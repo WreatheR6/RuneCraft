@@ -19,19 +19,18 @@ import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
 import com.runecraft.skill.XpService;
 import net.fabricmc.fabric.api.entity.FakePlayer;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,13 +44,13 @@ public final class TestContext {
     public static final int RADIUS = 12;
 
     public final MinecraftServer server;
-    public final ServerWorld world;
-    public ServerPlayerEntity player;
+    public final ServerLevel world;
+    public ServerPlayer player;
     /** The online player the checks run against in real mode, else null (a fake player is used). */
-    private final ServerPlayerEntity real;
-    private NbtCompound savedData;
+    private final ServerPlayer real;
+    private CompoundTag savedData;
     private final List<ItemStack> savedInventory = new ArrayList<>();
-    private ServerWorld savedWorld;
+    private ServerLevel savedWorld;
     private double savedX;
     private double savedY;
     private double savedZ;
@@ -62,7 +61,7 @@ public final class TestContext {
     /** Blocks the checks placed (skill nodes, stations, patches), cleared after every check. */
     private final java.util.Set<BlockPos> placed = new java.util.LinkedHashSet<>();
 
-    TestContext(MinecraftServer server, ServerWorld world, ServerPlayerEntity real) {
+    TestContext(MinecraftServer server, ServerLevel world, ServerPlayer real) {
         this.server = server;
         this.world = world;
         this.real = real;
@@ -75,7 +74,7 @@ public final class TestContext {
 
     void setUp() {
         world.getChunk(PLATFORM.getX() >> 4, PLATFORM.getZ() >> 4);
-        platform(Blocks.SMOOTH_STONE.getDefaultState(), Blocks.BARRIER.getDefaultState());
+        platform(Blocks.SMOOTH_STONE.defaultBlockState(), Blocks.BARRIER.defaultBlockState());
         if (real == null) {
             player = FakePlayer.get(world);
             return;
@@ -83,10 +82,10 @@ public final class TestContext {
         player = real;
         savedData = Players.data(player).toNbt();
         savedInventory.clear();
-        for (int i = 0; i < player.getInventory().size(); i++) {
-            savedInventory.add(player.getInventory().getStack(i).copy());
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            savedInventory.add(player.getInventory().getItem(i).copy());
         }
-        savedWorld = (ServerWorld) player.getWorld();
+        savedWorld = (ServerLevel) player.level();
         savedX = player.getX();
         savedY = player.getY();
         savedZ = player.getZ();
@@ -94,7 +93,7 @@ public final class TestContext {
         savedSpectator = player.isSpectator();
         savedModuleState.clear();
         for (ModuleState s : moduleStates()) {
-            savedModuleState.add(s.save(player.getUuid()));
+            savedModuleState.add(s.save(player.getUUID()));
         }
         // Bosses and raid rooms ignore creative and spectator players.
         if (savedCreative || savedSpectator) {
@@ -105,21 +104,21 @@ public final class TestContext {
 
     void tearDown() {
         reset();
-        platform(Blocks.AIR.getDefaultState(), Blocks.AIR.getDefaultState());
-        Players.state(server).remove(player.getUuid());
+        platform(Blocks.AIR.defaultBlockState(), Blocks.AIR.defaultBlockState());
+        Players.state(server).remove(player.getUUID());
         if (real == null) {
             return;
         }
         Players.data(player).fromNbt(savedData);
         List<ModuleState> states = moduleStates();
         for (int i = 0; i < states.size() && i < savedModuleState.size(); i++) {
-            states.get(i).restore(player.getUuid(), savedModuleState.get(i));
+            states.get(i).restore(player.getUUID(), savedModuleState.get(i));
         }
         XpService.updateMaxHealth(player);
         player.setHealth(player.getMaxHealth());
-        player.getInventory().clear();
+        player.getInventory().clearContent();
         for (int i = 0; i < savedInventory.size(); i++) {
-            player.getInventory().setStack(i, savedInventory.get(i));
+            player.getInventory().setItem(i, savedInventory.get(i));
         }
         player.setInvulnerable(false);
         if (savedCreative) {
@@ -127,7 +126,7 @@ public final class TestContext {
         } else if (savedSpectator) {
             command("gamemode spectator");
         }
-        player.teleport(savedWorld, savedX, savedY, savedZ, player.getYaw(), player.getPitch());
+        player.teleportTo(savedWorld, savedX, savedY, savedZ, player.getYRot(), player.getXRot());
         ServerNetworking.sync(player);
         SysNet.sendState(player);
     }
@@ -190,7 +189,7 @@ public final class TestContext {
 
     /** Runs a command as the (real) player with operator rights. */
     private void command(String command) {
-        server.getCommandManager().executeWithPrefix(player.getCommandSource().withLevel(4), command);
+        server.getCommands().performPrefixedCommand(player.createCommandSourceStack().withPermission(4), command);
     }
 
     /** Real mode: tops the player's health up so a boss or minigame can't kill it mid-check. */
@@ -203,10 +202,10 @@ public final class TestContext {
     private void platform(BlockState floor, BlockState wall) {
         for (int dx = -RADIUS; dx <= RADIUS; dx++) {
             for (int dz = -RADIUS; dz <= RADIUS; dz++) {
-                world.setBlockState(PLATFORM.add(dx, -1, dz), floor, Block.NOTIFY_LISTENERS);
+                world.setBlock(PLATFORM.offset(dx, -1, dz), floor, Block.UPDATE_CLIENTS);
                 if (Math.abs(dx) == RADIUS || Math.abs(dz) == RADIUS) {
                     for (int dy = 0; dy < 4; dy++) {
-                        world.setBlockState(PLATFORM.add(dx, dy, dz), wall, Block.NOTIFY_LISTENERS);
+                        world.setBlock(PLATFORM.offset(dx, dy, dz), wall, Block.UPDATE_CLIENTS);
                     }
                 }
             }
@@ -224,9 +223,9 @@ public final class TestContext {
         if (raid != null) {
             RaidManager.selfTestClose(raid);
         }
-        Players.state(server).remove(player.getUuid());
+        Players.state(server).remove(player.getUUID());
         for (ModuleState s : moduleStates()) {
-            s.restore(player.getUuid(), null);
+            s.restore(player.getUUID(), null);
         }
         PlayerData data = Players.data(player);
         for (Skill s : Skill.values()) {
@@ -236,13 +235,13 @@ public final class TestContext {
         data.setVisitedGielinor(true);
         XpService.updateMaxHealth(player);
         player.setHealth(player.getMaxHealth());
-        player.getInventory().clear();
+        player.getInventory().clearContent();
         home();
     }
 
     /** Back to the platform centre. */
     public void home() {
-        player.teleport(world, PLATFORM.getX() + 0.5, PLATFORM.getY(), PLATFORM.getZ() + 0.5, player.getYaw(), player.getPitch());
+        player.teleportTo(world, PLATFORM.getX() + 0.5, PLATFORM.getY(), PLATFORM.getZ() + 0.5, player.getYRot(), player.getXRot());
     }
 
     /** Marks every quest except {@code except} (nullable) complete, without rewards. */
@@ -260,34 +259,34 @@ public final class TestContext {
      * check. Returns the position.
      */
     public BlockPos place(BlockPos pos, BlockState state) {
-        placed.add(pos.toImmutable());
-        world.setBlockState(pos, state, Block.NOTIFY_ALL);
+        placed.add(pos.immutable());
+        world.setBlock(pos, state, Block.UPDATE_ALL);
         return pos;
     }
 
     /** Records a block a check made the game place (a lit fire, a laid trap) so it is removed after the check. */
     public void track(BlockPos pos) {
-        placed.add(pos.toImmutable());
+        placed.add(pos.immutable());
     }
 
     /** Removes every non-player entity around the platform (bosses, minions, drops, hazards) and the blocks checks placed. */
     void cleanUp() {
         ActionManager.cancel(player);
         for (BlockPos pos : placed) {
-            world.setBlockState(pos, pos.getY() == PLATFORM.getY() - 1 && Math.abs(pos.getX() - PLATFORM.getX()) <= RADIUS
-                    && Math.abs(pos.getZ() - PLATFORM.getZ()) <= RADIUS ? Blocks.SMOOTH_STONE.getDefaultState()
-                    : Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL);
+            world.setBlock(pos, pos.getY() == PLATFORM.getY() - 1 && Math.abs(pos.getX() - PLATFORM.getX()) <= RADIUS
+                    && Math.abs(pos.getZ() - PLATFORM.getZ()) <= RADIUS ? Blocks.SMOOTH_STONE.defaultBlockState()
+                    : Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
         }
         placed.clear();
-        Box box = new Box(PLATFORM.add(-48, -60, -48), PLATFORM.add(48, 60, 48));
-        for (Entity e : world.getEntitiesByClass(Entity.class, box, e -> !(e instanceof PlayerEntity))) {
+        AABB box = new AABB(PLATFORM.offset(-48, -60, -48), PLATFORM.offset(48, 60, 48));
+        for (Entity e : world.getEntitiesOfClass(Entity.class, box, e -> !(e instanceof Player))) {
             e.discard();
         }
-        player.getInventory().clear();
+        player.getInventory().clearContent();
     }
 
     /** Spot next to the player on the platform. */
     public BlockPos near(int dx, int dz) {
-        return PLATFORM.add(dx, 0, dz);
+        return PLATFORM.offset(dx, 0, dz);
     }
 }

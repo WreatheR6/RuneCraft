@@ -6,11 +6,10 @@ import com.runecraft.boss.Mechanics;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.bosses.ModernBosses;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Demonic Brutus (OSRS Wiki): three basic attacks, then a special, stomp and charge alternating (the first one random).
@@ -23,11 +22,11 @@ final class DemonicBrutusScript implements BossScript {
     private int basics;
     private boolean secondPhase;
     private boolean revivePending;
-    private ServerPlayerEntity volleyTarget;
+    private ServerPlayer volleyTarget;
     private final List<AttackDef> volley = new ArrayList<>();
 
     @Override
-    public AttackDef chooseAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+    public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
         if (!started) {
             started = true;
             stompNext = boss.getRandom().nextBoolean();
@@ -62,14 +61,14 @@ final class DemonicBrutusScript implements BossScript {
         }
         if (!volley.isEmpty() && volleyTarget != null) {
             AttackDef next = volley.remove(0);
-            if (volleyTarget.isAlive() && volleyTarget.squaredDistanceTo(boss) <= 24 * 24) {
+            if (volleyTarget.isAlive() && volleyTarget.distanceToSqr(boss) <= 24 * 24) {
                 Mechanics.perform(boss, volleyTarget, next, 1.0);
             }
         }
     }
 
     @Override
-    public int modifyIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+    public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
         if (!secondPhase && damage >= boss.getHealth()) {
             secondPhase = true;
             revivePending = true;

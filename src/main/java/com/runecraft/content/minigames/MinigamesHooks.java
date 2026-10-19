@@ -22,9 +22,8 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.network.ServerPlayerEntity;
-
+import net.minecraft.commands.Commands;
+import net.minecraft.server.level.ServerPlayer;
 import java.util.Map;
 
 /**
@@ -67,13 +66,13 @@ public final class MinigamesHooks implements ModuleHooks {
             java.util.List<String> blocks = placeBlocks.get(m.place());
             com.runecraft.world.LandmarkBuilder.registerCustom(m.place(), (world, centre) -> {
                 for (int i = 0; i < blocks.size(); i++) {
-                    world.setBlockState(centre.up().east(i * 2), Arena.module(blocks.get(i)));
+                    world.setBlockAndUpdate(centre.above().east(i * 2), Arena.module(blocks.get(i)));
                 }
             });
         }
         // The Burgh de Rott Ramble's portal outside Paterdomus (a style-NONE place of its own).
         com.runecraft.world.LandmarkBuilder.registerCustom(com.runecraft.osrs.content.minigames.TempleTrekking.RAMBLE_PLACE,
-                (world, centre) -> world.setBlockState(centre.up(), Arena.module(com.runecraft.osrs.content.minigames.TempleTrekking.RAMBLE_ENTRANCE)));
+                (world, centre) -> world.setBlockAndUpdate(centre.above(), Arena.module(com.runecraft.osrs.content.minigames.TempleTrekking.RAMBLE_ENTRANCE)));
         BlockHooks.register(com.runecraft.osrs.content.minigames.TempleTrekking.RAMBLE_ENTRANCE, (player, pos, state) -> Msg.game(player,
                 "Talk to one of the mercenaries here to choose who to escort to Burgh de Rott and which route to take."));
         for (com.runecraft.osrs.content.minigames.TempleTrekking.Follower f : com.runecraft.osrs.content.minigames.TempleTrekking.Follower.values()) {
@@ -191,12 +190,12 @@ public final class MinigamesHooks implements ModuleHooks {
                     : stats.profile() instanceof com.runecraft.osrs.content.BossDef bd ? bd.drops : null;
             if (scroll != null && !com.runecraft.osrs.content.minigames.ChampionsChallenge.tableHas(table, scroll)
                     && entity.getRandom().nextInt(com.runecraft.osrs.content.minigames.ChampionsChallenge.SCROLL_RATE) == 0) {
-                entity.dropStack(com.runecraft.util.Inv.stack(scroll, 1));
+                entity.spawnAtLocation(com.runecraft.util.Inv.stack(scroll, 1));
                 com.runecraft.collection.CollectionLog.obtain(player, scroll);
             }
         });
         ServerLivingEntityEvents.ALLOW_DEATH.register((entity, source, amount) ->
-                !(entity instanceof ServerPlayerEntity player) || MinigameManager.allowDeath(player));
+                !(entity instanceof ServerPlayer player) || MinigameManager.allowDeath(player));
         // Ectoplasmator (Soul Wars): Prayer XP of 20% of a spectral creature's hitpoints on each kill while carried.
         com.runecraft.content.GameEvents.onKill((player, entity, stats) -> {
             if (stats != null && stats.attributes().contains("spectral")
@@ -217,114 +216,114 @@ public final class MinigamesHooks implements ModuleHooks {
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> MinigameManager.onJoin(handler.getPlayer()));
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(
-                CommandManager.literal("minigame")
-                        .then(CommandManager.literal("leave").executes(ctx -> {
-                            ServerPlayerEntity p = ctx.getSource().getPlayer();
+                Commands.literal("minigame")
+                        .then(Commands.literal("leave").executes(ctx -> {
+                            ServerPlayer p = ctx.getSource().getPlayer();
                             if (p != null) {
                                 MinigameManager.leave(p);
                             }
                             return 1;
                         }))
-                        .then(CommandManager.literal("colosseum")
-                                .then(CommandManager.literal("pick").then(CommandManager.argument("choice", IntegerArgumentType.integer(1, 3))
+                        .then(Commands.literal("colosseum")
+                                .then(Commands.literal("pick").then(Commands.argument("choice", IntegerArgumentType.integer(1, 3))
                                         .executes(ctx -> {
-                                            ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                            ServerPlayer p = ctx.getSource().getPlayer();
                                             if (p != null && MinigameManager.session(p)
                                                     instanceof com.runecraft.content.minigames.games.ColosseumSession c) {
                                                 c.pick(p, IntegerArgumentType.getInteger(ctx, "choice"));
                                             }
                                             return 1;
                                         })))
-                                .then(CommandManager.literal("leave").executes(ctx -> {
-                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                .then(Commands.literal("leave").executes(ctx -> {
+                                    ServerPlayer p = ctx.getSource().getPlayer();
                                     if (p != null && MinigameManager.session(p) instanceof com.runecraft.content.minigames.games.ColosseumSession c) {
                                         c.cashOut(p);
                                     }
                                     return 1;
                                 }))
-                                .then(CommandManager.literal("salute").executes(ctx -> {
-                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                .then(Commands.literal("salute").executes(ctx -> {
+                                    ServerPlayer p = ctx.getSource().getPlayer();
                                     if (p != null) {
                                         com.runecraft.content.minigames.games.ColosseumSession.salute(p);
                                     }
                                     return 1;
                                 }))
-                                .then(CommandManager.literal("respawn").executes(ctx -> {
-                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                .then(Commands.literal("respawn").executes(ctx -> {
+                                    ServerPlayer p = ctx.getSource().getPlayer();
                                     if (p != null) {
                                         com.runecraft.content.minigames.games.ColosseumSession.setRespawn(p);
                                     }
                                     return 1;
                                 }))
-                                .then(CommandManager.literal("quiver").then(CommandManager.argument("for", StringArgumentType.word())
+                                .then(Commands.literal("quiver").then(Commands.argument("for", StringArgumentType.word())
                                         .executes(ctx -> {
-                                            ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                            ServerPlayer p = ctx.getSource().getPlayer();
                                             if (p != null) {
                                                 com.runecraft.content.minigames.games.ColosseumSession.tradeQuiver(p,
                                                         StringArgumentType.getString(ctx, "for").equals("pet"));
                                             }
                                             return 1;
                                         }))))
-                        .then(CommandManager.literal("redirect").then(CommandManager.argument("town", StringArgumentType.word())
+                        .then(Commands.literal("redirect").then(Commands.argument("town", StringArgumentType.word())
                                 .executes(ctx -> {
-                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                    ServerPlayer p = ctx.getSource().getPlayer();
                                     if (p != null) {
                                         MinigameItemUse.redirect(p, StringArgumentType.getString(ctx, "town"));
                                     }
                                     return 1;
                                 })))
-                        .then(CommandManager.literal("trek").then(CommandManager.argument("follower", StringArgumentType.word())
-                                .then(CommandManager.argument("route", IntegerArgumentType.integer(1, 3)).executes(ctx -> {
-                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                        .then(Commands.literal("trek").then(Commands.argument("follower", StringArgumentType.word())
+                                .then(Commands.argument("route", IntegerArgumentType.integer(1, 3)).executes(ctx -> {
+                                    ServerPlayer p = ctx.getSource().getPlayer();
                                     if (p != null) {
                                         com.runecraft.content.minigames.games.TempleTrekkingSession.choose(p,
                                                 StringArgumentType.getString(ctx, "follower"), IntegerArgumentType.getInteger(ctx, "route"));
                                     }
                                     return 1;
                                 }))))
-                        .then(CommandManager.literal("nmz")
-                                .then(CommandManager.literal("bosses").executes(ctx -> {
-                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                        .then(Commands.literal("nmz")
+                                .then(Commands.literal("bosses").executes(ctx -> {
+                                    ServerPlayer p = ctx.getSource().getPlayer();
                                     if (p != null) {
                                         com.runecraft.content.minigames.games.NightmareZoneSession.toggle(p, null);
                                     }
                                     return 1;
                                 }))
-                                .then(CommandManager.literal("shop").executes(ctx -> {
-                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                .then(Commands.literal("shop").executes(ctx -> {
+                                    ServerPlayer p = ctx.getSource().getPlayer();
                                     if (p != null && nearNpc(p, "mg_dominic_onion")) {
                                         com.runecraft.content.minigames.games.NightmareZoneSession.shop(p);
                                     }
                                     return 1;
                                 }))
-                                .then(CommandManager.literal("toggle").then(CommandManager.argument("boss", StringArgumentType.word())
+                                .then(Commands.literal("toggle").then(Commands.argument("boss", StringArgumentType.word())
                                         .executes(ctx -> {
-                                            ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                            ServerPlayer p = ctx.getSource().getPlayer();
                                             if (p != null) {
                                                 com.runecraft.content.minigames.games.NightmareZoneSession.toggle(p,
                                                         StringArgumentType.getString(ctx, "boss"));
                                             }
                                             return 1;
                                         })))
-                                .then(CommandManager.literal("barrel").executes(ctx -> {
-                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                .then(Commands.literal("barrel").executes(ctx -> {
+                                    ServerPlayer p = ctx.getSource().getPlayer();
                                     if (p != null && nearBarrels(p)) {
                                         com.runecraft.content.minigames.games.NightmareZoneSession.barrels(p);
                                     }
                                     return 1;
-                                }).then(CommandManager.argument("potion", StringArgumentType.word())
-                                        .then(CommandManager.argument("doses", IntegerArgumentType.integer(1, 255)).executes(ctx -> {
-                                            ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                }).then(Commands.argument("potion", StringArgumentType.word())
+                                        .then(Commands.argument("doses", IntegerArgumentType.integer(1, 255)).executes(ctx -> {
+                                            ServerPlayer p = ctx.getSource().getPlayer();
                                             if (p != null && nearBarrels(p)) {
                                                 com.runecraft.content.minigames.games.NightmareZoneSession.withdraw(p,
                                                         StringArgumentType.getString(ctx, "potion"), IntegerArgumentType.getInteger(ctx, "doses"));
                                             }
                                             return 1;
                                         }))))
-                                .then(CommandManager.argument("mode", StringArgumentType.word())
-                                        .then(CommandManager.argument("difficulty", StringArgumentType.word())
+                                .then(Commands.argument("mode", StringArgumentType.word())
+                                        .then(Commands.argument("difficulty", StringArgumentType.word())
                                                 .executes(ctx -> {
-                                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                                    ServerPlayer p = ctx.getSource().getPlayer();
                                                     if (p != null && nearNpc(p, "mg_dominic_onion")) {
                                                         com.runecraft.content.minigames.games.NightmareZoneSession.choose(p,
                                                                 StringArgumentType.getString(ctx, "mode"),
@@ -332,8 +331,8 @@ public final class MinigamesHooks implements ModuleHooks {
                                                     }
                                                     return 1;
                                                 })
-                                                .then(CommandManager.argument("boss", StringArgumentType.word()).executes(ctx -> {
-                                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                                .then(Commands.argument("boss", StringArgumentType.word()).executes(ctx -> {
+                                                    ServerPlayer p = ctx.getSource().getPlayer();
                                                     if (p != null && nearNpc(p, "mg_dominic_onion")) {
                                                         com.runecraft.content.minigames.games.NightmareZoneSession.choose(p,
                                                                 StringArgumentType.getString(ctx, "mode"),
@@ -342,52 +341,52 @@ public final class MinigamesHooks implements ModuleHooks {
                                                     }
                                                     return 1;
                                                 })))))
-                        .then(CommandManager.literal("token").then(CommandManager.argument("reward", StringArgumentType.word())
+                        .then(Commands.literal("token").then(Commands.argument("reward", StringArgumentType.word())
                                 .executes(ctx -> {
-                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                    ServerPlayer p = ctx.getSource().getPlayer();
                                     if (p != null) {
                                         com.runecraft.content.minigames.games.TempleTrekkingSession.claim(p,
                                                 StringArgumentType.getString(ctx, "reward"));
                                     }
                                     return 1;
                                 })))
-                        .then(CommandManager.literal("balevel").then(CommandManager.argument("role", StringArgumentType.word())
+                        .then(Commands.literal("balevel").then(Commands.argument("role", StringArgumentType.word())
                                 .executes(ctx -> {
-                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                    ServerPlayer p = ctx.getSource().getPlayer();
                                     if (p != null) {
                                         com.runecraft.content.minigames.games.BarbarianAssaultSession.buyLevel(p,
                                                 StringArgumentType.getString(ctx, "role"));
                                     }
                                     return 1;
                                 })))
-                        .then(CommandManager.literal("museum").then(CommandManager.argument("answer", IntegerArgumentType.integer(0, 2))
+                        .then(Commands.literal("museum").then(Commands.argument("answer", IntegerArgumentType.integer(0, 2))
                                 .executes(ctx -> {
-                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                    ServerPlayer p = ctx.getSource().getPlayer();
                                     if (p != null) {
                                         MuseumService.answer(p, IntegerArgumentType.getInteger(ctx, "answer"));
                                     }
                                     return 1;
                                 })))
-                        .then(CommandManager.literal("sing").then(CommandManager.argument("recipe", StringArgumentType.word())
+                        .then(Commands.literal("sing").then(Commands.argument("recipe", StringArgumentType.word())
                                 .executes(ctx -> {
-                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                    ServerPlayer p = ctx.getSource().getPlayer();
                                     if (p != null) {
                                         com.runecraft.content.minigames.games.GauntletSession.sing(p,
                                                 StringArgumentType.getString(ctx, "recipe"));
                                     }
                                     return 1;
                                 })))
-                        .then(CommandManager.literal("points").executes(ctx -> {
-                            ServerPlayerEntity p = ctx.getSource().getPlayer();
+                        .then(Commands.literal("points").executes(ctx -> {
+                            ServerPlayer p = ctx.getSource().getPlayer();
                             if (p != null) {
                                 showPoints(p);
                             }
                             return 1;
                         }))
-                        .then(CommandManager.literal("shop").then(CommandManager.argument("id", StringArgumentType.word())
+                        .then(Commands.literal("shop").then(Commands.argument("id", StringArgumentType.word())
                                 .executes(ctx -> {
-                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
-                                    if (p != null && ctx.getSource().hasPermissionLevel(2)) {
+                                    ServerPlayer p = ctx.getSource().getPlayer();
+                                    if (p != null && ctx.getSource().hasPermission(2)) {
                                         RewardShopService.open(p, StringArgumentType.getString(ctx, "id"));
                                     }
                                     return 1;
@@ -398,10 +397,10 @@ public final class MinigamesHooks implements ModuleHooks {
      * The guardian mummy: explains Pyramid Plunder, and recharges a carried pharaoh's sceptre (wiki: 24 ivory/pottery, 12
      * stone or 6 gold artefacts for a full recharge; 3 charges, up to 100 with the Desert Diary tiers).
      */
-    private static void guardianMummy(ServerPlayerEntity p) {
-        net.minecraft.item.ItemStack sceptre = net.minecraft.item.ItemStack.EMPTY;
-        for (int i = 0; i < p.getInventory().size(); i++) {
-            net.minecraft.item.ItemStack s = p.getInventory().getStack(i);
+    private static void guardianMummy(ServerPlayer p) {
+        net.minecraft.world.item.ItemStack sceptre = net.minecraft.world.item.ItemStack.EMPTY;
+        for (int i = 0; i < p.getInventory().getContainerSize(); i++) {
+            net.minecraft.world.item.ItemStack s = p.getInventory().getItem(i);
             if (com.runecraft.osrs.content.systems.Charges.PHARAOHS_SCEPTRE.equals(com.runecraft.util.Inv.idOf(s))) {
                 sceptre = s;
                 break;
@@ -445,8 +444,8 @@ public final class MinigamesHooks implements ModuleHooks {
     }
 
     /** Whether the player stands near one of an NPC's entities (commands behind clickable dialogue options). */
-    static boolean nearNpc(ServerPlayerEntity p, String npcId) {
-        boolean near = !p.getWorld().getEntitiesByClass(com.runecraft.entity.QuestNpcEntity.class, p.getBoundingBox().expand(12),
+    static boolean nearNpc(ServerPlayer p, String npcId) {
+        boolean near = !p.level().getEntitiesOfClass(com.runecraft.entity.QuestNpcEntity.class, p.getBoundingBox().inflate(12),
                 e -> npcId.equals(e.npcId())).isEmpty();
         if (!near) {
             Msg.game(p, "You need to be next to them to do that.");
@@ -458,15 +457,15 @@ public final class MinigamesHooks implements ModuleHooks {
      * Whether the player is by the Nightmare Zone potion barrels, or by Dominic Onion: a lobby built before the barrels were
      * added has no barrel block (places are built once), so the doses bought there are withdrawn through him.
      */
-    static boolean nearBarrels(ServerPlayerEntity p) {
-        net.minecraft.block.BlockState want = Arena.module(MinigameWorld.NMZ_BARRELS);
-        net.minecraft.util.math.BlockPos at = p.getBlockPos();
-        for (net.minecraft.util.math.BlockPos q : net.minecraft.util.math.BlockPos.iterate(at.add(-6, -3, -6), at.add(6, 3, 6))) {
-            if (p.getWorld().getBlockState(q).isOf(want.getBlock())) {
+    static boolean nearBarrels(ServerPlayer p) {
+        net.minecraft.world.level.block.state.BlockState want = Arena.module(MinigameWorld.NMZ_BARRELS);
+        net.minecraft.core.BlockPos at = p.blockPosition();
+        for (net.minecraft.core.BlockPos q : net.minecraft.core.BlockPos.betweenClosed(at.offset(-6, -3, -6), at.offset(6, 3, 6))) {
+            if (p.level().getBlockState(q).is(want.getBlock())) {
                 return true;
             }
         }
-        if (!p.getWorld().getEntitiesByClass(com.runecraft.entity.QuestNpcEntity.class, p.getBoundingBox().expand(12),
+        if (!p.level().getEntitiesOfClass(com.runecraft.entity.QuestNpcEntity.class, p.getBoundingBox().inflate(12),
                 e -> "mg_dominic_onion".equals(e.npcId())).isEmpty()) {
             return true;
         }
@@ -479,22 +478,22 @@ public final class MinigamesHooks implements ModuleHooks {
     }
 
     /** TzHaar-Ket-Rak: the challenges, what unlocks them and the JalRek-Jad metamorphosis. */
-    private static void ketRak(ServerPlayerEntity p) {
+    private static void ketRak(ServerPlayer p) {
         MinigameData data = MinigameData.of(p);
-        boolean inferno = data.stat(p.getUuid(), "kc:" + Minigame.INFERNO.id()) > 0;
+        boolean inferno = data.stat(p.getUUID(), "kc:" + Minigame.INFERNO.id()) > 0;
         QuestApi.say(p, "TzHaar-Ket-Rak", "The JalTok-Jads grow in number, JalYt. Help me thin them out: my first challenge is one Jad, "
                 + "the second two, and so on up to six at once. " + (inferno ? "You have bested TzKal-Zuk, so all my challenges are open to you,"
                 + " even the final one, where they never stop coming."
                 : "Defeat TzKal-Zuk in the Inferno and I will offer you the third challenge and beyond."));
-        if (data.flag(p.getUuid(), com.runecraft.osrs.content.minigames.KetRakChallenges.METAMORPHOSIS)) {
+        if (data.flag(p.getUUID(), com.runecraft.osrs.content.minigames.KetRakChallenges.METAMORPHOSIS)) {
             QuestApi.say(p, "TzHaar-Ket-Rak", "You have completed every challenge. Your TzRek-Jad may take the form of a JalRek-Jad.");
         }
     }
 
     /** The scoreboard beside TzHaar-Ket-Rak: completions, best time and deaths per challenge, and the endurance record. */
-    private static void ketRakScoreboard(ServerPlayerEntity p) {
+    private static void ketRakScoreboard(ServerPlayer p) {
         MinigameData data = MinigameData.of(p);
-        java.util.UUID u = p.getUuid();
+        java.util.UUID u = p.getUUID();
         Msg.game(p, "--- TzHaar-Ket-Rak's Challenges ---");
         for (int c = 1; c <= com.runecraft.osrs.content.minigames.KetRakChallenges.CHALLENGES; c++) {
             int best = data.stat(u, com.runecraft.osrs.content.minigames.KetRakChallenges.BEST_PREFIX + c);
@@ -508,19 +507,19 @@ public final class MinigamesHooks implements ModuleHooks {
                 + ", " + data.stat(u, com.runecraft.osrs.content.minigames.KetRakChallenges.DEATHS_PREFIX + f) + " attempts");
     }
 
-    private static void showPoints(ServerPlayerEntity p) {
+    private static void showPoints(ServerPlayer p) {
         MinigameData data = MinigameData.of(p);
         Msg.game(p, "--- Minigame points ---");
         for (Map.Entry<String, String> e : MinigameCurrencies.all().entrySet()) {
             if (e.getKey().startsWith("pts:")) {
-                int v = data.points(p.getUuid(), MinigameCurrencies.key(e.getKey()));
+                int v = data.points(p.getUUID(), MinigameCurrencies.key(e.getKey()));
                 if (v != 0) {
                     Msg.game(p, e.getValue() + ": " + String.format("%,d", v));
                 }
             }
         }
         for (Minigame m : Minigame.values()) {
-            int kc = data.stat(p.getUuid(), "kc:" + m.id());
+            int kc = data.stat(p.getUUID(), "kc:" + m.id());
             if (kc > 0) {
                 Msg.game(p, m.displayName() + " completions: " + kc);
             }

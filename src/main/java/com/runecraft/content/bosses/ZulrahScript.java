@@ -8,16 +8,15 @@ import com.runecraft.osrs.content.bosses.ZulrahVorkath;
 import com.runecraft.osrs.content.bosses.ZulrahVorkath.Form;
 import com.runecraft.osrs.content.bosses.ZulrahVorkath.Spot;
 import com.runecraft.osrs.content.bosses.ZulrahVorkath.Step;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Zulrah: follows one of four fixed rotations (OSRS Wiki, Zulrah/Strategies). Each phase it surfaces at a spot in
@@ -28,10 +27,10 @@ import java.util.List;
  * envenom; snakelings die off after 40 seconds.
  */
 final class ZulrahScript extends ScriptedBoss {
-    private record Cloud(Vec3d pos, long until) {
+    private record Cloud(Vec3 pos, long until) {
     }
 
-    private record Snakeling(MobEntity mob, long until) {
+    private record Snakeling(Mob mob, long until) {
     }
 
     private final String formId;
@@ -76,7 +75,7 @@ final class ZulrahScript extends ScriptedBoss {
         } else {
             rotation = boss.getRandom().nextInt(ZulrahVorkath.ROTATIONS.size());
             step = 0;
-            home = boss.getBlockPos();
+            home = boss.blockPosition();
             // A fresh spawn of a later form (not handed a state by swapForm): start at a phase of that form,
             // so a crimson or tanzanite Zulrah doesn't fight a green phase and swap form on its first dive.
             if (!current().form().bossId.equals(formId)) {
@@ -99,13 +98,13 @@ final class ZulrahScript extends ScriptedBoss {
     private void surface(DataBossEntity boss) {
         Step s = current();
         Spot spot = s.spot();
-        Vec3d to = BossFx.ground(BossFx.world(boss), home.getX() + 0.5 + spot.dx, home.getZ() + 0.5 + spot.dz, home.getY());
-        boss.requestTeleport(to.x, to.y, to.z);
+        Vec3 to = BossFx.ground(BossFx.world(boss), home.getX() + 0.5 + spot.dx, home.getZ() + 0.5 + spot.dz, home.getY());
+        boss.teleportTo(to.x, to.y, to.z);
         action = 0;
         surfacing = 2;
         jadMagic = s.form() == Form.JAD_MAGIC;
         BossFx.burst(boss, ParticleTypes.SPLASH, 40, 1.5);
-        BossFx.sound(boss, SoundEvents.ENTITY_GENERIC_SPLASH, 0.6f);
+        BossFx.sound(boss, SoundEvents.GENERIC_SPLASH, 0.6f);
         String hint = switch (s.form()) {
             case SERPENTINE -> "Zulrah surfaces in its green form! (ranged - protect from missiles)";
             case MAGMA -> "Zulrah surfaces in its crimson form! Don't stand where it stares!";
@@ -127,7 +126,7 @@ final class ZulrahScript extends ScriptedBoss {
     }
 
     @Override
-    protected AttackDef nextAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+    protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
         Step s = current();
         char what = s.actions().charAt(action);
         if (what == 'S') {
@@ -158,7 +157,7 @@ final class ZulrahScript extends ScriptedBoss {
     }
 
     @Override
-    protected void afterAttack(DataBossEntity boss, ServerPlayerEntity target, AttackDef attack) {
+    protected void afterAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
         next(boss);
     }
 
@@ -172,32 +171,32 @@ final class ZulrahScript extends ScriptedBoss {
     }
 
     @Override
-    protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+    protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
         return ZulrahVorkath.capDamage(damage, boss.getRandom().nextInt(6));
     }
 
-    private void spawnSnakeling(DataBossEntity boss, ServerPlayerEntity target) {
+    private void spawnSnakeling(DataBossEntity boss, ServerPlayer target) {
         snakelings.removeIf(sn -> !sn.mob().isAlive());
-        BossFx.world(boss).spawnParticles(ParticleTypes.END_ROD, boss.getX(), boss.getY() + 2.5, boss.getZ(), 6, 0.3, 0.3, 0.3, 0.02);
+        BossFx.world(boss).sendParticles(ParticleTypes.END_ROD, boss.getX(), boss.getY() + 2.5, boss.getZ(), 6, 0.3, 0.3, 0.3, 0.02);
         if (snakelings.size() >= 8) {
             return;
         }
-        MobEntity m = BossFx.spawnMinion(boss, "snakeling", around(boss, target.getPos(), 3), target);
+        Mob m = BossFx.spawnMinion(boss, "snakeling", around(boss, target.position(), 3), target);
         if (m != null) {
             snakelings.add(new Snakeling(m, now + ZulrahVorkath.SNAKELING_LIFE_TICKS));
         }
     }
 
-    private void spitClouds(DataBossEntity boss, ServerPlayerEntity target) {
+    private void spitClouds(DataBossEntity boss, ServerPlayer target) {
         for (int i = 0; i < 2; i++) {
-            Vec3d at = around(boss, target.getPos(), 3);
+            Vec3 at = around(boss, target.position(), 3);
             clouds.add(new Cloud(at, now + 30));
         }
         BossFx.warn(boss, "Zulrah spits clouds of toxic fumes!");
     }
 
     @Override
-    public int onHitPlayer(DataBossEntity boss, ServerPlayerEntity player, int damage, AttackType type) {
+    public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
         if (last == ZulrahVorkath.ZULRAH_TAIL_SLAM && damage > 0) {
             BossFx.stun(player, 3);
             com.runecraft.util.Msg.red(player, "Zulrah's tail slam stuns you!");
@@ -206,7 +205,7 @@ final class ZulrahScript extends ScriptedBoss {
     }
 
     @Override
-    protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+    protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
         if (rotation < 0) {
             restore(boss);
             return;
@@ -261,8 +260,8 @@ final class ZulrahScript extends ScriptedBoss {
                 it.remove();
                 continue;
             }
-            BossFx.world(boss).spawnParticles(ParticleTypes.SNEEZE, c.pos().x, c.pos().y + 0.4, c.pos().z, 12, 1.0, 0.3, 1.0, 0.0);
-            for (ServerPlayerEntity p : BossFx.world(boss).getPlayers(pl -> pl.isAlive() && pl.getPos().squaredDistanceTo(c.pos()) < 2.5)) {
+            BossFx.world(boss).sendParticles(ParticleTypes.SNEEZE, c.pos().x, c.pos().y + 0.4, c.pos().z, 12, 1.0, 0.3, 1.0, 0.0);
+            for (ServerPlayer p : BossFx.world(boss).getPlayers(pl -> pl.isAlive() && pl.position().distanceToSqr(c.pos()) < 2.5)) {
                 // The clouds deal venom-like damage every tick but don't envenom (OSRS Wiki).
                 com.runecraft.combat.CombatHooks.nameAttack("toxic_cloud", null);
                 CombatHandler.applyDamage(boss, p, 1 + p.getRandom().nextInt(5));
@@ -271,7 +270,7 @@ final class ZulrahScript extends ScriptedBoss {
     }
 
     @Override
-    public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
+    public void onDeath(DataBossEntity boss, ServerPlayer killer) {
         snakelings.forEach(sn -> sn.mob().discard());
     }
 }

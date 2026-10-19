@@ -5,17 +5,16 @@ import com.runecraft.osrs.content.dungeons.Dungeons.Camp;
 import com.runecraft.registry.ModEntities;
 import com.runecraft.world.Gielinor;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.fluid.Fluids;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.phys.AABB;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -59,7 +58,7 @@ final class DungeonCamps {
             if (++ticks % INTERVAL_MC_TICKS != 0) {
                 return;
             }
-            ServerWorld world = Gielinor.world(server);
+            ServerLevel world = Gielinor.world(server);
             if (world == null) {
                 return;
             }
@@ -73,8 +72,8 @@ final class DungeonCamps {
         });
     }
 
-    private static boolean playerNear(ServerWorld world, Camp camp) {
-        for (ServerPlayerEntity p : world.getPlayers()) {
+    private static boolean playerNear(ServerLevel world, Camp camp) {
+        for (ServerPlayer p : world.players()) {
             if (!p.isAlive() || p.isSpectator()) {
                 continue;
             }
@@ -87,7 +86,7 @@ final class DungeonCamps {
         return false;
     }
 
-    private static void tick(ServerWorld world, State state) {
+    private static void tick(ServerLevel world, State state) {
         Camp camp = state.camp;
         if (!playerNear(world, camp)) {
             state.active = false;
@@ -105,8 +104,8 @@ final class DungeonCamps {
                 return;
             }
         }
-        Box area = new Box(camp.x1() - 6, camp.feetY() - 3, camp.z1() - 6, camp.x2() + 7, camp.feetY() + 12, camp.z2() + 7);
-        int alive = world.getEntitiesByClass(MobEntity.class, area, e -> e.isAlive() && state.types.contains(e.getType())).size();
+        AABB area = new AABB(camp.x1() - 6, camp.feetY() - 3, camp.z1() - 6, camp.x2() + 7, camp.feetY() + 12, camp.z2() + 7);
+        int alive = world.getEntitiesOfClass(Mob.class, area, e -> e.isAlive() && state.types.contains(e.getType())).size();
         int missing = camp.cap() - alive;
         if (!state.active) {
             // A player just arrived: the camp is fully stocked, as the dungeon always is in OSRS.
@@ -116,7 +115,7 @@ final class DungeonCamps {
             }
             return;
         }
-        long now = world.getTime();
+        long now = world.getGameTime();
         while (state.pending.size() > Math.max(0, missing)) {
             state.pending.pollLast();
         }
@@ -130,26 +129,26 @@ final class DungeonCamps {
     }
 
     private static boolean open(BlockState state) {
-        return state.isAir() || state.isReplaceable() && state.getFluidState().isEmpty();
+        return state.isAir() || state.canBeReplaced() && state.getFluidState().isEmpty();
     }
 
-    private static void spawn(ServerWorld world, Camp camp) {
+    private static void spawn(ServerLevel world, Camp camp) {
         for (int attempt = 0; attempt < 8; attempt++) {
             int x = camp.x1() + world.getRandom().nextInt(camp.x2() - camp.x1() + 1);
             int z = camp.z1() + world.getRandom().nextInt(camp.z2() - camp.z1() + 1);
-            if (!world.isChunkLoaded(x >> 4, z >> 4)) {
+            if (!world.hasChunk(x >> 4, z >> 4)) {
                 continue;
             }
             int y = camp.feetY();
             BlockPos feet = new BlockPos(x, y, z);
-            BlockState below = world.getBlockState(feet.down());
-            if (!open(world.getBlockState(feet)) || !open(world.getBlockState(feet.up())) || below.isAir()
-                    || below.getFluidState().isOf(Fluids.LAVA) || below.getFluidState().isOf(Fluids.FLOWING_LAVA)) {
+            BlockState below = world.getBlockState(feet.below());
+            if (!open(world.getBlockState(feet)) || !open(world.getBlockState(feet.above())) || below.isAir()
+                    || below.getFluidState().is(Fluids.LAVA) || below.getFluidState().is(Fluids.FLOWING_LAVA)) {
                 continue; // a pillar, a pool of lava, or the dungeon hasn't been carved here yet
             }
             boolean crowded = false;
-            for (ServerPlayerEntity p : world.getPlayers()) {
-                if (p.squaredDistanceTo(x + 0.5, y, z + 0.5) < 5 * 5) {
+            for (ServerPlayer p : world.players()) {
+                if (p.distanceToSqr(x + 0.5, y, z + 0.5) < 5 * 5) {
                     crowded = true;
                     break;
                 }
@@ -163,13 +162,13 @@ final class DungeonCamps {
                 return;
             }
             Entity e = type.create(world);
-            if (!(e instanceof MobEntity mob)) {
+            if (!(e instanceof Mob mob)) {
                 return;
             }
-            mob.refreshPositionAndAngles(x + 0.5, y, z + 0.5, world.getRandom().nextFloat() * 360f, 0);
-            mob.initialize(world, world.getLocalDifficulty(feet), SpawnReason.SPAWNER, null, null);
-            mob.setPersistent();
-            world.spawnEntity(mob);
+            mob.moveTo(x + 0.5, y, z + 0.5, world.getRandom().nextFloat() * 360f, 0);
+            mob.finalizeSpawn(world, world.getCurrentDifficultyAt(feet), MobSpawnType.SPAWNER, null, null);
+            mob.setPersistenceRequired();
+            world.addFreshEntity(mob);
             return;
         }
     }

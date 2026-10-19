@@ -1,10 +1,10 @@
 package com.runecraft.item;
 
-import net.minecraft.item.ArmorItem;
-import net.minecraft.item.ArmorMaterial;
-import net.minecraft.recipe.Ingredient;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.sound.SoundEvents;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.ArmorMaterial;
+import net.minecraft.world.item.crafting.Ingredient;
 
 /**
  * Vanilla armour values for RuneCraft armour. Inside Gielinor OSRS defence bonuses are used
@@ -20,7 +20,7 @@ public final class OsrsArmorMaterial implements ArmorMaterial {
     }
 
     @Override
-    public int getDurability(ArmorItem.Type type) {
+    public int getDurabilityForType(ArmorItem.Type type) {
         return (100 + strength * 60) * switch (type) {
             case HELMET -> 11;
             case CHESTPLATE -> 16;
@@ -30,7 +30,7 @@ public final class OsrsArmorMaterial implements ArmorMaterial {
     }
 
     @Override
-    public int getProtection(ArmorItem.Type type) {
+    public int getDefenseForType(ArmorItem.Type type) {
         int base = Math.max(1, strength);
         return switch (type) {
             case HELMET -> Math.max(1, base / 2);
@@ -41,13 +41,13 @@ public final class OsrsArmorMaterial implements ArmorMaterial {
     }
 
     @Override
-    public int getEnchantability() {
+    public int getEnchantmentValue() {
         return 10;
     }
 
     @Override
     public SoundEvent getEquipSound() {
-        return "leather".equals(tier) ? SoundEvents.ITEM_ARMOR_EQUIP_LEATHER : SoundEvents.ITEM_ARMOR_EQUIP_IRON;
+        return "leather".equals(tier) ? SoundEvents.ARMOR_EQUIP_LEATHER : SoundEvents.ARMOR_EQUIP_IRON;
     }
 
     @Override

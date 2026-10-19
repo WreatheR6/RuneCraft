@@ -8,17 +8,16 @@ import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.data.Boss;
 import com.runecraft.osrs.data.Monster;
 import com.runecraft.registry.ModEntities;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.hit.EntityHitResult;
-
 import java.util.Iterator;
 import java.util.Locale;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.EntityHitResult;
 
 /** Status orbs, XP drops, the OSRS mouseover text ("Attack Goblin (level-2)") and the side panel. */
 public final class HudOverlay {
@@ -27,14 +26,14 @@ public final class HudOverlay {
     private HudOverlay() {
     }
 
-    public static void render(DrawContext ctx, float tickDelta) {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.player == null || mc.options.hudHidden) {
+    public static void render(GuiGraphics ctx, float tickDelta) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.options.hideGui) {
             return;
         }
-        TextRenderer tr = mc.textRenderer;
-        int w = ctx.getScaledWindowWidth();
-        boolean gielinor = mc.world != null && mc.world.getRegistryKey().getValue().equals(RuneCraft.id("gielinor"));
+        Font tr = mc.font;
+        int w = ctx.guiWidth();
+        boolean gielinor = mc.level != null && mc.level.dimension().location().equals(RuneCraft.id("gielinor"));
 
         // Orbs (top right)
         int x = w - 92;
@@ -46,21 +45,21 @@ public final class HudOverlay {
         int prayerMax = Math.max(1, ClientState.SKILLS.currentLevel(Skill.PRAYER));
         orb(ctx, tr, x, y + 14, "Pr", ClientState.prayerPoints + "/" + prayerMax, 0xFF20A0C0, ClientState.prayerPoints / (float) prayerMax);
         ctx.fill(x, y + 28, x + 88, y + 40, 0xA0201810);
-        ctx.drawTextWithShadow(tr, "Cb " + ClientState.SKILLS.combatLevel() + "  " + formatCoins(ClientState.coins) + " gp", x + 3, y + 30, 0xFFFFD700);
+        ctx.drawString(tr, "Cb " + ClientState.SKILLS.combatLevel() + "  " + formatCoins(ClientState.coins) + " gp", x + 3, y + 30, 0xFFFFD700);
         // Multicombat area: OSRS shows crossed swords.
         if (gielinor && ClientState.inMulti) {
             ctx.fill(x - 22, y, x - 2, y + 20, 0xA0201810);
             OsrsUi.icon(ctx, OsrsUi.tabIcon("combat"), x - 21, y + 1, 18);
         }
         // PvP skull: the server puts skulled players on a scoreboard team (SkullService).
-        net.minecraft.scoreboard.AbstractTeam skullTeam = mc.player.getScoreboardTeam();
+        net.minecraft.world.scores.Team skullTeam = mc.player.getTeam();
         if (gielinor && skullTeam != null && com.runecraft.osrs.PvpSkull.TEAM.equals(skullTeam.getName())) {
             ctx.fill(x - 44, y, x - 24, y + 20, 0xA0201810);
-            ctx.drawCenteredTextWithShadow(tr, "☠", x - 34, y + 6, 0xFFE8E8E8);
+            ctx.drawCenteredString(tr, "☠", x - 34, y + 6, 0xFFE8E8E8);
         } else if (gielinor && skullTeam != null && com.runecraft.osrs.PvpSkull.CHAMPION_TEAM.equals(skullTeam.getName())) {
             // The TzHaar Fight Pit champion's red skull.
             ctx.fill(x - 44, y, x - 24, y + 20, 0xA0201810);
-            ctx.drawCenteredTextWithShadow(tr, "☠", x - 34, y + 6, 0xFFD02020);
+            ctx.drawCenteredString(tr, "☠", x - 34, y + 6, 0xFFD02020);
         }
 
         // XP drops (right side, rising)
@@ -78,41 +77,41 @@ public final class HudOverlay {
             int rise = (int) (age * 40 / XP_DROP_MS);
             String text = "+" + Experience.format(d.tenths());
             int dy = dropY + index * 12 + 40 - rise;
-            int tx = w - tr.getWidth(text) - 6;
-            Identifier icon = OsrsUi.skillIcon(d.skill());
-            ctx.drawTexture(icon, tx - 12, dy - 1, 10, 10, 0, 0, 32, 32, 32, 32);
-            ctx.drawTextWithShadow(tr, text, tx, dy, 0xFFFFFFFF);
+            int tx = w - tr.width(text) - 6;
+            ResourceLocation icon = OsrsUi.skillIcon(d.skill());
+            ctx.blit(icon, tx - 12, dy - 1, 10, 10, 0, 0, 32, 32, 32, 32);
+            ctx.drawString(tr, text, tx, dy, 0xFFFFFFFF);
             index++;
         }
 
         // Mouseover text (top left), like OSRS
-        if (mc.crosshairTarget instanceof EntityHitResult hit && hit.getEntity() instanceof LivingEntity living && living != mc.player) {
+        if (mc.hitResult instanceof EntityHitResult hit && hit.getEntity() instanceof LivingEntity living && living != mc.player) {
             String name = living.getName().getString();
             int level = combatLevel(living, gielinor);
             String verb = living instanceof com.runecraft.entity.QuestNpcEntity ? "Talk-to " : "Attack ";
-            ctx.drawTextWithShadow(tr, verb, 4, 4, 0xFFFFFFFF);
-            int vx = 4 + tr.getWidth(verb);
-            ctx.drawTextWithShadow(tr, name, vx, 4, 0xFFFFFF00);
+            ctx.drawString(tr, verb, 4, 4, 0xFFFFFFFF);
+            int vx = 4 + tr.width(verb);
+            ctx.drawString(tr, name, vx, 4, 0xFFFFFF00);
             if (level > 0) {
-                ctx.drawTextWithShadow(tr, " (level-" + level + ")", vx + tr.getWidth(name), 4, levelColor(level));
+                ctx.drawString(tr, " (level-" + level + ")", vx + tr.width(name), 4, levelColor(level));
             }
         }
         if (!ClientState.slayerTask.isEmpty() && ClientState.slayerRemaining > 0) {
             String task = "Slayer: " + ClientState.slayerRemaining + " x " + ClientState.slayerTask.toLowerCase(Locale.ROOT).replace('_', ' ');
-            ctx.drawTextWithShadow(tr, task, w - tr.getWidth(task) - 4, y + 44, 0xFFC0C0C0);
+            ctx.drawString(tr, task, w - tr.width(task) - 4, y + 44, 0xFFC0C0C0);
         }
 
         // OSRS side panel (bottom right). While the cursor is free SidePanelScreen draws it instead,
         // with hover tooltips.
-        if (SidePanel.visible && !(mc.currentScreen instanceof SidePanelScreen)) {
-            SidePanel.render(ctx, w, ctx.getScaledWindowHeight(), Double.NaN, Double.NaN);
+        if (SidePanel.visible && !(mc.screen instanceof SidePanelScreen)) {
+            SidePanel.render(ctx, w, ctx.guiHeight(), Double.NaN, Double.NaN);
         }
     }
 
-    private static void orb(DrawContext ctx, TextRenderer tr, int x, int y, String label, String value, int color, float fill) {
+    private static void orb(GuiGraphics ctx, Font tr, int x, int y, String label, String value, int color, float fill) {
         ctx.fill(x, y, x + 88, y + 12, 0xA0201810);
         ctx.fill(x + 1, y + 1, x + 1 + (int) (86 * Math.max(0, Math.min(1, fill))), y + 11, color);
-        ctx.drawTextWithShadow(tr, label + " " + value, x + 3, y + 2, 0xFFFFFFFF);
+        ctx.drawString(tr, label + " " + value, x + 3, y + 2, 0xFFFFFFFF);
     }
 
     private static String formatCoins(long coins) {
@@ -133,10 +132,10 @@ public final class HudOverlay {
         if (entity instanceof OsrsMonsterEntity monster) {
             return monster.stats() == null ? 0 : monster.stats().combatLevel();
         }
-        if (entity instanceof net.minecraft.entity.player.PlayerEntity) {
+        if (entity instanceof net.minecraft.world.entity.player.Player) {
             return 0;
         }
-        Monster m = Monster.byEntity(Registries.ENTITY_TYPE.getId(entity.getType()).toString());
+        Monster m = Monster.byEntity(BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString());
         return gielinor && m != null ? m.combatLevel() : 0;
     }
 

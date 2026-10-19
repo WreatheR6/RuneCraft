@@ -11,12 +11,11 @@ import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
 import com.runecraft.world.LandmarkBuilder;
 import com.runecraft.world.StructurePlacer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.HashMap;
 import java.util.Map;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Fairy rings and Magic Mushtrees: sneak-click to turn the dial to the next destination, click to
@@ -27,16 +26,16 @@ public final class IslandsTravelService {
     private static final Map<String, String> DIAL = new HashMap<>();
 
     /** Whether a player may use fairy rings without a staff (set by the systems module: Lumbridge elite diary). */
-    public static java.util.function.Predicate<ServerPlayerEntity> staffless = p -> false;
+    public static java.util.function.Predicate<ServerPlayer> staffless = p -> false;
 
     /** Whether a player has built a fairy ring in their house (set by the extras module's house): DIQ needs one. */
-    public static java.util.function.Predicate<ServerPlayerEntity> houseFairyRing = p -> false;
+    public static java.util.function.Predicate<ServerPlayer> houseFairyRing = p -> false;
 
     /**
      * DIQ's arrival: into the player's house beside its fairy ring (set by the extras module's house; until then a plain
      * Teleport to House).
      */
-    public static java.util.function.Consumer<ServerPlayerEntity> houseRingTeleport =
+    public static java.util.function.Consumer<ServerPlayer> houseRingTeleport =
             p -> com.runecraft.content.systems.SysTeleport.houseTeleport.accept(p);
 
     private IslandsTravelService() {
@@ -71,7 +70,7 @@ public final class IslandsTravelService {
     }
 
     /** Uses a fairy ring or mushtree at {@code pos} (also the house fairy ring, which has no stop of its own). */
-    public static void use(ServerPlayerEntity player, BlockPos pos, IslandsTravel.Network network) {
+    public static void use(ServerPlayer player, BlockPos pos, IslandsTravel.Network network) {
         boolean fairy = network == IslandsTravel.FAIRY_RINGS;
         String quest = network.quest();
         if (quest != null && QuestApi.stage(player, quest) < 1 && !QuestApi.isComplete(player, quest)) {
@@ -79,19 +78,19 @@ public final class IslandsTravelService {
             return;
         }
         // OSRS: fairy rings only work while wielding a Dramen or Lunar staff.
-        String staff = com.runecraft.util.Inv.idOf(player.getMainHandStack());
+        String staff = com.runecraft.util.Inv.idOf(player.getMainHandItem());
         if (fairy && !"dramen_staff".equals(staff) && !"lunar_staff".equals(staff) && !staffless.test(player)) {
             Msg.game(player, "You need to wield a Dramen or Lunar staff to use the fairy rings.");
             return;
         }
         IslandsTravel.Stop here = here(network, pos);
         String hereCode = here == null ? "" : here.code();
-        String key = player.getUuid() + "|" + network.id();
+        String key = player.getUUID() + "|" + network.id();
         String chosen = DIAL.get(key);
         if (chosen == null || chosen.equals(hereCode) || network.stop(chosen) == null) {
             chosen = IslandsTravel.next(network, hereCode, hereCode).code();
         }
-        if (player.isSneaking()) {
+        if (player.isShiftKeyDown()) {
             IslandsTravel.Stop next = IslandsTravel.next(network, chosen, hereCode);
             DIAL.put(key, next.code());
             Msg.game(player, (fairy ? "You turn the dial to " + next.code() + ": " : "The mushtree will take you to ") + next.name()
@@ -161,16 +160,16 @@ public final class IslandsTravelService {
      * Lays a {@link IslandsTravel#REALM_RINGS} ring beside its place unless it is already there (worlds whose place was built
      * before the ring existed get it when a traveller arrives).
      */
-    static BlockPos ensureRealmRing(ServerWorld world, IslandsTravel.Stop stop) {
+    static BlockPos ensureRealmRing(ServerLevel world, IslandsTravel.Stop stop) {
         int[] at = position(stop);
         if (at == null) {
             return null;
         }
-        net.minecraft.block.Block ring = net.minecraft.registry.Registries.BLOCK.get(RuneCraft.resolve(IslandsBlocks.FAIRY_RING));
+        net.minecraft.world.level.block.Block ring = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(RuneCraft.resolve(IslandsBlocks.FAIRY_RING));
         BlockPos floor = ground(world, at[0], at[1]);
         for (int dy = -3; dy <= 2; dy++) {
-            if (world.getBlockState(floor.up(dy + 1)).isOf(ring)) {
-                return floor.up(dy);
+            if (world.getBlockState(floor.above(dy + 1)).is(ring)) {
+                return floor.above(dy);
             }
         }
         layRing(world, floor);
@@ -178,24 +177,24 @@ public final class IslandsTravelService {
     }
 
     /** Lays a dungeon realm's ring on its dungeon's floor (carving the dungeon's chunks first), unless it is there. */
-    static void layDungeonRing(ServerWorld world, IslandsTravel.DungeonRing ring) {
+    static void layDungeonRing(ServerLevel world, IslandsTravel.DungeonRing ring) {
         StructurePlacer.applyAround(world, ring.x(), ring.z(), 16);
-        net.minecraft.block.Block block = net.minecraft.registry.Registries.BLOCK.get(RuneCraft.resolve(IslandsBlocks.FAIRY_RING));
-        if (!world.getBlockState(new BlockPos(ring.x(), ring.floorY() + 1, ring.z())).isOf(block)) {
+        net.minecraft.world.level.block.Block block = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(RuneCraft.resolve(IslandsBlocks.FAIRY_RING));
+        if (!world.getBlockState(new BlockPos(ring.x(), ring.floorY() + 1, ring.z())).is(block)) {
             layRing(world, new BlockPos(ring.x(), ring.floorY(), ring.z()));
         }
     }
 
     /** The top solid block at (x, z), never below the sea surface. */
-    static BlockPos ground(ServerWorld world, int x, int z) {
+    static BlockPos ground(ServerLevel world, int x, int z) {
         world.getChunk(x >> 4, z >> 4);
         // The OCEAN_FLOOR heightmap stops on tree tops (leaves and logs block motion), which used to put rings in the canopy
         // out of reach of their travellers: walk down through trees, plants and air to the real ground.
-        BlockPos.Mutable pos = new BlockPos.Mutable(x, world.getTopY(net.minecraft.world.Heightmap.Type.OCEAN_FLOOR, x, z) - 1, z);
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(x, world.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.OCEAN_FLOOR, x, z) - 1, z);
         while (pos.getY() > world.getSeaLevel() - 1) {
-            net.minecraft.block.BlockState here = world.getBlockState(pos);
-            boolean through = here.isIn(net.minecraft.registry.tag.BlockTags.LOGS) || here.isIn(net.minecraft.registry.tag.BlockTags.LEAVES)
-                    || here.isAir() || (here.isReplaceable() && here.getFluidState().isEmpty());
+            net.minecraft.world.level.block.state.BlockState here = world.getBlockState(pos);
+            boolean through = here.is(net.minecraft.tags.BlockTags.LOGS) || here.is(net.minecraft.tags.BlockTags.LEAVES)
+                    || here.isAir() || (here.canBeReplaced() && here.getFluidState().isEmpty());
             if (!through) {
                 break;
             }
@@ -204,22 +203,22 @@ public final class IslandsTravelService {
         return new BlockPos(x, Math.max(pos.getY(), world.getSeaLevel() - 1), z);
     }
 
-    private static void layRing(ServerWorld world, BlockPos centre) {
-        net.minecraft.block.Block ring = net.minecraft.registry.Registries.BLOCK.get(RuneCraft.resolve(IslandsBlocks.FAIRY_RING));
+    private static void layRing(ServerLevel world, BlockPos centre) {
+        net.minecraft.world.level.block.Block ring = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(RuneCraft.resolve(IslandsBlocks.FAIRY_RING));
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
-                BlockPos floor = centre.add(dx, 0, dz);
-                world.setBlockState(floor, net.minecraft.block.Blocks.MYCELIUM.getDefaultState());
+                BlockPos floor = centre.offset(dx, 0, dz);
+                world.setBlockAndUpdate(floor, net.minecraft.world.level.block.Blocks.MYCELIUM.defaultBlockState());
                 for (int up = 1; up <= 3; up++) {
-                    world.setBlockState(floor.up(up), net.minecraft.block.Blocks.AIR.getDefaultState());
+                    world.setBlockAndUpdate(floor.above(up), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
                 }
                 if (dx != 0 || dz != 0) {
-                    world.setBlockState(floor.up(), (dx == 0 || dz == 0 ? net.minecraft.block.Blocks.RED_MUSHROOM
-                            : net.minecraft.block.Blocks.BROWN_MUSHROOM).getDefaultState());
+                    world.setBlockAndUpdate(floor.above(), (dx == 0 || dz == 0 ? net.minecraft.world.level.block.Blocks.RED_MUSHROOM
+                            : net.minecraft.world.level.block.Blocks.BROWN_MUSHROOM).defaultBlockState());
                 }
             }
         }
-        world.setBlockState(centre.up(), ring.getDefaultState());
+        world.setBlockAndUpdate(centre.above(), ring.defaultBlockState());
     }
 
     /** The dungeon ring a stop stands for (a ring carved into a dungeon realm), or null. */
@@ -229,14 +228,14 @@ public final class IslandsTravelService {
     }
 
     /** Travels straight to a fairy ring code's destination, without a staff or dial (the self-test). */
-    public static void travelTo(ServerPlayerEntity player, String code) {
+    public static void travelTo(ServerPlayer player, String code) {
         IslandsTravel.Stop to = IslandsTravel.FAIRY_RINGS.stop(code);
         if (to != null) {
             travel(player, to);
         }
     }
 
-    static void travel(ServerPlayerEntity player, IslandsTravel.Stop to) {
+    static void travel(ServerPlayer player, IslandsTravel.Stop to) {
         if (IslandsTravel.HOUSE_PLACE.equals(to.place())) {
             // DIQ: the player-owned house's ring (the extras module's house registers the teleport).
             houseRingTeleport.accept(player);
@@ -244,13 +243,13 @@ public final class IslandsTravelService {
         }
         IslandsTravel.DungeonRing ring = dungeonRing(to);
         if (ring != null) {
-            ServerWorld world = Gielinor.world(player.getServer());
+            ServerLevel world = Gielinor.world(player.getServer());
             if (world == null) {
                 return;
             }
             layDungeonRing(world, ring);
             int[] a = IslandsTravel.dungeonArrival(ring);
-            player.teleport(world, a[0] + 0.5, a[1], a[2] + 0.5, player.getYaw(), player.getPitch());
+            player.teleportTo(world, a[0] + 0.5, a[1], a[2] + 0.5, player.getYRot(), player.getXRot());
             return;
         }
         Landmark landmark = Landmark.byName(to.place());
@@ -258,7 +257,7 @@ public final class IslandsTravelService {
             Gielinor.teleport(player, landmark);
             return;
         }
-        ServerWorld world = Gielinor.world(player.getServer());
+        ServerLevel world = Gielinor.world(player.getServer());
         PlaceDef p = ContentRegistry.place(to.place());
         if (p == null || world == null) {
             RuneCraft.LOGGER.warn("Islands travel: unknown destination {}", to.place());
@@ -272,11 +271,11 @@ public final class IslandsTravelService {
             // Step out beside the ring (on its mycelium, east of the ring block), wherever the ground there lies.
             BlockPos realm = ensureRealmRing(world, to);
             if (realm != null) {
-                player.teleport(world, realm.getX() + 1.5, realm.getY() + 1, realm.getZ() + 0.5, player.getYaw(), player.getPitch());
+                player.teleportTo(world, realm.getX() + 1.5, realm.getY() + 1, realm.getZ() + 0.5, player.getYRot(), player.getXRot());
                 return;
             }
         }
         BlockPos pos = Gielinor.safeSpot(world, x + 2, z);
-        player.teleport(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, player.getYaw(), player.getPitch());
+        player.teleportTo(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, player.getYRot(), player.getXRot());
     }
 }

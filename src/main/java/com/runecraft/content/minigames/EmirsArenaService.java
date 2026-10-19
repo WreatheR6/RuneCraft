@@ -22,14 +22,13 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.TypedActionResult;
-
+import net.minecraft.commands.Commands;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ItemStack;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,83 +55,83 @@ public final class EmirsArenaService {
 
     static void register() {
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
-            if (hand != Hand.MAIN_HAND || world.isClient() || !(player instanceof ServerPlayerEntity sp)
-                    || !(entity instanceof ServerPlayerEntity target) || !inArena(sp)) {
-                return ActionResult.PASS;
+            if (hand != InteractionHand.MAIN_HAND || world.isClientSide() || !(player instanceof ServerPlayer sp)
+                    || !(entity instanceof ServerPlayer target) || !inArena(sp)) {
+                return InteractionResult.PASS;
             }
             challenge(sp, target);
-            return ActionResult.SUCCESS;
+            return InteractionResult.SUCCESS;
         });
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            ItemStack stack = player.getStackInHand(hand);
-            if (world.isClient() || !(player instanceof ServerPlayerEntity sp) || stack.isEmpty()
+            ItemStack stack = player.getItemInHand(hand);
+            if (world.isClientSide() || !(player instanceof ServerPlayer sp) || stack.isEmpty()
                     || !(MinigameManager.session(sp) instanceof EmirsArenaSession duel)) {
-                return TypedActionResult.pass(stack);
+                return InteractionResultHolder.pass(stack);
             }
             ItemDef def = ItemCatalog.get(Inv.idOf(stack));
             if (def != null && duel.blocksConsumable(def)) {
                 Msg.game(sp, def.kind() == ItemDef.Kind.POTION ? "Drinks have been disabled for this duel."
                         : "Food has been disabled for this duel.");
-                return TypedActionResult.fail(stack);
+                return InteractionResultHolder.fail(stack);
             }
-            return TypedActionResult.pass(stack);
+            return InteractionResultHolder.pass(stack);
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
-            UUID u = handler.getPlayer().getUuid();
+            UUID u = handler.getPlayer().getUUID();
             CHALLENGES.remove(u);
             OPTIONS.remove(u);
         });
         QuestScripts.onTalk(EmirsArena.MUBARIZ, (player, npc) -> {
-            int pts = MinigameData.of(player).points(player.getUuid(), MinigameCurrencies.key(EmirsArena.POINTS));
+            int pts = MinigameData.of(player).points(player.getUUID(), MinigameCurrencies.key(EmirsArena.POINTS));
             QuestApi.say(player, "Mubariz", "Welcome to the Emir's Arena! Spend your reward points here. You have " + pts
                     + " (at most " + EmirsArena.MAX_POINTS + ").");
             RewardShopService.open(player, EmirsArena.SHOP);
         });
         QuestScripts.onTalk(EmirsArena.GUARD, (player, npc) -> guard(player));
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(
-                CommandManager.literal("duel")
+                Commands.literal("duel")
                         .executes(ctx -> {
-                            ServerPlayerEntity p = ctx.getSource().getPlayer();
+                            ServerPlayer p = ctx.getSource().getPlayer();
                             if (p != null) {
                                 showOptions(p);
                             }
                             return 1;
                         })
-                        .then(CommandManager.literal("rule").then(CommandManager.argument("rule", StringArgumentType.word())
+                        .then(Commands.literal("rule").then(Commands.argument("rule", StringArgumentType.word())
                                 .executes(ctx -> {
-                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                    ServerPlayer p = ctx.getSource().getPlayer();
                                     if (p != null) {
                                         toggleRule(p, StringArgumentType.getString(ctx, "rule"));
                                     }
                                     return 1;
                                 })))
-                        .then(CommandManager.literal("slot").then(CommandManager.argument("slot", StringArgumentType.word())
+                        .then(Commands.literal("slot").then(Commands.argument("slot", StringArgumentType.word())
                                 .executes(ctx -> {
-                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                    ServerPlayer p = ctx.getSource().getPlayer();
                                     if (p != null) {
                                         toggleSlot(p, StringArgumentType.getString(ctx, "slot"));
                                     }
                                     return 1;
                                 })))
-                        .then(CommandManager.literal("preset").then(CommandManager.argument("name", StringArgumentType.word())
+                        .then(Commands.literal("preset").then(Commands.argument("name", StringArgumentType.word())
                                 .executes(ctx -> {
-                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                    ServerPlayer p = ctx.getSource().getPlayer();
                                     if (p != null) {
                                         preset(p, StringArgumentType.getString(ctx, "name"));
                                     }
                                     return 1;
                                 })))
-                        .then(CommandManager.literal("challenge").then(CommandManager.argument("player", StringArgumentType.word())
+                        .then(Commands.literal("challenge").then(Commands.argument("player", StringArgumentType.word())
                                 .executes(ctx -> {
-                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                    ServerPlayer p = ctx.getSource().getPlayer();
                                     if (p != null) {
                                         byName(p, StringArgumentType.getString(ctx, "player"));
                                     }
                                     return 1;
                                 })))
-                        .then(CommandManager.literal("accept").then(CommandManager.argument("player", StringArgumentType.word())
+                        .then(Commands.literal("accept").then(Commands.argument("player", StringArgumentType.word())
                                 .executes(ctx -> {
-                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                    ServerPlayer p = ctx.getSource().getPlayer();
                                     if (p != null) {
                                         byName(p, StringArgumentType.getString(ctx, "player"));
                                     }
@@ -140,17 +139,17 @@ public final class EmirsArenaService {
                                 })))));
     }
 
-    static boolean inArena(ServerPlayerEntity p) {
+    static boolean inArena(ServerPlayer p) {
         return Gielinor.is(p) && EmirsArena.inArena(GielinorMap.toOsrsX(p.getBlockX()), GielinorMap.toOsrsY(p.getBlockZ()));
     }
 
-    static Options options(ServerPlayerEntity p) {
-        return OPTIONS.getOrDefault(p.getUuid(), Options.none());
+    static Options options(ServerPlayer p) {
+        return OPTIONS.getOrDefault(p.getUUID(), Options.none());
     }
 
-    private static void guard(ServerPlayerEntity p) {
+    private static void guard(ServerPlayer p) {
         MinigameData data = MinigameData.of(p);
-        UUID u = p.getUuid();
+        UUID u = p.getUUID();
         int stored = data.stat(u, EmirsArena.RANK);
         int rank = stored == 0 ? EmirsArena.START_RANK : stored;
         QuestApi.say(p, "Arena Guard Yon", "Welcome to the Emir's Arena. Challenge another fighter anywhere in the arena grounds and "
@@ -162,7 +161,7 @@ public final class EmirsArenaService {
         showOptions(p);
     }
 
-    private static void showOptions(ServerPlayerEntity p) {
+    private static void showOptions(ServerPlayer p) {
         Msg.game(p, "Your duel options: " + options(p).describe() + ".");
         StringBuilder rules = new StringBuilder();
         for (Rule r : Rule.values()) {
@@ -172,40 +171,40 @@ public final class EmirsArenaService {
                 + "/duel preset <whip|boxing|clear>, /duel challenge <player>.");
     }
 
-    private static void toggleRule(ServerPlayerEntity p, String key) {
+    private static void toggleRule(ServerPlayer p, String key) {
         Rule r = Rule.byKey(key);
         if (r == null) {
             Msg.game(p, "There is no duel option called " + key + ".");
             return;
         }
         Options o = options(p).toggle(r);
-        OPTIONS.put(p.getUuid(), o);
+        OPTIONS.put(p.getUUID(), o);
         Msg.game(p, r.displayName + (o.has(r) ? " is on." : " is off."));
     }
 
-    private static void toggleSlot(ServerPlayerEntity p, String key) {
+    private static void toggleSlot(ServerPlayer p, String key) {
         DuelSlot s = DuelSlot.byKey(key);
         if (s == null) {
             Msg.game(p, "There is no equipment slot called " + key + ".");
             return;
         }
         Options o = options(p).toggle(s);
-        OPTIONS.put(p.getUuid(), o);
+        OPTIONS.put(p.getUUID(), o);
         Msg.game(p, "The " + s.key() + " slot is " + (o.disabled(s) ? "disabled." : "enabled."));
     }
 
-    private static void preset(ServerPlayerEntity p, String name) {
+    private static void preset(ServerPlayer p, String name) {
         Options o = name.equalsIgnoreCase("clear") ? Options.none() : EmirsArena.preset(name);
         if (o == null) {
             Msg.game(p, "The presets are whip, boxing and clear.");
             return;
         }
-        OPTIONS.put(p.getUuid(), o);
+        OPTIONS.put(p.getUUID(), o);
         Msg.game(p, "Duel options: " + o.describe() + ".");
     }
 
-    private static void byName(ServerPlayerEntity p, String name) {
-        ServerPlayerEntity target = p.getServer().getPlayerManager().getPlayer(name);
+    private static void byName(ServerPlayer p, String name) {
+        ServerPlayer target = p.getServer().getPlayerList().getPlayerByName(name);
         if (target == null) {
             Msg.game(p, "There is no player called " + name + " online.");
             return;
@@ -218,7 +217,7 @@ public final class EmirsArenaService {
     }
 
     /** Challenges {@code target}, or accepts the challenge {@code target} sent first. */
-    static void challenge(ServerPlayerEntity p, ServerPlayerEntity target) {
+    static void challenge(ServerPlayer p, ServerPlayer target) {
         if (target == p || !inArena(target)) {
             Msg.game(p, "You can only challenge players inside the Emir's Arena.");
             return;
@@ -227,11 +226,11 @@ public final class EmirsArenaService {
             Msg.game(p, "That player is busy at the moment.");
             return;
         }
-        int now = p.getServer().getTicks();
-        Challenge theirs = CHALLENGES.get(target.getUuid());
-        if (theirs != null && theirs.target().equals(p.getUuid()) && now - theirs.at() <= CHALLENGE_TICKS) {
-            CHALLENGES.remove(target.getUuid());
-            CHALLENGES.remove(p.getUuid());
+        int now = p.getServer().getTickCount();
+        Challenge theirs = CHALLENGES.get(target.getUUID());
+        if (theirs != null && theirs.target().equals(p.getUUID()) && now - theirs.at() <= CHALLENGE_TICKS) {
+            CHALLENGES.remove(target.getUUID());
+            CHALLENGES.remove(p.getUUID());
             String problem = EmirsArena.problem(theirs.options());
             if (problem != null) {
                 Msg.game(p, problem);
@@ -243,8 +242,8 @@ public final class EmirsArenaService {
             MinigameManager.start(Minigame.EMIRS_ARENA, EmirsArena.DUEL_PREFIX + theirs.options().encode(), List.of(target, p));
             return;
         }
-        Challenge mine = CHALLENGES.get(p.getUuid());
-        if (mine != null && mine.target().equals(target.getUuid()) && now - mine.at() < 10) {
+        Challenge mine = CHALLENGES.get(p.getUUID());
+        if (mine != null && mine.target().equals(target.getUUID()) && now - mine.at() < 10) {
             return; // the same click arrives twice (interact and interact-at)
         }
         Options o = options(p);
@@ -253,7 +252,7 @@ public final class EmirsArenaService {
             Msg.game(p, problem);
             return;
         }
-        CHALLENGES.put(p.getUuid(), new Challenge(target.getUuid(), now, o));
+        CHALLENGES.put(p.getUUID(), new Challenge(target.getUUID(), now, o));
         Msg.game(p, "Sending duel request to " + target.getName().getString() + "...");
         Msg.game(p, "As this is an unofficial duel, you will not receive rank or reward points for participating.");
         Msg.game(target, p.getName().getString() + " wishes to duel with you (" + o.describe() + "). Right-click them or type "
@@ -265,7 +264,7 @@ public final class EmirsArenaService {
      * Wars list). Returns true if the scroll was used up.
      */
     /** What the scroll turns {@code item} into, or null (also when a needed tool, the holy wrench, isn't carried). */
-    private static String imbuable(ServerPlayerEntity p, String item) {
+    private static String imbuable(ServerPlayer p, String item) {
         String to = EmirsArena.imbued(item);
         String tool = to == null ? null : com.runecraft.osrs.content.minigames.MinigameRules.Imbues.tool(item);
         if (tool != null && !Inv.has(p, tool, 1)) {
@@ -275,7 +274,7 @@ public final class EmirsArenaService {
         return to;
     }
 
-    static boolean useScrollOfImbuing(ServerPlayerEntity p) {
+    static boolean useScrollOfImbuing(ServerPlayer p) {
         SysState.SysPlayer sp = SysState.of(p);
         for (Jewellery.Slot slot : new Jewellery.Slot[]{Jewellery.Slot.RING, Jewellery.Slot.NECK}) {
             String to = imbuable(p, sp.wornId(slot));
@@ -285,20 +284,20 @@ public final class EmirsArenaService {
                 return true;
             }
         }
-        String head = imbuable(p, Inv.idOf(p.getEquippedStack(EquipmentSlot.HEAD)));
+        String head = imbuable(p, Inv.idOf(p.getItemBySlot(EquipmentSlot.HEAD)));
         if (head != null) {
-            p.equipStack(EquipmentSlot.HEAD, Inv.stack(head, 1));
+            p.setItemSlot(EquipmentSlot.HEAD, Inv.stack(head, 1));
             imbuedMessage(p, head);
             return true;
         }
         var inv = p.getInventory();
-        for (int i = 0; i < inv.size(); i++) {
-            ItemStack s = inv.getStack(i);
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack s = inv.getItem(i);
             String to = s.isEmpty() ? null : imbuable(p, Inv.idOf(s));
             if (to != null) {
-                s.decrement(1);
+                s.shrink(1);
                 if (s.isEmpty()) {
-                    inv.setStack(i, Inv.stack(to, 1));
+                    inv.setItem(i, Inv.stack(to, 1));
                 } else {
                     Inv.give(p, to, 1);
                 }
@@ -310,7 +309,7 @@ public final class EmirsArenaService {
         return false;
     }
 
-    private static void imbuedMessage(ServerPlayerEntity p, String to) {
+    private static void imbuedMessage(ServerPlayer p, String to) {
         ItemDef def = ItemCatalog.get(to);
         Msg.game(p, "The scroll imbues your item: you now have " + (def == null ? to : def.name()) + ".");
     }

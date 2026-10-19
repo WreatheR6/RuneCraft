@@ -6,10 +6,10 @@ import com.runecraft.boss.DataBossEntity;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 
 /** Mechanics for quest bosses that AttackDefs alone can't express. */
 final class QuestBossScripts {
@@ -22,10 +22,10 @@ final class QuestBossScripts {
         BossScripts.register("fareed", Fareed::new);
     }
 
-    static void announce(DataBossEntity boss, String message, Formatting colour) {
-        if (boss.getWorld() instanceof ServerWorld world) {
-            for (ServerPlayerEntity p : world.getPlayers(x -> x.squaredDistanceTo(boss) < 40 * 40)) {
-                p.sendMessage(Text.literal(message).formatted(colour), false);
+    static void announce(DataBossEntity boss, String message, ChatFormatting colour) {
+        if (boss.level() instanceof ServerLevel world) {
+            for (ServerPlayer p : world.getPlayers(x -> x.distanceToSqr(boss) < 40 * 40)) {
+                p.displayClientMessage(Component.literal(message).withStyle(colour), false);
             }
         }
     }
@@ -67,7 +67,7 @@ final class QuestBossScripts {
         @Override
         public void onSpawn(DataBossEntity boss) {
             colour = boss.getRandom().nextInt(COLOURS.length);
-            announce(boss, name + " is " + COLOURS[colour] + ": vulnerable to " + hint() + ".", Formatting.AQUA);
+            announce(boss, name + " is " + COLOURS[colour] + ": vulnerable to " + hint() + ".", ChatFormatting.AQUA);
         }
 
         @Override
@@ -75,16 +75,16 @@ final class QuestBossScripts {
             if (gameTick % 12 == 0) {
                 int next = boss.getRandom().nextInt(COLOURS.length - 1);
                 colour = next >= colour ? next + 1 : next;
-                announce(boss, name + " turns " + COLOURS[colour] + "! (vulnerable to " + hint() + ")", Formatting.AQUA);
+                announce(boss, name + " turns " + COLOURS[colour] + "! (vulnerable to " + hint() + ")", ChatFormatting.AQUA);
             }
         }
 
         @Override
-        public int modifyIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             if (weakTo(type)) {
                 return damage;
             }
-            long now = boss.getWorld().getTime();
+            long now = boss.level().getGameTime();
             if (now - lastImmuneMessage > 40) {
                 lastImmuneMessage = now;
                 Msg.action(attacker, name + " is " + COLOURS[colour] + " and shrugs off your attack. Use " + hint() + ".");
@@ -101,9 +101,9 @@ final class QuestBossScripts {
         private long lastMessage;
 
         @Override
-        public int modifyIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             if (type.isMelee() && !Inv.has(attacker, "ice_gloves", 1)) {
-                long now = boss.getWorld().getTime();
+                long now = boss.level().getGameTime();
                 if (now - lastMessage > 40) {
                     lastMessage = now;
                     Msg.action(attacker, "Fareed's flames scorch your hands and you can't keep hold of your weapon! Ice gloves would protect you.");

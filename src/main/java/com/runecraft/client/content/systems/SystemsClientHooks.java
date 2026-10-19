@@ -1,24 +1,24 @@
 package com.runecraft.client.content.systems;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.runecraft.client.content.ClientModuleHooks;
 import com.runecraft.content.systems.SysNet;
 import com.runecraft.item.ItemCharges;
 import com.runecraft.osrs.content.systems.Charges;
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.registry.Registries;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.network.PacketByteBuf;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
@@ -26,32 +26,32 @@ import java.util.List;
 
 /** Client side of the systems module: keys (special attack, spellbook, adventurer's log), HUD and screens. */
 public final class SystemsClientHooks implements ClientModuleHooks {
-    public static KeyBinding specKey;
-    public static KeyBinding spellbookKey;
-    public static KeyBinding hubKey;
+    public static KeyMapping specKey;
+    public static KeyMapping spellbookKey;
+    public static KeyMapping hubKey;
 
     @Override
     public void initClient() {
-        specKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("RuneCraft Special Attack", InputUtil.Type.KEYSYM,
+        specKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("RuneCraft Special Attack", InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_V, "key.categories.runecraft"));
-        spellbookKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("RuneCraft Spellbook", InputUtil.Type.KEYSYM,
+        spellbookKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("RuneCraft Spellbook", InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_B, "key.categories.runecraft"));
-        hubKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("RuneCraft Adventurer's Log", InputUtil.Type.KEYSYM,
+        hubKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("RuneCraft Adventurer's Log", InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_J, "key.categories.runecraft"));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            while (specKey.wasPressed()) {
+            while (specKey.consumeClick()) {
                 sendKey(SysNet.KEY_SPEC);
             }
-            while (spellbookKey.wasPressed()) {
+            while (spellbookKey.consumeClick()) {
                 sendKey(SysNet.KEY_SPELLBOOK);
             }
-            while (hubKey.wasPressed()) {
+            while (hubKey.consumeClick()) {
                 sendKey(SysNet.KEY_HUB);
             }
         });
         HudRenderCallback.EVENT.register(SystemsHud::render);
         ItemTooltipCallback.EVENT.register((stack, context, lines) -> {
-            Identifier id = Registries.ITEM.getId(stack.getItem());
+            ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
             if (!id.getNamespace().equals("runecraft")) {
                 return;
             }
@@ -59,11 +59,11 @@ public final class SystemsClientHooks implements ClientModuleHooks {
             if (spec == null) {
                 return;
             }
-            NbtCompound nbt = stack.getNbt();
+            CompoundTag nbt = stack.getTag();
             int charges = nbt != null && nbt.contains(ItemCharges.KEY) ? Charges.clamp(spec, nbt.getInt(ItemCharges.KEY)) : spec.initial();
-            Formatting color = Charges.depleted(spec, charges) ? Formatting.RED
-                    : charges * 4 < spec.max() ? Formatting.GOLD : Formatting.DARK_AQUA;
-            lines.add(Text.literal(Charges.describe(spec, charges)).formatted(color));
+            ChatFormatting color = Charges.depleted(spec, charges) ? ChatFormatting.RED
+                    : charges * 4 < spec.max() ? ChatFormatting.GOLD : ChatFormatting.DARK_AQUA;
+            lines.add(Component.literal(Charges.describe(spec, charges)).withStyle(color));
         });
 
         ClientPlayNetworking.registerGlobalReceiver(SysNet.STATE, (client, handler, buf, sender) -> {
@@ -71,8 +71,8 @@ public final class SystemsClientHooks implements ClientModuleHooks {
             boolean armed = buf.readBoolean();
             int run = buf.readVarInt();
             boolean stamina = buf.readBoolean();
-            String book = buf.readString();
-            String autocast = buf.readString();
+            String book = buf.readUtf();
+            String autocast = buf.readUtf();
             boolean veng = buf.readBoolean();
             int thrall = buf.readVarInt();
             int specCost = buf.readVarInt();
@@ -90,32 +90,32 @@ public final class SystemsClientHooks implements ClientModuleHooks {
             });
         });
         ClientPlayNetworking.registerGlobalReceiver(SysNet.SCREEN, (client, handler, buf, sender) -> {
-            String id = buf.readString();
-            String title = buf.readString();
+            String id = buf.readUtf();
+            String title = buf.readUtf();
             int nl = buf.readVarInt();
             List<SystemsScreen.Line> lines = new ArrayList<>();
             for (int i = 0; i < nl; i++) {
-                lines.add(new SystemsScreen.Line(buf.readString(), buf.readInt()));
+                lines.add(new SystemsScreen.Line(buf.readUtf(), buf.readInt()));
             }
             int nf = buf.readVarInt();
             List<SystemsScreen.Field> fields = new ArrayList<>();
             for (int i = 0; i < nf; i++) {
-                fields.add(new SystemsScreen.Field(buf.readString(), buf.readString(), buf.readString()));
+                fields.add(new SystemsScreen.Field(buf.readUtf(), buf.readUtf(), buf.readUtf()));
             }
             int nb = buf.readVarInt();
             List<SystemsScreen.Btn> buttons = new ArrayList<>();
             for (int i = 0; i < nb; i++) {
-                buttons.add(new SystemsScreen.Btn(buf.readString(), buf.readString(), buf.readString(), buf.readBoolean()));
+                buttons.add(new SystemsScreen.Btn(buf.readUtf(), buf.readUtf(), buf.readUtf(), buf.readBoolean()));
             }
             client.execute(() -> client.setScreen(new SystemsScreen(id, title, lines, fields, buttons)));
         });
     }
 
     static void sendKey(int key) {
-        if (MinecraftClient.getInstance().getNetworkHandler() == null) {
+        if (Minecraft.getInstance().getConnection() == null) {
             return;
         }
-        PacketByteBuf buf = PacketByteBufs.create();
+        FriendlyByteBuf buf = PacketByteBufs.create();
         buf.writeVarInt(key);
         ClientPlayNetworking.send(SysNet.KEY, buf);
     }

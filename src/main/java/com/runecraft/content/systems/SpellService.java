@@ -31,21 +31,6 @@ import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
-import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.mob.HuskEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
 import org.joml.Vector3f;
 
 import java.util.ArrayList;
@@ -53,6 +38,21 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.monster.Husk;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 /** Casting spells from the Ancient, Lunar and Arceuus spellbooks and the extra standard spells. */
 public final class SpellService {
@@ -88,9 +88,9 @@ public final class SpellService {
     // ---------------- Runes ----------------
 
     /** Whether the wielded staff (or off-hand tome) provides unlimited runes of an element. */
-    static boolean staffProvides(ServerPlayerEntity p, String element) {
-        String id = p.getMainHandStack().isEmpty() ? "" : Inv.idOf(p.getMainHandStack());
-        String off = p.getOffHandStack().isEmpty() ? "" : Inv.idOf(p.getOffHandStack());
+    static boolean staffProvides(ServerPlayer p, String element) {
+        String id = p.getMainHandItem().isEmpty() ? "" : Inv.idOf(p.getMainHandItem());
+        String off = p.getOffhandItem().isEmpty() ? "" : Inv.idOf(p.getOffhandItem());
         if (off.equals("tome_of_" + element)) {
             return true;
         }
@@ -110,7 +110,7 @@ public final class SpellService {
     }
 
     /** Items (and counts) to remove for a spell, or null if the player lacks runes. */
-    static Map<String, Integer> runePlan(ServerPlayerEntity p, Map<String, Integer> runes) {
+    static Map<String, Integer> runePlan(ServerPlayer p, Map<String, Integer> runes) {
         Map<String, Integer> remove = new LinkedHashMap<>();
         Map<String, Integer> elementNeed = new LinkedHashMap<>();
         for (Map.Entry<String, Integer> e : runes.entrySet()) {
@@ -160,7 +160,7 @@ public final class SpellService {
      * One blighted spell sack instead of the runes, when the player carries the sack for this spell where sacks work (the
      * Wilderness, Castle Wars, Soul Wars; see {@link com.runecraft.osrs.data.BlightedSacks}), or null.
      */
-    public static Map<String, Integer> blightedPlan(ServerPlayerEntity p, Spell s) {
+    public static Map<String, Integer> blightedPlan(ServerPlayer p, Spell s) {
         String sack = com.runecraft.osrs.data.BlightedSacks.sackFor(s.id());
         if (sack == null || !Inv.has(p, sack, 1)) {
             return null;
@@ -170,14 +170,14 @@ public final class SpellService {
                 session == null ? null : session.game.id()) ? Map.of(sack, 1) : null;
     }
 
-    static void consume(ServerPlayerEntity p, Map<String, Integer> plan) {
+    static void consume(ServerPlayer p, Map<String, Integer> plan) {
         plan.forEach((item, n) -> Inv.remove(p, item, n));
     }
 
     // ---------------- Requirements ----------------
 
     /** Whether the player may use a spellbook (quest requirement looked up at runtime). */
-    public static boolean bookAllowed(ServerPlayerEntity p, Book book, boolean warn) {
+    public static boolean bookAllowed(ServerPlayer p, Book book, boolean warn) {
         if (book.quest == null) {
             return true;
         }
@@ -206,7 +206,7 @@ public final class SpellService {
         return s.book() == current;
     }
 
-    static boolean canCast(ServerPlayerEntity p, Spell s, boolean quiet) {
+    static boolean canCast(ServerPlayer p, Spell s, boolean quiet) {
         SysState.SysPlayer sp = SysState.of(p);
         if (!inBook(sp, s)) {
             if (!quiet) {
@@ -223,7 +223,7 @@ public final class SpellService {
             }
             return false;
         }
-        if (s.item() != null && !Inv.idOf(p.getMainHandStack()).startsWith(s.item())) {
+        if (s.item() != null && !Inv.idOf(p.getMainHandItem()).startsWith(s.item())) {
             if (!quiet) {
                 ItemDef d = ItemCatalog.get(s.item());
                 Msg.game(p, "You need to wield " + (d == null ? s.item().replace('_', ' ') : Msg.article(d.name())) + " to cast this spell.");
@@ -240,7 +240,7 @@ public final class SpellService {
     }
 
     /** Takes the runes and awards the base XP for a successful cast. */
-    static void pay(ServerPlayerEntity p, Spell s) {
+    static void pay(ServerPlayer p, Spell s) {
         Map<String, Integer> plan = blightedPlan(p, s);
         if (plan == null) {
             plan = runePlan(p, s.runes());
@@ -261,7 +261,7 @@ public final class SpellService {
     // ---------------- Entry points ----------------
 
     /** Clicking a spell in the spellbook screen. */
-    public static void cast(ServerPlayerEntity p, String spellId) {
+    public static void cast(ServerPlayer p, String spellId) {
         Spell s = Spellbooks.get(spellId);
         if (s == null || !Stun.check(p)) {
             return;
@@ -292,7 +292,7 @@ public final class SpellService {
         }
     }
 
-    public static void setAutocast(ServerPlayerEntity p, String spellId) {
+    public static void setAutocast(ServerPlayer p, String spellId) {
         SysState.SysPlayer sp = SysState.of(p);
         sp.autocast = spellId == null ? "" : spellId;
         Msg.action(p, spellId == null ? "Autocast disabled." : "Autocasting " + Spellbooks.get(spellId).name() + ".");
@@ -300,7 +300,7 @@ public final class SpellService {
     }
 
     /** Staff right-click while one of this module's combat spells is set to autocast. Returns true if handled. */
-    public static boolean staffCast(ServerPlayerEntity p) {
+    public static boolean staffCast(ServerPlayer p) {
         SysState.SysPlayer sp = SysState.of(p);
         if (sp.autocast.isEmpty() || Players.data(p).autocast() != null) {
             return false;
@@ -323,7 +323,7 @@ public final class SpellService {
     // ---------------- Combat ----------------
 
     /** Auto-retaliate with this module's autocast spell (staff wielded); returns false if none is set. */
-    public static boolean retaliate(ServerPlayerEntity p, LivingEntity target) {
+    public static boolean retaliate(ServerPlayer p, LivingEntity target) {
         SysState.SysPlayer sp = SysState.of(p);
         Spell s = sp.autocast.isEmpty() ? null : Spellbooks.get(sp.autocast);
         if (s == null || !s.isCombat() || !inBook(sp, s)) {
@@ -333,13 +333,13 @@ public final class SpellService {
         return true;
     }
 
-    static void castCombat(ServerPlayerEntity p, Spell s, LivingEntity target) {
+    static void castCombat(ServerPlayer p, Spell s, LivingEntity target) {
         PlayerData data = Players.data(p);
         if (target == null) {
             Msg.action(p, "No target.");
             return;
         }
-        if (target instanceof ServerPlayerEntity other && !CombatHandler.canAttackPlayer(p, other)
+        if (target instanceof ServerPlayer other && !CombatHandler.canAttackPlayer(p, other)
                 || target instanceof com.runecraft.entity.QuestNpcEntity) {
             Msg.game(p, "You can't attack that.");
             return;
@@ -347,7 +347,7 @@ public final class SpellService {
         if (!CombatHandler.singleWayAllows(p, target)) {
             return;
         }
-        if (s.effect() == Effect.TELEBLOCK && !(target instanceof ServerPlayerEntity)) {
+        if (s.effect() == Effect.TELEBLOCK && !(target instanceof ServerPlayer)) {
             Msg.game(p, "You can only cast Tele Block on other players.");
             return;
         }
@@ -368,19 +368,19 @@ public final class SpellService {
         }
         data.lastAttackTick = now;
         pay(p, s);
-        if (target instanceof net.minecraft.entity.player.PlayerEntity) {
+        if (target instanceof net.minecraft.world.entity.player.Player) {
             // Combat spells cast on another player (the God spells task of the hard Wilderness diary).
             com.runecraft.content.GameEvents.fireActivity(p, "cast_on_player:" + s.id());
         }
-        p.swingHand(Hand.MAIN_HAND, true);
-        ServerWorld world = (ServerWorld) p.getWorld();
-        SysCombat.trail(world, p.getEyePos(), target.getPos().add(0, target.getHeight() / 2, 0), colour(s));
-        world.playSound(null, p.getBlockPos(), SoundEvents.ENTITY_EVOKER_CAST_SPELL, SoundCategory.PLAYERS, 0.5f, 1.2f);
+        p.swing(InteractionHand.MAIN_HAND, true);
+        ServerLevel world = (ServerLevel) p.level();
+        SysCombat.trail(world, p.getEyePosition(), target.position().add(0, target.getBbHeight() / 2, 0), colour(s));
+        world.playSound(null, p.blockPosition(), SoundEvents.EVOKER_CAST_SPELL, SoundSource.PLAYERS, 0.5f, 1.2f);
         List<LivingEntity> targets = new ArrayList<>();
         targets.add(target);
         // Area spells only hit more than one target in multicombat areas.
         if (s.area() && com.runecraft.combat.CombatZones.isMulti(target)) {
-            for (LivingEntity e : world.getEntitiesByClass(LivingEntity.class, target.getBoundingBox().expand(1.6),
+            for (LivingEntity e : world.getEntitiesOfClass(LivingEntity.class, target.getBoundingBox().inflate(1.6),
                     o -> o != target && o != p && o.isAlive() && SysCombat.canAttack(p, o))) {
                 if (targets.size() < 9) {
                     targets.add(e);
@@ -415,8 +415,8 @@ public final class SpellService {
             int max = (int) Math.floor(com.runecraft.combat.HitCalcBridge.maxHit(p, t, in) * dmgMult);
             boolean hit = p.getRandom().nextDouble() < Chance.hitChance(att, def);
             if (!hit) {
-                world.spawnParticles(ParticleTypes.CLOUD, t.getX(), t.getY() + 1, t.getZ(), 8, 0.3, 0.3, 0.3, 0.02);
-                t.setAttacker(p);
+                world.sendParticles(ParticleTypes.CLOUD, t.getX(), t.getY() + 1, t.getZ(), 8, 0.3, 0.3, 0.3, 0.02);
+                t.setLastHurtByMob(p);
                 CombatHandler.applyDamage(p, t, 0);
                 continue;
             }
@@ -424,7 +424,7 @@ public final class SpellService {
             damage = CombatHandler.hookAfterRoll(p, t, AttackType.MAGIC, damage, max);
             int dealt = max > 0 ? SysCombat.hit(p, t, AttackType.MAGIC, damage) : 0;
             if (max == 0) {
-                t.setAttacker(p);
+                t.setLastHurtByMob(p);
             }
             CombatHandler.hookAfterHit(p, t, AttackType.MAGIC, dealt);
             totalDealt += dealt;
@@ -439,7 +439,7 @@ public final class SpellService {
         }
     }
 
-    private static void applyEffect(ServerPlayerEntity p, Spell s, LivingEntity t, int dealt) {
+    private static void applyEffect(ServerPlayer p, Spell s, LivingEntity t, int dealt) {
         switch (s.effect()) {
             case POISON -> {
                 if (dealt > 0 && p.getRandom().nextInt(4) == 0) {
@@ -450,13 +450,13 @@ public final class SpellService {
             case DRAIN_DEFENCE -> curse(p, s, t, Skill.DEFENCE);
             case DRAIN_STRENGTH -> curse(p, s, t, Skill.STRENGTH);
             case TELEBLOCK -> {
-                if (t instanceof ServerPlayerEntity victim) {
+                if (t instanceof ServerPlayer victim) {
                     com.runecraft.combat.Teleblock.apply(p, victim);
                 }
             }
             case DRAIN_MAGIC -> SysCombat.drainStat(t, Skill.MAGIC, Math.max(1, SysCombat.statLevel(t, Skill.MAGIC) * s.param() / 100));
             case DRAIN_PRAYER -> {
-                if (t instanceof ServerPlayerEntity victim) {
+                if (t instanceof ServerPlayer victim) {
                     PlayerData vd = Players.data(victim);
                     vd.setPrayerPoints(vd.prayerPoints() - s.param());
                     ServerNetworking.sync(victim);
@@ -464,14 +464,14 @@ public final class SpellService {
             }
             // Protect from Magic halves freezes as well as binds (wiki: Freeze).
             case FREEZE -> SysCombat.freeze(t, com.runecraft.osrs.CombatEffects.bindTicks(s.param(),
-                    t instanceof ServerPlayerEntity fp && Players.data(fp).isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC)));
+                    t instanceof ServerPlayer fp && Players.data(fp).isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC)));
             case BIND -> {
                 // Ward of Arceuus cuts any bind on the warded player to a single tick.
-                if (t instanceof ServerPlayerEntity victim && SysState.of(victim).wardUntil > SysTicks.now()) {
+                if (t instanceof ServerPlayer victim && SysState.of(victim).wardUntil > SysTicks.now()) {
                     SysCombat.freeze(t, Spellbooks.WARDED_BIND_TICKS);
                 } else {
                     SysCombat.freeze(t, com.runecraft.osrs.CombatEffects.bindTicks(s.param(),
-                            t instanceof ServerPlayerEntity vp && Players.data(vp).isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC)));
+                            t instanceof ServerPlayer vp && Players.data(vp).isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC)));
                 }
             }
             default -> {
@@ -483,7 +483,7 @@ public final class SpellService {
      * Confuse / Weaken / Curse / Vulnerability / Enfeeble / Stun (and Shadow spells, god spells): lower a stat by a
      * percentage of the target's base level. Standard-book curses don't stack with an existing drain.
      */
-    private static void curse(ServerPlayerEntity p, Spell s, LivingEntity t, Skill skill) {
+    private static void curse(ServerPlayer p, Spell s, LivingEntity t, Skill skill) {
         int base = SysCombat.baseStatLevel(t, skill);
         int current = SysCombat.drainedStatLevel(t, skill);
         com.runecraft.osrs.CombatEffects.Curse curse = com.runecraft.osrs.CombatEffects.curse(s.id());
@@ -528,7 +528,7 @@ public final class SpellService {
 
     // ---------------- Teleports ----------------
 
-    static void teleport(ServerPlayerEntity p, Spell s) {
+    static void teleport(ServerPlayer p, Spell s) {
         boolean home = s.runes().isEmpty();
         if (!SysTeleport.canTeleport(p, SysTeleport.SPELL_WILDERNESS)) {
             return;
@@ -539,8 +539,8 @@ public final class SpellService {
                 int ticks;
 
                 @Override
-                public boolean tick(ServerPlayerEntity pl, long gameTick) {
-                    ((ServerWorld) pl.getWorld()).spawnParticles(ParticleTypes.ENCHANT, pl.getX(), pl.getY() + 1, pl.getZ(), 15, 0.5, 0.8, 0.5, 0.5);
+                public boolean tick(ServerPlayer pl, long gameTick) {
+                    ((ServerLevel) pl.level()).sendParticles(ParticleTypes.ENCHANT, pl.getX(), pl.getY() + 1, pl.getZ(), 15, 0.5, 0.8, 0.5, 0.5);
                     if (++ticks >= 16) {
                         SysTeleport.teleport(pl, s.destination(), SysTeleport.SPELL_WILDERNESS);
                         return false;
@@ -550,11 +550,11 @@ public final class SpellService {
             });
             return;
         }
-        List<ServerPlayerEntity> group = new ArrayList<>();
+        List<ServerPlayer> group = new ArrayList<>();
         if (Spellbooks.isGroupTeleport(s)) {
             // Tele Group: everyone on the 3x3 square around the caster (one OSRS tile = two blocks) who meets the
             // destination's requirements comes along; the casting cost is the caster's.
-            for (ServerPlayerEntity o : nearbyPlayers(p, 3)) {
+            for (ServerPlayer o : nearbyPlayers(p, 3)) {
                 if (o != p && o.isAlive() && SysTeleport.canTeleport(o, SysTeleport.SPELL_WILDERNESS)) {
                     group.add(o);
                 }
@@ -562,7 +562,7 @@ public final class SpellService {
         }
         pay(p, s);
         SysTeleport.teleport(p, s.destination(), SysTeleport.SPELL_WILDERNESS);
-        for (ServerPlayerEntity o : group) {
+        for (ServerPlayer o : group) {
             Msg.game(o, p.getName().getString() + " teleports you along.");
             SysTeleport.teleport(o, s.destination(), SysTeleport.SPELL_WILDERNESS);
         }
@@ -570,7 +570,7 @@ public final class SpellService {
 
     // ---------------- Utility ----------------
 
-    static void utility(ServerPlayerEntity p, Spell s) {
+    static void utility(ServerPlayer p, Spell s) {
         String id = s.id();
         if (id.startsWith("enchant_")) {
             enchant(p, s, Integer.parseInt(id.substring("enchant_".length())));
@@ -619,9 +619,9 @@ public final class SpellService {
                     return;
                 }
                 pay(p, s);
-                SysCombat.trail((ServerWorld) p.getWorld(), p.getEyePos(), item.getPos(), new Vector3f(0.9f, 0.9f, 0.4f));
-                item.setPosition(p.getX(), p.getY() + 0.5, p.getZ());
-                item.setPickupDelay(0);
+                SysCombat.trail((ServerLevel) p.level(), p.getEyePosition(), item.position(), new Vector3f(0.9f, 0.9f, 0.4f));
+                item.setPos(p.getX(), p.getY() + 0.5, p.getZ());
+                item.setPickUpDelay(0);
             }
             case "charge" -> {
                 pay(p, s);
@@ -663,7 +663,7 @@ public final class SpellService {
             case "cure_plant", "fertile_soil", "resurrect_crops" -> farmingSpell(p, s);
             case "monster_examine" -> {
                 LivingEntity t = SysCombat.lookTarget(p, 16);
-                if (t == null || t instanceof ServerPlayerEntity) {
+                if (t == null || t instanceof ServerPlayer) {
                     Msg.game(p, "Look at a monster to examine it.");
                     return;
                 }
@@ -679,7 +679,7 @@ public final class SpellService {
             }
             case "cure_other" -> {
                 LivingEntity t = SysCombat.lookTarget(p, 16);
-                if (!(t instanceof ServerPlayerEntity other)) {
+                if (!(t instanceof ServerPlayer other)) {
                     Msg.game(p, "You can only cast this on another player.");
                     return;
                 }
@@ -714,7 +714,7 @@ public final class SpellService {
             }
             case "cure_group" -> {
                 pay(p, s);
-                for (ServerPlayerEntity o : nearbyPlayers(p, 8)) {
+                for (ServerPlayer o : nearbyPlayers(p, 8)) {
                     PoisonService.cure(o, false, 0, ActionManager.gameTick());
                     Msg.game(o, "You have been cured of poison.");
                 }
@@ -727,7 +727,7 @@ public final class SpellService {
             }
             case "stat_spy" -> {
                 LivingEntity t = SysCombat.lookTarget(p, 16);
-                if (!(t instanceof ServerPlayerEntity other)) {
+                if (!(t instanceof ServerPlayer other)) {
                     Msg.game(p, "You can only cast this on another player.");
                     return;
                 }
@@ -746,7 +746,7 @@ public final class SpellService {
             case "npc_contact" -> SysMenus.npcContact(p);
             case "energy_transfer", "heal_other", "vengeance_other" -> {
                 LivingEntity t = SysCombat.lookTarget(p, 16);
-                if (!(t instanceof ServerPlayerEntity other)) {
+                if (!(t instanceof ServerPlayer other)) {
                     Msg.game(p, "You can only cast this on another player.");
                     return;
                 }
@@ -768,7 +768,7 @@ public final class SpellService {
                 SysNet.sendState(p);
             }
             case "heal_group" -> {
-                List<ServerPlayerEntity> others = nearbyPlayers(p, 8);
+                List<ServerPlayer> others = nearbyPlayers(p, 8);
                 others.remove(p);
                 if (others.isEmpty() || p.getHealth() < p.getMaxHealth() * 0.11f) {
                     Msg.game(p, "There is nobody nearby to heal, or you are too weak.");
@@ -777,7 +777,7 @@ public final class SpellService {
                 pay(p, s);
                 float give = p.getHealth() * 0.75f;
                 p.setHealth(p.getHealth() - give);
-                for (ServerPlayerEntity o : others) {
+                for (ServerPlayer o : others) {
                     o.heal(give / others.size());
                 }
             }
@@ -795,12 +795,12 @@ public final class SpellService {
             }
             case "dark_lure" -> {
                 LivingEntity t = SysCombat.lookTarget(p, 16);
-                if (t == null || t instanceof ServerPlayerEntity) {
+                if (t == null || t instanceof ServerPlayer) {
                     Msg.game(p, "Look at a monster to lure it.");
                     return;
                 }
                 pay(p, s);
-                if (t instanceof net.minecraft.entity.mob.MobEntity mob) {
+                if (t instanceof net.minecraft.world.entity.Mob mob) {
                     mob.setTarget(p);
                 }
                 Msg.action(p, "The monster turns its attention to you.");
@@ -875,28 +875,28 @@ public final class SpellService {
         }
     }
 
-    private static List<ServerPlayerEntity> nearbyPlayers(ServerPlayerEntity p, double r) {
-        List<ServerPlayerEntity> out = new ArrayList<>();
-        for (ServerPlayerEntity o : ((ServerWorld) p.getWorld()).getPlayers()) {
-            if (o.squaredDistanceTo(p) <= r * r) {
+    private static List<ServerPlayer> nearbyPlayers(ServerPlayer p, double r) {
+        List<ServerPlayer> out = new ArrayList<>();
+        for (ServerPlayer o : ((ServerLevel) p.level()).players()) {
+            if (o.distanceToSqr(p) <= r * r) {
                 out.add(o);
             }
         }
         return out;
     }
 
-    private static ItemEntity lookItem(ServerPlayerEntity p) {
-        Vec3d eye = p.getEyePos();
-        Vec3d look = p.getRotationVector();
+    private static ItemEntity lookItem(ServerPlayer p) {
+        Vec3 eye = p.getEyePosition();
+        Vec3 look = p.getLookAngle();
         ItemEntity best = null;
         double bestScore = 0.97;
-        for (ItemEntity e : p.getWorld().getEntitiesByClass(ItemEntity.class, new Box(eye, eye).expand(RANGE), x -> true)) {
-            Vec3d to = e.getPos().subtract(eye);
+        for (ItemEntity e : p.level().getEntitiesOfClass(ItemEntity.class, new AABB(eye, eye).inflate(RANGE), x -> true)) {
+            Vec3 to = e.position().subtract(eye);
             double dist = to.length();
             if (dist > RANGE || dist < 0.1) {
                 continue;
             }
-            double dot = to.normalize().dotProduct(look);
+            double dot = to.normalize().dot(look);
             if (dot > bestScore) {
                 bestScore = dot;
                 best = e;
@@ -909,9 +909,9 @@ public final class SpellService {
      * Enchant Crossbow Bolt: enchants up to 10 of the held bolts (or else the best bolts in the inventory the player can
      * enchant), with that bolt type's level, runes and XP.
      */
-    private static void enchantBolts(ServerPlayerEntity p) {
+    private static void enchantBolts(ServerPlayer p) {
         int magic = Players.data(p).skills().currentLevel(Skill.MAGIC);
-        String held = p.getMainHandStack().isEmpty() ? "" : Inv.idOf(p.getMainHandStack());
+        String held = p.getMainHandItem().isEmpty() ? "" : Inv.idOf(p.getMainHandItem());
         String from = null;
         BoltEffects.Enchant en = BoltEffects.forPlainBolts(held);
         if (en != null && Inv.has(p, held, 1)) {
@@ -950,14 +950,14 @@ public final class SpellService {
         pay(p, cast);
         Inv.remove(p, from, n);
         Inv.give(p, to, n);
-        ((ServerWorld) p.getWorld()).spawnParticles(ParticleTypes.ENCHANT, p.getX(), p.getY() + 1.2, p.getZ(), 30, 0.4, 0.4, 0.4, 0.5);
+        ((ServerLevel) p.level()).sendParticles(ParticleTypes.ENCHANT, p.getX(), p.getY() + 1.2, p.getZ(), 30, 0.4, 0.4, 0.4, 0.5);
         Msg.action(p, "The magic of the runes coaxes out the true nature of the gem tips: you enchant " + n + " "
                 + ItemCatalog.get(from).name().toLowerCase(Locale.ROOT) + ".");
     }
 
-    private static void enchant(ServerPlayerEntity p, Spell s, int level) {
+    private static void enchant(ServerPlayer p, Spell s, int level) {
         String from = null;
-        String held = p.getMainHandStack().isEmpty() ? "" : Inv.idOf(p.getMainHandStack());
+        String held = p.getMainHandItem().isEmpty() ? "" : Inv.idOf(p.getMainHandItem());
         if (Jewellery.ENCHANT_LEVEL.getOrDefault(held, 0) == level) {
             from = held;
         } else {
@@ -982,12 +982,12 @@ public final class SpellService {
         Inv.give(p, to, 1);
         // Enchanted jewellery counts as obtained (diary tasks, collection log).
         com.runecraft.collection.CollectionLog.obtain(p, to);
-        ((ServerWorld) p.getWorld()).spawnParticles(ParticleTypes.ENCHANT, p.getX(), p.getY() + 1.2, p.getZ(), 30, 0.4, 0.4, 0.4, 0.5);
+        ((ServerLevel) p.level()).sendParticles(ParticleTypes.ENCHANT, p.getX(), p.getY() + 1.2, p.getZ(), 30, 0.4, 0.4, 0.4, 0.5);
         Msg.action(p, "You enchant the " + ItemCatalog.get(from).name().toLowerCase(Locale.ROOT) + " into "
                 + Msg.article(ItemCatalog.get(to).name()) + ".");
     }
 
-    private static void convertOne(ServerPlayerEntity p, Spell s, String from, String to, Skill skill, double xp) {
+    private static void convertOne(ServerPlayer p, Spell s, String from, String to, Skill skill, double xp) {
         if (ItemCatalog.get(from) == null || ItemCatalog.get(to) == null || !Inv.has(p, from, 1)) {
             ItemDef d = ItemCatalog.get(from);
             Msg.game(p, "You need " + (d == null ? "the right item" : Msg.article(d.name().toLowerCase(Locale.ROOT))) + " to cast this.");
@@ -1002,7 +1002,7 @@ public final class SpellService {
         Msg.action(p, "You cast " + s.name() + ".");
     }
 
-    private static void bakePies(ServerPlayerEntity p, Spell s) {
+    private static void bakePies(ServerPlayer p, Spell s) {
         int baked = 0;
         for (Recipe r : Recipes.menu(MenuType.COOKING)) {
             String raw = r.inputs().keySet().iterator().next();
@@ -1032,7 +1032,7 @@ public final class SpellService {
         }
     }
 
-    private static void superglass(ServerPlayerEntity p, Spell s) {
+    private static void superglass(ServerPlayer p, Spell s) {
         String sand = "bucket_of_sand";
         String[] ash = {"giant_seaweed", "seaweed", "soda_ash"};
         if (ItemCatalog.get("molten_glass") == null || ItemCatalog.get(sand) == null) {
@@ -1062,7 +1062,7 @@ public final class SpellService {
         Msg.action(p, "You make some molten glass.");
     }
 
-    private static void tan(ServerPlayerEntity p, Spell s) {
+    private static void tan(ServerPlayer p, Spell s) {
         String[][] hides = {{"cowhide", "leather"}, {"green_dragonhide", "green_dragon_leather"}, {"blue_dragonhide", "blue_dragon_leather"},
                 {"red_dragonhide", "red_dragon_leather"}, {"black_dragonhide", "black_dragon_leather"}};
         int done = 0;
@@ -1087,10 +1087,10 @@ public final class SpellService {
         }
     }
 
-    private static void stringJewellery(ServerPlayerEntity p, Spell s) {
+    private static void stringJewellery(ServerPlayer p, Spell s) {
         int strung = 0;
-        for (int i = 0; i < p.getInventory().size(); i++) {
-            ItemStack st = p.getInventory().getStack(i);
+        for (int i = 0; i < p.getInventory().getContainerSize(); i++) {
+            ItemStack st = p.getInventory().getItem(i);
             if (st.isEmpty()) {
                 continue;
             }
@@ -1100,7 +1100,7 @@ public final class SpellService {
                     pay(p, s);
                 }
                 int n = st.getCount();
-                p.getInventory().setStack(i, Inv.stack(id.substring(0, id.length() - 2), n));
+                p.getInventory().setItem(i, Inv.stack(id.substring(0, id.length() - 2), n));
                 strung += n;
             }
         }
@@ -1112,7 +1112,7 @@ public final class SpellService {
         }
     }
 
-    private static void plankMake(ServerPlayerEntity p, Spell s) {
+    private static void plankMake(ServerPlayer p, Spell s) {
         String[][] logs = {{"mahogany_logs", "mahogany_plank", "1050"}, {"teak_logs", "teak_plank", "350"},
                 {"oak_logs", "oak_plank", "175"}, {"logs", "plank", "70"}};
         for (String[] l : logs) {
@@ -1134,7 +1134,7 @@ public final class SpellService {
         Msg.game(p, "You have no logs to turn into planks.");
     }
 
-    private static void otherPlayer(ServerPlayerEntity p, Spell s, ServerPlayerEntity other) {
+    private static void otherPlayer(ServerPlayer p, Spell s, ServerPlayer other) {
         SysState.SysPlayer mine = SysState.of(p);
         SysState.SysPlayer theirs = SysState.of(other);
         switch (s.id()) {
@@ -1172,11 +1172,11 @@ public final class SpellService {
         SysNet.sendState(p);
     }
 
-    private static void offering(ServerPlayerEntity p, Spell s, boolean demonic) {
+    private static void offering(ServerPlayer p, Spell s, boolean demonic) {
         int used = 0;
         double xp = 0;
-        for (int i = 0; i < p.getInventory().size() && used < 3; i++) {
-            ItemStack st = p.getInventory().getStack(i);
+        for (int i = 0; i < p.getInventory().getContainerSize() && used < 3; i++) {
+            ItemStack st = p.getInventory().getItem(i);
             if (st.isEmpty()) {
                 continue;
             }
@@ -1199,7 +1199,7 @@ public final class SpellService {
                 continue;
             }
             int n = Math.min(3 - used, st.getCount());
-            st.decrement(n);
+            st.shrink(n);
             used += n;
             xp += each * 3 * n;
         }
@@ -1214,7 +1214,7 @@ public final class SpellService {
 
     // ---------------- Thralls and reanimation ----------------
 
-    private static void thrall(ServerPlayerEntity p, Spell s) {
+    private static void thrall(ServerPlayer p, Spell s) {
         SysState.SysPlayer sp = SysState.of(p);
         long now = SysTicks.now();
         if (sp.thrallUntil > now) {
@@ -1226,7 +1226,7 @@ public final class SpellService {
             return;
         }
         if (ItemCatalog.get("book_of_the_dead") != null && !Inv.has(p, "book_of_the_dead", 1)
-                && !Inv.idOf(p.getOffHandStack()).equals("book_of_the_dead")) {
+                && !Inv.idOf(p.getOffhandItem()).equals("book_of_the_dead")) {
             Msg.game(p, "You need the Book of the Dead to resurrect a thrall.");
             return;
         }
@@ -1252,7 +1252,7 @@ public final class SpellService {
     }
 
     /** Thralls attack the player's current target every 4 ticks and always hit (0 to max 1/2/3, x per tier). */
-    public static void thrallTick(ServerPlayerEntity p, long tick) {
+    public static void thrallTick(ServerPlayer p, long tick) {
         SysState.SysPlayer sp = SysState.of(p);
         if (sp.thrallTier <= 0) {
             return;
@@ -1267,8 +1267,8 @@ public final class SpellService {
             return;
         }
         sp.nextThrallAttack = tick + 4;
-        net.minecraft.entity.Entity e = p.getWorld().getEntityById(sp.lastTargetId);
-        if (!(e instanceof LivingEntity target) || !target.isAlive() || target.squaredDistanceTo(p) > 15 * 15) {
+        net.minecraft.world.entity.Entity e = p.level().getEntity(sp.lastTargetId);
+        if (!(e instanceof LivingEntity target) || !target.isAlive() || target.distanceToSqr(p) > 15 * 15) {
             return;
         }
         int dmg = p.getRandom().nextInt(Spellbooks.thrallMaxHit(sp.thrallTier) + 1);
@@ -1277,7 +1277,7 @@ public final class SpellService {
             case "skeleton" -> new Vector3f(0.9f, 0.9f, 0.8f);
             default -> new Vector3f(0.3f, 0.6f, 0.2f);
         };
-        SysCombat.trail((ServerWorld) p.getWorld(), p.getPos().add(0, 1, 0), target.getPos().add(0, target.getHeight() / 2, 0), c);
+        SysCombat.trail((ServerLevel) p.level(), p.position().add(0, 1, 0), target.position().add(0, target.getBbHeight() / 2, 0), c);
         AttackType type = sp.thrallType.equals("ghost") ? AttackType.MAGIC : sp.thrallType.equals("skeleton") ? AttackType.RANGED
                 : AttackType.CRUSH;
         if (dmg > 0) {
@@ -1295,8 +1295,8 @@ public final class SpellService {
         }
     }
 
-    private static void reanimate(ServerPlayerEntity p, Spell s) {
-        String held = p.getMainHandStack().isEmpty() ? "" : Inv.idOf(p.getMainHandStack());
+    private static void reanimate(ServerPlayer p, Spell s) {
+        String held = p.getMainHandItem().isEmpty() ? "" : Inv.idOf(p.getMainHandItem());
         Spellbooks.Head head = Spellbooks.head(held);
         if (head == null) {
             Msg.game(p, "Hold an ensouled head in your main hand to reanimate it.");
@@ -1311,29 +1311,29 @@ public final class SpellService {
             return;
         }
         pay(p, s);
-        p.getMainHandStack().decrement(1);
-        ServerWorld world = (ServerWorld) p.getWorld();
-        HuskEntity husk = EntityType.HUSK.create(world);
+        p.getMainHandItem().shrink(1);
+        ServerLevel world = (ServerLevel) p.level();
+        Husk husk = EntityType.HUSK.create(world);
         if (husk == null) {
             return;
         }
-        Vec3d at = p.getPos().add(p.getRotationVector().multiply(2.0));
-        husk.refreshPositionAndAngles(at.x, p.getY(), at.z, p.getYaw() + 180, 0);
-        husk.initialize(world, world.getLocalDifficulty(p.getBlockPos()), SpawnReason.MOB_SUMMONED, null, null);
+        Vec3 at = p.position().add(p.getLookAngle().scale(2.0));
+        husk.moveTo(at.x, p.getY(), at.z, p.getYRot() + 180, 0);
+        husk.finalizeSpawn(world, world.getCurrentDifficultyAt(p.blockPosition()), MobSpawnType.MOB_SUMMONED, null, null);
         String name = head.name().replace("Ensouled ", "Reanimated ").replace(" head", "");
-        husk.setCustomName(Text.literal(name));
+        husk.setCustomName(Component.literal(name));
         husk.setCustomNameVisible(true);
-        husk.addCommandTag(REANIMATED_TAG + (int) Math.round(head.xp()));
-        husk.addCommandTag("runecraft_owner:" + p.getUuidAsString());
+        husk.addTag(REANIMATED_TAG + (int) Math.round(head.xp()));
+        husk.addTag("runecraft_owner:" + p.getStringUUID());
         husk.setTarget(p);
-        world.spawnEntity(husk);
-        world.spawnParticles(ParticleTypes.SOUL, at.x, p.getY() + 1, at.z, 30, 0.4, 0.8, 0.4, 0.05);
+        world.addFreshEntity(husk);
+        world.sendParticles(ParticleTypes.SOUL, at.x, p.getY() + 1, at.z, 30, 0.4, 0.8, 0.4, 0.05);
         Msg.action(p, "You reanimate the " + name.replace("Reanimated ", "").toLowerCase(Locale.ROOT) + ". Defeat it for Prayer XP.");
     }
 
     /** Awards prayer XP for killing a reanimated creature (called from the kill event). */
-    public static void onKill(ServerPlayerEntity p, LivingEntity e) {
-        for (String tag : e.getCommandTags()) {
+    public static void onKill(ServerPlayer p, LivingEntity e) {
+        for (String tag : e.getTags()) {
             if (tag.startsWith(REANIMATED_TAG)) {
                 try {
                     XpService.add(p, Skill.PRAYER, Integer.parseInt(tag.substring(REANIMATED_TAG.length())));
@@ -1354,29 +1354,29 @@ public final class SpellService {
     // ---------------- Lunar / Arceuus helpers ----------------
 
     /** The herb or allotment patch the player is looking at (within 6 blocks), or null. */
-    private static net.minecraft.util.math.BlockPos lookPatch(ServerPlayerEntity p) {
-        net.minecraft.util.hit.HitResult hit = p.raycast(6.0, 0f, false);
-        if (hit instanceof net.minecraft.util.hit.BlockHitResult bh && hit.getType() == net.minecraft.util.hit.HitResult.Type.BLOCK) {
-            net.minecraft.util.math.BlockPos pos = bh.getBlockPos();
-            if (p.getWorld().getBlockState(pos).getBlock() instanceof com.runecraft.block.FarmingPatchBlock) {
+    private static net.minecraft.core.BlockPos lookPatch(ServerPlayer p) {
+        net.minecraft.world.phys.HitResult hit = p.pick(6.0, 0f, false);
+        if (hit instanceof net.minecraft.world.phys.BlockHitResult bh && hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
+            net.minecraft.core.BlockPos pos = bh.getBlockPos();
+            if (p.level().getBlockState(pos).getBlock() instanceof com.runecraft.block.FarmingPatchBlock) {
                 return pos;
             }
-            if (p.getWorld().getBlockState(pos.down()).getBlock() instanceof com.runecraft.block.FarmingPatchBlock) {
-                return pos.down();
+            if (p.level().getBlockState(pos.below()).getBlock() instanceof com.runecraft.block.FarmingPatchBlock) {
+                return pos.below();
             }
         }
         return null;
     }
 
     /** Cure Plant, Fertile Soil and Resurrect Crops on the herb/allotment patch the player looks at. */
-    private static void farmingSpell(ServerPlayerEntity p, Spell s) {
-        net.minecraft.util.math.BlockPos pos = lookPatch(p);
+    private static void farmingSpell(ServerPlayer p, Spell s) {
+        net.minecraft.core.BlockPos pos = lookPatch(p);
         if (pos == null) {
             Msg.game(p, "Look at a herb or allotment patch to cast this spell on it.");
             return;
         }
-        ServerWorld world = (ServerWorld) p.getWorld();
-        net.minecraft.block.BlockState state = world.getBlockState(pos);
+        ServerLevel world = (ServerLevel) p.level();
+        net.minecraft.world.level.block.state.BlockState state = world.getBlockState(pos);
         com.runecraft.block.FarmingPatchBlock patch = (com.runecraft.block.FarmingPatchBlock) state.getBlock();
         switch (s.id()) {
             case "cure_plant" -> {
@@ -1407,20 +1407,20 @@ public final class SpellService {
                 Msg.action(p, ok ? "The crop springs back to life!" : "The spell fails and the dead crop crumbles away.");
             }
         }
-        world.spawnParticles(ParticleTypes.HAPPY_VILLAGER, pos.getX() + 0.5, pos.getY() + 1.2, pos.getZ() + 0.5, 12, 0.4, 0.3, 0.4, 0.0);
+        world.sendParticles(ParticleTypes.HAPPY_VILLAGER, pos.getX() + 0.5, pos.getY() + 1.2, pos.getZ() + 0.5, 12, 0.4, 0.3, 0.4, 0.0);
     }
 
     /** Geomancy: the state of the herb and allotment patches within 32 blocks. */
-    private static void geomancy(ServerPlayerEntity p, Spell s) {
-        ServerWorld world = (ServerWorld) p.getWorld();
-        net.minecraft.util.math.BlockPos c = p.getBlockPos();
+    private static void geomancy(ServerPlayer p, Spell s) {
+        ServerLevel world = (ServerLevel) p.level();
+        net.minecraft.core.BlockPos c = p.blockPosition();
         List<String> lines = new ArrayList<>();
-        net.minecraft.util.math.BlockPos.Mutable m = new net.minecraft.util.math.BlockPos.Mutable();
+        net.minecraft.core.BlockPos.MutableBlockPos m = new net.minecraft.core.BlockPos.MutableBlockPos();
         for (int dx = -32; dx <= 32 && lines.size() < 8; dx++) {
             for (int dz = -32; dz <= 32 && lines.size() < 8; dz++) {
                 for (int dy = -6; dy <= 6; dy++) {
                     m.set(c.getX() + dx, c.getY() + dy, c.getZ() + dz);
-                    net.minecraft.block.BlockState st = world.getBlockState(m);
+                    net.minecraft.world.level.block.state.BlockState st = world.getBlockState(m);
                     if (st.getBlock() instanceof com.runecraft.block.FarmingPatchBlock patch) {
                         lines.add(com.runecraft.skill.FarmingService.status(st, patch));
                         break;
@@ -1437,20 +1437,20 @@ public final class SpellService {
     }
 
     /** Dream: rest to regenerate an extra Hitpoint every minute (twice the natural rate) until healed or moving. */
-    private static void dream(ServerPlayerEntity p, Spell s) {
+    private static void dream(ServerPlayer p, Spell s) {
         if (p.getHealth() >= p.getMaxHealth()) {
             Msg.game(p, "You have no need to cast this spell since your hitpoints are already full.");
             return;
         }
         pay(p, s);
         Msg.action(p, "You lie down to rest...");
-        Vec3d start = p.getPos();
+        Vec3 start = p.position();
         ActionManager.start(p, new com.runecraft.action.Action() {
             int ticks;
 
             @Override
-            public boolean tick(ServerPlayerEntity pl, long gameTick) {
-                if (pl.getPos().squaredDistanceTo(start) > 0.25 || pl.getHealth() >= pl.getMaxHealth()) {
+            public boolean tick(ServerPlayer pl, long gameTick) {
+                if (pl.position().distanceToSqr(start) > 0.25 || pl.getHealth() >= pl.getMaxHealth()) {
                     Msg.game(pl, "You wake up.");
                     return false;
                 }
@@ -1458,7 +1458,7 @@ public final class SpellService {
                     pl.heal(1);
                 }
                 if (ticks % 5 == 0) {
-                    ((ServerWorld) pl.getWorld()).spawnParticles(ParticleTypes.NOTE, pl.getX(), pl.getY() + 1.6, pl.getZ(), 1, 0.2, 0.1, 0.2, 0.0);
+                    ((ServerLevel) pl.level()).sendParticles(ParticleTypes.NOTE, pl.getX(), pl.getY() + 1.6, pl.getZ(), 1, 0.2, 0.1, 0.2, 0.0);
                 }
                 return true;
             }
@@ -1466,8 +1466,8 @@ public final class SpellService {
     }
 
     /** Stat Restore Pot Share / Boost Potion Share: one dose of the held potion each for the caster and players next to them. */
-    private static void potionShare(ServerPlayerEntity p, Spell s) {
-        ItemStack held = p.getMainHandStack();
+    private static void potionShare(ServerPlayer p, Spell s) {
+        ItemStack held = p.getMainHandItem();
         String id = held.isEmpty() ? "" : Inv.idOf(held);
         com.runecraft.osrs.data.Potion potion = null;
         for (com.runecraft.osrs.data.Potion pt : com.runecraft.osrs.data.Potion.values()) {
@@ -1480,16 +1480,16 @@ public final class SpellService {
                     : "Hold a stat-boosting potion to share it.");
             return;
         }
-        int doses = 4 - held.getDamage();
-        List<ServerPlayerEntity> group = new ArrayList<>();
+        int doses = 4 - held.getDamageValue();
+        List<ServerPlayer> group = new ArrayList<>();
         group.add(p);
-        for (ServerPlayerEntity o : nearbyPlayers(p, 3)) {
+        for (ServerPlayer o : nearbyPlayers(p, 3)) {
             if (o != p && group.size() < doses) {
                 group.add(o);
             }
         }
         pay(p, s);
-        for (ServerPlayerEntity o : group) {
+        for (ServerPlayer o : group) {
             PlayerData d = Players.data(o);
             int prayer = potion.apply(d.skills());
             prayer += prayer > 0 ? com.runecraft.skill.ItemUses.wrenchBonus(o, 25) : 0;
@@ -1509,18 +1509,18 @@ public final class SpellService {
         }
         int left = doses - group.size();
         if (left <= 0) {
-            p.setStackInHand(Hand.MAIN_HAND, Inv.stack("vial", 1));
+            p.setItemInHand(InteractionHand.MAIN_HAND, Inv.stack("vial", 1));
         } else {
-            held.setDamage(4 - left);
+            held.setDamageValue(4 - left);
         }
         Msg.action(p, "You share your potion between " + group.size() + " player" + (group.size() == 1 ? "." : "s."));
     }
 
     /** A corruption spell waiting on the caster's next successful hit against a player (from the attack modifier). */
-    static void corruptOnHit(ServerPlayerEntity p, LivingEntity target, int dealt) {
+    static void corruptOnHit(ServerPlayer p, LivingEntity target, int dealt) {
         SysState.SysPlayer sp = SysState.of(p);
         long now = SysTicks.now();
-        if (sp.corruptionPending == 0 || dealt <= 0 || !(target instanceof ServerPlayerEntity victim)) {
+        if (sp.corruptionPending == 0 || dealt <= 0 || !(target instanceof ServerPlayer victim)) {
             return;
         }
         if (sp.corruptionPendingUntil < now) {
@@ -1543,7 +1543,7 @@ public final class SpellService {
     }
 
     /** Corruption pulses on a corrupted player (every 10 ticks, 5 with the caster's Mark of Darkness). */
-    public static void corruptionTick(ServerPlayerEntity p, long tick) {
+    public static void corruptionTick(ServerPlayer p, long tick) {
         SysState.SysPlayer sp = SysState.of(p);
         if (sp.corruptionPulses <= 0 || tick < sp.nextCorruptionPulse) {
             return;
@@ -1558,12 +1558,12 @@ public final class SpellService {
     }
 
     /** All spells shown in the spellbook screen for the player's book. */
-    public static List<Spell> visible(ServerPlayerEntity p) {
+    public static List<Spell> visible(ServerPlayer p) {
         SysState.SysPlayer sp = SysState.of(p);
         return Spellbooks.book(sp.swapBook != null ? sp.swapBook : sp.book);
     }
 
-    static ItemDef held(ServerPlayerEntity p) {
-        return ModItems.def(p.getMainHandStack());
+    static ItemDef held(ServerPlayer p) {
+        return ModItems.def(p.getMainHandItem());
     }
 }

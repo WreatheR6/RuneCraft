@@ -10,16 +10,15 @@ import com.runecraft.osrs.content.minigames.MinigameItems;
 import com.runecraft.osrs.content.minigames.MinigameRules.PyramidPlunder;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * Pyramid Plunder in Jalsavrah: five minutes to loot up to eight tomb rooms (Thieving 21/31/.../91).
@@ -33,7 +32,7 @@ public class PyramidPlunderSession extends MinigameSession {
     private boolean chestOpened;
     private boolean sarcophagusOpened;
 
-    public PyramidPlunderSession(int id, int slot, ServerWorld world, String variant) {
+    public PyramidPlunderSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.PYRAMID_PLUNDER, id, slot, world, variant);
     }
 
@@ -72,7 +71,7 @@ public class PyramidPlunderSession extends MinigameSession {
     }
 
     @Override
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
+    protected BlockPos spawnPoint(ServerPlayer player, int index) {
         return rel(index % 3 - 1, 1, 6);
     }
 
@@ -81,7 +80,7 @@ public class PyramidPlunderSession extends MinigameSession {
     }
 
     @Override
-    protected boolean onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         switch (blockId) {
             case "pp_urn" -> {
                 if (!looted.add(pos.asLong())) {
@@ -99,7 +98,7 @@ public class PyramidPlunderSession extends MinigameSession {
                     hurt(player, 1 + random.nextInt(4));
                     PoisonService.poison(player, 2, ActionManager.gameTick());
                 }
-                set(pos.getX() - origin.getX(), 1, pos.getZ() - origin.getZ(), Blocks.DECORATED_POT.getDefaultState());
+                set(pos.getX() - origin.getX(), 1, pos.getZ() - origin.getZ(), Blocks.DECORATED_POT.defaultBlockState());
                 return true;
             }
             case "pp_chest" -> {
@@ -112,8 +111,8 @@ public class PyramidPlunderSession extends MinigameSession {
                 reward(player, artefact(), 1);
                 if (random.nextInt(PyramidPlunder.SCEPTRE_CHANCE[room - 1]) == 0) {
                     reward(player, "pharaohs_sceptre", 1);
-                    player.getServer().getPlayerManager().broadcast(Text.literal(player.getName().getString()
-                            + " has found the Pharaoh's sceptre!").formatted(Formatting.GOLD), false);
+                    player.getServer().getPlayerList().broadcastSystemMessage(Component.literal(player.getName().getString()
+                            + " has found the Pharaoh's sceptre!").withStyle(ChatFormatting.GOLD), false);
                 }
                 if (random.nextInt(5) == 0) {
                     // A scarab swarm still leaves the artefact but gives no Thieving XP.
@@ -152,9 +151,9 @@ public class PyramidPlunderSession extends MinigameSession {
                 }
                 room++;
                 build();
-                for (ServerPlayerEntity p : online()) {
+                for (ServerPlayer p : online()) {
                     BlockPos at = spawnPoint(p, 0);
-                    p.teleport(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, p.getYaw(), p.getPitch());
+                    p.teleportTo(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, p.getYRot(), p.getXRot());
                 }
                 broadcast("You enter room " + room + " of the pyramid.");
                 return true;
@@ -175,19 +174,19 @@ public class PyramidPlunderSession extends MinigameSession {
 
     @Override
     protected void onEnd(boolean success) {
-        for (ServerPlayerEntity p : online()) {
-            MinigameData.of(p).incrementStat(p.getUuid(), "kc:" + game.id());
+        for (ServerPlayer p : online()) {
+            MinigameData.of(p).incrementStat(p.getUUID(), "kc:" + game.id());
         }
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
+    protected List<String> hud(ServerPlayer player) {
         return List.of("Pyramid Plunder", "Room: " + room + " / 8", "Time left: " + time(PyramidPlunder.GAME_TICKS - ticks),
                 "Thieving level: " + level(player, Skill.THIEVING));
     }
 
     /** Simon Templeton buys every artefact in the inventory. */
-    public static void sellArtefacts(ServerPlayerEntity player) {
+    public static void sellArtefacts(ServerPlayer player) {
         int total = 0;
         for (Object[] a : MinigameItems.ARTEFACTS) {
             int n = Inv.remove(player, (String) a[0], 1000);

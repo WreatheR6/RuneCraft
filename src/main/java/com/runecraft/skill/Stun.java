@@ -3,14 +3,14 @@ package com.runecraft.skill;
 import com.runecraft.action.ActionManager;
 import com.runecraft.player.Players;
 import com.runecraft.util.Msg;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 
 /** Thieving stuns block other actions for a few seconds. */
 public final class Stun {
     private Stun() {
     }
 
-    public static boolean check(ServerPlayerEntity player) {
+    public static boolean check(ServerPlayer player) {
         if (Players.data(player).stunnedUntil > ActionManager.mcTick()) {
             Msg.game(player, "You're stunned!");
             return false;
@@ -18,7 +18,7 @@ public final class Stun {
         return true;
     }
 
-    public static void apply(ServerPlayerEntity player, int gameTicks) {
+    public static void apply(ServerPlayer player, int gameTicks) {
         Players.data(player).stunnedUntil = ActionManager.mcTick() + (long) gameTicks * ActionManager.MC_TICKS_PER_GAME_TICK;
         ActionManager.cancel(player);
     }

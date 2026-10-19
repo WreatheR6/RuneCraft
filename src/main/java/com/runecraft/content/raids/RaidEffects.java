@@ -5,19 +5,18 @@ import com.runecraft.combat.CombatHandler;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.Prayer;
 import com.runecraft.player.Players;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.particle.ParticleEffect;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Telegraphed ground strikes and delayed tasks used by raid mechanics (falling crystals, lightning,
@@ -25,8 +24,8 @@ import java.util.function.Predicate;
  */
 public final class RaidEffects {
     /** A marked area that explodes after a delay. */
-    private record Strike(ServerWorld world, Vec3d pos, double radius, int maxHit, AttackType style, boolean piercing,
-                          long due, LivingEntity source, ParticleEffect warn, Predicate<ServerPlayerEntity> filter) {
+    private record Strike(ServerLevel world, Vec3 pos, double radius, int maxHit, AttackType style, boolean piercing,
+                          long due, LivingEntity source, ParticleOptions warn, Predicate<ServerPlayer> filter) {
     }
 
     private record Task(long due, Runnable run) {
@@ -47,18 +46,18 @@ public final class RaidEffects {
      * Marks {@code pos}; after {@code delay} game ticks every player within {@code radius} takes up to
      * {@code maxHit} (protection prayers block it unless piercing).
      */
-    public static void strike(ServerWorld world, Vec3d pos, double radius, int maxHit, int delay, LivingEntity source,
-                              ParticleEffect warn, AttackType style, boolean piercing) {
+    public static void strike(ServerLevel world, Vec3 pos, double radius, int maxHit, int delay, LivingEntity source,
+                              ParticleOptions warn, AttackType style, boolean piercing) {
         STRIKES.add(new Strike(world, pos, radius, maxHit, style, piercing, ActionManager.gameTick() + Math.max(1, delay), source,
                 warn == null ? ParticleTypes.FLAME : warn, p -> true));
     }
 
-    public static void strike(ServerWorld world, Vec3d pos, double radius, int maxHit, int delay, LivingEntity source,
-                              ParticleEffect warn) {
+    public static void strike(ServerLevel world, Vec3 pos, double radius, int maxHit, int delay, LivingEntity source,
+                              ParticleOptions warn) {
         strike(world, pos, radius, maxHit, delay, source, warn, null, true);
     }
 
-    public static void clear(ServerWorld world, net.minecraft.util.math.Box box) {
+    public static void clear(ServerLevel world, net.minecraft.world.phys.AABB box) {
         STRIKES.removeIf(s -> s.world() == world && box.contains(s.pos()));
     }
 
@@ -87,23 +86,23 @@ public final class RaidEffects {
                 it.remove();
             } else {
                 int n = (int) Math.max(4, s.radius() * 8);
-                s.world().spawnParticles(s.warn(), s.pos().x, s.pos().y + 0.15, s.pos().z, n, s.radius() * 0.5, 0.02,
+                s.world().sendParticles(s.warn(), s.pos().x, s.pos().y + 0.15, s.pos().z, n, s.radius() * 0.5, 0.02,
                         s.radius() * 0.5, 0.0);
             }
         }
         for (Strike s : due) {
-            s.world().spawnParticles(ParticleTypes.EXPLOSION, s.pos().x, s.pos().y + 0.5, s.pos().z, 1, 0, 0, 0, 0);
-            s.world().playSound(null, s.pos().x, s.pos().y, s.pos().z, SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.HOSTILE,
+            s.world().sendParticles(ParticleTypes.EXPLOSION, s.pos().x, s.pos().y + 0.5, s.pos().z, 1, 0, 0, 0, 0);
+            s.world().playSound(null, s.pos().x, s.pos().y, s.pos().z, SoundEvents.GENERIC_EXPLODE, SoundSource.HOSTILE,
                     0.4f, 1.5f);
             double r2 = s.radius() * s.radius();
-            for (ServerPlayerEntity p : s.world().getPlayers(pl -> pl.isAlive() && !pl.isSpectator() && !pl.isCreative()
-                    && horizontalDistSq(pl.getPos(), s.pos()) <= r2 && Math.abs(pl.getY() - s.pos().y) < 3)) {
+            for (ServerPlayer p : s.world().getPlayers(pl -> pl.isAlive() && !pl.isSpectator() && !pl.isCreative()
+                    && horizontalDistSq(pl.position(), s.pos()) <= r2 && Math.abs(pl.getY() - s.pos().y) < 3)) {
                 hit(s.source(), p, p.getRandom().nextInt(s.maxHit() + 1), s.style(), s.piercing());
             }
         }
     }
 
-    public static double horizontalDistSq(Vec3d a, Vec3d b) {
+    public static double horizontalDistSq(Vec3 a, Vec3 b) {
         double dx = a.x - b.x;
         double dz = a.z - b.z;
         return dx * dx + dz * dz;
@@ -113,7 +112,7 @@ public final class RaidEffects {
      * Deals damage from a raid mechanic. A matching protection prayer blocks it unless piercing.
      * Returns the damage dealt.
      */
-    public static int hit(LivingEntity source, ServerPlayerEntity player, int damage, AttackType style, boolean piercing) {
+    public static int hit(LivingEntity source, ServerPlayer player, int damage, AttackType style, boolean piercing) {
         RaidInstance raid = RaidManager.of(player);
         if (!piercing && style != null && protectedFrom(player, style)) {
             // ToA Quiet Prayers (OSRS): protection prayers are 10% less effective.
@@ -133,7 +132,7 @@ public final class RaidEffects {
         return dealt;
     }
 
-    public static boolean protectedFrom(ServerPlayerEntity player, AttackType style) {
+    public static boolean protectedFrom(ServerPlayer player, AttackType style) {
         var data = Players.data(player);
         return switch (style) {
             case MAGIC -> data.isActive(Prayer.PROTECT_FROM_MAGIC);

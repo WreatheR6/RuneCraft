@@ -2,8 +2,8 @@ package com.runecraft.item;
 
 import com.runecraft.osrs.content.systems.Charges;
 import com.runecraft.util.Inv;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Per-stack charges/degradation for the items in {@link Charges} (Barrows, crystal, tridents,
@@ -30,7 +30,7 @@ public final class ItemCharges {
         if (s == null) {
             return 0;
         }
-        NbtCompound nbt = stack.getNbt();
+        CompoundTag nbt = stack.getTag();
         return nbt != null && nbt.contains(KEY) ? Charges.clamp(s, nbt.getInt(KEY)) : s.initial();
     }
 
@@ -39,7 +39,7 @@ public final class ItemCharges {
         if (s == null) {
             return;
         }
-        stack.getOrCreateNbt().putInt(KEY, Charges.clamp(s, charges));
+        stack.getOrCreateTag().putInt(KEY, Charges.clamp(s, charges));
     }
 
     /** Drains charges; returns true when this made the item run out. */

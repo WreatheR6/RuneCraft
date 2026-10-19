@@ -3,37 +3,36 @@ package com.runecraft.content;
 import com.runecraft.combat.MonsterStats;
 import com.runecraft.osrs.Recipe;
 import com.runecraft.osrs.Skill;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
 
 /** Game events modules can listen to (achievement diaries, clue steps, minigame points...). */
 public final class GameEvents {
     public interface XpListener {
-        void onXp(ServerPlayerEntity player, Skill skill, int tenths);
+        void onXp(ServerPlayer player, Skill skill, int tenths);
     }
 
     public interface KillListener {
-        void onKill(ServerPlayerEntity player, LivingEntity entity, MonsterStats stats);
+        void onKill(ServerPlayer player, LivingEntity entity, MonsterStats stats);
     }
 
     public interface MakeListener {
-        void onMake(ServerPlayerEntity player, Recipe recipe);
+        void onMake(ServerPlayer player, Recipe recipe);
     }
 
     public interface ObtainListener {
-        void onObtain(ServerPlayerEntity player, String item, int count);
+        void onObtain(ServerPlayer player, String item, int count);
     }
 
     public interface CastListener {
-        void onCast(ServerPlayerEntity player, String spellId);
+        void onCast(ServerPlayer player, String spellId);
     }
 
     /** A named activity such as "talk:" + npc id, "minigame_start:" + game id or "eat:" + item id (see Diaries.ACTIVITIES). */
     public interface ActivityListener {
-        void onActivity(ServerPlayerEntity player, String key);
+        void onActivity(ServerPlayer player, String key);
     }
 
     private static final List<ActivityListener> ACTIVITIES = new ArrayList<>();
@@ -73,27 +72,27 @@ public final class GameEvents {
         ACTIVITIES.add(l);
     }
 
-    public static void fireActivity(ServerPlayerEntity p, String key) {
+    public static void fireActivity(ServerPlayer p, String key) {
         ACTIVITIES.forEach(l -> l.onActivity(p, key));
     }
 
-    public static void fireCast(ServerPlayerEntity p, String spellId) {
+    public static void fireCast(ServerPlayer p, String spellId) {
         CASTS.forEach(l -> l.onCast(p, spellId));
     }
 
-    public static void fireXp(ServerPlayerEntity p, Skill skill, int tenths) {
+    public static void fireXp(ServerPlayer p, Skill skill, int tenths) {
         XP.forEach(l -> l.onXp(p, skill, tenths));
     }
 
-    public static void fireKill(ServerPlayerEntity p, LivingEntity e, MonsterStats stats) {
+    public static void fireKill(ServerPlayer p, LivingEntity e, MonsterStats stats) {
         KILLS.forEach(l -> l.onKill(p, e, stats));
     }
 
-    public static void fireMake(ServerPlayerEntity p, Recipe r) {
+    public static void fireMake(ServerPlayer p, Recipe r) {
         MAKES.forEach(l -> l.onMake(p, r));
     }
 
-    public static void fireObtain(ServerPlayerEntity p, String item, int count) {
+    public static void fireObtain(ServerPlayer p, String item, int count) {
         OBTAINS.forEach(l -> l.onObtain(p, item, count));
     }
 }

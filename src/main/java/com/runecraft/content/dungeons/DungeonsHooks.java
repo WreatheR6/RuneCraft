@@ -18,14 +18,13 @@ import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import java.util.List;
 
 /**
@@ -90,8 +89,8 @@ public final class DungeonsHooks implements ModuleHooks {
             }
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            if (server.getTicks() % 20 == 0) {
-                ServerWorld world = Gielinor.world(server);
+            if (server.getTickCount() % 20 == 0) {
+                ServerLevel world = Gielinor.world(server);
                 if (world != null) {
                     keepKings(world);
                 }
@@ -101,9 +100,9 @@ public final class DungeonsHooks implements ModuleHooks {
             if (++hazardTicks % HAZARD_INTERVAL != 0) {
                 return;
             }
-            ServerWorld world = Gielinor.world(server);
+            ServerLevel world = Gielinor.world(server);
             if (world != null) {
-                for (ServerPlayerEntity p : world.getPlayers()) {
+                for (ServerPlayer p : world.players()) {
                     if (p.isAlive() && !p.isSpectator() && !p.isCreative()) {
                         apeAtollHazards(p);
                     }
@@ -113,8 +112,8 @@ public final class DungeonsHooks implements ModuleHooks {
     }
 
     /** Puts the iron ladder down to the Waterbirth Island Dungeon on the Lighthouse tower's ground floor. */
-    private static void placeLighthouseLadder(ServerWorld world) {
-        net.minecraft.block.Block ladder = net.minecraft.registry.Registries.BLOCK.get(com.runecraft.RuneCraft.id(DungeonBlocks.LIGHTHOUSE_LADDER));
+    private static void placeLighthouseLadder(ServerLevel world) {
+        net.minecraft.world.level.block.Block ladder = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(com.runecraft.RuneCraft.id(DungeonBlocks.LIGHTHOUSE_LADDER));
         if (ladder == Blocks.AIR) {
             return;
         }
@@ -123,9 +122,9 @@ public final class DungeonsHooks implements ModuleHooks {
         for (int[] o : new int[][]{{3, 0}, {-3, 0}, {0, 3}, {0, -3}, {2, 2}, {-2, -2}}) {
             for (int y = world.getSeaLevel(); y < world.getSeaLevel() + 12; y++) {
                 BlockPos at = new BlockPos(c[0] + o[0], y, c[1] + o[1]);
-                if (world.getBlockState(at).isAir() && world.getBlockState(at.up()).isAir()
-                        && world.getBlockState(at.down()).isSolidBlock(world, at.down())) {
-                    world.setBlockState(at, ladder.getDefaultState(), net.minecraft.block.Block.NOTIFY_LISTENERS);
+                if (world.getBlockState(at).isAir() && world.getBlockState(at.above()).isAir()
+                        && world.getBlockState(at.below()).isRedstoneConductor(world, at.below())) {
+                    world.setBlock(at, ladder.defaultBlockState(), net.minecraft.world.level.block.Block.UPDATE_CLIENTS);
                     return;
                 }
             }
@@ -143,9 +142,9 @@ public final class DungeonsHooks implements ModuleHooks {
      * The Dagannoth Kings are always in their lair in OSRS: while anyone is down there, each missing King comes back
      * {@link DungeonBlocks#KING_RESPAWN_TICKS} after it is found missing (the summoning stone still wakes them early).
      */
-    private static void keepKings(ServerWorld world) {
+    private static void keepKings(ServerLevel world) {
         boolean visited = false;
-        for (ServerPlayerEntity p : world.getPlayers()) {
+        for (ServerPlayer p : world.players()) {
             if (p.isAlive() && DungeonBlocks.inKingsLair(p.getBlockX(), p.getBlockY(), p.getBlockZ())) {
                 visited = true;
                 break;
@@ -156,15 +155,15 @@ public final class DungeonsHooks implements ModuleHooks {
         }
         long now = com.runecraft.action.ActionManager.gameTick();
         int[] centre = DungeonBlocks.kingSpot(0);
-        net.minecraft.util.math.Box lair = new net.minecraft.util.math.Box(new BlockPos(centre[0], centre[1], centre[2])).expand(40, 12, 40);
+        net.minecraft.world.phys.AABB lair = new net.minecraft.world.phys.AABB(new BlockPos(centre[0], centre[1], centre[2])).inflate(40, 12, 40);
         for (int i = 0; i < DungeonBlocks.KINGS.size(); i++) {
             String id = DungeonBlocks.KINGS.get(i);
-            net.minecraft.entity.EntityType<com.runecraft.boss.DataBossEntity> type = com.runecraft.registry.ModEntities.DATA_BOSS_TYPES.get(id);
+            net.minecraft.world.entity.EntityType<com.runecraft.boss.DataBossEntity> type = com.runecraft.registry.ModEntities.DATA_BOSS_TYPES.get(id);
             com.runecraft.osrs.content.BossDef def = com.runecraft.osrs.content.ContentRegistry.boss(id);
             if (type == null || def == null) {
                 continue;
             }
-            if (!world.getEntitiesByType(type, lair, e -> e.isAlive()).isEmpty()) {
+            if (!world.getEntities(type, lair, e -> e.isAlive()).isEmpty()) {
                 KING_DUE[i] = 0;
                 KING_SEEN[i] = true;
                 continue;
@@ -191,8 +190,8 @@ public final class DungeonsHooks implements ModuleHooks {
      * The Temple of Marimbo Dungeon's floor traps spring under a player standing on them; in the Ape Atoll Dungeon rocks
      * fall now and then on anyone away from the rock ledges (damage approx).
      */
-    private static void apeAtollHazards(ServerPlayerEntity p) {
-        BlockPos at = p.getBlockPos();
+    private static void apeAtollHazards(ServerPlayer p) {
+        BlockPos at = p.blockPosition();
         switch (DungeonBlocks.apeAtollHazard(at.getX(), at.getY(), at.getZ())) {
             case TUNNEL_TRAP -> {
                 Msg.game(p, "You trigger a trap! Spikes shoot up from the floor.");
@@ -207,7 +206,7 @@ public final class DungeonsHooks implements ModuleHooks {
                 hazardHit(p, Math.max(1, (int) Math.ceil(p.getHealth() * 0.2)));
             }
             case HOT_ROCKS -> {
-                String held = p.getMainHandStack().isEmpty() ? "" : Inv.idOf(p.getMainHandStack());
+                String held = p.getMainHandItem().isEmpty() ? "" : Inv.idOf(p.getMainHandItem());
                 if (!held.contains("zombie_monkey_greegree")) {
                     Msg.game(p, "The hot rocks burn your feet!");
                     hazardHit(p, 10);
@@ -225,11 +224,11 @@ public final class DungeonsHooks implements ModuleHooks {
     }
 
     /** The Kalphite Cave's monsters can only be damaged on a matching Slayer task (null = allowed). */
-    private static String taskOnlyDenied(ServerPlayerEntity player, net.minecraft.entity.LivingEntity target) {
+    private static String taskOnlyDenied(ServerPlayer player, net.minecraft.world.entity.LivingEntity target) {
         if (!(target instanceof com.runecraft.entity.OsrsMonsterEntity)) {
             return null;
         }
-        BlockPos at = target.getBlockPos();
+        BlockPos at = target.blockPosition();
         String needed = Dungeons.taskOnly(at.getX(), at.getY(), at.getZ());
         if (needed == null) {
             return null;
@@ -245,7 +244,7 @@ public final class DungeonsHooks implements ModuleHooks {
      * The Temple of Marimbo Dungeon's wooden door to the great western cave and its monkey skull: locked unless the
      * hard Western Provinces Diary is complete; leaving the cave is free.
      */
-    private static void marimboDoor(ServerPlayerEntity player, BlockPos pos, BlockState state) {
+    private static void marimboDoor(ServerPlayer player, BlockPos pos, BlockState state) {
         if (DungeonBlocks.insideMarimboDoor(player.getX())) {
             passThrough(player, pos);
             return;
@@ -259,7 +258,7 @@ public final class DungeonsHooks implements ModuleHooks {
         }
     }
 
-    private static void hazardHit(ServerPlayerEntity p, int damage) {
+    private static void hazardHit(ServerPlayer p, int damage) {
         CombatHandler.applyDamage(null, p, damage);
         ServerNetworking.hitsplat(p, damage, Net.SPLAT_DAMAGE);
     }
@@ -268,8 +267,8 @@ public final class DungeonsHooks implements ModuleHooks {
      * Moves the player through the block at {@code pos} to the first free spot on its far side
      * (the side away from the player).
      */
-    static boolean passThrough(ServerPlayerEntity player, BlockPos pos) {
-        if (!(player.getWorld() instanceof ServerWorld world)) {
+    static boolean passThrough(ServerPlayer player, BlockPos pos) {
+        if (!(player.level() instanceof ServerLevel world)) {
             return false;
         }
         double dx = pos.getX() + 0.5 - player.getX();
@@ -278,10 +277,10 @@ public final class DungeonsHooks implements ModuleHooks {
                 : (dz > 0 ? Direction.SOUTH : Direction.NORTH);
         BlockPos base = new BlockPos(pos.getX(), player.getBlockY(), pos.getZ());
         for (int k = 1; k <= 10; k++) {
-            BlockPos target = base.offset(dir, k);
-            if (world.getBlockState(target).isAir() && world.getBlockState(target.up()).isAir()
-                    && !world.getBlockState(target.down()).isAir()) {
-                player.teleport(world, target.getX() + 0.5, target.getY(), target.getZ() + 0.5, player.getYaw(), player.getPitch());
+            BlockPos target = base.relative(dir, k);
+            if (world.getBlockState(target).isAir() && world.getBlockState(target.above()).isAir()
+                    && !world.getBlockState(target.below()).isAir()) {
+                player.teleportTo(world, target.getX() + 0.5, target.getY(), target.getZ() + 0.5, player.getYRot(), player.getXRot());
                 return true;
             }
         }
@@ -289,14 +288,14 @@ public final class DungeonsHooks implements ModuleHooks {
         return false;
     }
 
-    private static void securityDoor(ServerPlayerEntity player, BlockPos pos, BlockState state) {
+    private static void securityDoor(ServerPlayer player, BlockPos pos, BlockState state) {
         String tip = SECURITY_TIPS.get(player.getRandom().nextInt(SECURITY_TIPS.size()));
         Msg.game(player, "The door asks you a question about keeping your account safe.");
         Msg.game(player, tip);
         passThrough(player, pos);
     }
 
-    private static void rewardChest(ServerPlayerEntity player, int chest) {
+    private static void rewardChest(ServerPlayer player, int chest) {
         DungeonState state = DungeonState.get(player.getServer());
         String name = switch (chest) {
             case 0 -> "Gift of Peace";
@@ -308,11 +307,11 @@ public final class DungeonsHooks implements ModuleHooks {
             cradleOfLife(player, state);
             return;
         }
-        if (state.hasClaimed(player.getUuid(), chest)) {
+        if (state.hasClaimed(player.getUUID(), chest)) {
             Msg.game(player, "The " + name + " is empty.");
             return;
         }
-        state.claim(player.getUuid(), chest);
+        state.claim(player.getUUID(), chest);
         int coins = DungeonBlocks.SOS_COINS.get(chest);
         Inv.give(player, Inv.COINS, coins);
         Msg.game(player, "You open the " + name + " and find " + coins + " coins!");
@@ -326,24 +325,24 @@ public final class DungeonsHooks implements ModuleHooks {
     }
 
     /** The Cradle of Life: fancy boots (or fighting boots while sneaking); a lost pair is replaced. */
-    private static void cradleOfLife(ServerPlayerEntity player, DungeonState state) {
+    private static void cradleOfLife(ServerPlayer player, DungeonState state) {
         boolean has = Inv.has(player, DungeonsContent.FANCY_BOOTS, 1) || Inv.has(player, DungeonsContent.FIGHTING_BOOTS, 1);
-        if (state.hasClaimed(player.getUuid(), 3) && has) {
+        if (state.hasClaimed(player.getUUID(), 3) && has) {
             Msg.game(player, "The Cradle of Life is empty. You already have a pair of boots from it.");
             return;
         }
-        String boots = player.isSneaking() ? DungeonsContent.FIGHTING_BOOTS : DungeonsContent.FANCY_BOOTS;
-        state.claim(player.getUuid(), 3);
+        String boots = player.isShiftKeyDown() ? DungeonsContent.FIGHTING_BOOTS : DungeonsContent.FANCY_BOOTS;
+        state.claim(player.getUUID(), 3);
         Inv.give(player, boots, 1);
-        Msg.game(player, "You take a pair of " + (player.isSneaking() ? "fighting" : "fancy") + " boots from the Cradle of Life.");
-        if (!player.isSneaking()) {
+        Msg.game(player, "You take a pair of " + (player.isShiftKeyDown() ? "fighting" : "fancy") + " boots from the Cradle of Life.");
+        if (!player.isShiftKeyDown()) {
             Msg.game(player, "(Sneak while opening the cradle for fighting boots instead.)");
         }
     }
 
-    private static boolean hasAxe(ServerPlayerEntity player) {
-        for (int i = 0; i < player.getInventory().size(); i++) {
-            ItemStack stack = player.getInventory().getStack(i);
+    private static boolean hasAxe(ServerPlayer player) {
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            ItemStack stack = player.getInventory().getItem(i);
             if (stack.isEmpty()) {
                 continue;
             }
@@ -355,7 +354,7 @@ public final class DungeonsHooks implements ModuleHooks {
         return false;
     }
 
-    private static void vines(ServerPlayerEntity player, BlockPos pos, BlockState state) {
+    private static void vines(ServerPlayer player, BlockPos pos, BlockState state) {
         if (!hasAxe(player)) {
             Msg.game(player, "You need an axe to chop through these vines.");
             return;
@@ -364,7 +363,7 @@ public final class DungeonsHooks implements ModuleHooks {
         passThrough(player, pos);
     }
 
-    private static void miningGuildDoor(ServerPlayerEntity player, BlockPos pos, BlockState state) {
+    private static void miningGuildDoor(ServerPlayer player, BlockPos pos, BlockState state) {
         if (Players.data(player).skills().level(Skill.MINING) < 60) {
             Msg.game(player, "Sorry, but you need level 60 Mining to go in there.");
             return;
@@ -373,7 +372,7 @@ public final class DungeonsHooks implements ModuleHooks {
     }
 
     /** A Mort'ton catacomb door: entering the crypt needs any shade key of the door's metal (kept); leaving is free. */
-    private static void shadeDoor(ServerPlayerEntity player, BlockPos pos, BlockState state) {
+    private static void shadeDoor(ServerPlayer player, BlockPos pos, BlockState state) {
         ShadeCatacombs.Door door = ShadeCatacombs.doorAt(pos.getX(), pos.getZ());
         if (door == null) {
             passThrough(player, pos);
@@ -400,22 +399,22 @@ public final class DungeonsHooks implements ModuleHooks {
      * The Waterbirth Island Dungeon's Kings' ladder: from the great hall (sublevel 5) down into the Kings' lair, where
      * their summoning stone stands, and from the lair back up.
      */
-    private static void kingsLadder(ServerPlayerEntity player, BlockPos pos, BlockState state) {
-        if (!(player.getWorld() instanceof ServerWorld world)) {
+    private static void kingsLadder(ServerPlayer player, BlockPos pos, BlockState state) {
+        if (!(player.level() instanceof ServerLevel world)) {
             return;
         }
         boolean up = DungeonBlocks.inKingsLair(pos.getX(), pos.getY(), pos.getZ());
         int[] to = DungeonBlocks.kingsLadderTarget(pos.getX(), pos.getY(), pos.getZ());
         Msg.game(player, up ? "You climb back up to the dungeon." : "You climb down into the lair of the Dagannoth Kings...");
-        player.teleport(world, to[0] + 0.5, to[1], to[2] + 0.5, player.getYaw(), player.getPitch());
+        player.teleportTo(world, to[0] + 0.5, to[1], to[2] + 0.5, player.getYRot(), player.getXRot());
     }
 
     /**
      * A Waterbirth circular door: from the entrance hall it opens only while another player stands on the pressure pad
      * beside it, or for a player with a pet rock to put on the pad; from the far side it opens freely.
      */
-    private static void circularDoor(ServerPlayerEntity player, BlockPos pos, BlockState state) {
-        if (!(player.getWorld() instanceof ServerWorld world)) {
+    private static void circularDoor(ServerPlayer player, BlockPos pos, BlockState state) {
+        if (!(player.level() instanceof ServerLevel world)) {
             return;
         }
         if (!DungeonBlocks.outsideCircularDoor(player.getX()) || isOpen(pos)) {
@@ -459,14 +458,14 @@ public final class DungeonsHooks implements ModuleHooks {
     }
 
     /** True if another player stands on a pressure pad near the door. */
-    private static boolean padHeld(ServerWorld world, ServerPlayerEntity player, BlockPos door) {
-        for (ServerPlayerEntity other : world.getPlayers()) {
+    private static boolean padHeld(ServerLevel world, ServerPlayer player, BlockPos door) {
+        for (ServerPlayer other : world.players()) {
             if (other == player || !other.isAlive() || other.isSpectator()) {
                 continue;
             }
-            BlockPos at = other.getBlockPos();
+            BlockPos at = other.blockPosition();
             if (Math.abs(at.getX() - door.getX()) <= 6 && Math.abs(at.getZ() - door.getZ()) <= 6 && Math.abs(at.getY() - door.getY()) <= 2
-                    && world.getBlockState(at).isOf(Blocks.STONE_PRESSURE_PLATE)) {
+                    && world.getBlockState(at).is(Blocks.STONE_PRESSURE_PLATE)) {
                 return true;
             }
         }
@@ -477,12 +476,12 @@ public final class DungeonsHooks implements ModuleHooks {
      * A door-support around Waterbirth's central room: knocked down from a distance by a ranged or magic weapon, or by
      * a rune thrownaxe's chain-hit (approx: it lets the player through and stands again); leaving the room is free.
      */
-    private static void doorSupport(ServerPlayerEntity player, BlockPos pos, BlockState state) {
+    private static void doorSupport(ServerPlayer player, BlockPos pos, BlockState state) {
         if (DungeonBlocks.insideCentralRoom(player.getX(), player.getZ(), pos.getX(), pos.getZ()) || isOpen(pos)) {
             passThrough(player, pos);
             return;
         }
-        ItemStack held = player.getMainHandStack();
+        ItemStack held = player.getMainHandItem();
         String heldId = held.isEmpty() ? "" : Inv.idOf(held);
         if (heldId.equals("rune_thrownaxe") || Inv.has(player, "rune_thrownaxe", 1)) {
             Msg.game(player, "Your rune thrownaxe chain-hits the door-supports, and they collapse.");
@@ -498,29 +497,29 @@ public final class DungeonsHooks implements ModuleHooks {
     }
 
     /** The iron ladder from Waterbirth sublevel 2 up to the Lighthouse. */
-    private static void lighthouseLadder(ServerPlayerEntity player, BlockPos pos, BlockState state) {
-        if (!(player.getWorld() instanceof ServerWorld world)) {
+    private static void lighthouseLadder(ServerPlayer player, BlockPos pos, BlockState state) {
+        if (!(player.level() instanceof ServerLevel world)) {
             return;
         }
         if (pos.getY() > com.runecraft.osrs.MultiCombat.UNDERGROUND_TOP) {
             // the iron ladder in the Lighthouse leads down to the Waterbirth Island Dungeon's rock lobsters
             int[] b = DungeonBlocks.lighthouseLadderBelow();
             Msg.game(player, "You climb down the long iron ladder into the dungeon below.");
-            player.teleport(world, b[0] + 0.5, b[1], b[2] + 0.5, player.getYaw(), player.getPitch());
+            player.teleportTo(world, b[0] + 0.5, b[1], b[2] + 0.5, player.getYRot(), player.getXRot());
             return;
         }
         int[] l = DungeonBlocks.lighthouseExit();
         BlockPos to = Gielinor.safeSpot(world, l[0], l[1]);
         Msg.game(player, "You climb the long iron ladder up into the Lighthouse.");
-        player.teleport(world, to.getX() + 0.5, to.getY(), to.getZ() + 0.5, player.getYaw(), player.getPitch());
+        player.teleportTo(world, to.getX() + 0.5, to.getY(), to.getZ() + 0.5, player.getYRot(), player.getXRot());
     }
 
     /**
      * A dungeon passage ({@link Dungeons.Passage}): the Varlamore lift platforms, Amoxliatl's imposing door, the way into
      * the Ruins of Mokhaiotl and the Troll Stronghold prison's secret exit.
      */
-    private static void passage(ServerPlayerEntity player, BlockPos pos, BlockState state) {
-        if (!(player.getWorld() instanceof ServerWorld world)) {
+    private static void passage(ServerPlayer player, BlockPos pos, BlockState state) {
+        if (!(player.level() instanceof ServerLevel world)) {
             return;
         }
         Dungeons.Passage p = DungeonBlocks.passageAt(pos.getX(), pos.getY(), pos.getZ());
@@ -536,17 +535,17 @@ public final class DungeonsHooks implements ModuleHooks {
             }
             BlockPos to = Gielinor.safeSpot(world, a.x(), a.z() + Math.max(2, a.radius() / 2));
             Msg.game(player, p.message());
-            player.teleport(world, to.getX() + 0.5, to.getY(), to.getZ() + 0.5, player.getYaw(), player.getPitch());
+            player.teleportTo(world, to.getX() + 0.5, to.getY(), to.getZ() + 0.5, player.getYRot(), player.getXRot());
             return;
         }
         Msg.game(player, p.message());
         if (p.toY() == Dungeons.SURFACE) {
             BlockPos to = Gielinor.safeSpot(world, p.toX(), p.toZ());
-            player.teleport(world, to.getX() + 0.5, to.getY(), to.getZ() + 0.5, player.getYaw(), player.getPitch());
+            player.teleportTo(world, to.getX() + 0.5, to.getY(), to.getZ() + 0.5, player.getYRot(), player.getXRot());
             return;
         }
         com.runecraft.world.StructurePlacer.applyIfLoaded(world, p.toX() >> 4, p.toZ() >> 4);
-        player.teleport(world, p.toX() + 0.5, p.toY(), p.toZ() + 0.5, player.getYaw(), player.getPitch());
+        player.teleportTo(world, p.toX() + 0.5, p.toY(), p.toZ() + 0.5, player.getYRot(), player.getXRot());
     }
 
     /**
@@ -554,19 +553,19 @@ public final class DungeonsHooks implements ModuleHooks {
      * (spawned at the place) is moved into his cell and a Mad Eadgar stands in the next one (OSRS: both are freed in
      * the Troll Stronghold quest). Skipped while the prison's chunk is not loaded.
      */
-    private static void placeTrollPrisoners(ServerWorld world, BlockPos centre) {
+    private static void placeTrollPrisoners(ServerLevel world, BlockPos centre) {
         int[] godric = DungeonBlocks.trollPrisoner(0);
         int[] eadgar = DungeonBlocks.trollPrisoner(1);
-        if (!world.isChunkLoaded(godric[0] >> 4, godric[2] >> 4) || !world.isChunkLoaded(eadgar[0] >> 4, eadgar[2] >> 4)) {
+        if (!world.hasChunk(godric[0] >> 4, godric[2] >> 4) || !world.hasChunk(eadgar[0] >> 4, eadgar[2] >> 4)) {
             return;
         }
         com.runecraft.world.StructurePlacer.applyIfLoaded(world, godric[0] >> 4, godric[2] >> 4);
         com.runecraft.world.StructurePlacer.applyIfLoaded(world, eadgar[0] >> 4, eadgar[2] >> 4);
-        net.minecraft.util.math.Box around = new net.minecraft.util.math.Box(centre.getX() - 48, world.getBottomY(), centre.getZ() - 48,
+        net.minecraft.world.phys.AABB around = new net.minecraft.world.phys.AABB(centre.getX() - 48, world.getMinBuildHeight(), centre.getZ() - 48,
                 centre.getX() + 48, centre.getY() + 64, centre.getZ() + 48);
-        for (com.runecraft.entity.QuestNpcEntity npc : world.getEntitiesByClass(com.runecraft.entity.QuestNpcEntity.class, around,
+        for (com.runecraft.entity.QuestNpcEntity npc : world.getEntitiesOfClass(com.runecraft.entity.QuestNpcEntity.class, around,
                 e -> "godric".equals(e.npcId()))) {
-            npc.refreshPositionAndAngles(godric[0] + 0.5, godric[1], godric[2] + 0.5, 0f, 0f);
+            npc.moveTo(godric[0] + 0.5, godric[1], godric[2] + 0.5, 0f, 0f);
         }
         com.runecraft.osrs.content.NpcDef def = com.runecraft.osrs.content.ContentRegistry.npc("mad_eadgar");
         if (def == null) {
@@ -576,14 +575,14 @@ public final class DungeonsHooks implements ModuleHooks {
         if (entity == null) {
             return;
         }
-        entity.refreshPositionAndAngles(eadgar[0] + 0.5, eadgar[1], eadgar[2] + 0.5, 180f, 0f);
+        entity.moveTo(eadgar[0] + 0.5, eadgar[1], eadgar[2] + 0.5, 180f, 0f);
         entity.setNpc(def);
-        entity.initialize(world, world.getLocalDifficulty(entity.getBlockPos()), net.minecraft.entity.SpawnReason.STRUCTURE, null, null);
-        world.spawnEntity(entity);
+        entity.finalizeSpawn(world, world.getCurrentDifficultyAt(entity.blockPosition()), net.minecraft.world.entity.MobSpawnType.STRUCTURE, null, null);
+        world.addFreshEntity(entity);
     }
 
     /** The rock pile by Waterbirth's arrival ladder: just rocks (pet rocks come from Askeladden in Rellekka, as in OSRS). */
-    private static void rockPile(ServerPlayerEntity player, BlockPos pos, BlockState state) {
+    private static void rockPile(ServerPlayer player, BlockPos pos, BlockState state) {
         Msg.game(player, Inv.has(player, DungeonsContent.PET_ROCK, 1) ? "Your pet rock would sit nicely on a pressure pad."
                 : "Just a pile of rocks. Askeladden in Rellekka gives out pet rocks that would sit nicely on a pressure pad.");
     }
@@ -592,7 +591,7 @@ public final class DungeonsHooks implements ModuleHooks {
      * Bardur, deep in the Waterbirth Island Dungeon, trades a cooked shark for a Fremennik blade, shield or helm once The
      * Fremennik Trials is complete (wiki).
      */
-    private static void bardur(ServerPlayerEntity player) {
+    private static void bardur(ServerPlayer player) {
         com.runecraft.osrs.QuestInfo trials = com.runecraft.osrs.content.ContentRegistry.quest("fremennik_trials");
         if (trials != null && !Players.data(player).questComplete(trials)) {
             com.runecraft.quest.QuestApi.say(player, "Bardur", "Outerlander! Leave me to my work - these fledgelings won't kill themselves.");
@@ -611,7 +610,7 @@ public final class DungeonsHooks implements ModuleHooks {
     }
 
     /** Askeladden gives a pet rock once The Fremennik Trials is started (and more after it, OSRS). */
-    private static void askeladden(ServerPlayerEntity player) {
+    private static void askeladden(ServerPlayer player) {
         com.runecraft.osrs.QuestInfo trials = com.runecraft.osrs.content.ContentRegistry.quest("fremennik_trials");
         if (trials != null && Players.data(player).questStage(trials) <= 0 && !Players.data(player).questComplete(trials)) {
             com.runecraft.quest.QuestApi.say(player, "Askeladden", "Hey, outerlander! Come back when you're trying to become one of us.");
@@ -626,7 +625,7 @@ public final class DungeonsHooks implements ModuleHooks {
         ServerNetworking.sync(player);
     }
 
-    private static void rift(ServerPlayerEntity player, BlockPos pos, BlockState state) {
+    private static void rift(ServerPlayer player, BlockPos pos, BlockState state) {
         Dungeons.Rift best = null;
         double bestD = Double.MAX_VALUE;
         for (Dungeons.Rift r : Dungeons.rifts()) {

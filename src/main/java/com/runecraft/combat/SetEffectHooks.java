@@ -3,13 +3,12 @@ package com.runecraft.combat;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.data.SetEffects;
 import com.runecraft.util.Inv;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
 
 /**
  * Armour set effects from {@link SetEffects}: Dharok's, Guthan's and Verac's Barrows sets, Inquisitor's armour
@@ -28,42 +27,42 @@ public final class SetEffectHooks {
      * True (once) when the hit being applied now is a Verac's "Defiler" hit, which also passes through protection prayers:
      * demonic gorillas can't block it (OSRS Wiki), although they block special attacks.
      */
-    public static boolean takeVeracHit(ServerPlayerEntity p) {
-        Long tick = p == null ? null : VERAC_HIT.remove(p.getUuid());
+    public static boolean takeVeracHit(ServerPlayer p) {
+        Long tick = p == null ? null : VERAC_HIT.remove(p.getUUID());
         return tick != null && tick == com.runecraft.action.ActionManager.mcTick();
     }
 
-    private static String worn(ServerPlayerEntity p, EquipmentSlot slot) {
-        return Inv.idOf(p.getEquippedStack(slot));
+    private static String worn(ServerPlayer p, EquipmentSlot slot) {
+        return Inv.idOf(p.getItemBySlot(slot));
     }
 
-    private static SetEffects.BarrowsSet barrows(ServerPlayerEntity p) {
+    private static SetEffects.BarrowsSet barrows(ServerPlayer p) {
         return SetEffects.barrows(worn(p, EquipmentSlot.HEAD), worn(p, EquipmentSlot.CHEST), worn(p, EquipmentSlot.LEGS),
-                Inv.idOf(p.getMainHandStack()));
+                Inv.idOf(p.getMainHandItem()));
     }
 
-    private static boolean damned(ServerPlayerEntity p) {
+    private static boolean damned(ServerPlayer p) {
         return "amulet_of_the_damned".equals(com.runecraft.content.systems.SysState.of(p).wornId(com.runecraft.osrs.content.systems.Jewellery.Slot.NECK));
     }
 
     public static void register() {
         CombatHooks.addModifier(new CombatHooks.PlayerAttackModifier() {
             @Override
-            public double accuracy(ServerPlayerEntity player, LivingEntity target, AttackType type) {
+            public double accuracy(ServerPlayer player, LivingEntity target, AttackType type) {
                 // Inquisitor's armour's crush bonus is part of com.runecraft.osrs.PlayerHitCalc (HitCalcBridge).
                 double m = 1.0;
                 if (type.isMelee() && barrows(player) == SetEffects.VERAC
                         && player.getRandom().nextDouble() < SetEffects.BARROWS_PROC_CHANCE) {
-                    VERAC_PROC.put(player.getUuid(), Boolean.TRUE);
+                    VERAC_PROC.put(player.getUUID(), Boolean.TRUE);
                     m *= 1000.0; // the hit ignores the target's defence
                 }
                 return m;
             }
 
             @Override
-            public int afterRoll(ServerPlayerEntity player, LivingEntity target, AttackType type, int damage) {
-                if (VERAC_PROC.remove(player.getUuid()) != null) {
-                    VERAC_HIT.put(player.getUuid(), com.runecraft.action.ActionManager.mcTick());
+            public int afterRoll(ServerPlayer player, LivingEntity target, AttackType type, int damage) {
+                if (VERAC_PROC.remove(player.getUUID()) != null) {
+                    VERAC_HIT.put(player.getUUID(), com.runecraft.action.ActionManager.mcTick());
                     return damage + 1;
                 }
                 // Ahrim's set with the amulet of the damned: 25% of spells deal 30% more damage (osrs-dps-calc).
@@ -75,7 +74,7 @@ public final class SetEffectHooks {
             }
 
             @Override
-            public void afterHit(ServerPlayerEntity player, LivingEntity target, AttackType type, int dealt) {
+            public void afterHit(ServerPlayer player, LivingEntity target, AttackType type, int dealt) {
                 // Karil's set with the amulet of the damned: 25% of shots hit a second time for half the damage.
                 if (dealt > 1 && type == AttackType.RANGED && barrows(player) == SetEffects.KARIL && damned(player)
                         && target.isAlive() && player.getRandom().nextDouble() < SetEffects.BARROWS_PROC_CHANCE) {

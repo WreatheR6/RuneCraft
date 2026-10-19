@@ -7,6 +7,8 @@ import static com.runecraft.osrs.content.bestiary.BestiaryHumKit.*;
 import static com.runecraft.osrs.content.bestiary.Kit.part;
 import static com.runecraft.osrs.content.bestiary.Kit.sym;
 
+import com.runecraft.osrs.content.bestiary.BestiaryHumKit.Fig;
+
 /**
  * Species forms built on {@link BestiaryHumKit}: demons, aviansies, goblins, ourgs, trolls/giants and the horse body
  * (unicorns, centaurs). Each returns the {@link Fig} so the caller can arm and dress it.

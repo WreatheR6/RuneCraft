@@ -19,12 +19,11 @@ import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EquipmentSlot;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -56,9 +55,9 @@ final class AgilityHooks {
         final List<Integer> loot = new ArrayList<>();
     }
 
-    private static Wild wild(ServerPlayerEntity player) {
+    private static Wild wild(ServerPlayer player) {
         Wild w = new Wild();
-        NbtCompound nbt = SkillingState.get(player.getServer()).section(WILD_SECTION).getCompound(player.getUuidAsString());
+        CompoundTag nbt = SkillingState.get(player.getServer()).section(WILD_SECTION).getCompound(player.getStringUUID());
         w.tickets = nbt.getInt("tickets");
         w.paid = nbt.getBoolean("paid");
         w.streak = nbt.getInt("streak");
@@ -68,8 +67,8 @@ final class AgilityHooks {
         return w;
     }
 
-    private static void save(ServerPlayerEntity player, Wild w) {
-        NbtCompound nbt = new NbtCompound();
+    private static void save(ServerPlayer player, Wild w) {
+        CompoundTag nbt = new CompoundTag();
         nbt.putInt("tickets", w.tickets);
         nbt.putBoolean("paid", w.paid);
         nbt.putInt("streak", w.streak);
@@ -78,7 +77,7 @@ final class AgilityHooks {
             loot[i] = w.loot.get(i);
         }
         nbt.putIntArray("loot", loot);
-        SkillingState.get(player.getServer()).section(WILD_SECTION).put(player.getUuidAsString(), nbt);
+        SkillingState.get(player.getServer()).section(WILD_SECTION).put(player.getStringUUID(), nbt);
     }
 
     private AgilityHooks() {
@@ -94,8 +93,8 @@ final class AgilityHooks {
         AgilityService.LAP_LISTENERS.add(AgilityHooks::lap);
         // Logging out inside the Wilderness course costs ten laps of streak; dying loses the fee (and the streak).
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
-            ServerPlayerEntity player = handler.player;
-            CROSSING.remove(player.getUuid());
+            ServerPlayer player = handler.player;
+            CROSSING.remove(player.getUUID());
             Wild w = wild(player);
             if (w.paid && Gielinor.wildernessLevel(player) > 0) {
                 w.streak = AgilityRewards.streakAfterLogout(w.streak);
@@ -103,7 +102,7 @@ final class AgilityHooks {
             }
         });
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
-            if (entity instanceof ServerPlayerEntity player) {
+            if (entity instanceof ServerPlayer player) {
                 Wild w = wild(player);
                 if (w.paid) {
                     w.paid = false;
@@ -120,8 +119,8 @@ final class AgilityHooks {
      * Every few game ticks: a player who paid the Wilderness course's fee and is no longer inside its walls (walked out,
      * teleported away, left Gielinor) forfeits the fee and the lap streak. Uncollected tickets stay at the dispenser.
      */
-    static void wildernessTick(ServerPlayerEntity player, long gameTick) {
-        if (gameTick % 5 != 0 || player.isDead()) {
+    static void wildernessTick(ServerPlayer player, long gameTick) {
+        if (gameTick % 5 != 0 || player.isDeadOrDying()) {
             return;
         }
         boolean inside = Gielinor.is(player) && AgilityRewards.inWildernessCourse(GielinorMap.toOsrsX(player.getBlockX()),
@@ -146,9 +145,9 @@ final class AgilityHooks {
      * Uses the agility shortcut whose end is at this block: requirement checks, then off to the other end. A use takes the
      * shortcut's ticks; until they pass, using a shortcut again does nothing (no instant back-and-forth).
      */
-    private static void shortcut(ServerPlayerEntity player, BlockPos pos) {
-        ServerWorld world = (ServerWorld) player.getWorld();
-        Long crossing = CROSSING.get(player.getUuid());
+    private static void shortcut(ServerPlayer player, BlockPos pos) {
+        ServerLevel world = (ServerLevel) player.level();
+        Long crossing = CROSSING.get(player.getUUID());
         if (crossing != null && ActionManager.mcTick() < crossing) {
             return;
         }
@@ -165,7 +164,7 @@ final class AgilityHooks {
                 }
                 BlockPos to = end == 0 ? new BlockPos(e.x2(), e.y2(), e.z2()) : new BlockPos(e.x1(), e.y1(), e.z1());
                 BlockPos land = beside(world, to);
-                player.teleport(world, land.getX() + 0.5, land.getY(), land.getZ() + 0.5, player.getYaw(), player.getPitch());
+                player.teleportTo(world, land.getX() + 0.5, land.getY(), land.getZ() + 0.5, player.getYRot(), player.getXRot());
                 done(player, s, e.ticks());
                 return;
             }
@@ -188,12 +187,12 @@ final class AgilityHooks {
         int tx = fromA ? s.bx() : s.ax();
         int ty = fromA ? s.by() : s.ay();
         BlockPos land = Gielinor.safeSpot(world, GielinorMap.toBlockX(tx) + 1, GielinorMap.toBlockZ(ty) + 1);
-        player.teleport(world, land.getX() + 0.5, land.getY(), land.getZ() + 0.5, player.getYaw(), player.getPitch());
+        player.teleportTo(world, land.getX() + 0.5, land.getY(), land.getZ() + 0.5, player.getYRot(), player.getXRot());
         done(player, s, s.ticks());
     }
 
     /** Level, skill and equipment requirements of a shortcut (messages the player when one is missing). */
-    private static boolean allowed(ServerPlayerEntity player, AgilityShortcuts.Shortcut s) {
+    private static boolean allowed(ServerPlayer player, AgilityShortcuts.Shortcut s) {
         if (s.level() > 0 && !SkillingUtil.need(player, Skill.AGILITY, s.level(), s.verb())) {
             return false;
         }
@@ -203,7 +202,7 @@ final class AgilityHooks {
             }
         }
         if (AgilityShortcuts.GRAPPLE.equals(s.needs())) {
-            if (!AgilityShortcuts.isCrossbow(Inv.idOf(player.getEquippedStack(EquipmentSlot.MAINHAND)))) {
+            if (!AgilityShortcuts.isCrossbow(Inv.idOf(player.getItemBySlot(EquipmentSlot.MAINHAND)))) {
                 Msg.game(player, "You need to be wielding a crossbow to fire a grapple.");
                 return false;
             }
@@ -219,8 +218,8 @@ final class AgilityHooks {
         return true;
     }
 
-    private static void done(ServerPlayerEntity player, AgilityShortcuts.Shortcut s, int ticks) {
-        CROSSING.put(player.getUuid(), ActionManager.mcTick() + (long) ticks * ActionManager.MC_TICKS_PER_GAME_TICK);
+    private static void done(ServerPlayer player, AgilityShortcuts.Shortcut s, int ticks) {
+        CROSSING.put(player.getUUID(), ActionManager.mcTick() + (long) ticks * ActionManager.MC_TICKS_PER_GAME_TICK);
         if (s.xp() > 0) {
             XpService.add(player, Skill.AGILITY, s.xp());
         }
@@ -230,24 +229,24 @@ final class AgilityHooks {
     }
 
     /** A free standing spot (air at feet and head, solid floor) next to the shortcut block at {@code end}. */
-    private static BlockPos beside(ServerWorld world, BlockPos end) {
+    private static BlockPos beside(ServerLevel world, BlockPos end) {
         for (int r = 1; r <= 2; r++) {
             for (int dx = -r; dx <= r; dx++) {
                 for (int dz = -r; dz <= r; dz++) {
-                    BlockPos p = end.add(dx, 0, dz);
-                    if (world.getBlockState(p).isAir() && world.getBlockState(p.up()).isAir()
-                            && world.getBlockState(p.down()).isSolidBlock(world, p.down())) {
+                    BlockPos p = end.offset(dx, 0, dz);
+                    if (world.getBlockState(p).isAir() && world.getBlockState(p.above()).isAir()
+                            && world.getBlockState(p.below()).isRedstoneConductor(world, p.below())) {
                         return p;
                     }
                 }
             }
         }
-        return end.up();
+        return end.above();
     }
 
     // ------------------------------------------------------------------ lap rewards
 
-    private static void lap(ServerPlayerEntity player, AgilityCourse course, int laps) {
+    private static void lap(ServerPlayer player, AgilityCourse course, int laps) {
         int shards = AgilityRewards.crystalShards(course);
         if (shards > 0) {
             give(player, "crystal_shard", shards);
@@ -271,7 +270,7 @@ final class AgilityHooks {
         }
     }
 
-    private static void give(ServerPlayerEntity player, String item, int n) {
+    private static void give(ServerPlayer player, String item, int n) {
         Inv.give(player, item, n);
         CollectionLog.obtain(player, item);
     }
@@ -281,7 +280,7 @@ final class AgilityHooks {
      * since the last tag; otherwise sneak-use pays the 150,000 coin fee, and use exchanges carried
      * tickets for Agility XP.
      */
-    private static void dispenser(ServerPlayerEntity player) {
+    private static void dispenser(ServerPlayer player) {
         Wild w = wild(player);
         if (w.tickets > 0) {
             give(player, AgilityRewards.WILDERNESS_TICKET, w.tickets);
@@ -298,7 +297,7 @@ final class AgilityHooks {
             save(player, w);
             return;
         }
-        if (player.isSneaking()) {
+        if (player.isShiftKeyDown()) {
             if (w.paid) {
                 Msg.game(player, "You've already paid. Your lap streak is " + w.streak + ".");
             } else if (!Inv.has(player, Inv.COINS, AgilityRewards.WILDERNESS_FEE)) {
@@ -329,9 +328,9 @@ final class AgilityHooks {
     // ------------------------------------------------------------------ shops
 
     /** Worm Tongue: an amylase pack for 100 termites, or (sneaking) the Varlamore Graceful recolour for 650. */
-    private static void wormTongue(ServerPlayerEntity player, QuestNpcEntity npc) {
+    private static void wormTongue(ServerPlayer player, QuestNpcEntity npc) {
         int termites = Inv.count(player, AgilityRewards.TERMITES);
-        if (player.isSneaking()) {
+        if (player.isShiftKeyDown()) {
             if (termites < AgilityRewards.VARLAMORE_RECOLOUR_TERMITES) {
                 Msg.game(player, "Worm Tongue: Recolourin' a Graceful set costs " + AgilityRewards.VARLAMORE_RECOLOUR_TERMITES
                         + " termites. You've got " + termites + ".");
@@ -356,7 +355,7 @@ final class AgilityHooks {
     }
 
     /** Swaps a full set of Graceful pieces carried in the inventory from one colour suffix to another; false if a piece is missing. */
-    static boolean recolour(ServerPlayerEntity player, String from, String to) {
+    static boolean recolour(ServerPlayer player, String from, String to) {
         for (AgilityData.Piece p : AgilityData.GRACEFUL) {
             if (!Inv.has(player, p.id() + from, 1)) {
                 return false;
@@ -369,13 +368,13 @@ final class AgilityHooks {
         return true;
     }
 
-    private static void grace(ServerPlayerEntity player, QuestNpcEntity npc) {
-        int index = SELECTED.getOrDefault(player.getUuid(), 0) % AgilityData.GRACEFUL.size();
-        if (player.isSneaking() || !SELECTED.containsKey(player.getUuid())) {
-            if (SELECTED.containsKey(player.getUuid())) {
+    private static void grace(ServerPlayer player, QuestNpcEntity npc) {
+        int index = SELECTED.getOrDefault(player.getUUID(), 0) % AgilityData.GRACEFUL.size();
+        if (player.isShiftKeyDown() || !SELECTED.containsKey(player.getUUID())) {
+            if (SELECTED.containsKey(player.getUUID())) {
                 index = (index + 1) % AgilityData.GRACEFUL.size();
             }
-            SELECTED.put(player.getUuid(), index);
+            SELECTED.put(player.getUUID(), index);
             AgilityData.Piece p = AgilityData.GRACEFUL.get(index);
             Msg.game(player, "Grace: The " + SkillingUtil.lower(p.name()) + " costs " + p.marks()
                     + " Marks of grace. Talk to me again to buy it, or sneak and talk to see something else.");

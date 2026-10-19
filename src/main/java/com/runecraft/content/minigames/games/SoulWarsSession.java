@@ -9,17 +9,16 @@ import com.runecraft.osrs.content.minigames.MinigameCurrencies;
 import com.runecraft.osrs.content.minigames.MinigameRules.SoulWars;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * Soul Wars on the Isle of Souls: the blue team fights the Avatar of Destruction and the red team
@@ -43,7 +42,7 @@ public class SoulWarsSession extends MinigameSession {
     /** Controlling team of the obelisk and the two graveyards (-1 none). */
     private final int[] owner = {-1, -1, -1};
 
-    public SoulWarsSession(int id, int slot, ServerWorld world, String variant) {
+    public SoulWarsSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.SOUL_WARS, id, slot, world, variant);
     }
 
@@ -67,22 +66,22 @@ public class SoulWarsSession extends MinigameSession {
     }
 
     @Override
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
-        teams.putIfAbsent(player.getUuid(), index % 2);
+    protected BlockPos spawnPoint(ServerPlayer player, int index) {
+        teams.putIfAbsent(player.getUUID(), index % 2);
         return team(player) == BLUE ? rel(-20, 1, 14 - index % 3) : rel(20, 1, -14 + index % 3);
     }
 
-    private int team(ServerPlayerEntity p) {
-        return teams.getOrDefault(p.getUuid(), BLUE);
+    private int team(ServerPlayer p) {
+        return teams.getOrDefault(p.getUUID(), BLUE);
     }
 
-    private int[] contrib(ServerPlayerEntity p) {
-        return contribution.computeIfAbsent(p.getUuid(), u -> new int[3]);
+    private int[] contrib(ServerPlayer p) {
+        return contribution.computeIfAbsent(p.getUUID(), u -> new int[3]);
     }
 
     @Override
     protected void start() {
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             Msg.game(p, "You join the " + TEAM[team(p)] + " team. Weaken and slay the " + (team(p) == BLUE ? "Avatar of Destruction"
                     : "Avatar of Creation") + "!");
         }
@@ -94,9 +93,9 @@ public class SoulWarsSession extends MinigameSession {
 
     private void spawnAvatar(int attackingTeam) {
         BlockPos at = attackingTeam == BLUE ? rel(22, 1, -16) : rel(-22, 1, 16);
-        MobEntity avatar = spawn(ENEMY_AVATAR[attackingTeam], at);
+        Mob avatar = spawn(ENEMY_AVATAR[attackingTeam], at);
         if (avatar != null) {
-            avatar.setPersistent();
+            avatar.setPersistenceRequired();
         }
         reduction[attackingTeam] = 100;
     }
@@ -104,7 +103,7 @@ public class SoulWarsSession extends MinigameSession {
     @Override
     protected void gameTick() {
         if (ticks % 20 == 0 && living("forgotten_soul").size() < 6) {
-            MobEntity soul = spawn("forgotten_soul", randomFloor(0, 0, 14));
+            Mob soul = spawn("forgotten_soul", randomFloor(0, 0, 14));
             if (soul != null) {
                 aggro(soul);
             }
@@ -115,7 +114,7 @@ public class SoulWarsSession extends MinigameSession {
     }
 
     @Override
-    protected boolean onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         int t = team(player);
         switch (blockId) {
             case "sw_soul_obelisk" -> {
@@ -141,7 +140,7 @@ public class SoulWarsSession extends MinigameSession {
         return true;
     }
 
-    private void capture(ServerPlayerEntity player, int point) {
+    private void capture(ServerPlayer player, int point) {
         int t = team(player);
         if (owner[point] == t) {
             return;
@@ -152,7 +151,7 @@ public class SoulWarsSession extends MinigameSession {
     }
 
     @Override
-    protected double damageMultiplier(ServerPlayerEntity player, LivingEntity target, AttackType type) {
+    protected double damageMultiplier(ServerPlayer player, LivingEntity target, AttackType type) {
         int t = team(player);
         if (MinigameManager.creatureId(target).equals(ENEMY_AVATAR[t])) {
             return (100 - reduction[t]) / 100.0;
@@ -161,19 +160,19 @@ public class SoulWarsSession extends MinigameSession {
     }
 
     @Override
-    protected void onPlayerHit(ServerPlayerEntity player, LivingEntity target, int dealt) {
+    protected void onPlayerHit(ServerPlayer player, LivingEntity target, int dealt) {
         if (MinigameManager.creatureId(target).equals(ENEMY_AVATAR[team(player)])) {
             contrib(player)[2] += dealt;
         }
     }
 
     @Override
-    protected boolean canAttackPlayer(ServerPlayerEntity attacker, ServerPlayerEntity target) {
+    protected boolean canAttackPlayer(ServerPlayer attacker, ServerPlayer target) {
         return team(attacker) != team(target);
     }
 
     @Override
-    protected void onKill(ServerPlayerEntity player, LivingEntity entity, String creatureId) {
+    protected void onKill(ServerPlayer player, LivingEntity entity, String creatureId) {
         int t = team(player);
         if (creatureId.equals(ENEMY_AVATAR[t])) {
             kills[t]++;
@@ -184,7 +183,7 @@ public class SoulWarsSession extends MinigameSession {
 
     @Override
     protected void onEnd(boolean success) {
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             int t = team(p);
             int outcome = Integer.compare(kills[t], kills[1 - t]);
             int[] c = contrib(p);
@@ -194,19 +193,19 @@ public class SoulWarsSession extends MinigameSession {
             if (zeal > 0) {
                 addPoints(p, MinigameCurrencies.ZEAL, zeal);
             }
-            MinigameData.of(p).incrementStat(p.getUuid(), "kc:" + game.id());
+            MinigameData.of(p).incrementStat(p.getUUID(), "kc:" + game.id());
             Msg.game(p, (outcome > 0 ? "Victory!" : outcome == 0 ? "It's a draw." : "Defeat.") + " You receive " + zeal + " Zeal Tokens.");
         }
     }
 
     @Override
-    protected void onLeave(ServerPlayerEntity player) {
+    protected void onLeave(ServerPlayer player) {
         Inv.remove(player, "soul_fragment", 1000);
         Inv.remove(player, "soul_wars_bones", 1000);
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
+    protected List<String> hud(ServerPlayer player) {
         int t = team(player);
         int[] c = contrib(player);
         return List.of("Soul Wars - " + TEAM[t] + " team", "Avatar kills: Blue " + kills[BLUE] + " - " + kills[RED] + " Red",

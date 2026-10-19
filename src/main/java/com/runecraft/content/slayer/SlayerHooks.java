@@ -11,10 +11,9 @@ import com.runecraft.osrs.content.ContentRegistry;
 import com.runecraft.quest.QuestApi;
 import com.runecraft.quest.QuestScripts;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.minecraft.server.level.ServerPlayer;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.server.network.ServerPlayerEntity;
-
 import java.util.List;
 import java.util.Random;
 import java.util.function.BiConsumer;
@@ -45,7 +44,7 @@ public final class SlayerHooks implements ModuleHooks {
             if (m.quest() == null || !WRAPPED.add(m.npcId())) {
                 continue;
             }
-            BiConsumer<ServerPlayerEntity, QuestNpcEntity> quest = QuestScripts.handler(m.npcId());
+            BiConsumer<ServerPlayer, QuestNpcEntity> quest = QuestScripts.handler(m.npcId());
             QuestScripts.onTalk(m.npcId(), (player, npc) -> {
                 if (quest != null && ContentRegistry.quest(m.quest()) != null && !QuestApi.isComplete(player, m.quest())) {
                     quest.accept(player, npc);
@@ -56,7 +55,7 @@ public final class SlayerHooks implements ModuleHooks {
         }
     }
 
-    private static void openChest(ServerPlayerEntity player, String key, String name, List<Drop> main, List<Drop> rares) {
+    private static void openChest(ServerPlayer player, String key, String name, List<Drop> main, List<Drop> rares) {
         if (!Inv.has(player, key, 1)) {
             Msg.game(player, "The " + name + " is locked. You need " + Msg.article(SlayerCommands.name(key)) + ".");
             return;
@@ -84,7 +83,7 @@ public final class SlayerHooks implements ModuleHooks {
         Msg.game(player, "You unlock the " + name + ".");
     }
 
-    private static void give(ServerPlayerEntity player, Drop d, Random random) {
+    private static void give(ServerPlayer player, Drop d, Random random) {
         int count = d.min() + (d.max() > d.min() ? random.nextInt(d.max() - d.min() + 1) : 0);
         Inv.give(player, d.item(), count);
         CollectionLog.obtain(player, d.item());

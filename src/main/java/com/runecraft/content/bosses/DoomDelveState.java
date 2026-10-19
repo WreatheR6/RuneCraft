@@ -1,10 +1,9 @@
 package com.runecraft.content.bosses;
 
 import com.runecraft.osrs.content.bosses.DoomDelves;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.PersistentState;
-
+import net.minecraft.world.level.saveddata.SavedData;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -15,7 +14,7 @@ import java.util.UUID;
  * World-save storage for Doom of Mokhaiotl delve runs: the last level each player completed, their stacks of demonic
  * charge and the loot held for them (OSRS keeps unclaimed loot in a chest in the lobby, so it survives leaving).
  */
-final class DoomDelveState extends PersistentState {
+final class DoomDelveState extends SavedData {
     static final String KEY = "runecraft_bosses_doom";
 
     /** One player's run: the last level completed, demonic charge stacks and the loot waiting to be claimed. */
@@ -28,8 +27,8 @@ final class DoomDelveState extends PersistentState {
     private final Map<UUID, Run> runs = new HashMap<>();
 
     static DoomDelveState get(MinecraftServer server) {
-        return server.getOverworld().getPersistentStateManager()
-                .getOrCreate(DoomDelveState::fromNbt, DoomDelveState::new, KEY);
+        return server.overworld().getDataStorage()
+                .computeIfAbsent(DoomDelveState::fromNbt, DoomDelveState::new, KEY);
     }
 
     Run get(UUID uuid) {
@@ -41,7 +40,7 @@ final class DoomDelveState extends PersistentState {
         if (r == null) {
             r = new Run();
             runs.put(uuid, r);
-            markDirty();
+            setDirty();
         }
         return r;
     }
@@ -49,15 +48,15 @@ final class DoomDelveState extends PersistentState {
     Run remove(UUID uuid) {
         Run r = runs.remove(uuid);
         if (r != null) {
-            markDirty();
+            setDirty();
         }
         return r;
     }
 
     @Override
-    public NbtCompound writeNbt(NbtCompound nbt) {
+    public CompoundTag save(CompoundTag nbt) {
         runs.forEach((uuid, run) -> {
-            NbtCompound c = new NbtCompound();
+            CompoundTag c = new CompoundTag();
             c.putInt("Completed", run.completed);
             c.putInt("Stacks", run.stacks);
             c.putString("Loot", DoomDelves.encode(run.pending));
@@ -66,12 +65,12 @@ final class DoomDelveState extends PersistentState {
         return nbt;
     }
 
-    static DoomDelveState fromNbt(NbtCompound nbt) {
+    static DoomDelveState fromNbt(CompoundTag nbt) {
         DoomDelveState state = new DoomDelveState();
-        for (String key : nbt.getKeys()) {
+        for (String key : nbt.getAllKeys()) {
             try {
                 UUID uuid = UUID.fromString(key);
-                NbtCompound c = nbt.getCompound(key);
+                CompoundTag c = nbt.getCompound(key);
                 Run run = new Run();
                 run.completed = c.getInt("Completed");
                 run.stacks = c.getInt("Stacks");

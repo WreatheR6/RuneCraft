@@ -13,15 +13,14 @@ import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Hand;
-
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.ItemStack;
 
 /** Builders and click handlers for the systems module's screens. */
 public final class SysMenus {
@@ -121,7 +120,7 @@ public final class SysMenus {
 
     // ---------------- Hub ----------------
 
-    public static void hub(ServerPlayerEntity p) {
+    public static void hub(ServerPlayer p) {
         SysState.SysPlayer sp = SysState.of(p);
         PlayerData d = Players.data(p);
         SysNet.Screen s = new SysNet.Screen("hub", "RuneCraft - Adventurer's log");
@@ -153,38 +152,38 @@ public final class SysMenus {
 
     // ---------------- Worn equipment ----------------
 
-    public static void worn(ServerPlayerEntity p) {
+    public static void worn(ServerPlayer p) {
         SysState.SysPlayer sp = SysState.of(p);
         SysNet.Screen s = new SysNet.Screen("worn", "Worn equipment");
         for (Jewellery.Slot slot : Jewellery.Slot.values()) {
             ItemStack st = sp.worn(slot);
             String label = slot.name().charAt(0) + slot.name().substring(1).toLowerCase(Locale.ROOT);
-            s.line(label + ": " + (st.isEmpty() ? "-" : st.getName().getString()), st.isEmpty() ? 0x808080 : 0xFFFFFF);
+            s.line(label + ": " + (st.isEmpty() ? "-" : st.getHoverName().getString()), st.isEmpty() ? 0x808080 : 0xFFFFFF);
         }
         EquipmentStats w = SysCombat.wornStats(p);
         s.line("Bonuses: att " + w.stabAttack() + "/" + w.slashAttack() + "/" + w.crushAttack() + "/" + w.magicAttack() + "/" + w.rangedAttack()
                 + "  def " + w.stabDefence() + "/" + w.slashDefence() + "/" + w.crushDefence() + "/" + w.magicDefence() + "/" + w.rangedDefence(), 0xA0E0FF);
         s.line("Str " + w.meleeStrength() + "  Rng str " + w.rangedStrength() + "  Mag dmg " + w.magicDamagePercent() + "%  Prayer " + w.prayer()
                 + (sp.wornId(Jewellery.Slot.RING).equals("ring_of_recoil") ? "  Recoil: " + sp.recoilCharges : ""), 0xA0E0FF);
-        Jewellery.Worn held = JewelleryService.wornDef(p.getMainHandStack());
+        Jewellery.Worn held = JewelleryService.wornDef(p.getMainHandItem());
         s.button("wear", "Wear held item", held == null ? "Hold a ring, amulet, cape, gloves or blessing." : held.name(), held != null);
         for (Jewellery.Slot slot : Jewellery.Slot.values()) {
             ItemStack st = sp.worn(slot);
             if (st.isEmpty()) {
                 continue;
             }
-            s.button("remove:" + slot.name(), "Remove " + st.getName().getString(), "", true);
+            s.button("remove:" + slot.name(), "Remove " + st.getHoverName().getString(), "", true);
             Jewellery.Worn def = JewelleryService.wornDef(st);
             if (def != null && !def.teleports().isEmpty()) {
-                s.button("tele:" + slot.name(), "Teleport: " + st.getName().getString(), "", true);
+                s.button("tele:" + slot.name(), "Teleport: " + st.getHoverName().getString(), "", true);
             }
         }
         s.send(p);
     }
 
-    private static void wornAction(ServerPlayerEntity p, String action, Map<String, String> fields) {
+    private static void wornAction(ServerPlayer p, String action, Map<String, String> fields) {
         if (action.equals("wear")) {
-            JewelleryService.wear(p, Hand.MAIN_HAND);
+            JewelleryService.wear(p, InteractionHand.MAIN_HAND);
             worn(p);
         } else if (action.startsWith("remove:")) {
             try {
@@ -200,7 +199,7 @@ public final class SysMenus {
 
     // ---------------- Spellbook ----------------
 
-    public static void spellbook(ServerPlayerEntity p, int page) {
+    public static void spellbook(ServerPlayer p, int page) {
         SysState.SysPlayer sp = SysState.of(p);
         PlayerData d = Players.data(p);
         Spellbooks.Book book = sp.swapBook != null ? sp.swapBook : sp.book;
@@ -239,7 +238,7 @@ public final class SysMenus {
         s.send(p);
     }
 
-    private static void spellbookAction(ServerPlayerEntity p, String action, Map<String, String> fields) {
+    private static void spellbookAction(ServerPlayer p, String action, Map<String, String> fields) {
         if (action.startsWith("cast:")) {
             String id = action.substring(5);
             Spellbooks.Spell spell = Spellbooks.get(id);
@@ -259,7 +258,7 @@ public final class SysMenus {
         }
     }
 
-    public static void spellbookSwap(ServerPlayerEntity p) {
+    public static void spellbookSwap(ServerPlayer p) {
         SysNet.Screen s = new SysNet.Screen("swap", "Spellbook Swap");
         s.line("Choose a spellbook to cast one spell from.");
         for (Spellbooks.Book b : Spellbooks.Book.values()) {
@@ -271,7 +270,7 @@ public final class SysMenus {
     }
 
     /** Switches spellbook at an altar. */
-    public static void altar(ServerPlayerEntity p, Spellbooks.Book book) {
+    public static void altar(ServerPlayer p, Spellbooks.Book book) {
         SysState.SysPlayer sp = SysState.of(p);
         if (sp.book == book) {
             sp.book = Spellbooks.Book.STANDARD;
@@ -295,7 +294,7 @@ public final class SysMenus {
         SysNet.sendState(p);
     }
 
-    public static void npcContact(ServerPlayerEntity p) {
+    public static void npcContact(ServerPlayer p) {
         SysNet.Screen s = new SysNet.Screen("npc_contact", "NPC Contact");
         s.line("Who would you like to contact?");
         // OSRS: the Dark Mage in the Abyss repairs essence pouches over NPC Contact.
@@ -310,8 +309,8 @@ public final class SysMenus {
         s.send(p);
     }
 
-    private static void contact(ServerPlayerEntity p, String npcId) {
-        ServerWorld world = Gielinor.world(p.getServer());
+    private static void contact(ServerPlayer p, String npcId) {
+        ServerLevel world = Gielinor.world(p.getServer());
         if (world == null) {
             return;
         }
@@ -325,7 +324,7 @@ public final class SysMenus {
             com.runecraft.content.skilling.EssencePouches.darkMage(p);
             return;
         }
-        for (Entity e : world.iterateEntities()) {
+        for (Entity e : world.getAllEntities()) {
             if (e instanceof QuestNpcEntity npc && npc.npcId().equals(npcId)) {
                 SpellService.pay(p, spell);
                 Msg.action(p, "You contact " + npc.getName().getString() + " through the astral plane.");
@@ -336,7 +335,7 @@ public final class SysMenus {
         Msg.game(p, "They don't answer. (They need to be somewhere loaded in the world.)");
     }
 
-    public static void statSpy(ServerPlayerEntity p, ServerPlayerEntity other) {
+    public static void statSpy(ServerPlayer p, ServerPlayer other) {
         PlayerData d = Players.data(other);
         SysNet.Screen s = new SysNet.Screen("statspy", "Stat Spy - " + other.getName().getString());
         StringBuilder line = new StringBuilder();
@@ -356,7 +355,7 @@ public final class SysMenus {
 
     // ---------------- Diaries ----------------
 
-    public static void diaries(ServerPlayerEntity p) {
+    public static void diaries(ServerPlayer p) {
         SysState.SysPlayer sp = SysState.of(p);
         SysNet.Screen s = new SysNet.Screen("diaries", "Achievement Diaries");
         s.line("Complete tasks around Gielinor to earn rewards. Click an area to see its tasks.", 0xC0C0C0);
@@ -373,7 +372,7 @@ public final class SysMenus {
         s.send(p);
     }
 
-    public static void diary(ServerPlayerEntity p, String areaId, Diaries.Tier tier) {
+    public static void diary(ServerPlayer p, String areaId, Diaries.Tier tier) {
         SysState.SysPlayer sp = SysState.of(p);
         Diaries.Area a = Diaries.area(areaId);
         if (a == null) {
@@ -416,7 +415,7 @@ public final class SysMenus {
         s.send(p);
     }
 
-    public static void lamp(ServerPlayerEntity p, Diaries.Tier tier) {
+    public static void lamp(ServerPlayer p, Diaries.Tier tier) {
         SysNet.Screen s = new SysNet.Screen("lamp", "Antique lamp");
         s.line("Choose a skill to gain " + String.format(Locale.ROOT, "%,d", tier.lampXp) + " XP (level " + tier.lampMinLevel + "+).");
         PlayerData d = Players.data(p);
@@ -428,7 +427,7 @@ public final class SysMenus {
 
     // ---------------- Clues ----------------
 
-    public static void clues(ServerPlayerEntity p) {
+    public static void clues(ServerPlayer p) {
         SysState.SysPlayer sp = SysState.of(p);
         SysNet.Screen s = new SysNet.Screen("clues", "Treasure Trails");
         s.line("Monsters drop clue scrolls; right-click a clue to read it, then dig or talk to people to progress.", 0xC0C0C0);
@@ -445,7 +444,7 @@ public final class SysMenus {
 
     // ---------------- Hiscores ----------------
 
-    public static void hiscores(ServerPlayerEntity p, Skill skill) {
+    public static void hiscores(ServerPlayer p, Skill skill) {
         CapeService.snapshot(p);
         SysNet.Screen s = new SysNet.Screen("hiscores", "Hiscores - " + (skill == null ? "Overall" : skill.displayName()));
         for (String l : CapeService.ranking(p.getServer(), skill, 12)) {

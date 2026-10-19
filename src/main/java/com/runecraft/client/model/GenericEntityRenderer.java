@@ -1,34 +1,34 @@
 package com.runecraft.client.model;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.runecraft.RuneCraft;
 import com.runecraft.osrs.model.ModelSpec;
-import net.minecraft.client.render.entity.EntityRendererFactory;
-import net.minecraft.client.render.entity.MobEntityRenderer;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.client.renderer.entity.MobRenderer;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Mob;
 
 /** Renders any mob with a data-defined model (texture: textures/entity/model/&lt;spec id&gt;.png). */
-public class GenericEntityRenderer<T extends MobEntity> extends MobEntityRenderer<T, GenericModel<T>> {
-    private final Identifier texture;
+public class GenericEntityRenderer<T extends Mob> extends MobRenderer<T, GenericModel<T>> {
+    private final ResourceLocation texture;
     private final float scale;
 
-    public GenericEntityRenderer(EntityRendererFactory.Context ctx, ModelSpec spec, float entityScale) {
-        super(ctx, new GenericModel<>(ctx.getPart(ModelSpecs.layer(spec.id())), spec), spec.shadowRadius() * entityScale);
+    public GenericEntityRenderer(EntityRendererProvider.Context ctx, ModelSpec spec, float entityScale) {
+        super(ctx, new GenericModel<>(ctx.bakeLayer(ModelSpecs.layer(spec.id())), spec), spec.shadowRadius() * entityScale);
         this.texture = RuneCraft.id("textures/entity/model/" + spec.id() + ".png");
         this.scale = spec.scale() * entityScale;
         if (spec.hasGlow()) {
-            this.addFeature(new GlowFeatureRenderer<>(this, RuneCraft.id("textures/entity/model/" + spec.id() + "_glow.png")));
+            this.addLayer(new GlowFeatureRenderer<>(this, RuneCraft.id("textures/entity/model/" + spec.id() + "_glow.png")));
         }
     }
 
     @Override
-    public Identifier getTexture(T entity) {
+    public ResourceLocation getTexture(T entity) {
         return texture;
     }
 
     @Override
-    protected void scale(T entity, MatrixStack matrices, float amount) {
+    protected void scale(T entity, PoseStack matrices, float amount) {
         matrices.scale(scale, scale, scale);
     }
 }

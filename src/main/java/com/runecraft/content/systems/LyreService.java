@@ -9,10 +9,9 @@ import com.runecraft.quest.QuestApi;
 import com.runecraft.quest.QuestScripts;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-
 import java.util.function.BiConsumer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * The enchanted lyre's charges (OSRS Wiki): after The Fremennik Trials the Fossegrimen blesses an empty lyre for an offering
@@ -31,7 +30,7 @@ final class LyreService {
 
     /** Wraps the Fossegrimen's quest dialogue (call after the quests module registered it). */
     static void register() {
-        BiConsumer<ServerPlayerEntity, QuestNpcEntity> earlier = QuestScripts.handler(FOSSEGRIMEN);
+        BiConsumer<ServerPlayer, QuestNpcEntity> earlier = QuestScripts.handler(FOSSEGRIMEN);
         QuestScripts.onTalk(FOSSEGRIMEN, (p, npc) -> {
             if (!offer(p) && earlier != null) {
                 earlier.accept(p, npc);
@@ -40,13 +39,13 @@ final class LyreService {
     }
 
     /** Handles a talk to the Fossegrimen after The Fremennik Trials; false leaves it to the quest dialogue. */
-    static boolean offer(ServerPlayerEntity p) {
+    static boolean offer(ServerPlayer p) {
         if (ContentRegistry.quest(TRIALS) == null || !QuestApi.isComplete(p, TRIALS)) {
             return false;
         }
         ItemStack lyre = null;
-        for (int i = 0; i < p.getInventory().size(); i++) {
-            ItemStack s = p.getInventory().getStack(i);
+        for (int i = 0; i < p.getInventory().getContainerSize(); i++) {
+            ItemStack s = p.getInventory().getItem(i);
             if (Charges.ENCHANTED_LYRE.equals(Inv.idOf(s))) {
                 lyre = s;
                 break;

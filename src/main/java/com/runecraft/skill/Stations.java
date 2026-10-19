@@ -7,15 +7,15 @@ import com.runecraft.osrs.Landmark;
 import com.runecraft.osrs.MenuType;
 import com.runecraft.osrs.Station;
 import com.runecraft.world.Gielinor;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
 
 /** What happens when a station block is clicked. */
 public final class Stations {
     private Stations() {
     }
 
-    public static void use(ServerPlayerEntity player, Station station, BlockPos pos) {
+    public static void use(ServerPlayer player, Station station, BlockPos pos) {
         switch (station) {
             case BANK_BOOTH -> openBank(player);
             case FURNACE -> MenuService.open(player, MenuType.SMELTING, pos, false);
@@ -45,7 +45,7 @@ public final class Stations {
     }
 
     /** Opens the bank (or exchanges the bank notes in hand for items). */
-    public static void openBank(ServerPlayerEntity player) {
+    public static void openBank(ServerPlayer player) {
         com.runecraft.bank.BankService.open(player);
     }
 }

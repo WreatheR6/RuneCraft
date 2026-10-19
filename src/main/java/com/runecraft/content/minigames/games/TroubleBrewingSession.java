@@ -7,17 +7,16 @@ import com.runecraft.osrs.content.minigames.Minigame;
 import com.runecraft.osrs.content.minigames.MinigameRules.TroubleBrewing;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * Trouble Brewing on Mos Le'Harmless: gather bitternuts, scrapey tree bark and sweetgrubs and
@@ -37,7 +36,7 @@ public class TroubleBrewingSession extends MinigameSession {
     private long brewingUntil = -1;
     private int teamBottles;
 
-    public TroubleBrewingSession(int id, int slot, ServerWorld world, String variant) {
+    public TroubleBrewingSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.TROUBLE_BREWING, id, slot, world, variant);
     }
 
@@ -52,11 +51,11 @@ public class TroubleBrewingSession extends MinigameSession {
     }
 
     @Override
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
+    protected BlockPos spawnPoint(ServerPlayer player, int index) {
         return rel(index % 5 - 2, 1, 18);
     }
 
-    private void gather(ServerPlayerEntity player, String item, Skill skill, double xp) {
+    private void gather(ServerPlayer player, String item, Skill skill, double xp) {
         repeat(player, p -> {
             if (!Inv.hasRoomFor(p, item)) {
                 return false;
@@ -70,7 +69,7 @@ public class TroubleBrewingSession extends MinigameSession {
     }
 
     @Override
-    protected boolean onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         switch (blockId) {
             case "tb_bitternut_tree" -> gather(player, "bitternut", Skill.WOODCUTTING, 5); // approx (monkeys fetch the nuts in OSRS)
             case "tb_scrapey_tree" -> gather(player, "scrapey_tree_bark", Skill.WOODCUTTING, 50);
@@ -89,8 +88,8 @@ public class TroubleBrewingSession extends MinigameSession {
                     Msg.game(player, "Bring bitternuts, scrapey tree bark or sweetgrubs to put in the hopper.");
                     return true;
                 }
-                deposited.merge(player.getUuid(), total, Integer::sum);
-                contributors.add(player.getUuid());
+                deposited.merge(player.getUUID(), total, Integer::sum);
+                contributors.add(player.getUUID());
                 Msg.game(player, "You put " + total + " ingredient" + (total > 1 ? "s" : "") + " in the hopper.");
             }
             default -> {
@@ -130,33 +129,33 @@ public class TroubleBrewingSession extends MinigameSession {
 
     @Override
     protected void onEnd(boolean success) {
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             for (String ingredient : INGREDIENTS) {
                 Inv.remove(p, ingredient, 1000);
             }
-            int resources = deposited.getOrDefault(p.getUuid(), 0);
+            int resources = deposited.getOrDefault(p.getUUID(), 0);
             if (resources == 0) {
                 Msg.game(p, "You didn't contribute anything this game.");
                 continue;
             }
             int eight = TroubleBrewing.piecesOfEight(teamBottles, resources);
             reward(p, "pieces_of_eight", eight);
-            int helped = Math.min(rumHelped.getOrDefault(p.getUuid(), 0), teamBottles);
+            int helped = Math.min(rumHelped.getOrDefault(p.getUUID(), 0), teamBottles);
             if (helped > 0) {
                 xp(p, Skill.CRAFTING, helped * TroubleBrewing.RUM_CRAFTING_XP);
                 xp(p, Skill.COOKING, helped * TroubleBrewing.RUM_COOKING_XP);
                 xp(p, Skill.FIREMAKING, helped * TroubleBrewing.RUM_FIREMAKING_XP);
             }
-            MinigameData.of(p).incrementStat(p.getUuid(), "kc:" + game.id());
+            MinigameData.of(p).incrementStat(p.getUUID(), "kc:" + game.id());
             Msg.game(p, "The game is over! Your team brewed " + teamBottles + " bottles and you earn " + eight + " pieces of eight.");
         }
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
+    protected List<String> hud(ServerPlayer player) {
         return List.of("Trouble Brewing", "Team bottles: " + teamBottles + (brewingUntil >= 0 ? " (brewing...)" : ""),
                 "Hopper: " + hopper[0] + " nuts, " + hopper[1] + " bark, " + hopper[2] + " grubs",
-                "Your contribution: " + Math.min(TroubleBrewing.MAX_CONTRIBUTION, deposited.getOrDefault(player.getUuid(), 0)),
+                "Your contribution: " + Math.min(TroubleBrewing.MAX_CONTRIBUTION, deposited.getOrDefault(player.getUUID(), 0)),
                 "Time left: " + time(TroubleBrewing.GAME_TICKS - ticks));
     }
 }

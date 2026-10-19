@@ -13,22 +13,20 @@ import com.runecraft.osrs.content.raids.RoomDef;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.PillarBlock;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.RotatedPillarBlock;
+import net.minecraft.world.phys.Vec3;
 
 /** Chambers of Xeric rooms. */
 final class CoxRooms {
@@ -38,7 +36,7 @@ final class CoxRooms {
     /** Tekton: every so often he retreats to his anvil (sparks fly at everyone), then returns enraged. */
     static final class Tekton extends RoomLogic {
         private DataBossEntity tekton;
-        private Vec3d anvil;
+        private Vec3 anvil;
         private int fight;
         private int anvilTicks;
         private int enrage;
@@ -51,9 +49,9 @@ final class CoxRooms {
 
         @Override
         public void decorate() {
-            RaidBuilder.set(world(), at(13, 0), Blocks.ANVIL.getDefaultState());
-            RaidBuilder.set(world(), at(13, -2), Blocks.LAVA_CAULDRON.getDefaultState());
-            RaidBuilder.set(world(), at(13, 2), Blocks.LAVA_CAULDRON.getDefaultState());
+            RaidBuilder.set(world(), at(13, 0), Blocks.ANVIL.defaultBlockState());
+            RaidBuilder.set(world(), at(13, -2), Blocks.LAVA_CAULDRON.defaultBlockState());
+            RaidBuilder.set(world(), at(13, 2), Blocks.LAVA_CAULDRON.defaultBlockState());
         }
 
         @Override
@@ -74,10 +72,10 @@ final class CoxRooms {
                 if (anvilTicks % ANVIL_HEAL_EVERY == 0) {
                     raid.heal(tekton, Math.max(1, raid.maxHitpoints(tekton) * 12 / 1000)); // approx 1.2%
                 }
-                world().spawnParticles(ParticleTypes.LAVA, anvil.x + 2, anvil.y + 1, anvil.z, 6, 0.4, 0.3, 0.4, 0);
+                world().sendParticles(ParticleTypes.LAVA, anvil.x + 2, anvil.y + 1, anvil.z, 6, 0.4, 0.3, 0.4, 0);
                 if (anvilTicks % 2 == 0) {
-                    for (ServerPlayerEntity p : players()) {
-                        RaidEffects.strike(world(), p.getPos(), 1.5, 18, 3, tekton, ParticleTypes.LAVA);
+                    for (ServerPlayer p : players()) {
+                        RaidEffects.strike(world(), p.position(), 1.5, 18, 3, tekton, ParticleTypes.LAVA);
                     }
                 }
                 if (anvilTicks == 0) {
@@ -88,7 +86,7 @@ final class CoxRooms {
             } else {
                 if (enrage > 0) {
                     enrage--;
-                    world().spawnParticles(ParticleTypes.FLAME, tekton.getX(), tekton.getY() + 2, tekton.getZ(), 4, 0.6, 0.6, 0.6, 0.01);
+                    world().sendParticles(ParticleTypes.FLAME, tekton.getX(), tekton.getY() + 2, tekton.getZ(), 4, 0.6, 0.6, 0.6, 0.01);
                 }
                 if (++fight >= 35) {
                     fight = 0;
@@ -103,7 +101,7 @@ final class CoxRooms {
 
         /** OSRS: Tekton is immune to Ranged and takes 80% less Magic damage. */
         @Override
-        public int bossIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        public int bossIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             if (type == AttackType.RANGED) {
                 Msg.game(attacker, "Tekton is immune to ranged attacks.");
                 return 0;
@@ -112,7 +110,7 @@ final class CoxRooms {
         }
 
         @Override
-        public int bossOutgoing(DataBossEntity boss, ServerPlayerEntity player, int damage, AttackType type) {
+        public int bossOutgoing(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
             // Enraged Tekton (fresh from the anvil) has a 59 max hit instead of 52 (OSRS).
             return enrage > 0 ? (int) Math.round(damage * 59 / 52.0) : damage;
         }
@@ -135,9 +133,9 @@ final class CoxRooms {
         public void decorate() {
             for (int sx = -1; sx <= 1; sx += 2) {
                 for (int sz = -1; sz <= 1; sz += 2) {
-                    BlockPos p = center().add(sx * 13, 0, sz * 13);
+                    BlockPos p = center().offset(sx * 13, 0, sz * 13);
                     RaidBuilder.fill(world(), p.getX() - 1, p.getY(), p.getZ() - 1, p.getX() + 1, p.getY(), p.getZ() + 1,
-                            Blocks.PURPUR_BLOCK.getDefaultState());
+                            Blocks.PURPUR_BLOCK.defaultBlockState());
                 }
             }
         }
@@ -167,18 +165,18 @@ final class CoxRooms {
                 if (!alive(siphon)) {
                     siphon = null;
                     CombatHandler.applyDamage(null, vasa, Math.max(1, raid.maxHitpoints(vasa) / 20));
-                    vasa.setAiDisabled(true);
-                    RaidEffects.later(4, () -> vasa.setAiDisabled(false));
+                    vasa.setNoAi(true);
+                    RaidEffects.later(4, () -> vasa.setNoAi(false));
                     warn("The crystal shatters and Vasa is stunned!");
                     return;
                 }
                 siphonTicks--;
                 raid.heal(vasa, Math.max(1, raid.maxHitpoints(vasa) / 100));
-                Vec3d a = siphon.getPos().add(0, 1.5, 0);
-                Vec3d b = vasa.getPos().add(0, 2, 0);
+                Vec3 a = siphon.position().add(0, 1.5, 0);
+                Vec3 b = vasa.position().add(0, 2, 0);
                 for (int i = 0; i <= 8; i++) {
-                    Vec3d p = a.lerp(b, i / 8.0);
-                    world().spawnParticles(ParticleTypes.END_ROD, p.x, p.y, p.z, 1, 0, 0, 0, 0);
+                    Vec3 p = a.lerp(b, i / 8.0);
+                    world().sendParticles(ParticleTypes.END_ROD, p.x, p.y, p.z, 1, 0, 0, 0, 0);
                 }
                 if (siphonTicks <= 0) {
                     siphon = null;
@@ -195,8 +193,8 @@ final class CoxRooms {
             }
             if (--siphonCooldown <= 0 && !live.isEmpty()) {
                 siphon = live.get(rnd().nextInt(live.size()));
-                Vec3d dir = center().toCenterPos().subtract(siphon.getPos()).normalize().multiply(2.5);
-                move(vasa, siphon.getPos().add(dir.x, 0, dir.z));
+                Vec3 dir = center().getCenter().subtract(siphon.position()).normalize().scale(2.5);
+                move(vasa, siphon.position().add(dir.x, 0, dir.z));
                 anchor(vasa);
                 siphonTicks = 20;
                 warn("Vasa begins to draw power from a glowing crystal! Destroy it!");
@@ -220,46 +218,46 @@ final class CoxRooms {
          * summed hitpoints minus 5, shared between them; unstunned players can pray Protect from Magic against it.
          */
         private void teleport() {
-            List<ServerPlayerEntity> party = new ArrayList<>(players());
+            List<ServerPlayer> party = new ArrayList<>(players());
             if (party.isEmpty()) {
                 return;
             }
             java.util.Collections.shuffle(party, new java.util.Random(rnd().nextLong()));
             com.runecraft.content.systems.CombatAchievementService.countNear(vasa, com.runecraft.osrs.content.systems.CombatAchievements.COUNT_VASA_TELEPORT);
             int n = Math.min(party.size(), RaidScaling.vasaTeleportTargets(party.size()));
-            List<ServerPlayerEntity> stunned = new ArrayList<>(party.subList(0, n));
+            List<ServerPlayer> stunned = new ArrayList<>(party.subList(0, n));
             int[] hp = new int[n];
             for (int i = 0; i < n; i++) {
-                ServerPlayerEntity p = stunned.get(i);
+                ServerPlayer p = stunned.get(i);
                 hp[i] = com.runecraft.combat.Overheal.hitpoints(p);
-                raid.teleport(p, vasa.getBlockPos().add(i % 2 == 0 ? 2 : -2, 0, i / 2 - 1));
+                raid.teleport(p, vasa.blockPosition().offset(i % 2 == 0 ? 2 : -2, 0, i / 2 - 1));
                 com.runecraft.content.systems.SysCombat.freeze(p, RaidScaling.VASA_TELEPORT_DELAY);
                 dropOverheads(p, "Vasa Nistirio teleports you to him and drains your prayers!");
                 Msg.red(p, "Vasa Nistirio teleports you to him!");
             }
             for (int i = n; i < party.size(); i++) {
-                ServerPlayerEntity p = party.get(i);
+                ServerPlayer p = party.get(i);
                 raid.teleport(p, at(i % 2 == 0 ? -17 : 17, i % 4 < 2 ? -6 : 6));
                 Msg.red(p, "Vasa Nistirio throws you to the edge of the room! Run in and protect from magic.");
             }
             charging = RaidScaling.VASA_TELEPORT_DELAY;
-            world().spawnParticles(ParticleTypes.END_ROD, vasa.getX(), vasa.getY() + 2, vasa.getZ(), 30, 1.5, 1, 1.5, 0.05);
+            world().sendParticles(ParticleTypes.END_ROD, vasa.getX(), vasa.getY() + 2, vasa.getZ(), 30, 1.5, 1, 1.5, 0.05);
             RaidEffects.later(RaidScaling.VASA_TELEPORT_DELAY, () -> barrage(stunned, hp));
         }
 
-        private void barrage(List<ServerPlayerEntity> stunned, int[] hp) {
+        private void barrage(List<ServerPlayer> stunned, int[] hp) {
             if (!alive(vasa)) {
                 return;
             }
-            List<ServerPlayerEntity> receivers = new ArrayList<>();
-            for (ServerPlayerEntity p : players()) {
-                if (stunned.contains(p) || p.squaredDistanceTo(vasa) <= 3.5 * 3.5) {
+            List<ServerPlayer> receivers = new ArrayList<>();
+            for (ServerPlayer p : players()) {
+                if (stunned.contains(p) || p.distanceToSqr(vasa) <= 3.5 * 3.5) {
                     receivers.add(p);
                 }
             }
             int dmg = RaidScaling.vasaTeleportDamage(hp, receivers.size());
-            world().spawnParticles(ParticleTypes.END_ROD, vasa.getX(), vasa.getY() + 1, vasa.getZ(), 40, 3, 0.5, 3, 0.1);
-            for (ServerPlayerEntity p : receivers) {
+            world().sendParticles(ParticleTypes.END_ROD, vasa.getX(), vasa.getY() + 1, vasa.getZ(), 40, 3, 0.5, 3, 0.1);
+            for (ServerPlayer p : receivers) {
                 // Stunned players can't pray; the others' Protect from Magic blocks their share.
                 RaidEffects.hit(vasa, p, dmg, AttackType.MAGIC, stunned.contains(p));
             }
@@ -271,7 +269,7 @@ final class CoxRooms {
         }
 
         @Override
-        public int bossIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        public int bossIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             return siphon != null ? damage / 2 : damage;
         }
 
@@ -299,14 +297,14 @@ final class CoxRooms {
         }
 
         @Override
-        public int bossIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
-            if (!Inv.idOf(attacker.getMainHandStack()).endsWith("_pickaxe")) {
+        public int bossIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            if (!Inv.idOf(attacker.getMainHandItem()).endsWith("_pickaxe")) {
                 Msg.action(attacker, "Only a pickaxe can harm the Guardians.");
                 return 0;
             }
             // OSRS: damage x (50 + Mining level + pickaxe level) / 150, the pickaxe capped at a dragon pickaxe.
             int dealt = RaidScaling.coxGuardianDamage(damage, level(attacker, Skill.MINING),
-                    RaidScaling.pickaxeLevel(Inv.idOf(attacker.getMainHandStack())));
+                    RaidScaling.pickaxeLevel(Inv.idOf(attacker.getMainHandItem())));
             if (dealt > 0) {
                 XpService.add(attacker, Skill.MINING, dealt * 2.0);
             }
@@ -327,8 +325,8 @@ final class CoxRooms {
         public void decorate() {
             for (int i = 0; i < 8; i++) {
                 BlockPos p = at(rnd().nextInt(30) - 15, rnd().nextInt(30) - 15);
-                RaidBuilder.set(world(), p, Blocks.MOSSY_COBBLESTONE_WALL.getDefaultState());
-                RaidBuilder.set(world(), p.up(), Blocks.MOSS_BLOCK.getDefaultState());
+                RaidBuilder.set(world(), p, Blocks.MOSSY_COBBLESTONE_WALL.defaultBlockState());
+                RaidBuilder.set(world(), p.above(), Blocks.MOSS_BLOCK.defaultBlockState());
             }
         }
 
@@ -345,29 +343,29 @@ final class CoxRooms {
                     continue;
                 }
                 jumpCooldown.put(e, 14 + rnd().nextInt(8));
-                ServerPlayerEntity target = randomPlayer();
+                ServerPlayer target = randomPlayer();
                 if (target == null) {
                     continue;
                 }
-                Vec3d mark = target.getPos();
+                Vec3 mark = target.position();
                 jumping.add(e);
                 say("A lizardman shaman leaps into the air!");
-                world().spawnParticles(ParticleTypes.CLOUD, e.getX(), e.getY(), e.getZ(), 15, 0.5, 0.2, 0.5, 0.05);
+                world().sendParticles(ParticleTypes.CLOUD, e.getX(), e.getY(), e.getZ(), 15, 0.5, 0.2, 0.5, 0.05);
                 e.setInvisible(true);
                 RaidEffects.strike(world(), mark, 2.5, 30, 3, e, ParticleTypes.ITEM_SLIME);
                 RaidEffects.later(3, () -> {
                     jumping.remove(e);
                     e.setInvisible(false);
                     if (alive(e)) {
-                        e.requestTeleport(mark.x, mark.y, mark.z);
+                        e.teleportTo(mark.x, mark.y, mark.z);
                     }
                 });
             }
             for (LivingEntity spawn : living("cox_lizardman_spawn")) {
-                if (spawn.age > 6 * ActionManager.MC_TICKS_PER_GAME_TICK) {
-                    world().spawnParticles(ParticleTypes.EXPLOSION, spawn.getX(), spawn.getY() + 0.5, spawn.getZ(), 2, 0.3, 0.3, 0.3, 0);
-                    for (ServerPlayerEntity p : players()) {
-                        if (p.squaredDistanceTo(spawn) < 2.5 * 2.5) {
+                if (spawn.tickCount > 6 * ActionManager.MC_TICKS_PER_GAME_TICK) {
+                    world().sendParticles(ParticleTypes.EXPLOSION, spawn.getX(), spawn.getY() + 0.5, spawn.getZ(), 2, 0.3, 0.3, 0.3, 0);
+                    for (ServerPlayer p : players()) {
+                        if (p.distanceToSqr(spawn) < 2.5 * 2.5) {
                             RaidEffects.hit(null, p, rnd().nextInt(21), null, true);
                         }
                     }
@@ -411,11 +409,11 @@ final class CoxRooms {
         public void decorate() {
             BlockPos c = center();
             RaidBuilder.fill(world(), c.getX() + 4, c.getY(), c.getZ() - 14, c.getX() + 15, c.getY(), c.getZ() - 4,
-                    Blocks.WATER.getDefaultState());
+                    Blocks.WATER.defaultBlockState());
             RaidBuilder.set(world(), tree(), RaidBuilder.module(RaidsContent.MEAT_TREE));
-            RaidBuilder.set(world(), tree().up(), Blocks.MANGROVE_ROOTS.getDefaultState());
+            RaidBuilder.set(world(), tree().above(), Blocks.MANGROVE_ROOTS.defaultBlockState());
             RaidBuilder.fill(world(), tree().getX() - 1, tree().getY() + 2, tree().getZ() - 1, tree().getX() + 1, tree().getY() + 3,
-                    tree().getZ() + 1, Blocks.RED_MUSHROOM_BLOCK.getDefaultState());
+                    tree().getZ() + 1, Blocks.RED_MUSHROOM_BLOCK.defaultBlockState());
         }
 
         @Override
@@ -441,7 +439,7 @@ final class CoxRooms {
                         raid.heal(m, Math.max(1, raid.maxHitpoints(m) * 3 / 100));
                         com.runecraft.content.systems.CombatAchievementService.flagNear(m,
                                 com.runecraft.osrs.content.systems.CombatAchievements.FLAG_MEAT_TREE_HEAL);
-                        world().spawnParticles(ParticleTypes.HEART, m.getX(), m.getY() + 1.5, m.getZ(), 1, 0.3, 0.3, 0.3, 0);
+                        world().sendParticles(ParticleTypes.HEART, m.getX(), m.getY() + 1.5, m.getZ(), 1, 0.3, 0.3, 0.3, 0);
                     }
                     continue;
                 }
@@ -449,7 +447,7 @@ final class CoxRooms {
                 if (cd > 0) {
                     feedCooldown.put(m, cd - 1);
                 } else if (treeAlive && raid.healthFraction(m) < 0.4) {
-                    move(m, Vec3d.ofBottomCenter(tree().add(2, 0, 0)));
+                    move(m, Vec3.atBottomCenterOf(tree().offset(2, 0, 0)));
                     anchor(m);
                     feeding.put(m, 8);
                     warn("The Muttadile goes to feed on the meat tree!");
@@ -465,7 +463,7 @@ final class CoxRooms {
         }
 
         @Override
-        public boolean useBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+        public boolean useBlock(ServerPlayer player, String blockId, BlockPos pos) {
             if (!blockId.equals(RaidsContent.MEAT_TREE)) {
                 return false;
             }
@@ -476,14 +474,14 @@ final class CoxRooms {
                 Msg.game(player, "You need an axe to chop down the meat tree.");
                 return true;
             }
-            player.swingHand(net.minecraft.util.Hand.MAIN_HAND);
+            player.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
             if (rnd().nextDouble() < 0.3 + level(player, Skill.WOODCUTTING) / 150.0) {
                 XpService.add(player, Skill.WOODCUTTING, 25);
                 if (--chops <= 0) {
                     treeAlive = false;
                     RaidBuilder.fill(world(), tree().getX() - 1, tree().getY(), tree().getZ() - 1, tree().getX() + 1, tree().getY() + 3,
-                            tree().getZ() + 1, Blocks.AIR.getDefaultState());
-                    RaidBuilder.set(world(), tree(), Blocks.MANGROVE_ROOTS.getDefaultState());
+                            tree().getZ() + 1, Blocks.AIR.defaultBlockState());
+                    RaidBuilder.set(world(), tree(), Blocks.MANGROVE_ROOTS.defaultBlockState());
                     say("The meat tree has been chopped down! The Muttadiles can no longer feed.");
                 } else {
                     Msg.action(player, "You chop at the meat tree. (" + chops + " chops left)");
@@ -535,10 +533,10 @@ final class CoxRooms {
             if (raid.roomTicks() % 30 == 29 && live.size() > 1) {
                 shelled = 4;
                 say("The Vanguards retreat into their shells and change places!");
-                Vec3d first = live.get(0).getPos();
+                Vec3 first = live.get(0).position();
                 for (int i = 0; i < live.size(); i++) {
                     DataBossEntity g = live.get(i);
-                    Vec3d to = i + 1 < live.size() ? live.get(i + 1).getPos() : first;
+                    Vec3 to = i + 1 < live.size() ? live.get(i + 1).position() : first;
                     unanchor(g);
                     move(g, to);
                     anchor(g);
@@ -623,11 +621,11 @@ final class CoxRooms {
         @Override
         public void decorate() {
             for (int i = -1; i <= 1; i += 2) {
-                RaidBuilder.pillar(world(), center().add(4, 0, i * 9), 0, 4, Blocks.JUNGLE_LOG.getDefaultState());
-                RaidBuilder.set(world(), center().add(4, 5, i * 9), Blocks.BEE_NEST.getDefaultState());
+                RaidBuilder.pillar(world(), center().offset(4, 0, i * 9), 0, 4, Blocks.JUNGLE_LOG.defaultBlockState());
+                RaidBuilder.set(world(), center().offset(4, 5, i * 9), Blocks.BEE_NEST.defaultBlockState());
             }
             for (int[] g : GRUBS) {
-                RaidBuilder.set(world(), at(g[0], g[1]), Blocks.HONEYCOMB_BLOCK.getDefaultState());
+                RaidBuilder.set(world(), at(g[0], g[1]), Blocks.HONEYCOMB_BLOCK.defaultBlockState());
             }
         }
 
@@ -641,7 +639,7 @@ final class CoxRooms {
             if (portal != null) {
                 anchor(portal);
                 // OSRS: the portal itself never attacks.
-                portal.setAiDisabled(true);
+                portal.setNoAi(true);
             }
             vespula = spawnBoss("vespula", at(8, 0), false);
         }
@@ -659,13 +657,13 @@ final class CoxRooms {
             if (alive(vespula) && !landedOnce && raid.healthFraction(vespula) <= 0.2) {
                 landedOnce = true;
                 landedTicks = LANDED_TICKS;
-                vespula.setAiDisabled(true);
+                vespula.setNoAi(true);
                 warn("Vespula crashes to the ground, exhausted! Destroy the portal now!");
                 com.runecraft.content.systems.CombatAchievementService.flagNear(portal,
                         com.runecraft.osrs.content.systems.CombatAchievements.FLAG_VESPULA_LANDED);
             }
             if (landedTicks > 0 && --landedTicks == 0 && alive(vespula)) {
-                vespula.setAiDisabled(false);
+                vespula.setNoAi(false);
                 say("Vespula takes to the air again.");
             }
             // Vespula stings the lux grubs while she flies.
@@ -679,9 +677,9 @@ final class CoxRooms {
                 if (!live.isEmpty()) {
                     int g = live.get(rnd().nextInt(live.size()));
                     BlockPos pos = at(GRUBS[g][0], GRUBS[g][1]);
-                    world().spawnParticles(ParticleTypes.CRIT, pos.getX() + 0.5, pos.getY() + 1.2, pos.getZ() + 0.5, 8, 0.3, 0.3, 0.3, 0.05);
+                    world().sendParticles(ParticleTypes.CRIT, pos.getX() + 0.5, pos.getY() + 1.2, pos.getZ() + 0.5, 8, 0.3, 0.3, 0.3, 0.05);
                     if (++grubStings[g] >= GRUB_STINGS) {
-                        RaidBuilder.set(world(), pos, Blocks.AIR.getDefaultState());
+                        RaidBuilder.set(world(), pos, Blocks.AIR.defaultBlockState());
                         spawnMob("vespine_soldier", pos, false);
                         warn("A lux grub hatches into a vespine soldier! Its kin will heal Vespula and the portal.");
                     }
@@ -702,8 +700,8 @@ final class CoxRooms {
             if (enragedTicks > 0) {
                 enragedTicks--;
                 if (tick % 2 == 0 && alive(vespula)) {
-                    for (ServerPlayerEntity p : players()) {
-                        if (p.squaredDistanceTo(portal) < 5 * 5) {
+                    for (ServerPlayer p : players()) {
+                        if (p.distanceToSqr(portal) < 5 * 5) {
                             RaidEffects.hit(vespula, p, 5 + rnd().nextInt(16), null, true);
                         }
                     }
@@ -712,7 +710,7 @@ final class CoxRooms {
         }
 
         @Override
-        public int bossIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        public int bossIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             if (boss == portal && damage > 0) {
                 if (flying()) {
                     if (enragedTicks <= 0) {
@@ -771,13 +769,13 @@ final class CoxRooms {
                 RaidBuilder.set(world(), at(x, -18), RaidBuilder.module(RaidsContent.SAPLING));
                 RaidBuilder.set(world(), at(x, 18), RaidBuilder.module(RaidsContent.SAPLING));
             }
-            ice(Blocks.BLUE_ICE.getDefaultState());
+            ice(Blocks.BLUE_ICE.defaultBlockState());
         }
 
-        private void ice(net.minecraft.block.BlockState state) {
+        private void ice(net.minecraft.world.level.block.state.BlockState state) {
             for (int sx = -1; sx <= 1; sx += 2) {
                 for (int sz = -1; sz <= 1; sz += 2) {
-                    RaidBuilder.pillar(world(), center().add(sx * 2, 0, sz * 2), 0, 3, state);
+                    RaidBuilder.pillar(world(), center().offset(sx * 2, 0, sz * 2), 0, 3, state);
                 }
             }
         }
@@ -786,13 +784,13 @@ final class CoxRooms {
         public void start() {
             needed = 8 + 4 * (raid.partySize() - 1);
             int firemaking = 0;
-            for (ServerPlayerEntity p : raid.players()) {
+            for (ServerPlayer p : raid.players()) {
                 firemaking += level(p, Skill.FIREMAKING);
             }
             pointsCap = RaidScaling.coxIceDemonPointsCap(firemaking);
             demon = spawnBoss("cox_ice_demon", at(0, 0));
             if (demon != null) {
-                demon.setAiDisabled(true);
+                demon.setNoAi(true);
                 anchor(demon);
             }
         }
@@ -813,12 +811,12 @@ final class CoxRooms {
         public void gameTick(long tick) {
             super.gameTick(tick);
             if (!thawed && alive(demon) && tick % 3 == 0) {
-                world().spawnParticles(ParticleTypes.SNOWFLAKE, demon.getX(), demon.getY() + 1.5, demon.getZ(), 8, 1, 1, 1, 0.01);
+                world().sendParticles(ParticleTypes.SNOWFLAKE, demon.getX(), demon.getY() + 1.5, demon.getZ(), 8, 1, 1, 1, 0.01);
             }
         }
 
         @Override
-        public boolean useBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+        public boolean useBlock(ServerPlayer player, String blockId, BlockPos pos) {
             if (blockId.equals(RaidsContent.SAPLING)) {
                 if (cooldown(player, 2)) {
                     return true;
@@ -827,7 +825,7 @@ final class CoxRooms {
                     Msg.game(player, "You need an axe to cut the sapling.");
                     return true;
                 }
-                player.swingHand(net.minecraft.util.Hand.MAIN_HAND);
+                player.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
                 if (rnd().nextDouble() < 0.4 + level(player, Skill.WOODCUTTING) / 150.0) {
                     Inv.give(player, "cox_kindling", 1);
                     XpService.add(player, Skill.WOODCUTTING, 15);
@@ -850,13 +848,13 @@ final class CoxRooms {
                 // The brazier points are shared out over the kindling the room needs.
                 raid.awardActionPoints(player, Math.max(0, Math.min(n, needed - heat)) * pointsCap / Math.max(1, needed));
                 heat += n;
-                RaidBuilder.set(world(), pos.up(), Blocks.CAMPFIRE.getDefaultState());
-                world().spawnParticles(ParticleTypes.FLAME, pos.getX() + 0.5, pos.getY() + 1.2, pos.getZ() + 0.5, 20, 0.3, 0.5, 0.3, 0.02);
+                RaidBuilder.set(world(), pos.above(), Blocks.CAMPFIRE.defaultBlockState());
+                world().sendParticles(ParticleTypes.FLAME, pos.getX() + 0.5, pos.getY() + 1.2, pos.getZ() + 0.5, 20, 0.3, 0.5, 0.3, 0.02);
                 say("The braziers warm the room... (" + Math.min(heat, needed) + "/" + needed + ")");
                 if (heat >= needed && alive(demon)) {
                     thawed = true;
-                    ice(Blocks.AIR.getDefaultState());
-                    demon.setAiDisabled(false);
+                    ice(Blocks.AIR.defaultBlockState());
+                    demon.setNoAi(false);
                     unanchor(demon);
                     warn("The ice cracks - the Ice demon breaks free!");
                 }
@@ -889,7 +887,7 @@ final class CoxRooms {
                 }
             }
             RaidBuilder.set(world(), at(14, 0), RaidBuilder.module(RaidsContent.TROUGH));
-            RaidBuilder.set(world(), at(15, 0), Blocks.HAY_BLOCK.getDefaultState());
+            RaidBuilder.set(world(), at(15, 0), Blocks.HAY_BLOCK.defaultBlockState());
             refill();
         }
 
@@ -905,7 +903,7 @@ final class CoxRooms {
         public void start() {
             needed = 12 + 6 * (raid.partySize() - 1);
             int thieving = 0;
-            for (ServerPlayerEntity p : raid.players()) {
+            for (ServerPlayer p : raid.players()) {
                 thieving += level(p, Skill.THIEVING);
             }
             pointsCap = RaidScaling.coxThievingPointsCap(thieving);
@@ -916,7 +914,7 @@ final class CoxRooms {
         }
 
         @Override
-        public boolean useBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+        public boolean useBlock(ServerPlayer player, String blockId, BlockPos pos) {
             if (blockId.equals(RaidsContent.GRUBBY_CHEST)) {
                 if (cooldown(player, 2)) {
                     return true;
@@ -925,7 +923,7 @@ final class CoxRooms {
                     Msg.game(player, "This chest has already been searched.");
                     return true;
                 }
-                player.swingHand(net.minecraft.util.Hand.MAIN_HAND);
+                player.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
                 if (rnd().nextDouble() > 0.55 + level(player, Skill.THIEVING) / 250.0) {
                     Msg.game(player, "You fail to pick the lock, and trigger a trap!");
                     RaidEffects.hit(null, player, 1 + rnd().nextInt(3), null, true);
@@ -986,29 +984,29 @@ final class CoxRooms {
             int y = c.getY();
             int h = RaidBuilder.HALF;
             RaidBuilder.fill(world(), c.getX() - 3, y - 4, c.getZ() - h, c.getX() + 3, y - 4, c.getZ() + h,
-                    Blocks.OBSIDIAN.getDefaultState());
+                    Blocks.OBSIDIAN.defaultBlockState());
             RaidBuilder.fill(world(), c.getX() - 3, y - 3, c.getZ() - h, c.getX() + 3, y - 3, c.getZ() + h,
-                    Blocks.MAGMA_BLOCK.getDefaultState());
-            RaidBuilder.fill(world(), c.getX() - 3, y - 2, c.getZ() - h, c.getX() + 3, y, c.getZ() + h, Blocks.AIR.getDefaultState());
+                    Blocks.MAGMA_BLOCK.defaultBlockState());
+            RaidBuilder.fill(world(), c.getX() - 3, y - 2, c.getZ() - h, c.getX() + 3, y, c.getZ() + h, Blocks.AIR.defaultBlockState());
             RaidBuilder.fill(world(), c.getX() - 3, y, c.getZ(), c.getX() + 3, y, c.getZ(),
-                    Blocks.CHAIN.getDefaultState().with(PillarBlock.AXIS, Direction.Axis.X));
+                    Blocks.CHAIN.defaultBlockState().setValue(RotatedPillarBlock.AXIS, Direction.Axis.X));
             RaidBuilder.set(world(), at(-5, 1), RaidBuilder.module(RaidsContent.TIGHTROPE));
             RaidBuilder.fill(world(), c.getX() + 8, y + 1, c.getZ() - 9, c.getX() + 12, y + 1, c.getZ() + 9,
-                    Blocks.PURPUR_SLAB.getDefaultState());
+                    Blocks.PURPUR_SLAB.defaultBlockState());
         }
 
         @Override
         public void start() {
             int pairs = raid.partySize() > 2 ? 2 : 1;
             for (int i = 0; i < pairs; i++) {
-                spawnMob("deathly_ranger", at(10, -7 + i * 3).up(), true);
-                spawnMob("deathly_mage", at(10, 7 - i * 3).up(), true);
+                spawnMob("deathly_ranger", at(10, -7 + i * 3).above(), true);
+                spawnMob("deathly_mage", at(10, 7 - i * 3).above(), true);
             }
         }
 
         @Override
         public void gameTick(long tick) {
-            for (ServerPlayerEntity p : raid.activePlayers()) {
+            for (ServerPlayer p : raid.activePlayers()) {
                 double dx = p.getX() - (center().getX() + 0.5);
                 double dz = p.getZ() - (center().getZ() + 0.5);
                 if (Math.abs(dx) > RaidBuilder.HALF + 0.5 || Math.abs(dz) > RaidBuilder.HALF + 0.5) {
@@ -1018,7 +1016,7 @@ final class CoxRooms {
                     raid.teleport(p, at(-6, 0));
                     RaidEffects.hit(null, p, 5, null, true);
                     Msg.red(p, "You fall into the chasm and climb back out.");
-                } else if (p.getX() > center().getX() + 4 && inside(p.getPos())) {
+                } else if (p.getX() > center().getX() + 4 && inside(p.position())) {
                     crossed = true;
                     takeCrystal(p);
                 }
@@ -1029,7 +1027,7 @@ final class CoxRooms {
         }
 
         /** OSRS: the first player across claims the crystal on the far side, worth 2,000 points. */
-        private void takeCrystal(ServerPlayerEntity p) {
+        private void takeCrystal(ServerPlayer p) {
             if (!crystalTaken) {
                 crystalTaken = true;
                 raid.awardActionPoints(p, RaidScaling.COX_TIGHTROPE_POINTS);
@@ -1053,7 +1051,7 @@ final class CoxRooms {
         }
 
         @Override
-        public boolean useBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+        public boolean useBlock(ServerPlayer player, String blockId, BlockPos pos) {
             if (!blockId.equals(RaidsContent.TIGHTROPE)) {
                 return false;
             }
@@ -1067,7 +1065,7 @@ final class CoxRooms {
                 crossed = true;
                 takeCrystal(player);
             } else {
-                raid.teleport(player, at(0, 3).down(3));
+                raid.teleport(player, at(0, 3).below(3));
                 Msg.red(player, "You lose your balance!");
             }
             return true;
@@ -1099,11 +1097,11 @@ final class CoxRooms {
                 for (int sz = -1; sz <= 1; sz += 2) {
                     BlockPos p = at(sx * 13, sz * 13);
                     crystals.add(p);
-                    RaidBuilder.set(world(), p, Blocks.TINTED_GLASS.getDefaultState());
-                    RaidBuilder.set(world(), p.up(), Blocks.TINTED_GLASS.getDefaultState());
+                    RaidBuilder.set(world(), p, Blocks.TINTED_GLASS.defaultBlockState());
+                    RaidBuilder.set(world(), p.above(), Blocks.TINTED_GLASS.defaultBlockState());
                 }
             }
-            RaidBuilder.set(world(), center().up(RaidBuilder.HEIGHT), Blocks.SEA_LANTERN.getDefaultState());
+            RaidBuilder.set(world(), center().above(RaidBuilder.HEIGHT), Blocks.SEA_LANTERN.defaultBlockState());
         }
 
         @Override
@@ -1122,15 +1120,15 @@ final class CoxRooms {
         }
 
         @Override
-        public void onCreatureHit(ServerPlayerEntity player, LivingEntity target, int damage) {
+        public void onCreatureHit(ServerPlayer player, LivingEntity target, int damage) {
             if (!living("cox_crystal_crab").contains(target)) {
                 return;
             }
             // The crabs cannot be killed: every strike restores them and makes them shimmer.
             raid.setCurrentHitpoints(target, raid.maxHitpoints(target));
             shimmer.put(target, SHIMMER_TICKS);
-            striker.put(target, player.getUuid());
-            world().spawnParticles(ParticleTypes.END_ROD, target.getX(), target.getY() + 0.6, target.getZ(), 12, 0.4, 0.3, 0.4, 0.05);
+            striker.put(target, player.getUUID());
+            world().sendParticles(ParticleTypes.END_ROD, target.getX(), target.getY() + 0.6, target.getZ(), 12, 0.4, 0.3, 0.4, 0.05);
             Msg.action(player, "The crystal crab shimmers with light.");
         }
 
@@ -1146,16 +1144,16 @@ final class CoxRooms {
                     continue;
                 }
                 shimmer.put(crab, left - 1);
-                world().spawnParticles(ParticleTypes.GLOW, crab.getX(), crab.getY() + 0.5, crab.getZ(), 3, 0.3, 0.2, 0.3, 0);
+                world().sendParticles(ParticleTypes.GLOW, crab.getX(), crab.getY() + 0.5, crab.getZ(), 3, 0.3, 0.2, 0.3, 0);
                 for (BlockPos c : crystals) {
-                    if (lit.contains(c) || RaidEffects.horizontalDistSq(crab.getPos(), Vec3d.ofBottomCenter(c)) > 2.5 * 2.5) {
+                    if (lit.contains(c) || RaidEffects.horizontalDistSq(crab.position(), Vec3.atBottomCenterOf(c)) > 2.5 * 2.5) {
                         continue;
                     }
                     lit.add(c);
                     shimmer.remove(crab);
-                    RaidBuilder.set(world(), c, Blocks.SEA_LANTERN.getDefaultState());
-                    RaidBuilder.set(world(), c.up(), Blocks.SEA_LANTERN.getDefaultState());
-                    ServerPlayerEntity who = world().getServer().getPlayerManager().getPlayer(striker.get(crab));
+                    RaidBuilder.set(world(), c, Blocks.SEA_LANTERN.defaultBlockState());
+                    RaidBuilder.set(world(), c.above(), Blocks.SEA_LANTERN.defaultBlockState());
+                    ServerPlayer who = world().getServer().getPlayerList().getPlayer(striker.get(crab));
                     if (who != null) {
                         raid.awardActionPoints(who, RaidScaling.COX_CRABS_POINTS / crystals.size());
                     }
@@ -1173,8 +1171,8 @@ final class CoxRooms {
         public void reset() {
             super.reset();
             for (BlockPos c : crystals) {
-                RaidBuilder.set(world(), c, Blocks.TINTED_GLASS.getDefaultState());
-                RaidBuilder.set(world(), c.up(), Blocks.TINTED_GLASS.getDefaultState());
+                RaidBuilder.set(world(), c, Blocks.TINTED_GLASS.defaultBlockState());
+                RaidBuilder.set(world(), c.above(), Blocks.TINTED_GLASS.defaultBlockState());
             }
             lit.clear();
         }
@@ -1200,7 +1198,7 @@ final class CoxRooms {
         /** Game ticks the left (melee) claw stays clenched. */
         private int clenchTicks;
         /** Healing pools: a player standing in one heals the Olm. */
-        private final List<Vec3d> pools = new ArrayList<>();
+        private final List<Vec3> pools = new ArrayList<>();
         private int poolTicks;
 
         Olm(RaidInstance raid, RoomDef def, int index) {
@@ -1212,12 +1210,12 @@ final class CoxRooms {
             BlockPos c = center();
             int y = c.getY();
             RaidBuilder.fill(world(), c.getX() + 18, y + 1, c.getZ() - RaidBuilder.HALF, c.getX() + RaidBuilder.HALF, y + RaidBuilder.HEIGHT,
-                    c.getZ() + RaidBuilder.HALF, Blocks.BLACKSTONE.getDefaultState());
+                    c.getZ() + RaidBuilder.HALF, Blocks.BLACKSTONE.defaultBlockState());
             RaidBuilder.fill(world(), c.getX() + 13, y, c.getZ() - 12, c.getX() + 17, y, c.getZ() + 12,
-                    Blocks.POLISHED_BLACKSTONE.getDefaultState());
+                    Blocks.POLISHED_BLACKSTONE.defaultBlockState());
             for (int i = 0; i < 14; i++) {
-                BlockPos p = c.add(18, 1 + rnd().nextInt(RaidBuilder.HEIGHT - 1), rnd().nextInt(RaidBuilder.HALF * 2) - RaidBuilder.HALF);
-                RaidBuilder.set(world(), p, Blocks.AMETHYST_BLOCK.getDefaultState());
+                BlockPos p = c.offset(18, 1 + rnd().nextInt(RaidBuilder.HEIGHT - 1), rnd().nextInt(RaidBuilder.HALF * 2) - RaidBuilder.HALF);
+                RaidBuilder.set(world(), p, Blocks.AMETHYST_BLOCK.defaultBlockState());
             }
         }
 
@@ -1268,7 +1266,7 @@ final class CoxRooms {
          * right claw is disabled. The claw never clenches in the final phase.
          */
         @Override
-        public int bossIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        public int bossIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             if (boss != left) {
                 return damage;
             }
@@ -1332,14 +1330,14 @@ final class CoxRooms {
                 return;
             }
             autoAttack(head, tick, 4);
-            List<ServerPlayerEntity> players = players();
+            List<ServerPlayer> players = players();
             if (players.isEmpty()) {
                 return;
             }
             // Falling crystals.
             if (tick % (headExposed ? 3 : 5) == 0) {
-                ServerPlayerEntity p = players.get(rnd().nextInt(players.size()));
-                Vec3d at = p.getPos().add(rnd().nextDouble() * 2 - 1, 0, rnd().nextDouble() * 2 - 1);
+                ServerPlayer p = players.get(rnd().nextInt(players.size()));
+                Vec3 at = p.position().add(rnd().nextDouble() * 2 - 1, 0, rnd().nextDouble() * 2 - 1);
                 RaidEffects.strike(world(), at, 1.3, 20, 3, head, ParticleTypes.END_ROD);
             }
             // Phase special.
@@ -1347,10 +1345,10 @@ final class CoxRooms {
                 switch (special) {
                     case "acid" -> {
                         say("The Great Olm sprays acid!");
-                        for (ServerPlayerEntity p : players) {
-                            Mechanics.addHazard(world(), p.getPos(), 6, 12, head);
+                        for (ServerPlayer p : players) {
+                            Mechanics.addHazard(world(), p.position(), 6, 12, head);
                         }
-                        ServerPlayerEntity drip = players.get(rnd().nextInt(players.size()));
+                        ServerPlayer drip = players.get(rnd().nextInt(players.size()));
                         PoisonService.poison(drip, 4, ActionManager.gameTick());
                         Msg.red(drip, "The Great Olm's acid drips onto you!");
                     }
@@ -1362,10 +1360,10 @@ final class CoxRooms {
                         }
                     }
                     default -> {
-                        ServerPlayerEntity p = players.get(rnd().nextInt(players.size()));
+                        ServerPlayer p = players.get(rnd().nextInt(players.size()));
                         say("The Great Olm breathes a wall of flame!");
                         for (int x = -18; x <= 12; x += 2) {
-                            RaidEffects.strike(world(), new Vec3d(center().getX() + 0.5 + x, p.getY(), p.getZ()), 1.3, 30, 4, head,
+                            RaidEffects.strike(world(), new Vec3(center().getX() + 0.5 + x, p.getY(), p.getZ()), 1.3, 30, 4, head,
                                     ParticleTypes.FLAME);
                         }
                     }
@@ -1391,8 +1389,8 @@ final class CoxRooms {
                     }
                     case 1 -> {
                         say("Crystals burst from the ground!");
-                        for (ServerPlayerEntity p : players) {
-                            RaidEffects.strike(world(), p.getPos(), 1.5, 30, 3, left, ParticleTypes.END_ROD);
+                        for (ServerPlayer p : players) {
+                            RaidEffects.strike(world(), p.position(), 1.5, 30, 3, left, ParticleTypes.END_ROD);
                         }
                     }
                     case 2 -> portals(players);
@@ -1413,13 +1411,13 @@ final class CoxRooms {
          * Spheres: a red (melee), green (ranged) or blue (magic) orb flies at each player; without the
          * matching protection prayer it hits hard and halves their prayer points.
          */
-        private void spheres(List<ServerPlayerEntity> players) {
+        private void spheres(List<ServerPlayer> players) {
             AttackType[] styles = {AttackType.CRUSH, AttackType.RANGED, AttackType.MAGIC};
             String[] names = {"red", "green", "blue"};
-            for (ServerPlayerEntity p : players) {
+            for (ServerPlayer p : players) {
                 int s = rnd().nextInt(3);
                 Msg.red(p, "The Great Olm fires a " + names[s] + " sphere at you!");
-                world().spawnParticles(s == 0 ? ParticleTypes.FLAME : s == 1 ? ParticleTypes.HAPPY_VILLAGER : ParticleTypes.SOUL_FIRE_FLAME,
+                world().sendParticles(s == 0 ? ParticleTypes.FLAME : s == 1 ? ParticleTypes.HAPPY_VILLAGER : ParticleTypes.SOUL_FIRE_FLAME,
                         head.getX(), head.getY() + 1.5, head.getZ(), 10, 0.4, 0.4, 0.4, 0.02);
                 DataBossEntity source = head;
                 RaidEffects.later(3, () -> {
@@ -1437,7 +1435,7 @@ final class CoxRooms {
         }
 
         /** Healing pools: marked pools appear around the room; each player standing in one heals the Olm. */
-        private void healingPools(List<ServerPlayerEntity> players) {
+        private void healingPools(List<ServerPlayer> players) {
             say("The Great Olm creates healing pools - stay out of them!");
             pools.clear();
             for (int i = 0; i < 3 + players.size(); i++) {
@@ -1452,14 +1450,14 @@ final class CoxRooms {
                 return;
             }
             poolTicks--;
-            for (Vec3d pool : pools) {
-                world().spawnParticles(ParticleTypes.HEART, pool.x, pool.y + 0.2, pool.z, 2, 0.6, 0.05, 0.6, 0);
-                world().spawnParticles(ParticleTypes.GLOW, pool.x, pool.y + 0.1, pool.z, 6, 0.7, 0.02, 0.7, 0);
+            for (Vec3 pool : pools) {
+                world().sendParticles(ParticleTypes.HEART, pool.x, pool.y + 0.2, pool.z, 2, 0.6, 0.05, 0.6, 0);
+                world().sendParticles(ParticleTypes.GLOW, pool.x, pool.y + 0.1, pool.z, 6, 0.7, 0.02, 0.7, 0);
             }
             int standing = 0;
-            for (ServerPlayerEntity p : players()) {
-                for (Vec3d pool : pools) {
-                    if (RaidEffects.horizontalDistSq(p.getPos(), pool) <= 1.2 * 1.2) {
+            for (ServerPlayer p : players()) {
+                for (Vec3 pool : pools) {
+                    if (RaidEffects.horizontalDistSq(p.position(), pool) <= 1.2 * 1.2) {
                         standing++;
                         break;
                     }
@@ -1476,24 +1474,24 @@ final class CoxRooms {
         }
 
         /** Teleport portals: pairs of players swap places; a lone player is blasted. */
-        private void portals(List<ServerPlayerEntity> players) {
+        private void portals(List<ServerPlayer> players) {
             say("Portals open beneath you!");
-            List<ServerPlayerEntity> list = new ArrayList<>(players);
+            List<ServerPlayer> list = new ArrayList<>(players);
             java.util.Collections.shuffle(list, rnd());
             for (int i = 0; i + 1 < list.size(); i += 2) {
-                ServerPlayerEntity a = list.get(i);
-                ServerPlayerEntity b = list.get(i + 1);
+                ServerPlayer a = list.get(i);
+                ServerPlayer b = list.get(i + 1);
                 RaidEffects.later(4, () -> {
                     if (a.isAlive() && b.isAlive()) {
-                        Vec3d pa = a.getPos();
-                        a.requestTeleport(b.getX(), b.getY(), b.getZ());
-                        b.requestTeleport(pa.x, pa.y, pa.z);
+                        Vec3 pa = a.position();
+                        a.teleportTo(b.getX(), b.getY(), b.getZ());
+                        b.teleportTo(pa.x, pa.y, pa.z);
                     }
                 });
             }
             if (list.size() % 2 == 1) {
-                ServerPlayerEntity p = list.get(list.size() - 1);
-                RaidEffects.strike(world(), p.getPos(), 1.4, 25, 4, left, ParticleTypes.PORTAL);
+                ServerPlayer p = list.get(list.size() - 1);
+                RaidEffects.strike(world(), p.position(), 1.4, 25, 4, left, ParticleTypes.PORTAL);
             }
         }
     }
@@ -1514,8 +1512,8 @@ final class CoxRooms {
         @Override
         public void decorate() {
             for (int[] r : new int[][]{{-8, -10}, {4, 9}, {10, -6}, {-2, 12}}) {
-                RaidBuilder.set(world(), at(r[0], r[1]), Blocks.MOSSY_COBBLESTONE.getDefaultState());
-                RaidBuilder.set(world(), at(r[0], r[1]).up(), Blocks.COBBLESTONE_WALL.getDefaultState());
+                RaidBuilder.set(world(), at(r[0], r[1]), Blocks.MOSSY_COBBLESTONE.defaultBlockState());
+                RaidBuilder.set(world(), at(r[0], r[1]).above(), Blocks.COBBLESTONE_WALL.defaultBlockState());
             }
         }
 
@@ -1539,15 +1537,15 @@ final class CoxRooms {
         }
 
         @Override
-        public void onCreatureHit(ServerPlayerEntity player, LivingEntity target, int damage) {
+        public void onCreatureHit(ServerPlayer player, LivingEntity target, int damage) {
             if (!beasts.contains(target) || (target.isAlive() && target.getHealth() > 0)) {
                 return;
             }
             beasts.remove(target);
             for (Map.Entry<String, Integer> e : com.runecraft.osrs.content.raids.CoxSupplies.scavengerDrop(rnd()).entrySet()) {
-                net.minecraft.item.ItemStack stack = Inv.stack(e.getKey(), e.getValue());
+                net.minecraft.world.item.ItemStack stack = Inv.stack(e.getKey(), e.getValue());
                 if (!stack.isEmpty()) {
-                    world().spawnEntity(new net.minecraft.entity.ItemEntity(world(), target.getX(), target.getY() + 0.3, target.getZ(), stack));
+                    world().addFreshEntity(new net.minecraft.world.entity.item.ItemEntity(world(), target.getX(), target.getY() + 0.3, target.getZ(), stack));
                 }
             }
         }
@@ -1583,13 +1581,13 @@ final class CoxRooms {
         public void decorate() {
             for (int z = -9; z <= 9; z += 6) {
                 BlockPos p = at(-8, z);
-                RaidBuilder.set(world(), p.down(), Blocks.COARSE_DIRT.getDefaultState());
+                RaidBuilder.set(world(), p.below(), Blocks.COARSE_DIRT.defaultBlockState());
                 RaidBuilder.set(world(), p, RaidBuilder.module(RaidsContent.HERB_PATCH));
                 patches.put(p, new int[]{WEEDY, 0});
             }
             BlockPos c = center();
             RaidBuilder.fill(world(), c.getX() + 6, c.getY() - 1, c.getZ() - 12, c.getX() + 9, c.getY() - 1, c.getZ() - 8,
-                    Blocks.WATER.getDefaultState());
+                    Blocks.WATER.defaultBlockState());
             RaidBuilder.set(world(), at(5, -10), RaidBuilder.module(RaidsContent.FISHING_POOL));
             RaidBuilder.set(world(), at(8, 10), RaidBuilder.module(RaidsContent.BAT_ROOST));
             RaidBuilder.set(world(), at(0, 0), RaidBuilder.module(RaidsContent.COOKING_FIRE));
@@ -1603,7 +1601,7 @@ final class CoxRooms {
         }
 
         @Override
-        public boolean useBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+        public boolean useBlock(ServerPlayer player, String blockId, BlockPos pos) {
             long now = ActionManager.gameTick();
             switch (blockId) {
                 case RaidsContent.HERB_PATCH -> patch(player, pos, now);
@@ -1635,7 +1633,7 @@ final class CoxRooms {
             return true;
         }
 
-        private void patch(ServerPlayerEntity player, BlockPos pos, long now) {
+        private void patch(ServerPlayer player, BlockPos pos, long now) {
             int[] patch = patches.computeIfAbsent(pos, k -> new int[]{WEEDY, 0});
             long ends = stageEnds.getOrDefault(pos, 0L);
             if (patch[0] == CLEAR && ends > 0 && now >= ends) {
@@ -1651,7 +1649,7 @@ final class CoxRooms {
                     if (cooldown(player, 3)) {
                         return;
                     }
-                    player.swingHand(net.minecraft.util.Hand.MAIN_HAND);
+                    player.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
                     patch[0] = CLEAR;
                     stageEnds.put(pos, now + 50);
                     String seed = com.runecraft.osrs.content.raids.CoxSupplies.rakeSeed(farming, rnd());
@@ -1698,7 +1696,7 @@ final class CoxRooms {
         }
 
         /** One catch per click: the best fish or bat the level allows (fish need cave worms as bait). */
-        private void gather(ServerPlayerEntity player, Skill skill, String tool, String noTool) {
+        private void gather(ServerPlayer player, Skill skill, String tool, String noTool) {
             if (cooldown(player, 3)) {
                 return;
             }
@@ -1714,7 +1712,7 @@ final class CoxRooms {
             }
             int lvl = level(player, skill);
             com.runecraft.osrs.content.raids.CoxSupplies.Food food = com.runecraft.osrs.content.raids.CoxSupplies.catchFor(skill, lvl);
-            player.swingHand(net.minecraft.util.Hand.MAIN_HAND);
+            player.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
             if (food == null || rnd().nextDouble() > 0.5 + lvl / 250.0) { // approx: catch chance
                 Msg.game(player, fish ? "You fail to catch anything." : "The bat flutters out of reach.");
                 return;
@@ -1728,7 +1726,7 @@ final class CoxRooms {
         }
 
         /** Cooks every raw fish and bat the player's Cooking level allows. // approx: CoX food never burns here */
-        private void cook(ServerPlayerEntity player) {
+        private void cook(ServerPlayer player) {
             int lvl = level(player, Skill.COOKING);
             int cooked = 0;
             for (com.runecraft.osrs.content.raids.CoxSupplies.Food f : com.runecraft.osrs.content.raids.CoxSupplies.FOODS) {

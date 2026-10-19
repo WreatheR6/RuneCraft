@@ -1,7 +1,7 @@
 package com.runecraft.quest;
 
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 
 /** Quest items with a right-click use (reading notes, etc.). */
 public final class QuestItems {
@@ -12,7 +12,7 @@ public final class QuestItems {
         return id.equals("research_notes") || id.equals("message_from_juliet");
     }
 
-    public static void use(ServerPlayerEntity player, ItemStack stack, String id) {
+    public static void use(ServerPlayer player, ItemStack stack, String id) {
         switch (id) {
             case "research_notes" -> com.runecraft.util.Msg.game(player,
                     "The notes are in a strange code. Something about \"teleporting to the altars\" and \"essence\".");

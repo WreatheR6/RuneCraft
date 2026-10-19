@@ -3,9 +3,9 @@ package com.runecraft.content.skilling;
 import com.runecraft.osrs.content.skilling.RunecraftData;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Essence pouch decay and repair. A pouch counts the essence stored in it since its last repair (NBT
@@ -20,12 +20,12 @@ public final class EssencePouches {
     }
 
     /** Repairs every essence pouch in the inventory; returns how many were degraded. */
-    public static int repairAll(ServerPlayerEntity player) {
+    public static int repairAll(ServerPlayer player) {
         int repaired = 0;
-        for (int i = 0; i < player.getInventory().size(); i++) {
-            ItemStack s = player.getInventory().getStack(i);
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            ItemStack s = player.getInventory().getItem(i);
             RunecraftData.Pouch p = s.isEmpty() ? null : RunecraftData.pouch(Inv.idOf(s));
-            NbtCompound nbt = p == null ? null : s.getNbt();
+            CompoundTag nbt = p == null ? null : s.getTag();
             if (nbt == null || !nbt.contains(USED_NBT)) {
                 continue;
             }
@@ -38,7 +38,7 @@ public final class EssencePouches {
     }
 
     /** The Dark Mage's repair, with his lines. */
-    public static void darkMage(ServerPlayerEntity player) {
+    public static void darkMage(ServerPlayer player) {
         int n = repairAll(player);
         if (n > 0) {
             Msg.game(player, "Dark Mage: Fine. I'll repair your pouches. There. Now leave me alone; I'm concentrating.");

@@ -16,17 +16,16 @@ import com.runecraft.registry.ModEntities;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
 import java.util.List;
 import java.util.Map;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 
 /**
  * Scripts the quests: NPC dialogue, stage changes, kill objectives and rewards. Dialogue is
@@ -38,28 +37,28 @@ public final class QuestManager {
 
     // ---------------- Helpers ----------------
 
-    private static void say(ServerPlayerEntity player, QuestNpc npc, String line) {
+    private static void say(ServerPlayer player, QuestNpc npc, String line) {
         QuestApi.say(player, npc.displayName(), line);
     }
 
-    private static void you(ServerPlayerEntity player, String line) {
+    private static void you(ServerPlayer player, String line) {
         QuestApi.you(player, line);
     }
 
-    private static int stage(ServerPlayerEntity p, com.runecraft.osrs.QuestInfo q) {
+    private static int stage(ServerPlayer p, com.runecraft.osrs.QuestInfo q) {
         return Players.data(p).questStage(q);
     }
 
-    static void set(ServerPlayerEntity p, com.runecraft.osrs.QuestInfo q, int stage) {
+    static void set(ServerPlayer p, com.runecraft.osrs.QuestInfo q, int stage) {
         PlayerData data = Players.data(p);
         if (data.questStage(q) == 0 && stage > 0) {
-            p.sendMessage(Text.literal("You have started a new quest: " + q.displayName()).formatted(Formatting.DARK_PURPLE), false);
+            p.displayClientMessage(Component.literal("You have started a new quest: " + q.displayName()).withStyle(ChatFormatting.DARK_PURPLE), false);
         }
         data.setQuestStage(q, stage);
         ServerNetworking.sync(p);
     }
 
-    static boolean takeAll(ServerPlayerEntity p, Map<String, Integer> items) {
+    static boolean takeAll(ServerPlayer p, Map<String, Integer> items) {
         for (Map.Entry<String, Integer> e : items.entrySet()) {
             if (!Inv.has(p, e.getKey(), e.getValue())) {
                 return false;
@@ -69,7 +68,7 @@ public final class QuestManager {
         return true;
     }
 
-    static boolean meetsRequirements(ServerPlayerEntity p, com.runecraft.osrs.QuestInfo q) {
+    static boolean meetsRequirements(ServerPlayer p, com.runecraft.osrs.QuestInfo q) {
         PlayerData data = Players.data(p);
         if (q instanceof com.runecraft.osrs.content.QuestDef def) {
             for (String req : def.questRequirements()) {
@@ -90,7 +89,7 @@ public final class QuestManager {
     }
 
     /** Marks a quest complete and hands out rewards (once). */
-    public static void complete(ServerPlayerEntity p, com.runecraft.osrs.QuestInfo q) {
+    public static void complete(ServerPlayer p, com.runecraft.osrs.QuestInfo q) {
         PlayerData data = Players.data(p);
         if (data.questComplete(q)) {
             return;
@@ -104,16 +103,16 @@ public final class QuestManager {
             Inv.give(p, parts[0], count);
             com.runecraft.collection.CollectionLog.obtain(p, parts[0]);
         }
-        p.sendMessage(Text.literal("Congratulations, you've completed a quest: ").formatted(Formatting.GOLD)
-                .append(Text.literal(q.displayName()).formatted(Formatting.YELLOW)), false);
-        p.sendMessage(Text.literal("Quest points: " + data.questPoints() + " / " + Quest.totalQuestPoints()), false);
-        p.getWorld().playSound(null, p.getBlockPos(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.PLAYERS, 1f, 1f);
+        p.displayClientMessage(Component.literal("Congratulations, you've completed a quest: ").withStyle(ChatFormatting.GOLD)
+                .append(Component.literal(q.displayName()).withStyle(ChatFormatting.YELLOW)), false);
+        p.displayClientMessage(Component.literal("Quest points: " + data.questPoints() + " / " + Quest.totalQuestPoints()), false);
+        p.level().playSound(null, p.blockPosition(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 1f, 1f);
         ServerNetworking.sync(p);
     }
 
     // ---------------- Dialogue ----------------
 
-    public static void talk(ServerPlayerEntity p, QuestNpcEntity entity) {
+    public static void talk(ServerPlayer p, QuestNpcEntity entity) {
         QuestNpc npc = entity.npc();
         com.runecraft.content.GameEvents.fireActivity(p, "talk:" + entity.npcId().toLowerCase(java.util.Locale.ROOT));
         if (npc == null) {
@@ -135,7 +134,7 @@ public final class QuestManager {
         }
     }
 
-    private static void cook(ServerPlayerEntity p, QuestNpc npc) {
+    private static void cook(ServerPlayer p, QuestNpc npc) {
         Quest q = Quest.COOKS_ASSISTANT;
         switch (stage(p, q)) {
             case 0 -> {
@@ -157,7 +156,7 @@ public final class QuestManager {
         }
     }
 
-    private static void fred(ServerPlayerEntity p, QuestNpc npc) {
+    private static void fred(ServerPlayer p, QuestNpc npc) {
         Quest q = Quest.SHEEP_SHEARER;
         switch (stage(p, q)) {
             case 0 -> {
@@ -177,7 +176,7 @@ public final class QuestManager {
         }
     }
 
-    private static void doric(ServerPlayerEntity p, QuestNpc npc) {
+    private static void doric(ServerPlayer p, QuestNpc npc) {
         Quest q = Quest.DORICS_QUEST;
         switch (stage(p, q)) {
             case 0 -> {
@@ -197,7 +196,7 @@ public final class QuestManager {
         }
     }
 
-    private static void runeMysteries(ServerPlayerEntity p, QuestNpc npc) {
+    private static void runeMysteries(ServerPlayer p, QuestNpc npc) {
         Quest q = Quest.RUNE_MYSTERIES;
         int s = stage(p, q);
         if (npc == QuestNpc.DUKE_HORACIO) {
@@ -233,7 +232,7 @@ public final class QuestManager {
         }
     }
 
-    private static void restlessGhost(ServerPlayerEntity p, QuestNpc npc) {
+    private static void restlessGhost(ServerPlayer p, QuestNpc npc) {
         Quest q = Quest.RESTLESS_GHOST;
         int s = stage(p, q);
         switch (npc) {
@@ -279,7 +278,7 @@ public final class QuestManager {
         }
     }
 
-    private static void impCatcher(ServerPlayerEntity p, QuestNpc npc) {
+    private static void impCatcher(ServerPlayer p, QuestNpc npc) {
         Quest q = Quest.IMP_CATCHER;
         switch (stage(p, q)) {
             case 0 -> {
@@ -299,7 +298,7 @@ public final class QuestManager {
         }
     }
 
-    private static void witchsPotion(ServerPlayerEntity p, QuestNpc npc) {
+    private static void witchsPotion(ServerPlayer p, QuestNpc npc) {
         Quest q = Quest.WITCHS_POTION;
         switch (stage(p, q)) {
             case 0 -> {
@@ -319,7 +318,7 @@ public final class QuestManager {
         }
     }
 
-    private static void romeoAndJuliet(ServerPlayerEntity p, QuestNpc npc) {
+    private static void romeoAndJuliet(ServerPlayer p, QuestNpc npc) {
         Quest q = Quest.ROMEO_AND_JULIET;
         int s = stage(p, q);
         switch (npc) {
@@ -371,7 +370,7 @@ public final class QuestManager {
         }
     }
 
-    private static void druidicRitual(ServerPlayerEntity p, QuestNpc npc) {
+    private static void druidicRitual(ServerPlayer p, QuestNpc npc) {
         Quest q = Quest.DRUIDIC_RITUAL;
         int s = stage(p, q);
         if (npc == QuestNpc.KAQEMEEX) {
@@ -402,7 +401,7 @@ public final class QuestManager {
         }
     }
 
-    private static void vampyreSlayer(ServerPlayerEntity p, QuestNpc npc) {
+    private static void vampyreSlayer(ServerPlayer p, QuestNpc npc) {
         Quest q = Quest.VAMPYRE_SLAYER;
         int s = stage(p, q);
         if (npc == QuestNpc.MORGAN) {
@@ -429,7 +428,7 @@ public final class QuestManager {
         }
     }
 
-    private static void demonSlayer(ServerPlayerEntity p, QuestNpc npc) {
+    private static void demonSlayer(ServerPlayer p, QuestNpc npc) {
         Quest q = Quest.DEMON_SLAYER;
         int s = stage(p, q);
         switch (npc) {
@@ -476,7 +475,7 @@ public final class QuestManager {
     // ---------------- Place objectives ----------------
 
     /** Checks the hand-scripted quests' place objectives ({@link FreeQuestObjectives#SPOTS}); called once a second. */
-    public static void spotTick(ServerPlayerEntity p) {
+    public static void spotTick(ServerPlayer p) {
         PlayerData data = Players.data(p);
         int tx = GielinorMap.toOsrsX(p.getBlockX());
         int ty = GielinorMap.toOsrsY(p.getBlockZ());
@@ -486,7 +485,7 @@ public final class QuestManager {
             if (!spot.active(data.questStage(spot.quest())) || !spot.contains(tx, ty, below) || !spot.applies(item -> Inv.has(p, item, 1))) {
                 continue;
             }
-            p.sendMessage(Text.literal(spot.message()).formatted(Formatting.GRAY, Formatting.ITALIC), false);
+            p.displayClientMessage(Component.literal(spot.message()).withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC), false);
             switch (spot.action()) {
                 case GIVE -> Inv.give(p, spot.item(), 1);
                 case ENCHANT_MEATS -> FreeQuestObjectives.DRUIDIC_MEATS.forEach((raw, enchanted) -> {
@@ -498,11 +497,11 @@ public final class QuestManager {
                 case COMPLETE -> complete(p, spot.quest());
             }
             if (spot.spawn() != null) {
-                EntityType.get(spot.spawn()).ifPresent(type -> {
-                    Entity e = type.create(p.getWorld());
+                EntityType.byString(spot.spawn()).ifPresent(type -> {
+                    Entity e = type.create(p.level());
                     if (e != null) {
-                        e.refreshPositionAndAngles(p.getX() + 2, p.getY(), p.getZ() + 2, 0f, 0f);
-                        p.getWorld().spawnEntity(e);
+                        e.moveTo(p.getX() + 2, p.getY(), p.getZ() + 2, 0f, 0f);
+                        p.level().addFreshEntity(e);
                     }
                 });
             }
@@ -512,14 +511,14 @@ public final class QuestManager {
 
     // ---------------- Kill objectives & quest drops ----------------
 
-    public static void onKill(ServerPlayerEntity p, LivingEntity entity, MonsterStats stats) {
+    public static void onKill(ServerPlayer p, LivingEntity entity, MonsterStats stats) {
         QuestScripts.onKill(p, entity, stats);
         PlayerData data = Players.data(p);
         String name = stats.name();
         for (FreeQuestObjectives.QuestDrop drop : FreeQuestObjectives.DROPS) {
             if (drop.matches(data.questStage(drop.quest()), name) && !Inv.has(p, drop.item(), 1)
                     && p.getRandom().nextInt(Math.max(1, drop.oneIn())) == 0) {
-                entity.dropStack(Inv.stack(drop.item(), 1));
+                entity.spawnAtLocation(Inv.stack(drop.item(), 1));
             }
         }
         // OSRS: imps carry Mizgog's beads (also on their normal drop table); while the quest needs them,
@@ -529,7 +528,7 @@ public final class QuestManager {
             String bead = ImpCatcherBeads.questDrop(item -> Inv.has(p, item, 1),
                     p.getRandom().nextInt(ImpCatcherBeads.QUEST_DROP_ONE_IN), p.getRandom().nextInt(4));
             if (bead != null) {
-                entity.dropStack(Inv.stack(bead, 1));
+                entity.spawnAtLocation(Inv.stack(bead, 1));
             }
         }
         Boss boss = ModEntities.boss(entity.getType());

@@ -13,15 +13,14 @@ import com.runecraft.osrs.world.StructureDef;
 import com.runecraft.player.Players;
 import com.runecraft.registry.ModBlocks;
 import com.runecraft.util.Inv;
-import net.minecraft.block.Block;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Sailing at sea: sorting salvage at a salvaging station, one boat-combat kill with a cannon, repair kits, the crew
@@ -46,14 +45,14 @@ final class SeaChecks {
 
     /** The crew fire the cannonball you loaded: an incendiary ball from the cargo hold sets the creature alight. */
     private static String crewSpecialAmmo(TestContext c) {
-        ServerPlayerEntity p = c.player;
+        ServerPlayer p = c.player;
         level(p, Skill.SAILING, 99);
         level(p, Skill.RANGED, 99);
         List<String> before = SeaHooks.crewOrder(p);
         String ammoBefore = SeaHooks.loadedAmmo(p);
         String ball = "bronze_incendiary_cannonball";
         SailingCrew.Crewmate jim = SailingCrew.crewmate("jobless_jim");
-        MobEntity mob = null;
+        Mob mob = null;
         try {
             SeaHooks.setCrew(p, new ArrayList<>(List.of("jobless_jim")));
             SeaHooks.clearHold(p, "skiff");
@@ -65,7 +64,7 @@ final class SeaChecks {
             if (shark == null) {
                 shark = SailingSea.CREATURES.get(SailingSea.CREATURES.size() - 1);
             }
-            mob = SeaHooks.spawnCreature(c.world, shark, new Vec3d(at.getX() + 0.5, at.getY(), at.getZ() + 0.5), p);
+            mob = SeaHooks.spawnCreature(c.world, shark, new Vec3(at.getX() + 0.5, at.getY(), at.getZ() + 0.5), p);
             if (mob == null) {
                 throw new SelfTest.Skip("no " + shark.id() + " entity");
             }
@@ -97,7 +96,7 @@ final class SeaChecks {
      * lockbox, and reading the schematic unlocks the dragon cannon at the boat schematics.
      */
     private static String lockbox(TestContext c) {
-        ServerPlayerEntity p = c.player;
+        ServerPlayer p = c.player;
         level(p, Skill.SAILING, 99);
         SailingLockboxes.Lockbox l = SailingLockboxes.byIsland("deepfin_point");
         SailingTraining.Facility cannon = null;
@@ -109,8 +108,8 @@ final class SeaChecks {
         if (l == null || cannon == null) {
             throw new AssertionError("no Deepfin Point lockbox or dragon cannon facility");
         }
-        boolean creative = p.getAbilities().creativeMode;
-        p.getAbilities().creativeMode = false;
+        boolean creative = p.getAbilities().instabuild;
+        p.getAbilities().instabuild = false;
         SailingLockboxHooks.forget(p);
         try {
             if (SailingLockboxHooks.missing(p, cannon) == null) {
@@ -134,16 +133,16 @@ final class SeaChecks {
             SailingLockboxHooks.forget(p);
             Inv.remove(p, l.keyId(), Inv.count(p, l.keyId()));
             Inv.remove(p, l.schematic(), Inv.count(p, l.schematic()));
-            p.getAbilities().creativeMode = creative;
+            p.getAbilities().instabuild = creative;
         }
     }
 
-    private static void level(ServerPlayerEntity p, Skill skill, int level) {
+    private static void level(ServerPlayer p, Skill skill, int level) {
         Players.data(p).skills().setXpTenths(skill, Experience.xpForLevel(level) * 10);
     }
 
     private static String sort(TestContext c) {
-        ServerPlayerEntity p = c.player;
+        ServerPlayer p = c.player;
         level(p, Skill.SAILING, 99);
         Block station = ModBlocks.MODULE_BLOCKS.get("port_salvaging_station");
         if (station == null) {
@@ -159,9 +158,9 @@ final class SeaChecks {
                 if (SeaHooks.sort(p, stack, w)) {
                     throw new AssertionError("sorted " + w.salvage() + " without a salvaging station");
                 }
-                c.world.setBlockState(at, station.getDefaultState());
+                c.world.setBlockAndUpdate(at, station.defaultBlockState());
                 int xp = Players.data(p).skills().xpTenths(Skill.SAILING);
-                long before = p.getInventory().main.stream().filter(s -> !s.isEmpty()).count();
+                long before = p.getInventory().items.stream().filter(s -> !s.isEmpty()).count();
                 if (!SeaHooks.sort(p, stack, w)) {
                     throw new AssertionError("couldn't sort " + w.salvage() + " next to a salvaging station");
                 }
@@ -172,7 +171,7 @@ final class SeaChecks {
                 if (gained != Math.round(w.sortXp() * 10)) {
                     throw new AssertionError("sorting " + w.salvage() + " gave " + gained / 10.0 + " XP, expected " + w.sortXp());
                 }
-                long after = p.getInventory().main.stream().filter(s -> !s.isEmpty()).count();
+                long after = p.getInventory().items.stream().filter(s -> !s.isEmpty()).count();
                 items += Math.max(0, after - before);
                 sorted++;
             }
@@ -183,7 +182,7 @@ final class SeaChecks {
     }
 
     private static String cannonKill(TestContext c) {
-        ServerPlayerEntity p = c.player;
+        ServerPlayer p = c.player;
         level(p, Skill.RANGED, 99);
         level(p, Skill.SAILING, 99);
         SailingSea.SeaCreature tern = SailingSea.creature("tern");
@@ -193,7 +192,7 @@ final class SeaChecks {
         }
         SeaHooks.takeBounty(p, bounty);
         BlockPos at = c.near(0, -6);
-        MobEntity mob = SeaHooks.spawnCreature(c.world, tern, new Vec3d(at.getX() + 0.5, at.getY(), at.getZ() + 0.5), p);
+        Mob mob = SeaHooks.spawnCreature(c.world, tern, new Vec3(at.getX() + 0.5, at.getY(), at.getZ() + 0.5), p);
         if (mob == null) {
             throw new SelfTest.Skip("no tern entity");
         }
@@ -236,7 +235,7 @@ final class SeaChecks {
     }
 
     private static String repairKit(TestContext c) {
-        ServerPlayerEntity p = c.player;
+        ServerPlayer p = c.player;
         int max = SeaHooks.boatHp(p, "skiff");
         SeaHooks.setBoatHp(p, "skiff", 5);
         int healed = SeaHooks.heal(p, "skiff", SailingCrew.kit("oak_repair_kit").heals());
@@ -253,12 +252,12 @@ final class SeaChecks {
     }
 
     private static String crew(TestContext c) {
-        ServerPlayerEntity p = c.player;
+        ServerPlayer p = c.player;
         level(p, Skill.SAILING, 99);
         level(p, Skill.RANGED, 99);
         List<String> before = SeaHooks.crewOrder(p);
         SailingCrew.Crewmate jim = SailingCrew.crewmate("jobless_jim");
-        MobEntity mob = null;
+        Mob mob = null;
         try {
             SeaHooks.setCrew(p, new ArrayList<>());
             SeaHooks.crewTalk(p, jim);
@@ -276,7 +275,7 @@ final class SeaChecks {
             SeaHooks.setBoatHp(p, "skiff", -1);
             SeaHooks.stockHold(p, "skiff", "bronze_cannonball", 5);
             BlockPos at = c.near(0, -6);
-            mob = SeaHooks.spawnCreature(c.world, SailingSea.creature("tern"), new Vec3d(at.getX() + 0.5, at.getY(), at.getZ() + 0.5), p);
+            mob = SeaHooks.spawnCreature(c.world, SailingSea.creature("tern"), new Vec3(at.getX() + 0.5, at.getY(), at.getZ() + 0.5), p);
             if (mob == null) {
                 throw new SelfTest.Skip("no tern entity");
             }
@@ -296,14 +295,14 @@ final class SeaChecks {
     }
 
     private static String incendiary(TestContext c) {
-        ServerPlayerEntity p = c.player;
+        ServerPlayer p = c.player;
         level(p, Skill.RANGED, 99);
         BlockPos at = c.near(0, -6);
         SailingSea.SeaCreature shark = SailingSea.creature("bull_shark");
         if (shark == null) {
             shark = SailingSea.CREATURES.get(SailingSea.CREATURES.size() - 1);
         }
-        MobEntity mob = SeaHooks.spawnCreature(c.world, shark, new Vec3d(at.getX() + 0.5, at.getY(), at.getZ() + 0.5), p);
+        Mob mob = SeaHooks.spawnCreature(c.world, shark, new Vec3(at.getX() + 0.5, at.getY(), at.getZ() + 0.5), p);
         if (mob == null) {
             throw new SelfTest.Skip("no " + shark.id() + " entity");
         }
@@ -331,7 +330,7 @@ final class SeaChecks {
     }
 
     private static String wreckRecovery(TestContext c) {
-        ServerPlayerEntity p = c.player;
+        ServerPlayer p = c.player;
         SeaHooks.markWrecked(p, "skiff_kit", "skiff");
         if (!SeaHooks.hasWreck(p)) {
             throw new AssertionError("no wreck recorded");

@@ -15,15 +15,14 @@ import com.runecraft.world.Gielinor;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.TypedActionResult;
-
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -66,50 +65,50 @@ public final class ChargeService {
         CombatHooks.addAttackGate(ChargeService::denyAttack);
         CombatHooks.addModifier(new CombatHooks.PlayerAttackModifier() {
             @Override
-            public void afterHit(ServerPlayerEntity player, LivingEntity target, AttackType type, int dealt) {
+            public void afterHit(ServerPlayer player, LivingEntity target, AttackType type, int dealt) {
                 onAttack(player, type);
             }
         });
         CombatHooks.addHurtListener(ChargeService::onHurt);
         SysTicks.everyPlayer(ChargeService::gameTick);
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
-            FIGHTS.remove(handler.player.getUuid());
-            QUOTES.remove(handler.player.getUuid());
+            FIGHTS.remove(handler.player.getUUID());
+            QUOTES.remove(handler.player.getUUID());
         });
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            ItemStack stack = player.getStackInHand(hand);
+            ItemStack stack = player.getItemInHand(hand);
             Charges.Spec spec = ItemCharges.spec(stack);
-            if (spec == null || spec.materials().isEmpty() || !player.isSneaking()) {
-                return TypedActionResult.pass(stack);
+            if (spec == null || spec.materials().isEmpty() || !player.isShiftKeyDown()) {
+                return InteractionResultHolder.pass(stack);
             }
-            if (world.isClient()) {
-                return TypedActionResult.success(stack, true);
+            if (world.isClientSide()) {
+                return InteractionResultHolder.sidedSuccess(stack, true);
             }
-            if (player instanceof ServerPlayerEntity sp) {
+            if (player instanceof ServerPlayer sp) {
                 recharge(sp, stack, spec);
             }
-            return TypedActionResult.success(stack, false);
+            return InteractionResultHolder.sidedSuccess(stack, false);
         });
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
-            if (hand != Hand.MAIN_HAND || player.isSneaking() || !(entity instanceof QuestNpcEntity npc) || !"npc_bob".equals(npc.npcId())) {
-                return ActionResult.PASS;
+            if (hand != InteractionHand.MAIN_HAND || player.isShiftKeyDown() || !(entity instanceof QuestNpcEntity npc) || !"npc_bob".equals(npc.npcId())) {
+                return InteractionResult.PASS;
             }
-            Charges.Spec held = ItemCharges.spec(player.getMainHandStack());
+            Charges.Spec held = ItemCharges.spec(player.getMainHandItem());
             if (held == null || held.kind() != Charges.Kind.BARROWS) {
-                return ActionResult.PASS;
+                return InteractionResult.PASS;
             }
-            if (!world.isClient() && player instanceof ServerPlayerEntity sp) {
+            if (!world.isClientSide() && player instanceof ServerPlayer sp) {
                 repair(sp, false);
             }
-            return ActionResult.SUCCESS;
+            return InteractionResult.SUCCESS;
         });
     }
 
-    private static Fight fight(ServerPlayerEntity p) {
-        return FIGHTS.computeIfAbsent(p.getUuid(), u -> new Fight());
+    private static Fight fight(ServerPlayer p) {
+        return FIGHTS.computeIfAbsent(p.getUUID(), u -> new Fight());
     }
 
-    private static void markCombat(ServerPlayerEntity p) {
+    private static void markCombat(ServerPlayer p) {
         Fight f = fight(p);
         long now = SysTicks.now();
         if (now - f.lastCombat > Charges.COMBAT_TIMEOUT_TICKS) {
@@ -125,8 +124,8 @@ public final class ChargeService {
 
     // ------------------------------------------------------------------ combat
 
-    private static String denyAttack(ServerPlayerEntity p, AttackType type) {
-        ItemStack weapon = p.getMainHandStack();
+    private static String denyAttack(ServerPlayer p, AttackType type) {
+        ItemStack weapon = p.getMainHandItem();
         Charges.Spec s = ItemCharges.spec(weapon);
         if (s == null || s.drain() == Charges.Drain.TELEPORT || !ItemCharges.depleted(weapon)) {
             return null;
@@ -139,9 +138,9 @@ public final class ChargeService {
         };
     }
 
-    private static void onAttack(ServerPlayerEntity p, AttackType type) {
+    private static void onAttack(ServerPlayer p, AttackType type) {
         markCombat(p);
-        ItemStack weapon = p.getMainHandStack();
+        ItemStack weapon = p.getMainHandItem();
         Charges.Spec s = ItemCharges.spec(weapon);
         if (s == null || s.drain() != Charges.Drain.ATTACK) {
             return;
@@ -158,13 +157,13 @@ public final class ChargeService {
         }
     }
 
-    private static void onHurt(ServerPlayerEntity p, LivingEntity attacker, int damage) {
+    private static void onHurt(ServerPlayer p, LivingEntity attacker, int damage) {
         markCombat(p);
         if (damage <= 0) {
             return;
         }
         for (EquipmentSlot slot : ARMOUR) {
-            ItemStack stack = p.getEquippedStack(slot);
+            ItemStack stack = p.getItemBySlot(slot);
             Charges.Spec s = ItemCharges.spec(stack);
             if (s != null && s.drain() == Charges.Drain.HIT_TAKEN && !CombatAchievementService.pennySavesCharge(p)
                     && ItemCharges.drain(stack, 1)) {
@@ -173,8 +172,8 @@ public final class ChargeService {
         }
     }
 
-    private static void gameTick(ServerPlayerEntity p, long tick) {
-        Fight f = FIGHTS.get(p.getUuid());
+    private static void gameTick(ServerPlayer p, long tick) {
+        Fight f = FIGHTS.get(p.getUUID());
         if (f == null || tick - f.lastCombat > Charges.COMBAT_TIMEOUT_TICKS || !Gielinor.is(p)) {
             return;
         }
@@ -183,7 +182,7 @@ public final class ChargeService {
         // Barrows: one charge per tick in combat, written in batches of 10 to keep stack updates rare.
         boolean barrowsBatch = f.ticksIn % 10 == 0;
         for (EquipmentSlot slot : WORN) {
-            ItemStack stack = p.getEquippedStack(slot);
+            ItemStack stack = p.getItemBySlot(slot);
             Charges.Spec s = ItemCharges.spec(stack);
             if (s == null || ItemCharges.depleted(stack)) {
                 continue;
@@ -215,7 +214,7 @@ public final class ChargeService {
         return String.join(", ", parts) + (s.chargesPerUnit() > 1 ? " per " + s.chargesPerUnit() + " charges" : " per charge");
     }
 
-    private static void recharge(ServerPlayerEntity p, ItemStack stack, Charges.Spec s) {
+    private static void recharge(ServerPlayer p, ItemStack stack, Charges.Spec s) {
         if (s.id().equals(Charges.CAMULET)) {
             if (Inv.count(p, Charges.UGTHANKI_DUNG) <= 0 && POLLNIVNEACH.contains(AccessGateService.tileX(p.getX()), AccessGateService.tileY(p.getZ()))
                     && (com.runecraft.quest.QuestApi.stage(p, "my_arms_big_adventure") > 0
@@ -271,11 +270,11 @@ public final class ChargeService {
     // ------------------------------------------------------------------ Barrows repairs
 
     /** Degraded Barrows stacks carried or worn. */
-    private static List<ItemStack> degradedBarrows(ServerPlayerEntity p) {
+    private static List<ItemStack> degradedBarrows(ServerPlayer p) {
         List<ItemStack> out = new ArrayList<>();
-        PlayerInventory inv = p.getInventory();
-        for (int i = 0; i < inv.size(); i++) {
-            ItemStack s = inv.getStack(i);
+        Inventory inv = p.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack s = inv.getItem(i);
             Charges.Spec spec = ItemCharges.spec(s);
             if (spec != null && spec.kind() == Charges.Kind.BARROWS && ItemCharges.get(s) < spec.max()) {
                 out.add(s);
@@ -288,7 +287,7 @@ public final class ChargeService {
      * Repairs every degraded Barrows piece the player carries: the first use quotes the price, a second
      * use within 15 seconds pays. {@code armourStand}: the POH armour stand's Smithing discount.
      */
-    public static void repair(ServerPlayerEntity p, boolean armourStand) {
+    public static void repair(ServerPlayer p, boolean armourStand) {
         List<ItemStack> pieces = degradedBarrows(p);
         String who = armourStand ? "Armour stand" : "Bob";
         if (pieces.isEmpty()) {
@@ -306,9 +305,9 @@ public final class ChargeService {
             cost += armourStand ? Charges.armourStandCost(spec, ItemCharges.get(s), smithing) : Charges.repairCost(spec, ItemCharges.get(s));
         }
         long now = SysTicks.now();
-        Quote q = QUOTES.get(p.getUuid());
+        Quote q = QUOTES.get(p.getUUID());
         if (q == null || q.expires() < now || q.cost() != cost || q.stand() != armourStand) {
-            QUOTES.put(p.getUuid(), new Quote(now + 25, cost, armourStand));
+            QUOTES.put(p.getUUID(), new Quote(now + 25, cost, armourStand));
             String line = "Repairing " + pieces.size() + " piece" + (pieces.size() == 1 ? "" : "s") + " of Barrows equipment will cost "
                     + String.format("%,d", cost) + " coins. Use me again to pay.";
             if (armourStand) {
@@ -318,7 +317,7 @@ public final class ChargeService {
             }
             return;
         }
-        QUOTES.remove(p.getUuid());
+        QUOTES.remove(p.getUUID());
         if (!Inv.has(p, Inv.COINS, cost)) {
             Msg.game(p, "You don't have enough coins: repairing costs " + String.format("%,d", cost) + ".");
             return;

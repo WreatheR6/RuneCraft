@@ -18,14 +18,13 @@ import com.runecraft.quest.QuestManager;
 import com.runecraft.skill.XpService;
 import com.runecraft.world.Gielinor;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.argument.EntityArgumentType;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import java.util.Arrays;
 import java.util.Locale;
 
@@ -41,65 +40,65 @@ public final class RuneCraftCommands {
         });
     }
 
-    private static void register(CommandDispatcher<ServerCommandSource> dispatcher, String name) {
-        LiteralArgumentBuilder<ServerCommandSource> root = CommandManager.literal(name)
-                .then(CommandManager.literal("stats").executes(ctx -> stats(ctx, ctx.getSource().getPlayerOrThrow()))
-                        .then(CommandManager.argument("player", EntityArgumentType.player())
-                                .executes(ctx -> stats(ctx, EntityArgumentType.getPlayer(ctx, "player")))))
-                .then(CommandManager.literal("quests").executes(RuneCraftCommands::quests))
-                .then(CommandManager.literal("kc").executes(RuneCraftCommands::killCounts))
-                .then(CommandManager.literal("gielinor").requires(s -> s.hasPermissionLevel(2))
+    private static void register(CommandDispatcher<CommandSourceStack> dispatcher, String name) {
+        LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal(name)
+                .then(Commands.literal("stats").executes(ctx -> stats(ctx, ctx.getSource().getPlayerOrException()))
+                        .then(Commands.argument("player", EntityArgument.player())
+                                .executes(ctx -> stats(ctx, EntityArgument.getPlayer(ctx, "player")))))
+                .then(Commands.literal("quests").executes(RuneCraftCommands::quests))
+                .then(Commands.literal("kc").executes(RuneCraftCommands::killCounts))
+                .then(Commands.literal("gielinor").requires(s -> s.hasPermission(2))
                         .executes(ctx -> {
-                            Gielinor.teleport(ctx.getSource().getPlayerOrThrow(), Landmark.LUMBRIDGE);
+                            Gielinor.teleport(ctx.getSource().getPlayerOrException(), Landmark.LUMBRIDGE);
                             return 1;
                         }))
-                .then(CommandManager.literal("leave").requires(s -> s.hasPermissionLevel(2))
+                .then(Commands.literal("leave").requires(s -> s.hasPermission(2))
                         .executes(ctx -> {
-                            Gielinor.leave(ctx.getSource().getPlayerOrThrow());
+                            Gielinor.leave(ctx.getSource().getPlayerOrException());
                             return 1;
                         }))
-                .then(CommandManager.literal("tele").requires(s -> s.hasPermissionLevel(2))
-                        .then(CommandManager.argument("landmark", StringArgumentType.word())
-                                .suggests((ctx, b) -> CommandSource.suggestMatching(
+                .then(Commands.literal("tele").requires(s -> s.hasPermission(2))
+                        .then(Commands.argument("landmark", StringArgumentType.word())
+                                .suggests((ctx, b) -> SharedSuggestionProvider.suggest(
                                         Arrays.stream(Landmark.values()).map(l -> l.name().toLowerCase(Locale.ROOT)), b))
                                 .executes(ctx -> {
                                     Landmark l = Landmark.byName(StringArgumentType.getString(ctx, "landmark"));
                                     if (l == null) {
-                                        ctx.getSource().sendError(Text.literal("Unknown landmark"));
+                                        ctx.getSource().sendFailure(Component.literal("Unknown landmark"));
                                         return 0;
                                     }
-                                    Gielinor.teleport(ctx.getSource().getPlayerOrThrow(), l);
+                                    Gielinor.teleport(ctx.getSource().getPlayerOrException(), l);
                                     return 1;
                                 })))
-                .then(CommandManager.literal("setlevel").requires(s -> s.hasPermissionLevel(2))
-                        .then(CommandManager.argument("player", EntityArgumentType.player())
-                                .then(CommandManager.argument("skill", StringArgumentType.word()).suggests(RuneCraftCommands::suggestSkills)
-                                        .then(CommandManager.argument("level", IntegerArgumentType.integer(1, 99))
+                .then(Commands.literal("setlevel").requires(s -> s.hasPermission(2))
+                        .then(Commands.argument("player", EntityArgument.player())
+                                .then(Commands.argument("skill", StringArgumentType.word()).suggests(RuneCraftCommands::suggestSkills)
+                                        .then(Commands.argument("level", IntegerArgumentType.integer(1, 99))
                                                 .executes(ctx -> setLevel(ctx))))))
-                .then(CommandManager.literal("addxp").requires(s -> s.hasPermissionLevel(2))
-                        .then(CommandManager.argument("player", EntityArgumentType.player())
-                                .then(CommandManager.argument("skill", StringArgumentType.word()).suggests(RuneCraftCommands::suggestSkills)
-                                        .then(CommandManager.argument("xp", IntegerArgumentType.integer(1, Experience.MAX_XP))
+                .then(Commands.literal("addxp").requires(s -> s.hasPermission(2))
+                        .then(Commands.argument("player", EntityArgument.player())
+                                .then(Commands.argument("skill", StringArgumentType.word()).suggests(RuneCraftCommands::suggestSkills)
+                                        .then(Commands.argument("xp", IntegerArgumentType.integer(1, Experience.MAX_XP))
                                                 .executes(ctx -> addXp(ctx))))))
-                .then(CommandManager.literal("completequest").requires(s -> s.hasPermissionLevel(2))
-                        .then(CommandManager.argument("quest", StringArgumentType.word())
-                                .suggests((ctx, b) -> CommandSource.suggestMatching(
+                .then(Commands.literal("completequest").requires(s -> s.hasPermission(2))
+                        .then(Commands.argument("quest", StringArgumentType.word())
+                                .suggests((ctx, b) -> SharedSuggestionProvider.suggest(
                                         com.runecraft.osrs.content.ContentRegistry.quests().stream().map(q -> q.questId().toLowerCase(Locale.ROOT)), b))
                                 .executes(ctx -> {
                                     String wanted = StringArgumentType.getString(ctx, "quest");
                                     com.runecraft.osrs.QuestInfo q = com.runecraft.osrs.content.ContentRegistry.quests().stream()
                                             .filter(x -> x.questId().equalsIgnoreCase(wanted)).findFirst().orElse(null);
                                     if (q == null) {
-                                        ctx.getSource().sendError(Text.literal("Unknown quest"));
+                                        ctx.getSource().sendFailure(Component.literal("Unknown quest"));
                                         return 0;
                                     }
-                                    QuestManager.complete(ctx.getSource().getPlayerOrThrow(), q);
+                                    QuestManager.complete(ctx.getSource().getPlayerOrException(), q);
                                     return 1;
                                 })))
-                .then(CommandManager.literal("coins").requires(s -> s.hasPermissionLevel(2))
-                        .then(CommandManager.argument("amount", IntegerArgumentType.integer(0))
+                .then(Commands.literal("coins").requires(s -> s.hasPermission(2))
+                        .then(Commands.argument("amount", IntegerArgumentType.integer(0))
                                 .executes(ctx -> {
-                                    ServerPlayerEntity p = ctx.getSource().getPlayerOrThrow();
+                                    ServerPlayer p = ctx.getSource().getPlayerOrException();
                                     Players.data(p).setCoins(IntegerArgumentType.getInteger(ctx, "amount"));
                                     ServerNetworking.sync(p);
                                     return 1;
@@ -108,50 +107,50 @@ public final class RuneCraftCommands {
     }
 
     private static java.util.concurrent.CompletableFuture<com.mojang.brigadier.suggestion.Suggestions> suggestSkills(
-            CommandContext<ServerCommandSource> ctx, com.mojang.brigadier.suggestion.SuggestionsBuilder builder) {
-        return CommandSource.suggestMatching(java.util.stream.Stream.concat(java.util.stream.Stream.of("all"),
+            CommandContext<CommandSourceStack> ctx, com.mojang.brigadier.suggestion.SuggestionsBuilder builder) {
+        return SharedSuggestionProvider.suggest(java.util.stream.Stream.concat(java.util.stream.Stream.of("all"),
                 Arrays.stream(Skill.values()).map(Skill::id)), builder);
     }
 
-    private static int stats(CommandContext<ServerCommandSource> ctx, ServerPlayerEntity player) {
+    private static int stats(CommandContext<CommandSourceStack> ctx, ServerPlayer player) {
         SkillSet s = Players.data(player).skills();
-        ServerCommandSource src = ctx.getSource();
-        src.sendFeedback(() -> Text.literal(player.getName().getString() + " - Combat level " + s.combatLevel()
-                + ", Total level " + s.totalLevel()).formatted(Formatting.GOLD), false);
+        CommandSourceStack src = ctx.getSource();
+        src.sendSuccess(() -> Component.literal(player.getName().getString() + " - Combat level " + s.combatLevel()
+                + ", Total level " + s.totalLevel()).withStyle(ChatFormatting.GOLD), false);
         StringBuilder line = new StringBuilder();
         for (Skill skill : Skill.values()) {
             line.append(skill.displayName()).append(' ').append(s.currentLevel(skill)).append('/').append(s.level(skill)).append("  ");
         }
         String text = line.toString();
-        src.sendFeedback(() -> Text.literal(text), false);
+        src.sendSuccess(() -> Component.literal(text), false);
         return 1;
     }
 
-    private static int quests(CommandContext<ServerCommandSource> ctx) throws CommandSyntaxException {
-        ServerPlayerEntity p = ctx.getSource().getPlayerOrThrow();
+    private static int quests(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer p = ctx.getSource().getPlayerOrException();
         PlayerData data = Players.data(p);
         for (com.runecraft.osrs.QuestInfo q : com.runecraft.osrs.content.ContentRegistry.quests()) {
             int stage = data.questStage(q);
-            Formatting color = stage == 0 ? Formatting.RED : stage >= q.finalStage() ? Formatting.GREEN : Formatting.YELLOW;
-            p.sendMessage(Text.literal(q.displayName()).formatted(color).append(Text.literal(" - " + q.journalFor(stage))
-                    .formatted(Formatting.GRAY)), false);
+            ChatFormatting color = stage == 0 ? ChatFormatting.RED : stage >= q.finalStage() ? ChatFormatting.GREEN : ChatFormatting.YELLOW;
+            p.displayClientMessage(Component.literal(q.displayName()).withStyle(color).append(Component.literal(" - " + q.journalFor(stage))
+                    .withStyle(ChatFormatting.GRAY)), false);
         }
-        p.sendMessage(Text.literal("Quest points: " + data.questPoints() + "/" + Quest.totalQuestPoints()), false);
+        p.displayClientMessage(Component.literal("Quest points: " + data.questPoints() + "/" + Quest.totalQuestPoints()), false);
         return 1;
     }
 
-    private static int killCounts(CommandContext<ServerCommandSource> ctx) throws CommandSyntaxException {
-        ServerPlayerEntity p = ctx.getSource().getPlayerOrThrow();
+    private static int killCounts(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer p = ctx.getSource().getPlayerOrException();
         PlayerData data = Players.data(p);
         if (data.killCounts().isEmpty()) {
-            p.sendMessage(Text.literal("You haven't killed any bosses yet."), false);
+            p.displayClientMessage(Component.literal("You haven't killed any bosses yet."), false);
         }
-        data.killCounts().forEach((boss, kc) -> p.sendMessage(Text.literal(boss + ": " + kc), false));
+        data.killCounts().forEach((boss, kc) -> p.displayClientMessage(Component.literal(boss + ": " + kc), false));
         return 1;
     }
 
-    private static int setLevel(CommandContext<ServerCommandSource> ctx) throws CommandSyntaxException {
-        ServerPlayerEntity p = EntityArgumentType.getPlayer(ctx, "player");
+    private static int setLevel(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer p = EntityArgument.getPlayer(ctx, "player");
         String name = StringArgumentType.getString(ctx, "skill");
         int level = IntegerArgumentType.getInteger(ctx, "level");
         if (name.equals("all")) {
@@ -159,24 +158,24 @@ public final class RuneCraftCommands {
                 // Hitpoints never goes below 10 in OSRS.
                 XpService.setLevel(p, s, s == Skill.HITPOINTS ? Math.max(10, level) : level);
             }
-            ctx.getSource().sendFeedback(() -> Text.literal("Set every skill to " + level), true);
+            ctx.getSource().sendSuccess(() -> Component.literal("Set every skill to " + level), true);
             return 1;
         }
         Skill skill = Skill.byId(name);
         if (skill == null) {
-            ctx.getSource().sendError(Text.literal("Unknown skill"));
+            ctx.getSource().sendFailure(Component.literal("Unknown skill"));
             return 0;
         }
         XpService.setLevel(p, skill, level);
-        ctx.getSource().sendFeedback(() -> Text.literal("Set " + skill.displayName() + " to " + IntegerArgumentType.getInteger(ctx, "level")), true);
+        ctx.getSource().sendSuccess(() -> Component.literal("Set " + skill.displayName() + " to " + IntegerArgumentType.getInteger(ctx, "level")), true);
         return 1;
     }
 
-    private static int addXp(CommandContext<ServerCommandSource> ctx) throws CommandSyntaxException {
-        ServerPlayerEntity p = EntityArgumentType.getPlayer(ctx, "player");
+    private static int addXp(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer p = EntityArgument.getPlayer(ctx, "player");
         Skill skill = Skill.byId(StringArgumentType.getString(ctx, "skill"));
         if (skill == null) {
-            ctx.getSource().sendError(Text.literal("Unknown skill"));
+            ctx.getSource().sendFailure(Component.literal("Unknown skill"));
             return 0;
         }
         XpService.add(p, skill, IntegerArgumentType.getInteger(ctx, "xp"));

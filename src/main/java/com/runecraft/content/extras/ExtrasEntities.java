@@ -3,12 +3,11 @@ package com.runecraft.content.extras;
 import com.runecraft.RuneCraft;
 import com.runecraft.osrs.content.extras.Seafaring;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
-import net.minecraft.entity.EntityDimensions;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnGroup;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.entity.EntityDimensions;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -25,9 +24,9 @@ public final class ExtrasEntities {
         if (PET != null) {
             return;
         }
-        PET = Registry.register(Registries.ENTITY_TYPE, RuneCraft.id("ext_pet"),
+        PET = Registry.register(BuiltInRegistries.ENTITY_TYPE, RuneCraft.id("ext_pet"),
                 FabricEntityTypeBuilder.<PetEntity>createMob()
-                        .spawnGroup(SpawnGroup.MISC)
+                        .spawnGroup(MobCategory.MISC)
                         .entityFactory(PetEntity::new)
                         .dimensions(EntityDimensions.fixed(0.5f, 0.7f))
                         .defaultAttributes(PetEntity::createAttributes)
@@ -35,12 +34,12 @@ public final class ExtrasEntities {
                         .disableSaving()
                         .build());
         for (Seafaring.BoatTier tier : Seafaring.BOATS) {
-            EntityType<SailBoatEntity> type = FabricEntityTypeBuilder.<SailBoatEntity>create(SpawnGroup.MISC,
+            EntityType<SailBoatEntity> type = FabricEntityTypeBuilder.<SailBoatEntity>create(MobCategory.MISC,
                             (t, world) -> new SailBoatEntity(t, world, tier))
-                    .dimensions(EntityDimensions.changing(1.375f, 0.5625f))
+                    .dimensions(EntityDimensions.scalable(1.375f, 0.5625f))
                     .trackRangeChunks(10)
                     .build();
-            BOATS.put(tier.id(), Registry.register(Registries.ENTITY_TYPE, RuneCraft.id("ext_boat_" + tier.id()), type));
+            BOATS.put(tier.id(), Registry.register(BuiltInRegistries.ENTITY_TYPE, RuneCraft.id("ext_boat_" + tier.id()), type));
         }
     }
 }

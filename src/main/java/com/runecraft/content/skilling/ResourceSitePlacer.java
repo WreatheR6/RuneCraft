@@ -9,17 +9,16 @@ import com.runecraft.world.Gielinor;
 import com.runecraft.world.StructurePlacer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.tag.BlockTags;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.Heightmap;
-
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -51,7 +50,7 @@ final class ResourceSitePlacer {
             for (int i = 0; i < site.tiles().size(); i++) {
                 int[] t = site.tiles().get(i);
                 Tile tile = new Tile(site, i, StructureDef.bx(t[0]), StructureDef.bz(t[1]));
-                BY_CHUNK.computeIfAbsent(ChunkPos.toLong(tile.x() >> 4, tile.z() >> 4), k -> new ArrayList<>()).add(tile);
+                BY_CHUNK.computeIfAbsent(ChunkPos.asLong(tile.x() >> 4, tile.z() >> 4), k -> new ArrayList<>()).add(tile);
             }
         }
     }
@@ -77,14 +76,14 @@ final class ResourceSitePlacer {
             if (QUEUE.isEmpty()) {
                 return;
             }
-            ServerWorld world = Gielinor.world(server);
+            ServerLevel world = Gielinor.world(server);
             if (world == null) {
                 return;
             }
             PlayerDataState state = Players.state(server);
             for (int n = 0; n < PER_TICK && !QUEUE.isEmpty(); n++) {
                 Tile t = QUEUE.poll();
-                if (state.isBuilt(t.key()) || !world.isChunkLoaded(t.x() >> 4, t.z() >> 4)) {
+                if (state.isBuilt(t.key()) || !world.hasChunk(t.x() >> 4, t.z() >> 4)) {
                     continue;
                 }
                 state.markBuilt(t.key());
@@ -98,8 +97,8 @@ final class ResourceSitePlacer {
         });
     }
 
-    private static void place(ServerWorld world, Tile t) {
-        Block block = Registries.BLOCK.get(RuneCraft.resolve(t.site().block()));
+    private static void place(ServerLevel world, Tile t) {
+        Block block = BuiltInRegistries.BLOCK.get(RuneCraft.resolve(t.site().block()));
         if (block == Blocks.AIR || alreadyNear(world, t, block)) {
             return;
         }
@@ -110,7 +109,7 @@ final class ResourceSitePlacer {
                 int x = t.x() + dx;
                 int z = t.z() + dz;
                 double d = dx * dx + dz * dz;
-                if (d >= bestDist || !world.isChunkLoaded(x >> 4, z >> 4)) {
+                if (d >= bestDist || !world.hasChunk(x >> 4, z >> 4)) {
                     continue;
                 }
                 BlockPos p = t.site().kind() == ResourceSites.Kind.FISHING ? shoreWater(world, x, z, t.site().block().startsWith("lava"))
@@ -125,23 +124,23 @@ final class ResourceSitePlacer {
             return;
         }
         switch (t.site().kind()) {
-            case FISHING -> world.setBlockState(best, block.getDefaultState(), Block.NOTIFY_ALL);
-            case ROCK -> world.setBlockState(best, block.getDefaultState(), Block.NOTIFY_ALL);
+            case FISHING -> world.setBlock(best, block.defaultBlockState(), Block.UPDATE_ALL);
+            case ROCK -> world.setBlock(best, block.defaultBlockState(), Block.UPDATE_ALL);
             case TREE -> tree(world, best, block, t.site().block());
         }
     }
 
     /** True if a structure already put this resource within a few blocks of the tile. */
-    private static boolean alreadyNear(ServerWorld world, Tile t, Block block) {
-        int top = world.getTopY(Heightmap.Type.MOTION_BLOCKING, t.x(), t.z());
-        BlockPos.Mutable p = new BlockPos.Mutable();
+    private static boolean alreadyNear(ServerLevel world, Tile t, Block block) {
+        int top = world.getHeight(Heightmap.Types.MOTION_BLOCKING, t.x(), t.z());
+        BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
         for (int dx = -4; dx <= 4; dx++) {
             for (int dz = -4; dz <= 4; dz++) {
-                if (!world.isChunkLoaded((t.x() + dx) >> 4, (t.z() + dz) >> 4)) {
+                if (!world.hasChunk((t.x() + dx) >> 4, (t.z() + dz) >> 4)) {
                     continue;
                 }
                 for (int dy = -8; dy <= 4; dy++) {
-                    if (world.getBlockState(p.set(t.x() + dx, top + dy, t.z() + dz)).isOf(block)) {
+                    if (world.getBlockState(p.set(t.x() + dx, top + dy, t.z() + dz)).is(block)) {
                         return true;
                     }
                 }
@@ -154,15 +153,15 @@ final class ResourceSitePlacer {
      * Still shoreline water with air above (the surface of the sea, a river or a lake), or null. Lava eel spots
      * ({@code lava}) take the shore of a still lava pool instead.
      */
-    private static BlockPos shoreWater(ServerWorld world, int x, int z, boolean lava) {
-        BlockPos p = new BlockPos(x, world.getTopY(Heightmap.Type.MOTION_BLOCKING, x, z) - 1, z);
+    private static BlockPos shoreWater(ServerLevel world, int x, int z, boolean lava) {
+        BlockPos p = new BlockPos(x, world.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z) - 1, z);
         BlockState s = world.getBlockState(p);
-        if (!s.isOf(lava ? Blocks.LAVA : Blocks.WATER) || !s.getFluidState().isStill() || !world.getBlockState(p.up()).isAir()) {
+        if (!s.is(lava ? Blocks.LAVA : Blocks.WATER) || !s.getFluidState().isSource() || !world.getBlockState(p.above()).isAir()) {
             return null;
         }
-        for (Direction d : Direction.Type.HORIZONTAL) {
-            BlockPos n = p.offset(d);
-            if (!world.isChunkLoaded(n.getX() >> 4, n.getZ() >> 4)) {
+        for (Direction d : Direction.Plane.HORIZONTAL) {
+            BlockPos n = p.relative(d);
+            if (!world.hasChunk(n.getX() >> 4, n.getZ() >> 4)) {
                 continue;
             }
             BlockState ns = world.getBlockState(n);
@@ -174,17 +173,17 @@ final class ResourceSitePlacer {
     }
 
     /** The first air block above natural, dry ground with room for a rock or tree, or null. */
-    private static BlockPos openGround(ServerWorld world, int x, int z, ResourceSites.Kind kind) {
-        int y = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
+    private static BlockPos openGround(ServerLevel world, int x, int z, ResourceSites.Kind kind) {
+        int y = world.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
         BlockPos feet = new BlockPos(x, y, z);
-        BlockState below = world.getBlockState(feet.down());
+        BlockState below = world.getBlockState(feet.below());
         if (!below.getFluidState().isEmpty() || !natural(below)) {
             return null;
         }
         int room = kind == ResourceSites.Kind.TREE ? 6 : 2;
         for (int up = 0; up < room; up++) {
-            BlockState s = world.getBlockState(feet.up(up));
-            if (!s.isAir() && !s.isReplaceable() && !s.isIn(BlockTags.LEAVES)) {
+            BlockState s = world.getBlockState(feet.above(up));
+            if (!s.isAir() && !s.canBeReplaced() && !s.is(BlockTags.LEAVES)) {
                 return null;
             }
         }
@@ -192,43 +191,43 @@ final class ResourceSitePlacer {
     }
 
     private static boolean natural(BlockState s) {
-        return s.isIn(BlockTags.DIRT) || s.isIn(BlockTags.SAND) || s.isOf(Blocks.STONE) || s.isOf(Blocks.GRAVEL)
-                || s.isOf(Blocks.ANDESITE) || s.isOf(Blocks.COBBLESTONE) || s.isOf(Blocks.SANDSTONE) || s.isOf(Blocks.SNOW_BLOCK)
-                || s.isOf(Blocks.COARSE_DIRT) || s.isOf(Blocks.TERRACOTTA) || s.isOf(Blocks.DIRT_PATH);
+        return s.is(BlockTags.DIRT) || s.is(BlockTags.SAND) || s.is(Blocks.STONE) || s.is(Blocks.GRAVEL)
+                || s.is(Blocks.ANDESITE) || s.is(Blocks.COBBLESTONE) || s.is(Blocks.SANDSTONE) || s.is(Blocks.SNOW_BLOCK)
+                || s.is(Blocks.COARSE_DIRT) || s.is(Blocks.TERRACOTTA) || s.is(Blocks.DIRT_PATH);
     }
 
     /** A choppable trunk (two resource log blocks) with a vanilla crown above. */
-    private static void tree(ServerWorld world, BlockPos base, Block log, String id) {
+    private static void tree(ServerLevel world, BlockPos base, Block log, String id) {
         BlockState trunk;
         BlockState leaves;
         int height;
         if (id.startsWith("yew")) {
-            trunk = Blocks.DARK_OAK_LOG.getDefaultState();
-            leaves = Blocks.DARK_OAK_LEAVES.getDefaultState();
+            trunk = Blocks.DARK_OAK_LOG.defaultBlockState();
+            leaves = Blocks.DARK_OAK_LEAVES.defaultBlockState();
             height = 6;
         } else if (id.startsWith("magic")) {
-            trunk = Blocks.BIRCH_LOG.getDefaultState();
-            leaves = Blocks.AZALEA_LEAVES.getDefaultState();
+            trunk = Blocks.BIRCH_LOG.defaultBlockState();
+            leaves = Blocks.AZALEA_LEAVES.defaultBlockState();
             height = 6;
         } else if (id.startsWith("maple")) {
-            trunk = Blocks.SPRUCE_LOG.getDefaultState();
-            leaves = Blocks.ACACIA_LEAVES.getDefaultState();
+            trunk = Blocks.SPRUCE_LOG.defaultBlockState();
+            leaves = Blocks.ACACIA_LEAVES.defaultBlockState();
             height = 6;
         } else if (id.startsWith("willow")) {
-            trunk = Blocks.OAK_LOG.getDefaultState();
-            leaves = Blocks.JUNGLE_LEAVES.getDefaultState();
+            trunk = Blocks.OAK_LOG.defaultBlockState();
+            leaves = Blocks.JUNGLE_LEAVES.defaultBlockState();
             height = 5;
         } else {
-            trunk = Blocks.JUNGLE_LOG.getDefaultState();
-            leaves = Blocks.JUNGLE_LEAVES.getDefaultState();
+            trunk = Blocks.JUNGLE_LOG.defaultBlockState();
+            leaves = Blocks.JUNGLE_LEAVES.defaultBlockState();
             height = 6;
         }
-        leaves = leaves.with(net.minecraft.block.LeavesBlock.PERSISTENT, true);
-        world.setBlockState(base.down(), Blocks.DIRT.getDefaultState(), Block.NOTIFY_ALL);
-        world.setBlockState(base, log.getDefaultState(), Block.NOTIFY_ALL);
-        world.setBlockState(base.up(), log.getDefaultState(), Block.NOTIFY_ALL);
+        leaves = leaves.setValue(net.minecraft.world.level.block.LeavesBlock.PERSISTENT, true);
+        world.setBlock(base.below(), Blocks.DIRT.defaultBlockState(), Block.UPDATE_ALL);
+        world.setBlock(base, log.defaultBlockState(), Block.UPDATE_ALL);
+        world.setBlock(base.above(), log.defaultBlockState(), Block.UPDATE_ALL);
         for (int y = 2; y < height; y++) {
-            world.setBlockState(base.up(y), trunk, Block.NOTIFY_ALL);
+            world.setBlock(base.above(y), trunk, Block.UPDATE_ALL);
         }
         for (int dx = -2; dx <= 2; dx++) {
             for (int dz = -2; dz <= 2; dz++) {
@@ -237,9 +236,9 @@ final class ResourceSitePlacer {
                     if (Math.abs(dx) > r || Math.abs(dz) > r || (Math.abs(dx) == 2 && Math.abs(dz) == 2)) {
                         continue;
                     }
-                    BlockPos p = base.add(dx, dy, dz);
+                    BlockPos p = base.offset(dx, dy, dz);
                     if (world.getBlockState(p).isAir()) {
-                        world.setBlockState(p, leaves, Block.NOTIFY_LISTENERS);
+                        world.setBlock(p, leaves, Block.UPDATE_CLIENTS);
                     }
                 }
             }

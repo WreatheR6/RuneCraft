@@ -21,10 +21,9 @@ import com.runecraft.osrs.content.minigames.SpoilsOfWar;
 import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.Hand;
-
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -67,7 +66,7 @@ final class MinigameRewardChecks {
         return checks;
     }
 
-    private ServerPlayerEntity p() {
+    private ServerPlayer p() {
         return c.player;
     }
 
@@ -80,7 +79,7 @@ final class MinigameRewardChecks {
     }
 
     /** Ticks a session until a boss is alive (at most 12 game ticks). */
-    private static List<net.minecraft.entity.LivingEntity> bosses(MinigameSession s, NightmareZoneSession nmz) {
+    private static List<net.minecraft.world.entity.LivingEntity> bosses(MinigameSession s, NightmareZoneSession nmz) {
         for (int i = 0; i < 12 && nmz.bosses().isEmpty(); i++) {
             MinigameManager.selfTestTick(s);
         }
@@ -103,14 +102,14 @@ final class MinigameRewardChecks {
             if (!(s instanceof NightmareZoneSession nmz) || nmz.dream().mode() != NightmareZone.Mode.PRACTICE) {
                 throw failure("a practice dream did not start in practice mode");
             }
-            List<net.minecraft.entity.LivingEntity> bosses = bosses(s, nmz);
+            List<net.minecraft.world.entity.LivingEntity> bosses = bosses(s, nmz);
             if (bosses.size() != 1 || !MinigameManager.creatureId(bosses.get(0)).equals("nmz_glod")) {
                 throw failure("practice spawned " + bosses.size() + " bosses instead of Glod alone");
             }
-            net.minecraft.entity.LivingEntity glod = bosses.get(0);
-            if (!glod.getCommandTags().contains(NightmareZoneSession.HARD_TAG)
+            net.minecraft.world.entity.LivingEntity glod = bosses.get(0);
+            if (!glod.getTags().contains(NightmareZoneSession.HARD_TAG)
                     || Math.round(glod.getMaxHealth()) != NightmareZone.hardHitpoints("nmz_glod")) {
-                throw failure("hard Glod has " + glod.getMaxHealth() + " hitpoints / tag " + glod.getCommandTags());
+                throw failure("hard Glod has " + glod.getMaxHealth() + " hitpoints / tag " + glod.getTags());
             }
             if (nmz.pointsFor("nmz_glod") != 0) {
                 throw failure("practice kills pay points");
@@ -126,7 +125,7 @@ final class MinigameRewardChecks {
         s = MinigameManager.selfTestStart(Minigame.NIGHTMARE_ZONE, endurance.variant(), p());
         try {
             NightmareZoneSession nmz = (NightmareZoneSession) s;
-            List<net.minecraft.entity.LivingEntity> bosses = bosses(s, nmz);
+            List<net.minecraft.world.entity.LivingEntity> bosses = bosses(s, nmz);
             if (nmz.pool().size() != NightmareZone.BOSSES.length || bosses.size() != 1) {
                 throw failure("endurance pool " + nmz.pool().size() + ", " + bosses.size() + " bosses at once");
             }
@@ -136,7 +135,7 @@ final class MinigameRewardChecks {
             if (combatXpFor(10) <= 0) {
                 throw failure("endurance hits give no combat experience");
             }
-            net.minecraft.entity.LivingEntity first = bosses.get(0);
+            net.minecraft.world.entity.LivingEntity first = bosses.get(0);
             if (MinigameManager.creatureId(first).equals("nmz_count_draynor")) {
                 first.setHealth(2);
                 nmz.zap(p(), first, NightmareZone.ZAPPER_MAX_HIT);
@@ -161,7 +160,7 @@ final class MinigameRewardChecks {
     private String nmzBarrels() {
         MinigameData data = MinigameData.of(p());
         String key = MinigameCurrencies.key(MinigameCurrencies.NIGHTMARE_ZONE);
-        int before = data.points(p().getUuid(), key);
+        int before = data.points(p().getUUID(), key);
         int stored = NightmareZoneSession.barrel(p(), NightmareZone.ABSORPTION);
         RewardShop shop = RewardShops.get("nightmare_zone");
         int index = -1;
@@ -171,29 +170,29 @@ final class MinigameRewardChecks {
             }
         }
         try {
-            p().getInventory().clear();
-            data.setStat(p().getUuid(), "nmz_barrel:" + NightmareZone.ABSORPTION, 0);
-            data.addPoints(p().getUuid(), key, 6 * 1000 - data.points(p().getUuid(), key));
+            p().getInventory().clearContent();
+            data.setStat(p().getUUID(), "nmz_barrel:" + NightmareZone.ABSORPTION, 0);
+            data.addPoints(p().getUUID(), key, 6 * 1000 - data.points(p().getUUID(), key));
             RewardShopService.buy(p(), "nightmare_zone", index, 6);
             if (NightmareZoneSession.barrel(p(), NightmareZone.ABSORPTION) != 6 || Inv.count(p(), NightmareZone.ABSORPTION) != 0
-                    || data.points(p().getUuid(), key) != 0) {
+                    || data.points(p().getUUID(), key) != 0) {
                 throw failure("buying 6 doses left " + NightmareZoneSession.barrel(p(), NightmareZone.ABSORPTION) + " in the barrel and "
                         + Inv.count(p(), NightmareZone.ABSORPTION) + " potions carried");
             }
             int taken = NightmareZoneSession.withdraw(p(), NightmareZone.ABSORPTION, 6);
             int doses = 0;
-            for (ItemStack st : p().getInventory().main) {
+            for (ItemStack st : p().getInventory().items) {
                 if (NightmareZone.ABSORPTION.equals(Inv.idOf(st))) {
-                    doses += 4 - st.getDamage();
+                    doses += 4 - st.getDamageValue();
                 }
             }
             if (taken != 6 || doses != 6 || NightmareZoneSession.barrel(p(), NightmareZone.ABSORPTION) != 0) {
                 throw failure("withdrew " + taken + " doses, carrying " + doses);
             }
         } finally {
-            p().getInventory().clear();
-            data.setStat(p().getUuid(), "nmz_barrel:" + NightmareZone.ABSORPTION, stored);
-            data.addPoints(p().getUuid(), key, before - data.points(p().getUuid(), key));
+            p().getInventory().clearContent();
+            data.setStat(p().getUUID(), "nmz_barrel:" + NightmareZone.ABSORPTION, stored);
+            data.addPoints(p().getUUID(), key, before - data.points(p().getUUID(), key));
         }
         return "6 absorption doses bought into the barrel and withdrawn as 4 + 2";
     }
@@ -201,12 +200,12 @@ final class MinigameRewardChecks {
     /** A reward token's tome is an item; reading it gives XP in the route's range. */
     private String trekTomes() {
         try {
-            p().getInventory().clear();
+            p().getInventory().clearContent();
             ItemStack token = Inv.stack("reward_token_red", 1);
-            p().setStackInHand(Hand.MAIN_HAND, token);
+            p().setItemInHand(InteractionHand.MAIN_HAND, token);
             com.runecraft.content.minigames.games.TempleTrekkingSession.claim(p(), "tome");
             String tome = null;
-            for (ItemStack st : p().getInventory().main) {
+            for (ItemStack st : p().getInventory().items) {
                 if (com.runecraft.osrs.content.minigames.TempleTrekking.tome(Inv.idOf(st)) != null) {
                     tome = Inv.idOf(st);
                 }
@@ -226,7 +225,7 @@ final class MinigameRewardChecks {
             }
             return tome + " read for " + gained + " " + skill.displayName() + " XP";
         } finally {
-            p().getInventory().clear();
+            p().getInventory().clearContent();
         }
     }
 
@@ -237,7 +236,7 @@ final class MinigameRewardChecks {
     private String shadesTown() {
         String riyl = com.runecraft.osrs.content.minigames.ShadesOfMortton.Shade.RIYL.remains();
         try {
-            p().getInventory().clear();
+            p().getInventory().clearContent();
             com.runecraft.content.minigames.ShadesService.addSanctity(p(), 30 - com.runecraft.content.minigames.ShadesService.sanctity(p()));
             Inv.give(p(), "serum_207", 1);
             if (com.runecraft.content.minigames.ShadesService.sanctifySerums(p()) != 1 || !Inv.has(p(), "serum_208", 1)
@@ -245,28 +244,28 @@ final class MinigameRewardChecks {
                 throw failure("serum 207 did not become serum 208 for 20% sanctity (sanctity now "
                         + com.runecraft.content.minigames.ShadesService.sanctity(p()) + ")");
             }
-            int items = p().getInventory().main.stream().filter(st -> !st.isEmpty()).mapToInt(ItemStack::getCount).sum();
+            int items = p().getInventory().items.stream().filter(st -> !st.isEmpty()).mapToInt(ItemStack::getCount).sum();
             com.runecraft.content.minigames.ShadesService.cure(p());
             ItemStack serum = ItemStack.EMPTY;
-            for (ItemStack st : p().getInventory().main) {
+            for (ItemStack st : p().getInventory().items) {
                 if ("serum_208".equals(Inv.idOf(st))) {
                     serum = st;
                 }
             }
-            int after = p().getInventory().main.stream().filter(st -> !st.isEmpty()).mapToInt(ItemStack::getCount).sum();
+            int after = p().getInventory().items.stream().filter(st -> !st.isEmpty()).mapToInt(ItemStack::getCount).sum();
             boolean coins = Players.data(p()).coins() > 0;
-            if (serum.isEmpty() || serum.getDamage() != 1 || (after <= items && !coins)) {
-                throw failure("curing an afflicted villager used " + (serum.isEmpty() ? "?" : serum.getDamage()) + " doses / gave nothing");
+            if (serum.isEmpty() || serum.getDamageValue() != 1 || (after <= items && !coins)) {
+                throw failure("curing an afflicted villager used " + (serum.isEmpty() ? "?" : serum.getDamageValue()) + " doses / gave nothing");
             }
-            p().getInventory().clear();
+            p().getInventory().clearContent();
             Inv.give(p(), "flamtaer_bag", 1);
             Inv.give(p(), "timber_beam", 10);
-            com.runecraft.content.minigames.ShadesService.useBag(p(), p().getInventory().getStack(0));
-            ItemStack bag = p().getInventory().getStack(0);
-            if (Inv.count(p(), "timber_beam") != 0 || bag.getNbt() == null || bag.getNbt().getInt("rc_bag_timber_beam") != 10) {
+            com.runecraft.content.minigames.ShadesService.useBag(p(), p().getInventory().getItem(0));
+            ItemStack bag = p().getInventory().getItem(0);
+            if (Inv.count(p(), "timber_beam") != 0 || bag.getTag() == null || bag.getTag().getInt("rc_bag_timber_beam") != 10) {
                 throw failure("the flamtaer bag did not take the timber beams");
             }
-            p().getInventory().clear();
+            p().getInventory().clearContent();
             com.runecraft.content.minigames.ShadesService.dampe(p());
             Inv.give(p(), "steel_locks", 1);
             com.runecraft.content.minigames.ShadesService.dampe(p());
@@ -275,7 +274,7 @@ final class MinigameRewardChecks {
             }
             Inv.give(p(), riyl, 10);
             ItemStack coffin = ItemStack.EMPTY;
-            for (ItemStack st : p().getInventory().main) {
+            for (ItemStack st : p().getInventory().items) {
                 if ("steel_coffin".equals(Inv.idOf(st))) {
                     coffin = st;
                 }
@@ -286,7 +285,7 @@ final class MinigameRewardChecks {
                 throw failure("the steel coffin took " + (10 - Inv.count(p(), riyl)) + " remains (holds 8)");
             }
         } finally {
-            p().getInventory().clear();
+            p().getInventory().clearContent();
         }
         return "serum 208 made and given to an afflicted villager; bag holds 10 beams; steel coffin holds 8 remains";
     }
@@ -296,7 +295,7 @@ final class MinigameRewardChecks {
     }
 
     private void use() {
-        UseItemCallback.EVENT.invoker().interact(p(), c.world, Hand.MAIN_HAND);
+        UseItemCallback.EVENT.invoker().interact(p(), c.world, InteractionHand.MAIN_HAND);
     }
 
     private ItemStack hold(String id) {
@@ -304,15 +303,15 @@ final class MinigameRewardChecks {
         if (s.isEmpty()) {
             throw failure("item " + id + " is not registered");
         }
-        p().setStackInHand(Hand.MAIN_HAND, s);
-        p().getItemCooldownManager().remove(s.getItem());
+        p().setItemInHand(InteractionHand.MAIN_HAND, s);
+        p().getCooldowns().removeCooldown(s.getItem());
         return s;
     }
 
     private int usedSlots() {
         int n = 0;
-        for (int i = 0; i < p().getInventory().size(); i++) {
-            n += p().getInventory().getStack(i).isEmpty() ? 0 : 1;
+        for (int i = 0; i < p().getInventory().getContainerSize(); i++) {
+            n += p().getInventory().getItem(i).isEmpty() ? 0 : 1;
         }
         return n;
     }
@@ -321,7 +320,7 @@ final class MinigameRewardChecks {
         for (String id : NightmareZone.POTIONS) {
             ItemStack s = hold(id);
             use();
-            if (p().getMainHandStack() != s || s.getDamage() != 0) {
+            if (p().getMainHandItem() != s || s.getDamageValue() != 0) {
                 throw failure(id + " was drunk outside the Nightmare Zone");
             }
         }
@@ -343,8 +342,8 @@ final class MinigameRewardChecks {
                 p().setHealth(p().getMaxHealth());
                 ItemStack held = hold(id);
                 use();
-                if (held.getDamage() != 1) {
-                    throw failure(id + " did not use a dose in the dream (damage " + held.getDamage() + ")");
+                if (held.getDamageValue() != 1) {
+                    throw failure(id + " did not use a dose in the dream (damage " + held.getDamageValue() + ")");
                 }
                 switch (id) {
                     case NightmareZone.ABSORPTION -> {
@@ -418,7 +417,7 @@ final class MinigameRewardChecks {
     private String nmzShop() {
         MinigameData data = MinigameData.of(p());
         String key = MinigameCurrencies.key(MinigameCurrencies.NIGHTMARE_ZONE);
-        int before = data.points(p().getUuid(), key);
+        int before = data.points(p().getUUID(), key);
         RewardShop shop = RewardShops.get("nightmare_zone");
         int box = -1;
         for (int i = 0; i < shop.entries().size(); i++) {
@@ -430,19 +429,19 @@ final class MinigameRewardChecks {
             throw failure("Dom Onion's shop has no herb box");
         }
         try {
-            p().getInventory().clear();
+            p().getInventory().clearContent();
             RewardShopService.resetDaily(p(), "nightmare_zone", "herb_box");
-            data.addPoints(p().getUuid(), key, 20 * 9500 - data.points(p().getUuid(), key));
+            data.addPoints(p().getUUID(), key, 20 * 9500 - data.points(p().getUUID(), key));
             RewardShopService.buy(p(), "nightmare_zone", box, 20);
             int boxes = Inv.count(p(), "herb_box");
             if (boxes != 15) {
                 throw failure("bought " + boxes + " herb boxes in a day (expected the limit of 15)");
             }
             RewardShopService.buy(p(), "nightmare_zone", box, 1);
-            if (Inv.count(p(), "herb_box") != 15 || data.points(p().getUuid(), key) != 5 * 9500) {
+            if (Inv.count(p(), "herb_box") != 15 || data.points(p().getUUID(), key) != 5 * 9500) {
                 throw failure("a 16th herb box was sold today");
             }
-            p().getInventory().clear();
+            p().getInventory().clearContent();
             Inv.give(p(), "scroll_of_redirection", 1);
             Inv.give(p(), "teleport_to_house", 1);
             if (!com.runecraft.content.minigames.MinigameItemUse.redirect(p(), "rimmington")
@@ -450,9 +449,9 @@ final class MinigameRewardChecks {
                 throw failure("the scroll of redirection did not make a Rimmington teleport tablet");
             }
         } finally {
-            p().getInventory().clear();
+            p().getInventory().clearContent();
             RewardShopService.resetDaily(p(), "nightmare_zone", "herb_box");
-            data.addPoints(p().getUuid(), key, before - data.points(p().getUuid(), key));
+            data.addPoints(p().getUUID(), key, before - data.points(p().getUUID(), key));
         }
         return "15 herb boxes a day; scroll of redirection made a Rimmington tablet";
     }
@@ -470,18 +469,18 @@ final class MinigameRewardChecks {
     private String baGamble() {
         MinigameData data = MinigameData.of(p());
         String key = MinigameCurrencies.key(MinigameCurrencies.BA_ATTACKER);
-        data.addPoints(p().getUuid(), key, 1000 - data.points(p().getUuid(), key));
-        data.setStat(p().getUuid(), BarbarianAssaultSession.WAVE_STAT, 0);
-        p().getInventory().clear();
+        data.addPoints(p().getUUID(), key, 1000 - data.points(p().getUUID(), key));
+        data.setStat(p().getUUID(), BarbarianAssaultSession.WAVE_STAT, 0);
+        p().getInventory().clearContent();
         int low = entry(BaGambles.Tier.LOW.displayName() + " (Attacker)");
         RewardShopService.buy(p(), "barbarian_assault", low, 1);
-        if (data.points(p().getUuid(), key) != 1000) {
+        if (data.points(p().getUUID(), key) != 1000) {
             throw failure("a low gamble went through before reaching wave 3");
         }
-        data.setStat(p().getUuid(), BarbarianAssaultSession.WAVE_STAT, 6);
+        data.setStat(p().getUUID(), BarbarianAssaultSession.WAVE_STAT, 6);
         long coinsBefore = Players.data(p()).coins();
         RewardShopService.buy(p(), "barbarian_assault", low, 1);
-        int left = data.points(p().getUuid(), key);
+        int left = data.points(p().getUUID(), key);
         if (left != 1000 - BaGambles.Tier.LOW.cost()) {
             throw failure("a low gamble left " + left + " Attacker points (expected " + (1000 - BaGambles.Tier.LOW.cost()) + ")");
         }
@@ -489,19 +488,19 @@ final class MinigameRewardChecks {
         if (usedSlots() == 0 && Players.data(p()).coins() <= coinsBefore) {
             throw failure("the low gamble handed out nothing");
         }
-        p().getInventory().clear();
+        p().getInventory().clearContent();
         return "locked before wave 3; low gamble paid 200 Attacker points and gave a prize";
     }
 
     private String spoils() {
-        p().getInventory().clear();
+        p().getInventory().clearContent();
         hold(SpoilsOfWar.ITEM);
         use();
         if (Inv.count(p(), SpoilsOfWar.ITEM) != 0) {
             throw failure("the spoils of war did not open");
         }
         int slots = usedSlots();
-        p().getInventory().clear();
+        p().getInventory().clearContent();
         if (slots == 0) {
             throw failure("the spoils of war contained nothing");
         }
@@ -607,12 +606,12 @@ final class MinigameRewardChecks {
             if (!c.selfTestWoundSol(0.05f)) {
                 throw failure("Sol Heredit is not in the arena on wave 12");
             }
-            float yaw = p().getYaw();
+            float yaw = p().getYRot();
             for (float y : new float[]{180f, 270f, 0f, 90f}) {
-                p().setYaw(y);
+                p().setYRot(y);
                 c.saluteIn(p());
             }
-            p().setYaw(yaw);
+            p().setYRot(yaw);
             if (c.salutes().size() != 4) {
                 throw failure("salutes counted " + c.salutes() + " (expected north, east, south and west)");
             }
@@ -629,12 +628,12 @@ final class MinigameRewardChecks {
     /** Glory unlocks (bank chest, respawn point, ring of dueling) and the daily Varlamore token from wave 3. */
     private String colosseumGlory() {
         MinigameData data = MinigameData.of(p());
-        java.util.UUID u = p().getUuid();
+        java.util.UUID u = p().getUUID();
         int glory = data.stat(u, FortisColosseum.STAT_GLORY);
-        var dim = p().getSpawnPointDimension();
-        net.minecraft.util.math.BlockPos spawn = p().getSpawnPointPosition();
-        float angle = p().getSpawnAngle();
-        boolean forced = p().isSpawnForced();
+        var dim = p().getRespawnDimension();
+        net.minecraft.core.BlockPos spawn = p().getRespawnPosition();
+        float angle = p().getRespawnAngle();
+        boolean forced = p().isRespawnForced();
         try {
             data.setStat(u, FortisColosseum.STAT_GLORY, FortisColosseum.GLORY_DUELING - 1);
             if (ColosseumSession.duelingGate(p()) == null) {
@@ -649,7 +648,7 @@ final class MinigameRewardChecks {
                 throw failure("Civitas illa Fortis became the respawn point with no Glory");
             }
             data.setStat(u, FortisColosseum.STAT_GLORY, FortisColosseum.GLORY_RESPAWN);
-            if (!ColosseumSession.setRespawn(p()) || p().getSpawnPointDimension() != com.runecraft.world.Gielinor.WORLD) {
+            if (!ColosseumSession.setRespawn(p()) || p().getRespawnDimension() != com.runecraft.world.Gielinor.WORLD) {
                 throw failure("Civitas illa Fortis did not become the respawn point at 5,000 Glory");
             }
             Inv.remove(p(), FortisColosseum.TOKEN, Inv.count(p(), FortisColosseum.TOKEN));
@@ -667,7 +666,7 @@ final class MinigameRewardChecks {
             return "dueling teleport at 12,000, respawn point at 5,000, token " + (eligible ? "given once" : "not due today");
         } finally {
             data.setStat(u, FortisColosseum.STAT_GLORY, glory);
-            p().setSpawnPoint(dim, spawn, angle, forced, false);
+            p().setRespawnPosition(dim, spawn, angle, forced, false);
         }
     }
 
@@ -692,7 +691,7 @@ final class MinigameRewardChecks {
                 throw failure("the entangle sack paid for Entangle outside the Wilderness");
             }
             // Stand in level 23 Wilderness (OSRS tile 3100, 3700) for the lookups only.
-            p().setPosition(com.runecraft.osrs.GielinorMap.toBlockX(3100) + 0.5, y, com.runecraft.osrs.GielinorMap.toBlockZ(3700) + 0.5);
+            p().setPos(com.runecraft.osrs.GielinorMap.toBlockX(3100) + 0.5, y, com.runecraft.osrs.GielinorMap.toBlockZ(3700) + 0.5);
             if (com.runecraft.world.Gielinor.wildernessLevel(p()) <= 0) {
                 throw new SelfTest.Skip("the Wilderness lookup position isn't in the Wilderness");
             }
@@ -704,7 +703,7 @@ final class MinigameRewardChecks {
                 throw failure("the entangle sack paid for Ice Barrage");
             }
         } finally {
-            p().setPosition(x, y, z);
+            p().setPos(x, y, z);
             int extra = Inv.count(p(), sack) - had;
             if (extra > 0) {
                 Inv.remove(p(), sack, extra);
@@ -736,11 +735,11 @@ final class MinigameRewardChecks {
             if (Inv.count(p(), "compost") != 0) {
                 throw failure("the player's own items weren't put away");
             }
-            if (!Inv.idOf(p().getMainHandStack()).equals("lms_ancient_staff") && Inv.count(p(), "lms_ancient_staff") == 0) {
+            if (!Inv.idOf(p().getMainHandItem()).equals("lms_ancient_staff") && Inv.count(p(), "lms_ancient_staff") == 0) {
                 throw failure("the Pure kit's ancient staff is missing");
             }
             hold("soul_cape");
-            com.runecraft.content.systems.JewelleryService.wear(p(), Hand.MAIN_HAND);
+            com.runecraft.content.systems.JewelleryService.wear(p(), InteractionHand.MAIN_HAND);
             if (Inv.idOf(com.runecraft.content.systems.SysState.of(p()).worn(com.runecraft.osrs.content.systems.Jewellery.Slot.CAPE))
                     .equals("soul_cape")) {
                 throw failure("a soul cape was worn with 52 Prayer");
@@ -762,7 +761,7 @@ final class MinigameRewardChecks {
         for (String id : List.of("blighted_karambwan", "blighted_super_restore")) {
             ItemStack s = hold(id);
             use();
-            if (p().getMainHandStack() != s || s.getCount() != 1 || s.getDamage() != 0) {
+            if (p().getMainHandItem() != s || s.getCount() != 1 || s.getDamageValue() != 0) {
                 throw failure(id + " was used outside the Wilderness");
             }
         }

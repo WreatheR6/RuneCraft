@@ -2,35 +2,35 @@ package com.runecraft.block;
 
 import com.runecraft.osrs.data.HunterCreature;
 import com.runecraft.skill.HunterService;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.ShapeContext;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.state.StateManager;
-import net.minecraft.state.property.BooleanProperty;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 /** A laid bird snare or box trap. Periodically rolls to catch a creature for the nearest hunter. */
 public class TrapBlock extends Block {
-    public static final BooleanProperty CAUGHT = BooleanProperty.of("caught");
-    private static final VoxelShape OUTLINE = Block.createCuboidShape(3, 0, 3, 13, 7, 13);
+    public static final BooleanProperty CAUGHT = BooleanProperty.create("caught");
+    private static final VoxelShape OUTLINE = Block.box(3, 0, 3, 13, 7, 13);
 
     private final HunterCreature.Trap trap;
 
-    public TrapBlock(HunterCreature.Trap trap, Settings settings) {
+    public TrapBlock(HunterCreature.Trap trap, Properties settings) {
         super(settings);
         this.trap = trap;
-        setDefaultState(this.stateManager.getDefaultState().with(CAUGHT, false));
+        registerDefaultState(this.stateDefinition.any().setValue(CAUGHT, false));
     }
 
     public HunterCreature.Trap trap() {
@@ -38,45 +38,45 @@ public class TrapBlock extends Block {
     }
 
     @Override
-    protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(CAUGHT);
     }
 
     @Override
     @SuppressWarnings("deprecation")
-    public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+    public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
         return OUTLINE;
     }
 
     @Override
     @SuppressWarnings("deprecation")
-    public VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        return VoxelShapes.empty();
+    public VoxelShape getCollisionShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
+        return Shapes.empty();
     }
 
     @Override
     @SuppressWarnings("deprecation")
-    public void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState, boolean notify) {
-        if (!world.isClient() && !state.get(CAUGHT)) {
-            world.scheduleBlockTick(pos, this, HunterService.CHECK_INTERVAL);
+    public void onPlace(BlockState state, Level world, BlockPos pos, BlockState oldState, boolean notify) {
+        if (!world.isClientSide() && !state.getValue(CAUGHT)) {
+            world.scheduleTick(pos, this, HunterService.CHECK_INTERVAL);
         }
     }
 
     @Override
     @SuppressWarnings("deprecation")
-    public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
+    public void tick(BlockState state, ServerLevel world, BlockPos pos, RandomSource random) {
         HunterService.checkTrap(world, pos, state, this);
     }
 
     @Override
     @SuppressWarnings("deprecation")
-    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
-        if (hand != Hand.MAIN_HAND) {
-            return ActionResult.PASS;
+    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        if (hand != InteractionHand.MAIN_HAND) {
+            return InteractionResult.PASS;
         }
-        if (!world.isClient() && player instanceof ServerPlayerEntity sp) {
-            HunterService.collect(sp, (ServerWorld) world, pos, state, this);
+        if (!world.isClientSide() && player instanceof ServerPlayer sp) {
+            HunterService.collect(sp, (ServerLevel) world, pos, state, this);
         }
-        return ActionResult.success(world.isClient());
+        return InteractionResult.sidedSuccess(world.isClientSide());
     }
 }

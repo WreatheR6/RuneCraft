@@ -8,17 +8,16 @@ import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.BossDef;
 import com.runecraft.osrs.world.ArenaLayout;
-import net.minecraft.particle.ParticleEffect;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.BiConsumer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Base class for this module's boss scripts.
@@ -40,8 +39,8 @@ abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScaled {
     static final int MAX_MC_HEALTH = 1024;
 
     /** A dodgeable ground strike. */
-    private record Strike(ServerWorld world, Vec3d pos, long due, int maxDamage, double radius, ParticleEffect particle,
-                          BiConsumer<List<ServerPlayerEntity>, Vec3d> onLand, String name) {
+    private record Strike(ServerLevel world, Vec3 pos, long due, int maxDamage, double radius, ParticleOptions particle,
+                          BiConsumer<List<ServerPlayer>, Vec3> onLand, String name) {
     }
 
     private final List<Strike> strikes = new ArrayList<>();
@@ -50,7 +49,7 @@ abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScaled {
     protected int attackCount;
     protected AttackDef last;
     protected long now;
-    private ServerPlayerEntity pendingDeathBy;
+    private ServerPlayer pendingDeathBy;
     private boolean pendingDeath;
 
     /** True when the script performs attacks itself. */
@@ -59,12 +58,12 @@ abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScaled {
     }
 
     /** Next attack in driven mode (may have side effects; called once per attack). */
-    protected AttackDef nextAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+    protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
         return null;
     }
 
     /** Whether the boss should walk into melee range (driven mode). */
-    protected boolean wantsMelee(DataBossEntity boss, ServerPlayerEntity target) {
+    protected boolean wantsMelee(DataBossEntity boss, ServerPlayer target) {
         return false;
     }
 
@@ -80,7 +79,7 @@ abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScaled {
     }
 
     /** Called after a driven attack has been started. */
-    protected void afterAttack(DataBossEntity boss, ServerPlayerEntity target, AttackDef attack) {
+    protected void afterAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
     }
 
     /** Main boss id whose kill is credited when this form dies, or null if this is the main boss. */
@@ -89,18 +88,18 @@ abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScaled {
     }
 
     /** Per-game-tick logic of the concrete script. */
-    protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+    protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
     }
 
     /** Damage adjustments of the concrete script (before HP scaling). */
-    protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+    protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
         return damage;
     }
 
     // ------------------------------------------------------------------
 
     @Override
-    public AttackDef chooseAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+    public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
         if (!driven()) {
             return null;
         }
@@ -119,9 +118,9 @@ abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScaled {
     public final void gameTick(DataBossEntity boss, long gameTick) {
         now = gameTick;
         if (home == null) {
-            home = boss.getBlockPos();
+            home = boss.blockPosition();
         }
-        ServerPlayerEntity target = target(boss);
+        ServerPlayer target = target(boss);
         tickStrikes();
         onGameTick(boss, target);
         if (!driven() || !boss.isAlive()) {
@@ -134,7 +133,7 @@ abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScaled {
         if (target == null || !canAttack(boss)) {
             return;
         }
-        double dist = Math.sqrt(boss.squaredDistanceTo(target)) - boss.getWidth() / 2;
+        double dist = Math.sqrt(boss.distanceToSqr(target)) - boss.getBbWidth() / 2;
         AttackDef a = nextAttack(boss, target, dist);
         if (a == null || dist > a.range()) {
             return;
@@ -145,7 +144,7 @@ abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScaled {
     }
 
     /** Performs an attack now (also usable outside the driven cadence, e.g. volleys and specials). */
-    protected void perform(DataBossEntity boss, ServerPlayerEntity target, AttackDef a) {
+    protected void perform(DataBossEntity boss, ServerPlayer target, AttackDef a) {
         last = a;
         attackCount++;
         Mechanics.perform(boss, target, a, multiplier(boss) * boss.variantHitScale(a));
@@ -162,7 +161,7 @@ abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScaled {
     }
 
     @Override
-    public final int modifyIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+    public final int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
         int d = incoming(boss, attacker, damage, type);
         int hp = boss.trueHitpoints();
         if (hp > MAX_MC_HEALTH && d > 0) {
@@ -188,13 +187,13 @@ abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScaled {
         return boss.getHealth() * 100.0 / boss.getMaxHealth();
     }
 
-    protected ServerPlayerEntity target(DataBossEntity boss) {
-        if (boss.getTarget() instanceof ServerPlayerEntity p && p.isAlive() && !p.isSpectator() && !p.isCreative()) {
+    protected ServerPlayer target(DataBossEntity boss) {
+        if (boss.getTarget() instanceof ServerPlayer p && p.isAlive() && !p.isSpectator() && !p.isCreative()) {
             return p;
         }
-        ServerPlayerEntity nearest = null;
-        for (ServerPlayerEntity p : BossFx.players(boss, 24)) {
-            if (nearest == null || p.squaredDistanceTo(boss) < nearest.squaredDistanceTo(boss)) {
+        ServerPlayer nearest = null;
+        for (ServerPlayer p : BossFx.players(boss, 24)) {
+            if (nearest == null || p.distanceToSqr(boss) < nearest.distanceToSqr(boss)) {
                 nearest = p;
             }
         }
@@ -207,12 +206,12 @@ abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScaled {
     // ---------------- Strikes ----------------
 
     /** Marks a ground position; after {@code delayTicks} everyone within {@code radius} takes up to {@code maxDamage}. */
-    protected void strike(DataBossEntity boss, Vec3d pos, int delayTicks, int maxDamage, double radius, ParticleEffect particle) {
+    protected void strike(DataBossEntity boss, Vec3 pos, int delayTicks, int maxDamage, double radius, ParticleOptions particle) {
         strike(boss, pos, delayTicks, maxDamage, radius, particle, null);
     }
 
-    protected void strike(DataBossEntity boss, Vec3d pos, int delayTicks, int maxDamage, double radius, ParticleEffect particle,
-                          BiConsumer<List<ServerPlayerEntity>, Vec3d> onLand) {
+    protected void strike(DataBossEntity boss, Vec3 pos, int delayTicks, int maxDamage, double radius, ParticleOptions particle,
+                          BiConsumer<List<ServerPlayer>, Vec3> onLand) {
         strikes.add(new Strike(BossFx.world(boss), pos, now + delayTicks, maxDamage, radius, particle, onLand, strikeName));
         owner = boss;
     }
@@ -221,13 +220,13 @@ abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScaled {
     private String strikeName;
 
     /** A strike whose damage is reported under an attack name (e.g. "lightning"). */
-    protected void namedStrike(String name, DataBossEntity boss, Vec3d pos, int delayTicks, int maxDamage, double radius,
-                               ParticleEffect particle) {
+    protected void namedStrike(String name, DataBossEntity boss, Vec3 pos, int delayTicks, int maxDamage, double radius,
+                               ParticleOptions particle) {
         namedStrike(name, boss, pos, delayTicks, maxDamage, radius, particle, null);
     }
 
-    protected void namedStrike(String name, DataBossEntity boss, Vec3d pos, int delayTicks, int maxDamage, double radius,
-                               ParticleEffect particle, BiConsumer<List<ServerPlayerEntity>, Vec3d> onLand) {
+    protected void namedStrike(String name, DataBossEntity boss, Vec3 pos, int delayTicks, int maxDamage, double radius,
+                               ParticleOptions particle, BiConsumer<List<ServerPlayer>, Vec3> onLand) {
         strikeName = name;
         strike(boss, pos, delayTicks, maxDamage, radius, particle, onLand);
         strikeName = null;
@@ -252,12 +251,12 @@ abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScaled {
             }
         }
         for (Strike s : landed) {
-            s.world().spawnParticles(ParticleTypes.EXPLOSION, s.pos().x, s.pos().y + 0.3, s.pos().z, 2, 0.3, 0.2, 0.3, 0);
-            s.world().spawnParticles(s.particle(), s.pos().x, s.pos().y + 0.5, s.pos().z, 15, s.radius() / 2, 0.4, s.radius() / 2, 0.02);
-            List<ServerPlayerEntity> hit = s.world().getPlayers(p -> p.isAlive() && !p.isSpectator()
-                    && p.getPos().squaredDistanceTo(s.pos()) <= s.radius() * s.radius());
+            s.world().sendParticles(ParticleTypes.EXPLOSION, s.pos().x, s.pos().y + 0.3, s.pos().z, 2, 0.3, 0.2, 0.3, 0);
+            s.world().sendParticles(s.particle(), s.pos().x, s.pos().y + 0.5, s.pos().z, 15, s.radius() / 2, 0.4, s.radius() / 2, 0.02);
+            List<ServerPlayer> hit = s.world().getPlayers(p -> p.isAlive() && !p.isSpectator()
+                    && p.position().distanceToSqr(s.pos()) <= s.radius() * s.radius());
             if (s.maxDamage() > 0) {
-                for (ServerPlayerEntity p : hit) {
+                for (ServerPlayer p : hit) {
                     if (s.name() != null) {
                         com.runecraft.combat.CombatHooks.nameAttack(s.name(), null);
                     }
@@ -272,14 +271,14 @@ abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScaled {
     }
 
     /** A random ground point within {@code radius} blocks of {@code centre}. */
-    protected static Vec3d around(DataBossEntity boss, Vec3d centre, double radius) {
+    protected static Vec3 around(DataBossEntity boss, Vec3 centre, double radius) {
         double a = boss.getRandom().nextDouble() * Math.PI * 2;
         double r = Math.sqrt(boss.getRandom().nextDouble()) * radius;
         return BossFx.ground(BossFx.world(boss), centre.x + Math.cos(a) * r, centre.z + Math.sin(a) * r, centre.y);
     }
 
-    protected Vec3d homeVec() {
-        return home == null ? Vec3d.ZERO : Vec3d.ofBottomCenter(home);
+    protected Vec3 homeVec() {
+        return home == null ? Vec3.ZERO : Vec3.atBottomCenterOf(home);
     }
 
     /**
@@ -287,12 +286,12 @@ abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScaled {
      * summoning stone sits by the arena's north edge, so a stone-summoned boss's spawn block is not the centre.
      */
     protected static BlockPos arenaCentre(DataBossEntity boss) {
-        BlockPos at = boss.getBlockPos();
+        BlockPos at = boss.blockPosition();
         ArenaLayout.Arena a = boss.def() == null ? null : ArenaLayout.of(boss.def().id);
         if (a == null || Math.hypot(at.getX() - a.x(), at.getZ() - a.z()) > a.radius() + 3) {
             return at;
         }
-        Vec3d floor = BossFx.ground(BossFx.world(boss), a.x() + 0.5, a.z() + 0.5, at.getY());
+        Vec3 floor = BossFx.ground(BossFx.world(boss), a.x() + 0.5, a.z() + 0.5, at.getY());
         return new BlockPos(a.x(), (int) Math.floor(floor.y), a.z());
     }
 }

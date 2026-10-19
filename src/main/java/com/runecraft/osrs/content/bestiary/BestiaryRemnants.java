@@ -12,6 +12,8 @@ import static com.runecraft.osrs.content.bestiary.BestiaryHumKit.*;
 import static com.runecraft.osrs.content.bestiary.BestiaryLookalikes.mixRgb;
 import static com.runecraft.osrs.content.bestiary.Kit.part;
 
+import com.runecraft.osrs.content.bestiary.BestiaryHumKit.Fig;
+
 /**
  * Round-4 models for creatures that were still on the outfit fallback or borrowing an unrelated body: the God Wars
  * followers (spiritual creatures of Bandos/Saradomin/Zamorak, orks, vampyres, Saradomin's knights and priests), the

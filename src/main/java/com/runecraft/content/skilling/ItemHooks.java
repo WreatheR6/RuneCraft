@@ -26,20 +26,19 @@ import com.runecraft.registry.ModItems;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.projectile.ArrowEntity;
-import net.minecraft.entity.projectile.PersistentProjectileEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.Hand;
-import net.minecraft.util.TypedActionResult;
-import net.minecraft.util.math.random.Random;
-
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.entity.projectile.Arrow;
+import net.minecraft.world.item.ItemStack;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -70,11 +69,11 @@ public final class ItemHooks {
     }
 
     /** Scattering demonic ashes for Prayer XP (2 game ticks, like burying bones). */
-    private static void scatter(ServerPlayerEntity player, ItemStack stack, PrayerData.Ashes ashes) {
-        player.getItemCooldownManager().set(stack.getItem(), 2 * ActionManager.MC_TICKS_PER_GAME_TICK);
-        stack.decrement(1);
+    private static void scatter(ServerPlayer player, ItemStack stack, PrayerData.Ashes ashes) {
+        player.getCooldowns().addCooldown(stack.getItem(), 2 * ActionManager.MC_TICKS_PER_GAME_TICK);
+        stack.shrink(1);
         com.runecraft.skill.XpService.add(player, Skill.PRAYER, ashes.xp());
-        player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.BLOCK_SAND_BREAK, SoundCategory.PLAYERS, 0.8f, 1.2f);
+        player.level().playSound(null, player.blockPosition(), SoundEvents.SAND_BREAK, SoundSource.PLAYERS, 0.8f, 1.2f);
         Msg.action(player, "You scatter the ashes.");
     }
 
@@ -103,26 +102,26 @@ public final class ItemHooks {
                 "unfermented_wine", "empty_sack", "hay_sack"));
 
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            ItemStack stack = player.getStackInHand(hand);
+            ItemStack stack = player.getItemInHand(hand);
             if (stack.isEmpty()) {
-                return TypedActionResult.pass(stack);
+                return InteractionResultHolder.pass(stack);
             }
             String id = Inv.idOf(stack);
-            if (world.isClient()) {
-                return HANDLED.contains(id) ? TypedActionResult.success(stack) : TypedActionResult.pass(stack);
+            if (world.isClientSide()) {
+                return HANDLED.contains(id) ? InteractionResultHolder.success(stack) : InteractionResultHolder.pass(stack);
             }
-            if (!(player instanceof ServerPlayerEntity sp) || player.getItemCooldownManager().isCoolingDown(stack.getItem())) {
-                return HANDLED.contains(id) ? TypedActionResult.success(stack) : TypedActionResult.pass(stack);
+            if (!(player instanceof ServerPlayer sp) || player.getCooldowns().isOnCooldown(stack.getItem())) {
+                return HANDLED.contains(id) ? InteractionResultHolder.success(stack) : InteractionResultHolder.pass(stack);
             }
-            return use(sp, stack, hand, id) ? TypedActionResult.success(stack) : TypedActionResult.pass(stack);
+            return use(sp, stack, hand, id) ? InteractionResultHolder.success(stack) : InteractionResultHolder.pass(stack);
         });
 
         // Poisoned melee weapons poison on hit (25% chance, like OSRS).
         CombatHooks.addModifier(new CombatHooks.PlayerAttackModifier() {
             @Override
-            public void afterHit(ServerPlayerEntity player, LivingEntity target, AttackType type, int dealt) {
-                ItemStack weapon = player.getMainHandStack();
-                NbtCompound nbt = weapon.getNbt();
+            public void afterHit(ServerPlayer player, LivingEntity target, AttackType type, int dealt) {
+                ItemStack weapon = player.getMainHandItem();
+                CompoundTag nbt = weapon.getTag();
                 if (dealt > 0 && type != AttackType.MAGIC && nbt != null && nbt.contains(POISON_NBT)
                         && player.getRandom().nextInt(4) == 0) {
                     PoisonService.poison(target, nbt.getInt(POISON_NBT), ActionManager.gameTick());
@@ -132,7 +131,7 @@ public final class ItemHooks {
     }
 
     /** Returns true if handled. */
-    private static boolean use(ServerPlayerEntity player, ItemStack stack, Hand hand, String id) {
+    private static boolean use(ServerPlayer player, ItemStack stack, InteractionHand hand, String id) {
         if (com.runecraft.skill.ThievingService.openPouches(player, id)) {
             return true;
         }
@@ -186,7 +185,7 @@ public final class ItemHooks {
             return true;
         }
         // Sneak + use cargo (salvage, cannonballs, repair kits) near your boat: store it in the cargo hold.
-        if (player.isSneaking() && player.getVehicle() == null && com.runecraft.osrs.content.skilling.SailingCrew.storable(id)
+        if (player.isShiftKeyDown() && player.getVehicle() == null && com.runecraft.osrs.content.skilling.SailingCrew.storable(id)
                 && SeaHooks.deposit(player, id, stack.getCount())) {
             return true;
         }
@@ -215,13 +214,13 @@ public final class ItemHooks {
         }
         switch (id) {
             case "casket" -> {
-                stack.decrement(1);
+                stack.shrink(1);
                 Loot l = SkillingUtil.roll(player, GatheringData.CASKET, player.getRandom());
                 Msg.action(player, "You open the casket and find " + SkillingUtil.lower(SkillingUtil.name(l.item())) + ".");
                 return true;
             }
             case "oyster" -> {
-                stack.decrement(1);
+                stack.shrink(1);
                 Loot l = SkillingUtil.roll(player, GatheringData.OYSTER, player.getRandom());
                 Msg.action(player, l.item().equals("oyster_pearl") ? "You find a pearl inside the oyster!" : "The oyster is empty.");
                 return true;
@@ -231,7 +230,7 @@ public final class ItemHooks {
                 return true;
             }
             case "bird_nest_seeds", "bird_nest_ring" -> {
-                stack.decrement(1);
+                stack.shrink(1);
                 Loot l = SkillingUtil.roll(player, id.equals("bird_nest_seeds") ? FarmingHooks.NEST_SEEDS : FarmingHooks.NEST_RINGS,
                         player.getRandom());
                 SkillingUtil.give(player, "bird_nest", 1);
@@ -242,7 +241,7 @@ public final class ItemHooks {
                 if (!SkillingUtil.needItem(player, "hammer", "You need a hammer to crush the infernal eel.")) {
                     return true;
                 }
-                stack.decrement(1);
+                stack.shrink(1);
                 Loot l = SkillingUtil.roll(player, GatheringData.INFERNAL_EEL, player.getRandom());
                 Msg.action(player, "You crush the infernal eel and find " + SkillingUtil.lower(SkillingUtil.name(l.item())) + ".");
                 return true;
@@ -260,10 +259,10 @@ public final class ItemHooks {
             }
             case "empty_sack" -> {
                 // Fill a sack with hay from a hay bale next to you (OSRS: haystacks and hay bales).
-                net.minecraft.util.math.BlockPos at = player.getBlockPos();
+                net.minecraft.core.BlockPos at = player.blockPosition();
                 boolean hay = false;
-                for (net.minecraft.util.math.BlockPos p : net.minecraft.util.math.BlockPos.iterate(at.add(-2, -1, -2), at.add(2, 2, 2))) {
-                    if (player.getWorld().getBlockState(p).isOf(net.minecraft.block.Blocks.HAY_BLOCK)) {
+                for (net.minecraft.core.BlockPos p : net.minecraft.core.BlockPos.betweenClosed(at.offset(-2, -1, -2), at.offset(2, 2, 2))) {
+                    if (player.level().getBlockState(p).is(net.minecraft.world.level.block.Blocks.HAY_BLOCK)) {
                         hay = true;
                         break;
                     }
@@ -272,7 +271,7 @@ public final class ItemHooks {
                     Msg.game(player, "Stand next to some hay to fill the sack.");
                     return true;
                 }
-                stack.decrement(1);
+                stack.shrink(1);
                 SkillingUtil.give(player, "hay_sack", 1);
                 Msg.action(player, "You fill the sack with hay.");
                 return true;
@@ -286,7 +285,7 @@ public final class ItemHooks {
                     Msg.game(player, "You need a bronze spear and a watermelon to make a scarecrow.");
                     return true;
                 }
-                stack.decrement(1);
+                stack.shrink(1);
                 Inv.remove(player, "bronze_spear", 1);
                 Inv.remove(player, "watermelon", 1);
                 SkillingUtil.give(player, "scarecrow", 1);
@@ -306,16 +305,16 @@ public final class ItemHooks {
 
     // ------------------------------------------------------------------ food
 
-    private static void bite(ServerPlayerEntity player, ItemStack stack, CookingData.Bite b) {
-        net.minecraft.item.Item item = stack.getItem();
-        stack.decrement(1);
+    private static void bite(ServerPlayer player, ItemStack stack, CookingData.Bite b) {
+        net.minecraft.world.item.Item item = stack.getItem();
+        stack.shrink(1);
         player.heal(b.heal());
-        player.getHungerManager().add(Math.max(1, b.heal() / 2), 0.3f);
-        player.getItemCooldownManager().set(item, EAT_DELAY);
+        player.getFoodData().eat(Math.max(1, b.heal() / 2), 0.3f);
+        player.getCooldowns().addCooldown(item, EAT_DELAY);
         if (b.next() != null) {
             Inv.give(player, b.next(), 1);
         }
-        player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ENTITY_PLAYER_BURP, SoundCategory.PLAYERS, 0.5f, 1.0f);
+        player.level().playSound(null, player.blockPosition(), SoundEvents.PLAYER_BURP, SoundSource.PLAYERS, 0.5f, 1.0f);
         Msg.action(player, "You eat " + (b.next() == null || b.next().equals("pie_dish") ? "the rest of " : "some of ") + "the "
                 + SkillingUtil.lower(SkillingUtil.name(b.full())) + ".");
         ActionManager.cancel(player);
@@ -323,18 +322,18 @@ public final class ItemHooks {
 
     // ------------------------------------------------------------------ potions
 
-    private static void drink(ServerPlayerEntity player, ItemStack stack, Hand hand, HerbloreData.ModPotion potion) {
+    private static void drink(ServerPlayer player, ItemStack stack, InteractionHand hand, HerbloreData.ModPotion potion) {
         HerbloreData.Effect e = potion.effect();
         PlayerData data = Players.data(player);
         long now = ActionManager.gameTick();
         if (e.weaponPoison()) {
-            ItemStack weapon = hand == Hand.MAIN_HAND ? player.getOffHandStack() : player.getMainHandStack();
+            ItemStack weapon = hand == InteractionHand.MAIN_HAND ? player.getOffhandItem() : player.getMainHandItem();
             ItemDef wdef = ModItems.def(weapon);
             if (wdef == null || (wdef.kind() != ItemDef.Kind.MELEE_WEAPON && wdef.kind() != ItemDef.Kind.ARROW)) {
                 Msg.game(player, "Hold the weapon you want to poison in your other hand.");
                 return;
             }
-            weapon.getOrCreateNbt().putInt(POISON_NBT, e.poisonDamage());
+            weapon.getOrCreateTag().putInt(POISON_NBT, e.poisonDamage());
             Msg.action(player, "You coat the " + SkillingUtil.lower(wdef.name()) + " with poison.");
             useDose(player, stack, hand, potion.name(), 4, false);
             return;
@@ -363,11 +362,11 @@ public final class ItemHooks {
      * Called when a player drinks a dose that cures disease (sanfew serum, relicym's balm): the Nightmare's parasites are
      * weakened by it.
      */
-    public static final java.util.List<java.util.function.Consumer<ServerPlayerEntity>> DISEASE_CURE =
+    public static final java.util.List<java.util.function.Consumer<ServerPlayer>> DISEASE_CURE =
             new java.util.concurrent.CopyOnWriteArrayList<>();
 
     /** The effect of one dose of a module potion (also used by barbarian mixes). */
-    private static void applyEffect(ServerPlayerEntity player, HerbloreData.Effect e, long now) {
+    private static void applyEffect(ServerPlayer player, HerbloreData.Effect e, long now) {
         PlayerData data = Players.data(player);
         int prayer = e.apply(data.skills());
         if (prayer > 0 && e == HerbloreData.Effect.SANFEW) {
@@ -384,19 +383,19 @@ public final class ItemHooks {
             case RELICYMS_BALM -> {
                 DISEASE_CURE.forEach(l -> l.accept(player));
                 // Cures disease: RuneCraft has none, so it clears the closest vanilla ailments.
-                player.removeStatusEffect(StatusEffects.WEAKNESS);
-                player.removeStatusEffect(StatusEffects.HUNGER);
-                player.removeStatusEffect(StatusEffects.NAUSEA);
+                player.removeEffect(MobEffects.WEAKNESS);
+                player.removeEffect(MobEffects.HUNGER);
+                player.removeEffect(MobEffects.CONFUSION);
             }
-            case PRAYER_REGENERATION -> PRAYER_REGEN.put(player.getUuid(), now + HerbloreData.Effect.REGEN_DURATION);
-            case GOADING -> GOADING.put(player.getUuid(), now + HerbloreData.Effect.GOADING_DURATION);
+            case PRAYER_REGENERATION -> PRAYER_REGEN.put(player.getUUID(), now + HerbloreData.Effect.REGEN_DURATION);
+            case GOADING -> GOADING.put(player.getUUID(), now + HerbloreData.Effect.GOADING_DURATION);
             case STAMINA -> {
-                player.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 20 * 120, 0));
-                player.getHungerManager().add(4, 0.5f);
+                player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 20 * 120, 0));
+                player.getFoodData().eat(4, 0.5f);
             }
             case SUPER_ENERGY -> {
-                player.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 20 * 60, 0));
-                player.getHungerManager().add(6, 0.4f);
+                player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 20 * 60, 0));
+                player.getFoodData().eat(6, 0.4f);
             }
             case SUPER_ANTIPOISON -> PoisonService.cure(player, false, 600, now);
             case ANTIDOTE_PLUS -> PoisonService.cure(player, false, 900, now);
@@ -407,11 +406,11 @@ public final class ItemHooks {
                     com.runecraft.osrs.Toxins.ANTI_VENOM_PLUS[1], now);
             case EXTENDED_ANTI_VENOM_PLUS -> PoisonService.antiVenom(player, com.runecraft.osrs.Toxins.EXTENDED_ANTI_VENOM_PLUS[0],
                     com.runecraft.osrs.Toxins.EXTENDED_ANTI_VENOM_PLUS[1], now);
-            case SUPER_ANTIFIRE -> player.addStatusEffect(new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, 20 * 180, 1));
-            case EXTENDED_SUPER_ANTIFIRE -> player.addStatusEffect(new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, 20 * 360, 1));
+            case SUPER_ANTIFIRE -> player.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 20 * 180, 1));
+            case EXTENDED_SUPER_ANTIFIRE -> player.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 20 * 360, 1));
             case GUTHIX_REST -> {
                 player.heal(5);
-                player.getHungerManager().add(3, 0.3f);
+                player.getFoodData().eat(3, 0.3f);
                 PoisonService.cure(player, false, 0, now);
             }
             case ZAMORAK_BREW -> player.setHealth(Math.max(1f, player.getHealth() - Math.max(1, (int) (player.getMaxHealth() * 0.12))));
@@ -420,13 +419,13 @@ public final class ItemHooks {
         }
         if (e.divine()) {
             player.setHealth(Math.max(1f, player.getHealth() - 10));
-            DIVINE.put(player.getUuid(), new Divine(e, now + 500));
+            DIVINE.put(player.getUUID(), new Divine(e, now + 500));
         }
-        player.removeStatusEffect(StatusEffects.POISON);
+        player.removeEffect(MobEffects.POISON);
     }
 
     /** A barbarian mix: the base potion's effect plus a heal, two doses. */
-    private static void drinkMix(ServerPlayerEntity player, ItemStack stack, Hand hand, HerbloreData.Mix mix) {
+    private static void drinkMix(ServerPlayer player, ItemStack stack, InteractionHand hand, HerbloreData.Mix mix) {
         long now = ActionManager.gameTick();
         PlayerData data = Players.data(player);
         HerbloreData.ModPotion mod = HerbloreData.potion(mix.base());
@@ -434,7 +433,7 @@ public final class ItemHooks {
             applyEffect(player, mod.effect(), now);
         } else if (mix.base().equals("antifire_potion") || mix.base().equals("extended_antifire")) {
             int minutes = mix.base().equals("antifire_potion") ? 6 : 12;
-            player.addStatusEffect(new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, minutes * 60 * 20, 0));
+            player.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, minutes * 60 * 20, 0));
         } else {
             for (com.runecraft.osrs.data.Potion p : com.runecraft.osrs.data.Potion.values()) {
                 if (!p.itemId().equals(mix.base())) {
@@ -447,10 +446,10 @@ public final class ItemHooks {
                     data.setPrayerPoints(Math.max(data.prayerPoints(), Math.min(cap, data.prayerPoints() + prayer)));
                 }
                 if (p == com.runecraft.osrs.data.Potion.ANTIPOISON) {
-                    player.removeStatusEffect(StatusEffects.POISON);
+                    player.removeEffect(MobEffects.POISON);
                     PoisonService.cure(player, false, com.runecraft.osrs.Toxins.ANTIPOISON[0], now);
                 } else if (p == com.runecraft.osrs.data.Potion.ENERGY) {
-                    player.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 20 * 60, 0));
+                    player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 20 * 60, 0));
                 }
             }
         }
@@ -460,42 +459,42 @@ public final class ItemHooks {
     }
 
     /** A keg of ale: one pint per sip; the empty calquat keg is kept after the fourth. */
-    private static void drinkFromKeg(ServerPlayerEntity player, ItemStack stack, Hand hand, BrewingData.Drink drink) {
+    private static void drinkFromKeg(ServerPlayer player, ItemStack stack, InteractionHand hand, BrewingData.Drink drink) {
         drink.apply(Players.data(player).skills());
         if (drink.heal() > 0) {
             player.heal(drink.heal());
-            player.getHungerManager().add(Math.max(1, drink.heal() / 2), 0.2f);
+            player.getFoodData().eat(Math.max(1, drink.heal() / 2), 0.2f);
         }
-        int used = stack.getDamage() + 1;
-        player.getItemCooldownManager().set(stack.getItem(), EAT_DELAY);
-        player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ENTITY_GENERIC_DRINK, SoundCategory.PLAYERS, 0.5f, 1.0f);
+        int used = stack.getDamageValue() + 1;
+        player.getCooldowns().addCooldown(stack.getItem(), EAT_DELAY);
+        player.level().playSound(null, player.blockPosition(), SoundEvents.GENERIC_DRINK, SoundSource.PLAYERS, 0.5f, 1.0f);
         int left = BrewingData.KEG_PINTS - used;
         Msg.action(player, "You drink from the keg of " + SkillingUtil.lower(drink.name()) + "."
                 + (left > 0 ? " It has " + left + " pint" + (left > 1 ? "s" : "") + " left." : " The keg is empty."));
         if (left <= 0) {
-            player.setStackInHand(hand, Inv.stack(BrewingData.KEG, 1));
+            player.setItemInHand(hand, Inv.stack(BrewingData.KEG, 1));
         } else {
-            stack.setDamage(used);
+            stack.setDamageValue(used);
         }
         ServerNetworking.sync(player);
         ActionManager.cancel(player);
     }
 
     /** Ales, ciders, cocktails and spirits: heal, boosts and drains; the glass is kept. */
-    private static void drinkBeverage(ServerPlayerEntity player, ItemStack stack, BrewingData.Drink drink) {
-        net.minecraft.item.Item item = stack.getItem();
-        stack.decrement(1);
+    private static void drinkBeverage(ServerPlayer player, ItemStack stack, BrewingData.Drink drink) {
+        net.minecraft.world.item.Item item = stack.getItem();
+        stack.shrink(1);
         drink.apply(Players.data(player).skills());
         if (drink.heal() > 0) {
             player.heal(drink.heal());
-            player.getHungerManager().add(Math.max(1, drink.heal() / 2), 0.2f);
+            player.getFoodData().eat(Math.max(1, drink.heal() / 2), 0.2f);
         }
         String glass = BrewingData.emptyGlass(drink.id());
         if (glass != null) {
             Inv.give(player, glass, 1);
         }
-        player.getItemCooldownManager().set(item, EAT_DELAY);
-        player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ENTITY_GENERIC_DRINK, SoundCategory.PLAYERS, 0.5f, 1.0f);
+        player.getCooldowns().addCooldown(item, EAT_DELAY);
+        player.level().playSound(null, player.blockPosition(), SoundEvents.GENERIC_DRINK, SoundSource.PLAYERS, 0.5f, 1.0f);
         Msg.action(player, "You drink the " + SkillingUtil.lower(drink.name()) + "."
                 + (drink.mods().isEmpty() ? "" : " You feel slightly reinvigorated... and slightly dizzy too."));
         ServerNetworking.sync(player);
@@ -506,33 +505,33 @@ public final class ItemHooks {
      * Goading potion: every 6 game ticks, monsters within a 9x9-tile area (4 tiles = 8 blocks each way) that aren't
      * already fighting someone turn on the player. Called every game tick.
      */
-    static void goadingTick(ServerPlayerEntity player, long gameTick) {
-        Long until = GOADING.get(player.getUuid());
+    static void goadingTick(ServerPlayer player, long gameTick) {
+        Long until = GOADING.get(player.getUUID());
         if (until == null) {
             return;
         }
         if (gameTick >= until || !player.isAlive()) {
-            GOADING.remove(player.getUuid());
+            GOADING.remove(player.getUUID());
             Msg.red(player, "Your goading potion has worn off.");
             return;
         }
         if (gameTick % HerbloreData.Effect.GOADING_INTERVAL != 0) {
             return;
         }
-        for (com.runecraft.entity.OsrsMonsterEntity mob : player.getWorld().getEntitiesByClass(com.runecraft.entity.OsrsMonsterEntity.class,
-                player.getBoundingBox().expand(8), m -> m.isAlive() && m.getTarget() == null)) {
+        for (com.runecraft.entity.OsrsMonsterEntity mob : player.level().getEntitiesOfClass(com.runecraft.entity.OsrsMonsterEntity.class,
+                player.getBoundingBox().inflate(8), m -> m.isAlive() && m.getTarget() == null)) {
             mob.setTarget(player);
         }
     }
 
     /** Prayer regeneration potions: one Prayer point every 12 game ticks while active. Called every game tick. */
-    static void prayerRegenTick(ServerPlayerEntity player, long gameTick) {
-        Long until = PRAYER_REGEN.get(player.getUuid());
+    static void prayerRegenTick(ServerPlayer player, long gameTick) {
+        Long until = PRAYER_REGEN.get(player.getUUID());
         if (until == null) {
             return;
         }
         if (gameTick >= until) {
-            PRAYER_REGEN.remove(player.getUuid());
+            PRAYER_REGEN.remove(player.getUUID());
             Msg.red(player, "Your prayer regeneration potion has worn off.");
             return;
         }
@@ -546,31 +545,31 @@ public final class ItemHooks {
         }
     }
 
-    private static void useDose(ServerPlayerEntity player, ItemStack stack, Hand hand, String name, int doses, boolean drank) {
-        int used = stack.getDamage() + 1;
+    private static void useDose(ServerPlayer player, ItemStack stack, InteractionHand hand, String name, int doses, boolean drank) {
+        int used = stack.getDamageValue() + 1;
         int left = doses - used;
-        player.getItemCooldownManager().set(stack.getItem(), EAT_DELAY);
-        player.getWorld().playSound(null, player.getBlockPos(), drank ? SoundEvents.ENTITY_GENERIC_DRINK : SoundEvents.ITEM_BOTTLE_EMPTY,
-                SoundCategory.PLAYERS, 0.5f, 1.0f);
+        player.getCooldowns().addCooldown(stack.getItem(), EAT_DELAY);
+        player.level().playSound(null, player.blockPosition(), drank ? SoundEvents.GENERIC_DRINK : SoundEvents.BOTTLE_EMPTY,
+                SoundSource.PLAYERS, 0.5f, 1.0f);
         if (drank) {
             Msg.action(player, "You drink some of your " + SkillingUtil.lower(name) + ". "
                     + (left > 0 ? "You have " + left + " dose" + (left > 1 ? "s" : "") + " of potion left." : "You have finished your potion."));
         }
         if (left <= 0) {
-            player.setStackInHand(hand, Inv.stack("vial", 1));
+            player.setItemInHand(hand, Inv.stack("vial", 1));
         } else {
-            stack.setDamage(used);
+            stack.setDamageValue(used);
         }
     }
 
     /** Keeps divine potion boosts topped up for 5 minutes. Called every game tick. */
-    static void divineTick(ServerPlayerEntity player, long gameTick) {
-        Divine d = DIVINE.get(player.getUuid());
+    static void divineTick(ServerPlayer player, long gameTick) {
+        Divine d = DIVINE.get(player.getUUID());
         if (d == null) {
             return;
         }
         if (gameTick >= d.until()) {
-            DIVINE.remove(player.getUuid());
+            DIVINE.remove(player.getUUID());
             Msg.red(player, "The effects of the divine potion have worn off.");
             return;
         }
@@ -582,29 +581,29 @@ public final class ItemHooks {
 
     // ------------------------------------------------------------------ thrown weapons
 
-    private static void throwItem(ServerPlayerEntity player, ItemStack stack, String id) {
+    private static void throwItem(ServerPlayer player, ItemStack stack, String id) {
         ItemDef def = ItemCatalog.get(id);
-        ArrowEntity arrow = new ArrowEntity(player.getWorld(), player);
-        arrow.addCommandTag(OsrsEquipmentItems.RANGED_STRENGTH_TAG + def.rangedStrength());
-        arrow.addCommandTag("runecraft_arrow_" + id);
-        arrow.pickupType = PersistentProjectileEntity.PickupPermission.DISALLOWED;
+        Arrow arrow = new Arrow(player.level(), player);
+        arrow.addTag(OsrsEquipmentItems.RANGED_STRENGTH_TAG + def.rangedStrength());
+        arrow.addTag("runecraft_arrow_" + id);
+        arrow.pickup = AbstractArrow.Pickup.DISALLOWED;
         boolean javelin = id.endsWith("_javelin");
-        arrow.setVelocity(player, player.getPitch(), player.getYaw(), 0.0f, javelin ? 2.2f : 2.6f, 1.0f);
-        player.getWorld().spawnEntity(arrow);
-        if (!player.getAbilities().creativeMode) {
-            stack.decrement(1);
+        arrow.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0f, javelin ? 2.2f : 2.6f, 1.0f);
+        player.level().addFreshEntity(arrow);
+        if (!player.getAbilities().instabuild) {
+            stack.shrink(1);
         }
-        player.swingHand(Hand.MAIN_HAND, true);
-        player.getItemCooldownManager().set(stack.getItem(), (javelin ? 6 : 3) * ActionManager.MC_TICKS_PER_GAME_TICK);
-        player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ENTITY_ARROW_SHOOT, SoundCategory.PLAYERS, 0.6f, 1.4f);
+        player.swing(InteractionHand.MAIN_HAND, true);
+        player.getCooldowns().addCooldown(stack.getItem(), (javelin ? 6 : 3) * ActionManager.MC_TICKS_PER_GAME_TICK);
+        player.level().playSound(null, player.blockPosition(), SoundEvents.ARROW_SHOOT, SoundSource.PLAYERS, 0.6f, 1.4f);
     }
 
     // ------------------------------------------------------------------ essence pouches
 
-    private static void pouch(ServerPlayerEntity player, ItemStack stack, RunecraftData.Pouch pouch) {
-        NbtCompound nbt = stack.getOrCreateNbt();
+    private static void pouch(ServerPlayer player, ItemStack stack, RunecraftData.Pouch pouch) {
+        CompoundTag nbt = stack.getOrCreateTag();
         int held = nbt.getInt(ESSENCE_NBT);
-        if (player.isSneaking()) {
+        if (player.isShiftKeyDown()) {
             if (held == 0) {
                 Msg.game(player, "There is no essence in this pouch.");
                 return;
@@ -637,13 +636,13 @@ public final class ItemHooks {
     }
 
     /** Empties every essence pouch in the inventory (before crafting at an altar). */
-    static void emptyPouches(ServerPlayerEntity player) {
-        for (int i = 0; i < player.getInventory().size(); i++) {
-            ItemStack s = player.getInventory().getStack(i);
+    static void emptyPouches(ServerPlayer player) {
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            ItemStack s = player.getInventory().getItem(i);
             if (s.isEmpty() || RunecraftData.pouch(Inv.idOf(s)) == null) {
                 continue;
             }
-            NbtCompound nbt = s.getNbt();
+            CompoundTag nbt = s.getTag();
             int held = nbt == null ? 0 : nbt.getInt(ESSENCE_NBT);
             if (held > 0) {
                 nbt.putInt(ESSENCE_NBT, 0);
@@ -652,7 +651,7 @@ public final class ItemHooks {
         }
     }
 
-    static Random random(ServerPlayerEntity player) {
+    static RandomSource random(ServerPlayer player) {
         return player.getRandom();
     }
 }

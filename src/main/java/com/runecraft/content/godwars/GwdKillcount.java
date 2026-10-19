@@ -13,14 +13,14 @@ import com.runecraft.skill.Drops;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.AABB;
 
 /**
  * God Wars kill count: killing a god's followers raises that god's count; entering a general's
@@ -30,30 +30,30 @@ import net.minecraft.util.math.Box;
  */
 public final class GwdKillcount {
     /** Kill count needed to open a general's chamber (the systems module lowers it with Combat Achievement tiers). */
-    public static java.util.function.ToIntFunction<ServerPlayerEntity> required = p -> GodWarsFactions.REQUIRED_KILLCOUNT;
+    public static java.util.function.ToIntFunction<ServerPlayer> required = p -> GodWarsFactions.REQUIRED_KILLCOUNT;
     /**
      * Ecumenical key chance (1 in n) for a Wilderness God Wars Dungeon kill: 1/60 (OSRS Wiki); the systems module lowers it
      * to 1/55..1/40 with the hard..grandmaster Combat Achievement tiers.
      */
-    public static java.util.function.ToIntFunction<ServerPlayerEntity> ecumenicalChance = p -> 60;
+    public static java.util.function.ToIntFunction<ServerPlayer> ecumenicalChance = p -> 60;
     /** Most ecumenical keys a player may hold (3; 4 and 5 with the medium and hard Wilderness diaries in OSRS). // approx */
     public static final int ECUMENICAL_KEY_CAP = 3;
 
     private GwdKillcount() {
     }
 
-    static int get(ServerPlayerEntity player, God god) {
-        return GwdKillcountState.get(player.getServer()).get(player.getUuid(), god);
+    static int get(ServerPlayer player, God god) {
+        return GwdKillcountState.get(player.getServer()).get(player.getUUID(), god);
     }
 
     /** Checks and consumes the kill count (or an ecumenical key) needed to fight a general. */
-    static boolean enter(ServerPlayerEntity player, God god, String general) {
+    static boolean enter(ServerPlayer player, God god, String general) {
         GwdKillcountState state = GwdKillcountState.get(player.getServer());
-        int kc = state.get(player.getUuid(), god);
+        int kc = state.get(player.getUUID(), god);
         int need = required.applyAsInt(player);
         int after = kc >= need ? kc - need : -1;
         if (after >= 0) {
-            state.set(player.getUuid(), god, after);
+            state.set(player.getUUID(), god, after);
             Msg.game(player, "The door to " + general + "'s chamber opens. (" + need + " "
                     + god.displayName() + " kill count used.)");
             return true;
@@ -69,13 +69,13 @@ public final class GwdKillcount {
     }
 
     /** Kill listener: follower kill count and the built-in generals' extra loot. */
-    static void onKill(ServerPlayerEntity player, LivingEntity entity, MonsterStats stats) {
+    static void onKill(ServerPlayer player, LivingEntity entity, MonsterStats stats) {
         if (stats != null && stats.profile() != null) {
             God god = GodWarsFactions.followerGod(stats.profile().id);
             if (god != null) {
                 GwdKillcountState state = GwdKillcountState.get(player.getServer());
-                int kc = state.get(player.getUuid(), god) + 1;
-                state.set(player.getUuid(), god, kc);
+                int kc = state.get(player.getUUID(), god) + 1;
+                state.set(player.getUUID(), god, kc);
                 int need = required.applyAsInt(player);
                 Msg.action(player, god.displayName() + " kill count: " + kc + (kc < need ? " / " + need : ""));
                 if (com.runecraft.world.Gielinor.wildernessLevel(entity) > 0
@@ -83,7 +83,7 @@ public final class GwdKillcount {
                     if (Inv.count(player, "ecumenical_key") >= ECUMENICAL_KEY_CAP) {
                         Msg.game(player, "You already have enough of these.");
                     } else {
-                        entity.dropStack(Inv.stack("ecumenical_key", 1));
+                        entity.spawnAtLocation(Inv.stack("ecumenical_key", 1));
                     }
                 }
             }
@@ -91,7 +91,7 @@ public final class GwdKillcount {
         if (entity instanceof BossEntity be && be.boss() != null) {
             String id = be.boss().entityId();
             for (Drops.Rolled r : Drops.roll(GwdBosses.builtinExtraDrops(id), entity.getRandom(), false)) {
-                entity.dropStack(Inv.stack(r.item(), r.count()));
+                entity.spawnAtLocation(Inv.stack(r.item(), r.count()));
                 CollectionLog.obtain(player, r.item());
             }
             String pet = GwdBosses.builtinPet(id);
@@ -104,23 +104,23 @@ public final class GwdKillcount {
     /** Blocks the built-in Graardor / K'ril summoning stones until the kill count is met. */
     static void registerBuiltinGate() {
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
-            if (world.isClient() || hand != Hand.MAIN_HAND || !(player instanceof ServerPlayerEntity sp)) {
-                return ActionResult.PASS;
+            if (world.isClientSide() || hand != InteractionHand.MAIN_HAND || !(player instanceof ServerPlayer sp)) {
+                return InteractionResult.PASS;
             }
             BlockPos pos = hit.getBlockPos();
             if (!(world.getBlockState(pos).getBlock() instanceof BossSummonBlock stone)) {
-                return ActionResult.PASS;
+                return InteractionResult.PASS;
             }
             Boss boss = stone.boss();
             God god = GodWarsFactions.generalGod(boss.entityId());
             if (god == null) {
-                return ActionResult.PASS;
+                return InteractionResult.PASS;
             }
             EntityType<BossEntity> type = ModEntities.BOSS_TYPES.get(boss);
-            if (type != null && !((ServerWorld) world).getEntitiesByType(type, new Box(pos).expand(64), e -> e.isAlive()).isEmpty()) {
-                return ActionResult.PASS; // already fighting: let the stone say so
+            if (type != null && !((ServerLevel) world).getEntities(type, new AABB(pos).inflate(64), e -> e.isAlive()).isEmpty()) {
+                return InteractionResult.PASS; // already fighting: let the stone say so
             }
-            return enter(sp, god, boss.displayName()) ? ActionResult.PASS : ActionResult.FAIL;
+            return enter(sp, god, boss.displayName()) ? InteractionResult.PASS : InteractionResult.FAIL;
         });
     }
 }

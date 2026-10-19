@@ -6,6 +6,9 @@ import java.util.List;
 
 import static com.runecraft.osrs.content.world.KandarinKit.*;
 
+import com.runecraft.osrs.content.world.KandarinKit.Bld;
+import com.runecraft.osrs.content.world.KandarinKit.Pal;
+
 /** Camelot, Seers' Village, Catherby, the Sorcerer's Tower, Keep Le Faye and the eastern Kandarin guilds. */
 final class KandarinSeers {
     private KandarinSeers() {

@@ -29,14 +29,13 @@ import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
-import net.minecraft.entity.Entity;
-import net.minecraft.registry.Registries;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -77,19 +76,19 @@ public final class MinigameManager {
     }
 
     /** The entrance block a player used last (their chosen role, room or difficulty). */
-    public static String chosenVariant(ServerPlayerEntity player) {
-        return CHOSEN.getOrDefault(player.getUuid(), "");
+    public static String chosenVariant(ServerPlayer player) {
+        return CHOSEN.getOrDefault(player.getUUID(), "");
     }
 
-    public static MinigameSession session(ServerPlayerEntity player) {
-        return BY_PLAYER.get(player.getUuid());
+    public static MinigameSession session(ServerPlayer player) {
+        return BY_PLAYER.get(player.getUUID());
     }
 
     /**
      * True (and tells the player) while they play a game on a stashed kit (Last Man Standing, a ranked Emir's Arena duel):
      * teleporting out would carry the kit, its supplies and the build's levels away before {@link LmsStash#restore} runs.
      */
-    public static boolean teleportBlocked(ServerPlayerEntity player) {
+    public static boolean teleportBlocked(ServerPlayer player) {
         if (session(player) == null || !LmsStash.has(player)) {
             return false;
         }
@@ -97,8 +96,8 @@ public final class MinigameManager {
         return true;
     }
 
-    static void forget(ServerPlayerEntity player) {
-        BY_PLAYER.remove(player.getUuid());
+    static void forget(ServerPlayer player) {
+        BY_PLAYER.remove(player.getUUID());
     }
 
     static void release(MinigameSession session) {
@@ -112,13 +111,13 @@ public final class MinigameManager {
 
     /** The creature id (registry path) of a RuneCraft entity, or the full id for others. */
     public static String creatureId(Entity e) {
-        Identifier id = Registries.ENTITY_TYPE.getId(e.getType());
+        ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(e.getType());
         return id.getNamespace().equals(RuneCraft.MOD_ID) ? id.getPath() : id.toString();
     }
 
     /** The session a tagged creature belongs to. */
     public static MinigameSession owner(Entity e) {
-        for (String tag : e.getCommandTags()) {
+        for (String tag : e.getTags()) {
             if (tag.startsWith(MinigameSession.TAG + "_")) {
                 try {
                     return SESSIONS.get(Integer.parseInt(tag.substring(MinigameSession.TAG.length() + 1)));
@@ -136,7 +135,7 @@ public final class MinigameManager {
     /** Coins Cap'n Izzy No-Beard charges to enter the Brimhaven Agility Arena. */
     static final int BRIMHAVEN_FEE = 200;
 
-    public static void enter(ServerPlayerEntity player, Minigame game, String variant) {
+    public static void enter(ServerPlayer player, Minigame game, String variant) {
         if (!Gielinor.is(player)) {
             return;
         }
@@ -158,13 +157,13 @@ public final class MinigameManager {
             Inv.remove(player, Inv.COINS, BRIMHAVEN_FEE);
             Msg.game(player, "You pay Cap'n Izzy No-Beard " + BRIMHAVEN_FEE + " coins.");
         }
-        CHOSEN.put(player.getUuid(), variant);
+        CHOSEN.put(player.getUUID(), variant);
         if (game.lobbySeconds() <= 0) {
             start(game, variant, List.of(player));
             return;
         }
         for (Lobby l : LOBBIES.values()) {
-            l.waiting.remove(player.getUuid());
+            l.waiting.remove(player.getUUID());
         }
         // Barbarian Assault players pick their role at different entrances but share one lobby.
         String key = game == Minigame.BARBARIAN_ASSAULT ? game.entranceBlock() : variant;
@@ -172,8 +171,8 @@ public final class MinigameManager {
         if (lobby.waiting.isEmpty()) {
             lobby.departAt = gameTicks + game.lobbySeconds() * 10L / 6;
         }
-        lobby.waiting.add(player.getUuid());
-        lobby.joinedAt.put(player.getUuid(), player.getBlockPos());
+        lobby.waiting.add(player.getUUID());
+        lobby.joinedAt.put(player.getUUID(), player.blockPosition());
         Msg.game(player, "You join the " + game.displayName() + " lobby. The game starts in "
                 + Math.max(1, (lobby.departAt - gameTicks) * 6 / 10) + " seconds.");
         if (lobby.waiting.size() >= game.maxPlayers()) {
@@ -182,7 +181,7 @@ public final class MinigameManager {
     }
 
     /** First unmet requirement as a message, or null. */
-    static String requirement(ServerPlayerEntity player, Minigame game, String variant) {
+    static String requirement(ServerPlayer player, Minigame game, String variant) {
         var skills = Players.data(player).skills();
         if (game == Minigame.PEST_CONTROL) {
             int tier = variant.contains("veteran") ? 2 : variant.contains("intermediate") ? 1 : 0;
@@ -190,7 +189,7 @@ public final class MinigameManager {
             if (skills.combatLevel() < need) {
                 return "You need a combat level of " + need + " to board the " + MinigameRules.PestControl.TIERS[tier] + " lander.";
             }
-            if (MinigameData.of(player).points(player.getUuid(), "pest_control") >= MinigameRules.PestControl.MAX_POINTS) {
+            if (MinigameData.of(player).points(player.getUUID(), "pest_control") >= MinigameRules.PestControl.MAX_POINTS) {
                 return "Squire: You have " + MinigameRules.PestControl.MAX_POINTS + " commendation points already. Spend some first!";
             }
             return null;
@@ -206,7 +205,7 @@ public final class MinigameManager {
             return null;
         }
         if (game == Minigame.INFERNO) {
-            boolean sacrificed = MinigameData.of(player).flag(player.getUuid(), "inferno_cape_sacrificed");
+            boolean sacrificed = MinigameData.of(player).flag(player.getUUID(), "inferno_cape_sacrificed");
             if (!sacrificed && !Inv.has(player, "fire_cape", 1)) {
                 return "TzHaar-Ket-Keh: You must sacrifice a fire cape to enter the Inferno, JalYt.";
             }
@@ -263,15 +262,15 @@ public final class MinigameManager {
      * TzHaar-Ket-Rak's challenges: the first two need access to the inner city of Mor Ul Rek (a fire cape earned), the rest
      * an Inferno completion.
      */
-    static String ketRakRequirement(ServerPlayerEntity player, String variant) {
+    static String ketRakRequirement(ServerPlayer player, String variant) {
         MinigameData data = MinigameData.of(player);
         int challenge = com.runecraft.osrs.content.minigames.KetRakChallenges.challengeOf(variant);
         if (com.runecraft.osrs.content.minigames.KetRakChallenges.requiresInferno(challenge)
-                && data.stat(player.getUuid(), "kc:" + Minigame.INFERNO.id()) < 1) {
+                && data.stat(player.getUUID(), "kc:" + Minigame.INFERNO.id()) < 1) {
             return "TzHaar-Ket-Rak: Only those who have defeated TzKal-Zuk in the Inferno may face this challenge, JalYt.";
         }
-        boolean fireCape = data.stat(player.getUuid(), "kc:" + Minigame.FIGHT_CAVES.id()) > 0
-                || data.flag(player.getUuid(), "inferno_cape_sacrificed") || Inv.has(player, "fire_cape", 1)
+        boolean fireCape = data.stat(player.getUUID(), "kc:" + Minigame.FIGHT_CAVES.id()) > 0
+                || data.flag(player.getUUID(), "inferno_cape_sacrificed") || Inv.has(player, "fire_cape", 1)
                 || Players.data(player).collectionLog().contains("fire_cape");
         if (!fireCape) {
             return "TzHaar-Ket-Rak: Only JalYt who have earned a fire cape may enter the inner city and take my challenges.";
@@ -289,7 +288,7 @@ public final class MinigameManager {
         return slot;
     }
 
-    static MinigameSession create(Minigame game, int id, int slot, ServerWorld world, String variant) {
+    static MinigameSession create(Minigame game, int id, int slot, ServerLevel world, String variant) {
         return switch (game) {
             case FIGHT_CAVES -> new FightCaveSession(id, slot, world, variant);
             case INFERNO -> new InfernoSession(id, slot, world, variant);
@@ -328,19 +327,19 @@ public final class MinigameManager {
         };
     }
 
-    static void start(Minigame game, String variant, List<ServerPlayerEntity> joining) {
+    static void start(Minigame game, String variant, List<ServerPlayer> joining) {
         if (joining.isEmpty()) {
             return;
         }
-        ServerWorld world = Gielinor.world(joining.get(0).getServer());
+        ServerLevel world = Gielinor.world(joining.get(0).getServer());
         if (world == null) {
             return;
         }
         int slot = allocateSlot(game);
         MinigameSession s = create(game, nextId++, slot, world, variant);
         SESSIONS.put(s.id, s);
-        for (ServerPlayerEntity p : joining) {
-            BY_PLAYER.put(p.getUuid(), s);
+        for (ServerPlayer p : joining) {
+            BY_PLAYER.put(p.getUUID(), s);
         }
         try {
             s.begin(joining);
@@ -354,12 +353,12 @@ public final class MinigameManager {
      * Self-test hook ({@code com.runecraft.selftest}): starts a session for one player straight away (no lobby or
      * requirements) and lets exceptions through instead of logging them.
      */
-    public static MinigameSession selfTestStart(Minigame game, String variant, ServerPlayerEntity player) {
-        ServerWorld world = Gielinor.world(player.getServer());
+    public static MinigameSession selfTestStart(Minigame game, String variant, ServerPlayer player) {
+        ServerLevel world = Gielinor.world(player.getServer());
         MinigameSession s = create(game, nextId++, allocateSlot(game), world, variant);
         SESSIONS.put(s.id, s);
-        BY_PLAYER.put(player.getUuid(), s);
-        CHOSEN.put(player.getUuid(), variant);
+        BY_PLAYER.put(player.getUUID(), s);
+        CHOSEN.put(player.getUUID(), variant);
         try {
             s.begin(List.of(player));
         } catch (RuntimeException e) {
@@ -375,9 +374,9 @@ public final class MinigameManager {
     }
 
     /** Leaves a session or lobby (exit portal, command). */
-    public static void leave(ServerPlayerEntity player) {
+    public static void leave(ServerPlayer player) {
         for (Lobby l : LOBBIES.values()) {
-            if (l.waiting.remove(player.getUuid())) {
+            if (l.waiting.remove(player.getUUID())) {
                 Msg.game(player, "You leave the lobby.");
                 MinigameNet.sendHud(player, List.of());
             }
@@ -392,7 +391,7 @@ public final class MinigameManager {
     // ------------------------------------------------------------------ ticking
 
     static void serverTick(MinecraftServer server) {
-        if (server.getTicks() % 12 != 0) {
+        if (server.getTickCount() % 12 != 0) {
             return;
         }
         gameTicks++;
@@ -400,7 +399,7 @@ public final class MinigameManager {
             try {
                 s.tick();
                 if (!s.isEnded()) {
-                    for (ServerPlayerEntity p : s.online()) {
+                    for (ServerPlayer p : s.online()) {
                         MinigameNet.sendHud(p, s.hud(p));
                     }
                 }
@@ -414,9 +413,9 @@ public final class MinigameManager {
         while (it.hasNext()) {
             Lobby l = it.next();
             l.waiting.removeIf(u -> {
-                ServerPlayerEntity p = server.getPlayerManager().getPlayer(u);
+                ServerPlayer p = server.getPlayerList().getPlayer(u);
                 BlockPos at = l.joinedAt.get(u);
-                boolean gone = p == null || at == null || p.getBlockPos().getSquaredDistance(at) > 24 * 24 || session(p) != null;
+                boolean gone = p == null || at == null || p.blockPosition().distSqr(at) > 24 * 24 || session(p) != null;
                 if (gone && p != null) {
                     MinigameNet.sendHud(p, List.of());
                 }
@@ -431,7 +430,7 @@ public final class MinigameManager {
                 it.remove();
             } else {
                 for (UUID u : l.waiting) {
-                    ServerPlayerEntity p = server.getPlayerManager().getPlayer(u);
+                    ServerPlayer p = server.getPlayerList().getPlayer(u);
                     if (p != null) {
                         MinigameNet.sendHud(p, List.of(l.game.displayName() + " lobby",
                                 "Players ready: " + l.waiting.size() + "/" + l.game.maxPlayers(),
@@ -441,9 +440,9 @@ public final class MinigameManager {
             }
         }
         for (Lobby l : departing) {
-            List<ServerPlayerEntity> players = new ArrayList<>();
+            List<ServerPlayer> players = new ArrayList<>();
             for (UUID u : l.waiting) {
-                ServerPlayerEntity p = server.getPlayerManager().getPlayer(u);
+                ServerPlayer p = server.getPlayerList().getPlayer(u);
                 if (p != null && requirement(p, l.game, l.variant) == null) {
                     players.add(p);
                 }
@@ -454,16 +453,16 @@ public final class MinigameManager {
 
     // ------------------------------------------------------------------ routing
 
-    static void onKill(ServerPlayerEntity player, net.minecraft.entity.LivingEntity entity) {
+    static void onKill(ServerPlayer player, net.minecraft.world.entity.LivingEntity entity) {
         MinigameSession s = owner(entity);
         if (s != null && !s.isEnded()) {
             s.onKill(player, entity, creatureId(entity));
         }
     }
 
-    static void onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    static void onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         MinigameSession s = session(player);
-        if (s == null && com.runecraft.content.BlockHooks.useFallback(player, blockId, pos, player.getWorld().getBlockState(pos))) {
+        if (s == null && com.runecraft.content.BlockHooks.useFallback(player, blockId, pos, player.level().getBlockState(pos))) {
             return;
         }
         if (s == null || !s.onBlock(player, blockId, pos)) {
@@ -476,7 +475,7 @@ public final class MinigameManager {
     }
 
     /** Returns false to cancel a player's death (they're handled by their minigame). */
-    static boolean allowDeath(ServerPlayerEntity player) {
+    static boolean allowDeath(ServerPlayer player) {
         MinigameSession s = session(player);
         if (s == null) {
             return true;
@@ -487,14 +486,14 @@ public final class MinigameManager {
             return true;
         }
         player.setHealth(player.getMaxHealth());
-        player.extinguish();
+        player.clearFire();
         s.onDeath(player);
         return false;
     }
 
-    static void onDisconnect(ServerPlayerEntity player) {
+    static void onDisconnect(ServerPlayer player) {
         for (Lobby l : LOBBIES.values()) {
-            l.waiting.remove(player.getUuid());
+            l.waiting.remove(player.getUUID());
         }
         MinigameSession s = session(player);
         if (s != null) {
@@ -503,8 +502,8 @@ public final class MinigameManager {
     }
 
     /** Players who log in inside an instance with no running game are sent to Lumbridge. */
-    static void onJoin(ServerPlayerEntity player) {
-        if (Gielinor.is(player) && Arena.inInstanceArea(player.getBlockPos()) && session(player) == null) {
+    static void onJoin(ServerPlayer player) {
+        if (Gielinor.is(player) && Arena.inInstanceArea(player.blockPosition()) && session(player) == null) {
             Msg.game(player, "The minigame you were in has ended.");
             Gielinor.teleport(player, com.runecraft.osrs.Landmark.LUMBRIDGE);
         }

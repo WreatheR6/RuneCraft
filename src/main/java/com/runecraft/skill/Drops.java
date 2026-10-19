@@ -6,10 +6,9 @@ import com.runecraft.osrs.data.Drop;
 import com.runecraft.osrs.data.DropTables;
 import com.runecraft.osrs.data.Gem;
 import com.runecraft.osrs.data.Herb;
-import net.minecraft.util.math.random.Random;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.util.RandomSource;
 
 /** Rolls OSRS-style drop tables, including the shared herb, seed and gem tables. */
 public final class Drops {
@@ -24,17 +23,17 @@ public final class Drops {
     }
 
     /** {@code stack} with {@code doses} doses left when it is a partly drunk potion (doses are item damage). */
-    public static net.minecraft.item.ItemStack withDoses(net.minecraft.item.ItemStack stack, int doses) {
+    public static net.minecraft.world.item.ItemStack withDoses(net.minecraft.world.item.ItemStack stack, int doses) {
         if (doses > 0 && doses < 4 && !stack.isEmpty()) {
             com.runecraft.osrs.ItemDef def = ItemCatalog.get(com.runecraft.util.Inv.idOf(stack));
             if (def != null && def.kind() == com.runecraft.osrs.ItemDef.Kind.POTION) {
-                stack.setDamage(4 - doses);
+                stack.setDamageValue(4 - doses);
             }
         }
         return stack;
     }
 
-    public static List<Rolled> roll(List<Drop> table, Random random, boolean ringOfWealth) {
+    public static List<Rolled> roll(List<Drop> table, RandomSource random, boolean ringOfWealth) {
         List<Rolled> out = new ArrayList<>();
         for (Drop d : table) {
             if (d.rarity() <= 1 || random.nextInt(d.rarity()) == 0) {
@@ -55,12 +54,12 @@ public final class Drops {
     }
 
     /** One grimy herb from the OSRS herb drop table. */
-    public static String rollHerb(Random random) {
+    public static String rollHerb(RandomSource random) {
         DropTables.Result r = DropTables.roll("#herbs", random::nextInt);
         return r != null ? r.item() : Herb.GUAM.grimyItem();
     }
 
-    public static String rollGem(Random random) {
+    public static String rollGem(RandomSource random) {
         int r = random.nextInt(64);
         if (r < 32) {
             return Gem.SAPPHIRE.uncutItem();
@@ -74,7 +73,7 @@ public final class Drops {
         return Gem.DRAGONSTONE.uncutItem();
     }
 
-    public static String rollSeed(Random random) {
+    public static String rollSeed(RandomSource random) {
         if (random.nextBoolean()) {
             Allotment[] a = Allotment.values();
             return a[Math.min(a.length - 1, (int) Math.floor(Math.pow(random.nextDouble(), 2) * a.length))].seedItem();

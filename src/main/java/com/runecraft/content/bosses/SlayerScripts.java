@@ -13,19 +13,18 @@ import com.runecraft.osrs.content.bosses.SlayerBosses;
 import com.runecraft.osrs.content.bosses.SlayerBosses.HydraPhase;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.particle.ParticleEffect;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.Vec3;
 
 /** Scripts for the Slayer bosses. */
 final class SlayerScripts {
@@ -34,15 +33,15 @@ final class SlayerScripts {
 
     /** Kraken: starts as a whirlpool; disturb all four tentacles before the Kraken itself surfaces. */
     static final class Kraken extends ScriptedBoss {
-        private final List<MobEntity> tentacles = new ArrayList<>();
+        private final List<Mob> tentacles = new ArrayList<>();
         private boolean risen;
 
         @Override
         public void onSpawn(DataBossEntity boss) {
-            Vec3d c = boss.getPos();
+            Vec3 c = boss.position();
             for (int i = 0; i < 4; i++) {
                 double a = Math.PI / 4 + Math.PI / 2 * i;
-                MobEntity t = BossFx.spawnMinion(boss, "enormous_tentacle",
+                Mob t = BossFx.spawnMinion(boss, "enormous_tentacle",
                         BossFx.ground(BossFx.world(boss), c.x + Math.cos(a) * 6, c.z + Math.sin(a) * 6, c.y), null);
                 if (t != null) {
                     tentacles.add(t);
@@ -53,7 +52,7 @@ final class SlayerScripts {
         }
 
         private boolean disturbed() {
-            for (MobEntity t : tentacles) {
+            for (Mob t : tentacles) {
                 if (t.isAlive() && t.getHealth() >= t.getMaxHealth()) {
                     return false;
                 }
@@ -62,7 +61,7 @@ final class SlayerScripts {
         }
 
         @Override
-        public AttackDef chooseAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+        public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             return risen ? null : IDLE_RANGED;
         }
 
@@ -72,9 +71,9 @@ final class SlayerScripts {
         }
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             if (!risen) {
-                BossFx.ring(BossFx.world(boss), boss.getPos(), 2.0, ParticleTypes.BUBBLE);
+                BossFx.ring(BossFx.world(boss), boss.position(), 2.0, ParticleTypes.BUBBLE);
                 if (disturbed()) {
                     risen = true;
                     boss.setInvisible(false);
@@ -85,8 +84,8 @@ final class SlayerScripts {
         }
 
         @Override
-        public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
-            tentacles.forEach(MobEntity::discard);
+        public void onDeath(DataBossEntity boss, ServerPlayer killer) {
+            tentacles.forEach(Mob::discard);
         }
     }
 
@@ -96,13 +95,13 @@ final class SlayerScripts {
                 "black_slayer_helmet", "green_slayer_helmet", "red_slayer_helmet", "purple_slayer_helmet");
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             BossFx.burst(boss, ParticleTypes.LARGE_SMOKE, 6, 1.5);
             if (now % 4 != 0) {
                 return;
             }
-            for (ServerPlayerEntity p : BossFx.players(boss, 14)) {
-                if (!MASKS.contains(Inv.idOf(p.getEquippedStack(EquipmentSlot.HEAD)))) {
+            for (ServerPlayer p : BossFx.players(boss, 14)) {
+                if (!MASKS.contains(Inv.idOf(p.getItemBySlot(EquipmentSlot.HEAD)))) {
                     Msg.red(p, "The thick smoke chokes you! You need a face mask.");
                     CombatHandler.applyDamage(boss, p, 5 + p.getRandom().nextInt(11));
                     for (Skill s : new Skill[]{Skill.ATTACK, Skill.STRENGTH, Skill.DEFENCE, Skill.RANGED, Skill.MAGIC}) {
@@ -123,7 +122,7 @@ final class SlayerScripts {
         private int souls = 20;
         private int lava = 12;
         private int soulStep = -1;
-        private final MobEntity[] soulMobs = new MobEntity[3];
+        private final Mob[] soulMobs = new Mob[3];
 
         @Override
         protected boolean driven() {
@@ -131,12 +130,12 @@ final class SlayerScripts {
         }
 
         @Override
-        protected boolean wantsMelee(DataBossEntity boss, ServerPlayerEntity target) {
+        protected boolean wantsMelee(DataBossEntity boss, ServerPlayer target) {
             return true;
         }
 
         @Override
-        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             if (attackCount % 10 == 0 && queue.isEmpty()) {
                 BossFx.say(boss, "Cerberus: Grrrrr!");
                 queue.add(SlayerBosses.CERB_MAGIC);
@@ -159,7 +158,7 @@ final class SlayerScripts {
         }
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             if (target == null) {
                 return;
             }
@@ -174,18 +173,18 @@ final class SlayerScripts {
             if (hp <= 200 && --lava <= 0) {
                 lava = 20;
                 BossFx.say(boss, "Cerberus: Grrrrrrrrrrrrrr!");
-                Vec3d p = target.getPos();
+                Vec3 p = target.position();
                 namedStrike("lava_pool", boss, p, 4, 15, 1.4, ParticleTypes.LAVA);
                 namedStrike("lava_pool", boss, around(boss, p, 3), 4, 15, 1.4, ParticleTypes.LAVA);
                 namedStrike("lava_pool", boss, around(boss, p, 3), 4, 15, 1.4, ParticleTypes.LAVA);
             }
         }
 
-        private void summonSouls(DataBossEntity boss, ServerPlayerEntity target) {
+        private void summonSouls(DataBossEntity boss, ServerPlayer target) {
             BossFx.say(boss, "Cerberus: Aaarrrooooooo! Summoned souls float in - ranged, then magic, then melee!");
             CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_CERBERUS_SOULS);
             String[] ids = {"summoned_soul_ranged", "summoned_soul_magic", "summoned_soul_melee"};
-            Vec3d c = homeVec();
+            Vec3 c = homeVec();
             for (int i = 0; i < 3; i++) {
                 soulMobs[i] = BossFx.spawnMinion(boss, ids[i], BossFx.ground(BossFx.world(boss), c.x - 3 + i * 3, c.z - 9, c.y), null);
             }
@@ -195,17 +194,17 @@ final class SlayerScripts {
 
         private int cooldownSouls;
 
-        private void tickSouls(DataBossEntity boss, ServerPlayerEntity target) {
+        private void tickSouls(DataBossEntity boss, ServerPlayer target) {
             if (--cooldownSouls > 0) {
                 return;
             }
             Prayer[] prayers = {Prayer.PROTECT_FROM_MISSILES, Prayer.PROTECT_FROM_MAGIC, Prayer.PROTECT_FROM_MELEE};
             String[] names = {"ranged", "magic", "melee"};
-            MobEntity soul = soulMobs[soulStep];
+            Mob soul = soulMobs[soulStep];
             if (soul != null && soul.isAlive()) {
-                BossFx.world(boss).spawnParticles(ParticleTypes.SOUL, soul.getX(), soul.getY() + 1, soul.getZ(), 15, 0.3, 0.5, 0.3, 0.05);
+                BossFx.world(boss).sendParticles(ParticleTypes.SOUL, soul.getX(), soul.getY() + 1, soul.getZ(), 15, 0.3, 0.5, 0.3, 0.05);
                 if (BossFx.protects(target, prayers[soulStep])) {
-                    boolean spectral = "spectral_spirit_shield".equals(Inv.idOf(target.getOffHandStack()));
+                    boolean spectral = "spectral_spirit_shield".equals(Inv.idOf(target.getOffhandItem()));
                     BossFx.drainPrayer(target, spectral ? 15 : 30);
                     CombatAchievementService.count(target, CombatAchievements.COUNT_SOUL_NEGATED, 1);
                     Msg.game(target, "The " + names[soulStep] + " soul drains your prayer.");
@@ -233,8 +232,8 @@ final class SlayerScripts {
      * tentacles return, spawns grow into scions and it swells up and explodes - get far away.
      */
     static final class Sire extends ScriptedBoss {
-        private final List<MobEntity> systems = new ArrayList<>();
-        private final List<Vec3d> tentacles = new ArrayList<>();
+        private final List<Mob> systems = new ArrayList<>();
+        private final List<Vec3> tentacles = new ArrayList<>();
         private int stage = 1;
         private boolean awake;
         private int disoriented;
@@ -245,22 +244,22 @@ final class SlayerScripts {
 
         @Override
         public void onSpawn(DataBossEntity boss) {
-            Vec3d c = boss.getPos();
+            Vec3 c = boss.position();
             for (int i = 0; i < 4; i++) {
                 double a = Math.PI / 4 + Math.PI / 2 * i;
-                MobEntity m = BossFx.spawnMinion(boss, "respiratory_system",
+                Mob m = BossFx.spawnMinion(boss, "respiratory_system",
                         BossFx.ground(BossFx.world(boss), c.x + Math.cos(a) * 7, c.z + Math.sin(a) * 7, c.y), null);
                 if (m != null) {
                     systems.add(m);
                     // Protected by the tentacles while the Sire is awake and not disoriented; open (always hitting) otherwise.
                     MinionRules.set(m, new MinionRules.Rule() {
                         @Override
-                        public double accuracy(ServerPlayerEntity p, net.minecraft.entity.LivingEntity mob, AttackType type) {
+                        public double accuracy(ServerPlayer p, net.minecraft.world.entity.LivingEntity mob, AttackType type) {
                             return systemsOpen() ? 10.0 : 1.0; // approx: OSRS deals at least half the max hit when open
                         }
 
                         @Override
-                        public int damage(ServerPlayerEntity p, net.minecraft.entity.LivingEntity mob, AttackType type, int d) {
+                        public int damage(ServerPlayer p, net.minecraft.world.entity.LivingEntity mob, AttackType type, int d) {
                             if (systemsOpen()) {
                                 return d;
                             }
@@ -298,7 +297,7 @@ final class SlayerScripts {
         }
 
         @Override
-        protected boolean wantsMelee(DataBossEntity boss, ServerPlayerEntity target) {
+        protected boolean wantsMelee(DataBossEntity boss, ServerPlayer target) {
             return stage == 2;
         }
 
@@ -313,14 +312,14 @@ final class SlayerScripts {
         }
 
         @Override
-        protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             if (stage != 1) {
                 return damage;
             }
             if (!awake) {
                 awake = true;
                 BossFx.say(boss, "The Abyssal Sire stirs and its tentacles awaken!");
-                BossFx.sound(boss, SoundEvents.ENTITY_WITHER_AMBIENT, 0.6f);
+                BossFx.sound(boss, SoundEvents.WITHER_AMBIENT, 0.6f);
             }
             if (attacker != null && disoriented <= 0) {
                 boolean stun = false;
@@ -342,7 +341,7 @@ final class SlayerScripts {
         }
 
         @Override
-        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             if (distance > 4) {
                 return SlayerBosses.SIRE_MIASMA;
             }
@@ -352,15 +351,15 @@ final class SlayerScripts {
 
         private void tickTentacles(DataBossEntity boss) {
             boolean active = tentaclesActive();
-            for (Vec3d t : tentacles) {
-                BossFx.world(boss).spawnParticles(active ? ParticleTypes.SQUID_INK : ParticleTypes.SMOKE, t.x, t.y + 1.0, t.z,
+            for (Vec3 t : tentacles) {
+                BossFx.world(boss).sendParticles(active ? ParticleTypes.SQUID_INK : ParticleTypes.SMOKE, t.x, t.y + 1.0, t.z,
                         active ? 3 : 1, 0.2, 0.6, 0.2, 0);
             }
             if (!active || now % 4 != 0) {
                 return;
             }
-            for (ServerPlayerEntity p : BossFx.players(boss, 24)) {
-                for (Vec3d t : tentacles) {
+            for (ServerPlayer p : BossFx.players(boss, 24)) {
+                for (Vec3 t : tentacles) {
                     double dx = p.getX() - t.x;
                     double dz = p.getZ() - t.z;
                     if (dx * dx + dz * dz <= 2.5 * 2.5) {
@@ -377,7 +376,7 @@ final class SlayerScripts {
         }
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             tickTentacles(boss);
             if (stage == 1) {
                 if (disoriented > 0) {
@@ -389,11 +388,11 @@ final class SlayerScripts {
                 } else {
                     BossFx.burst(boss, ParticleTypes.SQUID_INK, 3, 1.0);
                 }
-                if (systems.stream().noneMatch(MobEntity::isAlive)) {
+                if (systems.stream().noneMatch(Mob::isAlive)) {
                     stage = 2;
                     disoriented = 0;
                     BossFx.say(boss, "The Abyssal Sire awakens in a fury!");
-                    BossFx.sound(boss, SoundEvents.ENTITY_WITHER_SPAWN, 0.6f);
+                    BossFx.sound(boss, SoundEvents.WITHER_SPAWN, 0.6f);
                     return;
                 }
                 // Awake and not disoriented: miasma pools under the player and spawns.
@@ -404,7 +403,7 @@ final class SlayerScripts {
                     }
                     if (--spawnTimer <= 0) {
                         spawnTimer = 15;
-                        BossFx.spawnMinion(boss, "abyssal_spawn", around(boss, boss.getPos(), 3), target);
+                        BossFx.spawnMinion(boss, "abyssal_spawn", around(boss, boss.position(), 3), target);
                     }
                 }
                 return;
@@ -427,7 +426,7 @@ final class SlayerScripts {
             }
             if (--spawnTimer <= 0) {
                 spawnTimer = stage >= 3 ? 12 : 15;
-                BossFx.spawnMinion(boss, stage >= 3 ? "abyssal_scion" : "abyssal_spawn", around(boss, boss.getPos(), 3), target);
+                BossFx.spawnMinion(boss, stage >= 3 ? "abyssal_scion" : "abyssal_spawn", around(boss, boss.position(), 3), target);
                 if (stage >= 3) {
                     CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_SIRE_SCION);
                 }
@@ -435,8 +434,8 @@ final class SlayerScripts {
         }
 
         @Override
-        public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
-            systems.forEach(MobEntity::discard);
+        public void onDeath(DataBossEntity boss, ServerPlayer killer) {
+            systems.forEach(Mob::discard);
         }
     }
 
@@ -466,7 +465,7 @@ final class SlayerScripts {
         }
 
         @Override
-        protected boolean wantsMelee(DataBossEntity boss, ServerPlayerEntity target) {
+        protected boolean wantsMelee(DataBossEntity boss, ServerPlayer target) {
             return true;
         }
 
@@ -475,8 +474,8 @@ final class SlayerScripts {
             return phase == HydraPhase.GREEN ? null : "alchemical_hydra";
         }
 
-        private Vec3d vent(String colour) {
-            Vec3d c = homeVec();
+        private Vec3 vent(String colour) {
+            Vec3 c = homeVec();
             return switch (colour) {
                 case "red" -> c.add(-7, 0, -6);
                 case "green" -> c.add(7, 0, -6);
@@ -484,7 +483,7 @@ final class SlayerScripts {
             };
         }
 
-        private ParticleEffect ventParticle(String colour) {
+        private ParticleOptions ventParticle(String colour) {
             return switch (colour) {
                 case "red" -> ParticleTypes.FLAME;
                 case "green" -> ParticleTypes.SNEEZE;
@@ -494,19 +493,19 @@ final class SlayerScripts {
 
         private void placeVents(DataBossEntity boss) {
             for (String c : new String[]{"red", "green", "blue"}) {
-                Vec3d v = BossFx.ground(BossFx.world(boss), vent(c).x, vent(c).z, home.getY());
-                BlockPos p = BlockPos.ofFloored(v.x, v.y - 1, v.z);
+                Vec3 v = BossFx.ground(BossFx.world(boss), vent(c).x, vent(c).z, home.getY());
+                BlockPos p = BlockPos.containing(v.x, v.y - 1, v.z);
                 var state = switch (c) {
-                    case "red" -> Blocks.RED_CONCRETE.getDefaultState();
-                    case "green" -> Blocks.LIME_CONCRETE.getDefaultState();
-                    default -> Blocks.LIGHT_BLUE_CONCRETE.getDefaultState();
+                    case "red" -> Blocks.RED_CONCRETE.defaultBlockState();
+                    case "green" -> Blocks.LIME_CONCRETE.defaultBlockState();
+                    default -> Blocks.LIGHT_BLUE_CONCRETE.defaultBlockState();
                 };
-                BossFx.world(boss).setBlockState(p, state);
+                BossFx.world(boss).setBlockAndUpdate(p, state);
             }
         }
 
         @Override
-        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             if (attackCount > 0 && attackCount % 9 == 0) {
                 special(boss, target);
                 attackCount++;
@@ -522,13 +521,13 @@ final class SlayerScripts {
             return magicStyle ? SlayerBosses.HYDRA_MAGIC : SlayerBosses.HYDRA_RANGED;
         }
 
-        private void special(DataBossEntity boss, ServerPlayerEntity target) {
-            Vec3d p = target.getPos();
+        private void special(DataBossEntity boss, ServerPlayer target) {
+            Vec3 p = target.position();
             switch (phase) {
                 case GREEN, ENRAGED -> {
                     BossFx.warn(boss, "The Alchemical Hydra spits poison!");
                     for (int i = 0; i < 5; i++) {
-                        Vec3d at = i == 0 ? p : around(boss, p, 3);
+                        Vec3 at = i == 0 ? p : around(boss, p, 3);
                         namedStrike("poison_pool", boss, at, 2, 12, 1.2, ParticleTypes.SNEEZE, (hit, pos) ->
                                 com.runecraft.boss.Mechanics.addHazard(BossFx.world(boss), pos, 4, 10, boss));
                     }
@@ -538,7 +537,7 @@ final class SlayerScripts {
                     for (int i = 0; i < 4; i++) {
                         final int delay = 2 + i * 2;
                         namedStrike("lightning", boss, around(boss, p, 2 + i), delay, 20, 1.3, ParticleTypes.ELECTRIC_SPARK, (hit, pos) -> {
-                            for (ServerPlayerEntity h : hit) {
+                            for (ServerPlayer h : hit) {
                                 BossFx.stun(h, 2);
                             }
                         });
@@ -547,11 +546,11 @@ final class SlayerScripts {
                 case RED -> {
                     BossFx.warn(boss, "The Alchemical Hydra breathes walls of fire - get between them!");
                     CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_HYDRA_FLAME_WALL);
-                    Vec3d dir = p.subtract(boss.getPos()).normalize();
-                    Vec3d side = new Vec3d(-dir.z, 0, dir.x);
+                    Vec3 dir = p.subtract(boss.position()).normalize();
+                    Vec3 side = new Vec3(-dir.z, 0, dir.x);
                     for (int i = -5; i <= 5; i++) {
                         for (int s : new int[]{-2, 2}) {
-                            Vec3d at = p.add(dir.multiply(i * 1.2)).add(side.multiply(s));
+                            Vec3 at = p.add(dir.scale(i * 1.2)).add(side.scale(s));
                             namedStrike("fire_wall", boss, BossFx.ground(BossFx.world(boss), at.x, at.z, p.y), 3, 20, 1.0, ParticleTypes.FLAME);
                         }
                     }
@@ -561,7 +560,7 @@ final class SlayerScripts {
         }
 
         @Override
-        protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             if (shielded && damage > 0) {
                 double scaled = damage * SlayerBosses.HYDRA_SHIELD_MULTIPLIER;
                 int whole = (int) scaled;
@@ -571,7 +570,7 @@ final class SlayerScripts {
         }
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             if (!restored) {
                 restored = true;
                 if (boss.instanceTag != null && boss.instanceTag.startsWith("hydra;")) {
@@ -589,8 +588,8 @@ final class SlayerScripts {
             if (phase.vent != null && --ventTimer <= 0) {
                 ventTimer = 8;
                 for (String c : new String[]{"red", "green", "blue"}) {
-                    Vec3d v = vent(c);
-                    BossFx.column(BossFx.world(boss), new Vec3d(v.x, home.getY(), v.z), ventParticle(c), 8);
+                    Vec3 v = vent(c);
+                    BossFx.column(BossFx.world(boss), new Vec3(v.x, home.getY(), v.z), ventParticle(c), 8);
                     double dx = boss.getX() - v.x;
                     double dz = boss.getZ() - v.z;
                     if (dx * dx + dz * dz < 6.25) {
@@ -610,7 +609,7 @@ final class SlayerScripts {
             }
             if (phase != HydraPhase.ENRAGED && percent(boss) <= phase.endsAtPercent) {
                 HydraPhase next = phase.next();
-                BossFx.swapForm(boss, next.bossId, boss.getBlockPos(), false,
+                BossFx.swapForm(boss, next.bossId, boss.blockPosition(), false,
                         "hydra;" + home.getX() + ";" + home.getY() + ";" + home.getZ());
             }
         }
@@ -635,8 +634,8 @@ final class SlayerScripts {
 
         @Override
         public void onSpawn(DataBossEntity boss) {
-            ServerPlayerEntity target = boss.getTarget() instanceof ServerPlayerEntity p ? p : null;
-            dawn = BossFx.spawnBoss(boss, "dawn", boss.getBlockPos().add(3, 0, 0), target);
+            ServerPlayer target = boss.getTarget() instanceof ServerPlayer p ? p : null;
+            dawn = BossFx.spawnBoss(boss, "dawn", boss.blockPosition().offset(3, 0, 0), target);
             if (dawn != null && dawn.script() instanceof Dawn d) {
                 d.dusk = this;
             }
@@ -653,7 +652,7 @@ final class SlayerScripts {
         }
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             if (stage < 4 && !dawnAlive()) {
                 stage = 4;
                 special = 1;
@@ -700,23 +699,23 @@ final class SlayerScripts {
             }
         }
 
-        private void rockfall(DataBossEntity boss, ServerPlayerEntity target) {
+        private void rockfall(DataBossEntity boss, ServerPlayer target) {
             if (!dawnAlive()) {
                 return;
             }
             BossFx.warn(boss, "Rocks fall from above!");
             for (int i = 0; i < 4; i++) {
-                namedStrike("falling_rocks", boss, i == 0 ? target.getPos() : around(boss, target.getPos(), 4), 3, 22, 1.3, ParticleTypes.ASH);
+                namedStrike("falling_rocks", boss, i == 0 ? target.position() : around(boss, target.position(), 4), 3, 22, 1.3, ParticleTypes.ASH);
             }
         }
 
-        private void lightning(DataBossEntity boss, ServerPlayerEntity target) {
+        private void lightning(DataBossEntity boss, ServerPlayer target) {
             BossFx.warn(boss, "Lightning crackles across the rooftop!");
             for (int i = 0; i < 5; i++) {
                 // One vortex always targets the player's tile; each deals 5-10.
-                Vec3d at = i == 0 ? target.getPos() : around(boss, homeVec(), 10);
+                Vec3 at = i == 0 ? target.position() : around(boss, homeVec(), 10);
                 namedStrike("lightning", boss, at, 3, 0, 1.5, ParticleTypes.ELECTRIC_SPARK, (hit, pos) -> {
-                    for (ServerPlayerEntity h : hit) {
+                    for (ServerPlayer h : hit) {
                         com.runecraft.combat.CombatHooks.nameAttack("lightning", null);
                         CombatHandler.applyDamage(boss, h, 5 + h.getRandom().nextInt(6));
                     }
@@ -727,28 +726,28 @@ final class SlayerScripts {
         /** Dusk's missing wing glows: anyone next to him is knocked back and hit for the high 20s. */
         private void blinding(DataBossEntity boss) {
             BossFx.warn(boss, "Dusk's missing wing begins to glow... step away from him!");
-            double reach = boss.getWidth() / 2 + 1.8;
-            namedStrike("blinding", boss, boss.getPos(), 3, 0, reach, ParticleTypes.END_ROD, (hit, pos) -> {
-                for (ServerPlayerEntity h : hit) {
+            double reach = boss.getBbWidth() / 2 + 1.8;
+            namedStrike("blinding", boss, boss.position(), 3, 0, reach, ParticleTypes.END_ROD, (hit, pos) -> {
+                for (ServerPlayer h : hit) {
                     com.runecraft.combat.CombatHooks.nameAttack("blinding", null);
                     CombatHandler.applyDamage(boss, h, 22 + h.getRandom().nextInt(8)); // approx: "damage in the high 20s"
-                    h.takeKnockback(1.2, boss.getX() - h.getX(), boss.getZ() - h.getZ());
-                    h.velocityModified = true;
-                    h.addStatusEffect(new net.minecraft.entity.effect.StatusEffectInstance(
-                            net.minecraft.entity.effect.StatusEffects.BLINDNESS, 60, 0, false, false));
+                    h.knockback(1.2, boss.getX() - h.getX(), boss.getZ() - h.getZ());
+                    h.hurtMarked = true;
+                    h.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                            net.minecraft.world.effect.MobEffects.BLINDNESS, 60, 0, false, false));
                 }
             });
         }
 
         /** Drags the player into a cell of blue flames; still inside after 5 ticks: up to 65, healing Dusk. */
-        private void prison(DataBossEntity boss, ServerPlayerEntity target) {
+        private void prison(DataBossEntity boss, ServerPlayer target) {
             CombatAchievementService.countNear(boss, CombatAchievements.COUNT_DUSK_PRISON);
-            Vec3d cell = around(boss, homeVec(), 6);
-            target.requestTeleport(cell.x, cell.y, cell.z);
+            Vec3 cell = around(boss, homeVec(), 6);
+            target.teleportTo(cell.x, cell.y, cell.z);
             BossFx.say(boss, "Dusk drags you into a prison of flames! Escape the cell!");
             namedStrike("prison", boss, cell, 5, 0, 1.4, ParticleTypes.SOUL_FIRE_FLAME, (hit, pos) -> {
                 firstPrison = false;
-                for (ServerPlayerEntity h : hit) {
+                for (ServerPlayer h : hit) {
                     int dmg = h.getRandom().nextInt(66);
                     com.runecraft.combat.CombatHooks.nameAttack("prison", null);
                     CombatHandler.applyDamage(boss, h, dmg);
@@ -760,7 +759,7 @@ final class SlayerScripts {
         }
 
         @Override
-        public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
+        public void onDeath(DataBossEntity boss, ServerPlayer killer) {
             if (dawnAlive()) {
                 dawn.discard();
             }
@@ -778,7 +777,7 @@ final class SlayerScripts {
         }
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             if (target == null || --spheres > 0) {
                 return;
             }
@@ -788,11 +787,11 @@ final class SlayerScripts {
             }
             BossFx.warn(boss, "Dawn fires energy spheres - stand on them to absorb them!");
             for (int i = 0; i < 3; i++) {
-                strike(boss, around(boss, target.getPos(), 4), 5, 0, 1.0, ParticleTypes.END_ROD, (hit, pos) -> {
+                strike(boss, around(boss, target.position(), 4), 5, 0, 1.0, ParticleTypes.END_ROD, (hit, pos) -> {
                     if (hit.isEmpty()) {
                         boss.heal(mcHp(boss, 90));
                         CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_DAWN_HEALED);
-                        BossFx.world(boss).spawnParticles(ParticleTypes.HEART, boss.getX(), boss.getY() + 2, boss.getZ(), 3, 0.5, 0.3, 0.5, 0);
+                        BossFx.world(boss).sendParticles(ParticleTypes.HEART, boss.getX(), boss.getY() + 2, boss.getZ(), 3, 0.5, 0.3, 0.5, 0);
                     }
                     // Absorbing a sphere has no penalty (OSRS Wiki).
                 });
@@ -805,7 +804,7 @@ final class SlayerScripts {
      * Self-test (boss:araxxor_eggs): nine eggs ring the lair, the third standard attack hatches the first, and a destroyed
      * egg is dropped from the rotation.
      */
-    static String selfTestAraxxor(DataBossEntity boss, ServerPlayerEntity p) {
+    static String selfTestAraxxor(DataBossEntity boss, ServerPlayer p) {
         if (!(boss.script() instanceof Araxxor a)) {
             throw new IllegalStateException("Araxxor has no Araxxor script");
         }
@@ -821,7 +820,7 @@ final class SlayerScripts {
             if (a.eggsLeft() != 8 || a.araxytes.size() != 1) {
                 throw new IllegalStateException("after 3 attacks: " + a.eggsLeft() + " eggs, " + a.araxytes.size() + " araxytes");
             }
-            MobEntity egg = a.eggs.stream().filter(e -> e != null && e.isAlive()).findFirst().orElseThrow();
+            Mob egg = a.eggs.stream().filter(e -> e != null && e.isAlive()).findFirst().orElseThrow();
             egg.setHealth(0f);
             a.gameTick(boss, com.runecraft.action.ActionManager.gameTick());
             if (a.eggsLeft() != 7) {
@@ -840,17 +839,17 @@ final class SlayerScripts {
      * an egg that took more than the araxyte's 58 hitpoints just crumbles when its turn comes.
      */
     static final class Araxxor extends ScriptedBoss {
-        private final List<MobEntity> araxytes = new ArrayList<>();
+        private final List<Mob> araxytes = new ArrayList<>();
         /** The hatched ruptura araxytes (they explode instead of attacking). */
-        private final List<MobEntity> rupturas = new ArrayList<>();
-        private final List<MobEntity> eggs = new ArrayList<>();
+        private final List<Mob> rupturas = new ArrayList<>();
+        private final List<Mob> eggs = new ArrayList<>();
         private List<String> eggKinds = List.of();
         private int nextEgg;
         private int standardAttacks;
 
         private void placeEggs(DataBossEntity boss) {
             eggKinds = com.runecraft.osrs.content.bosses.BossMechanics.araxxorEggs(boss.getRandom().nextInt(3));
-            Vec3d c = homeVec();
+            Vec3 c = homeVec();
             for (int i = 0; i < eggKinds.size(); i++) {
                 // Clockwise from the south-east (Minecraft +x east, +z south: increasing angle turns clockwise from above).
                 double a = Math.PI / 4 + i * 2 * Math.PI / eggKinds.size();
@@ -860,21 +859,21 @@ final class SlayerScripts {
         }
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             if (eggs.isEmpty() && target != null) {
                 placeEggs(boss);
             }
             tickRupturas(boss);
             for (int i = 0; i < eggs.size(); i++) {
-                MobEntity egg = eggs.get(i);
+                Mob egg = eggs.get(i);
                 if (egg != null && !egg.isAlive()) {
                     eggs.set(i, null);
-                    if (egg.isDead()) {
-                        java.util.Set<ServerPlayerEntity> near = new java.util.LinkedHashSet<>(BossFx.players(boss, 24));
+                    if (egg.isDeadOrDying()) {
+                        java.util.Set<ServerPlayer> near = new java.util.LinkedHashSet<>(BossFx.players(boss, 24));
                         if (target != null) {
                             near.add(target);
                         }
-                        for (ServerPlayerEntity p : near) {
+                        for (ServerPlayer p : near) {
                             CombatAchievementService.count(p, com.runecraft.osrs.content.bosses.BossMechanics.COUNT_ARAXXOR_EGGS, 1);
                         }
                     }
@@ -884,18 +883,18 @@ final class SlayerScripts {
 
         /** Counts Araxxor's standard attacks (before it enrages) and hatches the next egg on the 3rd, 9th, 15th... */
         @Override
-        public int onHitPlayer(DataBossEntity boss, ServerPlayerEntity player, int damage, AttackType type) {
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
             if (boss.phase() < 0 && com.runecraft.osrs.content.bosses.BossMechanics.araxxorHatches(++standardAttacks)) {
                 hatch(boss, player);
             }
             return damage;
         }
 
-        private void hatch(DataBossEntity boss, ServerPlayerEntity target) {
+        private void hatch(DataBossEntity boss, ServerPlayer target) {
             araxytes.removeIf(m -> !m.isAlive());
             for (int k = 0; k < eggs.size(); k++) {
                 int i = (nextEgg + k) % eggs.size();
-                MobEntity egg = eggs.get(i);
+                Mob egg = eggs.get(i);
                 if (egg == null || !egg.isAlive()) {
                     continue; // destroyed: the next egg in the rotation hatches instead
                 }
@@ -903,7 +902,7 @@ final class SlayerScripts {
                 int eggDamage = (int) Math.round((egg.getMaxHealth() - egg.getHealth()) / Math.max(1f, egg.getMaxHealth())
                         * com.runecraft.osrs.content.bosses.BossMechanics.ARAXYTE_EGG_HP);
                 int hp = com.runecraft.osrs.content.bosses.BossMechanics.araxyteHitpoints(eggDamage);
-                Vec3d at = egg.getPos();
+                Vec3 at = egg.position();
                 egg.discard();
                 eggs.set(i, null);
                 if (hp <= 0) {
@@ -911,7 +910,7 @@ final class SlayerScripts {
                     return;
                 }
                 String kind = eggKinds.get(i);
-                MobEntity m = BossFx.spawnMinion(boss, kind, at, target);
+                Mob m = BossFx.spawnMinion(boss, kind, at, target);
                 if (m != null) {
                     m.setHealth(Math.max(1f, m.getMaxHealth() * hp / com.runecraft.osrs.content.bosses.BossMechanics.ARAXYTE_HP));
                     araxytes.add(m);
@@ -927,9 +926,9 @@ final class SlayerScripts {
         /** Ruptura araxytes walk up to a player and explode once in melee range. */
         private void tickRupturas(DataBossEntity boss) {
             rupturas.removeIf(m -> !m.isAlive());
-            for (MobEntity r : new ArrayList<>(rupturas)) {
-                for (ServerPlayerEntity p : BossFx.players(r, 3)) {
-                    if (p.squaredDistanceTo(r) <= 1.6 * 1.6) {
+            for (Mob r : new ArrayList<>(rupturas)) {
+                for (ServerPlayer p : BossFx.players(r, 3)) {
+                    if (p.distanceToSqr(r) <= 1.6 * 1.6) {
                         explode(boss, r);
                         break;
                     }
@@ -942,32 +941,32 @@ final class SlayerScripts {
          * its health); Araxxor, other araxytes and eggs take 80 under it, 64 next to it and at least 33 up to 3 tiles away.
          * Three araxytes killed by one explosion is "Araxyte Betrayal". Returns how many araxytes it killed.
          */
-        int explode(DataBossEntity boss, MobEntity r) {
-            Vec3d at = r.getPos();
+        int explode(DataBossEntity boss, Mob r) {
+            Vec3 at = r.position();
             double hp = r.getHealth() / Math.max(1f, r.getMaxHealth());
             rupturas.remove(r);
             r.discard();
-            BossFx.world(boss).spawnParticles(ParticleTypes.EXPLOSION, at.x, at.y + 0.5, at.z, 4, 1.2, 0.4, 1.2, 0);
-            BossFx.sound(r, SoundEvents.ENTITY_GENERIC_EXPLODE, 0.8f);
-            for (ServerPlayerEntity p : BossFx.players(r, BossMechanics.RUPTURA_RANGE + 1)) {
-                int dmg = BossMechanics.rupturaPlayerDamage(tiles(at, p.getPos()), hp);
+            BossFx.world(boss).sendParticles(ParticleTypes.EXPLOSION, at.x, at.y + 0.5, at.z, 4, 1.2, 0.4, 1.2, 0);
+            BossFx.sound(r, SoundEvents.GENERIC_EXPLODE, 0.8f);
+            for (ServerPlayer p : BossFx.players(r, BossMechanics.RUPTURA_RANGE + 1)) {
+                int dmg = BossMechanics.rupturaPlayerDamage(tiles(at, p.position()), hp);
                 if (dmg > 0) {
                     com.runecraft.combat.CombatHooks.nameAttack("ruptura_explosion", AttackType.CRUSH);
                     CombatHandler.applyDamage(r, p, dmg);
                 }
             }
             int killed = 0;
-            List<MobEntity> victims = new ArrayList<>(araxytes);
+            List<Mob> victims = new ArrayList<>(araxytes);
             eggs.forEach(e -> {
                 if (e != null) {
                     victims.add(e);
                 }
             });
-            for (MobEntity v : victims) {
+            for (Mob v : victims) {
                 if (v == r || !v.isAlive()) {
                     continue;
                 }
-                int dmg = BossMechanics.rupturaEnemyDamage(tiles(at, v.getPos()));
+                int dmg = BossMechanics.rupturaEnemyDamage(tiles(at, v.position()));
                 if (dmg > 0) {
                     CombatHandler.applyDamage(null, v, dmg);
                     if (!v.isAlive() && araxytes.contains(v)) {
@@ -975,7 +974,7 @@ final class SlayerScripts {
                     }
                 }
             }
-            int bossDmg = BossMechanics.rupturaEnemyDamage(tiles(at, boss.getPos()) - 1); // Araxxor is a large creature
+            int bossDmg = BossMechanics.rupturaEnemyDamage(tiles(at, boss.position()) - 1); // Araxxor is a large creature
             if (bossDmg > 0 && boss.isAlive()) {
                 CombatHandler.applyDamage(null, boss, bossDmg);
             }
@@ -985,7 +984,7 @@ final class SlayerScripts {
             return killed;
         }
 
-        private static int tiles(Vec3d a, Vec3d b) {
+        private static int tiles(Vec3 a, Vec3 b) {
             return (int) Math.floor(Math.max(Math.abs(a.x - b.x), Math.abs(a.z - b.z)));
         }
 
@@ -996,14 +995,14 @@ final class SlayerScripts {
 
         @Override
         public void onPhase(DataBossEntity boss, int phase) {
-            araxytes.forEach(MobEntity::discard);
+            araxytes.forEach(Mob::discard);
             araxytes.clear();
             rupturas.clear();
         }
 
         /** "Perfect Araxxor 2": no damage on it once it has enraged. */
         @Override
-        protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             if (boss.phase() >= 0 && damage > 0 && attacker != null) {
                 CombatAchievementService.flag(attacker, CombatAchievements.FLAG_ARAXXOR_ENRAGE_HIT);
             }
@@ -1011,8 +1010,8 @@ final class SlayerScripts {
         }
 
         @Override
-        public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
-            araxytes.forEach(MobEntity::discard);
+        public void onDeath(DataBossEntity boss, ServerPlayer killer) {
+            araxytes.forEach(Mob::discard);
             eggs.forEach(e -> {
                 if (e != null) {
                     e.discard();

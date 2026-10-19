@@ -15,13 +15,12 @@ import com.runecraft.world.Gielinor;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
-import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.TypedActionResult;
-
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
 import java.util.List;
 import java.util.Map;
 
@@ -40,17 +39,17 @@ public final class LootingBagService {
 
     public static void register() {
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            ItemStack stack = player.getStackInHand(hand);
+            ItemStack stack = player.getItemInHand(hand);
             if (stack.isEmpty() || !LootingBag.ID.equals(Inv.idOf(stack))) {
-                return TypedActionResult.pass(stack);
+                return InteractionResultHolder.pass(stack);
             }
-            if (world.isClient()) {
-                return TypedActionResult.success(stack, true);
+            if (world.isClientSide()) {
+                return InteractionResultHolder.sidedSuccess(stack, true);
             }
-            if (player instanceof ServerPlayerEntity sp) {
+            if (player instanceof ServerPlayer sp) {
                 open(sp);
             }
-            return TypedActionResult.success(stack, false);
+            return InteractionResultHolder.sidedSuccess(stack, false);
         });
         SysNet.onAction(SCREEN, (p, action, fields) -> {
             if (!Inv.has(p, LootingBag.ID, 1)) {
@@ -74,14 +73,14 @@ public final class LootingBagService {
         });
         ServerTickEvents.END_WORLD_TICK.register(LootingBagService::collect);
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
-            if (entity instanceof ServerPlayerEntity p && Gielinor.wildernessLevel(p) > 0) {
+            if (entity instanceof ServerPlayer p && Gielinor.wildernessLevel(p) > 0) {
                 dropOnDeath(p);
             }
         });
     }
 
     /** Wilderness death: everything in the bag drops where the player died (the contents are not protected). */
-    private static void dropOnDeath(ServerPlayerEntity p) {
+    private static void dropOnDeath(ServerPlayer p) {
         SysState.SysPlayer sp = SysState.of(p);
         sp.lootingBagOpen = false;
         if (sp.lootingBag.isEmpty()) {
@@ -92,10 +91,10 @@ public final class LootingBagService {
             if (proto.isEmpty()) {
                 continue;
             }
-            int max = Math.max(1, proto.getMaxCount());
+            int max = Math.max(1, proto.getMaxStackSize());
             for (long left = st.count(); left > 0; ) {
                 int n = (int) Math.min(left, max);
-                p.dropItem(proto.copyWithCount(n), true, false);
+                p.drop(proto.copyWithCount(n), true, false);
                 left -= n;
             }
         }
@@ -103,7 +102,7 @@ public final class LootingBagService {
     }
 
     /** The check/deposit screen: contents, Open/Close and one button per tradeable inventory stack. */
-    public static void open(ServerPlayerEntity p) {
+    public static void open(ServerPlayer p) {
         SysState.SysPlayer sp = SysState.of(p);
         LootingBag.Contents bag = sp.lootingBag;
         SysNet.Screen s = new SysNet.Screen(SCREEN, "Looting bag (" + bag.slotsUsed() + "/" + LootingBag.CAPACITY + ")");
@@ -122,14 +121,14 @@ public final class LootingBagService {
         s.button("toggle", sp.lootingBagOpen ? "Close bag" : "Open bag",
                 sp.lootingBagOpen ? "Picked-up items go to your inventory." : "Tradeable items you pick up in the Wilderness go into the bag.", true);
         s.button("store_all", "Deposit all tradeables", wild ? "" : "You can only fill the bag in the Wilderness.", wild);
-        PlayerInventory inv = p.getInventory();
+        Inventory inv = p.getInventory();
         int shown = 0;
-        for (int i = 0; i < inv.main.size() && shown < 12; i++) {
-            ItemStack st = inv.main.get(i);
+        for (int i = 0; i < inv.items.size() && shown < 12; i++) {
+            ItemStack st = inv.items.get(i);
             if (st.isEmpty() || !storable(st)) {
                 continue;
             }
-            s.button("store:" + i, "Store " + st.getCount() + " x " + st.getName().getString(), "", wild);
+            s.button("store:" + i, "Store " + st.getCount() + " x " + st.getHoverName().getString(), "", wild);
             shown++;
         }
         s.send(p);
@@ -143,16 +142,16 @@ public final class LootingBagService {
     }
 
     /** Puts one inventory stack in the bag; {@code anywhere} skips the Wilderness check (self-test). Returns items stored. */
-    public static int store(ServerPlayerEntity p, int slot, boolean anywhere) {
-        PlayerInventory inv = p.getInventory();
-        if (slot < 0 || slot >= inv.main.size()) {
+    public static int store(ServerPlayer p, int slot, boolean anywhere) {
+        Inventory inv = p.getInventory();
+        if (slot < 0 || slot >= inv.items.size()) {
             return 0;
         }
         if (!anywhere && Gielinor.wildernessLevel(p) <= 0) {
             Msg.game(p, "You can't put items in the looting bag unless you're in the Wilderness.");
             return 0;
         }
-        ItemStack st = inv.main.get(slot);
+        ItemStack st = inv.items.get(slot);
         if (st.isEmpty() || !storable(st)) {
             Msg.game(p, "Only tradeable items can be put in the looting bag.");
             return 0;
@@ -161,13 +160,13 @@ public final class LootingBagService {
         if (put == 0) {
             Msg.game(p, "The bag's too full.");
         }
-        p.getInventory().markDirty();
+        p.getInventory().setChanged();
         ServerNetworking.sync(p);
         return put;
     }
 
     /** Puts every tradeable inventory stack in the bag (as far as it fits). Returns items stored. */
-    public static int storeAll(ServerPlayerEntity p, boolean anywhere) {
+    public static int storeAll(ServerPlayer p, boolean anywhere) {
         if (!anywhere && Gielinor.wildernessLevel(p) <= 0) {
             Msg.game(p, "You can't put items in the looting bag unless you're in the Wilderness.");
             return 0;
@@ -175,7 +174,7 @@ public final class LootingBagService {
         LootingBag.Contents bag = SysState.of(p).lootingBag;
         int total = 0;
         boolean full = false;
-        for (ItemStack st : p.getInventory().main) {
+        for (ItemStack st : p.getInventory().items) {
             if (!st.isEmpty() && storable(st)) {
                 int before = st.getCount();
                 total += put(bag, st);
@@ -185,7 +184,7 @@ public final class LootingBagService {
         if (full) {
             Msg.game(p, "The bag's too full.");
         }
-        p.getInventory().markDirty();
+        p.getInventory().setChanged();
         ServerNetworking.sync(p);
         return total;
     }
@@ -196,7 +195,7 @@ public final class LootingBagService {
         String item = noted ? Notes.notedId(st) : Inv.idOf(st);
         String tag = noted ? Notes.notedTag(st) : Notes.tagOf(st);
         int put = bag.store(item, tag, noted, st.isStackable(), st.getCount());
-        st.decrement(put);
+        st.shrink(put);
         return put;
     }
 
@@ -204,7 +203,7 @@ public final class LootingBagService {
      * Banks everything in the bag (bank or deposit box opened while holding it). What the bank has no room for goes to the
      * inventory, and what doesn't fit there stays in the bag. Returns the number of items banked.
      */
-    public static long bankAll(ServerPlayerEntity p) {
+    public static long bankAll(ServerPlayer p) {
         LootingBag.Contents bag = SysState.of(p).lootingBag;
         if (bag.isEmpty()) {
             Msg.game(p, "Your looting bag is empty.");
@@ -232,14 +231,14 @@ public final class LootingBagService {
         }
         Msg.game(p, "You empty your looting bag into your bank" + (banked == 0 ? "" : " (" + String.format("%,d", banked) + " items)")
                 + (toInventory > 0 ? "; " + toInventory + " went to your inventory." : ".") + (bag.isEmpty() ? "" : " Some items didn't fit."));
-        p.getInventory().markDirty();
+        p.getInventory().setChanged();
         ServerNetworking.sync(p);
         return banked;
     }
 
     /** While the bag is open, tradeable items a player in the Wilderness walks over go into it (before vanilla pickup). */
-    private static void collect(ServerWorld world) {
-        for (ServerPlayerEntity p : world.getPlayers()) {
+    private static void collect(ServerLevel world) {
+        for (ServerPlayer p : world.players()) {
             if (p.isSpectator() || !p.isAlive() || Gielinor.wildernessLevel(p) <= 0) {
                 continue;
             }
@@ -247,27 +246,27 @@ public final class LootingBagService {
             if (!sp.lootingBagOpen || !Inv.has(p, LootingBag.ID, 1)) {
                 continue;
             }
-            List<ItemEntity> items = world.getEntitiesByClass(ItemEntity.class, p.getBoundingBox().expand(1.0, 0.5, 1.0),
-                    e -> e.isAlive() && !e.cannotPickup() && storable(e.getStack()));
+            List<ItemEntity> items = world.getEntitiesOfClass(ItemEntity.class, p.getBoundingBox().inflate(1.0, 0.5, 1.0),
+                    e -> e.isAlive() && !e.hasPickUpDelay() && storable(e.getItem()));
             for (ItemEntity e : items) {
-                ItemStack st = e.getStack();
+                ItemStack st = e.getItem();
                 int before = st.getCount();
                 int put = put(sp.lootingBag, st);
                 if (put <= 0) {
                     continue;
                 }
-                Msg.game(p, "You put " + put + " x " + st.getName().getString() + " in your looting bag.");
+                Msg.game(p, "You put " + put + " x " + st.getHoverName().getString() + " in your looting bag.");
                 if (put >= before || st.isEmpty()) {
                     e.discard();
                 } else {
-                    e.setStack(st);
+                    e.setItem(st);
                 }
             }
         }
     }
 
     /** Self-test hook: the player's bag contents as item -> total count. */
-    public static Map<String, Long> contents(ServerPlayerEntity p) {
+    public static Map<String, Long> contents(ServerPlayer p) {
         Map<String, Long> out = new java.util.LinkedHashMap<>();
         for (LootingBag.Stack st : SysState.of(p).lootingBag.stacks()) {
             out.merge(st.item, st.count(), Long::sum);

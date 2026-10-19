@@ -10,17 +10,16 @@ import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * Bird snares and box traps. A trap checks every ~15s whether a creature walked into it, rolling the
@@ -32,7 +31,7 @@ public final class HunterService {
     public static final int CHECK_INTERVAL = 300;
 
     /** A laid trap: owner and whether it is a placed snare/box trap block (pruned when the block is gone). */
-    private record Laid(UUID owner, ServerWorld world, BlockPos pos, boolean block) {
+    private record Laid(UUID owner, ServerLevel world, BlockPos pos, boolean block) {
     }
 
     /** Laid traps by "world|pos" key. */
@@ -45,8 +44,8 @@ public final class HunterService {
         return trap == HunterCreature.Trap.BIRD_SNARE ? 1 : 27;
     }
 
-    private static String key(ServerWorld world, BlockPos pos) {
-        return world.getRegistryKey().getValue() + "|" + pos.asLong();
+    private static String key(ServerLevel world, BlockPos pos) {
+        return world.dimension().location() + "|" + pos.asLong();
     }
 
     /** Number of traps this player currently has laid (stale snare/box trap entries are dropped). */
@@ -54,7 +53,7 @@ public final class HunterService {
         int n = 0;
         for (Iterator<Laid> it = LAID.values().iterator(); it.hasNext(); ) {
             Laid l = it.next();
-            if (l.block() && l.world().isChunkLoaded(l.pos()) && !(l.world().getBlockState(l.pos()).getBlock() instanceof TrapBlock)) {
+            if (l.block() && l.world().hasChunkAt(l.pos()) && !(l.world().getBlockState(l.pos()).getBlock() instanceof TrapBlock)) {
                 it.remove();
                 continue;
             }
@@ -66,15 +65,15 @@ public final class HunterService {
     }
 
     /** The player's trap limit where they stand. */
-    public static int trapLimit(ServerPlayerEntity player) {
+    public static int trapLimit(ServerPlayer player) {
         int level = Players.data(player).skills().currentLevel(Skill.HUNTER);
-        return HunterRates.trapLimit(level, Gielinor.is(player.getWorld()) && Gielinor.wildernessLevel(player) > 0);
+        return HunterRates.trapLimit(level, Gielinor.is(player.level()) && Gielinor.wildernessLevel(player) > 0);
     }
 
     /** True (after telling the player) when they already have as many traps laid as they may. */
-    public static boolean atTrapLimit(ServerPlayerEntity player) {
+    public static boolean atTrapLimit(ServerPlayer player) {
         int limit = trapLimit(player);
-        if (laidCount(player.getUuid()) >= limit) {
+        if (laidCount(player.getUUID()) >= limit) {
             Msg.game(player, "You don't have a high enough Hunter level to set up more than " + limit
                     + (limit == 1 ? " trap." : " traps."));
             return true;
@@ -83,51 +82,51 @@ public final class HunterService {
     }
 
     /** Records a laid trap. {@code block} = a placed snare/box trap block. */
-    public static void claim(ServerPlayerEntity player, ServerWorld world, BlockPos pos, boolean block) {
-        LAID.put(key(world, pos), new Laid(player.getUuid(), world, pos.toImmutable(), block));
+    public static void claim(ServerPlayer player, ServerLevel world, BlockPos pos, boolean block) {
+        LAID.put(key(world, pos), new Laid(player.getUUID(), world, pos.immutable(), block));
     }
 
-    public static void release(ServerWorld world, BlockPos pos) {
+    public static void release(ServerLevel world, BlockPos pos) {
         LAID.remove(key(world, pos));
     }
 
     /** Owner of a laid trap, or null. */
-    public static UUID owner(ServerWorld world, BlockPos pos) {
+    public static UUID owner(ServerLevel world, BlockPos pos) {
         Laid l = LAID.get(key(world, pos));
         return l == null ? null : l.owner();
     }
 
-    private static PlayerEntity hunterFor(ServerWorld world, BlockPos pos) {
+    private static Player hunterFor(ServerLevel world, BlockPos pos) {
         UUID owner = owner(world, pos);
         if (owner != null) {
-            PlayerEntity p = world.getPlayerByUuid(owner);
+            Player p = world.getPlayerByUUID(owner);
             if (p != null) {
                 return p;
             }
         }
-        return world.getClosestPlayer(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 24, false);
+        return world.getNearestPlayer(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 24, false);
     }
 
-    public static void checkTrap(ServerWorld world, BlockPos pos, BlockState state, TrapBlock block) {
-        if (state.get(TrapBlock.CAUGHT)) {
+    public static void checkTrap(ServerLevel world, BlockPos pos, BlockState state, TrapBlock block) {
+        if (state.getValue(TrapBlock.CAUGHT)) {
             return;
         }
-        PlayerEntity hunter = hunterFor(world, pos);
-        if (hunter instanceof ServerPlayerEntity sp) {
+        Player hunter = hunterFor(world, pos);
+        if (hunter instanceof ServerPlayer sp) {
             int level = Players.data(sp).skills().currentLevel(Skill.HUNTER);
             Region region = Gielinor.is(world) ? com.runecraft.osrs.GielinorMap.regionAtBlock(pos.getX(), pos.getZ()) : Region.MISTHALIN;
             HunterCreature creature = HunterCreature.best(block.trap(), region, level);
             if (creature != null && world.getRandom().nextDouble() < HunterRates.catchChance(creature, level)) {
-                world.setBlockState(pos, state.with(TrapBlock.CAUGHT, true), Block.NOTIFY_ALL);
+                world.setBlock(pos, state.setValue(TrapBlock.CAUGHT, true), Block.UPDATE_ALL);
                 return;
             }
         }
-        world.scheduleBlockTick(pos, block, CHECK_INTERVAL);
+        world.scheduleTick(pos, block, CHECK_INTERVAL);
     }
 
-    public static void collect(ServerPlayerEntity player, ServerWorld world, BlockPos pos, BlockState state, TrapBlock block) {
+    public static void collect(ServerPlayer player, ServerLevel world, BlockPos pos, BlockState state, TrapBlock block) {
         UUID owner = owner(world, pos);
-        if (owner != null && !owner.equals(player.getUuid())) {
+        if (owner != null && !owner.equals(player.getUUID())) {
             Msg.game(player, "This isn't your trap.");
             return;
         }
@@ -135,7 +134,7 @@ public final class HunterService {
         world.removeBlock(pos, false);
         release(world, pos);
         Inv.give(player, trapItem, 1);
-        if (!state.get(TrapBlock.CAUGHT)) {
+        if (!state.getValue(TrapBlock.CAUGHT)) {
             Msg.game(player, "You dismantle the trap.");
             return;
         }

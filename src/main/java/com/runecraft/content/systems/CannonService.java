@@ -34,26 +34,25 @@ import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.HostileEntity;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.particle.ParticleTypes;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.TypedActionResult;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.RaycastContext;
-
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -73,7 +72,7 @@ public final class CannonService {
     /** A set-up (or setting-up) cannon. */
     public static final class Cannon {
         public final UUID owner;
-        public final ServerWorld world;
+        public final ServerLevel world;
         public final BlockPos pos;
         /** Assembly steps done (1 = base ... 4 = complete). */
         public int stage;
@@ -85,7 +84,7 @@ public final class CannonService {
         public boolean broken;
         public int fired;
 
-        Cannon(UUID owner, ServerWorld world, BlockPos pos) {
+        Cannon(UUID owner, ServerLevel world, BlockPos pos) {
             this.owner = owner;
             this.world = world;
             this.pos = pos;
@@ -112,28 +111,28 @@ public final class CannonService {
     static void register() {
         BlockHooks.register(Multicannon.BLOCK, CannonService::click);
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            ItemStack stack = player.getStackInHand(hand);
+            ItemStack stack = player.getItemInHand(hand);
             String id = stack.isEmpty() ? "" : Inv.idOf(stack);
             boolean ours = id.equals(Multicannon.BASE) || id.equals(Multicannon.GRANITE_DUST) && Inv.count(player, Multicannon.STEEL_BALL) > 0;
             if (!ours) {
-                return TypedActionResult.pass(stack);
+                return InteractionResultHolder.pass(stack);
             }
-            if (world.isClient() || !(player instanceof ServerPlayerEntity p)) {
-                return TypedActionResult.success(stack, world.isClient());
+            if (world.isClientSide() || !(player instanceof ServerPlayer p)) {
+                return InteractionResultHolder.sidedSuccess(stack, world.isClientSide());
             }
             if (id.equals(Multicannon.BASE)) {
                 setUp(p);
             } else {
                 coatGranite(p);
             }
-            return TypedActionResult.success(p.getStackInHand(hand), false);
+            return InteractionResultHolder.sidedSuccess(p.getItemInHand(hand), false);
         });
         QuestScripts.onTalk(Multicannon.NULODION, (p, npc) -> nulodion(p));
         net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback.EVENT.register((dispatcher, access, env) -> dispatcher.register(
-                net.minecraft.server.command.CommandManager.literal("cannon").then(net.minecraft.server.command.CommandManager.literal("buy")
-                        .then(net.minecraft.server.command.CommandManager.argument("item",
+                net.minecraft.commands.Commands.literal("cannon").then(net.minecraft.commands.Commands.literal("buy")
+                        .then(net.minecraft.commands.Commands.argument("item",
                                 com.mojang.brigadier.arguments.StringArgumentType.word()).executes(ctx -> {
-                            ServerPlayerEntity p = ctx.getSource().getPlayer();
+                            ServerPlayer p = ctx.getSource().getPlayer();
                             if (p != null) {
                                 buyPart(p, com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "item"));
                             }
@@ -141,7 +140,7 @@ public final class CannonService {
                         })))));
         SysTicks.everyTick((server, tick) -> tick(server, tick));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
-            Cannon c = CANNONS.remove(handler.player.getUuid());
+            Cannon c = CANNONS.remove(handler.player.getUUID());
             if (c != null) {
                 // The cannon is left behind; Nulodion keeps it (and its cannonballs) for the owner.
                 remove(c);
@@ -151,14 +150,14 @@ public final class CannonService {
     }
 
     /** The player's cannon, or null. */
-    public static Cannon of(ServerPlayerEntity p) {
-        return CANNONS.get(p.getUuid());
+    public static Cannon of(ServerPlayer p) {
+        return CANNONS.get(p.getUUID());
     }
 
     // ------------------------------------------------------------------ setting up
 
     /** Why a cannon can't be set up around {@code centre}, or null if it can. */
-    public static String prohibited(ServerPlayerEntity p, BlockPos centre) {
+    public static String prohibited(ServerPlayer p, BlockPos centre) {
         if (!Gielinor.is(p) || RaidManagerBridge.inRaid(p)
                 || com.runecraft.content.minigames.MinigameManager.session(p) != null) {
             return Multicannon.DEFAULT_MESSAGE;
@@ -191,19 +190,19 @@ public final class CannonService {
                 return e.getValue();
             }
         }
-        Box near = block(centre).expand(BOSS_RADIUS);
-        if (!p.getWorld().getEntitiesByClass(LivingEntity.class, near, e -> e.isAlive() && destroysCannons(e)).isEmpty()) {
+        AABB near = block(centre).inflate(BOSS_RADIUS);
+        if (!p.level().getEntitiesOfClass(LivingEntity.class, near, e -> e.isAlive() && destroysCannons(e)).isEmpty()) {
             return "It doesn't seem safe to set up a cannon here.";
         }
         return null;
     }
 
     /** Whether the 3x3 around {@code centre} is free floor. */
-    static boolean clear(ServerWorld world, BlockPos centre) {
+    static boolean clear(ServerLevel world, BlockPos centre) {
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
-                BlockPos at = centre.add(dx, 0, dz);
-                if (!world.getBlockState(at).isAir() || !world.getBlockState(at.up()).isAir() || world.getBlockState(at.down()).isAir()) {
+                BlockPos at = centre.offset(dx, 0, dz);
+                if (!world.getBlockState(at).isAir() || !world.getBlockState(at.above()).isAir() || world.getBlockState(at.below()).isAir()) {
                     return false;
                 }
             }
@@ -212,20 +211,20 @@ public final class CannonService {
     }
 
     /** Starts setting up a cannon on the tile in front of the player; true if it began. */
-    public static boolean setUp(ServerPlayerEntity p) {
-        Direction d = p.getHorizontalFacing();
-        return setUp(p, p.getBlockPos().offset(d, 2), false);
+    public static boolean setUp(ServerPlayer p) {
+        Direction d = p.getDirection();
+        return setUp(p, p.blockPosition().relative(d, 2), false);
     }
 
     /** Sets up a cannon centred on {@code centre}; {@code instant} skips the assembly ticks (self-test). */
-    public static boolean setUp(ServerPlayerEntity p, BlockPos centre, boolean instant) {
+    public static boolean setUp(ServerPlayer p, BlockPos centre, boolean instant) {
         QuestInfo quest = ContentRegistry.quest(Multicannon.QUEST);
         if (quest != null && !Players.data(p).questComplete(quest)) {
             Msg.red(p, "You need to complete Dwarf Cannon to set up a dwarf multicannon.");
             return false;
         }
         SysState.SysPlayer sp = SysState.of(p);
-        if (CANNONS.containsKey(p.getUuid())) {
+        if (CANNONS.containsKey(p.getUUID())) {
             Msg.game(p, "You already have a cannon set up.");
             return false;
         }
@@ -244,7 +243,7 @@ public final class CannonService {
             Msg.red(p, why);
             return false;
         }
-        ServerWorld world = (ServerWorld) p.getWorld();
+        ServerLevel world = (ServerLevel) p.level();
         if (!clear(world, centre)) {
             Msg.game(p, "There isn't enough space to set up a cannon here.");
             return false;
@@ -253,14 +252,14 @@ public final class CannonService {
         if (block == null) {
             return false;
         }
-        Cannon c = new Cannon(p.getUuid(), world, centre.toImmutable());
-        CANNONS.put(p.getUuid(), c);
+        Cannon c = new Cannon(p.getUUID(), world, centre.immutable());
+        CANNONS.put(p.getUUID(), c);
         sp.cannonOut = true;
         sp.cannonSteel = 0;
         sp.cannonGranite = 0;
         Inv.remove(p, Multicannon.BASE, 1);
-        world.setBlockState(c.pos, block.getDefaultState(), Block.NOTIFY_ALL);
-        world.playSound(null, c.pos, SoundEvents.BLOCK_ANVIL_PLACE, SoundCategory.PLAYERS, 0.5f, 1.2f);
+        world.setBlock(c.pos, block.defaultBlockState(), Block.UPDATE_ALL);
+        world.playSound(null, c.pos, SoundEvents.ANVIL_PLACE, SoundSource.PLAYERS, 0.5f, 1.2f);
         c.stage = 1;
         Msg.game(p, "You place the cannon base on the ground.");
         c.nextStep = SysTicks.now() + Multicannon.SETUP_TICKS_PER_STEP;
@@ -272,7 +271,7 @@ public final class CannonService {
         return true;
     }
 
-    private static void assemble(ServerPlayerEntity p, Cannon c) {
+    private static void assemble(ServerPlayer p, Cannon c) {
         String part = Multicannon.PARTS.get(c.stage);
         if (!Inv.has(p, part, 1)) {
             Msg.red(p, "You need the cannon " + part.substring("cannon_".length()) + " to finish setting up your cannon.");
@@ -294,24 +293,24 @@ public final class CannonService {
 
     // ------------------------------------------------------------------ clicking it
 
-    private static void click(ServerPlayerEntity p, BlockPos pos, BlockState state) {
+    private static void click(ServerPlayer p, BlockPos pos, BlockState state) {
         Cannon c = null;
         for (Cannon k : CANNONS.values()) {
-            if (k.pos.equals(pos) && k.world == p.getWorld()) {
+            if (k.pos.equals(pos) && k.world == p.level()) {
                 c = k;
             }
         }
         if (c == null) {
             // Left over from before a restart: the owner gets it back from Nulodion.
-            p.getWorld().removeBlock(pos, false);
+            p.level().removeBlock(pos, false);
             Msg.game(p, "The abandoned cannon falls apart. Its owner can reclaim it from Nulodion.");
             return;
         }
-        if (!c.owner.equals(p.getUuid())) {
+        if (!c.owner.equals(p.getUUID())) {
             Msg.game(p, "This isn't your cannon!");
             return;
         }
-        if (p.isSneaking()) {
+        if (p.isShiftKeyDown()) {
             pickUp(p);
         } else if (!c.complete()) {
             Msg.game(p, "You're still setting up your cannon.");
@@ -325,7 +324,7 @@ public final class CannonService {
     }
 
     /** Loads cannonballs (granite first; a cannon holding granite takes no steel until it is empty); returns how many. */
-    public static int load(ServerPlayerEntity p) {
+    public static int load(ServerPlayer p) {
         Cannon c = of(p);
         if (c == null || !c.complete()) {
             return 0;
@@ -355,8 +354,8 @@ public final class CannonService {
     }
 
     /** Picks the cannon up: the four parts and its cannonballs go back to the inventory. */
-    public static boolean pickUp(ServerPlayerEntity p) {
-        Cannon c = CANNONS.remove(p.getUuid());
+    public static boolean pickUp(ServerPlayer p) {
+        Cannon c = CANNONS.remove(p.getUUID());
         if (c == null) {
             return false;
         }
@@ -373,7 +372,7 @@ public final class CannonService {
         return true;
     }
 
-    private static void giveBalls(ServerPlayerEntity p, int steel, int granite) {
+    private static void giveBalls(ServerPlayer p, int steel, int granite) {
         if (steel > 0) {
             Inv.give(p, Multicannon.STEEL_BALL, steel);
         }
@@ -401,7 +400,7 @@ public final class CannonService {
             return;
         }
         for (Cannon c : new ArrayList<>(CANNONS.values())) {
-            ServerPlayerEntity owner = server.getPlayerManager().getPlayer(c.owner);
+            ServerPlayer owner = server.getPlayerList().getPlayer(c.owner);
             if (owner == null) {
                 continue;
             }
@@ -414,7 +413,7 @@ public final class CannonService {
     }
 
     /** One game tick of a cannon: assembly, wear and one turn of the barrel (firing if loaded). */
-    public static void tick(ServerPlayerEntity owner, Cannon c, long now) {
+    public static void tick(ServerPlayer owner, Cannon c, long now) {
         if (!c.complete()) {
             if (now >= c.nextStep) {
                 assemble(owner, c);
@@ -439,13 +438,13 @@ public final class CannonService {
             default -> {
             }
         }
-        if (c.broken || c.balls() <= 0 || owner.getWorld() != c.world
-                || owner.squaredDistanceTo(Vec3d.ofCenter(c.pos)) > OWNER_RANGE * OWNER_RANGE) {
+        if (c.broken || c.balls() <= 0 || owner.level() != c.world
+                || owner.distanceToSqr(Vec3.atCenterOf(c.pos)) > OWNER_RANGE * OWNER_RANGE) {
             return;
         }
         c.facing = Multicannon.next(c.facing);
         int[] step = Multicannon.step(c.facing);
-        c.world.spawnParticles(ParticleTypes.SMOKE, c.pos.getX() + 0.5 + step[0] * 0.6, c.pos.getY() + 1.1,
+        c.world.sendParticles(ParticleTypes.SMOKE, c.pos.getX() + 0.5 + step[0] * 0.6, c.pos.getY() + 1.1,
                 c.pos.getZ() + 0.5 - step[1] * 0.6, 1, 0.02, 0.02, 0.02, 0.0);
         LivingEntity target = target(owner, c);
         if (target != null) {
@@ -454,15 +453,15 @@ public final class CannonService {
     }
 
     /** The monster the cannon shoots this tick (nearest in the facing direction's area), or null. */
-    static LivingEntity target(ServerPlayerEntity owner, Cannon c) {
+    static LivingEntity target(ServerPlayer owner, Cannon c) {
         boolean single = !CombatZones.isMulti(owner);
-        LivingEntity attacker = owner.getAttacker();
+        LivingEntity attacker = owner.getLastHurtByMob();
         boolean underAttack = single && attacker != null && attacker.isAlive() && validTarget(attacker);
         double reach = Multicannon.reachBlocks();
-        Box box = block(c.pos).expand(reach, 4, reach);
+        AABB box = block(c.pos).inflate(reach, 4, reach);
         LivingEntity best = null;
         double bestDist = Double.MAX_VALUE;
-        for (LivingEntity e : c.world.getEntitiesByClass(LivingEntity.class, box, e -> e.isAlive() && validTarget(e))) {
+        for (LivingEntity e : c.world.getEntitiesOfClass(LivingEntity.class, box, e -> e.isAlive() && validTarget(e))) {
             if (underAttack && e != attacker) {
                 continue;
             }
@@ -474,7 +473,7 @@ public final class CannonService {
             if (CombatZones.check(owner, e) != SingleCombat.Verdict.OK) {
                 continue;
             }
-            double dist = e.squaredDistanceTo(Vec3d.ofCenter(c.pos));
+            double dist = e.distanceToSqr(Vec3.atCenterOf(c.pos));
             if (dist < bestDist && lineOfSight(owner, c, e)) {
                 best = e;
                 bestDist = dist;
@@ -484,17 +483,17 @@ public final class CannonService {
     }
 
     static boolean validTarget(LivingEntity e) {
-        if (e instanceof ServerPlayerEntity || e instanceof QuestNpcEntity || e instanceof BossEntity || e.isInvulnerable()
+        if (e instanceof ServerPlayer || e instanceof QuestNpcEntity || e instanceof BossEntity || e.isInvulnerable()
                 || Multicannon.immune(creatureId(e))) {
             return false;
         }
-        return e instanceof OsrsMonsterEntity || e instanceof HostileEntity
-                || e instanceof MobEntity && com.runecraft.osrs.data.Monster.byEntity(
-                net.minecraft.registry.Registries.ENTITY_TYPE.getId(e.getType()).toString()) != null;
+        return e instanceof OsrsMonsterEntity || e instanceof Monster
+                || e instanceof Mob && com.runecraft.osrs.data.Monster.byEntity(
+                net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()).toString()) != null;
     }
 
-    private static Box block(BlockPos pos) {
-        return new Box(pos.getX(), pos.getY(), pos.getZ(), pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1);
+    private static AABB block(BlockPos pos) {
+        return new AABB(pos.getX(), pos.getY(), pos.getZ(), pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1);
     }
 
     static boolean isBoss(LivingEntity e) {
@@ -506,7 +505,7 @@ public final class CannonService {
         if (e instanceof DataBossEntity b && b.def() != null) {
             return b.def().id;
         }
-        net.minecraft.util.Identifier id = net.minecraft.registry.Registries.ENTITY_TYPE.getId(e.getType());
+        net.minecraft.resources.ResourceLocation id = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(e.getType());
         return id == null ? null : id.getPath();
     }
 
@@ -515,15 +514,15 @@ public final class CannonService {
         return isBoss(e) && !Multicannon.CANNON_BOSSES.contains(creatureId(e));
     }
 
-    private static boolean lineOfSight(ServerPlayerEntity owner, Cannon c, LivingEntity e) {
-        Vec3d from = new Vec3d(c.pos.getX() + 0.5, c.pos.getY() + 1.2, c.pos.getZ() + 0.5);
-        Vec3d to = new Vec3d(e.getX(), e.getBodyY(0.5), e.getZ());
-        return c.world.raycast(new RaycastContext(from, to, RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.NONE,
+    private static boolean lineOfSight(ServerPlayer owner, Cannon c, LivingEntity e) {
+        Vec3 from = new Vec3(c.pos.getX() + 0.5, c.pos.getY() + 1.2, c.pos.getZ() + 0.5);
+        Vec3 to = new Vec3(e.getX(), e.getY(0.5), e.getZ());
+        return c.world.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE,
                 owner)).getType() == HitResult.Type.MISS;
     }
 
     /** Fires one cannonball at {@code target}; returns the damage rolled. */
-    public static int fire(ServerPlayerEntity owner, Cannon c, LivingEntity target) {
+    public static int fire(ServerPlayer owner, Cannon c, LivingEntity target) {
         boolean granite = c.granite > 0;
         if (granite) {
             c.granite--;
@@ -531,8 +530,8 @@ public final class CannonService {
             c.steel--;
         }
         c.fired++;
-        c.world.playSound(null, c.pos, SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.PLAYERS, 0.35f, 1.6f);
-        c.world.spawnParticles(ParticleTypes.LARGE_SMOKE, target.getX(), target.getBodyY(0.6), target.getZ(), 3, 0.2, 0.2, 0.2, 0.01);
+        c.world.playSound(null, c.pos, SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 0.35f, 1.6f);
+        c.world.sendParticles(ParticleTypes.LARGE_SMOKE, target.getX(), target.getY(0.6), target.getZ(), 3, 0.2, 0.2, 0.2, 0.01);
         int damage = 0;
         if (owner.getRandom().nextDouble() < accuracy(owner, target)) {
             damage = owner.getRandom().nextInt(Multicannon.maxHit(granite) + 1);
@@ -552,10 +551,10 @@ public final class CannonService {
      * style's bonus otherwise, the better of the two with a powered staff), without target-specific boosts (slayer helm,
      * salve amulet...), against the target's heavy ranged defence.
      */
-    public static double accuracy(ServerPlayerEntity owner, LivingEntity target) {
+    public static double accuracy(ServerPlayer owner, LivingEntity target) {
         EquipmentDef weapon = Equipment.weapon(owner, Players.data(owner).skills());
         EquipmentDef.WeaponClass cls = weapon == null ? EquipmentDef.WeaponClass.NONE : weapon.weaponClass();
-        String weaponId = Inv.idOf(owner.getMainHandStack());
+        String weaponId = Inv.idOf(owner.getMainHandItem());
         boolean powered = com.runecraft.osrs.CombatBonuses.poweredStaffMaxHit(weaponId, 99) >= 0;
         long roll;
         if (powered) {
@@ -572,7 +571,7 @@ public final class CannonService {
         return Chance.hitChance(roll, CombatFormulas.npcRoll(stats.defence(), heavy));
     }
 
-    private static long attackRoll(ServerPlayerEntity owner, LivingEntity target, AttackType type) {
+    private static long attackRoll(ServerPlayer owner, LivingEntity target, AttackType type) {
         PlayerHitCalc.Input in = HitCalcBridge.input(owner, target, type, null, 0);
         in.onTask = false;
         in.attributes.clear();
@@ -583,7 +582,7 @@ public final class CannonService {
     // ------------------------------------------------------------------ granite cannonballs, Nulodion
 
     /** Coats steel cannonballs with granite dust (50 Smithing, one dust per ball, no XP); returns how many. */
-    public static int coatGranite(ServerPlayerEntity p) {
+    public static int coatGranite(ServerPlayer p) {
         if (Players.data(p).skills().currentLevel(Skill.SMITHING) < Multicannon.GRANITE_LEVEL) {
             Msg.game(p, "You need a Smithing level of " + Multicannon.GRANITE_LEVEL + " to make granite cannonballs.");
             return 0;
@@ -600,7 +599,7 @@ public final class CannonService {
     }
 
     /** Nulodion: swaps the old quest mould, returns a lost cannon, and sells the set (sneak while talking to buy). */
-    public static void nulodion(ServerPlayerEntity p) {
+    public static void nulodion(ServerPlayer p) {
         String name = "Nulodion";
         if (Inv.has(p, Multicannon.OLD_QUEST_MOULD, 1)) {
             int n = Inv.remove(p, Multicannon.OLD_QUEST_MOULD, 64);
@@ -613,7 +612,7 @@ public final class CannonService {
             return;
         }
         SysState.SysPlayer sp = SysState.of(p);
-        if (sp.cannonOut && !CANNONS.containsKey(p.getUuid())) {
+        if (sp.cannonOut && !CANNONS.containsKey(p.getUUID())) {
             for (String part : Multicannon.PARTS) {
                 Inv.give(p, part, 1);
             }
@@ -624,16 +623,16 @@ public final class CannonService {
             QuestApi.say(p, name, "I found your cannon lying around. Here you go, cannonballs and all. Try not to lose it again!");
             return;
         }
-        if (!p.isSneaking()) {
+        if (!p.isShiftKeyDown()) {
             QuestApi.say(p, name, "Hello again. I can sell you a dwarf multicannon: all four parts and an ammo mould for "
                     + String.format("%,d", Multicannon.SET_PRICE) + " coins (talk to me while sneaking), or the parts one at a time.");
-            net.minecraft.text.MutableText line = net.minecraft.text.Text.literal("Multicannon parts for sale: ")
-                    .formatted(net.minecraft.util.Formatting.GRAY);
+            net.minecraft.network.chat.MutableComponent line = net.minecraft.network.chat.Component.literal("Multicannon parts for sale: ")
+                    .withStyle(net.minecraft.ChatFormatting.GRAY);
             for (String part : Multicannon.PARTS) {
-                line.append(buyLink(Inv.stack(part, 1).getName().getString(), part, Multicannon.PART_PRICE)).append(" ");
+                line.append(buyLink(Inv.stack(part, 1).getHoverName().getString(), part, Multicannon.PART_PRICE)).append(" ");
             }
             line.append(buyLink("Ammo mould", Multicannon.AMMO_MOULD, Multicannon.MOULD_PRICE));
-            p.sendMessage(line, false);
+            p.displayClientMessage(line, false);
             return;
         }
         if (!Inv.has(p, Inv.COINS, Multicannon.SET_PRICE)) {
@@ -648,19 +647,19 @@ public final class CannonService {
         QuestApi.say(p, name, "There you go, a fine dwarf multicannon. Use the base to set it up somewhere roomy.");
     }
 
-    private static net.minecraft.text.MutableText buyLink(String label, String item, int price) {
-        return net.minecraft.text.Text.literal("[" + label + " " + String.format("%,d", price) + "]").styled(st -> st
-                .withColor(net.minecraft.util.Formatting.GOLD)
-                .withClickEvent(new net.minecraft.text.ClickEvent(net.minecraft.text.ClickEvent.Action.RUN_COMMAND, "/cannon buy " + item))
-                .withHoverEvent(new net.minecraft.text.HoverEvent(net.minecraft.text.HoverEvent.Action.SHOW_TEXT,
-                        net.minecraft.text.Text.literal("Buy one " + label))));
+    private static net.minecraft.network.chat.MutableComponent buyLink(String label, String item, int price) {
+        return net.minecraft.network.chat.Component.literal("[" + label + " " + String.format("%,d", price) + "]").withStyle(st -> st
+                .withColor(net.minecraft.ChatFormatting.GOLD)
+                .withClickEvent(new net.minecraft.network.chat.ClickEvent(net.minecraft.network.chat.ClickEvent.Action.RUN_COMMAND, "/cannon buy " + item))
+                .withHoverEvent(new net.minecraft.network.chat.HoverEvent(net.minecraft.network.chat.HoverEvent.Action.SHOW_TEXT,
+                        net.minecraft.network.chat.Component.literal("Buy one " + label))));
     }
 
     /**
      * Nulodion's shop ("Multicannon parts for sale", OSRS Wiki: 107% of value, so 200,625 coins a part and 5 for the ammo
      * mould): sells one part (or mould) after Dwarf Cannon. Shop stock limits (5 of each) are not modelled. Returns success.
      */
-    public static boolean buyPart(ServerPlayerEntity p, String item) {
+    public static boolean buyPart(ServerPlayer p, String item) {
         int price = item.equals(Multicannon.AMMO_MOULD) ? Multicannon.MOULD_PRICE
                 : Multicannon.PARTS.contains(item) ? Multicannon.PART_PRICE : -1;
         if (price < 0) {
@@ -673,7 +672,7 @@ public final class CannonService {
         }
         double nx = GielinorMap.toBlockX(Multicannon.NULODION_X);
         double nz = GielinorMap.toBlockZ(Multicannon.NULODION_Y);
-        if (p.squaredDistanceTo(nx, p.getY(), nz) > 24 * 24) {
+        if (p.distanceToSqr(nx, p.getY(), nz) > 24 * 24) {
             Msg.game(p, "You need to be at Nulodion's workshop to buy cannon parts.");
             return false;
         }
@@ -683,13 +682,13 @@ public final class CannonService {
         }
         Inv.remove(p, Inv.COINS, price);
         Inv.give(p, item, 1);
-        Msg.game(p, "You buy " + Inv.stack(item, 1).getName().getString() + " for " + String.format("%,d", price) + " coins.");
+        Msg.game(p, "You buy " + Inv.stack(item, 1).getHoverName().getString() + " for " + String.format("%,d", price) + " coins.");
         return true;
     }
 
     /** Raids are checked through the raids module's manager. */
     private static final class RaidManagerBridge {
-        static boolean inRaid(ServerPlayerEntity p) {
+        static boolean inRaid(ServerPlayer p) {
             return com.runecraft.content.raids.RaidManager.at(p) != null;
         }
     }

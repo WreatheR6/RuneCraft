@@ -15,19 +15,19 @@ import com.runecraft.registry.ModItems;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
 import org.joml.Vector3f;
 
 import java.util.List;
 import java.util.Map;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Wearing items in the extra slots, jewellery perks (recoil, life, phoenix, regen...), Vengeance and
@@ -51,7 +51,7 @@ public final class JewelleryService {
      * Activates the locked "visit" destinations (statues of Ates, the Necropolis obelisk) the player stands near; returns
      * the names activated.
      */
-    private static List<String> activateNearby(ServerPlayerEntity p, Jewellery.Worn w) {
+    private static List<String> activateNearby(ServerPlayer p, Jewellery.Worn w) {
         List<String> out = new java.util.ArrayList<>();
         if (!Gielinor.is(p)) {
             return out;
@@ -86,8 +86,8 @@ public final class JewelleryService {
     }
 
     /** Wears the item in the given hand (swapping with whatever is in that slot). */
-    public static void wear(ServerPlayerEntity p, Hand hand) {
-        ItemStack stack = p.getStackInHand(hand);
+    public static void wear(ServerPlayer p, InteractionHand hand) {
+        ItemStack stack = p.getItemInHand(hand);
         Jewellery.Worn w = wornDef(stack);
         if (w == null || ItemCatalog.get(Inv.idOf(stack)) == null) {
             Msg.game(p, "You can't wear that in an extra slot.");
@@ -115,30 +115,30 @@ public final class JewelleryService {
             sp.recoilCharges = Jewellery.RECOIL_CHARGES;
         }
         if (!old.isEmpty()) {
-            if (p.getStackInHand(hand).isEmpty()) {
-                p.setStackInHand(hand, old);
+            if (p.getItemInHand(hand).isEmpty()) {
+                p.setItemInHand(hand, old);
             } else {
                 Inv.give(p, old);
             }
         }
-        p.getWorld().playSound(null, p.getBlockPos(), SoundEvents.ITEM_ARMOR_EQUIP_CHAIN, SoundCategory.PLAYERS, 0.6f, 1.2f);
-        Msg.action(p, "You put on the " + one.getName().getString() + ".");
+        p.level().playSound(null, p.blockPosition(), SoundEvents.ARMOR_EQUIP_CHAIN, SoundSource.PLAYERS, 0.6f, 1.2f);
+        Msg.action(p, "You put on the " + one.getHoverName().getString() + ".");
         ServerNetworking.sync(p);
     }
 
-    public static void remove(ServerPlayerEntity p, Jewellery.Slot slot) {
+    public static void remove(ServerPlayer p, Jewellery.Slot slot) {
         SysState.SysPlayer sp = SysState.of(p);
         ItemStack old = sp.worn.remove(slot);
         if (old != null && !old.isEmpty()) {
             Inv.give(p, old);
-            Msg.action(p, "You remove the " + old.getName().getString() + ".");
+            Msg.action(p, "You remove the " + old.getHoverName().getString() + ".");
         }
     }
 
     // ---------------- Teleports ----------------
 
     /** Uses one charge of a teleport item (in hand or worn) and returns the new stack. */
-    static ItemStack useCharge(ServerPlayerEntity p, ItemStack stack) {
+    static ItemStack useCharge(ServerPlayer p, ItemStack stack) {
         Jewellery.Worn w = wornDef(stack);
         if (w == null || w.chargeBase() == null) {
             return stack;
@@ -159,7 +159,7 @@ public final class JewelleryService {
     }
 
     /** Opens the teleport menu of the item in hand or in a worn slot. */
-    public static void openTeleports(ServerPlayerEntity p, String source) {
+    public static void openTeleports(ServerPlayer p, String source) {
         ItemStack stack = stackFor(p, source);
         Jewellery.Worn w = teleDef(stack);
         if (w == null) {
@@ -244,9 +244,9 @@ public final class JewelleryService {
         return Character.isDigit(c) ? c - '0' : 1;
     }
 
-    static ItemStack stackFor(ServerPlayerEntity p, String source) {
+    static ItemStack stackFor(ServerPlayer p, String source) {
         if (source.equals("hand")) {
-            return p.getMainHandStack();
+            return p.getMainHandItem();
         }
         if (source.startsWith("worn:")) {
             try {
@@ -258,14 +258,14 @@ public final class JewelleryService {
         return ItemStack.EMPTY;
     }
 
-    private static void setStack(ServerPlayerEntity p, String source, ItemStack stack) {
+    private static void setStack(ServerPlayer p, String source, ItemStack stack) {
         if (source.equals("hand")) {
-            ItemStack held = p.getMainHandStack();
+            ItemStack held = p.getMainHandItem();
             if (held.getCount() > 1) {
-                held.decrement(1);
+                held.shrink(1);
                 Inv.give(p, stack);
             } else {
-                p.setStackInHand(Hand.MAIN_HAND, stack);
+                p.setItemInHand(InteractionHand.MAIN_HAND, stack);
             }
         } else if (source.startsWith("worn:")) {
             Jewellery.Slot slot = Jewellery.Slot.valueOf(source.substring(5));
@@ -277,7 +277,7 @@ public final class JewelleryService {
         }
     }
 
-    static void teleAction(ServerPlayerEntity p, String action, Map<String, String> fields) {
+    static void teleAction(ServerPlayer p, String action, Map<String, String> fields) {
         int bar = action.lastIndexOf('|');
         if (bar < 0) {
             return;
@@ -293,7 +293,7 @@ public final class JewelleryService {
         switch (what) {
             case "wear" -> {
                 if (Jewellery.worn(w.id()) != null) {
-                    wear(p, Hand.MAIN_HAND);
+                    wear(p, InteractionHand.MAIN_HAND);
                 }
             }
             case "energy" -> {
@@ -348,12 +348,12 @@ public final class JewelleryService {
                     return;
                 }
                 // Ring of returning: the player's own respawn point (a bed in Gielinor), else Lumbridge.
-                net.minecraft.util.math.BlockPos home = "ring_of_returning".equals(w.chargeBase()) ? SysTeleport.respawnPoint(p) : null;
+                net.minecraft.core.BlockPos home = "ring_of_returning".equals(w.chargeBase()) ? SysTeleport.respawnPoint(p) : null;
                 boolean went = home != null ? SysTeleport.teleportTo(p, home, "your respawn point", Teleports.wildernessLimit(w.id()))
                         : SysTeleport.teleport(p, dest, Teleports.wildernessLimit(w.id()));
                 if (went) {
                     if (Jewellery.SINGLE_USE.contains(w.id()) && source.equals("hand")) {
-                        stack.decrement(1);
+                        stack.shrink(1);
                         Msg.game(p, "Your " + w.name().toLowerCase(java.util.Locale.ROOT) + " is used up.");
                     }
                     // Charged pieces report their base id (teleport:digsite_pendant:digsite, whatever the charges left).
@@ -374,7 +374,7 @@ public final class JewelleryService {
      * Why a destination is closed to this player (a Kourend memoir story whose quest isn't done, the camulet's quarry or the
      * stony basalt's roof without their diary tier or Agility level), or null.
      */
-    static String lockedReason(ServerPlayerEntity p, Teleports.Destination dest) {
+    static String lockedReason(ServerPlayer p, Teleports.Destination dest) {
         String memoir = Teleports.memoirQuest(dest);
         if (memoir != null && com.runecraft.osrs.content.ContentRegistry.quest(memoir) != null
                 && !com.runecraft.quest.QuestApi.isComplete(p, memoir)) {
@@ -395,7 +395,7 @@ public final class JewelleryService {
     }
 
     /** Uses an unlock item (the ancient tablet) on a teleport item: permanently unlocks that destination. */
-    private static void unlock(ServerPlayerEntity p, Jewellery.Worn w, String index) {
+    private static void unlock(ServerPlayer p, Jewellery.Worn w, String index) {
         int i;
         try {
             i = Integer.parseInt(index);
@@ -421,8 +421,8 @@ public final class JewelleryService {
                 + "the tablet crumbles, and the talisman feels somehow different.");
     }
 
-    private static void explorerAlch(ServerPlayerEntity p, boolean high) {
-        ItemStack off = p.getOffHandStack();
+    private static void explorerAlch(ServerPlayer p, boolean high) {
+        ItemStack off = p.getOffhandItem();
         ItemDef def = ModItems.def(off);
         if (def == null || def.id().equals("coins")) {
             Msg.game(p, "Hold the item you want to alchemise in your off-hand.");
@@ -432,7 +432,7 @@ public final class JewelleryService {
             Msg.game(p, "Your ring has no alchemy charges left today.");
             return;
         }
-        off.decrement(1);
+        off.shrink(1);
         int coins = high ? def.highAlch() : def.lowAlch();
         Inv.give(p, "coins", coins);
         Msg.action(p, "Your ring alchemises the " + def.name().toLowerCase() + " into " + coins + " coins.");
@@ -441,14 +441,14 @@ public final class JewelleryService {
 
     // ---------------- Fountain of Heroes ----------------
 
-    public static void fountain(ServerPlayerEntity p, BlockPos pos, net.minecraft.block.BlockState state) {
+    public static void fountain(ServerPlayer p, BlockPos pos, net.minecraft.world.level.block.state.BlockState state) {
         int charged = rechargeAll(p);
         if (charged == 0) {
             Msg.game(p, "You need dragonstone jewellery (glory, skills necklace, combat bracelet or ring of wealth) to recharge.");
             return;
         }
         SysCombat.dust(p, new Vector3f(0.3f, 0.6f, 1.0f), 30);
-        p.getWorld().playSound(null, pos, SoundEvents.BLOCK_BEACON_POWER_SELECT, SoundCategory.BLOCKS, 0.8f, 1.2f);
+        p.level().playSound(null, pos, SoundEvents.BEACON_POWER_SELECT, SoundSource.BLOCKS, 0.8f, 1.2f);
         Msg.action(p, "You feel a power emanating from the fountain. It recharges your jewellery.");
     }
 
@@ -456,10 +456,10 @@ public final class JewelleryService {
      * Recharges every rechargeable dragonstone jewellery item carried or worn (Fountain of Heroes, Recharge Dragonstone);
      * returns how many were recharged.
      */
-    static int rechargeAll(ServerPlayerEntity p) {
+    static int rechargeAll(ServerPlayer p) {
         int charged = 0;
-        for (int i = 0; i < p.getInventory().size(); i++) {
-            ItemStack s = p.getInventory().getStack(i);
+        for (int i = 0; i < p.getInventory().getContainerSize(); i++) {
+            ItemStack s = p.getInventory().getItem(i);
             Jewellery.Worn w = wornDef(s);
             if (w == null || w.chargeBase() == null) {
                 continue;
@@ -469,7 +469,7 @@ public final class JewelleryService {
             if (target == null || w.charges() >= target.charges()) {
                 continue;
             }
-            p.getInventory().setStack(i, Inv.stack(to, s.getCount()));
+            p.getInventory().setItem(i, Inv.stack(to, s.getCount()));
             charged += s.getCount();
         }
         SysState.SysPlayer sp = SysState.of(p);
@@ -490,7 +490,7 @@ public final class JewelleryService {
     // ---------------- Damage reactions ----------------
 
     /** Uses one charge of a per-player pool (Jewellery.chargePool); the worn item crumbles when the pool runs out. */
-    static int useCharge(ServerPlayerEntity p, Jewellery.Slot slot, String id) {
+    static int useCharge(ServerPlayer p, Jewellery.Slot slot, String id) {
         SysState.SysPlayer sp = SysState.of(p);
         int left = sp.jewelleryCharges.getOrDefault(id, Jewellery.chargePool(id)) - 1;
         if (left <= 0) {
@@ -508,7 +508,7 @@ public final class JewelleryService {
      * Flamtaer bracelet: while worn, each Mort'ton temple repair uses one of its 80 charges (the minigames module adds the
      * extra sanctity). Returns whether a bracelet was worn.
      */
-    public static boolean useFlamtaerCharge(ServerPlayerEntity p) {
+    public static boolean useFlamtaerCharge(ServerPlayer p) {
         if (!SysState.of(p).wornId(Jewellery.Slot.HANDS).equals("flamtaer_bracelet")) {
             return false;
         }
@@ -520,7 +520,7 @@ public final class JewelleryService {
      * A worn binding necklace guarantees one altar click's combination runes: uses one of its 16 per-player charges and
      * returns true; false when none is worn.
      */
-    public static boolean bindingCharge(ServerPlayerEntity p) {
+    public static boolean bindingCharge(ServerPlayer p) {
         if (!SysState.of(p).wornId(Jewellery.Slot.NECK).equals("binding_necklace")) {
             return false;
         }
@@ -532,7 +532,7 @@ public final class JewelleryService {
     }
 
     /** Amulet of bounty: how many of an allotment's three seeds are used (25% chance of one, using a charge). */
-    public static int bountySeeds(ServerPlayerEntity p, int seeds) {
+    public static int bountySeeds(ServerPlayer p, int seeds) {
         if (!SysState.of(p).wornId(Jewellery.Slot.NECK).equals("amulet_of_bounty")) {
             return seeds;
         }
@@ -546,7 +546,7 @@ public final class JewelleryService {
     }
 
     /** Amulet of chemistry: doses of a potion just made with three (5% chance of four, using a charge). */
-    public static int chemistryDoses(ServerPlayerEntity p, int doses) {
+    public static int chemistryDoses(ServerPlayer p, int doses) {
         if (doses != 3 || !SysState.of(p).wornId(Jewellery.Slot.NECK).equals("amulet_of_chemistry")) {
             return doses;
         }
@@ -560,7 +560,7 @@ public final class JewelleryService {
     }
 
     /** Slayer task credit of a kill with an expeditious bracelet or bracelet of slaughter worn (OSRS: 25%, 30 charges). */
-    public static int slayerCredit(ServerPlayerEntity p, int base, boolean jadOrZuk) {
+    public static int slayerCredit(ServerPlayer p, int base, boolean jadOrZuk) {
         String hands = SysState.of(p).wornId(Jewellery.Slot.HANDS);
         if (!hands.equals("expeditious_bracelet") && !hands.equals("bracelet_of_slaughter")) {
             return base;
@@ -576,9 +576,9 @@ public final class JewelleryService {
     }
 
     /** Bracelet of ethereum: a charged one cuts revenant damage by 75% for one revenant ether per attack. */
-    public static int ethereum(ServerPlayerEntity p, LivingEntity attacker, int damage) {
+    public static int ethereum(ServerPlayer p, LivingEntity attacker, int damage) {
         if (attacker == null || damage <= 0
-                || !net.minecraft.registry.Registries.ENTITY_TYPE.getId(attacker.getType()).getPath().startsWith("revenant_")) {
+                || !net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(attacker.getType()).getPath().startsWith("revenant_")) {
             return damage;
         }
         ItemStack hands = SysState.of(p).worn(Jewellery.Slot.HANDS);
@@ -595,21 +595,21 @@ public final class JewelleryService {
      * Kills in the Wilderness: the looting bag drop (only while the player owns none) and the charged bracelet of
      * ethereum absorbing the revenant ether a revenant just dropped.
      */
-    public static void onKill(ServerPlayerEntity p, LivingEntity mob, com.runecraft.combat.MonsterStats stats) {
+    public static void onKill(ServerPlayer p, LivingEntity mob, com.runecraft.combat.MonsterStats stats) {
         if (Gielinor.wildernessLevel(mob) <= 0) {
             return;
         }
-        String cid = net.minecraft.registry.Registries.ENTITY_TYPE.getId(mob.getType()).getPath();
+        String cid = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).getPath();
         if (!com.runecraft.osrs.content.systems.LootingBag.excluded(cid) && !Inv.has(p, com.runecraft.osrs.content.systems.LootingBag.ID, 1)
                 && p.getRandom().nextDouble() < com.runecraft.osrs.content.systems.LootingBag.chance(stats.combatLevel())) {
-            mob.dropStack(Inv.stack(com.runecraft.osrs.content.systems.LootingBag.ID, 1));
+            mob.spawnAtLocation(Inv.stack(com.runecraft.osrs.content.systems.LootingBag.ID, 1));
         }
         ItemStack hands = SysState.of(p).worn(Jewellery.Slot.HANDS);
         if (cid.startsWith("revenant_") && !hands.isEmpty() && Inv.idOf(hands).equals("bracelet_of_ethereum")
                 && ItemCharges.get(hands) > 0) {
-            for (net.minecraft.entity.ItemEntity ie : mob.getWorld().getEntitiesByClass(net.minecraft.entity.ItemEntity.class,
-                    mob.getBoundingBox().expand(2.0), ie -> "revenant_ether".equals(Inv.idOf(ie.getStack())))) {
-                int n = ie.getStack().getCount();
+            for (net.minecraft.world.entity.item.ItemEntity ie : mob.level().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+                    mob.getBoundingBox().inflate(2.0), ie -> "revenant_ether".equals(Inv.idOf(ie.getItem())))) {
+                int n = ie.getItem().getCount();
                 ItemCharges.set(hands, Math.min(Charges.REVENANT_ETHER_MAX, ItemCharges.get(hands) + n));
                 ie.discard();
                 Msg.game(p, "Your bracelet of ethereum absorbs " + n + " revenant ether.");
@@ -617,7 +617,7 @@ public final class JewelleryService {
         }
     }
 
-    public static void onHurt(ServerPlayerEntity p, LivingEntity attacker, int damage) {
+    public static void onHurt(ServerPlayer p, LivingEntity attacker, int damage) {
         SysState.SysPlayer sp = SysState.of(p);
         long now = SysTicks.now();
         if (sp.powerOfDeathUntil > now && damage > 1) {
@@ -627,7 +627,7 @@ public final class JewelleryService {
             if (sp.vengeance) {
                 sp.vengeance = false;
                 int back = damage * 3 / 4;
-                p.sendMessage(Text.literal(p.getName().getString() + ": Taste vengeance!").formatted(Formatting.YELLOW), false);
+                p.displayClientMessage(Component.literal(p.getName().getString() + ": Taste vengeance!").withStyle(ChatFormatting.YELLOW), false);
                 if (back > 0) {
                     // Combat Achievements "finish with Vengeance": the recoil is the player's latest damage until they attack again.
                     CombatAchievementService.flag(p, com.runecraft.osrs.content.systems.CombatAchievements.FLAG_VENGEANCE_LAST);
@@ -690,7 +690,7 @@ public final class JewelleryService {
     }
 
     /** Per-tick perks: doubled hitpoint regeneration (regen bracelet, Hitpoints cape, max cape). */
-    public static void gameTick(ServerPlayerEntity p, long tick) {
+    public static void gameTick(ServerPlayer p, long tick) {
         if (tick % 100 != 50 || !Gielinor.is(p) || !p.isAlive() || p.getHealth() >= p.getMaxHealth()) {
             return;
         }
@@ -703,15 +703,15 @@ public final class JewelleryService {
     }
 
     /** Prayer bonus of worn items (shown in the worn-equipment screen). */
-    public static int wornPrayer(ServerPlayerEntity p) {
+    public static int wornPrayer(ServerPlayer p) {
         return SysCombat.wornStats(p).prayer();
     }
 
-    static PlayerData data(ServerPlayerEntity p) {
+    static PlayerData data(ServerPlayer p) {
         return Players.data(p);
     }
 
-    static boolean hasSkill99(ServerPlayerEntity p, Skill s) {
+    static boolean hasSkill99(ServerPlayer p, Skill s) {
         return data(p).skills().level(s) >= 99;
     }
 }

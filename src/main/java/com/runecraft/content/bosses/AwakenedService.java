@@ -9,9 +9,9 @@ import com.runecraft.osrs.content.bosses.BossVariant;
 import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Awakened Desert Treasure II bosses: using the summoning stone while holding an awakener's orb (after Desert Treasure
@@ -29,8 +29,8 @@ final class AwakenedService {
         }
     }
 
-    private static BossVariant choose(ServerPlayerEntity player, BossDef boss) {
-        if (!AwakenedBosses.ORB.equals(Inv.idOf(player.getMainHandStack()))) {
+    private static BossVariant choose(ServerPlayer player, BossDef boss) {
+        if (!AwakenedBosses.ORB.equals(Inv.idOf(player.getMainHandItem()))) {
             return null;
         }
         var quest = com.runecraft.osrs.content.ContentRegistry.quest("desert_treasure_ii");
@@ -44,7 +44,7 @@ final class AwakenedService {
         return v;
     }
 
-    private static void killed(ServerPlayerEntity player, DataBossEntity boss) {
+    private static void killed(ServerPlayer player, DataBossEntity boss) {
         BossDef def = boss.def();
         if (def == null || !boss.awakened()) {
             return;
@@ -52,8 +52,8 @@ final class AwakenedService {
         if (AwakenedBosses.earnsBloodKit(def.id, Players.data(player).killCounts())) {
             Inv.give(player, AwakenedBosses.BLOOD_KIT, 1);
             CollectionLog.obtain(player, AwakenedBosses.BLOOD_KIT);
-            player.getServer().getPlayerManager().broadcast(Text.literal(player.getName().getString()
-                    + " has defeated all four awakened bosses and received an ancient blood ornament kit!").formatted(Formatting.DARK_RED), false);
+            player.getServer().getPlayerList().broadcastSystemMessage(Component.literal(player.getName().getString()
+                    + " has defeated all four awakened bosses and received an ancient blood ornament kit!").withStyle(ChatFormatting.DARK_RED), false);
         }
     }
 }

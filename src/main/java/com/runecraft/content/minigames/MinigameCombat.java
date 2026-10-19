@@ -20,11 +20,10 @@ import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.ActionResult;
-
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
 import java.util.Map;
 import java.util.Set;
 
@@ -52,12 +51,12 @@ public final class MinigameCombat {
     private MinigameCombat() {
     }
 
-    static String worn(ServerPlayerEntity p, EquipmentSlot slot) {
-        return Inv.idOf(p.getEquippedStack(slot));
+    static String worn(ServerPlayer p, EquipmentSlot slot) {
+        return Inv.idOf(p.getItemBySlot(slot));
     }
 
     /** Void style worn: 0 melee, 1 ranged, 2 magic, or -1 without a full set. */
-    static int voidStyle(ServerPlayerEntity p) {
+    static int voidStyle(ServerPlayer p) {
         String top = worn(p, EquipmentSlot.CHEST);
         String legs = worn(p, EquipmentSlot.LEGS);
         if (!(top.equals("void_knight_top") || top.equals("elite_void_top"))
@@ -74,7 +73,7 @@ public final class MinigameCombat {
         };
     }
 
-    static boolean eliteVoid(ServerPlayerEntity p) {
+    static boolean eliteVoid(ServerPlayer p) {
         return worn(p, EquipmentSlot.CHEST).equals("elite_void_top") && worn(p, EquipmentSlot.LEGS).equals("elite_void_robe");
     }
 
@@ -82,11 +81,11 @@ public final class MinigameCombat {
         return type == AttackType.RANGED ? 1 : type == AttackType.MAGIC ? 2 : 0;
     }
 
-    private static boolean obsidianEffect(ServerPlayerEntity p, AttackType type) {
+    private static boolean obsidianEffect(ServerPlayer p, AttackType type) {
         return type.isMelee() && worn(p, EquipmentSlot.HEAD).equals("obsidian_helmet")
                 && worn(p, EquipmentSlot.CHEST).equals("obsidian_platebody")
                 && worn(p, EquipmentSlot.LEGS).equals("obsidian_platelegs")
-                && TZHAAR_MELEE.contains(Inv.idOf(p.getMainHandStack()));
+                && TZHAAR_MELEE.contains(Inv.idOf(p.getMainHandItem()));
     }
 
     static void register() {
@@ -95,7 +94,7 @@ public final class MinigameCombat {
             // (void: effective level x1.1, mage x1.45 accuracy; obsidian: +10% of the base roll / max hit; tome of
             // fire / water: x1.1 for matching spells), applied through combat.HitCalcBridge.
             @Override
-            public double maxHit(ServerPlayerEntity player, LivingEntity target, AttackType type) {
+            public double maxHit(ServerPlayer player, LivingEntity target, AttackType type) {
                 double m = 1.0;
                 MinigameSession s = MinigameManager.session(player);
                 if (s != null) {
@@ -105,8 +104,8 @@ public final class MinigameCombat {
             }
 
             @Override
-            public int afterRoll(ServerPlayerEntity player, LivingEntity target, AttackType type, int damage) {
-                if (target.getCommandTags().contains(INVULNERABLE)) {
+            public int afterRoll(ServerPlayer player, LivingEntity target, AttackType type, int damage) {
+                if (target.getTags().contains(INVULNERABLE)) {
                     Msg.action(player, "It's protected by a shield.");
                     return 0;
                 }
@@ -114,7 +113,7 @@ public final class MinigameCombat {
             }
 
             @Override
-            public void afterHit(ServerPlayerEntity player, LivingEntity target, AttackType type, int dealt) {
+            public void afterHit(ServerPlayer player, LivingEntity target, AttackType type, int dealt) {
                 MinigameSession s = MinigameManager.owner(target);
                 if (s != null && !s.isEnded()) {
                     s.onPlayerHit(player, target, dealt);
@@ -153,23 +152,23 @@ public final class MinigameCombat {
             }
         });
         AttackEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
-            if (world.isClient() || !(player instanceof ServerPlayerEntity attacker) || !(entity instanceof ServerPlayerEntity target)) {
-                return ActionResult.PASS;
+            if (world.isClientSide() || !(player instanceof ServerPlayer attacker) || !(entity instanceof ServerPlayer target)) {
+                return InteractionResult.PASS;
             }
             MinigameSession s = MinigameManager.session(attacker);
             if (s == null || s != MinigameManager.session(target)) {
-                return ActionResult.PASS;
+                return InteractionResult.PASS;
             }
             if (!s.canAttackPlayer(attacker, target)) {
-                return ActionResult.FAIL;
+                return InteractionResult.FAIL;
             }
             pvpMelee(attacker, target, s);
-            return ActionResult.SUCCESS;
+            return InteractionResult.SUCCESS;
         });
     }
 
     /** One OSRS melee attack between players inside a PvP minigame (Castle Wars). */
-    static void pvpMelee(ServerPlayerEntity attacker, ServerPlayerEntity target, MinigameSession session) {
+    static void pvpMelee(ServerPlayer attacker, ServerPlayer target, MinigameSession session) {
         PlayerData data = Players.data(attacker);
         SkillSet skills = data.skills();
         int speed = Equipment.weaponSpeed(attacker, skills);
@@ -190,7 +189,7 @@ public final class MinigameCombat {
         if (td.isActive(Prayer.PROTECT_FROM_MELEE)) {
             damage = (int) Math.floor(damage * 0.6);
         }
-        attacker.swingHand(net.minecraft.util.Hand.MAIN_HAND);
+        attacker.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
         int dealt = CombatHandler.applyDamage(attacker, target, damage);
         CombatHandler.awardXp(attacker, style, dealt, false);
         session.onPlayerHit(attacker, target, dealt);

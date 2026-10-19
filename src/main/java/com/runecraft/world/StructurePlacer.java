@@ -10,22 +10,21 @@ import com.runecraft.player.PlayerDataState;
 import com.runecraft.player.Players;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.LeavesBlock;
-import net.minecraft.block.enums.BedPart;
-import net.minecraft.block.enums.DoubleBlockHalf;
-import net.minecraft.command.argument.BlockArgumentParser;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.tag.BlockTags;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.state.property.Properties;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.Heightmap;
-
+import net.minecraft.commands.arguments.blocks.BlockStateParser;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LeavesBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BedPart;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
+import net.minecraft.world.level.levelgen.Heightmap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,11 +84,11 @@ public final class StructurePlacer {
             if (QUEUE.isEmpty() && QUEUE.waitingCount() == 0) {
                 return;
             }
-            ServerWorld world = Gielinor.world(server);
+            ServerLevel world = Gielinor.world(server);
             if (world == null) {
                 return;
             }
-            LongPredicate loaded = key -> world.isChunkLoaded(ChunkPos.getPackedX(key), ChunkPos.getPackedZ(key));
+            LongPredicate loaded = key -> world.hasChunk(ChunkPos.getX(key), ChunkPos.getZ(key));
             // Chunks that were announced but demoted before their turn wait until they are loaded again
             // (their load event will not fire a second time); see ChunkBuildQueue.
             if (QUEUE.waitingCount() > 0 && ++recheckTicks >= RECHECK_TICKS) {
@@ -97,20 +96,20 @@ public final class StructurePlacer {
                 QUEUE.recheck(loaded);
             }
             for (long key : QUEUE.next(CHUNKS_PER_TICK, loaded)) {
-                applyChunk(world, ChunkPos.getPackedX(key), ChunkPos.getPackedZ(key));
+                applyChunk(world, ChunkPos.getX(key), ChunkPos.getZ(key));
             }
         });
     }
 
     /** Builds this chunk's structure shares now if the chunk is loaded (cheap no-op once built). */
-    public static void applyIfLoaded(ServerWorld world, int cx, int cz) {
-        if (INDEX.contains(cx, cz) && world.isChunkLoaded(cx, cz)) {
+    public static void applyIfLoaded(ServerLevel world, int cx, int cz) {
+        if (INDEX.contains(cx, cz) && world.hasChunk(cx, cz)) {
             applyChunk(world, cx, cz);
         }
     }
 
     /** Builds every structure share in the chunks within {@code radius} blocks of a point (loading them). */
-    public static void applyAround(ServerWorld world, int x, int z, int radius) {
+    public static void applyAround(ServerLevel world, int x, int z, int radius) {
         for (int cx = (x - radius) >> 4; cx <= (x + radius) >> 4; cx++) {
             for (int cz = (z - radius) >> 4; cz <= (z + radius) >> 4; cz++) {
                 if (INDEX.contains(cx, cz)) {
@@ -122,7 +121,7 @@ public final class StructurePlacer {
     }
 
     /** Applies each not-yet-built structure share in one chunk. */
-    public static void applyChunk(ServerWorld world, int cx, int cz) {
+    public static void applyChunk(ServerLevel world, int cx, int cz) {
         List<StructureIndex.Share> shares = INDEX.at(cx, cz);
         if (shares == null) {
             return;
@@ -144,24 +143,24 @@ public final class StructurePlacer {
         }
     }
 
-    private static void apply(ServerWorld world, StructureDef.Op op, int cx, int cz) {
+    private static void apply(ServerLevel world, StructureDef.Op op, int cx, int cz) {
         int m = op.margin();
         int x1 = Math.max(op.x1() - m, cx << 4);
         int x2 = Math.min(op.x2() + m, (cx << 4) + 15);
         int z1 = Math.max(op.z1() - m, cz << 4);
         int z2 = Math.min(op.z2() + m, (cz << 4) + 15);
-        int y1 = Math.max(op.y1(), world.getBottomY());
-        int y2 = Math.min(op.y2(), world.getTopY() - 1);
+        int y1 = Math.max(op.y1(), world.getMinBuildHeight());
+        int y2 = Math.min(op.y2(), world.getMaxBuildHeight() - 1);
         if (op.type() == StructureDef.Op.Type.FLATTEN) {
             flatten(world, op, x1, z1, x2, z2);
             return;
         }
         BlockState block = parse(op.block());
         BlockState match = op.type() == StructureDef.Op.Type.REPLACE ? parse(op.extra()) : null;
-        BlockState air = Blocks.AIR.getDefaultState();
+        BlockState air = Blocks.AIR.defaultBlockState();
         // property lookups hoisted out of the per-block loop (same result for every block of the op)
         boolean multipart = isMultipart(block);
-        BlockPos.Mutable pos = new BlockPos.Mutable();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int x = x1; x <= x2; x++) {
             for (int z = z1; z <= z2; z++) {
                 for (int y = y1; y <= y2; y++) {
@@ -176,12 +175,12 @@ public final class StructurePlacer {
                         }
                         case FILL_AIR -> {
                             BlockState here = world.getBlockState(pos);
-                            if (here.isAir() || !here.getFluidState().isEmpty() || here.isReplaceable()) {
+                            if (here.isAir() || !here.getFluidState().isEmpty() || here.canBeReplaced()) {
                                 set(world, pos, block, multipart);
                             }
                         }
                         case REPLACE -> {
-                            if (match != null && world.getBlockState(pos).isOf(match.getBlock())) {
+                            if (match != null && world.getBlockState(pos).is(match.getBlock())) {
                                 set(world, pos, block, multipart);
                             }
                         }
@@ -197,11 +196,11 @@ public final class StructurePlacer {
      * Levels the box so its surface block sits at y1-1, then blends the ring of {@link
      * StructureDef.Op#BLEND} blocks around it linearly back to the natural ground height.
      */
-    private static void flatten(ServerWorld world, StructureDef.Op op, int x1, int z1, int x2, int z2) {
+    private static void flatten(ServerLevel world, StructureDef.Op op, int x1, int z1, int x2, int z2) {
         BlockState top = parse(op.block());
-        BlockState fill = op.extra() == null ? Blocks.DIRT.getDefaultState() : parse(op.extra());
+        BlockState fill = op.extra() == null ? Blocks.DIRT.defaultBlockState() : parse(op.extra());
         int target = op.y1() - 1;
-        BlockPos.Mutable pos = new BlockPos.Mutable();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int x = x1; x <= x2; x++) {
             for (int z = z1; z <= z2; z++) {
                 int dx = Math.max(0, Math.max(op.x1() - x, x - op.x2()));
@@ -218,7 +217,7 @@ public final class StructurePlacer {
                     set(world, pos.set(x, target, z), top);
                     for (int y = target + 1; y <= op.y2(); y++) {
                         if (!world.getBlockState(pos.set(x, y, z)).isAir()) {
-                            set(world, pos, Blocks.AIR.getDefaultState());
+                            set(world, pos, Blocks.AIR.defaultBlockState());
                         }
                     }
                     continue;
@@ -234,7 +233,7 @@ public final class StructurePlacer {
                 }
                 BlockState surface = world.getBlockState(pos.set(x, natural, z));
                 if (!surface.getFluidState().isEmpty() || surface.isAir()) {
-                    surface = Blocks.GRASS_BLOCK.getDefaultState();
+                    surface = Blocks.GRASS_BLOCK.defaultBlockState();
                 }
                 if (h > natural) {
                     for (int y = natural; y < h; y++) {
@@ -244,7 +243,7 @@ public final class StructurePlacer {
                 } else {
                     set(world, pos.set(x, h, z), surface);
                     for (int y = h + 1; y <= natural + 1; y++) {
-                        set(world, pos.set(x, y, z), Blocks.AIR.getDefaultState());
+                        set(world, pos.set(x, y, z), Blocks.AIR.defaultBlockState());
                     }
                 }
             }
@@ -252,12 +251,12 @@ public final class StructurePlacer {
     }
 
     /** Highest solid, non-tree block in a column (water surfaces count as their floor). */
-    private static int naturalGround(ServerWorld world, int x, int z) {
-        int y = world.getTopY(Heightmap.Type.OCEAN_FLOOR, x, z) - 1;
-        BlockPos.Mutable pos = new BlockPos.Mutable(x, y, z);
-        while (y > world.getBottomY()) {
+    private static int naturalGround(ServerLevel world, int x, int z) {
+        int y = world.getHeight(Heightmap.Types.OCEAN_FLOOR, x, z) - 1;
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(x, y, z);
+        while (y > world.getMinBuildHeight()) {
             BlockState s = world.getBlockState(pos.setY(y));
-            if (!(s.isAir() || s.getBlock() instanceof LeavesBlock || s.isIn(BlockTags.LOGS) || s.isReplaceable())) {
+            if (!(s.isAir() || s.getBlock() instanceof LeavesBlock || s.is(BlockTags.LOGS) || s.canBeReplaced())) {
                 break;
             }
             y--;
@@ -266,20 +265,20 @@ public final class StructurePlacer {
     }
 
     private static boolean isMultipart(BlockState state) {
-        return state.contains(Properties.DOUBLE_BLOCK_HALF) || state.contains(Properties.BED_PART);
+        return state.hasProperty(BlockStateProperties.DOUBLE_BLOCK_HALF) || state.hasProperty(BlockStateProperties.BED_PART);
     }
 
-    private static void set(ServerWorld world, BlockPos pos, BlockState state) {
+    private static void set(ServerLevel world, BlockPos pos, BlockState state) {
         set(world, pos, state, isMultipart(state));
     }
 
-    private static void set(ServerWorld world, BlockPos pos, BlockState state, boolean multipart) {
+    private static void set(ServerLevel world, BlockPos pos, BlockState state, boolean multipart) {
         if (multipart) {
             setMultipart(world, pos, state);
             return;
         }
-        BlockState placed = state.isAir() ? state : Block.postProcessState(state, world, pos);
-        world.setBlockState(pos, placed, Block.NOTIFY_LISTENERS | Block.SKIP_DROPS);
+        BlockState placed = state.isAir() ? state : Block.updateFromNeighbourShapes(state, world, pos);
+        world.setBlock(pos, placed, Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS);
     }
 
     /**
@@ -287,36 +286,36 @@ public final class StructurePlacer {
      * place the given half as-is together with its partner (FORCE_STATE stops either half from
      * popping before the other exists).
      */
-    private static void setMultipart(ServerWorld world, BlockPos pos, BlockState state) {
-        int flags = Block.NOTIFY_LISTENERS | Block.SKIP_DROPS | Block.FORCE_STATE;
-        world.setBlockState(pos, state, flags);
-        if (state.contains(Properties.DOUBLE_BLOCK_HALF)) {
-            boolean lower = state.get(Properties.DOUBLE_BLOCK_HALF) == DoubleBlockHalf.LOWER;
-            BlockPos other = lower ? pos.up() : pos.down();
-            world.setBlockState(other, state.with(Properties.DOUBLE_BLOCK_HALF,
+    private static void setMultipart(ServerLevel world, BlockPos pos, BlockState state) {
+        int flags = Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS | Block.UPDATE_KNOWN_SHAPE;
+        world.setBlock(pos, state, flags);
+        if (state.hasProperty(BlockStateProperties.DOUBLE_BLOCK_HALF)) {
+            boolean lower = state.getValue(BlockStateProperties.DOUBLE_BLOCK_HALF) == DoubleBlockHalf.LOWER;
+            BlockPos other = lower ? pos.above() : pos.below();
+            world.setBlock(other, state.setValue(BlockStateProperties.DOUBLE_BLOCK_HALF,
                     lower ? DoubleBlockHalf.UPPER : DoubleBlockHalf.LOWER), flags);
-        } else if (state.contains(Properties.HORIZONTAL_FACING)) {
-            boolean foot = state.get(Properties.BED_PART) == BedPart.FOOT;
-            Direction facing = state.get(Properties.HORIZONTAL_FACING);
-            BlockPos other = foot ? pos.offset(facing) : pos.offset(facing.getOpposite());
-            if (!world.isChunkLoaded(other.getX() >> 4, other.getZ() >> 4)) {
+        } else if (state.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
+            boolean foot = state.getValue(BlockStateProperties.BED_PART) == BedPart.FOOT;
+            Direction facing = state.getValue(BlockStateProperties.HORIZONTAL_FACING);
+            BlockPos other = foot ? pos.relative(facing) : pos.relative(facing.getOpposite());
+            if (!world.hasChunk(other.getX() >> 4, other.getZ() >> 4)) {
                 return;
             }
-            world.setBlockState(other, state.with(Properties.BED_PART, foot ? BedPart.HEAD : BedPart.FOOT), flags);
+            world.setBlock(other, state.setValue(BlockStateProperties.BED_PART, foot ? BedPart.HEAD : BedPart.FOOT), flags);
         }
     }
 
     /** Parses a block state in command syntax ("minecraft:oak_stairs[facing=north]"); unknown blocks become air. */
     public static BlockState parse(String text) {
         if (text == null) {
-            return Blocks.AIR.getDefaultState();
+            return Blocks.AIR.defaultBlockState();
         }
         return STATE_CACHE.computeIfAbsent(text, s -> {
             try {
-                return BlockArgumentParser.block(Registries.BLOCK.getReadOnlyWrapper(), s, false).blockState();
+                return BlockStateParser.parseForBlock(BuiltInRegistries.BLOCK.asLookup(), s, false).blockState();
             } catch (CommandSyntaxException e) {
                 RuneCraft.LOGGER.warn("Structure block '{}' could not be parsed: {}", s, e.getMessage());
-                return Blocks.AIR.getDefaultState();
+                return Blocks.AIR.defaultBlockState();
             }
         });
     }

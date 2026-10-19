@@ -9,16 +9,15 @@ import com.runecraft.player.Players;
 import com.runecraft.registry.ModBlocks;
 import com.runecraft.registry.ModEntities;
 import com.runecraft.util.Inv;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobSpawnType;
 
 /** Dwarf multicannon: set up, load, fire at a test monster, granite cannonballs and pick up. */
 final class CannonChecks {
@@ -33,7 +32,7 @@ final class CannonChecks {
         return checks;
     }
 
-    private static void clean(ServerPlayerEntity p) {
+    private static void clean(ServerPlayer p) {
         CannonService.pickUp(p);
         SysState.SysPlayer sp = SysState.of(p);
         sp.cannonOut = false;
@@ -42,7 +41,7 @@ final class CannonChecks {
     }
 
     private static String cycle(TestContext c) {
-        ServerPlayerEntity p = c.player;
+        ServerPlayer p = c.player;
         clean(p);
         c.completeQuests(null);
         for (String part : Multicannon.PARTS) {
@@ -80,14 +79,14 @@ final class CannonChecks {
                 throw new AssertionError("moss_giant is not a living entity");
             }
             // Three OSRS tiles (six blocks) north of the cannon's centre: in the north direction's area.
-            BlockPos at = centre.add(0, 0, -3 * com.runecraft.osrs.GielinorMap.SCALE);
-            target.refreshPositionAndAngles(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0f, 0f);
-            if (target instanceof MobEntity mob) {
-                mob.initialize(c.world, c.world.getLocalDifficulty(at), SpawnReason.SPAWNER, null, null);
-                mob.setPersistent();
-                mob.setAiDisabled(true);
+            BlockPos at = centre.offset(0, 0, -3 * com.runecraft.osrs.GielinorMap.SCALE);
+            target.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0f, 0f);
+            if (target instanceof Mob mob) {
+                mob.finalizeSpawn(c.world, c.world.getCurrentDifficultyAt(at), MobSpawnType.SPAWNER, null, null);
+                mob.setPersistenceRequired();
+                mob.setNoAi(true);
             }
-            c.world.spawnEntity(target);
+            c.world.addFreshEntity(target);
             float hp = target.getHealth();
             int xp = Players.data(p).skills().xpTenths(Skill.RANGED);
             long now = SysTicks.now();
@@ -137,7 +136,7 @@ final class CannonChecks {
 
     /** A monster whose wiki infobox says immunecannon = Yes (sand crab) is never shot, even standing in a double-hit spot. */
     private static String immune(TestContext c) {
-        ServerPlayerEntity p = c.player;
+        ServerPlayer p = c.player;
         clean(p);
         c.completeQuests(null);
         for (String part : Multicannon.PARTS) {
@@ -164,14 +163,14 @@ final class CannonChecks {
                 throw new AssertionError("sand_crab is not a living entity");
             }
             crab = living;
-            BlockPos at = centre.add(0, 0, -3 * com.runecraft.osrs.GielinorMap.SCALE);
-            crab.refreshPositionAndAngles(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0f, 0f);
-            if (crab instanceof MobEntity mob) {
-                mob.initialize(c.world, c.world.getLocalDifficulty(at), SpawnReason.SPAWNER, null, null);
-                mob.setPersistent();
-                mob.setAiDisabled(true);
+            BlockPos at = centre.offset(0, 0, -3 * com.runecraft.osrs.GielinorMap.SCALE);
+            crab.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0f, 0f);
+            if (crab instanceof Mob mob) {
+                mob.finalizeSpawn(c.world, c.world.getCurrentDifficultyAt(at), MobSpawnType.SPAWNER, null, null);
+                mob.setPersistenceRequired();
+                mob.setNoAi(true);
             }
-            c.world.spawnEntity(crab);
+            c.world.addFreshEntity(crab);
             long now = SysTicks.now();
             for (int i = 0; i < 16; i++) {
                 CannonService.tick(p, cannon, now + i);
@@ -190,7 +189,7 @@ final class CannonChecks {
     }
 
     private static String granite(TestContext c) {
-        ServerPlayerEntity p = c.player;
+        ServerPlayer p = c.player;
         Inv.give(p, Multicannon.STEEL_BALL, 5);
         Inv.give(p, Multicannon.GRANITE_DUST, 3);
         int made = CannonService.coatGranite(p);

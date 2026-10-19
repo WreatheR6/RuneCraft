@@ -5,15 +5,14 @@ import com.runecraft.osrs.content.systems.ClueScrolls;
 import com.runecraft.osrs.content.systems.GrandExchange;
 import com.runecraft.osrs.content.systems.Jewellery;
 import com.runecraft.osrs.content.systems.Spellbooks;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.nbt.NbtString;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.world.PersistentState;
-
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.saveddata.SavedData;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -22,7 +21,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /** World-save storage for the systems module: per-player data, the Grand Exchange and the hiscores. */
-public final class SysState extends PersistentState {
+public final class SysState extends SavedData {
     public static final String KEY = "runecraft_systems";
 
     /** Everything the systems module remembers about a player. */
@@ -132,44 +131,44 @@ public final class SysState extends PersistentState {
             return false;
         }
 
-        NbtCompound toNbt() {
-            NbtCompound n = new NbtCompound();
+        CompoundTag toNbt() {
+            CompoundTag n = new CompoundTag();
             n.putInt("Spec", specEnergy);
             n.putInt("Run", runEnergy);
-            NbtCompound worn = new NbtCompound();
+            CompoundTag worn = new CompoundTag();
             this.worn.forEach((slot, stack) -> {
                 if (!stack.isEmpty()) {
-                    worn.put(slot.name(), stack.writeNbt(new NbtCompound()));
+                    worn.put(slot.name(), stack.save(new CompoundTag()));
                 }
             });
             n.put("Worn", worn);
             n.putInt("Recoil", recoilCharges);
             n.putInt("SkullTicks", skullTicks);
-            NbtCompound jc = new NbtCompound();
+            CompoundTag jc = new CompoundTag();
             jewelleryCharges.forEach(jc::putInt);
             n.put("JewelleryCharges", jc);
             n.putString("Book", book.name());
             n.putString("Autocast", autocast);
-            NbtCompound clues = new NbtCompound();
+            CompoundTag clues = new CompoundTag();
             this.clues.forEach((t, v) -> clues.putLongArray(t.name(), v));
             n.put("Clues", clues);
-            NbtCompound done = new NbtCompound();
+            CompoundTag done = new CompoundTag();
             cluesCompleted.forEach((t, v) -> done.putInt(t.name(), v));
             n.put("CluesDone", done);
             n.put("Diary", strings(diaryDone));
-            NbtCompound counters = new NbtCompound();
+            CompoundTag counters = new CompoundTag();
             diaryCounters.forEach(counters::putInt);
             n.put("DiaryCounters", counters);
             n.put("DiaryClaimed", strings(diaryClaimed));
             n.put("CaDone", strings(caDone));
-            NbtCompound caCount = new NbtCompound();
+            CompoundTag caCount = new CompoundTag();
             caCounters.forEach(caCount::putInt);
             n.put("CaCounters", caCount);
             n.put("CaClaimed", strings(caClaimed));
-            NbtCompound daily = new NbtCompound();
+            CompoundTag daily = new CompoundTag();
             dailyUses.forEach(daily::putInt);
             n.put("Daily", daily);
-            NbtCompound owned = new NbtCompound();
+            CompoundTag owned = new CompoundTag();
             playerCharges.forEach(owned::putInt);
             n.put("PlayerCharges", owned);
             n.putLong("Day", day);
@@ -179,14 +178,14 @@ public final class SysState extends PersistentState {
             n.put("Unlocks", strings(unlocks));
             n.putString("CluePuzzle", cluePuzzle);
             if (cannonOut) {
-                NbtCompound cannon = new NbtCompound();
+                CompoundTag cannon = new CompoundTag();
                 cannon.putInt("Steel", cannonSteel);
                 cannon.putInt("Granite", cannonGranite);
                 n.put("Cannon", cannon);
             }
-            NbtList bag = new NbtList();
+            ListTag bag = new ListTag();
             for (com.runecraft.osrs.content.systems.LootingBag.Stack st : lootingBag.stacks()) {
-                NbtCompound c = new NbtCompound();
+                CompoundTag c = new CompoundTag();
                 c.putString("Item", st.item);
                 c.putString("Tag", st.tag);
                 c.putBoolean("Noted", st.noted);
@@ -199,14 +198,14 @@ public final class SysState extends PersistentState {
             return n;
         }
 
-        void fromNbt(NbtCompound n) {
+        void fromNbt(CompoundTag n) {
             specEnergy = n.contains("Spec") ? n.getInt("Spec") : 100;
             runEnergy = n.contains("Run") ? n.getInt("Run") : 10000;
             worn.clear();
-            NbtCompound w = n.getCompound("Worn");
+            CompoundTag w = n.getCompound("Worn");
             for (Jewellery.Slot slot : Jewellery.Slot.values()) {
                 if (w.contains(slot.name())) {
-                    ItemStack s = ItemStack.fromNbt(w.getCompound(slot.name()));
+                    ItemStack s = ItemStack.of(w.getCompound(slot.name()));
                     if (!s.isEmpty()) {
                         worn.put(slot, s);
                     }
@@ -215,8 +214,8 @@ public final class SysState extends PersistentState {
             recoilCharges = n.contains("Recoil") ? n.getInt("Recoil") : Jewellery.RECOIL_CHARGES;
             skullTicks = n.getInt("SkullTicks");
             jewelleryCharges.clear();
-            NbtCompound jc = n.getCompound("JewelleryCharges");
-            for (String k : jc.getKeys()) {
+            CompoundTag jc = n.getCompound("JewelleryCharges");
+            for (String k : jc.getAllKeys()) {
                 jewelleryCharges.put(k, jc.getInt(k));
             }
             try {
@@ -226,56 +225,56 @@ public final class SysState extends PersistentState {
             }
             autocast = n.getString("Autocast");
             clues.clear();
-            NbtCompound c = n.getCompound("Clues");
+            CompoundTag c = n.getCompound("Clues");
             for (ClueScrolls.Tier t : ClueScrolls.Tier.values()) {
                 if (c.contains(t.name())) {
                     clues.put(t, c.getLongArray(t.name()));
                 }
             }
             cluesCompleted.clear();
-            NbtCompound cd = n.getCompound("CluesDone");
+            CompoundTag cd = n.getCompound("CluesDone");
             for (ClueScrolls.Tier t : ClueScrolls.Tier.values()) {
                 if (cd.contains(t.name())) {
                     cluesCompleted.put(t, cd.getInt(t.name()));
                 }
             }
-            readStrings(n.getList("Diary", NbtElement.STRING_TYPE), diaryDone);
+            readStrings(n.getList("Diary", Tag.TAG_STRING), diaryDone);
             diaryCounters.clear();
-            NbtCompound dc = n.getCompound("DiaryCounters");
-            for (String k : dc.getKeys()) {
+            CompoundTag dc = n.getCompound("DiaryCounters");
+            for (String k : dc.getAllKeys()) {
                 diaryCounters.put(k, dc.getInt(k));
             }
-            readStrings(n.getList("DiaryClaimed", NbtElement.STRING_TYPE), diaryClaimed);
-            readStrings(n.getList("CaDone", NbtElement.STRING_TYPE), caDone);
+            readStrings(n.getList("DiaryClaimed", Tag.TAG_STRING), diaryClaimed);
+            readStrings(n.getList("CaDone", Tag.TAG_STRING), caDone);
             caCounters.clear();
-            NbtCompound cc = n.getCompound("CaCounters");
-            for (String k : cc.getKeys()) {
+            CompoundTag cc = n.getCompound("CaCounters");
+            for (String k : cc.getAllKeys()) {
                 caCounters.put(k, cc.getInt(k));
             }
-            readStrings(n.getList("CaClaimed", NbtElement.STRING_TYPE), caClaimed);
+            readStrings(n.getList("CaClaimed", Tag.TAG_STRING), caClaimed);
             dailyUses.clear();
-            NbtCompound d = n.getCompound("Daily");
-            for (String k : d.getKeys()) {
+            CompoundTag d = n.getCompound("Daily");
+            for (String k : d.getAllKeys()) {
                 dailyUses.put(k, d.getInt(k));
             }
             playerCharges.clear();
-            NbtCompound pc = n.getCompound("PlayerCharges");
-            for (String k : pc.getKeys()) {
+            CompoundTag pc = n.getCompound("PlayerCharges");
+            for (String k : pc.getAllKeys()) {
                 playerCharges.put(k, pc.getInt(k));
             }
             day = n.contains("Day") ? n.getLong("Day") : -1;
             geTrades = n.getInt("GeTrades");
-            readStrings(n.getList("Spells", NbtElement.STRING_TYPE), spellsCast);
-            readStrings(n.getList("PrayerScrolls", NbtElement.STRING_TYPE), prayerScrolls);
-            readStrings(n.getList("Unlocks", NbtElement.STRING_TYPE), unlocks);
+            readStrings(n.getList("Spells", Tag.TAG_STRING), spellsCast);
+            readStrings(n.getList("PrayerScrolls", Tag.TAG_STRING), prayerScrolls);
+            readStrings(n.getList("Unlocks", Tag.TAG_STRING), unlocks);
             cluePuzzle = n.getString("CluePuzzle");
             cannonOut = n.contains("Cannon");
             cannonSteel = n.getCompound("Cannon").getInt("Steel");
             cannonGranite = n.getCompound("Cannon").getInt("Granite");
             lootingBag.takeAll();
-            NbtList bag = n.getList("LootingBag", NbtElement.COMPOUND_TYPE);
+            ListTag bag = n.getList("LootingBag", Tag.TAG_COMPOUND);
             for (int i = 0; i < bag.size(); i++) {
-                NbtCompound entry = bag.getCompound(i);
+                CompoundTag entry = bag.getCompound(i);
                 lootingBag.restore(new com.runecraft.osrs.content.systems.LootingBag.Stack(entry.getString("Item"), entry.getString("Tag"),
                         entry.getBoolean("Noted"), entry.getBoolean("Stackable"), entry.getLong("Count")));
             }
@@ -309,11 +308,11 @@ public final class SysState extends PersistentState {
     private final Map<String, Integer> lastPrices = new HashMap<>();
 
     public static SysState get(MinecraftServer server) {
-        return server.getOverworld().getPersistentStateManager().getOrCreate(SysState::fromNbt, SysState::new, KEY);
+        return server.overworld().getDataStorage().computeIfAbsent(SysState::fromNbt, SysState::new, KEY);
     }
 
-    public static SysPlayer of(ServerPlayerEntity player) {
-        return get(player.getServer()).player(player.getUuid());
+    public static SysPlayer of(ServerPlayer player) {
+        return get(player.getServer()).player(player.getUUID());
     }
 
     public SysPlayer player(UUID uuid) {
@@ -329,7 +328,7 @@ public final class SysState extends PersistentState {
     /** Self-test hook: puts back a {@link #selfTestSave} copy; null drops the player's state (a fresh one is made on use). */
     public void selfTestRestore(UUID uuid, Object saved) {
         players.remove(uuid);
-        if (saved instanceof NbtCompound n) {
+        if (saved instanceof CompoundTag n) {
             SysPlayer p = new SysPlayer();
             p.fromNbt(n.copy());
             players.put(uuid, p);
@@ -354,13 +353,13 @@ public final class SysState extends PersistentState {
     }
 
     @Override
-    public NbtCompound writeNbt(NbtCompound nbt) {
-        NbtCompound ps = new NbtCompound();
+    public CompoundTag save(CompoundTag nbt) {
+        CompoundTag ps = new CompoundTag();
         players.forEach((u, p) -> ps.put(u.toString(), p.toNbt()));
         nbt.put("Players", ps);
-        NbtList offers = new NbtList();
+        ListTag offers = new ListTag();
         for (GrandExchange.Offer o : ge.offers()) {
-            NbtCompound c = new NbtCompound();
+            CompoundTag c = new CompoundTag();
             c.putLong("Id", o.id);
             c.putString("Owner", o.owner);
             c.putString("Item", o.item);
@@ -377,9 +376,9 @@ public final class SysState extends PersistentState {
         nbt.put("GeOffers", offers);
         nbt.putLong("GeNextId", ge.nextId());
         // 4-hour buy limits: elapsed game ticks of each running window, plus the wall clock to count downtime.
-        NbtList limits = new NbtList();
+        ListTag limits = new ListTag();
         for (GrandExchange.LimitWindow w : ge.saveBuyLimits(SysTicks.now())) {
-            NbtCompound c = new NbtCompound();
+            CompoundTag c = new CompoundTag();
             c.putString("Owner", w.owner());
             c.putString("Item", w.item());
             c.putLong("Elapsed", w.elapsedTicks());
@@ -388,24 +387,24 @@ public final class SysState extends PersistentState {
         }
         nbt.put("GeBuyLimits", limits);
         nbt.putLong("GeSavedAt", System.currentTimeMillis());
-        NbtCompound hs = new NbtCompound();
+        CompoundTag hs = new CompoundTag();
         hiscores.forEach((u, e) -> {
-            NbtCompound c = new NbtCompound();
+            CompoundTag c = new CompoundTag();
             c.putString("Name", e.name());
             c.putIntArray("Xp", e.xpTenths());
             hs.put(u.toString(), c);
         });
         nbt.put("Hiscores", hs);
-        NbtCompound prices = new NbtCompound();
+        CompoundTag prices = new CompoundTag();
         lastPrices.forEach(prices::putInt);
         nbt.put("Prices", prices);
         return nbt;
     }
 
-    public static SysState fromNbt(NbtCompound nbt) {
+    public static SysState fromNbt(CompoundTag nbt) {
         SysState s = new SysState();
-        NbtCompound ps = nbt.getCompound("Players");
-        for (String k : ps.getKeys()) {
+        CompoundTag ps = nbt.getCompound("Players");
+        for (String k : ps.getAllKeys()) {
             try {
                 SysPlayer p = new SysPlayer();
                 p.fromNbt(ps.getCompound(k));
@@ -414,9 +413,9 @@ public final class SysState extends PersistentState {
                 // skip malformed entries
             }
         }
-        NbtList offers = nbt.getList("GeOffers", NbtElement.COMPOUND_TYPE);
+        ListTag offers = nbt.getList("GeOffers", Tag.TAG_COMPOUND);
         for (int i = 0; i < offers.size(); i++) {
-            NbtCompound c = offers.getCompound(i);
+            CompoundTag c = offers.getCompound(i);
             GrandExchange.Offer o = new GrandExchange.Offer(c.getLong("Id"), c.getString("Owner"), c.getString("Item"),
                     c.getBoolean("Buy"), c.getInt("Qty"), c.getInt("Price"), c.getLong("Created"));
             o.filled = c.getInt("Filled");
@@ -427,18 +426,18 @@ public final class SysState extends PersistentState {
         }
         s.ge.setNextId(Math.max(1, nbt.getLong("GeNextId")));
         java.util.List<GrandExchange.LimitWindow> windows = new java.util.ArrayList<>();
-        NbtList limits = nbt.getList("GeBuyLimits", NbtElement.COMPOUND_TYPE);
+        ListTag limits = nbt.getList("GeBuyLimits", Tag.TAG_COMPOUND);
         for (int i = 0; i < limits.size(); i++) {
-            NbtCompound c = limits.getCompound(i);
+            CompoundTag c = limits.getCompound(i);
             windows.add(new GrandExchange.LimitWindow(c.getString("Owner"), c.getString("Item"), c.getLong("Elapsed"), c.getLong("Bought")));
         }
         long savedAt = nbt.getLong("GeSavedAt");
         long offline = savedAt <= 0 ? 0 : Math.max(0, System.currentTimeMillis() - savedAt) / 600;
         s.ge.loadBuyLimits(windows, SysTicks.now(), offline);
-        NbtCompound hs = nbt.getCompound("Hiscores");
-        for (String k : hs.getKeys()) {
+        CompoundTag hs = nbt.getCompound("Hiscores");
+        for (String k : hs.getAllKeys()) {
             try {
-                NbtCompound c = hs.getCompound(k);
+                CompoundTag c = hs.getCompound(k);
                 int[] xp = c.getIntArray("Xp");
                 if (xp.length == Skill.count()) {
                     s.hiscores.put(UUID.fromString(k), new HiscoreEntry(c.getString("Name"), xp));
@@ -447,22 +446,22 @@ public final class SysState extends PersistentState {
                 // skip
             }
         }
-        NbtCompound prices = nbt.getCompound("Prices");
-        for (String k : prices.getKeys()) {
+        CompoundTag prices = nbt.getCompound("Prices");
+        for (String k : prices.getAllKeys()) {
             s.lastPrices.put(k, prices.getInt(k));
         }
         return s;
     }
 
-    private static NbtList strings(Set<String> set) {
-        NbtList l = new NbtList();
+    private static ListTag strings(Set<String> set) {
+        ListTag l = new ListTag();
         for (String s : set) {
-            l.add(NbtString.of(s));
+            l.add(StringTag.valueOf(s));
         }
         return l;
     }
 
-    private static void readStrings(NbtList list, Set<String> into) {
+    private static void readStrings(ListTag list, Set<String> into) {
         into.clear();
         for (int i = 0; i < list.size(); i++) {
             into.add(list.getString(i));

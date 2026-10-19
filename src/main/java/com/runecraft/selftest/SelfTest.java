@@ -6,13 +6,12 @@ import com.runecraft.RuneCraft;
 import com.runecraft.world.Gielinor;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -61,7 +60,7 @@ public final class SelfTest {
     private static final List<String> SKIPS = new ArrayList<>();
     private static volatile TestContext context;
     private static volatile int finishedRuns;
-    private static ServerCommandSource reportTo;
+    private static CommandSourceStack reportTo;
     private static int passed;
     private static int failed;
     private static int skipped;
@@ -78,15 +77,15 @@ public final class SelfTest {
         ServerTickEvents.END_SERVER_TICK.register(SelfTest::tick);
     }
 
-    private static void register(CommandDispatcher<ServerCommandSource> dispatcher, String root) {
-        dispatcher.register(CommandManager.literal(root)
-                .then(CommandManager.literal("selftest").requires(s -> s.hasPermissionLevel(2))
+    private static void register(CommandDispatcher<CommandSourceStack> dispatcher, String root) {
+        dispatcher.register(Commands.literal(root)
+                .then(Commands.literal("selftest").requires(s -> s.hasPermission(2))
                         .executes(ctx -> start(ctx.getSource(), "", false))
-                        .then(CommandManager.literal("real")
+                        .then(Commands.literal("real")
                                 .executes(ctx -> start(ctx.getSource(), "", true))
-                                .then(CommandManager.argument("filter", StringArgumentType.greedyString())
+                                .then(Commands.argument("filter", StringArgumentType.greedyString())
                                         .executes(ctx -> start(ctx.getSource(), StringArgumentType.getString(ctx, "filter"), true))))
-                        .then(CommandManager.argument("filter", StringArgumentType.greedyString())
+                        .then(Commands.argument("filter", StringArgumentType.greedyString())
                                 .executes(ctx -> start(ctx.getSource(), StringArgumentType.getString(ctx, "filter"), false)))));
     }
 
@@ -99,16 +98,16 @@ public final class SelfTest {
         return finishedRuns;
     }
 
-    private static int start(ServerCommandSource source, String filter, boolean real) {
+    private static int start(CommandSourceStack source, String filter, boolean real) {
         if (running()) {
-            source.sendError(Text.literal("A self-test is already running (" + QUEUE.size() + " checks left)."));
+            source.sendFailure(Component.literal("A self-test is already running (" + QUEUE.size() + " checks left)."));
             return 0;
         }
         MinecraftServer server = source.getServer();
-        ServerWorld world = Gielinor.world(server);
-        ServerPlayerEntity realPlayer = real ? source.getPlayer() : null;
+        ServerLevel world = Gielinor.world(server);
+        ServerPlayer realPlayer = real ? source.getPlayer() : null;
         if (real && realPlayer == null) {
-            source.sendError(Text.literal("'/rc selftest real' must be run by a player."));
+            source.sendFailure(Component.literal("'/rc selftest real' must be run by a player."));
             return 0;
         }
         log("SELFTEST BEGIN" + (real ? " (real player " + realPlayer.getName().getString() + ")" : "")
@@ -147,7 +146,7 @@ public final class SelfTest {
             }
         }
         log("SELFTEST " + QUEUE.size() + " checks queued");
-        source.sendFeedback(() -> Text.literal("RuneCraft self-test started: " + QUEUE.size() + " checks."), false);
+        source.sendSuccess(() -> Component.literal("RuneCraft self-test started: " + QUEUE.size() + " checks."), false);
         return 1;
     }
 
@@ -250,8 +249,8 @@ public final class SelfTest {
         log("SELFTEST END");
         finishedRuns++;
         if (reportTo != null) {
-            ServerCommandSource src = reportTo;
-            src.sendFeedback(() -> Text.literal(summary), false);
+            CommandSourceStack src = reportTo;
+            src.sendSuccess(() -> Component.literal(summary), false);
             reportTo = null;
         }
     }

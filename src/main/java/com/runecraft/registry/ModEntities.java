@@ -8,17 +8,15 @@ import com.runecraft.entity.QuestNpcEntity;
 import com.runecraft.osrs.data.Boss;
 import com.runecraft.osrs.data.Monster;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
-import net.minecraft.entity.EntityDimensions;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnGroup;
-import net.minecraft.entity.SpawnRestriction;
-import net.minecraft.entity.attribute.DefaultAttributeContainer;
-import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.entity.mob.HostileEntity;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.world.Heightmap;
-
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.entity.EntityDimensions;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.entity.SpawnPlacements;
+import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.level.levelgen.Heightmap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -54,12 +52,12 @@ public final class ModEntities {
         };
     }
 
-    private static DefaultAttributeContainer.Builder attributes(int hp, double speed) {
-        return HostileEntity.createHostileAttributes()
-                .add(EntityAttributes.GENERIC_MAX_HEALTH, hp)
-                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, speed)
-                .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 24.0)
-                .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 0.5);
+    private static AttributeSupplier.Builder attributes(int hp, double speed) {
+        return net.minecraft.world.entity.monster.Monster.createMonsterAttributes()
+                .add(Attributes.MAX_HEALTH, hp)
+                .add(Attributes.MOVEMENT_SPEED, speed)
+                .add(Attributes.FOLLOW_RANGE, 24.0)
+                .add(Attributes.KNOCKBACK_RESISTANCE, 0.5);
     }
 
     public static void register() {
@@ -69,22 +67,22 @@ public final class ModEntities {
             }
             float s = scale(m.entity());
             EntityType<OsrsMonsterEntity> type = FabricEntityTypeBuilder.<OsrsMonsterEntity>createMob()
-                    .spawnGroup(SpawnGroup.MONSTER)
+                    .spawnGroup(MobCategory.MONSTER)
                     .entityFactory(OsrsMonsterEntity::new)
                     .dimensions(EntityDimensions.fixed(0.6f * s, 1.95f * s))
                     .defaultAttributes(() -> attributes(m.hitpoints(), 0.25))
-                    .spawnRestriction(SpawnRestriction.Location.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,
-                            HostileEntity::canSpawnIgnoreLightLevel)
+                    .spawnRestriction(SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                            net.minecraft.world.entity.monster.Monster::checkAnyLightMonsterSpawnRules)
                     .trackRangeBlocks(64)
                     .build();
             STATS.put(type, MonsterStats.from(m));
-            Registry.register(Registries.ENTITY_TYPE, RuneCraft.id(m.entity()), type);
+            Registry.register(BuiltInRegistries.ENTITY_TYPE, RuneCraft.id(m.entity()), type);
             MONSTERS.put(m, type);
         }
         for (Boss b : Boss.values()) {
             float s = b.scale();
             EntityType<BossEntity> type = FabricEntityTypeBuilder.<BossEntity>createMob()
-                    .spawnGroup(SpawnGroup.MONSTER)
+                    .spawnGroup(MobCategory.MONSTER)
                     .entityFactory(BossEntity::new)
                     .dimensions(EntityDimensions.fixed(0.6f * s, 1.95f * s))
                     .defaultAttributes(() -> attributes(b.hitpoints(), 0.27))
@@ -94,7 +92,7 @@ public final class ModEntities {
             STATS.put(type, new MonsterStats(b.displayName(), b.combatLevel(), b.hitpoints(), b.attack(), b.strength(),
                     b.defence(), b.magic(), b.ranged(), b.defenceBonus(), b.attackSpeed(), b.style(), b.maxHit(), null, null, b));
             BOSSES.put(type, b);
-            Registry.register(Registries.ENTITY_TYPE, RuneCraft.id(b.entityId()), type);
+            Registry.register(BuiltInRegistries.ENTITY_TYPE, RuneCraft.id(b.entityId()), type);
             BOSS_TYPES.put(b, type);
         }
         for (com.runecraft.osrs.content.MonsterDef m : com.runecraft.osrs.content.ContentRegistry.monsters()) {
@@ -106,23 +104,23 @@ public final class ModEntities {
                     : "demonic_gorilla".equals(m.id) || "tortured_gorilla".equals(m.id)
                     ? com.runecraft.content.slayer.GorillaEntity::new : OsrsMonsterEntity::new;
             EntityType<OsrsMonsterEntity> type = FabricEntityTypeBuilder.<OsrsMonsterEntity>createMob()
-                    .spawnGroup(SpawnGroup.MONSTER)
+                    .spawnGroup(MobCategory.MONSTER)
                     .entityFactory(factory)
                     .dimensions(EntityDimensions.fixed(m.width * sc, m.height * sc))
                     .defaultAttributes(() -> attributes(m.hitpoints, m.moveSpeed))
-                    .spawnRestriction(SpawnRestriction.Location.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,
-                            HostileEntity::canSpawnIgnoreLightLevel)
+                    .spawnRestriction(SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                            net.minecraft.world.entity.monster.Monster::checkAnyLightMonsterSpawnRules)
                     .trackRangeBlocks(64)
                     .build();
             STATS.put(type, MonsterStats.from(m));
-            Registry.register(Registries.ENTITY_TYPE, RuneCraft.id(m.id), type);
+            Registry.register(BuiltInRegistries.ENTITY_TYPE, RuneCraft.id(m.id), type);
             MODULE_MONSTERS.put(m.id, type);
             BY_ID.put(m.id, type);
         }
         for (com.runecraft.osrs.content.BossDef b : com.runecraft.osrs.content.ContentRegistry.bosses()) {
             float sc = b.scale;
             EntityType<com.runecraft.boss.DataBossEntity> type = FabricEntityTypeBuilder.<com.runecraft.boss.DataBossEntity>createMob()
-                    .spawnGroup(SpawnGroup.MONSTER)
+                    .spawnGroup(MobCategory.MONSTER)
                     .entityFactory(com.runecraft.boss.DataBossEntity::new)
                     .dimensions(EntityDimensions.fixed(b.width * sc, b.height * sc))
                     .defaultAttributes(() -> attributes(b.hitpoints, b.moveSpeed))
@@ -131,15 +129,15 @@ public final class ModEntities {
                     .build();
             STATS.put(type, MonsterStats.from(b));
             DATA_BOSSES.put(type, b);
-            Registry.register(Registries.ENTITY_TYPE, RuneCraft.id(b.id), type);
+            Registry.register(BuiltInRegistries.ENTITY_TYPE, RuneCraft.id(b.id), type);
             DATA_BOSS_TYPES.put(b.id, type);
             BY_ID.put(b.id, type);
         }
         MONSTERS.forEach((m, t) -> BY_ID.put(m.entity(), t));
         BOSS_TYPES.forEach((b, t) -> BY_ID.put(b.entityId(), t));
-        QUEST_NPC = Registry.register(Registries.ENTITY_TYPE, RuneCraft.id("quest_npc"),
+        QUEST_NPC = Registry.register(BuiltInRegistries.ENTITY_TYPE, RuneCraft.id("quest_npc"),
                 FabricEntityTypeBuilder.<QuestNpcEntity>createMob()
-                        .spawnGroup(SpawnGroup.MISC)
+                        .spawnGroup(MobCategory.MISC)
                         .entityFactory(QuestNpcEntity::new)
                         .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
                         .defaultAttributes(QuestNpcEntity::createAttributes)
@@ -161,7 +159,7 @@ public final class ModEntities {
     /** Entity type for a RuneCraft creature id (built-in, module monster or boss), or a vanilla "minecraft:" id. */
     public static EntityType<?> typeById(String id) {
         if (id.contains(":")) {
-            return Registries.ENTITY_TYPE.get(new net.minecraft.util.Identifier(id));
+            return BuiltInRegistries.ENTITY_TYPE.get(new net.minecraft.resources.ResourceLocation(id));
         }
         return BY_ID.get(id);
     }

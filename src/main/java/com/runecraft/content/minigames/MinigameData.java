@@ -1,13 +1,12 @@
 package com.runecraft.content.minigames;
 
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.nbt.NbtString;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.world.PersistentState;
-
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.saveddata.SavedData;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -19,7 +18,7 @@ import java.util.UUID;
  * honour points, pizazz...), unlock flags (Bones to Peaches, Inferno cape sacrificed) and stats
  * (completion counts, personal bests).
  */
-public final class MinigameData extends PersistentState {
+public final class MinigameData extends SavedData {
     public static final String KEY = "runecraft_minigames";
 
     private final Map<UUID, Map<String, Integer>> points = new HashMap<>();
@@ -27,10 +26,10 @@ public final class MinigameData extends PersistentState {
     private final Map<UUID, Set<String>> flags = new HashMap<>();
 
     public static MinigameData get(MinecraftServer server) {
-        return server.getOverworld().getPersistentStateManager().getOrCreate(MinigameData::fromNbt, MinigameData::new, KEY);
+        return server.overworld().getDataStorage().computeIfAbsent(MinigameData::fromNbt, MinigameData::new, KEY);
     }
 
-    public static MinigameData of(ServerPlayerEntity player) {
+    public static MinigameData of(ServerPlayer player) {
         return get(player.getServer());
     }
 
@@ -53,7 +52,7 @@ public final class MinigameData extends PersistentState {
             stats.put(player, new HashMap<>(s.stats()));
             flags.put(player, new HashSet<>(s.flags()));
         }
-        markDirty();
+        setDirty();
     }
 
     /** Points balance for a key such as "pest_control" (no "pts:" prefix). */
@@ -63,7 +62,7 @@ public final class MinigameData extends PersistentState {
 
     public void addPoints(UUID player, String key, int amount) {
         points.computeIfAbsent(player, k -> new HashMap<>()).merge(key, amount, Integer::sum);
-        markDirty();
+        setDirty();
     }
 
     public int stat(UUID player, String key) {
@@ -72,13 +71,13 @@ public final class MinigameData extends PersistentState {
 
     public int incrementStat(UUID player, String key) {
         int v = stats.computeIfAbsent(player, k -> new HashMap<>()).merge(key, 1, Integer::sum);
-        markDirty();
+        setDirty();
         return v;
     }
 
     public void setStat(UUID player, String key, int value) {
         stats.computeIfAbsent(player, k -> new HashMap<>()).put(key, value);
-        markDirty();
+        setDirty();
     }
 
     public boolean flag(UUID player, String flag) {
@@ -87,26 +86,26 @@ public final class MinigameData extends PersistentState {
 
     public void setFlag(UUID player, String flag) {
         flags.computeIfAbsent(player, k -> new HashSet<>()).add(flag);
-        markDirty();
+        setDirty();
     }
 
-    private static NbtCompound writeMap(Map<UUID, Map<String, Integer>> map) {
-        NbtCompound root = new NbtCompound();
+    private static CompoundTag writeMap(Map<UUID, Map<String, Integer>> map) {
+        CompoundTag root = new CompoundTag();
         map.forEach((uuid, values) -> {
-            NbtCompound c = new NbtCompound();
+            CompoundTag c = new CompoundTag();
             values.forEach(c::putInt);
             root.put(uuid.toString(), c);
         });
         return root;
     }
 
-    private static void readMap(NbtCompound root, Map<UUID, Map<String, Integer>> into) {
-        for (String key : root.getKeys()) {
+    private static void readMap(CompoundTag root, Map<UUID, Map<String, Integer>> into) {
+        for (String key : root.getAllKeys()) {
             try {
                 UUID uuid = UUID.fromString(key);
-                NbtCompound c = root.getCompound(key);
+                CompoundTag c = root.getCompound(key);
                 Map<String, Integer> values = new HashMap<>();
-                for (String k : c.getKeys()) {
+                for (String k : c.getAllKeys()) {
                     values.put(k, c.getInt(k));
                 }
                 into.put(uuid, values);
@@ -117,28 +116,28 @@ public final class MinigameData extends PersistentState {
     }
 
     @Override
-    public NbtCompound writeNbt(NbtCompound nbt) {
+    public CompoundTag save(CompoundTag nbt) {
         nbt.put("Points", writeMap(points));
         nbt.put("Stats", writeMap(stats));
-        NbtCompound f = new NbtCompound();
+        CompoundTag f = new CompoundTag();
         flags.forEach((uuid, set) -> {
-            NbtList list = new NbtList();
-            set.forEach(s -> list.add(NbtString.of(s)));
+            ListTag list = new ListTag();
+            set.forEach(s -> list.add(StringTag.valueOf(s)));
             f.put(uuid.toString(), list);
         });
         nbt.put("Flags", f);
         return nbt;
     }
 
-    public static MinigameData fromNbt(NbtCompound nbt) {
+    public static MinigameData fromNbt(CompoundTag nbt) {
         MinigameData data = new MinigameData();
         readMap(nbt.getCompound("Points"), data.points);
         readMap(nbt.getCompound("Stats"), data.stats);
-        NbtCompound f = nbt.getCompound("Flags");
-        for (String key : f.getKeys()) {
+        CompoundTag f = nbt.getCompound("Flags");
+        for (String key : f.getAllKeys()) {
             try {
                 UUID uuid = UUID.fromString(key);
-                NbtList list = f.getList(key, NbtElement.STRING_TYPE);
+                ListTag list = f.getList(key, Tag.TAG_STRING);
                 Set<String> set = new HashSet<>();
                 for (int i = 0; i < list.size(); i++) {
                     set.add(list.getString(i));

@@ -1,38 +1,37 @@
 package com.runecraft.client;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.runecraft.RuneCraft;
 import com.runecraft.entity.QuestNpcEntity;
 import com.runecraft.osrs.NpcRace;
 import com.runecraft.osrs.QuestNpc;
 import com.runecraft.osrs.content.ContentRegistry;
 import com.runecraft.osrs.content.NpcDef;
-import net.minecraft.client.render.entity.BipedEntityRenderer;
-import net.minecraft.client.render.entity.EntityRendererFactory;
-import net.minecraft.client.render.entity.model.BipedEntityModel;
-import net.minecraft.client.render.entity.model.EntityModelLayers;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.util.Identifier;
-
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.model.geom.ModelLayers;
+import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.client.renderer.entity.HumanoidMobRenderer;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Mob;
 
 /** Renders RuneCraft humanoids with the zombie/player biped model, a custom skin and a scale. */
-public class OsrsBipedRenderer<T extends MobEntity> extends BipedEntityRenderer<T, BipedEntityModel<T>> {
-    private final Identifier texture;
+public class OsrsBipedRenderer<T extends Mob> extends HumanoidMobRenderer<T, HumanoidModel<T>> {
+    private final ResourceLocation texture;
     private final float scale;
     /** NPC race by NPC id (dwarves and gnomes render shorter, elves taller; hitboxes are unchanged). */
     private static final Map<String, NpcRace> RACES = new HashMap<>();
 
-    public OsrsBipedRenderer(EntityRendererFactory.Context ctx, String textureName, float scale) {
-        super(ctx, new BipedEntityModel<>(ctx.getPart(EntityModelLayers.ZOMBIE)), 0.5f * scale);
+    public OsrsBipedRenderer(EntityRendererProvider.Context ctx, String textureName, float scale) {
+        super(ctx, new HumanoidModel<>(ctx.bakeLayer(ModelLayers.ZOMBIE)), 0.5f * scale);
         this.texture = textureName == null ? null : RuneCraft.id("textures/entity/" + textureName + ".png");
         this.scale = scale;
     }
 
     @Override
-    public Identifier getTexture(T entity) {
+    public ResourceLocation getTexture(T entity) {
         if (entity instanceof QuestNpcEntity npc) {
             if (npc.npc() == null) {
                 return RuneCraft.id("textures/entity/npc/" + npc.npcId() + ".png");
@@ -44,7 +43,7 @@ public class OsrsBipedRenderer<T extends MobEntity> extends BipedEntityRenderer<
     }
 
     @Override
-    protected void scale(T entity, MatrixStack matrices, float amount) {
+    protected void scale(T entity, PoseStack matrices, float amount) {
         if (entity instanceof QuestNpcEntity npc) {
             NpcRace race = race(npc.npcId());
             matrices.scale(scale * race.width(), scale * race.height(), scale * race.width());

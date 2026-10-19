@@ -24,18 +24,17 @@ import com.runecraft.osrs.data.Tree;
 import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.BlockState;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.random.Random;
-
 import java.util.List;
 import java.util.Locale;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
 
 /** Woodcutting, Mining and Fishing. */
 public final class Gathering {
@@ -48,7 +47,7 @@ public final class Gathering {
 
     // ---------------- Woodcutting ----------------
 
-    public static void woodcut(ServerPlayerEntity player, BlockPos pos, Tree tree) {
+    public static void woodcut(ServerPlayer player, BlockPos pos, Tree tree) {
         if (!Stun.check(player)) {
             return;
         }
@@ -71,18 +70,18 @@ public final class Gathering {
         Msg.action(player, "You swing your axe at the tree.");
         ActionManager.start(player, new GatherAction(pos, 4) {
             @Override
-            boolean valid(ServerPlayerEntity p, BlockState state) {
-                return state.getBlock() instanceof TreeLogBlock b && b.tree() == tree && !state.get(ResourceBlock.DEPLETED);
+            boolean valid(ServerPlayer p, BlockState state) {
+                return state.getBlock() instanceof TreeLogBlock b && b.tree() == tree && !state.getValue(ResourceBlock.DEPLETED);
             }
 
             @Override
-            boolean roll(ServerPlayerEntity p, ServerWorld world, BlockState state, Random random) {
+            boolean roll(ServerPlayer p, ServerLevel world, BlockState state, RandomSource random) {
                 SkillSet s = Players.data(p).skills();
                 Tools.Tool best = Tools.bestAxeTool(p, s);
                 if (best == null) {
                     return false;
                 }
-                world.playSound(null, pos, SoundEvents.BLOCK_WOOD_HIT, SoundCategory.PLAYERS, 1.0f, 0.8f + random.nextFloat() * 0.4f);
+                world.playSound(null, pos, SoundEvents.WOOD_HIT, SoundSource.PLAYERS, 1.0f, 0.8f + random.nextFloat() * 0.4f);
                 double chance = Chance.lerp(s.currentLevel(Skill.WOODCUTTING), tree.low(best.woodcuttingMultiplier()),
                         tree.high(best.woodcuttingMultiplier()));
                 String timerKey = treeKey(world, pos);
@@ -96,7 +95,7 @@ public final class Gathering {
                         // The infernal axe burns a third of the logs it cuts, for half the Firemaking XP.
                         Msg.action(p, "The infernal axe incinerates some " + tree.logName().toLowerCase(Locale.ROOT) + ".");
                         XpService.add(p, Skill.FIREMAKING, SpecialTool.infernalFiremakingXp(tree));
-                        world.spawnParticles(net.minecraft.particle.ParticleTypes.FLAME, p.getX(), p.getY() + 1, p.getZ(), 6,
+                        world.sendParticles(net.minecraft.core.particles.ParticleTypes.FLAME, p.getX(), p.getY() + 1, p.getZ(), 6,
                                 0.2, 0.3, 0.2, 0.01);
                     } else {
                         Inv.give(p, tree.logItem(), 1);
@@ -108,7 +107,7 @@ public final class Gathering {
                     if (expired) {
                         TREE_TIMERS.reset(timerKey);
                         ((ResourceBlock) state.getBlock()).deplete(world, pos, state, tree.respawnTicks());
-                        world.playSound(null, pos, SoundEvents.BLOCK_WOOD_BREAK, SoundCategory.BLOCKS, 1.0f, 0.8f);
+                        world.playSound(null, pos, SoundEvents.WOOD_BREAK, SoundSource.BLOCKS, 1.0f, 0.8f);
                         return false;
                     }
                 }
@@ -118,11 +117,11 @@ public final class Gathering {
     }
 
     /** Key identifying a tree block for {@link #TREE_TIMERS}. */
-    public static String treeKey(ServerWorld world, BlockPos pos) {
-        return world.getRegistryKey().getValue() + "@" + pos.asLong();
+    public static String treeKey(ServerLevel world, BlockPos pos) {
+        return world.dimension().location() + "@" + pos.asLong();
     }
 
-    private static void birdNest(ServerPlayerEntity player, Random random) {
+    private static void birdNest(ServerPlayer player, RandomSource random) {
         if (random.nextInt(256) == 0) {
             Msg.red(player, "A bird's nest falls out of the tree.");
             String seed = Drops.rollSeed(random);
@@ -133,14 +132,14 @@ public final class Gathering {
     // ---------------- Mining ----------------
 
     /** Invisible Mining boost for success rolls (celestial ring, +4); set by the skilling module. */
-    public static java.util.function.ToIntFunction<ServerPlayerEntity> miningBoost = p -> 0;
+    public static java.util.function.ToIntFunction<ServerPlayer> miningBoost = p -> 0;
     /**
      * Called once per ore mined: whether a mining enhancer gives an extra ore (a charged celestial ring uses a charge on
      * every ore and gives an extra one 1/10 of the time); set by the skilling module.
      */
-    public static java.util.function.BiPredicate<ServerPlayerEntity, String> extraOre = (p, ore) -> false;
+    public static java.util.function.BiPredicate<ServerPlayer, String> extraOre = (p, ore) -> false;
 
-    public static void mine(ServerPlayerEntity player, BlockPos pos, Rock rock) {
+    public static void mine(ServerPlayer player, BlockPos pos, Rock rock) {
         if (!Stun.check(player)) {
             return;
         }
@@ -162,24 +161,24 @@ public final class Gathering {
         Msg.action(player, "You swing your pickaxe at the rock.");
         ActionManager.start(player, new GatherAction(pos, pick.miningTicks()) {
             @Override
-            boolean valid(ServerPlayerEntity p, BlockState state) {
-                return state.getBlock() instanceof RockBlock b && b.rock() == rock && !state.get(ResourceBlock.DEPLETED);
+            boolean valid(ServerPlayer p, BlockState state) {
+                return state.getBlock() instanceof RockBlock b && b.rock() == rock && !state.getValue(ResourceBlock.DEPLETED);
             }
 
             @Override
-            int interval(ServerPlayerEntity p) {
+            int interval(ServerPlayer p) {
                 // Dragon/infernal pickaxes have a 1/6 chance of a 2-tick roll, the crystal pickaxe 1/4.
                 Tools.Tool best = Tools.bestPickaxeTool(p, Players.data(p).skills());
                 return best == null ? 8 : best.miningTicks(p.getRandom().nextDouble());
             }
 
             @Override
-            boolean roll(ServerPlayerEntity p, ServerWorld world, BlockState state, Random random) {
+            boolean roll(ServerPlayer p, ServerLevel world, BlockState state, RandomSource random) {
                 SkillSet s = Players.data(p).skills();
                 if (Tools.bestPickaxe(p, s) == null) {
                     return false;
                 }
-                world.playSound(null, pos, SoundEvents.BLOCK_STONE_HIT, SoundCategory.PLAYERS, 1.0f, 0.8f + random.nextFloat() * 0.4f);
+                world.playSound(null, pos, SoundEvents.STONE_HIT, SoundSource.PLAYERS, 1.0f, 0.8f + random.nextFloat() * 0.4f);
                 double chance = Chance.lerp(s.currentLevel(Skill.MINING) + miningBoost.applyAsInt(p), rock.low(), rock.high());
                 if (random.nextDouble() >= chance) {
                     return true;
@@ -229,13 +228,13 @@ public final class Gathering {
         });
     }
 
-    private static String rollMiningGem(Random random) {
+    private static String rollMiningGem(RandomSource random) {
         int r = random.nextInt(8);
         Gem gem = r < 4 ? Gem.SAPPHIRE : r < 6 ? Gem.EMERALD : r < 7 ? Gem.RUBY : Gem.DIAMOND;
         return gem.uncutItem();
     }
 
-    private static String rollGemRock(Random random) {
+    private static String rollGemRock(RandomSource random) {
         int r = random.nextInt(128);
         Gem gem;
         if (r < 60) {
@@ -258,7 +257,7 @@ public final class Gathering {
 
     // ---------------- Fishing ----------------
 
-    public static void fish(ServerPlayerEntity player, BlockPos pos, FishingSpot spot) {
+    public static void fish(ServerPlayer player, BlockPos pos, FishingSpot spot) {
         if (!Stun.check(player)) {
             return;
         }
@@ -289,12 +288,12 @@ public final class Gathering {
         });
         ActionManager.start(player, new GatherAction(pos, 5) {
             @Override
-            boolean valid(ServerPlayerEntity p, BlockState state) {
+            boolean valid(ServerPlayer p, BlockState state) {
                 return state.getBlock() instanceof FishingSpotBlock b && b.spot() == spot;
             }
 
             @Override
-            boolean roll(ServerPlayerEntity p, ServerWorld world, BlockState state, Random random) {
+            boolean roll(ServerPlayer p, ServerLevel world, BlockState state, RandomSource random) {
                 if (!hasTool(p, method)) {
                     return false;
                 }
@@ -307,7 +306,7 @@ public final class Gathering {
                     return false;
                 }
                 int level = Players.data(p).skills().currentLevel(Skill.FISHING);
-                world.playSound(null, pos, SoundEvents.ENTITY_FISHING_BOBBER_SPLASH, SoundCategory.PLAYERS, 0.4f, 1.0f);
+                world.playSound(null, pos, SoundEvents.FISHING_BOBBER_SPLASH, SoundSource.PLAYERS, 0.4f, 1.0f);
                 // Dragon/infernal harpoons catch 20% faster, the crystal harpoon 35%.
                 String harpoon = method == FishingMethod.HARPOON ? Tools.bestHarpoon(p, Players.data(p).skills()) : null;
                 double boost = harpoon == null ? 1.0 : SpecialTool.harpoonMultiplier(harpoon);
@@ -350,8 +349,8 @@ public final class Gathering {
     }
 
     /** Uses the method matching the tool in hand, otherwise the first method whose tool you carry. */
-    private static FishingMethod chooseMethod(ServerPlayerEntity player, FishingSpot spot) {
-        ItemStack held = player.getMainHandStack();
+    private static FishingMethod chooseMethod(ServerPlayer player, FishingSpot spot) {
+        ItemStack held = player.getMainHandItem();
         String heldId = held.isEmpty() ? "" : Inv.idOf(held);
         for (FishingMethod m : spot.catches().keySet()) {
             if (m.tool().equals(heldId) || (m == FishingMethod.HARPOON && SpecialTool.isHarpoon(heldId) && hasTool(player, m))) {
@@ -367,7 +366,7 @@ public final class Gathering {
     }
 
     /** Whether the player carries a tool for a method (any usable harpoon works for harpooning). */
-    private static boolean hasTool(ServerPlayerEntity player, FishingMethod method) {
+    private static boolean hasTool(ServerPlayer player, FishingMethod method) {
         if (method == FishingMethod.HARPOON) {
             return Tools.bestHarpoon(player, Players.data(player).skills()) != null;
         }
@@ -386,22 +385,22 @@ public final class Gathering {
             this.baseInterval = interval;
         }
 
-        abstract boolean valid(ServerPlayerEntity player, BlockState state);
+        abstract boolean valid(ServerPlayer player, BlockState state);
 
-        abstract boolean roll(ServerPlayerEntity player, ServerWorld world, BlockState state, Random random);
+        abstract boolean roll(ServerPlayer player, ServerLevel world, BlockState state, RandomSource random);
 
-        int interval(ServerPlayerEntity player) {
+        int interval(ServerPlayer player) {
             return baseInterval;
         }
 
         @Override
-        public boolean tick(ServerPlayerEntity player, long gameTick) {
-            ServerWorld world = (ServerWorld) player.getWorld();
+        public boolean tick(ServerPlayer player, long gameTick) {
+            ServerLevel world = (ServerLevel) player.level();
             BlockState state = world.getBlockState(pos);
-            if (!valid(player, state) || player.squaredDistanceTo(net.minecraft.util.math.Vec3d.ofCenter(pos)) > REACH_SQ) {
+            if (!valid(player, state) || player.distanceToSqr(net.minecraft.world.phys.Vec3.atCenterOf(pos)) > REACH_SQ) {
                 return false;
             }
-            player.swingHand(Hand.MAIN_HAND, true);
+            player.swing(InteractionHand.MAIN_HAND, true);
             if (target <= 0) {
                 target = interval(player);
             }

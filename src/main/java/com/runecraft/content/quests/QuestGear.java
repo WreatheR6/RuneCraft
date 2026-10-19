@@ -12,12 +12,11 @@ import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.TypedActionResult;
-
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -38,41 +37,41 @@ final class QuestGear {
     static void init() {
         QuestBook book = QuestBook.get();
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            ItemStack stack = player.getStackInHand(hand);
+            ItemStack stack = player.getItemInHand(hand);
             QuestBook.Gear gear = book.gear.get(Inv.idOf(stack));
             if (gear == null) {
-                return TypedActionResult.pass(stack);
+                return InteractionResultHolder.pass(stack);
             }
-            if (player instanceof ServerPlayerEntity sp) {
+            if (player instanceof ServerPlayer sp) {
                 wear(sp, gear, stack);
             }
-            return TypedActionResult.success(stack, world.isClient());
+            return InteractionResultHolder.sidedSuccess(stack, world.isClientSide());
         });
         // Quest-locked armour and shields (rune platebody, green d'hide body: Dragon Slayer I) can't be worn.
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            if (server.getTicks() % 20 == 0) {
-                for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
+            if (server.getTickCount() % 20 == 0) {
+                for (ServerPlayer p : server.getPlayerList().getPlayers()) {
                     enforceWornGates(p);
                 }
             }
         });
         // The worn quest gear is part of the gear totals PlayerHitCalc and the defence roll use (no separate multiplier).
         com.runecraft.combat.HitCalcBridge.extraWornStats = QuestGear::bonus;
-        com.runecraft.combat.HitCalcBridge.extraWornIds = p -> QuestsState.get(p).wornAll(p.getUuid()).values();
+        com.runecraft.combat.HitCalcBridge.extraWornIds = p -> QuestsState.get(p).wornAll(p.getUUID()).values();
         CombatHooks.addModifier(new CombatHooks.PlayerAttackModifier() {
             @Override
-            public double accuracy(ServerPlayerEntity player, LivingEntity target, AttackType type) {
+            public double accuracy(ServerPlayer player, LivingEntity target, AttackType type) {
                 return locked(player) ? 0.0 : 1.0;
             }
 
             @Override
-            public double maxHit(ServerPlayerEntity player, LivingEntity target, AttackType type) {
+            public double maxHit(ServerPlayer player, LivingEntity target, AttackType type) {
                 return locked(player) ? 0.0 : 1.0;
             }
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            if (server.getTicks() % 20 == 0 && !book.armourGates.isEmpty()) {
-                for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+            if (server.getTickCount() % 20 == 0 && !book.armourGates.isEmpty()) {
+                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                     enforceArmourGates(player, book);
                 }
             }
@@ -83,9 +82,9 @@ final class QuestGear {
             EquipmentSlot.FEET, EquipmentSlot.OFFHAND};
 
     /** Takes off quest-locked armour (rune platebody without Dragon Slayer I...), as OSRS refuses to equip it. */
-    private static void enforceArmourGates(ServerPlayerEntity player, QuestBook book) {
+    private static void enforceArmourGates(ServerPlayer player, QuestBook book) {
         for (EquipmentSlot slot : GATED_SLOTS) {
-            ItemStack stack = player.getEquippedStack(slot);
+            ItemStack stack = player.getItemBySlot(slot);
             if (stack.isEmpty()) {
                 continue;
             }
@@ -97,13 +96,13 @@ final class QuestGear {
             if (q == null || Players.data(player).questComplete(q)) {
                 continue;
             }
-            player.equipStack(slot, ItemStack.EMPTY);
+            player.setItemSlot(slot, ItemStack.EMPTY);
             Inv.give(player, stack);
             Msg.red(player, "You need to complete " + q.displayName() + " to wear that.");
         }
     }
 
-    static void wear(ServerPlayerEntity player, QuestBook.Gear gear, ItemStack stack) {
+    static void wear(ServerPlayer player, QuestBook.Gear gear, ItemStack stack) {
         if (gear.requiredQuest() != null) {
             QuestInfo q = ContentRegistry.quest(gear.requiredQuest());
             if (q != null && !Players.data(player).questComplete(q)) {
@@ -112,8 +111,8 @@ final class QuestGear {
             }
         }
         String slot = gear.slot().name().toLowerCase();
-        String old = QuestsState.get(player).wear(player.getUuid(), slot, gear.item());
-        stack.decrement(1);
+        String old = QuestsState.get(player).wear(player.getUUID(), slot, gear.item());
+        stack.shrink(1);
         if (old != null) {
             Inv.give(player, old, 1);
         }
@@ -121,8 +120,8 @@ final class QuestGear {
         com.runecraft.network.ServerNetworking.sync(player);
     }
 
-    static void remove(ServerPlayerEntity player, String slot) {
-        String old = QuestsState.get(player).wear(player.getUuid(), slot, null);
+    static void remove(ServerPlayer player, String slot) {
+        String old = QuestsState.get(player).wear(player.getUUID(), slot, null);
         if (old == null) {
             Msg.game(player, "You aren't wearing anything in your " + slot + " slot.");
             return;
@@ -133,10 +132,10 @@ final class QuestGear {
     }
 
     /** Total bonuses of the accessories a player wears. */
-    static EquipmentStats bonus(ServerPlayerEntity player) {
+    static EquipmentStats bonus(ServerPlayer player) {
         EquipmentStats total = EquipmentStats.NONE;
         Map<String, QuestBook.Gear> gear = QuestBook.get().gear;
-        for (String item : QuestsState.get(player).wornAll(player.getUuid()).values()) {
+        for (String item : QuestsState.get(player).wornAll(player.getUUID()).values()) {
             QuestBook.Gear g = gear.get(item);
             if (g != null) {
                 total = total.plus(g.stats());
@@ -149,10 +148,10 @@ final class QuestGear {
             EquipmentSlot.OFFHAND};
 
     /** Takes off any worn armour or shield whose quest the player hasn't completed. */
-    static void enforceWornGates(ServerPlayerEntity player) {
+    static void enforceWornGates(ServerPlayer player) {
         Map<String, String> gates = QuestBook.get().weaponGates;
         for (EquipmentSlot slot : WORN) {
-            ItemStack worn = player.getEquippedStack(slot);
+            ItemStack worn = player.getItemBySlot(slot);
             if (worn.isEmpty()) {
                 continue;
             }
@@ -162,17 +161,17 @@ final class QuestGear {
                 continue;
             }
             ItemStack copy = worn.copy();
-            player.equipStack(slot, ItemStack.EMPTY);
-            if (!player.getInventory().insertStack(copy)) {
-                player.dropItem(copy, false);
+            player.setItemSlot(slot, ItemStack.EMPTY);
+            if (!player.getInventory().add(copy)) {
+                player.drop(copy, false);
             }
             Msg.red(player, "You need to complete " + q.displayName() + " to wear that.");
         }
     }
 
     /** True when the wielded weapon needs a quest the player hasn't completed. */
-    static boolean locked(ServerPlayerEntity player) {
-        String weapon = Inv.idOf(player.getMainHandStack());
+    static boolean locked(ServerPlayer player) {
+        String weapon = Inv.idOf(player.getMainHandItem());
         String quest = QuestBook.get().weaponGates.get(weapon);
         if (quest == null) {
             return false;
@@ -181,9 +180,9 @@ final class QuestGear {
         if (q == null || Players.data(player).questComplete(q)) {
             return false;
         }
-        long now = player.getWorld().getTime();
-        if (now - LAST_WARNING.getOrDefault(player.getUuid(), -1000L) > 100) {
-            LAST_WARNING.put(player.getUuid(), now);
+        long now = player.level().getGameTime();
+        if (now - LAST_WARNING.getOrDefault(player.getUUID(), -1000L) > 100) {
+            LAST_WARNING.put(player.getUUID(), now);
             Msg.red(player, "You need to complete " + q.displayName() + " to wield that weapon.");
         }
         return true;

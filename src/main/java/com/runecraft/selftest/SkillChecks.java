@@ -34,22 +34,21 @@ import com.runecraft.registry.ModEntities;
 import com.runecraft.skill.HunterService;
 import com.runecraft.util.Inv;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
-
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -109,9 +108,9 @@ final class SkillChecks {
 
     /** Daeyalt essence is crafted first, like pure essence, for 50% more XP. */
     private String daeyaltEssence() {
-        p().getInventory().clear();
+        p().getInventory().clearContent();
         RuneAltar altar = RuneAltar.AIR;
-        BlockPos pos = placeNear(ModBlocks.ALTARS.get(altar).getDefaultState());
+        BlockPos pos = placeNear(ModBlocks.ALTARS.get(altar).defaultBlockState());
         give("daeyalt_essence", 4);
         give("pure_essence", 2);
         String rune = altar.rune().itemId();
@@ -123,17 +122,17 @@ final class SkillChecks {
                     + " alone), left " + Inv.count(p(), "daeyalt_essence") + " daeyalt and " + Inv.count(p(), "pure_essence") + " pure");
         }
         int got = gained(Skill.RUNECRAFT, xp0, (int) Math.round(altar.xp() * 4 * 1.5 * 10), "daeyalt essence");
-        p().getInventory().clear();
+        p().getInventory().clearContent();
         return want + " " + rune + ", +" + got / 10.0 + " xp (1.5x)";
     }
 
     /** Aether runes at the Cosmic Altar with Magic Imbue and a binding necklace: certain, one catalyst per rune. */
     private String aetherRunes() {
-        p().getInventory().clear();
-        java.util.function.Predicate<ServerPlayerEntity> imbued = com.runecraft.skill.Runecrafting.imbued;
+        p().getInventory().clearContent();
+        java.util.function.Predicate<ServerPlayer> imbued = com.runecraft.skill.Runecrafting.imbued;
         com.runecraft.skill.Runecrafting.imbued = q -> true;
         try {
-            BlockPos pos = placeNear(ModBlocks.ALTARS.get(RuneAltar.COSMIC).getDefaultState());
+            BlockPos pos = placeNear(ModBlocks.ALTARS.get(RuneAltar.COSMIC).defaultBlockState());
             sys().jewelleryCharges.remove("binding_necklace");
             sys().worn.put(com.runecraft.osrs.content.systems.Jewellery.Slot.NECK, Inv.stack("binding_necklace", 1));
             hold("soul_rune", 3);
@@ -157,13 +156,13 @@ final class SkillChecks {
             com.runecraft.skill.Runecrafting.imbued = imbued;
             sys().worn.remove(com.runecraft.osrs.content.systems.Jewellery.Slot.NECK);
             sys().jewelleryCharges.remove("binding_necklace");
-            p().getInventory().clear();
+            p().getInventory().clearContent();
         }
     }
 
     /** The celestial ring: +4 invisible Mining while worn, charged with stardust by using it. */
     private String celestialRing() {
-        p().getInventory().clear();
+        p().getInventory().clearContent();
         com.runecraft.osrs.content.systems.Jewellery.Slot ring = com.runecraft.osrs.content.systems.Jewellery.Slot.RING;
         sys().worn.put(ring, Inv.stack("celestial_ring_uncharged", 1));
         try {
@@ -182,7 +181,7 @@ final class SkillChecks {
             return "+4 Mining, charged with 25 stardust";
         } finally {
             sys().worn.remove(ring);
-            p().getInventory().clear();
+            p().getInventory().clearContent();
         }
     }
 
@@ -220,11 +219,11 @@ final class SkillChecks {
 
     /** Sailing flax seeds planted in a hops patch (3 seeds, 16 Farming XP). */
     private String flaxPatch() {
-        p().getInventory().clear();
+        p().getInventory().clearContent();
         BlockPos pos = placeNear(com.runecraft.content.minigames.Arena.module("hops_patch"));
         // The planted crop is saved with the world and the growing pot sits above the patch: start from an empty patch
         // (an earlier run may have left one) and empty it again afterwards.
-        c.track(pos.up());
+        c.track(pos.above());
         com.runecraft.content.skilling.SkillingHooks.clearPatch(c.world, pos);
         try {
             hold("flax_seed", 3);
@@ -238,13 +237,13 @@ final class SkillChecks {
             return "planted 3 flax seeds, +" + got / 10.0 + " xp";
         } finally {
             com.runecraft.content.skilling.SkillingHooks.clearPatch(c.world, pos);
-            p().getInventory().clear();
+            p().getInventory().clearContent();
         }
     }
 
     /** Drift net fishing: set a net on an anchor, two shoals swim in (Fishing + Hunter XP), fill it, harvest gives the rolls. */
     private String driftNet() {
-        p().getInventory().clear();
+        p().getInventory().clearContent();
         BlockPos pos = placeNear(com.runecraft.content.minigames.Arena.module(com.runecraft.osrs.content.skilling.DriftNetFishing.ANCHOR));
         // Nets are saved per player and anchor with the world: start clean and forget the net afterwards.
         com.runecraft.content.skilling.DriftNetHooks.clear(p(), c.world, pos);
@@ -277,8 +276,8 @@ final class SkillChecks {
                 throw failure("harvesting left " + com.runecraft.content.skilling.DriftNetHooks.caught(p(), c.world, pos) + " shoals in the net");
             }
             int loot = 0;
-            for (int i = 0; i < p().getInventory().size(); i++) {
-                loot += p().getInventory().getStack(i).getCount();
+            for (int i = 0; i < p().getInventory().getContainerSize(); i++) {
+                loot += p().getInventory().getItem(i).getCount();
             }
             if (loot < 1) {
                 throw failure("harvesting a " + shoals + "-shoal drift net gave " + loot + " items");
@@ -287,7 +286,7 @@ final class SkillChecks {
                     + loot + " items";
         } finally {
             com.runecraft.content.skilling.DriftNetHooks.clear(p(), c.world, pos);
-            p().getInventory().clear();
+            p().getInventory().clearContent();
         }
     }
 
@@ -295,7 +294,7 @@ final class SkillChecks {
         return new AssertionError(message);
     }
 
-    private ServerPlayerEntity p() {
+    private ServerPlayer p() {
         return c.player;
     }
 
@@ -314,8 +313,8 @@ final class SkillChecks {
             throw failure("item " + id + " is not registered");
         }
         // The fake player is never ticked, so a use delay from an earlier run would never wear off.
-        p().getItemCooldownManager().remove(s.getItem());
-        p().setStackInHand(Hand.MAIN_HAND, s);
+        p().getCooldowns().removeCooldown(s.getItem());
+        p().setItemInHand(InteractionHand.MAIN_HAND, s);
     }
 
     private void give(String id, int count) {
@@ -326,17 +325,17 @@ final class SkillChecks {
     }
 
     /** Right-clicks a block face as a player does (use-block callbacks, the block's onUse, then the held item's useOnBlock). */
-    private ActionResult useBlock(BlockPos pos, Direction side) {
-        p().setSneaking(false);
-        Vec3d at = Vec3d.ofCenter(pos).add(side.getOffsetX() * 0.5, side.getOffsetY() * 0.5, side.getOffsetZ() * 0.5);
-        return p().interactionManager.interactBlock(p(), c.world, p().getMainHandStack(), Hand.MAIN_HAND,
+    private InteractionResult useBlock(BlockPos pos, Direction side) {
+        p().setShiftKeyDown(false);
+        Vec3 at = Vec3.atCenterOf(pos).add(side.getStepX() * 0.5, side.getStepY() * 0.5, side.getStepZ() * 0.5);
+        return p().gameMode.useItemOn(p(), c.world, p().getMainHandItem(), InteractionHand.MAIN_HAND,
                 new BlockHitResult(at, side, pos, false));
     }
 
     /** Right-clicks with the held item as a player does (use-item callbacks, then the item's use). */
-    private ActionResult useItem() {
-        p().setSneaking(false);
-        return p().interactionManager.interactItem(p(), c.world, p().getMainHandStack(), Hand.MAIN_HAND);
+    private InteractionResult useItem() {
+        p().setShiftKeyDown(false);
+        return p().gameMode.useItem(p(), c.world, p().getMainHandItem(), InteractionHand.MAIN_HAND);
     }
 
     /** Advances the player's action one game tick at a time until {@code done} or the action ends. */
@@ -383,13 +382,13 @@ final class SkillChecks {
 
     private String woodcutting() {
         Tree tree = Tree.TREE;
-        return gather(ModBlocks.TREES.get(tree).getDefaultState(), "rune_axe", tree.logItem(), Skill.WOODCUTTING,
+        return gather(ModBlocks.TREES.get(tree).defaultBlockState(), "rune_axe", tree.logItem(), Skill.WOODCUTTING,
                 (int) Math.round(tree.xp() * 10), "tree");
     }
 
     private String mining() {
         Rock rock = Rock.COPPER;
-        return gather(ModBlocks.ROCKS.get(rock).getDefaultState(), "rune_pickaxe", rock.oreItem(), Skill.MINING,
+        return gather(ModBlocks.ROCKS.get(rock).defaultBlockState(), "rune_pickaxe", rock.oreItem(), Skill.MINING,
                 (int) Math.round(rock.xp() * 10), "copper rocks");
     }
 
@@ -397,7 +396,7 @@ final class SkillChecks {
         FishingSpot spot = FishingSpot.SEA_NET_BAIT;
         String fish = spot.catches().get(FishingMethod.NET).get(spot.catches().get(FishingMethod.NET).size() - 1).rawItem();
         // Not waterlogged: on the dry platform the spot can't wander off and spreads no water.
-        BlockState state = ModBlocks.FISHING_SPOTS.get(spot).getDefaultState().with(FishingSpotBlock.WATERLOGGED, false);
+        BlockState state = ModBlocks.FISHING_SPOTS.get(spot).defaultBlockState().setValue(FishingSpotBlock.WATERLOGGED, false);
         hold(FishingMethod.NET.tool(), 1);
         BlockPos pos = placeNear(state);
         int xp0 = xp(Skill.FISHING);
@@ -421,7 +420,7 @@ final class SkillChecks {
         Tree logs = Tree.TREE;
         hold("tinderbox", 1);
         give(logs.logItem(), 1);
-        BlockPos at = p().getBlockPos();
+        BlockPos at = p().blockPosition();
         c.track(at);
         int xp0 = xp(Skill.FIREMAKING);
         useItem();
@@ -485,7 +484,7 @@ final class SkillChecks {
 
     /** A station block placed next to the player ({@code dz} blocks aside) that the returned action right-clicks. */
     private Runnable station(Station station, int dz) {
-        BlockPos pos = c.place(c.near(2, dz), ModBlocks.STATIONS.get(station).getDefaultState());
+        BlockPos pos = c.place(c.near(2, dz), ModBlocks.STATIONS.get(station).defaultBlockState());
         return () -> useBlock(pos, Direction.WEST);
     }
 
@@ -502,7 +501,7 @@ final class SkillChecks {
     private String crafting() {
         hold("chisel", 1);
         String gems = make(recipe(MenuType.GEM_CUTTING, "uncut_sapphire", null), MenuType.GEM_CUTTING, "a chisel", this::useItem);
-        p().getInventory().clear();
+        p().getInventory().clearContent();
         hold("needle", 1);
         String leather = make(recipe(MenuType.LEATHERWORKING, null, "leather_gloves"), MenuType.LEATHERWORKING, "a needle",
                 this::useItem);
@@ -516,7 +515,7 @@ final class SkillChecks {
 
     private String smithing() {
         String bar = make(recipe(MenuType.SMELTING, null, "bronze_bar"), MenuType.SMELTING, "a furnace", station(Station.FURNACE));
-        p().getInventory().clear();
+        p().getInventory().clearContent();
         hold("hammer", 1);
         String dagger = make(recipe(MenuType.SMITHING, null, "bronze_dagger"), MenuType.SMITHING, "an anvil", station(Station.ANVIL, 2));
         return bar + "; " + dagger;
@@ -539,7 +538,7 @@ final class SkillChecks {
                     + Inv.count(p(), herb.cleanItem()) + " clean");
         }
         int clean = gained(Skill.HERBLORE, xp0, (int) Math.round(herb.cleanXp() * 10), "cleaning");
-        p().getInventory().clear();
+        p().getInventory().clearContent();
         hold("vial_of_water", 1);
         String unf = make(recipe(MenuType.HERBLORE, null, "guam_potion_unf"), MenuType.HERBLORE, "a vial of water", this::useItem);
         String potion = make(recipe(MenuType.HERBLORE, null, "attack_potion"), MenuType.HERBLORE, "an apothecary table",
@@ -554,9 +553,9 @@ final class SkillChecks {
         int n = course.obstacles();
         List<BlockPos> obstacles = new ArrayList<>();
         for (int i = 0; i < n; i++) {
-            BlockState state = ModBlocks.AGILITY_OBSTACLE.getDefaultState().with(AgilityObstacleBlock.COURSE, course.ordinal())
-                    .with(AgilityObstacleBlock.STEP, i);
-            obstacles.add(c.place(c.near(i - n / 2, 4).down(), state));
+            BlockState state = ModBlocks.AGILITY_OBSTACLE.defaultBlockState().setValue(AgilityObstacleBlock.COURSE, course.ordinal())
+                    .setValue(AgilityObstacleBlock.STEP, i);
+            obstacles.add(c.place(c.near(i - n / 2, 4).below(), state));
         }
         int expected = 0;
         for (int i = 0; i < n; i++) {
@@ -565,9 +564,9 @@ final class SkillChecks {
         int laps = data().agilityLaps(course);
         int xp0 = xp(Skill.AGILITY);
         for (BlockPos pos : obstacles) {
-            p().teleport(c.world, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, p().getYaw(), p().getPitch());
+            p().teleportTo(c.world, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, p().getYRot(), p().getXRot());
             BlockState state = c.world.getBlockState(pos);
-            state.getBlock().onSteppedOn(c.world, pos, state, p());
+            state.getBlock().stepOn(c.world, pos, state, p());
         }
         c.home();
         if (data().agilityLaps(course) != laps + 1) {
@@ -609,13 +608,13 @@ final class SkillChecks {
             throw failure(Monster.MAN.entity() + " is not a living entity");
         }
         BlockPos pos = c.near(2, 0);
-        man.refreshPositionAndAngles(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0f, 0f);
-        if (man instanceof MobEntity mob) {
-            mob.initialize(c.world, c.world.getLocalDifficulty(pos), SpawnReason.SPAWNER, null, null);
-            mob.setPersistent();
-            mob.setAiDisabled(true);
+        man.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0f, 0f);
+        if (man instanceof Mob mob) {
+            mob.finalizeSpawn(c.world, c.world.getCurrentDifficultyAt(pos), MobSpawnType.SPAWNER, null, null);
+            mob.setPersistenceRequired();
+            mob.setNoAi(true);
         }
-        c.world.spawnEntity(man);
+        c.world.addFreshEntity(man);
         Thieving.Pickpocket kind = Thieving.Pickpocket.MAN;
         String pouch = Thieving.pouchId(kind.pouch());
         int xp0 = xp(Skill.THIEVING);
@@ -624,7 +623,7 @@ final class SkillChecks {
             tries++;
             data().stunnedUntil = 0; // a failed attempt stuns
             c.heal();
-            UseEntityCallback.EVENT.invoker().interact(p(), c.world, Hand.MAIN_HAND, man, null);
+            UseEntityCallback.EVENT.invoker().interact(p(), c.world, InteractionHand.MAIN_HAND, man, null);
         }
         int got = gained(Skill.THIEVING, xp0, (int) Math.round(kind.xp() * 10), "pickpocketing a man (" + tries + " tries)");
         if (Inv.count(p(), pouch) <= 0) {
@@ -635,7 +634,7 @@ final class SkillChecks {
 
     private String stall() {
         Thieving.Stall stall = Thieving.Stall.CAKE;
-        BlockPos pos = placeNear(ModBlocks.STALLS.get(stall).getDefaultState());
+        BlockPos pos = placeNear(ModBlocks.STALLS.get(stall).defaultBlockState());
         int xp0 = xp(Skill.THIEVING);
         useBlock(pos, Direction.WEST);
         int got = gained(Skill.THIEVING, xp0, (int) Math.round(stall.xp() * 10), "stealing from the " + stall.displayName());
@@ -648,7 +647,7 @@ final class SkillChecks {
         if (loot.isEmpty()) {
             throw failure("stealing from the " + stall.displayName() + " gave none of its loot");
         }
-        if (!c.world.getBlockState(pos).get(StallBlock.EMPTY)) {
+        if (!c.world.getBlockState(pos).getValue(StallBlock.EMPTY)) {
             throw failure("the stall was not emptied");
         }
         return loot + ", +" + got / 10.0 + " xp";
@@ -656,39 +655,39 @@ final class SkillChecks {
 
     private String farming() {
         Herb herb = Herb.GUAM;
-        BlockPos pos = placeNear(ModBlocks.HERB_PATCH.getDefaultState());
+        BlockPos pos = placeNear(ModBlocks.HERB_PATCH.defaultBlockState());
         int xp0 = xp(Skill.FARMING);
         hold("compost", 1);
         useBlock(pos, Direction.UP);
-        if (c.world.getBlockState(pos).get(FarmingPatchBlock.COMPOST) != 1) {
+        if (c.world.getBlockState(pos).getValue(FarmingPatchBlock.COMPOST) != 1) {
             throw failure("using compost on the patch did not compost it");
         }
-        p().getInventory().clear();
+        p().getInventory().clearContent();
         hold(herb.seedItem(), 1);
         give("seed_dibber", 1);
         useBlock(pos, Direction.UP);
         BlockState planted = c.world.getBlockState(pos);
-        if (planted.get(HerbPatchBlock.CROP) != herb.ordinal() + 1 || planted.get(FarmingPatchBlock.STAGE) != 1) {
+        if (planted.getValue(HerbPatchBlock.CROP) != herb.ordinal() + 1 || planted.getValue(FarmingPatchBlock.STAGE) != 1) {
             throw failure("planting a " + herb.seedItem() + " left the patch at " + planted);
         }
         // Growing: random ticks (the gardener's protection keeps disease out of the check).
-        c.world.setBlockState(pos, planted.with(FarmingPatchBlock.PROTECTED, true));
+        c.world.setBlockAndUpdate(pos, planted.setValue(FarmingPatchBlock.PROTECTED, true));
         int ticks = 0;
-        while (c.world.getBlockState(pos).get(FarmingPatchBlock.STAGE) < 4 && ticks < 20_000) {
+        while (c.world.getBlockState(pos).getValue(FarmingPatchBlock.STAGE) < 4 && ticks < 20_000) {
             c.world.getBlockState(pos).randomTick(c.world, pos, c.world.getRandom());
             ticks++;
         }
         BlockState grown = c.world.getBlockState(pos);
-        if (grown.get(FarmingPatchBlock.STAGE) < 4) {
+        if (grown.getValue(FarmingPatchBlock.STAGE) < 4) {
             throw failure("the herb did not grow in " + ticks + " random ticks: " + grown);
         }
-        p().getInventory().clear();
+        p().getInventory().clearContent();
         useBlock(pos, Direction.UP);
         int picked = Inv.count(p(), herb.grimyItem());
         if (picked <= 0) {
             throw failure("harvesting the grown patch gave no " + herb.grimyItem());
         }
-        if (c.world.getBlockState(pos).get(HerbPatchBlock.CROP) != 0) {
+        if (c.world.getBlockState(pos).getValue(HerbPatchBlock.CROP) != 0) {
             throw failure("the patch was not cleared after the harvest");
         }
         return "composted, planted, grown in " + ticks + " random ticks, picked " + picked + ", +"
@@ -719,10 +718,10 @@ final class SkillChecks {
             throw failure("no landmark lies in a region with birds to snare");
         }
         c.world.getChunk(floor.getX() >> 4, floor.getZ() >> 4);
-        c.place(floor, Blocks.SMOOTH_STONE.getDefaultState());
-        BlockPos at = floor.up();
+        c.place(floor, Blocks.SMOOTH_STONE.defaultBlockState());
+        BlockPos at = floor.above();
         c.track(at);
-        c.place(at, Blocks.AIR.getDefaultState());
+        c.place(at, Blocks.AIR.defaultBlockState());
         hold("bird_snare", 1);
         useBlock(floor, Direction.UP);
         BlockState laid = c.world.getBlockState(at);
@@ -733,21 +732,21 @@ final class SkillChecks {
             throw failure("the snare was not used up when laid");
         }
         int rolls = 0;
-        while (!c.world.getBlockState(at).get(TrapBlock.CAUGHT) && rolls < 40) {
+        while (!c.world.getBlockState(at).getValue(TrapBlock.CAUGHT) && rolls < 40) {
             HunterService.checkTrap(c.world, at, c.world.getBlockState(at), block);
             rolls++;
         }
         String how = rolls + " checks";
-        if (!c.world.getBlockState(at).get(TrapBlock.CAUGHT)) {
+        if (!c.world.getBlockState(at).getValue(TrapBlock.CAUGHT)) {
             if (c.realPlayer()) {
                 throw failure("no " + bird.displayName() + " caught in " + rolls + " trap checks at 99 Hunter");
             }
             // The trap looks its hunter up in the world's player list, which the fake player isn't in.
-            c.world.setBlockState(at, c.world.getBlockState(at).with(TrapBlock.CAUGHT, true));
+            c.world.setBlockAndUpdate(at, c.world.getBlockState(at).setValue(TrapBlock.CAUGHT, true));
             how = "catch set by hand (the fake player is not in the world's player list)";
         }
         int xp0 = xp(Skill.HUNTER);
-        p().getInventory().clear();
+        p().getInventory().clearContent();
         useBlock(at, Direction.UP);
         if (c.world.getBlockState(at).getBlock() instanceof TrapBlock) {
             throw failure("collecting did not take the trap down");
@@ -768,7 +767,7 @@ final class SkillChecks {
 
     private String runecrafting() {
         RuneAltar altar = RuneAltar.AIR;
-        BlockPos pos = placeNear(ModBlocks.ALTARS.get(altar).getDefaultState());
+        BlockPos pos = placeNear(ModBlocks.ALTARS.get(altar).defaultBlockState());
         give("pure_essence", 5);
         String rune = altar.rune().itemId();
         int xp0 = xp(Skill.RUNECRAFT);
@@ -794,7 +793,7 @@ final class SkillChecks {
             throw failure("burying left " + Inv.count(p(), "bones") + " of 2 bones");
         }
         int got = gained(Skill.PRAYER, xp0, (int) Math.round(bone.xp() * 10), "burying bones");
-        p().getInventory().clear();
+        p().getInventory().clearContent();
         data().setPrayerPoints(1);
         Runnable altar = station(Station.PRAYER_ALTAR);
         altar.run();

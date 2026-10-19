@@ -2,19 +2,19 @@ package com.runecraft.block;
 
 import com.runecraft.osrs.FarmingDisease;
 import com.runecraft.skill.FarmingService;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.state.property.BooleanProperty;
-import net.minecraft.state.property.IntProperty;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
+import net.minecraft.world.phys.BlockHitResult;
 
 /**
  * A farming patch. {@code crop} 0 is empty, otherwise the 1-based index of the crop; {@code stage}
@@ -30,28 +30,28 @@ import net.minecraft.world.World;
  * flower that protects it. A living kronos plant sometimes grows a crop two steps at once.
  */
 public abstract class FarmingPatchBlock extends Block {
-    public static final IntProperty STAGE = IntProperty.of("stage", 0, 4);
+    public static final IntegerProperty STAGE = IntegerProperty.create("stage", 0, 4);
     /** 0 healthy, 1 diseased, 2 dead. */
-    public static final IntProperty DISEASE = IntProperty.of("disease", 0, 2);
+    public static final IntegerProperty DISEASE = IntegerProperty.create("disease", 0, 2);
     /** 0 none, 1 compost, 2 supercompost, 3 ultracompost. */
-    public static final IntProperty COMPOST = IntProperty.of("compost", 0, 3);
-    public static final BooleanProperty PROTECTED = BooleanProperty.of("protected");
+    public static final IntegerProperty COMPOST = IntegerProperty.create("compost", 0, 3);
+    public static final BooleanProperty PROTECTED = BooleanProperty.create("protected");
 
     /** Whether a fully grown flower (or scarecrow) next to an allotment protects its crop (produce id). */
     public interface FlowerCheck {
-        boolean protects(ServerWorld world, BlockPos pos, String crop);
+        boolean protects(ServerLevel world, BlockPos pos, String crop);
     }
 
     /** Set by the skilling module (flower patches keep their state there). */
     public static FlowerCheck flowers = (world, pos, crop) -> false;
     /** Set by the skilling module: the living anima plant ("kronos", "iasor", "attas") or null. */
-    public static java.util.function.Function<ServerWorld, String> anima = world -> null;
+    public static java.util.function.Function<ServerLevel, String> anima = world -> null;
 
-    protected FarmingPatchBlock(Settings settings) {
+    protected FarmingPatchBlock(Properties settings) {
         super(settings);
     }
 
-    public abstract IntProperty cropProperty();
+    public abstract IntegerProperty cropProperty();
 
     public abstract boolean isHerbPatch();
 
@@ -64,46 +64,46 @@ public abstract class FarmingPatchBlock extends Block {
     protected abstract int growthOdds(BlockState state);
 
     @Override
-    public boolean hasRandomTicks(BlockState state) {
-        int stage = state.get(STAGE);
-        return state.get(cropProperty()) > 0 && stage >= 1 && stage < 4 && state.get(DISEASE) < 2;
+    public boolean isRandomlyTicking(BlockState state) {
+        int stage = state.getValue(STAGE);
+        return state.getValue(cropProperty()) > 0 && stage >= 1 && stage < 4 && state.getValue(DISEASE) < 2;
     }
 
     @Override
     @SuppressWarnings("deprecation")
-    public void randomTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
-        if (!hasRandomTicks(state) || random.nextInt(growthOdds(state)) != 0) {
+    public void randomTick(BlockState state, ServerLevel world, BlockPos pos, RandomSource random) {
+        if (!isRandomlyTicking(state) || random.nextInt(growthOdds(state)) != 0) {
             return;
         }
-        if (state.get(DISEASE) == 1) {
+        if (state.getValue(DISEASE) == 1) {
             // Left untreated for a whole growth cycle: the crop dies.
-            world.setBlockState(pos, state.with(DISEASE, 2), Block.NOTIFY_ALL);
+            world.setBlock(pos, state.setValue(DISEASE, 2), Block.UPDATE_ALL);
             return;
         }
         boolean free = com.runecraft.world.Gielinor.is(world) && FarmingDisease.diseaseFreeArea(
                 com.runecraft.osrs.GielinorMap.toOsrsX(pos.getX()), com.runecraft.osrs.GielinorMap.toOsrsY(pos.getZ()));
         String plant = anima.apply(world);
         int base = isHerbPatch() ? FarmingDisease.BASE_CHANCE : FarmingDisease.ALLOTMENT_CHANCE;
-        int chance = free ? 0 : FarmingDisease.chance(base, state.get(COMPOST), "iasor".equals(plant));
+        int chance = free ? 0 : FarmingDisease.chance(base, state.getValue(COMPOST), "iasor".equals(plant));
         String crop = cropId(state);
-        boolean safe = state.get(PROTECTED) || (chance > 0 && crop != null && flowers.protects(world, pos, crop));
+        boolean safe = state.getValue(PROTECTED) || (chance > 0 && crop != null && flowers.protects(world, pos, crop));
         if (FarmingDisease.rollDisease(chance, safe, random::nextInt)) {
-            world.setBlockState(pos, state.with(DISEASE, 1), Block.NOTIFY_ALL);
+            world.setBlock(pos, state.setValue(DISEASE, 1), Block.UPDATE_ALL);
             return;
         }
         int grow = "kronos".equals(plant) && random.nextInt(100) < FarmingDisease.KRONOS_SKIP_PERCENT ? 2 : 1;
-        world.setBlockState(pos, state.with(STAGE, Math.min(4, state.get(STAGE) + grow)), Block.NOTIFY_ALL);
+        world.setBlock(pos, state.setValue(STAGE, Math.min(4, state.getValue(STAGE) + grow)), Block.UPDATE_ALL);
     }
 
     @Override
     @SuppressWarnings("deprecation")
-    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
-        if (hand != Hand.MAIN_HAND) {
-            return ActionResult.PASS;
+    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        if (hand != InteractionHand.MAIN_HAND) {
+            return InteractionResult.PASS;
         }
-        if (!world.isClient() && player instanceof ServerPlayerEntity sp) {
-            FarmingService.use(sp, (ServerWorld) world, pos, state, this);
+        if (!world.isClientSide() && player instanceof ServerPlayer sp) {
+            FarmingService.use(sp, (ServerLevel) world, pos, state, this);
         }
-        return ActionResult.success(world.isClient());
+        return InteractionResult.sidedSuccess(world.isClientSide());
     }
 }

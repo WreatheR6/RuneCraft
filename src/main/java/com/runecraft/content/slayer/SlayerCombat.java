@@ -17,14 +17,13 @@ import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.ItemStack;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -46,16 +45,16 @@ final class SlayerCombat {
             // salve amulet) is part of com.runecraft.osrs.PlayerHitCalc, applied through combat.HitCalcBridge.
 
             @Override
-            public int afterRoll(ServerPlayerEntity player, LivingEntity target, AttackType type, int damage) {
+            public int afterRoll(ServerPlayer player, LivingEntity target, AttackType type, int damage) {
                 return SlayerCombat.afterRoll(player, target, type, damage);
             }
         });
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
-            if (world.isClient() || hand != Hand.MAIN_HAND || !(player instanceof ServerPlayerEntity sp)
+            if (world.isClientSide() || hand != InteractionHand.MAIN_HAND || !(player instanceof ServerPlayer sp)
                     || !(entity instanceof LivingEntity living)) {
-                return ActionResult.PASS;
+                return InteractionResult.PASS;
             }
-            return useFinisher(sp, living) ? ActionResult.SUCCESS : ActionResult.PASS;
+            return useFinisher(sp, living) ? InteractionResult.SUCCESS : InteractionResult.PASS;
         });
         ServerTickEvents.END_SERVER_TICK.register(SlayerCombat::tick);
     }
@@ -74,7 +73,7 @@ final class SlayerCombat {
 
     // ------------------------------------------------------------------ special weapons & finishers
 
-    static int afterRoll(ServerPlayerEntity player, LivingEntity target, AttackType type, int damage) {
+    static int afterRoll(ServerPlayer player, LivingEntity target, AttackType type, int damage) {
         String category = category(target);
         if (category == null) {
             return damage;
@@ -108,8 +107,8 @@ final class SlayerCombat {
         return damage;
     }
 
-    private static boolean canHurtLeafBladed(ServerPlayerEntity player, AttackType type) {
-        String held = Inv.idOf(player.getMainHandStack());
+    private static boolean canHurtLeafBladed(ServerPlayer player, AttackType type) {
+        String held = Inv.idOf(player.getMainHandItem());
         return switch (type) {
             case MAGIC -> SlayerGear.MAGIC_DART_STAVES.contains(held);
             case RANGED -> SlayerGear.BROAD_AMMO.contains(firstAmmo(player));
@@ -118,12 +117,12 @@ final class SlayerCombat {
     }
 
     /** The arrow stack a bow would fire (off hand first, then inventory order), like vanilla. */
-    private static String firstAmmo(ServerPlayerEntity player) {
-        if (isArrow(player.getOffHandStack())) {
-            return Inv.idOf(player.getOffHandStack());
+    private static String firstAmmo(ServerPlayer player) {
+        if (isArrow(player.getOffhandItem())) {
+            return Inv.idOf(player.getOffhandItem());
         }
-        for (int i = 0; i < player.getInventory().size(); i++) {
-            ItemStack s = player.getInventory().getStack(i);
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            ItemStack s = player.getInventory().getItem(i);
             if (isArrow(s)) {
                 return Inv.idOf(s);
             }
@@ -137,10 +136,10 @@ final class SlayerCombat {
     }
 
     /** Using a rock hammer / bag of salt / ice cooler / fungicide spray on a weakened creature finishes it. */
-    private static boolean useFinisher(ServerPlayerEntity player, LivingEntity target) {
+    private static boolean useFinisher(ServerPlayer player, LivingEntity target) {
         String category = category(target);
         SlayerGear.Finisher f = category == null ? null : SlayerGear.finisher(creatureId(target), category);
-        if (f == null || !f.item().equals(Inv.idOf(player.getMainHandStack()))) {
+        if (f == null || !f.item().equals(Inv.idOf(player.getMainHandItem()))) {
             return false;
         }
         int health = (int) Math.ceil(target.getHealth());
@@ -149,7 +148,7 @@ final class SlayerCombat {
             return true;
         }
         if (f.consumed()) {
-            player.getMainHandStack().decrement(1);
+            player.getMainHandItem().shrink(1);
         }
         Msg.game(player, f.verb());
         CombatHandler.applyDamage(player, target, health);
@@ -159,20 +158,20 @@ final class SlayerCombat {
     // ------------------------------------------------------------------ protective equipment
 
     private static void tick(MinecraftServer server) {
-        if (server.getTicks() % 200 == 0) {
+        if (server.getTickCount() % 200 == 0) {
             // Keeps the HUD task counter fresh (also covers players who just joined).
-            server.getPlayerManager().getPlayerList().forEach(SlayerNet::sync);
+            server.getPlayerList().getPlayers().forEach(SlayerNet::sync);
         }
-        if (server.getTicks() % ActionManager.MC_TICKS_PER_GAME_TICK != 0) {
+        if (server.getTickCount() % ActionManager.MC_TICKS_PER_GAME_TICK != 0) {
             return;
         }
         long now = ActionManager.gameTick();
-        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             if (!player.isAlive() || player.isCreative() || player.isSpectator()) {
                 continue;
             }
-            List<OsrsMonsterEntity> near = player.getWorld().getEntitiesByClass(OsrsMonsterEntity.class,
-                    player.getBoundingBox().expand(6), m -> m.isAlive() && m.getTarget() == player);
+            List<OsrsMonsterEntity> near = player.level().getEntitiesOfClass(OsrsMonsterEntity.class,
+                    player.getBoundingBox().inflate(6), m -> m.isAlive() && m.getTarget() == player);
             for (OsrsMonsterEntity mob : near) {
                 MonsterStats ms = mob.stats();
                 SlayerGear.Protection prot = SlayerGear.protection(
@@ -191,19 +190,19 @@ final class SlayerCombat {
         }
     }
 
-    static boolean isProtected(ServerPlayerEntity player, SlayerGear.Protection prot) {
+    static boolean isProtected(ServerPlayer player, SlayerGear.Protection prot) {
         return switch (prot.where()) {
             case HEAD -> {
-                String head = Inv.idOf(player.getEquippedStack(EquipmentSlot.HEAD));
+                String head = Inv.idOf(player.getItemBySlot(EquipmentSlot.HEAD));
                 yield prot.items().contains(head) || SlayerGear.SLAYER_HELMETS.contains(head);
             }
-            case SHIELD -> prot.items().contains(Inv.idOf(player.getOffHandStack()));
-            case FEET -> prot.items().contains(Inv.idOf(player.getEquippedStack(EquipmentSlot.FEET)));
+            case SHIELD -> prot.items().contains(Inv.idOf(player.getOffhandItem()));
+            case FEET -> prot.items().contains(Inv.idOf(player.getItemBySlot(EquipmentSlot.FEET)));
             case INVENTORY -> prot.items().stream().anyMatch(i -> Inv.has(player, i, 1));
         };
     }
 
-    private static void unprotectedHit(ServerPlayerEntity player, OsrsMonsterEntity mob, SlayerGear.Protection prot) {
+    private static void unprotectedHit(ServerPlayer player, OsrsMonsterEntity mob, SlayerGear.Protection prot) {
         Msg.red(player, prot.message());
         int damage = 1 + player.getRandom().nextInt(Math.max(1, prot.damage()));
         CombatHandler.applyDamage(mob, player, damage);

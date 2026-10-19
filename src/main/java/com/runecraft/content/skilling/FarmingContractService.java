@@ -7,10 +7,10 @@ import com.runecraft.osrs.content.skilling.FarmingContracts.Tier;
 import com.runecraft.quest.QuestApi;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.math.random.Random;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Farming contracts (Guildmaster Jane, Farming Guild) and seed packs. A player's contract is kept in
@@ -24,9 +24,9 @@ public final class FarmingContractService {
     private FarmingContractService() {
     }
 
-    public static void talk(ServerPlayerEntity player, String name) {
+    public static void talk(ServerPlayer player, String name) {
         SkillingState state = SkillingState.get(player.getServer());
-        NbtCompound nbt = state.entry("contracts", player.getUuidAsString());
+        CompoundTag nbt = state.entry("contracts", player.getStringUUID());
         int farming = SkillingUtil.level(player, Skill.FARMING);
         Tier best = FarmingContracts.bestTier(farming);
         if (best == null) {
@@ -38,7 +38,7 @@ public final class FarmingContractService {
         if (current != null && nbt.getBoolean("done")) {
             ItemStack pack = Inv.stack("seed_pack", 1);
             if (!pack.isEmpty()) {
-                pack.getOrCreateNbt().putInt(TIER_KEY, FarmingContracts.packTier(current));
+                pack.getOrCreateTag().putInt(TIER_KEY, FarmingContracts.packTier(current));
                 Inv.give(player, pack);
             }
             nbt.remove("crop");
@@ -48,17 +48,17 @@ public final class FarmingContractService {
                     + ". Here's a seed pack for your trouble. Talk to me again for a new contract.");
             return;
         }
-        if (current != null && !player.isSneaking()) {
+        if (current != null && !player.isShiftKeyDown()) {
             QuestApi.say(player, name, "Your contract is to grow " + SkillingUtil.lower(current.name())
                     + ". Harvest it from any patch and come back to me. (Sneak-talk to swap it for an easier contract.)");
             return;
         }
         Tier tier = best;
-        if (player.isSneaking() && current != null) {
+        if (player.isShiftKeyDown() && current != null) {
             int t = current.tier().ordinal() - 1;
             tier = t < 0 ? best : Tier.values()[Math.min(t, best.ordinal())];
         }
-        Random random = player.getRandom();
+        RandomSource random = player.getRandom();
         Contract next = FarmingContracts.assign(tier, farming, current == null ? null : current.cropId(), random::nextInt);
         if (next == null) {
             QuestApi.say(player, name, "I don't have a contract for you at the moment.");
@@ -72,12 +72,12 @@ public final class FarmingContractService {
     }
 
     /** Called when a crop is harvested (or a tree is checked); completes a matching contract. */
-    public static void harvested(ServerPlayerEntity player, String cropId) {
+    public static void harvested(ServerPlayer player, String cropId) {
         SkillingState state = SkillingState.get(player.getServer());
-        if (!state.has("contracts", player.getUuidAsString())) {
+        if (!state.has("contracts", player.getStringUUID())) {
             return;
         }
-        NbtCompound nbt = state.entry("contracts", player.getUuidAsString());
+        CompoundTag nbt = state.entry("contracts", player.getStringUUID());
         if (nbt.getBoolean("done") || !cropId.equals(nbt.getString("crop"))) {
             return;
         }
@@ -86,10 +86,10 @@ public final class FarmingContractService {
     }
 
     /** Opens a seed pack (tier from its data; 3, like the Tithe Farm's pack, if it has none). */
-    static void open(ServerPlayerEntity player, ItemStack stack) {
-        int tier = stack.hasNbt() && stack.getNbt().contains(TIER_KEY) ? stack.getNbt().getInt(TIER_KEY) : 3;
-        stack.decrement(1);
-        Random random = player.getRandom();
+    static void open(ServerPlayer player, ItemStack stack) {
+        int tier = stack.hasTag() && stack.getTag().contains(TIER_KEY) ? stack.getTag().getInt(TIER_KEY) : 3;
+        stack.shrink(1);
+        RandomSource random = player.getRandom();
         for (int t : FarmingContracts.rolls(tier, random::nextInt)) {
             SkillingUtil.roll(player, FarmingContracts.table(t), random);
         }

@@ -13,15 +13,14 @@ import com.runecraft.player.Players;
 import com.runecraft.skill.Stun;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-
 import java.util.Locale;
 import java.util.Random;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.LivingEntity;
 
 /** Enchanted (e) bolt special effects on a player's crossbow shot (see {@link BoltEffects}). */
 public final class BoltProcs {
@@ -43,7 +42,7 @@ public final class BoltProcs {
         return s;
     }
 
-    public static int apply(ServerPlayerEntity p, LivingEntity target, String ammo, boolean accurate, int damage, int maxHit) {
+    public static int apply(ServerPlayer p, LivingEntity target, String ammo, boolean accurate, int damage, int maxHit) {
         lastShot = ammo;
         lastShotTick = ActionManager.mcTick();
         BoltEffects.Enchant en = BoltEffects.ofItem(ammo);
@@ -51,8 +50,8 @@ public final class BoltProcs {
             return damage;
         }
         boolean kandarin = Diaries.tierComplete(SysState.of(p).diaryDone, "kandarin", Diaries.Tier.HARD);
-        boolean zaryte = Inv.idOf(p.getMainHandStack()).startsWith("zaryte_crossbow");
-        boolean vsPlayer = target instanceof ServerPlayerEntity;
+        boolean zaryte = Inv.idOf(p.getMainHandItem()).startsWith("zaryte_crossbow");
+        boolean vsPlayer = target instanceof ServerPlayer;
         BoltEffects.Context ctx = new BoltEffects.Context(accurate, damage, maxHit,
                 Players.data(p).skills().currentLevel(Skill.RANGED), (int) Math.ceil(target.getHealth()), (int) Math.ceil(p.getHealth()),
                 zaryte, attribute(target, "fiery", "fire", "infernal", "lava", "tzhaar", "pyrefiend", "hellhound"),
@@ -62,7 +61,7 @@ public final class BoltProcs {
         if (!o.activated()) {
             return damage;
         }
-        ((ServerWorld) p.getWorld()).spawnParticles(ParticleTypes.ENCHANTED_HIT, target.getX(), target.getBodyY(0.6), target.getZ(),
+        ((ServerLevel) p.level()).sendParticles(ParticleTypes.ENCHANTED_HIT, target.getX(), target.getY(0.6), target.getZ(),
                 12, 0.3, 0.4, 0.3, 0.1);
         if (o.selfDamage() > 0) {
             p.setHealth(Math.max(1f, p.getHealth() - o.selfDamage()));
@@ -75,13 +74,13 @@ public final class BoltProcs {
             PoisonService.poison(target, o.poison(), ActionManager.gameTick());
         }
         if (o.stunTicks() > 0) {
-            if (target instanceof ServerPlayerEntity other) {
+            if (target instanceof ServerPlayer other) {
                 Stun.apply(other, o.stunTicks());
             } else {
-                target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, o.stunTicks() * 12, 10, false, true));
+                target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, o.stunTicks() * 12, 10, false, true));
             }
         }
-        if (o.drain() > 0 && target instanceof ServerPlayerEntity other) {
+        if (o.drain() > 0 && target instanceof ServerPlayer other) {
             PlayerData d = Players.data(other);
             if (en.effect() == BoltEffects.Effect.CLEAR_MIND) {
                 int drained = Math.min(d.prayerPoints(), o.drain());
@@ -101,7 +100,7 @@ public final class BoltProcs {
 
     /** A monster attribute from its wiki reference stats, else guessed from the name. */
     private static boolean attribute(LivingEntity target, String attribute, String... nameHints) {
-        if (target instanceof ServerPlayerEntity) {
+        if (target instanceof ServerPlayer) {
             return false;
         }
         MonsterStats stats = MonsterStats.of(target);

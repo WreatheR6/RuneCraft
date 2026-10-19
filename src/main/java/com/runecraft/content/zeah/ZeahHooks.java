@@ -21,13 +21,12 @@ import com.runecraft.quest.QuestApi;
 import com.runecraft.quest.QuestScripts;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.server.network.ServerPlayerEntity;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EquipmentSlot;
 
 /**
  * Minecraft-side behaviour for the zeah module: NPC dialogue, Veos' ship / Primio / the quetzals /
@@ -78,7 +77,7 @@ public final class ZeahHooks implements ModuleHooks {
     }
 
     /** The Catacombs altar: Darklight and 3 ancient shards become Arclight (with its starting 1,000 charges). */
-    private static void catacombsAltar(ServerPlayerEntity player) {
+    private static void catacombsAltar(ServerPlayer player) {
         if (!Inv.has(player, "darklight", 1)) {
             Msg.game(player, "The altar hums with the power of the ancient shards. Perhaps a demonic sword could channel it.");
             return;
@@ -95,8 +94,8 @@ public final class ZeahHooks implements ModuleHooks {
     }
 
     /** Sneak-talk to buy the next missing piece of Shayzien armour (5). */
-    private static void quartermaster(ServerPlayerEntity player, String name) {
-        if (!player.isSneaking()) {
+    private static void quartermaster(ServerPlayer player, String name) {
+        if (!player.isShiftKeyDown()) {
             talk(player, "zeah_shayzien_quartermaster", name);
             Msg.game(player, "(Sneak while talking to the quartermaster to buy Shayzien armour (5).)");
             return;
@@ -120,9 +119,9 @@ public final class ZeahHooks implements ModuleHooks {
         QuestApi.say(player, name, "You already have a full set of Shayzien armour (5).");
     }
 
-    private static boolean wearing(ServerPlayerEntity player, String id) {
+    private static boolean wearing(ServerPlayer player, String id) {
         for (EquipmentSlot slot : new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
-            if (Inv.idOf(player.getEquippedStack(slot)).equals(id)) {
+            if (Inv.idOf(player.getItemBySlot(slot)).equals(id)) {
                 return true;
             }
         }
@@ -130,7 +129,7 @@ public final class ZeahHooks implements ModuleHooks {
     }
 
     /** Hunters' Rumours: a guild hunter assigns a creature; catch it a few times, then report back for a loot sack. */
-    private static void rumour(ServerPlayerEntity player, String npcId, String name) {
+    private static void rumour(ServerPlayer player, String npcId, String name) {
         PlayerData data = Players.data(player);
         int level = data.skills().currentLevel(Skill.HUNTER);
         if (level < ZeahHunter.GUILD_LEVEL) {
@@ -139,7 +138,7 @@ public final class ZeahHooks implements ModuleHooks {
         }
         int target = data.killCount(ZeahHunter.RUMOUR_TARGET);
         if (target <= 0 || target > ZeahHunter.SPOTS.size()) {
-            if (!player.isSneaking()) {
+            if (!player.isShiftKeyDown()) {
                 talk(player, npcId, name);
                 Msg.game(player, "(Sneak while talking to a guild hunter to take a rumour.)");
                 return;
@@ -184,7 +183,7 @@ public final class ZeahHooks implements ModuleHooks {
     }
 
     /** Counts a catch of the player's rumour creature. */
-    private static void rumourCatch(ServerPlayerEntity player, String item, int count) {
+    private static void rumourCatch(ServerPlayer player, String item, int count) {
         PlayerData data = Players.data(player);
         int target = data.killCount(ZeahHunter.RUMOUR_TARGET);
         if (target <= 0 || target > ZeahHunter.SPOTS.size()) {
@@ -201,13 +200,13 @@ public final class ZeahHooks implements ModuleHooks {
         }
     }
 
-    private static String key(ServerPlayerEntity player, String npc) {
-        UUID id = player.getUuid();
+    private static String key(ServerPlayer player, String npc) {
+        UUID id = player.getUUID();
         return id + "|" + npc;
     }
 
     /** Says the NPC's next dialogue line. */
-    static void talk(ServerPlayerEntity player, String npcId, String name) {
+    static void talk(ServerPlayer player, String npcId, String name) {
         List<String> lines = ZeahNpcs.dialogue(npcId);
         if (lines.isEmpty()) {
             QuestApi.say(player, name, "Hello there, adventurer.");
@@ -220,8 +219,8 @@ public final class ZeahHooks implements ModuleHooks {
     }
 
     /** Thirus explains the Blast Mine; sneak-talk to buy a stick of dynamite. */
-    private static void thirus(ServerPlayerEntity player, String name) {
-        if (!player.isSneaking()) {
+    private static void thirus(ServerPlayer player, String name) {
+        if (!player.isShiftKeyDown()) {
             talk(player, ZeahNpcs.THIRUS, name);
             Msg.game(player, "(Sneak while talking to Thirus to buy dynamite for " + DYNAMITE_PRICE + " coins.)");
             return;
@@ -235,10 +234,10 @@ public final class ZeahHooks implements ModuleHooks {
         QuestApi.say(player, name, "Here you go. Don't light it in your hand.");
     }
 
-    static boolean wearsFullShayzien(ServerPlayerEntity player) {
+    static boolean wearsFullShayzien(ServerPlayer player) {
         EquipmentSlot[] slots = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
         for (int i = 0; i < slots.length; i++) {
-            if (!Inv.idOf(player.getEquippedStack(slots[i])).equals(ZeahItems.SHAYZIEN_ARMOUR.get(i))) {
+            if (!Inv.idOf(player.getItemBySlot(slots[i])).equals(ZeahItems.SHAYZIEN_ARMOUR.get(i))) {
                 return false;
             }
         }

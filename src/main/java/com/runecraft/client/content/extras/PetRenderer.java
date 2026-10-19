@@ -1,5 +1,6 @@
 package com.runecraft.client.content.extras;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.runecraft.client.OsrsBipedRenderer;
 import com.runecraft.client.model.GenericEntityRenderer;
 import com.runecraft.client.model.ModelSpecs;
@@ -9,14 +10,12 @@ import com.runecraft.osrs.content.ContentRegistry;
 import com.runecraft.osrs.content.MonsterDef;
 import com.runecraft.osrs.content.extras.Pets;
 import com.runecraft.osrs.model.ModelSpec;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.entity.EntityRenderer;
-import net.minecraft.client.render.entity.EntityRendererFactory;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.Identifier;
-
 import java.util.HashMap;
 import java.util.Map;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.entity.EntityRenderer;
+import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * Renders a pet follower with its source's model scaled down (a boss pet looks like a small
@@ -26,10 +25,10 @@ public class PetRenderer extends EntityRenderer<PetEntity> {
     /** Height in blocks a follower is drawn at. */
     private static final float PET_HEIGHT = 0.8f;
 
-    private final EntityRendererFactory.Context ctx;
+    private final EntityRendererProvider.Context ctx;
     private final Map<String, EntityRenderer<PetEntity>> delegates = new HashMap<>();
 
-    public PetRenderer(EntityRendererFactory.Context ctx) {
+    public PetRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);
         this.ctx = ctx;
         this.shadowRadius = 0.3f;
@@ -66,13 +65,13 @@ public class PetRenderer extends EntityRenderer<PetEntity> {
     }
 
     @Override
-    public void render(PetEntity entity, float yaw, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers,
+    public void render(PetEntity entity, float yaw, float tickDelta, PoseStack matrices, MultiBufferSource vertexConsumers,
                        int light) {
         delegate(entity).render(entity, yaw, tickDelta, matrices, vertexConsumers, light);
     }
 
     @Override
-    public Identifier getTexture(PetEntity entity) {
-        return delegate(entity).getTexture(entity);
+    public ResourceLocation getTexture(PetEntity entity) {
+        return delegate(entity).getTextureLocation(entity);
     }
 }

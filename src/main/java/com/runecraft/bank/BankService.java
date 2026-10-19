@@ -17,23 +17,22 @@ import com.runecraft.world.LandmarkBuilder;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.registry.Registries;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.Heightmap;
-
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.phys.Vec3;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,9 +45,9 @@ import java.util.UUID;
  */
 public final class BankService {
     /** Server -> client: the bank state (and open the screen). */
-    public static final Identifier STATE = RuneCraft.id("bank/state");
+    public static final ResourceLocation STATE = RuneCraft.id("bank/state");
     /** Client -> server: a bank request (see OP_*). */
-    public static final Identifier ACTION = RuneCraft.id("bank/action");
+    public static final ResourceLocation ACTION = RuneCraft.id("bank/action");
 
     public static final int OP_WITHDRAW = 0;
     public static final int OP_DEPOSIT = 1;
@@ -66,7 +65,7 @@ public final class BankService {
     /** How far (blocks) a player may walk from where they opened the bank before it closes. */
     private static final double MAX_DISTANCE_SQ = 8 * 8;
 
-    private record Session(Vec3d where, boolean depositOnly) {
+    private record Session(Vec3 where, boolean depositOnly) {
     }
 
     private static final Map<UUID, Session> OPEN = new HashMap<>();
@@ -77,8 +76,8 @@ public final class BankService {
     public static void register() {
         ServerPlayNetworking.registerGlobalReceiver(ACTION, (server, player, handler, buf, sender) -> {
             int op = buf.readVarInt();
-            String key = buf.readString(1024);
-            String key2 = buf.readString(1024);
+            String key = buf.readUtf(1024);
+            String key2 = buf.readUtf(1024);
             int slot = buf.readVarInt();
             int mode = buf.readVarInt();
             long x = buf.readVarLong();
@@ -91,7 +90,7 @@ public final class BankService {
                 }
             });
         });
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> OPEN.remove(handler.getPlayer().getUuid()));
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> OPEN.remove(handler.getPlayer().getUUID()));
         BlockHooks.register(DepositBoxes.BLOCK, (player, pos, state) -> openDepositBox(player));
         for (DepositBoxes.Spot spot : DepositBoxes.SPOTS) {
             LandmarkBuilder.registerCustom(spot.id(), BankService::placeDepositBox);
@@ -101,32 +100,32 @@ public final class BankService {
     // ------------------------------------------------------------------ opening
 
     /** Opens the bank (booth or banker). Holding bank notes exchanges them for items instead, as in OSRS. */
-    public static void open(ServerPlayerEntity player) {
-        if (Notes.isNote(player.getMainHandStack())) {
+    public static void open(ServerPlayer player) {
+        if (Notes.isNote(player.getMainHandItem())) {
             unnote(player);
             return;
         }
         bankLootingBag(player);
-        OPEN.put(player.getUuid(), new Session(player.getPos(), false));
+        OPEN.put(player.getUUID(), new Session(player.position(), false));
         send(player, true);
     }
 
-    public static void openDepositBox(ServerPlayerEntity player) {
+    public static void openDepositBox(ServerPlayer player) {
         bankLootingBag(player);
-        OPEN.put(player.getUuid(), new Session(player.getPos(), true));
+        OPEN.put(player.getUUID(), new Session(player.position(), true));
         send(player, true);
     }
 
     /** Holding the looting bag when the bank opens banks everything in it (OSRS: the bank's looting bag "deposit all"). */
-    private static void bankLootingBag(ServerPlayerEntity player) {
-        if (com.runecraft.osrs.content.systems.LootingBag.ID.equals(Inv.idOf(player.getMainHandStack()))) {
+    private static void bankLootingBag(ServerPlayer player) {
+        if (com.runecraft.osrs.content.systems.LootingBag.ID.equals(Inv.idOf(player.getMainHandItem()))) {
             com.runecraft.content.systems.LootingBagService.bankAll(player);
         }
     }
 
     /** Exchanges the notes in hand for items, one per free inventory slot (or a stack per slot for stacking items). */
-    static void unnote(ServerPlayerEntity player) {
-        ItemStack notes = player.getMainHandStack();
+    static void unnote(ServerPlayer player) {
+        ItemStack notes = player.getMainHandItem();
         ItemStack proto = Notes.unnoted(notes, 1);
         if (proto.isEmpty()) {
             Msg.game(player, "This note is worthless.");
@@ -148,16 +147,16 @@ public final class BankService {
         if (put < n) {
             Inv.give(player, proto.copyWithCount(n - put));
         }
-        Msg.action(player, "The banker exchanges your " + (n == 1 ? "note" : n + " notes") + " for " + proto.getName().getString() + ".");
+        Msg.action(player, "The banker exchanges your " + (n == 1 ? "note" : n + " notes") + " for " + proto.getHoverName().getString() + ".");
     }
 
-    private static Session session(ServerPlayerEntity player) {
-        Session s = OPEN.get(player.getUuid());
+    private static Session session(ServerPlayer player) {
+        Session s = OPEN.get(player.getUUID());
         if (s == null) {
             return null;
         }
-        if (player.getPos().squaredDistanceTo(s.where()) > MAX_DISTANCE_SQ) {
-            OPEN.remove(player.getUuid());
+        if (player.position().distanceToSqr(s.where()) > MAX_DISTANCE_SQ) {
+            OPEN.remove(player.getUUID());
             Msg.game(player, "You are too far away from the bank.");
             return null;
         }
@@ -167,13 +166,13 @@ public final class BankService {
     // ------------------------------------------------------------------ requests
 
     /** Self-test hook: runs one bank request as if the client had sent it (the bank must be open). */
-    public static void selfTestAction(ServerPlayerEntity player, int op, String key, int slot, BankQuantity.Mode mode, long x) {
+    public static void selfTestAction(ServerPlayer player, int op, String key, int slot, BankQuantity.Mode mode, long x) {
         action(player, op, key, "", slot, mode, x, 0);
     }
 
-    static void action(ServerPlayerEntity player, int op, String key, String key2, int slot, BankQuantity.Mode mode, long x, int tab) {
+    static void action(ServerPlayer player, int op, String key, String key2, int slot, BankQuantity.Mode mode, long x, int tab) {
         if (op == OP_CLOSE) {
-            OPEN.remove(player.getUuid());
+            OPEN.remove(player.getUUID());
             return;
         }
         Session s = session(player);
@@ -210,13 +209,13 @@ public final class BankService {
             default -> changed = false;
         }
         if (changed) {
-            player.getInventory().markDirty();
+            player.getInventory().setChanged();
             ServerNetworking.sync(player);
         }
         send(player, false);
     }
 
-    static void withdraw(ServerPlayerEntity player, BankModel bank, String key, BankQuantity.Mode mode, long x) {
+    static void withdraw(ServerPlayer player, BankModel bank, String key, BankQuantity.Mode mode, long x) {
         BankModel.Entry e = bank.byKey(key);
         if (e == null || e.count <= 0) {
             return;
@@ -271,18 +270,18 @@ public final class BankService {
         return bank.deposit(k[0], k[1], n, tab);
     }
 
-    static void depositSlot(ServerPlayerEntity player, BankModel bank, int slot, BankQuantity.Mode mode, long x, int tab) {
-        PlayerInventory inv = player.getInventory();
-        if (slot < 0 || slot >= inv.main.size() || inv.main.get(slot).isEmpty()) {
+    static void depositSlot(ServerPlayer player, BankModel bank, int slot, BankQuantity.Mode mode, long x, int tab) {
+        Inventory inv = player.getInventory();
+        if (slot < 0 || slot >= inv.items.size() || inv.items.get(slot).isEmpty()) {
             return;
         }
-        ItemStack target = inv.main.get(slot);
+        ItemStack target = inv.items.get(slot);
         String[] k = keyOf(target);
         boolean noted = Notes.isNote(target);
         // Every stack of the same item counts towards the quantity, as in OSRS; notes and unnoted items are
         // different items there, so only stacks of the clicked kind count.
         long available = 0;
-        for (ItemStack s : inv.main) {
+        for (ItemStack s : inv.items) {
             if (!s.isEmpty() && sameBankItem(s, k) && Notes.isNote(s) == noted) {
                 available += s.getCount();
             }
@@ -297,7 +296,7 @@ public final class BankService {
     }
 
     /** Moves {@code n} matching items (clicked slot first) into the bank. */
-    private static void depositMatching(ServerPlayerEntity player, BankModel bank, String[] k, long n, int tab, int first,
+    private static void depositMatching(ServerPlayer player, BankModel bank, String[] k, long n, int tab, int first,
                                         boolean noted) {
         if (n <= 0) {
             return;
@@ -308,16 +307,16 @@ public final class BankService {
         }
         long deposited = bank.deposit(k[0], k[1], n, tab);
         long left = deposited;
-        PlayerInventory inv = player.getInventory();
+        Inventory inv = player.getInventory();
         for (int pass = 0; pass < 2 && left > 0; pass++) {
-            for (int i = 0; i < inv.main.size() && left > 0; i++) {
+            for (int i = 0; i < inv.items.size() && left > 0; i++) {
                 if ((pass == 0) != (i == first)) {
                     continue;
                 }
-                ItemStack s = inv.main.get(i);
+                ItemStack s = inv.items.get(i);
                 if (!s.isEmpty() && sameBankItem(s, k) && Notes.isNote(s) == noted) {
                     int take = (int) Math.min(left, s.getCount());
-                    s.decrement(take);
+                    s.shrink(take);
                     left -= take;
                 }
             }
@@ -327,23 +326,23 @@ public final class BankService {
         }
     }
 
-    static void depositPouch(ServerPlayerEntity player, BankModel bank, BankQuantity.Mode mode, long x, int tab) {
+    static void depositPouch(ServerPlayer player, BankModel bank, BankQuantity.Mode mode, long x, int tab) {
         PlayerData data = Players.data(player);
         long n = BankQuantity.amount(mode, x, data.coins());
         long put = bank.deposit(Inv.COINS, "", n, tab);
         data.setCoins(data.coins() - put);
     }
 
-    static void depositInventory(ServerPlayerEntity player, BankModel bank, int tab) {
-        PlayerInventory inv = player.getInventory();
+    static void depositInventory(ServerPlayer player, BankModel bank, int tab) {
+        Inventory inv = player.getInventory();
         boolean full = false;
-        for (int i = 0; i < inv.main.size(); i++) {
-            ItemStack s = inv.main.get(i);
+        for (int i = 0; i < inv.items.size(); i++) {
+            ItemStack s = inv.items.get(i);
             if (s.isEmpty()) {
                 continue;
             }
             long put = depositStack(bank, s, s.getCount(), tab);
-            s.decrement((int) put);
+            s.shrink((int) put);
             full |= !s.isEmpty();
         }
         depositPouch(player, bank, BankQuantity.Mode.ALL, 0, tab);
@@ -352,14 +351,14 @@ public final class BankService {
         }
     }
 
-    static void depositWorn(ServerPlayerEntity player, BankModel bank, int tab) {
-        PlayerInventory inv = player.getInventory();
+    static void depositWorn(ServerPlayer player, BankModel bank, int tab) {
+        Inventory inv = player.getInventory();
         boolean any = false;
-        for (List<ItemStack> list : List.of(inv.armor, inv.offHand)) {
+        for (List<ItemStack> list : List.of(inv.armor, inv.offhand)) {
             for (ItemStack s : list) {
                 if (!s.isEmpty()) {
                     long put = depositStack(bank, s, s.getCount(), tab);
-                    s.decrement((int) put);
+                    s.shrink((int) put);
                     any |= put > 0;
                 }
             }
@@ -373,7 +372,7 @@ public final class BankService {
                 continue;
             }
             long put = depositStack(bank, s, s.getCount(), tab);
-            s.decrement((int) put);
+            s.shrink((int) put);
             any |= put > 0;
             if (s.isEmpty()) {
                 it.remove();
@@ -401,10 +400,10 @@ public final class BankService {
      * Packet: open flag, deposit-only flag, settings (noted, placeholders, quantity mode, X), total value and
      * the slots in display order (key, item id, NBT string, count, tab).
      */
-    public static void send(ServerPlayerEntity player, boolean open) {
-        Session s = OPEN.get(player.getUuid());
+    public static void send(ServerPlayer player, boolean open) {
+        Session s = OPEN.get(player.getUUID());
         BankModel bank = Players.data(player).bank();
-        PacketByteBuf buf = PacketByteBufs.create();
+        FriendlyByteBuf buf = PacketByteBufs.create();
         buf.writeBoolean(open);
         buf.writeBoolean(s != null && s.depositOnly());
         buf.writeBoolean(bank.noted);
@@ -415,8 +414,8 @@ public final class BankService {
         List<BankModel.Entry> entries = bank.entries();
         buf.writeVarInt(entries.size());
         for (BankModel.Entry e : entries) {
-            buf.writeString(e.item);
-            buf.writeString(e.tag);
+            buf.writeUtf(e.item);
+            buf.writeUtf(e.tag);
             buf.writeVarLong(e.count);
             buf.writeVarInt(e.tab);
         }
@@ -425,11 +424,11 @@ public final class BankService {
 
     // ------------------------------------------------------------------ persistence
 
-    public static NbtCompound write(BankModel bank) {
-        NbtCompound nbt = new NbtCompound();
-        NbtList list = new NbtList();
+    public static CompoundTag write(BankModel bank) {
+        CompoundTag nbt = new CompoundTag();
+        ListTag list = new ListTag();
         for (BankModel.Entry e : bank.entries()) {
-            NbtCompound c = new NbtCompound();
+            CompoundTag c = new CompoundTag();
             c.putString("Item", e.item);
             if (!e.tag.isEmpty()) {
                 c.putString("Tag", e.tag);
@@ -448,11 +447,11 @@ public final class BankService {
         return nbt;
     }
 
-    public static void read(BankModel bank, NbtCompound nbt) {
+    public static void read(BankModel bank, CompoundTag nbt) {
         bank.clear();
-        NbtList list = nbt.getList("Items", NbtElement.COMPOUND_TYPE);
+        ListTag list = nbt.getList("Items", Tag.TAG_COMPOUND);
         for (int i = 0; i < list.size(); i++) {
-            NbtCompound c = list.getCompound(i);
+            CompoundTag c = list.getCompound(i);
             bank.load(c.getString("Item"), c.getString("Tag"), c.getLong("Count"), c.getByte("Tab"));
         }
         bank.finishLoad();
@@ -469,21 +468,21 @@ public final class BankService {
     // ------------------------------------------------------------------ deposit boxes
 
     /** Puts a deposit box on the ground at a spot (on a dock's planks or the beach), unless something is there. */
-    private static void placeDepositBox(ServerWorld world, BlockPos centre) {
-        Block box = Registries.BLOCK.get(RuneCraft.id(DepositBoxes.BLOCK));
+    private static void placeDepositBox(ServerLevel world, BlockPos centre) {
+        Block box = BuiltInRegistries.BLOCK.get(RuneCraft.id(DepositBoxes.BLOCK));
         if (box == Blocks.AIR) {
             return;
         }
         int x = centre.getX();
         int z = centre.getZ();
         com.runecraft.world.StructurePlacer.applyIfLoaded(world, x >> 4, z >> 4);
-        int top = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
+        int top = world.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
         BlockPos at = new BlockPos(x, top, z);
-        BlockState below = world.getBlockState(at.down());
-        if (!world.getBlockState(at).isAir() || !below.isSolidBlock(world, at.down())) {
+        BlockState below = world.getBlockState(at.below());
+        if (!world.getBlockState(at).isAir() || !below.isRedstoneConductor(world, at.below())) {
             RuneCraft.LOGGER.info("No room for a deposit box at {}", at);
             return;
         }
-        world.setBlockState(at, box.getDefaultState(), Block.NOTIFY_LISTENERS);
+        world.setBlock(at, box.defaultBlockState(), Block.UPDATE_CLIENTS);
     }
 }

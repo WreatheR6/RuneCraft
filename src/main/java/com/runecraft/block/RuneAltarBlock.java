@@ -2,22 +2,22 @@ package com.runecraft.block;
 
 import com.runecraft.osrs.data.RuneAltar;
 import com.runecraft.skill.Runecrafting;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
 
 public class RuneAltarBlock extends Block {
     private final RuneAltar altar;
 
-    public RuneAltarBlock(RuneAltar altar, Settings settings) {
+    public RuneAltarBlock(RuneAltar altar, Properties settings) {
         super(settings);
         this.altar = altar;
     }
@@ -27,20 +27,20 @@ public class RuneAltarBlock extends Block {
     }
 
     @Override
-    public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
+    public void animateTick(BlockState state, Level world, BlockPos pos, RandomSource random) {
         world.addParticle(ParticleTypes.ENCHANT, pos.getX() + 0.5, pos.getY() + 1.5, pos.getZ() + 0.5,
                 random.nextGaussian() * 0.5, -0.5, random.nextGaussian() * 0.5);
     }
 
     @Override
     @SuppressWarnings("deprecation")
-    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
-        if (hand != Hand.MAIN_HAND) {
-            return ActionResult.PASS;
+    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        if (hand != InteractionHand.MAIN_HAND) {
+            return InteractionResult.PASS;
         }
-        if (!world.isClient() && player instanceof ServerPlayerEntity sp) {
+        if (!world.isClientSide() && player instanceof ServerPlayer sp) {
             Runecrafting.craft(sp, altar, pos);
         }
-        return ActionResult.success(world.isClient());
+        return InteractionResult.sidedSuccess(world.isClientSide());
     }
 }

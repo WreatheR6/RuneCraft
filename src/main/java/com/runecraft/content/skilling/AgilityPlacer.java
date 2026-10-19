@@ -14,15 +14,14 @@ import com.runecraft.world.Gielinor;
 import com.runecraft.world.StructurePlacer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.registry.Registries;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.Heightmap;
-
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -67,12 +66,12 @@ final class AgilityPlacer {
             for (int i = 0; i < tiles.size(); i++) {
                 int step = i;
                 add(new Tile("agility:" + course.name() + ":" + i, StructureDef.bx(tiles.get(i)[0]), StructureDef.bz(tiles.get(i)[1]),
-                        () -> ModBlocks.AGILITY_OBSTACLE.getDefaultState().with(AgilityObstacleBlock.COURSE, course.ordinal())
-                                .with(AgilityObstacleBlock.STEP, step)));
+                        () -> ModBlocks.AGILITY_OBSTACLE.defaultBlockState().setValue(AgilityObstacleBlock.COURSE, course.ordinal())
+                                .setValue(AgilityObstacleBlock.STEP, step)));
             }
         }
         for (AgilityShortcuts.Shortcut s : AgilityShortcuts.SHORTCUTS) {
-            Supplier<BlockState> block = () -> Registries.BLOCK.get(RuneCraft.resolve(AgilityShortcuts.BLOCK)).getDefaultState();
+            Supplier<BlockState> block = () -> BuiltInRegistries.BLOCK.get(RuneCraft.resolve(AgilityShortcuts.BLOCK)).defaultBlockState();
             add(new Tile("shortcut:" + s.id() + ":a:" + s.ax() + "," + s.ay(), StructureDef.bx(s.ax()), StructureDef.bz(s.ay()), block,
                     SURFACE, s, 0));
             add(new Tile("shortcut:" + s.id() + ":b:" + s.bx() + "," + s.by(), StructureDef.bx(s.bx()), StructureDef.bz(s.by()), block,
@@ -80,14 +79,14 @@ final class AgilityPlacer {
         }
         // Indoor shortcut ends inside surface buildings (the Slayer Tower's chains), at their storey's height.
         for (AgilityShortcuts.BlockEnds e : AgilityShortcuts.TOWER_ENDS) {
-            Supplier<BlockState> block = () -> Registries.BLOCK.get(RuneCraft.resolve(AgilityShortcuts.BLOCK)).getDefaultState();
+            Supplier<BlockState> block = () -> BuiltInRegistries.BLOCK.get(RuneCraft.resolve(AgilityShortcuts.BLOCK)).defaultBlockState();
             add(new Tile("shortcut:" + e.id() + ":a", e.x1(), e.z1(), block, e.y1()));
             add(new Tile("shortcut:" + e.id() + ":b", e.x2(), e.z2(), block, e.y2()));
         }
     }
 
     private static void add(Tile t) {
-        BY_CHUNK.computeIfAbsent(ChunkPos.toLong(t.x() >> 4, t.z() >> 4), k -> new ArrayList<>()).add(t);
+        BY_CHUNK.computeIfAbsent(ChunkPos.asLong(t.x() >> 4, t.z() >> 4), k -> new ArrayList<>()).add(t);
     }
 
     private AgilityPlacer() {
@@ -111,14 +110,14 @@ final class AgilityPlacer {
             if (QUEUE.isEmpty()) {
                 return;
             }
-            ServerWorld world = Gielinor.world(server);
+            ServerLevel world = Gielinor.world(server);
             if (world == null) {
                 return;
             }
             PlayerDataState state = Players.state(server);
             for (int n = 0; n < PER_TICK && !QUEUE.isEmpty(); n++) {
                 Tile t = QUEUE.poll();
-                if (state.isBuilt(t.key()) || !world.isChunkLoaded(t.x() >> 4, t.z() >> 4)) {
+                if (state.isBuilt(t.key()) || !world.hasChunk(t.x() >> 4, t.z() >> 4)) {
                     continue;
                 }
                 state.markBuilt(t.key());
@@ -139,8 +138,8 @@ final class AgilityPlacer {
     }
 
     /** True if a shortcut block near the tile's spot already counts as its shortcut's end (within a tile). */
-    private static boolean servesEnd(ServerWorld world, Tile t) {
-        Block shortcut = Registries.BLOCK.get(RuneCraft.resolve(AgilityShortcuts.BLOCK));
+    private static boolean servesEnd(ServerLevel world, Tile t) {
+        Block shortcut = BuiltInRegistries.BLOCK.get(RuneCraft.resolve(AgilityShortcuts.BLOCK));
         int r = SEARCH + 1;
         for (int dx = -r; dx <= r; dx++) {
             for (int dz = -r; dz <= r; dz++) {
@@ -148,13 +147,13 @@ final class AgilityPlacer {
                 int z = t.z() + dz;
                 int ox = GielinorMap.toOsrsX(x);
                 int oy = GielinorMap.toOsrsY(z);
-                if (!world.isChunkLoaded(x >> 4, z >> 4) || AgilityShortcuts.at(ox, oy) != t.shortcut()
+                if (!world.hasChunk(x >> 4, z >> 4) || AgilityShortcuts.at(ox, oy) != t.shortcut()
                         || t.shortcut().endAt(ox, oy) != t.end()) {
                     continue;
                 }
-                int top = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
+                int top = world.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
                 for (int y = top; y >= top - 3; y--) {
-                    if (world.getBlockState(new BlockPos(x, y, z)).isOf(shortcut)) {
+                    if (world.getBlockState(new BlockPos(x, y, z)).is(shortcut)) {
                         return true;
                     }
                 }
@@ -163,9 +162,9 @@ final class AgilityPlacer {
         return false;
     }
 
-    private static void place(ServerWorld world, Tile t) {
+    private static void place(ServerLevel world, Tile t) {
         BlockState block = t.state().get();
-        if (block.isOf(Blocks.AIR)) {
+        if (block.is(Blocks.AIR)) {
             return;
         }
         if (t.y() != SURFACE) {
@@ -173,8 +172,8 @@ final class AgilityPlacer {
             // replaceable blocks (cobwebs...) with a floor below and head room above.
             BlockPos feet = new BlockPos(t.x(), t.y(), t.z());
             BlockState at = world.getBlockState(feet);
-            if ((at.isAir() || at.isReplaceable() || at.isOf(Blocks.COBWEB)) && at.getFluidState().isEmpty()) {
-                world.setBlockState(feet, block, Block.NOTIFY_ALL);
+            if ((at.isAir() || at.canBeReplaced() || at.is(Blocks.COBWEB)) && at.getFluidState().isEmpty()) {
+                world.setBlock(feet, block, Block.UPDATE_ALL);
             }
             return;
         }
@@ -186,15 +185,15 @@ final class AgilityPlacer {
                     }
                     int x = t.x() + dx;
                     int z = t.z() + dz;
-                    if (!world.isChunkLoaded(x >> 4, z >> 4)) {
+                    if (!world.hasChunk(x >> 4, z >> 4)) {
                         continue;
                     }
-                    BlockPos feet = new BlockPos(x, world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z), z);
-                    BlockState below = world.getBlockState(feet.down());
+                    BlockPos feet = new BlockPos(x, world.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z), z);
+                    BlockState below = world.getBlockState(feet.below());
                     BlockState at = world.getBlockState(feet);
-                    if (below.getFluidState().isEmpty() && !below.isAir() && (at.isAir() || at.isReplaceable())
-                            && at.getFluidState().isEmpty() && world.getBlockState(feet.up()).isAir()) {
-                        world.setBlockState(feet, block, Block.NOTIFY_ALL);
+                    if (below.getFluidState().isEmpty() && !below.isAir() && (at.isAir() || at.canBeReplaced())
+                            && at.getFluidState().isEmpty() && world.getBlockState(feet.above()).isAir()) {
+                        world.setBlock(feet, block, Block.UPDATE_ALL);
                         return;
                     }
                 }

@@ -6,11 +6,11 @@ import com.runecraft.osrs.content.skilling.Camdozaal;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.random.Random;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 
 /**
  * The Ruins of Camdozaal ({@link Camdozaal}): the preparation tables (prepare every raw fish carried, 4 ticks each, with
@@ -28,7 +28,7 @@ final class CamdozaalHooks {
     }
 
     /** The first raw Camdozaal fish carried that the player can prepare, or null. */
-    private static Camdozaal.Fish nextRaw(ServerPlayerEntity player) {
+    private static Camdozaal.Fish nextRaw(ServerPlayer player) {
         int cooking = SkillingUtil.level(player, Skill.COOKING);
         for (Camdozaal.Fish f : Camdozaal.FISH) {
             if (cooking >= f.level() && Inv.has(player, f.raw(), 1)) {
@@ -38,7 +38,7 @@ final class CamdozaalHooks {
         return null;
     }
 
-    private static Camdozaal.Fish nextPrepared(ServerPlayerEntity player) {
+    private static Camdozaal.Fish nextPrepared(ServerPlayer player) {
         for (Camdozaal.Fish f : Camdozaal.FISH) {
             if (Inv.has(player, f.prepared(), 1)) {
                 return f;
@@ -47,7 +47,7 @@ final class CamdozaalHooks {
         return null;
     }
 
-    private static void prepare(ServerPlayerEntity player, BlockPos pos) {
+    private static void prepare(ServerPlayer player, BlockPos pos) {
         if (!SkillingUtil.needItem(player, "knife", "You need a knife to prepare the fish.")) {
             return;
         }
@@ -62,7 +62,7 @@ final class CamdozaalHooks {
         Msg.action(player, "You begin preparing the fish.");
         SkillingUtil.start(player, new SkillingUtil.BlockAction(pos, Camdozaal.PREPARATION_TABLE, Camdozaal.PREPARE_TICKS) {
             @Override
-            boolean roll(ServerPlayerEntity p, Random random) {
+            boolean roll(ServerPlayer p, RandomSource random) {
                 Camdozaal.Fish f = nextRaw(p);
                 if (f == null || !Inv.has(p, "knife", 1)) {
                     return false;
@@ -81,7 +81,7 @@ final class CamdozaalHooks {
         });
     }
 
-    private static void offer(ServerPlayerEntity player, BlockPos pos) {
+    private static void offer(ServerPlayer player, BlockPos pos) {
         if (nextPrepared(player) == null) {
             Msg.game(player, "You have no prepared fish to offer. Prepare them at the table first.");
             return;
@@ -89,20 +89,20 @@ final class CamdozaalHooks {
         Msg.action(player, "You begin offering the fish.");
         SkillingUtil.start(player, new SkillingUtil.BlockAction(pos, Camdozaal.ALTAR, Camdozaal.OFFER_TICKS) {
             @Override
-            boolean roll(ServerPlayerEntity p, Random random) {
+            boolean roll(ServerPlayer p, RandomSource random) {
                 Camdozaal.Fish f = nextPrepared(p);
                 if (f == null) {
                     return false;
                 }
                 Inv.remove(p, f.prepared(), 1);
                 XpService.add(p, Skill.PRAYER, f.prayerXp());
-                p.getWorld().playSound(null, pos, SoundEvents.BLOCK_AMETHYST_BLOCK_HIT, SoundCategory.PLAYERS, 0.6f, 1.0f);
+                p.level().playSound(null, pos, SoundEvents.AMETHYST_BLOCK_HIT, SoundSource.PLAYERS, 0.6f, 1.0f);
                 return nextPrepared(p) != null;
             }
         });
     }
 
-    private static void forge(ServerPlayerEntity player) {
+    private static void forge(ServerPlayer player) {
         boolean parts = Inv.has(player, Camdozaal.HEAD, 1) && Inv.has(player, Camdozaal.GUARD, 1) && Inv.has(player, Camdozaal.HANDLE, 1);
         if (!parts) {
             Msg.game(player, "The Sacred Forge burns hot. With a barronite head, guard and handle and " + Camdozaal.MACE_SHARDS

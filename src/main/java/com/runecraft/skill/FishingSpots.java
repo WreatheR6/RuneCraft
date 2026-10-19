@@ -2,19 +2,18 @@ package com.runecraft.skill;
 
 import com.runecraft.action.ActionManager;
 import com.runecraft.osrs.FishingSpotTimers;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.state.property.Properties;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.random.Random;
-
 import java.util.function.IntUnaryOperator;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 
 /**
  * Moves fishing spots around their fishing area on OSRS-like random timers ({@link FishingSpotTimers}).
@@ -31,8 +30,8 @@ public final class FishingSpots {
      * Checks the spot at {@code pos}; if its timer has run out it moves. Returns the new position, or
      * null if it stayed where it is.
      */
-    public static BlockPos tick(ServerWorld world, BlockPos pos, BlockState state) {
-        Random r = world.getRandom();
+    public static BlockPos tick(ServerLevel world, BlockPos pos, BlockState state) {
+        RandomSource r = world.getRandom();
         IntUnaryOperator random = n -> r.nextInt(n);
         long key = pos.asLong();
         long now = ActionManager.gameTick();
@@ -46,28 +45,28 @@ public final class FishingSpots {
             return null;
         }
         BlockPos to = new BlockPos(dest[0], dest[1], dest[2]);
-        BlockState moved = state.contains(Properties.WATERLOGGED) ? state.with(Properties.WATERLOGGED, true) : state;
-        boolean waterlogged = state.contains(Properties.WATERLOGGED);
-        world.setBlockState(to, moved, Block.NOTIFY_ALL);
-        world.setBlockState(pos, waterlogged || nearWater(world, pos) ? Blocks.WATER.getDefaultState() : Blocks.AIR.getDefaultState(),
-                Block.NOTIFY_ALL);
+        BlockState moved = state.hasProperty(BlockStateProperties.WATERLOGGED) ? state.setValue(BlockStateProperties.WATERLOGGED, true) : state;
+        boolean waterlogged = state.hasProperty(BlockStateProperties.WATERLOGGED);
+        world.setBlock(to, moved, Block.UPDATE_ALL);
+        world.setBlock(pos, waterlogged || nearWater(world, pos) ? Blocks.WATER.defaultBlockState() : Blocks.AIR.defaultBlockState(),
+                Block.UPDATE_ALL);
         TIMERS.moved(key, to.asLong(), to.getX(), to.getY(), to.getZ(), now, random);
-        world.spawnParticles(ParticleTypes.SPLASH, to.getX() + 0.5, to.getY() + 1.0, to.getZ() + 0.5, 12, 0.4, 0.1, 0.4, 0.05);
-        world.playSound(null, to, SoundEvents.ENTITY_FISH_SWIM, SoundCategory.BLOCKS, 0.6f, 1.0f);
+        world.sendParticles(ParticleTypes.SPLASH, to.getX() + 0.5, to.getY() + 1.0, to.getZ() + 0.5, 12, 0.4, 0.1, 0.4, 0.05);
+        world.playSound(null, to, SoundEvents.FISH_SWIM, SoundSource.BLOCKS, 0.6f, 1.0f);
         return to;
     }
 
     /** Still water with air above and land (a non-water block) on at least one side. */
-    static boolean validTile(ServerWorld world, BlockPos p) {
-        if (!world.isChunkLoaded(p.getX() >> 4, p.getZ() >> 4)) {
+    static boolean validTile(ServerLevel world, BlockPos p) {
+        if (!world.hasChunk(p.getX() >> 4, p.getZ() >> 4)) {
             return false;
         }
         BlockState s = world.getBlockState(p);
-        if (!s.isOf(Blocks.WATER) || !s.getFluidState().isStill() || !world.getBlockState(p.up()).isAir()) {
+        if (!s.is(Blocks.WATER) || !s.getFluidState().isSource() || !world.getBlockState(p.above()).isAir()) {
             return false;
         }
-        for (Direction d : Direction.Type.HORIZONTAL) {
-            BlockState n = world.getBlockState(p.offset(d));
+        for (Direction d : Direction.Plane.HORIZONTAL) {
+            BlockState n = world.getBlockState(p.relative(d));
             if (n.getFluidState().isEmpty() && !n.isAir()) {
                 return true;
             }
@@ -76,12 +75,12 @@ public final class FishingSpots {
     }
 
     /** True if the spot sits in water (so it leaves water behind when it moves). */
-    private static boolean nearWater(ServerWorld world, BlockPos p) {
-        if (!world.getBlockState(p.down()).getFluidState().isEmpty()) {
+    private static boolean nearWater(ServerLevel world, BlockPos p) {
+        if (!world.getBlockState(p.below()).getFluidState().isEmpty()) {
             return true;
         }
-        for (Direction d : Direction.Type.HORIZONTAL) {
-            if (world.getBlockState(p.offset(d)).isOf(Blocks.WATER)) {
+        for (Direction d : Direction.Plane.HORIZONTAL) {
+            if (world.getBlockState(p.relative(d)).is(Blocks.WATER)) {
                 return true;
             }
         }

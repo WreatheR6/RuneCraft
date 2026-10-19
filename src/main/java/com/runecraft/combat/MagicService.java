@@ -24,22 +24,22 @@ import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.projectile.ProjectileUtil;
-import net.minecraft.item.ItemStack;
-import net.minecraft.particle.DustParticleEffect;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.EntityHitResult;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
 import org.joml.Vector3f;
 
 import java.util.Map;
+import net.minecraft.core.particles.DustParticleOptions;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.Vec3;
 
 /** The standard spellbook: combat autocasting, teleports, alchemy and superheat. */
 public final class MagicService {
@@ -48,7 +48,7 @@ public final class MagicService {
     private MagicService() {
     }
 
-    public static void setAutocast(ServerPlayerEntity player, Spell spell) {
+    public static void setAutocast(ServerPlayer player, Spell spell) {
         PlayerData data = Players.data(player);
         if (spell != null && (spell.kind() != Spell.Kind.COMBAT || data.skills().level(Skill.MAGIC) < spell.level())) {
             Msg.game(player, "You need a Magic level of " + spell.level() + " to cast this spell.");
@@ -60,8 +60,8 @@ public final class MagicService {
     }
 
     /** Elemental staffs provide unlimited runes of their element. */
-    private static boolean staffProvides(ServerPlayerEntity player, Rune rune) {
-        ItemStack held = player.getMainHandStack();
+    private static boolean staffProvides(ServerPlayer player, Rune rune) {
+        ItemStack held = player.getMainHandItem();
         String id = held.isEmpty() ? "" : Inv.idOf(held);
         if (id.equals("steam_battlestaff")) {
             return rune == Rune.FIRE || rune == Rune.WATER;
@@ -80,7 +80,7 @@ public final class MagicService {
      * A blighted surge sack that pays for this wave or surge spell where sacks work (the Wilderness, Castle Wars, Soul Wars;
      * see {@link com.runecraft.osrs.data.BlightedSacks}), or null.
      */
-    private static String blightedSack(ServerPlayerEntity player, Spell spell) {
+    private static String blightedSack(ServerPlayer player, Spell spell) {
         String sack = com.runecraft.osrs.data.BlightedSacks.sackFor(spell.name());
         if (sack == null || !Inv.has(player, sack, 1)) {
             return null;
@@ -90,7 +90,7 @@ public final class MagicService {
                 session == null ? null : session.game.id()) ? sack : null;
     }
 
-    private static boolean hasRunes(ServerPlayerEntity player, Spell spell) {
+    private static boolean hasRunes(ServerPlayer player, Spell spell) {
         if (blightedSack(player, spell) != null) {
             return true;
         }
@@ -102,7 +102,7 @@ public final class MagicService {
         return true;
     }
 
-    private static void consumeRunes(ServerPlayerEntity player, Spell spell) {
+    private static void consumeRunes(ServerPlayer player, Spell spell) {
         String sack = blightedSack(player, spell);
         if (sack != null) {
             Inv.remove(player, sack, 1);
@@ -115,7 +115,7 @@ public final class MagicService {
         }
     }
 
-    private static boolean canCast(ServerPlayerEntity player, Spell spell) {
+    private static boolean canCast(ServerPlayer player, Spell spell) {
         if (Players.data(player).skills().currentLevel(Skill.MAGIC) < spell.level()) {
             Msg.game(player, "Your Magic level is not high enough for this spell.");
             return false;
@@ -129,17 +129,17 @@ public final class MagicService {
 
     // ---------------- Combat ----------------
 
-    public static void autocastAttack(ServerPlayerEntity player) {
+    public static void autocastAttack(ServerPlayer player) {
         autocastAttack(player, null);
     }
 
     /** The living entity the player is looking at within spell range, or null. */
-    private static LivingEntity lookTarget(ServerPlayerEntity player) {
-        Vec3d eye = player.getEyePos();
-        Vec3d look = player.getRotationVector();
-        Vec3d end = eye.add(look.multiply(SPELL_RANGE));
-        Box box = player.getBoundingBox().stretch(look.multiply(SPELL_RANGE)).expand(1.0);
-        EntityHitResult hit = ProjectileUtil.raycast(player, eye, end, box,
+    private static LivingEntity lookTarget(ServerPlayer player) {
+        Vec3 eye = player.getEyePosition();
+        Vec3 look = player.getLookAngle();
+        Vec3 end = eye.add(look.scale(SPELL_RANGE));
+        AABB box = player.getBoundingBox().expandTowards(look.scale(SPELL_RANGE)).inflate(1.0);
+        EntityHitResult hit = ProjectileUtil.getEntityHitResult(player, eye, end, box,
                 e -> e instanceof LivingEntity && e.isAlive() && e != player && !e.isSpectator(), SPELL_RANGE * SPELL_RANGE);
         return hit != null && hit.getEntity() instanceof LivingEntity l ? l : null;
     }
@@ -148,9 +148,9 @@ public final class MagicService {
      * Casts the autocast spell (or the powered staff's spell) at {@code forced}, or at whatever the player is looking
      * at when {@code forced} is null (auto-retaliate passes the attacker).
      */
-    public static void autocastAttack(ServerPlayerEntity player, LivingEntity forced) {
+    public static void autocastAttack(ServerPlayer player, LivingEntity forced) {
         PlayerData data = Players.data(player);
-        String weaponId = Inv.idOf(player.getMainHandStack());
+        String weaponId = Inv.idOf(player.getMainHandItem());
         if (CombatBonuses.poweredStaffMaxHit(weaponId, data.skills().currentLevel(Skill.MAGIC)) >= 0) {
             poweredStaffAttack(player, weaponId, forced);
             return;
@@ -164,17 +164,17 @@ public final class MagicService {
         if (now - data.lastAttackTick < 5L * ActionManager.MC_TICKS_PER_GAME_TICK) {
             return;
         }
-        Vec3d eye = player.getEyePos();
+        Vec3 eye = player.getEyePosition();
         LivingEntity target = forced != null ? forced : lookTarget(player);
         if (target == null) {
             Msg.action(player, "No target.");
             return;
         }
-        if (!(target instanceof ServerPlayerEntity) && target.isInvulnerable()) {
+        if (!(target instanceof ServerPlayer) && target.isInvulnerable()) {
             Msg.game(player, "You can't attack that."); // GotR's abyssal creatures: no cast, so no base spell XP either
             return;
         }
-        if (target instanceof ServerPlayerEntity other && !CombatHandler.canAttackPlayer(player, other)) {
+        if (target instanceof ServerPlayer other && !CombatHandler.canAttackPlayer(player, other)) {
             Msg.game(player, "You can't attack that player.");
             return;
         }
@@ -186,11 +186,11 @@ public final class MagicService {
         }
         data.lastAttackTick = now;
         consumeRunes(player, spell);
-        player.swingHand(Hand.MAIN_HAND, true);
-        trail((ServerWorld) player.getWorld(), eye, target.getPos().add(0, target.getHeight() / 2, 0), spell);
+        player.swing(InteractionHand.MAIN_HAND, true);
+        trail((ServerLevel) player.level(), eye, target.position().add(0, target.getBbHeight() / 2, 0), spell);
         XpService.addTenths(player, Skill.MAGIC, spell.xpTenths());
         if (!Gielinor.is(player)) {
-            target.damage(player.getDamageSources().indirectMagic(player, player), spell.maxHitAt(data.skills().currentLevel(Skill.MAGIC)) / 2.0f + 1);
+            target.hurt(player.damageSources().indirectMagic(player, player), spell.maxHitAt(data.skills().currentLevel(Skill.MAGIC)) / 2.0f + 1);
             return;
         }
         // Level-scaled spell max hit, magic damage, prayers and gear effects: PlayerHitCalc.
@@ -208,7 +208,7 @@ public final class MagicService {
         }
         damage = CombatHandler.protectionAgainstPlayer(target, AttackType.MAGIC, damage);
         if (splash) {
-            ((ServerWorld) player.getWorld()).spawnParticles(ParticleTypes.CLOUD, target.getX(), target.getY() + 1, target.getZ(), 8, 0.3, 0.3, 0.3, 0.02);
+            ((ServerLevel) player.level()).sendParticles(ParticleTypes.CLOUD, target.getX(), target.getY() + 1, target.getZ(), 8, 0.3, 0.3, 0.3, 0.02);
         }
         int dealt = CombatHandler.applyDamage(player, target, damage);
         CombatHandler.hookAfterHit(player, target, AttackType.MAGIC, dealt);
@@ -223,7 +223,7 @@ public final class MagicService {
      * whose max hit scales with Magic level, at the staff's own attack speed. Gives 2 Magic XP per damage
      * and no base cast XP.
      */
-    static void poweredStaffAttack(ServerPlayerEntity player, String weaponId, LivingEntity forced) {
+    static void poweredStaffAttack(ServerPlayer player, String weaponId, LivingEntity forced) {
         PlayerData data = Players.data(player);
         SkillSet skills = data.skills();
         int speed = Equipment.weaponSpeed(player, skills);
@@ -231,17 +231,17 @@ public final class MagicService {
         if (now - data.lastAttackTick < (long) speed * ActionManager.MC_TICKS_PER_GAME_TICK) {
             return;
         }
-        Vec3d eye = player.getEyePos();
+        Vec3 eye = player.getEyePosition();
         LivingEntity target = forced != null ? forced : lookTarget(player);
         if (target == null) {
             Msg.action(player, "No target.");
             return;
         }
-        if (!(target instanceof ServerPlayerEntity) && target.isInvulnerable()) {
+        if (!(target instanceof ServerPlayer) && target.isInvulnerable()) {
             Msg.game(player, "You can't attack that."); // GotR's abyssal creatures: no cast, so no base spell XP either
             return;
         }
-        if (target instanceof ServerPlayerEntity other && !CombatHandler.canAttackPlayer(player, other)) {
+        if (target instanceof ServerPlayer other && !CombatHandler.canAttackPlayer(player, other)) {
             Msg.game(player, "You can't attack that player.");
             return;
         }
@@ -259,8 +259,8 @@ public final class MagicService {
             return;
         }
         data.lastAttackTick = now;
-        player.swingHand(Hand.MAIN_HAND, true);
-        trail((ServerWorld) player.getWorld(), eye, target.getPos().add(0, target.getHeight() / 2, 0), Spell.WATER_SURGE);
+        player.swing(InteractionHand.MAIN_HAND, true);
+        trail((ServerLevel) player.level(), eye, target.position().add(0, target.getBbHeight() / 2, 0), Spell.WATER_SURGE);
         // Built-in spell max hit, Tumeken's shadow's x3, accurate +2 and gear effects: PlayerHitCalc.
         com.runecraft.osrs.PlayerHitCalc.Input in = HitCalcBridge.input(player, target, AttackType.MAGIC, null, 0);
         long attackRoll = HitCalcBridge.attackRoll(player, target, in);
@@ -275,7 +275,7 @@ public final class MagicService {
         }
         damage = CombatHandler.protectionAgainstPlayer(target, AttackType.MAGIC, damage);
         if (splash) {
-            ((ServerWorld) player.getWorld()).spawnParticles(ParticleTypes.CLOUD, target.getX(), target.getY() + 1, target.getZ(), 8, 0.3, 0.3, 0.3, 0.02);
+            ((ServerLevel) player.level()).sendParticles(ParticleTypes.CLOUD, target.getX(), target.getY() + 1, target.getZ(), 8, 0.3, 0.3, 0.3, 0.02);
         }
         int dealt = CombatHandler.applyDamage(player, target, damage);
         CombatHandler.hookAfterHit(player, target, AttackType.MAGIC, dealt);
@@ -291,12 +291,12 @@ public final class MagicService {
     }
 
     /** A monster casting a spell at a player. */
-    public static void npcCast(LivingEntity caster, ServerPlayerEntity target) {
-        trail((ServerWorld) caster.getWorld(), caster.getEyePos(), target.getPos().add(0, 1, 0), Spell.WATER_STRIKE);
+    public static void npcCast(LivingEntity caster, ServerPlayer target) {
+        trail((ServerLevel) caster.level(), caster.getEyePosition(), target.position().add(0, 1, 0), Spell.WATER_STRIKE);
         CombatHandler.npcAttack(caster, target, AttackType.MAGIC);
     }
 
-    private static void trail(ServerWorld world, Vec3d from, Vec3d to, Spell spell) {
+    private static void trail(ServerLevel world, Vec3 from, Vec3 to, Spell spell) {
         Vector3f color = switch (spell.name().substring(0, spell.name().indexOf('_'))) {
             case "WIND" -> new Vector3f(0.9f, 0.9f, 0.95f);
             case "WATER" -> new Vector3f(0.2f, 0.4f, 1.0f);
@@ -304,19 +304,19 @@ public final class MagicService {
             case "FIRE" -> new Vector3f(1.0f, 0.35f, 0.05f);
             default -> new Vector3f(0.7f, 0.2f, 0.9f);
         };
-        DustParticleEffect dust = new DustParticleEffect(color, 1.2f);
-        Vec3d delta = to.subtract(from);
+        DustParticleOptions dust = new DustParticleOptions(color, 1.2f);
+        Vec3 delta = to.subtract(from);
         int steps = (int) Math.max(4, delta.length() * 3);
         for (int i = 0; i <= steps; i++) {
-            Vec3d p = from.add(delta.multiply(i / (double) steps));
-            world.spawnParticles(dust, p.x, p.y, p.z, 1, 0, 0, 0, 0);
+            Vec3 p = from.add(delta.scale(i / (double) steps));
+            world.sendParticles(dust, p.x, p.y, p.z, 1, 0, 0, 0, 0);
         }
-        world.playSound(null, from.x, from.y, from.z, SoundEvents.ENTITY_EVOKER_CAST_SPELL, SoundCategory.PLAYERS, 0.5f, 1.4f);
+        world.playSound(null, from.x, from.y, from.z, SoundEvents.EVOKER_CAST_SPELL, SoundSource.PLAYERS, 0.5f, 1.4f);
     }
 
     // ---------------- Spellbook ----------------
 
-    public static void castFromSpellbook(ServerPlayerEntity player, Spell spell) {
+    public static void castFromSpellbook(ServerPlayer player, Spell spell) {
         if (!Stun.check(player)) {
             return;
         }
@@ -328,7 +328,7 @@ public final class MagicService {
         }
     }
 
-    private static void teleport(ServerPlayerEntity player, Spell spell) {
+    private static void teleport(ServerPlayer player, Spell spell) {
         Landmark dest = spell.destination();
         if (Teleblock.blocked(player) || com.runecraft.content.minigames.MinigameManager.teleportBlocked(player)) {
             return;
@@ -345,8 +345,8 @@ public final class MagicService {
                 int ticks;
 
                 @Override
-                public boolean tick(ServerPlayerEntity p, long gameTick) {
-                    ((ServerWorld) p.getWorld()).spawnParticles(ParticleTypes.ENCHANT, p.getX(), p.getY() + 1, p.getZ(), 15, 0.5, 0.8, 0.5, 0.5);
+                public boolean tick(ServerPlayer p, long gameTick) {
+                    ((ServerLevel) p.level()).sendParticles(ParticleTypes.ENCHANT, p.getX(), p.getY() + 1, p.getZ(), 15, 0.5, 0.8, 0.5, 0.5);
                     if (++ticks >= 16) {
                         Gielinor.teleport(p, Landmark.LUMBRIDGE);
                         return false;
@@ -365,22 +365,22 @@ public final class MagicService {
         }
         consumeRunes(player, spell);
         XpService.addTenths(player, Skill.MAGIC, spell.xpTenths());
-        ((ServerWorld) player.getWorld()).spawnParticles(ParticleTypes.PORTAL, player.getX(), player.getY() + 1, player.getZ(), 60, 0.5, 1, 0.5, 0.5);
+        ((ServerLevel) player.level()).sendParticles(ParticleTypes.PORTAL, player.getX(), player.getY() + 1, player.getZ(), 60, 0.5, 1, 0.5, 0.5);
         int[] tile = spell.tile();
         if (tile != null && Gielinor.world(player.getServer()) != null) {
-            ServerWorld world = Gielinor.world(player.getServer());
-            net.minecraft.util.math.BlockPos pos = Gielinor.safeSpot(world, com.runecraft.osrs.GielinorMap.toBlockX(tile[0]),
+            ServerLevel world = Gielinor.world(player.getServer());
+            net.minecraft.core.BlockPos pos = Gielinor.safeSpot(world, com.runecraft.osrs.GielinorMap.toBlockX(tile[0]),
                     com.runecraft.osrs.GielinorMap.toBlockZ(tile[1]));
-            player.teleport(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, player.getYaw(), player.getPitch());
+            player.teleportTo(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, player.getYRot(), player.getXRot());
         } else {
             Gielinor.teleport(player, dest);
         }
-        player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 1f, 1f);
+        player.level().playSound(null, player.blockPosition(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1f, 1f);
         com.runecraft.content.GameEvents.fireCast(player, spell.name().toLowerCase(java.util.Locale.ROOT));
     }
 
-    private static void alch(ServerPlayerEntity player, Spell spell) {
-        ItemStack held = player.getMainHandStack();
+    private static void alch(ServerPlayer player, Spell spell) {
+        ItemStack held = player.getMainHandItem();
         ItemDef def = ModItems.def(held);
         if (def == null || def.id().equals("coins")) {
             Msg.game(player, "Hold the item you want to alchemise in your main hand.");
@@ -390,18 +390,18 @@ public final class MagicService {
             return;
         }
         consumeRunes(player, spell);
-        held.decrement(1);
+        held.shrink(1);
         int coins = spell == Spell.HIGH_LEVEL_ALCHEMY ? def.highAlch() : def.lowAlch();
         Inv.give(player, "coins", coins);
         XpService.addTenths(player, Skill.MAGIC, spell.xpTenths());
-        ((ServerWorld) player.getWorld()).spawnParticles(ParticleTypes.FLAME, player.getX(), player.getY() + 1.2, player.getZ(), 20, 0.3, 0.3, 0.3, 0.05);
-        player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ENTITY_BLAZE_SHOOT, SoundCategory.PLAYERS, 0.6f, 1.2f);
+        ((ServerLevel) player.level()).sendParticles(ParticleTypes.FLAME, player.getX(), player.getY() + 1.2, player.getZ(), 20, 0.3, 0.3, 0.3, 0.05);
+        player.level().playSound(null, player.blockPosition(), SoundEvents.BLAZE_SHOOT, SoundSource.PLAYERS, 0.6f, 1.2f);
         Msg.action(player, "You receive " + coins + " coins.");
         com.runecraft.content.GameEvents.fireCast(player, spell.name().toLowerCase(java.util.Locale.ROOT));
         ServerNetworking.sync(player);
     }
 
-    private static void superheat(ServerPlayerEntity player, Spell spell) {
+    private static void superheat(ServerPlayer player, Spell spell) {
         int smithing = Players.data(player).skills().currentLevel(Skill.SMITHING);
         for (int i = Bar.values().length - 1; i >= 0; i--) {
             Bar bar = Bar.values()[i];

@@ -5,22 +5,21 @@ import com.runecraft.osrs.world.SpawnTable;
 import com.runecraft.registry.ModEntities;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.mob.ZombieEntity;
-import net.minecraft.entity.passive.TameableEntity;
-import net.minecraft.registry.Registries;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.world.Heightmap;
-
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.TamableAnimal;
+import net.minecraft.world.entity.monster.Zombie;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.phys.AABB;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -82,7 +81,7 @@ public final class LocationSpawner {
             BY_TAG.put(state.tag, state);
         }
         ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> {
-            if (Gielinor.is(world) && entity instanceof MobEntity mob && shouldRemove(mob)) {
+            if (Gielinor.is(world) && entity instanceof Mob mob && shouldRemove(mob)) {
                 synchronized (DISCARD) {
                     DISCARD.add(mob); // removed on the next tick, not while the world is adding it
                 }
@@ -98,9 +97,9 @@ public final class LocationSpawner {
      * the table, or a vanilla mob that came from natural spawning (anything vanilla that isn't
      * persistent, named, tamed, leashed, already fighting, or made by one of our spawners).
      */
-    private static boolean shouldRemove(MobEntity mob) {
+    private static boolean shouldRemove(Mob mob) {
         boolean ours = false;
-        for (String tag : mob.getCommandTags()) {
+        for (String tag : mob.getTags()) {
             if (tag.startsWith(KEY_PREFIX)) {
                 if (BY_TAG.containsKey(tag)) {
                     return false;
@@ -114,14 +113,14 @@ public final class LocationSpawner {
         if (ours) {
             return true; // its spawn point was removed from the table
         }
-        Identifier id = Registries.ENTITY_TYPE.getId(mob.getType());
+        ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType());
         if (!"minecraft".equals(id.getNamespace())) {
             return false; // RuneCraft creatures only come from our own spawners and scripts
         }
-        if (mob.isPersistent() || mob.hasCustomName() || mob.isLeashed() || mob.getTarget() != null) {
+        if (mob.isPersistenceRequired() || mob.hasCustomName() || mob.isLeashed() || mob.getTarget() != null) {
             return false; // a camp's, a script's or a player's mob
         }
-        return !(mob instanceof TameableEntity tame && tame.isTamed());
+        return !(mob instanceof TamableAnimal tame && tame.isTame());
     }
 
     // ------------------------------------------------------------------ spawn points
@@ -140,8 +139,8 @@ public final class LocationSpawner {
         if (++ticks % INTERVAL_MC_TICKS != 0) {
             return;
         }
-        ServerWorld world = Gielinor.world(server);
-        if (world == null || world.getPlayers().isEmpty()) {
+        ServerLevel world = Gielinor.world(server);
+        if (world == null || world.players().isEmpty()) {
             return;
         }
         for (State state : STATES) {
@@ -153,11 +152,11 @@ public final class LocationSpawner {
         }
     }
 
-    private static boolean playerNear(ServerWorld world, SpawnPoint p) {
+    private static boolean playerNear(ServerLevel world, SpawnPoint p) {
         double cx = p.blockX() + 0.5;
         double cz = p.blockZ() + 0.5;
         double range = PLAYER_RANGE + p.radiusBlocks();
-        for (ServerPlayerEntity player : world.getPlayers()) {
+        for (ServerPlayer player : world.players()) {
             if (!player.isAlive() || player.isSpectator()) {
                 continue;
             }
@@ -173,7 +172,7 @@ public final class LocationSpawner {
         return false;
     }
 
-    private static void tickPoint(ServerWorld world, State state) {
+    private static void tickPoint(ServerLevel world, State state) {
         SpawnPoint p = state.point;
         int cx = p.blockX();
         int cz = p.blockZ();
@@ -182,7 +181,7 @@ public final class LocationSpawner {
             state.pending.clear();
             return;
         }
-        if (!world.isChunkLoaded(cx >> 4, cz >> 4)) {
+        if (!world.hasChunk(cx >> 4, cz >> 4)) {
             return;
         }
         if (!state.resolved) {
@@ -198,21 +197,21 @@ public final class LocationSpawner {
         int r = p.radiusBlocks();
         int leash = Math.max(8, 2 * r);
         int reach = 2 * leash + 32;
-        Box area = p.surface()
-                ? new Box(cx - reach, world.getBottomY(), cz - reach, cx + reach + 1, world.getTopY(), cz + reach + 1)
-                : new Box(cx - reach, p.floorY() - PLAYER_RANGE_Y, cz - reach, cx + reach + 1, p.floorY() + PLAYER_RANGE_Y,
+        AABB area = p.surface()
+                ? new AABB(cx - reach, world.getMinBuildHeight(), cz - reach, cx + reach + 1, world.getMaxBuildHeight(), cz + reach + 1)
+                : new AABB(cx - reach, p.floorY() - PLAYER_RANGE_Y, cz - reach, cx + reach + 1, p.floorY() + PLAYER_RANGE_Y,
                 cz + reach + 1);
-        List<MobEntity> mine = new ArrayList<>(world.getEntitiesByClass(MobEntity.class, area,
-                e -> e.isAlive() && e.getCommandTags().contains(state.tag)));
+        List<Mob> mine = new ArrayList<>(world.getEntitiesOfClass(Mob.class, area,
+                e -> e.isAlive() && e.getTags().contains(state.tag)));
         if (mine.size() > p.count()) {
             // Some came back from an unloaded chunk after replacements were made: keep the nearest.
-            mine.sort(Comparator.comparingDouble((MobEntity e) -> e.squaredDistanceTo(cx + 0.5, e.getY(), cz + 0.5)));
+            mine.sort(Comparator.comparingDouble((Mob e) -> e.distanceToSqr(cx + 0.5, e.getY(), cz + 0.5)));
             for (int i = p.count(); i < mine.size(); i++) {
                 mine.get(i).discard();
             }
             mine = mine.subList(0, p.count());
         }
-        for (MobEntity mob : mine) {
+        for (Mob mob : mine) {
             leash(world, p, mob, leash);
         }
         int missing = p.count() - mine.size();
@@ -225,7 +224,7 @@ public final class LocationSpawner {
             }
             return;
         }
-        long now = world.getTime();
+        long now = world.getGameTime();
         while (state.pending.size() > Math.max(0, missing)) {
             state.pending.pollLast();
         }
@@ -239,7 +238,7 @@ public final class LocationSpawner {
     }
 
     /** Walks a wandering monster home, or teleports it back when it is far away (dropping its target). */
-    private static void leash(ServerWorld world, SpawnPoint p, MobEntity mob, int leash) {
+    private static void leash(ServerLevel world, SpawnPoint p, Mob mob, int leash) {
         double hx = p.blockX() + 0.5;
         double hz = p.blockZ() + 0.5;
         double dx = mob.getX() - hx;
@@ -249,7 +248,7 @@ public final class LocationSpawner {
             return;
         }
         if (d <= leash + 16 && mob.getTarget() == null) {
-            mob.getNavigation().startMovingTo(hx, mob.getY(), hz, 1.0);
+            mob.getNavigation().moveTo(hx, mob.getY(), hz, 1.0);
             return;
         }
         if (d > leash + 16) {
@@ -257,34 +256,34 @@ public final class LocationSpawner {
             if (home != null) {
                 mob.setTarget(null);
                 mob.getNavigation().stop();
-                mob.requestTeleport(home.getX() + 0.5, home.getY(), home.getZ() + 0.5);
+                mob.teleportTo(home.getX() + 0.5, home.getY(), home.getZ() + 0.5);
             }
         }
     }
 
     private static boolean open(BlockState state) {
-        return state.isAir() || state.isReplaceable() && state.getFluidState().isEmpty();
+        return state.isAir() || state.canBeReplaced() && state.getFluidState().isEmpty();
     }
 
     /** A random free standing spot within the point's radius, or null after a few tries. */
-    private static BlockPos findSpot(ServerWorld world, SpawnPoint p) {
+    private static BlockPos findSpot(ServerLevel world, SpawnPoint p) {
         int r = p.radiusBlocks();
         for (int attempt = 0; attempt < 8; attempt++) {
             int x = p.blockX() - r + world.getRandom().nextInt(2 * r + 1);
             int z = p.blockZ() - r + world.getRandom().nextInt(2 * r + 1);
-            if (!world.isChunkLoaded(x >> 4, z >> 4)) {
+            if (!world.hasChunk(x >> 4, z >> 4)) {
                 continue;
             }
-            int y = p.surface() ? world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z) : p.floorY();
+            int y = p.surface() ? world.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) : p.floorY();
             BlockPos feet = new BlockPos(x, y, z);
-            BlockState below = world.getBlockState(feet.down());
-            if (!open(world.getBlockState(feet)) || !open(world.getBlockState(feet.up())) || below.isAir()
+            BlockState below = world.getBlockState(feet.below());
+            if (!open(world.getBlockState(feet)) || !open(world.getBlockState(feet.above())) || below.isAir()
                     || !below.getFluidState().isEmpty()) {
                 continue; // water, lava, a wall, or the dungeon/building isn't there (yet)
             }
             boolean crowded = false;
-            for (ServerPlayerEntity player : world.getPlayers()) {
-                if (player.squaredDistanceTo(x + 0.5, y, z + 0.5) < 5 * 5) {
+            for (ServerPlayer player : world.players()) {
+                if (player.distanceToSqr(x + 0.5, y, z + 0.5) < 5 * 5) {
                     crowded = true;
                     break;
                 }
@@ -296,23 +295,23 @@ public final class LocationSpawner {
         return null;
     }
 
-    private static void spawn(ServerWorld world, State state) {
+    private static void spawn(ServerLevel world, State state) {
         BlockPos pos = findSpot(world, state.point);
         if (pos == null) {
             return;
         }
         Entity e = state.type.create(world);
-        if (!(e instanceof MobEntity mob)) {
+        if (!(e instanceof Mob mob)) {
             return;
         }
-        mob.refreshPositionAndAngles(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, world.getRandom().nextFloat() * 360f, 0);
-        mob.initialize(world, world.getLocalDifficulty(pos), SpawnReason.SPAWNER, null, null);
-        if (mob instanceof ZombieEntity zombie) {
+        mob.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, world.getRandom().nextFloat() * 360f, 0);
+        mob.finalizeSpawn(world, world.getCurrentDifficultyAt(pos), MobSpawnType.SPAWNER, null, null);
+        if (mob instanceof Zombie zombie) {
             zombie.setBaby(false); // OSRS zombies are all grown up
         }
-        mob.setPersistent();
-        mob.addCommandTag(TAG);
-        mob.addCommandTag(state.tag);
-        world.spawnEntity(mob);
+        mob.setPersistenceRequired();
+        mob.addTag(TAG);
+        mob.addTag(state.tag);
+        world.addFreshEntity(mob);
     }
 }

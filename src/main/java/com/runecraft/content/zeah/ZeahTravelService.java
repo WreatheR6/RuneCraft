@@ -11,13 +11,12 @@ import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
 import com.runecraft.world.LandmarkBuilder;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Travel between Zeah stops. Talking to a travel NPC (or using a minecart) while sneaking picks the
@@ -30,12 +29,12 @@ final class ZeahTravelService {
     private ZeahTravelService() {
     }
 
-    static void talk(ServerPlayerEntity player, String npcName, ZeahTravel.Agent agent) {
+    static void talk(ServerPlayer player, String npcName, ZeahTravel.Agent agent) {
         choose(player, npcName, agent.network(), agent.at());
     }
 
     /** A Lovakengj minecart: works out which station it belongs to from its position. */
-    static void minecart(ServerPlayerEntity player, BlockPos pos) {
+    static void minecart(ServerPlayer player, BlockPos pos) {
         int x = GielinorMap.toOsrsX(pos.getX());
         int y = GielinorMap.toOsrsY(pos.getZ());
         ZeahTravel.Stop here = ZeahTravel.nearestMinecart(x, y, id -> {
@@ -49,14 +48,14 @@ final class ZeahTravelService {
         choose(player, "Minecart conductor", ZeahTravel.MINECART, here.place());
     }
 
-    private static void choose(ServerPlayerEntity player, String speaker, ZeahTravel.Network network, String from) {
+    private static void choose(ServerPlayer player, String speaker, ZeahTravel.Network network, String from) {
         List<ZeahTravel.Stop> dests = network.destinations(from);
         if (dests.isEmpty()) {
             return;
         }
-        String key = player.getUuid() + "|" + network.id() + "|" + from;
+        String key = player.getUUID() + "|" + network.id() + "|" + from;
         int index = CHOICE.getOrDefault(key, 0) % dests.size();
-        if (player.isSneaking()) {
+        if (player.isShiftKeyDown()) {
             index = (index + 1) % dests.size();
             CHOICE.put(key, index);
             QuestApi.say(player, speaker, "Next stop: " + dests.get(index).name() + ". Talk to me again to go there.");
@@ -82,12 +81,12 @@ final class ZeahTravelService {
     }
 
     /** Sends a player to a stop: its OSRS tile if it has one, else next to its place. */
-    static void travel(ServerPlayerEntity player, ZeahTravel.Stop to) {
+    static void travel(ServerPlayer player, ZeahTravel.Stop to) {
         if (to.x() == 0) {
             travel(player, to.place());
             return;
         }
-        ServerWorld world = Gielinor.world(player.getServer());
+        ServerLevel world = Gielinor.world(player.getServer());
         if (world == null) {
             return;
         }
@@ -96,7 +95,7 @@ final class ZeahTravelService {
             LandmarkBuilder.buildNow(world, p);
         }
         BlockPos pos = Gielinor.safeSpot(world, GielinorMap.toBlockX(to.x()), GielinorMap.toBlockZ(to.y()));
-        player.teleport(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, player.getYaw(), player.getPitch());
+        player.teleportTo(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, player.getYRot(), player.getXRot());
     }
 
     /** Lays a minecart at each stand-alone Lovakengj station when its place is built. */
@@ -111,30 +110,30 @@ final class ZeahTravelService {
             int z = GielinorMap.toBlockZ(p.osrsY());
             LandmarkBuilder.registerCustom(id, (world, centre) -> {
                 world.getChunk(x >> 4, z >> 4);
-                int y = Math.max(world.getTopY(net.minecraft.world.Heightmap.Type.OCEAN_FLOOR, x, z), world.getSeaLevel());
-                net.minecraft.block.Block cart = net.minecraft.registry.Registries.BLOCK.get(
+                int y = Math.max(world.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.OCEAN_FLOOR, x, z), world.getSeaLevel());
+                net.minecraft.world.level.block.Block cart = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(
                         RuneCraft.resolve(com.runecraft.osrs.content.zeah.ZeahBlocks.MINECART));
-                world.setBlockState(new BlockPos(x, y, z), cart.getDefaultState());
-                world.setBlockState(new BlockPos(x, y + 1, z), net.minecraft.block.Blocks.AIR.getDefaultState());
+                world.setBlockAndUpdate(new BlockPos(x, y, z), cart.defaultBlockState());
+                world.setBlockAndUpdate(new BlockPos(x, y + 1, z), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
             });
         }
     }
 
     /** Sends a player to a module place or landmark, building it first if needed. */
-    static void travel(ServerPlayerEntity player, String place) {
+    static void travel(ServerPlayer player, String place) {
         Landmark landmark = Landmark.byName(place);
         if (landmark != null) {
             Gielinor.teleport(player, landmark);
             return;
         }
         PlaceDef p = ContentRegistry.place(place);
-        ServerWorld world = Gielinor.world(player.getServer());
+        ServerLevel world = Gielinor.world(player.getServer());
         if (p == null || world == null) {
             RuneCraft.LOGGER.warn("Zeah travel: unknown destination {}", place);
             return;
         }
         LandmarkBuilder.buildNow(world, p);
         BlockPos pos = Gielinor.safeSpot(world, p.blockX() + 3, p.blockZ() + 3);
-        player.teleport(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, player.getYaw(), player.getPitch());
+        player.teleportTo(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, player.getYRot(), player.getXRot());
     }
 }

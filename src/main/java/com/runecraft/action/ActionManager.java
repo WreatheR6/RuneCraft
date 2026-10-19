@@ -4,9 +4,8 @@ import com.runecraft.combat.PrayerService;
 import com.runecraft.player.PlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.math.Vec3d;
-
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.phys.Vec3;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -23,7 +22,7 @@ public final class ActionManager {
     private static long mcTicks;
     private static long gameTick;
 
-    private record Running(Action action, Vec3d origin, boolean allowMovement) {
+    private record Running(Action action, Vec3 origin, boolean allowMovement) {
     }
 
     private ActionManager() {
@@ -42,17 +41,17 @@ public final class ActionManager {
         return mcTicks;
     }
 
-    public static void start(ServerPlayerEntity player, Action action) {
+    public static void start(ServerPlayer player, Action action) {
         start(player, action, false);
     }
 
-    public static void start(ServerPlayerEntity player, Action action, boolean allowMovement) {
+    public static void start(ServerPlayer player, Action action, boolean allowMovement) {
         cancel(player);
-        ACTIONS.put(player.getUuid(), new Running(action, player.getPos(), allowMovement));
+        ACTIONS.put(player.getUUID(), new Running(action, player.position(), allowMovement));
     }
 
-    public static void cancel(ServerPlayerEntity player) {
-        Running old = ACTIONS.remove(player.getUuid());
+    public static void cancel(ServerPlayer player) {
+        Running old = ACTIONS.remove(player.getUUID());
         if (old != null) {
             old.action().stop(player);
         }
@@ -62,21 +61,21 @@ public final class ActionManager {
      * Self-test hook ({@code com.runecraft.selftest}): advances a player's current action by one game tick right now,
      * for test players that are not in the server's player list. Returns whether the action is still running.
      */
-    public static boolean tickNow(ServerPlayerEntity player) {
-        Running running = ACTIONS.get(player.getUuid());
+    public static boolean tickNow(ServerPlayer player) {
+        Running running = ACTIONS.get(player.getUUID());
         if (running == null) {
             return false;
         }
         if (!running.action().tick(player, gameTick)) {
-            ACTIONS.remove(player.getUuid());
+            ACTIONS.remove(player.getUUID());
             running.action().stop(player);
             return false;
         }
         return true;
     }
 
-    public static boolean isBusy(ServerPlayerEntity player) {
-        return ACTIONS.containsKey(player.getUuid());
+    public static boolean isBusy(ServerPlayer player) {
+        return ACTIONS.containsKey(player.getUUID());
     }
 
     private static void onServerTick(MinecraftServer server) {
@@ -86,19 +85,19 @@ public final class ActionManager {
             return;
         }
         gameTick++;
-        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-            Running running = ACTIONS.get(player.getUuid());
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            Running running = ACTIONS.get(player.getUUID());
             if (running != null) {
-                boolean moved = !running.allowMovement() && player.getPos().squaredDistanceTo(running.origin()) > 1.0;
-                if (moved || player.isDead() || !running.action().tick(player, gameTick)) {
-                    ACTIONS.remove(player.getUuid());
+                boolean moved = !running.allowMovement() && player.position().distanceToSqr(running.origin()) > 1.0;
+                if (moved || player.isDeadOrDying() || !running.action().tick(player, gameTick)) {
+                    ACTIONS.remove(player.getUUID());
                     running.action().stop(player);
                 }
             }
             PrayerService.gameTick(player, gameTick);
             PlayerEvents.gameTick(player, gameTick);
         }
-        ACTIONS.keySet().removeIf(uuid -> server.getPlayerManager().getPlayer(uuid) == null);
+        ACTIONS.keySet().removeIf(uuid -> server.getPlayerList().getPlayer(uuid) == null);
         com.runecraft.combat.CombatZones.gameTick(server, gameTick);
     }
 }

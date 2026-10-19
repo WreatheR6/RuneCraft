@@ -7,13 +7,13 @@ import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.Hand;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * OSRS run energy in Gielinor: sprinting drains it, standing/walking restores it (faster with Agility),
@@ -23,13 +23,13 @@ public final class RunEnergyService {
     private RunEnergyService() {
     }
 
-    public static void restore(ServerPlayerEntity p, int hundredths) {
+    public static void restore(ServerPlayer p, int hundredths) {
         SysState.SysPlayer sp = SysState.of(p);
         sp.runEnergy = Math.min(RunEnergy.MAX, sp.runEnergy + hundredths);
         SysNet.sendState(p);
     }
 
-    public static void gameTick(ServerPlayerEntity p, long tick) {
+    public static void gameTick(ServerPlayer p, long tick) {
         if (!Gielinor.is(p) || p.isCreative() || p.isSpectator()) {
             return;
         }
@@ -41,16 +41,16 @@ public final class RunEnergyService {
         // A full Graceful set restores energy 30% faster, the same boost as the Agility cape (they don't stack).
         boolean agilityCape = cape.startsWith("agility_cape") || cape.equals("max_cape")
                 || com.runecraft.osrs.content.skilling.AgilityData.fullGraceful(
-                        Inv.idOf(p.getEquippedStack(net.minecraft.entity.EquipmentSlot.HEAD)),
-                        Inv.idOf(p.getEquippedStack(net.minecraft.entity.EquipmentSlot.CHEST)),
-                        Inv.idOf(p.getEquippedStack(net.minecraft.entity.EquipmentSlot.LEGS)),
-                        Inv.idOf(p.getEquippedStack(net.minecraft.entity.EquipmentSlot.FEET)), cape,
+                        Inv.idOf(p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD)),
+                        Inv.idOf(p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.CHEST)),
+                        Inv.idOf(p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.LEGS)),
+                        Inv.idOf(p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.FEET)), cape,
                         sp.wornId(com.runecraft.osrs.content.systems.Jewellery.Slot.HANDS));
         if (p.isSprinting() && p.getVehicle() == null) {
             sp.runEnergy = Math.max(0, sp.runEnergy - RunEnergy.drain(carriedWeight(p, sp), stamina));
             if (sp.runEnergy <= 0) {
                 // Out of energy: slow the player to walking pace (cancels the sprint speed bonus).
-                p.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 30, 1, false, false));
+                p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 30, 1, false, false));
                 p.setSprinting(false);
                 if (before > 0) {
                     Msg.game(p, "You are out of run energy.");
@@ -69,16 +69,16 @@ public final class RunEnergyService {
      * slots, off-hand and accessory slots. Each inventory slot counts its item once, since a Minecraft stack
      * stands in for one OSRS inventory slot (approx); worn Graceful pieces weigh less than nothing.
      */
-    static int carriedWeight(ServerPlayerEntity p, SysState.SysPlayer sp) {
+    static int carriedWeight(ServerPlayer p, SysState.SysPlayer sp) {
         double kg = 0;
-        net.minecraft.entity.player.PlayerInventory inv = p.getInventory();
-        for (ItemStack stack : inv.main) {
+        net.minecraft.world.entity.player.Inventory inv = p.getInventory();
+        for (ItemStack stack : inv.items) {
             kg += weightOf(stack, false);
         }
         for (ItemStack stack : inv.armor) {
             kg += weightOf(stack, true);
         }
-        for (ItemStack stack : inv.offHand) {
+        for (ItemStack stack : inv.offhand) {
             kg += weightOf(stack, true);
         }
         for (ItemStack worn : sp.worn.values()) {
@@ -103,8 +103,8 @@ public final class RunEnergyService {
         return id.startsWith("stamina_potion") || id.startsWith("super_energy") || id.equals("stamina_mix");
     }
 
-    public static void drink(ServerPlayerEntity p, ItemStack stack, Hand hand, String id) {
-        if (p.getItemCooldownManager().isCoolingDown(stack.getItem())) {
+    public static void drink(ServerPlayer p, ItemStack stack, InteractionHand hand, String id) {
+        if (p.getCooldowns().isOnCooldown(stack.getItem())) {
             return;
         }
         SysState.SysPlayer sp = SysState.of(p);
@@ -116,17 +116,17 @@ public final class RunEnergyService {
             sp.runEnergy = Math.min(RunEnergy.MAX, sp.runEnergy + 2000);
             Msg.action(p, "You drink some of your super energy potion.");
         }
-        p.getWorld().playSound(null, p.getBlockPos(), SoundEvents.ENTITY_GENERIC_DRINK, SoundCategory.PLAYERS, 0.5f, 1.0f);
-        p.getItemCooldownManager().set(stack.getItem(), 3 * ActionManager.MC_TICKS_PER_GAME_TICK);
-        if (stack.isDamageable()) {
-            int used = stack.getDamage() + 1;
+        p.level().playSound(null, p.blockPosition(), SoundEvents.GENERIC_DRINK, SoundSource.PLAYERS, 0.5f, 1.0f);
+        p.getCooldowns().addCooldown(stack.getItem(), 3 * ActionManager.MC_TICKS_PER_GAME_TICK);
+        if (stack.isDamageableItem()) {
+            int used = stack.getDamageValue() + 1;
             if (used >= stack.getMaxDamage()) {
-                p.setStackInHand(hand, Inv.stack("vial", 1));
+                p.setItemInHand(hand, Inv.stack("vial", 1));
             } else {
-                stack.setDamage(used);
+                stack.setDamageValue(used);
             }
         } else {
-            stack.decrement(1);
+            stack.shrink(1);
             Inv.give(p, "vial", 1);
         }
         SysNet.sendState(p);

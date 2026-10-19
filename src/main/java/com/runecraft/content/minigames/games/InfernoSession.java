@@ -7,18 +7,17 @@ import com.runecraft.osrs.content.minigames.Minigame;
 import com.runecraft.osrs.content.minigames.TzHaarWaves;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * The Inferno: 69 waves (see {@link TzHaarWaves}). Nibblers chew on the three obsidian pillars,
@@ -43,7 +42,7 @@ public class InfernoSession extends TzHaarSession {
     private long firstJadDeath = -1;
     private boolean jadsJudged;
 
-    public InfernoSession(int id, int slot, ServerWorld world, String variant) {
+    public InfernoSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.INFERNO, id, slot, world, variant);
     }
 
@@ -75,7 +74,7 @@ public class InfernoSession extends TzHaarSession {
 
     @Override
     protected void build() {
-        room(net.minecraft.block.Blocks.BLACKSTONE, net.minecraft.block.Blocks.POLISHED_BLACKSTONE_BRICKS, net.minecraft.block.Blocks.MAGMA_BLOCK);
+        room(net.minecraft.world.level.block.Blocks.BLACKSTONE, net.minecraft.world.level.block.Blocks.POLISHED_BLACKSTONE_BRICKS, net.minecraft.world.level.block.Blocks.MAGMA_BLOCK);
         for (int i = 0; i < 3; i++) {
             buildPillar(i, true);
         }
@@ -87,35 +86,35 @@ public class InfernoSession extends TzHaarSession {
             for (int dz = -1; dz <= 1; dz++) {
                 for (int y = 1; y <= 5; y++) {
                     set(PILLARS[i][0] + dx, y, PILLARS[i][1] + dz,
-                            standing ? (y == 5 ? Blocks.CRYING_OBSIDIAN : Blocks.OBSIDIAN).getDefaultState() : Blocks.AIR.getDefaultState());
+                            standing ? (y == 5 ? Blocks.CRYING_OBSIDIAN : Blocks.OBSIDIAN).defaultBlockState() : Blocks.AIR.defaultBlockState());
                 }
             }
         }
     }
 
     @Override
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
+    protected BlockPos spawnPoint(ServerPlayer player, int index) {
         return rel(index % 3 - 1, 1, 16);
     }
 
     @Override
     protected void start() {
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             MinigameData data = MinigameData.of(p);
-            if (!data.flag(p.getUuid(), "inferno_cape_sacrificed") && Inv.remove(p, "fire_cape", 1) > 0) {
-                data.setFlag(p.getUuid(), "inferno_cape_sacrificed");
+            if (!data.flag(p.getUUID(), "inferno_cape_sacrificed") && Inv.remove(p, "fire_cape", 1) > 0) {
+                data.setFlag(p.getUUID(), "inferno_cape_sacrificed");
                 Msg.game(p, "You sacrifice your fire cape to the Inferno. You may now enter freely.");
             }
         }
     }
 
     @Override
-    protected MobEntity spawnWaveCreature(String id, BlockPos at) {
+    protected Mob spawnWaveCreature(String id, BlockPos at) {
         if (id.equals(TzHaarWaves.ZUK)) {
             broadcastRed("TzKal-Zuk: Ah, the JalYt finally arrives. Let us begin.");
-            MobEntity glyph = spawn("ancestral_glyph", rel(0, 1, -10));
+            Mob glyph = spawn("ancestral_glyph", rel(0, 1, -10));
             if (glyph != null) {
-                glyph.addCommandTag(com.runecraft.content.minigames.MinigameCombat.INVULNERABLE);
+                glyph.addTag(com.runecraft.content.minigames.MinigameCombat.INVULNERABLE);
             }
             zukSpawnedAt = ticks;
             setTimer = 0;
@@ -171,13 +170,13 @@ public class InfernoSession extends TzHaarSession {
                 if (pillarHp[i] <= 0) {
                     continue;
                 }
-                double d = nib.getBlockPos().getSquaredDistance(rel(PILLARS[i][0], 1, PILLARS[i][1]));
+                double d = nib.blockPosition().distSqr(rel(PILLARS[i][0], 1, PILLARS[i][1]));
                 if (d < bestD) {
                     bestD = d;
                     best = i;
                 }
             }
-            if (!(nib instanceof MobEntity mob)) {
+            if (!(nib instanceof Mob mob)) {
                 continue;
             }
             if (best < 0) {
@@ -188,7 +187,7 @@ public class InfernoSession extends TzHaarSession {
             }
             if (bestD > 9) {
                 BlockPos p = rel(PILLARS[best][0], 1, PILLARS[best][1]);
-                mob.getNavigation().startMovingTo(p.getX() + 0.5, p.getY(), p.getZ() + 0.5, 1.0);
+                mob.getNavigation().moveTo(p.getX() + 0.5, p.getY(), p.getZ() + 0.5, 1.0);
             } else {
                 pillarHp[best] -= random.nextInt(5);
                 if (pillarHp[best] <= 0) {
@@ -201,13 +200,13 @@ public class InfernoSession extends TzHaarSession {
     private void collapse(int i) {
         buildPillar(i, false);
         BlockPos c = rel(PILLARS[i][0], 1, PILLARS[i][1]);
-        world.spawnParticles(ParticleTypes.EXPLOSION, c.getX() + 0.5, c.getY() + 1, c.getZ() + 0.5, 6, 1.5, 1, 1.5, 0);
+        world.sendParticles(ParticleTypes.EXPLOSION, c.getX() + 0.5, c.getY() + 1, c.getZ() + 0.5, 6, 1.5, 1, 1.5, 0);
         broadcastRed("A pillar collapses!");
         if (wave < 67) {
             caRunFlags.add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_PILLAR_EARLY);
         }
-        for (ServerPlayerEntity p : online()) {
-            if (p.getBlockPos().getSquaredDistance(c) < 16) {
+        for (ServerPlayer p : online()) {
+            if (p.blockPosition().distSqr(c) < 16) {
                 CombatHandler.applyDamage(null, p, 10 + random.nextInt(40));
             }
         }
@@ -215,14 +214,14 @@ public class InfernoSession extends TzHaarSession {
 
     private void imkotDig() {
         for (LivingEntity e : living(TzHaarWaves.JAL_IMKOT)) {
-            if (e instanceof MobEntity mob && mob.getTarget() != null && mob.squaredDistanceTo(mob.getTarget()) > 100) {
+            if (e instanceof Mob mob && mob.getTarget() != null && mob.distanceToSqr(mob.getTarget()) > 100) {
                 if (++imkotFar >= 10) {
                     imkotFar = 0;
                     LivingEntity t = mob.getTarget();
-                    mob.requestTeleport(t.getX() + random.nextInt(3) - 1, t.getY(), t.getZ() + random.nextInt(3) - 1);
+                    mob.teleportTo(t.getX() + random.nextInt(3) - 1, t.getY(), t.getZ() + random.nextInt(3) - 1);
                     caRunFlags.add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_IMKOT_DUG);
-                    world.spawnParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, mob.getX(), mob.getY(), mob.getZ(), 10, 0.5, 0.2, 0.5, 0.01);
-                    if (t instanceof ServerPlayerEntity p) {
+                    world.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, mob.getX(), mob.getY(), mob.getZ(), 10, 0.5, 0.2, 0.5, 0.01);
+                    if (t instanceof ServerPlayer p) {
                         Msg.action(p, "Jal-ImKot burrows underground and resurfaces beside you!");
                     }
                 }
@@ -240,7 +239,7 @@ public class InfernoSession extends TzHaarSession {
         }
         String id = fallen.remove(random.nextInt(fallen.size()));
         LivingEntity zek = zeks.get(0);
-        MobEntity back = spawn(id, zek.getBlockPos().add(2, 0, 0));
+        Mob back = spawn(id, zek.blockPosition().offset(2, 0, 0));
         if (back != null) {
             back.setHealth(back.getMaxHealth() / 2);
             aggro(back);
@@ -259,7 +258,7 @@ public class InfernoSession extends TzHaarSession {
         if (!paused && ++setTimer >= TzHaarWaves.ZUK_SET_TICKS) {
             setTimer = 0;
             for (String id : new String[]{TzHaarWaves.JAL_XIL, TzHaarWaves.JAL_ZEK}) {
-                MobEntity m = spawn(id, rel(random.nextBoolean() ? -16 : 16, 1, -14));
+                Mob m = spawn(id, rel(random.nextBoolean() ? -16 : 16, 1, -14));
                 if (m != null) {
                     aggro(m);
                 }
@@ -268,7 +267,7 @@ public class InfernoSession extends TzHaarSession {
         }
         if (!zukJad && hp <= TzHaarWaves.ZUK_JAD_HP) {
             zukJad = true;
-            MobEntity jad = spawn(TzHaarWaves.JALTOK_JAD, rel(0, 1, -2));
+            Mob jad = spawn(TzHaarWaves.JALTOK_JAD, rel(0, 1, -2));
             if (jad != null) {
                 aggro(jad);
             }
@@ -278,7 +277,7 @@ public class InfernoSession extends TzHaarSession {
         if (!zukHealers && hp <= TzHaarWaves.ZUK_HEALER_HP) {
             zukHealers = true;
             for (int i = 0; i < 4; i++) {
-                MobEntity h = spawn("jal_mejjak", rel(-6 + i * 4, 1, -15));
+                Mob h = spawn("jal_mejjak", rel(-6 + i * 4, 1, -15));
                 if (h != null) {
                     aggro(h);
                 }
@@ -287,7 +286,7 @@ public class InfernoSession extends TzHaarSession {
         }
         if (ticks % 4 == 0) {
             for (LivingEntity h : living("jal_mejjak")) {
-                if (!h.getCommandTags().contains(DISTRACTED) && zuk.getHealth() < zuk.getMaxHealth()) {
+                if (!h.getTags().contains(DISTRACTED) && zuk.getHealth() < zuk.getMaxHealth()) {
                     zuk.heal(3 + random.nextInt(6));
                 }
             }
@@ -295,19 +294,19 @@ public class InfernoSession extends TzHaarSession {
     }
 
     @Override
-    protected void onPlayerHit(ServerPlayerEntity player, LivingEntity target, int dealt) {
+    protected void onPlayerHit(ServerPlayer player, LivingEntity target, int dealt) {
         super.onPlayerHit(player, target, dealt);
         if (MinigameManager.creatureId(target).equals("jal_mejjak")) {
-            target.addCommandTag(DISTRACTED);
+            target.addTag(DISTRACTED);
         }
     }
 
     @Override
-    protected void onKill(ServerPlayerEntity player, LivingEntity entity, String creatureId) {
+    protected void onKill(ServerPlayer player, LivingEntity entity, String creatureId) {
         switch (creatureId) {
             case TzHaarWaves.JAL_AK -> {
                 for (String small : new String[]{"jal_akrek_ket", "jal_akrek_xil", "jal_akrek_mej"}) {
-                    MobEntity m = spawn(small, entity.getBlockPos().add(random.nextInt(3) - 1, 0, random.nextInt(3) - 1));
+                    Mob m = spawn(small, entity.blockPosition().offset(random.nextInt(3) - 1, 0, random.nextInt(3) - 1));
                     if (m != null) {
                         m.setTarget(player);
                     }
@@ -337,23 +336,23 @@ public class InfernoSession extends TzHaarSession {
         if (!success || !zukDead) {
             return;
         }
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             reward(p, "infernal_cape", 1);
             reward(p, "tokkul", TzHaarWaves.INFERNO_TOKKUL);
-            int kc = MinigameData.of(p).incrementStat(p.getUuid(), "kc:" + game.id());
+            int kc = MinigameData.of(p).incrementStat(p.getUUID(), "kc:" + game.id());
             Msg.game(p, "You have defeated TzKal-Zuk! Your TzKal-Zuk kill count is: " + kc + ".");
             if (random.nextInt(TzHaarWaves.ZUK_PET_CHANCE) == 0) {
                 reward(p, "jal_nib_rek", 1);
-                p.getServer().getPlayerManager().broadcast(Text.literal(p.getName().getString()
-                        + " has a funny feeling like they're being followed.").formatted(Formatting.GOLD), false);
+                p.getServer().getPlayerList().broadcastSystemMessage(Component.literal(p.getName().getString()
+                        + " has a funny feeling like they're being followed.").withStyle(ChatFormatting.GOLD), false);
             }
-            p.getServer().getPlayerManager().broadcast(Text.literal(p.getName().getString()
-                    + " has defeated TzKal-Zuk and received an infernal cape!").formatted(Formatting.GOLD), false);
+            p.getServer().getPlayerList().broadcastSystemMessage(Component.literal(p.getName().getString()
+                    + " has defeated TzKal-Zuk and received an infernal cape!").withStyle(ChatFormatting.GOLD), false);
         }
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
+    protected List<String> hud(ServerPlayer player) {
         List<String> lines = new ArrayList<>(super.hud(player));
         lines.add("Pillars: " + (pillarHp[0] > 0 ? pillarHp[0] : "X") + " / " + (pillarHp[1] > 0 ? pillarHp[1] : "X") + " / "
                 + (pillarHp[2] > 0 ? pillarHp[2] : "X"));

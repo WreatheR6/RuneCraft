@@ -9,6 +9,8 @@ import static com.runecraft.osrs.content.world.EasternKit.*;
 import static com.runecraft.osrs.world.StructureDef.bx;
 import static com.runecraft.osrs.world.StructureDef.bz;
 
+import com.runecraft.osrs.content.world.EasternKit.Style;
+
 /**
  * The Wilderness at real OSRS tiles: the ditch along y=3520, the Chaos Temple, the Graveyard of Shadows,
  * the Dark Warriors' Fortress, the Bandit Camp, the Ferox Enclave, the Lava Maze, the Mage Arena, the

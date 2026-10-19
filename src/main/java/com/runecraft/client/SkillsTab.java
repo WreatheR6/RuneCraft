@@ -4,10 +4,9 @@ import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.SkillSet;
 import com.runecraft.osrs.ui.SkillGuide;
 import com.runecraft.osrs.ui.SkillPanel;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-
 import java.util.List;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 
 /**
  * The OSRS Skills tab: a 3-column grid of skill tiles (icon, current level over base level), the
@@ -26,11 +25,11 @@ public final class SkillsTab {
     private int guideScroll;
 
     /** Renders the tab and returns the tooltip lines to show (or null). */
-    public List<String> render(DrawContext ctx, TextRenderer tr, double mouseX, double mouseY) {
+    public List<String> render(GuiGraphics ctx, Font tr, double mouseX, double mouseY) {
         return guide != null ? renderGuide(ctx, tr, mouseX, mouseY) : renderGrid(ctx, tr, mouseX, mouseY);
     }
 
-    private List<String> renderGrid(DrawContext ctx, TextRenderer tr, double mouseX, double mouseY) {
+    private List<String> renderGrid(GuiGraphics ctx, Font tr, double mouseX, double mouseY) {
         SkillSet s = ClientState.SKILLS;
         Skill hovered = SkillPanel.skillAt(mouseX, mouseY);
         for (Skill skill : SkillPanel.layout()) {
@@ -47,9 +46,9 @@ public final class SkillsTab {
             int base = s.level(skill);
             String c = String.valueOf(cur);
             String b = String.valueOf(base);
-            ctx.drawTextWithShadow(tr, c, x + 41 - tr.getWidth(c) / 2, y + 3, 0xFF000000 | SkillPanel.currentLevelColor(cur, base));
-            ctx.drawTextWithShadow(tr, "/", x + 44, y + 9, OsrsUi.YELLOW);
-            ctx.drawTextWithShadow(tr, b, x + 52 - tr.getWidth(b) / 2, y + 15, OsrsUi.YELLOW);
+            ctx.drawString(tr, c, x + 41 - tr.width(c) / 2, y + 3, 0xFF000000 | SkillPanel.currentLevelColor(cur, base));
+            ctx.drawString(tr, "/", x + 44, y + 9, OsrsUi.YELLOW);
+            ctx.drawString(tr, b, x + 52 - tr.width(b) / 2, y + 15, OsrsUi.YELLOW);
         }
         int tx = SkillPanel.totalBoxX();
         int ty = SkillPanel.totalBoxY();
@@ -67,7 +66,7 @@ public final class SkillsTab {
         return null;
     }
 
-    private List<String> renderGuide(DrawContext ctx, TextRenderer tr, double mouseX, double mouseY) {
+    private List<String> renderGuide(GuiGraphics ctx, Font tr, double mouseX, double mouseY) {
         int w = SkillPanel.CONTENT_W;
         int h = SkillPanel.CONTENT_H;
         int level = ClientState.SKILLS.level(guide);
@@ -75,7 +74,7 @@ public final class SkillsTab {
 
         OsrsUi.inset(ctx, 0, 0, w, GUIDE_HEADER);
         OsrsUi.icon(ctx, OsrsUi.skillIcon(guide), 3, 2, 16);
-        ctx.drawTextWithShadow(tr, guide.displayName() + " guide", 23, 6, OsrsUi.ORANGE);
+        ctx.drawString(tr, guide.displayName() + " guide", 23, 6, OsrsUi.ORANGE);
         int cx = w - GUIDE_CLOSE - 3;
         boolean closeHover = inBox(mouseX, mouseY, cx, 3, GUIDE_CLOSE, GUIDE_CLOSE);
         OsrsUi.button(ctx, cx, 3, GUIDE_CLOSE, GUIDE_CLOSE, false, closeHover);
@@ -87,18 +86,18 @@ public final class SkillsTab {
         guideScroll = clampScroll(guideScroll, entries.size());
         List<String> tip = null;
         if (entries.isEmpty()) {
-            ctx.drawTextWithShadow(tr, "Nothing to unlock yet.", 6, listY + 6, OsrsUi.GREY);
+            ctx.drawString(tr, "Nothing to unlock yet.", 6, listY + 6, OsrsUi.GREY);
         }
         for (int i = 0; i < rows && guideScroll + i < entries.size(); i++) {
             SkillGuide.Entry e = entries.get(guideScroll + i);
             int y = listY + 3 + i * GUIDE_ROW;
             boolean unlocked = e.level() <= level;
             String lv = String.valueOf(e.level());
-            ctx.drawTextWithShadow(tr, lv, 22 - tr.getWidth(lv), y, unlocked ? OsrsUi.YELLOW : OsrsUi.ORANGE);
+            ctx.drawString(tr, lv, 22 - tr.width(lv), y, unlocked ? OsrsUi.YELLOW : OsrsUi.ORANGE);
             int maxW = w - 36;
             String text = e.text();
-            String shown = tr.getWidth(text) > maxW ? tr.trimToWidth(text, maxW - tr.getWidth("..")) + ".." : text;
-            ctx.drawTextWithShadow(tr, shown, 28, y, unlocked ? OsrsUi.WHITE : OsrsUi.GREY);
+            String shown = tr.width(text) > maxW ? tr.plainSubstrByWidth(text, maxW - tr.width("..")) + ".." : text;
+            ctx.drawString(tr, shown, 28, y, unlocked ? OsrsUi.WHITE : OsrsUi.GREY);
             if (inBox(mouseX, mouseY, 2, y - 1, w - 10, GUIDE_ROW)) {
                 ctx.fill(2, y - 1, w - 8, y + GUIDE_ROW - 2, 0x18FFFFFF);
                 if (!shown.equals(text)) {

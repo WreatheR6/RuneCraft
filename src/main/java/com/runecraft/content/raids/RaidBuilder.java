@@ -1,15 +1,15 @@
 package com.runecraft.content.raids;
 
 import com.runecraft.registry.ModBlocks;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.ChunkPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 
 /**
  * Builds raid instances out of blocks. Each instance occupies its own 1024-block strip of the
@@ -59,39 +59,39 @@ public final class RaidBuilder {
 
     public static Palette palette(String style) {
         return switch (style == null ? "stone" : style) {
-            case "lava" -> new Palette(Blocks.BLACKSTONE.getDefaultState(), Blocks.POLISHED_BLACKSTONE_BRICKS.getDefaultState(),
-                    Blocks.MAGMA_BLOCK.getDefaultState(), Blocks.SHROOMLIGHT.getDefaultState(), Blocks.BASALT.getDefaultState());
-            case "ice" -> new Palette(Blocks.PACKED_ICE.getDefaultState(), Blocks.BLUE_ICE.getDefaultState(),
-                    Blocks.SNOW_BLOCK.getDefaultState(), Blocks.SEA_LANTERN.getDefaultState(), Blocks.PACKED_ICE.getDefaultState());
-            case "crypt" -> new Palette(Blocks.DEEPSLATE_TILES.getDefaultState(), Blocks.DEEPSLATE_BRICKS.getDefaultState(),
-                    Blocks.CRACKED_DEEPSLATE_TILES.getDefaultState(), Blocks.SHROOMLIGHT.getDefaultState(),
-                    Blocks.CHISELED_DEEPSLATE.getDefaultState());
-            case "jungle" -> new Palette(Blocks.MOSSY_COBBLESTONE.getDefaultState(), Blocks.MOSSY_STONE_BRICKS.getDefaultState(),
-                    Blocks.MOSS_BLOCK.getDefaultState(), Blocks.OCHRE_FROGLIGHT.getDefaultState(), Blocks.JUNGLE_LOG.getDefaultState());
-            case "void" -> new Palette(Blocks.OBSIDIAN.getDefaultState(), Blocks.CRYING_OBSIDIAN.getDefaultState(),
-                    Blocks.PURPUR_BLOCK.getDefaultState(), Blocks.PEARLESCENT_FROGLIGHT.getDefaultState(),
-                    Blocks.PURPUR_PILLAR.getDefaultState());
-            case "water" -> new Palette(Blocks.PRISMARINE_BRICKS.getDefaultState(), Blocks.DARK_PRISMARINE.getDefaultState(),
-                    Blocks.PRISMARINE.getDefaultState(), Blocks.SEA_LANTERN.getDefaultState(), Blocks.DARK_PRISMARINE.getDefaultState());
-            case "sand" -> new Palette(Blocks.SMOOTH_SANDSTONE.getDefaultState(), Blocks.CUT_SANDSTONE.getDefaultState(),
-                    Blocks.CHISELED_SANDSTONE.getDefaultState(), Blocks.VERDANT_FROGLIGHT.getDefaultState(),
-                    Blocks.SANDSTONE.getDefaultState());
-            default -> new Palette(Blocks.STONE_BRICKS.getDefaultState(), Blocks.CRACKED_STONE_BRICKS.getDefaultState(),
-                    Blocks.CHISELED_STONE_BRICKS.getDefaultState(), Blocks.GLOWSTONE.getDefaultState(),
-                    Blocks.STONE_BRICKS.getDefaultState());
+            case "lava" -> new Palette(Blocks.BLACKSTONE.defaultBlockState(), Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState(),
+                    Blocks.MAGMA_BLOCK.defaultBlockState(), Blocks.SHROOMLIGHT.defaultBlockState(), Blocks.BASALT.defaultBlockState());
+            case "ice" -> new Palette(Blocks.PACKED_ICE.defaultBlockState(), Blocks.BLUE_ICE.defaultBlockState(),
+                    Blocks.SNOW_BLOCK.defaultBlockState(), Blocks.SEA_LANTERN.defaultBlockState(), Blocks.PACKED_ICE.defaultBlockState());
+            case "crypt" -> new Palette(Blocks.DEEPSLATE_TILES.defaultBlockState(), Blocks.DEEPSLATE_BRICKS.defaultBlockState(),
+                    Blocks.CRACKED_DEEPSLATE_TILES.defaultBlockState(), Blocks.SHROOMLIGHT.defaultBlockState(),
+                    Blocks.CHISELED_DEEPSLATE.defaultBlockState());
+            case "jungle" -> new Palette(Blocks.MOSSY_COBBLESTONE.defaultBlockState(), Blocks.MOSSY_STONE_BRICKS.defaultBlockState(),
+                    Blocks.MOSS_BLOCK.defaultBlockState(), Blocks.OCHRE_FROGLIGHT.defaultBlockState(), Blocks.JUNGLE_LOG.defaultBlockState());
+            case "void" -> new Palette(Blocks.OBSIDIAN.defaultBlockState(), Blocks.CRYING_OBSIDIAN.defaultBlockState(),
+                    Blocks.PURPUR_BLOCK.defaultBlockState(), Blocks.PEARLESCENT_FROGLIGHT.defaultBlockState(),
+                    Blocks.PURPUR_PILLAR.defaultBlockState());
+            case "water" -> new Palette(Blocks.PRISMARINE_BRICKS.defaultBlockState(), Blocks.DARK_PRISMARINE.defaultBlockState(),
+                    Blocks.PRISMARINE.defaultBlockState(), Blocks.SEA_LANTERN.defaultBlockState(), Blocks.DARK_PRISMARINE.defaultBlockState());
+            case "sand" -> new Palette(Blocks.SMOOTH_SANDSTONE.defaultBlockState(), Blocks.CUT_SANDSTONE.defaultBlockState(),
+                    Blocks.CHISELED_SANDSTONE.defaultBlockState(), Blocks.VERDANT_FROGLIGHT.defaultBlockState(),
+                    Blocks.SANDSTONE.defaultBlockState());
+            default -> new Palette(Blocks.STONE_BRICKS.defaultBlockState(), Blocks.CRACKED_STONE_BRICKS.defaultBlockState(),
+                    Blocks.CHISELED_STONE_BRICKS.defaultBlockState(), Blocks.GLOWSTONE.defaultBlockState(),
+                    Blocks.STONE_BRICKS.defaultBlockState());
         };
     }
 
-    public static void set(ServerWorld world, BlockPos pos, BlockState state) {
-        world.setBlockState(pos, state, Block.NOTIFY_LISTENERS);
+    public static void set(ServerLevel world, BlockPos pos, BlockState state) {
+        world.setBlock(pos, state, Block.UPDATE_CLIENTS);
     }
 
-    public static void fill(ServerWorld world, int x1, int y1, int z1, int x2, int y2, int z2, BlockState state) {
-        BlockPos.Mutable m = new BlockPos.Mutable();
+    public static void fill(ServerLevel world, int x1, int y1, int z1, int x2, int y2, int z2, BlockState state) {
+        BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
         for (int x = Math.min(x1, x2); x <= Math.max(x1, x2); x++) {
             for (int y = Math.min(y1, y2); y <= Math.max(y1, y2); y++) {
                 for (int z = Math.min(z1, z2); z <= Math.max(z1, z2); z++) {
-                    world.setBlockState(m.set(x, y, z), state, Block.NOTIFY_LISTENERS);
+                    world.setBlock(m.set(x, y, z), state, Block.UPDATE_CLIENTS);
                 }
             }
         }
@@ -99,17 +99,17 @@ public final class RaidBuilder {
 
     public static BlockState module(String blockId) {
         Block b = ModBlocks.MODULE_BLOCKS.get(blockId);
-        return b == null ? Blocks.BEDROCK.getDefaultState() : b.getDefaultState();
+        return b == null ? Blocks.BEDROCK.defaultBlockState() : b.defaultBlockState();
     }
 
     /** Generates and force-loads every chunk in the box (server thread). */
-    public static void loadChunks(ServerWorld world, int minX, int minZ, int maxX, int maxZ) {
+    public static void loadChunks(ServerLevel world, int minX, int minZ, int maxX, int maxZ) {
         RaidsState state = RaidsState.get(world.getServer());
         for (int cx = minX >> 4; cx <= maxX >> 4; cx++) {
             for (int cz = minZ >> 4; cz <= maxZ >> 4; cz++) {
                 world.getChunk(cx, cz);
                 world.setChunkForced(cx, cz, true);
-                state.addForced(ChunkPos.toLong(cx, cz));
+                state.addForced(ChunkPos.asLong(cx, cz));
             }
         }
     }
@@ -118,54 +118,54 @@ public final class RaidBuilder {
      * Force-loads a room's chunks without waiting: the forced ticket makes the server generate them
      * in the background, so building the room later does not stall the tick.
      */
-    public static void prefetch(ServerWorld world, int slot, int room) {
+    public static void prefetch(ServerLevel world, int slot, int room) {
         BlockPos c = center(slot, room);
         int w = HALF + 1;
         RaidsState state = RaidsState.get(world.getServer());
         for (int cx = (c.getX() - w - 1) >> 4; cx <= (c.getX() + SPACING - w + 1) >> 4; cx++) {
             for (int cz = (c.getZ() - w - 1) >> 4; cz <= (c.getZ() + w + 1) >> 4; cz++) {
                 world.setChunkForced(cx, cz, true);
-                state.addForced(ChunkPos.toLong(cx, cz));
+                state.addForced(ChunkPos.asLong(cx, cz));
             }
         }
     }
 
     /** Releases every chunk of an instance slot. */
-    public static void unloadSlot(ServerWorld world, int slot) {
+    public static void unloadSlot(ServerLevel world, int slot) {
         RaidsState state = RaidsState.get(world.getServer());
         int min = originX(slot) >> 4;
         int max = (originX(slot) + SLOT_WIDTH) >> 4;
         for (long c : new java.util.ArrayList<>(state.forcedChunks())) {
-            int cx = ChunkPos.getPackedX(c);
+            int cx = ChunkPos.getX(c);
             if (cx >= min && cx <= max) {
-                world.setChunkForced(cx, ChunkPos.getPackedZ(c), false);
+                world.setChunkForced(cx, ChunkPos.getZ(c), false);
                 state.removeForced(c);
             }
         }
     }
 
     /** Removes every non-player entity in a box (left-over monsters, dropped items). */
-    public static void clearEntities(ServerWorld world, Box box) {
-        for (Entity e : world.getOtherEntities(null, box, e -> !(e instanceof PlayerEntity))) {
+    public static void clearEntities(ServerLevel world, AABB box) {
+        for (Entity e : world.getEntities(null, box, e -> !(e instanceof Player))) {
             e.discard();
         }
     }
 
-    public static Box roomBox(int slot, int room) {
+    public static AABB roomBox(int slot, int room) {
         BlockPos c = center(slot, room);
-        return new Box(c.getX() - HALF - 2, FLOOR_Y - 2, c.getZ() - HALF - 2, c.getX() + HALF + 2, FLOOR_Y + HEIGHT + 8,
+        return new AABB(c.getX() - HALF - 2, FLOOR_Y - 2, c.getZ() - HALF - 2, c.getX() + HALF + 2, FLOOR_Y + HEIGHT + 8,
                 c.getZ() + HALF + 2);
     }
 
-    public static Box slotBox(int slot) {
-        return new Box(originX(slot), FLOOR_Y - 20, BASE_Z - 200, originX(slot) + SLOT_WIDTH, FLOOR_Y + 40, BASE_Z + 200);
+    public static AABB slotBox(int slot) {
+        return new AABB(originX(slot), FLOOR_Y - 20, BASE_Z - 200, originX(slot) + SLOT_WIDTH, FLOOR_Y + 40, BASE_Z + 200);
     }
 
     /**
      * Builds room {@code i}: floor, walls, lit ceiling, doorways, the spectator gallery above it and
      * the corridor towards the next room (closed by a barrier until the room is cleared).
      */
-    public static void buildRoom(ServerWorld world, int slot, int i, String style, boolean first, boolean last) {
+    public static void buildRoom(ServerLevel world, int slot, int i, String style, boolean first, boolean last) {
         BlockPos c = center(slot, i);
         int cx = c.getX();
         int cz = c.getZ();
@@ -174,22 +174,22 @@ public final class RaidBuilder {
         loadChunks(world, cx - w - 1, cz - w - 1, cx + SPACING - w + 1, cz + w + 1);
         clearEntities(world, roomBox(slot, i));
         Palette pal = palette(style);
-        BlockPos.Mutable m = new BlockPos.Mutable();
+        BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
         for (int dx = -w; dx <= w; dx++) {
             for (int dz = -w; dz <= w; dz++) {
                 boolean wall = Math.abs(dx) == w || Math.abs(dz) == w;
                 int x = cx + dx;
                 int z = cz + dz;
-                world.setBlockState(m.set(x, y - 1, z), pal.wall(), Block.NOTIFY_LISTENERS);
+                world.setBlock(m.set(x, y - 1, z), pal.wall(), Block.UPDATE_CLIENTS);
                 BlockState floor = wall ? pal.wall() : ((dx * 3 + dz * 5) % 11 == 0 ? pal.accent() : pal.floor());
-                world.setBlockState(m.set(x, y, z), floor, Block.NOTIFY_LISTENERS);
+                world.setBlock(m.set(x, y, z), floor, Block.UPDATE_CLIENTS);
                 for (int up = 1; up <= HEIGHT; up++) {
-                    world.setBlockState(m.set(x, y + up, z), wall ? pal.wall() : Blocks.AIR.getDefaultState(), Block.NOTIFY_LISTENERS);
+                    world.setBlock(m.set(x, y + up, z), wall ? pal.wall() : Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
                 }
                 boolean lamp = !wall && Math.floorMod(dx, 6) == 3 && Math.floorMod(dz, 6) == 3;
-                world.setBlockState(m.set(x, y + HEIGHT + 1, z), lamp ? pal.light() : pal.wall(), Block.NOTIFY_LISTENERS);
+                world.setBlock(m.set(x, y + HEIGHT + 1, z), lamp ? pal.light() : pal.wall(), Block.UPDATE_CLIENTS);
                 for (int up = HEIGHT + 2; up <= HEIGHT + 6; up++) {
-                    world.setBlockState(m.set(x, y + up, z), Blocks.AIR.getDefaultState(), Block.NOTIFY_LISTENERS);
+                    world.setBlock(m.set(x, y + up, z), Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
                 }
             }
         }
@@ -200,23 +200,23 @@ public final class RaidBuilder {
             }
         }
         // Spectator gallery: a glass box above the ceiling with a window looking down into the room.
-        fill(world, cx - 3, y + HEIGHT + 1, cz - 3, cx + 3, y + HEIGHT + 1, cz + 3, Blocks.GLASS.getDefaultState());
-        fill(world, cx - 4, y + HEIGHT + 1, cz - 4, cx + 4, y + HEIGHT + 5, cz + 4, Blocks.TINTED_GLASS.getDefaultState());
-        fill(world, cx - 3, y + HEIGHT + 1, cz - 3, cx + 3, y + HEIGHT + 1, cz + 3, Blocks.GLASS.getDefaultState());
-        fill(world, cx - 3, y + HEIGHT + 2, cz - 3, cx + 3, y + HEIGHT + 4, cz + 3, Blocks.AIR.getDefaultState());
-        set(world, new BlockPos(cx, y + HEIGHT + 5, cz), Blocks.SEA_LANTERN.getDefaultState());
+        fill(world, cx - 3, y + HEIGHT + 1, cz - 3, cx + 3, y + HEIGHT + 1, cz + 3, Blocks.GLASS.defaultBlockState());
+        fill(world, cx - 4, y + HEIGHT + 1, cz - 4, cx + 4, y + HEIGHT + 5, cz + 4, Blocks.TINTED_GLASS.defaultBlockState());
+        fill(world, cx - 3, y + HEIGHT + 1, cz - 3, cx + 3, y + HEIGHT + 1, cz + 3, Blocks.GLASS.defaultBlockState());
+        fill(world, cx - 3, y + HEIGHT + 2, cz - 3, cx + 3, y + HEIGHT + 4, cz + 3, Blocks.AIR.defaultBlockState());
+        set(world, new BlockPos(cx, y + HEIGHT + 5, cz), Blocks.SEA_LANTERN.defaultBlockState());
         // Doorways.
         if (!first) {
-            fill(world, cx - w, y + 1, cz - 2, cx - w, y + 4, cz + 2, Blocks.AIR.getDefaultState());
+            fill(world, cx - w, y + 1, cz - 2, cx - w, y + 4, cz + 2, Blocks.AIR.defaultBlockState());
         }
         if (!last) {
-            fill(world, cx + w, y + 1, cz - 2, cx + w, y + 4, cz + 2, Blocks.RED_STAINED_GLASS.getDefaultState());
+            fill(world, cx + w, y + 1, cz - 2, cx + w, y + 4, cz + 2, Blocks.RED_STAINED_GLASS.defaultBlockState());
             // Corridor to the next room.
             int x1 = cx + w + 1;
             int x2 = cx + SPACING - w - 1;
             fill(world, x1, y - 1, cz - 3, x2, y + 6, cz + 3, pal.wall());
             fill(world, x1, y, cz - 2, x2, y, cz + 2, pal.floor());
-            fill(world, x1, y + 1, cz - 2, x2, y + 4, cz + 2, Blocks.AIR.getDefaultState());
+            fill(world, x1, y + 1, cz - 2, x2, y + 4, cz + 2, Blocks.AIR.defaultBlockState());
             for (int x = x1 + 1; x < x2; x += 4) {
                 set(world, new BlockPos(x, y + 5, cz), pal.light());
             }
@@ -224,20 +224,20 @@ public final class RaidBuilder {
     }
 
     /** Opens the barrier on a room's exit doorway. */
-    public static void openExit(ServerWorld world, int slot, int i) {
+    public static void openExit(ServerLevel world, int slot, int i) {
         BlockPos c = center(slot, i);
         fill(world, c.getX() + HALF + 1, FLOOR_Y + 1, c.getZ() - 2, c.getX() + HALF + 1, FLOOR_Y + 4, c.getZ() + 2,
-                Blocks.AIR.getDefaultState());
+                Blocks.AIR.defaultBlockState());
     }
 
     /** Fills a room's exit doorway with the given block (e.g. the lobby's start barrier). */
-    public static void closeExit(ServerWorld world, int slot, int i, BlockState state) {
+    public static void closeExit(ServerLevel world, int slot, int i, BlockState state) {
         BlockPos c = center(slot, i);
         fill(world, c.getX() + HALF + 1, FLOOR_Y + 1, c.getZ() - 2, c.getX() + HALF + 1, FLOOR_Y + 4, c.getZ() + 2, state);
     }
 
     /** Builds a free-standing pillar (used for line-of-sight cover). */
-    public static void pillar(ServerWorld world, BlockPos base, int radius, int height, BlockState state) {
+    public static void pillar(ServerLevel world, BlockPos base, int radius, int height, BlockState state) {
         fill(world, base.getX() - radius, base.getY() + 1, base.getZ() - radius, base.getX() + radius, base.getY() + height,
                 base.getZ() + radius, state);
     }

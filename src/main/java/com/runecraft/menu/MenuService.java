@@ -16,17 +16,16 @@ import com.runecraft.skill.Stun;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
 
 /** OSRS "Make-X" interfaces for production skills and shops. */
 public final class MenuService {
@@ -36,19 +35,19 @@ public final class MenuService {
      * Adjusts a special range's burn reduction for a player (the Hosidius range's Kourend &amp; Kebos diary
      * requirement and elite bonus): (player, reduction) -> reduction.
      */
-    public static java.util.function.BiFunction<ServerPlayerEntity, Double, Double> rangeBurnReduction = (p, r) -> r;
+    public static java.util.function.BiFunction<ServerPlayer, Double, Double> rangeBurnReduction = (p, r) -> r;
 
     /**
      * Extra requirements modules add to recipes (quest unlocks, a full brewing vat...): (player, recipe) -> why it
      * can't be made, or null.
      */
-    public static final List<java.util.function.BiFunction<ServerPlayerEntity, Recipe, String>> REQUIREMENTS = new ArrayList<>();
+    public static final List<java.util.function.BiFunction<ServerPlayer, Recipe, String>> REQUIREMENTS = new ArrayList<>();
 
     private MenuService() {
     }
 
     /** Opens a menu. {@code station} may be null for tool-based menus (knife, chisel...). */
-    public static void open(ServerPlayerEntity player, MenuType type, BlockPos station, boolean range) {
+    public static void open(ServerPlayer player, MenuType type, BlockPos station, boolean range) {
         if (!Stun.check(player)) {
             return;
         }
@@ -92,8 +91,8 @@ public final class MenuService {
     }
 
     /** Returns why the recipe can't be made (shown to the player), or null if it can. */
-    private static String canMake(ServerPlayerEntity player, SkillSet skills, Recipe r, int times) {
-        for (java.util.function.BiFunction<ServerPlayerEntity, Recipe, String> req : REQUIREMENTS) {
+    private static String canMake(ServerPlayer player, SkillSet skills, Recipe r, int times) {
+        for (java.util.function.BiFunction<ServerPlayer, Recipe, String> req : REQUIREMENTS) {
             String why = req.apply(player, r);
             if (why != null) {
                 return why;
@@ -118,13 +117,13 @@ public final class MenuService {
         return null;
     }
 
-    public static void choose(ServerPlayerEntity player, String recipeId, int quantity) {
+    public static void choose(ServerPlayer player, String recipeId, int quantity) {
         PlayerData data = Players.data(player);
         Recipe recipe = Recipes.get(recipeId);
         if (recipe == null || recipe.menu() != data.openMenu) {
             return;
         }
-        if (data.menuStation != null && player.squaredDistanceTo(net.minecraft.util.math.Vec3d.ofCenter(data.menuStation)) > STATION_REACH_SQ) {
+        if (data.menuStation != null && player.distanceToSqr(net.minecraft.world.phys.Vec3.atCenterOf(data.menuStation)) > STATION_REACH_SQ) {
             Msg.game(player, "You're too far away.");
             return;
         }
@@ -152,7 +151,7 @@ public final class MenuService {
             int counter = recipe.ticks() - 1;
 
             @Override
-            public boolean tick(ServerPlayerEntity p, long gameTick) {
+            public boolean tick(ServerPlayer p, long gameTick) {
                 if (++counter < recipe.ticks()) {
                     return true;
                 }
@@ -166,14 +165,14 @@ public final class MenuService {
                     }
                     return false;
                 }
-                p.swingHand(Hand.MAIN_HAND, true);
+                p.swing(InteractionHand.MAIN_HAND, true);
                 makeOnce(p, recipe, range);
                 return --remaining > 0;
             }
         });
     }
 
-    private static void makeOnce(ServerPlayerEntity player, Recipe r, boolean range) {
+    private static void makeOnce(ServerPlayer player, Recipe r, boolean range) {
         SkillSet skills = Players.data(player).skills();
         r.inputs().forEach((item, count) -> Inv.remove(player, item, count));
         double chance = r.skill() != null ? r.successChance(skills.currentLevel(r.skill())) : r.successChance();
@@ -197,8 +196,8 @@ public final class MenuService {
                     // A 3-dose potion: one dose already used up (potions track doses as item damage). The amulet of
                     // chemistry makes some of them with four doses.
                     for (int i = 0; i < count; i++) {
-                        net.minecraft.item.ItemStack potion = Inv.stack(item, 1);
-                        potion.setDamage(4 - com.runecraft.content.systems.JewelleryService.chemistryDoses(player, r.outputDoses()));
+                        net.minecraft.world.item.ItemStack potion = Inv.stack(item, 1);
+                        potion.setDamageValue(4 - com.runecraft.content.systems.JewelleryService.chemistryDoses(player, r.outputDoses()));
                         Inv.give(player, potion);
                     }
                 } else {
@@ -244,15 +243,15 @@ public final class MenuService {
         };
     }
 
-    private static void sound(ServerPlayerEntity player, Recipe r) {
+    private static void sound(ServerPlayer player, Recipe r) {
         SoundEvent sound = switch (r.menu()) {
-            case SMITHING -> SoundEvents.BLOCK_ANVIL_USE;
-            case SMELTING -> SoundEvents.BLOCK_FURNACE_FIRE_CRACKLE;
-            case COOKING -> SoundEvents.BLOCK_FIRE_EXTINGUISH;
-            case HERBLORE -> SoundEvents.ITEM_BOTTLE_FILL;
+            case SMITHING -> SoundEvents.ANVIL_USE;
+            case SMELTING -> SoundEvents.FURNACE_FIRE_CRACKLE;
+            case COOKING -> SoundEvents.FIRE_EXTINGUISH;
+            case HERBLORE -> SoundEvents.BOTTLE_FILL;
             case FLETCHING, GEM_CUTTING, CONSTRUCTION -> SoundEvents.UI_STONECUTTER_TAKE_RESULT;
-            default -> SoundEvents.ENTITY_ITEM_PICKUP;
+            default -> SoundEvents.ITEM_PICKUP;
         };
-        player.getWorld().playSound(null, player.getBlockPos(), sound, SoundCategory.PLAYERS, 0.4f, 1.0f);
+        player.level().playSound(null, player.blockPosition(), sound, SoundSource.PLAYERS, 0.4f, 1.0f);
     }
 }

@@ -1,13 +1,12 @@
 package com.runecraft.content.quests;
 
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.nbt.NbtString;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.world.PersistentState;
-
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.saveddata.SavedData;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -19,7 +18,7 @@ import java.util.UUID;
  * World-save storage for the quests module: per-player quest flags (side objectives such as
  * "Manni's vote") and accessories worn in the module's virtual gear slots (gloves, cape, amulet).
  */
-public final class QuestsState extends PersistentState {
+public final class QuestsState extends SavedData {
     public static final String KEY = "runecraft_quests";
 
     private final Map<UUID, Set<String>> flags = new HashMap<>();
@@ -28,10 +27,10 @@ public final class QuestsState extends PersistentState {
     private final Map<UUID, Map<String, Integer>> kills = new HashMap<>();
 
     public static QuestsState get(MinecraftServer server) {
-        return server.getOverworld().getPersistentStateManager().getOrCreate(QuestsState::fromNbt, QuestsState::new, KEY);
+        return server.overworld().getDataStorage().computeIfAbsent(QuestsState::fromNbt, QuestsState::new, KEY);
     }
 
-    public static QuestsState get(ServerPlayerEntity player) {
+    public static QuestsState get(ServerPlayer player) {
         return get(player.getServer());
     }
 
@@ -54,7 +53,7 @@ public final class QuestsState extends PersistentState {
             gear.put(player, new LinkedHashMap<>(s.gear()));
             kills.put(player, new HashMap<>(s.kills()));
         }
-        markDirty();
+        setDirty();
     }
 
     public boolean hasFlag(UUID player, String flag) {
@@ -63,7 +62,7 @@ public final class QuestsState extends PersistentState {
 
     public void setFlag(UUID player, String flag) {
         if (flags.computeIfAbsent(player, u -> new HashSet<>()).add(flag)) {
-            markDirty();
+            setDirty();
         }
     }
 
@@ -71,7 +70,7 @@ public final class QuestsState extends PersistentState {
     public void clearFlag(UUID player, String flag) {
         Set<String> s = flags.get(player);
         if (s != null && s.remove(flag)) {
-            markDirty();
+            setDirty();
         }
     }
 
@@ -83,7 +82,7 @@ public final class QuestsState extends PersistentState {
     /** Counts one more kill towards an objective; returns the new total. */
     public int addKill(UUID player, String key) {
         int n = kills.computeIfAbsent(player, u -> new HashMap<>()).merge(key, 1, Integer::sum);
-        markDirty();
+        setDirty();
         return n;
     }
 
@@ -91,7 +90,7 @@ public final class QuestsState extends PersistentState {
     public void clearKills(UUID player, String key) {
         Map<String, Integer> m = kills.get(player);
         if (m != null && m.remove(key) != null) {
-            markDirty();
+            setDirty();
         }
     }
 
@@ -108,29 +107,29 @@ public final class QuestsState extends PersistentState {
     public String wear(UUID player, String slot, String item) {
         Map<String, String> slots = gear.computeIfAbsent(player, u -> new LinkedHashMap<>());
         String old = item == null ? slots.remove(slot) : slots.put(slot, item);
-        markDirty();
+        setDirty();
         return old;
     }
 
     @Override
-    public NbtCompound writeNbt(NbtCompound nbt) {
-        NbtCompound flagsNbt = new NbtCompound();
+    public CompoundTag save(CompoundTag nbt) {
+        CompoundTag flagsNbt = new CompoundTag();
         flags.forEach((uuid, set) -> {
-            NbtList list = new NbtList();
-            set.forEach(f -> list.add(NbtString.of(f)));
+            ListTag list = new ListTag();
+            set.forEach(f -> list.add(StringTag.valueOf(f)));
             flagsNbt.put(uuid.toString(), list);
         });
         nbt.put("Flags", flagsNbt);
-        NbtCompound gearNbt = new NbtCompound();
+        CompoundTag gearNbt = new CompoundTag();
         gear.forEach((uuid, slots) -> {
-            NbtCompound s = new NbtCompound();
+            CompoundTag s = new CompoundTag();
             slots.forEach(s::putString);
             gearNbt.put(uuid.toString(), s);
         });
         nbt.put("Gear", gearNbt);
-        NbtCompound killsNbt = new NbtCompound();
+        CompoundTag killsNbt = new CompoundTag();
         kills.forEach((uuid, counters) -> {
-            NbtCompound c = new NbtCompound();
+            CompoundTag c = new CompoundTag();
             counters.forEach(c::putInt);
             killsNbt.put(uuid.toString(), c);
         });
@@ -138,13 +137,13 @@ public final class QuestsState extends PersistentState {
         return nbt;
     }
 
-    public static QuestsState fromNbt(NbtCompound nbt) {
+    public static QuestsState fromNbt(CompoundTag nbt) {
         QuestsState state = new QuestsState();
-        NbtCompound flagsNbt = nbt.getCompound("Flags");
-        for (String key : flagsNbt.getKeys()) {
+        CompoundTag flagsNbt = nbt.getCompound("Flags");
+        for (String key : flagsNbt.getAllKeys()) {
             try {
                 UUID uuid = UUID.fromString(key);
-                NbtList list = flagsNbt.getList(key, NbtElement.STRING_TYPE);
+                ListTag list = flagsNbt.getList(key, Tag.TAG_STRING);
                 Set<String> set = new HashSet<>();
                 for (int i = 0; i < list.size(); i++) {
                     set.add(list.getString(i));
@@ -154,13 +153,13 @@ public final class QuestsState extends PersistentState {
                 // skip malformed entries
             }
         }
-        NbtCompound gearNbt = nbt.getCompound("Gear");
-        for (String key : gearNbt.getKeys()) {
+        CompoundTag gearNbt = nbt.getCompound("Gear");
+        for (String key : gearNbt.getAllKeys()) {
             try {
                 UUID uuid = UUID.fromString(key);
-                NbtCompound s = gearNbt.getCompound(key);
+                CompoundTag s = gearNbt.getCompound(key);
                 Map<String, String> slots = new LinkedHashMap<>();
-                for (String slot : s.getKeys()) {
+                for (String slot : s.getAllKeys()) {
                     slots.put(slot, s.getString(slot));
                 }
                 state.gear.put(uuid, slots);
@@ -168,13 +167,13 @@ public final class QuestsState extends PersistentState {
                 // skip malformed entries
             }
         }
-        NbtCompound killsNbt = nbt.getCompound("Kills");
-        for (String key : killsNbt.getKeys()) {
+        CompoundTag killsNbt = nbt.getCompound("Kills");
+        for (String key : killsNbt.getAllKeys()) {
             try {
                 UUID uuid = UUID.fromString(key);
-                NbtCompound c = killsNbt.getCompound(key);
+                CompoundTag c = killsNbt.getCompound(key);
                 Map<String, Integer> counters = new HashMap<>();
-                for (String objective : c.getKeys()) {
+                for (String objective : c.getAllKeys()) {
                     counters.put(objective, c.getInt(objective));
                 }
                 state.kills.put(uuid, counters);

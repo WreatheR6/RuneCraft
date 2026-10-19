@@ -1,11 +1,10 @@
 package com.runecraft.combat;
 
 import com.runecraft.osrs.AttackType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
 
 /**
  * Extension points into player combat (special attacks, slayer helmet, salve amulet, void, ring of
@@ -15,12 +14,12 @@ public final class CombatHooks {
     /** Modifies a player's attack. All methods are optional. */
     public interface PlayerAttackModifier {
         /** Multiplier applied to the attack roll. */
-        default double accuracy(ServerPlayerEntity player, LivingEntity target, AttackType type) {
+        default double accuracy(ServerPlayer player, LivingEntity target, AttackType type) {
             return 1.0;
         }
 
         /** Multiplier applied to the max hit. */
-        default double maxHit(ServerPlayerEntity player, LivingEntity target, AttackType type) {
+        default double maxHit(ServerPlayer player, LivingEntity target, AttackType type) {
             return 1.0;
         }
 
@@ -28,23 +27,23 @@ public final class CombatHooks {
          * True when this attack always deals its max hit whatever the roll (e.g. hits on the Judge of Yama). Applied before
          * {@link #afterRoll} wherever the attack's max hit is known.
          */
-        default boolean alwaysMaxHit(ServerPlayerEntity player, LivingEntity target, AttackType type) {
+        default boolean alwaysMaxHit(ServerPlayer player, LivingEntity target, AttackType type) {
             return false;
         }
 
         /** Last chance to change the rolled damage (e.g. a special attack hitting twice). */
-        default int afterRoll(ServerPlayerEntity player, LivingEntity target, AttackType type, int damage) {
+        default int afterRoll(ServerPlayer player, LivingEntity target, AttackType type, int damage) {
             return damage;
         }
 
         /** Called after the damage was applied. */
-        default void afterHit(ServerPlayerEntity player, LivingEntity target, AttackType type, int dealt) {
+        default void afterHit(ServerPlayer player, LivingEntity target, AttackType type, int dealt) {
         }
     }
 
     /** Reacts to a player being hit (recoil, defence procs...). */
     public interface PlayerHurtListener {
-        void onHurt(ServerPlayerEntity player, LivingEntity attacker, int damage);
+        void onHurt(ServerPlayer player, LivingEntity attacker, int damage);
     }
 
     /**
@@ -52,7 +51,7 @@ public final class CombatHooks {
      * Returns the message to show, or null to allow the attack.
      */
     public interface AttackGate {
-        String deny(ServerPlayerEntity player, AttackType type);
+        String deny(ServerPlayer player, AttackType type);
     }
 
     /**
@@ -60,7 +59,7 @@ public final class CombatHooks {
      * (a boss attack's {@code AttackDef} name, a monster's style, "hazard" or "poison"; null for scripted damage).
      */
     public interface PlayerDamageListener {
-        void onDamage(ServerPlayerEntity player, LivingEntity attacker, String attack, AttackType style, int damage);
+        void onDamage(ServerPlayer player, LivingEntity attacker, String attack, AttackType style, int damage);
     }
 
     private static final List<PlayerDamageListener> DAMAGE = new ArrayList<>();
@@ -77,7 +76,7 @@ public final class CombatHooks {
         attackStyle = style;
     }
 
-    static void damaged(ServerPlayerEntity p, LivingEntity attacker, int damage) {
+    static void damaged(ServerPlayer p, LivingEntity attacker, int damage) {
         String name = attackName;
         AttackType style = attackStyle;
         attackName = null;
@@ -111,7 +110,7 @@ public final class CombatHooks {
     /** Changes a monster drop for its killer before it hits the ground (e.g. diary noted bones). */
     public interface DropTransformer {
         /** The stack to drop instead, or null to leave the drop alone. */
-        net.minecraft.item.ItemStack transform(ServerPlayerEntity killer, LivingEntity mob, String item, int count);
+        net.minecraft.world.item.ItemStack transform(ServerPlayer killer, LivingEntity mob, String item, int count);
     }
 
     public static void addDropTransformer(DropTransformer t) {
@@ -119,9 +118,9 @@ public final class CombatHooks {
     }
 
     /** The stack a killed monster drops for an item of its loot table. */
-    public static net.minecraft.item.ItemStack dropStack(ServerPlayerEntity killer, LivingEntity mob, String item, int count) {
+    public static net.minecraft.world.item.ItemStack dropStack(ServerPlayer killer, LivingEntity mob, String item, int count) {
         for (DropTransformer t : DROPS) {
-            net.minecraft.item.ItemStack s = t.transform(killer, mob, item, count);
+            net.minecraft.world.item.ItemStack s = t.transform(killer, mob, item, count);
             if (s != null && !s.isEmpty()) {
                 return s;
             }
@@ -156,11 +155,11 @@ public final class CombatHooks {
      * extra max hit.
      */
     public interface NpcVersusPlayer {
-        default double accuracy(LivingEntity mob, ServerPlayerEntity target, AttackType type) {
+        default double accuracy(LivingEntity mob, ServerPlayer target, AttackType type) {
             return 1.0;
         }
 
-        default int maxHitBonus(LivingEntity mob, ServerPlayerEntity target, AttackType type) {
+        default int maxHitBonus(LivingEntity mob, ServerPlayer target, AttackType type) {
             return 0;
         }
     }
@@ -172,7 +171,7 @@ public final class CombatHooks {
     }
 
     /** The monster's attack roll against this player after every {@link NpcVersusPlayer}. */
-    public static long versusAttackRoll(LivingEntity mob, ServerPlayerEntity target, AttackType type, long roll) {
+    public static long versusAttackRoll(LivingEntity mob, ServerPlayer target, AttackType type, long roll) {
         double m = 1.0;
         for (NpcVersusPlayer v : VERSUS) {
             m *= v.accuracy(mob, target, type);
@@ -181,7 +180,7 @@ public final class CombatHooks {
     }
 
     /** The monster's max hit against this player after every {@link NpcVersusPlayer}. */
-    public static int versusMaxHit(LivingEntity mob, ServerPlayerEntity target, AttackType type, int maxHit) {
+    public static int versusMaxHit(LivingEntity mob, ServerPlayer target, AttackType type, int maxHit) {
         for (NpcVersusPlayer v : VERSUS) {
             maxHit += v.maxHitBonus(mob, target, type);
         }
@@ -205,7 +204,7 @@ public final class CombatHooks {
      * damage), e.g. Nightmare Zone absorption. Returns the damage that gets through.
      */
     public interface IncomingDamageModifier {
-        int modify(ServerPlayerEntity player, LivingEntity attacker, int damage);
+        int modify(ServerPlayer player, LivingEntity attacker, int damage);
     }
 
     private static final List<IncomingDamageModifier> INCOMING = new ArrayList<>();
@@ -214,7 +213,7 @@ public final class CombatHooks {
         INCOMING.add(modifier);
     }
 
-    static int incoming(ServerPlayerEntity player, LivingEntity attacker, int damage) {
+    static int incoming(ServerPlayer player, LivingEntity attacker, int damage) {
         for (IncomingDamageModifier m : INCOMING) {
             damage = Math.max(0, m.modify(player, attacker, damage));
         }
@@ -226,7 +225,7 @@ public final class CombatHooks {
      * recoil): e.g. the Kalphite Cave's task-only rule. Returns the message to show, or null to let the damage through.
      */
     public interface MonsterDamageGate {
-        String deny(ServerPlayerEntity player, LivingEntity target);
+        String deny(ServerPlayer player, LivingEntity target);
     }
 
     private static final List<MonsterDamageGate> MONSTER_GATES = new ArrayList<>();
@@ -236,7 +235,7 @@ public final class CombatHooks {
     }
 
     /** The first monster-damage gate's refusal, or null when the player may damage this target. */
-    public static String deniedDamage(ServerPlayerEntity player, LivingEntity target) {
+    public static String deniedDamage(ServerPlayer player, LivingEntity target) {
         for (MonsterDamageGate g : MONSTER_GATES) {
             String m = g.deny(player, target);
             if (m != null) {
@@ -247,7 +246,7 @@ public final class CombatHooks {
     }
 
     /** The first gate's refusal for this attack, or null when the attack may go ahead. */
-    public static String deniedAttack(ServerPlayerEntity p, AttackType type) {
+    public static String deniedAttack(ServerPlayer p, AttackType type) {
         for (AttackGate g : GATES) {
             String m = g.deny(p, type);
             if (m != null) {
@@ -257,7 +256,7 @@ public final class CombatHooks {
         return null;
     }
 
-    static double accuracy(ServerPlayerEntity p, LivingEntity t, AttackType type) {
+    static double accuracy(ServerPlayer p, LivingEntity t, AttackType type) {
         double m = 1.0;
         for (PlayerAttackModifier mod : MODIFIERS) {
             m *= mod.accuracy(p, t, type);
@@ -265,7 +264,7 @@ public final class CombatHooks {
         return m;
     }
 
-    static double maxHit(ServerPlayerEntity p, LivingEntity t, AttackType type) {
+    static double maxHit(ServerPlayer p, LivingEntity t, AttackType type) {
         double m = 1.0;
         for (PlayerAttackModifier mod : MODIFIERS) {
             m *= mod.maxHit(p, t, type);
@@ -273,7 +272,7 @@ public final class CombatHooks {
         return m;
     }
 
-    static int afterRoll(ServerPlayerEntity p, LivingEntity t, AttackType type, int damage) {
+    static int afterRoll(ServerPlayer p, LivingEntity t, AttackType type, int damage) {
         for (PlayerAttackModifier mod : MODIFIERS) {
             damage = mod.afterRoll(p, t, type, damage);
         }
@@ -281,7 +280,7 @@ public final class CombatHooks {
     }
 
     /** {@link #afterRoll} for a roll whose max hit is known: a modifier that guarantees the max hit raises the damage to it first. */
-    static int afterRoll(ServerPlayerEntity p, LivingEntity t, AttackType type, int damage, int maxHit) {
+    static int afterRoll(ServerPlayer p, LivingEntity t, AttackType type, int damage, int maxHit) {
         for (PlayerAttackModifier mod : MODIFIERS) {
             if (mod.alwaysMaxHit(p, t, type)) {
                 damage = Math.max(damage, maxHit);
@@ -291,14 +290,14 @@ public final class CombatHooks {
         return afterRoll(p, t, type, damage);
     }
 
-    static void afterHit(ServerPlayerEntity p, LivingEntity t, AttackType type, int dealt) {
+    static void afterHit(ServerPlayer p, LivingEntity t, AttackType type, int dealt) {
         for (PlayerAttackModifier mod : MODIFIERS) {
             mod.afterHit(p, t, type, dealt);
         }
     }
 
     /** Tells the hurt listeners (Vengeance, recoil, charges...) that a monster's attack damaged a player. */
-    public static void hurt(ServerPlayerEntity p, LivingEntity attacker, int damage) {
+    public static void hurt(ServerPlayer p, LivingEntity attacker, int damage) {
         for (PlayerHurtListener l : HURT) {
             l.onHurt(p, attacker, damage);
         }

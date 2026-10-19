@@ -8,14 +8,13 @@ import com.runecraft.osrs.content.minigames.Minigame;
 import com.runecraft.osrs.content.minigames.MinigameRules.RoguesDen;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * The Rogues' Den maze beneath Burthorpe (50 Agility and 50 Thieving): cross eight obstacles in
@@ -32,7 +31,7 @@ public class RoguesDenSession extends MinigameSession {
     private boolean cracked;
     private boolean paid;
 
-    public RoguesDenSession(int id, int slot, ServerWorld world, String variant) {
+    public RoguesDenSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.ROGUES_DEN, id, slot, world, variant);
     }
 
@@ -62,12 +61,12 @@ public class RoguesDenSession extends MinigameSession {
     }
 
     @Override
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
+    protected BlockPos spawnPoint(ServerPlayer player, int index) {
         return rel(0, 1, 19);
     }
 
     @Override
-    protected boolean onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         switch (blockId) {
             case "rd_obstacle" -> {
                 int index = (16 - (pos.getZ() - origin.getZ())) / 4;
@@ -101,7 +100,7 @@ public class RoguesDenSession extends MinigameSession {
                 if (random.nextDouble() < RoguesDen.passChance(Math.max(1, level(player, Skill.THIEVING) - drained[1]))) {
                     reward(player, "mystic_jewel", 1);
                     cracked = true;
-                    MinigameData.of(player).incrementStat(player.getUuid(), "kc:" + game.id());
+                    MinigameData.of(player).incrementStat(player.getUUID(), "kc:" + game.id());
                     Msg.game(player, "You crack the safe and find a mystic jewel!");
                     end(true);
                 } else if (random.nextBoolean()) {
@@ -124,7 +123,7 @@ public class RoguesDenSession extends MinigameSession {
     }
 
     /** Leaving the maze (cracked, failed or walked out): 12 XP per drained level, scaled by progress unless cracked. */
-    private void pay(ServerPlayerEntity player) {
+    private void pay(ServerPlayer player) {
         if (paid) {
             return;
         }
@@ -141,24 +140,24 @@ public class RoguesDenSession extends MinigameSession {
 
     @Override
     protected void onEnd(boolean success) {
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             pay(p);
         }
     }
 
     @Override
-    protected void onLeave(ServerPlayerEntity player) {
+    protected void onLeave(ServerPlayer player) {
         pay(player);
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
+    protected List<String> hud(ServerPlayer player) {
         return List.of("Rogues' Den", next < RoguesDen.OBSTACLES.length ? "Next: " + RoguesDen.OBSTACLES[next] : "Crack the wall safe!",
                 "Obstacles passed: " + next + " / " + RoguesDen.OBSTACLES.length);
     }
 
     /** Brian O'Richard: a mystic jewel for a piece of rogue equipment you don't have yet. */
-    public static void tradeJewel(ServerPlayerEntity player) {
+    public static void tradeJewel(ServerPlayer player) {
         if (Inv.remove(player, "mystic_jewel", 1) == 0) {
             Msg.game(player, "Brian O'Richard: Bring me a mystic jewel from the maze and I'll reward you with rogue equipment.");
             return;

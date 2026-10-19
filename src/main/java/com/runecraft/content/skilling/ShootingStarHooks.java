@@ -18,20 +18,19 @@ import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
 import com.runecraft.world.StructurePlacer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.random.Random;
-
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -117,14 +116,14 @@ final class ShootingStarHooks {
         if (star != null && now - star.lastMined <= 8 && ++star.worn >= ShootingStars.LAYER_TICKS) {
             star.worn = 0;
             star.size--;
-            ServerWorld world = Gielinor.world(server);
+            ServerLevel world = Gielinor.world(server);
             if (star.size <= 0) {
                 if (world != null && isStar(world.getBlockState(star.pos))) {
-                    world.setBlockState(star.pos, Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL);
+                    world.setBlock(star.pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
                 }
                 star = null;
             } else if (world != null) {
-                world.playSound(null, star.pos, SoundEvents.BLOCK_STONE_BREAK, SoundCategory.BLOCKS, 1.0f, 0.7f);
+                world.playSound(null, star.pos, SoundEvents.STONE_BREAK, SoundSource.BLOCKS, 1.0f, 0.7f);
             }
             save(server, now);
         }
@@ -133,7 +132,7 @@ final class ShootingStarHooks {
     /** Restores the star, the crash timer and the discovery bonuses saved before a restart. */
     private static void load(MinecraftServer server, long now) {
         SkillingState state = SkillingState.get(server);
-        NbtCompound tag = state.section(SECTION);
+        CompoundTag tag = state.section(SECTION);
         if (tag.contains("nextIn")) {
             nextCrash = now + Math.max(1, tag.getLong("nextIn"));
         }
@@ -144,13 +143,13 @@ final class ShootingStarHooks {
             Star s = new Star(new BlockPos(tag.getInt("x"), tag.getInt("y"), tag.getInt("z")), ShootingStars.SITES.get(site),
                     tag.getInt("size"));
             s.worn = tag.getInt("worn");
-            if (tag.containsUuid("discoverer")) {
-                s.discoverer = tag.getUuid("discoverer");
+            if (tag.hasUUID("discoverer")) {
+                s.discoverer = tag.getUUID("discoverer");
             }
             star = s;
         }
-        NbtCompound bonus = state.section(BONUS_SECTION);
-        for (String key : bonus.getKeys()) {
+        CompoundTag bonus = state.section(BONUS_SECTION);
+        for (String key : bonus.getAllKeys()) {
             try {
                 BONUS.put(UUID.fromString(key), bonus.getInt(key));
             } catch (IllegalArgumentException ignored) {
@@ -162,7 +161,7 @@ final class ShootingStarHooks {
     /** Writes the star, the crash timer and the bonuses into the world save. */
     private static void save(MinecraftServer server, long now) {
         SkillingState state = SkillingState.get(server);
-        NbtCompound tag = new NbtCompound();
+        CompoundTag tag = new CompoundTag();
         if (nextCrash >= 0) {
             tag.putLong("nextIn", Math.max(1, nextCrash - now));
         }
@@ -176,10 +175,10 @@ final class ShootingStarHooks {
             tag.putInt("y", s.pos.getY());
             tag.putInt("z", s.pos.getZ());
             if (s.discoverer != null) {
-                tag.putUuid("discoverer", s.discoverer);
+                tag.putUUID("discoverer", s.discoverer);
             }
         }
-        NbtCompound bonus = new NbtCompound();
+        CompoundTag bonus = new CompoundTag();
         BONUS.forEach((id, n) -> {
             if (n > 0) {
                 bonus.putInt(id.toString(), n);
@@ -189,11 +188,11 @@ final class ShootingStarHooks {
         replace(state.section(BONUS_SECTION), bonus);
     }
 
-    private static void replace(NbtCompound target, NbtCompound with) {
-        for (String key : new java.util.ArrayList<>(target.getKeys())) {
+    private static void replace(CompoundTag target, CompoundTag with) {
+        for (String key : new java.util.ArrayList<>(target.getAllKeys())) {
             target.remove(key);
         }
-        target.copyFrom(with);
+        target.merge(with);
     }
 
     private static boolean isStar(BlockState state) {
@@ -201,13 +200,13 @@ final class ShootingStarHooks {
     }
 
     private static void crash(MinecraftServer server, ThreadLocalRandom random) {
-        ServerWorld world = Gielinor.world(server);
+        ServerLevel world = Gielinor.world(server);
         BlockState block = SkillingUtil.moduleBlock(ShootingStars.STAR);
         if (world == null || block == null) {
             return;
         }
         if (star != null && isStar(world.getBlockState(star.pos))) {
-            world.setBlockState(star.pos, Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL);
+            world.setBlock(star.pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
         }
         ShootingStars.Site site = ShootingStars.nextSite(lastSite, random.nextDouble());
         lastSite = site;
@@ -216,21 +215,21 @@ final class ShootingStarHooks {
         world.getChunk(x >> 4, z >> 4);
         StructurePlacer.applyIfLoaded(world, x >> 4, z >> 4);
         BlockPos pos = Gielinor.safeSpot(world, x, z);
-        world.setBlockState(pos, block, Block.NOTIFY_ALL);
+        world.setBlock(pos, block, Block.UPDATE_ALL);
         star = new Star(pos, site, ShootingStars.landingSize(random.nextDouble()));
-        server.getPlayerManager().broadcast(Text.literal("A shooting star has crashed in " + site.region() + ": "
-                + site.name() + ".").formatted(Formatting.GOLD), false);
+        server.getPlayerList().broadcastSystemMessage(Component.literal("A shooting star has crashed in " + site.region() + ": "
+                + site.name() + ".").withStyle(ChatFormatting.GOLD), false);
     }
 
-    private static void mine(ServerPlayerEntity player, BlockPos pos) {
-        ServerWorld world = (ServerWorld) player.getWorld();
+    private static void mine(ServerPlayer player, BlockPos pos) {
+        ServerLevel world = (ServerLevel) player.level();
         if (star == null || !star.pos.equals(pos)) {
             // A star left over from before a restart has burnt out.
-            world.setBlockState(pos, Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL);
+            world.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
             Msg.game(player, "The star crumbles away.");
             return;
         }
-        if (player.isSneaking()) {
+        if (player.isShiftKeyDown()) {
             Msg.game(player, "This is a size-" + star.size + " star. A Mining level of at least " + ShootingStars.level(star.size)
                     + " is required to mine this layer. It has been mined about " + (star.worn * 100 / ShootingStars.LAYER_TICKS)
                     + "% of the way to the next layer.");
@@ -247,27 +246,27 @@ final class ShootingStarHooks {
         Msg.action(player, "You swing your pickaxe at the star.");
         SkillingUtil.start(player, new SkillingUtil.BlockAction(pos, ShootingStars.STAR, pick.miningTicks()) {
             @Override
-            boolean roll(ServerPlayerEntity p, Random random) {
+            boolean roll(ServerPlayer p, RandomSource random) {
                 Star s = star;
                 if (s == null || !s.pos.equals(pos) || Tools.bestPickaxe(p, Players.data(p).skills()) == null
                         || SkillingUtil.level(p, Skill.MINING) < ShootingStars.level(s.size)) {
                     return false;
                 }
                 s.lastMined = ActionManager.gameTick();
-                p.getWorld().playSound(null, pos, SoundEvents.BLOCK_AMETHYST_BLOCK_HIT, SoundCategory.PLAYERS, 1.0f, 0.9f);
+                p.level().playSound(null, pos, SoundEvents.AMETHYST_BLOCK_HIT, SoundSource.PLAYERS, 1.0f, 0.9f);
                 if (random.nextDouble() >= Chance.lerp(SkillingUtil.level(p, Skill.MINING), ShootingStars.LOW, ShootingStars.HIGH)) {
                     return true;
                 }
                 if (s.discoverer == null) {
-                    s.discoverer = p.getUuid();
-                    BONUS.put(p.getUuid(), ShootingStars.DISCOVERY_BONUS);
+                    s.discoverer = p.getUUID();
+                    BONUS.put(p.getUUID(), ShootingStars.DISCOVERY_BONUS);
                     Msg.red(p, "Congratulations! You were the first person to find this star!");
                 }
                 int dust = 1;
-                int bonus = BONUS.getOrDefault(p.getUuid(), 0);
+                int bonus = BONUS.getOrDefault(p.getUUID(), 0);
                 if (bonus > 0) {
                     dust++;
-                    BONUS.put(p.getUuid(), bonus - 1);
+                    BONUS.put(p.getUUID(), bonus - 1);
                 }
                 SkillingUtil.give(p, ShootingStars.STARDUST, dust);
                 XpService.add(p, Skill.MINING, ShootingStars.XP);
@@ -276,14 +275,14 @@ final class ShootingStarHooks {
         });
     }
 
-    private static void dusuri(ServerPlayerEntity player, QuestNpcEntity npc) {
+    private static void dusuri(ServerPlayer player, QuestNpcEntity npc) {
         int n = ShootingStars.SHOP.size();
-        int index = SELECTED.getOrDefault(player.getUuid(), 0) % n;
-        if (player.isSneaking() || !SELECTED.containsKey(player.getUuid())) {
-            if (SELECTED.containsKey(player.getUuid())) {
+        int index = SELECTED.getOrDefault(player.getUUID(), 0) % n;
+        if (player.isShiftKeyDown() || !SELECTED.containsKey(player.getUUID())) {
+            if (SELECTED.containsKey(player.getUUID())) {
                 index = (index + 1) % n;
             }
-            SELECTED.put(player.getUuid(), index);
+            SELECTED.put(player.getUUID(), index);
             ShootingStars.Reward r = ShootingStars.SHOP.get(index);
             Msg.game(player, "Dusuri: The " + r.label() + " costs " + r.stardust()
                     + " stardust. Talk to me again to buy it, or sneak and talk to see something else.");
@@ -297,7 +296,7 @@ final class ShootingStarHooks {
         }
         Inv.remove(player, ShootingStars.STARDUST, r.stardust());
         if (r.give().equals("bag_full_of_gems")) {
-            Random random = player.getRandom();
+            RandomSource random = player.getRandom();
             for (int i = 0; i < r.count(); i++) {
                 SkillingUtil.roll(player, ShootingStars.BAG_OF_GEMS, random);
             }

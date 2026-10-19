@@ -14,13 +14,12 @@ import com.runecraft.osrs.content.ContentRegistry;
 import com.runecraft.osrs.ui.SkillPanel;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.util.Identifier;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -75,9 +74,9 @@ public final class SidePanel {
     }
 
     static Layout layout(int screenW, int screenH) {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        double gui = Math.max(1.0, mc.getWindow().getScaleFactor());
-        double scale = SkillPanel.pixelsPerUnit(mc.getWindow().getFramebufferHeight()) / gui;
+        Minecraft mc = Minecraft.getInstance();
+        double gui = Math.max(1.0, mc.getWindow().getGuiScale());
+        double scale = SkillPanel.pixelsPerUnit(mc.getWindow().getHeight()) / gui;
         // Tiny windows: never let the panel climb into the HUD orbs at the top.
         double maxScale = Math.max(0.2, (screenH - 52) / (double) SkillPanel.PANEL_H);
         scale = Math.min(scale, maxScale);
@@ -94,19 +93,19 @@ public final class SidePanel {
     // ------------------------------------------------------------------ rendering
 
     /** Draws the panel. Pass NaN mouse coordinates when the cursor is captured (no hover). */
-    public static void render(DrawContext ctx, int screenW, int screenH, double mouseX, double mouseY) {
-        MinecraftClient mc = MinecraftClient.getInstance();
+    public static void render(GuiGraphics ctx, int screenW, int screenH, double mouseX, double mouseY) {
+        Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) {
             return;
         }
-        TextRenderer tr = mc.textRenderer;
+        Font tr = mc.font;
         Layout l = layout(screenW, screenH);
         double mx = l.localX(mouseX);
         double my = l.localY(mouseY);
 
-        ctx.getMatrices().push();
-        ctx.getMatrices().translate(l.x(), l.y(), 0);
-        ctx.getMatrices().scale((float) l.scale(), (float) l.scale(), 1);
+        ctx.pose().pushPose();
+        ctx.pose().translate(l.x(), l.y(), 0);
+        ctx.pose().scale((float) l.scale(), (float) l.scale(), 1);
 
         OsrsUi.stonePanel(ctx, 0, 0, SkillPanel.PANEL_W, SkillPanel.PANEL_H);
         int hoveredTab = SkillPanel.tabAt(mx, my);
@@ -123,10 +122,10 @@ public final class SidePanel {
         // Content area frame
         int cx = SkillPanel.CONTENT_X;
         int cy = SkillPanel.CONTENT_Y;
-        ctx.drawBorder(cx - 1, cy - 1, SkillPanel.CONTENT_W + 2, SkillPanel.CONTENT_H + 2, OsrsUi.EDGE);
+        ctx.renderOutline(cx - 1, cy - 1, SkillPanel.CONTENT_W + 2, SkillPanel.CONTENT_H + 2, OsrsUi.EDGE);
 
-        ctx.getMatrices().push();
-        ctx.getMatrices().translate(cx, cy, 0);
+        ctx.pose().pushPose();
+        ctx.pose().translate(cx, cy, 0);
         double lx = mx - cx;
         double ly = my - cy;
         List<String> tip = switch (tab) {
@@ -141,7 +140,7 @@ public final class SidePanel {
         if (tip != null && !Double.isNaN(lx)) {
             OsrsUi.tooltip(ctx, tr, tip, (int) lx, (int) ly, SkillPanel.CONTENT_W, SkillPanel.CONTENT_H);
         }
-        ctx.getMatrices().pop();
+        ctx.pose().popPose();
 
         if (hoveredTab >= 0) {
             String label = hoveredTab < SkillPanel.TABS_PER_ROW ? PanelTab.values()[hoveredTab].label
@@ -150,7 +149,7 @@ public final class SidePanel {
                 OsrsUi.tooltip(ctx, tr, List.of(label), (int) mx, (int) my, SkillPanel.PANEL_W, SkillPanel.PANEL_H);
             }
         }
-        ctx.getMatrices().pop();
+        ctx.pose().popPose();
     }
 
     private static boolean in(double mx, double my, int x, int y, int w, int h) {
@@ -183,10 +182,10 @@ public final class SidePanel {
 
     private static final int RANGED_Y = 126;
 
-    private static List<String> renderCombat(DrawContext ctx, TextRenderer tr, double mx, double my) {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        ItemStack held = mc.player.getMainHandStack();
-        String weapon = held.isEmpty() ? "Unarmed" : held.getName().getString();
+    private static List<String> renderCombat(GuiGraphics ctx, Font tr, double mx, double my) {
+        Minecraft mc = Minecraft.getInstance();
+        ItemStack held = mc.player.getMainHandItem();
+        String weapon = held.isEmpty() ? "Unarmed" : held.getHoverName().getString();
         OsrsUi.centered(ctx, tr, weapon, center(), 4, OsrsUi.ORANGE);
         OsrsUi.centered(ctx, tr, "Combat Lvl: " + ClientState.SKILLS.combatLevel(), center(), 16, OsrsUi.YELLOW);
         List<String> tip = null;
@@ -199,23 +198,23 @@ public final class SidePanel {
                 tip = List.of(MELEE_INFO[i]);
             }
         }
-        ctx.drawTextWithShadow(tr, "Bow styles", 4, RANGED_Y - 12, OsrsUi.ORANGE);
+        ctx.drawString(tr, "Bow styles", 4, RANGED_Y - 12, OsrsUi.ORANGE);
         for (int i = 0; i < RANGED.length; i++) {
             boolean active = ClientState.style == RANGED[i];
             boolean hover = in(mx, my, rangedX(i), RANGED_Y, 61, 30);
             OsrsUi.button(ctx, rangedX(i), RANGED_Y, 61, 30, active, hover);
             String name = RANGED[i].displayName();
-            if (tr.getWidth(name) > 57) {
-                name = tr.trimToWidth(name, 57);
+            if (tr.width(name) > 57) {
+                name = tr.plainSubstrByWidth(name, 57);
             }
             OsrsUi.centered(ctx, tr, name, rangedX(i) + 30, RANGED_Y + 11, active ? OsrsUi.WHITE : OsrsUi.ORANGE);
             if (hover) {
                 tip = List.of(RANGED_INFO[i]);
             }
         }
-        ctx.drawTextWithShadow(tr, "Autocast: " + (ClientState.autocast == null ? "none" : ClientState.autocast.displayName()),
+        ctx.drawString(tr, "Autocast: " + (ClientState.autocast == null ? "none" : ClientState.autocast.displayName()),
                 4, 172, 0xFF80A0FF);
-        ctx.drawTextWithShadow(tr, "Attack speed: " + Equipment.weaponSpeed(mc.player, ClientState.SKILLS) + " ticks",
+        ctx.drawString(tr, "Attack speed: " + Equipment.weaponSpeed(mc.player, ClientState.SKILLS) + " ticks",
                 4, 186, OsrsUi.WHITE);
         boolean hoverRetaliate = in(mx, my, 2, RETALIATE_Y, 186, 30);
         OsrsUi.button(ctx, 2, RETALIATE_Y, 186, 30, ClientState.autoRetaliate, hoverRetaliate);
@@ -282,7 +281,7 @@ public final class SidePanel {
         return sb.length() > 3 ? sb.substring(0, 3) : sb.toString();
     }
 
-    private static List<String> renderPrayer(DrawContext ctx, TextRenderer tr, double mx, double my) {
+    private static List<String> renderPrayer(GuiGraphics ctx, Font tr, double mx, double my) {
         Prayer[] all = Prayer.values();
         int level = ClientState.SKILLS.level(Skill.PRAYER);
         List<String> tip = null;
@@ -355,7 +354,7 @@ public final class SidePanel {
         return lines;
     }
 
-    private static List<String> renderMagic(DrawContext ctx, TextRenderer tr, double mx, double my) {
+    private static List<String> renderMagic(GuiGraphics ctx, Font tr, double mx, double my) {
         Spell[] all = Spell.values();
         int level = ClientState.SKILLS.level(Skill.MAGIC);
         List<String> tip = null;
@@ -377,7 +376,7 @@ public final class SidePanel {
             }
         }
         int rows = (all.length + 5) / 6;
-        ctx.drawTextWithShadow(tr, "Autocast: " + (ClientState.autocast == null ? "none" : ClientState.autocast.displayName()),
+        ctx.drawString(tr, "Autocast: " + (ClientState.autocast == null ? "none" : ClientState.autocast.displayName()),
                 4, 4 + rows * SPELL_BOX, 0xFF80A0FF);
         return tip;
     }
@@ -412,7 +411,7 @@ public final class SidePanel {
 
     private static final int QUEST_TOP = 16;
 
-    private static List<String> renderQuests(DrawContext ctx, TextRenderer tr, double mx, double my) {
+    private static List<String> renderQuests(GuiGraphics ctx, Font tr, double mx, double my) {
         List<QuestInfo> all = ContentRegistry.quests();
         OsrsUi.centered(ctx, tr, "Quest Points: " + ClientState.questPoints + "/" + Quest.totalQuestPoints(), center(), 3, OsrsUi.ORANGE);
         int rows = listRows(QUEST_TOP);
@@ -426,8 +425,8 @@ public final class SidePanel {
             int color = stage == 0 ? 0xFFFF0000 : stage >= q.finalStage() ? 0xFF00FF00 : OsrsUi.YELLOW;
             int y = QUEST_TOP + i * LIST_ROW;
             String name = q.displayName();
-            String shown = tr.getWidth(name) > 176 ? tr.trimToWidth(name, 170) + ".." : name;
-            ctx.drawTextWithShadow(tr, shown, 4, y, color);
+            String shown = tr.width(name) > 176 ? tr.plainSubstrByWidth(name, 170) + ".." : name;
+            ctx.drawString(tr, shown, 4, y, color);
             if (in(mx, my, 2, y - 1, SkillPanel.CONTENT_W - 4, LIST_ROW)) {
                 tip = List.of(name, stage == 0 ? "Not started" : stage >= q.finalStage() ? "Completed" : "In progress", "Click to read");
             }
@@ -441,7 +440,7 @@ public final class SidePanel {
         if (my >= QUEST_TOP - 1 && row >= 0 && row < listRows(QUEST_TOP) && index < ContentRegistry.quests().size()) {
             RuneScapeScreen screen = new RuneScapeScreen(RuneScapeScreen.Tab.QUESTS);
             screen.selectQuest(index);
-            MinecraftClient.getInstance().setScreen(screen);
+            Minecraft.getInstance().setScreen(screen);
             return true;
         }
         return false;
@@ -453,8 +452,8 @@ public final class SidePanel {
         return v >= 0 ? "+" + v : String.valueOf(v);
     }
 
-    private static List<String> renderGear(DrawContext ctx, TextRenderer tr) {
-        MinecraftClient mc = MinecraftClient.getInstance();
+    private static List<String> renderGear(GuiGraphics ctx, Font tr) {
+        Minecraft mc = Minecraft.getInstance();
         EquipmentStats s = Equipment.total(mc.player, ClientState.SKILLS);
         String[][] rows = {
                 {"Attack bonus", null},
@@ -472,10 +471,10 @@ public final class SidePanel {
                 if (y > 3) {
                     y += 3;
                 }
-                ctx.drawTextWithShadow(tr, r[0], 4, y, OsrsUi.ORANGE);
+                ctx.drawString(tr, r[0], 4, y, OsrsUi.ORANGE);
             } else {
-                ctx.drawTextWithShadow(tr, r[0] + ":", 10, y, OsrsUi.YELLOW);
-                ctx.drawTextWithShadow(tr, r[1], SkillPanel.CONTENT_W - 6 - tr.getWidth(r[1]), y, OsrsUi.YELLOW);
+                ctx.drawString(tr, r[0] + ":", 10, y, OsrsUi.YELLOW);
+                ctx.drawString(tr, r[1], SkillPanel.CONTENT_W - 6 - tr.width(r[1]), y, OsrsUi.YELLOW);
             }
             y += 13;
         }
@@ -486,7 +485,7 @@ public final class SidePanel {
 
     private static final int LOG_TOP = 28;
 
-    private static List<String> renderLog(DrawContext ctx, TextRenderer tr, double mx, double my) {
+    private static List<String> renderLog(GuiGraphics ctx, Font tr, double mx, double my) {
         List<CollectionLogData.Page> pages = CollectionLogData.pages();
         OsrsUi.centered(ctx, tr, "Collection Log", center(), 3, OsrsUi.ORANGE);
         OsrsUi.centered(ctx, tr, "Obtained: " + ClientState.COLLECTION_LOG.size() + "/" + CollectionLogData.totalSlots(), center(), 14,
@@ -501,10 +500,10 @@ public final class SidePanel {
             int color = got == p.items().size() ? 0xFF00FF00 : got > 0 ? OsrsUi.YELLOW : OsrsUi.ORANGE;
             int y = LOG_TOP + i * LIST_ROW;
             String count = got + "/" + p.items().size();
-            int maxW = SkillPanel.CONTENT_W - 12 - tr.getWidth(count);
-            String name = tr.getWidth(p.name()) > maxW ? tr.trimToWidth(p.name(), maxW - 6) + ".." : p.name();
-            ctx.drawTextWithShadow(tr, name, 4, y, color);
-            ctx.drawTextWithShadow(tr, count, SkillPanel.CONTENT_W - 4 - tr.getWidth(count), y, color);
+            int maxW = SkillPanel.CONTENT_W - 12 - tr.width(count);
+            String name = tr.width(p.name()) > maxW ? tr.plainSubstrByWidth(p.name(), maxW - 6) + ".." : p.name();
+            ctx.drawString(tr, name, 4, y, color);
+            ctx.drawString(tr, count, SkillPanel.CONTENT_W - 4 - tr.width(count), y, color);
             if (in(mx, my, 2, y - 1, SkillPanel.CONTENT_W - 4, LIST_ROW)) {
                 tip = List.of(p.category() + " - " + p.name(), "Click to open");
             }
@@ -518,7 +517,7 @@ public final class SidePanel {
         if (my >= LOG_TOP - 1 && row >= 0 && row < listRows(LOG_TOP) && index < CollectionLogData.pages().size()) {
             RuneScapeScreen screen = new RuneScapeScreen(RuneScapeScreen.Tab.COLLECTION);
             screen.selectPage(index);
-            MinecraftClient.getInstance().setScreen(screen);
+            Minecraft.getInstance().setScreen(screen);
             return true;
         }
         return false;
@@ -549,7 +548,7 @@ public final class SidePanel {
                 }
                 tab = next;
             } else if (t == EXPAND_TAB) {
-                MinecraftClient.getInstance().setScreen(new RuneScapeScreen(fullTab(tab)));
+                Minecraft.getInstance().setScreen(new RuneScapeScreen(fullTab(tab)));
             } else if (t == CLOSE_TAB) {
                 visible = false;
                 closeCursorScreen();
@@ -602,14 +601,14 @@ public final class SidePanel {
     }
 
     private static void closeCursorScreen() {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.currentScreen instanceof SidePanelScreen) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen instanceof SidePanelScreen) {
             mc.setScreen(null);
         }
     }
 
-    private static void send(Identifier channel, int value) {
-        PacketByteBuf buf = PacketByteBufs.create();
+    private static void send(ResourceLocation channel, int value) {
+        FriendlyByteBuf buf = PacketByteBufs.create();
         buf.writeVarInt(value);
         ClientPlayNetworking.send(channel, buf);
     }

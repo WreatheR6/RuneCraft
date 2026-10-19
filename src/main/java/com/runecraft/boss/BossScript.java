@@ -2,8 +2,8 @@ package com.runecraft.boss;
 
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.content.AttackDef;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Optional per-boss behaviour layered on top of a data-driven {@link DataBossEntity}. Register with
@@ -15,7 +15,7 @@ public interface BossScript {
      * Adjusts the defence a player's attack of {@code type} meets ({@code in.targetDefenceBonus} and, for ranged,
      * {@code in.targetRangedDefence}): e.g. Yama's magic defence follows his target's style and rises in phase 3.
      */
-    default void adjustDefence(DataBossEntity boss, ServerPlayerEntity attacker, AttackType type, com.runecraft.osrs.PlayerHitCalc.Input in) {
+    default void adjustDefence(DataBossEntity boss, ServerPlayer attacker, AttackType type, com.runecraft.osrs.PlayerHitCalc.Input in) {
     }
 
     /** Called when the boss spawns. */
@@ -34,7 +34,7 @@ public interface BossScript {
      * Chooses the next attack. Return null to use the default weighted choice from the
      * BossDef / phase attack list.
      */
-    default AttackDef chooseAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+    default AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
         return null;
     }
 
@@ -43,17 +43,17 @@ public interface BossScript {
      * attack list); returns the attack to perform instead. Lets a script act on the boss's real next attack, e.g.
      * Phosani's Prayer Deactivation.
      */
-    default AttackDef beforeAttack(DataBossEntity boss, ServerPlayerEntity target, AttackDef attack) {
+    default AttackDef beforeAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
         return attack;
     }
 
     /** Adjusts damage dealt to the boss (immunities, damage caps, shields...). */
-    default int modifyIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+    default int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
         return damage;
     }
 
     /** Adjusts damage the boss deals to a player just before it's applied. */
-    default int onHitPlayer(DataBossEntity boss, ServerPlayerEntity player, int damage, AttackType type) {
+    default int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
         return damage;
     }
 
@@ -62,18 +62,18 @@ public interface BossScript {
     }
 
     /** Called when a player kills the boss (after drops). */
-    default void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
+    default void onDeath(DataBossEntity boss, ServerPlayer killer) {
     }
 
     /**
      * Saves what has to outlive the entity being unloaded (chunk unload, logout, restart): a reloaded boss gets a fresh
      * script, so anything it put in the world (e.g. the Royal Titans' wall blocks) must be recorded here to be cleaned up.
      */
-    default void writeNbt(DataBossEntity boss, NbtCompound nbt) {
+    default void writeNbt(DataBossEntity boss, CompoundTag nbt) {
     }
 
     /** Reads what {@link #writeNbt} saved, when the boss is loaded again. */
-    default void readNbt(DataBossEntity boss, NbtCompound nbt) {
+    default void readNbt(DataBossEntity boss, CompoundTag nbt) {
     }
 
     /**

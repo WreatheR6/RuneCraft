@@ -11,13 +11,12 @@ import com.runecraft.osrs.content.quests.QuestSpec;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.minecraft.command.CommandSource;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import java.util.Map;
 
 /**
@@ -31,62 +30,62 @@ final class QuestCommands {
 
     static void init() {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-            dispatcher.register(CommandManager.literal("questgear")
+            dispatcher.register(Commands.literal("questgear")
                     .executes(QuestCommands::listGear)
-                    .then(CommandManager.literal("remove")
-                            .then(CommandManager.argument("slot", StringArgumentType.word())
-                                    .suggests((ctx, b) -> CommandSource.suggestMatching(new String[]{"hands", "cape", "neck"}, b))
+                    .then(Commands.literal("remove")
+                            .then(Commands.argument("slot", StringArgumentType.word())
+                                    .suggests((ctx, b) -> SharedSuggestionProvider.suggest(new String[]{"hands", "cape", "neck"}, b))
                                     .executes(ctx -> {
-                                        QuestGear.remove(ctx.getSource().getPlayerOrThrow(), StringArgumentType.getString(ctx, "slot"));
+                                        QuestGear.remove(ctx.getSource().getPlayerOrException(), StringArgumentType.getString(ctx, "slot"));
                                         return 1;
                                     }))));
-            dispatcher.register(CommandManager.literal("questguide")
-                    .then(CommandManager.argument("quest", StringArgumentType.word())
-                            .suggests((ctx, b) -> CommandSource.suggestMatching(
+            dispatcher.register(Commands.literal("questguide")
+                    .then(Commands.argument("quest", StringArgumentType.word())
+                            .suggests((ctx, b) -> SharedSuggestionProvider.suggest(
                                     QuestBook.get().quests.stream().map(QuestSpec::id), b))
                             .executes(QuestCommands::guide)));
-            dispatcher.register(CommandManager.literal("questcape").executes(QuestCommands::cape));
+            dispatcher.register(Commands.literal("questcape").executes(QuestCommands::cape));
             // quest puzzles: the chat links QuestPuzzles prints run "/questpuzzle <quest> <stage>.<trigger> <option>"
-            dispatcher.register(CommandManager.literal("questpuzzle")
-                    .then(CommandManager.argument("quest", StringArgumentType.word())
+            dispatcher.register(Commands.literal("questpuzzle")
+                    .then(Commands.argument("quest", StringArgumentType.word())
                             .executes(ctx -> {
-                                QuestPuzzles.reshow(ctx.getSource().getPlayerOrThrow(), StringArgumentType.getString(ctx, "quest"));
+                                QuestPuzzles.reshow(ctx.getSource().getPlayerOrException(), StringArgumentType.getString(ctx, "quest"));
                                 return 1;
                             })
-                            .then(CommandManager.argument("ref", StringArgumentType.word())
-                                    .then(CommandManager.argument("option", IntegerArgumentType.integer(0))
+                            .then(Commands.argument("ref", StringArgumentType.word())
+                                    .then(Commands.argument("option", IntegerArgumentType.integer(0))
                                             .executes(ctx -> {
-                                                QuestPuzzles.answer(ctx.getSource().getPlayerOrThrow(), StringArgumentType.getString(ctx, "quest"),
+                                                QuestPuzzles.answer(ctx.getSource().getPlayerOrException(), StringArgumentType.getString(ctx, "quest"),
                                                         StringArgumentType.getString(ctx, "ref"), IntegerArgumentType.getInteger(ctx, "option"));
                                                 return 1;
                                             })))));
         });
     }
 
-    private static int listGear(CommandContext<ServerCommandSource> ctx) throws CommandSyntaxException {
-        ServerPlayerEntity p = ctx.getSource().getPlayerOrThrow();
-        Map<String, String> worn = QuestsState.get(p).wornAll(p.getUuid());
+    private static int listGear(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer p = ctx.getSource().getPlayerOrException();
+        Map<String, String> worn = QuestsState.get(p).wornAll(p.getUUID());
         if (worn.isEmpty()) {
-            p.sendMessage(Text.literal("You aren't wearing any gloves, capes or amulets. Right-click one to wear it."), false);
+            p.displayClientMessage(Component.literal("You aren't wearing any gloves, capes or amulets. Right-click one to wear it."), false);
             return 1;
         }
-        worn.forEach((slot, item) -> p.sendMessage(Text.literal(slot + ": " + QuestInterpreter.describe(item, 1)), false));
+        worn.forEach((slot, item) -> p.displayClientMessage(Component.literal(slot + ": " + QuestInterpreter.describe(item, 1)), false));
         var b = QuestGear.bonus(p);
-        p.sendMessage(Text.literal("Bonuses: att " + b.stabAttack() + "/" + b.slashAttack() + "/" + b.crushAttack() + "/" + b.magicAttack()
-                + "/" + b.rangedAttack() + ", str +" + b.meleeStrength()).formatted(Formatting.GRAY), false);
+        p.displayClientMessage(Component.literal("Bonuses: att " + b.stabAttack() + "/" + b.slashAttack() + "/" + b.crushAttack() + "/" + b.magicAttack()
+                + "/" + b.rangedAttack() + ", str +" + b.meleeStrength()).withStyle(ChatFormatting.GRAY), false);
         return 1;
     }
 
-    private static int guide(CommandContext<ServerCommandSource> ctx) throws CommandSyntaxException {
-        ServerPlayerEntity p = ctx.getSource().getPlayerOrThrow();
+    private static int guide(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer p = ctx.getSource().getPlayerOrException();
         QuestSpec q = QuestBook.get().spec(StringArgumentType.getString(ctx, "quest"));
         if (q == null) {
-            ctx.getSource().sendError(Text.literal("Unknown quest"));
+            ctx.getSource().sendFailure(Component.literal("Unknown quest"));
             return 0;
         }
         PlayerData data = Players.data(p);
-        p.sendMessage(Text.literal(q.def.displayName() + " (" + q.def.difficulty().name().toLowerCase() + ", "
-                + q.def.questPoints() + " QP)").formatted(Formatting.GOLD), false);
+        p.displayClientMessage(Component.literal(q.def.displayName() + " (" + q.def.difficulty().name().toLowerCase() + ", "
+                + q.def.questPoints() + " QP)").withStyle(ChatFormatting.GOLD), false);
         if (q.minQuestPoints > 0) {
             line(p, q.minQuestPoints + " quest points", data.questPoints() >= q.minQuestPoints);
         }
@@ -97,31 +96,31 @@ final class QuestCommands {
             var info = com.runecraft.osrs.content.ContentRegistry.quest(req);
             line(p, info == null ? req : info.displayName(), info != null && data.questComplete(info));
         }
-        q.missingRequirements.forEach(r -> p.sendMessage(Text.literal("  (" + r + " - not required here)").formatted(Formatting.DARK_GRAY), false));
-        q.def.xpRewards().forEach((s, xp) -> p.sendMessage(Text.literal("  Reward: " + String.format("%,.0f", xp) + " " + s.displayName() + " XP")
-                .formatted(Formatting.AQUA), false));
-        q.def.itemRewards().forEach(r -> p.sendMessage(Text.literal("  Reward: " + r.replace('_', ' ')).formatted(Formatting.AQUA), false));
-        q.unlocks.forEach(u -> p.sendMessage(Text.literal("  Unlocks: " + u).formatted(Formatting.AQUA), false));
+        q.missingRequirements.forEach(r -> p.displayClientMessage(Component.literal("  (" + r + " - not required here)").withStyle(ChatFormatting.DARK_GRAY), false));
+        q.def.xpRewards().forEach((s, xp) -> p.displayClientMessage(Component.literal("  Reward: " + String.format("%,.0f", xp) + " " + s.displayName() + " XP")
+                .withStyle(ChatFormatting.AQUA), false));
+        q.def.itemRewards().forEach(r -> p.displayClientMessage(Component.literal("  Reward: " + r.replace('_', ' ')).withStyle(ChatFormatting.AQUA), false));
+        q.unlocks.forEach(u -> p.displayClientMessage(Component.literal("  Unlocks: " + u).withStyle(ChatFormatting.AQUA), false));
         int stage = QuestInterpreter.stage(p, q);
-        p.sendMessage(Text.literal(stage >= q.stages.size() ? "QUEST COMPLETE!" : q.stages.get(Math.max(0, stage)).journal)
-                .formatted(Formatting.YELLOW), false);
+        p.displayClientMessage(Component.literal(stage >= q.stages.size() ? "QUEST COMPLETE!" : q.stages.get(Math.max(0, stage)).journal)
+                .withStyle(ChatFormatting.YELLOW), false);
         return 1;
     }
 
-    private static void line(ServerPlayerEntity p, String text, boolean met) {
-        p.sendMessage(Text.literal("  " + (met ? "[x] " : "[ ] ") + text).formatted(met ? Formatting.GREEN : Formatting.RED), false);
+    private static void line(ServerPlayer p, String text, boolean met) {
+        p.displayClientMessage(Component.literal("  " + (met ? "[x] " : "[ ] ") + text).withStyle(met ? ChatFormatting.GREEN : ChatFormatting.RED), false);
     }
 
-    private static int cape(CommandContext<ServerCommandSource> ctx) throws CommandSyntaxException {
-        ServerPlayerEntity p = ctx.getSource().getPlayerOrThrow();
+    private static int cape(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer p = ctx.getSource().getPlayerOrException();
         int have = Players.data(p).questPoints();
         int total = Quest.totalQuestPoints();
-        p.sendMessage(Text.literal("Quest points: " + have + " / " + total).formatted(Formatting.GOLD), false);
+        p.displayClientMessage(Component.literal("Quest points: " + have + " / " + total).withStyle(ChatFormatting.GOLD), false);
         if (have >= total) {
-            p.sendMessage(Text.literal("You've completed every quest! Visit the Wise Old Man in Draynor Village for your quest point cape."), false);
+            p.displayClientMessage(Component.literal("You've completed every quest! Visit the Wise Old Man in Draynor Village for your quest point cape."), false);
         } else {
             long left = com.runecraft.osrs.content.ContentRegistry.quests().stream().filter(q -> q.questPoints() > 0 && !Players.data(p).questComplete(q)).count();
-            p.sendMessage(Text.literal(left + " quests left before you can buy the quest point cape."), false);
+            p.displayClientMessage(Component.literal(left + " quests left before you can buy the quest point cape."), false);
         }
         return 1;
     }

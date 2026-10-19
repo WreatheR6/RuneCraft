@@ -8,11 +8,10 @@ import com.runecraft.osrs.content.islands.IslandsNpcs;
 import com.runecraft.osrs.content.islands.IslandsTravel;
 import com.runecraft.quest.QuestApi;
 import com.runecraft.quest.QuestScripts;
-import net.minecraft.server.network.ServerPlayerEntity;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Minecraft-side behaviour for the islands module: NPC dialogue, the fairy rings and Magic
@@ -41,13 +40,13 @@ public final class IslandsHooks implements ModuleHooks {
     }
 
     /** Says the NPC's next dialogue line. */
-    static void talk(ServerPlayerEntity player, String npcId, String name) {
+    static void talk(ServerPlayer player, String npcId, String name) {
         List<String> lines = IslandsNpcs.dialogue(npcId);
         if (lines.isEmpty()) {
             QuestApi.say(player, name, "Hello there, adventurer.");
             return;
         }
-        String k = player.getUuid() + "|" + npcId;
+        String k = player.getUUID() + "|" + npcId;
         int i = LINE.getOrDefault(k, 0);
         QuestApi.say(player, name, lines.get(i % lines.size()));
         LINE.put(k, i + 1);

@@ -3,11 +3,10 @@ package com.runecraft.content.godwars;
 import com.runecraft.boss.DataBossEntity;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.godwars.GwdBosses;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Mob;
 
 /**
  * Commander Zilyana: attacks every 2 ticks. Slashes with her Saradomin sword (up to 31) when next to
@@ -20,7 +19,7 @@ final class ZilyanaScript extends GwdScript {
             "Saradomin lend me strength!", "By the power of Saradomin!", "May Saradomin be my sword!", "Good will always triumph!",
             "Forward! Our allies are with us!", "Saradomin is with us!", "In the name of Saradomin!", "All praise Saradomin!",
             "Attack! Find the Godsword!"};
-    private final List<MobEntity> guards = new ArrayList<>();
+    private final List<Mob> guards = new ArrayList<>();
     private double homeX;
     private double homeY;
     private double homeZ;
@@ -36,7 +35,7 @@ final class ZilyanaScript extends GwdScript {
     }
 
     @Override
-    protected AttackDef pick(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+    protected AttackDef pick(DataBossEntity boss, ServerPlayer target, double distance) {
         if (distance <= meleeReach(boss) && boss.getRandom().nextInt(4) != 0) {
             return GwdBosses.ZILY_MELEE;
         }
@@ -57,15 +56,15 @@ final class ZilyanaScript extends GwdScript {
         if (gameTick % 12 == 0 && boss.getRandom().nextInt(2) == 0) {
             double angle = boss.getRandom().nextDouble() * Math.PI * 2;
             double r = 3 + boss.getRandom().nextDouble() * 6;
-            boss.getNavigation().startMovingTo(homeX + Math.cos(angle) * r, homeY, homeZ + Math.sin(angle) * r, 1.4);
+            boss.getNavigation().moveTo(homeX + Math.cos(angle) * r, homeY, homeZ + Math.sin(angle) * r, 1.4);
         }
         if (gameTick % 20 == 0 && boss.getRandom().nextInt(3) == 0) {
             shout(boss, SHOUTS[boss.getRandom().nextInt(SHOUTS.length)]);
         }
         if (gameTick % 10 == 0) {
-            for (MobEntity guard : guards) {
-                if (guard != null && guard.isAlive() && guard.squaredDistanceTo(boss) > 20 * 20) {
-                    guard.requestTeleport(boss.getX() + 2, boss.getY(), boss.getZ() + 2);
+            for (Mob guard : guards) {
+                if (guard != null && guard.isAlive() && guard.distanceToSqr(boss) > 20 * 20) {
+                    guard.teleportTo(boss.getX() + 2, boss.getY(), boss.getZ() + 2);
                 }
             }
         }

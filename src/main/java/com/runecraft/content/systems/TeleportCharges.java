@@ -2,9 +2,9 @@ package com.runecraft.content.systems;
 
 import com.runecraft.item.ItemCharges;
 import com.runecraft.osrs.content.systems.Charges;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Charges of a charged item, kept on the stack (NBT) or, for the items whose charges belong to the player in OSRS
@@ -28,11 +28,11 @@ final class TeleportCharges {
 
     /** Charges a per-player stack held from before they moved to the player, or null. */
     private static Integer legacy(ItemStack stack) {
-        NbtCompound nbt = stack.getNbt();
+        CompoundTag nbt = stack.getTag();
         return nbt != null && nbt.contains(ItemCharges.KEY) && !nbt.getBoolean(MIRRORED) ? ItemCharges.get(stack) : null;
     }
 
-    static int get(ServerPlayerEntity p, ItemStack stack) {
+    static int get(ServerPlayer p, ItemStack stack) {
         Charges.Spec s = perPlayerSpec(stack);
         if (s == null) {
             return ItemCharges.get(stack);
@@ -40,7 +40,7 @@ final class TeleportCharges {
         return Charges.perPlayerCharges(s, SysState.of(p).playerCharges.get(s.id()), legacy(stack));
     }
 
-    static void set(ServerPlayerEntity p, ItemStack stack, int charges) {
+    static void set(ServerPlayer p, ItemStack stack, int charges) {
         Charges.Spec s = perPlayerSpec(stack);
         if (s == null) {
             ItemCharges.set(stack, charges);
@@ -48,6 +48,6 @@ final class TeleportCharges {
         }
         SysState.of(p).playerCharges.put(s.id(), Charges.clamp(s, charges));
         ItemCharges.set(stack, charges); // mirrored on the stack for its tooltip
-        stack.getOrCreateNbt().putBoolean(MIRRORED, true);
+        stack.getOrCreateTag().putBoolean(MIRRORED, true);
     }
 }

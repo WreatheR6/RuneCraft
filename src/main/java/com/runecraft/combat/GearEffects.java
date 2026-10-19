@@ -10,9 +10,9 @@ import com.runecraft.osrs.content.systems.Jewellery;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
 
 /**
  * Helpers for equipment set effects (salve amulets vs undead, Dharok's set, obsidian armour). The accuracy and
@@ -22,17 +22,17 @@ import net.minecraft.server.network.ServerPlayerEntity;
 public final class GearEffects implements CombatHooks.PlayerAttackModifier {
     private static final double EPS = 1e-9;
 
-    static String worn(ServerPlayerEntity p, EquipmentSlot slot) {
-        return Inv.idOf(p.getEquippedStack(slot));
+    static String worn(ServerPlayer p, EquipmentSlot slot) {
+        return Inv.idOf(p.getItemBySlot(slot));
     }
 
-    static String neck(ServerPlayerEntity p) {
+    static String neck(ServerPlayer p) {
         return SysState.of(p).wornId(Jewellery.Slot.NECK);
     }
 
     /** Salve multiplier for this attack (1.0 when it does not apply). */
-    public static double salve(ServerPlayerEntity p, LivingEntity target, AttackType type) {
-        if (target == null || target instanceof ServerPlayerEntity) {
+    public static double salve(ServerPlayer p, LivingEntity target, AttackType type) {
+        if (target == null || target instanceof ServerPlayer) {
             return 1.0;
         }
         double m = CombatBonuses.salve(neck(p), type);
@@ -40,30 +40,30 @@ public final class GearEffects implements CombatHooks.PlayerAttackModifier {
     }
 
     /** True when a salve amulet boosts this attack (the black mask / slayer helmet bonus is then skipped). */
-    public static boolean salveActive(ServerPlayerEntity p, LivingEntity target, AttackType type) {
+    public static boolean salveActive(ServerPlayer p, LivingEntity target, AttackType type) {
         return salve(p, target, type) > 1.0;
     }
 
-    static boolean dharoks(ServerPlayerEntity p) {
+    static boolean dharoks(ServerPlayer p) {
         return worn(p, EquipmentSlot.HEAD).equals("dharoks_helm") && worn(p, EquipmentSlot.CHEST).equals("dharoks_platebody")
-                && worn(p, EquipmentSlot.LEGS).equals("dharoks_platelegs") && Inv.idOf(p.getMainHandStack()).equals("dharoks_greataxe");
+                && worn(p, EquipmentSlot.LEGS).equals("dharoks_platelegs") && Inv.idOf(p.getMainHandItem()).equals("dharoks_greataxe");
     }
 
-    static boolean obsidianArmour(ServerPlayerEntity p) {
+    static boolean obsidianArmour(ServerPlayer p) {
         return worn(p, EquipmentSlot.HEAD).equals("obsidian_helmet") && worn(p, EquipmentSlot.CHEST).equals("obsidian_platebody")
                 && worn(p, EquipmentSlot.LEGS).equals("obsidian_platelegs");
     }
 
     /** Magic level (or magic attack, whichever is higher) the twisted bow scales with. */
     static int targetMagic(LivingEntity target) {
-        if (target instanceof ServerPlayerEntity other) {
+        if (target instanceof ServerPlayer other) {
             return Players.data(other).skills().currentLevel(Skill.MAGIC);
         }
         return MonsterStats.of(target).magic();
     }
 
-    static boolean crystal(ServerPlayerEntity p) {
-        return CombatBonuses.isCrystalBow(Inv.idOf(p.getMainHandStack()));
+    static boolean crystal(ServerPlayer p) {
+        return CombatBonuses.isCrystalBow(Inv.idOf(p.getMainHandItem()));
     }
 
     // Accuracy and max-hit effects (salve, Dharok's, berserker necklace, crystal armour, twisted bow, prayer magic

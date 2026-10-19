@@ -26,19 +26,18 @@ import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
-import net.minecraft.block.BlockState;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.random.Random;
-
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -58,19 +57,19 @@ public final class GatheringHooks {
     private GatheringHooks() {
     }
 
-    static boolean depleted(ServerWorld world, BlockPos pos) {
+    static boolean depleted(ServerLevel world, BlockPos pos) {
         Long until = DEPLETED.get(SkillingUtil.key(world, pos));
         return until != null && ActionManager.gameTick() < until;
     }
 
-    static void deplete(ServerWorld world, BlockPos pos, int ticks) {
+    static void deplete(ServerLevel world, BlockPos pos, int ticks) {
         DEPLETED.put(SkillingUtil.key(world, pos), ActionManager.gameTick() + ticks);
     }
 
     static void init() {
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> {
-            if (server.getTicks() % 30 == 0) {
-                ServerWorld world = com.runecraft.world.Gielinor.world(server);
+            if (server.getTickCount() % 30 == 0) {
+                ServerLevel world = com.runecraft.world.Gielinor.world(server);
                 if (world != null) {
                     roamImplings(world);
                 }
@@ -93,42 +92,42 @@ public final class GatheringHooks {
             BlockHooks.register(t.blockId(), (player, pos, state) -> trap(player, pos, t));
         }
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
-            if (hand != Hand.MAIN_HAND || !(entity instanceof OsrsMonsterEntity monster)) {
-                return ActionResult.PASS;
+            if (hand != InteractionHand.MAIN_HAND || !(entity instanceof OsrsMonsterEntity monster)) {
+                return InteractionResult.PASS;
             }
-            if (world.isClient()) {
-                ItemStack held = player.getMainHandStack();
+            if (world.isClientSide()) {
+                ItemStack held = player.getMainHandItem();
                 String heldId = held.isEmpty() ? "" : Inv.idOf(held);
-                return NETS.contains(heldId) || heldId.equals("magic_box") ? ActionResult.SUCCESS : ActionResult.PASS;
+                return NETS.contains(heldId) || heldId.equals("magic_box") ? InteractionResult.SUCCESS : InteractionResult.PASS;
             }
-            if (monster.stats() == null || monster.stats().profile() == null || !(player instanceof ServerPlayerEntity sp)) {
-                return ActionResult.PASS;
+            if (monster.stats() == null || monster.stats().profile() == null || !(player instanceof ServerPlayer sp)) {
+                return InteractionResult.PASS;
             }
             String id = monster.stats().profile().id;
             if ("imp".equals(id) && SkillingUtil.heldId(sp).equals("magic_box")) {
                 catchImp(sp, monster);
-                return ActionResult.SUCCESS;
+                return InteractionResult.SUCCESS;
             }
             HunterData.Impling imp = HunterData.impling(id);
             if (imp == null) {
-                return ActionResult.PASS;
+                return InteractionResult.PASS;
             }
             // Barehanded catches are allowed 10 levels above the impling's; otherwise a net must be held.
-            if (!NETS.contains(SkillingUtil.heldId(sp)) && !sp.getMainHandStack().isEmpty()) {
-                return ActionResult.PASS;
+            if (!NETS.contains(SkillingUtil.heldId(sp)) && !sp.getMainHandItem().isEmpty()) {
+                return InteractionResult.PASS;
             }
             catchImpling(sp, monster, imp);
-            return ActionResult.SUCCESS;
+            return InteractionResult.SUCCESS;
         });
     }
 
     // ------------------------------------------------------------------ Woodcutting
 
-    private static void chop(ServerPlayerEntity player, BlockPos pos, GatheringData.ModTree tree) {
+    private static void chop(ServerPlayer player, BlockPos pos, GatheringData.ModTree tree) {
         if (!Stun.check(player) || !SkillingUtil.need(player, Skill.WOODCUTTING, tree.level(), "chop down this tree")) {
             return;
         }
-        ServerWorld world = (ServerWorld) player.getWorld();
+        ServerLevel world = (ServerLevel) player.level();
         if (depleted(world, pos)) {
             Msg.game(player, "This tree has been cut down. It will grow back soon.");
             return;
@@ -141,12 +140,12 @@ public final class GatheringHooks {
         Msg.action(player, tree.blockId().equals("sulliuscep") ? "You swing your axe at the sulliuscep." : "You swing your axe at the tree.");
         SkillingUtil.start(player, new SkillingUtil.BlockAction(pos, tree.blockId(), 4) {
             @Override
-            boolean roll(ServerPlayerEntity p, Random random) {
+            boolean roll(ServerPlayer p, RandomSource random) {
                 Tools.Tool axe = Tools.bestAxeTool(p, Players.data(p).skills());
                 if (axe == null || depleted(world, pos)) {
                     return false;
                 }
-                world.playSound(null, pos, SoundEvents.BLOCK_WOOD_HIT, SoundCategory.PLAYERS, 1.0f, 0.9f);
+                world.playSound(null, pos, SoundEvents.WOOD_HIT, SoundSource.PLAYERS, 1.0f, 0.9f);
                 double chance = Chance.lerp(SkillingUtil.level(p, Skill.WOODCUTTING), tree.low(axe.woodcuttingMultiplier()),
                         tree.high(axe.woodcuttingMultiplier()));
                 if (random.nextDouble() < chance) {
@@ -159,7 +158,7 @@ public final class GatheringHooks {
                     }
                     if (random.nextDouble() < tree.depleteChance()) {
                         deplete(world, pos, tree.respawnTicks());
-                        world.playSound(null, pos, SoundEvents.BLOCK_WOOD_BREAK, SoundCategory.BLOCKS, 1.0f, 0.8f);
+                        world.playSound(null, pos, SoundEvents.WOOD_BREAK, SoundSource.BLOCKS, 1.0f, 0.8f);
                         return false;
                     }
                 }
@@ -170,11 +169,11 @@ public final class GatheringHooks {
 
     // ------------------------------------------------------------------ Mining
 
-    private static void mine(ServerPlayerEntity player, BlockPos pos, MiningData.MineRock rock) {
+    private static void mine(ServerPlayer player, BlockPos pos, MiningData.MineRock rock) {
         if (!Stun.check(player) || !SkillingUtil.need(player, Skill.MINING, rock.level(), "mine this rock")) {
             return;
         }
-        ServerWorld world = (ServerWorld) player.getWorld();
+        ServerLevel world = (ServerLevel) player.level();
         if (depleted(world, pos)) {
             Msg.game(player, "There is currently no ore available in this rock.");
             return;
@@ -185,7 +184,7 @@ public final class GatheringHooks {
             return;
         }
         if (rock.blockId().equals(MiningData.SULPHUR)) {
-            ItemStack head = player.getEquippedStack(net.minecraft.entity.EquipmentSlot.HEAD);
+            ItemStack head = player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD);
             if (head.isEmpty() || !MiningData.BREATHING_FILTERS.contains(Inv.idOf(head))) {
                 Msg.game(player, "You'll choke on the fumes if you try to mine without protection.");
                 return;
@@ -196,7 +195,7 @@ public final class GatheringHooks {
         boolean upper = rock.blockId().equals(MiningData.UPPER_VEIN);
         boolean inner = rock.blockId().equals(MiningData.INNER_VEIN);
         if (upper && !Motherlode.canUseUpperLevel(Players.data(player).skills().level(Skill.MINING),
-                SkillingState.get(player.getServer()).section("sacks").getBoolean(player.getUuidAsString() + ":upper"))) {
+                SkillingState.get(player.getServer()).section("sacks").getBoolean(player.getStringUUID() + ":upper"))) {
             Msg.game(player, "You need " + Motherlode.UPPER_LEVEL_MINING + " Mining (unboosted) and Prospector Percy's permission ("
                     + Motherlode.UPPER_LEVEL_NUGGETS + " golden nuggets, sneak-use the hopper) to mine the upper level.");
             return;
@@ -208,11 +207,11 @@ public final class GatheringHooks {
         Msg.action(player, "You swing your pickaxe at the rock.");
         SkillingUtil.start(player, new SkillingUtil.BlockAction(pos, rock.blockId(), pick.miningTicks()) {
             @Override
-            boolean roll(ServerPlayerEntity p, Random random) {
+            boolean roll(ServerPlayer p, RandomSource random) {
                 if (Tools.bestPickaxe(p, Players.data(p).skills()) == null || depleted(world, pos)) {
                     return false;
                 }
-                world.playSound(null, pos, SoundEvents.BLOCK_STONE_HIT, SoundCategory.PLAYERS, 1.0f, 0.9f);
+                world.playSound(null, pos, SoundEvents.STONE_HIT, SoundSource.PLAYERS, 1.0f, 0.9f);
                 MiningData.Yield got = rock.attempt(SkillingUtil.level(p, Skill.MINING), random::nextDouble);
                 if (got == null) {
                     return true;
@@ -221,8 +220,8 @@ public final class GatheringHooks {
                 XpService.add(p, Skill.MINING, got.xp());
                 if (vein) {
                     // The pay-dirt's ore is decided now, at the current (boosted) level; the hopper only washes it.
-                    NbtCompound sacks = SkillingState.get(p.getServer()).section("sacks");
-                    String qk = p.getUuidAsString() + ":pending";
+                    CompoundTag sacks = SkillingState.get(p.getServer()).section("sacks");
+                    String qk = p.getStringUUID() + ":pending";
                     String ore = Motherlode.wash(SkillingUtil.level(p, Skill.MINING), random::nextDouble);
                     String q = sacks.getString(qk) + Motherlode.code(ore);
                     int held = Inv.count(p, "pay_dirt");
@@ -268,7 +267,7 @@ public final class GatheringHooks {
     }
 
     /** The Barronite Crusher: crushes the barronite deposits carried with a hammer (14 Smithing, 30 XP each). */
-    private static void crushBarronite(ServerPlayerEntity player, BlockPos pos) {
+    private static void crushBarronite(ServerPlayer player, BlockPos pos) {
         if (!SkillingUtil.need(player, Skill.SMITHING, MiningData.CRUSH_LEVEL, "crush barronite deposits")) {
             return;
         }
@@ -283,14 +282,14 @@ public final class GatheringHooks {
         Msg.action(player, "You place a deposit in the crusher.");
         SkillingUtil.start(player, new SkillingUtil.BlockAction(pos, MiningData.BARRONITE_CRUSHER, 4) {
             @Override
-            boolean roll(ServerPlayerEntity p, Random random) {
+            boolean roll(ServerPlayer p, RandomSource random) {
                 if (!Inv.has(p, "barronite_deposit", 1) || !Inv.has(p, "hammer", 1)) {
                     return false;
                 }
                 Inv.remove(p, "barronite_deposit", 1);
                 Loot got = SkillingUtil.roll(p, MiningData.CRUSH_TABLE, random);
                 XpService.add(p, Skill.SMITHING, MiningData.CRUSH_XP);
-                p.getWorld().playSound(null, pos, SoundEvents.BLOCK_ANVIL_USE, SoundCategory.PLAYERS, 0.5f, 1.2f);
+                p.level().playSound(null, pos, SoundEvents.ANVIL_USE, SoundSource.PLAYERS, 0.5f, 1.2f);
                 if (got != null && !got.item().equals("barronite_shards")) {
                     Msg.red(p, "You find " + Msg.article(SkillingUtil.lower(SkillingUtil.name(got.item()))) + " in the deposit!");
                 }
@@ -300,9 +299,9 @@ public final class GatheringHooks {
     }
 
     /** True when the pay-dirt carried already fills what's left of the player's sack. */
-    private static boolean sackFull(ServerPlayerEntity player) {
-        NbtCompound sacks = SkillingState.get(player.getServer()).section("sacks");
-        String key = player.getUuidAsString();
+    private static boolean sackFull(ServerPlayer player) {
+        CompoundTag sacks = SkillingState.get(player.getServer()).section("sacks");
+        String key = player.getStringUUID();
         return Inv.count(player, "pay_dirt") + sacks.getInt(key) >= Motherlode.sackCapacity(sacks.getBoolean(key + ":upgraded"));
     }
 
@@ -314,7 +313,7 @@ public final class GatheringHooks {
      * hammer repairs a broken strut instead of depositing. While both are broken the wheel stops and nothing is
      * deposited. Returns true when the click was used up. // approx (OSRS: click the strut by the wheel)
      */
-    private static boolean struts(ServerPlayerEntity player) {
+    private static boolean struts(ServerPlayer player) {
         long now = ActionManager.gameTick();
         int broken = 0;
         int first = -1;
@@ -327,7 +326,7 @@ public final class GatheringHooks {
                 first = first < 0 ? i : first;
             }
         }
-        if (broken > 0 && "hammer".equals(Inv.idOf(player.getMainHandStack()))) {
+        if (broken > 0 && "hammer".equals(Inv.idOf(player.getMainHandItem()))) {
             STRUT_BREAKS[first] = Motherlode.strutBreaksAt(now, player.getRandom().nextInt(3));
             XpService.addTenths(player, Skill.SMITHING, Motherlode.strutRepairXpTenths(
                     com.runecraft.player.Players.data(player).skills().currentLevel(Skill.SMITHING)));
@@ -345,10 +344,10 @@ public final class GatheringHooks {
         return false;
     }
 
-    private static void hopper(ServerPlayerEntity player, boolean upper) {
-        NbtCompound sacks = SkillingState.get(player.getServer()).section("sacks");
-        String key = player.getUuidAsString();
-        if (player.isSneaking()) {
+    private static void hopper(ServerPlayer player, boolean upper) {
+        CompoundTag sacks = SkillingState.get(player.getServer()).section("sacks");
+        String key = player.getStringUUID();
+        if (player.isShiftKeyDown()) {
             if (upper) {
                 buyUpperHopper(player, sacks, key);
             } else {
@@ -382,7 +381,7 @@ public final class GatheringHooks {
         String qk = key + ":pending";
         String pending = sacks.getString(qk);
         int level = SkillingUtil.level(player, Skill.MINING);
-        Random random = player.getRandom();
+        RandomSource random = player.getRandom();
         int nuggets = 0;
         int lost = 0;
         double xp = 0;
@@ -409,11 +408,11 @@ public final class GatheringHooks {
         sacks.putInt(key, inSack + n - lost);
         Msg.game(player, "You deposit " + n + " pay-dirt into the hopper. The sack now holds " + (inSack + n - lost) + "/"
                 + Motherlode.sackCapacity(upgraded) + ".");
-        player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.BLOCK_GRAVEL_BREAK, SoundCategory.BLOCKS, 1f, 0.8f);
+        player.level().playSound(null, player.blockPosition(), SoundEvents.GRAVEL_BREAK, SoundSource.BLOCKS, 1f, 0.8f);
     }
 
     /** Prospector Percy's one-off upgrades (sneak-use the hopper / sack): upper level access and the bigger sack. */
-    private static void buyUpperLevel(ServerPlayerEntity player, NbtCompound sacks, String key) {
+    private static void buyUpperLevel(ServerPlayer player, CompoundTag sacks, String key) {
         if (sacks.getBoolean(key + ":upper")) {
             Msg.game(player, "You already have access to the upper level of the mine.");
             return;
@@ -431,7 +430,7 @@ public final class GatheringHooks {
         Msg.game(player, "You pay " + Motherlode.UPPER_LEVEL_NUGGETS + " golden nuggets for permanent access to the upper level.");
     }
 
-    private static void buyUpperHopper(ServerPlayerEntity player, NbtCompound sacks, String key) {
+    private static void buyUpperHopper(ServerPlayer player, CompoundTag sacks, String key) {
         if (sacks.getBoolean(key + ":upper_hopper")) {
             Msg.game(player, "You can already use the upper level's hopper.");
             return;
@@ -449,7 +448,7 @@ public final class GatheringHooks {
         Msg.game(player, "You pay " + Motherlode.UPPER_HOPPER_NUGGETS + " golden nuggets: you can now use the upper level's hopper.");
     }
 
-    private static void buyBiggerSack(ServerPlayerEntity player, NbtCompound sacks, String key) {
+    private static void buyBiggerSack(ServerPlayer player, CompoundTag sacks, String key) {
         if (sacks.getBoolean(key + ":upgraded")) {
             Msg.game(player, "Your sack is already as big as it gets (" + Motherlode.SACK_CAPACITY_UPGRADED + " pay-dirt).");
             return;
@@ -463,10 +462,10 @@ public final class GatheringHooks {
         Msg.game(player, "Your sack can now hold " + Motherlode.SACK_CAPACITY_UPGRADED + " pay-dirt.");
     }
 
-    private static void sack(ServerPlayerEntity player) {
-        NbtCompound sacks = SkillingState.get(player.getServer()).section("sacks");
-        String key = player.getUuidAsString();
-        if (player.isSneaking()) {
+    private static void sack(ServerPlayer player) {
+        CompoundTag sacks = SkillingState.get(player.getServer()).section("sacks");
+        String key = player.getStringUUID();
+        if (player.isShiftKeyDown()) {
             buyBiggerSack(player, sacks, key);
             return;
         }
@@ -492,7 +491,7 @@ public final class GatheringHooks {
             }
         }
         // Sacks filled before ores were washed at the hopper: wash the rest now.
-        Random random = player.getRandom();
+        RandomSource random = player.getRandom();
         int level = SkillingUtil.level(player, Skill.MINING);
         for (int i = washed; i < inSack; i++) {
             String item = Motherlode.wash(level, random::nextDouble);
@@ -512,7 +511,7 @@ public final class GatheringHooks {
 
     // ------------------------------------------------------------------ Fishing
 
-    private static void fish(ServerPlayerEntity player, BlockPos pos, GatheringData.Spot clicked) {
+    private static void fish(ServerPlayer player, BlockPos pos, GatheringData.Spot clicked) {
         if (!Stun.check(player)) {
             return;
         }
@@ -545,11 +544,11 @@ public final class GatheringHooks {
                 ? "You start harpooning fish." : "You cast out your line...");
         SkillingUtil.start(player, new SkillingUtil.BlockAction(pos, spot.blockId(), 5) {
             @Override
-            boolean roll(ServerPlayerEntity p, Random random) {
+            boolean roll(ServerPlayer p, RandomSource random) {
                 if (!hasFishingTool(p, spot)) {
                     return false;
                 }
-                ServerWorld w = (ServerWorld) p.getWorld();
+                ServerLevel w = (ServerLevel) p.level();
                 if (com.runecraft.skill.FishingSpots.tick(w, pos, w.getBlockState(pos)) != null) {
                     Msg.game(p, "The fishing spot has moved.");
                     return false;
@@ -558,7 +557,7 @@ public final class GatheringHooks {
                     Msg.game(p, "You don't have any " + SkillingUtil.lower(SkillingUtil.name(spot.bait())) + " left.");
                     return false;
                 }
-                p.getWorld().playSound(null, pos, SoundEvents.ENTITY_FISHING_BOBBER_SPLASH, SoundCategory.PLAYERS, 0.4f, 1.0f);
+                p.level().playSound(null, pos, SoundEvents.FISHING_BOBBER_SPLASH, SoundSource.PLAYERS, 0.4f, 1.0f);
                 if (spot.junkChance() > 0 && random.nextInt(100) < spot.junkChance()) {
                     Loot junk = SkillingUtil.roll(p, spot.junk(), random);
                     if (junk != null) {
@@ -596,7 +595,7 @@ public final class GatheringHooks {
     }
 
     /** The spot's tool; for harpoon spots any usable harpoon (dragon, infernal, crystal) works. */
-    private static boolean hasFishingTool(ServerPlayerEntity player, GatheringData.Spot spot) {
+    private static boolean hasFishingTool(ServerPlayer player, GatheringData.Spot spot) {
         if (spot.tool().equals("harpoon")) {
             return Tools.bestHarpoon(player, Players.data(player).skills()) != null;
         }
@@ -605,8 +604,8 @@ public final class GatheringHooks {
 
     // ------------------------------------------------------------------ Hunter traps
 
-    private static void trap(ServerPlayerEntity player, BlockPos pos, HunterData.TrapSpot spot) {
-        ServerWorld world = (ServerWorld) player.getWorld();
+    private static void trap(ServerPlayer player, BlockPos pos, HunterData.TrapSpot spot) {
+        ServerLevel world = (ServerLevel) player.level();
         if (!spot.kind().laid()) {
             track(player, world, pos, spot);
             return;
@@ -615,7 +614,7 @@ public final class GatheringHooks {
         LaidTrap laid = TRAPS.get(key);
         long now = ActionManager.gameTick();
         if (laid != null) {
-            if (!laid.owner().equals(player.getUuid())) {
+            if (!laid.owner().equals(player.getUUID())) {
                 Msg.game(player, "This isn't your trap.");
                 return;
             }
@@ -630,7 +629,7 @@ public final class GatheringHooks {
             if (player.getRandom().nextDouble() < chance) {
                 giveCatch(player, spot);
                 Msg.action(player, "You've caught " + Msg.article(SkillingUtil.lower(spot.creature())) + "!");
-                world.playSound(null, pos, SoundEvents.ENTITY_ITEM_PICKUP, SoundCategory.PLAYERS, 1f, 1f);
+                world.playSound(null, pos, SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 1f, 1f);
             } else {
                 Msg.game(player, "The " + SkillingUtil.lower(spot.creature()) + " escaped from your trap.");
             }
@@ -660,8 +659,8 @@ public final class GatheringHooks {
             }
             Inv.remove(player, spot.bait(), 1);
         }
-        player.swingHand(Hand.MAIN_HAND, true);
-        TRAPS.put(key, new LaidTrap(player.getUuid(), now));
+        player.swing(InteractionHand.MAIN_HAND, true);
+        TRAPS.put(key, new LaidTrap(player.getUUID(), now));
         HunterService.claim(player, world, pos, false);
         Msg.action(player, switch (spot.kind()) {
             case NET -> "You set up the net trap.";
@@ -672,7 +671,7 @@ public final class GatheringHooks {
     }
 
     /** The catch's loot (plus its rare extra, e.g. a tatty fur) and XP. */
-    private static void giveCatch(ServerPlayerEntity player, HunterData.TrapSpot spot) {
+    private static void giveCatch(ServerPlayer player, HunterData.TrapSpot spot) {
         for (String item : spot.loot()) {
             SkillingUtil.give(player, item, 1);
         }
@@ -687,13 +686,13 @@ public final class GatheringHooks {
      * reveals the whole track of a noose-wand creature at once; RuneCraft folds a track into one search, so the ring halves
      * how long the burrow stays empty after a successful catch instead. // approx
      */
-    public static java.util.function.Predicate<ServerPlayerEntity> pursuitTrack = p -> false;
+    public static java.util.function.Predicate<ServerPlayer> pursuitTrack = p -> false;
 
     /**
      * Immediate catches: noose-wand tracking (search the burrow for the kebbit or weasel), butterflies
      * (butterfly net, one jar per catch) and falconry (the falcon swoops on the kebbit).
      */
-    private static void track(ServerPlayerEntity player, ServerWorld world, BlockPos pos, HunterData.TrapSpot spot) {
+    private static void track(ServerPlayer player, ServerLevel world, BlockPos pos, HunterData.TrapSpot spot) {
         if (!Stun.check(player) || !SkillingUtil.need(player, Skill.HUNTER, spot.level(), "hunt " + SkillingUtil.lower(spot.creature()) + "s")) {
             return;
         }
@@ -713,11 +712,11 @@ public final class GatheringHooks {
                 SkillingUtil.name(spot.bait()))) + " to catch " + SkillingUtil.lower(spot.creature()) + "s.")) {
             return;
         }
-        if (spot.kind() == HunterData.TrapKind.FALCONRY && !player.getMainHandStack().isEmpty()) {
+        if (spot.kind() == HunterData.TrapKind.FALCONRY && !player.getMainHandItem().isEmpty()) {
             Msg.game(player, "You need your hands free to handle the falcon.");
             return;
         }
-        player.swingHand(Hand.MAIN_HAND, true);
+        player.swing(InteractionHand.MAIN_HAND, true);
         int level = SkillingUtil.level(player, Skill.HUNTER);
         double chance = HunterRates.catchChance(spot.creature(), spot.level(), level);
         int emptyFor = spot.kind() == HunterData.TrapKind.BUTTERFLY ? 4 : 8;
@@ -730,7 +729,7 @@ public final class GatheringHooks {
             }
             giveCatch(player, spot);
             Msg.action(player, "You've caught " + Msg.article(SkillingUtil.lower(spot.creature())) + "!");
-            world.playSound(null, pos, SoundEvents.ENTITY_RABBIT_HURT, SoundCategory.NEUTRAL, 0.8f, 1.2f);
+            world.playSound(null, pos, SoundEvents.RABBIT_HURT, SoundSource.NEUTRAL, 0.8f, 1.2f);
         } else {
             Msg.game(player, switch (spot.kind()) {
                 case BUTTERFLY -> "You fail to catch the butterfly.";
@@ -747,23 +746,23 @@ public final class GatheringHooks {
      * Implings never stand still in OSRS: an idle impling flits off to a random spot up to 12 tiles away now and then
      * (the spawner's leash still brings strays back toward their spawn area). // approx distances and timing
      */
-    private static void roamImplings(ServerWorld world) {
-        for (net.minecraft.entity.Entity e : world.iterateEntities()) {
-            if (!(e instanceof OsrsMonsterEntity m) || !m.isAlive() || m.getTarget() != null || !m.getNavigation().isIdle()
+    private static void roamImplings(ServerLevel world) {
+        for (net.minecraft.world.entity.Entity e : world.getAllEntities()) {
+            if (!(e instanceof OsrsMonsterEntity m) || !m.isAlive() || m.getTarget() != null || !m.getNavigation().isDone()
                     || m.stats() == null || m.stats().profile() == null || HunterData.impling(m.stats().profile().id) == null
                     || m.getRandom().nextInt(3) != 0) {
                 continue;
             }
             int x = m.getBlockX() + m.getRandom().nextInt(49) - 24;
             int z = m.getBlockZ() + m.getRandom().nextInt(49) - 24;
-            if (!world.isChunkLoaded(x >> 4, z >> 4)) {
+            if (!world.hasChunk(x >> 4, z >> 4)) {
                 continue;
             }
-            int y = world.getTopY(net.minecraft.world.Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
+            int y = world.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
             if (Math.abs(y - m.getBlockY()) > 12) {
                 continue; // underground (Puro-Puro, dungeons): stay on this floor
             }
-            m.getNavigation().startMovingTo(x + 0.5, y, z + 0.5, 1.0);
+            m.getNavigation().moveTo(x + 0.5, y, z + 0.5, 1.0);
         }
     }
 
@@ -772,7 +771,7 @@ public final class GatheringHooks {
     /** Jar generator charges, kept in the stack's NBT (a stack without the tag is new and full). */
     private static final String JAR_GENERATOR_NBT = "RcJarCharges";
 
-    private static void catchImpling(ServerPlayerEntity player, OsrsMonsterEntity entity, HunterData.Impling imp) {
+    private static void catchImpling(ServerPlayer player, OsrsMonsterEntity entity, HunterData.Impling imp) {
         String held = SkillingUtil.heldId(player);
         boolean barehanded = held.isEmpty();
         if (!barehanded && !NETS.contains(held)) {
@@ -786,7 +785,7 @@ public final class GatheringHooks {
         if (!SkillingUtil.needItem(player, "impling_jar", "You need an empty impling jar to catch implings.")) {
             return;
         }
-        player.swingHand(Hand.MAIN_HAND, true);
+        player.swing(InteractionHand.MAIN_HAND, true);
         int level = SkillingUtil.level(player, Skill.HUNTER);
         double chance = HunterData.catchChance(imp, level, barehanded || held.equals("magic_butterfly_net"));
         if (player.getRandom().nextDouble() >= chance) {
@@ -801,8 +800,8 @@ public final class GatheringHooks {
         entity.discard();
     }
 
-    static void openJar(ServerPlayerEntity player, ItemStack stack, HunterData.Impling imp) {
-        stack.decrement(1);
+    static void openJar(ServerPlayer player, ItemStack stack, HunterData.Impling imp) {
+        stack.shrink(1);
         Loot l;
         if (imp.id().equals(HunterData.LUCKY)) {
             l = luckyLoot(player, imp);
@@ -820,7 +819,7 @@ public final class GatheringHooks {
     }
 
     /** A lucky impling jar: one roll on a random clue tier's reward table (its loot lines name the tiers' caskets). */
-    private static Loot luckyLoot(ServerPlayerEntity player, HunterData.Impling imp) {
+    private static Loot luckyLoot(ServerPlayer player, HunterData.Impling imp) {
         Loot tierLine = Loot.pick(imp.loot(), player.getRandom().nextInt(Loot.totalWeight(imp.loot())));
         com.runecraft.osrs.content.systems.ClueScrolls.Tier tier = com.runecraft.osrs.content.systems.ClueScrolls.Tier.byCasket(tierLine.item());
         if (tier == null) {
@@ -833,15 +832,15 @@ public final class GatheringHooks {
     }
 
     /** Jar generator: an impling jar for 3 charges (sneak: a butterfly jar for 1). */
-    static void useJarGenerator(ServerPlayerEntity player, ItemStack stack) {
-        NbtCompound nbt = stack.getOrCreateNbt();
+    static void useJarGenerator(ServerPlayer player, ItemStack stack) {
+        CompoundTag nbt = stack.getOrCreateTag();
         int charges = nbt.contains(JAR_GENERATOR_NBT) ? nbt.getInt(JAR_GENERATOR_NBT) : HunterData.JAR_GENERATOR_CHARGES;
-        boolean butterfly = player.isSneaking();
+        boolean butterfly = player.isShiftKeyDown();
         int cost = butterfly ? HunterData.JAR_GENERATOR_BUTTERFLY_COST : HunterData.JAR_GENERATOR_IMPLING_COST;
         if (charges < cost) {
             Msg.game(player, "Your jar generator doesn't have enough charges left.");
             if (charges <= 0) {
-                stack.decrement(1);
+                stack.shrink(1);
             }
             return;
         }
@@ -850,7 +849,7 @@ public final class GatheringHooks {
         Msg.action(player, "Your jar generator makes " + (butterfly ? "a butterfly jar" : "an impling jar") + " (" + (charges - cost)
                 + " charges left).");
         if (charges - cost <= 0) {
-            stack.decrement(1);
+            stack.shrink(1);
             Msg.game(player, "Your jar generator crumbles to dust.");
         }
     }
@@ -861,11 +860,11 @@ public final class GatheringHooks {
      * A magic box set beside an imp catches it (wiki: 71 Hunter, 450 XP; a bead adds 3% to the chance). The trap is
      * set and checked at once here rather than left on the ground (approx).
      */
-    private static void catchImp(ServerPlayerEntity player, OsrsMonsterEntity imp) {
+    private static void catchImp(ServerPlayer player, OsrsMonsterEntity imp) {
         if (!SkillingUtil.need(player, Skill.HUNTER, HunterData.IMP_LEVEL, "catch imps")) {
             return;
         }
-        player.swingHand(Hand.MAIN_HAND, true);
+        player.swing(InteractionHand.MAIN_HAND, true);
         int level = SkillingUtil.level(player, Skill.HUNTER);
         String bead = null;
         for (String b : new String[]{"red_bead", "yellow_bead", "black_bead", "white_bead"}) {
@@ -890,10 +889,10 @@ public final class GatheringHooks {
     }
 
     /** Imp-in-a-box: the imp takes the item stack in your other hand to your bank. */
-    static void useImpBox(ServerPlayerEntity player, ItemStack box, Hand hand) {
+    static void useImpBox(ServerPlayer player, ItemStack box, InteractionHand hand) {
         String next = HunterData.impBoxAfterUse(Inv.idOf(box));
-        Hand other = hand == Hand.MAIN_HAND ? Hand.OFF_HAND : Hand.MAIN_HAND;
-        ItemStack item = player.getStackInHand(other);
+        InteractionHand other = hand == InteractionHand.MAIN_HAND ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
+        ItemStack item = player.getItemInHand(other);
         if (next == null || item.isEmpty()) {
             Msg.game(player, "Hold the item for the imp to bank in your other hand.");
             return;
@@ -904,8 +903,8 @@ public final class GatheringHooks {
             Msg.game(player, "Your bank is full.");
             return;
         }
-        item.decrement((int) moved);
-        box.decrement(1);
+        item.shrink((int) moved);
+        box.shrink(1);
         Inv.give(player, next, 1);
         Msg.action(player, next.equals("magic_box") ? "The imp takes your items to the bank and leaves the box."
                 : "The imp takes your items to the bank.");
@@ -914,8 +913,8 @@ public final class GatheringHooks {
     // ------------------------------------------------------------------ Firemaking
 
     /** Lights one of this module's logs if the player has one and no built-in logs are preferred. Returns true if handled. */
-    static boolean lightModLogs(ServerPlayerEntity player) {
-        ItemStack off = player.getOffHandStack();
+    static boolean lightModLogs(ServerPlayer player) {
+        ItemStack off = player.getOffhandItem();
         GatheringData.ModTree logs = off.isEmpty() ? null : GatheringData.treeByLog(Inv.idOf(off));
         int level = SkillingUtil.level(player, Skill.FIREMAKING);
         if (logs == null) {
@@ -936,9 +935,9 @@ public final class GatheringHooks {
         if (!SkillingUtil.need(player, Skill.FIREMAKING, logs.fmLevel(), "light these logs")) {
             return true;
         }
-        BlockPos at = player.getBlockPos();
-        ServerWorld world = (ServerWorld) player.getWorld();
-        if (!world.getBlockState(at).isAir() || !ModBlocks.FIRE.getDefaultState().canPlaceAt(world, at)) {
+        BlockPos at = player.blockPosition();
+        ServerLevel world = (ServerLevel) player.level();
+        if (!world.getBlockState(at).isAir() || !ModBlocks.FIRE.defaultBlockState().canSurvive(world, at)) {
             Msg.game(player, "You can't light a fire here.");
             return true;
         }
@@ -946,26 +945,26 @@ public final class GatheringHooks {
         Msg.action(player, "You attempt to light the logs.");
         ActionManager.start(player, new Action() {
             @Override
-            public boolean tick(ServerPlayerEntity p, long gameTick) {
+            public boolean tick(ServerPlayer p, long gameTick) {
                 if (!Inv.has(p, burning.log(), 1)) {
                     return false;
                 }
-                p.swingHand(Hand.MAIN_HAND, true);
+                p.swing(InteractionHand.MAIN_HAND, true);
                 if (p.getRandom().nextDouble() >= Chance.lerp(SkillingUtil.level(p, Skill.FIREMAKING), 64, 512)) {
                     return true;
                 }
-                BlockPos here = p.getBlockPos();
+                BlockPos here = p.blockPosition();
                 if (!world.getBlockState(here).isAir()) {
                     return false;
                 }
                 Inv.remove(p, burning.log(), 1);
-                world.setBlockState(here, ModBlocks.FIRE.getDefaultState());
+                world.setBlockAndUpdate(here, ModBlocks.FIRE.defaultBlockState());
                 XpService.add(p, Skill.FIREMAKING, burning.fmXp());
                 Msg.action(p, "The fire catches and the logs begin to burn.");
-                BlockPos west = here.offset(Direction.WEST);
+                BlockPos west = here.relative(Direction.WEST);
                 BlockState w = world.getBlockState(west);
                 if (w.getCollisionShape(world, west).isEmpty()) {
-                    p.requestTeleport(west.getX() + 0.5, p.getY(), west.getZ() + 0.5);
+                    p.teleportTo(west.getX() + 0.5, p.getY(), west.getZ() + 0.5);
                 }
                 return false;
             }

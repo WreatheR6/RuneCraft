@@ -17,19 +17,19 @@ import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.attribute.EntityAttributeInstance;
-import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.player.HungerManager;
-import net.minecraft.entity.vehicle.BoatEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.registry.Registries;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.vehicle.Boat;
+import net.minecraft.world.food.FoodData;
+import net.minecraft.world.item.ItemStack;
 
 /** Joins, respawns, dimension changes and the per-tick upkeep of OSRS player state. */
 public final class PlayerEvents {
@@ -40,13 +40,13 @@ public final class PlayerEvents {
 
     public static void register() {
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            ServerPlayerEntity player = handler.getPlayer();
+            ServerPlayer player = handler.getPlayer();
             XpService.updateMaxHealth(player);
             ServerNetworking.sync(player);
             com.runecraft.combat.AutoRetaliate.sendState(player, true);
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
-            com.runecraft.combat.AutoRetaliate.forget(handler.player.getUuid());
+            com.runecraft.combat.AutoRetaliate.forget(handler.player.getUUID());
         });
         ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((player, origin, destination) -> {
             XpService.updateMaxHealth(player);
@@ -58,7 +58,7 @@ public final class PlayerEvents {
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
             PlayerData data = Players.data(newPlayer);
             if (!alive) {
-                com.runecraft.combat.Teleblock.forget(newPlayer.getUuid());
+                com.runecraft.combat.Teleblock.forget(newPlayer.getUUID());
                 com.runecraft.combat.AutoRetaliate.stop(newPlayer);
                 data.activePrayers().clear();
                 data.setPrayerPoints(data.skills().level(Skill.PRAYER));
@@ -66,7 +66,7 @@ public final class PlayerEvents {
                     data.skills().setBoost(s, 0);
                 }
             }
-            if (!alive && Gielinor.is(oldPlayer) && newPlayer.getSpawnPointDimension() != Gielinor.WORLD) {
+            if (!alive && Gielinor.is(oldPlayer) && newPlayer.getRespawnDimension() != Gielinor.WORLD) {
                 Msg.game(newPlayer, "Oh dear, you are dead!");
                 Gielinor.teleport(newPlayer, Landmark.LUMBRIDGE);
             }
@@ -76,40 +76,40 @@ public final class PlayerEvents {
         });
         // Vanilla mobs in Gielinor take their OSRS hitpoints.
         ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> {
-            if (!Gielinor.is(world) || !(entity instanceof MobEntity mob) || entity.getCommandTags().contains(SCALED_TAG)) {
+            if (!Gielinor.is(world) || !(entity instanceof Mob mob) || entity.getTags().contains(SCALED_TAG)) {
                 return;
             }
-            Monster m = Monster.byEntity(Registries.ENTITY_TYPE.getId(entity.getType()).toString());
+            Monster m = Monster.byEntity(BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString());
             if (m == null || m.isCustom()) {
                 return;
             }
-            EntityAttributeInstance hp = mob.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH);
+            AttributeInstance hp = mob.getAttribute(Attributes.MAX_HEALTH);
             if (hp != null) {
                 hp.setBaseValue(m.hitpoints());
                 mob.setHealth(m.hitpoints());
             }
-            entity.addCommandTag(SCALED_TAG);
+            entity.addTag(SCALED_TAG);
         });
     }
 
     /** Every Minecraft tick. */
     public static void everyMcTick(MinecraftServer server, long tick) {
-        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             if (!Gielinor.is(player)) {
                 continue;
             }
             // No hunger in Gielinor; food at 17 also stops vanilla regeneration (OSRS regen is applied separately).
-            HungerManager hunger = player.getHungerManager();
+            FoodData hunger = player.getFoodData();
             if (hunger.getFoodLevel() != 17 || hunger.getSaturationLevel() != 0f) {
                 setFood(player, 17, 0f);
             }
             // Coins go straight into the money pouch.
-            for (int i = 0; i < player.getInventory().size(); i++) {
-                ItemStack s = player.getInventory().getStack(i);
+            for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+                ItemStack s = player.getInventory().getItem(i);
                 if (!s.isEmpty() && Inv.COINS.equals(Inv.idOf(s))) {
                     PlayerData data = Players.data(player);
                     data.setCoins(data.coins() + s.getCount());
-                    player.getInventory().setStack(i, ItemStack.EMPTY);
+                    player.getInventory().setItem(i, ItemStack.EMPTY);
                     ServerNetworking.sync(player);
                 }
             }
@@ -117,7 +117,7 @@ public final class PlayerEvents {
     }
 
     /** Every OSRS game tick (0.6s). */
-    public static void gameTick(ServerPlayerEntity player, long gameTick) {
+    public static void gameTick(ServerPlayer player, long gameTick) {
         PlayerData data = Players.data(player);
         boolean gielinor = Gielinor.is(player);
         com.runecraft.combat.PoisonService.tick(player, gameTick);
@@ -143,8 +143,8 @@ public final class PlayerEvents {
             enforceRequirements(player, data);
             regionMessages(player, data);
         }
-        if (gielinor && player.getVehicle() instanceof BoatEntity boat) {
-            net.minecraft.util.math.Vec3d v = boat.getVelocity();
+        if (gielinor && player.getVehicle() instanceof Boat boat) {
+            net.minecraft.world.phys.Vec3 v = boat.getDeltaMovement();
             data.sailingDistance += Math.sqrt(v.x * v.x + v.z * v.z) * 12;
             if (data.sailingDistance >= 32) {
                 data.sailingDistance -= 32;
@@ -157,29 +157,29 @@ public final class PlayerEvents {
      * Sets food (and saturation, unless negative) through the hunger NBT, which is always present on
      * a dedicated server (HungerManager's setters are only used by client code in vanilla).
      */
-    private static void setFood(ServerPlayerEntity player, int food, float saturation) {
-        HungerManager hunger = player.getHungerManager();
-        NbtCompound nbt = new NbtCompound();
-        hunger.writeNbt(nbt);
+    private static void setFood(ServerPlayer player, int food, float saturation) {
+        FoodData hunger = player.getFoodData();
+        CompoundTag nbt = new CompoundTag();
+        hunger.addAdditionalSaveData(nbt);
         nbt.putInt("foodLevel", food);
         if (saturation >= 0f) {
             nbt.putFloat("foodSaturationLevel", saturation);
         }
-        hunger.readNbt(nbt);
+        hunger.readAdditionalSaveData(nbt);
     }
 
     private static final EquipmentSlot[] ARMOUR = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
 
-    private static void enforceRequirements(ServerPlayerEntity player, PlayerData data) {
+    private static void enforceRequirements(ServerPlayer player, PlayerData data) {
         for (EquipmentSlot slot : ARMOUR) {
-            ItemStack stack = player.getEquippedStack(slot);
+            ItemStack stack = player.getItemBySlot(slot);
             ItemDef def = ModItems.def(stack);
             if (def == null || def.equipment() == null) {
                 continue;
             }
             String unmet = def.equipment().unmetRequirement(data.skills());
             if (unmet != null) {
-                player.equipStack(slot, ItemStack.EMPTY);
+                player.setItemSlot(slot, ItemStack.EMPTY);
                 Inv.give(player, stack);
                 Msg.game(player, "You need " + unmet + " to wear this.");
             }
@@ -187,7 +187,7 @@ public final class PlayerEvents {
         Equipment.total(player, data.skills());
     }
 
-    private static void regionMessages(ServerPlayerEntity player, PlayerData data) {
+    private static void regionMessages(ServerPlayer player, PlayerData data) {
         Region region = Gielinor.region(player);
         int wild = Gielinor.wildernessLevel(player);
         String key = region.name() + (wild > 0 ? ":" + wild : "");
@@ -195,12 +195,12 @@ public final class PlayerEvents {
             boolean enteringWild = wild > 0 && !data.lastRegion.startsWith("WILDERNESS");
             data.lastRegion = key;
             if (wild > 0) {
-                player.sendMessage(Text.literal("Level: " + wild).formatted(Formatting.YELLOW), true);
+                player.displayClientMessage(Component.literal("Level: " + wild).withStyle(ChatFormatting.YELLOW), true);
                 if (enteringWild) {
                     Msg.red(player, "You have entered the Wilderness. Other players can attack you here!");
                 }
             } else {
-                player.sendMessage(Text.literal(region.displayName()).formatted(Formatting.GOLD), true);
+                player.displayClientMessage(Component.literal(region.displayName()).withStyle(ChatFormatting.GOLD), true);
             }
         }
     }

@@ -12,18 +12,17 @@ import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Hand;
-import net.minecraft.util.TypedActionResult;
-
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.item.ItemStack;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -47,33 +46,33 @@ public final class ToaSupplyService {
 
     static void init() {
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            ItemStack stack = player.getStackInHand(hand);
+            ItemStack stack = player.getItemInHand(hand);
             if (stack.isEmpty() || !ToaSupplies.ITEMS.contains(Inv.idOf(stack))) {
-                return TypedActionResult.pass(stack);
+                return InteractionResultHolder.pass(stack);
             }
-            if (!(player instanceof ServerPlayerEntity sp)) {
-                return TypedActionResult.pass(stack);
+            if (!(player instanceof ServerPlayer sp)) {
+                return InteractionResultHolder.pass(stack);
             }
             RaidInstance raid = RaidManager.of(sp);
             String id = Inv.idOf(stack);
             if (raid == null || raid.type != RaidType.TOA) {
                 if (id.equals(ToaSupplies.HONEY_LOCUST)) {
-                    return TypedActionResult.pass(stack);
+                    return InteractionResultHolder.pass(stack);
                 }
                 Msg.game(sp, "This can only be used inside the Tombs of Amascut.");
-                return TypedActionResult.success(stack);
+                return InteractionResultHolder.success(stack);
             }
-            if (player.getItemCooldownManager().isCoolingDown(stack.getItem())) {
-                return TypedActionResult.success(stack);
+            if (player.getCooldowns().isOnCooldown(stack.getItem())) {
+                return InteractionResultHolder.success(stack);
             }
             use(sp, raid, stack, hand, id);
-            return TypedActionResult.success(stack);
+            return InteractionResultHolder.success(stack);
         });
     }
 
     /** Whether this player's liquid adrenaline is active. */
-    static boolean adrenaline(ServerPlayerEntity p) {
-        Long until = ADRENALINE.get(p.getUuid());
+    static boolean adrenaline(ServerPlayer p) {
+        Long until = ADRENALINE.get(p.getUUID());
         return until != null && until > ActionManager.gameTick();
     }
 
@@ -81,24 +80,24 @@ public final class ToaSupplyService {
 
     /** The Helpful Spirit appears with three bundles; each player may claim one (OSRS). */
     static void offer(RaidInstance raid) {
-        for (ServerPlayerEntity p : raid.players()) {
-            PENDING.add(p.getUuid());
-            p.sendMessage(Text.literal("The Helpful Spirit offers you supplies. Choose one bundle:").formatted(Formatting.AQUA), false);
-            MutableText line = Text.literal("");
+        for (ServerPlayer p : raid.players()) {
+            PENDING.add(p.getUUID());
+            p.displayClientMessage(Component.literal("The Helpful Spirit offers you supplies. Choose one bundle:").withStyle(ChatFormatting.AQUA), false);
+            MutableComponent line = Component.literal("");
             for (ToaSupplies.Bundle b : ToaSupplies.Bundle.values()) {
-                line.append(Text.literal("[" + b.displayName() + "] ").styled(s -> s.withColor(Formatting.GREEN)
+                line.append(Component.literal("[" + b.displayName() + "] ").withStyle(s -> s.withColor(ChatFormatting.GREEN)
                         .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/raids supplies " + b.name().toLowerCase(java.util.Locale.ROOT)))
-                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(b.contents())))));
+                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(b.contents())))));
             }
-            p.sendMessage(line, false);
+            p.displayClientMessage(line, false);
         }
     }
 
     /** Claims a Helpful Spirit bundle ({@code /raids supplies <life|chaos|power>}). */
-    static int claim(ServerPlayerEntity p, String name) {
+    static int claim(ServerPlayer p, String name) {
         RaidInstance raid = RaidManager.of(p);
         ToaSupplies.Bundle bundle = ToaSupplies.Bundle.byName(name);
-        if (raid == null || raid.type != RaidType.TOA || !PENDING.contains(p.getUuid())) {
+        if (raid == null || raid.type != RaidType.TOA || !PENDING.contains(p.getUUID())) {
             Msg.game(p, "The Helpful Spirit has nothing for you right now.");
             return 0;
         }
@@ -106,8 +105,8 @@ public final class ToaSupplyService {
             Msg.game(p, "Choose Life, Chaos or Power.");
             return 0;
         }
-        PENDING.remove(p.getUuid());
-        raid.markSuppliesTaken(p.getUuid());
+        PENDING.remove(p.getUUID());
+        raid.markSuppliesTaken(p.getUUID());
         Map<String, Integer> items = ToaSupplies.bundle(bundle, raid.invocations(), new java.util.Random(p.getRandom().nextLong()));
         StringBuilder got = new StringBuilder();
         items.forEach((id, n) -> {
@@ -119,7 +118,7 @@ public final class ToaSupplyService {
     }
 
     /** Gives {@code count} fresh supply items (dosed items one per slot with their starting doses). */
-    static void give(ServerPlayerEntity p, String id, int count) {
+    static void give(ServerPlayer p, String id, int count) {
         int doses = ToaSupplies.doses(id);
         if (doses <= 0) {
             Inv.give(p, id, count);
@@ -128,7 +127,7 @@ public final class ToaSupplyService {
         for (int i = 0; i < count; i++) {
             ItemStack stack = Inv.stack(id, 1);
             if (!stack.isEmpty() && doses < 4) {
-                stack.setDamage(4 - doses);
+                stack.setDamageValue(4 - doses);
             }
             Inv.give(p, stack);
         }
@@ -140,7 +139,7 @@ public final class ToaSupplyService {
         if (n <= 0) {
             return;
         }
-        for (ServerPlayerEntity p : raid.players()) {
+        for (ServerPlayer p : raid.players()) {
             Inv.give(p, ToaSupplies.HONEY_LOCUST, n);
         }
     }
@@ -152,7 +151,7 @@ public final class ToaSupplyService {
 
     // ------------------------------------------------------------------ the supplies
 
-    private static void use(ServerPlayerEntity p, RaidInstance raid, ItemStack stack, Hand hand, String id) {
+    private static void use(ServerPlayer p, RaidInstance raid, ItemStack stack, InteractionHand hand, String id) {
         Set<Invocation> inv = raid.invocations();
         boolean heals = id.equals(ToaSupplies.NECTAR) || id.equals(ToaSupplies.AMBROSIA);
         if (heals && !Invocation.healingPotionsAllowed(inv)) {
@@ -183,7 +182,7 @@ public final class ToaSupplyService {
             }
             case ToaSupplies.TEARS -> {
                 tears(p, skills, true);
-                for (ServerPlayerEntity other : raid.players()) {
+                for (ServerPlayer other : raid.players()) {
                     if (other != p && Math.abs(other.getX() - p.getX()) <= 1.5 && Math.abs(other.getZ() - p.getZ()) <= 1.5) {
                         tears(other, Players.data(other).skills(), false);
                         Msg.game(other, p.getName().getString() + "'s tears of Elidinis restore you too.");
@@ -214,11 +213,11 @@ public final class ToaSupplyService {
                 Msg.action(p, "You crush the smelling salts. You feel energised!");
             }
             case ToaSupplies.ADRENALINE -> {
-                ADRENALINE.put(p.getUuid(), now + ToaSupplies.ADRENALINE_TICKS);
+                ADRENALINE.put(p.getUUID(), now + ToaSupplies.ADRENALINE_TICKS);
                 Msg.action(p, "You drink the liquid adrenaline. Your special attacks cost half as much for 150 seconds.");
             }
             case ToaSupplies.HONEY_LOCUST -> {
-                raid.markSuppliesTaken(p.getUuid());
+                raid.markSuppliesTaken(p.getUUID());
                 int lvl = hpLevel;
                 int cur = hitpoints(p);
                 setHitpoints(p, Math.max(cur, Math.min(cur + ToaSupplies.HONEY_LOCUST_HEAL, lvl + ToaSupplies.HONEY_LOCUST_HEAL)));
@@ -233,21 +232,21 @@ public final class ToaSupplyService {
             }
         }
         if (id.equals(ToaSupplies.HONEY_LOCUST)) {
-            stack.decrement(1);
+            stack.shrink(1);
         } else {
-            int used = stack.getDamage() + 1;
+            int used = stack.getDamageValue() + 1;
             if (used >= 4) {
-                p.setStackInHand(hand, ItemStack.EMPTY);
+                p.setItemInHand(hand, ItemStack.EMPTY);
             } else {
-                stack.setDamage(used);
+                stack.setDamageValue(used);
             }
         }
-        p.getItemCooldownManager().set(stack.getItem(), 3 * ActionManager.MC_TICKS_PER_GAME_TICK);
-        p.getWorld().playSound(null, p.getBlockPos(), SoundEvents.ENTITY_GENERIC_DRINK, SoundCategory.PLAYERS, 0.5f, 1.0f);
+        p.getCooldowns().addCooldown(stack.getItem(), 3 * ActionManager.MC_TICKS_PER_GAME_TICK);
+        p.level().playSound(null, p.blockPosition(), SoundEvents.GENERIC_DRINK, SoundSource.PLAYERS, 0.5f, 1.0f);
         ServerNetworking.sync(p);
     }
 
-    private static void tears(ServerPlayerEntity p, SkillSet skills, boolean drinker) {
+    private static void tears(ServerPlayer p, SkillSet skills, boolean drinker) {
         for (Skill s : COMBAT) {
             skills.restore(s, 3, 0.25);
         }
@@ -259,7 +258,7 @@ public final class ToaSupplyService {
         }
     }
 
-    private static void salts(ServerPlayerEntity p) {
+    private static void salts(ServerPlayer p) {
         SkillSet skills = Players.data(p).skills();
         for (Skill s : COMBAT) {
             skills.applyBoost(s, 11, 0.16);
@@ -269,7 +268,7 @@ public final class ToaSupplyService {
     }
 
     /** Runs {@code effect} every {@code every} game ticks, {@code times} times, while the player stays in ToA. */
-    private static void pulse(ServerPlayerEntity p, int every, int times, Runnable effect) {
+    private static void pulse(ServerPlayer p, int every, int times, Runnable effect) {
         if (times <= 0) {
             return;
         }
@@ -284,12 +283,12 @@ public final class ToaSupplyService {
         });
     }
 
-    private static int hitpoints(ServerPlayerEntity p) {
+    private static int hitpoints(ServerPlayer p) {
         return com.runecraft.combat.Overheal.hitpoints(p);
     }
 
     /** Sets hitpoints, holding anything above the maximum as overheal (absorption, as Saradomin brews do). */
-    private static void setHitpoints(ServerPlayerEntity p, int total) {
+    private static void setHitpoints(ServerPlayer p, int total) {
         float max = p.getMaxHealth();
         p.setHealth(Math.min(max, Math.max(1, total)));
         p.setAbsorptionAmount(Math.max(0, total - max));

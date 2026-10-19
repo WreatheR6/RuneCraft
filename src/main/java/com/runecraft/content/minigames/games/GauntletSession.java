@@ -16,19 +16,6 @@ import com.runecraft.osrs.content.minigames.Minigame;
 import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -36,6 +23,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * One run of the Gauntlet or the Corrupted Gauntlet (see {@link Gauntlet}). The 7x7 maze is built as rooms of 13x13 blocks
@@ -69,11 +68,11 @@ public final class GauntletSession extends MinigameSession {
     private boolean bossFight;
     private boolean bossDead;
     private int endIn;
-    private final List<ServerPlayerEntity> joining = new ArrayList<>();
+    private final List<ServerPlayer> joining = new ArrayList<>();
     /** The Hunllef of this run once the fight has started. */
-    private MobEntity hunllef;
+    private Mob hunllef;
 
-    public GauntletSession(int id, int slot, ServerWorld world, String variant) {
+    public GauntletSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.GAUNTLET, id, slot, world, variant);
         this.mode = Gauntlet.CORRUPTED_ENTRANCE.equals(variant) ? Mode.CORRUPTED : Mode.NORMAL;
         this.maze = Gauntlet.generate(mode, random);
@@ -89,7 +88,7 @@ public final class GauntletSession extends MinigameSession {
     }
 
     /** Entry requirement: Song of the Elves; the Corrupted Gauntlet also needs one Gauntlet completed. */
-    public static String requirement(ServerPlayerEntity p, String variant) {
+    public static String requirement(ServerPlayer p, String variant) {
         if (!com.runecraft.quest.QuestApi.isComplete(p, "song_of_the_elves")) {
             return "You need to complete Song of the Elves to enter the Gauntlet.";
         }
@@ -123,8 +122,8 @@ public final class GauntletSession extends MinigameSession {
         boolean c = mode == Mode.CORRUPTED;
         room(c ? Blocks.BLACKSTONE : Blocks.CALCITE, c ? Blocks.RED_NETHER_BRICKS : Blocks.PRISMARINE_BRICKS,
                 c ? Blocks.SHROOMLIGHT : Blocks.SEA_LANTERN);
-        net.minecraft.block.BlockState wall = (c ? Blocks.RED_NETHER_BRICKS : Blocks.PRISMARINE_BRICKS).getDefaultState();
-        net.minecraft.block.BlockState air = Blocks.AIR.getDefaultState();
+        net.minecraft.world.level.block.state.BlockState wall = (c ? Blocks.RED_NETHER_BRICKS : Blocks.PRISMARINE_BRICKS).defaultBlockState();
+        net.minecraft.world.level.block.state.BlockState air = Blocks.AIR.defaultBlockState();
         int last = Gauntlet.GRID / 2;
         for (int k = -last; k < last; k++) {
             int w = PITCH / 2 + k * PITCH;
@@ -165,7 +164,7 @@ public final class GauntletSession extends MinigameSession {
     }
 
     @Override
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
+    protected BlockPos spawnPoint(ServerPlayer player, int index) {
         // Called once per joining player before start(): remember them, since online() only sees players in the server's
         // player list (a player not listed, such as the self-test's fake player, would otherwise keep their items).
         if (!joining.contains(player)) {
@@ -180,9 +179,9 @@ public final class GauntletSession extends MinigameSession {
 
     @Override
     protected void start() {
-        List<ServerPlayerEntity> entering = new ArrayList<>(joining);
+        List<ServerPlayer> entering = new ArrayList<>(joining);
         joining.clear();
-        for (ServerPlayerEntity p : entering) {
+        for (ServerPlayer p : entering) {
             GauntletStash.stash(p);
             for (String item : Gauntlet.startingItems(mode)) {
                 Inv.give(p, item, 1);
@@ -194,7 +193,7 @@ public final class GauntletSession extends MinigameSession {
 
     // ------------------------------------------------------------------ ticking
 
-    private int[] cellOf(ServerPlayerEntity p) {
+    private int[] cellOf(ServerPlayer p) {
         BlockPos r = relPos(p);
         int cx = Math.floorDiv(r.getX() + PITCH / 2, PITCH) + Gauntlet.BOSS;
         int cy = Math.floorDiv(r.getZ() + PITCH / 2, PITCH) + Gauntlet.BOSS;
@@ -213,11 +212,11 @@ public final class GauntletSession extends MinigameSession {
             }
             return;
         }
-        List<ServerPlayerEntity> on = online();
+        List<ServerPlayer> on = online();
         if (on.isEmpty()) {
             return;
         }
-        ServerPlayerEntity p = on.get(0);
+        ServerPlayer p = on.get(0);
         if (!bossFight) {
             prepLeft--;
             if (prepLeft == 100) {
@@ -237,7 +236,7 @@ public final class GauntletSession extends MinigameSession {
     }
 
     /** Lights a room: its resource nodes appear and its creatures wake. */
-    private void populate(ServerPlayerEntity p, int cx, int cy) {
+    private void populate(ServerPlayer p, int cx, int cy) {
         lit[cx][cy] = true;
         Gauntlet.Room room = maze[cx][cy];
         int x0 = centre(cx);
@@ -253,7 +252,7 @@ public final class GauntletSession extends MinigameSession {
             nodes.put(pos, n.yield);
         }
         for (String kind : room.creatures()) {
-            MobEntity mob = spawn(Gauntlet.creature(mode, kind), rel(x0 + random.nextInt(5) - 2, 1, z0 + random.nextInt(5) - 2));
+            Mob mob = spawn(Gauntlet.creature(mode, kind), rel(x0 + random.nextInt(5) - 2, 1, z0 + random.nextInt(5) - 2));
             if (mob != null) {
                 mob.setTarget(p);
             }
@@ -261,10 +260,10 @@ public final class GauntletSession extends MinigameSession {
         Msg.action(p, "Your sceptre lights the room.");
     }
 
-    private boolean holdsBow(ServerPlayerEntity p) {
+    private boolean holdsBow(ServerPlayer p) {
         for (Tier t : Tier.values()) {
             if (Inv.has(p, Gauntlet.equipment(mode, Piece.BOW, t), 1)
-                    || Gauntlet.equipment(mode, Piece.BOW, t).equals(Inv.idOf(p.getMainHandStack()))) {
+                    || Gauntlet.equipment(mode, Piece.BOW, t).equals(Inv.idOf(p.getMainHandItem()))) {
                 return true;
             }
         }
@@ -272,7 +271,7 @@ public final class GauntletSession extends MinigameSession {
     }
 
     /** Minecraft bows need ammunition; the Gauntlet's need none, so a quiver of crystal arrows is kept topped up. */
-    private void topUpArrows(ServerPlayerEntity p) {
+    private void topUpArrows(ServerPlayer p) {
         if (holdsBow(p)) {
             int have = Inv.count(p, Gauntlet.ARROWS);
             if (have < 16) {
@@ -282,9 +281,9 @@ public final class GauntletSession extends MinigameSession {
     }
 
     private void sweepLoot() {
-        for (ItemEntity item : world.getEntitiesByClass(ItemEntity.class, box(), e -> true)) {
-            if (!GauntletStash.runItem(Inv.idOf(item.getStack()))) {
-                lootStacks.add(item.getStack().copy());
+        for (ItemEntity item : world.getEntitiesOfClass(ItemEntity.class, box(), e -> true)) {
+            if (!GauntletStash.runItem(Inv.idOf(item.getItem()))) {
+                lootStacks.add(item.getItem().copy());
             }
             item.discard();
         }
@@ -292,13 +291,13 @@ public final class GauntletSession extends MinigameSession {
 
     // ------------------------------------------------------------------ the boss
 
-    private void enterBoss(ServerPlayerEntity p) {
+    private void enterBoss(ServerPlayer p) {
         if (bossFight) {
             return;
         }
         bossFight = true;
         BlockPos at = rel(0, 1, 4);
-        p.teleport(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 180f, 0f);
+        p.teleportTo(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 180f, 0f);
         hunllef = spawn(mode.boss, rel(0, 1, -3));
         if (hunllef != null) {
             hunllef.setTarget(p);
@@ -309,7 +308,7 @@ public final class GauntletSession extends MinigameSession {
     }
 
     /** Self-test hook: skips the preparation and starts the Hunllef fight. */
-    public void selfTestEnterBoss(ServerPlayerEntity p) {
+    public void selfTestEnterBoss(ServerPlayer p) {
         enterBoss(p);
     }
 
@@ -322,11 +321,11 @@ public final class GauntletSession extends MinigameSession {
     }
 
     @Override
-    protected void onKill(ServerPlayerEntity player, LivingEntity entity, String creatureId) {
+    protected void onKill(ServerPlayer player, LivingEntity entity, String creatureId) {
         if (creatureId.equals(mode.boss)) {
             bossDead = true;
             endIn = 3;
-            int kc = MinigameData.of(player).incrementStat(player.getUuid(), "kc:" + game.id());
+            int kc = MinigameData.of(player).incrementStat(player.getUUID(), "kc:" + game.id());
             Msg.game(player, "Your " + (mode == Mode.NORMAL ? "Gauntlet" : "Corrupted Gauntlet") + " completion count is "
                     + Players.data(player).killCount(mode.boss) + " (" + kc + " runs in all).");
             return;
@@ -397,10 +396,10 @@ public final class GauntletSession extends MinigameSession {
     // ------------------------------------------------------------------ objects
 
     @Override
-    protected boolean onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         Node node = Node.byBlock(blockId);
         if (node != null) {
-            gather(player, node, pos.toImmutable());
+            gather(player, node, pos.immutable());
             return true;
         }
         switch (blockId) {
@@ -437,7 +436,7 @@ public final class GauntletSession extends MinigameSession {
         return true;
     }
 
-    private void gather(ServerPlayerEntity player, Node node, BlockPos pos) {
+    private void gather(ServerPlayer player, Node node, BlockPos pos) {
         Integer left = nodes.get(pos);
         if (left == null || left <= 0) {
             Msg.game(player, "There is nothing left to gather here.");
@@ -445,14 +444,14 @@ public final class GauntletSession extends MinigameSession {
         }
         String tool = node.tool(mode);
         if (tool != null && !Inv.has(player, tool, 1)) {
-            Msg.game(player, "You need a " + Inv.stack(tool, 1).getName().getString().toLowerCase() + " to gather from the "
+            Msg.game(player, "You need a " + Inv.stack(tool, 1).getHoverName().getString().toLowerCase() + " to gather from the "
                     + node.displayName.toLowerCase() + ".");
             return;
         }
         Msg.action(player, "You start gathering from the " + node.displayName.toLowerCase() + ".");
         int[] wait = {0};
         repeat(player, p -> {
-            if (isEnded() || p.getBlockPos().getSquaredDistance(pos) > 25) {
+            if (isEnded() || p.blockPosition().distSqr(pos) > 25) {
                 return false;
             }
             if (++wait[0] < 3) {
@@ -470,7 +469,7 @@ public final class GauntletSession extends MinigameSession {
             }
             if (remaining <= 1) {
                 nodes.remove(pos);
-                Arena.set(world, pos, Blocks.AIR.getDefaultState());
+                Arena.set(world, pos, Blocks.AIR.defaultBlockState());
                 Msg.action(p, "The " + node.displayName.toLowerCase() + " is depleted.");
                 return false;
             }
@@ -480,7 +479,7 @@ public final class GauntletSession extends MinigameSession {
     }
 
     /** Cooks every raw paddlefish (stops burning at 47 Cooking; the burn chance below it is approx). */
-    private void cook(ServerPlayerEntity player) {
+    private void cook(ServerPlayer player) {
         int raw = Inv.count(player, Gauntlet.RAW_PADDLEFISH);
         if (raw == 0) {
             Msg.game(player, "You have no raw paddlefish to cook.");
@@ -503,7 +502,7 @@ public final class GauntletSession extends MinigameSession {
         Msg.action(player, "You cook " + cooked + " paddlefish" + (raw > cooked ? " and burn " + (raw - cooked) : "") + ".");
     }
 
-    private void showBowl(ServerPlayerEntity p) {
+    private void showBowl(ServerPlayer p) {
         Msg.game(p, "The singing bowl hums. Click a recipe to sing it:");
         for (Gauntlet.Sing s : Gauntlet.recipes(mode)) {
             boolean can = canSing(p, s);
@@ -512,17 +511,17 @@ public final class GauntletSession extends MinigameSession {
                 if (cost.length() > 0) {
                     cost.append(", ");
                 }
-                cost.append(e.getValue()).append(" ").append(Inv.stack(e.getKey(), 1).getName().getString());
+                cost.append(e.getValue()).append(" ").append(Inv.stack(e.getKey(), 1).getHoverName().getString());
             }
-            MutableText line = Text.literal((can ? "[Sing] " : "[----] ") + s.name()).styled(st -> st
-                    .withColor(can ? Formatting.AQUA : Formatting.GRAY)
+            MutableComponent line = Component.literal((can ? "[Sing] " : "[----] ") + s.name()).withStyle(st -> st
+                    .withColor(can ? ChatFormatting.AQUA : ChatFormatting.GRAY)
                     .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/minigame sing " + s.id())));
-            line.append(Text.literal(" - " + cost).formatted(Formatting.DARK_GRAY));
-            p.sendMessage(line, false);
+            line.append(Component.literal(" - " + cost).withStyle(ChatFormatting.DARK_GRAY));
+            p.displayClientMessage(line, false);
         }
     }
 
-    private boolean canSing(ServerPlayerEntity p, Gauntlet.Sing s) {
+    private boolean canSing(ServerPlayer p, Gauntlet.Sing s) {
         for (Map.Entry<String, Integer> e : s.inputs(mode).entrySet()) {
             if (!Inv.has(p, e.getKey(), e.getValue())) {
                 return false;
@@ -532,7 +531,7 @@ public final class GauntletSession extends MinigameSession {
     }
 
     /** Right-clicking the pestle and mortar: grinds ten shards into ten crystal dust; returns how many. */
-    public static int grind(ServerPlayerEntity p) {
+    public static int grind(ServerPlayer p) {
         if (!(MinigameManager.session(p) instanceof GauntletSession g)) {
             return 0;
         }
@@ -548,7 +547,7 @@ public final class GauntletSession extends MinigameSession {
     }
 
     /** Right-clicking a grym leaf: mixes it into a water-filled vial (grym potion (unf)). */
-    public static boolean mixGrym(ServerPlayerEntity p) {
+    public static boolean mixGrym(ServerPlayer p) {
         if (!(MinigameManager.session(p) instanceof GauntletSession g)) {
             return false;
         }
@@ -564,7 +563,7 @@ public final class GauntletSession extends MinigameSession {
     }
 
     /** Right-clicking a grym potion (unf): ten crystal dust finish an egniol potion (3 doses, 10 Herblore XP). */
-    public static boolean finishEgniol(ServerPlayerEntity p) {
+    public static boolean finishEgniol(ServerPlayer p) {
         if (!(MinigameManager.session(p) instanceof GauntletSession g)) {
             return false;
         }
@@ -583,7 +582,7 @@ public final class GauntletSession extends MinigameSession {
     }
 
     /** {@code /minigame sing <recipe>}: sings one recipe at the bowl. */
-    public static void sing(ServerPlayerEntity p, String recipeId) {
+    public static void sing(ServerPlayer p, String recipeId) {
         if (!(MinigameManager.session(p) instanceof GauntletSession g)) {
             Msg.game(p, "You can only sing crystal at the Gauntlet's singing bowl.");
             return;
@@ -592,7 +591,7 @@ public final class GauntletSession extends MinigameSession {
     }
 
     /** Sings a recipe; returns whether it was made. */
-    public boolean singRecipe(ServerPlayerEntity p, String recipeId) {
+    public boolean singRecipe(ServerPlayer p, String recipeId) {
         Gauntlet.Sing s = Gauntlet.recipe(mode, recipeId);
         if (s == null || bossFight) {
             Msg.game(p, "Nothing interesting happens.");
@@ -628,13 +627,13 @@ public final class GauntletSession extends MinigameSession {
     }
 
     /** The teleport crystal: back to the starting room (not from the boss room). */
-    public boolean teleportToStart(ServerPlayerEntity p) {
+    public boolean teleportToStart(ServerPlayer p) {
         if (bossFight) {
             Msg.game(p, "The Hunllef's lair blocks the crystal's magic.");
             return false;
         }
         BlockPos at = startPoint();
-        p.teleport(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, p.getYaw(), p.getPitch());
+        p.teleportTo(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, p.getYRot(), p.getXRot());
         return true;
     }
 
@@ -646,7 +645,7 @@ public final class GauntletSession extends MinigameSession {
     }
 
     @Override
-    protected void onDeath(ServerPlayerEntity player) {
+    protected void onDeath(ServerPlayer player) {
         Msg.red(player, "Oh dear, you are dead! The Gauntlet spits you out.");
         player.setHealth(player.getMaxHealth());
         end(false);
@@ -663,13 +662,13 @@ public final class GauntletSession extends MinigameSession {
             Gauntlet.Loot l = t.roll(random);
             owe(l.item(), l.min() + random.nextInt(l.max() - l.min() + 1));
         }
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             Msg.game(p, "You earned " + points + " points" + (t == null ? "; the reward chest is empty." : "."));
         }
     }
 
     @Override
-    protected void onLeave(ServerPlayerEntity player) {
+    protected void onLeave(ServerPlayer player) {
         GauntletStash.restore(player);
         // The run's loot waits in the Reward Chest in the lobby (OSRS), saved with the world.
         List<ItemStack> loot = new ArrayList<>();
@@ -691,7 +690,7 @@ public final class GauntletSession extends MinigameSession {
     }
 
     /** The lobby's Reward Chest: claims the loot of past runs. */
-    public static void rewardChest(ServerPlayerEntity p) {
+    public static void rewardChest(ServerPlayer p) {
         int n = GauntletStash.claimChest(p);
         Msg.game(p, n == 0 ? "The reward chest is empty." : "You take your rewards from the chest.");
     }
@@ -702,7 +701,7 @@ public final class GauntletSession extends MinigameSession {
     }
 
     @Override
-    public Set<String> caFlags(ServerPlayerEntity player) {
+    public Set<String> caFlags(ServerPlayer player) {
         Set<String> flags = new HashSet<>();
         if (!armourMade) {
             flags.add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_GAUNTLET_NO_ARMOUR);
@@ -717,7 +716,7 @@ public final class GauntletSession extends MinigameSession {
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
+    protected List<String> hud(ServerPlayer player) {
         List<String> lines = new ArrayList<>();
         lines.add(mode == Mode.NORMAL ? "The Gauntlet" : "The Corrupted Gauntlet");
         lines.add(bossFight ? "Hunllef fight" : "Preparation: " + time(prepLeft));

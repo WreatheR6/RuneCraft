@@ -1,24 +1,23 @@
 package com.runecraft.client.model;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.runecraft.entity.Disguisable;
 import com.runecraft.osrs.model.DisguisePlan;
 import com.runecraft.osrs.model.ModelSpec;
-import net.minecraft.client.model.ModelPart;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.entity.model.SinglePartEntityModel;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.math.MathHelper;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import net.minecraft.client.model.HierarchicalModel;
+import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
 
 /** An entity model built from a {@link ModelSpec}, animated procedurally by part role. */
-public class GenericModel<T extends Entity> extends SinglePartEntityModel<T> {
+public class GenericModel<T extends Entity> extends HierarchicalModel<T> {
     private record Animated(ModelPart part, ModelSpec.Part spec) {
     }
 
@@ -47,7 +46,7 @@ public class GenericModel<T extends Entity> extends SinglePartEntityModel<T> {
                 animated.add(new Animated(part, p));
             }
         }
-        this.allParts = root.traverse().toArray(ModelPart[]::new);
+        this.allParts = root.getAllParts().toArray(ModelPart[]::new);
         planGlow(spec);
         this.disguise = DisguisePlan.of(spec, DisguisePlan.SHELL);
         if (disguise != null) {
@@ -73,9 +72,9 @@ public class GenericModel<T extends Entity> extends SinglePartEntityModel<T> {
         for (int i = 0; i < animated.size(); i++) {
             Animated a = animated.get(i);
             a.part().visible = !disguised || disguiseVisible[i];
-            a.part().hidden = disguised && disguiseAncestor[i];
+            a.part().skipDraw = disguised && disguiseAncestor[i];
             if (disguised && a.spec().parent == null) {
-                a.part().pivotY += disguise.drop();
+                a.part().y += disguise.drop();
             }
         }
         return disguised;
@@ -120,14 +119,14 @@ public class GenericModel<T extends Entity> extends SinglePartEntityModel<T> {
      * texels of the glow texture are transparent black, which the additive blend ignores, so the result
      * is the same as drawing the whole model with a fraction of the vertices).
      */
-    public void renderGlow(MatrixStack matrices, VertexConsumer vertices, int light, int overlay) {
+    public void renderGlow(PoseStack matrices, VertexConsumer vertices, int light, int overlay) {
         if (glowHidden == null) {
             root.render(matrices, vertices, light, overlay, 1.0f, 1.0f, 1.0f, 1.0f);
             return;
         }
         for (int i = 0; i < glowHidden.length; i++) {
-            wasHidden[i] = glowHidden[i].hidden;
-            glowHidden[i].hidden = true;
+            wasHidden[i] = glowHidden[i].skipDraw;
+            glowHidden[i].skipDraw = true;
         }
         for (int i = 0; i < glowPruned.length; i++) {
             wasVisible[i] = glowPruned[i].visible;
@@ -137,7 +136,7 @@ public class GenericModel<T extends Entity> extends SinglePartEntityModel<T> {
             root.render(matrices, vertices, light, overlay, 1.0f, 1.0f, 1.0f, 1.0f);
         } finally {
             for (int i = 0; i < glowHidden.length; i++) {
-                glowHidden[i].hidden = wasHidden[i];
+                glowHidden[i].skipDraw = wasHidden[i];
             }
             for (int i = 0; i < glowPruned.length; i++) {
                 glowPruned[i].visible = wasVisible[i];
@@ -164,61 +163,61 @@ public class GenericModel<T extends Entity> extends SinglePartEntityModel<T> {
     }
 
     @Override
-    public ModelPart getPart() {
+    public ModelPart root() {
         return root;
     }
 
     @Override
-    public void setAngles(T entity, float limbAngle, float limbDistance, float animationProgress, float headYaw, float headPitch) {
+    public void setupAnim(T entity, float limbAngle, float limbDistance, float animationProgress, float headYaw, float headPitch) {
         for (ModelPart part : allParts) {
-            part.resetTransform();
+            part.resetPose();
         }
         if (applyDisguise(entity)) {
             return;
         }
-        float walk = MathHelper.cos(limbAngle * 0.6662f) * 1.2f * limbDistance;
-        float swing = MathHelper.sin(MathHelper.sqrt(handSwingProgress) * (float) Math.PI);
+        float walk = Mth.cos(limbAngle * 0.6662f) * 1.2f * limbDistance;
+        float swing = Mth.sin(Mth.sqrt(attackTime) * (float) Math.PI);
         for (Animated a : animated) {
             ModelPart p = a.part();
             switch (a.spec().role) {
                 case HEAD -> {
-                    p.yaw += headYaw * ((float) Math.PI / 180f);
-                    p.pitch += headPitch * ((float) Math.PI / 180f);
+                    p.yRot += headYaw * ((float) Math.PI / 180f);
+                    p.xRot += headPitch * ((float) Math.PI / 180f);
                 }
                 case NECK -> {
-                    p.yaw += headYaw * ((float) Math.PI / 180f) * 0.3f;
-                    p.pitch += MathHelper.sin(animationProgress * 0.05f) * 0.05f;
+                    p.yRot += headYaw * ((float) Math.PI / 180f) * 0.3f;
+                    p.xRot += Mth.sin(animationProgress * 0.05f) * 0.05f;
                 }
-                case JAW -> p.pitch += swing * 0.7f + Math.max(0, MathHelper.sin(animationProgress * 0.1f)) * 0.08f;
-                case LEG_FRONT_LEFT, LEG_BACK_RIGHT -> p.pitch += walk;
-                case LEG_FRONT_RIGHT, LEG_BACK_LEFT -> p.pitch -= walk;
+                case JAW -> p.xRot += swing * 0.7f + Math.max(0, Mth.sin(animationProgress * 0.1f)) * 0.08f;
+                case LEG_FRONT_LEFT, LEG_BACK_RIGHT -> p.xRot += walk;
+                case LEG_FRONT_RIGHT, LEG_BACK_LEFT -> p.xRot -= walk;
                 case LEG_EXTRA -> {
                     float phase = a.spec().index % 2 == 0 ? walk : -walk;
-                    p.yaw += phase * 0.5f;
-                    p.roll += Math.abs(phase) * 0.3f * (a.spec().index % 4 < 2 ? 1 : -1);
+                    p.yRot += phase * 0.5f;
+                    p.zRot += Math.abs(phase) * 0.3f * (a.spec().index % 4 < 2 ? 1 : -1);
                 }
                 case ARM_LEFT -> {
-                    p.pitch -= walk * 0.8f;
-                    p.pitch -= swing * 0.6f;
+                    p.xRot -= walk * 0.8f;
+                    p.xRot -= swing * 0.6f;
                 }
                 case ARM_RIGHT -> {
-                    p.pitch += walk * 0.8f;
-                    p.pitch -= swing * 1.4f;
+                    p.xRot += walk * 0.8f;
+                    p.xRot -= swing * 1.4f;
                 }
-                case WING_LEFT -> p.roll -= 0.3f + MathHelper.sin(animationProgress * 0.25f) * 0.6f;
-                case WING_RIGHT -> p.roll += 0.3f + MathHelper.sin(animationProgress * 0.25f) * 0.6f;
+                case WING_LEFT -> p.zRot -= 0.3f + Mth.sin(animationProgress * 0.25f) * 0.6f;
+                case WING_RIGHT -> p.zRot += 0.3f + Mth.sin(animationProgress * 0.25f) * 0.6f;
                 case TAIL -> {
-                    p.yaw += MathHelper.sin(animationProgress * 0.12f) * 0.35f;
-                    p.pitch += walk * 0.15f;
+                    p.yRot += Mth.sin(animationProgress * 0.12f) * 0.35f;
+                    p.xRot += walk * 0.15f;
                 }
                 case TENTACLE -> {
-                    p.pitch += MathHelper.sin(animationProgress * 0.15f + a.spec().index) * 0.3f;
-                    p.roll += MathHelper.cos(animationProgress * 0.13f + a.spec().index) * 0.2f;
+                    p.xRot += Mth.sin(animationProgress * 0.15f + a.spec().index) * 0.3f;
+                    p.zRot += Mth.cos(animationProgress * 0.13f + a.spec().index) * 0.2f;
                 }
-                case FIN -> p.yaw += MathHelper.sin(animationProgress * 0.3f) * 0.3f;
-                case SPIN -> p.yaw += animationProgress * 0.05f;
-                case FLOAT -> p.pivotY += MathHelper.sin(animationProgress * 0.1f) * 1.5f;
-                case BODY -> p.pivotY += MathHelper.sin(animationProgress * 0.08f) * 0.3f;
+                case FIN -> p.yRot += Mth.sin(animationProgress * 0.3f) * 0.3f;
+                case SPIN -> p.yRot += animationProgress * 0.05f;
+                case FLOAT -> p.y += Mth.sin(animationProgress * 0.1f) * 1.5f;
+                case BODY -> p.y += Mth.sin(animationProgress * 0.08f) * 0.3f;
                 default -> {
                 }
             }

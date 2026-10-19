@@ -6,6 +6,9 @@ import java.util.List;
 
 import static com.runecraft.osrs.content.world.KandarinKit.*;
 
+import com.runecraft.osrs.content.world.KandarinKit.Bld;
+import com.runecraft.osrs.content.world.KandarinKit.Pal;
+
 /** East and West Ardougne with the castle, zoo, monastery, Clock Tower, Tower of Life, Witchaven and the Fishing Platform. */
 final class KandarinArdougne {
     private KandarinArdougne() {

@@ -17,13 +17,12 @@ import com.runecraft.util.Msg;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.item.ItemStack;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.TypedActionResult;
-import net.minecraft.util.math.BlockPos;
-
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.item.ItemStack;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -51,9 +50,9 @@ public final class ShadesService {
                 "set of temple repair supplies", new String[]{"timber_beam", "limestone_brick", "swamp_paste"},
                 new int[]{1, 1, ShadesOfMortton.PASTE_PER_SET}));
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            ItemStack stack = player.getStackInHand(hand);
-            if (world.isClient() || !(player instanceof ServerPlayerEntity sp) || stack.isEmpty()) {
-                return TypedActionResult.pass(stack);
+            ItemStack stack = player.getItemInHand(hand);
+            if (world.isClientSide() || !(player instanceof ServerPlayer sp) || stack.isEmpty()) {
+                return InteractionResultHolder.pass(stack);
             }
             String id = Inv.idOf(stack);
             if ("sacred_oil".equals(id)) {
@@ -63,9 +62,9 @@ public final class ShadesService {
             } else if (ShadesOfMortton.Coffin.byId(id) != null) {
                 useCoffin(sp, stack, ShadesOfMortton.Coffin.byId(id));
             } else {
-                return TypedActionResult.pass(stack);
+                return InteractionResultHolder.pass(stack);
             }
-            return TypedActionResult.success(stack);
+            return InteractionResultHolder.success(stack);
         });
         BlockHooks.register(com.runecraft.osrs.content.minigames.MinigameWorld.DAMPE_COFFINS, (player, pos, state) -> dampe(player));
         for (String afflicted : ShadesOfMortton.AFFLICTED) {
@@ -77,21 +76,21 @@ public final class ShadesService {
             }
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            if (server.getTicks() % 1200 == 0) {
+            if (server.getTickCount() % 1200 == 0) {
                 SANCTITY.replaceAll((u, v) -> Math.max(0, v - ShadesOfMortton.SANCTITY_DRAIN_PER_MINUTE));
             }
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
-            SANCTITY.remove(handler.getPlayer().getUuid());
-            RESOURCES.remove(handler.getPlayer().getUuid());
+            SANCTITY.remove(handler.getPlayer().getUUID());
+            RESOURCES.remove(handler.getPlayer().getUUID());
         });
     }
 
-    static boolean questDone(ServerPlayerEntity player) {
+    static boolean questDone(ServerPlayer player) {
         return ContentRegistry.quest(ShadesOfMortton.QUEST) == null || QuestApi.isComplete(player, ShadesOfMortton.QUEST);
     }
 
-    private static boolean gate(ServerPlayerEntity player) {
+    private static boolean gate(ServerPlayer player) {
         if (!questDone(player)) {
             Msg.game(player, "You need to complete the Shades of Mort'ton quest first.");
             return false;
@@ -99,12 +98,12 @@ public final class ShadesService {
         return true;
     }
 
-    public static double sanctity(ServerPlayerEntity p) {
-        return SANCTITY.getOrDefault(p.getUuid(), 0.0);
+    public static double sanctity(ServerPlayer p) {
+        return SANCTITY.getOrDefault(p.getUUID(), 0.0);
     }
 
-    public static void addSanctity(ServerPlayerEntity p, double amount) {
-        SANCTITY.put(p.getUuid(), Math.max(0, Math.min(100, sanctity(p) + amount)));
+    public static void addSanctity(ServerPlayer p, double amount) {
+        SANCTITY.put(p.getUUID(), Math.max(0, Math.min(100, sanctity(p) + amount)));
     }
 
     private static String pct(double v) {
@@ -113,37 +112,37 @@ public final class ShadesService {
 
     // ------------------------------------------------------------------ doses (potion-style: stack damage = doses used)
 
-    private static int doses(ServerPlayerEntity p, String id) {
+    private static int doses(ServerPlayer p, String id) {
         int total = 0;
-        for (ItemStack s : p.getInventory().main) {
+        for (ItemStack s : p.getInventory().items) {
             if (!s.isEmpty() && id.equals(Inv.idOf(s))) {
-                total += Math.max(0, 4 - s.getDamage());
+                total += Math.max(0, 4 - s.getDamageValue());
             }
         }
         return total;
     }
 
-    private static void takeDoses(ServerPlayerEntity p, String id, int n) {
-        var main = p.getInventory().main;
+    private static void takeDoses(ServerPlayer p, String id, int n) {
+        var main = p.getInventory().items;
         for (int i = 0; i < main.size() && n > 0; i++) {
             ItemStack s = main.get(i);
             if (s.isEmpty() || !id.equals(Inv.idOf(s))) {
                 continue;
             }
-            int left = Math.max(0, 4 - s.getDamage());
+            int left = Math.max(0, 4 - s.getDamageValue());
             int use = Math.min(left, n);
             n -= use;
             if (use == left) {
                 main.set(i, Inv.stack("vial", 1));
             } else {
-                s.setDamage(s.getDamage() + use);
+                s.setDamageValue(s.getDamageValue() + use);
             }
         }
     }
 
     // ------------------------------------------------------------------ sacred fire
 
-    private static void sanctify(ServerPlayerEntity player) {
+    private static void sanctify(ServerPlayer player) {
         if (!gate(player)) {
             return;
         }
@@ -152,7 +151,7 @@ public final class ShadesService {
                     + "Repair the temple or slay the shades around it. (Sanctity: " + pct(sanctity(player)) + ")");
             return;
         }
-        var main = player.getInventory().main;
+        var main = player.getInventory().items;
         int serums = sanctifySerums(player);
         int done = 0;
         for (int i = 0; i < main.size(); i++) {
@@ -160,14 +159,14 @@ public final class ShadesService {
             if (s.isEmpty() || !"olive_oil".equals(Inv.idOf(s))) {
                 continue;
             }
-            int d = Math.max(0, 4 - s.getDamage());
+            int d = Math.max(0, 4 - s.getDamageValue());
             double cost = d * ShadesOfMortton.SANCTITY_PER_DOSE;
             if (sanctity(player) < cost) {
                 break;
             }
             addSanctity(player, -cost);
             ItemStack oil = Inv.stack("sacred_oil", 1);
-            oil.setDamage(s.getDamage());
+            oil.setDamageValue(s.getDamageValue());
             main.set(i, oil);
             done++;
         }
@@ -183,15 +182,15 @@ public final class ShadesService {
     }
 
     /** Serum 207 into serum 208 at the sacred fire: at least 20% sanctity, 5% a dose. Returns the vials changed. */
-    public static int sanctifySerums(ServerPlayerEntity player) {
-        var main = player.getInventory().main;
+    public static int sanctifySerums(ServerPlayer player) {
+        var main = player.getInventory().items;
         int done = 0;
         for (int i = 0; i < main.size(); i++) {
             ItemStack s = main.get(i);
             if (s.isEmpty() || !ShadesOfMortton.SERUM_207.equals(Inv.idOf(s))) {
                 continue;
             }
-            int d = Math.max(0, 4 - s.getDamage());
+            int d = Math.max(0, 4 - s.getDamageValue());
             double cost = d * ShadesOfMortton.SANCTITY_PER_SERUM_DOSE;
             if (sanctity(player) < ShadesOfMortton.SERUM_MIN_SANCTITY || sanctity(player) < cost) {
                 Msg.game(player, "You need at least " + pct(Math.max(ShadesOfMortton.SERUM_MIN_SANCTITY, cost))
@@ -200,7 +199,7 @@ public final class ShadesService {
             }
             addSanctity(player, -cost);
             ItemStack serum = Inv.stack(ShadesOfMortton.SERUM_208, 1);
-            serum.setDamage(s.getDamage());
+            serum.setDamageValue(s.getDamageValue());
             main.set(i, serum);
             done++;
         }
@@ -215,7 +214,7 @@ public final class ShadesService {
     // ------------------------------------------------------------------ the afflicted
 
     /** Talking to an afflicted villager with serum: a dose of 208 (or else 207) cures them for a while, for a reward. */
-    public static void cure(ServerPlayerEntity player) {
+    public static void cure(ServerPlayer player) {
         String serum = doses(player, ShadesOfMortton.SERUM_208) > 0 ? ShadesOfMortton.SERUM_208
                 : doses(player, ShadesOfMortton.SERUM_207) > 0 ? ShadesOfMortton.SERUM_207 : null;
         if (serum == null) {
@@ -233,11 +232,11 @@ public final class ShadesService {
     }
 
     /** Gives a cure reward (olive oils with their dose count). */
-    static void giveLoot(ServerPlayerEntity player, ShadesOfMortton.CureReward loot, int n) {
+    static void giveLoot(ServerPlayer player, ShadesOfMortton.CureReward loot, int n) {
         if (loot.doses() > 0) {
             for (int i = 0; i < n; i++) {
                 ItemStack oil = Inv.stack(loot.item(), 1);
-                oil.setDamage(4 - loot.doses());
+                oil.setDamageValue(4 - loot.doses());
                 Inv.give(player, oil);
             }
         } else {
@@ -249,8 +248,8 @@ public final class ShadesService {
     // ------------------------------------------------------------------ the flamtaer bag and Dampe's coffins
 
     /** Right-clicking the flamtaer bag: fills it with carried supplies, or empties it when there's nothing to put in. */
-    public static void useBag(ServerPlayerEntity player, ItemStack bag) {
-        var nbt = bag.getOrCreateNbt();
+    public static void useBag(ServerPlayer player, ItemStack bag) {
+        var nbt = bag.getOrCreateTag();
         int moved = 0;
         for (int i = 0; i < ShadesOfMortton.BAG_ITEMS.length; i++) {
             String item = ShadesOfMortton.BAG_ITEMS[i];
@@ -279,28 +278,28 @@ public final class ShadesService {
     }
 
     /** Takes one repair set's worth of an item from a carried flamtaer bag; true if the bag had it. */
-    private static boolean takeFromBag(ServerPlayerEntity p, String item, int n) {
-        for (ItemStack s : p.getInventory().main) {
-            if (!s.isEmpty() && "flamtaer_bag".equals(Inv.idOf(s)) && s.getNbt() != null && s.getNbt().getInt("rc_bag_" + item) >= n) {
-                s.getNbt().putInt("rc_bag_" + item, s.getNbt().getInt("rc_bag_" + item) - n);
+    private static boolean takeFromBag(ServerPlayer p, String item, int n) {
+        for (ItemStack s : p.getInventory().items) {
+            if (!s.isEmpty() && "flamtaer_bag".equals(Inv.idOf(s)) && s.getTag() != null && s.getTag().getInt("rc_bag_" + item) >= n) {
+                s.getTag().putInt("rc_bag_" + item, s.getTag().getInt("rc_bag_" + item) - n);
                 return true;
             }
         }
         return false;
     }
 
-    private static int inBag(ServerPlayerEntity p, String item) {
-        for (ItemStack s : p.getInventory().main) {
-            if (!s.isEmpty() && "flamtaer_bag".equals(Inv.idOf(s)) && s.getNbt() != null) {
-                return s.getNbt().getInt("rc_bag_" + item);
+    private static int inBag(ServerPlayer p, String item) {
+        for (ItemStack s : p.getInventory().items) {
+            if (!s.isEmpty() && "flamtaer_bag".equals(Inv.idOf(s)) && s.getTag() != null) {
+                return s.getTag().getInt("rc_bag_" + item);
             }
         }
         return 0;
     }
 
     /** Right-clicking a coffin: stores carried shade remains up to its capacity, or empties it. */
-    public static void useCoffin(ServerPlayerEntity player, ItemStack coffin, ShadesOfMortton.Coffin tier) {
-        var nbt = coffin.getOrCreateNbt();
+    public static void useCoffin(ServerPlayer player, ItemStack coffin, ShadesOfMortton.Coffin tier) {
+        var nbt = coffin.getOrCreateTag();
         int stored = 0;
         for (Shade s : Shade.values()) {
             stored += nbt.getInt("rc_coffin_" + s.remains());
@@ -331,8 +330,8 @@ public final class ShadesService {
     }
 
     /** Dampe: hands out a broken coffin, and fits carried locks to a coffin for a bigger one (remains inside are kept). */
-    public static void dampe(ServerPlayerEntity player) {
-        var main = player.getInventory().main;
+    public static void dampe(ServerPlayer player) {
+        var main = player.getInventory().items;
         int slot = -1;
         for (int i = 0; i < main.size(); i++) {
             String id = Inv.idOf(main.get(i));
@@ -361,22 +360,22 @@ public final class ShadesService {
         }
         Inv.remove(player, to.locks(), 1);
         ItemStack coffin = Inv.stack(to.id(), 1);
-        if (old.getNbt() != null) {
-            coffin.setNbt(old.getNbt().copy());
+        if (old.getTag() != null) {
+            coffin.setTag(old.getTag().copy());
         }
         main.set(slot, coffin);
         CollectionLog.obtain(player, to.id());
         QuestApi.say(player, "Dampe", "There you go: a " + to.metal + " coffin. It'll hold " + to.capacity + " shade remains.");
     }
 
-    private static boolean diary(ServerPlayerEntity p, com.runecraft.osrs.content.systems.Diaries.Tier tier) {
+    private static boolean diary(ServerPlayer p, com.runecraft.osrs.content.systems.Diaries.Tier tier) {
         return com.runecraft.osrs.content.systems.Diaries.tierComplete(com.runecraft.content.systems.SysState.of(p).diaryDone, "morytania",
                 tier);
     }
 
     // ------------------------------------------------------------------ temple repairs
 
-    private static void repair(ServerPlayerEntity player) {
+    private static void repair(ServerPlayer player) {
         if (!gate(player)) {
             return;
         }
@@ -400,19 +399,19 @@ public final class ShadesService {
                 Msg.game(p, "You have run out of building materials.");
                 return false;
             }
-            RESOURCES.put(p.getUuid(), RESOURCES.getOrDefault(p.getUuid(), 0.0) - ShadesOfMortton.RESOURCES_PER_REPAIR);
+            RESOURCES.put(p.getUUID(), RESOURCES.getOrDefault(p.getUUID(), 0.0) - ShadesOfMortton.RESOURCES_PER_REPAIR);
             // A worn flamtaer bracelet: about 75% more sanctity, one charge per repair.
             boolean bracelet = com.runecraft.content.systems.JewelleryService.useFlamtaerCharge(p);
             addSanctity(p, ShadesOfMortton.repairSanctity(bracelet));
             XpService.add(p, Skill.CRAFTING, ShadesOfMortton.REPAIR_CRAFTING_XP);
-            Msg.action(p, "Resources: " + pct(RESOURCES.getOrDefault(p.getUuid(), 0.0)) + "  Sanctity: " + pct(sanctity(p)));
+            Msg.action(p, "Resources: " + pct(RESOURCES.getOrDefault(p.getUUID(), 0.0)) + "  Sanctity: " + pct(sanctity(p)));
             return true;
         });
     }
 
     /** Makes sure at least 1% resources are on hand, using a set of materials if needed. */
-    private static boolean stock(ServerPlayerEntity p) {
-        if (RESOURCES.getOrDefault(p.getUuid(), 0.0) >= ShadesOfMortton.RESOURCES_PER_REPAIR) {
+    private static boolean stock(ServerPlayer p) {
+        if (RESOURCES.getOrDefault(p.getUUID(), 0.0) >= ShadesOfMortton.RESOURCES_PER_REPAIR) {
             return true;
         }
         // Supplies in a carried flamtaer bag are used without taking them out.
@@ -431,14 +430,14 @@ public final class ShadesService {
         if (!takeFromBag(p, "swamp_paste", ShadesOfMortton.PASTE_PER_SET)) {
             Inv.remove(p, "swamp_paste", ShadesOfMortton.PASTE_PER_SET);
         }
-        RESOURCES.put(p.getUuid(), RESOURCES.getOrDefault(p.getUuid(), 0.0) + ShadesOfMortton.RESOURCES_PER_SET);
+        RESOURCES.put(p.getUUID(), RESOURCES.getOrDefault(p.getUUID(), 0.0) + ShadesOfMortton.RESOURCES_PER_SET);
         return true;
     }
 
     // ------------------------------------------------------------------ pyre logs
 
     /** The best pyre log the player has the logs and the sacred oil for. */
-    private static PyreLog makeable(ServerPlayerEntity p) {
+    private static PyreLog makeable(ServerPlayer p) {
         int oil = doses(p, "sacred_oil");
         PyreLog best = null;
         for (PyreLog log : PyreLog.values()) {
@@ -449,7 +448,7 @@ public final class ShadesService {
         return best;
     }
 
-    private static void startPyreLogs(ServerPlayerEntity player) {
+    private static void startPyreLogs(ServerPlayer player) {
         if (!questDone(player)) {
             Msg.game(player, "This sacred oil doesn't seem fresh. You should make your own.");
             return;
@@ -475,7 +474,7 @@ public final class ShadesService {
 
     // ------------------------------------------------------------------ funeral pyre
 
-    private static void pyre(ServerPlayerEntity player, BlockPos pos) {
+    private static void pyre(ServerPlayer player, BlockPos pos) {
         if (!gate(player)) {
             return;
         }
@@ -521,7 +520,7 @@ public final class ShadesService {
         }
     }
 
-    private static void cremate(ServerPlayerEntity player, BlockPos pos, PyreLog log, Shade shade) {
+    private static void cremate(ServerPlayer player, BlockPos pos, PyreLog log, Shade shade) {
         Inv.remove(player, log.id(), 1);
         Inv.remove(player, shade.remains(), 1);
         // Morytania diary rewards: +50% Prayer XP with the hard diary, +50% Firemaking XP with the elite diary.
@@ -529,9 +528,9 @@ public final class ShadesService {
                 diary(player, com.runecraft.osrs.content.systems.Diaries.Tier.ELITE)));
         XpService.add(player, Skill.PRAYER, ShadesOfMortton.cremationPrayerXp(log.prayerXp(shade),
                 diary(player, com.runecraft.osrs.content.systems.Diaries.Tier.HARD)));
-        ServerWorld world = (ServerWorld) player.getWorld();
-        world.spawnParticles(ParticleTypes.SOUL_FIRE_FLAME, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, 30, 0.3, 0.8, 0.3, 0.03);
-        world.spawnParticles(ParticleTypes.SOUL, pos.getX() + 0.5, pos.getY() + 1.5, pos.getZ() + 0.5, 6, 0.2, 0.6, 0.2, 0.05);
+        ServerLevel world = (ServerLevel) player.level();
+        world.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, 30, 0.3, 0.8, 0.3, 0.03);
+        world.sendParticles(ParticleTypes.SOUL, pos.getX() + 0.5, pos.getY() + 1.5, pos.getZ() + 0.5, 6, 0.2, 0.6, 0.2, 0.05);
         ShadesOfMortton.Cremation c = ShadesOfMortton.cremate(shade, player.getRandom()::nextDouble);
         if (c.key() != null) {
             Inv.give(player, c.key(), 1);
@@ -545,7 +544,7 @@ public final class ShadesService {
 
     // ------------------------------------------------------------------ Razmire
 
-    private static void buy(ServerPlayerEntity player, int price, String what, String[] items, int[] counts) {
+    private static void buy(ServerPlayer player, int price, String what, String[] items, int[] counts) {
         if (!Inv.has(player, Inv.COINS, price)) {
             Msg.game(player, "Razmire: That'll be " + price + " coins for a " + what + ".");
             return;

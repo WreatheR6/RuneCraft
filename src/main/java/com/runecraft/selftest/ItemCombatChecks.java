@@ -55,25 +55,24 @@ import com.runecraft.player.Players;
 import com.runecraft.registry.ModEntities;
 import com.runecraft.util.Inv;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.damage.DamageType;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.projectile.PersistentProjectileEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.TypedActionResult;
-import net.minecraft.util.math.BlockPos;
-
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageType;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -110,7 +109,7 @@ final class ItemCombatChecks {
 
     /** Damage rolls against {@link #watching} (protection prayer checks). */
     private static final List<Integer> ROLLS = new ArrayList<>();
-    private static ServerPlayerEntity watching;
+    private static ServerPlayer watching;
     private static boolean listening;
 
     private final TestContext c;
@@ -230,7 +229,7 @@ final class ItemCombatChecks {
         return new AssertionError(message);
     }
 
-    private ServerPlayerEntity p() {
+    private ServerPlayer p() {
         return c.player;
     }
 
@@ -247,12 +246,12 @@ final class ItemCombatChecks {
     }
 
     /** A right-click with the item in {@code hand}: the use-item callbacks first, then the item's own use (as vanilla does). */
-    private void use(Hand hand) {
-        TypedActionResult<ItemStack> result = UseItemCallback.EVENT.invoker().interact(p(), c.world, hand);
-        if (result.getResult() != ActionResult.PASS) {
+    private void use(InteractionHand hand) {
+        InteractionResultHolder<ItemStack> result = UseItemCallback.EVENT.invoker().interact(p(), c.world, hand);
+        if (result.getResult() != InteractionResult.PASS) {
             return;
         }
-        ItemStack held = p().getStackInHand(hand);
+        ItemStack held = p().getItemInHand(hand);
         if (!held.isEmpty()) {
             held.getItem().use(c.world, p(), hand);
         }
@@ -273,15 +272,15 @@ final class ItemCombatChecks {
     private LivingEntity spawn(EntityType<?> type, int dx, int dz) {
         Entity e = type.create(c.world);
         if (!(e instanceof LivingEntity living)) {
-            throw failure(net.minecraft.registry.Registries.ENTITY_TYPE.getId(type) + " is not a living entity");
+            throw failure(net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(type) + " is not a living entity");
         }
         BlockPos pos = c.near(dx, dz);
-        living.refreshPositionAndAngles(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0f, 0f);
-        if (living instanceof MobEntity mob) {
-            mob.initialize(c.world, c.world.getLocalDifficulty(pos), SpawnReason.SPAWNER, null, null);
-            mob.setPersistent();
+        living.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0f, 0f);
+        if (living instanceof Mob mob) {
+            mob.finalizeSpawn(c.world, c.world.getCurrentDifficultyAt(pos), MobSpawnType.SPAWNER, null, null);
+            mob.setPersistenceRequired();
         }
-        c.world.spawnEntity(living);
+        c.world.addFreshEntity(living);
         return living;
     }
 
@@ -294,12 +293,12 @@ final class ItemCombatChecks {
     private String food(String id, int heal) {
         ItemStack stack = stack(id, 5);
         Item item = stack.getItem();
-        if (p().getItemCooldownManager().isCoolingDown(item)) {
+        if (p().getCooldowns().isOnCooldown(item)) {
             throw new SelfTest.Skip("still on its eat delay from an earlier check");
         }
-        p().setStackInHand(Hand.MAIN_HAND, stack);
+        p().setItemInHand(InteractionHand.MAIN_HAND, stack);
         p().setHealth(10f);
-        use(Hand.MAIN_HAND);
+        use(InteractionHand.MAIN_HAND);
         float hp = p().getHealth();
         int left = Inv.count(p(), id);
         if (left >= 5) {
@@ -308,11 +307,11 @@ final class ItemCombatChecks {
         if (heal > 0 && hp <= 10f) {
             throw failure("eating did not heal (HP " + fmt(hp) + "/" + fmt(p().getMaxHealth()) + ", heals " + heal + ")");
         }
-        if (!p().getItemCooldownManager().isCoolingDown(item)) {
+        if (!p().getCooldowns().isOnCooldown(item)) {
             throw failure("no eat delay after eating");
         }
         // Eating again at once must do nothing (OSRS: 3 game ticks between foods).
-        use(Hand.MAIN_HAND);
+        use(InteractionHand.MAIN_HAND);
         if (Inv.count(p(), id) != left || p().getHealth() != hp) {
             throw failure("a second bite went through during the eat delay");
         }
@@ -348,7 +347,7 @@ final class ItemCombatChecks {
     private String potion(String id) {
         ItemStack stack = stack(id, 1);
         Item item = stack.getItem();
-        if (p().getItemCooldownManager().isCoolingDown(item)) {
+        if (p().getCooldowns().isOnCooldown(item)) {
             throw new SelfTest.Skip("still on its drink delay from an earlier check");
         }
         HerbloreData.ModPotion mod = HerbloreData.potion(id);
@@ -359,10 +358,10 @@ final class ItemCombatChecks {
         ItemDef catalogDef = ItemCatalog.get(id);
         if (catalogDef != null && !catalogDef.drinkable()) {
             // OSRS only lets you empty these (Guthix balance, olive and sacred oil): using one must not use a dose.
-            p().setStackInHand(Hand.MAIN_HAND, stack);
-            use(Hand.MAIN_HAND);
-            ItemStack left = p().getMainHandStack();
-            if (left.isEmpty() || left.getItem() != item || left.getDamage() > 0) {
+            p().setItemInHand(InteractionHand.MAIN_HAND, stack);
+            use(InteractionHand.MAIN_HAND);
+            ItemStack left = p().getMainHandItem();
+            if (left.isEmpty() || left.getItem() != item || left.getDamageValue() > 0) {
                 throw failure("a potion OSRS doesn't let you drink used a dose");
             }
             return "not drinkable (as in OSRS); no dose used";
@@ -372,9 +371,9 @@ final class ItemCombatChecks {
             known |= p.itemId().equals(id);
         }
         // The potion goes in the main hand (inventory slot 0) before anything else is handed out.
-        p().setStackInHand(Hand.MAIN_HAND, stack);
+        p().setItemInHand(InteractionHand.MAIN_HAND, stack);
         if (effect != null && effect.weaponPoison()) {
-            p().setStackInHand(Hand.OFF_HAND, stack("bronze_dagger", 1));
+            p().setItemInHand(InteractionHand.OFF_HAND, stack("bronze_dagger", 1));
         } else if (effect == HerbloreData.Effect.COMPOST) {
             Inv.give(p(), "compost", 1);
         }
@@ -389,9 +388,9 @@ final class ItemCombatChecks {
         p().setHealth(50f);
         SkillSet expected = copy(skills);
         Integer prayer = model(id, expected);
-        use(Hand.MAIN_HAND);
-        ItemStack after = p().getMainHandStack();
-        boolean used = after.isEmpty() || after.getItem() != item || after.getDamage() > 0;
+        use(InteractionHand.MAIN_HAND);
+        ItemStack after = p().getMainHandItem();
+        boolean used = after.isEmpty() || after.getItem() != item || after.getDamageValue() > 0;
         if (!used) {
             if (!known) {
                 throw new SelfTest.Skip("no drink effect registered for this potion");
@@ -440,7 +439,7 @@ final class ItemCombatChecks {
             throw failure("Prayer points did not rise (" + data.prayerPoints() + ")");
         }
         String doses = after.isEmpty() || after.getItem() != item ? "finished -> " + (after.isEmpty() ? "nothing" : Inv.idOf(after))
-                : "dose used (" + after.getDamage() + " drunk)";
+                : "dose used (" + after.getDamageValue() + " drunk)";
         return doses + (prayer == null ? ", no stat model" : changed.isEmpty() ? ", no stat change" : ", " + String.join(" ", changed))
                 + (data.prayerPoints() != 40 ? ", prayer " + data.prayerPoints() : "");
     }
@@ -460,9 +459,9 @@ final class ItemCombatChecks {
     private void put(EquipmentDef.Slot slot, ItemStack stack) {
         EquipmentSlot armour = armourSlot(slot);
         if (armour != null) {
-            p().equipStack(armour, stack);
+            p().setItemSlot(armour, stack);
         } else {
-            p().setStackInHand(slot == EquipmentDef.Slot.SHIELD ? Hand.OFF_HAND : Hand.MAIN_HAND, stack);
+            p().setItemInHand(slot == EquipmentDef.Slot.SHIELD ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND, stack);
         }
     }
 
@@ -498,7 +497,7 @@ final class ItemCombatChecks {
             put(eq.slot(), stack(id, 1));
             if (armour != null) {
                 enforceTick();
-                if (!p().getEquippedStack(armour).isEmpty()) {
+                if (!p().getItemBySlot(armour).isEmpty()) {
                     throw failure("a level-1 player keeps wearing it although it needs " + reqs);
                 }
                 if (Inv.count(p(), id) != 1) {
@@ -509,7 +508,7 @@ final class ItemCombatChecks {
             } else if (eq.slot() == EquipmentDef.Slot.WEAPON && Equipment.weapon(p(), data().skills()) != null) {
                 throw failure("a level-1 player wields it although it needs " + reqs);
             }
-            p().getInventory().clear();
+            p().getInventory().clearContent();
             reqs.keySet().forEach(s -> setLevel(s, 99));
             reqNote = "refused at level 1 (" + reqs + ")";
         }
@@ -517,7 +516,7 @@ final class ItemCombatChecks {
         put(eq.slot(), stack);
         if (armour != null) {
             enforceTick();
-            if (p().getEquippedStack(armour).isEmpty()) {
+            if (p().getItemBySlot(armour).isEmpty()) {
                 throw failure("a level-99 player can't keep it on");
             }
         }
@@ -530,7 +529,7 @@ final class ItemCombatChecks {
         String extra = "";
         if (eq.slot() == EquipmentDef.Slot.WEAPON) {
             ItemDef shieldDef = ItemCatalog.get(SHIELD);
-            p().setStackInHand(Hand.OFF_HAND, stack(SHIELD, 1));
+            p().setItemInHand(InteractionHand.OFF_HAND, stack(SHIELD, 1));
             EquipmentStats with = Equipment.total(p(), data().skills());
             if (EquipmentBonuses.twoHanded(id)) {
                 if (!Equipment.twoHanded(p())) {
@@ -554,22 +553,22 @@ final class ItemCombatChecks {
         String reqNote = "no requirements";
         if (!reqs.isEmpty()) {
             reqs.keySet().forEach(s -> setLevel(s, 1));
-            p().setStackInHand(Hand.MAIN_HAND, stack(id, 1));
-            JewelleryService.wear(p(), Hand.MAIN_HAND);
+            p().setItemInHand(InteractionHand.MAIN_HAND, stack(id, 1));
+            JewelleryService.wear(p(), InteractionHand.MAIN_HAND);
             if (!sp.worn(worn.slot()).isEmpty()) {
                 throw failure("a level-1 player put it on although it needs " + reqs);
             }
-            p().getInventory().clear();
+            p().getInventory().clearContent();
             reqs.keySet().forEach(s -> setLevel(s, 99));
             reqNote = "refused at level 1 (" + reqs + ")";
         }
-        p().setStackInHand(Hand.MAIN_HAND, stack(id, 1));
-        JewelleryService.wear(p(), Hand.MAIN_HAND);
+        p().setItemInHand(InteractionHand.MAIN_HAND, stack(id, 1));
+        JewelleryService.wear(p(), InteractionHand.MAIN_HAND);
         if (!sp.wornId(worn.slot()).equals(id)) {
             throw failure("JewelleryService.wear did not put it in the " + worn.slot() + " slot");
         }
-        if (!p().getMainHandStack().isEmpty()) {
-            throw failure("wearing it left " + p().getMainHandStack() + " in the hand");
+        if (!p().getMainHandItem().isEmpty()) {
+            throw failure("wearing it left " + p().getMainHandItem() + " in the hand");
         }
         EquipmentStats total = SysCombat.wornStats(p());
         if (!total.equals(worn.stats())) {
@@ -700,7 +699,7 @@ final class ItemCombatChecks {
     }
 
     private String landed(int blockX, int blockZ) {
-        BlockPos at = p().getBlockPos();
+        BlockPos at = p().blockPosition();
         double d = Math.hypot(at.getX() - blockX, at.getZ() - blockZ);
         if (d > 48) {
             throw failure("ended at " + at.getX() + " " + at.getY() + " " + at.getZ() + ", " + (int) d + " blocks from the destination "
@@ -716,7 +715,7 @@ final class ItemCombatChecks {
         }
         String alchItem = "rune_scimitar";
         if (spell.kind() == Spell.Kind.ALCHEMY) {
-            p().setStackInHand(Hand.MAIN_HAND, stack(alchItem, 1)); // before the runes take slot 0
+            p().setItemInHand(InteractionHand.MAIN_HAND, stack(alchItem, 1)); // before the runes take slot 0
         }
         giveRunes(runes);
         Map<String, Integer> before = counts(runes.keySet());
@@ -799,7 +798,7 @@ final class ItemCombatChecks {
             if (weapon.isEmpty()) {
                 throw failure("needs " + s.item() + " wielded, but no such item exists");
             }
-            p().setStackInHand(Hand.MAIN_HAND, weapon);
+            p().setItemInHand(InteractionHand.MAIN_HAND, weapon);
         }
         giveRunes(s.runes());
         Map<String, Integer> before = counts(s.runes().keySet());
@@ -885,7 +884,7 @@ final class ItemCombatChecks {
     /** Casts {@code s} with only {@code inputs} (and the runes) carried; expects {@code want} more {@code product} and XP. */
     private String convert(Spellbooks.Spell s, Map<String, Integer> inputs, String product, int want, Skill skill) {
         stack(product, 1);
-        p().getInventory().clear();
+        p().getInventory().clearContent();
         giveRunes(s.runes());
         inputs.forEach((item, n) -> {
             if (!item.equals(Inv.COINS)) {
@@ -932,7 +931,7 @@ final class ItemCombatChecks {
                 unregistered++; // an alias with no item: nobody can carry it
                 continue;
             }
-            p().getInventory().clear();
+            p().getInventory().clearContent();
             giveRunes(s.runes());
             Inv.give(p(), from, 1);
             int had = Inv.count(p(), to);
@@ -969,7 +968,7 @@ final class ItemCombatChecks {
                 }
                 String to = com.runecraft.osrs.content.systems.BoltEffects.enchantedOf(bolts);
                 int per = com.runecraft.osrs.content.systems.BoltEffects.BOLTS_PER_CAST;
-                p().getInventory().clear();
+                p().getInventory().clearContent();
                 giveRunes(en.runes());
                 Inv.give(p(), bolts, per + 5);
                 int had = Inv.count(p(), to);
@@ -993,34 +992,34 @@ final class ItemCombatChecks {
 
     /** Telekinetic Grab: bones on the floor 4 blocks ahead, looked at, come to the player and can be picked up. */
     private String telekineticGrab(Spellbooks.Spell s) {
-        p().getInventory().clear();
+        p().getInventory().clearContent();
         giveRunes(s.runes());
         BlockPos at = c.near(4, 0);
-        net.minecraft.entity.ItemEntity item = new net.minecraft.entity.ItemEntity(c.world, at.getX() + 0.5, at.getY() + 0.1,
+        net.minecraft.world.entity.item.ItemEntity item = new net.minecraft.world.entity.item.ItemEntity(c.world, at.getX() + 0.5, at.getY() + 0.1,
                 at.getZ() + 0.5, stack("bones", 1));
-        item.setVelocity(net.minecraft.util.math.Vec3d.ZERO);
-        item.setPickupDelay(200);
-        c.world.spawnEntity(item);
+        item.setDeltaMovement(net.minecraft.world.phys.Vec3.ZERO);
+        item.setPickUpDelay(200);
+        c.world.addFreshEntity(item);
         // Look straight at it (the spell picks the ground item under the crosshair).
-        net.minecraft.util.math.Vec3d eye = p().getEyePos();
+        net.minecraft.world.phys.Vec3 eye = p().getEyePosition();
         double dx = item.getX() - eye.x;
         double dy = item.getY() - eye.y;
         double dz = item.getZ() - eye.z;
         float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
-        p().setYaw(yaw);
-        p().setHeadYaw(yaw);
-        p().setPitch((float) Math.toDegrees(Math.atan2(-dy, Math.sqrt(dx * dx + dz * dz))));
+        p().setYRot(yaw);
+        p().setYHeadRot(yaw);
+        p().setXRot((float) Math.toDegrees(Math.atan2(-dy, Math.sqrt(dx * dx + dz * dz))));
         int xp0 = magicXp();
         int bones = Inv.count(p(), "bones");
         SpellService.cast(p(), s.id());
         if (magicXp() - xp0 < Experience.tenths(s.xp())) {
             throw failure("not cast at bones 4 blocks ahead under the crosshair (+" + (magicXp() - xp0) / 10.0 + " xp)");
         }
-        double dist = Math.sqrt(item.squaredDistanceTo(p()));
+        double dist = Math.sqrt(item.distanceToSqr(p()));
         if (dist > 1.5) {
             throw failure("the bones stayed " + fmt(dist) + " blocks away");
         }
-        item.onPlayerCollision(p()); // what the player's next movement tick does
+        item.playerTouch(p()); // what the player's next movement tick does
         if (Inv.count(p(), "bones") <= bones) {
             throw failure("the grabbed bones could not be picked up");
         }
@@ -1030,7 +1029,7 @@ final class ItemCombatChecks {
     /** Bake Pie: two of the first uncooked pie in the Cooking recipes; a pie shell and its filling are left alone. */
     private String bakePie(Spellbooks.Spell s) {
         if (!Inv.stack("pie_shell", 1).isEmpty() && !Inv.stack("redberries", 1).isEmpty()) {
-            p().getInventory().clear();
+            p().getInventory().clearContent();
             giveRunes(s.runes());
             Inv.give(p(), "pie_shell", 1);
             Inv.give(p(), "redberries", 1);
@@ -1103,11 +1102,11 @@ final class ItemCombatChecks {
 
     private String attack(CombatStyle style, String weapon, String ammo) {
         if (weapon != null) {
-            p().setStackInHand(Hand.MAIN_HAND, stack(weapon, 1));
+            p().setItemInHand(InteractionHand.MAIN_HAND, stack(weapon, 1));
         }
         data().setStyle(style);
         LivingEntity dummy = spawn(DUMMY, 2, 0);
-        RegistryEntry<DamageType> osrsHit = c.world.getRegistryManager().get(RegistryKeys.DAMAGE_TYPE).entryOf(CombatHandler.OSRS_HIT);
+        Holder<DamageType> osrsHit = c.world.registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(CombatHandler.OSRS_HIT);
         Map<Skill, Integer> start = combatXp();
         Map<Skill, Integer> want = new HashMap<>();
         int dealt = 0;
@@ -1119,13 +1118,13 @@ final class ItemCombatChecks {
             data().lastAttackTick = ActionManager.mcTick() - 10_000;
             float hp = dummy.getHealth();
             if (ammo == null) {
-                dummy.damage(CombatHandler.source(p()), 1f);
+                dummy.hurt(CombatHandler.source(p()), 1f);
             } else {
                 if (!(Inv.item(ammo) instanceof OsrsEquipmentItems.Arrow arrowItem)) {
                     throw failure(ammo + " is not an arrow item");
                 }
-                PersistentProjectileEntity arrow = arrowItem.createArrow(c.world, stack(ammo, 1), p());
-                dummy.damage(new DamageSource(osrsHit, arrow, p()), 1f);
+                AbstractArrow arrow = arrowItem.createArrow(c.world, stack(ammo, 1), p());
+                dummy.hurt(new DamageSource(osrsHit, arrow, p()), 1f);
             }
             int d = Math.round(hp - dummy.getHealth());
             if (d > 0) {
@@ -1142,7 +1141,7 @@ final class ItemCombatChecks {
 
     private String magicAttack() {
         Spell spell = Spell.FIRE_STRIKE;
-        p().setStackInHand(Hand.MAIN_HAND, stack("staff_of_air", 1));
+        p().setItemInHand(InteractionHand.MAIN_HAND, stack("staff_of_air", 1));
         for (Map.Entry<Rune, Integer> e : spell.runes().entrySet()) {
             Inv.give(p(), e.getKey().itemId(), e.getValue() * (ATTACK_TRIES + 1));
         }
@@ -1209,7 +1208,7 @@ final class ItemCombatChecks {
 
     private void killAsPlayer(LivingEntity victim) {
         victim.setHealth(0f);
-        victim.onDeath(CombatHandler.source(p()));
+        victim.die(CombatHandler.source(p()));
     }
 
     private String slayer(SlayerMasters.Master master) {
@@ -1231,7 +1230,7 @@ final class ItemCombatChecks {
             // border, so judge by where the victim stands (as the game does), not the player.
             int before = prof.remaining;
             LivingEntity victim = spawn(type, 3, 0);
-            BlockPos at = victim.getBlockPos();
+            BlockPos at = victim.blockPosition();
             String here = com.runecraft.osrs.world.TaskRegions.at(at.getX(), at.getY(), at.getZ()).name();
             killAsPlayer(victim);
             if (prof.remaining != before && !prof.region.equals(here)) {
@@ -1250,17 +1249,17 @@ final class ItemCombatChecks {
             return note + ", kill outside the Wilderness ignored";
         }
         if (drop != credit) {
-            throw failure("killing a " + net.minecraft.registry.Registries.ENTITY_TYPE.getId(type) + " lowered the count by " + drop
+            throw failure("killing a " + net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(type) + " lowered the count by " + drop
                     + ", expected " + credit + " (" + note + ")");
         }
-        return note + ", killed " + net.minecraft.registry.Registries.ENTITY_TYPE.getId(type).getPath() + ": " + before + " -> " + prof.remaining;
+        return note + ", killed " + net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(type).getPath() + ": " + before + " -> " + prof.remaining;
     }
 
     // ------------------------------------------------------------------ bank, Grand Exchange, shops
 
     private int slotOf(String id, boolean note) {
         for (int i = 0; i < 36; i++) {
-            ItemStack s = p().getInventory().getStack(i);
+            ItemStack s = p().getInventory().getItem(i);
             if (!s.isEmpty() && (note ? Notes.isNote(s) && Notes.notedId(s).equals(id) : Inv.idOf(s).equals(id))) {
                 return i;
             }
@@ -1288,23 +1287,23 @@ final class ItemCombatChecks {
                         + " slots), " + Inv.count(p(), item) + " left carried");
             }
             SysState state = SysState.get(p().getServer());
-            state.selfTestRestore(p().getUuid(), state.selfTestSave(p().getUuid()));
+            state.selfTestRestore(p().getUUID(), state.selfTestSave(p().getUUID()));
             sp = SysState.of(p());
             if (sp.lootingBag.count(item) != 6) {
                 throw failure("bag contents lost on save/load: " + com.runecraft.content.systems.LootingBagService.contents(p()));
             }
             int bagSlot = -1;
-            for (int i = 0; i < p().getInventory().main.size(); i++) {
-                if (bagId.equals(Inv.idOf(p().getInventory().main.get(i)))) {
+            for (int i = 0; i < p().getInventory().items.size(); i++) {
+                if (bagId.equals(Inv.idOf(p().getInventory().items.get(i)))) {
                     bagSlot = i;
                 }
             }
             if (bagSlot < 0) {
                 throw failure("no looting bag in the inventory");
             }
-            ItemStack bagStack = p().getInventory().main.get(bagSlot).copy();
-            p().getInventory().main.set(bagSlot, ItemStack.EMPTY);
-            p().setStackInHand(Hand.MAIN_HAND, bagStack);
+            ItemStack bagStack = p().getInventory().items.get(bagSlot).copy();
+            p().getInventory().items.set(bagSlot, ItemStack.EMPTY);
+            p().setItemInHand(InteractionHand.MAIN_HAND, bagStack);
             BankService.open(p());
             BankService.selfTestAction(p(), BankService.OP_CLOSE, "", 0, BankQuantity.Mode.ONE, 0);
             if (!sp.lootingBag.isEmpty() || bank.count(item, "") != bankedBefore + 6) {
@@ -1340,8 +1339,8 @@ final class ItemCombatChecks {
         BankService.selfTestAction(p(), BankService.OP_SET_NOTED, "", 1, BankQuantity.Mode.ONE, 0);
         BankService.selfTestAction(p(), BankService.OP_WITHDRAW, item, 0, BankQuantity.Mode.ALL, 0);
         int noteSlot = slotOf(item, true);
-        if (noteSlot < 0 || p().getInventory().getStack(noteSlot).getCount() != 4 || bank.count(item, "") != 0) {
-            throw failure("withdrawing 4 as notes gave " + (noteSlot < 0 ? "no note" : p().getInventory().getStack(noteSlot).getCount() + " notes")
+        if (noteSlot < 0 || p().getInventory().getItem(noteSlot).getCount() != 4 || bank.count(item, "") != 0) {
+            throw failure("withdrawing 4 as notes gave " + (noteSlot < 0 ? "no note" : p().getInventory().getItem(noteSlot).getCount() + " notes")
                     + " (bank " + bank.count(item, "") + ")");
         }
         if (Notes.countWithNotes(p(), item) != 10) {
@@ -1360,11 +1359,11 @@ final class ItemCombatChecks {
         if (noteSlot < 0) {
             throw failure("no notes after withdrawing as notes again");
         }
-        ItemStack notes = p().getInventory().getStack(noteSlot).copy();
-        p().getInventory().setStack(noteSlot, ItemStack.EMPTY);
-        p().setStackInHand(Hand.MAIN_HAND, notes);
+        ItemStack notes = p().getInventory().getItem(noteSlot).copy();
+        p().getInventory().setItem(noteSlot, ItemStack.EMPTY);
+        p().setItemInHand(InteractionHand.MAIN_HAND, notes);
         BankService.open(p());
-        if (Inv.count(p(), item) != 10 || slotOf(item, true) >= 0 || Notes.isNote(p().getMainHandStack())) {
+        if (Inv.count(p(), item) != 10 || slotOf(item, true) >= 0 || Notes.isNote(p().getMainHandItem())) {
             throw failure("un-noting 10 notes left " + Inv.count(p(), item) + " lobsters and " + (slotOf(item, true) >= 0 ? "notes" : "no notes"));
         }
         BankService.selfTestAction(p(), BankService.OP_CLOSE, "", 0, BankQuantity.Mode.ONE, 0);
@@ -1407,7 +1406,7 @@ final class ItemCombatChecks {
         GeService.openAtBooth(p());
         Inv.give(p(), Inv.COINS, 1000);
         long coins0 = Inv.count(p(), Inv.COINS);
-        String uuid = p().getUuidAsString();
+        String uuid = p().getStringUUID();
         GrandExchange ge = SysState.get(c.server).ge();
         Set<Long> old = new java.util.HashSet<>();
         for (GrandExchange.Offer o : ge.offersOf(uuid)) {
@@ -1464,14 +1463,14 @@ final class ItemCombatChecks {
         int expected = (int) Math.max(1L, (long) value * rate / 1000L);
         boolean coins = def.currency().equals(Inv.COINS);
         int give = coins ? expected + 1_000_000 : expected + 10;
-        if (!coins && give > 30 * stack(def.currency(), 1).getMaxCount()) {
+        if (!coins && give > 30 * stack(def.currency(), 1).getMaxStackSize()) {
             throw new SelfTest.Skip("the cheapest item costs " + expected + " " + def.currency() + ", more than an inventory holds");
         }
         Inv.give(p(), def.currency(), give);
         String[] gate = Shops.QUEST_GATES.get(def.id());
         if (gate != null && com.runecraft.osrs.content.ContentRegistry.quest(gate[0]) != null) {
             // The fresh test player has no quests: a quest-gated keeper must refuse to trade.
-            ShopService.open(p(), def.id(), p().getPos());
+            ShopService.open(p(), def.id(), p().position());
             int curG = Inv.count(p(), def.currency());
             int haveG = Inv.count(p(), item);
             ShopService.selfTestBuy(p(), def.id(), item, 1);
@@ -1480,7 +1479,7 @@ final class ItemCombatChecks {
             }
         }
         c.completeQuests(null); // quest-gated shops (Shops.QUEST_GATES)
-        ShopService.open(p(), def.id(), p().getPos());
+        ShopService.open(p(), def.id(), p().position());
         int cur0 = Inv.count(p(), def.currency());
         int have0 = Inv.count(p(), item);
         ShopService.selfTestBuy(p(), def.id(), item, 1);

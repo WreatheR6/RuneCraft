@@ -19,18 +19,17 @@ import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.LandmarkBuilder;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.minecraft.block.Block;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.registry.Registries;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.level.block.Block;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -71,13 +70,13 @@ final class MuseumService {
             return;
         }
         wrapped = true;
-        BiConsumer<ServerPlayerEntity, QuestNpcEntity> minas = QuestScripts.handler("historian_minas");
+        BiConsumer<ServerPlayer, QuestNpcEntity> minas = QuestScripts.handler("historian_minas");
         QuestScripts.onTalk("historian_minas", (player, npc) -> {
             if (!minas(player) && minas != null) {
                 minas.accept(player, npc);
             }
         });
-        BiConsumer<ServerPlayerEntity, QuestNpcEntity> haig = QuestScripts.handler("curator_haig_halen");
+        BiConsumer<ServerPlayer, QuestNpcEntity> haig = QuestScripts.handler("curator_haig_halen");
         QuestScripts.onTalk("curator_haig_halen", (player, npc) -> {
             if (haig != null) {
                 haig.accept(player, npc);
@@ -90,27 +89,27 @@ final class MuseumService {
         });
     }
 
-    private static MinigameData data(ServerPlayerEntity p) {
+    private static MinigameData data(ServerPlayer p) {
         return MinigameData.of(p);
     }
 
-    static int kudos(ServerPlayerEntity p) {
-        return data(p).stat(p.getUuid(), KUDOS);
+    static int kudos(ServerPlayer p) {
+        return data(p).stat(p.getUUID(), KUDOS);
     }
 
-    private static void addKudos(ServerPlayerEntity p, int n) {
+    private static void addKudos(ServerPlayer p, int n) {
         int k = kudos(p) + n;
-        data(p).setStat(p.getUuid(), KUDOS, k);
+        data(p).setStat(p.getUUID(), KUDOS, k);
         Msg.game(p, "You gain " + n + " kudos. (Total: " + k + ".)");
     }
 
     // ------------------------------------------------------------------ natural history quiz
 
-    private static int correct(ServerPlayerEntity p, int d) {
-        return data(p).stat(p.getUuid(), "museum_quiz_" + d);
+    private static int correct(ServerPlayer p, int d) {
+        return data(p).stat(p.getUUID(), "museum_quiz_" + d);
     }
 
-    private static int firstUnfinished(ServerPlayerEntity p) {
+    private static int firstUnfinished(ServerPlayer p) {
         for (int d = 0; d < VarrockMuseum.DISPLAYS.size(); d++) {
             if (correct(p, d) < VarrockMuseum.QUIZ_RIGHT_ANSWERS) {
                 return d;
@@ -119,8 +118,8 @@ final class MuseumService {
         return -1;
     }
 
-    static void plaque(ServerPlayerEntity p) {
-        if (!data(p).flag(p.getUuid(), QUIZ_STARTED)) {
+    static void plaque(ServerPlayer p) {
+        if (!data(p).flag(p.getUUID(), QUIZ_STARTED)) {
             Msg.game(p, "This looks like some sort of quiz. I wonder if I can take part...");
             return;
         }
@@ -130,23 +129,23 @@ final class MuseumService {
             return;
         }
         List<Question> qs = VarrockMuseum.questions(d);
-        int qi = data(p).stat(p.getUuid(), "museum_quiz_next_" + d) % qs.size();
-        data(p).setStat(p.getUuid(), "museum_quiz_display", d);
-        data(p).setStat(p.getUuid(), "museum_quiz_q", qi + 1);
+        int qi = data(p).stat(p.getUUID(), "museum_quiz_next_" + d) % qs.size();
+        data(p).setStat(p.getUUID(), "museum_quiz_display", d);
+        data(p).setStat(p.getUUID(), "museum_quiz_q", qi + 1);
         Question q = qs.get(qi);
-        p.sendMessage(Text.literal(VarrockMuseum.DISPLAYS.get(d) + ": " + q.question()).formatted(Formatting.GOLD), false);
-        MutableText line = Text.literal("");
+        p.displayClientMessage(Component.literal(VarrockMuseum.DISPLAYS.get(d) + ": " + q.question()).withStyle(ChatFormatting.GOLD), false);
+        MutableComponent line = Component.literal("");
         for (int i = 0; i < q.answers().size(); i++) {
             String cmd = "/minigame museum " + i;
-            line.append(Text.literal("[" + q.answers().get(i) + "] ").styled(st -> st.withColor(Formatting.GREEN)
+            line.append(Component.literal("[" + q.answers().get(i) + "] ").withStyle(st -> st.withColor(ChatFormatting.GREEN)
                     .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, cmd))));
         }
-        p.sendMessage(line, false);
+        p.displayClientMessage(line, false);
     }
 
-    static void answer(ServerPlayerEntity p, int answer) {
+    static void answer(ServerPlayer p, int answer) {
         MinigameData data = data(p);
-        UUID u = p.getUuid();
+        UUID u = p.getUUID();
         int asked = data.stat(u, "museum_quiz_q");
         if (asked <= 0) {
             Msg.game(p, "Read one of the natural history plaques first.");
@@ -173,9 +172,9 @@ final class MuseumService {
         }
     }
 
-    static void orlando(ServerPlayerEntity p) {
+    static void orlando(ServerPlayer p) {
         MinigameData data = data(p);
-        UUID u = p.getUuid();
+        UUID u = p.getUUID();
         if (!data.flag(u, QUIZ_STARTED)) {
             data.setFlag(u, QUIZ_STARTED);
             QuestApi.say(p, "Orlando Smith", "G'day, mate! Fancy a quiz on the creatures in here? Read the plaques by the displays and "
@@ -203,14 +202,14 @@ final class MuseumService {
     // ------------------------------------------------------------------ Historian Minas, the clerk
 
     /** Hands out kudos for every completed timeline quest; false if there was nothing new. */
-    static boolean minas(ServerPlayerEntity p) {
+    static boolean minas(ServerPlayer p) {
         boolean any = false;
         for (QuestKudos q : VarrockMuseum.QUEST_KUDOS) {
             String flag = "museum_quest_" + q.quest();
-            if (ContentRegistry.quest(q.quest()) == null || data(p).flag(p.getUuid(), flag) || !QuestApi.isComplete(p, q.quest())) {
+            if (ContentRegistry.quest(q.quest()) == null || data(p).flag(p.getUUID(), flag) || !QuestApi.isComplete(p, q.quest())) {
                 continue;
             }
-            data(p).setFlag(p.getUuid(), flag);
+            data(p).setFlag(p.getUUID(), flag);
             QuestApi.say(p, "Historian Minas", "Tell me about " + ContentRegistry.quest(q.quest()).displayName()
                     + "... Fascinating! That belongs on our timeline.");
             addKudos(p, q.kudos());
@@ -223,7 +222,7 @@ final class MuseumService {
     }
 
     /** An antique lamp: XP in the player's lowest skill at or above {@code minLevel}. // approx: no lamp item */
-    private static void lamp(ServerPlayerEntity p, int xp, int minLevel) {
+    private static void lamp(ServerPlayer p, int xp, int minLevel) {
         Skill best = null;
         int bestLevel = Integer.MAX_VALUE;
         for (Skill s : Skill.values()) {
@@ -239,13 +238,13 @@ final class MuseumService {
         }
     }
 
-    static void clerk(ServerPlayerEntity p) {
+    static void clerk(ServerPlayer p) {
         int k = kudos(p);
         boolean any = false;
         for (KudosReward r : VarrockMuseum.KUDOS_REWARDS) {
             String flag = "museum_reward_" + r.kudos();
-            if (k >= r.kudos() && !data(p).flag(p.getUuid(), flag)) {
-                data(p).setFlag(p.getUuid(), flag);
+            if (k >= r.kudos() && !data(p).flag(p.getUUID(), flag)) {
+                data(p).setFlag(p.getUUID(), flag);
                 for (Map.Entry<Skill, Integer> e : r.xp().entrySet()) {
                     XpService.add(p, e.getKey(), e.getValue());
                 }
@@ -260,10 +259,10 @@ final class MuseumService {
 
     // ------------------------------------------------------------------ cleaning finds
 
-    static void tools(ServerPlayerEntity p) {
+    static void tools(ServerPlayer p) {
         List<String> given = new ArrayList<>();
         for (String t : List.of("trowel", "rock_pick", "specimen_brush", "leather_gloves", "leather_boots")) {
-            if (!Inv.has(p, t, 1) && !t.equals(Inv.idOf(p.getEquippedStack(EquipmentSlot.FEET)))) {
+            if (!Inv.has(p, t, 1) && !t.equals(Inv.idOf(p.getItemBySlot(EquipmentSlot.FEET)))) {
                 Inv.give(p, t, 1);
                 given.add(t);
             }
@@ -271,7 +270,7 @@ final class MuseumService {
         Msg.game(p, given.isEmpty() ? "You already have the tools you need." : "You take some tools from the rack.");
     }
 
-    static void rocks(ServerPlayerEntity p) {
+    static void rocks(ServerPlayer p) {
         if (!QuestApi.isComplete(p, VarrockMuseum.DIG_SITE)) {
             Msg.game(p, "You need to complete The Dig Site before you can help clean the finds.");
             return;
@@ -280,12 +279,12 @@ final class MuseumService {
         Msg.game(p, "You take an uncleaned find from the pile.");
     }
 
-    static void clean(ServerPlayerEntity p) {
+    static void clean(ServerPlayer p) {
         if (!Inv.has(p, "uncleaned_find", 1)) {
             Msg.game(p, "You need an uncleaned find from the specimen rocks.");
             return;
         }
-        if (!"leather_boots".equals(Inv.idOf(p.getEquippedStack(EquipmentSlot.FEET))) || !Inv.has(p, "leather_gloves", 1)) {
+        if (!"leather_boots".equals(Inv.idOf(p.getItemBySlot(EquipmentSlot.FEET))) || !Inv.has(p, "leather_gloves", 1)) {
             Msg.game(p, "You need to wear leather boots and have leather gloves to protect yourself while cleaning.");
             return;
         }
@@ -302,7 +301,7 @@ final class MuseumService {
         }
         List<String> owned = new ArrayList<>();
         for (String a : List.of("old_symbol", "ancient_symbol", "old_coin", "ancient_coin", "clean_necklace")) {
-            if (Inv.has(p, a, 1) || data(p).flag(p.getUuid(), "museum_display_" + a)) {
+            if (Inv.has(p, a, 1) || data(p).flag(p.getUUID(), "museum_display_" + a)) {
                 owned.add(a);
             }
         }
@@ -316,13 +315,13 @@ final class MuseumService {
         return def == null ? id : def.name().toLowerCase(java.util.Locale.ROOT);
     }
 
-    static void display(ServerPlayerEntity p) {
+    static void display(ServerPlayer p) {
         boolean any = false;
         for (String a : VarrockMuseum.ARTEFACTS) {
             String flag = "museum_display_" + a;
-            if (Inv.has(p, a, 1) && !data(p).flag(p.getUuid(), flag)) {
+            if (Inv.has(p, a, 1) && !data(p).flag(p.getUUID(), flag)) {
                 Inv.remove(p, a, 1);
-                data(p).setFlag(p.getUuid(), flag);
+                data(p).setFlag(p.getUUID(), flag);
                 Msg.game(p, "You place the " + itemName(a) + " in its display case.");
                 addKudos(p, VarrockMuseum.ARTEFACT_KUDOS);
                 any = true;
@@ -333,7 +332,7 @@ final class MuseumService {
         }
     }
 
-    static void crate(ServerPlayerEntity p) {
+    static void crate(ServerPlayer p) {
         int n = 0;
         for (String f : VarrockMuseum.CRATE_FINDS) {
             while (Inv.has(p, f, 1)) {
@@ -351,7 +350,7 @@ final class MuseumService {
                 + (n == 1 ? "" : "s") + " in the crate and take a reward for each.");
     }
 
-    static void archaeologist(ServerPlayerEntity p) {
+    static void archaeologist(ServerPlayer p) {
         int jewellery = Inv.count(p, "museum_jewellery");
         if (jewellery > 0) {
             Inv.remove(p, "museum_jewellery", jewellery);
@@ -361,7 +360,7 @@ final class MuseumService {
         }
         if (Inv.has(p, "clean_necklace", 1)) {
             Inv.remove(p, "clean_necklace", 1);
-            data(p).setFlag(p.getUuid(), "museum_display_clean_necklace");
+            data(p).setFlag(p.getUUID(), "museum_display_clean_necklace");
             QuestApi.say(p, "Archaeologist", "This necklace is from the Digsite! A Lvl-3 Enchant on a ruby necklace would make a pendant "
                     + "that takes you there.");
             return;
@@ -373,29 +372,29 @@ final class MuseumService {
     // ------------------------------------------------------------------ placement
 
     /** Places the cleaning area's blocks on the museum's ground floor (south end, OSRS tile row 3441). */
-    private static void build(ServerWorld world, BlockPos centre) {
+    private static void build(ServerLevel world, BlockPos centre) {
         String[] ids = {VarrockMuseum.SPECIMEN_ROCKS, VarrockMuseum.SPECIMEN_TABLE, VarrockMuseum.SPECIMEN_TABLE, VarrockMuseum.TOOL_RACK,
                 VarrockMuseum.STORAGE_CRATE, VarrockMuseum.DISPLAY_CASE, VarrockMuseum.PLAQUE};
         int z = GielinorMap.toBlockZ(3440) - 1;
         for (int i = 0; i < ids.length; i++) {
-            Block b = Registries.BLOCK.get(new Identifier("runecraft", ids[i]));
-            if (b == net.minecraft.block.Blocks.AIR) {
+            Block b = BuiltInRegistries.BLOCK.get(new ResourceLocation("runecraft", ids[i]));
+            if (b == net.minecraft.world.level.block.Blocks.AIR) {
                 continue;
             }
             int x = GielinorMap.toBlockX(3253) + 3 * i;
             Integer y = floor(world, x, z);
             if (y != null) {
-                world.setBlockState(new BlockPos(x, y, z), b.getDefaultState());
+                world.setBlockAndUpdate(new BlockPos(x, y, z), b.defaultBlockState());
             }
         }
     }
 
     /** The first air block above a solid floor, searching up from below the ground. */
-    private static Integer floor(ServerWorld world, int x, int z) {
+    private static Integer floor(ServerLevel world, int x, int z) {
         for (int y = 56; y < 80; y++) {
             BlockPos pos = new BlockPos(x, y, z);
-            if (world.getBlockState(pos).isAir() && !world.getBlockState(pos.down()).isAir()
-                    && world.getBlockState(pos.up()).isAir()) {
+            if (world.getBlockState(pos).isAir() && !world.getBlockState(pos.below()).isAir()
+                    && world.getBlockState(pos.above()).isAir()) {
                 return y;
             }
         }

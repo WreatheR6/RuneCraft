@@ -19,15 +19,15 @@ import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.minecraft.registry.Registries;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * {@code /slayer}: the slayer masters' dialogue options (rewards, equipment shop, task skips and
@@ -35,7 +35,7 @@ import net.minecraft.util.math.BlockPos;
  * master nearby.
  */
 final class SlayerCommands {
-    private static final Identifier STATION = RuneCraft.id("slayer_master");
+    private static final ResourceLocation STATION = RuneCraft.id("slayer_master");
 
     private SlayerCommands() {
     }
@@ -44,38 +44,38 @@ final class SlayerCommands {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> register(dispatcher));
     }
 
-    private static void register(CommandDispatcher<ServerCommandSource> d) {
-        d.register(CommandManager.literal("slayer")
+    private static void register(CommandDispatcher<CommandSourceStack> d) {
+        d.register(Commands.literal("slayer")
                 .executes(ctx -> run(ctx, p -> SlayerService.checkTask(p), false))
-                .then(CommandManager.literal("task").executes(ctx -> run(ctx, SlayerService::checkTask, false)))
-                .then(CommandManager.literal("skip").executes(ctx -> run(ctx, SlayerCommands::skip, true)))
-                .then(CommandManager.literal("block").executes(ctx -> run(ctx, SlayerCommands::block, true)))
-                .then(CommandManager.literal("unblock").then(CommandManager.argument("task", StringArgumentType.greedyString())
+                .then(Commands.literal("task").executes(ctx -> run(ctx, SlayerService::checkTask, false)))
+                .then(Commands.literal("skip").executes(ctx -> run(ctx, SlayerCommands::skip, true)))
+                .then(Commands.literal("block").executes(ctx -> run(ctx, SlayerCommands::block, true)))
+                .then(Commands.literal("unblock").then(Commands.argument("task", StringArgumentType.greedyString())
                         .executes(ctx -> run(ctx, p -> unblock(p, StringArgumentType.getString(ctx, "task")), true))))
-                .then(CommandManager.literal("rewards").executes(ctx -> run(ctx, SlayerCommands::rewards, true)))
-                .then(CommandManager.literal("unlock").then(CommandManager.argument("id", StringArgumentType.word())
+                .then(Commands.literal("rewards").executes(ctx -> run(ctx, SlayerCommands::rewards, true)))
+                .then(Commands.literal("unlock").then(Commands.argument("id", StringArgumentType.word())
                         .executes(ctx -> run(ctx, p -> unlock(p, StringArgumentType.getString(ctx, "id")), true))))
-                .then(CommandManager.literal("buy").then(CommandManager.argument("item", StringArgumentType.word())
+                .then(Commands.literal("buy").then(Commands.argument("item", StringArgumentType.word())
                         .executes(ctx -> run(ctx, p -> buyWithPoints(p, StringArgumentType.getString(ctx, "item")), true))))
-                .then(CommandManager.literal("shop").executes(ctx -> run(ctx, SlayerCommands::shop, true))
-                        .then(CommandManager.argument("item", StringArgumentType.word())
+                .then(Commands.literal("shop").executes(ctx -> run(ctx, SlayerCommands::shop, true))
+                        .then(Commands.argument("item", StringArgumentType.word())
                                 .executes(ctx -> run(ctx, p -> shopBuy(p, StringArgumentType.getString(ctx, "item"), 1), true))
-                                .then(CommandManager.argument("amount", IntegerArgumentType.integer(1, 10000))
+                                .then(Commands.argument("amount", IntegerArgumentType.integer(1, 10000))
                                         .executes(ctx -> run(ctx, p -> shopBuy(p, StringArgumentType.getString(ctx, "item"),
                                                 IntegerArgumentType.getInteger(ctx, "amount")), true)))))
-                .then(CommandManager.literal("craft").executes(ctx -> run(ctx, SlayerCommands::crafts, true))
-                        .then(CommandManager.argument("item", StringArgumentType.word())
+                .then(Commands.literal("craft").executes(ctx -> run(ctx, SlayerCommands::crafts, true))
+                        .then(Commands.argument("item", StringArgumentType.word())
                                 .executes(ctx -> run(ctx, p -> craft(p, StringArgumentType.getString(ctx, "item")), true)))));
     }
 
     private interface Action {
-        void run(ServerPlayerEntity player);
+        void run(ServerPlayer player);
     }
 
-    private static int run(CommandContext<ServerCommandSource> ctx, Action action, boolean needsMaster)
+    private static int run(CommandContext<CommandSourceStack> ctx, Action action, boolean needsMaster)
             throws CommandSyntaxException {
-        ServerPlayerEntity player = ctx.getSource().getPlayerOrThrow();
-        if (needsMaster && !nearMaster(player) && !ctx.getSource().hasPermissionLevel(2)) {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        if (needsMaster && !nearMaster(player) && !ctx.getSource().hasPermission(2)) {
             Msg.game(player, "You need to speak to a Slayer master for that.");
             return 0;
         }
@@ -83,15 +83,15 @@ final class SlayerCommands {
         return 1;
     }
 
-    static boolean nearMaster(ServerPlayerEntity player) {
-        boolean npc = !player.getWorld().getEntitiesByClass(QuestNpcEntity.class, player.getBoundingBox().expand(8),
+    static boolean nearMaster(ServerPlayer player) {
+        boolean npc = !player.level().getEntitiesOfClass(QuestNpcEntity.class, player.getBoundingBox().inflate(8),
                 e -> e.npcId() != null && SlayerMasters.byNpc(e.npcId()) != null).isEmpty();
         if (npc) {
             return true;
         }
-        BlockPos base = player.getBlockPos();
-        for (BlockPos pos : BlockPos.iterate(base.add(-6, -3, -6), base.add(6, 3, 6))) {
-            if (Registries.BLOCK.getId(player.getWorld().getBlockState(pos).getBlock()).equals(STATION)) {
+        BlockPos base = player.blockPosition();
+        for (BlockPos pos : BlockPos.betweenClosed(base.offset(-6, -3, -6), base.offset(6, 3, 6))) {
+            if (BuiltInRegistries.BLOCK.getKey(player.level().getBlockState(pos).getBlock()).equals(STATION)) {
                 return true;
             }
         }
@@ -100,7 +100,7 @@ final class SlayerCommands {
 
     // ------------------------------------------------------------------ task management
 
-    private static void skip(ServerPlayerEntity player) {
+    private static void skip(ServerPlayer player) {
         SlayerState.Profile p = SlayerService.profile(player);
         if (!p.hasTask()) {
             Msg.game(player, "You don't have a task to cancel.");
@@ -116,7 +116,7 @@ final class SlayerCommands {
         SlayerNet.sync(player);
     }
 
-    private static void block(ServerPlayerEntity player) {
+    private static void block(ServerPlayer player) {
         SlayerState.Profile p = SlayerService.profile(player);
         if (!p.hasTask()) {
             Msg.game(player, "You don't have a task to block.");
@@ -149,7 +149,7 @@ final class SlayerCommands {
                 : SlayerTasks.displayName(entry.substring(colon + 1)) + " (" + masterName(entry.substring(0, colon)) + ")";
     }
 
-    private static void unblock(ServerPlayerEntity player, String task) {
+    private static void unblock(ServerPlayer player, String task) {
         SlayerState.Profile p = SlayerService.profile(player);
         if (p.blocked.remove(task)) {
             Msg.game(player, "You may be assigned " + blockLabel(task) + " again.");
@@ -160,34 +160,34 @@ final class SlayerCommands {
 
     // ------------------------------------------------------------------ rewards
 
-    private static void rewards(ServerPlayerEntity player) {
+    private static void rewards(ServerPlayer player) {
         SlayerState.Profile p = SlayerService.profile(player);
-        player.sendMessage(Text.literal("--- Slayer rewards (" + p.points + " points) ---").formatted(Formatting.GOLD), false);
+        player.displayClientMessage(Component.literal("--- Slayer rewards (" + p.points + " points) ---").withStyle(ChatFormatting.GOLD), false);
         for (SlayerRewards.Unlock u : SlayerRewards.UNLOCKS) {
-            MutableText line = Text.literal(u.name() + " (" + u.cost() + ") ").formatted(
-                    p.unlocks.contains(u.id()) ? Formatting.GREEN : Formatting.WHITE);
+            MutableComponent line = Component.literal(u.name() + " (" + u.cost() + ") ").withStyle(
+                    p.unlocks.contains(u.id()) ? ChatFormatting.GREEN : ChatFormatting.WHITE);
             if (!p.unlocks.contains(u.id())) {
                 line.append(SlayerService.button("[Unlock]", "/slayer unlock " + u.id(), u.description()));
             } else {
-                line.append(Text.literal("unlocked").formatted(Formatting.DARK_GREEN));
+                line.append(Component.literal("unlocked").withStyle(ChatFormatting.DARK_GREEN));
             }
-            player.sendMessage(line, false);
+            player.displayClientMessage(line, false);
         }
         for (SlayerRewards.PointBuy b : SlayerRewards.BUY) {
-            player.sendMessage(Text.literal(b.amount() + " x " + name(b.item()) + " (" + b.cost() + ") ")
+            player.displayClientMessage(Component.literal(b.amount() + " x " + name(b.item()) + " (" + b.cost() + ") ")
                     .append(SlayerService.button("[Buy]", "/slayer buy " + b.item(), "Costs " + b.cost() + " points")), false);
         }
         if (!p.blocked.isEmpty()) {
-            MutableText line = Text.literal("Blocked: ").formatted(Formatting.GRAY);
+            MutableComponent line = Component.literal("Blocked: ").withStyle(ChatFormatting.GRAY);
             for (String b : p.blocked) {
                 line.append(SlayerService.button("[" + blockLabel(b) + "]", "/slayer unblock " + b, "Unblock"));
-                line.append(Text.literal(" "));
+                line.append(Component.literal(" "));
             }
-            player.sendMessage(line, false);
+            player.displayClientMessage(line, false);
         }
     }
 
-    private static void unlock(ServerPlayerEntity player, String id) {
+    private static void unlock(ServerPlayer player, String id) {
         SlayerState.Profile p = SlayerService.profile(player);
         SlayerRewards.Unlock u = SlayerRewards.unlock(id);
         if (u == null) {
@@ -209,7 +209,7 @@ final class SlayerCommands {
         }
     }
 
-    private static void buyWithPoints(ServerPlayerEntity player, String item) {
+    private static void buyWithPoints(ServerPlayer player, String item) {
         SlayerState.Profile p = SlayerService.profile(player);
         SlayerRewards.PointBuy b = SlayerRewards.pointBuy(item);
         if (b == null) {
@@ -228,19 +228,19 @@ final class SlayerCommands {
 
     // ------------------------------------------------------------------ equipment shop
 
-    private static void shop(ServerPlayerEntity player) {
-        player.sendMessage(Text.literal("--- Slayer Equipment ---").formatted(Formatting.GOLD), false);
+    private static void shop(ServerPlayer player) {
+        player.displayClientMessage(Component.literal("--- Slayer Equipment ---").withStyle(ChatFormatting.GOLD), false);
         for (SlayerRewards.ShopItem s : SlayerRewards.SHOP) {
-            MutableText line = Text.literal(name(s.item()) + " - " + s.price() + " gp"
+            MutableComponent line = Component.literal(name(s.item()) + " - " + s.price() + " gp"
                     + (s.slayerLevel() > 1 ? " (Slayer " + s.slayerLevel() + ")" : "") + " ");
             line.append(SlayerService.button("[1]", "/slayer shop " + s.item() + " 1", "Buy 1"));
-            line.append(Text.literal(" "));
+            line.append(Component.literal(" "));
             line.append(SlayerService.button("[10]", "/slayer shop " + s.item() + " 10", "Buy 10"));
-            player.sendMessage(line, false);
+            player.displayClientMessage(line, false);
         }
     }
 
-    private static void shopBuy(ServerPlayerEntity player, String item, int amount) {
+    private static void shopBuy(ServerPlayer player, String item, int amount) {
         SlayerRewards.ShopItem s = SlayerRewards.shopItem(item);
         if (s == null) {
             Msg.game(player, "The slayer master doesn't sell that.");
@@ -263,8 +263,8 @@ final class SlayerCommands {
 
     // ------------------------------------------------------------------ crafting
 
-    private static void crafts(ServerPlayerEntity player) {
-        player.sendMessage(Text.literal("--- Slayer crafting ---").formatted(Formatting.GOLD), false);
+    private static void crafts(ServerPlayer player) {
+        player.displayClientMessage(Component.literal("--- Slayer crafting ---").withStyle(ChatFormatting.GOLD), false);
         for (SlayerRewards.Craft c : SlayerRewards.CRAFTS) {
             StringBuilder needs = new StringBuilder();
             for (SlayerRewards.Input in : c.inputs()) {
@@ -273,14 +273,14 @@ final class SlayerCommands {
             if (c.tool() != null) {
                 needs.append(" (tool: ").append(name(c.tool())).append(")");
             }
-            player.sendMessage(Text.literal(name(c.product()) + " ")
+            player.displayClientMessage(Component.literal(name(c.product()) + " ")
                     .append(SlayerService.button("[Make]", "/slayer craft " + c.product(),
                             "Needs " + needs + "; " + c.skill().displayName() + " " + c.level()
                                     + (c.unlock() != null ? "; unlock " + SlayerRewards.unlock(c.unlock()).name() : ""))), false);
         }
     }
 
-    private static void craft(ServerPlayerEntity player, String product) {
+    private static void craft(ServerPlayer player, String product) {
         SlayerRewards.Craft c = SlayerRewards.craft(product);
         if (c == null) {
             Msg.game(player, "You can't make that here.");

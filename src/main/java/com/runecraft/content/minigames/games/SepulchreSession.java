@@ -7,15 +7,14 @@ import com.runecraft.osrs.content.minigames.Minigame;
 import com.runecraft.osrs.content.minigames.MinigameRules.Sepulchre;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * The Hallowed Sepulchre: race down each floor's corridor (Agility 52/62/72/82/92) while the
@@ -30,7 +29,7 @@ public class SepulchreSession extends MinigameSession {
     private int dangerRow = Integer.MIN_VALUE;
     private long fireAt = -1;
 
-    public SepulchreSession(int id, int slot, ServerWorld world, String variant) {
+    public SepulchreSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.HALLOWED_SEPULCHRE, id, slot, world, variant);
     }
 
@@ -67,7 +66,7 @@ public class SepulchreSession extends MinigameSession {
     }
 
     @Override
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
+    protected BlockPos spawnPoint(ServerPlayer player, int index) {
         return rel(index % 3 - 1, 1, 23);
     }
 
@@ -87,16 +86,16 @@ public class SepulchreSession extends MinigameSession {
         if (fireAt >= 0) {
             for (int dz = -1; dz <= 1; dz++) {
                 BlockPos lane = rel(0, 1, dangerRow + dz);
-                world.spawnParticles(ParticleTypes.CRIT, lane.getX() + 0.5, lane.getY() + 0.5, lane.getZ() + 0.5, 12, 5, 0.1, 0.1, 0);
+                world.sendParticles(ParticleTypes.CRIT, lane.getX() + 0.5, lane.getY() + 0.5, lane.getZ() + 0.5, 12, 5, 0.1, 0.1, 0);
             }
             if (ticks >= fireAt) {
                 fireAt = -1;
-                for (ServerPlayerEntity p : online()) {
+                for (ServerPlayer p : online()) {
                     if (Math.abs(relPos(p).getZ() - dangerRow) <= 1) {
                         hurt(p, floor + random.nextInt(2 + floor));
                         Msg.red(p, "You're struck by a crossbow bolt and stagger back to the start!");
                         BlockPos at = spawnPoint(p, 0);
-                        p.teleport(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, p.getYaw(), p.getPitch());
+                        p.teleportTo(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, p.getYRot(), p.getXRot());
                     }
                 }
             }
@@ -104,7 +103,7 @@ public class SepulchreSession extends MinigameSession {
     }
 
     @Override
-    protected boolean onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         switch (blockId) {
             case "sep_coffin" -> {
                 if (!opened.add(pos.asLong())) {
@@ -149,9 +148,9 @@ public class SepulchreSession extends MinigameSession {
                 }
                 floor++;
                 build();
-                for (ServerPlayerEntity p : online()) {
+                for (ServerPlayer p : online()) {
                     BlockPos at = spawnPoint(p, 0);
-                    p.teleport(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, p.getYaw(), p.getPitch());
+                    p.teleportTo(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, p.getYRot(), p.getXRot());
                 }
                 broadcast("You descend to floor " + floor + ".");
                 return true;
@@ -168,17 +167,17 @@ public class SepulchreSession extends MinigameSession {
 
     @Override
     protected void onEnd(boolean success) {
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             MinigameData data = MinigameData.of(p);
-            data.incrementStat(p.getUuid(), "kc:" + game.id());
-            if (floor > data.stat(p.getUuid(), "sepulchre_floor")) {
-                data.setStat(p.getUuid(), "sepulchre_floor", floor);
+            data.incrementStat(p.getUUID(), "kc:" + game.id());
+            if (floor > data.stat(p.getUUID(), "sepulchre_floor")) {
+                data.setStat(p.getUUID(), "sepulchre_floor", floor);
             }
         }
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
+    protected List<String> hud(ServerPlayer player) {
         return List.of("Hallowed Sepulchre", "Floor: " + floor + " / 5", "Time left: " + time(Sepulchre.GAME_TICKS - (ticks - floorStart)),
                 "Hallowed marks: " + Inv.count(player, "hallowed_mark"));
     }

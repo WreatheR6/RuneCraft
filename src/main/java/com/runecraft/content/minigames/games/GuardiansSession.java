@@ -10,18 +10,17 @@ import com.runecraft.osrs.content.minigames.Minigame;
 import com.runecraft.osrs.content.minigames.MinigameRules.Guardians;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * Guardians of the Rift: mine guardian fragments from the huge remains, shape them into guardian
@@ -53,12 +52,12 @@ public class GuardiansSession extends MinigameSession {
     private final Map<UUID, double[]> recharged = new HashMap<>();
     private final GuardiansRift rift = new GuardiansRift();
     /** The creatures shown for the rift's abyssal creatures, by creature id (tracked directly, not by box queries). */
-    private final Map<Integer, MobEntity> riftMobs = new HashMap<>();
+    private final Map<Integer, Mob> riftMobs = new HashMap<>();
     private double power;
     private int elemental;
     private int catalytic;
 
-    public GuardiansSession(int id, int slot, ServerWorld world, String variant) {
+    public GuardiansSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.GUARDIANS_OF_THE_RIFT, id, slot, world, variant);
     }
 
@@ -88,15 +87,15 @@ public class GuardiansSession extends MinigameSession {
     }
 
     @Override
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
+    protected BlockPos spawnPoint(ServerPlayer player, int index) {
         return rel(index % 5 - 2, 1, 16);
     }
 
     @Override
     protected void start() {
-        MobEntity g = spawn("great_guardian", rel(0, 1, -10));
+        Mob g = spawn("great_guardian", rel(0, 1, -10));
         if (g != null) {
-            g.setAiDisabled(true);
+            g.setNoAi(true);
         }
         rotateAltars();
         broadcastRed("The rift becomes active! Power the Great Guardian to seal it. Creatures come through in two minutes:"
@@ -107,7 +106,7 @@ public class GuardiansSession extends MinigameSession {
         List<Integer> el = new ArrayList<>();
         List<Integer> cat = new ArrayList<>();
         int minRc = 99;
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             minRc = Math.min(minRc, level(p, Skill.RUNECRAFT));
         }
         for (int i = 0; i < Guardians.ALTARS.length; i++) {
@@ -125,12 +124,12 @@ public class GuardiansSession extends MinigameSession {
         return Character.toUpperCase(id.charAt(0)) + id.substring(1);
     }
 
-    private int[] energy(ServerPlayerEntity p) {
-        return energy.computeIfAbsent(p.getUuid(), k -> new int[2]);
+    private int[] energy(ServerPlayer p) {
+        return energy.computeIfAbsent(p.getUUID(), k -> new int[2]);
     }
 
     /** Adds energy within the per-game caps, telling the player once they are fully attuned. */
-    private void gain(ServerPlayerEntity p, int elemental, int catalytic) {
+    private void gain(ServerPlayer p, int elemental, int catalytic) {
         if (!GuardiansRewards.addEnergy(energy(p), elemental, catalytic)) {
             Msg.game(p, "You are fully attuned with runic energy and cannot earn anymore until the rift has been closed.");
         }
@@ -148,7 +147,7 @@ public class GuardiansSession extends MinigameSession {
     }
 
     /** The charged cell the player carries, if any. */
-    private static GuardiansRift.Cell chargedCell(ServerPlayerEntity p) {
+    private static GuardiansRift.Cell chargedCell(ServerPlayer p) {
         for (GuardiansRift.Cell c : GuardiansRift.Cell.values()) {
             if (Inv.has(p, c.item, 1)) {
                 return c;
@@ -157,12 +156,12 @@ public class GuardiansSession extends MinigameSession {
         return null;
     }
 
-    private static int raiments(ServerPlayerEntity p) {
+    private static int raiments(ServerPlayer p) {
         int n = 0;
         String[] pieces = {"hat_of_the_eye", "robe_top_of_the_eye", "robe_bottoms_of_the_eye", "boots_of_the_eye"};
         EquipmentSlot[] slots = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
         for (int i = 0; i < 4; i++) {
-            if (Inv.idOf(p.getEquippedStack(slots[i])).equals(pieces[i])) {
+            if (Inv.idOf(p.getItemBySlot(slots[i])).equals(pieces[i])) {
                 n++;
             }
         }
@@ -170,7 +169,7 @@ public class GuardiansSession extends MinigameSession {
     }
 
     @Override
-    protected boolean onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         switch (blockId) {
             case "guardian_remains" -> {
                 if (!hasPickaxe(player)) {
@@ -229,7 +228,7 @@ public class GuardiansSession extends MinigameSession {
                     Msg.game(player, "Barrier: " + rift.describe(tile) + ". Use a charged cell to raise, strengthen or recharge it.");
                     return true;
                 } else {
-                    double[] r = recharged.computeIfAbsent(player.getUuid(), k -> new double[2]);
+                    double[] r = recharged.computeIfAbsent(player.getUUID(), k -> new double[2]);
                     boolean recharge = rift.tier(tile) >= cell.ordinal();
                     use = rift.useCell(tile, cell, r[0], (int) r[1]);
                     if (!use.ok()) {
@@ -269,7 +268,7 @@ public class GuardiansSession extends MinigameSession {
                 boolean cat = blockId.startsWith("catalytic");
                 int altar = cat ? catalytic : elemental;
                 // A portal talisman held in the main hand opens its (inactive) guardian of this kind and is used up.
-                String held = Inv.idOf(player.getMainHandStack());
+                String held = Inv.idOf(player.getMainHandItem());
                 for (int i = 0; i < Guardians.ALTARS.length; i++) {
                     if ((Boolean) Guardians.ALTARS[i][4] == cat && i != altar
                             && held.equals(GuardiansRewards.portalTalisman((String) Guardians.ALTARS[i][0]))) {
@@ -316,7 +315,7 @@ public class GuardiansSession extends MinigameSession {
         }
     }
 
-    private static boolean hasPickaxe(ServerPlayerEntity p) {
+    private static boolean hasPickaxe(ServerPlayer p) {
         for (String tier : new String[]{"bronze", "iron", "steel", "black", "mithril", "adamant", "rune", "dragon"}) {
             if (Inv.has(p, tier + "_pickaxe", 1)) {
                 return true;
@@ -325,7 +324,7 @@ public class GuardiansSession extends MinigameSession {
         return false;
     }
 
-    private void craft(ServerPlayerEntity p, int altar) {
+    private void craft(ServerPlayer p, int altar) {
         Object[] a = Guardians.ALTARS[altar];
         int need = (Integer) a[2];
         if (level(p, Skill.RUNECRAFT) < need) {
@@ -451,20 +450,20 @@ public class GuardiansSession extends MinigameSession {
         java.util.Set<Integer> alive = new java.util.HashSet<>();
         for (GuardiansRift.Creature c : rift.creatures()) {
             alive.add(c.id);
-            MobEntity mob = riftMobs.get(c.id);
+            Mob mob = riftMobs.get(c.id);
             if (mob == null || mob.isRemoved()) {
                 mob = spawn(c.type.creatureId, rel(TILE_X[c.lane], 1, CREATURE_Z[0]));
                 if (mob == null) {
                     continue;
                 }
-                mob.setAiDisabled(true);
+                mob.setNoAi(true);
                 mob.setInvulnerable(true);
                 riftMobs.put(c.id, mob);
             }
             int from = c.stage().ordinal() < 2 ? CREATURE_Z[0] : CREATURE_Z[1];
             int to = c.stage().ordinal() < 2 ? CREATURE_Z[1] : CREATURE_Z[2];
             double z = origin.getZ() + 0.5 + from + (to - from) * c.progress();
-            mob.refreshPositionAndAngles(origin.getX() + TILE_X[c.lane] + 0.5, origin.getY() + 1, z, 180f, 0);
+            mob.moveTo(origin.getX() + TILE_X[c.lane] + 0.5, origin.getY() + 1, z, 180f, 0);
         }
         riftMobs.entrySet().removeIf(e -> {
             if (alive.contains(e.getKey())) {
@@ -482,7 +481,7 @@ public class GuardiansSession extends MinigameSession {
     protected void onEnd(boolean success) {
         rift.seal();
         syncCreatures();
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             Inv.remove(p, GuardiansRewards.POLYCATALYTIC_STONE, 1000);
             Inv.remove(p, "guardian_fragments", 1000);
             Inv.remove(p, "guardian_essence", 1000);
@@ -506,12 +505,12 @@ public class GuardiansSession extends MinigameSession {
                 continue;
             }
             MinigameData data = MinigameData.of(p);
-            int elPts = data.stat(p.getUuid(), "gotr_elemental_points") + GuardiansRewards.points(e[0], random.nextDouble());
-            int catPts = data.stat(p.getUuid(), "gotr_catalytic_points") + GuardiansRewards.points(e[1], random.nextDouble());
-            data.setStat(p.getUuid(), "gotr_elemental_points", elPts);
-            data.setStat(p.getUuid(), "gotr_catalytic_points", catPts);
+            int elPts = data.stat(p.getUUID(), "gotr_elemental_points") + GuardiansRewards.points(e[0], random.nextDouble());
+            int catPts = data.stat(p.getUUID(), "gotr_catalytic_points") + GuardiansRewards.points(e[1], random.nextDouble());
+            data.setStat(p.getUUID(), "gotr_elemental_points", elPts);
+            data.setStat(p.getUUID(), "gotr_catalytic_points", catPts);
             xp(p, Skill.RUNECRAFT, GuardiansRewards.completionXp(level(p, Skill.RUNECRAFT)));
-            int kc = data.incrementStat(p.getUuid(), "kc:" + game.id());
+            int kc = data.incrementStat(p.getUUID(), "kc:" + game.id());
             Msg.game(p, "Elemental energy: " + e[0] + ". Catalytic energy: " + e[1] + ". Total reward points: " + elPts
                     + " elemental, " + catPts + " catalytic: search the Rewards Guardian to claim them. Rifts closed: " + kc + ".");
         }
@@ -521,10 +520,10 @@ public class GuardiansSession extends MinigameSession {
      * The Rewards Guardian: one search per click (sneak-use for a big search of five), each paid with one
      * elemental and one catalytic point, or with 25 abyssal pearls when the points have run out.
      */
-    public static void rewardsGuardian(ServerPlayerEntity p) {
+    public static void rewardsGuardian(ServerPlayer p) {
         MinigameData data = MinigameData.of(p);
-        UUID id = p.getUuid();
-        int wanted = p.isSneaking() ? GuardiansRewards.BIG_SEARCH : 1;
+        UUID id = p.getUUID();
+        int wanted = p.isShiftKeyDown() ? GuardiansRewards.BIG_SEARCH : 1;
         int done = 0;
         for (int i = 0; i < wanted; i++) {
             int el = data.stat(id, "gotr_elemental_points");
@@ -556,7 +555,7 @@ public class GuardiansSession extends MinigameSession {
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
+    protected List<String> hud(ServerPlayer player) {
         int[] e = energy(player);
         StringBuilder barriers = new StringBuilder("Barriers:");
         for (int i = 0; i < GuardiansRift.CELL_TILES; i++) {

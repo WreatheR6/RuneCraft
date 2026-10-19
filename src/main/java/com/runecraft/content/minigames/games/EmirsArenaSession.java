@@ -21,19 +21,18 @@ import com.runecraft.player.Players;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * A fight in Emir's Arena (see {@link EmirsArena}): a legacy duel between a challenger and the player who accepted, under the
@@ -56,7 +55,7 @@ public class EmirsArenaSession extends MinigameSession {
     private final Map<UUID, BlockPos> spots = new HashMap<>();
     private EmirsArena.Build build;
 
-    public EmirsArenaSession(int id, int slot, ServerWorld world, String variant) {
+    public EmirsArenaSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.EMIRS_ARENA, id, slot, world, variant);
         this.ranked = !variant.startsWith(EmirsArena.DUEL_PREFIX);
         Options o = Options.none();
@@ -91,16 +90,16 @@ public class EmirsArenaSession extends MinigameSession {
         if (!options.has(Rule.NO_MOVEMENT) && random.nextBoolean()) {
             // Half of the arenas have obstacles, as at the old Duel Arena.
             for (int[] p : new int[][]{{-5, -3}, {5, 3}, {0, -5}, {0, 5}}) {
-                set(p[0], 1, p[1], Blocks.SANDSTONE_WALL.getDefaultState());
+                set(p[0], 1, p[1], Blocks.SANDSTONE_WALL.defaultBlockState());
             }
         }
     }
 
     @Override
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
+    protected BlockPos spawnPoint(ServerPlayer player, int index) {
         int d = options.has(Rule.NO_MOVEMENT) ? 1 : 5;
         BlockPos at = rel(index == 0 ? -d : d, 1, 0);
-        spots.put(player.getUuid(), at);
+        spots.put(player.getUUID(), at);
         return at;
     }
 
@@ -113,16 +112,16 @@ public class EmirsArenaSession extends MinigameSession {
             end(false);
             return;
         }
-        List<ServerPlayerEntity> fighters = online();
+        List<ServerPlayer> fighters = online();
         if (ranked) {
             build = EmirsArena.weeklyBuild(java.time.LocalDate.now(java.time.ZoneOffset.UTC).toEpochDay());
-            for (ServerPlayerEntity p : fighters) {
+            for (ServerPlayer p : fighters) {
                 equipBuild(p, build);
                 Msg.game(p, "This week's ranked build is " + build.displayName + ". Your own items and levels wait for you in the "
                         + "hospital until the fight is over.");
             }
         }
-        for (ServerPlayerEntity p : fighters) {
+        for (ServerPlayer p : fighters) {
             var data = Players.data(p);
             if (options.has(Rule.NO_DRINKS)) {
                 for (Skill s : Skill.values()) {
@@ -133,18 +132,18 @@ public class EmirsArenaSession extends MinigameSession {
                 data.activePrayers().clear();
             }
             if (options.has(Rule.NO_SPECIAL_ATTACKS)) {
-                specEnergy.put(p.getUuid(), SysState.of(p).specEnergy);
+                specEnergy.put(p.getUUID(), SysState.of(p).specEnergy);
             }
             stripDisabled(p);
-            weapons.put(p.getUuid(), Inv.idOf(p.getMainHandStack()));
+            weapons.put(p.getUUID(), Inv.idOf(p.getMainHandItem()));
             Msg.game(p, (ranked ? "Ranked duel" : "Duel") + " rules: " + options.describe() + ".");
             if (!ranked) {
                 Msg.game(p, "As this is an unofficial duel, you will not receive rank or reward points for participating.");
             }
         }
         if (options.has(Rule.SHOW_INVENTORIES)) {
-            for (ServerPlayerEntity p : fighters) {
-                ServerPlayerEntity other = opponent(p);
+            for (ServerPlayer p : fighters) {
+                ServerPlayer other = opponent(p);
                 if (other != null) {
                     Msg.game(p, other.getName().getString() + " carries: " + inventory(other) + ".");
                 }
@@ -158,7 +157,7 @@ public class EmirsArenaSession extends MinigameSession {
      * Stashes the player's items and stats ({@link LmsStash}) and kits them out as {@code b}: the build's levels, no boosts or
      * prayers, the starter kit worn and carried, the supplies, and full hitpoints, prayer and special attack.
      */
-    public static void equipBuild(ServerPlayerEntity p, EmirsArena.Build b) {
+    public static void equipBuild(ServerPlayer p, EmirsArena.Build b) {
         LmsStash.stash(p);
         var data = Players.data(p);
         for (Skill s : LastManStanding.BUILD_SKILLS) {
@@ -184,23 +183,23 @@ public class EmirsArenaSession extends MinigameSession {
         ServerNetworking.sync(p);
     }
 
-    private ServerPlayerEntity opponent(ServerPlayerEntity p) {
-        for (ServerPlayerEntity o : online()) {
-            if (!o.getUuid().equals(p.getUuid())) {
+    private ServerPlayer opponent(ServerPlayer p) {
+        for (ServerPlayer o : online()) {
+            if (!o.getUUID().equals(p.getUUID())) {
                 return o;
             }
         }
         return null;
     }
 
-    private static String inventory(ServerPlayerEntity p) {
+    private static String inventory(ServerPlayer p) {
         List<String> names = new ArrayList<>();
         var inv = p.getInventory();
-        for (int i = 0; i < inv.size() && names.size() < 28; i++) {
-            ItemStack s = inv.getStack(i);
+        for (int i = 0; i < inv.getContainerSize() && names.size() < 28; i++) {
+            ItemStack s = inv.getItem(i);
             if (!s.isEmpty()) {
                 ItemDef def = ItemCatalog.get(Inv.idOf(s));
-                String name = def == null ? s.getName().getString() : def.name();
+                String name = def == null ? s.getHoverName().getString() : def.name();
                 names.add(s.getCount() > 1 ? s.getCount() + " x " + name : name);
             }
         }
@@ -208,7 +207,7 @@ public class EmirsArenaSession extends MinigameSession {
     }
 
     /** Moves items out of the slots the duel disables into the inventory (OSRS unequips them when the duel starts). */
-    private void stripDisabled(ServerPlayerEntity p) {
+    private void stripDisabled(ServerPlayer p) {
         unequip(p, DuelSlot.HEAD, EquipmentSlot.HEAD);
         unequip(p, DuelSlot.BODY, EquipmentSlot.CHEST);
         unequip(p, DuelSlot.LEGS, EquipmentSlot.LEGS);
@@ -221,17 +220,17 @@ public class EmirsArenaSession extends MinigameSession {
         unwear(p, DuelSlot.AMMO, Jewellery.Slot.AMMO);
     }
 
-    private void unequip(ServerPlayerEntity p, DuelSlot rule, EquipmentSlot slot) {
-        ItemStack s = p.getEquippedStack(slot);
+    private void unequip(ServerPlayer p, DuelSlot rule, EquipmentSlot slot) {
+        ItemStack s = p.getItemBySlot(slot);
         if (options.disabled(rule) && !s.isEmpty()) {
             ItemStack copy = s.copy();
-            p.equipStack(slot, ItemStack.EMPTY);
+            p.setItemSlot(slot, ItemStack.EMPTY);
             Inv.give(p, copy);
             Msg.game(p, "The " + rule.key() + " slot is disabled for this duel.");
         }
     }
 
-    private void unwear(ServerPlayerEntity p, DuelSlot rule, Jewellery.Slot slot) {
+    private void unwear(ServerPlayer p, DuelSlot rule, Jewellery.Slot slot) {
         SysState.SysPlayer sp = SysState.of(p);
         ItemStack s = sp.worn(slot);
         if (options.disabled(rule) && !s.isEmpty()) {
@@ -252,13 +251,13 @@ public class EmirsArenaSession extends MinigameSession {
     }
 
     @Override
-    protected boolean canAttackPlayer(ServerPlayerEntity attacker, ServerPlayerEntity target) {
+    protected boolean canAttackPlayer(ServerPlayer attacker, ServerPlayer target) {
         return started && !resolved;
     }
 
     @Override
-    protected double damageMultiplier(ServerPlayerEntity player, LivingEntity target, AttackType type) {
-        if (!(target instanceof ServerPlayerEntity)) {
+    protected double damageMultiplier(ServerPlayer player, LivingEntity target, AttackType type) {
+        if (!(target instanceof ServerPlayer)) {
             return 1.0;
         }
         if (!EmirsArena.styleAllowed(options, type)) {
@@ -266,7 +265,7 @@ public class EmirsArenaSession extends MinigameSession {
                     + " has been disabled for this duel.");
             return 0;
         }
-        String weapon = Inv.idOf(player.getMainHandStack());
+        String weapon = Inv.idOf(player.getMainHandItem());
         ItemDef def = weapon.isEmpty() ? null : ItemCatalog.get(weapon);
         boolean holdsWeapon = def != null && def.equipment() != null
                 && def.equipment().slot() == com.runecraft.osrs.EquipmentDef.Slot.WEAPON;
@@ -275,7 +274,7 @@ public class EmirsArenaSession extends MinigameSession {
                     : "Weapons have been disabled for this duel.");
             return 0;
         }
-        if (options.has(Rule.NO_WEAPON_SWITCH) && !weapon.equals(weapons.getOrDefault(player.getUuid(), weapon))) {
+        if (options.has(Rule.NO_WEAPON_SWITCH) && !weapon.equals(weapons.getOrDefault(player.getUUID(), weapon))) {
             Msg.action(player, "Weapon switching has been disabled for this duel.");
             return 0;
         }
@@ -287,8 +286,8 @@ public class EmirsArenaSession extends MinigameSession {
         if (!started || resolved) {
             return;
         }
-        for (ServerPlayerEntity p : online()) {
-            if (p.getWorld() != world || !box().contains(p.getPos())) {
+        for (ServerPlayer p : online()) {
+            if (p.level() != world || !box().contains(p.position())) {
                 // Getting out of the arena any other way forfeits, like the exit portal, and gives a ranked fighter's own
                 // items and levels back (the build's kit and supplies stay behind).
                 Msg.game(p, "You have left the arena.");
@@ -304,16 +303,16 @@ public class EmirsArenaSession extends MinigameSession {
             if (ticks % 5 == 0 && !options.slots().isEmpty()) {
                 stripDisabled(p);
             }
-            BlockPos spot = spots.get(p.getUuid());
+            BlockPos spot = spots.get(p.getUUID());
             if (options.has(Rule.NO_MOVEMENT) && spot != null
-                    && p.squaredDistanceTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5) > 0.5) {
-                p.teleport(world, spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, p.getYaw(), p.getPitch());
+                    && p.distanceToSqr(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5) > 0.5) {
+                p.teleportTo(world, spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, p.getYRot(), p.getXRot());
             }
         }
     }
 
     @Override
-    protected boolean onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         if (blockId.equals("minigame_exit") && options.has(Rule.NO_FORFEIT) && started && !resolved) {
             Msg.game(player, "You can't forfeit this duel.");
             return true;
@@ -322,8 +321,8 @@ public class EmirsArenaSession extends MinigameSession {
     }
 
     @Override
-    protected void onDeath(ServerPlayerEntity player) {
-        ServerPlayerEntity winner = opponent(player);
+    protected void onDeath(ServerPlayer player) {
+        ServerPlayer winner = opponent(player);
         Msg.red(player, "You have been defeated! You wake up in the arena hospital.");
         resolve(winner, player);
         removePlayer(player, true);
@@ -331,10 +330,10 @@ public class EmirsArenaSession extends MinigameSession {
     }
 
     @Override
-    protected void onLeave(ServerPlayerEntity player) {
+    protected void onLeave(ServerPlayer player) {
         if (started && !resolved) {
             // Forfeit: the opponent wins.
-            ServerPlayerEntity winner = opponent(player);
+            ServerPlayer winner = opponent(player);
             Msg.game(player, "You forfeit the duel.");
             resolve(winner, player);
             if (!isEnded()) {
@@ -345,7 +344,7 @@ public class EmirsArenaSession extends MinigameSession {
             // The kit stays in the arena; the player's own items and levels come back.
             LmsStash.restore(player);
         }
-        Integer spec = specEnergy.remove(player.getUuid());
+        Integer spec = specEnergy.remove(player.getUUID());
         if (spec != null) {
             SysState.of(player).specEnergy = spec;
         }
@@ -354,7 +353,7 @@ public class EmirsArenaSession extends MinigameSession {
         Players.data(player).setPrayerPoints(Players.data(player).skills().level(Skill.PRAYER));
     }
 
-    private void resolve(ServerPlayerEntity winner, ServerPlayerEntity loser) {
+    private void resolve(ServerPlayer winner, ServerPlayer loser) {
         if (resolved) {
             return;
         }
@@ -365,26 +364,26 @@ public class EmirsArenaSession extends MinigameSession {
         }
         Msg.game(winner, "You are victorious! You defeated " + loser.getName().getString() + ".");
         if (!ranked) {
-            int w = data.incrementStat(winner.getUuid(), EmirsArena.LEGACY_WINS);
-            int l = data.incrementStat(loser.getUuid(), EmirsArena.LEGACY_LOSSES);
+            int w = data.incrementStat(winner.getUUID(), EmirsArena.LEGACY_WINS);
+            int l = data.incrementStat(loser.getUUID(), EmirsArena.LEGACY_LOSSES);
             Msg.game(winner, "Legacy duel wins: " + w + ".");
             Msg.game(loser, "Legacy duel losses: " + l + ".");
             return;
         }
-        int winnerRank = rank(data, winner.getUuid());
-        int loserRank = rank(data, loser.getUuid());
+        int winnerRank = rank(data, winner.getUUID());
+        int loserRank = rank(data, loser.getUUID());
         int up = EmirsArena.rankChange(winnerRank, loserRank, true);
         int down = EmirsArena.rankChange(loserRank, winnerRank, false);
-        data.setStat(winner.getUuid(), EmirsArena.RANK, Math.max(1, winnerRank + up));
-        data.setStat(loser.getUuid(), EmirsArena.RANK, Math.max(1, loserRank + down));
-        int streak = data.stat(winner.getUuid(), EmirsArena.STREAK);
+        data.setStat(winner.getUUID(), EmirsArena.RANK, Math.max(1, winnerRank + up));
+        data.setStat(loser.getUUID(), EmirsArena.RANK, Math.max(1, loserRank + down));
+        int streak = data.stat(winner.getUUID(), EmirsArena.STREAK);
         award(winner, EmirsArena.rewardPoints(true, streak), winnerRank + up);
         award(loser, EmirsArena.rewardPoints(false, 0), loserRank + down);
-        data.setStat(winner.getUuid(), EmirsArena.STREAK, streak + 1);
-        data.setStat(loser.getUuid(), EmirsArena.STREAK, 0);
-        data.incrementStat(winner.getUuid(), EmirsArena.WINS);
-        data.incrementStat(loser.getUuid(), EmirsArena.LOSSES);
-        data.incrementStat(winner.getUuid(), "kc:" + game.id());
+        data.setStat(winner.getUUID(), EmirsArena.STREAK, streak + 1);
+        data.setStat(loser.getUUID(), EmirsArena.STREAK, 0);
+        data.incrementStat(winner.getUUID(), EmirsArena.WINS);
+        data.incrementStat(loser.getUUID(), EmirsArena.LOSSES);
+        data.incrementStat(winner.getUUID(), "kc:" + game.id());
     }
 
     /** A player's rank, starting at 2,500 (an unset stat reads 0; stored ranks are at least 1). */
@@ -393,9 +392,9 @@ public class EmirsArenaSession extends MinigameSession {
         return stored == 0 ? EmirsArena.START_RANK : stored;
     }
 
-    private void award(ServerPlayerEntity p, int points, int rank) {
+    private void award(ServerPlayer p, int points, int rank) {
         MinigameData data = MinigameData.of(p);
-        int balance = data.points(p.getUuid(), MinigameCurrencies.key(EmirsArena.POINTS));
+        int balance = data.points(p.getUUID(), MinigameCurrencies.key(EmirsArena.POINTS));
         int gain = EmirsArena.cappedGain(balance, points);
         if (gain > 0) {
             addPoints(p, EmirsArena.POINTS, gain);
@@ -405,10 +404,10 @@ public class EmirsArenaSession extends MinigameSession {
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
+    protected List<String> hud(ServerPlayer player) {
         List<String> lines = new ArrayList<>();
         lines.add(ranked ? "Emir's Arena: ranked duel" + (build == null ? "" : " (" + build.displayName + ")") : "Emir's Arena: duel");
-        ServerPlayerEntity other = opponent(player);
+        ServerPlayer other = opponent(player);
         if (other != null) {
             lines.add("Opponent: " + other.getName().getString() + " (" + Math.round(other.getHealth()) + " hp)");
         }

@@ -8,13 +8,12 @@ import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.server.network.ServerPlayerEntity;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Obstacle courses: step on numbered obstacles in order; each gives its own OSRS XP and the last one
@@ -34,18 +33,18 @@ public final class AgilityService {
     public static final List<LapListener> LAP_LISTENERS = new ArrayList<>();
 
     public interface MarkChance {
-        double adjust(ServerPlayerEntity player, AgilityCourse course, double chance);
+        double adjust(ServerPlayer player, AgilityCourse course, double chance);
     }
 
     public interface LapListener {
-        void lap(ServerPlayerEntity player, AgilityCourse course, int laps);
+        void lap(ServerPlayer player, AgilityCourse course, int laps);
     }
 
     private AgilityService() {
     }
 
     /** Null if the player may use the course, else why not. */
-    static String blocked(ServerPlayerEntity player, AgilityCourse course) {
+    static String blocked(ServerPlayer player, AgilityCourse course) {
         String quest = course.requiredQuest();
         if (quest != null) {
             boolean ok = course.questStartedEnough() ? com.runecraft.quest.QuestApi.stage(player, quest) > 0
@@ -67,22 +66,22 @@ public final class AgilityService {
     }
 
     /** A light source carried, worn in an armour slot or in one of the extra slots (cape, amulet...). */
-    static boolean hasLight(ServerPlayerEntity player) {
+    static boolean hasLight(ServerPlayer player) {
         com.runecraft.content.systems.SysState.SysPlayer sp = com.runecraft.content.systems.SysState.of(player);
         for (String id : AgilityCourse.LIGHT_SOURCES) {
             if (Inv.has(player, id, 1) || sp.wearing(id)) {
                 return true;
             }
         }
-        for (net.minecraft.entity.EquipmentSlot slot : net.minecraft.entity.EquipmentSlot.values()) {
-            if (AgilityCourse.LIGHT_SOURCES.contains(Inv.idOf(player.getEquippedStack(slot)))) {
+        for (net.minecraft.world.entity.EquipmentSlot slot : net.minecraft.world.entity.EquipmentSlot.values()) {
+            if (AgilityCourse.LIGHT_SOURCES.contains(Inv.idOf(player.getItemBySlot(slot)))) {
                 return true;
             }
         }
         return false;
     }
 
-    public static void step(ServerPlayerEntity player, AgilityCourse course, int step) {
+    public static void step(ServerPlayer player, AgilityCourse course, int step) {
         PlayerData data = Players.data(player);
         int level = data.skills().currentLevel(Skill.AGILITY);
         String blocked = level < course.level() ? "You need an Agility level of " + course.level() + " to attempt this course."
@@ -127,10 +126,10 @@ public final class AgilityService {
                 Msg.game(player, "You hand the stick to the Agility Trainer. \"Good doggy!\"");
             }
             long now = ActionManager.gameTick();
-            Long last = LAST_MARK.get(player.getUuid());
+            Long last = LAST_MARK.get(player.getUUID());
             boolean cooledDown = last == null || now - last >= AgilityCourse.MARK_COOLDOWN_TICKS;
             if (cooledDown && player.getRandom().nextDouble() < markChance.adjust(player, course, course.markChance(level))) {
-                LAST_MARK.put(player.getUuid(), now);
+                LAST_MARK.put(player.getUUID(), now);
                 Inv.give(player, "mark_of_grace", 1);
                 CollectionLog.obtain(player, "mark_of_grace");
                 Msg.red(player, "You find a Mark of grace!");

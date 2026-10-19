@@ -13,25 +13,24 @@ import com.runecraft.osrs.content.bosses.MinigameBosses;
 import com.runecraft.osrs.content.bosses.VarlamoreBosses;
 import com.runecraft.osrs.content.systems.CombatAchievements;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-
 import com.runecraft.osrs.Prayer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.Vec3;
 import java.util.List;
 import java.util.Map;
 
@@ -57,7 +56,7 @@ final class EncounterScripts {
         private int styleAttacks;
         private Category protectedStyle = Category.MELEE;
         private int hitsTaken;
-        private final List<MobEntity> tornadoes = new ArrayList<>();
+        private final List<Mob> tornadoes = new ArrayList<>();
         private int tornadoLife;
         private int tornadoTimer = 20;
         private int tileTimer = 10;
@@ -77,10 +76,10 @@ final class EncounterScripts {
         }
 
         @Override
-        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             double dx = target.getX() - boss.getX();
             double dz = target.getZ() - boss.getZ();
-            if (dx * dx + dz * dz < boss.getWidth() * boss.getWidth() / 4) {
+            if (dx * dx + dz * dz < boss.getBbWidth() * boss.getBbWidth() / 4) {
                 return MinigameBosses.HUNLLEF_STOMP;
             }
             if (styleAttacks >= MinigameBosses.HUNLLEF_ATTACKS_PER_STYLE) {
@@ -100,7 +99,7 @@ final class EncounterScripts {
         }
 
         @Override
-        public int onHitPlayer(DataBossEntity boss, ServerPlayerEntity player, int damage, AttackType type) {
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
             if (last == MinigameBosses.HUNLLEF_PRAYER_DISABLE) {
                 BossFx.disablePrayers(player, "The Hunllef's magic attack switches off your prayers!");
             }
@@ -108,7 +107,7 @@ final class EncounterScripts {
         }
 
         @Override
-        protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             Category c = category(type);
             if (c == protectedStyle) {
                 CombatAchievementService.flag(attacker, CombatAchievements.FLAG_HUNLLEF_WRONG_WEAPON);
@@ -124,15 +123,15 @@ final class EncounterScripts {
         }
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             if (target == null) {
                 return;
             }
-            BossFx.world(boss).spawnParticles(switch (protectedStyle) {
+            BossFx.world(boss).sendParticles(switch (protectedStyle) {
                 case MELEE -> ParticleTypes.CRIT;
                 case RANGED -> ParticleTypes.HAPPY_VILLAGER;
                 case MAGIC -> ParticleTypes.WITCH;
-            }, boss.getX(), boss.getY() + boss.getHeight() + 0.5, boss.getZ(), 3, 0.3, 0.1, 0.3, 0);
+            }, boss.getX(), boss.getY() + boss.getBbHeight() + 0.5, boss.getZ(), 3, 0.3, 0.1, 0.3, 0);
             int count = corrupted ? 2 : 1;
             if (percent(boss) < 66) {
                 count++;
@@ -145,7 +144,7 @@ final class EncounterScripts {
                 tornadoLife = 14;
                 BossFx.warn(boss, "The Hunllef summons tornadoes!");
                 for (int i = 0; i < count; i++) {
-                    MobEntity t = BossFx.spawnMinion(boss, "hunllef_tornado", around(boss, homeVec(), 8), null);
+                    Mob t = BossFx.spawnMinion(boss, "hunllef_tornado", around(boss, homeVec(), 8), null);
                     if (t != null) {
                         tornadoes.add(t);
                     }
@@ -153,19 +152,19 @@ final class EncounterScripts {
             }
             if (tornadoLife > 0) {
                 tornadoLife--;
-                for (MobEntity t : tornadoes) {
-                    Vec3d d = target.getPos().subtract(t.getPos());
-                    double len = d.horizontalLength();
+                for (Mob t : tornadoes) {
+                    Vec3 d = target.position().subtract(t.position());
+                    double len = d.horizontalDistance();
                     if (len < 1.2) {
                         com.runecraft.combat.CombatHooks.nameAttack("tornado", null);
                         CombatHandler.applyDamage(boss, target, (corrupted ? 15 : 10) + boss.getRandom().nextInt(11));
                     } else {
-                        Vec3d step = new Vec3d(d.x / len, 0, d.z / len);
-                        t.requestTeleport(t.getX() + step.x, t.getY(), t.getZ() + step.z);
+                        Vec3 step = new Vec3(d.x / len, 0, d.z / len);
+                        t.teleportTo(t.getX() + step.x, t.getY(), t.getZ() + step.z);
                     }
                 }
                 if (tornadoLife == 0) {
-                    tornadoes.forEach(MobEntity::discard);
+                    tornadoes.forEach(Mob::discard);
                     tornadoes.clear();
                 }
             }
@@ -179,8 +178,8 @@ final class EncounterScripts {
         }
 
         @Override
-        public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
-            tornadoes.forEach(MobEntity::discard);
+        public void onDeath(DataBossEntity boss, ServerPlayer killer) {
+            tornadoes.forEach(Mob::discard);
         }
     }
 
@@ -202,15 +201,15 @@ final class EncounterScripts {
         private static final Map<UUID, long[]> SLOWED = new java.util.concurrent.ConcurrentHashMap<>();
 
         static {
-            com.runecraft.content.skilling.ItemHooks.DISEASE_CURE.add(p -> CURED.add(p.getUuid()));
+            com.runecraft.content.skilling.ItemHooks.DISEASE_CURE.add(p -> CURED.add(p.getUUID()));
             MinionRules.watch((p, t, type, d) -> {
-                long[] slow = SLOWED.get(p.getUuid());
+                long[] slow = SLOWED.get(p.getUUID());
                 if (slow == null) {
                     return;
                 }
                 long now = com.runecraft.action.ActionManager.mcTick();
                 if (now >= slow[1]) {
-                    SLOWED.remove(p.getUuid());
+                    SLOWED.remove(p.getUUID());
                     return;
                 }
                 com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(p);
@@ -220,16 +219,16 @@ final class EncounterScripts {
             });
         }
 
-        private final List<MobEntity> parasites = new ArrayList<>();
+        private final List<Mob> parasites = new ArrayList<>();
         private int parasiteHealTimer = BossMechanics.PARASITE_HEAL_INTERVAL;
-        private final List<MobEntity> totems = new ArrayList<>();
-        private final List<MobEntity> husks = new ArrayList<>();
+        private final List<Mob> totems = new ArrayList<>();
+        private final List<Mob> husks = new ArrayList<>();
         private boolean shielded;
         private int parasiteIn = -1;
-        private ServerPlayerEntity host;
+        private ServerPlayer host;
         private int curseTimer = 40;
         private final boolean phosani;
-        private final List<MobEntity> walkers = new ArrayList<>();
+        private final List<Mob> walkers = new ArrayList<>();
         private long walkersMoveAt;
         private int setTotal;
         private int setReached;
@@ -237,7 +236,7 @@ final class EncounterScripts {
         private boolean desperate;
         private int walkerTimer;
         /** Spores on the arena floor (OSRS Wiki: within one tile one bursts and makes the player weary). */
-        private final List<Vec3d> spores = new ArrayList<>();
+        private final List<Vec3> spores = new ArrayList<>();
         private int sporeTimer = 50;
         private int sporesLeft;
         /** Weary players: game ticks left (no running, slower attacks; Phosani's yawns drain prayer). */
@@ -257,16 +256,16 @@ final class EncounterScripts {
 
         @Override
         public void onSpawn(DataBossEntity boss) {
-            home = boss.getBlockPos();
+            home = boss.blockPosition();
             raiseShield(boss);
         }
 
         private void raiseShield(DataBossEntity boss) {
-            totems.forEach(MobEntity::discard);
+            totems.forEach(Mob::discard);
             totems.clear();
-            Vec3d c = homeVec();
+            Vec3 c = homeVec();
             for (int[] o : new int[][]{{-9, -9}, {9, -9}, {-9, 9}, {9, 9}}) {
-                MobEntity t = BossFx.spawnMinion(boss, "nightmare_totem", BossFx.ground(BossFx.world(boss), c.x + o[0], c.z + o[1], c.y), null);
+                Mob t = BossFx.spawnMinion(boss, "nightmare_totem", BossFx.ground(BossFx.world(boss), c.x + o[0], c.z + o[1], c.y), null);
                 if (t != null) {
                     totems.add(t);
                 }
@@ -286,11 +285,11 @@ final class EncounterScripts {
                 summonWalkers(boss, BossMechanics.sleepwalkers(phase + 1));
             }
             raiseShield(boss);
-            ServerPlayerEntity target = target(boss);
+            ServerPlayer target = target(boss);
             if (target != null) {
                 husks.clear();
                 for (int i = 0; i < 2; i++) {
-                    MobEntity h = BossFx.spawnMinion(boss, "nightmare_husk", around(boss, target.getPos(), 2), target);
+                    Mob h = BossFx.spawnMinion(boss, "nightmare_husk", around(boss, target.position(), 2), target);
                     if (h != null) {
                         husks.add(h);
                         watchOneHit(h);
@@ -302,7 +301,7 @@ final class EncounterScripts {
         }
 
         /** Phosani's "Crush Hour": every parasite and husk must die to the first hit it takes. */
-        private void watchOneHit(MobEntity m) {
+        private void watchOneHit(Mob m) {
             if (!phosani) {
                 return;
             }
@@ -318,18 +317,18 @@ final class EncounterScripts {
          * Parasites support the Nightmare (OSRS Wiki "Parasite"): every few ticks each one restores 31-50 of her health, or
          * of the weakest totem while she is shielded; counted for "Terrible Parent".
          */
-        private void tickParasites(DataBossEntity boss, ServerPlayerEntity target) {
+        private void tickParasites(DataBossEntity boss, ServerPlayer target) {
             parasites.removeIf(m -> !m.isAlive());
             if (parasites.isEmpty() || --parasiteHealTimer > 0) {
                 return;
             }
             parasiteHealTimer = BossMechanics.PARASITE_HEAL_INTERVAL;
-            for (MobEntity parasite : parasites) {
+            for (Mob parasite : parasites) {
                 int heal = BossMechanics.parasiteHeal(new java.util.Random(boss.getRandom().nextLong()));
-                net.minecraft.entity.LivingEntity healed = boss;
+                net.minecraft.world.entity.LivingEntity healed = boss;
                 if (shielded) {
-                    MobEntity weakest = null;
-                    for (MobEntity t : totems) {
+                    Mob weakest = null;
+                    for (Mob t : totems) {
                         if (t.isAlive() && t.getHealth() < t.getMaxHealth() && (weakest == null || t.getHealth() < weakest.getHealth())) {
                             weakest = t;
                         }
@@ -346,11 +345,11 @@ final class EncounterScripts {
                 }
                 BossFx.burst(parasite, ParticleTypes.HEART, 4, 0.4);
                 BossFx.burst(healed, ParticleTypes.HEART, 6, 0.8);
-                java.util.Set<ServerPlayerEntity> fighters = new java.util.LinkedHashSet<>(BossFx.players(boss, 24));
+                java.util.Set<ServerPlayer> fighters = new java.util.LinkedHashSet<>(BossFx.players(boss, 24));
                 if (target != null) {
                     fighters.add(target);
                 }
-                for (ServerPlayerEntity p : fighters) {
+                for (ServerPlayer p : fighters) {
                     CombatAchievementService.count(p, BossMechanics.COUNT_NIGHTMARE_PARASITE_HEAL, heal);
                 }
             }
@@ -358,10 +357,10 @@ final class EncounterScripts {
 
         /** Sleepwalkers walk in from the edges of the arena; any hit kills one. */
         private void summonWalkers(DataBossEntity boss, int count) {
-            Vec3d c = homeVec();
+            Vec3 c = homeVec();
             for (int i = 0; i < count; i++) {
                 double a = boss.getRandom().nextDouble() * Math.PI * 2;
-                MobEntity m = BossFx.spawnMinion(boss, BossMechanics.PHOSANI_SLEEPWALKER,
+                Mob m = BossFx.spawnMinion(boss, BossMechanics.PHOSANI_SLEEPWALKER,
                         BossFx.ground(BossFx.world(boss), c.x + Math.cos(a) * 11, c.z + Math.sin(a) * 11, c.y), null);
                 if (m == null) {
                     continue;
@@ -369,12 +368,12 @@ final class EncounterScripts {
                 walkers.add(m);
                 MinionRules.set(m, new MinionRules.Rule() {
                     @Override
-                    public double accuracy(ServerPlayerEntity p, net.minecraft.entity.LivingEntity mob, AttackType type) {
+                    public double accuracy(ServerPlayer p, net.minecraft.world.entity.LivingEntity mob, AttackType type) {
                         return MinionRules.ALWAYS_HITS;
                     }
 
                     @Override
-                    public int damage(ServerPlayerEntity p, net.minecraft.entity.LivingEntity mob, AttackType type, int d) {
+                    public int damage(ServerPlayer p, net.minecraft.world.entity.LivingEntity mob, AttackType type, int d) {
                         return MinionRules.lethal(mob);
                     }
                 });
@@ -387,10 +386,10 @@ final class EncounterScripts {
             }
         }
 
-        private void tickWalkers(DataBossEntity boss, ServerPlayerEntity target) {
-            java.util.Iterator<MobEntity> it = walkers.iterator();
+        private void tickWalkers(DataBossEntity boss, ServerPlayer target) {
+            java.util.Iterator<Mob> it = walkers.iterator();
             while (it.hasNext()) {
-                MobEntity m = it.next();
+                Mob m = it.next();
                 if (!m.isAlive()) {
                     it.remove();
                     continue;
@@ -398,14 +397,14 @@ final class EncounterScripts {
                 if (now < walkersMoveAt) {
                     continue;
                 }
-                Vec3d d = boss.getPos().subtract(m.getPos());
-                double len = d.horizontalLength();
-                if (len <= boss.getWidth() / 2 + 1.0) {
+                Vec3 d = boss.position().subtract(m.position());
+                double len = d.horizontalDistance();
+                if (len <= boss.getBbWidth() / 2 + 1.0) {
                     m.discard();
                     it.remove();
                     if (desperate) {
                         CombatAchievementService.flagNear(boss, BossMechanics.FLAG_PHOSANI_SLEEPWALKER);
-                        for (ServerPlayerEntity p : BossFx.players(boss, 24)) {
+                        for (ServerPlayer p : BossFx.players(boss, 24)) {
                             CombatHooks.nameAttack("sleepwalker", null);
                             CombatHandler.applyDamage(boss, p, BossMechanics.DESPERATION_SLEEPWALKER_DAMAGE);
                         }
@@ -416,14 +415,14 @@ final class EncounterScripts {
                     continue;
                 }
                 double step = Math.min(0.35, len);
-                m.requestTeleport(m.getX() + d.x / len * step, m.getY(), m.getZ() + d.z / len * step);
+                m.teleportTo(m.getX() + d.x / len * step, m.getY(), m.getZ() + d.z / len * step);
             }
             if (setTotal > 0 && walkers.isEmpty()) {
                 // Every sleepwalker of the set is dead or arrived: the power blast.
                 int dmg = BossMechanics.sleepwalkerBlast(setReached, setTotal);
                 setTotal = 0;
                 BossFx.say(boss, setReached == 0 ? "The Nightmare's power blast fizzles." : "The Nightmare unleashes a power blast!");
-                for (ServerPlayerEntity p : BossFx.players(boss, 24)) {
+                for (ServerPlayer p : BossFx.players(boss, 24)) {
                     CombatHooks.nameAttack("power_blast", null);
                     CombatHandler.applyDamage(boss, p, dmg);
                 }
@@ -436,7 +435,7 @@ final class EncounterScripts {
         }
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             tickSpores(boss);
             if (phosani) {
                 tickWalkers(boss, target);
@@ -451,16 +450,16 @@ final class EncounterScripts {
                 }
             }
             if (shielded) {
-                BossFx.ring(BossFx.world(boss), boss.getPos(), 2.0, ParticleTypes.WITCH);
-                if (totems.stream().noneMatch(MobEntity::isAlive)) {
+                BossFx.ring(BossFx.world(boss), boss.position(), 2.0, ParticleTypes.WITCH);
+                if (totems.stream().noneMatch(Mob::isAlive)) {
                     shielded = false;
                     BossFx.say(boss, "The totems blast the Nightmare, shattering her shield!");
                     float blast = mcHp(boss, 800);
                     boss.setHealth(Math.max(1, boss.getHealth() - Math.min(blast, boss.getMaxHealth() * 0.1f)));
-                    BossFx.sound(boss, SoundEvents.ENTITY_GENERIC_EXPLODE, 0.7f);
+                    BossFx.sound(boss, SoundEvents.GENERIC_EXPLODE, 0.7f);
                 }
             }
-            if (!husks.isEmpty() && husks.stream().noneMatch(MobEntity::isAlive)) {
+            if (!husks.isEmpty() && husks.stream().noneMatch(Mob::isAlive)) {
                 husks.clear();
                 if (target != null) {
                     BossFx.unstun(target);
@@ -473,19 +472,19 @@ final class EncounterScripts {
             if (boss.phase() >= 0 && parasiteIn < 0 && boss.getRandom().nextInt(45) == 0) {
                 parasiteIn = BossMechanics.PARASITE_BURST_TICKS;
                 host = target;
-                CURED.remove(target.getUuid());
+                CURED.remove(target.getUUID());
                 Msg.red(target, "The Nightmare has impregnated you with a deadly parasite! Drink a sanfew serum or relicym's balm.");
             }
             if (parasiteIn > 0 && --parasiteIn == 0) {
                 if (host != null && host.isAlive()) {
-                    boolean weakened = CURED.remove(host.getUuid());
+                    boolean weakened = CURED.remove(host.getUUID());
                     CombatHooks.nameAttack(weakened ? BossMechanics.WEAKENED_PARASITE_BURST : BossMechanics.PARASITE_BURST, null);
                     CombatHandler.applyDamage(boss, host, BossMechanics.parasiteBurst(new java.util.Random(boss.getRandom().nextLong()), weakened));
-                    MobEntity parasite = BossFx.spawnMinion(boss, "nightmare_parasite", host.getPos(), host);
+                    Mob parasite = BossFx.spawnMinion(boss, "nightmare_parasite", host.position(), host);
                     if (parasite != null) {
                         if (!weakened) {
                             // 80 hitpoints instead of the weakened parasite's 40.
-                            var hp = parasite.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH);
+                            var hp = parasite.getAttribute(Attributes.MAX_HEALTH);
                             if (hp != null) {
                                 hp.setBaseValue(hp.getBaseValue() * BossMechanics.PARASITE_HP / BossMechanics.PARASITE_HP_WEAKENED);
                                 parasite.setHealth(parasite.getMaxHealth());
@@ -514,7 +513,7 @@ final class EncounterScripts {
 
         void placeSpores(DataBossEntity boss) {
             spores.clear();
-            Vec3d c = homeVec();
+            Vec3 c = homeVec();
             for (int i = 0; i < BossMechanics.SPORES; i++) {
                 spores.add(around(boss, c, 8));
             }
@@ -525,12 +524,12 @@ final class EncounterScripts {
         /** Spores burst when a player comes within a tile; weary players can't run and their yawns drain prayer (Phosani). */
         void tickSpores(DataBossEntity boss) {
             if (!spores.isEmpty()) {
-                List<ServerPlayerEntity> near = BossFx.players(boss, 32);
-                java.util.Iterator<Vec3d> it = spores.iterator();
+                List<ServerPlayer> near = BossFx.players(boss, 32);
+                java.util.Iterator<Vec3> it = spores.iterator();
                 while (it.hasNext()) {
-                    Vec3d sp = it.next();
-                    BossFx.world(boss).spawnParticles(ParticleTypes.SPORE_BLOSSOM_AIR, sp.x, sp.y + 0.4, sp.z, 2, 0.2, 0.2, 0.2, 0);
-                    for (ServerPlayerEntity p : near) {
+                    Vec3 sp = it.next();
+                    BossFx.world(boss).sendParticles(ParticleTypes.SPORE_BLOSSOM_AIR, sp.x, sp.y + 0.4, sp.z, 2, 0.2, 0.2, 0.2, 0);
+                    for (ServerPlayer p : near) {
                         if (Math.abs(p.getX() - sp.x) <= 1.5 && Math.abs(p.getZ() - sp.z) <= 1.5) {
                             burstSpore(boss, p, sp);
                             it.remove();
@@ -548,7 +547,7 @@ final class EncounterScripts {
             java.util.Iterator<Map.Entry<UUID, Integer>> wi = weary.entrySet().iterator();
             while (wi.hasNext()) {
                 Map.Entry<UUID, Integer> e = wi.next();
-                ServerPlayerEntity p = BossFx.world(boss).getServer().getPlayerManager().getPlayer(e.getKey());
+                ServerPlayer p = BossFx.world(boss).getServer().getPlayerList().getPlayer(e.getKey());
                 int left = e.getValue() - 1;
                 if (p == null || left <= 0) {
                     SLOWED.remove(e.getKey());
@@ -559,7 +558,7 @@ final class EncounterScripts {
                 if (p.isSprinting()) {
                     // No running (as when out of run energy): about walking pace while they try to sprint (renewed each
                     // game tick they do, so it wears off as they stop); walking itself is not slowed.
-                    p.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS,
+                    p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN,
                             com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK + 2, 1, false, false));
                     p.setSprinting(false);
                 }
@@ -570,10 +569,10 @@ final class EncounterScripts {
             }
         }
 
-        void burstSpore(DataBossEntity boss, ServerPlayerEntity p, Vec3d at) {
-            BossFx.world(boss).spawnParticles(ParticleTypes.SNEEZE, at.x, at.y + 0.6, at.z, 20, 0.6, 0.4, 0.6, 0.02);
-            weary.put(p.getUuid(), BossMechanics.SPORE_WEARY_TICKS);
-            SLOWED.put(p.getUuid(), new long[]{phosani ? BossMechanics.SPORE_SLOW_TICKS_PHOSANI : BossMechanics.SPORE_SLOW_TICKS,
+        void burstSpore(DataBossEntity boss, ServerPlayer p, Vec3 at) {
+            BossFx.world(boss).sendParticles(ParticleTypes.SNEEZE, at.x, at.y + 0.6, at.z, 20, 0.6, 0.4, 0.6, 0.02);
+            weary.put(p.getUUID(), BossMechanics.SPORE_WEARY_TICKS);
+            SLOWED.put(p.getUUID(), new long[]{phosani ? BossMechanics.SPORE_SLOW_TICKS_PHOSANI : BossMechanics.SPORE_SLOW_TICKS,
                     com.runecraft.action.ActionManager.mcTick()
                             + (long) BossMechanics.SPORE_WEARY_TICKS * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK});
             CombatAchievementService.flag(p, BossMechanics.FLAG_NIGHTMARE_SPORED);
@@ -588,7 +587,7 @@ final class EncounterScripts {
          * 16-25 ticks (rate guessed); not in her desperation phase.
          */
         @Override
-        public AttackDef beforeAttack(DataBossEntity boss, ServerPlayerEntity target, AttackDef attack) {
+        public AttackDef beforeAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
             if (!phosani || desperate || boss.phase() < 1 || deactivateTimer > 0 || target == null) {
                 return attack;
             }
@@ -608,14 +607,14 @@ final class EncounterScripts {
         }
 
         @Override
-        public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
+        public void onDeath(DataBossEntity boss, ServerPlayer killer) {
             spores.clear();
             weary.keySet().forEach(SLOWED::remove);
             weary.clear();
-            totems.forEach(MobEntity::discard);
-            husks.forEach(MobEntity::discard);
-            walkers.forEach(MobEntity::discard);
-            parasites.forEach(MobEntity::discard);
+            totems.forEach(Mob::discard);
+            husks.forEach(Mob::discard);
+            walkers.forEach(Mob::discard);
+            parasites.forEach(Mob::discard);
         }
     }
 
@@ -623,7 +622,7 @@ final class EncounterScripts {
      * Self-test (boss:nightmare_parasites): a parasite that lands on a player who then drinks a cure bursts out weakened
      * (40 hitpoints), and a living parasite heals the unshielded Nightmare.
      */
-    static String selfTestNightmare(DataBossEntity boss, ServerPlayerEntity p) {
+    static String selfTestNightmare(DataBossEntity boss, ServerPlayer p) {
         if (!(boss.script() instanceof Nightmare n)) {
             throw new IllegalStateException("the Nightmare has no Nightmare script");
         }
@@ -648,7 +647,7 @@ final class EncounterScripts {
             }
             return "weakened parasite " + weakHp + " hp, healed the Nightmare " + before + " -> " + boss.getHealth();
         } finally {
-            Nightmare.CURED.remove(p.getUuid());
+            Nightmare.CURED.remove(p.getUUID());
             n.onDeath(boss, p);
         }
     }
@@ -657,7 +656,7 @@ final class EncounterScripts {
      * Self-test (boss:muspah_shield): Smite and a corruption spell drain the prayer shield beyond its 2 per attack, and a
      * spike raised under a player hits them and stays.
      */
-    static String selfTestMuspah(DataBossEntity boss, ServerPlayerEntity p) {
+    static String selfTestMuspah(DataBossEntity boss, ServerPlayer p) {
         if (!(boss.script() instanceof Muspah m)) {
             throw new IllegalStateException("the Phantom Muspah has no Muspah script");
         }
@@ -715,9 +714,9 @@ final class EncounterScripts {
 
         @Override
         public void onPhase(DataBossEntity boss, int phase) {
-            ServerPlayerEntity target = target(boss);
+            ServerPlayer target = target(boss);
             if (phase == 0) {
-                var speed = boss.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED);
+                var speed = boss.getAttribute(Attributes.MOVEMENT_SPEED);
                 if (speed != null) {
                     speed.setBaseValue(0.3);
                 }
@@ -725,7 +724,7 @@ final class EncounterScripts {
             } else if (phase == 1) {
                 shield = BossMechanics.MUSPAH_SHIELD;
                 drains.clear();
-                var speed = boss.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED);
+                var speed = boss.getAttribute(Attributes.MOVEMENT_SPEED);
                 if (speed != null) {
                     speed.setBaseValue(0.18);
                 }
@@ -735,26 +734,26 @@ final class EncounterScripts {
 
         private List<Long> randomTiles(DataBossEntity boss, int n) {
             List<Long> tiles = new ArrayList<>();
-            Vec3d c = homeVec();
+            Vec3 c = homeVec();
             for (int i = 0; i < n; i++) {
-                Vec3d v = around(boss, c, 8);
+                Vec3 v = around(boss, c, 8);
                 tiles.add(BossMechanics.tile((int) Math.floor(v.x), (int) Math.floor(v.z)));
             }
             return tiles;
         }
 
         /** New spikes (plus one under the target): players standing on one are hit, knocked aside, and heal the Muspah. */
-        private void raiseSpikes(DataBossEntity boss, ServerPlayerEntity target, List<Long> tiles) {
+        private void raiseSpikes(DataBossEntity boss, ServerPlayer target, List<Long> tiles) {
             List<Long> fresh = new ArrayList<>(tiles);
             if (target != null) {
                 fresh.add(BossMechanics.tile(target.getBlockX(), target.getBlockZ()));
             }
             spikes.addAll(fresh);
-            Set<ServerPlayerEntity> near = new java.util.LinkedHashSet<>(BossFx.players(boss, 24));
+            Set<ServerPlayer> near = new java.util.LinkedHashSet<>(BossFx.players(boss, 24));
             if (target != null) {
                 near.add(target);
             }
-            for (ServerPlayerEntity p : near) {
+            for (ServerPlayer p : near) {
                 if (!fresh.contains(BossMechanics.tile(p.getBlockX(), p.getBlockZ()))) {
                     continue;
                 }
@@ -762,16 +761,16 @@ final class EncounterScripts {
                 CombatHooks.nameAttack("spike", null);
                 int dealt = CombatHandler.applyDamage(boss, p, dmg);
                 boss.heal(mcHp(boss, BossMechanics.muspahSpikeHeal(dealt)));
-                Vec3d away = p.getPos().subtract(boss.getPos()).normalize();
-                p.takeKnockback(0.8, -away.x, -away.z);
-                p.velocityModified = true;
+                Vec3 away = p.position().subtract(boss.position()).normalize();
+                p.knockback(0.8, -away.x, -away.z);
+                p.hurtMarked = true;
                 Msg.red(p, "A spike erupts beneath you!");
             }
-            BossFx.sound(boss, SoundEvents.BLOCK_GLASS_BREAK, 0.6f);
+            BossFx.sound(boss, SoundEvents.GLASS_BREAK, 0.6f);
         }
 
         @Override
-        protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             if (shield > 0) {
                 // OSRS Wiki: the shielded form is immune to damage; its 75-point prayer shield loses 2 per attack, and
                 // prayer drains speed it up.
@@ -797,7 +796,7 @@ final class EncounterScripts {
         }
 
         /** Extra shield points this attack's prayer drains take: Smite, an enchanted sapphire bolt, a pending corruption spell. */
-        private int drainShield(ServerPlayerEntity attacker, int damage, AttackType type) {
+        private int drainShield(ServerPlayer attacker, int damage, AttackType type) {
             int drained = 0;
             if (com.runecraft.player.Players.data(attacker).isActive(Prayer.SMITE) && damage > 0) {
                 drained += BossMechanics.muspahSmiteDrain(damage);
@@ -829,12 +828,12 @@ final class EncounterScripts {
 
         /** While shielded it also has Soul Split: it heals half the damage it deals. */
         @Override
-        public int onHitPlayer(DataBossEntity boss, ServerPlayerEntity player, int damage, AttackType type) {
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
             if (shield > 0 && damage > 1) {
                 boss.heal(mcHp(boss, damage / 2));
             }
             if (shieldBroken && ++attacks % BossMechanics.MUSPAH_SPIKE_EVERY == 0) {
-                Vec3d c = homeVec();
+                Vec3 c = homeVec();
                 raiseSpikes(boss, player, BossMechanics.muspahSpikeGrowth(spikes, (int) Math.floor(c.x), (int) Math.floor(c.z), 9,
                         0.35, new java.util.Random(boss.getRandom().nextLong()))); // approx: growth rate
             }
@@ -842,31 +841,31 @@ final class EncounterScripts {
         }
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             if (shield > 0) {
-                BossFx.ring(BossFx.world(boss), boss.getPos(), 2.2, ParticleTypes.SNOWFLAKE);
+                BossFx.ring(BossFx.world(boss), boss.position(), 2.2, ParticleTypes.SNOWFLAKE);
             }
             if (!spikes.isEmpty() && ++spikeFx % 3 == 0) {
-                ServerWorld w = BossFx.world(boss);
+                ServerLevel w = BossFx.world(boss);
                 int shown = 0;
                 for (long t : spikes) {
                     if (++shown > 120) {
                         break;
                     }
-                    w.spawnParticles(ParticleTypes.SNOWFLAKE, (int) (t >> 32) + 0.5, boss.getY() + 0.3, (int) t + 0.5, 2, 0.15, 0.4, 0.15, 0.0);
+                    w.sendParticles(ParticleTypes.SNOWFLAKE, (int) (t >> 32) + 0.5, boss.getY() + 0.3, (int) t + 0.5, 2, 0.15, 0.4, 0.15, 0.0);
                 }
             }
             if (shieldBroken) {
                 // "Space is Tight": spikes on every tile around its footprint.
-                int size = Math.max(1, (int) Math.ceil(boss.getWidth()));
+                int size = Math.max(1, (int) Math.ceil(boss.getBbWidth()));
                 int x = (int) Math.floor(boss.getX() - size / 2.0);
                 int z = (int) Math.floor(boss.getZ() - size / 2.0);
                 boolean surrounded = BossMechanics.muspahSurrounded(spikes, x, z, size);
-                Set<ServerPlayerEntity> near = new java.util.LinkedHashSet<>(BossFx.players(boss, 24));
+                Set<ServerPlayer> near = new java.util.LinkedHashSet<>(BossFx.players(boss, 24));
                 if (target != null) {
                     near.add(target);
                 }
-                for (ServerPlayerEntity p : near) {
+                for (ServerPlayer p : near) {
                     if (surrounded) {
                         CombatAchievementService.flag(p, BossMechanics.FLAG_MUSPAH_SURROUNDED);
                     } else {
@@ -921,12 +920,12 @@ final class EncounterScripts {
         }
 
         @Override
-        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             int vents = boss.awakened() ? 4 : 5;
             if (attackCount % vents == vents - 1) {
                 BossFx.warn(boss, "Poisonous gas erupts from the vents!");
                 for (int i = 0; i < (boss.awakened() ? 5 : 3); i++) {
-                    strike(boss, around(boss, target.getPos(), 4), 2, (int) Math.round(20 * scale), 1.3, ParticleTypes.SNEEZE, (hit, pos) ->
+                    strike(boss, around(boss, target.position(), 4), 2, (int) Math.round(20 * scale), 1.3, ParticleTypes.SNEEZE, (hit, pos) ->
                             com.runecraft.boss.Mechanics.addHazard(BossFx.world(boss), pos, 5, 8, boss));
                 }
                 attackCount++;
@@ -937,13 +936,13 @@ final class EncounterScripts {
         }
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             if (!pillars) {
                 pillars = true;
                 BlockPos c = home;
                 for (int[] o : new int[][]{{-5, -3}, {5, -3}, {-5, 5}, {5, 5}}) {
                     for (int y = 1; y <= 3; y++) {
-                        BossFx.world(boss).setBlockState(c.add(o[0], y, o[1]), Blocks.CHISELED_DEEPSLATE.getDefaultState());
+                        BossFx.world(boss).setBlockAndUpdate(c.offset(o[0], y, o[1]), Blocks.CHISELED_DEEPSLATE.defaultBlockState());
                     }
                 }
                 BossFx.say(boss, "Duke Sucellus stirs from his slumber...");
@@ -960,8 +959,8 @@ final class EncounterScripts {
             }
             if (gaze <= 0) {
                 gaze = boss.awakened() ? 14 : 20; // approx: the awakened Duke gazes more often
-                for (ServerPlayerEntity p : BossFx.players(boss, 24)) {
-                    if (boss.canSee(p)) {
+                for (ServerPlayer p : BossFx.players(boss, 24)) {
+                    if (boss.hasLineOfSight(p)) {
                         BossFx.stun(p, 6);
                         CombatHandler.applyDamage(boss, p, (int) Math.round((40 + boss.getRandom().nextInt(36))
                                 * boss.variantHitScale(Dt2Bosses.DUKE_GAZE) * scale));
@@ -1017,7 +1016,7 @@ final class EncounterScripts {
          * most 10 per hit (approx: the gaping wound on its back, which takes full damage, isn't modelled).
          */
         @Override
-        protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             if (stunned > 0) {
                 return Math.min(damage, 10);
             }
@@ -1032,7 +1031,7 @@ final class EncounterScripts {
         }
 
         @Override
-        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             if (volley.isEmpty()) {
                 int n = (boss.awakened() ? 5 : 3) + boss.getRandom().nextInt(4); // approx: awakened volleys are longer
                 AttackDef[] styles = {Dt2Bosses.LEVI_RANGED, Dt2Bosses.LEVI_MAGIC, Dt2Bosses.LEVI_MELEE};
@@ -1041,7 +1040,7 @@ final class EncounterScripts {
                 }
                 BossFx.warn(boss, "The Leviathan prepares a barrage of " + n + " projectiles!");
                 for (int i = 0; i < 3; i++) {
-                    strike(boss, around(boss, target.getPos(), 5), 3, (int) Math.round(maxHit(boss, Dt2Bosses.LEVI_DEBRIS) * scale), 1.3, ParticleTypes.ASH);
+                    strike(boss, around(boss, target.position(), 5), 3, (int) Math.round(maxHit(boss, Dt2Bosses.LEVI_DEBRIS) * scale), 1.3, ParticleTypes.ASH);
                 }
                 cooldown = 2;
                 return null;
@@ -1066,14 +1065,14 @@ final class EncounterScripts {
         }
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             if (stunned > 0) {
                 stunned--;
                 BossFx.burst(boss, ParticleTypes.SMOKE, 6, 1.5);
                 return;
             }
             if (target != null && boss.getRandom().nextInt(boss.awakened() ? 18 : 30) == 0) {
-                strike(boss, target.getPos(), 3, (int) Math.round(maxHit(boss, Dt2Bosses.LEVI_LIGHTNING) * scale), 1.3, ParticleTypes.ELECTRIC_SPARK);
+                strike(boss, target.position(), 3, (int) Math.round(maxHit(boss, Dt2Bosses.LEVI_LIGHTNING) * scale), 1.3, ParticleTypes.ELECTRIC_SPARK);
                 BossFx.warn(boss, "The Leviathan's shell crackles with lightning!");
             }
         }
@@ -1084,7 +1083,7 @@ final class EncounterScripts {
      * below 50%, the Shadow Realm: she becomes untouchable until you destroy her tentacles in time.
      */
     static final class Whisperer extends ScriptedBoss {
-        private final List<MobEntity> tentacles = new ArrayList<>();
+        private final List<Mob> tentacles = new ArrayList<>();
         private int shadowTicks = -1;
         /** Max hit scale: 1 for the boss, below 1 for the weaker Desert Treasure II quest version. */
         private final double scale;
@@ -1119,7 +1118,7 @@ final class EncounterScripts {
         }
 
         @Override
-        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             int screech = boss.awakened() ? 7 : 10;
             if (attackCount > 0 && attackCount % screech == 0) {
                 return Dt2Bosses.WHISPER_SCREECH;
@@ -1132,23 +1131,23 @@ final class EncounterScripts {
 
         @Override
         public void onPhase(DataBossEntity boss, int phase) {
-            ServerPlayerEntity target = target(boss);
+            ServerPlayer target = target(boss);
             if (target == null) {
                 return;
             }
             shadowTicks = boss.awakened() ? 24 : 30; // approx: less time to escape when awakened
             for (int i = 0; i < 3; i++) {
-                MobEntity t = BossFx.spawnMinion(boss, "whisperer_tentacle", around(boss, target.getPos(), 5), target);
+                Mob t = BossFx.spawnMinion(boss, "whisperer_tentacle", around(boss, target.position(), 5), target);
                 if (t != null) {
                     tentacles.add(t);
                 }
             }
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.DARKNESS, 30 * 12, 0, false, false));
+            target.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 30 * 12, 0, false, false));
             BossFx.say(boss, "You are dragged into the Shadow Realm! Destroy the tentacles before your soul is consumed!");
         }
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             if (shadowTicks < 0) {
                 return;
             }
@@ -1156,18 +1155,18 @@ final class EncounterScripts {
             if (target != null) {
                 CombatAchievementService.count(target, CombatAchievements.COUNT_SHADOW_REALM_TICKS, 1);
             }
-            boolean cleared = tentacles.stream().noneMatch(MobEntity::isAlive);
+            boolean cleared = tentacles.stream().noneMatch(Mob::isAlive);
             if (cleared || shadowTicks == 0) {
                 if (!cleared && target != null) {
                     CombatHandler.applyDamage(boss, target, (int) Math.round((30 + boss.getRandom().nextInt(21))
                             * boss.variantHitScale(Dt2Bosses.WHISPER_SIPHON) * scale));
                     Msg.red(target, "The Whisperer consumes part of your soul!");
                 }
-                tentacles.forEach(MobEntity::discard);
+                tentacles.forEach(Mob::discard);
                 tentacles.clear();
                 shadowTicks = -1;
                 if (target != null) {
-                    target.removeStatusEffect(StatusEffects.DARKNESS);
+                    target.removeEffect(MobEffects.DARKNESS);
                 }
                 BossFx.say(boss, "You escape the Shadow Realm.");
             }
@@ -1187,9 +1186,9 @@ final class EncounterScripts {
         private int autos;
         private boolean enraged;
         // Strangle: the spores to destroy, when the tendrils tighten, and whether the last special was a Strangle.
-        private final List<MobEntity> spores = new ArrayList<>();
+        private final List<Mob> spores = new ArrayList<>();
         private long strangleDue = -1;
-        private ServerPlayerEntity strangled;
+        private ServerPlayer strangled;
         private boolean lastStrangle;
 
         Vardorvis() {
@@ -1206,7 +1205,7 @@ final class EncounterScripts {
         }
 
         @Override
-        protected boolean wantsMelee(DataBossEntity boss, ServerPlayerEntity target) {
+        protected boolean wantsMelee(DataBossEntity boss, ServerPlayer target) {
             return true;
         }
 
@@ -1232,7 +1231,7 @@ final class EncounterScripts {
          * the awakened variant's 61), so the multiplier is taken against that listed max.
          */
         @Override
-        protected void perform(DataBossEntity boss, ServerPlayerEntity target, AttackDef a) {
+        protected void perform(DataBossEntity boss, ServerPlayer target, AttackDef a) {
             if (a != Dt2Bosses.VARD_SLASH || a.maxHit() <= 0) {
                 super.perform(boss, target, a);
                 return;
@@ -1244,7 +1243,7 @@ final class EncounterScripts {
         }
 
         @Override
-        public int onHitPlayer(DataBossEntity boss, ServerPlayerEntity player, int damage, AttackType type) {
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
             if (damage > 1) {
                 boss.heal(mcHp(boss, damage / 2)); // heals 50% of the damage he deals, rounded down
             }
@@ -1256,11 +1255,11 @@ final class EncounterScripts {
          * starts a bleed (3 every 3 ticks for 14 ticks, every tick while running; awakened 5 a hit). Awakened axes also hit
          * whoever stands where they appear, and that hit does not bleed (OSRS Wiki "Vardorvis/Strategies").
          */
-        private void axes(DataBossEntity boss, ServerPlayerEntity target) {
+        private void axes(DataBossEntity boss, ServerPlayer target) {
             int n = BossMechanics.vardorvisAxes(hp(boss), boss.awakened());
             BossFx.warn(boss, n == 1 ? "An axe swings out from the walls!" : n + " axes swing out from the walls!");
-            Vec3d p = target.getPos();
-            Vec3d toward = p.subtract(boss.getPos());
+            Vec3 p = target.position();
+            Vec3 toward = p.subtract(boss.position());
             double base = Math.atan2(toward.z, toward.x);
             int max = (int) Math.round((boss.awakened() ? BossMechanics.VARDORVIS_AXE_MAX_AWAKENED : BossMechanics.VARDORVIS_AXE_MAX)
                     * scale);
@@ -1268,30 +1267,30 @@ final class EncounterScripts {
             int bleed = awake ? BossMechanics.VARDORVIS_BLEED_DAMAGE_AWAKENED : BossMechanics.VARDORVIS_BLEED_DAMAGE;
             for (int a = 0; a < n; a++) {
                 double ang = base + a * Math.PI / 4 * (a % 2 == 0 ? 1 : -1);
-                Vec3d dir = new Vec3d(Math.cos(ang), 0, Math.sin(ang));
+                Vec3 dir = new Vec3(Math.cos(ang), 0, Math.sin(ang));
                 Set<UUID> struck = new HashSet<>();
                 if (awake) {
                     // The axe hits on appearing at the start of its path (no bleed from this hit).
-                    Vec3d from = p.add(dir.multiply(-4 * 1.5));
-                    for (ServerPlayerEntity h : BossFx.players(boss, 24)) {
-                        if (h.getPos().squaredDistanceTo(from.x, h.getY(), from.z) <= 1.1 * 1.1) {
+                    Vec3 from = p.add(dir.scale(-4 * 1.5));
+                    for (ServerPlayer h : BossFx.players(boss, 24)) {
+                        if (h.position().distanceToSqr(from.x, h.getY(), from.z) <= 1.1 * 1.1) {
                             int roll = boss.getRandom().nextInt(max + 1);
                             if (BossFx.protects(h, Prayer.PROTECT_FROM_MELEE)) {
                                 roll /= 2;
                             }
                             CombatHooks.nameAttack("swinging_axe", null);
                             CombatHandler.applyDamage(boss, h, roll);
-                            struck.add(h.getUuid());
+                            struck.add(h.getUUID());
                         }
                     }
-                    BossFx.world(boss).spawnParticles(ParticleTypes.SWEEP_ATTACK, from.x, p.y + 1.0, from.z, 3, 0.4, 0.3, 0.4, 0);
+                    BossFx.world(boss).sendParticles(ParticleTypes.SWEEP_ATTACK, from.x, p.y + 1.0, from.z, 3, 0.4, 0.3, 0.4, 0);
                 }
                 for (int i = -4; i <= 4; i++) {
-                    Vec3d at = p.add(dir.multiply(i * 1.5));
+                    Vec3 at = p.add(dir.scale(i * 1.5));
                     namedStrike("swinging_axe", boss, BossFx.ground(BossFx.world(boss), at.x, at.z, p.y), 3, 0, 1.1,
                             ParticleTypes.SWEEP_ATTACK, (hit, pos) -> {
-                                for (ServerPlayerEntity h : hit) {
-                                    if (!struck.add(h.getUuid())) {
+                                for (ServerPlayer h : hit) {
+                                    if (!struck.add(h.getUUID())) {
                                         continue;
                                     }
                                     int roll = boss.getRandom().nextInt(max + 1);
@@ -1311,28 +1310,28 @@ final class EncounterScripts {
          * Strangle (below 570 hitpoints, never twice in a row): tendrils root the target and spores appear around them; any
          * spore left after 5 ticks (awakened 4) tightens the tendrils for ~25 (awakened ~40).
          */
-        private void strangle(DataBossEntity boss, ServerPlayerEntity target) {
+        private void strangle(DataBossEntity boss, ServerPlayer target) {
             boolean awake = boss.awakened();
             int ticks = awake ? BossMechanics.VARDORVIS_STRANGLE_TICKS_AWAKENED : BossMechanics.VARDORVIS_STRANGLE_TICKS;
             BossFx.warn(boss, "Vardorvis strikes the ground and tendrils entangle you - destroy the spores!");
-            target.addStatusEffect(new net.minecraft.entity.effect.StatusEffectInstance(net.minecraft.entity.effect.StatusEffects.SLOWNESS,
+            target.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN,
                     ticks * 12, 10, false, true));
-            spores.forEach(MobEntity::discard);
+            spores.forEach(Mob::discard);
             spores.clear();
             for (int i = 0; i < BossMechanics.VARDORVIS_STRANGLE_SPORES; i++) {
                 double a = Math.PI * 2 * i / BossMechanics.VARDORVIS_STRANGLE_SPORES + boss.getRandom().nextDouble();
-                Vec3d at = BossFx.ground(BossFx.world(boss), target.getX() + Math.cos(a) * 1.6, target.getZ() + Math.sin(a) * 1.6,
+                Vec3 at = BossFx.ground(BossFx.world(boss), target.getX() + Math.cos(a) * 1.6, target.getZ() + Math.sin(a) * 1.6,
                         target.getY());
-                MobEntity spore = BossFx.spawnMinion(boss, BossMechanics.STRANGLER_SPORE, at, null);
+                Mob spore = BossFx.spawnMinion(boss, BossMechanics.STRANGLER_SPORE, at, null);
                 if (spore != null) {
                     MinionRules.set(spore, new MinionRules.Rule() {
                         @Override
-                        public double accuracy(ServerPlayerEntity pl, net.minecraft.entity.LivingEntity m, AttackType t) {
+                        public double accuracy(ServerPlayer pl, net.minecraft.world.entity.LivingEntity m, AttackType t) {
                             return MinionRules.ALWAYS_HITS;
                         }
 
                         @Override
-                        public int damage(ServerPlayerEntity pl, net.minecraft.entity.LivingEntity m, AttackType t, int d) {
+                        public int damage(ServerPlayer pl, net.minecraft.world.entity.LivingEntity m, AttackType t, int d) {
                             return MinionRules.lethal(m);
                         }
                     });
@@ -1349,8 +1348,8 @@ final class EncounterScripts {
                 return;
             }
             strangleDue = -1;
-            boolean left = spores.stream().anyMatch(MobEntity::isAlive);
-            spores.forEach(MobEntity::discard);
+            boolean left = spores.stream().anyMatch(Mob::isAlive);
+            spores.forEach(Mob::discard);
             spores.clear();
             if (left && strangled != null && strangled.isAlive()) {
                 int dmg = (int) Math.round((boss.awakened() ? BossMechanics.VARDORVIS_STRANGLE_DAMAGE_AWAKENED
@@ -1365,19 +1364,19 @@ final class EncounterScripts {
         }
 
         @Override
-        public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
-            spores.forEach(MobEntity::discard);
+        public void onDeath(DataBossEntity boss, ServerPlayer killer) {
+            spores.forEach(Mob::discard);
             spores.clear();
         }
 
-        private void darts(DataBossEntity boss, ServerPlayerEntity target) {
+        private void darts(DataBossEntity boss, ServerPlayer target) {
             int n = BossMechanics.vardorvisDarts(hp(boss));
             BossFx.warn(boss, "Vardorvis darts around you, leaving cracks in the ground!");
             int max = (int) Math.round((boss.awakened() ? 40 : 25) * scale);
             for (int i = 0; i < n; i++) {
-                Vec3d at = i == 0 ? target.getPos() : around(boss, target.getPos(), 3);
+                Vec3 at = i == 0 ? target.position() : around(boss, target.position(), 3);
                 namedStrike("darting_spikes", boss, at, 4 + i, max, 1.3, ParticleTypes.DAMAGE_INDICATOR, (hit, pos) -> {
-                    for (ServerPlayerEntity h : hit) {
+                    for (ServerPlayer h : hit) {
                         boss.heal(mcHp(boss, max / 4.0)); // heals half the (average) damage dealt
                     }
                 });
@@ -1386,7 +1385,7 @@ final class EncounterScripts {
         }
 
         @Override
-        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             boolean awake = boss.awakened();
             int hp = hp(boss);
             if (!enraged && hp < BossMechanics.VARDORVIS_ENRAGE_HP) {
@@ -1417,7 +1416,7 @@ final class EncounterScripts {
         }
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             // Defence follows his hitpoints (defence-draining specials make no difference on top).
             int lost = (int) Math.round((1 - hpFraction(boss)) * BossMechanics.VARDORVIS_HITPOINTS);
             com.runecraft.content.systems.SysCombat.drain(boss).defence = BossMechanics.vardorvisDefenceReduction(lost);
@@ -1455,8 +1454,8 @@ final class EncounterScripts {
         private static final int TAIL = 3;
         private static final int FINAL = 4;
         private int stage;
-        private final List<MobEntity> segments = new ArrayList<>();
-        private MobEntity tail;
+        private final List<Mob> segments = new ArrayList<>();
+        private Mob tail;
         private boolean lit;
         private int seerTimer = BossMechanics.HUEY_SEER_CHARGE_TICKS;
         private int shockTimer;
@@ -1475,12 +1474,12 @@ final class EncounterScripts {
 
         @Override
         public void onSpawn(DataBossEntity boss) {
-            home = boss.getBlockPos();
+            home = boss.blockPosition();
             spawnSegments(boss);
         }
 
         @Override
-        public void writeNbt(DataBossEntity boss, NbtCompound nbt) {
+        public void writeNbt(DataBossEntity boss, CompoundTag nbt) {
             if (stage == 0) {
                 return;
             }
@@ -1490,22 +1489,22 @@ final class EncounterScripts {
             nbt.putInt("HueyShock", shockTimer);
             // Not dead rather than alive: a minion whose chunk was saved just before hers is already removed but comes back.
             int i = 0;
-            for (MobEntity m : segments) {
-                if (!m.isDead()) {
-                    nbt.putUuid(NBT_SEGMENT + i++, m.getUuid());
+            for (Mob m : segments) {
+                if (!m.isDeadOrDying()) {
+                    nbt.putUUID(NBT_SEGMENT + i++, m.getUUID());
                 }
             }
             for (UUID id : lostSegments) {
-                nbt.putUuid(NBT_SEGMENT + i++, id);
+                nbt.putUUID(NBT_SEGMENT + i++, id);
             }
-            UUID tailId = tail != null && !tail.isDead() ? tail.getUuid() : lostTail;
+            UUID tailId = tail != null && !tail.isDeadOrDying() ? tail.getUUID() : lostTail;
             if (tailId != null) {
-                nbt.putUuid(NBT_TAIL, tailId);
+                nbt.putUUID(NBT_TAIL, tailId);
             }
         }
 
         @Override
-        public void readNbt(DataBossEntity boss, NbtCompound nbt) {
+        public void readNbt(DataBossEntity boss, CompoundTag nbt) {
             if (!nbt.contains(NBT_STAGE)) {
                 return;
             }
@@ -1514,19 +1513,19 @@ final class EncounterScripts {
             seerTimer = nbt.getInt("HueySeer");
             shockTimer = nbt.getInt("HueyShock");
             lostSegments.clear();
-            for (int i = 0; nbt.containsUuid(NBT_SEGMENT + i); i++) {
-                lostSegments.add(nbt.getUuid(NBT_SEGMENT + i));
+            for (int i = 0; nbt.hasUUID(NBT_SEGMENT + i); i++) {
+                lostSegments.add(nbt.getUUID(NBT_SEGMENT + i));
             }
-            lostTail = nbt.containsUuid(NBT_TAIL) ? nbt.getUuid(NBT_TAIL) : null;
+            lostTail = nbt.hasUUID(NBT_TAIL) ? nbt.getUUID(NBT_TAIL) : null;
             relinkTicks = RELINK_GRACE_TICKS;
         }
 
         /** Looks for the minions saved before an unload: adopted while the stage still needs them, discarded otherwise. */
         private void relink(DataBossEntity boss) {
-            ServerWorld w = BossFx.world(boss);
+            ServerLevel w = BossFx.world(boss);
             java.util.Iterator<UUID> it = lostSegments.iterator();
             while (it.hasNext()) {
-                if (w.getEntity(it.next()) instanceof MobEntity m) {
+                if (w.getEntity(it.next()) instanceof Mob m) {
                     it.remove();
                     if (stage == BODY && m.isAlive() && segments.size() < BossMechanics.HUEY_BODY_SEGMENTS) {
                         segments.add(m);
@@ -1535,7 +1534,7 @@ final class EncounterScripts {
                     }
                 }
             }
-            if (lostTail != null && w.getEntity(lostTail) instanceof MobEntity m) {
+            if (lostTail != null && w.getEntity(lostTail) instanceof Mob m) {
                 lostTail = null;
                 if (stage == TAIL && tail == null && m.isAlive()) {
                     tail = m;
@@ -1547,12 +1546,12 @@ final class EncounterScripts {
         }
 
         private void spawnSegments(DataBossEntity boss) {
-            segments.forEach(MobEntity::discard);
+            segments.forEach(Mob::discard);
             segments.clear();
-            Vec3d c = boss.getPos();
+            Vec3 c = boss.position();
             for (int i = 0; i < BossMechanics.HUEY_BODY_SEGMENTS; i++) {
                 double a = Math.PI * 0.6 + i * Math.PI * 0.2;
-                MobEntity m = BossFx.spawnMinion(boss, BossMechanics.HUEYCOATL_BODY,
+                Mob m = BossFx.spawnMinion(boss, BossMechanics.HUEYCOATL_BODY,
                         BossFx.ground(BossFx.world(boss), c.x + Math.cos(a) * 6, c.z + Math.sin(a) * 6, c.y), null);
                 if (m != null) {
                     segments.add(m);
@@ -1579,11 +1578,11 @@ final class EncounterScripts {
         }
 
         @Override
-        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             if (attackCount % 6 == 5 || (stage == FINAL && attackCount % 3 == 2)) {
                 BossFx.warn(boss, "Glowing symbols appear around you!");
                 for (int i = 0; i < 5; i++) {
-                    namedStrike("thunderstorm", boss, i == 0 ? target.getPos() : around(boss, target.getPos(), 5), 4,
+                    namedStrike("thunderstorm", boss, i == 0 ? target.position() : around(boss, target.position(), 5), 4,
                             maxHit(boss, VarlamoreBosses.HUEY_LIGHTNING), 1.4, ParticleTypes.ELECTRIC_SPARK);
                 }
                 attackCount++;
@@ -1598,7 +1597,7 @@ final class EncounterScripts {
         }
 
         @Override
-        protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             if (!isVulnerable(boss)) {
                 if (attacker != null) {
                     Msg.action(attacker, stage == BODY ? "The Hueycoatl is out of reach. Cut through her body first."
@@ -1616,11 +1615,11 @@ final class EncounterScripts {
 
         /** The seer's bar: every player near her counts towards the team size and the pillar their protection prayer charges. */
         void seerCheck(DataBossEntity boss) {
-            List<ServerPlayerEntity> team = BossFx.players(boss, 32);
+            List<ServerPlayer> team = BossFx.players(boss, 32);
             int melee = 0;
             int missiles = 0;
             int magic = 0;
-            for (ServerPlayerEntity p : team) {
+            for (ServerPlayer p : team) {
                 if (BossFx.protects(p, Prayer.PROTECT_FROM_MELEE)) {
                     melee++;
                 } else if (BossFx.protects(p, Prayer.PROTECT_FROM_MISSILES)) {
@@ -1632,7 +1631,7 @@ final class EncounterScripts {
             boolean charged = !team.isEmpty() && BossMechanics.hueyPillarsCharged(melee, missiles, magic, team.size());
             if (charged != lit) {
                 lit = charged;
-                for (ServerPlayerEntity p : team) {
+                for (ServerPlayer p : team) {
                     if (lit) {
                         Msg.game(p, "The braziers atop the pillars ignite! The Hueycoatl is vulnerable.");
                     } else {
@@ -1642,11 +1641,11 @@ final class EncounterScripts {
             }
         }
 
-        private void shockwave(DataBossEntity boss, ServerPlayerEntity target) {
+        private void shockwave(DataBossEntity boss, ServerPlayer target) {
             BossFx.warn(boss, "The Hueycoatl's tail slams the ground!");
-            for (ServerPlayerEntity p : BossFx.players(boss, 32)) {
-                namedStrike("tail_shockwave", boss, p.getPos(), 3, 0, 1.2, ParticleTypes.CLOUD, (hit, pos) -> {
-                    for (ServerPlayerEntity h : hit) {
+            for (ServerPlayer p : BossFx.players(boss, 32)) {
+                namedStrike("tail_shockwave", boss, p.position(), 3, 0, 1.2, ParticleTypes.CLOUD, (hit, pos) -> {
+                    for (ServerPlayer h : hit) {
                         CombatHooks.nameAttack("tail_shockwave", null);
                         CombatHandler.applyDamage(boss, h, BossMechanics.HUEY_SHOCKWAVE_MIN
                                 + h.getRandom().nextInt(BossMechanics.HUEY_SHOCKWAVE_MAX - BossMechanics.HUEY_SHOCKWAVE_MIN + 1));
@@ -1655,8 +1654,8 @@ final class EncounterScripts {
             }
         }
 
-        private void spawnTail(DataBossEntity boss, ServerPlayerEntity target) {
-            Vec3d c = boss.getPos();
+        private void spawnTail(DataBossEntity boss, ServerPlayer target) {
+            Vec3 c = boss.position();
             double a = boss.getRandom().nextBoolean() ? 0 : Math.PI;
             tail = BossFx.spawnMinion(boss, BossMechanics.HUEYCOATL_TAIL,
                     BossFx.ground(BossFx.world(boss), c.x + Math.cos(a) * 5, c.z + Math.sin(a) * 5, c.y), null);
@@ -1666,10 +1665,10 @@ final class EncounterScripts {
         }
 
         /** Hits on the tail cap at 4, or 9 with crush as the attacker's best attack bonus. */
-        private static void capTail(MobEntity tail) {
+        private static void capTail(Mob tail) {
             MinionRules.set(tail, new MinionRules.Rule() {
                 @Override
-                public int damage(ServerPlayerEntity p, net.minecraft.entity.LivingEntity mob, AttackType t, int d) {
+                public int damage(ServerPlayer p, net.minecraft.world.entity.LivingEntity mob, AttackType t, int d) {
                     com.runecraft.osrs.EquipmentStats g = com.runecraft.combat.HitCalcBridge.gearStats(p);
                     boolean crushBest = g.crushAttack() > g.stabAttack() && g.crushAttack() > g.slashAttack()
                             && g.crushAttack() > g.magicAttack() && g.crushAttack() > g.rangedAttack();
@@ -1679,7 +1678,7 @@ final class EncounterScripts {
         }
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             if (stage == 0) {
                 spawnSegments(boss);
             }
@@ -1727,9 +1726,9 @@ final class EncounterScripts {
                 } else if (--shockTimer <= 0 && target != null) {
                     // The tail changes sides and slams out a shockwave.
                     shockTimer = BossMechanics.HUEY_TAIL_SWAP_TICKS;
-                    Vec3d c = boss.getPos();
-                    Vec3d now0 = tail.getPos();
-                    tail.requestTeleport(2 * c.x - now0.x, now0.y, 2 * c.z - now0.z);
+                    Vec3 c = boss.position();
+                    Vec3 now0 = tail.position();
+                    tail.teleportTo(2 * c.x - now0.x, now0.y, 2 * c.z - now0.z);
                     shockwave(boss, target);
                 }
             }
@@ -1738,18 +1737,18 @@ final class EncounterScripts {
                 shockwave(boss, target);
             }
             if (lit) {
-                BossFx.ring(BossFx.world(boss), boss.getPos(), 2.5, ParticleTypes.FLAME);
+                BossFx.ring(BossFx.world(boss), boss.position(), 2.5, ParticleTypes.FLAME);
             }
         }
 
         @Override
-        public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
-            segments.forEach(MobEntity::discard);
+        public void onDeath(DataBossEntity boss, ServerPlayer killer) {
+            segments.forEach(Mob::discard);
             segments.clear();
             if (tail != null) {
                 tail.discard();
             }
-            ServerWorld w = BossFx.world(boss);
+            ServerLevel w = BossFx.world(boss);
             if (lostTail != null) {
                 lostSegments.add(lostTail);
                 lostTail = null;
@@ -1773,7 +1772,7 @@ final class EncounterScripts {
      * Self-test (boss:hueycoatl_phases): the head can't be harmed while her body parts stand; with them down she is; a
      * team of three praying all three protections lights the braziers.
      */
-    static String selfTestHueycoatl(DataBossEntity boss, ServerPlayerEntity p) {
+    static String selfTestHueycoatl(DataBossEntity boss, ServerPlayer p) {
         if (!(boss.script() instanceof Hueycoatl h)) {
             throw new IllegalStateException("the Hueycoatl has no Hueycoatl script");
         }
@@ -1805,7 +1804,7 @@ final class EncounterScripts {
      */
     static final class RoyalTitans extends ScriptedBoss {
         private static final class Wall {
-            final List<Vec3d> cells = new ArrayList<>();
+            final List<Vec3> cells = new ArrayList<>();
             final boolean fire;
             final long formsAt;
             long fadesAt;
@@ -1820,7 +1819,7 @@ final class EncounterScripts {
             }
         }
 
-        private record Elemental(MobEntity mob, boolean fire, long explodeAt) {
+        private record Elemental(Mob mob, boolean fire, long explodeAt) {
         }
 
         private DataBossEntity eldric;
@@ -1836,7 +1835,7 @@ final class EncounterScripts {
         private int blastsLeft;
         private long nextBlast;
         private int blastCycle = 10;
-        private Vec3d safe;
+        private Vec3 safe;
         private boolean subdued;
         private int subduedCharge = -2;
         private int eldricDeadCharge = -3;
@@ -1852,7 +1851,7 @@ final class EncounterScripts {
         private static final String NBT_WALL_WORLD = "TitanWallWorld";
 
         @Override
-        public void writeNbt(DataBossEntity boss, NbtCompound nbt) {
+        public void writeNbt(DataBossEntity boss, CompoundTag nbt) {
             List<Long> all = new ArrayList<>();
             for (Wall wall : walls) {
                 for (List<BlockPos> placed : wall.blocks.values()) {
@@ -1868,12 +1867,12 @@ final class EncounterScripts {
             }
             if (!all.isEmpty()) {
                 nbt.putLongArray(NBT_WALL_BLOCKS, all.stream().mapToLong(Long::longValue).toArray());
-                nbt.putString(NBT_WALL_WORLD, boss.getWorld().getRegistryKey().getValue().toString());
+                nbt.putString(NBT_WALL_WORLD, boss.level().dimension().location().toString());
             }
         }
 
         @Override
-        public void readNbt(DataBossEntity boss, NbtCompound nbt) {
+        public void readNbt(DataBossEntity boss, CompoundTag nbt) {
             if (nbt.contains(NBT_WALL_BLOCKS)) {
                 savedBlocks = nbt.getLongArray(NBT_WALL_BLOCKS);
                 savedWorld = nbt.getString(NBT_WALL_WORLD);
@@ -1881,10 +1880,10 @@ final class EncounterScripts {
         }
 
         /** Turns the walls saved before an unload back into air (only in the world they were saved in). */
-        private void clearSavedWalls(ServerWorld w) {
-            if (w.getRegistryKey().getValue().toString().equals(savedWorld)) {
+        private void clearSavedWalls(ServerLevel w) {
+            if (w.dimension().location().toString().equals(savedWorld)) {
                 for (long pos : savedBlocks) {
-                    clearWallBlock(w, BlockPos.fromLong(pos));
+                    clearWallBlock(w, BlockPos.of(pos));
                 }
             }
             savedBlocks = null;
@@ -1893,16 +1892,16 @@ final class EncounterScripts {
 
         @Override
         public void onSpawn(DataBossEntity boss) {
-            ServerPlayerEntity target = boss.getTarget() instanceof ServerPlayerEntity p ? p : null;
-            eldric = BossFx.spawnBoss(boss, "eldric_the_ice_king", boss.getBlockPos().add(5, 0, 0), target);
+            ServerPlayer target = boss.getTarget() instanceof ServerPlayer p ? p : null;
+            eldric = BossFx.spawnBoss(boss, "eldric_the_ice_king", boss.blockPosition().offset(5, 0, 0), target);
             BossFx.say(boss, "Branda the Fire Queen and Eldric the Ice King rise! Douse the fires and melt the icicles.");
             watcher = (p, t, type, d) -> {
-                if (!boss.isRemoved() && type == AttackType.MAGIC && p.squaredDistanceTo(boss) < 32 * 32) {
+                if (!boss.isRemoved() && type == AttackType.MAGIC && p.distanceToSqr(boss) < 32 * 32) {
                     String spell = MinionRules.spell(p);
                     if (BossMechanics.dousesFire(spell)) {
-                        clearWall(boss, p.getPos(), true);
+                        clearWall(boss, p.position(), true);
                     } else if (BossMechanics.meltsIce(spell)) {
-                        clearWall(boss, p.getPos(), false);
+                        clearWall(boss, p.position(), false);
                     }
                 }
             };
@@ -1918,7 +1917,7 @@ final class EncounterScripts {
         }
 
         /** Removes the wall cell nearest {@code from} and the two next to it. */
-        private void clearWall(DataBossEntity boss, Vec3d from, boolean fire) {
+        private void clearWall(DataBossEntity boss, Vec3 from, boolean fire) {
             Wall best = null;
             int bestCell = -1;
             double bestD = 12 * 12;
@@ -1927,7 +1926,7 @@ final class EncounterScripts {
                     continue;
                 }
                 for (int i = 0; i < w.cells.size(); i++) {
-                    double d = w.cells.get(i).squaredDistanceTo(from);
+                    double d = w.cells.get(i).distanceToSqr(from);
                     if (!w.gone[i] && d < bestD) {
                         bestD = d;
                         best = w;
@@ -1941,13 +1940,13 @@ final class EncounterScripts {
             for (int i = Math.max(0, bestCell - 1); i <= Math.min(best.cells.size() - 1, bestCell + 1); i++) {
                 best.gone[i] = true;
                 unblock(BossFx.world(boss), best, i);
-                Vec3d c = best.cells.get(i);
-                BossFx.world(boss).spawnParticles(fire ? ParticleTypes.CLOUD : ParticleTypes.SPLASH, c.x, c.y + 0.6, c.z, 8, 0.3, 0.4, 0.3, 0.02);
+                Vec3 c = best.cells.get(i);
+                BossFx.world(boss).sendParticles(fire ? ParticleTypes.CLOUD : ParticleTypes.SPLASH, c.x, c.y + 0.6, c.z, 8, 0.3, 0.4, 0.3, 0.02);
             }
         }
 
         @Override
-        public AttackDef chooseAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+        public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             return subdued || charging() ? IDLE_MELEE : null;
         }
 
@@ -1957,7 +1956,7 @@ final class EncounterScripts {
         }
 
         @Override
-        protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             if (eldricAlive() && attacker != null) {
                 // "One by one": attacking Branda while Eldric stands.
                 CombatAchievementService.flag(attacker, CombatAchievements.FLAG_TITANS_BOTH);
@@ -1977,8 +1976,8 @@ final class EncounterScripts {
         }
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
-            ServerWorld w = BossFx.world(boss);
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
+            ServerLevel w = BossFx.world(boss);
             if (savedBlocks != null) {
                 clearSavedWalls(w);
             }
@@ -1989,10 +1988,10 @@ final class EncounterScripts {
                     if (subduedCharge == eldricDeadCharge) {
                         CombatAchievementService.flagNear(boss, BossMechanics.FLAG_TITANS_CHARGE_KILL);
                     }
-                    ServerPlayerEntity killer = eldric.getAttacker() instanceof ServerPlayerEntity p ? p : target;
+                    ServerPlayer killer = eldric.getLastHurtByMob() instanceof ServerPlayer p ? p : target;
                     if (killer != null) {
                         boss.setHealth(0f);
-                        boss.onDeath(CombatHandler.source(killer));
+                        boss.die(CombatHandler.source(killer));
                         return;
                     }
                 }
@@ -2037,7 +2036,7 @@ final class EncounterScripts {
             }
         }
 
-        private void phaseTwoTick(DataBossEntity boss, ServerWorld w, ServerPlayerEntity target) {
+        private void phaseTwoTick(DataBossEntity boss, ServerLevel w, ServerPlayer target) {
             ModernScriptsAccess.speed(boss, 0.0);
             if (eldricAlive()) {
                 ModernScriptsAccess.speed(eldric, 0.0);
@@ -2049,8 +2048,8 @@ final class EncounterScripts {
                 if (now >= nextBlast) {
                     blastsLeft--;
                     nextBlast = now + 2;
-                    for (ServerPlayerEntity p : BossFx.players(boss, 24)) {
-                        if (safe == null || ModernScriptsAccess.flat(p.getPos(), safe) > 1.5) {
+                    for (ServerPlayer p : BossFx.players(boss, 24)) {
+                        if (safe == null || ModernScriptsAccess.flat(p.position(), safe) > 1.5) {
                             CombatHooks.nameAttack("elemental_blast", null);
                             CombatHandler.applyDamage(boss, p, boss.getRandom().nextInt(BossMechanics.TITAN_BLAST_MAX + 1));
                         }
@@ -2092,8 +2091,8 @@ final class EncounterScripts {
             }
         }
 
-        private void conjureWall(DataBossEntity boss, ServerWorld w, boolean fire) {
-            Vec3d c = homeVec().add(2.5, 0, 0);
+        private void conjureWall(DataBossEntity boss, ServerLevel w, boolean fire) {
+            Vec3 c = homeVec().add(2.5, 0, 0);
             double x = c.x + (boss.getRandom().nextInt(9) - 4) * 2;
             Wall wall = new Wall(fire, now + BossMechanics.TITAN_WALL_FORM_TICKS);
             for (int i = -2; i <= 2; i++) {
@@ -2103,8 +2102,8 @@ final class EncounterScripts {
             walls.add(wall);
         }
 
-        private void tickWalls(DataBossEntity boss, ServerWorld w) {
-            List<ServerPlayerEntity> players = BossFx.players(boss, 24);
+        private void tickWalls(DataBossEntity boss, ServerLevel w) {
+            List<ServerPlayer> players = BossFx.players(boss, 24);
             java.util.Iterator<Wall> it = walls.iterator();
             while (it.hasNext()) {
                 Wall wall = it.next();
@@ -2114,8 +2113,8 @@ final class EncounterScripts {
                         continue;
                     }
                     any = true;
-                    Vec3d c = wall.cells.get(i);
-                    w.spawnParticles(wall.fire ? ParticleTypes.FLAME : ParticleTypes.SNOWFLAKE, c.x, c.y + (wall.formed ? 0.8 : 0.1), c.z,
+                    Vec3 c = wall.cells.get(i);
+                    w.sendParticles(wall.fire ? ParticleTypes.FLAME : ParticleTypes.SNOWFLAKE, c.x, c.y + (wall.formed ? 0.8 : 0.1), c.z,
                             wall.formed ? 4 : 1, 0.3, wall.formed ? 0.5 : 0.05, 0.3, 0);
                 }
                 if (!any) {
@@ -2128,16 +2127,16 @@ final class EncounterScripts {
                     wall.formed = true;
                     wall.fadesAt = now + 30; // approx: how long a wall lasts by itself
                     for (int i = 0; i < wall.cells.size(); i++) {
-                        Vec3d c = wall.cells.get(i);
-                        for (ServerPlayerEntity p : players) {
-                            if (ModernScriptsAccess.flat(p.getPos(), c) < 1.1) {
+                        Vec3 c = wall.cells.get(i);
+                        for (ServerPlayer p : players) {
+                            if (ModernScriptsAccess.flat(p.position(), c) < 1.1) {
                                 CombatHooks.nameAttack(name, null);
                                 CombatHandler.applyDamage(boss, p, boss.getRandom().nextInt(BossMechanics.TITAN_WALL_MAX + 1));
                                 wall.gone[i] = true; // standing on the tile stops it forming
                             }
                         }
                         for (Elemental e : elementals) {
-                            if (!wall.gone[i] && e.fire() != wall.fire && e.mob().isAlive() && ModernScriptsAccess.flat(e.mob().getPos(), c) < 1.3) {
+                            if (!wall.gone[i] && e.fire() != wall.fire && e.mob().isAlive() && ModernScriptsAccess.flat(e.mob().position(), c) < 1.3) {
                                 e.mob().discard();
                                 CombatAchievementService.countNear(boss, BossMechanics.COUNT_TITAN_ELEMENTAL_KILLS);
                             }
@@ -2157,8 +2156,8 @@ final class EncounterScripts {
                         if (wall.gone[i]) {
                             continue;
                         }
-                        for (ServerPlayerEntity p : players) {
-                            if (ModernScriptsAccess.flat(p.getPos(), wall.cells.get(i)) < 0.9) {
+                        for (ServerPlayer p : players) {
+                            if (ModernScriptsAccess.flat(p.position(), wall.cells.get(i)) < 0.9) {
                                 CombatHooks.nameAttack(name, null);
                                 CombatHandler.applyDamage(boss, p, 2); // approx: walls block the tile in OSRS
                             }
@@ -2172,21 +2171,21 @@ final class EncounterScripts {
          * Raises a formed wall cell: a 2x2-block (one tile), 2-high column of magma (fire) or packed ice (icicles) in the
          * air blocks of the tile that no creature stands in, so players and elementals have to go around it.
          */
-        private static void block(ServerWorld w, Wall wall, int cell) {
-            Vec3d c = wall.cells.get(cell);
+        private static void block(ServerLevel w, Wall wall, int cell) {
+            Vec3 c = wall.cells.get(cell);
             List<BlockPos> placed = new ArrayList<>();
-            net.minecraft.block.BlockState state = (wall.fire ? Blocks.MAGMA_BLOCK : Blocks.PACKED_ICE).getDefaultState();
+            net.minecraft.world.level.block.state.BlockState state = (wall.fire ? Blocks.MAGMA_BLOCK : Blocks.PACKED_ICE).defaultBlockState();
             int y = (int) Math.floor(c.y + 0.01);
             for (int bx : new int[]{(int) Math.floor(c.x - 0.5), (int) Math.floor(c.x + 0.5)}) {
                 for (int bz : new int[]{(int) Math.floor(c.z - 0.5), (int) Math.floor(c.z + 0.5)}) {
                     for (int dy = 0; dy < 2; dy++) {
                         BlockPos pos = new BlockPos(bx, y + dy, bz);
                         if (placed.contains(pos) || !w.getBlockState(pos).isAir()
-                                || !w.getEntitiesByClass(net.minecraft.entity.LivingEntity.class, new net.minecraft.util.math.Box(pos),
+                                || !w.getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class, new net.minecraft.world.phys.AABB(pos),
                                 e -> e.isAlive()).isEmpty()) {
                             continue;
                         }
-                        w.setBlockState(pos, state);
+                        w.setBlockAndUpdate(pos, state);
                         placed.add(pos);
                     }
                 }
@@ -2194,7 +2193,7 @@ final class EncounterScripts {
             wall.blocks.put(cell, placed);
         }
 
-        private static void unblock(ServerWorld w, Wall wall, int cell) {
+        private static void unblock(ServerLevel w, Wall wall, int cell) {
             List<BlockPos> placed = wall.blocks.remove(cell);
             if (placed == null) {
                 return;
@@ -2204,30 +2203,30 @@ final class EncounterScripts {
             }
         }
 
-        private static void clearWallBlock(ServerWorld w, BlockPos pos) {
-            if (w.getBlockState(pos).isOf(Blocks.MAGMA_BLOCK) || w.getBlockState(pos).isOf(Blocks.PACKED_ICE)) {
-                w.setBlockState(pos, Blocks.AIR.getDefaultState());
+        private static void clearWallBlock(ServerLevel w, BlockPos pos) {
+            if (w.getBlockState(pos).is(Blocks.MAGMA_BLOCK) || w.getBlockState(pos).is(Blocks.PACKED_ICE)) {
+                w.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
             }
         }
 
-        private static void unblockAll(ServerWorld w, Wall wall) {
+        private static void unblockAll(ServerLevel w, Wall wall) {
             for (Integer cell : new ArrayList<>(wall.blocks.keySet())) {
                 unblock(w, wall, cell);
             }
         }
 
-        private void summonElementals(DataBossEntity boss, ServerPlayerEntity target) {
+        private void summonElementals(DataBossEntity boss, ServerPlayer target) {
             elementals.removeIf(e -> !e.mob().isAlive());
             if (elementals.size() >= 6) {
                 return;
             }
             for (int i = 0; i < 3; i++) {
-                MobEntity f = BossFx.spawnMinion(boss, "titan_fire_elemental", around(boss, boss.getPos(), 3), target);
+                Mob f = BossFx.spawnMinion(boss, "titan_fire_elemental", around(boss, boss.position(), 3), target);
                 if (f != null) {
                     elementals.add(new Elemental(f, true, now + 20)); // approx: when they self-destruct
                 }
                 if (eldricAlive()) {
-                    MobEntity ice = BossFx.spawnMinion(boss, "titan_ice_elemental", around(boss, eldric.getPos(), 3), target);
+                    Mob ice = BossFx.spawnMinion(boss, "titan_ice_elemental", around(boss, eldric.position(), 3), target);
                     if (ice != null) {
                         elementals.add(new Elemental(ice, false, now + 20));
                     }
@@ -2236,7 +2235,7 @@ final class EncounterScripts {
             BossFx.warn(boss, "The Royal Titans summon elementals!");
         }
 
-        private void tickElementals(DataBossEntity boss, ServerWorld w) {
+        private void tickElementals(DataBossEntity boss, ServerLevel w) {
             java.util.Iterator<Elemental> it = elementals.iterator();
             while (it.hasNext()) {
                 Elemental e = it.next();
@@ -2247,21 +2246,21 @@ final class EncounterScripts {
                 if (now < e.explodeAt()) {
                     continue;
                 }
-                for (ServerPlayerEntity p : BossFx.players(boss, 24)) {
-                    if (ModernScriptsAccess.flat(p.getPos(), e.mob().getPos()) <= 3.0) {
+                for (ServerPlayer p : BossFx.players(boss, 24)) {
+                    if (ModernScriptsAccess.flat(p.position(), e.mob().position()) <= 3.0) {
                         CombatHooks.nameAttack("elemental_explosion", null);
                         CombatHandler.applyDamage(boss, p, BossMechanics.TITAN_ELEMENTAL_BLAST_MIN
                                 + boss.getRandom().nextInt(BossMechanics.TITAN_ELEMENTAL_BLAST_MAX - BossMechanics.TITAN_ELEMENTAL_BLAST_MIN + 1));
                     }
                 }
-                w.spawnParticles(ParticleTypes.EXPLOSION, e.mob().getX(), e.mob().getY() + 0.5, e.mob().getZ(), 1, 0, 0, 0, 0);
+                w.sendParticles(ParticleTypes.EXPLOSION, e.mob().getX(), e.mob().getY() + 0.5, e.mob().getZ(), 1, 0, 0, 0, 0);
                 e.mob().discard();
                 it.remove();
             }
         }
 
         @Override
-        public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
+        public void onDeath(DataBossEntity boss, ServerPlayer killer) {
             if (charging() && eldricDead && eldricDeadCharge == chargeId) {
                 CombatAchievementService.flagNear(boss, BossMechanics.FLAG_TITANS_CHARGE_KILL);
             }
@@ -2281,7 +2280,7 @@ final class EncounterScripts {
                 MinionRules.unwatch(watcher);
                 watcher = null;
             }
-            ServerWorld w = BossFx.world(boss);
+            ServerLevel w = BossFx.world(boss);
             for (Wall wall : walls) {
                 unblockAll(w, wall);
             }
@@ -2297,20 +2296,20 @@ final class EncounterScripts {
         private ModernScriptsAccess() {
         }
 
-        static double flat(Vec3d a, Vec3d b) {
+        static double flat(Vec3 a, Vec3 b) {
             double dx = a.x - b.x;
             double dz = a.z - b.z;
             return Math.sqrt(dx * dx + dz * dz);
         }
 
-        static void speed(MobEntity mob, double speed) {
-            var attr = mob.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED);
+        static void speed(Mob mob, double speed) {
+            var attr = mob.getAttribute(Attributes.MOVEMENT_SPEED);
             if (attr != null && attr.getBaseValue() != speed) {
                 attr.setBaseValue(speed);
             }
         }
 
-        static void stop(MobEntity mob) {
+        static void stop(Mob mob) {
             speed(mob, 0.0);
             mob.getNavigation().stop();
         }

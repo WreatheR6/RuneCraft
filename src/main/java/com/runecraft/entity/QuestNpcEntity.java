@@ -2,56 +2,56 @@ package com.runecraft.entity;
 
 import com.runecraft.osrs.QuestNpc;
 import com.runecraft.quest.QuestManager;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.ai.goal.LookAroundGoal;
-import net.minecraft.entity.ai.goal.LookAtEntityGoal;
-import net.minecraft.entity.attribute.DefaultAttributeContainer;
-import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.data.DataTracker;
-import net.minecraft.entity.data.TrackedData;
-import net.minecraft.entity.data.TrackedDataHandlerRegistry;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.mob.PathAwareEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.world.World;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.PathfinderMob;
+import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
+import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 
 /** A stationary, invulnerable quest character. Right-click to talk. */
-public class QuestNpcEntity extends PathAwareEntity {
-    private static final TrackedData<String> NPC = DataTracker.registerData(QuestNpcEntity.class, TrackedDataHandlerRegistry.STRING);
+public class QuestNpcEntity extends PathfinderMob {
+    private static final EntityDataAccessor<String> NPC = SynchedEntityData.defineId(QuestNpcEntity.class, EntityDataSerializers.STRING);
     /** A built-in character loaded far from its OSRS tile (left at an old spot): removed on its first tick. */
     private boolean misplaced;
 
-    public QuestNpcEntity(EntityType<? extends PathAwareEntity> type, World world) {
+    public QuestNpcEntity(EntityType<? extends PathfinderMob> type, Level world) {
         super(type, world);
-        setPersistent();
+        setPersistenceRequired();
     }
 
-    public static DefaultAttributeContainer.Builder createAttributes() {
-        return MobEntity.createMobAttributes().add(EntityAttributes.GENERIC_MAX_HEALTH, 20.0)
-                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.0);
-    }
-
-    @Override
-    protected void initDataTracker() {
-        super.initDataTracker();
-        this.dataTracker.startTracking(NPC, QuestNpc.COOK.name());
+    public static AttributeSupplier.Builder createAttributes() {
+        return Mob.createMobAttributes().add(Attributes.MAX_HEALTH, 20.0)
+                .add(Attributes.MOVEMENT_SPEED, 0.0);
     }
 
     @Override
-    protected void initGoals() {
-        this.goalSelector.add(1, new LookAtEntityGoal(this, PlayerEntity.class, 8.0f, 1.0f));
-        this.goalSelector.add(2, new LookAroundGoal(this));
+    protected void defineSynchedData() {
+        super.defineSynchedData();
+        this.entityData.define(NPC, QuestNpc.COOK.name());
+    }
+
+    @Override
+    protected void registerGoals() {
+        this.goalSelector.addGoal(1, new LookAtPlayerGoal(this, Player.class, 8.0f, 1.0f));
+        this.goalSelector.addGoal(2, new RandomLookAroundGoal(this));
     }
 
     /** NPC id: a {@link QuestNpc} enum name for built-in characters or a module {@code NpcDef} id. */
     public String npcId() {
-        return this.dataTracker.get(NPC);
+        return this.entityData.get(NPC);
     }
 
     /** The built-in quest character, or null for module NPCs. */
@@ -64,26 +64,26 @@ public class QuestNpcEntity extends PathAwareEntity {
     }
 
     public void setNpc(QuestNpc npc) {
-        this.dataTracker.set(NPC, npc.name());
-        setCustomName(Text.literal(npc.displayName()));
+        this.entityData.set(NPC, npc.name());
+        setCustomName(Component.literal(npc.displayName()));
         setCustomNameVisible(true);
     }
 
     public void setNpc(com.runecraft.osrs.content.NpcDef npc) {
-        this.dataTracker.set(NPC, npc.id());
-        setCustomName(Text.literal(npc.name()));
+        this.entityData.set(NPC, npc.id());
+        setCustomName(Component.literal(npc.name()));
         setCustomNameVisible(true);
     }
 
     @Override
-    public void writeCustomDataToNbt(NbtCompound nbt) {
-        super.writeCustomDataToNbt(nbt);
+    public void addAdditionalSaveData(CompoundTag nbt) {
+        super.addAdditionalSaveData(nbt);
         nbt.putString("Npc", npcId());
     }
 
     @Override
-    public void readCustomDataFromNbt(NbtCompound nbt) {
-        super.readCustomDataFromNbt(nbt);
+    public void readAdditionalSaveData(CompoundTag nbt) {
+        super.readAdditionalSaveData(nbt);
         String id = nbt.getString("Npc");
         com.runecraft.osrs.content.NpcDef def = com.runecraft.osrs.content.ContentRegistry.npc(id);
         if (def != null) {
@@ -103,25 +103,25 @@ public class QuestNpcEntity extends PathAwareEntity {
     @Override
     public void tick() {
         super.tick();
-        if (misplaced && !getWorld().isClient()) {
+        if (misplaced && !level().isClientSide()) {
             discard();
         }
     }
 
     @Override
-    protected ActionResult interactMob(PlayerEntity player, Hand hand) {
-        if (hand != Hand.MAIN_HAND) {
-            return ActionResult.PASS;
+    protected InteractionResult mobInteract(Player player, InteractionHand hand) {
+        if (hand != InteractionHand.MAIN_HAND) {
+            return InteractionResult.PASS;
         }
-        if (!getWorld().isClient() && player instanceof ServerPlayerEntity sp) {
+        if (!level().isClientSide() && player instanceof ServerPlayer sp) {
             QuestManager.talk(sp, this);
         }
-        return ActionResult.success(getWorld().isClient());
+        return InteractionResult.sidedSuccess(level().isClientSide());
     }
 
     @Override
     public boolean isInvulnerableTo(DamageSource source) {
-        return !source.isSourceCreativePlayer();
+        return !source.isCreativePlayer();
     }
 
     @Override
@@ -130,7 +130,7 @@ public class QuestNpcEntity extends PathAwareEntity {
     }
 
     @Override
-    public boolean canImmediatelyDespawn(double distanceSquared) {
+    public boolean removeWhenFarAway(double distanceSquared) {
         return false;
     }
 }

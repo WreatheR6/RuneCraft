@@ -8,13 +8,12 @@ import com.runecraft.world.Gielinor;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.scoreboard.ServerScoreboard;
-import net.minecraft.scoreboard.Team;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
+import net.minecraft.server.ServerScoreboard;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.scores.PlayerTeam;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -42,15 +41,15 @@ public final class SkullService {
 
     static void register() {
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            if (server.getTicks() % 20 != 0) {
+            if (server.getTickCount() % 20 != 0) {
                 return;
             }
             // Keep each online player's skull ticks in SysState so the timer survives logouts and restarts.
-            for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
-                com.runecraft.content.systems.SysState.of(p).skullTicks = (int) SKULLS.ticksLeft(p.getUuid(), ActionManager.gameTick());
+            for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+                com.runecraft.content.systems.SysState.of(p).skullTicks = (int) SKULLS.ticksLeft(p.getUUID(), ActionManager.gameTick());
             }
             for (UUID id : SKULLS.expire(ActionManager.gameTick())) {
-                ServerPlayerEntity p = server.getPlayerManager().getPlayer(id);
+                ServerPlayer p = server.getPlayerList().getPlayer(id);
                 if (p != null) {
                     removeFromTeam(p);
                     Msg.game(p, "Your PK skull has faded.");
@@ -59,42 +58,42 @@ public final class SkullService {
             }
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
-            ServerPlayerEntity p = handler.getPlayer();
-            com.runecraft.content.systems.SysState.of(p).skullTicks = (int) SKULLS.ticksLeft(p.getUuid(), ActionManager.gameTick());
+            ServerPlayer p = handler.getPlayer();
+            com.runecraft.content.systems.SysState.of(p).skullTicks = (int) SKULLS.ticksLeft(p.getUUID(), ActionManager.gameTick());
         });
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
             if (!alive) {
                 com.runecraft.content.systems.SysState.of(newPlayer).skullTicks = 0;
-                SKULLS.clear(newPlayer.getUuid());
+                SKULLS.clear(newPlayer.getUUID());
                 removeFromTeam(newPlayer);
                 showChampion(newPlayer);
             }
         });
         // The skull's ticks left are saved in SysState: restore the timer on join, drop stale scoreboard skulls.
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            ServerPlayerEntity p = handler.getPlayer();
+            ServerPlayer p = handler.getPlayer();
             int saved = com.runecraft.content.systems.SysState.of(p).skullTicks;
-            if (saved > 0 && !SKULLS.isSkulled(p.getUuid(), ActionManager.gameTick())) {
-                SKULLS.skull(p.getUuid(), ActionManager.gameTick(), saved);
+            if (saved > 0 && !SKULLS.isSkulled(p.getUUID(), ActionManager.gameTick())) {
+                SKULLS.skull(p.getUUID(), ActionManager.gameTick(), saved);
                 addToTeam(p);
             }
-            if (!SKULLS.isSkulled(p.getUuid(), ActionManager.gameTick())) {
+            if (!SKULLS.isSkulled(p.getUUID(), ActionManager.gameTick())) {
                 removeFromTeam(p);
             }
-            if (!CHAMPIONS.contains(p.getUuid())) {
+            if (!CHAMPIONS.contains(p.getUUID())) {
                 removeFromTeam(p, PvpSkull.CHAMPION_TEAM);
             }
         });
     }
 
     /** A player attacked another player (any style, hit or miss). */
-    public static void onPlayerAttack(ServerPlayerEntity attacker, ServerPlayerEntity victim) {
+    public static void onPlayerAttack(ServerPlayer attacker, ServerPlayer victim) {
         if (attacker == victim || !Gielinor.is(attacker)) {
             return;
         }
         long now = ActionManager.gameTick();
-        boolean wasSkulled = SKULLS.isSkulled(attacker.getUuid(), now);
-        if (SKULLS.onAttack(attacker.getUuid(), victim.getUuid(), now, Gielinor.wildernessLevel(attacker) > 0)) {
+        boolean wasSkulled = SKULLS.isSkulled(attacker.getUUID(), now);
+        if (SKULLS.onAttack(attacker.getUUID(), victim.getUUID(), now, Gielinor.wildernessLevel(attacker) > 0)) {
             addToTeam(attacker);
             if (!wasSkulled) {
                 Msg.red(attacker, "You have been skulled: you will lose all your items if you die.");
@@ -102,28 +101,28 @@ public final class SkullService {
         }
     }
 
-    public static boolean isSkulled(ServerPlayerEntity player) {
-        return SKULLS.isSkulled(player.getUuid(), ActionManager.gameTick());
+    public static boolean isSkulled(ServerPlayer player) {
+        return SKULLS.isSkulled(player.getUUID(), ActionManager.gameTick());
     }
 
     /** Items the player keeps on death: 0 when skulled, otherwise 3; Protect Item adds one. */
-    public static int itemsKept(ServerPlayerEntity player, boolean protectItem) {
-        return SKULLS.itemsKept(player.getUuid(), ActionManager.gameTick(), protectItem);
+    public static int itemsKept(ServerPlayer player, boolean protectItem) {
+        return SKULLS.itemsKept(player.getUUID(), ActionManager.gameTick(), protectItem);
     }
 
     /** The Emblem Trader's "Skull" option: the first talk asks, talking again within 10 seconds confirms. */
-    public static void emblemTrader(ServerPlayerEntity player, String name) {
-        long time = player.getWorld().getTime();
-        Long asked = EMBLEM_ASKED.remove(player.getUuid());
+    public static void emblemTrader(ServerPlayer player, String name) {
+        long time = player.level().getGameTime();
+        Long asked = EMBLEM_ASKED.remove(player.getUUID());
         if (asked == null || time - asked > 200) {
-            EMBLEM_ASKED.put(player.getUuid(), time);
-            long left = SKULLS.ticksLeft(player.getUuid(), ActionManager.gameTick());
+            EMBLEM_ASKED.put(player.getUUID(), time);
+            long left = SKULLS.ticksLeft(player.getUUID(), ActionManager.gameTick());
             QuestApi.say(player, name, left > 0
                     ? "You're already skulled, " + PvpSkull.minutes(left) + " minutes left. Talk to me again to make it last longer."
                     : "A PK skull? You'll lose everything if you die in the Wilderness. Talk to me again to confirm.");
             return;
         }
-        SKULLS.skull(player.getUuid(), ActionManager.gameTick(), PvpSkull.EMBLEM_TRADER_TICKS);
+        SKULLS.skull(player.getUUID(), ActionManager.gameTick(), PvpSkull.EMBLEM_TRADER_TICKS);
         addToTeam(player);
         QuestApi.say(player, name, "There you go. Try not to die out there.");
         Msg.red(player, "You are now skulled.");
@@ -133,70 +132,70 @@ public final class SkullService {
      * Shows or hides the TzHaar Fight Pit champion's red skull above a player's head. It doesn't count as a PvP skull, and a
      * Wilderness skull is shown instead while the player has one.
      */
-    public static void setChampionSkull(ServerPlayerEntity player, boolean on) {
+    public static void setChampionSkull(ServerPlayer player, boolean on) {
         if (on) {
-            CHAMPIONS.add(player.getUuid());
+            CHAMPIONS.add(player.getUUID());
             showChampion(player);
         } else {
-            CHAMPIONS.remove(player.getUuid());
+            CHAMPIONS.remove(player.getUUID());
             removeFromTeam(player, PvpSkull.CHAMPION_TEAM);
         }
     }
 
-    public static boolean hasChampionSkull(ServerPlayerEntity player) {
-        return CHAMPIONS.contains(player.getUuid());
+    public static boolean hasChampionSkull(ServerPlayer player) {
+        return CHAMPIONS.contains(player.getUUID());
     }
 
-    private static void showChampion(ServerPlayerEntity player) {
-        if (CHAMPIONS.contains(player.getUuid()) && !isSkulled(player)) {
+    private static void showChampion(ServerPlayer player) {
+        if (CHAMPIONS.contains(player.getUUID()) && !isSkulled(player)) {
             addToTeam(player, PvpSkull.CHAMPION_TEAM);
         }
     }
 
-    private static Team team(MinecraftServer server, String name) {
+    private static PlayerTeam team(MinecraftServer server, String name) {
         ServerScoreboard board = server.getScoreboard();
-        Team team = board.getTeam(name);
+        PlayerTeam team = board.getPlayerTeam(name);
         if (team == null) {
-            team = board.addTeam(name);
+            team = board.addPlayerTeam(name);
             if (name.equals(PvpSkull.CHAMPION_TEAM)) {
-                team.setPrefix(Text.literal("☠ ").formatted(Formatting.DARK_RED));
-                team.setColor(Formatting.DARK_RED);
+                team.setPlayerPrefix(Component.literal("☠ ").withStyle(ChatFormatting.DARK_RED));
+                team.setColor(ChatFormatting.DARK_RED);
             } else {
-                team.setPrefix(Text.literal("☠ ").formatted(Formatting.RED));
+                team.setPlayerPrefix(Component.literal("☠ ").withStyle(ChatFormatting.RED));
             }
         }
         return team;
     }
 
-    private static void addToTeam(ServerPlayerEntity player) {
+    private static void addToTeam(ServerPlayer player) {
         addToTeam(player, PvpSkull.TEAM);
     }
 
-    private static void addToTeam(ServerPlayerEntity player, String teamName) {
+    private static void addToTeam(ServerPlayer player, String teamName) {
         MinecraftServer server = player.getServer();
         if (server == null) {
             return;
         }
-        Team team = team(server, teamName);
+        PlayerTeam team = team(server, teamName);
         String name = player.getGameProfile().getName();
-        if (server.getScoreboard().getPlayerTeam(name) != team) {
+        if (server.getScoreboard().getPlayersTeam(name) != team) {
             server.getScoreboard().addPlayerToTeam(name, team);
         }
     }
 
-    private static void removeFromTeam(ServerPlayerEntity player) {
+    private static void removeFromTeam(ServerPlayer player) {
         removeFromTeam(player, PvpSkull.TEAM);
     }
 
-    private static void removeFromTeam(ServerPlayerEntity player, String teamName) {
+    private static void removeFromTeam(ServerPlayer player, String teamName) {
         MinecraftServer server = player.getServer();
         if (server == null) {
             return;
         }
         ServerScoreboard board = server.getScoreboard();
-        Team team = board.getTeam(teamName);
+        PlayerTeam team = board.getPlayerTeam(teamName);
         String name = player.getGameProfile().getName();
-        if (team != null && board.getPlayerTeam(name) == team) {
+        if (team != null && board.getPlayersTeam(name) == team) {
             board.removePlayerFromTeam(name, team);
         }
     }

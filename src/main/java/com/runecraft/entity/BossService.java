@@ -7,25 +7,24 @@ import com.runecraft.player.Players;
 import com.runecraft.registry.ModEntities;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnReason;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-
 import java.util.Locale;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.phys.AABB;
 
 /** Summoning bosses at their lairs. */
 public final class BossService {
     private BossService() {
     }
 
-    public static void summon(ServerPlayerEntity player, ServerWorld world, BlockPos pos, Boss boss) {
+    public static void summon(ServerPlayer player, ServerLevel world, BlockPos pos, Boss boss) {
         EntityType<BossEntity> type = ModEntities.BOSS_TYPES.get(boss);
-        if (!world.getEntitiesByType(type, new Box(pos).expand(48), e -> e.isAlive()).isEmpty()) {
+        if (!world.getEntities(type, new AABB(pos).inflate(48), e -> e.isAlive()).isEmpty()) {
             Msg.game(player, boss.displayName() + " is already here!");
             return;
         }
@@ -50,31 +49,31 @@ public final class BossService {
         if (entity == null) {
             return;
         }
-        BlockPos spawn = pos.up().offset(player.getHorizontalFacing().getOpposite(), 0);
-        entity.refreshPositionAndAngles(spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5, world.getRandom().nextFloat() * 360f, 0);
-        entity.initialize(world, world.getLocalDifficulty(spawn), SpawnReason.EVENT, null, null);
+        BlockPos spawn = pos.above().relative(player.getDirection().getOpposite(), 0);
+        entity.moveTo(spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5, world.getRandom().nextFloat() * 360f, 0);
+        entity.finalizeSpawn(world, world.getCurrentDifficultyAt(spawn), MobSpawnType.EVENT, null, null);
         entity.setTarget(player);
-        world.spawnEntity(entity);
+        world.addFreshEntity(entity);
         spawnBodyguards(world, boss, spawn, player);
-        world.playSound(null, pos, SoundEvents.ENTITY_WITHER_SPAWN, SoundCategory.HOSTILE, 0.6f, 1.2f);
+        world.playSound(null, pos, SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 0.6f, 1.2f);
         Msg.red(player, boss.displayName() + " (level-" + boss.combatLevel() + ") emerges!");
     }
 
     /** Spawns the boss's bodyguards around it (skipping any still alive from an earlier fight). */
-    private static void spawnBodyguards(ServerWorld world, Boss boss, BlockPos center, ServerPlayerEntity player) {
+    private static void spawnBodyguards(ServerLevel world, Boss boss, BlockPos center, ServerPlayer player) {
         int i = 0;
         for (String id : boss.bodyguards()) {
             double angle = Math.PI * 2 * i++ / Math.max(1, boss.bodyguards().size());
             EntityType<?> type = ModEntities.typeById(id);
-            if (type == null || !world.getEntitiesByType(type, new Box(center).expand(48), e -> e.isAlive()).isEmpty()) {
+            if (type == null || !world.getEntities(type, new AABB(center).inflate(48), e -> e.isAlive()).isEmpty()) {
                 continue;
             }
-            if (type.create(world) instanceof net.minecraft.entity.mob.MobEntity mob) {
-                mob.refreshPositionAndAngles(center.getX() + 0.5 + Math.cos(angle) * 4, center.getY(),
+            if (type.create(world) instanceof net.minecraft.world.entity.Mob mob) {
+                mob.moveTo(center.getX() + 0.5 + Math.cos(angle) * 4, center.getY(),
                         center.getZ() + 0.5 + Math.sin(angle) * 4, 0, 0);
-                mob.initialize(world, world.getLocalDifficulty(mob.getBlockPos()), SpawnReason.EVENT, null, null);
+                mob.finalizeSpawn(world, world.getCurrentDifficultyAt(mob.blockPosition()), MobSpawnType.EVENT, null, null);
                 mob.setTarget(player);
-                world.spawnEntity(mob);
+                world.addFreshEntity(mob);
             }
         }
     }

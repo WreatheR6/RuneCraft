@@ -4,9 +4,9 @@ import com.runecraft.boss.DataBossEntity;
 import com.runecraft.combat.CombatHandler;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.bosses.IslandBosses;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * The Deranged archaeologist (see {@link IslandBosses}): ranged attacks, melee only against a player standing next to
@@ -26,12 +26,12 @@ final class DerangedArchaeologistScript extends ScriptedBoss {
     }
 
     @Override
-    protected boolean wantsMelee(DataBossEntity boss, ServerPlayerEntity target) {
+    protected boolean wantsMelee(DataBossEntity boss, ServerPlayer target) {
         return false;
     }
 
     @Override
-    protected AttackDef nextAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+    protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
         if (now >= specialReadyAt && boss.getRandom().nextInt(IslandBosses.SPECIAL_CHANCE) == 0) {
             specialReadyAt = now + IslandBosses.SPECIAL_COOLDOWN_TICKS;
             learnToRead(boss, target);
@@ -40,20 +40,20 @@ final class DerangedArchaeologistScript extends ScriptedBoss {
         return distance <= IslandBosses.DERANGED_MELEE.range() ? IslandBosses.DERANGED_MELEE : IslandBosses.DERANGED_RANGED;
     }
 
-    private void learnToRead(DataBossEntity boss, ServerPlayerEntity target) {
+    private void learnToRead(DataBossEntity boss, ServerPlayer target) {
         BossFx.say(boss, "Deranged archaeologist: Learn to read!");
         BossFx.warn(boss, "The Deranged archaeologist hurls a shower of books!");
-        Vec3d centre = target.getPos();
+        Vec3 centre = target.position();
         book(boss, centre, IslandBosses.BOOK_DELAY_TICKS, true);
         book(boss, around(boss, centre, 4.0), IslandBosses.BOOK_DELAY_TICKS, false);
         book(boss, around(boss, centre, 4.0), IslandBosses.BOOK_DELAY_TICKS, false);
     }
 
     /** One exploding book; the central one splits into two more when it lands. */
-    private void book(DataBossEntity boss, Vec3d at, int delay, boolean splits) {
+    private void book(DataBossEntity boss, Vec3 at, int delay, boolean splits) {
         strike(boss, at, delay, 0, SPLASH, ParticleTypes.FLAME, (hit, pos) -> {
-            for (ServerPlayerEntity p : hit) {
-                boolean direct = p.getPos().squaredDistanceTo(pos) <= DIRECT * DIRECT;
+            for (ServerPlayer p : hit) {
+                boolean direct = p.position().distanceToSqr(pos) <= DIRECT * DIRECT;
                 int max = direct ? IslandBosses.BOOK_DIRECT_MAX : IslandBosses.BOOK_SPLASH_MAX;
                 CombatHandler.applyDamage(boss.isAlive() ? boss : null, p, p.getRandom().nextInt(max + 1));
             }

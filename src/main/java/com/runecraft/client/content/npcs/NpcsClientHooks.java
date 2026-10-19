@@ -11,7 +11,7 @@ public final class NpcsClientHooks implements ClientModuleHooks {
         ClientPlayNetworking.registerGlobalReceiver(NpcsNet.SHOP, (client, handler, buf, sender) -> {
             ShopScreen.ShopData data = ShopScreen.ShopData.read(buf);
             client.execute(() -> {
-                if (client.currentScreen instanceof ShopScreen screen && screen.shopId().equals(data.id())) {
+                if (client.screen instanceof ShopScreen screen && screen.shopId().equals(data.id())) {
                     screen.update(data);
                 } else if (data.open()) {
                     client.setScreen(new ShopScreen(data));

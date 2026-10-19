@@ -5,11 +5,10 @@ import com.runecraft.osrs.CombatEffects;
 import com.runecraft.osrs.Prayer;
 import com.runecraft.player.Players;
 import com.runecraft.util.Msg;
-import net.minecraft.server.network.ServerPlayerEntity;
-
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.server.level.ServerPlayer;
 
 /** The Tele Block spell: stops a player teleporting for 5 minutes (2.5 with Protect from Magic). */
 public final class Teleblock {
@@ -19,9 +18,9 @@ public final class Teleblock {
     }
 
     /** Tele blocks a player; returns false (with a message to the caster) if it can't be applied now. */
-    public static boolean apply(ServerPlayerEntity caster, ServerPlayerEntity victim) {
+    public static boolean apply(ServerPlayer caster, ServerPlayer victim) {
         boolean prayer = Players.data(victim).isActive(Prayer.PROTECT_FROM_MAGIC);
-        CombatEffects.Teleblock tb = STATES.computeIfAbsent(victim.getUuid(), u -> new CombatEffects.Teleblock());
+        CombatEffects.Teleblock tb = STATES.computeIfAbsent(victim.getUUID(), u -> new CombatEffects.Teleblock());
         if (!tb.apply(ActionManager.gameTick(), prayer)) {
             Msg.game(caster, "That player is already affected by this spell.");
             return false;
@@ -32,8 +31,8 @@ public final class Teleblock {
     }
 
     /** True if the player is tele blocked (and tells them so). */
-    public static boolean blocked(ServerPlayerEntity player) {
-        CombatEffects.Teleblock tb = STATES.get(player.getUuid());
+    public static boolean blocked(ServerPlayer player) {
+        CombatEffects.Teleblock tb = STATES.get(player.getUUID());
         long now = ActionManager.gameTick();
         if (tb == null || !tb.blocked(now)) {
             return false;

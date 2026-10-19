@@ -43,16 +43,6 @@ import com.runecraft.quest.QuestManager;
 import com.runecraft.registry.ModEntities;
 import com.runecraft.util.Inv;
 import com.runecraft.world.Gielinor;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -60,6 +50,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 
 /** The self-test's gameplay checks. Each check starts from {@link TestContext#reset()}. */
 final class GameplayChecks {
@@ -149,7 +148,7 @@ final class GameplayChecks {
         return new AssertionError(message);
     }
 
-    private ServerPlayerEntity p() {
+    private ServerPlayer p() {
         return c.player;
     }
 
@@ -167,25 +166,25 @@ final class GameplayChecks {
         data.collectionLog().add("abyssal_whip");
         data.setSlayerStreak(7);
         data.skills().setXpTenths(Skill.SLAYER, 1_000_000);
-        net.minecraft.item.ItemStack bars = Inv.stack("bronze_bar", 10);
+        net.minecraft.world.item.ItemStack bars = Inv.stack("bronze_bar", 10);
         if (!bars.isEmpty()) {
             com.runecraft.bank.BankService.depositStack(data.bank(), bars, 10, 0);
         }
-        NbtCompound saved = data.toNbt();
+        CompoundTag saved = data.toNbt();
         PlayerData loaded = new PlayerData();
         loaded.fromNbt(saved.copy());
-        NbtCompound again = loaded.toNbt();
+        CompoundTag again = loaded.toNbt();
         if (!saved.equals(again)) {
             throw failure("PlayerData changed after a save/load round trip:\n  saved  " + saved + "\n  loaded " + again);
         }
         // The whole world-save state, as written to data/runecraft.dat.
-        NbtCompound state = Players.state(c.server).writeNbt(new NbtCompound());
+        CompoundTag state = Players.state(c.server).save(new CompoundTag());
         PlayerDataState reread = PlayerDataState.fromNbt(state);
-        NbtCompound mine = reread.get(p().getUuid()).toNbt();
+        CompoundTag mine = reread.get(p().getUUID()).toNbt();
         if (!saved.equals(mine)) {
             throw failure("PlayerDataState lost this player's data on a round trip:\n  saved  " + saved + "\n  loaded " + mine);
         }
-        return saved.getKeys().size() + " keys";
+        return saved.getAllKeys().size() + " keys";
     }
 
     // ------------------------------------------------------------------ menus and recipes
@@ -230,7 +229,7 @@ final class GameplayChecks {
         c.completeQuests(null);
         List<String> tried = new ArrayList<>();
         for (Recipe r : recipes.subList(0, Math.min(RECIPE_CANDIDATES, recipes.size()))) {
-            p().getInventory().clear();
+            p().getInventory().clearContent();
             giveFor(r, 3);
             Map<String, Integer> before = new LinkedHashMap<>();
             r.outputs().keySet().forEach(item -> before.put(item, Inv.count(p(), item)));
@@ -272,7 +271,7 @@ final class GameplayChecks {
         t.take.forEach((item, n) -> Inv.give(p(), item, n));
         t.tools.forEach(tool -> Inv.give(p(), QuestSpec.toolItem(tool), 1));
         QuestsState state = QuestsState.get(p());
-        t.needFlags.forEach(f -> state.setFlag(p().getUuid(), f));
+        t.needFlags.forEach(f -> state.setFlag(p().getUUID(), f));
         for (String item : t.unlessItems) {
             Inv.remove(p(), item, 10_000);
         }
@@ -306,7 +305,7 @@ final class GameplayChecks {
             if (!(e instanceof LivingEntity victim)) {
                 return false;
             }
-            victim.refreshPositionAndAngles(p().getX() + 2, p().getY(), p().getZ(), 0f, 0f);
+            victim.moveTo(p().getX() + 2, p().getY(), p().getZ(), 0f, 0f);
             QuestManager.onKill(p(), victim, MonsterStats.of(victim));
             victim.discard();
         }
@@ -396,7 +395,7 @@ final class GameplayChecks {
         }
         boolean natural = data.questComplete(q);
         if (!natural) {
-            p().getInventory().clear();
+            p().getInventory().clearContent();
             QuestApi.complete(p(), id);
         }
         if (!data.questComplete(q)) {
@@ -443,27 +442,27 @@ final class GameplayChecks {
         QuestsState state = QuestsState.get(p());
         Trigger first = rd.stages.get(1).triggers.stream().filter(t -> t.kind == Trigger.Kind.PUZZLE && t.slot == 0).findFirst()
                 .orElseThrow(() -> failure("no first test room"));
-        first.puzzle.failFlags.forEach(f -> state.clearFlag(p().getUuid(), f));
+        first.puzzle.failFlags.forEach(f -> state.clearFlag(p().getUUID(), f));
         String attempts = "puzzle:" + first.puzzle.key;
         try {
             data().setQuestStage(q, 1);
-            int before = state.kills(p().getUuid(), attempts);
+            int before = state.kills(p().getUUID(), attempts);
             if (!com.runecraft.content.quests.QuestPuzzles.selfTestFail(p(), rd, first)) {
                 throw failure("a wrong answer did not reset the room");
             }
-            if (state.kills(p().getUuid(), attempts) != before + 1 || data().questStage(q) != first.puzzle.failStage) {
+            if (state.kills(p().getUUID(), attempts) != before + 1 || data().questStage(q) != first.puzzle.failStage) {
                 throw failure("a wrong answer did not re-draw and send the player back (stage " + data().questStage(q) + ")");
             }
             String foe = com.runecraft.content.quests.QuestPuzzles.selfTestSolve(p(), rd, first);
             if (foe != null) {
                 kill(foe, 1);
             }
-            if (!state.hasFlag(p().getUuid(), "rd_test0")) {
+            if (!state.hasFlag(p().getUUID(), "rd_test0")) {
                 throw failure("solving the first room did not pass it" + (foe != null ? " (fight room: " + foe + ")" : ""));
             }
             return "wrong answer re-drew (attempt " + (before + 1) + "), first room passed" + (foe != null ? " by killing " + foe : "");
         } finally {
-            first.puzzle.failFlags.forEach(f -> state.clearFlag(p().getUuid(), f));
+            first.puzzle.failFlags.forEach(f -> state.clearFlag(p().getUUID(), f));
             data().setQuestStage(q, 0);
         }
     }
@@ -540,7 +539,7 @@ final class GameplayChecks {
         BlockPos at = c.near(0, 0);
         BossService.summon(p(), c.world, at, boss);
         EntityType<BossEntity> type = ModEntities.BOSS_TYPES.get(boss);
-        List<BossEntity> found = c.world.getEntitiesByType(type, new Box(at).expand(48), e -> e.isAlive());
+        List<BossEntity> found = c.world.getEntities(type, new AABB(at).inflate(48), e -> e.isAlive());
         if (found.isEmpty()) {
             throw failure("BossService.summon spawned nothing");
         }
@@ -554,7 +553,7 @@ final class GameplayChecks {
         }
         BlockPos at = c.near(0, 0);
         BossService.summon(p(), c.world, at, boss);
-        List<BossEntity> found = c.world.getEntitiesByType(ModEntities.BOSS_TYPES.get(boss), new Box(at).expand(48), e -> e.isAlive());
+        List<BossEntity> found = c.world.getEntities(ModEntities.BOSS_TYPES.get(boss), new AABB(at).inflate(48), e -> e.isAlive());
         if (found.isEmpty()) {
             throw failure("BossService.summon spawned nothing");
         }
@@ -575,7 +574,7 @@ final class GameplayChecks {
     private String oborKnockback() {
         BossEntity boss = summonLegacy(Boss.OBOR);
         try {
-            p().requestTeleport(boss.getX() + 2.5, boss.getY(), boss.getZ());
+            p().teleportTo(boss.getX() + 2.5, boss.getY(), boss.getZ());
             return com.runecraft.content.bosses.OldBossScripts.selfTestKnockback(boss, p());
         } finally {
             boss.discard();
@@ -583,7 +582,7 @@ final class GameplayChecks {
     }
 
     /** Spawns a data boss next to the player, targeting them, runs one scripted-mechanic check on it and removes it. */
-    private String scripted(String id, java.util.function.BiFunction<DataBossEntity, ServerPlayerEntity, String> test) {
+    private String scripted(String id, java.util.function.BiFunction<DataBossEntity, ServerPlayer, String> test) {
         BossDef def = ContentRegistry.boss(id);
         if (def == null) {
             throw failure("no BossDef " + id);
@@ -616,7 +615,7 @@ final class GameplayChecks {
         BlockPos at = c.near(0, 0);
         EntityType<DataBossEntity> type = ModEntities.DATA_BOSS_TYPES.get(id);
         DataBossService.summon(p(), c.world, at, def);
-        List<DataBossEntity> found = c.world.getEntitiesByType(type, new Box(at).expand(48), e -> e.isAlive());
+        List<DataBossEntity> found = c.world.getEntities(type, new AABB(at).inflate(48), e -> e.isAlive());
         String how = "summoned";
         if (found.isEmpty()) {
             // A requirement (quest stage, Slayer task...) refused the summon: spawn it directly.
@@ -632,8 +631,8 @@ final class GameplayChecks {
 
     /** Boss entities (data-driven or legacy) alive around the test platform. */
     private List<LivingEntity> bossesAround() {
-        Box box = new Box(TestContext.PLATFORM).expand(48);
-        return c.world.getEntitiesByClass(LivingEntity.class, box,
+        AABB box = new AABB(TestContext.PLATFORM).inflate(48);
+        return c.world.getEntitiesOfClass(LivingEntity.class, box,
                 e -> e.isAlive() && (e instanceof DataBossEntity || e instanceof BossEntity));
     }
 
@@ -641,7 +640,7 @@ final class GameplayChecks {
         if (e instanceof DataBossEntity d && d.def() != null) {
             return d.def().id;
         }
-        return net.minecraft.registry.Registries.ENTITY_TYPE.getId(e.getType()).getPath();
+        return net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()).getPath();
     }
 
     /**
@@ -651,14 +650,14 @@ final class GameplayChecks {
     private String fight(LivingEntity first, String id) {
         java.util.Set<java.util.UUID> seen = new java.util.HashSet<>();
         for (LivingEntity e : bossesAround()) {
-            seen.add(e.getUuid());
+            seen.add(e.getUUID());
         }
         LivingEntity boss = first;
         List<String> forms = new ArrayList<>();
         int ticks = 0;
         while (true) {
-            seen.add(boss.getUuid());
-            if (boss instanceof net.minecraft.entity.mob.MobEntity mob) {
+            seen.add(boss.getUUID());
+            if (boss instanceof net.minecraft.world.entity.Mob mob) {
                 mob.setTarget(p());
             }
             while (ticks < BOSS_TICKS && boss.isAlive()) {
@@ -671,7 +670,7 @@ final class GameplayChecks {
             }
             LivingEntity next = null;
             for (LivingEntity e : bossesAround()) {
-                if (!seen.contains(e.getUuid())) {
+                if (!seen.contains(e.getUUID())) {
                     next = e;
                     break;
                 }
@@ -688,12 +687,12 @@ final class GameplayChecks {
         int kcBefore = totalKills();
         int logBefore = data().collectionLog().size();
         boss.setHealth(0f);
-        boss.onDeath(CombatHandler.source(p()));
+        boss.die(CombatHandler.source(p()));
         int kc = totalKills() - kcBefore;
         if (kc <= 0) {
             throw failure("killing it did not add a kill count (" + ticks + " ticks alive)");
         }
-        int drops = c.world.getEntitiesByClass(net.minecraft.entity.ItemEntity.class, new Box(boss.getBlockPos()).expand(6),
+        int drops = c.world.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, new AABB(boss.blockPosition()).inflate(6),
                 e -> true).size();
         return ticks + " ticks" + (forms.isEmpty() ? "" : ", forms " + String.join(" ", forms)) + ", kc +" + kc + ", " + drops + " drops, log +" + (data().collectionLog().size() - logBefore);
     }
@@ -762,7 +761,7 @@ final class GameplayChecks {
 
     /** Throws unless the player stands within one block of {@code a} (x, feet y, z). */
     private void near(int[] a, String what) {
-        BlockPos at = p().getBlockPos();
+        BlockPos at = p().blockPosition();
         if (Math.abs(at.getX() - a[0]) > 1 || Math.abs(at.getZ() - a[2]) > 1 || Math.abs(at.getY() - a[1]) > 1) {
             throw failure(what + " at " + at.toShortString() + ", expected " + a[0] + " " + a[1] + " " + a[2]);
         }
@@ -787,14 +786,14 @@ final class GameplayChecks {
             throw failure("no King Black Dragon summoning stone in the lair, found " + stone);
         }
         BlockState lever = c.world.getBlockState(new BlockPos(GielinorMap.toBlockX(out.x()), a[1], GielinorMap.toBlockZ(out.y())));
-        if (!lever.isOf(net.minecraft.block.Blocks.LEVER)) {
+        if (!lever.is(net.minecraft.world.level.block.Blocks.LEVER)) {
             throw failure("no lever in the lair, found " + lever);
         }
         com.runecraft.content.npcs.WildernessTransportService.pull(p(), out);
         near(com.runecraft.osrs.content.npcs.WildernessTransport.kbdRoomArrival(), "entrance chamber arrival");
         int[] lb = com.runecraft.osrs.content.npcs.WildernessTransport.kbdLeverBlock();
         BlockState back = c.world.getBlockState(new BlockPos(lb[0], com.runecraft.osrs.content.npcs.WildernessTransport.KBD_ROOM_FLOOR + 1, lb[1]));
-        if (!back.isOf(net.minecraft.block.Blocks.LEVER)) {
+        if (!back.is(net.minecraft.world.level.block.Blocks.LEVER)) {
             throw failure("no lever in the entrance chamber, found " + back);
         }
         c.home();
@@ -808,11 +807,11 @@ final class GameplayChecks {
     private String fairyRingRealm(String code) {
         c.home();
         com.runecraft.content.islands.IslandsTravelService.travelTo(p(), code);
-        net.minecraft.block.Block ring = net.minecraft.registry.Registries.BLOCK.get(
+        net.minecraft.world.level.block.Block ring = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(
                 com.runecraft.RuneCraft.resolve(com.runecraft.osrs.content.islands.IslandsBlocks.FAIRY_RING));
-        BlockPos at = p().getBlockPos();
-        for (BlockPos q : BlockPos.iterate(at.add(-4, -3, -4), at.add(4, 3, 4))) {
-            if (c.world.getBlockState(q).isOf(ring)) {
+        BlockPos at = p().blockPosition();
+        for (BlockPos q : BlockPos.betweenClosed(at.offset(-4, -3, -4), at.offset(4, 3, 4))) {
+            if (c.world.getBlockState(q).is(ring)) {
                 String where = GielinorMap.toOsrsX(at.getX()) + "," + GielinorMap.toOsrsY(at.getZ()) + " y " + at.getY();
                 c.home();
                 return "ring beside " + where;
@@ -845,11 +844,11 @@ final class GameplayChecks {
         }
         c.completeQuests(null);
         c.home();
-        BlockPos start = p().getBlockPos();
+        BlockPos start = p().blockPosition();
         if (!com.runecraft.content.dungeons.EssenceMineService.teleport(p(), npcId)) {
             throw failure("teleport refused after Rune Mysteries");
         }
-        BlockPos at = p().getBlockPos();
+        BlockPos at = p().blockPosition();
         int ox = GielinorMap.toOsrsX(at.getX());
         int oy = GielinorMap.toOsrsY(at.getZ());
         String where = ox + "," + oy + " y " + at.getY();
@@ -858,8 +857,8 @@ final class GameplayChecks {
             throw failure("landed outside the mine at " + where);
         }
         BlockState feet = c.world.getBlockState(at);
-        BlockState below = c.world.getBlockState(at.down());
-        if (!feet.getCollisionShape(c.world, at).isEmpty() || below.getCollisionShape(c.world, at.down()).isEmpty()) {
+        BlockState below = c.world.getBlockState(at.below());
+        if (!feet.getCollisionShape(c.world, at).isEmpty() || below.getCollisionShape(c.world, at.below()).isEmpty()) {
             throw failure("no clear footing at " + where + " (feet " + feet + ", below " + below + ")");
         }
         int[] o = com.runecraft.osrs.content.dungeons.EssenceMine.OUTCROPS.get(0);
@@ -871,7 +870,7 @@ final class GameplayChecks {
         int[] portal = com.runecraft.osrs.content.dungeons.EssenceMine.PORTALS.get(0);
         BlockState portalState = c.world.getBlockState(new BlockPos(GielinorMap.toBlockX(portal[0]),
                 com.runecraft.osrs.content.dungeons.EssenceMine.FLOOR + 1, GielinorMap.toBlockZ(portal[1])));
-        String portalId = net.minecraft.registry.Registries.BLOCK.getId(portalState.getBlock()).getPath();
+        String portalId = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(portalState.getBlock()).getPath();
         if (!portalId.equals(com.runecraft.osrs.content.dungeons.DungeonBlocks.ESSENCE_PORTAL)) {
             throw failure("no portal, found " + portalId);
         }
@@ -879,30 +878,30 @@ final class GameplayChecks {
             throw failure("teleporter not remembered: " + com.runecraft.content.dungeons.EssenceMineService.lastTeleporter(p()));
         }
         com.runecraft.content.dungeons.EssenceMineService.leave(p());
-        BlockPos back = p().getBlockPos();
-        if (back.getSquaredDistance(start) > 4) {
+        BlockPos back = p().blockPosition();
+        if (back.distSqr(start) > 4) {
             throw failure("portal returned to " + back + " instead of " + start);
         }
         return "landed at " + where;
     }
 
     private String teleport(int x, int z) {
-        ServerWorld world = c.world;
+        ServerLevel world = c.world;
         BlockPos pos = Gielinor.safeSpot(world, x, z);
         BlockState feet = world.getBlockState(pos);
-        BlockState head = world.getBlockState(pos.up());
-        BlockState below = world.getBlockState(pos.down());
+        BlockState head = world.getBlockState(pos.above());
+        BlockState below = world.getBlockState(pos.below());
         String where = pos.getX() + " " + pos.getY() + " " + pos.getZ();
-        if (!feet.getCollisionShape(world, pos).isEmpty() || !head.getCollisionShape(world, pos.up()).isEmpty()) {
+        if (!feet.getCollisionShape(world, pos).isEmpty() || !head.getCollisionShape(world, pos.above()).isEmpty()) {
             throw failure("lands inside a block at " + where + " (" + feet + " / " + head + ")");
         }
         if (!feet.getFluidState().isEmpty() || !below.getFluidState().isEmpty()) {
             throw failure("lands in liquid at " + where + " (feet " + feet + ", below " + below + ")");
         }
-        if (below.getCollisionShape(world, pos.down()).isEmpty()) {
+        if (below.getCollisionShape(world, pos.below()).isEmpty()) {
             throw failure("nothing to stand on at " + where + " (below " + below + ")");
         }
         // The player stays on the test platform: moving it would load chunks around every destination.
-        return where + " on " + net.minecraft.registry.Registries.BLOCK.getId(below.getBlock());
+        return where + " on " + net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(below.getBlock());
     }
 }

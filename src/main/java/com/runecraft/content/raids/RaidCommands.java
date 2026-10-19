@@ -7,10 +7,10 @@ import com.runecraft.osrs.content.raids.RaidMode;
 import com.runecraft.osrs.content.raids.RaidType;
 import com.runecraft.util.Msg;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * {@code /raids}: completion counts (chat + screen), {@code /raids leave}, {@code /raids level <n>}
@@ -23,53 +23,53 @@ final class RaidCommands {
 
     static void register() {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(
-                CommandManager.literal("raids")
-                        .executes(ctx -> stats(ctx.getSource().getPlayerOrThrow()))
-                        .then(CommandManager.literal("leave").executes(ctx -> leave(ctx.getSource().getPlayerOrThrow())))
-                        .then(CommandManager.literal("invocations").executes(ctx -> invocations(ctx.getSource().getPlayerOrThrow())))
-                        .then(CommandManager.literal("supplies")
-                                .then(CommandManager.argument("bundle", StringArgumentType.word())
-                                        .executes(ctx -> ToaSupplyService.claim(ctx.getSource().getPlayerOrThrow(),
+                Commands.literal("raids")
+                        .executes(ctx -> stats(ctx.getSource().getPlayerOrException()))
+                        .then(Commands.literal("leave").executes(ctx -> leave(ctx.getSource().getPlayerOrException())))
+                        .then(Commands.literal("invocations").executes(ctx -> invocations(ctx.getSource().getPlayerOrException())))
+                        .then(Commands.literal("supplies")
+                                .then(Commands.argument("bundle", StringArgumentType.word())
+                                        .executes(ctx -> ToaSupplyService.claim(ctx.getSource().getPlayerOrException(),
                                                 StringArgumentType.getString(ctx, "bundle")))))
-                        .then(CommandManager.literal("mode")
-                                .then(CommandManager.argument("mode", StringArgumentType.word())
-                                        .executes(ctx -> mode(ctx.getSource().getPlayerOrThrow(),
+                        .then(Commands.literal("mode")
+                                .then(Commands.argument("mode", StringArgumentType.word())
+                                        .executes(ctx -> mode(ctx.getSource().getPlayerOrException(),
                                                 StringArgumentType.getString(ctx, "mode")))))
-                        .then(CommandManager.literal("level")
-                                .then(CommandManager.argument("level", IntegerArgumentType.integer(0, 600))
-                                        .executes(ctx -> level(ctx.getSource().getPlayerOrThrow(),
+                        .then(Commands.literal("level")
+                                .then(Commands.argument("level", IntegerArgumentType.integer(0, 600))
+                                        .executes(ctx -> level(ctx.getSource().getPlayerOrException(),
                                                 IntegerArgumentType.getInteger(ctx, "level")))))));
     }
 
-    private static int stats(ServerPlayerEntity p) {
-        RaidsState.Stats s = RaidsState.get(p.getServer()).stats(p.getUuid());
-        p.sendMessage(Text.literal("Raid completions").formatted(Formatting.GOLD, Formatting.BOLD), false);
+    private static int stats(ServerPlayer p) {
+        RaidsState.Stats s = RaidsState.get(p.getServer()).stats(p.getUUID());
+        p.displayClientMessage(Component.literal("Raid completions").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD), false);
         for (RaidType t : RaidType.values()) {
             String best = t == RaidType.TOB ? "" : ", best points " + s.bestPoints.getOrDefault(t.id(), 0);
-            p.sendMessage(Text.literal(t.displayName() + ": " + s.completions.getOrDefault(t.id(), 0) + " completions" + best
-                    + ", " + s.purples.getOrDefault(t.id(), 0) + " purples").formatted(Formatting.YELLOW), false);
+            p.displayClientMessage(Component.literal(t.displayName() + ": " + s.completions.getOrDefault(t.id(), 0) + " completions" + best
+                    + ", " + s.purples.getOrDefault(t.id(), 0) + " purples").withStyle(ChatFormatting.YELLOW), false);
         }
         RaidNet.sendStats(p);
         return 1;
     }
 
-    private static int leave(ServerPlayerEntity p) {
+    private static int leave(ServerPlayer p) {
         RaidInstance raid = RaidManager.of(p);
         if (raid == null) {
             Msg.game(p, "You are not in a raid.");
             return 0;
         }
-        raid.removePlayer(p.getUuid(), true);
+        raid.removePlayer(p.getUUID(), true);
         Msg.game(p, "You leave the " + raid.type.displayName() + ".");
         if (raid.party().isEmpty()) {
             RaidManager.close(raid);
         } else {
-            raid.say(p.getName().getString() + " has left the raid.", Formatting.GRAY);
+            raid.say(p.getName().getString() + " has left the raid.", ChatFormatting.GRAY);
         }
         return 1;
     }
 
-    private static int invocations(ServerPlayerEntity p) {
+    private static int invocations(ServerPlayer p) {
         RaidInstance raid = RaidManager.of(p);
         if (raid == null || raid.type != RaidType.TOA) {
             Msg.game(p, "You are not in the Tombs of Amascut.");
@@ -83,7 +83,7 @@ final class RaidCommands {
         return 1;
     }
 
-    private static int mode(ServerPlayerEntity p, String name) {
+    private static int mode(ServerPlayer p, String name) {
         RaidInstance raid = RaidManager.of(p);
         if (raid == null) {
             Msg.game(p, "You must be in a raid lobby to choose the mode.");
@@ -103,11 +103,11 @@ final class RaidCommands {
                     : raid.type == RaidType.TOB ? "entry, normal, hard" : "normal (use the obelisk to set the raid level)") + ".");
             return 0;
         }
-        raid.say("The raid mode is set to " + m.displayName() + ".", Formatting.YELLOW);
+        raid.say("The raid mode is set to " + m.displayName() + ".", ChatFormatting.YELLOW);
         return 1;
     }
 
-    private static int level(ServerPlayerEntity p, int level) {
+    private static int level(ServerPlayer p, int level) {
         RaidInstance raid = RaidManager.of(p);
         if (raid == null || raid.type != RaidType.TOA) {
             Msg.game(p, "You must be in the Tombs of Amascut lobby to set the raid level.");
@@ -122,7 +122,7 @@ final class RaidCommands {
             return 0;
         }
         raid.setCustomLevel(level);
-        raid.say("The raid level is set to " + raid.raidLevel() + ".", Formatting.YELLOW);
+        raid.say("The raid level is set to " + raid.raidLevel() + ".", ChatFormatting.YELLOW);
         return 1;
     }
 }

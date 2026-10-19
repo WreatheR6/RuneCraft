@@ -21,22 +21,21 @@ import com.runecraft.osrs.data.Rock;
 import com.runecraft.osrs.data.RuneAltar;
 import com.runecraft.osrs.data.Thieving;
 import com.runecraft.osrs.data.Tree;
-import net.minecraft.block.AbstractBlock;
-import net.minecraft.block.Block;
-import net.minecraft.block.MapColor;
-import net.minecraft.block.piston.PistonBehavior;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.Item;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.sound.BlockSoundGroup;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.material.PushReaction;
 
 /** All RuneCraft blocks. Resource nodes are unbreakable in survival, like the game world. */
 public final class ModBlocks {
@@ -62,16 +61,16 @@ public final class ModBlocks {
     private ModBlocks() {
     }
 
-    private static AbstractBlock.Settings unbreakable(MapColor color, BlockSoundGroup sound) {
-        return AbstractBlock.Settings.create().mapColor(color).sounds(sound).strength(-1.0f, 3600000.0f).dropsNothing()
-                .pistonBehavior(PistonBehavior.BLOCK);
+    private static BlockBehaviour.Properties unbreakable(MapColor color, SoundType sound) {
+        return BlockBehaviour.Properties.of().mapColor(color).sound(sound).strength(-1.0f, 3600000.0f).noLootTable()
+                .pushReaction(PushReaction.BLOCK);
     }
 
     private static <T extends Block> T register(String id, T block, boolean withItem) {
-        Registry.register(Registries.BLOCK, RuneCraft.id(id), block);
+        Registry.register(BuiltInRegistries.BLOCK, RuneCraft.id(id), block);
         ALL.add(block);
         if (withItem) {
-            BlockItem item = Registry.register(Registries.ITEM, RuneCraft.id(id), new BlockItem(block, new Item.Settings()));
+            BlockItem item = Registry.register(BuiltInRegistries.ITEM, RuneCraft.id(id), new BlockItem(block, new Item.Properties()));
             ITEMS.add(item);
         }
         return block;
@@ -79,21 +78,21 @@ public final class ModBlocks {
 
     public static void register() {
         for (Tree t : Tree.values()) {
-            TREES.put(t, register(t.blockId(), new TreeLogBlock(t, unbreakable(MapColor.BROWN, BlockSoundGroup.WOOD)), true));
+            TREES.put(t, register(t.blockId(), new TreeLogBlock(t, unbreakable(MapColor.COLOR_BROWN, SoundType.WOOD)), true));
         }
         for (Rock r : Rock.values()) {
-            ROCKS.put(r, register(r.blockId(), new RockBlock(r, unbreakable(MapColor.STONE_GRAY, BlockSoundGroup.STONE)), true));
+            ROCKS.put(r, register(r.blockId(), new RockBlock(r, unbreakable(MapColor.STONE, SoundType.STONE)), true));
         }
         for (FishingSpot s : FishingSpot.values()) {
             FISHING_SPOTS.put(s, register(s.blockId(), new FishingSpotBlock(s,
-                    unbreakable(MapColor.WATER_BLUE, BlockSoundGroup.WET_GRASS).noCollision().nonOpaque()), true));
+                    unbreakable(MapColor.WATER, SoundType.WET_GRASS).noCollission().noOcclusion()), true));
         }
         for (RuneAltar a : RuneAltar.values()) {
             ALTARS.put(a, register(a.blockId(), new RuneAltarBlock(a,
-                    unbreakable(MapColor.STONE_GRAY, BlockSoundGroup.STONE).luminance(s -> 7).nonOpaque()), true));
+                    unbreakable(MapColor.STONE, SoundType.STONE).lightLevel(s -> 7).noOcclusion()), true));
         }
         for (Thieving.Stall s : Thieving.Stall.values()) {
-            STALLS.put(s, register(s.blockId(), new StallBlock(s, unbreakable(MapColor.OAK_TAN, BlockSoundGroup.WOOD).nonOpaque()), true));
+            STALLS.put(s, register(s.blockId(), new StallBlock(s, unbreakable(MapColor.WOOD, SoundType.WOOD).noOcclusion()), true));
         }
         for (Station s : Station.values()) {
             if (s == Station.HERB_PATCH || s == Station.ALLOTMENT_PATCH) {
@@ -104,52 +103,52 @@ public final class ModBlocks {
                 STATIONS.put(s, STALLS.get(stall));
                 continue;
             }
-            AbstractBlock.Settings settings = AbstractBlock.Settings.create().mapColor(MapColor.STONE_GRAY)
-                    .sounds(s == Station.ANVIL ? BlockSoundGroup.ANVIL : BlockSoundGroup.STONE).strength(3.0f, 1200.0f)
-                    .requiresTool();
+            BlockBehaviour.Properties settings = BlockBehaviour.Properties.of().mapColor(MapColor.STONE)
+                    .sound(s == Station.ANVIL ? SoundType.ANVIL : SoundType.STONE).strength(3.0f, 1200.0f)
+                    .requiresCorrectToolForDrops();
             if (s == Station.BANK_BOOTH || s == Station.FURNACE || s == Station.ANVIL || s == Station.RANGE
                     || s == Station.PRAYER_ALTAR) {
-                settings = settings.nonOpaque(); // shaped OSRS models (see tools/gen_assets.py station_shape)
+                settings = settings.noOcclusion(); // shaped OSRS models (see tools/gen_assets.py station_shape)
             }
             if (s == Station.FURNACE || s == Station.RANGE || s == Station.PORTAL || s == Station.PRAYER_ALTAR) {
-                settings = settings.luminance(st -> 10);
+                settings = settings.lightLevel(st -> 10);
             }
             STATIONS.put(s, register(s.blockId(), new StationBlock(s, settings), true));
         }
         for (Boss b : Boss.values()) {
             BOSS_STONES.put(b, register(b.summonBlockId(), new BossSummonBlock(b,
-                    unbreakable(MapColor.BLACK, BlockSoundGroup.DEEPSLATE).luminance(st -> 6)), true));
+                    unbreakable(MapColor.COLOR_BLACK, SoundType.DEEPSLATE).lightLevel(st -> 6)), true));
         }
         for (com.runecraft.osrs.content.BlockDef def : com.runecraft.osrs.content.ContentRegistry.blocks()) {
-            AbstractBlock.Settings settings = def.breakable()
-                    ? AbstractBlock.Settings.create().mapColor(MapColor.STONE_GRAY).strength(2.5f, 1200.0f).sounds(BlockSoundGroup.STONE)
-                    : unbreakable(MapColor.STONE_GRAY, BlockSoundGroup.STONE);
+            BlockBehaviour.Properties settings = def.breakable()
+                    ? BlockBehaviour.Properties.of().mapColor(MapColor.STONE).strength(2.5f, 1200.0f).sound(SoundType.STONE)
+                    : unbreakable(MapColor.STONE, SoundType.STONE);
             if (def.look() != null && (def.look().contains("glow") || def.look().contains("fire") || def.look().contains("portal"))) {
-                settings = settings.luminance(st -> 10);
+                settings = settings.lightLevel(st -> 10);
             }
             MODULE_BLOCKS.put(def.id(), register(def.id(), new com.runecraft.block.ModuleBlock(def, settings), true));
         }
         for (com.runecraft.osrs.content.BossDef b : com.runecraft.osrs.content.ContentRegistry.bosses()) {
             if (!b.raidOnly) {
                 DATA_BOSS_STONES.put(b.id, register(b.summonBlockId(), new com.runecraft.block.DataBossSummonBlock(b,
-                        unbreakable(MapColor.BLACK, BlockSoundGroup.DEEPSLATE).luminance(st -> 6)), true));
+                        unbreakable(MapColor.COLOR_BLACK, SoundType.DEEPSLATE).lightLevel(st -> 6)), true));
             }
         }
         AGILITY_OBSTACLE = register("agility_obstacle", new AgilityObstacleBlock(
-                unbreakable(MapColor.OAK_TAN, BlockSoundGroup.WOOD)), true);
+                unbreakable(MapColor.WOOD, SoundType.WOOD)), true);
         HERB_PATCH = register("herb_patch", new HerbPatchBlock(
-                unbreakable(MapColor.DIRT_BROWN, BlockSoundGroup.ROOTED_DIRT).ticksRandomly().nonOpaque()), true);
+                unbreakable(MapColor.DIRT, SoundType.ROOTED_DIRT).randomTicks().noOcclusion()), true);
         ALLOTMENT_PATCH = register("allotment_patch", new AllotmentPatchBlock(
-                unbreakable(MapColor.DIRT_BROWN, BlockSoundGroup.ROOTED_DIRT).ticksRandomly().nonOpaque()), true);
+                unbreakable(MapColor.DIRT, SoundType.ROOTED_DIRT).randomTicks().noOcclusion()), true);
         STATIONS.put(Station.HERB_PATCH, HERB_PATCH);
         STATIONS.put(Station.ALLOTMENT_PATCH, ALLOTMENT_PATCH);
-        FIRE = register("osrs_fire", new OsrsFireBlock(AbstractBlock.Settings.create().mapColor(MapColor.BRIGHT_RED)
-                .noCollision().breakInstantly().luminance(s -> 15).sounds(BlockSoundGroup.WOOL).dropsNothing()
-                .pistonBehavior(PistonBehavior.DESTROY)), false);
-        BIRD_SNARE = register("bird_snare_trap", new TrapBlock(HunterCreature.Trap.BIRD_SNARE, AbstractBlock.Settings.create()
-                .noCollision().nonOpaque().breakInstantly().dropsNothing().sounds(BlockSoundGroup.GRASS)), false);
-        BOX_TRAP = register("box_trap_trap", new TrapBlock(HunterCreature.Trap.BOX_TRAP, AbstractBlock.Settings.create()
-                .noCollision().nonOpaque().breakInstantly().dropsNothing().sounds(BlockSoundGroup.WOOD)), false);
+        FIRE = register("osrs_fire", new OsrsFireBlock(BlockBehaviour.Properties.of().mapColor(MapColor.FIRE)
+                .noCollission().instabreak().lightLevel(s -> 15).sound(SoundType.WOOL).noLootTable()
+                .pushReaction(PushReaction.DESTROY)), false);
+        BIRD_SNARE = register("bird_snare_trap", new TrapBlock(HunterCreature.Trap.BIRD_SNARE, BlockBehaviour.Properties.of()
+                .noCollission().noOcclusion().instabreak().noLootTable().sound(SoundType.GRASS)), false);
+        BOX_TRAP = register("box_trap_trap", new TrapBlock(HunterCreature.Trap.BOX_TRAP, BlockBehaviour.Properties.of()
+                .noCollission().noOcclusion().instabreak().noLootTable().sound(SoundType.WOOD)), false);
     }
 
     public static List<Block> all() {

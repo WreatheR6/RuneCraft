@@ -15,15 +15,14 @@ import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
 import com.runecraft.world.LandmarkBuilder;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.List;
 import java.util.Map;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 
 /**
  * Blast Furnace: Keldagrim stairs down to the furnace room, the conveyor belt (deposit ore; the
@@ -55,7 +54,7 @@ final class BlastFurnaceHooks {
     }
 
     /** Charges the coffer of every player standing in the furnace room (called each game tick). */
-    static void tick(ServerPlayerEntity player, long gameTick) {
+    static void tick(ServerPlayer player, long gameTick) {
         if (gameTick % DRAIN_INTERVAL != 0 || !inRoom(player)) {
             return;
         }
@@ -69,16 +68,16 @@ final class BlastFurnaceHooks {
         save(player, f);
     }
 
-    private static boolean inRoom(ServerPlayerEntity player) {
+    private static boolean inRoom(ServerPlayer player) {
         if (!Gielinor.is(player)) {
             return false;
         }
-        int x = GielinorMap.toOsrsX(player.getBlockPos().getX());
-        int y = GielinorMap.toOsrsY(player.getBlockPos().getZ());
+        int x = GielinorMap.toOsrsX(player.blockPosition().getX());
+        int y = GielinorMap.toOsrsY(player.blockPosition().getZ());
         return Math.abs(x - BlastFurnaceData.FURNACE_X) <= ROOM_RADIUS && Math.abs(y - BlastFurnaceData.FURNACE_Y) <= ROOM_RADIUS;
     }
 
-    private static void conveyor(ServerPlayerEntity player) {
+    private static void conveyor(ServerPlayer player) {
         Furnace f = load(player);
         int smithing = SkillingUtil.level(player, Skill.SMITHING);
         long now = ActionManager.gameTick();
@@ -113,7 +112,7 @@ final class BlastFurnaceHooks {
             return;
         }
         Msg.action(player, "You put " + deposited + " ore on the conveyor belt.");
-        player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.BLOCK_GRAVEL_PLACE, SoundCategory.BLOCKS, 1f, 0.8f);
+        player.level().playSound(null, player.blockPosition(), SoundEvents.GRAVEL_PLACE, SoundSource.BLOCKS, 1f, 0.8f);
         for (BlastFurnaceData.Smelted s : BlastFurnaceData.smelt(f, smithing)) {
             XpService.add(player, Skill.SMITHING, s.xp());
             Msg.game(player, "The dwarves smelt " + s.count() + " " + s.bar().displayName().toLowerCase() + (s.count() > 1 ? "s" : "")
@@ -123,7 +122,7 @@ final class BlastFurnaceHooks {
         ServerNetworking.sync(player);
     }
 
-    private static void dispenser(ServerPlayerEntity player) {
+    private static void dispenser(ServerPlayer player) {
         Furnace f = load(player);
         if (f.bars.isEmpty()) {
             Msg.game(player, "The bar dispenser is empty.");
@@ -153,21 +152,21 @@ final class BlastFurnaceHooks {
     }
 
     /** Bars don't stack: one free inventory slot per bar. */
-    private static int roomFor(ServerPlayerEntity player, String item, int wanted) {
+    private static int roomFor(ServerPlayer player, String item, int wanted) {
         return Inv.hasRoomFor(player, item) ? Math.min(wanted, Math.max(1, freeSlots(player))) : 0;
     }
 
-    private static int freeSlots(ServerPlayerEntity player) {
+    private static int freeSlots(ServerPlayer player) {
         int free = 0;
         for (int i = 0; i < 36; i++) {
-            if (player.getInventory().getStack(i).isEmpty()) {
+            if (player.getInventory().getItem(i).isEmpty()) {
                 free++;
             }
         }
         return free;
     }
 
-    private static void coffer(ServerPlayerEntity player) {
+    private static void coffer(ServerPlayer player) {
         Furnace f = load(player);
         int coins = Inv.count(player, "coins");
         int amount = Math.min(coins, BlastFurnaceData.COFFER_PER_HOUR);
@@ -183,8 +182,8 @@ final class BlastFurnaceHooks {
         ServerNetworking.sync(player);
     }
 
-    private static void travel(ServerPlayerEntity player, int osrsX, int osrsY, String message) {
-        ServerWorld world = Gielinor.world(player.getServer());
+    private static void travel(ServerPlayer player, int osrsX, int osrsY, String message) {
+        ServerLevel world = Gielinor.world(player.getServer());
         if (world == null) {
             return;
         }
@@ -194,7 +193,7 @@ final class BlastFurnaceHooks {
         }
         BlockPos pos = Gielinor.safeSpot(world, GielinorMap.toBlockX(osrsX) + 2, GielinorMap.toBlockZ(osrsY) + 2);
         player.stopRiding();
-        player.teleport(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, player.getYaw(), player.getPitch());
+        player.teleportTo(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, player.getYRot(), player.getXRot());
         Msg.game(player, message);
     }
 
@@ -216,15 +215,15 @@ final class BlastFurnaceHooks {
         return null;
     }
 
-    private static Furnace load(ServerPlayerEntity player) {
-        NbtCompound nbt = SkillingState.get(player.getServer()).entry(SECTION, player.getUuidAsString());
+    private static Furnace load(ServerPlayer player) {
+        CompoundTag nbt = SkillingState.get(player.getServer()).entry(SECTION, player.getStringUUID());
         Furnace f = new Furnace();
-        NbtCompound ore = nbt.getCompound("ore");
-        for (String k : ore.getKeys()) {
+        CompoundTag ore = nbt.getCompound("ore");
+        for (String k : ore.getAllKeys()) {
             f.ore.put(k, ore.getInt(k));
         }
-        NbtCompound bars = nbt.getCompound("bars");
-        for (String k : bars.getKeys()) {
+        CompoundTag bars = nbt.getCompound("bars");
+        for (String k : bars.getAllKeys()) {
             f.bars.put(k, bars.getInt(k));
         }
         f.coffer = nbt.getInt("coffer");
@@ -232,13 +231,13 @@ final class BlastFurnaceHooks {
         return f;
     }
 
-    private static void save(ServerPlayerEntity player, Furnace f) {
-        NbtCompound nbt = SkillingState.get(player.getServer()).entry(SECTION, player.getUuidAsString());
-        NbtCompound ore = new NbtCompound();
+    private static void save(ServerPlayer player, Furnace f) {
+        CompoundTag nbt = SkillingState.get(player.getServer()).entry(SECTION, player.getStringUUID());
+        CompoundTag ore = new CompoundTag();
         for (Map.Entry<String, Integer> e : f.ore.entrySet()) {
             ore.putInt(e.getKey(), e.getValue());
         }
-        NbtCompound bars = new NbtCompound();
+        CompoundTag bars = new CompoundTag();
         for (Map.Entry<String, Integer> e : f.bars.entrySet()) {
             bars.putInt(e.getKey(), e.getValue());
         }

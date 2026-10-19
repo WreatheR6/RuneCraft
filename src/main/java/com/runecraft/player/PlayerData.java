@@ -8,14 +8,13 @@ import com.runecraft.osrs.SkillSet;
 import com.runecraft.osrs.Spell;
 import com.runecraft.osrs.data.AgilityCourse;
 import com.runecraft.osrs.data.Monster;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.EnumSet;
 import java.util.Set;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.world.item.ItemStack;
 
 /** Everything RuneCraft remembers about a player. Persisted in {@link PlayerDataState}. */
 public final class PlayerData {
@@ -208,8 +207,8 @@ public final class PlayerData {
         return collectionLog;
     }
 
-    public NbtCompound toNbt() {
-        NbtCompound nbt = new NbtCompound();
+    public CompoundTag toNbt() {
+        CompoundTag nbt = new CompoundTag();
         nbt.putIntArray("Xp", skills.rawXp());
         nbt.putIntArray("Boosts", skills.rawBoosts());
         nbt.putInt("Prayer", prayerPoints);
@@ -233,21 +232,21 @@ public final class PlayerData {
             nbt.putLong("ReturnPos", returnPos.asLong());
         }
         nbt.putInt("QuestPoints", questPoints);
-        NbtCompound kc = new NbtCompound();
+        CompoundTag kc = new CompoundTag();
         killCounts.forEach(kc::putInt);
         nbt.put("KillCounts", kc);
-        NbtCompound quests = new NbtCompound();
+        CompoundTag quests = new CompoundTag();
         questStages.forEach(quests::putInt);
         nbt.put("Quests", quests);
-        NbtList log = new NbtList();
+        ListTag log = new ListTag();
         for (String item : collectionLog) {
-            log.add(net.minecraft.nbt.NbtString.of(item));
+            log.add(net.minecraft.nbt.StringTag.valueOf(item));
         }
         nbt.put("CollectionLog", log);
         return nbt;
     }
 
-    public void fromNbt(NbtCompound nbt) {
+    public void fromNbt(CompoundTag nbt) {
         skills.load(nbt.getIntArray("Xp"), nbt.getIntArray("Boosts"));
         prayerPoints = nbt.getInt("Prayer");
         activePrayers.clear();
@@ -273,29 +272,29 @@ public final class PlayerData {
             com.runecraft.bank.BankService.read(bank, nbt.getCompound("Bank2"));
         } else {
             // Old 54-slot chest bank: move every stack into the new bank.
-            NbtList bankList = nbt.getList("Bank", NbtElement.COMPOUND_TYPE);
+            ListTag bankList = nbt.getList("Bank", Tag.TAG_COMPOUND);
             for (int i = 0; i < bankList.size(); i++) {
-                ItemStack stack = ItemStack.fromNbt(bankList.getCompound(i));
+                ItemStack stack = ItemStack.of(bankList.getCompound(i));
                 if (!stack.isEmpty()) {
                     com.runecraft.bank.BankService.depositStack(bank, stack, stack.getCount(), 0);
                 }
             }
         }
         visitedGielinor = nbt.getBoolean("Visited");
-        returnPos = nbt.contains("ReturnPos") ? BlockPos.fromLong(nbt.getLong("ReturnPos")) : null;
+        returnPos = nbt.contains("ReturnPos") ? BlockPos.of(nbt.getLong("ReturnPos")) : null;
         questPoints = nbt.getInt("QuestPoints");
         killCounts.clear();
-        NbtCompound kc = nbt.getCompound("KillCounts");
-        for (String k : kc.getKeys()) {
+        CompoundTag kc = nbt.getCompound("KillCounts");
+        for (String k : kc.getAllKeys()) {
             killCounts.put(k, kc.getInt(k));
         }
         questStages.clear();
-        NbtCompound quests = nbt.getCompound("Quests");
-        for (String k : quests.getKeys()) {
+        CompoundTag quests = nbt.getCompound("Quests");
+        for (String k : quests.getAllKeys()) {
             questStages.put(k, quests.getInt(k));
         }
         collectionLog.clear();
-        NbtList log = nbt.getList("CollectionLog", NbtElement.STRING_TYPE);
+        ListTag log = nbt.getList("CollectionLog", Tag.TAG_STRING);
         for (int i = 0; i < log.size(); i++) {
             collectionLog.add(log.getString(i));
         }

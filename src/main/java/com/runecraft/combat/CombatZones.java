@@ -8,11 +8,11 @@ import com.runecraft.osrs.MultiCombat;
 import com.runecraft.osrs.SingleCombat;
 import com.runecraft.osrs.world.SpawnTable;
 import com.runecraft.world.Gielinor;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 
 /**
  * Single-way and multi-way combat (rules in {@link SingleCombat}, areas in {@link MultiCombat}). Outside
@@ -33,7 +33,7 @@ public final class CombatZones {
         if (com.runecraft.content.raids.RaidManager.at(e) != null) {
             return true;
         }
-        if (e instanceof ServerPlayerEntity p ? com.runecraft.content.minigames.MinigameManager.session(p) != null
+        if (e instanceof ServerPlayer p ? com.runecraft.content.minigames.MinigameManager.session(p) != null
                 : com.runecraft.content.minigames.MinigameManager.owner(e) != null) {
             return true;
         }
@@ -65,21 +65,21 @@ public final class CombatZones {
             return SingleCombat.Verdict.OK;
         }
         boolean multi = isMulti(target) || isMulti(attacker);
-        boolean pvp = attacker instanceof ServerPlayerEntity && target instanceof ServerPlayerEntity;
-        ServerWorld world = attacker.getWorld() instanceof ServerWorld w ? w : null;
+        boolean pvp = attacker instanceof ServerPlayer && target instanceof ServerPlayer;
+        ServerLevel world = attacker.level() instanceof ServerLevel w ? w : null;
         return TRACKER.check(attacker.getId(), target.getId(), ActionManager.gameTick(), multi, pvp,
                 id -> active(world, id));
     }
 
     /** A recorded fighter still counts while it is alive, loaded and not a boss (bosses never block anyone). */
-    private static boolean active(ServerWorld world, int id) {
+    private static boolean active(ServerLevel world, int id) {
         Entity e = null;
         if (world != null) {
-            e = world.getEntityById(id);
+            e = world.getEntity(id);
         }
         if (e == null && server != null) {
-            for (ServerWorld w : server.getWorlds()) {
-                e = w.getEntityById(id);
+            for (ServerLevel w : server.getAllLevels()) {
+                e = w.getEntity(id);
                 if (e != null) {
                     break;
                 }
@@ -89,7 +89,7 @@ public final class CombatZones {
     }
 
     /** Convenience for monsters: may this NPC attack the player now? */
-    public static boolean npcMayAttack(LivingEntity mob, ServerPlayerEntity player) {
+    public static boolean npcMayAttack(LivingEntity mob, ServerPlayer player) {
         return check(mob, player) == SingleCombat.Verdict.OK;
     }
 

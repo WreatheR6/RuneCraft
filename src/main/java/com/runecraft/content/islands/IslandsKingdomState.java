@@ -1,10 +1,9 @@
 package com.runecraft.content.islands;
 
 import com.runecraft.osrs.content.islands.Kingdom;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.PersistentState;
-
+import net.minecraft.world.level.saveddata.SavedData;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -17,15 +16,15 @@ import java.util.UUID;
  * already produced in "stock", Minecraft-day clock) load with ten subjects on that work, the stock
  * kept for collection and the clock restarted today.
  */
-final class IslandsKingdomState extends PersistentState {
+final class IslandsKingdomState extends SavedData {
     static final String KEY = "runecraft_islands";
 
     private final Map<UUID, Kingdom.State> kingdoms = new HashMap<>();
     private final Map<UUID, Long> days = new HashMap<>();
 
     static IslandsKingdomState get(MinecraftServer server) {
-        return server.getOverworld().getPersistentStateManager()
-                .getOrCreate(IslandsKingdomState::fromNbt, IslandsKingdomState::new, KEY);
+        return server.overworld().getDataStorage()
+                .computeIfAbsent(IslandsKingdomState::fromNbt, IslandsKingdomState::new, KEY);
     }
 
     Kingdom.State kingdom(UUID uuid) {
@@ -40,22 +39,22 @@ final class IslandsKingdomState extends PersistentState {
     void set(UUID uuid, Kingdom.State state, long day) {
         kingdoms.put(uuid, state);
         days.put(uuid, day);
-        markDirty();
+        setDirty();
     }
 
     @Override
-    public NbtCompound writeNbt(NbtCompound nbt) {
+    public CompoundTag save(CompoundTag nbt) {
         kingdoms.forEach((uuid, k) -> {
-            NbtCompound c = new NbtCompound();
+            CompoundTag c = new CompoundTag();
             c.putLong("coffer", k.coffer());
             c.putInt("approval", k.approval());
             c.putLong("points", k.points());
             c.putString("clock", "utc");
-            NbtCompound workers = new NbtCompound();
+            CompoundTag workers = new CompoundTag();
             k.workers().forEach((w, n) -> workers.putInt(w.name(), n));
             c.put("workers", workers);
             c.putLong("day", days.getOrDefault(uuid, -1L));
-            NbtCompound stock = new NbtCompound();
+            CompoundTag stock = new CompoundTag();
             k.stock().forEach(stock::putInt);
             c.put("stock", stock);
             nbt.put(uuid.toString(), c);
@@ -71,16 +70,16 @@ final class IslandsKingdomState extends PersistentState {
         }
     }
 
-    static IslandsKingdomState fromNbt(NbtCompound nbt) {
+    static IslandsKingdomState fromNbt(CompoundTag nbt) {
         IslandsKingdomState state = new IslandsKingdomState();
-        for (String key : nbt.getKeys()) {
+        for (String key : nbt.getAllKeys()) {
             try {
                 UUID uuid = UUID.fromString(key);
-                NbtCompound c = nbt.getCompound(key);
+                CompoundTag c = nbt.getCompound(key);
                 Map<Kingdom.Work, Integer> workers = new EnumMap<>(Kingdom.Work.class);
                 if (c.contains("workers")) {
-                    NbtCompound w = c.getCompound("workers");
-                    for (String name : w.getKeys()) {
+                    CompoundTag w = c.getCompound("workers");
+                    for (String name : w.getAllKeys()) {
                         Kingdom.Work work = work(name);
                         if (work != null) {
                             workers.put(work, w.getInt(name));
@@ -91,8 +90,8 @@ final class IslandsKingdomState extends PersistentState {
                     workers.put(old == null ? Kingdom.Work.WOODCUTTING : old, Kingdom.WORKERS);
                 }
                 Map<String, Integer> stock = new LinkedHashMap<>();
-                NbtCompound s = c.getCompound("stock");
-                for (String item : s.getKeys()) {
+                CompoundTag s = c.getCompound("stock");
+                for (String item : s.getAllKeys()) {
                     stock.put(item, s.getInt(item));
                 }
                 boolean utc = c.getString("clock").equals("utc");

@@ -1,20 +1,19 @@
 package com.runecraft.player;
 
 import com.runecraft.osrs.world.BuiltChunks;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.nbt.NbtString;
-import net.minecraft.world.PersistentState;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.world.level.saveddata.SavedData;
 
 /** World-save storage for all RuneCraft player data and which landmarks have been built. */
-public final class PlayerDataState extends PersistentState {
+public final class PlayerDataState extends SavedData {
     public static final String KEY = "runecraft";
 
     private final Map<UUID, PlayerData> players = new HashMap<>();
@@ -36,7 +35,7 @@ public final class PlayerDataState extends PersistentState {
 
     public void markBuilt(String landmark) {
         builtLandmarks.add(landmark);
-        markDirty();
+        setDirty();
     }
 
     /** True if this structure's share of the chunk has been placed. */
@@ -46,7 +45,7 @@ public final class PlayerDataState extends PersistentState {
 
     public void markStructureBuilt(String structureId, int chunkX, int chunkZ) {
         builtStructures.markBuilt(structureId, chunkX, chunkZ);
-        markDirty();
+        setDirty();
     }
 
     /** Player data changes constantly (XP, bank); always save. */
@@ -56,16 +55,16 @@ public final class PlayerDataState extends PersistentState {
     }
 
     @Override
-    public NbtCompound writeNbt(NbtCompound nbt) {
-        NbtCompound playersNbt = new NbtCompound();
+    public CompoundTag save(CompoundTag nbt) {
+        CompoundTag playersNbt = new CompoundTag();
         players.forEach((uuid, data) -> playersNbt.put(uuid.toString(), data.toNbt()));
         nbt.put("Players", playersNbt);
-        NbtList built = new NbtList();
+        ListTag built = new ListTag();
         for (String s : builtLandmarks) {
-            built.add(NbtString.of(s));
+            built.add(StringTag.valueOf(s));
         }
         nbt.put("Landmarks", built);
-        NbtCompound structures = new NbtCompound();
+        CompoundTag structures = new CompoundTag();
         for (String id : builtStructures.structures()) {
             structures.putLongArray(id, builtStructures.chunkKeys(id));
         }
@@ -73,10 +72,10 @@ public final class PlayerDataState extends PersistentState {
         return nbt;
     }
 
-    public static PlayerDataState fromNbt(NbtCompound nbt) {
+    public static PlayerDataState fromNbt(CompoundTag nbt) {
         PlayerDataState state = new PlayerDataState();
-        NbtCompound playersNbt = nbt.getCompound("Players");
-        for (String key : playersNbt.getKeys()) {
+        CompoundTag playersNbt = nbt.getCompound("Players");
+        for (String key : playersNbt.getAllKeys()) {
             try {
                 PlayerData data = new PlayerData();
                 data.fromNbt(playersNbt.getCompound(key));
@@ -85,15 +84,15 @@ public final class PlayerDataState extends PersistentState {
                 // skip malformed entries
             }
         }
-        NbtList built = nbt.getList("Landmarks", NbtElement.STRING_TYPE);
+        ListTag built = nbt.getList("Landmarks", Tag.TAG_STRING);
         for (int i = 0; i < built.size(); i++) {
             String key = built.getString(i);
             if (!state.builtStructures.parseLegacyKey(key)) { // older saves: one string per structure share
                 state.builtLandmarks.add(key);
             }
         }
-        NbtCompound structures = nbt.getCompound("StructureChunks");
-        for (String id : structures.getKeys()) {
+        CompoundTag structures = nbt.getCompound("StructureChunks");
+        for (String id : structures.getAllKeys()) {
             state.builtStructures.addAll(id, structures.getLongArray(id));
         }
         return state;

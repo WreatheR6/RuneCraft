@@ -13,10 +13,10 @@ import com.runecraft.osrs.Spell;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Builds a {@link PlayerHitCalc.Input} from a player and their target, so every player attack (melee, ranged, autocast
@@ -31,7 +31,7 @@ public final class HitCalcBridge {
     }
 
     /** The player's input for an attack of {@code type}; {@code ammoStrength} is the fired arrow's ranged strength. */
-    public static PlayerHitCalc.Input input(ServerPlayerEntity p, LivingEntity target, AttackType type, String ammoId, int ammoStrength) {
+    public static PlayerHitCalc.Input input(ServerPlayer p, LivingEntity target, AttackType type, String ammoId, int ammoStrength) {
         PlayerData d = Players.data(p);
         SkillSet s = d.skills();
         PlayerHitCalc.Input in = new PlayerHitCalc.Input();
@@ -45,11 +45,11 @@ public final class HitCalcBridge {
         in.hitpoints = Math.max(0, (int) Math.ceil(p.getHealth()));
         in.prayers.addAll(d.activePrayers());
         for (EquipmentSlot slot : new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
-            add(in, p.getEquippedStack(slot));
+            add(in, p.getItemBySlot(slot));
         }
-        in.weapon = Inv.idOf(p.getMainHandStack());
-        add(in, p.getMainHandStack());
-        add(in, p.getOffHandStack());
+        in.weapon = Inv.idOf(p.getMainHandItem());
+        add(in, p.getMainHandItem());
+        add(in, p.getOffhandItem());
         for (ItemStack stack : SysState.of(p).worn.values()) {
             add(in, stack);
         }
@@ -83,9 +83,9 @@ public final class HitCalcBridge {
     }
 
     /** True when this attack is the player's special attack; set by the systems module (special attack service). */
-    public static java.util.function.BiPredicate<ServerPlayerEntity, AttackType> specialAttack = (p, type) -> false;
+    public static java.util.function.BiPredicate<ServerPlayer, AttackType> specialAttack = (p, type) -> false;
     /** The player's soulreaper axe soul stacks; set by the systems module. */
-    public static java.util.function.ToIntFunction<ServerPlayerEntity> soulStacks = p -> 0;
+    public static java.util.function.ToIntFunction<ServerPlayer> soulStacks = p -> 0;
 
     /** Vampyre tier immunity and damage multipliers applied to a rolled hit (PlayerHitCalc). */
     public static int afterRoll(PlayerHitCalc.Input in, int damage) {
@@ -106,16 +106,16 @@ public final class HitCalcBridge {
      * Stats of items worn in slots another module keeps (the quests module's cape / hands / neck gear such as the imbued
      * god capes and chaos gauntlets), added to the gear totals; set by that module.
      */
-    public static java.util.function.Function<ServerPlayerEntity, EquipmentStats> extraWornStats = p -> EquipmentStats.NONE;
+    public static java.util.function.Function<ServerPlayer, EquipmentStats> extraWornStats = p -> EquipmentStats.NONE;
     /** Ids of those items (for item effects such as the chaos gauntlets' bolt bonus). */
-    public static java.util.function.Function<ServerPlayerEntity, java.util.Collection<String>> extraWornIds = p -> java.util.List.of();
+    public static java.util.function.Function<ServerPlayer, java.util.Collection<String>> extraWornIds = p -> java.util.List.of();
 
     /**
      * Every bonus the player wears, summed: armour, weapon and shield, the extra jewellery / cape / gloves / ammo slots and
      * other modules' worn slots. The totals PlayerHitCalc and the player's defence roll use; no worn item multiplies on
      * its own.
      */
-    public static EquipmentStats gearStats(ServerPlayerEntity p) {
+    public static EquipmentStats gearStats(ServerPlayer p) {
         return Equipment.total(p, Players.data(p).skills()).plus(SysCombat.wornStats(p)).plus(extraWornStats.apply(p));
     }
 
@@ -126,12 +126,12 @@ public final class HitCalcBridge {
     }
 
     /** Fills the target side: defence level and bonus for the attack style, attributes, task, twisted bow magic. */
-    static void target(PlayerHitCalc.Input in, ServerPlayerEntity p, LivingEntity target) {
+    static void target(PlayerHitCalc.Input in, ServerPlayer p, LivingEntity target) {
         if (target == null) {
             return;
         }
-        in.targetSize = Math.max(1, Math.round(target.getWidth()));
-        if (target instanceof ServerPlayerEntity other) {
+        in.targetSize = Math.max(1, Math.round(target.getBbWidth()));
+        if (target instanceof ServerPlayer other) {
             in.targetTbowMagic = Players.data(other).skills().currentLevel(Skill.MAGIC);
             return;
         }
@@ -173,7 +173,7 @@ public final class HitCalcBridge {
      * The defending player's side of an attack of {@code style}: boosted Defence and Magic, hitpoints, prayers, stance,
      * the total defence bonus against the style (every worn slot) and Torag's set.
      */
-    public static NpcHitCalc.Input defenderInput(ServerPlayerEntity p, AttackType style) {
+    public static NpcHitCalc.Input defenderInput(ServerPlayer p, AttackType style) {
         PlayerData d = Players.data(p);
         SkillSet s = d.skills();
         NpcHitCalc.Input in = new NpcHitCalc.Input();
@@ -185,16 +185,16 @@ public final class HitCalcBridge {
         in.prayers.addAll(d.activePrayers());
         in.stance = d.style();
         in.defenceBonus = gearStats(p).defence(style);
-        in.torags = Inv.idOf(p.getEquippedStack(EquipmentSlot.HEAD)).equals("torags_helm")
-                && Inv.idOf(p.getEquippedStack(EquipmentSlot.CHEST)).equals("torags_platebody")
-                && Inv.idOf(p.getEquippedStack(EquipmentSlot.LEGS)).equals("torags_platelegs")
-                && Inv.idOf(p.getMainHandStack()).equals("torags_hammers")
+        in.torags = Inv.idOf(p.getItemBySlot(EquipmentSlot.HEAD)).equals("torags_helm")
+                && Inv.idOf(p.getItemBySlot(EquipmentSlot.CHEST)).equals("torags_platebody")
+                && Inv.idOf(p.getItemBySlot(EquipmentSlot.LEGS)).equals("torags_platelegs")
+                && Inv.idOf(p.getMainHandItem()).equals("torags_hammers")
                 && "amulet_of_the_damned".equals(SysState.of(p).wornId(com.runecraft.osrs.content.systems.Jewellery.Slot.NECK));
         return in;
     }
 
     /** The player's defence roll against an attack style (NpcHitCalc, tested against the DPS calculator). */
-    public static long playerDefenceRoll(ServerPlayerEntity p, AttackType style) {
+    public static long playerDefenceRoll(ServerPlayer p, AttackType style) {
         return NpcHitCalc.playerDefenceRoll(defenderInput(p, style));
     }
 
@@ -211,7 +211,7 @@ public final class HitCalcBridge {
     }
 
     /** True when the player's overhead prayer blocks a monster's attack of this style. */
-    public static boolean protectedFrom(ServerPlayerEntity p, AttackType style) {
+    public static boolean protectedFrom(ServerPlayer p, AttackType style) {
         return NpcHitCalc.protectedFrom(Players.data(p).activePrayers(), style);
     }
 
@@ -235,7 +235,7 @@ public final class HitCalcBridge {
      * {@link CombatHandler#defenceRoll}.
      */
     public static long defenceRoll(LivingEntity target, PlayerHitCalc.Input in) {
-        if (target == null || target instanceof ServerPlayerEntity) {
+        if (target == null || target instanceof ServerPlayer) {
             AttackType against = PlayerHitCalc.specialDefenceType(in);
             return CombatHandler.defenceRoll(target, against != null ? against : in.type);
         }
@@ -243,12 +243,12 @@ public final class HitCalcBridge {
     }
 
     /** Attack roll including the remaining {@link CombatHooks} accuracy modifiers. */
-    public static long attackRoll(ServerPlayerEntity p, LivingEntity target, PlayerHitCalc.Input in) {
+    public static long attackRoll(ServerPlayer p, LivingEntity target, PlayerHitCalc.Input in) {
         return (long) (PlayerHitCalc.attackRoll(in) * CombatHooks.accuracy(p, target, in.type));
     }
 
     /** Max hit including the remaining {@link CombatHooks} max-hit modifiers. */
-    public static int maxHit(ServerPlayerEntity p, LivingEntity target, PlayerHitCalc.Input in) {
+    public static int maxHit(ServerPlayer p, LivingEntity target, PlayerHitCalc.Input in) {
         return Math.max(0, (int) Math.floor(PlayerHitCalc.maxHit(in) * CombatHooks.maxHit(p, target, in.type) + 1e-9));
     }
 

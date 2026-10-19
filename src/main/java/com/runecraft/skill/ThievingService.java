@@ -8,19 +8,18 @@ import com.runecraft.osrs.data.Thieving;
 import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * Pickpocketing and stealing from stalls. Every pickpocket target in the game (built-in creatures,
@@ -32,12 +31,12 @@ public final class ThievingService {
     private ThievingService() {
     }
 
-    public static void stealFromStall(ServerPlayerEntity player, ServerWorld world, BlockPos pos, BlockState state, StallBlock block) {
+    public static void stealFromStall(ServerPlayer player, ServerLevel world, BlockPos pos, BlockState state, StallBlock block) {
         if (!Stun.check(player)) {
             return;
         }
         Thieving.Stall stall = block.stall();
-        if (state.get(StallBlock.EMPTY)) {
+        if (state.getValue(StallBlock.EMPTY)) {
             Msg.game(player, "The stall is empty.");
             return;
         }
@@ -46,7 +45,7 @@ public final class ThievingService {
             return;
         }
         Thieving.Loot l = stall.pick(world.getRandom().nextInt(stall.totalWeight()));
-        player.swingHand(Hand.MAIN_HAND, true);
+        player.swing(InteractionHand.MAIN_HAND, true);
         Inv.give(player, l.item(), l.min());
         CollectionLog.obtain(player, l.item());
         GameEvents.fireActivity(player, "thieve:" + stall.blockId()); // Rocky's rate is per stall
@@ -56,28 +55,28 @@ public final class ThievingService {
     }
 
     /** Pickpocket success-chance multiplier (achievement diary perks register theirs; 1.0 = none). */
-    public static java.util.function.ToDoubleFunction<ServerPlayerEntity> pickpocketBonus = p -> 1.0;
+    public static java.util.function.ToDoubleFunction<ServerPlayer> pickpocketBonus = p -> 1.0;
 
     /** Whether a failed pickpocket goes unnoticed (Shadow Veil registers its 15% chance; default never). */
-    public static java.util.function.Predicate<ServerPlayerEntity> failUnnoticed = p -> false;
+    public static java.util.function.Predicate<ServerPlayer> failUnnoticed = p -> false;
 
     /** Whether the player wears an item in one of the systems module's extra slots (cape, neck, hands...). */
-    public static java.util.function.BiPredicate<ServerPlayerEntity, String> wearingExtra = (p, id) -> false;
+    public static java.util.function.BiPredicate<ServerPlayer, String> wearingExtra = (p, id) -> false;
 
     /**
      * A worn dodgy necklace saving the player from a stun: the systems module rolls its 25% chance and
      * uses up a charge (default: no necklace).
      */
-    public static java.util.function.Predicate<ServerPlayerEntity> dodgyNecklace = p -> false;
+    public static java.util.function.Predicate<ServerPlayer> dodgyNecklace = p -> false;
 
     /** Coin pouches the player may carry (the systems module raises it with the Ardougne diary). */
-    public static java.util.function.ToIntFunction<ServerPlayerEntity> coinPouchLimit = p -> Thieving.COIN_POUCH_LIMIT;
+    public static java.util.function.ToIntFunction<ServerPlayer> coinPouchLimit = p -> Thieving.COIN_POUCH_LIMIT;
 
     /**
      * A pickpocket success chance after bonuses: gloves of silence and the Ardougne diary ({@link #pickpocketBonus}),
      * then the Thieving cape, each scaling the target's low/high values ({@link Thieving#pickpocketChance}).
      */
-    public static double pickpocketChance(ServerPlayerEntity player, int level, int low, int high) {
+    public static double pickpocketChance(ServerPlayer player, int level, int low, int high) {
         double bonus = pickpocketBonus.applyAsDouble(player);
         double cape = wearingExtra.test(player, "thieving_cape") || wearingExtra.test(player, "thieving_cape_t")
                 || wearingExtra.test(player, "max_cape") ? Thieving.THIEVING_CAPE_BONUS : 1.0;
@@ -85,10 +84,10 @@ public final class ThievingService {
     }
 
     /** Rogue equipment pieces worn (mask, top, trousers, boots in the armour slots; gloves in the hands slot). */
-    public static int roguePieces(ServerPlayerEntity player) {
+    public static int roguePieces(ServerPlayer player) {
         int n = 0;
         for (EquipmentSlot slot : new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
-            if (Thieving.ROGUE_OUTFIT.contains(Inv.idOf(player.getEquippedStack(slot)))) {
+            if (Thieving.ROGUE_OUTFIT.contains(Inv.idOf(player.getItemBySlot(slot)))) {
                 n++;
             }
         }
@@ -99,7 +98,7 @@ public final class ThievingService {
     }
 
     /** Coin pouches of every kind the player carries. */
-    public static int coinPouches(ServerPlayerEntity player) {
+    public static int coinPouches(ServerPlayer player) {
         int n = 0;
         for (Thieving.CoinPouch p : Thieving.COIN_POUCHES) {
             n += Inv.count(player, p.itemId());
@@ -111,7 +110,7 @@ public final class ThievingService {
      * Opens every coin pouch of one kind in the inventory and gives the coins. Returns false if the
      * item is not a coin pouch.
      */
-    public static boolean openPouches(ServerPlayerEntity player, String itemId) {
+    public static boolean openPouches(ServerPlayer player, String itemId) {
         Thieving.CoinPouch pouch = Thieving.pouchByItem(itemId);
         if (pouch == null) {
             return false;
@@ -142,7 +141,7 @@ public final class ThievingService {
     }
 
     /** Pickpocketing one of the built-in targets (men, Al-Kharid warriors, guards...). */
-    public static void pickpocket(ServerPlayerEntity player, LivingEntity target, Thieving.Pickpocket kind) {
+    public static void pickpocket(ServerPlayer player, LivingEntity target, Thieving.Pickpocket kind) {
         attempt(player, target, new Target(kind.displayName(), kind.level(), kind.xp(), kind.low(), kind.high(), kind.stunDamage(),
                 kind.pouch()), out -> {
             for (Thieving.Loot l : kind.loot()) {
@@ -158,12 +157,12 @@ public final class ThievingService {
      * coin pouch, doubled by the rogue equipment), and on failure the stun and the NPC's hit (which a
      * dodgy necklace may prevent).
      */
-    public static void attempt(ServerPlayerEntity player, LivingEntity npc, Target t, LootRoll loot) {
+    public static void attempt(ServerPlayer player, LivingEntity npc, Target t, LootRoll loot) {
         attempt(player, npc, t, loot, false);
     }
 
-    /** As {@link #attempt(ServerPlayerEntity, LivingEntity, Target, LootRoll)}; {@code sure} = the target is knocked out. */
-    public static void attempt(ServerPlayerEntity player, LivingEntity npc, Target t, LootRoll loot, boolean sure) {
+    /** As {@link #attempt(ServerPlayer, LivingEntity, Target, LootRoll)}; {@code sure} = the target is knocked out. */
+    public static void attempt(ServerPlayer player, LivingEntity npc, Target t, LootRoll loot, boolean sure) {
         if (!Stun.check(player)) {
             return;
         }
@@ -178,7 +177,7 @@ public final class ThievingService {
             return;
         }
         Msg.action(player, "You attempt to pick the " + who + "'s pocket.");
-        player.swingHand(Hand.MAIN_HAND, true);
+        player.swing(InteractionHand.MAIN_HAND, true);
         if (sure || player.getRandom().nextDouble() < pickpocketChance(player, level, t.low(), t.high())) {
             List<String> items = new ArrayList<>();
             List<Integer> counts = new ArrayList<>();
@@ -224,10 +223,10 @@ public final class ThievingService {
                 return;
             }
             Msg.red(player, "You have been stunned!");
-            npc.swingHand(Hand.MAIN_HAND);
+            npc.swing(InteractionHand.MAIN_HAND);
             // OSRS: a failed pickpocket always hits for the NPC's listed stun damage.
             com.runecraft.combat.CombatHandler.applyDamage(npc, player, Math.max(1, t.stunDamage()));
-            player.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 100, 4, false, false));
+            player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 100, 4, false, false));
             Stun.apply(player, Thieving.STUN_TICKS);
         }
     }

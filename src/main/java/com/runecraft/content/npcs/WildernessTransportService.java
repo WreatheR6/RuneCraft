@@ -12,19 +12,18 @@ import com.runecraft.world.NpcFloor;
 import com.runecraft.world.StructurePlacer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.particle.ParticleTypes;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.Heightmap;
-
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -60,48 +59,48 @@ public final class WildernessTransportService {
             LandmarkBuilder.registerCustom(o.placeId(), (world, centre) -> layObelisk(world, o));
         }
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
-            if (hand != Hand.MAIN_HAND || !Gielinor.is(world)) {
-                return ActionResult.PASS;
+            if (hand != InteractionHand.MAIN_HAND || !Gielinor.is(world)) {
+                return InteractionResult.PASS;
             }
             BlockPos pos = hit.getBlockPos();
             int tx = GielinorMap.toOsrsX(pos.getX());
             int ty = GielinorMap.toOsrsY(pos.getZ());
             BlockState state = world.getBlockState(pos);
-            WildernessTransport.Lever lever = state.isOf(Blocks.LEVER) ? WildernessTransport.leverAt(tx, ty) : null;
+            WildernessTransport.Lever lever = state.is(Blocks.LEVER) ? WildernessTransport.leverAt(tx, ty) : null;
             WildernessTransport.Obelisk obelisk = lever == null && pillar(state) ? WildernessTransport.pillarAt(tx, ty) : null;
             if (lever == null && obelisk == null) {
-                return ActionResult.PASS;
+                return InteractionResult.PASS;
             }
-            if (world.isClient() || !(player instanceof ServerPlayerEntity sp)) {
-                return ActionResult.SUCCESS;
+            if (world.isClientSide() || !(player instanceof ServerPlayer sp)) {
+                return InteractionResult.SUCCESS;
             }
             if (lever != null) {
                 pull(sp, lever);
             } else {
                 activate(sp, obelisk);
             }
-            return ActionResult.SUCCESS;
+            return InteractionResult.SUCCESS;
         });
         ServerTickEvents.END_SERVER_TICK.register(WildernessTransportService::tick);
     }
 
     private static boolean pillar(BlockState state) {
-        return state.isOf(Blocks.POLISHED_BLACKSTONE) || state.isOf(Blocks.CHISELED_POLISHED_BLACKSTONE);
+        return state.is(Blocks.POLISHED_BLACKSTONE) || state.is(Blocks.CHISELED_POLISHED_BLACKSTONE);
     }
 
     // ------------------------------------------------------------------ levers
 
     /** A lever on the floor of its tile (inside the building there, if any). */
-    private static void layLever(ServerWorld world, WildernessTransport.Lever l) {
+    private static void layLever(ServerLevel world, WildernessTransport.Lever l) {
         int x = GielinorMap.toBlockX(l.x());
         int z = GielinorMap.toBlockZ(l.y());
         StructurePlacer.applyAround(world, x, z, 16);
         BlockPos feet = NpcFloor.spot(world, x, z, false);
-        world.setBlockState(feet, StructurePlacer.parse("minecraft:lever[face=floor,facing=north]"));
+        world.setBlockAndUpdate(feet, StructurePlacer.parse("minecraft:lever[face=floor,facing=north]"));
     }
 
     /** Where a lever's traveller lands: the destination tile's other block, on its floor (the Mage Bank's cavern floor). */
-    static BlockPos arrival(ServerWorld world, WildernessTransport.Lever l) {
+    static BlockPos arrival(ServerLevel world, WildernessTransport.Lever l) {
         // The Mage Bank, the King Black Dragon's lair and its entrance chamber are carved caverns: land on their floor.
         int[] a = WildernessTransport.cavernArrival(l);
         if (a != null) {
@@ -122,19 +121,19 @@ public final class WildernessTransportService {
     }
 
     /** Pulls a lever: sends the player to its paired lever (public for the self-test). */
-    public static void pull(ServerPlayerEntity p, WildernessTransport.Lever l) {
+    public static void pull(ServerPlayer p, WildernessTransport.Lever l) {
         if (com.runecraft.combat.Teleblock.blocked(p)) {
             return;
         }
-        ServerWorld world = Gielinor.world(p.getServer());
+        ServerLevel world = Gielinor.world(p.getServer());
         if (world == null) {
             return;
         }
         Msg.action(p, "You pull the lever...");
         BlockPos to = arrival(world, l);
-        world.spawnParticles(ParticleTypes.PORTAL, p.getX(), p.getY() + 1, p.getZ(), 40, 0.4, 1, 0.4, 0.4);
-        p.teleport(world, to.getX() + 0.5, NpcFloor.feetY(world, to), to.getZ() + 0.5, p.getYaw(), p.getPitch());
-        world.playSound(null, to, SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 1f, 1f);
+        world.sendParticles(ParticleTypes.PORTAL, p.getX(), p.getY() + 1, p.getZ(), 40, 0.4, 1, 0.4, 0.4);
+        p.teleportTo(world, to.getX() + 0.5, NpcFloor.feetY(world, to), to.getZ() + 0.5, p.getYRot(), p.getXRot());
+        world.playSound(null, to, SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1f, 1f);
         Msg.game(p, "...and teleport to " + l.toName() + ".");
         GameEvents.fireActivity(p, "lever:" + l.id());
     }
@@ -142,7 +141,7 @@ public final class WildernessTransportService {
     // ------------------------------------------------------------------ obelisks
 
     /** Levels the 5x5-tile square, with a stone platform and a pillar on each corner tile. */
-    private static void layObelisk(ServerWorld world, WildernessTransport.Obelisk o) {
+    private static void layObelisk(ServerLevel world, WildernessTransport.Obelisk o) {
         int x1 = GielinorMap.toBlockX(o.x() - 2);
         int x2 = GielinorMap.toBlockX(o.x() + 2) + 1;
         int z1 = GielinorMap.toBlockZ(o.y() + 2);
@@ -151,13 +150,13 @@ public final class WildernessTransportService {
         int cz = GielinorMap.toBlockZ(o.y());
         StructurePlacer.applyAround(world, cx, cz, 16);
         world.getChunk(cx >> 4, cz >> 4);
-        int gy = Math.max(world.getTopY(Heightmap.Type.OCEAN_FLOOR, cx, cz) - 1, world.getSeaLevel());
+        int gy = Math.max(world.getHeight(Heightmap.Types.OCEAN_FLOOR, cx, cz) - 1, world.getSeaLevel());
         for (int x = x1; x <= x2; x++) {
             for (int z = z1; z <= z2; z++) {
                 boolean edge = x == x1 || x == x2 || z == z1 || z == z2;
-                world.setBlockState(new BlockPos(x, gy, z), (edge ? Blocks.CRACKED_STONE_BRICKS : Blocks.STONE_BRICKS).getDefaultState());
+                world.setBlockAndUpdate(new BlockPos(x, gy, z), (edge ? Blocks.CRACKED_STONE_BRICKS : Blocks.STONE_BRICKS).defaultBlockState());
                 for (int y = gy + 1; y <= gy + 5; y++) {
-                    world.setBlockState(new BlockPos(x, y, z), Blocks.AIR.getDefaultState());
+                    world.setBlockAndUpdate(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState());
                 }
             }
         }
@@ -165,26 +164,26 @@ public final class WildernessTransportService {
             for (int dx = 0; dx <= 1; dx++) {
                 for (int dz = 0; dz <= 1; dz++) {
                     for (int y = gy + 1; y <= gy + 2; y++) {
-                        world.setBlockState(new BlockPos(c[0] + dx, y, c[1] + dz), Blocks.POLISHED_BLACKSTONE.getDefaultState());
+                        world.setBlockAndUpdate(new BlockPos(c[0] + dx, y, c[1] + dz), Blocks.POLISHED_BLACKSTONE.defaultBlockState());
                     }
-                    world.setBlockState(new BlockPos(c[0] + dx, gy + 3, c[1] + dz), Blocks.CHISELED_POLISHED_BLACKSTONE.getDefaultState());
+                    world.setBlockAndUpdate(new BlockPos(c[0] + dx, gy + 3, c[1] + dz), Blocks.CHISELED_POLISHED_BLACKSTONE.defaultBlockState());
                 }
             }
         }
     }
 
     /** Whether a player has completed the hard Wilderness Diary (Set Destination on the obelisks). */
-    static boolean hardDiary(ServerPlayerEntity p) {
+    static boolean hardDiary(ServerPlayer p) {
         return com.runecraft.osrs.content.systems.Diaries.tierComplete(com.runecraft.content.systems.SysState.of(p).diaryDone,
                 "wilderness", com.runecraft.osrs.content.systems.Diaries.Tier.HARD);
     }
 
-    static void activate(ServerPlayerEntity p, WildernessTransport.Obelisk o) {
-        long now = p.getServer().getTicks();
+    static void activate(ServerPlayer p, WildernessTransport.Obelisk o) {
+        long now = p.getServer().getTickCount();
         // Set Destination (hard Wilderness Diary): sneak-activate to cycle through the six obelisks.
-        if (p.isSneaking() && hardDiary(p)) {
-            WildernessTransport.Obelisk next = WildernessTransport.nextChoice(CHOSEN.get(p.getUuid()));
-            CHOSEN.put(p.getUuid(), next);
+        if (p.isShiftKeyDown() && hardDiary(p)) {
+            WildernessTransport.Obelisk next = WildernessTransport.nextChoice(CHOSEN.get(p.getUUID()));
+            CHOSEN.put(p.getUUID(), next);
             Msg.game(p, "The obelisks will now take you to the level " + next.level() + " obelisk (" + next.name()
                     + "). Activate the obelisk to teleport there.");
             return;
@@ -199,7 +198,7 @@ public final class WildernessTransportService {
         }
         ARMED.put(o, now + (long) WildernessTransport.OBELISK_DELAY_TICKS * MC_TICKS_PER_GAME_TICK);
         // The first activator's rules apply to everyone on the platform (OSRS Wiki).
-        WildernessTransport.Obelisk chosen = hardDiary(p) ? CHOSEN.get(p.getUuid()) : null;
+        WildernessTransport.Obelisk chosen = hardDiary(p) ? CHOSEN.get(p.getUUID()) : null;
         if (chosen != null) {
             TARGET.put(o, chosen);
         } else {
@@ -207,8 +206,8 @@ public final class WildernessTransportService {
         }
         Msg.action(p, "You activate the ancient obelisk...");
         GameEvents.fireActivity(p, "obelisk:" + o.level());
-        if (p.getWorld() instanceof ServerWorld world) {
-            world.playSound(null, p.getBlockPos(), SoundEvents.BLOCK_BEACON_ACTIVATE, SoundCategory.BLOCKS, 1f, 1f);
+        if (p.level() instanceof ServerLevel world) {
+            world.playSound(null, p.blockPosition(), SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 1f, 1f);
         }
     }
 
@@ -216,12 +215,12 @@ public final class WildernessTransportService {
         if (ARMED.isEmpty()) {
             return;
         }
-        long now = server.getTicks();
-        ServerWorld world = Gielinor.world(server);
+        long now = server.getTickCount();
+        ServerLevel world = Gielinor.world(server);
         for (WildernessTransport.Obelisk o : new ArrayList<>(ARMED.keySet())) {
             long at = ARMED.get(o);
             if (world != null && at - now > 0 && (at - now) % MC_TICKS_PER_GAME_TICK == 0) {
-                world.spawnParticles(ParticleTypes.ENCHANT, GielinorMap.toBlockX(o.x()) + 1, world.getTopY(Heightmap.Type.MOTION_BLOCKING,
+                world.sendParticles(ParticleTypes.ENCHANT, GielinorMap.toBlockX(o.x()) + 1, world.getHeight(Heightmap.Types.MOTION_BLOCKING,
                         GielinorMap.toBlockX(o.x()), GielinorMap.toBlockZ(o.y())) + 1, GielinorMap.toBlockZ(o.y()) + 1, 40, 2.5, 1, 2.5, 0.5);
             }
             if (at > now) {
@@ -240,10 +239,10 @@ public final class WildernessTransportService {
      * Sends everyone on the obelisk's platform to the same spot of the destination obelisk's platform, except players under
      * a Tele Block (OSRS: "The obelisk will only teleport players who are not under the effects of a Tele Block").
      */
-    static int fire(ServerWorld world, WildernessTransport.Obelisk from, WildernessTransport.Obelisk to) {
-        List<ServerPlayerEntity> riders = new ArrayList<>();
-        for (ServerPlayerEntity p : world.getPlayers()) {
-            BlockPos at = p.getBlockPos();
+    static int fire(ServerLevel world, WildernessTransport.Obelisk from, WildernessTransport.Obelisk to) {
+        List<ServerPlayer> riders = new ArrayList<>();
+        for (ServerPlayer p : world.players()) {
+            BlockPos at = p.blockPosition();
             if (WildernessTransport.platformAt(GielinorMap.toOsrsX(at.getX()), GielinorMap.toOsrsY(at.getZ())) == from
                     && !com.runecraft.combat.Teleblock.blocked(p)) {
                 riders.add(p);
@@ -259,15 +258,15 @@ public final class WildernessTransportService {
         int dx = GielinorMap.toBlockX(to.x()) - GielinorMap.toBlockX(from.x());
         int dz = GielinorMap.toBlockZ(to.y()) - GielinorMap.toBlockZ(from.y());
         StructurePlacer.applyAround(world, GielinorMap.toBlockX(to.x()), GielinorMap.toBlockZ(to.y()), 16);
-        for (ServerPlayerEntity p : riders) {
-            BlockPos spot = Gielinor.safeSpot(world, p.getBlockPos().getX() + dx, p.getBlockPos().getZ() + dz);
-            p.teleport(world, p.getX() + dx, spot.getY(), p.getZ() + dz, p.getYaw(), p.getPitch());
-            world.spawnParticles(ParticleTypes.PORTAL, p.getX(), p.getY() + 1, p.getZ(), 40, 0.4, 1, 0.4, 0.4);
+        for (ServerPlayer p : riders) {
+            BlockPos spot = Gielinor.safeSpot(world, p.blockPosition().getX() + dx, p.blockPosition().getZ() + dz);
+            p.teleportTo(world, p.getX() + dx, spot.getY(), p.getZ() + dz, p.getYRot(), p.getXRot());
+            world.sendParticles(ParticleTypes.PORTAL, p.getX(), p.getY() + 1, p.getZ(), 40, 0.4, 1, 0.4, 0.4);
             Msg.action(p, "Ancient magic teleports you somewhere in the Wilderness.");
             GameEvents.fireActivity(p, "obelisk_teleport:" + to.level());
         }
         world.playSound(null, new BlockPos(GielinorMap.toBlockX(to.x()), world.getSeaLevel(), GielinorMap.toBlockZ(to.y())),
-                SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 1f, 1f);
+                SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1f, 1f);
         return riders.size();
     }
 }

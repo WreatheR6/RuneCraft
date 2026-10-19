@@ -8,16 +8,15 @@ import com.runecraft.osrs.content.dungeons.Dungeons;
 import com.runecraft.registry.ModBlocks;
 import com.runecraft.registry.ModEntities;
 import com.runecraft.world.StructurePlacer;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobSpawnType;
 
 /** World and dungeon rules: the Kalphite Cave's task-only gate on every damage path, the Temple of Marimbo's locked door. */
 final class DungeonWorldChecks {
@@ -33,7 +32,7 @@ final class DungeonWorldChecks {
 
     /** Damage dealt straight through CombatHandler.applyDamage (the cannon's and spells' path) is stopped without a task. */
     private static String kalphiteGate(TestContext c) {
-        ServerPlayerEntity p = c.player;
+        ServerPlayer p = c.player;
         Dungeons.Camp camp = null;
         for (Dungeons.Dungeon d : Dungeons.all()) {
             if (d.id().equals("dng_kalphite_cave") && !d.camps().isEmpty()) {
@@ -62,13 +61,13 @@ final class DungeonWorldChecks {
                 throw new AssertionError(camp.creatures().get(0) + " is not a living entity");
             }
             mob = living;
-            mob.refreshPositionAndAngles(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0f, 0f);
-            if (mob instanceof MobEntity m) {
-                m.initialize(c.world, c.world.getLocalDifficulty(at), SpawnReason.SPAWNER, null, null);
-                m.setPersistent();
-                m.setAiDisabled(true);
+            mob.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0f, 0f);
+            if (mob instanceof Mob m) {
+                m.finalizeSpawn(c.world, c.world.getCurrentDifficultyAt(at), MobSpawnType.SPAWNER, null, null);
+                m.setPersistenceRequired();
+                m.setNoAi(true);
             }
-            c.world.spawnEntity(mob);
+            c.world.addFreshEntity(mob);
             float before = mob.getHealth();
             int dealt = CombatHandler.applyDamage(p, mob, 3);
             if (dealt != 0 || mob.getHealth() < before) {

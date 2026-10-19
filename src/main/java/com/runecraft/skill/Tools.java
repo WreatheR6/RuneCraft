@@ -6,9 +6,9 @@ import com.runecraft.osrs.SkillSet;
 import com.runecraft.osrs.data.SpecialTool;
 import com.runecraft.osrs.data.ToolTier;
 import com.runecraft.registry.ModItems;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Finds the best usable axe/pickaxe/harpoon anywhere in the inventory, like OSRS. Crystal and
@@ -31,32 +31,32 @@ public final class Tools {
         }
     }
 
-    public static ToolTier bestAxe(PlayerEntity player, SkillSet skills) {
+    public static ToolTier bestAxe(Player player, SkillSet skills) {
         Tool t = bestAxeTool(player, skills);
         return t == null ? null : t.tier();
     }
 
-    public static ToolTier bestPickaxe(PlayerEntity player, SkillSet skills) {
+    public static ToolTier bestPickaxe(Player player, SkillSet skills) {
         Tool t = bestPickaxeTool(player, skills);
         return t == null ? null : t.tier();
     }
 
-    public static Tool bestAxeTool(PlayerEntity player, SkillSet skills) {
+    public static Tool bestAxeTool(Player player, SkillSet skills) {
         return best(player, skills, ItemDef.Kind.AXE, Skill.WOODCUTTING);
     }
 
-    public static Tool bestPickaxeTool(PlayerEntity player, SkillSet skills) {
+    public static Tool bestPickaxeTool(Player player, SkillSet skills) {
         return best(player, skills, ItemDef.Kind.PICKAXE, Skill.MINING);
     }
 
     /** The best harpoon the player can use (crystal > infernal/dragon > harpoon), or null. */
-    public static String bestHarpoon(PlayerEntity player, SkillSet skills) {
+    public static String bestHarpoon(Player player, SkillSet skills) {
         String best = null;
         double bestMult = 0;
-        PlayerInventory inv = player.getInventory();
+        Inventory inv = player.getInventory();
         int level = skills.currentLevel(Skill.FISHING);
-        for (int i = 0; i < inv.size(); i++) {
-            ItemStack stack = inv.getStack(i);
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack stack = inv.getItem(i);
             ItemDef def = ModItems.def(stack);
             if (def == null || !SpecialTool.isHarpoon(def.id())) {
                 continue;
@@ -75,11 +75,11 @@ public final class Tools {
     }
 
     /** Lowest-tier tool of the kind the player owns but can't use (for the error message). */
-    public static ToolTier anyOwned(PlayerEntity player, ItemDef.Kind kind) {
+    public static ToolTier anyOwned(Player player, ItemDef.Kind kind) {
         ToolTier found = null;
-        PlayerInventory inv = player.getInventory();
-        for (int i = 0; i < inv.size(); i++) {
-            ToolTier t = tierOf(inv.getStack(i), kind);
+        Inventory inv = player.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ToolTier t = tierOf(inv.getItem(i), kind);
             if (t != null && (found == null || t.ordinal() < found.ordinal())) {
                 found = t;
             }
@@ -87,12 +87,12 @@ public final class Tools {
         return found;
     }
 
-    private static Tool best(PlayerEntity player, SkillSet skills, ItemDef.Kind kind, Skill skill) {
+    private static Tool best(Player player, SkillSet skills, ItemDef.Kind kind, Skill skill) {
         Tool best = null;
         int bestScore = -1;
-        PlayerInventory inv = player.getInventory();
-        for (int i = 0; i < inv.size(); i++) {
-            ItemStack stack = inv.getStack(i);
+        Inventory inv = player.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack stack = inv.getItem(i);
             ToolTier t = tierOf(stack, kind);
             if (t == null) {
                 continue;

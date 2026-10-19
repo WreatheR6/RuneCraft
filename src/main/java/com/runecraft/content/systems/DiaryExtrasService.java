@@ -13,11 +13,10 @@ import com.runecraft.player.Players;
 import com.runecraft.quest.QuestApi;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.Hand;
-
 import java.util.List;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * NPC services and objects behind diary tasks: Tindel Marchant's rusty sword repair, the genie of Spirits of the Elid,
@@ -42,13 +41,13 @@ final class DiaryExtrasService {
         DiaryObjectsService.register();
     }
 
-    private static boolean questDone(ServerPlayerEntity p, String questId) {
+    private static boolean questDone(ServerPlayer p, String questId) {
         QuestInfo q = ContentRegistry.quest(questId);
         return q == null || Players.data(p).questComplete(q);
     }
 
     /** Tindel Marchant: 100 coins to "identify" (repair) a rusty sword; 25 Smithing XP when it comes back a weapon (wiki). */
-    private static void tindel(ServerPlayerEntity p) {
+    private static void tindel(ServerPlayer p) {
         if (!Inv.has(p, "rusty_sword", 1)) {
             QuestApi.say(p, "Tindel Marchant", "Bring me a rusty sword and 100 coins and I'll see what I can make of it.");
             return;
@@ -77,7 +76,7 @@ final class DiaryExtrasService {
     }
 
     /** The genie in the crevice near Nardah; visiting him after Spirits of the Elid is the medium Desert task. */
-    private static void genie(ServerPlayerEntity p) {
+    private static void genie(ServerPlayer p) {
         if (!questDone(p, "spirits_of_the_elid")) {
             QuestApi.say(p, "Genie", "Who dares disturb my slumber? Begone, mortal!");
             return;
@@ -86,7 +85,7 @@ final class DiaryExtrasService {
         GameEvents.fireActivity(p, "genie_visit");
     }
 
-    private static void chest(ServerPlayerEntity p, String key, String chestId, List<DiaryExtras.Loot> loot) {
+    private static void chest(ServerPlayer p, String key, String chestId, List<DiaryExtras.Loot> loot) {
         if (!Inv.has(p, key, 1)) {
             Msg.game(p, "This chest is securely locked shut.");
             return;
@@ -110,7 +109,7 @@ final class DiaryExtrasService {
     }
 
     /** Right-click: join two halves ("use A on B"), or sneak + right-click the skull sceptre to Invoke its teleport. */
-    static boolean use(ServerPlayerEntity p, ItemStack stack, Hand hand, String id, boolean sneaking) {
+    static boolean use(ServerPlayer p, ItemStack stack, InteractionHand hand, String id, boolean sneaking) {
         if (id.equals(Charges.SKULL_SCEPTRE) && sneaking) {
             int left = ItemCharges.get(stack);
             if (left <= 0) {
@@ -122,7 +121,7 @@ final class DiaryExtrasService {
                 ItemCharges.drain(stack, 1);
                 left = ItemCharges.get(stack);
                 if (left <= 0) {
-                    stack.decrement(1);
+                    stack.shrink(1);
                     Msg.game(p, "Your skull sceptre crumbles to dust.");
                 } else {
                     Msg.game(p, "Your sceptre has " + left + " charge" + (left == 1 ? "" : "s") + " left.");

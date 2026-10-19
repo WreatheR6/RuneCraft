@@ -8,16 +8,15 @@ import com.runecraft.osrs.content.zeah.ZeahPlaces.Camp;
 import com.runecraft.registry.ModEntities;
 import com.runecraft.world.Gielinor;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.world.Heightmap;
-
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.phys.AABB;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -39,7 +38,7 @@ final class ZeahCamps {
             if (++ticks % INTERVAL_MC_TICKS != 0) {
                 return;
             }
-            ServerWorld world = Gielinor.world(server);
+            ServerLevel world = Gielinor.world(server);
             if (world == null) {
                 return;
             }
@@ -65,7 +64,7 @@ final class ZeahCamps {
         return null;
     }
 
-    private static void tickCamp(ServerWorld world, Camp camp) {
+    private static void tickCamp(ServerLevel world, Camp camp) {
         int[] c = centre(camp);
         if (c == null) {
             return;
@@ -73,7 +72,7 @@ final class ZeahCamps {
         int cx = c[0];
         int cz = c[1];
         int reach = camp.radius() + 24;
-        List<ServerPlayerEntity> near = world.getPlayers(p -> p.isAlive() && !p.isSpectator()
+        List<ServerPlayer> near = world.getPlayers(p -> p.isAlive() && !p.isSpectator()
                 && Math.abs(p.getX() - cx) < reach && Math.abs(p.getZ() - cz) < reach
                 && (camp.surface() || Math.abs(p.getY() - camp.floorY()) < 12));
         if (near.isEmpty()) {
@@ -90,9 +89,9 @@ final class ZeahCamps {
             return;
         }
         int y0 = camp.surface() ? near.get(0).getBlockY() : camp.floorY();
-        Box area = new Box(cx - camp.radius() - 16, y0 - 32, cz - camp.radius() - 16, cx + camp.radius() + 16, y0 + 32,
+        AABB area = new AABB(cx - camp.radius() - 16, y0 - 32, cz - camp.radius() - 16, cx + camp.radius() + 16, y0 + 32,
                 cz + camp.radius() + 16);
-        int alive = world.getEntitiesByClass(MobEntity.class, area, e -> e.isAlive() && types.contains(e.getType())).size();
+        int alive = world.getEntitiesOfClass(Mob.class, area, e -> e.isAlive() && types.contains(e.getType())).size();
         if (alive >= camp.cap()) {
             return;
         }
@@ -103,29 +102,29 @@ final class ZeahCamps {
         }
         int x = cx + world.getRandom().nextInt(camp.radius() * 2 + 1) - camp.radius();
         int z = cz + world.getRandom().nextInt(camp.radius() * 2 + 1) - camp.radius();
-        for (ServerPlayerEntity p : near) {
-            if (p.squaredDistanceTo(x, p.getY(), z) < 6 * 6) {
+        for (ServerPlayer p : near) {
+            if (p.distanceToSqr(x, p.getY(), z) < 6 * 6) {
                 return; // never spawn on top of a player
             }
         }
         int y;
         if (camp.surface()) {
-            y = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
+            y = world.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
         } else {
             y = camp.floorY();
             BlockPos feet = new BlockPos(x, y, z);
-            if (!world.getBlockState(feet).isAir() || !world.getBlockState(feet.up()).isAir()
-                    || world.getBlockState(feet.down()).isAir()) {
+            if (!world.getBlockState(feet).isAir() || !world.getBlockState(feet.above()).isAir()
+                    || world.getBlockState(feet.below()).isAir()) {
                 return; // the crypt hasn't been carved here (yet), or a pillar is in the way
             }
         }
         Entity e = type.create(world);
-        if (!(e instanceof MobEntity mob)) {
+        if (!(e instanceof Mob mob)) {
             return;
         }
         BlockPos pos = new BlockPos(x, y, z);
-        mob.refreshPositionAndAngles(x + 0.5, y, z + 0.5, world.getRandom().nextFloat() * 360f, 0);
-        mob.initialize(world, world.getLocalDifficulty(pos), SpawnReason.SPAWNER, null, null);
-        world.spawnEntity(mob);
+        mob.moveTo(x + 0.5, y, z + 0.5, world.getRandom().nextFloat() * 360f, 0);
+        mob.finalizeSpawn(world, world.getCurrentDifficultyAt(pos), MobSpawnType.SPAWNER, null, null);
+        world.addFreshEntity(mob);
     }
 }

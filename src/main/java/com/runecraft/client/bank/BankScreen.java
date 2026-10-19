@@ -9,21 +9,20 @@ import com.runecraft.osrs.bank.BankModel;
 import com.runecraft.osrs.bank.BankQuantity;
 import com.runecraft.osrs.content.systems.GrandExchange;
 import com.runecraft.util.Inv;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.tooltip.Tooltip;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * The OSRS bank interface: tabs along the top (drag an item onto a tab to move it there, onto "+" for a new tab),
@@ -45,8 +44,8 @@ public class BankScreen extends Screen {
     private static int scroll;
 
     private final Map<String, ItemStack> stacks = new HashMap<>();
-    private TextFieldWidget searchField;
-    private TextFieldWidget xField;
+    private EditBox searchField;
+    private EditBox xField;
     private int left;
     private int top;
     private int panelW;
@@ -66,11 +65,11 @@ public class BankScreen extends Screen {
     private boolean dragging;
 
     public BankScreen() {
-        super(Text.literal("The Bank of Gielinor"));
+        super(Component.literal("The Bank of Gielinor"));
     }
 
     @Override
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 
@@ -81,7 +80,7 @@ public class BankScreen extends Screen {
     /** New state from the server. */
     void refresh() {
         stacks.clear();
-        clearAndInit();
+        rebuildWidgets();
     }
 
     @Override
@@ -110,16 +109,16 @@ public class BankScreen extends Screen {
 
         int y = top + 42 + contentH + 4;
         if (bankShown) {
-            searchField = new TextFieldWidget(textRenderer, left + 8, y, 110, 16, Text.literal("Search"));
+            searchField = new EditBox(font, left + 8, y, 110, 16, Component.literal("Search"));
             searchField.setMaxLength(40);
-            searchField.setText(search);
-            searchField.setPlaceholder(Text.literal("Search...").formatted(Formatting.DARK_GRAY));
-            searchField.setChangedListener(t -> {
+            searchField.setValue(search);
+            searchField.setHint(Component.literal("Search...").withStyle(ChatFormatting.DARK_GRAY));
+            searchField.setResponder(t -> {
                 search = t;
                 scroll = 0;
                 rebuildView();
             });
-            addDrawableChild(searchField);
+            addRenderableWidget(searchField);
             if (searchFocused) {
                 setFocused(searchField);
                 searchField.setFocused(true);
@@ -130,10 +129,10 @@ public class BankScreen extends Screen {
             x = toggle(x, y, 34, "Item", !bank.noted, "Withdraw items as items.", () -> send(BankService.OP_SET_NOTED, 0));
             x = toggle(x, y, 34, "Note", bank.noted, "Withdraw tradeable items as bank notes.", () -> send(BankService.OP_SET_NOTED, 1)) + 6;
             x = quantityButtons(x, y);
-            xField = new TextFieldWidget(textRenderer, x, y + 1, 48, 16, Text.literal("X"));
+            xField = new EditBox(font, x, y + 1, 48, 16, Component.literal("X"));
             xField.setMaxLength(12);
-            xField.setText(Long.toString(bank.x));
-            addDrawableChild(xField);
+            xField.setValue(Long.toString(bank.x));
+            addRenderableWidget(xField);
             y += 22;
             x = left + 8;
             x = toggle(x, y, 92, "Placeholders: " + (bank.placeholders ? "On" : "Off"), bank.placeholders,
@@ -151,9 +150,9 @@ public class BankScreen extends Screen {
     }
 
     private int toggle(int x, int y, int w, String label, boolean active, String tip, Runnable click) {
-        ButtonWidget b = ButtonWidget.builder(Text.literal(label).formatted(active ? Formatting.YELLOW : Formatting.WHITE), btn -> click.run())
-                .dimensions(x, y, w, 18).tooltip(Tooltip.of(Text.literal(tip))).build();
-        addDrawableChild(b);
+        Button b = Button.builder(Component.literal(label).withStyle(active ? ChatFormatting.YELLOW : ChatFormatting.WHITE), btn -> click.run())
+                .bounds(x, y, w, 18).tooltip(Tooltip.create(Component.literal(tip))).build();
+        addRenderableWidget(b);
         return x + w + 2;
     }
 
@@ -169,14 +168,14 @@ public class BankScreen extends Screen {
     }
 
     private void depositButtons(int x, int y) {
-        addDrawableChild(ButtonWidget.builder(Text.literal("Deposit inv."), b -> send(BankService.OP_DEPOSIT_INVENTORY, 0))
-                .dimensions(x, y, 62, 18).tooltip(Tooltip.of(Text.literal("Deposit inventory (and coin pouch)"))).build());
-        addDrawableChild(ButtonWidget.builder(Text.literal("Deposit worn"), b -> send(BankService.OP_DEPOSIT_WORN, 0))
-                .dimensions(x + 64, y, 62, 18).tooltip(Tooltip.of(Text.literal("Deposit worn items"))).build());
+        addRenderableWidget(Button.builder(Component.literal("Deposit inv."), b -> send(BankService.OP_DEPOSIT_INVENTORY, 0))
+                .bounds(x, y, 62, 18).tooltip(Tooltip.create(Component.literal("Deposit inventory (and coin pouch)"))).build());
+        addRenderableWidget(Button.builder(Component.literal("Deposit worn"), b -> send(BankService.OP_DEPOSIT_WORN, 0))
+                .bounds(x + 64, y, 62, 18).tooltip(Tooltip.create(Component.literal("Deposit worn items"))).build());
     }
 
     private long xAmount() {
-        long x = xField == null ? -1 : BankQuantity.parseX(xField.getText());
+        long x = xField == null ? -1 : BankQuantity.parseX(xField.getValue());
         return x > 0 ? x : BankClient.BANK.x;
     }
 
@@ -197,7 +196,7 @@ public class BankScreen extends Screen {
     private ItemStack stackOf(BankModel.Entry e) {
         return stacks.computeIfAbsent(e.key(), k -> {
             ItemStack s = Notes.stackOf(e.item, e.tag, 1);
-            return s.isEmpty() ? new ItemStack(net.minecraft.item.Items.BARRIER) : s;
+            return s.isEmpty() ? new ItemStack(net.minecraft.world.item.Items.BARRIER) : s;
         });
     }
 
@@ -207,7 +206,7 @@ public class BankScreen extends Screen {
             return def.name();
         }
         ItemStack s = Notes.stackOf(item, "", 1);
-        return s.isEmpty() ? item : s.getName().getString();
+        return s.isEmpty() ? item : s.getHoverName().getString();
     }
 
     // ------------------------------------------------------------------ geometry
@@ -278,7 +277,7 @@ public class BankScreen extends Screen {
                 tab = t;
                 scroll = 0;
                 if (searchField != null) {
-                    searchField.setText("");
+                    searchField.setValue("");
                 }
                 search = "";
                 rebuildView();
@@ -290,7 +289,7 @@ public class BankScreen extends Screen {
             BankQuantity.Mode mode = button == 1 ? BankQuantity.Mode.ALL : BankClient.BANK.quantity;
             if (slot == -2) {
                 BankClient.send(BankService.OP_DEPOSIT_POUCH, "", "", 0, mode, xAmount(), depositTab());
-            } else if (client != null && client.player != null && !client.player.getInventory().main.get(slot).isEmpty()) {
+            } else if (minecraft != null && minecraft.player != null && !minecraft.player.getInventory().items.get(slot).isEmpty()) {
                 BankClient.send(BankService.OP_DEPOSIT, "", "", slot, mode, xAmount(), depositTab());
             }
             return true;
@@ -356,33 +355,33 @@ public class BankScreen extends Screen {
     // ------------------------------------------------------------------ drawing
 
     @Override
-    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
         renderBackground(ctx);
         ctx.fill(left - 1, top - 1, left + panelW + 1, top + panelH + 1, 0xFF100C08);
         ctx.fill(left, top, left + panelW, top + panelH, PANEL_BG);
         String title = depositOnly() ? "The Bank of Gielinor - Deposit Box" : getTitle().getString();
-        ctx.drawTextWithShadow(textRenderer, title, left + 8, top + 5, 0xFFFF981F);
+        ctx.drawString(font, title, left + 8, top + 5, 0xFFFF981F);
         if (!depositOnly()) {
             String value = "Value: " + GrandExchange.formatGp(BankClient.value) + " gp";
-            ctx.drawTextWithShadow(textRenderer, value, left + panelW - 8 - textRenderer.getWidth(value), top + 5, 0xFFFFD700);
+            ctx.drawString(font, value, left + panelW - 8 - font.width(value), top + 5, 0xFFFFD700);
             drawTabs(ctx, mouseX, mouseY);
             drawGrid(ctx, mouseX, mouseY);
             String used = BankClient.BANK.slotsUsed() + "/" + BankModel.CAPACITY;
-            ctx.drawTextWithShadow(textRenderer, used, left + 8 + 114, gridY + Math.max(rows * CELL, 6 * CELL + CELL + 2) + 8, 0xFFC0C0C0);
+            ctx.drawString(font, used, left + 8 + 114, gridY + Math.max(rows * CELL, 6 * CELL + CELL + 2) + 8, 0xFFC0C0C0);
         }
         drawInventory(ctx);
         super.render(ctx, mouseX, mouseY, delta);
         if (dragging && pressed != null) {
-            ctx.getMatrices().push();
-            ctx.getMatrices().translate(0, 0, 300);
-            ctx.drawItem(stackOf(pressed), mouseX - 8, mouseY - 8);
-            ctx.getMatrices().pop();
+            ctx.pose().pushPose();
+            ctx.pose().translate(0, 0, 300);
+            ctx.renderItem(stackOf(pressed), mouseX - 8, mouseY - 8);
+            ctx.pose().popPose();
         } else {
             drawTooltip(ctx, mouseX, mouseY);
         }
     }
 
-    private void drawTabs(DrawContext ctx, int mouseX, int mouseY) {
+    private void drawTabs(GuiGraphics ctx, int mouseX, int mouseY) {
         BankModel bank = BankClient.BANK;
         int n = tabButtons();
         int hovered = tabAt(mouseX, mouseY);
@@ -391,21 +390,21 @@ public class BankScreen extends Screen {
             int y = top + 18;
             boolean selected = i == tab && search.isBlank();
             ctx.fill(x, y, x + CELL, y + CELL, selected ? 0xFF6A2A1E : hovered == i ? 0xFF4A3E2E : 0xFF3A3024);
-            ctx.drawBorder(x, y, CELL, CELL, 0xFF100C08);
+            ctx.renderOutline(x, y, CELL, CELL, 0xFF100C08);
             if (i == 0) {
-                ctx.drawCenteredTextWithShadow(textRenderer, "All", x + CELL / 2, y + 6, 0xFFFFFFFF);
+                ctx.drawCenteredString(font, "All", x + CELL / 2, y + 6, 0xFFFFFFFF);
             } else if (i > bank.tabCount()) {
-                ctx.drawCenteredTextWithShadow(textRenderer, "+", x + CELL / 2, y + 6, 0xFFFFFF60);
+                ctx.drawCenteredString(font, "+", x + CELL / 2, y + 6, 0xFFFFFF60);
             } else {
                 List<BankModel.Entry> inTab = bank.view(i, "", null);
                 if (!inTab.isEmpty()) {
-                    ctx.drawItem(stackOf(inTab.get(0)), x + 2, y + 2);
+                    ctx.renderItem(stackOf(inTab.get(0)), x + 2, y + 2);
                 }
             }
         }
     }
 
-    private void drawGrid(DrawContext ctx, int mouseX, int mouseY) {
+    private void drawGrid(GuiGraphics ctx, int mouseX, int mouseY) {
         ctx.fill(gridX - 1, gridY - 1, gridX + COLS * CELL + 1, gridY + rows * CELL + 1, GRID_BG);
         BankModel.Entry hovered = entryAt(mouseX, mouseY);
         int start = scroll * COLS;
@@ -419,15 +418,15 @@ public class BankScreen extends Screen {
             if (dragging && e == pressed) {
                 continue;
             }
-            ctx.drawItem(stackOf(e), x + 2, y + 2);
-            ctx.getMatrices().push();
-            ctx.getMatrices().translate(0, 0, 200);
+            ctx.renderItem(stackOf(e), x + 2, y + 2);
+            ctx.pose().pushPose();
+            ctx.pose().translate(0, 0, 200);
             if (e.placeholder()) {
                 ctx.fill(x + 1, y + 1, x + CELL - 1, y + CELL - 1, 0xA01E170F);
             } else if (e.count > 1 || ItemCatalog.get(e.item) == null || ItemCatalog.get(e.item).maxStack() > 1) {
                 countText(ctx, e.count, x, y);
             }
-            ctx.getMatrices().pop();
+            ctx.pose().popPose();
         }
         int total = (view.size() + COLS - 1) / COLS;
         if (total > rows) {
@@ -436,35 +435,35 @@ public class BankScreen extends Screen {
             ctx.fill(gridX + COLS * CELL - 2, barY, gridX + COLS * CELL, barY + barH, 0xFF8A7A5A);
         }
         if (view.isEmpty()) {
-            ctx.drawCenteredTextWithShadow(textRenderer, search.isBlank() ? "This tab is empty." : "No matches.",
+            ctx.drawCenteredString(font, search.isBlank() ? "This tab is empty." : "No matches.",
                     gridX + COLS * CELL / 2, gridY + 8, 0xFF9F9F9F);
         }
     }
 
-    private void countText(DrawContext ctx, long count, int x, int y) {
-        ctx.getMatrices().push();
-        ctx.getMatrices().translate(x + 1, y + 1, 0);
-        ctx.getMatrices().scale(0.75f, 0.75f, 1f);
-        ctx.drawText(textRenderer, BankQuantity.shortCount(count), 0, 0, 0xFF000000 | BankQuantity.countColor(count), true);
-        ctx.getMatrices().pop();
+    private void countText(GuiGraphics ctx, long count, int x, int y) {
+        ctx.pose().pushPose();
+        ctx.pose().translate(x + 1, y + 1, 0);
+        ctx.pose().scale(0.75f, 0.75f, 1f);
+        ctx.drawString(font, BankQuantity.shortCount(count), 0, 0, 0xFF000000 | BankQuantity.countColor(count), true);
+        ctx.pose().popPose();
     }
 
-    private void drawInventory(DrawContext ctx) {
+    private void drawInventory(GuiGraphics ctx) {
         ctx.fill(invX - 1, invY - 1, invX + INV_COLS * CELL + 1, invY + 6 * CELL + 1, GRID_BG);
-        if (client == null || client.player == null) {
+        if (minecraft == null || minecraft.player == null) {
             return;
         }
-        PlayerInventory inv = client.player.getInventory();
+        Inventory inv = minecraft.player.getInventory();
         for (int d = 0; d < 36; d++) {
-            ItemStack s = inv.main.get(displayToSlot(d));
+            ItemStack s = inv.items.get(displayToSlot(d));
             int x = invX + (d % INV_COLS) * CELL;
             int y = invY + (d / INV_COLS) * CELL;
             if (d >= 27) {
                 ctx.fill(x, y, x + CELL, y + CELL, 0x18FFFFFF);
             }
             if (!s.isEmpty()) {
-                ctx.drawItem(s, x + 2, y + 2);
-                ctx.drawItemInSlot(textRenderer, s, x + 2, y + 2);
+                ctx.renderItem(s, x + 2, y + 2);
+                ctx.renderItemDecorations(font, s, x + 2, y + 2);
             }
         }
         // Coin pouch.
@@ -472,50 +471,50 @@ public class BankScreen extends Screen {
         ctx.fill(invX - 1, py - 1, invX + CELL + 1, py + CELL + 1, GRID_BG);
         ItemStack coins = Inv.stack(Inv.COINS, 1);
         if (!coins.isEmpty()) {
-            ctx.drawItem(coins, invX + 2, py + 2);
+            ctx.renderItem(coins, invX + 2, py + 2);
         }
-        ctx.getMatrices().push();
-        ctx.getMatrices().translate(0, 0, 200);
+        ctx.pose().pushPose();
+        ctx.pose().translate(0, 0, 200);
         countText(ctx, ClientState.coins, invX, py);
-        ctx.getMatrices().pop();
-        ctx.drawTextWithShadow(textRenderer, "Coin pouch", invX + CELL + 4, py + 6, 0xFFC0C0C0);
+        ctx.pose().popPose();
+        ctx.drawString(font, "Coin pouch", invX + CELL + 4, py + 6, 0xFFC0C0C0);
     }
 
-    private void drawTooltip(DrawContext ctx, int mouseX, int mouseY) {
+    private void drawTooltip(GuiGraphics ctx, int mouseX, int mouseY) {
         BankModel.Entry e = entryAt(mouseX, mouseY);
         if (e != null) {
-            List<Text> lines = new ArrayList<>();
-            lines.add(stackOf(e).getName().copy().formatted(Formatting.GOLD));
+            List<Component> lines = new ArrayList<>();
+            lines.add(stackOf(e).getHoverName().copy().withStyle(ChatFormatting.GOLD));
             if (e.placeholder()) {
-                lines.add(Text.literal("Placeholder").formatted(Formatting.GRAY));
+                lines.add(Component.literal("Placeholder").withStyle(ChatFormatting.GRAY));
             } else {
-                lines.add(Text.literal(String.format(Locale.ROOT, "%,d", e.count)).formatted(Formatting.YELLOW));
+                lines.add(Component.literal(String.format(Locale.ROOT, "%,d", e.count)).withStyle(ChatFormatting.YELLOW));
                 long each = BankService.priceOf(e.item);
                 if (each > 0 && !e.item.equals(Inv.COINS)) {
-                    lines.add(Text.literal("GE: " + GrandExchange.formatGp(each) + " gp ea, "
-                            + GrandExchange.formatGp(BankModel.value(List.of(e), BankService::priceOf)) + " gp total").formatted(Formatting.GRAY));
+                    lines.add(Component.literal("GE: " + GrandExchange.formatGp(each) + " gp ea, "
+                            + GrandExchange.formatGp(BankModel.value(List.of(e), BankService::priceOf)) + " gp total").withStyle(ChatFormatting.GRAY));
                 }
-                lines.add(Text.literal("Click: withdraw " + BankClient.BANK.quantity.label + (BankClient.BANK.noted ? " (as note)" : "")
-                        + ", right-click: All").formatted(Formatting.DARK_GRAY));
+                lines.add(Component.literal("Click: withdraw " + BankClient.BANK.quantity.label + (BankClient.BANK.noted ? " (as note)" : "")
+                        + ", right-click: All").withStyle(ChatFormatting.DARK_GRAY));
             }
-            ctx.drawTooltip(textRenderer, lines, mouseX, mouseY);
+            ctx.renderComponentTooltip(font, lines, mouseX, mouseY);
             return;
         }
         int t = tabAt(mouseX, mouseY);
         if (t >= 0) {
             String label = t == 0 ? "View all items" : t > BankClient.BANK.tabCount() ? "New tab (drag an item here)" : "Tab " + t;
-            ctx.drawTooltip(textRenderer, Text.literal(label), mouseX, mouseY);
+            ctx.renderTooltip(font, Component.literal(label), mouseX, mouseY);
             return;
         }
         int slot = invSlotAt(mouseX, mouseY);
-        if (slot >= 0 && client != null && client.player != null) {
-            ItemStack s = client.player.getInventory().main.get(slot);
+        if (slot >= 0 && minecraft != null && minecraft.player != null) {
+            ItemStack s = minecraft.player.getInventory().items.get(slot);
             if (!s.isEmpty()) {
-                ctx.drawTooltip(textRenderer, List.of(s.getName().copy(),
-                        Text.literal("Click: deposit " + BankClient.BANK.quantity.label + ", right-click: All").formatted(Formatting.DARK_GRAY)), mouseX, mouseY);
+                ctx.renderComponentTooltip(font, List.of(s.getHoverName().copy(),
+                        Component.literal("Click: deposit " + BankClient.BANK.quantity.label + ", right-click: All").withStyle(ChatFormatting.DARK_GRAY)), mouseX, mouseY);
             }
         } else if (slot == -2) {
-            ctx.drawTooltip(textRenderer, Text.literal("Coins: " + String.format(Locale.ROOT, "%,d", ClientState.coins)), mouseX, mouseY);
+            ctx.renderTooltip(font, Component.literal("Coins: " + String.format(Locale.ROOT, "%,d", ClientState.coins)), mouseX, mouseY);
         }
     }
 }

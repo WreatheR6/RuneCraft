@@ -1,9 +1,9 @@
 package com.runecraft.client.content.systems;
 
 import com.runecraft.RuneCraft;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 
 /** Run energy and special attack orbs, drawn just left of the core HP/prayer orbs. */
 public final class SystemsHud {
@@ -12,14 +12,14 @@ public final class SystemsHud {
     private SystemsHud() {
     }
 
-    public static void render(DrawContext ctx, float tickDelta) {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.player == null || mc.options.hudHidden || !SysClientState.received) {
+    public static void render(GuiGraphics ctx, float tickDelta) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.options.hideGui || !SysClientState.received) {
             return;
         }
-        boolean gielinor = mc.world != null && mc.world.getRegistryKey().getValue().equals(RuneCraft.id("gielinor"));
-        TextRenderer tr = mc.textRenderer;
-        int x = ctx.getScaledWindowWidth() - 92 - W - 4;
+        boolean gielinor = mc.level != null && mc.level.dimension().location().equals(RuneCraft.id("gielinor"));
+        Font tr = mc.font;
+        int x = ctx.guiWidth() - 92 - W - 4;
         int y = 4;
         if (gielinor) {
             int runColor = SysClientState.stamina ? 0xFFC08030 : 0xFFC0B020;
@@ -41,17 +41,17 @@ public final class SystemsHud {
         }
         if (status.length() > 0) {
             ctx.fill(x, y + 28, x + W, y + 40, 0xA0201810);
-            ctx.drawTextWithShadow(tr, status.toString(), x + 3, y + 30, 0xFFE0C0FF);
+            ctx.drawString(tr, status.toString(), x + 3, y + 30, 0xFFE0C0FF);
         }
         if (!SysClientState.autocast.isEmpty()) {
             String a = SysClientState.autocast;
-            ctx.drawTextWithShadow(tr, a, x + W - tr.getWidth(a), y + 42, 0xFFB0A0FF);
+            ctx.drawString(tr, a, x + W - tr.width(a), y + 42, 0xFFB0A0FF);
         }
     }
 
-    private static void bar(DrawContext ctx, TextRenderer tr, int x, int y, String label, int color, float fill) {
+    private static void bar(GuiGraphics ctx, Font tr, int x, int y, String label, int color, float fill) {
         ctx.fill(x, y, x + W, y + 12, 0xA0201810);
         ctx.fill(x + 1, y + 1, x + 1 + (int) ((W - 2) * Math.max(0, Math.min(1, fill))), y + 11, color);
-        ctx.drawTextWithShadow(tr, label, x + 3, y + 2, 0xFFFFFFFF);
+        ctx.drawString(tr, label, x + 3, y + 2, 0xFFFFFFFF);
     }
 }

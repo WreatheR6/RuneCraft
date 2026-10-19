@@ -22,11 +22,10 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-
+import net.minecraft.commands.Commands;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import java.util.List;
 
 /**
@@ -49,45 +48,45 @@ public final class NpcsHooks implements ModuleHooks {
             LandmarkBuilder.registerCustom(placeId, (world, centre) -> NpcPlacement.settlePlace(world, centre, placeId));
         }
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
-            if (hand != Hand.MAIN_HAND) {
-                return ActionResult.PASS;
+            if (hand != InteractionHand.MAIN_HAND) {
+                return InteractionResult.PASS;
             }
             // Sneak + right-click: "Trade" with any shopkeeper, including characters from other modules.
-            if (entity instanceof QuestNpcEntity npc && player.isSneaking()) {
+            if (entity instanceof QuestNpcEntity npc && player.isShiftKeyDown()) {
                 ShopDef shop = shopOf(npc.npcId());
                 if (shop == null) {
-                    return ActionResult.PASS;
+                    return InteractionResult.PASS;
                 }
-                if (!world.isClient() && player instanceof ServerPlayerEntity sp) {
-                    ShopService.open(sp, shop.id(), npc.getPos());
+                if (!world.isClientSide() && player instanceof ServerPlayer sp) {
+                    ShopService.open(sp, shop.id(), npc.position());
                 }
-                return ActionResult.SUCCESS;
+                return InteractionResult.SUCCESS;
             }
             // Right-click an attackable townsperson: "Pickpocket".
             if (entity instanceof OsrsMonsterEntity monster) {
                 TownMonsters.Pickpocket target = pickpocketTarget(monster);
                 if (target == null) {
-                    return ActionResult.PASS;
+                    return InteractionResult.PASS;
                 }
-                if (!world.isClient() && player instanceof ServerPlayerEntity sp) {
+                if (!world.isClientSide() && player instanceof ServerPlayer sp) {
                     pickpocket(sp, monster, target);
                 }
-                return ActionResult.SUCCESS;
+                return InteractionResult.SUCCESS;
             }
-            return ActionResult.PASS;
+            return InteractionResult.PASS;
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             ShopService.tick(server);
             TownSpawner.tick(server);
         });
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> ShopService.forget(handler.player.getUuid()));
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> ShopService.forget(handler.player.getUUID()));
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(
-                CommandManager.literal("npcs")
-                        .then(CommandManager.literal("travel")
-                                .then(CommandManager.argument("npc", StringArgumentType.word())
-                                        .then(CommandManager.argument("destination", IntegerArgumentType.integer(0))
+                Commands.literal("npcs")
+                        .then(Commands.literal("travel")
+                                .then(Commands.argument("npc", StringArgumentType.word())
+                                        .then(Commands.argument("destination", IntegerArgumentType.integer(0))
                                                 .executes(ctx -> {
-                                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                                    ServerPlayer p = ctx.getSource().getPlayer();
                                                     if (p != null) {
                                                         TravelService.travel(p, StringArgumentType.getString(ctx, "npc"),
                                                                 IntegerArgumentType.getInteger(ctx, "destination"));
@@ -106,14 +105,14 @@ public final class NpcsHooks implements ModuleHooks {
         return n != null && n.role() == TownNpc.Role.SHOP ? Shops.get(n.shop()) : null;
     }
 
-    private static void talk(ServerPlayerEntity player, QuestNpcEntity entity, TownNpc n) {
+    private static void talk(ServerPlayer player, QuestNpcEntity entity, TownNpc n) {
         String name = entity.getName().getString();
         switch (n.role()) {
             case SHOP -> {
                 ShopDef shop = Shops.get(n.shop());
                 if (shop != null) {
                     QuestApi.say(player, name, shop.greeting());
-                    ShopService.open(player, shop.id(), entity.getPos());
+                    ShopService.open(player, shop.id(), entity.position());
                 }
             }
             case BANKER -> {
@@ -126,7 +125,7 @@ public final class NpcsHooks implements ModuleHooks {
             }
             case TANNER -> {
                 QuestApi.say(player, name, n.lines().get(0));
-                MenuService.open(player, MenuType.TANNING, entity.getBlockPos(), false);
+                MenuService.open(player, MenuType.TANNING, entity.blockPosition(), false);
             }
             case AMBIENT -> {
                 List<String> lines = n.lines();
@@ -143,7 +142,7 @@ public final class NpcsHooks implements ModuleHooks {
         return TownMonsters.pickpocket(def.id);
     }
 
-    private static void pickpocket(ServerPlayerEntity player, OsrsMonsterEntity target, TownMonsters.Pickpocket p) {
+    private static void pickpocket(ServerPlayer player, OsrsMonsterEntity target, TownMonsters.Pickpocket p) {
         // Shared Thieving rules (coin pouches, rogue equipment, dodgy necklace, Thieving cape, stun).
         com.runecraft.skill.ThievingService.attempt(player, target, new com.runecraft.skill.ThievingService.Target(p.name(), p.level(),
                 p.xp(), p.low(), p.high(), p.stunDamage(), com.runecraft.osrs.data.Thieving.pouchForNpc(p.creature())), out -> {
@@ -167,7 +166,7 @@ public final class NpcsHooks implements ModuleHooks {
         });
     }
 
-    private static int amount(ServerPlayerEntity player, TownMonsters.Loot l) {
+    private static int amount(ServerPlayer player, TownMonsters.Loot l) {
         return l.min() + (l.max() > l.min() ? player.getRandom().nextInt(l.max() - l.min() + 1) : 0);
     }
 

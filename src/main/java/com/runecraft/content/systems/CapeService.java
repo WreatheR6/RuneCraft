@@ -15,13 +15,12 @@ import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
+import net.minecraft.server.level.ServerPlayer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -53,7 +52,7 @@ public final class CapeService {
         return !quests.isEmpty();
     }
 
-    public static void open(ServerPlayerEntity p) {
+    public static void open(ServerPlayer p) {
         PlayerData d = Players.data(p);
         SysState.SysPlayer sp = SysState.of(p);
         int n99 = count99(d);
@@ -76,7 +75,7 @@ public final class CapeService {
         s.send(p);
     }
 
-    static void action(ServerPlayerEntity p, String action, Map<String, String> fields) {
+    static void action(ServerPlayer p, String action, Map<String, String> fields) {
         PlayerData d = Players.data(p);
         String item;
         long price = Capes.SKILLCAPE_PRICE;
@@ -122,14 +121,14 @@ public final class CapeService {
 
     // ---------------- Hiscores ----------------
 
-    public static void snapshot(ServerPlayerEntity p) {
+    public static void snapshot(ServerPlayer p) {
         SysState state = SysState.get(p.getServer());
         int[] xp = new int[Skill.count()];
         PlayerData d = Players.data(p);
         for (Skill s : Skill.values()) {
             xp[s.ordinal()] = d.skills().xpTenths(s);
         }
-        state.hiscores().put(p.getUuid(), new SysState.HiscoreEntry(p.getName().getString(), xp));
+        state.hiscores().put(p.getUUID(), new SysState.HiscoreEntry(p.getName().getString(), xp));
     }
 
     /** Ranked lines for overall (skill null) or one skill. */
@@ -171,58 +170,58 @@ public final class CapeService {
         });
     }
 
-    private static void register(CommandDispatcher<ServerCommandSource> dispatcher, String root) {
-        LiteralArgumentBuilder<ServerCommandSource> node = CommandManager.literal(root)
-                .then(CommandManager.literal("hiscores")
+    private static void register(CommandDispatcher<CommandSourceStack> dispatcher, String root) {
+        LiteralArgumentBuilder<CommandSourceStack> node = Commands.literal(root)
+                .then(Commands.literal("hiscores")
                         .executes(ctx -> hiscores(ctx.getSource(), null))
-                        .then(CommandManager.argument("skill", StringArgumentType.word())
+                        .then(Commands.argument("skill", StringArgumentType.word())
                                 .executes(ctx -> hiscores(ctx.getSource(), StringArgumentType.getString(ctx, "skill")))))
-                .then(CommandManager.literal("diary").executes(ctx -> {
-                    SysMenus.diaries(ctx.getSource().getPlayerOrThrow());
+                .then(Commands.literal("diary").executes(ctx -> {
+                    SysMenus.diaries(ctx.getSource().getPlayerOrException());
                     return 1;
                 }))
-                .then(CommandManager.literal("ge").executes(ctx -> {
-                    GeService.open(ctx.getSource().getPlayerOrThrow(), null, null);
+                .then(Commands.literal("ge").executes(ctx -> {
+                    GeService.open(ctx.getSource().getPlayerOrException(), null, null);
                     return 1;
                 }))
-                .then(CommandManager.literal("spellbook").executes(ctx -> {
-                    SysMenus.spellbook(ctx.getSource().getPlayerOrThrow(), 0);
+                .then(Commands.literal("spellbook").executes(ctx -> {
+                    SysMenus.spellbook(ctx.getSource().getPlayerOrException(), 0);
                     return 1;
                 }))
-                .then(CommandManager.literal("worn").executes(ctx -> {
-                    SysMenus.worn(ctx.getSource().getPlayerOrThrow());
+                .then(Commands.literal("worn").executes(ctx -> {
+                    SysMenus.worn(ctx.getSource().getPlayerOrException());
                     return 1;
                 }))
-                .then(CommandManager.literal("spec").executes(ctx -> {
-                    ServerPlayerEntity p = ctx.getSource().getPlayerOrThrow();
+                .then(Commands.literal("spec").executes(ctx -> {
+                    ServerPlayer p = ctx.getSource().getPlayerOrException();
                     Msg.game(p, "Special attack energy: " + SysState.of(p).specEnergy + "%");
                     return 1;
                 }))
-                .then(CommandManager.literal("clue").requires(s -> s.hasPermissionLevel(2))
-                        .then(CommandManager.argument("tier", StringArgumentType.word()).executes(ctx -> {
-                            ServerPlayerEntity p = ctx.getSource().getPlayerOrThrow();
+                .then(Commands.literal("clue").requires(s -> s.hasPermission(2))
+                        .then(Commands.argument("tier", StringArgumentType.word()).executes(ctx -> {
+                            ServerPlayer p = ctx.getSource().getPlayerOrException();
                             ClueScrolls.Tier t = ClueScrolls.Tier.byScroll("clue_scroll_" + StringArgumentType.getString(ctx, "tier").toLowerCase(Locale.ROOT));
                             if (t == null) {
-                                ctx.getSource().sendError(Text.literal("Unknown tier"));
+                                ctx.getSource().sendFailure(Component.literal("Unknown tier"));
                                 return 0;
                             }
                             Inv.give(p, t.scrollItem(), 1);
                             return 1;
                         })))
-                .then(CommandManager.literal("specenergy").requires(s -> s.hasPermissionLevel(2)).executes(ctx -> {
-                    ServerPlayerEntity p = ctx.getSource().getPlayerOrThrow();
+                .then(Commands.literal("specenergy").requires(s -> s.hasPermission(2)).executes(ctx -> {
+                    ServerPlayer p = ctx.getSource().getPlayerOrException();
                     SpecialAttackService.restoreEnergy(p, 100);
                     return 1;
                 }));
         dispatcher.register(node);
     }
 
-    private static int hiscores(ServerCommandSource src, String skillName) {
+    private static int hiscores(CommandSourceStack src, String skillName) {
         Skill skill = null;
         if (skillName != null && !skillName.equalsIgnoreCase("overall")) {
             skill = Skill.byId(skillName.toLowerCase(Locale.ROOT));
             if (skill == null) {
-                src.sendError(Text.literal("Unknown skill: " + skillName));
+                src.sendFailure(Component.literal("Unknown skill: " + skillName));
                 return 0;
             }
         }
@@ -231,12 +230,12 @@ public final class CapeService {
         }
         List<String> lines = ranking(src.getServer(), skill, 10);
         String title = "Hiscores - " + (skill == null ? "Overall" : skill.displayName());
-        src.sendFeedback(() -> Text.literal(title).formatted(Formatting.GOLD), false);
+        src.sendSuccess(() -> Component.literal(title).withStyle(ChatFormatting.GOLD), false);
         if (lines.isEmpty()) {
-            src.sendFeedback(() -> Text.literal("No players ranked yet."), false);
+            src.sendSuccess(() -> Component.literal("No players ranked yet."), false);
         }
         for (String l : lines) {
-            src.sendFeedback(() -> Text.literal(l), false);
+            src.sendSuccess(() -> Component.literal(l), false);
         }
         return 1;
     }

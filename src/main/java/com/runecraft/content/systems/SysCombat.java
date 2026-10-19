@@ -17,19 +17,6 @@ import com.runecraft.osrs.content.systems.Jewellery;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
 import com.runecraft.registry.ModItems;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.projectile.ProjectileUtil;
-import net.minecraft.item.ItemStack;
-import net.minecraft.particle.DustParticleEffect;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.hit.EntityHitResult;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
 import org.joml.Vector3f;
 
 import java.util.Collections;
@@ -38,6 +25,19 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.core.particles.DustParticleOptions;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.Vec3;
 
 /** Combat maths shared by special attacks, spells, jewellery and thralls. */
 public final class SysCombat {
@@ -56,12 +56,12 @@ public final class SysCombat {
     private SysCombat() {
     }
 
-    public static SkillSet skills(ServerPlayerEntity p) {
+    public static SkillSet skills(ServerPlayer p) {
         return Players.data(p).skills();
     }
 
     /** Bonuses from items worn in the systems module's extra slots (requirements must be met). */
-    public static EquipmentStats wornStats(ServerPlayerEntity p) {
+    public static EquipmentStats wornStats(ServerPlayer p) {
         SysState.SysPlayer sp = SysState.of(p);
         SkillSet skills = skills(p);
         EquipmentStats total = EquipmentStats.NONE;
@@ -84,53 +84,53 @@ public final class SysCombat {
         return total;
     }
 
-    public static EquipmentStats coreStats(ServerPlayerEntity p) {
+    public static EquipmentStats coreStats(ServerPlayer p) {
         return Equipment.total(p, skills(p));
     }
 
     /** Armour, weapon and shield plus the extra slots: the totals every attack roll and max hit uses. */
-    public static EquipmentStats allStats(ServerPlayerEntity p) {
+    public static EquipmentStats allStats(ServerPlayer p) {
         return coreStats(p).plus(wornStats(p));
     }
 
     // ---------------- Attack rolls (without hooks; gear effects are in PlayerHitCalc) ----------------
 
-    public static long meleeAttackRoll(ServerPlayerEntity p, AttackType type) {
+    public static long meleeAttackRoll(ServerPlayer p, AttackType type) {
         PlayerData d = Players.data(p);
         CombatStyle style = d.style().forMelee();
         int eff = CombatFormulas.effectiveAttack(d.skills().currentLevel(Skill.ATTACK), PrayerService.attack(d), style);
         return CombatFormulas.attackRoll(eff, allStats(p).attack(type));
     }
 
-    public static int meleeMaxHit(ServerPlayerEntity p) {
+    public static int meleeMaxHit(ServerPlayer p) {
         PlayerData d = Players.data(p);
         CombatStyle style = d.style().forMelee();
         int eff = CombatFormulas.effectiveStrength(d.skills().currentLevel(Skill.STRENGTH), PrayerService.strength(d), style);
         return CombatFormulas.meleeMaxHit(eff, allStats(p).meleeStrength());
     }
 
-    public static long rangedAttackRoll(ServerPlayerEntity p) {
+    public static long rangedAttackRoll(ServerPlayer p) {
         PlayerData d = Players.data(p);
         int eff = CombatFormulas.effectiveRanged(d.skills().currentLevel(Skill.RANGED), PrayerService.rangedAttack(d), d.style().forRanged());
         return CombatFormulas.attackRoll(eff, allStats(p).rangedAttack());
     }
 
-    public static int rangedMaxHit(ServerPlayerEntity p, int ammoStrength) {
+    public static int rangedMaxHit(ServerPlayer p, int ammoStrength) {
         PlayerData d = Players.data(p);
         int eff = CombatFormulas.effectiveRanged(d.skills().currentLevel(Skill.RANGED), PrayerService.rangedStrength(d), d.style().forRanged());
         return CombatFormulas.rangedMaxHit(eff, ammoStrength + allStats(p).rangedStrength());
     }
 
-    public static long magicAttackRoll(ServerPlayerEntity p) {
+    public static long magicAttackRoll(ServerPlayer p) {
         PlayerData d = Players.data(p);
         int eff = CombatFormulas.effectiveMagic(d.skills().currentLevel(Skill.MAGIC), PrayerService.magic(d));
         return CombatFormulas.attackRoll(eff, allStats(p).magicAttack());
     }
 
     /** Ranged strength of the first arrow in the inventory (what a bow would fire). */
-    public static int ammoStrength(ServerPlayerEntity p) {
-        for (int i = 0; i < p.getInventory().size(); i++) {
-            com.runecraft.osrs.ItemDef def = ModItems.def(p.getInventory().getStack(i));
+    public static int ammoStrength(ServerPlayer p) {
+        for (int i = 0; i < p.getInventory().getContainerSize(); i++) {
+            com.runecraft.osrs.ItemDef def = ModItems.def(p.getInventory().getItem(i));
             if (def != null && def.kind() == com.runecraft.osrs.ItemDef.Kind.ARROW) {
                 return def.rangedStrength();
             }
@@ -142,7 +142,7 @@ public final class SysCombat {
 
     /** The core defence roll (no drains). */
     public static long baseDefenceRoll(LivingEntity target, AttackType type) {
-        if (target instanceof ServerPlayerEntity defender) {
+        if (target instanceof ServerPlayer defender) {
             return com.runecraft.combat.HitCalcBridge.playerDefenceRoll(defender, type);
         }
         MonsterStats stats = MonsterStats.of(target);
@@ -152,10 +152,10 @@ public final class SysCombat {
 
     /** Defence roll after this module's stat drains. */
     public static long defenceRoll(LivingEntity target, AttackType type) {
-        if (target instanceof ServerPlayerEntity) {
+        if (target instanceof ServerPlayer) {
             return baseDefenceRoll(target, type);
         }
-        Drain drain = DRAINS.get(target.getUuid());
+        Drain drain = DRAINS.get(target.getUUID());
         if (drain == null) {
             return baseDefenceRoll(target, type);
         }
@@ -166,7 +166,7 @@ public final class SysCombat {
 
     /** Accuracy multiplier equivalent to the target's drained defence (used in the attack modifier). */
     public static double drainAccuracy(LivingEntity target, AttackType type) {
-        if (target instanceof ServerPlayerEntity || !DRAINS.containsKey(target.getUuid())) {
+        if (target instanceof ServerPlayer || !DRAINS.containsKey(target.getUUID())) {
             return 1.0;
         }
         long base = baseDefenceRoll(target, type);
@@ -175,14 +175,14 @@ public final class SysCombat {
     }
 
     public static Drain drain(LivingEntity target) {
-        return DRAINS.computeIfAbsent(target.getUuid(), u -> new Drain());
+        return DRAINS.computeIfAbsent(target.getUUID(), u -> new Drain());
     }
 
     public static int defenceLevel(LivingEntity target) {
-        if (target instanceof ServerPlayerEntity p) {
+        if (target instanceof ServerPlayer p) {
             return skills(p).currentLevel(Skill.DEFENCE);
         }
-        Drain d = DRAINS.get(target.getUuid());
+        Drain d = DRAINS.get(target.getUUID());
         return Math.max(0, MonsterStats.of(target).defence() - (d == null ? 0 : d.defence));
     }
 
@@ -195,7 +195,7 @@ public final class SysCombat {
         if (levels <= 0) {
             return;
         }
-        if (target instanceof ServerPlayerEntity p) {
+        if (target instanceof ServerPlayer p) {
             SkillSet s = skills(p);
             int floor = -s.level(skill);
             s.setBoost(skill, Math.max(floor, s.boost(skill) - levels));
@@ -217,10 +217,10 @@ public final class SysCombat {
 
     /** A monster's attack level for a style after Attack/Magic/Ranged drains (players: unchanged). */
     public static int drainedAttackLevel(LivingEntity mob, AttackType type, int level) {
-        if (mob instanceof ServerPlayerEntity) {
+        if (mob instanceof ServerPlayer) {
             return level;
         }
-        Drain d = DRAINS.get(mob.getUuid());
+        Drain d = DRAINS.get(mob.getUUID());
         if (d == null) {
             return level;
         }
@@ -234,11 +234,11 @@ public final class SysCombat {
 
     /** A target's level in a skill after drains (monsters: base level minus this module's drains). */
     public static int drainedStatLevel(LivingEntity target, Skill skill) {
-        if (target instanceof ServerPlayerEntity p) {
+        if (target instanceof ServerPlayer p) {
             return skills(p).currentLevel(skill);
         }
         int base = statLevel(target, skill);
-        Drain d = DRAINS.get(target.getUuid());
+        Drain d = DRAINS.get(target.getUUID());
         if (d == null) {
             return base;
         }
@@ -255,14 +255,14 @@ public final class SysCombat {
 
     /** A target's base (undrained) level in a skill. */
     public static int baseStatLevel(LivingEntity target, Skill skill) {
-        if (target instanceof ServerPlayerEntity p) {
+        if (target instanceof ServerPlayer p) {
             return skills(p).level(skill);
         }
         return statLevel(target, skill);
     }
 
     public static int statLevel(LivingEntity target, Skill skill) {
-        if (target instanceof ServerPlayerEntity p) {
+        if (target instanceof ServerPlayer p) {
             return skills(p).currentLevel(skill);
         }
         MonsterStats s = MonsterStats.of(target);
@@ -280,9 +280,9 @@ public final class SysCombat {
     /** Freezes (or binds) a target for a number of game ticks. */
     public static void freeze(LivingEntity target, int gameTicks) {
         int mcTicks = gameTicks * ActionManager.MC_TICKS_PER_GAME_TICK;
-        target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, mcTicks, 6, false, true));
-        target.setVelocity(Vec3d.ZERO);
-        if (target instanceof MobEntity mob) {
+        target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, mcTicks, 6, false, true));
+        target.setDeltaMovement(Vec3.ZERO);
+        if (target instanceof Mob mob) {
             mob.getNavigation().stop();
         }
         dust(target, new Vector3f(0.6f, 0.85f, 1.0f), 20);
@@ -290,7 +290,7 @@ public final class SysCombat {
 
     public static void poison(LivingEntity target, int damage) {
         PoisonService.poison(target, damage, ActionManager.gameTick());
-        if (!(target instanceof ServerPlayerEntity) && !(target instanceof OsrsMonsterEntity)) {
+        if (!(target instanceof ServerPlayer) && !(target instanceof OsrsMonsterEntity)) {
             POISONED.add(target);
         }
     }
@@ -318,35 +318,35 @@ public final class SysCombat {
     }
 
     public static void forget(Entity entity) {
-        DRAINS.remove(entity.getUuid());
+        DRAINS.remove(entity.getUUID());
     }
 
     public static void dust(Entity e, Vector3f color, int count) {
-        if (e.getWorld() instanceof ServerWorld w) {
-            w.spawnParticles(new DustParticleEffect(color, 1.2f), e.getX(), e.getY() + e.getHeight() / 2, e.getZ(), count,
+        if (e.level() instanceof ServerLevel w) {
+            w.sendParticles(new DustParticleOptions(color, 1.2f), e.getX(), e.getY() + e.getBbHeight() / 2, e.getZ(), count,
                     0.4, 0.5, 0.4, 0.01);
         }
     }
 
-    public static void trail(ServerWorld world, Vec3d from, Vec3d to, Vector3f color) {
-        DustParticleEffect dust = new DustParticleEffect(color, 1.2f);
-        Vec3d delta = to.subtract(from);
+    public static void trail(ServerLevel world, Vec3 from, Vec3 to, Vector3f color) {
+        DustParticleOptions dust = new DustParticleOptions(color, 1.2f);
+        Vec3 delta = to.subtract(from);
         int steps = (int) Math.max(4, delta.length() * 3);
         for (int i = 0; i <= steps; i++) {
-            Vec3d p = from.add(delta.multiply(i / (double) steps));
-            world.spawnParticles(dust, p.x, p.y, p.z, 1, 0, 0, 0, 0);
+            Vec3 p = from.add(delta.scale(i / (double) steps));
+            world.sendParticles(dust, p.x, p.y, p.z, 1, 0, 0, 0, 0);
         }
     }
 
     // ---------------- Hits ----------------
 
     /** Rolls damage with the given rolls. */
-    public static int roll(ServerPlayerEntity p, long attackRoll, long defenceRoll, int maxHit) {
+    public static int roll(ServerPlayer p, long attackRoll, long defenceRoll, int maxHit) {
         return CombatFormulas.roll(new java.util.Random(p.getRandom().nextLong()), attackRoll, defenceRoll, maxHit);
     }
 
     /** Applies a player's hit to a target, passing it through the target's own damage modifiers. */
-    public static int hit(ServerPlayerEntity p, LivingEntity target, AttackType type, int damage) {
+    public static int hit(ServerPlayer p, LivingEntity target, AttackType type, int damage) {
         if (target instanceof OsrsMonsterEntity monster) {
             damage = monster.modifyIncoming(p, damage, type);
         }
@@ -358,39 +358,39 @@ public final class SysCombat {
     }
 
     /** The living entity the player is looking at, within range. */
-    public static LivingEntity lookTarget(ServerPlayerEntity player, double range) {
-        Vec3d eye = player.getEyePos();
-        Vec3d look = player.getRotationVector();
-        Vec3d end = eye.add(look.multiply(range));
-        Box box = player.getBoundingBox().stretch(look.multiply(range)).expand(1.0);
-        EntityHitResult hit = ProjectileUtil.raycast(player, eye, end, box,
+    public static LivingEntity lookTarget(ServerPlayer player, double range) {
+        Vec3 eye = player.getEyePosition();
+        Vec3 look = player.getLookAngle();
+        Vec3 end = eye.add(look.scale(range));
+        AABB box = player.getBoundingBox().expandTowards(look.scale(range)).inflate(1.0);
+        EntityHitResult hit = ProjectileUtil.getEntityHitResult(player, eye, end, box,
                 e -> e instanceof LivingEntity && e.isAlive() && e != player && !e.isSpectator(), range * range);
         return hit != null && hit.getEntity() instanceof LivingEntity l ? l : null;
     }
 
     /** The player's current combat target: what they're looking at, or the last thing they hit. */
-    public static LivingEntity currentTarget(ServerPlayerEntity player, double range) {
+    public static LivingEntity currentTarget(ServerPlayer player, double range) {
         LivingEntity look = lookTarget(player, range);
         if (look != null) {
             return look;
         }
         SysState.SysPlayer sp = SysState.of(player);
         if (sp.lastTargetId >= 0 && ActionManager.gameTick() - sp.lastCombatTick < 20) {
-            Entity e = player.getWorld().getEntityById(sp.lastTargetId);
-            if (e instanceof LivingEntity l && l.isAlive() && l.squaredDistanceTo(player) < range * range) {
+            Entity e = player.level().getEntity(sp.lastTargetId);
+            if (e instanceof LivingEntity l && l.isAlive() && l.distanceToSqr(player) < range * range) {
                 return l;
             }
         }
-        LivingEntity attacker = player.getAttacker();
-        if (attacker != null && attacker.isAlive() && attacker.squaredDistanceTo(player) < range * range) {
+        LivingEntity attacker = player.getLastHurtByMob();
+        if (attacker != null && attacker.isAlive() && attacker.distanceToSqr(player) < range * range) {
             return attacker;
         }
         return null;
     }
 
     /** Whether a target can be attacked by this player (Wilderness rules for players, single-way combat). */
-    public static boolean canAttack(ServerPlayerEntity p, LivingEntity target) {
-        if (target instanceof ServerPlayerEntity other && !CombatHandler.canAttackPlayer(p, other)) {
+    public static boolean canAttack(ServerPlayer p, LivingEntity target) {
+        if (target instanceof ServerPlayer other && !CombatHandler.canAttackPlayer(p, other)) {
             return false;
         }
         if (target instanceof com.runecraft.entity.QuestNpcEntity) {
@@ -400,7 +400,7 @@ public final class SysCombat {
     }
 
     public static boolean isUndead(LivingEntity target) {
-        if (target.isUndead()) {
+        if (target.isInvertedHealAndHarm()) {
             return true;
         }
         MonsterStats stats = MonsterStats.of(target);

@@ -8,6 +8,8 @@ import java.util.List;
 import static com.runecraft.osrs.content.bestiary.BestiaryHumForms.*;
 import static com.runecraft.osrs.content.bestiary.BestiaryHumKit.*;
 
+import com.runecraft.osrs.content.bestiary.BestiaryHumKit.Fig;
+
 /**
  * Humanoid world bosses: Obor, Bryophyta, Count Draynor, Delrith, Vet'ion/Calvar'ion, the Chaos Fanatic, the Crazy
  * Archaeologist, Skotizo, Vardorvis, Sol Heredit, the Royal Titans and the Moons of Peril.

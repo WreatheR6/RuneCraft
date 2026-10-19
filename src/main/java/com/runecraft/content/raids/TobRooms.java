@@ -9,16 +9,6 @@ import com.runecraft.osrs.content.raids.RoomDef;
 import com.runecraft.osrs.content.raids.TobNylocas;
 import com.runecraft.osrs.content.systems.CombatAchievements;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.particle.ParticleEffect;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,6 +16,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.Vec3;
 
 /** Theatre of Blood rooms. */
 final class TobRooms {
@@ -33,11 +32,11 @@ final class TobRooms {
     }
 
     /** Moves passive crabs/spawn toward a point. */
-    static void walk(LivingEntity e, Vec3d to) {
-        if (e instanceof MobEntity mob) {
+    static void walk(LivingEntity e, Vec3 to) {
+        if (e instanceof Mob mob) {
             mob.setTarget(null);
-            if (mob.age % 10 == 0 || mob.getNavigation().isIdle()) {
-                mob.getNavigation().startMovingTo(to.x, to.y, to.z, 1.0);
+            if (mob.tickCount % 10 == 0 || mob.getNavigation().isDone()) {
+                mob.getNavigation().moveTo(to.x, to.y, to.z, 1.0);
             }
         }
     }
@@ -49,7 +48,7 @@ final class TobRooms {
         /** Nylocas Matomenos that reached her (each makes her tornadoes hit harder; Hard mode: the first five faster). */
         private int fed;
         /** Blood trails left by blood spawn, with the tick they dry (never in Hard mode). */
-        private final Map<Vec3d, Long> trail = new HashMap<>();
+        private final Map<Vec3, Long> trail = new HashMap<>();
         private final Set<BlockPos> trailTiles = new HashSet<>();
 
         Maiden(RaidInstance raid, RoomDef def, int index) {
@@ -59,12 +58,12 @@ final class TobRooms {
         @Override
         public void decorate() {
             for (int i = 0; i < 18; i++) {
-                RaidBuilder.set(world(), center().add(rnd().nextInt(36) - 18, 0, rnd().nextInt(36) - 18),
-                        Blocks.RED_CONCRETE.getDefaultState());
+                RaidBuilder.set(world(), center().offset(rnd().nextInt(36) - 18, 0, rnd().nextInt(36) - 18),
+                        Blocks.RED_CONCRETE.defaultBlockState());
             }
             for (int z = -16; z <= 16; z += 8) {
                 RaidBuilder.fill(world(), center().getX() + 20, center().getY() + 6, center().getZ() + z,
-                        center().getX() + 20, center().getY() + 9, center().getZ() + z, Blocks.CHAIN.getDefaultState());
+                        center().getX() + 20, center().getY() + 9, center().getZ() + z, Blocks.CHAIN.defaultBlockState());
             }
         }
 
@@ -103,24 +102,24 @@ final class TobRooms {
             List<LivingEntity> spawns = living("blood_spawn");
             for (LivingEntity sp : spawns) {
                 if (tick % 2 == 0) {
-                    trail.put(sp.getPos(), hard() ? Long.MAX_VALUE : tick + 16);
-                    if (trailTiles.add(sp.getBlockPos())) {
+                    trail.put(sp.position(), hard() ? Long.MAX_VALUE : tick + 16);
+                    if (trailTiles.add(sp.blockPosition())) {
                         com.runecraft.content.systems.CombatAchievementService.countNear(maiden, com.runecraft.osrs.content.systems.CombatAchievements.COUNT_MAIDEN_TRAIL);
                     }
                 }
-                if (sp.age > 200) {
+                if (sp.tickCount > 200) {
                     com.runecraft.content.systems.CombatAchievementService.flagNear(maiden, com.runecraft.osrs.content.systems.CombatAchievements.FLAG_BLOODSPAWN_OLD);
                 }
-                if (sp.age % 60 == 0) {
+                if (sp.tickCount % 60 == 0) {
                     walk(sp, vec(rnd().nextInt(30) - 15, rnd().nextInt(30) - 15));
                 }
             }
             trail.entrySet().removeIf(e -> e.getValue() < tick);
-            for (ServerPlayerEntity p : players()) {
-                for (Vec3d t : trail.keySet()) {
-                    if (RaidEffects.horizontalDistSq(p.getPos(), t) < 0.8 * 0.8) {
+            for (ServerPlayer p : players()) {
+                for (Vec3 t : trail.keySet()) {
+                    if (RaidEffects.horizontalDistSq(p.position(), t) < 0.8 * 0.8) {
                         if (tick % 2 == 0) {
-                            world().spawnParticles(ParticleTypes.DAMAGE_INDICATOR, t.x, t.y + 0.3, t.z, 2, 0.2, 0.1, 0.2, 0);
+                            world().sendParticles(ParticleTypes.DAMAGE_INDICATOR, t.x, t.y + 0.3, t.z, 2, 0.2, 0.1, 0.2, 0);
                         }
                         if (!cooldown(p, 1)) {
                             // OSRS: standing in a blood trail hurts and heals the Maiden by the damage taken.
@@ -141,45 +140,45 @@ final class TobRooms {
          * heals the Maiden by the damage dealt, and spots may turn into blood spawn.
          */
         private void bloodSpots(int spawnCount) {
-            List<ServerPlayerEntity> players = players();
+            List<ServerPlayer> players = players();
             if (players.isEmpty()) {
                 return;
             }
-            List<Vec3d> spots = new ArrayList<>();
-            ServerPlayerEntity far = null;
-            for (ServerPlayerEntity p : players) {
-                spots.add(p.getPos());
-                if (far == null || p.squaredDistanceTo(maiden) > far.squaredDistanceTo(maiden)) {
+            List<Vec3> spots = new ArrayList<>();
+            ServerPlayer far = null;
+            for (ServerPlayer p : players) {
+                spots.add(p.position());
+                if (far == null || p.distanceToSqr(maiden) > far.distanceToSqr(maiden)) {
                     far = p;
                 }
             }
             for (int i = 0; i < 3; i++) {
-                spots.add(far.getPos().add(rnd().nextInt(3) - 1, 0, rnd().nextInt(3) - 1));
+                spots.add(far.position().add(rnd().nextInt(3) - 1, 0, rnd().nextInt(3) - 1));
             }
             int cap = hard() ? 5 : 3;
             int[] spawned = {spawnCount};
-            for (Vec3d at : spots) {
-                world().spawnParticles(ParticleTypes.DAMAGE_INDICATOR, at.x, at.y + 0.2, at.z, 6, 0.4, 0.1, 0.4, 0);
+            for (Vec3 at : spots) {
+                world().sendParticles(ParticleTypes.DAMAGE_INDICATOR, at.x, at.y + 0.2, at.z, 6, 0.4, 0.1, 0.4, 0);
                 RaidEffects.later(3, () -> {
                     if (!alive(maiden)) {
                         return;
                     }
-                    for (ServerPlayerEntity p : players()) {
-                        if (RaidEffects.horizontalDistSq(p.getPos(), at) < 0.9 * 0.9) {
+                    for (ServerPlayer p : players()) {
+                        if (RaidEffects.horizontalDistSq(p.position(), at) < 0.9 * 0.9) {
                             int dealt = RaidEffects.hit(maiden, p, rnd().nextInt(26), null, true); // approx: blood spot up to 25
                             raid.heal(maiden, dealt);
                         }
                     }
                     if (spawned[0] < cap && rnd().nextInt(5) == 0) { // approx: 1 in 5 spots become blood spawn
                         spawned[0]++;
-                        spawnMob("blood_spawn", BlockPos.ofFloored(at), false);
+                        spawnMob("blood_spawn", BlockPos.containing(at), false);
                     }
                 });
             }
         }
 
         @Override
-        public int bossOutgoing(DataBossEntity boss, ServerPlayerEntity player, int damage, AttackType type) {
+        public int bossOutgoing(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
             // OSRS: every Matomenos that reaches the Maiden increases her tornado damage. // approx: +10% each
             return boss == maiden ? (int) Math.round(damage * (1 + 0.1 * fed)) : damage;
         }
@@ -207,7 +206,7 @@ final class TobRooms {
             super(raid, def, index);
         }
 
-        private Vec3d waypoint(int i) {
+        private Vec3 waypoint(int i) {
             int[][] corners = {{-11, -11}, {11, -11}, {11, 11}, {-11, 11}};
             int[] c = corners[Math.floorMod(i, 4)];
             return vec(c[0], c[1]);
@@ -215,10 +214,10 @@ final class TobRooms {
 
         @Override
         public void decorate() {
-            RaidBuilder.pillar(world(), center(), 4, RaidBuilder.HEIGHT, Blocks.DEEPSLATE_BRICKS.getDefaultState());
+            RaidBuilder.pillar(world(), center(), 4, RaidBuilder.HEIGHT, Blocks.DEEPSLATE_BRICKS.defaultBlockState());
             for (int i = 0; i < 6; i++) {
-                RaidBuilder.set(world(), center().add(rnd().nextInt(36) - 18, RaidBuilder.HEIGHT, rnd().nextInt(36) - 18),
-                        Blocks.CHAIN.getDefaultState());
+                RaidBuilder.set(world(), center().offset(rnd().nextInt(36) - 18, RaidBuilder.HEIGHT, rnd().nextInt(36) - 18),
+                        Blocks.CHAIN.defaultBlockState());
             }
         }
 
@@ -230,7 +229,7 @@ final class TobRooms {
             turnTicks = 0;
             // OSRS: the first walk lasts 39-47 ticks.
             stateLength = com.runecraft.osrs.content.raids.RaidScaling.TOB_BLOAT_FIRST_WALK + rnd().nextInt(9);
-            bloat = spawnBoss("pestilent_bloat", BlockPos.ofFloored(waypoint(0)));
+            bloat = spawnBoss("pestilent_bloat", BlockPos.containing(waypoint(0)));
         }
 
         @Override
@@ -240,13 +239,13 @@ final class TobRooms {
                 boss.getNavigation().stop();
                 return;
             }
-            Vec3d wp = waypoint(waypoint);
-            if (boss.getPos().squaredDistanceTo(wp) < 2.0) {
+            Vec3 wp = waypoint(waypoint);
+            if (boss.position().distanceToSqr(wp) < 2.0) {
                 waypoint += direction;
                 wp = waypoint(waypoint);
             }
-            if (boss.age % 10 == 0 || boss.getNavigation().isIdle()) {
-                boss.getNavigation().startMovingTo(wp.x, wp.y, wp.z, 1.3);
+            if (boss.tickCount % 10 == 0 || boss.getNavigation().isDone()) {
+                boss.getNavigation().moveTo(wp.x, wp.y, wp.z, 1.3);
             }
         }
 
@@ -273,7 +272,7 @@ final class TobRooms {
         }
 
         @Override
-        public int bossIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        public int bossIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             // OSRS: the Bloat takes 50% less damage (rounded down) while it moves.
             return walking ? damage / 2 : damage;
         }
@@ -285,11 +284,11 @@ final class TobRooms {
                 return;
             }
             stateTicks++;
-            List<ServerPlayerEntity> players = players();
+            List<ServerPlayer> players = players();
             if (walking) {
                 // OSRS: while it walks, its flies hit everyone in its line of sight for 10-20 every tick
                 // (Protect from Missiles takes 25% off).
-                for (ServerPlayerEntity p : players) {
+                for (ServerPlayer p : players) {
                     if (canSee(bloat, p)) {
                         int dmg = 10 + rnd().nextInt(11);
                         if (RaidEffects.protectedFrom(p, AttackType.RANGED)) {
@@ -300,8 +299,8 @@ final class TobRooms {
                 }
                 if (tick % 3 == 0 && !players.isEmpty()) {
                     // OSRS: mutilated flesh falls from the ceiling for 30-50 (Hard mode: all fight long).
-                    ServerPlayerEntity p = players.get(rnd().nextInt(players.size()));
-                    Vec3d at = p.getPos().add(rnd().nextInt(5) - 2, 0, rnd().nextInt(5) - 2);
+                    ServerPlayer p = players.get(rnd().nextInt(players.size()));
+                    Vec3 at = p.position().add(rnd().nextInt(5) - 2, 0, rnd().nextInt(5) - 2);
                     RaidEffects.strike(world(), at, 1.0, 50, 3, bloat, ParticleTypes.FALLING_LAVA);
                 }
                 maybeTurn();
@@ -313,13 +312,13 @@ final class TobRooms {
                     com.runecraft.content.systems.CombatAchievementService.countNear(bloat, com.runecraft.osrs.content.systems.CombatAchievements.COUNT_BLOAT_SHUTDOWN);
                 }
             } else {
-                world().spawnParticles(ParticleTypes.SMOKE, bloat.getX(), bloat.getY() + 2, bloat.getZ(), 4, 0.8, 0.4, 0.8, 0.01);
+                world().sendParticles(ParticleTypes.SMOKE, bloat.getX(), bloat.getY() + 2, bloat.getZ(), 4, 0.8, 0.4, 0.8, 0.01);
                 if (stateTicks == stateLength - 1) {
                     warn("The Bloat stirs...");
                 }
                 if (hard() && tick % 3 == 0 && !players.isEmpty()) {
-                    ServerPlayerEntity p = players.get(rnd().nextInt(players.size()));
-                    RaidEffects.strike(world(), p.getPos().add(rnd().nextInt(5) - 2, 0, rnd().nextInt(5) - 2), 1.0, 50, 3, bloat,
+                    ServerPlayer p = players.get(rnd().nextInt(players.size()));
+                    RaidEffects.strike(world(), p.position().add(rnd().nextInt(5) - 2, 0, rnd().nextInt(5) - 2), 1.0, 50, 3, bloat,
                             ParticleTypes.FALLING_LAVA);
                 }
                 if (stateTicks >= stateLength) {
@@ -327,13 +326,13 @@ final class TobRooms {
                     stateTicks = 0;
                     // OSRS: after the stomp it walks for 34-42 ticks.
                     stateLength = com.runecraft.osrs.content.raids.RaidScaling.TOB_BLOAT_WALK + rnd().nextInt(9);
-                    world().spawnParticles(ParticleTypes.EXPLOSION_EMITTER, bloat.getX(), bloat.getY(), bloat.getZ(), 1, 0, 0, 0, 0);
-                    for (ServerPlayerEntity p : players) {
-                        if (p.squaredDistanceTo(bloat) < 4.5 * 4.5) {
+                    world().sendParticles(ParticleTypes.EXPLOSION_EMITTER, bloat.getX(), bloat.getY(), bloat.getZ(), 1, 0, 0, 0, 0);
+                    for (ServerPlayer p : players) {
+                        if (p.distanceToSqr(bloat) < 4.5 * 4.5) {
                             RaidEffects.hit(bloat, p, 40 + rnd().nextInt(41), null, true); // OSRS: the stomp deals 40-80
-                            Vec3d push = p.getPos().subtract(bloat.getPos()).normalize().multiply(1.2);
-                            p.addVelocity(push.x, 0.5, push.z);
-                            p.velocityModified = true;
+                            Vec3 push = p.position().subtract(bloat.position()).normalize().scale(1.2);
+                            p.push(push.x, 0.5, push.z);
+                            p.hurtMarked = true;
                             Msg.red(p, "The Bloat stomps on you!");
                         }
                     }
@@ -358,13 +357,13 @@ final class TobRooms {
 
         /** One live wave nylocas. */
         private static final class Nylo {
-            final MobEntity mob;
+            final Mob mob;
             final TobNylocas.Breed breed;
             final boolean big;
             final boolean aggressive;
             int age;
 
-            Nylo(MobEntity mob, TobNylocas.Breed breed, boolean big, boolean aggressive) {
+            Nylo(Mob mob, TobNylocas.Breed breed, boolean big, boolean aggressive) {
                 this.mob = mob;
                 this.breed = breed;
                 this.big = big;
@@ -399,14 +398,14 @@ final class TobRooms {
         }
 
         private BlockPos pillarBase(int i) {
-            return center().add(PILLARS[i][0], 0, PILLARS[i][1]);
+            return center().offset(PILLARS[i][0], 0, PILLARS[i][1]);
         }
 
         @Override
         public void decorate() {
             for (int i = 0; i < PILLARS.length; i++) {
-                RaidBuilder.pillar(world(), pillarBase(i), 1, 4, Blocks.POLISHED_DEEPSLATE.getDefaultState());
-                RaidBuilder.set(world(), pillarBase(i).up(5), Blocks.SOUL_LANTERN.getDefaultState());
+                RaidBuilder.pillar(world(), pillarBase(i), 1, 4, Blocks.POLISHED_DEEPSLATE.defaultBlockState());
+                RaidBuilder.set(world(), pillarBase(i).above(5), Blocks.SOUL_LANTERN.defaultBlockState());
             }
         }
 
@@ -425,7 +424,7 @@ final class TobRooms {
         }
 
         /** The Nylocas room a player is fighting in, if any. */
-        static Nylocas of(ServerPlayerEntity p) {
+        static Nylocas of(ServerPlayer p) {
             RaidInstance raid = RaidManager.of(p);
             return raid != null && raid.type == com.runecraft.osrs.content.raids.RaidType.TOB && raid.logic() instanceof Nylocas n
                     ? n : null;
@@ -442,7 +441,7 @@ final class TobRooms {
         }
 
         private void spawnNylo(TobNylocas.Breed breed, boolean big, boolean aggressive, BlockPos pos) {
-            MobEntity m = spawnMob(breed.creatureId, pos, false);
+            Mob m = spawnMob(breed.creatureId, pos, false);
             if (m == null) {
                 return;
             }
@@ -525,12 +524,12 @@ final class TobRooms {
                 form = TobNylocas.nextForm(form, rnd());
                 warn("The Nylocas Vasilias changes to its " + FORMS[form] + " form!");
             }
-            ParticleEffect colour = switch (form) {
+            ParticleOptions colour = switch (form) {
                 case 0 -> ParticleTypes.CRIT;
                 case 1 -> ParticleTypes.HAPPY_VILLAGER;
                 default -> ParticleTypes.SOUL_FIRE_FLAME;
             };
-            world().spawnParticles(colour, vasilias.getX(), vasilias.getY() + 1, vasilias.getZ(), 6, 1, 0.5, 1, 0.01);
+            world().sendParticles(colour, vasilias.getX(), vasilias.getY() + 1, vasilias.getZ(), 6, 1, 0.5, 1, 0.01);
         }
 
         /** Entry mode Vasilias changes form more slowly. // approx: 14 ticks */
@@ -545,7 +544,7 @@ final class TobRooms {
                 Nylo n = it.next();
                 if (!alive(n.mob)) {
                     it.remove();
-                    if (n.big && n.mob.isDead()) {
+                    if (n.big && n.mob.isDeadOrDying()) {
                         split.add(n);
                     }
                     continue;
@@ -556,8 +555,8 @@ final class TobRooms {
                     continue;
                 }
                 if (n.aggressive) {
-                    if (!(n.mob.getTarget() instanceof ServerPlayerEntity current) || !current.isAlive()) {
-                        ServerPlayerEntity t = randomPlayer();
+                    if (!(n.mob.getTarget() instanceof ServerPlayer current) || !current.isAlive()) {
+                        ServerPlayer t = randomPlayer();
                         if (t != null) {
                             n.mob.setTarget(t);
                         }
@@ -565,20 +564,20 @@ final class TobRooms {
                     continue;
                 }
                 n.mob.setTarget(null);
-                int p = nearestPillar(n.mob.getPos());
+                int p = nearestPillar(n.mob.position());
                 if (p < 0) {
                     continue;
                 }
-                Vec3d pc = Vec3d.ofBottomCenter(pillarBase(p).up());
-                double d2 = RaidEffects.horizontalDistSq(n.mob.getPos(), pc);
+                Vec3 pc = Vec3.atBottomCenterOf(pillarBase(p).above());
+                double d2 = RaidEffects.horizontalDistSq(n.mob.position(), pc);
                 if (d2 > 2.6 * 2.6) {
-                    if (n.age % 8 == 1 || n.mob.getNavigation().isIdle()) {
-                        n.mob.getNavigation().startMovingTo(pc.x, pc.y, pc.z, 1.0);
+                    if (n.age % 8 == 1 || n.mob.getNavigation().isDone()) {
+                        n.mob.getNavigation().moveTo(pc.x, pc.y, pc.z, 1.0);
                     }
                 } else if (n.age % 3 == 0) {
                     // Nylocas attack every 3 ticks.
                     pillarHp[p] -= TobNylocas.pillarDamage(n.big, rnd());
-                    world().spawnParticles(ParticleTypes.CRIT, pc.x, pc.y + 1, pc.z, 2, 0.6, 0.6, 0.6, 0.01);
+                    world().sendParticles(ParticleTypes.CRIT, pc.x, pc.y + 1, pc.z, 2, 0.6, 0.6, 0.6, 0.01);
                     if (pillarHp[p] <= 0) {
                         collapse(p);
                     }
@@ -586,22 +585,22 @@ final class TobRooms {
             }
             for (Nylo n : split) {
                 // OSRS: a slain big nylocas splits into two small nylocas of any breed.
-                BlockPos at = n.mob.getBlockPos();
+                BlockPos at = n.mob.blockPosition();
                 TobNylocas.Breed[] breeds = TobNylocas.Breed.values();
                 for (int i = 0; i < 2; i++) {
-                    spawnNylo(breeds[rnd().nextInt(breeds.length)], false, n.aggressive, at.add(i, 0, 0));
+                    spawnNylo(breeds[rnd().nextInt(breeds.length)], false, n.aggressive, at.offset(i, 0, 0));
                 }
             }
         }
 
-        private int nearestPillar(Vec3d pos) {
+        private int nearestPillar(Vec3 pos) {
             int best = -1;
             double bestD = Double.MAX_VALUE;
             for (int i = 0; i < PILLARS.length; i++) {
                 if (pillarHp[i] <= 0) {
                     continue;
                 }
-                double d = RaidEffects.horizontalDistSq(pos, Vec3d.ofBottomCenter(pillarBase(i)));
+                double d = RaidEffects.horizontalDistSq(pos, Vec3.atBottomCenterOf(pillarBase(i)));
                 if (d < bestD) {
                     bestD = d;
                     best = i;
@@ -612,12 +611,12 @@ final class TobRooms {
 
         /** A nylocas self-destructs: players next to it take up to 18 (small) or 21 (big). */
         private void explode(Nylo n) {
-            Vec3d pos = n.mob.getPos();
-            world().spawnParticles(ParticleTypes.EXPLOSION, pos.x, pos.y + 0.5, pos.z, 1, 0, 0, 0, 0);
+            Vec3 pos = n.mob.position();
+            world().sendParticles(ParticleTypes.EXPLOSION, pos.x, pos.y + 0.5, pos.z, 1, 0, 0, 0, 0);
             int max = n.big ? TobNylocas.BIG_EXPLOSION : TobNylocas.SMALL_EXPLOSION;
             double r = n.big ? 2.5 : 1.8;
-            for (ServerPlayerEntity p : players()) {
-                if (p.getPos().squaredDistanceTo(pos) <= r * r) {
+            for (ServerPlayer p : players()) {
+                if (p.position().distanceToSqr(pos) <= r * r) {
                     RaidEffects.hit(n.mob, p, rnd().nextInt(max + 1), null, true);
                 }
             }
@@ -629,18 +628,18 @@ final class TobRooms {
             pillarHp[i] = 0;
             pillarLost = true;
             BlockPos b = pillarBase(i);
-            RaidBuilder.pillar(world(), b, 1, 5, Blocks.AIR.getDefaultState());
-            RaidBuilder.pillar(world(), b, 1, 1, Blocks.CRACKED_DEEPSLATE_BRICKS.getDefaultState());
-            world().spawnParticles(ParticleTypes.EXPLOSION, b.getX() + 0.5, b.getY() + 2, b.getZ() + 0.5, 4, 1, 1, 1, 0);
+            RaidBuilder.pillar(world(), b, 1, 5, Blocks.AIR.defaultBlockState());
+            RaidBuilder.pillar(world(), b, 1, 1, Blocks.CRACKED_DEEPSLATE_BRICKS.defaultBlockState());
+            world().sendParticles(ParticleTypes.EXPLOSION, b.getX() + 0.5, b.getY() + 2, b.getZ() + 0.5, 4, 1, 1, 1, 0);
             if (standing() == 0) {
                 warn("The last support collapses and the roof caves in!");
-                for (ServerPlayerEntity p : players()) {
+                for (ServerPlayer p : players()) {
                     RaidEffects.hit(null, p, Math.round(p.getMaxHealth()) + 100, null, true);
                 }
                 return;
             }
             warn("A support collapses! Rocks fall from the roof! (" + standing() + " left)");
-            for (ServerPlayerEntity p : players()) {
+            for (ServerPlayer p : players()) {
                 RaidEffects.hit(null, p, rnd().nextInt(TobNylocas.PILLAR_COLLAPSE_MAX_HIT + 1), null, true);
             }
         }
@@ -654,7 +653,7 @@ final class TobRooms {
         }
 
         @Override
-        public AttackDef bossAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+        public AttackDef bossAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             if (boss == prinkipas) {
                 return formAttack(prinkipasForm, TobNylocas.PRINKIPAS_MAX_HIT);
             }
@@ -662,7 +661,7 @@ final class TobRooms {
         }
 
         @Override
-        public int bossIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        public int bossIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             int f = boss == prinkipas ? prinkipasForm : form;
             if (TobNylocas.formWeakTo(f, type)) {
                 return damage;
@@ -716,12 +715,12 @@ final class TobRooms {
         }
 
         private BlockPos mazeOrigin() {
-            return center().add(-COLS, 0, RaidBuilder.MAZE_OFFSET_Z - ROWS);
+            return center().offset(-COLS, 0, RaidBuilder.MAZE_OFFSET_Z - ROWS);
         }
 
         /** The arena copy of the maze: the same grid laid on the arena floor, west of Sotetseg. */
         private BlockPos arenaOrigin() {
-            return center().add(-COLS, 0, -ROWS);
+            return center().offset(-COLS, 0, -ROWS);
         }
 
         @Override
@@ -730,23 +729,23 @@ final class TobRooms {
             int y = o.getY();
             RaidBuilder.loadChunks(world(), o.getX() - 4, o.getZ() - 6, o.getX() + COLS * 2 + 4, o.getZ() + ROWS * 2 + 6);
             RaidBuilder.fill(world(), o.getX() - 2, y - 1, o.getZ() - 5, o.getX() + COLS * 2 + 1, y - 1, o.getZ() + ROWS * 2 + 4,
-                    Blocks.OBSIDIAN.getDefaultState());
+                    Blocks.OBSIDIAN.defaultBlockState());
             RaidBuilder.fill(world(), o.getX() - 2, y, o.getZ() - 5, o.getX() + COLS * 2 + 1, y + 3, o.getZ() + ROWS * 2 + 4,
-                    Blocks.RED_STAINED_GLASS.getDefaultState());
+                    Blocks.RED_STAINED_GLASS.defaultBlockState());
             RaidBuilder.fill(world(), o.getX() - 1, y + 1, o.getZ() - 4, o.getX() + COLS * 2, y + 3, o.getZ() + ROWS * 2 + 3,
-                    Blocks.AIR.getDefaultState());
+                    Blocks.AIR.defaultBlockState());
             RaidBuilder.fill(world(), o.getX() - 1, y, o.getZ() - 4, o.getX() + COLS * 2, y, o.getZ() - 1,
-                    Blocks.CRIMSON_NYLIUM.getDefaultState());
+                    Blocks.CRIMSON_NYLIUM.defaultBlockState());
             RaidBuilder.fill(world(), o.getX() - 1, y, o.getZ() + ROWS * 2, o.getX() + COLS * 2, y, o.getZ() + ROWS * 2 + 3,
-                    Blocks.RED_NETHER_BRICKS.getDefaultState());
+                    Blocks.RED_NETHER_BRICKS.defaultBlockState());
             RaidBuilder.fill(world(), o.getX(), y, o.getZ(), o.getX() + COLS * 2 - 1, y, o.getZ() + ROWS * 2 - 1,
-                    Blocks.POLISHED_BLACKSTONE.getDefaultState());
+                    Blocks.POLISHED_BLACKSTONE.defaultBlockState());
             // The arena's tiled maze floor (the path itself is invisible from the arena).
             BlockPos a = arenaOrigin();
             RaidBuilder.fill(world(), a.getX(), a.getY(), a.getZ(), a.getX() + COLS * 2 - 1, a.getY(), a.getZ() + ROWS * 2 - 1,
-                    Blocks.POLISHED_BLACKSTONE_BRICKS.getDefaultState());
-            RaidBuilder.pillar(world(), center().add(-12, 0, -8), 1, 2, Blocks.CRIMSON_HYPHAE.getDefaultState()); // clear of the arena maze
-            RaidBuilder.pillar(world(), center().add(-12, 0, 8), 1, 2, Blocks.CRIMSON_HYPHAE.getDefaultState());
+                    Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState());
+            RaidBuilder.pillar(world(), center().offset(-12, 0, -8), 1, 2, Blocks.CRIMSON_HYPHAE.defaultBlockState()); // clear of the arena maze
+            RaidBuilder.pillar(world(), center().offset(-12, 0, 8), 1, 2, Blocks.CRIMSON_HYPHAE.defaultBlockState());
         }
 
         @Override
@@ -762,17 +761,17 @@ final class TobRooms {
             return ((long) col << 32) | (row & 0xffffffffL);
         }
 
-        private ServerPlayerEntity player(UUID id) {
-            for (ServerPlayerEntity p : raid.activePlayers()) {
-                if (p.getUuid().equals(id)) {
+        private ServerPlayer player(UUID id) {
+            for (ServerPlayer p : raid.activePlayers()) {
+                if (p.getUUID().equals(id)) {
                     return p;
                 }
             }
-            return world().getServer().getPlayerManager().getPlayer(id);
+            return world().getServer().getPlayerList().getPlayer(id);
         }
 
         private void startMaze() {
-            List<ServerPlayerEntity> party = players();
+            List<ServerPlayer> party = players();
             if (party.isEmpty()) {
                 return;
             }
@@ -780,7 +779,7 @@ final class TobRooms {
             int col = rnd().nextInt(COLS);
             for (int r = 0; r < ROWS; r++) {
                 path.add(key(col, r));
-                int next = MathHelper.clamp(col + rnd().nextInt(5) - 2, 0, COLS - 1);
+                int next = Mth.clamp(col + rnd().nextInt(5) - 2, 0, COLS - 1);
                 for (int c = Math.min(col, next); c <= Math.max(col, next); c++) {
                     path.add(key(c, r));
                 }
@@ -794,8 +793,8 @@ final class TobRooms {
             mazeTicks = 0;
             BlockPos o = mazeOrigin();
             for (int i = 0; i < taken; i++) {
-                ServerPlayerEntity p = party.get(i);
-                runners.add(p.getUuid());
+                ServerPlayer p = party.get(i);
+                runners.add(p.getUUID());
                 raid.teleport(p, new BlockPos(o.getX() + COLS - taken / 2 + i, o.getY() + 1, o.getZ() - 2));
                 warn("Sotetseg drags " + p.getName().getString() + " into the shadow realm! Find the hidden path.");
                 Msg.game(p, "Follow the souls through the maze. Stepping off the path hurts.");
@@ -833,7 +832,7 @@ final class TobRooms {
             if (--ballCooldown <= 0) {
                 // OSRS: the ball of death follows every 10 projectiles (one every 5 ticks); Hard mode launches two at a time.
                 ballCooldown = 50;
-                List<ServerPlayerEntity> party = players();
+                List<ServerPlayer> party = players();
                 int balls = hard() && party.size() > 1 ? 2 : 1;
                 java.util.Collections.shuffle(party, new java.util.Random(rnd().nextLong()));
                 for (int i = 0; i < Math.min(balls, party.size()); i++) {
@@ -842,25 +841,25 @@ final class TobRooms {
             }
         }
 
-        private void deathBall(ServerPlayerEntity target) {
+        private void deathBall(ServerPlayer target) {
             warn("Sotetseg launches a ball of death at " + target.getName().getString() + "! Stand together to share it!");
             RaidEffects.later(4, () -> {
                 if (!target.isAlive() || !alive(sotetseg)) {
                     return;
                 }
-                List<ServerPlayerEntity> share = new ArrayList<>();
-                for (ServerPlayerEntity p : players()) {
-                    if (p.squaredDistanceTo(target) <= 3.5 * 3.5) {
+                List<ServerPlayer> share = new ArrayList<>();
+                for (ServerPlayer p : players()) {
+                    if (p.distanceToSqr(target) <= 3.5 * 3.5) {
                         share.add(p);
                     }
                 }
                 if (!share.contains(target)) {
                     share.add(target);
                 }
-                world().spawnParticles(ParticleTypes.EXPLOSION, target.getX(), target.getY() + 1, target.getZ(), 3, 1, 0.5, 1, 0);
+                world().sendParticles(ParticleTypes.EXPLOSION, target.getX(), target.getY() + 1, target.getZ(), 3, 1, 0.5, 1, 0);
                 // OSRS: up to 188 split between everyone within 3x3 of the target. // approx: scaled like the HP by party
                 int each = (int) (com.runecraft.osrs.content.raids.RaidScaling.TOB_SOTETSEG_BALL * com.runecraft.osrs.content.raids.RaidScaling.tobHp(raid.partySize())) / share.size();
-                for (ServerPlayerEntity p : share) {
+                for (ServerPlayer p : share) {
                     RaidEffects.hit(sotetseg, p, each, null, true);
                 }
             });
@@ -869,10 +868,10 @@ final class TobRooms {
         private void mazeTick() {
             BlockPos o = mazeOrigin();
             mazeTicks++;
-            ServerPlayerEntity lead = null;
+            ServerPlayer lead = null;
             int leadRow = -1;
             for (UUID id : new ArrayList<>(runners)) {
-                ServerPlayerEntity p = player(id);
+                ServerPlayer p = player(id);
                 if (p == null || !p.isAlive() || raid.isDowned(p)) {
                     runners.remove(id);
                     continue;
@@ -904,7 +903,7 @@ final class TobRooms {
                 for (int r = from; r < Math.min(ROWS, from + 3); r++) {
                     for (int c = 0; c < COLS; c++) {
                         if (path.contains(key(c, r))) {
-                            world().spawnParticles(ParticleTypes.SOUL, o.getX() + c * 2 + 1, o.getY() + 1.1, o.getZ() + r * 2 + 1, 1, 0.3, 0,
+                            world().sendParticles(ParticleTypes.SOUL, o.getX() + c * 2 + 1, o.getY() + 1.1, o.getZ() + r * 2 + 1, 1, 0.3, 0,
                                     0.3, 0);
                         }
                     }
@@ -923,16 +922,16 @@ final class TobRooms {
          * The players left in the arena see only the runner's position (a red glow on the arena's tiles) and must walk
          * the same path: a wrong tile hits for 15 plus 6.67% of current hitpoints every tick (OSRS).
          */
-        private void arenaTick(BlockPos o, ServerPlayerEntity lead) {
+        private void arenaTick(BlockPos o, ServerPlayer lead) {
             BlockPos a = arenaOrigin();
             int col = (int) Math.floor((lead.getX() - o.getX()) / 2);
             int row = (int) Math.floor((lead.getZ() - o.getZ()) / 2);
             if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
-                world().spawnParticles(ParticleTypes.CRIMSON_SPORE, a.getX() + col * 2 + 1, a.getY() + 1.1, a.getZ() + row * 2 + 1, 6, 0.5,
+                world().sendParticles(ParticleTypes.CRIMSON_SPORE, a.getX() + col * 2 + 1, a.getY() + 1.1, a.getZ() + row * 2 + 1, 6, 0.5,
                         0.1, 0.5, 0);
             }
-            for (ServerPlayerEntity p : players()) {
-                if (runners.contains(p.getUuid())) {
+            for (ServerPlayer p : players()) {
+                if (runners.contains(p.getUUID())) {
                     continue;
                 }
                 int c = (int) Math.floor((p.getX() - a.getX()) / 2);
@@ -950,7 +949,7 @@ final class TobRooms {
         public void cleanup() {
             super.cleanup();
             for (UUID id : runners) {
-                ServerPlayerEntity p = player(id);
+                ServerPlayer p = player(id);
                 if (p != null && p.isAlive()) {
                     raid.teleport(p, at(-14, 0));
                 }
@@ -961,7 +960,7 @@ final class TobRooms {
 
     /** Xarpus: exhumed acid to absorb, acid spit, then the reflecting screech phase. */
     static final class Xarpus extends RoomLogic {
-        private record Exhumed(Vec3d pos, long expires) {
+        private record Exhumed(Vec3 pos, long expires) {
         }
 
         private DataBossEntity xarpus;
@@ -979,10 +978,10 @@ final class TobRooms {
         public void decorate() {
             BlockPos c = center();
             RaidBuilder.fill(world(), c.getX() - 2, c.getY(), c.getZ() - 2, c.getX() + 2, c.getY(), c.getZ() + 2,
-                    Blocks.DARK_PRISMARINE.getDefaultState());
+                    Blocks.DARK_PRISMARINE.defaultBlockState());
             for (int sx = -1; sx <= 1; sx += 2) {
                 for (int sz = -1; sz <= 1; sz += 2) {
-                    RaidBuilder.set(world(), c.add(sx * 3, 1, sz * 3), Blocks.SEA_PICKLE.getDefaultState());
+                    RaidBuilder.set(world(), c.offset(sx * 3, 1, sz * 3), Blocks.SEA_PICKLE.defaultBlockState());
                 }
             }
         }
@@ -995,7 +994,7 @@ final class TobRooms {
             xarpus = spawnBoss("xarpus", at(0, 0));
             if (xarpus != null) {
                 anchor(xarpus);
-                xarpus.setAiDisabled(true);
+                xarpus.setNoAi(true);
                 // OSRS: Xarpus starts severely weakened; the exhumeds can restore the missing quarter of his health.
                 raid.setCurrentHitpoints(xarpus, raid.maxHitpoints(xarpus) * 3 / 4);
             }
@@ -1010,9 +1009,9 @@ final class TobRooms {
         public void bossTick(DataBossEntity boss) {
             if (phase == 3) {
                 boss.setTarget(null);
-                boss.setYaw(facing);
-                boss.setHeadYaw(facing);
-                boss.setBodyYaw(facing);
+                boss.setYRot(facing);
+                boss.setYHeadRot(facing);
+                boss.setYBodyRot(facing);
             }
         }
 
@@ -1023,20 +1022,20 @@ final class TobRooms {
                 return;
             }
             long now = ActionManager.gameTick();
-            List<ServerPlayerEntity> players = players();
+            List<ServerPlayer> players = players();
             if (phase == 1) {
                 if (tick % 3 == 0 && !players.isEmpty()) {
-                    ServerPlayerEntity p = players.get(rnd().nextInt(players.size()));
-                    exhumeds.add(new Exhumed(p.getPos().add(rnd().nextInt(9) - 4, 0, rnd().nextInt(9) - 4), now + 8));
+                    ServerPlayer p = players.get(rnd().nextInt(players.size()));
+                    exhumeds.add(new Exhumed(p.position().add(rnd().nextInt(9) - 4, 0, rnd().nextInt(9) - 4), now + 8));
                 }
                 for (int i = exhumeds.size() - 1; i >= 0; i--) {
                     Exhumed e = exhumeds.get(i);
-                    world().spawnParticles(ParticleTypes.SNEEZE, e.pos().x, e.pos().y + 0.1, e.pos().z, 5, 0.3, 0.02, 0.3, 0);
+                    world().sendParticles(ParticleTypes.SNEEZE, e.pos().x, e.pos().y + 0.1, e.pos().z, 5, 0.3, 0.02, 0.3, 0);
                     if (now >= e.expires()) {
                         exhumeds.remove(i);
-                        ServerPlayerEntity absorber = null;
-                        for (ServerPlayerEntity p : players) {
-                            if (RaidEffects.horizontalDistSq(p.getPos(), e.pos()) < 1.2) {
+                        ServerPlayer absorber = null;
+                        for (ServerPlayer p : players) {
+                            if (RaidEffects.horizontalDistSq(p.position(), e.pos()) < 1.2) {
                                 absorber = p;
                                 break;
                             }
@@ -1057,7 +1056,7 @@ final class TobRooms {
                 if (raid.roomTicks() >= 30) {
                     phase = 2;
                     exhumeds.clear();
-                    xarpus.setAiDisabled(false);
+                    xarpus.setNoAi(false);
                     warn("Xarpus awakens!");
                 }
                 return;
@@ -1065,8 +1064,8 @@ final class TobRooms {
             if (phase == 2 && tick % 6 == 0 && !players.isEmpty()) {
                 // OSRS: the poison splashes a 3x3 area lightly and then stays on the floor for the rest of the fight,
                 // dealing 4-8 a tick, more for every exhumed Xarpus absorbed. // approx: 6 + 1 per exhumed, up to 16
-                ServerPlayerEntity p = players.get(rnd().nextInt(players.size()));
-                Vec3d at = p.getPos();
+                ServerPlayer p = players.get(rnd().nextInt(players.size()));
+                Vec3 at = p.position();
                 int pool = Math.min(16, 6 + absorbed);
                 RaidEffects.strike(world(), at, 1.6, 8, 3, xarpus, ParticleTypes.ITEM_SLIME);
                 RaidEffects.later(3, () -> Mechanics.addHazard(world(), at, pool, 3000, xarpus));
@@ -1092,14 +1091,14 @@ final class TobRooms {
         }
 
         @Override
-        public int bossIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        public int bossIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             if (phase != 3) {
                 return damage;
             }
             double dx = attacker.getX() - boss.getX();
             double dz = attacker.getZ() - boss.getZ();
             float angle = (float) Math.toDegrees(Math.atan2(-dx, dz));
-            if (Math.abs(MathHelper.wrapDegrees(angle - facing)) < 50) {
+            if (Math.abs(Mth.wrapDegrees(angle - facing)) < 50) {
                 // OSRS: attacking from the quadrant he stares at draws a poison retaliation of 50-75.
                 Msg.red(attacker, "Xarpus spits poison back at you!");
                 com.runecraft.content.systems.CombatAchievementService.flagNear(boss, com.runecraft.osrs.content.systems.CombatAchievements.FLAG_XARPUS_REFLECT);
@@ -1115,7 +1114,7 @@ final class TobRooms {
         private static final int[][] PILLARS = {{0, -7}, {0, 7}, {-8, -7}, {-8, 7}};
         private DataBossEntity verzik;
         private int form;
-        private final Map<UUID, Vec3d> lastPos = new HashMap<>();
+        private final Map<UUID, Vec3> lastPos = new HashMap<>();
         private boolean purpleSpawned;
 
         Verzik(RaidInstance raid, RoomDef def, int index) {
@@ -1126,15 +1125,15 @@ final class TobRooms {
         public void decorate() {
             BlockPos c = center();
             RaidBuilder.fill(world(), c.getX() + 12, c.getY(), c.getZ() - 4, c.getX() + 18, c.getY() + 1, c.getZ() + 4,
-                    Blocks.POLISHED_BLACKSTONE_BRICKS.getDefaultState());
+                    Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState());
             RaidBuilder.fill(world(), c.getX() + 12, c.getY() + 1, c.getZ() - 1, c.getX() + 13, c.getY() + 1, c.getZ() + 1,
-                    Blocks.RED_CARPET.getDefaultState());
-            pillars(Blocks.STONE_BRICKS.getDefaultState());
+                    Blocks.RED_CARPET.defaultBlockState());
+            pillars(Blocks.STONE_BRICKS.defaultBlockState());
         }
 
-        private void pillars(net.minecraft.block.BlockState state) {
+        private void pillars(net.minecraft.world.level.block.state.BlockState state) {
             for (int[] p : PILLARS) {
-                RaidBuilder.pillar(world(), center().add(p[0], 0, p[1]), 1, 5, state);
+                RaidBuilder.pillar(world(), center().offset(p[0], 0, p[1]), 1, 5, state);
             }
         }
 
@@ -1142,19 +1141,19 @@ final class TobRooms {
         private final int[] pillarBlasts = new int[PILLARS.length];
         private boolean pillarLost;
 
-        private Vec3d pillarCentre(int i) {
-            return Vec3d.ofBottomCenter(center().add(PILLARS[i][0], 1, PILLARS[i][1]));
+        private Vec3 pillarCentre(int i) {
+            return Vec3.atBottomCenterOf(center().offset(PILLARS[i][0], 1, PILLARS[i][1]));
         }
 
         /** The standing pillar sheltering a player from Verzik (the nearest one between them), or -1. */
-        private int shelter(ServerPlayerEntity p) {
+        private int shelter(ServerPlayer p) {
             int best = -1;
             double bestD = 3.5 * 3.5;
             for (int i = 0; i < PILLARS.length; i++) {
                 if (pillarBlasts[i] < 0) {
                     continue;
                 }
-                double d = RaidEffects.horizontalDistSq(p.getPos(), pillarCentre(i));
+                double d = RaidEffects.horizontalDistSq(p.position(), pillarCentre(i));
                 if (d < bestD) {
                     bestD = d;
                     best = i;
@@ -1169,17 +1168,17 @@ final class TobRooms {
          */
         private void collapse(int i) {
             pillarBlasts[i] = -1;
-            Vec3d c = pillarCentre(i);
-            RaidBuilder.pillar(world(), center().add(PILLARS[i][0], 0, PILLARS[i][1]), 1, 5, Blocks.AIR.getDefaultState());
-            world().spawnParticles(ParticleTypes.EXPLOSION, c.x, c.y + 1, c.z, 4, 1, 1, 1, 0);
+            Vec3 c = pillarCentre(i);
+            RaidBuilder.pillar(world(), center().offset(PILLARS[i][0], 0, PILLARS[i][1]), 1, 5, Blocks.AIR.defaultBlockState());
+            world().sendParticles(ParticleTypes.EXPLOSION, c.x, c.y + 1, c.z, 4, 1, 1, 1, 0);
             int max = com.runecraft.osrs.content.raids.RaidScaling.verzikPillarCollapse(raid.mode());
-            for (ServerPlayerEntity p : players()) {
-                if (RaidEffects.horizontalDistSq(p.getPos(), c) <= 2.6 * 2.6) {
+            for (ServerPlayer p : players()) {
+                if (RaidEffects.horizontalDistSq(p.position(), c) <= 2.6 * 2.6) {
                     RaidEffects.hit(verzik, p, rnd().nextInt(max + 1), null, true);
                     com.runecraft.content.systems.SysCombat.freeze(p, 3);
-                    Vec3d push = p.getPos().subtract(c).multiply(1, 0, 1).normalize().multiply(0.8);
-                    p.addVelocity(push.x, 0.3, push.z);
-                    p.velocityModified = true;
+                    Vec3 push = p.position().subtract(c).multiply(1, 0, 1).normalize().scale(0.8);
+                    p.push(push.x, 0.3, push.z);
+                    p.hurtMarked = true;
                     Msg.red(p, "The pillar collapses on top of you!");
                 }
             }
@@ -1191,16 +1190,16 @@ final class TobRooms {
             purpleSpawned = false;
             java.util.Arrays.fill(pillarBlasts, 0);
             pillarLost = false;
-            verzik = spawnBoss("verzik_vitur", at(15, 0).up());
+            verzik = spawnBoss("verzik_vitur", at(15, 0).above());
             if (verzik != null) {
                 // Phase 1 only attacks with the room's pillar-blocked blast (OSRS); the generic attack AI would hit through pillars.
-                verzik.setAiDisabled(true);
+                verzik.setNoAi(true);
             }
             anchor(verzik);
         }
 
         @Override
-        public int bossIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        public int bossIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             // Phase 1: without a Dawnbringer every hit is capped at 10 (as in OSRS).
             return form == 1 ? Math.min(damage, 10) : damage;
         }
@@ -1210,7 +1209,7 @@ final class TobRooms {
             if (verzik == null) {
                 return;
             }
-            Vec3d pos = verzik.getPos();
+            Vec3 pos = verzik.position();
             if (!alive(verzik)) {
                 if (form == 1) {
                     form = 2;
@@ -1220,19 +1219,19 @@ final class TobRooms {
                             collapse(i);
                         }
                     }
-                    pillars(Blocks.AIR.getDefaultState());
-                    verzik = spawnBoss("verzik_vitur_p2", BlockPos.ofFloored(pos).add(-3, 0, 0));
+                    pillars(Blocks.AIR.defaultBlockState());
+                    verzik = spawnBoss("verzik_vitur_p2", BlockPos.containing(pos).offset(-3, 0, 0));
                     warn("Verzik Vitur: Let's see how you handle this! The pillars crumble!");
                 } else if (form == 2) {
                     form = 3;
-                    verzik = spawnBoss("verzik_vitur_p3", BlockPos.ofFloored(pos));
+                    verzik = spawnBoss("verzik_vitur_p3", BlockPos.containing(pos));
                     warn("Verzik Vitur: Behold my true nature!");
                 } else {
                     complete();
                 }
                 return;
             }
-            List<ServerPlayerEntity> players = players();
+            List<ServerPlayer> players = players();
             switch (form) {
                 case 1 -> phaseOne(tick, players);
                 case 2 -> phaseTwo(tick, players);
@@ -1240,7 +1239,7 @@ final class TobRooms {
             }
         }
 
-        private void phaseOne(long tick, List<ServerPlayerEntity> players) {
+        private void phaseOne(long tick, List<ServerPlayer> players) {
             if (pillarLost) {
                 com.runecraft.content.systems.CombatAchievementService.flagNear(verzik, CombatAchievements.FLAG_VERZIK_PILLAR_LOST);
             }
@@ -1251,13 +1250,13 @@ final class TobRooms {
                         return;
                     }
                     Set<Integer> struck = new HashSet<>();
-                    for (ServerPlayerEntity p : players()) {
+                    for (ServerPlayer p : players()) {
                         if (canSee(verzik, p)) {
-                            Vec3d a = verzik.getEyePos();
-                            Vec3d b = p.getEyePos();
+                            Vec3 a = verzik.getEyePosition();
+                            Vec3 b = p.getEyePosition();
                             for (int i = 0; i <= 10; i++) {
-                                Vec3d v = a.lerp(b, i / 10.0);
-                                world().spawnParticles(ParticleTypes.ELECTRIC_SPARK, v.x, v.y, v.z, 2, 0.1, 0.1, 0.1, 0);
+                                Vec3 v = a.lerp(b, i / 10.0);
+                                world().sendParticles(ParticleTypes.ELECTRIC_SPARK, v.x, v.y, v.z, 2, 0.1, 0.1, 0.1, 0);
                             }
                             // OSRS: an unshielded P1 blast hits up to 137 in normal mode.
                             RaidEffects.hit(verzik, p, rnd().nextInt(138), null, true);
@@ -1281,38 +1280,38 @@ final class TobRooms {
             }
         }
 
-        private void phaseTwo(long tick, List<ServerPlayerEntity> players) {
+        private void phaseTwo(long tick, List<ServerPlayer> players) {
             autoAttack(verzik, tick, 4);
             if (tick % 20 == 0) {
                 say("Verzik summons lightning!");
-                for (ServerPlayerEntity p : players) {
-                    RaidEffects.strike(world(), p.getPos(), 1.4, 30, 3, verzik, ParticleTypes.ELECTRIC_SPARK);
+                for (ServerPlayer p : players) {
+                    RaidEffects.strike(world(), p.position(), 1.4, 30, 3, verzik, ParticleTypes.ELECTRIC_SPARK);
                 }
             }
             if (tick % 30 == 15) {
                 for (int i = 0; i < 2; i++) {
-                    spawnMob("nylocas_matomenos", BlockPos.ofFloored(verzik.getPos()).add(rnd().nextInt(5) - 2, 0, rnd().nextInt(5) - 2),
+                    spawnMob("nylocas_matomenos", BlockPos.containing(verzik.position()).offset(rnd().nextInt(5) - 2, 0, rnd().nextInt(5) - 2),
                             false);
                 }
                 say("Verzik spawns explosive Nylocas!");
             }
             for (LivingEntity crab : living("nylocas_matomenos")) {
-                ServerPlayerEntity nearest = null;
+                ServerPlayer nearest = null;
                 double best = Double.MAX_VALUE;
-                for (ServerPlayerEntity p : players) {
-                    double d = p.squaredDistanceTo(crab);
+                for (ServerPlayer p : players) {
+                    double d = p.distanceToSqr(crab);
                     if (d < best) {
                         best = d;
                         nearest = p;
                     }
                 }
                 if (nearest != null) {
-                    walk(crab, nearest.getPos());
+                    walk(crab, nearest.position());
                 }
-                if (best < 1.8 * 1.8 || crab.age > 20 * ActionManager.MC_TICKS_PER_GAME_TICK) {
-                    world().spawnParticles(ParticleTypes.EXPLOSION, crab.getX(), crab.getY() + 0.5, crab.getZ(), 2, 0.4, 0.4, 0.4, 0);
-                    for (ServerPlayerEntity p : players) {
-                        if (p.squaredDistanceTo(crab) < 2.5 * 2.5) {
+                if (best < 1.8 * 1.8 || crab.tickCount > 20 * ActionManager.MC_TICKS_PER_GAME_TICK) {
+                    world().sendParticles(ParticleTypes.EXPLOSION, crab.getX(), crab.getY() + 0.5, crab.getZ(), 2, 0.4, 0.4, 0.4, 0);
+                    for (ServerPlayer p : players) {
+                        if (p.distanceToSqr(crab) < 2.5 * 2.5) {
                             RaidEffects.hit(verzik, p, 10 + rnd().nextInt(16), null, true);
                         }
                     }
@@ -1327,7 +1326,7 @@ final class TobRooms {
             healers("nylocas_athanatos", verzik, 0.75, "The Nylocas Athanatos heals Verzik!");
         }
 
-        private void phaseThree(long tick, List<ServerPlayerEntity> players) {
+        private void phaseThree(long tick, List<ServerPlayer> players) {
             if (players.isEmpty()) {
                 return;
             }
@@ -1338,32 +1337,32 @@ final class TobRooms {
                 List<BlockPos> webs = new ArrayList<>();
                 int count = 6 + players.size() * 2;
                 for (int i = 0; i < (hard() ? count * 3 / 2 : count); i++) {
-                    ServerPlayerEntity p = players.get(rnd().nextInt(players.size()));
-                    BlockPos w = p.getBlockPos().add(rnd().nextInt(7) - 3, 0, rnd().nextInt(7) - 3);
-                    if (world().getBlockState(w).isAir() && inside(Vec3d.ofBottomCenter(w))) {
-                        RaidBuilder.set(world(), w, Blocks.COBWEB.getDefaultState());
+                    ServerPlayer p = players.get(rnd().nextInt(players.size()));
+                    BlockPos w = p.blockPosition().offset(rnd().nextInt(7) - 3, 0, rnd().nextInt(7) - 3);
+                    if (world().getBlockState(w).isAir() && inside(Vec3.atBottomCenterOf(w))) {
+                        RaidBuilder.set(world(), w, Blocks.COBWEB.defaultBlockState());
                         webs.add(w);
                     }
                 }
                 RaidEffects.later(15, () -> {
                     for (BlockPos w : webs) {
-                        if (world().getBlockState(w).isOf(Blocks.COBWEB)) {
-                            RaidBuilder.set(world(), w, Blocks.AIR.getDefaultState());
+                        if (world().getBlockState(w).is(Blocks.COBWEB)) {
+                            RaidBuilder.set(world(), w, Blocks.AIR.defaultBlockState());
                         }
                     }
                 });
             }
             if (t % 40 == 25) {
                 warn("Verzik spits yellow pools! Stand in one to lessen the damage!");
-                List<Vec3d> pools = new ArrayList<>();
-                for (ServerPlayerEntity p : players) {
-                    pools.add(p.getPos().add(rnd().nextInt(7) - 3, 0, rnd().nextInt(7) - 3));
+                List<Vec3> pools = new ArrayList<>();
+                for (ServerPlayer p : players) {
+                    pools.add(p.position().add(rnd().nextInt(7) - 3, 0, rnd().nextInt(7) - 3));
                 }
                 for (int burst = 0; burst < 3; burst++) {
                     for (int s = 0; s < 2; s++) {
                         RaidEffects.later(1 + burst * 2 + s, () -> {
-                            for (Vec3d v : pools) {
-                                world().spawnParticles(ParticleTypes.WAX_ON, v.x, v.y + 0.1, v.z, 8, 0.4, 0.05, 0.4, 0);
+                            for (Vec3 v : pools) {
+                                world().sendParticles(ParticleTypes.WAX_ON, v.x, v.y + 0.1, v.z, 8, 0.4, 0.05, 0.4, 0);
                             }
                         });
                     }
@@ -1371,10 +1370,10 @@ final class TobRooms {
                         if (!alive(verzik)) {
                             return;
                         }
-                        for (ServerPlayerEntity p : players()) {
+                        for (ServerPlayer p : players()) {
                             boolean safe = false;
-                            for (Vec3d v : pools) {
-                                if (RaidEffects.horizontalDistSq(p.getPos(), v) < 1.4) {
+                            for (Vec3 v : pools) {
+                                if (RaidEffects.horizontalDistSq(p.position(), v) < 1.4) {
                                     safe = true;
                                     break;
                                 }
@@ -1385,20 +1384,20 @@ final class TobRooms {
                 }
             }
             if (t % 25 == 5) {
-                ServerPlayerEntity target = players.get(rnd().nextInt(players.size()));
+                ServerPlayer target = players.get(rnd().nextInt(players.size()));
                 warn("Verzik hurls a green ball at " + target.getName().getString() + "!");
                 RaidEffects.later(4, () -> {
                     if (!target.isAlive() || !alive(verzik)) {
                         return;
                     }
-                    ServerPlayerEntity buddy = null;
-                    for (ServerPlayerEntity p : players()) {
-                        if (p != target && p.squaredDistanceTo(target) < 36) {
+                    ServerPlayer buddy = null;
+                    for (ServerPlayer p : players()) {
+                        if (p != target && p.distanceToSqr(target) < 36) {
                             buddy = p;
                             break;
                         }
                     }
-                    world().spawnParticles(ParticleTypes.HAPPY_VILLAGER, target.getX(), target.getY() + 1, target.getZ(), 20, 0.5, 0.5, 0.5, 0);
+                    world().sendParticles(ParticleTypes.HAPPY_VILLAGER, target.getX(), target.getY() + 1, target.getZ(), 20, 0.5, 0.5, 0.5, 0);
                     if (buddy != null) {
                         RaidEffects.hit(verzik, target, 25, AttackType.RANGED, false);
                         RaidEffects.hit(verzik, buddy, 25, AttackType.RANGED, false);
@@ -1408,8 +1407,8 @@ final class TobRooms {
                 });
             }
             if (raid.healthFraction(verzik) < 0.2 && tick % 2 == 0) {
-                for (ServerPlayerEntity p : players) {
-                    Vec3d last = lastPos.put(p.getUuid(), p.getPos());
+                for (ServerPlayer p : players) {
+                    Vec3 last = lastPos.put(p.getUUID(), p.position());
                     if (last != null) {
                         RaidEffects.strike(world(), last, 1.2, 15, 2, verzik, ParticleTypes.CLOUD);
                     }

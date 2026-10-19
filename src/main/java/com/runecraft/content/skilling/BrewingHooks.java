@@ -9,9 +9,9 @@ import com.runecraft.osrs.content.skilling.BrewingData;
 import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Brewing's fermenting vats: each player has their own vat at each brewery (kept in the skilling world
@@ -38,12 +38,12 @@ final class BrewingHooks {
         GameEvents.onMake(BrewingHooks::started);
     }
 
-    private static NbtCompound vats(ServerPlayerEntity player) {
+    private static CompoundTag vats(ServerPlayer player) {
         return SkillingState.get(player.getServer()).section("vats");
     }
 
-    private static String key(ServerPlayerEntity player, BlockPos pos) {
-        return player.getUuidAsString() + "|" + SkillingUtil.key(player.getWorld(), pos);
+    private static String key(ServerPlayer player, BlockPos pos) {
+        return player.getStringUUID() + "|" + SkillingUtil.key(player.level(), pos);
     }
 
     private static long cycleTicks() {
@@ -51,7 +51,7 @@ final class BrewingHooks {
     }
 
     /** The yeast went in: the brew starts fermenting in this player's vat. */
-    private static void started(ServerPlayerEntity player, Recipe recipe) {
+    private static void started(ServerPlayer player, Recipe recipe) {
         BrewingData.Brew brew = BrewingData.brewByRecipe(recipe.id());
         BlockPos station = Players.data(player).menuStation;
         if (brew == null || station == null) {
@@ -62,23 +62,23 @@ final class BrewingHooks {
         if (stuff) {
             Inv.remove(player, BrewingData.THE_STUFF, 1);
         }
-        NbtCompound v = new NbtCompound();
+        CompoundTag v = new CompoundTag();
         v.putString("brew", brew.id());
-        v.putLong("start", player.getWorld().getTime());
+        v.putLong("start", player.level().getGameTime());
         v.putInt("outcome", BrewingData.outcome(stuff, player.getRandom().nextDouble()).ordinal());
         vats(player).put(key(player, station), v);
         Msg.game(player, "You add the yeast" + (stuff ? " and some of \"the stuff\"" : "") + ". The " + SkillingUtil.lower(brew.name())
                 + " will take about a day to ferment.");
     }
 
-    private static void vat(ServerPlayerEntity player, BlockPos pos) {
-        NbtCompound all = vats(player);
+    private static void vat(ServerPlayer player, BlockPos pos) {
+        CompoundTag all = vats(player);
         String key = key(player, pos);
         if (!all.contains(key)) {
             MenuService.open(player, MenuType.BREWING, pos, false);
             return;
         }
-        NbtCompound v = all.getCompound(key);
+        CompoundTag v = all.getCompound(key);
         BrewingData.Brew brew = null;
         for (BrewingData.Brew b : BrewingData.BREWS) {
             if (b.id().equals(v.getString("brew"))) {
@@ -89,7 +89,7 @@ final class BrewingHooks {
             all.remove(key);
             return;
         }
-        long left = BrewingData.readyAt(v.getLong("start"), cycleTicks()) - player.getWorld().getTime();
+        long left = BrewingData.readyAt(v.getLong("start"), cycleTicks()) - player.level().getGameTime();
         if (left > 0) {
             long minutes = (left + TICKS_PER_MINUTE - 1) / TICKS_PER_MINUTE;
             Msg.game(player, "The " + SkillingUtil.lower(brew.name()) + " is still fermenting. It should be ready in about "

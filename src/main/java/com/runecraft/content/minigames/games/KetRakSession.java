@@ -9,13 +9,6 @@ import com.runecraft.osrs.content.minigames.TzHaarWaves;
 import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -23,6 +16,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * TzHaar-Ket-Rak's Challenges (see {@link KetRakChallenges}): challenge N spawns N JalTok-Jads at once (the Inferno's Jad with
@@ -42,7 +41,7 @@ public class KetRakSession extends TzHaarSession {
     private int respawnIn = -1;
     private final Map<Integer, Set<String>> stylesPerJad = new LinkedHashMap<>();
 
-    public KetRakSession(int id, int slot, ServerWorld world, String variant) {
+    public KetRakSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.TZHAAR_KET_RAK, id, slot, world, variant);
         this.challenge = KetRakChallenges.challengeOf(variant);
         this.nextWaveIn = KetRakChallenges.START_DELAY;
@@ -67,7 +66,7 @@ public class KetRakSession extends TzHaarSession {
     }
 
     @Override
-    protected MobEntity spawnWaveCreature(String creature, BlockPos at) {
+    protected Mob spawnWaveCreature(String creature, BlockPos at) {
         // One Jad per spawn point, in order, so they never stack on one tile.
         int index = living(TzHaarWaves.JALTOK_JAD).size();
         BlockPos[] points = spawnPoints();
@@ -81,7 +80,7 @@ public class KetRakSession extends TzHaarSession {
 
     @Override
     protected void start() {
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             Msg.game(p, "TzHaar-Ket-Rak: " + KetRakChallenges.name(challenge) + " begins. "
                     + (challenge == KetRakChallenges.FINAL ? "They will keep coming, JalYt." : "Slay " + KetRakChallenges.jads(challenge)
                     + " JalTok-Jad" + (challenge == 1 ? "" : "s") + "."));
@@ -95,14 +94,14 @@ public class KetRakSession extends TzHaarSession {
             jadsAt = ticks;
         }
         checkJadHealers(TzHaarWaves.JALTOK_JAD, KetRakChallenges.HEALERS_PER_JAD);
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             if (emptyInventory && !inventoryEmpty(p)) {
                 emptyInventory = false;
             }
         }
         if (respawnIn > 0 && --respawnIn == 0) {
             BlockPos[] points = spawnPoints();
-            MobEntity jad = spawnWaveCreature(TzHaarWaves.JALTOK_JAD, points[random.nextInt(points.length)]);
+            Mob jad = spawnWaveCreature(TzHaarWaves.JALTOK_JAD, points[random.nextInt(points.length)]);
             if (jad != null) {
                 aggro(jad);
             }
@@ -111,9 +110,9 @@ public class KetRakSession extends TzHaarSession {
     }
 
     /** Nothing in the inventory but the wielded weapon (equipped items don't count). */
-    private static boolean inventoryEmpty(ServerPlayerEntity p) {
-        List<ItemStack> main = p.getInventory().main;
-        int held = p.getInventory().selectedSlot;
+    private static boolean inventoryEmpty(ServerPlayer p) {
+        List<ItemStack> main = p.getInventory().items;
+        int held = p.getInventory().selected;
         for (int i = 0; i < main.size(); i++) {
             if (i != held && !main.get(i).isEmpty()) {
                 return false;
@@ -123,7 +122,7 @@ public class KetRakSession extends TzHaarSession {
     }
 
     @Override
-    protected double damageMultiplier(ServerPlayerEntity player, LivingEntity target, AttackType type) {
+    protected double damageMultiplier(ServerPlayer player, LivingEntity target, AttackType type) {
         if (MinigameManager.creatureId(target).equals(TzHaarWaves.JALTOK_JAD)) {
             stylesPerJad.computeIfAbsent(target.getId(), k -> new HashSet<>()).add(KetRakChallenges.styleClass(type.name()));
         }
@@ -131,7 +130,7 @@ public class KetRakSession extends TzHaarSession {
     }
 
     @Override
-    protected void onKill(ServerPlayerEntity player, LivingEntity entity, String creatureId) {
+    protected void onKill(ServerPlayer player, LivingEntity entity, String creatureId) {
         if (!creatureId.equals(TzHaarWaves.JALTOK_JAD)) {
             return;
         }
@@ -154,14 +153,14 @@ public class KetRakSession extends TzHaarSession {
     }
 
     @Override
-    protected void onDeath(ServerPlayerEntity player) {
+    protected void onDeath(ServerPlayer player) {
         MinigameData data = MinigameData.of(player);
-        data.incrementStat(player.getUuid(), KetRakChallenges.DEATHS_PREFIX + challenge);
+        data.incrementStat(player.getUUID(), KetRakChallenges.DEATHS_PREFIX + challenge);
         if (challenge == KetRakChallenges.FINAL) {
-            int record = data.stat(player.getUuid(), KetRakChallenges.FINAL_RECORD);
+            int record = data.stat(player.getUUID(), KetRakChallenges.FINAL_RECORD);
             Msg.game(player, "You slew " + jadsKilled + " JalTok-Jad" + (jadsKilled == 1 ? "" : "s") + " in the final challenge.");
             if (jadsKilled > record) {
-                data.setStat(player.getUuid(), KetRakChallenges.FINAL_RECORD, jadsKilled);
+                data.setStat(player.getUUID(), KetRakChallenges.FINAL_RECORD, jadsKilled);
                 Msg.game(player, "That's a new personal record!");
             }
         }
@@ -169,10 +168,10 @@ public class KetRakSession extends TzHaarSession {
     }
 
     @Override
-    protected void onLeave(ServerPlayerEntity player) {
+    protected void onLeave(ServerPlayer player) {
         if (!completed) {
             // Dying or leaving fails the challenge: "It Wasn't a Fluke" needs the fifth and sixth back to back.
-            MinigameData.of(player).setStat(player.getUuid(), KetRakChallenges.LAST_RESULT, -challenge);
+            MinigameData.of(player).setStat(player.getUUID(), KetRakChallenges.LAST_RESULT, -challenge);
         }
     }
 
@@ -181,9 +180,9 @@ public class KetRakSession extends TzHaarSession {
         if (!success || !completed) {
             return;
         }
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             MinigameData data = MinigameData.of(p);
-            java.util.UUID u = p.getUuid();
+            java.util.UUID u = p.getUUID();
             fluke = KetRakChallenges.fluke(data.stat(u, KetRakChallenges.LAST_RESULT), challenge);
             data.setStat(u, KetRakChallenges.LAST_RESULT, challenge);
             int tokkul = KetRakChallenges.tokkul(challenge);
@@ -216,7 +215,7 @@ public class KetRakSession extends TzHaarSession {
     }
 
     @Override
-    public Set<String> caFlags(ServerPlayerEntity player) {
+    public Set<String> caFlags(ServerPlayer player) {
         Set<String> flags = new HashSet<>();
         if (!completed) {
             return flags;
@@ -234,7 +233,7 @@ public class KetRakSession extends TzHaarSession {
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
+    protected List<String> hud(ServerPlayer player) {
         List<String> lines = new ArrayList<>();
         lines.add(KetRakChallenges.name(challenge));
         if (challenge == KetRakChallenges.FINAL) {

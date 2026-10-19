@@ -24,20 +24,19 @@ import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.damage.DamageType;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.projectile.PersistentProjectileEntity;
-import net.minecraft.entity.projectile.ProjectileEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.server.network.ServerPlayerEntity;
-
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageType;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.item.ItemStack;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -47,7 +46,7 @@ import java.util.WeakHashMap;
  * is kept but still awards OSRS combat experience.
  */
 public final class CombatHandler {
-    public static final RegistryKey<DamageType> OSRS_HIT = RegistryKey.of(RegistryKeys.DAMAGE_TYPE, RuneCraft.id("osrs_hit"));
+    public static final ResourceKey<DamageType> OSRS_HIT = ResourceKey.create(Registries.DAMAGE_TYPE, RuneCraft.id("osrs_hit"));
 
     private static boolean applying;
     private static final Map<LivingEntity, Long> NPC_LAST_ATTACK = new WeakHashMap<>();
@@ -69,25 +68,25 @@ public final class CombatHandler {
         if (applying) {
             return true;
         }
-        Entity attacker = source.getAttacker();
-        Entity direct = source.getSource();
+        Entity attacker = source.getEntity();
+        Entity direct = source.getDirectEntity();
         boolean gielinor = Gielinor.is(target);
 
-        if (attacker instanceof ServerPlayerEntity player && target != player) {
+        if (attacker instanceof ServerPlayer player && target != player) {
             if (!gielinor) {
                 overworldXp(player, target, amount, direct);
                 return true;
             }
-            if (target instanceof ServerPlayerEntity other && !canAttackPlayer(player, other)) {
+            if (target instanceof ServerPlayer other && !canAttackPlayer(player, other)) {
                 return false;
             }
-            if ((direct instanceof PersistentProjectileEntity || direct == player) && !singleWayAllows(player, target)) {
-                if (direct instanceof PersistentProjectileEntity arrow) {
+            if ((direct instanceof AbstractArrow || direct == player) && !singleWayAllows(player, target)) {
+                if (direct instanceof AbstractArrow arrow) {
                     arrow.discard();
                 }
                 return false;
             }
-            if (direct instanceof PersistentProjectileEntity arrow) {
+            if (direct instanceof AbstractArrow arrow) {
                 playerRanged(player, target, arrow);
                 return false;
             }
@@ -97,18 +96,18 @@ public final class CombatHandler {
             }
             return true;
         }
-        if (target instanceof ServerPlayerEntity player && attacker instanceof LivingEntity mob && !(attacker instanceof PlayerEntity)) {
+        if (target instanceof ServerPlayer player && attacker instanceof LivingEntity mob && !(attacker instanceof Player)) {
             if (gielinor || mob instanceof OsrsMonsterEntity) {
                 if (!CombatZones.npcMayAttack(mob, player)) {
-                    if (direct instanceof ProjectileEntity projectile) {
+                    if (direct instanceof Projectile projectile) {
                         projectile.discard();
                     }
                     return false;
                 }
                 MonsterStats stats = MonsterStats.of(mob);
-                AttackType type = direct instanceof ProjectileEntity ? AttackType.RANGED
+                AttackType type = direct instanceof Projectile ? AttackType.RANGED
                         : stats.style().isMelee() ? stats.style() : AttackType.CRUSH;
-                if (direct instanceof ProjectileEntity projectile) {
+                if (direct instanceof Projectile projectile) {
                     projectile.discard();
                 }
                 npcAttack(mob, player, type);
@@ -120,7 +119,7 @@ public final class CombatHandler {
 
     // ---------------- Players attacking ----------------
 
-    private static void playerMelee(ServerPlayerEntity player, LivingEntity target) {
+    private static void playerMelee(ServerPlayer player, LivingEntity target) {
         PlayerData data = Players.data(player);
         SkillSet skills = data.skills();
         int speed = Equipment.weaponSpeed(player, skills);
@@ -135,7 +134,7 @@ public final class CombatHandler {
             return;
         }
         data.lastAttackTick = now;
-        ItemStack held = player.getMainHandStack();
+        ItemStack held = player.getMainHandItem();
         com.runecraft.osrs.ItemDef heldDef = com.runecraft.registry.ModItems.def(held);
         if (heldDef != null && heldDef.equipment() != null) {
             String unmet = heldDef.equipment().unmetRequirement(skills);
@@ -164,12 +163,12 @@ public final class CombatHandler {
         awardXp(player, style, dealt, false);
     }
 
-    private static void playerRanged(ServerPlayerEntity player, LivingEntity target, PersistentProjectileEntity arrow) {
+    private static void playerRanged(ServerPlayer player, LivingEntity target, AbstractArrow arrow) {
         PlayerData data = Players.data(player);
         SkillSet skills = data.skills();
         int rangedStrength = 0;
         String arrowItem = null;
-        for (String tag : arrow.getCommandTags()) {
+        for (String tag : arrow.getTags()) {
             if (tag.startsWith(OsrsEquipmentItems.RANGED_STRENGTH_TAG)) {
                 rangedStrength = parse(tag.substring(OsrsEquipmentItems.RANGED_STRENGTH_TAG.length()));
             } else if (tag.startsWith("runecraft_arrow_")) {
@@ -205,7 +204,7 @@ public final class CombatHandler {
         CombatHooks.afterHit(player, target, AttackType.RANGED, dealt);
         awardXp(player, style, dealt, false);
         if (arrowItem != null && player.getRandom().nextFloat() < 0.8f) {
-            target.dropStack(Inv.stack(arrowItem, 1));
+            target.spawnAtLocation(Inv.stack(arrowItem, 1));
         }
     }
 
@@ -219,7 +218,7 @@ public final class CombatHandler {
 
     /** Defence roll of any target against an attack style (players: NpcHitCalc through HitCalcBridge). */
     public static long defenceRoll(LivingEntity target, AttackType type) {
-        if (target instanceof ServerPlayerEntity defender) {
+        if (target instanceof ServerPlayer defender) {
             return HitCalcBridge.playerDefenceRoll(defender, type);
         }
         MonsterStats stats = MonsterStats.of(target);
@@ -231,13 +230,13 @@ public final class CombatHandler {
      * PvP rules of a PvP minigame both players are in (Last Man Standing, Castle Wars, the Fight Pit): true or false decides,
      * null falls back to the Wilderness rule. Set by the minigames module.
      */
-    public static java.util.function.BiFunction<ServerPlayerEntity, ServerPlayerEntity, Boolean> pvpOverride = (attacker, target) -> null;
+    public static java.util.function.BiFunction<ServerPlayer, ServerPlayer, Boolean> pvpOverride = (attacker, target) -> null;
 
     /**
      * PvP is only allowed in the Wilderness, between players whose combat levels differ by no more than the
      * Wilderness level.
      */
-    public static boolean canAttackPlayer(ServerPlayerEntity attacker, ServerPlayerEntity target) {
+    public static boolean canAttackPlayer(ServerPlayer attacker, ServerPlayer target) {
         Boolean override = pvpOverride.apply(attacker, target);
         if (override != null) {
             return override;
@@ -250,7 +249,7 @@ public final class CombatHandler {
      * Single-way combat check for a player starting an attack; tells the player why not ("Someone else is fighting
      * that." / "I'm already under attack.").
      */
-    public static boolean singleWayAllows(ServerPlayerEntity player, LivingEntity target) {
+    public static boolean singleWayAllows(ServerPlayer player, LivingEntity target) {
         com.runecraft.osrs.SingleCombat.Verdict v = CombatZones.check(player, target);
         if (v != com.runecraft.osrs.SingleCombat.Verdict.OK) {
             Msg.game(player, v.message);
@@ -266,7 +265,7 @@ public final class CombatHandler {
 
     /** Protection prayers only block 40% of damage dealt by other players. */
     public static int protectionAgainstPlayer(LivingEntity target, AttackType type, int damage) {
-        if (damage > 0 && target instanceof ServerPlayerEntity defender && isProtected(Players.data(defender), type)) {
+        if (damage > 0 && target instanceof ServerPlayer defender && isProtected(Players.data(defender), type)) {
             return com.runecraft.osrs.CombatBonuses.protectedFromPlayer(damage);
         }
         return damage;
@@ -275,7 +274,7 @@ public final class CombatHandler {
     // ---------------- Monsters attacking ----------------
 
     /** Performs one OSRS attack from a monster against a player (respecting attack speed). */
-    public static void npcAttack(LivingEntity mob, ServerPlayerEntity player, AttackType type) {
+    public static void npcAttack(LivingEntity mob, ServerPlayer player, AttackType type) {
         MonsterStats stats = MonsterStats.of(mob);
         if (!CombatZones.npcMayAttack(mob, player)) {
             return;
@@ -321,24 +320,24 @@ public final class CombatHandler {
     }
 
     /** Combat hook passthroughs for MagicService and module code. */
-    public static double hookAccuracy(ServerPlayerEntity p, LivingEntity t, AttackType type) {
+    public static double hookAccuracy(ServerPlayer p, LivingEntity t, AttackType type) {
         return CombatHooks.accuracy(p, t, type);
     }
 
-    public static double hookMaxHit(ServerPlayerEntity p, LivingEntity t, AttackType type) {
+    public static double hookMaxHit(ServerPlayer p, LivingEntity t, AttackType type) {
         return CombatHooks.maxHit(p, t, type);
     }
 
-    public static int hookAfterRoll(ServerPlayerEntity p, LivingEntity t, AttackType type, int damage) {
+    public static int hookAfterRoll(ServerPlayer p, LivingEntity t, AttackType type, int damage) {
         return CombatHooks.afterRoll(p, t, type, damage);
     }
 
     /** {@link #hookAfterRoll} for a roll whose max hit is known (targets that always take the max hit get it). */
-    public static int hookAfterRoll(ServerPlayerEntity p, LivingEntity t, AttackType type, int damage, int maxHit) {
+    public static int hookAfterRoll(ServerPlayer p, LivingEntity t, AttackType type, int damage, int maxHit) {
         return CombatHooks.afterRoll(p, t, type, damage, maxHit);
     }
 
-    public static void hookAfterHit(ServerPlayerEntity p, LivingEntity t, AttackType type, int dealt) {
+    public static void hookAfterHit(ServerPlayer p, LivingEntity t, AttackType type, int dealt) {
         CombatHooks.afterHit(p, t, type, dealt);
     }
 
@@ -353,19 +352,19 @@ public final class CombatHandler {
     }
 
     private static DamageSource source(LivingEntity attacker, LivingEntity worldHolder) {
-        RegistryEntry<DamageType> type = worldHolder.getWorld().getRegistryManager().get(RegistryKeys.DAMAGE_TYPE).entryOf(OSRS_HIT);
+        Holder<DamageType> type = worldHolder.level().registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(OSRS_HIT);
         return attacker == null ? new DamageSource(type) : new DamageSource(type, attacker);
     }
 
     /** Applies OSRS damage with a hitsplat; returns the damage actually dealt (capped at remaining HP). */
     public static int applyDamage(LivingEntity attacker, LivingEntity target, int damage) {
-        if (attacker != null && !(target instanceof ServerPlayerEntity) && target.isInvulnerable()) {
+        if (attacker != null && !(target instanceof ServerPlayer) && target.isInvulnerable()) {
             // Scenery creatures (GotR's abyssal creatures, Sorceress's Garden elementals) can't be hurt by any path (melee,
             // ranged, magic, cannon, specials), so they never give combat XP.
             ServerNetworking.hitsplat(target, 0, Net.SPLAT_MISS);
             return 0;
         }
-        if (attacker instanceof ServerPlayerEntity gated && !(target instanceof ServerPlayerEntity)) {
+        if (attacker instanceof ServerPlayer gated && !(target instanceof ServerPlayer)) {
             String denied = CombatHooks.deniedDamage(gated, target);
             if (denied != null) {
                 if (damage > 0) {
@@ -375,24 +374,24 @@ public final class CombatHandler {
                 return 0;
             }
         }
-        if (target instanceof MobEntity mob && attacker != null && mob.getTarget() == null) {
+        if (target instanceof Mob mob && attacker != null && mob.getTarget() == null) {
             mob.setTarget(attacker);
         }
         if (attacker != null) {
-            target.setAttacker(attacker);
+            target.setLastHurtByMob(attacker);
             CombatZones.onHit(attacker, target);
-            if (target instanceof ServerPlayerEntity hurt && attacker != target
+            if (target instanceof ServerPlayer hurt && attacker != target
                     && !(attacker instanceof com.runecraft.entity.QuestNpcEntity)) {
                 AutoRetaliate.onHurt(hurt, attacker);
             }
-            if (attacker instanceof ServerPlayerEntity hitter) {
+            if (attacker instanceof ServerPlayer hitter) {
                 AutoRetaliate.onPlayerAttack(hitter, target);
-                if (target instanceof ServerPlayerEntity victim) {
+                if (target instanceof ServerPlayer victim) {
                     SkullService.onPlayerAttack(hitter, victim);
                 }
             }
         }
-        if (target instanceof ServerPlayerEntity damaged) {
+        if (target instanceof ServerPlayer damaged) {
             if (attacker != null && attacker != damaged && damage > 0) {
                 damage = DefenceEffects.reduce(damaged, attacker, CombatHooks.namedStyle(), CombatHooks.typelessNamed(), damage);
                 damage = CombatHooks.incoming(damaged, attacker, damage);
@@ -408,8 +407,8 @@ public final class CombatHandler {
         int dealt = Math.min(damage, (int) Math.ceil(target.getHealth()));
         applying = true;
         try {
-            target.timeUntilRegen = 0;
-            target.damage(source(attacker, target), damage);
+            target.invulnerableTime = 0;
+            target.hurt(source(attacker, target), damage);
         } finally {
             applying = false;
         }
@@ -420,7 +419,7 @@ public final class CombatHandler {
     }
 
     /** OSRS combat XP: 4 per damage to the trained skill (1.33 each when controlled) plus 1.33 Hitpoints. */
-    public static void awardXp(ServerPlayerEntity player, CombatStyle style, int damage, boolean magic) {
+    public static void awardXp(ServerPlayer player, CombatStyle style, int damage, boolean magic) {
         if (damage <= 0) {
             return;
         }
@@ -442,14 +441,14 @@ public final class CombatHandler {
         XpService.addTenths(player, Skill.HITPOINTS, CombatFormulas.hitpointsXpTenths(damage));
     }
 
-    private static void overworldXp(ServerPlayerEntity player, LivingEntity target, float amount, Entity direct) {
+    private static void overworldXp(ServerPlayer player, LivingEntity target, float amount, Entity direct) {
         int damage = (int) Math.ceil(Math.min(amount, target.getHealth()));
         if (damage <= 0) {
             return;
         }
         PlayerData data = Players.data(player);
-        CombatStyle style = direct instanceof PersistentProjectileEntity ? data.style().forRanged() : data.style().forMelee();
-        if (direct == player || direct instanceof PersistentProjectileEntity) {
+        CombatStyle style = direct instanceof AbstractArrow ? data.style().forRanged() : data.style().forMelee();
+        if (direct == player || direct instanceof AbstractArrow) {
             awardXp(player, style, damage, false);
         }
     }
@@ -457,12 +456,12 @@ public final class CombatHandler {
     // ---------------- Deaths ----------------
 
     private static void afterDeath(LivingEntity entity, DamageSource source) {
-        Entity attacker = source.getAttacker();
-        if (entity instanceof ServerPlayerEntity) {
+        Entity attacker = source.getEntity();
+        if (entity instanceof ServerPlayer) {
             return;
         }
         boolean osrsWorld = Gielinor.is(entity) || entity instanceof OsrsMonsterEntity;
-        if (!osrsWorld || !(attacker instanceof ServerPlayerEntity player)) {
+        if (!osrsWorld || !(attacker instanceof ServerPlayer player)) {
             return;
         }
         MonsterStats stats = MonsterStats.of(entity);
@@ -473,7 +472,7 @@ public final class CombatHandler {
                 : stats.profile() instanceof com.runecraft.osrs.content.MonsterDef md ? md.drops : null;
         if (table != null) {
             for (Drops.Rolled r : Drops.roll(table, entity.getRandom(), false)) {
-                entity.dropStack(Drops.withDoses(CombatHooks.dropStack(player, entity, r.item(), r.count()), r.doses()));
+                entity.spawnAtLocation(Drops.withDoses(CombatHooks.dropStack(player, entity, r.item(), r.count()), r.doses()));
                 CollectionLog.obtain(player, r.item());
             }
         }

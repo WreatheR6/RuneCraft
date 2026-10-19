@@ -10,21 +10,20 @@ import com.runecraft.osrs.content.ContentRegistry;
 import com.runecraft.osrs.content.raids.RoomDef;
 import com.runecraft.registry.ModEntities;
 import com.runecraft.util.Msg;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.RaycastContext;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Behaviour of one raid room. The default is a combat room: spawn the room's bosses when it starts
@@ -173,26 +172,26 @@ public class RoomLogic {
     }
 
     /** A party member damaged a creature in this room (after the hit landed). */
-    public void onCreatureHit(ServerPlayerEntity player, LivingEntity target, int damage) {
+    public void onCreatureHit(ServerPlayer player, LivingEntity target, int damage) {
     }
 
     /** A party member in this room took damage. */
-    public void onPlayerHurt(ServerPlayerEntity player, int damage) {
+    public void onPlayerHurt(ServerPlayer player, int damage) {
     }
 
     /** A scripted block inside this room was used; return true if handled. */
-    public boolean useBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    public boolean useBlock(ServerPlayer player, String blockId, BlockPos pos) {
         return false;
     }
 
     // ------------------------------------------------------------------ anchoring
 
-    private final java.util.Map<LivingEntity, Vec3d> anchors = new java.util.WeakHashMap<>();
+    private final java.util.Map<LivingEntity, Vec3> anchors = new java.util.WeakHashMap<>();
 
     /** Keeps a stationary creature (Olm, Maiden, Sotetseg...) exactly where it is. */
     public void anchor(LivingEntity e) {
         if (e != null) {
-            anchors.put(e, e.getPos());
+            anchors.put(e, e.position());
         }
     }
 
@@ -201,13 +200,13 @@ public class RoomLogic {
     }
 
     void keepAnchored(LivingEntity e) {
-        Vec3d home = anchors.get(e);
+        Vec3 home = anchors.get(e);
         if (home == null) {
             return;
         }
-        e.setVelocity(0, Math.min(0, e.getVelocity().y), 0);
-        if (e.getPos().squaredDistanceTo(home) > 0.25) {
-            e.requestTeleport(home.x, home.y, home.z);
+        e.setDeltaMovement(0, Math.min(0, e.getDeltaMovement().y), 0);
+        if (e.position().distanceToSqr(home) > 0.25) {
+            e.teleportTo(home.x, home.y, home.z);
         }
     }
 
@@ -217,7 +216,7 @@ public class RoomLogic {
     public void bossTick(DataBossEntity boss) {
     }
 
-    public AttackDef bossAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+    public AttackDef bossAttack(DataBossEntity boss, ServerPlayer target, double distance) {
         return null;
     }
 
@@ -225,15 +224,15 @@ public class RoomLogic {
         return true;
     }
 
-    public int bossIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+    public int bossIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
         return damage;
     }
 
-    public int bossOutgoing(DataBossEntity boss, ServerPlayerEntity player, int damage, AttackType type) {
+    public int bossOutgoing(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
         return damage;
     }
 
-    public void bossDeath(DataBossEntity boss, ServerPlayerEntity killer) {
+    public void bossDeath(DataBossEntity boss, ServerPlayer killer) {
     }
 
     /**
@@ -247,13 +246,13 @@ public class RoomLogic {
     // ------------------------------------------------------------------ combat helpers
 
     /** Whether nothing solid lies between two points. */
-    public boolean clearLine(Vec3d from, Vec3d to, Entity except) {
-        return world().raycast(new RaycastContext(from, to, RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.NONE,
+    public boolean clearLine(Vec3 from, Vec3 to, Entity except) {
+        return world().clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE,
                 except)).getType() == HitResult.Type.MISS;
     }
 
-    public boolean canSee(LivingEntity from, ServerPlayerEntity player) {
-        return clearLine(from.getEyePos(), player.getEyePos(), from);
+    public boolean canSee(LivingEntity from, ServerPlayer player) {
+        return clearLine(from.getEyePosition(), player.getEyePosition(), from);
     }
 
     /** The boss's current attack list (its phase's list if the phase has one). */
@@ -278,19 +277,19 @@ public class RoomLogic {
      * every {@code every} game ticks a random visible player further away is attacked.
      */
     public void autoAttack(DataBossEntity boss, long tick, int every) {
-        if (!alive(boss) || tick % every != 0 || boss.isAiDisabled()) {
+        if (!alive(boss) || tick % every != 0 || boss.isNoAi()) {
             return;
         }
-        List<ServerPlayerEntity> targets = new ArrayList<>();
-        for (ServerPlayerEntity p : players()) {
-            if (p.squaredDistanceTo(boss) > 9.5 * 9.5 && canSee(boss, p)) {
+        List<ServerPlayer> targets = new ArrayList<>();
+        for (ServerPlayer p : players()) {
+            if (p.distanceToSqr(boss) > 9.5 * 9.5 && canSee(boss, p)) {
                 targets.add(p);
             }
         }
         if (targets.isEmpty()) {
             return;
         }
-        ServerPlayerEntity target = targets.get(rnd().nextInt(targets.size()));
+        ServerPlayer target = targets.get(rnd().nextInt(targets.size()));
         AttackDef attack = bossAttack(boss, target, boss.distanceTo(target));
         if (attack == null) {
             List<AttackDef> list = new ArrayList<>();
@@ -308,23 +307,23 @@ public class RoomLogic {
     }
 
     /** Teleports a boss (and stops it walking off). */
-    public void move(LivingEntity e, Vec3d pos) {
-        e.requestTeleport(pos.x, pos.y, pos.z);
-        if (e instanceof MobEntity mob) {
+    public void move(LivingEntity e, Vec3 pos) {
+        e.teleportTo(pos.x, pos.y, pos.z);
+        if (e instanceof Mob mob) {
             mob.getNavigation().stop();
         }
-        world().spawnParticles(net.minecraft.particle.ParticleTypes.PORTAL, pos.x, pos.y + 1, pos.z, 30, 0.6, 1, 0.6, 0.2);
+        world().sendParticles(net.minecraft.core.particles.ParticleTypes.PORTAL, pos.x, pos.y + 1, pos.z, 30, 0.6, 1, 0.6, 0.2);
     }
 
     // ------------------------------------------------------------------ helpers
 
     /** Whether the player carries (or wields) an item whose id ends with {@code suffix}, e.g. "_pickaxe". */
-    public static boolean hasTool(ServerPlayerEntity p, String suffix) {
-        if (com.runecraft.util.Inv.idOf(p.getMainHandStack()).endsWith(suffix)) {
+    public static boolean hasTool(ServerPlayer p, String suffix) {
+        if (com.runecraft.util.Inv.idOf(p.getMainHandItem()).endsWith(suffix)) {
             return true;
         }
-        for (int i = 0; i < p.getInventory().size(); i++) {
-            net.minecraft.item.ItemStack s = p.getInventory().getStack(i);
+        for (int i = 0; i < p.getInventory().getContainerSize(); i++) {
+            net.minecraft.world.item.ItemStack s = p.getInventory().getItem(i);
             if (!s.isEmpty() && com.runecraft.util.Inv.idOf(s).endsWith(suffix)) {
                 return true;
             }
@@ -332,12 +331,12 @@ public class RoomLogic {
         return false;
     }
 
-    public static int level(ServerPlayerEntity p, com.runecraft.osrs.Skill skill) {
+    public static int level(ServerPlayer p, com.runecraft.osrs.Skill skill) {
         return com.runecraft.player.Players.data(p).skills().currentLevel(skill);
     }
 
     /** Switches off a player's protection prayers (ToA Penetration, Ba-Ba's sarcophagi...). */
-    public static void dropOverheads(ServerPlayerEntity p, String message) {
+    public static void dropOverheads(ServerPlayer p, String message) {
         com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(p);
         if (data.activePrayers().removeIf(pr -> pr == com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE
                 || pr == com.runecraft.osrs.Prayer.PROTECT_FROM_MISSILES || pr == com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC)) {
@@ -347,24 +346,24 @@ public class RoomLogic {
     }
 
     /** A player's current prayer points. */
-    public static int prayerPoints(ServerPlayerEntity p) {
+    public static int prayerPoints(ServerPlayer p) {
         return com.runecraft.player.Players.data(p).prayerPoints();
     }
 
     /** Per-player cooldown for skilling clicks (game ticks). */
     private final java.util.Map<java.util.UUID, Long> clickCooldown = new java.util.HashMap<>();
 
-    public boolean cooldown(ServerPlayerEntity p, int ticks) {
+    public boolean cooldown(ServerPlayer p, int ticks) {
         long now = com.runecraft.action.ActionManager.gameTick();
-        Long last = clickCooldown.get(p.getUuid());
+        Long last = clickCooldown.get(p.getUUID());
         if (last != null && now - last < ticks) {
             return true;
         }
-        clickCooldown.put(p.getUuid(), now);
+        clickCooldown.put(p.getUUID(), now);
         return false;
     }
 
-    public ServerWorld world() {
+    public ServerLevel world() {
         return raid.world;
     }
 
@@ -378,41 +377,41 @@ public class RoomLogic {
 
     /** Standing position (floor + 1) relative to the room centre. */
     public BlockPos at(int dx, int dz) {
-        return center().add(dx, 1, dz);
+        return center().offset(dx, 1, dz);
     }
 
-    public Vec3d vec(double dx, double dz) {
+    public Vec3 vec(double dx, double dz) {
         BlockPos c = center();
-        return new Vec3d(c.getX() + 0.5 + dx, c.getY() + 1, c.getZ() + 0.5 + dz);
+        return new Vec3(c.getX() + 0.5 + dx, c.getY() + 1, c.getZ() + 0.5 + dz);
     }
 
-    public boolean inside(Vec3d pos) {
+    public boolean inside(Vec3 pos) {
         return raid.inRoom(pos, index);
     }
 
-    public List<ServerPlayerEntity> players() {
-        List<ServerPlayerEntity> list = new ArrayList<>();
-        for (ServerPlayerEntity p : raid.activePlayers()) {
-            if (inside(p.getPos())) {
+    public List<ServerPlayer> players() {
+        List<ServerPlayer> list = new ArrayList<>();
+        for (ServerPlayer p : raid.activePlayers()) {
+            if (inside(p.position())) {
                 list.add(p);
             }
         }
         return list;
     }
 
-    public ServerPlayerEntity randomPlayer() {
-        List<ServerPlayerEntity> list = players();
+    public ServerPlayer randomPlayer() {
+        List<ServerPlayer> list = players();
         return list.isEmpty() ? null : list.get(rnd().nextInt(list.size()));
     }
 
     public void say(String message) {
-        for (ServerPlayerEntity p : raid.players()) {
+        for (ServerPlayer p : raid.players()) {
             Msg.game(p, message);
         }
     }
 
     public void warn(String message) {
-        for (ServerPlayerEntity p : raid.players()) {
+        for (ServerPlayer p : raid.players()) {
             Msg.red(p, message);
         }
     }
@@ -453,22 +452,22 @@ public class RoomLogic {
     }
 
     /** Spawns a module creature (minion), scaled for the party, optionally tracked. */
-    public MobEntity spawnMob(String id, BlockPos pos, boolean track) {
+    public Mob spawnMob(String id, BlockPos pos, boolean track) {
         EntityType<?> type = ModEntities.typeById(id);
         if (type == null) {
             return null;
         }
         Entity e = type.create(world());
-        if (!(e instanceof MobEntity mob)) {
+        if (!(e instanceof Mob mob)) {
             return null;
         }
-        mob.refreshPositionAndAngles(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, rnd().nextFloat() * 360f, 0);
-        mob.initialize(world(), world().getLocalDifficulty(pos), SpawnReason.EVENT, null, null);
-        mob.setPersistent();
-        world().spawnEntity(mob);
+        mob.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, rnd().nextFloat() * 360f, 0);
+        mob.finalizeSpawn(world(), world().getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null, null);
+        mob.setPersistenceRequired();
+        world().addFreshEntity(mob);
         raid.scale(mob);
-        ServerPlayerEntity target = randomPlayer();
-        if (target != null && !mob.isAiDisabled()) {
+        ServerPlayer target = randomPlayer();
+        if (target != null && !mob.isNoAi()) {
             mob.setTarget(target);
         }
         if (track) {
@@ -484,7 +483,7 @@ public class RoomLogic {
         if (type == null) {
             return list;
         }
-        for (Entity e : world().getOtherEntities(null, RaidBuilder.roomBox(raid.slot, index), x -> x.getType() == type)) {
+        for (Entity e : world().getEntities(null, RaidBuilder.roomBox(raid.slot, index), x -> x.getType() == type)) {
             if (e instanceof LivingEntity le && le.isAlive()) {
                 list.add(le);
             }
@@ -502,16 +501,16 @@ public class RoomLogic {
             return 0;
         }
         for (LivingEntity e : living(id)) {
-            if (e instanceof MobEntity mob) {
+            if (e instanceof Mob mob) {
                 mob.setTarget(null);
-                if (mob.age % 10 == 0 || mob.getNavigation().isIdle()) {
-                    mob.getNavigation().startMovingTo(boss.getX(), boss.getY(), boss.getZ(), 1.0);
+                if (mob.tickCount % 10 == 0 || mob.getNavigation().isDone()) {
+                    mob.getNavigation().moveTo(boss.getX(), boss.getY(), boss.getZ(), 1.0);
                 }
             }
-            if (e.squaredDistanceTo(boss) < Math.pow(boss.getWidth() / 2 + 1.6, 2)) {
+            if (e.distanceToSqr(boss) < Math.pow(boss.getBbWidth() / 2 + 1.6, 2)) {
                 int heal = (int) Math.max(1, raid.hitpoints(e) * factor);
                 raid.heal(boss, heal);
-                world().spawnParticles(net.minecraft.particle.ParticleTypes.HEART, boss.getX(), boss.getY() + boss.getHeight(), boss.getZ(),
+                world().sendParticles(net.minecraft.core.particles.ParticleTypes.HEART, boss.getX(), boss.getY() + boss.getBbHeight(), boss.getZ(),
                         4, 0.5, 0.3, 0.5, 0);
                 if (message != null) {
                     say(message);

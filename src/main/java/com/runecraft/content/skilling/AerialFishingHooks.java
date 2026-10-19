@@ -10,11 +10,11 @@ import com.runecraft.skill.Stun;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.random.Random;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 
 /**
  * Aerial fishing at Lake Molch ({@link AerialFishing}) and Kylie Minnow's minnow-for-shark trade at the Fishing Guild.
@@ -33,15 +33,15 @@ final class AerialFishingHooks {
         QuestScripts.onTalk(GatheringData.KYLIE_MINNOW, AerialFishingHooks::kylie);
     }
 
-    private static String bait(ServerPlayerEntity player) {
+    private static String bait(ServerPlayer player) {
         if (Inv.has(player, AerialFishing.KING_WORM, 1)) {
             return AerialFishing.KING_WORM;
         }
         return Inv.has(player, AerialFishing.OFFCUTS, 1) ? AerialFishing.OFFCUTS : null;
     }
 
-    private static boolean ready(ServerPlayerEntity player) {
-        if (!player.getMainHandStack().isEmpty()) {
+    private static boolean ready(ServerPlayer player) {
+        if (!player.getMainHandItem().isEmpty()) {
             Msg.game(player, "You need both hands free to fish with a cormorant.");
             return false;
         }
@@ -52,7 +52,7 @@ final class AerialFishingHooks {
         return true;
     }
 
-    private static void fish(ServerPlayerEntity player, BlockPos pos) {
+    private static void fish(ServerPlayer player, BlockPos pos) {
         if (!Stun.check(player) || !SkillingUtil.need(player, Skill.FISHING, AerialFishing.FISHING_LEVEL, "fish here")
                 || !SkillingUtil.need(player, Skill.HUNTER, AerialFishing.HUNTER_LEVEL, "fish here")) {
             return;
@@ -67,7 +67,7 @@ final class AerialFishingHooks {
         Msg.action(player, "You send your cormorant to try to catch a fish from out of the water.");
         SkillingUtil.start(player, new SkillingUtil.BlockAction(pos, AerialFishing.SPOT, INTERVAL) {
             @Override
-            boolean roll(ServerPlayerEntity p, Random random) {
+            boolean roll(ServerPlayer p, RandomSource random) {
                 if (!Inv.has(p, AerialFishing.GLOVE, 1) || !ready(p)) {
                     return false;
                 }
@@ -77,7 +77,7 @@ final class AerialFishingHooks {
                 if (bait.equals(AerialFishing.KING_WORM) || random.nextDouble() < AerialFishing.OFFCUT_USE_CHANCE) {
                     Inv.remove(p, bait, 1);
                 }
-                p.getWorld().playSound(null, pos, SoundEvents.ENTITY_FISHING_BOBBER_SPLASH, SoundCategory.PLAYERS, 0.4f, 1.2f);
+                p.level().playSound(null, pos, SoundEvents.FISHING_BOBBER_SPLASH, SoundSource.PLAYERS, 0.4f, 1.2f);
                 if (random.nextInt(AerialFishing.GOLDEN_TENCH_CHANCE) == 0) {
                     SkillingUtil.give(p, AerialFishing.GOLDEN_TENCH, 1);
                     Msg.red(p, "Your cormorant returns with a golden tench!");
@@ -99,7 +99,7 @@ final class AerialFishingHooks {
     }
 
     /** Kylie Minnow: one raw shark for every 40 minnows handed over. */
-    private static void kylie(ServerPlayerEntity player, QuestNpcEntity npc) {
+    private static void kylie(ServerPlayer player, QuestNpcEntity npc) {
         int minnows = Inv.count(player, GatheringData.MINNOW);
         int sharks = minnows / GatheringData.MINNOWS_PER_SHARK;
         if (sharks == 0) {

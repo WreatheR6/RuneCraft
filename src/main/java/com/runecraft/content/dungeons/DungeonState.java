@@ -1,22 +1,21 @@
 package com.runecraft.content.dungeons;
 
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.PersistentState;
-
+import net.minecraft.world.level.saveddata.SavedData;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 /** World-save storage for the Stronghold of Security reward chests each player has opened. */
-final class DungeonState extends PersistentState {
+final class DungeonState extends SavedData {
     static final String KEY = "runecraft_dungeons";
 
     private final Map<UUID, Integer> claimed = new HashMap<>();
 
     static DungeonState get(MinecraftServer server) {
-        return server.getOverworld().getPersistentStateManager()
-                .getOrCreate(DungeonState::fromNbt, DungeonState::new, KEY);
+        return server.overworld().getDataStorage()
+                .computeIfAbsent(DungeonState::fromNbt, DungeonState::new, KEY);
     }
 
     boolean hasClaimed(UUID uuid, int chest) {
@@ -25,18 +24,18 @@ final class DungeonState extends PersistentState {
 
     void claim(UUID uuid, int chest) {
         claimed.merge(uuid, 1 << chest, (a, b) -> a | b);
-        markDirty();
+        setDirty();
     }
 
     @Override
-    public NbtCompound writeNbt(NbtCompound nbt) {
+    public CompoundTag save(CompoundTag nbt) {
         claimed.forEach((uuid, mask) -> nbt.putInt(uuid.toString(), mask));
         return nbt;
     }
 
-    static DungeonState fromNbt(NbtCompound nbt) {
+    static DungeonState fromNbt(CompoundTag nbt) {
         DungeonState state = new DungeonState();
-        for (String key : nbt.getKeys()) {
+        for (String key : nbt.getAllKeys()) {
             try {
                 state.claimed.put(UUID.fromString(key), nbt.getInt(key));
             } catch (IllegalArgumentException ignored) {

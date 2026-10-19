@@ -13,14 +13,13 @@ import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.level.ServerPlayer;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.BiConsumer;
@@ -45,18 +44,18 @@ final class IslandsKingdomService {
         ServerLifecycleEvents.SERVER_STARTED.register(server -> wrapGhrim());
         GameEvents.onObtain((player, item, count) -> onObtain(player, item, count));
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(
-                CommandManager.literal("kingdom")
-                        .then(CommandManager.literal("assign").then(CommandManager.argument("work", StringArgumentType.word())
-                                .then(CommandManager.argument("delta", IntegerArgumentType.integer(-10, 10)).executes(ctx -> {
-                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                Commands.literal("kingdom")
+                        .then(Commands.literal("assign").then(Commands.argument("work", StringArgumentType.word())
+                                .then(Commands.argument("delta", IntegerArgumentType.integer(-10, 10)).executes(ctx -> {
+                                    ServerPlayer p = ctx.getSource().getPlayer();
                                     if (p != null) {
                                         assign(p, StringArgumentType.getString(ctx, "work"), IntegerArgumentType.getInteger(ctx, "delta"));
                                     }
                                     return 1;
                                 }))))
-                        .then(CommandManager.literal("withdraw").then(CommandManager.argument("coins",
+                        .then(Commands.literal("withdraw").then(Commands.argument("coins",
                                 IntegerArgumentType.integer(1)).executes(ctx -> {
-                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                    ServerPlayer p = ctx.getSource().getPlayer();
                                     if (p != null) {
                                         withdraw(p, IntegerArgumentType.getInteger(ctx, "coins"));
                                     }
@@ -69,7 +68,7 @@ final class IslandsKingdomService {
             return;
         }
         wrapped = true;
-        BiConsumer<ServerPlayerEntity, QuestNpcEntity> quest = QuestScripts.handler("advisor_ghrim");
+        BiConsumer<ServerPlayer, QuestNpcEntity> quest = QuestScripts.handler("advisor_ghrim");
         QuestScripts.onTalk("advisor_ghrim", (player, npc) -> {
             if (quest != null && !QuestApi.isComplete(player, "royal_trouble")) {
                 quest.accept(player, npc);
@@ -79,11 +78,11 @@ final class IslandsKingdomService {
         });
     }
 
-    private static boolean royalTrouble(ServerPlayerEntity player) {
+    private static boolean royalTrouble(ServerPlayer player) {
         return QuestApi.isComplete(player, "royal_trouble");
     }
 
-    private static boolean unlocked(ServerPlayerEntity player) {
+    private static boolean unlocked(ServerPlayer player) {
         if (QuestApi.isComplete(player, "throne_of_miscellania")) {
             return true;
         }
@@ -97,8 +96,8 @@ final class IslandsKingdomService {
     }
 
     /** The player's kingdom, advanced to today. */
-    private static Kingdom.State current(ServerPlayerEntity player, IslandsKingdomState store) {
-        UUID uuid = player.getUuid();
+    private static Kingdom.State current(ServerPlayer player, IslandsKingdomState store) {
+        UUID uuid = player.getUUID();
         Kingdom.State s = store.kingdom(uuid);
         long last = store.day(uuid);
         long now = today();
@@ -109,14 +108,14 @@ final class IslandsKingdomService {
         return s;
     }
 
-    static void ledger(ServerPlayerEntity player) {
+    static void ledger(ServerPlayer player) {
         if (!unlocked(player)) {
             return;
         }
         IslandsKingdomState store = IslandsKingdomState.get(player.getServer());
         Kingdom.State s = current(player, store);
         boolean rt = royalTrouble(player);
-        if (player.isSneaking()) {
+        if (player.isShiftKeyDown()) {
             long fits = Kingdom.depositable(s, Inv.count(player, Inv.COINS), rt);
             if (fits <= 0) {
                 QuestApi.say(player, ADVISOR, s.coffer() >= Kingdom.maxCoffer(rt)
@@ -126,7 +125,7 @@ final class IslandsKingdomService {
             }
             Inv.remove(player, Inv.COINS, (int) fits);
             s = Kingdom.deposit(s, fits, rt);
-            store.set(player.getUuid(), s, today());
+            store.set(player.getUUID(), s, today());
             QuestApi.say(player, ADVISOR, "You pay " + String.format("%,d", fits) + " coins into the coffer. It now holds "
                     + String.format("%,d", s.coffer()) + ".");
             return;
@@ -138,7 +137,7 @@ final class IslandsKingdomService {
             }
             Msg.game(player, "You collect what your subjects have gathered.");
             s = Kingdom.collected(s);
-            store.set(player.getUuid(), s, today());
+            store.set(player.getUUID(), s, today());
         }
         QuestApi.say(player, ADVISOR, "Coffer: " + String.format("%,d", s.coffer()) + " coins (wages "
                 + String.format("%,d", Kingdom.dailySpend(s.coffer(), rt)) + " a day). Approval: " + s.approvalPercent() + "%.");
@@ -148,7 +147,7 @@ final class IslandsKingdomService {
         }
     }
 
-    static void workforce(ServerPlayerEntity player) {
+    static void workforce(ServerPlayer player) {
         if (!unlocked(player)) {
             return;
         }
@@ -160,20 +159,20 @@ final class IslandsKingdomService {
                 continue;
             }
             String cmd = "/kingdom assign " + w.name().toLowerCase(java.util.Locale.ROOT) + " ";
-            MutableText line = Text.literal(" " + w.label() + ": " + s.workers(w) + " ").formatted(Formatting.GRAY)
-                    .append(link("+", cmd + "1", "Assign a subject", Formatting.GREEN)).append(Text.literal(" "))
-                    .append(link("-", cmd + "-1", "Take a subject off", Formatting.RED));
-            player.sendMessage(line, false);
+            MutableComponent line = Component.literal(" " + w.label() + ": " + s.workers(w) + " ").withStyle(ChatFormatting.GRAY)
+                    .append(link("+", cmd + "1", "Assign a subject", ChatFormatting.GREEN)).append(Component.literal(" "))
+                    .append(link("-", cmd + "-1", "Take a subject off", ChatFormatting.RED));
+            player.displayClientMessage(line, false);
         }
     }
 
-    private static MutableText link(String label, String command, String hover, Formatting color) {
-        return Text.literal("[" + label + "]").styled(st -> st.withColor(color)
+    private static MutableComponent link(String label, String command, String hover, ChatFormatting color) {
+        return Component.literal("[" + label + "]").withStyle(st -> st.withColor(color)
                 .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
-                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(hover))));
+                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(hover))));
     }
 
-    static void assign(ServerPlayerEntity player, String work, int delta) {
+    static void assign(ServerPlayer player, String work, int delta) {
         if (!unlocked(player)) {
             return;
         }
@@ -192,12 +191,12 @@ final class IslandsKingdomService {
                     : "Nobody is working on that.");
             return;
         }
-        store.set(player.getUuid(), next, today());
+        store.set(player.getUUID(), next, today());
         Msg.game(player, w.label() + ": " + next.workers(w) + " subject" + (next.workers(w) == 1 ? "" : "s") + ". ("
                 + next.assigned() + " assigned.)");
     }
 
-    static void withdraw(ServerPlayerEntity player, int coins) {
+    static void withdraw(ServerPlayer player, int coins) {
         if (!unlocked(player)) {
             return;
         }
@@ -209,14 +208,14 @@ final class IslandsKingdomService {
             Msg.game(player, "The coffer is empty.");
             return;
         }
-        store.set(player.getUuid(), next, today());
+        store.set(player.getUUID(), next, today());
         Inv.give(player, Inv.COINS, (int) taken);
         QuestApi.say(player, ADVISOR, "You withdraw " + String.format("%,d", taken) + " coins. The coffer holds "
                 + String.format("%,d", next.coffer()) + ".");
     }
 
     /** Gathering on the islands raises approval (wiki table). */
-    static void onObtain(ServerPlayerEntity player, String item, int count) {
+    static void onObtain(ServerPlayer player, String item, int count) {
         if (!Gielinor.is(player) || count <= 0) {
             return;
         }
@@ -238,7 +237,7 @@ final class IslandsKingdomService {
             return;
         }
         Kingdom.State next = Kingdom.work(s, gain);
-        store.set(player.getUuid(), next, today());
+        store.set(player.getUUID(), next, today());
         Msg.game(player, "Thanks!");
         if (next.approval() >= Kingdom.MAX_APPROVAL) {
             Msg.game(player, "Your subjects' approval of you is now 100%.");

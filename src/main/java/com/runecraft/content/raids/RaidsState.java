@@ -1,13 +1,12 @@
 package com.runecraft.content.raids;
 
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.nbt.NbtLong;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.LongTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.PersistentState;
-
+import net.minecraft.world.level.saveddata.SavedData;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -19,7 +18,7 @@ import java.util.UUID;
  * player, the entrance each player last used (so anyone stranded in an instance after a restart is
  * sent back), and the instance chunks that are force-loaded.
  */
-public final class RaidsState extends PersistentState {
+public final class RaidsState extends SavedData {
     public static final String KEY = "runecraft_raids";
 
     /** Per-player raid statistics, keyed by raid id. */
@@ -34,7 +33,7 @@ public final class RaidsState extends PersistentState {
     private final Set<Long> forcedChunks = new LinkedHashSet<>();
 
     public static RaidsState get(MinecraftServer server) {
-        return server.getOverworld().getPersistentStateManager().getOrCreate(RaidsState::fromNbt, RaidsState::new, KEY);
+        return server.overworld().getDataStorage().computeIfAbsent(RaidsState::fromNbt, RaidsState::new, KEY);
     }
 
     public Stats stats(UUID player) {
@@ -53,13 +52,13 @@ public final class RaidsState extends PersistentState {
         if (purple) {
             s.purples.merge(raid, 1, Integer::sum);
         }
-        markDirty();
+        setDirty();
         return kc;
     }
 
     public void setLastEntrance(UUID player, BlockPos pos) {
         stats(player).lastEntrance = pos;
-        markDirty();
+        setDirty();
     }
 
     public Set<Long> forcedChunks() {
@@ -68,21 +67,21 @@ public final class RaidsState extends PersistentState {
 
     public void addForced(long chunk) {
         if (forcedChunks.add(chunk)) {
-            markDirty();
+            setDirty();
         }
     }
 
     public void removeForced(long chunk) {
         if (forcedChunks.remove(chunk)) {
-            markDirty();
+            setDirty();
         }
     }
 
     @Override
-    public NbtCompound writeNbt(NbtCompound nbt) {
-        NbtCompound all = new NbtCompound();
+    public CompoundTag save(CompoundTag nbt) {
+        CompoundTag all = new CompoundTag();
         players.forEach((uuid, s) -> {
-            NbtCompound p = new NbtCompound();
+            CompoundTag p = new CompoundTag();
             p.put("Completions", map(s.completions));
             p.put("Best", map(s.bestPoints));
             p.put("Purples", map(s.purples));
@@ -92,48 +91,48 @@ public final class RaidsState extends PersistentState {
             all.put(uuid.toString(), p);
         });
         nbt.put("Players", all);
-        NbtList forced = new NbtList();
+        ListTag forced = new ListTag();
         for (long c : forcedChunks) {
-            forced.add(NbtLong.of(c));
+            forced.add(LongTag.valueOf(c));
         }
         nbt.put("Forced", forced);
         return nbt;
     }
 
-    private static NbtCompound map(Map<String, Integer> map) {
-        NbtCompound c = new NbtCompound();
+    private static CompoundTag map(Map<String, Integer> map) {
+        CompoundTag c = new CompoundTag();
         map.forEach(c::putInt);
         return c;
     }
 
-    private static void read(NbtCompound c, Map<String, Integer> into) {
-        for (String k : c.getKeys()) {
+    private static void read(CompoundTag c, Map<String, Integer> into) {
+        for (String k : c.getAllKeys()) {
             into.put(k, c.getInt(k));
         }
     }
 
-    public static RaidsState fromNbt(NbtCompound nbt) {
+    public static RaidsState fromNbt(CompoundTag nbt) {
         RaidsState state = new RaidsState();
-        NbtCompound all = nbt.getCompound("Players");
-        for (String key : all.getKeys()) {
+        CompoundTag all = nbt.getCompound("Players");
+        for (String key : all.getAllKeys()) {
             try {
                 UUID uuid = UUID.fromString(key);
-                NbtCompound p = all.getCompound(key);
+                CompoundTag p = all.getCompound(key);
                 Stats s = state.stats(uuid);
                 read(p.getCompound("Completions"), s.completions);
                 read(p.getCompound("Best"), s.bestPoints);
                 read(p.getCompound("Purples"), s.purples);
                 if (p.contains("Entrance")) {
-                    s.lastEntrance = BlockPos.fromLong(p.getLong("Entrance"));
+                    s.lastEntrance = BlockPos.of(p.getLong("Entrance"));
                 }
             } catch (IllegalArgumentException ignored) {
                 // skip malformed entries
             }
         }
-        NbtList forced = nbt.getList("Forced", NbtElement.LONG_TYPE);
+        ListTag forced = nbt.getList("Forced", Tag.TAG_LONG);
         for (int i = 0; i < forced.size(); i++) {
-            if (forced.get(i) instanceof NbtLong l) {
-                state.forcedChunks.add(l.longValue());
+            if (forced.get(i) instanceof LongTag l) {
+                state.forcedChunks.add(l.getAsLong());
             }
         }
         return state;

@@ -4,10 +4,9 @@ import com.runecraft.client.content.ClientModuleHooks;
 import com.runecraft.content.minigames.MinigameNet;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,7 +21,7 @@ public final class MinigamesClientHooks implements ClientModuleHooks {
             int n = buf.readVarInt();
             List<String> lines = new ArrayList<>();
             for (int i = 0; i < n; i++) {
-                lines.add(buf.readString());
+                lines.add(buf.readUtf());
             }
             client.execute(() -> {
                 HUD.clear();
@@ -32,7 +31,7 @@ public final class MinigamesClientHooks implements ClientModuleHooks {
         ClientPlayNetworking.registerGlobalReceiver(MinigameNet.SHOP, (client, handler, buf, sender) -> {
             RewardShopScreen.ShopData data = RewardShopScreen.ShopData.read(buf);
             client.execute(() -> {
-                if (client.currentScreen instanceof RewardShopScreen screen && screen.shopId().equals(data.id())) {
+                if (client.screen instanceof RewardShopScreen screen && screen.shopId().equals(data.id())) {
                     screen.update(data);
                 } else {
                     client.setScreen(new RewardShopScreen(data));
@@ -42,17 +41,17 @@ public final class MinigamesClientHooks implements ClientModuleHooks {
         HudRenderCallback.EVENT.register(MinigamesClientHooks::renderHud);
     }
 
-    private static void renderHud(DrawContext ctx, float tickDelta) {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (HUD.isEmpty() || mc.player == null || mc.options.hudHidden) {
+    private static void renderHud(GuiGraphics ctx, float tickDelta) {
+        Minecraft mc = Minecraft.getInstance();
+        if (HUD.isEmpty() || mc.player == null || mc.options.hideGui) {
             return;
         }
-        TextRenderer tr = mc.textRenderer;
+        Font tr = mc.font;
         int width = 0;
         int lines = 0;
         for (String l : HUD) {
             if (!l.isEmpty()) {
-                width = Math.max(width, tr.getWidth(l));
+                width = Math.max(width, tr.width(l));
                 lines++;
             }
         }
@@ -64,7 +63,7 @@ public final class MinigamesClientHooks implements ClientModuleHooks {
             if (l.isEmpty()) {
                 continue;
             }
-            ctx.drawTextWithShadow(tr, l, x + 1, y, first ? 0xFFFF9800 : 0xFFFFFF60);
+            ctx.drawString(tr, l, x + 1, y, first ? 0xFFFF9800 : 0xFFFFFF60);
             y += 10;
             first = false;
         }

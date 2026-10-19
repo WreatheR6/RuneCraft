@@ -1,7 +1,7 @@
 package com.runecraft.player;
 
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 
 /** Access to persistent player data. */
 public final class Players {
@@ -9,11 +9,11 @@ public final class Players {
     }
 
     public static PlayerDataState state(MinecraftServer server) {
-        return server.getOverworld().getPersistentStateManager()
-                .getOrCreate(PlayerDataState::fromNbt, PlayerDataState::new, PlayerDataState.KEY);
+        return server.overworld().getDataStorage()
+                .computeIfAbsent(PlayerDataState::fromNbt, PlayerDataState::new, PlayerDataState.KEY);
     }
 
-    public static PlayerData data(ServerPlayerEntity player) {
-        return state(player.getServer()).get(player.getUuid());
+    public static PlayerData data(ServerPlayer player) {
+        return state(player.getServer()).get(player.getUUID());
     }
 }

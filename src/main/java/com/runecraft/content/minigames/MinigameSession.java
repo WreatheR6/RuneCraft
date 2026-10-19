@@ -9,29 +9,28 @@ import com.runecraft.registry.ModEntities;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.attribute.EntityAttributeInstance;
-import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 
 /**
  * One running instance of a minigame. Subclasses build their arena around {@link #origin}, drive
@@ -44,7 +43,7 @@ public abstract class MinigameSession {
     public final Minigame game;
     public final int id;
     public final int slot;
-    public final ServerWorld world;
+    public final ServerLevel world;
     public final BlockPos origin;
     /** Entrance block used to join (selects difficulty, role or room). */
     public final String variant;
@@ -54,7 +53,7 @@ public abstract class MinigameSession {
     protected long ticks;
     private boolean ended;
 
-    protected MinigameSession(Minigame game, int id, int slot, ServerWorld world, String variant) {
+    protected MinigameSession(Minigame game, int id, int slot, ServerLevel world, String variant) {
         this.game = game;
         this.id = id;
         this.slot = slot;
@@ -82,8 +81,8 @@ public abstract class MinigameSession {
     protected abstract void build();
 
     /** Where a player appears when entering. */
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
-        return origin.add(index % 3 - 1, 1, 0);
+    protected BlockPos spawnPoint(ServerPlayer player, int index) {
+        return origin.offset(index % 3 - 1, 1, 0);
     }
 
     /** Called once after every player has been teleported in. */
@@ -94,16 +93,16 @@ public abstract class MinigameSession {
     protected abstract void gameTick();
 
     /** A player killed a creature belonging to this session. */
-    protected void onKill(ServerPlayerEntity player, LivingEntity entity, String creatureId) {
+    protected void onKill(ServerPlayer player, LivingEntity entity, String creatureId) {
     }
 
     /** A player clicked one of the module's arena blocks. Return true if handled. */
-    protected boolean onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         return false;
     }
 
     /** A player would have died. Default: they're removed from the game (items kept). */
-    protected void onDeath(ServerPlayerEntity player) {
+    protected void onDeath(ServerPlayer player) {
         Msg.red(player, "Oh dear, you are dead! You have been removed from " + game.displayName() + ".");
         removePlayer(player, true);
     }
@@ -117,7 +116,7 @@ public abstract class MinigameSession {
     }
 
     /** A death in a dangerous minigame: the player leaves the session at its entry point, then the normal death runs. */
-    final void dieDangerously(ServerPlayerEntity player) {
+    final void dieDangerously(ServerPlayer player) {
         removePlayer(player, true);
     }
 
@@ -126,7 +125,7 @@ public abstract class MinigameSession {
     }
 
     /** A player left (logout, exit portal, /minigame leave or death). */
-    protected void onLeave(ServerPlayerEntity player) {
+    protected void onLeave(ServerPlayer player) {
     }
 
     /** Rewards and messages when the game finishes; players are still inside. */
@@ -138,12 +137,12 @@ public abstract class MinigameSession {
     }
 
     /** Multiplier on a session player's max hit (role bonuses). */
-    protected double damageMultiplier(ServerPlayerEntity player, LivingEntity target, com.runecraft.osrs.AttackType type) {
+    protected double damageMultiplier(ServerPlayer player, LivingEntity target, com.runecraft.osrs.AttackType type) {
         return 1.0;
     }
 
     /** A player damaged one of this session's creatures (or another player in PvP games). */
-    protected void onPlayerHit(ServerPlayerEntity player, LivingEntity target, int dealt) {
+    protected void onPlayerHit(ServerPlayer player, LivingEntity target, int dealt) {
     }
 
     /**
@@ -155,7 +154,7 @@ public abstract class MinigameSession {
     }
 
     /** Whether two players in this session may fight each other (team PvP). */
-    protected boolean canAttackPlayer(ServerPlayerEntity attacker, ServerPlayerEntity target) {
+    protected boolean canAttackPlayer(ServerPlayer attacker, ServerPlayer target) {
         return false;
     }
 
@@ -165,29 +164,29 @@ public abstract class MinigameSession {
     }
 
     /** Combat Achievement runs: conditions the session judged itself for this player. Still read after the session ends. */
-    public java.util.Set<String> caFlags(ServerPlayerEntity player) {
+    public java.util.Set<String> caFlags(ServerPlayer player) {
         return java.util.Set.of();
     }
 
     /** Overlay lines shown to a player. */
-    protected List<String> hud(ServerPlayerEntity player) {
+    protected List<String> hud(ServerPlayer player) {
         return List.of(game.displayName());
     }
 
     // ------------------------------------------------------------------ framework
 
-    final void begin(List<ServerPlayerEntity> joining) {
+    final void begin(List<ServerPlayer> joining) {
         build();
         int i = 0;
-        for (ServerPlayerEntity p : joining) {
-            players.add(p.getUuid());
-            returnTo.put(p.getUuid(), p.getBlockPos());
+        for (ServerPlayer p : joining) {
+            players.add(p.getUUID());
+            returnTo.put(p.getUUID(), p.blockPosition());
             BlockPos at = spawnPoint(p, i++);
-            p.teleport(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, p.getYaw(), p.getPitch());
+            p.teleportTo(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, p.getYRot(), p.getXRot());
             Msg.game(p, "Welcome to " + game.displayName() + ".");
         }
         start();
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             com.runecraft.content.GameEvents.fireActivity(p, "minigame_start:" + game.id());
         }
     }
@@ -207,14 +206,14 @@ public abstract class MinigameSession {
         return ended;
     }
 
-    public final boolean has(ServerPlayerEntity player) {
-        return players.contains(player.getUuid());
+    public final boolean has(ServerPlayer player) {
+        return players.contains(player.getUUID());
     }
 
-    public final List<ServerPlayerEntity> online() {
-        List<ServerPlayerEntity> list = new ArrayList<>();
+    public final List<ServerPlayer> online() {
+        List<ServerPlayer> list = new ArrayList<>();
         for (UUID u : players) {
-            ServerPlayerEntity p = world.getServer().getPlayerManager().getPlayer(u);
+            ServerPlayer p = world.getServer().getPlayerList().getPlayer(u);
             if (p != null) {
                 list.add(p);
             }
@@ -227,15 +226,15 @@ public abstract class MinigameSession {
     }
 
     /** Sends a player back to where they entered and drops them from the session. */
-    public final void removePlayer(ServerPlayerEntity player, boolean teleport) {
-        if (!players.remove(player.getUuid())) {
+    public final void removePlayer(ServerPlayer player, boolean teleport) {
+        if (!players.remove(player.getUUID())) {
             return;
         }
         onLeave(player);
-        BlockPos back = returnTo.remove(player.getUuid());
+        BlockPos back = returnTo.remove(player.getUUID());
         MinigameManager.forget(player);
         if (teleport && back != null) {
-            player.teleport(world, back.getX() + 0.5, back.getY(), back.getZ() + 0.5, player.getYaw(), player.getPitch());
+            player.teleportTo(world, back.getX() + 0.5, back.getY(), back.getZ() + 0.5, player.getYRot(), player.getXRot());
         }
         MinigameNet.sendHud(player, List.of());
         if (players.isEmpty() && !ended) {
@@ -253,7 +252,7 @@ public abstract class MinigameSession {
             return;
         }
         ended = true;
-        List<ServerPlayerEntity> online = online();
+        List<ServerPlayer> online = online();
         if (rewards) {
             try {
                 onEnd(success);
@@ -261,25 +260,25 @@ public abstract class MinigameSession {
                 com.runecraft.RuneCraft.LOGGER.error("Minigame {} failed to hand out rewards", game.id(), e);
             }
             if (success) {
-                for (ServerPlayerEntity p : online) {
+                for (ServerPlayer p : online) {
                     com.runecraft.content.GameEvents.fireActivity(p, "minigame_win:" + game.id());
                 }
             }
         }
-        Box box = box();
-        for (Entity e : world.getEntitiesByClass(Entity.class, box, e -> !(e instanceof PlayerEntity))) {
+        AABB box = box();
+        for (Entity e : world.getEntitiesOfClass(Entity.class, box, e -> !(e instanceof Player))) {
             if (e instanceof ItemEntity item && !online.isEmpty()) {
-                Inv.give(online.get(0), item.getStack().copy());
+                Inv.give(online.get(0), item.getItem().copy());
             }
             e.discard();
         }
-        for (ServerPlayerEntity p : online) {
-            players.remove(p.getUuid());
+        for (ServerPlayer p : online) {
+            players.remove(p.getUUID());
             onLeave(p);
-            BlockPos back = returnTo.remove(p.getUuid());
+            BlockPos back = returnTo.remove(p.getUUID());
             MinigameManager.forget(p);
             if (back != null) {
-                p.teleport(world, back.getX() + 0.5, back.getY(), back.getZ() + 0.5, p.getYaw(), p.getPitch());
+                p.teleportTo(world, back.getX() + 0.5, back.getY(), back.getZ() + 0.5, p.getYRot(), p.getXRot());
             }
             MinigameNet.sendHud(p, List.of());
         }
@@ -292,20 +291,20 @@ public abstract class MinigameSession {
         MinigameManager.release(this);
     }
 
-    public final Box box() {
-        return new Box(origin.add(-halfX() - 2, -2, -halfZ() - 2), origin.add(halfX() + 2, height() + 3, halfZ() + 2));
+    public final AABB box() {
+        return new AABB(origin.offset(-halfX() - 2, -2, -halfZ() - 2), origin.offset(halfX() + 2, height() + 3, halfZ() + 2));
     }
 
     private void removeStrays() {
         String tag = TAG + "_" + id;
-        List<com.runecraft.boss.DataBossEntity> bosses = world.getEntitiesByClass(com.runecraft.boss.DataBossEntity.class, box(),
-                b -> b.getCommandTags().contains(tag));
-        for (MobEntity mob : world.getEntitiesByClass(MobEntity.class, box(), m -> !m.getCommandTags().contains(tag))) {
+        List<com.runecraft.boss.DataBossEntity> bosses = world.getEntitiesOfClass(com.runecraft.boss.DataBossEntity.class, box(),
+                b -> b.getTags().contains(tag));
+        for (Mob mob : world.getEntitiesOfClass(Mob.class, box(), m -> !m.getTags().contains(tag))) {
             if (mob instanceof com.runecraft.entity.QuestNpcEntity) {
                 continue;
             }
             // Minions summoned by one of our bosses join the session; anything else is a stray spawn.
-            boolean minion = bosses.stream().anyMatch(b -> b.squaredDistanceTo(mob) < 64);
+            boolean minion = bosses.stream().anyMatch(b -> b.distanceToSqr(mob) < 64);
             if (minion) {
                 tag(mob);
             } else {
@@ -317,12 +316,12 @@ public abstract class MinigameSession {
     // ------------------------------------------------------------------ helpers
 
     /** Builds the sealed arena room with the given materials. */
-    protected final void room(net.minecraft.block.Block floor, net.minecraft.block.Block wall, net.minecraft.block.Block accent) {
-        Arena.room(world, origin, halfX(), halfZ(), height(), floor.getDefaultState(), wall.getDefaultState(), accent.getDefaultState());
+    protected final void room(net.minecraft.world.level.block.Block floor, net.minecraft.world.level.block.Block wall, net.minecraft.world.level.block.Block accent) {
+        Arena.room(world, origin, halfX(), halfZ(), height(), floor.defaultBlockState(), wall.defaultBlockState(), accent.defaultBlockState());
     }
 
     protected final BlockPos rel(int dx, int dy, int dz) {
-        return origin.add(dx, dy, dz);
+        return origin.offset(dx, dy, dz);
     }
 
     protected final void set(int dx, int dy, int dz, BlockState state) {
@@ -334,7 +333,7 @@ public abstract class MinigameSession {
     }
 
     /** Spawns a creature (module monster, data boss or built-in) at an arena-relative position. */
-    protected final MobEntity spawn(String creatureId, BlockPos at) {
+    protected final Mob spawn(String creatureId, BlockPos at) {
         EntityType<?> type = ModEntities.typeById(creatureId);
         if (type == null) {
             com.runecraft.RuneCraft.LOGGER.warn("Unknown creature {}", creatureId);
@@ -343,15 +342,15 @@ public abstract class MinigameSession {
         return spawnType(type, at);
     }
 
-    protected final MobEntity spawnType(EntityType<?> type, BlockPos at) {
+    protected final Mob spawnType(EntityType<?> type, BlockPos at) {
         Entity e = type.create(world);
-        if (!(e instanceof MobEntity mob)) {
+        if (!(e instanceof Mob mob)) {
             return null;
         }
-        mob.refreshPositionAndAngles(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, random.nextFloat() * 360f, 0);
-        mob.initialize(world, world.getLocalDifficulty(at), SpawnReason.EVENT, null, null);
+        mob.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, random.nextFloat() * 360f, 0);
+        mob.finalizeSpawn(world, world.getCurrentDifficultyAt(at), MobSpawnType.EVENT, null, null);
         tag(mob);
-        world.spawnEntity(mob);
+        world.addFreshEntity(mob);
         if (mob instanceof com.runecraft.boss.DataBossEntity boss) {
             boss.instanceTag = TAG + "_" + id;
             boss.script().onSpawn(boss);
@@ -359,15 +358,15 @@ public abstract class MinigameSession {
         return mob;
     }
 
-    protected final void tag(MobEntity mob) {
-        mob.addCommandTag(TAG);
-        mob.addCommandTag(TAG + "_" + id);
-        mob.setPersistent();
+    protected final void tag(Mob mob) {
+        mob.addTag(TAG);
+        mob.addTag(TAG + "_" + id);
+        mob.setPersistenceRequired();
     }
 
     /** Sets a creature's max and current hitpoints (wave scaling). */
     protected static void setHitpoints(LivingEntity mob, int hp) {
-        EntityAttributeInstance attr = mob.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH);
+        AttributeInstance attr = mob.getAttribute(Attributes.MAX_HEALTH);
         if (attr != null) {
             attr.setBaseValue(hp);
             mob.setHealth(hp);
@@ -384,15 +383,15 @@ public abstract class MinigameSession {
     }
 
     /** Sets every online player's target as the creature's target. */
-    protected final void aggro(MobEntity mob) {
-        List<ServerPlayerEntity> online = online();
+    protected final void aggro(Mob mob) {
+        List<ServerPlayer> online = online();
         if (!online.isEmpty()) {
             mob.setTarget(online.get(random.nextInt(online.size())));
         }
     }
 
     /** Environmental damage (traps, cold, waves) with a hitsplat. */
-    protected static void hurt(ServerPlayerEntity p, int damage) {
+    protected static void hurt(ServerPlayer p, int damage) {
         if (damage <= 0) {
             return;
         }
@@ -401,34 +400,34 @@ public abstract class MinigameSession {
     }
 
     /** Starts a repeating per-game-tick action for a player (stops when the step returns false). */
-    protected static void repeat(ServerPlayerEntity p, java.util.function.Predicate<ServerPlayerEntity> step) {
+    protected static void repeat(ServerPlayer p, java.util.function.Predicate<ServerPlayer> step) {
         com.runecraft.action.ActionManager.start(p, (player, tick) -> step.test(player));
     }
 
     protected final void broadcast(String message) {
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             Msg.game(p, message);
         }
     }
 
     protected final void broadcastRed(String message) {
-        for (ServerPlayerEntity p : online()) {
-            p.sendMessage(Text.literal(message).formatted(Formatting.RED), false);
+        for (ServerPlayer p : online()) {
+            p.displayClientMessage(Component.literal(message).withStyle(ChatFormatting.RED), false);
         }
     }
 
-    protected final int level(ServerPlayerEntity p, Skill skill) {
+    protected final int level(ServerPlayer p, Skill skill) {
         return Players.data(p).skills().level(skill);
     }
 
-    protected static void xp(ServerPlayerEntity p, Skill skill, double amount) {
+    protected static void xp(ServerPlayer p, Skill skill, double amount) {
         if (amount > 0) {
             XpService.add(p, skill, amount);
         }
     }
 
     /** Gives an item reward, logs it and fires the obtain event. */
-    protected static void reward(ServerPlayerEntity p, String item, int count) {
+    protected static void reward(ServerPlayer p, String item, int count) {
         if (count <= 0) {
             return;
         }
@@ -437,19 +436,19 @@ public abstract class MinigameSession {
     }
 
     /** Rolls a loot table once and gives the result. */
-    protected final void rollLoot(ServerPlayerEntity p, List<MinigameRules.Loot> table) {
+    protected final void rollLoot(ServerPlayer p, List<MinigameRules.Loot> table) {
         MinigameRules.Loot l = MinigameRules.pick(table, random.nextDouble());
         reward(p, l.item(), l.min() + random.nextInt(l.max() - l.min() + 1));
     }
 
-    protected final void addPoints(ServerPlayerEntity p, String currency, int amount) {
-        MinigameData.of(p).addPoints(p.getUuid(), com.runecraft.osrs.content.minigames.MinigameCurrencies.key(currency), amount);
+    protected final void addPoints(ServerPlayer p, String currency, int amount) {
+        MinigameData.of(p).addPoints(p.getUUID(), com.runecraft.osrs.content.minigames.MinigameCurrencies.key(currency), amount);
     }
 
     protected final List<LivingEntity> living(String creatureId) {
         String tag = TAG + "_" + id;
         List<LivingEntity> list = new ArrayList<>();
-        for (LivingEntity e : world.getEntitiesByClass(LivingEntity.class, box(), x -> x.isAlive() && x.getCommandTags().contains(tag))) {
+        for (LivingEntity e : world.getEntitiesOfClass(LivingEntity.class, box(), x -> x.isAlive() && x.getTags().contains(tag))) {
             if (creatureId == null || creatureId.equals(MinigameManager.creatureId(e))) {
                 list.add(e);
             }
@@ -467,7 +466,7 @@ public abstract class MinigameSession {
     }
 
     /** The player's current position relative to the arena origin. */
-    protected final BlockPos relPos(ServerPlayerEntity p) {
-        return p.getBlockPos().subtract(origin);
+    protected final BlockPos relPos(ServerPlayer p) {
+        return p.blockPosition().subtract(origin);
     }
 }

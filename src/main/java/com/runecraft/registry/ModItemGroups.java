@@ -3,12 +3,11 @@ package com.runecraft.registry;
 import com.runecraft.RuneCraft;
 import com.runecraft.osrs.ItemDef;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemGroup;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.text.Text;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 
 public final class ModItemGroups {
     private ModItemGroups() {
@@ -19,29 +18,29 @@ public final class ModItemGroups {
     }
 
     public static void register() {
-        Registry.register(Registries.ITEM_GROUP, RuneCraft.id("items"), FabricItemGroup.builder()
+        Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, RuneCraft.id("items"), FabricItemGroup.builder()
                 .icon(() -> new ItemStack(ModItems.get("air_rune")))
-                .displayName(Text.translatable("itemGroup.runecraft.items"))
-                .entries((context, entries) -> {
+                .title(Component.translatable("itemGroup.runecraft.items"))
+                .displayItems((context, entries) -> {
                     for (Item item : ModItems.all()) {
                         if (!isEquipment(ModItems.def(item))) {
-                            entries.add(item);
+                            entries.accept(item);
                         }
                     }
                 }).build());
-        Registry.register(Registries.ITEM_GROUP, RuneCraft.id("equipment"), FabricItemGroup.builder()
+        Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, RuneCraft.id("equipment"), FabricItemGroup.builder()
                 .icon(() -> new ItemStack(ModItems.get("rune_scimitar")))
-                .displayName(Text.translatable("itemGroup.runecraft.equipment"))
-                .entries((context, entries) -> {
+                .title(Component.translatable("itemGroup.runecraft.equipment"))
+                .displayItems((context, entries) -> {
                     for (Item item : ModItems.all()) {
                         if (isEquipment(ModItems.def(item))) {
-                            entries.add(item);
+                            entries.accept(item);
                         }
                     }
                 }).build());
-        Registry.register(Registries.ITEM_GROUP, RuneCraft.id("blocks"), FabricItemGroup.builder()
+        Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, RuneCraft.id("blocks"), FabricItemGroup.builder()
                 .icon(() -> new ItemStack(ModBlocks.TREES.values().iterator().next()))
-                .displayName(Text.translatable("itemGroup.runecraft.blocks"))
-                .entries((context, entries) -> ModBlocks.items().forEach(entries::add)).build());
+                .title(Component.translatable("itemGroup.runecraft.blocks"))
+                .displayItems((context, entries) -> ModBlocks.items().forEach(entries::accept)).build());
     }
 }

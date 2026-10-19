@@ -4,7 +4,7 @@ import com.runecraft.boss.BossScript;
 import com.runecraft.boss.DataBossEntity;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.content.AttackDef;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Fumus, Umbra, Cruor and Glacies: they wait in the corners of Nex's prison, immune and silent,
@@ -24,7 +24,7 @@ final class NexMinionScript implements BossScript {
     }
 
     @Override
-    public AttackDef chooseAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+    public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
         return active ? null : IDLE;
     }
 

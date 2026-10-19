@@ -8,13 +8,12 @@ import com.runecraft.osrs.content.minigames.MinigameCurrencies;
 import com.runecraft.osrs.content.minigames.MinigameRules.GiantsFoundry;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * Giants' Foundry: fill the crucible with 14 bars (better metals make better swords), pour it into
@@ -35,7 +34,7 @@ public class GiantsFoundrySession extends MinigameSession {
     private int[] plan = new int[GiantsFoundry.STAGES];
     private int swords;
 
-    public GiantsFoundrySession(int id, int slot, ServerWorld world, String variant) {
+    public GiantsFoundrySession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.GIANTS_FOUNDRY, id, slot, world, variant);
     }
 
@@ -64,7 +63,7 @@ public class GiantsFoundrySession extends MinigameSession {
     }
 
     @Override
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
+    protected BlockPos spawnPoint(ServerPlayer player, int index) {
         return rel(index % 3 - 1, 1, 10);
     }
 
@@ -95,7 +94,7 @@ public class GiantsFoundrySession extends MinigameSession {
     }
 
     @Override
-    protected boolean onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         switch (blockId) {
             case "foundry_crucible" -> {
                 if (poured) {
@@ -136,7 +135,7 @@ public class GiantsFoundrySession extends MinigameSession {
                 }
                 int metalScore = Math.max(1, metalTotal / GiantsFoundry.BARS_NEEDED);
                 int rep = GiantsFoundry.reputation(quality, metalScore);
-                for (ServerPlayerEntity p : online()) {
+                for (ServerPlayer p : online()) {
                     addPoints(p, MinigameCurrencies.FOUNDRY, rep);
                     xp(p, Skill.SMITHING, GiantsFoundry.xp(quality, metalScore));
                     reward(p, "coins", rep * 10);
@@ -152,7 +151,7 @@ public class GiantsFoundrySession extends MinigameSession {
         return true;
     }
 
-    private void work(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    private void work(ServerPlayer player, String blockId, BlockPos pos) {
         if (!poured || stage >= GiantsFoundry.STAGES) {
             Msg.game(player, poured ? "The sword is finished. Hand it to Kovac." : "There's no sword to work on.");
             return;
@@ -171,7 +170,7 @@ public class GiantsFoundrySession extends MinigameSession {
         progress++;
         heat = Math.max(0, heat - 3);
         xp(player, Skill.SMITHING, 6);
-        world.spawnParticles(ParticleTypes.LAVA, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, 3, 0.2, 0.2, 0.2, 0);
+        world.sendParticles(ParticleTypes.LAVA, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, 3, 0.2, 0.2, 0.2, 0);
         if (progress >= 5) {
             progress = 0;
             stage++;
@@ -188,15 +187,15 @@ public class GiantsFoundrySession extends MinigameSession {
     }
 
     @Override
-    protected void onLeave(ServerPlayerEntity player) {
-        MinigameData.of(player).setStat(player.getUuid(), "kc:" + game.id(), MinigameData.of(player).stat(player.getUuid(), "kc:" + game.id()) + swords);
+    protected void onLeave(ServerPlayer player) {
+        MinigameData.of(player).setStat(player.getUUID(), "kc:" + game.id(), MinigameData.of(player).stat(player.getUUID(), "kc:" + game.id()) + swords);
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
+    protected List<String> hud(ServerPlayer player) {
         String step = !poured ? "Crucible: " + bars + " / " + GiantsFoundry.BARS_NEEDED + " bars"
                 : stage >= GiantsFoundry.STAGES ? "Hand in to Kovac" : "Stage " + (stage + 1) + "/6: " + TOOL_NAMES[plan[stage]] + " (" + progress + "/5)";
         return List.of("Giants' Foundry", step, "Heat: " + heat + "  Quality: " + quality,
-                "Reputation: " + MinigameData.of(player).points(player.getUuid(), "giants_foundry"));
+                "Reputation: " + MinigameData.of(player).points(player.getUUID(), "giants_foundry"));
     }
 }

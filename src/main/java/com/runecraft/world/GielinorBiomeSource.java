@@ -5,15 +5,14 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.runecraft.osrs.GielinorMap;
 import com.runecraft.osrs.Region;
 import com.runecraft.osrs.world.Elevation;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.world.biome.source.BiomeCoords;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.source.BiomeSource;
-import net.minecraft.world.biome.source.util.MultiNoiseUtil;
-
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.stream.Stream;
+import net.minecraft.core.Holder;
+import net.minecraft.core.QuartPos;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.BiomeSource;
+import net.minecraft.world.level.biome.Climate;
 
 /**
  * Places biomes by real Old School RuneScape geography (see {@link GielinorMap}) instead of
@@ -23,20 +22,20 @@ import java.util.stream.Stream;
  */
 public class GielinorBiomeSource extends BiomeSource {
     public static final Codec<GielinorBiomeSource> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            Codec.unboundedMap(Codec.STRING, Biome.REGISTRY_CODEC).fieldOf("biomes").forGetter(s -> s.byName)
+            Codec.unboundedMap(Codec.STRING, Biome.CODEC).fieldOf("biomes").forGetter(s -> s.byName)
     ).apply(instance, instance.stable(GielinorBiomeSource::new)));
 
-    private final Map<String, RegistryEntry<Biome>> byName;
-    private final Map<Region, RegistryEntry<Biome>> byRegion = new EnumMap<>(Region.class);
-    private final RegistryEntry<Biome> fallback;
-    private final RegistryEntry<Biome> sea;
-    private final RegistryEntry<Biome> peaks;
+    private final Map<String, Holder<Biome>> byName;
+    private final Map<Region, Holder<Biome>> byRegion = new EnumMap<>(Region.class);
+    private final Holder<Biome> fallback;
+    private final Holder<Biome> sea;
+    private final Holder<Biome> peaks;
 
-    public GielinorBiomeSource(Map<String, RegistryEntry<Biome>> byName) {
+    public GielinorBiomeSource(Map<String, Holder<Biome>> byName) {
         this.byName = byName;
-        RegistryEntry<Biome> first = null;
+        Holder<Biome> first = null;
         for (Region r : Region.values()) {
-            RegistryEntry<Biome> b = byName.get(r.id());
+            Holder<Biome> b = byName.get(r.id());
             if (b != null) {
                 byRegion.put(r, b);
                 if (first == null) {
@@ -53,19 +52,19 @@ public class GielinorBiomeSource extends BiomeSource {
     }
 
     @Override
-    protected Codec<? extends BiomeSource> getCodec() {
+    protected Codec<? extends BiomeSource> codec() {
         return CODEC;
     }
 
     @Override
-    protected Stream<RegistryEntry<Biome>> biomeStream() {
+    protected Stream<Holder<Biome>> collectPossibleBiomes() {
         return byName.values().stream().distinct();
     }
 
     @Override
-    public RegistryEntry<Biome> getBiome(int x, int y, int z, MultiNoiseUtil.MultiNoiseSampler noise) {
-        int bx = BiomeCoords.toBlock(x);
-        int bz = BiomeCoords.toBlock(z);
+    public Holder<Biome> getNoiseBiome(int x, int y, int z, Climate.Sampler noise) {
+        int bx = QuartPos.toBlock(x);
+        int bz = QuartPos.toBlock(z);
         if (sea != null && Elevation.isOcean(bx, bz)) {
             return sea;
         }

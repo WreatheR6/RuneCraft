@@ -7,12 +7,11 @@ import com.runecraft.osrs.content.systems.CombatAchievements.Tier;
 import com.runecraft.osrs.content.systems.CombatAchievements.Track;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
-import net.minecraft.server.network.ServerPlayerEntity;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import net.minecraft.server.level.ServerPlayer;
 
 /** The Combat Achievements screens: overview with rewards, task lists per tier and per boss, and the antique lamps. */
 public final class CaMenus {
@@ -80,7 +79,7 @@ public final class CaMenus {
         SysNet.onAction("cahilt", CombatAchievementService::hiltAction);
     }
 
-    public static void overview(ServerPlayerEntity p) {
+    public static void overview(ServerPlayer p) {
         SysState.SysPlayer sp = SysState.of(p);
         int points = CombatAchievements.points(sp.caDone);
         Tier unlocked = CombatAchievements.unlocked(points);
@@ -117,7 +116,7 @@ public final class CaMenus {
         s.send(p);
     }
 
-    private static String line(ServerPlayerEntity p, SysState.SysPlayer sp, Task t) {
+    private static String line(ServerPlayer p, SysState.SysPlayer sp, Task t) {
         boolean done = sp.caDone.contains(t.id());
         boolean counted = t.track() == Track.KILLS || t.track() == Track.RAID || t.track() == Track.RUN || t.track() == Track.STREAK;
         String progress = counted && t.count() > 1 && !done ? " (" + CombatAchievementService.progress(p, t) + "/" + t.count() + ")" : "";
@@ -128,7 +127,7 @@ public final class CaMenus {
         return sp.caDone.contains(t.id()) ? 0x60E060 : t.track() == Track.UNTRACKED ? 0x808080 : 0xE0E0E0;
     }
 
-    public static void tier(ServerPlayerEntity p, Tier tier, int page) {
+    public static void tier(ServerPlayer p, Tier tier, int page) {
         SysState.SysPlayer sp = SysState.of(p);
         List<Task> tasks = CombatAchievements.tasks(tier);
         int pages = Math.max(1, (tasks.size() + TASKS_PER_PAGE - 1) / TASKS_PER_PAGE);
@@ -149,7 +148,7 @@ public final class CaMenus {
         s.send(p);
     }
 
-    public static void bosses(ServerPlayerEntity p, int page) {
+    public static void bosses(ServerPlayer p, int page) {
         SysState.SysPlayer sp = SysState.of(p);
         List<Map.Entry<String, List<Task>>> all = new ArrayList<>(CombatAchievements.byMonster().entrySet());
         int pages = Math.max(1, (all.size() + BOSSES_PER_PAGE - 1) / BOSSES_PER_PAGE);
@@ -170,7 +169,7 @@ public final class CaMenus {
         s.send(p);
     }
 
-    public static void boss(ServerPlayerEntity p, String monster) {
+    public static void boss(ServerPlayer p, String monster) {
         SysState.SysPlayer sp = SysState.of(p);
         List<Task> tasks = CombatAchievements.byMonster().get(monster);
         if (tasks == null) {
@@ -187,7 +186,7 @@ public final class CaMenus {
         s.send(p);
     }
 
-    public static void lamp(ServerPlayerEntity p, Tier tier) {
+    public static void lamp(ServerPlayer p, Tier tier) {
         SysNet.Screen s = new SysNet.Screen("calamp", "Antique lamp (" + tier.id() + " combat achievements)");
         s.line("Choose a skill to gain " + String.format(Locale.ROOT, "%,d", tier.lampXp) + " XP (level " + tier.lampMinLevel + "+).");
         PlayerData d = Players.data(p);

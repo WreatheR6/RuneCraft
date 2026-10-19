@@ -5,10 +5,10 @@ import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.runecraft.RuneCraft;
 import com.runecraft.osrs.world.Elevation;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.util.dynamic.CodecHolder;
-import net.minecraft.world.gen.densityfunction.DensityFunction;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.util.KeyDispatchDataCodec;
+import net.minecraft.world.level.levelgen.DensityFunction;
 
 /**
  * Density function {@code runecraft:gielinor_terrain}: solid below the OSRS-faithful terrain height
@@ -21,26 +21,26 @@ public record GielinorTerrainDensity(double scale) implements DensityFunction {
     public static final MapCodec<GielinorTerrainDensity> MAP_CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             Codec.DOUBLE.optionalFieldOf("scale", 0.125).forGetter(GielinorTerrainDensity::scale)
     ).apply(instance, GielinorTerrainDensity::new));
-    public static final CodecHolder<GielinorTerrainDensity> CODEC = CodecHolder.of(MAP_CODEC);
+    public static final KeyDispatchDataCodec<GielinorTerrainDensity> CODEC = KeyDispatchDataCodec.of(MAP_CODEC);
 
     /** Registers the density function type (call from mod init, before worlds load). */
     public static void register() {
-        Registry.register(Registries.DENSITY_FUNCTION_TYPE, RuneCraft.id("gielinor_terrain"), CODEC.codec());
+        Registry.register(BuiltInRegistries.DENSITY_FUNCTION_TYPE, RuneCraft.id("gielinor_terrain"), CODEC.codec());
     }
 
     @Override
-    public double sample(DensityFunction.NoisePos pos) {
+    public double compute(DensityFunction.FunctionContext pos) {
         double d = (Elevation.height(pos.blockX(), pos.blockZ()) - pos.blockY()) * scale;
         return Math.max(-LIMIT, Math.min(LIMIT, d));
     }
 
     @Override
-    public void fill(double[] densities, DensityFunction.EachApplier applier) {
-        applier.fill(densities, this);
+    public void fillArray(double[] densities, DensityFunction.ContextProvider applier) {
+        applier.fillAllDirectly(densities, this);
     }
 
     @Override
-    public DensityFunction apply(DensityFunction.DensityFunctionVisitor visitor) {
+    public DensityFunction mapAll(DensityFunction.Visitor visitor) {
         return visitor.apply(this);
     }
 
@@ -55,7 +55,7 @@ public record GielinorTerrainDensity(double scale) implements DensityFunction {
     }
 
     @Override
-    public CodecHolder<? extends DensityFunction> getCodecHolder() {
+    public KeyDispatchDataCodec<? extends DensityFunction> codec() {
         return CODEC;
     }
 }

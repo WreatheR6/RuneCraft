@@ -13,15 +13,14 @@ import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.Hand;
-import net.minecraft.util.TypedActionResult;
-
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
 import java.util.Random;
 
 /**
@@ -57,42 +56,42 @@ public final class GauntletService {
         });
         com.runecraft.combat.CombatHooks.addIncomingModifier(GauntletService::armour);
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            ItemStack stack = player.getStackInHand(hand);
-            if (world.isClient() || !(player instanceof ServerPlayerEntity sp) || stack.isEmpty()) {
-                return TypedActionResult.pass(stack);
+            ItemStack stack = player.getItemInHand(hand);
+            if (world.isClientSide() || !(player instanceof ServerPlayer sp) || stack.isEmpty()) {
+                return InteractionResultHolder.pass(stack);
             }
             String id = Inv.idOf(stack);
             if (id.equals(Gauntlet.EGNIOL)) {
-                if (!sp.getItemCooldownManager().isCoolingDown(stack.getItem())) {
+                if (!sp.getCooldowns().isOnCooldown(stack.getItem())) {
                     drinkEgniol(sp, stack, hand);
                 }
-                return TypedActionResult.success(stack);
+                return InteractionResultHolder.success(stack);
             }
             if (id.equals(Gauntlet.ESCAPE_CRYSTAL)) {
                 if (MinigameManager.session(sp) instanceof GauntletSession) {
-                    stack.decrement(1);
+                    stack.shrink(1);
                     Msg.action(sp, "The crystal shatters and you escape the Gauntlet.");
                     MinigameManager.leave(sp);
                 } else {
                     Msg.game(sp, "The crystal only works inside the Gauntlet.");
                 }
-                return TypedActionResult.success(stack);
+                return InteractionResultHolder.success(stack);
             }
             for (Gauntlet.Mode m : Gauntlet.Mode.values()) {
                 if (id.equals(Gauntlet.teleport(m))) {
                     if (MinigameManager.session(sp) instanceof GauntletSession g && g.teleportToStart(sp)) {
-                        stack.decrement(1);
+                        stack.shrink(1);
                         Msg.action(sp, "The crystal shatters and returns you to the starting room.");
                     } else if (!(MinigameManager.session(sp) instanceof GauntletSession)) {
                         Msg.game(sp, "The crystal only works inside the Gauntlet.");
                     }
-                    return TypedActionResult.success(stack);
+                    return InteractionResultHolder.success(stack);
                 }
             }
-            return TypedActionResult.pass(stack);
+            return InteractionResultHolder.pass(stack);
         });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            ServerPlayerEntity p = handler.getPlayer();
+            ServerPlayer p = handler.getPlayer();
             if (GauntletStash.has(p) && !(MinigameManager.session(p) instanceof GauntletSession)) {
                 GauntletStash.restore(p);
                 Msg.game(p, "Your belongings from before the Gauntlet have been returned.");
@@ -101,7 +100,7 @@ public final class GauntletService {
     }
 
     /** Worn crystal or corrupted armour lowers the Hunllef's and its tornadoes' hits by the sum of the pieces' tiers. */
-    static int armour(ServerPlayerEntity p, LivingEntity attacker, int damage) {
+    static int armour(ServerPlayer p, LivingEntity attacker, int damage) {
         if (damage <= 0 || attacker == null || !(MinigameManager.session(p) instanceof GauntletSession g)) {
             return damage;
         }
@@ -109,28 +108,28 @@ public final class GauntletService {
         if (!id.equals(g.mode().boss) && !id.equals("hunllef_tornado")) {
             return damage;
         }
-        int sum = Gauntlet.armourTier(Inv.idOf(p.getEquippedStack(EquipmentSlot.HEAD)))
-                + Gauntlet.armourTier(Inv.idOf(p.getEquippedStack(EquipmentSlot.CHEST)))
-                + Gauntlet.armourTier(Inv.idOf(p.getEquippedStack(EquipmentSlot.LEGS)));
+        int sum = Gauntlet.armourTier(Inv.idOf(p.getItemBySlot(EquipmentSlot.HEAD)))
+                + Gauntlet.armourTier(Inv.idOf(p.getItemBySlot(EquipmentSlot.CHEST)))
+                + Gauntlet.armourTier(Inv.idOf(p.getItemBySlot(EquipmentSlot.LEGS)));
         return (int) Math.round(damage * Gauntlet.hunllefDamageScale(g.mode(), sum));
     }
 
     /** Egniol potion: restores floor(Prayer / 4) + 7 prayer points and 40% run energy, and acts as a stamina potion. */
-    static void drinkEgniol(ServerPlayerEntity p, ItemStack stack, Hand hand) {
+    static void drinkEgniol(ServerPlayer p, ItemStack stack, InteractionHand hand) {
         PlayerData data = Players.data(p);
         int level = data.skills().level(Skill.PRAYER);
         data.setPrayerPoints(Math.min(level, data.prayerPoints() + Gauntlet.egniolPrayer(level)));
         SysState.SysPlayer sp = SysState.of(p);
         sp.runEnergy = Math.min(RunEnergy.MAX, sp.runEnergy + RunEnergy.MAX * 40 / 100);
         sp.staminaUntil = com.runecraft.action.ActionManager.gameTick() + 200;
-        p.getWorld().playSound(null, p.getBlockPos(), SoundEvents.ENTITY_GENERIC_DRINK, SoundCategory.PLAYERS, 0.5f, 1.0f);
-        p.getItemCooldownManager().set(stack.getItem(), 3 * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK);
-        int used = stack.getDamage() + 1;
+        p.level().playSound(null, p.blockPosition(), SoundEvents.GENERIC_DRINK, SoundSource.PLAYERS, 0.5f, 1.0f);
+        p.getCooldowns().addCooldown(stack.getItem(), 3 * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK);
+        int used = stack.getDamageValue() + 1;
         if (used >= 4) {
-            p.setStackInHand(hand, Inv.stack(Gauntlet.VIAL, 1));
+            p.setItemInHand(hand, Inv.stack(Gauntlet.VIAL, 1));
             Msg.action(p, "You drink the last of your egniol potion.");
         } else {
-            stack.setDamage(used);
+            stack.setDamageValue(used);
             Msg.action(p, "You drink some of your egniol potion. You have " + (4 - used) + " dose" + (used == 3 ? "" : "s") + " left.");
         }
         SysNet.sendState(p);

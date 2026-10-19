@@ -10,14 +10,6 @@ import com.runecraft.osrs.EquipmentDef;
 import com.runecraft.osrs.ItemCatalog;
 import com.runecraft.osrs.ItemDef;
 import com.runecraft.osrs.data.MetalTier;
-import net.minecraft.item.ArmorItem;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.Rarity;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -25,6 +17,13 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Rarity;
 
 /** Registers one Minecraft item per {@link ItemCatalog} entry. */
 public final class ModItems {
@@ -40,14 +39,14 @@ public final class ModItems {
             TOOL_MATERIALS.put(t, new OsrsToolMaterial(t));
         }
         for (ItemDef def : ItemCatalog.all()) {
-            Item item = Registry.register(Registries.ITEM, RuneCraft.id(def.id()), create(def));
+            Item item = Registry.register(BuiltInRegistries.ITEM, RuneCraft.id(def.id()), create(def));
             BY_ID.put(def.id(), item);
         }
     }
 
     private static Item create(ItemDef def) {
         // Minecraft 1.20.1 saves stack counts as a byte, so OSRS-style huge stacks (scales, shards) are capped at 64.
-        Item.Settings settings = new Item.Settings().maxCount(Math.min(64, Math.max(1, def.maxStack())));
+        Item.Properties settings = new Item.Properties().stacksTo(Math.min(64, Math.max(1, def.maxStack())));
         if (def.tier() != null && (def.tier().equals("dragon") || def.tier().equals("rune") || def.tier().equals("magic"))) {
             settings = settings.rarity(def.tier().equals("dragon") ? Rarity.RARE : Rarity.UNCOMMON);
         }
@@ -56,21 +55,21 @@ public final class ModItems {
         }
         MetalTier metal = metal(def.tier());
         return switch (def.kind()) {
-            case AXE -> new OsrsEquipmentItems.Axe(def, TOOL_MATERIALS.get(metal), new Item.Settings());
-            case PICKAXE -> new OsrsEquipmentItems.Pickaxe(def, TOOL_MATERIALS.get(metal), new Item.Settings());
+            case AXE -> new OsrsEquipmentItems.Axe(def, TOOL_MATERIALS.get(metal), new Item.Properties());
+            case PICKAXE -> new OsrsEquipmentItems.Pickaxe(def, TOOL_MATERIALS.get(metal), new Item.Properties());
             case MELEE_WEAPON -> {
                 EquipmentDef eq = def.equipment();
                 int damage = Math.max(1, eq.stats().meleeStrength() / 12);
                 // OSRS attack speed in game ticks (0.6s) -> vanilla attacks per second.
                 float speed = -4.0f + 1.0f / (eq.attackSpeed() * 0.6f);
-                yield new OsrsEquipmentItems.Weapon(def, TOOL_MATERIALS.get(metal), damage, speed, new Item.Settings());
+                yield new OsrsEquipmentItems.Weapon(def, TOOL_MATERIALS.get(metal), damage, speed, new Item.Properties());
             }
             case ARMOUR -> new OsrsEquipmentItems.Armour(def, armorMaterial(def.tier()), armorType(def.equipment().slot()),
-                    new Item.Settings());
-            case BOW -> new OsrsEquipmentItems.Bow(def, new Item.Settings().maxDamage(384));
-            case ARROW -> new OsrsEquipmentItems.Arrow(def, new Item.Settings());
-            case STAFF -> new OsrsEquipmentItems.Staff(def, new Item.Settings().maxCount(1));
-            case POTION -> new OsrsItem(def, new Item.Settings().maxDamage(4));
+                    new Item.Properties());
+            case BOW -> new OsrsEquipmentItems.Bow(def, new Item.Properties().durability(384));
+            case ARROW -> new OsrsEquipmentItems.Arrow(def, new Item.Properties());
+            case STAFF -> new OsrsEquipmentItems.Staff(def, new Item.Properties().stacksTo(1));
+            case POTION -> new OsrsItem(def, new Item.Properties().durability(4));
             default -> new OsrsItem(def, settings);
         };
     }
@@ -122,7 +121,7 @@ public final class ModItems {
         if (item instanceof OsrsItemLike like) {
             return like.def();
         }
-        Identifier id = Registries.ITEM.getId(item);
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(item);
         return id.getNamespace().equals(RuneCraft.MOD_ID) ? ItemCatalog.get(id.getPath()) : null;
     }
 

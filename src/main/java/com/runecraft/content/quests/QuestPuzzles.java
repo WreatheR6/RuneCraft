@@ -7,12 +7,6 @@ import com.runecraft.osrs.content.quests.QuestSpec;
 import com.runecraft.osrs.content.quests.QuestSpec.Trigger;
 import com.runecraft.quest.QuestApi;
 import com.runecraft.util.Msg;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,6 +14,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Runs {@link QuestPuzzle} triggers: shows the player's room of the puzzle with clickable options
@@ -53,23 +52,23 @@ public final class QuestPuzzles {
         return "puzzle:" + puzzle.key;
     }
 
-    static long seed(ServerPlayerEntity p, QuestPuzzle puzzle) {
-        int attempt = QuestsState.get(p).kills(p.getUuid(), attemptsKey(puzzle));
-        return QuestPuzzle.seed(p.getUuidAsString(), puzzle.key, attempt);
+    static long seed(ServerPlayer p, QuestPuzzle puzzle) {
+        int attempt = QuestsState.get(p).kills(p.getUUID(), attemptsKey(puzzle));
+        return QuestPuzzle.seed(p.getStringUUID(), puzzle.key, attempt);
     }
 
-    static QuestPuzzle.Variant variant(ServerPlayerEntity p, Trigger t) {
+    static QuestPuzzle.Variant variant(ServerPlayer p, Trigger t) {
         return t.puzzle.variant(seed(p, t.puzzle), t.slot);
     }
 
     /** Who presents the trigger's puzzle to this player: the variant's NPC, else the trigger target. */
-    static String presenter(ServerPlayerEntity p, Trigger t) {
+    static String presenter(ServerPlayer p, Trigger t) {
         String npc = variant(p, t).npc();
         return npc != null ? npc : t.target;
     }
 
     /** Talking to an NPC that presents a puzzle of an active quest: shows it. True if handled. */
-    static boolean talk(ServerPlayerEntity p, String npcId, List<QuestSpec> quests) {
+    static boolean talk(ServerPlayer p, String npcId, List<QuestSpec> quests) {
         for (QuestSpec q : quests) {
             if (!QuestInterpreter.active(p, q)) {
                 continue;
@@ -90,8 +89,8 @@ public final class QuestPuzzles {
     }
 
     /** Arriving at a place that presents a puzzle (called from the reach tick); shown once per visit. */
-    static void reach(ServerPlayerEntity p, QuestSpec q, Trigger t, boolean inside) {
-        String key = p.getUuidAsString() + "|" + q.id() + "|" + t.stage + "|" + q.stages.get(t.stage).triggers.indexOf(t);
+    static void reach(ServerPlayer p, QuestSpec q, Trigger t, boolean inside) {
+        String key = p.getStringUUID() + "|" + q.id() + "|" + t.stage + "|" + q.stages.get(t.stage).triggers.indexOf(t);
         if (!inside) {
             SHOWN.remove(key);
             return;
@@ -105,9 +104,9 @@ public final class QuestPuzzles {
         }
     }
 
-    static void show(ServerPlayerEntity p, QuestSpec q, Trigger t) {
+    static void show(ServerPlayer p, QuestSpec q, Trigger t) {
         int index = q.stages.get(t.stage).triggers.indexOf(t);
-        Entry e = ACTIVE.get(p.getUuid());
+        Entry e = ACTIVE.get(p.getUUID());
         QuestPuzzle.Variant v = variant(p, t);
         String speaker = QuestInterpreter.npcName(presenter(p, t));
         if (e != null && e.awaitingKill && e.quest.equals(q.id()) && e.stage == t.stage && e.trigger == index) {
@@ -119,18 +118,18 @@ public final class QuestPuzzles {
             Msg.game(p, "Defeat " + (boss == null ? v.kill().replace('_', ' ') : boss.name) + "!");
             return;
         }
-        ACTIVE.put(p.getUuid(), new Entry(q.id(), t.stage, index));
+        ACTIVE.put(p.getUUID(), new Entry(q.id(), t.stage, index));
         QuestInterpreter.speak(p, isNpc(presenter(p, t)) ? speaker : "", v.prompt());
         long seed = seed(p, t.puzzle);
-        MutableText line = Text.literal("");
+        MutableComponent line = Component.literal("");
         for (int i : t.puzzle.displayOrder(seed, v)) {
             String cmd = "/questpuzzle " + q.id() + " " + t.stage + "." + index + " " + i;
-            line.append(Text.literal("[" + v.options().get(i) + "] ").styled(st -> st.withColor(Formatting.GREEN)
+            line.append(Component.literal("[" + v.options().get(i) + "] ").withStyle(st -> st.withColor(ChatFormatting.GREEN)
                     .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, cmd))));
         }
-        p.sendMessage(line, false);
+        p.displayClientMessage(line, false);
         if (v.length() > 1) {
-            p.sendMessage(Text.literal("(" + v.length() + " choices in order; click the options one at a time.)").formatted(Formatting.GRAY), false);
+            p.displayClientMessage(Component.literal("(" + v.length() + " choices in order; click the options one at a time.)").withStyle(ChatFormatting.GRAY), false);
         }
     }
 
@@ -142,7 +141,7 @@ public final class QuestPuzzles {
     }
 
     /** {@code /questpuzzle <quest>}: shows the current puzzle of a quest again. */
-    static void reshow(ServerPlayerEntity p, String questId) {
+    static void reshow(ServerPlayer p, String questId) {
         QuestSpec q = QuestBook.get().spec(questId);
         if (q == null || !QuestInterpreter.active(p, q)) {
             Msg.game(p, "You have no puzzle to solve for that quest.");
@@ -158,7 +157,7 @@ public final class QuestPuzzles {
     }
 
     /** One clicked option ({@code ref} = "stage.trigger"). */
-    static void answer(ServerPlayerEntity p, String questId, String ref, int option) {
+    static void answer(ServerPlayer p, String questId, String ref, int option) {
         QuestSpec q = QuestBook.get().spec(questId);
         String[] parts = ref.split("\\.");
         if (q == null || parts.length != 2 || !QuestInterpreter.active(p, q)) {
@@ -172,7 +171,7 @@ public final class QuestPuzzles {
         } catch (NumberFormatException ex) {
             return;
         }
-        Entry e = ACTIVE.get(p.getUuid());
+        Entry e = ACTIVE.get(p.getUUID());
         if (stageIndex != QuestInterpreter.stage(p, q) || index < 0 || index >= q.stages.get(stageIndex).triggers.size()
                 || e == null || !e.quest.equals(questId) || e.stage != stageIndex || e.trigger != index) {
             Msg.game(p, "That puzzle has moved on. Look at it again.");
@@ -201,19 +200,19 @@ public final class QuestPuzzles {
         } else if (result == 0) {
             List<String> picked = new ArrayList<>();
             e.input.forEach(i -> picked.add(v.options().get(i)));
-            p.sendMessage(Text.literal("> " + String.join(", ", picked) + " (" + e.input.size() + "/" + v.length() + ")")
-                    .formatted(Formatting.GRAY), false);
+            p.displayClientMessage(Component.literal("> " + String.join(", ", picked) + " (" + e.input.size() + "/" + v.length() + ")")
+                    .withStyle(ChatFormatting.GRAY), false);
         } else if (v.spawn() != null) {
             e.awaitingKill = true;
             QuestInterpreter.spawnNear(p, v.spawn());
         } else {
-            ACTIVE.remove(p.getUuid());
+            ACTIVE.remove(p.getUUID());
             QuestInterpreter.fire(p, q, t, isNpc(presenter(p, t)) ? speaker : "");
         }
     }
 
-    private static void fail(ServerPlayerEntity p, QuestSpec q, Trigger t, String speaker) {
-        ACTIVE.remove(p.getUuid());
+    private static void fail(ServerPlayer p, QuestSpec q, Trigger t, String speaker) {
+        ACTIVE.remove(p.getUUID());
         QuestPuzzle puzzle = t.puzzle;
         if (puzzle.failLines.isEmpty()) {
             Msg.red(p, "That isn't right.");
@@ -222,13 +221,13 @@ public final class QuestPuzzles {
         }
         if (puzzle.failStage >= 0) {
             QuestsState state = QuestsState.get(p);
-            puzzle.failFlags.forEach(f -> state.clearFlag(p.getUuid(), f));
-            state.addKill(p.getUuid(), attemptsKey(puzzle));
+            puzzle.failFlags.forEach(f -> state.clearFlag(p.getUUID(), f));
+            state.addKill(p.getUUID(), attemptsKey(puzzle));
             QuestApi.setStage(p, q.id(), puzzle.failStage);
-            p.sendMessage(Text.literal("[" + q.def.displayName() + "] " + q.stages.get(puzzle.failStage).journal).formatted(Formatting.DARK_AQUA), false);
+            p.displayClientMessage(Component.literal("[" + q.def.displayName() + "] " + q.stages.get(puzzle.failStage).journal).withStyle(ChatFormatting.DARK_AQUA), false);
             com.runecraft.network.ServerNetworking.sync(p);
             // the re-drawn first room is shown again by the reach tick while the player stands at the place
-            String prefix = p.getUuidAsString() + "|" + q.id() + "|";
+            String prefix = p.getStringUUID() + "|" + q.id() + "|";
             SHOWN.removeIf(k -> k.startsWith(prefix));
         } else {
             Msg.game(p, "Try again.");
@@ -237,14 +236,14 @@ public final class QuestPuzzles {
     }
 
     /** A kill while a fight room's foe is up: solves the room. True if it fired a trigger. */
-    static boolean onKill(ServerPlayerEntity p, List<String> ids) {
-        Entry e = ACTIVE.get(p.getUuid());
+    static boolean onKill(ServerPlayer p, List<String> ids) {
+        Entry e = ACTIVE.get(p.getUUID());
         if (e == null || !e.awaitingKill) {
             return false;
         }
         QuestSpec q = QuestBook.get().spec(e.quest);
         if (q == null || !QuestInterpreter.active(p, q) || QuestInterpreter.stage(p, q) != e.stage) {
-            ACTIVE.remove(p.getUuid());
+            ACTIVE.remove(p.getUUID());
             return false;
         }
         Trigger t = q.stages.get(e.stage).triggers.get(e.trigger);
@@ -252,7 +251,7 @@ public final class QuestPuzzles {
         if (v.kill() == null || !ids.contains(v.kill())) {
             return false;
         }
-        ACTIVE.remove(p.getUuid());
+        ACTIVE.remove(p.getUUID());
         QuestInterpreter.fire(p, q, t, "");
         return true;
     }
@@ -261,19 +260,19 @@ public final class QuestPuzzles {
      * Self-test hook: shows the player's room and clicks a solution through {@link #answer}. Returns the creature to
      * kill when the room is a fight (its foe has been raised), else null.
      */
-    public static String selfTestSolve(ServerPlayerEntity p, QuestSpec q, Trigger t) {
+    public static String selfTestSolve(ServerPlayer p, QuestSpec q, Trigger t) {
         show(p, q, t);
         QuestPuzzle.Variant v = variant(p, t);
         String ref = t.stage + "." + q.stages.get(t.stage).triggers.indexOf(t);
         for (int option : v.solutions().get(0)) {
             answer(p, q.id(), ref, option);
         }
-        Entry e = ACTIVE.get(p.getUuid());
+        Entry e = ACTIVE.get(p.getUUID());
         return e != null && e.awaitingKill ? v.kill() : null;
     }
 
     /** Self-test hook: clicks a wrong first option; returns whether the puzzle reacted (input reset). */
-    public static boolean selfTestFail(ServerPlayerEntity p, QuestSpec q, Trigger t) {
+    public static boolean selfTestFail(ServerPlayer p, QuestSpec q, Trigger t) {
         show(p, q, t);
         QuestPuzzle.Variant v = variant(p, t);
         int wrong = -1;
@@ -286,7 +285,7 @@ public final class QuestPuzzles {
             return false;
         }
         answer(p, q.id(), t.stage + "." + q.stages.get(t.stage).triggers.indexOf(t), wrong);
-        return !ACTIVE.containsKey(p.getUuid());
+        return !ACTIVE.containsKey(p.getUUID());
     }
 
     /** Whether an id names an NPC (puzzles presented by places are narrated). */

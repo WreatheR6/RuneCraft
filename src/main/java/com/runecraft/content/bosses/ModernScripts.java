@@ -19,17 +19,6 @@ import com.runecraft.osrs.content.bosses.VarlamoreBosses;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
-import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.particle.ParticleEffect;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,6 +27,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 /** Scripts for Yama (with his contracts), Amoxliatl and the Maggot King. Numbers: {@link BossMechanics}. */
 final class ModernScripts {
@@ -51,20 +50,20 @@ final class ModernScripts {
         return (int) Math.floor(blocks / TILE + 0.25);
     }
 
-    private static double flat(Vec3d a, Vec3d b) {
+    private static double flat(Vec3 a, Vec3 b) {
         double dx = a.x - b.x;
         double dz = a.z - b.z;
         return Math.sqrt(dx * dx + dz * dz);
     }
 
-    private static void setSpeed(MobEntity mob, double speed) {
-        var attr = mob.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED);
+    private static void setSpeed(Mob mob, double speed) {
+        var attr = mob.getAttribute(Attributes.MOVEMENT_SPEED);
         if (attr != null && attr.getBaseValue() != speed) {
             attr.setBaseValue(speed);
         }
     }
 
-    private static void hurt(DataBossEntity boss, ServerPlayerEntity p, String attack, int damage) {
+    private static void hurt(DataBossEntity boss, ServerPlayer p, String attack, int damage) {
         CombatHooks.nameAttack(attack, null);
         CombatHandler.applyDamage(boss, p, Math.max(0, damage));
     }
@@ -74,8 +73,8 @@ final class ModernScripts {
      * 20 and snuffs out protection prayers) and fire streaks (keep moving; standing still in one burns and binds you).
      */
     private static final class Sweep {
-        final Vec3d start;
-        final Vec3d dir;
+        final Vec3 start;
+        final Vec3 dir;
         final double length;
         final double halfWidth;
         final double speed;
@@ -83,7 +82,7 @@ final class ModernScripts {
         final Set<UUID> passed = new HashSet<>();
         double travelled;
 
-        Sweep(Vec3d start, Vec3d dir, double length, double halfWidth, double speed, boolean shadow) {
+        Sweep(Vec3 start, Vec3 dir, double length, double halfWidth, double speed, boolean shadow) {
             this.start = start;
             this.dir = dir;
             this.length = length;
@@ -110,32 +109,32 @@ final class ModernScripts {
         private static final Map<UUID, YamaContract> PENDING = new HashMap<>();
 
         /** Called by the summon requirement: a contract held in the main hand is shown to Yama and consumed. */
-        static boolean offerContract(ServerPlayerEntity player) {
+        static boolean offerContract(ServerPlayer player) {
             YamaContract c = YamaContract.byItem(BossFx.heldId(player));
             if (c != null && Inv.has(player, c.item, 1)) {
                 Inv.remove(player, c.item, 1);
-                PENDING.put(player.getUuid(), c);
+                PENDING.put(player.getUUID(), c);
                 Msg.red(player, "Yama: " + c.displayName() + "? Very well. Let us see if you can honour these terms.");
             } else {
-                PENDING.remove(player.getUuid());
+                PENDING.remove(player.getUUID());
             }
             return true;
         }
 
         private static final class Glyph {
-            final Vec3d pos;
+            final Vec3 pos;
             final boolean fire;
             long readyAt;
             final Set<UUID> on = new HashSet<>();
 
-            Glyph(Vec3d pos, boolean fire) {
+            Glyph(Vec3 pos, boolean fire) {
                 this.pos = pos;
                 this.fire = fire;
             }
         }
 
         /** A void flare and the health it spawned with (its explosion scales with the share of that left). */
-        private record Flare(MobEntity mob, long due, float full) {
+        private record Flare(Mob mob, long due, float full) {
         }
 
         private enum Special { GLYPH_FIRE, GLYPH_SHADOW, METEOR, STOMP }
@@ -152,19 +151,19 @@ final class ModernScripts {
         private final List<Glyph> glyphs = new ArrayList<>();
         private final List<Flare> flares = new ArrayList<>();
         private final List<Sweep> sweeps = new ArrayList<>();
-        private final Map<UUID, Vec3d> lastPos = new HashMap<>();
+        private final Map<UUID, Vec3> lastPos = new HashMap<>();
         private Special pending;
         private long pendingDue;
-        private Vec3d pendingAt;
+        private Vec3 pendingAt;
         // exile
         private int exileDelay = -1;
         private int exilesQueued;
         private boolean exiled;
         private long exileStart;
-        private MobEntity judge;
+        private Mob judge;
         private int judgeAttacks;
         private final Map<UUID, Integer> exileHits = new HashMap<>();
-        private final List<ServerPlayerEntity> exilees = new ArrayList<>();
+        private final List<ServerPlayer> exilees = new ArrayList<>();
         // phase 3
         private int crashTimer;
         private int crashAxis;
@@ -174,9 +173,9 @@ final class ModernScripts {
         public void onSpawn(DataBossEntity boss) {
             // The glyphs, the exile spot and the Judge are laid out around the arena centre, and he plants himself there.
             home = arenaCentre(boss);
-            ServerPlayerEntity challenger = boss.getTarget() instanceof ServerPlayerEntity p ? p : null;
+            ServerPlayer challenger = boss.getTarget() instanceof ServerPlayer p ? p : null;
             if (challenger != null) {
-                contract = PENDING.remove(challenger.getUuid());
+                contract = PENDING.remove(challenger.getUUID());
             }
             fireStyle = boss.getRandom().nextBoolean();
             BossFx.say(boss, contract == null ? "Yama: Let us begin. Mind the glyphs, mortal."
@@ -189,7 +188,7 @@ final class ModernScripts {
         }
 
         @Override
-        protected boolean wantsMelee(DataBossEntity boss, ServerPlayerEntity target) {
+        protected boolean wantsMelee(DataBossEntity boss, ServerPlayer target) {
             return meleeStance && stage < 3 && !exiled;
         }
 
@@ -215,7 +214,7 @@ final class ModernScripts {
         }
 
         @Override
-        protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             if (attacker != null && attacker == target(boss)) {
                 meleeStance = type.isMelee();
                 targetMaging = type == AttackType.MAGIC;
@@ -236,7 +235,7 @@ final class ModernScripts {
 
         /** Defence bonuses by phase, contract and his target's style (OSRS Wiki infobox; glyphic attenuation 666 but crush). */
         @Override
-        public void adjustDefence(DataBossEntity boss, ServerPlayerEntity attacker, AttackType type,
+        public void adjustDefence(DataBossEntity boss, ServerPlayer attacker, AttackType type,
                                   com.runecraft.osrs.PlayerHitCalc.Input in) {
             boolean p3 = stage >= 3;
             in.targetDefenceBonus = BossMechanics.yamaDefenceBonus(type, targetMaging, p3, contract);
@@ -247,7 +246,7 @@ final class ModernScripts {
 
         /** Phase 3: his fire (magic) and shadow (ranged) autos pierce the matching protection prayer for up to 3. */
         @Override
-        protected void afterAttack(DataBossEntity boss, ServerPlayerEntity target, AttackDef attack) {
+        protected void afterAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
             if (stage < 3 || target == null || (attack != ModernBosses.YAMA_FIRE && attack != ModernBosses.YAMA_SHADOW)) {
                 return;
             }
@@ -258,7 +257,7 @@ final class ModernScripts {
         }
 
         @Override
-        public int onHitPlayer(DataBossEntity boss, ServerPlayerEntity player, int damage, AttackType type) {
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
             if (contract == YamaContract.FORFEIT_BREATH && damage > 0) {
                 SysState.of(player).runEnergy -= damage * 40; // approx
             }
@@ -266,26 +265,26 @@ final class ModernScripts {
         }
 
         /** A floor spot at an offset from the arena centre, pulled in to stay at least two blocks inside the ring wall. */
-        private Vec3d floorSpot(DataBossEntity boss, double dx, double dz) {
+        private Vec3 floorSpot(DataBossEntity boss, double dx, double dz) {
             double max = Math.max(2.0, (boss.def() == null ? 15 : boss.def().arenaRadius) - 2.0);
             double len = Math.hypot(dx, dz);
             if (len > max) {
                 dx *= max / len;
                 dz *= max / len;
             }
-            Vec3d c = homeVec();
+            Vec3 c = homeVec();
             return BossFx.ground(BossFx.world(boss), c.x + dx, c.z + dz, c.y);
         }
 
         /** The spot when a player fits there (solid floor, feet and head clear), otherwise the nearest safe column. */
-        private static Vec3d standable(ServerWorld w, Vec3d spot) {
-            BlockPos feet = BlockPos.ofFloored(spot);
+        private static Vec3 standable(ServerLevel w, Vec3 spot) {
+            BlockPos feet = BlockPos.containing(spot);
             if (w.getBlockState(feet).getCollisionShape(w, feet).isEmpty()
-                    && w.getBlockState(feet.up()).getCollisionShape(w, feet.up()).isEmpty()
-                    && !w.getBlockState(feet.down()).getCollisionShape(w, feet.down()).isEmpty()) {
+                    && w.getBlockState(feet.above()).getCollisionShape(w, feet.above()).isEmpty()
+                    && !w.getBlockState(feet.below()).getCollisionShape(w, feet.below()).isEmpty()) {
                 return spot;
             }
-            return Vec3d.ofBottomCenter(Gielinor.safeSpot(w, feet.getX(), feet.getZ()));
+            return Vec3.atBottomCenterOf(Gielinor.safeSpot(w, feet.getX(), feet.getZ()));
         }
 
         private void placeGlyphs(DataBossEntity boss) {
@@ -311,7 +310,7 @@ final class ModernScripts {
         }
 
         @Override
-        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             if (stage >= 3) {
                 if (distance < 2.6) {
                     melee(boss, target, BossMechanics.YAMA_MELEE_THROUGH_PRAYER_P3);
@@ -342,12 +341,12 @@ final class ModernScripts {
         }
 
         /** The axe swing: hits everyone within three tiles of the target; Protect from Melee caps it. */
-        private void melee(DataBossEntity boss, ServerPlayerEntity target, int throughPrayer) {
+        private void melee(DataBossEntity boss, ServerPlayer target, int throughPrayer) {
             int max = (int) Math.round(BossMechanics.YAMA_AUTO_MAX * multiplier(boss));
             cooldown = attackDelay(boss, null) - 1;
             attackCount++;
-            for (ServerPlayerEntity p : BossFx.players(boss, 24)) {
-                if (flat(p.getPos(), target.getPos()) > 3 * TILE) {
+            for (ServerPlayer p : BossFx.players(boss, 24)) {
+                if (flat(p.position(), target.position()) > 3 * TILE) {
                     continue;
                 }
                 int roll = boss.getRandom().nextInt(max + 1);
@@ -363,7 +362,7 @@ final class ModernScripts {
             BossFx.burst(boss, ParticleTypes.SWEEP_ATTACK, 6, 1.5);
         }
 
-        private void startSpecial(DataBossEntity boss, ServerPlayerEntity target) {
+        private void startSpecial(DataBossEntity boss, ServerPlayer target) {
             autosToSpecial = 3;
             cooldown = attackDelay(boss, null) - 1;
             hazard(boss, hazardWaves, stage >= 2 ? 2 : 1);
@@ -378,7 +377,7 @@ final class ModernScripts {
             } else {
                 pending = stage >= 2 ? Special.STOMP : Special.GLYPH_SHADOW;
             }
-            pendingAt = target.getPos();
+            pendingAt = target.position();
             pendingDue = now + (pending == Special.METEOR ? 5 : 4);
             BossFx.warn(boss, switch (pending) {
                 case GLYPH_FIRE -> "Flames begin to envelop you... find a Glyph of Fire!";
@@ -397,8 +396,8 @@ final class ModernScripts {
                 BossFx.say(boss, "The glyph absorbs Yama's " + (fire ? "fire" : "shadow") + "!");
                 return;
             }
-            ServerWorld w = BossFx.world(boss);
-            for (ServerPlayerEntity p : BossFx.players(boss, 24)) {
+            ServerLevel w = BossFx.world(boss);
+            for (ServerPlayer p : BossFx.players(boss, 24)) {
                 switch (s) {
                     case GLYPH_FIRE -> {
                         hurt(boss, p, "glyph_flames", boss.getRandom().nextInt(BossMechanics.YAMA_GLYPH_SPECIAL_MAX + 1));
@@ -406,7 +405,7 @@ final class ModernScripts {
                     }
                     case GLYPH_SHADOW -> hurt(boss, p, "shadow_engulf", boss.getRandom().nextInt(BossMechanics.YAMA_GLYPH_SPECIAL_MAX + 1));
                     case METEOR -> {
-                        int dmg = BossMechanics.meteorDamage(tiles(flat(p.getPos(), pendingAt)));
+                        int dmg = BossMechanics.meteorDamage(tiles(flat(p.position(), pendingAt)));
                         if (dmg > 0) {
                             hurt(boss, p, "meteor_strike", dmg >= 121 ? dmg : dmg - boss.getRandom().nextInt(6));
                             BossDots.burn(p, BossMechanics.YAMA_METEOR_BURN);
@@ -420,7 +419,7 @@ final class ModernScripts {
                 }
             }
             if (s == Special.METEOR) {
-                w.spawnParticles(ParticleTypes.EXPLOSION_EMITTER, pendingAt.x, pendingAt.y + 0.5, pendingAt.z, 1, 0, 0, 0, 0);
+                w.sendParticles(ParticleTypes.EXPLOSION_EMITTER, pendingAt.x, pendingAt.y + 0.5, pendingAt.z, 1, 0, 0, 0, 0);
             }
         }
 
@@ -428,7 +427,7 @@ final class ModernScripts {
             flares.removeIf(f -> !f.mob().isAlive());
             int room = 4 - flares.size();
             for (int i = 0; i < Math.min(count, room); i++) {
-                MobEntity m = BossFx.spawnMinion(boss, BossMechanics.YAMA_VOID_FLARE, around(boss, homeVec(), 9), null);
+                Mob m = BossFx.spawnMinion(boss, BossMechanics.YAMA_VOID_FLARE, around(boss, homeVec(), 9), null);
                 if (m == null) {
                     continue;
                 }
@@ -440,12 +439,12 @@ final class ModernScripts {
                 // Magic and ranged attacks always land their max hit on a flare, except under the Contract of bloodied blows.
                 MinionRules.set(m, new MinionRules.Rule() {
                     @Override
-                    public double accuracy(ServerPlayerEntity p, net.minecraft.entity.LivingEntity minion, AttackType type) {
+                    public double accuracy(ServerPlayer p, net.minecraft.world.entity.LivingEntity minion, AttackType type) {
                         return guaranteed(type) ? MinionRules.ALWAYS_HITS : 1.0;
                     }
 
                     @Override
-                    public boolean alwaysMaxHit(ServerPlayerEntity p, net.minecraft.entity.LivingEntity minion, AttackType type) {
+                    public boolean alwaysMaxHit(ServerPlayer p, net.minecraft.world.entity.LivingEntity minion, AttackType type) {
                         return guaranteed(type);
                     }
 
@@ -454,7 +453,7 @@ final class ModernScripts {
                     }
 
                     @Override
-                    public int damage(ServerPlayerEntity p, net.minecraft.entity.LivingEntity minion, AttackType type, int d) {
+                    public int damage(ServerPlayer p, net.minecraft.world.entity.LivingEntity minion, AttackType type, int d) {
                         int dealt = resistant ? d / 2 : d;
                         if (dealt >= minion.getHealth() && !SpecialAttackService.specialActive(p)) {
                             CombatAchievementService.flag(p, BossMechanics.FLAG_YAMA_FLARE_NONSPEC);
@@ -469,35 +468,35 @@ final class ModernScripts {
         private void hazard(DataBossEntity boss, boolean waves, int count) {
             BossDefRadius r = new BossDefRadius(boss);
             for (int i = 0; i < count; i++) {
-                Vec3d dir;
+                Vec3 dir;
                 if (waves) {
                     double sx = boss.getRandom().nextBoolean() ? 1 : -1;
-                    dir = new Vec3d(-sx, 0, -1).normalize(); // from the south-east or south-west, heading north
+                    dir = new Vec3(-sx, 0, -1).normalize(); // from the south-east or south-west, heading north
                 } else {
-                    dir = new Vec3d(boss.getRandom().nextBoolean() ? 1 : -1, 0, 0);
+                    dir = new Vec3(boss.getRandom().nextBoolean() ? 1 : -1, 0, 0);
                 }
-                Vec3d start = homeVec().subtract(dir.multiply(r.radius + i * 4.0));
+                Vec3 start = homeVec().subtract(dir.scale(r.radius + i * 4.0));
                 sweeps.add(new Sweep(start, dir, 2 * r.radius + i * 4.0, r.radius, waves ? 1.5 : 2.0, waves));
             }
             BossFx.warn(boss, waves ? "Waves of shadow surge across the arena - skip over them!" : "Fire streaks across the arena - keep moving!");
         }
 
         /** Phase 3: three fireballs in a line on the target; shadows converge on the centre one (a bow tie). */
-        private void shadowCrash(DataBossEntity boss, ServerPlayerEntity target, int index) {
+        private void shadowCrash(DataBossEntity boss, ServerPlayer target, int index) {
             int axis = (crashAxis + index) % 2; // cardinal, diagonal, cardinal
-            Vec3d along;
+            Vec3 along;
             if (axis == 0) {
-                along = boss.getRandom().nextBoolean() ? new Vec3d(1, 0, 0) : new Vec3d(0, 0, 1);
+                along = boss.getRandom().nextBoolean() ? new Vec3(1, 0, 0) : new Vec3(0, 0, 1);
             } else {
-                along = new Vec3d(boss.getRandom().nextBoolean() ? 1 : -1, 0, 1).normalize();
+                along = new Vec3(boss.getRandom().nextBoolean() ? 1 : -1, 0, 1).normalize();
             }
             crashAxis++;
-            Vec3d centre = target.getPos();
-            Vec3d dirAlong = along;
+            Vec3 centre = target.position();
+            Vec3 dirAlong = along;
             int delay = 3 + index * 2;
-            java.util.function.BiConsumer<List<ServerPlayerEntity>, Vec3d> land = (hit, pos) -> crashLands(boss, target, pos, dirAlong);
+            java.util.function.BiConsumer<List<ServerPlayer>, Vec3> land = (hit, pos) -> crashLands(boss, target, pos, dirAlong);
             for (int k = -1; k <= 1; k++) {
-                Vec3d at = centre.add(dirAlong.multiply(k * 2 * TILE));
+                Vec3 at = centre.add(dirAlong.scale(k * 2 * TILE));
                 if (k == 0) {
                     strike(boss, at, delay, 0, 0.9, ParticleTypes.SOUL_FIRE_FLAME, land);
                 } else {
@@ -506,16 +505,16 @@ final class ModernScripts {
             }
         }
 
-        private void crashLands(DataBossEntity boss, ServerPlayerEntity owner, Vec3d centre, Vec3d along) {
-            Vec3d perp = new Vec3d(-along.z, 0, along.x);
-            for (ServerPlayerEntity p : BossFx.players(boss, 24)) {
-                Vec3d rel = new Vec3d(p.getX() - centre.x, 0, p.getZ() - centre.z);
-                double a = Math.abs(rel.dotProduct(along));
-                double side = Math.abs(rel.dotProduct(perp));
+        private void crashLands(DataBossEntity boss, ServerPlayer owner, Vec3 centre, Vec3 along) {
+            Vec3 perp = new Vec3(-along.z, 0, along.x);
+            for (ServerPlayer p : BossFx.players(boss, 24)) {
+                Vec3 rel = new Vec3(p.getX() - centre.x, 0, p.getZ() - centre.z);
+                double a = Math.abs(rel.dot(along));
+                double side = Math.abs(rel.dot(perp));
                 if (a <= 2 * TILE + 0.5 && side < 1.0 + 0.25 * a) {
                     hurt(boss, p, "shadow_crash", boss.getRandom().nextInt(BossMechanics.YAMA_SHADOW_CRASH_MAX + 1));
                 }
-                if (p == owner && flat(p.getPos(), centre) > 1.5 * TILE) {
+                if (p == owner && flat(p.position(), centre) > 1.5 * TILE) {
                     CombatAchievementService.flag(p, BossMechanics.FLAG_YAMA_CRASH_FAR);
                 }
             }
@@ -545,17 +544,17 @@ final class ModernScripts {
             sweeps.clear();
             setSpeed(boss, 0.0);
             boss.getNavigation().stop();
-            Vec3d c = homeVec();
-            boss.requestTeleport(c.x, c.y, c.z);
-            ServerWorld w = BossFx.world(boss);
+            Vec3 c = homeVec();
+            boss.teleportTo(c.x, c.y, c.z);
+            ServerLevel w = BossFx.world(boss);
             // The exile spot and the Judge sit in the arena's west side, inside the ring wall.
-            Vec3d spot = standable(w, floorSpot(boss, -12, 4));
-            for (ServerPlayerEntity p : BossFx.players(boss, 24)) {
-                p.requestTeleport(spot.x, spot.y, spot.z);
+            Vec3 spot = standable(w, floorSpot(boss, -12, 4));
+            for (ServerPlayer p : BossFx.players(boss, 24)) {
+                p.teleportTo(spot.x, spot.y, spot.z);
                 exilees.add(p);
                 Msg.red(p, "Yama slams his axe down and exiles you from the arena! Defeat the Judge of Yama.");
             }
-            ServerPlayerEntity target = exilees.isEmpty() ? null : exilees.get(0);
+            ServerPlayer target = exilees.isEmpty() ? null : exilees.get(0);
             judge = BossFx.spawnMinion(boss, BossMechanics.YAMA_JUDGE, floorSpot(boss, -12, -3), target);
             if (judge != null) {
                 // The Judge prays against ranged and the last style it was hit with (melee at the start); other attacks
@@ -563,17 +562,17 @@ final class ModernScripts {
                 AttackType[] last = {AttackType.CRUSH};
                 MinionRules.set(judge, new MinionRules.Rule() {
                     @Override
-                    public double accuracy(ServerPlayerEntity p, net.minecraft.entity.LivingEntity m, AttackType type) {
+                    public double accuracy(ServerPlayer p, net.minecraft.world.entity.LivingEntity m, AttackType type) {
                         return MinionRules.ALWAYS_HITS;
                     }
 
                     @Override
-                    public boolean alwaysMaxHit(ServerPlayerEntity p, net.minecraft.entity.LivingEntity m, AttackType type) {
+                    public boolean alwaysMaxHit(ServerPlayer p, net.minecraft.world.entity.LivingEntity m, AttackType type) {
                         return true;
                     }
 
                     @Override
-                    public int damage(ServerPlayerEntity p, net.minecraft.entity.LivingEntity m, AttackType type, int d) {
+                    public int damage(ServerPlayer p, net.minecraft.world.entity.LivingEntity m, AttackType type, int d) {
                         boolean blocked = type == AttackType.RANGED || type.isMelee() == last[0].isMelee()
                                 && (type == AttackType.MAGIC) == (last[0] == AttackType.MAGIC);
                         last[0] = type;
@@ -593,12 +592,12 @@ final class ModernScripts {
             if (judgeAlive && now - exileStart < 300) {
                 if (now > exileStart && (now - exileStart) % BossMechanics.JUDGE_ATTACK_TICKS == 0) {
                     judgeAttacks++;
-                    for (ServerPlayerEntity p : exilees) {
+                    for (ServerPlayer p : exilees) {
                         if (!p.isAlive()) {
                             continue;
                         }
-                        UUID id = p.getUuid();
-                        namedStrike("fire_wave", boss, p.getPos(), 2, BossMechanics.JUDGE_FIRE_MAX, 1.3, ParticleTypes.FLAME, (hit, pos) -> {
+                        UUID id = p.getUUID();
+                        namedStrike("fire_wave", boss, p.position(), 2, BossMechanics.JUDGE_FIRE_MAX, 1.3, ParticleTypes.FLAME, (hit, pos) -> {
                             if (hit.contains(p)) {
                                 exileHits.merge(id, 1, Integer::sum);
                             }
@@ -619,13 +618,13 @@ final class ModernScripts {
             judge = null;
             exiled = false;
             stage++;
-            Vec3d front = floorSpot(boss, 0, 7);
-            for (ServerPlayerEntity p : exilees) {
-                if (exileHits.getOrDefault(p.getUuid(), 0) > 1) {
+            Vec3 front = floorSpot(boss, 0, 7);
+            for (ServerPlayer p : exilees) {
+                if (exileHits.getOrDefault(p.getUUID(), 0) > 1) {
                     CombatAchievementService.flag(p, BossMechanics.FLAG_YAMA_EXILE_HITS);
                 }
                 if (p.isAlive()) {
-                    p.requestTeleport(front.x, front.y, front.z);
+                    p.teleportTo(front.x, front.y, front.z);
                 }
             }
             exilees.clear();
@@ -645,16 +644,16 @@ final class ModernScripts {
         }
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             if (glyphs.isEmpty()) {
                 placeGlyphs(boss);
             }
-            ServerWorld w = BossFx.world(boss);
-            List<ServerPlayerEntity> players = BossFx.players(boss, 24);
+            ServerLevel w = BossFx.world(boss);
+            List<ServerPlayer> players = BossFx.players(boss, 24);
             BossDots.tick(boss, players);
             if (contract != null && target != null) {
                 if (contract == YamaContract.FORFEIT_BREATH) {
-                    for (ServerPlayerEntity p : players) {
+                    for (ServerPlayer p : players) {
                         SysState.SysPlayer sp = SysState.of(p);
                         sp.runEnergy -= 25; // approx: passive drain
                         if (sp.runEnergy <= 0) {
@@ -665,7 +664,7 @@ final class ModernScripts {
                     }
                 }
                 if (contract.seversPrayers && now % 10 == 0) {
-                    for (ServerPlayerEntity p : players) {
+                    for (ServerPlayer p : players) {
                         if (BossFx.protects(p, Prayer.PROTECT_FROM_MAGIC) || BossFx.protects(p, Prayer.PROTECT_FROM_MISSILES)
                                 || BossFx.protects(p, Prayer.PROTECT_FROM_MELEE)) {
                             BossFx.disablePrayers(p, "Yama severs your connection to the gods!");
@@ -689,18 +688,18 @@ final class ModernScripts {
             // matching special is on its way.
             for (Glyph g : glyphs) {
                 boolean ready = glyphReady(g);
-                w.spawnParticles(ready ? (g.fire ? ParticleTypes.FLAME : ParticleTypes.SOUL_FIRE_FLAME) : ParticleTypes.SMOKE,
+                w.sendParticles(ready ? (g.fire ? ParticleTypes.FLAME : ParticleTypes.SOUL_FIRE_FLAME) : ParticleTypes.SMOKE,
                         g.pos.x, g.pos.y + 0.1, g.pos.z, 3, 0.4, 0.05, 0.4, 0);
                 Set<UUID> now0 = new HashSet<>();
-                for (ServerPlayerEntity p : players) {
-                    if (!ready || flat(p.getPos(), g.pos) > 1.3 || Math.abs(p.getY() - g.pos.y) > 2) {
+                for (ServerPlayer p : players) {
+                    if (!ready || flat(p.position(), g.pos) > 1.3 || Math.abs(p.getY() - g.pos.y) > 2) {
                         continue;
                     }
-                    now0.add(p.getUuid());
-                    if (g.on.contains(p.getUuid())) {
+                    now0.add(p.getUUID());
+                    if (g.on.contains(p.getUUID())) {
                         continue;
                     }
-                    int cost = BossMechanics.glyphCost(tiles(flat(boss.getPos(), g.pos)));
+                    int cost = BossMechanics.glyphCost(tiles(flat(boss.position(), g.pos)));
                     if (contract == YamaContract.GLYPHIC_ATTENUATION) {
                         cost *= 2;
                     }
@@ -721,7 +720,7 @@ final class ModernScripts {
                 if (pending == Special.METEOR) {
                     BossFx.ring(w, pendingAt, 2 * TILE, ParticleTypes.LAVA);
                 } else if (target != null) {
-                    w.spawnParticles(pending == Special.GLYPH_FIRE ? ParticleTypes.FLAME : ParticleTypes.SQUID_INK,
+                    w.sendParticles(pending == Special.GLYPH_FIRE ? ParticleTypes.FLAME : ParticleTypes.SQUID_INK,
                             target.getX(), target.getY() + 1, target.getZ(), 6, 0.4, 0.6, 0.4, 0.01);
                 }
                 if (now >= pendingDue) {
@@ -734,12 +733,12 @@ final class ModernScripts {
                 nextFlare = now + 30;
                 spawnFlares(boss, 2);
             }
-            for (ServerPlayerEntity p : players) {
-                lastPos.put(p.getUuid(), p.getPos());
+            for (ServerPlayer p : players) {
+                lastPos.put(p.getUUID(), p.position());
             }
         }
 
-        private void tickSweeps(DataBossEntity boss, ServerWorld w, List<ServerPlayerEntity> players) {
+        private void tickSweeps(DataBossEntity boss, ServerLevel w, List<ServerPlayer> players) {
             Iterator<Sweep> it = sweeps.iterator();
             while (it.hasNext()) {
                 Sweep s = it.next();
@@ -748,32 +747,32 @@ final class ModernScripts {
                     it.remove();
                     continue;
                 }
-                Vec3d centre = s.start.add(s.dir.multiply(s.travelled));
-                Vec3d perp = new Vec3d(-s.dir.z, 0, s.dir.x);
-                ParticleEffect fx = s.shadow ? ParticleTypes.SQUID_INK : ParticleTypes.FLAME;
+                Vec3 centre = s.start.add(s.dir.scale(s.travelled));
+                Vec3 perp = new Vec3(-s.dir.z, 0, s.dir.x);
+                ParticleOptions fx = s.shadow ? ParticleTypes.SQUID_INK : ParticleTypes.FLAME;
                 for (double k = -s.halfWidth; k <= s.halfWidth; k += 1.5) {
-                    Vec3d at = centre.add(perp.multiply(k));
-                    w.spawnParticles(fx, at.x, centre.y + 0.2, at.z, 1, 0.1, 0.1, 0.1, 0);
+                    Vec3 at = centre.add(perp.scale(k));
+                    w.sendParticles(fx, at.x, centre.y + 0.2, at.z, 1, 0.1, 0.1, 0.1, 0);
                 }
-                for (ServerPlayerEntity p : players) {
-                    if (s.passed.contains(p.getUuid())) {
+                for (ServerPlayer p : players) {
+                    if (s.passed.contains(p.getUUID())) {
                         continue;
                     }
-                    Vec3d rel = new Vec3d(p.getX() - centre.x, 0, p.getZ() - centre.z);
-                    if (Math.abs(rel.dotProduct(s.dir)) > 1.0 || Math.abs(rel.dotProduct(perp)) > s.halfWidth) {
+                    Vec3 rel = new Vec3(p.getX() - centre.x, 0, p.getZ() - centre.z);
+                    if (Math.abs(rel.dot(s.dir)) > 1.0 || Math.abs(rel.dot(perp)) > s.halfWidth) {
                         continue;
                     }
-                    s.passed.add(p.getUuid());
+                    s.passed.add(p.getUUID());
                     if (s.shadow) {
-                        if (p.isOnGround()) {
+                        if (p.onGround()) {
                             hurt(boss, p, "shadow_wave", boss.getRandom().nextInt(BossMechanics.YAMA_SHADOW_WAVE_MAX + 1));
                             BossFx.disablePrayers(p, "The shadows snuff out your prayers!");
                         } else {
                             Msg.action(p, "You skip over the wave of shadow.");
                         }
                     } else {
-                        Vec3d before = lastPos.get(p.getUuid());
-                        boolean moving = before != null && flat(before, p.getPos()) > 0.15;
+                        Vec3 before = lastPos.get(p.getUUID());
+                        boolean moving = before != null && flat(before, p.position()) > 0.15;
                         if (!moving) {
                             hurt(boss, p, "fire_streak", boss.getRandom().nextInt(BossMechanics.YAMA_FIRE_STREAK_MAX + 1));
                             BossFx.stun(p, 3);
@@ -784,16 +783,16 @@ final class ModernScripts {
             }
         }
 
-        private void tickFlares(DataBossEntity boss, List<ServerPlayerEntity> players) {
+        private void tickFlares(DataBossEntity boss, List<ServerPlayer> players) {
             Iterator<Flare> it = flares.iterator();
             while (it.hasNext()) {
                 Flare f = it.next();
-                MobEntity m = f.mob();
+                Mob m = f.mob();
                 if (!m.isAlive()) {
                     it.remove();
                     continue;
                 }
-                BossFx.ring(BossFx.world(boss), m.getPos(), 0.8, now + 6 >= f.due() ? ParticleTypes.ELECTRIC_SPARK : ParticleTypes.WITCH);
+                BossFx.ring(BossFx.world(boss), m.position(), 0.8, now + 6 >= f.due() ? ParticleTypes.ELECTRIC_SPARK : ParticleTypes.WITCH);
                 if (now < f.due()) {
                     continue;
                 }
@@ -805,16 +804,16 @@ final class ModernScripts {
                     continue;
                 }
                 int dmg = contract != null && contract.lethalFlares ? 999 : BossMechanics.flareExplosion(frac, stage >= 3);
-                for (ServerPlayerEntity p : players) {
+                for (ServerPlayer p : players) {
                     hurt(boss, p, "void_flare", contract != null && contract.lethalFlares ? dmg : Math.max(0, dmg - boss.getRandom().nextInt(3)));
                 }
                 boss.heal(mcHp(boss, Math.min(dmg, 44)));
-                BossFx.sound(boss, SoundEvents.ENTITY_GENERIC_EXPLODE, 0.9f);
+                BossFx.sound(boss, SoundEvents.GENERIC_EXPLODE, 0.9f);
             }
         }
 
         @Override
-        public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
+        public void onDeath(DataBossEntity boss, ServerPlayer killer) {
             flares.forEach(f -> f.mob().discard());
             if (judge != null) {
                 judge.discard();
@@ -862,7 +861,7 @@ final class ModernScripts {
     static final class Amoxliatl extends ScriptedBoss {
         private int untilSpecial = 2;
         private boolean iceNext;
-        private final List<MobEntity> ice = new ArrayList<>();
+        private final List<Mob> ice = new ArrayList<>();
         private long shatterAt = -1;
 
         @Override
@@ -877,7 +876,7 @@ final class ModernScripts {
         }
 
         @Override
-        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             if (untilSpecial <= 0) {
                 untilSpecial = 2 + boss.getRandom().nextInt(3);
                 boolean doIce = iceNext;
@@ -892,8 +891,8 @@ final class ModernScripts {
             }
             untilSpecial--;
             // The standard attack: ice spikes on your tile and around the arena (typeless) and an icy pool where you stood.
-            Vec3d at = target.getPos();
-            ServerWorld w = BossFx.world(boss);
+            Vec3 at = target.position();
+            ServerLevel w = BossFx.world(boss);
             namedStrike("ice_spikes", boss, at, 2, 8, 0.9, ParticleTypes.SNOWFLAKE, (hit, pos) -> icyPool(w, boss, pos, 0.9)); // approx damage
             for (int i = 0; i < 2; i++) {
                 namedStrike("ice_spikes", boss, around(boss, homeVec(), 8), 2, 8, 0.9, ParticleTypes.SNOWFLAKE);
@@ -901,15 +900,15 @@ final class ModernScripts {
             return VarlamoreBosses.AMOX_ICE;
         }
 
-        private void icyPool(ServerWorld w, DataBossEntity boss, Vec3d pos, double radius) {
+        private void icyPool(ServerLevel w, DataBossEntity boss, Vec3 pos, double radius) {
             int dmg = BossMechanics.ICY_POOL_MIN + boss.getRandom().nextInt(BossMechanics.ICY_POOL_MAX - BossMechanics.ICY_POOL_MIN + 1);
             Mechanics.addHazard(w, pos, dmg, 12, boss); // approx duration
         }
 
-        private void unstableIce(DataBossEntity boss, ServerPlayerEntity target) {
+        private void unstableIce(DataBossEntity boss, ServerPlayer target) {
             int n = 1 + boss.getRandom().nextInt(4);
             for (int i = 0; i < n; i++) {
-                MobEntity m = BossFx.spawnMinion(boss, BossMechanics.UNSTABLE_ICE, around(boss, target.getPos(), 4), null);
+                Mob m = BossFx.spawnMinion(boss, BossMechanics.UNSTABLE_ICE, around(boss, target.position(), 4), null);
                 if (m == null) {
                     continue;
                 }
@@ -917,12 +916,12 @@ final class ModernScripts {
                 // Only melee breaks it, always in one hit.
                 MinionRules.set(m, new MinionRules.Rule() {
                     @Override
-                    public double accuracy(ServerPlayerEntity p, net.minecraft.entity.LivingEntity mob, AttackType type) {
+                    public double accuracy(ServerPlayer p, net.minecraft.world.entity.LivingEntity mob, AttackType type) {
                         return type.isMelee() ? MinionRules.ALWAYS_HITS : 1.0;
                     }
 
                     @Override
-                    public int damage(ServerPlayerEntity p, net.minecraft.entity.LivingEntity mob, AttackType type, int d) {
+                    public int damage(ServerPlayer p, net.minecraft.world.entity.LivingEntity mob, AttackType type, int d) {
                         if (!type.isMelee()) {
                             Msg.action(p, "Only a melee attack can break the unstable ice.");
                             return 0;
@@ -941,7 +940,7 @@ final class ModernScripts {
         }
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             ice.removeIf(m -> !m.isAlive());
             if (shatterAt < 0) {
                 return;
@@ -950,21 +949,21 @@ final class ModernScripts {
                 shatterAt = -1;
                 return;
             }
-            for (MobEntity m : ice) {
-                BossFx.ring(BossFx.world(boss), m.getPos(), 0.7, ParticleTypes.SNOWFLAKE);
+            for (Mob m : ice) {
+                BossFx.ring(BossFx.world(boss), m.position(), 0.7, ParticleTypes.SNOWFLAKE);
             }
             if (now < shatterAt) {
                 return;
             }
-            ServerWorld w = BossFx.world(boss);
-            for (MobEntity m : ice) {
-                icyPool(w, boss, m.getPos(), 1.5 * TILE);
+            ServerLevel w = BossFx.world(boss);
+            for (Mob m : ice) {
+                icyPool(w, boss, m.position(), 1.5 * TILE);
                 for (int[] o : new int[][]{{2, 0}, {-2, 0}, {0, 2}, {0, -2}}) {
-                    icyPool(w, boss, m.getPos().add(o[0], 0, o[1]), 1.0);
+                    icyPool(w, boss, m.position().add(o[0], 0, o[1]), 1.0);
                 }
                 boss.heal(mcHp(boss, BossMechanics.UNSTABLE_ICE_HEAL_MIN
                         + boss.getRandom().nextInt(BossMechanics.UNSTABLE_ICE_HEAL_MAX - BossMechanics.UNSTABLE_ICE_HEAL_MIN + 1)));
-                w.spawnParticles(ParticleTypes.ITEM_SNOWBALL, m.getX(), m.getY() + 0.5, m.getZ(), 20, 0.6, 0.4, 0.6, 0.1);
+                w.sendParticles(ParticleTypes.ITEM_SNOWBALL, m.getX(), m.getY() + 0.5, m.getZ(), 20, 0.6, 0.4, 0.6, 0.1);
                 m.discard();
             }
             ice.clear();
@@ -974,8 +973,8 @@ final class ModernScripts {
         }
 
         @Override
-        public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
-            ice.forEach(MobEntity::discard);
+        public void onDeath(DataBossEntity boss, ServerPlayer killer) {
+            ice.forEach(Mob::discard);
         }
     }
 
@@ -997,7 +996,7 @@ final class ModernScripts {
         private boolean screeched;
         private boolean meleeMode;
         private long slamDue = -1;
-        private Vec3d slamDir;
+        private Vec3 slamDir;
         private long punishUntil = -1;
         private final Set<UUID> punished = new HashSet<>();
         private boolean westNext = true;
@@ -1006,16 +1005,16 @@ final class ModernScripts {
         private final List<Carrion> carrion = new ArrayList<>();
         private MinionRules.AttackWatcher watcher;
 
-        private record Carrion(Vec3d pos, long until) {
+        private record Carrion(Vec3 pos, long until) {
         }
 
         private static final class Larva {
-            final MobEntity mob;
+            final Mob mob;
             final long landsAt;
             double dirX;
             int chip = 3;
 
-            Larva(MobEntity mob, long landsAt, double dirX) {
+            Larva(Mob mob, long landsAt, double dirX) {
                 this.mob = mob;
                 this.landsAt = landsAt;
                 this.dirX = dirX;
@@ -1032,7 +1031,7 @@ final class ModernScripts {
             // Melee punish: an attack landed while the slam comes down deals 50% more.
             watcher = (p, target, type, d) -> {
                 if (!boss.isRemoved() && target == boss && punishUntil >= now && type.isMelee()) {
-                    punished.add(p.getUuid());
+                    punished.add(p.getUUID());
                 }
             };
             MinionRules.watch(watcher);
@@ -1061,7 +1060,7 @@ final class ModernScripts {
         }
 
         @Override
-        protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             if (attacker != null && punishUntil >= now && type.isMelee()) {
                 Msg.action(attacker, "You punish the Maggot King's slam!");
                 return (int) Math.round(damage * BossMechanics.MAGGOT_PUNISH_DAMAGE);
@@ -1070,7 +1069,7 @@ final class ModernScripts {
         }
 
         @Override
-        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             int hp = trueHp(boss);
             if (untilScreech <= 0) {
                 startScreech(boss);
@@ -1078,7 +1077,7 @@ final class ModernScripts {
             }
             untilScreech--;
             if (meleeMode || hp <= BossMechanics.MAGGOT_FINAL_HP) {
-                slamDir = new Vec3d(target.getX() - boss.getX(), 0, target.getZ() - boss.getZ()).normalize();
+                slamDir = new Vec3(target.getX() - boss.getX(), 0, target.getZ() - boss.getZ()).normalize();
                 slamDue = now + 3;
                 BossFx.warn(boss, "The Maggot King rears its head to slam!");
                 return null;
@@ -1087,13 +1086,13 @@ final class ModernScripts {
         }
 
         @Override
-        protected void afterAttack(DataBossEntity boss, ServerPlayerEntity target, AttackDef attack) {
+        protected void afterAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
             // Bile on the target's tile and two adjacent ones; ranged spit also poisons.
-            ServerWorld w = BossFx.world(boss);
-            Vec3d at = target.getPos();
-            Vec3d side = boss.getRandom().nextBoolean() ? new Vec3d(TILE, 0, 0) : new Vec3d(0, 0, TILE);
+            ServerLevel w = BossFx.world(boss);
+            Vec3 at = target.position();
+            Vec3 side = boss.getRandom().nextBoolean() ? new Vec3(TILE, 0, 0) : new Vec3(0, 0, TILE);
             for (int k = -1; k <= 1; k++) {
-                Mechanics.addHazard(w, at.add(side.multiply(k)), 3, 40, boss); // approx: until stepped on or covered
+                Mechanics.addHazard(w, at.add(side.scale(k)), 3, 40, boss); // approx: until stepped on or covered
             }
             if (attack == ModernBosses.MAGGOT_RANGED) {
                 PoisonService.poison(target, 8, now);
@@ -1114,11 +1113,11 @@ final class ModernScripts {
             untilScreech = BossMechanics.maggotAttacksBeforeScreech(boss.getRandom().nextInt(5));
             int hp = trueHp(boss);
             // Carrion: big piles (25) on random tiles, then smaller bits (10) next to them; it wipes away bile.
-            ServerWorld w = BossFx.world(boss);
+            ServerLevel w = BossFx.world(boss);
             for (int i = 0; i < 5; i++) {
-                Vec3d at = around(boss, homeVec(), 12);
+                Vec3 at = around(boss, homeVec(), 12);
                 namedStrike("carrion", boss, at, 3, BossMechanics.MAGGOT_CARRION_MAX, 1.0, ParticleTypes.MYCELIUM, (hit, pos) -> {
-                    Mechanics.clearHazards(w, new Box(pos, pos).expand(1.5, 2, 1.5));
+                    Mechanics.clearHazards(w, new AABB(pos, pos).inflate(1.5, 2, 1.5));
                     carrion.add(new Carrion(pos, now + BossMechanics.MAGGOT_CARRION_TICKS));
                     for (int[] o : new int[][]{{2, 0}, {-2, 0}, {0, 2}, {0, -2}}) {
                         namedStrike("carrion", boss, pos.add(o[0], 0, o[1]), 2, BossMechanics.MAGGOT_CARRION_BIT_MAX, 0.9,
@@ -1143,9 +1142,9 @@ final class ModernScripts {
             for (int i = 0; i < n; i++) {
                 double side = westNext ? -1 : 1;
                 westNext = !westNext;
-                Vec3d c = homeVec();
-                Vec3d at = BossFx.ground(BossFx.world(boss), c.x + side * 8, c.z + 4 + i * TILE, c.y);
-                MobEntity m = BossFx.spawnMinion(boss, BossMechanics.UR_MAGGOT_LARVA, at, null);
+                Vec3 c = homeVec();
+                Vec3 at = BossFx.ground(BossFx.world(boss), c.x + side * 8, c.z + 4 + i * TILE, c.y);
+                Mob m = BossFx.spawnMinion(boss, BossMechanics.UR_MAGGOT_LARVA, at, null);
                 if (m == null) {
                     continue;
                 }
@@ -1165,13 +1164,13 @@ final class ModernScripts {
         }
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
-            ServerWorld w = BossFx.world(boss);
-            List<ServerPlayerEntity> players = BossFx.players(boss, 24);
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
+            ServerLevel w = BossFx.world(boss);
+            List<ServerPlayer> players = BossFx.players(boss, 24);
             if (screechTicks >= 0) {
                 BossFx.burst(boss, ParticleTypes.WHITE_ASH, 8, 2.0);
                 if (screechTicks <= 3 && screechTicks > 0) {
-                    for (ServerPlayerEntity p : players) {
+                    for (ServerPlayer p : players) {
                         if (BossFx.protects(p, Prayer.PROTECT_FROM_MAGIC) || BossFx.protects(p, Prayer.PROTECT_FROM_MISSILES)
                                 || BossFx.protects(p, Prayer.PROTECT_FROM_MELEE)) {
                             hurt(boss, p, "screech", BossMechanics.MAGGOT_SCREECH_MIN
@@ -1185,7 +1184,7 @@ final class ModernScripts {
             }
             if (slamDue >= 0) {
                 if (now < slamDue) {
-                    Vec3d front = boss.getPos().add(slamDir.multiply(4));
+                    Vec3 front = boss.position().add(slamDir.scale(4));
                     BossFx.ring(w, front, 3.0, ParticleTypes.MYCELIUM);
                 } else {
                     slam(boss, players);
@@ -1194,8 +1193,8 @@ final class ModernScripts {
                 }
             }
             if (punishUntil >= 0 && now > punishUntil) {
-                for (ServerPlayerEntity p : players) {
-                    if (!punished.contains(p.getUuid())) {
+                for (ServerPlayer p : players) {
+                    if (!punished.contains(p.getUUID())) {
                         CombatAchievementService.flag(p, BossMechanics.FLAG_MAGGOT_PUNISH_MISSED);
                     }
                 }
@@ -1206,13 +1205,13 @@ final class ModernScripts {
         }
 
         /** The 3x4-tile slam in front of it (towards where the target stood), with biles launched ahead. */
-        private void slam(DataBossEntity boss, List<ServerPlayerEntity> players) {
-            Vec3d perp = new Vec3d(-slamDir.z, 0, slamDir.x);
-            for (ServerPlayerEntity p : players) {
-                Vec3d rel = new Vec3d(p.getX() - boss.getX(), 0, p.getZ() - boss.getZ());
-                double a = rel.dotProduct(slamDir);
-                double side = Math.abs(rel.dotProduct(perp));
-                if (a > 0 && a <= boss.getWidth() / 2 + 4 * TILE && side <= 1.5 * TILE) {
+        private void slam(DataBossEntity boss, List<ServerPlayer> players) {
+            Vec3 perp = new Vec3(-slamDir.z, 0, slamDir.x);
+            for (ServerPlayer p : players) {
+                Vec3 rel = new Vec3(p.getX() - boss.getX(), 0, p.getZ() - boss.getZ());
+                double a = rel.dot(slamDir);
+                double side = Math.abs(rel.dot(perp));
+                if (a > 0 && a <= boss.getBbWidth() / 2 + 4 * TILE && side <= 1.5 * TILE) {
                     int roll = boss.getRandom().nextInt(BossMechanics.MAGGOT_SLAM_MAX + 1);
                     if (BossFx.protects(p, Prayer.PROTECT_FROM_MELEE)) {
                         roll = Math.min(roll, BossMechanics.MAGGOT_SLAM_PRAYED);
@@ -1220,21 +1219,21 @@ final class ModernScripts {
                     hurt(boss, p, "slam", roll);
                 }
             }
-            BossFx.world(boss).spawnParticles(ParticleTypes.EXPLOSION, boss.getX() + slamDir.x * 4, boss.getY() + 0.3,
+            BossFx.world(boss).sendParticles(ParticleTypes.EXPLOSION, boss.getX() + slamDir.x * 4, boss.getY() + 0.3,
                     boss.getZ() + slamDir.z * 4, 3, 1.5, 0.2, 1.5, 0);
             for (int i = 0; i < 3; i++) {
-                Mechanics.addHazard(BossFx.world(boss), boss.getPos().add(slamDir.multiply(3 + 2 * i)).add(perp.multiply((i - 1) * TILE)),
+                Mechanics.addHazard(BossFx.world(boss), boss.position().add(slamDir.scale(3 + 2 * i)).add(perp.scale((i - 1) * TILE)),
                         3, 40, boss);
             }
             punishUntil = now + 2; // the punish window: hit it while its head is down
             punished.clear();
         }
 
-        private void tickLarvae(DataBossEntity boss, List<ServerPlayerEntity> players) {
+        private void tickLarvae(DataBossEntity boss, List<ServerPlayer> players) {
             carrion.removeIf(c -> now >= c.until());
             if (now % 4 == 0) {
                 for (Carrion c : carrion) {
-                    BossFx.world(boss).spawnParticles(ParticleTypes.MYCELIUM, c.pos().x, c.pos().y + 0.2, c.pos().z, 3, 0.4, 0.05, 0.4, 0);
+                    BossFx.world(boss).sendParticles(ParticleTypes.MYCELIUM, c.pos().x, c.pos().y + 0.2, c.pos().z, 3, 0.4, 0.05, 0.4, 0);
                 }
             }
             Iterator<Larva> it = larvae.iterator();
@@ -1245,12 +1244,12 @@ final class ModernScripts {
                     continue;
                 }
                 if (now < l.landsAt) {
-                    BossFx.world(boss).spawnParticles(ParticleTypes.CLOUD, l.mob.getX(), l.mob.getY() + 1.5, l.mob.getZ(), 2, 0.2, 0.2, 0.2, 0);
+                    BossFx.world(boss).sendParticles(ParticleTypes.CLOUD, l.mob.getX(), l.mob.getY() + 1.5, l.mob.getZ(), 2, 0.2, 0.2, 0.2, 0);
                     continue;
                 }
-                ServerPlayerEntity touching = null;
-                for (ServerPlayerEntity p : players) {
-                    if (flat(p.getPos(), l.mob.getPos()) < 1.4) {
+                ServerPlayer touching = null;
+                for (ServerPlayer p : players) {
+                    if (flat(p.position(), l.mob.position()) < 1.4) {
                         touching = p;
                     }
                 }
@@ -1263,13 +1262,13 @@ final class ModernScripts {
                     continue;
                 }
                 // Crawls back and forth along its row.
-                Vec3d c = homeVec();
+                Vec3 c = homeVec();
                 double nx = l.mob.getX() + l.dirX * 0.5;
                 if (Math.abs(nx - c.x) > 10) {
                     l.dirX = -l.dirX;
                     nx = l.mob.getX() + l.dirX * 0.5;
                 }
-                l.mob.requestTeleport(nx, l.mob.getY(), l.mob.getZ());
+                l.mob.teleportTo(nx, l.mob.getY(), l.mob.getZ());
                 eatCarrion(boss, l);
             }
         }
@@ -1279,17 +1278,17 @@ final class ModernScripts {
             Iterator<Carrion> it = carrion.iterator();
             while (it.hasNext()) {
                 Carrion c = it.next();
-                if (flat(l.mob.getPos(), c.pos()) < 1.2) {
+                if (flat(l.mob.position(), c.pos()) < 1.2) {
                     it.remove();
                     boss.heal(mcHp(boss, BossMechanics.MAGGOT_CARRION_HEAL));
                     CombatAchievementService.flagNear(boss, BossMechanics.FLAG_MAGGOT_HEALED);
-                    BossFx.world(boss).spawnParticles(ParticleTypes.HEART, l.mob.getX(), l.mob.getY() + 0.6, l.mob.getZ(), 1, 0, 0, 0, 0);
+                    BossFx.world(boss).sendParticles(ParticleTypes.HEART, l.mob.getX(), l.mob.getY() + 0.6, l.mob.getZ(), 1, 0, 0, 0, 0);
                 }
             }
         }
 
         @Override
-        public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
+        public void onDeath(DataBossEntity boss, ServerPlayer killer) {
             larvae.forEach(l -> l.mob.discard());
             if (watcher != null) {
                 MinionRules.unwatch(watcher);

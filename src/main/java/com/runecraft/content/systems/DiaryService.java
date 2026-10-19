@@ -20,13 +20,12 @@ import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
 import java.util.Locale;
 import java.util.Map;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
 
 /** Tracks achievement diary tasks from game events and periodic checks, and hands out rewards. */
 public final class DiaryService {
@@ -47,13 +46,13 @@ public final class DiaryService {
         }
     }
 
-    public static int dailyLeft(ServerPlayerEntity p, String key, int max) {
+    public static int dailyLeft(ServerPlayer p, String key, int max) {
         SysState.SysPlayer sp = SysState.of(p);
         rollDay(sp);
         return Math.max(0, max - sp.dailyUses.getOrDefault(key, 0));
     }
 
-    public static boolean useDaily(ServerPlayerEntity p, String key, int max) {
+    public static boolean useDaily(ServerPlayer p, String key, int max) {
         SysState.SysPlayer sp = SysState.of(p);
         rollDay(sp);
         int used = sp.dailyUses.getOrDefault(key, 0);
@@ -67,7 +66,7 @@ public final class DiaryService {
     // ---------------- Areas ----------------
 
     /** Whether the player is inside a task restriction (null = anywhere, an area id or an "x,y,r" circle). */
-    static boolean inArea(ServerPlayerEntity p, String restrict) {
+    static boolean inArea(ServerPlayer p, String restrict) {
         if (restrict == null) {
             return true;
         }
@@ -83,7 +82,7 @@ public final class DiaryService {
     }
 
     /** The task's skill (boosts count, as in OSRS) and quest requirements. */
-    static boolean meets(ServerPlayerEntity p, Task task) {
+    static boolean meets(ServerPlayer p, Task task) {
         PlayerData d = Players.data(p);
         for (Map.Entry<Skill, Integer> e : task.reqs().entrySet()) {
             int lvl = Math.max(d.skills().level(e.getKey()), d.skills().currentLevel(e.getKey()));
@@ -102,23 +101,23 @@ public final class DiaryService {
 
     // ---------------- Completion ----------------
 
-    static void complete(ServerPlayerEntity p, Task task) {
+    static void complete(ServerPlayer p, Task task) {
         SysState.SysPlayer sp = SysState.of(p);
         if (sp.diaryDone.contains(task.id()) || !meets(p, task)) {
             return;
         }
         sp.diaryDone.add(task.id());
         Area a = Diaries.area(task.area());
-        p.sendMessage(Text.literal("Well done! You have completed " + (task.tier() == Tier.EASY || task.tier() == Tier.ELITE ? "an " : "a ")
+        p.displayClientMessage(Component.literal("Well done! You have completed " + (task.tier() == Tier.EASY || task.tier() == Tier.ELITE ? "an " : "a ")
                 + task.tier().id() + " task in the " + a.name() + " area. Your Achievement Diary has been updated.")
-                .formatted(Formatting.DARK_GREEN), false);
+                .withStyle(ChatFormatting.DARK_GREEN), false);
         if (Diaries.tierComplete(sp.diaryDone, task.area(), task.tier())) {
-            p.sendMessage(Text.literal("Congratulations! You have completed all of the " + task.tier().id() + " tasks in the " + a.name()
-                    + " area. Claim your reward from the Achievement Diary menu (J) or the diary master.").formatted(Formatting.GOLD), false);
+            p.displayClientMessage(Component.literal("Congratulations! You have completed all of the " + task.tier().id() + " tasks in the " + a.name()
+                    + " area. Claim your reward from the Achievement Diary menu (J) or the diary master.").withStyle(ChatFormatting.GOLD), false);
         }
     }
 
-    private static void count(ServerPlayerEntity p, Task task, int amount) {
+    private static void count(ServerPlayer p, Task task, int amount) {
         SysState.SysPlayer sp = SysState.of(p);
         if (sp.diaryDone.contains(task.id()) || !meets(p, task)) {
             return;
@@ -132,7 +131,7 @@ public final class DiaryService {
 
     // ---------------- Events ----------------
 
-    public static void onXp(ServerPlayerEntity p, Skill skill, int tenths) {
+    public static void onXp(ServerPlayer p, Skill skill, int tenths) {
         SysState.SysPlayer sp = SysState.of(p);
         PlayerData d = Players.data(p);
         for (Task t : Diaries.tasks()) {
@@ -145,7 +144,7 @@ public final class DiaryService {
         DiaryPerks.farmXp(p, skill, tenths);
     }
 
-    public static void onKill(ServerPlayerEntity p, LivingEntity e, MonsterStats stats) {
+    public static void onKill(ServerPlayer p, LivingEntity e, MonsterStats stats) {
         String name = (stats == null ? e.getName().getString() : stats.name()).toLowerCase(Locale.ROOT);
         for (Task t : Diaries.tasks()) {
             if (t.type() == Type.KILL && Diaries.killMatches(t.target(), name) && inArea(p, t.restrict())) {
@@ -154,7 +153,7 @@ public final class DiaryService {
         }
     }
 
-    public static void onMake(ServerPlayerEntity p, Recipe r) {
+    public static void onMake(ServerPlayer p, Recipe r) {
         for (Task t : Diaries.tasks()) {
             if (t.type() != Type.MAKE) {
                 continue;
@@ -169,7 +168,7 @@ public final class DiaryService {
     }
 
     /** An item gathered, stolen, dropped or rewarded. */
-    public static void onObtain(ServerPlayerEntity p, String item, int amount) {
+    public static void onObtain(ServerPlayer p, String item, int amount) {
         for (Task t : Diaries.tasks()) {
             if (t.type() == Type.OBTAIN && Diaries.itemMatches(t.target(), item) && inArea(p, t.restrict())) {
                 if (Diaries.inOneGo(t)) {
@@ -185,7 +184,7 @@ public final class DiaryService {
         DiaryPerks.onObtain(p, item);
     }
 
-    public static void onCast(ServerPlayerEntity p, String spell) {
+    public static void onCast(ServerPlayer p, String spell) {
         SysState.of(p).spellsCast.add(spell);
         for (Task t : Diaries.tasks()) {
             if (t.type() == Type.CAST && Diaries.spellMatches(t.target(), spell) && inArea(p, t.restrict())) {
@@ -195,7 +194,7 @@ public final class DiaryService {
     }
 
     /** A named activity (NPC talk, minigame start/win, spellbook switch, jewellery teleport, food eaten...). */
-    public static void onActivity(ServerPlayerEntity p, String key) {
+    public static void onActivity(ServerPlayer p, String key) {
         for (Task t : Diaries.tasks()) {
             if (t.type() == Type.EVENT && Diaries.eventMatches(t.target(), key) && inArea(p, t.restrict())) {
                 complete(p, t);
@@ -203,7 +202,7 @@ public final class DiaryService {
         }
     }
 
-    public static void onClue(ServerPlayerEntity p, ClueScrolls.Tier tier) {
+    public static void onClue(ServerPlayer p, ClueScrolls.Tier tier) {
         for (Task t : Diaries.tasks()) {
             if (t.type() == Type.CLUE && t.target().equals(tier.id())) {
                 complete(p, t);
@@ -211,12 +210,12 @@ public final class DiaryService {
         }
     }
 
-    public static void onGeTrade(ServerPlayerEntity p) {
+    public static void onGeTrade(ServerPlayer p) {
         check(p, Type.GE);
     }
 
     /** Periodic checks for state-based tasks. */
-    public static void gameTick(ServerPlayerEntity p, long tick) {
+    public static void gameTick(ServerPlayer p, long tick) {
         if ((tick + p.getId()) % 10 != 0) {
             return;
         }
@@ -225,7 +224,7 @@ public final class DiaryService {
         }
     }
 
-    private static boolean at(ServerPlayerEntity p, String target) {
+    private static boolean at(ServerPlayer p, String target) {
         if (!Gielinor.is(p)) {
             return false;
         }
@@ -235,7 +234,7 @@ public final class DiaryService {
         return Teleports.within(pos[0], pos[1], v[0], v[1], v[2]) && Diaries.visitDepthOk(target, p.getBlockY());
     }
 
-    static void check(ServerPlayerEntity p, Type type) {
+    static void check(ServerPlayer p, Type type) {
         SysState.SysPlayer sp = SysState.of(p);
         PlayerData d = Players.data(p);
         for (Task t : Diaries.tasks()) {
@@ -291,15 +290,15 @@ public final class DiaryService {
     }
 
     /** Every '&'-separated piece is worn (armour slots, hands or the extra jewellery/cape slots). */
-    private static boolean wearingAll(ServerPlayerEntity p, String target) {
+    private static boolean wearingAll(ServerPlayer p, String target) {
         java.util.List<String> worn = new java.util.ArrayList<>();
-        for (net.minecraft.entity.EquipmentSlot slot : net.minecraft.entity.EquipmentSlot.values()) {
-            net.minecraft.item.ItemStack s = p.getEquippedStack(slot);
+        for (net.minecraft.world.entity.EquipmentSlot slot : net.minecraft.world.entity.EquipmentSlot.values()) {
+            net.minecraft.world.item.ItemStack s = p.getItemBySlot(slot);
             if (!s.isEmpty()) {
                 worn.add(Inv.idOf(s));
             }
         }
-        for (net.minecraft.item.ItemStack s : SysState.of(p).worn.values()) {
+        for (net.minecraft.world.item.ItemStack s : SysState.of(p).worn.values()) {
             if (!s.isEmpty()) {
                 worn.add(Inv.idOf(s));
             }
@@ -307,19 +306,19 @@ public final class DiaryService {
         return Diaries.wearingAll(target, worn);
     }
 
-    private static boolean haveItem(ServerPlayerEntity p, String target, int count) {
+    private static boolean haveItem(ServerPlayer p, String target, int count) {
         if (!target.startsWith("*") && !target.contains("|")) {
             return Inv.count(p, target) >= count || SysState.of(p).wearing(target);
         }
         // Items worn in the extra slots (capes, rings, amulets...) count too, e.g. a Fire cape worn in TzHaar City.
-        for (net.minecraft.item.ItemStack worn : SysState.of(p).worn.values()) {
+        for (net.minecraft.world.item.ItemStack worn : SysState.of(p).worn.values()) {
             if (!worn.isEmpty() && Diaries.itemMatches(target, Inv.idOf(worn))) {
                 return true;
             }
         }
         int total = 0;
-        for (int i = 0; i < p.getInventory().size(); i++) {
-            var s = p.getInventory().getStack(i);
+        for (int i = 0; i < p.getInventory().getContainerSize(); i++) {
+            var s = p.getInventory().getItem(i);
             if (!s.isEmpty() && Diaries.itemMatches(target, Inv.idOf(s))) {
                 total += s.getCount();
             }
@@ -340,7 +339,7 @@ public final class DiaryService {
     }
 
     /** Button label of a reward teleport, with the uses left today for limited ones. */
-    static String rewardTeleLabel(ServerPlayerEntity p, String itemId, int index) {
+    static String rewardTeleLabel(ServerPlayer p, String itemId, int index) {
         DiaryRewards.Tele t = rewardTele(itemId, index);
         if (t == null) {
             return "?";
@@ -350,7 +349,7 @@ public final class DiaryService {
     }
 
     /** Uses a diary reward item's teleport, honouring its daily charges. Returns true if the player teleported. */
-    static boolean rewardTeleport(ServerPlayerEntity p, String itemId, int index) {
+    static boolean rewardTeleport(ServerPlayer p, String itemId, int index) {
         DiaryRewards.Tele t = rewardTele(itemId, index);
         if (t == null) {
             return false;
@@ -373,7 +372,7 @@ public final class DiaryService {
         return Diaries.tierComplete(sp.diaryDone, a.id(), t) && !sp.diaryClaimed.contains(a.id() + ":" + t.name());
     }
 
-    public static void claim(ServerPlayerEntity p, Area a, Tier t) {
+    public static void claim(ServerPlayer p, Area a, Tier t) {
         SysState.SysPlayer sp = SysState.of(p);
         if (!Diaries.tierComplete(sp.diaryDone, a.id(), t)) {
             Msg.game(p, "You haven't completed all of the " + t.id() + " tasks in the " + a.name() + " area yet.");
@@ -402,7 +401,7 @@ public final class DiaryService {
     }
 
     /** Antique lamp: XP in a chosen skill. */
-    public static void rubLamp(ServerPlayerEntity p, Tier tier, Skill skill) {
+    public static void rubLamp(ServerPlayer p, Tier tier, Skill skill) {
         if (!Inv.has(p, "antique_lamp_" + tier.id(), 1)) {
             return;
         }

@@ -6,6 +6,9 @@ import java.util.List;
 
 import static com.runecraft.osrs.content.world.KandarinKit.*;
 
+import com.runecraft.osrs.content.world.KandarinKit.Bld;
+import com.runecraft.osrs.content.world.KandarinKit.Pal;
+
 /** The Tree Gnome Stronghold: the Grand Tree, gnome huts, the agility course, the swamp, patches, restaurant and gate. */
 final class KandarinGnomes {
     private KandarinGnomes() {

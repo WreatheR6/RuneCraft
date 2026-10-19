@@ -7,16 +7,15 @@ import com.runecraft.player.Players;
 import com.runecraft.quest.QuestApi;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.server.network.ServerPlayerEntity;
-
 import java.util.List;
+import net.minecraft.server.level.ServerPlayer;
 
 /** Quest-locked NPC shops (Ava's devices, Culinaromancer's chest, quest point cape). */
 final class QuestShops {
     private QuestShops() {
     }
 
-    static boolean qualifies(ServerPlayerEntity p, QuestBook.Shop s) {
+    static boolean qualifies(ServerPlayer p, QuestBook.Shop s) {
         PlayerData data = Players.data(p);
         if (s.quest() != null) {
             if (s.quest().equals("*")) {
@@ -33,12 +32,12 @@ final class QuestShops {
         return s.skill() == null || data.skills().level(s.skill()) >= s.level();
     }
 
-    static boolean owns(ServerPlayerEntity p, String item) {
-        return Inv.has(p, item, 1) || QuestsState.get(p).wornAll(p.getUuid()).containsValue(item);
+    static boolean owns(ServerPlayer p, String item) {
+        return Inv.has(p, item, 1) || QuestsState.get(p).wornAll(p.getUUID()).containsValue(item);
     }
 
     /** Offers the best qualifying item this NPC sells that the player doesn't own; returns whether it said anything. */
-    static boolean offer(ServerPlayerEntity p, String npcId, String name) {
+    static boolean offer(ServerPlayer p, String npcId, String name) {
         List<QuestBook.Shop> shops = QuestBook.get().shops.stream().filter(s -> s.npc().equals(npcId)).toList();
         for (int i = shops.size() - 1; i >= 0; i--) {
             QuestBook.Shop s = shops.get(i);

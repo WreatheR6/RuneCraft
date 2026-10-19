@@ -15,15 +15,14 @@ import com.runecraft.registry.ModBlocks;
 import com.runecraft.registry.ModEntities;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.SpawnReason;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.Heightmap;
-
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -44,18 +43,18 @@ public final class LandmarkBuilder {
     private static final Map<Long, List<QuestNpc>> REMOTE_NPCS = new HashMap<>();
     private static final Deque<QuestNpc> NPC_QUEUE = new ArrayDeque<>();
     /** Custom structure builders keyed by Landmark enum name or PlaceDef id: (world, plaza centre at floor level). */
-    private static final Map<String, List<java.util.function.BiConsumer<ServerWorld, BlockPos>>> CUSTOM = new HashMap<>();
+    private static final Map<String, List<java.util.function.BiConsumer<ServerLevel, BlockPos>>> CUSTOM = new HashMap<>();
 
     static {
         for (Landmark l : Landmark.values()) {
-            BY_CHUNK.computeIfAbsent(ChunkPos.toLong(l.blockX() >> 4, l.blockZ() >> 4), k -> new ArrayList<>()).add(l);
+            BY_CHUNK.computeIfAbsent(ChunkPos.asLong(l.blockX() >> 4, l.blockZ() >> 4), k -> new ArrayList<>()).add(l);
         }
         for (com.runecraft.osrs.content.PlaceDef p : com.runecraft.osrs.content.ContentRegistry.places()) {
-            PLACES_BY_CHUNK.computeIfAbsent(ChunkPos.toLong(p.blockX() >> 4, p.blockZ() >> 4), k -> new ArrayList<>()).add(p);
+            PLACES_BY_CHUNK.computeIfAbsent(ChunkPos.asLong(p.blockX() >> 4, p.blockZ() >> 4), k -> new ArrayList<>()).add(p);
         }
         for (QuestNpc n : QuestNpc.values()) {
             if (n.remote()) {
-                REMOTE_NPCS.computeIfAbsent(ChunkPos.toLong(n.blockX() >> 4, n.blockZ() >> 4), k -> new ArrayList<>()).add(n);
+                REMOTE_NPCS.computeIfAbsent(ChunkPos.asLong(n.blockX() >> 4, n.blockZ() >> 4), k -> new ArrayList<>()).add(n);
             }
         }
     }
@@ -64,7 +63,7 @@ public final class LandmarkBuilder {
      * Registers extra structure-building code for a landmark (enum name, e.g. "LUMBRIDGE") or module
      * place id. Runs once, right after the place's plaza is generated, with the plaza centre.
      */
-    public static void registerCustom(String placeId, java.util.function.BiConsumer<ServerWorld, BlockPos> builder) {
+    public static void registerCustom(String placeId, java.util.function.BiConsumer<ServerLevel, BlockPos> builder) {
         CUSTOM.computeIfAbsent(placeId, k -> new ArrayList<>()).add(builder);
     }
 
@@ -105,7 +104,7 @@ public final class LandmarkBuilder {
             if (QUEUE.isEmpty() && PLACE_QUEUE.isEmpty() && NPC_QUEUE.isEmpty()) {
                 return;
             }
-            ServerWorld world = Gielinor.world(server);
+            ServerLevel world = Gielinor.world(server);
             if (world != null) {
                 if (!QUEUE.isEmpty()) {
                     buildNow(world, QUEUE.poll());
@@ -119,7 +118,7 @@ public final class LandmarkBuilder {
     }
 
     /** Builds a landmark if it hasn't been built yet. */
-    public static void buildNow(ServerWorld world, Landmark landmark) {
+    public static void buildNow(ServerLevel world, Landmark landmark) {
         PlayerDataState state = Players.state(world.getServer());
         if (state.isBuilt(landmark.name())) {
             return;
@@ -133,7 +132,7 @@ public final class LandmarkBuilder {
     }
 
     /** Builds a module place if it hasn't been built yet. */
-    public static void buildNow(ServerWorld world, com.runecraft.osrs.content.PlaceDef place) {
+    public static void buildNow(ServerLevel world, com.runecraft.osrs.content.PlaceDef place) {
         PlayerDataState state = Players.state(world.getServer());
         String key = "place:" + place.id();
         if (state.isBuilt(key)) {
@@ -147,13 +146,13 @@ public final class LandmarkBuilder {
         }
     }
 
-    private static int groundY(ServerWorld world, int x, int z) {
+    private static int groundY(ServerLevel world, int x, int z) {
         world.getChunk(x >> 4, z >> 4);
-        int ground = Math.max(world.getTopY(Heightmap.Type.OCEAN_FLOOR, x, z), world.getSeaLevel());
-        return Math.max(ground, world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z) - 1);
+        int ground = Math.max(world.getHeight(Heightmap.Types.OCEAN_FLOOR, x, z), world.getSeaLevel());
+        return Math.max(ground, world.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1);
     }
 
-    private static void buildPlace(ServerWorld world, com.runecraft.osrs.content.PlaceDef place) {
+    private static void buildPlace(ServerLevel world, com.runecraft.osrs.content.PlaceDef place) {
         int cx = place.blockX();
         int cz = place.blockZ();
         if (replacedBuild(world, place.id(), cx, cz, place.stations(), place.blocks())) {
@@ -167,13 +166,13 @@ public final class LandmarkBuilder {
             for (Station s : place.stations()) {
                 Block block = ModBlocks.STATIONS.get(s);
                 if (block != null) {
-                    set(world, stationSlot(cx, y + 1, cz, radius - 2, slot++), block.getDefaultState());
+                    set(world, stationSlot(cx, y + 1, cz, radius - 2, slot++), block.defaultBlockState());
                 }
             }
             for (String id : place.blocks()) {
-                Block block = net.minecraft.registry.Registries.BLOCK.get(RuneCraft.resolve(id));
+                Block block = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(RuneCraft.resolve(id));
                 if (block != Blocks.AIR) {
-                    set(world, stationSlot(cx, y + 1, cz, radius - 2, slot++), block.getDefaultState());
+                    set(world, stationSlot(cx, y + 1, cz, radius - 2, slot++), block.defaultBlockState());
                 }
             }
         }
@@ -181,7 +180,7 @@ public final class LandmarkBuilder {
     }
 
     /** Boss arenas, NPCs and custom builders shared by landmarks and module places. */
-    private static void afterBuild(ServerWorld world, String placeId, int cx, int y, int cz) {
+    private static void afterBuild(ServerLevel world, String placeId, int cx, int y, int cz) {
         int arena = 0;
         for (com.runecraft.osrs.content.BossDef b : com.runecraft.osrs.content.ContentRegistry.bosses()) {
             if (b.raidOnly || !placeId.equals(b.place)) {
@@ -196,7 +195,7 @@ public final class LandmarkBuilder {
             com.runecraft.boss.DataBossService.buildArena(world, new BlockPos(ax, ay, az), r, b.arenaStyle);
             Block stone = ModBlocks.DATA_BOSS_STONES.get(b.id);
             if (stone != null) {
-                set(world, new BlockPos(ax, ay + 1, az - r + 2), stone.getDefaultState());
+                set(world, new BlockPos(ax, ay + 1, az - r + 2), stone.defaultBlockState());
             }
             arena++;
         }
@@ -218,13 +217,13 @@ public final class LandmarkBuilder {
             Integer below = com.runecraft.osrs.world.NpcStoreys.undergroundFeetY(npc.id());
             BlockPos feet = below != null ? new BlockPos(x, below, z) : NpcFloor.spot(world, x, z, NpcFloor.isBanker(npc.id(), npc.name()),
                     com.runecraft.osrs.world.NpcStoreys.of(npc.id()));
-            entity.refreshPositionAndAngles(feet.getX() + 0.5, below != null ? below : NpcFloor.feetY(world, feet), feet.getZ() + 0.5,
+            entity.moveTo(feet.getX() + 0.5, below != null ? below : NpcFloor.feetY(world, feet), feet.getZ() + 0.5,
                     world.getRandom().nextFloat() * 360f, 0);
             entity.setNpc(npc);
-            entity.initialize(world, world.getLocalDifficulty(entity.getBlockPos()), SpawnReason.STRUCTURE, null, null);
-            world.spawnEntity(entity);
+            entity.finalizeSpawn(world, world.getCurrentDifficultyAt(entity.blockPosition()), MobSpawnType.STRUCTURE, null, null);
+            world.addFreshEntity(entity);
         }
-        for (java.util.function.BiConsumer<ServerWorld, BlockPos> custom : CUSTOM.getOrDefault(placeId, List.of())) {
+        for (java.util.function.BiConsumer<ServerLevel, BlockPos> custom : CUSTOM.getOrDefault(placeId, List.of())) {
             try {
                 custom.accept(world, new BlockPos(cx, y, cz));
             } catch (RuntimeException e) {
@@ -233,60 +232,60 @@ public final class LandmarkBuilder {
         }
     }
 
-    private static void plaza(ServerWorld world, int cx, int y, int cz, int radius, com.runecraft.osrs.content.PlaceDef.Style style) {
+    private static void plaza(ServerLevel world, int cx, int y, int cz, int radius, com.runecraft.osrs.content.PlaceDef.Style style) {
         BlockState floorA;
         BlockState floorB;
         BlockState wallState;
         switch (style) {
             case RUINS -> {
-                floorA = Blocks.MOSSY_STONE_BRICKS.getDefaultState();
-                floorB = Blocks.CRACKED_STONE_BRICKS.getDefaultState();
-                wallState = Blocks.MOSSY_STONE_BRICK_WALL.getDefaultState();
+                floorA = Blocks.MOSSY_STONE_BRICKS.defaultBlockState();
+                floorB = Blocks.CRACKED_STONE_BRICKS.defaultBlockState();
+                wallState = Blocks.MOSSY_STONE_BRICK_WALL.defaultBlockState();
             }
             case CAVE -> {
-                floorA = Blocks.DEEPSLATE_TILES.getDefaultState();
-                floorB = Blocks.COBBLED_DEEPSLATE.getDefaultState();
-                wallState = Blocks.DEEPSLATE_BRICK_WALL.getDefaultState();
+                floorA = Blocks.DEEPSLATE_TILES.defaultBlockState();
+                floorB = Blocks.COBBLED_DEEPSLATE.defaultBlockState();
+                wallState = Blocks.DEEPSLATE_BRICK_WALL.defaultBlockState();
             }
             case CAMP -> {
-                floorA = Blocks.COARSE_DIRT.getDefaultState();
-                floorB = Blocks.PACKED_MUD.getDefaultState();
-                wallState = Blocks.OAK_FENCE.getDefaultState();
+                floorA = Blocks.COARSE_DIRT.defaultBlockState();
+                floorB = Blocks.PACKED_MUD.defaultBlockState();
+                wallState = Blocks.OAK_FENCE.defaultBlockState();
             }
             case ARENA -> {
-                floorA = Blocks.SMOOTH_SANDSTONE.getDefaultState();
-                floorB = Blocks.CUT_SANDSTONE.getDefaultState();
-                wallState = Blocks.SANDSTONE_WALL.getDefaultState();
+                floorA = Blocks.SMOOTH_SANDSTONE.defaultBlockState();
+                floorB = Blocks.CUT_SANDSTONE.defaultBlockState();
+                wallState = Blocks.SANDSTONE_WALL.defaultBlockState();
             }
             default -> {
-                floorA = Blocks.STONE_BRICKS.getDefaultState();
-                floorB = Blocks.POLISHED_ANDESITE.getDefaultState();
-                wallState = Blocks.STONE_BRICK_WALL.getDefaultState();
+                floorA = Blocks.STONE_BRICKS.defaultBlockState();
+                floorB = Blocks.POLISHED_ANDESITE.defaultBlockState();
+                wallState = Blocks.STONE_BRICK_WALL.defaultBlockState();
             }
         }
         for (int dx = -radius; dx <= radius; dx++) {
             for (int dz = -radius; dz <= radius; dz++) {
                 BlockPos p = new BlockPos(cx + dx, y, cz + dz);
                 for (int fill = 1; fill <= 4; fill++) {
-                    BlockState below = world.getBlockState(p.down(fill));
+                    BlockState below = world.getBlockState(p.below(fill));
                     if (below.isAir() || !below.getFluidState().isEmpty()) {
-                        set(world, p.down(fill), Blocks.STONE_BRICKS.getDefaultState());
+                        set(world, p.below(fill), Blocks.STONE_BRICKS.defaultBlockState());
                     }
                 }
                 set(world, p, ((dx + dz) & 1) == 0 ? floorA : floorB);
                 for (int up = 1; up <= 6; up++) {
-                    set(world, p.up(up), Blocks.AIR.getDefaultState());
+                    set(world, p.above(up), Blocks.AIR.defaultBlockState());
                 }
                 boolean edge = Math.abs(dx) == radius || Math.abs(dz) == radius;
                 if (edge && Math.abs(dx) > 1 && Math.abs(dz) > 1) {
-                    set(world, p.up(), wallState);
+                    set(world, p.above(), wallState);
                 }
             }
         }
     }
 
-    private static void set(ServerWorld world, BlockPos pos, BlockState state) {
-        world.setBlockState(pos, state, Block.NOTIFY_LISTENERS);
+    private static void set(ServerLevel world, BlockPos pos, BlockState state) {
+        world.setBlock(pos, state, Block.UPDATE_CLIENTS);
     }
 
     /**
@@ -294,7 +293,7 @@ public final class LandmarkBuilder {
      * structure around it first and then adds only what it lacks: any station block the structure
      * doesn't contain (placed on the ground near the centre), NPCs, arenas and custom builders.
      */
-    private static boolean replacedBuild(ServerWorld world, String placeId, int cx, int cz,
+    private static boolean replacedBuild(ServerLevel world, String placeId, int cx, int cz,
                                          java.util.Collection<Station> stations, java.util.Collection<String> blocks) {
         com.runecraft.osrs.world.StructureDef def = StructurePlacer.replacing(placeId);
         if (def == null) {
@@ -312,27 +311,27 @@ public final class LandmarkBuilder {
         List<Block> missing = new ArrayList<>();
         for (Station s : stations) {
             Block block = ModBlocks.STATIONS.get(s);
-            if (block != null && !used.contains(net.minecraft.registry.Registries.BLOCK.getId(block).toString())) {
+            if (block != null && !used.contains(net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(block).toString())) {
                 missing.add(block);
             }
         }
         for (String id : blocks) {
-            Block block = net.minecraft.registry.Registries.BLOCK.get(RuneCraft.resolve(id));
-            if (block != Blocks.AIR && !used.contains(net.minecraft.registry.Registries.BLOCK.getId(block).toString())) {
+            Block block = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(RuneCraft.resolve(id));
+            if (block != Blocks.AIR && !used.contains(net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(block).toString())) {
                 missing.add(block);
             }
         }
         int slot = 0;
         for (Block block : missing) {
             BlockPos p = stationSlot(cx, 0, cz, 4, slot++);
-            int top = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, p.getX(), p.getZ());
-            set(world, new BlockPos(p.getX(), top, p.getZ()), block.getDefaultState());
+            int top = world.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, p.getX(), p.getZ());
+            set(world, new BlockPos(p.getX(), top, p.getZ()), block.defaultBlockState());
         }
         afterBuild(world, placeId, cx, groundY(world, cx, cz), cz);
         return true;
     }
 
-    private static void build(ServerWorld world, Landmark landmark) {
+    private static void build(ServerLevel world, Landmark landmark) {
         int cx = landmark.blockX();
         int cz = landmark.blockZ();
         if (!landmark.isAltar() && replacedBuild(world, landmark.name(), cx, cz, landmark.stations(), List.of())) {
@@ -341,15 +340,15 @@ public final class LandmarkBuilder {
                 if (b.lair() == landmark && landmark != Landmark.BARROWS) {
                     int lx = cx - 6 + b.ordinal() % 4 * 2;
                     int lz = cz + 12;
-                    buildLair(world, new BlockPos(lx, world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, lx, lz), lz), b);
+                    buildLair(world, new BlockPos(lx, world.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, lx, lz), lz), b);
                 }
             }
             spawnNpcs(world, landmark, cx, groundY(world, cx, cz) + 1, cz);
             return;
         }
         world.getChunk(cx >> 4, cz >> 4);
-        int ground = Math.max(world.getTopY(Heightmap.Type.OCEAN_FLOOR, cx, cz), world.getSeaLevel()) ;
-        int y = Math.max(ground, world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, cx, cz) - 1);
+        int ground = Math.max(world.getHeight(Heightmap.Types.OCEAN_FLOOR, cx, cz), world.getSeaLevel()) ;
+        int y = Math.max(ground, world.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, cx, cz) - 1);
         if (landmark.isAltar()) {
             buildAltar(world, landmark, cx, y, cz);
             afterBuild(world, landmark.name(), cx, y, cz);
@@ -362,21 +361,21 @@ public final class LandmarkBuilder {
                 BlockPos p = new BlockPos(cx + dx, y, cz + dz);
                 boolean edge = Math.abs(dx) == radius || Math.abs(dz) == radius;
                 for (int fill = 1; fill <= 4; fill++) {
-                    BlockState below = world.getBlockState(p.down(fill));
+                    BlockState below = world.getBlockState(p.below(fill));
                     if (below.isAir() || !below.getFluidState().isEmpty()) {
-                        set(world, p.down(fill), Blocks.STONE_BRICKS.getDefaultState());
+                        set(world, p.below(fill), Blocks.STONE_BRICKS.defaultBlockState());
                     }
                 }
-                set(world, p, ((dx + dz) & 1) == 0 ? Blocks.STONE_BRICKS.getDefaultState() : Blocks.POLISHED_ANDESITE.getDefaultState());
+                set(world, p, ((dx + dz) & 1) == 0 ? Blocks.STONE_BRICKS.defaultBlockState() : Blocks.POLISHED_ANDESITE.defaultBlockState());
                 for (int up = 1; up <= 6; up++) {
-                    set(world, p.up(up), Blocks.AIR.getDefaultState());
+                    set(world, p.above(up), Blocks.AIR.defaultBlockState());
                 }
                 if (edge) {
                     boolean gate = Math.abs(dx) <= 1 || Math.abs(dz) <= 1;
                     if (!gate) {
-                        set(world, p.up(), Blocks.STONE_BRICK_WALL.getDefaultState());
+                        set(world, p.above(), Blocks.STONE_BRICK_WALL.defaultBlockState());
                         if ((Math.abs(dx) == radius && Math.abs(dz) == radius)) {
-                            set(world, p.up(2), Blocks.LANTERN.getDefaultState());
+                            set(world, p.above(2), Blocks.LANTERN.defaultBlockState());
                         }
                     }
                 }
@@ -390,7 +389,7 @@ public final class LandmarkBuilder {
             BlockPos p = stationSlot(cx, y + 1, cz, inner, slot++);
             Block block = ModBlocks.STATIONS.get(s);
             if (block != null) {
-                set(world, p, block.getDefaultState());
+                set(world, p, block.defaultBlockState());
             }
         }
         // Lair for bosses based here.
@@ -404,7 +403,7 @@ public final class LandmarkBuilder {
         }
         if (landmark == Landmark.LUMBRIDGE) {
             // Lumbridge castle courtyard trees and a fountain.
-            set(world, new BlockPos(cx, y, cz), Blocks.WATER.getDefaultState());
+            set(world, new BlockPos(cx, y, cz), Blocks.WATER.defaultBlockState());
         }
         AgilityCourse course = AgilityCourse.at(landmark);
         // Courses with OSRS obstacle tiles are placed by the skilling module's agility placer instead.
@@ -428,7 +427,7 @@ public final class LandmarkBuilder {
         };
     }
 
-    private static void buildAltar(ServerWorld world, Landmark landmark, int cx, int y, int cz) {
+    private static void buildAltar(ServerLevel world, Landmark landmark, int cx, int y, int cz) {
         RuneAltar altar = RuneAltar.of(landmark.altar());
         for (int dx = -3; dx <= 3; dx++) {
             for (int dz = -3; dz <= 3; dz++) {
@@ -436,34 +435,34 @@ public final class LandmarkBuilder {
                     continue;
                 }
                 BlockPos p = new BlockPos(cx + dx, y, cz + dz);
-                set(world, p, (dx + dz) % 3 == 0 ? Blocks.MOSSY_STONE_BRICKS.getDefaultState() : Blocks.CRACKED_STONE_BRICKS.getDefaultState());
+                set(world, p, (dx + dz) % 3 == 0 ? Blocks.MOSSY_STONE_BRICKS.defaultBlockState() : Blocks.CRACKED_STONE_BRICKS.defaultBlockState());
                 for (int up = 1; up <= 4; up++) {
-                    set(world, p.up(up), Blocks.AIR.getDefaultState());
+                    set(world, p.above(up), Blocks.AIR.defaultBlockState());
                 }
                 if (dx * dx + dz * dz >= 8 && (dx + dz) % 2 == 0) {
-                    set(world, p.up(), Blocks.MOSSY_STONE_BRICK_WALL.getDefaultState());
+                    set(world, p.above(), Blocks.MOSSY_STONE_BRICK_WALL.defaultBlockState());
                 }
             }
         }
         if (altar != null) {
-            set(world, new BlockPos(cx, y + 1, cz), ModBlocks.ALTARS.get(altar).getDefaultState());
+            set(world, new BlockPos(cx, y + 1, cz), ModBlocks.ALTARS.get(altar).defaultBlockState());
         }
     }
 
-    private static void buildLair(ServerWorld world, BlockPos pos, Boss boss) {
+    private static void buildLair(ServerLevel world, BlockPos pos, Boss boss) {
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
-                set(world, pos.add(dx, -1, dz), Blocks.POLISHED_BLACKSTONE_BRICKS.getDefaultState());
+                set(world, pos.offset(dx, -1, dz), Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState());
                 for (int up = 0; up <= 3; up++) {
-                    set(world, pos.add(dx, up, dz), Blocks.AIR.getDefaultState());
+                    set(world, pos.offset(dx, up, dz), Blocks.AIR.defaultBlockState());
                 }
             }
         }
-        set(world, pos, ModBlocks.BOSS_STONES.get(boss).getDefaultState());
+        set(world, pos, ModBlocks.BOSS_STONES.get(boss).defaultBlockState());
     }
 
     /** A rooftop-style parkour course: numbered pillars, each a short jump from the previous one. */
-    private static void buildCourse(ServerWorld world, AgilityCourse course, int x, int y, int z) {
+    private static void buildCourse(ServerLevel world, AgilityCourse course, int x, int y, int z) {
         int height = y + 1;
         for (int step = 0; step < course.obstacles(); step++) {
             int px = x + (step % 4) * 3;
@@ -473,13 +472,13 @@ public final class LandmarkBuilder {
             }
             height += step < course.obstacles() / 2 ? 1 : (step == course.obstacles() / 2 ? 0 : -1);
             for (int h = y; h < height; h++) {
-                set(world, new BlockPos(px, h, pz), Blocks.STONE_BRICKS.getDefaultState());
+                set(world, new BlockPos(px, h, pz), Blocks.STONE_BRICKS.defaultBlockState());
             }
             for (int up = 0; up <= 3; up++) {
-                set(world, new BlockPos(px, height + 1 + up, pz), Blocks.AIR.getDefaultState());
+                set(world, new BlockPos(px, height + 1 + up, pz), Blocks.AIR.defaultBlockState());
             }
-            set(world, new BlockPos(px, height, pz), ModBlocks.AGILITY_OBSTACLE.getDefaultState()
-                    .with(AgilityObstacleBlock.COURSE, course.ordinal()).with(AgilityObstacleBlock.STEP, step));
+            set(world, new BlockPos(px, height, pz), ModBlocks.AGILITY_OBSTACLE.defaultBlockState()
+                    .setValue(AgilityObstacleBlock.COURSE, course.ordinal()).setValue(AgilityObstacleBlock.STEP, step));
         }
     }
 
@@ -487,13 +486,13 @@ public final class LandmarkBuilder {
      * Spawns a quest character that stands far from its landmark, once, while the chunk of its OSRS tile is loaded
      * (the landmark may be built while that chunk is not, so it isn't spawned with the landmark).
      */
-    private static void spawnRemote(ServerWorld world, QuestNpc npc) {
+    private static void spawnRemote(ServerLevel world, QuestNpc npc) {
         if (npc == null) {
             return;
         }
         int x = npc.blockX();
         int z = npc.blockZ();
-        if (!world.isChunkLoaded(x >> 4, z >> 4)) {
+        if (!world.hasChunk(x >> 4, z >> 4)) {
             return;
         }
         PlayerDataState state = Players.state(world.getServer());
@@ -509,17 +508,17 @@ public final class LandmarkBuilder {
             }
             StructurePlacer.applyIfLoaded(world, x >> 4, z >> 4);
             BlockPos feet = NpcFloor.spot(world, x, z, NpcFloor.isBanker(npc.name(), npc.displayName()), npc.floor());
-            entity.refreshPositionAndAngles(feet.getX() + 0.5, NpcFloor.feetY(world, feet), feet.getZ() + 0.5,
+            entity.moveTo(feet.getX() + 0.5, NpcFloor.feetY(world, feet), feet.getZ() + 0.5,
                     world.getRandom().nextFloat() * 360f, 0);
             entity.setNpc(npc);
-            entity.initialize(world, world.getLocalDifficulty(entity.getBlockPos()), SpawnReason.STRUCTURE, null, null);
-            world.spawnEntity(entity);
+            entity.finalizeSpawn(world, world.getCurrentDifficultyAt(entity.blockPosition()), MobSpawnType.STRUCTURE, null, null);
+            world.addFreshEntity(entity);
         } catch (RuntimeException e) {
             RuneCraft.LOGGER.error("Failed to spawn quest NPC {}", npc, e);
         }
     }
 
-    private static void spawnNpcs(ServerWorld world, Landmark landmark, int cx, int y, int cz) {
+    private static void spawnNpcs(ServerLevel world, Landmark landmark, int cx, int y, int cz) {
         for (QuestNpc npc : QuestNpc.values()) {
             if (npc.landmark() != landmark || npc.remote()) {
                 continue;
@@ -532,11 +531,11 @@ public final class LandmarkBuilder {
             int z = cz + npc.dz();
             StructurePlacer.applyIfLoaded(world, x >> 4, z >> 4);
             BlockPos feet = NpcFloor.spot(world, x, z, NpcFloor.isBanker(npc.name(), npc.displayName()), npc.floor());
-            entity.refreshPositionAndAngles(feet.getX() + 0.5, NpcFloor.feetY(world, feet), feet.getZ() + 0.5,
+            entity.moveTo(feet.getX() + 0.5, NpcFloor.feetY(world, feet), feet.getZ() + 0.5,
                     world.getRandom().nextFloat() * 360f, 0);
             entity.setNpc(npc);
-            entity.initialize(world, world.getLocalDifficulty(entity.getBlockPos()), SpawnReason.STRUCTURE, null, null);
-            world.spawnEntity(entity);
+            entity.finalizeSpawn(world, world.getCurrentDifficultyAt(entity.blockPosition()), MobSpawnType.STRUCTURE, null, null);
+            world.addFreshEntity(entity);
         }
     }
 

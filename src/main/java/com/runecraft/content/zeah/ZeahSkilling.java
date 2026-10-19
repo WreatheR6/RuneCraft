@@ -13,20 +13,19 @@ import com.runecraft.skill.Tools;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.phys.Vec3;
 
 /** Lovakite mining, the Blast Mine and the Varlamore Hunter spots. */
 final class ZeahSkilling {
@@ -49,8 +48,8 @@ final class ZeahSkilling {
     private ZeahSkilling() {
     }
 
-    private static String key(ServerWorld world, BlockPos pos) {
-        return world.getRegistryKey().getValue() + "|" + pos.asLong();
+    private static String key(ServerLevel world, BlockPos pos) {
+        return world.dimension().location() + "|" + pos.asLong();
     }
 
     private static boolean depleted(String key) {
@@ -58,11 +57,11 @@ final class ZeahSkilling {
         return until != null && ActionManager.gameTick() < until;
     }
 
-    private static int level(ServerPlayerEntity player, Skill skill) {
+    private static int level(ServerPlayer player, Skill skill) {
         return Players.data(player).skills().currentLevel(skill);
     }
 
-    private static boolean need(ServerPlayerEntity player, Skill skill, int lvl, String what) {
+    private static boolean need(ServerPlayer player, Skill skill, int lvl, String what) {
         if (level(player, skill) < lvl) {
             Msg.game(player, "You need " + Msg.article(skill.displayName()) + " level of " + lvl + " to " + what + ".");
             return false;
@@ -70,7 +69,7 @@ final class ZeahSkilling {
         return true;
     }
 
-    private static void give(ServerPlayerEntity player, String item, int count) {
+    private static void give(ServerPlayer player, String item, int count) {
         Inv.give(player, item, count);
         CollectionLog.record(player, item);
         GameEvents.fireObtain(player, item, count);
@@ -82,11 +81,11 @@ final class ZeahSkilling {
 
     // ------------------------------------------------------------------ Lovakite
 
-    static void mineLovakite(ServerPlayerEntity player, BlockPos pos) {
+    static void mineLovakite(ServerPlayer player, BlockPos pos) {
         if (!need(player, Skill.MINING, LOVAKITE_LEVEL, "mine lovakite")) {
             return;
         }
-        ServerWorld world = (ServerWorld) player.getWorld();
+        ServerLevel world = (ServerLevel) player.level();
         String key = key(world, pos);
         if (depleted(key)) {
             Msg.game(player, "There is currently no ore available in this rock.");
@@ -103,16 +102,16 @@ final class ZeahSkilling {
             private int counter;
 
             @Override
-            public boolean tick(ServerPlayerEntity p, long gameTick) {
-                if (p.squaredDistanceTo(Vec3d.ofCenter(pos)) > 36.0 || depleted(key)) {
+            public boolean tick(ServerPlayer p, long gameTick) {
+                if (p.distanceToSqr(Vec3.atCenterOf(pos)) > 36.0 || depleted(key)) {
                     return false;
                 }
                 if (++counter < interval) {
                     return true;
                 }
                 counter = 0;
-                p.swingHand(Hand.MAIN_HAND, true);
-                world.playSound(null, pos, SoundEvents.BLOCK_STONE_HIT, SoundCategory.PLAYERS, 1.0f, 0.9f);
+                p.swing(InteractionHand.MAIN_HAND, true);
+                world.playSound(null, pos, SoundEvents.STONE_HIT, SoundSource.PLAYERS, 1.0f, 0.9f);
                 if (p.getRandom().nextDouble() >= Chance.lerp(level(p, Skill.MINING), 20, 90)) {
                     return true;
                 }
@@ -131,11 +130,11 @@ final class ZeahSkilling {
     private static final Object[][] BLASTED = {{"coal", 30, 50}, {"gold_ore", 40, 20}, {"mithril_ore", 55, 16},
             {"adamantite_ore", 70, 10}, {"runite_ore", 85, 4}};
 
-    static void blastMine(ServerPlayerEntity player, BlockPos pos) {
+    static void blastMine(ServerPlayer player, BlockPos pos) {
         if (!need(player, Skill.MINING, BLAST_LEVEL, "work in the Blast Mine")) {
             return;
         }
-        ServerWorld world = (ServerWorld) player.getWorld();
+        ServerLevel world = (ServerLevel) player.level();
         String key = key(world, pos);
         if (depleted(key)) {
             Msg.game(player, "The rubble still needs to settle.");
@@ -151,7 +150,7 @@ final class ZeahSkilling {
                 return;
             }
             Inv.remove(player, "dynamite", 1);
-            player.swingHand(Hand.MAIN_HAND, true);
+            player.swing(InteractionHand.MAIN_HAND, true);
             XpService.add(player, Skill.MINING, EXCAVATE_XP);
             CHARGED.add(key);
             Msg.action(player, "You excavate a hole in the rock and pack it with dynamite. Light it with a tinderbox.");
@@ -162,8 +161,8 @@ final class ZeahSkilling {
             return;
         }
         CHARGED.remove(key);
-        world.playSound(null, pos, SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.BLOCKS, 1.0f, 1.0f);
-        world.spawnParticles(ParticleTypes.EXPLOSION, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, 3, 0.4, 0.4, 0.4, 0.0);
+        world.playSound(null, pos, SoundEvents.GENERIC_EXPLODE, SoundSource.BLOCKS, 1.0f, 1.0f);
+        world.sendParticles(ParticleTypes.EXPLOSION, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, 3, 0.4, 0.4, 0.4, 0.0);
         int lvl = level(player, Skill.MINING);
         int total = 0;
         for (Object[] o : BLASTED) {
@@ -192,8 +191,8 @@ final class ZeahSkilling {
 
     // ------------------------------------------------------------------ Hunter
 
-    static void hunt(ServerPlayerEntity player, BlockPos pos, ZeahHunter.Spot spot) {
-        ServerWorld world = (ServerWorld) player.getWorld();
+    static void hunt(ServerPlayer player, BlockPos pos, ZeahHunter.Spot spot) {
+        ServerLevel world = (ServerLevel) player.level();
         String key = key(world, pos);
         long now = ActionManager.gameTick();
         String creature = spot.creature().toLowerCase();
@@ -201,7 +200,7 @@ final class ZeahSkilling {
             if (!need(player, Skill.HUNTER, spot.level(), "catch " + creature + "s")) {
                 return;
             }
-            String net = Inv.idOf(player.getMainHandStack());
+            String net = Inv.idOf(player.getMainHandItem());
             if (!net.equals("butterfly_net") && !net.equals("magic_butterfly_net")) {
                 Msg.game(player, "You need to wield a butterfly net to catch moths.");
                 return;
@@ -210,7 +209,7 @@ final class ZeahSkilling {
                 Msg.game(player, "You need an empty " + name(spot.consumed()) + " to keep the moth in.");
                 return;
             }
-            player.swingHand(Hand.MAIN_HAND, true);
+            player.swing(InteractionHand.MAIN_HAND, true);
             if (player.getRandom().nextDouble() >= ZeahHunter.catchChance(level(player, Skill.HUNTER), spot)) {
                 Msg.game(player, "The " + creature + " flutters out of reach.");
                 return;
@@ -227,7 +226,7 @@ final class ZeahSkilling {
         }
         LaidTrap laid = TRAPS.get(key);
         if (laid != null) {
-            if (!laid.owner().equals(player.getUuid())) {
+            if (!laid.owner().equals(player.getUUID())) {
                 Msg.game(player, "This isn't your trap.");
                 return;
             }
@@ -243,7 +242,7 @@ final class ZeahSkilling {
                 }
                 XpService.add(player, Skill.HUNTER, spot.xp());
                 Msg.action(player, "You've caught " + Msg.article(creature) + "!");
-                world.playSound(null, pos, SoundEvents.ENTITY_ITEM_PICKUP, SoundCategory.PLAYERS, 1f, 1f);
+                world.playSound(null, pos, SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 1f, 1f);
             } else {
                 Msg.game(player, "The " + creature + " escaped from your trap.");
             }
@@ -269,8 +268,8 @@ final class ZeahSkilling {
             }
             Inv.remove(player, spot.consumed(), 1);
         }
-        player.swingHand(Hand.MAIN_HAND, true);
-        TRAPS.put(key, new LaidTrap(player.getUuid(), now));
+        player.swing(InteractionHand.MAIN_HAND, true);
+        TRAPS.put(key, new LaidTrap(player.getUUID(), now));
         com.runecraft.skill.HunterService.claim(player, world, pos, false);
         Msg.action(player, spot.method() == ZeahHunter.Method.PITFALL ? "You dig a pit and cover it with logs."
                 : "You set up the box trap by the burrow.");

@@ -16,20 +16,19 @@ import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.particle.DefaultParticleType;
-import net.minecraft.particle.ParticleEffect;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.registry.Registries;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Vec3d;
-
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.particles.SimpleParticleType;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -40,11 +39,11 @@ import java.util.Random;
  * prayers, telegraphs, sky strikes, AoE, hazards, poison/venom, freezes, drains and more.
  */
 public final class Mechanics {
-    private record Pending(OsrsMonsterEntity mob, ServerPlayerEntity target, AttackDef attack, Vec3d marked, long dueMcTick,
+    private record Pending(OsrsMonsterEntity mob, ServerPlayer target, AttackDef attack, Vec3 marked, long dueMcTick,
                            double multiplier) {
     }
 
-    private record Hazard(ServerWorld world, Vec3d pos, int damage, long untilGameTick, LivingEntity owner) {
+    private record Hazard(ServerLevel world, Vec3 pos, int damage, long untilGameTick, LivingEntity owner) {
     }
 
     private static final List<Pending> PENDING = new ArrayList<>();
@@ -79,30 +78,30 @@ public final class Mechanics {
     /** Starts an attack; telegraphed attacks land later. {@code multiplier} scales the max hit (enrage phases). */
     /** Sees every attack a monster or boss performs (Combat Achievements count specials and repeats). */
     public interface AttackListener {
-        void onAttack(OsrsMonsterEntity mob, ServerPlayerEntity target, AttackDef attack);
+        void onAttack(OsrsMonsterEntity mob, ServerPlayer target, AttackDef attack);
     }
 
     public static AttackListener attackListener = (mob, target, attack) -> {
     };
 
-    public static void perform(OsrsMonsterEntity mob, ServerPlayerEntity target, AttackDef attack, double multiplier) {
-        ServerWorld world = (ServerWorld) mob.getWorld();
+    public static void perform(OsrsMonsterEntity mob, ServerPlayer target, AttackDef attack, double multiplier) {
+        ServerLevel world = (ServerLevel) mob.level();
         attackListener.onAttack(mob, target, attack);
         if (attack.message() != null) {
-            for (ServerPlayerEntity p : world.getPlayers(pl -> pl.squaredDistanceTo(mob) < 40 * 40)) {
+            for (ServerPlayer p : world.getPlayers(pl -> pl.distanceToSqr(mob) < 40 * 40)) {
                 Msg.action(p, attack.message());
             }
         }
         if (attack.melee()) {
-            mob.swingHand(net.minecraft.util.Hand.MAIN_HAND);
+            mob.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
         }
-        Vec3d marked = target.getPos();
+        Vec3 marked = target.position();
         if (attack.special() == AttackDef.Special.SKY_STRIKE) {
-            world.spawnParticles(ParticleTypes.FLAME, marked.x, marked.y + 0.1, marked.z, 30, 0.6, 0.05, 0.6, 0.01);
+            world.sendParticles(ParticleTypes.FLAME, marked.x, marked.y + 0.1, marked.z, 30, 0.6, 0.05, 0.6, 0.01);
         }
         if (attack.telegraphTicks() > 0 || attack.special() == AttackDef.Special.SKY_STRIKE) {
             int ticks = Math.max(attack.telegraphTicks(), attack.special() == AttackDef.Special.SKY_STRIKE ? 3 : 0);
-            world.spawnParticles(particle(attack, ParticleTypes.ENCHANTED_HIT), mob.getX(), mob.getY() + mob.getHeight(), mob.getZ(),
+            world.sendParticles(particle(attack, ParticleTypes.ENCHANTED_HIT), mob.getX(), mob.getY() + mob.getBbHeight(), mob.getZ(),
                     25, 0.5, 0.5, 0.5, 0.1);
             PENDING.add(new Pending(mob, target, attack, marked, ActionManager.mcTick() + (long) ticks * ActionManager.MC_TICKS_PER_GAME_TICK,
                     multiplier));
@@ -111,25 +110,25 @@ public final class Mechanics {
         land(mob, target, attack, marked, multiplier);
     }
 
-    private static ParticleEffect particle(AttackDef a, ParticleEffect fallback) {
+    private static ParticleOptions particle(AttackDef a, ParticleOptions fallback) {
         if (a.particle() == null) {
             return fallback;
         }
-        var type = Registries.PARTICLE_TYPE.get(new Identifier(a.particle()));
-        return type instanceof DefaultParticleType simple ? simple : fallback;
+        var type = BuiltInRegistries.PARTICLE_TYPE.get(new ResourceLocation(a.particle()));
+        return type instanceof SimpleParticleType simple ? simple : fallback;
     }
 
-    private static void trail(ServerWorld world, Vec3d from, Vec3d to, ParticleEffect effect) {
-        Vec3d delta = to.subtract(from);
+    private static void trail(ServerLevel world, Vec3 from, Vec3 to, ParticleOptions effect) {
+        Vec3 delta = to.subtract(from);
         int steps = (int) Math.max(4, delta.length() * 3);
         for (int i = 0; i <= steps; i++) {
-            Vec3d p = from.add(delta.multiply(i / (double) steps));
-            world.spawnParticles(effect, p.x, p.y, p.z, 1, 0, 0, 0, 0);
+            Vec3 p = from.add(delta.scale(i / (double) steps));
+            world.sendParticles(effect, p.x, p.y, p.z, 1, 0, 0, 0, 0);
         }
     }
 
-    private static void land(OsrsMonsterEntity mob, ServerPlayerEntity target, AttackDef a, Vec3d marked, double multiplier) {
-        ServerWorld world = (ServerWorld) mob.getWorld();
+    private static void land(OsrsMonsterEntity mob, ServerPlayer target, AttackDef a, Vec3 marked, double multiplier) {
+        ServerLevel world = (ServerLevel) mob.level();
         switch (a.special()) {
             case SUMMON -> {
                 if (mob instanceof DataBossEntity boss) {
@@ -139,26 +138,26 @@ public final class Mechanics {
             }
             case HEAL_SELF -> {
                 mob.heal(a.param());
-                world.spawnParticles(ParticleTypes.HEART, mob.getX(), mob.getY() + mob.getHeight(), mob.getZ(), 5, 0.5, 0.3, 0.5, 0);
+                world.sendParticles(ParticleTypes.HEART, mob.getX(), mob.getY() + mob.getBbHeight(), mob.getZ(), 5, 0.5, 0.3, 0.5, 0);
                 return;
             }
             case BLINK -> {
-                mob.requestTeleport(target.getX() + 1, target.getY(), target.getZ() + 1);
-                world.spawnParticles(ParticleTypes.PORTAL, mob.getX(), mob.getY() + 1, mob.getZ(), 40, 0.5, 1, 0.5, 0.3);
+                mob.teleportTo(target.getX() + 1, target.getY(), target.getZ() + 1);
+                world.sendParticles(ParticleTypes.PORTAL, mob.getX(), mob.getY() + 1, mob.getZ(), 40, 0.5, 1, 0.5, 0.3);
             }
             case AOE -> {
-                world.spawnParticles(particle(a, ParticleTypes.EXPLOSION), mob.getX(), mob.getY() + 1, mob.getZ(), 6, a.param() / 2.0, 0.5,
+                world.sendParticles(particle(a, ParticleTypes.EXPLOSION), mob.getX(), mob.getY() + 1, mob.getZ(), 6, a.param() / 2.0, 0.5,
                         a.param() / 2.0, 0);
-                for (ServerPlayerEntity p : world.getPlayers(pl -> pl.isAlive() && !pl.isSpectator()
-                        && pl.squaredDistanceTo(mob) <= a.param() * (double) a.param())) {
+                for (ServerPlayer p : world.getPlayers(pl -> pl.isAlive() && !pl.isSpectator()
+                        && pl.distanceToSqr(mob) <= a.param() * (double) a.param())) {
                     hit(mob, p, a, multiplier);
                 }
                 return;
             }
             case SKY_STRIKE -> {
-                world.spawnParticles(particle(a, ParticleTypes.EXPLOSION), marked.x, marked.y + 0.5, marked.z, 3, 0.5, 0.5, 0.5, 0);
-                world.playSound(null, marked.x, marked.y, marked.z, SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.HOSTILE, 0.6f, 1.4f);
-                for (ServerPlayerEntity p : world.getPlayers(pl -> pl.isAlive() && pl.getPos().squaredDistanceTo(marked) <= 2.25)) {
+                world.sendParticles(particle(a, ParticleTypes.EXPLOSION), marked.x, marked.y + 0.5, marked.z, 3, 0.5, 0.5, 0.5, 0);
+                world.playSound(null, marked.x, marked.y, marked.z, SoundEvents.GENERIC_EXPLODE, SoundSource.HOSTILE, 0.6f, 1.4f);
+                for (ServerPlayer p : world.getPlayers(pl -> pl.isAlive() && pl.position().distanceToSqr(marked) <= 2.25)) {
                     hit(mob, p, a, multiplier);
                 }
                 return;
@@ -167,14 +166,14 @@ public final class Mechanics {
             }
         }
         if (!a.melee()) {
-            trail(world, mob.getEyePos(), target.getPos().add(0, 1, 0), particle(a,
+            trail(world, mob.getEyePosition(), target.position().add(0, 1, 0), particle(a,
                     a.style() == AttackType.MAGIC ? ParticleTypes.WITCH : ParticleTypes.CRIT));
         }
         hit(mob, target, a, multiplier);
     }
 
     /** One accuracy-rolled hit with all on-hit effects. */
-    private static void hit(OsrsMonsterEntity mob, ServerPlayerEntity target, AttackDef a, double multiplier) {
+    private static void hit(OsrsMonsterEntity mob, ServerPlayer target, AttackDef a, double multiplier) {
         MonsterStats stats = mob.stats();
         PlayerData data = Players.data(target);
         int attackLevel = switch (a.style()) {
@@ -184,10 +183,10 @@ public final class Mechanics {
         };
         int maxHit = (int) Math.round(a.maxHit() * multiplier);
         if (a.special() == AttackDef.Special.DRAGONFIRE) {
-            String off = Inv.idOf(target.getOffHandStack());
+            String off = Inv.idOf(target.getOffhandItem());
             boolean shield = off.equals("anti_dragon_shield") || off.startsWith("dragonfire_")
                     || off.equals("elemental_shield") || off.equals("mind_shield") || off.equals("ancient_wyvern_shield");
-            boolean antifire = target.hasStatusEffect(StatusEffects.FIRE_RESISTANCE);
+            boolean antifire = target.hasEffect(MobEffects.FIRE_RESISTANCE);
             boolean prayer = data.isActive(Prayer.PROTECT_FROM_MAGIC);
             if (shield && antifire) {
                 maxHit = 0;
@@ -236,16 +235,16 @@ public final class Mechanics {
             }
             case LIFESTEAL -> mob.heal(dealt * a.param() / 100f);
             case KNOCKBACK -> {
-                Vec3d dir = target.getPos().subtract(mob.getPos()).normalize().multiply(Math.max(1, a.param()) * 0.5);
-                target.addVelocity(dir.x, 0.4, dir.z);
-                target.velocityModified = true;
+                Vec3 dir = target.position().subtract(mob.position()).normalize().scale(Math.max(1, a.param()) * 0.5);
+                target.push(dir.x, 0.4, dir.z);
+                target.hurtMarked = true;
             }
             case FREEZE -> {
-                target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, Math.max(1, a.param()) * 12, 10, false, true));
+                target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, Math.max(1, a.param()) * 12, 10, false, true));
                 Msg.action(target, "You have been frozen!");
             }
-            case PULL -> target.requestTeleport(mob.getX() + 1, mob.getY(), mob.getZ());
-            case HAZARD -> HAZARDS.add(new Hazard((ServerWorld) mob.getWorld(), target.getPos(), Math.max(1, a.param()), tick + 10, mob));
+            case PULL -> target.teleportTo(mob.getX() + 1, mob.getY(), mob.getZ());
+            case HAZARD -> HAZARDS.add(new Hazard((ServerLevel) mob.level(), target.position(), Math.max(1, a.param()), tick + 10, mob));
             case DRAIN_STAT -> {
                 Skill skill = Skill.byIndex(Math.max(0, Math.min(Skill.count() - 1, a.param())));
                 int drain = Math.max(1, data.skills().currentLevel(skill) / 10);
@@ -258,12 +257,12 @@ public final class Mechanics {
     }
 
     /** Places a damaging ground hazard (e.g. acid pool, lava splat) for a number of game ticks. */
-    public static void addHazard(ServerWorld world, Vec3d pos, int damage, int gameTicks, LivingEntity owner) {
+    public static void addHazard(ServerLevel world, Vec3 pos, int damage, int gameTicks, LivingEntity owner) {
         HAZARDS.add(new Hazard(world, pos, damage, ActionManager.gameTick() + gameTicks, owner));
     }
 
     /** Removes every ground hazard inside a box (raid rooms and instances being cleared). */
-    public static void clearHazards(ServerWorld world, net.minecraft.util.math.Box box) {
+    public static void clearHazards(ServerLevel world, net.minecraft.world.phys.AABB box) {
         HAZARDS.removeIf(h -> h.world() == world && box.contains(h.pos()));
     }
 
@@ -275,8 +274,8 @@ public final class Mechanics {
                 it.remove();
                 continue;
             }
-            h.world().spawnParticles(ParticleTypes.SNEEZE, h.pos().x, h.pos().y + 0.1, h.pos().z, 6, 0.5, 0.02, 0.5, 0.0);
-            for (ServerPlayerEntity p : h.world().getPlayers(pl -> pl.isAlive() && pl.getPos().squaredDistanceTo(h.pos()) < 1.0)) {
+            h.world().sendParticles(ParticleTypes.SNEEZE, h.pos().x, h.pos().y + 0.1, h.pos().z, 6, 0.5, 0.02, 0.5, 0.0);
+            for (ServerPlayer p : h.world().getPlayers(pl -> pl.isAlive() && pl.position().distanceToSqr(h.pos()) < 1.0)) {
                 com.runecraft.combat.CombatHooks.nameAttack("hazard", null);
                 CombatHandler.applyDamage(h.owner() != null && h.owner().isAlive() ? h.owner() : null, p,
                         1 + p.getRandom().nextInt(h.damage()));
@@ -285,7 +284,7 @@ public final class Mechanics {
     }
 
     /** Picks a weighted attack usable at this distance (falls back to the closest-range attack). */
-    public static AttackDef choose(List<AttackDef> attacks, double distance, net.minecraft.util.math.random.Random random) {
+    public static AttackDef choose(List<AttackDef> attacks, double distance, net.minecraft.util.RandomSource random) {
         int total = 0;
         for (AttackDef a : attacks) {
             if (distance <= a.range()) {

@@ -5,16 +5,15 @@ import com.runecraft.osrs.GielinorMap;
 import com.runecraft.osrs.content.npcs.TownMonsters;
 import com.runecraft.registry.ModEntities;
 import com.runecraft.world.Gielinor;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.phys.AABB;
 import java.util.List;
 
 /**
@@ -40,8 +39,8 @@ final class TownSpawner {
         if (++ticks % CHECK_TICKS != 0) {
             return;
         }
-        ServerWorld world = Gielinor.world(server);
-        if (world == null || world.getPlayers().isEmpty()) {
+        ServerLevel world = Gielinor.world(server);
+        if (world == null || world.players().isEmpty()) {
             return;
         }
         for (int i = 0; i < SPAWNS.size(); i++) {
@@ -51,15 +50,15 @@ final class TownSpawner {
                 com.runecraft.RuneCraft.LOGGER.error("Town spawn {} failed", SPAWNS.get(i), e);
             }
         }
-        for (ServerPlayerEntity p : world.getPlayers()) {
-            for (QuestNpcEntity e : world.getEntitiesByClass(QuestNpcEntity.class, p.getBoundingBox().expand(48), NpcPlacement::isMine)) {
+        for (ServerPlayer p : world.players()) {
+            for (QuestNpcEntity e : world.getEntitiesOfClass(QuestNpcEntity.class, p.getBoundingBox().inflate(48), NpcPlacement::isMine)) {
                 NpcPlacement.settle(world, e);
             }
         }
     }
 
-    private static boolean playerNear(ServerWorld world, int x, int z) {
-        for (ServerPlayerEntity p : world.getPlayers()) {
+    private static boolean playerNear(ServerLevel world, int x, int z) {
+        for (ServerPlayer p : world.players()) {
             double dx = p.getX() - x;
             double dz = p.getZ() - z;
             if (dx * dx + dz * dz < PLAYER_RANGE * PLAYER_RANGE) {
@@ -69,11 +68,11 @@ final class TownSpawner {
         return false;
     }
 
-    private static void check(ServerWorld world, int index) {
+    private static void check(ServerLevel world, int index) {
         TownMonsters.TownSpawn s = SPAWNS.get(index);
         int cx = GielinorMap.toBlockX(s.x());
         int cz = GielinorMap.toBlockZ(s.y());
-        if (!world.isChunkLoaded(cx >> 4, cz >> 4) || !playerNear(world, cx, cz)) {
+        if (!world.hasChunk(cx >> 4, cz >> 4) || !playerNear(world, cx, cz)) {
             return;
         }
         EntityType<?> type = ModEntities.typeById(s.creature());
@@ -81,8 +80,8 @@ final class TownSpawner {
             return;
         }
         int r = s.radius() * GielinorMap.SCALE;
-        Box box = new Box(cx - r - 8, world.getBottomY(), cz - r - 8, cx + r + 9, world.getTopY(), cz + r + 9);
-        int alive = world.getEntitiesByClass(MobEntity.class, box, e -> e.isAlive() && e.getType() == type).size();
+        AABB box = new AABB(cx - r - 8, world.getMinBuildHeight(), cz - r - 8, cx + r + 9, world.getMaxBuildHeight(), cz + r + 9);
+        int alive = world.getEntitiesOfClass(Mob.class, box, e -> e.isAlive() && e.getType() == type).size();
         if (alive >= s.count()) {
             FILLED[index] = true;
             return;
@@ -92,19 +91,19 @@ final class TownSpawner {
         }
         int x = cx - r + world.getRandom().nextInt(2 * r + 1);
         int z = cz - r + world.getRandom().nextInt(2 * r + 1);
-        if (!world.isChunkLoaded(x >> 4, z >> 4)) {
+        if (!world.hasChunk(x >> 4, z >> 4)) {
             return;
         }
         Entity entity = type.create(world);
-        if (!(entity instanceof MobEntity mob)) {
+        if (!(entity instanceof Mob mob)) {
             return;
         }
         int y = NpcPlacement.standY(world, x, z);
         BlockPos pos = new BlockPos(x, y, z);
-        mob.refreshPositionAndAngles(x + 0.5, y, z + 0.5, world.getRandom().nextFloat() * 360f, 0);
-        mob.initialize(world, world.getLocalDifficulty(pos), SpawnReason.EVENT, null, null);
-        mob.setPersistent();
-        world.spawnEntity(mob);
+        mob.moveTo(x + 0.5, y, z + 0.5, world.getRandom().nextFloat() * 360f, 0);
+        mob.finalizeSpawn(world, world.getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null, null);
+        mob.setPersistenceRequired();
+        world.addFreshEntity(mob);
         NEXT[index] = ticks + RESPAWN_TICKS;
         if (alive + 1 >= s.count()) {
             FILLED[index] = true;

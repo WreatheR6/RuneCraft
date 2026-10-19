@@ -12,13 +12,12 @@ import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.function.ToDoubleFunction;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.item.ItemStack;
 
 /** Prayer points, toggling, drain (OSRS drain-resistance model) and altars. */
 public final class PrayerService {
@@ -50,13 +49,13 @@ public final class PrayerService {
      * Whether the player has read the scroll a prayer needs (Rigour, Augury, Preserve, Deadeye, Mystic Vigour).
      * The systems module stores the scrolls read; without it every prayer counts as learnt.
      */
-    public static java.util.function.BiPredicate<ServerPlayerEntity, Prayer> scrollRead = (p, prayer) -> true;
+    public static java.util.function.BiPredicate<ServerPlayer, Prayer> scrollRead = (p, prayer) -> true;
 
     /**
      * A minigame's prayer rules (Last Man Standing builds, No Prayer duels): null leaves the normal checks, "" allows the prayer
      * without its quest/scroll unlocks, any other text forbids it with that message. Set by the minigames module.
      */
-    public static java.util.function.BiFunction<ServerPlayerEntity, Prayer, String> minigameRule = (p, prayer) -> null;
+    public static java.util.function.BiFunction<ServerPlayer, Prayer, String> minigameRule = (p, prayer) -> null;
 
     public static double rangedAttack(PlayerData d) {
         return best(d, Prayer::rangedAttackMultiplier);
@@ -70,7 +69,7 @@ public final class PrayerService {
         return best(d, Prayer::magicMultiplier);
     }
 
-    public static void toggle(ServerPlayerEntity player, Prayer prayer) {
+    public static void toggle(ServerPlayer player, Prayer prayer) {
         PlayerData data = Players.data(player);
         if (data.isActive(prayer)) {
             data.activePrayers().remove(prayer);
@@ -104,13 +103,13 @@ public final class PrayerService {
             }
             data.activePrayers().removeIf(prayer::conflictsWith);
             data.activePrayers().add(prayer);
-            player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.BLOCK_BEACON_ACTIVATE, SoundCategory.PLAYERS, 0.3f, 1.6f);
+            player.level().playSound(null, player.blockPosition(), SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.3f, 1.6f);
         }
         ServerNetworking.sync(player);
     }
 
     /** Called every game tick. */
-    public static void gameTick(ServerPlayerEntity player, long gameTick) {
+    public static void gameTick(ServerPlayer player, long gameTick) {
         PlayerData data = Players.data(player);
         if (data.activePrayers().isEmpty()) {
             return;
@@ -142,8 +141,8 @@ public final class PrayerService {
         }
     }
 
-    /** Praying at an altar recharges Prayer points (no bone offering; see {@link #useAltar(ServerPlayerEntity, BlockPos)}). */
-    public static void useAltar(ServerPlayerEntity player) {
+    /** Praying at an altar recharges Prayer points (no bone offering; see {@link #useAltar(ServerPlayer, BlockPos)}). */
+    public static void useAltar(ServerPlayer player) {
         useAltar(player, null);
     }
 
@@ -151,7 +150,7 @@ public final class PrayerService {
      * A world altar at {@code pos}: the Chaos Altar (350%, 50% chance to keep the bone) and the Ectofuntus (400%) take the
      * held bone as an offering; any other altar only recharges Prayer points, as in OSRS (bones there are buried instead).
      */
-    public static void useAltar(ServerPlayerEntity player, BlockPos pos) {
+    public static void useAltar(ServerPlayer player, BlockPos pos) {
         PlayerData data = Players.data(player);
         PrayerAltars.Kind kind = pos == null || !Gielinor.is(player) ? PrayerAltars.Kind.REGULAR
                 : PrayerAltars.at(GielinorMap.toOsrsX(pos.getX()), GielinorMap.toOsrsY(pos.getZ()));
@@ -159,7 +158,7 @@ public final class PrayerService {
             if (offerHeldBone(player, kind.multiplier, kind == PrayerAltars.Kind.CHAOS ? PrayerAltars.CHAOS_SAVE_CHANCE : 0.0)) {
                 return;
             }
-        } else if (!player.getMainHandStack().isEmpty() && Bone.byItem(Inv.idOf(player.getMainHandStack())) != null) {
+        } else if (!player.getMainHandItem().isEmpty() && Bone.byItem(Inv.idOf(player.getMainHandItem())) != null) {
             Msg.game(player, "The gods won't accept offerings at this altar. Use a gilded altar, the Chaos Altar or the Ectofuntus,"
                     + " or bury your bones.");
         }
@@ -170,7 +169,7 @@ public final class PrayerService {
             return;
         }
         data.setPrayerPoints(max);
-        player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.BLOCK_BEACON_POWER_SELECT, SoundCategory.PLAYERS, 0.6f, 1.0f);
+        player.level().playSound(null, player.blockPosition(), SoundEvents.BEACON_POWER_SELECT, SoundSource.PLAYERS, 0.6f, 1.0f);
         Msg.game(player, "You recharge your Prayer points.");
         ServerNetworking.sync(player);
     }
@@ -179,30 +178,30 @@ public final class PrayerService {
      * Offers the bone held in the main hand at an altar for {@code multiplier} times its burying XP (house altars pass their
      * own multiplier, e.g. 3.5 for a gilded altar with two lit burners). Returns false if no bone is held.
      */
-    public static boolean offerHeldBone(ServerPlayerEntity player, double multiplier) {
+    public static boolean offerHeldBone(ServerPlayer player, double multiplier) {
         return offerHeldBone(player, multiplier, 0.0);
     }
 
-    private static boolean offerHeldBone(ServerPlayerEntity player, double multiplier, double saveChance) {
-        ItemStack held = player.getMainHandStack();
+    private static boolean offerHeldBone(ServerPlayer player, double multiplier, double saveChance) {
+        ItemStack held = player.getMainHandItem();
         Bone bone = held.isEmpty() ? null : Bone.byItem(Inv.idOf(held));
         if (bone == null) {
             return false;
         }
         boolean saved = saveChance > 0 && player.getRandom().nextDouble() < saveChance;
         if (!saved) {
-            held.decrement(1);
+            held.shrink(1);
         }
         XpService.add(player, Skill.PRAYER, bone.xp() * multiplier);
         Msg.action(player, multiplier >= 3 ? "The gods are very pleased with your offering." : "The gods are pleased with your offering.");
         if (saved) {
             Msg.game(player, "The Dark Lord spares your bones.");
         }
-        player.swingHand(net.minecraft.util.Hand.MAIN_HAND, true);
+        player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
         return true;
     }
 
-    public static boolean inGielinor(ServerPlayerEntity player) {
+    public static boolean inGielinor(ServerPlayer player) {
         return Gielinor.is(player);
     }
 }

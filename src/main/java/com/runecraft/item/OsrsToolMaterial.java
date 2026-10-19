@@ -1,11 +1,11 @@
 package com.runecraft.item;
 
 import com.runecraft.osrs.data.MetalTier;
-import net.minecraft.item.ToolMaterial;
-import net.minecraft.recipe.Ingredient;
+import net.minecraft.world.item.Tier;
+import net.minecraft.world.item.crafting.Ingredient;
 
 /** Vanilla tool stats for RuneCraft metal tiers, so tools also work outside Gielinor. */
-public final class OsrsToolMaterial implements ToolMaterial {
+public final class OsrsToolMaterial implements Tier {
     private final MetalTier tier;
 
     public OsrsToolMaterial(MetalTier tier) {
@@ -13,7 +13,7 @@ public final class OsrsToolMaterial implements ToolMaterial {
     }
 
     @Override
-    public int getDurability() {
+    public int getUses() {
         return switch (tier) {
             case BRONZE -> 150;
             case IRON -> 250;
@@ -27,17 +27,17 @@ public final class OsrsToolMaterial implements ToolMaterial {
     }
 
     @Override
-    public float getMiningSpeedMultiplier() {
+    public float getSpeed() {
         return 3.0f + tier.ordinal() * 1.1f;
     }
 
     @Override
-    public float getAttackDamage() {
+    public float getAttackDamageBonus() {
         return tier.ordinal() * 0.75f;
     }
 
     @Override
-    public int getMiningLevel() {
+    public int getLevel() {
         return switch (tier) {
             case BRONZE -> 1;
             case IRON, STEEL, BLACK -> 2;
@@ -47,7 +47,7 @@ public final class OsrsToolMaterial implements ToolMaterial {
     }
 
     @Override
-    public int getEnchantability() {
+    public int getEnchantmentValue() {
         return 10 + tier.ordinal();
     }
 

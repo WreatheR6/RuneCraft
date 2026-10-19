@@ -10,19 +10,18 @@ import com.runecraft.osrs.content.minigames.Minigame;
 import com.runecraft.osrs.content.minigames.MinigameCurrencies;
 import com.runecraft.osrs.content.minigames.MinigameRules.PestControl;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * Pest Control: defend the Void Knight while destroying the four portals. Portal shields drop one
@@ -32,18 +31,18 @@ import java.util.UUID;
  */
 public class PestControlSession extends MinigameSession {
     /** Extra commendation points per won game (the systems module adds the Combat Achievement tier bonus). */
-    public static java.util.function.ToIntFunction<ServerPlayerEntity> extraPoints = p -> 0;
+    public static java.util.function.ToIntFunction<ServerPlayer> extraPoints = p -> 0;
 
     private static final int[][] PORTAL_POS = {{-24, 0}, {24, 0}, {12, 22}, {-12, 22}};
     private static final String[] PORTAL_DIR = {"western", "eastern", "south-eastern", "south-western"};
     private final int tier;
-    private final MobEntity[] portals = new MobEntity[4];
+    private final Mob[] portals = new Mob[4];
     private final boolean[] shielded = {true, true, true, true};
-    private MobEntity knight;
+    private Mob knight;
     private final Map<UUID, Integer> activity = new HashMap<>();
     private boolean won;
 
-    public PestControlSession(int id, int slot, ServerWorld world, String variant) {
+    public PestControlSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.PEST_CONTROL, id, slot, world, variant);
         this.tier = variant.contains("veteran") ? 2 : variant.contains("intermediate") ? 1 : 0;
     }
@@ -65,23 +64,23 @@ public class PestControlSession extends MinigameSession {
         for (int d = -6; d <= 6; d++) {
             for (int[] side : new int[][]{{d, -6}, {d, 6}, {-6, d}, {6, d}}) {
                 if (Math.abs(d) > 1) {
-                    set(side[0], 1, side[1], Blocks.STONE_BRICK_WALL.getDefaultState());
+                    set(side[0], 1, side[1], Blocks.STONE_BRICK_WALL.defaultBlockState());
                 } else {
-                    set(side[0], 1, side[1], Blocks.OAK_FENCE_GATE.getDefaultState());
+                    set(side[0], 1, side[1], Blocks.OAK_FENCE_GATE.defaultBlockState());
                 }
             }
         }
         // Landing dock in the north where the lander arrives.
         for (int x = -3; x <= 3; x++) {
             for (int z = -28; z <= -24; z++) {
-                set(x, 0, z, Blocks.SPRUCE_PLANKS.getDefaultState());
+                set(x, 0, z, Blocks.SPRUCE_PLANKS.defaultBlockState());
             }
         }
         place(0, -28, "minigame_exit");
     }
 
     @Override
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
+    protected BlockPos spawnPoint(ServerPlayer player, int index) {
         return rel(index % 5 - 2, 1, -25);
     }
 
@@ -92,7 +91,7 @@ public class PestControlSession extends MinigameSession {
             portals[i] = spawn(PestControl.PORTALS[i], rel(PORTAL_POS[i][0], 1, PORTAL_POS[i][1]));
             if (portals[i] != null) {
                 setHitpoints(portals[i], PestControl.PORTAL_HP[tier]);
-                portals[i].addCommandTag(MinigameCombat.INVULNERABLE);
+                portals[i].addTag(MinigameCombat.INVULNERABLE);
             }
         }
         broadcast("You must defend the Void Knight while the portals are unsummoned. The ritual takes twenty minutes.");
@@ -121,7 +120,7 @@ public class PestControlSession extends MinigameSession {
             if (!up.isEmpty()) {
                 int i = up.get(random.nextInt(up.size()));
                 shielded[i] = false;
-                portals[i].getCommandTags().remove(MinigameCombat.INVULNERABLE);
+                portals[i].getTags().remove(MinigameCombat.INVULNERABLE);
                 broadcastRed("The " + colour(i) + ", " + PORTAL_DIR[i] + " portal shield has dropped!");
             }
         }
@@ -131,7 +130,7 @@ public class PestControlSession extends MinigameSession {
             for (int i = 0; i < 4; i++) {
                 if (portals[i] != null && portals[i].isAlive()) {
                     String id = PestControl.PESTS[random.nextInt(PestControl.PESTS.length)];
-                    MobEntity pest = spawn(id, portals[i].getBlockPos().add(random.nextInt(5) - 2, 0, random.nextInt(5) - 2));
+                    Mob pest = spawn(id, portals[i].blockPosition().offset(random.nextInt(5) - 2, 0, random.nextInt(5) - 2));
                     if (pest != null) {
                         setHitpoints(pest, (int) Math.max(5, pest.getMaxHealth() * PestControl.PEST_SCALE[tier]));
                         if (random.nextBoolean()) {
@@ -142,29 +141,29 @@ public class PestControlSession extends MinigameSession {
             }
         }
         for (LivingEntity e : pests) {
-            if (!(e instanceof MobEntity pest)) {
+            if (!(e instanceof Mob pest)) {
                 continue;
             }
             String cid = MinigameManager.creatureId(pest);
             if (cid.equals("spinner") && ticks % 5 == 0) {
-                for (MobEntity portal : portals) {
-                    if (portal != null && portal.isAlive() && portal.squaredDistanceTo(pest) < 25 && portal.getHealth() < portal.getMaxHealth()) {
+                for (Mob portal : portals) {
+                    if (portal != null && portal.isAlive() && portal.distanceToSqr(pest) < 25 && portal.getHealth() < portal.getMaxHealth()) {
                         portal.heal(5 + random.nextInt(6));
-                        world.spawnParticles(ParticleTypes.HAPPY_VILLAGER, portal.getX(), portal.getY() + 2, portal.getZ(), 3, 0.5, 0.5, 0.5, 0);
+                        world.sendParticles(ParticleTypes.HAPPY_VILLAGER, portal.getX(), portal.getY() + 2, portal.getZ(), 3, 0.5, 0.5, 0.5, 0);
                     }
                 }
                 continue;
             }
-            boolean engaged = pest.getTarget() instanceof ServerPlayerEntity t && t.squaredDistanceTo(pest) < 64;
+            boolean engaged = pest.getTarget() instanceof ServerPlayer t && t.distanceToSqr(pest) < 64;
             if (engaged) {
                 continue;
             }
-            double d = pest.squaredDistanceTo(knight);
+            double d = pest.distanceToSqr(knight);
             if (d > 9) {
-                pest.getNavigation().startMovingTo(knight.getX(), knight.getY(), knight.getZ(), 1.0);
+                pest.getNavigation().moveTo(knight.getX(), knight.getY(), knight.getZ(), 1.0);
             } else if (random.nextInt(3) == 0) {
                 int max = Math.max(1, MonsterStats.of(pest).maxHit());
-                pest.swingHand(net.minecraft.util.Hand.MAIN_HAND);
+                pest.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
                 CombatHandler.applyDamage(pest, knight, random.nextInt(max + 1));
                 if (cid.equals("splatter")) {
                     pest.kill();
@@ -189,23 +188,23 @@ public class PestControlSession extends MinigameSession {
     }
 
     @Override
-    protected void onPlayerHit(ServerPlayerEntity player, LivingEntity target, int dealt) {
-        activity.merge(player.getUuid(), dealt, Integer::sum);
+    protected void onPlayerHit(ServerPlayer player, LivingEntity target, int dealt) {
+        activity.merge(player.getUUID(), dealt, Integer::sum);
     }
 
     @Override
-    protected void onKill(ServerPlayerEntity player, LivingEntity entity, String creatureId) {
+    protected void onKill(ServerPlayer player, LivingEntity entity, String creatureId) {
         for (int i = 0; i < 4; i++) {
             if (entity == portals[i]) {
                 broadcastRed("The " + colour(i) + ", " + PORTAL_DIR[i] + " portal has been destroyed!");
-                activity.merge(player.getUuid(), 25, Integer::sum);
+                activity.merge(player.getUUID(), 25, Integer::sum);
                 if (knight != null) {
                     knight.heal(50);
                 }
             }
         }
         boolean allDead = true;
-        for (MobEntity p : portals) {
+        for (Mob p : portals) {
             if (p != null && p.isAlive() && p != entity) {
                 allDead = false;
             }
@@ -217,24 +216,24 @@ public class PestControlSession extends MinigameSession {
     }
 
     @Override
-    protected void onDeath(ServerPlayerEntity player) {
+    protected void onDeath(ServerPlayer player) {
         Msg.red(player, "Oh dear, you are dead! You return to the lander.");
         BlockPos at = spawnPoint(player, 0);
-        player.teleport(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, player.getYaw(), player.getPitch());
+        player.teleportTo(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, player.getYRot(), player.getXRot());
     }
 
     @Override
     protected void onEnd(boolean success) {
-        for (ServerPlayerEntity p : online()) {
-            int act = activity.getOrDefault(p.getUuid(), 0);
+        for (ServerPlayer p : online()) {
+            int act = activity.getOrDefault(p.getUUID(), 0);
             if (success && won && act >= PestControl.MIN_ACTIVITY) {
-                int balance = MinigameData.of(p).points(p.getUuid(), "pest_control");
+                int balance = MinigameData.of(p).points(p.getUUID(), "pest_control");
                 int pts = Math.max(0, Math.min(PestControl.pointsAwarded(tier, balance) + extraPoints.applyAsInt(p),
                         PestControl.MAX_POINTS - balance));
                 addPoints(p, MinigameCurrencies.PEST_CONTROL, pts);
                 reward(p, "coins", com.runecraft.player.Players.data(p).skills().combatLevel() * PestControl.COINS_PER_COMBAT_LEVEL);
-                int total = MinigameData.of(p).points(p.getUuid(), "pest_control");
-                MinigameData.of(p).incrementStat(p.getUuid(), "kc:" + game.id());
+                int total = MinigameData.of(p).points(p.getUUID(), "pest_control");
+                MinigameData.of(p).incrementStat(p.getUUID(), "kc:" + game.id());
                 Msg.game(p, "Congratulations! You managed to destroy all the portals! We've awarded you " + pts
                         + " Void Knight Commendation points. You now have " + total + " points.");
             } else if (success && won) {
@@ -246,18 +245,18 @@ public class PestControlSession extends MinigameSession {
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
+    protected List<String> hud(ServerPlayer player) {
         List<String> lines = new ArrayList<>();
         lines.add("Pest Control (" + PestControl.TIERS[tier] + ")");
         lines.add("Time left: " + time(PestControl.GAME_TICKS - ticks));
         lines.add("Void Knight: " + (knight == null ? 0 : (int) knight.getHealth()) + " / " + PestControl.VOID_KNIGHT_HP);
         StringBuilder sb = new StringBuilder("Portals: ");
         for (int i = 0; i < 4; i++) {
-            MobEntity p = portals[i];
+            Mob p = portals[i];
             sb.append(p == null || !p.isAlive() ? "X" : (shielded[i] ? "S" : String.valueOf((int) p.getHealth()))).append(i < 3 ? " / " : "");
         }
         lines.add(sb.toString());
-        lines.add("Damage dealt: " + activity.getOrDefault(player.getUuid(), 0));
+        lines.add("Damage dealt: " + activity.getOrDefault(player.getUUID(), 0));
         return lines;
     }
 }

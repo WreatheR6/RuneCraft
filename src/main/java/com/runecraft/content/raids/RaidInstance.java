@@ -17,20 +17,6 @@ import com.runecraft.osrs.content.raids.RoomDef;
 import com.runecraft.osrs.content.raids.RaidsContent;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.attribute.EntityAttributeInstance;
-import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.registry.Registries;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -42,6 +28,19 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.WeakHashMap;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * One running raid: its party, rooms, points, deaths, raid level and rewards. Rooms are built
@@ -54,7 +53,7 @@ public final class RaidInstance {
 
     public final int slot;
     public final RaidType type;
-    public final ServerWorld world;
+    public final ServerLevel world;
     public final List<RoomDef> rooms;
     public final Random random;
     private final List<UUID> party = new ArrayList<>();
@@ -96,7 +95,7 @@ public final class RaidInstance {
     /** Game tick the party passed the start barrier (the ToA time-limit invocations count from here). */
     private long beginTick = -1;
 
-    RaidInstance(int slot, RaidType type, ServerWorld world, List<ServerPlayerEntity> members, BlockPos entrance) {
+    RaidInstance(int slot, RaidType type, ServerLevel world, List<ServerPlayer> members, BlockPos entrance) {
         this.slot = slot;
         this.type = type;
         this.world = world;
@@ -107,14 +106,14 @@ public final class RaidInstance {
         for (int i = 0; i < rooms.size(); i++) {
             logics[i] = RoomLogic.create(this, rooms.get(i), i);
         }
-        for (ServerPlayerEntity p : members) {
-            party.add(p.getUuid());
-            names.put(p.getUuid(), p.getName().getString());
-            points.put(p.getUuid(), 0);
-            returnPos.put(p.getUuid(), entrance.up());
+        for (ServerPlayer p : members) {
+            party.add(p.getUUID());
+            names.put(p.getUUID(), p.getName().getString());
+            points.put(p.getUUID(), 0);
+            returnPos.put(p.getUUID(), entrance.above());
         }
         this.partySize = Math.max(1, members.size());
-        this.leader = members.get(0).getUuid();
+        this.leader = members.get(0).getUUID();
         this.startTick = ActionManager.gameTick();
         if (type == RaidType.TOA) {
             applyPreset(1);
@@ -129,25 +128,25 @@ public final class RaidInstance {
 
     /** Where the party arrives in a room (just inside its west doorway). */
     public BlockPos spawn(int room) {
-        return center(room).add(-RaidBuilder.HALF + 2, 1, 0);
+        return center(room).offset(-RaidBuilder.HALF + 2, 1, 0);
     }
 
     public BlockPos gallery(int room) {
-        return center(room).add(0, RaidBuilder.HEIGHT + 2, 0);
+        return center(room).offset(0, RaidBuilder.HEIGHT + 2, 0);
     }
 
     public boolean contains(Entity e) {
-        return e.getWorld() == world && RaidBuilder.slotAt(e.getX(), e.getZ()) == slot;
+        return e.level() == world && RaidBuilder.slotAt(e.getX(), e.getZ()) == slot;
     }
 
-    public boolean inRoom(Vec3d pos, int room) {
+    public boolean inRoom(Vec3 pos, int room) {
         BlockPos c = center(room);
         return Math.abs(pos.x - (c.getX() + 0.5)) <= RaidBuilder.HALF + 0.5 && Math.abs(pos.z - (c.getZ() + 0.5)) <= RaidBuilder.HALF + 0.5
                 && pos.y >= RaidBuilder.FLOOR_Y - 1 && pos.y <= RaidBuilder.FLOOR_Y + RaidBuilder.HEIGHT + 1;
     }
 
     /** Index of the room containing a position (-1 for corridors and elsewhere). */
-    public int roomAt(Vec3d pos) {
+    public int roomAt(Vec3 pos) {
         for (int i = 0; i < rooms.size(); i++) {
             if (inRoom(pos, i)) {
                 return i;
@@ -162,14 +161,14 @@ public final class RaidInstance {
         return party;
     }
 
-    public boolean isLeader(ServerPlayerEntity p) {
-        return p.getUuid().equals(leader);
+    public boolean isLeader(ServerPlayer p) {
+        return p.getUUID().equals(leader);
     }
 
-    public List<ServerPlayerEntity> players() {
-        List<ServerPlayerEntity> list = new ArrayList<>();
+    public List<ServerPlayer> players() {
+        List<ServerPlayer> list = new ArrayList<>();
         for (UUID u : party) {
-            ServerPlayerEntity p = world.getServer().getPlayerManager().getPlayer(u);
+            ServerPlayer p = world.getServer().getPlayerList().getPlayer(u);
             if (p != null) {
                 list.add(p);
             }
@@ -178,32 +177,32 @@ public final class RaidInstance {
     }
 
     /** Party members who are alive, not downed and inside the instance. */
-    public List<ServerPlayerEntity> activePlayers() {
-        List<ServerPlayerEntity> list = new ArrayList<>();
-        for (ServerPlayerEntity p : players()) {
-            if (p.isAlive() && !downed.contains(p.getUuid()) && contains(p)) {
+    public List<ServerPlayer> activePlayers() {
+        List<ServerPlayer> list = new ArrayList<>();
+        for (ServerPlayer p : players()) {
+            if (p.isAlive() && !downed.contains(p.getUUID()) && contains(p)) {
                 list.add(p);
             }
         }
         return list;
     }
 
-    public boolean isDowned(ServerPlayerEntity p) {
-        return downed.contains(p.getUuid());
+    public boolean isDowned(ServerPlayer p) {
+        return downed.contains(p.getUUID());
     }
 
     public int partySize() {
         return partySize;
     }
 
-    public void say(String message, Formatting color) {
-        for (ServerPlayerEntity p : players()) {
-            p.sendMessage(Text.literal(message).formatted(color), false);
+    public void say(String message, ChatFormatting color) {
+        for (ServerPlayer p : players()) {
+            p.displayClientMessage(Component.literal(message).withStyle(color), false);
         }
     }
 
     public void say(String message) {
-        say(message, Formatting.WHITE);
+        say(message, ChatFormatting.WHITE);
     }
 
     // ------------------------------------------------------------------ scaling and points
@@ -300,7 +299,7 @@ public final class RaidInstance {
         if (e instanceof DataBossEntity boss && boss.def() != null) {
             return boss.def().id;
         }
-        return Registries.ENTITY_TYPE.getId(e.getType()).getPath();
+        return BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()).getPath();
     }
 
     /**
@@ -308,11 +307,11 @@ public final class RaidInstance {
      * points per hitpoint (full value while fresh, decaying as it drains); ToA gives 1 point per damage
      * times the creature's multiplier; ToB counts the damage towards the room's MVP.
      */
-    public void onDamage(ServerPlayerEntity player, LivingEntity target, int dealt) {
+    public void onDamage(ServerPlayer player, LivingEntity target, int dealt) {
         if (dealt <= 0) {
             return;
         }
-        int room = roomAt(target.getPos());
+        int room = roomAt(target.position());
         if (room >= 0) {
             logics[room].onCreatureHit(player, target, dealt);
         }
@@ -322,28 +321,28 @@ public final class RaidInstance {
                 int pool = coxPools.getOrDefault(target, max * RaidScaling.COX_DAMAGE_POOL_PER_HP);
                 int earned = RaidScaling.coxDamagePoints(pool, max, dealt);
                 coxPools.put(target, pool - earned);
-                addPoints(player.getUuid(), earned);
+                addPoints(player.getUUID(), earned);
             }
             case TOA -> {
                 boolean p3 = logics[current] instanceof ToaRooms.Wardens w && w.phaseThree();
-                addPoints(player.getUuid(), (int) Math.floor(dealt * RaidScaling.toaPointsPerDamage(creatureId(target), p3)));
+                addPoints(player.getUUID(), (int) Math.floor(dealt * RaidScaling.toaPointsPerDamage(creatureId(target), p3)));
             }
-            case TOB -> roomDamage.merge(player.getUuid(), dealt, Integer::sum);
+            case TOB -> roomDamage.merge(player.getUUID(), dealt, Integer::sum);
         }
         topUp(target);
     }
 
     /** Points a player earned for a CoX puzzle action (kindling, grubs, the tightrope crystal, crabs). */
-    public void awardActionPoints(ServerPlayerEntity player, int amount) {
+    public void awardActionPoints(ServerPlayer player, int amount) {
         if (amount > 0) {
-            addPoints(player.getUuid(), amount);
+            addPoints(player.getUUID(), amount);
         }
     }
 
     /** Sets a creature's hitpoints, keeping anything above Minecraft's 1024 cap in reserve. */
     public void setHitpoints(LivingEntity e, int total) {
         total = Math.max(1, total);
-        EntityAttributeInstance inst = e.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH);
+        AttributeInstance inst = e.getAttribute(Attributes.MAX_HEALTH);
         int shown = Math.min(total, MC_MAX_HEALTH);
         if (inst != null) {
             inst.setBaseValue(shown);
@@ -378,7 +377,7 @@ public final class RaidInstance {
     private int guardianHp() {
         int total = 0;
         int n = 0;
-        for (ServerPlayerEntity p : players()) {
+        for (ServerPlayer p : players()) {
             total += RoomLogic.level(p, com.runecraft.osrs.Skill.MINING);
             n++;
         }
@@ -555,7 +554,7 @@ public final class RaidInstance {
     }
 
     /** Builds the lobby and first room and brings the party in. */
-    void open(List<ServerPlayerEntity> members) {
+    void open(List<ServerPlayer> members) {
         for (int i = 0; i < Math.min(3, rooms.size()); i++) {
             RaidBuilder.prefetch(world, slot, i);
         }
@@ -566,28 +565,28 @@ public final class RaidInstance {
         roomStartTick = ActionManager.gameTick();
         logics[0].started = true;
         BlockPos spawn = spawn(0);
-        for (ServerPlayerEntity p : members) {
-            RaidsState.get(world.getServer()).setLastEntrance(p.getUuid(), returnPos.get(p.getUuid()));
-            teleport(p, spawn.add(0, 0, random.nextInt(3) - 1));
-            p.sendMessage(Text.literal("You enter the " + type.displayName() + ".").formatted(Formatting.GOLD), false);
+        for (ServerPlayer p : members) {
+            RaidsState.get(world.getServer()).setLastEntrance(p.getUUID(), returnPos.get(p.getUUID()));
+            teleport(p, spawn.offset(0, 0, random.nextInt(3) - 1));
+            p.displayClientMessage(Component.literal("You enter the " + type.displayName() + ".").withStyle(ChatFormatting.GOLD), false);
             Msg.game(p, rooms.get(0).hint());
         }
         if (type == RaidType.TOA) {
             say("Raid level: " + raidLevel + " (" + Invocation.presets().get(presetIndex).name() + "). Use the obelisk to change it.",
-                    Formatting.YELLOW);
+                    ChatFormatting.YELLOW);
         } else {
             say("Mode: " + mode.displayName() + ". The leader can change it with /raids mode "
-                    + (type == RaidType.COX ? "<normal|challenge>" : "<entry|normal|hard>") + ".", Formatting.YELLOW);
+                    + (type == RaidType.COX ? "<normal|challenge>" : "<entry|normal|hard>") + ".", ChatFormatting.YELLOW);
         }
     }
 
-    public void teleport(ServerPlayerEntity p, BlockPos pos) {
-        p.teleport(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, -90f, 0f);
+    public void teleport(ServerPlayer p, BlockPos pos) {
+        p.teleportTo(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, -90f, 0f);
         p.fallDistance = 0;
     }
 
     /** The start barrier: leaves the lobby and locks in the raid level. */
-    public void begin(ServerPlayerEntity player) {
+    public void begin(ServerPlayer player) {
         if (begun) {
             return;
         }
@@ -598,16 +597,16 @@ public final class RaidInstance {
         if (type == RaidType.TOA) {
             // OSRS: the attempts invocations count wipes over the whole raid, not per room.
             retriesLeft = Invocation.roomRetries(invocations);
-            say("The raid begins at raid level " + raidLevel + ".", Formatting.GOLD);
+            say("The raid begins at raid level " + raidLevel + ".", ChatFormatting.GOLD);
             int limit = Invocation.timeLimitMinutes(invocations);
             if (limit > 0) {
                 say("You have " + limit + " minutes to complete the raid, or the raid level drops by "
-                        + Invocation.timeLimitPenalty(invocations) + ".", Formatting.YELLOW);
+                        + Invocation.timeLimitPenalty(invocations) + ".", ChatFormatting.YELLOW);
             }
         } else {
-            say(player.getName().getString() + " has started the raid (" + mode.displayName() + "). Good luck!", Formatting.GOLD);
+            say(player.getName().getString() + " has started the raid (" + mode.displayName() + "). Good luck!", ChatFormatting.GOLD);
         }
-        world.playSound(null, center(0), SoundEvents.BLOCK_END_PORTAL_FRAME_FILL, SoundCategory.BLOCKS, 1f, 0.6f);
+        world.playSound(null, center(0), SoundEvents.END_PORTAL_FRAME_FILL, SoundSource.BLOCKS, 1f, 0.6f);
     }
 
     void gameTick(long tick) {
@@ -615,8 +614,8 @@ public final class RaidInstance {
             return;
         }
         for (UUID u : new ArrayList<>(party)) {
-            ServerPlayerEntity p = world.getServer().getPlayerManager().getPlayer(u);
-            if (p != null && (!contains(p) || p.getWorld() != world)) {
+            ServerPlayer p = world.getServer().getPlayerList().getPlayer(u);
+            if (p != null && (!contains(p) || p.level() != world)) {
                 Msg.game(p, "You have left the " + type.displayName() + ".");
                 removePlayer(u, false);
             }
@@ -638,8 +637,8 @@ public final class RaidInstance {
             }
         }
         if (logics[current].done && current + 1 < rooms.size()) {
-            for (ServerPlayerEntity p : activePlayers()) {
-                if (inRoom(p.getPos(), current + 1)) {
+            for (ServerPlayer p : activePlayers()) {
+                if (inRoom(p.position(), current + 1)) {
                     startRoom(current + 1);
                     break;
                 }
@@ -682,8 +681,8 @@ public final class RaidInstance {
         RoomDef def = rooms.get(i);
         RoomLogic logic = logics[i];
         logic.started = true;
-        for (ServerPlayerEntity p : players()) {
-            p.sendMessage(Text.literal(def.name()).formatted(Formatting.GOLD, Formatting.BOLD), true);
+        for (ServerPlayer p : players()) {
+            p.displayClientMessage(Component.literal(def.name()).withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD), true);
             Msg.game(p, def.hint());
         }
         logic.start();
@@ -696,7 +695,7 @@ public final class RaidInstance {
         RoomDef def = logic.def;
         long secs = roomTicks() * 6 / 10;
         if (def.kind() != RoomDef.Kind.LOBBY && def.kind() != RoomDef.Kind.REWARD && def.kind() != RoomDef.Kind.RESOURCE) {
-            say(def.name() + " complete! Duration: " + secs / 60 + ":" + String.format("%02d", secs % 60), Formatting.GREEN);
+            say(def.name() + " complete! Duration: " + secs / 60 + ":" + String.format("%02d", secs % 60), ChatFormatting.GREEN);
         }
         for (UUID u : party) {
             if (type == RaidType.TOB) {
@@ -717,12 +716,12 @@ public final class RaidInstance {
             }
             if (mvp != null) {
                 points.merge(mvp, RaidScaling.tobMvpPoints(def.id()), Integer::sum);
-                say(name(mvp) + " was the MVP of " + def.name() + ".", Formatting.YELLOW);
+                say(name(mvp) + " was the MVP of " + def.name() + ".", ChatFormatting.YELLOW);
             }
         }
         roomDamage.clear();
         RaidBuilder.openExit(world, slot, logic.index);
-        world.playSound(null, center(logic.index), SoundEvents.BLOCK_IRON_DOOR_OPEN, SoundCategory.BLOCKS, 1f, 0.8f);
+        world.playSound(null, center(logic.index), SoundEvents.IRON_DOOR_OPEN, SoundSource.BLOCKS, 1f, 0.8f);
         reviveAll(logic.index);
         if (type == RaidType.TOA) {
             if (def.kind() == RoomDef.Kind.COMBAT) {
@@ -741,7 +740,7 @@ public final class RaidInstance {
                     }
                     for (int i : RaidScaling.walkThePathLevelUps(remaining, pathsCompleted, random)) {
                         pathLevelUps[i]++;
-                        say("You hear a mysterious rumbling coming from the Path of " + PATH_GODS[i] + ".", Formatting.LIGHT_PURPLE);
+                        say("You hear a mysterious rumbling coming from the Path of " + PATH_GODS[i] + ".", ChatFormatting.LIGHT_PURPLE);
                     }
                 }
                 if (com.runecraft.osrs.content.raids.ToaSupplies.offeredAfter(pathsCompleted)) {
@@ -754,10 +753,10 @@ public final class RaidInstance {
 
     /** Brings downed players back into a room (after it is cleared or retried). */
     private void reviveAll(int room) {
-        for (ServerPlayerEntity p : players()) {
-            if (downed.remove(p.getUuid())) {
+        for (ServerPlayer p : players()) {
+            if (downed.remove(p.getUUID())) {
                 restore(p);
-                teleport(p, center(room).add(RaidBuilder.HALF - 3, 1, random.nextInt(5) - 2));
+                teleport(p, center(room).offset(RaidBuilder.HALF - 3, 1, random.nextInt(5) - 2));
                 Msg.game(p, "You are revived.");
             }
         }
@@ -778,53 +777,53 @@ public final class RaidInstance {
         if (limit > 0 && beginTick >= 0 && endTick - beginTick > limit * 100L) {
             // OSRS: missing a time-limit invocation's limit lowers the raid level (and with it the loot).
             raidLevel = Math.max(0, raidLevel - Invocation.timeLimitPenalty(invocations));
-            say("You missed the " + limit + "-minute time limit: the raid level drops to " + raidLevel + ".", Formatting.RED);
+            say("You missed the " + limit + "-minute time limit: the raid level drops to " + raidLevel + ".", ChatFormatting.RED);
         }
         result = RaidRewards.roll(type, mode, pts, raidLevel, withinTarget, random);
         long secs = elapsedTicks() * 6 / 10;
         say("Congratulations - your raid is complete! Duration: " + secs / 60 + ":" + String.format("%02d", secs % 60),
-                Formatting.GOLD);
+                ChatFormatting.GOLD);
         if (type != RaidType.TOB) {
-            say("Total points: " + totalPoints() + ".", Formatting.YELLOW);
+            say("Total points: " + totalPoints() + ".", ChatFormatting.YELLOW);
         }
         if (!RaidRewards.extras(type, mode).isEmpty()) {
             long target = RaidScaling.targetTicks(type, mode, partySize) * 6 / 10;
             say(withinTarget ? "You beat the " + mode.displayName() + " target time of " + target / 60 + " minutes!"
-                    : "You missed the " + mode.displayName() + " target time of " + target / 60 + " minutes.", Formatting.YELLOW);
+                    : "You missed the " + mode.displayName() + " target time of " + target / 60 + " minutes.", ChatFormatting.YELLOW);
         }
         RaidsState state = RaidsState.get(world.getServer());
-        for (ServerPlayerEntity p : players()) {
-            boolean purple = result.purple(p.getUuid().toString());
-            int kc = state.addCompletion(p.getUuid(), type.id(), points(p.getUuid()), purple);
+        for (ServerPlayer p : players()) {
+            boolean purple = result.purple(p.getUUID().toString());
+            int kc = state.addCompletion(p.getUUID(), type.id(), points(p.getUUID()), purple);
             Msg.game(p, "Your completed " + type.displayName() + " count is: " + kc + ".");
             if (type != RaidType.TOB) {
-                Msg.game(p, "Personal points: " + points(p.getUuid()) + ".");
+                Msg.game(p, "Personal points: " + points(p.getUUID()) + ".");
             }
         }
         for (String who : result.purpleRecipients()) {
             String name = names.getOrDefault(UUID.fromString(who), "Someone");
             String item = result.lootFor(who).isEmpty() ? "" : result.lootFor(who).get(0).item();
             ItemDef def = ItemCatalog.get(item);
-            world.getServer().getPlayerManager().broadcast(Text.literal(name + " received special loot from a raid: "
-                    + (def == null ? item : def.name()) + "!").formatted(Formatting.LIGHT_PURPLE), false);
-            world.playSound(null, center(current), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.PLAYERS, 1f, 1f);
+            world.getServer().getPlayerList().broadcastSystemMessage(Component.literal(name + " received special loot from a raid: "
+                    + (def == null ? item : def.name()) + "!").withStyle(ChatFormatting.LIGHT_PURPLE), false);
+            world.playSound(null, center(current), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 1f, 1f);
         }
         if (result.purpleRecipients().isEmpty()) {
-            say("The chest contains standard loot.", Formatting.GRAY);
+            say("The chest contains standard loot.", ChatFormatting.GRAY);
         }
     }
 
     /** The reward chest: hands over this player's loot once. */
-    public void claim(ServerPlayerEntity p) {
+    public void claim(ServerPlayer p) {
         if (!finished || result == null) {
             Msg.game(p, "The chest is sealed until the raid is complete.");
             return;
         }
-        if (!claimed.add(p.getUuid())) {
+        if (!claimed.add(p.getUUID())) {
             Msg.game(p, "You have already claimed your reward. Use the exit to leave.");
             return;
         }
-        List<RaidRewards.Loot> loot = result.lootFor(p.getUuid().toString());
+        List<RaidRewards.Loot> loot = result.lootFor(p.getUUID().toString());
         if (loot.isEmpty()) {
             Msg.game(p, "The chest is empty for you.");
             return;
@@ -835,14 +834,14 @@ public final class RaidInstance {
             ItemDef def = ItemCatalog.get(l.item());
             Msg.game(p, "You find: " + l.count() + " x " + (def == null ? l.item() : def.name()) + ".");
         }
-        if (result.petRecipients().contains(p.getUuid().toString())) {
-            world.getServer().getPlayerManager().broadcast(Text.literal(p.getName().getString()
-                    + " has a funny feeling like they're being followed.").formatted(Formatting.GOLD), false);
+        if (result.petRecipients().contains(p.getUUID().toString())) {
+            world.getServer().getPlayerList().broadcastSystemMessage(Component.literal(p.getName().getString()
+                    + " has a funny feeling like they're being followed.").withStyle(ChatFormatting.GOLD), false);
         }
     }
 
-    public boolean hasClaimed(ServerPlayerEntity p) {
-        return claimed.contains(p.getUuid());
+    public boolean hasClaimed(ServerPlayer p) {
+        return claimed.contains(p.getUUID());
     }
 
     /** Records that a player used Helpful Spirit supplies or honey locusts ("Helpful spirit who?"). */
@@ -850,7 +849,7 @@ public final class RaidInstance {
         suppliesTaken.add(u);
     }
 
-    public void takeSupplies(ServerPlayerEntity p) {
+    public void takeSupplies(ServerPlayer p) {
         if (type == RaidType.TOA) {
             // OSRS: the tomb has no free supply chest; the Helpful Spirit offers bundles after the second and fourth path.
             Msg.game(p, "The storage unit is for your own items. The Helpful Spirit brings supplies after the second and fourth paths.");
@@ -862,7 +861,7 @@ public final class RaidInstance {
             Msg.game(p, "The storage unit is for your own items. Gather and brew your supplies in the resource rooms.");
             return;
         }
-        if (!suppliesTaken.add(p.getUuid())) {
+        if (!suppliesTaken.add(p.getUUID())) {
             Msg.game(p, "You have already taken your share of the supplies.");
             return;
         }
@@ -882,8 +881,8 @@ public final class RaidInstance {
     // ------------------------------------------------------------------ deaths
 
     /** Called instead of a party member dying. */
-    void onDeath(ServerPlayerEntity p) {
-        UUID u = p.getUuid();
+    void onDeath(ServerPlayer p) {
+        UUID u = p.getUUID();
         deaths.merge(u, 1, Integer::sum);
         restore(p);
         RoomDef room = rooms.get(current);
@@ -892,7 +891,7 @@ public final class RaidInstance {
             case COX -> {
                 int before = points(u);
                 points.put(u, RaidScaling.coxDeathPenalty(before));
-                say(p.getName().getString() + " has died and lost " + (before - points(u)) + " points.", Formatting.RED);
+                say(p.getName().getString() + " has died and lost " + (before - points(u)) + " points.", ChatFormatting.RED);
                 teleport(p, spawn(0));
             }
             case TOB -> {
@@ -906,7 +905,7 @@ public final class RaidInstance {
             case TOA -> {
                 int before = points(u);
                 points.put(u, RaidScaling.toaDeathPenalty(before));
-                say(p.getName().getString() + " has died and lost " + (before - points(u)) + " points.", Formatting.RED);
+                say(p.getName().getString() + " has died and lost " + (before - points(u)) + " points.", ChatFormatting.RED);
                 if (fighting) {
                     down(p, room.name());
                 } else {
@@ -919,8 +918,8 @@ public final class RaidInstance {
         }
     }
 
-    private void down(ServerPlayerEntity p, String room) {
-        downed.add(p.getUuid());
+    private void down(ServerPlayer p, String room) {
+        downed.add(p.getUUID());
         teleport(p, gallery(current));
         Msg.red(p, "You have fallen. You will rejoin your party when " + room + " is defeated.");
     }
@@ -931,13 +930,13 @@ public final class RaidInstance {
                 retriesLeft--;
             }
             say("Your party has fallen! The room resets" + (retriesLeft >= 0 ? " (" + retriesLeft + " attempts left)." : "."),
-                    Formatting.RED);
+                    ChatFormatting.RED);
             // OSRS: wiping hands out honey locusts (not with On a Diet).
             ToaSupplyService.wiped(this);
             RoomLogic logic = logics[current];
             logic.reset();
-            for (ServerPlayerEntity p : players()) {
-                downed.remove(p.getUuid());
+            for (ServerPlayer p : players()) {
+                downed.remove(p.getUUID());
                 restore(p);
                 teleport(p, spawn(current));
             }
@@ -946,17 +945,17 @@ public final class RaidInstance {
             logic.start();
             return;
         }
-        say("Your party has fallen. The " + type.displayName() + " is lost.", Formatting.DARK_RED);
+        say("Your party has fallen. The " + type.displayName() + " is lost.", ChatFormatting.DARK_RED);
         for (UUID u : new ArrayList<>(party)) {
             removePlayer(u, true);
         }
         RaidManager.close(this);
     }
 
-    private static void restore(ServerPlayerEntity p) {
+    private static void restore(ServerPlayer p) {
         p.setHealth(p.getMaxHealth());
-        p.extinguish();
-        p.clearStatusEffects();
+        p.clearFire();
+        p.removeAllEffects();
         PoisonService.cure(p, true, 0, ActionManager.gameTick());
         p.fallDistance = 0;
     }
@@ -972,7 +971,7 @@ public final class RaidInstance {
         RaidManager.unbind(u);
         ToaSupplyService.forget(u);
         CoxSupplyService.forget(u);
-        ServerPlayerEntity p = world.getServer().getPlayerManager().getPlayer(u);
+        ServerPlayer p = world.getServer().getPlayerList().getPlayer(u);
         if (p != null) {
             for (String item : RaidItems.RAID_ONLY_ITEMS) {
                 Inv.remove(p, item, Inv.count(p, item));
@@ -980,9 +979,9 @@ public final class RaidInstance {
             RaidNet.clearHud(p);
             if (teleportOut) {
                 restore(p);
-                BlockPos back = returnPos.getOrDefault(u, p.getServer().getOverworld().getSpawnPos());
-                ServerWorld gielinor = com.runecraft.world.Gielinor.world(p.getServer());
-                p.teleport(gielinor == null ? world : gielinor, back.getX() + 0.5, back.getY(), back.getZ() + 0.5, p.getYaw(), 0);
+                BlockPos back = returnPos.getOrDefault(u, p.getServer().overworld().getSharedSpawnPos());
+                ServerLevel gielinor = com.runecraft.world.Gielinor.world(p.getServer());
+                p.teleportTo(gielinor == null ? world : gielinor, back.getX() + 0.5, back.getY(), back.getZ() + 0.5, p.getYRot(), 0);
             }
         }
         if (u.equals(leader) && !party.isEmpty()) {

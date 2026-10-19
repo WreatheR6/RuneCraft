@@ -7,16 +7,15 @@ import com.runecraft.osrs.content.minigames.Minigame;
 import com.runecraft.osrs.content.minigames.MinigameRules.Trawler;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * Fishing Trawler: keep the trawler afloat while the net fills. Leaks spring in the hull (patch
@@ -29,7 +28,7 @@ public class FishingTrawlerSession extends MinigameSession {
     private final Map<UUID, Integer> contribution = new HashMap<>();
     private int water;
 
-    public FishingTrawlerSession(int id, int slot, ServerWorld world, String variant) {
+    public FishingTrawlerSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.FISHING_TRAWLER, id, slot, world, variant);
     }
 
@@ -56,24 +55,24 @@ public class FishingTrawlerSession extends MinigameSession {
     }
 
     @Override
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
+    protected BlockPos spawnPoint(ServerPlayer player, int index) {
         return rel(index % 3 - 1, 1, 12);
     }
 
     @Override
     protected void start() {
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             Inv.give(p, "swamp_paste", 15);
         }
         broadcast("Murphy: All aboard! Keep her afloat, lads!");
     }
 
-    private void add(ServerPlayerEntity p, int amount) {
-        contribution.merge(p.getUuid(), amount, Integer::sum);
+    private void add(ServerPlayer p, int amount) {
+        contribution.merge(p.getUUID(), amount, Integer::sum);
     }
 
     @Override
-    protected boolean onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         switch (blockId) {
             case "trawler_leak" -> {
                 if (Inv.remove(player, "swamp_paste", 1) == 0) {
@@ -81,7 +80,7 @@ public class FishingTrawlerSession extends MinigameSession {
                     return true;
                 }
                 leaks.removeIf(l -> l.equals(pos));
-                world.setBlockState(pos, Blocks.DARK_OAK_PLANKS.getDefaultState());
+                world.setBlockAndUpdate(pos, Blocks.DARK_OAK_PLANKS.defaultBlockState());
                 add(player, 10);
                 Msg.action(player, "You patch the leak.");
             }
@@ -105,7 +104,7 @@ public class FishingTrawlerSession extends MinigameSession {
         if (ticks % Trawler.LEAK_INTERVAL == 0 && leaks.size() < 8) {
             int side = random.nextBoolean() ? -8 : 8;
             BlockPos pos = rel(side, 1 + random.nextInt(2), random.nextInt(27) - 13);
-            world.setBlockState(pos, com.runecraft.content.minigames.Arena.module("trawler_leak"));
+            world.setBlockAndUpdate(pos, com.runecraft.content.minigames.Arena.module("trawler_leak"));
             leaks.add(pos);
             broadcast("A leak springs in the hull!");
         }
@@ -124,12 +123,12 @@ public class FishingTrawlerSession extends MinigameSession {
 
     @Override
     protected void onEnd(boolean success) {
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             Inv.remove(p, "swamp_paste", 1000);
             if (!success) {
                 continue;
             }
-            int c = contribution.getOrDefault(p.getUuid(), 0);
+            int c = contribution.getOrDefault(p.getUUID(), 0);
             if (c < 20) {
                 Msg.game(p, "Murphy: You barely lifted a finger! No share of the catch for you.");
                 continue;
@@ -149,14 +148,14 @@ public class FishingTrawlerSession extends MinigameSession {
                 reward(p, piece, 1);
                 Msg.game(p, "You find a piece of the angler outfit in the net!");
             }
-            MinigameData.of(p).incrementStat(p.getUuid(), "kc:" + game.id());
+            MinigameData.of(p).incrementStat(p.getUUID(), "kc:" + game.id());
             Msg.game(p, "The trawler returns to port. You receive " + fish + " fish from the net.");
         }
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
+    protected List<String> hud(ServerPlayer player) {
         return List.of("Fishing Trawler", "Water level: " + water + "%", "Leaks: " + leaks.size(),
-                "Contribution: " + contribution.getOrDefault(player.getUuid(), 0), "Time left: " + time(Trawler.GAME_TICKS - ticks));
+                "Contribution: " + contribution.getOrDefault(player.getUUID(), 0), "Time left: " + time(Trawler.GAME_TICKS - ticks));
     }
 }

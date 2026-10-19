@@ -10,22 +10,21 @@ import com.runecraft.osrs.content.minigames.Minigame;
 import com.runecraft.osrs.content.minigames.MinigameRules.Wintertodt;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Wintertodt: chop bruma roots, fletch them into kindling, and feed the four braziers to drain the
@@ -49,7 +48,7 @@ public class WintertodtSession extends MinigameSession {
     private int energy;
     private int maxEnergy;
 
-    public WintertodtSession(int id, int slot, ServerWorld world, String variant) {
+    public WintertodtSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.WINTERTODT, id, slot, world, variant);
     }
 
@@ -70,13 +69,13 @@ public class WintertodtSession extends MinigameSession {
         place(0, 21, "minigame_exit");
         for (int x = -2; x <= 2; x++) {
             for (int z = -2; z <= 2; z++) {
-                set(x, 0, z, Blocks.BLUE_ICE.getDefaultState());
+                set(x, 0, z, Blocks.BLUE_ICE.defaultBlockState());
             }
         }
     }
 
     @Override
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
+    protected BlockPos spawnPoint(ServerPlayer player, int index) {
         return rel(index % 5 - 2, 1, 19);
     }
 
@@ -84,9 +83,9 @@ public class WintertodtSession extends MinigameSession {
     protected void start() {
         maxEnergy = Wintertodt.energy(playerCount());
         energy = maxEnergy;
-        MobEntity todt = spawn("wintertodt", rel(0, 1, 0));
+        Mob todt = spawn("wintertodt", rel(0, 1, 0));
         if (todt != null) {
-            todt.setAiDisabled(true);
+            todt.setNoAi(true);
         }
         broadcastRed("The Wintertodt awakens! Feed the braziers to subdue it.");
     }
@@ -103,8 +102,8 @@ public class WintertodtSession extends MinigameSession {
         return best;
     }
 
-    private void addPoints(ServerPlayerEntity p, int amount) {
-        points.merge(p.getUuid(), amount, Integer::sum);
+    private void addPoints(ServerPlayer p, int amount) {
+        points.merge(p.getUUID(), amount, Integer::sum);
     }
 
     private int lit() {
@@ -122,7 +121,7 @@ public class WintertodtSession extends MinigameSession {
     }
 
     @Override
-    protected boolean onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         switch (blockId) {
             case "bruma_roots" -> {
                 if (!Inv.has(player, "bronze_axe", 1) && !hasAnyAxe(player)) {
@@ -166,7 +165,7 @@ public class WintertodtSession extends MinigameSession {
         }
     }
 
-    private static boolean hasAnyAxe(ServerPlayerEntity p) {
+    private static boolean hasAnyAxe(ServerPlayer p) {
         for (String tier : new String[]{"bronze", "iron", "steel", "black", "mithril", "adamant", "rune", "dragon"}) {
             if (Inv.has(p, tier + "_axe", 1)) {
                 return true;
@@ -175,7 +174,7 @@ public class WintertodtSession extends MinigameSession {
         return false;
     }
 
-    private void crate(ServerPlayerEntity player) {
+    private void crate(ServerPlayer player) {
         int herbs = Inv.count(player, "bruma_herb");
         if (herbs > 0) {
             Inv.remove(player, "bruma_herb", herbs);
@@ -213,7 +212,7 @@ public class WintertodtSession extends MinigameSession {
                 + "Use it with bruma roots (and a knife) to fletch, or with bruma herbs to make potions.");
     }
 
-    private void brazier(ServerPlayerEntity player, int i) {
+    private void brazier(ServerPlayer player, int i) {
         switch (braziers[i]) {
             case BROKEN -> {
                 if (!Inv.has(player, "hammer", 1)) {
@@ -221,7 +220,7 @@ public class WintertodtSession extends MinigameSession {
                     return;
                 }
                 braziers[i] = State.UNLIT;
-                caPlayerFlags.computeIfAbsent(player.getUuid(), u -> new java.util.HashSet<>()).add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_FIXED_BRAZIER);
+                caPlayerFlags.computeIfAbsent(player.getUUID(), u -> new java.util.HashSet<>()).add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_FIXED_BRAZIER);
                 addPoints(player, Wintertodt.POINTS_FIX);
                 xp(player, Skill.CONSTRUCTION, Wintertodt.fixXp(level(player, Skill.CONSTRUCTION)));
                 Msg.game(player, "You fix the brazier.");
@@ -230,7 +229,7 @@ public class WintertodtSession extends MinigameSession {
                 if (pyromancerDown[i]) {
                     if (Inv.remove(player, "rejuvenation_potion", 1) > 0) {
                         pyromancerDown[i] = false;
-                        caPlayerFlags.computeIfAbsent(player.getUuid(), u -> new java.util.HashSet<>()).add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_HEALED_PYROMANCER);
+                        caPlayerFlags.computeIfAbsent(player.getUUID(), u -> new java.util.HashSet<>()).add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_HEALED_PYROMANCER);
                         addPoints(player, Wintertodt.POINTS_HEAL_PYROMANCER);
                         Msg.game(player, "You help the pyromancer back to their feet.");
                     } else {
@@ -238,14 +237,14 @@ public class WintertodtSession extends MinigameSession {
                     }
                     return;
                 }
-                if (!Inv.has(player, "tinderbox", 1) && !"bruma_torch".equals(Inv.idOf(player.getMainHandStack()))) {
+                if (!Inv.has(player, "tinderbox", 1) && !"bruma_torch".equals(Inv.idOf(player.getMainHandItem()))) {
                     Msg.game(player, "You need a tinderbox to light the brazier.");
                     return;
                 }
                 braziers[i] = State.LIT;
                 addPoints(player, Wintertodt.POINTS_LIGHT);
                 xp(player, Skill.FIREMAKING, Wintertodt.lightXp(level(player, Skill.FIREMAKING)));
-                world.playSound(null, player.getBlockPos(), SoundEvents.ITEM_FIRECHARGE_USE, SoundCategory.BLOCKS, 1f, 1f);
+                world.playSound(null, player.blockPosition(), SoundEvents.FIRECHARGE_USE, SoundSource.BLOCKS, 1f, 1f);
                 Msg.game(player, "You light the brazier.");
             }
             case LIT -> {
@@ -273,18 +272,18 @@ public class WintertodtSession extends MinigameSession {
         }
     }
 
-    private int warmth(ServerPlayerEntity p) {
+    private int warmth(ServerPlayer p) {
         int warm = 0;
         for (EquipmentSlot slot : new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
-            if (Inv.idOf(p.getEquippedStack(slot)).startsWith("pyromancer_")) {
+            if (Inv.idOf(p.getItemBySlot(slot)).startsWith("pyromancer_")) {
                 warm++;
             }
         }
-        String off = Inv.idOf(p.getOffHandStack());
+        String off = Inv.idOf(p.getOffhandItem());
         if (off.equals("fire_cape") || off.equals("infernal_cape") || off.equals("obsidian_cape") || off.equals("tome_of_fire")) {
             warm++;
         }
-        if (Inv.idOf(p.getMainHandStack()).equals("bruma_torch")) {
+        if (Inv.idOf(p.getMainHandItem()).equals("bruma_torch")) {
             warm++;
         }
         if (Inv.has(p, "warm_gloves", 1)) {
@@ -294,9 +293,9 @@ public class WintertodtSession extends MinigameSession {
     }
 
     /** Whether the player stands beside a lit brazier (the B term of the cold formula). */
-    private boolean nearLitBrazier(ServerPlayerEntity p) {
+    private boolean nearLitBrazier(ServerPlayer p) {
         for (int i = 0; i < 4; i++) {
-            if (braziers[i] == State.LIT && p.getBlockPos().getSquaredDistance(rel(BRAZIERS[i][0], 1, BRAZIERS[i][1])) <= 36) {
+            if (braziers[i] == State.LIT && p.blockPosition().distSqr(rel(BRAZIERS[i][0], 1, BRAZIERS[i][1])) <= 36) {
                 return true;
             }
         }
@@ -317,7 +316,7 @@ public class WintertodtSession extends MinigameSession {
         for (int i = 0; i < 4; i++) {
             BlockPos b = rel(BRAZIERS[i][0], 2, BRAZIERS[i][1]);
             if (braziers[i] == State.LIT) {
-                world.spawnParticles(ParticleTypes.FLAME, b.getX() + 0.5, b.getY(), b.getZ() + 0.5, 4, 0.2, 0.3, 0.2, 0.02);
+                world.sendParticles(ParticleTypes.FLAME, b.getX() + 0.5, b.getY(), b.getZ() + 0.5, 4, 0.2, 0.3, 0.2, 0.02);
                 int roll = random.nextInt(250);
                 if (roll == 0) {
                     braziers[i] = State.BROKEN;
@@ -325,8 +324,8 @@ public class WintertodtSession extends MinigameSession {
                     if (java.util.Arrays.stream(braziers).allMatch(b2 -> b2 == State.BROKEN)) {
                         caRunFlags.add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_ALL_BRAZIERS_BROKEN);
                     }
-                    for (ServerPlayerEntity p : online()) {
-                        if (p.getBlockPos().getSquaredDistance(b) < 9) {
+                    for (ServerPlayer p : online()) {
+                        if (p.blockPosition().distSqr(b) < 9) {
                             CombatHandler.applyDamage(null, p, 1 + random.nextInt(6));
                         }
                     }
@@ -340,12 +339,12 @@ public class WintertodtSession extends MinigameSession {
                     broadcastRed("A pyromancer has fallen!");
                 }
             } else if (braziers[i] == State.BROKEN) {
-                world.spawnParticles(ParticleTypes.SMOKE, b.getX() + 0.5, b.getY(), b.getZ() + 0.5, 2, 0.2, 0.2, 0.2, 0.01);
+                world.sendParticles(ParticleTypes.SMOKE, b.getX() + 0.5, b.getY(), b.getZ() + 0.5, 2, 0.2, 0.2, 0.2, 0.01);
             }
         }
         // The cold.
         if (ticks % 12 == 0) {
-            for (ServerPlayerEntity p : online()) {
+            for (ServerPlayer p : online()) {
                 int dmg = Wintertodt.coldDamage(level(p, Skill.HITPOINTS), warmth(p), nearLitBrazier(p) ? 1 : 0);
                 CombatHandler.applyDamage(null, p, dmg);
                 com.runecraft.network.ServerNetworking.hitsplat(p, dmg, com.runecraft.network.Net.SPLAT_DAMAGE);
@@ -357,18 +356,18 @@ public class WintertodtSession extends MinigameSession {
         }
         // Snowfall: a telegraphed area attack on a random player.
         if (ticks % 25 == 0 && !online().isEmpty()) {
-            List<ServerPlayerEntity> online = online();
-            ServerPlayerEntity target = online.get(random.nextInt(online.size()));
-            snowfalls.add(new Object[]{target.getPos(), ticks + 3});
+            List<ServerPlayer> online = online();
+            ServerPlayer target = online.get(random.nextInt(online.size()));
+            snowfalls.add(new Object[]{target.position(), ticks + 3});
         }
         snowfalls.removeIf(s -> {
-            Vec3d at = (Vec3d) s[0];
-            world.spawnParticles(ParticleTypes.SNOWFLAKE, at.x, at.y + 3, at.z, 20, 1.2, 0.5, 1.2, 0.01);
+            Vec3 at = (Vec3) s[0];
+            world.sendParticles(ParticleTypes.SNOWFLAKE, at.x, at.y + 3, at.z, 20, 1.2, 0.5, 1.2, 0.01);
             if (ticks < (Long) s[1]) {
                 return false;
             }
-            for (ServerPlayerEntity p : online()) {
-                if (p.getPos().squaredDistanceTo(at) < 4) {
+            for (ServerPlayer p : online()) {
+                if (p.position().distanceToSqr(at) < 4) {
                     int dmg = 3 + random.nextInt(8);
                     CombatHandler.applyDamage(null, p, dmg);
                     com.runecraft.network.ServerNetworking.hitsplat(p, dmg, com.runecraft.network.Net.SPLAT_DAMAGE);
@@ -379,13 +378,13 @@ public class WintertodtSession extends MinigameSession {
     }
 
     @Override
-    public java.util.Set<String> caFlags(ServerPlayerEntity player) {
+    public java.util.Set<String> caFlags(ServerPlayer player) {
         java.util.Set<String> flags = new java.util.HashSet<>(caRunFlags);
-        flags.addAll(caPlayerFlags.getOrDefault(player.getUuid(), java.util.Set.of()));
+        flags.addAll(caPlayerFlags.getOrDefault(player.getUUID(), java.util.Set.of()));
         if (warmth(player) >= 4) {
             flags.add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_WARM_GEAR);
         }
-        if (points.getOrDefault(player.getUuid(), 0) >= 3000) {
+        if (points.getOrDefault(player.getUUID(), 0) >= 3000) {
             flags.add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_POINTS_3000);
         }
         return flags;
@@ -396,13 +395,13 @@ public class WintertodtSession extends MinigameSession {
         if (!success) {
             return;
         }
-        for (ServerPlayerEntity p : online()) {
-            int pts = points.getOrDefault(p.getUuid(), 0);
+        for (ServerPlayer p : online()) {
+            int pts = points.getOrDefault(p.getUUID(), 0);
             int rolls = Wintertodt.rolls(pts, random.nextDouble());
             if (rolls > 0) {
                 xp(p, Skill.FIREMAKING, Wintertodt.completionXp(level(p, Skill.FIREMAKING)));
                 Inv.give(p, MinigameItemUse.container("supply_crate", rolls));
-                int kc = MinigameData.of(p).incrementStat(p.getUuid(), "kc:" + game.id());
+                int kc = MinigameData.of(p).incrementStat(p.getUUID(), "kc:" + game.id());
                 Msg.game(p, "You have helped to subdue the Wintertodt! You earned " + pts + " points and a supply crate (" + rolls + " rolls). "
                         + "Your subdued Wintertodt count is: " + kc + ".");
             } else {
@@ -412,9 +411,9 @@ public class WintertodtSession extends MinigameSession {
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
+    protected List<String> hud(ServerPlayer player) {
         return List.of("Wintertodt", "Wintertodt's Energy: " + (maxEnergy == 0 ? 100 : energy * 100 / maxEnergy) + "%",
-                "Points: " + points.getOrDefault(player.getUuid(), 0), "Braziers lit: " + lit() + " / 4",
+                "Points: " + points.getOrDefault(player.getUUID(), 0), "Braziers lit: " + lit() + " / 4",
                 "Warmth: " + warmth(player) + " / 4");
     }
 }

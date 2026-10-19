@@ -1,7 +1,7 @@
 package com.runecraft.entity;
 
 import com.runecraft.combat.CombatHandler;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.world.entity.LivingEntity;
 
 /** Small bridge so bosses can perform multi-target attacks. */
 final class CombatHandlerAccess {

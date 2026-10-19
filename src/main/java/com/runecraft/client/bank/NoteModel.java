@@ -4,21 +4,20 @@ import com.runecraft.RuneCraft;
 import com.runecraft.bank.Notes;
 import com.runecraft.osrs.bank.BankNotes;
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.model.BakedModel;
-import net.minecraft.client.render.model.BakedQuad;
-import net.minecraft.client.render.model.json.ModelOverrideList;
-import net.minecraft.client.render.model.json.ModelTransformation;
-import net.minecraft.client.texture.Sprite;
-import net.minecraft.client.util.ModelIdentifier;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.random.Random;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.renderer.block.model.ItemOverrides;
+import net.minecraft.client.renderer.block.model.ItemTransforms;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.client.resources.model.ModelResourceLocation;
+import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,8 +40,8 @@ public final class NoteModel {
 
     static void register() {
         ModelLoadingPlugin.register(ctx -> ctx.modifyModelAfterBake().register((model, context) -> {
-            Identifier id = context.id();
-            if (model != null && id instanceof ModelIdentifier mid && mid.getNamespace().equals(RuneCraft.MOD_ID)
+            ResourceLocation id = context.id();
+            if (model != null && id instanceof ModelResourceLocation mid && mid.getNamespace().equals(RuneCraft.MOD_ID)
                     && mid.getPath().equals(BankNotes.NOTE_ITEM) && mid.getVariant().equals("inventory")) {
                 return new Wrapped(model);
             }
@@ -59,7 +58,7 @@ public final class NoteModel {
         }
 
         @Override
-        public List<BakedQuad> getQuads(BlockState state, Direction face, Random random) {
+        public List<BakedQuad> getQuads(BlockState state, Direction face, RandomSource random) {
             return base.getQuads(state, face, random);
         }
 
@@ -69,33 +68,33 @@ public final class NoteModel {
         }
 
         @Override
-        public boolean hasDepth() {
-            return base.hasDepth();
+        public boolean isGui3d() {
+            return base.isGui3d();
         }
 
         @Override
-        public boolean isSideLit() {
-            return base.isSideLit();
+        public boolean usesBlockLight() {
+            return base.usesBlockLight();
         }
 
         @Override
-        public boolean isBuiltin() {
+        public boolean isCustomRenderer() {
             return false;
         }
 
         @Override
-        public Sprite getParticleSprite() {
-            return base.getParticleSprite();
+        public TextureAtlasSprite getParticleIcon() {
+            return base.getParticleIcon();
         }
 
         @Override
-        public ModelTransformation getTransformation() {
-            return base.getTransformation();
+        public ItemTransforms getTransforms() {
+            return base.getTransforms();
         }
 
         @Override
-        public ModelOverrideList getOverrides() {
-            return ModelOverrideList.EMPTY;
+        public ItemOverrides getOverrides() {
+            return ItemOverrides.EMPTY;
         }
     }
 
@@ -109,12 +108,12 @@ public final class NoteModel {
         }
 
         @Override
-        public ModelOverrideList getOverrides() {
+        public ItemOverrides getOverrides() {
             return overrides;
         }
     }
 
-    private static final class Overrides extends ModelOverrideList {
+    private static final class Overrides extends ItemOverrides {
         private final Wrapped owner;
 
         Overrides(Wrapped owner) {
@@ -123,7 +122,7 @@ public final class NoteModel {
         }
 
         @Override
-        public BakedModel apply(BakedModel model, ItemStack stack, ClientWorld world, LivingEntity entity, int seed) {
+        public BakedModel resolve(BakedModel model, ItemStack stack, ClientLevel world, LivingEntity entity, int seed) {
             if (!Notes.isNote(stack)) {
                 return owner;
             }
@@ -136,10 +135,10 @@ public final class NoteModel {
             try {
                 ItemStack inner = Notes.unnoted(stack, 1);
                 if (!inner.isEmpty() && !Notes.isNote(inner)) {
-                    BakedModel innerModel = MinecraftClient.getInstance().getItemRenderer().getModels().getModel(inner);
+                    BakedModel innerModel = Minecraft.getInstance().getItemRenderer().getItemModelShaper().getItemModel(inner);
                     if (innerModel != null) {
-                        BakedModel resolved = innerModel.getOverrides().apply(innerModel, inner, world, entity, seed);
-                        if (resolved != null && !resolved.isBuiltin()) {
+                        BakedModel resolved = innerModel.getOverrides().resolve(innerModel, inner, world, entity, seed);
+                        if (resolved != null && !resolved.isCustomRenderer()) {
                             built = new Composite(owner.base, resolved);
                         }
                     }
@@ -166,7 +165,7 @@ public final class NoteModel {
         }
 
         @Override
-        public List<BakedQuad> getQuads(BlockState state, Direction face, Random random) {
+        public List<BakedQuad> getQuads(BlockState state, Direction face, RandomSource random) {
             if (face == null) {
                 if (unculled == null) {
                     unculled = merge(base.getQuads(state, null, random), inner.getQuads(state, null, random));
@@ -186,7 +185,7 @@ public final class NoteModel {
         }
 
         private static BakedQuad shrink(BakedQuad q) {
-            int[] data = q.getVertexData().clone();
+            int[] data = q.getVertices().clone();
             int stride = data.length / 4;
             for (int v = 0; v < 4; v++) {
                 int o = v * stride;
@@ -197,7 +196,7 @@ public final class NoteModel {
                 data[o + 1] = Float.floatToRawIntBits(0.5f + (y - 0.5f) * SCALE + DY);
                 data[o + 2] = Float.floatToRawIntBits(0.5f + (z - 0.5f) * SCALE + DZ);
             }
-            return new BakedQuad(data, q.getColorIndex(), q.getFace(), q.getSprite(), q.hasShade());
+            return new BakedQuad(data, q.getTintIndex(), q.getDirection(), q.getSprite(), q.isShade());
         }
     }
 }

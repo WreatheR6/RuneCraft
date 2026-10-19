@@ -16,13 +16,12 @@ import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Blocks;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -74,7 +73,7 @@ public final class SkillingHooks implements ModuleHooks {
                 return;
             }
             long gameTick = ActionManager.gameTick();
-            for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 ItemHooks.divineTick(player, gameTick);
                 ItemHooks.prayerRegenTick(player, gameTick);
                 ItemHooks.goadingTick(player, gameTick);
@@ -91,13 +90,13 @@ public final class SkillingHooks implements ModuleHooks {
         QuestScripts.onTalk(RunecraftData.DARK_MAGE, (player, npc) -> EssencePouches.darkMage(player));
         // Gielinor's looms (Minecraft looms in the Crafting Guild, Rimmington...) are for weaving.
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
-            if (hand != Hand.MAIN_HAND || !world.getBlockState(hit.getBlockPos()).isOf(Blocks.LOOM) || !Gielinor.is(player)) {
-                return ActionResult.PASS;
+            if (hand != InteractionHand.MAIN_HAND || !world.getBlockState(hit.getBlockPos()).is(Blocks.LOOM) || !Gielinor.is(player)) {
+                return InteractionResult.PASS;
             }
-            if (player instanceof ServerPlayerEntity sp) {
+            if (player instanceof ServerPlayer sp) {
                 MenuService.open(sp, MenuType.SPINNING, hit.getBlockPos(), false);
             }
-            return ActionResult.SUCCESS;
+            return InteractionResult.SUCCESS;
         });
 
         GameEvents.onXp((player, skill, tenths) -> {
@@ -108,9 +107,9 @@ public final class SkillingHooks implements ModuleHooks {
             if (pct <= 0) {
                 return;
             }
-            double bonus = tenths * pct / 100.0 + PROSPECTOR_REMAINDER.getOrDefault(player.getUuid(), 0.0);
+            double bonus = tenths * pct / 100.0 + PROSPECTOR_REMAINDER.getOrDefault(player.getUUID(), 0.0);
             int whole = (int) Math.floor(bonus);
-            PROSPECTOR_REMAINDER.put(player.getUuid(), bonus - whole);
+            PROSPECTOR_REMAINDER.put(player.getUUID(), bonus - whole);
             if (whole > 0) {
                 awarding = true;
                 try {
@@ -123,16 +122,16 @@ public final class SkillingHooks implements ModuleHooks {
     }
 
     /** Empties the farming patch at {@code pos}: its saved crop and the decoration above it (for the self-test). */
-    public static void clearPatch(net.minecraft.server.world.ServerWorld world, net.minecraft.util.math.BlockPos pos) {
+    public static void clearPatch(net.minecraft.server.level.ServerLevel world, net.minecraft.core.BlockPos pos) {
         FarmingHooks.forget(world, pos);
     }
 
     /** Prospector kit Mining XP bonus in percent (0.4/0.8/0.6/0.2, +0.5 for the full set = 2.5%). */
-    static double prospectorBonus(ServerPlayerEntity player) {
+    static double prospectorBonus(ServerPlayer player) {
         double pct = 0;
         int pieces = 0;
         for (int i = 0; i < ARMOUR.length; i++) {
-            ItemStack worn = player.getEquippedStack(ARMOUR[i]);
+            ItemStack worn = player.getItemBySlot(ARMOUR[i]);
             if (!worn.isEmpty() && Inv.idOf(worn).equals(MiningData.PROSPECTOR[i])) {
                 pct += MiningData.PROSPECTOR_BONUS[i];
                 pieces++;

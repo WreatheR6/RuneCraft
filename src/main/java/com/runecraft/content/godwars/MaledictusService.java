@@ -12,12 +12,12 @@ import com.runecraft.osrs.content.BossDef;
 import com.runecraft.osrs.content.ContentRegistry;
 import com.runecraft.osrs.content.godwars.RevenantRewards;
 import com.runecraft.util.Msg;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
 
 /**
  * The revenant maledictus (OSRS wiki): every revenant kill adds its combat level to a running total, and the chance of
@@ -34,7 +34,7 @@ final class MaledictusService {
     private static long lastSeen = -1;
     private static DataBossEntity active;
 
-    static void onKill(ServerPlayerEntity player, LivingEntity entity, MonsterStats stats) {
+    static void onKill(ServerPlayer player, LivingEntity entity, MonsterStats stats) {
         if (stats == null || stats.profile() == null || !RevenantRewards.countsForMaledictus(stats.profile().id)) {
             return;
         }
@@ -51,10 +51,10 @@ final class MaledictusService {
             return;
         }
         BossDef def = ContentRegistry.boss(RevenantRewards.MALEDICTUS);
-        if (def == null || !(entity.getWorld() instanceof ServerWorld world)) {
+        if (def == null || !(entity.level() instanceof ServerLevel world)) {
             return;
         }
-        BlockPos at = entity.getBlockPos().add(2, 0, 0);
+        BlockPos at = entity.blockPosition().offset(2, 0, 0);
         DataBossEntity boss = DataBossService.spawn(world, at, def, player);
         if (boss == null) {
             return;
@@ -63,8 +63,8 @@ final class MaledictusService {
         accumulated = 0;
         lastSeen = now;
         cooldownUntil = now + RevenantRewards.MALEDICTUS_COOLDOWN_TICKS;
-        for (ServerPlayerEntity p : world.getPlayers(o -> o.squaredDistanceTo(entity) < 96 * 96)) {
-            p.sendMessage(Text.literal("A revenant maledictus has appeared nearby!").formatted(Formatting.DARK_PURPLE), false);
+        for (ServerPlayer p : world.getPlayers(o -> o.distanceToSqr(entity) < 96 * 96)) {
+            p.displayClientMessage(Component.literal("A revenant maledictus has appeared nearby!").withStyle(ChatFormatting.DARK_PURPLE), false);
         }
     }
 
@@ -77,7 +77,7 @@ final class MaledictusService {
             if (born < 0) {
                 born = gameTick;
             } else if (gameTick - born >= RevenantRewards.MALEDICTUS_DESPAWN_TICKS) {
-                for (ServerPlayerEntity p : ((ServerWorld) boss.getWorld()).getPlayers(o -> o.squaredDistanceTo(boss) < 48 * 48)) {
+                for (ServerPlayer p : ((ServerLevel) boss.level()).getPlayers(o -> o.distanceToSqr(boss) < 48 * 48)) {
                     Msg.game(p, "The revenant maledictus fades back into the shadows.");
                 }
                 boss.discard();
@@ -85,7 +85,7 @@ final class MaledictusService {
         }
 
         @Override
-        public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
+        public void onDeath(DataBossEntity boss, ServerPlayer killer) {
             if (killer == null) {
                 return;
             }
@@ -100,8 +100,8 @@ final class MaledictusService {
             }
         }
 
-        private static void give(DataBossEntity boss, ServerPlayerEntity killer, String item) {
-            boss.dropStack(CombatHooks.dropStack(killer, boss, item, 1));
+        private static void give(DataBossEntity boss, ServerPlayer killer, String item) {
+            boss.spawnAtLocation(CombatHooks.dropStack(killer, boss, item, 1));
             CollectionLog.obtain(killer, item);
         }
     }

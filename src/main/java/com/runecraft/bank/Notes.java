@@ -3,15 +3,15 @@ package com.runecraft.bank;
 import com.runecraft.RuneCraft;
 import com.runecraft.osrs.bank.BankNotes;
 import com.runecraft.util.Inv;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.TagParser;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.StringNbtReader;
-import net.minecraft.registry.Registries;
 
 /**
  * Bank notes on the Minecraft side: one {@code runecraft:bank_note} item whose NBT names the noted item
@@ -29,20 +29,20 @@ public final class Notes {
 
     /** The stack's NBT as a string ("" for none). */
     public static String tagOf(ItemStack stack) {
-        NbtCompound n = stack.getNbt();
-        return n == null || n.isEmpty() ? "" : n.asString();
+        CompoundTag n = stack.getTag();
+        return n == null || n.isEmpty() ? "" : n.getAsString();
     }
 
     /** A stack of a bank item (id + NBT string), or EMPTY for unknown items. */
     public static ItemStack stackOf(String item, String tag, int count) {
-        Item it = Registries.ITEM.get(RuneCraft.resolve(item));
+        Item it = BuiltInRegistries.ITEM.get(RuneCraft.resolve(item));
         if (it == Items.AIR || count <= 0) {
             return ItemStack.EMPTY;
         }
         ItemStack s = new ItemStack(it, count);
         if (tag != null && !tag.isEmpty()) {
             try {
-                s.setNbt(StringNbtReader.parse(tag));
+                s.setTag(TagParser.parseTag(tag));
             } catch (CommandSyntaxException e) {
                 RuneCraft.LOGGER.warn("Bad bank item data for {}: {}", item, tag);
             }
@@ -53,18 +53,18 @@ public final class Notes {
     // ------------------------------------------------------------------ notes
 
     public static boolean isNote(ItemStack stack) {
-        return !stack.isEmpty() && Inv.idOf(stack).equals(BankNotes.NOTE_ITEM) && stack.hasNbt()
-                && stack.getNbt().contains(NOTED);
+        return !stack.isEmpty() && Inv.idOf(stack).equals(BankNotes.NOTE_ITEM) && stack.hasTag()
+                && stack.getTag().contains(NOTED);
     }
 
     /** The item a note stands for ("" if not a note). */
     public static String notedId(ItemStack stack) {
-        return isNote(stack) ? stack.getNbt().getString(NOTED) : "";
+        return isNote(stack) ? stack.getTag().getString(NOTED) : "";
     }
 
     /** The noted item's own stack data ("" for none). */
     public static String notedTag(ItemStack stack) {
-        return isNote(stack) ? stack.getNbt().getString(NOTED_TAG) : "";
+        return isNote(stack) ? stack.getTag().getString(NOTED_TAG) : "";
     }
 
     /** A single unnoted item for a note (EMPTY if the note is invalid). */
@@ -84,11 +84,11 @@ public final class Notes {
             return true;
         }
         ItemStack s = stackOf(item, tag, 1);
-        NbtCompound n = s.getNbt();
+        CompoundTag n = s.getTag();
         if (n == null) {
             return true;
         }
-        for (String k : n.getKeys()) {
+        for (String k : n.getAllKeys()) {
             if (!k.equals("Damage")) {
                 return false;
             }
@@ -102,27 +102,27 @@ public final class Notes {
         if (s.isEmpty()) {
             return s;
         }
-        NbtCompound n = new NbtCompound();
+        CompoundTag n = new CompoundTag();
         n.putString(NOTED, item);
         if (tag != null && !tag.isEmpty()) {
             n.putString(NOTED_TAG, tag);
         }
-        s.setNbt(n);
+        s.setTag(n);
         return s;
     }
 
     // ------------------------------------------------------------------ inventory helpers
 
     /** How many more of {@code proto} fit in the main inventory (36 slots), stacking with matching stacks. */
-    public static int room(PlayerEntity player, ItemStack proto) {
-        PlayerInventory inv = player.getInventory();
+    public static int room(Player player, ItemStack proto) {
+        Inventory inv = player.getInventory();
         long room = 0;
-        int max = proto.getMaxCount();
-        for (int i = 0; i < inv.main.size(); i++) {
-            ItemStack s = inv.main.get(i);
+        int max = proto.getMaxStackSize();
+        for (int i = 0; i < inv.items.size(); i++) {
+            ItemStack s = inv.items.get(i);
             if (s.isEmpty()) {
                 room += max;
-            } else if (ItemStack.canCombine(s, proto)) {
+            } else if (ItemStack.isSameItemSameTags(s, proto)) {
                 room += Math.max(0, max - s.getCount());
             }
         }
@@ -130,34 +130,34 @@ public final class Notes {
     }
 
     /** Puts up to {@code count} copies of {@code proto} into the main inventory; returns how many went in. */
-    public static int insert(PlayerEntity player, ItemStack proto, int count) {
-        PlayerInventory inv = player.getInventory();
+    public static int insert(Player player, ItemStack proto, int count) {
+        Inventory inv = player.getInventory();
         int left = count;
-        int max = proto.getMaxCount();
-        for (int i = 0; i < inv.main.size() && left > 0; i++) {
-            ItemStack s = inv.main.get(i);
-            if (!s.isEmpty() && ItemStack.canCombine(s, proto) && s.getCount() < max) {
+        int max = proto.getMaxStackSize();
+        for (int i = 0; i < inv.items.size() && left > 0; i++) {
+            ItemStack s = inv.items.get(i);
+            if (!s.isEmpty() && ItemStack.isSameItemSameTags(s, proto) && s.getCount() < max) {
                 int n = Math.min(left, max - s.getCount());
-                s.increment(n);
+                s.grow(n);
                 left -= n;
             }
         }
-        for (int i = 0; i < inv.main.size() && left > 0; i++) {
-            if (inv.main.get(i).isEmpty()) {
+        for (int i = 0; i < inv.items.size() && left > 0; i++) {
+            if (inv.items.get(i).isEmpty()) {
                 int n = Math.min(left, max);
-                inv.main.set(i, proto.copyWithCount(n));
+                inv.items.set(i, proto.copyWithCount(n));
                 left -= n;
             }
         }
-        inv.markDirty();
+        inv.setChanged();
         return count - left;
     }
 
     /** Count of an item including notes of it (what general stores and the Grand Exchange accept). */
-    public static int countWithNotes(PlayerEntity player, String id) {
+    public static int countWithNotes(Player player, String id) {
         long total = Inv.count(player, id);
         if (BankNotes.canNote(id)) {
-            for (ItemStack s : player.getInventory().main) {
+            for (ItemStack s : player.getInventory().items) {
                 if (isNote(s) && notedId(s).equals(id) && notedTag(s).isEmpty()) {
                     total += s.getCount();
                 }
@@ -167,14 +167,14 @@ public final class Notes {
     }
 
     /** Removes items, real ones first, then notes of them; returns how many were removed. */
-    public static int removeWithNotes(PlayerEntity player, String id, int amount) {
+    public static int removeWithNotes(Player player, String id, int amount) {
         int removed = Inv.remove(player, id, amount);
-        PlayerInventory inv = player.getInventory();
-        for (int i = 0; i < inv.main.size() && removed < amount; i++) {
-            ItemStack s = inv.main.get(i);
+        Inventory inv = player.getInventory();
+        for (int i = 0; i < inv.items.size() && removed < amount; i++) {
+            ItemStack s = inv.items.get(i);
             if (isNote(s) && notedId(s).equals(id) && notedTag(s).isEmpty()) {
                 int n = Math.min(amount - removed, s.getCount());
-                s.decrement(n);
+                s.shrink(n);
                 removed += n;
             }
         }
@@ -185,13 +185,13 @@ public final class Notes {
      * Gives items as the Grand Exchange collection box does: several of a noteable item come as notes (one slot),
      * otherwise as the items themselves (overflow is dropped at the player's feet, as {@link Inv#give} does).
      */
-    public static void giveNotedIfMany(PlayerEntity player, String id, int amount) {
+    public static void giveNotedIfMany(Player player, String id, int amount) {
         if (amount > 1 && BankNotes.canNote(id)) {
             ItemStack proto = note(id, "", 1);
             if (!proto.isEmpty()) {
                 int left = amount;
                 while (left > 0) {
-                    int n = Math.min(left, proto.getMaxCount());
+                    int n = Math.min(left, proto.getMaxStackSize());
                     Inv.give(player, proto.copyWithCount(n));
                     left -= n;
                 }

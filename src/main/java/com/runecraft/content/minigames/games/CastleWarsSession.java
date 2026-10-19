@@ -7,16 +7,15 @@ import com.runecraft.osrs.content.minigames.Minigame;
 import com.runecraft.osrs.content.minigames.MinigameRules.CastleWars;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * Castle Wars: Saradomin against Zamorak. Steal the enemy standard from their castle and bring it
@@ -34,7 +33,7 @@ public class CastleWarsSession extends MinigameSession {
     /** Who carries each team's standard (null = on its stand). */
     private final UUID[] carrier = new UUID[2];
 
-    public CastleWarsSession(int id, int slot, ServerWorld world, String variant) {
+    public CastleWarsSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.CASTLE_WARS, id, slot, world, variant);
     }
 
@@ -66,32 +65,32 @@ public class CastleWarsSession extends MinigameSession {
         // Rocks and a river in the middle.
         for (int z = -17; z <= 17; z++) {
             if (Math.abs(z) > 2) {
-                set(0, 0, z, Blocks.WATER.getDefaultState());
-                set(1, 0, z, Blocks.WATER.getDefaultState());
+                set(0, 0, z, Blocks.WATER.defaultBlockState());
+                set(1, 0, z, Blocks.WATER.defaultBlockState());
             }
         }
     }
 
-    private void castle(int cx, net.minecraft.block.Block accent) {
+    private void castle(int cx, net.minecraft.world.level.block.Block accent) {
         for (int dx = -5; dx <= 5; dx++) {
             for (int dz = -8; dz <= 8; dz++) {
                 boolean wall = Math.abs(dx) == 5 || Math.abs(dz) == 8;
                 boolean gate = Math.abs(dz) <= 1 && dx == (cx < 0 ? 5 : -5);
                 if (wall && !gate) {
                     for (int y = 1; y <= 4; y++) {
-                        set(cx + dx, y, dz, (y == 4 && (dx + dz) % 2 == 0 ? accent : Blocks.STONE_BRICKS).getDefaultState());
+                        set(cx + dx, y, dz, (y == 4 && (dx + dz) % 2 == 0 ? accent : Blocks.STONE_BRICKS).defaultBlockState());
                     }
                 }
             }
         }
     }
 
-    private int team(ServerPlayerEntity p) {
-        return teams.getOrDefault(p.getUuid(), SARA);
+    private int team(ServerPlayer p) {
+        return teams.getOrDefault(p.getUUID(), SARA);
     }
 
     @Override
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
+    protected BlockPos spawnPoint(ServerPlayer player, int index) {
         int t = index % 2;
         return rel(t == SARA ? -22 : 22, 1, index / 2 % 5 - 2);
     }
@@ -99,24 +98,24 @@ public class CastleWarsSession extends MinigameSession {
     @Override
     protected void start() {
         int i = 0;
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             int t = i++ % 2;
-            teams.put(p.getUuid(), t);
+            teams.put(p.getUUID(), t);
             BlockPos at = spawnPoint(p, t + 2 * (i / 2));
-            p.teleport(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, p.getYaw(), p.getPitch());
+            p.teleportTo(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, p.getYRot(), p.getXRot());
             Msg.game(p, "You are on team " + TEAM[t] + ". Capture the " + TEAM[1 - t] + " standard!");
             Inv.give(p, t == SARA ? "saradomin_hood" : "zamorak_hood", 1);
         }
     }
 
     @Override
-    protected boolean canAttackPlayer(ServerPlayerEntity attacker, ServerPlayerEntity target) {
+    protected boolean canAttackPlayer(ServerPlayer attacker, ServerPlayer target) {
         return team(attacker) != team(target);
     }
 
     @Override
-    protected double damageMultiplier(ServerPlayerEntity player, LivingEntity target, AttackType type) {
-        if (target instanceof ServerPlayerEntity t && (Inv.has(player, "castlewars_brace", 1) || com.runecraft.content.systems.SysState.of(player)
+    protected double damageMultiplier(ServerPlayer player, LivingEntity target, AttackType type) {
+        if (target instanceof ServerPlayer t && (Inv.has(player, "castlewars_brace", 1) || com.runecraft.content.systems.SysState.of(player)
                 .wornId(com.runecraft.osrs.content.systems.Jewellery.Slot.HANDS).startsWith("castle_wars_bracelet"))
                 && (Inv.has(t, STANDARD[0], 1) || Inv.has(t, STANDARD[1], 1))) {
             return 1.2;
@@ -125,7 +124,7 @@ public class CastleWarsSession extends MinigameSession {
     }
 
     @Override
-    protected boolean onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         int t = team(player);
         switch (blockId) {
             case "cw_saradomin_stand", "cw_zamorak_stand" -> {
@@ -135,7 +134,7 @@ public class CastleWarsSession extends MinigameSession {
                         Msg.game(player, "The " + TEAM[standTeam] + " standard has already been taken!");
                         return true;
                     }
-                    carrier[standTeam] = player.getUuid();
+                    carrier[standTeam] = player.getUUID();
                     Inv.give(player, STANDARD[standTeam], 1);
                     broadcastRed(player.getName().getString() + " has taken the " + TEAM[standTeam] + " standard!");
                 } else if (Inv.has(player, STANDARD[1 - t], 1)) {
@@ -163,9 +162,9 @@ public class CastleWarsSession extends MinigameSession {
         }
     }
 
-    private void dropStandards(ServerPlayerEntity p) {
+    private void dropStandards(ServerPlayer p) {
         for (int i = 0; i < 2; i++) {
-            if (p.getUuid().equals(carrier[i])) {
+            if (p.getUUID().equals(carrier[i])) {
                 carrier[i] = null;
                 Inv.remove(p, STANDARD[i], 10);
                 broadcast("The " + TEAM[i] + " standard has been returned to its stand.");
@@ -174,15 +173,15 @@ public class CastleWarsSession extends MinigameSession {
     }
 
     @Override
-    protected void onDeath(ServerPlayerEntity player) {
+    protected void onDeath(ServerPlayer player) {
         dropStandards(player);
         Msg.red(player, "Oh dear, you are dead! You respawn in your castle.");
         BlockPos at = spawnPoint(player, team(player));
-        player.teleport(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, player.getYaw(), player.getPitch());
+        player.teleportTo(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, player.getYRot(), player.getXRot());
     }
 
     @Override
-    protected void onLeave(ServerPlayerEntity player) {
+    protected void onLeave(ServerPlayer player) {
         dropStandards(player);
         Inv.remove(player, "castle_wars_bandage", 1000);
         Inv.remove(player, STANDARD[0], 10);
@@ -199,18 +198,18 @@ public class CastleWarsSession extends MinigameSession {
     @Override
     protected void onEnd(boolean success) {
         int winner = score[SARA] == score[ZAM] ? -1 : score[SARA] > score[ZAM] ? SARA : ZAM;
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             int t = team(p);
             int tickets = CastleWars.tickets(score[t], score[1 - t]);
             reward(p, "castle_wars_ticket", tickets);
-            MinigameData.of(p).incrementStat(p.getUuid(), "kc:" + game.id());
+            MinigameData.of(p).incrementStat(p.getUUID(), "kc:" + game.id());
             Msg.game(p, (winner < 0 ? "It's a draw!" : TEAM[winner] + " wins!") + " You receive " + tickets + " ticket"
                     + (tickets > 1 ? "s" : "") + ".");
         }
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
+    protected List<String> hud(ServerPlayer player) {
         return List.of("Castle Wars - team " + TEAM[team(player)], "Saradomin " + score[SARA] + " - " + score[ZAM] + " Zamorak",
                 "Saradomin standard: " + (carrier[SARA] == null ? "safe" : "TAKEN"),
                 "Zamorak standard: " + (carrier[ZAM] == null ? "safe" : "TAKEN"),

@@ -10,6 +10,8 @@ import static com.runecraft.osrs.content.bestiary.BestiaryHumForms.*;
 import static com.runecraft.osrs.content.bestiary.BestiaryHumKit.*;
 import static com.runecraft.osrs.content.bestiary.Kit.part;
 
+import com.runecraft.osrs.content.bestiary.BestiaryHumKit.Fig;
+
 /**
  * Humanoid quest bosses and the Mage Arena: archetype sculpts (knight, mage, rogue, brute, ghost, demon, vampyre,
  * elemental) dressed per boss with their signature colours, headgear and weapons.

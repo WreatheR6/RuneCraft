@@ -7,9 +7,9 @@ import com.runecraft.osrs.ItemDef;
 import com.runecraft.osrs.SkillSet;
 import com.runecraft.osrs.data.EquipmentBonuses;
 import com.runecraft.registry.ModItems;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 
 /** Totals a player's OSRS equipment bonuses (armour slots, main hand weapon, off-hand shield unless two-handed). */
 public final class Equipment {
@@ -18,21 +18,21 @@ public final class Equipment {
     private Equipment() {
     }
 
-    public static EquipmentStats total(PlayerEntity player, SkillSet skills) {
+    public static EquipmentStats total(Player player, SkillSet skills) {
         EquipmentStats total = EquipmentStats.NONE;
         for (EquipmentSlot slot : ARMOUR) {
-            total = total.plus(stats(player.getEquippedStack(slot), skills, null));
+            total = total.plus(stats(player.getItemBySlot(slot), skills, null));
         }
-        total = total.plus(stats(player.getMainHandStack(), skills, EquipmentDef.Slot.WEAPON));
+        total = total.plus(stats(player.getMainHandItem(), skills, EquipmentDef.Slot.WEAPON));
         if (!twoHanded(player)) {
-            total = total.plus(stats(player.getOffHandStack(), skills, EquipmentDef.Slot.SHIELD));
+            total = total.plus(stats(player.getOffhandItem(), skills, EquipmentDef.Slot.SHIELD));
         }
         return total;
     }
 
     /** True when the main-hand weapon is two-handed: like OSRS, an off-hand shield then gives no bonuses. */
-    public static boolean twoHanded(PlayerEntity player) {
-        ItemDef def = ModItems.def(player.getMainHandStack());
+    public static boolean twoHanded(Player player) {
+        ItemDef def = ModItems.def(player.getMainHandItem());
         return def != null && EquipmentBonuses.twoHanded(def.id());
     }
 
@@ -59,20 +59,20 @@ public final class Equipment {
     }
 
     /** The wielded weapon's definition (or null when unarmed / wielding something else). */
-    public static EquipmentDef weapon(PlayerEntity player, SkillSet skills) {
-        ItemDef def = ModItems.def(player.getMainHandStack());
+    public static EquipmentDef weapon(Player player, SkillSet skills) {
+        ItemDef def = ModItems.def(player.getMainHandItem());
         if (def == null || def.equipment() == null || def.equipment().slot() != EquipmentDef.Slot.WEAPON) {
             return null;
         }
         return skills == null || def.equipment().unmetRequirement(skills) == null ? def.equipment() : null;
     }
 
-    public static int weaponSpeed(PlayerEntity player, SkillSet skills) {
+    public static int weaponSpeed(Player player, SkillSet skills) {
         EquipmentDef w = weapon(player, skills);
         return w == null ? 4 : w.attackSpeed();
     }
 
-    public static AttackType meleeType(PlayerEntity player, SkillSet skills) {
+    public static AttackType meleeType(Player player, SkillSet skills) {
         EquipmentDef w = weapon(player, skills);
         return w == null || !w.attackType().isMelee() ? AttackType.CRUSH : w.attackType();
     }

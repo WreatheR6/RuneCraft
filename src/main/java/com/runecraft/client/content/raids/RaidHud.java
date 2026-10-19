@@ -1,9 +1,9 @@
 package com.runecraft.client.content.raids;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.network.PacketByteBuf;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.FriendlyByteBuf;
 
 /** The raid overlay in the top-right corner: room, points, timer, party and boss health. */
 final class RaidHud {
@@ -28,14 +28,14 @@ final class RaidHud {
     }
 
     /** Reads a HUD packet (network thread) and applies it on the client thread. */
-    static void read(MinecraftClient client, PacketByteBuf buf) {
+    static void read(Minecraft client, FriendlyByteBuf buf) {
         boolean on = buf.readBoolean();
         if (!on) {
             client.execute(() -> active = false);
             return;
         }
-        String r = buf.readString();
-        String rm = buf.readString();
+        String r = buf.readUtf();
+        String rm = buf.readUtf();
         int ri = buf.readVarInt();
         int rc = buf.readVarInt();
         int pp = buf.readVarInt();
@@ -43,7 +43,7 @@ final class RaidHud {
         int lvl = buf.readVarInt();
         int secs = buf.readVarInt();
         boolean dn = buf.readBoolean();
-        String b = buf.readString();
+        String b = buf.readUtf();
         int bh = buf.readVarInt();
         int bm = buf.readVarInt();
         int al = buf.readVarInt();
@@ -73,39 +73,39 @@ final class RaidHud {
         active = false;
     }
 
-    static void render(DrawContext ctx, float tickDelta) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (!active || client.player == null || client.options.hudHidden) {
+    static void render(GuiGraphics ctx, float tickDelta) {
+        Minecraft client = Minecraft.getInstance();
+        if (!active || client.player == null || client.options.hideGui) {
             return;
         }
-        TextRenderer tr = client.textRenderer;
+        Font tr = client.font;
         int width = 150;
-        int x = ctx.getScaledWindowWidth() - width - 6;
+        int x = ctx.guiWidth() - width - 6;
         int y = 6;
         int lines = 5 + (raidLevel >= 0 ? 1 : 0) + (boss.isEmpty() ? 0 : 2);
         ctx.fill(x - 4, y - 4, x + width + 2, y + lines * 11 + 2, 0xA0201810);
         ctx.fill(x - 4, y - 4, x + width + 2, y - 3, 0xFFB08A40);
-        ctx.drawTextWithShadow(tr, raid, x, y, 0xFFFFB000);
+        ctx.drawString(tr, raid, x, y, 0xFFFFB000);
         y += 11;
-        ctx.drawTextWithShadow(tr, room + " (" + (roomIndex + 1) + "/" + roomCount + ")", x, y, 0xFFFFFFFF);
+        ctx.drawString(tr, room + " (" + (roomIndex + 1) + "/" + roomCount + ")", x, y, 0xFFFFFFFF);
         y += 11;
         if (tob) {
-            ctx.drawTextWithShadow(tr, "Points: " + personal, x, y, 0xFFE0E0E0);
+            ctx.drawString(tr, "Points: " + personal, x, y, 0xFFE0E0E0);
         } else {
-            ctx.drawTextWithShadow(tr, "Points: " + personal + "  Total: " + total, x, y, 0xFFE0E0E0);
+            ctx.drawString(tr, "Points: " + personal + "  Total: " + total, x, y, 0xFFE0E0E0);
         }
         y += 11;
         if (raidLevel >= 0) {
-            ctx.drawTextWithShadow(tr, "Raid level: " + raidLevel, x, y, 0xFFE0C060);
+            ctx.drawString(tr, "Raid level: " + raidLevel, x, y, 0xFFE0C060);
             y += 11;
         }
-        ctx.drawTextWithShadow(tr, String.format("Time: %d:%02d", seconds / 60, seconds % 60), x, y, 0xFFC0C0C0);
+        ctx.drawString(tr, String.format("Time: %d:%02d", seconds / 60, seconds % 60), x, y, 0xFFC0C0C0);
         y += 11;
-        ctx.drawTextWithShadow(tr, "Party: " + alive + "/" + partySize + (downed ? "  (you are down)" : ""), x, y,
+        ctx.drawString(tr, "Party: " + alive + "/" + partySize + (downed ? "  (you are down)" : ""), x, y,
                 downed ? 0xFFFF6060 : 0xFFC0C0C0);
         y += 11;
         if (!boss.isEmpty() && bossMax > 0) {
-            ctx.drawTextWithShadow(tr, boss + ": " + bossHp + "/" + bossMax, x, y, 0xFFFF8080);
+            ctx.drawString(tr, boss + ": " + bossHp + "/" + bossMax, x, y, 0xFFFF8080);
             y += 11;
             int bar = (int) (width * Math.max(0, Math.min(1, bossHp / (double) bossMax)));
             ctx.fill(x, y, x + width, y + 6, 0xFF400000);

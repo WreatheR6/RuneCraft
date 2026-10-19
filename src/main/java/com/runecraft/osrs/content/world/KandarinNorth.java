@@ -6,6 +6,9 @@ import java.util.List;
 
 import static com.runecraft.osrs.content.world.KandarinKit.*;
 
+import com.runecraft.osrs.content.world.KandarinKit.Bld;
+import com.runecraft.osrs.content.world.KandarinKit.Pal;
+
 /** The north: Barbarian Outpost, the Lighthouse, Rellekka, Piscatoris, Trollheim and the Troll Stronghold. */
 final class KandarinNorth {
     private KandarinNorth() {

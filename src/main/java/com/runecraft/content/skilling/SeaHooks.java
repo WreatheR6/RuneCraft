@@ -22,27 +22,26 @@ import com.runecraft.world.Gielinor;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.vehicle.BoatEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.registry.tag.FluidTags;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.FluidTags;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.vehicle.Boat;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -76,42 +75,42 @@ public final class SeaHooks {
         // Sneak + use your boat with an empty hand: empty its cargo hold into your inventory.
         // Boat paint (OSRS: a cosmetic colour scheme for your boat): use the paint on one of your boats to repaint its hull.
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
-            if (hand != Hand.MAIN_HAND || !(entity instanceof BoatEntity boat) || !PAINT.equals(Inv.idOf(player.getMainHandStack()))) {
-                return ActionResult.PASS;
+            if (hand != InteractionHand.MAIN_HAND || !(entity instanceof Boat boat) || !PAINT.equals(Inv.idOf(player.getMainHandItem()))) {
+                return InteractionResult.PASS;
             }
-            if (world.isClient() || !(player instanceof ServerPlayerEntity sp) || SailingHooks.boatType(entity) == null) {
-                return ActionResult.PASS;
+            if (world.isClientSide() || !(player instanceof ServerPlayer sp) || SailingHooks.boatType(entity) == null) {
+                return InteractionResult.PASS;
             }
-            boat.setVariant(BoatEntity.Type.DARK_OAK); // approx: the shark scheme's dark grey hull
-            player.getMainHandStack().decrement(1);
+            boat.setVariant(Boat.Type.DARK_OAK); // approx: the shark scheme's dark grey hull
+            player.getMainHandItem().shrink(1);
             Msg.action(sp, "You paint your boat in the colours of a shark.");
-            return ActionResult.SUCCESS;
+            return InteractionResult.SUCCESS;
         });
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
-            if (hand != Hand.MAIN_HAND || !(entity instanceof BoatEntity) || !player.isSneaking() || !player.getMainHandStack().isEmpty()) {
-                return ActionResult.PASS;
+            if (hand != InteractionHand.MAIN_HAND || !(entity instanceof Boat) || !player.isShiftKeyDown() || !player.getMainHandItem().isEmpty()) {
+                return InteractionResult.PASS;
             }
-            if (world.isClient() || !(player instanceof ServerPlayerEntity sp)) {
-                return ActionResult.PASS;
+            if (world.isClientSide() || !(player instanceof ServerPlayer sp)) {
+                return InteractionResult.PASS;
             }
             String type = SailingHooks.boatType(entity);
             if (type == null) {
-                return ActionResult.PASS;
+                return InteractionResult.PASS;
             }
             withdrawAll(sp, type);
-            return ActionResult.SUCCESS;
+            return InteractionResult.SUCCESS;
         });
     }
 
     // ------------------------------------------------------------------ salvage sorting
 
     /** Next to a port salvaging station, or on/next to your boat with a salvaging station built on it. */
-    public static boolean atStation(ServerPlayerEntity player) {
+    public static boolean atStation(ServerPlayer player) {
         BlockState station = SkillingUtil.moduleBlock("port_salvaging_station");
         if (station != null) {
-            BlockPos p = player.getBlockPos();
-            for (BlockPos q : BlockPos.iterate(p.add(-4, -2, -4), p.add(4, 2, 4))) {
-                if (player.getWorld().getBlockState(q).isOf(station.getBlock())) {
+            BlockPos p = player.blockPosition();
+            for (BlockPos q : BlockPos.betweenClosed(p.offset(-4, -2, -4), p.offset(4, 2, 4))) {
+                if (player.level().getBlockState(q).is(station.getBlock())) {
                     return true;
                 }
             }
@@ -121,7 +120,7 @@ public final class SeaHooks {
     }
 
     /** Sorts one salvage from the stack (wiki loot table and sorting XP); false when the player can't sort here. */
-    public static boolean sort(ServerPlayerEntity player, ItemStack stack, SailingData.Wreck wreck) {
+    public static boolean sort(ServerPlayer player, ItemStack stack, SailingData.Wreck wreck) {
         if (!atStation(player)) {
             Msg.game(player, "You need to be at a salvaging station (at a port, or built on your boat) to sort salvage.");
             return false;
@@ -129,7 +128,7 @@ public final class SeaHooks {
         if (!SkillingUtil.need(player, Skill.SAILING, wreck.level(), "sort this salvage")) {
             return false;
         }
-        stack.decrement(1);
+        stack.shrink(1);
         List<SailingSea.Got> got = SailingSea.sort(wreck.salvage(), RNG);
         XpService.add(player, Skill.SAILING, wreck.sortXp());
         List<String> names = new ArrayList<>();
@@ -143,23 +142,23 @@ public final class SeaHooks {
 
     // ------------------------------------------------------------------ bounty tasks
 
-    static NbtCompound bounties(ServerPlayerEntity player) {
-        return SkillingState.get(player.getServer()).entry("bounty_tasks", player.getUuidAsString());
+    static CompoundTag bounties(ServerPlayer player) {
+        return SkillingState.get(player.getServer()).entry("bounty_tasks", player.getStringUUID());
     }
 
     /** Takes a bounty task (no level checks); used by the board and the self-test. */
-    public static void takeBounty(ServerPlayerEntity player, SailingSea.Bounty b) {
+    public static void takeBounty(ServerPlayer player, SailingSea.Bounty b) {
         bounties(player).putBoolean(String.valueOf(b.id()), true);
     }
 
-    public static void clearBounties(ServerPlayerEntity player) {
-        NbtCompound held = bounties(player);
-        for (String key : new ArrayList<>(held.getKeys())) {
+    public static void clearBounties(ServerPlayer player) {
+        CompoundTag held = bounties(player);
+        for (String key : new ArrayList<>(held.getAllKeys())) {
             held.remove(key);
         }
     }
 
-    public static boolean hasBounty(ServerPlayerEntity player, int id) {
+    public static boolean hasBounty(ServerPlayer player, int id) {
         return bounties(player).contains(String.valueOf(id));
     }
 
@@ -167,7 +166,7 @@ public final class SeaHooks {
      * Port notice board, before courier tasks: drops off a castaway, hands in finished bounties (XP and as many coins),
      * cancels a bounty when sneaking, or sometimes offers one of the board's bounty tasks. True when it did something.
      */
-    static boolean portBoard(ServerPlayerEntity player, SailingData.Port here, int couriers) {
+    static boolean portBoard(ServerPlayer player, SailingData.Port here, int couriers) {
         int level = SkillingUtil.level(player, Skill.SAILING);
         boolean acted = false;
         if (Inv.has(player, "castaway", 1)) {
@@ -176,8 +175,8 @@ public final class SeaHooks {
             Msg.action(player, "You drop the castaway off safely at " + here.name() + ".");
             acted = true;
         }
-        NbtCompound held = bounties(player);
-        for (String key : new ArrayList<>(held.getKeys())) {
+        CompoundTag held = bounties(player);
+        for (String key : new ArrayList<>(held.getAllKeys())) {
             SailingSea.Bounty b = SailingSea.bounty(Integer.parseInt(key));
             if (b == null) {
                 held.remove(key);
@@ -196,26 +195,26 @@ public final class SeaHooks {
         if (acted) {
             return true;
         }
-        if (player.isSneaking()) {
-            if (held.getKeys().isEmpty()) {
+        if (player.isShiftKeyDown()) {
+            if (held.getAllKeys().isEmpty()) {
                 return false;
             }
-            String key = held.getKeys().iterator().next();
+            String key = held.getAllKeys().iterator().next();
             held.remove(key);
             Msg.game(player, "You cancel a bounty task.");
             return true;
         }
-        for (String key : held.getKeys()) {
+        for (String key : held.getAllKeys()) {
             SailingSea.Bounty b = SailingSea.bounty(Integer.parseInt(key));
             Msg.game(player, "Bounty: " + b.qty() + " x " + b.itemName() + " (" + Inv.count(player, b.item()) + " so far).");
         }
-        if (level < SailingSea.BOUNTY_LEVEL || level < here.level() || couriers + held.getKeys().size() >= SailingTraining.taskSlots(level)) {
+        if (level < SailingSea.BOUNTY_LEVEL || level < here.level() || couriers + held.getAllKeys().size() >= SailingTraining.taskSlots(level)) {
             return false;
         }
         List<SailingSea.Bounty> options = new ArrayList<>();
         for (SailingSea.Bounty b : SailingSea.boardBounties(here.id(), level)) {
             boolean same = false;
-            for (String key : held.getKeys()) {
+            for (String key : held.getAllKeys()) {
                 SailingSea.Bounty h = SailingSea.bounty(Integer.parseInt(key));
                 same |= h != null && h.item().equals(b.item());
             }
@@ -235,7 +234,7 @@ public final class SeaHooks {
         return true;
     }
 
-    private static void onKill(ServerPlayerEntity player, LivingEntity entity, MonsterStats stats) {
+    private static void onKill(ServerPlayer player, LivingEntity entity, MonsterStats stats) {
         if (!(stats.profile() instanceof MonsterDef md)) {
             return;
         }
@@ -243,12 +242,12 @@ public final class SeaHooks {
         if (c == null) {
             return;
         }
-        NbtCompound held = bounties(player);
-        for (String key : held.getKeys()) {
+        CompoundTag held = bounties(player);
+        for (String key : held.getAllKeys()) {
             SailingSea.Bounty b = SailingSea.bounty(Integer.parseInt(key));
             if (b != null && b.creature().equals(c.id()) && Inv.count(player, b.item()) < b.qty() && RNG.nextDouble() < b.chance()) {
                 SkillingUtil.give(player, b.item(), 1);
-                player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 0.5f, 1.6f);
+                player.level().playSound(null, player.blockPosition(), SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.5f, 1.6f);
                 Msg.action(player, "You harvest " + Msg.article(SkillingUtil.lower(b.itemName())) + " for your bounty ("
                         + Inv.count(player, b.item()) + "/" + b.qty() + ").");
             }
@@ -276,14 +275,14 @@ public final class SeaHooks {
     }
 
     /** The cannonball a player last loaded (null for none); used by the self-test. */
-    public static String loadedAmmo(ServerPlayerEntity player) {
-        Sea s = SEA.get(player.getUuid());
+    public static String loadedAmmo(ServerPlayer player) {
+        Sea s = SEA.get(player.getUUID());
         return s == null ? null : s.ammo;
     }
 
     /** Loads a cannonball type for auto-fire and the crew (self-test and manual fire). */
-    public static void loadAmmo(ServerPlayerEntity player, String item) {
-        SEA.computeIfAbsent(player.getUuid(), k -> new Sea()).ammo = item;
+    public static void loadAmmo(ServerPlayer player, String item) {
+        SEA.computeIfAbsent(player.getUUID(), k -> new Sea()).ammo = item;
     }
 
     private static final Map<UUID, Sea> SEA = new HashMap<>();
@@ -304,22 +303,22 @@ public final class SeaHooks {
         }
     }
 
-    private static final Map<MobEntity, Spawned> SPAWNED = new HashMap<>();
+    private static final Map<Mob, Spawned> SPAWNED = new HashMap<>();
 
-    static int maxHp(ServerPlayerEntity player, String type) {
+    static int maxHp(ServerPlayer player, String type) {
         return SailingSea.boatHp(type, SailingHooks.partTier(player, type, SailingTraining.PartType.HULL),
                 SailingHooks.partTier(player, type, SailingTraining.PartType.KEEL));
     }
 
     /** The boat's hitpoints (full when not yet damaged). */
-    public static int boatHp(ServerPlayerEntity player, String type) {
-        Sea s = SEA.get(player.getUuid());
+    public static int boatHp(ServerPlayer player, String type) {
+        Sea s = SEA.get(player.getUUID());
         return s == null || s.hp < 0 || !type.equals(s.boat) ? maxHp(player, type) : s.hp;
     }
 
     /** Called every game tick while the player is on one of their boats. */
-    static void boatTick(ServerPlayerEntity player, Entity vehicle, String type) {
-        Sea s = SEA.computeIfAbsent(player.getUuid(), k -> new Sea());
+    static void boatTick(ServerPlayer player, Entity vehicle, String type) {
+        Sea s = SEA.computeIfAbsent(player.getUUID(), k -> new Sea());
         if (s.hp < 0 || !type.equals(s.boat)) {
             s.hp = maxHp(player, type);
             s.boat = type;
@@ -327,13 +326,13 @@ public final class SeaHooks {
         // Hull speed (wiki Hull table) for the Sailing boats; the extras module's boats keep their own tier speed.
         double speed = vehicle instanceof com.runecraft.content.extras.SailBoatEntity ? 1 : SailingCrew.velocityMultiplier(
                 SailingCrew.speedFactor(type, SailingHooks.partTier(player, type, SailingTraining.PartType.HULL)));
-        if (!vehicle.getUuid().equals(s.speedVehicle) || speed != s.speed) {
-            s.speedVehicle = vehicle.getUuid();
+        if (!vehicle.getUUID().equals(s.speedVehicle) || speed != s.speed) {
+            s.speedVehicle = vehicle.getUUID();
             s.speed = speed;
             sendSpeed(player, speed, vehicle.getId());
         }
         crewTick(player, vehicle, type, s);
-        Vec3d v = vehicle.getVelocity();
+        Vec3 v = vehicle.getDeltaMovement();
         boolean moving = v.x * v.x + v.z * v.z > 0.01;
         if (moving && --s.encounterTicks <= 0) {
             s.encounterTicks = SailingSea.ENCOUNTER_TICKS;
@@ -356,8 +355,8 @@ public final class SeaHooks {
         if (s.cannonCooldown > 0) {
             s.cannonCooldown--;
         } else if (s.target != null) {
-            Entity e = ((ServerWorld) player.getWorld()).getEntity(s.target);
-            if (e instanceof MobEntity mob && mob.isAlive() && mob.distanceTo(player) <= SailingSea.CANNON_RANGE) {
+            Entity e = ((ServerLevel) player.level()).getEntity(s.target);
+            if (e instanceof Mob mob && mob.isAlive() && mob.distanceTo(player) <= SailingSea.CANNON_RANGE) {
                 fire(player, type, mob, s.ammo);
             } else {
                 s.target = null;
@@ -366,8 +365,8 @@ public final class SeaHooks {
     }
 
     /** Called every game tick while the player is not on a boat: tidies up their sea creatures. */
-    static void offBoat(ServerPlayerEntity player) {
-        Sea sea = SEA.get(player.getUuid());
+    static void offBoat(ServerPlayer player) {
+        Sea sea = SEA.get(player.getUUID());
         if (sea != null && sea.speedVehicle != null) {
             sea.speedVehicle = null;
             sendSpeed(player, 1, -1);
@@ -375,13 +374,13 @@ public final class SeaHooks {
         if (SPAWNED.isEmpty()) {
             return;
         }
-        Iterator<Map.Entry<MobEntity, Spawned>> it = SPAWNED.entrySet().iterator();
+        Iterator<Map.Entry<Mob, Spawned>> it = SPAWNED.entrySet().iterator();
         while (it.hasNext()) {
-            Map.Entry<MobEntity, Spawned> e = it.next();
-            MobEntity mob = e.getKey();
+            Map.Entry<Mob, Spawned> e = it.next();
+            Mob mob = e.getKey();
             if (!mob.isAlive() || mob.isRemoved()) {
                 it.remove();
-            } else if (e.getValue().owner.equals(player.getUuid()) && (mob.getWorld() != player.getWorld() || mob.distanceTo(player) > 64)) {
+            } else if (e.getValue().owner.equals(player.getUUID()) && (mob.level() != player.level() || mob.distanceTo(player) > 64)) {
                 mob.discard();
                 it.remove();
             }
@@ -391,28 +390,28 @@ public final class SeaHooks {
     // ------------------------------------------------------------------ sea creatures
 
     /** Spawns a sea creature (AI off: it floats where it is and attacks boats from range). Used by the self-test too. */
-    public static MobEntity spawnCreature(ServerWorld world, SailingSea.SeaCreature c, Vec3d pos, ServerPlayerEntity owner) {
+    public static Mob spawnCreature(ServerLevel world, SailingSea.SeaCreature c, Vec3 pos, ServerPlayer owner) {
         EntityType<?> type = ModEntities.typeById(c.id());
         if (type == null) {
             return null;
         }
         Entity e = type.create(world);
-        if (!(e instanceof MobEntity mob)) {
+        if (!(e instanceof Mob mob)) {
             return null;
         }
-        mob.refreshPositionAndAngles(pos.x, pos.y, pos.z, RNG.nextFloat() * 360f, 0);
-        mob.initialize(world, world.getLocalDifficulty(mob.getBlockPos()), SpawnReason.MOB_SUMMONED, null, null);
-        mob.setAiDisabled(true);
-        mob.addCommandTag(SEA_TAG);
-        world.spawnEntity(mob);
-        SPAWNED.put(mob, new Spawned(owner.getUuid(), c));
+        mob.moveTo(pos.x, pos.y, pos.z, RNG.nextFloat() * 360f, 0);
+        mob.finalizeSpawn(world, world.getCurrentDifficultyAt(mob.blockPosition()), MobSpawnType.MOB_SUMMONED, null, null);
+        mob.setNoAi(true);
+        mob.addTag(SEA_TAG);
+        world.addFreshEntity(mob);
+        SPAWNED.put(mob, new Spawned(owner.getUUID(), c));
         return mob;
     }
 
-    private static int owned(ServerPlayerEntity player) {
+    private static int owned(ServerPlayer player) {
         int n = 0;
-        for (Map.Entry<MobEntity, Spawned> e : SPAWNED.entrySet()) {
-            if (e.getValue().owner.equals(player.getUuid()) && e.getKey().isAlive()) {
+        for (Map.Entry<Mob, Spawned> e : SPAWNED.entrySet()) {
+            if (e.getValue().owner.equals(player.getUUID()) && e.getKey().isAlive()) {
                 n++;
             }
         }
@@ -420,7 +419,7 @@ public final class SeaHooks {
     }
 
     /** Sea creatures live at their wiki spots: within 40 tiles of one, up to two rise near the boat. */
-    private static void spawnNearby(ServerPlayerEntity player) {
+    private static void spawnNearby(ServerPlayer player) {
         if (owned(player) >= 2) {
             return;
         }
@@ -438,16 +437,16 @@ public final class SeaHooks {
         if (best == null) {
             return;
         }
-        ServerWorld world = (ServerWorld) player.getWorld();
+        ServerLevel world = (ServerLevel) player.level();
         double angle = RNG.nextDouble() * Math.PI * 2;
         double r = 10 + RNG.nextDouble() * 4;
-        BlockPos at = BlockPos.ofFloored(player.getX() + Math.cos(angle) * r, player.getY(), player.getZ() + Math.sin(angle) * r);
+        BlockPos at = BlockPos.containing(player.getX() + Math.cos(angle) * r, player.getY(), player.getZ() + Math.sin(angle) * r);
         for (int dy = 2; dy >= -3; dy--) {
-            BlockPos q = at.up(dy);
-            if (world.getFluidState(q).isIn(FluidTags.WATER) && world.getBlockState(q.up()).isAir()) {
-                MobEntity mob = spawnCreature(world, best, new Vec3d(q.getX() + 0.5, q.getY() + 0.6, q.getZ() + 0.5), player);
+            BlockPos q = at.above(dy);
+            if (world.getFluidState(q).is(FluidTags.WATER) && world.getBlockState(q.above()).isAir()) {
+                Mob mob = spawnCreature(world, best, new Vec3(q.getX() + 0.5, q.getY() + 0.6, q.getZ() + 0.5), player);
                 if (mob != null) {
-                    world.spawnParticles(ParticleTypes.SPLASH, mob.getX(), mob.getY() + 0.5, mob.getZ(), 20, 0.6, 0.3, 0.6, 0.1);
+                    world.sendParticles(ParticleTypes.SPLASH, mob.getX(), mob.getY() + 0.5, mob.getZ(), 20, 0.6, 0.3, 0.6, 0.1);
                     if (best.aggressive()) {
                         Msg.red(player, "A " + SkillingUtil.lower(best.name()) + " rises from the water!");
                     }
@@ -458,17 +457,17 @@ public final class SeaHooks {
     }
 
     /** Aggressive creatures (and any you have shot at) attack your boat from up to 15 tiles away. */
-    private static void tickCreatures(ServerPlayerEntity player, Entity vehicle, String type, Sea s) {
-        Iterator<Map.Entry<MobEntity, Spawned>> it = SPAWNED.entrySet().iterator();
+    private static void tickCreatures(ServerPlayer player, Entity vehicle, String type, Sea s) {
+        Iterator<Map.Entry<Mob, Spawned>> it = SPAWNED.entrySet().iterator();
         while (it.hasNext()) {
-            Map.Entry<MobEntity, Spawned> e = it.next();
-            MobEntity mob = e.getKey();
+            Map.Entry<Mob, Spawned> e = it.next();
+            Mob mob = e.getKey();
             Spawned sp = e.getValue();
             if (!mob.isAlive() || mob.isRemoved()) {
                 it.remove();
                 continue;
             }
-            if (!sp.owner.equals(player.getUuid())) {
+            if (!sp.owner.equals(player.getUUID())) {
                 continue;
             }
             if (mob.distanceTo(player) > 64) {
@@ -490,7 +489,7 @@ public final class SeaHooks {
                 continue;
             }
             sp.cooldown = 0;
-            mob.lookAtEntity(player, 30f, 30f);
+            mob.lookAt(player, 30f, 30f);
             int max = Math.max(0, sp.creature.maxHitAgainst(0) - SailingSea.keelReduction(type,
                     SailingHooks.partTier(player, type, SailingTraining.PartType.KEEL)));
             int dmg = max <= 0 || RNG.nextBoolean() ? 0 : 1 + RNG.nextInt(max); // approx: half the attacks land
@@ -500,10 +499,10 @@ public final class SeaHooks {
         }
     }
 
-    private static void hurtBoat(ServerPlayerEntity player, Entity vehicle, String type, Sea s, int dmg, String what) {
+    private static void hurtBoat(ServerPlayer player, Entity vehicle, String type, Sea s, int dmg, String what) {
         s.hp -= dmg;
         int max = maxHp(player, type);
-        player.getWorld().playSound(null, vehicle.getBlockPos(), SoundEvents.ENTITY_ZOMBIE_ATTACK_WOODEN_DOOR, SoundCategory.PLAYERS, 0.5f, 1f);
+        player.level().playSound(null, vehicle.blockPosition(), SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR, SoundSource.PLAYERS, 0.5f, 1f);
         Msg.action(player, what + " for " + dmg + " (" + Math.max(0, s.hp) + "/" + max + " boat hitpoints).");
         if (s.hp <= 0) {
             sink(player, vehicle, type, s);
@@ -514,7 +513,7 @@ public final class SeaHooks {
      * At 0 hitpoints the boat is wrecked (wiki Boat combat): you wash up at the nearest port, the courier crates, bounty
      * items and salvage in its cargo hold are lost, and a shipwright must recover the boat before it can sail again.
      */
-    private static void sink(ServerPlayerEntity player, Entity vehicle, String type, Sea s) {
+    private static void sink(ServerPlayer player, Entity vehicle, String type, Sea s) {
         SailingData.Boat kit = SailingHooks.boatOf(vehicle);
         player.stopRiding();
         vehicle.discard();
@@ -522,8 +521,8 @@ public final class SeaHooks {
             SailingHooks.boatState(player).putString("wrecked." + kit.kit(), type);
         }
         int lost = 0;
-        NbtCompound hold = hold(player, type);
-        for (String item : new ArrayList<>(hold.getKeys())) {
+        CompoundTag hold = hold(player, type);
+        for (String item : new ArrayList<>(hold.getAllKeys())) {
             if (SailingCrew.lostOnSinking(item)) {
                 lost += hold.getInt(item);
                 hold.remove(item);
@@ -533,8 +532,8 @@ public final class SeaHooks {
         s.target = null;
         SailingData.Port port = nearestPort(player);
         if (port != null) {
-            BlockPos dock = Gielinor.safeSpot((ServerWorld) player.getWorld(), GielinorMap.toBlockX(port.x()), GielinorMap.toBlockZ(port.y()));
-            player.requestTeleport(dock.getX() + 0.5, dock.getY(), dock.getZ() + 0.5);
+            BlockPos dock = Gielinor.safeSpot((ServerLevel) player.level(), GielinorMap.toBlockX(port.x()), GielinorMap.toBlockZ(port.y()));
+            player.teleportTo(dock.getX() + 0.5, dock.getY(), dock.getZ() + 0.5);
         }
         Msg.red(player, "Your " + type + " has been wrecked! You wash up" + (port == null ? "" : " at " + port.name())
                 + (lost > 0 ? " and the " + lost + " items of cargo in its hold are lost" : "") + ".");
@@ -542,7 +541,7 @@ public final class SeaHooks {
                 + SailingCrew.SHIPWRIGHT_GP_PER_HP + " coins a hitpoint.");
     }
 
-    private static SailingData.Port nearestPort(ServerPlayerEntity player) {
+    private static SailingData.Port nearestPort(ServerPlayer player) {
         int x = GielinorMap.toOsrsX(player.getBlockX());
         int y = GielinorMap.toOsrsY(player.getBlockZ());
         SailingData.Port best = null;
@@ -558,8 +557,8 @@ public final class SeaHooks {
     }
 
     /** True when the player has a wrecked boat waiting for a shipwright. */
-    public static boolean hasWreck(ServerPlayerEntity player) {
-        for (String key : SailingHooks.boatState(player).getKeys()) {
+    public static boolean hasWreck(ServerPlayer player) {
+        for (String key : SailingHooks.boatState(player).getAllKeys()) {
             if (key.startsWith("wrecked.")) {
                 return true;
             }
@@ -571,10 +570,10 @@ public final class SeaHooks {
      * At the boat schematics: a shipwright recovers each wrecked boat for 50 coins a hitpoint of its full hitpoints
      * (wiki repair rate; the recovery fee itself is approx) and hands the kit back. True when there was a wreck.
      */
-    public static boolean recoverWrecks(ServerPlayerEntity player) {
-        NbtCompound state = SailingHooks.boatState(player);
+    public static boolean recoverWrecks(ServerPlayer player) {
+        CompoundTag state = SailingHooks.boatState(player);
         boolean any = false;
-        for (String key : new ArrayList<>(state.getKeys())) {
+        for (String key : new ArrayList<>(state.getAllKeys())) {
             if (!key.startsWith("wrecked.")) {
                 continue;
             }
@@ -595,17 +594,17 @@ public final class SeaHooks {
     }
 
     /** Wrecks a boat for the self-test: as if it sank, without the teleport. */
-    public static void markWrecked(ServerPlayerEntity player, String kit, String type) {
+    public static void markWrecked(ServerPlayer player, String kit, String type) {
         SailingHooks.boatState(player).putString("wrecked." + kit, type);
     }
 
     // ------------------------------------------------------------------ repair kits
 
     /** Applies a repair kit on your boat (wiki: heals the kit's amount, up to the boat's hitpoints). */
-    static boolean applyKit(ServerPlayerEntity player, ItemStack stack, SailingCrew.Kit kit) {
+    static boolean applyKit(ServerPlayer player, ItemStack stack, SailingCrew.Kit kit) {
         String type = SailingHooks.boatType(player.getVehicle());
         if (type == null) {
-            if (player.isSneaking() && deposit(player, kit.id(), stack.getCount())) {
+            if (player.isShiftKeyDown() && deposit(player, kit.id(), stack.getCount())) {
                 return true;
             }
             Msg.game(player, "You need to be aboard your boat to repair it.");
@@ -617,15 +616,15 @@ public final class SeaHooks {
             Msg.game(player, "Your " + type + " doesn't need repairing.");
             return true;
         }
-        stack.decrement(1);
+        stack.shrink(1);
         int healed = heal(player, type, kit.heals());
         Msg.action(player, "You repair your " + type + " (+" + healed + ", " + boatHp(player, type) + "/" + max + " hitpoints).");
         return true;
     }
 
     /** Repairs the boat by up to {@code amount} hitpoints; returns the hitpoints restored. Used by the self-test. */
-    public static int heal(ServerPlayerEntity player, String type, int amount) {
-        Sea s = SEA.computeIfAbsent(player.getUuid(), k -> new Sea());
+    public static int heal(ServerPlayer player, String type, int amount) {
+        Sea s = SEA.computeIfAbsent(player.getUUID(), k -> new Sea());
         int max = maxHp(player, type);
         if (s.hp < 0 || !type.equals(s.boat)) {
             s.hp = max;
@@ -633,30 +632,30 @@ public final class SeaHooks {
         }
         int before = s.hp;
         s.hp = Math.min(max, s.hp + amount);
-        player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.BLOCK_WOOD_PLACE, SoundCategory.PLAYERS, 0.8f, 1f);
+        player.level().playSound(null, player.blockPosition(), SoundEvents.WOOD_PLACE, SoundSource.PLAYERS, 0.8f, 1f);
         return s.hp - before;
     }
 
     /** Sets the boat's hitpoints (self-test). */
-    public static void setBoatHp(ServerPlayerEntity player, String type, int hp) {
-        Sea s = SEA.computeIfAbsent(player.getUuid(), k -> new Sea());
+    public static void setBoatHp(ServerPlayer player, String type, int hp) {
+        Sea s = SEA.computeIfAbsent(player.getUUID(), k -> new Sea());
         s.boat = type;
         s.hp = hp;
     }
 
     // ------------------------------------------------------------------ cargo hold
 
-    static NbtCompound hold(ServerPlayerEntity player, String type) {
-        NbtCompound all = SkillingState.get(player.getServer()).entry("cargo_hold", player.getUuidAsString());
+    static CompoundTag hold(ServerPlayer player, String type) {
+        CompoundTag all = SkillingState.get(player.getServer()).entry("cargo_hold", player.getStringUUID());
         if (!all.contains(type)) {
-            all.put(type, new NbtCompound());
+            all.put(type, new CompoundTag());
         }
         return all.getCompound(type);
     }
 
-    private static Map<String, Integer> holdContents(NbtCompound hold) {
+    private static Map<String, Integer> holdContents(CompoundTag hold) {
         Map<String, Integer> m = new HashMap<>();
-        for (String k : hold.getKeys()) {
+        for (String k : hold.getAllKeys()) {
             m.put(k, hold.getInt(k));
         }
         return m;
@@ -667,20 +666,20 @@ public final class SeaHooks {
     }
 
     /** How many of an item the boat's cargo hold holds. */
-    public static int inHold(ServerPlayerEntity player, String type, String item) {
+    public static int inHold(ServerPlayer player, String type, String item) {
         return hold(player, type).getInt(item);
     }
 
     /** Puts items straight into a boat's cargo hold (self-test). */
-    public static void stockHold(ServerPlayerEntity player, String type, String item, int count) {
-        NbtCompound hold = hold(player, type);
+    public static void stockHold(ServerPlayer player, String type, String item, int count) {
+        CompoundTag hold = hold(player, type);
         hold.putInt(item, hold.getInt(item) + count);
     }
 
     /** Empties a boat's cargo hold (self-test). */
-    public static void clearHold(ServerPlayerEntity player, String type) {
-        NbtCompound hold = hold(player, type);
-        for (String k : new ArrayList<>(hold.getKeys())) {
+    public static void clearHold(ServerPlayer player, String type) {
+        CompoundTag hold = hold(player, type);
+        for (String k : new ArrayList<>(hold.getAllKeys())) {
             hold.remove(k);
         }
     }
@@ -689,13 +688,13 @@ public final class SeaHooks {
      * Sneak + use a storable item on (or next to) your boat with a cargo hold: deposits the whole stack, as far as the
      * hold's capacity allows (wiki capacity by hold tier and boat). Returns false when there's no boat with a hold here.
      */
-    public static boolean deposit(ServerPlayerEntity player, String item, int count) {
+    public static boolean deposit(ServerPlayer player, String item, int count) {
         String type = SailingHooks.boatType(SailingHooks.nearbyBoat(player));
         SailingCrew.Hold h = type == null ? null : SailingCrew.bestHold(SailingHooks.facilities(player, type));
         if (h == null || !SailingCrew.storable(item) || count <= 0) {
             return false;
         }
-        NbtCompound hold = hold(player, type);
+        CompoundTag hold = hold(player, type);
         int fit = SailingCrew.room(holdContents(hold), item, count, h.capacity(type), SeaHooks::stackable);
         int moved = fit <= 0 ? 0 : Inv.remove(player, item, fit);
         if (moved <= 0) {
@@ -709,14 +708,14 @@ public final class SeaHooks {
     }
 
     /** Takes everything out of the boat's cargo hold. */
-    static void withdrawAll(ServerPlayerEntity player, String type) {
-        NbtCompound hold = hold(player, type);
-        if (hold.getKeys().isEmpty()) {
+    static void withdrawAll(ServerPlayer player, String type) {
+        CompoundTag hold = hold(player, type);
+        if (hold.getAllKeys().isEmpty()) {
             Msg.game(player, "Your " + type + "'s cargo hold is empty. Sneak and use cargo near the boat to store it.");
             return;
         }
         List<String> names = new ArrayList<>();
-        for (String item : new ArrayList<>(hold.getKeys())) {
+        for (String item : new ArrayList<>(hold.getAllKeys())) {
             int n = hold.getInt(item);
             hold.remove(item);
             if (n > 0) {
@@ -728,8 +727,8 @@ public final class SeaHooks {
     }
 
     /** Takes one of the items from the boat's hold (crew repairs and cannon ammunition); false when there's none. */
-    private static boolean takeFromHold(ServerPlayerEntity player, String type, String item) {
-        NbtCompound hold = hold(player, type);
+    private static boolean takeFromHold(ServerPlayer player, String type, String item) {
+        CompoundTag hold = hold(player, type);
         int n = hold.getInt(item);
         if (n <= 0) {
             return false;
@@ -744,25 +743,25 @@ public final class SeaHooks {
 
     // ------------------------------------------------------------------ crew
 
-    static NbtCompound crew(ServerPlayerEntity player) {
-        return SkillingState.get(player.getServer()).entry("sailing_crew", player.getUuidAsString());
+    static CompoundTag crew(ServerPlayer player) {
+        return SkillingState.get(player.getServer()).entry("sailing_crew", player.getStringUUID());
     }
 
     /** Recruited crewmates in crew order. */
-    public static List<String> crewOrder(ServerPlayerEntity player) {
+    public static List<String> crewOrder(ServerPlayer player) {
         String order = crew(player).getString("order");
         return order.isEmpty() ? new ArrayList<>() : new ArrayList<>(Arrays.asList(order.split(",")));
     }
 
-    public static void setCrew(ServerPlayerEntity player, List<String> order) {
+    public static void setCrew(ServerPlayer player, List<String> order) {
         crew(player).putString("order", String.join(",", order));
     }
 
     /** Talking to a crewmate recruits them (wiki levels and quests); sneak-talking dismisses them from the crew. */
-    public static void crewTalk(ServerPlayerEntity player, SailingCrew.Crewmate c) {
+    public static void crewTalk(ServerPlayer player, SailingCrew.Crewmate c) {
         List<String> order = crewOrder(player);
         if (order.contains(c.id())) {
-            if (player.isSneaking()) {
+            if (player.isShiftKeyDown()) {
                 order.remove(c.id());
                 setCrew(player, order);
                 Msg.action(player, c.name() + " leaves your crew.");
@@ -776,11 +775,11 @@ public final class SeaHooks {
             Msg.game(player, c.name() + ": Come back when you've a Sailing level of " + c.level() + ".");
             return;
         }
-        if (c.quest() != null && !QuestApi.isComplete(player, c.quest()) && !player.getAbilities().creativeMode) {
+        if (c.quest() != null && !QuestApi.isComplete(player, c.quest()) && !player.getAbilities().instabuild) {
             Msg.game(player, c.name() + ": I'll not sail with you until you've proven yourself (quest required).");
             return;
         }
-        if (c.id().equals("cabin_boy_jenkins") && !Inv.has(player, "ghostspeak_amulet", 1) && !player.getAbilities().creativeMode) {
+        if (c.id().equals("cabin_boy_jenkins") && !Inv.has(player, "ghostspeak_amulet", 1) && !player.getAbilities().instabuild) {
             Msg.game(player, "You hear a faint voice, but you can't make out the words. (Ghostspeak amulet needed.)");
             return;
         }
@@ -795,7 +794,7 @@ public final class SeaHooks {
      * mans the cannon against creatures in range when you aren't firing it, and the best deckhand repairs the boat with
      * kits from the cargo hold once it drops below half its hitpoints.
      */
-    private static void crewTick(ServerPlayerEntity player, Entity vehicle, String type, Sea s) {
+    private static void crewTick(ServerPlayer player, Entity vehicle, String type, Sea s) {
         if (s.crewCannon > 0) {
             s.crewCannon--;
         }
@@ -828,11 +827,11 @@ public final class SeaHooks {
                 || SkillingUtil.level(player, Skill.RANGED) < cannon.ranged()) {
             return;
         }
-        MobEntity target = null;
-        for (Map.Entry<MobEntity, Spawned> e : SPAWNED.entrySet()) {
-            MobEntity mob = e.getKey();
+        Mob target = null;
+        for (Map.Entry<Mob, Spawned> e : SPAWNED.entrySet()) {
+            Mob mob = e.getKey();
             Spawned sp = e.getValue();
-            if (sp.owner.equals(player.getUuid()) && mob.isAlive() && (sp.engaged || sp.creature.aggressive())
+            if (sp.owner.equals(player.getUUID()) && mob.isAlive() && (sp.engaged || sp.creature.aggressive())
                     && mob.distanceTo(player) <= SailingSea.CANNON_RANGE) {
                 target = mob;
                 break;
@@ -845,7 +844,7 @@ public final class SeaHooks {
     }
 
     /** A crewmate applies the best repair kit in the cargo hold; returns the hitpoints restored (0: no kit). Used by the self-test. */
-    public static int crewRepair(ServerPlayerEntity player, String type, SailingCrew.Crewmate hand) {
+    public static int crewRepair(ServerPlayer player, String type, SailingCrew.Crewmate hand) {
         for (int i = SailingCrew.KITS.size() - 1; i >= 0; i--) {
             SailingCrew.Kit kit = SailingCrew.KITS.get(i);
             if (takeFromHold(player, type, kit.id())) {
@@ -862,7 +861,7 @@ public final class SeaHooks {
      * A crewmate fires the cannon: a cannonball from the cargo hold (or your inventory), the wiki crew max hit (your
      * Sailing level, times (Privateering + 13) / 20). Returns the damage, or -1 with no ammunition. Used by the self-test.
      */
-    public static int crewFire(ServerPlayerEntity player, String type, MobEntity target, SailingSea.Cannon cannon, SailingCrew.Crewmate c) {
+    public static int crewFire(ServerPlayer player, String type, Mob target, SailingSea.Cannon cannon, SailingCrew.Crewmate c) {
         SailingSea.Ball ball = null;
         String item = null;
         // The cannonball you loaded (chainshot and incendiary included) first, then the best plain ball the cannon takes.
@@ -886,9 +885,9 @@ public final class SeaHooks {
         if (sp != null) {
             sp.engaged = true;
         }
-        ServerWorld world = (ServerWorld) player.getWorld();
-        world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.PLAYERS, 0.5f, 1.5f);
-        world.spawnParticles(ParticleTypes.EXPLOSION, target.getX(), target.getY() + 0.5, target.getZ(), 1, 0, 0, 0, 0);
+        ServerLevel world = (ServerLevel) player.level();
+        world.playSound(null, player.blockPosition(), SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 0.5f, 1.5f);
+        world.sendParticles(ParticleTypes.EXPLOSION, target.getX(), target.getY() + 0.5, target.getZ(), 1, 0, 0, 0, 0);
         int max = SailingCrew.crewMaxHit(SkillingUtil.level(player, Skill.SAILING), cannon, ball, c.privateering());
         boolean hit = sp == null || RNG.nextDouble() < SailingSea.cannonAccuracy(cannon, ball, false, sp.creature);
         int dmg = hit ? RNG.nextInt(max + 1) : 0;
@@ -916,11 +915,11 @@ public final class SeaHooks {
     }
 
     /** Sends the hull speed of the boat entity {@code boatId} you ride (-1 and 1: none); the client applies it on water only. */
-    private static void sendSpeed(ServerPlayerEntity player, double speed, int boatId) {
+    private static void sendSpeed(ServerPlayer player, double speed, int boatId) {
         if (!ServerPlayNetworking.canSend(player, SeaNet.BOAT_SPEED)) {
             return;
         }
-        PacketByteBuf buf = PacketByteBufs.create();
+        FriendlyByteBuf buf = PacketByteBufs.create();
         buf.writeDouble(speed);
         buf.writeInt(boatId);
         ServerPlayNetworking.send(player, SeaNet.BOAT_SPEED, buf);
@@ -929,20 +928,20 @@ public final class SeaHooks {
     // ------------------------------------------------------------------ cannons
 
     /** Right-click with cannonballs on a boat with a cannon: fire at the nearest sea creature in range. */
-    static boolean useCannonball(ServerPlayerEntity player, String ball) {
+    static boolean useCannonball(ServerPlayer player, String ball) {
         String type = SailingHooks.boatType(player.getVehicle());
         if (type == null) {
-            return player.isSneaking() && deposit(player, ball, Inv.count(player, ball));
+            return player.isShiftKeyDown() && deposit(player, ball, Inv.count(player, ball));
         }
         SailingSea.Cannon cannon = SailingSea.bestCannon(SailingHooks.facilities(player, type));
         if (cannon == null) {
             Msg.game(player, "You need a cannon built on your boat to fire cannonballs.");
             return true;
         }
-        MobEntity target = null;
+        Mob target = null;
         double best = SailingSea.CANNON_RANGE;
-        for (MobEntity mob : SPAWNED.keySet()) {
-            if (mob.isAlive() && mob.getWorld() == player.getWorld() && mob.distanceTo(player) <= best) {
+        for (Mob mob : SPAWNED.keySet()) {
+            if (mob.isAlive() && mob.level() == player.level() && mob.distanceTo(player) <= best) {
                 best = mob.distanceTo(player);
                 target = mob;
             }
@@ -951,8 +950,8 @@ public final class SeaHooks {
             Msg.game(player, "There's nothing in range of your cannon.");
             return true;
         }
-        Sea s = SEA.computeIfAbsent(player.getUuid(), k -> new Sea());
-        s.target = target.getUuid();
+        Sea s = SEA.computeIfAbsent(player.getUUID(), k -> new Sea());
+        s.target = target.getUUID();
         s.ammo = ball; // auto-fire and the crew keep firing this cannonball while you carry it
         if (s.cannonCooldown <= 0) {
             fire(player, type, target, ball);
@@ -960,8 +959,8 @@ public final class SeaHooks {
         return true;
     }
 
-    private static void fire(ServerPlayerEntity player, String type, MobEntity target, String preferred) {
-        Sea s = SEA.computeIfAbsent(player.getUuid(), k -> new Sea());
+    private static void fire(ServerPlayer player, String type, Mob target, String preferred) {
+        Sea s = SEA.computeIfAbsent(player.getUUID(), k -> new Sea());
         SailingSea.Cannon cannon = SailingSea.bestCannon(SailingHooks.facilities(player, type));
         if (cannon == null) {
             s.target = null;
@@ -978,7 +977,7 @@ public final class SeaHooks {
     }
 
     /** The cannonball item to fire: the one used (plain, chainshot or incendiary) if the cannon takes it, else the best plain one. */
-    private static String pickBall(ServerPlayerEntity player, SailingSea.Cannon cannon, String preferred) {
+    private static String pickBall(ServerPlayer player, SailingSea.Cannon cannon, String preferred) {
         SailingSea.Ball p = preferred == null ? null : SailingCrew.ballStats(preferred);
         if (p != null && p.tier() <= cannon.tier() && Inv.has(player, preferred, 1)) {
             return preferred;
@@ -998,7 +997,7 @@ public final class SeaHooks {
      * (wiki: halves its speed for 8 ticks; approx) and incendiary balls burn it on a hit (wiki Burn: 1 damage every 4 ticks,
      * 10 times, up to 5 burns; approx: every hit burns). Returns the damage. Used by the self-test.
      */
-    public static int fireCannon(ServerPlayerEntity player, MobEntity target, SailingSea.Cannon cannon, String item) {
+    public static int fireCannon(ServerPlayer player, Mob target, SailingSea.Cannon cannon, String item) {
         SailingSea.Ball ball = SailingCrew.ballStats(item);
         if (ball == null) {
             return 0;
@@ -1016,9 +1015,9 @@ public final class SeaHooks {
         }
         SailingCrew.Special special = SailingCrew.special(item);
         SailingSea.SeaCreature c = sp != null ? sp.creature : null;
-        ServerWorld world = (ServerWorld) player.getWorld();
-        world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.PLAYERS, 0.6f, 1.4f);
-        world.spawnParticles(ParticleTypes.EXPLOSION, target.getX(), target.getY() + 0.5, target.getZ(), 1, 0, 0, 0, 0);
+        ServerLevel world = (ServerLevel) player.level();
+        world.playSound(null, player.blockPosition(), SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 0.6f, 1.4f);
+        world.sendParticles(ParticleTypes.EXPLOSION, target.getX(), target.getY() + 0.5, target.getZ(), 1, 0, 0, 0, 0);
         int max = SailingSea.cannonMaxHit(SkillingUtil.level(player, Skill.RANGED), cannon, ball, true);
         boolean hit = c == null || RNG.nextDouble() < SailingSea.cannonAccuracy(cannon, ball, true, c);
         int dmg = hit ? RNG.nextInt(max + 1) : 0;
@@ -1034,17 +1033,17 @@ public final class SeaHooks {
     }
 
     /** Burn instances on a spawned sea creature (self-test). */
-    public static int burns(MobEntity mob) {
+    public static int burns(Mob mob) {
         Spawned sp = SPAWNED.get(mob);
         return sp == null ? 0 : sp.burns.size();
     }
 
     // ------------------------------------------------------------------ ocean encounters
 
-    private static void encounter(ServerPlayerEntity player, String type, SailingSea.Encounter e) {
+    private static void encounter(ServerPlayer player, String type, SailingSea.Encounter e) {
         int level = SkillingUtil.level(player, Skill.SAILING);
-        ServerWorld world = (ServerWorld) player.getWorld();
-        world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_DOLPHIN_SPLASH, SoundCategory.PLAYERS, 0.8f, 1f);
+        ServerLevel world = (ServerLevel) player.level();
+        world.playSound(null, player.blockPosition(), SoundEvents.DOLPHIN_SPLASH, SoundSource.PLAYERS, 0.8f, 1f);
         switch (e) {
             case STRONG_WINDS -> {
                 double xp = 3 * SailingTraining.trimXp(type, SailingHooks.partTier(player, type, SailingTraining.PartType.SAILS));
@@ -1102,14 +1101,14 @@ public final class SeaHooks {
 
     // ------------------------------------------------------------------ hazards
 
-    private static void hazard(ServerPlayerEntity player, Entity vehicle, String type, Sea s) {
+    private static void hazard(ServerPlayer player, Entity vehicle, String type, Sea s) {
         SailingSea.Hazard h = SailingSea.hazardAt(GielinorMap.toOsrsX(player.getBlockX()), GielinorMap.toOsrsY(player.getBlockZ()));
         if (h == null || SailingSea.protectedFrom(h, SailingHooks.tiers(player, type), SailingHooks.facilities(player, type))) {
             return;
         }
         if (h.hurtsPlayer) {
             Msg.red(player, h.message);
-            player.damage(player.getDamageSources().magic(), h.damage);
+            player.hurt(player.damageSources().magic(), h.damage);
         } else {
             hurtBoat(player, vehicle, type, s, h.damage, h.message.replace("!", "") + ": your boat takes damage");
         }

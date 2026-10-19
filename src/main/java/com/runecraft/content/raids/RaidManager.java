@@ -13,22 +13,21 @@ import com.runecraft.world.Gielinor;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.minecraft.item.BlockItem;
-import net.minecraft.util.ActionResult;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.Vec3d;
-
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -45,8 +44,8 @@ public final class RaidManager {
     private RaidManager() {
     }
 
-    public static RaidInstance of(ServerPlayerEntity player) {
-        return BY_PLAYER.get(player.getUuid());
+    public static RaidInstance of(ServerPlayer player) {
+        return BY_PLAYER.get(player.getUUID());
     }
 
     /** The raid whose instance contains this entity, or null. */
@@ -56,7 +55,7 @@ public final class RaidManager {
             return null;
         }
         RaidInstance raid = ACTIVE.get(slot);
-        return raid != null && raid.world == e.getWorld() ? raid : null;
+        return raid != null && raid.world == e.level() ? raid : null;
     }
 
     static void unbind(UUID u) {
@@ -107,7 +106,7 @@ public final class RaidManager {
             }
         });
         ServerLivingEntityEvents.ALLOW_DEATH.register((entity, source, amount) -> {
-            if (entity instanceof ServerPlayerEntity p) {
+            if (entity instanceof ServerPlayer p) {
                 RaidInstance raid = of(p);
                 if (raid != null && raid.contains(p)) {
                     raid.onDeath(p);
@@ -121,7 +120,7 @@ public final class RaidManager {
             return true;
         });
         ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> {
-            if (entity instanceof ServerPlayerEntity p) {
+            if (entity instanceof ServerPlayer p) {
                 RaidInstance raid = of(p);
                 return raid == null || !raid.isDowned(p);
             }
@@ -130,12 +129,12 @@ public final class RaidManager {
         CombatHooks.addModifier(new CombatHooks.PlayerAttackModifier() {
             /** OSRS: melee always hits a Warden's ejected core for its maximum. */
             @Override
-            public boolean alwaysMaxHit(ServerPlayerEntity player, LivingEntity target, AttackType type) {
+            public boolean alwaysMaxHit(ServerPlayer player, LivingEntity target, AttackType type) {
                 return ToaRooms.Wardens.isCore(target) && (type == AttackType.STAB || type == AttackType.SLASH || type == AttackType.CRUSH);
             }
 
             @Override
-            public void afterHit(ServerPlayerEntity player, LivingEntity target, AttackType type, int dealt) {
+            public void afterHit(ServerPlayer player, LivingEntity target, AttackType type, int dealt) {
                 RaidInstance raid = of(player);
                 if (raid != null && raid.contains(target)) {
                     raid.onDamage(player, target, dealt);
@@ -164,7 +163,7 @@ public final class RaidManager {
             }
             if (!com.runecraft.osrs.content.raids.ToaSupplies.givenInsideTomb(def.id())) {
                 // CA 424 "You are not prepared": anyone using supplies brought from outside fails it for the party.
-                for (ServerPlayerEntity member : raid.players()) {
+                for (ServerPlayer member : raid.players()) {
                     com.runecraft.content.systems.CombatAchievementService.flag(member,
                             com.runecraft.osrs.content.systems.CombatAchievements.FLAG_TOA_OUTSIDE_SUPPLY);
                 }
@@ -172,18 +171,18 @@ public final class RaidManager {
             return null;
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
-            ServerPlayerEntity p = handler.player;
+            ServerPlayer p = handler.player;
             RaidInstance raid = of(p);
             if (raid != null) {
-                raid.removePlayer(p.getUuid(), false);
-                raid.say(p.getName().getString() + " has left the raid.", Formatting.GRAY);
+                raid.removePlayer(p.getUUID(), false);
+                raid.say(p.getName().getString() + " has left the raid.", ChatFormatting.GRAY);
                 if (raid.party().isEmpty()) {
                     close(raid);
                 }
             }
         });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            ServerPlayerEntity p = handler.player;
+            ServerPlayer p = handler.player;
             if (of(p) == null && RaidBuilder.inInstanceArea(p.getX(), p.getZ()) && Gielinor.is(p)) {
                 RaidEffects.later(1, () -> sendHome(p));
             }
@@ -192,11 +191,11 @@ public final class RaidManager {
         PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, blockEntity) ->
                 player.isCreative() || !RaidBuilder.inInstanceArea(pos.getX(), pos.getZ()) || !Gielinor.is(world));
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
-            if (!world.isClient() && !player.isCreative() && player.getStackInHand(hand).getItem() instanceof BlockItem
+            if (!world.isClientSide() && !player.isCreative() && player.getItemInHand(hand).getItem() instanceof BlockItem
                     && RaidBuilder.inInstanceArea(hit.getBlockPos().getX(), hit.getBlockPos().getZ()) && Gielinor.is(world)) {
-                return ActionResult.FAIL;
+                return InteractionResult.FAIL;
             }
-            return ActionResult.PASS;
+            return InteractionResult.PASS;
         });
         ServerLifecycleEvents.SERVER_STARTED.register(RaidManager::releaseStaleChunks);
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
@@ -209,7 +208,7 @@ public final class RaidManager {
     }
 
     /** ToA Deadly Prayers (OSRS): prayer is drained by 20% of the damage taken. */
-    static void deadlyPrayers(ServerPlayerEntity player, int damage) {
+    static void deadlyPrayers(ServerPlayer player, int damage) {
         RaidInstance raid = of(player);
         if (raid == null || raid.type != RaidType.TOA || damage <= 0) {
             return;
@@ -222,27 +221,27 @@ public final class RaidManager {
         }
     }
 
-    static void hurt(ServerPlayerEntity player, int damage) {
+    static void hurt(ServerPlayer player, int damage) {
         RaidInstance raid = of(player);
         if (raid == null) {
             return;
         }
-        int room = raid.roomAt(player.getPos());
+        int room = raid.roomAt(player.position());
         if (room >= 0) {
             raid.logic(room).onPlayerHurt(player, damage);
         }
     }
 
     /** Sends a player stranded in an instance (e.g. after a restart) back to the entrance they used. */
-    static void sendHome(ServerPlayerEntity p) {
+    static void sendHome(ServerPlayer p) {
         if (!p.isAlive() || of(p) != null) {
             return;
         }
-        RaidsState.Stats stats = RaidsState.get(p.getServer()).stats(p.getUuid());
-        ServerWorld world = Gielinor.world(p.getServer());
+        RaidsState.Stats stats = RaidsState.get(p.getServer()).stats(p.getUUID());
+        ServerLevel world = Gielinor.world(p.getServer());
         if (stats.lastEntrance != null && world != null) {
             BlockPos b = stats.lastEntrance;
-            p.teleport(world, b.getX() + 0.5, b.getY(), b.getZ() + 0.5, p.getYaw(), 0);
+            p.teleportTo(world, b.getX() + 0.5, b.getY(), b.getZ() + 0.5, p.getYRot(), 0);
         } else {
             Gielinor.teleport(p, Landmark.LUMBRIDGE);
         }
@@ -251,12 +250,12 @@ public final class RaidManager {
 
     private static void releaseStaleChunks(MinecraftServer server) {
         RaidsState state = RaidsState.get(server);
-        ServerWorld world = Gielinor.world(server);
+        ServerLevel world = Gielinor.world(server);
         if (world == null) {
             return;
         }
         for (long c : new ArrayList<>(state.forcedChunks())) {
-            world.setChunkForced(ChunkPos.getPackedX(c), ChunkPos.getPackedZ(c), false);
+            world.setChunkForced(ChunkPos.getX(c), ChunkPos.getZ(c), false);
             state.removeForced(c);
         }
     }
@@ -264,20 +263,20 @@ public final class RaidManager {
     // ------------------------------------------------------------------ entrance
 
     /** The entrance block: forms a party from players within 8 blocks and starts a new instance. */
-    public static void enter(ServerPlayerEntity player, RaidType type, BlockPos pos) {
+    public static void enter(ServerPlayer player, RaidType type, BlockPos pos) {
         if (of(player) != null) {
             Msg.game(player, "You are already in a raid.");
             return;
         }
-        ServerWorld world = Gielinor.world(player.getServer());
+        ServerLevel world = Gielinor.world(player.getServer());
         if (world == null) {
-            world = player.getServerWorld();
+            world = player.serverLevel();
         }
-        List<ServerPlayerEntity> members = new ArrayList<>();
+        List<ServerPlayer> members = new ArrayList<>();
         members.add(player);
-        for (ServerPlayerEntity p : player.getServerWorld().getPlayers()) {
+        for (ServerPlayer p : player.serverLevel().players()) {
             if (p != player && members.size() < type.maxParty() && of(p) == null && p.isAlive() && !p.isSpectator()
-                    && p.squaredDistanceTo(Vec3d.ofCenter(pos)) <= 8 * 8) {
+                    && p.distanceToSqr(Vec3.atCenterOf(pos)) <= 8 * 8) {
                 members.add(p);
             }
         }
@@ -296,29 +295,29 @@ public final class RaidManager {
         try {
             raid = new RaidInstance(slot, type, world, members, pos);
             ACTIVE.put(slot, raid);
-            for (ServerPlayerEntity p : members) {
-                BY_PLAYER.put(p.getUuid(), raid);
+            for (ServerPlayer p : members) {
+                BY_PLAYER.put(p.getUUID(), raid);
             }
             raid.open(members);
         } catch (RuntimeException e) {
             RuneCraft.LOGGER.error("Failed to start a raid", e);
             Msg.red(player, "The raid could not be started.");
             ACTIVE.remove(slot);
-            for (ServerPlayerEntity p : members) {
-                BY_PLAYER.remove(p.getUuid());
+            for (ServerPlayer p : members) {
+                BY_PLAYER.remove(p.getUUID());
             }
             return;
         }
         StringBuilder names = new StringBuilder();
-        for (ServerPlayerEntity p : members) {
+        for (ServerPlayer p : members) {
             names.append(names.length() == 0 ? "" : ", ").append(p.getName().getString());
         }
-        raid.say("Party (" + members.size() + "): " + names, Formatting.YELLOW);
+        raid.say("Party (" + members.size() + "): " + names, ChatFormatting.YELLOW);
     }
 
     // ------------------------------------------------------------------ scripted blocks
 
-    public static void useBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    public static void useBlock(ServerPlayer player, String blockId, BlockPos pos) {
         RaidInstance raid = of(player);
         if (raid == null || RaidBuilder.slotAt(pos.getX(), pos.getZ()) != raid.slot) {
             Msg.game(player, "Nothing interesting happens.");
@@ -333,16 +332,16 @@ public final class RaidManager {
                     raid.claim(player);
                 }
                 Msg.game(player, raid.finished() ? "You leave with your reward." : "You leave the " + raid.type.displayName() + ".");
-                raid.removePlayer(player.getUuid(), true);
+                raid.removePlayer(player.getUUID(), true);
                 if (raid.party().isEmpty()) {
                     close(raid);
                 } else {
-                    raid.say(player.getName().getString() + " has left the raid.", Formatting.GRAY);
+                    raid.say(player.getName().getString() + " has left the raid.", ChatFormatting.GRAY);
                 }
             }
-            case RaidsContent.INVOCATION_OBELISK -> invocations(player, raid, player.isSneaking() ? -1 : 1);
+            case RaidsContent.INVOCATION_OBELISK -> invocations(player, raid, player.isShiftKeyDown() ? -1 : 1);
             default -> {
-                int room = raid.roomAt(Vec3d.ofCenter(pos));
+                int room = raid.roomAt(Vec3.atCenterOf(pos));
                 RoomLogic logic = room >= 0 ? raid.logic(room) : null;
                 // CoX resource rooms open their exit at once but their stations stay usable for the rest of the raid.
                 boolean usable = logic != null && logic.started && (!logic.done || logic.def.kind() == com.runecraft.osrs.content.raids.RoomDef.Kind.RESOURCE);
@@ -354,7 +353,7 @@ public final class RaidManager {
     }
 
     /** The invocation obelisk cycles the ToA presets (sneak to go back). */
-    static void invocations(ServerPlayerEntity player, RaidInstance raid, int step) {
+    static void invocations(ServerPlayer player, RaidInstance raid, int step) {
         if (raid.type != RaidType.TOA) {
             return;
         }
@@ -365,12 +364,12 @@ public final class RaidManager {
         raid.applyPreset(raid.presetIndex() + step);
         Invocation.Preset preset = Invocation.presets().get(raid.presetIndex());
         raid.say(player.getName().getString() + " sets the invocations to " + preset.name() + " (raid level " + raid.raidLevel() + ").",
-                Formatting.YELLOW);
+                ChatFormatting.YELLOW);
         StringBuilder list = new StringBuilder();
         for (Invocation i : raid.invocations()) {
             list.append(list.length() == 0 ? "" : ", ").append(i.displayName());
         }
-        player.sendMessage(Text.literal(list.length() == 0 ? "No invocations active." : "Active: " + list).formatted(Formatting.GRAY),
+        player.displayClientMessage(Component.literal(list.length() == 0 ? "No invocations active." : "Active: " + list).withStyle(ChatFormatting.GRAY),
                 false);
     }
 }

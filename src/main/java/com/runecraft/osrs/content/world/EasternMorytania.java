@@ -8,6 +8,8 @@ import static com.runecraft.osrs.content.world.EasternKit.*;
 import static com.runecraft.osrs.world.StructureDef.bx;
 import static com.runecraft.osrs.world.StructureDef.bz;
 
+import com.runecraft.osrs.content.world.EasternKit.Style;
+
 /**
  * Morytania at real OSRS tiles: Paterdomus, Canifis, the Slayer Tower, Port Phasmatys with the Ectofuntus
  * and its docks, the Barrows, Mort'ton, Burgh de Rott, Ver Sinhaza, Darkmeyer with the Hallowed Sepulchre,

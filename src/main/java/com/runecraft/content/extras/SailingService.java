@@ -16,27 +16,26 @@ import com.runecraft.world.Gielinor;
 import com.runecraft.world.LandmarkBuilder;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.EntityType;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.registry.tag.FluidTags;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.TypedActionResult;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.RaycastContext;
-
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.FluidTags;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -55,15 +54,15 @@ final class SailingService {
 
     static void init() {
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            ItemStack stack = player.getStackInHand(hand);
+            ItemStack stack = player.getItemInHand(hand);
             Seafaring.BoatTier tier = stack.isEmpty() ? null : Seafaring.byDeed(Inv.idOf(stack));
             if (tier == null) {
-                return TypedActionResult.pass(stack);
+                return InteractionResultHolder.pass(stack);
             }
-            if (!world.isClient() && player instanceof ServerPlayerEntity sp) {
+            if (!world.isClientSide() && player instanceof ServerPlayer sp) {
                 launch(sp, stack, tier);
             }
-            return TypedActionResult.success(stack);
+            return InteractionResultHolder.success(stack);
         });
         BlockHooks.register(ExtrasContent.CHARTER_DOCK, (player, pos, state) -> dockOptions(player, portNear(pos)));
         for (Seafaring.Port p : Seafaring.PORTS) {
@@ -73,10 +72,10 @@ final class SailingService {
             }
         }
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            if (server.getTicks() % 10 == 0) {
+            if (server.getTickCount() % 10 == 0) {
                 voyageTick(server);
             }
-            if (server.getTicks() % 200 == 50) {
+            if (server.getTickCount() % 200 == 50) {
                 ensureDocks(server);
             }
         });
@@ -102,7 +101,7 @@ final class SailingService {
         return bestD < 64 ? best : null;
     }
 
-    private static void buildDock(ServerWorld world, Seafaring.Port p) {
+    private static void buildDock(ServerLevel world, Seafaring.Port p) {
         BlockState dock = ExtrasUtil.block(ExtrasContent.CHARTER_DOCK);
         if (dock == null) {
             return;
@@ -110,78 +109,78 @@ final class SailingService {
         BlockPos d = dockPos(p);
         int y = ExtrasUtil.surfaceY(world, d.getX(), d.getZ());
         BlockPos at = new BlockPos(d.getX(), y, d.getZ());
-        for (BlockPos q : BlockPos.iterate(at.add(-3, -3, -3), at.add(3, 3, 3))) {
-            if (world.getBlockState(q).isOf(dock.getBlock())) {
+        for (BlockPos q : BlockPos.betweenClosed(at.offset(-3, -3, -3), at.offset(3, 3, 3))) {
+            if (world.getBlockState(q).is(dock.getBlock())) {
                 return;
             }
         }
         // A small jetty: planks under the dock post (over water too).
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
-                BlockPos floor = at.add(dx, -1, dz);
+                BlockPos floor = at.offset(dx, -1, dz);
                 if (world.getBlockState(floor).isAir() || !world.getFluidState(floor).isEmpty()) {
-                    world.setBlockState(floor, Blocks.SPRUCE_PLANKS.getDefaultState());
+                    world.setBlockAndUpdate(floor, Blocks.SPRUCE_PLANKS.defaultBlockState());
                 }
             }
         }
-        world.setBlockState(at, dock);
-        world.setBlockState(at.add(1, 0, 0), Blocks.SPRUCE_FENCE.getDefaultState());
-        world.setBlockState(at.add(1, 1, 0), Blocks.LANTERN.getDefaultState());
+        world.setBlockAndUpdate(at, dock);
+        world.setBlockAndUpdate(at.offset(1, 0, 0), Blocks.SPRUCE_FENCE.defaultBlockState());
+        world.setBlockAndUpdate(at.offset(1, 1, 0), Blocks.LANTERN.defaultBlockState());
     }
 
     /** Re-places a dock a town structure flattened (structures are placed chunk by chunk). */
     private static void ensureDocks(MinecraftServer server) {
-        ServerWorld world = Gielinor.world(server);
+        ServerLevel world = Gielinor.world(server);
         if (world == null) {
             return;
         }
-        for (ServerPlayerEntity player : world.getPlayers()) {
+        for (ServerPlayer player : world.players()) {
             for (Seafaring.Port p : Seafaring.PORTS) {
                 BlockPos d = dockPos(p);
                 if (Math.abs(player.getX() - d.getX()) <= 48 && Math.abs(player.getZ() - d.getZ()) <= 48
-                        && world.getChunkManager().isChunkLoaded(d.getX() >> 4, d.getZ() >> 4)) {
+                        && world.getChunkSource().hasChunk(d.getX() >> 4, d.getZ() >> 4)) {
                     buildDock(world, p);
                 }
             }
         }
     }
 
-    private static void dockOptions(ServerPlayerEntity player, Seafaring.Port here) {
+    private static void dockOptions(ServerPlayer player, Seafaring.Port here) {
         if (here == null) {
             Msg.game(player, "This dock doesn't belong to any port.");
             return;
         }
         int level = ExtrasUtil.level(player, Skill.SAILING);
-        NbtCompound voyage = ExtrasState.get(player.getServer()).entry("voyages", player.getUuidAsString());
+        CompoundTag voyage = ExtrasState.get(player.getServer()).entry("voyages", player.getStringUUID());
         if (voyage.contains("to")) {
             Seafaring.Port to = Seafaring.port(voyage.getString("to"));
             Msg.game(player, "Current voyage: sail your boat to " + (to == null ? "?" : to.name()) + ".");
         }
-        List<MutableText> charters = new ArrayList<>();
-        List<MutableText> voyages = new ArrayList<>();
+        List<MutableComponent> charters = new ArrayList<>();
+        List<MutableComponent> voyages = new ArrayList<>();
         for (Seafaring.Port p : Seafaring.PORTS) {
             if (p == here) {
                 continue;
             }
             int fare = Seafaring.charterFare(here, p);
             charters.add(ExtrasUtil.link(p.name() + " - " + ExtrasUtil.coins(fare), "/sailing charter " + here.id() + " " + p.id(),
-                    "Charter a ship to " + p.name() + " (" + ExtrasUtil.coins(fare) + " coins)", Formatting.GOLD));
+                    "Charter a ship to " + p.name() + " (" + ExtrasUtil.coins(fare) + " coins)", ChatFormatting.GOLD));
             boolean ok = level >= p.level();
             voyages.add(ExtrasUtil.link(p.name() + " (" + p.level() + ")", "/sailing voyage " + here.id() + " " + p.id(),
-                    "Sail your own boat to " + p.name() + "\nRequires level " + p.level() + " Sailing", ok ? Formatting.GREEN
-                            : Formatting.DARK_GRAY));
+                    "Sail your own boat to " + p.name() + "\nRequires level " + p.level() + " Sailing", ok ? ChatFormatting.GREEN
+                            : ChatFormatting.DARK_GRAY));
         }
         Msg.action(player, here.name() + " charter dock.");
         ExtrasUtil.options(player, "Charter:", charters);
         ExtrasUtil.options(player, "Voyage:", voyages);
     }
 
-    private static boolean nearDock(ServerPlayerEntity player, Seafaring.Port p) {
+    private static boolean nearDock(ServerPlayer player, Seafaring.Port p) {
         BlockPos d = dockPos(p);
         return Gielinor.is(player) && Math.hypot(player.getX() - d.getX(), player.getZ() - d.getZ()) < 24;
     }
 
-    static void charter(ServerPlayerEntity player, String fromId, String toId) {
+    static void charter(ServerPlayer player, String fromId, String toId) {
         Seafaring.Port from = Seafaring.port(fromId);
         Seafaring.Port to = Seafaring.port(toId);
         if (from == null || to == null || from == to) {
@@ -199,11 +198,11 @@ final class SailingService {
         Inv.remove(player, Inv.COINS, fare);
         ServerNetworking.sync(player);
         ExtrasUtil.teleport(player, to.x(), to.y());
-        player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ENTITY_BOAT_PADDLE_WATER, SoundCategory.PLAYERS, 1f, 1f);
+        player.level().playSound(null, player.blockPosition(), SoundEvents.BOAT_PADDLE_WATER, SoundSource.PLAYERS, 1f, 1f);
         Msg.game(player, "You board the charter ship and sail to " + to.name() + ".");
     }
 
-    static void startVoyage(ServerPlayerEntity player, String fromId, String toId) {
+    static void startVoyage(ServerPlayer player, String fromId, String toId) {
         Seafaring.Port from = Seafaring.port(fromId);
         Seafaring.Port to = Seafaring.port(toId);
         if (from == null || to == null) {
@@ -225,7 +224,7 @@ final class SailingService {
             Msg.game(player, "You need a Sailing level of " + to.level() + " to sail to " + to.name() + ".");
             return;
         }
-        NbtCompound voyage = ExtrasState.get(player.getServer()).entry("voyages", player.getUuidAsString());
+        CompoundTag voyage = ExtrasState.get(player.getServer()).entry("voyages", player.getStringUUID());
         voyage.putString("from", from.id());
         voyage.putString("to", to.id());
         voyage.putLong("start", ActionManager.gameTick());
@@ -233,13 +232,13 @@ final class SailingService {
     }
 
     private static void voyageTick(MinecraftServer server) {
-        NbtCompound all = ExtrasState.get(server).section("voyages");
-        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-            String key = player.getUuidAsString();
+        CompoundTag all = ExtrasState.get(server).section("voyages");
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            String key = player.getStringUUID();
             if (!all.contains(key) || !(player.getVehicle() instanceof SailBoatEntity boat)) {
                 continue;
             }
-            NbtCompound v = all.getCompound(key);
+            CompoundTag v = all.getCompound(key);
             Seafaring.Port from = Seafaring.port(v.getString("from"));
             Seafaring.Port to = Seafaring.port(v.getString("to"));
             if (from == null || to == null) {
@@ -264,14 +263,14 @@ final class SailingService {
             int coins = 20 + Seafaring.tiles(from, to) / 4; // approx: cargo payment
             Inv.give(player, Inv.COINS, coins);
             ServerNetworking.sync(player);
-            player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 0.6f, 1.4f);
+            player.level().playSound(null, player.blockPosition(), SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.6f, 1.4f);
             Msg.action(player, "You complete your voyage to " + to.name() + " and are paid " + coins + " coins.");
         }
     }
 
     // ------------------------------------------------------------------ boats
 
-    static boolean canBoard(ServerPlayerEntity player, SailBoatEntity boat) {
+    static boolean canBoard(ServerPlayer player, SailBoatEntity boat) {
         int level = ExtrasUtil.level(player, Skill.SAILING);
         if (level < boat.tier().level()) {
             Msg.game(player, "You need a Sailing level of " + boat.tier().level() + " to sail " + Msg.article(ExtrasUtil.lower(boat.tier()
@@ -282,15 +281,15 @@ final class SailingService {
     }
 
     /** Sailing your own boat needs the Pandemonium quest (creative players skip it). */
-    static boolean pandemoniumDone(ServerPlayerEntity player) {
-        if (player.getAbilities().creativeMode || com.runecraft.quest.QuestApi.isComplete(player, Seafaring.SAILING_QUEST)) {
+    static boolean pandemoniumDone(ServerPlayer player) {
+        if (player.getAbilities().instabuild || com.runecraft.quest.QuestApi.isComplete(player, Seafaring.SAILING_QUEST)) {
             return true;
         }
         Msg.game(player, "You need to complete Pandemonium before you can sail your own boat.");
         return false;
     }
 
-    private static void launch(ServerPlayerEntity player, ItemStack stack, Seafaring.BoatTier tier) {
+    private static void launch(ServerPlayer player, ItemStack stack, Seafaring.BoatTier tier) {
         if (!pandemoniumDone(player)) {
             return;
         }
@@ -298,11 +297,11 @@ final class SailingService {
             Msg.game(player, "You need a Sailing level of " + tier.level() + " to sail " + Msg.article(ExtrasUtil.lower(tier.name())) + ".");
             return;
         }
-        Vec3d eye = player.getEyePos();
-        Vec3d end = eye.add(player.getRotationVector().multiply(6.0));
-        BlockHitResult hit = player.getWorld().raycast(new RaycastContext(eye, end, RaycastContext.ShapeType.OUTLINE,
-                RaycastContext.FluidHandling.SOURCE_ONLY, player));
-        if (hit.getType() != HitResult.Type.BLOCK || !player.getWorld().getFluidState(hit.getBlockPos()).isIn(FluidTags.WATER)) {
+        Vec3 eye = player.getEyePosition();
+        Vec3 end = eye.add(player.getLookAngle().scale(6.0));
+        BlockHitResult hit = player.level().clip(new ClipContext(eye, end, ClipContext.Block.OUTLINE,
+                ClipContext.Fluid.SOURCE_ONLY, player));
+        if (hit.getType() != HitResult.Type.BLOCK || !player.level().getFluidState(hit.getBlockPos()).is(FluidTags.WATER)) {
             Msg.game(player, "Use the deed while looking at water to launch your " + ExtrasUtil.lower(tier.name()) + ".");
             return;
         }
@@ -310,27 +309,27 @@ final class SailingService {
         if (type == null) {
             return;
         }
-        SailBoatEntity boat = type.create(player.getWorld());
+        SailBoatEntity boat = type.create(player.level());
         if (boat == null) {
             return;
         }
-        Vec3d p = hit.getPos();
-        boat.refreshPositionAndAngles(p.x, p.y, p.z, player.getYaw(), 0);
-        boat.setOwner(player.getUuid());
-        boat.setCustomName(Text.literal(player.getName().getString() + "'s " + ExtrasUtil.lower(tier.name())));
-        player.getWorld().spawnEntity(boat);
-        stack.decrement(1);
-        player.getWorld().playSound(null, boat.getBlockPos(), SoundEvents.ENTITY_GENERIC_SPLASH, SoundCategory.PLAYERS, 1f, 1f);
+        Vec3 p = hit.getLocation();
+        boat.moveTo(p.x, p.y, p.z, player.getYRot(), 0);
+        boat.setOwner(player.getUUID());
+        boat.setCustomName(Component.literal(player.getName().getString() + "'s " + ExtrasUtil.lower(tier.name())));
+        player.level().addFreshEntity(boat);
+        stack.shrink(1);
+        player.level().playSound(null, boat.blockPosition(), SoundEvents.GENERIC_SPLASH, SoundSource.PLAYERS, 1f, 1f);
         Msg.action(player, "You launch your " + ExtrasUtil.lower(tier.name()) + ".");
     }
 
     /** Sneak + right-click: the owner docks the boat and gets the deed back. */
-    static void dock(ServerPlayerEntity player, SailBoatEntity boat) {
-        if (boat.owner() != null && !boat.owner().equals(player.getUuid()) && !player.getAbilities().creativeMode) {
+    static void dock(ServerPlayer player, SailBoatEntity boat) {
+        if (boat.owner() != null && !boat.owner().equals(player.getUUID()) && !player.getAbilities().instabuild) {
             Msg.game(player, "This isn't your boat.");
             return;
         }
-        if (boat.hasPassengers()) {
+        if (boat.isVehicle()) {
             Msg.game(player, "Someone is still aboard.");
             return;
         }
@@ -341,24 +340,24 @@ final class SailingService {
 
     // ------------------------------------------------------------------ shipwright
 
-    private static void shipwright(ServerPlayerEntity player) {
+    private static void shipwright(ServerPlayer player) {
         Msg.game(player, "Shipwright: Ahoy! I can sell you a boat, or build one from your own materials.");
-        List<MutableText> links = new ArrayList<>();
+        List<MutableComponent> links = new ArrayList<>();
         for (Seafaring.BoatTier b : Seafaring.BOATS) {
             links.add(ExtrasUtil.link("Buy " + b.name() + " - " + ExtrasUtil.coins(b.price()), "/sailing buy " + b.id(),
-                    b.name() + "\nRequires level " + b.level() + " Sailing to sail", Formatting.GOLD));
+                    b.name() + "\nRequires level " + b.level() + " Sailing to sail", ChatFormatting.GOLD));
             links.add(ExtrasUtil.link("Build " + b.name(), "/sailing build " + b.id(), b.name() + " from your materials\nLevel "
-                    + b.buildLevel() + " Construction\n" + ExtrasUtil.materials(b.build()), Formatting.YELLOW));
+                    + b.buildLevel() + " Construction\n" + ExtrasUtil.materials(b.build()), ChatFormatting.YELLOW));
         }
         ExtrasUtil.options(player, "Boats:", links);
     }
 
-    private static boolean nearShipwright(ServerPlayerEntity player) {
-        return !player.getWorld().getEntitiesByClass(QuestNpcEntity.class, player.getBoundingBox().expand(8),
+    private static boolean nearShipwright(ServerPlayer player) {
+        return !player.level().getEntitiesOfClass(QuestNpcEntity.class, player.getBoundingBox().inflate(8),
                 e -> e.npcId() != null && e.npcId().startsWith("ext_shipwright_")).isEmpty();
     }
 
-    static void buy(ServerPlayerEntity player, String tierId, boolean build) {
+    static void buy(ServerPlayer player, String tierId, boolean build) {
         Seafaring.BoatTier b = Seafaring.boat(tierId);
         if (b == null) {
             return;
@@ -394,12 +393,12 @@ final class SailingService {
     }
 
     /** /sailing info: feature requirements. */
-    static void info(ServerPlayerEntity player) {
+    static void info(ServerPlayer player) {
         int level = ExtrasUtil.level(player, Skill.SAILING);
         Msg.game(player, "Sailing level " + level + ". Requirements:");
         for (Map.Entry<String, Integer> e : Seafaring.FEATURES.entrySet()) {
-            player.sendMessage(Text.literal(" " + e.getKey() + ": " + (e.getValue() <= 0 ? "-" : e.getValue()))
-                    .formatted(level >= e.getValue() ? Formatting.GREEN : Formatting.RED), false);
+            player.displayClientMessage(Component.literal(" " + e.getKey() + ": " + (e.getValue() <= 0 ? "-" : e.getValue()))
+                    .withStyle(level >= e.getValue() ? ChatFormatting.GREEN : ChatFormatting.RED), false);
         }
     }
 }

@@ -12,21 +12,20 @@ import com.runecraft.player.Players;
 import com.runecraft.quest.QuestApi;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.LeavesBlock;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LeavesBlock;
+import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * The Sorceress's Garden: a central garden with the fountain (drink to leave) and the four seasonal
@@ -39,16 +38,16 @@ public class SorceressGardenSession extends MinigameSession {
     /** Distance from the centre to each garden's gate; the central garden is 13x13. */
     private static final int GATE = 7;
     private static final int HEDGE = 3;
-    private final Map<Season, List<MobEntity>> elementals = new EnumMap<>(Season.class);
+    private final Map<Season, List<Mob>> elementals = new EnumMap<>(Season.class);
     /** Game tick until which a player who was just teleported can't be caught again. */
     private final Map<UUID, Long> grace = new HashMap<>();
 
-    public SorceressGardenSession(int id, int slot, ServerWorld world, String variant) {
+    public SorceressGardenSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.SORCERESS_GARDEN, id, slot, world, variant);
     }
 
     /** Entry check: Osman only sends players who rescued Prince Ali. */
-    public static String requirement(ServerPlayerEntity player) {
+    public static String requirement(ServerPlayer player) {
         if (ContentRegistry.quest(SorceressGarden.QUEST) != null && !QuestApi.isComplete(player, SorceressGarden.QUEST)) {
             return "Apprentice: The sorceress only lets friends of Osman into her garden. (Complete Prince Ali Rescue.)";
         }
@@ -110,14 +109,14 @@ public class SorceressGardenSession extends MinigameSession {
 
     private void air(Season s, int u, int v) {
         for (int y = 1; y <= HEDGE; y++) {
-            set(ox(s, u, v), y, oz(s, u, v), Blocks.AIR.getDefaultState());
+            set(ox(s, u, v), y, oz(s, u, v), Blocks.AIR.defaultBlockState());
         }
     }
 
     @Override
     protected void build() {
         room(Blocks.GRASS_BLOCK, Blocks.MOSSY_STONE_BRICKS, Blocks.MOSS_BLOCK);
-        BlockState hedge = Blocks.OAK_LEAVES.getDefaultState().with(LeavesBlock.PERSISTENT, true);
+        BlockState hedge = Blocks.OAK_LEAVES.defaultBlockState().setValue(LeavesBlock.PERSISTENT, true);
         int h = halfX();
         // Hedges everywhere except the central garden, then the gardens are carved out of them.
         for (int dx = -h; dx <= h; dx++) {
@@ -148,28 +147,28 @@ public class SorceressGardenSession extends MinigameSession {
         // The central garden: the fountain in the middle and flower beds in the corners.
         place(0, 0, "sg_fountain");
         for (int[] c : new int[][]{{-5, -5}, {5, -5}, {-5, 5}, {5, 5}}) {
-            set(c[0], 1, c[1], Blocks.FLOWERING_AZALEA.getDefaultState());
+            set(c[0], 1, c[1], Blocks.FLOWERING_AZALEA.defaultBlockState());
         }
     }
 
     private static BlockState flower(Season s) {
         return switch (s) {
-            case WINTER -> Blocks.LILY_OF_THE_VALLEY.getDefaultState();
-            case SPRING -> Blocks.OXEYE_DAISY.getDefaultState();
-            case AUTUMN -> Blocks.ORANGE_TULIP.getDefaultState();
-            case SUMMER -> Blocks.POPPY.getDefaultState();
+            case WINTER -> Blocks.LILY_OF_THE_VALLEY.defaultBlockState();
+            case SPRING -> Blocks.OXEYE_DAISY.defaultBlockState();
+            case AUTUMN -> Blocks.ORANGE_TULIP.defaultBlockState();
+            case SUMMER -> Blocks.POPPY.defaultBlockState();
         };
     }
 
     @Override
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
+    protected BlockPos spawnPoint(ServerPlayer player, int index) {
         return rel(0, 1, 3);
     }
 
     @Override
     protected void start() {
         for (Season s : Season.values()) {
-            List<MobEntity> list = new ArrayList<>();
+            List<Mob> list = new ArrayList<>();
             for (SorceressGarden.Patrol p : SorceressGarden.patrols(s)) {
                 list.add(spawnElemental(s, p));
             }
@@ -178,10 +177,10 @@ public class SorceressGardenSession extends MinigameSession {
         broadcast("You appear in the middle of the sorceress's garden. Drink from the fountain to leave.");
     }
 
-    private MobEntity spawnElemental(Season s, SorceressGarden.Patrol p) {
-        MobEntity mob = spawn(s.elemental(), rel(ox(s, p.u(ticks), p.v(ticks)), 1, oz(s, p.u(ticks), p.v(ticks))));
+    private Mob spawnElemental(Season s, SorceressGarden.Patrol p) {
+        Mob mob = spawn(s.elemental(), rel(ox(s, p.u(ticks), p.v(ticks)), 1, oz(s, p.u(ticks), p.v(ticks))));
         if (mob != null) {
-            mob.setAiDisabled(true);
+            mob.setNoAi(true);
             mob.setInvulnerable(true);
         }
         return mob;
@@ -193,13 +192,13 @@ public class SorceressGardenSession extends MinigameSession {
     protected void gameTick() {
         for (Season s : Season.values()) {
             List<SorceressGarden.Patrol> patrols = SorceressGarden.patrols(s);
-            List<MobEntity> mobs = elementals.get(s);
+            List<Mob> mobs = elementals.get(s);
             if (mobs == null) {
                 continue;
             }
             for (int i = 0; i < patrols.size(); i++) {
                 SorceressGarden.Patrol p = patrols.get(i);
-                MobEntity mob = mobs.get(i);
+                Mob mob = mobs.get(i);
                 if (mob == null || !mob.isAlive()) {
                     mob = spawnElemental(s, p);
                     mobs.set(i, mob);
@@ -211,13 +210,13 @@ public class SorceressGardenSession extends MinigameSession {
                 int v = p.v(ticks);
                 BlockPos at = rel(ox(s, u, v), 1, oz(s, u, v));
                 BlockPos next = rel(ox(s, p.u(ticks + 1), p.v(ticks + 1)), 1, oz(s, p.u(ticks + 1), p.v(ticks + 1)));
-                float yaw = facing(next.getX() - at.getX(), next.getZ() - at.getZ(), mob.getYaw());
-                mob.refreshPositionAndAngles(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, yaw, 0);
-                mob.setHeadYaw(yaw);
-                mob.setBodyYaw(yaw);
+                float yaw = facing(next.getX() - at.getX(), next.getZ() - at.getZ(), mob.getYRot());
+                mob.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, yaw, 0);
+                mob.setYHeadRot(yaw);
+                mob.setYBodyRot(yaw);
             }
         }
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             watch(p);
         }
     }
@@ -237,8 +236,8 @@ public class SorceressGardenSession extends MinigameSession {
     }
 
     /** Teleports a player out if an elemental of the garden they're in can see them. */
-    private void watch(ServerPlayerEntity p) {
-        if (grace.getOrDefault(p.getUuid(), 0L) > ticks) {
+    private void watch(ServerPlayer p) {
+        if (grace.getOrDefault(p.getUUID(), 0L) > ticks) {
             return;
         }
         BlockPos r = relPos(p);
@@ -249,24 +248,24 @@ public class SorceressGardenSession extends MinigameSession {
         int u = along(s, r.getX(), r.getZ());
         int v = across(s, r.getX(), r.getZ());
         if (SorceressGarden.seen(s, ticks, u, v)) {
-            world.spawnParticles(ParticleTypes.PORTAL, p.getX(), p.getY() + 1, p.getZ(), 30, 0.3, 0.6, 0.3, 0.1);
+            world.sendParticles(ParticleTypes.PORTAL, p.getX(), p.getY() + 1, p.getZ(), 30, 0.3, 0.6, 0.3, 0.1);
             Msg.red(p, "An elemental force emanating from the garden teleports you away.");
             toCentre(p, s);
         }
     }
 
     /** Back to the central garden, just in front of a garden's gate (or by the fountain). */
-    private void toCentre(ServerPlayerEntity p, Season s) {
+    private void toCentre(ServerPlayer p, Season s) {
         BlockPos at = s == null ? rel(0, 1, 3) : rel(ox(s, -2, 0), 1, oz(s, -2, 0));
-        p.teleport(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, p.getYaw(), p.getPitch());
-        grace.put(p.getUuid(), ticks + 2);
+        p.teleportTo(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, p.getYRot(), p.getXRot());
+        grace.put(p.getUUID(), ticks + 2);
         ActionManager.cancel(p);
     }
 
     // ------------------------------------------------------------------ objects
 
     @Override
-    protected boolean onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         if (blockId.equals("sg_fountain")) {
             Msg.game(player, "You drink from the fountain and feel yourself being pulled away...");
             removePlayer(player, true);
@@ -289,7 +288,7 @@ public class SorceressGardenSession extends MinigameSession {
         return false;
     }
 
-    private void gate(ServerPlayerEntity player, Season s) {
+    private void gate(ServerPlayer player, Season s) {
         BlockPos r = relPos(player);
         boolean inside = gardenAt(r.getX(), r.getZ()) == s && along(s, r.getX(), r.getZ()) > 0;
         if (inside) {
@@ -302,12 +301,12 @@ public class SorceressGardenSession extends MinigameSession {
             return;
         }
         BlockPos at = rel(ox(s, 1, 0), 1, oz(s, 1, 0));
-        player.teleport(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, player.getYaw(), player.getPitch());
-        grace.put(player.getUuid(), ticks + 1);
+        player.teleportTo(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, player.getYRot(), player.getXRot());
+        grace.put(player.getUUID(), ticks + 1);
         Msg.game(player, "You open the gate and slip into the " + s.displayName() + " garden.");
     }
 
-    private void pickSqirk(ServerPlayerEntity player, Season s) {
+    private void pickSqirk(ServerPlayer player, Season s) {
         if (!Inv.hasRoomFor(player, s.fruit())) {
             Msg.game(player, "You don't have enough inventory space to pick a sq'irk.");
             return;
@@ -320,14 +319,14 @@ public class SorceressGardenSession extends MinigameSession {
         if (random.nextDouble() < SorceressGarden.rockyChance(thieving) && com.runecraft.osrs.ItemCatalog.get("pet_rocky") != null
                 && !Players.data(player).collectionLog().contains("pet_rocky")) {
             reward(player, "pet_rocky", 1);
-            player.getServer().getPlayerManager().broadcast(net.minecraft.text.Text.literal(player.getName().getString()
-                    + " has a funny feeling like they're being followed.").formatted(net.minecraft.util.Formatting.GOLD), false);
+            player.getServer().getPlayerList().broadcastSystemMessage(net.minecraft.network.chat.Component.literal(player.getName().getString()
+                    + " has a funny feeling like they're being followed.").withStyle(net.minecraft.ChatFormatting.GOLD), false);
         }
         Msg.game(player, "An elemental force emanating from the garden teleports you away.");
         toCentre(player, null);
     }
 
-    private void pickHerbs(ServerPlayerEntity player, Season s) {
+    private void pickHerbs(ServerPlayer player, Season s) {
         for (int i = 0; i < SorceressGarden.HERBS_PER_PICK; i++) {
             MinigameRules.Loot herb = MinigameRules.pick(s.herbTable(), random.nextDouble());
             Inv.give(player, herb.item(), 1);
@@ -339,12 +338,12 @@ public class SorceressGardenSession extends MinigameSession {
     }
 
     @Override
-    protected void onDeath(ServerPlayerEntity player) {
+    protected void onDeath(ServerPlayer player) {
         toCentre(player, null);
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
+    protected List<String> hud(ServerPlayer player) {
         BlockPos r = relPos(player);
         Season s = gardenAt(r.getX(), r.getZ());
         List<String> lines = new ArrayList<>();

@@ -15,20 +15,20 @@ import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.Vec3d;
 import org.joml.Vector3f;
 
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Special attack energy and the special attacks themselves. A special is armed with the special attack
@@ -59,7 +59,7 @@ public final class SpecialAttackService {
 
     /** Rules that change a special attack's energy cost (e.g. ToA's Overly Draining); return -1 to keep it. */
     public interface CostRule {
-        int cost(ServerPlayerEntity p, Spec spec);
+        int cost(ServerPlayer p, Spec spec);
     }
 
     private static final java.util.List<CostRule> COST_RULES = new java.util.concurrent.CopyOnWriteArrayList<>();
@@ -69,7 +69,7 @@ public final class SpecialAttackService {
     }
 
     /** The energy this player's special attack costs (the weapon's cost unless a {@link CostRule} changes it). */
-    public static int cost(ServerPlayerEntity p, Spec spec) {
+    public static int cost(ServerPlayer p, Spec spec) {
         for (CostRule r : COST_RULES) {
             int c = r.cost(p, spec);
             if (c >= 0) {
@@ -79,15 +79,15 @@ public final class SpecialAttackService {
         return spec.cost();
     }
 
-    public static Spec weaponSpec(ServerPlayerEntity p) {
-        if (p.getMainHandStack().isEmpty()) {
+    public static Spec weaponSpec(ServerPlayer p) {
+        if (p.getMainHandItem().isEmpty()) {
             return null;
         }
-        return SpecialAttacks.of(Inv.idOf(p.getMainHandStack()));
+        return SpecialAttacks.of(Inv.idOf(p.getMainHandItem()));
     }
 
     /** The special attack key / orb. */
-    public static void toggle(ServerPlayerEntity p) {
+    public static void toggle(ServerPlayer p) {
         SysState.SysPlayer sp = SysState.of(p);
         Spec spec = weaponSpec(p);
         if (spec == null) {
@@ -117,22 +117,22 @@ public final class SpecialAttackService {
         SysNet.sendState(p);
     }
 
-    static void spend(ServerPlayerEntity p, Spec spec) {
+    static void spend(ServerPlayer p, Spec spec) {
         SysState.SysPlayer sp = SysState.of(p);
         sp.specEnergy = Math.max(0, sp.specEnergy - cost(p, spec));
         sp.specArmed = false;
-        p.getWorld().playSound(null, p.getBlockPos(), SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, SoundCategory.PLAYERS, 0.8f, 0.7f);
+        p.level().playSound(null, p.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 0.8f, 0.7f);
         SysNet.sendState(p);
     }
 
-    public static void restoreEnergy(ServerPlayerEntity p, int amount) {
+    public static void restoreEnergy(ServerPlayer p, int amount) {
         SysState.SysPlayer sp = SysState.of(p);
         sp.specEnergy = Math.min(SpecialAttacks.MAX_ENERGY, sp.specEnergy + amount);
         SysNet.sendState(p);
     }
 
     /** Called every game tick: energy regeneration (10% every 30 seconds). */
-    public static void gameTick(ServerPlayerEntity p, long tick) {
+    public static void gameTick(ServerPlayer p, long tick) {
         SysState.SysPlayer sp = SysState.of(p);
         if (sp.specEnergy < SpecialAttacks.MAX_ENERGY) {
             int before = sp.specEnergy;
@@ -156,21 +156,21 @@ public final class SpecialAttackService {
     static boolean forceSpecial;
 
     /** True when the player's {@code type} attack being rolled now is their special attack (HitCalcBridge.specialAttack). */
-    public static boolean isSpecial(ServerPlayerEntity p, AttackType type) {
+    public static boolean isSpecial(ServerPlayer p, AttackType type) {
         if (forceSpecial) {
             return true;
         }
         if (secondary) {
             return false;
         }
-        if (ACTIVE.containsKey(p.getUuid())) {
+        if (ACTIVE.containsKey(p.getUUID())) {
             return true;
         }
         return startable(p, type) != null;
     }
 
     /** The armed special that an attack of this style would start now (matching style, enough energy, its requirements), or null. */
-    private static Spec startable(ServerPlayerEntity p, AttackType type) {
+    private static Spec startable(ServerPlayer p, AttackType type) {
         SysState.SysPlayer sp = SysState.of(p);
         if (!sp.specArmed) {
             return null;
@@ -197,14 +197,14 @@ public final class SpecialAttackService {
         return spec;
     }
 
-    private static boolean bloodMoonSet(ServerPlayerEntity p) {
-        return Inv.idOf(p.getEquippedStack(EquipmentSlot.HEAD)).equals("blood_moon_helm")
-                && Inv.idOf(p.getEquippedStack(EquipmentSlot.CHEST)).equals("blood_moon_chestplate")
-                && Inv.idOf(p.getEquippedStack(EquipmentSlot.LEGS)).equals("blood_moon_tassets");
+    private static boolean bloodMoonSet(ServerPlayer p) {
+        return Inv.idOf(p.getItemBySlot(EquipmentSlot.HEAD)).equals("blood_moon_helm")
+                && Inv.idOf(p.getItemBySlot(EquipmentSlot.CHEST)).equals("blood_moon_chestplate")
+                && Inv.idOf(p.getItemBySlot(EquipmentSlot.LEGS)).equals("blood_moon_tassets");
     }
 
     /** Starts a special for this attack if one is armed and matches the attack style. */
-    static Active begin(ServerPlayerEntity p, LivingEntity target, AttackType type) {
+    static Active begin(ServerPlayer p, LivingEntity target, AttackType type) {
         if (secondary) {
             return null;
         }
@@ -218,24 +218,24 @@ public final class SpecialAttackService {
         }
         spend(p, spec);
         Active a = new Active(spec, target);
-        ACTIVE.put(p.getUuid(), a);
+        ACTIVE.put(p.getUUID(), a);
         if (spec.effect() == Effect.BLOOD_INFUSION) {
             // Blood Infusion: costs 25% of the current hitpoints (rounded down).
             p.setHealth(Math.max(1f, p.getHealth() - (float) Math.floor(p.getHealth() * spec.param() / 100.0)));
         }
-        if (p.getWorld() instanceof ServerWorld w) {
-            w.spawnParticles(net.minecraft.particle.ParticleTypes.CRIT, target.getX(), target.getY() + target.getHeight() / 2,
+        if (p.level() instanceof ServerLevel w) {
+            w.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT, target.getX(), target.getY() + target.getBbHeight() / 2,
                     target.getZ(), 15, 0.3, 0.3, 0.3, 0.2);
         }
         return a;
     }
 
-    static Active active(ServerPlayerEntity p) {
-        return secondary ? null : ACTIVE.get(p.getUuid());
+    static Active active(ServerPlayer p) {
+        return secondary ? null : ACTIVE.get(p.getUUID());
     }
 
     /** Whether the player's current attack is a special attack (boss scripts: "killed only with special attacks"). */
-    public static boolean specialActive(ServerPlayerEntity p) {
+    public static boolean specialActive(ServerPlayer p) {
         return active(p) != null;
     }
 
@@ -244,18 +244,18 @@ public final class SpecialAttackService {
      * rolls against and always-hitting specials come from PlayerHitCalc (HitCalcBridge marks the input special), so this
      * multiplier is 1.
      */
-    static double accuracy(ServerPlayerEntity p, LivingEntity target, AttackType type) {
+    static double accuracy(ServerPlayer p, LivingEntity target, AttackType type) {
         if (secondary) {
             return 1.0;
         }
-        Active a = ACTIVE.get(p.getUuid());
+        Active a = ACTIVE.get(p.getUUID());
         if (a == null || a.target != target) {
             begin(p, target, type);
         }
         return 1.0;
     }
 
-    static double maxHit(ServerPlayerEntity p, LivingEntity target, AttackType type) {
+    static double maxHit(ServerPlayer p, LivingEntity target, AttackType type) {
         Active a = active(p);
         if (a != null && a.spec.effect() == Effect.SHOVE) {
             return 0.0;
@@ -263,7 +263,7 @@ public final class SpecialAttackService {
         return 1.0;
     }
 
-    static int afterRoll(ServerPlayerEntity p, LivingEntity target, AttackType type, int damage) {
+    static int afterRoll(ServerPlayer p, LivingEntity target, AttackType type, int damage) {
         Active a = active(p);
         if (a == null) {
             return damage;
@@ -339,33 +339,33 @@ public final class SpecialAttackService {
      * Rod of Ivandis' Retainer: a vampyre juvenile or juvinate below half health is held (frozen, its target dropped) for
      * {@code ticks}; any other target gets the OSRS refusal. Either way the rod loses a charge and crumbles at the last.
      */
-    private static void retainer(ServerPlayerEntity p, LivingEntity target, int ticks) {
-        String key = target instanceof ServerPlayerEntity ? null : com.runecraft.combat.MonsterStats.of(target).traitsKey();
+    private static void retainer(ServerPlayer p, LivingEntity target, int ticks) {
+        String key = target instanceof ServerPlayer ? null : com.runecraft.combat.MonsterStats.of(target).traitsKey();
         String fail = SpecialAttacks.retainerFailure(key, target.getHealth() / Math.max(1f, target.getMaxHealth()));
         if (fail != null) {
             Msg.game(p, fail);
         } else {
             SysCombat.freeze(target, ticks);
-            if (target instanceof net.minecraft.entity.mob.MobEntity mob) {
+            if (target instanceof net.minecraft.world.entity.Mob mob) {
                 mob.setTarget(null);
             }
             SysCombat.dust(target, new Vector3f(0.8f, 0.8f, 0.9f), 20);
             Msg.action(p, "The rod of Ivandis binds the vampyre in place.");
         }
-        net.minecraft.item.ItemStack rod = p.getMainHandStack();
+        net.minecraft.world.item.ItemStack rod = p.getMainHandItem();
         if (Inv.idOf(rod).equals(com.runecraft.osrs.content.systems.Charges.ROD_OF_IVANDIS)
                 && com.runecraft.item.ItemCharges.drain(rod, 1)) {
-            rod.decrement(1);
+            rod.shrink(1);
             Msg.red(p, "Your rod of Ivandis crumbles to dust.");
         }
     }
 
-    private static boolean hasDragonArrows(ServerPlayerEntity p) {
+    private static boolean hasDragonArrows(ServerPlayer p) {
         return Inv.count(p, "dragon_arrow") > 0 || Inv.count(p, "lms_dragon_arrow") > 0;
     }
 
-    static void afterHit(ServerPlayerEntity p, LivingEntity target, AttackType type, int dealt) {
-        Active a = secondary ? null : ACTIVE.remove(p.getUuid());
+    static void afterHit(ServerPlayer p, LivingEntity target, AttackType type, int dealt) {
+        Active a = secondary ? null : ACTIVE.remove(p.getUUID());
         if (a == null) {
             soulreaperPassive(p, target, dealt);
             return;
@@ -444,15 +444,15 @@ public final class SpecialAttackService {
                 }
             }
             case AREA -> {
-                for (LivingEntity other : p.getWorld().getEntitiesByClass(LivingEntity.class, target.getBoundingBox().expand(2.5),
+                for (LivingEntity other : p.level().getEntitiesOfClass(LivingEntity.class, target.getBoundingBox().inflate(2.5),
                         e -> e != p && e != target && e.isAlive() && SysCombat.canAttack(p, e))) {
                     followUp(p, other, type, 1.0, false, 0);
                 }
             }
             case SHOVE -> {
                 SysCombat.freeze(target, spec.param());
-                Vec3d d = target.getPos().subtract(p.getPos()).normalize();
-                target.takeKnockback(1.2, -d.x, -d.z);
+                Vec3 d = target.position().subtract(p.position()).normalize();
+                target.knockback(1.2, -d.x, -d.z);
             }
             case LIGHTNING -> {
                 if (dealt > 0) {
@@ -503,7 +503,7 @@ public final class SpecialAttackService {
             }
             case PRAYER_SMASH -> {
                 if (dealt > 0) {
-                    if (target instanceof ServerPlayerEntity victim) {
+                    if (target instanceof ServerPlayer victim) {
                         PlayerData vd = Players.data(victim);
                         int drained = Math.min(vd.prayerPoints(), dealt);
                         vd.setPrayerPoints(vd.prayerPoints() - drained);
@@ -520,7 +520,7 @@ public final class SpecialAttackService {
         }
         // Weapon-specific extras.
         String id = spec.itemId();
-        if (id.startsWith("dragon_scimitar") && target instanceof ServerPlayerEntity victim && dealt > 0) {
+        if (id.startsWith("dragon_scimitar") && target instanceof ServerPlayer victim && dealt > 0) {
             PlayerData vd = Players.data(victim);
             vd.activePrayers().removeIf(pr -> pr == Prayer.PROTECT_FROM_MELEE || pr == Prayer.PROTECT_FROM_MISSILES
                     || pr == Prayer.PROTECT_FROM_MAGIC);
@@ -531,7 +531,7 @@ public final class SpecialAttackService {
             // Smash lowers the target's current Defence by 70% (wiki; approx, the tooltip says 75%).
             SysCombat.drainDefence(target, (int) Math.ceil(SysCombat.defenceLevel(target) * 0.70));
         }
-        if (id.contains("abyssal_whip") && target instanceof ServerPlayerEntity victim && dealt > 0) {
+        if (id.contains("abyssal_whip") && target instanceof ServerPlayer victim && dealt > 0) {
             SysState.SysPlayer vs = SysState.of(victim);
             int take = vs.runEnergy / 10;
             vs.runEnergy -= take;
@@ -556,7 +556,7 @@ public final class SpecialAttackService {
                 break;
             }
             if (s == Skill.PRAYER) {
-                if (target instanceof ServerPlayerEntity victim) {
+                if (target instanceof ServerPlayer victim) {
                     PlayerData vd = Players.data(victim);
                     int d = Math.min(remaining, vd.prayerPoints());
                     vd.setPrayerPoints(vd.prayerPoints() - d);
@@ -581,26 +581,26 @@ public final class SpecialAttackService {
      * Ancient godsword Blood Sacrifice: unless the target is 5 or more tiles away 8 ticks later, it takes 25 damage and the
      * attacker heals 15% of its Hitpoints level (capped at 25, 15 against players).
      */
-    private static void bloodSacrifice(ServerPlayerEntity p, LivingEntity target, int damage) {
+    private static void bloodSacrifice(ServerPlayer p, LivingEntity target, int damage) {
         SysCombat.dust(target, new Vector3f(0.6f, 0.0f, 0.0f), 20);
         SysTicks.later(8, () -> {
-            if (!target.isAlive() || !p.isAlive() || target.squaredDistanceTo(p) >= 25.0) {
+            if (!target.isAlive() || !p.isAlive() || target.distanceToSqr(p) >= 25.0) {
                 return;
             }
             int done = SysCombat.hit(p, target, AttackType.MAGIC, damage);
             int hpLevel = Math.round(target.getMaxHealth());
-            if (!(target instanceof ServerPlayerEntity)) {
+            if (!(target instanceof ServerPlayer)) {
                 hpLevel = Math.max(hpLevel, com.runecraft.combat.MonsterStats.of(target).hitpoints());
             }
             if (done > 0) {
-                p.heal(SpecialAttacks.bloodSacrificeHeal(hpLevel, target instanceof ServerPlayerEntity));
+                p.heal(SpecialAttacks.bloodSacrificeHeal(hpLevel, target instanceof ServerPlayer));
             }
             SysCombat.dust(target, new Vector3f(0.8f, 0.0f, 0.0f), 30);
         });
     }
 
     /** {@code hits} hits of {@code damage} every {@code interval} game ticks (burns, Bear Down). */
-    private static void damageOverTime(ServerPlayerEntity p, LivingEntity target, int damage, int hits, int interval) {
+    private static void damageOverTime(ServerPlayer p, LivingEntity target, int damage, int hits, int interval) {
         for (int i = 0; i < hits; i++) {
             SysTicks.later(i * interval, () -> {
                 if (target.isAlive() && p.isAlive()) {
@@ -611,9 +611,9 @@ public final class SpecialAttackService {
     }
 
     /** Soulreaper axe: every damaging hit gains a soul stack (up to 5) at the cost of 8 hitpoints. */
-    private static void soulreaperPassive(ServerPlayerEntity p, LivingEntity target, int dealt) {
+    private static void soulreaperPassive(ServerPlayer p, LivingEntity target, int dealt) {
         if (secondary || dealt <= 0
-                || !"soulreaper_axe".equals(com.runecraft.osrs.data.EquipmentBonuses.reference(Inv.idOf(p.getMainHandStack())))) {
+                || !"soulreaper_axe".equals(com.runecraft.osrs.data.EquipmentBonuses.reference(Inv.idOf(p.getMainHandItem())))) {
             return;
         }
         SysState.SysPlayer sp = SysState.of(p);
@@ -624,12 +624,12 @@ public final class SpecialAttackService {
     }
 
     /** The player's input for a special attack's hit (special = true while a spec is active or being followed up). */
-    private static PlayerHitCalc.Input hitInput(ServerPlayerEntity p, LivingEntity target, AttackType type) {
+    private static PlayerHitCalc.Input hitInput(ServerPlayer p, LivingEntity target, AttackType type) {
         return com.runecraft.combat.HitCalcBridge.input(p, target, type, null, type == AttackType.RANGED ? SysCombat.ammoStrength(p) : 0);
     }
 
     /** The input of a follow-up hit of the special (second stab, extra arrow, sweep), with the special's changes. */
-    private static PlayerHitCalc.Input specialInput(ServerPlayerEntity p, LivingEntity target, AttackType type) {
+    private static PlayerHitCalc.Input specialInput(ServerPlayer p, LivingEntity target, AttackType type) {
         boolean before = forceSpecial;
         forceSpecial = true;
         try {
@@ -643,7 +643,7 @@ public final class SpecialAttackService {
      * Rolls and applies an additional hit of the special (through the other combat hooks): {@code accMult} scales the attack
      * roll (halberd sweep 0.75), {@code alwaysHits} skips the accuracy roll (abyssal dagger).
      */
-    static void followUp(ServerPlayerEntity p, LivingEntity target, AttackType type, double accMult, boolean alwaysHits, int delay) {
+    static void followUp(ServerPlayer p, LivingEntity target, AttackType type, double accMult, boolean alwaysHits, int delay) {
         Runnable run = () -> {
             if (!target.isAlive() || !p.isAlive()) {
                 return;
@@ -678,7 +678,7 @@ public final class SpecialAttackService {
         }
     }
 
-    private static void fixedHit(ServerPlayerEntity p, LivingEntity target, AttackType type, int damage, int delay) {
+    private static void fixedHit(ServerPlayer p, LivingEntity target, AttackType type, int damage, int delay) {
         Runnable run = () -> {
             if (!target.isAlive()) {
                 return;
@@ -694,9 +694,9 @@ public final class SpecialAttackService {
     }
 
     /** An extra projectile of a ranged special (with the special's accuracy, damage and dark bow limits); returns the damage dealt. */
-    private static int secondaryRanged(ServerPlayerEntity p, LivingEntity target, Spec spec) {
-        if (p.getWorld() instanceof ServerWorld w) {
-            SysCombat.trail(w, p.getEyePos(), target.getPos().add(0, target.getHeight() / 2, 0), new Vector3f(0.3f, 0.2f, 0.4f));
+    private static int secondaryRanged(ServerPlayer p, LivingEntity target, Spec spec) {
+        if (p.level() instanceof ServerLevel w) {
+            SysCombat.trail(w, p.getEyePosition(), target.position().add(0, target.getBbHeight() / 2, 0), new Vector3f(0.3f, 0.2f, 0.4f));
         }
         PlayerHitCalc.Input in = specialInput(p, target, AttackType.RANGED);
         secondary = true;
@@ -719,7 +719,7 @@ public final class SpecialAttackService {
 
     // ---------------- Instant specials ----------------
 
-    private static boolean instant(ServerPlayerEntity p, Spec spec) {
+    private static boolean instant(ServerPlayer p, Spec spec) {
         PlayerData data = Players.data(p);
         SkillSet s = data.skills();
         switch (spec.effect()) {
@@ -734,7 +734,7 @@ public final class SpecialAttackService {
                 s.setBoost(Skill.RANGED, s.boost(Skill.RANGED) - rng / 10);
                 int boost = SpecialAttacks.rampageBoost(att, def, mag, rng);
                 s.setBoost(Skill.STRENGTH, Math.max(s.boost(Skill.STRENGTH), Math.min(boost, s.boost(Skill.STRENGTH) + boost)));
-                p.swingHand(Hand.MAIN_HAND, true);
+                p.swing(InteractionHand.MAIN_HAND, true);
                 Msg.action(p, "Raarrrrrgggggghhhhhhh!");
                 ServerNetworking.sync(p);
                 return true;
@@ -752,7 +752,7 @@ public final class SpecialAttackService {
                     Msg.game(p, "You need a target in reach to use Quick Smash.");
                     return false;
                 }
-                p.swingHand(Hand.MAIN_HAND, true);
+                p.swing(InteractionHand.MAIN_HAND, true);
                 followUp(p, t, com.runecraft.combat.Equipment.meleeType(p, s), 1.0, false, 0);
                 return true;
             }
@@ -792,10 +792,10 @@ public final class SpecialAttackService {
                     dmg = 75 + p.getRandom().nextInt(76);
                 }
                 dmg = com.runecraft.combat.HitCalcBridge.afterRoll(in, dmg);
-                if (p.getWorld() instanceof ServerWorld w) {
-                    SysCombat.trail(w, p.getEyePos(), t.getPos().add(0, t.getHeight() / 2, 0), new Vector3f(0.6f, 0.1f, 0.6f));
+                if (p.level() instanceof ServerLevel w) {
+                    SysCombat.trail(w, p.getEyePosition(), t.position().add(0, t.getBbHeight() / 2, 0), new Vector3f(0.6f, 0.1f, 0.6f));
                 }
-                p.swingHand(Hand.MAIN_HAND, true);
+                p.swing(InteractionHand.MAIN_HAND, true);
                 int done = SysCombat.hit(p, t, AttackType.MAGIC, dmg);
                 com.runecraft.skill.XpService.addTenths(p, Skill.MAGIC, done * 20);
                 com.runecraft.skill.XpService.addTenths(p, Skill.HITPOINTS, CombatFormulas.hitpointsXpTenths(done));

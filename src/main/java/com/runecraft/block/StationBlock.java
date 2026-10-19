@@ -2,23 +2,23 @@ package com.runecraft.block;
 
 import com.runecraft.osrs.Station;
 import com.runecraft.skill.Stations;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
 
 /** Furnaces, anvils, ranges, banks, shops, altars... anything you click to open a menu. */
 public class StationBlock extends Block {
     private final Station station;
 
-    public StationBlock(Station station, Settings settings) {
+    public StationBlock(Station station, Properties settings) {
         super(settings);
         this.station = station;
     }
@@ -28,7 +28,7 @@ public class StationBlock extends Block {
     }
 
     @Override
-    public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
+    public void animateTick(BlockState state, Level world, BlockPos pos, RandomSource random) {
         if (station == Station.FURNACE || station == Station.RANGE) {
             world.addParticle(ParticleTypes.SMOKE, pos.getX() + 0.5, pos.getY() + 1.05, pos.getZ() + 0.5, 0, 0.03, 0);
         } else if (station == Station.PORTAL) {
@@ -41,13 +41,13 @@ public class StationBlock extends Block {
 
     @Override
     @SuppressWarnings("deprecation")
-    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
-        if (hand != Hand.MAIN_HAND) {
-            return ActionResult.PASS;
+    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        if (hand != InteractionHand.MAIN_HAND) {
+            return InteractionResult.PASS;
         }
-        if (!world.isClient() && player instanceof ServerPlayerEntity sp) {
+        if (!world.isClientSide() && player instanceof ServerPlayer sp) {
             Stations.use(sp, station, pos);
         }
-        return ActionResult.success(world.isClient());
+        return InteractionResult.sidedSuccess(world.isClientSide());
     }
 }

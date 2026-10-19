@@ -6,18 +6,17 @@ import com.runecraft.osrs.content.minigames.MinigameItems;
 import com.runecraft.osrs.content.minigames.MinigameRules.WarriorsGuild;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * Warriors' Guild. The animator room: place a full helm, platebody and platelegs on a magical
@@ -28,14 +27,14 @@ import java.util.Map;
  */
 public class WarriorsGuildSession extends MinigameSession {
     /** Token multiplier for animated armour (the systems module applies the Combat Achievement bonus). */
-    public static java.util.function.ToIntFunction<ServerPlayerEntity> tokenMultiplier = p -> 1;
+    public static java.util.function.ToIntFunction<ServerPlayer> tokenMultiplier = p -> 1;
 
     private final boolean cyclopsRoom;
     /** Animated armour entity id -> (owner, tier) so the armour can be returned. */
     private final Map<Integer, Object[]> animated = new HashMap<>();
     private long nextCharge;
 
-    public WarriorsGuildSession(int id, int slot, ServerWorld world, String variant) {
+    public WarriorsGuildSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.WARRIORS_GUILD, id, slot, world, variant);
         this.cyclopsRoom = variant.contains("cyclops");
     }
@@ -63,14 +62,14 @@ public class WarriorsGuildSession extends MinigameSession {
     }
 
     @Override
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
+    protected BlockPos spawnPoint(ServerPlayer player, int index) {
         return rel(index % 3 - 1, 1, 11);
     }
 
     @Override
     protected void start() {
         if (cyclopsRoom) {
-            for (ServerPlayerEntity p : online()) {
+            for (ServerPlayer p : online()) {
                 Inv.remove(p, "warrior_guild_token", WarriorsGuild.CYCLOPS_TOKENS);
                 Msg.game(p, WarriorsGuild.CYCLOPS_TOKENS + " tokens are taken as you enter the cyclops room.");
             }
@@ -79,7 +78,7 @@ public class WarriorsGuildSession extends MinigameSession {
     }
 
     /** Index of the best defender a player owns (0 bronze .. 7 dragon), or -1. */
-    private static int bestDefender(ServerPlayerEntity p) {
+    private static int bestDefender(ServerPlayer p) {
         int best = -1;
         for (int i = 0; i < MinigameItems.DEFENDER_TIERS.length; i++) {
             if (Inv.has(p, MinigameItems.DEFENDER_TIERS[i] + "_defender", 1)) {
@@ -96,7 +95,7 @@ public class WarriorsGuildSession extends MinigameSession {
         }
         if (ticks >= nextCharge) {
             nextCharge = ticks + WarriorsGuild.CYCLOPS_TICKS_PER_CHARGE;
-            for (ServerPlayerEntity p : online()) {
+            for (ServerPlayer p : online()) {
                 if (Inv.remove(p, "warrior_guild_token", WarriorsGuild.CYCLOPS_TOKENS) < WarriorsGuild.CYCLOPS_TOKENS) {
                     Msg.red(p, "You have run out of tokens.");
                     removePlayer(p, true);
@@ -109,7 +108,7 @@ public class WarriorsGuildSession extends MinigameSession {
         boolean elite = online().stream().anyMatch(p -> bestDefender(p) >= 6);
         List<LivingEntity> cyclopes = living(null);
         if (ticks % 10 == 0 && cyclopes.size() < 4 + playerCount()) {
-            MobEntity c = spawn(elite ? "cyclops_elite" : "warriors_guild_cyclops", randomFloor(0, -6, 8));
+            Mob c = spawn(elite ? "cyclops_elite" : "warriors_guild_cyclops", randomFloor(0, -6, 8));
             if (c != null) {
                 aggro(c);
             }
@@ -117,7 +116,7 @@ public class WarriorsGuildSession extends MinigameSession {
     }
 
     @Override
-    protected boolean onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         if (!blockId.equals("wg_armour_animator")) {
             return false;
         }
@@ -128,11 +127,11 @@ public class WarriorsGuildSession extends MinigameSession {
                 Inv.remove(player, tier + "_full_helm", 1);
                 Inv.remove(player, tier + "_platebody", 1);
                 Inv.remove(player, tier + "_platelegs", 1);
-                MobEntity armour = spawn("animated_" + tier + "_armour", pos.up().south(2));
+                Mob armour = spawn("animated_" + tier + "_armour", pos.above().south(2));
                 if (armour != null) {
                     armour.setTarget(player);
-                    animated.put(armour.getId(), new Object[]{player.getUuid(), tier});
-                    world.spawnParticles(ParticleTypes.ENCHANT, armour.getX(), armour.getY() + 1, armour.getZ(), 30, 0.5, 1, 0.5, 0.5);
+                    animated.put(armour.getId(), new Object[]{player.getUUID(), tier});
+                    world.sendParticles(ParticleTypes.ENCHANT, armour.getX(), armour.getY() + 1, armour.getZ(), 30, 0.5, 1, 0.5, 0.5);
                     Msg.game(player, "You place your armour on the platform where it disappears... The animator hums, something appears!");
                 }
                 return true;
@@ -143,7 +142,7 @@ public class WarriorsGuildSession extends MinigameSession {
     }
 
     @Override
-    protected void onKill(ServerPlayerEntity player, LivingEntity entity, String creatureId) {
+    protected void onKill(ServerPlayer player, LivingEntity entity, String creatureId) {
         Object[] a = animated.remove(entity.getId());
         if (a != null) {
             String tier = (String) a[1];
@@ -173,20 +172,20 @@ public class WarriorsGuildSession extends MinigameSession {
     }
 
     @Override
-    protected void onLeave(ServerPlayerEntity player) {
+    protected void onLeave(ServerPlayer player) {
         for (Object[] a : new ArrayList<>(animated.values())) {
-            if (player.getUuid().equals(a[0])) {
+            if (player.getUUID().equals(a[0])) {
                 String tier = (String) a[1];
                 Inv.give(player, tier + "_full_helm", 1);
                 Inv.give(player, tier + "_platebody", 1);
                 Inv.give(player, tier + "_platelegs", 1);
             }
         }
-        animated.values().removeIf(a -> player.getUuid().equals(a[0]));
+        animated.values().removeIf(a -> player.getUUID().equals(a[0]));
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
+    protected List<String> hud(ServerPlayer player) {
         int best = bestDefender(player);
         return List.of(cyclopsRoom ? "Warriors' Guild - Cyclops room" : "Warriors' Guild - Animator room",
                 "Tokens: " + Inv.count(player, "warrior_guild_token"),

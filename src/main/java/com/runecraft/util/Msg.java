@@ -1,24 +1,24 @@
 package com.runecraft.util;
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Player;
 
 /** Game-style chat messages. */
 public final class Msg {
     private Msg() {
     }
 
-    public static void game(PlayerEntity player, String message) {
-        player.sendMessage(Text.literal(message), false);
+    public static void game(Player player, String message) {
+        player.displayClientMessage(Component.literal(message), false);
     }
 
-    public static void red(PlayerEntity player, String message) {
-        player.sendMessage(Text.literal(message).formatted(Formatting.RED), false);
+    public static void red(Player player, String message) {
+        player.displayClientMessage(Component.literal(message).withStyle(ChatFormatting.RED), false);
     }
 
-    public static void action(PlayerEntity player, String message) {
-        player.sendMessage(Text.literal(message), true);
+    public static void action(Player player, String message) {
+        player.displayClientMessage(Component.literal(message), true);
     }
 
     public static String article(String noun) {

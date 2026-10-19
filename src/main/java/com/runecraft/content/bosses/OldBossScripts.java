@@ -9,14 +9,13 @@ import com.runecraft.osrs.content.bosses.BossMechanics;
 import com.runecraft.osrs.data.Boss;
 import com.runecraft.registry.ModItems;
 import com.runecraft.util.Msg;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Scripts for the old-style {@link BossEntity} bosses: Bryophyta's growthlings and Obor's ranged attack and knockback
@@ -35,7 +34,7 @@ public final class OldBossScripts {
      * Self-test (boss:bryophyta_growthlings): a batch of three growthlings appears, Bryophyta takes no damage while any
      * lives, takes damage again once they're dead, and the next batch waits for the cooldown. Throws on a failure.
      */
-    public static String selfTestGrowthlings(BossEntity boss, ServerPlayerEntity p) {
+    public static String selfTestGrowthlings(BossEntity boss, ServerPlayer p) {
         if (!(boss.script() instanceof Bryophyta b)) {
             throw new IllegalStateException("Bryophyta has no growthling script");
         }
@@ -48,7 +47,7 @@ public final class OldBossScripts {
         if (blocked != 0) {
             throw new IllegalStateException("Bryophyta took " + blocked + " while her growthlings lived");
         }
-        for (MobEntity g : new ArrayList<>(b.growthlings)) {
+        for (Mob g : new ArrayList<>(b.growthlings)) {
             g.discard();
         }
         b.gameTick(boss);
@@ -66,7 +65,7 @@ public final class OldBossScripts {
     }
 
     /** Self-test (boss:obor_knockback): the slam pushes a player standing in the open straight away from Obor. */
-    public static String selfTestKnockback(BossEntity boss, ServerPlayerEntity p) {
+    public static String selfTestKnockback(BossEntity boss, ServerPlayer p) {
         double before = Math.hypot(p.getX() - boss.getX(), p.getZ() - boss.getZ());
         int tiles = Obor.knockback(boss, p);
         double after = Math.hypot(p.getX() - boss.getX(), p.getZ() - boss.getZ());
@@ -77,7 +76,7 @@ public final class OldBossScripts {
             throw new IllegalStateException("Obor's ranged max hit is " + boss.maxHitAgainst(p, AttackType.RANGED));
         }
         if (boss.script() instanceof Obor o && !Obor.frozen(boss)) {
-            double farSq = Math.pow(boss.getWidth() * 1.4 + 4, 2);
+            double farSq = Math.pow(boss.getBbWidth() * 1.4 + 4, 2);
             long was = o.rangedFrom;
             o.rangedFrom = ActionManager.mcTick() + 100;
             AttackType walking = boss.chooseStyle(p, farSq);
@@ -94,8 +93,8 @@ public final class OldBossScripts {
     }
 
     /** Whether the player's held weapon finishes growthlings: an axe (not the blessed axe) or magic secateurs. */
-    static boolean cutsGrowthling(ServerPlayerEntity p) {
-        ItemDef def = ModItems.def(p.getMainHandStack());
+    static boolean cutsGrowthling(ServerPlayer p) {
+        ItemDef def = ModItems.def(p.getMainHandItem());
         return BossMechanics.cutsGrowthling(BossFx.heldId(p), def != null && def.kind() == ItemDef.Kind.AXE);
     }
 
@@ -104,7 +103,7 @@ public final class OldBossScripts {
      * dies). While any lives she takes no damage except poison and venom; only an axe or magic secateurs finishes one.
      */
     static final class Bryophyta implements BossEntity.Script {
-        private final List<MobEntity> growthlings = new ArrayList<>();
+        private final List<Mob> growthlings = new ArrayList<>();
         private long nextBatch;
         private long firstDeath = -1;
         private long lastDeath = -1;
@@ -112,11 +111,11 @@ public final class OldBossScripts {
         private boolean warned;
 
         boolean protectedByGrowthlings() {
-            return growthlings.stream().anyMatch(MobEntity::isAlive);
+            return growthlings.stream().anyMatch(Mob::isAlive);
         }
 
         @Override
-        public void afterAttack(BossEntity boss, ServerPlayerEntity target, AttackType type) {
+        public void afterAttack(BossEntity boss, ServerPlayer target, AttackType type) {
             long now = ActionManager.gameTick();
             if (!growthlings.isEmpty() || now < nextBatch || boss.getRandom().nextInt(BossMechanics.GROWTHLING_CHANCE) != 0) {
                 return;
@@ -125,11 +124,11 @@ public final class OldBossScripts {
         }
 
         /** Summons a batch of growthlings around her (also used by the self-test). */
-        void summon(BossEntity boss, ServerPlayerEntity target) {
+        void summon(BossEntity boss, ServerPlayer target) {
             for (int i = 0; i < BossMechanics.GROWTHLINGS; i++) {
                 double a = Math.PI * 2 * i / BossMechanics.GROWTHLINGS;
-                Vec3d at = BossFx.ground(BossFx.world(boss), boss.getX() + Math.cos(a) * 3, boss.getZ() + Math.sin(a) * 3, boss.getY());
-                MobEntity g = BossFx.spawnMinion(boss, BossMechanics.GROWTHLING, at, target);
+                Vec3 at = BossFx.ground(BossFx.world(boss), boss.getX() + Math.cos(a) * 3, boss.getZ() + Math.sin(a) * 3, boss.getY());
+                Mob g = BossFx.spawnMinion(boss, BossMechanics.GROWTHLING, at, target);
                 if (g == null) {
                     continue;
                 }
@@ -153,7 +152,7 @@ public final class OldBossScripts {
                 return;
             }
             long now = ActionManager.gameTick();
-            for (MobEntity g : new ArrayList<>(growthlings)) {
+            for (Mob g : new ArrayList<>(growthlings)) {
                 if (!g.isAlive()) {
                     growthlings.remove(g);
                     dead++;
@@ -172,7 +171,7 @@ public final class OldBossScripts {
         }
 
         @Override
-        public int modifyIncoming(BossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        public int modifyIncoming(BossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             if (!protectedByGrowthlings()) {
                 return damage;
             }
@@ -185,7 +184,7 @@ public final class OldBossScripts {
 
         @Override
         public void onRemoved(BossEntity boss) {
-            growthlings.forEach(MobEntity::discard);
+            growthlings.forEach(Mob::discard);
             growthlings.clear();
         }
     }
@@ -206,7 +205,7 @@ public final class OldBossScripts {
          * A melee style makes the attack goal chase; a ranged one makes it stand and shoot.
          */
         @Override
-        public AttackType chooseStyle(BossEntity boss, ServerPlayerEntity target, double distanceSq, AttackType chosen) {
+        public AttackType chooseStyle(BossEntity boss, ServerPlayer target, double distanceSq, AttackType chosen) {
             if (boss.adjacent(distanceSq)) {
                 return AttackType.CRUSH;
             }
@@ -215,12 +214,12 @@ public final class OldBossScripts {
 
         /** Whether a freeze or bind holds him in place (the same test as the "frozen" Combat Achievement rule). */
         static boolean frozen(BossEntity boss) {
-            var slow = boss.getStatusEffect(net.minecraft.entity.effect.StatusEffects.SLOWNESS);
+            var slow = boss.getEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN);
             return slow != null && slow.getAmplifier() >= 6;
         }
 
         @Override
-        public int maxHit(BossEntity boss, ServerPlayerEntity player, AttackType type, int max) {
+        public int maxHit(BossEntity boss, ServerPlayer player, AttackType type, int max) {
             return type == AttackType.RANGED ? BossMechanics.OBOR_RANGED_MAX : BossMechanics.OBOR_MELEE_MAX;
         }
 
@@ -230,7 +229,7 @@ public final class OldBossScripts {
         }
 
         @Override
-        public void afterAttack(BossEntity boss, ServerPlayerEntity target, AttackType type) {
+        public void afterAttack(BossEntity boss, ServerPlayer target, AttackType type) {
             rangedFrom = ActionManager.mcTick() + ((long) boss.stats().attackSpeed()
                     + boss.getRandom().nextInt(RANGED_WALK_TICKS + 1)) * ActionManager.MC_TICKS_PER_GAME_TICK;
             if (type.isMelee() && boss.getRandom().nextInt(BossMechanics.OBOR_KNOCKBACK_CHANCE) == 0) {
@@ -239,21 +238,21 @@ public final class OldBossScripts {
         }
 
         /** Pushes the target up to two tiles straight away from Obor; returns the whole tiles moved. */
-        static int knockback(BossEntity boss, ServerPlayerEntity target) {
-            Vec3d dir = new Vec3d(target.getX() - boss.getX(), 0, target.getZ() - boss.getZ());
-            if (dir.lengthSquared() < 1.0E-4) {
-                dir = new Vec3d(1, 0, 0);
+        static int knockback(BossEntity boss, ServerPlayer target) {
+            Vec3 dir = new Vec3(target.getX() - boss.getX(), 0, target.getZ() - boss.getZ());
+            if (dir.lengthSqr() < 1.0E-4) {
+                dir = new Vec3(1, 0, 0);
             }
             dir = dir.normalize();
             var w = BossFx.world(boss);
-            Vec3d at = target.getPos();
+            Vec3 at = target.position();
             double moved = 0;
             int maxBlocks = BossMechanics.OBOR_KNOCKBACK_TILES * 2; // one OSRS tile is two blocks
             for (int step = 1; step <= maxBlocks; step++) {
-                Vec3d next = target.getPos().add(dir.multiply(step));
-                BlockPos feet = BlockPos.ofFloored(next);
+                Vec3 next = target.position().add(dir.scale(step));
+                BlockPos feet = BlockPos.containing(next);
                 if (!w.getBlockState(feet).getCollisionShape(w, feet).isEmpty()
-                        || !w.getBlockState(feet.up()).getCollisionShape(w, feet.up()).isEmpty()) {
+                        || !w.getBlockState(feet.above()).getCollisionShape(w, feet.above()).isEmpty()) {
                     break;
                 }
                 at = next;
@@ -261,9 +260,9 @@ public final class OldBossScripts {
             }
             int tiles = (int) Math.floor(moved / 2.0);
             if (moved > 0) {
-                target.requestTeleport(at.x, at.y, at.z);
+                target.teleportTo(at.x, at.y, at.z);
             }
-            w.spawnParticles(ParticleTypes.EXPLOSION, target.getX(), target.getY() + 1, target.getZ(), 1, 0, 0, 0, 0);
+            w.sendParticles(ParticleTypes.EXPLOSION, target.getX(), target.getY() + 1, target.getZ(), 1, 0, 0, 0, 0);
             Msg.action(target, "Obor's slam knocks you back!");
             if (BossMechanics.oborPushedTooFar(tiles)) {
                 CombatAchievementService.flag(target, BossMechanics.FLAG_OBOR_PUSHED);

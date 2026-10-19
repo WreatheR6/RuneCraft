@@ -12,13 +12,12 @@ import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.Hand;
-import net.minecraft.util.TypedActionResult;
-
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.item.ItemStack;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -38,28 +37,28 @@ public final class CoxSupplyService {
 
     static void init() {
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            ItemStack stack = player.getStackInHand(hand);
-            if (stack.isEmpty() || !(player instanceof ServerPlayerEntity sp)) {
-                return TypedActionResult.pass(stack);
+            ItemStack stack = player.getItemInHand(hand);
+            if (stack.isEmpty() || !(player instanceof ServerPlayer sp)) {
+                return InteractionResultHolder.pass(stack);
             }
             String id = Inv.idOf(stack);
             if (id == null || !CoxSupplies.ITEMS.contains(id)) {
-                return TypedActionResult.pass(stack);
+                return InteractionResultHolder.pass(stack);
             }
             CoxSupplies.Herb grimy = CoxSupplies.Herb.byGrimy(id);
             CoxSupplies.Brew brew = CoxSupplies.brew(id);
             boolean secondary = id.equals(CoxSupplies.STINKHORN) || id.equals(CoxSupplies.ENDARKENED) || id.equals(CoxSupplies.CICELY)
                     || id.equals(CoxSupplies.Herb.NOXIFER.clean);
             if (grimy == null && brew == null && !secondary) {
-                return TypedActionResult.pass(stack);
+                return InteractionResultHolder.pass(stack);
             }
             RaidInstance raid = RaidManager.of(sp);
             if (raid == null || raid.type != RaidType.COX) {
                 Msg.game(sp, "This can only be used inside the Chambers of Xeric.");
-                return TypedActionResult.success(stack);
+                return InteractionResultHolder.success(stack);
             }
-            if (player.getItemCooldownManager().isCoolingDown(stack.getItem())) {
-                return TypedActionResult.success(stack);
+            if (player.getCooldowns().isOnCooldown(stack.getItem())) {
+                return InteractionResultHolder.success(stack);
             }
             if (grimy != null) {
                 clean(sp, grimy);
@@ -68,7 +67,7 @@ public final class CoxSupplyService {
             } else {
                 mix(sp, id);
             }
-            return TypedActionResult.success(stack);
+            return InteractionResultHolder.success(stack);
         });
     }
 
@@ -82,13 +81,13 @@ public final class CoxSupplyService {
      * overload (+) and drinks an elder (+), checking each result; restores the player's Herblore XP, boosts and hand.
      * Returns a summary, or throws an {@link AssertionError}.
      */
-    public static String selfTest(ServerPlayerEntity p) {
+    public static String selfTest(ServerPlayer p) {
         if (!inCox(p)) {
             throw new AssertionError("the player is not in a Chambers of Xeric raid");
         }
         SkillSet skills = Players.data(p).skills();
         int herbloreTenths = skills.xpTenths(Skill.HERBLORE);
-        ItemStack hand = p.getMainHandStack().copy();
+        ItemStack hand = p.getMainHandItem().copy();
         try {
             skills.setXpTenths(Skill.HERBLORE, com.runecraft.osrs.Experience.xpForLevel(99) * 10);
             Inv.give(p, CoxSupplies.Herb.GOLPAR.grimy(), 3);
@@ -109,16 +108,16 @@ public final class CoxSupplyService {
             expect(p, CoxSupplies.Potion.ELDER.id(strong), 0, "the overload used the elder (+)");
             String elder = CoxSupplies.Potion.ELDER.id(strong);
             ItemStack dose = Inv.stack(elder, 1);
-            p.setStackInHand(Hand.MAIN_HAND, dose);
-            p.getItemCooldownManager().remove(dose.getItem());
+            p.setItemInHand(InteractionHand.MAIN_HAND, dose);
+            p.getCooldowns().removeCooldown(dose.getItem());
             skills.setBoost(Skill.ATTACK, 0);
-            drink(p, dose, Hand.MAIN_HAND, CoxSupplies.brew(elder));
+            drink(p, dose, InteractionHand.MAIN_HAND, CoxSupplies.brew(elder));
             int want = CoxSupplies.combatBoost(strong, skills.level(Skill.ATTACK));
             if (skills.boost(Skill.ATTACK) != want) {
                 throw new AssertionError("elder (+) boosted Attack by " + skills.boost(Skill.ATTACK) + ", expected " + want);
             }
-            if (p.getMainHandStack().getDamage() != 1) {
-                throw new AssertionError("drinking did not use a dose (damage " + p.getMainHandStack().getDamage() + ")");
+            if (p.getMainHandItem().getDamageValue() != 1) {
+                throw new AssertionError("drinking did not use a dose (damage " + p.getMainHandItem().getDamageValue() + ")");
             }
             return "cleaned, brewed elder/twisted/kodai (+), mixed an overload (+), elder (+) Attack +" + want;
         } finally {
@@ -129,26 +128,26 @@ public final class CoxSupplyService {
             for (Skill s : COMBAT) {
                 skills.setBoost(s, 0);
             }
-            p.setStackInHand(Hand.MAIN_HAND, hand);
+            p.setItemInHand(InteractionHand.MAIN_HAND, hand);
             ServerNetworking.sync(p);
         }
     }
 
-    private static void expect(ServerPlayerEntity p, String id, int n, String what) {
+    private static void expect(ServerPlayer p, String id, int n, String what) {
         int have = Inv.count(p, id);
         if (have != n) {
             throw new AssertionError(what + ": " + have + " x " + id + " (expected " + n + ")");
         }
     }
 
-    private static int level(ServerPlayerEntity p, Skill s) {
+    private static int level(ServerPlayer p, Skill s) {
         return Players.data(p).skills().level(s);
     }
 
     // ------------------------------------------------------------------ herblore
 
     /** Cleans every grimy herb of this kind the player carries (Herblore 47/52/60, 1/2/3 XP each). */
-    static void clean(ServerPlayerEntity p, CoxSupplies.Herb herb) {
+    static void clean(ServerPlayer p, CoxSupplies.Herb herb) {
         if (level(p, Skill.HERBLORE) < herb.cleanLevel) {
             Msg.game(p, "You need a Herblore level of " + herb.cleanLevel + " to clean this herb.");
             return;
@@ -169,7 +168,7 @@ public final class CoxSupplyService {
      * vial; a noxifer mixes an elder, a twisted and a kodai potion (any strengths) into an overload. The strength made
      * follows the Herblore level (and, for an overload, the weakest of the three potions).
      */
-    static void mix(ServerPlayerEntity p, String secondary) {
+    static void mix(ServerPlayer p, String secondary) {
         int herblore = level(p, Skill.HERBLORE);
         if (secondary.equals(CoxSupplies.Herb.NOXIFER.clean)) {
             CoxSupplies.Strength s = CoxSupplies.Potion.OVERLOAD.strengthFor(herblore);
@@ -212,7 +211,7 @@ public final class CoxSupplyService {
             finish(p);
             return;
         }
-        String offhand = Inv.idOf(p.getOffHandStack());
+        String offhand = Inv.idOf(p.getOffhandItem());
         CoxSupplies.Herb herb = CoxSupplies.Herb.byClean(offhand);
         if (herb == null || herb == CoxSupplies.Herb.NOXIFER) {
             herb = Inv.has(p, CoxSupplies.Herb.GOLPAR.clean, 1) ? CoxSupplies.Herb.GOLPAR
@@ -246,14 +245,14 @@ public final class CoxSupplyService {
         return ("aeiou".indexOf(lower.charAt(0)) >= 0 ? "an " : "a ") + lower;
     }
 
-    private static void finish(ServerPlayerEntity p) {
-        p.getWorld().playSound(null, p.getBlockPos(), SoundEvents.ITEM_BOTTLE_FILL, SoundCategory.PLAYERS, 0.5f, 1.0f);
+    private static void finish(ServerPlayer p) {
+        p.level().playSound(null, p.blockPosition(), SoundEvents.BOTTLE_FILL, SoundSource.PLAYERS, 0.5f, 1.0f);
         ServerNetworking.sync(p);
     }
 
     // ------------------------------------------------------------------ drinking
 
-    static void drink(ServerPlayerEntity p, ItemStack stack, Hand hand, CoxSupplies.Brew brew) {
+    static void drink(ServerPlayer p, ItemStack stack, InteractionHand hand, CoxSupplies.Brew brew) {
         PlayerData data = Players.data(p);
         SkillSet skills = data.skills();
         CoxSupplies.Strength s = brew.strength();
@@ -265,7 +264,7 @@ public final class CoxSupplyService {
                 Msg.action(p, "You drink some of your " + brew.potion().displayName(s).toLowerCase(java.util.Locale.ROOT) + ".");
             }
             case OVERLOAD -> {
-                if (OVERLOAD_UNTIL.getOrDefault(p.getUuid(), 0L) > ActionManager.gameTick()) {
+                if (OVERLOAD_UNTIL.getOrDefault(p.getUUID(), 0L) > ActionManager.gameTick()) {
                     Msg.game(p, "You are already under the effects of an overload.");
                     return;
                 }
@@ -305,14 +304,14 @@ public final class CoxSupplyService {
                 Msg.action(p, "You drink some of your prayer enhance. You feel your prayer slowly restoring.");
             }
         }
-        int used = stack.getDamage() + 1;
+        int used = stack.getDamageValue() + 1;
         if (used >= 4) {
-            p.setStackInHand(hand, ItemStack.EMPTY);
+            p.setItemInHand(hand, ItemStack.EMPTY);
         } else {
-            stack.setDamage(used);
+            stack.setDamageValue(used);
         }
-        p.getItemCooldownManager().set(stack.getItem(), 3 * ActionManager.MC_TICKS_PER_GAME_TICK);
-        p.getWorld().playSound(null, p.getBlockPos(), SoundEvents.ENTITY_GENERIC_DRINK, SoundCategory.PLAYERS, 0.5f, 1.0f);
+        p.getCooldowns().addCooldown(stack.getItem(), 3 * ActionManager.MC_TICKS_PER_GAME_TICK);
+        p.level().playSound(null, p.blockPosition(), SoundEvents.GENERIC_DRINK, SoundSource.PLAYERS, 0.5f, 1.0f);
         ServerNetworking.sync(p);
     }
 
@@ -327,8 +326,8 @@ public final class CoxSupplyService {
      * Overload (OSRS): 50 hitpoints of damage in five hits of 10, the combat boosts re-applied every 15 seconds for five
      * minutes, then 50 hitpoints healed. It ends when the player leaves the Chambers.
      */
-    static void overload(ServerPlayerEntity p, CoxSupplies.Strength s) {
-        UUID u = p.getUuid();
+    static void overload(ServerPlayer p, CoxSupplies.Strength s) {
+        UUID u = p.getUUID();
         long until = ActionManager.gameTick() + CoxSupplies.OVERLOAD_TICKS;
         OVERLOAD_UNTIL.put(u, until);
         OVERLOAD_STRENGTH.put(u, s);
@@ -356,8 +355,8 @@ public final class CoxSupplyService {
         });
     }
 
-    private static void overloadBoost(ServerPlayerEntity p) {
-        CoxSupplies.Strength s = OVERLOAD_STRENGTH.get(p.getUuid());
+    private static void overloadBoost(ServerPlayer p) {
+        CoxSupplies.Strength s = OVERLOAD_STRENGTH.get(p.getUUID());
         if (s == null) {
             return;
         }
@@ -368,13 +367,13 @@ public final class CoxSupplyService {
         ServerNetworking.sync(p);
     }
 
-    private static boolean inCox(ServerPlayerEntity p) {
+    private static boolean inCox(ServerPlayer p) {
         RaidInstance raid = RaidManager.of(p);
         return raid != null && raid.type == RaidType.COX;
     }
 
     /** Runs {@code effect} every {@code every} game ticks, {@code times} times, while the player stays in the Chambers. */
-    private static void pulse(ServerPlayerEntity p, int every, int times, Runnable effect) {
+    private static void pulse(ServerPlayer p, int every, int times, Runnable effect) {
         if (times <= 0) {
             return;
         }
@@ -388,12 +387,12 @@ public final class CoxSupplyService {
         });
     }
 
-    private static int hitpoints(ServerPlayerEntity p) {
+    private static int hitpoints(ServerPlayer p) {
         return com.runecraft.combat.Overheal.hitpoints(p);
     }
 
     /** Sets hitpoints, holding anything above the maximum as overheal (Xeric's aid heals above the maximum). */
-    private static void setHitpoints(ServerPlayerEntity p, int total) {
+    private static void setHitpoints(ServerPlayer p, int total) {
         float max = p.getMaxHealth();
         p.setHealth(Math.min(max, Math.max(1, total)));
         p.setAbsorptionAmount(Math.max(0, total - max));

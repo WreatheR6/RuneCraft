@@ -13,20 +13,20 @@ import com.runecraft.registry.ModEntities;
 import com.runecraft.skill.Drops;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.boss.BossBar;
-import net.minecraft.entity.boss.ServerBossBar;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.mob.HostileEntity;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.world.World;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerBossEvent;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.BossEvent;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.level.Level;
 
 /** A boss with its OSRS signature mechanics, a boss bar, kill counts and collection log drops. */
 public class BossEntity extends OsrsMonsterEntity {
@@ -40,20 +40,20 @@ public class BossEntity extends OsrsMonsterEntity {
         }
 
         /** The style for the next attack ({@code chosen} is the boss's own choice). */
-        default AttackType chooseStyle(BossEntity boss, ServerPlayerEntity target, double distanceSq, AttackType chosen) {
+        default AttackType chooseStyle(BossEntity boss, ServerPlayer target, double distanceSq, AttackType chosen) {
             return chosen;
         }
 
         /** Called before each attack; true when the script performed it itself. */
-        default boolean performAttack(BossEntity boss, ServerPlayerEntity target, AttackType type) {
+        default boolean performAttack(BossEntity boss, ServerPlayer target, AttackType type) {
             return false;
         }
 
         /** Called after the boss's normal attack has been made. */
-        default void afterAttack(BossEntity boss, ServerPlayerEntity target, AttackType type) {
+        default void afterAttack(BossEntity boss, ServerPlayer target, AttackType type) {
         }
 
-        default int maxHit(BossEntity boss, ServerPlayerEntity player, AttackType type, int max) {
+        default int maxHit(BossEntity boss, ServerPlayer player, AttackType type, int max) {
             return max;
         }
 
@@ -62,7 +62,7 @@ public class BossEntity extends OsrsMonsterEntity {
             return 0;
         }
 
-        default int modifyIncoming(BossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        default int modifyIncoming(BossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             return damage;
         }
 
@@ -78,10 +78,10 @@ public class BossEntity extends OsrsMonsterEntity {
         SCRIPTS.put(boss, factory);
     }
 
-    private final ServerBossBar bossBar;
+    private final ServerBossEvent bossBar;
     private int attackCounter;
     private AttackType pendingStyle;
-    private ServerPlayerEntity pendingTarget;
+    private ServerPlayer pendingTarget;
     private long pendingAt;
     private Script script;
     private boolean scriptMade;
@@ -98,12 +98,12 @@ public class BossEntity extends OsrsMonsterEntity {
         return script;
     }
 
-    public BossEntity(EntityType<? extends HostileEntity> type, World world) {
+    public BossEntity(EntityType<? extends Monster> type, Level world) {
         super(type, world);
         Boss boss = boss();
-        this.bossBar = new ServerBossBar(Text.literal(boss == null ? "Boss" : boss.displayName()),
-                BossBar.Color.RED, BossBar.Style.NOTCHED_10);
-        setPersistent();
+        this.bossBar = new ServerBossEvent(Component.literal(boss == null ? "Boss" : boss.displayName()),
+                BossEvent.BossBarColor.RED, BossEvent.BossBarOverlay.NOTCHED_10);
+        setPersistenceRequired();
     }
 
     public Boss boss() {
@@ -111,27 +111,27 @@ public class BossEntity extends OsrsMonsterEntity {
     }
 
     @Override
-    protected boolean shouldAggro(net.minecraft.entity.LivingEntity entity) {
-        return entity instanceof ServerPlayerEntity p && !p.isCreative() && !p.isSpectator();
+    protected boolean shouldAggro(net.minecraft.world.entity.LivingEntity entity) {
+        return entity instanceof ServerPlayer p && !p.isCreative() && !p.isSpectator();
     }
 
     @Override
-    public void onStartedTrackingBy(ServerPlayerEntity player) {
-        super.onStartedTrackingBy(player);
+    public void startSeenByPlayer(ServerPlayer player) {
+        super.startSeenByPlayer(player);
         bossBar.addPlayer(player);
     }
 
     @Override
-    public void onStoppedTrackingBy(ServerPlayerEntity player) {
-        super.onStoppedTrackingBy(player);
+    public void stopSeenByPlayer(ServerPlayer player) {
+        super.stopSeenByPlayer(player);
         bossBar.removePlayer(player);
     }
 
     @Override
-    protected void mobTick() {
-        super.mobTick();
-        bossBar.setPercent(getHealth() / getMaxHealth());
-        if (script() != null && age % ActionManager.MC_TICKS_PER_GAME_TICK == 0 && isAlive()) {
+    protected void customServerAiStep() {
+        super.customServerAiStep();
+        bossBar.setProgress(getHealth() / getMaxHealth());
+        if (script() != null && tickCount % ActionManager.MC_TICKS_PER_GAME_TICK == 0 && isAlive()) {
             script.gameTick(this);
         }
         if (pendingStyle != null && ActionManager.mcTick() >= pendingAt) {
@@ -144,17 +144,17 @@ public class BossEntity extends OsrsMonsterEntity {
     }
 
     @Override
-    public AttackType chooseStyle(ServerPlayerEntity target, double distanceSq) {
+    public AttackType chooseStyle(ServerPlayer target, double distanceSq) {
         AttackType chosen = baseStyle(target, distanceSq);
         return script() != null ? script.chooseStyle(this, target, distanceSq, chosen) : chosen;
     }
 
     /** Whether a target at this squared distance is in melee reach. */
     public boolean adjacent(double distanceSq) {
-        return distanceSq < Math.pow(getWidth() * 1.4 + 1.2, 2);
+        return distanceSq < Math.pow(getBbWidth() * 1.4 + 1.2, 2);
     }
 
-    private AttackType baseStyle(ServerPlayerEntity target, double distanceSq) {
+    private AttackType baseStyle(ServerPlayer target, double distanceSq) {
         Boss boss = boss();
         boolean adjacent = adjacent(distanceSq);
         return switch (boss.mechanic()) {
@@ -169,7 +169,7 @@ public class BossEntity extends OsrsMonsterEntity {
     }
 
     @Override
-    public void performAttack(ServerPlayerEntity target, AttackType type) {
+    public void performAttack(ServerPlayer target, AttackType type) {
         attackStyle = type;
         if (script() != null && script.performAttack(this, target, type)) {
             return;
@@ -180,10 +180,10 @@ public class BossEntity extends OsrsMonsterEntity {
         }
     }
 
-    private void bossAttack(ServerPlayerEntity target, AttackType type) {
+    private void bossAttack(ServerPlayer target, AttackType type) {
         Boss boss = boss();
         attackCounter++;
-        ServerWorld world = (ServerWorld) getWorld();
+        ServerLevel world = (ServerLevel) level();
         switch (boss.mechanic()) {
             case JAD -> {
                 if (type.isMelee()) {
@@ -194,20 +194,20 @@ public class BossEntity extends OsrsMonsterEntity {
                 pendingTarget = target;
                 pendingAt = ActionManager.mcTick() + 3L * ActionManager.MC_TICKS_PER_GAME_TICK;
                 if (type == AttackType.MAGIC) {
-                    world.spawnParticles(ParticleTypes.FLAME, getX(), getY() + getHeight(), getZ(), 40, 0.6, 0.6, 0.6, 0.05);
-                    world.playSound(null, getBlockPos(), SoundEvents.ENTITY_BLAZE_SHOOT, SoundCategory.HOSTILE, 2f, 0.5f);
+                    world.sendParticles(ParticleTypes.FLAME, getX(), getY() + getBbHeight(), getZ(), 40, 0.6, 0.6, 0.6, 0.05);
+                    world.playSound(null, blockPosition(), SoundEvents.BLAZE_SHOOT, SoundSource.HOSTILE, 2f, 0.5f);
                     Msg.action(target, "TzTok-Jad rears up!");
                 } else {
-                    world.spawnParticles(ParticleTypes.LAVA, getX(), getY() + 0.2, getZ(), 30, 1.0, 0.1, 1.0, 0.1);
-                    world.playSound(null, getBlockPos(), SoundEvents.ENTITY_RAVAGER_STUNNED, SoundCategory.HOSTILE, 2f, 0.5f);
+                    world.sendParticles(ParticleTypes.LAVA, getX(), getY() + 0.2, getZ(), 30, 1.0, 0.1, 1.0, 0.1);
+                    world.playSound(null, blockPosition(), SoundEvents.RAVAGER_STUNNED, SoundSource.HOSTILE, 2f, 0.5f);
                     Msg.action(target, "TzTok-Jad stomps the ground!");
                 }
                 return;
             }
             case GRAARDOR -> {
                 if (type == AttackType.RANGED) {
-                    world.spawnParticles(ParticleTypes.EXPLOSION, getX(), getY() + 1, getZ(), 3, 1, 0.5, 1, 0);
-                    for (ServerPlayerEntity p : world.getPlayers(pl -> pl.squaredDistanceTo(this) < 12 * 12 && pl.isAlive())) {
+                    world.sendParticles(ParticleTypes.EXPLOSION, getX(), getY() + 1, getZ(), 3, 1, 0.5, 1, 0);
+                    for (ServerPlayer p : world.getPlayers(pl -> pl.distanceToSqr(this) < 12 * 12 && pl.isAlive())) {
                         CombatHandler.npcAttack(this, p, AttackType.RANGED);
                         resetCooldownHack();
                     }
@@ -218,15 +218,15 @@ public class BossEntity extends OsrsMonsterEntity {
                 if (type.isMelee() && Players.data(target).isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE) && random.nextInt(9) == 0) {
                     // "YARRRRRRR!" prayer smash (OSRS Wiki): 1 in 9 melee hits against Protect from Melee; always 35-49
                     // through prayer, and drains half the target's prayer points (a quarter with a spectral spirit shield).
-                    world.getServer().getPlayerManager().getPlayerList().stream().filter(p -> p.squaredDistanceTo(this) < 32 * 32)
-                            .forEach(p -> p.sendMessage(Text.literal("K'ril Tsutsaroth: YARRRRRRR!").formatted(Formatting.RED), false));
+                    world.getServer().getPlayerList().getPlayers().stream().filter(p -> p.distanceToSqr(this) < 32 * 32)
+                            .forEach(p -> p.displayClientMessage(Component.literal("K'ril Tsutsaroth: YARRRRRRR!").withStyle(ChatFormatting.RED), false));
                     com.runecraft.content.systems.CombatAchievementService.countNear(this,
                             com.runecraft.osrs.content.systems.CombatAchievements.COUNT_KRIL_YARR);
                     PlayerData data = Players.data(target);
-                    boolean spectral = "spectral_spirit_shield".equals(Inv.idOf(target.getOffHandStack()));
+                    boolean spectral = "spectral_spirit_shield".equals(Inv.idOf(target.getOffhandItem()));
                     data.setPrayerPoints(data.prayerPoints() - data.prayerPoints() / (spectral ? 4 : 2));
                     int dmg = 35 + random.nextInt(15);
-                    swingHand(net.minecraft.util.Hand.MAIN_HAND);
+                    swing(net.minecraft.world.InteractionHand.MAIN_HAND);
                     CombatHandler.applyDamage(this, target, dmg);
                     ServerNetworking.sync(target);
                     return;
@@ -244,7 +244,7 @@ public class BossEntity extends OsrsMonsterEntity {
     }
 
     @Override
-    public int maxHitAgainst(ServerPlayerEntity player, AttackType type) {
+    public int maxHitAgainst(ServerPlayer player, AttackType type) {
         int max = baseMaxHit(type);
         return script() != null ? script.maxHit(this, player, type, max) : max;
     }
@@ -280,7 +280,7 @@ public class BossEntity extends OsrsMonsterEntity {
     }
 
     @Override
-    public int onHitPlayer(ServerPlayerEntity player, int damage, AttackType type) {
+    public int onHitPlayer(ServerPlayer player, int damage, AttackType type) {
         Boss boss = boss();
         if (damage <= 0) {
             return damage;
@@ -289,12 +289,12 @@ public class BossEntity extends OsrsMonsterEntity {
             case GUTHAN -> {
                 if (random.nextInt(4) == 0) {
                     heal(damage);
-                    ((ServerWorld) getWorld()).spawnParticles(ParticleTypes.HEART, getX(), getY() + getHeight(), getZ(), 3, 0.3, 0.3, 0.3, 0);
+                    ((ServerLevel) level()).sendParticles(ParticleTypes.HEART, getX(), getY() + getBbHeight(), getZ(), 3, 0.3, 0.3, 0.3, 0);
                 }
             }
             case TORAG -> {
                 if (random.nextInt(4) == 0) {
-                    player.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 100, 1));
+                    player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 100, 1));
                     Msg.action(player, "You feel drained of energy.");
                 }
             }
@@ -320,7 +320,7 @@ public class BossEntity extends OsrsMonsterEntity {
     }
 
     @Override
-    public int modifyIncoming(ServerPlayerEntity attacker, int damage, AttackType type) {
+    public int modifyIncoming(ServerPlayer attacker, int damage, AttackType type) {
         if (script() != null) {
             damage = script.modifyIncoming(this, attacker, damage, type);
         }
@@ -331,7 +331,7 @@ public class BossEntity extends OsrsMonsterEntity {
             return Math.max(0, (int) getHealth() - 1);
         }
         if (boss.mechanic() == Boss.Mechanic.DEMON) {
-            boolean silverlight = "silverlight".equals(Inv.idOf(attacker.getMainHandStack()));
+            boolean silverlight = "silverlight".equals(Inv.idOf(attacker.getMainHandItem()));
             if (!silverlight && damage >= getHealth()) {
                 Msg.game(attacker, "Delrith is weakened, but only Silverlight can banish him!");
                 return Math.max(0, (int) getHealth() - 1);
@@ -341,12 +341,12 @@ public class BossEntity extends OsrsMonsterEntity {
     }
 
     @Override
-    public void onKilledBy(ServerPlayerEntity player) {
+    public void onKilledBy(ServerPlayer player) {
         Boss boss = boss();
         // TzHaar Fight Pit monsters (its TzTok-Jad included) drop nothing and count no kill (OSRS).
         if (com.runecraft.content.minigames.MinigameManager.owner(this)
                 instanceof com.runecraft.content.minigames.games.FightPitsSession) {
-            bossBar.clearPlayers();
+            bossBar.removeAllPlayers();
             return;
         }
         if (boss.mechanic() == Boss.Mechanic.VAMPIRE) {
@@ -355,20 +355,20 @@ public class BossEntity extends OsrsMonsterEntity {
         // As in OSRS the Barrows brothers drop nothing: their tables are rolled by the Barrows chest.
         if (boss.lair() != com.runecraft.osrs.Landmark.BARROWS) {
             for (Drops.Rolled r : Drops.roll(boss.drops(), getRandom(), false)) {
-                dropStack(Drops.withDoses(Inv.stack(r.item(), r.count()), r.doses()));
+                spawnAtLocation(Drops.withDoses(Inv.stack(r.item(), r.count()), r.doses()));
                 CollectionLog.obtain(player, r.item());
             }
         }
         PlayerData data = Players.data(player);
         int kc = data.incrementKillCount(boss.entityId());
         Msg.game(player, "Your " + boss.displayName() + " kill count is: " + kc + ".");
-        bossBar.clearPlayers();
+        bossBar.removeAllPlayers();
     }
 
     @Override
     public void remove(RemovalReason reason) {
         super.remove(reason);
-        bossBar.clearPlayers();
+        bossBar.removeAllPlayers();
         if (script != null) {
             script.onRemoved(this);
         }

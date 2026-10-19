@@ -8,13 +8,12 @@ import com.runecraft.osrs.content.minigames.MinigameCurrencies;
 import com.runecraft.osrs.content.minigames.MinigameRules.MageArena;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * The Mage Training Arena's four rooms (entered from separate entrances):
@@ -42,7 +41,7 @@ public class MageArenaSession extends MinigameSession {
     /** Alchemy value index (into MageArena.ALCHEMY_VALUES) of the cupboard item right now. */
     private int alchValue;
 
-    public MageArenaSession(int id, int slot, ServerWorld world, String variant) {
+    public MageArenaSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.MAGE_TRAINING_ARENA, id, slot, world, variant);
         int r = 0;
         for (int i = 0; i < MageArena.ROOMS.length; i++) {
@@ -74,7 +73,7 @@ public class MageArenaSession extends MinigameSession {
                     int x = random.nextInt(24) - 12;
                     int z = random.nextInt(20) - 12;
                     if (Math.abs(x) + Math.abs(z) > 3) {
-                        set(x, 1, z, Blocks.DEEPSLATE_BRICK_WALL.getDefaultState());
+                        set(x, 1, z, Blocks.DEEPSLATE_BRICK_WALL.defaultBlockState());
                     }
                 }
                 moveStatue();
@@ -105,19 +104,19 @@ public class MageArenaSession extends MinigameSession {
     }
 
     private void moveStatue() {
-        set(statue[0], 1, statue[1], Blocks.AIR.getDefaultState());
+        set(statue[0], 1, statue[1], Blocks.AIR.defaultBlockState());
         statue = new int[]{random.nextInt(22) - 11, random.nextInt(18) - 12};
         place(statue[0], statue[1], "mta_statue");
     }
 
     @Override
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
+    protected BlockPos spawnPoint(ServerPlayer player, int index) {
         return rel(index % 3 - 1, 1, 11);
     }
 
     @Override
     protected void start() {
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             if (level(p, Skill.MAGIC) < MAGIC[room]) {
                 Msg.game(p, "You need a Magic level of " + MAGIC[room] + " to train in this room.");
                 removePlayer(p, true);
@@ -125,7 +124,7 @@ public class MageArenaSession extends MinigameSession {
         }
     }
 
-    private boolean runes(ServerPlayerEntity p, Object... pairs) {
+    private boolean runes(ServerPlayer p, Object... pairs) {
         for (int i = 0; i < pairs.length; i += 2) {
             if (!Inv.has(p, (String) pairs[i], (Integer) pairs[i + 1])) {
                 Msg.game(p, "You don't have enough runes to cast this spell.");
@@ -138,8 +137,8 @@ public class MageArenaSession extends MinigameSession {
         return true;
     }
 
-    private void points(ServerPlayerEntity p, String currency, int amount) {
-        int have = MinigameData.of(p).points(p.getUuid(), MinigameCurrencies.key(currency));
+    private void points(ServerPlayer p, String currency, int amount) {
+        int have = MinigameData.of(p).points(p.getUUID(), MinigameCurrencies.key(currency));
         amount = Math.max(0, Math.min(amount, MageArena.MAX_POINTS[room] - have));
         if (amount == 0) {
             Msg.game(p, "You can't hold any more " + MinigameCurrencies.name(currency) + ".");
@@ -150,14 +149,14 @@ public class MageArenaSession extends MinigameSession {
     }
 
     @Override
-    protected boolean onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         switch (blockId) {
             case "mta_statue" -> {
                 if (!runes(player, "law_rune", 1, "air_rune", 1)) {
                     return true;
                 }
                 xp(player, Skill.MAGIC, 43);
-                world.spawnParticles(ParticleTypes.ENCHANT, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, 20, 0.4, 0.6, 0.4, 0.3);
+                world.sendParticles(ParticleTypes.ENCHANT, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, 20, 0.4, 0.6, 0.4, 0.3);
                 if (++statueHits >= 3) {
                     statueHits = 0;
                     mazes++;
@@ -239,7 +238,7 @@ public class MageArenaSession extends MinigameSession {
                     Msg.game(player, "Gather bones from the piles first.");
                     return true;
                 }
-                boolean peaches = MinigameData.of(player).flag(player.getUuid(), "bones_to_peaches") && level(player, Skill.MAGIC) >= 60;
+                boolean peaches = MinigameData.of(player).flag(player.getUUID(), "bones_to_peaches") && level(player, Skill.MAGIC) >= 60;
                 if (peaches ? !runes(player, "nature_rune", 2, "water_rune", 4, "earth_rune", 4)
                         : !runes(player, "nature_rune", 1, "water_rune", 2, "earth_rune", 2)) {
                     return true;
@@ -270,9 +269,9 @@ public class MageArenaSession extends MinigameSession {
                     + MageArena.ALCHEMY_VALUES[alchValue] + " coins.");
         }
         if (room == 3 && ticks % 8 == 0) {
-            for (ServerPlayerEntity p : online()) {
+            for (ServerPlayer p : online()) {
                 if (random.nextInt(3) == 0) {
-                    world.spawnParticles(ParticleTypes.WHITE_ASH, p.getX(), p.getY() + 3, p.getZ(), 15, 0.5, 0.5, 0.5, 0);
+                    world.sendParticles(ParticleTypes.WHITE_ASH, p.getX(), p.getY() + 3, p.getZ(), 15, 0.5, 0.5, 0.5, 0);
                     hurt(p, MageArena.GRAVEYARD_BONE_DAMAGE);
                     Msg.action(p, "You're hit by falling bones!");
                 }
@@ -281,28 +280,28 @@ public class MageArenaSession extends MinigameSession {
     }
 
     @Override
-    protected void onDeath(ServerPlayerEntity player) {
+    protected void onDeath(ServerPlayer player) {
         if (room == 3) {
-            int have = MinigameData.of(player).points(player.getUuid(), "mta_graveyard");
+            int have = MinigameData.of(player).points(player.getUUID(), "mta_graveyard");
             addPoints(player, MinigameCurrencies.MTA_GRAVEYARD, -Math.min(have, MageArena.GRAVEYARD_DEATH_PENALTY));
         }
         super.onDeath(player);
     }
 
     @Override
-    protected void onLeave(ServerPlayerEntity player) {
+    protected void onLeave(ServerPlayer player) {
         Inv.remove(player, "alchemy_item", 1000);
         Inv.remove(player, "enchantment_shape", 1000);
         Inv.remove(player, "graveyard_bones", 1000);
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
+    protected List<String> hud(ServerPlayer player) {
         MinigameData d = MinigameData.of(player);
         String[] names = {"Telekinetic Theatre", "Alchemists' Playground", "Enchanting Chamber", "Creature Graveyard"};
         return List.of("Mage Training Arena - " + names[room],
-                "Telekinetic: " + d.points(player.getUuid(), "mta_telekinetic") + "  Alchemist: " + d.points(player.getUuid(), "mta_alchemist"),
-                "Enchantment: " + d.points(player.getUuid(), "mta_enchantment") + "  Graveyard: " + d.points(player.getUuid(), "mta_graveyard"),
+                "Telekinetic: " + d.points(player.getUUID(), "mta_telekinetic") + "  Alchemist: " + d.points(player.getUUID(), "mta_alchemist"),
+                "Enchantment: " + d.points(player.getUUID(), "mta_enchantment") + "  Graveyard: " + d.points(player.getUUID(), "mta_graveyard"),
                 room == 0 ? "Mazes solved: " + mazes + " (statue grabs " + statueHits + "/3)" : "");
     }
 }

@@ -22,26 +22,25 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.EntityType;
-import net.minecraft.item.ItemStack;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Hand;
-import net.minecraft.util.TypedActionResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.Commands;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -83,41 +82,41 @@ public final class BarrowsHooks {
         BlockHooks.register(Barrows.CHEST, BarrowsHooks::chest);
 
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            ItemStack stack = player.getStackInHand(hand);
-            if (world.isClient() || stack.isEmpty() || !SPADE.equals(Inv.idOf(stack)) || !(player instanceof ServerPlayerEntity p)) {
-                return TypedActionResult.pass(stack);
+            ItemStack stack = player.getItemInHand(hand);
+            if (world.isClientSide() || stack.isEmpty() || !SPADE.equals(Inv.idOf(stack)) || !(player instanceof ServerPlayer p)) {
+                return InteractionResultHolder.pass(stack);
             }
-            return dig(p) ? TypedActionResult.success(p.getStackInHand(hand), false) : TypedActionResult.pass(stack);
+            return dig(p) ? InteractionResultHolder.sidedSuccess(p.getItemInHand(hand), false) : InteractionResultHolder.pass(stack);
         });
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
-            if (world.isClient() || hand != Hand.MAIN_HAND || !(player instanceof ServerPlayerEntity p)) {
-                return ActionResult.PASS;
+            if (world.isClientSide() || hand != InteractionHand.MAIN_HAND || !(player instanceof ServerPlayer p)) {
+                return InteractionResult.PASS;
             }
-            ItemStack stack = p.getMainHandStack();
+            ItemStack stack = p.getMainHandItem();
             if (stack.isEmpty() || !SPADE.equals(Inv.idOf(stack))) {
-                return ActionResult.PASS;
+                return InteractionResult.PASS;
             }
-            return dig(p) ? ActionResult.SUCCESS : ActionResult.PASS;
+            return dig(p) ? InteractionResult.SUCCESS : InteractionResult.PASS;
         });
 
         GameEvents.onKill((p, e, stats) -> {
             Boss boss = ModEntities.boss(e.getType());
             int i = Barrows.indexOf(boss);
             if (i < 0) {
-                BlockPos at = e.getBlockPos();
+                BlockPos at = e.blockPosition();
                 if (boss == null && Gielinor.is(p) && Barrows.inTunnels(at.getX(), at.getY(), at.getZ())) {
                     BarrowsState state = BarrowsState.get(p.getServer());
-                    state.run(p.getUuid()).addMonsterKill(stats.combatLevel());
-                    state.markDirty();
+                    state.run(p.getUUID()).addMonsterKill(stats.combatLevel());
+                    state.setDirty();
                 }
                 return;
             }
             BarrowsState state = BarrowsState.get(p.getServer());
-            BarrowsRun run = state.run(p.getUuid());
+            BarrowsRun run = state.run(p.getUUID());
             if (!run.kill(i)) {
                 return;
             }
-            state.markDirty();
+            state.setDirty();
             Msg.game(p, "You have defeated " + run.killedCount() + " of the six Barrows brothers this run.");
             if (run.killedCount() == 5 && !run.killed(run.tunnel())) {
                 Msg.game(p, "Only one sarcophagus is left to search - it may hide something.");
@@ -125,26 +124,26 @@ public final class BarrowsHooks {
         });
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(
-                CommandManager.literal("barrows")
-                        .then(CommandManager.literal("tunnel")
-                                .then(CommandManager.literal("yes").executes(ctx -> {
-                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                Commands.literal("barrows")
+                        .then(Commands.literal("tunnel")
+                                .then(Commands.literal("yes").executes(ctx -> {
+                                    ServerPlayer p = ctx.getSource().getPlayer();
                                     if (p != null) {
                                         confirmTunnel(p);
                                     }
                                     return 1;
                                 }))
-                                .then(CommandManager.literal("no").executes(ctx -> {
-                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                .then(Commands.literal("no").executes(ctx -> {
+                                    ServerPlayer p = ctx.getSource().getPlayer();
                                     if (p != null) {
                                         Msg.game(p, "You leave the tunnel alone.");
                                     }
                                     return 1;
                                 })))
-                        .then(CommandManager.literal("puzzle")
-                                .then(CommandManager.literal("1").executes(ctx -> answerPuzzle(ctx.getSource().getPlayer(), 0)))
-                                .then(CommandManager.literal("2").executes(ctx -> answerPuzzle(ctx.getSource().getPlayer(), 1)))
-                                .then(CommandManager.literal("3").executes(ctx -> answerPuzzle(ctx.getSource().getPlayer(), 2))))));
+                        .then(Commands.literal("puzzle")
+                                .then(Commands.literal("1").executes(ctx -> answerPuzzle(ctx.getSource().getPlayer(), 0)))
+                                .then(Commands.literal("2").executes(ctx -> answerPuzzle(ctx.getSource().getPlayer(), 1)))
+                                .then(Commands.literal("3").executes(ctx -> answerPuzzle(ctx.getSource().getPlayer(), 2))))));
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             ++ticks;
@@ -153,18 +152,18 @@ public final class BarrowsHooks {
             if (!drain && !rooms) {
                 return;
             }
-            ServerWorld world = Gielinor.world(server);
+            ServerLevel world = Gielinor.world(server);
             if (world == null) {
                 return;
             }
-            for (ServerPlayerEntity p : world.getPlayers()) {
-                BlockPos at = p.getBlockPos();
+            for (ServerPlayer p : world.players()) {
+                BlockPos at = p.blockPosition();
                 boolean alive = p.isAlive() && !p.isSpectator();
                 if (rooms) {
                     if (alive && Barrows.inTunnels(at.getX(), at.getY(), at.getZ())) {
                         checkRoom(p, world, Barrows.roomAt(at.getX(), at.getZ()));
                     } else {
-                        ROOMS.remove(p.getUuid());
+                        ROOMS.remove(p.getUUID());
                     }
                 }
                 if (drain && alive && Barrows.underground(at.getX(), at.getY(), at.getZ())
@@ -175,31 +174,31 @@ public final class BarrowsHooks {
         });
     }
 
-    private static BarrowsState state(ServerPlayerEntity p) {
+    private static BarrowsState state(ServerPlayer p) {
         return BarrowsState.get(p.getServer());
     }
 
     /** Teleports within Gielinor, building the structures there first so the player never lands in rock. */
-    private static void moveTo(ServerPlayerEntity p, ServerWorld world, int x, int y, int z, float yaw) {
+    private static void moveTo(ServerPlayer p, ServerLevel world, int x, int y, int z, float yaw) {
         StructurePlacer.applyAround(world, x, z, 12);
         p.stopRiding();
-        p.teleport(world, x + 0.5, y, z + 0.5, yaw, p.getPitch());
+        p.teleportTo(world, x + 0.5, y, z + 0.5, yaw, p.getXRot());
     }
 
     // ------------------------------------------------------------------ mounds and crypts
 
     /** Digging with a spade: on top of a mound the player breaks into its crypt. */
-    private static boolean dig(ServerPlayerEntity p) {
-        if (!Gielinor.is(p) || !(p.getWorld() instanceof ServerWorld world)) {
+    private static boolean dig(ServerPlayer p) {
+        if (!Gielinor.is(p) || !(p.level() instanceof ServerLevel world)) {
             return false;
         }
-        BlockPos at = p.getBlockPos();
+        BlockPos at = p.blockPosition();
         Barrows.Crypt crypt = Barrows.moundAt(at.getX(), at.getY(), at.getZ());
         if (crypt == null) {
             return false;
         }
-        world.spawnParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, p.getX(), p.getY(), p.getZ(), 8, 0.3, 0.1, 0.3, 0.01);
-        world.playSound(null, at, SoundEvents.ITEM_SHOVEL_FLATTEN, SoundCategory.PLAYERS, 1f, 1f);
+        world.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, p.getX(), p.getY(), p.getZ(), 8, 0.3, 0.1, 0.3, 0.01);
+        world.playSound(null, at, SoundEvents.SHOVEL_FLATTEN, SoundSource.PLAYERS, 1f, 1f);
         int[] a = crypt.arrival();
         moveTo(p, world, a[0], a[1], a[2], 180f);
         Msg.game(p, "You dig into the mound... and break into a crypt!");
@@ -207,63 +206,63 @@ public final class BarrowsHooks {
         return true;
     }
 
-    private static void stairs(ServerPlayerEntity p, BlockPos pos, BlockState state) {
+    private static void stairs(ServerPlayer p, BlockPos pos, BlockState state) {
         Barrows.Crypt crypt = Barrows.cryptAt(pos.getX(), pos.getY(), pos.getZ());
-        if (crypt == null || !(p.getWorld() instanceof ServerWorld world)) {
+        if (crypt == null || !(p.level() instanceof ServerLevel world)) {
             Msg.game(p, "The stairs are blocked.");
             return;
         }
         StructurePlacer.applyAround(world, crypt.x(), crypt.z(), 12);
         BlockPos top = Gielinor.safeSpot(world, crypt.x(), crypt.z());
         p.stopRiding();
-        p.teleport(world, top.getX() + 0.5, top.getY(), top.getZ() + 0.5, p.getYaw(), p.getPitch());
+        p.teleportTo(world, top.getX() + 0.5, top.getY(), top.getZ() + 0.5, p.getYRot(), p.getXRot());
         Msg.game(p, "You climb the stairs to the top of the mound.");
     }
 
-    private static void sarcophagus(ServerPlayerEntity p, BlockPos pos, BlockState blockState) {
+    private static void sarcophagus(ServerPlayer p, BlockPos pos, BlockState blockState) {
         Barrows.Crypt crypt = Barrows.cryptAt(pos.getX(), pos.getY(), pos.getZ());
-        if (crypt == null || !(p.getWorld() instanceof ServerWorld world)) {
+        if (crypt == null || !(p.level() instanceof ServerLevel world)) {
             Msg.game(p, "The sarcophagus is sealed.");
             return;
         }
         BarrowsState state = state(p);
-        BarrowsRun run = state.run(p.getUuid());
+        BarrowsRun run = state.run(p.getUUID());
         switch (run.search(crypt.index())) {
             case EMPTY -> Msg.game(p, "You search the sarcophagus but find nothing.");
             case TUNNEL -> {
-                if (p.isSneaking()) {
+                if (p.isShiftKeyDown()) {
                     enterTunnels(p, world, run);
                     return;
                 }
-                MutableText line = Text.literal("You find a hidden tunnel, do you want to enter? ").formatted(Formatting.GRAY);
-                line.append(link("Yes", "/barrows tunnel yes", "Enter the tunnels", Formatting.GREEN)).append(Text.literal(" "));
-                line.append(link("No", "/barrows tunnel no", "Stay in the crypt", Formatting.RED));
-                p.sendMessage(line, false);
+                MutableComponent line = Component.literal("You find a hidden tunnel, do you want to enter? ").withStyle(ChatFormatting.GRAY);
+                line.append(link("Yes", "/barrows tunnel yes", "Enter the tunnels", ChatFormatting.GREEN)).append(Component.literal(" "));
+                line.append(link("No", "/barrows tunnel no", "Stay in the crypt", ChatFormatting.RED));
+                p.displayClientMessage(line, false);
                 Msg.game(p, "(Or sneak while searching to enter at once.)");
             }
             case SUMMON -> {
                 int[] f = crypt.spawnFloor();
                 BossService.summon(p, world, new BlockPos(f[0], f[1], f[2]), crypt.brother());
                 run.summon(crypt.index());
-                state.markDirty();
+                state.setDirty();
             }
         }
     }
 
-    private static MutableText link(String label, String command, String hover, Formatting color) {
-        return Text.literal("[" + label + "]").styled(s -> s.withColor(color)
+    private static MutableComponent link(String label, String command, String hover, ChatFormatting color) {
+        return Component.literal("[" + label + "]").withStyle(s -> s.withColor(color)
                 .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
-                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(hover))));
+                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(hover))));
     }
 
     /** [Yes] on the hidden-tunnel prompt: only works standing in this run's tunnel brother's crypt. */
-    private static void confirmTunnel(ServerPlayerEntity p) {
-        if (!Gielinor.is(p) || !(p.getWorld() instanceof ServerWorld world)) {
+    private static void confirmTunnel(ServerPlayer p) {
+        if (!Gielinor.is(p) || !(p.level() instanceof ServerLevel world)) {
             return;
         }
-        BlockPos at = p.getBlockPos();
+        BlockPos at = p.blockPosition();
         Barrows.Crypt crypt = Barrows.cryptAt(at.getX(), at.getY(), at.getZ());
-        BarrowsRun run = state(p).run(p.getUuid());
+        BarrowsRun run = state(p).run(p.getUUID());
         if (crypt == null || run.search(crypt.index()) != BarrowsRun.Search.TUNNEL) {
             Msg.game(p, "There is no tunnel here.");
             return;
@@ -271,62 +270,62 @@ public final class BarrowsHooks {
         enterTunnels(p, world, run);
     }
 
-    private static void enterTunnels(ServerPlayerEntity p, ServerWorld world, BarrowsRun run) {
+    private static void enterTunnels(ServerPlayer p, ServerLevel world, BarrowsRun run) {
         int[] c = Barrows.roomCentre(run.startRoom());
-        moveTo(p, world, c[0], Barrows.TUNNEL_FLOOR + 1, c[1], p.getYaw());
+        moveTo(p, world, c[0], Barrows.TUNNEL_FLOOR + 1, c[1], p.getYRot());
         Msg.game(p, "You climb down into the tunnels. Find your way to the chest in the centre.");
     }
 
     // ------------------------------------------------------------------ tunnels
 
-    private static void door(ServerPlayerEntity p, BlockPos pos, BlockState state) {
+    private static void door(ServerPlayer p, BlockPos pos, BlockState state) {
         int edge = Barrows.edgeAtDoor(pos.getX(), pos.getZ());
-        BarrowsRun run = state(p).run(p.getUuid());
+        BarrowsRun run = state(p).run(p.getUUID());
         if (edge < 0 || !run.doorOpen(edge)) {
             Msg.game(p, "The door is locked. You'll have to find another way round.");
             return;
         }
         // OSRS: the doors into the chest room may pose a puzzle (only on the way in).
         if (run.needsPuzzle(edge) && Barrows.roomBeyondDoor(edge, p.getBlockX(), p.getBlockZ()) == Barrows.CHEST_ROOM) {
-            Pending old = PUZZLES.get(p.getUuid());
+            Pending old = PUZZLES.get(p.getUUID());
             BarrowsPuzzles.Asked asked = old != null && old.edge() == edge ? old.asked()
                     : BarrowsPuzzles.roll(new Random(p.getRandom().nextLong()), null);
-            PUZZLES.put(p.getUuid(), new Pending(edge, pos.toImmutable(), asked));
+            PUZZLES.put(p.getUUID(), new Pending(edge, pos.immutable(), asked));
             askPuzzle(p, asked);
             return;
         }
         openDoor(p, pos);
     }
 
-    private static void openDoor(ServerPlayerEntity p, BlockPos pos) {
-        p.getWorld().playSound(null, pos, SoundEvents.BLOCK_WOODEN_DOOR_OPEN, SoundCategory.BLOCKS, 0.8f, 0.8f);
+    private static void openDoor(ServerPlayer p, BlockPos pos) {
+        p.level().playSound(null, pos, SoundEvents.WOODEN_DOOR_OPEN, SoundSource.BLOCKS, 0.8f, 0.8f);
         DungeonsHooks.passThrough(p, pos);
     }
 
-    private static void askPuzzle(ServerPlayerEntity p, BarrowsPuzzles.Asked asked) {
+    private static void askPuzzle(ServerPlayer p, BarrowsPuzzles.Asked asked) {
         Msg.game(p, "The door is sealed by a puzzle. " + BarrowsPuzzles.PROMPT);
-        p.sendMessage(Text.literal(asked.puzzle().question()).formatted(Formatting.YELLOW), false);
-        MutableText line = Text.literal("Answer: ").formatted(Formatting.GRAY);
+        p.displayClientMessage(Component.literal(asked.puzzle().question()).withStyle(ChatFormatting.YELLOW), false);
+        MutableComponent line = Component.literal("Answer: ").withStyle(ChatFormatting.GRAY);
         List<String> options = asked.options();
         for (int i = 0; i < options.size(); i++) {
-            line.append(link(options.get(i), "/barrows puzzle " + (i + 1), "Answer " + options.get(i), Formatting.AQUA));
-            line.append(Text.literal(" "));
+            line.append(link(options.get(i), "/barrows puzzle " + (i + 1), "Answer " + options.get(i), ChatFormatting.AQUA));
+            line.append(Component.literal(" "));
         }
-        p.sendMessage(line, false);
+        p.displayClientMessage(line, false);
     }
 
     /** A click on one of the puzzle answers ({@code choice} 0..2). */
-    private static int answerPuzzle(ServerPlayerEntity p, int choice) {
+    private static int answerPuzzle(ServerPlayer p, int choice) {
         if (p == null) {
             return 0;
         }
-        UUID uuid = p.getUuid();
+        UUID uuid = p.getUUID();
         Pending pending = PUZZLES.get(uuid);
         if (pending == null || !Gielinor.is(p)) {
             Msg.game(p, "No door is waiting for an answer.");
             return 1;
         }
-        if (p.getBlockPos().getSquaredDistance(pending.door()) > 6 * 6) {
+        if (p.blockPosition().distSqr(pending.door()) > 6 * 6) {
             Msg.game(p, "You are too far away from the door.");
             return 1;
         }
@@ -340,7 +339,7 @@ public final class BarrowsHooks {
         if (pending.asked().isCorrect(choice)) {
             PUZZLES.remove(uuid);
             run.solve(pending.edge());
-            state.markDirty();
+            state.setDirty();
             Msg.game(p, "You hear the door's locking mechanism grind open.");
             openDoor(p, pending.door());
             return 1;
@@ -355,19 +354,19 @@ public final class BarrowsHooks {
     // ------------------------------------------------------------------ brothers in the tunnels
 
     /** Called while a player is in the tunnels with the room he is in (-1 in a corridor). */
-    private static void checkRoom(ServerPlayerEntity p, ServerWorld world, int room) {
+    private static void checkRoom(ServerPlayer p, ServerLevel world, int room) {
         if (room < 0) {
             return;
         }
-        Integer last = ROOMS.put(p.getUuid(), room);
+        Integer last = ROOMS.put(p.getUUID(), room);
         if ((last != null && last == room) || room == Barrows.CHEST_ROOM) {
             return;
         }
-        if (brotherUp(world, p.getBlockPos())) {
+        if (brotherUp(world, p.blockPosition())) {
             return;
         }
         BarrowsState state = state(p);
-        BarrowsRun run = state.run(p.getUuid());
+        BarrowsRun run = state.run(p.getUUID());
         int brother = run.tunnelEncounter(new Random(p.getRandom().nextLong()));
         if (brother < 0) {
             return;
@@ -381,15 +380,15 @@ public final class BarrowsHooks {
         Msg.game(p, "You hear footsteps in the darkness...");
         BossService.summon(p, world, new BlockPos(c[0] + sx, Barrows.TUNNEL_FLOOR, c[1] + sz), Barrows.BROTHERS.get(brother));
         run.summon(brother);
-        state.markDirty();
+        state.setDirty();
     }
 
     /** True if any Barrows brother is alive near {@code pos} (at most one brother at a time). */
-    private static boolean brotherUp(ServerWorld world, BlockPos pos) {
-        Box box = new Box(pos).expand(48);
+    private static boolean brotherUp(ServerLevel world, BlockPos pos) {
+        AABB box = new AABB(pos).inflate(48);
         for (Boss b : Barrows.BROTHERS) {
             EntityType<BossEntity> type = ModEntities.BOSS_TYPES.get(b);
-            if (type != null && !world.getEntitiesByType(type, box, e -> e.isAlive()).isEmpty()) {
+            if (type != null && !world.getEntities(type, box, e -> e.isAlive()).isEmpty()) {
                 return true;
             }
         }
@@ -397,20 +396,20 @@ public final class BarrowsHooks {
     }
 
     /** Rune quantity multiplier for a player's Barrows chest (Morytania hard diary perk; 1.0 = none). */
-    public static java.util.function.ToDoubleFunction<ServerPlayerEntity> runeBonus = p -> 1.0;
+    public static java.util.function.ToDoubleFunction<ServerPlayer> runeBonus = p -> 1.0;
 
-    private static void chest(ServerPlayerEntity p, BlockPos pos, BlockState blockState) {
-        if (!(p.getWorld() instanceof ServerWorld world)) {
+    private static void chest(ServerPlayer p, BlockPos pos, BlockState blockState) {
+        if (!(p.level() instanceof ServerLevel world)) {
             return;
         }
         BarrowsState state = state(p);
-        BarrowsRun run = state.run(p.getUuid());
+        BarrowsRun run = state.run(p.getUUID());
         if (run.open() == BarrowsRun.Open.SUMMON_HIDDEN) {
             Boss hidden = run.tunnelBrother();
             Msg.game(p, "You open the chest... and something stirs in the dark!");
-            BossService.summon(p, world, pos.add(2, -1, 0), hidden);
+            BossService.summon(p, world, pos.offset(2, -1, 0), hidden);
             run.summon(run.tunnel());
-            state.markDirty();
+            state.setDirty();
             return;
         }
         List<BarrowsRun.Reward> rewards = run.rollRewards(new Random(p.getRandom().nextLong()));
@@ -435,15 +434,15 @@ public final class BarrowsHooks {
         int kc = data.incrementKillCount("barrows_chests");
         Msg.game(p, "Your Barrows chest count is: " + kc + ".");
         run.reset(new Random(p.getRandom().nextLong()));
-        PUZZLES.remove(p.getUuid());
-        state.markDirty();
-        world.playSound(null, pos, SoundEvents.BLOCK_CHEST_OPEN, SoundCategory.BLOCKS, 1f, 0.8f);
+        PUZZLES.remove(p.getUUID());
+        state.setDirty();
+        world.playSound(null, pos, SoundEvents.CHEST_OPEN, SoundSource.BLOCKS, 1f, 0.8f);
         int x = GielinorMap.toBlockX(Barrows.SURFACE_TILE[0]);
         int z = GielinorMap.toBlockZ(Barrows.SURFACE_TILE[1]);
         StructurePlacer.applyAround(world, x, z, 12);
         BlockPos top = Gielinor.safeSpot(world, x, z);
         p.stopRiding();
-        p.teleport(world, top.getX() + 0.5, top.getY(), top.getZ() + 0.5, p.getYaw(), p.getPitch());
+        p.teleportTo(world, top.getX() + 0.5, top.getY(), top.getZ() + 0.5, p.getYRot(), p.getXRot());
         Msg.game(p, "The crypts rumble and you find yourself back on the surface.");
         ServerNetworking.sync(p);
     }
@@ -451,12 +450,12 @@ public final class BarrowsHooks {
     // ------------------------------------------------------------------ prayer drain
 
     /** OSRS: prayer drains in the crypts and tunnels, one point more for each brother killed this run. */
-    private static void drainPrayer(ServerPlayerEntity p) {
+    private static void drainPrayer(ServerPlayer p) {
         PlayerData data = Players.data(p);
         if (data.prayerPoints() <= 0) {
             return;
         }
-        int killed = state(p).run(p.getUuid()).killedCount();
+        int killed = state(p).run(p.getUUID()).killedCount();
         data.setPrayerPoints(data.prayerPoints() - (1 + killed));
         ServerNetworking.sync(p);
     }

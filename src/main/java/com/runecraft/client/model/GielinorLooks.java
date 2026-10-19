@@ -3,24 +3,23 @@ package com.runecraft.client.model;
 import com.runecraft.osrs.content.ContentRegistry;
 import com.runecraft.osrs.model.ModelSpec;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
-import net.minecraft.client.render.entity.CaveSpiderEntityRenderer;
-import net.minecraft.client.render.entity.ChickenEntityRenderer;
-import net.minecraft.client.render.entity.CowEntityRenderer;
-import net.minecraft.client.render.entity.EntityRenderer;
-import net.minecraft.client.render.entity.EntityRendererFactory;
-import net.minecraft.client.render.entity.PigEntityRenderer;
-import net.minecraft.client.render.entity.SheepEntityRenderer;
-import net.minecraft.client.render.entity.SilverfishEntityRenderer;
-import net.minecraft.client.render.entity.SkeletonEntityRenderer;
-import net.minecraft.client.render.entity.SpiderEntityRenderer;
-import net.minecraft.client.render.entity.VillagerEntityRenderer;
-import net.minecraft.client.render.entity.WitchEntityRenderer;
-import net.minecraft.client.render.entity.WolfEntityRenderer;
-import net.minecraft.client.render.entity.ZombieEntityRenderer;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.mob.SpiderEntity;
-
+import net.minecraft.client.renderer.entity.CaveSpiderRenderer;
+import net.minecraft.client.renderer.entity.ChickenRenderer;
+import net.minecraft.client.renderer.entity.CowRenderer;
+import net.minecraft.client.renderer.entity.EntityRenderer;
+import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.client.renderer.entity.PigRenderer;
+import net.minecraft.client.renderer.entity.SheepRenderer;
+import net.minecraft.client.renderer.entity.SilverfishRenderer;
+import net.minecraft.client.renderer.entity.SkeletonRenderer;
+import net.minecraft.client.renderer.entity.SpiderRenderer;
+import net.minecraft.client.renderer.entity.VillagerRenderer;
+import net.minecraft.client.renderer.entity.WitchRenderer;
+import net.minecraft.client.renderer.entity.WolfRenderer;
+import net.minecraft.client.renderer.entity.ZombieRenderer;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.monster.Spider;
 import java.util.function.Function;
 
 /** OSRS looks for the vanilla mobs that Gielinor uses as RuneScape monsters (see Monster's vanilla entries). */
@@ -29,22 +28,22 @@ public final class GielinorLooks {
     }
 
     public static void registerAll() {
-        look(EntityType.CHICKEN, "chicken", ChickenEntityRenderer::new);
-        look(EntityType.COW, "cow", CowEntityRenderer::new);
-        look(EntityType.SHEEP, "sheep", SheepEntityRenderer::new);
-        look(EntityType.PIG, "pig", PigEntityRenderer::new);
-        look(EntityType.SILVERFISH, "giant_rat", SilverfishEntityRenderer::new);
-        look(EntityType.CAVE_SPIDER, "spider", CaveSpiderEntityRenderer::new);
-        look(EntityType.SPIDER, "giant_spider", ctx -> new SpiderEntityRenderer<SpiderEntity>(ctx));
-        look(EntityType.ZOMBIE, "zombie", ZombieEntityRenderer::new);
-        look(EntityType.SKELETON, "skeleton", SkeletonEntityRenderer::new);
-        look(EntityType.WOLF, "wolf", WolfEntityRenderer::new);
-        look(EntityType.VILLAGER, "man", VillagerEntityRenderer::new);
-        look(EntityType.WITCH, "dark_wizard", WitchEntityRenderer::new);
+        look(EntityType.CHICKEN, "chicken", ChickenRenderer::new);
+        look(EntityType.COW, "cow", CowRenderer::new);
+        look(EntityType.SHEEP, "sheep", SheepRenderer::new);
+        look(EntityType.PIG, "pig", PigRenderer::new);
+        look(EntityType.SILVERFISH, "giant_rat", SilverfishRenderer::new);
+        look(EntityType.CAVE_SPIDER, "spider", CaveSpiderRenderer::new);
+        look(EntityType.SPIDER, "giant_spider", ctx -> new SpiderRenderer<Spider>(ctx));
+        look(EntityType.ZOMBIE, "zombie", ZombieRenderer::new);
+        look(EntityType.SKELETON, "skeleton", SkeletonRenderer::new);
+        look(EntityType.WOLF, "wolf", WolfRenderer::new);
+        look(EntityType.VILLAGER, "man", VillagerRenderer::new);
+        look(EntityType.WITCH, "dark_wizard", WitchRenderer::new);
     }
 
-    private static <T extends MobEntity> void look(EntityType<T> type, String model,
-                                                   Function<EntityRendererFactory.Context, ? extends EntityRenderer<? super T>> vanilla) {
+    private static <T extends Mob> void look(EntityType<T> type, String model,
+                                                   Function<EntityRendererProvider.Context, ? extends EntityRenderer<? super T>> vanilla) {
         ModelSpec spec = ContentRegistry.models().get(model);
         if (spec == null) {
             return;

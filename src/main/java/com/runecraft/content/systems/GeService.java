@@ -7,13 +7,12 @@ import com.runecraft.osrs.content.systems.GrandExchange;
 import com.runecraft.osrs.content.systems.GrandExchange.Offer;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.item.ItemStack;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.Vec3d;
-
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -32,14 +31,14 @@ public final class GeService {
     private GeService() {
     }
 
-    public static void openAtBooth(ServerPlayerEntity p) {
-        AT_BOOTH.put(p.getUuid(), new Object[]{p.getPos(), SysTicks.now()});
+    public static void openAtBooth(ServerPlayer p) {
+        AT_BOOTH.put(p.getUUID(), new Object[]{p.position(), SysTicks.now()});
         open(p, null, null);
     }
 
-    static boolean atBooth(ServerPlayerEntity p) {
-        Object[] at = AT_BOOTH.get(p.getUuid());
-        return at != null && SysTicks.now() - (Long) at[1] < 500 && p.getPos().squaredDistanceTo((Vec3d) at[0]) < 24 * 24;
+    static boolean atBooth(ServerPlayer p) {
+        Object[] at = AT_BOOTH.get(p.getUUID());
+        return at != null && SysTicks.now() - (Long) at[1] < 500 && p.position().distanceToSqr((Vec3) at[0]) < 24 * 24;
     }
 
     static int guide(String item) {
@@ -70,10 +69,10 @@ public final class GeService {
         return null;
     }
 
-    public static void open(ServerPlayerEntity p, String item, String message) {
+    public static void open(ServerPlayer p, String item, String message) {
         SysState state = SysState.get(p.getServer());
         boolean booth = atBooth(p);
-        ItemStack held = p.getMainHandStack();
+        ItemStack held = p.getMainHandItem();
         // A held bank note stands for its item.
         String heldId = held.isEmpty() ? "" : com.runecraft.bank.Notes.isNote(held) ? com.runecraft.bank.Notes.notedId(held) : Inv.idOf(held);
         String defItem = item != null ? item : heldId.isEmpty() || ItemCatalog.get(heldId) == null ? "" : heldId;
@@ -90,11 +89,11 @@ public final class GeService {
             int limit = com.runecraft.osrs.data.GePrices.buyLimit(def.id());
             if (limit > 0) {
                 s.line("Buy limit: " + String.format(Locale.ROOT, "%,d", limit) + " per 4 hours ("
-                        + String.format(Locale.ROOT, "%,d", Math.min(limit, state.ge().buyLimitRemaining(p.getUuidAsString(), def.id(), SysTicks.now())))
+                        + String.format(Locale.ROOT, "%,d", Math.min(limit, state.ge().buyLimitRemaining(p.getStringUUID(), def.id(), SysTicks.now())))
                         + " left).", 0xC0C0C0);
             }
         }
-        List<Offer> mine = state.ge().offersOf(p.getUuidAsString());
+        List<Offer> mine = state.ge().offersOf(p.getStringUUID());
         s.line("Your offers (" + mine.size() + "/" + GrandExchange.MAX_OFFERS + "):", 0xC0C0C0);
         long collectCoins = 0;
         int collectItems = 0;
@@ -131,7 +130,7 @@ public final class GeService {
     }
 
     /** Self-test hook: runs one Grand Exchange screen action (instant buy/sell, offers, abort, collect). */
-    public static void selfTestAction(ServerPlayerEntity p, String action, Map<String, String> fields) {
+    public static void selfTestAction(ServerPlayer p, String action, Map<String, String> fields) {
         action(p, action, fields);
     }
 
@@ -140,10 +139,10 @@ public final class GeService {
         return guide(item);
     }
 
-    static void action(ServerPlayerEntity p, String action, Map<String, String> fields) {
+    static void action(ServerPlayer p, String action, Map<String, String> fields) {
         SysState state = SysState.get(p.getServer());
         GrandExchange ge = state.ge();
-        String uuid = p.getUuidAsString();
+        String uuid = p.getStringUUID();
         if (action.equals("collect")) {
             collect(p);
             open(p, null, "Collected.");
@@ -279,9 +278,9 @@ public final class GeService {
         }
     }
 
-    static void collect(ServerPlayerEntity p) {
+    static void collect(ServerPlayer p) {
         SysState state = SysState.get(p.getServer());
-        for (Offer o : state.ge().offersOf(p.getUuidAsString())) {
+        for (Offer o : state.ge().offersOf(p.getStringUUID())) {
             if (o.itemsToCollect > 0) {
                 // Several non-stackable items come as bank notes, as in OSRS.
                 com.runecraft.bank.Notes.giveNotedIfMany(p, o.item, o.itemsToCollect);
@@ -311,7 +310,7 @@ public final class GeService {
         try {
             UUID u = UUID.fromString(owner);
             SysState.get(server).player(u).geTrades++;
-            ServerPlayerEntity p = server.getPlayerManager().getPlayer(u);
+            ServerPlayer p = server.getPlayerList().getPlayer(u);
             if (p != null) {
                 DiaryService.onGeTrade(p);
             }
@@ -322,11 +321,11 @@ public final class GeService {
 
     private static void notify(MinecraftServer server, Offer o) {
         try {
-            ServerPlayerEntity p = server.getPlayerManager().getPlayer(UUID.fromString(o.owner));
+            ServerPlayer p = server.getPlayerList().getPlayer(UUID.fromString(o.owner));
             if (p != null) {
                 ItemDef d = ItemCatalog.get(o.item);
-                p.sendMessage(Text.literal("Grand Exchange: " + (o.complete() ? "Finished " : "Updated ") + (o.buy ? "buying " : "selling ")
-                        + o.filled + "/" + o.quantity + " x " + (d == null ? o.item : d.name()) + ".").formatted(Formatting.GREEN), false);
+                p.displayClientMessage(Component.literal("Grand Exchange: " + (o.complete() ? "Finished " : "Updated ") + (o.buy ? "buying " : "selling ")
+                        + o.filled + "/" + o.quantity + " x " + (d == null ? o.item : d.name()) + ".").withStyle(ChatFormatting.GREEN), false);
             }
         } catch (IllegalArgumentException ignored) {
             // not a player
@@ -348,7 +347,7 @@ public final class GeService {
         }
     }
 
-    static void msg(ServerPlayerEntity p, String m) {
+    static void msg(ServerPlayer p, String m) {
         Msg.game(p, m);
     }
 }

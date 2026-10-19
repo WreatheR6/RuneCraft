@@ -3,40 +3,40 @@ package com.runecraft.block;
 import com.runecraft.osrs.data.FishingSpot;
 import com.runecraft.skill.FishingSpots;
 import com.runecraft.skill.Gathering;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.ShapeContext;
-import net.minecraft.block.Waterloggable;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.fluid.FluidState;
-import net.minecraft.fluid.Fluids;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.state.StateManager;
-import net.minecraft.state.property.BooleanProperty;
-import net.minecraft.state.property.Properties;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SimpleWaterloggedBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 /** A rippling fishing spot sitting on the water surface. It moves now and then, like OSRS spots. */
-public class FishingSpotBlock extends Block implements Waterloggable {
-    public static final BooleanProperty WATERLOGGED = Properties.WATERLOGGED;
-    private static final VoxelShape OUTLINE = Block.createCuboidShape(0, 12, 0, 16, 15, 16);
+public class FishingSpotBlock extends Block implements SimpleWaterloggedBlock {
+    public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
+    private static final VoxelShape OUTLINE = Block.box(0, 12, 0, 16, 15, 16);
 
     private final FishingSpot spot;
 
-    public FishingSpotBlock(FishingSpot spot, Settings settings) {
+    public FishingSpotBlock(FishingSpot spot, Properties settings) {
         super(settings);
         this.spot = spot;
-        setDefaultState(this.stateManager.getDefaultState().with(WATERLOGGED, true));
+        registerDefaultState(this.stateDefinition.any().setValue(WATERLOGGED, true));
     }
 
     public FishingSpot spot() {
@@ -44,42 +44,42 @@ public class FishingSpotBlock extends Block implements Waterloggable {
     }
 
     @Override
-    protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(WATERLOGGED);
     }
 
     @Override
     @SuppressWarnings("deprecation")
     public FluidState getFluidState(BlockState state) {
-        return state.get(WATERLOGGED) ? Fluids.WATER.getStill(false) : super.getFluidState(state);
+        return state.getValue(WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(state);
     }
 
     @Override
     @SuppressWarnings("deprecation")
-    public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+    public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
         return OUTLINE;
     }
 
     @Override
     @SuppressWarnings("deprecation")
-    public VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        return VoxelShapes.empty();
+    public VoxelShape getCollisionShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
+        return Shapes.empty();
     }
 
     /** Spots wander around their fishing area on OSRS-like timers, even while nobody fishes them. */
     @Override
-    public boolean hasRandomTicks(BlockState state) {
+    public boolean isRandomlyTicking(BlockState state) {
         return true;
     }
 
     @Override
     @SuppressWarnings("deprecation")
-    public void randomTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
+    public void randomTick(BlockState state, ServerLevel world, BlockPos pos, RandomSource random) {
         FishingSpots.tick(world, pos, state);
     }
 
     @Override
-    public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
+    public void animateTick(BlockState state, Level world, BlockPos pos, RandomSource random) {
         if (random.nextInt(3) == 0) {
             world.addParticle(ParticleTypes.SPLASH, pos.getX() + random.nextDouble(), pos.getY() + 0.95,
                     pos.getZ() + random.nextDouble(), 0, 0.05, 0);
@@ -92,13 +92,13 @@ public class FishingSpotBlock extends Block implements Waterloggable {
 
     @Override
     @SuppressWarnings("deprecation")
-    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
-        if (hand != Hand.MAIN_HAND) {
-            return ActionResult.PASS;
+    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        if (hand != InteractionHand.MAIN_HAND) {
+            return InteractionResult.PASS;
         }
-        if (!world.isClient() && player instanceof ServerPlayerEntity sp) {
+        if (!world.isClientSide() && player instanceof ServerPlayer sp) {
             Gathering.fish(sp, pos, spot);
         }
-        return ActionResult.success(world.isClient());
+        return InteractionResult.sidedSuccess(world.isClientSide());
     }
 }

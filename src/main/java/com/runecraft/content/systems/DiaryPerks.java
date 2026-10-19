@@ -6,12 +6,11 @@ import com.runecraft.osrs.content.systems.DiaryRewards;
 import com.runecraft.osrs.content.systems.Jewellery;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.server.network.ServerPlayerEntity;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EquipmentSlot;
 
 /**
  * Passive achievement diary reward effects: Varrock armour's extra ore (mining) and extra bar (smelting),
@@ -27,14 +26,14 @@ final class DiaryPerks {
     private DiaryPerks() {
     }
 
-    static void onObtain(ServerPlayerEntity p, String item) {
-        PENDING.put(p.getUuid(), new Pending(item, SysTicks.now()));
+    static void onObtain(ServerPlayer p, String item) {
+        PENDING.put(p.getUUID(), new Pending(item, SysTicks.now()));
     }
 
     private static boolean inBonusXp;
 
     /** Falador medium diary: 10% more Farming XP at the Falador farm patches (paid as a separate XP drop). */
-    static void farmXp(ServerPlayerEntity p, Skill skill, int tenths) {
+    static void farmXp(ServerPlayer p, Skill skill, int tenths) {
         if (skill != Skill.FARMING || inBonusXp || tenths <= 0 || !com.runecraft.world.Gielinor.is(p)) {
             return;
         }
@@ -54,17 +53,17 @@ final class DiaryPerks {
         }
     }
 
-    static void onXp(ServerPlayerEntity p, Skill skill) {
+    static void onXp(ServerPlayer p, Skill skill) {
         if (skill != Skill.MINING && skill != Skill.FISHING) {
             return;
         }
-        Pending pending = PENDING.remove(p.getUuid());
+        Pending pending = PENDING.remove(p.getUUID());
         if (pending == null || SysTicks.now() - pending.tick() > 1) {
             return;
         }
         if (skill == Skill.MINING) {
-            int tier = DiaryRewards.tierOf(Inv.idOf(p.getEquippedStack(EquipmentSlot.CHEST)));
-            if (Inv.idOf(p.getEquippedStack(EquipmentSlot.CHEST)).startsWith("varrock_armour_") && DiaryRewards.varrockOre(tier, pending.item())
+            int tier = DiaryRewards.tierOf(Inv.idOf(p.getItemBySlot(EquipmentSlot.CHEST)));
+            if (Inv.idOf(p.getItemBySlot(EquipmentSlot.CHEST)).startsWith("varrock_armour_") && DiaryRewards.varrockOre(tier, pending.item())
                     && p.getRandom().nextInt(100) < DiaryRewards.VARROCK_BONUS_PERCENT) {
                 Inv.give(p, pending.item(), 1);
                 Msg.game(p, "Your Varrock armour allows you to mine an additional ore.");
@@ -79,8 +78,8 @@ final class DiaryPerks {
         }
     }
 
-    static void onMake(ServerPlayerEntity p, Recipe r) {
-        String chest = Inv.idOf(p.getEquippedStack(EquipmentSlot.CHEST));
+    static void onMake(ServerPlayer p, Recipe r) {
+        String chest = Inv.idOf(p.getItemBySlot(EquipmentSlot.CHEST));
         if (!chest.startsWith("varrock_armour_")) {
             return;
         }

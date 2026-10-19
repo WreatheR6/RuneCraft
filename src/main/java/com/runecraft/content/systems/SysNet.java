@@ -4,10 +4,9 @@ import com.runecraft.RuneCraft;
 import com.runecraft.osrs.content.systems.Spellbooks;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.Identifier;
-
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,13 +18,13 @@ import java.util.Map;
  */
 public final class SysNet {
     /** Server -> client: spec energy, run energy, spellbook... */
-    public static final Identifier STATE = RuneCraft.id("systems/state");
+    public static final ResourceLocation STATE = RuneCraft.id("systems/state");
     /** Server -> client: a generic screen. */
-    public static final Identifier SCREEN = RuneCraft.id("systems/screen");
+    public static final ResourceLocation SCREEN = RuneCraft.id("systems/screen");
     /** Client -> server: a key press (see KEY_*). */
-    public static final Identifier KEY = RuneCraft.id("systems/key");
+    public static final ResourceLocation KEY = RuneCraft.id("systems/key");
     /** Client -> server: a screen button was clicked. */
-    public static final Identifier ACTION = RuneCraft.id("systems/action");
+    public static final ResourceLocation ACTION = RuneCraft.id("systems/action");
 
     public static final int KEY_SPEC = 0;
     public static final int KEY_SPELLBOOK = 1;
@@ -35,7 +34,7 @@ public final class SysNet {
     /** Handles a button click on a screen. */
     @FunctionalInterface
     public interface ActionHandler {
-        void handle(ServerPlayerEntity player, String action, Map<String, String> fields);
+        void handle(ServerPlayer player, String action, Map<String, String> fields);
     }
 
     private static final Map<String, ActionHandler> HANDLERS = new HashMap<>();
@@ -62,12 +61,12 @@ public final class SysNet {
             });
         });
         ServerPlayNetworking.registerGlobalReceiver(ACTION, (server, player, handler, buf, sender) -> {
-            String screen = buf.readString(64);
-            String action = buf.readString(256);
+            String screen = buf.readUtf(64);
+            String action = buf.readUtf(256);
             int n = Math.min(buf.readVarInt(), 16);
             Map<String, String> fields = new HashMap<>();
             for (int i = 0; i < n; i++) {
-                fields.put(buf.readString(64), buf.readString(256));
+                fields.put(buf.readUtf(64), buf.readUtf(256));
             }
             server.execute(() -> {
                 ActionHandler h = HANDLERS.get(screen);
@@ -83,19 +82,19 @@ public final class SysNet {
     }
 
     /** Sends the HUD state (special attack, run energy, spellbook, autocast). */
-    public static void sendState(ServerPlayerEntity player) {
+    public static void sendState(ServerPlayer player) {
         SysState.SysPlayer p = SysState.of(player);
-        PacketByteBuf buf = PacketByteBufs.create();
+        FriendlyByteBuf buf = PacketByteBufs.create();
         buf.writeVarInt(p.specEnergy);
         buf.writeBoolean(p.specArmed);
         buf.writeVarInt(p.runEnergy);
         buf.writeBoolean(p.staminaUntil > com.runecraft.action.ActionManager.gameTick());
-        buf.writeString(p.book.displayName);
+        buf.writeUtf(p.book.displayName);
         Spellbooks.Spell auto = p.autocast.isEmpty() ? null : Spellbooks.get(p.autocast);
-        buf.writeString(auto == null ? "" : auto.name());
+        buf.writeUtf(auto == null ? "" : auto.name());
         buf.writeBoolean(p.vengeance);
         buf.writeVarInt(p.thrallTier);
-        String weapon = com.runecraft.util.Inv.idOf(player.getMainHandStack());
+        String weapon = com.runecraft.util.Inv.idOf(player.getMainHandItem());
         com.runecraft.osrs.content.systems.SpecialAttacks.Spec spec = com.runecraft.osrs.content.systems.SpecialAttacks.of(weapon);
         buf.writeVarInt(spec == null ? -1 : SpecialAttackService.cost(player, spec));
         ServerPlayNetworking.send(player, STATE, buf);
@@ -137,26 +136,26 @@ public final class SysNet {
             return this;
         }
 
-        public void send(ServerPlayerEntity player) {
-            PacketByteBuf buf = PacketByteBufs.create();
-            buf.writeString(id);
-            buf.writeString(title);
+        public void send(ServerPlayer player) {
+            FriendlyByteBuf buf = PacketByteBufs.create();
+            buf.writeUtf(id);
+            buf.writeUtf(title);
             buf.writeVarInt(lines.size());
             for (String[] l : lines) {
-                buf.writeString(l[0].length() > 300 ? l[0].substring(0, 300) : l[0]);
+                buf.writeUtf(l[0].length() > 300 ? l[0].substring(0, 300) : l[0]);
                 buf.writeInt(Integer.parseInt(l[1]));
             }
             buf.writeVarInt(fields.size());
             for (String[] f : fields) {
-                buf.writeString(f[0]);
-                buf.writeString(f[1]);
-                buf.writeString(f[2]);
+                buf.writeUtf(f[0]);
+                buf.writeUtf(f[1]);
+                buf.writeUtf(f[2]);
             }
             buf.writeVarInt(buttons.size());
             for (Object[] b : buttons) {
-                buf.writeString((String) b[0]);
-                buf.writeString((String) b[1]);
-                buf.writeString((String) b[2]);
+                buf.writeUtf((String) b[0]);
+                buf.writeUtf((String) b[1]);
+                buf.writeUtf((String) b[2]);
                 buf.writeBoolean((Boolean) b[3]);
             }
             ServerPlayNetworking.send(player, SCREEN, buf);

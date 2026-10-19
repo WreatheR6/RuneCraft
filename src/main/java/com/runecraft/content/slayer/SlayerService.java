@@ -24,30 +24,29 @@ import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 
 /** Slayer tasks, points, streaks, keys and superiors (called through {@link com.runecraft.combat.Slayer}). */
 public final class SlayerService {
     private SlayerService() {
     }
 
-    public static SlayerState.Profile profile(ServerPlayerEntity player) {
-        SlayerState.Profile p = SlayerState.of(player.getServer()).get(player.getUuid());
+    public static SlayerState.Profile profile(ServerPlayer player) {
+        SlayerState.Profile p = SlayerState.of(player.getServer()).get(player.getUUID());
         if (!p.migrated) {
             migrate(player, p);
         }
@@ -55,7 +54,7 @@ public final class SlayerService {
     }
 
     /** Moves a task stored by the old core system (PlayerData) into the slayer module's state. */
-    private static void migrate(ServerPlayerEntity player, SlayerState.Profile p) {
+    private static void migrate(ServerPlayer player, SlayerState.Profile p) {
         p.migrated = true;
         PlayerData data = Players.data(player);
         p.streak = Math.max(p.streak, data.slayerStreak());
@@ -74,14 +73,14 @@ public final class SlayerService {
     // ------------------------------------------------------------------ masters
 
     /** The generic slayer master station: the best master for the player's levels. */
-    public static void talkToStation(ServerPlayerEntity player) {
+    public static void talkToStation(ServerPlayer player) {
         PlayerData data = Players.data(player);
         SlayerMasters.Master m = SlayerMasters.bestFor(data.skills().combatLevel(), data.skills().level(Skill.SLAYER),
                 x -> x.quest() == null || ContentRegistry.quest(x.quest()) == null || QuestApi.isComplete(player, x.quest()));
         talk(player, m);
     }
 
-    public static void talk(ServerPlayerEntity player, SlayerMasters.Master master) {
+    public static void talk(ServerPlayer player, SlayerMasters.Master master) {
         PlayerData data = Players.data(player);
         SlayerState.Profile p = profile(player);
         int combat = data.skills().combatLevel();
@@ -122,7 +121,7 @@ public final class SlayerService {
         assign(player, master, p, combat, slayer);
     }
 
-    private static void assign(ServerPlayerEntity player, SlayerMasters.Master master, SlayerState.Profile p, int combat,
+    private static void assign(ServerPlayer player, SlayerMasters.Master master, SlayerState.Profile p, int combat,
                                int slayer) {
         Random random = new Random(player.getRandom().nextLong());
         String previous = p.task;
@@ -171,7 +170,7 @@ public final class SlayerService {
      * A task's quest requirement: {@code id} must be complete, {@code ~id} only started. Quests RuneCraft
      * doesn't have never block a task.
      */
-    private static boolean questMet(ServerPlayerEntity player, String requirement) {
+    private static boolean questMet(ServerPlayer player, String requirement) {
         boolean started = requirement.startsWith("~");
         String id = started ? requirement.substring(1) : requirement;
         if (ContentRegistry.quest(id) == null) {
@@ -181,7 +180,7 @@ public final class SlayerService {
     }
 
     /** Whether the elite tier of the master's points diary (Konar: Kourend &amp; Kebos; Nieve/Steve: Western) is done. */
-    private static boolean eliteDiary(ServerPlayerEntity player, SlayerMasters.Master master) {
+    private static boolean eliteDiary(ServerPlayer player, SlayerMasters.Master master) {
         return master.diary() != null && com.runecraft.osrs.content.systems.Diaries.tierComplete(
                 com.runecraft.content.systems.SysState.of(player).diaryDone, master.diary(),
                 com.runecraft.osrs.content.systems.Diaries.Tier.ELITE);
@@ -189,7 +188,7 @@ public final class SlayerService {
 
     /** Kingdom a kill counts in for Konar: a carved dungeon counts as the kingdom it belongs to. */
     private static Region taskRegion(Entity entity) {
-        return TaskRegions.at(entity.getBlockPos().getX(), entity.getBlockPos().getY(), entity.getBlockPos().getZ());
+        return TaskRegions.at(entity.blockPosition().getX(), entity.blockPosition().getY(), entity.blockPosition().getZ());
     }
 
     private static String describe(SlayerState.Profile p) {
@@ -200,33 +199,33 @@ public final class SlayerService {
         return name;
     }
 
-    private static void say(ServerPlayerEntity player, SlayerMasters.Master master, String line) {
-        player.sendMessage(Text.literal(master.name() + ": ").formatted(Formatting.YELLOW)
-                .append(Text.literal(line).formatted(Formatting.WHITE)), false);
+    private static void say(ServerPlayer player, SlayerMasters.Master master, String line) {
+        player.displayClientMessage(Component.literal(master.name() + ": ").withStyle(ChatFormatting.YELLOW)
+                .append(Component.literal(line).withStyle(ChatFormatting.WHITE)), false);
     }
 
     /** Clickable task-management options shown by masters. */
-    static void menu(ServerPlayerEntity player, SlayerState.Profile p) {
-        MutableText line = Text.literal("Options: ").formatted(Formatting.GRAY);
+    static void menu(ServerPlayer player, SlayerState.Profile p) {
+        MutableComponent line = Component.literal("Options: ").withStyle(ChatFormatting.GRAY);
         line.append(button("[Skip " + SlayerRewards.SKIP_COST + "pts]", "/slayer skip", "Cancel this task for 30 points"));
-        line.append(Text.literal(" "));
+        line.append(Component.literal(" "));
         line.append(button("[Block " + SlayerRewards.blockCost(p.master) + "pts]", "/slayer block", "Never be assigned this task again"));
-        line.append(Text.literal(" "));
+        line.append(Component.literal(" "));
         line.append(button("[Rewards]", "/slayer rewards", "Spend your " + p.points + " slayer points"));
-        line.append(Text.literal(" "));
+        line.append(Component.literal(" "));
         line.append(button("[Shop]", "/slayer shop", "Buy slayer equipment"));
-        line.append(Text.literal(" "));
+        line.append(Component.literal(" "));
         line.append(button("[Craft]", "/slayer craft", "Assemble slayer helmets, rings and more"));
-        player.sendMessage(line, false);
+        player.displayClientMessage(line, false);
     }
 
-    static MutableText button(String label, String command, String hover) {
-        return Text.literal(label).styled(s -> s.withColor(Formatting.GOLD)
+    static MutableComponent button(String label, String command, String hover) {
+        return Component.literal(label).withStyle(s -> s.withColor(ChatFormatting.GOLD)
                 .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
-                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(hover))));
+                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(hover))));
     }
 
-    public static void checkTask(ServerPlayerEntity player) {
+    public static void checkTask(ServerPlayer player) {
         SlayerState.Profile p = profile(player);
         if (!p.hasTask()) {
             Msg.game(player, "You need something new to hunt. Visit a Slayer master. (Streak: " + p.streak + ", points: "
@@ -272,7 +271,7 @@ public final class SlayerService {
     }
 
     /** True if the entity counts towards the player's current task right now (location rules included). */
-    public static boolean isOnTask(ServerPlayerEntity player, LivingEntity entity) {
+    public static boolean isOnTask(ServerPlayer player, LivingEntity entity) {
         SlayerState.Profile p = profile(player);
         if (!p.hasTask()) {
             return false;
@@ -287,7 +286,7 @@ public final class SlayerService {
         return p.region == null || taskRegion(entity).name().equals(p.region);
     }
 
-    public static void onKill(ServerPlayerEntity player, LivingEntity entity, MonsterStats stats) {
+    public static void onKill(ServerPlayer player, LivingEntity entity, MonsterStats stats) {
         SlayerState.Profile p = profile(player);
         if (!p.hasTask() || !counts(p.task, stats)) {
             return;
@@ -312,7 +311,7 @@ public final class SlayerService {
                 : com.runecraft.osrs.data.MonsterTraits.slayerXp(stats.traitsKey(), stats.hitpoints()));
         // "Double Trouble": each Grotesque Guardians kill counts twice.
         // Expeditious bracelet / bracelet of slaughter (systems module): 25% chance to double or void the credit.
-        String killed = net.minecraft.registry.Registries.ENTITY_TYPE.getId(entity.getType()).getPath();
+        String killed = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).getPath();
         int credit = com.runecraft.content.systems.JewelleryService.slayerCredit(player, SlayerTasks.killCredit(p.task, p.unlocks),
                 killed.equals("tztok_jad") || killed.equals("tzkal_zuk"));
         p.remaining = Math.max(0, p.remaining - credit);
@@ -337,7 +336,7 @@ public final class SlayerService {
         SlayerNet.sync(player);
     }
 
-    private static void complete(ServerPlayerEntity player, SlayerState.Profile p, SlayerMasters.Master master,
+    private static void complete(ServerPlayer player, SlayerState.Profile p, SlayerMasters.Master master,
                                  boolean eliteDiary) {
         p.remaining = 0;
         p.completed++;
@@ -357,24 +356,24 @@ public final class SlayerService {
         ServerNetworking.sync(player);
     }
 
-    private static void reward(ServerPlayerEntity player, LivingEntity at, String item, String message) {
-        at.dropStack(Inv.stack(item, 1));
+    private static void reward(ServerPlayer player, LivingEntity at, String item, String message) {
+        at.spawnAtLocation(Inv.stack(item, 1));
         CollectionLog.obtain(player, item);
         Msg.red(player, message);
     }
 
-    private static void spawnSuperior(ServerPlayerEntity player, LivingEntity base, Superiors.Superior s) {
+    private static void spawnSuperior(ServerPlayer player, LivingEntity base, Superiors.Superior s) {
         EntityType<?> type = ModEntities.typeById(s.id());
-        if (type == null || !(base.getWorld() instanceof ServerWorld world)) {
+        if (type == null || !(base.level() instanceof ServerLevel world)) {
             return;
         }
         Entity e = type.create(world);
         if (e == null) {
             return;
         }
-        e.refreshPositionAndAngles(base.getX(), base.getY(), base.getZ(), base.getYaw(), 0);
-        world.spawnEntity(e);
-        if (e instanceof MobEntity mob) {
+        e.moveTo(base.getX(), base.getY(), base.getZ(), base.getYRot(), 0);
+        world.addFreshEntity(e);
+        if (e instanceof Mob mob) {
             mob.setTarget(player);
         }
         Msg.red(player, "A superior foe has appeared...");
@@ -383,7 +382,7 @@ public final class SlayerService {
     // ------------------------------------------------------------------ combat bonuses
 
     /** Black mask / slayer helmet: +16.67% melee max hit against the current task. */
-    public static int boostMaxHit(ServerPlayerEntity player, LivingEntity target, int maxHit) {
+    public static int boostMaxHit(ServerPlayer player, LivingEntity target, int maxHit) {
         if (target != null && wearingAny(player, SlayerGear.MELEE_BOOST_HEADGEAR) && isOnTask(player, target)
                 && !com.runecraft.combat.GearEffects.salveActive(player, target, com.runecraft.osrs.AttackType.CRUSH)) {
             return maxHit * 7 / 6;
@@ -391,8 +390,8 @@ public final class SlayerService {
         return maxHit;
     }
 
-    static boolean wearingAny(ServerPlayerEntity player, List<String> items) {
-        String head = Inv.idOf(player.getEquippedStack(EquipmentSlot.HEAD));
+    static boolean wearingAny(ServerPlayer player, List<String> items) {
+        String head = Inv.idOf(player.getItemBySlot(EquipmentSlot.HEAD));
         return items.contains(head);
     }
 

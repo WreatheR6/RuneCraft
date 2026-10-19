@@ -14,107 +14,106 @@ import com.runecraft.registry.ModEntities;
 import com.runecraft.skill.Drops;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.particle.ParticleEffect;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.Heightmap;
-
 import java.util.List;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.phys.Vec3;
 
 /** Shared helpers for boss scripts: messages, particles, minions, form swaps and kill credit. */
 final class BossFx {
     private BossFx() {
     }
 
-    static ServerWorld world(Entity e) {
-        return (ServerWorld) e.getWorld();
+    static ServerLevel world(Entity e) {
+        return (ServerLevel) e.level();
     }
 
     /** Living, non-spectating players within {@code radius} blocks of the boss. */
-    static List<ServerPlayerEntity> players(Entity boss, double radius) {
+    static List<ServerPlayer> players(Entity boss, double radius) {
         return world(boss).getPlayers(p -> p.isAlive() && !p.isSpectator() && !p.isCreative()
-                && p.squaredDistanceTo(boss) <= radius * radius);
+                && p.distanceToSqr(boss) <= radius * radius);
     }
 
     /** Boss shout (red chat line) to everyone near the boss. */
     static void say(Entity boss, String message) {
-        for (ServerPlayerEntity p : world(boss).getPlayers(p -> p.squaredDistanceTo(boss) < 48 * 48)) {
-            p.sendMessage(Text.literal(message).formatted(Formatting.RED), false);
+        for (ServerPlayer p : world(boss).getPlayers(p -> p.distanceToSqr(boss) < 48 * 48)) {
+            p.displayClientMessage(Component.literal(message).withStyle(ChatFormatting.RED), false);
         }
     }
 
     /** Action-bar warning to everyone near the boss (used for telegraphs). */
     static void warn(Entity boss, String message) {
-        for (ServerPlayerEntity p : world(boss).getPlayers(p -> p.squaredDistanceTo(boss) < 48 * 48)) {
+        for (ServerPlayer p : world(boss).getPlayers(p -> p.distanceToSqr(boss) < 48 * 48)) {
             Msg.action(p, message);
         }
     }
 
-    static void burst(Entity e, ParticleEffect effect, int count, double spread) {
-        world(e).spawnParticles(effect, e.getX(), e.getY() + e.getHeight() / 2, e.getZ(), count, spread, spread, spread, 0.05);
+    static void burst(Entity e, ParticleOptions effect, int count, double spread) {
+        world(e).sendParticles(effect, e.getX(), e.getY() + e.getBbHeight() / 2, e.getZ(), count, spread, spread, spread, 0.05);
     }
 
-    static void column(ServerWorld world, Vec3d pos, ParticleEffect effect, int height) {
+    static void column(ServerLevel world, Vec3 pos, ParticleOptions effect, int height) {
         for (int i = 0; i < height; i++) {
-            world.spawnParticles(effect, pos.x, pos.y + i * 0.5, pos.z, 2, 0.2, 0.1, 0.2, 0.01);
+            world.sendParticles(effect, pos.x, pos.y + i * 0.5, pos.z, 2, 0.2, 0.1, 0.2, 0.01);
         }
     }
 
-    static void ring(ServerWorld world, Vec3d centre, double radius, ParticleEffect effect) {
+    static void ring(ServerLevel world, Vec3 centre, double radius, ParticleOptions effect) {
         int points = (int) Math.max(8, radius * 8);
         for (int i = 0; i < points; i++) {
             double a = Math.PI * 2 * i / points;
-            world.spawnParticles(effect, centre.x + Math.cos(a) * radius, centre.y + 0.1, centre.z + Math.sin(a) * radius, 1, 0, 0, 0, 0);
+            world.sendParticles(effect, centre.x + Math.cos(a) * radius, centre.y + 0.1, centre.z + Math.sin(a) * radius, 1, 0, 0, 0, 0);
         }
     }
 
-    static void sound(Entity e, net.minecraft.sound.SoundEvent sound, float pitch) {
-        world(e).playSound(null, e.getX(), e.getY(), e.getZ(), sound, SoundCategory.HOSTILE, 1.0f, pitch);
+    static void sound(Entity e, net.minecraft.sounds.SoundEvent sound, float pitch) {
+        world(e).playSound(null, e.getX(), e.getY(), e.getZ(), sound, SoundSource.HOSTILE, 1.0f, pitch);
     }
 
     /** Ground position (top solid block + 1) at a horizontal location. */
-    static Vec3d ground(ServerWorld world, double x, double z, double fallbackY) {
-        int top = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, (int) Math.floor(x), (int) Math.floor(z));
+    static Vec3 ground(ServerLevel world, double x, double z, double fallbackY) {
+        int top = world.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, (int) Math.floor(x), (int) Math.floor(z));
         double y = Math.abs(top - fallbackY) > 6 ? fallbackY : top;
-        return new Vec3d(x, y, z);
+        return new Vec3(x, y, z);
     }
 
     /** Spawns a module creature (minion) at a position, targeting {@code target}. */
-    static MobEntity spawnMinion(Entity boss, String creatureId, Vec3d pos, ServerPlayerEntity target) {
+    static Mob spawnMinion(Entity boss, String creatureId, Vec3 pos, ServerPlayer target) {
         EntityType<?> type = ModEntities.typeById(creatureId);
         if (type == null) {
             return null;
         }
-        ServerWorld world = world(boss);
+        ServerLevel world = world(boss);
         Entity e = type.create(world);
-        if (!(e instanceof MobEntity mob)) {
+        if (!(e instanceof Mob mob)) {
             return null;
         }
-        mob.refreshPositionAndAngles(pos.x, pos.y, pos.z, boss.getYaw(), 0);
-        mob.initialize(world, world.getLocalDifficulty(mob.getBlockPos()), SpawnReason.MOB_SUMMONED, null, null);
+        mob.moveTo(pos.x, pos.y, pos.z, boss.getYRot(), 0);
+        mob.finalizeSpawn(world, world.getCurrentDifficultyAt(mob.blockPosition()), MobSpawnType.MOB_SUMMONED, null, null);
         if (target != null) {
             mob.setTarget(target);
         }
-        world.spawnEntity(mob);
-        world.spawnParticles(ParticleTypes.POOF, pos.x, pos.y + 0.5, pos.z, 10, 0.3, 0.3, 0.3, 0.02);
+        world.addFreshEntity(mob);
+        world.sendParticles(ParticleTypes.POOF, pos.x, pos.y + 0.5, pos.z, 10, 0.3, 0.3, 0.3, 0.02);
         return mob;
     }
 
     /** Spawns another data boss (companion or next form) at a position. */
-    static DataBossEntity spawnBoss(Entity near, String bossId, BlockPos pos, ServerPlayerEntity target) {
+    static DataBossEntity spawnBoss(Entity near, String bossId, BlockPos pos, ServerPlayer target) {
         BossDef def = ContentRegistry.boss(bossId);
         if (def == null) {
             return null;
@@ -127,7 +126,7 @@ final class BossFx {
      * {@code state} is handed to the new form's script through {@link DataBossEntity#instanceTag}.
      */
     static DataBossEntity swapForm(DataBossEntity boss, String bossId, BlockPos at, boolean fullHealth, String state) {
-        ServerPlayerEntity target = boss.getTarget() instanceof ServerPlayerEntity p ? p : null;
+        ServerPlayer target = boss.getTarget() instanceof ServerPlayer p ? p : null;
         DataBossEntity next = spawnBoss(boss, bossId, at, target);
         if (next == null) {
             return null;
@@ -145,22 +144,22 @@ final class BossFx {
      * Awards a kill of {@code mainId} (drops, collection log, pet, kill count) when a secondary form of the
      * boss is defeated, then removes the form. Used by Zulrah's, Hydra's and the Kalphite Queen's later forms.
      */
-    static void creditKill(DataBossEntity form, ServerPlayerEntity killer, String mainId) {
+    static void creditKill(DataBossEntity form, ServerPlayer killer, String mainId) {
         BossDef def = ContentRegistry.boss(mainId);
         if (def == null || killer == null) {
             form.discard();
             return;
         }
         for (Drops.Rolled r : Drops.roll(def.drops, form.getRandom(), false)) {
-            form.dropStack(Drops.withDoses(Inv.stack(r.item(), r.count()), r.doses()));
+            form.spawnAtLocation(Drops.withDoses(Inv.stack(r.item(), r.count()), r.doses()));
             CollectionLog.obtain(killer, r.item());
         }
         int petRate = com.runecraft.osrs.content.extras.Pets.engineRate(def.id);
         if (def.pet != null && petRate > 0 && form.getRandom().nextInt(petRate) == 0) {
             Inv.give(killer, def.pet, 1);
             CollectionLog.obtain(killer, def.pet);
-            killer.getServer().getPlayerManager().broadcast(Text.literal(killer.getName().getString()
-                    + " has a funny feeling like they're being followed.").formatted(Formatting.GOLD), false);
+            killer.getServer().getPlayerList().broadcastSystemMessage(Component.literal(killer.getName().getString()
+                    + " has a funny feeling like they're being followed.").withStyle(ChatFormatting.GOLD), false);
         }
         PlayerData data = Players.data(killer);
         int kc = data.incrementKillCount(def.id);
@@ -168,12 +167,12 @@ final class BossFx {
         // The form is discarded rather than killed, so credit the slayer task (hydras, boss tasks) here.
         com.runecraft.combat.Slayer.onKill(killer, form, com.runecraft.combat.MonsterStats.from(def));
         burst(form, ParticleTypes.EXPLOSION, 6, 1.0);
-        sound(form, SoundEvents.ENTITY_GENERIC_EXPLODE, 0.8f);
+        sound(form, SoundEvents.GENERIC_EXPLODE, 0.8f);
         form.discard();
     }
 
     /** Switches off all of a player's prayers. */
-    static void disablePrayers(ServerPlayerEntity p, String message) {
+    static void disablePrayers(ServerPlayer p, String message) {
         PlayerData data = Players.data(p);
         if (!data.activePrayers().isEmpty()) {
             data.activePrayers().clear();
@@ -183,40 +182,40 @@ final class BossFx {
     }
 
     /** Switches off one prayer, leaving the others on (e.g. Phosani's Prayer Deactivation of a protection prayer). */
-    static void disablePrayer(ServerPlayerEntity p, Prayer prayer, String message) {
+    static void disablePrayer(ServerPlayer p, Prayer prayer, String message) {
         if (Players.data(p).activePrayers().remove(prayer)) {
             ServerNetworking.sync(p);
             Msg.red(p, message);
         }
     }
 
-    static boolean protects(ServerPlayerEntity p, Prayer prayer) {
+    static boolean protects(ServerPlayer p, Prayer prayer) {
         return Players.data(p).isActive(prayer);
     }
 
-    static void drainPrayer(ServerPlayerEntity p, int points) {
+    static void drainPrayer(ServerPlayer p, int points) {
         PlayerData data = Players.data(p);
         data.setPrayerPoints(data.prayerPoints() - points);
         ServerNetworking.sync(p);
     }
 
-    static void drainStat(ServerPlayerEntity p, Skill skill, int amount) {
+    static void drainStat(ServerPlayer p, Skill skill, int amount) {
         PlayerData data = Players.data(p);
         data.skills().setBoost(skill, data.skills().boost(skill) - amount);
         ServerNetworking.sync(p);
     }
 
     /** Stuns/binds a player for {@code gameTicks} (heavy slowness, like a freeze). */
-    static void stun(ServerPlayerEntity p, int gameTicks) {
-        p.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, gameTicks * 12, 10, false, true));
+    static void stun(ServerPlayer p, int gameTicks) {
+        p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, gameTicks * 12, 10, false, true));
     }
 
-    static void unstun(ServerPlayerEntity p) {
-        p.removeStatusEffect(StatusEffects.SLOWNESS);
+    static void unstun(ServerPlayer p) {
+        p.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
     }
 
-    static String heldId(ServerPlayerEntity p) {
-        String id = Inv.idOf(p.getMainHandStack());
+    static String heldId(ServerPlayer p) {
+        String id = Inv.idOf(p.getMainHandItem());
         return id == null ? "" : id;
     }
 }

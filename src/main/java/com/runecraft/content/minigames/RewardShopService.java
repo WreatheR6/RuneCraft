@@ -15,9 +15,8 @@ import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.server.network.ServerPlayerEntity;
-
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.server.level.ServerPlayer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -28,21 +27,21 @@ public final class RewardShopService {
 
     /** Adjusts a cost for a player, e.g. diary discounts: (player, shop id, amount) -> amount. */
     public interface CostAdjuster {
-        int adjust(ServerPlayerEntity player, String shopId, int amount);
+        int adjust(ServerPlayer player, String shopId, int amount);
     }
 
     /** Set by other modules (the systems module's Karamja gloves TzHaar discount). */
     public static CostAdjuster costAdjuster = (p, shop, amount) -> amount;
     /** Extra reason an item can't be bought (diary requirements), or null: (player, item id) -> reason. */
-    public static java.util.function.BiFunction<ServerPlayerEntity, String, String> extraLock = (p, item) -> null;
+    public static java.util.function.BiFunction<ServerPlayer, String, String> extraLock = (p, item) -> null;
     /** Adjusts Nightmare Zone / Soul Wars imbue costs (Combat Achievements hard tier halves them): (player, cost) -> cost. */
-    public static java.util.function.BiFunction<ServerPlayerEntity, Integer, Integer> imbueCost = (p, amount) -> amount;
+    public static java.util.function.BiFunction<ServerPlayer, Integer, Integer> imbueCost = (p, amount) -> amount;
 
     private RewardShopService() {
     }
 
     /** The entry with its costs adjusted for this player. */
-    private static RewardShop.Entry priced(ServerPlayerEntity player, String shopId, RewardShop.Entry e) {
+    private static RewardShop.Entry priced(ServerPlayer player, String shopId, RewardShop.Entry e) {
         java.util.List<RewardShop.Cost> costs = new java.util.ArrayList<>();
         boolean changed = false;
         for (RewardShop.Cost c : e.costs()) {
@@ -57,14 +56,14 @@ public final class RewardShopService {
                 e.requiredLevel(), e.requiresItem()) : e;
     }
 
-    public static int balance(ServerPlayerEntity player, String currency) {
+    public static int balance(ServerPlayer player, String currency) {
         if (currency.startsWith("item:")) {
             return Inv.count(player, MinigameCurrencies.key(currency));
         }
-        return MinigameData.of(player).points(player.getUuid(), MinigameCurrencies.key(currency));
+        return MinigameData.of(player).points(player.getUUID(), MinigameCurrencies.key(currency));
     }
 
-    private static Map<String, Integer> balances(ServerPlayerEntity player, RewardShop shop) {
+    private static Map<String, Integer> balances(ServerPlayer player, RewardShop shop) {
         Map<String, Integer> map = new HashMap<>();
         for (String c : shop.currencies()) {
             map.put(c, balance(player, c));
@@ -114,7 +113,7 @@ public final class RewardShopService {
     }
 
     /** Problem that prevents buying (level, prerequisite item, already unlocked) or null. */
-    private static String locked(ServerPlayerEntity player, RewardShop.Entry e) {
+    private static String locked(ServerPlayer player, RewardShop.Entry e) {
         if (e.requiredSkill() != null && Players.data(player).skills().level(e.requiredSkill()) < e.requiredLevel()) {
             return "Requires level " + e.requiredLevel() + " " + e.requiredSkill().displayName();
         }
@@ -134,7 +133,7 @@ public final class RewardShopService {
                 }
             }
         }
-        if (e.reward() == RewardShop.Reward.UNLOCK && MinigameData.of(player).flag(player.getUuid(), e.item())) {
+        if (e.reward() == RewardShop.Reward.UNLOCK && MinigameData.of(player).flag(player.getUUID(), e.item())) {
             return "Already unlocked";
         }
         // Barbarian Assault gambles: low and medium need wave 3 / 6 of the current round.
@@ -149,35 +148,35 @@ public final class RewardShopService {
         // Last Man Standing: tradeable rewards need a won game (OSRS Wiki, May 2026).
         int wins = com.runecraft.osrs.content.minigames.LastManStanding.winsNeeded(e.item());
         if (wins > 0 && e.costs().stream().anyMatch(c -> c.currency().equals(com.runecraft.osrs.content.minigames.LastManStanding.POINTS))
-                && MinigameData.of(player).stat(player.getUuid(), com.runecraft.osrs.content.minigames.LastManStanding.WINS) < wins) {
+                && MinigameData.of(player).stat(player.getUUID(), com.runecraft.osrs.content.minigames.LastManStanding.WINS) < wins) {
             return "Requires " + wins + " competitive Last Man Standing win" + (wins == 1 ? "" : "s");
         }
         return extraLock.apply(player, e.item());
     }
 
-    public static void open(ServerPlayerEntity player, String shopId) {
+    public static void open(ServerPlayer player, String shopId) {
         RewardShop shop = RewardShops.get(shopId);
         if (shop == null) {
             return;
         }
         Map<String, Integer> bal = balances(player, shop);
-        PacketByteBuf buf = PacketByteBufs.create();
-        buf.writeString(shop.id());
-        buf.writeString(shop.title());
+        FriendlyByteBuf buf = PacketByteBufs.create();
+        buf.writeUtf(shop.id());
+        buf.writeUtf(shop.title());
         buf.writeVarInt(shop.currencies().size());
         for (String c : shop.currencies()) {
-            buf.writeString(MinigameCurrencies.name(c));
+            buf.writeUtf(MinigameCurrencies.name(c));
             buf.writeVarInt(bal.get(c));
         }
         buf.writeVarInt(shop.entries().size());
         for (RewardShop.Entry raw : shop.entries()) {
             RewardShop.Entry e = priced(player, shop.id(), raw);
             String lock = locked(player, e);
-            buf.writeString(label(e));
-            buf.writeString(icon(e));
-            buf.writeString(e.costText());
+            buf.writeUtf(label(e));
+            buf.writeUtf(icon(e));
+            buf.writeUtf(e.costText());
             buf.writeBoolean(lock == null && e.affordable(bal, 1));
-            buf.writeString(lock == null ? "" : lock);
+            buf.writeUtf(lock == null ? "" : lock);
         }
         ServerPlayNetworking.send(player, MinigameNet.SHOP, buf);
     }
@@ -192,21 +191,21 @@ public final class RewardShopService {
     }
 
     /** How many of a daily-limited reward the player has bought today (OSRS days reset at 00:00 UTC). */
-    public static int boughtToday(ServerPlayerEntity player, String shopId, String item) {
-        int v = MinigameData.of(player).stat(player.getUuid(), dailyKey(shopId, item));
+    public static int boughtToday(ServerPlayer player, String shopId, String item) {
+        int v = MinigameData.of(player).stat(player.getUUID(), dailyKey(shopId, item));
         return v / 1000 == (int) (today() % 2_000_000) ? v % 1000 : 0;
     }
 
-    private static void recordToday(ServerPlayerEntity player, String shopId, String item, int count) {
-        MinigameData.of(player).setStat(player.getUuid(), dailyKey(shopId, item), (int) (today() % 2_000_000) * 1000 + count);
+    private static void recordToday(ServerPlayer player, String shopId, String item, int count) {
+        MinigameData.of(player).setStat(player.getUUID(), dailyKey(shopId, item), (int) (today() % 2_000_000) * 1000 + count);
     }
 
     /** Self-test: forgets today's purchases of a daily-limited reward. */
-    public static void resetDaily(ServerPlayerEntity player, String shopId, String item) {
-        MinigameData.of(player).setStat(player.getUuid(), dailyKey(shopId, item), 0);
+    public static void resetDaily(ServerPlayer player, String shopId, String item) {
+        MinigameData.of(player).setStat(player.getUUID(), dailyKey(shopId, item), 0);
     }
 
-    public static void buy(ServerPlayerEntity player, String shopId, int index, int quantity) {
+    public static void buy(ServerPlayer player, String shopId, int index, int quantity) {
         RewardShop shop = RewardShops.get(shopId);
         if (shop == null || index < 0 || index >= shop.entries().size()) {
             return;
@@ -258,7 +257,7 @@ public final class RewardShopService {
             if (c.isItem()) {
                 Inv.remove(player, c.key(), amount);
             } else {
-                MinigameData.of(player).addPoints(player.getUuid(), c.key(), -amount);
+                MinigameData.of(player).addPoints(player.getUUID(), c.key(), -amount);
             }
         }
         switch (e.reward()) {
@@ -274,13 +273,13 @@ public final class RewardShopService {
                         && com.runecraft.osrs.bank.BankNotes.canNote(e.item())) {
                     // Handed out as bank notes; whatever doesn't fit drops at the player's feet.
                     int n = e.count() * times;
-                    net.minecraft.item.ItemStack note = com.runecraft.bank.Notes.note(e.item(), "", 1);
+                    net.minecraft.world.item.ItemStack note = com.runecraft.bank.Notes.note(e.item(), "", 1);
                     int in = note.isEmpty() ? 0 : com.runecraft.bank.Notes.insert(player, note, n);
                     if (note.isEmpty()) {
                         give(player, e.item(), n);
                     } else {
                         if (in < n) {
-                            player.dropItem(note.copyWithCount(n - in), false);
+                            player.drop(note.copyWithCount(n - in), false);
                         }
                         CollectionLog.obtain(player, e.item());
                     }
@@ -300,7 +299,7 @@ public final class RewardShopService {
                 Msg.game(player, "You gain " + String.format("%,d", xp) + " " + skill.displayName() + " experience.");
             }
             case UNLOCK -> {
-                MinigameData.of(player).setFlag(player.getUuid(), e.item());
+                MinigameData.of(player).setFlag(player.getUUID(), e.item());
                 if (e.item().equals("bones_to_peaches")) {
                     Inv.give(player, "bones_to_peaches_tablet", 1);
                     CollectionLog.obtain(player, "bones_to_peaches_tablet");
@@ -318,7 +317,7 @@ public final class RewardShopService {
         open(player, shopId);
     }
 
-    private static void giveItem(ServerPlayerEntity player, RewardShop.Entry e) {
+    private static void giveItem(ServerPlayer player, RewardShop.Entry e) {
         switch (e.item()) {
             case "#herbs" -> {
                 for (int i = 0; i < 3 + RANDOM.nextInt(4); i++) {
@@ -352,7 +351,7 @@ public final class RewardShopService {
         }
     }
 
-    private static void give(ServerPlayerEntity player, String item, int count) {
+    private static void give(ServerPlayer player, String item, int count) {
         if (item == null) {
             return;
         }

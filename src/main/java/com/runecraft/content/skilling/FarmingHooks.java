@@ -18,21 +18,20 @@ import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.LeavesBlock;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.random.Random;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LeavesBlock;
+import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * Tree/fruit/bush/hops/special patches, compost bins and bird houses. Patch state lives in
@@ -69,7 +68,7 @@ final class FarmingHooks {
         }
         QuestScripts.onTalk("solihib", (player, npc) -> {
             com.runecraft.quest.QuestApi.say(player, "Solihib", "Ook! Food for sale, the finest on Ape Atoll.");
-            com.runecraft.content.npcs.ShopService.open(player, "solihibs_food_stall", npc.getPos());
+            com.runecraft.content.npcs.ShopService.open(player, "solihibs_food_stall", npc.position());
         });
         // Herb and allotment patch blocks ask here for flowers next to them and the living anima plant.
         com.runecraft.block.FarmingPatchBlock.flowers = FarmingHooks::flowerProtects;
@@ -87,14 +86,14 @@ final class FarmingHooks {
     // ------------------------------------------------------------------ anima plants
 
     /** The living anima plant on the server ("kronos", "iasor" or "attas"), or null. */
-    static String activeAnima(ServerWorld world) {
+    static String activeAnima(ServerLevel world) {
         SkillingState state = SkillingState.get(world.getServer());
         if (!state.has("anima", "active")) {
             return null;
         }
-        NbtCompound a = state.entry("anima", "active");
+        CompoundTag a = state.entry("anima", "active");
         Crop c = FarmingData.byId(a.getString("crop"));
-        if (c == null || c.patch() != Patch.ANIMA || world.getTime() - a.getLong("planted") >= growthTicks(c)) {
+        if (c == null || c.patch() != Patch.ANIMA || world.getGameTime() - a.getLong("planted") >= growthTicks(c)) {
             return null;
         }
         return c.id();
@@ -118,9 +117,9 @@ final class FarmingHooks {
      * Whether a fully grown flower (or a scarecrow) in a flower patch next to an allotment protects
      * its crop (produce id) from disease, as in OSRS.
      */
-    static boolean flowerProtects(ServerWorld world, BlockPos pos, String allotment) {
+    static boolean flowerProtects(ServerLevel world, BlockPos pos, String allotment) {
         SkillingState state = SkillingState.get(world.getServer());
-        for (BlockPos p : BlockPos.iterate(pos.add(-6, -2, -6), pos.add(6, 2, 6))) {
+        for (BlockPos p : BlockPos.betweenClosed(pos.offset(-6, -2, -6), pos.offset(6, 2, 6))) {
             if (Patch.byBlock(SkillingUtil.blockId(world.getBlockState(p))) != Patch.FLOWER) {
                 continue;
             }
@@ -128,7 +127,7 @@ final class FarmingHooks {
             if (!state.has("patches", key)) {
                 continue;
             }
-            NbtCompound nbt = state.entry("patches", key);
+            CompoundTag nbt = state.entry("patches", key);
             Crop flower = nbt.contains("crop") ? FarmingData.byId(nbt.getString("crop")) : null;
             if (flower == null || !FarmingDisease.flowerProtects(allotment, flower.id())) {
                 continue;
@@ -137,7 +136,7 @@ final class FarmingHooks {
                 return true;
             }
             FarmingDisease.Crop h = updateHealth(world, flower, nbt);
-            if (h.grown(world.getTime(), FarmingData.stages(flower), cycleTicks(flower))) {
+            if (h.grown(world.getGameTime(), FarmingData.stages(flower), cycleTicks(flower))) {
                 return true;
             }
         }
@@ -147,9 +146,9 @@ final class FarmingHooks {
     // ------------------------------------------------------------------ Hespori
 
     /** A fully grown Hespori is disturbed (from its patch or the summoning stone): it attacks. */
-    private static void hesporiKilled(ServerPlayerEntity player) {
+    private static void hesporiKilled(ServerPlayer player) {
         SkillingState state = SkillingState.get(player.getServer());
-        String id = player.getUuidAsString();
+        String id = player.getStringUUID();
         if (!state.has("hespori", id) || !state.entry("hespori", id).getBoolean("fighting")) {
             return;
         }
@@ -160,23 +159,23 @@ final class FarmingHooks {
     }
 
     /** Summoning stone check: only a player whose Hespori is fully grown can wake it there. */
-    private static boolean hesporiFromStone(ServerPlayerEntity player) {
-        ServerWorld world = (ServerWorld) player.getWorld();
+    private static boolean hesporiFromStone(ServerPlayer player) {
+        ServerLevel world = (ServerLevel) player.level();
         SkillingState state = SkillingState.get(player.getServer());
-        String id = player.getUuidAsString();
+        String id = player.getStringUUID();
         if (state.has("hespori", id)) {
-            NbtCompound h = state.entry("hespori", id);
+            CompoundTag h = state.entry("hespori", id);
             if (h.getBoolean("fighting")) {
                 return true;
             }
             String key = h.getString("patch");
             if (state.has("patches", key)) {
-                NbtCompound nbt = state.entry("patches", key);
+                CompoundTag nbt = state.entry("patches", key);
                 Crop crop = FarmingData.byId(nbt.getString("crop"));
                 if (crop != null && crop.harvest() == FarmingData.Harvest.BOSS) {
                     FarmingDisease.Crop health = updateHealth(world, crop, nbt);
-                    if (health.grown(world.getTime(), FarmingData.stages(crop), cycleTicks(crop))) {
-                        clear(world, BlockPos.fromLong(h.getLong("pos")), nbt, state, key);
+                    if (health.grown(world.getGameTime(), FarmingData.stages(crop), cycleTicks(crop))) {
+                        clear(world, BlockPos.of(h.getLong("pos")), nbt, state, key);
                         h.putBoolean("fighting", true);
                         return true;
                     }
@@ -188,7 +187,7 @@ final class FarmingHooks {
         return false;
     }
 
-    private static void disturbHespori(ServerPlayerEntity player, ServerWorld world, BlockPos pos, Crop crop, NbtCompound nbt,
+    private static void disturbHespori(ServerPlayer player, ServerLevel world, BlockPos pos, Crop crop, CompoundTag nbt,
                                        SkillingState state, String key) {
         com.runecraft.osrs.content.BossDef def = com.runecraft.osrs.content.ContentRegistry.boss("hespori");
         if (def == null) {
@@ -196,20 +195,20 @@ final class FarmingHooks {
             return;
         }
         clear(world, pos, nbt, state, key);
-        NbtCompound h = state.entry("hespori", player.getUuidAsString());
+        CompoundTag h = state.entry("hespori", player.getStringUUID());
         h.putBoolean("fighting", true);
-        com.runecraft.boss.DataBossService.spawn(world, pos.up().offset(player.getHorizontalFacing().getOpposite(), 2), def, player);
-        world.playSound(null, pos, SoundEvents.ENTITY_WITHER_SPAWN, SoundCategory.HOSTILE, 0.6f, 1.0f);
+        com.runecraft.boss.DataBossService.spawn(world, pos.above().relative(player.getDirection().getOpposite(), 2), def, player);
+        world.playSound(null, pos, SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 0.6f, 1.0f);
         Msg.red(player, "You disturb the Hespori! (level-" + def.combatLevel + ")");
     }
 
     /** A tool leprechaun notes the harvested produce in the player's inventory. */
-    static void leprechaun(ServerPlayerEntity player) {
+    static void leprechaun(ServerPlayer player) {
         int noted = 0;
-        net.minecraft.entity.player.PlayerInventory inv = player.getInventory();
-        for (int i = 0; i < inv.main.size(); i++) {
-            ItemStack s = inv.main.get(i);
-            if (s.isEmpty() || s.hasNbt()) {
+        net.minecraft.world.entity.player.Inventory inv = player.getInventory();
+        for (int i = 0; i < inv.items.size(); i++) {
+            ItemStack s = inv.items.get(i);
+            if (s.isEmpty() || s.hasTag()) {
                 continue;
             }
             String id = Inv.idOf(s);
@@ -221,7 +220,7 @@ final class FarmingHooks {
                 continue;
             }
             noted += s.getCount();
-            inv.main.set(i, ItemStack.EMPTY);
+            inv.items.set(i, ItemStack.EMPTY);
             Inv.give(player, note);
         }
         Msg.game(player, noted > 0 ? "Tool Leprechaun: There ye go, I've noted yer produce for ye."
@@ -233,12 +232,12 @@ final class FarmingHooks {
         return Math.max(1, (long) (FarmingData.cycleMinutes(c) * TICKS_PER_MINUTE / GROWTH_SPEED));
     }
 
-    private static FarmingDisease.Crop health(NbtCompound nbt) {
+    private static FarmingDisease.Crop health(CompoundTag nbt) {
         return new FarmingDisease.Crop(nbt.getLong("planted"), nbt.getInt("rolled"),
                 nbt.contains("diseasedAt") ? nbt.getLong("diseasedAt") : -1, nbt.getBoolean("dead"));
     }
 
-    private static void saveHealth(NbtCompound nbt, FarmingDisease.Crop h) {
+    private static void saveHealth(CompoundTag nbt, FarmingDisease.Crop h) {
         nbt.putLong("planted", h.planted);
         nbt.putInt("rolled", h.rolled);
         nbt.putLong("diseasedAt", h.diseasedAt);
@@ -246,21 +245,21 @@ final class FarmingHooks {
     }
 
     /** Rolls disease for every growth cycle since the patch was last looked at and saves the result. */
-    private static FarmingDisease.Crop updateHealth(ServerWorld world, Crop crop, NbtCompound nbt) {
+    private static FarmingDisease.Crop updateHealth(ServerLevel world, Crop crop, CompoundTag nbt) {
         FarmingDisease.Crop h = health(nbt);
-        Random random = world.getRandom();
+        RandomSource random = world.getRandom();
         String anima = activeAnima(world);
         int stages = FarmingData.stages(crop);
         long cycle = cycleTicks(crop);
-        h.update(world.getTime(), stages, cycle, FarmingData.diseaseChance(crop, nbt.getInt("compost"), "iasor".equals(anima)),
+        h.update(world.getGameTime(), stages, cycle, FarmingData.diseaseChance(crop, nbt.getInt("compost"), "iasor".equals(anima)),
                 nbt.getBoolean("protected"), random::nextInt);
         // Kronos: every growth cycle that passes has a chance to grow the crop an extra stage.
         if ("kronos".equals(anima) && crop.patch() != Patch.ANIMA && !h.dead && !h.diseased()) {
-            long cycles = Math.min(stages, Math.max(0, (world.getTime() - h.planted) / cycle));
+            long cycles = Math.min(stages, Math.max(0, (world.getGameTime() - h.planted) / cycle));
             int done = nbt.getInt("kronos");
             while (done < cycles) {
                 done++;
-                if (random.nextInt(100) < FarmingDisease.KRONOS_SKIP_PERCENT && (world.getTime() - h.planted) / cycle < stages) {
+                if (random.nextInt(100) < FarmingDisease.KRONOS_SKIP_PERCENT && (world.getGameTime() - h.planted) / cycle < stages) {
                     h.planted -= cycle;
                 }
             }
@@ -272,11 +271,11 @@ final class FarmingHooks {
 
     // ------------------------------------------------------------------ patches
 
-    private static void usePatch(ServerPlayerEntity player, BlockPos pos, Patch patch) {
-        ServerWorld world = (ServerWorld) player.getWorld();
+    private static void usePatch(ServerPlayer player, BlockPos pos, Patch patch) {
+        ServerLevel world = (ServerLevel) player.level();
         SkillingState state = SkillingState.get(player.getServer());
         String key = SkillingUtil.key(world, pos);
-        NbtCompound nbt = state.entry("patches", key);
+        CompoundTag nbt = state.entry("patches", key);
         String held = SkillingUtil.heldId(player);
         Crop crop = nbt.contains("crop") ? FarmingData.byId(nbt.getString("crop")) : null;
         if (crop == null) {
@@ -284,7 +283,7 @@ final class FarmingHooks {
             return;
         }
         if (crop.harvest() == FarmingData.Harvest.SCARECROW) {
-            if (player.isSneaking() && Inv.has(player, "spade", 1)) {
+            if (player.isShiftKeyDown() && Inv.has(player, "spade", 1)) {
                 clear(world, pos, nbt, state, key);
                 SkillingUtil.give(player, "scarecrow", 1);
                 Msg.action(player, "You take the scarecrow out of the patch.");
@@ -308,7 +307,7 @@ final class FarmingHooks {
         }
         int stages = FarmingData.stages(crop);
         long cycle = cycleTicks(crop);
-        long now = world.getTime();
+        long now = world.getGameTime();
         if (!health.grown(now, stages, cycle)) {
             long done = Math.max(0, now - health.planted);
             Msg.game(player, "The " + SkillingUtil.lower(crop.name()) + " is still growing (" + Math.min(99, done * 100 / (stages * cycle))
@@ -335,9 +334,9 @@ final class FarmingHooks {
     }
 
     /** An anima plant: active from planting until it withers at the end of its growth; then it is dug up. */
-    private static void animaPatch(ServerPlayerEntity player, ServerWorld world, BlockPos pos, Crop crop, NbtCompound nbt,
+    private static void animaPatch(ServerPlayer player, ServerLevel world, BlockPos pos, Crop crop, CompoundTag nbt,
                                    SkillingState state, String key, FarmingDisease.Crop health) {
-        long left = growthTicks(crop) - (world.getTime() - health.planted);
+        long left = growthTicks(crop) - (world.getGameTime() - health.planted);
         if (left > 0) {
             long hours = Math.max(1, left / (60 * TICKS_PER_MINUTE));
             Msg.game(player, "The " + SkillingUtil.lower(crop.name()) + " plant is thriving: " + animaName(crop.id())
@@ -352,13 +351,13 @@ final class FarmingHooks {
         Msg.action(player, "You dig up the withered " + SkillingUtil.lower(crop.name()) + " plant.");
     }
 
-    private static void deadPatch(ServerPlayerEntity player, ServerWorld world, BlockPos pos, Crop crop, NbtCompound nbt,
+    private static void deadPatch(ServerPlayer player, ServerLevel world, BlockPos pos, Crop crop, CompoundTag nbt,
                                   SkillingState state, String key) {
         if (nbt.getInt("visual") != 4) {
             nbt.putInt("visual", 4);
             clearVisual(world, pos);
-            if (world.getBlockState(pos.up()).isAir()) {
-                world.setBlockState(pos.up(), Blocks.POTTED_DEAD_BUSH.getDefaultState(), Block.NOTIFY_LISTENERS);
+            if (world.getBlockState(pos.above()).isAir()) {
+                world.setBlock(pos.above(), Blocks.POTTED_DEAD_BUSH.defaultBlockState(), Block.UPDATE_CLIENTS);
             }
         }
         if (!Inv.has(player, "spade", 1)) {
@@ -366,11 +365,11 @@ final class FarmingHooks {
             return;
         }
         clear(world, pos, nbt, state, key);
-        world.playSound(null, pos, SoundEvents.BLOCK_GRAVEL_BREAK, SoundCategory.BLOCKS, 1f, 1f);
+        world.playSound(null, pos, SoundEvents.GRAVEL_BREAK, SoundSource.BLOCKS, 1f, 1f);
         Msg.action(player, "You dig up the dead " + SkillingUtil.lower(crop.name()) + " and clear the patch.");
     }
 
-    private static void diseasedPatch(ServerPlayerEntity player, ServerWorld world, BlockPos pos, Crop crop, NbtCompound nbt,
+    private static void diseasedPatch(ServerPlayer player, ServerLevel world, BlockPos pos, Crop crop, CompoundTag nbt,
                                       FarmingDisease.Crop health) {
         String name = SkillingUtil.lower(crop.name());
         if (crop.patch().pruned) {
@@ -388,9 +387,9 @@ final class FarmingHooks {
             Inv.give(player, "vial", 1);
             Msg.action(player, "You treat the " + name + " with plant cure. It is restored to health.");
         }
-        health.cure(world.getTime(), cycleTicks(crop));
+        health.cure(world.getGameTime(), cycleTicks(crop));
         saveHealth(nbt, health);
-        world.playSound(null, pos, SoundEvents.BLOCK_AZALEA_LEAVES_BREAK, SoundCategory.BLOCKS, 1f, 1.2f);
+        world.playSound(null, pos, SoundEvents.AZALEA_LEAVES_BREAK, SoundSource.BLOCKS, 1f, 1.2f);
     }
 
     /**
@@ -398,16 +397,16 @@ final class FarmingHooks {
      * Talking pays for the first unprotected crop the player can afford; otherwise the gardener
      * names the price.
      */
-    static void gardener(ServerPlayerEntity player, com.runecraft.entity.QuestNpcEntity npc, FarmingData.Gardener g) {
-        ServerWorld world = (ServerWorld) player.getWorld();
+    static void gardener(ServerPlayer player, com.runecraft.entity.QuestNpcEntity npc, FarmingData.Gardener g) {
+        ServerLevel world = (ServerLevel) player.level();
         SkillingState state = SkillingState.get(player.getServer());
-        BlockPos centre = npc.getBlockPos();
+        BlockPos centre = npc.blockPosition();
         List<String> prices = new ArrayList<>();
         boolean any = false;
-        for (BlockPos p : BlockPos.iterate(centre.add(-14, -4, -14), centre.add(14, 4, 14))) {
+        for (BlockPos p : BlockPos.betweenClosed(centre.offset(-14, -4, -14), centre.offset(14, 4, 14))) {
             BlockState bs = world.getBlockState(p);
             if (bs.getBlock() instanceof com.runecraft.block.FarmingPatchBlock core) {
-                int r = com.runecraft.skill.FarmingService.protect(player, world, p.toImmutable(), bs, core);
+                int r = com.runecraft.skill.FarmingService.protect(player, world, p.immutable(), bs, core);
                 if (r == 1) {
                     return;
                 }
@@ -419,13 +418,13 @@ final class FarmingHooks {
             if (patch == null || !state.has("patches", key)) {
                 continue;
             }
-            NbtCompound nbt = state.entry("patches", key);
+            CompoundTag nbt = state.entry("patches", key);
             Crop crop = nbt.contains("crop") ? FarmingData.byId(nbt.getString("crop")) : null;
             if (crop == null || nbt.getBoolean("protected")) {
                 continue;
             }
             FarmingDisease.Crop health = updateHealth(world, crop, nbt);
-            if (health.dead || health.diseased() || health.grown(world.getTime(), FarmingData.stages(crop), cycleTicks(crop))) {
+            if (health.dead || health.diseased() || health.grown(world.getGameTime(), FarmingData.stages(crop), cycleTicks(crop))) {
                 continue;
             }
             List<FarmingDisease.Payment> fee = FarmingDisease.paymentsFor(crop.id());
@@ -450,7 +449,7 @@ final class FarmingHooks {
         }
     }
 
-    private static void emptyPatch(ServerPlayerEntity player, ServerWorld world, BlockPos pos, Patch patch, NbtCompound nbt, String held) {
+    private static void emptyPatch(ServerPlayer player, ServerLevel world, BlockPos pos, Patch patch, CompoundTag nbt, String held) {
         FarmingData.Compost compost = FarmingData.Compost.byItem(held);
         if (compost != null) {
             if (!FarmingData.compostable(patch)) {
@@ -492,7 +491,7 @@ final class FarmingHooks {
         }
         Inv.remove(player, held, crop.count());
         nbt.putString("crop", crop.id());
-        nbt.putLong("planted", world.getTime());
+        nbt.putLong("planted", world.getGameTime());
         nbt.putBoolean("checked", false);
         nbt.putBoolean("stump", false);
         nbt.putInt("rolled", 0);
@@ -502,14 +501,14 @@ final class FarmingHooks {
         nbt.putInt("kronos", 0);
         nbt.putInt("picks", crop.minYield() + nbt.getInt("compost"));
         if (crop.patch() == Patch.ANIMA) {
-            NbtCompound a = state(player).entry("anima", "active");
+            CompoundTag a = state(player).entry("anima", "active");
             a.putString("crop", crop.id());
-            a.putLong("planted", world.getTime());
+            a.putLong("planted", world.getGameTime());
             a.putString("patch", SkillingUtil.key(world, pos));
             Msg.game(player, "The " + SkillingUtil.lower(crop.name()) + " seed takes root: " + animaName(crop.id()) + ".");
         }
         if (crop.harvest() == FarmingData.Harvest.BOSS) {
-            NbtCompound h = state(player).entry("hespori", player.getUuidAsString());
+            CompoundTag h = state(player).entry("hespori", player.getStringUUID());
             h.putString("patch", SkillingUtil.key(world, pos));
             h.putLong("pos", pos.asLong());
             h.putBoolean("fighting", false);
@@ -518,12 +517,12 @@ final class FarmingHooks {
             XpService.add(player, Skill.FARMING, crop.plantXp());
         }
         setVisual(world, pos, crop, 0, nbt);
-        world.playSound(null, pos, SoundEvents.ITEM_CROP_PLANT, SoundCategory.BLOCKS, 1f, 1f);
+        world.playSound(null, pos, SoundEvents.CROP_PLANTED, SoundSource.BLOCKS, 1f, 1f);
         Msg.action(player, FarmingData.noPlantingTool(crop) ? "You stand the scarecrow in the patch."
                 : "You plant the " + SkillingUtil.lower(SkillingUtil.name(held)) + " in the patch.");
     }
 
-    private static SkillingState state(ServerPlayerEntity player) {
+    private static SkillingState state(ServerPlayer player) {
         return SkillingState.get(player.getServer());
     }
 
@@ -531,7 +530,7 @@ final class FarmingHooks {
      * Crops planted in the Hosidius patches by a player who has completed the easy Kourend &amp; Kebos
      * diary can't get diseased (OSRS).
      */
-    static boolean hosidiusDiseaseFree(ServerPlayerEntity player, ServerWorld world, BlockPos pos) {
+    static boolean hosidiusDiseaseFree(ServerPlayer player, ServerLevel world, BlockPos pos) {
         if (!Gielinor.is(world) || !FarmingDisease.hosidiusFarm(com.runecraft.osrs.GielinorMap.toOsrsX(pos.getX()),
                 com.runecraft.osrs.GielinorMap.toOsrsY(pos.getZ()))) {
             return false;
@@ -550,14 +549,14 @@ final class FarmingHooks {
         return "You can plant: " + String.join(", ", names) + ".";
     }
 
-    private static void checkHealth(ServerPlayerEntity player, Crop crop, NbtCompound nbt) {
+    private static void checkHealth(ServerPlayer player, Crop crop, CompoundTag nbt) {
         nbt.putBoolean("checked", true);
         XpService.add(player, Skill.FARMING, crop.checkXp());
         FarmingContractService.harvested(player, crop.id());
         Msg.action(player, "You examine the " + SkillingUtil.lower(crop.name()) + " for signs of disease and find that it is in perfect health.");
     }
 
-    private static void chopOrDig(ServerPlayerEntity player, ServerWorld world, BlockPos pos, Crop crop, NbtCompound nbt,
+    private static void chopOrDig(ServerPlayer player, ServerLevel world, BlockPos pos, Crop crop, CompoundTag nbt,
                                   SkillingState state, String key) {
         if (!nbt.getBoolean("checked")) {
             checkHealth(player, crop, nbt);
@@ -592,13 +591,13 @@ final class FarmingHooks {
         Msg.action(player, "You swing your axe at the tree.");
         SkillingUtil.start(player, new SkillingUtil.BlockAction(pos, blockId, 4) {
             @Override
-            boolean roll(ServerPlayerEntity p, Random random) {
-                NbtCompound n = SkillingState.get(p.getServer()).entry("patches", key);
+            boolean roll(ServerPlayer p, RandomSource random) {
+                CompoundTag n = SkillingState.get(p.getServer()).entry("patches", key);
                 ToolTier axe = Tools.bestAxe(p, Players.data(p).skills());
                 if (axe == null || n.getBoolean("stump") || !n.contains("crop")) {
                     return false;
                 }
-                world.playSound(null, pos, SoundEvents.BLOCK_WOOD_HIT, SoundCategory.PLAYERS, 1f, 0.9f);
+                world.playSound(null, pos, SoundEvents.WOOD_HIT, SoundSource.PLAYERS, 1f, 0.9f);
                 double chance = Chance.lerp(SkillingUtil.level(p, Skill.WOODCUTTING), tree.low(axe.woodcuttingMultiplier()),
                         tree.high(axe.woodcuttingMultiplier()));
                 boolean expired = com.runecraft.skill.Gathering.TREE_TIMERS.chop(key, tree.despawnTicks(),
@@ -624,7 +623,7 @@ final class FarmingHooks {
      * A farmed Sailing hardwood tree (camphor, ironwood, rosewood): chopped like its wild tree in GatheringData, each log
      * with the wild tree's depletion chance; when it falls the stump is dug up as usual.
      */
-    private static void chopModTree(ServerPlayerEntity player, ServerWorld world, BlockPos pos, Crop crop,
+    private static void chopModTree(ServerPlayer player, ServerLevel world, BlockPos pos, Crop crop,
                                     com.runecraft.osrs.content.skilling.GatheringData.ModTree tree, String key) {
         if (!SkillingUtil.need(player, Skill.WOODCUTTING, tree.level(), "chop down this tree")) {
             return;
@@ -637,13 +636,13 @@ final class FarmingHooks {
         Msg.action(player, "You swing your axe at the tree.");
         SkillingUtil.start(player, new SkillingUtil.BlockAction(pos, blockId, 4) {
             @Override
-            boolean roll(ServerPlayerEntity p, Random random) {
-                NbtCompound n = SkillingState.get(p.getServer()).entry("patches", key);
+            boolean roll(ServerPlayer p, RandomSource random) {
+                CompoundTag n = SkillingState.get(p.getServer()).entry("patches", key);
                 ToolTier axe = Tools.bestAxe(p, Players.data(p).skills());
                 if (axe == null || n.getBoolean("stump") || !n.contains("crop")) {
                     return false;
                 }
-                world.playSound(null, pos, SoundEvents.BLOCK_WOOD_HIT, SoundCategory.PLAYERS, 1f, 0.9f);
+                world.playSound(null, pos, SoundEvents.WOOD_HIT, SoundSource.PLAYERS, 1f, 0.9f);
                 double chance = Chance.lerp(SkillingUtil.level(p, Skill.WOODCUTTING), tree.low(axe.woodcuttingMultiplier()),
                         tree.high(axe.woodcuttingMultiplier()));
                 if (random.nextDouble() < chance) {
@@ -662,24 +661,24 @@ final class FarmingHooks {
         });
     }
 
-    private static void pick(ServerPlayerEntity player, ServerWorld world, BlockPos pos, Crop crop, NbtCompound nbt, SkillingState state,
+    private static void pick(ServerPlayer player, ServerLevel world, BlockPos pos, Crop crop, CompoundTag nbt, SkillingState state,
                              String key, long sinceGrown) {
         if (!nbt.getBoolean("checked") && crop.checkXp() > 0) {
             checkHealth(player, crop, nbt);
-            nbt.putLong("regrow", world.getTime());
+            nbt.putLong("regrow", world.getGameTime());
             return;
         }
         int max = crop.maxYield() + nbt.getInt("compost");
         long regrowTicks = Math.max(20, (long) (crop.regrowMinutes() * TICKS_PER_MINUTE / GROWTH_SPEED));
-        long last = nbt.contains("regrow") ? nbt.getLong("regrow") : world.getTime() - sinceGrown;
-        int regrown = (int) ((world.getTime() - last) / regrowTicks);
+        long last = nbt.contains("regrow") ? nbt.getLong("regrow") : world.getGameTime() - sinceGrown;
+        int regrown = (int) ((world.getGameTime() - last) / regrowTicks);
         int picks = nbt.getInt("picks");
         if (regrown > 0 && picks < max) {
             picks = Math.min(max, picks + regrown);
-            nbt.putLong("regrow", world.getTime());
+            nbt.putLong("regrow", world.getGameTime());
         }
         if (picks <= 0) {
-            if (player.isSneaking() && Inv.has(player, "spade", 1)) {
+            if (player.isShiftKeyDown() && Inv.has(player, "spade", 1)) {
                 clear(world, pos, nbt, state, key);
                 Msg.action(player, "You dig up the " + SkillingUtil.lower(crop.name()) + ".");
                 return;
@@ -698,34 +697,34 @@ final class FarmingHooks {
                 SkillingUtil.level(player, Skill.FARMING), yieldBonus(player, world, crop), 0);
         nbt.putInt("picks", saved ? picks : picks - 1);
         if (!nbt.contains("regrow")) {
-            nbt.putLong("regrow", world.getTime());
+            nbt.putLong("regrow", world.getGameTime());
         }
         SkillingUtil.give(player, crop.produce(), 1);
         XpService.add(player, Skill.FARMING, crop.harvestXp());
         FarmingContractService.harvested(player, crop.id());
-        world.playSound(null, pos, SoundEvents.BLOCK_SWEET_BERRY_BUSH_PICK_BERRIES, SoundCategory.BLOCKS, 1f, 1f);
+        world.playSound(null, pos, SoundEvents.SWEET_BERRY_BUSH_PICK_BERRIES, SoundSource.BLOCKS, 1f, 1f);
         Msg.action(player, "You pick " + Msg.article(SkillingUtil.lower(SkillingUtil.name(crop.produce()))) + ".");
     }
 
-    private static void harvestAll(ServerPlayerEntity player, ServerWorld world, BlockPos pos, Crop crop, NbtCompound nbt,
+    private static void harvestAll(ServerPlayer player, ServerLevel world, BlockPos pos, Crop crop, CompoundTag nbt,
                                    SkillingState state, String key) {
         if (crop.patch() == Patch.HOPS && !Inv.has(player, "secateurs", 1) && !Inv.has(player, "spade", 1)) {
             Msg.game(player, "You need a spade to harvest the hops.");
             return;
         }
-        Random random = player.getRandom();
+        RandomSource random = player.getRandom();
         int yield = FarmingData.harvestYield(crop, SkillingUtil.level(player, Skill.FARMING), nbt.getInt("compost"),
                 yieldBonus(player, world, crop), random::nextInt);
         SkillingUtil.give(player, crop.produce(), yield);
         XpService.add(player, Skill.FARMING, FarmingData.harvestXp(crop, yield));
         FarmingContractService.harvested(player, crop.id());
         clear(world, pos, nbt, state, key);
-        world.playSound(null, pos, SoundEvents.BLOCK_CROP_BREAK, SoundCategory.BLOCKS, 1f, 1f);
+        world.playSound(null, pos, SoundEvents.CROP_BREAK, SoundSource.BLOCKS, 1f, 1f);
         Msg.action(player, "You harvest " + yield + " " + SkillingUtil.lower(SkillingUtil.name(crop.produce())) + " from the patch.");
     }
 
     /** Harvest lives item bonus: magic secateurs (hops, grapes) and a living attas plant. */
-    private static double yieldBonus(ServerPlayerEntity player, ServerWorld world, Crop crop) {
+    private static double yieldBonus(ServerPlayer player, ServerLevel world, Crop crop) {
         double bonus = 0;
         if (FarmingData.secateursBoost(crop) && Inv.has(player, "magic_secateurs", 1)) {
             bonus += com.runecraft.osrs.FarmingYield.MAGIC_SECATEURS;
@@ -736,14 +735,14 @@ final class FarmingHooks {
         return bonus;
     }
 
-    private static void spiritTree(ServerPlayerEntity player, Crop crop, NbtCompound nbt) {
+    private static void spiritTree(ServerPlayer player, Crop crop, CompoundTag nbt) {
         if (!nbt.getBoolean("checked")) {
             checkHealth(player, crop, nbt);
             Msg.game(player, "The spirit tree is fully grown. Talk to it to travel; sneak to choose a destination.");
             return;
         }
         int dest = nbt.getInt("dest") % SPIRIT_DESTINATIONS.size();
-        if (player.isSneaking()) {
+        if (player.isShiftKeyDown()) {
             dest = (dest + 1) % SPIRIT_DESTINATIONS.size();
             nbt.putInt("dest", dest);
             Msg.game(player, "The spirit tree will take you to " + SPIRIT_DESTINATIONS.get(dest).name() + ".");
@@ -762,30 +761,30 @@ final class FarmingHooks {
                 return;
             }
         }
-        ServerWorld world = Gielinor.world(player.getServer());
+        ServerLevel world = Gielinor.world(player.getServer());
         if (world == null) {
             return;
         }
         Msg.action(player, "You feel at one with the spirit tree.");
         BlockPos pos = Gielinor.safeSpot(world, com.runecraft.osrs.GielinorMap.toBlockX(to.x()),
                 com.runecraft.osrs.GielinorMap.toBlockZ(to.y()));
-        player.teleport(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, player.getYaw(), player.getPitch());
+        player.teleportTo(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, player.getYRot(), player.getXRot());
     }
 
-    private static void clear(ServerWorld world, BlockPos pos, NbtCompound nbt, SkillingState state, String key) {
+    private static void clear(ServerLevel world, BlockPos pos, CompoundTag nbt, SkillingState state, String key) {
         clearVisual(world, pos);
         state.remove("patches", key);
     }
 
     /** Forgets whatever grows in the patch at {@code pos} and removes its decoration (self-test clean-up). */
-    static void forget(ServerWorld world, BlockPos pos) {
+    static void forget(ServerLevel world, BlockPos pos) {
         clear(world, pos, null, SkillingState.get(world.getServer()), SkillingUtil.key(world, pos));
     }
 
     // ------------------------------------------------------------------ visuals
 
     /** stage: 0 growing, 1 grown, 2 stump. */
-    private static void setVisual(ServerWorld world, BlockPos pos, Crop crop, int stage, NbtCompound nbt) {
+    private static void setVisual(ServerLevel world, BlockPos pos, Crop crop, int stage, CompoundTag nbt) {
         if (nbt.getInt("visual") == stage + 1) {
             return;
         }
@@ -793,48 +792,48 @@ final class FarmingHooks {
         clearVisual(world, pos);
         List<BlockState> column = new ArrayList<>();
         if (stage == 0) {
-            column.add(growingPot(crop).getDefaultState());
+            column.add(growingPot(crop).defaultBlockState());
         } else if (stage == 2) {
-            column.add(log(crop).getDefaultState());
+            column.add(log(crop).defaultBlockState());
         } else {
             switch (crop.patch()) {
                 case TREE, HARDWOOD, REDWOOD, SPIRIT, CALQUAT, CELASTRUS -> {
-                    column.add(log(crop).getDefaultState());
-                    column.add(log(crop).getDefaultState());
+                    column.add(log(crop).defaultBlockState());
+                    column.add(log(crop).defaultBlockState());
                     column.add(leaves(crop));
                 }
                 case FRUIT_TREE -> {
-                    column.add(log(crop).getDefaultState());
-                    column.add(Blocks.FLOWERING_AZALEA_LEAVES.getDefaultState().with(LeavesBlock.PERSISTENT, true));
+                    column.add(log(crop).defaultBlockState());
+                    column.add(Blocks.FLOWERING_AZALEA_LEAVES.defaultBlockState().setValue(LeavesBlock.PERSISTENT, true));
                 }
-                case BUSH -> column.add(Blocks.AZALEA_LEAVES.getDefaultState().with(LeavesBlock.PERSISTENT, true));
-                case CACTUS -> column.add(Blocks.POTTED_CACTUS.getDefaultState());
-                case MUSHROOM -> column.add(Blocks.POTTED_RED_MUSHROOM.getDefaultState());
-                case BELLADONNA -> column.add(Blocks.POTTED_WITHER_ROSE.getDefaultState());
-                case FLOWER -> column.add(crop.harvest() == FarmingData.Harvest.SCARECROW ? Blocks.CARVED_PUMPKIN.getDefaultState()
-                        : flowerPot(crop).getDefaultState());
+                case BUSH -> column.add(Blocks.AZALEA_LEAVES.defaultBlockState().setValue(LeavesBlock.PERSISTENT, true));
+                case CACTUS -> column.add(Blocks.POTTED_CACTUS.defaultBlockState());
+                case MUSHROOM -> column.add(Blocks.POTTED_RED_MUSHROOM.defaultBlockState());
+                case BELLADONNA -> column.add(Blocks.POTTED_WITHER_ROSE.defaultBlockState());
+                case FLOWER -> column.add(crop.harvest() == FarmingData.Harvest.SCARECROW ? Blocks.CARVED_PUMPKIN.defaultBlockState()
+                        : flowerPot(crop).defaultBlockState());
                 case CRYSTAL -> {
-                    column.add(Blocks.AMETHYST_BLOCK.getDefaultState());
-                    column.add(Blocks.LARGE_AMETHYST_BUD.getDefaultState());
+                    column.add(Blocks.AMETHYST_BLOCK.defaultBlockState());
+                    column.add(Blocks.LARGE_AMETHYST_BUD.defaultBlockState());
                 }
-                case HESPORI -> column.add(Blocks.POTTED_CRIMSON_FUNGUS.getDefaultState());
-                case ANIMA -> column.add(Blocks.POTTED_BLUE_ORCHID.getDefaultState());
-                default -> column.add(Blocks.POTTED_BAMBOO.getDefaultState());
+                case HESPORI -> column.add(Blocks.POTTED_CRIMSON_FUNGUS.defaultBlockState());
+                case ANIMA -> column.add(Blocks.POTTED_BLUE_ORCHID.defaultBlockState());
+                default -> column.add(Blocks.POTTED_BAMBOO.defaultBlockState());
             }
         }
         for (int i = 0; i < column.size(); i++) {
-            BlockPos at = pos.up(i + 1);
+            BlockPos at = pos.above(i + 1);
             if (world.getBlockState(at).isAir() || isVisual(world.getBlockState(at))) {
-                world.setBlockState(at, column.get(i), Block.NOTIFY_LISTENERS);
+                world.setBlock(at, column.get(i), Block.UPDATE_CLIENTS);
             }
         }
     }
 
-    private static void clearVisual(ServerWorld world, BlockPos pos) {
+    private static void clearVisual(ServerLevel world, BlockPos pos) {
         for (int i = 1; i <= 3; i++) {
-            BlockPos at = pos.up(i);
+            BlockPos at = pos.above(i);
             if (isVisual(world.getBlockState(at))) {
-                world.setBlockState(at, Blocks.AIR.getDefaultState(), Block.NOTIFY_LISTENERS);
+                world.setBlock(at, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
             }
         }
     }
@@ -857,8 +856,8 @@ final class FarmingHooks {
             case HARDWOOD, CALQUAT -> Blocks.POTTED_JUNGLE_SAPLING;
             case REDWOOD -> Blocks.POTTED_DARK_OAK_SAPLING;
             case SPIRIT, CELASTRUS -> Blocks.POTTED_CHERRY_SAPLING;
-            case FRUIT_TREE -> Blocks.POTTED_FLOWERING_AZALEA_BUSH;
-            case BUSH -> Blocks.POTTED_AZALEA_BUSH;
+            case FRUIT_TREE -> Blocks.POTTED_FLOWERING_AZALEA;
+            case BUSH -> Blocks.POTTED_AZALEA;
             case CACTUS -> Blocks.POTTED_CACTUS;
             case MUSHROOM -> Blocks.POTTED_BROWN_MUSHROOM;
             case BELLADONNA -> Blocks.POTTED_ALLIUM;
@@ -903,16 +902,16 @@ final class FarmingHooks {
             case "spirit", "celastrus" -> Blocks.CHERRY_LEAVES;
             default -> Blocks.OAK_LEAVES;
         };
-        return b.getDefaultState().with(LeavesBlock.PERSISTENT, true);
+        return b.defaultBlockState().setValue(LeavesBlock.PERSISTENT, true);
     }
 
     // ------------------------------------------------------------------ compost bins
 
-    private static void useBin(ServerPlayerEntity player, BlockPos pos) {
-        ServerWorld world = (ServerWorld) player.getWorld();
+    private static void useBin(ServerPlayer player, BlockPos pos) {
+        ServerLevel world = (ServerLevel) player.level();
         SkillingState state = SkillingState.get(player.getServer());
         String key = SkillingUtil.key(world, pos);
-        NbtCompound bin = state.entry("bins", key);
+        CompoundTag bin = state.entry("bins", key);
         int count = bin.getInt("count");
         String held = SkillingUtil.heldId(player);
         long closedAt = bin.contains("closed") ? bin.getLong("closed") : -1;
@@ -932,9 +931,9 @@ final class FarmingHooks {
                 return;
             }
             if (count >= 15) {
-                bin.putLong("closed", world.getTime());
+                bin.putLong("closed", world.getGameTime());
                 Msg.action(player, "You close the compost bin. The contents will begin to rot.");
-                world.playSound(null, pos, SoundEvents.BLOCK_BARREL_CLOSE, SoundCategory.BLOCKS, 1f, 1f);
+                world.playSound(null, pos, SoundEvents.BARREL_CLOSE, SoundSource.BLOCKS, 1f, 1f);
                 return;
             }
             Msg.game(player, count == 0 ? "The compost bin is empty. Fill it with 15 vegetables, fruit, hops or weeds."
@@ -943,7 +942,7 @@ final class FarmingHooks {
         }
         boolean superC = bin.getBoolean("super");
         long rot = (long) ((superC ? 90 : 45) * TICKS_PER_MINUTE / GROWTH_SPEED);
-        if (world.getTime() - closedAt < rot) {
+        if (world.getGameTime() - closedAt < rot) {
             Msg.game(player, "The compost is still rotting.");
             return;
         }
@@ -987,7 +986,7 @@ final class FarmingHooks {
         return null;
     }
 
-    private static void buildBirdhouse(ServerPlayerEntity player, BlockPos pos) {
+    private static void buildBirdhouse(ServerPlayer player, BlockPos pos) {
         CraftingData.BirdHouse b = birdhouse(SkillingUtil.heldId(player));
         if (b == null) {
             Msg.game(player, "You can build a bird house here. Use a bird house on the space.");
@@ -1000,20 +999,20 @@ final class FarmingHooks {
         if (house == null) {
             return;
         }
-        ServerWorld world = (ServerWorld) player.getWorld();
+        ServerLevel world = (ServerLevel) player.level();
         Inv.remove(player, b.id(), 1);
-        world.setBlockState(pos, house);
-        NbtCompound nbt = SkillingState.get(player.getServer()).entry("birdhouses", SkillingUtil.key(world, pos));
+        world.setBlockAndUpdate(pos, house);
+        CompoundTag nbt = SkillingState.get(player.getServer()).entry("birdhouses", SkillingUtil.key(world, pos));
         nbt.putString("type", b.id());
-        nbt.putString("owner", player.getUuidAsString());
+        nbt.putString("owner", player.getStringUUID());
         Msg.action(player, "You build " + Msg.article(SkillingUtil.lower(b.name())) + ". Fill it with 10 hop or herb seeds.");
     }
 
-    private static void useBirdhouse(ServerPlayerEntity player, BlockPos pos) {
-        ServerWorld world = (ServerWorld) player.getWorld();
+    private static void useBirdhouse(ServerPlayer player, BlockPos pos) {
+        ServerLevel world = (ServerLevel) player.level();
         SkillingState state = SkillingState.get(player.getServer());
         String key = SkillingUtil.key(world, pos);
-        NbtCompound nbt = state.entry("birdhouses", key);
+        CompoundTag nbt = state.entry("birdhouses", key);
         CraftingData.BirdHouse b = birdhouse(nbt.getString("type"));
         if (b == null) {
             b = CraftingData.BIRD_HOUSES.get(0);
@@ -1026,15 +1025,15 @@ final class FarmingHooks {
                 return;
             }
             Inv.remove(player, held, 10);
-            nbt.putLong("seeded", world.getTime());
+            nbt.putLong("seeded", world.getGameTime());
             Msg.action(player, "You fill the bird house with seeds.");
             return;
         }
-        if (world.getTime() - nbt.getLong("seeded") < (long) (50 * TICKS_PER_MINUTE / GROWTH_SPEED)) {
+        if (world.getGameTime() - nbt.getLong("seeded") < (long) (50 * TICKS_PER_MINUTE / GROWTH_SPEED)) {
             Msg.game(player, "The bird house is still trapping birds.");
             return;
         }
-        Random random = player.getRandom();
+        RandomSource random = player.getRandom();
         int tier = CraftingData.BIRD_HOUSES.indexOf(b);
         XpService.add(player, Skill.HUNTER, b.hunterXp());
         SkillingUtil.give(player, "minecraft:feather", 20 + random.nextInt(20 + tier * 10));
@@ -1048,7 +1047,7 @@ final class FarmingHooks {
         state.remove("birdhouses", key);
         BlockState space = SkillingUtil.moduleBlock("birdhouse_space");
         if (space != null) {
-            world.setBlockState(pos, space);
+            world.setBlockAndUpdate(pos, space);
         }
         Msg.action(player, "You dismantle the bird house and collect its contents" + (nests > 0 ? ", including a bird's nest!" : "."));
     }
@@ -1064,7 +1063,7 @@ final class FarmingHooks {
             Loot.of("ruby_ring", 8), Loot.of("diamond_ring", 2));
 
     /** Tree seed + filled plant pot (with a gardening trowel) = sapling. Returns true if handled. */
-    static boolean potSeed(ServerPlayerEntity player, ItemStack stack, String seed) {
+    static boolean potSeed(ServerPlayer player, ItemStack stack, String seed) {
         for (Crop c : FarmingData.CROPS) {
             if (c.seed().equals(seed) && !c.seed().equals(c.planted())) {
                 if (!SkillingUtil.need(player, Skill.FARMING, c.level(), "plant this seed")) {
@@ -1074,7 +1073,7 @@ final class FarmingHooks {
                         || !SkillingUtil.needItem(player, "gardening_trowel", "You need a gardening trowel to plant this seed in a pot.")) {
                     return true;
                 }
-                stack.decrement(1);
+                stack.shrink(1);
                 Inv.remove(player, "filled_plant_pot", 1);
                 SkillingUtil.give(player, c.planted(), 1);
                 Msg.action(player, "You plant the seed in the pot. It grows into " + Msg.article(SkillingUtil.lower(SkillingUtil.name(c.planted())))

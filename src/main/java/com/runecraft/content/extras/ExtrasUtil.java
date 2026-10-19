@@ -9,22 +9,21 @@ import com.runecraft.player.Players;
 import com.runecraft.registry.ModBlocks;
 import com.runecraft.util.Inv;
 import com.runecraft.world.Gielinor;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 
 /** Small helpers shared by the extras module's Minecraft code. */
 final class ExtrasUtil {
@@ -33,14 +32,14 @@ final class ExtrasUtil {
 
     static BlockState block(String id) {
         Block b = ModBlocks.MODULE_BLOCKS.get(id);
-        return b == null ? null : b.getDefaultState();
+        return b == null ? null : b.defaultBlockState();
     }
 
     static String blockId(BlockState state) {
         return state.getBlock() instanceof ModuleBlock mb ? mb.def().id() : null;
     }
 
-    static int level(ServerPlayerEntity player, Skill skill) {
+    static int level(ServerPlayer player, Skill skill) {
         return Players.data(player).skills().level(skill);
     }
 
@@ -74,7 +73,7 @@ final class ExtrasUtil {
         return sb.toString();
     }
 
-    static boolean hasAll(ServerPlayerEntity player, Map<String, Integer> mats) {
+    static boolean hasAll(ServerPlayer player, Map<String, Integer> mats) {
         for (Map.Entry<String, Integer> e : mats.entrySet()) {
             if (!Inv.has(player, e.getKey(), e.getValue())) {
                 return false;
@@ -83,40 +82,40 @@ final class ExtrasUtil {
         return true;
     }
 
-    static void removeAll(ServerPlayerEntity player, Map<String, Integer> mats) {
+    static void removeAll(ServerPlayer player, Map<String, Integer> mats) {
         mats.forEach((item, n) -> Inv.remove(player, item, n));
     }
 
     /** A clickable chat option running a command. */
-    static MutableText link(String label, String command, String hover, Formatting color) {
-        return Text.literal("[" + label + "]").styled(s -> s.withColor(color)
+    static MutableComponent link(String label, String command, String hover, ChatFormatting color) {
+        return Component.literal("[" + label + "]").withStyle(s -> s.withColor(color)
                 .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
-                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(hover))));
+                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(hover))));
     }
 
     /** Sends a line of clickable options after a grey prompt. */
-    static void options(ServerPlayerEntity player, String prompt, List<MutableText> links) {
-        MutableText line = Text.literal(prompt + " ").formatted(Formatting.GRAY);
-        for (MutableText l : links) {
-            line.append(l).append(Text.literal(" "));
+    static void options(ServerPlayer player, String prompt, List<MutableComponent> links) {
+        MutableComponent line = Component.literal(prompt + " ").withStyle(ChatFormatting.GRAY);
+        for (MutableComponent l : links) {
+            line.append(l).append(Component.literal(" "));
         }
-        player.sendMessage(line, false);
+        player.displayClientMessage(line, false);
     }
 
     /** Teleports a player to OSRS coordinates in Gielinor. */
-    static void teleport(ServerPlayerEntity player, int osrsX, int osrsY) {
-        ServerWorld world = Gielinor.world(player.getServer());
+    static void teleport(ServerPlayer player, int osrsX, int osrsY) {
+        ServerLevel world = Gielinor.world(player.getServer());
         if (world == null) {
             return;
         }
         BlockPos pos = Gielinor.safeSpot(world, GielinorMap.toBlockX(osrsX), GielinorMap.toBlockZ(osrsY));
         player.stopRiding();
-        player.teleport(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, player.getYaw(), player.getPitch());
-        world.playSound(null, pos, SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 0.6f, 1.2f);
+        player.teleportTo(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, player.getYRot(), player.getXRot());
+        world.playSound(null, pos, SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 0.6f, 1.2f);
     }
 
     /** Ground level (first free block above the surface) at a column. */
-    static int surfaceY(ServerWorld world, int x, int z) {
+    static int surfaceY(ServerLevel world, int x, int z) {
         return Gielinor.safeSpot(world, x, z).getY();
     }
 }

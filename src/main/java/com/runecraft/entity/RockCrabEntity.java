@@ -1,19 +1,19 @@
 package com.runecraft.entity;
 
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.ai.goal.LookAroundGoal;
-import net.minecraft.entity.ai.goal.LookAtEntityGoal;
-import net.minecraft.entity.ai.goal.RevengeGoal;
-import net.minecraft.entity.ai.goal.SwimGoal;
-import net.minecraft.entity.ai.goal.WanderAroundFarGoal;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.data.DataTracker;
-import net.minecraft.entity.data.TrackedData;
-import net.minecraft.entity.data.TrackedDataHandlerRegistry;
-import net.minecraft.entity.mob.HostileEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.world.World;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.ai.goal.FloatGoal;
+import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
+import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
+import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
+import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 
 /**
  * OSRS rock crab: lies on the shore as a plain rock ("Rocks") - passive and motionless, drawn as just
@@ -22,30 +22,30 @@ import net.minecraft.world.World;
  * disguises itself again.
  */
 public class RockCrabEntity extends OsrsMonsterEntity implements Disguisable {
-    private static final TrackedData<Boolean> DISGUISED = DataTracker.registerData(RockCrabEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    private static final EntityDataAccessor<Boolean> DISGUISED = SynchedEntityData.defineId(RockCrabEntity.class, EntityDataSerializers.BOOLEAN);
     /** A player this close wakes the crab (blocks). */
     private static final double WAKE_RANGE = 2.5;
     /** Ticks without a target before the crab disguises itself again (10 s). */
     private static final int REDISGUISE_TICKS = 200;
     private int idleTicks;
 
-    public RockCrabEntity(EntityType<? extends HostileEntity> type, World world) {
+    public RockCrabEntity(EntityType<? extends Monster> type, Level world) {
         super(type, world);
     }
 
     @Override
-    protected void initDataTracker() {
-        super.initDataTracker();
-        this.dataTracker.startTracking(DISGUISED, true);
+    protected void defineSynchedData() {
+        super.defineSynchedData();
+        this.entityData.define(DISGUISED, true);
     }
 
     @Override
     public boolean isDisguised() {
-        return this.dataTracker.get(DISGUISED);
+        return this.entityData.get(DISGUISED);
     }
 
     private void setDisguised(boolean disguised) {
-        this.dataTracker.set(DISGUISED, disguised);
+        this.entityData.set(DISGUISED, disguised);
         idleTicks = 0;
         if (disguised) {
             setTarget(null);
@@ -54,40 +54,40 @@ public class RockCrabEntity extends OsrsMonsterEntity implements Disguisable {
     }
 
     @Override
-    protected void initGoals() {
+    protected void registerGoals() {
         // The same goals as other monsters, but idle movement waits until the crab is awake, and it
         // picks targets by waking up (proximity or being hit) rather than by aggression range.
-        this.goalSelector.add(0, new SwimGoal(this));
-        this.goalSelector.add(2, new OsrsAttackGoal(this));
-        this.goalSelector.add(6, new WanderAroundFarGoal(this, 0.8) {
+        this.goalSelector.addGoal(0, new FloatGoal(this));
+        this.goalSelector.addGoal(2, new OsrsAttackGoal(this));
+        this.goalSelector.addGoal(6, new WaterAvoidingRandomStrollGoal(this, 0.8) {
             @Override
-            public boolean canStart() {
-                return !isDisguised() && super.canStart();
+            public boolean canUse() {
+                return !isDisguised() && super.canUse();
             }
         });
-        this.goalSelector.add(7, new LookAtEntityGoal(this, PlayerEntity.class, 8.0f) {
+        this.goalSelector.addGoal(7, new LookAtPlayerGoal(this, Player.class, 8.0f) {
             @Override
-            public boolean canStart() {
-                return !isDisguised() && super.canStart();
+            public boolean canUse() {
+                return !isDisguised() && super.canUse();
             }
         });
-        this.goalSelector.add(8, new LookAroundGoal(this) {
+        this.goalSelector.addGoal(8, new RandomLookAroundGoal(this) {
             @Override
-            public boolean canStart() {
-                return !isDisguised() && super.canStart();
+            public boolean canUse() {
+                return !isDisguised() && super.canUse();
             }
         });
-        this.targetSelector.add(1, new RevengeGoal(this));
+        this.targetSelector.addGoal(1, new HurtByTargetGoal(this));
     }
 
     @Override
-    protected void mobTick() {
-        super.mobTick();
+    protected void customServerAiStep() {
+        super.customServerAiStep();
         if (isDisguised()) {
             getNavigation().stop();
-            setVelocity(0, getVelocity().y, 0);
-            PlayerEntity near = getWorld().getClosestPlayer(this, WAKE_RANGE);
-            if (near instanceof ServerPlayerEntity player && !player.isCreative() && !player.isSpectator()) {
+            setDeltaMovement(0, getDeltaMovement().y, 0);
+            Player near = level().getNearestPlayer(this, WAKE_RANGE);
+            if (near instanceof ServerPlayer player && !player.isCreative() && !player.isSpectator()) {
                 setDisguised(false);
                 setTarget(player);
             }
@@ -101,13 +101,13 @@ public class RockCrabEntity extends OsrsMonsterEntity implements Disguisable {
     }
 
     @Override
-    public boolean damage(DamageSource source, float amount) {
-        if (!getWorld().isClient() && isDisguised()) {
+    public boolean hurt(DamageSource source, float amount) {
+        if (!level().isClientSide() && isDisguised()) {
             setDisguised(false);
-            if (source.getAttacker() instanceof ServerPlayerEntity player) {
+            if (source.getEntity() instanceof ServerPlayer player) {
                 setTarget(player);
             }
         }
-        return super.damage(source, amount);
+        return super.hurt(source, amount);
     }
 }

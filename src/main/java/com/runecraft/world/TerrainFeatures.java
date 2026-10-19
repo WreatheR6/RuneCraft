@@ -1,11 +1,11 @@
 package com.runecraft.world;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.Heightmap;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
 
 /**
  * Small decorations that belong on the natural terrain rather than on levelled structure ground,
@@ -21,21 +21,21 @@ public final class TerrainFeatures {
     }
 
     /** A ring of six snow-capped standing stones around the Oracle on Ice Mountain's summit. */
-    private static void oracleStones(ServerWorld world, BlockPos centre) {
+    private static void oracleStones(ServerLevel world, BlockPos centre) {
         for (int i = 0; i < 6; i++) {
             double a = i * Math.PI / 3;
             int x = centre.getX() + (int) Math.round(4 * Math.cos(a));
             int z = centre.getZ() + (int) Math.round(4 * Math.sin(a));
-            int y = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
-            BlockPos.Mutable pos = new BlockPos.Mutable(x, y - 1, z);
+            int y = world.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+            BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(x, y - 1, z);
             for (int dy = 0; dy < 3; dy++) {
-                set(world, pos.setY(y - 1 + dy), Blocks.STONE_BRICKS.getDefaultState());
+                set(world, pos.setY(y - 1 + dy), Blocks.STONE_BRICKS.defaultBlockState());
             }
-            set(world, pos.setY(y + 2), Blocks.SNOW.getDefaultState());
+            set(world, pos.setY(y + 2), Blocks.SNOW.defaultBlockState());
         }
     }
 
-    private static void set(ServerWorld world, BlockPos pos, BlockState state) {
-        world.setBlockState(pos, state, Block.NOTIFY_LISTENERS);
+    private static void set(ServerLevel world, BlockPos pos, BlockState state) {
+        world.setBlock(pos, state, Block.UPDATE_CLIENTS);
     }
 }

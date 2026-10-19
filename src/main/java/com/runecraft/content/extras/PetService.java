@@ -16,22 +16,21 @@ import com.runecraft.world.LandmarkBuilder;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.block.BlockState;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.particle.ParticleTypes;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.TypedActionResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.random.Random;
-
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -60,24 +59,24 @@ final class PetService {
 
     static void init() {
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            ItemStack stack = player.getStackInHand(hand);
+            ItemStack stack = player.getItemInHand(hand);
             String id = stack.isEmpty() ? null : Inv.idOf(stack);
             if (id == null || !Pets.isPet(id)) {
-                return TypedActionResult.pass(stack);
+                return InteractionResultHolder.pass(stack);
             }
-            if (!world.isClient() && player instanceof ServerPlayerEntity sp) {
+            if (!world.isClientSide() && player instanceof ServerPlayer sp) {
                 drop(sp, stack, id);
             }
-            return TypedActionResult.success(stack);
+            return InteractionResultHolder.success(stack);
         });
         GameEvents.onObtain((player, item, count) -> {
             if (SkillingPets.forItem(item) != null) {
-                PENDING.put(player.getUuid(), new Pending(item, player.getServer().getTicks()));
+                PENDING.put(player.getUUID(), new Pending(item, player.getServer().getTickCount()));
             }
         });
         GameEvents.onActivity((player, key) -> {
             if (key.startsWith("thieve:")) {
-                THIEVING_SOURCE.put(player.getUuid(), new Pending(key.substring("thieve:".length()), player.getServer().getTicks()));
+                THIEVING_SOURCE.put(player.getUUID(), new Pending(key.substring("thieve:".length()), player.getServer().getTickCount()));
             }
         });
         GameEvents.onXp(PetService::onXp);
@@ -90,33 +89,33 @@ final class PetService {
         LandmarkBuilder.registerCustom(ExtrasContent.HERBIBOAR_SITE, (world, centre) -> {
             BlockState burrow = ExtrasUtil.block(ExtrasContent.HERBIBOAR_BURROW);
             if (burrow != null) {
-                world.setBlockState(new BlockPos(centre.getX(), ExtrasUtil.surfaceY(world, centre.getX(), centre.getZ()), centre.getZ()),
+                world.setBlockAndUpdate(new BlockPos(centre.getX(), ExtrasUtil.surfaceY(world, centre.getX(), centre.getZ()), centre.getZ()),
                         burrow);
             }
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            if (server.getTicks() % 20 == 0) {
+            if (server.getTickCount() % 20 == 0) {
                 ensureFollowers(server);
             }
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
-            PetEntity e = ACTIVE.remove(handler.player.getUuid());
+            PetEntity e = ACTIVE.remove(handler.player.getUUID());
             if (e != null) {
                 e.discard();
             }
-            PENDING.remove(handler.player.getUuid());
-            THIEVING_SOURCE.remove(handler.player.getUuid());
+            PENDING.remove(handler.player.getUUID());
+            THIEVING_SOURCE.remove(handler.player.getUUID());
         });
     }
 
     // ------------------------------------------------------------------ rolls
 
-    private static void onXp(ServerPlayerEntity player, Skill skill, int tenths) {
-        Random random = player.getRandom();
+    private static void onXp(ServerPlayer player, Skill skill, int tenths) {
+        RandomSource random = player.getRandom();
         switch (skill) {
             case THIEVING -> {
-                Pending src = THIEVING_SOURCE.remove(player.getUuid());
-                String source = src != null && src.tick() == player.getServer().getTicks() ? src.item() : null;
+                Pending src = THIEVING_SOURCE.remove(player.getUUID());
+                String source = src != null && src.tick() == player.getServer().getTickCount() ? src.item() : null;
                 int base = SkillingPets.thievingBase(source, tenths);
                 if (base > 0) {
                     rollSkilling(player, SkillingPets.ROCKY, skill, base, random);
@@ -130,8 +129,8 @@ final class PetService {
                 }
             }
             default -> {
-                Pending p = PENDING.remove(player.getUuid());
-                if (p == null || p.tick() != player.getServer().getTicks()) {
+                Pending p = PENDING.remove(player.getUUID());
+                if (p == null || p.tick() != player.getServer().getTickCount()) {
                     return;
                 }
                 SkillingPets.Roll roll = SkillingPets.forItem(p.item());
@@ -142,14 +141,14 @@ final class PetService {
         }
     }
 
-    private static void rollSkilling(ServerPlayerEntity player, String pet, Skill skill, int base, Random random) {
+    private static void rollSkilling(ServerPlayer player, String pet, Skill skill, int base, RandomSource random) {
         if (random.nextDouble() < Pets.skillingChance(base, ExtrasUtil.level(player, skill))) {
             award(player, pet);
         }
     }
 
     /** Rolls a non-engine pet (Herbi, Chompy chick) at its real rate. */
-    private static void rollBoss(ServerPlayerEntity player, String source, String what) {
+    private static void rollBoss(ServerPlayer player, String source, String what) {
         Pets.PetDef pet = Pets.bySource(source);
         int rate = pet == null ? 0 : Pets.rate(pet.id(), source);
         if (rate > 0 && player.getRandom().nextInt(rate) == 0) {
@@ -158,13 +157,13 @@ final class PetService {
     }
 
     /** Gives a pet: it starts following if there's no follower, otherwise it goes into the backpack. */
-    static void award(ServerPlayerEntity player, String petId) {
+    static void award(ServerPlayer player, String petId) {
         Pets.PetDef pet = Pets.get(petId);
         if (pet == null) {
             return;
         }
         ExtrasState state = ExtrasState.get(player.getServer());
-        String key = player.getUuidAsString();
+        String key = player.getStringUUID();
         if (!state.section("followers").contains(key)) {
             state.section("followers").putString(key, petId);
             spawn(player, petId);
@@ -174,32 +173,32 @@ final class PetService {
             Msg.red(player, "You feel something weird sneaking into your backpack.");
         }
         CollectionLog.obtain(player, petId);
-        player.getServer().getPlayerManager().broadcast(Text.literal(player.getName().getString() + " has received a pet: "
-                + pet.name() + "!").formatted(Formatting.GOLD), false);
+        player.getServer().getPlayerList().broadcastSystemMessage(Component.literal(player.getName().getString() + " has received a pet: "
+                + pet.name() + "!").withStyle(ChatFormatting.GOLD), false);
     }
 
     // ------------------------------------------------------------------ followers
 
-    private static void drop(ServerPlayerEntity player, ItemStack stack, String petId) {
+    private static void drop(ServerPlayer player, ItemStack stack, String petId) {
         ExtrasState state = ExtrasState.get(player.getServer());
-        String key = player.getUuidAsString();
+        String key = player.getStringUUID();
         if (state.section("followers").contains(key)) {
             Msg.game(player, "You already have a follower.");
             return;
         }
-        stack.decrement(1);
+        stack.shrink(1);
         state.section("followers").putString(key, petId);
         spawn(player, petId);
         Msg.game(player, "Your " + Pets.get(petId).name().toLowerCase() + " starts following you.");
     }
 
     /** Right-click on a pet: its owner picks it up; menagerie pets go back into the pet house. */
-    static void interact(ServerPlayerEntity player, PetEntity pet) {
+    static void interact(ServerPlayer player, PetEntity pet) {
         if (pet.roaming()) {
             Msg.game(player, "The " + Pets.get(pet.petId()).name().toLowerCase() + " is enjoying the menagerie.");
             return;
         }
-        if (!player.getUuid().equals(pet.owner())) {
+        if (!player.getUUID().equals(pet.owner())) {
             Msg.game(player, "This isn't your pet.");
             return;
         }
@@ -207,63 +206,63 @@ final class PetService {
             Msg.game(player, "You don't have enough inventory space to pick up your pet.");
             return;
         }
-        ExtrasState.get(player.getServer()).section("followers").remove(player.getUuidAsString());
-        ACTIVE.remove(player.getUuid());
+        ExtrasState.get(player.getServer()).section("followers").remove(player.getStringUUID());
+        ACTIVE.remove(player.getUUID());
         pet.discard();
         Inv.give(player, pet.petId(), 1);
         Msg.game(player, "You pick up your pet.");
     }
 
     /** Removes the follower (into the inventory) - used by the pet house. Returns the pet id or null. */
-    static String takeFollower(ServerPlayerEntity player) {
+    static String takeFollower(ServerPlayer player) {
         ExtrasState state = ExtrasState.get(player.getServer());
-        String key = player.getUuidAsString();
+        String key = player.getStringUUID();
         if (!state.section("followers").contains(key)) {
             return null;
         }
         String id = state.section("followers").getString(key);
         state.section("followers").remove(key);
-        PetEntity e = ACTIVE.remove(player.getUuid());
+        PetEntity e = ACTIVE.remove(player.getUUID());
         if (e != null) {
             e.discard();
         }
         return id;
     }
 
-    private static void spawn(ServerPlayerEntity player, String petId) {
-        PetEntity old = ACTIVE.remove(player.getUuid());
+    private static void spawn(ServerPlayer player, String petId) {
+        PetEntity old = ACTIVE.remove(player.getUUID());
         if (old != null) {
             old.discard();
         }
         if (ExtrasEntities.PET == null || player.isSpectator()) {
             return;
         }
-        ServerWorld world = (ServerWorld) player.getWorld();
+        ServerLevel world = (ServerLevel) player.level();
         PetEntity pet = ExtrasEntities.PET.create(world);
         if (pet == null) {
             return;
         }
         pet.setPetId(petId);
-        pet.setOwner(player.getUuid());
+        pet.setOwner(player.getUUID());
         Pets.PetDef def = Pets.get(petId);
         if (def != null) {
-            pet.setCustomName(Text.literal(def.name()));
+            pet.setCustomName(Component.literal(def.name()));
         }
-        pet.refreshPositionAndAngles(player.getX() + 1, player.getY(), player.getZ() + 1, player.getYaw(), 0);
-        world.spawnEntity(pet);
-        world.spawnParticles(ParticleTypes.POOF, pet.getX(), pet.getY() + 0.3, pet.getZ(), 6, 0.2, 0.2, 0.2, 0.01);
-        ACTIVE.put(player.getUuid(), pet);
+        pet.moveTo(player.getX() + 1, player.getY(), player.getZ() + 1, player.getYRot(), 0);
+        world.addFreshEntity(pet);
+        world.sendParticles(ParticleTypes.POOF, pet.getX(), pet.getY() + 0.3, pet.getZ(), 6, 0.2, 0.2, 0.2, 0.01);
+        ACTIVE.put(player.getUUID(), pet);
     }
 
     private static void ensureFollowers(MinecraftServer server) {
-        NbtCompound followers = ExtrasState.get(server).section("followers");
-        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-            String key = player.getUuidAsString();
+        CompoundTag followers = ExtrasState.get(server).section("followers");
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            String key = player.getStringUUID();
             if (!followers.contains(key) || !player.isAlive()) {
                 continue;
             }
-            PetEntity e = ACTIVE.get(player.getUuid());
-            if (e == null || e.isRemoved() || e.getWorld() != player.getWorld()) {
+            PetEntity e = ACTIVE.get(player.getUUID());
+            if (e == null || e.isRemoved() || e.level() != player.level()) {
                 spawn(player, followers.getString(key));
             }
         }
@@ -271,9 +270,9 @@ final class PetService {
 
     // ------------------------------------------------------------------ pet house
 
-    static List<String> stored(ServerPlayerEntity player) {
-        NbtCompound c = ExtrasState.get(player.getServer()).entry("pet_house", player.getUuidAsString());
-        return new ArrayList<>(c.getKeys());
+    static List<String> stored(ServerPlayer player) {
+        CompoundTag c = ExtrasState.get(player.getServer()).entry("pet_house", player.getStringUUID());
+        return new ArrayList<>(c.getAllKeys());
     }
 
     /** Pet house capacity by tier (OSRS: an oak pet house holds fewer pets than a natural one; approx). */
@@ -281,9 +280,9 @@ final class PetService {
         return tier >= 3 ? 1000 : 10 * tier;
     }
 
-    static void store(ServerPlayerEntity player, String petId, int tier) {
-        NbtCompound c = ExtrasState.get(player.getServer()).entry("pet_house", player.getUuidAsString());
-        if (c.getKeys().size() >= capacity(tier) && !c.contains(petId)) {
+    static void store(ServerPlayer player, String petId, int tier) {
+        CompoundTag c = ExtrasState.get(player.getServer()).entry("pet_house", player.getStringUUID());
+        if (c.getAllKeys().size() >= capacity(tier) && !c.contains(petId)) {
             Msg.game(player, "Your pet house is full.");
             return;
         }
@@ -291,8 +290,8 @@ final class PetService {
         Msg.game(player, "You put your " + Pets.get(petId).name().toLowerCase() + " in the pet house.");
     }
 
-    static void take(ServerPlayerEntity player, String petId) {
-        NbtCompound c = ExtrasState.get(player.getServer()).entry("pet_house", player.getUuidAsString());
+    static void take(ServerPlayer player, String petId) {
+        CompoundTag c = ExtrasState.get(player.getServer()).entry("pet_house", player.getStringUUID());
         int n = c.getInt(petId);
         if (n <= 0) {
             Msg.game(player, "That pet isn't in your pet house.");
@@ -312,15 +311,15 @@ final class PetService {
     }
 
     /** Pet house click: store the held pet (or the follower), or list stored pets with "take" links. */
-    static void petHouse(ServerPlayerEntity player, int tier) {
-        ItemStack held = player.getMainHandStack();
+    static void petHouse(ServerPlayer player, int tier) {
+        ItemStack held = player.getMainHandItem();
         String id = held.isEmpty() ? null : Inv.idOf(held);
         if (id != null && Pets.isPet(id)) {
-            held.decrement(1);
+            held.shrink(1);
             store(player, id, tier);
             return;
         }
-        if (player.isSneaking()) {
+        if (player.isShiftKeyDown()) {
             String follower = takeFollower(player);
             if (follower != null) {
                 store(player, follower, tier);
@@ -332,17 +331,17 @@ final class PetService {
             Msg.game(player, "Your pet house is empty. Use a pet on it (or sneak and click it) to store your follower.");
             return;
         }
-        List<MutableText> links = new ArrayList<>();
+        List<MutableComponent> links = new ArrayList<>();
         for (String p : pets) {
             Pets.PetDef def = Pets.get(p);
-            links.add(ExtrasUtil.link(def == null ? p : def.name(), "/house pet " + p, "Take this pet out", Formatting.GOLD));
+            links.add(ExtrasUtil.link(def == null ? p : def.name(), "/house pet " + p, "Take this pet out", ChatFormatting.GOLD));
         }
         ExtrasUtil.options(player, "Pets in your house (" + pets.size() + "/" + Math.min(capacity(tier), 999) + "):", links);
     }
 
     // ------------------------------------------------------------------ Herbiboar
 
-    private static void herbiboar(ServerPlayerEntity player, BlockPos pos, BlockState state) {
+    private static void herbiboar(ServerPlayer player, BlockPos pos, BlockState state) {
         if (ExtrasUtil.level(player, Skill.HUNTER) < Herbiboar.HUNTER_LEVEL) {
             Msg.game(player, "You need a Hunter level of 80 to track the herbiboar.");
             return;
@@ -352,13 +351,13 @@ final class PetService {
             return;
         }
         long now = ActionManager.gameTick();
-        Long next = HERBIBOAR_COOLDOWN.get(player.getUuid());
+        Long next = HERBIBOAR_COOLDOWN.get(player.getUUID());
         if (next != null && now < next) {
             Msg.game(player, "The herbiboar's tracks are still faint. Wait a while before tracking it again.");
             return;
         }
-        HERBIBOAR_COOLDOWN.put(player.getUuid(), now + 50);
-        Random random = player.getRandom();
+        HERBIBOAR_COOLDOWN.put(player.getUUID(), now + 50);
+        RandomSource random = player.getRandom();
         int hunter = ExtrasUtil.level(player, Skill.HUNTER);
         // Trail searches (50 XP each, chance of a fossil), then the harvest (OSRS Wiki, Module:Herbiboar).
         int searches = Herbiboar.searches(random.nextDouble());
@@ -376,9 +375,9 @@ final class PetService {
             Inv.give(player, herb, 1);
             CollectionLog.obtain(player, herb);
         }
-        ServerWorld world = (ServerWorld) player.getWorld();
-        world.spawnParticles(ParticleTypes.HAPPY_VILLAGER, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, 10, 0.4, 0.3, 0.4, 0.01);
-        world.playSound(null, pos, SoundEvents.ENTITY_HOGLIN_AMBIENT, SoundCategory.NEUTRAL, 0.8f, 1.4f);
+        ServerLevel world = (ServerLevel) player.level();
+        world.sendParticles(ParticleTypes.HAPPY_VILLAGER, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, 10, 0.4, 0.3, 0.4, 0.01);
+        world.playSound(null, pos, SoundEvents.HOGLIN_AMBIENT, SoundSource.NEUTRAL, 0.8f, 1.4f);
         Msg.action(player, "You stun the herbiboar and harvest some herbs from its back.");
         rollBoss(player, "herbiboar", "Herbi");
     }

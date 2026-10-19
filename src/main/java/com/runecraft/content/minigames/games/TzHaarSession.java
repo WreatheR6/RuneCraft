@@ -4,16 +4,15 @@ import com.runecraft.content.minigames.MinigameSession;
 import com.runecraft.osrs.content.minigames.Minigame;
 import com.runecraft.osrs.content.minigames.TzHaarWaves;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * Shared wave logic for the Fight Cave and the Inferno: waves spawn at the cave's spawn points
@@ -28,7 +27,7 @@ public abstract class TzHaarSession extends MinigameSession {
     protected final java.util.Set<String> caRunFlags = new java.util.HashSet<>();
     protected static final String DISTRACTED = "rcmg_distracted";
 
-    protected TzHaarSession(Minigame game, int id, int slot, ServerWorld world, String variant) {
+    protected TzHaarSession(Minigame game, int id, int slot, ServerLevel world, String variant) {
         super(game, id, slot, world, variant);
     }
 
@@ -39,7 +38,7 @@ public abstract class TzHaarSession extends MinigameSession {
     protected abstract BlockPos[] spawnPoints();
 
     /** Spawns one wave creature; subclasses override for bosses. */
-    protected MobEntity spawnWaveCreature(String id, BlockPos at) {
+    protected Mob spawnWaveCreature(String id, BlockPos at) {
         return spawn(id, at);
     }
 
@@ -64,9 +63,9 @@ public abstract class TzHaarSession extends MinigameSession {
             int x = random.nextInt(34) - 17;
             int z = random.nextInt(34) - 17;
             if (Math.abs(x) + Math.abs(z) > 6) {
-                set(x, 1, z, Blocks.BASALT.getDefaultState());
+                set(x, 1, z, Blocks.BASALT.defaultBlockState());
                 if (random.nextBoolean()) {
-                    set(x, 2, z, Blocks.BASALT.getDefaultState());
+                    set(x, 2, z, Blocks.BASALT.defaultBlockState());
                 }
             }
         }
@@ -74,7 +73,7 @@ public abstract class TzHaarSession extends MinigameSession {
     }
 
     @Override
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
+    protected BlockPos spawnPoint(ServerPlayer player, int index) {
         return rel(index % 3 - 1, 1, 15);
     }
 
@@ -97,7 +96,7 @@ public abstract class TzHaarSession extends MinigameSession {
         List<String> monsters = waveMonsters(wave);
         for (int i = 0; i < monsters.size(); i++) {
             BlockPos at = points[(i + random.nextInt(points.length)) % points.length];
-            MobEntity mob = spawnWaveCreature(monsters.get(i), at);
+            Mob mob = spawnWaveCreature(monsters.get(i), at);
             if (mob != null) {
                 aggro(mob);
             }
@@ -105,7 +104,7 @@ public abstract class TzHaarSession extends MinigameSession {
     }
 
     @Override
-    public java.util.Set<String> caFlags(ServerPlayerEntity player) {
+    public java.util.Set<String> caFlags(ServerPlayer player) {
         return new java.util.HashSet<>(caRunFlags);
     }
 
@@ -117,20 +116,20 @@ public abstract class TzHaarSession extends MinigameSession {
         List<LivingEntity> all = living(null);
         for (LivingEntity e : all) {
             String cid = com.runecraft.content.minigames.MinigameManager.creatureId(e);
-            if (cid.equals("yt_hurkot") && e instanceof MobEntity healer && !healer.getCommandTags().contains(DISTRACTED)) {
+            if (cid.equals("yt_hurkot") && e instanceof Mob healer && !healer.getTags().contains(DISTRACTED)) {
                 LivingEntity jad = nearestJad(all, healer);
                 if (jad != null) {
-                    if (healer.squaredDistanceTo(jad) > 9) {
-                        healer.getNavigation().startMovingTo(jad.getX(), jad.getY(), jad.getZ(), 1.0);
+                    if (healer.distanceToSqr(jad) > 9) {
+                        healer.getNavigation().moveTo(jad.getX(), jad.getY(), jad.getZ(), 1.0);
                     } else if (jad.getHealth() < jad.getMaxHealth()) {
                         jad.heal(TzHaarWaves.hurKotHeal(com.runecraft.content.minigames.MinigameManager.creatureId(jad), random));
                         caRunFlags.add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_HURKOT_HEALED);
-                        world.spawnParticles(ParticleTypes.HEART, jad.getX(), jad.getY() + jad.getHeight(), jad.getZ(), 2, 0.4, 0.3, 0.4, 0);
+                        world.sendParticles(ParticleTypes.HEART, jad.getX(), jad.getY() + jad.getBbHeight(), jad.getZ(), 2, 0.4, 0.3, 0.4, 0);
                     }
                 }
             } else if (cid.equals("yt_mejkot")) {
                 for (LivingEntity ally : all) {
-                    if (ally != e && ally.squaredDistanceTo(e) < 16 && ally.getHealth() < ally.getMaxHealth()) {
+                    if (ally != e && ally.distanceToSqr(e) < 16 && ally.getHealth() < ally.getMaxHealth()) {
                         ally.heal(2);
                         caRunFlags.add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_MEJKOT_HEALED);
                     }
@@ -144,7 +143,7 @@ public abstract class TzHaarSession extends MinigameSession {
         for (LivingEntity e : all) {
             String cid = com.runecraft.content.minigames.MinigameManager.creatureId(e);
             if ((cid.equals("tztok_jad") || cid.equals("jaltok_jad"))
-                    && (best == null || e.squaredDistanceTo(from) < best.squaredDistanceTo(from))) {
+                    && (best == null || e.distanceToSqr(from) < best.distanceToSqr(from))) {
                 best = e;
             }
         }
@@ -157,7 +156,7 @@ public abstract class TzHaarSession extends MinigameSession {
             if (jad.getHealth() < jad.getMaxHealth() / 2 && !healedJads.contains(jad.getId())) {
                 healedJads.add(jad.getId());
                 for (int i = 0; i < healers; i++) {
-                    MobEntity h = spawn("yt_hurkot", jad.getBlockPos().add(random.nextInt(5) - 2, 0, random.nextInt(5) - 2));
+                    Mob h = spawn("yt_hurkot", jad.blockPosition().offset(random.nextInt(5) - 2, 0, random.nextInt(5) - 2));
                     if (h != null) {
                         h.setTarget(null);
                     }
@@ -168,17 +167,17 @@ public abstract class TzHaarSession extends MinigameSession {
     }
 
     @Override
-    protected void onPlayerHit(ServerPlayerEntity player, LivingEntity target, int dealt) {
-        if (target instanceof MobEntity mob && com.runecraft.content.minigames.MinigameManager.creatureId(mob).equals("yt_hurkot")
-                && !mob.getCommandTags().contains(DISTRACTED)) {
-            mob.addCommandTag(DISTRACTED);
+    protected void onPlayerHit(ServerPlayer player, LivingEntity target, int dealt) {
+        if (target instanceof Mob mob && com.runecraft.content.minigames.MinigameManager.creatureId(mob).equals("yt_hurkot")
+                && !mob.getTags().contains(DISTRACTED)) {
+            mob.addTag(DISTRACTED);
             mob.setTarget(player);
             Msg.action(player, "The Yt-HurKot turns its attention to you.");
         }
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
+    protected List<String> hud(ServerPlayer player) {
         return List.of(game.displayName(), "Wave: " + Math.max(1, wave) + " / " + totalWaves(), "Monsters: " + mobsAlive());
     }
 }

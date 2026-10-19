@@ -18,20 +18,19 @@ import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.LandmarkBuilder;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.minecraft.block.Block;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.tag.BlockTags;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.Heightmap;
-
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.levelgen.Heightmap;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.BiConsumer;
@@ -75,7 +74,7 @@ final class TaiBwoWannaiService {
             return;
         }
         wrapped = true;
-        BiConsumer<ServerPlayerEntity, QuestNpcEntity> quest = QuestScripts.handler("murcaily");
+        BiConsumer<ServerPlayer, QuestNpcEntity> quest = QuestScripts.handler("murcaily");
         QuestScripts.onTalk("murcaily", (player, npc) -> {
             int stage = QuestApi.stage(player, "my_arms_big_adventure");
             boolean maba = stage > 0 && !QuestApi.isComplete(player, "my_arms_big_adventure");
@@ -87,37 +86,37 @@ final class TaiBwoWannaiService {
         });
     }
 
-    private static MinigameData data(ServerPlayerEntity p) {
+    private static MinigameData data(ServerPlayer p) {
         return MinigameData.of(p);
     }
 
-    static int favour(ServerPlayerEntity p) {
-        return data(p).stat(p.getUuid(), FAVOUR);
+    static int favour(ServerPlayer p) {
+        return data(p).stat(p.getUUID(), FAVOUR);
     }
 
     private static String percent(int tenths) {
         return tenths / 10 + "." + tenths % 10 + "%";
     }
 
-    private static boolean unlocked(ServerPlayerEntity p) {
+    private static boolean unlocked(ServerPlayer p) {
         if (!QuestApi.isComplete(p, TaiBwoWannai.QUEST)) {
             Msg.game(p, "You need to complete Jungle Potion first.");
             return false;
         }
-        if (!data(p).flag(p.getUuid(), STARTED)) {
+        if (!data(p).flag(p.getUUID(), STARTED)) {
             Msg.game(p, "You should speak to Murcaily by the Hardwood Grove first.");
             return false;
         }
         return true;
     }
 
-    static void addFavour(ServerPlayerEntity p, int tenths) {
+    static void addFavour(ServerPlayer p, int tenths) {
         int before = favour(p);
         int after = TaiBwoWannai.addFavour(before, tenths);
         if (after == before) {
             return;
         }
-        data(p).setStat(p.getUuid(), FAVOUR, after);
+        data(p).setStat(p.getUUID(), FAVOUR, after);
         Msg.game(p, "Tai Bwo Wannai favour: " + percent(after) + ".");
         if (after >= TaiBwoWannai.MAX_FAVOUR) {
             GameEvents.fireActivity(p, "tbw_favour:100");
@@ -125,9 +124,9 @@ final class TaiBwoWannaiService {
     }
 
     /** The best machete carried or wielded (0 = plain machete), or -1 for none. */
-    private static int macheteTier(ServerPlayerEntity p) {
+    private static int macheteTier(ServerPlayer p) {
         int best = -1;
-        String wielded = Inv.idOf(p.getMainHandStack());
+        String wielded = Inv.idOf(p.getMainHandItem());
         for (int i = 0; i < TaiBwoWannai.MACHETES.size(); i++) {
             String m = TaiBwoWannai.MACHETES.get(i);
             if (Inv.has(p, m, 1) || m.equals(wielded)) {
@@ -137,13 +136,13 @@ final class TaiBwoWannaiService {
         return best;
     }
 
-    private static int level(ServerPlayerEntity p, Skill s) {
+    private static int level(ServerPlayer p, Skill s) {
         return Players.data(p).skills().currentLevel(s);
     }
 
     private static final java.util.Map<UUID, Long> LAST_HACK = new java.util.HashMap<>();
 
-    static void hack(ServerPlayerEntity p, Jungle j) {
+    static void hack(ServerPlayer p, Jungle j) {
         if (!unlocked(p)) {
             return;
         }
@@ -157,12 +156,12 @@ final class TaiBwoWannaiService {
             Msg.game(p, "You need a Woodcutting level of " + j.level + " to hack " + j.name.toLowerCase(java.util.Locale.ROOT) + ".");
             return;
         }
-        long now = p.getServer().getTicks();
-        Long last = LAST_HACK.get(p.getUuid());
+        long now = p.getServer().getTickCount();
+        Long last = LAST_HACK.get(p.getUUID());
         if (last != null && now - last < 12) { // one swing per 0.6 s tick
             return;
         }
-        LAST_HACK.put(p.getUuid(), now);
+        LAST_HACK.put(p.getUUID(), now);
         if (p.getRandom().nextDouble() >= TaiBwoWannai.hackChance(j, wc, tier)) {
             XpService.add(p, Skill.WOODCUTTING, 1); // a failed hack still gives 1 XP
             Msg.game(p, "You swing your machete at the jungle.");
@@ -177,7 +176,7 @@ final class TaiBwoWannaiService {
         }
     }
 
-    private static void event(ServerPlayerEntity p, int wc) {
+    private static void event(ServerPlayer p, int wc) {
         if (p.getRandom().nextDouble() < TaiBwoWannai.goutTuberChance(wc)) {
             Inv.give(p, "gout_tuber", 1);
             Msg.game(p, "You uncover a gout tuber and dig it up.");
@@ -207,8 +206,8 @@ final class TaiBwoWannaiService {
         addFavour(p, e.favour);
     }
 
-    private static boolean hasPickaxe(ServerPlayerEntity p) {
-        String held = Inv.idOf(p.getMainHandStack());
+    private static boolean hasPickaxe(ServerPlayer p) {
+        String held = Inv.idOf(p.getMainHandItem());
         if (held.endsWith("pickaxe")) {
             return true;
         }
@@ -220,29 +219,29 @@ final class TaiBwoWannaiService {
         return false;
     }
 
-    private static boolean spawn(ServerPlayerEntity p, String creature) {
+    private static boolean spawn(ServerPlayer p, String creature) {
         EntityType<?> type = ModEntities.typeById(creature);
         if (type == null) {
             return false;
         }
-        ServerWorld world = p.getServerWorld();
+        ServerLevel world = p.serverLevel();
         Entity entity = type.create(world);
-        if (!(entity instanceof MobEntity mob)) {
+        if (!(entity instanceof Mob mob)) {
             return false;
         }
-        mob.refreshPositionAndAngles(p.getX() + 1.5, p.getY(), p.getZ() + 1.5, p.getYaw(), 0);
-        mob.initialize(world, world.getLocalDifficulty(mob.getBlockPos()), SpawnReason.MOB_SUMMONED, null, null);
-        mob.addCommandTag(EVENT_TAG);
+        mob.moveTo(p.getX() + 1.5, p.getY(), p.getZ() + 1.5, p.getYRot(), 0);
+        mob.finalizeSpawn(world, world.getCurrentDifficultyAt(mob.blockPosition()), MobSpawnType.MOB_SUMMONED, null, null);
+        mob.addTag(EVENT_TAG);
         mob.setTarget(p);
-        world.spawnEntity(mob);
+        world.addFreshEntity(mob);
         return true;
     }
 
-    private static void onKill(ServerPlayerEntity p, net.minecraft.entity.LivingEntity entity) {
-        if (!QuestApi.isComplete(p, TaiBwoWannai.QUEST) || !data(p).flag(p.getUuid(), STARTED)) {
+    private static void onKill(ServerPlayer p, net.minecraft.world.entity.LivingEntity entity) {
+        if (!QuestApi.isComplete(p, TaiBwoWannai.QUEST) || !data(p).flag(p.getUUID(), STARTED)) {
             return;
         }
-        boolean event = entity.getCommandTags().contains(EVENT_TAG);
+        boolean event = entity.getTags().contains(EVENT_TAG);
         String id = MinigameManager.creatureId(entity);
         if (!id.equals("jungle_spider")) {
             return;
@@ -251,7 +250,7 @@ final class TaiBwoWannaiService {
         int y = GielinorMap.toOsrsY(entity.getBlockZ());
         boolean nearVillage = x >= 2740 && x <= 2900 && y >= 3030 && y <= 3130;
         // Wild jungle spiders count only after your first trading sticks (wiki).
-        if (event || nearVillage && data(p).flag(p.getUuid(), FIRST_STICKS)) {
+        if (event || nearVillage && data(p).flag(p.getUUID(), FIRST_STICKS)) {
             addFavour(p, 10 + p.getRandom().nextInt(11)); // 1-2%
         }
     }
@@ -261,23 +260,23 @@ final class TaiBwoWannaiService {
     }
 
     /** The fence's level after decay (one level per {@link TaiBwoWannai#FENCE_DECAY_TICKS} ticks). */
-    private static int fenceLevel(ServerPlayerEntity p) {
+    private static int fenceLevel(ServerPlayer p) {
         MinigameData d = data(p);
-        int level = d.stat(p.getUuid(), FENCE_LEVEL);
-        int at = d.stat(p.getUuid(), FENCE_AT);
+        int level = d.stat(p.getUUID(), FENCE_LEVEL);
+        int at = d.stat(p.getUUID(), FENCE_AT);
         int decayMinutes = TaiBwoWannai.FENCE_DECAY_TICKS * 6 / 600;
         if (level > 0 && decayMinutes > 0) {
             int lost = (minuteNow() - at) / decayMinutes;
             if (lost > 0) {
                 level = Math.max(0, level - lost);
-                d.setStat(p.getUuid(), FENCE_LEVEL, level);
-                d.setStat(p.getUuid(), FENCE_AT, minuteNow());
+                d.setStat(p.getUUID(), FENCE_LEVEL, level);
+                d.setStat(p.getUUID(), FENCE_AT, minuteNow());
             }
         }
         return level;
     }
 
-    static void repair(ServerPlayerEntity p) {
+    static void repair(ServerPlayer p) {
         if (!unlocked(p)) {
             return;
         }
@@ -303,42 +302,42 @@ final class TaiBwoWannaiService {
         }
         Inv.remove(p, spar.item, 1);
         XpService.add(p, Skill.WOODCUTTING, spar.xp);
-        data(p).setStat(p.getUuid(), FENCE_LEVEL, level + 1);
-        data(p).setStat(p.getUuid(), FENCE_AT, minuteNow());
-        data(p).setFlag(p.getUuid(), REPAIRED);
+        data(p).setStat(p.getUUID(), FENCE_LEVEL, level + 1);
+        data(p).setStat(p.getUUID(), FENCE_AT, minuteNow());
+        data(p).setFlag(p.getUUID(), REPAIRED);
         Msg.game(p, level == 0 ? "You repair the rotten fence." : "You reinforce the fence.");
         addFavour(p, spar.favour);
     }
 
-    static void murcaily(ServerPlayerEntity p) {
+    static void murcaily(ServerPlayer p) {
         if (!QuestApi.isComplete(p, TaiBwoWannai.QUEST)) {
             QuestApi.say(p, "Murcaily", "This jungle grove is no place for outsiders, bwana.");
             return;
         }
         MinigameData d = data(p);
-        if (!d.flag(p.getUuid(), STARTED)) {
-            d.setFlag(p.getUuid(), STARTED);
+        if (!d.flag(p.getUUID(), STARTED)) {
+            d.setFlag(p.getUUID(), STARTED);
             QuestApi.say(p, "Murcaily", "The villagers are coming home, but the jungle has overrun the village. Hack it back with a "
                     + "machete, use the thatching spars to repair the fence, and we will reward your help with trading sticks.");
             return;
         }
-        if (!d.flag(p.getUuid(), REPAIRED)) {
+        if (!d.flag(p.getUUID(), REPAIRED)) {
             QuestApi.say(p, "Murcaily", "Repair a part of the village fence first, then come back to me for your trading sticks.");
             return;
         }
         if (giveSticks(p, "murcaily", "Murcaily")) {
-            d.setFlag(p.getUuid(), FIRST_STICKS);
+            d.setFlag(p.getUUID(), FIRST_STICKS);
         }
     }
 
-    static void villager(ServerPlayerEntity p, String npc, QuestNpcEntity entity) {
+    static void villager(ServerPlayer p, String npc, QuestNpcEntity entity) {
         String name = entity.getName().getString();
         if (!QuestApi.isComplete(p, TaiBwoWannai.QUEST)) {
             QuestApi.say(p, name, "Welcome to Tai Bwo Wannai, bwana.");
             return;
         }
         MinigameData d = data(p);
-        boolean ready = d.flag(p.getUuid(), FIRST_STICKS);
+        boolean ready = d.flag(p.getUUID(), FIRST_STICKS);
         if (ready && favour(p) > 0 && cooldownLeft(p, npc) <= 0) {
             giveSticks(p, npc, name);
             return;
@@ -351,16 +350,16 @@ final class TaiBwoWannaiService {
                 : favour(p) <= 0 ? "Do some more work around the village, bwana." : "I have no more sticks for you yet, bwana.");
     }
 
-    private static int cooldownLeft(ServerPlayerEntity p, String npc) {
-        int at = data(p).stat(p.getUuid(), "tbw_sticks_" + npc);
+    private static int cooldownLeft(ServerPlayer p, String npc) {
+        int at = data(p).stat(p.getUUID(), "tbw_sticks_" + npc);
         int minutes = TaiBwoWannai.STICK_COOLDOWN_TICKS * 6 / 600;
         return at == 0 ? 0 : at + minutes - minuteNow();
     }
 
-    private static int clothingWorn(ServerPlayerEntity p) {
+    private static int clothingWorn(ServerPlayer p) {
         int n = 0;
         for (EquipmentSlot slot : new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
-            String id = Inv.idOf(p.getEquippedStack(slot));
+            String id = Inv.idOf(p.getItemBySlot(slot));
             if (id.startsWith("villager_") || id.startsWith("tribal_top_")) {
                 n++;
             }
@@ -374,7 +373,7 @@ final class TaiBwoWannaiService {
         return n;
     }
 
-    private static boolean giveSticks(ServerPlayerEntity p, String npc, String name) {
+    private static boolean giveSticks(ServerPlayer p, String npc, String name) {
         int left = cooldownLeft(p, npc);
         if (left > 0) {
             QuestApi.say(p, name, "I have no more sticks for you yet. Come back in " + left + " minute" + (left == 1 ? "" : "s") + ".");
@@ -386,8 +385,8 @@ final class TaiBwoWannaiService {
             return false;
         }
         int[] trade = TaiBwoWannai.trade(favour, clothingWorn(p));
-        data(p).setStat(p.getUuid(), FAVOUR, favour - trade[1]);
-        data(p).setStat(p.getUuid(), "tbw_sticks_" + npc, minuteNow());
+        data(p).setStat(p.getUUID(), FAVOUR, favour - trade[1]);
+        data(p).setStat(p.getUUID(), "tbw_sticks_" + npc, minuteNow());
         Inv.give(p, TaiBwoWannai.STICKS, trade[0]);
         QuestApi.say(p, name, "Thank you for your work, bwana. Take these " + trade[0] + " trading sticks.");
         Msg.game(p, "Tai Bwo Wannai favour: " + percent(favour - trade[1]) + ".");
@@ -395,7 +394,7 @@ final class TaiBwoWannaiService {
     }
 
     /** Places the jungle patches and fence sections east of the village, near Murcaily. */
-    private static void build(ServerWorld world, BlockPos centre) {
+    private static void build(ServerLevel world, BlockPos centre) {
         Block light = block(Jungle.LIGHT.block);
         Block medium = block(Jungle.MEDIUM.block);
         Block dense = block(Jungle.DENSE.block);
@@ -420,17 +419,17 @@ final class TaiBwoWannaiService {
     }
 
     private static Block block(String id) {
-        Block b = Registries.BLOCK.get(new Identifier("runecraft", id));
-        return b == net.minecraft.block.Blocks.AIR ? null : b;
+        Block b = BuiltInRegistries.BLOCK.get(new ResourceLocation("runecraft", id));
+        return b == net.minecraft.world.level.block.Blocks.AIR ? null : b;
     }
 
     /** Puts a block on natural ground (grass, dirt or sand) only, never on a building. */
-    private static void put(ServerWorld world, int x, int z, Block block) {
-        int y = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
+    private static void put(ServerLevel world, int x, int z, Block block) {
+        int y = world.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
         BlockPos ground = new BlockPos(x, y - 1, z);
         var state = world.getBlockState(ground);
-        if (state.isIn(BlockTags.DIRT) || state.isIn(BlockTags.SAND)) {
-            world.setBlockState(ground.up(), block.getDefaultState());
+        if (state.is(BlockTags.DIRT) || state.is(BlockTags.SAND)) {
+            world.setBlockAndUpdate(ground.above(), block.defaultBlockState());
         }
     }
 }

@@ -6,13 +6,12 @@ import com.runecraft.osrs.content.minigames.TzHaarWaves;
 import com.runecraft.osrs.data.Boss;
 import com.runecraft.registry.ModEntities;
 import com.runecraft.util.Msg;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 
 /**
  * The TzHaar Fight Cave: 63 waves (see {@link TzHaarWaves}) ending with the built-in TzTok-Jad,
@@ -23,7 +22,7 @@ import java.util.List;
 public class FightCaveSession extends TzHaarSession {
     private boolean jadDead;
 
-    public FightCaveSession(int id, int slot, ServerWorld world, String variant) {
+    public FightCaveSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.FIGHT_CAVES, id, slot, world, variant);
     }
 
@@ -48,7 +47,7 @@ public class FightCaveSession extends TzHaarSession {
     }
 
     @Override
-    protected MobEntity spawnWaveCreature(String id, BlockPos at) {
+    protected Mob spawnWaveCreature(String id, BlockPos at) {
         if (id.equals(TzHaarWaves.JAD)) {
             broadcastRed("TzTok-Jad emerges from the lava!");
             return spawnType(ModEntities.BOSS_TYPES.get(Boss.TZTOK_JAD), rel(0, 1, -12));
@@ -65,10 +64,10 @@ public class FightCaveSession extends TzHaarSession {
     }
 
     @Override
-    protected void onKill(ServerPlayerEntity player, LivingEntity entity, String creatureId) {
+    protected void onKill(ServerPlayer player, LivingEntity entity, String creatureId) {
         if (creatureId.equals(TzHaarWaves.TZ_KEK)) {
             for (int i = 0; i < 2; i++) {
-                MobEntity small = spawn("tz_kek_small", entity.getBlockPos().add(i * 2 - 1, 0, 0));
+                Mob small = spawn("tz_kek_small", entity.blockPosition().offset(i * 2 - 1, 0, 0));
                 if (small != null) {
                     small.setTarget(player);
                 }
@@ -84,7 +83,7 @@ public class FightCaveSession extends TzHaarSession {
     }
 
     @Override
-    protected boolean onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         if (blockId.equals("minigame_exit")) {
             int tokkul = TzHaarWaves.fightCaveForfeitTokkul(Math.max(0, wave - 1));
             if (tokkul > 0) {
@@ -104,8 +103,8 @@ public class FightCaveSession extends TzHaarSession {
         }
         // TzTok-Jad's kill (fire cape, the 8,032 tokkul reward, pet roll) and its kill count message come from BossEntity;
         // this stat only records completions for the Inferno's fire cape check, so the kill isn't announced twice.
-        for (ServerPlayerEntity p : online()) {
-            MinigameData.of(p).incrementStat(p.getUuid(), "kc:" + game.id());
+        for (ServerPlayer p : online()) {
+            MinigameData.of(p).incrementStat(p.getUUID(), "kc:" + game.id());
         }
     }
 }

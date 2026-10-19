@@ -3,15 +3,14 @@ package com.runecraft.client.content.systems;
 import com.runecraft.content.systems.SysNet;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.tooltip.Tooltip;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.text.OrderedText;
-import net.minecraft.text.Text;
-
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -39,9 +38,9 @@ public class SystemsScreen extends Screen {
     private final List<Line> lines;
     private final List<Field> fields;
     private final List<Btn> buttons;
-    private final Map<String, TextFieldWidget> fieldWidgets = new LinkedHashMap<>();
+    private final Map<String, EditBox> fieldWidgets = new LinkedHashMap<>();
     private final Map<String, String> fieldValues = new LinkedHashMap<>();
-    private final List<OrderedText> wrapped = new ArrayList<>();
+    private final List<FormattedCharSequence> wrapped = new ArrayList<>();
     private final List<Integer> wrappedColors = new ArrayList<>();
     private int panelW;
     private int left;
@@ -50,7 +49,7 @@ public class SystemsScreen extends Screen {
     private int contentH;
 
     public SystemsScreen(String id, String title, List<Line> lines, List<Field> fields, List<Btn> buttons) {
-        super(Text.literal(title));
+        super(Component.literal(title));
         this.id = id;
         this.lines = lines;
         this.fields = fields;
@@ -61,7 +60,7 @@ public class SystemsScreen extends Screen {
     }
 
     @Override
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 
@@ -78,8 +77,8 @@ public class SystemsScreen extends Screen {
 
     @Override
     protected void init() {
-        for (Map.Entry<String, TextFieldWidget> e : fieldWidgets.entrySet()) {
-            fieldValues.put(e.getKey(), e.getValue().getText());
+        for (Map.Entry<String, EditBox> e : fieldWidgets.entrySet()) {
+            fieldValues.put(e.getKey(), e.getValue().getValue());
         }
         fieldWidgets.clear();
         panelW = Math.min(380, width - 16);
@@ -87,7 +86,7 @@ public class SystemsScreen extends Screen {
         wrapped.clear();
         wrappedColors.clear();
         for (Line l : lines) {
-            for (OrderedText t : textRenderer.wrapLines(Text.literal(l.text()), panelW - 16)) {
+            for (FormattedCharSequence t : font.split(Component.literal(l.text()), panelW - 16)) {
                 wrapped.add(t);
                 wrappedColors.add(0xFF000000 | l.color());
             }
@@ -102,10 +101,10 @@ public class SystemsScreen extends Screen {
         int y = top + 24 + wrapped.size() * LINE_H + GAP;
         int labelW = 70;
         for (Field f : fields) {
-            TextFieldWidget w = new TextFieldWidget(textRenderer, left + 8 + labelW, y, panelW - 16 - labelW, 16, Text.literal(f.label()));
+            EditBox w = new EditBox(font, left + 8 + labelW, y, panelW - 16 - labelW, 16, Component.literal(f.label()));
             w.setMaxLength(64);
-            w.setText(fieldValues.getOrDefault(f.key(), ""));
-            addDrawableChild(w);
+            w.setValue(fieldValues.getOrDefault(f.key(), ""));
+            addRenderableWidget(w);
             fieldWidgets.put(f.key(), w);
             y += 22;
         }
@@ -115,26 +114,26 @@ public class SystemsScreen extends Screen {
             Btn b = buttons.get(i);
             int col = i % cols;
             int row = i / cols;
-            ButtonWidget.Builder builder = ButtonWidget.builder(Text.literal(b.label()), btn -> click(b.action()))
-                    .dimensions(left + 8 + col * (bw + GAP), y + row * (BUTTON_H + GAP), bw, BUTTON_H);
+            Button.Builder builder = Button.builder(Component.literal(b.label()), btn -> click(b.action()))
+                    .bounds(left + 8 + col * (bw + GAP), y + row * (BUTTON_H + GAP), bw, BUTTON_H);
             if (!b.tooltip().isEmpty()) {
-                builder.tooltip(Tooltip.of(Text.literal(b.tooltip())));
+                builder.tooltip(Tooltip.create(Component.literal(b.tooltip())));
             }
-            ButtonWidget w = builder.build();
+            Button w = builder.build();
             w.active = b.enabled();
-            addDrawableChild(w);
+            addRenderableWidget(w);
         }
     }
 
     private void click(String action) {
-        PacketByteBuf buf = PacketByteBufs.create();
-        buf.writeString(id);
-        buf.writeString(action);
+        FriendlyByteBuf buf = PacketByteBufs.create();
+        buf.writeUtf(id);
+        buf.writeUtf(action);
         buf.writeVarInt(fieldWidgets.size());
-        for (Map.Entry<String, TextFieldWidget> e : fieldWidgets.entrySet()) {
-            buf.writeString(e.getKey());
-            String v = e.getValue().getText();
-            buf.writeString(v.length() > 200 ? v.substring(0, 200) : v);
+        for (Map.Entry<String, EditBox> e : fieldWidgets.entrySet()) {
+            buf.writeUtf(e.getKey());
+            String v = e.getValue().getValue();
+            buf.writeUtf(v.length() > 200 ? v.substring(0, 200) : v);
         }
         ClientPlayNetworking.send(SysNet.ACTION, buf);
     }
@@ -143,26 +142,26 @@ public class SystemsScreen extends Screen {
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
         if (contentH > height - 16) {
             scroll -= (int) (amount * 16);
-            clearAndInit();
+            rebuildWidgets();
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, amount);
     }
 
     @Override
-    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
         renderBackground(ctx);
         ctx.fill(left, top, left + panelW, top + contentH, 0xE0302418);
         ctx.fill(left, top, left + panelW, top + 18, 0xF04A3A28);
-        ctx.drawCenteredTextWithShadow(textRenderer, getTitle(), left + panelW / 2, top + 5, 0xFFFF981F);
+        ctx.drawCenteredString(font, getTitle(), left + panelW / 2, top + 5, 0xFFFF981F);
         int y = top + 24;
         for (int i = 0; i < wrapped.size(); i++) {
-            ctx.drawTextWithShadow(textRenderer, wrapped.get(i), left + 8, y, wrappedColors.get(i));
+            ctx.drawString(font, wrapped.get(i), left + 8, y, wrappedColors.get(i));
             y += LINE_H;
         }
         y += GAP;
         for (Field f : fields) {
-            ctx.drawTextWithShadow(textRenderer, f.label(), left + 8, y + 4, 0xFFE0D0B0);
+            ctx.drawString(font, f.label(), left + 8, y + 4, 0xFFE0D0B0);
             y += 22;
         }
         super.render(ctx, mouseX, mouseY, delta);

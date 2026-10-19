@@ -22,23 +22,22 @@ import com.runecraft.quest.QuestApi;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * Temple Trekking and the Burgh de Rott Ramble (see {@link TempleTrekking}). The trek is a run of event areas: each event
@@ -60,7 +59,7 @@ public class TempleTrekkingSession extends MinigameSession {
     private List<Event> events = List.of();
     private int index = -1;
     private Event event;
-    private MobEntity companion;
+    private Mob companion;
     private int points;
     private int spawned;
     private int killed;
@@ -69,7 +68,7 @@ public class TempleTrekkingSession extends MinigameSession {
     private boolean lumberjackPiece;
     private boolean arrived;
 
-    public TempleTrekkingSession(int id, int slot, ServerWorld world, String variant) {
+    public TempleTrekkingSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.TEMPLE_TREKKING, id, slot, world, variant);
         String[] parts = variant.split(":");
         this.follower = parts.length == 3 ? Follower.byId(parts[1]) : null;
@@ -90,7 +89,7 @@ public class TempleTrekkingSession extends MinigameSession {
     }
 
     /** First unmet requirement, or null. */
-    public static String requirement(ServerPlayerEntity player, String variant) {
+    public static String requirement(ServerPlayer player, String variant) {
         String[] parts = variant.split(":");
         Follower f = parts.length == 3 ? Follower.byId(parts[1]) : null;
         if (f == null) {
@@ -106,7 +105,7 @@ public class TempleTrekkingSession extends MinigameSession {
     }
 
     /** A follower's dialogue: their difficulty and the three routes as clickable options. */
-    public static void talk(ServerPlayerEntity player, Follower f) {
+    public static void talk(ServerPlayer player, Follower f) {
         String where = f.ramble ? "Burgh de Rott" : "the Paterdomus temple";
         QuestApi.say(player, f.displayName, "Will you escort me to " + where + "? I'm " + switch (f.difficulty) {
             case EASY -> "handy with a weapon, so only three monsters will come for us at a time.";
@@ -114,29 +113,29 @@ public class TempleTrekkingSession extends MinigameSession {
             case HARD -> "weak and slow: five or six monsters will come for us at a time, but the reward will be bigger.";
         });
         int cb = Players.data(player).skills().combatLevel();
-        MutableText line = Text.literal("Which route? ").formatted(Formatting.GRAY);
+        MutableComponent line = Component.literal("Which route? ").withStyle(ChatFormatting.GRAY);
         String[] names = {"Route 1: Mort Myre (monsters ~level 80)", "Route 2: River Salve (~level 110)", "Route 3: Canifis and the Hollows (~level 140)"};
         int[] advised = {70, 95, 115}; // approx: the wiki only says to choose a route that suits your combat level and gear
         for (Route r : Route.values()) {
             String command = "/minigame trek " + f.id() + " " + r.number();
             String hover = names[r.ordinal()] + (cb < advised[r.ordinal()] ? "\nDangerous at your combat level (" + cb + ")." : "");
-            line.append(Text.literal("[Route " + r.number() + "]").styled(s -> s.withColor(cb < advised[r.ordinal()] ? Formatting.RED
-                            : Formatting.GOLD)
+            line.append(Component.literal("[Route " + r.number() + "]").withStyle(s -> s.withColor(cb < advised[r.ordinal()] ? ChatFormatting.RED
+                            : ChatFormatting.GOLD)
                     .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
-                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(hover)))));
-            line.append(Text.literal(" "));
+                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(hover)))));
+            line.append(Component.literal(" "));
         }
-        player.sendMessage(line, false);
+        player.displayClientMessage(line, false);
     }
 
     /** "/minigame trek <follower> <route>": start escorting a follower standing nearby. */
-    public static void choose(ServerPlayerEntity player, String followerId, int routeNumber) {
+    public static void choose(ServerPlayer player, String followerId, int routeNumber) {
         Follower f = Follower.byId(followerId);
         Route r = Route.byNumber(routeNumber);
         if (f == null || r == null) {
             return;
         }
-        boolean near = !player.getWorld().getEntitiesByClass(QuestNpcEntity.class, player.getBoundingBox().expand(10),
+        boolean near = !player.level().getEntitiesOfClass(QuestNpcEntity.class, player.getBoundingBox().inflate(10),
                 e -> f.npc().equals(e.npcId())).isEmpty();
         if (!near) {
             Msg.game(player, "You need to be next to " + f.displayName + " to escort them.");
@@ -178,7 +177,7 @@ public class TempleTrekkingSession extends MinigameSession {
             int x = random.nextInt(40) - 20;
             int z = random.nextInt(14) - 7;
             if (Math.abs(z) > 2) {
-                set(x, 1, z, (random.nextBoolean() ? Blocks.DEAD_BUSH : Blocks.BROWN_MUSHROOM).getDefaultState());
+                set(x, 1, z, (random.nextBoolean() ? Blocks.DEAD_BUSH : Blocks.BROWN_MUSHROOM).defaultBlockState());
             }
         }
         place(-25, 0, "minigame_exit");
@@ -195,10 +194,10 @@ public class TempleTrekkingSession extends MinigameSession {
                     for (int y = -6; y <= 0; y++) {
                         if (edge) {
                             if (y < -1) {
-                                set(x, y, z, Blocks.MUD_BRICKS.getDefaultState());
+                                set(x, y, z, Blocks.MUD_BRICKS.defaultBlockState());
                             }
                         } else {
-                            set(x, y, z, (y == -6 ? Blocks.MUD_BRICKS : y <= -4 ? Blocks.WATER : Blocks.AIR).getDefaultState());
+                            set(x, y, z, (y == -6 ? Blocks.MUD_BRICKS : y <= -4 ? Blocks.WATER : Blocks.AIR).defaultBlockState());
                         }
                     }
                 }
@@ -219,7 +218,7 @@ public class TempleTrekkingSession extends MinigameSession {
     }
 
     @Override
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int i) {
+    protected BlockPos spawnPoint(ServerPlayer player, int i) {
         return rel(-22, 1, 0);
     }
 
@@ -250,30 +249,30 @@ public class TempleTrekkingSession extends MinigameSession {
         solved = false;
         lumberjackPiece = false;
         buildArea(event);
-        for (ServerPlayerEntity p : online()) {
-            p.teleport(world, origin.getX() - 21.5, origin.getY() + 1, origin.getZ() + 0.5, p.getYaw(), p.getPitch());
+        for (ServerPlayer p : online()) {
+            p.teleportTo(world, origin.getX() - 21.5, origin.getY() + 1, origin.getZ() + 0.5, p.getYRot(), p.getXRot());
         }
         if (companion == null || !companion.isAlive()) {
             companion = spawn(follower == null ? TempleTrekking.Difficulty.EASY.creature() : follower.difficulty.creature(), rel(-22, 1, 2));
             if (companion != null) {
-                companion.setCustomName(Text.literal(follower == null ? "Follower" : follower.displayName));
+                companion.setCustomName(Component.literal(follower == null ? "Follower" : follower.displayName));
                 companion.setCustomNameVisible(true);
             }
         } else {
-            companion.requestTeleport(origin.getX() - 21.5, origin.getY() + 1, origin.getZ() + 2.5);
+            companion.teleportTo(origin.getX() - 21.5, origin.getY() + 1, origin.getZ() + 2.5);
         }
         broadcastRed(event.message);
         switch (event.kind) {
             case COMBAT -> {
                 if (event == Event.BOAT) {
                     // One head and four tentacles, whatever the follower's difficulty.
-                    MobEntity head = spawn(TempleTrekking.SWAMP_HEAD, rel(14, 1, 0));
+                    Mob head = spawn(TempleTrekking.SWAMP_HEAD, rel(14, 1, 0));
                     if (head != null) {
                         spawned++;
                         aggro(head);
                     }
                     for (int i = 0; i < TempleTrekking.BOAT_TENTACLES; i++) {
-                        MobEntity t = spawn(TempleTrekking.SWAMP_TENTACLE, rel(6 + 4 * i, 1, i % 2 == 0 ? -6 : 6));
+                        Mob t = spawn(TempleTrekking.SWAMP_TENTACLE, rel(6 + 4 * i, 1, i % 2 == 0 ? -6 : 6));
                         if (t != null) {
                             spawned++;
                         }
@@ -282,7 +281,7 @@ public class TempleTrekkingSession extends MinigameSession {
                 }
                 int n = (follower == null ? TempleTrekking.Difficulty.EASY : follower.difficulty).monsters(random::nextDouble);
                 for (int i = 0; i < n; i++) {
-                    MobEntity m = spawn(event.creature(route), randomFloor(14, 0, 6));
+                    Mob m = spawn(event.creature(route), randomFloor(14, 0, 6));
                     if (m != null) {
                         spawned++;
                         // Some go for the player, the rest for the follower. // approx: OSRS picks targets itself
@@ -296,7 +295,7 @@ public class TempleTrekkingSession extends MinigameSession {
             case PUZZLE -> {
                 if (event == Event.BRIDGE || event == Event.LUMBERJACK_BRIDGE) {
                     // A zombie carries a bronze axe for anyone without one.
-                    MobEntity z = spawn("trek_zombie", rel(-10, 1, 4));
+                    Mob z = spawn("trek_zombie", rel(-10, 1, 4));
                     if (z != null) {
                         aggro(z);
                     }
@@ -306,7 +305,7 @@ public class TempleTrekkingSession extends MinigameSession {
     }
 
     private void abidorCrank() {
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             p.heal(TempleTrekking.ABIDOR_HEAL);
             var skills = Players.data(p).skills();
             int boost = TempleTrekking.abidorDefenceBoost(skills.level(Skill.DEFENCE));
@@ -325,14 +324,14 @@ public class TempleTrekkingSession extends MinigameSession {
     private void arrive() {
         arrived = true;
         int total = TempleTrekking.clampPoints(points);
-        List<ServerPlayerEntity> list = online();
-        for (ServerPlayerEntity p : list) {
+        List<ServerPlayer> list = online();
+        for (ServerPlayer p : list) {
             ItemStack token = Inv.stack(route.token, 1);
             if (!token.isEmpty()) {
-                token.getOrCreateNbt().putInt(POINTS_NBT, total);
+                token.getOrCreateTag().putInt(POINTS_NBT, total);
             }
             Inv.give(p, token);
-            int kc = MinigameData.of(p).incrementStat(p.getUuid(), "kc:" + game.id());
+            int kc = MinigameData.of(p).incrementStat(p.getUUID(), "kc:" + game.id());
             String name = follower == null ? "Your follower" : follower.displayName;
             Msg.game(p, name + ": Thank you for getting me here safely! Please take this token. (" + total + " points)");
             Msg.game(p, "Treks completed: " + kc + ".");
@@ -345,9 +344,9 @@ public class TempleTrekkingSession extends MinigameSession {
         int x = GielinorMap.toBlockX(ramble ? TempleTrekking.BURGH_X : TempleTrekking.PATERDOMUS_X);
         int z = GielinorMap.toBlockZ(ramble ? TempleTrekking.BURGH_Y : TempleTrekking.PATERDOMUS_Y);
         BlockPos at = Gielinor.safeSpot(world, x, z);
-        for (ServerPlayerEntity p : list) {
+        for (ServerPlayer p : list) {
             if (Gielinor.is(p)) {
-                p.teleport(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, p.getYaw(), p.getPitch());
+                p.teleportTo(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, p.getYRot(), p.getXRot());
             }
         }
     }
@@ -364,38 +363,38 @@ public class TempleTrekkingSession extends MinigameSession {
             end(false);
             return;
         }
-        List<ServerPlayerEntity> list = online();
+        List<ServerPlayer> list = online();
         if (list.isEmpty()) {
             return;
         }
-        ServerPlayerEntity p = list.get(0);
+        ServerPlayer p = list.get(0);
         // The follower keeps close to the player (and catches up across rivers once they're crossed).
-        double d = companion.squaredDistanceTo(p);
+        double d = companion.distanceToSqr(p);
         if (d > 144 || companion.getY() < origin.getY() - 0.5) {
-            companion.requestTeleport(p.getX() - 1, p.getY(), p.getZ() + 1);
+            companion.teleportTo(p.getX() - 1, p.getY(), p.getZ() + 1);
         } else if (d > 9) {
-            companion.getNavigation().startMovingTo(p.getX(), p.getY(), p.getZ(), 1.0);
+            companion.getNavigation().moveTo(p.getX(), p.getY(), p.getZ(), 1.0);
         }
         // Falling into the river.
         if (p.getY() < origin.getY() - 0.5) {
-            p.teleport(world, origin.getX() - CHANNEL - 3 + 0.5, origin.getY() + 1, origin.getZ() + 0.5, p.getYaw(), p.getPitch());
+            p.teleportTo(world, origin.getX() - CHANNEL - 3 + 0.5, origin.getY() + 1, origin.getZ() + 0.5, p.getYRot(), p.getXRot());
             Msg.game(p, "You fall into the river and are washed back to the bank.");
         }
         // Monsters that aren't fighting the player go for the follower.
         for (LivingEntity e : living(null)) {
-            if (e == companion || !(e instanceof MobEntity mob) || MinigameManager.creatureId(e).equals("trek_zombie")) {
+            if (e == companion || !(e instanceof Mob mob) || MinigameManager.creatureId(e).equals("trek_zombie")) {
                 continue;
             }
-            boolean engaged = mob.getTarget() instanceof ServerPlayerEntity t && t.squaredDistanceTo(mob) < 100;
+            boolean engaged = mob.getTarget() instanceof ServerPlayer t && t.distanceToSqr(mob) < 100;
             if (engaged) {
                 continue;
             }
-            double fd = mob.squaredDistanceTo(companion);
+            double fd = mob.distanceToSqr(companion);
             if (fd > 6) {
-                mob.getNavigation().startMovingTo(companion.getX(), companion.getY(), companion.getZ(), 1.0);
+                mob.getNavigation().moveTo(companion.getX(), companion.getY(), companion.getZ(), 1.0);
             } else if ((ticks + mob.getId()) % 4 == 0) {
                 int max = Math.max(1, MonsterStats.of(mob).maxHit());
-                mob.swingHand(net.minecraft.util.Hand.MAIN_HAND);
+                mob.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
                 CombatHandler.applyDamage(mob, companion, random.nextInt(max + 1));
             }
         }
@@ -411,7 +410,7 @@ public class TempleTrekkingSession extends MinigameSession {
         }
         // Undead lumberjacks keep wading out of the river until the bridge is fixed.
         if (event == Event.LUMBERJACK_BRIDGE && !solved && ticks % 15 == 0 && living(event.creature(route)).size() < 2) {
-            MobEntity lj = spawn(event.creature(route), rel(-CHANNEL - 2, 1, random.nextInt(13) - 6));
+            Mob lj = spawn(event.creature(route), rel(-CHANNEL - 2, 1, random.nextInt(13) - 6));
             if (lj != null) {
                 aggro(lj);
             }
@@ -419,9 +418,9 @@ public class TempleTrekkingSession extends MinigameSession {
     }
 
     @Override
-    protected double damageMultiplier(ServerPlayerEntity player, LivingEntity target, AttackType type) {
+    protected double damageMultiplier(ServerPlayer player, LivingEntity target, AttackType type) {
         if (MinigameManager.creatureId(target).startsWith("trek_vampyre_juvinate")
-                && !SILVER.contains(Inv.idOf(player.getMainHandStack()))) {
+                && !SILVER.contains(Inv.idOf(player.getMainHandItem()))) {
             if (ticks % 5 == 0) {
                 Msg.game(player, "Only silver weapons can harm the vampyre juvinate.");
             }
@@ -431,15 +430,15 @@ public class TempleTrekkingSession extends MinigameSession {
     }
 
     @Override
-    protected void onPlayerHit(ServerPlayerEntity player, LivingEntity target, int dealt) {
+    protected void onPlayerHit(ServerPlayer player, LivingEntity target, int dealt) {
         // A monster the player attacks turns on them.
-        if (target instanceof MobEntity mob && target != companion) {
+        if (target instanceof Mob mob && target != companion) {
             mob.setTarget(player);
         }
     }
 
     @Override
-    protected void onKill(ServerPlayerEntity player, LivingEntity entity, String creatureId) {
+    protected void onKill(ServerPlayer player, LivingEntity entity, String creatureId) {
         if (event == null || entity == companion) {
             return;
         }
@@ -471,7 +470,7 @@ public class TempleTrekkingSession extends MinigameSession {
     }
 
     @Override
-    protected boolean onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         switch (blockId) {
             case "trek_continue" -> {
                 if (!solved && event != null && event.kind != EventType.FRIENDLY) {
@@ -536,10 +535,10 @@ public class TempleTrekkingSession extends MinigameSession {
                     return true;
                 }
                 Inv.remove(player, "trek_long_vine", 1);
-                player.teleport(world, origin.getX() + CHANNEL + 3.5, origin.getY() + 1, origin.getZ() + 0.5, player.getYaw(),
-                        player.getPitch());
+                player.teleportTo(world, origin.getX() + CHANNEL + 3.5, origin.getY() + 1, origin.getZ() + 0.5, player.getYRot(),
+                        player.getXRot());
                 if (companion != null) {
-                    companion.requestTeleport(origin.getX() + CHANNEL + 3.5, origin.getY() + 1, origin.getZ() + 2.5);
+                    companion.teleportTo(origin.getX() + CHANNEL + 3.5, origin.getY() + 1, origin.getZ() + 2.5);
                 }
                 solved = true;
                 Msg.game(player, "You throw the vine over the branch and swing across the river with your follower.");
@@ -551,11 +550,11 @@ public class TempleTrekkingSession extends MinigameSession {
         }
     }
 
-    private static boolean hasAxe(ServerPlayerEntity p) {
-        if (Inv.idOf(p.getMainHandStack()).endsWith("_axe")) {
+    private static boolean hasAxe(ServerPlayer p) {
+        if (Inv.idOf(p.getMainHandItem()).endsWith("_axe")) {
             return true;
         }
-        for (ItemStack s : p.getInventory().main) {
+        for (ItemStack s : p.getInventory().items) {
             if (Inv.idOf(s).endsWith("_axe")) {
                 return true;
             }
@@ -564,7 +563,7 @@ public class TempleTrekkingSession extends MinigameSession {
     }
 
     /** Uses a log (any but pyre logs) or plank on the next gap; needs a hammer, or an axe wielded or carried. // approx */
-    private void repairBridge(ServerPlayerEntity player) {
+    private void repairBridge(ServerPlayer player) {
         if (solved) {
             Msg.game(player, "The bridge is already repaired.");
             return;
@@ -574,7 +573,7 @@ public class TempleTrekkingSession extends MinigameSession {
             return;
         }
         String material = null;
-        for (ItemStack s : player.getInventory().main) {
+        for (ItemStack s : player.getInventory().items) {
             String id = Inv.idOf(s);
             if (id.equals("plank") || (id.endsWith("logs") && !id.contains("pyre"))) {
                 material = id;
@@ -588,10 +587,10 @@ public class TempleTrekkingSession extends MinigameSession {
         }
         Inv.remove(player, material, 1);
         int x = -CHANNEL + bridged;
-        set(x, 0, 0, Blocks.SPRUCE_PLANKS.getDefaultState());
-        set(x, 0, 1, Blocks.SPRUCE_PLANKS.getDefaultState());
+        set(x, 0, 0, Blocks.SPRUCE_PLANKS.defaultBlockState());
+        set(x, 0, 1, Blocks.SPRUCE_PLANKS.defaultBlockState());
         bridged++;
-        world.spawnParticles(ParticleTypes.CLOUD, origin.getX() + x + 0.5, origin.getY() + 1, origin.getZ() + 0.5, 4, 0.3, 0.2, 0.3, 0);
+        world.sendParticles(ParticleTypes.CLOUD, origin.getX() + x + 0.5, origin.getY() + 1, origin.getZ() + 0.5, 4, 0.3, 0.2, 0.3, 0);
         if (bridged >= TempleTrekking.BRIDGE_GAPS) {
             solved = true;
             Msg.game(player, "You finish repairing the bridge.");
@@ -608,7 +607,7 @@ public class TempleTrekkingSession extends MinigameSession {
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
+    protected List<String> hud(ServerPlayer player) {
         List<String> lines = new ArrayList<>();
         lines.add((follower != null && follower.ramble ? "Burgh de Rott Ramble" : "Temple Trekking") + " - route " + route.number());
         lines.add("Event: " + Math.max(1, index + 1) + " / " + Math.max(1, events.size()));
@@ -626,13 +625,13 @@ public class TempleTrekkingSession extends MinigameSession {
     // ------------------------------------------------------------------ reward tokens
 
     /** Right-clicking a reward token: the rewards as clickable options. */
-    public static void openToken(ServerPlayerEntity player, ItemStack token) {
+    public static void openToken(ServerPlayer player, ItemStack token) {
         Route r = TempleTrekking.tokenRoute(Inv.idOf(token));
         if (r == null) {
             return;
         }
         int pts = tokenPoints(token);
-        MutableText line = Text.literal("Choose a reward (" + pts + " points): ").formatted(Formatting.GRAY);
+        MutableComponent line = Component.literal("Choose a reward (" + pts + " points): ").withStyle(ChatFormatting.GRAY);
         for (Reward reward : Reward.values()) {
             List<String> choices = reward == Reward.HERBS ? List.of("herbs_tarromin", "herbs_harralander") : List.of(reward.id());
             for (String choice : choices) {
@@ -641,16 +640,16 @@ public class TempleTrekkingSession extends MinigameSession {
                         : choice.equals("herbs_tarromin") ? "Tarromin and toadflax"
                         : TempleTrekking.rewardCount(reward.low(r), reward.high(r), pts) + " " + reward.displayName.toLowerCase();
                 String command = "/minigame token " + choice;
-                line.append(Text.literal("[" + label + "]").styled(s -> s.withColor(Formatting.GOLD)
+                line.append(Component.literal("[" + label + "]").withStyle(s -> s.withColor(ChatFormatting.GOLD)
                         .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))));
-                line.append(Text.literal(" "));
+                line.append(Component.literal(" "));
             }
         }
-        player.sendMessage(line, false);
+        player.displayClientMessage(line, false);
     }
 
     /** Reading a tome of experience: XP in its skill, uniform in its route's range. Returns true if the item was a tome. */
-    public static boolean readTome(ServerPlayerEntity player, String id) {
+    public static boolean readTome(ServerPlayer player, String id) {
         Object[] tome = TempleTrekking.tome(id);
         if (tome == null) {
             return false;
@@ -670,13 +669,13 @@ public class TempleTrekkingSession extends MinigameSession {
     }
 
     private static int tokenPoints(ItemStack token) {
-        NbtCompound nbt = token.getNbt();
+        CompoundTag nbt = token.getTag();
         return nbt != null && nbt.contains(POINTS_NBT) ? nbt.getInt(POINTS_NBT) : TempleTrekking.MIN_POINTS;
     }
 
     /** "/minigame token <choice>": claims the reward of the token in the player's hand. */
-    public static void claim(ServerPlayerEntity player, String choice) {
-        ItemStack token = player.getMainHandStack();
+    public static void claim(ServerPlayer player, String choice) {
+        ItemStack token = player.getMainHandItem();
         Route r = TempleTrekking.tokenRoute(Inv.idOf(token));
         if (r == null) {
             Msg.game(player, "Hold the reward token you want to use.");
@@ -688,7 +687,7 @@ public class TempleTrekkingSession extends MinigameSession {
             return;
         }
         int pts = tokenPoints(token);
-        token.decrement(1);
+        token.shrink(1);
         if (reward == Reward.TOME) {
             // The skill is chosen at random (one in seven) when the tome is picked; the XP is rolled when it is read.
             Skill skill = TempleTrekking.TOME_SKILLS.get(player.getRandom().nextInt(TempleTrekking.TOME_SKILLS.size()));

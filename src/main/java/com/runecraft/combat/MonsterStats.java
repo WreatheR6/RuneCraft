@@ -4,9 +4,9 @@ import com.runecraft.entity.OsrsMonsterEntity;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.data.Monster;
 import com.runecraft.world.Gielinor;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.registry.Registries;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 
 /** OSRS combat stats for any living entity: from a {@link Monster} definition or derived from vanilla attributes. */
 public record MonsterStats(String name, int combatLevel, int hitpoints, int attack, int strength, int defence,
@@ -101,14 +101,14 @@ public record MonsterStats(String name, int combatLevel, int hitpoints, int atta
         if (entity instanceof OsrsMonsterEntity custom) {
             return custom.stats();
         }
-        Monster m = Monster.byEntity(Registries.ENTITY_TYPE.getId(entity.getType()).toString());
+        Monster m = Monster.byEntity(BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString());
         if (m != null && Gielinor.is(entity)) {
             return from(m);
         }
         // Derive something sensible from vanilla attributes.
         int hp = Math.max(1, Math.round(entity.getMaxHealth()));
-        double dmg = entity.getAttributes().hasAttribute(EntityAttributes.GENERIC_ATTACK_DAMAGE)
-                ? entity.getAttributeValue(EntityAttributes.GENERIC_ATTACK_DAMAGE) : 1.0;
+        double dmg = entity.getAttributes().hasAttribute(Attributes.ATTACK_DAMAGE)
+                ? entity.getAttributeValue(Attributes.ATTACK_DAMAGE) : 1.0;
         int level = Math.max(1, hp / 2 + (int) dmg * 2);
         return new MonsterStats(entity.getName().getString(), level, hp, level, level, level, 1, 1, 0, 4,
                 AttackType.CRUSH, Math.max(1, (int) Math.round(dmg)), m, null);

@@ -11,6 +11,8 @@ import static com.runecraft.osrs.content.bestiary.BestiaryHumKit.*;
 import static com.runecraft.osrs.content.bestiary.Kit.part;
 import static com.runecraft.osrs.content.bestiary.Kit.sym;
 
+import com.runecraft.osrs.content.bestiary.BestiaryHumKit.Fig;
+
 /**
  * Creatures that used to fall back to a generic outfit biped: dedicated OSRS-shaped sculpts (Tormented demons,
  * goraks, werewolves, minotaurs, nagua, animated armour, kalphites, aviansies) and look-alike copies of existing

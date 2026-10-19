@@ -9,16 +9,15 @@ import com.runecraft.osrs.content.minigames.MinigameItems;
 import com.runecraft.osrs.content.minigames.MinigameRules.TitheFarm;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * Tithe Farm in Hosidius: plant the seed for your Farming level (golovanova 34, bologano 54,
@@ -36,7 +35,7 @@ public class TitheFarmSession extends MinigameSession {
     private final Map<UUID, Integer> water = new HashMap<>();
     private final Map<UUID, Integer> delivered = new HashMap<>();
 
-    public TitheFarmSession(int id, int slot, ServerWorld world, String variant) {
+    public TitheFarmSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.TITHE_FARM, id, slot, world, variant);
         java.util.Arrays.fill(type, -1);
     }
@@ -69,7 +68,7 @@ public class TitheFarmSession extends MinigameSession {
     }
 
     @Override
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
+    protected BlockPos spawnPoint(ServerPlayer player, int index) {
         return rel(index % 3 - 1, 1, 11);
     }
 
@@ -88,15 +87,15 @@ public class TitheFarmSession extends MinigameSession {
         int[] p = patchPos(i);
         Block b = type[i] < 0 ? Blocks.AIR : stage[i] == -2 ? Blocks.BROWN_CARPET : stage[i] >= 4 ? Blocks.FLOWERING_AZALEA_LEAVES
                 : stage[i] >= 2 ? Blocks.AZALEA_LEAVES : Blocks.MOSS_CARPET;
-        net.minecraft.block.BlockState state = b.getDefaultState();
-        if (b instanceof net.minecraft.block.LeavesBlock) {
-            state = state.with(net.minecraft.block.LeavesBlock.PERSISTENT, true);
+        net.minecraft.world.level.block.state.BlockState state = b.defaultBlockState();
+        if (b instanceof net.minecraft.world.level.block.LeavesBlock) {
+            state = state.setValue(net.minecraft.world.level.block.LeavesBlock.PERSISTENT, true);
         }
         set(p[0], 2, p[1], state);
     }
 
     @Override
-    protected boolean onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         switch (blockId) {
             case "tithe_seed_table" -> {
                 int s = TitheFarm.seedFor(level(player, Skill.FARMING));
@@ -108,12 +107,12 @@ public class TitheFarmSession extends MinigameSession {
                 Msg.game(player, "You take some " + MinigameItems.TITHE_PLANTS[s] + " seeds.");
             }
             case "tithe_water_barrel" -> {
-                water.put(player.getUuid(), Inv.has(player, "gricollers_can", 1) ? 1000 : 40);
+                water.put(player.getUUID(), Inv.has(player, "gricollers_can", 1) ? 1000 : 40);
                 Msg.game(player, "You fill your watering can.");
             }
             case "tithe_patch" -> patch(player, patchAt(pos));
             case "tithe_sack" -> {
-                int already = delivered.getOrDefault(player.getUuid(), 0);
+                int already = delivered.getOrDefault(player.getUUID(), 0);
                 int fruit = 0;
                 int pts = 0;
                 double bonusXp = 0;
@@ -136,13 +135,13 @@ public class TitheFarmSession extends MinigameSession {
                             : "You have no fruit to deposit.");
                     return true;
                 }
-                int have = MinigameData.of(player).points(player.getUuid(), "tithe_farm");
+                int have = MinigameData.of(player).points(player.getUUID(), "tithe_farm");
                 pts = Math.max(0, Math.min(pts, TitheFarm.MAX_POINTS - have));
                 if (pts > 0) {
                     addPoints(player, MinigameCurrencies.TITHE, pts);
                 }
                 xp(player, Skill.FARMING, bonusXp);
-                delivered.merge(player.getUuid(), fruit, Integer::sum);
+                delivered.merge(player.getUUID(), fruit, Integer::sum);
                 Msg.game(player, "You deposit " + fruit + " fruit and earn " + pts + " points. ("
                         + (already + fruit) + " / " + TitheFarm.SACK_SIZE + " this run)");
             }
@@ -153,7 +152,7 @@ public class TitheFarmSession extends MinigameSession {
         return true;
     }
 
-    private void patch(ServerPlayerEntity player, int i) {
+    private void patch(ServerPlayer player, int i) {
         if (i < 0) {
             return;
         }
@@ -197,12 +196,12 @@ public class TitheFarmSession extends MinigameSession {
             Msg.action(player, "This plant has already been watered.");
             return;
         }
-        int left = water.getOrDefault(player.getUuid(), 0);
+        int left = water.getOrDefault(player.getUUID(), 0);
         if (left <= 0) {
             Msg.game(player, "Your watering can is empty. Fill it at the water barrel.");
             return;
         }
-        water.put(player.getUuid(), left - 1);
+        water.put(player.getUUID(), left - 1);
         watered[i] = true;
         Msg.action(player, "You water the plant.");
     }
@@ -230,19 +229,19 @@ public class TitheFarmSession extends MinigameSession {
     }
 
     @Override
-    protected void onLeave(ServerPlayerEntity player) {
+    protected void onLeave(ServerPlayer player) {
         for (int t = 0; t < 3; t++) {
             Inv.remove(player, MinigameItems.TITHE_PLANTS[t] + "_seed", 1000);
             Inv.remove(player, MinigameItems.TITHE_PLANTS[t] + "_fruit", 1000);
         }
-        MinigameData.of(player).setStat(player.getUuid(), "kc:" + game.id(),
-                MinigameData.of(player).stat(player.getUuid(), "kc:" + game.id()) + delivered.getOrDefault(player.getUuid(), 0));
+        MinigameData.of(player).setStat(player.getUUID(), "kc:" + game.id(),
+                MinigameData.of(player).stat(player.getUUID(), "kc:" + game.id()) + delivered.getOrDefault(player.getUUID(), 0));
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
-        return List.of("Tithe Farm", "Points: " + MinigameData.of(player).points(player.getUuid(), "tithe_farm"),
-                "Fruit deposited: " + delivered.getOrDefault(player.getUuid(), 0),
-                "Watering can: " + water.getOrDefault(player.getUuid(), 0) + " uses");
+    protected List<String> hud(ServerPlayer player) {
+        return List.of("Tithe Farm", "Points: " + MinigameData.of(player).points(player.getUUID(), "tithe_farm"),
+                "Fruit deposited: " + delivered.getOrDefault(player.getUUID(), 0),
+                "Watering can: " + water.getOrDefault(player.getUUID(), 0) + " uses");
     }
 }

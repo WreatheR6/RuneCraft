@@ -16,16 +16,16 @@ import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.passive.VillagerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 
 /** Hooks into vanilla interactions: vanilla stations in Gielinor, selling to shops, and pickpocketing. */
 public final class Interactions {
@@ -34,24 +34,24 @@ public final class Interactions {
 
     public static void register() {
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
-            if (hand != Hand.MAIN_HAND) {
-                return ActionResult.PASS;
+            if (hand != InteractionHand.MAIN_HAND) {
+                return InteractionResult.PASS;
             }
             BlockState state = world.getBlockState(hit.getBlockPos());
             Block block = state.getBlock();
             // Sneak + right-click a shop counter while holding an item: sell it.
-            if (player.isSneaking() && block instanceof StationBlock station && isShop(station.station())) {
-                if (!world.isClient() && player instanceof ServerPlayerEntity sp) {
+            if (player.isShiftKeyDown() && block instanceof StationBlock station && isShop(station.station())) {
+                if (!world.isClientSide() && player instanceof ServerPlayer sp) {
                     sell(sp);
                 }
-                return ActionResult.SUCCESS;
+                return InteractionResult.SUCCESS;
             }
             if (!Gielinor.is(world)) {
-                return ActionResult.PASS;
+                return InteractionResult.PASS;
             }
             MenuType menu = null;
             boolean range = false;
-            ItemStack held = player.getMainHandStack();
+            ItemStack held = player.getMainHandItem();
             if (block == Blocks.CAMPFIRE || block == Blocks.SOUL_CAMPFIRE) {
                 menu = MenuType.COOKING;
             } else if ((block == Blocks.SMOKER || block == Blocks.FURNACE) && isRaw(held)) {
@@ -65,26 +65,26 @@ public final class Interactions {
                 menu = MenuType.SPINNING;
             }
             if (menu == null) {
-                return ActionResult.PASS;
+                return InteractionResult.PASS;
             }
-            if (!world.isClient() && player instanceof ServerPlayerEntity sp) {
+            if (!world.isClientSide() && player instanceof ServerPlayer sp) {
                 MenuService.open(sp, menu, hit.getBlockPos(), range);
             }
-            return ActionResult.SUCCESS;
+            return InteractionResult.SUCCESS;
         });
 
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
-            if (hand != Hand.MAIN_HAND || !(entity instanceof LivingEntity living)) {
-                return ActionResult.PASS;
+            if (hand != InteractionHand.MAIN_HAND || !(entity instanceof LivingEntity living)) {
+                return InteractionResult.PASS;
             }
             Thieving.Pickpocket kind = pickpocketTarget(living);
-            if (kind == null || (entity instanceof VillagerEntity && !player.isSneaking())) {
-                return ActionResult.PASS;
+            if (kind == null || (entity instanceof Villager && !player.isShiftKeyDown())) {
+                return InteractionResult.PASS;
             }
-            if (!world.isClient() && player instanceof ServerPlayerEntity sp) {
+            if (!world.isClientSide() && player instanceof ServerPlayer sp) {
                 ThievingService.pickpocket(sp, living, kind);
             }
-            return ActionResult.SUCCESS;
+            return InteractionResult.SUCCESS;
         });
     }
 
@@ -106,7 +106,7 @@ public final class Interactions {
     }
 
     private static Thieving.Pickpocket pickpocketTarget(LivingEntity entity) {
-        if (entity instanceof VillagerEntity) {
+        if (entity instanceof Villager) {
             return Thieving.Pickpocket.MAN;
         }
         if (entity instanceof OsrsMonsterEntity monster && monster.stats() != null && monster.stats().monster() != null) {
@@ -122,8 +122,8 @@ public final class Interactions {
     }
 
     /** General stores buy items at 40% of their value. */
-    private static void sell(ServerPlayerEntity player) {
-        ItemStack held = player.getMainHandStack();
+    private static void sell(ServerPlayer player) {
+        ItemStack held = player.getMainHandItem();
         // Bank notes sell as the item they stand for.
         ItemDef def = com.runecraft.bank.Notes.isNote(held)
                 ? com.runecraft.osrs.ItemCatalog.get(com.runecraft.bank.Notes.notedId(held)) : ModItems.def(held);
@@ -140,6 +140,6 @@ public final class Interactions {
     }
 
     static String id(Block block) {
-        return Registries.BLOCK.getId(block).toString();
+        return BuiltInRegistries.BLOCK.getKey(block).toString();
     }
 }

@@ -10,15 +10,14 @@ import com.runecraft.osrs.content.minigames.MinigameRules.TearsOfGuthix;
 import com.runecraft.player.Players;
 import com.runecraft.quest.QuestApi;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * Tears of Guthix in the Chasm of Tears: for one game tick per quest point, collect blue tears from
@@ -35,11 +34,11 @@ public class TearsOfGuthixSession extends MinigameSession {
     private int tears;
     private int limit;
 
-    public TearsOfGuthixSession(int id, int slot, ServerWorld world, String variant) {
+    public TearsOfGuthixSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.TEARS_OF_GUTHIX, id, slot, world, variant);
     }
 
-    private static boolean questDone(ServerPlayerEntity player, String quest) {
+    private static boolean questDone(ServerPlayer player, String quest) {
         return ContentRegistry.quest(quest) != null && QuestApi.isComplete(player, quest);
     }
 
@@ -48,22 +47,22 @@ public class TearsOfGuthixSession extends MinigameSession {
     }
 
     /** Entry check: the quest, a week since the last visit and a quest point or 100,000 XP gained since. */
-    public static String requirement(ServerPlayerEntity player) {
+    public static String requirement(ServerPlayer player) {
         if (!questDone(player, "tears_of_guthix")) {
             return "Juna: You must complete the Tears of Guthix quest before you can collect the tears.";
         }
         MinigameData d = MinigameData.of(player);
-        if (d.stat(player.getUuid(), "tog_visits") == 0) {
+        if (d.stat(player.getUUID(), "tog_visits") == 0) {
             return null;
         }
-        int days = today() - d.stat(player.getUuid(), "tog_day");
+        int days = today() - d.stat(player.getUUID(), "tog_day");
         if (days < TearsOfGuthix.DAYS_BETWEEN) {
             return "Juna: Come back in " + (TearsOfGuthix.DAYS_BETWEEN - days) + " day" + (TearsOfGuthix.DAYS_BETWEEN - days > 1 ? "s" : "")
                     + ", adventurer.";
         }
         var data = Players.data(player);
-        boolean qp = data.questPoints() > d.stat(player.getUuid(), "tog_qp");
-        boolean xp = data.skills().totalXp() / 1000 - d.stat(player.getUuid(), "tog_kxp") >= TearsOfGuthix.XP_SINCE_LAST / 1000;
+        boolean qp = data.questPoints() > d.stat(player.getUUID(), "tog_qp");
+        boolean xp = data.skills().totalXp() / 1000 - d.stat(player.getUUID(), "tog_kxp") >= TearsOfGuthix.XP_SINCE_LAST / 1000;
         if (!qp && !xp) {
             return "Juna: Gain a quest point or 100,000 experience before you tell me another story.";
         }
@@ -94,19 +93,19 @@ public class TearsOfGuthixSession extends MinigameSession {
     }
 
     @Override
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
+    protected BlockPos spawnPoint(ServerPlayer player, int index) {
         return rel(0, 1, 2);
     }
 
     @Override
     protected void start() {
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             limit = TearsOfGuthix.ticks(Players.data(p).questPoints());
             MinigameData d = MinigameData.of(p);
-            d.incrementStat(p.getUuid(), "tog_visits");
-            d.setStat(p.getUuid(), "tog_day", today());
-            d.setStat(p.getUuid(), "tog_qp", Players.data(p).questPoints());
-            d.setStat(p.getUuid(), "tog_kxp", (int) Math.min(Integer.MAX_VALUE, Players.data(p).skills().totalXp() / 1000));
+            d.incrementStat(p.getUUID(), "tog_visits");
+            d.setStat(p.getUUID(), "tog_day", today());
+            d.setStat(p.getUUID(), "tog_qp", Players.data(p).questPoints());
+            d.setStat(p.getUUID(), "tog_kxp", (int) Math.min(Integer.MAX_VALUE, Players.data(p).skills().totalXp() / 1000));
             Msg.game(p, "Juna lets you into the chasm with a stone bowl. Collect the blue tears, avoid the green! (" + limit + " ticks)");
         }
         moveStreams();
@@ -125,7 +124,7 @@ public class TearsOfGuthixSession extends MinigameSession {
     }
 
     @Override
-    protected boolean onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         if (!blockId.equals("tog_weeping_wall")) {
             return false;
         }
@@ -134,7 +133,7 @@ public class TearsOfGuthixSession extends MinigameSession {
             return true;
         }
         repeat(player, p -> {
-            if (p.getBlockPos().getSquaredDistance(pos) > 9 || stream[wall] == 0) {
+            if (p.blockPosition().distSqr(pos) > 9 || stream[wall] == 0) {
                 return false;
             }
             if (stream[wall] == 1) {
@@ -158,7 +157,7 @@ public class TearsOfGuthixSession extends MinigameSession {
             for (int i = 0; i < WALLS; i++) {
                 if (stream[i] != 0) {
                     BlockPos at = rel(wallX(i), 2, -6);
-                    world.spawnParticles(stream[i] == 1 ? ParticleTypes.FALLING_WATER : ParticleTypes.FALLING_SPORE_BLOSSOM,
+                    world.sendParticles(stream[i] == 1 ? ParticleTypes.FALLING_WATER : ParticleTypes.FALLING_SPORE_BLOSSOM,
                             at.getX() + 0.5, at.getY() + 0.5, at.getZ() + 0.5, 6, 0.2, 0.4, 0.2, 0);
                 }
             }
@@ -170,7 +169,7 @@ public class TearsOfGuthixSession extends MinigameSession {
 
     @Override
     protected void onEnd(boolean success) {
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             SkillSet skills = Players.data(p).skills();
             Skill skill = TearsOfGuthix.skill(skills::xp, s -> switch (s) {
                 case RUNECRAFT -> questDone(p, "RUNE_MYSTERIES");
@@ -188,7 +187,7 @@ public class TearsOfGuthixSession extends MinigameSession {
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
+    protected List<String> hud(ServerPlayer player) {
         return List.of("Tears of Guthix", "Tears: " + tears, "Time left: " + time(Math.max(0, limit - ticks)));
     }
 }

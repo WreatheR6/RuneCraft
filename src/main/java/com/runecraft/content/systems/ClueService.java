@@ -15,18 +15,17 @@ import com.runecraft.osrs.content.systems.Teleports;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
 import java.util.List;
 import java.util.Locale;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
 
 /** Treasure trails: reading clues, digging, talking to NPCs, reward caskets and clue drops. */
 public final class ClueService {
@@ -58,7 +57,7 @@ public final class ClueService {
         return i < steps.size() ? steps.get(i) : null;
     }
 
-    public static void read(ServerPlayerEntity p, Tier tier) {
+    public static void read(ServerPlayer p, Tier tier) {
         SysState.SysPlayer sp = SysState.of(p);
         List<Step> steps = trail(sp, tier);
         int index = (int) sp.clues.get(tier)[1];
@@ -103,7 +102,7 @@ public final class ClueService {
         return ItemCatalog.get("spade") != null;
     }
 
-    static void action(ServerPlayerEntity p, String action, java.util.Map<String, String> fields) {
+    static void action(ServerPlayer p, String action, java.util.Map<String, String> fields) {
         if (action.startsWith("hint:")) {
             try {
                 Step step = current(SysState.of(p), Tier.valueOf(action.substring(5)));
@@ -139,7 +138,7 @@ public final class ClueService {
     }
 
     /** Tries to dig for a clue of the tier at the player's position. Returns true on success. */
-    public static boolean dig(ServerPlayerEntity p, Tier tier, boolean loud) {
+    public static boolean dig(ServerPlayer p, Tier tier, boolean loud) {
         if (!Inv.has(p, tier.scrollItem(), 1)) {
             return false;
         }
@@ -162,15 +161,15 @@ public final class ClueService {
             }
             return false;
         }
-        ((ServerWorld) p.getWorld()).spawnParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, p.getX(), p.getY(), p.getZ(), 8, 0.3, 0.1, 0.3, 0.01);
-        p.getWorld().playSound(null, p.getBlockPos(), SoundEvents.ITEM_SHOVEL_FLATTEN, SoundCategory.PLAYERS, 1f, 1f);
+        ((ServerLevel) p.level()).sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, p.getX(), p.getY(), p.getZ(), 8, 0.3, 0.1, 0.3, 0.01);
+        p.level().playSound(null, p.blockPosition(), SoundEvents.SHOVEL_FLATTEN, SoundSource.PLAYERS, 1f, 1f);
         Msg.action(p, "You dig a hole...");
         advance(p, tier);
         return true;
     }
 
     /** Performs the current emote step: right place, and the required item carried or worn. */
-    static void emote(ServerPlayerEntity p, Tier tier) {
+    static void emote(ServerPlayer p, Tier tier) {
         if (!Inv.has(p, tier.scrollItem(), 1)) {
             return;
         }
@@ -186,10 +185,10 @@ public final class ClueService {
             return;
         }
         if (step.item() != null && !Inv.has(p, step.item(), 1) && !sp.wearing(step.item())
-                && !Inv.idOf(p.getEquippedStack(net.minecraft.entity.EquipmentSlot.HEAD)).equals(step.item())
-                && !Inv.idOf(p.getEquippedStack(net.minecraft.entity.EquipmentSlot.CHEST)).equals(step.item())
-                && !Inv.idOf(p.getEquippedStack(net.minecraft.entity.EquipmentSlot.LEGS)).equals(step.item())
-                && !Inv.idOf(p.getEquippedStack(net.minecraft.entity.EquipmentSlot.FEET)).equals(step.item())) {
+                && !Inv.idOf(p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD)).equals(step.item())
+                && !Inv.idOf(p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.CHEST)).equals(step.item())
+                && !Inv.idOf(p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.LEGS)).equals(step.item())
+                && !Inv.idOf(p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.FEET)).equals(step.item())) {
             ItemDef d = ItemCatalog.get(step.item());
             Msg.game(p, "Uri appears, then shakes his head: you need " + (d == null ? step.item() : Msg.article(d.name().toLowerCase(Locale.ROOT)))
                     + " with you.");
@@ -210,7 +209,7 @@ public final class ClueService {
     }
 
     /** Talking to an NPC: completes talk steps. Returns true if the interaction was used by a clue. */
-    public static boolean talk(ServerPlayerEntity p, QuestNpcEntity npc) {
+    public static boolean talk(ServerPlayer p, QuestNpcEntity npc) {
         SysState.SysPlayer sp = SysState.of(p);
         for (Tier tier : Tier.values()) {
             if (!Inv.has(p, tier.scrollItem(), 1) || !sp.clues.containsKey(tier)) {
@@ -293,11 +292,11 @@ public final class ClueService {
     }
 
     /** The player's saved puzzle, or null. */
-    private static Puzzle loadPuzzle(ServerPlayerEntity p) {
+    private static Puzzle loadPuzzle(ServerPlayer p) {
         return Puzzle.decode(SysState.of(p).cluePuzzle);
     }
 
-    private static void savePuzzle(ServerPlayerEntity p, Puzzle puzzle) {
+    private static void savePuzzle(ServerPlayer p, Puzzle puzzle) {
         SysState.of(p).cluePuzzle = puzzle == null ? "" : puzzle.encode();
     }
 
@@ -308,7 +307,7 @@ public final class ClueService {
     }
 
     /** Talking to the NPC of a puzzle step: hands over the box, or takes it back solved. Returns true to advance. */
-    private static boolean puzzleTalk(ServerPlayerEntity p, Tier tier, Step step, String speaker) {
+    private static boolean puzzleTalk(ServerPlayer p, Tier tier, Step step, String speaker) {
         String box = step.item();
         Puzzle puzzle = loadPuzzle(p);
         if (puzzle != null && puzzle.tier == tier && puzzle.solved() && Inv.has(p, box, 1)) {
@@ -328,7 +327,7 @@ public final class ClueService {
         return false;
     }
 
-    private static Puzzle puzzleFor(ServerPlayerEntity p, Tier tier, String box) {
+    private static Puzzle puzzleFor(ServerPlayer p, Tier tier, String box) {
         Puzzle puzzle = loadPuzzle(p);
         boolean light = box.equals(CluePuzzles.LIGHT_BOX);
         if (puzzle == null || puzzle.tier != tier || (puzzle.lights != null) != light
@@ -342,7 +341,7 @@ public final class ClueService {
     }
 
     /** Using a puzzle box or light box item: opens the puzzle of the clue step that handed it over. */
-    public static boolean useBox(ServerPlayerEntity p, String box) {
+    public static boolean useBox(ServerPlayer p, String box) {
         SysState.SysPlayer sp = SysState.of(p);
         for (Tier tier : Tier.values()) {
             if (!Inv.has(p, tier.scrollItem(), 1) || !sp.clues.containsKey(tier)) {
@@ -359,7 +358,7 @@ public final class ClueService {
         return true;
     }
 
-    private static void openPuzzle(ServerPlayerEntity p, Puzzle puzzle) {
+    private static void openPuzzle(ServerPlayer p, Puzzle puzzle) {
         if (puzzle.slider != null) {
             int n = puzzle.slider.size();
             SysNet.Screen s = new SysNet.Screen("grid" + n + "_puzzle", "Puzzle box");
@@ -386,7 +385,7 @@ public final class ClueService {
         s.send(p);
     }
 
-    static void puzzleAction(ServerPlayerEntity p, String action, java.util.Map<String, String> fields) {
+    static void puzzleAction(ServerPlayer p, String action, java.util.Map<String, String> fields) {
         Puzzle puzzle = loadPuzzle(p);
         if (puzzle == null || action.length() < 3) {
             return;
@@ -409,11 +408,11 @@ public final class ClueService {
         openPuzzle(p, puzzle);
     }
 
-    private static void say(ServerPlayerEntity p, String speaker, String line) {
-        p.sendMessage(Text.literal(speaker + ": ").formatted(Formatting.YELLOW).append(Text.literal(line).formatted(Formatting.WHITE)), false);
+    private static void say(ServerPlayer p, String speaker, String line) {
+        p.displayClientMessage(Component.literal(speaker + ": ").withStyle(ChatFormatting.YELLOW).append(Component.literal(line).withStyle(ChatFormatting.WHITE)), false);
     }
 
-    static void advance(ServerPlayerEntity p, Tier tier) {
+    static void advance(ServerPlayer p, Tier tier) {
         SysState.SysPlayer sp = SysState.of(p);
         long[] prog = sp.clues.get(tier);
         List<Step> steps = trail(sp, tier);
@@ -425,8 +424,8 @@ public final class ClueService {
             int n = sp.cluesCompleted.merge(tier, 1, Integer::sum);
             com.runecraft.player.Players.data(p).incrementKillCount("clue_" + tier.id());
             Msg.action(p, "You've found a reward casket!");
-            p.sendMessage(Text.literal("You have completed " + n + " " + tier.id() + " Treasure Trail" + (n == 1 ? "" : "s") + ".")
-                    .formatted(Formatting.GOLD), false);
+            p.displayClientMessage(Component.literal("You have completed " + n + " " + tier.id() + " Treasure Trail" + (n == 1 ? "" : "s") + ".")
+                    .withStyle(ChatFormatting.GOLD), false);
             DiaryService.onClue(p, tier);
         } else {
             Msg.action(p, "You've found another clue!");
@@ -435,8 +434,8 @@ public final class ClueService {
     }
 
     /** Opens a reward casket. */
-    public static void openCasket(ServerPlayerEntity p, ItemStack stack, Tier tier) {
-        stack.decrement(1);
+    public static void openCasket(ServerPlayer p, ItemStack stack, Tier tier) {
+        stack.shrink(1);
         List<ClueRewards.Reward> rewards = ClueRewards.roll(tier, new java.util.Random(p.getRandom().nextLong()));
         long value = 0;
         SysNet.Screen s = new SysNet.Screen("casket", "Treasure trail reward (" + tier.id() + ")");
@@ -459,7 +458,7 @@ public final class ClueService {
 
     // ---------------- Drops ----------------
 
-    public static void onKill(ServerPlayerEntity p, LivingEntity entity, MonsterStats stats) {
+    public static void onKill(ServerPlayer p, LivingEntity entity, MonsterStats stats) {
         if (!Gielinor.is(entity) || stats == null) {
             return;
         }
@@ -485,14 +484,14 @@ public final class ClueService {
                 continue;
             }
             if (p.getRandom().nextInt(oneIn) == 0) {
-                entity.dropStack(Inv.stack(tier.scrollItem(), 1));
+                entity.spawnAtLocation(Inv.stack(tier.scrollItem(), 1));
                 Msg.red(p, "A clue scroll (" + tier.id() + ") has dropped!");
                 break;
             }
         }
         Spellbooks.Head head = Spellbooks.headFor(stats.name());
         if (head != null && ItemCatalog.get(head.id()) != null && p.getRandom().nextInt(head.dropRate()) == 0) {
-            entity.dropStack(Inv.stack(head.id(), 1));
+            entity.spawnAtLocation(Inv.stack(head.id(), 1));
         }
     }
 }

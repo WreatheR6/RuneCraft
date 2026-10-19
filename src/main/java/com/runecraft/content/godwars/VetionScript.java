@@ -3,17 +3,16 @@ package com.runecraft.content.godwars;
 import com.runecraft.boss.DataBossEntity;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.util.Msg;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LightningEntity;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LightningBolt;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Vet'ion and Calvar'ion. At half health in each form the skeleton summons two hellhounds and is
@@ -26,7 +25,7 @@ final class VetionScript extends GwdScript {
     private final boolean calvarion;
     private int form = 1;
     private boolean houndsSummoned;
-    private final List<MobEntity> hounds = new ArrayList<>();
+    private final List<Mob> hounds = new ArrayList<>();
 
     VetionScript(boolean calvarion) {
         this.calvarion = calvarion;
@@ -43,7 +42,7 @@ final class VetionScript extends GwdScript {
     }
 
     @Override
-    public int modifyIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+    public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
         if (form == 1 && damage >= boss.getHealth()) {
             rebirth(boss);
             return 0;
@@ -55,11 +54,11 @@ final class VetionScript extends GwdScript {
         form = 2;
         houndsSummoned = false;
         boss.setHealth(boss.getMaxHealth());
-        boss.setCustomName(Text.literal(name() + " Reborn"));
+        boss.setCustomName(Component.literal(name() + " Reborn"));
         shout(boss, "Do it again!!");
-        ServerWorld world = (ServerWorld) boss.getWorld();
-        world.spawnParticles(ParticleTypes.SOUL_FIRE_FLAME, boss.getX(), boss.getY() + 1.5, boss.getZ(), 60, 0.8, 1.2, 0.8, 0.05);
-        for (ServerPlayerEntity p : players(boss, 24)) {
+        ServerLevel world = (ServerLevel) boss.level();
+        world.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, boss.getX(), boss.getY() + 1.5, boss.getZ(), 60, 0.8, 1.2, 0.8, 0.05);
+        for (ServerPlayer p : players(boss, 24)) {
             Msg.red(p, name() + " rises again, wreathed in flame!");
         }
     }
@@ -75,27 +74,27 @@ final class VetionScript extends GwdScript {
             hounds.add(spawnMinion(boss, hound, -2, 0));
         }
         // Extra lightning around his target every few ticks.
-        if (gameTick % 9 == 0 && boss.getTarget() instanceof ServerPlayerEntity target && target.squaredDistanceTo(boss) < 24 * 24) {
-            ServerWorld world = (ServerWorld) boss.getWorld();
+        if (gameTick % 9 == 0 && boss.getTarget() instanceof ServerPlayer target && target.distanceToSqr(boss) < 24 * 24) {
+            ServerLevel world = (ServerLevel) boss.level();
             for (int i = 0; i < 2; i++) {
                 double x = target.getX() + boss.getRandom().nextInt(5) - 2;
                 double z = target.getZ() + boss.getRandom().nextInt(5) - 2;
-                Vec3d pos = new Vec3d(x, target.getY(), z);
+                Vec3 pos = new Vec3(x, target.getY(), z);
                 strike(boss, pos, 3, calvarion ? 22 : 30, 1.2, ParticleTypes.ELECTRIC_SPARK, ParticleTypes.FLASH, (p, dmg) -> {
                 });
-                LightningEntity bolt = EntityType.LIGHTNING_BOLT.create(world);
+                LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(world);
                 if (bolt != null) {
-                    bolt.setCosmetic(true);
-                    bolt.refreshPositionAfterTeleport(x, target.getY(), z);
+                    bolt.setVisualOnly(true);
+                    bolt.moveTo(x, target.getY(), z);
                     pendingBolts.add(new Bolt(bolt, gameTick + 3));
                 }
             }
         }
         if (!pendingBolts.isEmpty()) {
-            ServerWorld world = (ServerWorld) boss.getWorld();
+            ServerLevel world = (ServerLevel) boss.level();
             pendingBolts.removeIf(b -> {
                 if (b.due() <= gameTick) {
-                    world.spawnEntity(b.bolt());
+                    world.addFreshEntity(b.bolt());
                     return true;
                 }
                 return false;
@@ -104,15 +103,15 @@ final class VetionScript extends GwdScript {
     }
 
     /** Cosmetic lightning that lands together with its strike. */
-    private record Bolt(LightningEntity bolt, long due) {
+    private record Bolt(LightningBolt bolt, long due) {
     }
 
     private final List<Bolt> pendingBolts = new ArrayList<>();
 
     @Override
-    public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
+    public void onDeath(DataBossEntity boss, ServerPlayer killer) {
         shout(boss, "Urk! I... failed...");
-        for (MobEntity h : hounds) {
+        for (Mob h : hounds) {
             if (h != null && h.isAlive()) {
                 h.discard();
             }

@@ -12,12 +12,12 @@ import com.runecraft.quest.QuestScripts;
 import com.runecraft.skill.Stun;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Msg;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
 
 /** Pickpocketing module NPCs, thieving chests and extra stalls. */
 final class ThievingHooks {
@@ -38,7 +38,7 @@ final class ThievingHooks {
     private static final java.util.Map<java.util.UUID, long[]> KNOCKED_OUT = new java.util.HashMap<>();
 
     /** The blackjack seller in Pollnivneach: sells an ordinary willow blackjack once The Feud is done. */
-    private static void blackjackSeller(ServerPlayerEntity player) {
+    private static void blackjackSeller(ServerPlayer player) {
         if (!com.runecraft.quest.QuestApi.isComplete(player, "the_feud")) {
             com.runecraft.quest.QuestApi.say(player, "Blackjack seller", "Blackjacks? Never heard of 'em. Maybe ask around town first.");
             return;
@@ -54,17 +54,17 @@ final class ThievingHooks {
         ServerNetworking.sync(player);
     }
 
-    private static void pickpocket(ServerPlayerEntity player, QuestNpcEntity npc, ThievingData.Target t) {
+    private static void pickpocket(ServerPlayer player, QuestNpcEntity npc, ThievingData.Target t) {
         long now = com.runecraft.action.ActionManager.gameTick();
-        long[] ko = KNOCKED_OUT.get(npc.getUuid());
+        long[] ko = KNOCKED_OUT.get(npc.getUUID());
         boolean unconscious = ko != null && ko[0] > now && ko[1] > 0;
         if (ko != null && !unconscious) {
-            KNOCKED_OUT.remove(npc.getUuid());
+            KNOCKED_OUT.remove(npc.getUUID());
         }
         // Blackjacking: with a blackjack in hand, knock the target out first; while it is out cold
         // (two pickpockets) the pickpocket always succeeds.
         if (!unconscious && ThievingData.BLACKJACK_TARGETS.contains(t.npcId())
-                && ThievingData.BLACKJACKS.contains(com.runecraft.util.Inv.idOf(player.getMainHandStack()))) {
+                && ThievingData.BLACKJACKS.contains(com.runecraft.util.Inv.idOf(player.getMainHandItem()))) {
             knockOut(player, npc, t, now);
             return;
         }
@@ -86,7 +86,7 @@ final class ThievingHooks {
         }, unconscious);
     }
 
-    private static void knockOut(ServerPlayerEntity player, QuestNpcEntity npc, ThievingData.Target t, long now) {
+    private static void knockOut(ServerPlayer player, QuestNpcEntity npc, ThievingData.Target t, long now) {
         if (!Stun.check(player)) {
             return;
         }
@@ -97,14 +97,14 @@ final class ThievingHooks {
         if (!SkillingUtil.need(player, Skill.THIEVING, t.level(), "knock out the " + SkillingUtil.lower(t.name()))) {
             return;
         }
-        player.swingHand(Hand.MAIN_HAND, true);
+        player.swing(InteractionHand.MAIN_HAND, true);
         String who = SkillingUtil.lower(t.name());
         if (player.getRandom().nextDouble() < ThievingData.knockoutChance(t, SkillingUtil.level(player, Skill.THIEVING))) {
-            KNOCKED_OUT.put(npc.getUuid(), new long[]{now + ThievingData.KNOCKOUT_TICKS, 2});
+            KNOCKED_OUT.put(npc.getUUID(), new long[]{now + ThievingData.KNOCKOUT_TICKS, 2});
             Msg.action(player, "You smack the " + who + " over the head and render them unconscious.");
         } else {
             Msg.game(player, "Your blow only glances off the " + who + "'s head.");
-            npc.swingHand(Hand.MAIN_HAND);
+            npc.swing(InteractionHand.MAIN_HAND);
             com.runecraft.combat.CombatHandler.applyDamage(npc, player, Math.max(1, t.stunDamage()));
         }
     }
@@ -113,9 +113,9 @@ final class ThievingHooks {
     private static final java.util.Map<java.util.UUID, Long> HOUSE_OPEN = new java.util.HashMap<>();
 
     /** True if the player is inside a Civitas house: a house key lets them in for a few minutes (and is used up). */
-    private static boolean inHouse(ServerPlayerEntity player) {
+    private static boolean inHouse(ServerPlayer player) {
         long now = com.runecraft.action.ActionManager.gameTick();
-        Long until = HOUSE_OPEN.get(player.getUuid());
+        Long until = HOUSE_OPEN.get(player.getUUID());
         if (until != null && until > now) {
             return true;
         }
@@ -124,16 +124,16 @@ final class ThievingHooks {
             return false;
         }
         com.runecraft.util.Inv.remove(player, ThievingData.HOUSE_KEY, 1);
-        HOUSE_OPEN.put(player.getUuid(), now + ThievingData.HOUSE_VISIT_TICKS);
+        HOUSE_OPEN.put(player.getUUID(), now + ThievingData.HOUSE_VISIT_TICKS);
         Msg.game(player, "You unlock the house with your key. Better be quick before the owner gets back.");
         return true;
     }
 
-    private static void steal(ServerPlayerEntity player, BlockPos pos, ThievingData.Container c) {
+    private static void steal(ServerPlayer player, BlockPos pos, ThievingData.Container c) {
         if (!Stun.check(player)) {
             return;
         }
-        ServerWorld world = (ServerWorld) player.getWorld();
+        ServerLevel world = (ServerLevel) player.level();
         if (GatheringHooks.depleted(world, pos)) {
             Msg.game(player, c.chest() ? "The chest is empty." : "The stall is empty.");
             return;
@@ -154,7 +154,7 @@ final class ThievingHooks {
             Msg.game(player, "You need " + Msg.article(SkillingUtil.lower(SkillingUtil.name(key))) + " to open this chest.");
             return;
         }
-        player.swingHand(Hand.MAIN_HAND, true);
+        player.swing(InteractionHand.MAIN_HAND, true);
         double chance = ThievingData.openChance(c.blockId(), SkillingUtil.level(player, Skill.THIEVING),
                 com.runecraft.util.Inv.has(player, "lockpick", 1));
         if (player.getRandom().nextDouble() >= chance) {
@@ -166,7 +166,7 @@ final class ThievingHooks {
                     BlockPos out = com.runecraft.world.Gielinor.safeSpot(world,
                             com.runecraft.osrs.GielinorMap.toBlockX(ThievingData.SOUL_CHEST_TRAP_EXIT[0]),
                             com.runecraft.osrs.GielinorMap.toBlockZ(ThievingData.SOUL_CHEST_TRAP_EXIT[1]));
-                    player.teleport(world, out.getX() + 0.5, out.getY(), out.getZ() + 0.5, player.getYaw(), player.getPitch());
+                    player.teleportTo(world, out.getX() + 0.5, out.getY(), out.getZ() + 0.5, player.getYRot(), player.getXRot());
                     return;
                 }
                 com.runecraft.combat.CombatHandler.applyDamage(null, player, 2);
@@ -179,7 +179,7 @@ final class ThievingHooks {
         }
         if (c.chest()) {
             Msg.action(player, "You search the chest for traps... You find a trap on the chest and disable it.");
-            world.playSound(null, pos, SoundEvents.BLOCK_CHEST_OPEN, SoundCategory.BLOCKS, 1f, 1f);
+            world.playSound(null, pos, SoundEvents.CHEST_OPEN, SoundSource.BLOCKS, 1f, 1f);
         }
         SkillingUtil.giveAll(player, c.always(), player.getRandom());
         SkillingUtil.roll(player, c.table(), player.getRandom());

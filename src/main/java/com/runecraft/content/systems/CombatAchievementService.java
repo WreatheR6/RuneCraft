@@ -28,16 +28,6 @@ import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -46,6 +36,15 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Tracks Combat Achievement tasks: kill counts (bosses and minigame completions) are polled, regular monster kills
@@ -78,10 +77,10 @@ public final class CombatAchievementService {
         /** Delve runs: the fight key of the boss being delved (its hits count as the target's). */
         String target;
         /** Where the player stood last tick (tiles walked). */
-        Vec3d pos;
+        Vec3 pos;
         /** Fights: the creature first engaged and where it stood then ("without the boss ever moving"). */
         LivingEntity targetEntity;
-        Vec3d targetStart;
+        Vec3 targetStart;
         /** Fights: the game tick of the player's latest attack still to be compared with the target's attack tick, and on whom. */
         long pendingAttackTick = -1;
         int pendingAttackMob;
@@ -100,7 +99,7 @@ public final class CombatAchievementService {
     /** A kill streak of one task: kills so far and where the last one happened. */
     private static final class Streak {
         int count;
-        Vec3d anchor;
+        Vec3 anchor;
         String world;
     }
 
@@ -137,7 +136,7 @@ public final class CombatAchievementService {
     public static void register() {
         CombatHooks.addModifier(new CombatHooks.PlayerAttackModifier() {
             @Override
-            public int afterRoll(ServerPlayerEntity player, LivingEntity target, AttackType type, int damage) {
+            public int afterRoll(ServerPlayer player, LivingEntity target, AttackType type, int damage) {
                 onAttack(player, target, type, damage);
                 return damage;
             }
@@ -152,21 +151,21 @@ public final class CombatAchievementService {
      * A boss script reports something the fight's tasks check with {@code flag=}/{@code noflag=} (a grub absorbed, a
      * kill during an exposed phase...): it goes on the player's current fight and, on a delve run, on the run.
      */
-    public static void flag(ServerPlayerEntity p, String flag) {
+    public static void flag(ServerPlayer p, String flag) {
         for (Tracker t : trackers(p)) {
             t.m.flags.add(flag);
         }
     }
 
     /** Takes a flag back (a condition that only holds for a while, e.g. the Giant Mole having just resurfaced). */
-    public static void unflag(ServerPlayerEntity p, String flag) {
+    public static void unflag(ServerPlayer p, String flag) {
         for (Tracker t : trackers(p)) {
             t.m.flags.remove(flag);
         }
     }
 
     /** Counts something a script observed for the player's fight and run (burrows, souls negated...). */
-    public static void count(ServerPlayerEntity p, String key, int n) {
+    public static void count(ServerPlayer p, String key, int n) {
         for (Tracker t : trackers(p)) {
             t.m.count(key, n);
         }
@@ -175,35 +174,35 @@ public final class CombatAchievementService {
     /** Range within which players count as part of a boss's fight for team-wide flags. */
     private static final double SCRIPT_RANGE = 32;
 
-    private static List<ServerPlayerEntity> near(LivingEntity source) {
-        if (!(source.getWorld() instanceof net.minecraft.server.world.ServerWorld world)) {
+    private static List<ServerPlayer> near(LivingEntity source) {
+        if (!(source.level() instanceof net.minecraft.server.level.ServerLevel world)) {
             return List.of();
         }
-        return world.getPlayers(o -> o.isAlive() && !o.isSpectator() && o.squaredDistanceTo(source) < SCRIPT_RANGE * SCRIPT_RANGE);
+        return world.getPlayers(o -> o.isAlive() && !o.isSpectator() && o.distanceToSqr(source) < SCRIPT_RANGE * SCRIPT_RANGE);
     }
 
     /** {@link #flag} for every player fighting near a boss ("without anyone..." conditions). */
     public static void flagNear(LivingEntity source, String flag) {
-        for (ServerPlayerEntity p : near(source)) {
+        for (ServerPlayer p : near(source)) {
             flag(p, flag);
         }
     }
 
     public static void unflagNear(LivingEntity source, String flag) {
-        for (ServerPlayerEntity p : near(source)) {
+        for (ServerPlayer p : near(source)) {
             unflag(p, flag);
         }
     }
 
     public static void countNear(LivingEntity source, String key) {
-        for (ServerPlayerEntity p : near(source)) {
+        for (ServerPlayer p : near(source)) {
             count(p, key, 1);
         }
     }
 
     /** Attack key of the latest damaging hit the player took ("mechanic" when it had no name). */
-    public static String lastHitAttack(ServerPlayerEntity p) {
-        return LAST_HIT.getOrDefault(p.getUuid(), "mechanic");
+    public static String lastHitAttack(ServerPlayer p) {
+        return LAST_HIT.getOrDefault(p.getUUID(), "mechanic");
     }
 
     /** The last attack of each monster, for "the same attack twice in a row" conditions (keyed by entity id). */
@@ -213,7 +212,7 @@ public final class CombatAchievementService {
      * A monster or boss used an attack (hit or not): counted as "used:" + attack for everyone fighting it, and flagged
      * "repeat:" + attack when it used the same attack twice in a row.
      */
-    private static void bossAttack(OsrsMonsterEntity mob, ServerPlayerEntity target, com.runecraft.osrs.content.AttackDef attack) {
+    private static void bossAttack(OsrsMonsterEntity mob, ServerPlayer target, com.runecraft.osrs.content.AttackDef attack) {
         if (attack == null || attack.name() == null) {
             return;
         }
@@ -230,8 +229,8 @@ public final class CombatAchievementService {
         if (target != null) {
             engage(target, mob);
         }
-        for (ServerPlayerEntity p : near(mob)) {
-            Tracker f = FIGHTS.get(p.getUuid());
+        for (ServerPlayer p : near(mob)) {
+            Tracker f = FIGHTS.get(p.getUUID());
             if (f == null || fight == null || !f.key.equals(fight)) {
                 continue;
             }
@@ -256,7 +255,7 @@ public final class CombatAchievementService {
     }
 
     private static String fightKey(LivingEntity e) {
-        if (e == null || e instanceof ServerPlayerEntity) {
+        if (e == null || e instanceof ServerPlayer) {
             return null;
         }
         String boss = bossId(e);
@@ -277,31 +276,31 @@ public final class CombatAchievementService {
         if (e == null) {
             return "";
         }
-        if (e instanceof ServerPlayerEntity pl) {
+        if (e instanceof ServerPlayer pl) {
             return pl.getName().getString().toLowerCase(Locale.ROOT);
         }
         return MonsterStats.of(e).name().toLowerCase(Locale.ROOT);
     }
 
     /** Starts or continues the fight with an entity; a different opponent starts a new fight. */
-    private static Tracker engage(ServerPlayerEntity p, LivingEntity other) {
+    private static Tracker engage(ServerPlayer p, LivingEntity other) {
         String key = fightKey(other);
         if (key == null) {
             return null;
         }
         long now = SysTicks.now();
         if (key.equals("barrows_brother")) {
-            Tracker run = BARROWS.get(p.getUuid());
+            Tracker run = BARROWS.get(p.getUUID());
             if (run == null) {
                 run = new Tracker(CombatAchievements.BARROWS_RUN, now);
                 run.target = key;
                 run.kcAtStart = Players.data(p).killCount("barrows_chests");
                 start(p, run);
-                BARROWS.put(p.getUuid(), run);
+                BARROWS.put(p.getUUID(), run);
             }
             run.last = now;
         }
-        Tracker f = FIGHTS.get(p.getUuid());
+        Tracker f = FIGHTS.get(p.getUUID());
         if (f != null && !f.key.equals(key) && !f.key.startsWith("kill:")) {
             // A boss fight carries on while its minions, bodyguards or spawns join in.
             f.last = now;
@@ -312,9 +311,9 @@ public final class CombatAchievementService {
             f = new Tracker(key, now);
             f.kcAtStart = bossKc(p, key);
             f.targetEntity = other;
-            f.targetStart = other.getPos();
+            f.targetStart = other.position();
             start(p, f);
-            for (Kill k : RECENT.getOrDefault(p.getUuid(), List.of())) {
+            for (Kill k : RECENT.getOrDefault(p.getUUID(), List.of())) {
                 if (now - k.end() <= CombatAchievements.FIGHT_TIMEOUT_TICKS) {
                     f.m.killed(k.key());
                 }
@@ -328,23 +327,23 @@ public final class CombatAchievementService {
                     Tracker run = new Tracker("delve:" + key, now);
                     run.target = key;
                     start(p, run);
-                    DELVES.put(p.getUuid(), run);
+                    DELVES.put(p.getUUID(), run);
                 }
             }
             RaidInstance raid = RaidManager.of(p);
             if (raid != null) {
                 f.raid = raid;
                 f.raidDeathsAtStart = raid.totalDeaths();
-                f.myRaidDeathsAtStart = raid.deaths(p.getUuid());
+                f.myRaidDeathsAtStart = raid.deaths(p.getUUID());
             }
-            FIGHTS.put(p.getUuid(), f);
+            FIGHTS.put(p.getUUID(), f);
         }
         f.last = now;
         return f;
     }
 
     /** The starting state of a fight or run. */
-    private static void start(ServerPlayerEntity p, Tracker t) {
+    private static void start(ServerPlayer p, Tracker t) {
         PlayerData d = Players.data(p);
         t.prayer = d.prayerPoints();
         if (t.prayer > 0) {
@@ -354,18 +353,18 @@ public final class CombatAchievementService {
         t.m.maxHp = (int) Math.ceil(p.getHealth());
         t.m.minHp = t.m.maxHp;
         t.m.book = SysState.of(p).book.name();
-        t.pos = p.getPos();
+        t.pos = p.position();
         t.m.gear(worn(p));
         for (Prayer pr : d.activePrayers()) {
             t.m.prayersEver.add(pr.name());
         }
     }
 
-    private static int playersNear(ServerPlayerEntity p) {
-        return p.getServerWorld().getPlayers(o -> o.isAlive() && !o.isSpectator() && o.squaredDistanceTo(p) < GROUP_RANGE * GROUP_RANGE).size();
+    private static int playersNear(ServerPlayer p) {
+        return p.serverLevel().getPlayers(o -> o.isAlive() && !o.isSpectator() && o.distanceToSqr(p) < GROUP_RANGE * GROUP_RANGE).size();
     }
 
-    private static boolean protectedFrom(ServerPlayerEntity p, AttackType style) {
+    private static boolean protectedFrom(ServerPlayer p, AttackType style) {
         PlayerData d = Players.data(p);
         if (style == null) {
             Set<Prayer> active = d.activePrayers();
@@ -380,7 +379,7 @@ public final class CombatAchievementService {
     }
 
     /** Kill count of everything that counts as a fight key's boss (main id plus forms/partners). */
-    private static int bossKc(ServerPlayerEntity p, String key) {
+    private static int bossKc(ServerPlayer p, String key) {
         if (key.startsWith("kill:")) {
             return 0;
         }
@@ -394,7 +393,7 @@ public final class CombatAchievementService {
     }
 
     /** The spell behind a magic attack: this module's autocast, else the standard-book autocast. */
-    private static String spellOf(ServerPlayerEntity p) {
+    private static String spellOf(ServerPlayer p) {
         String auto = SysState.of(p).autocast;
         if (auto != null && !auto.isEmpty()) {
             return auto;
@@ -404,8 +403,8 @@ public final class CombatAchievementService {
     }
 
     /** One attack by the player (hit or miss). */
-    private static void onAttack(ServerPlayerEntity p, LivingEntity target, AttackType type, int damage) {
-        String weapon = p.getMainHandStack().isEmpty() ? "" : Inv.idOf(p.getMainHandStack());
+    private static void onAttack(ServerPlayer p, LivingEntity target, AttackType type, int damage) {
+        String weapon = p.getMainHandItem().isEmpty() ? "" : Inv.idOf(p.getMainHandItem());
         boolean spec = SpecialAttackService.active(p) != null;
         String spell = type == AttackType.MAGIC ? spellOf(p) : null;
         Tracker f = engage(p, target);
@@ -425,20 +424,20 @@ public final class CombatAchievementService {
                 rapidReload(p, f, target);
             }
         }
-        Tracker run = RUNS.get(p.getUuid());
+        Tracker run = RUNS.get(p.getUUID());
         if (run != null) {
             record(run.m, type, weapon, spell, spec);
         }
-        Tracker delve = DELVES.get(p.getUuid());
+        Tracker delve = DELVES.get(p.getUUID());
         if (delve != null && delve.target.equals(fightKey(target))) {
             record(delve.m, type, weapon, spell, spec);
         }
     }
 
     /** "Rapid Reload": a damaging crossbow/ballista hit on a tormented demon; three different demons within 3 seconds flag the fight. */
-    private static void rapidReload(ServerPlayerEntity p, Tracker f, LivingEntity target) {
+    private static void rapidReload(ServerPlayer p, Tracker f, LivingEntity target) {
         long now = SysTicks.now();
-        List<long[]> hits = TD_HITS.computeIfAbsent(p.getUuid(), u -> new ArrayList<>());
+        List<long[]> hits = TD_HITS.computeIfAbsent(p.getUUID(), u -> new ArrayList<>());
         hits.removeIf(h -> now - h[1] >= RAPID_RELOAD_TICKS);
         hits.add(new long[]{target.getId(), now});
         Set<Long> demons = new HashSet<>();
@@ -462,15 +461,15 @@ public final class CombatAchievementService {
     }
 
     /** Any damage roll against the player, with the attack's name when the game knows it. */
-    private static void onDamaged(ServerPlayerEntity p, LivingEntity attacker, String attack, AttackType style, int damage) {
-        if (attacker != null && !(attacker instanceof ServerPlayerEntity)) {
+    private static void onDamaged(ServerPlayer p, LivingEntity attacker, String attack, AttackType style, int damage) {
+        if (attacker != null && !(attacker instanceof ServerPlayer)) {
             engage(p, attacker);
         }
         String attackerKey = fightKey(attacker);
         String attackerName = nameOf(attacker);
         boolean prayed = protectedFrom(p, style);
         if (damage > 0) {
-            LAST_HIT.put(p.getUuid(), CombatAchievementRules.attackKey(attack));
+            LAST_HIT.put(p.getUUID(), CombatAchievementRules.attackKey(attack));
         }
         for (Tracker t : trackers(p)) {
             boolean fromTarget = t.fight() ? t.key.equals(attackerKey) : t.target != null && t.target.equals(attackerKey);
@@ -487,21 +486,21 @@ public final class CombatAchievementService {
         }
     }
 
-    private static List<Tracker> trackers(ServerPlayerEntity p) {
+    private static List<Tracker> trackers(ServerPlayer p) {
         List<Tracker> list = new ArrayList<>(2);
-        Tracker f = FIGHTS.get(p.getUuid());
+        Tracker f = FIGHTS.get(p.getUUID());
         if (f != null) {
             list.add(f);
         }
-        Tracker r = RUNS.get(p.getUuid());
+        Tracker r = RUNS.get(p.getUUID());
         if (r != null) {
             list.add(r);
         }
-        Tracker d = DELVES.get(p.getUuid());
+        Tracker d = DELVES.get(p.getUUID());
         if (d != null) {
             list.add(d);
         }
-        Tracker b = BARROWS.get(p.getUuid());
+        Tracker b = BARROWS.get(p.getUUID());
         if (b != null) {
             list.add(b);
         }
@@ -510,29 +509,29 @@ public final class CombatAchievementService {
 
     // ------------------------------------------------------------------ per-tick measurements
 
-    private static void tick(ServerPlayerEntity p, long tick) {
+    private static void tick(ServerPlayer p, long tick) {
         if (!p.isAlive()) {
-            FIGHTS.remove(p.getUuid());
-            STREAKS.remove(p.getUuid());
-            DELVES.remove(p.getUuid());
-            BARROWS.remove(p.getUuid());
+            FIGHTS.remove(p.getUUID());
+            STREAKS.remove(p.getUUID());
+            DELVES.remove(p.getUUID());
+            BARROWS.remove(p.getUUID());
             return;
         }
-        Tracker f = FIGHTS.get(p.getUuid());
+        Tracker f = FIGHTS.get(p.getUUID());
         if (f != null && tick - f.last > CombatAchievements.FIGHT_TIMEOUT_TICKS) {
-            FIGHTS.remove(p.getUuid());
+            FIGHTS.remove(p.getUUID());
             f = null;
         }
         if (f != null) {
             tickFight(f, tick);
         }
         tickRun(p);
-        Tracker barrows = BARROWS.get(p.getUuid());
+        Tracker barrows = BARROWS.get(p.getUUID());
         if (barrows != null && Players.data(p).killCount("barrows_chests") > barrows.kcAtStart) {
-            BARROWS.remove(p.getUuid());
+            BARROWS.remove(p.getUUID());
             completeRun(p, barrows);
         } else if (barrows != null && tick - barrows.last > BARROWS_RUN_TIMEOUT_TICKS) {
-            BARROWS.remove(p.getUuid()); // an abandoned run: the next brother fought starts a new one
+            BARROWS.remove(p.getUUID()); // an abandoned run: the next brother fought starts a new one
         }
         if (com.runecraft.combat.PoisonService.isVenomImmune(p, tick) || com.runecraft.combat.PoisonService.isPoisonImmune(p, tick)) {
             for (Tracker t : trackers(p)) {
@@ -550,7 +549,7 @@ public final class CombatAchievementService {
                 }
             }
         }
-        f = FIGHTS.get(p.getUuid());
+        f = FIGHTS.get(p.getUUID());
         if (f != null && f.fight() && !f.key.startsWith("kill:") && bossKc(p, f.key) > f.kcAtStart) {
             finish(p, f, null);
         }
@@ -573,7 +572,7 @@ public final class CombatAchievementService {
             f.pendingAttackTick = -1;
         }
         LivingEntity target = f.targetEntity;
-        if (target != null && target.isAlive() && f.targetStart != null && target.getPos().squaredDistanceTo(f.targetStart) > 4.0) {
+        if (target != null && target.isAlive() && f.targetStart != null && target.position().distanceToSqr(f.targetStart) > 4.0) {
             f.m.flags.add(CombatAchievements.FLAG_TARGET_MOVED);
         }
     }
@@ -586,11 +585,11 @@ public final class CombatAchievementService {
     private static final EquipmentSlot[] SLOTS = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET,
             EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND};
 
-    private static Snapshot snapshot(ServerPlayerEntity p) {
+    private static Snapshot snapshot(ServerPlayer p) {
         Map<String, Integer> food = new HashMap<>();
         int doses = 0;
-        for (int i = 0; i < p.getInventory().size(); i++) {
-            ItemStack st = p.getInventory().getStack(i);
+        for (int i = 0; i < p.getInventory().getContainerSize(); i++) {
+            ItemStack st = p.getInventory().getItem(i);
             if (st.isEmpty()) {
                 continue;
             }
@@ -602,7 +601,7 @@ public final class CombatAchievementService {
             if (def.kind() == ItemDef.Kind.FOOD) {
                 food.merge(id, st.getCount(), Integer::sum);
             } else if (def.kind() == ItemDef.Kind.POTION) {
-                doses += st.getCount() * Math.max(1, 4 - st.getDamage());
+                doses += st.getCount() * Math.max(1, 4 - st.getDamageValue());
             }
         }
         Set<String> prayers = new HashSet<>();
@@ -614,10 +613,10 @@ public final class CombatAchievementService {
     }
 
     /** Item ids of everything worn: armour and hands, plus the jewellery slots. */
-    private static List<String> worn(ServerPlayerEntity p) {
+    private static List<String> worn(ServerPlayer p) {
         List<String> ids = new ArrayList<>();
         for (EquipmentSlot slot : SLOTS) {
-            ItemStack st = p.getEquippedStack(slot);
+            ItemStack st = p.getItemBySlot(slot);
             ids.add(st.isEmpty() ? "" : Inv.idOf(st));
         }
         SysState.SysPlayer sp = SysState.of(p);
@@ -627,7 +626,7 @@ public final class CombatAchievementService {
         return ids;
     }
 
-    private static void measure(ServerPlayerEntity p, Tracker t, Snapshot s) {
+    private static void measure(ServerPlayer p, Tracker t, Snapshot s) {
         Metrics m = t.m;
         // Damage from anything (scripted specials, hazards nobody named) counts, not just hits the damage hook saw.
         float drop = t.health - s.health() - t.attributed;
@@ -667,7 +666,7 @@ public final class CombatAchievementService {
         t.food = s.food();
         t.doses = s.doses();
         t.equipment = s.equipment();
-        Vec3d at = p.getPos();
+        Vec3 at = p.position();
         if (t.pos != null) {
             double step = Math.sqrt(Math.pow(at.x - t.pos.x, 2) + Math.pow(at.z - t.pos.z, 2));
             if (step < 8) { // teleports and knockbacks across the arena aren't walking
@@ -686,7 +685,7 @@ public final class CombatAchievementService {
 
     // ------------------------------------------------------------------ kills
 
-    private static void onKill(ServerPlayerEntity p, LivingEntity e, MonsterStats stats) {
+    private static void onKill(ServerPlayer p, LivingEntity e, MonsterStats stats) {
         String name = (stats == null ? e.getName().getString() : stats.name()).toLowerCase(Locale.ROOT);
         SysState.SysPlayer sp = SysState.of(p);
         for (Task t : CombatAchievements.tasks()) {
@@ -706,19 +705,19 @@ public final class CombatAchievementService {
         for (Tracker t : trackers(p)) {
             t.m.killed(key);
         }
-        List<Kill> recent = RECENT.computeIfAbsent(p.getUuid(), u -> new ArrayList<>());
+        List<Kill> recent = RECENT.computeIfAbsent(p.getUUID(), u -> new ArrayList<>());
         recent.add(new Kill(key, now, now));
         if (recent.size() > 30) {
             recent.remove(0);
         }
-        Tracker f = FIGHTS.get(p.getUuid());
+        Tracker f = FIGHTS.get(p.getUUID());
         boolean mine = f != null && f.key.equals(key);
         windows(p, key, mine ? f.start : now, now, mine ? f.m : null);
         if (mine) {
             Metrics m = f.m;
-            StatusEffectInstance slow = e.getStatusEffect(StatusEffects.SLOWNESS);
+            MobEffectInstance slow = e.getEffect(MobEffects.MOVEMENT_SLOWDOWN);
             m.frozen = slow != null && slow.getAmplifier() >= 6;
-            m.othersAlive = !e.getWorld().getEntitiesByClass(OsrsMonsterEntity.class, e.getBoundingBox().expand(16),
+            m.othersAlive = !e.level().getEntitiesOfClass(OsrsMonsterEntity.class, e.getBoundingBox().inflate(16),
                     o -> o != e && o.isAlive()).isEmpty();
             String raw = bossId(e);
             m.killedId = raw != null ? raw : name;
@@ -729,8 +728,8 @@ public final class CombatAchievementService {
         }
     }
 
-    private static void finish(ServerPlayerEntity p, Tracker f, LivingEntity killed) {
-        FIGHTS.remove(p.getUuid());
+    private static void finish(ServerPlayer p, Tracker f, LivingEntity killed) {
+        FIGHTS.remove(p.getUUID());
         long now = SysTicks.now();
         Metrics m = f.m;
         m.ticks = now - f.start;
@@ -740,7 +739,7 @@ public final class CombatAchievementService {
         }
         m.wornAtEnd.clear();
         m.wornAtEnd.addAll(worn(p));
-        m.antifire = p.hasStatusEffect(StatusEffects.FIRE_RESISTANCE);
+        m.antifire = p.hasEffect(MobEffects.FIRE_RESISTANCE);
         if (f.raid != null) {
             m.raid = raidInfo(f.raid, p, f.raidDeathsAtStart, f.myRaidDeathsAtStart);
         }
@@ -749,7 +748,7 @@ public final class CombatAchievementService {
         if (m.delve > 0) {
             completeDelve(p, sp, m.delve, now);
         }
-        List<Long> durations = DURATIONS.computeIfAbsent(p.getUuid(), u -> new HashMap<>()).computeIfAbsent(f.key, k -> new ArrayList<>());
+        List<Long> durations = DURATIONS.computeIfAbsent(p.getUUID(), u -> new HashMap<>()).computeIfAbsent(f.key, k -> new ArrayList<>());
         durations.add(m.ticks);
         if (durations.size() > 10) {
             durations.remove(0);
@@ -774,16 +773,16 @@ public final class CombatAchievementService {
                     }
                 }
                 case STREAK -> {
-                    Streak s = STREAKS.computeIfAbsent(p.getUuid(), u -> new HashMap<>()).computeIfAbsent(t.id(), k -> new Streak());
+                    Streak s = STREAKS.computeIfAbsent(p.getUUID(), u -> new HashMap<>()).computeIfAbsent(t.id(), k -> new Streak());
                     if (!CombatAchievementRules.meets(CombatAchievementRules.killFilter(t.rule()), m)) {
                         s.count = 0;
                     } else {
                         s.count++;
                     }
-                    s.anchor = p.getPos();
-                    s.world = p.getWorld().getRegistryKey().getValue().toString();
+                    s.anchor = p.position();
+                    s.world = p.level().dimension().location().toString();
                     if (s.count >= t.count()) {
-                        STREAKS.get(p.getUuid()).remove(t.id());
+                        STREAKS.get(p.getUUID()).remove(t.id());
                         complete(p, t);
                     }
                 }
@@ -799,7 +798,7 @@ public final class CombatAchievementService {
     }
 
     /** Kills for time-window tasks: each task keeps its own recent kills that met its per-kill conditions. */
-    private static void windows(ServerPlayerEntity p, String key, long start, long end, Metrics fight) {
+    private static void windows(ServerPlayer p, String key, long start, long end, Metrics fight) {
         SysState.SysPlayer sp = SysState.of(p);
         for (Task t : CombatAchievements.tasks()) {
             if (t.track() != Track.WINDOW || sp.caDone.contains(t.id()) || !t.targets(key)) {
@@ -809,7 +808,7 @@ public final class CombatAchievementService {
             if (!filter.isEmpty() && (fight == null || !CombatAchievementRules.meets(filter, fight))) {
                 continue;
             }
-            List<Kill> kills = WINDOWS.computeIfAbsent(p.getUuid(), u -> new HashMap<>()).computeIfAbsent(t.id(), k -> new ArrayList<>());
+            List<Kill> kills = WINDOWS.computeIfAbsent(p.getUUID(), u -> new HashMap<>()).computeIfAbsent(t.id(), k -> new ArrayList<>());
             kills.add(new Kill(key, start, end));
             if (kills.size() > 20) {
                 kills.remove(0);
@@ -822,20 +821,20 @@ public final class CombatAchievementService {
     }
 
     /** "Without leaving": streaks end when the player goes elsewhere. */
-    private static void checkStreakRange(ServerPlayerEntity p) {
-        Map<String, Streak> streaks = STREAKS.get(p.getUuid());
+    private static void checkStreakRange(ServerPlayer p) {
+        Map<String, Streak> streaks = STREAKS.get(p.getUUID());
         if (streaks == null || streaks.isEmpty()) {
             return;
         }
-        String world = p.getWorld().getRegistryKey().getValue().toString();
+        String world = p.level().dimension().location().toString();
         streaks.values().removeIf(s -> s.anchor == null || !world.equals(s.world)
-                || s.anchor.squaredDistanceTo(p.getPos()) > STREAK_RANGE * STREAK_RANGE);
+                || s.anchor.distanceToSqr(p.position()) > STREAK_RANGE * STREAK_RANGE);
     }
 
     /** Progress of a counted task for the task list: kills, completions or the current streak. */
-    static int progress(ServerPlayerEntity p, Task t) {
+    static int progress(ServerPlayer p, Task t) {
         if (t.track() == Track.STREAK) {
-            Map<String, Streak> streaks = STREAKS.get(p.getUuid());
+            Map<String, Streak> streaks = STREAKS.get(p.getUUID());
             Streak s = streaks == null ? null : streaks.get(t.id());
             return s == null ? 0 : s.count;
         }
@@ -844,20 +843,20 @@ public final class CombatAchievementService {
 
     // ------------------------------------------------------------------ raids and minigame runs
 
-    private static CombatAchievementRules.Raid raidInfo(RaidInstance raid, ServerPlayerEntity p, int deathsAtStart, int myDeathsAtStart) {
+    private static CombatAchievementRules.Raid raidInfo(RaidInstance raid, ServerPlayer p, int deathsAtStart, int myDeathsAtStart) {
         Set<String> invocations = new HashSet<>();
         for (Invocation i : raid.invocations()) {
             invocations.add(i.name());
         }
         boolean withinTarget = raid.elapsedTicks() <= RaidScaling.targetTicks(raid.type, raid.mode(), raid.partySize());
         return new CombatAchievementRules.Raid(raid.type.name(), raid.mode().name(), raid.partySize(), raid.raidLevel(), invocations,
-                raid.pathLevel(), raid.totalDeaths() - deathsAtStart, raid.deaths(p.getUuid()) - myDeathsAtStart, withinTarget,
-                raid.points(p.getUuid()), raid.suppliesTaken());
+                raid.pathLevel(), raid.totalDeaths() - deathsAtStart, raid.deaths(p.getUUID()) - myDeathsAtStart, withinTarget,
+                raid.points(p.getUUID()), raid.suppliesTaken());
     }
 
     /** Starts, ends and completes raid and minigame runs. */
-    private static void tickRun(ServerPlayerEntity p) {
-        UUID u = p.getUuid();
+    private static void tickRun(ServerPlayer p) {
+        UUID u = p.getUUID();
         Tracker run = RUNS.get(u);
         RaidInstance raid = RaidManager.of(p);
         if (raid != null && raid.begun()) {
@@ -898,7 +897,7 @@ public final class CombatAchievementService {
         }
     }
 
-    private static void completeRaid(ServerPlayerEntity p, Tracker run) {
+    private static void completeRaid(ServerPlayer p, Tracker run) {
         RaidInstance raid = run.raid;
         Metrics m = run.m;
         m.ticks = raid.elapsedTicks();
@@ -914,7 +913,7 @@ public final class CombatAchievementService {
         }
     }
 
-    private static void completeRun(ServerPlayerEntity p, Tracker run) {
+    private static void completeRun(ServerPlayer p, Tracker run) {
         Metrics m = run.m;
         m.ticks = SysTicks.now() - run.start;
         if (run.session != null) {
@@ -933,8 +932,8 @@ public final class CombatAchievementService {
     }
 
     /** A delve level was completed: judges the delve run so far (time from the delve 1 fight, conditions over every level). */
-    private static void completeDelve(ServerPlayerEntity p, SysState.SysPlayer sp, int level, long now) {
-        Tracker run = DELVES.get(p.getUuid());
+    private static void completeDelve(ServerPlayer p, SysState.SysPlayer sp, int level, long now) {
+        Tracker run = DELVES.get(p.getUUID());
         if (run == null) {
             return;
         }
@@ -952,7 +951,7 @@ public final class CombatAchievementService {
     }
 
     /** Completes a task, or counts towards it when it needs several qualifying completions. */
-    private static void counted(ServerPlayerEntity p, SysState.SysPlayer sp, Task t) {
+    private static void counted(ServerPlayer p, SysState.SysPlayer sp, Task t) {
         if (t.count() <= 1) {
             complete(p, t);
             return;
@@ -967,14 +966,14 @@ public final class CombatAchievementService {
     }
 
     /** Kill count of one key: a boss id or "mg:" + minigame id (completions). */
-    static int kc(ServerPlayerEntity p, String key) {
+    static int kc(ServerPlayer p, String key) {
         if (key.startsWith("mg:")) {
-            return com.runecraft.content.minigames.MinigameData.of(p).stat(p.getUuid(), "kc:" + key.substring(3));
+            return com.runecraft.content.minigames.MinigameData.of(p).stat(p.getUUID(), "kc:" + key.substring(3));
         }
         return Players.data(p).killCount(key);
     }
 
-    static void checkKillCounts(ServerPlayerEntity p) {
+    static void checkKillCounts(ServerPlayer p) {
         SysState.SysPlayer sp = SysState.of(p);
         for (Task t : CombatAchievements.tasks()) {
             if (t.track() == Track.KC && !sp.caDone.contains(t.id()) && CombatAchievements.kcValue(t.target(), k -> kc(p, k)) >= t.count()) {
@@ -985,29 +984,29 @@ public final class CombatAchievementService {
 
     // ------------------------------------------------------------------ completion and rewards
 
-    public static int points(ServerPlayerEntity p) {
+    public static int points(ServerPlayer p) {
         return CombatAchievements.points(SysState.of(p).caDone);
     }
 
     /** The highest tier the player's points unlock, or null. */
-    public static Tier tier(ServerPlayerEntity p) {
+    public static Tier tier(ServerPlayer p) {
         return CombatAchievements.unlocked(points(p));
     }
 
-    static void complete(ServerPlayerEntity p, Task t) {
+    static void complete(ServerPlayer p, Task t) {
         SysState.SysPlayer sp = SysState.of(p);
         Tier before = CombatAchievements.unlocked(CombatAchievements.points(sp.caDone));
         if (!sp.caDone.add(t.id())) {
             return;
         }
         int points = CombatAchievements.points(sp.caDone);
-        p.sendMessage(Text.literal("Congratulations, you've completed " + (t.tier() == Tier.EASY || t.tier() == Tier.ELITE ? "an " : "a ")
+        p.displayClientMessage(Component.literal("Congratulations, you've completed " + (t.tier() == Tier.EASY || t.tier() == Tier.ELITE ? "an " : "a ")
                 + t.tier().id() + " combat task: " + t.name() + " (" + t.points() + " point" + (t.points() == 1 ? "" : "s")
-                + "). Total points: " + points + ".").formatted(Formatting.DARK_GREEN), false);
+                + "). Total points: " + points + ".").withStyle(ChatFormatting.DARK_GREEN), false);
         Tier after = CombatAchievements.unlocked(points);
         if (after != null && after != before) {
-            p.sendMessage(Text.literal("You have unlocked the " + after.id() + " tier of Combat Achievement rewards! Claim them from Ghommal "
-                    + "at the Warriors' Guild or the Combat Achievements menu.").formatted(Formatting.GOLD), false);
+            p.displayClientMessage(Component.literal("You have unlocked the " + after.id() + " tier of Combat Achievement rewards! Claim them from Ghommal "
+                    + "at the Warriors' Guild or the Combat Achievements menu.").withStyle(ChatFormatting.GOLD), false);
         }
     }
 
@@ -1016,7 +1015,7 @@ public final class CombatAchievementService {
     }
 
     /** Hands out a tier's rewards (or a replacement hilt). */
-    public static void claim(ServerPlayerEntity p, Tier t) {
+    public static void claim(ServerPlayer p, Tier t) {
         SysState.SysPlayer sp = SysState.of(p);
         int points = CombatAchievements.points(sp.caDone);
         if (!CombatAchievements.unlocked(points, t)) {
@@ -1043,7 +1042,7 @@ public final class CombatAchievementService {
                 + " and an antique lamp.");
     }
 
-    public static void rubLamp(ServerPlayerEntity p, Tier tier, Skill skill) {
+    public static void rubLamp(ServerPlayer p, Tier tier, Skill skill) {
         if (!Inv.has(p, tier.lamp(), 1)) {
             return;
         }
@@ -1057,12 +1056,12 @@ public final class CombatAchievementService {
     }
 
     /** A hilt works up to the tier the player's points currently unlock (as in OSRS). */
-    static int effectiveHilt(ServerPlayerEntity p, String hiltId) {
+    static int effectiveHilt(ServerPlayer p, String hiltId) {
         Tier unlocked = tier(p);
         return unlocked == null ? 0 : Math.min(CombatAchievements.hiltTier(hiltId), unlocked.ordinal() + 1);
     }
 
-    static void hiltMenu(ServerPlayerEntity p, String hiltId) {
+    static void hiltMenu(ServerPlayer p, String hiltId) {
         int hilt = effectiveHilt(p, hiltId);
         SysNet.Screen s = new SysNet.Screen("cahilt", ItemCatalog.get(hiltId) == null ? hiltId : ItemCatalog.get(hiltId).name());
         if (hilt == 0) {
@@ -1096,7 +1095,7 @@ public final class CombatAchievementService {
         s.send(p);
     }
 
-    static void hiltAction(ServerPlayerEntity p, String action, Map<String, String> fields) {
+    static void hiltAction(ServerPlayer p, String action, Map<String, String> fields) {
         int bar = action.lastIndexOf('|');
         if (bar < 0) {
             return;
@@ -1163,7 +1162,7 @@ public final class CombatAchievementService {
     // ------------------------------------------------------------------ reward effects used by other systems
 
     /** Ghommal's lucky penny worn in the ammo slot saves a charge 5% of the time (master tier needed). */
-    public static boolean pennySavesCharge(ServerPlayerEntity p) {
+    public static boolean pennySavesCharge(ServerPlayer p) {
         SysState.SysPlayer sp = SysState.of(p);
         if (!sp.wornId(com.runecraft.osrs.content.systems.Jewellery.Slot.AMMO).equals(CombatAchievements.LUCKY_PENNY)) {
             return false;
@@ -1173,18 +1172,18 @@ public final class CombatAchievementService {
     }
 
     /** Medium tier: no Barrows Prayer drain while a Ghommal's hilt is held in the off-hand. */
-    public static boolean barrowsDrainNullified(ServerPlayerEntity p) {
-        ItemStack off = p.getOffHandStack();
+    public static boolean barrowsDrainNullified(ServerPlayer p) {
+        ItemStack off = p.getOffhandItem();
         return !off.isEmpty() && CombatAchievements.barrowsDrainNullified(tier(p), Inv.idOf(off));
     }
 
     /** "Like a boss": the most kills a boss slayer task can have (35, +5 per unlocked tier). */
-    public static int bossTaskMax(ServerPlayerEntity p, int base) {
+    public static int bossTaskMax(ServerPlayer p, int base) {
         return CombatAchievements.bossTaskMax(base, tier(p));
     }
 
     /** Elite tier: superior slayer monsters appear 1/150 instead of 1/200. */
-    public static int superiorChance(ServerPlayerEntity p, int base) {
+    public static int superiorChance(ServerPlayer p, int base) {
         return CombatAchievements.superiorChance(base, tier(p));
     }
 }

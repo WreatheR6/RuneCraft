@@ -12,31 +12,30 @@ import com.runecraft.player.Players;
 import com.runecraft.registry.ModBlocks;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.world.World;
-
 import java.util.List;
 import java.util.Locale;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 
 /** Small helpers shared by the skilling hooks. */
 final class SkillingUtil {
     private SkillingUtil() {
     }
 
-    static int level(ServerPlayerEntity player, Skill skill) {
+    static int level(ServerPlayer player, Skill skill) {
         return Players.data(player).skills().currentLevel(skill);
     }
 
     /** Checks a level requirement and tells the player if it isn't met. */
-    static boolean need(ServerPlayerEntity player, Skill skill, int level, String what) {
+    static boolean need(ServerPlayer player, Skill skill, int level, String what) {
         if (level(player, skill) < level) {
             Msg.game(player, "You need " + Msg.article(skill.displayName()) + " level of " + level + " to " + what + ".");
             return false;
@@ -44,7 +43,7 @@ final class SkillingUtil {
         return true;
     }
 
-    static boolean needItem(ServerPlayerEntity player, String item, String message) {
+    static boolean needItem(ServerPlayer player, String item, String message) {
         if (!Inv.has(player, item, 1)) {
             Msg.game(player, message);
             return false;
@@ -53,7 +52,7 @@ final class SkillingUtil {
     }
 
     /** Gives an item, logs it in the collection log and fires the obtain event. */
-    static void give(ServerPlayerEntity player, String item, int count) {
+    static void give(ServerPlayer player, String item, int count) {
         if (count <= 0) {
             return;
         }
@@ -65,7 +64,7 @@ final class SkillingUtil {
     }
 
     /** Rolls one line of a loot table and gives it; returns the line (or null for an empty table). */
-    static Loot roll(ServerPlayerEntity player, List<Loot> table, Random random) {
+    static Loot roll(ServerPlayer player, List<Loot> table, RandomSource random) {
         if (table.isEmpty()) {
             return null;
         }
@@ -74,7 +73,7 @@ final class SkillingUtil {
         return l;
     }
 
-    static void giveAll(ServerPlayerEntity player, List<Loot> lines, Random random) {
+    static void giveAll(ServerPlayer player, List<Loot> lines, RandomSource random) {
         for (Loot l : lines) {
             give(player, l.item(), l.amount(random.nextDouble()));
         }
@@ -94,21 +93,21 @@ final class SkillingUtil {
     }
 
     static String blockId(BlockState state) {
-        return Registries.BLOCK.getId(state.getBlock()).getPath();
+        return BuiltInRegistries.BLOCK.getKey(state.getBlock()).getPath();
     }
 
     static BlockState moduleBlock(String id) {
         Block block = ModBlocks.MODULE_BLOCKS.get(id);
-        return block == null ? null : block.getDefaultState();
+        return block == null ? null : block.defaultBlockState();
     }
 
     /** Key for per-position storage, unique across dimensions. */
-    static String key(World world, BlockPos pos) {
-        return world.getRegistryKey().getValue() + "|" + pos.asLong();
+    static String key(Level world, BlockPos pos) {
+        return world.dimension().location() + "|" + pos.asLong();
     }
 
-    static String heldId(ServerPlayerEntity player) {
-        ItemStack held = player.getMainHandStack();
+    static String heldId(ServerPlayer player) {
+        ItemStack held = player.getMainHandItem();
         return held.isEmpty() ? "" : Inv.idOf(held);
     }
 
@@ -128,26 +127,26 @@ final class SkillingUtil {
             this.interval = interval;
         }
 
-        abstract boolean roll(ServerPlayerEntity player, Random random);
+        abstract boolean roll(ServerPlayer player, RandomSource random);
 
         @Override
-        public boolean tick(ServerPlayerEntity player, long gameTick) {
-            if (player.squaredDistanceTo(Vec3d.ofCenter(pos)) > 36.0) {
+        public boolean tick(ServerPlayer player, long gameTick) {
+            if (player.distanceToSqr(Vec3.atCenterOf(pos)) > 36.0) {
                 return false;
             }
-            if (!blockId(player.getWorld().getBlockState(pos)).equals(blockId)) {
+            if (!blockId(player.level().getBlockState(pos)).equals(blockId)) {
                 return false;
             }
             if (++counter < interval) {
                 return true;
             }
             counter = 0;
-            player.swingHand(Hand.MAIN_HAND, true);
+            player.swing(InteractionHand.MAIN_HAND, true);
             return roll(player, player.getRandom());
         }
     }
 
-    static void start(ServerPlayerEntity player, Action action) {
+    static void start(ServerPlayer player, Action action) {
         ActionManager.start(player, action);
     }
 }

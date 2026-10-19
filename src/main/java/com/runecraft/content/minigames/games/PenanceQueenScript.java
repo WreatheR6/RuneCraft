@@ -4,7 +4,7 @@ import com.runecraft.boss.BossScript;
 import com.runecraft.boss.DataBossEntity;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.util.Msg;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * The Penance Queen shrugs off most weapon damage: in OSRS she is brought down with omega eggs
@@ -15,9 +15,9 @@ public class PenanceQueenScript implements BossScript {
     private long lastWarning;
 
     @Override
-    public int modifyIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
-        if (boss.age - lastWarning > 200) {
-            lastWarning = boss.age;
+    public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+        if (boss.tickCount - lastWarning > 200) {
+            lastWarning = boss.tickCount;
             Msg.action(attacker, "The Penance Queen barely notices. Load eggs into the egg launcher!");
         }
         return damage / 4;

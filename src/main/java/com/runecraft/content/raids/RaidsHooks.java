@@ -10,10 +10,10 @@ import com.runecraft.osrs.content.raids.RaidScaling;
 import com.runecraft.osrs.content.raids.RaidType;
 import com.runecraft.osrs.content.raids.RaidsContent;
 import com.runecraft.world.LandmarkBuilder;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * Minecraft-side behaviour for the raids content module: the raid framework (entrances, instances,
@@ -53,7 +53,7 @@ public final class RaidsHooks implements ModuleHooks {
     private static void registerToaScaling() {
         com.runecraft.combat.CombatHooks.addModifier(new com.runecraft.combat.CombatHooks.PlayerAttackModifier() {
             @Override
-            public double accuracy(net.minecraft.server.network.ServerPlayerEntity player, net.minecraft.entity.LivingEntity target,
+            public double accuracy(net.minecraft.server.level.ServerPlayer player, net.minecraft.world.entity.LivingEntity target,
                                    com.runecraft.osrs.AttackType type) {
                 RaidInstance raid = target == null ? null : RaidManager.at(target);
                 if (raid == null || raid.type != RaidType.TOA) {
@@ -81,7 +81,7 @@ public final class RaidsHooks implements ModuleHooks {
     private static void registerNylocasStyles() {
         com.runecraft.combat.CombatHooks.addModifier(new com.runecraft.combat.CombatHooks.PlayerAttackModifier() {
             @Override
-            public int afterRoll(net.minecraft.server.network.ServerPlayerEntity player, net.minecraft.entity.LivingEntity target,
+            public int afterRoll(net.minecraft.server.level.ServerPlayer player, net.minecraft.world.entity.LivingEntity target,
                                  com.runecraft.osrs.AttackType type, int damage) {
                 TobRooms.Nylocas room = target == null ? null : TobRooms.Nylocas.of(player);
                 if (room != null) {
@@ -93,46 +93,46 @@ public final class RaidsHooks implements ModuleHooks {
     }
 
     /** A rocky mountainside with a glowing cave mouth, north of the plaza. */
-    private static void buildMountQuidamortem(ServerWorld world, BlockPos c) {
-        BlockPos base = c.add(0, 0, -16);
+    private static void buildMountQuidamortem(ServerLevel world, BlockPos c) {
+        BlockPos base = c.offset(0, 0, -16);
         for (int layer = 0; layer < 9; layer++) {
             int r = 10 - layer;
             RaidBuilder.fill(world, base.getX() - r, base.getY() + layer, base.getZ() - r, base.getX() + r, base.getY() + layer,
-                    base.getZ() + r, layer % 3 == 2 ? Blocks.COBBLED_DEEPSLATE.getDefaultState() : Blocks.STONE.getDefaultState());
+                    base.getZ() + r, layer % 3 == 2 ? Blocks.COBBLED_DEEPSLATE.defaultBlockState() : Blocks.STONE.defaultBlockState());
         }
         RaidBuilder.fill(world, base.getX() - 1, base.getY() + 1, base.getZ() + 4, base.getX() + 1, base.getY() + 3, base.getZ() + 10,
-                Blocks.AIR.getDefaultState());
-        RaidBuilder.set(world, base.add(0, 4, 10), Blocks.SHROOMLIGHT.getDefaultState());
+                Blocks.AIR.defaultBlockState());
+        RaidBuilder.set(world, base.offset(0, 4, 10), Blocks.SHROOMLIGHT.defaultBlockState());
         for (int i = -1; i <= 1; i += 2) {
-            RaidBuilder.set(world, base.add(i * 3, 1, 10), Blocks.AMETHYST_CLUSTER.getDefaultState());
+            RaidBuilder.set(world, base.offset(i * 3, 1, 10), Blocks.AMETHYST_CLUSTER.defaultBlockState());
         }
     }
 
     /** Ver Sinhaza: dark stone walls and towers around the Theatre's doors. */
-    private static void buildVerSinhaza(ServerWorld world, BlockPos c) {
-        BlockPos base = c.add(0, 0, -14);
-        BlockState wall = Blocks.POLISHED_BLACKSTONE_BRICKS.getDefaultState();
+    private static void buildVerSinhaza(ServerLevel world, BlockPos c) {
+        BlockPos base = c.offset(0, 0, -14);
+        BlockState wall = Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState();
         RaidBuilder.fill(world, base.getX() - 9, base.getY() + 1, base.getZ() - 1, base.getX() + 9, base.getY() + 6, base.getZ(), wall);
         RaidBuilder.fill(world, base.getX() - 2, base.getY() + 1, base.getZ() - 1, base.getX() + 2, base.getY() + 4, base.getZ(),
-                Blocks.RED_STAINED_GLASS.getDefaultState());
+                Blocks.RED_STAINED_GLASS.defaultBlockState());
         for (int i = -1; i <= 1; i += 2) {
             RaidBuilder.fill(world, base.getX() + i * 9 - 1, base.getY() + 1, base.getZ() - 2, base.getX() + i * 9 + 1, base.getY() + 11,
                     base.getZ() + 1, wall);
-            RaidBuilder.set(world, base.add(i * 9, 12, 0), Blocks.REDSTONE_LAMP.getDefaultState());
-            RaidBuilder.set(world, base.add(i * 4, 7, 0), Blocks.SOUL_LANTERN.getDefaultState());
+            RaidBuilder.set(world, base.offset(i * 9, 12, 0), Blocks.REDSTONE_LAMP.defaultBlockState());
+            RaidBuilder.set(world, base.offset(i * 4, 7, 0), Blocks.SOUL_LANTERN.defaultBlockState());
         }
     }
 
     /** The Jaldraocht Pyramid. */
-    private static void buildPyramid(ServerWorld world, BlockPos c) {
-        BlockPos base = c.add(0, 0, -20);
+    private static void buildPyramid(ServerLevel world, BlockPos c) {
+        BlockPos base = c.offset(0, 0, -20);
         for (int layer = 0; layer < 11; layer++) {
             int r = 11 - layer;
             RaidBuilder.fill(world, base.getX() - r, base.getY() + layer, base.getZ() - r, base.getX() + r, base.getY() + layer,
-                    base.getZ() + r, layer == 10 ? Blocks.GOLD_BLOCK.getDefaultState() : Blocks.SMOOTH_SANDSTONE.getDefaultState());
+                    base.getZ() + r, layer == 10 ? Blocks.GOLD_BLOCK.defaultBlockState() : Blocks.SMOOTH_SANDSTONE.defaultBlockState());
         }
         RaidBuilder.fill(world, base.getX() - 1, base.getY() + 1, base.getZ() + 6, base.getX() + 1, base.getY() + 3, base.getZ() + 11,
-                Blocks.AIR.getDefaultState());
-        RaidBuilder.set(world, base.add(0, 4, 11), Blocks.CHISELED_SANDSTONE.getDefaultState());
+                Blocks.AIR.defaultBlockState());
+        RaidBuilder.set(world, base.offset(0, 4, 11), Blocks.CHISELED_SANDSTONE.defaultBlockState());
     }
 }

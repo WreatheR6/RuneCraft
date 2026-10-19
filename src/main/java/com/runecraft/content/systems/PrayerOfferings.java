@@ -9,11 +9,11 @@ import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.TypedActionResult;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Blessed bone shard sacrifices ({@link Libation}): right-click the shards next to an altar with jugs of wine to offer up
@@ -26,28 +26,28 @@ public final class PrayerOfferings {
 
     public static void register() {
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            ItemStack stack = player.getStackInHand(hand);
+            ItemStack stack = player.getItemInHand(hand);
             if (stack.isEmpty() || !Libation.SHARDS.equals(Inv.idOf(stack))) {
-                return TypedActionResult.pass(stack);
+                return InteractionResultHolder.pass(stack);
             }
-            if (world.isClient()) {
-                return TypedActionResult.success(stack, true);
+            if (world.isClientSide()) {
+                return InteractionResultHolder.sidedSuccess(stack, true);
             }
-            if (player instanceof ServerPlayerEntity sp) {
+            if (player instanceof ServerPlayer sp) {
                 if (!nearAltar(sp)) {
                     Msg.game(sp, "You need to be at an altar to sacrifice blessed bone shards.");
                 } else {
                     sacrifice(sp);
                 }
             }
-            return TypedActionResult.success(stack, false);
+            return InteractionResultHolder.sidedSuccess(stack, false);
         });
     }
 
-    private static boolean nearAltar(ServerPlayerEntity p) {
-        BlockPos at = p.getBlockPos();
-        for (BlockPos pos : BlockPos.iterate(at.add(-4, -2, -4), at.add(4, 2, 4))) {
-            if (Registries.BLOCK.getId(p.getWorld().getBlockState(pos).getBlock()).getPath().contains("altar")) {
+    private static boolean nearAltar(ServerPlayer p) {
+        BlockPos at = p.blockPosition();
+        for (BlockPos pos : BlockPos.betweenClosed(at.offset(-4, -2, -4), at.offset(4, 2, 4))) {
+            if (BuiltInRegistries.BLOCK.getKey(p.level().getBlockState(pos).getBlock()).getPath().contains("altar")) {
                 return true;
             }
         }
@@ -55,7 +55,7 @@ public final class PrayerOfferings {
     }
 
     /** One sacrifice action; returns the shards offered (0 if refused). */
-    public static int sacrifice(ServerPlayerEntity p) {
+    public static int sacrifice(ServerPlayer p) {
         PlayerData data = Players.data(p);
         if (data.skills().level(Skill.PRAYER) < Libation.LEVEL) {
             Msg.game(p, "You need a Prayer level of " + Libation.LEVEL + " to sacrifice blessed bone shards.");

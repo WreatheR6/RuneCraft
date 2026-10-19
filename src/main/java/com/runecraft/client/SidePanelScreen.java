@@ -1,10 +1,10 @@
 package com.runecraft.client;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 
 /**
  * A transparent screen that only frees the mouse cursor so the bottom-right {@link SidePanel} can
@@ -14,16 +14,16 @@ import net.minecraft.text.Text;
  */
 public class SidePanelScreen extends Screen {
     public SidePanelScreen() {
-        super(Text.literal("Side panel"));
+        super(Component.literal("Side panel"));
     }
 
     @Override
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 
     @Override
-    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
         // No background: the world and HUD stay visible behind the panel.
         SidePanel.render(ctx, width, height, mouseX, mouseY);
         super.render(ctx, mouseX, mouseY, delta);
@@ -47,9 +47,9 @@ public class SidePanelScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (RuneCraftClient.sidePanelKey != null && RuneCraftClient.sidePanelKey.matchesKey(keyCode, scanCode)) {
+        if (RuneCraftClient.sidePanelKey != null && RuneCraftClient.sidePanelKey.matches(keyCode, scanCode)) {
             SidePanel.visible = !SidePanel.visible;
-            close();
+            onClose();
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
@@ -57,8 +57,8 @@ public class SidePanelScreen extends Screen {
 
     @Override
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-        if (RuneCraftClient.panelCursorKey != null && RuneCraftClient.panelCursorKey.matchesKey(keyCode, scanCode)) {
-            close();
+        if (RuneCraftClient.panelCursorKey != null && RuneCraftClient.panelCursorKey.matches(keyCode, scanCode)) {
+            onClose();
             return true;
         }
         return super.keyReleased(keyCode, scanCode, modifiers);
@@ -67,16 +67,16 @@ public class SidePanelScreen extends Screen {
     @Override
     public void tick() {
         // Safety net in case the release event went elsewhere (e.g. window lost focus).
-        if (client == null || RuneCraftClient.panelCursorKey == null) {
+        if (minecraft == null || RuneCraftClient.panelCursorKey == null) {
             return;
         }
-        InputUtil.Key key = KeyBindingHelper.getBoundKeyOf(RuneCraftClient.panelCursorKey);
-        if (key.getCategory() == InputUtil.Type.KEYSYM && key.getCode() != InputUtil.UNKNOWN_KEY.getCode()
-                && !InputUtil.isKeyPressed(client.getWindow().getHandle(), key.getCode())) {
-            close();
+        InputConstants.Key key = KeyBindingHelper.getBoundKeyOf(RuneCraftClient.panelCursorKey);
+        if (key.getType() == InputConstants.Type.KEYSYM && key.getValue() != InputConstants.UNKNOWN.getValue()
+                && !InputConstants.isKeyDown(minecraft.getWindow().getWindow(), key.getValue())) {
+            onClose();
         }
         if (!SidePanel.visible) {
-            close();
+            onClose();
         }
     }
 }

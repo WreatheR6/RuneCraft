@@ -13,18 +13,17 @@ import com.runecraft.quest.QuestApi;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.List;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 
 /** Boats, charter ships, gliders, magic carpets and canoes: a clickable destination list, then a paid trip. */
 final class TravelService {
@@ -48,12 +47,12 @@ final class TravelService {
     }
 
     /** Shows the destinations of an NPC's route as clickable chat options. */
-    static void offer(ServerPlayerEntity player, TownNpc npc) {
+    static void offer(ServerPlayer player, TownNpc npc) {
         Travel.Route route = Travel.get(npc.travel());
         if (route == null) {
             return;
         }
-        MutableText line = Text.literal("Where to? ").formatted(Formatting.GRAY);
+        MutableComponent line = Component.literal("Where to? ").withStyle(ChatFormatting.GRAY);
         List<Travel.Dest> dests = route.dests();
         for (int i = 0; i < dests.size(); i++) {
             Travel.Dest d = dests.get(i);
@@ -64,13 +63,13 @@ final class TravelService {
             }
             String command = "/npcs travel " + npc.id() + " " + i;
             String hover = capital(route.verb()) + " to " + d.name() + " (" + cost(d) + ")" + req;
-            line.append(Text.literal("[" + d.name() + (d.price() > 0 || d.item() != null ? " - " + cost(d) : "") + "]").styled(s -> s
-                    .withColor(Formatting.GOLD)
+            line.append(Component.literal("[" + d.name() + (d.price() > 0 || d.item() != null ? " - " + cost(d) : "") + "]").withStyle(s -> s
+                    .withColor(ChatFormatting.GOLD)
                     .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
-                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(hover)))));
-            line.append(Text.literal(" "));
+                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(hover)))));
+            line.append(Component.literal(" "));
         }
-        player.sendMessage(line, false);
+        player.displayClientMessage(line, false);
     }
 
     private static String capital(String s) {
@@ -78,7 +77,7 @@ final class TravelService {
     }
 
     /** Runs a chosen trip if the player is next to the NPC and meets the fare and requirements. */
-    static void travel(ServerPlayerEntity player, String npcId, int index) {
+    static void travel(ServerPlayer player, String npcId, int index) {
         TownNpc npc = Townsfolk.get(npcId);
         if (npc == null || npc.travel() == null) {
             return;
@@ -87,7 +86,7 @@ final class TravelService {
         if (route == null || index < 0 || index >= route.dests().size()) {
             return;
         }
-        boolean near = !player.getWorld().getEntitiesByClass(QuestNpcEntity.class, player.getBoundingBox().expand(10),
+        boolean near = !player.level().getEntitiesOfClass(QuestNpcEntity.class, player.getBoundingBox().inflate(10),
                 e -> npcId.equals(e.npcId())).isEmpty();
         if (!near) {
             Msg.game(player, "You need to be next to " + npc.name() + " to travel.");
@@ -122,13 +121,13 @@ final class TravelService {
         if (price > 0 || d.item() != null) {
             ServerNetworking.sync(player);
         }
-        ServerWorld world = Gielinor.world(player.getServer());
+        ServerLevel world = Gielinor.world(player.getServer());
         if (world == null) {
             return;
         }
         BlockPos pos = Gielinor.safeSpot(world, GielinorMap.toBlockX(d.x()), GielinorMap.toBlockZ(d.y()));
-        player.teleport(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, player.getYaw(), player.getPitch());
-        world.playSound(null, pos, SoundEvents.ENTITY_BOAT_PADDLE_WATER, SoundCategory.PLAYERS, 1f, 1f);
+        player.teleportTo(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, player.getYRot(), player.getXRot());
+        world.playSound(null, pos, SoundEvents.BOAT_PADDLE_WATER, SoundSource.PLAYERS, 1f, 1f);
         Msg.game(player, switch (route.verb()) {
             case "sail" -> "You board the ship and sail to " + d.name() + ".";
             case "fly" -> "You climb into the glider and fly to " + d.name() + ".";

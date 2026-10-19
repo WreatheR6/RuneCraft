@@ -15,18 +15,17 @@ import com.runecraft.world.Gielinor;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -40,7 +39,7 @@ import java.util.UUID;
  */
 public final class AccessGateService {
     private static final class State {
-        Vec3d lastSafe;
+        Vec3 lastSafe;
         String admitted;
         long lastMessage = -1000;
     }
@@ -53,27 +52,27 @@ public final class AccessGateService {
 
     public static void register() {
         ServerTickEvents.END_SERVER_TICK.register(AccessGateService::tick);
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> STATES.remove(handler.player.getUuid()));
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> STATES.remove(handler.player.getUUID()));
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
-            if (world.isClient() || !(player instanceof ServerPlayerEntity sp) || sp.isCreative() || !Gielinor.is(sp)) {
-                return ActionResult.PASS;
+            if (world.isClientSide() || !(player instanceof ServerPlayer sp) || sp.isCreative() || !Gielinor.is(sp)) {
+                return InteractionResult.PASS;
             }
-            Identifier id = Registries.BLOCK.getId(world.getBlockState(hit.getBlockPos()).getBlock());
+            ResourceLocation id = BuiltInRegistries.BLOCK.getKey(world.getBlockState(hit.getBlockPos()).getBlock());
             int tier = AccessGates.farmingGuildTier(id.getPath());
             if (tier <= 45) {
-                return ActionResult.PASS;
+                return InteractionResult.PASS;
             }
             BlockPos pos = hit.getBlockPos();
             AccessGates.Gate guild = AccessGates.byId("farming_guild");
             if (guild == null || !guild.contains(tileX(pos.getX() + 0.5), tileY(pos.getZ() + 0.5))) {
-                return ActionResult.PASS;
+                return InteractionResult.PASS;
             }
             if (Players.data(sp).skills().currentLevel(Skill.FARMING) < tier) {
                 Msg.game(sp, "You need a Farming level of " + tier + " to use the " + (tier >= 85 ? "advanced" : "intermediate")
                         + " tier of the Farming Guild.");
-                return ActionResult.FAIL;
+                return InteractionResult.FAIL;
             }
-            return ActionResult.PASS;
+            return InteractionResult.PASS;
         });
     }
 
@@ -91,7 +90,7 @@ public final class AccessGateService {
         if ((counter++ & 1) != 0) {
             return;
         }
-        for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
+        for (ServerPlayer p : server.getPlayerList().getPlayers()) {
             try {
                 check(p);
             } catch (RuntimeException e) {
@@ -100,55 +99,55 @@ public final class AccessGateService {
         }
     }
 
-    private static void check(ServerPlayerEntity p) {
+    private static void check(ServerPlayer p) {
         if (!Gielinor.is(p) || p.isCreative() || p.isSpectator() || !p.isAlive()) {
-            STATES.remove(p.getUuid());
+            STATES.remove(p.getUUID());
             return;
         }
-        State st = STATES.computeIfAbsent(p.getUuid(), u -> new State());
+        State st = STATES.computeIfAbsent(p.getUUID(), u -> new State());
         double x = tileX(p.getX());
         double y = tileY(p.getZ());
         AccessGates.Gate gate = AccessGates.at(x, y);
         if (gate == null) {
             st.admitted = null;
-            st.lastSafe = p.getPos();
+            st.lastSafe = p.position();
             return;
         }
         if (gate.id().equals(st.admitted)) {
-            st.lastSafe = p.getPos();
+            st.lastSafe = p.position();
             return;
         }
         String refusal = gate.check(new View(p));
         if (refusal == null) {
             st.admitted = gate.id();
-            st.lastSafe = p.getPos();
+            st.lastSafe = p.position();
             return;
         }
-        long now = p.getServer().getTicks();
+        long now = p.getServer().getTickCount();
         if (now - st.lastMessage > 40) {
             Msg.game(p, refusal);
             st.lastMessage = now;
         }
-        ServerWorld world = (ServerWorld) p.getWorld();
-        Vec3d back = st.lastSafe;
+        ServerLevel world = (ServerLevel) p.level();
+        Vec3 back = st.lastSafe;
         if (back == null || gate.contains(tileX(back.x), tileY(back.z))) {
             double[] out = gate.exit(x, y);
             int bx = (int) Math.floor((out[0] - GielinorMap.ORIGIN_X) * GielinorMap.SCALE);
             int bz = (int) Math.floor((GielinorMap.ORIGIN_Y + 1 - out[1]) * GielinorMap.SCALE);
             BlockPos safe = Gielinor.safeSpot(world, bx, bz);
-            back = new Vec3d(safe.getX() + 0.5, safe.getY(), safe.getZ() + 0.5);
+            back = new Vec3(safe.getX() + 0.5, safe.getY(), safe.getZ() + 0.5);
             st.lastSafe = back;
         }
-        if (p.hasVehicle()) {
+        if (p.isPassenger()) {
             p.stopRiding();
         }
-        p.teleport(world, back.x, back.y, back.z, p.getYaw(), p.getPitch());
-        p.setVelocity(Vec3d.ZERO);
-        p.velocityModified = true;
+        p.teleportTo(world, back.x, back.y, back.z, p.getYRot(), p.getXRot());
+        p.setDeltaMovement(Vec3.ZERO);
+        p.hurtMarked = true;
     }
 
     /** The requirement view of a live player. */
-    private record View(ServerPlayerEntity p) implements AccessGates.PlayerView {
+    private record View(ServerPlayer p) implements AccessGates.PlayerView {
         private static final EquipmentSlot[] WORN = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS,
                 EquipmentSlot.FEET, EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND};
 
@@ -181,7 +180,7 @@ public final class AccessGateService {
         @Override
         public boolean wearing(String itemId) {
             for (EquipmentSlot slot : WORN) {
-                ItemStack s = p.getEquippedStack(slot);
+                ItemStack s = p.getItemBySlot(slot);
                 if (!s.isEmpty() && Inv.idOf(s).equals(itemId)) {
                     return true;
                 }
@@ -201,9 +200,9 @@ public final class AccessGateService {
 
         @Override
         public boolean hasCombatGear() {
-            PlayerInventory inv = p.getInventory();
-            for (int i = 0; i < inv.size(); i++) {
-                ItemStack s = inv.getStack(i);
+            Inventory inv = p.getInventory();
+            for (int i = 0; i < inv.getContainerSize(); i++) {
+                ItemStack s = inv.getItem(i);
                 if (s.isEmpty()) {
                     continue;
                 }

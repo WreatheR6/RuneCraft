@@ -20,16 +20,15 @@ import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.LandmarkBuilder;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Round 28 item sources (see {@link ItemSources}): Eluned sings crystal teleport seeds into teleport crystals, the
@@ -42,7 +41,7 @@ final class ItemSourcesService {
     private static final double MAKER_REACH_SQ = 8.0 * 8.0;
 
     /** Where a player last asked a Fremennik craftsman for armour, and which line that craftsman makes. */
-    private record Maker(Vec3d pos, String line) {
+    private record Maker(Vec3 pos, String line) {
     }
 
     private static final Map<UUID, Maker> MAKERS = new HashMap<>();
@@ -64,8 +63,8 @@ final class ItemSourcesService {
     }
 
     /** Runs {@code mine} first; if it doesn't handle the talk, the NPC's earlier handler (quest dialogue) runs. */
-    private static void wrap(String npc, BiPredicate<ServerPlayerEntity, QuestNpcEntity> mine) {
-        BiConsumer<ServerPlayerEntity, QuestNpcEntity> earlier = QuestScripts.handler(npc);
+    private static void wrap(String npc, BiPredicate<ServerPlayer, QuestNpcEntity> mine) {
+        BiConsumer<ServerPlayer, QuestNpcEntity> earlier = QuestScripts.handler(npc);
         QuestScripts.onTalk(npc, (p, entity) -> {
             if (!mine.test(p, entity) && earlier != null) {
                 earlier.accept(p, entity);
@@ -73,14 +72,14 @@ final class ItemSourcesService {
         });
     }
 
-    private static boolean questDone(ServerPlayerEntity p, String questId) {
+    private static boolean questDone(ServerPlayer p, String questId) {
         QuestInfo q = ContentRegistry.quest(questId);
         return q == null || Players.data(p).questComplete(q);
     }
 
     // ---------------- Eluned: teleport crystals ----------------
 
-    private static boolean eluned(ServerPlayerEntity p, QuestNpcEntity npc) {
+    private static boolean eluned(ServerPlayer p, QuestNpcEntity npc) {
         if (!Inv.has(p, "crystal_teleport_seed", 1)) {
             return false;
         }
@@ -110,7 +109,7 @@ final class ItemSourcesService {
 
     // ---------------- Lumbridge Guide: amulet of the eye ----------------
 
-    private static boolean lumbridgeGuide(ServerPlayerEntity p, QuestNpcEntity npc) {
+    private static boolean lumbridgeGuide(ServerPlayer p, QuestNpcEntity npc) {
         if (!Inv.has(p, "tarnished_locket", 1)) {
             return false;
         }
@@ -124,7 +123,7 @@ final class ItemSourcesService {
 
     // ---------------- Fremennik armour ----------------
 
-    private static boolean fremennikMaker(ServerPlayerEntity p, QuestNpcEntity npc) {
+    private static boolean fremennikMaker(ServerPlayer p, QuestNpcEntity npc) {
         String line = ItemSources.fremennikLine(npc.npcId());
         if (line == null) {
             return false;
@@ -138,22 +137,22 @@ final class ItemSourcesService {
         }
         QuestApi.say(p, npc.getName().getString(), "Bring me dagannoth hides, the right piece and coins, and I'll make you "
                 + line.replace('_', '-') + " armour.");
-        MAKERS.put(p.getUuid(), new Maker(npc.getPos(), line));
-        MenuService.open(p, MenuType.TANNING, npc.getBlockPos(), false);
+        MAKERS.put(p.getUUID(), new Maker(npc.position(), line));
+        MenuService.open(p, MenuType.TANNING, npc.blockPosition(), false);
         return true;
     }
 
     /** Fremennik armour recipes (tanning menu) need The Fremennik Trials and the craftsman of that armour line. */
-    private static String fremennikRecipe(ServerPlayerEntity p, com.runecraft.osrs.Recipe r) {
+    private static String fremennikRecipe(ServerPlayer p, com.runecraft.osrs.Recipe r) {
         if (r.menu() != MenuType.TANNING || !r.id().startsWith(ItemSources.FREMENNIK_RECIPE_PREFIX)) {
             return null;
         }
         if (!questDone(p, ItemSources.FREMENNIK_QUEST)) {
             return "Only Fremennik may have Fremennik armour made: complete The Fremennik Trials.";
         }
-        Maker m = MAKERS.get(p.getUuid());
+        Maker m = MAKERS.get(p.getUUID());
         String piece = r.id().substring(ItemSources.FREMENNIK_RECIPE_PREFIX.length());
-        if (m == null || !piece.startsWith(m.line()) || p.getPos().squaredDistanceTo(m.pos()) > MAKER_REACH_SQ) {
+        if (m == null || !piece.startsWith(m.line()) || p.position().distanceToSqr(m.pos()) > MAKER_REACH_SQ) {
             return "Only the craftsmen of Rellekka make that armour (Sigli: spined, Skulgrimen: rock-shell, Peer the Seer: skeletal).";
         }
         return null;
@@ -161,7 +160,7 @@ final class ItemSourcesService {
 
     // ---------------- Weiss Salt Mine ----------------
 
-    private static void mine(ServerPlayerEntity p, BlockPos pos, ItemSources.SaltRock rock) {
+    private static void mine(ServerPlayer p, BlockPos pos, ItemSources.SaltRock rock) {
         if (!questDone(p, ItemSources.SALT_MINE_QUEST)) {
             Msg.game(p, "The Snowflake won't let you mine here until you've finished Making Friends with My Arm.");
             return;
@@ -179,8 +178,8 @@ final class ItemSourcesService {
             int counter;
 
             @Override
-            public boolean tick(ServerPlayerEntity player, long gameTick) {
-                if (!DiaryObjectsService.isBlock(player.getWorld().getBlockState(pos), rock.block())) {
+            public boolean tick(ServerPlayer player, long gameTick) {
+                if (!DiaryObjectsService.isBlock(player.level().getBlockState(pos), rock.block())) {
                     return false;
                 }
                 if (++counter < 4) { // approx: one item every 4 ticks
@@ -200,7 +199,7 @@ final class ItemSourcesService {
     }
 
     /** Using basalt with 3 efh (or urt) salts and a te salt makes an icy (or stony) basalt (Making Friends with My Arm). */
-    static boolean combineBasalt(ServerPlayerEntity p) {
+    static boolean combineBasalt(ServerPlayer p) {
         ItemSources.Basalt b = ItemSources.basaltFor(id -> Inv.count(p, id));
         if (b == null) {
             Msg.game(p, "Basalt takes 3 efh salts (icy) or 3 urt salts (stony) and a te salt.");

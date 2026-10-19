@@ -5,8 +5,8 @@ import com.runecraft.osrs.bank.BankModel;
 import com.runecraft.osrs.bank.BankQuantity;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.network.PacketByteBuf;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.FriendlyByteBuf;
 
 /** Client side of the bank: the last state the server sent, and requests back to it. */
 public final class BankClient {
@@ -33,8 +33,8 @@ public final class BankClient {
             long[] counts = new long[n];
             int[] tabs = new int[n];
             for (int i = 0; i < n; i++) {
-                items[i] = buf.readString();
-                tags[i] = buf.readString();
+                items[i] = buf.readUtf();
+                tags[i] = buf.readUtf();
                 counts[i] = buf.readVarLong();
                 tabs[i] = buf.readVarInt();
             }
@@ -49,7 +49,7 @@ public final class BankClient {
                 BANK.x = x;
                 depositOnly = deposit;
                 value = total;
-                if (client.currentScreen instanceof BankScreen screen) {
+                if (client.screen instanceof BankScreen screen) {
                     screen.refresh();
                 } else if (open) {
                     client.setScreen(new BankScreen());
@@ -61,13 +61,13 @@ public final class BankClient {
 
     /** Sends a bank request (see {@link BankService} OP_*). */
     public static void send(int op, String key, String key2, int slot, BankQuantity.Mode mode, long x, int tab) {
-        if (MinecraftClient.getInstance().getNetworkHandler() == null) {
+        if (Minecraft.getInstance().getConnection() == null) {
             return;
         }
-        PacketByteBuf buf = PacketByteBufs.create();
+        FriendlyByteBuf buf = PacketByteBufs.create();
         buf.writeVarInt(op);
-        buf.writeString(key == null ? "" : key);
-        buf.writeString(key2 == null ? "" : key2);
+        buf.writeUtf(key == null ? "" : key);
+        buf.writeUtf(key2 == null ? "" : key2);
         buf.writeVarInt(slot);
         buf.writeVarInt(mode == null ? 0 : mode.ordinal());
         buf.writeVarLong(Math.max(0, x));

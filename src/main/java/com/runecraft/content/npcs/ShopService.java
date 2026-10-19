@@ -13,12 +13,11 @@ import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.item.ItemStack;
-import net.minecraft.network.PacketByteBuf;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.math.Vec3d;
-
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -36,7 +35,7 @@ public final class ShopService {
     private static final Map<UUID, Session> OPEN = new HashMap<>();
     private static int mcTicks;
 
-    private record Session(String shopId, Vec3d where) {
+    private record Session(String shopId, Vec3 where) {
     }
 
     /** A sellable stack summary for the screen. */
@@ -52,7 +51,7 @@ public final class ShopService {
     }
 
     /** Opens a shop for a player standing at {@code where} (the shopkeeper's position). */
-    public static void open(ServerPlayerEntity player, String shopId, Vec3d where) {
+    public static void open(ServerPlayer player, String shopId, Vec3 where) {
         if (stock(shopId) == null) {
             return;
         }
@@ -65,15 +64,15 @@ public final class ShopService {
             }
         }
         ActionManager.cancel(player);
-        OPEN.put(player.getUuid(), new Session(shopId, where));
+        OPEN.put(player.getUUID(), new Session(shopId, where));
         send(player, shopId, true);
         com.runecraft.content.GameEvents.fireActivity(player, "shop_open:" + shopId);
     }
 
-    static void close(ServerPlayerEntity player, String shopId) {
-        Session s = OPEN.get(player.getUuid());
+    static void close(ServerPlayer player, String shopId) {
+        Session s = OPEN.get(player.getUUID());
         if (s != null && s.shopId().equals(shopId)) {
-            OPEN.remove(player.getUuid());
+            OPEN.remove(player.getUUID());
         }
     }
 
@@ -81,14 +80,14 @@ public final class ShopService {
         OPEN.remove(player);
     }
 
-    private static boolean near(ServerPlayerEntity player, String shopId) {
-        Session s = OPEN.get(player.getUuid());
+    private static boolean near(ServerPlayer player, String shopId) {
+        Session s = OPEN.get(player.getUUID());
         if (s == null || !s.shopId().equals(shopId)) {
             return false;
         }
-        if (player.getPos().squaredDistanceTo(s.where()) > MAX_DISTANCE_SQ) {
+        if (player.position().distanceToSqr(s.where()) > MAX_DISTANCE_SQ) {
             Msg.game(player, "You are too far away from the shopkeeper.");
-            OPEN.remove(player.getUuid());
+            OPEN.remove(player.getUUID());
             return false;
         }
         return true;
@@ -104,7 +103,7 @@ public final class ShopService {
             return def.name();
         }
         ItemStack stack = Inv.stack(item, 1);
-        return stack.isEmpty() ? item : stack.getName().getString();
+        return stack.isEmpty() ? item : stack.getHoverName().getString();
     }
 
     private static String currencyName(ShopDef def) {
@@ -121,12 +120,12 @@ public final class ShopService {
         return def == null ? 0 : def.value();
     }
 
-    private static List<Offer> offers(ServerPlayerEntity player, ShopStock stock) {
+    private static List<Offer> offers(ServerPlayer player, ShopStock stock) {
         Map<String, Offer> map = new LinkedHashMap<>();
-        for (int i = 0; i < player.getInventory().main.size(); i++) {
-            ItemStack s = player.getInventory().main.get(i);
+        for (int i = 0; i < player.getInventory().items.size(); i++) {
+            ItemStack s = player.getInventory().items.get(i);
             boolean note = com.runecraft.bank.Notes.isNote(s) && com.runecraft.bank.Notes.notedTag(s).isEmpty();
-            if (s.isEmpty() || (s.hasNbt() && !note)) {
+            if (s.isEmpty() || (s.hasTag() && !note)) {
                 continue;
             }
             // Shops buy bank notes as the item they stand for.
@@ -153,34 +152,34 @@ public final class ShopService {
      * Packet: open flag, shop id, title, currency name, balance, general flag, stock lines (icon,
      * item id, name, count, price) and sell offers (icon, item id, name, count, price each).
      */
-    static void send(ServerPlayerEntity player, String shopId, boolean open) {
+    static void send(ServerPlayer player, String shopId, boolean open) {
         ShopStock stock = stock(shopId);
         if (stock == null) {
             return;
         }
         ShopDef def = stock.shop();
-        PacketByteBuf buf = PacketByteBufs.create();
+        FriendlyByteBuf buf = PacketByteBufs.create();
         buf.writeBoolean(open);
-        buf.writeString(def.id());
-        buf.writeString(def.name());
-        buf.writeString(currencyName(def));
+        buf.writeUtf(def.id());
+        buf.writeUtf(def.name());
+        buf.writeUtf(currencyName(def));
         buf.writeVarInt(Inv.count(player, def.currency()));
         buf.writeBoolean(def.general());
         List<ShopStock.Line> lines = stock.lines();
         buf.writeVarInt(lines.size());
         for (ShopStock.Line l : lines) {
-            buf.writeString(icon(l.item()));
-            buf.writeString(l.item());
-            buf.writeString(name(l.item()));
+            buf.writeUtf(icon(l.item()));
+            buf.writeUtf(l.item());
+            buf.writeUtf(name(l.item()));
             buf.writeVarInt(l.count());
             buf.writeVarInt(l.count() > 0 ? stock.priceToBuy(l.item()) : 0);
         }
         List<Offer> offers = offers(player, stock);
         buf.writeVarInt(offers.size());
         for (Offer o : offers) {
-            buf.writeString(icon(o.item()));
-            buf.writeString(o.item());
-            buf.writeString(o.name());
+            buf.writeUtf(icon(o.item()));
+            buf.writeUtf(o.item());
+            buf.writeUtf(o.name());
             buf.writeVarInt(o.count());
             buf.writeVarInt(o.price());
         }
@@ -193,16 +192,16 @@ public final class ShopService {
     }
 
     /** Self-test hook: buys from an open shop. */
-    public static void selfTestBuy(ServerPlayerEntity player, String shopId, String item, int quantity) {
+    public static void selfTestBuy(ServerPlayer player, String shopId, String item, int quantity) {
         buy(player, shopId, item, quantity);
     }
 
     /** Self-test hook: sells to an open shop. */
-    public static void selfTestSell(ServerPlayerEntity player, String shopId, String item, int quantity) {
+    public static void selfTestSell(ServerPlayer player, String shopId, String item, int quantity) {
         sell(player, shopId, item, quantity);
     }
 
-    static void buy(ServerPlayerEntity player, String shopId, String item, int quantity) {
+    static void buy(ServerPlayer player, String shopId, String item, int quantity) {
         ShopStock stock = stock(shopId);
         if (stock == null || !near(player, shopId)) {
             return;
@@ -233,7 +232,7 @@ public final class ShopService {
         refresh(shopId);
     }
 
-    static void sell(ServerPlayerEntity player, String shopId, String item, int quantity) {
+    static void sell(ServerPlayer player, String shopId, String item, int quantity) {
         ShopStock stock = stock(shopId);
         if (stock == null || !near(player, shopId)) {
             return;
@@ -268,8 +267,8 @@ public final class ShopService {
         if (OPEN.isEmpty()) {
             return;
         }
-        for (ServerPlayerEntity p : players()) {
-            Session s = OPEN.get(p.getUuid());
+        for (ServerPlayer p : players()) {
+            Session s = OPEN.get(p.getUUID());
             if (s != null && s.shopId().equals(shopId)) {
                 send(p, shopId, false);
             }
@@ -278,8 +277,8 @@ public final class ShopService {
 
     private static MinecraftServer server;
 
-    private static List<ServerPlayerEntity> players() {
-        return server == null ? List.of() : server.getPlayerManager().getPlayerList();
+    private static List<ServerPlayer> players() {
+        return server == null ? List.of() : server.getPlayerList().getPlayers();
     }
 
     /** Called every server tick: restocks shops once per game tick (0.6s). */

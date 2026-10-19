@@ -11,13 +11,12 @@ import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.TypedActionResult;
-
+import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.item.ItemStack;
 import java.util.Random;
 
 /** Right-click behaviour of reward containers (supply crates, intricate pouches...) and Bones to Peaches. */
@@ -32,30 +31,30 @@ public final class MinigameItemUse {
     public static ItemStack container(String item, int rolls) {
         ItemStack stack = Inv.stack(item, 1);
         if (!stack.isEmpty()) {
-            NbtCompound nbt = stack.getOrCreateNbt();
+            CompoundTag nbt = stack.getOrCreateTag();
             nbt.putInt(ROLLS, rolls);
         }
         return stack;
     }
 
     private static int rolls(ItemStack stack) {
-        NbtCompound nbt = stack.getNbt();
+        CompoundTag nbt = stack.getTag();
         return nbt != null && nbt.contains(ROLLS) ? Math.max(1, nbt.getInt(ROLLS)) : 1;
     }
 
     static void register() {
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            ItemStack stack = player.getStackInHand(hand);
-            if (world.isClient() || !(player instanceof ServerPlayerEntity sp) || stack.isEmpty()) {
-                return TypedActionResult.pass(stack);
+            ItemStack stack = player.getItemInHand(hand);
+            if (world.isClientSide() || !(player instanceof ServerPlayer sp) || stack.isEmpty()) {
+                return InteractionResultHolder.pass(stack);
             }
             String id = Inv.idOf(stack);
-            if (sp.getItemCooldownManager().isCoolingDown(stack.getItem())) {
-                return TypedActionResult.pass(stack);
+            if (sp.getCooldowns().isOnCooldown(stack.getItem())) {
+                return InteractionResultHolder.pass(stack);
             }
             if (com.runecraft.content.minigames.games.NightmareZoneSession.drink(sp, stack, hand, id) || blighted(sp, stack, hand, id)
                     || com.runecraft.content.minigames.games.VolcanicMineSession.useVessel(sp, id)) {
-                return TypedActionResult.success(stack);
+                return InteractionResultHolder.success(stack);
             }
             boolean used = switch (id) {
                 case "spoils_of_war" -> {
@@ -107,14 +106,14 @@ public final class MinigameItemUse {
                 default -> com.runecraft.content.minigames.games.TempleTrekkingSession.readTome(sp, id);
             };
             if (used) {
-                stack.decrement(1);
-                return TypedActionResult.success(stack);
+                stack.shrink(1);
+                return InteractionResultHolder.success(stack);
             }
-            return TypedActionResult.pass(stack);
+            return InteractionResultHolder.pass(stack);
         });
     }
 
-    static void give(ServerPlayerEntity p, String item, int count) {
+    static void give(ServerPlayer p, String item, int count) {
         if (item == null || count <= 0) {
             return;
         }
@@ -122,32 +121,32 @@ public final class MinigameItemUse {
         CollectionLog.obtain(p, item);
     }
 
-    private static void pet(ServerPlayerEntity p, String pet) {
+    private static void pet(ServerPlayer p, String pet) {
         give(p, pet, 1);
-        p.getServer().getPlayerManager().broadcast(Text.literal(p.getName().getString()
-                + " has a funny feeling like they're being followed.").formatted(Formatting.GOLD), false);
+        p.getServer().getPlayerList().broadcastSystemMessage(Component.literal(p.getName().getString()
+                + " has a funny feeling like they're being followed.").withStyle(ChatFormatting.GOLD), false);
     }
 
     /** Gives {@code n} of an item as bank notes when it can be noted (overflow drops at the player's feet). */
-    public static void giveNoted(ServerPlayerEntity p, String item, int n) {
+    public static void giveNoted(ServerPlayer p, String item, int n) {
         if (n <= 0) {
             return;
         }
-        net.minecraft.item.ItemStack note = com.runecraft.osrs.bank.BankNotes.canNote(item)
-                ? com.runecraft.bank.Notes.note(item, "", 1) : net.minecraft.item.ItemStack.EMPTY;
+        net.minecraft.world.item.ItemStack note = com.runecraft.osrs.bank.BankNotes.canNote(item)
+                ? com.runecraft.bank.Notes.note(item, "", 1) : net.minecraft.world.item.ItemStack.EMPTY;
         if (note.isEmpty()) {
             give(p, item, n);
             return;
         }
         int in = com.runecraft.bank.Notes.insert(p, note, n);
         if (in < n) {
-            p.dropItem(note.copyWithCount(n - in), false);
+            p.drop(note.copyWithCount(n - in), false);
         }
         CollectionLog.obtain(p, item);
     }
 
     /** Soul Wars spoils of war: three rolls plus the Lil' creator roll. */
-    public static void openSpoils(ServerPlayerEntity p) {
+    public static void openSpoils(ServerPlayer p) {
         for (com.runecraft.osrs.content.minigames.SpoilsOfWar.Prize prize
                 : com.runecraft.osrs.content.minigames.SpoilsOfWar.open(RANDOM::nextDouble)) {
             if (prize.item().equals(com.runecraft.osrs.content.minigames.SpoilsOfWar.PET)) {
@@ -163,23 +162,23 @@ public final class MinigameItemUse {
 
     /** Herb box (Nightmare Zone): seven rolls on the herb drop table (OSRS Wiki weights out of 128). */
     /** The scroll of redirection's towns, as chat links ({@code /minigame redirect <town>}). */
-    static void showRedirects(ServerPlayerEntity p) {
+    static void showRedirects(ServerPlayer p) {
         Msg.game(p, "Use the scroll on a Teleport to house tablet to redirect it to:");
-        net.minecraft.text.MutableText line = net.minecraft.text.Text.literal("");
+        net.minecraft.network.chat.MutableComponent line = net.minecraft.network.chat.Component.literal("");
         for (com.runecraft.osrs.content.minigames.MinigameRules.NightmareZone.Redirect r
                 : com.runecraft.osrs.content.minigames.MinigameRules.NightmareZone.REDIRECTS) {
-            line.append(net.minecraft.text.Text.literal("[" + r.town() + "] ").styled(s -> s.withColor(net.minecraft.util.Formatting.AQUA)
-                    .withClickEvent(new net.minecraft.text.ClickEvent(net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
+            line.append(net.minecraft.network.chat.Component.literal("[" + r.town() + "] ").withStyle(s -> s.withColor(net.minecraft.ChatFormatting.AQUA)
+                    .withClickEvent(new net.minecraft.network.chat.ClickEvent(net.minecraft.network.chat.ClickEvent.Action.RUN_COMMAND,
                             "/minigame redirect " + r.town().toLowerCase(java.util.Locale.ROOT)))));
         }
-        p.sendMessage(line, false);
+        p.displayClientMessage(line, false);
     }
 
     /**
      * Redirects one Teleport to house tablet with a scroll of redirection (both used up), if the player has the Construction
      * level to move a house to that town and any quest it needs. Returns whether a tablet was made.
      */
-    public static boolean redirect(ServerPlayerEntity p, String town) {
+    public static boolean redirect(ServerPlayer p, String town) {
         com.runecraft.osrs.content.minigames.MinigameRules.NightmareZone.Redirect r =
                 com.runecraft.osrs.content.minigames.MinigameRules.NightmareZone.redirect(town);
         if (r == null) {
@@ -205,7 +204,7 @@ public final class MinigameItemUse {
         return true;
     }
 
-    public static void openHerbBox(ServerPlayerEntity p) {
+    public static void openHerbBox(ServerPlayer p) {
         String[] herbs = {"guam_leaf", "marrentill", "tarromin", "harralander", "ranarr_weed", "irit_leaf", "avantoe", "kwuarm",
                 "cadantine", "lantadyme", "dwarf_weed"};
         int[] weights = {32, 24, 18, 14, 11, 8, 6, 5, 4, 3, 3};
@@ -230,7 +229,7 @@ public final class MinigameItemUse {
      * Blighted supplies only work in the Wilderness. Returns true when the click was handled: blocked outside
      * the Wilderness, or a blighted super restore drunk inside it (blighted food is eaten as normal food).
      */
-    static boolean blighted(ServerPlayerEntity p, ItemStack stack, net.minecraft.util.Hand hand, String id) {
+    static boolean blighted(ServerPlayer p, ItemStack stack, net.minecraft.world.InteractionHand hand, String id) {
         boolean food = id.equals("blighted_karambwan") || id.equals("blighted_anglerfish") || id.equals("blighted_manta_ray");
         boolean restore = id.equals("blighted_super_restore");
         if (!food && !restore) {
@@ -250,22 +249,22 @@ public final class MinigameItemUse {
             int cap = Math.max(data.skills().level(Skill.PRAYER), data.skills().currentLevel(Skill.PRAYER));
             data.setPrayerPoints(Math.max(data.prayerPoints(), Math.min(cap, data.prayerPoints() + prayer)));
         }
-        int used = stack.getDamage() + 1;
-        p.getItemCooldownManager().set(stack.getItem(), 3 * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK);
-        p.getWorld().playSound(null, p.getBlockPos(), net.minecraft.sound.SoundEvents.ENTITY_GENERIC_DRINK,
-                net.minecraft.sound.SoundCategory.PLAYERS, 0.5f, 1.0f);
+        int used = stack.getDamageValue() + 1;
+        p.getCooldowns().addCooldown(stack.getItem(), 3 * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK);
+        p.level().playSound(null, p.blockPosition(), net.minecraft.sounds.SoundEvents.GENERIC_DRINK,
+                net.minecraft.sounds.SoundSource.PLAYERS, 0.5f, 1.0f);
         Msg.action(p, "You drink some of your blighted super restore.");
         if (used >= 4) {
-            p.setStackInHand(hand, Inv.stack("vial", 1));
+            p.setItemInHand(hand, Inv.stack("vial", 1));
         } else {
-            stack.setDamage(used);
+            stack.setDamageValue(used);
         }
         com.runecraft.network.ServerNetworking.sync(p);
         return true;
     }
 
     /** Wintertodt supply crate: N rolls of the wiki reward table (uniques first, then a skill/coin table). */
-    public static void openSupplyCrate(ServerPlayerEntity p, int rolls) {
+    public static void openSupplyCrate(ServerPlayer p, int rolls) {
         java.util.Set<String> log = com.runecraft.player.Players.data(p).collectionLog();
         com.runecraft.osrs.SkillSet skills = com.runecraft.player.Players.data(p).skills();
         WintertodtRewards.Player who = new WintertodtRewards.Player(skills.level(Skill.CRAFTING), skills.level(Skill.HERBLORE),
@@ -285,7 +284,7 @@ public final class MinigameItemUse {
     }
 
     /** Guardians of the Rift intricate pouch (approx. contents; 1/200 blood essence pre-roll). */
-    public static void openPouch(ServerPlayerEntity p) {
+    public static void openPouch(ServerPlayer p) {
         boolean hasLocket = Inv.has(p, "tarnished_locket", 1) || Inv.has(p, "amulet_of_the_eye", 1)
                 || com.runecraft.player.Players.data(p).collectionLog().contains("tarnished_locket")
                 || com.runecraft.player.Players.data(p).collectionLog().contains("amulet_of_the_eye");
@@ -295,7 +294,7 @@ public final class MinigameItemUse {
     }
 
     /** One Rewards Guardian search (costs one elemental and one catalytic point, paid by the caller). */
-    public static void riftSearch(ServerPlayerEntity p) {
+    public static void riftSearch(ServerPlayer p) {
         java.util.List<String> owned = new java.util.ArrayList<>();
         java.util.List<String> check = new java.util.ArrayList<>(GuardiansRewards.POUCHES);
         check.addAll(GuardiansRewards.ONCE_ONLY);
@@ -316,7 +315,7 @@ public final class MinigameItemUse {
     }
 
     /** Gnome Restaurant reward box. */
-    public static void openAluftBox(ServerPlayerEntity p) {
+    public static void openAluftBox(ServerPlayer p) {
         Object[] dish = MinigameItems.GNOME_DISHES[RANDOM.nextInt(MinigameItems.GNOME_DISHES.length)];
         give(p, (String) dish[0], 1);
         give(p, "coins", 200 + RANDOM.nextInt(800));
@@ -332,8 +331,8 @@ public final class MinigameItemUse {
     }
 
     /** Bones to Peaches (unlocked at the Mage Training Arena): 2 nature, 4 water, 4 earth runes. */
-    static void bonesToPeaches(ServerPlayerEntity p) {
-        if (!MinigameData.of(p).flag(p.getUuid(), "bones_to_peaches")) {
+    static void bonesToPeaches(ServerPlayer p) {
+        if (!MinigameData.of(p).flag(p.getUUID(), "bones_to_peaches")) {
             Msg.game(p, "You haven't unlocked Bones to Peaches. Visit the Mage Training Arena.");
             return;
         }

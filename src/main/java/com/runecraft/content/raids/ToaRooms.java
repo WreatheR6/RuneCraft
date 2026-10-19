@@ -13,16 +13,6 @@ import com.runecraft.osrs.content.raids.RoomDef;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.LeavesBlock;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,6 +20,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LeavesBlock;
+import net.minecraft.world.phys.Vec3;
 
 /** Tombs of Amascut rooms: the four path puzzles, the path bosses and the Wardens. */
 final class ToaRooms {
@@ -56,13 +55,13 @@ final class ToaRooms {
             tiles.clear();
             for (int dz = -4; dz <= 4; dz += 4) {
                 for (int dx = -4; dx <= 4; dx += 4) {
-                    BlockPos p = center().add(dx, 0, dz);
+                    BlockPos p = center().offset(dx, 0, dz);
                     RaidBuilder.set(world(), p, RaidBuilder.module(RaidsContent.SCABARAS_TILE));
                     tiles.add(p);
                 }
             }
-            RaidBuilder.pillar(world(), center().add(12, 0, -10), 1, 4, Blocks.CHISELED_SANDSTONE.getDefaultState());
-            RaidBuilder.pillar(world(), center().add(12, 0, 10), 1, 4, Blocks.CHISELED_SANDSTONE.getDefaultState());
+            RaidBuilder.pillar(world(), center().offset(12, 0, -10), 1, 4, Blocks.CHISELED_SANDSTONE.defaultBlockState());
+            RaidBuilder.pillar(world(), center().offset(12, 0, 10), 1, 4, Blocks.CHISELED_SANDSTONE.defaultBlockState());
         }
 
         @Override
@@ -92,8 +91,8 @@ final class ToaRooms {
                 showIndex++;
                 if (showIndex >= 0 && showIndex % 2 == 0 && showIndex / 2 < sequence.size()) {
                     BlockPos t = tiles.get(sequence.get(showIndex / 2));
-                    world().spawnParticles(ParticleTypes.END_ROD, t.getX() + 0.5, t.getY() + 1.2, t.getZ() + 0.5, 25, 0.3, 0.5, 0.3, 0.02);
-                    world().playSound(null, t, SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), SoundCategory.BLOCKS, 1f,
+                    world().sendParticles(ParticleTypes.END_ROD, t.getX() + 0.5, t.getY() + 1.2, t.getZ() + 0.5, 25, 0.3, 0.5, 0.3, 0.02);
+                    world().playSound(null, t, SoundEvents.NOTE_BLOCK_CHIME.value(), SoundSource.BLOCKS, 1f,
                             0.6f + sequence.get(showIndex / 2) * 0.1f);
                 }
                 if (showIndex >= sequence.size() * 2) {
@@ -102,23 +101,23 @@ final class ToaRooms {
                 }
                 return;
             }
-            for (ServerPlayerEntity p : players()) {
-                int on = tiles.indexOf(p.getBlockPos().down());
-                Integer before = standing.put(p.getUuid(), on);
+            for (ServerPlayer p : players()) {
+                int on = tiles.indexOf(p.blockPosition().below());
+                Integer before = standing.put(p.getUUID(), on);
                 if (on >= 0 && (before == null || before != on)) {
                     press(p, on);
                 }
             }
         }
 
-        private void press(ServerPlayerEntity p, int tile) {
+        private void press(ServerPlayer p, int tile) {
             if (done || showIndex != Integer.MAX_VALUE) {
                 return;
             }
             BlockPos t = tiles.get(tile);
             if (sequence.get(input) == tile) {
                 input++;
-                world().spawnParticles(ParticleTypes.HAPPY_VILLAGER, t.getX() + 0.5, t.getY() + 1.2, t.getZ() + 0.5, 10, 0.3, 0.3, 0.3, 0);
+                world().sendParticles(ParticleTypes.HAPPY_VILLAGER, t.getX() + 0.5, t.getY() + 1.2, t.getZ() + 0.5, 10, 0.3, 0.3, 0.3, 0);
                 if (input >= sequence.size()) {
                     if (round >= 3) {
                         say("The tiles of Scabaras glow - the path is open!");
@@ -129,7 +128,7 @@ final class ToaRooms {
                 }
             } else {
                 warn("Wrong tile! Scarabs swarm out of the floor!");
-                for (ServerPlayerEntity pl : players()) {
+                for (ServerPlayer pl : players()) {
                     RaidEffects.hit(null, pl, 5 + rnd().nextInt(8), null, true);
                 }
                 replay();
@@ -137,7 +136,7 @@ final class ToaRooms {
         }
 
         @Override
-        public boolean useBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+        public boolean useBlock(ServerPlayer player, String blockId, BlockPos pos) {
             if (!blockId.equals(RaidsContent.SCABARAS_TILE)) {
                 return false;
             }
@@ -161,10 +160,10 @@ final class ToaRooms {
         @Override
         public void decorate() {
             RaidBuilder.set(world(), at(16, 0), RaidBuilder.module(RaidsContent.HET_SEAL));
-            RaidBuilder.set(world(), at(16, 0).up(), Blocks.GOLD_BLOCK.getDefaultState());
-            RaidBuilder.pillar(world(), center().add(16, 0, -3), 0, 4, Blocks.CHISELED_SANDSTONE.getDefaultState());
-            RaidBuilder.pillar(world(), center().add(16, 0, 3), 0, 4, Blocks.CHISELED_SANDSTONE.getDefaultState());
-            RaidBuilder.set(world(), at(-19, 0).up(2), Blocks.GLOWSTONE.getDefaultState());
+            RaidBuilder.set(world(), at(16, 0).above(), Blocks.GOLD_BLOCK.defaultBlockState());
+            RaidBuilder.pillar(world(), center().offset(16, 0, -3), 0, 4, Blocks.CHISELED_SANDSTONE.defaultBlockState());
+            RaidBuilder.pillar(world(), center().offset(16, 0, 3), 0, 4, Blocks.CHISELED_SANDSTONE.defaultBlockState());
+            RaidBuilder.set(world(), at(-19, 0).above(2), Blocks.GLOWSTONE.defaultBlockState());
         }
 
         @Override
@@ -176,11 +175,11 @@ final class ToaRooms {
         @Override
         public void gameTick(long tick) {
             if (tick % 6 == 0) {
-                ServerPlayerEntity p = randomPlayer();
+                ServerPlayer p = randomPlayer();
                 if (p != null) {
                     say("The light of Het sweeps across the room!");
                     for (int x = -18; x <= 14; x += 2) {
-                        RaidEffects.strike(world(), new Vec3d(center().getX() + 0.5 + x, p.getY(), p.getZ()), 1.2, 18, 3, null,
+                        RaidEffects.strike(world(), new Vec3(center().getX() + 0.5 + x, p.getY(), p.getZ()), 1.2, 18, 3, null,
                                 ParticleTypes.END_ROD);
                     }
                 }
@@ -188,7 +187,7 @@ final class ToaRooms {
         }
 
         @Override
-        public boolean useBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+        public boolean useBlock(ServerPlayer player, String blockId, BlockPos pos) {
             if (!blockId.equals(RaidsContent.HET_SEAL)) {
                 return false;
             }
@@ -199,14 +198,14 @@ final class ToaRooms {
                 Msg.game(player, "You need a pickaxe to break the seal.");
                 return true;
             }
-            player.swingHand(net.minecraft.util.Hand.MAIN_HAND);
+            player.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
             progress += 1 + level(player, Skill.MINING) / 30;
             XpService.add(player, Skill.MINING, 20);
-            world().spawnParticles(ParticleTypes.CRIT, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 8, 0.4, 0.4, 0.4, 0.1);
+            world().sendParticles(ParticleTypes.CRIT, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 8, 0.4, 0.4, 0.4, 0.1);
             Msg.action(player, "You chip at Het's seal. (" + Math.min(progress, needed) + "/" + needed + ")");
             if (progress >= needed) {
-                RaidBuilder.set(world(), pos, Blocks.AIR.getDefaultState());
-                RaidBuilder.set(world(), pos.up(), Blocks.AIR.getDefaultState());
+                RaidBuilder.set(world(), pos, Blocks.AIR.defaultBlockState());
+                RaidBuilder.set(world(), pos.above(), Blocks.AIR.defaultBlockState());
                 say("Het's seal shatters!");
                 complete();
             }
@@ -262,11 +261,11 @@ final class ToaRooms {
                     warn("Apmeken's sight reveals: " + fixtures.get(problem) + "!");
                 }
             } else {
-                world().spawnParticles(ParticleTypes.LARGE_SMOKE, problem.getX() + 0.5, problem.getY() + 1.2, problem.getZ() + 0.5, 4, 0.3,
+                world().sendParticles(ParticleTypes.LARGE_SMOKE, problem.getX() + 0.5, problem.getY() + 1.2, problem.getZ() + 0.5, 4, 0.3,
                         0.3, 0.3, 0.01);
                 if (now > deadline) {
                     warn("You were too slow - the room shakes violently!");
-                    for (ServerPlayerEntity p : players()) {
+                    for (ServerPlayer p : players()) {
                         RaidEffects.hit(null, p, 10 + rnd().nextInt(11), null, true);
                     }
                     problem = null;
@@ -281,7 +280,7 @@ final class ToaRooms {
         }
 
         @Override
-        public boolean useBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+        public boolean useBlock(ServerPlayer player, String blockId, BlockPos pos) {
             if (!fixtures.containsKey(pos)) {
                 return false;
             }
@@ -289,7 +288,7 @@ final class ToaRooms {
                 Msg.game(player, "Nothing seems wrong with this right now.");
                 return true;
             }
-            player.swingHand(net.minecraft.util.Hand.MAIN_HAND);
+            player.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
             XpService.add(player, Skill.CONSTRUCTION, 30);
             repaired++;
             problem = null;
@@ -326,9 +325,9 @@ final class ToaRooms {
             BlockPos palm = at(14, 0);
             RaidBuilder.set(world(), palm, RaidBuilder.module(RaidsContent.CRONDIS_PALM));
             RaidBuilder.fill(world(), palm.getX(), palm.getY() + 1, palm.getZ(), palm.getX(), palm.getY() + 3, palm.getZ(),
-                    Blocks.JUNGLE_LOG.getDefaultState());
+                    Blocks.JUNGLE_LOG.defaultBlockState());
             RaidBuilder.fill(world(), palm.getX() - 2, palm.getY() + 4, palm.getZ() - 2, palm.getX() + 2, palm.getY() + 4, palm.getZ() + 2,
-                    Blocks.JUNGLE_LEAVES.getDefaultState().with(LeavesBlock.PERSISTENT, true));
+                    Blocks.JUNGLE_LEAVES.defaultBlockState().setValue(LeavesBlock.PERSISTENT, true));
         }
 
         @Override
@@ -340,9 +339,9 @@ final class ToaRooms {
         @Override
         public void gameTick(long tick) {
             if (tick % 5 == 0) {
-                ServerPlayerEntity p = randomPlayer();
+                ServerPlayer p = randomPlayer();
                 if (p != null) {
-                    Vec3d at = p.getPos();
+                    Vec3 at = p.position();
                     RaidEffects.strike(world(), at, 1.3, 10, 3, null, ParticleTypes.ITEM_SLIME);
                     RaidEffects.later(3, () -> Mechanics.addHazard(world(), at, 4, 10, null));
                 }
@@ -350,7 +349,7 @@ final class ToaRooms {
         }
 
         @Override
-        public void onPlayerHurt(ServerPlayerEntity player, int damage) {
+        public void onPlayerHurt(ServerPlayer player, int damage) {
             if (damage > 0 && Inv.has(player, "crondis_water_container", 1) && rnd().nextInt(3) == 0) {
                 Inv.remove(player, "crondis_water_container", 1);
                 Msg.red(player, "You spill your water!");
@@ -358,7 +357,7 @@ final class ToaRooms {
         }
 
         @Override
-        public boolean useBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+        public boolean useBlock(ServerPlayer player, String blockId, BlockPos pos) {
             if (blockId.equals(RaidsContent.CRONDIS_WATER)) {
                 if (Inv.has(player, "crondis_water_container", 1)) {
                     Msg.game(player, "You are already carrying water.");
@@ -375,7 +374,7 @@ final class ToaRooms {
                 }
                 Inv.remove(player, "crondis_water_container", 1);
                 watered++;
-                world().spawnParticles(ParticleTypes.SPLASH, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, 20, 0.5, 0.5, 0.5, 0);
+                world().sendParticles(ParticleTypes.SPLASH, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, 20, 0.5, 0.5, 0.5, 0);
                 say(player.getName().getString() + " waters the palm. (" + Math.min(watered, needed) + "/" + needed + ")");
                 if (watered >= needed) {
                     say("The Palm of Resourcefulness flourishes!");
@@ -419,7 +418,7 @@ final class ToaRooms {
         public void decorate() {
             BlockPos c = center();
             RaidBuilder.fill(world(), c.getX() + 12, c.getY(), c.getZ() - 4, c.getX() + 17, c.getY(), c.getZ() + 4,
-                    Blocks.CHISELED_SANDSTONE.getDefaultState());
+                    Blocks.CHISELED_SANDSTONE.defaultBlockState());
         }
 
         @Override
@@ -450,7 +449,7 @@ final class ToaRooms {
 
         /** A shield bar never takes Kephri below 1 hitpoint: breaking it starts an intermission instead. */
         @Override
-        public int bossIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        public int bossIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             if (boss != kephri || broken >= 3 || damage <= 0) {
                 return damage;
             }
@@ -489,7 +488,7 @@ final class ToaRooms {
                 int body = RaidScaling.toaScaledHp(80, raid.raidLevel(), raid.pathLevel(), raid.partySize(), true);
                 raid.setCurrentHitpoints(kephri, body);
                 warn("Kephri's swarm disperses - she is vulnerable!");
-                for (ServerPlayerEntity p : players()) {
+                for (ServerPlayer p : players()) {
                     dungStrike(p);
                 }
                 return;
@@ -548,7 +547,7 @@ final class ToaRooms {
         }
 
         @Override
-        public void onCreatureHit(ServerPlayerEntity player, LivingEntity target, int damage) {
+        public void onCreatureHit(ServerPlayer player, LivingEntity target, int damage) {
             if (target == arcane && alive(arcane)) {
                 arcaneHits++;
                 // OSRS: three hits (+1 per extra player), or one over 39, make the Arcane Scarab relocate.
@@ -563,31 +562,31 @@ final class ToaRooms {
             arcaneHits = 0;
             arcaneCharge = 0;
             BlockPos to = at(ARCANE_SPOTS[arcaneSpot][0], ARCANE_SPOTS[arcaneSpot][1]);
-            arcane.requestTeleport(to.getX() + 0.5, to.getY(), to.getZ() + 0.5);
+            arcane.teleportTo(to.getX() + 0.5, to.getY(), to.getZ() + 0.5);
             say("The Arcane Scarab scuttles away, dispersing its swarm.");
         }
 
-        private void dungStrike(ServerPlayerEntity p) {
+        private void dungStrike(ServerPlayer p) {
             Msg.red(p, "Flies buzz around you...");
             RaidEffects.later(3, () -> {
                 if (!alive(kephri) || !p.isAlive()) {
                     return;
                 }
                 Msg.red(p, "Kephri throws you back!");
-                Vec3d push = p.getPos().subtract(kephri.getPos()).multiply(1, 0, 1).normalize().multiply(1.4);
-                p.addVelocity(push.x, 0.4, push.z);
-                p.velocityModified = true;
+                Vec3 push = p.position().subtract(kephri.position()).multiply(1, 0, 1).normalize().scale(1.4);
+                p.push(push.x, 0.4, push.z);
+                p.hurtMarked = true;
                 RaidEffects.hit(kephri, p, 5 + rnd().nextInt(11), null, true); // approx: dung strike damage
-                world().spawnParticles(ParticleTypes.ITEM_SLIME, p.getX(), p.getY() + 0.5, p.getZ(), 12, 0.6, 0.3, 0.6, 0.05);
+                world().sendParticles(ParticleTypes.ITEM_SLIME, p.getX(), p.getY() + 0.5, p.getZ(), 12, 0.6, 0.3, 0.6, 0.05);
             });
         }
 
         /** Kephri's fireball (and a bomber scarab's): lands where the target stood; 3x3 and harder with Aerial Assault. */
-        private void fireball(ServerPlayerEntity p) {
+        private void fireball(ServerPlayer p) {
             Set<Invocation> inv = raid.invocations();
             int radius = Invocation.kephriFireballRadius(inv);
             int max = (int) Math.round(24 * Invocation.kephriFireballDamage(inv));
-            RaidEffects.strike(world(), p.getPos(), 0.8 + 1.5 * radius, max, 3, kephri, ParticleTypes.FLAME, AttackType.MAGIC, true);
+            RaidEffects.strike(world(), p.position(), 0.8 + 1.5 * radius, max, 3, kephri, ParticleTypes.FLAME, AttackType.MAGIC, true);
         }
 
         @Override
@@ -600,7 +599,7 @@ final class ToaRooms {
             // OSRS: faster auto-attacks every two path levels.
             int every = 6 - Math.min(4, raid.pathLevel()) / 2;
             if (tick % every == 0 && !dazed) {
-                ServerPlayerEntity p = randomPlayer();
+                ServerPlayer p = randomPlayer();
                 if (p != null) {
                     fireball(p);
                 }
@@ -617,13 +616,13 @@ final class ToaRooms {
                     LivingEntity swarm = spawnMob("toa_scarab_swarm", at(-6 + rnd().nextInt(12), i % 2 == 0 ? -18 : 18), false);
                     if (swarm != null && Invocation.kephriMedicSwarmSpeed(inv) < 1.0) {
                         // OSRS: Medic!'s swarms move 50% slower (Slowness III: -45%).
-                        swarm.addStatusEffect(new net.minecraft.entity.effect.StatusEffectInstance(
-                                net.minecraft.entity.effect.StatusEffects.SLOWNESS, 20 * 600, 2, false, false));
+                        swarm.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                                net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN, 20 * 600, 2, false, false));
                     }
                 }
             }
             if (tick % 2 == 0 && (dazed || guarded())) {
-                world().spawnParticles(ParticleTypes.ENCHANT, kephri.getX(), kephri.getY() + 1, kephri.getZ(), 10, 1.2, 0.8, 1.2, 0.2);
+                world().sendParticles(ParticleTypes.ENCHANT, kephri.getX(), kephri.getY() + 1, kephri.getZ(), 10, 1.2, 0.8, 1.2, 0.2);
             }
             // OSRS: a swarm that reaches her recharges about 10% of a shield (heals her body in the last phase): 1% of her
             // maximum per hitpoint of the 10-hitpoint swarm.
@@ -637,13 +636,13 @@ final class ToaRooms {
 
         /** Intermission: bomber scarabs, the Soldier's healing swarms, the Spitting Scarab's spray, the Arcane charge. */
         private void intermission(long tick) {
-            List<ServerPlayerEntity> players = players();
+            List<ServerPlayer> players = players();
             if (players.isEmpty()) {
                 return;
             }
             if (tick % 8 == 0) {
                 // OSRS: bomber scarabs fly at players like Kephri's fireball (same flight distance, Aerial Assault applies).
-                ServerPlayerEntity p = players.get(rnd().nextInt(players.size()));
+                ServerPlayer p = players.get(rnd().nextInt(players.size()));
                 Msg.red(p, "A bomber scarab homes in on you!");
                 fireball(p);
             }
@@ -654,15 +653,15 @@ final class ToaRooms {
                 String id = RaidInstance.creatureId(g);
                 if ("toa_soldier_scarab".equals(id) && tick % 8 == 0) {
                     // OSRS: about every 5 seconds the Soldier sends a swarm that recharges Kephri, more at higher health.
-                    LivingEntity swarm = spawnMob("toa_scarab_swarm", g.getBlockPos(), false);
+                    LivingEntity swarm = spawnMob("toa_scarab_swarm", g.blockPosition(), false);
                     if (swarm != null) {
                         swarm.setHealth(Math.max(1, swarm.getMaxHealth() * (float) raid.healthFraction(g)));
                     }
                 } else if ("toa_spitting_scarab".equals(id) && tick % 3 == 0) {
                     // OSRS: the Spitting Scarab hits every player within 8 tiles (poisoning from 6).
-                    LivingEntity target = g instanceof net.minecraft.entity.mob.MobEntity m ? m.getTarget() : null;
-                    for (ServerPlayerEntity p : players) {
-                        if (p != target && p.squaredDistanceTo(g) < 8 * 8) {
+                    LivingEntity target = g instanceof net.minecraft.world.entity.Mob m ? m.getTarget() : null;
+                    for (ServerPlayer p : players) {
+                        if (p != target && p.distanceToSqr(g) < 8 * 8) {
                             if (RaidEffects.hit(g, p, rnd().nextInt(9), AttackType.RANGED, false) > 0 && rnd().nextInt(4) == 0) {
                                 com.runecraft.combat.PoisonService.poison(p, 6, com.runecraft.action.ActionManager.gameTick());
                             }
@@ -672,11 +671,11 @@ final class ToaRooms {
             }
             if (alive(arcane)) {
                 arcaneCharge++;
-                world().spawnParticles(ParticleTypes.WITCH, arcane.getX(), arcane.getY() + 0.5, arcane.getZ(), 4 + arcaneCharge / 2, 1.0, 0.4, 1.0, 0.02);
+                world().sendParticles(ParticleTypes.WITCH, arcane.getX(), arcane.getY() + 0.5, arcane.getZ(), 4 + arcaneCharge / 2, 1.0, 0.4, 1.0, 0.02);
                 if (arcaneCharge >= Invocation.ARCANE_SCARAB_CHARGE_TICKS) {
                     // OSRS: well over 65 damage unless Protect from Magic is up (which cuts about two thirds).
                     warn("The Arcane Scarab unleashes its explosive swarm!");
-                    for (ServerPlayerEntity p : players) {
+                    for (ServerPlayer p : players) {
                         int roll = 45 + rnd().nextInt(26);
                         RaidEffects.hit(arcane, p, RaidEffects.protectedFrom(p, AttackType.MAGIC) ? roll / 3 : roll, null, true);
                     }
@@ -691,38 +690,38 @@ final class ToaRooms {
          * Larvae); with too many scarabs about she Dung Strikes instead.
          */
         private void shieldSpecials(long tick, Set<Invocation> inv) {
-            List<ServerPlayerEntity> players = players();
+            List<ServerPlayer> players = players();
             if (players.isEmpty()) {
                 return;
             }
             boolean crowded = living("toa_agile_scarab").size() >= 4; // approx: "too many scarabs"
             if (tick % 16 == 4 || (tick % 16 == 12 && crowded)) {
-                List<ServerPlayerEntity> pool = new ArrayList<>(players);
+                List<ServerPlayer> pool = new ArrayList<>(players);
                 java.util.Collections.shuffle(pool, rnd());
                 int n = Invocation.kephriDungTargets(inv, players.size());
-                for (ServerPlayerEntity p : pool.subList(0, Math.min(n, pool.size()))) {
+                for (ServerPlayer p : pool.subList(0, Math.min(n, pool.size()))) {
                     dungStrike(p);
                 }
             } else if (tick % 16 == 12) {
                 say("Kephri lays her eggs!");
                 for (int i = 0; i < 2; i++) {
-                    ServerPlayerEntity p = players.get(rnd().nextInt(players.size()));
-                    Vec3d at = p.getPos().add(rnd().nextInt(7) - 3, 0, rnd().nextInt(7) - 3);
+                    ServerPlayer p = players.get(rnd().nextInt(players.size()));
+                    Vec3 at = p.position().add(rnd().nextInt(7) - 3, 0, rnd().nextInt(7) - 3);
                     // OSRS: unattended small eggs explode in a 3x3 area. // approx: 8 ticks, up to 12
                     RaidEffects.strike(world(), at, 1.6, 12, 8, kephri, ParticleTypes.ITEM_SLIME, null, true);
                 }
                 int dark = Invocation.kephriDarkEggs(inv, rnd());
                 for (int i = 0; i < dark; i++) {
-                    ServerPlayerEntity p = players.get(rnd().nextInt(players.size()));
-                    BlockPos egg = inRoom(BlockPos.ofFloored(p.getPos().add(rnd().nextInt(9) - 4, 0, rnd().nextInt(9) - 4)));
-                    world().spawnParticles(ParticleTypes.SQUID_INK, egg.getX() + 0.5, egg.getY() + 0.3, egg.getZ() + 0.5, 8, 0.3, 0.1, 0.3, 0.01);
+                    ServerPlayer p = players.get(rnd().nextInt(players.size()));
+                    BlockPos egg = inRoom(BlockPos.containing(p.position().add(rnd().nextInt(9) - 4, 0, rnd().nextInt(9) - 4)));
+                    world().sendParticles(ParticleTypes.SQUID_INK, egg.getX() + 0.5, egg.getY() + 0.3, egg.getZ() + 0.5, 8, 0.3, 0.1, 0.3, 0.01);
                     RaidEffects.later(8, () -> {
                         if (!alive(kephri)) {
                             return;
                         }
                         // A player standing on the dark egg crushes it before it hatches. // approx: OSRS eggs are attacked
-                        for (ServerPlayerEntity q : players()) {
-                            if (q.getBlockPos().getSquaredDistance(egg) <= 2) {
+                        for (ServerPlayer q : players()) {
+                            if (q.blockPosition().distSqr(egg) <= 2) {
                                 Msg.game(q, "You crush a dark egg.");
                                 return;
                             }
@@ -744,15 +743,15 @@ final class ToaRooms {
         /** Agile Scarabs retreat from players at running speed (OSRS). */
         private void agileScarabs() {
             for (LivingEntity s : living("toa_agile_scarab")) {
-                ServerPlayerEntity near = null;
-                for (ServerPlayerEntity p : players()) {
-                    if (p.squaredDistanceTo(s) < 9 && (near == null || p.squaredDistanceTo(s) < near.squaredDistanceTo(s))) {
+                ServerPlayer near = null;
+                for (ServerPlayer p : players()) {
+                    if (p.distanceToSqr(s) < 9 && (near == null || p.distanceToSqr(s) < near.distanceToSqr(s))) {
                         near = p;
                     }
                 }
-                if (near != null && s instanceof net.minecraft.entity.mob.MobEntity m) {
-                    Vec3d away = s.getPos().subtract(near.getPos()).multiply(1, 0, 1).normalize().multiply(4);
-                    m.getNavigation().startMovingTo(s.getX() + away.x, s.getY(), s.getZ() + away.z, 1.4);
+                if (near != null && s instanceof net.minecraft.world.entity.Mob m) {
+                    Vec3 away = s.position().subtract(near.position()).multiply(1, 0, 1).normalize().scale(4);
+                    m.getNavigation().moveTo(s.getX() + away.x, s.getY(), s.getZ() + away.z, 1.4);
                 }
             }
         }
@@ -780,7 +779,7 @@ final class ToaRooms {
         private int styleAttacks;
         /** Game ticks left of Trailing Orbs, and where each player stood last tick. */
         private int trailTicks;
-        private final Map<UUID, Vec3d> trailLast = new HashMap<>();
+        private final Map<UUID, Vec3> trailLast = new HashMap<>();
 
         Akkha(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -790,7 +789,7 @@ final class ToaRooms {
         public void decorate() {
             for (int sx = -1; sx <= 1; sx += 2) {
                 for (int sz = -1; sz <= 1; sz += 2) {
-                    RaidBuilder.set(world(), at(sx * 10, sz * 10), Blocks.SOUL_LANTERN.getDefaultState());
+                    RaidBuilder.set(world(), at(sx * 10, sz * 10), Blocks.SOUL_LANTERN.defaultBlockState());
                 }
             }
         }
@@ -813,7 +812,7 @@ final class ToaRooms {
         }
 
         @Override
-        public AttackDef bossAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+        public AttackDef bossAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             List<AttackDef> list = attacks(boss);
             return list.size() >= 3 ? list.get(style) : null;
         }
@@ -831,8 +830,8 @@ final class ToaRooms {
                 autos++;
                 if (Invocation.akkhaKeepBack(inv) && style != 0) {
                     // OSRS Keep Back: a melee hit lands on anyone next to him just before his ranged/magic attack.
-                    for (ServerPlayerEntity p : players()) {
-                        if (p.squaredDistanceTo(akkha) < 2.6 * 2.6) {
+                    for (ServerPlayer p : players()) {
+                        if (p.distanceToSqr(akkha) < 2.6 * 2.6) {
                             RaidEffects.hit(akkha, p, rnd().nextInt(27), AttackType.SLASH, false);
                         }
                     }
@@ -853,15 +852,15 @@ final class ToaRooms {
             double hp = raid.healthFraction(akkha);
             for (int t : new int[]{80, 60, 40, 20}) {
                 if (hp * 100 <= t && shadows.add(t)) {
-                    shadow = spawnMob("akkhas_shadow", BlockPos.ofFloored(akkha.getPos()).add(rnd().nextInt(7) - 3, 0, 4), false);
+                    shadow = spawnMob("akkhas_shadow", BlockPos.containing(akkha.position()).offset(rnd().nextInt(7) - 3, 0, 4), false);
                     warn("Akkha splits off a shadow! Kill it to make him vulnerable.");
                 }
             }
             trailingOrbs(inv);
             if (hp < 0.2 && tick % 3 == 0) {
-                ServerPlayerEntity p = randomPlayer();
+                ServerPlayer p = randomPlayer();
                 if (p != null) {
-                    RaidEffects.strike(world(), p.getPos().add(rnd().nextInt(3) - 1, 0, rnd().nextInt(3) - 1), 1.3, 15, 3, akkha,
+                    RaidEffects.strike(world(), p.position().add(rnd().nextInt(3) - 1, 0, rnd().nextInt(3) - 1), 1.3, 15, 3, akkha,
                             ParticleTypes.WITCH);
                 }
             }
@@ -875,11 +874,11 @@ final class ToaRooms {
         }
 
         /** Quadrant (0-3) of a position: west/east times north/south of the room centre. */
-        private int quadrant(Vec3d pos) {
+        private int quadrant(Vec3 pos) {
             return (pos.x < center().getX() + 0.5 ? 0 : 2) + (pos.z < center().getZ() + 0.5 ? 0 : 1);
         }
 
-        private Vec3d quadrantCentre(int q) {
+        private Vec3 quadrantCentre(int q) {
             return vec(q < 2 ? -9 : 9, q % 2 == 0 ? -9 : 9);
         }
 
@@ -920,8 +919,8 @@ final class ToaRooms {
                 order.add(q);
                 int shown = q;
                 RaidEffects.later(1 + 2 * k, () -> {
-                    Vec3d c = quadrantCentre(shown);
-                    world().spawnParticles(ParticleTypes.SOUL_FIRE_FLAME, c.x, c.y + 1, c.z, 40, 3, 0.5, 3, 0.01);
+                    Vec3 c = quadrantCentre(shown);
+                    world().sendParticles(ParticleTypes.SOUL_FIRE_FLAME, c.x, c.y + 1, c.z, 40, 3, 0.5, 3, 0.01);
                 });
             }
             int start = 3 + 2 * rounds;
@@ -931,9 +930,9 @@ final class ToaRooms {
                     if (!alive(akkha)) {
                         return;
                     }
-                    for (ServerPlayerEntity p : players()) {
-                        if (quadrant(p.getPos()) != safe) {
-                            world().spawnParticles(ParticleTypes.SQUID_INK, p.getX(), p.getY() + 1, p.getZ(), 10, 0.4, 0.4, 0.4, 0.02);
+                    for (ServerPlayer p : players()) {
+                        if (quadrant(p.position()) != safe) {
+                            world().sendParticles(ParticleTypes.SQUID_INK, p.getX(), p.getY() + 1, p.getZ(), 10, 0.4, 0.4, 0.4, 0.02);
                             RaidEffects.hit(akkha, p, 15 + rnd().nextInt(16), null, true); // approx: memory blast damage
                         }
                     }
@@ -947,14 +946,14 @@ final class ToaRooms {
                 return;
             }
             trailTicks--;
-            for (ServerPlayerEntity p : players()) {
-                Vec3d now = p.getPos();
-                Vec3d last = trailLast.put(p.getUuid(), now);
+            for (ServerPlayer p : players()) {
+                Vec3 now = p.position();
+                Vec3 last = trailLast.put(p.getUUID(), now);
                 if (last != null && RaidEffects.horizontalDistSq(last, now) > 0.25) {
                     Mechanics.addHazard(world(), last, 10, 12, akkha); // approx: orb damage
-                    world().spawnParticles(ParticleTypes.WITCH, last.x, last.y + 0.5, last.z, 6, 0.2, 0.2, 0.2, 0);
+                    world().sendParticles(ParticleTypes.WITCH, last.x, last.y + 0.5, last.z, 6, 0.2, 0.2, 0.2, 0);
                     if (Invocation.akkhaTrailingOrbs(inv) > 1) {
-                        Vec3d ahead = now.add(now.subtract(last).normalize().multiply(1.5));
+                        Vec3 ahead = now.add(now.subtract(last).normalize().scale(1.5));
                         Mechanics.addHazard(world(), ahead, 10, 12, akkha);
                     }
                 }
@@ -966,10 +965,10 @@ final class ToaRooms {
             warn("Akkha marks everyone for detonation! Don't line up with each other.");
             boolean diagonals = Invocation.akkhaDetonateDiagonals(inv, raid.partySize());
             RaidEffects.later(4, () -> {
-                List<ServerPlayerEntity> players = players();
-                for (ServerPlayerEntity a : players) {
-                    world().spawnParticles(ParticleTypes.EXPLOSION, a.getX(), a.getY() + 1, a.getZ(), 1, 0, 0, 0, 0);
-                    for (ServerPlayerEntity b : players) {
+                List<ServerPlayer> players = players();
+                for (ServerPlayer a : players) {
+                    world().sendParticles(ParticleTypes.EXPLOSION, a.getX(), a.getY() + 1, a.getZ(), 1, 0, 0, 0, 0);
+                    for (ServerPlayer b : players) {
                         if (a == b) {
                             continue;
                         }
@@ -999,7 +998,7 @@ final class ToaRooms {
         /** Baboons seen alive (Jungle Japes: their deaths drop banana peels). */
         private final Set<LivingEntity> baboons = new HashSet<>();
         /** Banana peels on the floor, with the game tick they rot away. */
-        private final Map<Vec3d, Long> peels = new HashMap<>();
+        private final Map<Vec3, Long> peels = new HashMap<>();
         /** Boulders alive last tick (a destroyed one counts towards "I'm in a rush"). */
         private final Set<LivingEntity> knownBoulders = new HashSet<>();
 
@@ -1010,8 +1009,8 @@ final class ToaRooms {
         @Override
         public void decorate() {
             for (int i = 0; i < 6; i++) {
-                RaidBuilder.set(world(), at(rnd().nextInt(30) - 15, rnd().nextBoolean() ? -19 : 19), Blocks.JUNGLE_LEAVES.getDefaultState()
-                        .with(LeavesBlock.PERSISTENT, true));
+                RaidBuilder.set(world(), at(rnd().nextInt(30) - 15, rnd().nextBoolean() ? -19 : 19), Blocks.JUNGLE_LEAVES.defaultBlockState()
+                        .setValue(LeavesBlock.PERSISTENT, true));
             }
         }
 
@@ -1054,7 +1053,7 @@ final class ToaRooms {
                 }
             }
             for (LivingEntity b : knownBoulders) {
-                if (b.isDead()) {
+                if (b.isDeadOrDying()) {
                     com.runecraft.content.systems.CombatAchievementService.countNear(baba, com.runecraft.osrs.content.systems.CombatAchievements.COUNT_BABA_BOULDER);
                 }
             }
@@ -1062,14 +1061,14 @@ final class ToaRooms {
             knownBoulders.addAll(living("baba_boulder"));
             for (LivingEntity b : living("baba_boulder")) {
                 TobRooms.walk(b, vec(b.getX() - center().getX() - 0.5, 19));
-                for (ServerPlayerEntity p : players()) {
-                    if (p.squaredDistanceTo(b) < 1.4 * 1.4 && !cooldown(p, 2)) {
+                for (ServerPlayer p : players()) {
+                    if (p.distanceToSqr(b) < 1.4 * 1.4 && !cooldown(p, 2)) {
                         RaidEffects.hit(null, p, 15 + rnd().nextInt(10), null, true);
                         Msg.red(p, "A rolling boulder crushes you!");
                     }
                 }
                 if (b.getZ() > center().getZ() + 17) {
-                    world().spawnParticles(ParticleTypes.EXPLOSION, b.getX(), b.getY() + 0.5, b.getZ(), 2, 0.4, 0.4, 0.4, 0);
+                    world().sendParticles(ParticleTypes.EXPLOSION, b.getX(), b.getY() + 0.5, b.getZ(), 2, 0.4, 0.4, 0.4, 0);
                     b.discard();
                 }
             }
@@ -1099,7 +1098,7 @@ final class ToaRooms {
         private void scream() {
             warn("Ba-Ba screams, knocking you back!");
             boolean gap = Invocation.babaMindTheGap(raid.invocations());
-            for (ServerPlayerEntity p : players()) {
+            for (ServerPlayer p : players()) {
                 double dx = p.getX() - (center().getX() + 0.5);
                 double dz = p.getZ() - (center().getZ() + 0.5);
                 if (gap && Math.abs(dx) < 3.5 && Math.abs(dz) < 14) { // approx: the room's north and south edges are safe
@@ -1107,24 +1106,24 @@ final class ToaRooms {
                     RaidEffects.hit(baba, p, 999, null, true);
                     continue;
                 }
-                p.addVelocity(0, 0.4, 1.4);
-                p.velocityModified = true;
+                p.push(0, 0.4, 1.4);
+                p.hurtMarked = true;
             }
         }
 
         /** Shockwave: Ba-Ba slams the ground around her target, 5x5 (7x7 with Shaking Things Up). */
         private void slam(Set<Invocation> inv) {
-            ServerPlayerEntity target = null;
+            ServerPlayer target = null;
             double best = 6 * 6;
-            for (ServerPlayerEntity p : players()) {
-                double d = p.squaredDistanceTo(baba);
+            for (ServerPlayer p : players()) {
+                double d = p.distanceToSqr(baba);
                 if (d < best) {
                     best = d;
                     target = p;
                 }
             }
             if (target != null) {
-                RaidEffects.strike(world(), target.getPos(), Invocation.babaSlamRadius(inv) + 0.5, 20, 3, baba, ParticleTypes.CLOUD,
+                RaidEffects.strike(world(), target.position(), Invocation.babaSlamRadius(inv) + 0.5, 20, 3, baba, ParticleTypes.CLOUD,
                         AttackType.CRUSH, true);
             }
         }
@@ -1137,17 +1136,17 @@ final class ToaRooms {
             if (living("toa_baboon_brawler").isEmpty() && living("toa_baboon_thrower").isEmpty() && living("toa_baboon_mage").isEmpty()) {
                 return;
             }
-            ServerPlayerEntity p = randomPlayer();
+            ServerPlayer p = randomPlayer();
             if (p == null) {
                 return;
             }
             say("A baboon smashes open a sarcophagus! Energy pours out.");
-            Vec3d at = p.getPos();
+            Vec3 at = p.position();
             double radius = 1.2 + 0.6 * (Math.min(4, raid.pathLevel()) / 2);
-            world().spawnParticles(ParticleTypes.SOUL, at.x, at.y + 0.2, at.z, 20, radius / 2, 0.1, radius / 2, 0.01);
+            world().sendParticles(ParticleTypes.SOUL, at.x, at.y + 0.2, at.z, 20, radius / 2, 0.1, radius / 2, 0.01);
             RaidEffects.later(3, () -> {
-                for (ServerPlayerEntity pl : players()) {
-                    if (RaidEffects.horizontalDistSq(pl.getPos(), at) <= radius * radius) {
+                for (ServerPlayer pl : players()) {
+                    if (RaidEffects.horizontalDistSq(pl.position(), at) <= radius * radius) {
                         int dmg = rnd().nextInt(13) + Invocation.babaFaithDamage(inv, RoomLogic.prayerPoints(pl)); // approx: 0-12
                         RaidEffects.hit(baba, pl, dmg, null, true);
                     }
@@ -1171,25 +1170,25 @@ final class ToaRooms {
                     continue;
                 }
                 it.remove();
-                if (b.isDead()) {
+                if (b.isDeadOrDying()) {
                     for (int i = 0; i < per; i++) {
-                        peels.put(b.getPos().add(rnd().nextDouble() * 2 - 1, 0, rnd().nextDouble() * 2 - 1), tick + 100);
+                        peels.put(b.position().add(rnd().nextDouble() * 2 - 1, 0, rnd().nextDouble() * 2 - 1), tick + 100);
                     }
                 }
             }
             peels.entrySet().removeIf(e -> e.getValue() < tick);
-            java.util.Iterator<Map.Entry<Vec3d, Long>> pi = peels.entrySet().iterator();
+            java.util.Iterator<Map.Entry<Vec3, Long>> pi = peels.entrySet().iterator();
             while (pi.hasNext()) {
-                Vec3d peel = pi.next().getKey();
+                Vec3 peel = pi.next().getKey();
                 if (tick % 4 == 0) {
-                    world().spawnParticles(ParticleTypes.FALLING_HONEY, peel.x, peel.y + 0.3, peel.z, 2, 0.2, 0.1, 0.2, 0);
+                    world().sendParticles(ParticleTypes.FALLING_HONEY, peel.x, peel.y + 0.3, peel.z, 2, 0.2, 0.1, 0.2, 0);
                 }
-                for (ServerPlayerEntity p : players()) {
-                    if (RaidEffects.horizontalDistSq(p.getPos(), peel) < 0.7 * 0.7) {
+                for (ServerPlayer p : players()) {
+                    if (RaidEffects.horizontalDistSq(p.position(), peel) < 0.7 * 0.7) {
                         Msg.red(p, "You slip on a banana peel!");
                         RaidEffects.hit(null, p, 1 + rnd().nextInt(3), null, true); // approx: a small amount of damage
-                        p.addStatusEffect(new net.minecraft.entity.effect.StatusEffectInstance(
-                                net.minecraft.entity.effect.StatusEffects.SLOWNESS, Invocation.BANANA_STUN_TICKS * 12, 9, false, false));
+                        p.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                                net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN, Invocation.BANANA_STUN_TICKS * 12, 9, false, false));
                         pi.remove();
                         break;
                     }
@@ -1221,12 +1220,12 @@ final class ToaRooms {
         public void decorate() {
             for (int x : new int[]{-6, 2}) {
                 for (int z = -14; z <= 14; z += 7) {
-                    RaidBuilder.set(world(), at(x + (z % 2 == 0 ? 0 : 1), z), Blocks.DECORATED_POT.getDefaultState());
+                    RaidBuilder.set(world(), at(x + (z % 2 == 0 ? 0 : 1), z), Blocks.DECORATED_POT.defaultBlockState());
                 }
             }
             BlockPos c = center();
             RaidBuilder.fill(world(), c.getX() + 16, c.getY(), c.getZ() - 8, c.getX() + 19, c.getY(), c.getZ() + 8,
-                    Blocks.WATER.getDefaultState());
+                    Blocks.WATER.defaultBlockState());
         }
 
         @Override
@@ -1254,26 +1253,26 @@ final class ToaRooms {
                         return;
                     }
                     for (int z = -18; z <= 18; z += 2) {
-                        world().spawnParticles(ParticleTypes.SPLASH, center().getX() + 15, center().getY() + 1.5, center().getZ() + z, 20, 0.5,
+                        world().sendParticles(ParticleTypes.SPLASH, center().getX() + 15, center().getY() + 1.5, center().getZ() + z, 20, 0.5,
                                 0.6, 0.5, 0.2);
                     }
-                    for (ServerPlayerEntity p : players()) {
-                        Vec3d eye = p.getEyePos();
-                        Vec3d east = new Vec3d(zebak.getX() - 2, eye.y - 0.8, eye.z);
-                        boolean covered = !clearLine(p.getPos().add(0, 0.5, 0), new Vec3d(east.x, p.getY() + 0.5, east.z), p);
+                    for (ServerPlayer p : players()) {
+                        Vec3 eye = p.getEyePosition();
+                        Vec3 east = new Vec3(zebak.getX() - 2, eye.y - 0.8, eye.z);
+                        boolean covered = !clearLine(p.position().add(0, 0.5, 0), new Vec3(east.x, p.getY() + 0.5, east.z), p);
                         if (!covered) {
                             RaidEffects.hit(zebak, p, 25 + rnd().nextInt(26), null, true);
-                            p.addVelocity(-1.2, 0.4, 0);
-                            p.velocityModified = true;
+                            p.push(-1.2, 0.4, 0);
+                            p.hurtMarked = true;
                             Msg.red(p, "The wave crashes into you!");
                         }
                     }
                 });
             }
             if (tick % 8 == 0) {
-                ServerPlayerEntity p = randomPlayer();
+                ServerPlayer p = randomPlayer();
                 if (p != null) {
-                    Vec3d at = p.getPos();
+                    Vec3 at = p.position();
                     // OSRS: Upset Stomach spreads the acid pools from 3x3 to 5x5.
                     double spread = raid.invocations().contains(Invocation.UPSET_STOMACH) ? 2.3 : 1.3;
                     RaidEffects.strike(world(), at, spread, 15, 3, zebak, ParticleTypes.ITEM_SLIME);
@@ -1292,8 +1291,8 @@ final class ToaRooms {
             if (tick % 24 == 12 && raid.invocations().contains(Invocation.NOT_JUST_A_HEAD)) {
                 say("Zebak casts blood magic!");
                 int total = 0;
-                for (ServerPlayerEntity p : players()) {
-                    world().spawnParticles(ParticleTypes.DAMAGE_INDICATOR, p.getX(), p.getY() + 1, p.getZ(), 6, 0.3, 0.4, 0.3, 0.1);
+                for (ServerPlayer p : players()) {
+                    world().sendParticles(ParticleTypes.DAMAGE_INDICATOR, p.getX(), p.getY() + 1, p.getZ(), 6, 0.3, 0.4, 0.3, 0.1);
                     total += RaidEffects.hit(zebak, p, 8 + rnd().nextInt(4), null, true);
                 }
                 double share = raid.invocations().contains(Invocation.ARTERIAL_SPRAY) ? 1.0 : 2 / 3.0;
@@ -1322,9 +1321,9 @@ final class ToaRooms {
             double y = center().getY() + 1.2;
             while (it.hasNext()) {
                 double[] c = it.next();
-                ServerPlayerEntity near = null;
+                ServerPlayer near = null;
                 double best = Double.MAX_VALUE;
-                for (ServerPlayerEntity p : players()) {
+                for (ServerPlayer p : players()) {
                     double d = (p.getX() - c[0]) * (p.getX() - c[0]) + (p.getZ() - c[1]) * (p.getZ() - c[1]);
                     if (d < best) {
                         best = d;
@@ -1344,10 +1343,10 @@ final class ToaRooms {
                     c[1] += (near.getZ() - c[1]) / dist;
                     c[2] -= Invocation.BLOOD_CLOUD_COST_PER_TILE;
                 }
-                world().spawnParticles(new net.minecraft.particle.DustParticleEffect(new org.joml.Vector3f(0.6f, 0.0f, 0.0f), 2.0f),
+                world().sendParticles(new net.minecraft.core.particles.DustParticleOptions(new org.joml.Vector3f(0.6f, 0.0f, 0.0f), 2.0f),
                         c[0], y, c[1], 8, 0.4, 0.3, 0.4, 0);
                 if (c[2] <= 0) {
-                    world().spawnParticles(ParticleTypes.SMOKE, c[0], y, c[1], 10, 0.3, 0.3, 0.3, 0.02);
+                    world().sendParticles(ParticleTypes.SMOKE, c[0], y, c[1], 10, 0.3, 0.3, 0.3, 0.02);
                     it.remove();
                 }
             }
@@ -1403,9 +1402,9 @@ final class ToaRooms {
         public void decorate() {
             BlockPos c = center();
             RaidBuilder.fill(world(), c.getX() + 10, c.getY(), c.getZ() - 10, c.getX() + 18, c.getY(), c.getZ() + 10,
-                    Blocks.GOLD_BLOCK.getDefaultState());
-            RaidBuilder.pillar(world(), c.add(18, 0, -14), 1, 9, Blocks.PRISMARINE_BRICKS.getDefaultState());
-            RaidBuilder.pillar(world(), c.add(18, 0, 14), 1, 9, Blocks.CUT_SANDSTONE.getDefaultState());
+                    Blocks.GOLD_BLOCK.defaultBlockState());
+            RaidBuilder.pillar(world(), c.offset(18, 0, -14), 1, 9, Blocks.PRISMARINE_BRICKS.defaultBlockState());
+            RaidBuilder.pillar(world(), c.offset(18, 0, 14), 1, 9, Blocks.CUT_SANDSTONE.defaultBlockState());
         }
 
         @Override
@@ -1449,14 +1448,14 @@ final class ToaRooms {
         }
 
         @Override
-        public int bossIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        public int bossIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             if (phase != 2 || boss != warden || damage <= 0) {
                 return damage;
             }
             if (core == null) {
                 bar += damage;
                 // OSRS loot calculator: phase 2 Warden damage is worth 2 points each.
-                raid.addPoints(attacker.getUuid(), damage * 2);
+                raid.addPoints(attacker.getUUID(), damage * 2);
                 if (bar >= RaidScaling.toaCoreChargeNeeded(raid.raidLevel(), raid.partySize())) {
                     ejectCore();
                 }
@@ -1468,7 +1467,7 @@ final class ToaRooms {
         private void ejectCore() {
             bar = 0;
             coreTicks = RaidScaling.toaCoreExposureTicks(p2Hp / (double) Math.max(1, p2Max));
-            BlockPos at = BlockPos.ofFloored(warden.getX() - 4, warden.getY(), warden.getZ());
+            BlockPos at = BlockPos.containing(warden.getX() - 4, warden.getY(), warden.getZ());
             core = spawnMob("toa_warden_core", at, false);
             if (core != null) {
                 CORES.add(core);
@@ -1479,7 +1478,7 @@ final class ToaRooms {
         }
 
         @Override
-        public void onCreatureHit(ServerPlayerEntity player, LivingEntity target, int damage) {
+        public void onCreatureHit(ServerPlayer player, LivingEntity target, int damage) {
             if (phase != 2 || target != core || core == null || damage <= 0) {
                 return;
             }
@@ -1526,7 +1525,7 @@ final class ToaRooms {
         }
 
         @Override
-        public int bossOutgoing(DataBossEntity boss, ServerPlayerEntity player, int damage, AttackType type) {
+        public int bossOutgoing(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
             return phase == 3 ? (int) Math.round(damage * 1.3) : damage; // approx: phase 3 slams
         }
 
@@ -1535,7 +1534,7 @@ final class ToaRooms {
             if (obelisk == null && warden == null) {
                 return;
             }
-            List<ServerPlayerEntity> players = players();
+            List<ServerPlayer> players = players();
             Set<Invocation> inv = raid.invocations();
             if (phase == 1) {
                 if (!alive(obelisk)) {
@@ -1553,8 +1552,8 @@ final class ToaRooms {
                 // OSRS Ancient Haste: the Wardens charge faster in phase 1.
                 if (tick % Invocation.wardensChargeEvery(inv) == 0) {
                     say("The obelisk crackles with energy!");
-                    for (ServerPlayerEntity p : players) {
-                        RaidEffects.strike(world(), p.getPos(), 1.4, 20, 3, obelisk, ParticleTypes.END_ROD);
+                    for (ServerPlayer p : players) {
+                        RaidEffects.strike(world(), p.position(), 1.4, 20, 3, obelisk, ParticleTypes.END_ROD);
                     }
                 }
                 return;
@@ -1575,12 +1574,12 @@ final class ToaRooms {
             }
         }
 
-        private void phaseTwo(long tick, List<ServerPlayerEntity> players, Set<Invocation> inv) {
+        private void phaseTwo(long tick, List<ServerPlayer> players, Set<Invocation> inv) {
             // Undo chip damage that skipped bossIncoming (recoil, Vengeance, poison) so it can't build up.
             syncBody();
             if (core != null) {
                 coreTicks--;
-                world().spawnParticles(ParticleTypes.END_ROD, core.getX(), core.getY() + 0.5, core.getZ(), 3, 0.3, 0.3, 0.3, 0.01);
+                world().sendParticles(ParticleTypes.END_ROD, core.getX(), core.getY() + 0.5, core.getZ(), 3, 0.3, 0.3, 0.3, 0.01);
                 if (coreTicks <= 0 || !core.isAlive()) {
                     dropCore();
                     say("The Warden's core retreats back into its body.");
@@ -1595,12 +1594,12 @@ final class ToaRooms {
                 say("Divine lightning strikes the arena!");
                 // OSRS Penetration: the phase 2 obelisk hits harder and its hits switch off overhead prayers.
                 int max = (int) Math.round(25 * Invocation.wardensObeliskDamage(inv));
-                for (ServerPlayerEntity p : players) {
-                    RaidEffects.strike(world(), p.getPos(), 1.4, max, 3, warden, ParticleTypes.ELECTRIC_SPARK);
+                for (ServerPlayer p : players) {
+                    RaidEffects.strike(world(), p.position(), 1.4, max, 3, warden, ParticleTypes.ELECTRIC_SPARK);
                 }
                 if (Invocation.wardensPenetration(inv)) {
                     RaidEffects.later(3, () -> {
-                        for (ServerPlayerEntity p : players()) {
+                        for (ServerPlayer p : players()) {
                             RoomLogic.dropOverheads(p, "The obelisk's energy pierces your prayers!");
                         }
                     });
@@ -1608,7 +1607,7 @@ final class ToaRooms {
             }
         }
 
-        private void phaseThree(long tick, List<ServerPlayerEntity> players, Set<Invocation> inv) {
+        private void phaseThree(long tick, List<ServerPlayer> players, Set<Invocation> inv) {
             double hp = raid.healthFraction(warden);
             boolean elidinis = !elidinisFirst;
             for (int[] at : new int[][]{{60, 0}, {40, 1}}) {
@@ -1629,8 +1628,8 @@ final class ToaRooms {
             }
             // OSRS: Overclocked, Overclocked 2 and Insanity bring the slam 1/2/3 ticks sooner.
             if (tick % Math.max(3, 6 - Invocation.wardensSlamFaster(inv)) == 0) {
-                ServerPlayerEntity p = players.get(rnd().nextInt(players.size()));
-                RaidEffects.strike(world(), p.getPos().add(rnd().nextInt(5) - 2, 0, rnd().nextInt(5) - 2), 1.5, 25, 3, warden,
+                ServerPlayer p = players.get(rnd().nextInt(players.size()));
+                RaidEffects.strike(world(), p.position().add(rnd().nextInt(5) - 2, 0, rnd().nextInt(5) - 2), 1.5, 25, 3, warden,
                         ParticleTypes.FLAME);
             }
             if (enrageHealed && tick % 20 == 10) {
@@ -1646,15 +1645,15 @@ final class ToaRooms {
         }
 
         /** The path bosses' phantoms use their originals' attacks, with the same invocations (OSRS wiki). */
-        private void phantomAttack(String phantom, long tick, List<ServerPlayerEntity> players, Set<Invocation> inv) {
-            ServerPlayerEntity p = players.get(rnd().nextInt(players.size()));
+        private void phantomAttack(String phantom, long tick, List<ServerPlayer> players, Set<Invocation> inv) {
+            ServerPlayer p = players.get(rnd().nextInt(players.size()));
             switch (phantom) {
                 case "Kephri" -> {
                     // Kephri's fireball: lands where the player stood; 3x3 and harder with Aerial Assault.
                     if (tick % 6 == 3) {
                         int radius = Invocation.kephriFireballRadius(inv);
                         int max = (int) Math.round(24 * Invocation.kephriFireballDamage(inv));
-                        RaidEffects.strike(world(), p.getPos(), 0.8 + 1.5 * radius, max, 3, warden, ParticleTypes.FLAME, AttackType.MAGIC, true);
+                        RaidEffects.strike(world(), p.position(), 0.8 + 1.5 * radius, max, 3, warden, ParticleTypes.FLAME, AttackType.MAGIC, true);
                     }
                 }
                 case "Akkha" -> {
@@ -1674,7 +1673,7 @@ final class ToaRooms {
                 default -> {
                     // Ba-Ba's phantom only launches boulders: step a tile away from the shadow.
                     if (tick % 6 == 0) {
-                        RaidEffects.strike(world(), p.getPos(), 1.0, 25, 3, warden, ParticleTypes.CAMPFIRE_COSY_SMOKE); // approx: damage
+                        RaidEffects.strike(world(), p.position(), 1.0, 25, 3, warden, ParticleTypes.CAMPFIRE_COSY_SMOKE); // approx: damage
                     }
                 }
             }

@@ -1,23 +1,22 @@
 package com.runecraft.content.godwars;
 
 import com.runecraft.osrs.content.godwars.GodWarsFactions.God;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.PersistentState;
-
+import net.minecraft.world.level.saveddata.SavedData;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 /** World-save storage for every player's God Wars kill count (one counter per god). */
-final class GwdKillcountState extends PersistentState {
+final class GwdKillcountState extends SavedData {
     static final String KEY = "runecraft_godwars";
 
     private final Map<UUID, int[]> counts = new HashMap<>();
 
     static GwdKillcountState get(MinecraftServer server) {
-        return server.getOverworld().getPersistentStateManager()
-                .getOrCreate(GwdKillcountState::fromNbt, GwdKillcountState::new, KEY);
+        return server.overworld().getDataStorage()
+                .computeIfAbsent(GwdKillcountState::fromNbt, GwdKillcountState::new, KEY);
     }
 
     private int[] of(UUID uuid) {
@@ -30,18 +29,18 @@ final class GwdKillcountState extends PersistentState {
 
     void set(UUID uuid, God god, int value) {
         of(uuid)[god.ordinal()] = Math.max(0, value);
-        markDirty();
+        setDirty();
     }
 
     @Override
-    public NbtCompound writeNbt(NbtCompound nbt) {
+    public CompoundTag save(CompoundTag nbt) {
         counts.forEach((uuid, arr) -> nbt.putIntArray(uuid.toString(), arr));
         return nbt;
     }
 
-    static GwdKillcountState fromNbt(NbtCompound nbt) {
+    static GwdKillcountState fromNbt(CompoundTag nbt) {
         GwdKillcountState state = new GwdKillcountState();
-        for (String key : nbt.getKeys()) {
+        for (String key : nbt.getAllKeys()) {
             try {
                 int[] stored = nbt.getIntArray(key);
                 int[] arr = new int[God.values().length];

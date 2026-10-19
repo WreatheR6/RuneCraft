@@ -12,13 +12,12 @@ import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
-
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -34,8 +33,8 @@ public final class PitChampionService {
     private static final class Champion {
         final long until;
         boolean inPit = true;
-        Vec3d pos;
-        RegistryKey<World> world;
+        Vec3 pos;
+        ResourceKey<Level> world;
         String gear;
 
         Champion(long until) {
@@ -52,14 +51,14 @@ public final class PitChampionService {
 
     static void register() {
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            if (server.getTicks() % 20 != 0 || CHAMPIONS.isEmpty()) {
+            if (server.getTickCount() % 20 != 0 || CHAMPIONS.isEmpty()) {
                 return;
             }
             long now = ActionManager.gameTick();
             Iterator<Map.Entry<UUID, Champion>> it = CHAMPIONS.entrySet().iterator();
             while (it.hasNext()) {
                 Map.Entry<UUID, Champion> e = it.next();
-                ServerPlayerEntity p = server.getPlayerManager().getPlayer(e.getKey());
+                ServerPlayer p = server.getPlayerList().getPlayer(e.getKey());
                 if (p == null) {
                     it.remove();
                     continue;
@@ -77,61 +76,61 @@ public final class PitChampionService {
                     continue;
                 }
                 boolean overhead = Players.data(p).activePrayers().stream().anyMatch(Prayer::isOverhead);
-                SkullLoss loss = FightPits.skullLoss(now, c.until, p.getPos().distanceTo(c.pos), p.getWorld().getRegistryKey() == c.world,
+                SkullLoss loss = FightPits.skullLoss(now, c.until, p.position().distanceTo(c.pos), p.level().dimension() == c.world,
                         !gear(p).equals(c.gear), overhead);
                 if (loss != null) {
                     it.remove();
                     lose(p, loss);
                 } else {
-                    c.pos = p.getPos();
+                    c.pos = p.position();
                 }
             }
         });
         CombatHooks.addHurtListener((player, attacker, damage) -> {
-            if (damage > 0 && attacker != null && !(attacker instanceof PlayerEntity) && CHAMPIONS.containsKey(player.getUuid())) {
+            if (damage > 0 && attacker != null && !(attacker instanceof Player) && CHAMPIONS.containsKey(player.getUUID())) {
                 clear(player, SkullLoss.MONSTER_DAMAGE);
             }
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
-            if (CHAMPIONS.remove(handler.getPlayer().getUuid()) != null) {
+            if (CHAMPIONS.remove(handler.getPlayer().getUUID()) != null) {
                 SkullService.setChampionSkull(handler.getPlayer(), false);
             }
         });
     }
 
-    private static void snapshot(Champion c, ServerPlayerEntity p) {
-        c.pos = p.getPos();
-        c.world = p.getWorld().getRegistryKey();
+    private static void snapshot(Champion c, ServerPlayer p) {
+        c.pos = p.position();
+        c.world = p.level().dimension();
         c.gear = gear(p);
     }
 
     /** Armour and shield ids. // approx: the weapon isn't watched, since the main hand follows the hotbar here */
-    private static String gear(ServerPlayerEntity p) {
+    private static String gear(ServerPlayer p) {
         StringBuilder sb = new StringBuilder();
         for (EquipmentSlot slot : GEAR) {
-            sb.append(Inv.idOf(p.getEquippedStack(slot))).append('|');
+            sb.append(Inv.idOf(p.getItemBySlot(slot))).append('|');
         }
         return sb.toString();
     }
 
     /** The last player standing becomes champion: the red skull for an hour. */
-    public static void crown(ServerPlayerEntity player) {
-        CHAMPIONS.put(player.getUuid(), new Champion(ActionManager.gameTick() + FightPits.SKULL_TICKS));
+    public static void crown(ServerPlayer player) {
+        CHAMPIONS.put(player.getUUID(), new Champion(ActionManager.gameTick() + FightPits.SKULL_TICKS));
         SkullService.setChampionSkull(player, true);
     }
 
-    public static boolean isChampion(ServerPlayerEntity player) {
-        return CHAMPIONS.containsKey(player.getUuid());
+    public static boolean isChampion(ServerPlayer player) {
+        return CHAMPIONS.containsKey(player.getUUID());
     }
 
     /** Removes the champion's skull (defeated in the pit, left a game early...). */
-    public static void clear(ServerPlayerEntity player, SkullLoss reason) {
-        if (CHAMPIONS.remove(player.getUuid()) != null) {
+    public static void clear(ServerPlayer player, SkullLoss reason) {
+        if (CHAMPIONS.remove(player.getUUID()) != null) {
             lose(player, reason);
         }
     }
 
-    private static void lose(ServerPlayerEntity player, SkullLoss reason) {
+    private static void lose(ServerPlayer player, SkullLoss reason) {
         SkullService.setChampionSkull(player, false);
         Msg.game(player, reason.message);
     }

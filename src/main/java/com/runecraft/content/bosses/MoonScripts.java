@@ -12,9 +12,9 @@ import com.runecraft.osrs.content.BossDef;
 import com.runecraft.osrs.content.bosses.BossMechanics;
 import com.runecraft.player.Players;
 import com.runecraft.util.Msg;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * The Moons of Peril (zeah module bosses; OSRS Wiki "Moons of Peril/Strategies"): the Moons' flat armour, and the Eclipse
@@ -51,7 +51,7 @@ final class MoonScripts {
     /** Blue Moon: -5 flat armour, so every melee or ranged hit that lands on her deals 5 more. */
     static final class BlueMoon extends ScriptedBoss {
         @Override
-        protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             return flatArmour(damage, BossMechanics.BLUE_MOON_FLAT_ARMOUR, type);
         }
     }
@@ -67,8 +67,8 @@ final class MoonScripts {
         private static final int SPECIAL_EVERY = 7; // approx: a special every 7 attacks (OSRS: on the full/new moon sigil)
         private int cloneStep = -1;
         private long cloneNext;
-        private Vec3d clone;
-        private ServerPlayerEntity bound;
+        private Vec3 clone;
+        private ServerPlayer bound;
         private boolean nextClones = true;
         private boolean parrying;
 
@@ -78,7 +78,7 @@ final class MoonScripts {
         }
 
         @Override
-        protected boolean wantsMelee(DataBossEntity boss, ServerPlayerEntity target) {
+        protected boolean wantsMelee(DataBossEntity boss, ServerPlayer target) {
             return true;
         }
 
@@ -88,7 +88,7 @@ final class MoonScripts {
         }
 
         @Override
-        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             if (attackCount % SPECIAL_EVERY == SPECIAL_EVERY - 1) {
                 boolean clones = nextClones;
                 nextClones = !nextClones;
@@ -111,7 +111,7 @@ final class MoonScripts {
             return dart != null ? dart : bash;
         }
 
-        void startClones(DataBossEntity boss, ServerPlayerEntity target) {
+        void startClones(DataBossEntity boss, ServerPlayer target) {
             bound = target;
             cloneStep = 0;
             clone = null;
@@ -133,17 +133,17 @@ final class MoonScripts {
         }
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             if (cloneStep < 0) {
                 return;
             }
-            if (bound == null || !bound.isAlive() || !boss.isAlive() || bound.squaredDistanceTo(boss) > 32 * 32) {
+            if (bound == null || !bound.isAlive() || !boss.isAlive() || bound.distanceToSqr(boss) > 32 * 32) {
                 endClones();
                 return;
             }
             if (clone != null) {
-                BossFx.world(boss).spawnParticles(ParticleTypes.LARGE_SMOKE, clone.x, clone.y + 1.0, clone.z, 4, 0.2, 0.6, 0.2, 0);
-                BossFx.world(boss).spawnParticles(ParticleTypes.END_ROD, clone.x, clone.y + 1.8, clone.z, 1, 0.1, 0.1, 0.1, 0);
+                BossFx.world(boss).sendParticles(ParticleTypes.LARGE_SMOKE, clone.x, clone.y + 1.0, clone.z, 4, 0.2, 0.6, 0.2, 0);
+                BossFx.world(boss).sendParticles(ParticleTypes.END_ROD, clone.x, clone.y + 1.8, clone.z, 1, 0.1, 0.1, 0.1, 0);
             }
             if (now < cloneNext) {
                 return;
@@ -166,8 +166,8 @@ final class MoonScripts {
         }
 
         /** A clone attacks: parried (the player faces it) for a free, always-hitting melee hit on the Moon, else it hits. */
-        boolean resolveClone(DataBossEntity boss, ServerPlayerEntity p, Vec3d at) {
-            if (BossMechanics.faces(p.getYaw(), at.x - p.getX(), at.z - p.getZ())) {
+        boolean resolveClone(DataBossEntity boss, ServerPlayer p, Vec3 at) {
+            if (BossMechanics.faces(p.getYRot(), at.x - p.getX(), at.z - p.getZ())) {
                 AttackType type = Equipment.meleeType(p, Players.data(p).skills());
                 com.runecraft.osrs.PlayerHitCalc.Input in = HitCalcBridge.input(p, boss, type, null, 0);
                 int max = Math.max(0, HitCalcBridge.maxHit(p, boss, in));
@@ -180,7 +180,7 @@ final class MoonScripts {
                 }
                 int dealt = CombatHandler.applyDamage(p, boss, damage);
                 CombatHandler.awardXp(p, Players.data(p).style().forMelee(), dealt, false);
-                BossFx.world(boss).spawnParticles(ParticleTypes.SWEEP_ATTACK, at.x, at.y + 1.0, at.z, 1, 0, 0, 0, 0);
+                BossFx.world(boss).sendParticles(ParticleTypes.SWEEP_ATTACK, at.x, at.y + 1.0, at.z, 1, 0, 0, 0, 0);
                 Msg.action(p, "You parry the clone and strike back at the Eclipse Moon!");
                 return true;
             }
@@ -192,7 +192,7 @@ final class MoonScripts {
         }
 
         @Override
-        protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             if (attacker != null && !parrying) {
                 CombatAchievementService.flag(attacker, BossMechanics.FLAG_ECLIPSE_DIRECT_HIT);
             }
@@ -201,7 +201,7 @@ final class MoonScripts {
         }
 
         @Override
-        public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
+        public void onDeath(DataBossEntity boss, ServerPlayer killer) {
             endClones();
         }
     }
@@ -210,16 +210,16 @@ final class MoonScripts {
      * Self-test (boss:eclipse_clones): a clone the player faces is parried and damages the Moon; one behind them hits the
      * player.
      */
-    static String selfTestEclipse(DataBossEntity boss, ServerPlayerEntity p) {
+    static String selfTestEclipse(DataBossEntity boss, ServerPlayer p) {
         if (!(boss.script() instanceof EclipseMoon e)) {
             throw new IllegalStateException("the Eclipse Moon has no EclipseMoon script");
         }
         e.gameTick(boss, com.runecraft.action.ActionManager.gameTick());
         e.startClones(boss, p);
         try {
-            p.setYaw(0f); // facing +z
-            Vec3d ahead = p.getPos().add(0, 0, 2.5);
-            Vec3d behind = p.getPos().add(0, 0, -2.5);
+            p.setYRot(0f); // facing +z
+            Vec3 ahead = p.position().add(0, 0, 2.5);
+            Vec3 behind = p.position().add(0, 0, -2.5);
             if (!e.resolveClone(boss, p, ahead)) {
                 throw new IllegalStateException("a clone in front of the player wasn't parried");
             }

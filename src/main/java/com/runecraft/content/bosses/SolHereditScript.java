@@ -12,19 +12,18 @@ import com.runecraft.osrs.content.minigames.SolHeredit.Grapple;
 import com.runecraft.player.Players;
 import com.runecraft.util.Msg;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.Commands;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -77,9 +76,9 @@ public final class SolHereditScript extends ScriptedBoss {
 
     public static void register() {
         CommandRegistrationCallback.EVENT.register((dispatcher, access, env) -> dispatcher.register(
-                CommandManager.literal("solheredit").then(CommandManager.literal("parry")
-                        .then(CommandManager.argument("slot", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(ctx -> {
-                            ServerPlayerEntity p = ctx.getSource().getPlayer();
+                Commands.literal("solheredit").then(Commands.literal("parry")
+                        .then(Commands.argument("slot", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(ctx -> {
+                            ServerPlayer p = ctx.getSource().getPlayer();
                             if (p != null) {
                                 parry(p, com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "slot"));
                             }
@@ -87,15 +86,15 @@ public final class SolHereditScript extends ScriptedBoss {
                         })))));
         CombatHooks.addModifier(new CombatHooks.PlayerAttackModifier() {
             @Override
-            public boolean alwaysMaxHit(ServerPlayerEntity player, LivingEntity target, AttackType type) {
-                Long until = PERFECT.get(player.getUuid());
+            public boolean alwaysMaxHit(ServerPlayer player, LivingEntity target, AttackType type) {
+                Long until = PERFECT.get(player.getUUID());
                 return until != null && com.runecraft.action.ActionManager.gameTick() <= until && isSol(target);
             }
 
             @Override
-            public void afterHit(ServerPlayerEntity player, LivingEntity target, AttackType type, int dealt) {
+            public void afterHit(ServerPlayer player, LivingEntity target, AttackType type, int dealt) {
                 if (isSol(target)) {
-                    PERFECT.remove(player.getUuid());
+                    PERFECT.remove(player.getUUID());
                 }
             }
         });
@@ -106,8 +105,8 @@ public final class SolHereditScript extends ScriptedBoss {
     }
 
     /** {@code /solheredit parry <slot>}: defends the called gear slot; returns whether it blocked the grapple. */
-    public static boolean parry(ServerPlayerEntity p, String slot) {
-        SolHereditScript s = GRAPPLED.get(p.getUuid());
+    public static boolean parry(ServerPlayer p, String slot) {
+        SolHereditScript s = GRAPPLED.get(p.getUUID());
         if (s == null || s.grapple == null) {
             Msg.game(p, "There is nothing to defend against.");
             return false;
@@ -126,7 +125,7 @@ public final class SolHereditScript extends ScriptedBoss {
         int tick = (int) (s.now - s.grappleStart);
         s.defended = true;
         if (SolHeredit.perfectParry(tick)) {
-            PERFECT.put(p.getUuid(), s.now + SolHeredit.PERFECT_PARRY_TICKS);
+            PERFECT.put(p.getUUID(), s.now + SolHeredit.PERFECT_PARRY_TICKS);
             Msg.game(p, "You perfectly parry Sol Heredit's grapple!");
         } else {
             Msg.game(p, "You successfully defend from Sol Heredit's grapple!");
@@ -155,7 +154,7 @@ public final class SolHereditScript extends ScriptedBoss {
     }
 
     @Override
-    protected boolean wantsMelee(DataBossEntity boss, ServerPlayerEntity target) {
+    protected boolean wantsMelee(DataBossEntity boss, ServerPlayer target) {
         return true;
     }
 
@@ -165,17 +164,17 @@ public final class SolHereditScript extends ScriptedBoss {
     }
 
     @Override
-    public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
+    public void onDeath(DataBossEntity boss, ServerPlayer killer) {
         cleanUp(boss);
     }
 
     private void cleanUp(DataBossEntity boss) {
         GRAPPLED.values().removeIf(s -> s == this);
-        Mechanics.clearHazards(BossFx.world(boss), boss.getBoundingBox().expand(24, 6, 24));
+        Mechanics.clearHazards(BossFx.world(boss), boss.getBoundingBox().inflate(24, 6, 24));
     }
 
     @Override
-    protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+    protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
         if (!boss.isAlive()) {
             cleanUp(boss);
             return;
@@ -215,8 +214,8 @@ public final class SolHereditScript extends ScriptedBoss {
             return;
         }
         Attack a = SolHeredit.next(previous, phase, afterPhase, random);
-        BlockPos c = boss.getBlockPos();
-        BlockPos t = target.getBlockPos();
+        BlockPos c = boss.blockPosition();
+        BlockPos t = target.blockPosition();
         if (!a.special() && Math.max(Math.abs(t.getX() - c.getX()), Math.abs(t.getZ() - c.getZ())) > SolHeredit.MELEE_REACH) {
             return; // he must be next to the player to start a regular attack
         }
@@ -244,7 +243,7 @@ public final class SolHereditScript extends ScriptedBoss {
         }
     }
 
-    private void enterPhase(DataBossEntity boss, ServerPlayerEntity target, int p) {
+    private void enterPhase(DataBossEntity boss, ServerPlayer target, int p) {
         // The BossDef's phases (same thresholds) announce SolHeredit.PHASE_LINES.
         afterPhase = true;
         if (target != null) {
@@ -254,13 +253,13 @@ public final class SolHereditScript extends ScriptedBoss {
     }
 
     /** Beams of light around the player (one on the player's tile when {@code onPlayer}) leaving molten sand 2 ticks later. */
-    private void sand(DataBossEntity boss, ServerPlayerEntity target, int count, boolean onPlayer) {
-        ServerWorld world = BossFx.world(boss);
-        BlockPos t = target.getBlockPos();
+    private void sand(DataBossEntity boss, ServerPlayer target, int count, boolean onPlayer) {
+        ServerLevel world = BossFx.world(boss);
+        BlockPos t = target.blockPosition();
         for (int i = 0; i < count; i++) {
             int dx = i == 0 && onPlayer ? 0 : random.nextInt(2 * SolHeredit.SAND_RADIUS + 1) - SolHeredit.SAND_RADIUS;
             int dz = i == 0 && onPlayer ? 0 : random.nextInt(2 * SolHeredit.SAND_RADIUS + 1) - SolHeredit.SAND_RADIUS;
-            Vec3d at = BossFx.ground(world, t.getX() + dx + 0.5, t.getZ() + dz + 0.5, target.getY());
+            Vec3 at = BossFx.ground(world, t.getX() + dx + 0.5, t.getZ() + dz + 0.5, target.getY());
             BossFx.column(world, at, ParticleTypes.END_ROD, 4);
             strike(boss, at, SolHeredit.SAND_DELAY_TICKS, 0, 0.5, ParticleTypes.END_ROD, (hit, pos) ->
                     Mechanics.addHazard(world, pos, SolHeredit.SAND_MAX_DAMAGE, 6000, boss));
@@ -273,17 +272,17 @@ public final class SolHereditScript extends ScriptedBoss {
         }
         Attack a = pending;
         pending = null;
-        ServerWorld world = BossFx.world(boss);
+        ServerLevel world = BossFx.world(boss);
         for (int dx = -7; dx <= 7; dx++) {
             for (int dz = -7; dz <= 7; dz++) {
                 if (SolHeredit.hits(a, dx, dz, pendingFacing[0], pendingFacing[1]) && (dx + dz) % 2 == 0) {
-                    world.spawnParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, pendingCentre.getX() + dx + 0.5, pendingCentre.getY() + 0.2,
+                    world.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, pendingCentre.getX() + dx + 0.5, pendingCentre.getY() + 0.2,
                             pendingCentre.getZ() + dz + 0.5, 1, 0.3, 0.05, 0.3, 0.0);
                 }
             }
         }
-        for (ServerPlayerEntity p : BossFx.players(boss, 16)) {
-            BlockPos b = p.getBlockPos();
+        for (ServerPlayer p : BossFx.players(boss, 16)) {
+            BlockPos b = p.blockPosition();
             if (SolHeredit.hits(a, b.getX() - pendingCentre.getX(), b.getZ() - pendingCentre.getZ(), pendingFacing[0], pendingFacing[1])) {
                 CombatHooks.nameAttack(a.spear() ? "spear" : "shield_bash", null);
                 CombatHandler.applyDamage(boss, p, random.nextInt(SolHeredit.AOE_MAX_HIT + 1));
@@ -291,7 +290,7 @@ public final class SolHereditScript extends ScriptedBoss {
         }
     }
 
-    private void tickTriple(DataBossEntity boss, ServerPlayerEntity target) {
+    private void tickTriple(DataBossEntity boss, ServerPlayer target) {
         if (tripleStart < 0 || now < tripleNext) {
             return;
         }
@@ -318,33 +317,33 @@ public final class SolHereditScript extends ScriptedBoss {
         }
     }
 
-    private void startGrapple(DataBossEntity boss, ServerPlayerEntity target) {
+    private void startGrapple(DataBossEntity boss, ServerPlayer target) {
         grapple = Grapple.values()[random.nextInt(Grapple.values().length)];
         grappleStart = now;
-        grappled = target.getUuid();
+        grappled = target.getUUID();
         defended = false;
         answered = false;
-        GRAPPLED.put(target.getUuid(), this);
+        GRAPPLED.put(target.getUUID(), this);
         BossFx.say(boss, "Sol Heredit: " + grapple.shout);
-        MutableText line = Text.literal("Defend: ").formatted(Formatting.GRAY);
+        MutableComponent line = Component.literal("Defend: ").withStyle(ChatFormatting.GRAY);
         for (Grapple g : Grapple.values()) {
             String label = g.slot.substring(0, 1).toUpperCase() + g.slot.substring(1);
-            line.append(Text.literal("[" + label + "]").styled(st -> st.withColor(Formatting.GOLD)
+            line.append(Component.literal("[" + label + "]").withStyle(st -> st.withColor(ChatFormatting.GOLD)
                     .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/solheredit parry " + g.slot))
-                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("Defend your " + g.slot)))))
-                    .append(Text.literal(" "));
+                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Defend your " + g.slot)))))
+                    .append(Component.literal(" "));
         }
-        target.sendMessage(line, false);
+        target.displayClientMessage(line, false);
     }
 
     private void tickGrapple(DataBossEntity boss) {
         if (grapple == null || now - grappleStart < SolHeredit.GRAPPLE_WINDOW_TICKS) {
             return;
         }
-        ServerPlayerEntity p = BossFx.world(boss).getServer().getPlayerManager().getPlayer(grappled);
+        ServerPlayer p = BossFx.world(boss).getServer().getPlayerList().getPlayer(grappled);
         if (p == null) {
-            for (ServerPlayerEntity near : BossFx.players(boss, 24)) {
-                if (near.getUuid().equals(grappled)) {
+            for (ServerPlayer near : BossFx.players(boss, 24)) {
+                if (near.getUUID().equals(grappled)) {
                     p = near;
                 }
             }
@@ -358,18 +357,18 @@ public final class SolHereditScript extends ScriptedBoss {
     }
 
     /** Light-beam crystals: each shot targets the player's tile and lands a few ticks later. */
-    private void tickLasers(DataBossEntity boss, ServerPlayerEntity target) {
-        ServerWorld world = BossFx.world(boss);
+    private void tickLasers(DataBossEntity boss, ServerPlayer target) {
+        ServerLevel world = BossFx.world(boss);
         for (int i = lasers.size() - 1; i >= 0; i--) {
             long[] l = lasers.get(i);
-            Vec3d at = new Vec3d(l[1] + 0.5, l[2], l[3] + 0.5);
+            Vec3 at = new Vec3(l[1] + 0.5, l[2], l[3] + 0.5);
             if (now < l[0]) {
                 BossFx.ring(world, at, 0.6, ParticleTypes.END_ROD);
                 continue;
             }
             lasers.remove(i);
-            world.spawnParticles(ParticleTypes.FLASH, at.x, at.y + 0.5, at.z, 1, 0, 0, 0, 0);
-            for (ServerPlayerEntity p : BossFx.players(boss, 24)) {
+            world.sendParticles(ParticleTypes.FLASH, at.x, at.y + 0.5, at.z, 1, 0, 0, 0, 0);
+            for (ServerPlayer p : BossFx.players(boss, 24)) {
                 if (p.getBlockX() == l[1] && p.getBlockZ() == l[3]) {
                     CombatHooks.nameAttack("laser", null);
                     CombatHandler.applyDamage(boss, p, random.nextInt(SolHeredit.LASER_MAX_HIT + 1));
@@ -382,11 +381,11 @@ public final class SolHereditScript extends ScriptedBoss {
         }
         boolean enraged = phase >= 6;
         nextLaser = now + Math.max(4, (enraged ? SolHeredit.ENRAGE_LASER_INTERVAL_TICKS : SolHeredit.LASER_INTERVAL_TICKS) / beams);
-        BlockPos t = target.getBlockPos();
+        BlockPos t = target.blockPosition();
         // The crystal circles the arena's edge; it shines a harmless beam at the player's tile, then fires.
         double angle = (beamIndex++ % 8) * Math.PI / 4;
-        Vec3d crystal = new Vec3d(t.getX() + 0.5 + Math.cos(angle) * 8, target.getY() + 1, t.getZ() + 0.5 + Math.sin(angle) * 8);
-        world.spawnParticles(ParticleTypes.END_ROD, crystal.x, crystal.y, crystal.z, 6, 0.2, 0.2, 0.2, 0.0);
+        Vec3 crystal = new Vec3(t.getX() + 0.5 + Math.cos(angle) * 8, target.getY() + 1, t.getZ() + 0.5 + Math.sin(angle) * 8);
+        world.sendParticles(ParticleTypes.END_ROD, crystal.x, crystal.y, crystal.z, 6, 0.2, 0.2, 0.2, 0.0);
         lasers.add(new long[]{now + (enraged ? SolHeredit.ENRAGE_LASER_WARNING_TICKS : SolHeredit.LASER_WARNING_TICKS),
                 t.getX(), (long) Math.floor(target.getY()), t.getZ()});
         Msg.action(target, "A beam of light locks onto you!");

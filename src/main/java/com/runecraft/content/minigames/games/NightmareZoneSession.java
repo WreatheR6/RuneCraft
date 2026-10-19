@@ -18,22 +18,6 @@ import com.runecraft.player.Players;
 import com.runecraft.quest.QuestApi;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.particle.DustParticleEffect;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
 import org.joml.Vector3f;
 
 import java.util.ArrayList;
@@ -43,6 +27,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.DustParticleOptions;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * Nightmare Zone: Dominic Onion's dreams pit the player against the quest bosses they have beaten (OSRS Wiki). Four modes, each
@@ -70,7 +70,7 @@ public class NightmareZoneSession extends MinigameSession {
      * The bosses spawned, tracked directly: box queries miss mobs in an instance chunk that isn't ticking yet (the
      * self-test's fake player loads no chunks).
      */
-    private final List<MobEntity> spawnedBosses = new ArrayList<>();
+    private final List<Mob> spawnedBosses = new ArrayList<>();
     private int kills;
     private int earned;
     /** Absorption points per player. */
@@ -90,7 +90,7 @@ public class NightmareZoneSession extends MinigameSession {
     /** Ultimate force kills pay no points. */
     private boolean forcing;
 
-    public NightmareZoneSession(int id, int slot, ServerWorld world, String variant) {
+    public NightmareZoneSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.NIGHTMARE_ZONE, id, slot, world, variant);
         this.dream = NightmareZone.Dream.parse(variant);
         this.hard = dream.hard();
@@ -98,21 +98,21 @@ public class NightmareZoneSession extends MinigameSession {
 
     // ------------------------------------------------------------------ choosing a dream
 
-    private static boolean questDone(ServerPlayerEntity player, String quest) {
+    private static boolean questDone(ServerPlayer player, String quest) {
         return ContentRegistry.quest(quest) == null || QuestApi.isComplete(player, quest);
     }
 
     /** The bosses a player has unlocked (by quest), in the wiki table's order. */
-    public static List<String> unlocked(ServerPlayerEntity player) {
+    public static List<String> unlocked(ServerPlayer player) {
         return NightmareZone.unlocked(q -> questDone(player, q));
     }
 
     /** The bosses a customisable rumble would use: the unlocked ones the player hasn't switched off. */
-    public static List<String> customPool(ServerPlayerEntity player) {
+    public static List<String> customPool(ServerPlayer player) {
         List<String> out = new ArrayList<>();
         MinigameData data = MinigameData.of(player);
         for (String boss : unlocked(player)) {
-            if (data.stat(player.getUuid(), OFF_PREFIX + boss) == 0) {
+            if (data.stat(player.getUUID(), OFF_PREFIX + boss) == 0) {
                 out.add(boss);
             }
         }
@@ -120,7 +120,7 @@ public class NightmareZoneSession extends MinigameSession {
     }
 
     /** Entry check: five boss quests, at least one dream boss beaten, the dream's fee in coins, and a valid boss choice. */
-    public static String requirement(ServerPlayerEntity player, String variant) {
+    public static String requirement(ServerPlayer player, String variant) {
         if (!NightmareZone.canEnter(q -> ContentRegistry.quest(q) != null && QuestApi.isComplete(player, q))) {
             return "Dominic Onion: Your brain is insufficiently trained for my dreams. Complete at least "
                     + NightmareZone.QUESTS_NEEDED + " quests with bosses in them first.";
@@ -149,40 +149,40 @@ public class NightmareZoneSession extends MinigameSession {
         return def == null ? id : def.name;
     }
 
-    private static MutableText option(String label, String command, String hover, Formatting colour) {
-        return Text.literal("[" + label + "]").styled(s -> s.withColor(colour)
+    private static MutableComponent option(String label, String command, String hover, ChatFormatting colour) {
+        return Component.literal("[" + label + "]").withStyle(s -> s.withColor(colour)
                 .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
-                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(hover))));
+                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(hover))));
     }
 
     /** Dominic Onion: the four dream modes (normal or hard) as clickable options, his reward shop and the potion barrels. */
-    public static void dominic(ServerPlayerEntity player) {
+    public static void dominic(ServerPlayer player) {
         QuestApi.say(player, "Dominic Onion", "Welcome to the Nightmare Zone! Which dream would you like? Practice is free; the others "
                 + "cost coins, and hard dreams make the bosses far stronger.");
         for (NightmareZone.Mode m : NightmareZone.Mode.values()) {
-            MutableText line = Text.literal(m.displayName + ": ").formatted(Formatting.GRAY);
+            MutableComponent line = Component.literal(m.displayName + ": ").withStyle(ChatFormatting.GRAY);
             if (m == NightmareZone.Mode.PRACTICE) {
                 line.append(option("Choose a boss", "/minigame nmz practice normal", "Fight one boss you have beaten, for no points.",
-                        Formatting.GOLD));
+                        ChatFormatting.GOLD));
             } else {
                 for (boolean h : new boolean[]{false, true}) {
                     line.append(option(h ? "Hard" : "Normal", "/minigame nmz " + m.id + " " + (h ? "hard" : "normal"),
-                            String.format("%,d", m.cost(h)) + " coins", h ? Formatting.RED : Formatting.GOLD));
-                    line.append(Text.literal(" "));
+                            String.format("%,d", m.cost(h)) + " coins", h ? ChatFormatting.RED : ChatFormatting.GOLD));
+                    line.append(Component.literal(" "));
                 }
                 if (m == NightmareZone.Mode.CUSTOM_RUMBLE) {
-                    line.append(option("Bosses", "/minigame nmz bosses", "Switch bosses on or off.", Formatting.AQUA));
+                    line.append(option("Bosses", "/minigame nmz bosses", "Switch bosses on or off.", ChatFormatting.AQUA));
                 }
             }
-            player.sendMessage(line, false);
+            player.displayClientMessage(line, false);
         }
-        player.sendMessage(Text.literal("").append(option("Rewards", "/minigame nmz shop", "Dom Onion's Reward Shop", Formatting.GREEN))
-                .append(Text.literal(" "))
-                .append(option("Potion barrels", "/minigame nmz barrel", "Withdraw the doses you have bought", Formatting.GREEN)), false);
+        player.displayClientMessage(Component.literal("").append(option("Rewards", "/minigame nmz shop", "Dom Onion's Reward Shop", ChatFormatting.GREEN))
+                .append(Component.literal(" "))
+                .append(option("Potion barrels", "/minigame nmz barrel", "Withdraw the doses you have bought", ChatFormatting.GREEN)), false);
     }
 
     /** "/minigame nmz <mode> <normal|hard> [boss]": start a dream, or list the practice bosses. */
-    public static void choose(ServerPlayerEntity player, String modeId, String difficulty, String boss) {
+    public static void choose(ServerPlayer player, String modeId, String difficulty, String boss) {
         NightmareZone.Mode mode = NightmareZone.Mode.byId(modeId);
         if (mode == null) {
             return;
@@ -193,13 +193,13 @@ public class NightmareZoneSession extends MinigameSession {
                 Msg.game(player, "Dominic Onion: You haven't defeated any of my dream bosses yet.");
                 return;
             }
-            MutableText line = Text.literal("Practise against: ").formatted(Formatting.GRAY);
+            MutableComponent line = Component.literal("Practise against: ").withStyle(ChatFormatting.GRAY);
             for (String b : unlocked(player)) {
-                line.append(option(bossName(b), "/minigame nmz practice normal " + b, "Normal", Formatting.GOLD));
-                line.append(option("H", "/minigame nmz practice hard " + b, "Hard", Formatting.RED));
-                line.append(Text.literal(" "));
+                line.append(option(bossName(b), "/minigame nmz practice normal " + b, "Normal", ChatFormatting.GOLD));
+                line.append(option("H", "/minigame nmz practice hard " + b, "Hard", ChatFormatting.RED));
+                line.append(Component.literal(" "));
             }
-            player.sendMessage(line, false);
+            player.displayClientMessage(line, false);
             return;
         }
         MinigameManager.enter(player, Minigame.NIGHTMARE_ZONE, new NightmareZone.Dream(mode, h,
@@ -207,59 +207,59 @@ public class NightmareZoneSession extends MinigameSession {
     }
 
     /** "/minigame nmz bosses" and "/minigame nmz toggle <boss>": the customisable rumble's boss switches. */
-    public static void toggle(ServerPlayerEntity player, String boss) {
+    public static void toggle(ServerPlayer player, String boss) {
         MinigameData data = MinigameData.of(player);
         if (boss != null && unlocked(player).contains(boss)) {
             String key = OFF_PREFIX + boss;
-            data.setStat(player.getUuid(), key, data.stat(player.getUuid(), key) == 0 ? 1 : 0);
+            data.setStat(player.getUUID(), key, data.stat(player.getUUID(), key) == 0 ? 1 : 0);
         }
-        MutableText line = Text.literal("Customisable rumble bosses: ").formatted(Formatting.GRAY);
+        MutableComponent line = Component.literal("Customisable rumble bosses: ").withStyle(ChatFormatting.GRAY);
         for (String b : unlocked(player)) {
-            boolean on = data.stat(player.getUuid(), OFF_PREFIX + b) == 0;
+            boolean on = data.stat(player.getUUID(), OFF_PREFIX + b) == 0;
             line.append(option(bossName(b), "/minigame nmz toggle " + b, on ? "On: click to switch off" : "Off: click to switch on",
-                    on ? Formatting.GREEN : Formatting.DARK_GRAY));
-            line.append(Text.literal(" "));
+                    on ? ChatFormatting.GREEN : ChatFormatting.DARK_GRAY));
+            line.append(Component.literal(" "));
         }
-        player.sendMessage(line, false);
+        player.displayClientMessage(line, false);
     }
 
     // ------------------------------------------------------------------ potion barrels
 
     /** Doses of a potion stored in the player's barrel. */
-    public static int barrel(ServerPlayerEntity player, String potion) {
-        return MinigameData.of(player).stat(player.getUuid(), BARREL_PREFIX + potion);
+    public static int barrel(ServerPlayer player, String potion) {
+        return MinigameData.of(player).stat(player.getUUID(), BARREL_PREFIX + potion);
     }
 
     /** Doses that fit in the barrel; called by the reward shop before a purchase. */
-    public static int barrelRoom(ServerPlayerEntity player, String potion, int wanted) {
+    public static int barrelRoom(ServerPlayer player, String potion, int wanted) {
         return NightmareZone.barrelRoom(barrel(player, potion), wanted);
     }
 
     /** Stores bought doses in the barrel (the reward shop's purchase of a dream potion). */
-    public static void storeDoses(ServerPlayerEntity player, String potion, int doses) {
-        MinigameData.of(player).setStat(player.getUuid(), BARREL_PREFIX + potion,
+    public static void storeDoses(ServerPlayer player, String potion, int doses) {
+        MinigameData.of(player).setStat(player.getUUID(), BARREL_PREFIX + potion,
                 Math.min(NightmareZone.BARREL_CAPACITY, barrel(player, potion) + Math.max(0, doses)));
     }
 
     /** The potion barrels: doses stored and withdraw options. */
-    public static void barrels(ServerPlayerEntity player) {
+    public static void barrels(ServerPlayer player) {
         Msg.game(player, "--- Nightmare Zone potion barrels ---");
         for (String potion : NightmareZone.POTIONS) {
             var def = com.runecraft.osrs.ItemCatalog.get(potion);
             int n = barrel(player, potion);
-            MutableText line = Text.literal((def == null ? potion : def.name()) + ": " + n + " doses ").formatted(Formatting.GRAY);
+            MutableComponent line = Component.literal((def == null ? potion : def.name()) + ": " + n + " doses ").withStyle(ChatFormatting.GRAY);
             for (int take : new int[]{1, 4, 16, 28}) {
                 line.append(option(String.valueOf(take), "/minigame nmz barrel " + potion + " " + take, "Withdraw " + take + " doses",
-                        Formatting.GOLD));
+                        ChatFormatting.GOLD));
             }
             line.append(option("All", "/minigame nmz barrel " + potion + " " + NightmareZone.BARREL_CAPACITY, "Withdraw every dose",
-                    Formatting.GOLD));
-            player.sendMessage(line, false);
+                    ChatFormatting.GOLD));
+            player.displayClientMessage(line, false);
         }
     }
 
     /** "/minigame nmz barrel <potion> <doses>": withdraws doses as 4-dose potions plus one partly drunk potion. */
-    public static int withdraw(ServerPlayerEntity player, String potion, int doses) {
+    public static int withdraw(ServerPlayer player, String potion, int doses) {
         if (!NightmareZone.POTIONS.contains(potion)) {
             return 0;
         }
@@ -268,13 +268,13 @@ public class NightmareZoneSession extends MinigameSession {
             Msg.game(player, "That barrel is empty. Buy doses at Dom Onion's Reward Shop.");
             return 0;
         }
-        MinigameData.of(player).setStat(player.getUuid(), BARREL_PREFIX + potion, barrel(player, potion) - take);
+        MinigameData.of(player).setStat(player.getUUID(), BARREL_PREFIX + potion, barrel(player, potion) - take);
         int left = take;
         while (left > 0) {
             int d = Math.min(4, left);
             ItemStack s = Inv.stack(potion, 1);
             if (!s.isEmpty()) {
-                s.setDamage(4 - d);
+                s.setDamageValue(4 - d);
                 Inv.give(player, s);
             }
             left -= d;
@@ -285,7 +285,7 @@ public class NightmareZoneSession extends MinigameSession {
     }
 
     /** "/minigame nmz shop": Dom Onion's Reward Shop. */
-    public static void shop(ServerPlayerEntity player) {
+    public static void shop(ServerPlayer player) {
         RewardShopService.open(player, "nightmare_zone");
     }
 
@@ -308,7 +308,7 @@ public class NightmareZoneSession extends MinigameSession {
     }
 
     @Override
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
+    protected BlockPos spawnPoint(ServerPlayer player, int index) {
         return rel(index % 3 - 1, 1, 12);
     }
 
@@ -325,8 +325,8 @@ public class NightmareZoneSession extends MinigameSession {
     @Override
     protected void start() {
         int cost = dream.mode().cost(hard);
-        List<ServerPlayerEntity> list = online();
-        for (ServerPlayerEntity p : list) {
+        List<ServerPlayer> list = online();
+        for (ServerPlayer p : list) {
             if (cost > 0) {
                 Inv.remove(p, "coins", cost);
             }
@@ -355,8 +355,8 @@ public class NightmareZoneSession extends MinigameSession {
         return dream.mode() != NightmareZone.Mode.PRACTICE;
     }
 
-    private MobEntity spawnBoss(String id) {
-        MobEntity mob = spawn(id, randomFloor(0, -6, 10));
+    private Mob spawnBoss(String id) {
+        Mob mob = spawn(id, randomFloor(0, -6, 10));
         if (mob == null) {
             return null;
         }
@@ -364,7 +364,7 @@ public class NightmareZoneSession extends MinigameSession {
         if (hard) {
             // Hard rumble hitpoints from the wiki table; the attack levels and max hits are raised by the combat hook.
             setHitpoints(mob, NightmareZone.hardHitpoints(id));
-            mob.addCommandTag(HARD_TAG);
+            mob.addTag(HARD_TAG);
         }
         aggro(mob);
         return mob;
@@ -408,7 +408,7 @@ public class NightmareZoneSession extends MinigameSession {
                 }
             }
         }
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             overloadTick(p);
         }
     }
@@ -428,29 +428,29 @@ public class NightmareZoneSession extends MinigameSession {
             broadcast("A " + spawned.displayName().toLowerCase() + " power-up has appeared.");
         }
         if (spawned != null) {
-            world.spawnParticles(new DustParticleEffect(colour(spawned), 1.5f), spawnedAt.getX() + 0.5, spawnedAt.getY() + 0.6,
+            world.sendParticles(new DustParticleOptions(colour(spawned), 1.5f), spawnedAt.getX() + 0.5, spawnedAt.getY() + 0.6,
                     spawnedAt.getZ() + 0.5, 6, 0.25, 0.4, 0.25, 0);
-            for (ServerPlayerEntity p : online()) {
-                if (p.getBlockPos().getSquaredDistance(spawnedAt) <= 2.5) {
+            for (ServerPlayer p : online()) {
+                if (p.blockPosition().distSqr(spawnedAt) <= 2.5) {
                     activate(p, spawned);
                     spawned = null;
                     break;
                 }
             }
         }
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             powerTick(p);
         }
     }
 
     /** One game tick of a player's active power-up (public for the self-test, whose player isn't in the player list). */
-    public void powerTick(ServerPlayerEntity p) {
-        NightmareZone.PowerUp active = power.get(p.getUuid());
+    public void powerTick(ServerPlayer p) {
+        NightmareZone.PowerUp active = power.get(p.getUUID());
         if (active == null) {
             return;
         }
-        if (ticks >= powerUntil.getOrDefault(p.getUuid(), 0L)) {
-            power.remove(p.getUuid());
+        if (ticks >= powerUntil.getOrDefault(p.getUUID(), 0L)) {
+            power.remove(p.getUUID());
             Msg.red(p, "Your " + active.displayName().toLowerCase() + " power-up has worn off.");
             return;
         }
@@ -467,9 +467,9 @@ public class NightmareZoneSession extends MinigameSession {
      * One zap: the zapper can finish any boss except Count Draynor, who it only kills once the player has hit him (OSRS
      * Wiki). Returns the damage dealt (public for the self-test).
      */
-    public int zap(ServerPlayerEntity p, LivingEntity boss, int roll) {
+    public int zap(ServerPlayer p, LivingEntity boss, int roll) {
         int dmg = Math.max(0, roll);
-        if (!NightmareZone.zapperMayKill(MinigameManager.creatureId(boss), hitByPlayer.contains(boss.getUuid()))) {
+        if (!NightmareZone.zapperMayKill(MinigameManager.creatureId(boss), hitByPlayer.contains(boss.getUUID()))) {
             dmg = Math.min(dmg, Math.max(0, (int) boss.getHealth() - 1));
         }
         if (dmg > 0) {
@@ -487,10 +487,10 @@ public class NightmareZoneSession extends MinigameSession {
         };
     }
 
-    private List<LivingEntity> bossesNear(ServerPlayerEntity p, double range) {
+    private List<LivingEntity> bossesNear(ServerPlayer p, double range) {
         List<LivingEntity> out = new ArrayList<>();
         for (LivingEntity e : bosses()) {
-            if (e.squaredDistanceTo(p) <= range * range) {
+            if (e.distanceToSqr(p) <= range * range) {
                 out.add(e);
             }
         }
@@ -498,8 +498,8 @@ public class NightmareZoneSession extends MinigameSession {
     }
 
     /** Activates a power-up for a player (public for the self-test). */
-    public void activate(ServerPlayerEntity p, NightmareZone.PowerUp up) {
-        world.playSound(null, p.getBlockPos(), SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.PLAYERS, 1.0f, 0.8f);
+    public void activate(ServerPlayer p, NightmareZone.PowerUp up) {
+        world.playSound(null, p.blockPosition(), SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 1.0f, 0.8f);
         if (up == NightmareZone.PowerUp.ULTIMATE_FORCE) {
             Msg.game(p, "You activate ultimate force! Every boss in the dream is destroyed.");
             forcing = true;
@@ -512,8 +512,8 @@ public class NightmareZoneSession extends MinigameSession {
             }
             return;
         }
-        power.put(p.getUuid(), up);
-        powerUntil.put(p.getUuid(), ticks + up.ticks());
+        power.put(p.getUUID(), up);
+        powerUntil.put(p.getUUID(), ticks + up.ticks());
         if (up == NightmareZone.PowerUp.POWER_SURGE) {
             com.runecraft.content.systems.SpecialAttackService.restoreEnergy(p, 100);
         }
@@ -521,8 +521,8 @@ public class NightmareZoneSession extends MinigameSession {
     }
 
     /** The power-up a player has active, or null. */
-    public NightmareZone.PowerUp activePowerUp(ServerPlayerEntity p) {
-        return power.get(p.getUuid());
+    public NightmareZone.PowerUp activePowerUp(ServerPlayer p) {
+        return power.get(p.getUUID());
     }
 
     /** The bosses alive in the dream (public for the self-test). */
@@ -533,13 +533,13 @@ public class NightmareZoneSession extends MinigameSession {
 
     /** Records that a player hit a boss (even for 0), which lets the zapper finish Count Draynor. */
     public void noteHit(LivingEntity boss) {
-        hitByPlayer.add(boss.getUuid());
+        hitByPlayer.add(boss.getUUID());
     }
 
     @Override
-    protected void onPlayerHit(ServerPlayerEntity player, LivingEntity target, int dealt) {
+    protected void onPlayerHit(ServerPlayer player, LivingEntity target, int dealt) {
         noteHit(target);
-        if (dealt > 0 && power.get(player.getUuid()) == NightmareZone.PowerUp.RECURRENT_DAMAGE && target.isAlive()) {
+        if (dealt > 0 && power.get(player.getUUID()) == NightmareZone.PowerUp.RECURRENT_DAMAGE && target.isAlive()) {
             // The extra hit gives no experience (applyDamage awards none).
             CombatHandler.applyDamage(player, target, NightmareZone.recurrent(dealt));
         }
@@ -549,8 +549,8 @@ public class NightmareZoneSession extends MinigameSession {
     public static void register() {
         CombatHooks.addNpcVersusPlayer(new CombatHooks.NpcVersusPlayer() {
             @Override
-            public double accuracy(LivingEntity mob, ServerPlayerEntity target, AttackType type) {
-                if (!mob.getCommandTags().contains(HARD_TAG)) {
+            public double accuracy(LivingEntity mob, ServerPlayer target, AttackType type) {
+                if (!mob.getTags().contains(HARD_TAG)) {
                     return 1.0;
                 }
                 return NightmareZone.hardAccuracy(MinigameManager.creatureId(mob), type != AttackType.RANGED && type != AttackType.MAGIC,
@@ -558,8 +558,8 @@ public class NightmareZoneSession extends MinigameSession {
             }
 
             @Override
-            public int maxHitBonus(LivingEntity mob, ServerPlayerEntity target, AttackType type) {
-                if (!mob.getCommandTags().contains(HARD_TAG) || type == AttackType.RANGED || type == AttackType.MAGIC) {
+            public int maxHitBonus(LivingEntity mob, ServerPlayer target, AttackType type) {
+                if (!mob.getTags().contains(HARD_TAG) || type == AttackType.RANGED || type == AttackType.MAGIC) {
                     return 0;
                 }
                 return NightmareZone.hardMaxHitBonus(MinigameManager.creatureId(mob));
@@ -570,7 +570,7 @@ public class NightmareZoneSession extends MinigameSession {
     // ------------------------------------------------------------------ potions
 
     /** Drinks a Nightmare Zone potion (only inside a dream). Returns whether the click was handled. */
-    public static boolean drink(ServerPlayerEntity player, ItemStack stack, Hand hand, String id) {
+    public static boolean drink(ServerPlayer player, ItemStack stack, InteractionHand hand, String id) {
         if (!NightmareZone.POTIONS.contains(id)) {
             return false;
         }
@@ -579,15 +579,15 @@ public class NightmareZoneSession extends MinigameSession {
             return true;
         }
         if (nmz.drink(player, id)) {
-            int used = stack.getDamage() + 1;
+            int used = stack.getDamageValue() + 1;
             int left = 4 - used;
-            player.getItemCooldownManager().set(stack.getItem(), 3 * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK);
-            player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ENTITY_GENERIC_DRINK, SoundCategory.PLAYERS, 0.5f, 1.0f);
+            player.getCooldowns().addCooldown(stack.getItem(), 3 * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK);
+            player.level().playSound(null, player.blockPosition(), SoundEvents.GENERIC_DRINK, SoundSource.PLAYERS, 0.5f, 1.0f);
             if (left <= 0) {
                 // The empty Nightmare Zone vial is discarded (OSRS: no empty vials are needed or kept).
-                player.setStackInHand(hand, ItemStack.EMPTY);
+                player.setItemInHand(hand, ItemStack.EMPTY);
             } else {
-                stack.setDamage(used);
+                stack.setDamageValue(used);
             }
             ServerNetworking.sync(player);
         }
@@ -595,11 +595,11 @@ public class NightmareZoneSession extends MinigameSession {
     }
 
     /** Applies one dose; false if it can't be drunk now. Public for the self-test. */
-    public boolean drink(ServerPlayerEntity p, String id) {
+    public boolean drink(ServerPlayer p, String id) {
         SkillSet skills = Players.data(p).skills();
         switch (id) {
             case NightmareZone.OVERLOAD -> {
-                if (overload.containsKey(p.getUuid())) {
+                if (overload.containsKey(p.getUUID())) {
                     Msg.game(p, "You should wait until your overload wears off before drinking another.");
                     return false;
                 }
@@ -607,13 +607,13 @@ public class NightmareZoneSession extends MinigameSession {
                     Msg.game(p, "You need more than 50 Hitpoints to survive the power of an overload.");
                     return false;
                 }
-                overload.put(p.getUuid(), ticks);
+                overload.put(p.getUUID(), ticks);
                 overloadBoost(skills);
                 Msg.game(p, "You drink some of your overload potion.");
             }
             case NightmareZone.ABSORPTION -> {
-                int now = NightmareZone.absorb(absorption.getOrDefault(p.getUuid(), 0));
-                absorption.put(p.getUuid(), now);
+                int now = NightmareZone.absorb(absorption.getOrDefault(p.getUUID(), 0));
+                absorption.put(p.getUUID(), now);
                 Msg.game(p, "You drink some of your absorption potion. Absorption points: " + now + ".");
             }
             case NightmareZone.SUPER_RANGING -> {
@@ -644,8 +644,8 @@ public class NightmareZoneSession extends MinigameSession {
         }
     }
 
-    private void overloadTick(ServerPlayerEntity p) {
-        Long start = overload.get(p.getUuid());
+    private void overloadTick(ServerPlayer p) {
+        Long start = overload.get(p.getUUID());
         if (start == null) {
             return;
         }
@@ -662,8 +662,8 @@ public class NightmareZoneSession extends MinigameSession {
         }
     }
 
-    private void endOverload(ServerPlayerEntity p, boolean heal) {
-        if (overload.remove(p.getUuid()) == null) {
+    private void endOverload(ServerPlayer p, boolean heal) {
+        if (overload.remove(p.getUUID()) == null) {
             return;
         }
         SkillSet skills = Players.data(p).skills();
@@ -680,26 +680,26 @@ public class NightmareZoneSession extends MinigameSession {
     }
 
     /** Absorption points a player has left (public for the self-test). */
-    public int absorption(ServerPlayerEntity p) {
-        return absorption.getOrDefault(p.getUuid(), 0);
+    public int absorption(ServerPlayer p) {
+        return absorption.getOrDefault(p.getUUID(), 0);
     }
 
     /** Whether a player's overload is active (public for the self-test). */
-    public boolean overloaded(ServerPlayerEntity p) {
-        return overload.containsKey(p.getUuid());
+    public boolean overloaded(ServerPlayer p) {
+        return overload.containsKey(p.getUUID());
     }
 
     /** Absorption soaks up damage from monsters (registered with CombatHooks by the minigames module). */
-    public static int absorb(ServerPlayerEntity p, LivingEntity attacker, int damage) {
+    public static int absorb(ServerPlayer p, LivingEntity attacker, int damage) {
         if (damage <= 0 || attacker == null || attacker == p || !(MinigameManager.session(p) instanceof NightmareZoneSession nmz)) {
             return damage;
         }
-        int points = nmz.absorption.getOrDefault(p.getUuid(), 0);
+        int points = nmz.absorption.getOrDefault(p.getUUID(), 0);
         if (points <= 0) {
             return damage;
         }
         int soaked = Math.min(points, damage);
-        nmz.absorption.put(p.getUuid(), points - soaked);
+        nmz.absorption.put(p.getUUID(), points - soaked);
         return damage - soaked;
     }
 
@@ -714,7 +714,7 @@ public class NightmareZoneSession extends MinigameSession {
     }
 
     @Override
-    protected void onKill(ServerPlayerEntity player, LivingEntity entity, String creatureId) {
+    protected void onKill(ServerPlayer player, LivingEntity entity, String creatureId) {
         if (!NightmareZone.isBoss(creatureId)) {
             return;
         }
@@ -729,10 +729,10 @@ public class NightmareZoneSession extends MinigameSession {
     }
 
     @Override
-    protected void onLeave(ServerPlayerEntity player) {
+    protected void onLeave(ServerPlayer player) {
         endOverload(player, false);
-        absorption.remove(player.getUuid());
-        power.remove(player.getUuid());
+        absorption.remove(player.getUUID());
+        power.remove(player.getUUID());
         int removed = 0;
         for (String potion : NightmareZone.POTIONS) {
             removed += Inv.remove(player, potion, 10_000);
@@ -740,14 +740,14 @@ public class NightmareZoneSession extends MinigameSession {
         if (removed > 0) {
             Msg.game(player, "Your Nightmare Zone potions fade away as you wake.");
         }
-        int total = MinigameData.of(player).points(player.getUuid(), MinigameCurrencies.key(MinigameCurrencies.NIGHTMARE_ZONE));
+        int total = MinigameData.of(player).points(player.getUUID(), MinigameCurrencies.key(MinigameCurrencies.NIGHTMARE_ZONE));
         Msg.game(player, "You wake up. This dream: " + kills + " bosses for " + String.format("%,d", earned)
                 + " points. You have " + String.format("%,d", total) + " Nightmare Zone points.");
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
-        NightmareZone.PowerUp up = power.get(player.getUuid());
+    protected List<String> hud(ServerPlayer player) {
+        NightmareZone.PowerUp up = power.get(player.getUUID());
         String progress = dream.mode() == NightmareZone.Mode.ENDURANCE ? "Wave: " + next + " / " + pool.size()
                 : "Bosses in the arena: " + bossesAlive();
         return List.of("Nightmare Zone - " + (hard ? "hard " : "") + dream.mode().displayName.toLowerCase(), "Bosses defeated: " + kills,

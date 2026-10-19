@@ -18,12 +18,11 @@ import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.TypedActionResult;
-
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.item.ItemStack;
 import java.util.function.BiConsumer;
 
 /**
@@ -39,22 +38,22 @@ public final class SorceressGardenService {
 
     static void register() {
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            ItemStack stack = player.getStackInHand(hand);
-            if (world.isClient() || !(player instanceof ServerPlayerEntity sp) || stack.isEmpty()) {
-                return TypedActionResult.pass(stack);
+            ItemStack stack = player.getItemInHand(hand);
+            if (world.isClientSide() || !(player instanceof ServerPlayer sp) || stack.isEmpty()) {
+                return InteractionResultHolder.pass(stack);
             }
             String id = Inv.idOf(stack);
             Season fruit = Season.byFruit(id);
             if (fruit != null) {
                 startJuicing(sp, fruit);
-                return TypedActionResult.success(stack);
+                return InteractionResultHolder.success(stack);
             }
             Season juice = Season.byJuice(id);
             if (juice != null) {
                 drink(sp, stack, juice);
-                return TypedActionResult.success(stack);
+                return InteractionResultHolder.success(stack);
             }
-            return TypedActionResult.pass(stack);
+            return InteractionResultHolder.pass(stack);
         });
         BlockHooks.register(MinigameWorld.SORCERESS_SHELVES, (player, pos, state) -> {
             if (!Inv.hasRoomFor(player, "beer_glass")) {
@@ -74,11 +73,11 @@ public final class SorceressGardenService {
 
     // ------------------------------------------------------------------ sq'irkjuice
 
-    private static boolean canJuice(ServerPlayerEntity p, Season s) {
+    private static boolean canJuice(ServerPlayer p, Season s) {
         return Inv.has(p, "pestle_and_mortar", 1) && Inv.has(p, "beer_glass", 1) && Inv.has(p, s.fruit(), s.perGlass());
     }
 
-    private static void startJuicing(ServerPlayerEntity p, Season s) {
+    private static void startJuicing(ServerPlayer p, Season s) {
         if (!Inv.has(p, "pestle_and_mortar", 1)) {
             Msg.game(p, "You need a pestle and mortar to crush the sq'irks.");
             return;
@@ -101,7 +100,7 @@ public final class SorceressGardenService {
         });
     }
 
-    private static void squeeze(ServerPlayerEntity p, Season s) {
+    private static void squeeze(ServerPlayer p, Season s) {
         Inv.remove(p, s.fruit(), s.perGlass());
         Inv.remove(p, "beer_glass", 1);
         Inv.give(p, s.juice(), 1);
@@ -109,18 +108,18 @@ public final class SorceressGardenService {
         Msg.action(p, "You squeeze " + s.perGlass() + " sq'irks into an empty glass.");
     }
 
-    private static void drink(ServerPlayerEntity p, ItemStack stack, Season s) {
-        if (p.getItemCooldownManager().isCoolingDown(stack.getItem())) {
+    private static void drink(ServerPlayer p, ItemStack stack, Season s) {
+        if (p.getCooldowns().isOnCooldown(stack.getItem())) {
             return;
         }
-        p.getItemCooldownManager().set(stack.getItem(), 3 * ActionManager.MC_TICKS_PER_GAME_TICK);
-        stack.decrement(1);
+        p.getCooldowns().addCooldown(stack.getItem(), 3 * ActionManager.MC_TICKS_PER_GAME_TICK);
+        stack.shrink(1);
         if (s.boost() > 0) {
             Players.data(p).skills().applyBoost(Skill.THIEVING, s.boost(), 0);
         }
         RunEnergyService.restore(p, s.energy() * 100);
         Inv.give(p, "beer_glass", 1); // approx: the wiki doesn't say whether the glass is kept
-        p.getWorld().playSound(null, p.getBlockPos(), SoundEvents.ENTITY_GENERIC_DRINK, SoundCategory.PLAYERS, 0.5f, 1.0f);
+        p.level().playSound(null, p.blockPosition(), SoundEvents.GENERIC_DRINK, SoundSource.PLAYERS, 0.5f, 1.0f);
         Msg.action(p, "You drink the sq'irkjuice. You feel more agile" + (s.boost() > 0 ? " and light-fingered." : "."));
         ServerNetworking.sync(p);
     }
@@ -132,7 +131,7 @@ public final class SorceressGardenService {
             return;
         }
         wrapped = true;
-        BiConsumer<ServerPlayerEntity, QuestNpcEntity> quest = QuestScripts.handler("osman");
+        BiConsumer<ServerPlayer, QuestNpcEntity> quest = QuestScripts.handler("osman");
         QuestScripts.onTalk("osman", (player, npc) -> {
             if (!tradeJuice(player) && quest != null) {
                 quest.accept(player, npc);
@@ -141,7 +140,7 @@ public final class SorceressGardenService {
     }
 
     /** Hands every glass of sq'irkjuice to Osman for Thieving XP; false if there was nothing to trade. */
-    static boolean tradeJuice(ServerPlayerEntity player) {
+    static boolean tradeJuice(ServerPlayer player) {
         if (ContentRegistry.quest(SorceressGarden.QUEST) != null && !QuestApi.isComplete(player, SorceressGarden.QUEST)) {
             return false;
         }

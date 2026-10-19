@@ -1,12 +1,11 @@
 package com.runecraft.content.slayer;
 
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.nbt.NbtString;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.PersistentState;
-
+import net.minecraft.world.level.saveddata.SavedData;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -16,7 +15,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /** World-save storage for every player's slayer progress (key {@code runecraft_slayer}). */
-public final class SlayerState extends PersistentState {
+public final class SlayerState extends SavedData {
     public static final String KEY = "runecraft_slayer";
 
     /** One player's slayer progress. */
@@ -43,8 +42,8 @@ public final class SlayerState extends PersistentState {
             return task != null && remaining > 0;
         }
 
-        NbtCompound toNbt() {
-            NbtCompound nbt = new NbtCompound();
+        CompoundTag toNbt() {
+            CompoundTag nbt = new CompoundTag();
             nbt.putString("Task", task == null ? "" : task);
             nbt.putInt("Remaining", remaining);
             nbt.putInt("Amount", amount);
@@ -60,7 +59,7 @@ public final class SlayerState extends PersistentState {
             return nbt;
         }
 
-        static Profile fromNbt(NbtCompound nbt) {
+        static Profile fromNbt(CompoundTag nbt) {
             Profile p = new Profile();
             p.task = emptyToNull(nbt.getString("Task"));
             p.remaining = nbt.getInt("Remaining");
@@ -72,21 +71,21 @@ public final class SlayerState extends PersistentState {
             p.points = nbt.getInt("Points");
             p.completed = nbt.getInt("Completed");
             p.migrated = nbt.getBoolean("Migrated");
-            NbtList unlocks = nbt.getList("Unlocks", NbtElement.STRING_TYPE);
+            ListTag unlocks = nbt.getList("Unlocks", Tag.TAG_STRING);
             for (int i = 0; i < unlocks.size(); i++) {
                 p.unlocks.add(unlocks.getString(i));
             }
-            NbtList blocked = nbt.getList("Blocked", NbtElement.STRING_TYPE);
+            ListTag blocked = nbt.getList("Blocked", Tag.TAG_STRING);
             for (int i = 0; i < blocked.size(); i++) {
                 p.blocked.add(blocked.getString(i));
             }
             return p;
         }
 
-        private static NbtList list(Iterable<String> values) {
-            NbtList list = new NbtList();
+        private static ListTag list(Iterable<String> values) {
+            ListTag list = new ListTag();
             for (String s : values) {
-                list.add(NbtString.of(s));
+                list.add(StringTag.valueOf(s));
             }
             return list;
         }
@@ -111,7 +110,7 @@ public final class SlayerState extends PersistentState {
     /** Self-test hook: puts back a {@link #selfTestSave} copy; null drops the profile (a fresh one is made on use). */
     public void selfTestRestore(UUID uuid, Object saved) {
         profiles.remove(uuid);
-        if (saved instanceof NbtCompound n) {
+        if (saved instanceof CompoundTag n) {
             profiles.put(uuid, Profile.fromNbt(n.copy()));
         }
     }
@@ -123,17 +122,17 @@ public final class SlayerState extends PersistentState {
     }
 
     @Override
-    public NbtCompound writeNbt(NbtCompound nbt) {
-        NbtCompound all = new NbtCompound();
+    public CompoundTag save(CompoundTag nbt) {
+        CompoundTag all = new CompoundTag();
         profiles.forEach((uuid, p) -> all.put(uuid.toString(), p.toNbt()));
         nbt.put("Profiles", all);
         return nbt;
     }
 
-    public static SlayerState fromNbt(NbtCompound nbt) {
+    public static SlayerState fromNbt(CompoundTag nbt) {
         SlayerState state = new SlayerState();
-        NbtCompound all = nbt.getCompound("Profiles");
-        for (String key : all.getKeys()) {
+        CompoundTag all = nbt.getCompound("Profiles");
+        for (String key : all.getAllKeys()) {
             try {
                 state.profiles.put(UUID.fromString(key), Profile.fromNbt(all.getCompound(key)));
             } catch (IllegalArgumentException ignored) {
@@ -144,6 +143,6 @@ public final class SlayerState extends PersistentState {
     }
 
     public static SlayerState of(MinecraftServer server) {
-        return server.getOverworld().getPersistentStateManager().getOrCreate(SlayerState::fromNbt, SlayerState::new, KEY);
+        return server.overworld().getDataStorage().computeIfAbsent(SlayerState::fromNbt, SlayerState::new, KEY);
     }
 }

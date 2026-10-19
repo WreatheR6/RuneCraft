@@ -10,22 +10,21 @@ import com.runecraft.osrs.content.minigames.Minigame;
 import com.runecraft.osrs.content.minigames.MinigameRules.BarbarianAssault;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * Barbarian Assault: ten waves of Penance fighters, rangers, runners and healers, then the
@@ -41,9 +40,9 @@ public class BarbarianAssaultSession extends MinigameSession {
     private int nextWaveIn = 10;
     private int escaped;
     private boolean cleared = true;
-    private MobEntity queen;
+    private Mob queen;
 
-    public BarbarianAssaultSession(int id, int slot, ServerWorld world, String variant) {
+    public BarbarianAssaultSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.BARBARIAN_ASSAULT, id, slot, world, variant);
     }
 
@@ -61,8 +60,8 @@ public class BarbarianAssaultSession extends MinigameSession {
     protected void build() {
         room(Blocks.COARSE_DIRT, Blocks.SPRUCE_LOG, Blocks.MUD_BRICKS);
         for (int x = -4; x <= 4; x++) {
-            set(x, 1, -19, Blocks.AIR.getDefaultState());
-            set(x, 0, -21, Blocks.BLACKSTONE.getDefaultState());
+            set(x, 1, -19, Blocks.AIR.defaultBlockState());
+            set(x, 0, -21, Blocks.BLACKSTONE.defaultBlockState());
         }
         place(-4, 16, "ba_egg_launcher");
         place(4, 16, "ba_healer_spring");
@@ -70,12 +69,12 @@ public class BarbarianAssaultSession extends MinigameSession {
     }
 
     @Override
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
+    protected BlockPos spawnPoint(ServerPlayer player, int index) {
         return rel(index % 5 - 2, 1, 17);
     }
 
-    private int role(ServerPlayerEntity p) {
-        return roles.getOrDefault(p.getUuid(), 0);
+    private int role(ServerPlayer p) {
+        return roles.getOrDefault(p.getUUID(), 0);
     }
 
     private static String roleName(int r) {
@@ -85,7 +84,7 @@ public class BarbarianAssaultSession extends MinigameSession {
 
     @Override
     protected void start() {
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             String v = MinigameManager.chosenVariant(p);
             int r = 0;
             for (int i = 0; i < BarbarianAssault.ROLES.length; i++) {
@@ -93,7 +92,7 @@ public class BarbarianAssaultSession extends MinigameSession {
                     r = i;
                 }
             }
-            roles.put(p.getUuid(), r);
+            roles.put(p.getUUID(), r);
             Msg.game(p, "Your role this game is: " + roleName(r) + ".");
         }
     }
@@ -110,9 +109,9 @@ public class BarbarianAssaultSession extends MinigameSession {
                 }
             }
             for (LivingEntity runner : living("penance_runner")) {
-                if (runner instanceof MobEntity m && m.getNavigation().isIdle()) {
+                if (runner instanceof Mob m && m.getNavigation().isDone()) {
                     BlockPos to = randomFloor(0, -10, 10);
-                    m.getNavigation().startMovingTo(to.getX(), to.getY(), to.getZ(), 1.2);
+                    m.getNavigation().moveTo(to.getX(), to.getY(), to.getZ(), 1.2);
                 }
             }
             if (queen != null && queen.isAlive()) {
@@ -140,7 +139,7 @@ public class BarbarianAssaultSession extends MinigameSession {
         int[] counts = BarbarianAssault.wave(wave);
         for (int type = 0; type < 4; type++) {
             for (int n = 0; n < counts[type]; n++) {
-                MobEntity mob = spawn(BarbarianAssault.PENANCE[type], randomFloor(0, -17, 4));
+                Mob mob = spawn(BarbarianAssault.PENANCE[type], randomFloor(0, -17, 4));
                 if (mob != null) {
                     setHitpoints(mob, BarbarianAssault.hitpoints(type, wave));
                     if (type != 2) {
@@ -159,14 +158,14 @@ public class BarbarianAssaultSession extends MinigameSession {
     }
 
     private void completeWave() {
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             int r = role(p);
             int honour = giveHonour(p, r, BarbarianAssault.waveHonour(r, wave, escaped));
             Msg.game(p, "Wave " + wave + " complete! You earn " + honour + " " + roleName(r) + " honour points"
                     + (escaped > 0 ? " (" + escaped + " runner" + (escaped > 1 ? "s" : "") + " escaped)." : "."));
             // The round's progress (the next wave) unlocks low (wave 3) and medium (wave 6) gambles.
             if (waveReached(p) < wave + 1) {
-                MinigameData.of(p).setStat(p.getUuid(), WAVE_STAT, wave + 1);
+                MinigameData.of(p).setStat(p.getUUID(), WAVE_STAT, wave + 1);
             }
             GameEvents.fireActivity(p, "ba_wave");
         }
@@ -174,15 +173,15 @@ public class BarbarianAssaultSession extends MinigameSession {
     }
 
     /** Adds honour points in a role, capped at 5,000; returns the amount added. */
-    private int giveHonour(ServerPlayerEntity p, int role, int amount) {
+    private int giveHonour(ServerPlayer p, int role, int amount) {
         String key = "ba_" + BarbarianAssault.ROLES[role];
-        int add = BarbarianAssault.addHonour(MinigameData.of(p).points(p.getUuid(), key), amount);
+        int add = BarbarianAssault.addHonour(MinigameData.of(p).points(p.getUUID(), key), amount);
         addPoints(p, "pts:" + key, add);
         return add;
     }
 
     @Override
-    protected double damageMultiplier(ServerPlayerEntity player, LivingEntity target, AttackType type) {
+    protected double damageMultiplier(ServerPlayer player, LivingEntity target, AttackType type) {
         String cid = MinigameManager.creatureId(target);
         return switch (role(player)) {
             // Attacker level: +1 to +5 bonus damage, approximated as +5% per level over 1. // approx
@@ -195,9 +194,9 @@ public class BarbarianAssaultSession extends MinigameSession {
     }
 
     @Override
-    protected void onKill(ServerPlayerEntity player, LivingEntity entity, String creatureId) {
+    protected void onKill(ServerPlayer player, LivingEntity entity, String creatureId) {
         if (creatureId.equals("penance_fighter") || creatureId.equals("penance_ranger")) {
-            for (ServerPlayerEntity p : online()) {
+            for (ServerPlayer p : online()) {
                 if (role(p) == 2) {
                     // The collection bag holds 2 / 4 / 6 / 7 / 8 eggs by collector level.
                     int room = BarbarianAssault.collectorBag(roleLevel(p, 2)) - Inv.count(p, "penance_egg");
@@ -216,7 +215,7 @@ public class BarbarianAssaultSession extends MinigameSession {
     }
 
     @Override
-    protected boolean onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         if (blockId.equals("ba_egg_launcher")) {
             int eggs = Inv.remove(player, "penance_egg", 1000);
             if (eggs == 0) {
@@ -226,7 +225,7 @@ public class BarbarianAssaultSession extends MinigameSession {
             if (queen != null && queen.isAlive()) {
                 int dmg = eggs * BarbarianAssault.omegaEggDamage();
                 CombatHandler.applyDamage(player, queen, dmg);
-                world.spawnParticles(ParticleTypes.EXPLOSION, queen.getX(), queen.getY() + 1, queen.getZ(), eggs, 1, 1, 1, 0);
+                world.sendParticles(ParticleTypes.EXPLOSION, queen.getX(), queen.getY() + 1, queen.getZ(), eggs, 1, 1, 1, 0);
                 Msg.game(player, "You fire " + eggs + " omega egg" + (eggs > 1 ? "s" : "") + " at the Penance Queen!");
                 if (!queen.isAlive()) {
                     broadcastRed("The Penance Queen has been defeated!");
@@ -240,8 +239,8 @@ public class BarbarianAssaultSession extends MinigameSession {
         }
         if (blockId.equals("ba_healer_spring")) {
             int healed = 0;
-            for (ServerPlayerEntity p : online()) {
-                if (p.squaredDistanceTo(player) < 64 && p.getHealth() < p.getMaxHealth()) {
+            for (ServerPlayer p : online()) {
+                if (p.distanceToSqr(player) < 64 && p.getHealth() < p.getMaxHealth()) {
                     // Healer level: 10 / 15 / 20 / 25 / 35 hitpoints a heal.
                     p.heal(role(player) == 3 ? BarbarianAssault.healerHeal(roleLevel(player, 3)) : 4);
                     healed++;
@@ -261,41 +260,41 @@ public class BarbarianAssaultSession extends MinigameSession {
         if (!success) {
             return;
         }
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             int r = role(p);
             // Wave 10: 80 points in your role and 5 in each of the others.
             for (int other = 0; other < BarbarianAssault.ROLES.length; other++) {
                 giveHonour(p, other, other == r ? BarbarianAssault.WAVE_10_ROLE : BarbarianAssault.WAVE_10_OTHER);
             }
-            int kc = MinigameData.of(p).incrementStat(p.getUuid(), "kc:" + game.id());
+            int kc = MinigameData.of(p).incrementStat(p.getUUID(), "kc:" + game.id());
             String queenKey = com.runecraft.osrs.content.minigames.MinigameCurrencies.key(
                     com.runecraft.osrs.content.minigames.MinigameCurrencies.BA_QUEEN);
-            if (MinigameData.of(p).points(p.getUuid(), queenKey) < BarbarianAssault.MAX_QUEEN_KILLS) {
+            if (MinigameData.of(p).points(p.getUUID(), queenKey) < BarbarianAssault.MAX_QUEEN_KILLS) {
                 addPoints(p, com.runecraft.osrs.content.minigames.MinigameCurrencies.BA_QUEEN, 1);
             }
             Msg.game(p, "Congratulations! You've defeated the Penance Queen. Queen kills: " + kc + ".");
             // The pet penance queen comes from high gambles (BaGambles), not from the kill itself (OSRS Wiki).
             // Finishing wave 10 resets the round, so low and medium gambles need new waves.
-            MinigameData.of(p).setStat(p.getUuid(), WAVE_STAT, 0);
+            MinigameData.of(p).setStat(p.getUUID(), WAVE_STAT, 0);
             Inv.remove(p, "penance_egg", 1000);
         }
     }
 
     /** A player's level (1-5) in a role, bought with that role's honour points. */
-    public static int roleLevel(ServerPlayerEntity p, int role) {
-        return Math.max(1, MinigameData.of(p).stat(p.getUuid(), "ba_level_" + BarbarianAssault.ROLES[role]));
+    public static int roleLevel(ServerPlayer p, int role) {
+        return Math.max(1, MinigameData.of(p).stat(p.getUUID(), "ba_level_" + BarbarianAssault.ROLES[role]));
     }
 
     /** Stat key: the wave a player has reached in the current round (0 after the queen dies). */
     public static final String WAVE_STAT = "ba_wave_reached";
 
     /** The wave a player has reached in the current round (gates low and medium gambles). */
-    public static int waveReached(ServerPlayerEntity p) {
-        return MinigameData.of(p).stat(p.getUuid(), WAVE_STAT);
+    public static int waveReached(ServerPlayer p) {
+        return MinigameData.of(p).stat(p.getUUID(), WAVE_STAT);
     }
 
     /** Runs one gamble whose cost the reward shop has already taken. */
-    public static void gamble(ServerPlayerEntity p, com.runecraft.osrs.content.minigames.BaGambles.Tier tier) {
+    public static void gamble(ServerPlayer p, com.runecraft.osrs.content.minigames.BaGambles.Tier tier) {
         if (tier == null) {
             return;
         }
@@ -308,16 +307,16 @@ public class BarbarianAssaultSession extends MinigameSession {
                 reward(p, prize.item(), prize.amount());
             }
             if (prize.item().equals("pet_penance_queen")) {
-                p.getServer().getPlayerManager().broadcast(Text.literal(p.getName().getString()
-                        + " has a funny feeling like they're being followed.").formatted(Formatting.GOLD), false);
+                p.getServer().getPlayerList().broadcastSystemMessage(Component.literal(p.getName().getString()
+                        + " has a funny feeling like they're being followed.").withStyle(ChatFormatting.GOLD), false);
             }
         }
-        MinigameData.of(p).incrementStat(p.getUuid(), "ba_gambles_" + tier.name().toLowerCase(java.util.Locale.ROOT));
+        MinigameData.of(p).incrementStat(p.getUUID(), "ba_gambles_" + tier.name().toLowerCase(java.util.Locale.ROOT));
         Msg.game(p, "Commander Connad hands you the prize of your " + tier.displayName().toLowerCase(java.util.Locale.ROOT) + ".");
     }
 
     /** Every role's level. */
-    public static int[] roleLevels(ServerPlayerEntity p) {
+    public static int[] roleLevels(ServerPlayer p) {
         int[] levels = new int[BarbarianAssault.ROLES.length];
         for (int r = 0; r < levels.length; r++) {
             levels[r] = roleLevel(p, r);
@@ -326,7 +325,7 @@ public class BarbarianAssaultSession extends MinigameSession {
     }
 
     /** Buys the next level in a role with its honour points; returns whether it did. */
-    public static boolean buyLevel(ServerPlayerEntity p, int role) {
+    public static boolean buyLevel(ServerPlayer p, int role) {
         int level = roleLevel(p, role);
         String name = roleName(role);
         if (level >= BarbarianAssault.MAX_ROLE_LEVEL) {
@@ -336,18 +335,18 @@ public class BarbarianAssaultSession extends MinigameSession {
         int cost = BarbarianAssault.levelCost(level + 1);
         String key = "ba_" + BarbarianAssault.ROLES[role];
         MinigameData data = MinigameData.of(p);
-        if (data.points(p.getUuid(), key) < cost) {
+        if (data.points(p.getUUID(), key) < cost) {
             Msg.game(p, "You need " + cost + " " + name + " honour points for level " + (level + 1) + ".");
             return false;
         }
-        data.addPoints(p.getUuid(), key, -cost);
-        data.setStat(p.getUuid(), "ba_level_" + BarbarianAssault.ROLES[role], level + 1);
+        data.addPoints(p.getUUID(), key, -cost);
+        data.setStat(p.getUUID(), "ba_level_" + BarbarianAssault.ROLES[role], level + 1);
         Msg.game(p, "You are now a level " + (level + 1) + " " + name + ".");
         return true;
     }
 
     /** Buys a level by role name ("attacker", "defender", "collector" or "healer"). */
-    public static void buyLevel(ServerPlayerEntity p, String roleName) {
+    public static void buyLevel(ServerPlayer p, String roleName) {
         for (int r = 0; r < BarbarianAssault.ROLES.length; r++) {
             if (BarbarianAssault.ROLES[r].equals(roleName)) {
                 buyLevel(p, r);
@@ -358,20 +357,20 @@ public class BarbarianAssaultSession extends MinigameSession {
     }
 
     /** The blackboard: honour, level and next upgrade per role, with links to buy upgrades. */
-    public static void readBlackboard(ServerPlayerEntity p) {
+    public static void readBlackboard(ServerPlayer p) {
         MinigameData data = MinigameData.of(p);
-        p.sendMessage(Text.literal("Barbarian Assault - honour points and role levels").formatted(Formatting.GOLD), false);
+        p.displayClientMessage(Component.literal("Barbarian Assault - honour points and role levels").withStyle(ChatFormatting.GOLD), false);
         for (int r = 0; r < BarbarianAssault.ROLES.length; r++) {
             int level = roleLevel(p, r);
-            int honour = data.points(p.getUuid(), "ba_" + BarbarianAssault.ROLES[r]);
-            MutableText line = Text.literal(" " + roleName(r) + ": level " + level + ", " + honour + " honour")
-                    .formatted(Formatting.GRAY);
+            int honour = data.points(p.getUUID(), "ba_" + BarbarianAssault.ROLES[r]);
+            MutableComponent line = Component.literal(" " + roleName(r) + ": level " + level + ", " + honour + " honour")
+                    .withStyle(ChatFormatting.GRAY);
             if (level < BarbarianAssault.MAX_ROLE_LEVEL) {
                 String command = "/minigame balevel " + BarbarianAssault.ROLES[r];
-                line.append(Text.literal(" [Upgrade: " + BarbarianAssault.levelCost(level + 1) + "]").styled(st -> st
-                        .withColor(Formatting.GREEN).withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))));
+                line.append(Component.literal(" [Upgrade: " + BarbarianAssault.levelCost(level + 1) + "]").withStyle(st -> st
+                        .withColor(ChatFormatting.GREEN).withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))));
             }
-            p.sendMessage(line, false);
+            p.displayClientMessage(line, false);
         }
         GameEvents.fireActivity(p, "ba_blackboard");
         if (BarbarianAssault.allMaxed(roleLevels(p))) {
@@ -380,9 +379,9 @@ public class BarbarianAssaultSession extends MinigameSession {
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
+    protected List<String> hud(ServerPlayer player) {
         int r = role(player);
-        int honour = MinigameData.of(player).points(player.getUuid(), "ba_" + BarbarianAssault.ROLES[r]);
+        int honour = MinigameData.of(player).points(player.getUUID(), "ba_" + BarbarianAssault.ROLES[r]);
         return List.of("Barbarian Assault", "Wave: " + Math.max(1, wave) + " / " + BarbarianAssault.WAVES,
                 "Role: " + roleName(r) + " lv " + roleLevel(player, r) + " (" + honour + " honour)", "Penance left: " + mobsAlive(),
                 queen != null && queen.isAlive() ? "Queen: " + (int) queen.getHealth() + " / " + BarbarianAssault.QUEEN_HP : "");

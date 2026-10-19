@@ -3,10 +3,9 @@ package com.runecraft.content.minigames;
 import com.runecraft.RuneCraft;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.Identifier;
-
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,11 +14,11 @@ import java.util.UUID;
 /** Minigame packet channels: the HUD overlay and reward shops. */
 public final class MinigameNet {
     /** S2C: overlay lines (empty list hides the overlay). */
-    public static final Identifier HUD = RuneCraft.id("minigames/hud");
+    public static final ResourceLocation HUD = RuneCraft.id("minigames/hud");
     /** S2C: open a reward shop. */
-    public static final Identifier SHOP = RuneCraft.id("minigames/shop");
+    public static final ResourceLocation SHOP = RuneCraft.id("minigames/shop");
     /** C2S: buy from a reward shop (shop id, entry index, quantity). */
-    public static final Identifier BUY = RuneCraft.id("minigames/buy");
+    public static final ResourceLocation BUY = RuneCraft.id("minigames/buy");
 
     private static final Map<UUID, List<String>> LAST_HUD = new HashMap<>();
 
@@ -28,28 +27,28 @@ public final class MinigameNet {
 
     public static void register() {
         ServerPlayNetworking.registerGlobalReceiver(BUY, (server, player, handler, buf, sender) -> {
-            String shop = buf.readString(64);
+            String shop = buf.readUtf(64);
             int index = buf.readVarInt();
             int quantity = buf.readVarInt();
             server.execute(() -> RewardShopService.buy(player, shop, index, quantity));
         });
     }
 
-    public static void sendHud(ServerPlayerEntity player, List<String> lines) {
-        List<String> last = LAST_HUD.get(player.getUuid());
+    public static void sendHud(ServerPlayer player, List<String> lines) {
+        List<String> last = LAST_HUD.get(player.getUUID());
         if (lines.equals(last)) {
             return;
         }
-        LAST_HUD.put(player.getUuid(), List.copyOf(lines));
-        PacketByteBuf buf = PacketByteBufs.create();
+        LAST_HUD.put(player.getUUID(), List.copyOf(lines));
+        FriendlyByteBuf buf = PacketByteBufs.create();
         buf.writeVarInt(lines.size());
         for (String l : lines) {
-            buf.writeString(l);
+            buf.writeUtf(l);
         }
         ServerPlayNetworking.send(player, HUD, buf);
     }
 
-    static void forget(ServerPlayerEntity player) {
-        LAST_HUD.remove(player.getUuid());
+    static void forget(ServerPlayer player) {
+        LAST_HUD.remove(player.getUUID());
     }
 }

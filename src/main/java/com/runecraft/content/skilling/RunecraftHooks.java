@@ -12,17 +12,16 @@ import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.minecraft.block.BlockState;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.random.Random;
-
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.level.block.state.BlockState;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -37,15 +36,15 @@ final class RunecraftHooks {
 
     static void init() {
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
-            if (hand != Hand.MAIN_HAND || world.isClient() || !(player instanceof ServerPlayerEntity sp)) {
-                return ActionResult.PASS;
+            if (hand != InteractionHand.MAIN_HAND || world.isClientSide() || !(player instanceof ServerPlayer sp)) {
+                return InteractionResult.PASS;
             }
             BlockState state = world.getBlockState(hit.getBlockPos());
             if (!(state.getBlock() instanceof RuneAltarBlock altarBlock)) {
-                return ActionResult.PASS;
+                return InteractionResult.PASS;
             }
             ItemHooks.emptyPouches(sp);
-            return altar(sp, altarBlock.altar(), hit.getBlockPos()) ? ActionResult.SUCCESS : ActionResult.PASS;
+            return altar(sp, altarBlock.altar(), hit.getBlockPos()) ? InteractionResult.SUCCESS : InteractionResult.PASS;
         });
         BlockHooks.register("ourania_altar", (player, pos, state) -> ourania(player, pos));
         for (CraftingData.Orb orb : CraftingData.ORBS) {
@@ -54,7 +53,7 @@ final class RunecraftHooks {
     }
 
     /** Tiara binding and combination runes; returns true if handled (otherwise normal crafting runs). */
-    private static boolean altar(ServerPlayerEntity player, RuneAltar altar, BlockPos pos) {
+    private static boolean altar(ServerPlayer player, RuneAltar altar, BlockPos pos) {
         String held = SkillingUtil.heldId(player);
         if (held.equals("tiara")) {
             String talisman = RunecraftData.talisman(altar);
@@ -92,7 +91,7 @@ final class RunecraftHooks {
         return false;
     }
 
-    private static void combination(ServerPlayerEntity player, RunecraftData.Combination c, BlockPos pos) {
+    private static void combination(ServerPlayer player, RunecraftData.Combination c, BlockPos pos) {
         if (!SkillingUtil.need(player, Skill.RUNECRAFT, c.level(), "craft " + SkillingUtil.lower(c.name()) + "s")) {
             return;
         }
@@ -111,7 +110,7 @@ final class RunecraftHooks {
         }
         // A worn binding necklace guarantees success (one of its 16 charges per trip); otherwise 50% per rune.
         boolean binding = useBindingCharge(player);
-        Random random = player.getRandom();
+        RandomSource random = player.getRandom();
         int made = 0;
         for (int i = 0; i < n; i++) {
             if (binding || random.nextBoolean()) {
@@ -125,7 +124,7 @@ final class RunecraftHooks {
     }
 
     /** Uses a charge of a worn binding necklace (16 per player, OSRS Wiki); returns false if none is worn. */
-    private static boolean useBindingCharge(ServerPlayerEntity player) {
+    private static boolean useBindingCharge(ServerPlayer player) {
         return com.runecraft.content.systems.JewelleryService.bindingCharge(player);
     }
 
@@ -133,7 +132,7 @@ final class RunecraftHooks {
      * Aether runes (OSRS Wiki): 90 Runecraft; one essence, soul rune and aether catalyst per rune, 50% each without a binding
      * necklace. A failed rune loses its essence and soul rune but keeps its catalyst. Daeyalt essence pays 30 XP a rune.
      */
-    private static void aether(ServerPlayerEntity player, BlockPos pos) {
+    private static void aether(ServerPlayer player, BlockPos pos) {
         if (!SkillingUtil.need(player, Skill.RUNECRAFT, RunecraftData.AETHER_LEVEL, "craft aether runes")) {
             return;
         }
@@ -148,7 +147,7 @@ final class RunecraftHooks {
         Inv.remove(player, essenceId, n);
         Inv.remove(player, "soul_rune", n);
         boolean binding = useBindingCharge(player);
-        Random random = player.getRandom();
+        RandomSource random = player.getRandom();
         int made = 0;
         for (int i = 0; i < n; i++) {
             if (binding || random.nextBoolean()) {
@@ -162,7 +161,7 @@ final class RunecraftHooks {
         effects(player, pos);
     }
 
-    private static void ourania(ServerPlayerEntity player, BlockPos pos) {
+    private static void ourania(ServerPlayer player, BlockPos pos) {
         int essence = Inv.count(player, "pure_essence");
         ItemHooks.emptyPouches(player);
         essence = Inv.count(player, "pure_essence");
@@ -178,7 +177,7 @@ final class RunecraftHooks {
             }
         }
         Inv.remove(player, "pure_essence", essence);
-        Random random = player.getRandom();
+        RandomSource random = player.getRandom();
         double xp = 0;
         for (int i = 0; i < essence; i++) {
             // Favour higher runes as the player levels: pick the better of two rolls half the time.
@@ -197,17 +196,17 @@ final class RunecraftHooks {
         effects(player, pos);
     }
 
-    private static void effects(ServerPlayerEntity player, BlockPos pos) {
-        ServerWorld world = (ServerWorld) player.getWorld();
-        world.spawnParticles(ParticleTypes.WITCH, pos.getX() + 0.5, pos.getY() + 1.2, pos.getZ() + 0.5, 30, 0.4, 0.4, 0.4, 0.1);
-        world.playSound(null, pos, SoundEvents.BLOCK_ENCHANTMENT_TABLE_USE, SoundCategory.PLAYERS, 1.0f, 1.0f);
+    private static void effects(ServerPlayer player, BlockPos pos) {
+        ServerLevel world = (ServerLevel) player.level();
+        world.sendParticles(ParticleTypes.WITCH, pos.getX() + 0.5, pos.getY() + 1.2, pos.getZ() + 0.5, 30, 0.4, 0.4, 0.4, 0.1);
+        world.playSound(null, pos, SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.PLAYERS, 1.0f, 1.0f);
     }
 
-    private static boolean canCharge(ServerPlayerEntity player, CraftingData.Orb orb) {
+    private static boolean canCharge(ServerPlayer player, CraftingData.Orb orb) {
         return Inv.has(player, "unpowered_orb", 1) && Inv.has(player, "cosmic_rune", 3) && Inv.has(player, orb.rune(), 30);
     }
 
-    private static void chargeOrbs(ServerPlayerEntity player, BlockPos pos, CraftingData.Orb orb) {
+    private static void chargeOrbs(ServerPlayer player, BlockPos pos, CraftingData.Orb orb) {
         if (!SkillingUtil.need(player, Skill.MAGIC, orb.magicLevel(), "charge " + orb.element() + " orbs")) {
             return;
         }
@@ -219,7 +218,7 @@ final class RunecraftHooks {
             int counter = 4;
 
             @Override
-            public boolean tick(ServerPlayerEntity p, long gameTick) {
+            public boolean tick(ServerPlayer p, long gameTick) {
                 if (++counter < 5) {
                     return true;
                 }
@@ -232,9 +231,9 @@ final class RunecraftHooks {
                 Inv.remove(p, orb.rune(), 30);
                 SkillingUtil.give(p, orb.orb(), 1);
                 XpService.add(p, Skill.MAGIC, orb.magicXp());
-                p.swingHand(Hand.MAIN_HAND, true);
+                p.swing(InteractionHand.MAIN_HAND, true);
                 Msg.action(p, "You charge the orb with the power of " + orb.element() + ".");
-                ((ServerWorld) p.getWorld()).spawnParticles(ParticleTypes.ENCHANT, pos.getX() + 0.5, pos.getY() + 1.5,
+                ((ServerLevel) p.level()).sendParticles(ParticleTypes.ENCHANT, pos.getX() + 0.5, pos.getY() + 1.5,
                         pos.getZ() + 0.5, 20, 0.3, 0.5, 0.3, 0.2);
                 return true;
             }
@@ -244,7 +243,7 @@ final class RunecraftHooks {
     // ------------------------------------------------------------------ wine
 
     /** Unfermented wine turns into wine after ~12 seconds (OSRS: 200 Cooking XP each, bad wine below 68). */
-    static void fermentWine(ServerPlayerEntity player) {
+    static void fermentWine(ServerPlayer player) {
         int jugs = Inv.count(player, "unfermented_wine");
         if (jugs <= 0) {
             return;

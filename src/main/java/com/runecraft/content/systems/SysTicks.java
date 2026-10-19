@@ -3,8 +3,7 @@ package com.runecraft.content.systems;
 import com.runecraft.action.ActionManager;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-
+import net.minecraft.server.level.ServerPlayer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -15,7 +14,7 @@ public final class SysTicks {
     }
 
     private static final List<Task> TASKS = new ArrayList<>();
-    private static final List<BiConsumer<ServerPlayerEntity, Long>> PLAYER_TICKS = new ArrayList<>();
+    private static final List<BiConsumer<ServerPlayer, Long>> PLAYER_TICKS = new ArrayList<>();
     private static final List<BiConsumer<MinecraftServer, Long>> SERVER_TICKS = new ArrayList<>();
     private static long lastTick = -1;
 
@@ -47,8 +46,8 @@ public final class SysTicks {
             for (BiConsumer<MinecraftServer, Long> s : SERVER_TICKS) {
                 s.accept(server, tick);
             }
-            for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
-                for (BiConsumer<ServerPlayerEntity, Long> c : PLAYER_TICKS) {
+            for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+                for (BiConsumer<ServerPlayer, Long> c : PLAYER_TICKS) {
                     try {
                         c.accept(p, tick);
                     } catch (RuntimeException e) {
@@ -64,7 +63,7 @@ public final class SysTicks {
         TASKS.add(new Task(ActionManager.gameTick() + Math.max(1, gameTicks), run));
     }
 
-    public static void everyPlayer(BiConsumer<ServerPlayerEntity, Long> c) {
+    public static void everyPlayer(BiConsumer<ServerPlayer, Long> c) {
         PLAYER_TICKS.add(c);
     }
 

@@ -21,17 +21,16 @@ import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.minecraft.block.BlockState;
-import net.minecraft.item.ItemStack;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,33 +53,33 @@ final class ConstructionHooks {
 
     static void init() {
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
-            if (hand != Hand.MAIN_HAND) {
-                return ActionResult.PASS;
+            if (hand != InteractionHand.MAIN_HAND) {
+                return InteractionResult.PASS;
             }
-            ItemStack held = player.getMainHandStack();
+            ItemStack held = player.getMainHandItem();
             if (held.isEmpty()) {
-                return ActionResult.PASS;
+                return InteractionResult.PASS;
             }
             Furniture f = ConstructionData.byFlatpack(Inv.idOf(held));
             if (f == null) {
-                return ActionResult.PASS;
+                return InteractionResult.PASS;
             }
-            if (world.isClient() || !(player instanceof ServerPlayerEntity sp)) {
-                return ActionResult.SUCCESS;
+            if (world.isClientSide() || !(player instanceof ServerPlayer sp)) {
+                return InteractionResult.SUCCESS;
             }
-            BlockPos target = hit.getBlockPos().offset(hit.getSide());
+            BlockPos target = hit.getBlockPos().relative(hit.getDirection());
             BlockState block = SkillingUtil.moduleBlock(f.block());
-            if (block == null || !world.getBlockState(target).isReplaceable() || !world.canPlayerModifyAt(sp, target)) {
+            if (block == null || !world.getBlockState(target).canBeReplaced() || !world.mayInteract(sp, target)) {
                 Msg.game(sp, "You can't set up the " + SkillingUtil.lower(f.name()) + " there.");
-                return ActionResult.SUCCESS;
+                return InteractionResult.SUCCESS;
             }
-            world.setBlockState(target, block);
-            if (!sp.getAbilities().creativeMode) {
-                held.decrement(1);
+            world.setBlockAndUpdate(target, block);
+            if (!sp.getAbilities().instabuild) {
+                held.shrink(1);
             }
-            world.playSound(null, target, SoundEvents.BLOCK_WOOD_PLACE, SoundCategory.BLOCKS, 1f, 1f);
+            world.playSound(null, target, SoundEvents.WOOD_PLACE, SoundSource.BLOCKS, 1f, 1f);
             Msg.action(sp, "You set up the " + SkillingUtil.lower(f.name()) + ".");
-            return ActionResult.SUCCESS;
+            return InteractionResult.SUCCESS;
         });
         for (Furniture f : ConstructionData.FURNITURE) {
             switch (f.use()) {
@@ -96,21 +95,21 @@ final class ConstructionHooks {
         }
     }
 
-    private static int litBurners(ServerWorld world, BlockPos altar) {
+    private static int litBurners(ServerLevel world, BlockPos altar) {
         long now = ActionManager.gameTick();
-        String worldId = world.getRegistryKey().getValue().toString();
+        String worldId = world.dimension().location().toString();
         BURNERS.values().removeIf(l -> l.until() < now);
         int n = 0;
         for (Lit l : BURNERS.values()) {
-            if (l.world().equals(worldId) && l.pos().getSquaredDistance(altar) <= 64) {
+            if (l.world().equals(worldId) && l.pos().distSqr(altar) <= 64) {
                 n++;
             }
         }
         return Math.min(2, n);
     }
 
-    private static void burner(ServerPlayerEntity player, BlockPos pos) {
-        ServerWorld world = (ServerWorld) player.getWorld();
+    private static void burner(ServerPlayer player, BlockPos pos) {
+        ServerLevel world = (ServerLevel) player.level();
         String key = SkillingUtil.key(world, pos);
         Lit lit = BURNERS.get(key);
         if (lit != null && lit.until() > ActionManager.gameTick()) {
@@ -123,16 +122,16 @@ final class ConstructionHooks {
             return;
         }
         Inv.remove(player, "marrentill", 1);
-        BURNERS.put(key, new Lit(world.getRegistryKey().getValue().toString(), pos, ActionManager.gameTick() + 200));
-        world.spawnParticles(ParticleTypes.FLAME, pos.getX() + 0.5, pos.getY() + 1.1, pos.getZ() + 0.5, 10, 0.2, 0.1, 0.2, 0.01);
-        world.playSound(null, pos, SoundEvents.ITEM_FLINTANDSTEEL_USE, SoundCategory.BLOCKS, 1f, 1f);
+        BURNERS.put(key, new Lit(world.dimension().location().toString(), pos, ActionManager.gameTick() + 200));
+        world.sendParticles(ParticleTypes.FLAME, pos.getX() + 0.5, pos.getY() + 1.1, pos.getZ() + 0.5, 10, 0.2, 0.1, 0.2, 0.01);
+        world.playSound(null, pos, SoundEvents.FLINTANDSTEEL_USE, SoundSource.BLOCKS, 1f, 1f);
         Msg.action(player, "You light the incense burner.");
     }
 
-    private static void altar(ServerPlayerEntity player, BlockPos pos, Furniture f) {
+    private static void altar(ServerPlayer player, BlockPos pos, Furniture f) {
         Bone first = Bone.byItem(SkillingUtil.heldId(player));
         if (first == null) {
-            int burners = litBurners((ServerWorld) player.getWorld(), pos);
+            int burners = litBurners((ServerLevel) player.level(), pos);
             PrayerService.useAltar(player); // praying at the altar recharges Prayer points
             Msg.game(player, "Use bones on the altar to offer them to the gods (" + (f.power() + burners * 50) + "% Prayer XP).");
             return;
@@ -141,46 +140,46 @@ final class ConstructionHooks {
             int counter = 2;
 
             @Override
-            public boolean tick(ServerPlayerEntity p, long gameTick) {
+            public boolean tick(ServerPlayer p, long gameTick) {
                 if (++counter < 3) {
                     return true;
                 }
                 counter = 0;
-                ServerWorld world = (ServerWorld) p.getWorld();
-                if (p.squaredDistanceTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5) > 25) {
+                ServerLevel world = (ServerLevel) p.level();
+                if (p.distanceToSqr(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5) > 25) {
                     return false;
                 }
                 // The shared Prayer bone offering, with this altar's multiplier (gilded + 2 lit burners = 350%).
                 if (!PrayerService.offerHeldBone(p, (f.power() + litBurners(world, pos) * 50) / 100.0)) {
                     return false;
                 }
-                world.spawnParticles(ParticleTypes.END_ROD, pos.getX() + 0.5, pos.getY() + 1.2, pos.getZ() + 0.5, 6, 0.2, 0.3, 0.2, 0.02);
+                world.sendParticles(ParticleTypes.END_ROD, pos.getX() + 0.5, pos.getY() + 1.2, pos.getZ() + 0.5, 6, 0.2, 0.3, 0.2, 0.02);
                 return true;
             }
         });
     }
 
-    private static void larder(ServerPlayerEntity player, Furniture f) {
+    private static void larder(ServerPlayer player, Furniture f) {
         long now = ActionManager.gameTick();
-        Long next = LARDER_COOLDOWN.get(player.getUuid());
+        Long next = LARDER_COOLDOWN.get(player.getUUID());
         if (next != null && now < next) {
             Msg.game(player, "You've just taken something from the larder.");
             return;
         }
-        LARDER_COOLDOWN.put(player.getUuid(), now + 25);
+        LARDER_COOLDOWN.put(player.getUUID(), now + 25);
         List<String> items = ConstructionData.larderItems(f.power());
         String item = items.get(player.getRandom().nextInt(items.size()));
         Inv.give(player, item, 1);
         Msg.action(player, "You take " + Msg.article(SkillingUtil.lower(SkillingUtil.name(item))) + " from the larder.");
     }
 
-    private static void bookcase(ServerPlayerEntity player) {
+    private static void bookcase(ServerPlayer player) {
         PlayerData data = Players.data(player);
         Msg.game(player, "You browse your bookcase. You have " + data.questPoints() + " quest points and a total level of "
                 + data.skills().totalLevel() + ".");
     }
 
-    private static void pool(ServerPlayerEntity player, BlockPos pos, Furniture f) {
+    private static void pool(ServerPlayer player, BlockPos pos, Furniture f) {
         PlayerData data = Players.data(player);
         SkillSet skills = data.skills();
         int tier = f.power();
@@ -202,14 +201,14 @@ final class ConstructionHooks {
             player.setHealth(player.getMaxHealth());
             PoisonService.cure(player, true, 0, ActionManager.gameTick());
         }
-        ServerWorld world = (ServerWorld) player.getWorld();
-        world.spawnParticles(ParticleTypes.SPLASH, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, 30, 0.4, 0.2, 0.4, 0.1);
-        world.playSound(null, pos, SoundEvents.ENTITY_GENERIC_SPLASH, SoundCategory.BLOCKS, 1f, 1f);
+        ServerLevel world = (ServerLevel) player.level();
+        world.sendParticles(ParticleTypes.SPLASH, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, 30, 0.4, 0.2, 0.4, 0.1);
+        world.playSound(null, pos, SoundEvents.GENERIC_SPLASH, SoundSource.BLOCKS, 1f, 1f);
         Msg.action(player, "You drink from the " + SkillingUtil.lower(f.name()) + " and feel refreshed.");
         ServerNetworking.sync(player);
     }
 
-    private static void portal(ServerPlayerEntity player, Furniture f) {
+    private static void portal(ServerPlayer player, Furniture f) {
         Landmark l = Landmark.byName(f.destination());
         if (l == null) {
             return;

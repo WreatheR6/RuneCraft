@@ -1,33 +1,33 @@
 package com.runecraft.content.extras;
 
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.PersistentState;
+import net.minecraft.world.level.saveddata.SavedData;
 
 /**
  * World-save storage for the extras module (key {@code runecraft_extras}): house layouts and plots,
  * followers and pet house contents, Sailing voyages. NBT sections keyed by name.
  */
-public final class ExtrasState extends PersistentState {
+public final class ExtrasState extends SavedData {
     public static final String KEY = "runecraft_extras";
 
-    private NbtCompound root = new NbtCompound();
+    private CompoundTag root = new CompoundTag();
 
     public static ExtrasState get(MinecraftServer server) {
-        return server.getOverworld().getPersistentStateManager().getOrCreate(ExtrasState::fromNbt, ExtrasState::new, KEY);
+        return server.overworld().getDataStorage().computeIfAbsent(ExtrasState::fromNbt, ExtrasState::new, KEY);
     }
 
-    public NbtCompound section(String name) {
+    public CompoundTag section(String name) {
         if (!root.contains(name)) {
-            root.put(name, new NbtCompound());
+            root.put(name, new CompoundTag());
         }
         return root.getCompound(name);
     }
 
-    public NbtCompound entry(String section, String key) {
-        NbtCompound s = section(section);
+    public CompoundTag entry(String section, String key) {
+        CompoundTag s = section(section);
         if (!s.contains(key)) {
-            s.put(key, new NbtCompound());
+            s.put(key, new CompoundTag());
         }
         return s.getCompound(key);
     }
@@ -46,12 +46,12 @@ public final class ExtrasState extends PersistentState {
     }
 
     @Override
-    public NbtCompound writeNbt(NbtCompound nbt) {
+    public CompoundTag save(CompoundTag nbt) {
         nbt.put("Data", root.copy());
         return nbt;
     }
 
-    public static ExtrasState fromNbt(NbtCompound nbt) {
+    public static ExtrasState fromNbt(CompoundTag nbt) {
         ExtrasState state = new ExtrasState();
         state.root = nbt.getCompound("Data");
         return state;

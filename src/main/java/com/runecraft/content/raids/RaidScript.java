@@ -4,7 +4,7 @@ import com.runecraft.boss.BossScript;
 import com.runecraft.boss.DataBossEntity;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.content.AttackDef;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Boss script shared by every raid boss. Encounter mechanics live in the room's {@link RoomLogic}
@@ -17,7 +17,7 @@ public final class RaidScript implements BossScript {
         if (raid == null) {
             return null;
         }
-        int i = raid.roomAt(boss.getPos());
+        int i = raid.roomAt(boss.position());
         return i >= 0 ? raid.logic(i) : raid.logic();
     }
 
@@ -31,19 +31,19 @@ public final class RaidScript implements BossScript {
     }
 
     @Override
-    public AttackDef chooseAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+    public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
         RoomLogic r = room(boss);
         return r == null ? null : r.bossAttack(boss, target, distance);
     }
 
     @Override
-    public int modifyIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+    public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
         RoomLogic r = room(boss);
         return r == null ? damage : r.bossIncoming(boss, attacker, damage, type);
     }
 
     @Override
-    public int onHitPlayer(DataBossEntity boss, ServerPlayerEntity player, int damage, AttackType type) {
+    public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
         RaidInstance raid = RaidManager.at(boss);
         if (raid == null) {
             return damage;
@@ -79,7 +79,7 @@ public final class RaidScript implements BossScript {
     }
 
     @Override
-    public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
+    public void onDeath(DataBossEntity boss, ServerPlayer killer) {
         RoomLogic r = room(boss);
         if (r != null) {
             r.bossDeath(boss, killer);

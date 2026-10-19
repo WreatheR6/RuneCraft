@@ -25,14 +25,13 @@ import com.runecraft.registry.ModItems;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.Vec3d;
-
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -52,7 +51,7 @@ final class DoomDelveService {
     }
 
     /** Acid blood left on each player's last level (it carries over to the next level, except delve 6). */
-    private static final Map<UUID, List<Vec3d>> ACID = new HashMap<>();
+    private static final Map<UUID, List<Vec3>> ACID = new HashMap<>();
 
     static void init() {
         BossScripts.register(DoomDelves.BOSS, DoomScript::new);
@@ -60,9 +59,9 @@ final class DoomDelveService {
         DataBossService.variant(DoomDelves.BOSS, DoomDelveService::nextLevel);
         DataBossService.onKilled(DoomDelves.BOSS, DoomDelveService::completed);
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
-            if (entity instanceof ServerPlayerEntity p) {
-                ACID.remove(p.getUuid());
-                DoomDelveState.Run run = state(p).remove(p.getUuid());
+            if (entity instanceof ServerPlayer p) {
+                ACID.remove(p.getUUID());
+                DoomDelveState.Run run = state(p).remove(p.getUUID());
                 if (run != null && !run.pending.isEmpty()) {
                     Msg.red(p, "Your delve run is over; the Doom's loot is lost.");
                 }
@@ -71,7 +70,7 @@ final class DoomDelveService {
         // Demonic larvae: non-demonbane hits deal at most 1, a demonbane hit kills a small larva outright.
         CombatHooks.addModifier(new CombatHooks.PlayerAttackModifier() {
             @Override
-            public int afterRoll(ServerPlayerEntity player, LivingEntity target, AttackType type, int damage) {
+            public int afterRoll(ServerPlayer player, LivingEntity target, AttackType type, int damage) {
                 if (!isLarva(target)) {
                     return damage;
                 }
@@ -89,43 +88,43 @@ final class DoomDelveService {
         return ModernBosses.DOOM_LARVA.equals(id) || ModernBosses.DOOM_GIANT_LARVA.equals(id);
     }
 
-    static boolean demonbane(ServerPlayerEntity p) {
+    static boolean demonbane(ServerPlayer p) {
         return TormentedDemons.pierces(BossFx.heldId(p)); // approx: demonbane spells and the eye of ayak are not counted
     }
 
-    private static DoomDelveState state(ServerPlayerEntity p) {
+    private static DoomDelveState state(ServerPlayer p) {
         return DoomDelveState.get(p.getServer());
     }
 
     /** Sneak-using the stone claims the loot held from the run instead of descending. */
-    private static boolean beforeSummon(ServerPlayerEntity player, BossDef boss) {
-        DoomDelveState.Run run = state(player).get(player.getUuid());
-        if (player.isSneaking() && run != null) {
+    private static boolean beforeSummon(ServerPlayer player, BossDef boss) {
+        DoomDelveState.Run run = state(player).get(player.getUUID());
+        if (player.isShiftKeyDown() && run != null) {
             claim(player, run);
             return false;
         }
         return true;
     }
 
-    private static BossVariant nextLevel(ServerPlayerEntity player, BossDef boss) {
-        DoomDelveState.Run run = state(player).getOrCreate(player.getUuid());
+    private static BossVariant nextLevel(ServerPlayer player, BossDef boss) {
+        DoomDelveState.Run run = state(player).getOrCreate(player.getUUID());
         int level = run.completed + 1;
         if (level > 1) {
             Msg.game(player, "You follow the Doom of Mokhaiotl down the burrow hole to delve level " + level + ".");
         } else {
-            ACID.remove(player.getUuid());
+            ACID.remove(player.getUUID());
         }
         return DoomDelves.variant(boss, level);
     }
 
-    private static void completed(ServerPlayerEntity player, DataBossEntity boss) {
+    private static void completed(ServerPlayer player, DataBossEntity boss) {
         int level = Math.max(1, boss.delve());
         DoomDelveState st = state(player);
-        DoomDelveState.Run run = st.getOrCreate(player.getUuid());
+        DoomDelveState.Run run = st.getOrCreate(player.getUUID());
         run.completed = level;
         List<DoomDelves.Loot> loot = DoomDelves.roll(level, new java.util.Random(player.getRandom().nextLong()));
         run.pending.addAll(loot);
-        st.markDirty();
+        st.setDirty();
         PlayerData data = Players.data(player);
         int best = data.killCount(DoomDelves.DEEPEST_KEY);
         if (level > best) {
@@ -143,9 +142,9 @@ final class DoomDelveService {
         Msg.game(player, "Use the summoning stone to delve deeper (level " + (level + 1) + "), or sneak and use it to claim your loot.");
     }
 
-    private static void claim(ServerPlayerEntity player, DoomDelveState.Run run) {
-        state(player).remove(player.getUuid());
-        ACID.remove(player.getUuid());
+    private static void claim(ServerPlayer player, DoomDelveState.Run run) {
+        state(player).remove(player.getUUID());
+        ACID.remove(player.getUUID());
         if (run.pending.isEmpty()) {
             Msg.game(player, "You have no loot waiting from the Doom.");
             return;
@@ -158,12 +157,12 @@ final class DoomDelveService {
     }
 
     /** Stacks of demonic charge on this player's run (they carry over between levels). */
-    static int addStacks(ServerPlayerEntity player, int n) {
+    static int addStacks(ServerPlayer player, int n) {
         DoomDelveState st = state(player);
-        DoomDelveState.Run run = st.getOrCreate(player.getUuid());
+        DoomDelveState.Run run = st.getOrCreate(player.getUUID());
         int before = run.stacks;
         run.stacks += n;
-        st.markDirty();
+        st.setDirty();
         return before;
     }
 
@@ -177,11 +176,11 @@ final class DoomDelveService {
         return String.join(", ", parts);
     }
 
-    private static boolean wearsShield(ServerPlayerEntity p) {
+    private static boolean wearsShield(ServerPlayer p) {
         if (Equipment.twoHanded(p)) {
             return false;
         }
-        ItemDef def = ModItems.def(p.getOffHandStack());
+        ItemDef def = ModItems.def(p.getOffhandItem());
         return def != null && def.equipment() != null && def.equipment().slot() == EquipmentDef.Slot.SHIELD;
     }
 
@@ -205,13 +204,13 @@ final class DoomDelveService {
      * </ul>
      */
     static final class DoomScript extends ScriptedBoss {
-        private record Larva(MobEntity mob, boolean giant) {
+        private record Larva(Mob mob, boolean giant) {
         }
 
         private int level;
         private boolean started;
         private long lastSplat;
-        private final List<Vec3d> acid = new ArrayList<>();
+        private final List<Vec3> acid = new ArrayList<>();
         private final List<Larva> larvae = new ArrayList<>();
         private long nextLarva;
         // Beam / melee punish
@@ -226,14 +225,14 @@ final class DoomDelveService {
         private int attacksSinceShield;
         // Burrow phase
         private int burrowTicks;
-        private final List<Vec3d> rocks = new ArrayList<>();
+        private final List<Vec3> rocks = new ArrayList<>();
         // Shockwave
         private long nextShockwave;
         private long shockwaveDue = -1;
-        private final List<MobEntity> earth = new ArrayList<>();
-        private final List<Vec3d> earthBroken = new ArrayList<>();
-        private Vec3d earthenShield;
-        private Vec3d earthenTarget;
+        private final List<Mob> earth = new ArrayList<>();
+        private final List<Vec3> earthBroken = new ArrayList<>();
+        private Vec3 earthenShield;
+        private Vec3 earthenTarget;
         private int cleared;
 
         @Override
@@ -257,7 +256,7 @@ final class DoomDelveService {
         }
 
         @Override
-        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             if (level >= DoomDelves.SHIELD_FROM && attacksSinceShield >= (shieldsDone == 0 ? DoomDelves.SHIELD_MIN_ATTACKS : 12) // approx
                     && boss.getHealth() <= boss.getMaxHealth() * DoomDelves.SHIELD_BELOW) {
                 startShield(boss);
@@ -276,14 +275,14 @@ final class DoomDelveService {
         }
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             if (!boss.isAlive()) {
                 return;
             }
             level = Math.max(1, boss.delve());
             if (!started && target != null) {
                 started = true;
-                List<Vec3d> carried = ACID.remove(target.getUuid());
+                List<Vec3> carried = ACID.remove(target.getUUID());
                 if (carried != null && level != DoomDelves.ACID_WIPE_LEVEL) {
                     acid.addAll(carried);
                 } else if (carried != null && !carried.isEmpty()) {
@@ -295,8 +294,8 @@ final class DoomDelveService {
             if (!started) {
                 return;
             }
-            List<ServerPlayerEntity> near = BossFx.players(boss, 24);
-            for (ServerPlayerEntity p : near) {
+            List<ServerPlayer> near = BossFx.players(boss, 24);
+            for (ServerPlayer p : near) {
                 if (!wearsShield(p)) {
                     CombatAchievementService.flag(p, DoomDelves.FLAG_NO_SHIELD);
                 }
@@ -332,15 +331,15 @@ final class DoomDelveService {
             attacksSinceBeam = 0;
             beamTicks = DoomDelves.BEAM_CHARGE_TICKS;
             BossFx.say(boss, "The Doom of Mokhaiotl begins charging a beam... punish it with melee!");
-            BossFx.sound(boss, SoundEvents.BLOCK_BEACON_POWER_SELECT, 0.6f);
+            BossFx.sound(boss, SoundEvents.BEACON_POWER_SELECT, 0.6f);
         }
 
-        private void fireBeam(DataBossEntity boss, ServerPlayerEntity target) {
+        private void fireBeam(DataBossEntity boss, ServerPlayer target) {
             if (target == null || !target.isAlive()) {
                 return;
             }
             BossFx.say(boss, "The Doom of Mokhaiotl fires its beam!");
-            BossFx.world(boss).spawnParticles(ParticleTypes.SONIC_BOOM, target.getX(), target.getY() + 1, target.getZ(), 1, 0, 0, 0, 0);
+            BossFx.world(boss).sendParticles(ParticleTypes.SONIC_BOOM, target.getX(), target.getY() + 1, target.getZ(), 1, 0, 0, 0, 0);
             CombatHooks.nameAttack("charge", AttackType.CRUSH);
             CombatHandler.applyDamage(boss, target, boss.getRandom().nextInt(DoomDelves.chargeMaxHit(level) + 1));
         }
@@ -356,9 +355,9 @@ final class DoomDelveService {
             BossFx.burst(boss, ParticleTypes.ENCHANT, 30, 1.5);
         }
 
-        private void tickShield(DataBossEntity boss, ServerPlayerEntity target) {
+        private void tickShield(DataBossEntity boss, ServerPlayer target) {
             shieldTicks++;
-            BossFx.ring(BossFx.world(boss), boss.getPos(), boss.getWidth() / 2 + 0.5, ParticleTypes.SOUL_FIRE_FLAME);
+            BossFx.ring(BossFx.world(boss), boss.position(), boss.getBbWidth() / 2 + 0.5, ParticleTypes.SOUL_FIRE_FLAME);
             if (target != null && shieldTicks % DoomDelves.shieldLarvaInterval(level) == 0) {
                 spawnLarva(boss, target, false);
             }
@@ -400,22 +399,22 @@ final class DoomDelveService {
             BossFx.burst(boss, ParticleTypes.CAMPFIRE_COSY_SMOKE, 20, 1.5);
         }
 
-        private void tickBurrow(DataBossEntity boss, ServerPlayerEntity target, List<ServerPlayerEntity> near) {
+        private void tickBurrow(DataBossEntity boss, ServerPlayer target, List<ServerPlayer> near) {
             burrowTicks--;
-            ServerWorld world = BossFx.world(boss);
-            for (Vec3d r : rocks) {
+            ServerLevel world = BossFx.world(boss);
+            for (Vec3 r : rocks) {
                 BossFx.column(world, r, ParticleTypes.CAMPFIRE_COSY_SMOKE, 3);
             }
             if (target != null && burrowTicks > 3 && burrowTicks % DoomDelves.TRAMPLE_INTERVAL == 0) {
-                Vec3d d = target.getPos().subtract(boss.getPos());
+                Vec3 d = target.position().subtract(boss.position());
                 double len = Math.sqrt(d.x * d.x + d.z * d.z);
                 if (len > 0.1) {
                     double step = Math.min(len, 4);
-                    boss.requestTeleport(boss.getX() + d.x / len * step, boss.getY(), boss.getZ() + d.z / len * step);
+                    boss.teleportTo(boss.getX() + d.x / len * step, boss.getY(), boss.getZ() + d.z / len * step);
                 }
                 BossFx.burst(boss, ParticleTypes.EXPLOSION, 2, 0.8);
-                for (ServerPlayerEntity p : near) {
-                    if (p.squaredDistanceTo(boss) <= 2.25 * 2.25) {
+                for (ServerPlayer p : near) {
+                    if (p.distanceToSqr(boss) <= 2.25 * 2.25) {
                         CombatHooks.nameAttack("trample", AttackType.CRUSH);
                         CombatHandler.applyDamage(boss, p, boss.getRandom().nextInt(DoomDelves.standardMaxHit(level) + 1)); // approx
                     }
@@ -426,9 +425,9 @@ final class DoomDelveService {
             }
             if (burrowTicks == 0) {
                 BossFx.burst(boss, ParticleTypes.EXPLOSION_EMITTER, 1, 0.5);
-                BossFx.sound(boss, SoundEvents.ENTITY_GENERIC_EXPLODE, 0.7f);
-                for (ServerPlayerEntity p : near) {
-                    boolean sheltered = rocks.stream().anyMatch(r -> p.getPos().squaredDistanceTo(r) <= 1.5 * 1.5);
+                BossFx.sound(boss, SoundEvents.GENERIC_EXPLODE, 0.7f);
+                for (ServerPlayer p : near) {
+                    boolean sheltered = rocks.stream().anyMatch(r -> p.position().distanceToSqr(r) <= 1.5 * 1.5);
                     if (!sheltered) {
                         CombatHooks.nameAttack("slam", AttackType.CRUSH);
                         CombatHandler.applyDamage(boss, p, boss.getRandom().nextInt(DoomDelves.chargeMaxHit(level) + 1)); // approx
@@ -442,46 +441,46 @@ final class DoomDelveService {
 
         // ---------------- Demonic larvae ----------------
 
-        private void spawnLarva(DataBossEntity boss, ServerPlayerEntity target, boolean giant) {
-            Vec3d d = target.getPos().subtract(boss.getPos());
+        private void spawnLarva(DataBossEntity boss, ServerPlayer target, boolean giant) {
+            Vec3 d = target.position().subtract(boss.position());
             double len = Math.max(0.1, Math.sqrt(d.x * d.x + d.z * d.z));
             double side = (boss.getRandom().nextDouble() - 0.5) * 6;
             double x = boss.getX() + d.x / len * 7 - d.z / len * side;
             double z = boss.getZ() + d.z / len * 7 + d.x / len * side;
-            Vec3d at = BossFx.ground(BossFx.world(boss), x, z, boss.getY());
-            MobEntity mob = BossFx.spawnMinion(boss, giant ? ModernBosses.DOOM_GIANT_LARVA : ModernBosses.DOOM_LARVA, at, null);
+            Vec3 at = BossFx.ground(BossFx.world(boss), x, z, boss.getY());
+            Mob mob = BossFx.spawnMinion(boss, giant ? ModernBosses.DOOM_GIANT_LARVA : ModernBosses.DOOM_LARVA, at, null);
             if (mob != null) {
                 larvae.add(new Larva(mob, giant));
             }
         }
 
-        private void tickLarvae(DataBossEntity boss, ServerPlayerEntity target, List<ServerPlayerEntity> near) {
+        private void tickLarvae(DataBossEntity boss, ServerPlayer target, List<ServerPlayer> near) {
             Iterator<Larva> it = larvae.iterator();
             while (it.hasNext()) {
                 Larva l = it.next();
-                MobEntity mob = l.mob();
+                Mob mob = l.mob();
                 if (!mob.isAlive()) {
-                    if (mob.isDead()) {
+                    if (mob.isDeadOrDying()) {
                         explode(boss, mob, near);
                     }
                     it.remove();
                     continue;
                 }
-                Vec3d d = boss.getPos().subtract(mob.getPos());
+                Vec3 d = boss.position().subtract(mob.position());
                 double len = Math.sqrt(d.x * d.x + d.z * d.z);
-                if (len <= boss.getWidth() / 2 + 0.6) {
+                if (len <= boss.getBbWidth() / 2 + 0.6) {
                     absorb(boss, l, target, near);
                     mob.discard();
                     it.remove();
                     continue;
                 }
                 double step = Math.min(len, 0.6); // approx: about a tile a tick
-                mob.requestTeleport(mob.getX() + d.x / len * step, mob.getY(), mob.getZ() + d.z / len * step);
+                mob.teleportTo(mob.getX() + d.x / len * step, mob.getY(), mob.getZ() + d.z / len * step);
             }
         }
 
-        private void absorb(DataBossEntity boss, Larva l, ServerPlayerEntity target, List<ServerPlayerEntity> near) {
-            ServerPlayerEntity victim = target != null ? target : near.isEmpty() ? null : near.get(0);
+        private void absorb(DataBossEntity boss, Larva l, ServerPlayer target, List<ServerPlayer> near) {
+            ServerPlayer victim = target != null ? target : near.isEmpty() ? null : near.get(0);
             int stacks = victim != null ? addStacks(victim, DoomDelves.larvaStacks(l.giant())) : 0;
             boss.heal(DoomDelves.larvaHeal(stacks, l.giant()));
             BossFx.burst(boss, ParticleTypes.HEART, 4, 0.8);
@@ -490,22 +489,22 @@ final class DoomDelveService {
                 CombatHandler.applyDamage(boss, victim, DoomDelves.larvaDamage(stacks, l.giant(), level));
                 Msg.red(victim, "A larva reaches the Doom, which grows stronger (demonic charge " + (stacks + DoomDelves.larvaStacks(l.giant())) + ").");
             }
-            for (ServerPlayerEntity p : near) {
+            for (ServerPlayer p : near) {
                 CombatAchievementService.flag(p, DoomDelves.FLAG_GRUB_ABSORBED);
             }
         }
 
-        private void explode(DataBossEntity boss, MobEntity mob, List<ServerPlayerEntity> near) {
-            ServerWorld world = BossFx.world(boss);
-            world.spawnParticles(ParticleTypes.EXPLOSION, mob.getX(), mob.getY() + 0.3, mob.getZ(), 1, 0, 0, 0, 0);
-            for (ServerPlayerEntity p : near) {
-                if (p.getPos().squaredDistanceTo(mob.getPos()) <= 1.5 * 1.5) {
+        private void explode(DataBossEntity boss, Mob mob, List<ServerPlayer> near) {
+            ServerLevel world = BossFx.world(boss);
+            world.sendParticles(ParticleTypes.EXPLOSION, mob.getX(), mob.getY() + 0.3, mob.getZ(), 1, 0, 0, 0, 0);
+            for (ServerPlayer p : near) {
+                if (p.position().distanceToSqr(mob.position()) <= 1.5 * 1.5) {
                     CombatHooks.nameAttack("larva_explosion", null);
                     CombatHandler.applyDamage(boss, p, 1 + boss.getRandom().nextInt(5)); // approx
                 }
             }
-            double reach = boss.getWidth() / 2 + 1.5;
-            if (mob.squaredDistanceTo(boss) <= reach * reach) {
+            double reach = boss.getBbWidth() / 2 + 1.5;
+            if (mob.distanceToSqr(boss) <= reach * reach) {
                 if (shield) {
                     damageShield(boss, DoomDelves.LARVA_SHIELD_DAMAGE);
                 } else {
@@ -516,7 +515,7 @@ final class DoomDelveService {
 
         // ---------------- Shockwave, volatile earth and the earthen shield ----------------
 
-        private void tickShockwave(DataBossEntity boss, List<ServerPlayerEntity> near) {
+        private void tickShockwave(DataBossEntity boss, List<ServerPlayer> near) {
             if (shockwaveDue < 0) {
                 if (now >= nextShockwave && !shield && burrowTicks <= 0 && beamTicks <= 0 && !near.isEmpty()) {
                     shockwaveDue = now + DoomDelves.SHOCKWAVE_WINDUP;
@@ -524,7 +523,7 @@ final class DoomDelveService {
                     earthenShield = null;
                     cleared = 0;
                     for (int i = 0; i < 3; i++) {
-                        MobEntity e = BossFx.spawnMinion(boss, ModernBosses.DOOM_VOLATILE_EARTH, around(boss, homeVec(), 8), null);
+                        Mob e = BossFx.spawnMinion(boss, ModernBosses.DOOM_VOLATILE_EARTH, around(boss, homeVec(), 8), null);
                         if (e != null) {
                             earth.add(e);
                         }
@@ -533,12 +532,12 @@ final class DoomDelveService {
                 }
                 return;
             }
-            Iterator<MobEntity> it = earth.iterator();
+            Iterator<Mob> it = earth.iterator();
             while (it.hasNext()) {
-                MobEntity e = it.next();
+                Mob e = it.next();
                 if (!e.isAlive()) {
-                    if (e.isDead() && earthBroken.size() < 2) {
-                        earthBroken.add(e.getPos());
+                    if (e.isDeadOrDying() && earthBroken.size() < 2) {
+                        earthBroken.add(e.position());
                     }
                     it.remove();
                 }
@@ -546,22 +545,22 @@ final class DoomDelveService {
             if (earthenShield == null && earthBroken.size() >= 2) {
                 earthenShield = earthBroken.get(1);
                 earthenTarget = earthBroken.get(0);
-                for (MobEntity e : earth) {
+                for (Mob e : earth) {
                     e.discard();
                 }
                 earth.clear();
                 BossFx.warn(boss, "An earthen shield rises from the rubble!");
             }
             if (earthenShield != null) {
-                Vec3d d = earthenTarget.subtract(earthenShield);
+                Vec3 d = earthenTarget.subtract(earthenShield);
                 double len = Math.sqrt(d.x * d.x + d.z * d.z);
                 if (len > 0.05) {
                     double step = Math.min(len, 0.5);
                     earthenShield = earthenShield.add(d.x / len * step, 0, d.z / len * step);
                 }
-                Iterator<Vec3d> a = acid.iterator();
+                Iterator<Vec3> a = acid.iterator();
                 while (a.hasNext()) {
-                    Vec3d splat = a.next();
+                    Vec3 splat = a.next();
                     double dx = splat.x - earthenShield.x;
                     double dz = splat.z - earthenShield.z;
                     if (dx * dx + dz * dz <= 1.0) {
@@ -572,10 +571,10 @@ final class DoomDelveService {
                 BossFx.ring(BossFx.world(boss), earthenShield, 2.0, ParticleTypes.WAX_ON);
             }
             if (now >= shockwaveDue) {
-                BossFx.sound(boss, SoundEvents.ENTITY_GENERIC_EXPLODE, 0.5f);
-                BossFx.ring(BossFx.world(boss), boss.getPos(), 10, ParticleTypes.EXPLOSION);
-                for (ServerPlayerEntity p : near) {
-                    boolean safe = earthenShield != null && p.getPos().squaredDistanceTo(earthenShield) <= 2.5 * 2.5;
+                BossFx.sound(boss, SoundEvents.GENERIC_EXPLODE, 0.5f);
+                BossFx.ring(BossFx.world(boss), boss.position(), 10, ParticleTypes.EXPLOSION);
+                for (ServerPlayer p : near) {
+                    boolean safe = earthenShield != null && p.position().distanceToSqr(earthenShield) <= 2.5 * 2.5;
                     if (!safe) {
                         CombatHooks.nameAttack("shockwave", AttackType.MAGIC);
                         CombatHandler.applyDamage(boss, p, boss.getRandom().nextInt(DoomDelves.standardMaxHit(level) + 1)); // approx
@@ -584,7 +583,7 @@ final class DoomDelveService {
                         CombatAchievementService.flag(p, DoomDelves.FLAG_MOPPING_UP);
                     }
                 }
-                for (MobEntity e : earth) {
+                for (Mob e : earth) {
                     e.discard();
                 }
                 earth.clear();
@@ -596,17 +595,17 @@ final class DoomDelveService {
 
         // ---------------- Acid blood ----------------
 
-        private void tickAcid(DataBossEntity boss, List<ServerPlayerEntity> near) {
+        private void tickAcid(DataBossEntity boss, List<ServerPlayer> near) {
             if (acid.isEmpty()) {
                 return;
             }
-            ServerWorld world = BossFx.world(boss);
-            for (Vec3d a : acid) {
-                world.spawnParticles(ParticleTypes.SNEEZE, a.x, a.y + 0.1, a.z, 2, 0.4, 0.02, 0.4, 0.0);
+            ServerLevel world = BossFx.world(boss);
+            for (Vec3 a : acid) {
+                world.sendParticles(ParticleTypes.SNEEZE, a.x, a.y + 0.1, a.z, 2, 0.4, 0.02, 0.4, 0.0);
             }
-            for (ServerPlayerEntity p : near) {
-                for (Vec3d a : acid) {
-                    if (p.getPos().squaredDistanceTo(a) < 0.8 * 0.8) {
+            for (ServerPlayer p : near) {
+                for (Vec3 a : acid) {
+                    if (p.position().distanceToSqr(a) < 0.8 * 0.8) {
                         CombatHooks.nameAttack("hazard", null);
                         CombatHandler.applyDamage(boss, p, 1 + boss.getRandom().nextInt(7));
                         PoisonService.venom(p, now);
@@ -617,7 +616,7 @@ final class DoomDelveService {
         }
 
         @Override
-        protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             if (burrowTicks > 0) {
                 return 0;
             }
@@ -657,17 +656,17 @@ final class DoomDelveService {
         }
 
         @Override
-        public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
+        public void onDeath(DataBossEntity boss, ServerPlayer killer) {
             for (Larva l : larvae) {
                 l.mob().discard();
             }
             larvae.clear();
-            for (MobEntity e : earth) {
+            for (Mob e : earth) {
                 e.discard();
             }
             earth.clear();
             if (killer != null && !acid.isEmpty()) {
-                ACID.put(killer.getUuid(), new ArrayList<>(acid));
+                ACID.put(killer.getUUID(), new ArrayList<>(acid));
             }
         }
     }

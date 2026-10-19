@@ -12,20 +12,19 @@ import com.runecraft.osrs.content.minigames.MinigameRules.Tempoross;
 import com.runecraft.osrs.content.minigames.TemporossRewards;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * Tempoross: harpoon harpoonfish, cook them at the shrine, and load them into the cannons to drain
@@ -56,7 +55,7 @@ public class TemporossSession extends MinigameSession {
     private long vulnerableUntil = -1;
     private long waveAt = -1;
 
-    public TemporossSession(int id, int slot, ServerWorld world, String variant) {
+    public TemporossSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.TEMPOROSS, id, slot, world, variant);
     }
 
@@ -71,7 +70,7 @@ public class TemporossSession extends MinigameSession {
         // The sea in front of Tempoross.
         for (int x = -20; x <= 20; x++) {
             for (int z = -22; z <= -14; z++) {
-                set(x, 0, z, Blocks.WATER.getDefaultState());
+                set(x, 0, z, Blocks.WATER.defaultBlockState());
             }
         }
         for (int[] spot : new int[][]{{-12, 6}, {12, 6}, {-18, -4}, {18, -4}}) {
@@ -89,17 +88,17 @@ public class TemporossSession extends MinigameSession {
     }
 
     @Override
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
+    protected BlockPos spawnPoint(ServerPlayer player, int index) {
         return rel(index % 5 - 2, 1, 16);
     }
 
     @Override
     protected void start() {
-        MobEntity t = spawn("tempoross", rel(0, 1, -18));
+        Mob t = spawn("tempoross", rel(0, 1, -18));
         if (t != null) {
-            t.setAiDisabled(true);
+            t.setNoAi(true);
         }
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             if (!Inv.has(p, "harpoon", 1) && !Inv.has(p, "dragon_harpoon", 1)) {
                 Inv.give(p, "harpoon", 1);
                 Msg.game(p, "First Mate Deri hands you a harpoon.");
@@ -110,8 +109,8 @@ public class TemporossSession extends MinigameSession {
         broadcast("Ropes, hammers and buckets are in the supply crate; fill buckets at the water pump.");
     }
 
-    private void addPoints(ServerPlayerEntity p, int amount) {
-        points.merge(p.getUuid(), amount, Integer::sum);
+    private void addPoints(ServerPlayer p, int amount) {
+        points.merge(p.getUUID(), amount, Integer::sum);
     }
 
     private boolean vulnerable() {
@@ -119,7 +118,7 @@ public class TemporossSession extends MinigameSession {
     }
 
     @Override
-    protected boolean onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         switch (blockId) {
             case "tempoross_fishing_spot" -> {
                 if (!Inv.has(player, "harpoon", 1) && !Inv.has(player, "dragon_harpoon", 1)) {
@@ -164,15 +163,15 @@ public class TemporossSession extends MinigameSession {
                     return true;
                 }
                 addPoints(player, Tempoross.POINTS_LOAD_RAW * raw + Tempoross.POINTS_LOAD_COOKED * cooked);
-                if (cannonsLoaded.computeIfAbsent(player.getUuid(), u -> new java.util.HashSet<>()).add(pos.getX())
-                        && cannonsLoaded.get(player.getUuid()).size() >= 2) {
+                if (cannonsLoaded.computeIfAbsent(player.getUUID(), u -> new java.util.HashSet<>()).add(pos.getX())
+                        && cannonsLoaded.get(player.getUUID()).size() >= 2) {
                     caFlag(player, com.runecraft.osrs.content.systems.CombatAchievements.FLAG_BOTH_CANNONS);
                 }
                 xp(player, Skill.FISHING, TemporossRewards.cannonXp(level(player, Skill.FISHING)) * (raw + cooked));
                 if (!vulnerable()) {
                     energy = Math.max(0, energy - raw * Tempoross.RAW_DAMAGE - cooked * Tempoross.COOKED_DAMAGE);
                 }
-                world.spawnParticles(ParticleTypes.EXPLOSION, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, 3, 0.3, 0.3, 0.3, 0);
+                world.sendParticles(ParticleTypes.EXPLOSION, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, 3, 0.3, 0.3, 0.3, 0);
                 Msg.game(player, "You fire " + (raw + cooked) + " harpoonfish at Tempoross!");
                 if (energy <= 0 && !vulnerable()) {
                     vulnerableUntil = ticks + Tempoross.VULNERABLE_TICKS;
@@ -214,7 +213,7 @@ public class TemporossSession extends MinigameSession {
                 Inv.give(player, BUCKET, 1);
                 douse(pos);
                 addPoints(player, Tempoross.POINTS_DOUSE);
-                int n = doused.merge(player.getUuid(), 1, Integer::sum);
+                int n = doused.merge(player.getUUID(), 1, Integer::sum);
                 if (n >= Tempoross.MASTER_OF_BUCKETS) {
                     caFlag(player, com.runecraft.osrs.content.systems.CombatAchievements.FLAG_FIVE_FIRES);
                 }
@@ -240,7 +239,7 @@ public class TemporossSession extends MinigameSession {
                     return true;
                 }
                 if (waveAt - ticks <= Tempoross.WAVE_WARNING) {
-                    tethered.put(player.getUuid(), waveAt + 2);
+                    tethered.put(player.getUUID(), waveAt + 2);
                     addPoints(player, Tempoross.POINTS_TETHER);
                     Msg.game(player, "You tether yourself to the totem pole.");
                 } else {
@@ -278,7 +277,7 @@ public class TemporossSession extends MinigameSession {
         if (vulnerableUntil >= 0 && ticks > vulnerableUntil) {
             vulnerableUntil = -1;
             energy = 100;
-            set(0, 1, -12, Blocks.AIR.getDefaultState());
+            set(0, 1, -12, Blocks.AIR.defaultBlockState());
             broadcastRed("Tempoross recovers and dives beneath the waves!");
         }
         if (ticks == waveAt - Tempoross.WAVE_WARNING) {
@@ -289,8 +288,8 @@ public class TemporossSession extends MinigameSession {
             waveAt = ticks + Tempoross.WAVE_INTERVAL; // no attacks at 10% energy or below
         } else if (ticks >= waveAt) {
             waveAt = ticks + Tempoross.WAVE_INTERVAL;
-            for (ServerPlayerEntity p : online()) {
-                if (tethered.getOrDefault(p.getUuid(), -1L) >= ticks) {
+            for (ServerPlayer p : online()) {
+                if (tethered.getOrDefault(p.getUUID(), -1L) >= ticks) {
                     Msg.game(p, "You hold on tight as the wave crashes over you.");
                     continue;
                 }
@@ -316,7 +315,7 @@ public class TemporossSession extends MinigameSession {
                     broadcastRed("The wave smashes a totem pole! Repair it with a hammer.");
                 }
             }
-            world.spawnParticles(ParticleTypes.SPLASH, origin.getX(), origin.getY() + 2, origin.getZ(), 200, 15, 1, 15, 0.2);
+            world.sendParticles(ParticleTypes.SPLASH, origin.getX(), origin.getY() + 2, origin.getZ(), 200, 15, 1, 15, 0.2);
         }
         if (attacking && ticks % Tempoross.LIGHTNING_INTERVAL == Tempoross.LIGHTNING_INTERVAL / 2) {
             lightning();
@@ -324,7 +323,7 @@ public class TemporossSession extends MinigameSession {
         tickFires();
         if (vulnerable()) {
             BlockPos pool = rel(0, 2, -12);
-            world.spawnParticles(ParticleTypes.GLOW, pool.getX() + 0.5, pool.getY(), pool.getZ() + 0.5, 5, 0.6, 0.6, 0.6, 0);
+            world.sendParticles(ParticleTypes.GLOW, pool.getX() + 0.5, pool.getY(), pool.getZ() + 0.5, 5, 0.6, 0.6, 0.6, 0);
         }
         if (ticks > 3000) {
             broadcast("Tempoross escapes into the storm.");
@@ -334,7 +333,7 @@ public class TemporossSession extends MinigameSession {
 
     /** Lightning strikes near the players and lights fires; anyone standing where one lands is caught in it. */
     private void lightning() {
-        List<ServerPlayerEntity> on = online();
+        List<ServerPlayer> on = online();
         if (on.isEmpty()) {
             return;
         }
@@ -352,13 +351,13 @@ public class TemporossSession extends MinigameSession {
         }
         fires.put(at, ticks);
         Arena.set(world, at, Arena.module("tempoross_fire"));
-        world.spawnParticles(ParticleTypes.ELECTRIC_SPARK, at.getX() + 0.5, at.getY() + 1, at.getZ() + 0.5, 20, 0.3, 1.0, 0.3, 0.1);
+        world.sendParticles(ParticleTypes.ELECTRIC_SPARK, at.getX() + 0.5, at.getY() + 1, at.getZ() + 0.5, 20, 0.3, 1.0, 0.3, 0.1);
     }
 
     private void douse(BlockPos at) {
         if (fires.remove(at) != null) {
-            Arena.set(world, at, Blocks.AIR.getDefaultState());
-            world.spawnParticles(ParticleTypes.CLOUD, at.getX() + 0.5, at.getY() + 0.8, at.getZ() + 0.5, 8, 0.3, 0.3, 0.3, 0.02);
+            Arena.set(world, at, Blocks.AIR.defaultBlockState());
+            world.sendParticles(ParticleTypes.CLOUD, at.getX() + 0.5, at.getY() + 0.8, at.getZ() + 0.5, 8, 0.3, 0.3, 0.3, 0.02);
         }
     }
 
@@ -369,7 +368,7 @@ public class TemporossSession extends MinigameSession {
         }
         for (Map.Entry<BlockPos, Long> f : new java.util.ArrayList<>(fires.entrySet())) {
             BlockPos at = f.getKey();
-            world.spawnParticles(ParticleTypes.FLAME, at.getX() + 0.5, at.getY() + 1.1, at.getZ() + 0.5, 3, 0.3, 0.3, 0.3, 0.01);
+            world.sendParticles(ParticleTypes.FLAME, at.getX() + 0.5, at.getY() + 1.1, at.getZ() + 0.5, 3, 0.3, 0.3, 0.3, 0.01);
             if ((ticks - f.getValue()) > 0 && (ticks - f.getValue()) % Tempoross.FIRE_SPREAD_TICKS == 0 && fires.size() < Tempoross.MAX_FIRES) {
                 BlockPos rel = at.subtract(origin);
                 light(randomFloor(rel.getX(), rel.getZ(), 2));
@@ -378,7 +377,7 @@ public class TemporossSession extends MinigameSession {
         if (ticks % Tempoross.FIRE_BURN_INTERVAL != 0) {
             return;
         }
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             for (BlockPos at : fires.keySet()) {
                 double dx = p.getX() - (at.getX() + 0.5);
                 double dz = p.getZ() - (at.getZ() + 0.5);
@@ -396,13 +395,13 @@ public class TemporossSession extends MinigameSession {
         }
     }
 
-    private void caFlag(ServerPlayerEntity p, String flag) {
-        caPlayerFlags.computeIfAbsent(p.getUuid(), u -> new java.util.HashSet<>()).add(flag);
+    private void caFlag(ServerPlayer p, String flag) {
+        caPlayerFlags.computeIfAbsent(p.getUUID(), u -> new java.util.HashSet<>()).add(flag);
     }
 
     @Override
-    public java.util.Set<String> caFlags(ServerPlayerEntity player) {
-        return new java.util.HashSet<>(caPlayerFlags.getOrDefault(player.getUuid(), java.util.Set.of()));
+    public java.util.Set<String> caFlags(ServerPlayer player) {
+        return new java.util.HashSet<>(caPlayerFlags.getOrDefault(player.getUUID(), java.util.Set.of()));
     }
 
     @Override
@@ -411,10 +410,10 @@ public class TemporossSession extends MinigameSession {
             return;
         }
         broadcastRed("Tempoross has been subdued!");
-        for (ServerPlayerEntity p : online()) {
-            int pts = points.getOrDefault(p.getUuid(), 0);
+        for (ServerPlayer p : online()) {
+            int pts = points.getOrDefault(p.getUUID(), 0);
             int permits = Tempoross.permits(pts, random.nextDouble());
-            int kc = MinigameData.of(p).incrementStat(p.getUuid(), "kc:" + game.id());
+            int kc = MinigameData.of(p).incrementStat(p.getUUID(), "kc:" + game.id());
             if (permits >= 10) {
                 caFlag(p, com.runecraft.osrs.content.systems.CombatAchievements.FLAG_TEN_PERMITS);
             }
@@ -429,14 +428,14 @@ public class TemporossSession extends MinigameSession {
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
+    protected List<String> hud(ServerPlayer player) {
         return List.of("Tempoross", vulnerable() ? "Essence: " + essence + "%  (VULNERABLE)" : "Energy: " + energy + "%",
-                "Essence: " + essence + "%", "Points: " + points.getOrDefault(player.getUuid(), 0),
+                "Essence: " + essence + "%", "Points: " + points.getOrDefault(player.getUUID(), 0),
                 waveAt - ticks <= Tempoross.WAVE_WARNING ? "WAVE INCOMING!" : "Next wave: " + time(waveAt - ticks));
     }
 
     /** The reward pool in the Ruins of Unkah: each permit is one roll. */
-    public static void rewardPool(ServerPlayerEntity player) {
+    public static void rewardPool(ServerPlayer player) {
         int permits = Inv.count(player, "reward_permit");
         if (permits == 0) {
             Msg.game(player, "You need reward permits to search the reward pool. Earn them by subduing Tempoross.");
@@ -459,8 +458,8 @@ public class TemporossSession extends MinigameSession {
                 owned.add(r.item());
             }
             if (r.item().equals("tiny_tempor")) {
-                player.getServer().getPlayerManager().broadcast(Text.literal(player.getName().getString()
-                        + " has a funny feeling like they're being followed.").formatted(Formatting.GOLD), false);
+                player.getServer().getPlayerList().broadcastSystemMessage(Component.literal(player.getName().getString()
+                        + " has a funny feeling like they're being followed.").withStyle(ChatFormatting.GOLD), false);
             }
         }
         Msg.game(player, "You search the reward pool " + permits + " time" + (permits > 1 ? "s" : "") + ".");

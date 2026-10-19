@@ -15,23 +15,22 @@ import com.runecraft.registry.ModEntities;
 import com.runecraft.skill.Drops;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.attribute.EntityAttributeInstance;
-import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.entity.boss.BossBar;
-import net.minecraft.entity.boss.ServerBossBar;
-import net.minecraft.entity.mob.HostileEntity;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.world.World;
-
 import java.util.List;
+import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerBossEvent;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.BossEvent;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.level.Level;
 
 /** A boss driven entirely by its {@link BossDef} plus an optional {@link BossScript}. */
 public class DataBossEntity extends OsrsMonsterEntity {
@@ -39,7 +38,7 @@ public class DataBossEntity extends OsrsMonsterEntity {
     public interface HpScaled {
     }
 
-    private final ServerBossBar bossBar;
+    private final ServerBossEvent bossBar;
     private final BossScript script;
     private int phase = -1;
     /** Raid / instance owner tag so raids can track their bosses. */
@@ -49,12 +48,12 @@ public class DataBossEntity extends OsrsMonsterEntity {
     /** Awakened DT2 boss or Doom delve level (null: the ordinary fight). Saved with the entity. */
     private BossVariant variant;
 
-    public DataBossEntity(EntityType<? extends HostileEntity> type, World world) {
+    public DataBossEntity(EntityType<? extends Monster> type, Level world) {
         super(type, world);
         BossDef def = def();
-        this.bossBar = new ServerBossBar(Text.literal(def == null ? "Boss" : def.name), BossBar.Color.RED, BossBar.Style.NOTCHED_10);
+        this.bossBar = new ServerBossEvent(Component.literal(def == null ? "Boss" : def.name), BossEvent.BossBarColor.RED, BossEvent.BossBarOverlay.NOTCHED_10);
         this.script = BossScripts.create(def == null ? "" : def.id);
-        setPersistent();
+        setPersistenceRequired();
     }
 
     public BossDef def() {
@@ -108,24 +107,24 @@ public class DataBossEntity extends OsrsMonsterEntity {
                 s.maxHit(), s.monster(), s.profile(), s.boss()));
         if (heal) {
             int shown = Math.min(v.hitpoints(), MAX_MC_HEALTH);
-            EntityAttributeInstance inst = getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH);
+            AttributeInstance inst = getAttribute(Attributes.MAX_HEALTH);
             if (inst != null) {
                 inst.setBaseValue(shown);
             }
             setHealth(shown);
         }
-        bossBar.setName(Text.literal(v.name()));
-        bossBar.setColor(v.awakened() ? BossBar.Color.PURPLE : BossBar.Color.RED);
+        bossBar.setName(Component.literal(v.name()));
+        bossBar.setColor(v.awakened() ? BossEvent.BossBarColor.PURPLE : BossEvent.BossBarColor.RED);
     }
 
     @Override
-    public void writeCustomDataToNbt(NbtCompound nbt) {
-        super.writeCustomDataToNbt(nbt);
+    public void addAdditionalSaveData(CompoundTag nbt) {
+        super.addAdditionalSaveData(nbt);
         if (variant != null) {
             nbt.putString("RcVariant", variant.kind());
             nbt.putInt("RcVariantLevel", variant.level());
         }
-        NbtCompound scriptData = new NbtCompound();
+        CompoundTag scriptData = new CompoundTag();
         script.writeNbt(this, scriptData);
         if (!scriptData.isEmpty()) {
             nbt.put("RcScript", scriptData);
@@ -133,8 +132,8 @@ public class DataBossEntity extends OsrsMonsterEntity {
     }
 
     @Override
-    public void readCustomDataFromNbt(NbtCompound nbt) {
-        super.readCustomDataFromNbt(nbt);
+    public void readAdditionalSaveData(CompoundTag nbt) {
+        super.readAdditionalSaveData(nbt);
         BossDef def = def();
         if (def != null && nbt.contains("RcVariant")) {
             String kind = nbt.getString("RcVariant");
@@ -151,27 +150,27 @@ public class DataBossEntity extends OsrsMonsterEntity {
 
     @Override
     protected boolean shouldAggro(LivingEntity entity) {
-        return entity instanceof ServerPlayerEntity p && !p.isCreative() && !p.isSpectator();
+        return entity instanceof ServerPlayer p && !p.isCreative() && !p.isSpectator();
     }
 
     @Override
-    public void onStartedTrackingBy(ServerPlayerEntity player) {
-        super.onStartedTrackingBy(player);
+    public void startSeenByPlayer(ServerPlayer player) {
+        super.startSeenByPlayer(player);
         bossBar.addPlayer(player);
     }
 
     @Override
-    public void onStoppedTrackingBy(ServerPlayerEntity player) {
-        super.onStoppedTrackingBy(player);
+    public void stopSeenByPlayer(ServerPlayer player) {
+        super.stopSeenByPlayer(player);
         bossBar.removePlayer(player);
     }
 
     @Override
-    protected void mobTick() {
-        super.mobTick();
-        bossBar.setPercent(getHealth() / getMaxHealth());
+    protected void customServerAiStep() {
+        super.customServerAiStep();
+        bossBar.setProgress(getHealth() / getMaxHealth());
         script.tick(this);
-        if (age % ActionManager.MC_TICKS_PER_GAME_TICK == 0) {
+        if (tickCount % ActionManager.MC_TICKS_PER_GAME_TICK == 0) {
             script.gameTick(this, ActionManager.gameTick());
         }
         BossDef def = def();
@@ -182,8 +181,8 @@ public class DataBossEntity extends OsrsMonsterEntity {
                 if (percent <= p.belowPercent()) {
                     phase = i;
                     if (p.message() != null) {
-                        for (ServerPlayerEntity pl : ((ServerWorld) getWorld()).getPlayers(x -> x.squaredDistanceTo(this) < 48 * 48)) {
-                            pl.sendMessage(Text.literal(def.name + ": " + p.message()).formatted(Formatting.RED), false);
+                        for (ServerPlayer pl : ((ServerLevel) level()).getPlayers(x -> x.distanceToSqr(this) < 48 * 48)) {
+                            pl.displayClientMessage(Component.literal(def.name + ": " + p.message()).withStyle(ChatFormatting.RED), false);
                         }
                     }
                     if (p.summonMinions()) {
@@ -215,7 +214,7 @@ public class DataBossEntity extends OsrsMonsterEntity {
     }
 
     @Override
-    public AttackType chooseStyle(ServerPlayerEntity target, double distanceSq) {
+    public AttackType chooseStyle(ServerPlayer target, double distanceSq) {
         AttackDef custom = script.chooseAttack(this, target, Math.sqrt(distanceSq));
         if (custom != null) {
             nextAttack = custom;
@@ -225,7 +224,7 @@ public class DataBossEntity extends OsrsMonsterEntity {
     }
 
     @Override
-    public void performAttack(ServerPlayerEntity target, AttackType type) {
+    public void performAttack(ServerPlayer target, AttackType type) {
         if (nextAttack != null && attackList() != null) {
             AttackDef chosen = script.beforeAttack(this, target, nextAttack);
             if (chosen != null) {
@@ -236,7 +235,7 @@ public class DataBossEntity extends OsrsMonsterEntity {
     }
 
     @Override
-    public int modifyIncoming(ServerPlayerEntity attacker, int damage, AttackType type) {
+    public int modifyIncoming(ServerPlayer attacker, int damage, AttackType type) {
         if (!script.isVulnerable(this)) {
             Msg.action(attacker, "Your attack has no effect right now.");
             return 0;
@@ -252,7 +251,7 @@ public class DataBossEntity extends OsrsMonsterEntity {
     }
 
     @Override
-    public int onHitPlayer(ServerPlayerEntity player, int damage, AttackType type) {
+    public int onHitPlayer(ServerPlayer player, int damage, AttackType type) {
         return script.onHitPlayer(this, player, damage, type);
     }
 
@@ -266,29 +265,29 @@ public class DataBossEntity extends OsrsMonsterEntity {
         if (type == null) {
             return;
         }
-        ServerWorld world = (ServerWorld) getWorld();
+        ServerLevel world = (ServerLevel) level();
         for (int i = 0; i < count; i++) {
             var e = type.create(world);
-            if (e instanceof MobEntity mob) {
+            if (e instanceof Mob mob) {
                 double angle = random.nextDouble() * Math.PI * 2;
-                mob.refreshPositionAndAngles(getX() + Math.cos(angle) * 3, getY(), getZ() + Math.sin(angle) * 3, 0, 0);
-                mob.initialize(world, world.getLocalDifficulty(mob.getBlockPos()), SpawnReason.MOB_SUMMONED, null, null);
+                mob.moveTo(getX() + Math.cos(angle) * 3, getY(), getZ() + Math.sin(angle) * 3, 0, 0);
+                mob.finalizeSpawn(world, world.getCurrentDifficultyAt(mob.blockPosition()), MobSpawnType.MOB_SUMMONED, null, null);
                 if (getTarget() != null) {
                     mob.setTarget(getTarget());
                 }
-                world.spawnEntity(mob);
+                world.addFreshEntity(mob);
             }
         }
     }
 
     @Override
-    public void onKilledBy(ServerPlayerEntity player) {
+    public void onKilledBy(ServerPlayer player) {
         BossDef def = def();
         if (def == null) {
             return;
         }
         for (Drops.Rolled r : Drops.roll(variant != null ? variant.drops() : def.drops, getRandom(), false)) {
-            dropStack(Drops.withDoses(com.runecraft.combat.CombatHooks.dropStack(player, this, r.item(), r.count()), r.doses()));
+            spawnAtLocation(Drops.withDoses(com.runecraft.combat.CombatHooks.dropStack(player, this, r.item(), r.count()), r.doses()));
             CollectionLog.obtain(player, r.item());
         }
         int petRate = variant != null && variant.petRate() >= 0 ? variant.petRate()
@@ -296,8 +295,8 @@ public class DataBossEntity extends OsrsMonsterEntity {
         if (def.pet != null && petRate > 0 && getRandom().nextInt(petRate) == 0) {
             Inv.give(player, def.pet, 1);
             CollectionLog.obtain(player, def.pet);
-            player.getServer().getPlayerManager().broadcast(Text.literal(player.getName().getString()
-                    + " has a funny feeling like they're being followed.").formatted(Formatting.GOLD), false);
+            player.getServer().getPlayerList().broadcastSystemMessage(Component.literal(player.getName().getString()
+                    + " has a funny feeling like they're being followed.").withStyle(ChatFormatting.GOLD), false);
         }
         PlayerData data = Players.data(player);
         String kcKey = variant != null ? variant.kcKey() : def.id;
@@ -305,14 +304,14 @@ public class DataBossEntity extends OsrsMonsterEntity {
         Msg.game(player, "Your " + (variant != null && variant.awakened() ? variant.name() : def.name) + " kill count is: " + kc + ".");
         script.onDeath(this, player);
         DataBossService.killed(player, this);
-        bossBar.clearPlayers();
+        bossBar.removeAllPlayers();
     }
 
     @Override
     public void remove(RemovalReason reason) {
         super.remove(reason);
-        bossBar.clearPlayers();
-        if (!getWorld().isClient() && reason != RemovalReason.UNLOADED_TO_CHUNK) {
+        bossBar.removeAllPlayers();
+        if (!level().isClientSide() && reason != RemovalReason.UNLOADED_TO_CHUNK) {
             script.onRemoved(this); // gone for good (not a chunk unload that saves the boss to come back)
         }
     }

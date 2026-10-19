@@ -1,5 +1,6 @@
 package com.runecraft.client;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.runecraft.entity.BossEntity;
 import com.runecraft.entity.OsrsMonsterEntity;
 import com.runecraft.network.Net;
@@ -21,11 +22,10 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
-import net.minecraft.block.Block;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.entity.EntityType;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.level.block.Block;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
@@ -34,30 +34,30 @@ import java.util.Map;
 
 public class RuneCraftClient implements ClientModInitializer {
     /** Opens the full-screen RuneScape interface (all tabs). */
-    public static KeyBinding interfaceKey;
+    public static KeyMapping interfaceKey;
     /** Shows/hides the OSRS side panel at the bottom-right of the HUD. */
-    public static KeyBinding sidePanelKey;
+    public static KeyMapping sidePanelKey;
     /** Hold to free the cursor and use the side panel. */
-    public static KeyBinding panelCursorKey;
+    public static KeyMapping panelCursorKey;
 
     @Override
     public void onInitializeClient() {
         registerPackets();
-        sidePanelKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.runecraft.side_panel", InputUtil.Type.KEYSYM,
+        sidePanelKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.runecraft.side_panel", InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_K, "key.categories.runecraft"));
-        panelCursorKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.runecraft.panel_cursor", InputUtil.Type.KEYSYM,
+        panelCursorKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.runecraft.panel_cursor", InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_LEFT_ALT, "key.categories.runecraft"));
-        interfaceKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.runecraft.interface", InputUtil.Type.KEYSYM,
+        interfaceKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.runecraft.interface", InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_J, "key.categories.runecraft"));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            while (interfaceKey.wasPressed()) {
+            while (interfaceKey.consumeClick()) {
                 client.setScreen(new RuneScapeScreen(SidePanel.fullTab(SidePanel.tab)));
             }
-            while (sidePanelKey.wasPressed()) {
+            while (sidePanelKey.consumeClick()) {
                 SidePanel.visible = !SidePanel.visible;
             }
-            while (panelCursorKey.wasPressed()) {
-                if (client.currentScreen == null && client.player != null) {
+            while (panelCursorKey.consumeClick()) {
+                if (client.screen == null && client.player != null) {
                     SidePanel.visible = true;
                     client.setScreen(new SidePanelScreen());
                 }
@@ -95,7 +95,7 @@ public class RuneCraftClient implements ClientModInitializer {
         cutout.add(ModBlocks.HERB_PATCH);
         cutout.add(ModBlocks.ALLOTMENT_PATCH);
         for (Block b : cutout) {
-            BlockRenderLayerMap.INSTANCE.putBlock(b, RenderLayer.getCutout());
+            BlockRenderLayerMap.INSTANCE.putBlock(b, RenderType.cutout());
         }
         for (com.runecraft.client.content.ClientModuleHooks hooks : com.runecraft.client.content.ClientModuleHooksRegistry.ALL) {
             hooks.initClient();
@@ -110,7 +110,7 @@ public class RuneCraftClient implements ClientModInitializer {
      * Registers the renderer for a creature: its custom model if one exists (explicit {@code model}
      * id, or a model spec with the creature's own id), otherwise the textured biped.
      */
-    public static <T extends net.minecraft.entity.mob.MobEntity> void register(EntityType<T> type, String id, String model, float scale) {
+    public static <T extends net.minecraft.world.entity.Mob> void register(EntityType<T> type, String id, String model, float scale) {
         if (type == null) {
             return;
         }
@@ -145,7 +145,7 @@ public class RuneCraftClient implements ClientModInitializer {
             int style = buf.readVarInt();
             int autocast = buf.readVarInt();
             long coins = buf.readVarLong();
-            String task = buf.readString();
+            String task = buf.readUtf();
             int remaining = buf.readVarInt();
             int questCount = buf.readVarInt();
             int[] stages = new int[questCount];
@@ -156,12 +156,12 @@ public class RuneCraftClient implements ClientModInitializer {
             int logCount = buf.readVarInt();
             List<String> log = new ArrayList<>();
             for (int i = 0; i < logCount; i++) {
-                log.add(buf.readString());
+                log.add(buf.readUtf());
             }
             java.util.Map<String, Integer> kills = new java.util.HashMap<>();
             int killCount = buf.isReadable() ? buf.readVarInt() : 0;
             for (int i = 0; i < killCount; i++) {
-                String key = buf.readString();
+                String key = buf.readUtf();
                 kills.put(key, buf.readVarInt());
             }
             client.execute(() -> {
@@ -199,7 +199,7 @@ public class RuneCraftClient implements ClientModInitializer {
             int count = buf.readVarInt();
             List<ClientState.MenuEntry> entries = new ArrayList<>();
             for (int i = 0; i < count; i++) {
-                entries.add(new ClientState.MenuEntry(buf.readString(), buf.readString(), buf.readString(), buf.readVarInt(),
+                entries.add(new ClientState.MenuEntry(buf.readUtf(), buf.readUtf(), buf.readUtf(), buf.readVarInt(),
                         buf.readVarInt(), buf.readBoolean()));
             }
             client.execute(() -> {

@@ -1,69 +1,68 @@
 package com.runecraft.content.extras;
 
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.ai.goal.LookAroundGoal;
-import net.minecraft.entity.ai.goal.LookAtEntityGoal;
-import net.minecraft.entity.ai.goal.SwimGoal;
-import net.minecraft.entity.ai.goal.WanderAroundFarGoal;
-import net.minecraft.entity.attribute.DefaultAttributeContainer;
-import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.data.DataTracker;
-import net.minecraft.entity.data.TrackedData;
-import net.minecraft.entity.data.TrackedDataHandlerRegistry;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.mob.PathAwareEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.world.World;
-
 import java.util.UUID;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.PathfinderMob;
+import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.goal.FloatGoal;
+import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
+import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
+import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 
 /**
  * A pet following its owner (or roaming a house menagerie). Never saved with the world: the
  * follower is kept in {@link ExtrasState} and respawned by {@link PetService}, so the pet item can
  * never be lost. Right-click it to pick it up.
  */
-public class PetEntity extends PathAwareEntity {
-    private static final TrackedData<String> PET = DataTracker.registerData(PetEntity.class, TrackedDataHandlerRegistry.STRING);
+public class PetEntity extends PathfinderMob {
+    private static final EntityDataAccessor<String> PET = SynchedEntityData.defineId(PetEntity.class, EntityDataSerializers.STRING);
 
     private UUID owner;
     /** Menagerie pets wander instead of following. */
     private boolean roaming;
     private int pathCooldown;
 
-    public PetEntity(EntityType<? extends PathAwareEntity> type, World world) {
+    public PetEntity(EntityType<? extends PathfinderMob> type, Level world) {
         super(type, world);
     }
 
-    public static DefaultAttributeContainer.Builder createAttributes() {
-        return MobEntity.createMobAttributes()
-                .add(EntityAttributes.GENERIC_MAX_HEALTH, 10.0)
-                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.3)
-                .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 32.0);
+    public static AttributeSupplier.Builder createAttributes() {
+        return Mob.createMobAttributes()
+                .add(Attributes.MAX_HEALTH, 10.0)
+                .add(Attributes.MOVEMENT_SPEED, 0.3)
+                .add(Attributes.FOLLOW_RANGE, 32.0);
     }
 
     @Override
-    protected void initDataTracker() {
-        super.initDataTracker();
-        this.dataTracker.startTracking(PET, "");
+    protected void defineSynchedData() {
+        super.defineSynchedData();
+        this.entityData.define(PET, "");
     }
 
     @Override
-    protected void initGoals() {
-        this.goalSelector.add(0, new SwimGoal(this));
-        this.goalSelector.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 6.0f));
-        this.goalSelector.add(7, new LookAroundGoal(this));
+    protected void registerGoals() {
+        this.goalSelector.addGoal(0, new FloatGoal(this));
+        this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 6.0f));
+        this.goalSelector.addGoal(7, new RandomLookAroundGoal(this));
     }
 
     public String petId() {
-        return this.dataTracker.get(PET);
+        return this.entityData.get(PET);
     }
 
     public void setPetId(String id) {
-        this.dataTracker.set(PET, id);
+        this.entityData.set(PET, id);
     }
 
     public UUID owner() {
@@ -81,34 +80,34 @@ public class PetEntity extends PathAwareEntity {
     public void setRoaming(boolean roaming) {
         this.roaming = roaming;
         if (roaming) {
-            this.goalSelector.add(5, new WanderAroundFarGoal(this, 0.8));
+            this.goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.8));
         }
     }
 
     @Override
     public void tick() {
         super.tick();
-        if (getWorld().isClient() || roaming) {
+        if (level().isClientSide() || roaming) {
             return;
         }
         if (owner == null || getServer() == null) {
             discard();
             return;
         }
-        ServerPlayerEntity player = getServer().getPlayerManager().getPlayer(owner);
-        if (player == null || player.getWorld() != getWorld() || player.isSpectator()) {
+        ServerPlayer player = getServer().getPlayerList().getPlayer(owner);
+        if (player == null || player.level() != level() || player.isSpectator()) {
             discard();
             return;
         }
-        double d = squaredDistanceTo(player);
+        double d = distanceToSqr(player);
         if (d > 14 * 14) {
-            refreshPositionAndAngles(player.getX() - Math.sin(Math.toRadians(-player.getYaw())) * 1.5, player.getY(),
-                    player.getZ() - Math.cos(Math.toRadians(-player.getYaw())) * 1.5, player.getYaw(), 0);
+            moveTo(player.getX() - Math.sin(Math.toRadians(-player.getYRot())) * 1.5, player.getY(),
+                    player.getZ() - Math.cos(Math.toRadians(-player.getYRot())) * 1.5, player.getYRot(), 0);
             getNavigation().stop();
         } else if (d > 3.5 * 3.5) {
             if (--pathCooldown <= 0) {
                 pathCooldown = 10;
-                getNavigation().startMovingTo(player, d > 64 ? 1.6 : 1.2);
+                getNavigation().moveTo(player, d > 64 ? 1.6 : 1.2);
             }
         } else {
             getNavigation().stop();
@@ -116,14 +115,14 @@ public class PetEntity extends PathAwareEntity {
     }
 
     @Override
-    protected ActionResult interactMob(PlayerEntity player, Hand hand) {
-        if (hand != Hand.MAIN_HAND) {
-            return ActionResult.PASS;
+    protected InteractionResult mobInteract(Player player, InteractionHand hand) {
+        if (hand != InteractionHand.MAIN_HAND) {
+            return InteractionResult.PASS;
         }
-        if (!getWorld().isClient() && player instanceof ServerPlayerEntity sp) {
+        if (!level().isClientSide() && player instanceof ServerPlayer sp) {
             PetService.interact(sp, this);
         }
-        return ActionResult.success(getWorld().isClient());
+        return InteractionResult.sidedSuccess(level().isClientSide());
     }
 
     @Override
@@ -132,12 +131,12 @@ public class PetEntity extends PathAwareEntity {
     }
 
     @Override
-    public boolean canImmediatelyDespawn(double distanceSquared) {
+    public boolean removeWhenFarAway(double distanceSquared) {
         return false;
     }
 
     @Override
-    public boolean canBeLeashedBy(PlayerEntity player) {
+    public boolean canBeLeashed(Player player) {
         return false;
     }
 

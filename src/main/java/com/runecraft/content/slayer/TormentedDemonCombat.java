@@ -8,13 +8,12 @@ import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.content.slayer.TormentedDemons;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-
 import java.util.Map;
 import java.util.WeakHashMap;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
 
 /**
  * Tormented Demon mechanics (see {@link TormentedDemons}): it prays against one combat style and swaps to the style that
@@ -44,27 +43,27 @@ public final class TormentedDemonCombat implements CombatHooks.PlayerAttackModif
         CombatHooks.addModifier(new TormentedDemonCombat());
         // Emberlight: use a tormented synapse on an anvil with a fully charged Arclight and a hammer.
         net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
-            if (hand != net.minecraft.util.Hand.MAIN_HAND || player.getMainHandStack().isEmpty()
-                    || !"tormented_synapse".equals(Inv.idOf(player.getMainHandStack()))) {
-                return net.minecraft.util.ActionResult.PASS;
+            if (hand != net.minecraft.world.InteractionHand.MAIN_HAND || player.getMainHandItem().isEmpty()
+                    || !"tormented_synapse".equals(Inv.idOf(player.getMainHandItem()))) {
+                return net.minecraft.world.InteractionResult.PASS;
             }
-            net.minecraft.block.Block block = world.getBlockState(hit.getBlockPos()).getBlock();
+            net.minecraft.world.level.block.Block block = world.getBlockState(hit.getBlockPos()).getBlock();
             boolean anvil = block instanceof com.runecraft.block.StationBlock s && s.station() == com.runecraft.osrs.Station.ANVIL
-                    || block == net.minecraft.block.Blocks.ANVIL || block == net.minecraft.block.Blocks.CHIPPED_ANVIL
-                    || block == net.minecraft.block.Blocks.DAMAGED_ANVIL;
+                    || block == net.minecraft.world.level.block.Blocks.ANVIL || block == net.minecraft.world.level.block.Blocks.CHIPPED_ANVIL
+                    || block == net.minecraft.world.level.block.Blocks.DAMAGED_ANVIL;
             if (!anvil) {
-                return net.minecraft.util.ActionResult.PASS;
+                return net.minecraft.world.InteractionResult.PASS;
             }
-            if (!world.isClient() && player instanceof ServerPlayerEntity sp) {
+            if (!world.isClientSide() && player instanceof ServerPlayer sp) {
                 forgeEmberlight(sp);
             }
-            return net.minecraft.util.ActionResult.SUCCESS;
+            return net.minecraft.world.InteractionResult.SUCCESS;
         });
     }
 
-    private static void forgeEmberlight(ServerPlayerEntity p) {
-        net.minecraft.item.ItemStack arclight = net.minecraft.item.ItemStack.EMPTY;
-        for (net.minecraft.item.ItemStack s : p.getInventory().main) {
+    private static void forgeEmberlight(ServerPlayer p) {
+        net.minecraft.world.item.ItemStack arclight = net.minecraft.world.item.ItemStack.EMPTY;
+        for (net.minecraft.world.item.ItemStack s : p.getInventory().items) {
             if (!s.isEmpty() && com.runecraft.osrs.content.systems.Charges.ARCLIGHT.equals(Inv.idOf(s))
                     && (arclight.isEmpty() || com.runecraft.item.ItemCharges.get(s) > com.runecraft.item.ItemCharges.get(arclight))) {
                 arclight = s;
@@ -81,12 +80,12 @@ public final class TormentedDemonCombat implements CombatHooks.PlayerAttackModif
             Msg.game(p, problem);
             return;
         }
-        arclight.decrement(1);
+        arclight.shrink(1);
         Inv.remove(p, "tormented_synapse", 1);
         Inv.give(p, "emberlight", 1);
         com.runecraft.collection.CollectionLog.obtain(p, "emberlight");
         com.runecraft.skill.XpService.add(p, com.runecraft.osrs.Skill.SMITHING, TormentedDemons.EMBERLIGHT_XP);
-        p.swingHand(net.minecraft.util.Hand.MAIN_HAND, true);
+        p.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
         Msg.action(p, "You hammer the tormented synapse into Arclight. It bursts into flame: Emberlight!");
     }
 
@@ -99,22 +98,22 @@ public final class TormentedDemonCombat implements CombatHooks.PlayerAttackModif
         return type == AttackType.MAGIC ? Style.MAGIC : type == AttackType.RANGED ? Style.RANGED : Style.MELEE;
     }
 
-    private static String weapon(ServerPlayerEntity p) {
-        return p.getMainHandStack().isEmpty() ? "" : Inv.idOf(p.getMainHandStack());
+    private static String weapon(ServerPlayer p) {
+        return p.getMainHandItem().isEmpty() ? "" : Inv.idOf(p.getMainHandItem());
     }
 
-    private static double demonbane(ServerPlayerEntity p, LivingEntity target) {
+    private static double demonbane(ServerPlayer p, LivingEntity target) {
         Double bonus = TormentedDemons.DEMONBANE_BONUS.get(weapon(p));
         return bonus != null && SysCombat.isDemon(target) ? bonus : 1.0;
     }
 
     @Override
-    public double accuracy(ServerPlayerEntity player, LivingEntity target, AttackType type) {
+    public double accuracy(ServerPlayer player, LivingEntity target, AttackType type) {
         return demonbane(player, target);
     }
 
     @Override
-    public double maxHit(ServerPlayerEntity player, LivingEntity target, AttackType type) {
+    public double maxHit(ServerPlayer player, LivingEntity target, AttackType type) {
         return demonbane(player, target);
     }
 
@@ -129,7 +128,7 @@ public final class TormentedDemonCombat implements CombatHooks.PlayerAttackModif
     }
 
     @Override
-    public int afterRoll(ServerPlayerEntity player, LivingEntity target, AttackType type, int damage) {
+    public int afterRoll(ServerPlayer player, LivingEntity target, AttackType type, int damage) {
         if (!isDemon(target)) {
             return damage;
         }
@@ -139,7 +138,7 @@ public final class TormentedDemonCombat implements CombatHooks.PlayerAttackModif
             // Approximation: the shield drops on the fire bomb cadence rather than on the bomb itself.
             s.shieldDownUntil = now + TormentedDemons.SHIELD_DOWN_TICKS;
             s.nextBomb = now + BOMB_INTERVAL;
-            ((ServerWorld) target.getWorld()).spawnParticles(ParticleTypes.LARGE_SMOKE, target.getX(), target.getBodyY(0.8),
+            ((ServerLevel) target.level()).sendParticles(ParticleTypes.LARGE_SMOKE, target.getX(), target.getY(0.8),
                     target.getZ(), 20, 0.5, 0.6, 0.5, 0.02);
         }
         if (s.prayer == style(type)) {
@@ -156,7 +155,7 @@ public final class TormentedDemonCombat implements CombatHooks.PlayerAttackModif
     }
 
     @Override
-    public void afterHit(ServerPlayerEntity player, LivingEntity target, AttackType type, int dealt) {
+    public void afterHit(ServerPlayer player, LivingEntity target, AttackType type, int dealt) {
         if (dealt <= 0 || !isDemon(target)) {
             return;
         }

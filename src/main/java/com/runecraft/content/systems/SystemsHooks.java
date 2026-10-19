@@ -26,13 +26,12 @@ import com.runecraft.util.Msg;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.TypedActionResult;
-
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import java.util.List;
 
 /** Minecraft-side behaviour for the systems content module. */
@@ -65,10 +64,10 @@ public final class SystemsHooks implements ModuleHooks {
             SpellService.onKill(p, e);
             JewelleryService.onKill(p, e, stats);
             if (com.runecraft.osrs.content.systems.MimicRewards.MIMIC.equals(
-                    net.minecraft.registry.Registries.ENTITY_TYPE.getId(e.getType()).getPath())) {
+                    net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()).getPath())) {
                 String unique = com.runecraft.osrs.content.systems.MimicRewards.roll(new java.util.Random(p.getRandom().nextLong()));
                 if (unique != null) {
-                    e.dropStack(Inv.stack(unique, 1));
+                    e.spawnAtLocation(Inv.stack(unique, 1));
                     com.runecraft.collection.CollectionLog.obtain(p, unique);
                 }
             }
@@ -80,7 +79,7 @@ public final class SystemsHooks implements ModuleHooks {
         GameEvents.onActivity(DiaryService::onActivity);
         // Ardougne Zoo: talking to the zookeeper as a monkey (greegree held) gets you put in the monkey cage.
         GameEvents.onActivity((p, key) -> {
-            if (key.equals("talk:charlie_zookeeper") && "monkey_greegree".equals(Inv.idOf(p.getMainHandStack()))) {
+            if (key.equals("talk:charlie_zookeeper") && "monkey_greegree".equals(Inv.idOf(p.getMainHandItem()))) {
                 Msg.game(p, "Zookeeper: Hey! How did that monkey get out? Back in the cage with you!");
                 GameEvents.fireActivity(p, "monkey_cage");
             }
@@ -118,7 +117,7 @@ public final class SystemsHooks implements ModuleHooks {
             }
         });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            ServerPlayerEntity p = handler.getPlayer();
+            ServerPlayer p = handler.getPlayer();
             server.execute(() -> {
                 SysNet.sendState(p);
                 CapeService.snapshot(p);
@@ -181,12 +180,12 @@ public final class SystemsHooks implements ModuleHooks {
         com.runecraft.skill.ThievingService.wearingExtra = (p, id) -> SysState.of(p).wearing(id);
         com.runecraft.skill.ThievingService.dodgyNecklace = p -> {
             SysState.SysPlayer sp = SysState.of(p);
-            net.minecraft.item.ItemStack neck = sp.worn(Jewellery.Slot.NECK);
+            net.minecraft.world.item.ItemStack neck = sp.worn(Jewellery.Slot.NECK);
             if (neck.isEmpty() || !com.runecraft.util.Inv.idOf(neck).equals("dodgy_necklace")
                     || p.getRandom().nextDouble() >= com.runecraft.osrs.data.Thieving.DODGY_NECKLACE_CHANCE) {
                 return false;
             }
-            net.minecraft.nbt.NbtCompound nbt = neck.getOrCreateNbt();
+            net.minecraft.nbt.CompoundTag nbt = neck.getOrCreateTag();
             int used = nbt.getInt("DodgyUsed") + 1;
             if (used >= com.runecraft.osrs.data.Thieving.DODGY_NECKLACE_CHARGES) {
                 sp.worn.remove(Jewellery.Slot.NECK);
@@ -224,7 +223,7 @@ public final class SystemsHooks implements ModuleHooks {
                 DiaryRewards.fairyRingsWithoutStaff(diaryDone(p, "lumbridge", Diaries.Tier.ELITE));
         CombatHooks.addDropTransformer((killer, mob, item, count) -> {
             String monster = mob instanceof com.runecraft.boss.DataBossEntity b && b.def() != null ? b.def().id
-                    : net.minecraft.registry.Registries.ENTITY_TYPE.getId(mob.getType()).getPath();
+                    : net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).getPath();
             boolean wild = com.runecraft.world.Gielinor.wildernessLevel(mob) > 0;
             return DiaryRewards.notedDrop(monster, item, wild, (area, tier) -> diaryDone(killer, area, tier))
                     ? com.runecraft.bank.Notes.note(item, "", count) : null;
@@ -244,18 +243,18 @@ public final class SystemsHooks implements ModuleHooks {
         };
         UseItemCallback.EVENT.register(SystemsHooks::useItem);
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
-            if (hand != Hand.MAIN_HAND || world.isClient() || !(entity instanceof QuestNpcEntity npc) || !(player instanceof ServerPlayerEntity sp)) {
-                return ActionResult.PASS;
+            if (hand != InteractionHand.MAIN_HAND || world.isClientSide() || !(entity instanceof QuestNpcEntity npc) || !(player instanceof ServerPlayer sp)) {
+                return InteractionResult.PASS;
             }
-            return ClueService.talk(sp, npc) ? ActionResult.SUCCESS : ActionResult.PASS;
+            return ClueService.talk(sp, npc) ? InteractionResult.SUCCESS : InteractionResult.PASS;
         });
     }
 
-    private static boolean diaryDone(ServerPlayerEntity p, String area, Diaries.Tier tier) {
+    private static boolean diaryDone(ServerPlayer p, String area, Diaries.Tier tier) {
         return Diaries.tierComplete(SysState.of(p).diaryDone, area, tier);
     }
 
-    private static void watson(ServerPlayerEntity p, QuestNpcEntity npc) {
+    private static void watson(ServerPlayer p, QuestNpcEntity npc) {
         String[] needed = {"clue_scroll_easy", "clue_scroll_medium", "clue_scroll_hard", "clue_scroll_elite"};
         for (String n : needed) {
             if (!Inv.has(p, n, 1)) {
@@ -292,27 +291,27 @@ public final class SystemsHooks implements ModuleHooks {
         return sneaking && (!diaryItemTeleports(id).isEmpty() || CombatAchievements.hiltTier(id) > 0);
     }
 
-    private static TypedActionResult<ItemStack> useItem(PlayerEntity player, net.minecraft.world.World world, Hand hand) {
-        ItemStack stack = player.getStackInHand(hand);
+    private static InteractionResultHolder<ItemStack> useItem(Player player, net.minecraft.world.level.Level world, InteractionHand hand) {
+        ItemStack stack = player.getItemInHand(hand);
         if (stack.isEmpty()) {
-            return TypedActionResult.pass(stack);
+            return InteractionResultHolder.pass(stack);
         }
         String id = Inv.idOf(stack);
-        boolean sneaking = player.isSneaking();
-        if (world.isClient()) {
-            return deterministic(id, sneaking) ? TypedActionResult.success(stack, true) : TypedActionResult.pass(stack);
+        boolean sneaking = player.isShiftKeyDown();
+        if (world.isClientSide()) {
+            return deterministic(id, sneaking) ? InteractionResultHolder.sidedSuccess(stack, true) : InteractionResultHolder.pass(stack);
         }
-        if (!(player instanceof ServerPlayerEntity p)) {
-            return TypedActionResult.pass(stack);
+        if (!(player instanceof ServerPlayer p)) {
+            return InteractionResultHolder.pass(stack);
         }
         if (handle(p, stack, hand, id, sneaking)) {
-            return TypedActionResult.success(p.getStackInHand(hand), false);
+            return InteractionResultHolder.sidedSuccess(p.getItemInHand(hand), false);
         }
-        return TypedActionResult.pass(stack);
+        return InteractionResultHolder.pass(stack);
     }
 
-    private static boolean handle(ServerPlayerEntity p, ItemStack stack, Hand hand, String id, boolean sneaking) {
-        if (p.getItemCooldownManager().isCoolingDown(stack.getItem())) {
+    private static boolean handle(ServerPlayer p, ItemStack stack, InteractionHand hand, String id, boolean sneaking) {
+        if (p.getCooldowns().isOnCooldown(stack.getItem())) {
             return deterministic(id, sneaking);
         }
         ClueScrolls.Tier clue = ClueScrolls.Tier.byScroll(id);
@@ -339,7 +338,7 @@ public final class SystemsHooks implements ModuleHooks {
         Spellbooks.Tablet tab = Spellbooks.tablet(id);
         if (tab != null) {
             if (SysTeleport.teleport(p, tab.destination(), SysTeleport.SPELL_WILDERNESS)) {
-                stack.decrement(1);
+                stack.shrink(1);
             }
             return true;
         }
@@ -380,21 +379,21 @@ public final class SystemsHooks implements ModuleHooks {
             }
             return false;
         }
-        if (Jewellery.held(id) != null && hand == Hand.MAIN_HAND && !sneaking) {
+        if (Jewellery.held(id) != null && hand == InteractionHand.MAIN_HAND && !sneaking) {
             JewelleryService.openTeleports(p, "hand"); // the pharaoh's sceptre's teleports
             return true;
         }
         Jewellery.Worn worn = Jewellery.worn(id);
         if (worn != null && ItemCatalog.get(id) != null) {
             boolean explorer = id.startsWith("explorers_ring");
-            if (hand == Hand.MAIN_HAND && !sneaking && (explorer || !worn.teleports().isEmpty()
+            if (hand == InteractionHand.MAIN_HAND && !sneaking && (explorer || !worn.teleports().isEmpty()
                     || (worn.chargeBase() != null && worn.charges() == 0 && Jewellery.recharged(worn.chargeBase()) != null))) {
                 JewelleryService.openTeleports(p, "hand");
             } else {
-                if (hand != Hand.MAIN_HAND) {
+                if (hand != InteractionHand.MAIN_HAND) {
                     JewelleryService.wear(p, hand);
                 } else {
-                    JewelleryService.wear(p, Hand.MAIN_HAND);
+                    JewelleryService.wear(p, InteractionHand.MAIN_HAND);
                 }
             }
             return true;
@@ -446,13 +445,13 @@ public final class SystemsHooks implements ModuleHooks {
     }
 
     /** Sneak-teleport menu of a held diary reward: "itemId|index". */
-    static void diaryTeleAction(ServerPlayerEntity p, String action, java.util.Map<String, String> fields) {
+    static void diaryTeleAction(ServerPlayer p, String action, java.util.Map<String, String> fields) {
         int bar = action.lastIndexOf('|');
         if (bar < 0) {
             return;
         }
         String id = action.substring(0, bar);
-        if (!Inv.idOf(p.getMainHandStack()).equals(id)) {
+        if (!Inv.idOf(p.getMainHandItem()).equals(id)) {
             Msg.game(p, "You are no longer holding that item.");
             return;
         }

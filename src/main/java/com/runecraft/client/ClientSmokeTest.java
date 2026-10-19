@@ -6,23 +6,23 @@ import com.runecraft.osrs.content.PlaceDef;
 import com.runecraft.world.Gielinor;
 import com.runecraft.world.LandmarkBuilder;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.screen.MessageScreen;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.client.gui.screen.ingame.InventoryScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.util.ScreenshotRecorder;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.screens.GenericDirtMessageScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableTextContent;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,7 +98,7 @@ public final class ClientSmokeTest {
         ClientTickEvents.END_CLIENT_TICK.register(ClientSmokeTest::tick);
     }
 
-    private static void tick(MinecraftClient client) {
+    private static void tick(Minecraft client) {
         if (finished) {
             return;
         }
@@ -150,15 +150,15 @@ public final class ClientSmokeTest {
 
     // ------------------------------------------------------------------ world loading
 
-    private static void waitForWorld(MinecraftClient client) {
-        Screen screen = client.currentScreen;
+    private static void waitForWorld(Minecraft client) {
+        Screen screen = client.screen;
         if (screen != lastScreen) {
             lastScreen = screen;
             screenTicks = 0;
             LOG.info("[ClientSmoke] screen: {}", screen == null ? "none" : screen.getClass().getName());
         }
         screenTicks++;
-        if (client.world != null && client.player != null && client.getServer() != null) {
+        if (client.level != null && client.player != null && client.getSingleplayerServer() != null) {
             worldTicks++;
             if (worldTicks == 1) {
                 LOG.info("[ClientSmoke] joined world after {}s", ticks / 20);
@@ -181,11 +181,11 @@ public final class ClientSmokeTest {
         }
         if (screen instanceof TitleScreen && screenTicks == 60 && !triedTitleLoad) {
             triedTitleLoad = true;
-            if (client.getLevelStorage().levelExists(worldName)) {
+            if (client.getLevelSource().levelExists(worldName)) {
                 LOG.info("[ClientSmoke] loading world '{}' from the title screen", worldName);
-                client.createIntegratedServerLoader().start(new TitleScreen(), worldName);
+                client.createWorldOpenFlows().loadLevel(new TitleScreen(), worldName);
             } else {
-                ERRORS.add("world '" + worldName + "' does not exist in " + client.getLevelStorage().getSavesDirectory());
+                ERRORS.add("world '" + worldName + "' does not exist in " + client.getLevelSource().getBaseDir());
                 finish(client);
             }
             return;
@@ -197,15 +197,15 @@ public final class ClientSmokeTest {
 
     /** Presses a "proceed"-style button on a prompt shown while loading (experimental settings, backup...). */
     private static void proceed(Screen screen) {
-        ButtonWidget best = null;
+        Button best = null;
         int bestRank = Integer.MAX_VALUE;
-        for (Element e : screen.children()) {
-            if (!(e instanceof ButtonWidget b) || !b.active) {
+        for (GuiEventListener e : screen.children()) {
+            if (!(e instanceof Button b) || !b.active) {
                 continue;
             }
-            Text msg = b.getMessage();
+            Component msg = b.getMessage();
             int rank = Integer.MAX_VALUE;
-            if (msg.getContent() instanceof TranslatableTextContent t) {
+            if (msg.getContents() instanceof TranslatableContents t) {
                 int i = PROCEED_KEYS.indexOf(t.getKey());
                 if (i >= 0) {
                     rank = i;
@@ -230,8 +230,8 @@ public final class ClientSmokeTest {
 
     // ------------------------------------------------------------------ the walkthrough
 
-    private static void buildSteps(MinecraftClient client) {
-        UUID uuid = client.player.getUuid();
+    private static void buildSteps(Minecraft client) {
+        UUID uuid = client.player.getUUID();
         step("setup", 40, () -> {
             cmd(client, uuid, "gamemode creative");
             cmd(client, uuid, "gamerule doDaylightCycle false");
@@ -273,8 +273,8 @@ public final class ClientSmokeTest {
 
         // Item models: RuneCraft items in the inventory, a few pages.
         List<Item> items = new ArrayList<>();
-        for (Item item : Registries.ITEM) {
-            if (Registries.ITEM.getId(item).getNamespace().equals("runecraft")) {
+        for (Item item : BuiltInRegistries.ITEM) {
+            if (BuiltInRegistries.ITEM.getKey(item).getNamespace().equals("runecraft")) {
                 items.add(item);
             }
         }
@@ -285,9 +285,9 @@ public final class ClientSmokeTest {
             int n = page;
             step("inventory page " + n, 20, () -> {
                 onServer(client, uuid, p -> {
-                    p.getInventory().clear();
+                    p.getInventory().clearContent();
                     for (int i = 0; i < slice.size(); i++) {
-                        p.getInventory().setStack(i, new ItemStack(slice.get(i)));
+                        p.getInventory().setItem(i, new ItemStack(slice.get(i)));
                     }
                 });
             });
@@ -334,7 +334,7 @@ public final class ClientSmokeTest {
     }
 
     /** Summons creatures in a row {@code ahead} blocks south of the player, facing it, frozen in place. */
-    private static void summonRow(MinecraftClient client, UUID uuid, List<String> ids, int ahead, int spacing) {
+    private static void summonRow(Minecraft client, UUID uuid, List<String> ids, int ahead, int spacing) {
         int start = -(ids.size() - 1) * spacing / 2;
         for (int i = 0; i < ids.size(); i++) {
             cmd(client, uuid, "execute at @s run summon runecraft:" + ids.get(i) + " ~" + (start + i * spacing) + " ~ ~" + ahead
@@ -343,7 +343,7 @@ public final class ClientSmokeTest {
     }
 
     /** Builds a data boss's place now and moves the player into its arena (same layout as LandmarkBuilder). */
-    private static void teleportToArena(MinecraftClient client, UUID uuid, String bossId) {
+    private static void teleportToArena(Minecraft client, UUID uuid, String bossId) {
         BossDef boss = ContentRegistry.bosses().stream().filter(b -> b.id.equals(bossId)).findFirst().orElse(null);
         if (boss == null || boss.place == null) {
             ERRORS.add("no boss/place for " + bossId);
@@ -370,32 +370,32 @@ public final class ClientSmokeTest {
         int az = spot != null ? spot.z() : fallback[1];
         LOG.info("[ClientSmoke] {} arena at {} {} (place {})", bossId, ax, az, place.id());
         onServer(client, uuid, p -> {
-            ServerWorld world = Gielinor.world(p.getServer());
+            ServerLevel world = Gielinor.world(p.getServer());
             if (world == null) {
                 ERRORS.add("Gielinor dimension missing");
                 return;
             }
             LandmarkBuilder.buildNow(world, place);
             BlockPos pos = Gielinor.safeSpot(world, ax, az - r + 3);
-            p.teleport(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0f, 10f);
+            p.teleportTo(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0f, 10f);
         });
     }
 
     /** Runs a command as the player with operator rights on the integrated server. */
-    private static void cmd(MinecraftClient client, UUID uuid, String command) {
+    private static void cmd(Minecraft client, UUID uuid, String command) {
         LOG.info("[ClientSmoke] /{}", command);
-        onServer(client, uuid, p -> p.getServer().getCommandManager().executeWithPrefix(p.getCommandSource().withLevel(4), command));
+        onServer(client, uuid, p -> p.getServer().getCommands().performPrefixedCommand(p.createCommandSourceStack().withPermission(4), command));
     }
 
-    private static void onServer(MinecraftClient client, UUID uuid, Consumer<ServerPlayerEntity> action) {
-        MinecraftServer server = client.getServer();
+    private static void onServer(Minecraft client, UUID uuid, Consumer<ServerPlayer> action) {
+        MinecraftServer server = client.getSingleplayerServer();
         if (server == null) {
             ERRORS.add("integrated server is gone");
             return;
         }
         server.execute(() -> {
             try {
-                ServerPlayerEntity p = server.getPlayerManager().getPlayer(uuid);
+                ServerPlayer p = server.getPlayerList().getPlayer(uuid);
                 if (p == null) {
                     ERRORS.add("player not found on the integrated server");
                     return;
@@ -408,16 +408,16 @@ public final class ClientSmokeTest {
         });
     }
 
-    private static void shot(MinecraftClient client, String name) {
+    private static void shot(Minecraft client, String name) {
         String file = "runecraft_" + name + ".png";
         SHOTS.add(file);
-        ScreenshotRecorder.saveScreenshot(client.runDirectory, file, client.getFramebuffer(),
+        Screenshot.grab(client.gameDirectory, file, client.getMainRenderTarget(),
                 msg -> LOG.info("[ClientSmoke] {}", msg.getString()));
     }
 
     // ------------------------------------------------------------------ end
 
-    private static void finish(MinecraftClient client) {
+    private static void finish(Minecraft client) {
         finished = true;
         LOG.info("[ClientSmoke] {} screenshots: {}", SHOTS.size(), SHOTS);
         if (ERRORS.isEmpty()) {
@@ -429,18 +429,18 @@ public final class ClientSmokeTest {
             LOG.error("RUNECRAFT CLIENT SMOKE: FAILED ({} errors)", ERRORS.size());
         }
         try {
-            if (client.world != null) {
-                boolean singleplayer = client.isInSingleplayer();
-                client.world.disconnect();
+            if (client.level != null) {
+                boolean singleplayer = client.isLocalServer();
+                client.level.disconnect();
                 if (singleplayer) {
-                    client.disconnect(new MessageScreen(Text.translatable("menu.savingLevel")));
+                    client.clearLevel(new GenericDirtMessageScreen(Component.translatable("menu.savingLevel")));
                 } else {
-                    client.disconnect();
+                    client.clearLevel();
                 }
             }
         } catch (RuntimeException e) {
             LOG.error("[ClientSmoke] disconnect failed", e);
         }
-        client.scheduleStop();
+        client.stop();
     }
 }

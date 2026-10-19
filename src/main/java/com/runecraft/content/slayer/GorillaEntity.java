@@ -8,21 +8,20 @@ import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.slayer.DemonicGorillas;
 import com.runecraft.osrs.content.slayer.DemonicGorillas.Style;
 import com.runecraft.util.Msg;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.mob.HostileEntity;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
-
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Demonic and tortured gorillas (see {@link DemonicGorillas}): they attack with one style at a time and switch to another
@@ -35,14 +34,14 @@ public class GorillaEntity extends OsrsMonsterEntity {
     private Random rng;
     /** True while one of its own standard attacks is in flight (its outcome counts towards the style switch). */
     private boolean countingAttack;
-    private ServerPlayerEntity boulderTarget;
-    private Vec3d boulderAt;
+    private ServerPlayer boulderTarget;
+    private Vec3 boulderAt;
     private long boulderDue = -1;
     private long lastCombatTick;
     /** The protection prayer shown over a demonic gorilla's head (its name tag), or null before the first update. */
     private Style shownPrayer;
 
-    public GorillaEntity(EntityType<? extends HostileEntity> type, World world) {
+    public GorillaEntity(EntityType<? extends Monster> type, Level world) {
         super(type, world);
     }
 
@@ -85,17 +84,17 @@ public class GorillaEntity extends OsrsMonsterEntity {
             return;
         }
         shownPrayer = prayer;
-        Formatting colour = switch (prayer) {
-            case MELEE -> Formatting.RED;
-            case RANGED -> Formatting.GREEN;
-            case MAGIC -> Formatting.AQUA;
+        ChatFormatting colour = switch (prayer) {
+            case MELEE -> ChatFormatting.RED;
+            case RANGED -> ChatFormatting.GREEN;
+            case MAGIC -> ChatFormatting.AQUA;
         };
-        setCustomName(Text.literal("Demonic gorilla ").append(Text.literal("[" + prayer.prayerName() + "]").formatted(colour)));
+        setCustomName(Component.literal("Demonic gorilla ").append(Component.literal("[" + prayer.prayerName() + "]").withStyle(colour)));
         setCustomNameVisible(true);
     }
 
     @Override
-    public AttackType chooseStyle(ServerPlayerEntity target, double distanceSq) {
+    public AttackType chooseStyle(ServerPlayer target, double distanceSq) {
         AttackDef a = attackFor(tracker().attackStyle());
         if (a == null) {
             return super.chooseStyle(target, distanceSq);
@@ -105,19 +104,19 @@ public class GorillaEntity extends OsrsMonsterEntity {
     }
 
     @Override
-    public void performAttack(ServerPlayerEntity target, AttackType type) {
+    public void performAttack(ServerPlayer target, AttackType type) {
         DemonicGorillas.Tracker t = tracker();
         lastCombatTick = ActionManager.gameTick();
         if (t.attackStyle() != Style.MELEE && boulderDue < 0 && rng.nextInt(DemonicGorillas.BOULDER_CHANCE) == 0) {
             // The boulder toss: beats its chest and a rock falls on the player's tile a moment later.
             boulderTarget = target;
-            boulderAt = target.getPos();
+            boulderAt = target.position();
             boulderDue = ActionManager.gameTick() + DemonicGorillas.BOULDER_DELAY_TICKS;
-            swingHand(net.minecraft.util.Hand.MAIN_HAND);
-            ServerWorld world = (ServerWorld) getWorld();
-            world.spawnParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, boulderAt.x, boulderAt.y + 3,
+            swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+            ServerLevel world = (ServerLevel) level();
+            world.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, boulderAt.x, boulderAt.y + 3,
                     boulderAt.z, 20, 0.5, 0.5, 0.5, 0.01);
-            world.playSound(null, getBlockPos(), SoundEvents.ENTITY_RAVAGER_ROAR, SoundCategory.HOSTILE, 0.6f, 1.4f);
+            world.playSound(null, blockPosition(), SoundEvents.RAVAGER_ROAR, SoundSource.HOSTILE, 0.6f, 1.4f);
             Msg.action(target, "The " + label() + " beats its chest - a boulder falls towards you!");
             return;
         }
@@ -130,20 +129,20 @@ public class GorillaEntity extends OsrsMonsterEntity {
     }
 
     @Override
-    public int onHitPlayer(ServerPlayerEntity player, int damage, AttackType type) {
+    public int onHitPlayer(ServerPlayer player, int damage, AttackType type) {
         int out = super.onHitPlayer(player, damage, type);
         if (countingAttack && tracker().attacked(out <= 0, rng)) {
             Style now = tracker().attackStyle();
-            ((ServerWorld) getWorld()).spawnParticles(ParticleTypes.ANGRY_VILLAGER, getX(), getY() + getHeight() + 0.3, getZ(), 4, 0.4, 0.2,
+            ((ServerLevel) level()).sendParticles(ParticleTypes.ANGRY_VILLAGER, getX(), getY() + getBbHeight() + 0.3, getZ(), 4, 0.4, 0.2,
                     0.4, 0.0);
-            getWorld().playSound(null, getBlockPos(), SoundEvents.ENTITY_RAVAGER_ROAR, SoundCategory.HOSTILE, 0.8f, 0.8f);
+            level().playSound(null, blockPosition(), SoundEvents.RAVAGER_ROAR, SoundSource.HOSTILE, 0.8f, 0.8f);
             Msg.action(player, "The " + label() + " screams \"Rhaaaaaaa!\" and switches to " + now.name().toLowerCase(Locale.ROOT) + ".");
         }
         return out;
     }
 
     @Override
-    public int modifyIncoming(ServerPlayerEntity attacker, int damage, AttackType type) {
+    public int modifyIncoming(ServerPlayer attacker, int damage, AttackType type) {
         int d = super.modifyIncoming(attacker, damage, type);
         DemonicGorillas.Tracker t = tracker();
         lastCombatTick = ActionManager.gameTick();
@@ -153,7 +152,7 @@ public class GorillaEntity extends OsrsMonsterEntity {
             return 0;
         }
         if (t.damaged(style, d)) {
-            ((ServerWorld) getWorld()).spawnParticles(ParticleTypes.ENCHANT, getX(), getY() + getHeight(), getZ(), 20, 0.5, 0.4, 0.5, 0.2);
+            ((ServerLevel) level()).sendParticles(ParticleTypes.ENCHANT, getX(), getY() + getBbHeight(), getZ(), 20, 0.5, 0.4, 0.5, 0.2);
             Msg.action(attacker, "The demonic gorilla pounds its chest and switches to " + style.prayerName() + "!");
         }
         showPrayer();
@@ -161,27 +160,27 @@ public class GorillaEntity extends OsrsMonsterEntity {
     }
 
     @Override
-    protected void mobTick() {
-        super.mobTick();
-        if (age % 20 == 0 && demonic()) {
+    protected void customServerAiStep() {
+        super.customServerAiStep();
+        if (tickCount % 20 == 0 && demonic()) {
             showPrayer();
         }
-        if (age % ActionManager.MC_TICKS_PER_GAME_TICK != 0 || tracker == null) {
+        if (tickCount % ActionManager.MC_TICKS_PER_GAME_TICK != 0 || tracker == null) {
             return;
         }
         long now = ActionManager.gameTick();
         if (boulderDue >= 0 && now < boulderDue) {
             // The boulder's shadow on the marked tile.
-            ((ServerWorld) getWorld()).spawnParticles(ParticleTypes.LARGE_SMOKE, boulderAt.x, boulderAt.y + 0.1, boulderAt.z, 6, 0.4, 0.02,
+            ((ServerLevel) level()).sendParticles(ParticleTypes.LARGE_SMOKE, boulderAt.x, boulderAt.y + 0.1, boulderAt.z, 6, 0.4, 0.02,
                     0.4, 0.0);
         }
         if (boulderDue >= 0 && now >= boulderDue) {
             boulderDue = -1;
-            ServerWorld world = (ServerWorld) getWorld();
-            world.spawnParticles(ParticleTypes.EXPLOSION, boulderAt.x, boulderAt.y + 0.5, boulderAt.z, 2, 0.3, 0.2, 0.3, 0);
-            world.playSound(null, boulderAt.x, boulderAt.y, boulderAt.z, SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.HOSTILE, 0.5f, 1.2f);
+            ServerLevel world = (ServerLevel) level();
+            world.sendParticles(ParticleTypes.EXPLOSION, boulderAt.x, boulderAt.y + 0.5, boulderAt.z, 2, 0.3, 0.2, 0.3, 0);
+            world.playSound(null, boulderAt.x, boulderAt.y, boulderAt.z, SoundEvents.GENERIC_EXPLODE, SoundSource.HOSTILE, 0.5f, 1.2f);
             // One tile (two blocks) around the marked spot: step off it to dodge.
-            if (boulderTarget != null && boulderTarget.isAlive() && boulderTarget.getPos().squaredDistanceTo(boulderAt) < 1.0) {
+            if (boulderTarget != null && boulderTarget.isAlive() && boulderTarget.position().distanceToSqr(boulderAt) < 1.0) {
                 int hp = (int) Math.ceil(boulderTarget.getHealth());
                 CombatHandler.applyDamage(this, boulderTarget, DemonicGorillas.boulderDamage(hp));
             }

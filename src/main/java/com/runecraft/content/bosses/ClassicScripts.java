@@ -15,21 +15,20 @@ import com.runecraft.content.systems.CombatAchievementService;
 import com.runecraft.osrs.content.systems.CombatAchievements;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.phys.Vec3;
 
 /** Scripts for the classic bosses (Mole, Kalphite Queen, Dagannoth Kings, Corp, Skotizo, Hespori, Scurrius, Zalcano, Sol). */
 final class ClassicScripts {
@@ -44,7 +43,7 @@ final class ClassicScripts {
         private int surfacedFor;
 
         @Override
-        protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             // OSRS Wiki: each attack has a 1/4 chance to make her burrow while she is between 50% and 5% of her hitpoints.
             double hp = percent(boss);
             if (hp < 50 && hp > 5 && burrowIn < 0 && burrowCooldown == 0 && boss.getRandom().nextInt(4) == 0) {
@@ -60,7 +59,7 @@ final class ClassicScripts {
         }
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             if (burrowCooldown > 0) {
                 burrowCooldown--;
             }
@@ -71,11 +70,11 @@ final class ClassicScripts {
                 burrowIn--;
                 BossFx.burst(boss, ParticleTypes.CAMPFIRE_COSY_SMOKE, 12, 1.0);
                 if (burrowIn == 0) {
-                    Vec3d to = around(boss, homeVec(), 10);
-                    boss.requestTeleport(to.x, to.y, to.z);
-                    BossFx.sound(boss, SoundEvents.BLOCK_GRAVEL_BREAK, 0.6f);
-                    for (ServerPlayerEntity p : BossFx.players(boss, 24)) {
-                        p.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 60, 0, false, false));
+                    Vec3 to = around(boss, homeVec(), 10);
+                    boss.teleportTo(to.x, to.y, to.z);
+                    BossFx.sound(boss, SoundEvents.GRAVEL_BREAK, 0.6f);
+                    for (ServerPlayer p : BossFx.players(boss, 24)) {
+                        p.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 60, 0, false, false));
                     }
                     BossFx.say(boss, "The Giant Mole digs away! Your light source is extinguished.");
                     CombatAchievementService.countNear(boss, CombatAchievements.COUNT_MOLE_BURROW);
@@ -94,7 +93,7 @@ final class ClassicScripts {
         private int wait;
 
         @Override
-        protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             if (transforming) {
                 return 0;
             }
@@ -115,12 +114,12 @@ final class ClassicScripts {
         }
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             if (transforming) {
                 BossFx.burst(boss, ParticleTypes.CRIT, 20, 1.2);
                 if (--wait <= 0) {
                     BossFx.say(boss, "The Kalphite Queen emerges from her shell and takes to the air!");
-                    BossFx.swapForm(boss, "kalphite_queen_airborne", boss.getBlockPos(), true, null);
+                    BossFx.swapForm(boss, "kalphite_queen_airborne", boss.blockPosition(), true, null);
                 }
             }
         }
@@ -145,14 +144,14 @@ final class ClassicScripts {
     static final class DagannothRex extends ScriptedBoss {
         @Override
         public void onSpawn(DataBossEntity boss) {
-            ServerPlayerEntity target = boss.getTarget() instanceof ServerPlayerEntity p ? p : null;
+            ServerPlayer target = boss.getTarget() instanceof ServerPlayer p ? p : null;
             // The lair keeps the Kings present (dungeons module): only wake the brothers that aren't already there.
             for (String brother : new String[]{"dagannoth_prime", "dagannoth_supreme"}) {
-                net.minecraft.entity.EntityType<DataBossEntity> type = com.runecraft.registry.ModEntities.DATA_BOSS_TYPES.get(brother);
-                if (type != null && !boss.getWorld().getEntitiesByType(type, boss.getBoundingBox().expand(48), e -> e.isAlive()).isEmpty()) {
+                net.minecraft.world.entity.EntityType<DataBossEntity> type = com.runecraft.registry.ModEntities.DATA_BOSS_TYPES.get(brother);
+                if (type != null && !boss.level().getEntities(type, boss.getBoundingBox().inflate(48), e -> e.isAlive()).isEmpty()) {
                     continue;
                 }
-                BossFx.spawnBoss(boss, brother, boss.getBlockPos().add(brother.endsWith("prime") ? -4 : 4, 0, 3), target);
+                BossFx.spawnBoss(boss, brother, boss.blockPosition().offset(brother.endsWith("prime") ? -4 : 4, 0, 3), target);
             }
             BossFx.say(boss, "The Dagannoth Kings rise! Rex resists melee, Prime resists magic and Supreme resists ranged.");
         }
@@ -165,18 +164,18 @@ final class ClassicScripts {
      * for half, and jumps to a player when nobody is next to it.
      */
     static final class Corp extends ScriptedBoss {
-        private MobEntity core;
+        private Mob core;
         private boolean coreRoll;
         private int coreTick;
 
         @Override
-        public AttackDef chooseAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+        public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             if (boss.getHealth() < mcHp(boss, 1000)) {
                 coreRoll = true; // rolled when it attacks below 1,000 hitpoints
             }
             double dx = target.getX() - boss.getX();
             double dz = target.getZ() - boss.getZ();
-            return dx * dx + dz * dz < boss.getWidth() * boss.getWidth() / 4 ? ClassicBosses.CORP_STOMP : null;
+            return dx * dx + dz * dz < boss.getBbWidth() * boss.getBbWidth() / 4 ? ClassicBosses.CORP_STOMP : null;
         }
 
         static boolean spearOrHalberd(String id) {
@@ -184,7 +183,7 @@ final class ClassicScripts {
         }
 
         @Override
-        protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             int d = type == AttackType.STAB && spearOrHalberd(BossFx.heldId(attacker)) ? damage : damage / 2;
             if (d >= 32) {
                 coreRoll = true;
@@ -197,35 +196,35 @@ final class ClassicScripts {
         }
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             if (coreRoll) {
                 coreRoll = false;
                 if (!coreAlive() && target != null && boss.getRandom().nextInt(8) == 0) {
                     BossFx.say(boss, "The Corporeal Beast releases a dark energy core!");
-                    core = BossFx.spawnMinion(boss, "dark_energy_core", around(boss, target.getPos(), 2), target);
+                    core = BossFx.spawnMinion(boss, "dark_energy_core", around(boss, target.position(), 2), target);
                 }
             }
             if (!coreAlive() || ++coreTick % 2 != 0) {
                 return;
             }
-            List<ServerPlayerEntity> adjacent = BossFx.world(boss).getPlayers(p -> p.isAlive() && !p.isSpectator()
-                    && p.squaredDistanceTo(core) < 2.0 * 2.0);
+            List<ServerPlayer> adjacent = BossFx.world(boss).getPlayers(p -> p.isAlive() && !p.isSpectator()
+                    && p.distanceToSqr(core) < 2.0 * 2.0);
             if (adjacent.isEmpty()) {
-                ServerPlayerEntity to = target != null ? target : null;
-                for (ServerPlayerEntity p : BossFx.players(boss, 24)) {
+                ServerPlayer to = target != null ? target : null;
+                for (ServerPlayer p : BossFx.players(boss, 24)) {
                     // The core prefers the northernmost player (then the easternmost).
                     if (to == null || p.getZ() < to.getZ() - 1 || Math.abs(p.getZ() - to.getZ()) <= 1 && p.getX() > to.getX()) {
                         to = p;
                     }
                 }
                 if (to != null) {
-                    Vec3d at = to.getPos().add(1, 0, 0);
-                    core.requestTeleport(at.x, at.y, at.z);
+                    Vec3 at = to.position().add(1, 0, 0);
+                    core.teleportTo(at.x, at.y, at.z);
                     BossFx.burst(core, ParticleTypes.SOUL, 10, 0.5);
                 }
                 return;
             }
-            for (ServerPlayerEntity p : adjacent) {
+            for (ServerPlayer p : adjacent) {
                 int dmg = 5 + p.getRandom().nextInt(9);
                 com.runecraft.combat.CombatHooks.nameAttack("dark_core", null);
                 CombatHandler.applyDamage(core, p, dmg);
@@ -236,7 +235,7 @@ final class ClassicScripts {
         }
 
         @Override
-        public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
+        public void onDeath(DataBossEntity boss, ServerPlayer killer) {
             if (coreAlive()) {
                 core.discard();
             }
@@ -250,9 +249,9 @@ final class ClassicScripts {
      * timer summons a dark ankou, one at a time.
      */
     static final class Skotizo extends ScriptedBoss {
-        private final MobEntity[] altars = new MobEntity[SkotizoRules.ALTARS];
-        private final List<MobEntity> spawns = new ArrayList<>();
-        private MobEntity ankou;
+        private final Mob[] altars = new Mob[SkotizoRules.ALTARS];
+        private final List<Mob> spawns = new ArrayList<>();
+        private Mob ankou;
         private int altarTimer = -1;
         private int ankouTimer = -1;
         private int resummon = -1;
@@ -264,7 +263,7 @@ final class ClassicScripts {
         static void registerAltarBreaker() {
             com.runecraft.combat.CombatHooks.addModifier(new com.runecraft.combat.CombatHooks.PlayerAttackModifier() {
                 @Override
-                public int afterRoll(ServerPlayerEntity player, net.minecraft.entity.LivingEntity target, AttackType type, int damage) {
+                public int afterRoll(ServerPlayer player, net.minecraft.world.entity.LivingEntity target, AttackType type, int damage) {
                     if (target != null && target.getType() == com.runecraft.registry.ModEntities.typeById("awakened_altar")
                             && SkotizoRules.altarBreaker(BossFx.heldId(player))) {
                         return Math.max(damage, (int) Math.ceil(target.getHealth()));
@@ -276,7 +275,7 @@ final class ClassicScripts {
 
         int awake() {
             int n = 0;
-            for (MobEntity a : altars) {
+            for (Mob a : altars) {
                 if (a != null && a.isAlive()) {
                     n++;
                 }
@@ -285,7 +284,7 @@ final class ClassicScripts {
         }
 
         private void awaken(DataBossEntity boss, int i) {
-            Vec3d c = homeVec();
+            Vec3 c = homeVec();
             altars[i] = BossFx.spawnMinion(boss, "awakened_altar", BossFx.ground(BossFx.world(boss), c.x + SPOTS[i][0], c.z + SPOTS[i][1],
                     c.y), null);
         }
@@ -296,13 +295,13 @@ final class ClassicScripts {
 
         @Override
         public void onSpawn(DataBossEntity boss) {
-            home = boss.getBlockPos();
+            home = boss.blockPosition();
             altarTimer = between(boss, SkotizoRules.ALTAR_MIN_TICKS, SkotizoRules.ALTAR_MAX_TICKS);
             BossFx.say(boss, "Skotizo awakens! Destroy the altars he awakens, or they will shield him.");
         }
 
         @Override
-        protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             boolean breaker = attacker != null && SkotizoRules.altarBreaker(BossFx.heldId(attacker));
             return SkotizoRules.damage(damage, awake(), breaker);
         }
@@ -315,11 +314,11 @@ final class ClassicScripts {
 
         private void summonSpawns(DataBossEntity boss) {
             spawns.removeIf(m -> !m.isAlive());
-            ServerPlayerEntity target = target(boss);
-            Vec3d c = boss.getPos();
+            ServerPlayer target = target(boss);
+            Vec3 c = boss.position();
             for (int i = spawns.size(); i < SkotizoRules.DEMON_SPAWNS; i++) {
                 double a = Math.PI * 2 * i / SkotizoRules.DEMON_SPAWNS;
-                MobEntity m = BossFx.spawnMinion(boss, "reanimated_demon_spawn",
+                Mob m = BossFx.spawnMinion(boss, "reanimated_demon_spawn",
                         BossFx.ground(BossFx.world(boss), c.x + Math.cos(a) * 2.5, c.z + Math.sin(a) * 2.5, c.y), target);
                 if (m != null) {
                     spawns.add(m);
@@ -328,7 +327,7 @@ final class ClassicScripts {
         }
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             int awake = awake();
             // "Demonic Weakening": the kill counts while no altar is active.
             if (awake == 0) {
@@ -375,13 +374,13 @@ final class ClassicScripts {
         }
 
         @Override
-        public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
-            for (MobEntity a : altars) {
+        public void onDeath(DataBossEntity boss, ServerPlayer killer) {
+            for (Mob a : altars) {
                 if (a != null && a.isAlive()) {
                     a.discard();
                 }
             }
-            spawns.forEach(MobEntity::discard);
+            spawns.forEach(Mob::discard);
             if (ankou != null && ankou.isAlive()) {
                 ankou.discard();
             }
@@ -395,15 +394,15 @@ final class ClassicScripts {
 
     /** Hespori: at 2/3 and 1/3 health it becomes invulnerable until its flowers are cut down. */
     static final class Hespori extends ScriptedBoss {
-        private final List<MobEntity> flowers = new ArrayList<>();
+        private final List<Mob> flowers = new ArrayList<>();
 
         @Override
         public void onPhase(DataBossEntity boss, int phase) {
             flowers.clear();
-            Vec3d c = boss.getPos();
+            Vec3 c = boss.position();
             for (int i = 0; i < 6; i++) {
                 double a = Math.PI * 2 * i / 6;
-                MobEntity f = BossFx.spawnMinion(boss, "hesporis_flower",
+                Mob f = BossFx.spawnMinion(boss, "hesporis_flower",
                         BossFx.ground(BossFx.world(boss), c.x + Math.cos(a) * 5, c.z + Math.sin(a) * 5, c.y), null);
                 if (f != null) {
                     flowers.add(f);
@@ -414,12 +413,12 @@ final class ClassicScripts {
 
         @Override
         public boolean isVulnerable(DataBossEntity boss) {
-            return flowers.stream().noneMatch(MobEntity::isAlive);
+            return flowers.stream().noneMatch(Mob::isAlive);
         }
 
         @Override
-        public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
-            flowers.forEach(MobEntity::discard);
+        public void onDeath(DataBossEntity boss, ServerPlayer killer) {
+            flowers.forEach(Mob::discard);
         }
     }
 
@@ -428,7 +427,7 @@ final class ClassicScripts {
         private boolean ate;
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             if (!ate && percent(boss) < 40) {
                 ate = true;
                 BossFx.say(boss, "Scurrius scurries to his food pile and starts to eat!");
@@ -470,17 +469,17 @@ final class ClassicScripts {
         private float armouredHealth = -1;
         private final Map<UUID, Long> nextSwing = new HashMap<>();
 
-        private record Symbol(Vec3d pos, boolean blue, long activeAt, long until) {
+        private record Symbol(Vec3 pos, boolean blue, long activeAt, long until) {
         }
 
         private final List<Symbol> symbols = new ArrayList<>();
 
         private static final class Golem {
-            final MobEntity mob;
+            final Mob mob;
             final Map<UUID, Integer> damage = new HashMap<>();
-            ServerPlayerEntity last;
+            ServerPlayer last;
 
-            Golem(MobEntity mob) {
+            Golem(Mob mob) {
                 this.mob = mob;
             }
         }
@@ -493,22 +492,22 @@ final class ClassicScripts {
         }
 
         /** A point at an offset from the arena centre, pulled in to stay at least two blocks inside the ring wall. */
-        private Vec3d spot(DataBossEntity boss, double dx, double dz) {
+        private Vec3 spot(DataBossEntity boss, double dx, double dz) {
             double max = reach(boss);
             double len = Math.hypot(dx, dz);
             if (len > max) {
                 dx *= max / len;
                 dz *= max / len;
             }
-            Vec3d c = homeVec();
-            return new Vec3d(c.x + dx, c.y, c.z + dz);
+            Vec3 c = homeVec();
+            return new Vec3(c.x + dx, c.y, c.z + dz);
         }
 
-        private Vec3d spot(DataBossEntity boss, int[] off) {
+        private Vec3 spot(DataBossEntity boss, int[] off) {
             return spot(boss, off[0], off[1]);
         }
 
-        private static double flat(Vec3d a, Vec3d b) {
+        private static double flat(Vec3 a, Vec3 b) {
             double dx = a.x - b.x;
             double dz = a.z - b.z;
             return Math.sqrt(dx * dx + dz * dz);
@@ -518,13 +517,13 @@ final class ClassicScripts {
             return downUntil >= 0;
         }
 
-        private static int level(ServerPlayerEntity p, Skill skill) {
+        private static int level(ServerPlayer p, Skill skill) {
             return com.runecraft.player.Players.data(p).skills().currentLevel(skill);
         }
 
-        private boolean onBlue(ServerPlayerEntity p) {
+        private boolean onBlue(ServerPlayer p) {
             for (Symbol s : symbols) {
-                if (s.blue() && now <= s.until() && flat(p.getPos(), s.pos()) <= 1.5) {
+                if (s.blue() && now <= s.until() && flat(p.position(), s.pos()) <= 1.5) {
                     return true;
                 }
             }
@@ -532,7 +531,7 @@ final class ClassicScripts {
         }
 
         /** A thrown imbued tephra's damage (0 to the max). */
-        private int tephraHit(ServerPlayerEntity p) {
+        private int tephraHit(ServerPlayer p) {
             int max = BossMechanics.tephraMaxHit(level(p, Skill.SMITHING), level(p, Skill.RUNECRAFT), onBlue(p));
             return p.getRandom().nextInt(max + 1);
         }
@@ -542,10 +541,10 @@ final class ClassicScripts {
             // The stations are laid out around the arena centre (her spawn block sits by the summoning stone at the north
             // edge), and she stands in the middle of her prison.
             home = arenaCentre(boss);
-            if (!home.equals(boss.getBlockPos())) {
-                Vec3d c = homeVec();
+            if (!home.equals(boss.blockPosition())) {
+                Vec3 c = homeVec();
                 boss.getNavigation().stop();
-                boss.requestTeleport(c.x, c.y, c.z);
+                boss.teleportTo(c.x, c.y, c.z);
             }
             BossFx.say(boss, "Zalcano rises in her prison! Mine tephra at the glowing rocks, refine it at the furnace (east) and "
                     + "imbue it at the altar (west) to break her armour.");
@@ -562,13 +561,13 @@ final class ClassicScripts {
         }
 
         @Override
-        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             int roll = boss.getRandom().nextInt(10);
-            List<ServerPlayerEntity> players = BossFx.players(boss, 28);
+            List<ServerPlayer> players = BossFx.players(boss, 28);
             if (roll < 3) {
                 BossFx.warn(boss, "Zalcano stomps the ground... rocks fall from the ceiling!");
-                for (ServerPlayerEntity p : players) {
-                    namedStrike("rockfall", boss, p.getPos(), 4, maxHit(boss, BOULDER_MAX), 1.0, ParticleTypes.ASH);
+                for (ServerPlayer p : players) {
+                    namedStrike("rockfall", boss, p.position(), 4, maxHit(boss, BOULDER_MAX), 1.0, ParticleTypes.ASH);
                 }
             } else if (roll < 5) {
                 summonSymbols(boss);
@@ -578,7 +577,7 @@ final class ClassicScripts {
             } else if (roll < 9 && golems.size() < 2) {
                 spawnGolem(boss);
             } else {
-                for (ServerPlayerEntity p : players) {
+                for (ServerPlayer p : players) {
                     CombatHooks.nameAttack("pebbles", null);
                     CombatHandler.applyDamage(boss, p, 1 + p.getRandom().nextInt(5)); // approx: "only a few hitpoints"
                 }
@@ -604,8 +603,8 @@ final class ClassicScripts {
         /** Spawns a golem at the prison's wall; it walks to her. Package-private for the self-test. */
         Golem spawnGolem(DataBossEntity boss) {
             double a = boss.getRandom().nextDouble() * Math.PI * 2;
-            Vec3d at = spot(boss, Math.cos(a) * 12, Math.sin(a) * 12);
-            MobEntity m = BossFx.spawnMinion(boss, "zalcano_golem", BossFx.ground(BossFx.world(boss), at.x, at.z, at.y), null);
+            Vec3 at = spot(boss, Math.cos(a) * 12, Math.sin(a) * 12);
+            Mob m = BossFx.spawnMinion(boss, "zalcano_golem", BossFx.ground(BossFx.world(boss), at.x, at.z, at.y), null);
             if (m == null) {
                 return null;
             }
@@ -613,19 +612,19 @@ final class ClassicScripts {
             golems.add(g);
             MinionRules.set(m, new MinionRules.Rule() {
                 @Override
-                public double accuracy(ServerPlayerEntity p, net.minecraft.entity.LivingEntity mob, AttackType type) {
+                public double accuracy(ServerPlayer p, net.minecraft.world.entity.LivingEntity mob, AttackType type) {
                     return MinionRules.ALWAYS_HITS;
                 }
 
                 @Override
-                public int damage(ServerPlayerEntity p, net.minecraft.entity.LivingEntity mob, AttackType type, int d) {
+                public int damage(ServerPlayer p, net.minecraft.world.entity.LivingEntity mob, AttackType type, int d) {
                     if (!Inv.has(p, BossMechanics.IMBUED_TEPHRA, 1)) {
                         Msg.action(p, "Only imbued tephra can harm the golem.");
                         return 0;
                     }
                     Inv.remove(p, BossMechanics.IMBUED_TEPHRA, 1);
                     int hit = tephraHit(p);
-                    g.damage.merge(p.getUuid(), hit, Integer::sum);
+                    g.damage.merge(p.getUUID(), hit, Integer::sum);
                     g.last = p;
                     return hit;
                 }
@@ -647,9 +646,9 @@ final class ClassicScripts {
                 }
                 g.mob.setTarget(null);
                 if (now % 5 == 0) {
-                    g.mob.getNavigation().startMovingTo(boss.getX(), boss.getY(), boss.getZ(), 1.0);
+                    g.mob.getNavigation().moveTo(boss.getX(), boss.getY(), boss.getZ(), 1.0);
                 }
-                if (g.mob.squaredDistanceTo(boss) < 3.0 * 3.0) {
+                if (g.mob.distanceToSqr(boss) < 3.0 * 3.0) {
                     if (!down()) {
                         int heal = BossMechanics.golemArmourHeal(g.mob.getHealth() / g.mob.getMaxHealth());
                         armour = Math.min(BossMechanics.ZALCANO_ARMOUR, armour + heal);
@@ -673,10 +672,10 @@ final class ClassicScripts {
                     best = e.getKey();
                 }
             }
-            ServerPlayerEntity to = g.last;
-            if (best != null && (to == null || !to.getUuid().equals(best))) {
-                for (ServerPlayerEntity p : BossFx.players(boss, 48)) {
-                    if (p.getUuid().equals(best)) {
+            ServerPlayer to = g.last;
+            if (best != null && (to == null || !to.getUUID().equals(best))) {
+                for (ServerPlayer p : BossFx.players(boss, 48)) {
+                    if (p.getUUID().equals(best)) {
                         to = p;
                     }
                 }
@@ -703,10 +702,10 @@ final class ClassicScripts {
             downUntil = -1;
             armour = BossMechanics.ZALCANO_ARMOUR;
             BossFx.say(boss, "Zalcano rises again, her armour restored! Her shockwave destroys all tephra in the prison.");
-            for (ServerPlayerEntity p : BossFx.players(boss, 32)) {
-                if (p.squaredDistanceTo(boss) < 3.5 * 3.5) {
-                    p.takeKnockback(1.0, boss.getX() - p.getX(), boss.getZ() - p.getZ());
-                    p.velocityModified = true;
+            for (ServerPlayer p : BossFx.players(boss, 32)) {
+                if (p.distanceToSqr(boss) < 3.5 * 3.5) {
+                    p.knockback(1.0, boss.getX() - p.getX(), boss.getZ() - p.getZ());
+                    p.hurtMarked = true;
                     CombatHooks.nameAttack("zalcano_shockwave", null);
                     CombatHandler.applyDamage(boss, p, BossMechanics.ZALCANO_RISE_DAMAGE);
                     BossFx.stun(p, 1 + p.getRandom().nextInt(2));
@@ -716,7 +715,7 @@ final class ClassicScripts {
             BossFx.burst(boss, ParticleTypes.CLOUD, 30, 2.0);
         }
 
-        private static void destroyTephra(ServerPlayerEntity p) {
+        private static void destroyTephra(ServerPlayer p) {
             for (String id : BossMechanics.TEPHRA_ITEMS) {
                 int n = Inv.count(p, id);
                 if (n > 0) {
@@ -725,12 +724,12 @@ final class ClassicScripts {
             }
         }
 
-        private void mine(ServerPlayerEntity p, boolean glowingRock) {
-            Long due = nextSwing.get(p.getUuid());
+        private void mine(ServerPlayer p, boolean glowingRock) {
+            Long due = nextSwing.get(p.getUUID());
             if (due != null && now < due) {
                 return;
             }
-            nextSwing.put(p.getUuid(), now + 3); // approx: one swing every 3 ticks
+            nextSwing.put(p.getUUID(), now + 3); // approx: one swing every 3 ticks
             int pick = com.runecraft.osrs.content.raids.RaidScaling.pickaxeLevel(BossFx.heldId(p));
             double chance = glowingRock ? Math.min(0.9, 0.3 + level(p, Skill.MINING) / 200.0 + pick / 400.0) : 0.08; // approx
             if (p.getRandom().nextDouble() >= chance) {
@@ -745,9 +744,9 @@ final class ClassicScripts {
 
         /** Mining at the rock formations, refining at the furnace and imbuing at the altar (one tephra a tick). */
         private void tephraLoop(DataBossEntity boss) {
-            ServerWorld w = BossFx.world(boss);
-            Vec3d furnace = spot(boss, FURNACE);
-            Vec3d altar = spot(boss, ALTAR);
+            ServerLevel w = BossFx.world(boss);
+            Vec3 furnace = spot(boss, FURNACE);
+            Vec3 altar = spot(boss, ALTAR);
             if (now % 4 == 0) {
                 for (int i = 0; i < CORNERS.length; i++) {
                     BossFx.column(w, spot(boss, CORNERS[i]), i == glowing ? ParticleTypes.FLAME : ParticleTypes.SMOKE,
@@ -756,8 +755,8 @@ final class ClassicScripts {
                 BossFx.ring(w, furnace, 1.2, ParticleTypes.LAVA);
                 BossFx.ring(w, altar, 1.2, ParticleTypes.ENCHANT);
             }
-            for (ServerPlayerEntity p : BossFx.players(boss, 28)) {
-                Vec3d pos = p.getPos();
+            for (ServerPlayer p : BossFx.players(boss, 28)) {
+                Vec3 pos = p.position();
                 int corner = -1;
                 for (int i = 0; i < CORNERS.length; i++) {
                     if (flat(pos, spot(boss, CORNERS[i])) <= STATION_RANGE) {
@@ -779,7 +778,7 @@ final class ClassicScripts {
         }
 
         private void tickSymbols(DataBossEntity boss) {
-            ServerWorld w = BossFx.world(boss);
+            ServerLevel w = BossFx.world(boss);
             symbols.removeIf(s -> now > s.until());
             for (Symbol s : symbols) {
                 if (now % 2 == 0) {
@@ -790,8 +789,8 @@ final class ClassicScripts {
                 }
                 // Orange symbols hurt more the longer they've been active, up to 26.
                 int dmg = (int) Math.min(BossMechanics.ZALCANO_SYMBOL_MAX, 4 + 3 * (now - s.activeAt())); // approx ramp
-                for (ServerPlayerEntity p : BossFx.players(boss, 32)) {
-                    if (flat(p.getPos(), s.pos()) <= 1.5) {
+                for (ServerPlayer p : BossFx.players(boss, 32)) {
+                    if (flat(p.position(), s.pos()) <= 1.5) {
                         CombatHooks.nameAttack("red_symbol", null);
                         CombatHandler.applyDamage(boss, p, dmg);
                     }
@@ -800,7 +799,7 @@ final class ClassicScripts {
         }
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             if (!boss.isAlive()) {
                 return;
             }
@@ -817,10 +816,10 @@ final class ClassicScripts {
             tickGolems(boss);
             if (explodeAt >= 0 && now >= explodeAt) {
                 explodeAt = -1;
-                Vec3d rock = spot(boss, CORNERS[glowing]);
-                BossFx.world(boss).spawnParticles(ParticleTypes.EXPLOSION, rock.x, rock.y + 0.5, rock.z, 4, 0.8, 0.5, 0.8, 0);
-                for (ServerPlayerEntity p : BossFx.players(boss, 32)) {
-                    if (flat(p.getPos(), rock) <= 3.0) {
+                Vec3 rock = spot(boss, CORNERS[glowing]);
+                BossFx.world(boss).sendParticles(ParticleTypes.EXPLOSION, rock.x, rock.y + 0.5, rock.z, 4, 0.8, 0.5, 0.8, 0);
+                for (ServerPlayer p : BossFx.players(boss, 32)) {
+                    if (flat(p.position(), rock) <= 3.0) {
                         CombatHooks.nameAttack("rock_explosion", null);
                         CombatHandler.applyDamage(boss, p, BossMechanics.ZALCANO_ROCK_MIN
                                 + p.getRandom().nextInt(BossMechanics.ZALCANO_ROCK_MAX - BossMechanics.ZALCANO_ROCK_MIN + 1));
@@ -830,8 +829,8 @@ final class ClassicScripts {
                 BossFx.warn(boss, "The rock formation explodes! Another one starts to glow.");
             }
             if (down()) {
-                for (ServerPlayerEntity p : BossFx.players(boss, 4)) {
-                    if (flat(p.getPos(), boss.getPos()) <= 1.6) {
+                for (ServerPlayer p : BossFx.players(boss, 4)) {
+                    if (flat(p.position(), boss.position()) <= 1.6) {
                         CombatHooks.nameAttack("under_zalcano", null);
                         CombatHandler.applyDamage(boss, p, BossMechanics.ZALCANO_UNDER_MIN
                                 + p.getRandom().nextInt(BossMechanics.ZALCANO_UNDER_MAX - BossMechanics.ZALCANO_UNDER_MIN + 1));
@@ -841,7 +840,7 @@ final class ClassicScripts {
         }
 
         @Override
-        protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+        protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             if (attacker == null) {
                 return 0;
             }
@@ -874,7 +873,7 @@ final class ClassicScripts {
         }
 
         @Override
-        public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
+        public void onDeath(DataBossEntity boss, ServerPlayer killer) {
             golems.forEach(g -> g.mob.discard());
             golems.clear();
             symbols.clear();
@@ -890,7 +889,7 @@ final class ClassicScripts {
      * Self-test (boss:zalcano_tephra): her armour ignores attacks without imbued tephra, tephra breaks it and she falls; a
      * golem killed with tephra leaves its attacker 16-24 imbued tephra.
      */
-    static String selfTestZalcano(DataBossEntity boss, ServerPlayerEntity p) {
+    static String selfTestZalcano(DataBossEntity boss, ServerPlayer p) {
         if (!(boss.script() instanceof Zalcano z)) {
             throw new IllegalStateException("Zalcano has no Zalcano script");
         }
@@ -913,7 +912,7 @@ final class ClassicScripts {
         Zalcano.Golem g = z.spawnGolem(boss);
         if (g != null) {
             Zalcano.destroyTephra(p);
-            g.damage.put(p.getUuid(), BossMechanics.ZALCANO_GOLEM_HP);
+            g.damage.put(p.getUUID(), BossMechanics.ZALCANO_GOLEM_HP);
             g.last = p;
             g.mob.setHealth(0f);
             z.gameTick(boss, com.runecraft.action.ActionManager.gameTick());

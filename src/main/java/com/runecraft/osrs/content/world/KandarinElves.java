@@ -6,6 +6,9 @@ import java.util.List;
 
 import static com.runecraft.osrs.content.world.KandarinKit.*;
 
+import com.runecraft.osrs.content.world.KandarinKit.Bld;
+import com.runecraft.osrs.content.world.KandarinKit.Pal;
+
 /** Tirannwn: Lletya, the Tyras camp and the crystal city of Prifddinas. */
 final class KandarinElves {
     private KandarinElves() {

@@ -5,27 +5,26 @@ import com.runecraft.osrs.EquipmentStats;
 import com.runecraft.osrs.ItemDef;
 import com.runecraft.osrs.Skill;
 import com.runecraft.registry.ModItems;
-import net.minecraft.client.item.TooltipContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
 import java.util.List;
 import java.util.Map;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 
 /** OSRS-style item info: requirements, bonuses, healing and value. */
 public final class Tooltips {
     private Tooltips() {
     }
 
-    public static void append(ItemStack stack, TooltipContext context, List<Text> lines) {
+    public static void append(ItemStack stack, TooltipFlag context, List<Component> lines) {
         if (com.runecraft.bank.Notes.isNote(stack)) {
             ItemDef inner = com.runecraft.osrs.ItemCatalog.get(com.runecraft.bank.Notes.notedId(stack));
-            lines.add(Text.literal("Bank note").formatted(Formatting.YELLOW));
-            lines.add(Text.literal(com.runecraft.osrs.bank.BankNotes.EXAMINE).formatted(Formatting.GRAY, Formatting.ITALIC));
+            lines.add(Component.literal("Bank note").withStyle(ChatFormatting.YELLOW));
+            lines.add(Component.literal(com.runecraft.osrs.bank.BankNotes.EXAMINE).withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
             if (inner != null) {
-                lines.add(Text.literal("Value: " + String.format("%,d", inner.value()) + " gp each  (HA " + String.format("%,d", inner.highAlch()) + ")")
-                        .formatted(Formatting.DARK_GRAY));
+                lines.add(Component.literal("Value: " + String.format("%,d", inner.value()) + " gp each  (HA " + String.format("%,d", inner.highAlch()) + ")")
+                        .withStyle(ChatFormatting.DARK_GRAY));
             }
             return;
         }
@@ -34,28 +33,28 @@ public final class Tooltips {
             return;
         }
         if (def.examine() != null) {
-            lines.add(Text.literal(def.examine()).formatted(Formatting.GRAY, Formatting.ITALIC));
+            lines.add(Component.literal(def.examine()).withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
         }
         if (def.heal() > 0) {
-            lines.add(Text.literal("Heals " + def.heal() + " Hitpoints").formatted(Formatting.GREEN));
+            lines.add(Component.literal("Heals " + def.heal() + " Hitpoints").withStyle(ChatFormatting.GREEN));
         }
         if (def.rangedStrength() > 0) {
-            lines.add(Text.literal("Ranged strength: +" + def.rangedStrength()).formatted(Formatting.GREEN));
+            lines.add(Component.literal("Ranged strength: +" + def.rangedStrength()).withStyle(ChatFormatting.GREEN));
         }
         EquipmentDef eq = def.equipment();
         if (eq != null) {
             for (Map.Entry<Skill, Integer> e : eq.requirements().entrySet()) {
                 boolean ok = ClientState.SKILLS.level(e.getKey()) >= e.getValue();
-                lines.add(Text.literal("Requires " + e.getValue() + " " + e.getKey().displayName())
-                        .formatted(ok ? Formatting.GREEN : Formatting.RED));
+                lines.add(Component.literal("Requires " + e.getValue() + " " + e.getKey().displayName())
+                        .withStyle(ok ? ChatFormatting.GREEN : ChatFormatting.RED));
             }
             EquipmentStats s = eq.stats();
             if (eq.attackSpeed() > 0) {
-                lines.add(Text.literal("Attack speed: " + eq.attackSpeed() + " ticks (" + eq.attackType().name().toLowerCase() + ")")
-                        .formatted(Formatting.YELLOW));
+                lines.add(Component.literal("Attack speed: " + eq.attackSpeed() + " ticks (" + eq.attackType().name().toLowerCase() + ")")
+                        .withStyle(ChatFormatting.YELLOW));
             }
             if (com.runecraft.osrs.data.EquipmentBonuses.twoHanded(def.id())) {
-                lines.add(Text.literal("Two-handed (no shield bonuses)").formatted(Formatting.YELLOW));
+                lines.add(Component.literal("Two-handed (no shield bonuses)").withStyle(ChatFormatting.YELLOW));
             }
             line(lines, "Attack", s.stabAttack(), s.slashAttack(), s.crushAttack(), s.magicAttack(), s.rangedAttack());
             line(lines, "Defence", s.stabDefence(), s.slashDefence(), s.crushDefence(), s.magicDefence(), s.rangedDefence());
@@ -73,19 +72,19 @@ public final class Tooltips {
                 other.append("Prayer ").append(signed(s.prayer()));
             }
             if (other.length() > 0) {
-                lines.add(Text.literal(other.toString().trim()).formatted(Formatting.GOLD));
+                lines.add(Component.literal(other.toString().trim()).withStyle(ChatFormatting.GOLD));
             }
         }
-        lines.add(Text.literal("Value: " + String.format("%,d", def.value()) + " gp  (HA " + String.format("%,d", def.highAlch()) + ")")
-                .formatted(Formatting.DARK_GRAY));
+        lines.add(Component.literal("Value: " + String.format("%,d", def.value()) + " gp  (HA " + String.format("%,d", def.highAlch()) + ")")
+                .withStyle(ChatFormatting.DARK_GRAY));
     }
 
-    private static void line(List<Text> lines, String label, int stab, int slash, int crush, int magic, int ranged) {
+    private static void line(List<Component> lines, String label, int stab, int slash, int crush, int magic, int ranged) {
         if (stab == 0 && slash == 0 && crush == 0 && magic == 0 && ranged == 0) {
             return;
         }
-        lines.add(Text.literal(label + ": Stab " + signed(stab) + " Slash " + signed(slash) + " Crush " + signed(crush)
-                + " Magic " + signed(magic) + " Range " + signed(ranged)).formatted(Formatting.AQUA));
+        lines.add(Component.literal(label + ": Stab " + signed(stab) + " Slash " + signed(slash) + " Crush " + signed(crush)
+                + " Magic " + signed(magic) + " Range " + signed(ranged)).withStyle(ChatFormatting.AQUA));
     }
 
     private static String signed(int v) {

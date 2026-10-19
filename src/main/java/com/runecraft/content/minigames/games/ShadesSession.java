@@ -12,16 +12,15 @@ import com.runecraft.player.Players;
 import com.runecraft.quest.QuestApi;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.item.ItemStack;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * The Shade Catacombs below Mort'ton: an entrance hall, then five crypts behind key doors - bronze
@@ -38,12 +37,12 @@ public class ShadesSession extends MinigameSession {
     public static final String[] CHESTS = {"shade_chest", "shade_chest_steel", "shade_chest_black", "shade_chest_silver",
             "shade_chest_gold"};
 
-    public ShadesSession(int id, int slot, ServerWorld world, String variant) {
+    public ShadesSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.SHADES_OF_MORTTON, id, slot, world, variant);
     }
 
     /** Entry check: the minigame follows the Shades of Mort'ton quest. */
-    public static String requirement(ServerPlayerEntity player) {
+    public static String requirement(ServerPlayer player) {
         if (ContentRegistry.quest(ShadesOfMortton.QUEST) != null && !QuestApi.isComplete(player, ShadesOfMortton.QUEST)) {
             return "You need to complete the Shades of Mort'ton quest to enter the catacombs.";
         }
@@ -82,7 +81,7 @@ public class ShadesSession extends MinigameSession {
             int x = wall(i);
             for (int dz = -halfZ(); dz <= halfZ(); dz++) {
                 for (int y = 1; y <= height(); y++) {
-                    set(x, y, dz, Blocks.DEEPSLATE_BRICKS.getDefaultState());
+                    set(x, y, dz, Blocks.DEEPSLATE_BRICKS.defaultBlockState());
                 }
             }
             place(x, 0, "shade_door_" + ShadesOfMortton.METALS[i]);
@@ -90,17 +89,17 @@ public class ShadesSession extends MinigameSession {
             place(mid, -halfZ() + 1, CHESTS[i]);
             // Coffins along the crypt walls, a soul fire and cobwebs.
             for (int cx = x + 2; cx < x + CRYPT - 1; cx += 4) {
-                set(cx, 1, halfZ(), Blocks.POLISHED_DEEPSLATE_SLAB.getDefaultState());
-                set(cx, 1, halfZ() - 1, Blocks.POLISHED_DEEPSLATE_SLAB.getDefaultState());
+                set(cx, 1, halfZ(), Blocks.POLISHED_DEEPSLATE_SLAB.defaultBlockState());
+                set(cx, 1, halfZ() - 1, Blocks.POLISHED_DEEPSLATE_SLAB.defaultBlockState());
             }
-            set(mid, 1, 4, Blocks.SOUL_CAMPFIRE.getDefaultState());
-            set(x + 2, height(), -halfZ() + 1, Blocks.COBWEB.getDefaultState());
+            set(mid, 1, 4, Blocks.SOUL_CAMPFIRE.defaultBlockState());
+            set(x + 2, height(), -halfZ() + 1, Blocks.COBWEB.defaultBlockState());
         }
         place(-halfX() + 2, 0, "minigame_exit");
     }
 
     @Override
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
+    protected BlockPos spawnPoint(ServerPlayer player, int index) {
         return rel(-halfX() + 4, 1, index % 3 - 1);
     }
 
@@ -126,7 +125,7 @@ public class ShadesSession extends MinigameSession {
     }
 
     @Override
-    protected boolean onBlock(ServerPlayerEntity player, String blockId, BlockPos pos) {
+    protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         for (int i = 0; i < ShadesOfMortton.METALS.length; i++) {
             String metal = ShadesOfMortton.METALS[i];
             if (blockId.equals("shade_door_" + metal)) {
@@ -141,7 +140,7 @@ public class ShadesSession extends MinigameSession {
         return false;
     }
 
-    private static boolean hasKey(ServerPlayerEntity player, String metal) {
+    private static boolean hasKey(ServerPlayer player, String metal) {
         for (String c : ShadesOfMortton.COLOURS) {
             if (Inv.has(player, ShadesOfMortton.key(metal, c), 1)) {
                 return true;
@@ -150,7 +149,7 @@ public class ShadesSession extends MinigameSession {
         return false;
     }
 
-    private void door(ServerPlayerEntity player, int i) {
+    private void door(ServerPlayer player, int i) {
         String metal = ShadesOfMortton.METALS[i];
         int x = wall(i);
         boolean west = relPos(player).getX() < x;
@@ -159,13 +158,13 @@ public class ShadesSession extends MinigameSession {
             return;
         }
         BlockPos to = rel(west ? x + 2 : x - 2, 1, 0);
-        player.teleport(world, to.getX() + 0.5, to.getY(), to.getZ() + 0.5, player.getYaw(), player.getPitch());
+        player.teleportTo(world, to.getX() + 0.5, to.getY(), to.getZ() + 0.5, player.getYRot(), player.getXRot());
         if (west) {
             Msg.game(player, "You unlock the doors with your " + metal + " key.");
         }
     }
 
-    private void chest(ServerPlayerEntity player, String metal) {
+    private void chest(ServerPlayer player, String metal) {
         List<String> uniques = openChest(player, metal, random);
         if (uniques != null) {
             for (String u : uniques) {
@@ -179,9 +178,9 @@ public class ShadesSession extends MinigameSession {
      * which dissolves in the lock, and gives the chest's rolls. Used by this instance and by the chests standing in the
      * dungeons module's catacombs below Mort'ton. Returns the uniques found, or null when the player has no key.
      */
-    public static List<String> openChest(ServerPlayerEntity player, String metal, java.util.Random random) {
+    public static List<String> openChest(ServerPlayer player, String metal, java.util.Random random) {
         String key = null;
-        ItemStack held = player.getMainHandStack();
+        ItemStack held = player.getMainHandItem();
         String[] heldParts = held.isEmpty() ? null : ShadesOfMortton.keyParts(Inv.idOf(held));
         if (heldParts != null && heldParts[0].equals(metal)) {
             key = Inv.idOf(held);
@@ -214,14 +213,14 @@ public class ShadesSession extends MinigameSession {
                 uniques.add(r.item());
             }
         }
-        ((ServerWorld) player.getWorld()).spawnParticles(ParticleTypes.SOUL, player.getX(), player.getY() + 1, player.getZ(), 8,
+        ((ServerLevel) player.level()).sendParticles(ParticleTypes.SOUL, player.getX(), player.getY() + 1, player.getZ(), 8,
                 0.4, 0.4, 0.4, 0.02);
         Msg.game(player, "The " + colour + " " + metal + " key dissolves in the lock as the chest opens.");
         return uniques;
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
+    protected List<String> hud(ServerPlayer player) {
         int c = crypt(relPos(player).getX());
         String where = c < 0 ? "Entrance hall" : Character.toUpperCase(ShadesOfMortton.METALS[c].charAt(0))
                 + ShadesOfMortton.METALS[c].substring(1) + " crypt (" + Shade.values()[c + 1].displayName() + " shades)";

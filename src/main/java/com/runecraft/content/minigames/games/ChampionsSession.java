@@ -15,16 +15,15 @@ import com.runecraft.player.Players;
 import com.runecraft.quest.QuestApi;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * Champions' Challenge: Larxus takes a champion scroll and the player fights that champion alone in the
@@ -35,14 +34,14 @@ public class ChampionsSession extends MinigameSession {
     private Champion champion;
     private long endAt = -1;
 
-    public ChampionsSession(int id, int slot, ServerWorld world, String variant) {
+    public ChampionsSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.CHAMPIONS_CHALLENGE, id, slot, world, variant);
     }
 
     // ------------------------------------------------------------------ rules
 
     /** Why the player can't take on their scroll's champion, or null. */
-    public static String requirement(ServerPlayerEntity p) {
+    public static String requirement(ServerPlayer p) {
         if (Players.data(p).questPoints() < ChampionsChallenge.QUEST_POINTS) {
             return "Larxus: You need " + ChampionsChallenge.QUEST_POINTS + " quest points to take part in the Champions' Challenge.";
         }
@@ -55,15 +54,15 @@ public class ChampionsSession extends MinigameSession {
     }
 
     /** What breaks a rule's equipment, inventory or prayer conditions, or null. */
-    static String broken(ServerPlayerEntity p, Rule rule, boolean holdingScroll) {
-        PlayerInventory inv = p.getInventory();
+    static String broken(ServerPlayer p, Rule rule, boolean holdingScroll) {
+        Inventory inv = p.getInventory();
         if (rule.noArmour()) {
             for (ItemStack s : inv.armor) {
                 if (!s.isEmpty()) {
                     return "Take off your armour.";
                 }
             }
-            if (!inv.offHand.get(0).isEmpty()) {
+            if (!inv.offhand.get(0).isEmpty()) {
                 return "Take off your shield.";
             }
             for (ItemStack s : com.runecraft.content.systems.SysState.of(p).worn.values()) {
@@ -72,14 +71,14 @@ public class ChampionsSession extends MinigameSession {
                 }
             }
         }
-        if (rule.noWeapon() && isWeapon(p.getMainHandStack())) {
+        if (rule.noWeapon() && isWeapon(p.getMainHandItem())) {
             return "Put away your weapon.";
         }
         if (rule.emptyInventory()) {
             int allowed = holdingScroll ? 1 : 0;
-            for (int i = 0; i < inv.main.size(); i++) {
-                ItemStack s = inv.main.get(i);
-                if (s.isEmpty() || i == inv.selectedSlot && isWeapon(s)) {
+            for (int i = 0; i < inv.items.size(); i++) {
+                ItemStack s = inv.items.get(i);
+                if (s.isEmpty() || i == inv.selected && isWeapon(s)) {
                     continue;
                 }
                 if (allowed > 0 && ChampionsChallenge.byScroll(Inv.idOf(s)) != null && s.getCount() == 1) {
@@ -88,7 +87,7 @@ public class ChampionsSession extends MinigameSession {
                 }
                 return "Your inventory must be empty" + (rule == Rule.WEAPON_ONLY ? " (only your weapon is allowed)." : ".");
             }
-            if (!rule.noArmour() && !inv.offHand.get(0).isEmpty()) {
+            if (!rule.noArmour() && !inv.offhand.get(0).isEmpty()) {
                 return "Your off-hand must be empty.";
             }
         }
@@ -104,11 +103,11 @@ public class ChampionsSession extends MinigameSession {
         }
         ItemDef def = com.runecraft.registry.ModItems.def(s);
         return def != null && def.equipment() != null && def.equipment().slot() == EquipmentDef.Slot.WEAPON
-                || s.getItem() instanceof net.minecraft.item.SwordItem || s.getItem() instanceof net.minecraft.item.BowItem;
+                || s.getItem() instanceof net.minecraft.world.item.SwordItem || s.getItem() instanceof net.minecraft.world.item.BowItem;
     }
 
     /** Attack gate: the champion's rule on attack styles and special attacks (null = allowed). */
-    public static String deniedAttack(ServerPlayerEntity p, AttackType type) {
+    public static String deniedAttack(ServerPlayer p, AttackType type) {
         if (!(MinigameManager.session(p) instanceof ChampionsSession s) || s.champion == null) {
             return null;
         }
@@ -123,7 +122,7 @@ public class ChampionsSession extends MinigameSession {
                 return "The " + s.champion.name() + " doesn't allow special attacks.";
             }
         }
-        if (rule.noWeapon() && isWeapon(p.getMainHandStack())) {
+        if (rule.noWeapon() && isWeapon(p.getMainHandItem())) {
             return "The " + s.champion.name() + "'s rule: " + rule.text() + ".";
         }
         return null;
@@ -153,25 +152,25 @@ public class ChampionsSession extends MinigameSession {
     }
 
     @Override
-    protected BlockPos spawnPoint(ServerPlayerEntity player, int index) {
+    protected BlockPos spawnPoint(ServerPlayer player, int index) {
         return rel(0, 1, 5);
     }
 
     @Override
     protected void start() {
-        List<ServerPlayerEntity> online = online();
+        List<ServerPlayer> online = online();
         if (online.isEmpty()) {
             end(false);
             return;
         }
-        ServerPlayerEntity p = online.get(0);
+        ServerPlayer p = online.get(0);
         champion = ChampionsChallenge.chooseScroll(item -> Inv.has(p, item, 1));
         if (champion == null) {
             end(false);
             return;
         }
         Inv.remove(p, champion.scroll(), 1);
-        MobEntity mob = spawn(champion.id(), rel(0, 1, -5));
+        Mob mob = spawn(champion.id(), rel(0, 1, -5));
         if (mob == null) {
             end(false);
             return;
@@ -191,7 +190,7 @@ public class ChampionsSession extends MinigameSession {
         if (champion == null || ticks % 2 != 0) {
             return;
         }
-        for (ServerPlayerEntity p : online()) {
+        for (ServerPlayer p : online()) {
             String broken = broken(p, champion.rule(), false);
             if (broken != null) {
                 if (champion.rule() == Rule.NO_PRAYER) {
@@ -207,13 +206,13 @@ public class ChampionsSession extends MinigameSession {
     }
 
     @Override
-    protected void onKill(ServerPlayerEntity player, LivingEntity entity, String creatureId) {
+    protected void onKill(ServerPlayer player, LivingEntity entity, String creatureId) {
         if (champion == null || !creatureId.equals(champion.id()) || endAt >= 0) {
             return;
         }
         MinigameData data = MinigameData.of(player);
-        data.setFlag(player.getUuid(), ChampionsChallenge.defeatedFlag(champion.id()));
-        data.incrementStat(player.getUuid(), "kc:" + game.id());
+        data.setFlag(player.getUUID(), ChampionsChallenge.defeatedFlag(champion.id()));
+        data.incrementStat(player.getUUID(), "kc:" + game.id());
         Msg.game(player, "Congratulations! You have defeated the " + champion.name() + ".");
         if (champion.id().equals(ChampionsChallenge.LEON)) {
             // The cape is Leon's drop (picked up for the player when the arena closes).
@@ -223,22 +222,22 @@ public class ChampionsSession extends MinigameSession {
     }
 
     @Override
-    protected List<String> hud(ServerPlayerEntity player) {
+    protected List<String> hud(ServerPlayer player) {
         return champion == null ? List.of(game.displayName())
                 : List.of(game.displayName(), champion.name(), "Rule: " + champion.rule().text());
     }
 
     /** Larxus: explains the challenge, reports progress and hands out Leon's scroll after all ten. */
-    public static void larxus(ServerPlayerEntity p) {
+    public static void larxus(ServerPlayer p) {
         MinigameData data = MinigameData.of(p);
         int beaten = 0;
         for (Champion c : ChampionsChallenge.CHAMPIONS) {
-            if (data.flag(p.getUuid(), ChampionsChallenge.defeatedFlag(c.id()))) {
+            if (data.flag(p.getUUID(), ChampionsChallenge.defeatedFlag(c.id()))) {
                 beaten++;
             }
         }
-        boolean allTen = ChampionsChallenge.allTenDefeated(id -> data.flag(p.getUuid(), ChampionsChallenge.defeatedFlag(id)));
-        boolean leon = data.flag(p.getUuid(), ChampionsChallenge.defeatedFlag(ChampionsChallenge.LEON));
+        boolean allTen = ChampionsChallenge.allTenDefeated(id -> data.flag(p.getUUID(), ChampionsChallenge.defeatedFlag(id)));
+        boolean leon = data.flag(p.getUUID(), ChampionsChallenge.defeatedFlag(ChampionsChallenge.LEON));
         if (allTen && !leon && !Inv.has(p, ChampionsChallenge.LEON_SCROLL, 1)) {
             Inv.give(p, ChampionsChallenge.LARXUS_REWARD.item(), 1);
             com.runecraft.collection.CollectionLog.obtain(p, ChampionsChallenge.LARXUS_REWARD.item());

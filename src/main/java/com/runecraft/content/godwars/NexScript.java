@@ -17,19 +17,18 @@ import com.runecraft.osrs.content.systems.CombatAchievements;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
 import com.runecraft.util.Msg;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Nex, the Zarosian general. Five phases:
@@ -64,10 +63,10 @@ final class NexScript extends GwdScript {
     private long siphonUntil = -1;
     private long nextSpecial;
     private boolean alternate;
-    private ServerPlayerEntity sacrifice;
+    private ServerPlayer sacrifice;
     private long sacrificeAt;
-    private ServerPlayerEntity prisoner;
-    private Vec3d prisonCentre;
+    private ServerPlayer prisoner;
+    private Vec3 prisonCentre;
     private long prisonAt;
     private final List<BlockPos> prisonBlocks = new ArrayList<>();
     private double homeX;
@@ -92,14 +91,14 @@ final class NexScript extends GwdScript {
         homeX = boss.getX();
         homeY = boss.getY();
         homeZ = boss.getZ();
-        ServerWorld world = (ServerWorld) boss.getWorld();
+        ServerLevel world = (ServerLevel) boss.level();
         int[][] corners = {{-9, -9}, {9, -9}, {9, 9}, {-9, 9}};
         for (int i = 0; i < 4; i++) {
             BossDef def = ContentRegistry.boss(GwdBosses.NEX_MINIONS[i]);
             if (def == null) {
                 continue;
             }
-            DataBossEntity minion = DataBossService.spawn(world, boss.getBlockPos().add(corners[i][0], 0, corners[i][1]), def, null);
+            DataBossEntity minion = DataBossService.spawn(world, boss.blockPosition().offset(corners[i][0], 0, corners[i][1]), def, null);
             if (minion != null && minion.script() instanceof NexMinionScript s) {
                 s.nex = boss;
                 s.active = false;
@@ -133,7 +132,7 @@ final class NexScript extends GwdScript {
     }
 
     @Override
-    protected AttackDef pick(DataBossEntity boss, ServerPlayerEntity target, double distance) {
+    protected AttackDef pick(DataBossEntity boss, ServerPlayer target, double distance) {
         if (distance <= meleeReach(boss) && boss.getRandom().nextInt(3) == 0) {
             return GwdBosses.NEX_MELEE;
         }
@@ -152,9 +151,9 @@ final class NexScript extends GwdScript {
     }
 
     @Override
-    protected int landed(DataBossEntity boss, ServerPlayerEntity player, int damage, AttackDef attack) {
+    protected int landed(DataBossEntity boss, ServerPlayer player, int damage, AttackDef attack) {
         if (attack == GwdBosses.NEX_SHADOW) {
-            double dist = Math.sqrt(player.squaredDistanceTo(boss));
+            double dist = Math.sqrt(player.distanceToSqr(boss));
             double factor = Math.max(0.2, Math.min(1.0, 1.0 - (dist - 2) / 14.0));
             return (int) Math.round(damage * factor);
         }
@@ -165,7 +164,7 @@ final class NexScript extends GwdScript {
     }
 
     @Override
-    public int modifyIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
+    public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
         if (siphonUntil > ActionManager.gameTick()) {
             healReal(boss, damage);
             if (damage > 0) {
@@ -183,33 +182,33 @@ final class NexScript extends GwdScript {
     @Override
     public void gameTick(DataBossEntity boss, long gameTick) {
         super.gameTick(boss, gameTick);
-        ServerWorld world = (ServerWorld) boss.getWorld();
+        ServerLevel world = (ServerLevel) boss.level();
         // A general has fallen: move on to the next phase.
         if (shieldIndex >= 0 && (minions[shieldIndex] == null || !minions[shieldIndex].isAlive())) {
             stage = Stage.values()[shieldIndex + 1];
             shieldIndex = -1;
             shout(boss, STAGE_LINES[stage.ordinal()]);
-            world.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.ENTITY_WITHER_AMBIENT, SoundCategory.HOSTILE,
+            world.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.WITHER_AMBIENT, SoundSource.HOSTILE,
                     1.0f, 0.7f);
             if (stage == Stage.ZAROS) {
                 healReal(boss, 500);
-                world.spawnParticles(ParticleTypes.DRAGON_BREATH, boss.getX(), boss.getY() + 2, boss.getZ(), 60, 1, 1, 1, 0.05);
+                world.sendParticles(ParticleTypes.DRAGON_BREATH, boss.getX(), boss.getY() + 2, boss.getZ(), 60, 1, 1, 1, 0.05);
             }
             nextSpecial = gameTick + 8;
         }
         if (siphonUntil > gameTick) {
-            world.spawnParticles(ParticleTypes.DAMAGE_INDICATOR, boss.getX(), boss.getY() + 1.5, boss.getZ(), 6, 0.8, 0.8, 0.8, 0.1);
+            world.sendParticles(ParticleTypes.DAMAGE_INDICATOR, boss.getX(), boss.getY() + 1.5, boss.getZ(), 6, 0.8, 0.8, 0.8, 0.1);
         }
         resolveSacrifice(boss, world, gameTick);
         resolvePrison(boss, world, gameTick);
         tickCough(boss, world, gameTick);
-        List<ServerPlayerEntity> nearby = players(boss, 24);
+        List<ServerPlayer> nearby = players(boss, 24);
         if (nearby.isEmpty() || shieldIndex >= 0 || gameTick < nextSpecial) {
             return;
         }
         nextSpecial = gameTick + 15 + boss.getRandom().nextInt(10);
         alternate = !alternate;
-        ServerPlayerEntity victim = nearby.get(boss.getRandom().nextInt(nearby.size()));
+        ServerPlayer victim = nearby.get(boss.getRandom().nextInt(nearby.size()));
         switch (stage) {
             case SMOKE -> {
                 if (alternate) {
@@ -221,8 +220,8 @@ final class NexScript extends GwdScript {
             case SHADOW -> {
                 if (alternate) {
                     shout(boss, "Fear the shadow!");
-                    for (ServerPlayerEntity p : nearby) {
-                        strike(boss, p.getPos(), 3, 50, 1.3, ParticleTypes.SQUID_INK, ParticleTypes.LARGE_SMOKE, (hit, dmg) -> {
+                    for (ServerPlayer p : nearby) {
+                        strike(boss, p.position(), 3, 50, 1.3, ParticleTypes.SQUID_INK, ParticleTypes.LARGE_SMOKE, (hit, dmg) -> {
                             drainPrayer(hit, 10);
                             if (dmg > 0) {
                                 CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_NEX_SHADOW_SMASH);
@@ -231,8 +230,8 @@ final class NexScript extends GwdScript {
                     }
                 } else {
                     shout(boss, "Embrace darkness!");
-                    for (ServerPlayerEntity p : nearby) {
-                        p.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 100, 0, false, false));
+                    for (ServerPlayer p : nearby) {
+                        p.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 100, 0, false, false));
                     }
                 }
             }
@@ -253,7 +252,7 @@ final class NexScript extends GwdScript {
                     iceprison(boss, world, victim, gameTick);
                 } else {
                     shout(boss, "Contain this!");
-                    strike(boss, boss.getPos(), 2, 60, 3.5, ParticleTypes.SNOWFLAKE, ParticleTypes.ITEM_SNOWBALL, (hit, dmg) -> {
+                    strike(boss, boss.position(), 2, 60, 3.5, ParticleTypes.SNOWFLAKE, ParticleTypes.ITEM_SNOWBALL, (hit, dmg) -> {
                         drainPrayer(hit, Players.data(hit).prayerPoints() / 4);
                         if (dmg > 0) {
                             CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_NEX_ICE);
@@ -264,7 +263,7 @@ final class NexScript extends GwdScript {
             case ZAROS -> {
                 // Nex's Zarosian power: a burst of soul-draining energy around her.
                 shout(boss, "I fear no one!");
-                for (ServerPlayerEntity p : nearby) {
+                for (ServerPlayer p : nearby) {
                     drainPrayer(p, 8);
                 }
             }
@@ -272,46 +271,46 @@ final class NexScript extends GwdScript {
     }
 
     /** "There is... NO ESCAPE!": dash in a line through the target, hitting everyone in the way. */
-    private void smokeDash(DataBossEntity boss, ServerWorld world, ServerPlayerEntity victim) {
+    private void smokeDash(DataBossEntity boss, ServerLevel world, ServerPlayer victim) {
         shout(boss, "There is... NO ESCAPE!");
-        Vec3d from = boss.getPos();
-        Vec3d dir = victim.getPos().subtract(from).multiply(1, 0, 1);
-        if (dir.lengthSquared() < 0.01) {
+        Vec3 from = boss.position();
+        Vec3 dir = victim.position().subtract(from).multiply(1, 0, 1);
+        if (dir.lengthSqr() < 0.01) {
             return;
         }
-        Vec3d to = victim.getPos().add(dir.normalize().multiply(3));
-        Vec3d home = new Vec3d(homeX, homeY, homeZ);
-        if (to.subtract(home).horizontalLength() > 14) {
-            to = home.add(to.subtract(home).multiply(1, 0, 1).normalize().multiply(14));
+        Vec3 to = victim.position().add(dir.normalize().scale(3));
+        Vec3 home = new Vec3(homeX, homeY, homeZ);
+        if (to.subtract(home).horizontalDistance() > 14) {
+            to = home.add(to.subtract(home).multiply(1, 0, 1).normalize().scale(14));
         }
-        Vec3d end = new Vec3d(to.x, boss.getY(), to.z);
+        Vec3 end = new Vec3(to.x, boss.getY(), to.z);
         for (int i = 0; i <= 16; i++) {
-            Vec3d p = from.add(end.subtract(from).multiply(i / 16.0));
-            world.spawnParticles(ParticleTypes.LARGE_SMOKE, p.x, p.y + 1, p.z, 4, 0.3, 0.5, 0.3, 0.01);
+            Vec3 p = from.add(end.subtract(from).scale(i / 16.0));
+            world.sendParticles(ParticleTypes.LARGE_SMOKE, p.x, p.y + 1, p.z, 4, 0.3, 0.5, 0.3, 0.01);
         }
-        for (ServerPlayerEntity p : players(boss, 24)) {
-            if (segmentDistance(p.getPos(), from, end) < 1.6) {
+        for (ServerPlayer p : players(boss, 24)) {
+            if (segmentDistance(p.position(), from, end) < 1.6) {
                 CombatHooks.nameAttack("smoke_dash", null);
                 if (CombatHandler.applyDamage(boss, p, boss.getRandom().nextInt(51)) > 0) {
                     CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_NEX_SMOKE_DASH);
                 }
             }
         }
-        boss.requestTeleport(end.x, end.y, end.z);
+        boss.teleportTo(end.x, end.y, end.z);
     }
 
     /** Players coughing from the Choke virus, with the game tick it wears off. */
-    private final java.util.Map<ServerPlayerEntity, Long> coughing = new java.util.HashMap<>();
+    private final java.util.Map<ServerPlayer, Long> coughing = new java.util.HashMap<>();
     /** How long the cough lasts (approx), and how much shorter with a gas mask, facemask or slayer helmet. */
     private static final int COUGH_TICKS = 30;
     private static final int COUGH_TICKS_MASKED = 20;
 
-    private static boolean masked(ServerPlayerEntity p) {
-        String head = com.runecraft.util.Inv.idOf(p.getEquippedStack(net.minecraft.entity.EquipmentSlot.HEAD));
+    private static boolean masked(ServerPlayer p) {
+        String head = com.runecraft.util.Inv.idOf(p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD));
         return head.equals("gas_mask") || head.equals("facemask") || head.startsWith("slayer_helmet");
     }
 
-    private void infect(ServerPlayerEntity p, long gameTick) {
+    private void infect(ServerPlayer p, long gameTick) {
         if (!coughing.containsKey(p)) {
             Msg.red(p, "You've been infected by Nex's virus!");
         }
@@ -322,28 +321,28 @@ final class NexScript extends GwdScript {
      * "Let the virus flow through you!" (OSRS Wiki, Choke): the victim is infected and coughs, losing 2 prayer points
      * every 2 ticks; the virus spreads to adjacent players, infecting them or resetting their cough.
      */
-    private void virus(DataBossEntity boss, ServerPlayerEntity victim, List<ServerPlayerEntity> nearby, long gameTick) {
+    private void virus(DataBossEntity boss, ServerPlayer victim, List<ServerPlayer> nearby, long gameTick) {
         shout(boss, "Let the virus flow through you!");
         PoisonService.poison(victim, 6, gameTick);
         infect(victim, gameTick);
         CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_NEX_COUGHING);
     }
 
-    private void tickCough(DataBossEntity boss, ServerWorld world, long gameTick) {
+    private void tickCough(DataBossEntity boss, ServerLevel world, long gameTick) {
         if (coughing.isEmpty()) {
             return;
         }
         coughing.entrySet().removeIf(e -> !e.getKey().isAlive() || gameTick >= e.getValue());
-        for (ServerPlayerEntity p : new ArrayList<>(coughing.keySet())) {
+        for (ServerPlayer p : new ArrayList<>(coughing.keySet())) {
             if (gameTick % 2 == 0) {
                 drainPrayer(p, 2);
-                world.spawnParticles(ParticleTypes.SNEEZE, p.getX(), p.getY() + 1.7, p.getZ(), 4, 0.2, 0.1, 0.2, 0.01);
+                world.sendParticles(ParticleTypes.SNEEZE, p.getX(), p.getY() + 1.7, p.getZ(), 4, 0.2, 0.1, 0.2, 0.01);
                 if (gameTick % 6 == 0) {
                     Msg.action(p, "*Cough*");
                 }
             }
-            for (ServerPlayerEntity o : players(boss, 24)) {
-                if (o != p && o.squaredDistanceTo(p) < 2.5 * 2.5) {
+            for (ServerPlayer o : players(boss, 24)) {
+                if (o != p && o.distanceToSqr(p) < 2.5 * 2.5) {
                     infect(o, gameTick);
                 }
             }
@@ -353,7 +352,7 @@ final class NexScript extends GwdScript {
         }
     }
 
-    private void resolveSacrifice(DataBossEntity boss, ServerWorld world, long gameTick) {
+    private void resolveSacrifice(DataBossEntity boss, ServerLevel world, long gameTick) {
         if (sacrifice == null) {
             return;
         }
@@ -362,13 +361,13 @@ final class NexScript extends GwdScript {
             return;
         }
         if (gameTick < sacrificeAt) {
-            world.spawnParticles(ParticleTypes.DAMAGE_INDICATOR, sacrifice.getX(), sacrifice.getY() + 2.3, sacrifice.getZ(), 3, 0.2, 0.1,
+            world.sendParticles(ParticleTypes.DAMAGE_INDICATOR, sacrifice.getX(), sacrifice.getY() + 2.3, sacrifice.getZ(), 3, 0.2, 0.1,
                     0.2, 0);
             return;
         }
         PlayerData data = Players.data(sacrifice);
         drainPrayer(sacrifice, data.prayerPoints() / 3);
-        if (sacrifice.squaredDistanceTo(boss) < 7 * 7) {
+        if (sacrifice.distanceToSqr(boss) < 7 * 7) {
             int dealt = CombatHandler.applyDamage(boss, sacrifice, boss.getRandom().nextInt(51));
             healReal(boss, dealt);
             Msg.red(sacrifice, "Nex drains your blood!");
@@ -376,23 +375,23 @@ final class NexScript extends GwdScript {
         sacrifice = null;
     }
 
-    private void iceprison(DataBossEntity boss, ServerWorld world, ServerPlayerEntity victim, long gameTick) {
+    private void iceprison(DataBossEntity boss, ServerLevel world, ServerPlayer victim, long gameTick) {
         shout(boss, "Die now, in a prison of ice!");
         clearPrison(world);
         prisoner = victim;
-        prisonCentre = victim.getPos();
+        prisonCentre = victim.position();
         prisonAt = gameTick + 5;
-        victim.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 10, false, true));
-        BlockPos c = victim.getBlockPos();
+        victim.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 60, 10, false, true));
+        BlockPos c = victim.blockPosition();
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
                 if (dx == 0 && dz == 0) {
                     continue;
                 }
                 for (int dy = 0; dy <= 1; dy++) {
-                    BlockPos p = c.add(dx, dy, dz);
+                    BlockPos p = c.offset(dx, dy, dz);
                     if (world.getBlockState(p).isAir()) {
-                        world.setBlockState(p, Blocks.ICE.getDefaultState());
+                        world.setBlockAndUpdate(p, Blocks.ICE.defaultBlockState());
                         prisonBlocks.add(p);
                     }
                 }
@@ -400,31 +399,31 @@ final class NexScript extends GwdScript {
         }
     }
 
-    private void resolvePrison(DataBossEntity boss, ServerWorld world, long gameTick) {
+    private void resolvePrison(DataBossEntity boss, ServerLevel world, long gameTick) {
         if (prisoner == null || gameTick < prisonAt) {
             return;
         }
-        if (prisoner.isAlive() && prisoner.getPos().squaredDistanceTo(prisonCentre) < 1.5 * 1.5) {
+        if (prisoner.isAlive() && prisoner.position().distanceToSqr(prisonCentre) < 1.5 * 1.5) {
             if (CombatHandler.applyDamage(boss, prisoner, boss.getRandom().nextInt(61)) > 0) {
                 CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_NEX_ICE);
             }
             Msg.red(prisoner, "The ice prison shatters around you!");
         }
-        world.spawnParticles(ParticleTypes.ITEM_SNOWBALL, prisonCentre.x, prisonCentre.y + 1, prisonCentre.z, 30, 1, 1, 1, 0.1);
+        world.sendParticles(ParticleTypes.ITEM_SNOWBALL, prisonCentre.x, prisonCentre.y + 1, prisonCentre.z, 30, 1, 1, 1, 0.1);
         clearPrison(world);
         prisoner = null;
     }
 
-    private void clearPrison(ServerWorld world) {
+    private void clearPrison(ServerLevel world) {
         for (BlockPos p : prisonBlocks) {
-            if (world.getBlockState(p).isOf(Blocks.ICE)) {
-                world.setBlockState(p, Blocks.AIR.getDefaultState());
+            if (world.getBlockState(p).is(Blocks.ICE)) {
+                world.setBlockAndUpdate(p, Blocks.AIR.defaultBlockState());
             }
         }
         prisonBlocks.clear();
     }
 
-    private static void drainPrayer(ServerPlayerEntity player, int amount) {
+    private static void drainPrayer(ServerPlayer player, int amount) {
         if (amount <= 0) {
             return;
         }
@@ -433,19 +432,19 @@ final class NexScript extends GwdScript {
         ServerNetworking.sync(player);
     }
 
-    static double segmentDistance(Vec3d p, Vec3d a, Vec3d b) {
-        Vec3d ab = b.subtract(a);
-        double len = ab.lengthSquared();
-        double t = len < 1e-6 ? 0 : Math.max(0, Math.min(1, p.subtract(a).dotProduct(ab) / len));
-        return a.add(ab.multiply(t)).distanceTo(p);
+    static double segmentDistance(Vec3 p, Vec3 a, Vec3 b) {
+        Vec3 ab = b.subtract(a);
+        double len = ab.lengthSqr();
+        double t = len < 1e-6 ? 0 : Math.max(0, Math.min(1, p.subtract(a).dot(ab) / len));
+        return a.add(ab.scale(t)).distanceTo(p);
     }
 
     @Override
-    public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
+    public void onDeath(DataBossEntity boss, ServerPlayer killer) {
         shout(boss, "Taste my wrath!");
-        ServerWorld world = (ServerWorld) boss.getWorld();
-        world.spawnParticles(ParticleTypes.EXPLOSION_EMITTER, boss.getX(), boss.getY() + 1, boss.getZ(), 2, 1, 1, 1, 0);
-        for (ServerPlayerEntity p : players(boss, 4)) {
+        ServerLevel world = (ServerLevel) boss.level();
+        world.sendParticles(ParticleTypes.EXPLOSION_EMITTER, boss.getX(), boss.getY() + 1, boss.getZ(), 2, 1, 1, 1, 0);
+        for (ServerPlayer p : players(boss, 4)) {
             CombatHandler.applyDamage(null, p, boss.getRandom().nextInt(41));
         }
         for (DataBossEntity minion : minions) {

@@ -4,14 +4,13 @@ import com.runecraft.network.Net;
 import com.runecraft.network.ServerNetworking;
 import com.runecraft.osrs.Toxins;
 import com.runecraft.util.Msg;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
 
 /**
  * OSRS poison and venom (rules in {@link Toxins}). Poison hits every 30 game ticks (18s), starting at its
@@ -25,20 +24,20 @@ public final class PoisonService {
     }
 
     private static Toxins.State state(LivingEntity target) {
-        return STATES.computeIfAbsent(target.getUuid(), u -> new Toxins.State());
+        return STATES.computeIfAbsent(target.getUUID(), u -> new Toxins.State());
     }
 
     public static void poison(LivingEntity target, int damage, long gameTick) {
-        if (!(target instanceof ServerPlayerEntity) && com.runecraft.osrs.data.MonsterTraits.poisonImmune(MonsterStats.of(target).traitsKey())) {
+        if (!(target instanceof ServerPlayer) && com.runecraft.osrs.data.MonsterTraits.poisonImmune(MonsterStats.of(target).traitsKey())) {
             return; // OSRS: poison-immune monsters (most bosses, undead, demons...) can't be poisoned
         }
-        if (Toxins.poison(state(target), damage, gameTick) && target instanceof ServerPlayerEntity p) {
-            p.sendMessage(Text.literal("You have been poisoned!").formatted(Formatting.DARK_GREEN), false);
+        if (Toxins.poison(state(target), damage, gameTick) && target instanceof ServerPlayer p) {
+            p.displayClientMessage(Component.literal("You have been poisoned!").withStyle(ChatFormatting.DARK_GREEN), false);
         }
     }
 
     public static void venom(LivingEntity target, long gameTick) {
-        if (!(target instanceof ServerPlayerEntity)) {
+        if (!(target instanceof ServerPlayer)) {
             String key = MonsterStats.of(target).traitsKey();
             if (com.runecraft.osrs.data.MonsterTraits.venomImmune(key)) {
                 // OSRS: a venom-immune monster that isn't poison-immune is poisoned (6) instead
@@ -48,8 +47,8 @@ public final class PoisonService {
                 return;
             }
         }
-        if (Toxins.venom(state(target), gameTick) && target instanceof ServerPlayerEntity p) {
-            p.sendMessage(Text.literal("You have been envenomed!").formatted(Formatting.DARK_GREEN), false);
+        if (Toxins.venom(state(target), gameTick) && target instanceof ServerPlayer p) {
+            p.displayClientMessage(Component.literal("You have been envenomed!").withStyle(ChatFormatting.DARK_GREEN), false);
         }
     }
 
@@ -60,7 +59,7 @@ public final class PoisonService {
      */
     public static void cure(LivingEntity target, boolean venomToo, int immunityTicks, long gameTick) {
         Toxins.Cure result = Toxins.cure(state(target), venomToo, immunityTicks, 0, gameTick);
-        if (result == Toxins.Cure.VENOM_TO_POISON && target instanceof ServerPlayerEntity p) {
+        if (result == Toxins.Cure.VENOM_TO_POISON && target instanceof ServerPlayer p) {
             Msg.game(p, "The venom in your blood turns into a weaker poison.");
         }
     }
@@ -71,33 +70,33 @@ public final class PoisonService {
     }
 
     public static boolean isPoisoned(LivingEntity target) {
-        Toxins.State s = STATES.get(target.getUuid());
+        Toxins.State s = STATES.get(target.getUUID());
         return s != null && s.active();
     }
 
     public static boolean isEnvenomed(LivingEntity target) {
-        Toxins.State s = STATES.get(target.getUuid());
+        Toxins.State s = STATES.get(target.getUUID());
         return s != null && s.envenomed();
     }
 
     public static boolean isVenomImmune(LivingEntity target, long gameTick) {
-        Toxins.State s = STATES.get(target.getUuid());
+        Toxins.State s = STATES.get(target.getUUID());
         return s != null && s.venomImmune(gameTick);
     }
 
     public static boolean isPoisonImmune(LivingEntity target, long gameTick) {
-        Toxins.State s = STATES.get(target.getUuid());
+        Toxins.State s = STATES.get(target.getUUID());
         return s != null && s.poisonImmune(gameTick);
     }
 
     /** Called once per game tick for each player (and for module mobs from their tick). */
     public static void tick(LivingEntity entity, long gameTick) {
-        Toxins.State s = STATES.get(entity.getUuid());
+        Toxins.State s = STATES.get(entity.getUUID());
         if (s == null) {
             return;
         }
         if (!entity.isAlive()) {
-            STATES.remove(entity.getUuid());
+            STATES.remove(entity.getUUID());
             return;
         }
         boolean venom = s.envenomed();
@@ -106,12 +105,12 @@ public final class PoisonService {
             CombatHooks.nameAttack("poison", null);
             CombatHandler.applyDamage(null, entity, damage);
             ServerNetworking.hitsplat(entity, damage, venom ? Net.SPLAT_VENOM : Net.SPLAT_POISON);
-            if (!s.active() && entity instanceof ServerPlayerEntity p) {
+            if (!s.active() && entity instanceof ServerPlayer p) {
                 Msg.game(p, "The poison has worn off.");
             }
         }
         if (s.idle(gameTick)) {
-            STATES.remove(entity.getUuid());
+            STATES.remove(entity.getUUID());
         }
     }
 }

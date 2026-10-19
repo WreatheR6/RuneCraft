@@ -6,15 +6,15 @@ import com.runecraft.osrs.content.skilling.RunecraftData;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.vehicle.BoatEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.tag.FluidTags;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.FluidTags;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.vehicle.Boat;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Client-side behaviour for the skilling content module: tooltips for essence pouches and poisoned weapons, and the
@@ -30,18 +30,18 @@ public final class SkillingClientHooks implements ClientModuleHooks {
     @Override
     public void initClient() {
         ItemTooltipCallback.EVENT.register((stack, context, lines) -> {
-            Identifier id = Registries.ITEM.getId(stack.getItem());
+            ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
             if (!id.getNamespace().equals("runecraft")) {
                 return;
             }
-            NbtCompound nbt = stack.getNbt();
+            CompoundTag nbt = stack.getTag();
             RunecraftData.Pouch pouch = RunecraftData.pouch(id.getPath());
             if (pouch != null) {
                 int held = nbt == null ? 0 : nbt.getInt("Essence");
-                lines.add(Text.literal("Essence: " + held + "/" + pouch.capacity()).formatted(Formatting.GRAY));
+                lines.add(Component.literal("Essence: " + held + "/" + pouch.capacity()).withStyle(ChatFormatting.GRAY));
             }
             if (nbt != null && nbt.contains("RunecraftPoison")) {
-                lines.add(Text.literal("Poisoned (" + nbt.getInt("RunecraftPoison") + ")").formatted(Formatting.DARK_GREEN));
+                lines.add(Component.literal("Poisoned (" + nbt.getInt("RunecraftPoison") + ")").withStyle(ChatFormatting.DARK_GREEN));
             }
         });
         ClientPlayNetworking.registerGlobalReceiver(SeaNet.BOAT_SPEED, (client, handler, buf, sender) -> {
@@ -67,11 +67,11 @@ public final class SkillingClientHooks implements ClientModuleHooks {
             }
             riding = true;
             // Only the Sailing boat the server named, and only while it floats (not sliding over ice or land).
-            if (vehicle instanceof BoatEntity && vehicle.getId() == boatId && vehicle.isLogicalSideForUpdatingMovement()
-                    && (vehicle.isTouchingWater() || vehicle.getWorld().getFluidState(vehicle.getBlockPos()).isIn(FluidTags.WATER)
-                    || vehicle.getWorld().getFluidState(vehicle.getBlockPos().down()).isIn(FluidTags.WATER))) {
-                Vec3d v = vehicle.getVelocity();
-                vehicle.setVelocity(v.x * boatSpeed, v.y, v.z * boatSpeed);
+            if (vehicle instanceof Boat && vehicle.getId() == boatId && vehicle.isControlledByLocalInstance()
+                    && (vehicle.isInWater() || vehicle.level().getFluidState(vehicle.blockPosition()).is(FluidTags.WATER)
+                    || vehicle.level().getFluidState(vehicle.blockPosition().below()).is(FluidTags.WATER))) {
+                Vec3 v = vehicle.getDeltaMovement();
+                vehicle.setDeltaMovement(v.x * boatSpeed, v.y, v.z * boatSpeed);
             }
         });
     }

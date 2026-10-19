@@ -15,15 +15,14 @@ import com.runecraft.osrs.ui.SkillPanel;
 import com.runecraft.util.Inv;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.tooltip.Tooltip;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.item.ItemStack;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import java.util.List;
 import java.util.Locale;
 
@@ -55,7 +54,7 @@ public class RuneScapeScreen extends Screen {
     private int selectedIndex;
 
     public RuneScapeScreen(Tab tab) {
-        super(Text.literal("RuneScape"));
+        super(Component.literal("RuneScape"));
         this.tab = tab;
     }
 
@@ -75,7 +74,7 @@ public class RuneScapeScreen extends Screen {
     }
 
     @Override
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 
@@ -100,7 +99,7 @@ public class RuneScapeScreen extends Screen {
         }
         tab = t;
         page = 0;
-        clearAndInit();
+        rebuildWidgets();
     }
 
     private int tabWidth() {
@@ -152,8 +151,8 @@ public class RuneScapeScreen extends Screen {
         return super.mouseScrolled(mouseX, mouseY, amount);
     }
 
-    private static void send(Identifier channel, int value) {
-        PacketByteBuf buf = PacketByteBufs.create();
+    private static void send(ResourceLocation channel, int value) {
+        FriendlyByteBuf buf = PacketByteBufs.create();
         buf.writeVarInt(value);
         ClientPlayNetworking.send(channel, buf);
     }
@@ -168,26 +167,26 @@ public class RuneScapeScreen extends Screen {
         String[] rangedInfo = {"Accurate: +3 Ranged, trains Ranged", "Rapid: faster, trains Ranged", "Longrange: trains Ranged + Defence"};
         for (int i = 0; i < melee.length; i++) {
             CombatStyle s = melee[i];
-            addDrawableChild(ButtonWidget.builder(Text.literal((ClientState.style == s ? "> " : "") + s.displayName()), b -> {
+            addRenderableWidget(Button.builder(Component.literal((ClientState.style == s ? "> " : "") + s.displayName()), b -> {
                 send(Net.SET_STYLE, s.ordinal());
                 ClientState.style = s;
-                clearAndInit();
-            }).dimensions(left + 10, top + 40 + i * 24, 135, 20).tooltip(Tooltip.of(Text.literal(meleeInfo[i]))).build());
+                rebuildWidgets();
+            }).bounds(left + 10, top + 40 + i * 24, 135, 20).tooltip(Tooltip.create(Component.literal(meleeInfo[i]))).build());
         }
         for (int i = 0; i < ranged.length; i++) {
             CombatStyle s = ranged[i];
-            addDrawableChild(ButtonWidget.builder(Text.literal((ClientState.style == s ? "> " : "") + "Bow: " + s.displayName()), b -> {
+            addRenderableWidget(Button.builder(Component.literal((ClientState.style == s ? "> " : "") + "Bow: " + s.displayName()), b -> {
                 send(Net.SET_STYLE, s.ordinal());
                 ClientState.style = s;
-                clearAndInit();
-            }).dimensions(left + 155, top + 40 + i * 24, 135, 20).tooltip(Tooltip.of(Text.literal(rangedInfo[i]))).build());
+                rebuildWidgets();
+            }).bounds(left + 155, top + 40 + i * 24, 135, 20).tooltip(Tooltip.create(Component.literal(rangedInfo[i]))).build());
         }
-        addDrawableChild(ButtonWidget.builder(Text.literal("Auto Retaliate: " + (ClientState.autoRetaliate ? "On" : "Off")), b -> {
+        addRenderableWidget(Button.builder(Component.literal("Auto Retaliate: " + (ClientState.autoRetaliate ? "On" : "Off")), b -> {
             ClientPlayNetworking.send(Net.TOGGLE_RETALIATE, PacketByteBufs.create());
             ClientState.autoRetaliate = !ClientState.autoRetaliate;
-            clearAndInit();
-        }).dimensions(left + 155, top + 40 + ranged.length * 24, 135, 20)
-                .tooltip(Tooltip.of(Text.literal("Fight back automatically when attacked."))).build());
+            rebuildWidgets();
+        }).bounds(left + 155, top + 40 + ranged.length * 24, 135, 20)
+                .tooltip(Tooltip.create(Component.literal("Fight back automatically when attacked."))).build());
     }
 
     // ---------------- Prayer ----------------
@@ -200,12 +199,12 @@ public class RuneScapeScreen extends Screen {
             Prayer p = all[i];
             boolean unlocked = ClientState.SKILLS.level(Skill.PRAYER) >= p.level();
             String label = (ClientState.prayerActive(p) ? "*" : "") + shortName(p.displayName());
-            ButtonWidget btn = ButtonWidget.builder(Text.literal(label), b -> send(Net.TOGGLE_PRAYER, p.ordinal()))
-                    .dimensions(left + 5 + (i % cols) * (bw + 3), top + 22 + (i / cols) * 22, bw, 20)
-                    .tooltip(Tooltip.of(Text.literal(p.displayName() + "\nLevel " + p.level() + "\nDrain: " + p.drainEffect())))
+            Button btn = Button.builder(Component.literal(label), b -> send(Net.TOGGLE_PRAYER, p.ordinal()))
+                    .bounds(left + 5 + (i % cols) * (bw + 3), top + 22 + (i / cols) * 22, bw, 20)
+                    .tooltip(Tooltip.create(Component.literal(p.displayName() + "\nLevel " + p.level() + "\nDrain: " + p.drainEffect())))
                     .build();
             btn.active = unlocked;
-            addDrawableChild(btn);
+            addRenderableWidget(btn);
         }
     }
 
@@ -242,18 +241,18 @@ public class RuneScapeScreen extends Screen {
                 case UTILITY -> "Smelts ore in your inventory without a furnace.";
             };
             String label = (ClientState.autocast == s ? "> " : "") + s.displayName().replace("Teleport", "Tele").replace("Lumbridge Home", "Home");
-            ButtonWidget btn = ButtonWidget.builder(Text.literal(label), b -> {
+            Button btn = Button.builder(Component.literal(label), b -> {
                 send(Net.CAST_SPELL, s.ordinal());
                 if (s.kind() != Spell.Kind.COMBAT) {
-                    close();
+                    onClose();
                 } else {
                     ClientState.autocast = s;
-                    clearAndInit();
+                    rebuildWidgets();
                 }
-            }).dimensions(left + 5 + (i % cols) * (bw + 3), top + 6 + (i / cols) * 20, bw, 18)
-                    .tooltip(Tooltip.of(Text.literal(desc))).build();
+            }).bounds(left + 5 + (i % cols) * (bw + 3), top + 6 + (i / cols) * 20, bw, 18)
+                    .tooltip(Tooltip.create(Component.literal(desc))).build();
             btn.active = unlocked || s == Spell.HOME_TELEPORT;
-            addDrawableChild(btn);
+            addRenderableWidget(btn);
         }
     }
 
@@ -270,20 +269,20 @@ public class RuneScapeScreen extends Screen {
             int stage = ClientState.QUEST_STAGES[i];
             String prefix = stage == 0 ? "\u00a7c" : stage >= q.finalStage() ? "\u00a7a" : "\u00a7e";
             String name = q.displayName().length() > 20 ? q.displayName().substring(0, 19) + "." : q.displayName();
-            addDrawableChild(ButtonWidget.builder(Text.literal(prefix + name), b -> {
+            addRenderableWidget(Button.builder(Component.literal(prefix + name), b -> {
                 selectedQuest = q;
                 selectedIndex = index;
-            }).dimensions(left + 5, top + 6 + (i - page * perPage) * 16, 130, 15).build());
+            }).bounds(left + 5, top + 6 + (i - page * perPage) * 16, 130, 15).build());
         }
         if (pages > 1) {
-            addDrawableChild(ButtonWidget.builder(Text.literal("<"), b -> {
+            addRenderableWidget(Button.builder(Component.literal("<"), b -> {
                 page = (page + pages - 1) % pages;
-                clearAndInit();
-            }).dimensions(left + 5, top + PANEL_H - 22, 20, 18).build());
-            addDrawableChild(ButtonWidget.builder(Text.literal(">"), b -> {
+                rebuildWidgets();
+            }).bounds(left + 5, top + PANEL_H - 22, 20, 18).build());
+            addRenderableWidget(Button.builder(Component.literal(">"), b -> {
                 page = (page + 1) % pages;
-                clearAndInit();
-            }).dimensions(left + 115, top + PANEL_H - 22, 20, 18).build());
+                rebuildWidgets();
+            }).bounds(left + 115, top + PANEL_H - 22, 20, 18).build());
         }
     }
 
@@ -291,18 +290,18 @@ public class RuneScapeScreen extends Screen {
 
     private void initCollection() {
         int pages = CollectionLogData.pages().size();
-        addDrawableChild(ButtonWidget.builder(Text.literal("<"), b -> {
+        addRenderableWidget(Button.builder(Component.literal("<"), b -> {
             page = (page + pages - 1) % pages;
-        }).dimensions(left + 5, top + PANEL_H - 24, 20, 18).build());
-        addDrawableChild(ButtonWidget.builder(Text.literal(">"), b -> {
+        }).bounds(left + 5, top + PANEL_H - 24, 20, 18).build());
+        addRenderableWidget(Button.builder(Component.literal(">"), b -> {
             page = (page + 1) % pages;
-        }).dimensions(left + PANEL_W - 25, top + PANEL_H - 24, 20, 18).build());
+        }).bounds(left + PANEL_W - 25, top + PANEL_H - 24, 20, 18).build());
     }
 
     // ---------------- Rendering ----------------
 
     @Override
-    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
         renderBackground(ctx);
         // OSRS stone frame with a row of icon tabs along the top.
         OsrsUi.stonePanel(ctx, left - 4, top - TAB_H - 4, PANEL_W + 8, PANEL_H + TAB_H + 8);
@@ -318,14 +317,14 @@ public class RuneScapeScreen extends Screen {
         List<String> skillTip = null;
         switch (tab) {
             case SKILLS -> {
-                ctx.getMatrices().push();
-                ctx.getMatrices().translate(skillsX(), skillsY(), 0);
-                ctx.getMatrices().scale(SKILLS_SCALE, SKILLS_SCALE, 1);
-                skillTip = skillsTab.render(ctx, textRenderer, skillsLocalX(mouseX), skillsLocalY(mouseY));
-                ctx.getMatrices().pop();
+                ctx.pose().pushPose();
+                ctx.pose().translate(skillsX(), skillsY(), 0);
+                ctx.pose().scale(SKILLS_SCALE, SKILLS_SCALE, 1);
+                skillTip = skillsTab.render(ctx, font, skillsLocalX(mouseX), skillsLocalY(mouseY));
+                ctx.pose().popPose();
             }
             case COMBAT -> renderCombat(ctx);
-            case PRAYER -> ctx.drawTextWithShadow(textRenderer, "Prayer points: " + ClientState.prayerPoints + " / "
+            case PRAYER -> ctx.drawString(font, "Prayer points: " + ClientState.prayerPoints + " / "
                     + ClientState.SKILLS.currentLevel(Skill.PRAYER), left + 6, top + 8, 0xFF40E0FF);
             case MAGIC -> {
             }
@@ -335,56 +334,56 @@ public class RuneScapeScreen extends Screen {
         }
         super.render(ctx, mouseX, mouseY, delta);
         if (skillTip != null) {
-            ctx.getMatrices().push();
-            ctx.getMatrices().translate(skillsX(), skillsY(), 0);
-            ctx.getMatrices().scale(SKILLS_SCALE, SKILLS_SCALE, 1);
-            OsrsUi.tooltip(ctx, textRenderer, skillTip, (int) skillsLocalX(mouseX), (int) skillsLocalY(mouseY),
+            ctx.pose().pushPose();
+            ctx.pose().translate(skillsX(), skillsY(), 0);
+            ctx.pose().scale(SKILLS_SCALE, SKILLS_SCALE, 1);
+            OsrsUi.tooltip(ctx, font, skillTip, (int) skillsLocalX(mouseX), (int) skillsLocalY(mouseY),
                     (int) ((left + PANEL_W - skillsX()) / SKILLS_SCALE), (int) (PANEL_H / SKILLS_SCALE));
-            ctx.getMatrices().pop();
+            ctx.pose().popPose();
         }
         if (hoveredTab != null) {
-            ctx.drawTooltip(textRenderer, Text.literal(hoveredTab.label), mouseX, mouseY);
+            ctx.renderTooltip(font, Component.literal(hoveredTab.label), mouseX, mouseY);
         }
     }
 
-    private void renderCombat(DrawContext ctx) {
-        ItemStack held = client.player.getMainHandStack();
-        String weapon = held.isEmpty() ? "Unarmed" : held.getName().getString();
-        ctx.drawTextWithShadow(textRenderer, weapon + "   Combat level: " + ClientState.SKILLS.combatLevel(), left + 8, top + 10, 0xFFFFD700);
-        ctx.drawTextWithShadow(textRenderer, "Melee styles", left + 10, top + 28, 0xFFE0C080);
-        ctx.drawTextWithShadow(textRenderer, "Ranged styles", left + 155, top + 28, 0xFFE0C080);
-        ctx.drawTextWithShadow(textRenderer, "Autocast: " + (ClientState.autocast == null ? "none" : ClientState.autocast.displayName()),
+    private void renderCombat(GuiGraphics ctx) {
+        ItemStack held = minecraft.player.getMainHandItem();
+        String weapon = held.isEmpty() ? "Unarmed" : held.getHoverName().getString();
+        ctx.drawString(font, weapon + "   Combat level: " + ClientState.SKILLS.combatLevel(), left + 8, top + 10, 0xFFFFD700);
+        ctx.drawString(font, "Melee styles", left + 10, top + 28, 0xFFE0C080);
+        ctx.drawString(font, "Ranged styles", left + 155, top + 28, 0xFFE0C080);
+        ctx.drawString(font, "Autocast: " + (ClientState.autocast == null ? "none" : ClientState.autocast.displayName()),
                 left + 10, top + 150, 0xFF80A0FF);
-        ctx.drawTextWithShadow(textRenderer, "Attack speed: " + Equipment.weaponSpeed(client.player, ClientState.SKILLS) + " ticks",
+        ctx.drawString(font, "Attack speed: " + Equipment.weaponSpeed(minecraft.player, ClientState.SKILLS) + " ticks",
                 left + 10, top + 164, 0xFFC0C0C0);
     }
 
-    private void renderQuests(DrawContext ctx) {
-        ctx.drawTextWithShadow(textRenderer, "Quest points: " + ClientState.questPoints + "/" + Quest.totalQuestPoints(),
+    private void renderQuests(GuiGraphics ctx) {
+        ctx.drawString(font, "Quest points: " + ClientState.questPoints + "/" + Quest.totalQuestPoints(),
                 left + 140, top + 8, 0xFFFFD700);
         if (selectedQuest != null) {
             int stage = ClientState.QUEST_STAGES[selectedIndex];
-            ctx.drawTextWithShadow(textRenderer, selectedQuest.displayName(), left + 140, top + 26, 0xFFFF9800);
-            List<net.minecraft.text.OrderedText> wrapped = textRenderer.wrapLines(Text.literal(selectedQuest.journalFor(stage)), 150);
+            ctx.drawString(font, selectedQuest.displayName(), left + 140, top + 26, 0xFFFF9800);
+            List<net.minecraft.util.FormattedCharSequence> wrapped = font.split(Component.literal(selectedQuest.journalFor(stage)), 150);
             int y = top + 42;
-            for (net.minecraft.text.OrderedText line : wrapped) {
-                ctx.drawTextWithShadow(textRenderer, line, left + 140, y, 0xFFE0E0E0);
+            for (net.minecraft.util.FormattedCharSequence line : wrapped) {
+                ctx.drawString(font, line, left + 140, y, 0xFFE0E0E0);
                 y += 10;
             }
             y += 6;
-            ctx.drawTextWithShadow(textRenderer, "Rewards: " + selectedQuest.questPoints() + " QP", left + 140, y, 0xFFA0FFA0);
+            ctx.drawString(font, "Rewards: " + selectedQuest.questPoints() + " QP", left + 140, y, 0xFFA0FFA0);
             for (var e : selectedQuest.xpRewards().entrySet()) {
                 y += 10;
-                ctx.drawTextWithShadow(textRenderer, String.format(Locale.ROOT, "%,.0f %s XP", e.getValue(), e.getKey().displayName()),
+                ctx.drawString(font, String.format(Locale.ROOT, "%,.0f %s XP", e.getValue(), e.getKey().displayName()),
                         left + 140, y, 0xFFA0FFA0);
             }
         } else {
-            ctx.drawTextWithShadow(textRenderer, "Select a quest.", left + 140, top + 26, 0xFFC0C0C0);
+            ctx.drawString(font, "Select a quest.", left + 140, top + 26, 0xFFC0C0C0);
         }
     }
 
-    private void renderEquipment(DrawContext ctx) {
-        EquipmentStats s = Equipment.total(client.player, ClientState.SKILLS);
+    private void renderEquipment(GuiGraphics ctx) {
+        EquipmentStats s = Equipment.total(minecraft.player, ClientState.SKILLS);
         String[] lines = {
                 "Attack bonus", "Stab: " + s.stabAttack(), "Slash: " + s.slashAttack(), "Crush: " + s.crushAttack(),
                 "Magic: " + s.magicAttack(), "Range: " + s.rangedAttack(), "",
@@ -393,24 +392,24 @@ public class RuneScapeScreen extends Screen {
         String[] def = {"Defence bonus", "Stab: " + s.stabDefence(), "Slash: " + s.slashDefence(), "Crush: " + s.crushDefence(),
                 "Magic: " + s.magicDefence(), "Range: " + s.rangedDefence()};
         for (int i = 0; i < lines.length; i++) {
-            ctx.drawTextWithShadow(textRenderer, lines[i], left + 10, top + 10 + i * 12, i == 0 || i == 7 ? 0xFFFF9800 : 0xFFE0E0E0);
+            ctx.drawString(font, lines[i], left + 10, top + 10 + i * 12, i == 0 || i == 7 ? 0xFFFF9800 : 0xFFE0E0E0);
         }
         for (int i = 0; i < def.length; i++) {
-            ctx.drawTextWithShadow(textRenderer, def[i], left + 160, top + 10 + i * 12, i == 0 ? 0xFFFF9800 : 0xFFE0E0E0);
+            ctx.drawString(font, def[i], left + 160, top + 10 + i * 12, i == 0 ? 0xFFFF9800 : 0xFFE0E0E0);
         }
     }
 
-    private void renderCollection(DrawContext ctx, int mouseX, int mouseY) {
+    private void renderCollection(GuiGraphics ctx, int mouseX, int mouseY) {
         List<CollectionLogData.Page> pages = CollectionLogData.pages();
         CollectionLogData.Page p = pages.get(Math.max(0, Math.min(page, pages.size() - 1)));
         long obtained = p.items().stream().filter(ClientState.COLLECTION_LOG::contains).count();
-        ctx.drawTextWithShadow(textRenderer, p.category() + " - " + p.name(), left + 8, top + 8, 0xFFFF9800);
+        ctx.drawString(font, p.category() + " - " + p.name(), left + 8, top + 8, 0xFFFF9800);
         if (!CollectionLogData.kcKeys(p).isEmpty()) {
             String kc = (p.category().equals("Clues") || p.category().equals("Raids") ? "Completions: " : "Kills: ")
                     + CollectionLogData.killCount(p, ClientState.KILL_COUNTS);
-            ctx.drawTextWithShadow(textRenderer, kc, left + PANEL_W - 10 - textRenderer.getWidth(kc), top + 8, 0xFFE0E0E0);
+            ctx.drawString(font, kc, left + PANEL_W - 10 - font.width(kc), top + 8, 0xFFE0E0E0);
         }
-        ctx.drawTextWithShadow(textRenderer, "Obtained: " + obtained + "/" + p.items().size() + "   Total: "
+        ctx.drawString(font, "Obtained: " + obtained + "/" + p.items().size() + "   Total: "
                 + ClientState.COLLECTION_LOG.size() + "/" + CollectionLogData.totalSlots(), left + 8, top + 20, 0xFFE0E0E0);
         int cols = 8;
         String hovered = null;
@@ -421,7 +420,7 @@ public class RuneScapeScreen extends Screen {
             boolean has = ClientState.COLLECTION_LOG.contains(item);
             ctx.fill(x, y, x + 30, y + 30, has ? 0xFF2E4A1E : 0xFF2A231A);
             ItemStack stack = Inv.stack(item, 1);
-            ctx.drawItem(stack, x + 7, y + 7);
+            ctx.renderItem(stack, x + 7, y + 7);
             if (!has) {
                 ctx.fill(x, y, x + 30, y + 30, 0x90000000);
             }
@@ -429,10 +428,10 @@ public class RuneScapeScreen extends Screen {
                 hovered = item;
             }
         }
-        ctx.drawCenteredTextWithShadow(textRenderer, (page + 1) + " / " + pages.size(), left + PANEL_W / 2, top + PANEL_H - 19, 0xFFC0C0C0);
+        ctx.drawCenteredString(font, (page + 1) + " / " + pages.size(), left + PANEL_W / 2, top + PANEL_H - 19, 0xFFC0C0C0);
         if (hovered != null) {
             ItemDef def = ItemCatalog.get(hovered);
-            ctx.drawTooltip(textRenderer, Text.literal(def == null ? hovered : def.name()), mouseX, mouseY);
+            ctx.renderTooltip(font, Component.literal(def == null ? hovered : def.name()), mouseX, mouseY);
         }
     }
 }

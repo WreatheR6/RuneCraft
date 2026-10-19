@@ -19,16 +19,15 @@ import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
 import com.runecraft.world.LandmarkBuilder;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.Heightmap;
-
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -68,22 +67,22 @@ final class DiaryObjectsService {
         });
         GameEvents.onKill((p, entity, stats) -> {
             if (stats != null && stats.profile() != null && "ent".equals(stats.profile().id)) {
-                fallTrunk(p, (ServerWorld) entity.getWorld(), entity.getBlockPos());
+                fallTrunk(p, (ServerLevel) entity.level(), entity.blockPosition());
             }
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            if (server.getTicks() % 20 != 0 || TRUNKS.isEmpty()) {
+            if (server.getTickCount() % 20 != 0 || TRUNKS.isEmpty()) {
                 return;
             }
             long now = ActionManager.gameTick();
-            ServerWorld world = Gielinor.world(server);
+            ServerLevel world = Gielinor.world(server);
             Iterator<Map.Entry<BlockPos, Trunk>> it = TRUNKS.entrySet().iterator();
             while (it.hasNext()) {
                 Map.Entry<BlockPos, Trunk> e = it.next();
                 if (e.getValue().expires() <= now) {
                     it.remove();
                     if (world != null && isBlock(world.getBlockState(e.getKey()), DiaryExtras.ENT_TRUNK)) {
-                        world.setBlockState(e.getKey(), Blocks.AIR.getDefaultState());
+                        world.setBlockAndUpdate(e.getKey(), Blocks.AIR.defaultBlockState());
                     }
                 }
             }
@@ -91,16 +90,16 @@ final class DiaryObjectsService {
     }
 
     private static Block block(String id) {
-        return Registries.BLOCK.get(RuneCraft.id(id));
+        return BuiltInRegistries.BLOCK.get(RuneCraft.id(id));
     }
 
     static boolean isBlock(BlockState state, String id) {
         Block b = block(id);
-        return b != Blocks.AIR && state.isOf(b);
+        return b != Blocks.AIR && state.is(b);
     }
 
     /** Puts a block on the ground at a place; {@code indoors} uses the first floor above sea level (a hall, not the roof). */
-    static void place(ServerWorld world, BlockPos centre, String id, boolean indoors) {
+    static void place(ServerLevel world, BlockPos centre, String id, boolean indoors) {
         Block b = block(id);
         if (b == Blocks.AIR) {
             return;
@@ -108,33 +107,33 @@ final class DiaryObjectsService {
         int x = centre.getX();
         int z = centre.getZ();
         com.runecraft.world.StructurePlacer.applyIfLoaded(world, x >> 4, z >> 4);
-        int top = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
+        int top = world.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
         int y = top;
         if (indoors) {
             for (int yy = world.getSeaLevel(); yy < top; yy++) {
                 BlockPos at = new BlockPos(x, yy, z);
-                if (world.getBlockState(at).isAir() && world.getBlockState(at.down()).isSolidBlock(world, at.down())) {
+                if (world.getBlockState(at).isAir() && world.getBlockState(at.below()).isRedstoneConductor(world, at.below())) {
                     y = yy;
                     break;
                 }
             }
         }
         BlockPos at = new BlockPos(x, y, z);
-        if (!world.getBlockState(at).isAir() || !world.getBlockState(at.down()).isSolidBlock(world, at.down())) {
+        if (!world.getBlockState(at).isAir() || !world.getBlockState(at.below()).isRedstoneConductor(world, at.below())) {
             RuneCraft.LOGGER.info("No room for {} at {}", id, at);
             return;
         }
-        world.setBlockState(at, b.getDefaultState(), Block.NOTIFY_LISTENERS);
+        world.setBlock(at, b.defaultBlockState(), Block.UPDATE_CLIENTS);
     }
 
-    private static boolean questDone(ServerPlayerEntity p, String questId) {
+    private static boolean questDone(ServerPlayer p, String questId) {
         QuestInfo q = ContentRegistry.quest(questId);
         return q == null || Players.data(p).questComplete(q);
     }
 
     // ---------------- Saltpetre ----------------
 
-    private static void dig(ServerPlayerEntity p, BlockPos pos) {
+    private static void dig(ServerPlayer p, BlockPos pos) {
         if (!Inv.has(p, "spade", 1)) {
             Msg.game(p, "You need a spade to dig up the saltpetre.");
             return;
@@ -144,8 +143,8 @@ final class DiaryObjectsService {
             int counter;
 
             @Override
-            public boolean tick(ServerPlayerEntity player, long gameTick) {
-                if (!isBlock(player.getWorld().getBlockState(pos), DiaryExtras.SALTPETRE_DEPOSIT) || !Inv.has(player, "spade", 1)) {
+            public boolean tick(ServerPlayer player, long gameTick) {
+                if (!isBlock(player.level().getBlockState(pos), DiaryExtras.SALTPETRE_DEPOSIT) || !Inv.has(player, "spade", 1)) {
                     return false;
                 }
                 if (++counter < 3) { // approx: a dig every 3 ticks
@@ -168,14 +167,14 @@ final class DiaryObjectsService {
 
     // ---------------- Totem pole ----------------
 
-    private static void totem(ServerPlayerEntity p) {
+    private static void totem(ServerPlayer p) {
         if (!questDone(p, "legends_quest")) {
             Msg.game(p, "A sculpted trunk of wood. Nothing happens.");
             return;
         }
         int charged = 0;
-        for (int i = 0; i < p.getInventory().size(); i++) {
-            ItemStack s = p.getInventory().getStack(i);
+        for (int i = 0; i < p.getInventory().getContainerSize(); i++) {
+            ItemStack s = p.getInventory().getItem(i);
             Jewellery.Worn w = s.isEmpty() ? null : Jewellery.worn(Inv.idOf(s));
             if (w == null || w.chargeBase() == null || !DiaryExtras.TOTEM_RECHARGES.contains(w.chargeBase())) {
                 continue;
@@ -185,7 +184,7 @@ final class DiaryObjectsService {
             if (target == null || w.charges() >= target.charges()) {
                 continue;
             }
-            p.getInventory().setStack(i, Inv.stack(to, s.getCount()));
+            p.getInventory().setItem(i, Inv.stack(to, s.getCount()));
             charged += s.getCount();
         }
         if (charged == 0) {
@@ -198,7 +197,7 @@ final class DiaryObjectsService {
 
     // ---------------- Sawmill operator ----------------
 
-    private static void sawmill(ServerPlayerEntity p) {
+    private static void sawmill(ServerPlayer p) {
         for (DiaryExtras.Sawmill s : DiaryExtras.SAWMILL) {
             int logs = Inv.count(p, s.logs());
             if (logs <= 0) {
@@ -222,20 +221,20 @@ final class DiaryObjectsService {
 
     // ---------------- Ent trunks ----------------
 
-    private static void fallTrunk(ServerPlayerEntity p, ServerWorld world, BlockPos pos) {
+    private static void fallTrunk(ServerPlayer p, ServerLevel world, BlockPos pos) {
         Block b = block(DiaryExtras.ENT_TRUNK);
-        if (b == Blocks.AIR || !world.getBlockState(pos).isAir() || !world.getBlockState(pos.down()).isSolidBlock(world, pos.down())) {
+        if (b == Blocks.AIR || !world.getBlockState(pos).isAir() || !world.getBlockState(pos.below()).isRedstoneConductor(world, pos.below())) {
             return;
         }
-        world.setBlockState(pos, b.getDefaultState(), Block.NOTIFY_LISTENERS);
-        TRUNKS.put(pos.toImmutable(), new Trunk(p.getUuid(), ActionManager.gameTick() + DiaryExtras.ENT_TRUNK_TICKS,
+        world.setBlock(pos, b.defaultBlockState(), Block.UPDATE_CLIENTS);
+        TRUNKS.put(pos.immutable(), new Trunk(p.getUUID(), ActionManager.gameTick() + DiaryExtras.ENT_TRUNK_TICKS,
                 Gielinor.wildernessLevel(p) > 0));
         Msg.game(p, "The Ent's trunk falls to the ground.");
     }
 
-    private static void chop(ServerPlayerEntity p, BlockPos pos) {
+    private static void chop(ServerPlayer p, BlockPos pos) {
         Trunk trunk = TRUNKS.get(pos);
-        if (trunk == null || !trunk.owner().equals(p.getUuid())) {
+        if (trunk == null || !trunk.owner().equals(p.getUUID())) {
             Msg.game(p, "This is not your Ent to chop.");
             return;
         }
@@ -248,9 +247,9 @@ final class DiaryObjectsService {
             int counter;
 
             @Override
-            public boolean tick(ServerPlayerEntity player, long gameTick) {
-                if (!TRUNKS.containsKey(pos) || !isBlock(player.getWorld().getBlockState(pos), DiaryExtras.ENT_TRUNK)
-                        || player.getBlockPos().getSquaredDistance(pos) > 16) {
+            public boolean tick(ServerPlayer player, long gameTick) {
+                if (!TRUNKS.containsKey(pos) || !isBlock(player.level().getBlockState(pos), DiaryExtras.ENT_TRUNK)
+                        || player.blockPosition().distSqr(pos) > 16) {
                     return false;
                 }
                 if (++counter < DiaryExtras.ENT_CHOP_TICKS) {

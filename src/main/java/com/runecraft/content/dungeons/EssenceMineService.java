@@ -15,22 +15,21 @@ import com.runecraft.world.Gielinor;
 import com.runecraft.world.StructurePlacer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.Commands;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.Text;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.PersistentState;
-
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.level.saveddata.SavedData;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -53,24 +52,24 @@ public final class EssenceMineService {
     static void register() {
         BlockHooks.register(DungeonBlocks.ESSENCE_PORTAL, (player, pos, state) -> leave(player));
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
-            if (hand != Hand.MAIN_HAND || world.isClient() || player.isSneaking() || !(entity instanceof QuestNpcEntity npc)
-                    || !(player instanceof ServerPlayerEntity sp) || !EssenceMine.TELEPORTERS.containsKey(npc.npcId())) {
-                return ActionResult.PASS;
+            if (hand != InteractionHand.MAIN_HAND || world.isClientSide() || player.isShiftKeyDown() || !(entity instanceof QuestNpcEntity npc)
+                    || !(player instanceof ServerPlayer sp) || !EssenceMine.TELEPORTERS.containsKey(npc.npcId())) {
+                return InteractionResult.PASS;
             }
             if (questDone(sp)) {
                 String command = "/essencemine " + npc.npcId();
-                sp.sendMessage(Text.literal("[Teleport to the Rune essence mine]").styled(s -> s.withColor(Formatting.GOLD)
+                sp.displayClientMessage(Component.literal("[Teleport to the Rune essence mine]").withStyle(s -> s.withColor(ChatFormatting.GOLD)
                         .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
-                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("Teleport")))), false);
+                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Teleport")))), false);
             }
             // The NPC's own dialogue (quests, shop greeting) still runs.
-            return ActionResult.PASS;
+            return InteractionResult.PASS;
         });
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(
-                CommandManager.literal("essencemine")
-                        .then(CommandManager.argument("npc", StringArgumentType.word())
+                Commands.literal("essencemine")
+                        .then(Commands.argument("npc", StringArgumentType.word())
                                 .executes(ctx -> {
-                                    ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                    ServerPlayer p = ctx.getSource().getPlayer();
                                     String npcId = StringArgumentType.getString(ctx, "npc");
                                     if (p != null && nextTo(p, npcId)) {
                                         teleport(p, npcId);
@@ -79,15 +78,15 @@ public final class EssenceMineService {
                                 }))));
     }
 
-    private static boolean questDone(ServerPlayerEntity player) {
+    private static boolean questDone(ServerPlayer player) {
         return ContentRegistry.quest(EssenceMine.QUEST) == null || QuestApi.isComplete(player, EssenceMine.QUEST);
     }
 
-    private static boolean nextTo(ServerPlayerEntity player, String npcId) {
+    private static boolean nextTo(ServerPlayer player, String npcId) {
         if (!EssenceMine.TELEPORTERS.containsKey(npcId)) {
             return false;
         }
-        boolean near = !player.getWorld().getEntitiesByClass(QuestNpcEntity.class, player.getBoundingBox().expand(REACH),
+        boolean near = !player.level().getEntitiesOfClass(QuestNpcEntity.class, player.getBoundingBox().inflate(REACH),
                 e -> npcId.equals(e.npcId())).isEmpty();
         if (!near) {
             Msg.game(player, "You need to be next to " + EssenceMine.TELEPORTERS.get(npcId) + " to be teleported.");
@@ -99,7 +98,7 @@ public final class EssenceMineService {
      * Teleports the player to the mine as if {@code npcId} cast the spell (no distance check). Returns false (and tells the
      * player) if Rune Mysteries isn't complete or the NPC isn't a teleporter.
      */
-    public static boolean teleport(ServerPlayerEntity player, String npcId) {
+    public static boolean teleport(ServerPlayer player, String npcId) {
         String name = EssenceMine.TELEPORTERS.get(npcId);
         if (name == null) {
             return false;
@@ -108,32 +107,32 @@ public final class EssenceMineService {
             Msg.game(player, name + " has no reason to trust you with the incantation. (Complete Rune Mysteries.)");
             return false;
         }
-        ServerWorld world = Gielinor.world(player.getServer());
+        ServerLevel world = Gielinor.world(player.getServer());
         if (world == null) {
             return false;
         }
         if (!EssenceMine.contains(GielinorMap.toOsrsX(player.getBlockX()), GielinorMap.toOsrsY(player.getBlockZ()), player.getBlockY())
                 && Gielinor.is(player)) {
-            state(player.getServer()).put(player.getUuid(), npcId, player.getBlockPos());
+            state(player.getServer()).put(player.getUUID(), npcId, player.blockPosition());
         }
         QuestApi.say(player, name, EssenceMine.INCANTATION);
         int x = GielinorMap.toBlockX(EssenceMine.ARRIVE_X);
         int z = GielinorMap.toBlockZ(EssenceMine.ARRIVE_Y);
         StructurePlacer.applyAround(world, x, z, 48);
         player.stopRiding();
-        player.teleport(world, x + 0.5, EssenceMine.FLOOR + 1, z + 0.5, player.getYaw(), player.getPitch());
-        world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 0.6f, 1.2f);
+        player.teleportTo(world, x + 0.5, EssenceMine.FLOOR + 1, z + 0.5, player.getYRot(), player.getXRot());
+        world.playSound(null, player.blockPosition(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 0.6f, 1.2f);
         GameEvents.fireActivity(player, "essence_mine:" + npcId.toLowerCase(Locale.ROOT));
         return true;
     }
 
     /** Leaves through a portal: back to where the player was teleported from (Varrock if unknown). */
-    public static void leave(ServerPlayerEntity player) {
-        ServerWorld world = Gielinor.world(player.getServer());
+    public static void leave(ServerPlayer player) {
+        ServerLevel world = Gielinor.world(player.getServer());
         if (world == null) {
             return;
         }
-        Return r = state(player.getServer()).get(player.getUuid());
+        Return r = state(player.getServer()).get(player.getUUID());
         Msg.game(player, "You step through the portal.");
         if (r == null) {
             Gielinor.teleport(player, Landmark.VARROCK);
@@ -141,24 +140,24 @@ public final class EssenceMineService {
         }
         StructurePlacer.applyAround(world, r.pos().getX(), r.pos().getZ(), 16);
         player.stopRiding();
-        player.teleport(world, r.pos().getX() + 0.5, r.pos().getY(), r.pos().getZ() + 0.5, player.getYaw(), player.getPitch());
+        player.teleportTo(world, r.pos().getX() + 0.5, r.pos().getY(), r.pos().getZ() + 0.5, player.getYRot(), player.getXRot());
     }
 
     /** The NPC (id) who last sent the player to the mine, or null. */
-    public static String lastTeleporter(ServerPlayerEntity player) {
-        Return r = state(player.getServer()).get(player.getUuid());
+    public static String lastTeleporter(ServerPlayer player) {
+        Return r = state(player.getServer()).get(player.getUUID());
         return r == null ? null : r.npcId();
     }
 
     private static State state(MinecraftServer server) {
-        return server.getOverworld().getPersistentStateManager().getOrCreate(State::fromNbt, State::new, State.KEY);
+        return server.overworld().getDataStorage().computeIfAbsent(State::fromNbt, State::new, State.KEY);
     }
 
     record Return(String npcId, BlockPos pos) {
     }
 
     /** Where each player entered the mine from. */
-    static final class State extends PersistentState {
+    static final class State extends SavedData {
         static final String KEY = "runecraft_dungeons_essence";
         private final Map<UUID, Return> returns = new HashMap<>();
 
@@ -167,14 +166,14 @@ public final class EssenceMineService {
         }
 
         void put(UUID uuid, String npcId, BlockPos pos) {
-            returns.put(uuid, new Return(npcId, pos.toImmutable()));
-            markDirty();
+            returns.put(uuid, new Return(npcId, pos.immutable()));
+            setDirty();
         }
 
         @Override
-        public NbtCompound writeNbt(NbtCompound nbt) {
+        public CompoundTag save(CompoundTag nbt) {
             returns.forEach((uuid, r) -> {
-                NbtCompound e = new NbtCompound();
+                CompoundTag e = new CompoundTag();
                 e.putString("npc", r.npcId());
                 e.putLong("pos", r.pos().asLong());
                 nbt.put(uuid.toString(), e);
@@ -182,12 +181,12 @@ public final class EssenceMineService {
             return nbt;
         }
 
-        static State fromNbt(NbtCompound nbt) {
+        static State fromNbt(CompoundTag nbt) {
             State state = new State();
-            for (String key : nbt.getKeys()) {
+            for (String key : nbt.getAllKeys()) {
                 try {
-                    NbtCompound e = nbt.getCompound(key);
-                    state.returns.put(UUID.fromString(key), new Return(e.getString("npc"), BlockPos.fromLong(e.getLong("pos"))));
+                    CompoundTag e = nbt.getCompound(key);
+                    state.returns.put(UUID.fromString(key), new Return(e.getString("npc"), BlockPos.of(e.getLong("pos"))));
                 } catch (IllegalArgumentException ignored) {
                     // Not a player entry.
                 }

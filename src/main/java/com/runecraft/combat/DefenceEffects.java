@@ -4,9 +4,9 @@ import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.NpcHitCalc;
 import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
 
 /**
  * Damage reduction on hits a player takes (round 17), applied by {@link CombatHandler#applyDamage} to every hit from a
@@ -20,15 +20,15 @@ public final class DefenceEffects {
     }
 
     /** The hit after the defender's damage-reducing gear; {@code style} is the attack's style when known. */
-    public static int reduce(ServerPlayerEntity p, LivingEntity attacker, AttackType style, boolean typeless, int damage) {
-        String shield = Inv.idOf(p.getOffHandStack());
-        String weapon = Inv.idOf(p.getMainHandStack());
+    public static int reduce(ServerPlayer p, LivingEntity attacker, AttackType style, boolean typeless, int damage) {
+        String shield = Inv.idOf(p.getOffhandItem());
+        String weapon = Inv.idOf(p.getMainHandItem());
         boolean elysian = "elysian_spirit_shield".equals(shield);
         boolean dinhs = NpcHitCalc.dinhsBlocking(weapon, Players.data(p).style());
         // OSRS Wiki: the Justiciar set effect works outside PvP only and never on typeless damage.
-        boolean justiciar = !typeless && !(attacker instanceof ServerPlayerEntity)
-                && NpcHitCalc.justiciarSet(Inv.idOf(p.getEquippedStack(EquipmentSlot.HEAD)),
-                Inv.idOf(p.getEquippedStack(EquipmentSlot.CHEST)), Inv.idOf(p.getEquippedStack(EquipmentSlot.LEGS)));
+        boolean justiciar = !typeless && !(attacker instanceof ServerPlayer)
+                && NpcHitCalc.justiciarSet(Inv.idOf(p.getItemBySlot(EquipmentSlot.HEAD)),
+                Inv.idOf(p.getItemBySlot(EquipmentSlot.CHEST)), Inv.idOf(p.getItemBySlot(EquipmentSlot.LEGS)));
         if (!elysian && !dinhs && !justiciar) {
             return damage;
         }
@@ -48,7 +48,7 @@ public final class DefenceEffects {
     /** Registers Dinh's bulwark's rule: no attacking in the Block stance. */
     static void register() {
         CombatHooks.addAttackGate((player, type) -> type.isMelee()
-                && NpcHitCalc.dinhsBlocking(Inv.idOf(player.getMainHandStack()), Players.data(player).style())
+                && NpcHitCalc.dinhsBlocking(Inv.idOf(player.getMainHandItem()), Players.data(player).style())
                 ? "Your bulwark gets in the way." : null);
     }
 }

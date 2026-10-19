@@ -7,6 +7,8 @@ import java.util.List;
 
 import static com.runecraft.osrs.content.bestiary.BestiaryHumKit.*;
 
+import com.runecraft.osrs.content.bestiary.BestiaryHumKit.Fig;
+
 /**
  * The six Barrows brothers, each in his exact OSRS set: grey, withered undead with burning eyes, in tarnished,
  * rust-stained armour and their signature weapons.

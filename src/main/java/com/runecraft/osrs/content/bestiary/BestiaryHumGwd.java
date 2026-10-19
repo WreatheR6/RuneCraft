@@ -11,6 +11,8 @@ import static com.runecraft.osrs.content.bestiary.BestiaryHumKit.*;
 import static com.runecraft.osrs.content.bestiary.Kit.part;
 import static com.runecraft.osrs.content.bestiary.Kit.sym;
 
+import com.runecraft.osrs.content.bestiary.BestiaryHumKit.Fig;
+
 /** God Wars Dungeon: the four generals, their bodyguards and Nex. */
 final class BestiaryHumGwd {
     private BestiaryHumGwd() {

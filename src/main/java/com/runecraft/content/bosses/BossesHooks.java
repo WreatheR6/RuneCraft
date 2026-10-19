@@ -10,12 +10,11 @@ import com.runecraft.osrs.content.bosses.Dt2Bosses;
 import com.runecraft.osrs.content.bosses.SlayerBosses.HydraPhase;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.Map;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 
 /** Minecraft-side behaviour for the bosses content module: boss scripts and the Font of Consumption. */
 public final class BossesHooks implements ModuleHooks {
@@ -105,12 +104,12 @@ public final class BossesHooks implements ModuleHooks {
         BlockHooks.register(BossPlaces.ANCIENT_VAULT_CHEST, BossesHooks::openVaultChest);
         // Yama's dossiers open into a contract or chasm teleport scrolls (OSRS Wiki "Dossier").
         net.fabricmc.fabric.api.event.player.UseItemCallback.EVENT.register((player, world, hand) -> {
-            net.minecraft.item.ItemStack stack = player.getStackInHand(hand);
-            if (world.isClient() || stack.isEmpty() || !(player instanceof ServerPlayerEntity p) || !"dossier".equals(Inv.idOf(stack))) {
-                return net.minecraft.util.TypedActionResult.pass(stack);
+            net.minecraft.world.item.ItemStack stack = player.getItemInHand(hand);
+            if (world.isClientSide() || stack.isEmpty() || !(player instanceof ServerPlayer p) || !"dossier".equals(Inv.idOf(stack))) {
+                return net.minecraft.world.InteractionResultHolder.pass(stack);
             }
             openDossier(p);
-            return net.minecraft.util.TypedActionResult.success(stack, false);
+            return net.minecraft.world.InteractionResultHolder.sidedSuccess(stack, false);
         });
     }
 
@@ -118,11 +117,11 @@ public final class BossesHooks implements ModuleHooks {
      * The Ancient Vault's chest: a quartz (the one in hand, else the first carried) is consumed for one of its five
      * rewards (Dt2Bosses.VAULT_CHEST); noted rewards come as bank notes.
      */
-    private static void openVaultChest(ServerPlayerEntity player, BlockPos pos, net.minecraft.block.BlockState state) {
+    private static void openVaultChest(ServerPlayer player, BlockPos pos, net.minecraft.world.level.block.state.BlockState state) {
         if (!questDone(player, "desert_treasure_ii", "The chest is sealed by Zarosian magic. (Complete Desert Treasure II.)")) {
             return;
         }
-        int q = Dt2Bosses.QUARTZES.indexOf(com.runecraft.util.Inv.idOf(player.getMainHandStack()));
+        int q = Dt2Bosses.QUARTZES.indexOf(com.runecraft.util.Inv.idOf(player.getMainHandItem()));
         for (int i = 0; q < 0 && i < Dt2Bosses.QUARTZES.size(); i++) {
             if (Inv.has(player, Dt2Bosses.QUARTZES.get(i), 1)) {
                 q = i;
@@ -137,14 +136,14 @@ public final class BossesHooks implements ModuleHooks {
         Object[] r = table.get(player.getRandom().nextInt(table.size()));
         String item = (String) r[0];
         int n = (Integer) r[1];
-        net.minecraft.item.ItemStack note = (Integer) r[2] == 1 && com.runecraft.osrs.bank.BankNotes.canNote(item)
-                ? com.runecraft.bank.Notes.note(item, "", 1) : net.minecraft.item.ItemStack.EMPTY;
+        net.minecraft.world.item.ItemStack note = (Integer) r[2] == 1 && com.runecraft.osrs.bank.BankNotes.canNote(item)
+                ? com.runecraft.bank.Notes.note(item, "", 1) : net.minecraft.world.item.ItemStack.EMPTY;
         if (note.isEmpty()) {
             Inv.give(player, item, n);
         } else {
             int in = com.runecraft.bank.Notes.insert(player, note, n);
             if (in < n) {
-                player.dropItem(note.copyWithCount(n - in), false);
+                player.drop(note.copyWithCount(n - in), false);
             }
         }
         com.runecraft.osrs.ItemDef def = com.runecraft.osrs.ItemCatalog.get(item);
@@ -152,7 +151,7 @@ public final class BossesHooks implements ModuleHooks {
     }
 
     /** Opens one dossier: a roll on its 1,740-weight table. Public for the self-test. */
-    public static String openDossier(ServerPlayerEntity player) {
+    public static String openDossier(ServerPlayer player) {
         if (!Inv.has(player, "dossier", 1)) {
             return null;
         }
@@ -169,7 +168,7 @@ public final class BossesHooks implements ModuleHooks {
         return item;
     }
 
-    private static boolean questDone(ServerPlayerEntity player, String questId, String message) {
+    private static boolean questDone(ServerPlayer player, String questId, String message) {
         var quest = com.runecraft.osrs.content.ContentRegistry.quest(questId);
         if (quest != null && com.runecraft.player.Players.data(player).questComplete(quest)) {
             return true;
@@ -179,7 +178,7 @@ public final class BossesHooks implements ModuleHooks {
     }
 
     /** The growth in the Scar gives abyssal potatoes once Desert Treasure II is complete. */
-    private static void pluckGrowth(ServerPlayerEntity player, BlockPos pos, net.minecraft.block.BlockState state) {
+    private static void pluckGrowth(ServerPlayer player, BlockPos pos, net.minecraft.world.level.block.state.BlockState state) {
         if (!questDone(player, "desert_treasure_ii", "The growth recoils from your touch. (Complete Desert Treasure II.)")) {
             return;
         }
@@ -188,7 +187,7 @@ public final class BossesHooks implements ModuleHooks {
     }
 
     /** Offering an unsired to the Font of Consumption rolls the Abyssal Sire's unique table. */
-    private static void offerUnsired(ServerPlayerEntity player, BlockPos pos, net.minecraft.block.BlockState state) {
+    private static void offerUnsired(ServerPlayer player, BlockPos pos, net.minecraft.world.level.block.state.BlockState state) {
         if (!Inv.has(player, "unsired", 1)) {
             Msg.game(player, "The Font of Consumption hungers for an unsired.");
             return;
@@ -209,7 +208,7 @@ public final class BossesHooks implements ModuleHooks {
         }
         Inv.give(player, reward, 1);
         CollectionLog.obtain(player, reward);
-        ((ServerWorld) player.getWorld()).spawnParticles(ParticleTypes.SQUID_INK, pos.getX() + 0.5, pos.getY() + 1.2, pos.getZ() + 0.5,
+        ((ServerLevel) player.level()).sendParticles(ParticleTypes.SQUID_INK, pos.getX() + 0.5, pos.getY() + 1.2, pos.getZ() + 0.5,
                 30, 0.4, 0.4, 0.4, 0.05);
         Msg.game(player, "The Font consumes the unsired and returns you " + Msg.article(reward.replace('_', ' ')) + ".");
     }

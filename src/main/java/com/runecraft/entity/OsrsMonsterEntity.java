@@ -5,28 +5,28 @@ import com.runecraft.combat.MonsterStats;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.player.Players;
 import com.runecraft.registry.ModEntities;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.ai.goal.ActiveTargetGoal;
-import net.minecraft.entity.ai.goal.LookAroundGoal;
-import net.minecraft.entity.ai.goal.LookAtEntityGoal;
-import net.minecraft.entity.ai.goal.RevengeGoal;
-import net.minecraft.entity.ai.goal.SwimGoal;
-import net.minecraft.entity.ai.goal.WanderAroundFarGoal;
-import net.minecraft.entity.mob.HostileEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.world.World;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.ai.goal.FloatGoal;
+import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
+import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
+import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
+import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
+import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 
 /**
  * A Gielinor creature with OSRS combat stats. Attacks are performed by {@link OsrsAttackGoal}
  * at the monster's real attack speed; damage is rolled with OSRS formulas.
  */
-public class OsrsMonsterEntity extends HostileEntity {
+public class OsrsMonsterEntity extends Monster {
     private MonsterStats cachedStats;
 
-    public OsrsMonsterEntity(EntityType<? extends HostileEntity> type, World world) {
+    public OsrsMonsterEntity(EntityType<? extends Monster> type, Level world) {
         super(type, world);
-        this.experiencePoints = 0;
+        this.xpReward = 0;
     }
 
     /**
@@ -55,23 +55,23 @@ public class OsrsMonsterEntity extends HostileEntity {
     }
 
     @Override
-    protected void initGoals() {
-        this.goalSelector.add(0, new SwimGoal(this));
-        this.goalSelector.add(2, new OsrsAttackGoal(this));
-        this.goalSelector.add(6, new WanderAroundFarGoal(this, 0.8));
-        this.goalSelector.add(7, new LookAtEntityGoal(this, PlayerEntity.class, 8.0f));
-        this.goalSelector.add(8, new LookAroundGoal(this));
-        this.targetSelector.add(1, new RevengeGoal(this));
-        this.targetSelector.add(2, new ActiveTargetGoal<>(this, PlayerEntity.class, 10, true, false, this::shouldAggro));
+    protected void registerGoals() {
+        this.goalSelector.addGoal(0, new FloatGoal(this));
+        this.goalSelector.addGoal(2, new OsrsAttackGoal(this));
+        this.goalSelector.addGoal(6, new WaterAvoidingRandomStrollGoal(this, 0.8));
+        this.goalSelector.addGoal(7, new LookAtPlayerGoal(this, Player.class, 8.0f));
+        this.goalSelector.addGoal(8, new RandomLookAroundGoal(this));
+        this.targetSelector.addGoal(1, new HurtByTargetGoal(this));
+        this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, 10, true, false, this::shouldAggro));
     }
 
     /**
      * OSRS aggression: only attacks players whose combat level is at most double its own (any level in the
      * Wilderness), and stops once the player has been in the area for 10 minutes (tolerance).
      */
-    protected boolean shouldAggro(net.minecraft.entity.LivingEntity entity) {
+    protected boolean shouldAggro(net.minecraft.world.entity.LivingEntity entity) {
         MonsterStats s = stats();
-        if (s == null || (s.monster() == null && s.profile() == null) || !(entity instanceof ServerPlayerEntity player) || player.isCreative()) {
+        if (s == null || (s.monster() == null && s.profile() == null) || !(entity instanceof ServerPlayer player) || player.isCreative()) {
             return false;
         }
         boolean aggressive = s.monster() != null ? s.monster().aggressive() : s.profile().aggressive;
@@ -104,17 +104,17 @@ public class OsrsMonsterEntity extends HostileEntity {
     }
 
     /** Style used for the next attack against a target at the given distance. */
-    public AttackType chooseStyle(ServerPlayerEntity target, double distanceSq) {
+    public AttackType chooseStyle(ServerPlayer target, double distanceSq) {
         java.util.List<com.runecraft.osrs.content.AttackDef> attacks = attackList();
         if (attacks != null) {
-            nextAttack = com.runecraft.boss.Mechanics.choose(attacks, Math.sqrt(distanceSq) - getWidth() / 2, getRandom());
+            nextAttack = com.runecraft.boss.Mechanics.choose(attacks, Math.sqrt(distanceSq) - getBbWidth() / 2, getRandom());
             return nextAttack.style();
         }
         return stats().style();
     }
 
     /** Hook: adjust damage a player is about to deal to this monster. Applies slayer/immunity/weapon rules. */
-    public int modifyIncoming(ServerPlayerEntity attacker, int damage, AttackType type) {
+    public int modifyIncoming(ServerPlayer attacker, int damage, AttackType type) {
         MonsterStats s = stats();
         if (s == null || s.profile() == null) {
             return damage;
@@ -128,7 +128,7 @@ public class OsrsMonsterEntity extends HostileEntity {
             com.runecraft.util.Msg.action(attacker, "The " + p.name + " is immune to that attack style.");
             return 0;
         }
-        if (p.requiredWeapon != null && !p.requiredWeapon.equals(com.runecraft.util.Inv.idOf(attacker.getMainHandStack()))) {
+        if (p.requiredWeapon != null && !p.requiredWeapon.equals(com.runecraft.util.Inv.idOf(attacker.getMainHandItem()))) {
             com.runecraft.util.Msg.action(attacker, "You need a special weapon to harm this creature.");
             return 0;
         }
@@ -136,7 +136,7 @@ public class OsrsMonsterEntity extends HostileEntity {
     }
 
     /** Hook: max hit against a player for an attack style. */
-    public int maxHitAgainst(ServerPlayerEntity player, AttackType type) {
+    public int maxHitAgainst(ServerPlayer player, AttackType type) {
         return stats().maxHit();
     }
 
@@ -146,16 +146,16 @@ public class OsrsMonsterEntity extends HostileEntity {
     }
 
     /** Hook: called with the rolled damage just before it's applied to the player. */
-    public int onHitPlayer(ServerPlayerEntity player, int damage, AttackType type) {
+    public int onHitPlayer(ServerPlayer player, int damage, AttackType type) {
         return damage;
     }
 
     /** Hook: called when a player kills this monster. */
-    public void onKilledBy(ServerPlayerEntity player) {
+    public void onKilledBy(ServerPlayer player) {
     }
 
     /** Performs an attack now (called by the attack goal when the attack speed allows). */
-    public void performAttack(ServerPlayerEntity target, AttackType type) {
+    public void performAttack(ServerPlayer target, AttackType type) {
         if (nextAttack != null && attackList() != null) {
             com.runecraft.boss.Mechanics.perform(this, target, nextAttack, damageMultiplier());
             return;
@@ -163,27 +163,27 @@ public class OsrsMonsterEntity extends HostileEntity {
         if (type == AttackType.MAGIC) {
             com.runecraft.combat.MagicService.npcCast(this, target);
         } else {
-            this.swingHand(net.minecraft.util.Hand.MAIN_HAND);
+            this.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
             CombatHandler.npcAttack(this, target, type);
         }
     }
 
     @Override
-    protected void mobTick() {
-        super.mobTick();
-        if (age % com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK == 0) {
+    protected void customServerAiStep() {
+        super.customServerAiStep();
+        if (tickCount % com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK == 0) {
             com.runecraft.combat.PoisonService.tick(this, com.runecraft.action.ActionManager.gameTick());
         }
     }
 
     @Override
-    public boolean tryAttack(net.minecraft.entity.Entity target) {
+    public boolean doHurtTarget(net.minecraft.world.entity.Entity target) {
         // Vanilla melee is replaced by OsrsAttackGoal.
         return false;
     }
 
     @Override
-    public boolean isDisallowedInPeaceful() {
+    public boolean shouldDespawnInPeaceful() {
         MonsterStats s = stats();
         return s != null && (s.monster() != null ? s.monster().aggressive() : s.profile() != null && s.profile().aggressive);
     }

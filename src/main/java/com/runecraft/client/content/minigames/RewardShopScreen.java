@@ -3,16 +3,15 @@ package com.runecraft.client.content.minigames;
 import com.runecraft.content.minigames.MinigameNet;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.tooltip.Tooltip;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.item.ItemStack;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.registry.Registries;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,20 +21,20 @@ public class RewardShopScreen extends Screen {
     }
 
     public record ShopData(String id, String title, List<String> currencies, List<Integer> balances, List<Entry> entries) {
-        static ShopData read(PacketByteBuf buf) {
-            String id = buf.readString();
-            String title = buf.readString();
+        static ShopData read(FriendlyByteBuf buf) {
+            String id = buf.readUtf();
+            String title = buf.readUtf();
             int nc = buf.readVarInt();
             List<String> names = new ArrayList<>();
             List<Integer> bal = new ArrayList<>();
             for (int i = 0; i < nc; i++) {
-                names.add(buf.readString());
+                names.add(buf.readUtf());
                 bal.add(buf.readVarInt());
             }
             int ne = buf.readVarInt();
             List<Entry> entries = new ArrayList<>();
             for (int i = 0; i < ne; i++) {
-                entries.add(new Entry(buf.readString(), buf.readString(), buf.readString(), buf.readBoolean(), buf.readString()));
+                entries.add(new Entry(buf.readUtf(), buf.readUtf(), buf.readUtf(), buf.readBoolean(), buf.readUtf()));
             }
             return new ShopData(id, title, names, bal, entries);
         }
@@ -50,7 +49,7 @@ public class RewardShopScreen extends Screen {
     private int top;
 
     public RewardShopScreen(ShopData data) {
-        super(Text.literal(data.title()));
+        super(Component.literal(data.title()));
         this.data = data;
     }
 
@@ -60,11 +59,11 @@ public class RewardShopScreen extends Screen {
 
     void update(ShopData fresh) {
         this.data = fresh;
-        clearAndInit();
+        rebuildWidgets();
     }
 
     @Override
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 
@@ -82,62 +81,62 @@ public class RewardShopScreen extends Screen {
             Entry e = data.entries().get(i);
             int index = i;
             int y = y0 + (i - start) * 18;
-            ButtonWidget one = ButtonWidget.builder(Text.literal("Buy"), b -> buy(index, 1))
-                    .dimensions(left + W - 86, y, 38, 16)
-                    .tooltip(Tooltip.of(Text.literal(e.label() + "\n" + e.cost() + (e.locked().isEmpty() ? "" : "\n" + e.locked()))))
+            Button one = Button.builder(Component.literal("Buy"), b -> buy(index, 1))
+                    .bounds(left + W - 86, y, 38, 16)
+                    .tooltip(Tooltip.create(Component.literal(e.label() + "\n" + e.cost() + (e.locked().isEmpty() ? "" : "\n" + e.locked()))))
                     .build();
             one.active = e.available();
-            addDrawableChild(one);
-            ButtonWidget ten = ButtonWidget.builder(Text.literal("x10"), b -> buy(index, 10)).dimensions(left + W - 44, y, 38, 16).build();
+            addRenderableWidget(one);
+            Button ten = Button.builder(Component.literal("x10"), b -> buy(index, 10)).bounds(left + W - 44, y, 38, 16).build();
             ten.active = e.available();
-            addDrawableChild(ten);
+            addRenderableWidget(ten);
         }
         int pages = (data.entries().size() + PER_PAGE - 1) / PER_PAGE;
         if (pages > 1) {
-            addDrawableChild(ButtonWidget.builder(Text.literal("<"), b -> {
+            addRenderableWidget(Button.builder(Component.literal("<"), b -> {
                 page = (page + pages - 1) % pages;
-                clearAndInit();
-            }).dimensions(left + 6, top + H - 20, 20, 16).build());
-            addDrawableChild(ButtonWidget.builder(Text.literal(">"), b -> {
+                rebuildWidgets();
+            }).bounds(left + 6, top + H - 20, 20, 16).build());
+            addRenderableWidget(Button.builder(Component.literal(">"), b -> {
                 page = (page + 1) % pages;
-                clearAndInit();
-            }).dimensions(left + 30, top + H - 20, 20, 16).build());
+                rebuildWidgets();
+            }).bounds(left + 30, top + H - 20, 20, 16).build());
         }
-        addDrawableChild(ButtonWidget.builder(Text.literal("Close"), b -> close()).dimensions(left + W - 56, top + H - 20, 50, 16).build());
+        addRenderableWidget(Button.builder(Component.literal("Close"), b -> onClose()).bounds(left + W - 56, top + H - 20, 50, 16).build());
     }
 
     private void buy(int index, int quantity) {
-        PacketByteBuf buf = PacketByteBufs.create();
-        buf.writeString(data.id());
+        FriendlyByteBuf buf = PacketByteBufs.create();
+        buf.writeUtf(data.id());
         buf.writeVarInt(index);
         buf.writeVarInt(quantity);
         ClientPlayNetworking.send(MinigameNet.BUY, buf);
     }
 
     @Override
-    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
         renderBackground(ctx);
         ctx.fill(left - 2, top - 2, left + W + 2, top + H + 2, 0xFF1A140C);
         ctx.fill(left, top, left + W, top + H, 0xF03E3529);
-        ctx.drawCenteredTextWithShadow(textRenderer, title, left + W / 2, top + 6, 0xFFFF9800);
+        ctx.drawCenteredString(font, title, left + W / 2, top + 6, 0xFFFF9800);
         for (int i = 0; i < data.currencies().size(); i++) {
             String s = data.currencies().get(i) + ": " + String.format("%,d", data.balances().get(i));
-            ctx.drawTextWithShadow(textRenderer, s, left + 8 + (i % 2) * (W / 2), top + 20 + (i / 2) * 10, 0xFFFFFF60);
+            ctx.drawString(font, s, left + 8 + (i % 2) * (W / 2), top + 20 + (i / 2) * 10, 0xFFFFFF60);
         }
         int start = page * PER_PAGE;
         int y0 = listTop();
         for (int i = start; i < Math.min(data.entries().size(), start + PER_PAGE); i++) {
             Entry e = data.entries().get(i);
             int y = y0 + (i - start) * 18;
-            Identifier id = Identifier.tryParse(e.icon());
+            ResourceLocation id = ResourceLocation.tryParse(e.icon());
             if (id != null) {
-                ctx.drawItem(new ItemStack(Registries.ITEM.get(id)), left + 6, y);
+                ctx.renderItem(new ItemStack(BuiltInRegistries.ITEM.get(id)), left + 6, y);
             }
             int color = e.available() ? 0xFFFFFFFF : e.locked().isEmpty() ? 0xFFB0A090 : 0xFFE05050;
-            String label = textRenderer.trimToWidth(e.label(), 130);
-            ctx.drawTextWithShadow(textRenderer, label, left + 26, y + 4, color);
-            String cost = textRenderer.trimToWidth(e.locked().isEmpty() ? e.cost() : e.locked(), W - 26 - 136 - 92);
-            ctx.drawTextWithShadow(textRenderer, cost, left + 160, y + 4, 0xFFFFD700);
+            String label = font.plainSubstrByWidth(e.label(), 130);
+            ctx.drawString(font, label, left + 26, y + 4, color);
+            String cost = font.plainSubstrByWidth(e.locked().isEmpty() ? e.cost() : e.locked(), W - 26 - 136 - 92);
+            ctx.drawString(font, cost, left + 160, y + 4, 0xFFFFD700);
         }
         super.render(ctx, mouseX, mouseY, delta);
     }

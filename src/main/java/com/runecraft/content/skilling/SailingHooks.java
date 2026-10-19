@@ -15,25 +15,6 @@ import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.LandmarkBuilder;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.vehicle.BoatEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.registry.tag.FluidTags;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.world.RaycastContext;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,6 +22,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.FluidTags;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.vehicle.Boat;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Sailing: launching boats, sail trimming, salvaging shipwrecks, sea charting (wiki tasks), courier
@@ -101,58 +100,58 @@ final class SailingHooks {
     private static final Set<String> SHIPWRIGHT_PORTS = Set.of("port_sarim", "rellekka", "port_piscarilius", "aldarin");
 
     /** Puts a module block on the water surface (or on the ground if the spot turned out to be land). */
-    static void placeAtSea(ServerWorld world, BlockPos centre, String blockId, int dx) {
+    static void placeAtSea(ServerLevel world, BlockPos centre, String blockId, int dx) {
         BlockState block = SkillingUtil.moduleBlock(blockId);
         if (block == null) {
             return;
         }
-        BlockPos at = centre.add(dx, 0, 0);
+        BlockPos at = centre.offset(dx, 0, 0);
         BlockState here = world.getBlockState(at);
-        if (here.getFluidState().isIn(FluidTags.WATER) || here.isReplaceable()) {
-            world.setBlockState(at, block, Block.NOTIFY_LISTENERS);
+        if (here.getFluidState().is(FluidTags.WATER) || here.canBeReplaced()) {
+            world.setBlock(at, block, Block.UPDATE_CLIENTS);
         } else {
-            world.setBlockState(at.up(), block, Block.NOTIFY_LISTENERS);
+            world.setBlock(at.above(), block, Block.UPDATE_CLIENTS);
         }
     }
 
     // ------------------------------------------------------------------ boats
 
-    static void launch(ServerPlayerEntity player, ItemStack stack, SailingData.Boat boat) {
+    static void launch(ServerPlayer player, ItemStack stack, SailingData.Boat boat) {
         String why = SailingData.canSail(pandemoniumDone(player), SkillingUtil.level(player, Skill.SAILING), boat);
         if (why != null) {
             Msg.game(player, why);
             return;
         }
-        Vec3d eye = player.getEyePos();
-        Vec3d end = eye.add(player.getRotationVector().multiply(5.0));
-        BlockHitResult hit = player.getWorld().raycast(new RaycastContext(eye, end, RaycastContext.ShapeType.OUTLINE,
-                RaycastContext.FluidHandling.SOURCE_ONLY, player));
-        if (hit.getType() != HitResult.Type.BLOCK || !player.getWorld().getFluidState(hit.getBlockPos()).isIn(FluidTags.WATER)) {
+        Vec3 eye = player.getEyePosition();
+        Vec3 end = eye.add(player.getLookAngle().scale(5.0));
+        BlockHitResult hit = player.level().clip(new ClipContext(eye, end, ClipContext.Block.OUTLINE,
+                ClipContext.Fluid.SOURCE_ONLY, player));
+        if (hit.getType() != HitResult.Type.BLOCK || !player.level().getFluidState(hit.getBlockPos()).is(FluidTags.WATER)) {
             Msg.game(player, "Use the kit while looking at water to launch your " + SkillingUtil.lower(boat.name()) + ".");
             return;
         }
-        Vec3d p = hit.getPos();
-        BoatEntity entity = new BoatEntity(player.getWorld(), p.x, p.y, p.z);
-        entity.setVariant(BoatEntity.Type.valueOf(boat.variant()));
-        entity.setYaw(player.getYaw());
-        entity.addCommandTag(BOAT_TAG + boat.kit());
-        entity.setCustomName(net.minecraft.text.Text.literal(player.getName().getString() + "'s " + SkillingUtil.lower(boat.name())));
-        player.getWorld().spawnEntity(entity);
-        stack.decrement(1);
-        player.getWorld().playSound(null, entity.getBlockPos(), SoundEvents.ENTITY_GENERIC_SPLASH, SoundCategory.PLAYERS, 1f, 1f);
+        Vec3 p = hit.getLocation();
+        Boat entity = new Boat(player.level(), p.x, p.y, p.z);
+        entity.setVariant(Boat.Type.valueOf(boat.variant()));
+        entity.setYRot(player.getYRot());
+        entity.addTag(BOAT_TAG + boat.kit());
+        entity.setCustomName(net.minecraft.network.chat.Component.literal(player.getName().getString() + "'s " + SkillingUtil.lower(boat.name())));
+        player.level().addFreshEntity(entity);
+        stack.shrink(1);
+        player.level().playSound(null, entity.blockPosition(), SoundEvents.GENERIC_SPLASH, SoundSource.PLAYERS, 1f, 1f);
         Msg.action(player, "You launch your " + SkillingUtil.lower(boat.name()) + ".");
     }
 
     /** Sailing is taught by the Pandemonium quest (creative players skip it). */
-    static boolean pandemoniumDone(ServerPlayerEntity player) {
-        return player.getAbilities().creativeMode || QuestApi.isComplete(player, SailingData.SAILING_QUEST);
+    static boolean pandemoniumDone(ServerPlayer player) {
+        return player.getAbilities().instabuild || QuestApi.isComplete(player, SailingData.SAILING_QUEST);
     }
 
     static SailingData.Boat boatOf(Entity vehicle) {
-        if (!(vehicle instanceof BoatEntity)) {
+        if (!(vehicle instanceof Boat)) {
             return null;
         }
-        for (String tag : vehicle.getCommandTags()) {
+        for (String tag : vehicle.getTags()) {
             if (tag.startsWith(BOAT_TAG)) {
                 return SailingData.boat(tag.substring(BOAT_TAG.length()));
             }
@@ -166,7 +165,7 @@ final class SailingHooks {
      * Called every game tick: boat level requirements, sail trimming (wiki trim XP of the boat's sails every 30
      * seconds under way; automatic here, approx), the crystal extractor (250 XP every 109 ticks) and Barracuda Trials.
      */
-    static void boatTick(ServerPlayerEntity player) {
+    static void boatTick(ServerPlayer player) {
         Entity vehicle = player.getVehicle();
         SailingData.Boat boat = boatOf(vehicle);
         if (boat != null && SkillingUtil.level(player, Skill.SAILING) < boat.level()) {
@@ -176,15 +175,15 @@ final class SailingHooks {
         }
         String type = boatType(vehicle);
         if (type == null) {
-            TICKS.remove(player.getUuid());
+            TICKS.remove(player.getUUID());
             SeaHooks.offBoat(player);
-            if (TRIALS.containsKey(player.getUuid())) {
+            if (TRIALS.containsKey(player.getUUID())) {
                 trialTick(player);
             }
             return;
         }
-        int[] t = TICKS.computeIfAbsent(player.getUuid(), k -> new int[2]);
-        Vec3d v = vehicle.getVelocity();
+        int[] t = TICKS.computeIfAbsent(player.getUUID(), k -> new int[2]);
+        Vec3 v = vehicle.getDeltaMovement();
         if (v.x * v.x + v.z * v.z > 0.01 && ++t[0] >= SailingTraining.TRIM_TICKS) {
             t[0] = 0;
             double xp = SailingTraining.trimXp(type, partTier(player, type, SailingTraining.PartType.SAILS));
@@ -197,19 +196,19 @@ final class SailingHooks {
             Msg.action(player, "You harvest a wind mote from the crystal extractor.");
         }
         SeaHooks.boatTick(player, vehicle, type);
-        if (TRIALS.containsKey(player.getUuid())) {
+        if (TRIALS.containsKey(player.getUUID())) {
             trialTick(player);
         }
     }
 
-    static boolean nearBoat(ServerPlayerEntity player) {
-        return player.getVehicle() instanceof BoatEntity
-                || !player.getWorld().getEntitiesByClass(BoatEntity.class, player.getBoundingBox().expand(6), b -> true).isEmpty();
+    static boolean nearBoat(ServerPlayer player) {
+        return player.getVehicle() instanceof Boat
+                || !player.level().getEntitiesOfClass(Boat.class, player.getBoundingBox().inflate(6), b -> true).isEmpty();
     }
 
     // ------------------------------------------------------------------ salvaging
 
-    private static void salvage(ServerPlayerEntity player, BlockPos pos, SailingData.Wreck w) {
+    private static void salvage(ServerPlayer player, BlockPos pos, SailingData.Wreck w) {
         if (!SkillingUtil.need(player, Skill.SAILING, w.level(), "salvage this shipwreck")) {
             return;
         }
@@ -221,7 +220,7 @@ final class SailingHooks {
             return;
         }
         int tier = Math.max(0, hookTier);
-        ServerWorld world = (ServerWorld) player.getWorld();
+        ServerLevel world = (ServerLevel) player.level();
         if (GatheringHooks.depleted(world, pos)) {
             Msg.game(player, "There's nothing left to salvage here for now.");
             return;
@@ -235,11 +234,11 @@ final class SailingHooks {
             private int crewTicks;
 
             @Override
-            boolean roll(ServerPlayerEntity p, Random random) {
+            boolean roll(ServerPlayer p, RandomSource random) {
                 if ((hookTier < 0 && !Inv.has(p, "salvaging_hook", 1)) || GatheringHooks.depleted(world, pos)) {
                     return false;
                 }
-                world.playSound(null, pos, SoundEvents.ENTITY_FISHING_BOBBER_SPLASH, SoundCategory.PLAYERS, 0.5f, 0.8f);
+                world.playSound(null, pos, SoundEvents.FISHING_BOBBER_SPLASH, SoundSource.PLAYERS, 0.5f, 0.8f);
                 double chance = com.runecraft.osrs.content.skilling.SailingSea.salvageChance(w, SkillingUtil.level(p, Skill.SAILING), tier);
                 // The best deckhand aboard works a hook alongside you (approx: OSRS assigns crew to each hook, and they keep
                 // salvaging while you do something else): every 5 ticks, your chance x Deckhandiness x 10%, for that share
@@ -272,9 +271,9 @@ final class SailingHooks {
 
     // ------------------------------------------------------------------ sea charting
 
-    private static Set<Integer> charted(NbtCompound charted) {
+    private static Set<Integer> charted(CompoundTag charted) {
         Set<Integer> done = new HashSet<>();
-        for (String k : charted.getKeys()) {
+        for (String k : charted.getAllKeys()) {
             if (k.startsWith("t") && charted.getBoolean(k)) {
                 done.add(Integer.parseInt(k.substring(1)));
             }
@@ -282,7 +281,7 @@ final class SailingHooks {
         return done;
     }
 
-    private static void chart(ServerPlayerEntity player, BlockPos pos) {
+    private static void chart(ServerPlayer player, BlockPos pos) {
         int x = GielinorMap.toOsrsX(pos.getX());
         int y = GielinorMap.toOsrsY(pos.getZ());
         SailingTraining.ChartTask task = SailingTraining.nearestChart(x, y, 8);
@@ -305,7 +304,7 @@ final class SailingHooks {
             Msg.game(player, "You need to be on your boat to chart this.");
             return;
         }
-        NbtCompound charted = SkillingState.get(player.getServer()).entry("charted", player.getUuidAsString());
+        CompoundTag charted = SkillingState.get(player.getServer()).entry("charted", player.getStringUUID());
         if (charted.getBoolean("t" + task.id())) {
             Msg.game(player, "You have already charted this. (" + task.task() + ")");
             return;
@@ -328,20 +327,20 @@ final class SailingHooks {
     }
 
     /** Accepted courier tasks: ids, with a "got" flag once the cargo is collected. */
-    private static NbtCompound tasks(ServerPlayerEntity player) {
-        return SkillingState.get(player.getServer()).entry("courier_tasks", player.getUuidAsString());
+    private static CompoundTag tasks(ServerPlayer player) {
+        return SkillingState.get(player.getServer()).entry("courier_tasks", player.getStringUUID());
     }
 
-    private static void portBoard(ServerPlayerEntity player, SailingData.Port here) {
+    private static void portBoard(ServerPlayer player, SailingData.Port here) {
         if (!pandemoniumDone(player)) {
             Msg.game(player, "You need to complete Pandemonium before you can take port tasks.");
             return;
         }
         int level = SkillingUtil.level(player, Skill.SAILING);
-        NbtCompound held = tasks(player);
+        CompoundTag held = tasks(player);
         boolean acted = false;
         // Deliver, then collect, at this port's ledger.
-        for (String key : new ArrayList<>(held.getKeys())) {
+        for (String key : new ArrayList<>(held.getAllKeys())) {
             SailingTraining.CourierTask t = SailingTraining.courier(Integer.parseInt(key));
             if (t == null) {
                 held.remove(key);
@@ -379,15 +378,15 @@ final class SailingHooks {
                 acted = true;
             }
         }
-        if (acted || SeaHooks.portBoard(player, here, held.getKeys().size())) {
+        if (acted || SeaHooks.portBoard(player, here, held.getAllKeys().size())) {
             return;
         }
-        if (player.isSneaking()) {
-            if (held.getKeys().isEmpty()) {
+        if (player.isShiftKeyDown()) {
+            if (held.getAllKeys().isEmpty()) {
                 Msg.game(player, "You have no port tasks to cancel.");
                 return;
             }
-            String key = held.getKeys().iterator().next();
+            String key = held.getAllKeys().iterator().next();
             SailingTraining.CourierTask t = SailingTraining.courier(Integer.parseInt(key));
             if (held.getBoolean(key) && t != null) {
                 Inv.remove(player, "cargo_crate", t.qty());
@@ -396,7 +395,7 @@ final class SailingHooks {
             Msg.game(player, "You cancel a courier task.");
             return;
         }
-        for (String key : held.getKeys()) {
+        for (String key : held.getAllKeys()) {
             SailingTraining.CourierTask t = SailingTraining.courier(Integer.parseInt(key));
             if (t != null) {
                 Msg.game(player, "Task: " + t.cargoName() + " from " + port(t.cargo()).name() + " to " + port(t.destination()).name()
@@ -407,7 +406,7 @@ final class SailingHooks {
             Msg.game(player, "You need a Sailing level of " + here.level() + " to take tasks from " + here.name() + ".");
             return;
         }
-        if (held.getKeys().size() >= SailingTraining.taskSlots(level)) {
+        if (held.getAllKeys().size() >= SailingTraining.taskSlots(level)) {
             Msg.game(player, "You can't take on more than " + SailingTraining.taskSlots(level) + " port tasks at your level. "
                     + "(Sneak to cancel one.)");
             return;
@@ -443,11 +442,11 @@ final class SailingHooks {
     }
 
     /** The boat a player is on or standing next to. */
-    static Entity nearbyBoat(ServerPlayerEntity player) {
+    static Entity nearbyBoat(ServerPlayer player) {
         if (boatType(player.getVehicle()) != null) {
             return player.getVehicle();
         }
-        for (BoatEntity b : player.getWorld().getEntitiesByClass(BoatEntity.class, player.getBoundingBox().expand(6), e -> true)) {
+        for (Boat b : player.level().getEntitiesOfClass(Boat.class, player.getBoundingBox().inflate(6), e -> true)) {
             if (boatType(b) != null) {
                 return b;
             }
@@ -460,19 +459,19 @@ final class SailingHooks {
         return com.runecraft.osrs.content.skilling.SailingCrew.allFacilities();
     }
 
-    static NbtCompound boatState(ServerPlayerEntity player) {
-        return SkillingState.get(player.getServer()).entry("boats", player.getUuidAsString());
+    static CompoundTag boatState(ServerPlayer player) {
+        return SkillingState.get(player.getServer()).entry("boats", player.getStringUUID());
     }
 
-    static int partTier(ServerPlayerEntity player, String boat, SailingTraining.PartType type) {
+    static int partTier(ServerPlayer player, String boat, SailingTraining.PartType type) {
         return boatState(player).getInt(boat + "." + type.name());
     }
 
-    static boolean hasFacility(ServerPlayerEntity player, String boat, String facility) {
+    static boolean hasFacility(ServerPlayer player, String boat, String facility) {
         return boatState(player).getBoolean(boat + ".f." + facility);
     }
 
-    static Map<SailingTraining.PartType, Integer> tiers(ServerPlayerEntity player, String boat) {
+    static Map<SailingTraining.PartType, Integer> tiers(ServerPlayer player, String boat) {
         Map<SailingTraining.PartType, Integer> m = new HashMap<>();
         for (SailingTraining.PartType t : SailingTraining.PartType.values()) {
             m.put(t, partTier(player, boat, t));
@@ -480,7 +479,7 @@ final class SailingHooks {
         return m;
     }
 
-    static Set<String> facilities(ServerPlayerEntity player, String boat) {
+    static Set<String> facilities(ServerPlayer player, String boat) {
         Set<String> s = new HashSet<>();
         for (SailingTraining.Facility f : allFacilities()) {
             if (hasFacility(player, boat, f.id())) {
@@ -496,7 +495,7 @@ final class SailingHooks {
         return sb.toString();
     }
 
-    private static boolean hasAll(ServerPlayerEntity player, Map<String, Integer> mats) {
+    private static boolean hasAll(ServerPlayer player, Map<String, Integer> mats) {
         for (Map.Entry<String, Integer> e : mats.entrySet()) {
             if (!Inv.has(player, e.getKey(), e.getValue())) {
                 return false;
@@ -506,7 +505,7 @@ final class SailingHooks {
     }
 
     /** Boat schematics: click to cycle through the next upgrades for your boat, sneak-click to build the one shown. */
-    private static void schematics(ServerPlayerEntity player) {
+    private static void schematics(ServerPlayer player) {
         if (SeaHooks.recoverWrecks(player)) {
             return;
         }
@@ -532,9 +531,9 @@ final class SailingHooks {
             Msg.game(player, "Your " + type + " is fully upgraded.");
             return;
         }
-        NbtCompound state = boatState(player);
+        CompoundTag state = boatState(player);
         int sel = Math.floorMod(state.getInt("sel"), options.size());
-        if (!player.isSneaking()) {
+        if (!player.isShiftKeyDown()) {
             sel = (sel + 1) % options.size();
             state.putInt("sel", sel);
         }
@@ -544,7 +543,7 @@ final class SailingHooks {
         int con = o instanceof SailingTraining.Part p ? p.construction() : ((SailingTraining.Facility) o).construction();
         double xp = o instanceof SailingTraining.Part p ? p.conXp() : ((SailingTraining.Facility) o).conXp();
         Map<String, Integer> mats = o instanceof SailingTraining.Part p ? p.materials() : ((SailingTraining.Facility) o).materials();
-        if (!player.isSneaking()) {
+        if (!player.isShiftKeyDown()) {
             Msg.game(player, "[" + (sel + 1) + "/" + options.size() + "] " + name + " for your " + type + ": Sailing " + sailing
                     + ", Construction " + con + ". Needs " + materials(mats) + " and a hammer. Sneak and use the schematics to build it.");
             return;
@@ -579,7 +578,7 @@ final class SailingHooks {
             state.putBoolean(type + ".f." + ((SailingTraining.Facility) o).id(), true);
         }
         XpService.add(player, Skill.CONSTRUCTION, xp);
-        player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.BLOCK_ANVIL_USE, SoundCategory.PLAYERS, 0.6f, 1.2f);
+        player.level().playSound(null, player.blockPosition(), SoundEvents.ANVIL_USE, SoundSource.PLAYERS, 0.6f, 1.2f);
         Msg.action(player, "You build " + Msg.article(SkillingUtil.lower(name)) + " on your " + type + ".");
     }
 
@@ -615,7 +614,7 @@ final class SailingHooks {
 
     private static final Map<UUID, TrialRun> TRIALS = new HashMap<>();
 
-    private static void trialBuoy(ServerPlayerEntity player, BlockPos pos) {
+    private static void trialBuoy(ServerPlayer player, BlockPos pos) {
         int x = GielinorMap.toOsrsX(pos.getX());
         int y = GielinorMap.toOsrsY(pos.getZ());
         SailingTraining.Trial trial = null;
@@ -627,14 +626,14 @@ final class SailingHooks {
         if (trial == null) {
             return;
         }
-        if (TRIALS.containsKey(player.getUuid())) {
-            TRIALS.remove(player.getUuid());
+        if (TRIALS.containsKey(player.getUUID())) {
+            TRIALS.remove(player.getUUID());
             Msg.game(player, "You abandon the trial.");
             return;
         }
-        NbtCompound best = SkillingState.get(player.getServer()).entry("trials", player.getUuidAsString());
+        CompoundTag best = SkillingState.get(player.getServer()).entry("trials", player.getStringUUID());
         int rank = Math.floorMod(best.getInt(trial.id() + ".pick"), 3);
-        if (!player.isSneaking()) {
+        if (!player.isShiftKeyDown()) {
             rank = (rank + 1) % 3;
             best.putInt(trial.id() + ".pick", rank);
             SailingTraining.Rank r = trial.ranks().get(rank);
@@ -647,28 +646,28 @@ final class SailingHooks {
         String type = boatType(boat);
         String why = SailingTraining.trialBlocker(trial, SkillingUtil.level(player, Skill.SAILING), type,
                 type == null ? Map.of() : tiers(player, type), type == null ? Set.of() : facilities(player, type),
-                trial.quest() == null || player.getAbilities().creativeMode || QuestApi.isComplete(player, trial.quest()));
+                trial.quest() == null || player.getAbilities().instabuild || QuestApi.isComplete(player, trial.quest()));
         if (why != null) {
             Msg.game(player, why);
             return;
         }
         TrialRun run = new TrialRun(trial, rank, ActionManager.gameTick());
-        TRIALS.put(player.getUuid(), run);
+        TRIALS.put(player.getUUID(), run);
         Msg.action(player, trial.name() + " (" + run.r().name() + ") begins! Collect the lost supplies marked by glowing water.");
     }
 
-    private static void trialTick(ServerPlayerEntity player) {
-        TrialRun run = TRIALS.get(player.getUuid());
+    private static void trialTick(ServerPlayer player) {
+        TrialRun run = TRIALS.get(player.getUUID());
         if (run == null) {
             return;
         }
-        ServerWorld world = (ServerWorld) player.getWorld();
+        ServerLevel world = (ServerLevel) player.level();
         int x = GielinorMap.toOsrsX(player.getBlockX());
         int y = GielinorMap.toOsrsY(player.getBlockZ());
         boolean onSkiff = "skiff".equals(boatType(player.getVehicle()));
         if (!onSkiff || Math.max(Math.abs(x - run.trial.x()), Math.abs(y - run.trial.y())) > 110) {
             if (++run.outside > 17) { // 10 seconds outside the trial area (wiki)
-                TRIALS.remove(player.getUuid());
+                TRIALS.remove(player.getUUID());
                 Msg.game(player, "You left the trial area and your progress was lost.");
             }
             return;
@@ -682,7 +681,7 @@ final class SailingHooks {
         }
         int bx = GielinorMap.toBlockX(target[0]);
         int bz = GielinorMap.toBlockZ(target[1]);
-        world.spawnParticles(ParticleTypes.GLOW, bx + 1, world.getSeaLevel() + 1, bz + 1, 6, 0.6, 0.4, 0.6, 0.02);
+        world.sendParticles(ParticleTypes.GLOW, bx + 1, world.getSeaLevel() + 1, bz + 1, 6, 0.6, 0.4, 0.6, 0.02);
         if (Math.abs(player.getX() - bx - 1) <= 4 && Math.abs(player.getZ() - bz - 1) <= 4) {
             if (run.crates < r.crates()) {
                 run.crates++;
@@ -692,16 +691,16 @@ final class SailingHooks {
                 Msg.action(player, (run.objectives % 2 == 1 ? "You load the shipment" : "You make the delivery") + " ("
                         + run.objectives + "/" + r.objectives() + ").");
             }
-            world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.PLAYERS, 0.6f, 1.2f);
+            world.playSound(null, player.blockPosition(), SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.6f, 1.2f);
         }
     }
 
-    private static void finishTrial(ServerPlayerEntity player, TrialRun run) {
-        TRIALS.remove(player.getUuid());
+    private static void finishTrial(ServerPlayer player, TrialRun run) {
+        TRIALS.remove(player.getUUID());
         SailingTraining.Rank r = run.r();
         double seconds = (ActionManager.gameTick() - run.start) * 0.6;
         XpService.add(player, Skill.SAILING, r.xp());
-        NbtCompound best = SkillingState.get(player.getServer()).entry("trials", player.getUuidAsString());
+        CompoundTag best = SkillingState.get(player.getServer()).entry("trials", player.getStringUUID());
         String key = run.trial.id() + "." + r.name();
         boolean target = seconds <= r.targetSeconds();
         Msg.action(player, "You complete " + run.trial.name() + " (" + r.name() + ") in " + (int) seconds + "s"
@@ -728,7 +727,7 @@ final class SailingHooks {
     }
 
     /** The best trawling net built on a boat, or null. */
-    private static SailingTraining.Net net(ServerPlayerEntity player, String boat) {
+    private static SailingTraining.Net net(ServerPlayer player, String boat) {
         SailingTraining.Net best = null;
         for (SailingTraining.Net n : SailingTraining.NETS) {
             if (boat != null && hasFacility(player, boat, n.facility())) {
@@ -738,9 +737,9 @@ final class SailingHooks {
         return best;
     }
 
-    static void trawl(ServerPlayerEntity player) {
+    static void trawl(ServerPlayer player) {
         String boat = boatType(player.getVehicle());
-        if (!(player.getVehicle() instanceof BoatEntity)) {
+        if (!(player.getVehicle() instanceof Boat)) {
             Msg.game(player, "You need to be sailing a boat to cast a trawling net.");
             return;
         }
@@ -758,8 +757,8 @@ final class SailingHooks {
             int counter;
 
             @Override
-            public boolean tick(ServerPlayerEntity p, long gameTick) {
-                if (!(p.getVehicle() instanceof BoatEntity) || !Inv.has(p, "trawling_net", 1)) {
+            public boolean tick(ServerPlayer p, long gameTick) {
+                if (!(p.getVehicle() instanceof Boat) || !Inv.has(p, "trawling_net", 1)) {
                     Msg.game(p, "You haul in your trawling net.");
                     return false;
                 }
@@ -767,14 +766,14 @@ final class SailingHooks {
                     return true;
                 }
                 counter = 0;
-                if (!p.getWorld().getFluidState(p.getVehicle().getBlockPos()).isIn(FluidTags.WATER)
-                        && !p.getWorld().getFluidState(p.getVehicle().getBlockPos().down()).isIn(FluidTags.WATER)) {
+                if (!p.level().getFluidState(p.getVehicle().blockPosition()).is(FluidTags.WATER)
+                        && !p.level().getFluidState(p.getVehicle().blockPosition().below()).is(FluidTags.WATER)) {
                     return true;
                 }
                 // Every roll gives a token of Sailing XP; a successful roll catches fish for Fishing XP (wiki).
                 XpService.add(p, Skill.SAILING, net.xpPerRoll());
                 int fishing = SkillingUtil.level(p, Skill.FISHING);
-                Random random = p.getRandom();
+                RandomSource random = p.getRandom();
                 for (CookingData.NewFish f : TRAWL) {
                     if (fishing >= f.fishLevel() && SailingTraining.shoalDepth(f.id()) <= net.depth()
                             && random.nextDouble() < Chance.lerp(fishing, 12, 48) / 2) { // approx catch rate

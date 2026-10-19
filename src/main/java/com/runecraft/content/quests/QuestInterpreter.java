@@ -26,17 +26,16 @@ import com.runecraft.world.Gielinor;
 import com.runecraft.world.LandmarkBuilder;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.registry.Registries;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.AABB;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -65,45 +64,45 @@ public final class QuestInterpreter {
             DataBossService.requirement(boss.id, (player, def) -> canFight(player, def.id));
         }
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            if (server.getTicks() % 20 == 0) {
+            if (server.getTickCount() % 20 == 0) {
                 reachTick(server);
             }
         });
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> QuestPuzzles.forget(handler.player.getUuid()));
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> QuestPuzzles.forget(handler.player.getUUID()));
     }
 
     /** Self-test hook ({@code com.runecraft.selftest}): talks to a quest NPC through the real dialogue dispatcher. */
-    public static void selfTestTalk(ServerPlayerEntity p, String npcId) {
+    public static void selfTestTalk(ServerPlayer p, String npcId) {
         talk(p, npcId);
     }
 
     /** Self-test hook: executes a trigger as if its objective (reach a place, a drop) had just happened. */
-    public static void selfTestFire(ServerPlayerEntity p, QuestSpec q, Trigger t) {
+    public static void selfTestFire(ServerPlayer p, QuestSpec q, Trigger t) {
         fire(p, q, t, npcName(t.target));
     }
 
     // ---------------------------------------------------------------- State helpers
 
-    static int stage(ServerPlayerEntity p, QuestSpec q) {
+    static int stage(ServerPlayer p, QuestSpec q) {
         return QuestApi.stage(p, q.id());
     }
 
-    static boolean active(ServerPlayerEntity p, QuestSpec q) {
+    static boolean active(ServerPlayer p, QuestSpec q) {
         int s = stage(p, q);
         return s > 0 && s < q.stages.size();
     }
 
-    static boolean complete(ServerPlayerEntity p, String questId) {
+    static boolean complete(ServerPlayer p, String questId) {
         QuestInfo q = ContentRegistry.quest(questId);
         return q != null && Players.data(p).questComplete(q);
     }
 
-    static boolean flag(ServerPlayerEntity p, String flag) {
-        return QuestsState.get(p).hasFlag(p.getUuid(), flag);
+    static boolean flag(ServerPlayer p, String flag) {
+        return QuestsState.get(p).hasFlag(p.getUUID(), flag);
     }
 
     /** True when the trigger should be ignored entirely (already done / not applicable). */
-    static boolean skipped(ServerPlayerEntity p, Trigger t) {
+    static boolean skipped(ServerPlayer p, Trigger t) {
         for (String item : t.unlessItems) {
             if (Inv.has(p, item, 1)) {
                 return true;
@@ -126,7 +125,7 @@ public final class QuestInterpreter {
     }
 
     /** First unmet condition as a short reason, or null when every condition is met. */
-    static String unmet(ServerPlayerEntity p, Trigger t) {
+    static String unmet(ServerPlayer p, Trigger t) {
         PlayerData data = Players.data(p);
         if (t.minQuestPoints > 0 && data.questPoints() < t.minQuestPoints) {
             return "You need " + t.minQuestPoints + " quest points.";
@@ -169,9 +168,9 @@ public final class QuestInterpreter {
     }
 
     /** Whether the player carries (or wields) any tool meeting a requirement such as "pickaxe" or "axe:mithril". */
-    static boolean hasTool(ServerPlayerEntity p, String tool) {
-        for (int i = 0; i < p.getInventory().size(); i++) {
-            if (QuestSpec.toolSatisfies(tool, com.runecraft.registry.ModItems.def(p.getInventory().getStack(i)))) {
+    static boolean hasTool(ServerPlayer p, String tool) {
+        for (int i = 0; i < p.getInventory().getContainerSize(); i++) {
+            if (QuestSpec.toolSatisfies(tool, com.runecraft.registry.ModItems.def(p.getInventory().getItem(i)))) {
                 return true;
             }
         }
@@ -196,13 +195,13 @@ public final class QuestInterpreter {
 
     // ---------------------------------------------------------------- Dialogue
 
-    static void speak(ServerPlayerEntity p, String speaker, List<String> lines) {
+    static void speak(ServerPlayer p, String speaker, List<String> lines) {
         for (String line : lines) {
             if (line.startsWith("> ")) {
                 QuestApi.you(p, line.substring(2));
             } else if (line.startsWith("* ") || speaker.isEmpty()) {
                 String text = line.startsWith("* ") ? line.substring(2) : line;
-                p.sendMessage(Text.literal(text).formatted(Formatting.GRAY, Formatting.ITALIC), false);
+                p.displayClientMessage(Component.literal(text).withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC), false);
             } else if (line.startsWith("@") && line.contains(": ")) {
                 int colon = line.indexOf(": ");
                 QuestApi.say(p, line.substring(1, colon), line.substring(colon + 2));
@@ -212,7 +211,7 @@ public final class QuestInterpreter {
         }
     }
 
-    static void talk(ServerPlayerEntity p, String npcId) {
+    static void talk(ServerPlayer p, String npcId) {
         String name = npcName(npcId);
         // 0. Puzzles this NPC presents (Recruitment Drive's examiners, Murder Mystery's accusation).
         if (QuestPuzzles.talk(p, npcId, book.quests)) {
@@ -295,7 +294,7 @@ public final class QuestInterpreter {
         QuestApi.say(p, name, "Hello there, adventurer.");
     }
 
-    static void showMissing(ServerPlayerEntity p, Trigger t, String name) {
+    static void showMissing(ServerPlayer p, Trigger t, String name) {
         if (!t.missing.isEmpty()) {
             speak(p, name, t.missing);
         } else {
@@ -308,7 +307,7 @@ public final class QuestInterpreter {
     }
 
     /** Executes a trigger whose conditions are met. */
-    static void fire(ServerPlayerEntity p, QuestSpec q, Trigger t, String speaker) {
+    static void fire(ServerPlayer p, QuestSpec q, Trigger t, String speaker) {
         if (!t.take.isEmpty() && !QuestApi.takeAll(p, t.take)) {
             return;
         }
@@ -316,7 +315,7 @@ public final class QuestInterpreter {
         t.give.forEach((item, n) -> Inv.give(p, item, n));
         t.xp.forEach((skill, xp) -> XpService.add(p, skill, xp));
         QuestsState state = QuestsState.get(p);
-        t.setFlags.forEach(f -> state.setFlag(p.getUuid(), f));
+        t.setFlags.forEach(f -> state.setFlag(p.getUUID(), f));
         if (t.spawn != null) {
             spawnNear(p, t.spawn);
         }
@@ -326,11 +325,11 @@ public final class QuestInterpreter {
         if (t.completes()) {
             QuestApi.complete(p, q.id());
             for (String unlock : q.unlocks) {
-                p.sendMessage(Text.literal("Unlocked: " + unlock).formatted(Formatting.GOLD), false);
+                p.displayClientMessage(Component.literal("Unlocked: " + unlock).withStyle(ChatFormatting.GOLD), false);
             }
         } else if (t.next != t.stage) {
             QuestApi.setStage(p, q.id(), t.next);
-            p.sendMessage(Text.literal("[" + q.def.displayName() + "] " + q.stages.get(t.next).journal).formatted(Formatting.DARK_AQUA), false);
+            p.displayClientMessage(Component.literal("[" + q.def.displayName() + "] " + q.stages.get(t.next).journal).withStyle(ChatFormatting.DARK_AQUA), false);
         }
         ServerNetworking.sync(p);
     }
@@ -346,12 +345,12 @@ public final class QuestInterpreter {
         if (stats.monster() != null) {
             ids.add(stats.monster().entity());
         }
-        ids.add(Registries.ENTITY_TYPE.getId(entity.getType()).toString());
+        ids.add(BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString());
         ids.add(stats.name().toLowerCase(Locale.ROOT).replace(' ', '_').replace("'", ""));
         return ids;
     }
 
-    static void onKill(ServerPlayerEntity p, LivingEntity entity, MonsterStats stats) {
+    static void onKill(ServerPlayer p, LivingEntity entity, MonsterStats stats) {
         List<String> ids = ids(entity, stats);
         if (QuestPuzzles.onKill(p, ids)) {
             return;
@@ -368,20 +367,20 @@ public final class QuestInterpreter {
                 }
                 if (t.kind == Trigger.Kind.DROP) {
                     if (unmet(p, t) == null && p.getRandom().nextInt(Math.max(1, t.chance)) == 0) {
-                        t.give.forEach((item, n) -> entity.dropStack(Inv.stack(item, n)));
+                        t.give.forEach((item, n) -> entity.spawnAtLocation(Inv.stack(item, n)));
                     }
                 } else if (t.kind == Trigger.Kind.KILL && unmet(p, t) == null) {
                     if (t.count > 1) {
                         // Multi-kill objective: count the kill (saved with the world) and fire on the last one.
                         QuestsState state = QuestsState.get(p);
                         String key = t.counterKey(q.id(), i);
-                        int done = state.addKill(p.getUuid(), key);
+                        int done = state.addKill(p.getUUID(), key);
                         if (done < t.count) {
-                            p.sendMessage(Text.literal("[" + q.def.displayName() + "] " + stats.name() + ": " + done + "/" + t.count + " killed.")
-                                    .formatted(Formatting.DARK_AQUA), false);
+                            p.displayClientMessage(Component.literal("[" + q.def.displayName() + "] " + stats.name() + ": " + done + "/" + t.count + " killed.")
+                                    .withStyle(ChatFormatting.DARK_AQUA), false);
                             return;
                         }
-                        state.clearKills(p.getUuid(), key);
+                        state.clearKills(p.getUUID(), key);
                     }
                     fire(p, q, t, stats.name());
                     return;
@@ -391,7 +390,7 @@ public final class QuestInterpreter {
     }
 
     /** Whether a summoning stone may raise this quest boss for the player. */
-    static boolean canFight(ServerPlayerEntity p, String bossId) {
+    static boolean canFight(ServerPlayer p, String bossId) {
         for (QuestSpec q : book.quests) {
             if (!active(p, q)) {
                 continue;
@@ -417,23 +416,23 @@ public final class QuestInterpreter {
     }
 
     /** Whether a living quest boss of this id is within 32 blocks of the player. */
-    static boolean bossNearby(ServerPlayerEntity p, String bossId) {
+    static boolean bossNearby(ServerPlayer p, String bossId) {
         EntityType<DataBossEntity> type = ModEntities.DATA_BOSS_TYPES.get(bossId);
-        return type != null && p.getWorld() instanceof ServerWorld world
-                && !world.getEntitiesByType(type, new Box(p.getBlockPos()).expand(32), e -> e.isAlive()).isEmpty();
+        return type != null && p.level() instanceof ServerLevel world
+                && !world.getEntities(type, new AABB(p.blockPosition()).inflate(32), e -> e.isAlive()).isEmpty();
     }
 
-    static void spawnNear(ServerPlayerEntity p, String bossId) {
+    static void spawnNear(ServerPlayer p, String bossId) {
         BossDef def = ContentRegistry.boss(bossId);
         EntityType<DataBossEntity> type = ModEntities.DATA_BOSS_TYPES.get(bossId);
-        if (def == null || type == null || !(p.getWorld() instanceof ServerWorld world)) {
+        if (def == null || type == null || !(p.level() instanceof ServerLevel world)) {
             return;
         }
         if (bossNearby(p, bossId)) {
             Msg.game(p, def.name + " is already nearby!");
             return;
         }
-        BlockPos at = p.getBlockPos().offset(p.getHorizontalFacing(), 4);
+        BlockPos at = p.blockPosition().relative(p.getDirection(), 4);
         DataBossService.spawn(world, at, def, p);
         Msg.red(p, def.name + " (level-" + def.combatLevel + ") appears!");
     }
@@ -447,25 +446,25 @@ public final class QuestInterpreter {
         return d == null ? null : new int[]{d.blockX(), d.blockZ()};
     }
 
-    static void travel(ServerPlayerEntity p, String place) {
+    static void travel(ServerPlayer p, String place) {
         Landmark l = Landmark.byName(place);
         if (l != null) {
             Gielinor.teleport(p, l);
             return;
         }
         PlaceDef d = ContentRegistry.place(place);
-        ServerWorld world = Gielinor.world(p.getServer());
+        ServerLevel world = Gielinor.world(p.getServer());
         if (d == null || world == null) {
             return;
         }
         LandmarkBuilder.buildNow(world, d);
         BlockPos pos = Gielinor.safeSpot(world, d.blockX() + 2, d.blockZ() + 2);
-        p.teleport(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, p.getYaw(), p.getPitch());
+        p.teleportTo(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, p.getYRot(), p.getXRot());
         Msg.game(p, "You arrive at " + d.name() + ".");
     }
 
     static void reachTick(MinecraftServer server) {
-        for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
+        for (ServerPlayer p : server.getPlayerList().getPlayers()) {
             if (!Gielinor.is(p) || p.isSpectator()) {
                 continue;
             }
@@ -502,9 +501,9 @@ public final class QuestInterpreter {
                         fire(p, q, t, "");
                         break;
                     }
-                    int last = REACH_NOTICE.getOrDefault(p.getUuid(), -10000);
-                    if (server.getTicks() - last > 600) {
-                        REACH_NOTICE.put(p.getUuid(), server.getTicks());
+                    int last = REACH_NOTICE.getOrDefault(p.getUUID(), -10000);
+                    if (server.getTickCount() - last > 600) {
+                        REACH_NOTICE.put(p.getUUID(), server.getTickCount());
                         if (!t.missing.isEmpty()) {
                             speak(p, "", t.missing);
                         }
