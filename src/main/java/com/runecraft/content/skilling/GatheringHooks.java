@@ -25,7 +25,7 @@ import com.runecraft.skill.Tools;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.fabricmc.fabric.api.event.player.UseEntityCallback;
+import com.runecraft.platform.UseEntityCallback;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -67,7 +67,7 @@ public final class GatheringHooks {
     }
 
     static void init() {
-        net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> {
+        com.runecraft.platform.ServerTickEvents.END_SERVER_TICK.register(server -> {
             if (server.getTickCount() % 30 == 0) {
                 ServerLevel world = com.runecraft.world.Gielinor.world(server);
                 if (world != null) {

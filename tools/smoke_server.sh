@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Boots a real dedicated Fabric server with the built mod, generates Gielinor around a few
+# Boots a real dedicated NeoForge server with the built mod, generates Gielinor around a few
 # towns (forcing structure placement, landmark building and NPC spawning), then runs gameplay
 # checks from the server console:
 #   - station blocks (bank booths, furnaces, altars...) exist exactly where the town structures put
@@ -11,7 +11,7 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 prop() { grep "^$1=" gradle.properties | cut -d= -f2; }
-MC=$(prop minecraft_version); LOADER=$(prop loader_version); FAPI=$(prop fabric_version)
+NEO=$(prop neo_version)
 JAR=$(ls build/libs/*.jar | grep -v -- '-sources' | head -1)
 D=build/smoke
 rm -rf "$D"; mkdir -p "$D/mods"
@@ -30,8 +30,11 @@ SPAWN_POS=$(grep '^SPAWN lumbridge ' "$D/probes.txt" | head -1 | cut -d' ' -f3-5
 BOSSES=(tztok_jad general_graardor king_black_dragon kreearra zulrah vorkath cerberus abyssal_sire)
 MONSTERS=(man goblin guard hill_giant hobgoblin)
 
-curl -sSfL -o "$D/server.jar" "https://meta.fabricmc.net/v2/versions/loader/$MC/$LOADER/1.0.1/server/jar" || exit 1
-curl -sSfL -o "$D/mods/fabric-api.jar" "https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/$FAPI/fabric-api-$FAPI.jar" || exit 1
+# NeoForge server: the installer fetches the vanilla server and libraries and writes the launch arguments.
+curl -sSfL -o "$D/installer.jar" "https://maven.neoforged.net/releases/net/neoforged/neoforge/$NEO/neoforge-$NEO-installer.jar" || exit 1
+(cd "$D" && java -jar installer.jar --installServer . > installer.log 2>&1) || { tail -40 "$D/installer.log"; echo "FAIL: NeoForge installer failed"; exit 1; }
+ARGS="libraries/net/neoforged/neoforge/$NEO/unix_args.txt"
+[ -f "$D/$ARGS" ] || { tail -40 "$D/installer.log"; echo "FAIL: NeoForge installer wrote no $ARGS"; exit 1; }
 cp "$JAR" "$D/mods/"
 echo "eula=true" > "$D/eula.txt"
 printf 'online-mode=false\nspawn-protection=0\nlevel-seed=42\nsync-chunk-writes=false\nmax-tick-time=-1\n' > "$D/server.properties"
@@ -115,7 +118,7 @@ feed() {
     echo "stop"
     sleep 60
 }
-feed | timeout 2700 java -Xmx4G -jar server.jar nogui >> "$LOG" 2>&1
+feed | timeout 2700 java -Xmx4G @"$ARGS" nogui >> "$LOG" 2>&1
 # The self-test provokes failures on purpose: what is logged between its BEGIN and END markers is reported
 # in its own section and kept out of the blocking checks below (a crash still fails the job).
 awk '/SELFTEST BEGIN/ { skip = 1 } !skip { print } /SELFTEST END/ { skip = 0 }' "$LOG" > strict.log

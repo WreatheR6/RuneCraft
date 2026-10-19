@@ -3,7 +3,7 @@ package com.runecraft.client.bank;
 import com.runecraft.RuneCraft;
 import com.runecraft.bank.Notes;
 import com.runecraft.osrs.bank.BankNotes;
-import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
+import com.runecraft.platform.client.ModelLoadingPlugin;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.block.model.BakedQuad;
@@ -40,9 +40,9 @@ public final class NoteModel {
 
     static void register() {
         ModelLoadingPlugin.register(ctx -> ctx.modifyModelAfterBake().register((model, context) -> {
-            ResourceLocation id = context.id();
-            if (model != null && id instanceof ModelResourceLocation mid && mid.getNamespace().equals(RuneCraft.MOD_ID)
-                    && mid.getPath().equals(BankNotes.NOTE_ITEM) && mid.getVariant().equals("inventory")) {
+            ModelResourceLocation mid = context.id();
+            if (model != null && mid.id().getNamespace().equals(RuneCraft.MOD_ID)
+                    && mid.id().getPath().equals(BankNotes.NOTE_ITEM) && mid.variant().equals("inventory")) {
                 return new Wrapped(model);
             }
             return model;

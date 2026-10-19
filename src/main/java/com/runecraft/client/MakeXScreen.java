@@ -2,8 +2,8 @@ package com.runecraft.client;
 
 import com.runecraft.network.Net;
 import com.runecraft.osrs.Skill;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import com.runecraft.platform.client.ClientPlayNetworking;
+import com.runecraft.platform.PacketByteBufs;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
@@ -95,7 +95,7 @@ public class MakeXScreen extends Screen {
             int slot = i - start;
             int x = left + 5 + (slot % 3) * 108;
             int y = top + 22 + (slot / 3) * 28;
-            ItemStack icon = new ItemStack(BuiltInRegistries.ITEM.get(new ResourceLocation(e.icon())));
+            ItemStack icon = new ItemStack(BuiltInRegistries.ITEM.get(ResourceLocation.parse(e.icon())));
             ctx.renderItem(icon, x + 4, y + 4);
         }
     }

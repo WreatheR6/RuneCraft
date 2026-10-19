@@ -32,8 +32,8 @@ import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
-import net.fabricmc.fabric.api.event.player.UseItemCallback;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import com.runecraft.platform.UseItemCallback;
+import com.runecraft.platform.ServerPlayConnectionEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
@@ -128,7 +128,7 @@ public final class CannonService {
             return InteractionResultHolder.sidedSuccess(p.getItemInHand(hand), false);
         });
         QuestScripts.onTalk(Multicannon.NULODION, (p, npc) -> nulodion(p));
-        net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback.EVENT.register((dispatcher, access, env) -> dispatcher.register(
+        com.runecraft.platform.CommandRegistrationCallback.EVENT.register((dispatcher, access, env) -> dispatcher.register(
                 net.minecraft.commands.Commands.literal("cannon").then(net.minecraft.commands.Commands.literal("buy")
                         .then(net.minecraft.commands.Commands.argument("item",
                                 com.mojang.brigadier.arguments.StringArgumentType.word()).executes(ctx -> {

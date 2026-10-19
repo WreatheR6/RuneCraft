@@ -15,7 +15,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
       - uses: gradle/actions/setup-gradle@v4
       - name: Export compile classpath
         run: ./gradlew exportClasspath --stacktrace
@@ -25,6 +25,15 @@ jobs:
           name: compile-classpath
           path: build/classpath/*.jar
           retention-days: 7
+      # Same jars as a release asset, for offline compile checks where artifact storage is unreachable.
+      - name: Publish classpath
+        if: github.event_name != 'pull_request'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          (cd build/classpath && zip -q -r ../neoforge-classpath.zip .)
+          gh release upload dev-latest build/neoforge-classpath.zip --clobber
       - name: Build mod jar
         run: ./gradlew build --stacktrace
       - name: Upload jar
@@ -78,5 +87,5 @@ jobs:
           name: RuneCraft development build
           prerelease: true
           make_latest: false
-          body: "Automatic build of ${{ github.sha }} (branch ${{ github.ref_name }}). Requires Minecraft 1.20.1, Fabric Loader and Fabric API."
+          body: "Automatic build of ${{ github.sha }} (branch ${{ github.ref_name }}). Requires Minecraft 1.21.1 and NeoForge 21.1."
           files: build/libs/*.jar

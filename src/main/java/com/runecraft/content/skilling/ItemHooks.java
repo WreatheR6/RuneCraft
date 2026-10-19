@@ -25,7 +25,7 @@ import com.runecraft.player.Players;
 import com.runecraft.registry.ModItems;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.fabricmc.fabric.api.event.player.UseItemCallback;
+import com.runecraft.platform.UseItemCallback;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;

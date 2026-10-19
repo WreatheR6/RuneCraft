@@ -11,7 +11,7 @@ import com.runecraft.osrs.content.minigames.SolHeredit.Attack;
 import com.runecraft.osrs.content.minigames.SolHeredit.Grapple;
 import com.runecraft.player.Players;
 import com.runecraft.util.Msg;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import com.runecraft.platform.CommandRegistrationCallback;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;

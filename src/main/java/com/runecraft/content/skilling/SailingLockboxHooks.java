@@ -8,7 +8,7 @@ import com.runecraft.osrs.content.skilling.SailingTraining;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.LandmarkBuilder;
-import net.fabricmc.fabric.api.event.player.UseItemCallback;
+import com.runecraft.platform.UseItemCallback;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;

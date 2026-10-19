@@ -20,7 +20,7 @@ import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
-import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import com.runecraft.platform.UseBlockCallback;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;

@@ -13,15 +13,19 @@ import com.runecraft.osrs.data.Boss;
 import com.runecraft.osrs.data.Monster;
 import com.runecraft.registry.ModBlocks;
 import com.runecraft.registry.ModEntities;
-import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
+import com.runecraft.platform.client.BlockRenderLayerMap;
+import com.runecraft.platform.client.ClientTickEvents;
+import com.runecraft.platform.client.ItemTooltipCallback;
+import com.runecraft.platform.client.KeyBindingHelper;
+import com.runecraft.platform.client.ClientPlayNetworking;
+import com.runecraft.platform.client.EntityRendererRegistry;
+import com.runecraft.platform.client.HudRenderCallback;
+import com.runecraft.platform.client.WorldRenderEvents;
+import com.runecraft.platform.client.ClientPlatformEvents;
+import com.runecraft.RuneCraft;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.common.Mod;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.entity.EntityType;
@@ -32,7 +36,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class RuneCraftClient implements ClientModInitializer {
+@Mod(value = RuneCraft.MOD_ID, dist = Dist.CLIENT)
+public class RuneCraftClient {
     /** Opens the full-screen RuneScape interface (all tabs). */
     public static KeyMapping interfaceKey;
     /** Shows/hides the OSRS side panel at the bottom-right of the HUD. */
@@ -40,7 +45,11 @@ public class RuneCraftClient implements ClientModInitializer {
     /** Hold to free the cursor and use the side panel. */
     public static KeyMapping panelCursorKey;
 
-    @Override
+    public RuneCraftClient(IEventBus modBus) {
+        ClientPlatformEvents.init(modBus, this::onInitializeClient);
+    }
+
+    /** The client init, run once after registration (see {@link ClientPlatformEvents}). */
     public void onInitializeClient() {
         registerPackets();
         sidePanelKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.runecraft.side_panel", InputConstants.Type.KEYSYM,
@@ -70,7 +79,6 @@ public class RuneCraftClient implements ClientModInitializer {
         com.runecraft.client.model.ModelSpecs.registerAll();
         com.runecraft.client.model.GielinorLooks.registerAll();
         CoinStacks.register();
-        com.runecraft.client.bank.BankClient.init();
         com.runecraft.client.bank.BankClient.init();
         for (Map.Entry<Monster, EntityType<OsrsMonsterEntity>> e : ModEntities.MONSTERS.entrySet()) {
             String id = e.getKey().entity();

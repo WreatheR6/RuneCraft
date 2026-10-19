@@ -3,7 +3,7 @@ package com.runecraft.client.model;
 import com.runecraft.RuneCraft;
 import com.runecraft.osrs.content.ContentRegistry;
 import com.runecraft.osrs.model.ModelSpec;
-import net.fabricmc.fabric.api.client.rendering.v1.EntityModelLayerRegistry;
+import com.runecraft.platform.client.EntityModelLayerRegistry;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.CubeDeformation;

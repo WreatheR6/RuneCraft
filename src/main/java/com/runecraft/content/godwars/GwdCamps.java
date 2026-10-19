@@ -7,7 +7,7 @@ import com.runecraft.osrs.content.godwars.GwdPlaces;
 import com.runecraft.osrs.content.godwars.GwdPlaces.Camp;
 import com.runecraft.registry.ModEntities;
 import com.runecraft.world.Gielinor;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import com.runecraft.platform.ServerTickEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;

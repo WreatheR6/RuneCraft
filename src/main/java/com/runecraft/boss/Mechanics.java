@@ -15,7 +15,7 @@ import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import com.runecraft.platform.ServerTickEvents;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.particles.SimpleParticleType;
@@ -114,7 +114,7 @@ public final class Mechanics {
         if (a.particle() == null) {
             return fallback;
         }
-        var type = BuiltInRegistries.PARTICLE_TYPE.get(new ResourceLocation(a.particle()));
+        var type = BuiltInRegistries.PARTICLE_TYPE.get(ResourceLocation.parse(a.particle()));
         return type instanceof SimpleParticleType simple ? simple : fallback;
     }
 

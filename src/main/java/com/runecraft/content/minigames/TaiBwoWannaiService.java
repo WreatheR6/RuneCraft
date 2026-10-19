@@ -17,7 +17,7 @@ import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.LandmarkBuilder;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import com.runecraft.platform.ServerLifecycleEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -419,7 +419,7 @@ final class TaiBwoWannaiService {
     }
 
     private static Block block(String id) {
-        Block b = BuiltInRegistries.BLOCK.get(new ResourceLocation("runecraft", id));
+        Block b = BuiltInRegistries.BLOCK.get(ResourceLocation.fromNamespaceAndPath("runecraft", id));
         return b == net.minecraft.world.level.block.Blocks.AIR ? null : b;
     }
 

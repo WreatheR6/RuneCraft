@@ -2,7 +2,7 @@ package com.runecraft.client.model;
 
 import com.runecraft.osrs.content.ContentRegistry;
 import com.runecraft.osrs.model.ModelSpec;
-import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
+import com.runecraft.platform.client.EntityRendererRegistry;
 import net.minecraft.client.renderer.entity.CaveSpiderRenderer;
 import net.minecraft.client.renderer.entity.ChickenRenderer;
 import net.minecraft.client.renderer.entity.CowRenderer;

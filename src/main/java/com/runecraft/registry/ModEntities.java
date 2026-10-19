@@ -7,16 +7,12 @@ import com.runecraft.entity.OsrsMonsterEntity;
 import com.runecraft.entity.QuestNpcEntity;
 import com.runecraft.osrs.data.Boss;
 import com.runecraft.osrs.data.Monster;
-import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
-import net.minecraft.core.Registry;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
-import net.minecraft.world.entity.SpawnPlacements;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.level.levelgen.Heightmap;
+import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
+import net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -66,33 +62,26 @@ public final class ModEntities {
                 continue;
             }
             float s = scale(m.entity());
-            EntityType<OsrsMonsterEntity> type = FabricEntityTypeBuilder.<OsrsMonsterEntity>createMob()
-                    .spawnGroup(MobCategory.MONSTER)
-                    .entityFactory(OsrsMonsterEntity::new)
-                    .dimensions(EntityDimensions.fixed(0.6f * s, 1.95f * s))
+            EntityType<OsrsMonsterEntity> type = MobTypeBuilder.<OsrsMonsterEntity>create(OsrsMonsterEntity::new, MobCategory.MONSTER)
+                    .size(0.6f * s, 1.95f * s)
                     .defaultAttributes(() -> attributes(m.hitpoints(), 0.25))
-                    .spawnRestriction(SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
-                            net.minecraft.world.entity.monster.Monster::checkAnyLightMonsterSpawnRules)
+                    .groundSpawns()
                     .trackRangeBlocks(64)
-                    .build();
+                    .register(RuneCraft.id(m.entity()));
             STATS.put(type, MonsterStats.from(m));
-            Registry.register(BuiltInRegistries.ENTITY_TYPE, RuneCraft.id(m.entity()), type);
             MONSTERS.put(m, type);
         }
         for (Boss b : Boss.values()) {
             float s = b.scale();
-            EntityType<BossEntity> type = FabricEntityTypeBuilder.<BossEntity>createMob()
-                    .spawnGroup(MobCategory.MONSTER)
-                    .entityFactory(BossEntity::new)
-                    .dimensions(EntityDimensions.fixed(0.6f * s, 1.95f * s))
+            EntityType<BossEntity> type = MobTypeBuilder.<BossEntity>create(BossEntity::new, MobCategory.MONSTER)
+                    .size(0.6f * s, 1.95f * s)
                     .defaultAttributes(() -> attributes(b.hitpoints(), 0.27))
                     .trackRangeBlocks(96)
                     .fireImmune()
-                    .build();
+                    .register(RuneCraft.id(b.entityId()));
             STATS.put(type, new MonsterStats(b.displayName(), b.combatLevel(), b.hitpoints(), b.attack(), b.strength(),
                     b.defence(), b.magic(), b.ranged(), b.defenceBonus(), b.attackSpeed(), b.style(), b.maxHit(), null, null, b));
             BOSSES.put(type, b);
-            Registry.register(BuiltInRegistries.ENTITY_TYPE, RuneCraft.id(b.entityId()), type);
             BOSS_TYPES.put(b, type);
         }
         for (com.runecraft.osrs.content.MonsterDef m : com.runecraft.osrs.content.ContentRegistry.monsters()) {
@@ -103,45 +92,43 @@ public final class ModEntities {
                     ? com.runecraft.entity.RockCrabEntity::new
                     : "demonic_gorilla".equals(m.id) || "tortured_gorilla".equals(m.id)
                     ? com.runecraft.content.slayer.GorillaEntity::new : OsrsMonsterEntity::new;
-            EntityType<OsrsMonsterEntity> type = FabricEntityTypeBuilder.<OsrsMonsterEntity>createMob()
-                    .spawnGroup(MobCategory.MONSTER)
-                    .entityFactory(factory)
-                    .dimensions(EntityDimensions.fixed(m.width * sc, m.height * sc))
+            EntityType<OsrsMonsterEntity> type = MobTypeBuilder.<OsrsMonsterEntity>create(factory, MobCategory.MONSTER)
+                    .size(m.width * sc, m.height * sc)
                     .defaultAttributes(() -> attributes(m.hitpoints, m.moveSpeed))
-                    .spawnRestriction(SpawnPlacements.Type.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
-                            net.minecraft.world.entity.monster.Monster::checkAnyLightMonsterSpawnRules)
+                    .groundSpawns()
                     .trackRangeBlocks(64)
-                    .build();
+                    .register(RuneCraft.id(m.id));
             STATS.put(type, MonsterStats.from(m));
-            Registry.register(BuiltInRegistries.ENTITY_TYPE, RuneCraft.id(m.id), type);
             MODULE_MONSTERS.put(m.id, type);
             BY_ID.put(m.id, type);
         }
         for (com.runecraft.osrs.content.BossDef b : com.runecraft.osrs.content.ContentRegistry.bosses()) {
             float sc = b.scale;
-            EntityType<com.runecraft.boss.DataBossEntity> type = FabricEntityTypeBuilder.<com.runecraft.boss.DataBossEntity>createMob()
-                    .spawnGroup(MobCategory.MONSTER)
-                    .entityFactory(com.runecraft.boss.DataBossEntity::new)
-                    .dimensions(EntityDimensions.fixed(b.width * sc, b.height * sc))
+            EntityType<com.runecraft.boss.DataBossEntity> type = MobTypeBuilder.<com.runecraft.boss.DataBossEntity>create(com.runecraft.boss.DataBossEntity::new, MobCategory.MONSTER)
+                    .size(b.width * sc, b.height * sc)
                     .defaultAttributes(() -> attributes(b.hitpoints, b.moveSpeed))
                     .trackRangeBlocks(128)
                     .fireImmune()
-                    .build();
+                    .register(RuneCraft.id(b.id));
             STATS.put(type, MonsterStats.from(b));
             DATA_BOSSES.put(type, b);
-            Registry.register(BuiltInRegistries.ENTITY_TYPE, RuneCraft.id(b.id), type);
             DATA_BOSS_TYPES.put(b.id, type);
             BY_ID.put(b.id, type);
         }
         MONSTERS.forEach((m, t) -> BY_ID.put(m.entity(), t));
         BOSS_TYPES.forEach((b, t) -> BY_ID.put(b.entityId(), t));
-        QUEST_NPC = Registry.register(BuiltInRegistries.ENTITY_TYPE, RuneCraft.id("quest_npc"),
-                FabricEntityTypeBuilder.<QuestNpcEntity>createMob()
-                        .spawnGroup(MobCategory.MISC)
-                        .entityFactory(QuestNpcEntity::new)
-                        .dimensions(EntityDimensions.fixed(0.6f, 1.95f))
-                        .defaultAttributes(QuestNpcEntity::createAttributes)
-                        .build());
+        QUEST_NPC = MobTypeBuilder.<QuestNpcEntity>create(QuestNpcEntity::new, MobCategory.MISC)
+                .size(0.6f, 1.95f)
+                .defaultAttributes(QuestNpcEntity::createAttributes)
+                .register(RuneCraft.id("quest_npc"));
+    }
+
+    public static void registerAttributes(EntityAttributeCreationEvent event) {
+        MobTypeBuilder.registerAttributes(event);
+    }
+
+    public static void registerSpawnPlacements(RegisterSpawnPlacementsEvent event) {
+        MobTypeBuilder.registerSpawnPlacements(event);
     }
 
     public static MonsterStats stats(EntityType<?> type) {

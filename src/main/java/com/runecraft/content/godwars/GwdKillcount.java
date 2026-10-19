@@ -12,7 +12,7 @@ import com.runecraft.registry.ModEntities;
 import com.runecraft.skill.Drops;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import com.runecraft.platform.UseBlockCallback;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;

@@ -1,8 +1,8 @@
 package com.runecraft.client.content.systems;
 
 import com.runecraft.content.systems.SysNet;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import com.runecraft.platform.client.ClientPlayNetworking;
+import com.runecraft.platform.PacketByteBufs;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;

@@ -42,7 +42,7 @@ public final class TormentedDemonCombat implements CombatHooks.PlayerAttackModif
     static void register() {
         CombatHooks.addModifier(new TormentedDemonCombat());
         // Emberlight: use a tormented synapse on an anvil with a fully charged Arclight and a hammer.
-        net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
+        com.runecraft.platform.UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             if (hand != net.minecraft.world.InteractionHand.MAIN_HAND || player.getMainHandItem().isEmpty()
                     || !"tormented_synapse".equals(Inv.idOf(player.getMainHandItem()))) {
                 return net.minecraft.world.InteractionResult.PASS;

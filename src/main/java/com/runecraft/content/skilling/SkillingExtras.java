@@ -16,7 +16,7 @@ import com.runecraft.skill.Tools;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.fabricmc.fabric.api.event.player.UseItemCallback;
+import com.runecraft.platform.UseItemCallback;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;

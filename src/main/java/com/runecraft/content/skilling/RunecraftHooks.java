@@ -11,7 +11,7 @@ import com.runecraft.osrs.data.RuneAltar;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import com.runecraft.platform.UseBlockCallback;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;

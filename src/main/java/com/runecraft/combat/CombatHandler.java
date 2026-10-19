@@ -23,7 +23,7 @@ import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
-import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import com.runecraft.platform.ServerLivingEntityEvents;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;

@@ -8,7 +8,7 @@ import com.runecraft.osrs.content.extras.Poh;
 import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import com.runecraft.platform.ServerTickEvents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.MutableComponent;

@@ -33,7 +33,7 @@ import com.runecraft.registry.ModBlocks;
 import com.runecraft.registry.ModEntities;
 import com.runecraft.skill.HunterService;
 import com.runecraft.util.Inv;
-import net.fabricmc.fabric.api.event.player.UseEntityCallback;
+import com.runecraft.platform.UseEntityCallback;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;

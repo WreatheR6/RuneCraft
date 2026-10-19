@@ -11,7 +11,7 @@ import com.runecraft.quest.QuestApi;
 import com.runecraft.quest.QuestScripts;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import com.runecraft.platform.ServerPlayConnectionEvents;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import java.util.UUID;

@@ -2,7 +2,7 @@ package com.runecraft.client.content.npcs;
 
 import com.runecraft.client.content.ClientModuleHooks;
 import com.runecraft.content.npcs.NpcsNet;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import com.runecraft.platform.client.ClientPlayNetworking;
 
 /** Client side of the npcs module: the shop screen. */
 public final class NpcsClientHooks implements ClientModuleHooks {

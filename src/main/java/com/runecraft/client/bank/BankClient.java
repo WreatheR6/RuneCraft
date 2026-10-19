@@ -3,8 +3,8 @@ package com.runecraft.client.bank;
 import com.runecraft.bank.BankService;
 import com.runecraft.osrs.bank.BankModel;
 import com.runecraft.osrs.bank.BankQuantity;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import com.runecraft.platform.client.ClientPlayNetworking;
+import com.runecraft.platform.PacketByteBufs;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 

@@ -10,7 +10,7 @@ import com.runecraft.skill.Drops;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.fabricmc.fabric.api.event.player.UseItemCallback;
+import com.runecraft.platform.UseItemCallback;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;

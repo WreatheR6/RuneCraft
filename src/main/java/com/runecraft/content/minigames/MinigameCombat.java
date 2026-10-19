@@ -19,7 +19,7 @@ import com.runecraft.player.Players;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
+import com.runecraft.platform.AttackEntityCallback;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.EquipmentSlot;

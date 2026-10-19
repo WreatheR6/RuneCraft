@@ -20,7 +20,7 @@ import com.runecraft.osrs.content.minigames.RewardShops;
 import com.runecraft.osrs.content.minigames.SpoilsOfWar;
 import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
-import net.fabricmc.fabric.api.event.player.UseItemCallback;
+import com.runecraft.platform.UseItemCallback;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;

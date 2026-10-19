@@ -54,7 +54,7 @@ import com.runecraft.player.PlayerEvents;
 import com.runecraft.player.Players;
 import com.runecraft.registry.ModEntities;
 import com.runecraft.util.Inv;
-import net.fabricmc.fabric.api.event.player.UseItemCallback;
+import com.runecraft.platform.UseItemCallback;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;

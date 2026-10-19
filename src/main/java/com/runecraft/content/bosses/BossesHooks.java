@@ -103,7 +103,7 @@ public final class BossesHooks implements ModuleHooks {
         BlockHooks.register(BossPlaces.SCAR_GROWTH, BossesHooks::pluckGrowth);
         BlockHooks.register(BossPlaces.ANCIENT_VAULT_CHEST, BossesHooks::openVaultChest);
         // Yama's dossiers open into a contract or chasm teleport scrolls (OSRS Wiki "Dossier").
-        net.fabricmc.fabric.api.event.player.UseItemCallback.EVENT.register((player, world, hand) -> {
+        com.runecraft.platform.UseItemCallback.EVENT.register((player, world, hand) -> {
             net.minecraft.world.item.ItemStack stack = player.getItemInHand(hand);
             if (world.isClientSide() || stack.isEmpty() || !(player instanceof ServerPlayer p) || !"dossier".equals(Inv.idOf(stack))) {
                 return net.minecraft.world.InteractionResultHolder.pass(stack);

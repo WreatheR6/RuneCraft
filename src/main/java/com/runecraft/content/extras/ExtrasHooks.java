@@ -3,7 +3,7 @@ package com.runecraft.content.extras;
 import com.runecraft.content.ModuleHooks;
 import com.runecraft.osrs.content.extras.Poh;
 import com.runecraft.util.Inv;
-import net.fabricmc.fabric.api.event.player.UseItemCallback;
+import com.runecraft.platform.UseItemCallback;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.item.ItemStack;
@@ -16,7 +16,6 @@ import net.minecraft.world.item.ItemStack;
 public final class ExtrasHooks implements ModuleHooks {
     @Override
     public void init() {
-        ExtrasEntities.register();
         PetService.init();
         HouseService.init();
         HouseFurniture.init();

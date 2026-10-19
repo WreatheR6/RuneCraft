@@ -10,7 +10,7 @@ import com.runecraft.osrs.content.quests.QuestBook;
 import com.runecraft.osrs.content.quests.QuestSpec;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import com.runecraft.platform.CommandRegistrationCallback;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;

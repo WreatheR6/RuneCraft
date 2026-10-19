@@ -1,7 +1,7 @@
 package com.runecraft.content.npcs;
 
 import com.runecraft.RuneCraft;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import com.runecraft.platform.ServerPlayNetworking;
 import net.minecraft.resources.ResourceLocation;
 
 /** Packet channels for NPC shops. */

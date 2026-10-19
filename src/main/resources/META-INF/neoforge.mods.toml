@@ -1,0 +1,25 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+
+[[mods]]
+modId = "runecraft"
+version = "${version}"
+displayName = "RuneCraft"
+authors = "RuneCraft contributors"
+logoFile = "assets/runecraft/icon.png"
+description = '''Old School RuneScape in Minecraft: all 24 skills with the exact OSRS experience curve, OSRS combat, prayers, spells, quests, bosses, a collection log and the Gielinor dimension laid out like the real world map.'''
+
+[[dependencies.runecraft]]
+modId = "neoforge"
+type = "required"
+versionRange = "[21.1,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.runecraft]]
+modId = "minecraft"
+type = "required"
+versionRange = "[1.21.1,1.21.2)"
+ordering = "NONE"
+side = "BOTH"

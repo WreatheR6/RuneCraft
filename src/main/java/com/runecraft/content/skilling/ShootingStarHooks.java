@@ -17,7 +17,7 @@ import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
 import com.runecraft.world.StructurePlacer;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import com.runecraft.platform.ServerTickEvents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;

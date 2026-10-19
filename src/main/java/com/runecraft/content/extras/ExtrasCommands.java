@@ -6,7 +6,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.runecraft.osrs.content.extras.Pets;
 import com.runecraft.osrs.content.extras.Poh;
 import com.runecraft.util.Msg;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import com.runecraft.platform.CommandRegistrationCallback;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.server.level.ServerPlayer;

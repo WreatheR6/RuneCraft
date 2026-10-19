@@ -24,7 +24,7 @@ import com.runecraft.player.Players;
 import com.runecraft.registry.ModItems;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
-import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import com.runecraft.platform.ServerLivingEntityEvents;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;

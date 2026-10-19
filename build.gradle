@@ -1,6 +1,7 @@
 plugins {
-    id 'fabric-loom' version '1.10-SNAPSHOT'
+    id 'java-library'
     id 'maven-publish'
+    id 'net.neoforged.moddev' version '2.0.148'
 }
 
 version = project.mod_version
@@ -10,59 +11,66 @@ base {
     archivesName = project.archives_base_name
 }
 
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    withSourcesJar()
+}
+
 repositories {
 }
 
-dependencies {
-    minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings loom.officialMojangMappings()
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+neoForge {
+    version = project.neo_version
 
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-}
-
-loom {
     runs {
+        client {
+            client()
+        }
+        server {
+            server()
+            programArgument '--nogui'
+        }
         // CI client smoke test (./gradlew runClientSmoke, see .github/workflows/build.yml): loads the
         // world saved as build/clientsmoke/saves/smoke, walks through Gielinor taking screenshots, quits.
         clientSmoke {
             client()
-            name "Client Smoke Test"
-            runDir "build/clientsmoke"
-            ideConfigGenerated false
-            property("runecraft.clientSmoke", "true")
-            property("runecraft.clientSmoke.world", "smoke")
+            gameDirectory = project.file('build/clientsmoke')
+            systemProperty 'runecraft.clientSmoke', 'true'
+            systemProperty 'runecraft.clientSmoke.world', 'smoke'
             // Real-player self-test after the walkthrough (tools/smoke_client.sh sets these; "none" skips it).
-            property("runecraft.clientSmoke.selftest", System.getenv("RUNECRAFT_CLIENT_SELFTEST") ?: "minigame:,raid:,boss:")
-            property("runecraft.clientSmoke.selftestMinutes", System.getenv("RUNECRAFT_CLIENT_SELFTEST_MINUTES") ?: "14")
-            programArgs("--quickPlaySingleplayer", "smoke", "--width", "1280", "--height", "720")
+            systemProperty 'runecraft.clientSmoke.selftest', System.getenv('RUNECRAFT_CLIENT_SELFTEST') ?: 'minigame:,raid:,boss:'
+            systemProperty 'runecraft.clientSmoke.selftestMinutes', System.getenv('RUNECRAFT_CLIENT_SELFTEST_MINUTES') ?: '14'
+            programArguments.addAll('--quickPlaySingleplayer', 'smoke', '--width', '1280', '--height', '720')
+        }
+    }
+
+    mods {
+        runecraft {
+            sourceSet(sourceSets.main)
         }
     }
 }
 
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
 processResources {
     inputs.property "version", project.version
-    filesMatching("fabric.mod.json") {
+    filesMatching("META-INF/neoforge.mods.toml") {
         expand "version": project.version
     }
 }
 
 tasks.withType(JavaCompile).configureEach {
-    it.options.release = 17
+    it.options.release = 21
     it.options.encoding = 'UTF-8'
     it.options.compilerArgs += ['-Xmaxerrs', '10000']
 }
 
 test {
     useJUnitPlatform()
-}
-
-java {
-    withSourcesJar()
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
 }
 
 jar {
@@ -79,8 +87,10 @@ tasks.register('dumpCatalog', JavaExec) {
     args = ["${buildDir}/catalog.json"]
 }
 
-// Copies the full compile classpath (remapped Minecraft + Fabric jars) for offline compile checks.
+// Copies the full compile classpath (NeoForge's Minecraft jar and libraries) for offline compile checks; CI
+// publishes it as neoforge-classpath.zip on the dev-latest release.
 tasks.register('exportClasspath', Copy) {
+    dependsOn tasks.matching { it.name == 'createMinecraftArtifacts' }
     from configurations.compileClasspath
     into "${buildDir}/classpath"
 }

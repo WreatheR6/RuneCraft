@@ -1,7 +1,7 @@
 package com.runecraft.content.systems;
 
 import com.runecraft.action.ActionManager;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import com.runecraft.platform.ServerTickEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import java.util.ArrayList;

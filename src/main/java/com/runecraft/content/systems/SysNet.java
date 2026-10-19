@@ -2,8 +2,8 @@ package com.runecraft.content.systems;
 
 import com.runecraft.RuneCraft;
 import com.runecraft.osrs.content.systems.Spellbooks;
-import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import com.runecraft.platform.PacketByteBufs;
+import com.runecraft.platform.ServerPlayNetworking;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;

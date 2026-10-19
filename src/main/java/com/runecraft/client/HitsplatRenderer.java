@@ -2,7 +2,7 @@ package com.runecraft.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.runecraft.network.Net;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
+import com.runecraft.platform.client.WorldRenderContext;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;

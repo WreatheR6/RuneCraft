@@ -10,7 +10,7 @@ import com.runecraft.entity.QuestNpcEntity;
 import com.runecraft.osrs.content.ContentRegistry;
 import com.runecraft.quest.QuestApi;
 import com.runecraft.quest.QuestScripts;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import com.runecraft.platform.ServerLifecycleEvents;
 import net.minecraft.server.level.ServerPlayer;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;

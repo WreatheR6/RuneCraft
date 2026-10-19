@@ -18,7 +18,7 @@ import com.runecraft.osrs.content.ContentRegistry;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
 import com.runecraft.skill.XpService;
-import net.fabricmc.fabric.api.entity.FakePlayer;
+import com.runecraft.platform.FakePlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;

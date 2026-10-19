@@ -5,7 +5,7 @@ import com.runecraft.osrs.content.ContentRegistry;
 import com.runecraft.osrs.content.PlaceDef;
 import com.runecraft.world.Gielinor;
 import com.runecraft.world.LandmarkBuilder;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import com.runecraft.platform.client.ClientTickEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.components.Button;

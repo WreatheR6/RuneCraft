@@ -2,8 +2,8 @@ package com.runecraft.client.content.minigames;
 
 import com.runecraft.client.content.ClientModuleHooks;
 import com.runecraft.content.minigames.MinigameNet;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import com.runecraft.platform.client.ClientPlayNetworking;
+import com.runecraft.platform.client.HudRenderCallback;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;

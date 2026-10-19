@@ -17,7 +17,7 @@ import com.runecraft.player.Players;
 import com.runecraft.quest.QuestManager;
 import com.runecraft.skill.XpService;
 import com.runecraft.world.Gielinor;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import com.runecraft.platform.CommandRegistrationCallback;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;

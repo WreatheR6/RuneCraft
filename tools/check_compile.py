@@ -14,7 +14,7 @@ import subprocess
 import sys
 import tempfile
 
-EXTERNAL = ("net.minecraft", "net.fabricmc", "com.mojang", "org.joml", "org.lwjgl", "org.slf4j")
+EXTERNAL = ("net.minecraft", "net.neoforged", "net.fabricmc", "com.mojang", "io.netty", "org.joml", "org.lwjgl", "org.slf4j")
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 srcs = []
 for d, _, files in os.walk(os.path.join(root, "src/main/java")):
@@ -42,7 +42,7 @@ while changed:
 
 out = tempfile.mkdtemp()
 env = dict(os.environ, JAVA_TOOL_OPTIONS="")
-proc = subprocess.run(["javac", "--release", "17", "-proc:none", "-Xmaxerrs", "100000", "-d", out, "-encoding", "UTF-8"] + srcs,
+proc = subprocess.run(["javac", "--release", "21", "-proc:none", "-Xmaxerrs", "100000", "-d", out, "-encoding", "UTF-8"] + srcs,
                       capture_output=True, text=True, env=env)
 text = proc.stderr
 blocks = re.split(r"\n(?=/)", text)

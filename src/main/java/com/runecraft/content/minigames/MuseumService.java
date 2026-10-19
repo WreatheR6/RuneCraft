@@ -18,7 +18,7 @@ import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.LandmarkBuilder;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import com.runecraft.platform.ServerLifecycleEvents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -377,7 +377,7 @@ final class MuseumService {
                 VarrockMuseum.STORAGE_CRATE, VarrockMuseum.DISPLAY_CASE, VarrockMuseum.PLAQUE};
         int z = GielinorMap.toBlockZ(3440) - 1;
         for (int i = 0; i < ids.length; i++) {
-            Block b = BuiltInRegistries.BLOCK.get(new ResourceLocation("runecraft", ids[i]));
+            Block b = BuiltInRegistries.BLOCK.get(ResourceLocation.fromNamespaceAndPath("runecraft", ids[i]));
             if (b == net.minecraft.world.level.block.Blocks.AIR) {
                 continue;
             }

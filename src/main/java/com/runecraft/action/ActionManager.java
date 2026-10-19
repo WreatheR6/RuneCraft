@@ -2,7 +2,7 @@ package com.runecraft.action;
 
 import com.runecraft.combat.PrayerService;
 import com.runecraft.player.PlayerEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import com.runecraft.platform.ServerTickEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
