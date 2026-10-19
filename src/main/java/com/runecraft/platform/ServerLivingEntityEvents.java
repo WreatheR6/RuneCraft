@@ -5,8 +5,11 @@ import net.minecraft.world.entity.LivingEntity;
 
 /**
  * Fabric's living entity events. ALLOW_DAMAGE is fired from {@code LivingIncomingDamageEvent} (false cancels the
- * damage), ALLOW_DEATH from {@code LivingDeathEvent} at the highest priority (false cancels the death) and AFTER_DEATH
- * from {@code LivingDeathEvent} at the lowest priority when no one cancelled it.
+ * damage). ALLOW_DEATH is fired once per death: from {@code LivingDamageEvent.Post} when the damage leaves the entity
+ * dead, before the totem check and {@code die()}, or from {@code LivingDeathEvent} for a {@code die()} that damage did
+ * not lead to. False cancels the death and no totem is used; the listener should give the entity its health back, or it
+ * stays dying at 0 health. AFTER_DEATH is fired from {@code LivingDeathEvent} at the lowest priority when no one
+ * cancelled it.
  */
 public final class ServerLivingEntityEvents {
     private ServerLivingEntityEvents() {
