@@ -947,7 +947,7 @@ final class SlayerScripts {
             rupturas.remove(r);
             r.discard();
             BossFx.world(boss).sendParticles(ParticleTypes.EXPLOSION, at.x, at.y + 0.5, at.z, 4, 1.2, 0.4, 1.2, 0);
-            BossFx.sound(r, SoundEvents.GENERIC_EXPLODE, 0.8f);
+            BossFx.sound(r, SoundEvents.GENERIC_EXPLODE.value(), 0.8f);
             for (ServerPlayer p : BossFx.players(r, BossMechanics.RUPTURA_RANGE + 1)) {
                 int dmg = BossMechanics.rupturaPlayerDamage(tiles(at, p.position()), hp);
                 if (dmg > 0) {

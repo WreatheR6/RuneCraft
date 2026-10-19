@@ -1,5 +1,6 @@
 package com.runecraft.content.skilling;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -16,7 +17,7 @@ public final class SkillingState extends SavedData {
 
     public static SkillingState get(MinecraftServer server) {
         return server.overworld().getDataStorage()
-                .computeIfAbsent(SkillingState::fromNbt, SkillingState::new, KEY);
+                .computeIfAbsent(new SavedData.Factory<>(SkillingState::new, SkillingState::fromNbt, null), KEY);
     }
 
     /** A named section (created on demand), e.g. "patches" or "sacks". */
@@ -51,12 +52,12 @@ public final class SkillingState extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag nbt) {
+    public CompoundTag save(CompoundTag nbt, HolderLookup.Provider registries) {
         nbt.put("Data", root.copy());
         return nbt;
     }
 
-    public static SkillingState fromNbt(CompoundTag nbt) {
+    public static SkillingState fromNbt(CompoundTag nbt, HolderLookup.Provider registries) {
         SkillingState state = new SkillingState();
         state.root = nbt.getCompound("Data");
         return state;

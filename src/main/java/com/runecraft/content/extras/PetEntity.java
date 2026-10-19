@@ -45,9 +45,9 @@ public class PetEntity extends PathfinderMob {
     }
 
     @Override
-    protected void defineSynchedData() {
-        super.defineSynchedData();
-        this.entityData.define(PET, "");
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(PET, "");
     }
 
     @Override
@@ -136,7 +136,7 @@ public class PetEntity extends PathfinderMob {
     }
 
     @Override
-    public boolean canBeLeashed(Player player) {
+    public boolean canBeLeashed() {
         return false;
     }
 

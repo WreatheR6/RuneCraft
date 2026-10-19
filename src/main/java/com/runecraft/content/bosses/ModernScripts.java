@@ -808,7 +808,7 @@ final class ModernScripts {
                     hurt(boss, p, "void_flare", contract != null && contract.lethalFlares ? dmg : Math.max(0, dmg - boss.getRandom().nextInt(3)));
                 }
                 boss.heal(mcHp(boss, Math.min(dmg, 44)));
-                BossFx.sound(boss, SoundEvents.GENERIC_EXPLODE, 0.9f);
+                BossFx.sound(boss, SoundEvents.GENERIC_EXPLODE.value(), 0.9f);
             }
         }
 

@@ -1,5 +1,6 @@
 package com.runecraft.content.slayer;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -122,14 +123,14 @@ public final class SlayerState extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag nbt) {
+    public CompoundTag save(CompoundTag nbt, HolderLookup.Provider registries) {
         CompoundTag all = new CompoundTag();
         profiles.forEach((uuid, p) -> all.put(uuid.toString(), p.toNbt()));
         nbt.put("Profiles", all);
         return nbt;
     }
 
-    public static SlayerState fromNbt(CompoundTag nbt) {
+    public static SlayerState fromNbt(CompoundTag nbt, HolderLookup.Provider registries) {
         SlayerState state = new SlayerState();
         CompoundTag all = nbt.getCompound("Profiles");
         for (String key : all.getAllKeys()) {
@@ -143,6 +144,6 @@ public final class SlayerState extends SavedData {
     }
 
     public static SlayerState of(MinecraftServer server) {
-        return server.overworld().getDataStorage().computeIfAbsent(SlayerState::fromNbt, SlayerState::new, KEY);
+        return server.overworld().getDataStorage().computeIfAbsent(new SavedData.Factory<>(SlayerState::new, SlayerState::fromNbt, null), KEY);
     }
 }

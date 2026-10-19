@@ -103,7 +103,7 @@ final class BossFx {
             return null;
         }
         mob.moveTo(pos.x, pos.y, pos.z, boss.getYRot(), 0);
-        mob.finalizeSpawn(world, world.getCurrentDifficultyAt(mob.blockPosition()), MobSpawnType.MOB_SUMMONED, null, null);
+        mob.finalizeSpawn(world, world.getCurrentDifficultyAt(mob.blockPosition()), MobSpawnType.MOB_SUMMONED, null);
         if (target != null) {
             mob.setTarget(target);
         }
@@ -167,7 +167,7 @@ final class BossFx {
         // The form is discarded rather than killed, so credit the slayer task (hydras, boss tasks) here.
         com.runecraft.combat.Slayer.onKill(killer, form, com.runecraft.combat.MonsterStats.from(def));
         burst(form, ParticleTypes.EXPLOSION, 6, 1.0);
-        sound(form, SoundEvents.GENERIC_EXPLODE, 0.8f);
+        sound(form, SoundEvents.GENERIC_EXPLODE.value(), 0.8f);
         form.discard();
     }
 

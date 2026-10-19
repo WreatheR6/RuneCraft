@@ -456,7 +456,7 @@ final class EncounterScripts {
                     BossFx.say(boss, "The totems blast the Nightmare, shattering her shield!");
                     float blast = mcHp(boss, 800);
                     boss.setHealth(Math.max(1, boss.getHealth() - Math.min(blast, boss.getMaxHealth() * 0.1f)));
-                    BossFx.sound(boss, SoundEvents.GENERIC_EXPLODE, 0.7f);
+                    BossFx.sound(boss, SoundEvents.GENERIC_EXPLODE.value(), 0.7f);
                 }
             }
             if (!husks.isEmpty() && husks.stream().noneMatch(Mob::isAlive)) {

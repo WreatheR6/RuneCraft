@@ -1,5 +1,6 @@
 package com.runecraft.content.extras;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -14,7 +15,7 @@ public final class ExtrasState extends SavedData {
     private CompoundTag root = new CompoundTag();
 
     public static ExtrasState get(MinecraftServer server) {
-        return server.overworld().getDataStorage().computeIfAbsent(ExtrasState::fromNbt, ExtrasState::new, KEY);
+        return server.overworld().getDataStorage().computeIfAbsent(new SavedData.Factory<>(ExtrasState::new, ExtrasState::fromNbt, null), KEY);
     }
 
     public CompoundTag section(String name) {
@@ -46,12 +47,12 @@ public final class ExtrasState extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag nbt) {
+    public CompoundTag save(CompoundTag nbt, HolderLookup.Provider registries) {
         nbt.put("Data", root.copy());
         return nbt;
     }
 
-    public static ExtrasState fromNbt(CompoundTag nbt) {
+    public static ExtrasState fromNbt(CompoundTag nbt, HolderLookup.Provider registries) {
         ExtrasState state = new ExtrasState();
         state.root = nbt.getCompound("Data");
         return state;

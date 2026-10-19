@@ -425,7 +425,7 @@ final class DoomDelveService {
             }
             if (burrowTicks == 0) {
                 BossFx.burst(boss, ParticleTypes.EXPLOSION_EMITTER, 1, 0.5);
-                BossFx.sound(boss, SoundEvents.GENERIC_EXPLODE, 0.7f);
+                BossFx.sound(boss, SoundEvents.GENERIC_EXPLODE.value(), 0.7f);
                 for (ServerPlayer p : near) {
                     boolean sheltered = rocks.stream().anyMatch(r -> p.position().distanceToSqr(r) <= 1.5 * 1.5);
                     if (!sheltered) {
@@ -571,7 +571,7 @@ final class DoomDelveService {
                 BossFx.ring(BossFx.world(boss), earthenShield, 2.0, ParticleTypes.WAX_ON);
             }
             if (now >= shockwaveDue) {
-                BossFx.sound(boss, SoundEvents.GENERIC_EXPLODE, 0.5f);
+                BossFx.sound(boss, SoundEvents.GENERIC_EXPLODE.value(), 0.5f);
                 BossFx.ring(BossFx.world(boss), boss.position(), 10, ParticleTypes.EXPLOSION);
                 for (ServerPlayer p : near) {
                     boolean safe = earthenShield != null && p.position().distanceToSqr(earthenShield) <= 2.5 * 2.5;

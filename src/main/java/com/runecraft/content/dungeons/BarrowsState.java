@@ -1,6 +1,7 @@
 package com.runecraft.content.dungeons;
 
 import com.runecraft.osrs.content.dungeons.BarrowsRun;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -17,7 +18,7 @@ final class BarrowsState extends SavedData {
 
     static BarrowsState get(MinecraftServer server) {
         return server.overworld().getDataStorage()
-                .computeIfAbsent(BarrowsState::fromNbt, BarrowsState::new, KEY);
+                .computeIfAbsent(new SavedData.Factory<>(BarrowsState::new, BarrowsState::fromNbt, null), KEY);
     }
 
     /** The player's run, starting a fresh one if he has none. Call {@link #setDirty()} after changing it. */
@@ -32,7 +33,7 @@ final class BarrowsState extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag nbt) {
+    public CompoundTag save(CompoundTag nbt, HolderLookup.Provider registries) {
         runs.forEach((uuid, run) -> {
             CompoundTag tag = new CompoundTag();
             tag.putInt("Killed", run.killedMask());
@@ -48,7 +49,7 @@ final class BarrowsState extends SavedData {
         return nbt;
     }
 
-    static BarrowsState fromNbt(CompoundTag nbt) {
+    static BarrowsState fromNbt(CompoundTag nbt, HolderLookup.Provider registries) {
         BarrowsState state = new BarrowsState();
         for (String key : nbt.getAllKeys()) {
             try {

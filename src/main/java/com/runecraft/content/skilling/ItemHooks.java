@@ -25,6 +25,7 @@ import com.runecraft.player.Players;
 import com.runecraft.registry.ModItems;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
+import com.runecraft.util.StackData;
 import com.runecraft.platform.UseItemCallback;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
@@ -39,6 +40,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.projectile.Arrow;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -121,7 +123,7 @@ public final class ItemHooks {
             @Override
             public void afterHit(ServerPlayer player, LivingEntity target, AttackType type, int dealt) {
                 ItemStack weapon = player.getMainHandItem();
-                CompoundTag nbt = weapon.getTag();
+                CompoundTag nbt = StackData.get(weapon);
                 if (dealt > 0 && type != AttackType.MAGIC && nbt != null && nbt.contains(POISON_NBT)
                         && player.getRandom().nextInt(4) == 0) {
                     PoisonService.poison(target, nbt.getInt(POISON_NBT), ActionManager.gameTick());
@@ -333,7 +335,7 @@ public final class ItemHooks {
                 Msg.game(player, "Hold the weapon you want to poison in your other hand.");
                 return;
             }
-            weapon.getOrCreateTag().putInt(POISON_NBT, e.poisonDamage());
+            StackData.update(weapon, t -> t.putInt(POISON_NBT, e.poisonDamage()));
             Msg.action(player, "You coat the " + SkillingUtil.lower(wdef.name()) + " with poison.");
             useDose(player, stack, hand, potion.name(), 4, false);
             return;
@@ -583,7 +585,7 @@ public final class ItemHooks {
 
     private static void throwItem(ServerPlayer player, ItemStack stack, String id) {
         ItemDef def = ItemCatalog.get(id);
-        Arrow arrow = new Arrow(player.level(), player);
+        Arrow arrow = new Arrow(player.level(), player, new ItemStack(Items.ARROW), null);
         arrow.addTag(OsrsEquipmentItems.RANGED_STRENGTH_TAG + def.rangedStrength());
         arrow.addTag("runecraft_arrow_" + id);
         arrow.pickup = AbstractArrow.Pickup.DISALLOWED;
@@ -601,7 +603,7 @@ public final class ItemHooks {
     // ------------------------------------------------------------------ essence pouches
 
     private static void pouch(ServerPlayer player, ItemStack stack, RunecraftData.Pouch pouch) {
-        CompoundTag nbt = stack.getOrCreateTag();
+        CompoundTag nbt = StackData.get(stack);
         int held = nbt.getInt(ESSENCE_NBT);
         if (player.isShiftKeyDown()) {
             if (held == 0) {
@@ -609,6 +611,7 @@ public final class ItemHooks {
                 return;
             }
             nbt.putInt(ESSENCE_NBT, 0);
+            StackData.set(stack, nbt);
             Inv.give(player, "pure_essence", held);
             Msg.action(player, "You empty " + held + " essence from the pouch.");
             return;
@@ -628,6 +631,7 @@ public final class ItemHooks {
         nbt.putInt(ESSENCE_NBT, held + add);
         // Pouches decay by the essence stored in them (OSRS); the Dark Mage repairs them.
         nbt.putInt(EssencePouches.USED_NBT, used + add);
+        StackData.set(stack, nbt);
         int after = RunecraftData.capacity(pouch, used + add);
         Msg.action(player, "You fill the pouch (" + (held + add) + "/" + capacity + ").");
         if (after < capacity) {
@@ -642,10 +646,10 @@ public final class ItemHooks {
             if (s.isEmpty() || RunecraftData.pouch(Inv.idOf(s)) == null) {
                 continue;
             }
-            CompoundTag nbt = s.getTag();
-            int held = nbt == null ? 0 : nbt.getInt(ESSENCE_NBT);
+            CompoundTag nbt = StackData.get(s);
+            int held = nbt.getInt(ESSENCE_NBT);
             if (held > 0) {
-                nbt.putInt(ESSENCE_NBT, 0);
+                StackData.update(s, t -> t.putInt(ESSENCE_NBT, 0));
                 Inv.give(player, "pure_essence", held);
             }
         }

@@ -16,6 +16,7 @@ import com.runecraft.skill.Tools;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
+import com.runecraft.util.StackData;
 import com.runecraft.platform.UseItemCallback;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -69,7 +70,7 @@ public final class SkillingExtras {
     }
 
     public static int celestialCharges(ItemStack ring) {
-        CompoundTag nbt = ring.getTag();
+        CompoundTag nbt = StackData.get(ring);
         return nbt != null && nbt.contains(CELESTIAL_NBT) ? nbt.getInt(CELESTIAL_NBT) : 0;
     }
 
@@ -86,7 +87,7 @@ public final class SkillingExtras {
             SysState.of(p).worn.put(Jewellery.Slot.RING, Inv.stack(ShootingStars.CELESTIAL_RING_UNCHARGED, 1));
             Msg.red(p, "Your celestial ring has run out of stardust.");
         } else {
-            ring.getOrCreateTag().putInt(CELESTIAL_NBT, left);
+            StackData.update(ring, t -> t.putInt(CELESTIAL_NBT, left));
         }
         return extra;
     }
@@ -120,7 +121,7 @@ public final class SkillingExtras {
         }
         Inv.remove(p, ShootingStars.STARDUST, add);
         ItemStack charged = Inv.idOf(ring).equals(ShootingStars.CELESTIAL_RING) ? ring : Inv.stack(ShootingStars.CELESTIAL_RING, 1);
-        charged.getOrCreateTag().putInt(CELESTIAL_NBT, charges + add);
+        StackData.update(charged, t -> t.putInt(CELESTIAL_NBT, charges + add));
         if (charged != ring) {
             if (worn) {
                 SysState.of(p).worn.put(Jewellery.Slot.RING, charged);

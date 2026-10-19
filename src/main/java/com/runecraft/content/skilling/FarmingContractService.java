@@ -7,6 +7,7 @@ import com.runecraft.osrs.content.skilling.FarmingContracts.Tier;
 import com.runecraft.quest.QuestApi;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
+import com.runecraft.util.StackData;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
@@ -38,7 +39,7 @@ public final class FarmingContractService {
         if (current != null && nbt.getBoolean("done")) {
             ItemStack pack = Inv.stack("seed_pack", 1);
             if (!pack.isEmpty()) {
-                pack.getOrCreateTag().putInt(TIER_KEY, FarmingContracts.packTier(current));
+                StackData.update(pack, t -> t.putInt(TIER_KEY, FarmingContracts.packTier(current)));
                 Inv.give(player, pack);
             }
             nbt.remove("crop");
@@ -87,7 +88,7 @@ public final class FarmingContractService {
 
     /** Opens a seed pack (tier from its data; 3, like the Tithe Farm's pack, if it has none). */
     static void open(ServerPlayer player, ItemStack stack) {
-        int tier = stack.hasTag() && stack.getTag().contains(TIER_KEY) ? stack.getTag().getInt(TIER_KEY) : 3;
+        int tier = StackData.contains(stack, TIER_KEY) ? StackData.get(stack).getInt(TIER_KEY) : 3;
         stack.shrink(1);
         RandomSource random = player.getRandom();
         for (int t : FarmingContracts.rolls(tier, random::nextInt)) {

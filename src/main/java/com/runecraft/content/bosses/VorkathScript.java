@@ -206,7 +206,7 @@ final class VorkathScript extends ScriptedBoss {
                 cooldown = 2;
             } else if (frozen != null && spawn.distanceToSqr(frozen) < 2.25) {
                 BossFx.burst(spawn, ParticleTypes.EXPLOSION, 4, 0.5);
-                BossFx.sound(spawn, SoundEvents.GENERIC_EXPLODE, 1.2f);
+                BossFx.sound(spawn, SoundEvents.GENERIC_EXPLODE.value(), 1.2f);
                 com.runecraft.combat.CombatHooks.nameAttack("spawn_explosion", null);
                 CombatHandler.applyDamage(boss, frozen, ZulrahVorkath.spawnExplosion(spawn.getHealth(), spawn.getMaxHealth()));
                 BossFx.unstun(frozen);

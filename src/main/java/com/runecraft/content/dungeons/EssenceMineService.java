@@ -18,6 +18,7 @@ import com.runecraft.platform.UseEntityCallback;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
@@ -150,7 +151,7 @@ public final class EssenceMineService {
     }
 
     private static State state(MinecraftServer server) {
-        return server.overworld().getDataStorage().computeIfAbsent(State::fromNbt, State::new, State.KEY);
+        return server.overworld().getDataStorage().computeIfAbsent(new SavedData.Factory<>(State::new, State::fromNbt, null), State.KEY);
     }
 
     record Return(String npcId, BlockPos pos) {
@@ -171,7 +172,7 @@ public final class EssenceMineService {
         }
 
         @Override
-        public CompoundTag save(CompoundTag nbt) {
+        public CompoundTag save(CompoundTag nbt, HolderLookup.Provider registries) {
             returns.forEach((uuid, r) -> {
                 CompoundTag e = new CompoundTag();
                 e.putString("npc", r.npcId());
@@ -181,7 +182,7 @@ public final class EssenceMineService {
             return nbt;
         }
 
-        static State fromNbt(CompoundTag nbt) {
+        static State fromNbt(CompoundTag nbt, HolderLookup.Provider registries) {
             State state = new State();
             for (String key : nbt.getAllKeys()) {
                 try {

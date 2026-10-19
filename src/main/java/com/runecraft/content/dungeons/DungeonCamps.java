@@ -166,7 +166,7 @@ final class DungeonCamps {
                 return;
             }
             mob.moveTo(x + 0.5, y, z + 0.5, world.getRandom().nextFloat() * 360f, 0);
-            mob.finalizeSpawn(world, world.getCurrentDifficultyAt(feet), MobSpawnType.SPAWNER, null, null);
+            mob.finalizeSpawn(world, world.getCurrentDifficultyAt(feet), MobSpawnType.SPAWNER, null);
             mob.setPersistenceRequired();
             world.addFreshEntity(mob);
             return;
