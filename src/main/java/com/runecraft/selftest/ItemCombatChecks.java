@@ -1123,7 +1123,7 @@ final class ItemCombatChecks {
                 if (!(Inv.item(ammo) instanceof OsrsEquipmentItems.Arrow arrowItem)) {
                     throw failure(ammo + " is not an arrow item");
                 }
-                AbstractArrow arrow = arrowItem.createArrow(c.world, stack(ammo, 1), p());
+                AbstractArrow arrow = arrowItem.createArrow(c.world, stack(ammo, 1), p(), null);
                 dummy.hurt(new DamageSource(osrsHit, arrow, p()), 1f);
             }
             int d = Math.round(hp - dummy.getHealth());
