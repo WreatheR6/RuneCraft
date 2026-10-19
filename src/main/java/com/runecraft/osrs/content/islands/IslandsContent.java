@@ -55,6 +55,8 @@ public final class IslandsContent implements ContentModule {
 
     @Override
     public List<StructureDef> structures() {
-        return IslandsStructures.all();
+        List<StructureDef> out = new java.util.ArrayList<>(IslandsStructures.all());
+        out.add(IslandsTravel.enchantedValley()); // BKQ's realm
+        return out;
     }
 }

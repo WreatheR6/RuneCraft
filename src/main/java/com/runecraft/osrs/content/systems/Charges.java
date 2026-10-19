@@ -89,6 +89,49 @@ public final class Charges {
     public static final String PENDANT_OF_ATES = "pendant_of_ates";
     public static final int PENDANT_OF_ATES_MAX = 1_000;
     /**
+     * Enchanted lyre (wiki): charged only when empty, by offering the Fossegrimen a raw shark (2 charges), manta ray (3) or
+     * sea turtle (4) - or a raw bass (2) while wearing a ring of charos (a) - plus one with the easy Fremennik Diary.
+     */
+    public static final String ENCHANTED_LYRE = "enchanted_lyre";
+    public static final int ENCHANTED_LYRE_MAX = 5;
+    /**
+     * Kharedst's memoirs (wiki): one law, body, mind and soul rune per charge (10 Magic XP each in OSRS), 20 per page up to
+     * 100; the book of the dead holds 250. OSRS recharges them at the Old Memorial north of Land's End; here as any charged
+     * teleport item (sneak-use with the runes). approx
+     */
+    public static final String KHAREDSTS_MEMOIRS = "kharedsts_memoirs";
+    public static final int KHAREDSTS_MEMOIRS_MAX = 100;
+    public static final String BOOK_OF_THE_DEAD = "book_of_the_dead";
+    public static final int BOOK_OF_THE_DEAD_MAX = 250;
+    /**
+     * Sailors' amulet (wiki): ten charges per law rune and ten water runes, at most 10,000; one per teleport. One item id
+     * (the skilling module's salvage drop, "inert") holds the charges. approx: OSRS swaps it for the charged amulet
+     */
+    public static final String SAILORS_AMULET = "sailors_amulet_inert";
+    public static final int SAILORS_AMULET_MAX = 10_000;
+    public static final int SAILORS_AMULET_PER_UNIT = 10;
+
+    /** Charges the Fossegrimen gives an empty enchanted lyre for an offering of this raw fish (0 if she won't take it). */
+    public static int lyreCharges(String fish, boolean ringOfCharosA, boolean easyFremennikDiary) {
+        int base = switch (fish == null ? "" : fish) {
+            case "raw_shark" -> 2;
+            case "raw_manta_ray" -> 3;
+            case "raw_sea_turtle" -> 4;
+            case "raw_bass" -> ringOfCharosA ? 2 : 0; // "explain that it is really a small shark"
+            default -> 0;
+        };
+        return base == 0 ? 0 : base + (easyFremennikDiary ? 1 : 0);
+    }
+
+    /** How an empty teleport item with no charge materials is recharged (shown in its menu), or null. */
+    public static String rechargeHint(String itemId) {
+        return switch (itemId == null ? "" : itemId) {
+            case ENCHANTED_LYRE -> "Offer the Fossegrimen, on the lake south-west of Rellekka, a raw shark, manta ray or sea turtle to charge it.";
+            case PHARAOHS_SCEPTRE -> "The guardian mummy in Jalsavrah recharges it.";
+            default -> null;
+        };
+    }
+    /**
      * Pharaoh's sceptre (wiki): holds 3 charges, 10/25/50/100 with the easy/medium/hard/elite Desert Diary; recharged
      * by the guardian mummy in Jalsavrah for 6 gold, 12 stone or 24 pottery/ivory artefacts.
      */
@@ -204,6 +247,15 @@ public final class Charges {
                 ordered("big_bones", 1, "law_rune", 1), 1, 0));
         put(new Spec(PENDANT_OF_ATES, "Pendant of ates", Kind.CHARGED, PENDANT_OF_ATES_MAX, 0, Drain.TELEPORT,
                 ordered("frozen_tear", 1), 1, 0));
+        // Round 32 transport: the enchanted lyre (charged by the Fossegrimen only), the sailors' amulet and the Kourend memoir
+        // books (a book given with its five pages holds 20 per page: 100).
+        put(new Spec(ENCHANTED_LYRE, "Enchanted lyre", Kind.CHARGED, ENCHANTED_LYRE_MAX, 0, Drain.TELEPORT, ordered(), 1, 0));
+        put(new Spec(SAILORS_AMULET, "Sailors' amulet", Kind.CHARGED, SAILORS_AMULET_MAX, 0, Drain.TELEPORT,
+                ordered("law_rune", 1, "water_rune", 10), SAILORS_AMULET_PER_UNIT, 0));
+        put(new Spec(KHAREDSTS_MEMOIRS, "Kharedst's memoirs", Kind.CHARGED, KHAREDSTS_MEMOIRS_MAX, KHAREDSTS_MEMOIRS_MAX, Drain.TELEPORT,
+                ordered("law_rune", 1, "body_rune", 1, "mind_rune", 1, "soul_rune", 1), 1, 0));
+        put(new Spec(BOOK_OF_THE_DEAD, "Book of the dead", Kind.CHARGED, BOOK_OF_THE_DEAD_MAX, KHAREDSTS_MEMOIRS_MAX, Drain.TELEPORT,
+                ordered("law_rune", 1, "body_rune", 1, "mind_rune", 1, "soul_rune", 1), 1, 0));
         // Revenant weapons and their wilderness-boss upgrades (wiki): up to 16,000 revenant ether, one per attack; they drop
         // uncharged ("(u)") and can't attack empty, which also ends their +50% Wilderness bonus (PlayerHitCalc.revWeapon).
         for (String[] w : new String[][]{{"craws_bow", "Craw's bow"}, {"viggoras_chainmace", "Viggora's chainmace"},

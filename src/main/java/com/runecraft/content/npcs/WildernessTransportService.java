@@ -41,6 +41,10 @@ public final class WildernessTransportService {
     private static final Map<WildernessTransport.Obelisk, Long> ARMED = new HashMap<>();
     /** Server tick until which an obelisk that just fired stays inert. */
     private static final Map<WildernessTransport.Obelisk, Long> COOLING = new HashMap<>();
+    /** Where an armed obelisk sends its riders when its first activator had set a destination (hard Wilderness Diary). */
+    private static final Map<WildernessTransport.Obelisk, WildernessTransport.Obelisk> TARGET = new HashMap<>();
+    /** Each player's chosen obelisk (Set Destination, hard Wilderness Diary). */
+    private static final Map<java.util.UUID, WildernessTransport.Obelisk> CHOSEN = new HashMap<>();
     private static final Random RANDOM = new Random();
 
     private WildernessTransportService() {
@@ -48,7 +52,9 @@ public final class WildernessTransportService {
 
     static void init() {
         for (WildernessTransport.Lever l : WildernessTransport.LEVERS) {
-            LandmarkBuilder.registerCustom(l.placeId(), (world, centre) -> layLever(world, l));
+            if (!WildernessTransport.inCavern(l)) {
+                LandmarkBuilder.registerCustom(l.placeId(), (world, centre) -> layLever(world, l));
+            }
         }
         for (WildernessTransport.Obelisk o : WildernessTransport.OBELISKS) {
             LandmarkBuilder.registerCustom(o.placeId(), (world, centre) -> layObelisk(world, o));
@@ -96,9 +102,9 @@ public final class WildernessTransportService {
 
     /** Where a lever's traveller lands: the destination tile's other block, on its floor (the Mage Bank's cavern floor). */
     static BlockPos arrival(ServerWorld world, WildernessTransport.Lever l) {
-        WildernessTransport.Lever there = WildernessTransport.leverAt(l.toX(), l.toY());
-        if (there != null && there.id().equals("mage_bank")) {
-            int[] a = WildernessTransport.mageBankArrival();
+        // The Mage Bank, the King Black Dragon's lair and its entrance chamber are carved caverns: land on their floor.
+        int[] a = WildernessTransport.cavernArrival(l);
+        if (a != null) {
             StructurePlacer.applyAround(world, a[0], a[2], 24);
             return new BlockPos(a[0], a[1], a[2]);
         }
@@ -115,7 +121,8 @@ public final class WildernessTransportService {
         return NpcFloor.spot(world, x, z, false);
     }
 
-    static void pull(ServerPlayerEntity p, WildernessTransport.Lever l) {
+    /** Pulls a lever: sends the player to its paired lever (public for the self-test). */
+    public static void pull(ServerPlayerEntity p, WildernessTransport.Lever l) {
         if (com.runecraft.combat.Teleblock.blocked(p)) {
             return;
         }
@@ -166,8 +173,22 @@ public final class WildernessTransportService {
         }
     }
 
+    /** Whether a player has completed the hard Wilderness Diary (Set Destination on the obelisks). */
+    static boolean hardDiary(ServerPlayerEntity p) {
+        return com.runecraft.osrs.content.systems.Diaries.tierComplete(com.runecraft.content.systems.SysState.of(p).diaryDone,
+                "wilderness", com.runecraft.osrs.content.systems.Diaries.Tier.HARD);
+    }
+
     static void activate(ServerPlayerEntity p, WildernessTransport.Obelisk o) {
         long now = p.getServer().getTicks();
+        // Set Destination (hard Wilderness Diary): sneak-activate to cycle through the six obelisks.
+        if (p.isSneaking() && hardDiary(p)) {
+            WildernessTransport.Obelisk next = WildernessTransport.nextChoice(CHOSEN.get(p.getUuid()));
+            CHOSEN.put(p.getUuid(), next);
+            Msg.game(p, "The obelisks will now take you to the level " + next.level() + " obelisk (" + next.name()
+                    + "). Activate the obelisk to teleport there.");
+            return;
+        }
         if (ARMED.containsKey(o)) {
             Msg.game(p, "The obelisk is already active.");
             return;
@@ -177,6 +198,13 @@ public final class WildernessTransportService {
             return;
         }
         ARMED.put(o, now + (long) WildernessTransport.OBELISK_DELAY_TICKS * MC_TICKS_PER_GAME_TICK);
+        // The first activator's rules apply to everyone on the platform (OSRS Wiki).
+        WildernessTransport.Obelisk chosen = hardDiary(p) ? CHOSEN.get(p.getUuid()) : null;
+        if (chosen != null) {
+            TARGET.put(o, chosen);
+        } else {
+            TARGET.remove(o);
+        }
         Msg.action(p, "You activate the ancient obelisk...");
         GameEvents.fireActivity(p, "obelisk:" + o.level());
         if (p.getWorld() instanceof ServerWorld world) {
@@ -201,8 +229,9 @@ public final class WildernessTransportService {
             }
             ARMED.remove(o);
             COOLING.put(o, now + (long) WildernessTransport.OBELISK_COOLDOWN_TICKS * MC_TICKS_PER_GAME_TICK);
+            WildernessTransport.Obelisk target = TARGET.remove(o);
             if (world != null) {
-                fire(world, o, WildernessTransport.destination(o, RANDOM));
+                fire(world, o, target != null ? target : WildernessTransport.destination(o, RANDOM));
             }
         }
     }

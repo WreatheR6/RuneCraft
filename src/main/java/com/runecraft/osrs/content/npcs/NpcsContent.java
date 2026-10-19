@@ -53,7 +53,7 @@ public final class NpcsContent implements ContentModule {
     /** The Mage Bank cavern under the sea at its OSRS tile (the Mage Arena lever's destination). */
     @Override
     public List<com.runecraft.osrs.world.StructureDef> structures() {
-        return List.of(WildernessTransport.mageBank());
+        return List.of(WildernessTransport.mageBank(), WildernessTransport.kbdLair(), WildernessTransport.kbdLeverRoom());
     }
 
     @Override

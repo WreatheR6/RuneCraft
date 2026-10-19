@@ -74,6 +74,17 @@ public final class JewelleryService {
         return out;
     }
 
+    /** What a visit-unlocked destination's item communes with: the Necropolis obelisk, a Sailors' Marker, a statue of Ates. */
+    private static String visitObject(Jewellery.Worn w, boolean full) {
+        if (w.id().equals("pharaohs_sceptre")) {
+            return "obelisk";
+        }
+        if (w.id().equals(Charges.SAILORS_AMULET)) {
+            return "Sailors' Marker";
+        }
+        return full ? "statue of Ates" : "statue";
+    }
+
     /** Wears the item in the given hand (swapping with whatever is in that slot). */
     public static void wear(ServerPlayerEntity p, Hand hand) {
         ItemStack stack = p.getStackInHand(hand);
@@ -156,16 +167,20 @@ public final class JewelleryService {
         }
         SysNet.Screen s = new SysNet.Screen("tele", w.name());
         for (String name : activateNearby(p, w)) {
-            Msg.action(p, "You commune with the " + (w.id().equals("pharaohs_sceptre") ? "obelisk" : "statue")
+            Msg.action(p, "You commune with the " + visitObject(w, false)
                     + ". Your " + w.name().toLowerCase(java.util.Locale.ROOT) + " can now teleport you to " + name + ".");
         }
         Charges.Spec charged = teleportCharges(stack);
         if (w.chargeBase() != null && w.charges() == 0) {
             s.line("It has no charges left. Recharge it at the Fountain of Heroes (Heroes' Guild, Burthorpe).", 0xFF8080);
         } else if (charged != null && TeleportCharges.get(p, stack) <= 0) {
-            s.line("It has no charges left. Sneak and use it with " + materialName(charged) + "s in your inventory to charge it.", 0xFF8080);
+            String hint = Charges.rechargeHint(charged.id());
+            s.line(hint != null ? "It has no charges left. " + hint
+                    : "It has no charges left. Sneak and use it with " + materialName(charged) + "s in your inventory to charge it.", 0xFF8080);
         } else {
-            if (charged != null) {
+            if (charged != null && Charges.rechargeHint(charged.id()) != null) {
+                s.line(Charges.describe(charged, TeleportCharges.get(p, stack)) + " (one per teleport).");
+            } else if (charged != null) {
                 s.line(Charges.describe(charged, TeleportCharges.get(p, stack)) + " (one per teleport; sneak and use it with "
                         + materialName(charged) + "s to add more).");
             }
@@ -317,7 +332,7 @@ public final class JewelleryService {
                     return;
                 }
                 if (Teleports.needsVisit(dest) && !SysState.of(p).unlocks.contains(dest.name())) {
-                    Msg.game(p, "You need to commune with the " + (w.id().equals("pharaohs_sceptre") ? "obelisk" : "statue of Ates")
+                    Msg.game(p, "You need to commune with the " + visitObject(w, true)
                             + " at " + dest.name() + " with your " + w.name().toLowerCase(java.util.Locale.ROOT)
                             + " before you can teleport there.");
                     return;

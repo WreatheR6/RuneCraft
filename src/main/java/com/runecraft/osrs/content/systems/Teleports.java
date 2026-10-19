@@ -33,7 +33,7 @@ public final class Teleports {
             at("Tears of Guthix", 3252, 3175), // relocated: the Tears of Guthix cave
             at("Wintertodt Camp", 1631, 3940));
     public static final List<Destination> SKILLS = List.of(at("Fishing Guild", 2611, 3390),
-            at("Mining Guild", 3016, 3339), // relocated: the guild's surface entrance (OSRS lands underground)
+            at("Mining Guild", 3037, 9756), // relocated: inside this world's carved Mining Guild (OSRS 3049, 9763 lies east of it)
             at("Crafting Guild", 2933, 3295), at("Cooks' Guild", 3144, 3438), at("Woodcutting Guild", 1662, 3505),
             at("Farming Guild", 1248, 3719));
     public static final List<Destination> COMBAT = List.of(at("Warriors' Guild", 2882, 3547), at("Champions' Guild", 3192, 3368),
@@ -65,6 +65,21 @@ public final class Teleports {
     public static String unlockItem(Destination d) {
         return XERICS_HONOUR.equals(d) ? ANCIENT_TABLET : null;
     }
+
+    /**
+     * Enchanted lyre (The Fremennik Trials): Rellekka; Waterbirth Island with the hard Fremennik Diary; Jatizso and
+     * Neitiznot with the elite one ({@link #needsDiary}). Charged by offering the Fossegrimen a raw fish
+     * ({@code Charges.lyreCharges}).
+     */
+    public static final List<Destination> LYRE = List.of(at("Rellekka", 2662, 3644), at("Waterbirth Island", 2551, 3755),
+            at("Jatizso", 2409, 3809), at("Neitiznot", 2336, 3802));
+    /**
+     * Sailors' amulet (shipwreck salvage, the skilling module's {@code sailors_amulet_inert}): The Pandemonium, and Port
+     * Roberts, Red Rock and Deepfin Point once their Sailors' Marker has been activated ({@link #needsVisit}: here by opening
+     * the amulet's menu near the destination). One law rune and ten water runes per ten charges, at most 10,000.
+     */
+    public static final List<Destination> SAILORS = List.of(at("The Pandemonium", 3058, 2975), at("Port Roberts", 1889, 3292),
+            at("Red Rock", 2797, 2521), at("Deepfin Point", 1943, 2757));
     /**
      * Camulet (Enakhra's Lament): Enakhra's Temple (OSRS lands inside it, plane 2; here at its entrance) or, with the hard
      * Desert Diary, the Bandit Camp Quarry ({@link #needsDiary}). 4 charges shared by every camulet the player owns,
@@ -148,7 +163,8 @@ public final class Teleports {
     public static final List<Destination> MUSIC_CAPE = List.of(at("Falo the Bard", 2689, 3547));
     /**
      * Kharedst's memoirs and the book of the dead: the five Kourend memoir stories. Each needs that house's quest
-     * ({@link #MEMOIR_QUESTS}; OSRS: reading the story it unlocks). Charges are not modelled. approx
+     * ({@link #MEMOIR_QUESTS}; OSRS: reading the story it unlocks). One charge per teleport ({@code Charges.KHAREDSTS_MEMOIRS},
+     * {@code Charges.BOOK_OF_THE_DEAD}).
      */
     public static final List<Destination> MEMOIRS = List.of(at("Lunch by the Lancalliums", 1710, 3611), // relocated: OSRS 1714 is in this world's river
             at("The Fisher's Flute", 1803, 3748), at("History and Hearsay", 1478, 3576), at("Jewelry of Jubilation", 1544, 3761),
@@ -164,8 +180,15 @@ public final class Teleports {
         return i < 0 ? null : MEMOIR_QUESTS.get(i);
     }
 
-    /** Diary tier a destination needs ({area, tier name}), or null: the camulet's quarry (hard Desert), the basalt roof. */
+    /**
+     * Diary tier a destination needs ({area, tier name}), or null: the camulet's quarry (hard Desert), the basalt roof, the
+     * enchanted lyre's Waterbirth Island (hard Fremennik), Jatizso and Neitiznot (elite Fremennik).
+     */
     public static String[] needsDiary(Destination d) {
+        int lyre = LYRE.indexOf(d);
+        if (lyre >= 1) {
+            return new String[]{"fremennik", lyre == 1 ? "HARD" : "ELITE"};
+        }
         if (CAMULET_QUARRY.equals(d)) {
             return new String[]{"desert", "HARD"};
         }
@@ -194,9 +217,12 @@ public final class Teleports {
     /** How close (tiles) a player must be to a {@link #needsVisit} destination to activate it. approx */
     public static final int ACTIVATE_RADIUS = 12;
 
-    /** Destinations unlocked by visiting them once with the item (the statues of Ates, the Necropolis obelisk). */
+    /**
+     * Destinations unlocked by visiting them once with the item (the statues of Ates, the Necropolis obelisk, the Sailors'
+     * Markers of the sailors' amulet).
+     */
     public static boolean needsVisit(Destination d) {
-        return ATES.contains(d) || PHARAOH.get(3).equals(d);
+        return ATES.contains(d) || PHARAOH.get(3).equals(d) || SAILORS.indexOf(d) >= 1;
     }
 
     /**

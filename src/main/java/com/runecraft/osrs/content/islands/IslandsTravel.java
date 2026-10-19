@@ -14,7 +14,9 @@ import java.util.List;
  *   OSRS tile of every other surface ring (codes, tiles and quest requirements as in OSRS, checked by
  *   TransportSnapshotTest), plus CKP (the Cosmic Altar's plane), BJR (the Fisher Realm) and DIR (Gorak's
  *   Plane), which lead to the places this world builds for those realms. Using them needs Fairytale II -
- *   Cure a Queen to have been started.</li>
+ *   Cure a Queen to have been started. The realms this world builds elsewhere (BJR, DIR, DIP, DLS and BLQ, Yu'biusk)
+ *   have a ring of their own beside their place ({@link #REALM_RINGS}) to leave from; BKQ leads to a small Enchanted
+ *   Valley carved at its OSRS tile ({@link #enchantedValley()}).</li>
  *   <li>The Mycelium transportation system: Fossil Island's four Magic Mushtrees.</li>
  * </ul>
  */
@@ -54,9 +56,9 @@ public final class IslandsTravel {
 
     /**
      * Fairy rings that stand on their own (OSRS code, tile of the ring, name, quest). Each gets a bare place at
-     * the ring's tile; the Minecraft side lays the ring there. Rings in realms this world doesn't build (the
-     * Enchanted Valley, Yu'biusk, the Great Conch) are not included; the dungeon realms (TzHaar, the Abyss, the
-     * Dorgeshuun caves) are {@link #DUNGEON_RINGS}, and the house ring (DIQ) is a virtual stop.
+     * the ring's tile; the Minecraft side lays the ring there. The dungeon realms (TzHaar, the Abyss, the Dorgeshuun
+     * caves) and the Enchanted Valley are {@link #DUNGEON_RINGS}, the realms built elsewhere are {@link #REALM_RINGS},
+     * and the house ring (DIQ) is a virtual stop.
      */
     private static final Object[][] RINGS = {
             {"AIR", 2700, 3247, "Kandarin: South-east of Ardougne", null},
@@ -81,6 +83,7 @@ public final class IslandsTravel {
             {"CIQ", 2528, 3127, "Kandarin: North-west of Yanille", null},
             {"CIR", 1302, 3762, "Kebos Lowlands: South of Mount Karuulm", null},
             {"CIS", 1639, 3868, "Kourend: North of the Arceuus Library", null},
+            {"CJQ", 3178, 2447, "Islands: The Great Conch", "troubled_tortugans"},
             {"CJR", 2705, 3576, "Kandarin: Sinclair Mansion", null},
             {"CKQ", 1359, 2941, "Varlamore: Aldarin", "children_of_the_sun"},
             {"CKR", 2801, 3003, "Karamja: South of Tai Bwo Wannai", null},
@@ -117,7 +120,74 @@ public final class IslandsTravel {
             // The Abyss (DungeonsMisthalin.abyss): its outer ring, east-north-east of the centre, outside the inner wall.
             new DungeonRing("ALR", "dng_the_abyss", StructureDef.bx(3106) + 30, -24, StructureDef.bz(3556) - 52),
             // Dorgesh-Kaan (DungeonsMisthalin.lumbridgeCellar): the south-west corner of the city cavern, beside the houses.
-            new DungeonRing("AJQ", "dng_lumbridge_cellar_caves", 66, 10, 56));
+            new DungeonRing("AJQ", "dng_lumbridge_cellar_caves", 66, 10, 56),
+            // The Enchanted Valley (enchantedValley()): the ring on its own OSRS tile (3041, 4532), in the carved valley.
+            new DungeonRing("BKQ", "isl_enchanted_valley", StructureDef.bx(3041), 20, StructureDef.bz(4532)));
+
+    /** Structure id of the Enchanted Valley (BKQ). */
+    public static final String ENCHANTED_VALLEY = "isl_enchanted_valley";
+    /** The Enchanted Valley's tile box {x1, y1, x2, y2} around its fairy ring (3041, 4532). approx layout */
+    public static final int[] ENCHANTED_VALLEY_TILES = {3024, 4516, 3058, 4546};
+
+    /**
+     * The Enchanted Valley (BKQ), an outdoor realm in OSRS (tiles around 3041, 4532, north of the map): here a grassy
+     * valley sealed in rock deep under the far northern sea (its top stays below y 34, so the sea bed above is left alone),
+     * lit from above, with its pond, trees and flowers. Its fairy ring is laid by the Minecraft side like the other dungeon
+     * rings, on the ring's own OSRS tile.
+     */
+    public static StructureDef enchantedValley() {
+        DungeonRing ring = dungeonRing("BKQ");
+        int[] t = ENCHANTED_VALLEY_TILES;
+        int x1 = StructureDef.bx(t[0]);
+        int x2 = StructureDef.bx(t[2]) + 1;
+        int z1 = StructureDef.bz(t[3]);
+        int z2 = StructureDef.bz(t[1]) + 1;
+        int f = ring.floorY();
+        StructureDef.Builder b = StructureDef.builder(ENCHANTED_VALLEY, "Enchanted Valley");
+        b.fill(x1 - 1, f - 2, z1 - 1, x2 + 1, f + 11, z2 + 1, "minecraft:stone");
+        b.clear(x1, f + 1, z1, x2, f + 10, z2);
+        b.fill(x1, f - 1, z1, x2, f - 1, z2, "minecraft:dirt");
+        b.fill(x1, f, z1, x2, f, z2, "minecraft:grass_block");
+        // Mossy valley sides and a lit "sky".
+        b.walls(x1, f + 1, z1, x2, f + 3, z2, "minecraft:mossy_cobblestone");
+        for (int x = x1 + 4; x <= x2 - 4; x += 8) {
+            for (int z = z1 + 4; z <= z2 - 4; z += 8) {
+                b.set(x, f + 11, z, "minecraft:shroomlight");
+            }
+        }
+        // The pond in the west of the valley (its fishing spot in OSRS) and the trees the tree spirit guards.
+        int px = StructureDef.bx(3028);
+        int pz = StructureDef.bz(4538);
+        b.fill(px, f - 1, pz, px + 9, f, pz + 11, "minecraft:clay");
+        b.fill(px + 1, f, pz + 1, px + 8, f, pz + 10, "minecraft:water");
+        for (int[] tree : new int[][]{{3049, 4541}, {3053, 4527}, {3034, 4522}, {3046, 4520}, {3055, 4538}}) {
+            int x = StructureDef.bx(tree[0]);
+            int z = StructureDef.bz(tree[1]);
+            b.fill(x - 2, f + 4, z - 2, x + 2, f + 5, z + 2, "minecraft:oak_leaves[persistent=true]");
+            b.fill(x - 1, f + 6, z - 1, x + 1, f + 6, z + 1, "minecraft:oak_leaves[persistent=true]");
+            b.fill(x, f + 1, z, x, f + 5, z, "minecraft:oak_log[axis=y]");
+        }
+        String[] flowers = {"minecraft:poppy", "minecraft:dandelion", "minecraft:blue_orchid"};
+        int[][] spots = {{3038, 4527}, {3044, 4537}, {3036, 4541}, {3051, 4533}, {3043, 4524}, {3050, 4545}, {3026, 4520}};
+        for (int i = 0; i < spots.length; i++) {
+            b.set(StructureDef.bx(spots[i][0]), f + 1, StructureDef.bz(spots[i][1]), flowers[i % flowers.length]);
+        }
+        return b.build();
+    }
+
+    /** OSRS code of the Yu'biusk ring: it opens once Land of the Goblins has been started (OSRS: part-way through). approx */
+    public static final String YUBIUSK = "BLQ";
+    public static final String YUBIUSK_QUEST = "land_of_the_goblins";
+
+    /** Block offset of a {@link #REALM_RINGS} ring from its place's centre: just south of the place's plaza. */
+    public static final int REALM_RING_DX = 0;
+    public static final int REALM_RING_DZ = 7;
+
+    /**
+     * Rings of realms this world builds as places elsewhere (the Fisher Realm, Gorak's Plane, the Abyssal Nexus, the Myreque
+     * hideout and Yu'biusk): a ring beside each place to leave from, laid when the place is built or a traveller arrives.
+     */
+    public static final java.util.Set<String> REALM_RINGS = java.util.Set.of("BJR", "DIR", "DIP", "DLS", YUBIUSK);
 
     /** The dungeon ring with this code, or null. */
     public static DungeonRing dungeonRing(String code) {
@@ -165,7 +235,7 @@ public final class IslandsTravel {
                         IslandsStructures.MUDSKIPPER_RING_DZ, true, null),
                 new Stop("AKS", "Feldip Hills: Feldip Hunter area", IslandsPlaces.FELDIP_HUNTER_AREA, IslandsStructures.FELDIP_RING_DX,
                         IslandsStructures.FELDIP_RING_DZ, true, null),
-                new Stop("BJR", "Other realms: Fisher Realm", "fisher_realm", 3, 3, false, "holy_grail"),
+                new Stop("BJR", "Other realms: Fisher Realm", "fisher_realm", REALM_RING_DX, REALM_RING_DZ, true, "holy_grail"),
                 new Stop("BKP", "Feldip Hills: South of Castle Wars", IslandsPlaces.CASTLE_WARS, IslandsStructures.CASTLE_WARS_RING_DX,
                         IslandsStructures.CASTLE_WARS_RING_DZ, true, null),
                 new Stop("CIP", "Islands: Miscellania", IslandsPlaces.MISCELLANIA, IslandsStructures.MISCELLANIA_RING_DX,
@@ -173,12 +243,15 @@ public final class IslandsTravel {
                 new Stop("CKP", "Other realms: Cosmic entity's plane", "COSMIC_ALTAR", 3, 3, false, null),
                 new Stop("CLR", "Islands: Ape Atoll", IslandsPlaces.APE_ATOLL_AGILITY, IslandsStructures.APE_RING_DX,
                         IslandsStructures.APE_RING_DZ, true, "monkey_madness_i"),
-                new Stop("DIR", "Other realms: Gorak's Plane", "gorak_plane", 3, 3, false, null),
+                new Stop("DIR", "Other realms: Gorak's Plane", "gorak_plane", REALM_RING_DX, REALM_RING_DZ, true, null),
                 new Stop("DLR", "Islands: Poison Waste, south of Isafdar", IslandsPlaces.ZUL_ANDRA, IslandsStructures.ZUL_ANDRA_RING_DX,
                         IslandsStructures.ZUL_ANDRA_RING_DZ, true, null),
-                // Realms built as places elsewhere in this world (arrival only, like CKP/BJR/DIR).
-                new Stop("DIP", "Other realms: Abyssal Nexus", "abyssal_nexus", 3, 3, false, null),
-                new Stop("DLS", "Morytania: Myreque hideout under Canifis", "myreque_hideout", 3, 3, false, "in_search_of_the_myreque"),
+                // Realms built as places elsewhere in this world, each with a ring of its own beside the place (REALM_RINGS).
+                new Stop("DIP", "Other realms: Abyssal Nexus", "abyssal_nexus", REALM_RING_DX, REALM_RING_DZ, true, null),
+                new Stop("DLS", "Morytania: Myreque hideout under Canifis", "myreque_hideout", REALM_RING_DX, REALM_RING_DZ, true,
+                        "in_search_of_the_myreque"),
+                // Yu'biusk: the goblins' realm, where this world's Land of the Goblins builds it.
+                new Stop(YUBIUSK, "Other realms: Yu'biusk", "quest_yubiusk", REALM_RING_DX, REALM_RING_DZ, true, null),
                 // The player-owned house's ring: a virtual stop (Teleport to House).
                 new Stop("DIQ", "Player-owned house", HOUSE_PLACE, 0, 0, false, null)));
         List<com.runecraft.osrs.content.PlaceDef> places = ringPlaces();
@@ -192,7 +265,8 @@ public final class IslandsTravel {
         }
         // Dungeon realms: rings on the floors of this world's dungeons (DUNGEON_RINGS), under their bare places.
         String[][] realms = {{"BLP", "Dungeons: TzHaar area", null}, {"ALR", "Other realms: The Abyss", null},
-                {"AJQ", "Dungeons: Cave south of Dorgesh-Kaan", "death_to_the_dorgeshuun"}};
+                {"AJQ", "Dungeons: Cave south of Dorgesh-Kaan", "death_to_the_dorgeshuun"},
+                {"BKQ", "Other realms: Enchanted Valley", null}};
         for (int i = 0; i < DUNGEON_RINGS.size(); i++) {
             DungeonRing d = DUNGEON_RINGS.get(i);
             com.runecraft.osrs.content.PlaceDef p = places.get(RINGS.length + i);

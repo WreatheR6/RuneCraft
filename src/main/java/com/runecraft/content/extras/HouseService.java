@@ -360,6 +360,35 @@ final class HouseService {
         enter(player, player.getUuid(), false, false);
     }
 
+    /**
+     * Fairy ring code DIQ: into the player's own house beside its fairy ring (OSRS: the house ring, not the portal). Falls
+     * back to the house's entrance when no ring stands on the ground floor.
+     */
+    static void teleportToFairyRing(ServerPlayerEntity player) {
+        enter(player, player.getUuid(), false, false);
+        ServerWorld world = Gielinor.world(player.getServer());
+        if (world == null || player.getWorld() != world) {
+            return;
+        }
+        BlockPos o = origin(player.getServer(), player.getUuid());
+        int size = HouseLayout.GRID * Poh.ROOM;
+        for (BlockPos p : BlockPos.iterate(o, o.add(size - 1, 3, size - 1))) {
+            String id = ExtrasUtil.blockId(world.getBlockState(p));
+            Poh.Furniture f = id == null ? null : Poh.byBlock(id);
+            if (f == null || f.effect() != Poh.Effect.FAIRY_RING) {
+                continue;
+            }
+            BlockPos ring = p.toImmutable();
+            for (BlockPos side : new BlockPos[]{ring.east(), ring.west(), ring.south(), ring.north()}) {
+                if (world.getBlockState(side).isAir() && world.getBlockState(side.up()).isAir()) {
+                    player.teleport(world, side.getX() + 0.5, side.getY(), side.getZ() + 0.5, player.getYaw(), player.getPitch());
+                    return;
+                }
+            }
+            return;
+        }
+    }
+
     static void toggleBuilding(ServerPlayerEntity player) {
         Spot here = locate((ServerWorld) player.getWorld(), player.getBlockPos());
         if (here == null || !here.owner().equals(player.getUuid())) {

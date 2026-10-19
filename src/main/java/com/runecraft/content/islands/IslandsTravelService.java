@@ -32,6 +32,13 @@ public final class IslandsTravelService {
     /** Whether a player has built a fairy ring in their house (set by the extras module's house): DIQ needs one. */
     public static java.util.function.Predicate<ServerPlayerEntity> houseFairyRing = p -> false;
 
+    /**
+     * DIQ's arrival: into the player's house beside its fairy ring (set by the extras module's house; until then a plain
+     * Teleport to House).
+     */
+    public static java.util.function.Consumer<ServerPlayerEntity> houseRingTeleport =
+            p -> com.runecraft.content.systems.SysTeleport.houseTeleport.accept(p);
+
     private IslandsTravelService() {
     }
 
@@ -106,6 +113,16 @@ public final class IslandsTravelService {
             Msg.game(player, "The " + to.code() + " fairy ring code only works if you have built a fairy ring in your house.");
             return;
         }
+        // BLQ (Yu'biusk) is attuned during Land of the Goblins (OSRS: part-way through the quest). approx: once started
+        for (IslandsTravel.Stop end : new IslandsTravel.Stop[]{here, to}) {
+            if (end != null && IslandsTravel.YUBIUSK.equals(end.code())
+                    && ContentRegistry.quest(IslandsTravel.YUBIUSK_QUEST) != null
+                    && QuestApi.stage(player, IslandsTravel.YUBIUSK_QUEST) < 1 && !QuestApi.isComplete(player, IslandsTravel.YUBIUSK_QUEST)) {
+                Msg.game(player, "The " + end.code() + " fairy ring only works for those who have started "
+                        + ContentRegistry.quest(IslandsTravel.YUBIUSK_QUEST).displayName() + ".");
+                return;
+            }
+        }
         Msg.game(player, fairy ? "You step into the fairy ring... " + to.name() + "." : "The mushtree's spores carry you to " + to.name()
                 + ". (Sneak and use it to choose another destination.)");
         travel(player, to);
@@ -132,6 +149,31 @@ public final class IslandsTravelService {
                 }
             });
         }
+        // The rings of the realms built as places elsewhere (BJR, DIR, DIP, DLS, BLQ): beside their place.
+        for (IslandsTravel.Stop s : IslandsTravel.FAIRY_RINGS.stops()) {
+            if (IslandsTravel.REALM_RINGS.contains(s.code())) {
+                LandmarkBuilder.registerCustom(s.place(), (world, plaza) -> ensureRealmRing(world, s));
+            }
+        }
+    }
+
+    /**
+     * Lays a {@link IslandsTravel#REALM_RINGS} ring beside its place unless it is already there (worlds whose place was built
+     * before the ring existed get it when a traveller arrives).
+     */
+    static void ensureRealmRing(ServerWorld world, IslandsTravel.Stop stop) {
+        int[] at = position(stop);
+        if (at == null) {
+            return;
+        }
+        net.minecraft.block.Block ring = net.minecraft.registry.Registries.BLOCK.get(RuneCraft.resolve(IslandsBlocks.FAIRY_RING));
+        BlockPos floor = ground(world, at[0], at[1]);
+        for (int dy = -3; dy <= 2; dy++) {
+            if (world.getBlockState(floor.up(dy)).isOf(ring)) {
+                return;
+            }
+        }
+        layRing(world, floor);
     }
 
     /** Lays a dungeon realm's ring on its dungeon's floor (carving the dungeon's chunks first), unless it is there. */
@@ -174,10 +216,18 @@ public final class IslandsTravelService {
         return ring != null && IslandsTravel.ringPlace(ring.code()).equals(stop.place()) ? ring : null;
     }
 
+    /** Travels straight to a fairy ring code's destination, without a staff or dial (the self-test). */
+    public static void travelTo(ServerPlayerEntity player, String code) {
+        IslandsTravel.Stop to = IslandsTravel.FAIRY_RINGS.stop(code);
+        if (to != null) {
+            travel(player, to);
+        }
+    }
+
     static void travel(ServerPlayerEntity player, IslandsTravel.Stop to) {
         if (IslandsTravel.HOUSE_PLACE.equals(to.place())) {
             // DIQ: the player-owned house's ring (the extras module's house registers the teleport).
-            com.runecraft.content.systems.SysTeleport.houseTeleport.accept(player);
+            houseRingTeleport.accept(player);
             return;
         }
         IslandsTravel.DungeonRing ring = dungeonRing(to);
@@ -206,6 +256,9 @@ public final class IslandsTravelService {
         int x = p.blockX() + to.dx();
         int z = p.blockZ() + to.dz();
         StructurePlacer.applyAround(world, x, z, 16);
+        if (IslandsTravel.REALM_RINGS.contains(to.code())) {
+            ensureRealmRing(world, to);
+        }
         BlockPos pos = Gielinor.safeSpot(world, x + 2, z);
         player.teleport(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, player.getYaw(), player.getPitch());
     }

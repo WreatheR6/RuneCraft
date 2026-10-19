@@ -128,6 +128,10 @@ final class GameplayChecks {
         for (String npcId : com.runecraft.osrs.content.dungeons.EssenceMine.TELEPORTERS.keySet()) {
             checks.add(new SelfTest.Check("essencemine:" + npcId.toLowerCase(Locale.ROOT), () -> g.essenceMine(npcId)));
         }
+        checks.add(new SelfTest.Check("transport:kbd_levers", g::kbdLevers));
+        for (String code : new String[]{"BKQ", "DIP", "DLS", "BLQ"}) {
+            checks.add(new SelfTest.Check("transport:fairy_ring_" + code.toLowerCase(Locale.ROOT), () -> g.fairyRingRealm(code)));
+        }
         // Items, combat and interactions (after the teleports, which generate the spell destinations' chunks).
         checks.addAll(ItemCombatChecks.all(context));
         checks.addAll(CannonChecks.all(context));
@@ -729,7 +733,7 @@ final class GameplayChecks {
             all.putIfAbsent("obelisk_" + o.level(), new int[] {GielinorMap.toBlockX(o.x()), GielinorMap.toBlockZ(o.y())});
         }
         for (com.runecraft.osrs.content.npcs.WildernessTransport.Lever l : com.runecraft.osrs.content.npcs.WildernessTransport.LEVERS) {
-            if (!l.toName().equals("the Mage Bank")) {
+            if (com.runecraft.osrs.content.npcs.WildernessTransport.cavernArrival(l) == null) { // caverns: transport:kbd_levers
                 all.putIfAbsent("lever_" + l.id(), new int[] {GielinorMap.toBlockX(l.toX()) + 1, GielinorMap.toBlockZ(l.toY()) + 1});
             }
         }
@@ -749,6 +753,67 @@ final class GameplayChecks {
 
     private static String key(String name) {
         return name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "_");
+    }
+
+    /** Throws unless the player stands within one block of {@code a} (x, feet y, z). */
+    private void near(int[] a, String what) {
+        BlockPos at = p().getBlockPos();
+        if (Math.abs(at.getX() - a[0]) > 1 || Math.abs(at.getZ() - a[2]) > 1 || Math.abs(at.getY() - a[1]) > 1) {
+            throw failure(what + " at " + at.toShortString() + ", expected " + a[0] + " " + a[1] + " " + a[2]);
+        }
+    }
+
+    /**
+     * The King Black Dragon's levers: the lever in the Lava Maze's entrance chamber lands beside the lever in the lair (with
+     * the dragon's summoning stone), and the lair's lever brings the player back into the chamber.
+     */
+    private String kbdLevers() {
+        c.home();
+        com.runecraft.osrs.content.npcs.WildernessTransport.Lever in = com.runecraft.osrs.content.npcs.WildernessTransport.lever("kbd_lair_entrance");
+        com.runecraft.osrs.content.npcs.WildernessTransport.Lever out = com.runecraft.osrs.content.npcs.WildernessTransport.lever("kbd_lair");
+        com.runecraft.content.npcs.WildernessTransportService.pull(p(), in);
+        int[] a = com.runecraft.osrs.content.npcs.WildernessTransport.kbdLairArrival();
+        near(a, "lair arrival");
+        int[] st = com.runecraft.osrs.content.npcs.WildernessTransport.KBD_STONE_TILE;
+        BlockState stone = c.world.getBlockState(new BlockPos(GielinorMap.toBlockX(st[0]), a[1], GielinorMap.toBlockZ(st[1])));
+        if (!(stone.getBlock() instanceof com.runecraft.block.DataBossSummonBlock)) {
+            throw failure("no King Black Dragon summoning stone in the lair, found " + stone);
+        }
+        BlockState lever = c.world.getBlockState(new BlockPos(GielinorMap.toBlockX(out.x()), a[1], GielinorMap.toBlockZ(out.y())));
+        if (!lever.isOf(net.minecraft.block.Blocks.LEVER)) {
+            throw failure("no lever in the lair, found " + lever);
+        }
+        com.runecraft.content.npcs.WildernessTransportService.pull(p(), out);
+        near(com.runecraft.osrs.content.npcs.WildernessTransport.kbdRoomArrival(), "entrance chamber arrival");
+        int[] lb = com.runecraft.osrs.content.npcs.WildernessTransport.kbdLeverBlock();
+        BlockState back = c.world.getBlockState(new BlockPos(lb[0], com.runecraft.osrs.content.npcs.WildernessTransport.KBD_ROOM_FLOOR + 1, lb[1]));
+        if (!back.isOf(net.minecraft.block.Blocks.LEVER)) {
+            throw failure("no lever in the entrance chamber, found " + back);
+        }
+        c.home();
+        return "lair and back";
+    }
+
+    /**
+     * A realm fairy ring (BKQ's Enchanted Valley, and the rings beside the Abyssal Nexus, the Myreque hideout and Yu'biusk):
+     * travelling there lands next to a fairy ring the player can leave from (laid on arrival in worlds built before it).
+     */
+    private String fairyRingRealm(String code) {
+        c.home();
+        com.runecraft.content.islands.IslandsTravelService.travelTo(p(), code);
+        net.minecraft.block.Block ring = net.minecraft.registry.Registries.BLOCK.get(
+                com.runecraft.RuneCraft.resolve(com.runecraft.osrs.content.islands.IslandsBlocks.FAIRY_RING));
+        BlockPos at = p().getBlockPos();
+        for (BlockPos q : BlockPos.iterate(at.add(-4, -3, -4), at.add(4, 3, 4))) {
+            if (c.world.getBlockState(q).isOf(ring)) {
+                String where = GielinorMap.toOsrsX(at.getX()) + "," + GielinorMap.toOsrsY(at.getZ()) + " y " + at.getY();
+                c.home();
+                return "ring beside " + where;
+            }
+        }
+        String where = GielinorMap.toOsrsX(at.getX()) + "," + GielinorMap.toOsrsY(at.getZ()) + " y " + at.getY();
+        c.home();
+        throw failure("no fairy ring near the arrival at " + where);
     }
 
     /**
