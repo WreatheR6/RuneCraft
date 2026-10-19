@@ -227,6 +227,11 @@ public final class Jewellery {
         externalTeleporter("pendant_of_ates", "Pendant of ates", Slot.NECK, s(0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 2),
                 Teleports.ATES); // wiki bonuses (EquipmentWikiSyncTest)
         externalTeleporter("giantsoul_amulet", "Giantsoul amulet", Slot.NECK, NONE, Teleports.GIANTSOUL);
+        // Sailors' amulet (skilling module salvage drop "Sailors' amulet (inert)"): law and water runes charge it.
+        externalTeleporter("sailors_amulet_inert", "Sailors' amulet", Slot.NECK, NONE, Teleports.SAILORS);
+        // Enchanted lyre (quests module item, The Fremennik Trials): played from the hand; the Fossegrimen charges it.
+        HELD.put("enchanted_lyre", new Worn("enchanted_lyre", "Enchanted lyre", Slot.RING, NONE, Perk.TELEPORT_ONLY, null, -1,
+                Teleports.LYRE, false));
         // Guardians of the Rift reward (minigames module): elemental altar teleports, one charge of each elemental rune and
         // a law rune per teleport.
         externalTeleporter("ring_of_the_elements", "Ring of the elements", Slot.RING, NONE, Teleports.ELEMENTS);

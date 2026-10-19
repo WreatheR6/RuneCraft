@@ -233,6 +233,7 @@ public final class SystemsHooks implements ModuleHooks {
                 "I'm Falo, the bard. Bring me what my songs ask for and I'll help you on your treasure trail."));
 
         ItemSourcesService.register(); // after QuestsHooks: wraps Eluned's, the Lumbridge Guide's and Sigli's dialogue
+        LyreService.register(); // after QuestsHooks: wraps the Fossegrimen (enchanted lyre charges)
         // Ring of pursuit: one per-player charge (Jewellery.PURSUIT_CHARGES) per noose-wand catch it speeds up.
         com.runecraft.content.skilling.GatheringHooks.pursuitTrack = p -> {
             if (!"ring_of_pursuit".equals(SysState.of(p).wornId(Jewellery.Slot.RING))) {

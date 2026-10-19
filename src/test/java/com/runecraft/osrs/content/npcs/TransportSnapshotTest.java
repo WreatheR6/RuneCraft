@@ -45,7 +45,7 @@ class TransportSnapshotTest {
     private static final Map<String, String> RELOCATED = Map.ofEntries(
             Map.entry("Games necklace: Corporeal Beast", "lair built on the surface (corporeal_beast_lair)"),
             Map.entry("Games necklace: Tears of Guthix", "cave built on the surface (tears_of_guthix_cave)"),
-            Map.entry("Skills necklace: Mining Guild", "no dungeon carved under OSRS's tile (the guild mine); the surface guild entrance"),
+            Map.entry("Skills necklace: Mining Guild", "OSRS's tile lies east of this world's carved Mining Guild; inside the guild"),
             Map.entry("Ring of wealth: Dondakan", "OSRS lands underground; mine entrance at White Wolf Mountain"),
             Map.entry("Digsite pendant: Lithkren", "OSRS lands in the vault; Lithkren's surface"),
             Map.entry("Drakan's medallion: Slepe", "OSRS lands in the sanctuary under Slepe; the village"),
@@ -189,8 +189,9 @@ class TransportSnapshotTest {
             }
         }
         // Realms built elsewhere (CKP: the Cosmic Altar's plane, BJR: the Fisher Realm, DIR: Gorak's Plane, DIP: the Abyssal
-        // Nexus, DLS: the Myreque hideout), rings carved into dungeons (BLP, ALR, AJQ: checked below) and the house ring.
-        Set<String> otherRealms = Set.of("CKP", "BJR", "DIR", "DIP", "DLS", "BLP", "ALR", "AJQ", "DIQ");
+        // Nexus, DLS: the Myreque hideout, BLQ: Yu'biusk), rings carved into dungeons (BLP, ALR, AJQ: checked below) and the
+        // house ring. BKQ's Enchanted Valley is carved at its OSRS tile, so its ring is checked like a surface one.
+        Set<String> otherRealms = Set.of("CKP", "BJR", "DIR", "DIP", "DLS", "BLQ", "BLP", "ALR", "AJQ", "DIQ");
         // CLR's ring is part of the hand-built Ape Atoll course, a few tiles from OSRS's.
         Map<String, Integer> tolerance = Map.of("CLR", 6);
         Set<String> seen = new HashSet<>();
@@ -211,18 +212,21 @@ class TransportSnapshotTest {
             assertTrue(Math.abs(t[0] - src[0]) <= tol && Math.abs(t[1] - src[1]) <= tol,
                     s.code() + " at " + xy(t) + ", OSRS " + xy(src));
         }
-        // Every surface ring exists (DIQ is the house ring; CJQ, the Great Conch, has no land in this world yet).
+        // Every surface ring exists (DIQ is the house ring), and every OSRS code is on the dial (BKS is the Zanaris hub).
         for (Map.Entry<String, int[]> e : tiles.entrySet()) {
             int[] t = e.getValue();
-            boolean surface = t[1] < 4100 && !Set.of("DIQ", "CJQ", "BKS").contains(e.getKey());
+            boolean surface = t[1] < 4100 && !Set.of("DIQ", "BKS").contains(e.getKey());
             if (surface) {
                 assertTrue(seen.contains(e.getKey()), "missing fairy ring " + e.getKey() + " at " + xy(t));
             }
         }
         assertTrue(seen.size() >= 50, "rings " + seen.size());
-        for (String code : List.of("BLP", "ALR", "AJQ", "DIP", "DLS", "DIQ")) {
-            assertTrue(seen.contains(code), "missing fairy ring " + code);
-        }
+        Set<String> every = new HashSet<>(tiles.keySet());
+        every.remove("BKS");
+        assertEquals(every, seen);
+        // The Great Conch's ring stands on dry land.
+        int[] cjq = ringTile(IslandsTravel.FAIRY_RINGS.stop("CJQ"));
+        assertFalse(com.runecraft.osrs.world.Elevation.isWater(GielinorMap.toBlockX(cjq[0]), GielinorMap.toBlockZ(cjq[1])), "CJQ in water");
         assertEquals(IslandsTravel.HOUSE_PLACE, IslandsTravel.FAIRY_RINGS.stop("DIQ").place());
     }
 
@@ -246,10 +250,11 @@ class TransportSnapshotTest {
         return hit;
     }
 
-    private static com.runecraft.osrs.content.dungeons.Dungeons.Dungeon dungeon(String id) {
-        for (com.runecraft.osrs.content.dungeons.Dungeons.Dungeon d : com.runecraft.osrs.content.dungeons.Dungeons.all()) {
-            if (d.id().equals(id)) {
-                return d;
+    /** The registered structure with this id (a dungeon's, or a carved realm's such as the Enchanted Valley), or null. */
+    private static com.runecraft.osrs.world.StructureDef structure(String id) {
+        for (com.runecraft.osrs.world.StructureDef s : ContentRegistry.structures()) {
+            if (s.id().equals(id)) {
+                return s;
             }
         }
         return null;
@@ -258,19 +263,19 @@ class TransportSnapshotTest {
     /** Each dungeon realm's ring and arrival spot stand in its dungeon's carved air, on a solid floor. */
     @Test
     void dungeonFairyRingsStandInCarvedAir() {
-        assertEquals(3, IslandsTravel.DUNGEON_RINGS.size());
+        assertEquals(4, IslandsTravel.DUNGEON_RINGS.size());
         for (IslandsTravel.DungeonRing r : IslandsTravel.DUNGEON_RINGS) {
-            com.runecraft.osrs.content.dungeons.Dungeons.Dungeon d = dungeon(r.dungeon());
+            com.runecraft.osrs.world.StructureDef d = structure(r.dungeon());
             assertNotNull(d, r.code() + " dungeon " + r.dungeon());
             int[] a = IslandsTravel.dungeonArrival(r);
             for (int[] at : new int[][]{{r.x(), r.z()}, {a[0], a[2]}}) {
                 for (int up = 1; up <= 2; up++) {
-                    com.runecraft.osrs.world.StructureDef.Op op = last(d.structure(), at[0], r.floorY() + up, at[1]);
+                    com.runecraft.osrs.world.StructureDef.Op op = last(d, at[0], r.floorY() + up, at[1]);
                     assertNotNull(op, r.code() + " not inside " + r.dungeon() + " at " + at[0] + "," + (r.floorY() + up) + "," + at[1]);
                     assertEquals(com.runecraft.osrs.world.StructureDef.Op.Type.CLEAR, op.type(),
                             r.code() + " blocked by " + op.block() + " at " + at[0] + "," + (r.floorY() + up) + "," + at[1]);
                 }
-                com.runecraft.osrs.world.StructureDef.Op floor = last(d.structure(), at[0], r.floorY(), at[1]);
+                com.runecraft.osrs.world.StructureDef.Op floor = last(d, at[0], r.floorY(), at[1]);
                 assertNotNull(floor, r.code() + " floor");
                 assertTrue(floor.type() != com.runecraft.osrs.world.StructureDef.Op.Type.CLEAR && !floor.block().contains("lava")
                         && !floor.block().contains("water"), r.code() + " floor " + floor.block());
@@ -331,12 +336,15 @@ class TransportSnapshotTest {
             mine.add(l.x() + "," + l.y() + ">" + l.toX() + "," + l.toY());
             assertEquals(l, WildernessTransport.leverAt(l.x(), l.y()));
         }
-        // The King Black Dragon's levers (inside the Lava Maze dungeon and the lair) are not built.
-        Set<String> notBuilt = Set.of("3067,10253>2271,4680", "2271,4680>3067,10254");
+        // The King Black Dragon's levers: the lair end is on its OSRS tile; the Lava Maze dungeon around the entrance lever
+        // (3067, 10253) isn't built, so that lever stands in a chamber off the foot of this world's Lava Maze KBD ladder.
         Set<String> expected = new HashSet<>(osrs);
-        expected.removeAll(notBuilt);
+        assertTrue(expected.remove("3067,10253>2271,4680"));
+        assertTrue(expected.remove("2271,4680>3067,10254"));
+        expected.add("3037,3851>2271,4680");
+        expected.add("2271,4680>3036,3851");
         assertEquals(expected, mine);
-        assertEquals(5, WildernessTransport.LEVERS.size());
+        assertEquals(7, WildernessTransport.LEVERS.size());
     }
 
     @Test
@@ -365,15 +373,14 @@ class TransportSnapshotTest {
                 assertEquals(o, WildernessTransport.pillarAt(o.x() + c[0], o.y() + c[1]));
             }
             assertEquals(null, WildernessTransport.pillarAt(o.x(), o.y()));
-            // Always another obelisk, and every other one can come up.
+            // Any of the six can come up, the obelisk itself included ("players may even be teleported to the same location").
             Set<Integer> reached = new HashSet<>();
             java.util.Random random = new java.util.Random(o.level());
-            for (int i = 0; i < 200; i++) {
-                WildernessTransport.Obelisk to = WildernessTransport.destination(o, random);
-                assertTrue(to != o);
-                reached.add(to.level());
+            for (int i = 0; i < 300; i++) {
+                reached.add(WildernessTransport.destination(o, random).level());
             }
-            assertEquals(5, reached.size());
+            assertEquals(6, reached.size());
+            assertEquals(o, WildernessTransport.obelisk(o.level()));
             assertEquals(o.level(), GielinorMap.wildernessLevel(GielinorMap.toBlockX(o.x()), GielinorMap.toBlockZ(o.y())), "obelisk " + o.level() + " Wilderness level");
         }
         // Laying an obelisk's 5x5-tile square (floor, pillars, five blocks of air) cuts into no structure above ground.
@@ -393,7 +400,7 @@ class TransportSnapshotTest {
         }
         // Every lever and obelisk tile on the surface is dry land (the Mage Bank is its own cavern under the sea).
         for (WildernessTransport.Lever l : WildernessTransport.LEVERS) {
-            if (!l.id().equals("mage_bank")) {
+            if (!WildernessTransport.inCavern(l)) {
                 assertFalse(com.runecraft.osrs.world.Elevation.isWater(GielinorMap.toBlockX(l.x()), GielinorMap.toBlockZ(l.y())), l.name());
             }
         }
@@ -696,7 +703,8 @@ class TransportSnapshotTest {
             Map.entry("Chronicle", Teleports.CHRONICLE), Map.entry("Mythical cape", Teleports.MYTHICAL_CAPE),
             Map.entry("Music cape", Teleports.MUSIC_CAPE), Map.entry("Kharedst's memoirs", Teleports.MEMOIRS),
             Map.entry("Book of the dead", Teleports.MEMOIRS), Map.entry("Hallowed crystal shard", Teleports.HALLOWED_SHARD),
-            Map.entry("Camulet", Teleports.CAMULET), Map.entry("Ring of shadows", Teleports.SHADOWS));
+            Map.entry("Camulet", Teleports.CAMULET), Map.entry("Ring of shadows", Teleports.SHADOWS),
+            Map.entry("Enchanted lyre", Teleports.LYRE), Map.entry("Sailors' amulet", Teleports.SAILORS));
     private static final Map<String, String> ITEM_IDS = Map.ofEntries(
             Map.entry("Amulet of glory", "amulet_of_glory_4"), Map.entry("Ring of dueling", "ring_of_dueling_8"),
             Map.entry("Games necklace", "games_necklace_8"), Map.entry("Skills necklace", "skills_necklace_4"),
@@ -713,7 +721,8 @@ class TransportSnapshotTest {
             Map.entry("Amulet of the eye", "amulet_of_the_eye"), Map.entry("Chronicle", "chronicle"),
             Map.entry("Mythical cape", "mythical_cape"), Map.entry("Music cape", "music_cape"),
             Map.entry("Kharedst's memoirs", "kharedsts_memoirs"), Map.entry("Book of the dead", "book_of_the_dead"),
-            Map.entry("Hallowed crystal shard", "hallowed_crystal_shard"), Map.entry("Camulet", "camulet"));
+            Map.entry("Hallowed crystal shard", "hallowed_crystal_shard"), Map.entry("Camulet", "camulet"),
+            Map.entry("Enchanted lyre", "enchanted_lyre"), Map.entry("Sailors' amulet", "sailors_amulet_inert"));
     /** RuneCraft destination names that differ from the snapshot's. */
     private static final Map<String, String> ALIAS = Map.ofEntries(Map.entry("Cooks' Guild", "Cooking Guild"),
             Map.entry("Edgeville Monastery", "Monastery"), Map.entry("Dondakan's Rock", "Dondakan"),
@@ -931,7 +940,7 @@ class TransportSnapshotTest {
         for (List<Teleports.Destination> l : List.of(Teleports.PHARAOH, Teleports.ELEMENTS, Teleports.RETURNING, Teleports.GIANTSOUL,
                 Teleports.ATES, Teleports.TELEPORT_CRYSTAL, Teleports.SEED_POD, Teleports.ICY_BASALT, Teleports.STONY_BASALT,
                 Teleports.AMULET_OF_THE_EYE, Teleports.CHRONICLE, Teleports.MYTHICAL_CAPE, Teleports.MUSIC_CAPE, Teleports.MEMOIRS,
-                Teleports.HALLOWED_SHARD, Teleports.CAMULET)) {
+                Teleports.HALLOWED_SHARD, Teleports.CAMULET, Teleports.LYRE, Teleports.SAILORS)) {
             all.addAll(l);
         }
         for (Teleports.Destination d : all) {

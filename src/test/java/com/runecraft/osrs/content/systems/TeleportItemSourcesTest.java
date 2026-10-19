@@ -27,6 +27,7 @@ class TeleportItemSourcesTest {
             Map.entry("royal_seed_pod", "Monkey Madness II quest script reward"),
             Map.entry("pharaohs_sceptre", "Pyramid Plunder sarcophagus roll (minigames session)"),
             Map.entry("ectophial", "Ghosts Ahoy quest script reward"),
+            Map.entry("enchanted_lyre", "the Fossegrimen: The Fremennik Trials, then a raw fish offering (LyreService)"),
             Map.entry("slayer_ring_eternal", "Slayer reward crafting: eternal gem and a gold bar (SlayerRewards.Craft)"),
             Map.entry("max_cape", "CapeService: the Wise Old Man's cape stand at 99 in every skill"),
             Map.entry("achievement_diary_cape", "CapeService: every achievement diary complete"));

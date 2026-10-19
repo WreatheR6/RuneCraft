@@ -370,6 +370,9 @@ class IslandsContentTest {
         module.places().forEach(p -> mine.add(p.id()));
         Set<String> replaced = new HashSet<>();
         for (StructureDef s : module.structures()) {
+            if (s.id().equals(IslandsTravel.ENCHANTED_VALLEY)) {
+                continue; // BKQ's carved realm under the far northern sea replaces no place (TransportRound32Test)
+            }
             String target = s.replacesLandmark();
             assertNotNull(target, s.id());
             assertNotNull(ContentRegistry.place(target), s.id() + " replaces unknown place " + target);
@@ -451,7 +454,8 @@ class IslandsContentTest {
                 }
                 int[] c = centre(s.place());
                 assertNotNull(c, s.place());
-                if (s.hasBlock() && !s.place().startsWith(IslandsTravel.RING_PLACE_PREFIX)) { // those are laid at runtime
+                if (s.hasBlock() && !s.place().startsWith(IslandsTravel.RING_PLACE_PREFIX) // those are laid at runtime,
+                        && !(n == IslandsTravel.FAIRY_RINGS && IslandsTravel.REALM_RINGS.contains(s.code()))) { // so are realm rings
                     assertTrue(blockAt("runecraft:" + n.blockId(), c[0] + s.dx(), c[1] + s.dz()),
                             n.id() + " " + s.code() + " has no block at its stop");
                 }
