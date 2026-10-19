@@ -117,7 +117,7 @@ public final class NoteModel {
         private final Wrapped owner;
 
         Overrides(Wrapped owner) {
-            super(null, null, List.of());
+            super();
             this.owner = owner;
         }
 

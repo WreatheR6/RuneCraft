@@ -10,8 +10,8 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.ModelEvent;
+import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
-import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
@@ -63,12 +63,14 @@ public final class ClientPlatformEvents {
                 }
             }
         });
+        // Above every vanilla layer, so vanilla's HUD (effects, hotbar, chat) never covers ours. Not hidden by F1:
+        // the listeners check hideGui themselves.
+        modBus.addListener(RegisterGuiLayersEvent.class, e -> e.registerAboveAll(RuneCraft.id("hud"), (g, delta) ->
+                HudRenderCallback.EVENT.invoker().onHudRender(g, delta.getGameTimeDeltaPartialTick(false))));
 
         // game events
         IEventBus bus = NeoForge.EVENT_BUS;
         bus.addListener(ClientTickEvent.Post.class, e -> ClientTickEvents.END_CLIENT_TICK.invoker().onEndTick(Minecraft.getInstance()));
-        bus.addListener(RenderGuiEvent.Post.class, e ->
-                HudRenderCallback.EVENT.invoker().onHudRender(e.getGuiGraphics(), e.getPartialTick().getGameTimeDeltaPartialTick(false)));
         bus.addListener(RenderLevelStageEvent.class, e -> {
             if (e.getStage() == RenderLevelStageEvent.Stage.AFTER_ENTITIES && !WorldRenderEvents.AFTER_ENTITIES.isEmpty()) {
                 WorldRenderEvents.AFTER_ENTITIES.invoker().afterEntities(new WorldRenderContext(e.getPoseStack(), e.getCamera(),

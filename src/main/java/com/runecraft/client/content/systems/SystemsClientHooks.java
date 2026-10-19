@@ -1,6 +1,7 @@
 package com.runecraft.client.content.systems;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import com.runecraft.client.RuneCraftClient;
 import com.runecraft.client.content.ClientModuleHooks;
 import com.runecraft.content.systems.SysNet;
 import com.runecraft.item.ItemCharges;
@@ -38,7 +39,7 @@ public final class SystemsClientHooks implements ClientModuleHooks {
         spellbookKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("RuneCraft Spellbook", InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_B, "key.categories.runecraft"));
         hubKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("RuneCraft Adventurer's Log", InputConstants.Type.KEYSYM,
-                GLFW.GLFW_KEY_J, "key.categories.runecraft"));
+                InputConstants.UNKNOWN.getValue(), "key.categories.runecraft"));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (specKey.consumeClick()) {
                 sendKey(SysNet.KEY_SPEC);
@@ -47,7 +48,12 @@ public final class SystemsClientHooks implements ClientModuleHooks {
                 sendKey(SysNet.KEY_SPELLBOOK);
             }
             while (hubKey.consumeClick()) {
-                sendKey(SysNet.KEY_HUB);
+                // One action per key: on the full interface's exact binding (options saved with both on J), only the
+                // interface opens.
+                KeyMapping ui = RuneCraftClient.interfaceKey;
+                if (!hubKey.getKey().equals(ui.getKey()) || hubKey.getKeyModifier() != ui.getKeyModifier()) {
+                    sendKey(SysNet.KEY_HUB);
+                }
             }
         });
         HudRenderCallback.EVENT.register(SystemsHud::render);

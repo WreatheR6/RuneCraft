@@ -3,7 +3,7 @@ package com.runecraft.platform.client;
 import com.runecraft.platform.Event;
 import net.minecraft.client.gui.GuiGraphics;
 
-/** Fabric's HUD callback, fired after the vanilla HUD from NeoForge's {@code RenderGuiEvent.Post}. */
+/** Fabric's HUD callback, fired from a GUI layer registered above all of vanilla's HUD layers. */
 @FunctionalInterface
 public interface HudRenderCallback {
     void onHudRender(GuiGraphics drawContext, float tickDelta);
