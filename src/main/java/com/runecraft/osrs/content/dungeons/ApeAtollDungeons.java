@@ -5,53 +5,98 @@ import com.runecraft.osrs.world.StructureDef;
 import java.util.List;
 
 import static com.runecraft.osrs.content.dungeons.Cave.mc;
+import static com.runecraft.osrs.content.dungeons.Cave.rc;
 
 /**
- * The two undead dungeons of Ape Atoll (Monkey Madness I), carved below Kruk's Dungeon's floors:
+ * The two undead dungeons of Ape Atoll (Monkey Madness I), carved tile by tile from the OSRS map ({@link ApeAtollMaps})
+ * below Kruk's Dungeon's floors:
  *
  * <ul>
- *   <li>The Ape Atoll Dungeon (Zooknock's tunnels), entered in the southern jungle (tile 2763, 2703): the entrance
- *   cavern and the eastern caves of level 98 monkey zombies, the two halls of level 142 skeletons to the west, the
- *   northern tunnel back east, and Zooknock's cave at its end.</li>
- *   <li>The Temple of Marimbo Dungeon, below the temple's trapdoor: the first cave (small monkey zombies and spiders),
- *   the large monkey zombies by the monkey skull's room at its east end, and, through the trapped tunnel and the
- *   wooden door, the great western cave of monkey zombies.</li>
+ *   <li>The Ape Atoll Dungeon (Zooknock's tunnels), entered by the bamboo ladder in the southern jungle (tile 2763, 2703;
+ *   skretzo/shortest-path): the winding maze of monkey zombies, level 142 skeletons and spiders, its spike traps and
+ *   the two stone traps under rock ledges (wiki map), falling rocks away from the ledges, and Zooknock's cave at its
+ *   north-eastern end, where Zooknock, Bunkwicket and Waymottin stand on their cache tiles.</li>
+ *   <li>The Temple of Marimbo Dungeon, below the temple's trapdoor: the first area with the two walls of flame, the
+ *   crevice to the small cave of hot rocks (the long hot rock where stuffed snakes are cooked), the trapped tunnel to
+ *   the locked wooden door, the great western cave with the monkey skull behind it (the hard Western Provinces Diary
+ *   opens the door), and the separate southern cave of spiders.</li>
  * </ul>
  *
- * <p>Rooms cover the cache's monster clusters (mejrs/data_osrs NPCList_OSRS.json) and every camp keeps the cache's
- * number of each monster (the level 1 spiders are the core Spider). Approximations: the rooms are boxes around the
- * clusters rather than the real winding tunnels; rocks fall on players anywhere in Zooknock's tunnels away from the
- * rock ledges ({@link #fallingRocks}), and the trapped tunnel has one row of floor traps ({@link #trapAt}) that always
- * spring (damage approx); the hot-rock cave and the locked doors are left out; the temple's trapdoor is a hut just
- * south of the temple (the islands module builds the temple), with the dungeon shifted 3 tiles south to lie under it;
- * Zooknock and his companions are not placed (the quests module keeps Zooknock on the surface by Marim).
+ * <p>Every monster stands on its cache tile (mejrs/data_osrs NPCList_OSRS.json; one camp per tile). Approximations: the
+ * temple's trapdoor is a hut just south of the temple (the islands module builds the temple), with the dungeon shifted
+ * 10 tiles south to lie under it; the southern cave's entrance is a hut 21 tiles east of the real crate in Marim; the
+ * hot-rock cave (an instance in OSRS) is carved beside the southern cave; trap damage is checked once a second.
  */
 final class ApeAtollDungeons {
-    /** Surface entrance of the Ape Atoll Dungeon and the shift from its cache tiles. */
-    static final int DX = 1;
+    /** Shift from the Ape Atoll Dungeon's cache tiles to the surface (its ladder 2763, 9103 is below 2763, 2703). */
+    static final int DX = 0;
     static final int DY = -6400;
-    /** The temple dungeon's shift (its arrival tile 2790, 9186 lies under the hut at 2790, 2783). */
-    static final int TEMPLE_DY = -6403;
-    /** Floor height: below Kruk's Dungeon (22 and 36). */
+    /** The temple dungeon's shift (its arrival tile 2790, 9191 lies under the hut at 2790, 2781, clear of the temple's grounds). */
+    static final int TEMPLE_DY = -6410;
+    /**
+     * Floor heights: both dungeons lie below Kruk's Dungeon (22 and 36) and above its western hordes (-10); the temple
+     * dungeon's southern cave ends one tile north of Zooknock's tunnels.
+     */
     static final int FLOOR = 6;
+    static final int TEMPLE_FLOOR = 6;
     private static final String SPIDER = "minecraft:cave_spider";
 
     /** The rock ledges of the Ape Atoll Dungeon (cache tiles): standing within a block or two of one shelters a player. */
     static final int[][] LEDGES = {{2770, 9100}, {2800, 9110}, {2740, 9110}, {2710, 9100}, {2705, 9130}, {2760, 9144}};
-    /** The temple dungeon's trapped tunnel: the cache tile column of its floor traps. */
-    static final int TRAP_X = 2777;
-    static final int TRAP_Y = 9196;
+    /** Spike traps of Zooknock's tunnels (wiki map; each of the four multi-trap patches is one trap here, approx). */
+    static final int[][] SPIKE_TRAPS = {{2809, 9111}, {2740, 9135}, {2715, 9119}, {2733, 9105}, {2725, 9097}, {2691, 9115},
+            {2701, 9142}, {2744, 9102}, {2708, 9108}, {2740, 9122}, {2712, 9133}};
+    /** The two stone traps ("a rock") under rock ledges: 20% of the player's hitpoints per tick while standing on them. */
+    static final int[][] STONE_TRAPS = {{2693, 9109}, {2743, 9146}};
+    /** Zooknock, Bunkwicket and Waymottin (cache tiles). */
+    static final int[] ZOOKNOCK = {2804, 9145};
+    /** The temple dungeon's trapped tunnel (one tile wide) and its locked wooden door just west of the trap. */
+    static final int TRAP_X = 2778;
+    static final int TRAP_Y = 9195;
+    static final int DOOR_X = 2777;
+    /** The crevice in the middle of the first area and the hot-rock cave it leads to (cache tiles, approx). */
+    static final int[] CREVICE = {2796, 9200};
+    static final int HOT_X1 = 2808;
+    static final int HOT_X2 = 2814;
+    static final int HOT_Y1 = 9166;
+    static final int HOT_Y2 = 9172;
+    /** The line of hot rocks across the cave (a tile column) and the long hot rock beyond it. */
+    static final int HOT_LINE_X = 2810;
+
+    /** What hurts a player standing at a block. */
+    enum Hazard { NONE, TUNNEL_TRAP, SPIKE_TRAP, STONE_TRAP, HOT_ROCKS, FALLING_ROCKS }
 
     private ApeAtollDungeons() {
     }
 
+    static List<Dungeons.Dungeon> all() {
+        return List.of(apeAtollDungeon(), templeDungeon());
+    }
+
+    private static int bx(int t, int dx) {
+        return StructureDef.bx(t + dx);
+    }
+
+    private static int bz(int t, int dy) {
+        return StructureDef.bz(t + dy);
+    }
+
+    /** True if the feet block (x, z) is on the cache tile (tx, ty) under the given shift. */
+    private static boolean onTile(int x, int z, int tx, int ty, int dx, int dy) {
+        return x >= bx(tx, dx) && x <= bx(tx, dx) + 1 && z >= bz(ty, dy) && z <= bz(ty, dy) + 1;
+    }
+
     /**
-     * True if a player whose feet are at block (x, y, z) stands on one of the trapped tunnel's floor traps (the temple
-     * dungeon's tunnel between its first cave and the great western cave).
+     * True if a player whose feet are at block (x, y, z) stands on the trapped tunnel's floor traps (the temple
+     * dungeon's tunnel between its first area and the wooden door).
      */
     static boolean trapAt(int x, int y, int z) {
-        int tz = bz(TRAP_Y, TEMPLE_DY);
-        return y == FLOOR + 1 && x == bx(TRAP_X, 0) && z >= tz - 1 && z <= tz + 1;
+        return y == TEMPLE_FLOOR + 1 && onTile(x, z, TRAP_X, TRAP_Y, 0, TEMPLE_DY);
+    }
+
+    /** True if the player at (x, z) is on the western (locked) side of the temple dungeon's wooden door. */
+    static boolean insideWoodenDoor(double x) {
+        return x < bx(DOOR_X, 0);
     }
 
     /**
@@ -70,101 +115,129 @@ final class ApeAtollDungeons {
         return true;
     }
 
-    static List<Dungeons.Dungeon> all() {
-        return List.of(apeAtollDungeon(), templeDungeon());
+    /** The hazard at a player's feet block, if any. */
+    static Hazard hazardAt(int x, int y, int z) {
+        if (trapAt(x, y, z)) {
+            return Hazard.TUNNEL_TRAP;
+        }
+        if (y == TEMPLE_FLOOR + 1 && x >= bx(HOT_LINE_X, 0) && x <= bx(HOT_LINE_X, 0) + 1 && z >= bz(HOT_Y2, TEMPLE_DY)
+                && z <= bz(HOT_Y1, TEMPLE_DY) + 1) {
+            return Hazard.HOT_ROCKS;
+        }
+        if (y == FLOOR + 1) {
+            for (int[] t : SPIKE_TRAPS) {
+                if (x == bx(t[0], DX) && z == bz(t[1], DY)) {
+                    return Hazard.SPIKE_TRAP;
+                }
+            }
+            for (int[] t : STONE_TRAPS) {
+                if (onTile(x, z, t[0], t[1], DX, DY)) {
+                    return Hazard.STONE_TRAP;
+                }
+            }
+        }
+        return fallingRocks(x, y, z) ? Hazard.FALLING_ROCKS : Hazard.NONE;
     }
 
-    private static int bx(int t, int dx) {
-        return StructureDef.bx(t + dx);
+    /** Block {x, y, z} of the wooden door's lower northern block. */
+    static int[] woodenDoor() {
+        return new int[]{bx(DOOR_X, 0), TEMPLE_FLOOR + 1, bz(TRAP_Y, TEMPLE_DY)};
     }
 
-    private static int bz(int t, int dy) {
-        return StructureDef.bz(t + dy);
+    /** Feet block {x, y, z} of the temple dungeon's crevice (in the first area). */
+    static int[] crevice() {
+        return new int[]{bx(CREVICE[0], 0), TEMPLE_FLOOR + 1, bz(CREVICE[1], TEMPLE_DY)};
     }
 
-    private static void room(Cave c, int dx, int dy, int tx1, int ty1, int tx2, int ty2, int h) {
-        c.room(bx(tx1, dx), bz(ty2, dy), bx(tx2, dx) + 1, bz(ty1, dy) + 1, FLOOR, h);
+    /** One camp per cache spawn tile ({x, y, x, y, ...}): the tile's 2x2 blocks, one creature each. */
+    private static void tileCamps(Cave c, int dx, int dy, int f, int respawn, String creature, int... tiles) {
+        for (int i = 0; i + 1 < tiles.length; i += 2) {
+            int x = bx(tiles[i], dx);
+            int z = bz(tiles[i + 1], dy);
+            c.camp(x, z, x + 1, z + 1, f, 1, respawn, creature);
+        }
     }
 
-    private static void hall(Cave c, int dx, int dy, int ax, int ay, int bxT, int byT) {
-        c.hall(bx(ax, dx), bz(ay, dy), bx(bxT, dx), bz(byT, dy), FLOOR, 3, 5);
-    }
-
-    private static void camp(Cave c, int dx, int dy, int tx1, int ty1, int tx2, int ty2, int cap, int respawn, String creature) {
-        c.camp(bx(tx1, dx) + 1, bz(ty2, dy) + 1, bx(tx2, dx), bz(ty1, dy), FLOOR, cap, respawn, creature);
-    }
-
-    /** Zooknock's tunnels (cache 2690-2812, 9088-9152). */
+    /** Zooknock's tunnels (cache 2689-2814, 9089-9151). */
     static Dungeons.Dungeon apeAtollDungeon() {
         Cave c = new Cave("dng_ape_atoll_dungeon", "Ape Atoll Dungeon", mc("mossy_cobblestone"), mc("coarse_dirt"),
                 mc("ochre_froglight"));
         int dx = DX;
         int dy = DY;
-        room(c, dx, dy, 2756, 9088, 2790, 9122, 6);           // the entrance cavern
-        room(c, dx, dy, 2792, 9088, 2812, 9134, 6);           // the eastern caves
-        room(c, dx, dy, 2760, 9125, 2785, 9134, 5);
-        hall(c, dx, dy, 2790, 9110, 2792, 9110);
-        hall(c, dx, dy, 2770, 9122, 2770, 9125);
-        hall(c, dx, dy, 2785, 9130, 2792, 9130);
-        hall(c, dx, dy, 2750, 9105, 2756, 9105);
-        room(c, dx, dy, 2732, 9096, 2750, 9127, 6);           // skeleton hall (east)
-        hall(c, dx, dy, 2730, 9100, 2732, 9100);
-        room(c, dx, dy, 2698, 9088, 2730, 9113, 6);           // skeleton hall (west)
-        room(c, dx, dy, 2690, 9114, 2720, 9150, 6);           // the north-western caves
-        room(c, dx, dy, 2721, 9137, 2795, 9150, 5);           // the northern tunnel
-        hall(c, dx, dy, 2795, 9145, 2797, 9145);
-        room(c, dx, dy, 2797, 9138, 2810, 9152, 6);           // Zooknock's cave
+        c.traced(ApeAtollMaps.DUNGEON, ApeAtollMaps.DUNGEON_X0, ApeAtollMaps.DUNGEON_TOP, dx, dy, FLOOR, 5);
         c.carve();
-        // Rock ledges (the falling-rock shelters) and bones; Zooknock's brewing.
+        // Rock ledges (the falling-rock shelters), the traps, bones; Zooknock's brewing.
         for (int[] p : LEDGES) {
-            c.pillar(bx(p[0], dx), bz(p[1], dy), FLOOR, 6, mc("mossy_stone_bricks"));
+            c.set(bx(p[0], dx), FLOOR + 1, bz(p[1], dy), mc("mossy_cobblestone_wall"));
+            c.set(bx(p[0], dx), FLOOR + 5, bz(p[1], dy), mc("mossy_stone_bricks"));
+        }
+        for (int[] t : SPIKE_TRAPS) {
+            c.set(bx(t[0], dx), FLOOR + 1, bz(t[1], dy), mc("polished_blackstone_pressure_plate"));
+        }
+        for (int[] t : STONE_TRAPS) {
+            c.fill(bx(t[0], dx), FLOOR + 1, bz(t[1], dy), bx(t[0], dx) + 1, FLOOR + 1, bz(t[1], dy) + 1, mc("stone_pressure_plate"));
         }
         c.set(bx(2738, dx), FLOOR + 1, bz(9120, dy), mc("bone_block[axis=x]"));
         c.set(bx(2712, dx), FLOOR + 1, bz(9104, dy), mc("skeleton_skull[rotation=2]"));
-        c.set(bx(2805, dx), FLOOR + 1, bz(9147, dy), mc("cauldron"));
-        c.set(bx(2803, dx), FLOOR + 1, bz(9149, dy), mc("brewing_stand"));
-        c.entrance(bx(2762, dx), bz(9103, dy), FLOOR, mc("mossy_cobblestone"), mc("coarse_dirt"), 'n');
+        c.set(bx(2807, dx), FLOOR + 1, bz(9146, dy), mc("cauldron"));
+        c.set(bx(2807, dx), FLOOR + 1, bz(9148, dy), mc("brewing_stand"));
+        c.entrance(bx(2763, dx), bz(9103, dy), FLOOR, mc("mossy_cobblestone"), mc("coarse_dirt"), 'n');
         // Monkey zombies respawn after 50 ticks, the skeletons after 100 (wiki); spiders approx.
-        // (Camps of neighbouring rooms are merged: a camp counts its creatures a few blocks around its box.)
-        camp(c, dx, dy, 2756, 9088, 2812, 9122, 18, 50, "monkey_zombie");
-        camp(c, dx, dy, 2756, 9088, 2812, 9122, 12, 30, SPIDER);
-        camp(c, dx, dy, 2732, 9096, 2750, 9127, 9, 100, "skeleton_lvl142");
-        camp(c, dx, dy, 2732, 9096, 2750, 9127, 3, 30, SPIDER);
-        camp(c, dx, dy, 2698, 9088, 2720, 9150, 8, 100, "skeleton_lvl142");
-        camp(c, dx, dy, 2698, 9088, 2720, 9150, 8, 50, "monkey_zombie");
-        camp(c, dx, dy, 2698, 9088, 2720, 9150, 7, 30, SPIDER);
-        camp(c, dx, dy, 2730, 9137, 2795, 9150, 4, 50, "monkey_zombie");
-        camp(c, dx, dy, 2730, 9137, 2795, 9150, 3, 30, SPIDER);
+        tileCamps(c, dx, dy, FLOOR, 50, "monkey_zombie", 2694, 9115, 2697, 9130, 2698, 9145, 2702, 9093, 2714, 9095, 2719, 9147,
+                2726, 9107, 2728, 9097, 2740, 9138, 2742, 9146, 2752, 9144, 2763, 9118, 2764, 9133, 2765, 9113, 2769, 9094, 2772, 9110,
+                2774, 9093, 2777, 9144, 2779, 9119, 2779, 9129, 2781, 9092, 2788, 9103, 2793, 9129, 2794, 9117, 2799, 9112, 2801, 9097,
+                2807, 9131, 2809, 9104, 2810, 9111, 2810, 9123);
+        tileCamps(c, dx, dy, FLOOR, 100, "skeleton_lvl142", 2704, 9109, 2707, 9112, 2708, 9103, 2710, 9135, 2711, 9109, 2711, 9130,
+                2714, 9135, 2715, 9132, 2735, 9119, 2736, 9121, 2738, 9124, 2740, 9120, 2741, 9103, 2741, 9124, 2743, 9105, 2744, 9100,
+                2745, 9102);
+        tileCamps(c, dx, dy, FLOOR, 30, SPIDER, 2694, 9104, 2694, 9138, 2698, 9127, 2704, 9104, 2711, 9137, 2712, 9108, 2716, 9096,
+                2716, 9146, 2729, 9118, 2732, 9130, 2741, 9122, 2743, 9107, 2748, 9100, 2748, 9143, 2761, 9094, 2761, 9120, 2761, 9144,
+                2764, 9103, 2766, 9133, 2768, 9111, 2781, 9140, 2784, 9093, 2788, 9102, 2793, 9117, 2793, 9130, 2798, 9138, 2799, 9099,
+                2810, 9104, 2810, 9124);
         return c.build();
     }
 
-    /** The Temple of Marimbo Dungeon (cache 2758-2812, 9183-9211). */
+    /** The Temple of Marimbo Dungeon (cache 2755-2815, 9158-9213). */
     static Dungeons.Dungeon templeDungeon() {
         Cave c = new Cave("dng_temple_of_marimbo_dungeon", "Temple of Marimbo Dungeon", mc("mossy_stone_bricks"), mc("rooted_dirt"),
                 mc("ochre_froglight"));
         int dx = 0;
         int dy = TEMPLE_DY;
-        room(c, dx, dy, 2787, 9183, 2793, 9186, 5);           // below the trapdoor
-        room(c, dx, dy, 2778, 9187, 2806, 9206, 6);           // the first cave
-        room(c, dx, dy, 2807, 9188, 2812, 9211, 5);           // its eastern end, by the monkey skull's room
-        hall(c, dx, dy, 2775, 9196, 2778, 9196);              // the trapped tunnel and the wooden door
-        room(c, dx, dy, 2758, 9186, 2775, 9206, 6);           // the great western cave
+        int f = TEMPLE_FLOOR;
+        c.traced(ApeAtollMaps.TEMPLE, ApeAtollMaps.TEMPLE_X0, ApeAtollMaps.TEMPLE_TOP, dx, dy, f, 5);
+        // The small cave of hot rocks beyond the crevice (an instance in OSRS: carved east of the southern cave).
+        c.room(bx(HOT_X1, dx), bz(HOT_Y2, dy), bx(HOT_X2, dx) + 1, bz(HOT_Y1, dy) + 1, f, 4);
         c.carve();
-        // The two walls of flame where m'speak amulets are made, and old bones.
-        c.set(bx(2796, dx), FLOOR + 1, bz(9205, dy), mc("soul_campfire"));
-        c.set(bx(2800, dx), FLOOR + 1, bz(9205, dy), mc("soul_campfire"));
-        // The trapped tunnel's floor traps, across its whole width.
-        for (int k = -1; k <= 1; k++) {
-            c.set(bx(TRAP_X, dx), FLOOR + 1, bz(TRAP_Y, dy) + k, mc("polished_blackstone_pressure_plate"));
-        }
-        c.set(bx(2766, dx), FLOOR + 1, bz(9196, dy), mc("bone_block[axis=y]"));
-        c.set(bx(2770, dx), FLOOR + 1, bz(9188, dy), mc("skeleton_skull[rotation=6]"));
-        c.entrance(bx(2790, dx), bz(9184, dy), FLOOR, mc("mossy_stone_bricks"), mc("rooted_dirt"), 'n');
-        camp(c, dx, dy, 2758, 9188, 2812, 9206, 29, 50, "monkey_zombie_lvl82");
-        camp(c, dx, dy, 2758, 9188, 2812, 9206, 12, 30, SPIDER);
-        camp(c, dx, dy, 2758, 9186, 2775, 9206, 5, 50, "monkey_zombie");
-        camp(c, dx, dy, 2758, 9186, 2775, 9206, 3, 12, "monkey_zombie_lvl129");
-        camp(c, dx, dy, 2807, 9188, 2812, 9211, 4, 12, "monkey_zombie_lvl129");
+        // The two walls of flame where m'speak amulets are made, beside the large monkey zombies at the east end.
+        c.set(bx(2810, dx), f + 1, bz(9191, dy), mc("soul_campfire[lit=true]"));
+        c.set(bx(2810, dx), f + 1, bz(9210, dy), mc("soul_campfire[lit=true]"));
+        // The trapped tunnel's floor traps (its whole width) and the locked wooden door to the great western cave.
+        c.fill(bx(TRAP_X, dx), f + 1, bz(TRAP_Y, dy), bx(TRAP_X, dx) + 1, f + 1, bz(TRAP_Y, dy) + 1,
+                mc("polished_blackstone_pressure_plate"));
+        c.fill(bx(DOOR_X, dx), f + 1, bz(TRAP_Y, dy), bx(DOOR_X, dx), f + 2, bz(TRAP_Y, dy) + 1, rc(DungeonBlocks.MARIMBO_DOOR));
+        // The monkey skull's spot in the western cave, old bones.
+        c.set(bx(2769, dx), f + 1, bz(9203, dy), mc("skeleton_skull[rotation=6]"));
+        c.set(bx(2766, dx), f + 1, bz(9196, dy), mc("bone_block[axis=y]"));
+        // The hot rocks across the small cave and the long hot rock beyond them.
+        c.fill(bx(HOT_LINE_X, dx), f, bz(HOT_Y2, dy), bx(HOT_LINE_X, dx) + 1, f, bz(HOT_Y1, dy) + 1, mc("orange_terracotta"));
+        c.fill(bx(HOT_X2, dx), f + 1, bz(9170, dy), bx(HOT_X2, dx) + 1, f + 1, bz(9168, dy) + 1, mc("magma_block"));
+        int[] cr = crevice();
+        c.passage2(DungeonBlocks.MARIMBO_CREVICE, cr[0], cr[2], f, "You squeeze through the crevice into a small, hot cave.",
+                bx(HOT_X1, dx), bz(9169, dy), f, "You squeeze back through the crevice.");
+        c.entrance(bx(2790, dx), bz(9191, dy), f, mc("mossy_stone_bricks"), mc("rooted_dirt"), 'n');
+        // The southern cave (entered through the crate in Marim in OSRS).
+        c.entrance(bx(2790, dx), bz(9165, dy), f, mc("bamboo_planks"), mc("coarse_dirt"), 's');
+        // Monkey zombies respawn after 50 ticks (wiki); the large ones and the spiders approx.
+        tileCamps(c, dx, dy, f, 50, "monkey_zombie_lvl82", 2761, 9193, 2761, 9204, 2763, 9205, 2764, 9193, 2764, 9197, 2765, 9188,
+                2765, 9202, 2765, 9203, 2766, 9191, 2766, 9196, 2768, 9197, 2768, 9201, 2770, 9188, 2770, 9192, 2770, 9199, 2771, 9195,
+                2782, 9193, 2785, 9200, 2786, 9204, 2790, 9194, 2798, 9196, 2798, 9199, 2798, 9204, 2800, 9196, 2800, 9198, 2800, 9203,
+                2806, 9201, 2807, 9200, 2807, 9202);
+        tileCamps(c, dx, dy, f, 50, "monkey_zombie", 2761, 9197, 2763, 9201, 2764, 9191, 2766, 9199, 2769, 9190);
+        tileCamps(c, dx, dy, f, 12, "monkey_zombie_lvl129", 2768, 9203, 2769, 9202, 2770, 9202, 2808, 9191, 2808, 9210, 2809, 9193,
+                2809, 9208);
+        tileCamps(c, dx, dy, f, 30, SPIDER, 2761, 9189, 2764, 9195, 2767, 9163, 2768, 9187, 2769, 9193, 2770, 9201, 2773, 9194,
+                2776, 9163, 2779, 9163, 2784, 9201, 2785, 9164, 2785, 9190, 2787, 9169, 2788, 9196, 2789, 9172, 2792, 9167, 2796, 9170,
+                2796, 9175, 2797, 9198, 2799, 9205, 2800, 9162, 2801, 9198);
         return c.build();
     }
 }

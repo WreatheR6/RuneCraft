@@ -259,7 +259,6 @@ public final class MultiCombat {
             new Around("Kraken Cove", "kraken_cove", 15),
             new Around("Abyssal Nexus", "abyssal_nexus", 15),
             new Around("Corporeal Beast's lair", "corporeal_beast_lair", 15),
-            new Around("Waterbirth Island Dungeon", "waterbirth_island", 15),
             new Around("Grotesque Guardians' rooftop", "slayer_tower_roof", 10),
             new Around("Zalcano's prison", "zalcano_chamber", 20),
             new Around("The Hueycoatl's lair", "hueycoatl_lair", 20),

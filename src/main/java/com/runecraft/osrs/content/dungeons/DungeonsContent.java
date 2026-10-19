@@ -73,16 +73,49 @@ public final class DungeonsContent implements ContentModule {
     public static final int ASKELADDEN_X = 2658;
     public static final int ASKELADDEN_Y = 3660;
 
+    /**
+     * Zooknock's cave at the end of the Ape Atoll Dungeon (the place is the surface tile above Zooknock's cache tile 2804,
+     * 9145; he and his companions stand below it, {@code NpcStoreys.undergroundFeetY}), and Bardur on Waterbirth
+     * sublevel 2 (cache 1850, 4392, plane 1), fighting dagannoth fledgelings.
+     */
+    public static final String ZOOKNOCK_CAVE = "zooknock_cave";
+    public static final String BARDUR = "bardur";
+    public static final String BARDUR_PLACE = "waterbirth_bardur";
+
     @Override
     public List<com.runecraft.osrs.content.PlaceDef> places() {
+        int[] z = ApeAtollDungeons.ZOOKNOCK;
+        int[] b = WaterbirthDungeon.bardurTile();
         return List.of(com.runecraft.osrs.content.PlaceDef.of(ASKELADDEN, "Askeladden", ASKELADDEN_X, ASKELADDEN_Y,
-                com.runecraft.osrs.content.PlaceDef.Style.NONE, List.of()));
+                        com.runecraft.osrs.content.PlaceDef.Style.NONE, List.of()),
+                com.runecraft.osrs.content.PlaceDef.of(ZOOKNOCK_CAVE, "Zooknock's cave", z[0] + ApeAtollDungeons.DX, z[1] + ApeAtollDungeons.DY,
+                        com.runecraft.osrs.content.PlaceDef.Style.NONE, List.of()),
+                com.runecraft.osrs.content.PlaceDef.of(BARDUR_PLACE, "Bardur", b[0], b[1], com.runecraft.osrs.content.PlaceDef.Style.NONE,
+                        List.of()));
     }
 
     @Override
     public List<com.runecraft.osrs.content.NpcDef> npcs() {
+        int[] z = ApeAtollDungeons.ZOOKNOCK;
+        int zx = z[0] + ApeAtollDungeons.DX;
+        int zy = z[1] + ApeAtollDungeons.DY;
+        int[] b = WaterbirthDungeon.bardurTile();
         return List.of(com.runecraft.osrs.content.NpcDef.of(ASKELADDEN, "Askeladden", ASKELADDEN, 0, 0, 0xE0B090, 0x8A5A2A, 0x5A3A2A,
-                0xE0C060));
+                        0xE0C060),
+                at("bunkwicket", "Bunkwicket", ZOOKNOCK_CAVE, zx, zy, 2803 + ApeAtollDungeons.DX, 9148 + ApeAtollDungeons.DY,
+                        0x8A6A4A, 0x5A6A3A, 0x4A3A2A, 0x6A5A3A),
+                at("waymottin", "Waymottin", ZOOKNOCK_CAVE, zx, zy, 2805 + ApeAtollDungeons.DX, 9147 + ApeAtollDungeons.DY,
+                        0x8A6A4A, 0x6A5A3A, 0x4A3A2A, 0x5A6A3A),
+                at(BARDUR, "Bardur", BARDUR_PLACE, b[0], b[1], b[0], b[1], 0xE0B090, 0x6A4A2A, 0x4A3A2A, 0xC0A060));
+    }
+
+    /** An NPC standing on tile (tx, ty) near a place centred on tile (px, py) (place centres snap to their chunk's centre). */
+    static com.runecraft.osrs.content.NpcDef at(String id, String name, String place, int px, int py, int tx, int ty, int skin, int top,
+                                               int bottom, int hat) {
+        int cx = ((StructureDef.bx(px) >> 4) << 4) + 8;
+        int cz = ((StructureDef.bz(py) >> 4) << 4) + 8;
+        return com.runecraft.osrs.content.NpcDef.of(id, name, place, StructureDef.bx(tx) - cx, StructureDef.bz(ty) - cz, skin, top, bottom,
+                hat);
     }
 
     @Override

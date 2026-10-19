@@ -11,6 +11,20 @@ import com.runecraft.osrs.data.Drop;
 
 /** The gnome quests: Tree Gnome Village, The Grand Tree and Monkey Madness I. */
 final class KandarinGnomeQuests {
+    /**
+     * Zooknock stands at the end of the Ape Atoll Dungeon on his cache tile (2804, 9145), below surface tile (2804, 2745):
+     * the dungeons module's {@code zooknock_cave} place, whose centre snaps to its chunk's centre.
+     */
+    private static int zooknockDx() {
+        int x = com.runecraft.osrs.world.StructureDef.bx(2804);
+        return x - (((x >> 4) << 4) + 8);
+    }
+
+    private static int zooknockDz() {
+        int z = com.runecraft.osrs.world.StructureDef.bz(2745);
+        return z - (((z >> 4) << 4) + 8);
+    }
+
     private KandarinGnomeQuests() {
     }
 
@@ -111,7 +125,7 @@ final class KandarinGnomeQuests {
         b.npc("glo_caranock", "G.L.O. Caranock", "karamja_shipyard", 0, 0, 0xC89868, 0x3A5A8A, 0x2A3A5A, 0x8A6A3A);
         b.npc("daero", "Daero", "grand_tree", -4, 3, 0xD8A87A, 0x2A2A2A, 0x1A1A1A, 0x3A3A3A);
         b.npc("garkor", "Garkor", "ape_atoll", 4, 4, 0xC09868, 0x3A5A2A, 0x2A3A1A, 0x6A6A3A);
-        b.npc("zooknock", "Zooknock", "ape_atoll", -4, 4, 0xC8A070, 0x5A2A6A, 0x3A1A4A, 0x9A9A9A);
+        b.npc("zooknock", "Zooknock", "zooknock_cave", zooknockDx(), zooknockDz(), 0xC8A070, 0x5A2A6A, 0x3A1A4A, 0x9A9A9A);
         b.npc("tutab", "Tutab", "ape_atoll", 4, -4, 0x7A5A3A, 0x6A3A1A, 0x4A2A1A, 0x5A3A1A);
         b.npc("king_awowogei", "King Awowogei", "ape_atoll", 0, -6, 0xA08060, 0xE0C030, 0xA02020, 0xE0D040);
         b.item("narnodes_orders", "Narnode's orders", "note", 0xE8D8B0, "Royal orders from King Narnode.");

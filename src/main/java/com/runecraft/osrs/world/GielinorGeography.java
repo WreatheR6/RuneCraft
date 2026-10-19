@@ -311,7 +311,6 @@ public final class GielinorGeography {
             new Ellipse("Entrana", 2836, 3340, 38, 30),
             new Ellipse("Cairn Isle", 2763, 2976, 15, 14),
             new Ellipse("Void Knights' Outpost", 2655, 2658, 42, 40),
-            new Ellipse("Isle of Souls", 2210, 2900, 70, 60), // approx
             new Ellipse("Harmony Island", 3795, 2861, 30, 30),
             new Ellipse("Mos Le'Harmless", 3712, 2985, 66, 62),
             new Ellipse("Dragontooth Island", 3808, 3555, 26, 26),
@@ -330,14 +329,12 @@ public final class GielinorGeography {
             new Ellipse("Ungael", 2256, 4048, 30, 30),
             new Ellipse("Iceberg", 2660, 4010, 14, 12),
             // Sailing-era islands of the Unquiet Ocean, placed and sized around their quest sites (approx); the traced ones
-            // (the Pandemonium, the Onyx Crest, Sunbleak Island...) are in SeaIslands
-            new Ellipse("The Great Conch", 3186, 2443, 62, 58),
+            // (the Pandemonium, the Onyx Crest, Sunbleak Island, the Great Conch, Last Light, the Isle of Souls...) are in SeaIslands
             new Ellipse("Little Pearl", 3352, 2212, 16, 14),
             new Ellipse("Tortugan islet", 2962, 2605, 10, 9),
             new Ellipse("Red Rock", 2792, 2522, 15, 13),
             new Ellipse("The Zenith", 2878, 2505, 16, 14),
-            new Ellipse("Last Light", 2855, 2327, 26, 24),
-            new Ellipse("Wyrmscraig", 2566, 2250, 58, 62),
+            new Ellipse("Wyrmscraig", 2566, 2250, 58, 62), // upcoming: not on the map yet (approx)
             new Ellipse("Deepfin Point", 1948, 2780, 16, 23), // wiki map centre; its charter dock (1943, 2757) on the south shore
             // instanced areas that the mod places at their OSRS instance coordinates
             new Ellipse("Zanaris", 2412, 4432, 48, 44),

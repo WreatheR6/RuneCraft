@@ -407,7 +407,7 @@ class DungeonsContentTest {
         // Two lift ends each (Tapoyauik's on its own hut, Tonali's in the entrance hut), the two doors and the exit.
         assertEquals(Map.of("dng_ruins_of_tapoyauik:dng_lift_platform", 2, "dng_ruins_of_tapoyauik:dng_imposing_door", 1,
                 "dng_tonali_cavern:dng_lift_platform", 2, "dng_tonali_cavern:dng_mokhaiotl_entrance", 1,
-                "dng_troll_stronghold:dng_secret_exit", 1), passages);
+                "dng_troll_stronghold:dng_secret_exit", 1, "dng_temple_of_marimbo_dungeon:dng_marimbo_crevice", 2), passages);
         // The Tonali lift's surface platform stands in the hut on the crypt's entrance tile (1309, 3104); Tapoyauik's
         // lift hut is on the Tower of Ascension's tile (1641, 3221) and its entrance hut on (1693, 3232).
         Dungeons.Dungeon tap = Dungeons.all().stream().filter(x -> x.id().equals("dng_ruins_of_tapoyauik")).findFirst().orElseThrow();
@@ -638,7 +638,7 @@ class DungeonsContentTest {
                 traps++;
             }
         }
-        assertEquals(3, traps);
+        assertEquals(1, traps); // one fill over the tunnel's whole width
         int[] ledge = ApeAtollDungeons.LEDGES[0];
         int lx = StructureDef.bx(ledge[0] + ApeAtollDungeons.DX);
         int lz = StructureDef.bz(ledge[1] + ApeAtollDungeons.DY);
@@ -647,6 +647,129 @@ class DungeonsContentTest {
         assertFalse(DungeonBlocks.apeAtollFallingRocks(lx + 8, ApeAtollDungeons.FLOOR + 30, lz));
         assertTrue(DungeonBlocks.breaksDoorSupport("magic_shortbow") && DungeonBlocks.breaksDoorSupport("staff_of_air"));
         assertFalse(DungeonBlocks.breaksDoorSupport("rune_scimitar"));
+    }
+
+    /** Air blocks of a dungeon's CLEAR ops, minus its later FILL/SET blocks, at one feet height (block x, z packed). */
+    private static Set<Long> walkable(Dungeons.Dungeon d, int feetY) {
+        Set<Long> air = new HashSet<>();
+        for (Op op : d.structure().ops()) {
+            if (op.y1() > feetY + 1 || op.y2() < feetY) {
+                continue;
+            }
+            for (int x = op.x1(); x <= op.x2(); x++) {
+                for (int z = op.z1(); z <= op.z2(); z++) {
+                    long k = ((long) x << 32) ^ (z & 0xffffffffL);
+                    if (op.type() == Op.Type.CLEAR && op.y1() <= feetY && op.y2() >= feetY + 1) {
+                        air.add(k);
+                    } else if (op.type() != Op.Type.CLEAR && op.block() != null && !op.block().contains("pressure_plate")) {
+                        air.remove(k);
+                    }
+                }
+            }
+        }
+        return air;
+    }
+
+    /** Blocks reachable on foot through {@code air} (4-connected) from the air blocks within 2 of (x, z). */
+    private static Set<Long> reach(Set<Long> air, int x, int z) {
+        Set<Long> seen = new HashSet<>();
+        java.util.ArrayDeque<long[]> q = new java.util.ArrayDeque<>();
+        for (int dx = -2; dx <= 2; dx++) {
+            for (int dz = -2; dz <= 2; dz++) {
+                q.add(new long[]{x + dx, z + dz});
+            }
+        }
+        while (!q.isEmpty()) {
+            long[] p = q.poll();
+            long k = (p[0] << 32) ^ (p[1] & 0xffffffffL);
+            if (!air.contains(k) || !seen.add(k)) {
+                continue;
+            }
+            q.add(new long[]{p[0] + 1, p[1]});
+            q.add(new long[]{p[0] - 1, p[1]});
+            q.add(new long[]{p[0], p[1] + 1});
+            q.add(new long[]{p[0], p[1] - 1});
+        }
+        return seen;
+    }
+
+    private static long key(int x, int z) {
+        return ((long) x << 32) ^ (z & 0xffffffffL);
+    }
+
+    /**
+     * Ape Atoll's dungeons follow the map: from the bamboo ladder every monster's cache tile and Zooknock's cave are
+     * reachable on foot through the traced tunnels; in the temple dungeon the first area reaches the wooden door but not
+     * the great western cave behind it, and the southern cave is separate.
+     */
+    @Test
+    void apeAtollDungeonsAreTracedAndReachable() {
+        Dungeons.Dungeon ape = dungeon("dng_ape_atoll_dungeon");
+        Set<Long> air = walkable(ape, ApeAtollDungeons.FLOOR + 1);
+        Set<Long> from = reach(air, StructureDef.bx(2763) + 1, StructureDef.bz(9103 + ApeAtollDungeons.DY));
+        assertTrue(from.size() > 4000 * 2, "only " + from.size() + " blocks reachable");
+        for (Dungeons.Camp c : ape.camps()) {
+            assertTrue(from.contains(key(c.x1(), c.z1())) || from.contains(key(c.x2(), c.z2())) || from.contains(key(c.x1(), c.z2()))
+                    || from.contains(key(c.x2(), c.z1())), "unreachable camp " + c);
+        }
+        int[] zk = ApeAtollDungeons.ZOOKNOCK;
+        assertTrue(from.contains(key(StructureDef.bx(zk[0]), StructureDef.bz(zk[1] + ApeAtollDungeons.DY)))
+                || from.contains(key(StructureDef.bx(zk[0]) + 1, StructureDef.bz(zk[1] + ApeAtollDungeons.DY) + 1)));
+        // The traced plans are far from boxes: rock between the tunnels.
+        assertFalse(air.contains(key(StructureDef.bx(2700), StructureDef.bz(9120 + ApeAtollDungeons.DY))));
+        Dungeons.Dungeon temple = dungeon("dng_temple_of_marimbo_dungeon");
+        Set<Long> tAir = walkable(temple, ApeAtollDungeons.TEMPLE_FLOOR + 1);
+        Set<Long> first = reach(tAir, StructureDef.bx(2790) + 1, StructureDef.bz(9191 + ApeAtollDungeons.TEMPLE_DY));
+        int skullX = StructureDef.bx(2765);
+        int skullZ = StructureDef.bz(9200 + ApeAtollDungeons.TEMPLE_DY);
+        assertTrue(tAir.contains(key(skullX, skullZ)));
+        assertFalse(first.contains(key(skullX, skullZ)), "the wooden door must close off the great western cave");
+        assertTrue(first.contains(key(StructureDef.bx(ApeAtollDungeons.TRAP_X) + 1, StructureDef.bz(ApeAtollDungeons.TRAP_Y
+                + ApeAtollDungeons.TEMPLE_DY))));
+        assertTrue(first.contains(key(StructureDef.bx(2808), StructureDef.bz(9200 + ApeAtollDungeons.TEMPLE_DY))), "walls of flame");
+        Set<Long> south = reach(tAir, StructureDef.bx(2790) + 1, StructureDef.bz(9165 + ApeAtollDungeons.TEMPLE_DY));
+        assertTrue(south.size() > 500 && !south.contains(key(StructureDef.bx(2790) + 1, StructureDef.bz(9191 + ApeAtollDungeons.TEMPLE_DY))));
+        assertEquals(2, temple.entrances().size());
+        // The crevice leads to the hot-rock cave, whose hot rocks burn.
+        long crevices = temple.passages().stream().filter(p -> DungeonBlocks.MARIMBO_CREVICE.equals(p.block())).count();
+        assertEquals(2, crevices);
+        int hx = StructureDef.bx(ApeAtollDungeons.HOT_LINE_X);
+        int hz = StructureDef.bz(9169 + ApeAtollDungeons.TEMPLE_DY);
+        assertEquals(DungeonBlocks.ApeHazard.HOT_ROCKS, DungeonBlocks.apeAtollHazard(hx, ApeAtollDungeons.TEMPLE_FLOOR + 1, hz));
+        assertTrue(tAir.contains(key(hx, hz)));
+        int[] spike = ApeAtollDungeons.SPIKE_TRAPS[0];
+        assertEquals(DungeonBlocks.ApeHazard.SPIKE_TRAP, DungeonBlocks.apeAtollHazard(StructureDef.bx(spike[0]), ApeAtollDungeons.FLOOR + 1,
+                StructureDef.bz(spike[1] + ApeAtollDungeons.DY)));
+        assertTrue(DungeonBlocks.insideMarimboDoor(StructureDef.bx(ApeAtollDungeons.DOOR_X) - 1));
+        assertFalse(DungeonBlocks.insideMarimboDoor(StructureDef.bx(ApeAtollDungeons.DOOR_X) + 1));
+    }
+
+    /**
+     * Zooknock, Bunkwicket, Waymottin and Bardur stand in their dungeons, on carved floor at their cache tiles, and the
+     * quests module's Zooknock is the one in the Ape Atoll Dungeon.
+     */
+    @Test
+    void underGroundNpcsStandInCarvedAir() {
+        Map<String, String> dungeonOf = Map.of("zooknock", "dng_ape_atoll_dungeon", "bunkwicket", "dng_ape_atoll_dungeon",
+                "waymottin", "dng_ape_atoll_dungeon", "bardur", "dng_waterbirth_dungeon");
+        for (Map.Entry<String, String> e : dungeonOf.entrySet()) {
+            com.runecraft.osrs.content.NpcDef npc = com.runecraft.osrs.content.ContentRegistry.npc(e.getKey());
+            assertNotNull(npc, e.getKey());
+            PlaceDef place = com.runecraft.osrs.content.ContentRegistry.place(npc.place());
+            assertNotNull(place, npc.place());
+            Integer feet = com.runecraft.osrs.world.NpcStoreys.undergroundFeetY(npc.id());
+            assertNotNull(feet, npc.id());
+            int x = place.blockX() + npc.dx();
+            int z = place.blockZ() + npc.dz();
+            assertTrue(walkable(dungeon(e.getValue()), feet).contains(key(x, z)), npc.id() + " at " + x + "," + feet + "," + z);
+        }
+        PlaceDef zc = com.runecraft.osrs.content.ContentRegistry.place(DungeonsContent.ZOOKNOCK_CAVE);
+        com.runecraft.osrs.content.NpcDef zooknock = com.runecraft.osrs.content.ContentRegistry.npc("zooknock");
+        assertEquals(StructureDef.bx(ApeAtollDungeons.ZOOKNOCK[0]), zc.blockX() + zooknock.dx());
+        assertEquals(StructureDef.bz(ApeAtollDungeons.ZOOKNOCK[1] + ApeAtollDungeons.DY), zc.blockZ() + zooknock.dz());
+        // Waterbirth is multicombat underground only: no surface multi box around the island any more.
+        assertTrue(com.runecraft.osrs.MultiCombat.AROUND.stream().noneMatch(a -> a.place().equals("waterbirth_island")));
+        assertTrue(com.runecraft.osrs.MultiCombat.UNDERGROUND.contains("dng_waterbirth_dungeon"));
     }
 
     /** The Mort'ton catacombs' key doors stand in their halls, one per metal, each guarding a crypt with its shades. */

@@ -141,8 +141,30 @@ public final class DungeonBlocks {
     public static final String SECRET_EXIT = "dng_secret_exit";
     /** The way from the Tonali Cavern into the Ruins of Mokhaiotl and on to the Doom of Mokhaiotl. */
     public static final String MOKHAIOTL_ENTRANCE = "dng_mokhaiotl_entrance";
+    /** The crevice between the Temple of Marimbo Dungeon's first area and its small cave of hot rocks. */
+    public static final String MARIMBO_CREVICE = "dng_marimbo_crevice";
+    /** The locked wooden door to the Temple of Marimbo Dungeon's great western cave (the hard Western Provinces Diary opens it). */
+    public static final String MARIMBO_DOOR = "dng_marimbo_wooden_door";
     /** Every block that is a {@link Dungeons.Passage}. */
-    public static final List<String> PASSAGES = List.of(LIFT_PLATFORM, IMPOSING_DOOR, SECRET_EXIT, MOKHAIOTL_ENTRANCE);
+    public static final List<String> PASSAGES = List.of(LIFT_PLATFORM, IMPOSING_DOOR, SECRET_EXIT, MOKHAIOTL_ENTRANCE, MARIMBO_CREVICE);
+
+    /** What hurts a player in Ape Atoll's dungeons (traps, hot rocks, falling rocks). */
+    public enum ApeHazard { NONE, TUNNEL_TRAP, SPIKE_TRAP, STONE_TRAP, HOT_ROCKS, FALLING_ROCKS }
+
+    /** The Ape Atoll hazard at a player's feet block (x, y, z). */
+    public static ApeHazard apeAtollHazard(int x, int y, int z) {
+        return ApeHazard.valueOf(ApeAtollDungeons.hazardAt(x, y, z).name());
+    }
+
+    /** Block {x, y, z} of the Temple of Marimbo Dungeon's wooden door (its lower northern block). */
+    public static int[] marimboDoor() {
+        return ApeAtollDungeons.woodenDoor();
+    }
+
+    /** True if a player at block x is on the locked (western) side of the Temple of Marimbo Dungeon's wooden door. */
+    public static boolean insideMarimboDoor(double x) {
+        return ApeAtollDungeons.insideWoodenDoor(x);
+    }
 
     /** The passage (lift, door, exit) whose block is at (x, y, z), or null. */
     public static Dungeons.Passage passageAt(int x, int y, int z) {
@@ -188,7 +210,9 @@ public final class DungeonBlocks {
                 BlockDef.scripted(LIFT_PLATFORM, "Lift Platform", 0x8A8A7A, "pit"),
                 BlockDef.scripted(IMPOSING_DOOR, "Imposing door", 0x9AC8E0, "portal_door"),
                 BlockDef.scripted(SECRET_EXIT, "Exit", 0x4A4A42, "door"),
-                BlockDef.scripted(MOKHAIOTL_ENTRANCE, "Entrance (Ruins of Mokhaiotl)", 0x6A5A3A, "portal_door")));
+                BlockDef.scripted(MOKHAIOTL_ENTRANCE, "Entrance (Ruins of Mokhaiotl)", 0x6A5A3A, "portal_door"),
+                BlockDef.scripted(MARIMBO_CREVICE, "Crevice", 0x3A3228, "boulder"),
+                BlockDef.scripted(MARIMBO_DOOR, "Wooden door", 0x6A4A2A, "door")));
         for (String metal : com.runecraft.osrs.content.CommonItems.SHADE_KEY_METALS) {
             list.add(BlockDef.scripted(shadeDoor(metal), "Wooden doors (" + metal + " lock)", 0x6A4A2A, "portal_door"));
         }

@@ -77,31 +77,16 @@ public final class DungeonsHooks implements ModuleHooks {
         com.runecraft.world.LandmarkBuilder.registerCustom("troll_stronghold", (world, centre) -> placeTrollPrisoners(world, centre));
         DungeonCamps.register();
         BarrowsHooks.register();
-        // Task-only dungeons (the Kalphite Cave): no damage to their monsters without the matching Slayer task.
-        com.runecraft.combat.CombatHooks.addModifier(new com.runecraft.combat.CombatHooks.PlayerAttackModifier() {
-            @Override
-            public int afterRoll(ServerPlayerEntity player, net.minecraft.entity.LivingEntity target, com.runecraft.osrs.AttackType type,
-                                 int damage) {
-                if (!(target instanceof com.runecraft.entity.OsrsMonsterEntity)) {
-                    return damage;
-                }
-                BlockPos at = target.getBlockPos();
-                String needed = Dungeons.taskOnly(at.getX(), at.getY(), at.getZ());
-                if (needed == null) {
-                    return damage;
-                }
-                var profile = com.runecraft.content.slayer.SlayerService.profile(player);
-                if (profile.hasTask() && needed.equals(profile.task)) {
-                    return damage;
-                }
-                Msg.game(player, "You can only fight the creatures of this cave while on a Slayer task to kill them.");
-                return 0;
-            }
-        });
+        // Task-only dungeons (the Kalphite Cave): no damage to their monsters without the matching Slayer task, whatever
+        // the damage path (melee, ranged, spells, specials, the cannon, recoil).
+        com.runecraft.combat.CombatHooks.addMonsterDamageGate(DungeonsHooks::taskOnlyDenied);
+        BlockHooks.register(DungeonBlocks.MARIMBO_DOOR, DungeonsHooks::marimboDoor);
         com.runecraft.world.LandmarkBuilder.registerCustom("lighthouse", (world, centre) -> placeLighthouseLadder(world));
         com.runecraft.content.GameEvents.onActivity((p, key) -> {
             if (key.equals("talk:" + DungeonsContent.ASKELADDEN)) {
                 askeladden(p);
+            } else if (key.equals("talk:" + DungeonsContent.BARDUR)) {
+                bardur(p);
             }
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
@@ -147,8 +132,12 @@ public final class DungeonsHooks implements ModuleHooks {
         }
     }
 
-    /** Game tick each King was first seen missing (0 = present); the Kings return 90 seconds after dying (OSRS). */
-    private static final long[] KING_DEAD_SINCE = new long[3];
+    /** Game tick each missing King is due back (0 = present); the Kings return 90 seconds after dying (OSRS). */
+    private static final long[] KING_DUE = new long[3];
+    /** Whether each King has been seen alive since the server started (until then a missing King comes almost at once). */
+    private static final boolean[] KING_SEEN = new boolean[3];
+    /** Game ticks before a never-seen King appears (lets the lair's saved entities load first). */
+    private static final long KING_FIRST_DELAY = 5;
 
     /**
      * The Dagannoth Kings are always in their lair in OSRS: while anyone is down there, each missing King comes back
@@ -176,17 +165,20 @@ public final class DungeonsHooks implements ModuleHooks {
                 continue;
             }
             if (!world.getEntitiesByType(type, lair, e -> e.isAlive()).isEmpty()) {
-                KING_DEAD_SINCE[i] = 0;
+                KING_DUE[i] = 0;
+                KING_SEEN[i] = true;
                 continue;
             }
-            if (KING_DEAD_SINCE[i] == 0) {
-                KING_DEAD_SINCE[i] = now;
+            if (KING_DUE[i] == 0) {
+                // A King that died waits 90 seconds; one never seen since the server started comes a few seconds after the first visit.
+                KING_DUE[i] = now + (KING_SEEN[i] ? DungeonBlocks.KING_RESPAWN_TICKS : KING_FIRST_DELAY);
                 continue;
             }
-            if (now - KING_DEAD_SINCE[i] >= DungeonBlocks.KING_RESPAWN_TICKS) {
+            if (now >= KING_DUE[i]) {
                 int[] s = DungeonBlocks.kingSpot(i);
                 com.runecraft.boss.DataBossService.spawn(world, new BlockPos(s[0], s[1], s[2]), def, null);
-                KING_DEAD_SINCE[i] = 0;
+                KING_DUE[i] = 0;
+                KING_SEEN[i] = true; // a just-spawned King may not show up in box queries at once: never re-spawn it early
             }
         }
     }
@@ -201,12 +193,69 @@ public final class DungeonsHooks implements ModuleHooks {
      */
     private static void apeAtollHazards(ServerPlayerEntity p) {
         BlockPos at = p.getBlockPos();
-        if (DungeonBlocks.apeAtollTrap(at.getX(), at.getY(), at.getZ())) {
-            Msg.game(p, "You trigger a trap! Spikes shoot up from the floor.");
-            hazardHit(p, 2 + p.getRandom().nextInt(5));
-        } else if (DungeonBlocks.apeAtollFallingRocks(at.getX(), at.getY(), at.getZ()) && p.getRandom().nextInt(8) == 0) {
-            Msg.game(p, "Rocks fall from the ceiling and hit you!");
-            hazardHit(p, 1 + p.getRandom().nextInt(4));
+        switch (DungeonBlocks.apeAtollHazard(at.getX(), at.getY(), at.getZ())) {
+            case TUNNEL_TRAP -> {
+                Msg.game(p, "You trigger a trap! Spikes shoot up from the floor.");
+                hazardHit(p, 2 + p.getRandom().nextInt(5));
+            }
+            case SPIKE_TRAP -> {
+                Msg.game(p, "You step on a spike trap!");
+                hazardHit(p, 4);
+            }
+            case STONE_TRAP -> {
+                Msg.game(p, "The rock shifts under your feet, and the stalagmites beside it lash out!");
+                hazardHit(p, Math.max(1, (int) Math.ceil(p.getHealth() * 0.2)));
+            }
+            case HOT_ROCKS -> {
+                String held = p.getMainHandStack().isEmpty() ? "" : Inv.idOf(p.getMainHandStack());
+                if (!held.contains("zombie_monkey_greegree")) {
+                    Msg.game(p, "The hot rocks burn your feet!");
+                    hazardHit(p, 10);
+                }
+            }
+            case FALLING_ROCKS -> {
+                if (p.getRandom().nextInt(8) == 0) {
+                    Msg.game(p, "Rocks fall from the ceiling and hit you!");
+                    hazardHit(p, 1 + p.getRandom().nextInt(4));
+                }
+            }
+            default -> {
+            }
+        }
+    }
+
+    /** The Kalphite Cave's monsters can only be damaged on a matching Slayer task (null = allowed). */
+    private static String taskOnlyDenied(ServerPlayerEntity player, net.minecraft.entity.LivingEntity target) {
+        if (!(target instanceof com.runecraft.entity.OsrsMonsterEntity)) {
+            return null;
+        }
+        BlockPos at = target.getBlockPos();
+        String needed = Dungeons.taskOnly(at.getX(), at.getY(), at.getZ());
+        if (needed == null) {
+            return null;
+        }
+        var profile = com.runecraft.content.slayer.SlayerService.profile(player);
+        if (profile.hasTask() && needed.equals(profile.task)) {
+            return null;
+        }
+        return "You can only fight the creatures of this cave while on a Slayer task to kill them.";
+    }
+
+    /**
+     * The Temple of Marimbo Dungeon's wooden door to the great western cave and its monkey skull: locked unless the
+     * hard Western Provinces Diary is complete; leaving the cave is free.
+     */
+    private static void marimboDoor(ServerPlayerEntity player, BlockPos pos, BlockState state) {
+        if (DungeonBlocks.insideMarimboDoor(player.getX())) {
+            passThrough(player, pos);
+            return;
+        }
+        if (com.runecraft.osrs.content.systems.Diaries.tierComplete(com.runecraft.content.systems.SysState.of(player).diaryDone, "western",
+                com.runecraft.osrs.content.systems.Diaries.Tier.HARD)) {
+            Msg.game(player, "The wooden door creaks open.");
+            passThrough(player, pos);
+        } else {
+            Msg.game(player, "The wooden door won't open. (Completing the hard Western Provinces Diary gives access.)");
         }
     }
 
@@ -369,18 +418,43 @@ public final class DungeonsHooks implements ModuleHooks {
         if (!(player.getWorld() instanceof ServerWorld world)) {
             return;
         }
-        if (!DungeonBlocks.outsideCircularDoor(player.getX())) {
+        if (!DungeonBlocks.outsideCircularDoor(player.getX()) || isOpen(pos)) {
             passThrough(player, pos);
             return;
         }
         if (padHeld(world, player, pos)) {
             Msg.game(player, "Your companion holds the pressure pad down, and the door swings open.");
+            open(pos, 0);
             passThrough(player, pos);
         } else if (Inv.has(player, DungeonsContent.PET_ROCK, 1)) {
             Msg.game(player, "You put your pet rock on the pressure pad. The door swings open, and you pick the rock back up.");
+            open(pos, 0);
             passThrough(player, pos);
         } else {
             Msg.game(player, "The door won't budge. Someone needs to stand on the pressure pad - or put a pet rock on it.");
+        }
+    }
+
+    /**
+     * Waterbirth's opened circular doors and knocked-down door-supports, by block column: the game tick until which
+     * anyone may pass (one minute, approx: in OSRS a door stays open while its pad is held, a support until it respawns).
+     */
+    private static final java.util.Map<Long, Long> OPEN_UNTIL = new java.util.HashMap<>();
+    private static final long OPEN_TICKS = 100;
+
+    private static boolean isOpen(BlockPos pos) {
+        Long until = OPEN_UNTIL.get(BlockPos.asLong(pos.getX(), 0, pos.getZ()));
+        return until != null && com.runecraft.action.ActionManager.gameTick() < until;
+    }
+
+    /** Opens the door or support column at pos and every column within {@code radius} blocks of it (the same barrier's other blocks). */
+    private static void open(BlockPos pos, int radius) {
+        long until = com.runecraft.action.ActionManager.gameTick() + OPEN_TICKS;
+        OPEN_UNTIL.entrySet().removeIf(e -> e.getValue() < com.runecraft.action.ActionManager.gameTick());
+        for (int dx = -Math.max(radius, 1); dx <= Math.max(radius, 1); dx++) {
+            for (int dz = -Math.max(radius, 1); dz <= Math.max(radius, 1); dz++) {
+                OPEN_UNTIL.put(BlockPos.asLong(pos.getX() + dx, 0, pos.getZ() + dz), until);
+            }
         }
     }
 
@@ -404,7 +478,7 @@ public final class DungeonsHooks implements ModuleHooks {
      * a rune thrownaxe's chain-hit (approx: it lets the player through and stands again); leaving the room is free.
      */
     private static void doorSupport(ServerPlayerEntity player, BlockPos pos, BlockState state) {
-        if (DungeonBlocks.insideCentralRoom(player.getX(), player.getZ(), pos.getX(), pos.getZ())) {
+        if (DungeonBlocks.insideCentralRoom(player.getX(), player.getZ(), pos.getX(), pos.getZ()) || isOpen(pos)) {
             passThrough(player, pos);
             return;
         }
@@ -412,8 +486,10 @@ public final class DungeonsHooks implements ModuleHooks {
         String heldId = held.isEmpty() ? "" : Inv.idOf(held);
         if (heldId.equals("rune_thrownaxe") || Inv.has(player, "rune_thrownaxe", 1)) {
             Msg.game(player, "Your rune thrownaxe chain-hits the door-supports, and they collapse.");
+            open(pos, 24); // the special bounces between all three supports
         } else if (DungeonBlocks.breaksDoorSupport(heldId)) {
             Msg.game(player, "You knock the door-support down from a safe distance.");
+            open(pos, 2);
         } else {
             Msg.game(player, "The door-support is too sturdy to push past. Knock it down from a distance with a ranged or magic attack.");
             return;
@@ -510,6 +586,28 @@ public final class DungeonsHooks implements ModuleHooks {
     private static void rockPile(ServerPlayerEntity player, BlockPos pos, BlockState state) {
         Msg.game(player, Inv.has(player, DungeonsContent.PET_ROCK, 1) ? "Your pet rock would sit nicely on a pressure pad."
                 : "Just a pile of rocks. Askeladden in Rellekka gives out pet rocks that would sit nicely on a pressure pad.");
+    }
+
+    /**
+     * Bardur, deep in the Waterbirth Island Dungeon, trades a cooked shark for a Fremennik blade, shield or helm once The
+     * Fremennik Trials is complete (wiki).
+     */
+    private static void bardur(ServerPlayerEntity player) {
+        com.runecraft.osrs.QuestInfo trials = com.runecraft.osrs.content.ContentRegistry.quest("fremennik_trials");
+        if (trials != null && !Players.data(player).questComplete(trials)) {
+            com.runecraft.quest.QuestApi.say(player, "Bardur", "Outerlander! Leave me to my work - these fledgelings won't kill themselves.");
+            return;
+        }
+        for (String gear : new String[]{"fremennik_blade", "fremennik_shield", "fremennik_helm"}) {
+            if (Inv.has(player, gear, 1)) {
+                Inv.remove(player, gear, 1);
+                Inv.give(player, "shark", 1);
+                com.runecraft.quest.QuestApi.say(player, "Bardur", "Fine Fremennik craftsmanship! Here, take this shark for it.");
+                ServerNetworking.sync(player);
+                return;
+            }
+        }
+        com.runecraft.quest.QuestApi.say(player, "Bardur", "Bring me Fremennik blades, shields or helms from the dagannoth, and I'll give you a shark for each.");
     }
 
     /** Askeladden gives a pet rock once The Fremennik Trials is started (and more after it, OSRS). */

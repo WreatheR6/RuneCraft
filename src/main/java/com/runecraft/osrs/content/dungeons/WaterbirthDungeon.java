@@ -26,12 +26,13 @@ import static com.runecraft.osrs.content.dungeons.Cave.rc;
  * ({@link #DX1}, {@link #DY1}), the sublevels by ({@link #DX2}, {@link #DY2}), the lair by ({@link #DXL}, {@link #DYL})
  * on sublevel 5's floor), all deep enough that the sea bed above keeps its natural depth; the passages between the
  * cache's rooms and the ladders between the floors follow the wiki's walkthrough but not its exact map; the hut stands
- * on the island's west shore, about 12 tiles from the real cave mouth (the islands module builds the cave itself); the
- * circular doors and door-supports let one player through per use and stay in place, and leaving through them is
- * free; the Kings are always present while anyone is in the lair, each returning 90 seconds after it dies (the stone
- * still wakes them early), and the spinolyps walk on the cave floor; the iron ladder also leads down from the Lighthouse
- * tower's ground floor; the whole dungeon is multicombat ({@code MultiCombat.UNDERGROUND}); the dagannoth eggs are spawn
- * camps beside the eggs; Bardur and the Askeladden exit are not built.
+ * on the island's west shore, about 12 tiles from the real cave mouth (the islands module builds the cave itself); an
+ * opened circular door or a knocked-down door-support stays open for everyone for a minute (approx) and leaving through
+ * them is free; the Kings are always present while anyone is in the lair (a few seconds after the first visit on a fresh
+ * server), each returning 90 seconds after it dies (the stone still wakes them early), and the spinolyps walk on the cave
+ * floor; the iron ladder also leads down from the Lighthouse tower's ground floor; the whole dungeon is multicombat
+ * ({@code MultiCombat.UNDERGROUND}); the dagannoth eggs are spawn camps beside the eggs. Bardur stands on his cache tile on
+ * sublevel 2 ({@link #bardurTile}); Askeladden hands out pet rocks in Rellekka.
  */
 final class WaterbirthDungeon {
     /** OSRS tile of the entrance hall where the cave's stairs arrive, and the shift that puts it under the hut. */
@@ -69,7 +70,16 @@ final class WaterbirthDungeon {
     static final int DOOR_X = 2494;
     static final int[] DOOR_ROWS = {10126, 10145, 10160};
 
+    /** Bardur on plane 1 (sublevel 2), fighting the dagannoth fledgelings: one tile east of his wiki tile (1850, 4392), where old bones lie. */
+    static final int BARDUR_X = 1851;
+    static final int BARDUR_Y = 4392;
+
     private WaterbirthDungeon() {
+    }
+
+    /** The surface tile above Bardur's spot (his cache tile under the sublevels' shift). */
+    static int[] bardurTile() {
+        return new int[]{BARDUR_X + DX2, BARDUR_Y + DY2};
     }
 
     /** Sublevel 1's tile to block. */
