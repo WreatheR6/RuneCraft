@@ -111,6 +111,10 @@ Keep behaviour identical; only adapt to the new API. Shared helpers: `com.runecr
   `StackData.update(stack, t -> ...)` (edits to the copy are lost otherwise); `setTag(t)` → `StackData.set`.
   `ItemStack.isSameItemSameTags` → `ItemStack.isSameItemSameComponents`. "Plain, stackable stack" checks →
   `stack.getComponentsPatch().isEmpty()`.
+- **Stacks in RuneCraft's own saved data** (stashes, worn slots, bank migration): read them with
+  `com.runecraft.util.LegacyStacks.parse(provider, tag)`, which runs stacks saved by the Fabric 1.20.1 build through
+  the vanilla data fixer first. Bank and looting-bag keys carry every non-custom-data component under
+  `rc_components` (`bank/Notes`), and old keys are upgraded once on load.
 - **ItemStack save/load** need a `HolderLookup.Provider` (`level.registryAccess()`, `server.registryAccess()`, or the
   provider passed to `SavedData.save`/load): `ItemStack.of(tag)` → `ItemStack.parseOptional(provider, tag)`;
   `stack.save(new CompoundTag())` → `stack.saveOptional(provider)` (`save` throws on an empty stack).
@@ -143,13 +147,32 @@ Keep behaviour identical; only adapt to the new API. Shared helpers: `com.runecr
   Abstract `codec()` on `BaseEntityBlock`/`HorizontalDirectionalBlock` subclasses: `simpleCodec(Ctor::new)`.
 - **Arrows**: `new Arrow(level, shooter, pickupStack, weaponStack)` (pickup = the arrow item stack, weapon may be null).
 
+## Runtime lessons (things the compiler did not catch)
+
+- **Data pack formats.** 1.20.5 flattened int providers (`{"type":"uniform","min_inclusive":..}` instead of
+  `"value":{..}`); one old-format field makes the whole world registry fail to load. `minecraft:grass` is
+  `minecraft:short_grass` since 1.20.3 (StructureBlockIdsTest now rejects renamed ids).
+- **Fake players.** NeoForge's `FakePlayer` connection ignores `teleport()`, so a fake player never moves;
+  `platform.FakePlayer` keeps NeoForge's fake player but with a Fabric-style connection that only drops packets.
+- **Item stacks over 99** cannot be saved (`ItemStack.CODEC` count range 1..99): split loot and ground drops
+  into full stacks (`Inv.splitStacks`, `Inv.spawnAtLocation`, `Inv.drop`).
+- **Screens.** 1.21 `Screen.render` draws the blurred background itself and a second blur in one frame throws;
+  draw panels in a `renderBackground` override after `super.renderBackground`.
+- **Key mappings.** NeoForge fires every mapping bound to a pressed key (vanilla kept one), so two RuneCraft keys
+  on one default key both fire.
+- **Damage and death.** `LivingIncomingDamageEvent` cancels leave a `DamageContainer` behind (popped by the
+  bridge); Fabric's `ALLOW_DEATH` ran before the totem check, so the bridge asks it from `LivingDamageEvent.Post`.
+- **Knockback.** 1.21 knocks targets back for damage without an attacker unless the type is in
+  `#minecraft:no_knockback`; attacker-less OSRS hits use `runecraft:osrs_typeless`.
+- **Enchanting** in 1.21 is driven by item tags (`#minecraft:swords`, `enchantable/*`); gen_worldgen writes them.
+
 ## Status
 
 - [x] Phase 1 freeze (CI green on 389aca80: server 3046/0, client 368/0)
 - [x] Phase 2 Mojang mappings on Fabric 1.20.1 (CI green on bcd2a480, same self-test results)
 - [x] Phase 3 build switch (ModDevGradle, NeoForge 21.1.220, Java 21)
 - [x] Phase 4 loader API port (com.runecraft.platform facade, @Mod entry points, RegisterEvent registries)
-- [ ] Phase 5 1.21.1 API port (in progress: compile errors by package)
-- [ ] Phase 6 resources
+- [x] Phase 5 1.21.1 API port (0 compile errors; review fixes merged)
+- [x] Phase 6 resources (1.21 data pack layout and formats, item tags)
 - [x] Phase 7 CI and smoke scripts (NeoForge installer server, runClientSmoke, classpath asset)
 - [ ] Phase 8 green self-tests, Fabric retired

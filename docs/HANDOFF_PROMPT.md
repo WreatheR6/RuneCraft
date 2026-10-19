@@ -4,7 +4,7 @@ Paste this into a new Claude Code (claude.ai/code) session that has the `Wreathe
 
 ---
 
-You're continuing an ongoing project: RuneCraft, a Fabric 1.20.1 Minecraft mod that recreates all of Old School RuneScape in a custom Gielinor dimension. Levels and XP should be faithful to OSRS, and so should quests, the world, bosses, raids, skilling and models.
+You're continuing an ongoing project: RuneCraft, a NeoForge 1.21.1 Minecraft mod that recreates all of Old School RuneScape in a custom Gielinor dimension. Levels and XP should be faithful to OSRS, and so should quests, the world, bosses, raids, skilling and models.
 
 Work on the branch `claude/busy-cray-anf3uw`. Pushing to it runs CI, which builds the jar, boots a real server and client, and publishes the jar to the `dev-latest` GitHub release.
 

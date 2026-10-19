@@ -119,10 +119,12 @@ Implement the methods you need on your module class (`ContentModule`):
 - `Gielinor.teleport(player, Landmark)`, `Gielinor.safeSpot(world, x, z)`, `Gielinor.is(entity)`, `Gielinor.wildernessLevel(entity)`.
 - `CollectionLog.obtain(player, item)`.
 
-### Fabric and Minecraft
-- You may register your own Fabric event listeners, networking channels (ids under `runecraft:<module>/...`), extra blocks/items/entities (`Registry.register` with ids under `runecraft:`) and persistent state (`PersistentStateManager`, key `runecraft_<module>`).
-- Target Minecraft 1.20.1, Yarn 1.20.1+build.10 and Fabric API 0.92.2+1.20.1.
-- Use only APIs you are certain exist in 1.20.1.
+### NeoForge and Minecraft
+- Target Minecraft 1.21.1 with Mojang names on NeoForge 21.1 (Java 21). Check every Minecraft/NeoForge call with `tools/compile_full.sh` (see docs/NEOFORGE_PORT.md, "Compiling locally"); `javap` on the NeoForge jar shows exact signatures.
+- Events and networking go through `com.runecraft.platform` (and `.platform.client`): Fabric-API-shaped classes (`ServerTickEvents`, `UseBlockCallback`, `ServerPlayNetworking`, `HudRenderCallback`, ...) bridged to NeoForge. Use them rather than NeoForge's buses directly. Networking channels use ids under `runecraft:<module>/...`.
+- Blocks, items and entity types are registered inside NeoForge's `RegisterEvent` (see `RuneCraft.register`); entity types use `registry.MobTypeBuilder`, which also handles default attributes and spawn rules. Never create a `Block`/`Item` outside registration.
+- Persistent state: `SavedData` with `SavedData.Factory`, key `runecraft_<module>`; `save(CompoundTag, HolderLookup.Provider)`.
+- Per-stack data: `util.StackData` (the `custom_data` component). Stacks saved in our own data: `ItemStack.saveOptional(provider)` (counts above 99 throw: split first) and `util.LegacyStacks.parse(provider, tag)` to read them (it upgrades stacks saved by the Fabric 1.20.1 build).
 
 ### Client (`initClient()`)
 - `EntityRendererRegistry` for your own entity types.

@@ -1,6 +1,6 @@
 # RuneCraft
 
-Old School RuneScape for **Minecraft 1.20.1 (Fabric)**. It adds a separate dimension, **Gielinor**, laid out like the real OSRS world map (as the LOTR mod does for Middle-earth). Skills, experience and combat follow OSRS formulas.
+Old School RuneScape for **Minecraft 1.21.1 (NeoForge)**. It adds a separate dimension, **Gielinor**, laid out like the real OSRS world map (as the LOTR mod does for Middle-earth). Skills, experience and combat follow OSRS formulas.
 
 > **Status: early alpha.** Every push is built by GitHub Actions. The latest jar is on the [dev-latest release](https://github.com/WreatheR6/RuneCraft/releases/tag/dev-latest). Most content has not been play-tested in game yet.
 
@@ -104,7 +104,8 @@ Pages for bosses, raids, clues, minigames, slayer, quests and other activities.
 
 ## Building
 ```
-./gradlew build          # needs access to maven.fabricmc.net
+./gradlew build          # needs maven.neoforged.net and Mojang's download servers
+bash tools/compile_full.sh <dir>   # real compile against the NeoForge classpath in <dir> (neoforge-classpath.zip on the dev-latest release)
 bash tools/run_core_tests.sh   # compiles + tests the pure-Java OSRS core without Minecraft
 python3 tools/gen_assets.py    # regenerates textures/models/lang from build/catalog.json
 python3 tools/gen_worldgen.py  # regenerates the Gielinor data pack

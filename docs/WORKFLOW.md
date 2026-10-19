@@ -8,11 +8,11 @@ This file is the shared memory of that loop. Update the round log and backlog at
 - **Branch:** `claude/busy-cray-anf3uw` is the integration branch. Every push to it runs CI (`.github/workflows/build.yml`), which does three things:
   - builds the jar;
   - boots a real dedicated server (`tools/smoke_server.sh`), which force-loads Gielinor, checks every station block (strict), and summons bosses and monsters;
-  - then runs the in-game self-test (`/rc selftest [filter]`, package `com.runecraft.selftest`) against a Fabric fake player: every menu opens, one recipe per menu is made, every quest is walked and completed, every minigame and raid runs, every boss ticks and is killed, every teleport lands on a safe spot, player data survives save/load. The job log ends with `SELFTEST n passed, m failed` and the `SELFTEST FAIL` lines (with stack frames); failures don't fail the job yet;
+  - then runs the in-game self-test (`/rc selftest [filter]`, package `com.runecraft.selftest`) against a fake player (`platform.FakePlayer`): every menu opens, one recipe per menu is made, every quest is walked and completed, every minigame and raid runs, every boss ticks and is killed, every teleport lands on a safe spot, player data survives save/load. The job log ends with `SELFTEST n passed, m failed` and the `SELFTEST FAIL` lines (with stack frames); failures don't fail the job yet;
   - runs an xvfb client walkthrough (`tools/smoke_client.sh`, continue-on-error), which ends with `/rc selftest real minigame:,raid:,boss:` as the real, online player (the fake player is not in the player lists, so minigames, raid rooms and boss targeting skip it). Its `SELFTEST` lines and summary are printed in that step's log.
 
   Each green run publishes the jar to the `dev-latest` release.
-- **Offline checks only:** cloud sessions usually can't reach the Fabric maven, so the Minecraft layer (`com.runecraft.*`) only truly compiles in CI.
+- **Real compile without Gradle:** cloud sessions usually can't reach the NeoForge maven or Mojang, but CI publishes the full compile classpath as `neoforge-classpath.zip` on the `dev-latest` release, which does download. Unzip it into a scratch directory and run `bash tools/compile_full.sh <dir>` (about 15 s; must print `0 error(s)`). See docs/NEOFORGE_PORT.md, "Compiling locally".
   - `tools/loop/verify.sh` runs everything that does work offline:
     - core unit tests for the pure-Java `com.runecraft.osrs`;
     - `check_visibility.py`;
@@ -56,13 +56,13 @@ Recurring conflict spots:
 
 ## Agent brief (paste into every sub-agent prompt, then add the scope)
 
-> You are auditing and improving a Fabric 1.20.1 Minecraft mod (RuneCraft) that recreates Old School RuneScape (repo root = your working directory). Read docs/CONTENT_GUIDE.md and docs/WORKFLOW.md first. Pure-Java core lives in src/main/java/com/runecraft/osrs (unit-tested); Minecraft code in src/main/java/com/runecraft (compiles only in CI, which also boots a dedicated server + a real client — mimic existing Yarn 1.20.1 code exactly).
+> You are auditing and improving a NeoForge 1.21.1 Minecraft mod (RuneCraft) that recreates Old School RuneScape (repo root = your working directory). Read docs/CONTENT_GUIDE.md and docs/WORKFLOW.md first. Pure-Java core lives in src/main/java/com/runecraft/osrs (unit-tested); Minecraft code in src/main/java/com/runecraft (Mojang names; compile it with tools/compile_full.sh against the classpath from the dev-latest release, see docs/WORKFLOW.md; CI also boots a dedicated server + a real client — mimic the existing 1.21.1 code).
 >
 > METHOD: compare the mod's data and mechanics in your scope against OSRS as documented on the OSRS Wiki. The wiki site is not reachable; use the GitHub data sources listed in docs/WORKFLOW.md (clone read-only into your scratch dir, never into the repo) and WebSearch ("osrs wiki <topic>") to confirm numbers. Prioritise: (1) things that are wrong (level, XP, stat, formula, drop rate, mechanic), (2) missing things that matter to gameplay, (3) polish. Fix them in code/data with tests; prefer committing a snapshot of a machine-readable source plus a diff test. Keep ids stable; don't duplicate ids across modules (grep first). Mark remaining guesses `// approx`. Append new enum values last (ordinals are saved or sent to the client).
 >
 > Rules: stay within your scope's files where possible; small edits to shared files are OK but keep diffs minimal (other agents work in parallel). A module may not reference another module's items (move shared items into CommonItems). Classes used from another package must be public. Don't touch tools/gen_assets.py, models/textures, structures or terrain unless your scope says so. If you add items/blocks/models, run tools/loop/verify.sh (it runs gen_assets validation).
 >
-> Compile caveat: `check_compile.py` cannot see errors inside expressions whose receiver or arguments involve a Minecraft type (javac skips attributing them), e.g. `screen.button("x" + tier.points())` with a misnamed member passes offline but fails in CI. In Minecraft-side code, grep every field/method you call on our own types (field vs method, exact name, arity, static vs instance) and every import.
+> Compile: `check_compile.py` (inside verify.sh) cannot see errors in expressions involving Minecraft types. Also run `bash tools/compile_full.sh <classpath dir>` (the real compile against NeoForge; unzip neoforge-classpath.zip from the dev-latest release into a scratch dir first) and fix every error in files you touched before committing.
 >
 > Verify: `TMPDIR=<your scratch dir> bash tools/loop/verify.sh` must print VERIFY OK. Commit on your branch (in stages if large). Do not push. Report: what you checked, what was wrong and fixed (before→after for important values), what's still missing or approximate, shared files touched, and the commit hash.
 
