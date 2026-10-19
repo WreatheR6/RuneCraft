@@ -410,15 +410,41 @@ for name, d in BIOMES.items():
         "features": features(set(d["feats"]))})
 
 # ---------------------------------------------------------------- damage type & tags
-write("runecraft/damage_type/osrs_hit.json", {"exhaustion": 0.0, "message_id": "runecraft.osrs_hit", "scaling": "never"})
-for tag in ["bypasses_armor", "bypasses_cooldown", "bypasses_shield", "bypasses_enchantments", "bypasses_effects", "no_knockback"]:
-    if tag == "no_knockback":
-        continue
-    write(f"minecraft/tags/damage_type/{tag}.json", {"replace": False, "values": ["runecraft:osrs_hit"]})
+# osrs_typeless is an OSRS hit with no attacker (poison, venom, typeless area damage; CombatHandler.source). Only it
+# is no_knockback: a hit from an attacker still pushes the target away from that attacker.
+OSRS_HIT = {"exhaustion": 0.0, "message_id": "runecraft.osrs_hit", "scaling": "never"}
+write("runecraft/damage_type/osrs_hit.json", OSRS_HIT)
+write("runecraft/damage_type/osrs_typeless.json", OSRS_HIT)
+for tag in ["bypasses_armor", "bypasses_cooldown", "bypasses_shield", "bypasses_enchantments", "bypasses_effects"]:
+    write(f"minecraft/tags/damage_type/{tag}.json", {"replace": False, "values": ["runecraft:osrs_hit", "runecraft:osrs_typeless"]})
+write("minecraft/tags/damage_type/no_knockback.json", {"replace": False, "values": ["runecraft:osrs_typeless"]})
 
 catalog = json.load(open("build/catalog.json"))
 arrows = [f"runecraft:{i['id']}" for i in catalog["items"] if i["kind"] == "ARROW"]
 write("minecraft/tags/item/arrows.json", {"replace": False, "values": arrows})
+
+
+def gear(kind):
+    return [i for i in catalog["items"] if i["kind"] == kind]
+
+
+def ids(items):
+    return [f"runecraft:{i['id']}" for i in items]
+
+
+# Enchanting table and anvil support come from the minecraft:enchantable/* tags, which are built on these equipment
+# tags. Kinds as ModItems registers them: MELEE_WEAPON is a sword and ARMOUR an armour piece by slot (anything but
+# head, legs and feet is a chestplate). Vanilla lists minecraft:bow directly, so bows go straight into the enchantable tags.
+write("minecraft/tags/item/swords.json", {"replace": False, "values": ids(gear("MELEE_WEAPON"))})
+write("minecraft/tags/item/axes.json", {"replace": False, "values": ids(gear("AXE"))})
+write("minecraft/tags/item/pickaxes.json", {"replace": False, "values": ids(gear("PICKAXE"))})
+ARMOUR_TAGS = {"HEAD": "head_armor", "LEGS": "leg_armor", "FEET": "foot_armor"}
+for tag in ["head_armor", "chest_armor", "leg_armor", "foot_armor"]:
+    pieces = [i for i in gear("ARMOUR") if ARMOUR_TAGS.get(i["slot"], "chest_armor") == tag]
+    write(f"minecraft/tags/item/{tag}.json", {"replace": False, "values": ids(pieces)})
+for tag in ["bow", "durability"]:
+    write(f"minecraft/tags/item/enchantable/{tag}.json", {"replace": False, "values": ids(gear("BOW"))})
+
 logs = [f"runecraft:{t['id']}_tree_log" for t in catalog["trees"]]
 write("minecraft/tags/block/logs.json", {"replace": False, "values": logs})
 stations = ["bank_booth", "furnace", "anvil", "cooking_range", "prayer_altar", "general_store", "rune_shop", "weapon_shop",

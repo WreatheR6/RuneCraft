@@ -78,7 +78,7 @@ public final class CatalogDump {
         List<String> items = new ArrayList<>();
         for (ItemDef d : ItemCatalog.all()) {
             items.add(obj("id", d.id(), "name", d.name(), "kind", d.kind().name(), "shape", d.shape(), "color", d.color(),
-                    "tier", d.tier()));
+                    "tier", d.tier(), "slot", d.equipment() == null ? null : d.equipment().slot().name()));
         }
         List<String> trees = new ArrayList<>();
         for (Tree t : Tree.values()) {

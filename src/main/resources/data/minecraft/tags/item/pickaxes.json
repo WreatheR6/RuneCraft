@@ -1,0 +1,16 @@
+{
+  "replace": false,
+  "values": [
+    "runecraft:bronze_pickaxe",
+    "runecraft:iron_pickaxe",
+    "runecraft:steel_pickaxe",
+    "runecraft:black_pickaxe",
+    "runecraft:mithril_pickaxe",
+    "runecraft:adamant_pickaxe",
+    "runecraft:rune_pickaxe",
+    "runecraft:dragon_pickaxe",
+    "runecraft:infernal_pickaxe",
+    "runecraft:crystal_pickaxe",
+    "runecraft:3rd_age_pickaxe"
+  ]
+}

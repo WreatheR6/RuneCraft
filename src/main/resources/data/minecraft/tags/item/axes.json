@@ -1,0 +1,16 @@
+{
+  "replace": false,
+  "values": [
+    "runecraft:bronze_axe",
+    "runecraft:iron_axe",
+    "runecraft:steel_axe",
+    "runecraft:black_axe",
+    "runecraft:mithril_axe",
+    "runecraft:adamant_axe",
+    "runecraft:rune_axe",
+    "runecraft:dragon_axe",
+    "runecraft:infernal_axe",
+    "runecraft:crystal_axe",
+    "runecraft:3rd_age_axe"
+  ]
+}
