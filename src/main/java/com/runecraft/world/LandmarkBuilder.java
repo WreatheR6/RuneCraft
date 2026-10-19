@@ -210,8 +210,11 @@ public final class LandmarkBuilder {
             }
             int x = cx + npc.dx();
             int z = cz + npc.dz();
-            // the building around the spot first, so the NPC is placed on its floor rather than in the open
-            StructurePlacer.applyIfLoaded(world, x >> 4, z >> 4);
+            // the building around the spot first, so the NPC is placed on its floor rather than in the open. The spot's
+            // chunk is loaded for this: it may lie outside the area the build loaded, and an unloaded column's top is
+            // the world's bottom (the NPC would be put in the bedrock and never moved)
+            world.getChunk(x >> 4, z >> 4);
+            StructurePlacer.applyChunk(world, x >> 4, z >> 4);
             BlockPos feet = NpcFloor.spot(world, x, z, NpcFloor.isBanker(npc.id(), npc.name()),
                     com.runecraft.osrs.world.NpcStoreys.of(npc.id()));
             entity.refreshPositionAndAngles(feet.getX() + 0.5, NpcFloor.feetY(world, feet), feet.getZ() + 0.5,
