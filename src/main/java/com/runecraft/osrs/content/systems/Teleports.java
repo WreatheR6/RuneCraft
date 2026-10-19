@@ -33,7 +33,9 @@ public final class Teleports {
             at("Tears of Guthix", 3252, 3175), // relocated: the Tears of Guthix cave
             at("Wintertodt Camp", 1631, 3940));
     public static final List<Destination> SKILLS = List.of(at("Fishing Guild", 2611, 3390),
-            at("Mining Guild", 3037, 9756), // relocated: inside this world's carved Mining Guild (OSRS 3049, 9763 lies east of it)
+            // relocated: OSRS lands at the guild's underground entrance (3049, 9763), outside it; here the Dwarven Mine hall just
+            // north of this world's Mining Guild door (60 Mining), so the door still decides who gets in.
+            at("Mining Guild", 3022, 9791),
             at("Crafting Guild", 2933, 3295), at("Cooks' Guild", 3144, 3438), at("Woodcutting Guild", 1662, 3505),
             at("Farming Guild", 1248, 3719));
     public static final List<Destination> COMBAT = List.of(at("Warriors' Guild", 2882, 3547), at("Champions' Guild", 3192, 3368),

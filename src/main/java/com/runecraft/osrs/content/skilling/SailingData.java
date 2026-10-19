@@ -249,7 +249,12 @@ public final class SailingData extends SkillingPart {
                         .value(Integer.parseInt(it[3]));
                 continue;
             }
-            simple(s, SailingSea.itemId(it[0]), it[0], it[1], Integer.parseInt(it[2], 16), Integer.parseInt(it[3]));
+            com.runecraft.osrs.ItemDef d = simple(s, SailingSea.itemId(it[0]), it[0], it[1], Integer.parseInt(it[2], 16),
+                    Integer.parseInt(it[3]));
+            if (SailingSea.itemId(it[0]).equals("sailors_amulet_inert")) {
+                // One per stack: its charges live on the item (Charges), so a stack would share and duplicate them.
+                d.stack(1);
+            }
         }
         for (String part : SailingSea.bountyParts()) {
             String name = SailingSea.BOUNTIES.stream().filter(b -> b.item().equals(part)).findFirst().orElseThrow().itemName();

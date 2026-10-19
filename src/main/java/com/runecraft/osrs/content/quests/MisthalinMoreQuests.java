@@ -175,7 +175,9 @@ final class MisthalinMoreQuests {
     private static void clientOfKourend(QuestBook b) {
         b.npc("leenz", "Leenz", "great_kourend", 0, 3, 0xE0B8A8, 0x6A4A2E, 0x4A3A1E, 0x6A3A1F);
         b.item("enchanted_scroll", "Enchanted scroll", "note", 0xD0C0F0, "A scroll asking for the Kourend houses' opinions.");
-        b.item("kharedsts_memoirs", "Kharedst's memoirs", "book", 0x5A3A6A, "A book that can teleport you around Great Kourend.");
+        // One per stack: its charges live on the item (Charges), so a stack would share and duplicate them.
+        b.items(s -> s.add("kharedsts_memoirs", "Kharedst's memoirs", com.runecraft.osrs.ItemDef.Kind.SIMPLE, "book", 0x5A3A6A).value(0)
+                .stack(1).examine("A book that can teleport you around Great Kourend."));
         b.quest("client_of_kourend", "Client of Kourend", Difficulty.NOVICE, 1)
                 .reqQuest("x_marks_the_spot").xp(Skill.HITPOINTS, 500).xp(Skill.CRAFTING, 500).reward("kharedsts_memoirs")
                 .stage("I can start this quest by speaking to Veos on the Port Sarim docks. (Requires X Marks the Spot.)")

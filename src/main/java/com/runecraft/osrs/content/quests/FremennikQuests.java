@@ -46,7 +46,9 @@ final class FremennikQuests {
         b.npc("olaf", "Olaf the Bard", "RELLEKKA", -6, 3, 0xF0C8AA, 0xC0A03A, 0x5A4A2A, 0xC08030);
         b.npc("sigmund", "Sigmund the Merchant", "RELLEKKA", 4, 6, 0xE8C0A1, 0x3A6A6A, 0x2A3A3A, 0x6A4A2A);
         b.npc("fossegrimen", "Fossegrimen", "fossegrimen_lake", 0, 0, 0x8AC0C0, 0x3A8A8A, 0x2A5A5A, 0x5AA0A0);
-        b.item("enchanted_lyre", "Enchanted lyre", "key", 0xE0C040, "A lyre blessed by the Fossegrimen.");
+        // One per stack: its charges live on the item (Charges), so a stack would share and duplicate them.
+        b.items(s -> s.add("enchanted_lyre", "Enchanted lyre", com.runecraft.osrs.ItemDef.Kind.SIMPLE, "key", 0xE0C040).value(0)
+                .stack(1).examine("A lyre blessed by the Fossegrimen."));
         b.item("fremennik_ballad", "Fremennik ballad", "note", 0xE0D8B0, "A ballad of the Fremennik, composed by you and Olaf.");
         b.boss(BossDef.of("draugen", "The Draugen").level(69).stats(60, 60, 60, 60, 1, 1).speed(5)
                 .attack(AttackDef.of("crush", AttackType.CRUSH, 10, 2.5, 10))
