@@ -365,7 +365,8 @@ final class KandarinSeers {
      */
     static StructureDef camelot() {
         KandarinKit k = new KandarinKit("camelot_castle", "Camelot Castle").replaces("CAMELOT");
-        k.flatten(2740, 3462, 2778, 3518);
+        // no flatten here: Seers' Village levels the grounds before its own buildings, and a flatten in this later
+        // structure would cut into the Seers courthouse and church
         // the south lawn, paths and flower beds outside the grounds
         k.road(2756, 3466, 2759, 3483, GRAVEL, ANDESITE);
         k.road(2744, 3474, 2771, 3475, GRAVEL, null);

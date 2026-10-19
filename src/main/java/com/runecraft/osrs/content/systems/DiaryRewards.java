@@ -34,7 +34,7 @@ public final class DiaryRewards {
     public static final List<Tele> TELES = List.of(
             new Tele("ardougne", Teleports.at("Ardougne Monastery", 2606, 3222), new int[]{0, 0, 0, 0}),
             new Tele("ardougne", Teleports.at("Ardougne Farm", 2673, 3375), new int[]{-1, 3, 5, 0}),
-            new Tele("desert", Teleports.at("Nardah", 3428, 2892), new int[]{-1, 1, 0, 0}),
+            new Tele("desert", Teleports.at("Nardah", 3433, 2892), new int[]{-1, 1, 0, 0}),
             new Tele("desert", Teleports.at("Kalphite Cave", 3321, 3122), new int[]{-1, -1, -1, 0}),
             new Tele("fremennik", Teleports.at("Rellekka", 2660, 3657), new int[]{1, 3, 5, 0}),
             new Tele("kandarin", Teleports.at("Sherlock", 2733, 3415), new int[]{-1, -1, 1, 0}),

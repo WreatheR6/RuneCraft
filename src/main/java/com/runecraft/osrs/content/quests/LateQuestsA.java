@@ -495,7 +495,8 @@ final class LateQuestsA {
     }
 
     private static void grimTales(QuestBook b) {
-        b.npc("sylas", "Sylas", "grim_tales_tower", 3, 3, 0xE0B8B2, 0x5A6A3F, 0x3A4A2F, 0x9A9A9E);
+        b.npc("sylas", "Sylas", "TAVERLEY", -14, -16, // in Taverley, south of the house portal (OSRS 2891, 3454)
+                0xE0B8B2, 0x5A6A3F, 0x3A4A2F, 0x9A9A9E);
         b.item("magic_beans", "Magic beans", "seed", 0x8A5AC0, "Some magic beans.");
         b.item("griffin_feather", "Griffin feather", "mark", 0xE0C050, "A feather from a griffin.");
         b.boss(BossDef.of("glod", "Glod").level(138).stats(160, 120, 130, 100, 1, 1).speed(5)

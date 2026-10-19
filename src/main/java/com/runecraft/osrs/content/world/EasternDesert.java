@@ -712,12 +712,15 @@ final class EasternDesert {
         return k.build();
     }
 
-    /** The rocky cave mouth leading down to the Source of the Elid: the crevice at 3372-3375, 2902-2906 (shortest-path). */
+    /**
+     * The rocky cave mouth leading down to the Source of the Elid: the Water Ravine entrance by the root over the
+     * waterfall cave (OSRS 3369, 3132), north of the desert. The crevice west of Nardah is the Genie's.
+     */
     static StructureDef elidCave() {
         EasternKit k = new EasternKit("elid_cave_entrance", "Source of the Elid entrance").replaces("elid_cave");
         int g = k.g;
-        int x = cx(3373);
-        int z = cz(2903);
+        int x = cx(3369);
+        int z = cz(3132);
         k.dome(x, z, g, 5.5, 4, "minecraft:sandstone", "minecraft:smooth_sandstone");
         k.clear(x - 1, g, z - 1, x + 1, g + 2, z + 6);
         k.clear(x - 1, g - 4, z - 1, x + 1, g - 1, z + 1);
