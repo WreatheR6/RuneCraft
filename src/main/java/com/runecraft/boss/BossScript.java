@@ -38,6 +38,15 @@ public interface BossScript {
         return null;
     }
 
+    /**
+     * Called just before the engine's attack goal performs {@code attack} (the weighted choice from the BossDef / phase
+     * attack list); returns the attack to perform instead. Lets a script act on the boss's real next attack, e.g.
+     * Phosani's Prayer Deactivation.
+     */
+    default AttackDef beforeAttack(DataBossEntity boss, ServerPlayerEntity target, AttackDef attack) {
+        return attack;
+    }
+
     /** Adjusts damage dealt to the boss (immunities, damage caps, shields...). */
     default int modifyIncoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
         return damage;

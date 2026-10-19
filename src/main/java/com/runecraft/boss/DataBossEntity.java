@@ -225,6 +225,17 @@ public class DataBossEntity extends OsrsMonsterEntity {
     }
 
     @Override
+    public void performAttack(ServerPlayerEntity target, AttackType type) {
+        if (nextAttack != null && attackList() != null) {
+            AttackDef chosen = script.beforeAttack(this, target, nextAttack);
+            if (chosen != null) {
+                nextAttack = chosen;
+            }
+        }
+        super.performAttack(target, type);
+    }
+
+    @Override
     public int modifyIncoming(ServerPlayerEntity attacker, int damage, AttackType type) {
         if (!script.isVulnerable(this)) {
             Msg.action(attacker, "Your attack has no effect right now.");

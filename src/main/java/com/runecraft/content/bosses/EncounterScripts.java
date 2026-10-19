@@ -195,8 +195,29 @@ final class EncounterScripts {
         /** Players who drank a sanfew serum or relicym's balm since their parasite landed (it bursts out weakened). */
         private static final java.util.Set<java.util.UUID> CURED = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
+        /**
+         * Weary players' slower attacks: uuid -> {extra game ticks, Minecraft tick the weariness wears off}. The attack a
+         * weary player starts pushes their next one back (approx: melee and magic only; bows have no attack timer here).
+         */
+        private static final Map<UUID, long[]> SLOWED = new java.util.concurrent.ConcurrentHashMap<>();
+
         static {
             com.runecraft.content.skilling.ItemHooks.DISEASE_CURE.add(p -> CURED.add(p.getUuid()));
+            MinionRules.watch((p, t, type, d) -> {
+                long[] slow = SLOWED.get(p.getUuid());
+                if (slow == null) {
+                    return;
+                }
+                long now = com.runecraft.action.ActionManager.mcTick();
+                if (now >= slow[1]) {
+                    SLOWED.remove(p.getUuid());
+                    return;
+                }
+                com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(p);
+                if (data.lastAttackTick == now) { // the attack just started (pushed back once, even for multi-hit specials)
+                    data.lastAttackTick = now + slow[0] * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK;
+                }
+            });
         }
 
         private final List<MobEntity> parasites = new ArrayList<>();
@@ -221,10 +242,10 @@ final class EncounterScripts {
         private int sporesLeft;
         /** Weary players: game ticks left (no running, slower attacks; Phosani's yawns drain prayer). */
         private final Map<UUID, Integer> weary = new HashMap<>();
-        /** Phosani's Prayer Deactivation (phase three): the attack she is winding up and when it lands. */
-        private AttackDef windUp;
-        private long windUpLands;
+        /** Phosani's Prayer Deactivation (phase three): game ticks until one of her standard attacks can switch a prayer off. */
         private int deactivateTimer = 20;
+        /** Her claw swipe when it deactivates a prayer: it lands 2 ticks after the wind-up, like her magic and ranged. */
+        private static final AttackDef PHOSANI_MELEE_WIND_UP = MinigameBosses.PHOSANI_MELEE.telegraph(2, null);
 
         Nightmare() {
             this(false);
@@ -486,8 +507,8 @@ final class EncounterScripts {
                 sporeTimer = 60 + boss.getRandom().nextInt(30);
                 placeSpores(boss);
             }
-            if (phosani && boss.phase() >= 1) {
-                tickDeactivation(boss, target);
+            if (phosani && boss.phase() >= 1 && !desperate && deactivateTimer > 0) {
+                deactivateTimer--;
             }
         }
 
@@ -530,11 +551,18 @@ final class EncounterScripts {
                 ServerPlayerEntity p = BossFx.world(boss).getServer().getPlayerManager().getPlayer(e.getKey());
                 int left = e.getValue() - 1;
                 if (p == null || left <= 0) {
+                    SLOWED.remove(e.getKey());
                     wi.remove();
                     continue;
                 }
                 e.setValue(left);
-                p.setSprinting(false);
+                if (p.isSprinting()) {
+                    // No running (as when out of run energy): about walking pace while they try to sprint (renewed each
+                    // game tick they do, so it wears off as they stop); walking itself is not slowed.
+                    p.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS,
+                            com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK + 2, 1, false, false));
+                    p.setSprinting(false);
+                }
                 if (phosani && left % 5 == 0) {
                     BossFx.drainPrayer(p, BossMechanics.SPORE_YAWN_PRAYER);
                     Msg.action(p, "You yawn...");
@@ -545,45 +573,44 @@ final class EncounterScripts {
         void burstSpore(DataBossEntity boss, ServerPlayerEntity p, Vec3d at) {
             BossFx.world(boss).spawnParticles(ParticleTypes.SNEEZE, at.x, at.y + 0.6, at.z, 20, 0.6, 0.4, 0.6, 0.02);
             weary.put(p.getUuid(), BossMechanics.SPORE_WEARY_TICKS);
-            p.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, BossMechanics.SPORE_WEARY_TICKS * 12, 1, false, true));
-            p.addStatusEffect(new StatusEffectInstance(StatusEffects.MINING_FATIGUE, BossMechanics.SPORE_WEARY_TICKS * 12,
-                    phosani ? BossMechanics.SPORE_SLOW_TICKS_PHOSANI : BossMechanics.SPORE_SLOW_TICKS, false, true));
+            SLOWED.put(p.getUuid(), new long[]{phosani ? BossMechanics.SPORE_SLOW_TICKS_PHOSANI : BossMechanics.SPORE_SLOW_TICKS,
+                    com.runecraft.action.ActionManager.mcTick()
+                            + (long) BossMechanics.SPORE_WEARY_TICKS * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK});
             CombatAchievementService.flag(p, BossMechanics.FLAG_NIGHTMARE_SPORED);
             Msg.red(p, "A spore bursts in your face and you feel weary.");
         }
 
         /**
-         * Phosani's Prayer Deactivation (OSRS Wiki, phase three only): she winds up an attack and, if the player already has
-         * the matching protection prayer up as the animation starts, switches it off; praying correctly only after the
-         * wind-up is the counter. approx: the wind-up is announced in chat and lands 2 ticks later; rate guessed.
+         * Phosani's Prayer Deactivation (OSRS Wiki, phase three only): as she starts one of her standard attacks, a player
+         * already praying the matching protection prayer has that prayer switched off; praying it only after the wind-up is
+         * the counter. It acts on the attack her normal rotation picked (in range, at her normal speed) and leaves her
+         * other prayers alone. approx: the wind-up is announced in chat and the attack lands 2 ticks later; at most every
+         * 16-25 ticks (rate guessed); not in her desperation phase.
          */
-        void tickDeactivation(DataBossEntity boss, ServerPlayerEntity target) {
-            if (windUp != null) {
-                if (now >= windUpLands) {
-                    perform(boss, target, windUp);
-                    windUp = null;
-                }
-                return;
+        @Override
+        public AttackDef beforeAttack(DataBossEntity boss, ServerPlayerEntity target, AttackDef attack) {
+            if (!phosani || desperate || boss.phase() < 1 || deactivateTimer > 0 || target == null) {
+                return attack;
             }
-            if (--deactivateTimer > 0) {
-                return;
-            }
-            deactivateTimer = 16 + boss.getRandom().nextInt(10);
             AttackDef[] styles = {MinigameBosses.PHOSANI_MELEE, MinigameBosses.PHOSANI_MAGIC, MinigameBosses.PHOSANI_RANGED};
             Prayer[] counters = {Prayer.PROTECT_FROM_MELEE, Prayer.PROTECT_FROM_MAGIC, Prayer.PROTECT_FROM_MISSILES};
-            int i = boss.getRandom().nextInt(3);
-            windUp = styles[i];
-            windUpLands = now + 2;
+            int i = java.util.Arrays.asList(styles).indexOf(attack);
+            if (i < 0) {
+                return attack;
+            }
+            deactivateTimer = 16 + boss.getRandom().nextInt(10);
             BossFx.warn(boss, "Phosani's Nightmare winds up a " + (i == 0 ? "melee" : i == 1 ? "magic" : "ranged") + " attack...");
             if (BossFx.protects(target, counters[i])) {
-                BossFx.disablePrayers(target, "Phosani's Nightmare saw your prayer coming and switches it off!");
+                BossFx.disablePrayer(target, counters[i], "Phosani's Nightmare saw your prayer coming and switches it off!");
                 CombatAchievementService.flag(target, BossMechanics.FLAG_PHOSANI_PRAYER_DISABLED);
             }
+            return i == 0 ? PHOSANI_MELEE_WIND_UP : attack;
         }
 
         @Override
         public void onDeath(DataBossEntity boss, ServerPlayerEntity killer) {
             spores.clear();
+            weary.keySet().forEach(SLOWED::remove);
             weary.clear();
             totems.forEach(MobEntity::discard);
             husks.forEach(MobEntity::discard);
@@ -1433,11 +1460,90 @@ final class EncounterScripts {
         private boolean lit;
         private int seerTimer = BossMechanics.HUEY_SEER_CHARGE_TICKS;
         private int shockTimer;
+        /**
+         * Body parts and tail saved with her when she was unloaded mid-fight (the reloaded boss has a fresh script): found
+         * again by uuid as their chunks load, then adopted while her stage still needs them and discarded otherwise.
+         */
+        private final List<UUID> lostSegments = new ArrayList<>();
+        private UUID lostTail;
+        /** Game ticks left to find the saved minions before the fight carries on without them. */
+        private int relinkTicks;
+        private static final int RELINK_GRACE_TICKS = 20; // approx: time for the lair's chunks to load
+        private static final String NBT_STAGE = "HueyStage";
+        private static final String NBT_SEGMENT = "HueySegment";
+        private static final String NBT_TAIL = "HueyTail";
 
         @Override
         public void onSpawn(DataBossEntity boss) {
             home = boss.getBlockPos();
             spawnSegments(boss);
+        }
+
+        @Override
+        public void writeNbt(DataBossEntity boss, NbtCompound nbt) {
+            if (stage == 0) {
+                return;
+            }
+            nbt.putInt(NBT_STAGE, stage);
+            nbt.putBoolean("HueyLit", lit);
+            nbt.putInt("HueySeer", seerTimer);
+            nbt.putInt("HueyShock", shockTimer);
+            // Not dead rather than alive: a minion whose chunk was saved just before hers is already removed but comes back.
+            int i = 0;
+            for (MobEntity m : segments) {
+                if (!m.isDead()) {
+                    nbt.putUuid(NBT_SEGMENT + i++, m.getUuid());
+                }
+            }
+            for (UUID id : lostSegments) {
+                nbt.putUuid(NBT_SEGMENT + i++, id);
+            }
+            UUID tailId = tail != null && !tail.isDead() ? tail.getUuid() : lostTail;
+            if (tailId != null) {
+                nbt.putUuid(NBT_TAIL, tailId);
+            }
+        }
+
+        @Override
+        public void readNbt(DataBossEntity boss, NbtCompound nbt) {
+            if (!nbt.contains(NBT_STAGE)) {
+                return;
+            }
+            stage = nbt.getInt(NBT_STAGE);
+            lit = nbt.getBoolean("HueyLit");
+            seerTimer = nbt.getInt("HueySeer");
+            shockTimer = nbt.getInt("HueyShock");
+            lostSegments.clear();
+            for (int i = 0; nbt.containsUuid(NBT_SEGMENT + i); i++) {
+                lostSegments.add(nbt.getUuid(NBT_SEGMENT + i));
+            }
+            lostTail = nbt.containsUuid(NBT_TAIL) ? nbt.getUuid(NBT_TAIL) : null;
+            relinkTicks = RELINK_GRACE_TICKS;
+        }
+
+        /** Looks for the minions saved before an unload: adopted while the stage still needs them, discarded otherwise. */
+        private void relink(DataBossEntity boss) {
+            ServerWorld w = BossFx.world(boss);
+            java.util.Iterator<UUID> it = lostSegments.iterator();
+            while (it.hasNext()) {
+                if (w.getEntity(it.next()) instanceof MobEntity m) {
+                    it.remove();
+                    if (stage == BODY && m.isAlive() && segments.size() < BossMechanics.HUEY_BODY_SEGMENTS) {
+                        segments.add(m);
+                    } else {
+                        m.discard();
+                    }
+                }
+            }
+            if (lostTail != null && w.getEntity(lostTail) instanceof MobEntity m) {
+                lostTail = null;
+                if (stage == TAIL && tail == null && m.isAlive()) {
+                    tail = m;
+                    capTail(m);
+                } else {
+                    m.discard();
+                }
+            }
         }
 
         private void spawnSegments(DataBossEntity boss) {
@@ -1555,22 +1661,43 @@ final class EncounterScripts {
             tail = BossFx.spawnMinion(boss, BossMechanics.HUEYCOATL_TAIL,
                     BossFx.ground(BossFx.world(boss), c.x + Math.cos(a) * 5, c.z + Math.sin(a) * 5, c.y), null);
             if (tail != null) {
-                MinionRules.set(tail, new MinionRules.Rule() {
-                    @Override
-                    public int damage(ServerPlayerEntity p, net.minecraft.entity.LivingEntity mob, AttackType t, int d) {
-                        com.runecraft.osrs.EquipmentStats g = com.runecraft.combat.HitCalcBridge.gearStats(p);
-                        boolean crushBest = g.crushAttack() > g.stabAttack() && g.crushAttack() > g.slashAttack()
-                                && g.crushAttack() > g.magicAttack() && g.crushAttack() > g.rangedAttack();
-                        return BossMechanics.hueyTailDamage(d, crushBest);
-                    }
-                });
+                capTail(tail);
             }
+        }
+
+        /** Hits on the tail cap at 4, or 9 with crush as the attacker's best attack bonus. */
+        private static void capTail(MobEntity tail) {
+            MinionRules.set(tail, new MinionRules.Rule() {
+                @Override
+                public int damage(ServerPlayerEntity p, net.minecraft.entity.LivingEntity mob, AttackType t, int d) {
+                    com.runecraft.osrs.EquipmentStats g = com.runecraft.combat.HitCalcBridge.gearStats(p);
+                    boolean crushBest = g.crushAttack() > g.stabAttack() && g.crushAttack() > g.slashAttack()
+                            && g.crushAttack() > g.magicAttack() && g.crushAttack() > g.rangedAttack();
+                    return BossMechanics.hueyTailDamage(d, crushBest);
+                }
+            });
         }
 
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayerEntity target) {
             if (stage == 0) {
                 spawnSegments(boss);
+            }
+            if (relinkTicks > 0) {
+                relink(boss);
+                if ((!lostSegments.isEmpty() || lostTail != null) && --relinkTicks > 0) {
+                    return; // give the saved minions' chunks time to load before judging the stage
+                }
+                relinkTicks = 0;
+                // Saved minions that never turned up (e.g. despawned): bring back what the stage still needs.
+                if (stage == BODY && segments.isEmpty() && !lostSegments.isEmpty()) {
+                    spawnSegments(boss);
+                }
+                if (stage == TAIL && tail == null && lostTail != null) {
+                    spawnTail(boss, target);
+                }
+            } else if (!lostSegments.isEmpty() || lostTail != null) {
+                relink(boss); // late arrivals: discarded unless the stage still needs them
             }
             if (stage == BODY) {
                 segments.removeIf(m -> !m.isAlive());
@@ -1622,6 +1749,18 @@ final class EncounterScripts {
             if (tail != null) {
                 tail.discard();
             }
+            ServerWorld w = BossFx.world(boss);
+            if (lostTail != null) {
+                lostSegments.add(lostTail);
+                lostTail = null;
+            }
+            for (UUID id : lostSegments) {
+                var e = w.getEntity(id);
+                if (e != null) {
+                    e.discard();
+                }
+            }
+            lostSegments.clear();
         }
 
         @Override

@@ -648,10 +648,10 @@ public final class BossMechanics {
 
     /** Combat Achievement flag: a player damaged the Eclipse Moon other than through a parried clone ("The Clone Zone"). */
     public static final String FLAG_ECLIPSE_DIRECT_HIT = "eclipse_direct_hit";
-    /** Eclipse Moon flat armour: every hitsplat on her is reduced by 6, by 4 during her Clone special. */
+    /** Eclipse Moon flat armour: every melee or ranged hitsplat on her is reduced by 6, by 4 during her Clone special. */
     public static final int ECLIPSE_FLAT_ARMOUR = 6;
     public static final int ECLIPSE_FLAT_ARMOUR_CLONES = 4;
-    /** Blue Moon flat armour of -5: every hitsplat on her is increased by 5. */
+    /** Blue Moon flat armour of -5: every melee or ranged hitsplat on her is increased by 5. */
     public static final int BLUE_MOON_FLAT_ARMOUR = -5;
     /** The Clone special: five cycles of three clones, 15 attacks; face each clone as it appears to parry it. */
     public static final int ECLIPSE_CLONE_CYCLES = 5;

@@ -37,11 +37,22 @@ final class MoonScripts {
         return null;
     }
 
-    /** Blue Moon: -5 flat armour, so every hit that lands on her deals 5 more. */
+    /**
+     * A hit after a Moon's flat armour (OSRS Wiki "Flat armour"): only successful melee and ranged hits change; player magic
+     * (powered staves too) and thralls ignore it.
+     */
+    static int flatArmour(int damage, int armour, AttackType type) {
+        if (type == AttackType.MAGIC || com.runecraft.content.systems.SpellService.thrallHitting()) {
+            return damage;
+        }
+        return BossMechanics.flatArmour(damage, armour);
+    }
+
+    /** Blue Moon: -5 flat armour, so every melee or ranged hit that lands on her deals 5 more. */
     static final class BlueMoon extends ScriptedBoss {
         @Override
         protected int incoming(DataBossEntity boss, ServerPlayerEntity attacker, int damage, AttackType type) {
-            return BossMechanics.flatArmour(damage, BossMechanics.BLUE_MOON_FLAT_ARMOUR);
+            return flatArmour(damage, BossMechanics.BLUE_MOON_FLAT_ARMOUR, type);
         }
     }
 
@@ -186,7 +197,7 @@ final class MoonScripts {
                 CombatAchievementService.flag(attacker, BossMechanics.FLAG_ECLIPSE_DIRECT_HIT);
             }
             int armour = cloneStep >= 0 ? BossMechanics.ECLIPSE_FLAT_ARMOUR_CLONES : BossMechanics.ECLIPSE_FLAT_ARMOUR;
-            return BossMechanics.flatArmour(damage, armour);
+            return flatArmour(damage, armour, type);
         }
 
         @Override
