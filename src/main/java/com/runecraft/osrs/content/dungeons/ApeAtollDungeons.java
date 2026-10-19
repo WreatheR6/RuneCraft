@@ -2,6 +2,7 @@ package com.runecraft.osrs.content.dungeons;
 
 import com.runecraft.osrs.world.StructureDef;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.runecraft.osrs.content.dungeons.Cave.mc;
@@ -22,7 +23,8 @@ import static com.runecraft.osrs.content.dungeons.Cave.rc;
  *   opens the door), and the separate southern cave of spiders.</li>
  * </ul>
  *
- * <p>Every monster stands on its cache tile (mejrs/data_osrs NPCList_OSRS.json; one camp per tile). Approximations: the
+ * <p>Every monster camps at its cache tile (mejrs/data_osrs NPCList_OSRS.json): a lone tile is its own camp, and a cluster
+ * of one creature's tiles is one camp over the cluster with the cluster's count. Approximations: the
  * temple's trapdoor is a hut just south of the temple (the islands module builds the temple), with the dungeon shifted
  * 10 tiles south to lie under it; the southern cave's entrance is a hut 21 tiles east of the real crate in Marim; the
  * hot-rock cave (an instance in OSRS) is carved beside the southern cave; trap damage is checked once a second.
@@ -40,6 +42,8 @@ final class ApeAtollDungeons {
     static final int FLOOR = 6;
     static final int TEMPLE_FLOOR = 6;
     private static final String SPIDER = "minecraft:cave_spider";
+    /** Cache tiles of one creature this close (on both axes) to each other share a camp ({@link #tileCamps}). */
+    static final int CAMP_JOIN = 4;
 
     /** The rock ledges of the Ape Atoll Dungeon (cache tiles): standing within a block or two of one shelters a player. */
     static final int[][] LEDGES = {{2770, 9100}, {2800, 9110}, {2740, 9110}, {2710, 9100}, {2705, 9130}, {2760, 9144}};
@@ -149,12 +153,38 @@ final class ApeAtollDungeons {
         return new int[]{bx(CREVICE[0], 0), TEMPLE_FLOOR + 1, bz(CREVICE[1], TEMPLE_DY)};
     }
 
-    /** One camp per cache spawn tile ({x, y, x, y, ...}): the tile's 2x2 blocks, one creature each. */
+    /**
+     * Camps one creature's cache spawn tiles ({x, y, x, y, ...}). A camp counts its creatures a few blocks around its box
+     * (up to 4 tiles), so one-tile camps closer than that would starve each other: tiles within {@link #CAMP_JOIN} tiles
+     * of a group join it, and each group is one camp over its tiles' bounding box with a cap of its tile count (a lone
+     * tile is a camp of its own 2x2 blocks).
+     */
     private static void tileCamps(Cave c, int dx, int dy, int f, int respawn, String creature, int... tiles) {
+        List<int[]> groups = new ArrayList<>(); // {x1, y1, x2, y2, count} in cache tiles
         for (int i = 0; i + 1 < tiles.length; i += 2) {
-            int x = bx(tiles[i], dx);
-            int z = bz(tiles[i + 1], dy);
-            c.camp(x, z, x + 1, z + 1, f, 1, respawn, creature);
+            groups.add(new int[]{tiles[i], tiles[i + 1], tiles[i], tiles[i + 1], 1});
+        }
+        boolean merged = true;
+        while (merged) {
+            merged = false;
+            for (int i = 0; i < groups.size() && !merged; i++) {
+                for (int j = i + 1; j < groups.size() && !merged; j++) {
+                    int[] a = groups.get(i);
+                    int[] b = groups.get(j);
+                    if (b[0] <= a[2] + CAMP_JOIN && a[0] <= b[2] + CAMP_JOIN && b[1] <= a[3] + CAMP_JOIN && a[1] <= b[3] + CAMP_JOIN) {
+                        a[0] = Math.min(a[0], b[0]);
+                        a[1] = Math.min(a[1], b[1]);
+                        a[2] = Math.max(a[2], b[2]);
+                        a[3] = Math.max(a[3], b[3]);
+                        a[4] += b[4];
+                        groups.remove(j);
+                        merged = true;
+                    }
+                }
+            }
+        }
+        for (int[] g : groups) {
+            c.camp(bx(g[0], dx), bz(g[3], dy), bx(g[2], dx) + 1, bz(g[1], dy) + 1, f, g[4], respawn, creature);
         }
     }
 
