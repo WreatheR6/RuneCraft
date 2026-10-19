@@ -113,7 +113,7 @@ public final class DiaryService {
                 .withStyle(ChatFormatting.DARK_GREEN), false);
         if (Diaries.tierComplete(sp.diaryDone, task.area(), task.tier())) {
             p.displayClientMessage(Component.literal("Congratulations! You have completed all of the " + task.tier().id() + " tasks in the " + a.name()
-                    + " area. Claim your reward from the Achievement Diary menu (J) or the diary master.").withStyle(ChatFormatting.GOLD), false);
+                    + " area. Claim your reward from the Achievement Diary menu in the Adventurer's Log (H) or the diary master.").withStyle(ChatFormatting.GOLD), false);
         }
     }
 

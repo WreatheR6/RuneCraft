@@ -39,7 +39,7 @@ public final class SystemsClientHooks implements ClientModuleHooks {
         spellbookKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("RuneCraft Spellbook", InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_B, "key.categories.runecraft"));
         hubKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("RuneCraft Adventurer's Log", InputConstants.Type.KEYSYM,
-                InputConstants.UNKNOWN.getValue(), "key.categories.runecraft"));
+                GLFW.GLFW_KEY_H, "key.categories.runecraft"));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (specKey.consumeClick()) {
                 sendKey(SysNet.KEY_SPEC);
