@@ -172,14 +172,14 @@ final class GameplayChecks {
         }
         CompoundTag saved = data.toNbt();
         PlayerData loaded = new PlayerData();
-        loaded.fromNbt(saved.copy());
+        loaded.fromNbt(saved.copy(), c.server.registryAccess());
         CompoundTag again = loaded.toNbt();
         if (!saved.equals(again)) {
             throw failure("PlayerData changed after a save/load round trip:\n  saved  " + saved + "\n  loaded " + again);
         }
         // The whole world-save state, as written to data/runecraft.dat.
-        CompoundTag state = Players.state(c.server).save(new CompoundTag());
-        PlayerDataState reread = PlayerDataState.fromNbt(state);
+        CompoundTag state = Players.state(c.server).save(new CompoundTag(), c.server.registryAccess());
+        PlayerDataState reread = PlayerDataState.fromNbt(state, c.server.registryAccess());
         CompoundTag mine = reread.get(p().getUUID()).toNbt();
         if (!saved.equals(mine)) {
             throw failure("PlayerDataState lost this player's data on a round trip:\n  saved  " + saved + "\n  loaded " + mine);
@@ -421,7 +421,7 @@ final class GameplayChecks {
         }
         // A completed quest must survive a save/load.
         PlayerData loaded = new PlayerData();
-        loaded.fromNbt(data.toNbt());
+        loaded.fromNbt(data.toNbt(), c.server.registryAccess());
         if (!loaded.questComplete(q)) {
             throw failure("completion lost on save/load");
         }

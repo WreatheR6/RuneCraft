@@ -23,8 +23,12 @@ public class SidePanelScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
+    public void renderBackground(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
         // No background: the world and HUD stay visible behind the panel.
+    }
+
+    @Override
+    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
         SidePanel.render(ctx, width, height, mouseX, mouseY);
         super.render(ctx, mouseX, mouseY, delta);
     }
@@ -38,11 +42,11 @@ public class SidePanelScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
-        if (SidePanel.mouseScrolled(width, height, mouseX, mouseY, amount)) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (SidePanel.mouseScrolled(width, height, mouseX, mouseY, scrollY)) {
             return true;
         }
-        return super.mouseScrolled(mouseX, mouseY, amount);
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override

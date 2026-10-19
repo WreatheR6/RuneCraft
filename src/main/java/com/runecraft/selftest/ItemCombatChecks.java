@@ -277,7 +277,7 @@ final class ItemCombatChecks {
         BlockPos pos = c.near(dx, dz);
         living.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0f, 0f);
         if (living instanceof Mob mob) {
-            mob.finalizeSpawn(c.world, c.world.getCurrentDifficultyAt(pos), MobSpawnType.SPAWNER, null, null);
+            mob.finalizeSpawn(c.world, c.world.getCurrentDifficultyAt(pos), MobSpawnType.SPAWNER, null);
             mob.setPersistenceRequired();
         }
         c.world.addFreshEntity(living);

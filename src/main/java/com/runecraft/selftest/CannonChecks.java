@@ -82,7 +82,7 @@ final class CannonChecks {
             BlockPos at = centre.offset(0, 0, -3 * com.runecraft.osrs.GielinorMap.SCALE);
             target.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0f, 0f);
             if (target instanceof Mob mob) {
-                mob.finalizeSpawn(c.world, c.world.getCurrentDifficultyAt(at), MobSpawnType.SPAWNER, null, null);
+                mob.finalizeSpawn(c.world, c.world.getCurrentDifficultyAt(at), MobSpawnType.SPAWNER, null);
                 mob.setPersistenceRequired();
                 mob.setNoAi(true);
             }
@@ -166,7 +166,7 @@ final class CannonChecks {
             BlockPos at = centre.offset(0, 0, -3 * com.runecraft.osrs.GielinorMap.SCALE);
             crab.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0f, 0f);
             if (crab instanceof Mob mob) {
-                mob.finalizeSpawn(c.world, c.world.getCurrentDifficultyAt(at), MobSpawnType.SPAWNER, null, null);
+                mob.finalizeSpawn(c.world, c.world.getCurrentDifficultyAt(at), MobSpawnType.SPAWNER, null);
                 mob.setPersistenceRequired();
                 mob.setNoAi(true);
             }

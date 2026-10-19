@@ -337,13 +337,13 @@ public class BankScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mx, double my, double amount) {
+    public boolean mouseScrolled(double mx, double my, double scrollX, double scrollY) {
         if (!depositOnly() && mx >= gridX && mx < gridX + COLS * CELL && my >= gridY && my < gridY + rows * CELL) {
-            scroll -= (int) Math.signum(amount);
+            scroll -= (int) Math.signum(scrollY);
             rebuildView();
             return true;
         }
-        return super.mouseScrolled(mx, my, amount);
+        return super.mouseScrolled(mx, my, scrollX, scrollY);
     }
 
     @Override
@@ -355,8 +355,8 @@ public class BankScreen extends Screen {
     // ------------------------------------------------------------------ drawing
 
     @Override
-    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
-        renderBackground(ctx);
+    public void renderBackground(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
+        super.renderBackground(ctx, mouseX, mouseY, delta);
         ctx.fill(left - 1, top - 1, left + panelW + 1, top + panelH + 1, 0xFF100C08);
         ctx.fill(left, top, left + panelW, top + panelH, PANEL_BG);
         String title = depositOnly() ? "The Bank of Gielinor - Deposit Box" : getTitle().getString();
@@ -370,6 +370,10 @@ public class BankScreen extends Screen {
             ctx.drawString(font, used, left + 8 + 114, gridY + Math.max(rows * CELL, 6 * CELL + CELL + 2) + 8, 0xFFC0C0C0);
         }
         drawInventory(ctx);
+    }
+
+    @Override
+    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
         super.render(ctx, mouseX, mouseY, delta);
         if (dragging && pressed != null) {
             ctx.pose().pushPose();

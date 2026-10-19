@@ -10,7 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.events.GuiEventListener;
-import net.minecraft.client.gui.screens.GenericDirtMessageScreen;
+import net.minecraft.client.gui.screens.GenericMessageScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
@@ -183,7 +183,7 @@ public final class ClientSmokeTest {
             triedTitleLoad = true;
             if (client.getLevelSource().levelExists(worldName)) {
                 LOG.info("[ClientSmoke] loading world '{}' from the title screen", worldName);
-                client.createWorldOpenFlows().loadLevel(new TitleScreen(), worldName);
+                client.createWorldOpenFlows().openWorld(worldName, () -> client.setScreen(new TitleScreen()));
             } else {
                 ERRORS.add("world '" + worldName + "' does not exist in " + client.getLevelSource().getBaseDir());
                 finish(client);
@@ -433,9 +433,9 @@ public final class ClientSmokeTest {
                 boolean singleplayer = client.isLocalServer();
                 client.level.disconnect();
                 if (singleplayer) {
-                    client.clearLevel(new GenericDirtMessageScreen(Component.translatable("menu.savingLevel")));
+                    client.disconnect(new GenericMessageScreen(Component.translatable("menu.savingLevel")));
                 } else {
-                    client.clearLevel();
+                    client.disconnect();
                 }
             }
         } catch (RuntimeException e) {

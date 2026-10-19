@@ -83,11 +83,15 @@ public class MakeXScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
-        renderBackground(ctx);
+    public void renderBackground(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
+        super.renderBackground(ctx, mouseX, mouseY, delta);
         ctx.fill(left - 2, top - 2, left + 332, top + 222, 0xFF1A140C);
         ctx.fill(left, top, left + 330, top + 220, 0xF03E3529);
         ctx.drawCenteredString(font, title, left + 165, top + 8, 0xFFFF9800);
+    }
+
+    @Override
+    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
         super.render(ctx, mouseX, mouseY, delta);
         int start = page * PER_PAGE;
         for (int i = start; i < Math.min(ClientState.MENU.size(), start + PER_PAGE); i++) {

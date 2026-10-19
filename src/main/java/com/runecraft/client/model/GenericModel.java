@@ -121,7 +121,7 @@ public class GenericModel<T extends Entity> extends HierarchicalModel<T> {
      */
     public void renderGlow(PoseStack matrices, VertexConsumer vertices, int light, int overlay) {
         if (glowHidden == null) {
-            root.render(matrices, vertices, light, overlay, 1.0f, 1.0f, 1.0f, 1.0f);
+            root.render(matrices, vertices, light, overlay, -1);
             return;
         }
         for (int i = 0; i < glowHidden.length; i++) {
@@ -133,7 +133,7 @@ public class GenericModel<T extends Entity> extends HierarchicalModel<T> {
             glowPruned[i].visible = false;
         }
         try {
-            root.render(matrices, vertices, light, overlay, 1.0f, 1.0f, 1.0f, 1.0f);
+            root.render(matrices, vertices, light, overlay, -1);
         } finally {
             for (int i = 0; i < glowHidden.length; i++) {
                 glowHidden[i].skipDraw = wasHidden[i];

@@ -6,6 +6,7 @@ import com.runecraft.osrs.content.skilling.RunecraftData;
 import com.runecraft.platform.client.ClientTickEvents;
 import com.runecraft.platform.client.ItemTooltipCallback;
 import com.runecraft.platform.client.ClientPlayNetworking;
+import com.runecraft.util.StackData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -34,7 +35,7 @@ public final class SkillingClientHooks implements ClientModuleHooks {
             if (!id.getNamespace().equals("runecraft")) {
                 return;
             }
-            CompoundTag nbt = stack.getTag();
+            CompoundTag nbt = StackData.get(stack);
             RunecraftData.Pouch pouch = RunecraftData.pouch(id.getPath());
             if (pouch != null) {
                 int held = nbt == null ? 0 : nbt.getInt("Essence");

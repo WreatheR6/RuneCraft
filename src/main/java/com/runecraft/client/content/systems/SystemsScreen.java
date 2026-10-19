@@ -139,18 +139,18 @@ public class SystemsScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (contentH > height - 16) {
-            scroll -= (int) (amount * 16);
+            scroll -= (int) (scrollY * 16);
             rebuildWidgets();
             return true;
         }
-        return super.mouseScrolled(mouseX, mouseY, amount);
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override
-    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
-        renderBackground(ctx);
+    public void renderBackground(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
+        super.renderBackground(ctx, mouseX, mouseY, delta);
         ctx.fill(left, top, left + panelW, top + contentH, 0xE0302418);
         ctx.fill(left, top, left + panelW, top + 18, 0xF04A3A28);
         ctx.drawCenteredString(font, getTitle(), left + panelW / 2, top + 5, 0xFFFF981F);
@@ -164,6 +164,5 @@ public class SystemsScreen extends Screen {
             ctx.drawString(font, f.label(), left + 8, y + 4, 0xFFE0D0B0);
             y += 22;
         }
-        super.render(ctx, mouseX, mouseY, delta);
     }
 }

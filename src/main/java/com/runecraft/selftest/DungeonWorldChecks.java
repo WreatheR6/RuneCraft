@@ -63,7 +63,7 @@ final class DungeonWorldChecks {
             mob = living;
             mob.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0f, 0f);
             if (mob instanceof Mob m) {
-                m.finalizeSpawn(c.world, c.world.getCurrentDifficultyAt(at), MobSpawnType.SPAWNER, null, null);
+                m.finalizeSpawn(c.world, c.world.getCurrentDifficultyAt(at), MobSpawnType.SPAWNER, null);
                 m.setPersistenceRequired();
                 m.setNoAi(true);
             }

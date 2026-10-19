@@ -20,6 +20,7 @@ import com.runecraft.osrs.content.minigames.RewardShops;
 import com.runecraft.osrs.content.minigames.SpoilsOfWar;
 import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
+import com.runecraft.util.StackData;
 import com.runecraft.platform.UseItemCallback;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -262,7 +263,7 @@ final class MinigameRewardChecks {
             Inv.give(p(), "timber_beam", 10);
             com.runecraft.content.minigames.ShadesService.useBag(p(), p().getInventory().getItem(0));
             ItemStack bag = p().getInventory().getItem(0);
-            if (Inv.count(p(), "timber_beam") != 0 || bag.getTag() == null || bag.getTag().getInt("rc_bag_timber_beam") != 10) {
+            if (Inv.count(p(), "timber_beam") != 0 || StackData.get(bag).getInt("rc_bag_timber_beam") != 10) {
                 throw failure("the flamtaer bag did not take the timber beams");
             }
             p().getInventory().clearContent();

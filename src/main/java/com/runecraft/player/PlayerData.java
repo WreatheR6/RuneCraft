@@ -11,6 +11,7 @@ import com.runecraft.osrs.data.Monster;
 import java.util.EnumSet;
 import java.util.Set;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -246,7 +247,7 @@ public final class PlayerData {
         return nbt;
     }
 
-    public void fromNbt(CompoundTag nbt) {
+    public void fromNbt(CompoundTag nbt, HolderLookup.Provider registries) {
         skills.load(nbt.getIntArray("Xp"), nbt.getIntArray("Boosts"));
         prayerPoints = nbt.getInt("Prayer");
         activePrayers.clear();
@@ -274,7 +275,7 @@ public final class PlayerData {
             // Old 54-slot chest bank: move every stack into the new bank.
             ListTag bankList = nbt.getList("Bank", Tag.TAG_COMPOUND);
             for (int i = 0; i < bankList.size(); i++) {
-                ItemStack stack = ItemStack.of(bankList.getCompound(i));
+                ItemStack stack = ItemStack.parseOptional(registries, bankList.getCompound(i));
                 if (!stack.isEmpty()) {
                     com.runecraft.bank.BankService.depositStack(bank, stack, stack.getCount(), 0);
                 }
