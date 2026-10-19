@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "runecraft:osrs_hit"
+    "runecraft:osrs_hit",
+    "runecraft:osrs_typeless"
   ]
 }

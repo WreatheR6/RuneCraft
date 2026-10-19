@@ -47,6 +47,8 @@ import java.util.WeakHashMap;
  */
 public final class CombatHandler {
     public static final ResourceKey<DamageType> OSRS_HIT = ResourceKey.create(Registries.DAMAGE_TYPE, RuneCraft.id("osrs_hit"));
+    /** An OSRS hit with no attacker (poison, venom, typeless area damage); in #minecraft:no_knockback, so it never pushes. */
+    public static final ResourceKey<DamageType> OSRS_TYPELESS = ResourceKey.create(Registries.DAMAGE_TYPE, RuneCraft.id("osrs_typeless"));
 
     private static boolean applying;
     private static final Map<LivingEntity, Long> NPC_LAST_ATTACK = new WeakHashMap<>();
@@ -352,7 +354,8 @@ public final class CombatHandler {
     }
 
     private static DamageSource source(LivingEntity attacker, LivingEntity worldHolder) {
-        Holder<DamageType> type = worldHolder.level().registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(OSRS_HIT);
+        Holder<DamageType> type = worldHolder.level().registryAccess().registryOrThrow(Registries.DAMAGE_TYPE)
+                .getHolderOrThrow(attacker == null ? OSRS_TYPELESS : OSRS_HIT);
         return attacker == null ? new DamageSource(type) : new DamageSource(type, attacker);
     }
 
