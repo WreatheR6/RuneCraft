@@ -390,7 +390,8 @@ public final class MinigameWorld {
         list.add(NpcDef.of("mg_murphy", "Murphy", Minigame.FISHING_TRAWLER.place(), 2, 2, 0xC09070, 0x3A6A8A, 0x2A3A4A, 0x3A3A3A));
         list.add(NpcDef.of("mg_brian_orichard", "Brian O'Richard", Minigame.ROGUES_DEN.place(), 2, 2, 0xC8A080, 0x3A3A40, 0x2A2A30,
                 0x2A2A30));
-        list.add(NpcDef.of("mg_dominic_onion", "Dominic Onion", Minigame.NIGHTMARE_ZONE.place(), 2, 2, 0xC8A080, 0x4A6AA0, 0x3A4A7A,
+        // north of the place's centre: Yanille's north wall (tile row 3109) runs just south of it
+        list.add(NpcDef.of("mg_dominic_onion", "Dominic Onion", Minigame.NIGHTMARE_ZONE.place(), 2, -2, 0xC8A080, 0x4A6AA0, 0x3A4A7A,
                 0xE0E0E0));
         list.add(NpcDef.of("mg_nomad", "Nomad", Minigame.SOUL_WARS.place(), 2, 2, 0xC09070, 0x5A3A8A, 0x3A2A5A, 0x2A2A2A));
         list.add(NpcDef.of("mg_sorceress_apprentice", "Apprentice", Minigame.SORCERESS_GARDEN.place(), 2, 2, 0xC09070, 0x6A3A8A,

@@ -412,7 +412,7 @@ final class KandarinMoreQuests {
         b.item("me2_newly_made_crystal", "Newly made crystal", "gem", 0xE0F0FF, "Arianwyn sang the dark shard into this crystal.");
         b.spot("me_arandar_gate", "Arandar Pass gate", 2416, 3330); // approx
         b.spot("me_apple_orchard", "Rotten apple orchard", 2490, 3365); // approx: north-east of the Outpost
-        Cast.npc(b, "tegid", "Tegid", "TAVERLEY", 6, 6, Cast.FAIR, 0x6A6A8A);
+        Cast.npc(b, "tegid", "Tegid", "TAVERLEY", 30, 58, Cast.FAIR, 0x6A6A8A); // by the lake south-east of town (OSRS 2913, 3417)
         Cast.npc(b, "oronwen", "Oronwen", "LLETYA", -4, 4, Cast.PALE, 0x6A3A6A);
         Cast.npc(b, "essyllt", "Essyllt", "mourner_hq", 2, 2, Cast.PALE, 0x1A1A1A);
         b.boss(BossDef.of("shadow_of_light", "Shadow").level(73).stats(80, 70, 70, 70, 1, 1).speed(4)

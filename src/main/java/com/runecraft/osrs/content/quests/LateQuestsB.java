@@ -25,7 +25,7 @@ final class LateQuestsB {
     }
 
     static void register(QuestBook b) {
-        b.place("elid_cave", "Source of the Elid", 3373, 2904, PlaceDef.Style.CAVE); // the crevice west of Nardah
+        b.place("elid_cave", "Source of the Elid", 3369, 3132, PlaceDef.Style.CAVE); // the root over the waterfall cave (Water Ravine)
         b.place("sophanem_dungeon", "Sophanem dungeon", 3290, 2770, PlaceDef.Style.CAVE);
         b.place("necropolis", "Necropolis", 3340, 2730, PlaceDef.Style.RUINS);
         b.place("piscatoris", "Piscatoris Fishing Colony", 2342, 3650, PlaceDef.Style.CAMP);
@@ -50,8 +50,10 @@ final class LateQuestsB {
     }
 
     private static void spiritsOfTheElid(QuestBook b) {
-        b.npc("awusah", "Awusah the Mayor", "NARDAH", 0, 5, 0xB07A4E, 0xE0C082, 0xB09062, 0xE0E0ED);
-        b.npc("ghaslor", "Ghaslor the Elder", "NARDAH", 5, 0, 0xA86A43, 0xE0D0A2, 0x8A6A41, 0xE0E0EE);
+        b.npc("awusah", "Awusah the Mayor", "NARDAH", 32, -36, // in the Mayor's house (OSRS 3442, 2912)
+                0xB07A4E, 0xE0C082, 0xB09062, 0xE0E0ED);
+        b.npc("ghaslor", "Ghaslor the Elder", "NARDAH", 30, -78, // in his house north of the Mayor's (OSRS 3441, 2933)
+                0xA86A43, 0xE0D0A2, 0x8A6A41, 0xE0E0EE);
         b.item("ancestral_key", "Ancestral key", "key", 0xC0A063, "The key to the Elid's source.");
         b.quest("spirits_of_the_elid", "Spirits of the Elid", Difficulty.INTERMEDIATE, 2)
                 .req(Skill.MAGIC, 33).req(Skill.RANGED, 37).req(Skill.MINING, 37).req(Skill.THIEVING, 37)
