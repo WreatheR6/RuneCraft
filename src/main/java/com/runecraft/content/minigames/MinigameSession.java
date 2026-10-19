@@ -31,6 +31,7 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * One running instance of a minigame. Subclasses build their arena around {@link #origin}, drive
@@ -292,7 +293,8 @@ public abstract class MinigameSession {
     }
 
     public final AABB box() {
-        return new AABB(origin.offset(-halfX() - 2, -2, -halfZ() - 2), origin.offset(halfX() + 2, height() + 3, halfZ() + 2));
+        return new AABB(Vec3.atLowerCornerOf(origin.offset(-halfX() - 2, -2, -halfZ() - 2)),
+                Vec3.atLowerCornerOf(origin.offset(halfX() + 2, height() + 3, halfZ() + 2)));
     }
 
     private void removeStrays() {
@@ -348,7 +350,7 @@ public abstract class MinigameSession {
             return null;
         }
         mob.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, random.nextFloat() * 360f, 0);
-        mob.finalizeSpawn(world, world.getCurrentDifficultyAt(at), MobSpawnType.EVENT, null, null);
+        mob.finalizeSpawn(world, world.getCurrentDifficultyAt(at), MobSpawnType.EVENT, null);
         tag(mob);
         world.addFreshEntity(mob);
         if (mob instanceof com.runecraft.boss.DataBossEntity boss) {

@@ -1,6 +1,7 @@
 package com.runecraft.content.raids;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.LongTag;
@@ -33,7 +34,7 @@ public final class RaidsState extends SavedData {
     private final Set<Long> forcedChunks = new LinkedHashSet<>();
 
     public static RaidsState get(MinecraftServer server) {
-        return server.overworld().getDataStorage().computeIfAbsent(RaidsState::fromNbt, RaidsState::new, KEY);
+        return server.overworld().getDataStorage().computeIfAbsent(new SavedData.Factory<>(RaidsState::new, RaidsState::fromNbt, null), KEY);
     }
 
     public Stats stats(UUID player) {
@@ -78,7 +79,7 @@ public final class RaidsState extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag nbt) {
+    public CompoundTag save(CompoundTag nbt, HolderLookup.Provider registries) {
         CompoundTag all = new CompoundTag();
         players.forEach((uuid, s) -> {
             CompoundTag p = new CompoundTag();
@@ -111,7 +112,7 @@ public final class RaidsState extends SavedData {
         }
     }
 
-    public static RaidsState fromNbt(CompoundTag nbt) {
+    public static RaidsState fromNbt(CompoundTag nbt, HolderLookup.Provider registries) {
         RaidsState state = new RaidsState();
         CompoundTag all = nbt.getCompound("Players");
         for (String key : all.getAllKeys()) {

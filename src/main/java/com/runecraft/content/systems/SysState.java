@@ -5,6 +5,7 @@ import com.runecraft.osrs.content.systems.ClueScrolls;
 import com.runecraft.osrs.content.systems.GrandExchange;
 import com.runecraft.osrs.content.systems.Jewellery;
 import com.runecraft.osrs.content.systems.Spellbooks;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -131,14 +132,14 @@ public final class SysState extends SavedData {
             return false;
         }
 
-        CompoundTag toNbt() {
+        CompoundTag toNbt(HolderLookup.Provider registries) {
             CompoundTag n = new CompoundTag();
             n.putInt("Spec", specEnergy);
             n.putInt("Run", runEnergy);
             CompoundTag worn = new CompoundTag();
             this.worn.forEach((slot, stack) -> {
                 if (!stack.isEmpty()) {
-                    worn.put(slot.name(), stack.save(new CompoundTag()));
+                    worn.put(slot.name(), stack.saveOptional(registries));
                 }
             });
             n.put("Worn", worn);
@@ -198,14 +199,14 @@ public final class SysState extends SavedData {
             return n;
         }
 
-        void fromNbt(CompoundTag n) {
+        void fromNbt(CompoundTag n, HolderLookup.Provider registries) {
             specEnergy = n.contains("Spec") ? n.getInt("Spec") : 100;
             runEnergy = n.contains("Run") ? n.getInt("Run") : 10000;
             worn.clear();
             CompoundTag w = n.getCompound("Worn");
             for (Jewellery.Slot slot : Jewellery.Slot.values()) {
                 if (w.contains(slot.name())) {
-                    ItemStack s = ItemStack.of(w.getCompound(slot.name()));
+                    ItemStack s = ItemStack.parseOptional(registries, w.getCompound(slot.name()));
                     if (!s.isEmpty()) {
                         worn.put(slot, s);
                     }
@@ -306,9 +307,12 @@ public final class SysState extends SavedData {
     private final Map<UUID, HiscoreEntry> hiscores = new HashMap<>();
     /** Last traded price per item on the Grand Exchange. */
     private final Map<String, Integer> lastPrices = new HashMap<>();
+    private HolderLookup.Provider registries;
 
     public static SysState get(MinecraftServer server) {
-        return server.overworld().getDataStorage().computeIfAbsent(SysState::fromNbt, SysState::new, KEY);
+        SysState s = server.overworld().getDataStorage().computeIfAbsent(new SavedData.Factory<>(SysState::new, SysState::fromNbt, null), KEY);
+        s.registries = server.registryAccess();
+        return s;
     }
 
     public static SysPlayer of(ServerPlayer player) {
@@ -322,7 +326,7 @@ public final class SysState extends SavedData {
     /** Self-test hook ({@code com.runecraft.selftest}): an opaque copy of one player's state, or null if there is none. */
     public Object selfTestSave(UUID uuid) {
         SysPlayer p = players.get(uuid);
-        return p == null ? null : p.toNbt();
+        return p == null ? null : p.toNbt(registries);
     }
 
     /** Self-test hook: puts back a {@link #selfTestSave} copy; null drops the player's state (a fresh one is made on use). */
@@ -330,7 +334,7 @@ public final class SysState extends SavedData {
         players.remove(uuid);
         if (saved instanceof CompoundTag n) {
             SysPlayer p = new SysPlayer();
-            p.fromNbt(n.copy());
+            p.fromNbt(n.copy(), registries);
             players.put(uuid, p);
         }
     }
@@ -353,9 +357,9 @@ public final class SysState extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag nbt) {
+    public CompoundTag save(CompoundTag nbt, HolderLookup.Provider registries) {
         CompoundTag ps = new CompoundTag();
-        players.forEach((u, p) -> ps.put(u.toString(), p.toNbt()));
+        players.forEach((u, p) -> ps.put(u.toString(), p.toNbt(registries)));
         nbt.put("Players", ps);
         ListTag offers = new ListTag();
         for (GrandExchange.Offer o : ge.offers()) {
@@ -401,13 +405,13 @@ public final class SysState extends SavedData {
         return nbt;
     }
 
-    public static SysState fromNbt(CompoundTag nbt) {
+    public static SysState fromNbt(CompoundTag nbt, HolderLookup.Provider registries) {
         SysState s = new SysState();
         CompoundTag ps = nbt.getCompound("Players");
         for (String k : ps.getAllKeys()) {
             try {
                 SysPlayer p = new SysPlayer();
-                p.fromNbt(ps.getCompound(k));
+                p.fromNbt(ps.getCompound(k), registries);
                 s.players.put(UUID.fromString(k), p);
             } catch (IllegalArgumentException ignored) {
                 // skip malformed entries

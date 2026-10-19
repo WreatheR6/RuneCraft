@@ -2,6 +2,7 @@ package com.runecraft.content.systems;
 
 import com.runecraft.item.ItemCharges;
 import com.runecraft.osrs.content.systems.Charges;
+import com.runecraft.util.StackData;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -28,8 +29,8 @@ final class TeleportCharges {
 
     /** Charges a per-player stack held from before they moved to the player, or null. */
     private static Integer legacy(ItemStack stack) {
-        CompoundTag nbt = stack.getTag();
-        return nbt != null && nbt.contains(ItemCharges.KEY) && !nbt.getBoolean(MIRRORED) ? ItemCharges.get(stack) : null;
+        CompoundTag nbt = StackData.get(stack);
+        return nbt.contains(ItemCharges.KEY) && !nbt.getBoolean(MIRRORED) ? ItemCharges.get(stack) : null;
     }
 
     static int get(ServerPlayer p, ItemStack stack) {
@@ -48,6 +49,6 @@ final class TeleportCharges {
         }
         SysState.of(p).playerCharges.put(s.id(), Charges.clamp(s, charges));
         ItemCharges.set(stack, charges); // mirrored on the stack for its tooltip
-        stack.getOrCreateTag().putBoolean(MIRRORED, true);
+        StackData.update(stack, t -> t.putBoolean(MIRRORED, true));
     }
 }

@@ -1,6 +1,7 @@
 package com.runecraft.content.islands;
 
 import com.runecraft.osrs.content.islands.Kingdom;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -24,7 +25,7 @@ final class IslandsKingdomState extends SavedData {
 
     static IslandsKingdomState get(MinecraftServer server) {
         return server.overworld().getDataStorage()
-                .computeIfAbsent(IslandsKingdomState::fromNbt, IslandsKingdomState::new, KEY);
+                .computeIfAbsent(new SavedData.Factory<>(IslandsKingdomState::new, IslandsKingdomState::fromNbt, null), KEY);
     }
 
     Kingdom.State kingdom(UUID uuid) {
@@ -43,7 +44,7 @@ final class IslandsKingdomState extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag nbt) {
+    public CompoundTag save(CompoundTag nbt, HolderLookup.Provider registries) {
         kingdoms.forEach((uuid, k) -> {
             CompoundTag c = new CompoundTag();
             c.putLong("coffer", k.coffer());
@@ -70,7 +71,7 @@ final class IslandsKingdomState extends SavedData {
         }
     }
 
-    static IslandsKingdomState fromNbt(CompoundTag nbt) {
+    static IslandsKingdomState fromNbt(CompoundTag nbt, HolderLookup.Provider registries) {
         IslandsKingdomState state = new IslandsKingdomState();
         for (String key : nbt.getAllKeys()) {
             try {

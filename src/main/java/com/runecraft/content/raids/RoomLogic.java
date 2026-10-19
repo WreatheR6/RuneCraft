@@ -462,7 +462,7 @@ public class RoomLogic {
             return null;
         }
         mob.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, rnd().nextFloat() * 360f, 0);
-        mob.finalizeSpawn(world(), world().getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null, null);
+        mob.finalizeSpawn(world(), world().getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null);
         mob.setPersistenceRequired();
         world().addFreshEntity(mob);
         raid.scale(mob);

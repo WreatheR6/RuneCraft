@@ -185,13 +185,12 @@ public final class SystemsHooks implements ModuleHooks {
                     || p.getRandom().nextDouble() >= com.runecraft.osrs.data.Thieving.DODGY_NECKLACE_CHANCE) {
                 return false;
             }
-            net.minecraft.nbt.CompoundTag nbt = neck.getOrCreateTag();
-            int used = nbt.getInt("DodgyUsed") + 1;
+            int used = com.runecraft.util.StackData.get(neck).getInt("DodgyUsed") + 1;
             if (used >= com.runecraft.osrs.data.Thieving.DODGY_NECKLACE_CHARGES) {
                 sp.worn.remove(Jewellery.Slot.NECK);
                 Msg.red(p, "Your dodgy necklace crumbles to dust.");
             } else {
-                nbt.putInt("DodgyUsed", used);
+                com.runecraft.util.StackData.update(neck, t -> t.putInt("DodgyUsed", used));
             }
             SysNet.sendState(p);
             return true;

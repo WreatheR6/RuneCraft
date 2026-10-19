@@ -101,7 +101,7 @@ final class TownSpawner {
         int y = NpcPlacement.standY(world, x, z);
         BlockPos pos = new BlockPos(x, y, z);
         mob.moveTo(x + 0.5, y, z + 0.5, world.getRandom().nextFloat() * 360f, 0);
-        mob.finalizeSpawn(world, world.getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null, null);
+        mob.finalizeSpawn(world, world.getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null);
         mob.setPersistenceRequired();
         world.addFreshEntity(mob);
         NEXT[index] = ticks + RESPAWN_TICKS;

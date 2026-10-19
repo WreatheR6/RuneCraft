@@ -161,7 +161,7 @@ final class ZeahSkilling {
             return;
         }
         CHARGED.remove(key);
-        world.playSound(null, pos, SoundEvents.GENERIC_EXPLODE, SoundSource.BLOCKS, 1.0f, 1.0f);
+        world.playSound(null, pos, SoundEvents.GENERIC_EXPLODE.value(), SoundSource.BLOCKS, 1.0f, 1.0f);
         world.sendParticles(ParticleTypes.EXPLOSION, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, 3, 0.4, 0.4, 0.4, 0.0);
         int lvl = level(player, Skill.MINING);
         int total = 0;

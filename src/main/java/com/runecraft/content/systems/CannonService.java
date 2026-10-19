@@ -530,7 +530,7 @@ public final class CannonService {
             c.steel--;
         }
         c.fired++;
-        c.world.playSound(null, c.pos, SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 0.35f, 1.6f);
+        c.world.playSound(null, c.pos, SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.35f, 1.6f);
         c.world.sendParticles(ParticleTypes.LARGE_SMOKE, target.getX(), target.getY(0.6), target.getZ(), 3, 0.2, 0.2, 0.2, 0.01);
         int damage = 0;
         if (owner.getRandom().nextDouble() < accuracy(owner, target)) {

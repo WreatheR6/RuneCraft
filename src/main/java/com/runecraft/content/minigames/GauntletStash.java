@@ -6,6 +6,7 @@ import com.runecraft.osrs.content.minigames.Gauntlet;
 import com.runecraft.osrs.content.systems.Jewellery;
 import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -36,7 +37,7 @@ public final class GauntletStash extends SavedData {
     private final Map<UUID, ListTag> chest = new HashMap<>();
 
     public static GauntletStash get(MinecraftServer server) {
-        return server.overworld().getDataStorage().computeIfAbsent(GauntletStash::fromNbt, GauntletStash::new, KEY);
+        return server.overworld().getDataStorage().computeIfAbsent(new SavedData.Factory<>(GauntletStash::new, GauntletStash::fromNbt, null), KEY);
     }
 
     public static boolean has(ServerPlayer player) {
@@ -55,7 +56,7 @@ public final class GauntletStash extends SavedData {
         SysState.SysPlayer sp = SysState.of(player);
         for (Map.Entry<Jewellery.Slot, ItemStack> e : sp.worn.entrySet()) {
             if (!e.getValue().isEmpty()) {
-                worn.put(e.getKey().name(), e.getValue().save(new CompoundTag()));
+                worn.put(e.getKey().name(), e.getValue().saveOptional(player.registryAccess()));
             }
         }
         c.put("Worn", worn);
@@ -82,7 +83,7 @@ public final class GauntletStash extends SavedData {
         ListTag list = state.chest.computeIfAbsent(player.getUUID(), u -> new ListTag());
         for (ItemStack s : loot) {
             if (!s.isEmpty()) {
-                list.add(s.save(new CompoundTag()));
+                list.add(s.saveOptional(player.registryAccess()));
             }
         }
         state.setDirty();
@@ -103,7 +104,7 @@ public final class GauntletStash extends SavedData {
         }
         state.setDirty();
         for (int i = 0; i < list.size(); i++) {
-            ItemStack s = ItemStack.of(list.getCompound(i));
+            ItemStack s = ItemStack.parseOptional(player.registryAccess(), list.getCompound(i));
             if (!s.isEmpty()) {
                 Inv.give(player, s);
             }
@@ -142,7 +143,7 @@ public final class GauntletStash extends SavedData {
         CompoundTag worn = c.getCompound("Worn");
         for (Jewellery.Slot slot : Jewellery.Slot.values()) {
             if (worn.contains(slot.name())) {
-                ItemStack stack = ItemStack.of(worn.getCompound(slot.name()));
+                ItemStack stack = ItemStack.parseOptional(player.registryAccess(), worn.getCompound(slot.name()));
                 if (!stack.isEmpty()) {
                     sp.worn.put(slot, stack);
                 }
@@ -155,7 +156,7 @@ public final class GauntletStash extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag nbt) {
+    public CompoundTag save(CompoundTag nbt, HolderLookup.Provider registries) {
         CompoundTag root = new CompoundTag();
         stashed.forEach((uuid, c) -> root.put(uuid.toString(), c));
         nbt.put("Stashed", root);
@@ -165,7 +166,7 @@ public final class GauntletStash extends SavedData {
         return nbt;
     }
 
-    public static GauntletStash fromNbt(CompoundTag nbt) {
+    public static GauntletStash fromNbt(CompoundTag nbt, HolderLookup.Provider registries) {
         GauntletStash state = new GauntletStash();
         CompoundTag root = nbt.getCompound("Stashed");
         for (String key : root.getAllKeys()) {
