@@ -1244,6 +1244,13 @@ public final class SpellService {
         SysNet.sendState(p);
     }
 
+    /** True while a thrall's hit is being resolved (rules thralls ignore, such as the Moons' flat armour, check it). */
+    private static boolean thrallHitting;
+
+    public static boolean thrallHitting() {
+        return thrallHitting;
+    }
+
     /** Thralls attack the player's current target every 4 ticks and always hit (0 to max 1/2/3, x per tier). */
     public static void thrallTick(ServerPlayerEntity p, long tick) {
         SysState.SysPlayer sp = SysState.of(p);
@@ -1275,7 +1282,12 @@ public final class SpellService {
                 : AttackType.CRUSH;
         if (dmg > 0) {
             if (target instanceof com.runecraft.entity.OsrsMonsterEntity m) {
-                dmg = m.modifyIncoming(p, dmg, type);
+                thrallHitting = true;
+                try {
+                    dmg = m.modifyIncoming(p, dmg, type);
+                } finally {
+                    thrallHitting = false;
+                }
             }
             CombatHandler.applyDamage(p, target, dmg);
         } else {

@@ -182,6 +182,14 @@ final class BossFx {
         }
     }
 
+    /** Switches off one prayer, leaving the others on (e.g. Phosani's Prayer Deactivation of a protection prayer). */
+    static void disablePrayer(ServerPlayerEntity p, Prayer prayer, String message) {
+        if (Players.data(p).activePrayers().remove(prayer)) {
+            ServerNetworking.sync(p);
+            Msg.red(p, message);
+        }
+    }
+
     static boolean protects(ServerPlayerEntity p, Prayer prayer) {
         return Players.data(p).isActive(prayer);
     }
