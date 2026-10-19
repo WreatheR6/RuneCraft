@@ -39,7 +39,7 @@ public class GielinorLookRenderer<T extends Mob> extends EntityRenderer<T> {
     }
 
     @Override
-    public ResourceLocation getTexture(T entity) {
-        return osrs(entity) ? osrs.getTexture(entity) : vanilla.getTextureLocation(entity);
+    public ResourceLocation getTextureLocation(T entity) {
+        return osrs(entity) ? osrs.getTextureLocation(entity) : vanilla.getTextureLocation(entity);
     }
 }

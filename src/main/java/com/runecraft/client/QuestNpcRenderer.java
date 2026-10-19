@@ -50,7 +50,7 @@ public class QuestNpcRenderer extends EntityRenderer<QuestNpcEntity> {
     }
 
     @Override
-    public ResourceLocation getTexture(QuestNpcEntity npc) {
+    public ResourceLocation getTextureLocation(QuestNpcEntity npc) {
         return pick(npc).getTextureLocation(npc);
     }
 }

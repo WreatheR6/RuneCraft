@@ -71,7 +71,7 @@ public class PetRenderer extends EntityRenderer<PetEntity> {
     }
 
     @Override
-    public ResourceLocation getTexture(PetEntity entity) {
+    public ResourceLocation getTextureLocation(PetEntity entity) {
         return delegate(entity).getTextureLocation(entity);
     }
 }

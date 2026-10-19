@@ -483,7 +483,7 @@ public class RoomLogic {
         if (type == null) {
             return list;
         }
-        for (Entity e : world().getEntities(null, RaidBuilder.roomBox(raid.slot, index), x -> x.getType() == type)) {
+        for (Entity e : world().getEntities((Entity) null, RaidBuilder.roomBox(raid.slot, index), x -> x.getType() == type)) {
             if (e instanceof LivingEntity le && le.isAlive()) {
                 list.add(le);
             }

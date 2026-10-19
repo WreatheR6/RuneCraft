@@ -31,7 +31,7 @@ public class OsrsBipedRenderer<T extends Mob> extends HumanoidMobRenderer<T, Hum
     }
 
     @Override
-    public ResourceLocation getTexture(T entity) {
+    public ResourceLocation getTextureLocation(T entity) {
         if (entity instanceof QuestNpcEntity npc) {
             if (npc.npc() == null) {
                 return RuneCraft.id("textures/entity/npc/" + npc.npcId() + ".png");

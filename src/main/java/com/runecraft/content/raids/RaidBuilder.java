@@ -146,7 +146,7 @@ public final class RaidBuilder {
 
     /** Removes every non-player entity in a box (left-over monsters, dropped items). */
     public static void clearEntities(ServerLevel world, AABB box) {
-        for (Entity e : world.getEntities(null, box, e -> !(e instanceof Player))) {
+        for (Entity e : world.getEntities((Entity) null, box, e -> !(e instanceof Player))) {
             e.discard();
         }
     }

@@ -23,7 +23,7 @@ public class GenericEntityRenderer<T extends Mob> extends MobRenderer<T, Generic
     }
 
     @Override
-    public ResourceLocation getTexture(T entity) {
+    public ResourceLocation getTextureLocation(T entity) {
         return texture;
     }
 
