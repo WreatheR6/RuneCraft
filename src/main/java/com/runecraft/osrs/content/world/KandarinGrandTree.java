@@ -77,7 +77,7 @@ final class KandarinGrandTree {
      * trunk (they cannot stand on planks). Call after the meadow.
      */
     static void tidy(KandarinKit k, int gx, int gz) {
-        String[] meadow = {"minecraft:grass", "minecraft:dandelion", "minecraft:poppy", "minecraft:oxeye_daisy", "minecraft:azure_bluet"};
+        String[] meadow = {"minecraft:short_grass", "minecraft:dandelion", "minecraft:poppy", "minecraft:oxeye_daisy", "minecraft:azure_bluet"};
         for (String f : meadow) {
             k.replace(gx - 13, 0, gz - 13, gx + 13, 0, gz + 13, f, "minecraft:air");
             k.replace(gx - 17, 0, gz - 6, gx + 17, 0, gz + 6, f, "minecraft:air");

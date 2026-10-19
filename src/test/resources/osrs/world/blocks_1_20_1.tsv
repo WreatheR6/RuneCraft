@@ -1,4 +1,4 @@
-# Minecraft 1.20.1 block ids and block-state properties (PrismarineJS minecraft-data pc/1.20 blocks.json)
+# Minecraft block ids and block-state properties (PrismarineJS minecraft-data pc/1.20 blocks.json), with the 1.20.3 rename grass -> short_grass applied for 1.21.1
 acacia_button	face=floor,wall,ceiling;facing=north,south,west,east;powered=true,false
 acacia_door	facing=north,south,west,east;half=upper,lower;hinge=left,right;open=true,false;powered=true,false
 acacia_fence	east=true,false;north=true,false;south=true,false;waterlogged=true,false;west=true,false
@@ -381,7 +381,7 @@ granite
 granite_slab	type=top,bottom,double;waterlogged=true,false
 granite_stairs	facing=north,south,west,east;half=top,bottom;shape=straight,inner_left,inner_right,outer_left,outer_right;waterlogged=true,false
 granite_wall	east=none,low,tall;north=none,low,tall;south=none,low,tall;up=true,false;waterlogged=true,false;west=none,low,tall
-grass	
+short_grass	
 grass_block	snowy=true,false
 gravel	
 gray_banner	rotation=0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15

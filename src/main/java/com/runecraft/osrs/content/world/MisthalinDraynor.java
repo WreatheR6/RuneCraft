@@ -276,7 +276,7 @@ final class MisthalinDraynor {
         k.scatter(grounds, -1, "minecraft:podzol", 5);
         k.scatter(grounds, -1, COARSE_DIRT, 7);
         k.scatter(grounds, 0, "minecraft:dead_bush", 30);
-        k.scatter(grounds, 0, "minecraft:grass", 12);
+        k.scatter(grounds, 0, "minecraft:short_grass", 12);
         // the winding path from the gate to the large doors (OSRS map)
         k.floor(t(3108, 3331, 3110, 3337), GRAVEL);
         k.floor(t(3107, 3337, 3109, 3343), GRAVEL);

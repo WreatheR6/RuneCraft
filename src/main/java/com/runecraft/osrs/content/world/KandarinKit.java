@@ -569,7 +569,7 @@ final class KandarinKit {
 
     /** Scatter flowers / grass on the open ground of a block rect (only on air at y 0). */
     void meadow(int ax, int az, int cx, int cz, int every) {
-        String[] f = {"minecraft:grass", "minecraft:dandelion", "minecraft:poppy", "minecraft:grass", "minecraft:oxeye_daisy", "minecraft:azure_bluet", "minecraft:grass"};
+        String[] f = {"minecraft:short_grass", "minecraft:dandelion", "minecraft:poppy", "minecraft:short_grass", "minecraft:oxeye_daisy", "minecraft:azure_bluet", "minecraft:short_grass"};
         for (int x = ax; x <= cx; x++) {
             for (int z = az; z <= cz; z++) {
                 int h = hash(x, z);

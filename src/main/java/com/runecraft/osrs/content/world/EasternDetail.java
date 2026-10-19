@@ -851,7 +851,7 @@ public final class EasternDetail {
     /** Overgrowth: vines/moss carpets/grass dropped only into empty air cells just above the ground. */
     public void overgrowth(int x1, int z1, int x2, int z2, int count, long seed) {
         Random rnd = new Random(seed);
-        String[] plants = {"minecraft:grass", "minecraft:fern", "minecraft:moss_carpet", "minecraft:grass", "minecraft:sweet_berry_bush[age=1]"};
+        String[] plants = {"minecraft:short_grass", "minecraft:fern", "minecraft:moss_carpet", "minecraft:short_grass", "minecraft:sweet_berry_bush[age=1]"};
         for (int i = 0; i < count; i++) {
             int x = x1 + rnd.nextInt(Math.max(1, x2 - x1 + 1));
             int z = z1 + rnd.nextInt(Math.max(1, z2 - z1 + 1));

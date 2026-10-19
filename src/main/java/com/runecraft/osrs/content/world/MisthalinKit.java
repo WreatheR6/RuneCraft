@@ -1065,7 +1065,7 @@ final class MisthalinKit {
 
     /** Flowers and grass tufts scattered on a grassy rectangle. */
     MisthalinKit meadow(Box r, int every) {
-        scatter(r, 0, "minecraft:grass", every);
+        scatter(r, 0, "minecraft:short_grass", every);
         scatter(r, 0, "minecraft:dandelion", every * 4);
         scatter(r, 0, "minecraft:poppy", every * 5);
         scatter(r, 0, "minecraft:oxeye_daisy", every * 6);

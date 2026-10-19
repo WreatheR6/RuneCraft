@@ -24,6 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class StructureBlockIdsTest {
     private static final List<String> NOT_BLOCKS = List.of("armor_stand", "item_frame", "glow_item_frame", "painting",
             "minecart", "chest_minecart", "oak_boat", "spruce_boat", "end_crystal", "leash_knot");
+    /** Block ids renamed since 1.20.1; the old names no longer parse on 1.21.1. */
+    private static final Map<String, String> RENAMED = Map.of("grass", "short_grass");
 
     @Test
     void structureCodeUsesNoEntityIdsAsBlocks() throws IOException {
@@ -38,14 +40,18 @@ class StructureBlockIdsTest {
                         if (NOT_BLOCKS.contains(m.group(1))) {
                             bad.add(f.getFileName() + ":" + (i + 1) + " minecraft:" + m.group(1));
                         }
+                        if (RENAMED.containsKey(m.group(1))) {
+                            bad.add(f.getFileName() + ":" + (i + 1) + " minecraft:" + m.group(1) + " (now minecraft:"
+                                    + RENAMED.get(m.group(1)) + ")");
+                        }
                     }
                 }
             }
         }
-        assertTrue(bad.isEmpty(), "entity ids used as structure blocks: " + bad);
+        assertTrue(bad.isEmpty(), "entity or renamed ids used as structure blocks: " + bad);
     }
 
-    /** Structures rebuilt from the OSRS map since round 26: every block state must exist in 1.20.1. */
+    /** Structures rebuilt from the OSRS map since round 26: every block state must exist in 1.21.1. */
     private static final Set<String> CHECKED = Set.of("watchtower", "rellekka", "rellekka_market", "burthorpe_castle",
             "burthorpe_games_room", "catherby", "draynor_village", "draynor_market", "draynor_manor",
             "taverley", "camelot_castle", "canifis", "pollnivneach", "nardah", "shilo_village",
