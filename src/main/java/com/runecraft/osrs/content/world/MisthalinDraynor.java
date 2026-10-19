@@ -344,6 +344,16 @@ final class MisthalinDraynor {
             k.clear(r.inset(1), 5, 8);
             k.fill(r.inset(1), 4, 4, DARK_PLANKS);
         }
+        // the first-floor west block's partitions (OSRS plane 1): the alcoves north and south along the west wall
+        // (walls at 3360 and 3357 across 3092-3094), the stub off the north wall at 3095, and the wall at x 3103
+        // that closes off the two small east rooms (open to the middle room at 3357; the south room's door at 3105)
+        k.fill(X(3091), 5, Z(3359), X(3094) + 1, 8, Z(3359), wall);
+        k.fill(X(3095), 5, Z(3362), X(3095), 8, Z(3361), wall);
+        k.fill(X(3091), 5, Z(3356), X(3094) + 1, 8, Z(3356), wall);
+        k.fill(X(3103), 5, Z(3361), X(3103), 8, Z(3358) + 1, wall);
+        k.fill(X(3103), 5, Z(3356), X(3103), 8, Z(3354) + 1, wall);
+        k.fill(X(3104), 5, Z(3356), X(3106) + 1, 8, Z(3356), wall);
+        k.clear(X(3105), 5, Z(3356), X(3105) + 1, 7, Z(3356));
         // corner quoins on the outer corners
         for (int[] c : new int[][]{{wWing.x1(), wWing.z1()}, {wWing.x1(), wWing.z2()}, {nwRoom.x1(), nwRoom.z1()}, {northHall.x2(), northHall.z1()},
                 {eWing.x2(), eWing.z1()}, {eWing.x2(), eWing.z2()}, {wWing.x2(), wWing.z1()}, {ballroom.x2(), ballroom.z1()}}) {
@@ -623,7 +633,7 @@ final class MisthalinDraynor {
     /**
      * The Wizards' Tower, traced from the OSRS map (mejrs layers_osrs, planes 0-2 and the basement) and the
      * shortest-path transports: an octagonal tower 13 tiles across (3103-3115, 3154-3166) with a north-west
-     * annex holding the staircase (3103, 3159) and the basement ladder (3104, 3162), on an island joined to
+     * annex holding the staircase (3103-3105, 3159-3161) and the basement ladder (3104, 3162), on an island joined to
      * Draynor's south shore by a long bridge (3112-3115). Three storeys: the ground floor with the north
      * entrance hall, Wizard Traiborn's floor (two halves split at x 3110) and the top floor with Wizard
      * Mizgog and the caged lesser demon (3113, 3162). The basement (Sedridor's study, the Rune Mysteries and
@@ -751,9 +761,23 @@ final class MisthalinDraynor {
         k.table(X(3113), 0, Z(3158)).chair(X(3113) + 1, 0, Z(3158), "west").table(X(3105), 0, Z(3156)).chair(X(3105), 0, Z(3156) - 1, "south");
         k.set(X(3114), 0, Z(3160), "minecraft:enchanting_table").set(X(3112), 0, Z(3155), "minecraft:lectern[facing=north]");
         k.set(X(3109), 3, Z(3157), LANTERN_HANG).set(X(3113), 3, Z(3160), LANTERN_HANG);
-        // ladders: the staircase (3103, 3159) up through both floors, the basement ladder (3104, 3162)
-        k.ladder(annex.x1() + 1, Z(3159), "east", 0, 11);
-        k.ladder(annex.x1() + 1, Z(3159) + 1, "east", 0, 11);
+        // the staircase (OSRS 3103-3105 x 3159-3161: up from 3105,3159 to 3104,3161 on each floor) as two flights,
+        // north up the annex's west side to the first floor, then south beside it to the top floor; the
+        // basement ladder (3104, 3162)
+        for (int i = 0; i < 6; i++) {
+            int z1 = Z(3159) + 1 - i;
+            k.clear(X(3103), i, z1, X(3103) + 1, i + 3, z1);
+            if (i > 0) {
+                k.fill(X(3103), 0, z1, X(3103) + 1, i - 1, z1, STONE_BRICKS);
+            }
+            k.fill(X(3103), i, z1, X(3103) + 1, i, z1, "minecraft:stone_brick_stairs[facing=north,half=bottom]");
+            int z2 = Z(3161) + i;
+            k.clear(X(3104), 6 + i, z2, X(3104) + 1, 9 + i, z2);
+            if (i > 0) {
+                k.fill(X(3104), 6, z2, X(3104) + 1, 5 + i, z2, STONE_BRICKS);
+            }
+            k.fill(X(3104), 6 + i, z2, X(3104) + 1, 6 + i, z2, "minecraft:stone_brick_stairs[facing=south,half=bottom]");
+        }
         int lx = X(3104);
         int lz = Z(3162) + 1;
         k.set(lx, -1, lz, "minecraft:spruce_trapdoor[half=top,facing=north]");
