@@ -35,6 +35,7 @@ final class Cave {
     final List<com.runecraft.osrs.content.skilling.AgilityShortcuts.BlockEnds> shortcuts = new ArrayList<>();
     final List<Dungeons.Passage> passages = new ArrayList<>();
     final List<int[]> multi = new ArrayList<>();
+    private final List<int[]> innerWalls = new ArrayList<>();
     private boolean carved;
 
     Cave(String id, String name, String wall, String floor, String light) {
@@ -172,6 +173,55 @@ final class Cave {
         };
     }
 
+    /**
+     * A floor plan traced tile by tile from the OSRS map (e.g. {@link ApeAtollMaps}): row 0 is cache tile row {@code top},
+     * column 0 cache tile {@code x0}, and (dx, dy) shift the cache tiles to the surface tiles above. Each run of floor
+     * tiles in a row becomes an area on floor f, h blocks high (a run repeated in the next row extends the same area);
+     * 'w', 'n' and 'b' tiles also get a one-block wall along their west / north edge (both for 'b') when carved.
+     */
+    Cave traced(String[] rows, int x0, int top, int dx, int dy, int f, int h) {
+        if (carved) {
+            throw new IllegalStateException(id + ": area added after carve()");
+        }
+        java.util.Map<Long, int[]> open = new java.util.HashMap<>();
+        for (int j = 0; j < rows.length; j++) {
+            String r = rows[j];
+            int z = StructureDef.bz(top - j + dy);
+            java.util.Map<Long, int[]> next = new java.util.HashMap<>();
+            int i = 0;
+            while (i < r.length()) {
+                if (r.charAt(i) == '.') {
+                    i++;
+                    continue;
+                }
+                int s = i;
+                while (i < r.length() && r.charAt(i) != '.') {
+                    char c = r.charAt(i);
+                    int x = StructureDef.bx(x0 + i + dx);
+                    if (c == 'w' || c == 'b') {
+                        innerWalls.add(new int[]{x, f + 1, z, x, f + h, z + 1});
+                    }
+                    if (c == 'n' || c == 'b') {
+                        innerWalls.add(new int[]{x, f + 1, z, x + 1, f + h, z});
+                    }
+                    i++;
+                }
+                long key = ((long) s << 32) | i;
+                int[] a = open.get(key);
+                if (a != null) {
+                    a[5] = z + 1;
+                } else {
+                    a = new int[]{StructureDef.bx(x0 + s + dx), f + 1, z, StructureDef.bx(x0 + i - 1 + dx) + 1, f + h, z + 1};
+                    areas.add(a);
+                    areaFloors.add(floor);
+                }
+                next.put(key, a);
+            }
+            open = next;
+        }
+        return this;
+    }
+
     /** A round cavern of radius r, made of one strip per row. */
     Cave disc(int cx, int cz, int r, int f, int h) {
         return disc(cx, cz, r, f, h, floor);
@@ -207,6 +257,9 @@ final class Cave {
         for (int i = 0; i < areas.size(); i++) {
             int[] a = areas.get(i);
             b.fill(a[0], a[1] - 1, a[2], a[3], a[1] - 1, a[5], areaFloors.get(i));
+        }
+        for (int[] w : innerWalls) {
+            b.fill(w[0], w[1], w[2], w[3], w[4], w[5], wall);
         }
         if (light != null) {
             for (int[] a : areas) {

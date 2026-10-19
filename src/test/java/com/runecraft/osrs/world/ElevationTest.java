@@ -97,11 +97,14 @@ class ElevationTest {
             double inland = Elevation.landDistance(p.osrsX(), p.osrsY());
             assertTrue(inland >= 3, id + " is only " + inland + " tiles from the coast");
         }
-        // The big islands are islands, with open sea around them.
-        for (double[] land : new double[][]{{3186, 2443}, {3150, 2440}, {3225, 2460}, {2566, 2250}, {2540, 2290}, {2855, 2327}}) {
+        // The big islands are islands, with open sea around them (the Great Conch's centre, 3186, 2443, is on its sea inlet).
+        for (double[] land : new double[][]{{3200, 2480}, {3150, 2440}, {3225, 2460}, {2566, 2250}, {2540, 2290}}) {
             assertTrue(Elevation.landDistance(land[0], land[1]) > 8, "inland " + land[0] + "," + land[1]);
         }
-        for (double[] sea : new double[][]{{3186, 2560}, {3110, 2440}, {2566, 2350}, {2700, 2400}, {3000, 2967}}) {
+        // Last Light is a small rock (traced: 2844-2871, 2316-2344) around its lighthouse.
+        assertTrue(Elevation.landDistance(2855, 2327) > 3, "inland Last Light");
+        assertTrue(h(2855, 2300) < Elevation.SEA_LEVEL - 2, "sea south of Last Light");
+        for (double[] sea : new double[][]{{3186, 2585}, {3050, 2440}, {2566, 2350}, {2700, 2400}, {3000, 2967}}) {
             assertTrue(h(sea[0], sea[1]) < Elevation.SEA_LEVEL - 2, "sea at " + sea[0] + "," + sea[1]);
         }
     }

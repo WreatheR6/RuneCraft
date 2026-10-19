@@ -9,8 +9,9 @@ import static com.runecraft.osrs.content.dungeons.Cave.rc;
  * the wiki's LocLine tiles (Kiyogitpy/osrs-wiki-data, July 2026). The dark hole stands on the island (2637, 2416); its
  * landing tile is not in the transport data, so the shift puts it among the lesser demons by the south-west mine
  * (approx). The rooms are boxes around the clusters of the wiki's monster map; the mines' 10 coal, 3 adamantite and 2
- * runite rocks stand in the south-west (rows approx; the rubium rocks, Kragin and the old chest are not in the game). In
- * OSRS everything but the strykewyrms is multicombat; here the dungeon is single-way (approx).
+ * runite rocks stand in the south-west (rows approx) and the 24 rubium rocks in the south-central mine on their wiki
+ * tiles (Kragin, his two rubium deposits and the old chest are not built). In OSRS everything but the strykewyrms is
+ * multicombat; here the whole dungeon is ({@code MultiCombat.UNDERGROUND}, approx for the strykewyrms).
  */
 final class CharredDungeon {
     static final int RESPAWN = CacheDungeons.RESPAWN;

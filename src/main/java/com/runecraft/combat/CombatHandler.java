@@ -365,6 +365,16 @@ public final class CombatHandler {
             ServerNetworking.hitsplat(target, 0, Net.SPLAT_MISS);
             return 0;
         }
+        if (attacker instanceof ServerPlayerEntity gated && !(target instanceof ServerPlayerEntity)) {
+            String denied = CombatHooks.deniedDamage(gated, target);
+            if (denied != null) {
+                if (damage > 0) {
+                    Msg.game(gated, denied);
+                }
+                ServerNetworking.hitsplat(target, 0, Net.SPLAT_MISS);
+                return 0;
+            }
+        }
         if (target instanceof MobEntity mob && attacker != null && mob.getTarget() == null) {
             mob.setTarget(attacker);
         }

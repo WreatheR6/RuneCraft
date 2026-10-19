@@ -221,6 +221,31 @@ public final class CombatHooks {
         return damage;
     }
 
+    /**
+     * Can stop any damage a player deals to a monster, whatever the path (melee, ranged, spells, specials, the cannon,
+     * recoil): e.g. the Kalphite Cave's task-only rule. Returns the message to show, or null to let the damage through.
+     */
+    public interface MonsterDamageGate {
+        String deny(ServerPlayerEntity player, LivingEntity target);
+    }
+
+    private static final List<MonsterDamageGate> MONSTER_GATES = new ArrayList<>();
+
+    public static void addMonsterDamageGate(MonsterDamageGate gate) {
+        MONSTER_GATES.add(gate);
+    }
+
+    /** The first monster-damage gate's refusal, or null when the player may damage this target. */
+    public static String deniedDamage(ServerPlayerEntity player, LivingEntity target) {
+        for (MonsterDamageGate g : MONSTER_GATES) {
+            String m = g.deny(player, target);
+            if (m != null) {
+                return m;
+            }
+        }
+        return null;
+    }
+
     /** The first gate's refusal for this attack, or null when the attack may go ahead. */
     public static String deniedAttack(ServerPlayerEntity p, AttackType type) {
         for (AttackGate g : GATES) {
