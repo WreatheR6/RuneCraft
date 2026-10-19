@@ -208,7 +208,7 @@ final class FarmingHooks {
         net.minecraft.world.entity.player.Inventory inv = player.getInventory();
         for (int i = 0; i < inv.items.size(); i++) {
             ItemStack s = inv.items.get(i);
-            if (s.isEmpty() || s.hasTag()) {
+            if (s.isEmpty() || !s.getComponentsPatch().isEmpty()) {
                 continue;
             }
             String id = Inv.idOf(s);

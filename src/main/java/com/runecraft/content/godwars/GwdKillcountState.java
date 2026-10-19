@@ -1,6 +1,7 @@
 package com.runecraft.content.godwars;
 
 import com.runecraft.osrs.content.godwars.GodWarsFactions.God;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -16,7 +17,7 @@ final class GwdKillcountState extends SavedData {
 
     static GwdKillcountState get(MinecraftServer server) {
         return server.overworld().getDataStorage()
-                .computeIfAbsent(GwdKillcountState::fromNbt, GwdKillcountState::new, KEY);
+                .computeIfAbsent(new SavedData.Factory<>(GwdKillcountState::new, GwdKillcountState::fromNbt, null), KEY);
     }
 
     private int[] of(UUID uuid) {
@@ -33,12 +34,12 @@ final class GwdKillcountState extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag nbt) {
+    public CompoundTag save(CompoundTag nbt, HolderLookup.Provider registries) {
         counts.forEach((uuid, arr) -> nbt.putIntArray(uuid.toString(), arr));
         return nbt;
     }
 
-    static GwdKillcountState fromNbt(CompoundTag nbt) {
+    static GwdKillcountState fromNbt(CompoundTag nbt, HolderLookup.Provider registries) {
         GwdKillcountState state = new GwdKillcountState();
         for (String key : nbt.getAllKeys()) {
             try {

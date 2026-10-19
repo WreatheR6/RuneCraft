@@ -400,7 +400,7 @@ public final class SeaHooks {
             return null;
         }
         mob.moveTo(pos.x, pos.y, pos.z, RNG.nextFloat() * 360f, 0);
-        mob.finalizeSpawn(world, world.getCurrentDifficultyAt(mob.blockPosition()), MobSpawnType.MOB_SUMMONED, null, null);
+        mob.finalizeSpawn(world, world.getCurrentDifficultyAt(mob.blockPosition()), MobSpawnType.MOB_SUMMONED, null);
         mob.setNoAi(true);
         mob.addTag(SEA_TAG);
         world.addFreshEntity(mob);
@@ -886,7 +886,7 @@ public final class SeaHooks {
             sp.engaged = true;
         }
         ServerLevel world = (ServerLevel) player.level();
-        world.playSound(null, player.blockPosition(), SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 0.5f, 1.5f);
+        world.playSound(null, player.blockPosition(), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.5f, 1.5f);
         world.sendParticles(ParticleTypes.EXPLOSION, target.getX(), target.getY() + 0.5, target.getZ(), 1, 0, 0, 0, 0);
         int max = SailingCrew.crewMaxHit(SkillingUtil.level(player, Skill.SAILING), cannon, ball, c.privateering());
         boolean hit = sp == null || RNG.nextDouble() < SailingSea.cannonAccuracy(cannon, ball, false, sp.creature);
@@ -1016,7 +1016,7 @@ public final class SeaHooks {
         SailingCrew.Special special = SailingCrew.special(item);
         SailingSea.SeaCreature c = sp != null ? sp.creature : null;
         ServerLevel world = (ServerLevel) player.level();
-        world.playSound(null, player.blockPosition(), SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 0.6f, 1.4f);
+        world.playSound(null, player.blockPosition(), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.6f, 1.4f);
         world.sendParticles(ParticleTypes.EXPLOSION, target.getX(), target.getY() + 0.5, target.getZ(), 1, 0, 0, 0, 0);
         int max = SailingSea.cannonMaxHit(SkillingUtil.level(player, Skill.RANGED), cannon, ball, true);
         boolean hit = c == null || RNG.nextDouble() < SailingSea.cannonAccuracy(cannon, ball, true, c);

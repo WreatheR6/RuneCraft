@@ -1,5 +1,6 @@
 package com.runecraft.content.quests;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -27,7 +28,7 @@ public final class QuestsState extends SavedData {
     private final Map<UUID, Map<String, Integer>> kills = new HashMap<>();
 
     public static QuestsState get(MinecraftServer server) {
-        return server.overworld().getDataStorage().computeIfAbsent(QuestsState::fromNbt, QuestsState::new, KEY);
+        return server.overworld().getDataStorage().computeIfAbsent(new SavedData.Factory<>(QuestsState::new, QuestsState::fromNbt, null), KEY);
     }
 
     public static QuestsState get(ServerPlayer player) {
@@ -112,7 +113,7 @@ public final class QuestsState extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag nbt) {
+    public CompoundTag save(CompoundTag nbt, HolderLookup.Provider registries) {
         CompoundTag flagsNbt = new CompoundTag();
         flags.forEach((uuid, set) -> {
             ListTag list = new ListTag();
@@ -137,7 +138,7 @@ public final class QuestsState extends SavedData {
         return nbt;
     }
 
-    public static QuestsState fromNbt(CompoundTag nbt) {
+    public static QuestsState fromNbt(CompoundTag nbt, HolderLookup.Provider registries) {
         QuestsState state = new QuestsState();
         CompoundTag flagsNbt = nbt.getCompound("Flags");
         for (String key : flagsNbt.getAllKeys()) {

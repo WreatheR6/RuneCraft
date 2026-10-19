@@ -176,7 +176,7 @@ abstract class GwdScript implements BossScript {
             return null;
         }
         mob.moveTo(boss.getX() + dx, boss.getY(), boss.getZ() + dz, boss.getRandom().nextFloat() * 360f, 0);
-        mob.finalizeSpawn(world, world.getCurrentDifficultyAt(mob.blockPosition()), MobSpawnType.MOB_SUMMONED, null, null);
+        mob.finalizeSpawn(world, world.getCurrentDifficultyAt(mob.blockPosition()), MobSpawnType.MOB_SUMMONED, null);
         if (boss.getTarget() != null) {
             mob.setTarget(boss.getTarget());
         }

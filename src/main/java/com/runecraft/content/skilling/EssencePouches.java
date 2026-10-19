@@ -3,6 +3,7 @@ package com.runecraft.content.skilling;
 import com.runecraft.osrs.content.skilling.RunecraftData;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
+import com.runecraft.util.StackData;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -25,14 +26,14 @@ public final class EssencePouches {
         for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
             ItemStack s = player.getInventory().getItem(i);
             RunecraftData.Pouch p = s.isEmpty() ? null : RunecraftData.pouch(Inv.idOf(s));
-            CompoundTag nbt = p == null ? null : s.getTag();
+            CompoundTag nbt = p == null ? null : StackData.get(s);
             if (nbt == null || !nbt.contains(USED_NBT)) {
                 continue;
             }
             if (RunecraftData.degraded(p, nbt.getInt(USED_NBT))) {
                 repaired++;
             }
-            nbt.putInt(USED_NBT, 0);
+            StackData.update(s, t -> t.putInt(USED_NBT, 0));
         }
         return repaired;
     }

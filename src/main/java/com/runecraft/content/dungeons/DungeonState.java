@@ -1,5 +1,6 @@
 package com.runecraft.content.dungeons;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -15,7 +16,7 @@ final class DungeonState extends SavedData {
 
     static DungeonState get(MinecraftServer server) {
         return server.overworld().getDataStorage()
-                .computeIfAbsent(DungeonState::fromNbt, DungeonState::new, KEY);
+                .computeIfAbsent(new SavedData.Factory<>(DungeonState::new, DungeonState::fromNbt, null), KEY);
     }
 
     boolean hasClaimed(UUID uuid, int chest) {
@@ -28,12 +29,12 @@ final class DungeonState extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag nbt) {
+    public CompoundTag save(CompoundTag nbt, HolderLookup.Provider registries) {
         claimed.forEach((uuid, mask) -> nbt.putInt(uuid.toString(), mask));
         return nbt;
     }
 
-    static DungeonState fromNbt(CompoundTag nbt) {
+    static DungeonState fromNbt(CompoundTag nbt, HolderLookup.Provider registries) {
         DungeonState state = new DungeonState();
         for (String key : nbt.getAllKeys()) {
             try {

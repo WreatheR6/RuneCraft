@@ -1,6 +1,7 @@
 package com.runecraft.content.bosses;
 
 import com.runecraft.osrs.content.bosses.DoomDelves;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -28,7 +29,7 @@ final class DoomDelveState extends SavedData {
 
     static DoomDelveState get(MinecraftServer server) {
         return server.overworld().getDataStorage()
-                .computeIfAbsent(DoomDelveState::fromNbt, DoomDelveState::new, KEY);
+                .computeIfAbsent(new SavedData.Factory<>(DoomDelveState::new, DoomDelveState::fromNbt, null), KEY);
     }
 
     Run get(UUID uuid) {
@@ -54,7 +55,7 @@ final class DoomDelveState extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag nbt) {
+    public CompoundTag save(CompoundTag nbt, HolderLookup.Provider registries) {
         runs.forEach((uuid, run) -> {
             CompoundTag c = new CompoundTag();
             c.putInt("Completed", run.completed);
@@ -65,7 +66,7 @@ final class DoomDelveState extends SavedData {
         return nbt;
     }
 
-    static DoomDelveState fromNbt(CompoundTag nbt) {
+    static DoomDelveState fromNbt(CompoundTag nbt, HolderLookup.Provider registries) {
         DoomDelveState state = new DoomDelveState();
         for (String key : nbt.getAllKeys()) {
             try {

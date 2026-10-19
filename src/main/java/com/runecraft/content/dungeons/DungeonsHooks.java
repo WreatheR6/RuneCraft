@@ -577,7 +577,7 @@ public final class DungeonsHooks implements ModuleHooks {
         }
         entity.moveTo(eadgar[0] + 0.5, eadgar[1], eadgar[2] + 0.5, 180f, 0f);
         entity.setNpc(def);
-        entity.finalizeSpawn(world, world.getCurrentDifficultyAt(entity.blockPosition()), net.minecraft.world.entity.MobSpawnType.STRUCTURE, null, null);
+        entity.finalizeSpawn(world, world.getCurrentDifficultyAt(entity.blockPosition()), net.minecraft.world.entity.MobSpawnType.STRUCTURE, null);
         world.addFreshEntity(entity);
     }
 

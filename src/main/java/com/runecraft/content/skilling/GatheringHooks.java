@@ -25,6 +25,7 @@ import com.runecraft.skill.Tools;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
+import com.runecraft.util.StackData;
 import com.runecraft.platform.UseEntityCallback;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -833,7 +834,7 @@ public final class GatheringHooks {
 
     /** Jar generator: an impling jar for 3 charges (sneak: a butterfly jar for 1). */
     static void useJarGenerator(ServerPlayer player, ItemStack stack) {
-        CompoundTag nbt = stack.getOrCreateTag();
+        CompoundTag nbt = StackData.get(stack);
         int charges = nbt.contains(JAR_GENERATOR_NBT) ? nbt.getInt(JAR_GENERATOR_NBT) : HunterData.JAR_GENERATOR_CHARGES;
         boolean butterfly = player.isShiftKeyDown();
         int cost = butterfly ? HunterData.JAR_GENERATOR_BUTTERFLY_COST : HunterData.JAR_GENERATOR_IMPLING_COST;
@@ -844,7 +845,7 @@ public final class GatheringHooks {
             }
             return;
         }
-        nbt.putInt(JAR_GENERATOR_NBT, charges - cost);
+        StackData.update(stack, t -> t.putInt(JAR_GENERATOR_NBT, charges - cost));
         SkillingUtil.give(player, butterfly ? "butterfly_jar" : "impling_jar", 1);
         Msg.action(player, "Your jar generator makes " + (butterfly ? "a butterfly jar" : "an impling jar") + " (" + (charges - cost)
                 + " charges left).");
