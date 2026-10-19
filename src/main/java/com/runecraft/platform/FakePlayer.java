@@ -13,7 +13,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.CommonListenerCookie;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 import java.util.UUID;
@@ -51,7 +50,7 @@ public final class FakePlayer extends net.neoforged.neoforge.common.util.FakePla
         }
 
         @Override
-        public void send(Packet<?> packet, @Nullable PacketSendListener listener) {
+        public void send(Packet<?> packet, PacketSendListener listener) {
         }
 
         @Override
