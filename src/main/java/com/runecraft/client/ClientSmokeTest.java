@@ -489,6 +489,78 @@ public final class ClientSmokeTest {
     }
 
     /**
+     * Chunk holders that still have a generation reference (ChunkMap.processUnloads skips them forever): their
+     * status futures (S done, E failed/unloaded, P pending, - none) and the generation tasks holding them.
+     */
+    private static void stuckHolders(net.minecraft.server.level.ChunkMap map, StringBuilder out) {
+        try {
+            java.lang.reflect.Field updating = net.minecraft.server.level.ChunkMap.class.getDeclaredField("updatingChunkMap");
+            updating.setAccessible(true);
+            java.lang.reflect.Field futures = net.minecraft.server.level.GenerationChunkHolder.class.getDeclaredField("futures");
+            futures.setAccessible(true);
+            java.lang.reflect.Field task = net.minecraft.server.level.GenerationChunkHolder.class.getDeclaredField("task");
+            task.setAccessible(true);
+            java.lang.reflect.Field started = net.minecraft.server.level.GenerationChunkHolder.class.getDeclaredField("startedWork");
+            started.setAccessible(true);
+            java.lang.reflect.Field allowed = net.minecraft.server.level.GenerationChunkHolder.class.getDeclaredField("highestAllowedStatus");
+            allowed.setAccessible(true);
+            Map<?, ?> holders = (Map<?, ?>) updating.get(map);
+            int withRef = 0;
+            int withTask = 0;
+            int shown = 0;
+            java.util.Set<Object> tasks = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+            for (Object o : holders.values()) {
+                net.minecraft.server.level.ChunkHolder h = (net.minecraft.server.level.ChunkHolder) o;
+                Object t = ((java.util.concurrent.atomic.AtomicReference<?>) task.get(h)).get();
+                if (t != null) {
+                    withTask++;
+                    tasks.add(t);
+                }
+                if (h.getGenerationRefCount() == 0) {
+                    continue;
+                }
+                withRef++;
+                if (shown++ >= 12) {
+                    continue;
+                }
+                java.util.concurrent.atomic.AtomicReferenceArray<?> fs = (java.util.concurrent.atomic.AtomicReferenceArray<?>) futures.get(h);
+                StringBuilder states = new StringBuilder();
+                for (int i = 0; i < fs.length(); i++) {
+                    Object f = fs.get(i);
+                    states.append(f == null ? '-' : !((java.util.concurrent.CompletableFuture<?>) f).isDone() ? 'P'
+                            : ((net.minecraft.server.level.ChunkResult<?>) ((java.util.concurrent.CompletableFuture<?>) f).getNow(null)).isSuccess() ? 'S' : 'E');
+                }
+                out.append("\n  holder ").append(h.getPos()).append(" ref=").append(h.getGenerationRefCount())
+                        .append(" level=").append(h.getTicketLevel()).append(" persisted=").append(h.getPersistedStatus())
+                        .append(" latest=").append(h.getLatestStatus()).append(" started=")
+                        .append(((java.util.concurrent.atomic.AtomicReference<?>) started.get(h)).get())
+                        .append(" allowed=").append(allowed.get(h)).append(" futures=").append(states)
+                        .append(" task=").append(t != null);
+            }
+            out.append("\n  holders with a generation ref: ").append(withRef).append(", with a task: ").append(withTask);
+            int n = 0;
+            for (Object t : tasks) {
+                if (n++ >= 10) {
+                    break;
+                }
+                StringBuilder fields = new StringBuilder();
+                for (String name : List.of("pos", "targetStatus", "scheduledStatus", "markedForCancellation", "needsGeneration")) {
+                    java.lang.reflect.Field f = t.getClass().getDeclaredField(name);
+                    f.setAccessible(true);
+                    fields.append(' ').append(name).append('=').append(f.get(t));
+                }
+                java.lang.reflect.Field layer = t.getClass().getDeclaredField("scheduledLayer");
+                layer.setAccessible(true);
+                List<?> pending = (List<?>) layer.get(t);
+                long waiting = pending.stream().filter(f -> !((java.util.concurrent.CompletableFuture<?>) f).isDone()).count();
+                out.append("\n  task").append(fields).append(" layer=").append(pending.size()).append(" pending=").append(waiting);
+            }
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            out.append("\n  holders: ").append(e);
+        }
+    }
+
+    /**
      * What keeps MinecraftServer.stopServer draining chunks: each term of ChunkMap.hasWork() per level (read from
      * another thread without locks, so only indicative), plus the remaining tickets.
      */
@@ -515,6 +587,9 @@ public final class ClientSmokeTest {
                 } catch (ReflectiveOperationException | RuntimeException e) {
                     out.append(' ').append(name).append("=?");
                 }
+            }
+            if (map.hasWork()) {
+                stuckHolders(map, out);
             }
             try {
                 java.lang.reflect.Field f = net.minecraft.server.level.DistanceManager.class.getDeclaredField("tickets");
