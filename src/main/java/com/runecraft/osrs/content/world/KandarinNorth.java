@@ -336,6 +336,10 @@ final class KandarinNorth {
         // 0: climb the rough wall on the north side of Yrsa's shop (OSRS 2625, 3678)
         int lx = KandarinKit.X(2624);
         for (int dx = 0; dx < 4; dx++) {
+            // not against one of D's windows (x1 + 2 + 4k): a fence window can't hold the rung in front of it
+            if (Math.floorMod(KandarinKit.X(2624) + dx - d.x1() - 2, 4) == 0) {
+                continue;
+            }
             if (k.ladder(KandarinKit.X(2624) + dx, d.z1() - 1, 0, top, "north")) {
                 lx = KandarinKit.X(2624) + dx;
                 break;
