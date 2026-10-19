@@ -430,7 +430,7 @@ public final class ClientSmokeTest {
             }
             LOG.error("RUNECRAFT CLIENT SMOKE: FAILED ({} errors)", ERRORS.size());
         }
-        startQuitWatchdog();
+        startQuitWatchdog(client.getSingleplayerServer());
         try {
             if (client.level != null) {
                 boolean singleplayer = client.isLocalServer();
@@ -454,14 +454,20 @@ public final class ClientSmokeTest {
      * If quitting hangs (e.g. the integrated server never shuts down), logs every thread's stack after
      * QUIT_TIMEOUT_MS and exits with code 3 so CI shows where it stuck instead of waiting for its timeout.
      */
-    private static void startQuitWatchdog() {
+    private static void startQuitWatchdog(MinecraftServer server) {
         Thread t = new Thread(() -> {
             try {
                 Thread.sleep(QUIT_TIMEOUT_MS);
             } catch (InterruptedException e) {
                 return;
             }
-            StringBuilder dump = new StringBuilder("[ClientSmoke] quit stuck after " + QUIT_TIMEOUT_MS / 1000 + "s; thread dump:");
+            StringBuilder dump = new StringBuilder("[ClientSmoke] quit stuck after " + QUIT_TIMEOUT_MS / 1000 + "s");
+            try {
+                chunkWork(server, dump);
+            } catch (RuntimeException e) {
+                dump.append("\n[chunks] unreadable: ").append(e);
+            }
+            dump.append("\nthread dump:");
             for (Map.Entry<Thread, StackTraceElement[]> e : Thread.getAllStackTraces().entrySet()) {
                 dump.append("\n\"").append(e.getKey().getName()).append("\" ").append(e.getKey().getState());
                 for (StackTraceElement frame : e.getValue()) {
@@ -480,5 +486,45 @@ public final class ClientSmokeTest {
         }, "RuneCraft smoke quit watchdog");
         t.setDaemon(true);
         t.start();
+    }
+
+    /**
+     * What keeps MinecraftServer.stopServer draining chunks: each term of ChunkMap.hasWork() per level (read from
+     * another thread without locks, so only indicative), plus the remaining tickets.
+     */
+    private static void chunkWork(MinecraftServer server, StringBuilder out) {
+        if (server == null) {
+            return;
+        }
+        for (ServerLevel level : server.getAllLevels()) {
+            net.minecraft.server.level.ChunkMap map = level.getChunkSource().chunkMap;
+            out.append("\n[chunks] ").append(level.dimension().location())
+                    .append(" hasWork=").append(map.hasWork())
+                    .append(" holders=").append(map.size())
+                    .append(" light=").append(level.getChunkSource().getLightEngine().hasLightWork())
+                    .append(" poi=").append(level.getPoiManager().hasWork())
+                    .append(" tickets=").append(map.getDistanceManager().hasTickets())
+                    .append(" (").append(map.getDistanceManager().getDebugStatus()).append(')');
+            for (String name : List.of("pendingUnloads", "updatingChunkMap", "toDrop", "unloadQueue", "pendingGenerationTasks", "queueSorter")) {
+                try {
+                    java.lang.reflect.Field f = net.minecraft.server.level.ChunkMap.class.getDeclaredField(name);
+                    f.setAccessible(true);
+                    Object v = f.get(map);
+                    out.append(' ').append(name).append('=').append(v instanceof Map<?, ?> m ? m.size()
+                            : v instanceof java.util.Collection<?> c ? c.size() : String.valueOf(v));
+                } catch (ReflectiveOperationException | RuntimeException e) {
+                    out.append(' ').append(name).append("=?");
+                }
+            }
+            try {
+                java.lang.reflect.Field f = net.minecraft.server.level.DistanceManager.class.getDeclaredField("tickets");
+                f.setAccessible(true);
+                Map<?, ?> tickets = (Map<?, ?>) f.get(map.getDistanceManager());
+                tickets.entrySet().stream().limit(20).forEach(e -> out.append("\n  ticket ")
+                        .append(new net.minecraft.world.level.ChunkPos((Long) e.getKey())).append(' ').append(e.getValue()));
+            } catch (ReflectiveOperationException | RuntimeException e) {
+                out.append("\n  tickets: ").append(e);
+            }
+        }
     }
 }
