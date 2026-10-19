@@ -13,7 +13,7 @@ fi
 OUT=$(mktemp -d)
 CP=$(ls "$CP_DIR"/*.jar | tr '\n' ':')
 find src/main/java -name '*.java' > "$OUT/sources.txt"
-JAVA_TOOL_OPTIONS="" javac --release 21 -proc:none -nowarn -Xmaxerrs 100000 -encoding UTF-8 -cp "$CP" -d "$OUT/classes" @"$OUT/sources.txt" > "$OUT/javac.log" 2>&1
+JAVA_TOOL_OPTIONS="" javac --release 21 -proc:none -nowarn -XDshould-stop.ifError=FLOW -Xmaxerrs 100000 -encoding UTF-8 -cp "$CP" -d "$OUT/classes" @"$OUT/sources.txt" > "$OUT/javac.log" 2>&1
 code=$?
 cat "$OUT/javac.log"
 n=$(grep -c ': error:' "$OUT/javac.log")
