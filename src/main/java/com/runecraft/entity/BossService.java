@@ -51,7 +51,7 @@ public final class BossService {
         }
         BlockPos spawn = pos.above().relative(player.getDirection().getOpposite(), 0);
         entity.moveTo(spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5, world.getRandom().nextFloat() * 360f, 0);
-        entity.finalizeSpawn(world, world.getCurrentDifficultyAt(spawn), MobSpawnType.EVENT, null, null);
+        entity.finalizeSpawn(world, world.getCurrentDifficultyAt(spawn), MobSpawnType.EVENT, null);
         entity.setTarget(player);
         world.addFreshEntity(entity);
         spawnBodyguards(world, boss, spawn, player);
@@ -71,7 +71,7 @@ public final class BossService {
             if (type.create(world) instanceof net.minecraft.world.entity.Mob mob) {
                 mob.moveTo(center.getX() + 0.5 + Math.cos(angle) * 4, center.getY(),
                         center.getZ() + 0.5 + Math.sin(angle) * 4, 0, 0);
-                mob.finalizeSpawn(world, world.getCurrentDifficultyAt(mob.blockPosition()), MobSpawnType.EVENT, null, null);
+                mob.finalizeSpawn(world, world.getCurrentDifficultyAt(mob.blockPosition()), MobSpawnType.EVENT, null);
                 mob.setTarget(player);
                 world.addFreshEntity(mob);
             }

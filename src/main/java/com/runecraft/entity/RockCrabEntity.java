@@ -34,9 +34,9 @@ public class RockCrabEntity extends OsrsMonsterEntity implements Disguisable {
     }
 
     @Override
-    protected void defineSynchedData() {
-        super.defineSynchedData();
-        this.entityData.define(DISGUISED, true);
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(DISGUISED, true);
     }
 
     @Override

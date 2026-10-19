@@ -220,7 +220,7 @@ public final class LandmarkBuilder {
             entity.moveTo(feet.getX() + 0.5, below != null ? below : NpcFloor.feetY(world, feet), feet.getZ() + 0.5,
                     world.getRandom().nextFloat() * 360f, 0);
             entity.setNpc(npc);
-            entity.finalizeSpawn(world, world.getCurrentDifficultyAt(entity.blockPosition()), MobSpawnType.STRUCTURE, null, null);
+            entity.finalizeSpawn(world, world.getCurrentDifficultyAt(entity.blockPosition()), MobSpawnType.STRUCTURE, null);
             world.addFreshEntity(entity);
         }
         for (java.util.function.BiConsumer<ServerLevel, BlockPos> custom : CUSTOM.getOrDefault(placeId, List.of())) {
@@ -511,7 +511,7 @@ public final class LandmarkBuilder {
             entity.moveTo(feet.getX() + 0.5, NpcFloor.feetY(world, feet), feet.getZ() + 0.5,
                     world.getRandom().nextFloat() * 360f, 0);
             entity.setNpc(npc);
-            entity.finalizeSpawn(world, world.getCurrentDifficultyAt(entity.blockPosition()), MobSpawnType.STRUCTURE, null, null);
+            entity.finalizeSpawn(world, world.getCurrentDifficultyAt(entity.blockPosition()), MobSpawnType.STRUCTURE, null);
             world.addFreshEntity(entity);
         } catch (RuntimeException e) {
             RuneCraft.LOGGER.error("Failed to spawn quest NPC {}", npc, e);
@@ -534,7 +534,7 @@ public final class LandmarkBuilder {
             entity.moveTo(feet.getX() + 0.5, NpcFloor.feetY(world, feet), feet.getZ() + 0.5,
                     world.getRandom().nextFloat() * 360f, 0);
             entity.setNpc(npc);
-            entity.finalizeSpawn(world, world.getCurrentDifficultyAt(entity.blockPosition()), MobSpawnType.STRUCTURE, null, null);
+            entity.finalizeSpawn(world, world.getCurrentDifficultyAt(entity.blockPosition()), MobSpawnType.STRUCTURE, null);
             world.addFreshEntity(entity);
         }
     }

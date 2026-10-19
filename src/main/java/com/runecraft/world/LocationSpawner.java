@@ -305,7 +305,7 @@ public final class LocationSpawner {
             return;
         }
         mob.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, world.getRandom().nextFloat() * 360f, 0);
-        mob.finalizeSpawn(world, world.getCurrentDifficultyAt(pos), MobSpawnType.SPAWNER, null, null);
+        mob.finalizeSpawn(world, world.getCurrentDifficultyAt(pos), MobSpawnType.SPAWNER, null);
         if (mob instanceof Zombie zombie) {
             zombie.setBaby(false); // OSRS zombies are all grown up
         }

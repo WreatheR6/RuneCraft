@@ -1,5 +1,6 @@
 package com.runecraft.skill;
 
+import com.runecraft.RuneCraft;
 import com.runecraft.network.ServerNetworking;
 import com.runecraft.osrs.Experience;
 import com.runecraft.osrs.Skill;
@@ -8,12 +9,12 @@ import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
 import com.runecraft.world.Gielinor;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiPredicate;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -24,7 +25,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 
 /** Grants experience, announces level-ups and keeps derived stats (max HP) in sync. */
 public final class XpService {
-    private static final UUID HITPOINTS_MODIFIER = UUID.fromString("5d2a7c3e-6b8e-4f63-9a51-0e1c2b3a4d5f");
+    private static final ResourceLocation HITPOINTS_MODIFIER = RuneCraft.id("hitpoints");
     /** Gates that can withhold experience (registered by modules, e.g. Nightmare Zone practice dreams give none). */
     private static final List<BiPredicate<ServerPlayer, Skill>> GATES = new CopyOnWriteArrayList<>();
 
@@ -105,8 +106,8 @@ public final class XpService {
             int hp = Players.data(player).skills().level(Skill.HITPOINTS);
             double delta = hp - health.getBaseValue();
             if (delta != 0) {
-                health.addTransientModifier(new AttributeModifier(HITPOINTS_MODIFIER, "RuneCraft Hitpoints",
-                        delta, AttributeModifier.Operation.ADDITION));
+                health.addTransientModifier(new AttributeModifier(HITPOINTS_MODIFIER, delta,
+                        AttributeModifier.Operation.ADD_VALUE));
             }
         }
         if (player.getHealth() > player.getMaxHealth()) {
