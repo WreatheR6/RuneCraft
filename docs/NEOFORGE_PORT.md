@@ -90,13 +90,66 @@ All game events go on `NeoForge.EVENT_BUS`; registration and client setup events
 
 Worldgen, dimension, damage-type JSON and block/item models carry over (1.21.1 still uses the `models/item` layout; the 1.21.4 item-definition format does not apply).
 
+## Compiling locally
+
+`tools/compile_full.sh <dir>` compiles `src/main/java` against the real NeoForge classpath. CI's
+`exportClasspath` step publishes those jars as `neoforge-classpath.zip` on the `dev-latest` release
+(release assets download even where CI artifact storage is blocked):
+
+    mkdir -p /tmp/nfcp && cd /tmp/nfcp && curl -sSL -o cp.zip \
+      https://github.com/WreatheR6/RuneCraft/releases/download/dev-latest/neoforge-classpath.zip && unzip -q cp.zip
+    tools/compile_full.sh /tmp/nfcp
+
+## 1.21.1 fix guide (how each compile error is fixed)
+
+Keep behaviour identical; only adapt to the new API. Shared helpers: `com.runecraft.util.StackData`,
+`com.runecraft.platform.*` (the Fabric-shaped facade; don't edit it from feature code).
+
+- **Stack NBT** → `StackData` (the `custom_data` component). `stack.getTag()` → `StackData.get(stack)` (a *copy*,
+  never null: an old `tag != null` check stays harmless, `tag == null` means `!StackData.has(stack)`);
+  `hasTag()` → `StackData.has`; `getOrCreateTag().putX(..)` and any edit of a fetched tag →
+  `StackData.update(stack, t -> ...)` (edits to the copy are lost otherwise); `setTag(t)` → `StackData.set`.
+  `ItemStack.isSameItemSameTags` → `ItemStack.isSameItemSameComponents`. "Plain, stackable stack" checks →
+  `stack.getComponentsPatch().isEmpty()`.
+- **ItemStack save/load** need a `HolderLookup.Provider` (`level.registryAccess()`, `server.registryAccess()`, or the
+  provider passed to `SavedData.save`/load): `ItemStack.of(tag)` → `ItemStack.parseOptional(provider, tag)`;
+  `stack.save(new CompoundTag())` → `stack.saveOptional(provider)` (`save` throws on an empty stack).
+- **SavedData**: `save(CompoundTag tag, HolderLookup.Provider registries)`; loaders take `(CompoundTag, Provider)`;
+  `storage.computeIfAbsent(load, create, name)` →
+  `storage.computeIfAbsent(new SavedData.Factory<>(Ctor::new, Cls::load, null), name)`.
+- **Mob spawning**: `finalizeSpawn(level, difficulty, reason, data, nbt)` → drop the last argument (4 params).
+  `defineSynchedData()` → `defineSynchedData(SynchedEntityData.Builder builder)` + `builder.define(KEY, value)`
+  (call `super.defineSynchedData(builder)` first).
+- **Sounds**: many `SoundEvents` constants are `Holder.Reference<SoundEvent>` now → `.value()` where a `SoundEvent`
+  is needed (or pass the holder to a `Holder<SoundEvent>` overload).
+- **Screens**: `renderBackground(g)` → `renderBackground(g, mouseX, mouseY, partialTick)`, but 1.21's
+  `Screen.render` already draws the background (with blur) and blurring twice in a frame throws
+  `IllegalStateException: Can only blur once per frame`: when the method also calls `super.render(...)`, remove
+  the explicit call instead. `mouseScrolled(x, y, amount)` → `mouseScrolled(x, y, scrollX, scrollY)` (use
+  `scrollY`). `GenericDirtMessageScreen` → `GenericMessageScreen`.
+- **Models**: `render(pose, vc, light, overlay, r, g, b, a)` → `render(pose, vc, light, overlay, argbColor)`
+  (`renderToBuffer` likewise; `-1` for opaque white).
+- **Attribute modifiers**: `AttributeModifier(ResourceLocation id, double, Operation)` (no UUID, no name);
+  `ADDITION` → `ADD_VALUE`, `MULTIPLY_BASE` → `ADD_MULTIPLIED_BASE`, `MULTIPLY_TOTAL` → `ADD_MULTIPLIED_TOTAL`;
+  `removeModifier(ResourceLocation)`. Derive the id from the old UUID's purpose, e.g. `RuneCraft.id("prayer_boost")`.
+- **Items**: `appendHoverText(stack, level, lines, flag)` → `(stack, Item.TooltipContext ctx, lines, flag)`;
+  `getUseDuration(stack)` → `getUseDuration(stack, LivingEntity entity)`; `Item#getMaxStackSize()` →
+  `getDefaultMaxStackSize()`. Tools: `Tier#getIncorrectBlocksForDrops()` replaces `getLevel()`;
+  `SwordItem(tier, props.attributes(SwordItem.createAttributes(tier, dmg, speed)))`, `AxeItem`/`PickaxeItem` with
+  `DiggerItem.createAttributes`. Armour: `ArmorMaterial` is a record registered in `ARMOR_MATERIAL`
+  (`Holder<ArmorMaterial>`), durability moves to `Item.Properties.durability(type.getDurability(n))`.
+- **Blocks**: `use(state, level, pos, player, hand, hit)` → `useWithoutItem(state, level, pos, player, hit)`
+  returning `InteractionResult` (or `useItemOn(...)` returning `ItemInteractionResult` when the held item matters).
+  Abstract `codec()` on `BaseEntityBlock`/`HorizontalDirectionalBlock` subclasses: `simpleCodec(Ctor::new)`.
+- **Arrows**: `new Arrow(level, shooter, pickupStack, weaponStack)` (pickup = the arrow item stack, weapon may be null).
+
 ## Status
 
-- [ ] Phase 1 freeze
-- [ ] Phase 2 Mojang mappings on Fabric 1.20.1 (CI green)
-- [ ] Phase 3 build switch
-- [ ] Phase 4 loader API port
-- [ ] Phase 5 1.21.1 API port
+- [x] Phase 1 freeze (CI green on 389aca80: server 3046/0, client 368/0)
+- [x] Phase 2 Mojang mappings on Fabric 1.20.1 (CI green on bcd2a480, same self-test results)
+- [x] Phase 3 build switch (ModDevGradle, NeoForge 21.1.220, Java 21)
+- [x] Phase 4 loader API port (com.runecraft.platform facade, @Mod entry points, RegisterEvent registries)
+- [ ] Phase 5 1.21.1 API port (in progress: compile errors by package)
 - [ ] Phase 6 resources
-- [ ] Phase 7 CI and smoke scripts
+- [x] Phase 7 CI and smoke scripts (NeoForge installer server, runClientSmoke, classpath asset)
 - [ ] Phase 8 green self-tests, Fabric retired

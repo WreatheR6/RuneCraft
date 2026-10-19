@@ -20,7 +20,7 @@ public record RawPayload(ResourceLocation channel, byte[] data) implements Custo
             },
             buf -> new RawPayload(buf.readResourceLocation(), buf.readByteArray()));
 
-    static RawPayload of(ResourceLocation channel, FriendlyByteBuf buf) {
+    public static RawPayload of(ResourceLocation channel, FriendlyByteBuf buf) {
         byte[] bytes = new byte[buf.readableBytes()];
         buf.getBytes(buf.readerIndex(), bytes);
         return new RawPayload(channel, bytes);

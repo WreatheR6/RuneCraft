@@ -7,6 +7,7 @@ import com.runecraft.entity.OsrsMonsterEntity;
 import com.runecraft.entity.QuestNpcEntity;
 import com.runecraft.osrs.data.Boss;
 import com.runecraft.osrs.data.Monster;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
@@ -146,7 +147,7 @@ public final class ModEntities {
     /** Entity type for a RuneCraft creature id (built-in, module monster or boss), or a vanilla "minecraft:" id. */
     public static EntityType<?> typeById(String id) {
         if (id.contains(":")) {
-            return BuiltInRegistries.ENTITY_TYPE.get(new net.minecraft.resources.ResourceLocation(id));
+            return BuiltInRegistries.ENTITY_TYPE.get(net.minecraft.resources.ResourceLocation.parse(id));
         }
         return BY_ID.get(id);
     }

@@ -1,6 +1,7 @@
 package com.runecraft.world;
 
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.runecraft.osrs.GielinorMap;
 import com.runecraft.osrs.Region;
@@ -21,7 +22,7 @@ import net.minecraft.world.level.biome.Climate;
  * model instead: {@code sea} for the open sea and {@code mountain_peaks} for snow-capped summits.
  */
 public class GielinorBiomeSource extends BiomeSource {
-    public static final Codec<GielinorBiomeSource> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+    public static final MapCodec<GielinorBiomeSource> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             Codec.unboundedMap(Codec.STRING, Biome.CODEC).fieldOf("biomes").forGetter(s -> s.byName)
     ).apply(instance, instance.stable(GielinorBiomeSource::new)));
 
@@ -52,7 +53,7 @@ public class GielinorBiomeSource extends BiomeSource {
     }
 
     @Override
-    protected Codec<? extends BiomeSource> codec() {
+    protected MapCodec<? extends BiomeSource> codec() {
         return CODEC;
     }
 

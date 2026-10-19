@@ -90,7 +90,7 @@ public final class Inv {
         }
         int left = amount;
         while (left > 0) {
-            int n = Math.min(left, item.getMaxStackSize());
+            int n = Math.min(left, item.getDefaultMaxStackSize());
             give(player, new ItemStack(item, n));
             left -= n;
         }
@@ -114,7 +114,7 @@ public final class Inv {
         Inventory inv = player.getInventory();
         for (int i = 0; i < inv.items.size(); i++) {
             ItemStack s = inv.items.get(i);
-            if (s.isEmpty() || (s.is(item) && s.isStackable() && s.getCount() < s.getMaxStackSize() && !s.hasTag())) {
+            if (s.isEmpty() || (s.is(item) && s.isStackable() && s.getCount() < s.getMaxStackSize() && s.getComponentsPatch().isEmpty())) {
                 return true;
             }
         }
