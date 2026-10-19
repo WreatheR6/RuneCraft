@@ -1,9 +1,12 @@
 package com.runecraft.platform;
 
+import com.runecraft.RuneCraft;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -12,21 +15,28 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.common.damagesource.DamageContainer;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.neoforge.event.entity.living.LivingUseTotemEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
+import java.lang.reflect.Field;
+import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Stack;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -43,6 +53,19 @@ public final class PlatformEvents {
 
     private record Respawn(ServerPlayer oldPlayer, boolean alive) {
     }
+
+    /**
+     * ALLOW_DEATH verdicts taken when damage turned fatal, for the totem check and {@code die()} that follow in the same
+     * {@code hurt} call. Cleared every tick, so one left behind (a totem saved the entity) can't answer a later death.
+     * Server thread only.
+     */
+    private static final Map<LivingEntity, DeathVerdict> DEATH_VERDICTS = new IdentityHashMap<>();
+
+    private record DeathVerdict(DamageSource source, boolean allowed) {
+    }
+
+    /** NeoForge's per-entity stack of hits being processed; {@code hurt} leaves a cancelled hit's container on it. */
+    private static final Field DAMAGE_CONTAINERS = damageContainersField();
 
     public static void init(IEventBus modBus) {
         IEventBus bus = NeoForge.EVENT_BUS;
@@ -101,12 +124,45 @@ public final class PlatformEvents {
                 e.setCanceled(true);
             }
         });
+        bus.addListener(EventPriority.LOWEST, true, LivingIncomingDamageEvent.class, e -> {
+            if (e.isCanceled()) {
+                dropContainer(e.getEntity(), e.getContainer());
+            }
+        });
+        // ALLOW_DEATH is asked as soon as the damage has landed, before hurt's totem check, death sound and die()
+        bus.addListener(EventPriority.LOWEST, false, LivingDamageEvent.Post.class, e -> {
+            LivingEntity entity = e.getEntity();
+            if (!entity.level().isClientSide() && entity.isDeadOrDying()) {
+                boolean allowed = ServerLivingEntityEvents.ALLOW_DEATH.invoker().allowDeath(entity, e.getSource(), e.getNewDamage());
+                if (entity.isDeadOrDying()) {
+                    DEATH_VERDICTS.put(entity, new DeathVerdict(e.getSource(), allowed));
+                }
+            }
+        });
+        // a vetoed death whose listeners left the health at 0 keeps its totem, and die() is cancelled below
+        bus.addListener(EventPriority.HIGHEST, false, LivingUseTotemEvent.class, e -> {
+            if (!e.getEntity().level().isClientSide()) {
+                DeathVerdict verdict = DEATH_VERDICTS.get(e.getEntity());
+                if (verdict != null && verdict.source() == e.getSource() && !verdict.allowed()) {
+                    e.setCanceled(true);
+                }
+            }
+        });
+        // deaths that never passed LivingDamageEvent.Post (die() called directly) are asked here
         bus.addListener(EventPriority.HIGHEST, false, LivingDeathEvent.class, e -> {
-            if (!e.getEntity().level().isClientSide()
-                    && !ServerLivingEntityEvents.ALLOW_DEATH.invoker().allowDeath(e.getEntity(), e.getSource(), 0f)) {
+            LivingEntity entity = e.getEntity();
+            if (entity.level().isClientSide()) {
+                return;
+            }
+            DeathVerdict verdict = DEATH_VERDICTS.remove(entity);
+            boolean allowed = verdict != null && verdict.source() == e.getSource() ? verdict.allowed()
+                    : ServerLivingEntityEvents.ALLOW_DEATH.invoker().allowDeath(entity, e.getSource(), 0f);
+            if (!allowed) {
                 e.setCanceled(true);
             }
         });
+        bus.addListener(ServerTickEvent.Post.class, e -> DEATH_VERDICTS.clear());
+        bus.addListener(ServerStoppedEvent.class, e -> DEATH_VERDICTS.clear());
         bus.addListener(EventPriority.LOWEST, false, LivingDeathEvent.class, e -> {
             if (!e.getEntity().level().isClientSide()) {
                 ServerLivingEntityEvents.AFTER_DEATH.invoker().afterDeath(e.getEntity(), e.getSource());
@@ -174,5 +230,32 @@ public final class PlatformEvents {
                 e.setCanceled(true);
             }
         });
+    }
+
+    /** Takes a cancelled hit's container back off the entity's damage stack, where NeoForge's {@code hurt} leaves it. */
+    @SuppressWarnings("unchecked")
+    private static void dropContainer(LivingEntity entity, DamageContainer container) {
+        if (DAMAGE_CONTAINERS == null) {
+            return;
+        }
+        try {
+            Stack<DamageContainer> stack = (Stack<DamageContainer>) DAMAGE_CONTAINERS.get(entity);
+            if (!stack.isEmpty() && stack.peek() == container) {
+                stack.pop();
+            }
+        } catch (IllegalAccessException e) {
+            // made accessible when it was looked up
+        }
+    }
+
+    private static Field damageContainersField() {
+        try {
+            Field field = LivingEntity.class.getDeclaredField("damageContainers");
+            field.setAccessible(true);
+            return field;
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            RuneCraft.LOGGER.warn("LivingEntity.damageContainers not found; cancelled hits stay on NeoForge's damage stack", e);
+            return null;
+        }
     }
 }
