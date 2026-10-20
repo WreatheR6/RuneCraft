@@ -740,11 +740,12 @@ final class TobRooms {
     // ================================================================== The Pestilent Bloat
 
     /**
-     * The Pestilent Bloat (OSRS wiki): it walks its path round the central tank, its flies hitting everyone in sight for up
-     * to 20 a tick (25% less with Protect from Missiles) and halving damage taken; below 90% health hands fall from the
-     * ceiling (30-50 and a stun). After 34-42 ticks (38-46 the first time; +4 if nobody hit it during its last shutdown)
-     * it shuts down for 32 ticks and stomps on the 30th (40-80 to anyone close). It may turn around every 32 ticks (16 in
-     * Hard mode) and can't go down for 5 ticks after a turn. It runs between 40% and 60% health.
+     * The Pestilent Bloat (OSRS wiki): it walks its path round the central tank, its flies hitting everyone in sight (and
+     * anyone in sight of them) for up to 20 a tick (25% less with Protect from Missiles) and halving damage taken; below
+     * 90% health hands fall from the ceiling (30-50 and a stun). After 34-42 ticks (38-46 the first time; +4 if nobody hit
+     * it during its last shutdown) it shuts down for 32 ticks and stomps on the 30th (40-80 to anyone close). It may turn
+     * around every 32 ticks (16 in Hard mode) and can't go down for 5 ticks after a turn. It runs between 40% and 60%
+     * health.
      */
     static final class Bloat extends TobRoom {
         private DataBossEntity bloat;
@@ -861,14 +862,12 @@ final class TobRooms {
                 }
             }
             if (walking) {
-                for (ServerPlayer p : players) {
-                    if (canSee(bloat, p)) {
-                        int dmg = rnd().nextInt(TobRules.BLOAT_FLIES_MAX + 1);
-                        if (RaidEffects.protectedFrom(p, AttackType.RANGED)) {
-                            dmg = dmg * 3 / 4;
-                        }
-                        hurt(bloat, p, dmg, null, true);
+                for (ServerPlayer p : fliesTargets(players)) {
+                    int dmg = rnd().nextInt(TobRules.BLOAT_FLIES_MAX + 1);
+                    if (RaidEffects.protectedFrom(p, AttackType.RANGED)) {
+                        dmg = dmg * 3 / 4;
                     }
+                    hurt(bloat, p, dmg, null, true);
                 }
                 if ((hard() || raid.healthFraction(bloat) < TobRules.BLOAT_HANDS_BELOW) && t % 3 == 0 && !players.isEmpty()) {
                     hands(players);
@@ -913,6 +912,28 @@ final class TobRooms {
                     stateLength = RaidScaling.TOB_BLOAT_WALK + rnd().nextInt(9) + (hitWhileDown ? 0 : TobRules.BLOAT_UNATTACKED_BONUS);
                 }
             }
+        }
+
+        /**
+         * The flies hit everyone in the Bloat's sight and, in turn, anyone in sight of a player they hit (OSRS), so hiding
+         * behind the tank only works when nobody can see a team-mate in the open.
+         */
+        List<ServerPlayer> fliesTargets(List<ServerPlayer> players) {
+            List<ServerPlayer> struck = new ArrayList<>();
+            for (ServerPlayer p : players) {
+                if (canSee(bloat, p)) {
+                    struck.add(p);
+                }
+            }
+            for (int i = 0; i < struck.size(); i++) {
+                ServerPlayer seen = struck.get(i);
+                for (ServerPlayer q : players) {
+                    if (!struck.contains(q) && canSee(seen, q)) {
+                        struck.add(q);
+                    }
+                }
+            }
+            return struck;
         }
 
         /** Hands fall from the ceiling: 30-50 and a short stun. */
