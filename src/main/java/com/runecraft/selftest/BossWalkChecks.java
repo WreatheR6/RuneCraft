@@ -1,0 +1,118 @@
+package com.runecraft.selftest;
+
+import com.runecraft.RuneCraft;
+import com.runecraft.action.ActionManager;
+import com.runecraft.boss.DataBossEntity;
+import com.runecraft.boss.DataBossService;
+import com.runecraft.boss.Mechanics;
+import com.runecraft.content.bosses.BossWalks;
+import com.runecraft.osrs.content.BossDef;
+import com.runecraft.osrs.content.ContentRegistry;
+import com.runecraft.skill.XpService;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.phys.Vec3;
+
+/**
+ * Phase walks of the modern bosses ({@code boss:walk:<id>}, {@link BossWalks}): the boss is spawned on the test platform and
+ * fought phase by phase, each mechanic answered the OSRS way, by the real player in the client walkthrough. Like the fight
+ * checks, nothing else in the world ticks while a walk runs; the player keeps a health buffer and is healed every tick.
+ */
+final class BossWalkChecks {
+    private static final int MC = ActionManager.MC_TICKS_PER_GAME_TICK;
+    private static final ResourceLocation HP_BUFFER = RuneCraft.id("selftest_walk_hp");
+
+    /** Boss id -> its walk. */
+    private static final Map<String, BiFunction<DataBossEntity, BossWalks.Driver, String>> WALKS = new LinkedHashMap<>();
+
+    static {
+        WALKS.put("the_whisperer", BossWalks::whisperer);
+    }
+
+    private final TestContext c;
+
+    private BossWalkChecks(TestContext c) {
+        this.c = c;
+    }
+
+    static List<SelfTest.Check> all(TestContext context) {
+        BossWalkChecks w = new BossWalkChecks(context);
+        List<SelfTest.Check> checks = new ArrayList<>();
+        for (Map.Entry<String, BiFunction<DataBossEntity, BossWalks.Driver, String>> e : WALKS.entrySet()) {
+            checks.add(new SelfTest.Check("boss:walk:" + e.getKey(), () -> w.walk(e.getKey(), e.getValue())));
+        }
+        return checks;
+    }
+
+    private String walk(String id, BiFunction<DataBossEntity, BossWalks.Driver, String> walk) {
+        BossDef def = ContentRegistry.boss(id);
+        if (def == null) {
+            throw new AssertionError("no BossDef " + id);
+        }
+        ServerPlayer p = c.player;
+        DataBossEntity boss = DataBossService.spawn(c.world, c.near(0, 0), def, p);
+        if (boss == null) {
+            throw new AssertionError("DataBossService.spawn returned null for " + id);
+        }
+        AttributeInstance health = p.getAttribute(Attributes.MAX_HEALTH);
+        if (health != null) {
+            health.removeModifier(HP_BUFFER);
+            health.addTransientModifier(new AttributeModifier(HP_BUFFER, 2000, AttributeModifier.Operation.ADD_VALUE));
+        }
+        BossWalks.Driver driver = new BossWalks.Driver() {
+            @Override
+            public void ticks(DataBossEntity b, int n) {
+                for (int t = 0; t < n; t++) {
+                    for (int m = 0; m < MC; m++) {
+                        ActionManager.advanceForSelfTest();
+                        if (b.isAlive()) {
+                            if (b.getTarget() != p) {
+                                b.setTarget(p);
+                            }
+                            b.tickCount++; // as ServerLevel.tickNonPassenger does (see BossFightChecks)
+                            b.tick();
+                        }
+                        Mechanics.tickForSelfTest();
+                        p.setHealth(p.getMaxHealth());
+                    }
+                }
+            }
+
+            @Override
+            public ServerPlayer player() {
+                return p;
+            }
+
+            @Override
+            public void moveTo(Vec3 at, DataBossEntity b) {
+                double dx = b.getX() - at.x;
+                double dz = b.getZ() - at.z;
+                float yaw = (float) (Math.toDegrees(Math.atan2(dz, dx)) - 90.0);
+                p.teleportTo(c.world, at.x, at.y, at.z, yaw, p.getXRot());
+            }
+        };
+        try {
+            return walk.apply(boss, driver);
+        } catch (IllegalStateException e) {
+            throw new AssertionError(e.getMessage(), e);
+        } finally {
+            if (boss.isAlive()) {
+                boss.discard();
+            }
+            if (health != null) {
+                health.removeModifier(HP_BUFFER);
+            }
+            XpService.updateMaxHealth(p);
+            p.setHealth(p.getMaxHealth());
+            c.home();
+        }
+    }
+}

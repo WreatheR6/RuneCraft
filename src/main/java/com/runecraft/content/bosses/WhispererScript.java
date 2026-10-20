@@ -126,6 +126,8 @@ final class WhispererScript extends ScriptedBoss {
     /** Each fighting player's sanity, and who stands in the Shadow Realm now. */
     private final Map<UUID, WhispererRules.Sanity> sanity = new HashMap<>();
     private final Set<UUID> realm = new HashSet<>();
+    /** Specials that ran out on the players (seeds erupting, a completed chant): for the self-test walk. */
+    private int failures;
 
     WhispererScript() {
         this(1.0);
@@ -197,6 +199,11 @@ final class WhispererScript extends ScriptedBoss {
 
     int sanity(ServerPlayer p) {
         return sanityOf(p).value();
+    }
+
+    /** Pre-enrage realm ticks counted for a player this fight (Dark Memories). */
+    int realmTicks(ServerPlayer p) {
+        return sanityOf(p).realmTicks();
     }
 
     private void drainSanity(ServerPlayer p, int amount) {
@@ -624,7 +631,9 @@ final class WhispererScript extends ScriptedBoss {
 
                     @Override
                     public int damage(ServerPlayer p, net.minecraft.world.entity.LivingEntity mob, AttackType type, int d) {
-                        if (!WhispererRules.canHitSoul(inRealm(p))) {
+                        // (the Desert Treasure II quest version lets a player who has no fragment yet hit them anyway)
+                        boolean questWithout = scale < 1 && !Inv.has(p, WhispererRules.FRAGMENT, 1);
+                        if (!WhispererRules.canHitSoul(inRealm(p)) && !questWithout) {
                             Msg.action(p, "Your attack passes through the lost soul: it is in the Shadow Realm.");
                             return 0;
                         }
@@ -667,6 +676,7 @@ final class WhispererScript extends ScriptedBoss {
         }
         boolean failed = boss.awakened() ? !allDead : setsDone.isEmpty();
         if (failed && target != null) {
+            failures++;
             int left = BossMechanics.WHISPERER_SOUL_SETS.length - setsDone.size();
             int dmg = scaled(boss, Dt2Bosses.WHISPER_SIPHON);
             CombatHooks.nameAttack(Dt2Bosses.WHISPER_SIPHON.name(), null);
@@ -754,6 +764,7 @@ final class WhispererScript extends ScriptedBoss {
             }
             endSpecial(boss, target, true);
         } else if (specialTick >= due) {
+            failures++;
             if (target != null) {
                 int dmg = (int) Math.round(BossMechanics.WHISPERER_SEED_FAIL * scale);
                 CombatHandler.applyDamage(boss, target, dmg);
@@ -883,6 +894,10 @@ final class WhispererScript extends ScriptedBoss {
 
     String selfTestSpecialName() {
         return special == null ? null : special.name().toLowerCase(java.util.Locale.ROOT);
+    }
+
+    int selfTestFailures() {
+        return failures;
     }
 
     boolean selfTestEnraged() {
