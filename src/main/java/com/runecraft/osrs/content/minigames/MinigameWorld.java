@@ -117,6 +117,7 @@ public final class MinigameWorld {
             {"pp_chest", "Grand gold chest", "E0B030", "chest"},
             {"pp_sarcophagus", "Sarcophagus", "C0A060", "statue"},
             {"pp_door", "Tomb door", "8A7A5A", "portal_door"},
+            {"pp_speartrap", "Speartrap", "9A8A6A", "machine"},
             // Hallowed Sepulchre (see HallowedSepulchre): coffins, stairs, the trap statues, the coffins' skill challenges, the
             // platforms and the magical obelisks.
             {"sep_coffin", "Coffin", "6A6A7A", "chest"},

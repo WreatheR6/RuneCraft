@@ -167,6 +167,14 @@ public final class MinigameMonsters {
                 .attack(melee(AttackType.CRUSH, 6)).size(0.9f, 2.4f, 1.3f).skin(0xA08060, 0x6A4A2A, 0x4A3A2A, 0x202020));
         list.add(m("cyclops_elite", "Cyclops", 106).model("cyclops").stats(75, 90, 105, 90, 1, 1).speed(5)
                 .attack(melee(AttackType.CRUSH, 11)).size(0.9f, 2.4f, 1.5f).skin(0x907050, 0x5A3A2A, 0x3A2A1A, 0x202020));
+        // ---------------- Pyramid Plunder (dps-calc "Mummy (Pyramid Plunder)" and "Scarab Swarm (Pyramid Plunder)") ----------------
+        // The mummy from a sarcophagus (level 84, max 6 crush) and the swarm from the Grand Gold Chest (level 98, 25 Hitpoints,
+        // 1 damage every tick, poisonous); both only go for the player who woke them and drop nothing.
+        list.add(MonsterDef.of("pp_mummy", "Mummy").level(84).stats(90, 90, 30, 90, 1, 1).speed(4).defenceBonus(90, 90, 30, 90, 0)
+                .attack(melee(AttackType.CRUSH, 6)).size(0.6f, 1.9f, 1.0f).skin(0xD8D0B0, 0xC8C0A0, 0xB0A888, 0x2A2A2A));
+        list.add(MonsterDef.of("pp_scarab_swarm", "Scarab swarm").level(98).model("toa_scarab").stats(25, 255, 5, 30, 1, 1).speed(1)
+                .defenceBonus(90, 90, 5, 90, 90).attack(melee(AttackType.SLASH, 1).special(Special.POISON, 1))
+                .size(0.8f, 0.4f, 0.6f).skin(0x2A2A1A, 0x3A3A2A, 0x1A1A10, 0x8A8A4A));
         // ---------------- Shades of Mort'ton ----------------
         // OSRS Wiki / dps-calc: crush, 4-tick; shades drop only their remains (keys come from cremating them).
         for (ShadesOfMortton.Shade s : ShadesOfMortton.Shade.values()) {

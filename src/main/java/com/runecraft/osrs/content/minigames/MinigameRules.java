@@ -633,17 +633,35 @@ public final class MinigameRules {
     }
 
     // ---------------------------------------------------------------- Pyramid Plunder
+    /**
+     * Pyramid Plunder in Jalsavrah (OSRS Wiki "Pyramid Plunder", "Urn (Pyramid Plunder)", "Grand Gold Chest", "Sarcophagus
+     * (Pyramid Plunder)", "Tomb Door", "Speartrap"): five minutes for up to eight rooms (Thieving 21-91, unboostable). Each
+     * room has a speartrap at its entrance, 13 urns (12 in room 3), a Grand Gold Chest, a sarcophagus and four tomb doors, one
+     * of which leads on (the fourth always does after three wrong ones); the final room's doors lead out.
+     */
     public static final class PyramidPlunder {
+        public static final int ROOMS = 8;
         public static final int[] ROOM_LEVELS = {21, 31, 41, 51, 61, 71, 81, 91};
-        /** Thieving XP for looting an urn (3x the snake-check XP), per room. */
-        public static final double[] URN_XP = {60, 90, 150, 210, 300, 450, 675, 825};
-        /** Thieving XP for opening the Grand Gold Chest, per room. */
+        /** Thieving XP for looting an urn, per room (searching = checking for snakes and searching). */
+        public static final double[] URN_XP = {60, 90, 150, 215, 300, 450, 675, 825};
+        /** Thieving XP for opening the Grand Gold Chest (none when a scarab swarm comes out). */
         public static final double[] CHEST_XP = {40, 60, 100, 140, 200, 300, 450, 550};
-        /** Strength XP for opening the sarcophagus, per room. */
+        /** Strength XP for opening the sarcophagus. */
         public static final double[] SARCOPHAGUS_XP = {20, 30, 50, 70, 100, 150, 225, 275};
-        /** Sceptre chance (1 in N) from the Grand Gold Chest per room (approx.). */
-        public static final int[] SCEPTRE_CHANCE = {3500, 2250, 1250, 750, 650, 650, 650, 650};
+        /** Thieving XP for picking the right tomb door (halved with a lockpick); the final room's doors lead out. */
+        public static final double[] DOOR_XP = {40, 60, 100, 140, 200, 300, 450, 0};
+        /** Thieving XP for passing a room's speartrap. */
+        public static final double SPEAR_XP = 10;
+        /** Urns per room (room 3 has one fewer). */
+        public static final int[] URNS = {13, 13, 12, 13, 13, 13, 13, 13};
+        public static final int DOORS = 4;
+        /** Pharaoh's sceptre from the chest and the sarcophagus, 1 in N by room (Poll 80, August 2023; rolled even on a failure). */
+        public static final int[] SCEPTRE_CHANCE = {4200, 2800, 1600, 950, 800, 750, 650, 650};
+        /** Five minutes in the pyramid. */
         public static final int GAME_TICKS = 500;
+        /** A scarab swarm out of the chest hits for 3 at once; snakes, the speartrap and the door guardians 1-4. */
+        public static final int SCARAB_DAMAGE = 3;
+        public static final int TRAP_MAX_DAMAGE = 4;
         /**
          * Recharging the pharaoh's sceptre at the guardian mummy (wiki): a full recharge costs 24 ivory/pottery, 12 stone
          * or 6 gold artefacts; shapes may be mixed within one material. The jewelled golden statuette isn't accepted.
@@ -652,7 +670,106 @@ public final class MinigameRules {
                 {"stone_seal", "stone_scarab", "stone_statuette"}, {"gold_seal", "golden_scarab", "golden_statuette"}};
         public static final int[] SCEPTRE_ARTEFACT_COUNT = {24, 12, 6};
 
+        /** One artefact line of a container's table in a room: item and weight out of 4 (1/4 = 1, 1/2 = 2). */
+        public record Artefact(String item, int weight) {
+        }
+
+        private static List<Artefact> t(Object... pairs) {
+            List<Artefact> out = new java.util.ArrayList<>();
+            for (int i = 0; i < pairs.length; i += 2) {
+                out.add(new Artefact((String) pairs[i], (Integer) pairs[i + 1]));
+            }
+            return List.copyOf(out);
+        }
+
+        /** The Grand Gold Chest's artefacts per room (wiki). */
+        public static final List<List<Artefact>> CHEST = List.of(
+                t("stone_seal", 1, "stone_scarab", 2, "stone_statuette", 1),
+                t("stone_scarab", 2, "stone_statuette", 2),
+                t("stone_scarab", 1, "stone_statuette", 2, "gold_seal", 1),
+                t("stone_statuette", 2, "gold_seal", 2),
+                t("stone_statuette", 1, "gold_seal", 2, "golden_scarab", 1),
+                t("gold_seal", 2, "golden_scarab", 2),
+                t("gold_seal", 1, "golden_scarab", 2, "golden_statuette", 1),
+                t("golden_scarab", 2, "golden_statuette", 2));
+        /** The sarcophagus's artefacts per room (wiki). */
+        public static final List<List<Artefact>> SARCOPHAGUS = List.of(
+                t("pottery_scarab", 1, "pottery_statuette", 2, "stone_seal", 1),
+                t("pottery_statuette", 2, "stone_seal", 2),
+                t("pottery_statuette", 1, "stone_seal", 2, "stone_scarab", 1),
+                t("stone_seal", 2, "stone_scarab", 2),
+                t("stone_seal", 1, "stone_scarab", 2, "stone_statuette", 1),
+                t("stone_scarab", 2, "stone_statuette", 2),
+                t("stone_scarab", 1, "stone_statuette", 2, "gold_seal", 1),
+                t("stone_statuette", 2, "gold_seal", 2));
+        /**
+         * Urns per room (approx: the wiki's urn table is incomplete; it lists ivory combs, the stone and the gold artefacts,
+         * and the artefacts' room ranges put ivory combs in rooms 1-2 only). Urns follow the chest's ladder from room 3.
+         */
+        public static final List<List<Artefact>> URN = List.of(
+                t("ivory_comb", 2, "stone_seal", 1, "stone_scarab", 1),
+                t("ivory_comb", 1, "stone_seal", 1, "stone_scarab", 2),
+                t("stone_scarab", 1, "stone_statuette", 2, "gold_seal", 1),
+                t("stone_statuette", 2, "gold_seal", 2),
+                t("stone_statuette", 1, "gold_seal", 2, "golden_scarab", 1),
+                t("gold_seal", 2, "golden_scarab", 2),
+                t("gold_seal", 1, "golden_scarab", 2, "golden_statuette", 1),
+                t("golden_scarab", 2, "golden_statuette", 2));
+
         private PyramidPlunder() {
+        }
+
+        /** The artefact a table of a room gives, given a random value in [0,1). */
+        public static String artefact(List<List<Artefact>> table, int room, double random) {
+            List<Artefact> t = table.get(room - 1);
+            int total = 0;
+            for (Artefact a : t) {
+                total += a.weight();
+            }
+            int r = (int) Math.floor(random * total);
+            for (Artefact a : t) {
+                r -= a.weight();
+                if (r < 0) {
+                    return a.item();
+                }
+            }
+            return t.get(t.size() - 1).item();
+        }
+
+        /** The OSRS skilling chart (out of 256) less 1/256 for every room past the first (wiki: urns and tomb doors). */
+        private static double chart(int level, int low, int high, int room) {
+            return Math.max(0, com.runecraft.osrs.Chance.lerp(level, low, high) - (room - 1) / 256.0);
+        }
+
+        /** Searching an urn (wiki chart 100-180 in room 1). */
+        public static double urnChance(int thieving, int room) {
+            return chart(thieving, 100, 180, room);
+        }
+
+        /** Picking a tomb door (130-220, with a lockpick 160-250, in room 1). */
+        public static double doorChance(int thieving, int room, boolean lockpick) {
+            return lockpick ? chart(thieving, 160, 250, room) : chart(thieving, 130, 220, room);
+        }
+
+        /** Passing the speartrap (160-250; the room penalty is approx). */
+        public static double spearChance(int thieving, int room) {
+            return chart(thieving, 160, 250, room);
+        }
+
+        /** Opening the Grand Gold Chest without setting off the scarabs (130-220). */
+        public static double chestChance(int thieving) {
+            return com.runecraft.osrs.Chance.lerp(thieving, 130, 220);
+        }
+
+        /** Opening the sarcophagus by current Strength: low 80 - room level, high 270 - room level (wiki chart). */
+        public static double sarcophagusChance(int strength, int room) {
+            int lvl = ROOM_LEVELS[room - 1];
+            return com.runecraft.osrs.Chance.lerp(strength, 80 - lvl, 270 - lvl);
+        }
+
+        /** A mummy rises from the sarcophagus with chance room/9; the sceptre then isn't rolled. */
+        public static double mummyChance(int room) {
+            return room / 9.0;
         }
 
         /**
@@ -691,13 +808,6 @@ public final class MinigameRules {
                 }
             }
             return room;
-        }
-
-        /** Index into {@link MinigameItems#ARTEFACTS} for an urn in a room, given a random value in [0,1). */
-        public static int artefact(int room, double random) {
-            int max = Math.min(MinigameItems.ARTEFACTS.length - 1, room + 1);
-            int min = Math.max(0, room - 3);
-            return min + (int) Math.floor(random * (max - min + 1));
         }
     }
 

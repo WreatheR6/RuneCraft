@@ -79,6 +79,10 @@ public final class AgilityMinigameWalk {
         return run(p, AgilityMinigameWalk::sepulchreOutOfTime);
     }
 
+    public static String pyramidPlunder(ServerPlayer p) {
+        return run(p, AgilityMinigameWalk::plunderRun);
+    }
+
     // ------------------------------------------------------------------ helpers
 
     private static void expect(boolean ok, String message) {
@@ -157,7 +161,7 @@ public final class AgilityMinigameWalk {
         player.setItemInHand(InteractionHand.OFF_HAND, Inv.stack("hallowed_focus", 1));
         for (String[] item : new String[][]{{"strange_old_lockpick", "1"}, {"hammer", "1"}, {"mith_grapple", "1"},
                 {"mahogany_plank", "10"}, {"rune_nails", "60"}, {"vampyre_dust", "12"}, {"cosmic_rune", "20"},
-                {"water_rune", "20"}, {"hallowed_token", "2"}, {"shark", "5"}}) {
+                {"water_rune", "20"}, {"hallowed_token", "8"}, {"shark", "5"}}) {
             Inv.give(player, item[0], Integer.parseInt(item[1]));
         }
     }
@@ -292,6 +296,10 @@ public final class AgilityMinigameWalk {
     /** Crosses a trap corridor tile by tile on the pure rules' safe plan at OSRS run speed; a hit fails the walk. */
     private void cross(SepulchreSession.SelfTestSection sec) {
         SepulchreSession s = sep();
+        // A careful runner tops the clock up with hallowed tokens rather than risk the coffins sealing.
+        if (s.selfTestTimeLeft() < 80 && Inv.has(player, "hallowed_token", 1) && SepulchreSession.useToken(player)) {
+            Inv.remove(player, "hallowed_token", 1);
+        }
         int t0 = sec.trapStart();
         moveTo(s.selfTestSpot(t0 - 1, 0));
         int hits = s.selfTestHits();
@@ -412,6 +420,116 @@ public final class AgilityMinigameWalk {
         int got = Inv.count(player, "hallowed_mark") - marks;
         expect(got >= HallowedSepulchre.GRAND_MARKS[0] && got <= HallowedSepulchre.GRAND_MARKS[1], "the Grand Coffin gave " + got + " marks");
         notes.add("the Grand Hallowed Coffin (" + got + " marks)");
+    }
+
+    // ------------------------------------------------------------------ Pyramid Plunder
+
+    /**
+     * A whole Pyramid Plunder run to the last room: in each room the speartrap, every urn, the Grand Gold Chest and the
+     * sarcophagus, then the tomb doors (dead ends until the right one, and the fourth always leads on); in room 8 the chest
+     * holds the Pharaoh's sceptre and the guardian mummy throws the player out.
+     */
+    private void plunderRun() {
+        step = "plunder start";
+        player.getInventory().clearContent();
+        int kc = MinigameData.of(player).stat(player.getUUID(), "kc:pyramid_plunder");
+        start(Minigame.PYRAMID_PLUNDER);
+        PyramidPlunderSession s = (PyramidPlunderSession) session;
+        s.selfTestSceptre(false);
+        int artefacts = 0;
+        for (int room = 1; room <= com.runecraft.osrs.content.minigames.MinigameRules.PyramidPlunder.ROOMS; room++) {
+            step = "room " + room;
+            expect(s.selfTestRoom() == room, "expected room " + room + ", the session is in room " + s.selfTestRoom());
+            double thieving = xp(Skill.THIEVING);
+            for (int i = 0; i < 15 && !s.selfTestSpearPassed(); i++) {
+                moveTo(s.selfTestSpot(0, 7));
+                click(s.selfTestSpear(), "pp_speartrap");
+                tick();
+            }
+            expect(s.selfTestSpearPassed(), "couldn't pass the speartrap");
+            expect(xp(Skill.THIEVING) - thieving >= com.runecraft.osrs.content.minigames.MinigameRules.PyramidPlunder.SPEAR_XP,
+                    "the speartrap gave no Thieving XP");
+            List<BlockPos> urns = s.selfTestUrns();
+            expect(urns.size() == com.runecraft.osrs.content.minigames.MinigameRules.PyramidPlunder.URNS[room - 1],
+                    "room " + room + " has " + urns.size() + " urns");
+            for (BlockPos urn : urns) {
+                for (int i = 0; i < 25 && !s.selfTestUrnLooted(urn); i++) {
+                    moveTo(urn.south());
+                    click(urn, "pp_urn");
+                    tick();
+                }
+                expect(s.selfTestUrnLooted(urn), "couldn't loot the urn at " + urn);
+            }
+            moveTo(s.selfTestChest().south());
+            click(s.selfTestChest(), "pp_chest");
+            for (int i = 0; i < 20 && !s.selfTestSarcophagusOpened(); i++) {
+                moveTo(s.selfTestSarcophagus().south());
+                click(s.selfTestSarcophagus(), "pp_sarcophagus");
+                tick();
+            }
+            expect(s.selfTestSarcophagusOpened(), "couldn't open the sarcophagus");
+            int got = countArtefacts();
+            expect(got >= artefacts + urns.size() + 2, "room " + room + " gave " + (got - artefacts) + " artefacts for "
+                    + urns.size() + " urns, the chest and the sarcophagus");
+            artefacts = got;
+            if (room == com.runecraft.osrs.content.minigames.MinigameRules.PyramidPlunder.ROOMS) {
+                break;
+            }
+            step = "room " + room + " doors";
+            int correct = s.selfTestCorrectDoor();
+            List<BlockPos> doors = s.selfTestDoors();
+            // A wrong door first (a dead end), then the right one.
+            int wrong = (correct + 1) % doors.size();
+            for (int i = 0; i < 25 && s.selfTestDoorsTried() == 0 && s.selfTestRoom() == room; i++) {
+                moveTo(doors.get(wrong).south());
+                click(doors.get(wrong), "pp_door");
+                tick();
+            }
+            expect(s.selfTestRoom() == room && s.selfTestDoorsTried() == 1, "a wrong tomb door led somewhere");
+            for (int i = 0; i < 25 && s.selfTestRoom() == room; i++) {
+                moveTo(doors.get(correct).south());
+                click(doors.get(correct), "pp_door");
+                tick();
+            }
+            expect(s.selfTestRoom() == room + 1, "the right tomb door didn't lead to room " + (room + 1));
+        }
+        expect(xp(Skill.STRENGTH) > 0, "no Strength XP from the sarcophagi");
+        notes.add("all 8 rooms: speartraps, " + artefacts + " artefacts, the doors");
+        step = "leave";
+        expect(s.selfTestRoom() == 8, "not in room 8");
+        moveTo(s.selfTestDoors().get(0).south());
+        click(s.selfTestDoors().get(0), "pp_door");
+        expect(session.isEnded(), "the final room's door didn't lead out");
+        expect(MinigameData.of(player).stat(player.getUUID(), "kc:pyramid_plunder") == kc + 1, "the run didn't count");
+        notes.add("room 8's door leads out");
+
+        step = "sceptre run";
+        start(Minigame.PYRAMID_PLUNDER);
+        PyramidPlunderSession t = (PyramidPlunderSession) session;
+        t.selfTestSceptre(true);
+        moveTo(t.selfTestSpot(0, 7));
+        for (int i = 0; i < 15 && !t.selfTestSpearPassed(); i++) {
+            click(t.selfTestSpear(), "pp_speartrap");
+            tick();
+        }
+        moveTo(t.selfTestChest().south());
+        click(t.selfTestChest(), "pp_chest");
+        expect(Inv.has(player, "pharaohs_sceptre", 1), "the chest's sceptre roll gave no sceptre");
+        expect(session.isEnded(), "finding the sceptre didn't throw the player out");
+        notes.add("the Pharaoh's sceptre ends the run");
+
+        step = "simon";
+        long coins = Inv.count(player, "coins");
+        PyramidPlunderSession.sellArtefacts(player);
+        expect(Inv.count(player, "coins") > coins && countArtefacts() == 0, "Simon Templeton didn't buy the artefacts");
+    }
+
+    private int countArtefacts() {
+        int n = 0;
+        for (Object[] a : com.runecraft.osrs.content.minigames.MinigameItems.ARTEFACTS) {
+            n += Inv.count(player, (String) a[0]);
+        }
+        return n;
     }
 
     private void sepulchreOutOfTime() {

@@ -273,8 +273,8 @@ class MinigamesContentTest {
         assertEquals(370, MinigameRules.BarbarianAssault.fullGameHonour(0));
         for (int r = 1; r <= 8; r++) {
             for (double x = 0; x < 1; x += 0.1) {
-                int a = MinigameRules.PyramidPlunder.artefact(r, x);
-                assertTrue(a >= 0 && a < MinigameItems.ARTEFACTS.length);
+                String a = MinigameRules.PyramidPlunder.artefact(MinigameRules.PyramidPlunder.URN, r, x);
+                assertTrue(java.util.Arrays.stream(MinigameItems.ARTEFACTS).anyMatch(row -> row[0].equals(a)), a);
             }
         }
     }
