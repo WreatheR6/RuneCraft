@@ -87,4 +87,12 @@ public interface BossScript {
     default boolean isVulnerable(DataBossEntity boss) {
         return true;
     }
+
+    /**
+     * The boss bar's fill (0-1): its health by default; raids show hitpoints held above Minecraft's health cap and
+     * shields (Kephri) this way.
+     */
+    default float bossBarProgress(DataBossEntity boss) {
+        return boss.getHealth() / boss.getMaxHealth();
+    }
 }

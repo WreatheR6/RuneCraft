@@ -57,6 +57,13 @@ public final class RaidsState extends SavedData {
         return kc;
     }
 
+    /** Adds one to a player's count under {@code key} (e.g. a ToA mode's completions) and returns the new count. */
+    public int addCount(UUID player, String key) {
+        int n = stats(player).completions.merge(key, 1, Integer::sum);
+        setDirty();
+        return n;
+    }
+
     public void setLastEntrance(UUID player, BlockPos pos) {
         stats(player).lastEntrance = pos;
         setDirty();

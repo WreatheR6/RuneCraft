@@ -417,9 +417,38 @@ public final class RaidManager {
 
     /** The obelisk outside the tomb (OSRS Grouping Obelisk): how parties form, and the player's completions. */
     private static void groupingObelisk(ServerPlayer player) {
-        int kc = RaidsState.get(player.getServer()).completions(player.getUUID(), RaidType.TOA.id());
+        RaidsState state = RaidsState.get(player.getServer());
+        int entry = state.completions(player.getUUID(), com.runecraft.osrs.content.raids.ToaLoot.modeKey(0));
+        int normal = state.completions(player.getUUID(), com.runecraft.osrs.content.raids.ToaLoot.modeKey(150));
+        int expert = state.completions(player.getUUID(), com.runecraft.osrs.content.raids.ToaLoot.modeKey(300));
         Msg.game(player, "To raid the Tombs of Amascut, gather your party (up to " + RaidType.TOA.maxParty() + ") within 8 blocks of the "
                 + "entrance; whoever enters leads the party and picks the invocations inside.");
-        Msg.game(player, "Your Tombs of Amascut completion count is: " + kc + ".");
+        Msg.game(player, "Your Tombs of Amascut completions: " + entry + " Entry, " + normal + " Normal, " + expert + " Expert mode.");
+        shroudChest(player, normal + expert);
+    }
+
+    /**
+     * The lobby chest beside the obelisk (OSRS): Icthlarin's shroud for 100/500/1,000/1,500/2,000 Normal or Expert mode
+     * completions. A player who has none of the tiers unlocked gets the highest; each tier unlocked counts for the
+     * collection log (OSRS lets you change between them).
+     */
+    static void shroudChest(ServerPlayer player, int normalOrExpert) {
+        int tier = com.runecraft.osrs.content.raids.ToaLoot.shroudTier(normalOrExpert);
+        if (tier == 0) {
+            return;
+        }
+        java.util.List<String> shrouds = com.runecraft.osrs.content.raids.ToaLoot.SHROUDS;
+        for (int i = 0; i < tier; i++) {
+            com.runecraft.collection.CollectionLog.obtain(player, shrouds.get(i));
+        }
+        var bank = com.runecraft.player.Players.data(player).bank();
+        for (String s : shrouds) {
+            if (com.runecraft.util.Inv.has(player, s, 1) || (bank != null && bank.count(s, null) > 0)) {
+                return;
+            }
+        }
+        String best = shrouds.get(tier - 1);
+        com.runecraft.util.Inv.give(player, best, 1);
+        Msg.game(player, "You search the chest beside the obelisk and find Icthlarin's shroud (tier " + tier + ").");
     }
 }

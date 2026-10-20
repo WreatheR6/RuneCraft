@@ -178,8 +178,9 @@ public final class RaidSelfTest {
         expect(raid.toggleInvocation(Invocation.PATHFINDER) == null && !raid.invocations().contains(Invocation.PATHSEEKER),
                 "Pathfinder did not replace Pathseeker (same group)");
         raid.toggleInvocation(Invocation.PATHSEEKER);
-        // Entry-level attempts (no attempts invocation) so a wipe would only reset the room.
-        raid.toggleInvocation(Invocation.HARDCORE_RUN);
+        expect(raid.invocations().contains(Invocation.PATHSEEKER), "Pathseeker did not come back on");
+        // Unlimited attempts (no attempts invocation) so a wipe would only reset the room.
+        expect(Invocation.roomRetries(raid.invocations()) < 0, "the Normal preset limits the attempts");
         note("raid level " + raid.raidLevel());
         use(raid.center(0).offset(RaidBuilder.HALF + 1, 1, 0));
         expect(raid.begun(), "the start barrier did not begin the raid");

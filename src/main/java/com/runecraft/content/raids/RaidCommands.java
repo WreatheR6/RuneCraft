@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.runecraft.osrs.content.raids.Invocation;
 import com.runecraft.osrs.content.raids.RaidMode;
 import com.runecraft.osrs.content.raids.RaidType;
+import com.runecraft.osrs.content.raids.ToaLoot;
 import com.runecraft.util.Msg;
 import com.runecraft.platform.CommandRegistrationCallback;
 import net.minecraft.ChatFormatting;
@@ -57,6 +58,11 @@ final class RaidCommands {
             String best = t == RaidType.TOB ? "" : ", best points " + s.bestPoints.getOrDefault(t.id(), 0);
             p.displayClientMessage(Component.literal(t.displayName() + ": " + s.completions.getOrDefault(t.id(), 0) + " completions" + best
                     + ", " + s.purples.getOrDefault(t.id(), 0) + " purples").withStyle(ChatFormatting.YELLOW), false);
+            if (t == RaidType.TOA) {
+                p.displayClientMessage(Component.literal("  Entry " + s.completions.getOrDefault(ToaLoot.modeKey(0), 0) + ", Normal "
+                        + s.completions.getOrDefault(ToaLoot.modeKey(150), 0) + ", Expert " + s.completions.getOrDefault(ToaLoot.modeKey(300), 0))
+                        .withStyle(ChatFormatting.GRAY), false);
+            }
         }
         RaidNet.sendStats(p);
         return 1;

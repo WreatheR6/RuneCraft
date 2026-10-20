@@ -1152,9 +1152,10 @@ final class ToaBossRooms {
 
         @Override
         public AttackDef bossAttack(DataBossEntity boss, ServerPlayer target, double distance) {
-            // Her own attack is the melee slam; everything else is the room's.
+            // Her own attack is the melee slam (harmless from her throne while the boulders roll); everything else is the
+            // room's, so her other listed attacks are never picked.
             List<AttackDef> list = attacks(boss);
-            return rolling || list.isEmpty() ? null : list.get(0);
+            return list.isEmpty() ? null : list.get(0);
         }
 
         @Override

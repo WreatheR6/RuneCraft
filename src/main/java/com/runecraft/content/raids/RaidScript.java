@@ -79,6 +79,13 @@ public final class RaidScript implements BossScript {
         return r == null || r.bossVulnerable(boss);
     }
 
+    /** The boss bar shows true hitpoints, including those held above Minecraft's 1024 health cap. */
+    @Override
+    public float bossBarProgress(DataBossEntity boss) {
+        RaidInstance raid = RaidManager.at(boss);
+        return raid == null ? boss.getHealth() / boss.getMaxHealth() : (float) raid.healthFraction(boss);
+    }
+
     @Override
     public void onDeath(DataBossEntity boss, ServerPlayer killer) {
         RoomLogic r = room(boss);

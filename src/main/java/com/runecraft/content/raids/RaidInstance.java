@@ -807,6 +807,12 @@ public final class RaidInstance {
                 }
             }
         }
+        // Bosses the room drives without AI (Kephri, Zebak, the Wardens) don't update their own boss bar.
+        for (LivingEntity e : logics[current].spawned) {
+            if (e instanceof DataBossEntity b && b.isNoAi() && b.isAlive()) {
+                b.refreshBossBar();
+            }
+        }
         RaidNet.sendHud(this);
     }
 
@@ -1111,6 +1117,8 @@ public final class RaidInstance {
         finished = true;
         endTick = now();
         boolean withinTarget = elapsedTicks() <= RaidScaling.targetTicks(type, mode, partySize);
+        // The mode the raid was played at (before any time-limit penalty).
+        int modeLevel = raidLevel;
         int limit = type == RaidType.TOA ? Invocation.timeLimitMinutes(invocations) : 0;
         long stop = wardensDownTick >= 0 ? wardensDownTick : endTick;
         if (limit > 0 && beginTick >= 0 && stop - beginTick > limit * 100L) {
@@ -1146,7 +1154,13 @@ public final class RaidInstance {
         for (ServerPlayer p : players()) {
             boolean purple = result.purple(p.getUUID().toString());
             int kc = state.addCompletion(p.getUUID(), type.id(), points(p.getUUID()), purple);
-            Msg.game(p, "Your completed " + type.displayName() + " count is: " + kc + ".");
+            if (type == RaidType.TOA) {
+                // OSRS keeps Entry, Normal and Expert mode completion counts apart.
+                int modeKc = state.addCount(p.getUUID(), ToaLoot.modeKey(modeLevel));
+                Msg.game(p, "Your completed " + ToaLoot.modeCountName(modeLevel) + " count is: " + modeKc + ".");
+            } else {
+                Msg.game(p, "Your completed " + type.displayName() + " count is: " + kc + ".");
+            }
             if (type != RaidType.TOB) {
                 Msg.game(p, "Personal points: " + points(p.getUUID()) + ".");
             }

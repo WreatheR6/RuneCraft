@@ -254,6 +254,10 @@ public final class Jewellery {
         wornExternal("fire_cape", Slot.CAPE, s(1, 1, 1, 1, 1, 11, 11, 11, 11, 11, 4, 0, 0, 2));
         wornExternal("infernal_cape", Slot.CAPE, s(4, 4, 4, 1, 1, 12, 12, 12, 12, 12, 8, 0, 0, 2));
         wornExternal("champions_cape", Slot.CAPE, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+        // Icthlarin's shroud, tiers 1-5 (raids module, Tombs of Amascut completions): cosmetic.
+        for (int tier = 1; tier <= 5; tier++) {
+            wornExternal("icthlarins_shroud_tier_" + tier, Slot.CAPE, NONE);
+        }
         wornExternal("avas_accumulator", Slot.CAPE, s(0, 0, 0, 0, 4, 0, 1, 0, 4, 0, 0, 0, 0, 0));
         wornExternal("barrows_gloves", Slot.HANDS, s(12, 12, 12, 6, 12, 12, 12, 12, 6, 12, 12, 0, 0, 0));
         wornExternal("ferocious_gloves", Slot.HANDS, s(16, 16, 16, -16, -16, 0, 0, 0, 0, 0, 14, 0, 0, 0));

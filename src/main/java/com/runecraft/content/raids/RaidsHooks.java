@@ -44,7 +44,8 @@ public final class RaidsHooks implements ModuleHooks {
         registerNylocasStyles();
         LandmarkBuilder.registerCustom(RaidType.COX.placeId(), RaidsHooks::buildMountQuidamortem);
         LandmarkBuilder.registerCustom(RaidType.TOB.placeId(), RaidsHooks::buildVerSinhaza);
-        LandmarkBuilder.registerCustom(RaidType.TOA.placeId(), RaidsHooks::buildPyramid);
+        // The Tombs of Amascut entrance is the Jaltevas Pyramid structure in the Necropolis (EasternDesert.tombsOfAmascut);
+        // the old block pyramid built here stood half over it.
     }
 
     /**
@@ -124,16 +125,4 @@ public final class RaidsHooks implements ModuleHooks {
         }
     }
 
-    /** The Jaldraocht Pyramid. */
-    private static void buildPyramid(ServerLevel world, BlockPos c) {
-        BlockPos base = c.offset(0, 0, -20);
-        for (int layer = 0; layer < 11; layer++) {
-            int r = 11 - layer;
-            RaidBuilder.fill(world, base.getX() - r, base.getY() + layer, base.getZ() - r, base.getX() + r, base.getY() + layer,
-                    base.getZ() + r, layer == 10 ? Blocks.GOLD_BLOCK.defaultBlockState() : Blocks.SMOOTH_SANDSTONE.defaultBlockState());
-        }
-        RaidBuilder.fill(world, base.getX() - 1, base.getY() + 1, base.getZ() + 6, base.getX() + 1, base.getY() + 3, base.getZ() + 11,
-                Blocks.AIR.defaultBlockState());
-        RaidBuilder.set(world, base.offset(0, 4, 11), Blocks.CHISELED_SANDSTONE.defaultBlockState());
-    }
 }

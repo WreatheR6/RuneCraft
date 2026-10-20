@@ -303,8 +303,13 @@ class RaidsContentTest {
             assertEquals(expected[i], presets.get(i).raidLevel(), presets.get(i).name());
             assertTrue(Invocation.valid(presets.get(i).invocations()), presets.get(i).name());
         }
-        assertEquals(0, Invocation.roomRetries(presets.get(1).invocations()));
+        // Normal, the starting preset, keeps unlimited attempts, food and no time limit (round 33).
+        assertEquals(-1, Invocation.roomRetries(presets.get(1).invocations()));
+        assertTrue(Invocation.foodAllowed(presets.get(1).invocations()));
+        assertEquals(0, Invocation.timeLimitMinutes(presets.get(1).invocations()));
+        assertFalse(presets.get(1).invocations().contains(Invocation.MIND_THE_GAP));
         assertEquals(-1, Invocation.roomRetries(presets.get(0).invocations()));
+        assertEquals(9, Invocation.roomRetries(presets.get(3).invocations()));
     }
 
     @Test

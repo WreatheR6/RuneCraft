@@ -189,6 +189,13 @@ public final class RaidItems {
                 .examine("Use it on Tumeken's guardian to change its form.");
         items.add("fossilised_dung", "Fossilised dung", Kind.SIMPLE, "ore", 0x6A5A3A).value(1)
                 .examine("Your reward for not pulling your weight.");
+        // Icthlarin's shroud (OSRS): cosmetic capes from the lobby chest after 100/500/1,000/1,500/2,000 Normal or Expert
+        // completions (see ToaLoot.shroudTier); worn in the cape slot (systems module, Jewellery).
+        int[] shroudColours = {0x3A3A4A, 0x4A3A6A, 0x6A4A2A, 0x8A6A2A, 0xC8A040};
+        for (int tier = 1; tier <= ToaLoot.SHROUDS.size(); tier++) {
+            items.add(ToaLoot.SHROUDS.get(tier - 1), "Icthlarin's shroud (tier " + tier + ")", Kind.SIMPLE, "cape",
+                    shroudColours[tier - 1]).value(1000).stack(1).examine("A cloak made to honour the dead.");
+        }
 
         // ---------------- Challenge Mode / Hard mode rewards ----------------
         items.add("twisted_ancestral_colour_kit", "Twisted ancestral colour kit", Kind.SIMPLE, "package", 0x5A3A2A).value(1).stack(1)

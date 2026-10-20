@@ -165,10 +165,18 @@ public class DataBossEntity extends OsrsMonsterEntity {
         bossBar.removePlayer(player);
     }
 
+    /**
+     * Updates the boss bar from the script's {@link BossScript#bossBarProgress}. It runs with the AI, so whatever drives a
+     * boss without AI (raid rooms) calls it.
+     */
+    public void refreshBossBar() {
+        bossBar.setProgress(Math.max(0f, Math.min(1f, script.bossBarProgress(this))));
+    }
+
     @Override
     protected void customServerAiStep() {
         super.customServerAiStep();
-        bossBar.setProgress(getHealth() / getMaxHealth());
+        refreshBossBar();
         script.tick(this);
         if (tickCount % ActionManager.MC_TICKS_PER_GAME_TICK == 0) {
             script.gameTick(this, ActionManager.gameTick());

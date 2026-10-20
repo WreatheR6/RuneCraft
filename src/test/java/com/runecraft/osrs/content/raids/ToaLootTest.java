@@ -151,4 +151,25 @@ class ToaLootTest {
         assertTrue(fresh.lootFor("carry").stream().anyMatch(l -> l.item().equals("menaphite_ornament_kit")));
         assertNull(ToaLoot.challengeRewards(0, true, Set.of(), Map.of()).stream().findFirst().orElse(null));
     }
+
+    /** Icthlarin's shroud tiers (OSRS: 100/500/1,000/1,500/2,000 Normal or Expert completions) and the mode counts. */
+    @Test
+    void shroudsAndModeCounts() {
+        assertEquals(0, ToaLoot.shroudTier(99));
+        assertEquals(1, ToaLoot.shroudTier(100));
+        assertEquals(1, ToaLoot.shroudTier(499));
+        assertEquals(2, ToaLoot.shroudTier(500));
+        assertEquals(3, ToaLoot.shroudTier(1_000));
+        assertEquals(4, ToaLoot.shroudTier(1_500));
+        assertEquals(5, ToaLoot.shroudTier(50_000));
+        assertEquals(5, ToaLoot.SHROUDS.size());
+        for (String s : ToaLoot.SHROUDS) {
+            assertTrue(com.runecraft.osrs.ItemCatalog.get(s) != null, s);
+        }
+        assertEquals("tombs_of_amascut_entry", ToaLoot.modeKey(145));
+        assertEquals("tombs_of_amascut_normal", ToaLoot.modeKey(150));
+        assertEquals("tombs_of_amascut_expert", ToaLoot.modeKey(300));
+        assertEquals("Tombs of Amascut: Expert Mode", ToaLoot.modeCountName(500));
+        assertEquals("Tombs of Amascut", ToaLoot.modeCountName(299));
+    }
 }

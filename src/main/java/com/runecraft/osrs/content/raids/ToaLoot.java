@@ -160,6 +160,35 @@ public final class ToaLoot {
         return pool.get(random.nextInt(pool.size()));
     }
 
+    // ------------------------------------------------------------------ Icthlarin's shroud
+
+    /** Icthlarin's shroud, tiers 1-5. */
+    public static final List<String> SHROUDS = List.of("icthlarins_shroud_tier_1", "icthlarins_shroud_tier_2",
+            "icthlarins_shroud_tier_3", "icthlarins_shroud_tier_4", "icthlarins_shroud_tier_5");
+    /** Normal or Expert mode completions each shroud tier needs (OSRS: 100, 500, 1,000, 1,500, 2,000). */
+    public static final int[] SHROUD_COMPLETIONS = {100, 500, 1_000, 1_500, 2_000};
+
+    /** The highest shroud tier (1-5) these Normal/Expert completions unlock, or 0. */
+    public static int shroudTier(int normalOrExpertCompletions) {
+        int tier = 0;
+        for (int i = 0; i < SHROUD_COMPLETIONS.length; i++) {
+            if (normalOrExpertCompletions >= SHROUD_COMPLETIONS[i]) {
+                tier = i + 1;
+            }
+        }
+        return tier;
+    }
+
+    /** The completion-count key of a raid's mode (OSRS keeps Entry, Normal and Expert mode counts apart). */
+    public static String modeKey(int raidLevel) {
+        return raidLevel < 150 ? "tombs_of_amascut_entry" : raidLevel < 300 ? "tombs_of_amascut_normal" : "tombs_of_amascut_expert";
+    }
+
+    /** The name OSRS gives a mode's completion count ("Tombs of Amascut: Expert Mode"). */
+    public static String modeCountName(int raidLevel) {
+        return raidLevel < 150 ? "Tombs of Amascut: Entry Mode" : raidLevel < 300 ? "Tombs of Amascut" : "Tombs of Amascut: Expert Mode";
+    }
+
     // ------------------------------------------------------------------ challenge rewards
 
     public static final Set<Invocation> AKKHA_INVOCATIONS = EnumSet.of(Invocation.DOUBLE_TROUBLE, Invocation.KEEP_BACK,

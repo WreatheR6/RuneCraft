@@ -153,7 +153,8 @@ final class OsrsPages {
         EXTEND.add(new Def("Raids", "Tombs of Amascut", null, l("tumekens_warden", "elidinis_warden"), l("thread_of_elidinis",
                 "eye_of_the_corruptor", "jewel_of_the_sun", "breach_of_the_scarab", "jewel_of_amascut", "cursed_phalanx", "masori_crafting_kit", "menaphite_ornament_kit",
                 "remnant_of_akkha", "remnant_of_baba", "remnant_of_kephri", "remnant_of_zebak", "ancient_remnant",
-                "cache_of_runes")));
+                "cache_of_runes", "icthlarins_shroud_tier_1", "icthlarins_shroud_tier_2", "icthlarins_shroud_tier_3",
+                "icthlarins_shroud_tier_4", "icthlarins_shroud_tier_5")));
         for (String tier : new String[]{"Beginner", "Easy", "Medium", "Hard", "Elite", "Master"}) {
             EXTEND.add(new Def("Clues", tier + " Treasure Trails", null, l("clue_" + tier.toLowerCase(java.util.Locale.ROOT)), l()));
         }

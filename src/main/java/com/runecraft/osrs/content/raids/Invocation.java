@@ -464,20 +464,22 @@ public enum Invocation {
     private static final List<Preset> PRESETS = new ArrayList<>();
 
     static {
-        Set<Invocation> normal = EnumSet.of(HARDCORE_RUN, WALK_FOR_IT, NEED_SOME_HELP, PATHSEEKER, QUIET_PRAYERS, ON_A_DIET,
-                NOT_JUST_A_HEAD, STAY_VIGILANT, JUNGLE_JAPES, MIND_THE_GAP, LIVELY_LARVAE);
+        // Normal (150) is the preset a new party starts on, so it keeps unlimited attempts, no time limit, food and the
+        // pit closed: invocations that only change how a fight plays (round 33; it used to hold Hardcore Run, On a Diet and
+        // Mind the Gap!, so one wipe or one boulder scream ended a learner's raid).
+        Set<Invocation> normal = EnumSet.of(NEED_SOME_HELP, PATHSEEKER, QUIET_PRAYERS, NOT_JUST_A_HEAD, ARTERIAL_SPRAY,
+                BLOOD_THINNERS, STAY_VIGILANT, KEEP_BACK, LIVELY_LARVAE, BLOWING_MUD, ANCIENT_HASTE, ACCELERATION, OVERCLOCKED);
         Set<Invocation> expert = EnumSet.copyOf(normal);
-        expert.remove(MIND_THE_GAP);
-        expert.addAll(EnumSet.of(DOUBLE_TROUBLE, DEADLY_PRAYERS, OVERLY_DRAINING, FEELING_SPECIAL, SHAKING_THINGS_UP,
-                BOULDERDASH, ANCIENT_HASTE, ACCELERATION, PENETRATION, BLOWING_MUD, MEDIC, AERIAL_ASSAULT));
+        expert.addAll(EnumSet.of(WALK_THE_PATH, DEADLY_PRAYERS, FEELING_SPECIAL, JUNGLE_JAPES, SHAKING_THINGS_UP, BOULDERDASH,
+                MEDIC, AERIAL_ASSAULT, PENETRATION));
         Set<Invocation> expertPlus = EnumSet.copyOf(expert);
         expertPlus.remove(PATHSEEKER);
-        expertPlus.addAll(EnumSet.of(PATHFINDER, OVERCLOCKED, ARTERIAL_SPRAY, KEEP_BACK, BLOOD_THINNERS, UPSET_STOMACH,
-                MORE_OVERLORDS, MIND_THE_GAP));
+        expertPlus.addAll(EnumSet.of(TRY_AGAIN, PATHFINDER, DOUBLE_TROUBLE, UPSET_STOMACH, MORE_OVERLORDS, OVERCLOCKED_2,
+                GOTTA_HAVE_FAITH));
         Set<Invocation> insanity = EnumSet.copyOf(expertPlus);
-        insanity.remove(WALK_FOR_IT);
+        insanity.remove(TRY_AGAIN);
         insanity.remove(NEED_SOME_HELP);
-        insanity.addAll(EnumSet.of(SPRINT_FOR_IT, OVERCLOCKED_2, INSANITY, NO_HELP_NEEDED));
+        insanity.addAll(EnumSet.of(PERSISTENCE, WALK_FOR_IT, NEED_LESS_HELP, INSANITY, OVERLY_DRAINING, MIND_THE_GAP));
         PRESETS.add(new Preset("Entry mode", EnumSet.noneOf(Invocation.class)));
         PRESETS.add(new Preset("Normal mode", normal));
         PRESETS.add(new Preset("Expert mode", expert));
