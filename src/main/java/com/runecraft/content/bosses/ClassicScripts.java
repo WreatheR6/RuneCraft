@@ -315,6 +315,11 @@ final class ClassicScripts {
             return core != null && core.isAlive();
         }
 
+        /** The live dark energy core, or null (self-test). */
+        Mob core() {
+            return coreAlive() ? core : null;
+        }
+
         /** Stomps everyone standing under it (every 7 ticks); returns how many it stomped. Package-private for the self-test. */
         int stomp(DataBossEntity boss) {
             double reach = boss.getBbWidth() / 2;
@@ -425,6 +430,20 @@ final class ClassicScripts {
         private boolean summoned;
 
         private static final int[][] SPOTS = {{0, -9}, {9, 0}, {0, 9}, {-9, 0}};
+
+        /**
+         * Skotizo's kill loot (registered as his loot roller): his table rolled as any boss's, with the ancient shards as the
+         * table of their own the wiki describes (1-5 on every kill, 1.41 on average) rather than lines of the main table.
+         */
+        static List<com.runecraft.skill.Drops.Rolled> rollLoot(ServerPlayer killer, DataBossEntity boss,
+                List<com.runecraft.osrs.data.Drop> table) {
+            List<com.runecraft.osrs.data.Drop> rest = table.stream().filter(d -> !d.item().equals("ancient_shard")).toList();
+            List<com.runecraft.osrs.data.Drop> lines = new ArrayList<>(com.runecraft.osrs.content.bosses.BossLoot.pick("skotizo", rest,
+                    boss.getRandom()::nextInt));
+            int shards = ClassicBosses.skotizoShards(boss.getRandom().nextInt(100));
+            lines.add(new com.runecraft.osrs.data.Drop("ancient_shard", shards, shards, 1));
+            return com.runecraft.skill.Drops.resolve(lines, boss.getRandom());
+        }
 
         /** Arclight and Emberlight disable an awakened altar in one hit (registered once by the module). */
         static void registerAltarBreaker() {

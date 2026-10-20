@@ -243,6 +243,15 @@ public final class ClassicBosses {
                 .size(1.6f, 2.2f, 2.0f).moveSpeed(0.2);
     }
 
+    /**
+     * Skotizo's ancient shards (OSRS Wiki, Mod Ash): a table of their own on every kill, 1 shard 75/100, 2 15/100, 3 5/100,
+     * 4 4/100 and 5 1/100 (1.41 a kill). {@code roll100} is uniform in [0, 100).
+     */
+    public static int skotizoShards(int roll100) {
+        int r = Math.floorMod(roll100, 100);
+        return r < 75 ? 1 : r < 90 ? 2 : r < 95 ? 3 : r < 99 ? 4 : 5;
+    }
+
     static BossDef skotizo() {
         // OSRS wiki: Str 250; 80 stab/slash/crush/magic and 130 ranged defence.
         return BossDef.of("skotizo", "Skotizo").level(321).stats(450, 240, 250, 200, 280, 1).speed(5)
@@ -253,7 +262,9 @@ public final class ClassicBosses {
                 // the script summons dark ankou and re-summons slain spawns.
                 .phase(SkotizoRules.SPAWN_BELOW_PERCENT, "Gar mulno ful taglo!", 1.0, false)
                 .minion("reanimated_demon_spawn", SkotizoRules.DEMON_SPAWNS)
-                .drops(Drop.always("infernal_ashes"), Drop.of("dark_claw", 1, 1, 25), Drop.of("jar_of_darkness", 1, 1, 200),
+                // OSRS Wiki: a hard clue scroll on every kill (his best-known drop) besides the 1/5 elite one.
+                .drops(Drop.always("infernal_ashes"), Drop.always("clue_scroll_hard"), Drop.of("dark_claw", 1, 1, 25),
+                        Drop.of("jar_of_darkness", 1, 1, 200),
                         Drop.of("uncut_onyx", 1, 1, 1000), Drop.of("ancient_shard", 1, 3, 4), Drop.of("dark_totem_base", 1, 1, 8),
                         Drop.of("soul_rune", 100, 200, 8), Drop.of("rune_platebody", 1, 1, 12), Drop.of("coins", 20000, 30000, 4),
                         Drop.of("clue_scroll_elite", 1, 1, 5))

@@ -127,6 +127,25 @@ class ClassicBossRulesTest {
     }
 
     @Test
+    void skotizoShardsAndHardClue() {
+        int[] counts = new int[6];
+        int total = 0;
+        for (int r = 0; r < 100; r++) {
+            int n = ClassicBosses.skotizoShards(r);
+            counts[n]++;
+            total += n;
+        }
+        assertEquals(75, counts[1]);
+        assertEquals(15, counts[2]);
+        assertEquals(5, counts[3]);
+        assertEquals(4, counts[4]);
+        assertEquals(1, counts[5]);
+        assertEquals(141, total, "1.41 shards a kill (wiki)");
+        assertTrue(ContentRegistry.boss("skotizo").drops.stream()
+                .anyMatch(d -> d.item().equals("clue_scroll_hard") && d.rarity() == 1), "a hard clue on every kill");
+    }
+
+    @Test
     void vorkathBombHeadAndQuestVersion() {
         assertEquals(121, ZulrahVorkath.bombMax(121, true));
         assertEquals(60, ZulrahVorkath.bombMax(121, false));

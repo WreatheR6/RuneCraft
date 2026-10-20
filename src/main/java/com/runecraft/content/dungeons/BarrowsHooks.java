@@ -175,7 +175,7 @@ public final class BarrowsHooks {
     // ------------------------------------------------------------------ mounds and crypts
 
     /** Digging with a spade: on top of a mound the player breaks into its crypt. */
-    private static boolean dig(ServerPlayer p) {
+    static boolean dig(ServerPlayer p) {
         if (!Gielinor.is(p) || !(p.level() instanceof ServerLevel world)) {
             return false;
         }
@@ -359,7 +359,7 @@ public final class BarrowsHooks {
     }
 
     /** A click on one of the puzzle answers ({@code choice} 0..2). */
-    private static int answerPuzzle(ServerPlayer p, int choice) {
+    static int answerPuzzle(ServerPlayer p, int choice) {
         if (p == null) {
             return 0;
         }
@@ -420,6 +420,20 @@ public final class BarrowsHooks {
         BarrowsRun run = BarrowsRun.of(0, 0, (brother + 1) % Barrows.BROTHERS.size(), 0L, false);
         run.summon(brother);
         return state(p).replace(p.getUUID(), run);
+    }
+
+    /** Self-test: the right answer (0..2) to the puzzle a door is asking the player, or -1 when none waits. */
+    static int selfTestPuzzleChoice(ServerPlayer p) {
+        Pending pending = PUZZLES.get(p.getUUID());
+        if (pending == null) {
+            return -1;
+        }
+        for (int i = 0; i < pending.asked().options().size(); i++) {
+            if (pending.asked().isCorrect(i)) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     /** The player's current Barrows run, as the chest would read it (self-test: what the fight's kill did to the run). */

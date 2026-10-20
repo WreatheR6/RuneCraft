@@ -134,6 +134,21 @@ final class GameplayChecks {
                 () -> g.scripted("yama", com.runecraft.content.bosses.BossSelfTests::yamaDossier)));
         checks.add(new SelfTest.Check("boss:hueycoatl_phases",
                 () -> g.scripted("the_hueycoatl", com.runecraft.content.bosses.BossSelfTests::hueycoatlPhases)));
+        // Round 36: the classic bosses' mechanics, driven tick by tick (ClassicBossWalks).
+        checks.add(new SelfTest.Check("boss:zulrah_rotation",
+                () -> g.scripted("zulrah", com.runecraft.content.bosses.BossSelfTests::zulrahRotation)));
+        checks.add(new SelfTest.Check("boss:vorkath_specials",
+                () -> g.scripted("vorkath", com.runecraft.content.bosses.BossSelfTests::vorkathSpecials)));
+        checks.add(new SelfTest.Check("boss:kalphite_queen_forms",
+                () -> g.scripted("kalphite_queen", com.runecraft.content.bosses.BossSelfTests::kalphiteQueenForms)));
+        checks.add(new SelfTest.Check("boss:corp_mechanics",
+                () -> g.scripted("corporeal_beast", com.runecraft.content.bosses.BossSelfTests::corpMechanics)));
+        checks.add(new SelfTest.Check("boss:sarachnis_web",
+                () -> g.scripted("sarachnis", com.runecraft.content.bosses.BossSelfTests::sarachnisWeb)));
+        checks.add(new SelfTest.Check("boss:scurrius_food",
+                () -> g.scripted("scurrius", com.runecraft.content.bosses.BossSelfTests::scurriusFood)));
+        // A whole Barrows run as the real player: six crypts, the tunnels, the chest.
+        checks.add(new SelfTest.Check("boss:barrows_run", () -> g.walk(com.runecraft.content.dungeons.BarrowsWalk::run)));
         checks.addAll(BossFightChecks.all(context));
         // The God Wars Dungeon walked end to end: the hole, kill count, each general's chamber, the prison and Nex.
         checks.add(new SelfTest.Check("boss:gwd_walk", () -> g.walk(com.runecraft.content.godwars.GwdWalk::run)));

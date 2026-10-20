@@ -27,6 +27,7 @@ public final class BossesHooks implements ModuleHooks {
         BossScripts.register("corporeal_beast", ClassicScripts.Corp::new);
         BossScripts.register("skotizo", ClassicScripts.Skotizo::new);
         ClassicScripts.Skotizo.registerAltarBreaker();
+        com.runecraft.boss.DataBossService.loot("skotizo", ClassicScripts.Skotizo::rollLoot);
         BossScripts.register("hespori", ClassicScripts.Hespori::new);
         BossScripts.register("scurrius", ClassicScripts.Scurrius::new);
         BossScripts.register("sarachnis", ClassicScripts.Sarachnis::new);
