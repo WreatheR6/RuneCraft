@@ -216,7 +216,7 @@ class BossesContentTest {
 
     @Test
     void yamaSpawnsVoidFlaresOnlyThroughHisScript() {
-        // A BossDef minion would make the driven script's idle SUMMON attack spawn untracked void flares.
+        // The script spawns and tracks its own void flares; a BossDef minion (phase summons, SUMMON attacks) would not be tracked.
         assertTrue(boss("yama").minion == null);
     }
 

@@ -12,8 +12,8 @@ import net.minecraft.server.level.ServerPlayer;
  * damaged again. They vanish if Nex is gone.
  */
 final class NexMinionScript implements BossScript {
-    /** No-op attack used while dormant (a summon without a minion type does nothing). */
-    private static final AttackDef IDLE = AttackDef.of("idle", AttackType.MAGIC, 0, 64, 1).special(AttackDef.Special.SUMMON, 0);
+    /** Movement-only placeholder used while dormant (the engine performs nothing for it). */
+    private static final AttackDef IDLE = AttackDef.idle(AttackType.MAGIC);
 
     DataBossEntity nex;
     boolean active;

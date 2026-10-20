@@ -109,6 +109,14 @@ public final class BankService {
 
     // ------------------------------------------------------------------ opening
 
+    /**
+     * Whether the player has a bank (or deposit box) open. The bank screen is the mod's own (a state packet), not a
+     * container menu, so {@code player.containerMenu} doesn't show it.
+     */
+    public static boolean isOpen(ServerPlayer player) {
+        return OPEN.containsKey(player.getUUID());
+    }
+
     /** Opens the bank (booth or banker). Holding bank notes exchanges them for items instead, as in OSRS. */
     public static void open(ServerPlayer player) {
         if (Notes.isNote(player.getMainHandItem())) {

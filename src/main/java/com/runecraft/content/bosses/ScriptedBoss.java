@@ -33,9 +33,9 @@ import net.minecraft.world.phys.Vec3;
  * </ul>
  */
 abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScaled {
-    /** Idle attacks handed to the engine in driven mode (SUMMON with no minion does nothing). */
-    static final AttackDef IDLE_RANGED = AttackDef.of("idle", AttackType.MAGIC, 0, 64, 1).special(AttackDef.Special.SUMMON, 0);
-    static final AttackDef IDLE_MELEE = AttackDef.of("idle", AttackType.CRUSH, 0, 64, 1).special(AttackDef.Special.SUMMON, 0);
+    /** Idle attacks handed to the engine in driven mode: movement only, the engine performs nothing for them. */
+    static final AttackDef IDLE_RANGED = AttackDef.idle(AttackType.MAGIC);
+    static final AttackDef IDLE_MELEE = AttackDef.idle(AttackType.CRUSH);
     static final int MAX_MC_HEALTH = 1024;
 
     /** A dodgeable ground strike. */

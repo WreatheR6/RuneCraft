@@ -132,13 +132,15 @@ public final class ColosseumWalk {
         BlockPos doorway = lobbyBlock(FortisColosseum.ARENA_ENTRANCE_X, FortisColosseum.ARENA_ENTRANCE_Y, FortisColosseum.ARENA_ENTRANCE);
         lobbyBlock(1797, FortisColosseum.LOBBY_Y, FortisColosseum.LOBBY_EXIT);
         use(scoreboard);
-        // The Brawlers' bank chest needs 2,000 Glory.
+        // The Brawlers' bank chest needs 2,000 Glory. The bank is the mod's own screen (BankService's open sessions), not a
+        // container menu, so it is asked whether a bank is open.
+        closeBank();
         use(bank);
-        expect(player.containerMenu == player.inventoryMenu, "the bank chest opened with no Glory");
+        expect(!com.runecraft.bank.BankService.isOpen(player), "the bank chest opened with no Glory");
         MinigameData.of(player).setStat(player.getUUID(), FortisColosseum.STAT_GLORY, FortisColosseum.GLORY_BANK);
         use(bank);
-        expect(player.containerMenu != player.inventoryMenu, "the bank chest did not open at 2,000 Glory");
-        player.closeContainer();
+        expect(com.runecraft.bank.BankService.isOpen(player), "the bank chest did not open at 2,000 Glory");
+        closeBank();
         MinigameData.of(player).setStat(player.getUUID(), FortisColosseum.STAT_GLORY, 0);
         // The doorway refuses a player Minimus hasn't briefed.
         moveTo(doorway.south());
@@ -628,6 +630,13 @@ public final class ColosseumWalk {
 
     private void use(BlockPos pos) {
         BlockHooks.use(player, blockId(pos), pos, world.getBlockState(pos));
+    }
+
+    /** Closes the bank as the client's close button does (the server's session, then the client's screen). */
+    private void closeBank() {
+        com.runecraft.bank.BankService.selfTestAction(player, com.runecraft.bank.BankService.OP_CLOSE, "", 0,
+                com.runecraft.osrs.bank.BankQuantity.Mode.ONE, 0);
+        player.closeContainer();
     }
 
     private void command(String cmd) {

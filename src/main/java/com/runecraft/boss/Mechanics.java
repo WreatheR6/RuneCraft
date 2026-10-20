@@ -95,6 +95,12 @@ public final class Mechanics {
     };
 
     public static void perform(OsrsMonsterEntity mob, ServerPlayer target, AttackDef attack, double multiplier) {
+        if (attack.isIdle()) {
+            // A boss script's movement-only placeholder (AttackDef.idle), also what a driven script spends a turn on while its
+            // special is made of its own strikes (the Deranged archaeologist's books): not an attack, so nothing happens and the
+            // attack listener (Combat Achievements' "used:", "repeat:" and same-tick checks) never sees it.
+            return;
+        }
         ServerLevel world = (ServerLevel) mob.level();
         attackListener.onAttack(mob, target, attack);
         if (attack.message() != null) {

@@ -43,7 +43,9 @@ public record AttackDef(String name, AttackType style, int maxHit, double range,
         /** Teleports the boss next to the target. */
         BLINK,
         /** Heals the boss by {@code param} hitpoints instead of attacking. */
-        HEAL_SELF
+        HEAL_SELF,
+        /** Not an attack: the movement-only placeholder of {@link AttackDef#idle}; nothing is performed for it. */
+        IDLE
     }
 
     public static AttackDef melee(int maxHit) {
@@ -52,6 +54,21 @@ public record AttackDef(String name, AttackType style, int maxHit, double range,
 
     public static AttackDef of(String name, AttackType style, int maxHit, double range, int weight) {
         return new AttackDef(name, style, maxHit, range, weight, Special.NONE, 0, 0, null, null);
+    }
+
+    /**
+     * The movement-only "attack" a boss script hands the engine's attack goal while the script makes every attack itself on
+     * its own cadence (driven bosses) or holds back (dormant, submerged...): {@code style} only tells the goal whether to walk
+     * into melee range. A driven script may also spend a turn on it while a special of its own strikes plays out. The engine
+     * performs nothing for it: no swing, no hit, and no script hook or attack listener (Combat Achievements) sees it.
+     */
+    public static AttackDef idle(AttackType style) {
+        return new AttackDef("idle", style, 0, 64, 1, Special.IDLE, 0, 0, null, null);
+    }
+
+    /** True for the movement-only placeholder of {@link #idle}, which is not an attack. */
+    public boolean isIdle() {
+        return special == Special.IDLE;
     }
 
     public AttackDef special(Special special, int param) {

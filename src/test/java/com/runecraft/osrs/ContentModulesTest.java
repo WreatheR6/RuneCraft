@@ -77,6 +77,23 @@ class ContentModulesTest {
     }
 
     @Test
+    void idlePlaceholderIsNeverARealAttack() {
+        // A boss script's movement-only placeholder: the engine performs nothing for it, so it must never be a listed attack.
+        AttackDef idle = AttackDef.idle(AttackType.CRUSH);
+        assertTrue(idle.isIdle() && idle.melee() && idle.maxHit() == 0);
+        assertTrue(!AttackDef.idle(AttackType.MAGIC).melee());
+        for (MonsterDef m : ContentRegistry.monsters()) {
+            assertTrue(m.attacks.stream().noneMatch(AttackDef::isIdle), m.id + " lists the idle placeholder");
+        }
+        for (BossDef b : ContentRegistry.bosses()) {
+            assertTrue(b.attacks.stream().noneMatch(AttackDef::isIdle), b.id + " lists the idle placeholder");
+            for (BossDef.Phase p : b.phases) {
+                assertTrue(p.attacks().stream().noneMatch(AttackDef::isIdle), b.id + " phase lists the idle placeholder");
+            }
+        }
+    }
+
+    @Test
     void npcsPlacesAndModels() {
         for (NpcDef n : ContentRegistry.npcs()) {
             assertTrue(placeExists(n.place()), n.id() + " place " + n.place());
