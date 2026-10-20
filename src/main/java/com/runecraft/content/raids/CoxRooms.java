@@ -1843,6 +1843,8 @@ final class CoxRooms {
         private int wanted;
         private int t;
         private int orbs;
+        /** How the last orb was lost before reaching a crystal (self-test diagnostics), or null. */
+        private String lost;
 
         CrystalCrabs(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -1900,6 +1902,7 @@ final class CoxRooms {
             colour.clear();
             stunTicks.clear();
             orb = null;
+            lost = null;
             wanted = CoxRules.crabCount(raid.partySize());
             for (int i = 0; i < wanted; i++) {
                 spawnCrab();
@@ -2027,6 +2030,7 @@ final class CoxRooms {
                     world().sendParticles(ParticleTypes.EXPLOSION, orb.x, orb.y + 0.5, orb.z, 1, 0, 0, 0, 0);
                     RaidEffects.hit(null, p, CoxRules.orbDamage(Math.round(p.getHealth())), null, true);
                     Msg.red(p, "The orb explodes against you!");
+                    lost = orbColour + " orb exploded against " + p.getName().getString() + " at " + where(orb);
                     orb = null;
                     return;
                 }
@@ -2046,6 +2050,7 @@ final class CoxRooms {
                 CoxRules.Colour next = CoxRules.reflect(orbColour, colourOf(crab));
                 boolean pass = turn < 0 && next == orbColour && colourOf(crab) == orbColour && orbColour != CoxRules.Colour.WHITE;
                 if (next == null || (turn < 0 && !pass)) {
+                    lost = orbColour + " orb absorbed by a " + colourOf(crab) + " crab at " + where(crab.position());
                     orb = null; // absorbed
                     return;
                 }
@@ -2080,7 +2085,53 @@ final class CoxRooms {
                 return;
             }
             if (!inside(orb)) {
+                lost = orbColour + " orb left the room at " + where(orb);
                 orb = null;
+            }
+        }
+
+        /** A position relative to the room centre, in blocks (x east, z south). */
+        private String where(Vec3 pos) {
+            return Math.round(pos.x - (center().getX() + 0.5)) + ", " + Math.round(pos.z - (center().getZ() + 0.5));
+        }
+
+        private String lostNote() {
+            return lost == null ? "" : "; last orb lost: " + lost;
+        }
+
+        /**
+         * Whether a crab at {@code pos} stands where an orb can meet it: the lane from the sculpture to the black crystal, or a
+         * turning point's row out to its crystal (with half a block to spare over the orb's reach).
+         */
+        boolean onOrbPath(Vec3 pos) {
+            double dx = pos.x - (center().getX() + 0.5);
+            double dz = pos.z - (center().getZ() + 0.5);
+            if (Math.abs(dx) < 1.5 && dz > -20 && dz < SOUTH_Z + 1) {
+                return true;
+            }
+            for (int i = 0; i < TURN_Z.length; i++) {
+                if (Math.abs(dz - TURN_Z[i]) < 1.5 && dx * TURN_SIDE[i] > -1.5 && dx * TURN_SIDE[i] < CRYSTAL_X + 1) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /** Spots away from every orb path where the walk leaves the crabs it lures off them. */
+        private static final int[][] CRAB_PARKING = {{9, 15}, {-9, 15}, {9, -16}, {-9, -16}, {15, 1}, {-15, 1}, {15, -8}, {-15, -8}};
+
+        /** Self-test walk: lures every crab but {@code keep} that stands on an orb path to a spot clear of them. */
+        private void lureOffPaths(LivingEntity keep) {
+            int spot = 0;
+            for (LivingEntity crab : crabs()) {
+                if (crab == keep || !onOrbPath(crab.position())) {
+                    continue;
+                }
+                Vec3 to = vec(CRAB_PARKING[spot % CRAB_PARKING.length][0], CRAB_PARKING[spot % CRAB_PARKING.length][1]);
+                spot++;
+                stunTicks.remove(crab);
+                stunAt.remove(crab);
+                crab.teleportTo(to.x, to.y, to.z);
             }
         }
 
@@ -2099,20 +2150,23 @@ final class CoxRooms {
             w.until(() -> crabs().size() >= 3, 20, "fewer than three crystal crabs appeared");
             w.use(w.block(this, RaidsContent.COX_TOOLS));
             w.expect(w.count("hammer") > 0, "the room's hammer spawn gave nothing");
-            // Clear the lane so the white orb reaches the black crystal.
+            // Clear the lane (and the turning rows) of crabs so the white orb reaches the black crystal.
             w.moveTo(at(-10, 14));
-            for (LivingEntity crab : crabs()) {
-                if (Math.abs(crab.getX() - (center().getX() + 0.5)) < 3) {
-                    crab.teleportTo(crab.getX() + 8, crab.getY(), crab.getZ());
-                }
+            lureOffPaths(null);
+            for (int i = 0; i < 60 && !lit[3]; i++) {
+                w.tick(1);
             }
-            w.until(() -> lit[3], 60, "the white orb never lit the black crystal");
+            w.expect(lit[3], "the white orb never lit the black crystal (waited 60 ticks)" + lostNote());
             AttackType[] styles = {AttackType.MAGIC, AttackType.SLASH, AttackType.RANGED};
             for (int i = 0; i < 3; i++) {
                 final int turn = i;
                 LivingEntity crab = crabs().get(0);
                 Vec3 p = turnPoint(turn);
                 crab.teleportTo(p.x, p.y, p.z); // lured there
+                // OSRS Wiki (Crab puzzle): the other crabs are lured away, or they run into the orb (a reflected orb that meets
+                // a crab of another colour away from a turning point is lost). The walk drives no creature AI, so a crab
+                // spawned on this turn's row would stand in the reflected orb's way for good.
+                lureOffPaths(crab);
                 w.moveTo(new Vec3(p.x - TURN_SIDE[turn] * 2.5, p.y, p.z)); // beside the lane, away from the reflected orb
                 w.hold("hammer");
                 w.hit(crab, 1, AttackType.CRUSH);
@@ -2125,7 +2179,7 @@ final class CoxRooms {
                     }
                     w.tick(1);
                 }
-                w.expect(lit[turn], "the " + TURN_WANTS[turn] + " orb never lit its crystal (crab " + colourOf(crab) + ")");
+                w.expect(lit[turn], "the " + TURN_WANTS[turn] + " orb never lit its crystal (crab " + colourOf(crab) + ")" + lostNote());
                 crab.teleportTo(crab.getX() + 10, crab.getY(), crab.getZ()); // lead it away from the lane
                 stunTicks.remove(crab);
             }
