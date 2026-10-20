@@ -196,11 +196,14 @@ public final class YamaWalk {
         if (flares.isEmpty()) {
             throw fail("no void flares spawned");
         }
-        for (Mob f : flares) {
-            CombatHandler.applyDamage(p, f, 500);
-        }
         d.clearDamage();
-        d.ticks(boss, BossMechanics.VOID_FLARE_TICKS + 2);
+        // destroy every flare before it charges up (his own specials may bring more meanwhile)
+        for (int t = 0; t < BossMechanics.VOID_FLARE_TICKS + 2; t++) {
+            for (Mob f : y.walkFlareMobs()) {
+                CombatHandler.applyDamage(p, f, 500);
+            }
+            d.ticks(boss, 1);
+        }
         if (d.damage("void_flare") > 0) {
             throw fail("destroyed void flares still exploded for " + d.damage("void_flare"));
         }

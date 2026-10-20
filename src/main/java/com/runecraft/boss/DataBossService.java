@@ -203,6 +203,9 @@ public final class DataBossService {
         com.runecraft.osrs.world.ArenaLayout.Arena arena = com.runecraft.osrs.world.ArenaLayout.of(boss.id);
         DataBossEntity entity = spawn(world, at, boss, player,
                 arena != null && at.getX() == arena.x() && at.getZ() == arena.z() ? arena.radius() + 8 : 24);
+        if (entity != null) {
+            entity.breakSafespots(true); // a lair boss closes in on a target terrain keeps out of its reach (BossLair)
+        }
         if (entity != null && variant != null) {
             entity.applyVariant(variant);
         }
@@ -234,10 +237,11 @@ public final class DataBossService {
     }
 
     /**
-     * Spawns a boss; with {@code leash > 0} it is summoned at a stone and kept in its lair
-     * ({@link DataBossEntity#markSummoned}), set before its script's onSpawn so the guards it places belong to the lair.
+     * Spawns a boss; with {@code leash > 0} it is kept in a lair around {@code at} ({@link DataBossEntity#markSummoned}: a
+     * summoning stone's boss, or a quest boss spawned beside its player with {@link BossLair#QUEST_LEASH}), set before its
+     * script's onSpawn so the guards it places belong to the lair.
      */
-    static DataBossEntity spawn(ServerLevel world, BlockPos at, BossDef boss, ServerPlayer target, int leash) {
+    public static DataBossEntity spawn(ServerLevel world, BlockPos at, BossDef boss, ServerPlayer target, int leash) {
         EntityType<DataBossEntity> type = ModEntities.DATA_BOSS_TYPES.get(boss.id);
         if (type == null) {
             return null;

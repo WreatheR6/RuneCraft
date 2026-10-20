@@ -511,7 +511,8 @@ public final class QuestInterpreter {
             return;
         }
         BlockPos at = p.blockPosition().relative(p.getDirection(), 4);
-        DataBossService.spawn(world, at, def, p);
+        // leashed where it appears; it vanishes a minute after its fight is left (BossLair)
+        DataBossService.spawn(world, at, def, p, com.runecraft.osrs.content.bosses.BossLair.QUEST_LEASH);
         Msg.red(p, def.name + " (level-" + def.combatLevel + ") appears!");
     }
 

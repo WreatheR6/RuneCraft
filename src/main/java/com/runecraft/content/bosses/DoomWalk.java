@@ -58,6 +58,7 @@ public final class DoomWalk {
                 if (!(boss.script() instanceof DoomDelveService.DoomScript s)) {
                     throw fail("the Doom has no DoomScript");
                 }
+                d.ticks(boss, 1); // its first game tick takes its home (the spot its mechanics are laid out around)
                 d.moveTo(s.homeVec().add(0, 0, -9), boss);
                 d.ticks(boss, 2);
                 if (s.walkLevel() != level) {

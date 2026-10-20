@@ -60,4 +60,37 @@ public final class BossLair {
     public static String minionTag(long home) {
         return MINION_TAG + home;
     }
+
+    // ---- quest bosses and terrain safespots
+
+    /**
+     * Leash of a quest boss spawned beside the player (no summoning stone): it stays within this many blocks of where it
+     * appeared and vanishes a minute after its fight is left, like an OSRS quest boss when the player walks off.
+     */
+    public static final int QUEST_LEASH = 24;
+
+    /**
+     * Game ticks a melee-only lair boss may be kept out of reach by terrain before it closes the gap: Minecraft terrain (a
+     * pillar, a ledge, a hole) can strand a melee boss where OSRS's flat lair floors never would, which would make it free to
+     * kill from range.
+     */
+    public static final int SAFESPOT_TICKS = 5; // approx
+
+    /** One more game tick with ({@code stranded}) or without its target out of its reach: the new count. */
+    public static int stranded(int ticks, boolean stranded) {
+        return stranded ? ticks + 1 : 0;
+    }
+
+    /** Whether a boss stranded this long steps up beside its target. */
+    public static boolean breaksSafespot(int strandedTicks) {
+        return strandedTicks >= SAFESPOT_TICKS;
+    }
+
+    /**
+     * Whether a target is out of a melee boss's reach where the boss can't walk to it: further than a step from melee range
+     * ({@code distance} beyond {@code meleeReach}) and no path that ends next to it.
+     */
+    public static boolean strandedBy(double distance, double meleeReach, boolean pathReaches) {
+        return distance > meleeReach + 1.0 && !pathReaches;
+    }
 }

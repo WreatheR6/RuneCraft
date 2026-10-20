@@ -135,6 +135,9 @@ public final class BossesHooks implements ModuleHooks {
                 "You need to complete Children of the Sun to fight the Hueycoatl."));
         com.runecraft.boss.DataBossService.requirement("amoxliatl", (player, def) -> questDone(player, "the_heart_of_darkness",
                 "You need to complete The Heart of Darkness to fight Amoxliatl."));
+        // OSRS Wiki "Maggot King's lair": "Accessing it requires completion of The Blood Moon Rises."
+        com.runecraft.boss.DataBossService.requirement("maggot_king", (player, def) -> questDone(player, "the_blood_moon_rises",
+                "You need to complete The Blood Moon Rises to enter the Maggot King's lair."));
         for (String moon : com.runecraft.osrs.content.bosses.MoonsRules.MOONS) {
             com.runecraft.boss.DataBossService.requirement(moon, (player, def) -> questDone(player, "perilous_moons",
                     "You need to complete Perilous Moons to challenge " + def.name + "."));

@@ -71,6 +71,23 @@ class BossLairTest {
     }
 
     /** Minions are tagged with their lair, so a reset clears exactly that lair's (also after a restart). */
+    /** A melee boss stranded by terrain (no path that reaches its target, out of reach) steps up after a few game ticks. */
+    @Test
+    void terrainSafespotsDontLast() {
+        assertTrue(BossLair.strandedBy(6, 3, false));
+        assertFalse(BossLair.strandedBy(6, 3, true), "a walkable target is chased, not jumped to");
+        assertFalse(BossLair.strandedBy(3.5, 3, false), "within a step of melee reach");
+        int t = 0;
+        for (int i = 1; i < BossLair.SAFESPOT_TICKS; i++) {
+            t = BossLair.stranded(t, true);
+            assertFalse(BossLair.breaksSafespot(t));
+        }
+        t = BossLair.stranded(t, true);
+        assertTrue(BossLair.breaksSafespot(t));
+        assertEquals(0, BossLair.stranded(t, false), "a reachable tick resets the count");
+        assertEquals(24, BossLair.QUEST_LEASH);
+    }
+
     @Test
     void minionTagsNameTheirLair() {
         assertEquals("rc_lair_123", BossLair.minionTag(123));
