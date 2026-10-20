@@ -1002,7 +1002,6 @@ final class ToaBossRooms {
                 int side = rnd().nextBoolean() ? 1 : -1;
                 unstable.add(alongX ? new double[]{-side * RaidBuilder.HALF, lane, side, 0} : new double[]{lane, -side * RaidBuilder.HALF, 0, side});
             }
-            int dmg = ToaBossRules.unstableOrbDamage(raid.damageMultiplier(), raid.pathLevel());
             java.util.Iterator<double[]> it = unstable.iterator();
             while (it.hasNext()) {
                 double[] o = it.next();
@@ -1016,8 +1015,9 @@ final class ToaBossRooms {
                 world().sendParticles(ParticleTypes.END_ROD, at.x, at.y + 0.8, at.z, 3, 0.15, 0.15, 0.15, 0);
                 for (ServerPlayer p : players()) {
                     if (RaidEffects.horizontalDistSq(p.position(), at) < 0.8 * 0.8) {
-                        int d = RaidEffects.protectedFrom(p, AttackType.MAGIC) ? dmg * 3 / 4 : dmg;
-                        RaidEffects.hitRaw(akkha, p, d);
+                        // OSRS: Protect from Magic takes 25% off before the orbs' cap of 25.
+                        RaidEffects.hitRaw(akkha, p, ToaBossRules.unstableOrbDamage(raid.damageMultiplier(), raid.pathLevel(),
+                                RaidEffects.protectedFrom(p, AttackType.MAGIC)));
                         it.remove();
                         break;
                     }
@@ -1085,6 +1085,7 @@ final class ToaBossRooms {
         boolean rolling;
         private int setsLeft;
         private long nextSet;
+        private int lastCracked = -1;
         private final Set<LivingEntity> cracked = new HashSet<>();
         /** Debris piles (block positions) and their hitpoints. */
         final Map<BlockPos, Integer> debris = new HashMap<>();
@@ -1312,6 +1313,7 @@ final class ToaBossRooms {
         private void rollingStones() {
             rolling = true;
             setsLeft = ToaBossRules.BOULDER_SETS;
+            lastCracked = -1;
             clearDebris();
             unanchor(baba);
             move(baba, vec(17, 0));
@@ -1334,8 +1336,9 @@ final class ToaBossRooms {
         private void boulders(long tick, Set<Invocation> inv) {
             if (setsLeft > 0 && now() >= nextSet) {
                 setsLeft--;
-                // OSRS: one cracked boulder a column (ranged always max-hits it).
-                int crackedAt = rnd().nextInt(ToaBossRules.BOULDERS_PER_SET);
+                // OSRS: one cracked boulder a column (ranged always max-hits it), near the last column's.
+                int crackedAt = ToaBossRules.crackedBoulder(lastCracked, rnd());
+                lastCracked = crackedAt;
                 int hp = RaidScaling.toaScaledHp(ToaBossRules.babaBoulderHp(raid.pathLevel()), 0, 0, raid.partySize(), false);
                 for (int i = 0; i < ToaBossRules.BOULDERS_PER_SET; i++) {
                     LivingEntity b = spawnMob("baba_boulder", at(12, -8 + i * 4), false);
@@ -1857,13 +1860,14 @@ final class ToaBossRooms {
                     it.remove();
                     continue;
                 }
+                // OSRS: a cloud loses 2 hitpoints every tick and siphons a player it touches to prolong itself.
+                c[2] -= Invocation.BLOOD_CLOUD_COST_PER_TILE;
                 if (best <= 2.25) {
                     c[2] += hurt(zebak, near, 3 + rnd().nextInt(4));
                 } else {
                     double dist = Math.sqrt(best);
                     c[0] += (near.getX() - c[0]) / dist;
                     c[1] += (near.getZ() - c[1]) / dist;
-                    c[2] -= Invocation.BLOOD_CLOUD_COST_PER_TILE;
                 }
                 world().sendParticles(new DustParticleOptions(new Vector3f(0.6f, 0.0f, 0.0f), 2.0f), c[0], y, c[1], 8, 0.4, 0.3, 0.4, 0);
                 if (c[2] <= 0) {

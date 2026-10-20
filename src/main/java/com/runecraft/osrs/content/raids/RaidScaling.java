@@ -492,9 +492,10 @@ public final class RaidScaling {
     /** Ba-Ba's baboons: 10 hitpoints, static (OSRS, June 2025; they were 35). */
     public static final int BABA_BABOON_HP = 10;
 
-    /** Baboons Ba-Ba has out at once (OSRS: 1-4 by party size). // approx: one per player, up to four */
+    /** Baboons Ba-Ba calls at once (OSRS wiki: 2-4 by party size). // approx: 2 solo, 3 for two or three, 4 from four */
     public static int babaBaboons(int partySize) {
-        return clampParty(partySize, 4);
+        int n = clampParty(partySize, 8);
+        return n <= 1 ? 2 : n <= 3 ? 3 : 4;
     }
 
     /**

@@ -30,6 +30,9 @@ class ToaBossRulesTest {
         assertEquals(5, ToaBossRules.akkhaSwapHits(3));
         assertEquals(25, ToaBossRules.unstableOrbDamage(5.0, 4), "unstable orbs are capped at 25");
         assertEquals(12, ToaBossRules.unstableOrbDamage(1.0, 0));
+        // Protect from Magic takes 25% off before the cap: it helps at low levels, not once the orbs hit far over 25.
+        assertEquals(9, ToaBossRules.unstableOrbDamage(1.0, 0, true));
+        assertEquals(25, ToaBossRules.unstableOrbDamage(3.5, 4, true));
         assertEquals(List.of("fire", "shadow", "lightning", "ice"), List.of(ToaBossRules.QUADRANTS));
     }
 

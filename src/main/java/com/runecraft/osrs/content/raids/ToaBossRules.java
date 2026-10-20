@@ -51,7 +51,18 @@ public final class ToaBossRules {
 
     /** Unstable orbs' damage (OSRS: grows with raid and path level, capped at 25). // approx: 12 at raid level 0 */
     public static int unstableOrbDamage(double raidDamageMultiplier, int pathLevel) {
+        return unstableOrbDamage(raidDamageMultiplier, pathLevel, false);
+    }
+
+    /**
+     * Unstable orbs' damage on a player: Protect from Magic takes 25% off before the cap of 25 (OSRS wiki), so it only
+     * helps while the orbs hit for less than about 33.
+     */
+    public static int unstableOrbDamage(double raidDamageMultiplier, int pathLevel, boolean protectedFromMagic) {
         double d = 12 * raidDamageMultiplier * (1 + 0.1 * (Math.min(4, Math.max(0, pathLevel)) / 2));
+        if (protectedFromMagic) {
+            d *= 0.75;
+        }
         return Math.min(25, (int) Math.round(d));
     }
 
@@ -68,6 +79,17 @@ public final class ToaBossRules {
     public static int babaBoulderHp(int pathLevel) {
         int p = Math.max(0, pathLevel);
         return 25 + (p >= 2 ? 2 : 0) + (p >= 4 ? 4 : 0);
+    }
+
+    /**
+     * Where the cracked boulder of the next column rolls (0-4, OSRS wiki): the first column's is in the middle three
+     * starting points, each later one at most two positions north or south of the last ({@code last} &lt; 0: first).
+     */
+    public static int crackedBoulder(int last, Random random) {
+        if (last < 0) {
+            return 1 + random.nextInt(3);
+        }
+        return Math.max(0, Math.min(BOULDERS_PER_SET - 1, last + random.nextInt(5) - 2));
     }
 
     /** Sets of rolling boulders before Ba-Ba stops (OSRS: ten). */

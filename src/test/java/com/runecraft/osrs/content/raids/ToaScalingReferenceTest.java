@@ -88,8 +88,16 @@ class ToaScalingReferenceTest {
         assertEquals(25, RaidScaling.toaScaledHp("toa_baboon_brawler", 25, 500, 4, 8, true));
         assertEquals(30, RaidScaling.toaScaledHp("toa_baboon_thrower", 30, 300, 2, 3, true));
         assertEquals(10, RaidScaling.BABA_BABOON_HP);
-        assertEquals(1, RaidScaling.babaBaboons(1));
+        // OSRS wiki: Ba-Ba calls 2-4 baboons depending on party size.
+        assertEquals(2, RaidScaling.babaBaboons(1));
         assertEquals(4, RaidScaling.babaBaboons(8));
+        java.util.Random r = new java.util.Random(3);
+        for (int i = 0; i < 200; i++) {
+            int first = ToaBossRules.crackedBoulder(-1, r);
+            assertTrue(first >= 1 && first <= 3, "the first cracked boulder is in the middle three");
+            int next = ToaBossRules.crackedBoulder(first, r);
+            assertTrue(Math.abs(next - first) <= 2 && next >= 0 && next < ToaBossRules.BOULDERS_PER_SET);
+        }
     }
 
     @Test

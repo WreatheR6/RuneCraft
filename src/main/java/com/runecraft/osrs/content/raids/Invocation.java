@@ -253,8 +253,8 @@ public enum Invocation {
     }
 
     /**
-     * Blood clouds (OSRS wiki): each loses 2 hitpoints per tile it moves and hurts an adjacent player, healing itself
-     * by the damage. // approx: 40 hitpoints, 3-6 damage a tick
+     * Blood clouds (OSRS wiki): each loses 2 hitpoints every tick and hurts an adjacent player, healing itself by the
+     * damage. // approx: 40 hitpoints, 3-6 damage a tick
      */
     public static final int BLOOD_CLOUD_HP = 40;
     public static final int BLOOD_CLOUD_COST_PER_TILE = 2;
