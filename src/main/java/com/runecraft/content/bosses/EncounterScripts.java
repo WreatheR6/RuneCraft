@@ -902,7 +902,14 @@ final class EncounterScripts {
      * the gaze up to 121, enraged at 25.9%, and from 32% an Orb of Darkness every ~10 seconds (27, drains combat stats by 8).
      */
     static final class Duke extends ScriptedBoss {
+        private static final String NBT_PILLARS_UP = "DukePillarsUp";
+        private static final String NBT_PILLARS = "DukePillars";
         private boolean pillars;
+        /**
+         * The pillar blocks raised around a Duke standing away from his arena (the Desert Treasure II quest version, a boss
+         * spawned elsewhere): there they are his, not the arena's scenery, and go when he does instead of staying in the world.
+         */
+        private final List<BlockPos> pillarBlocks = new ArrayList<>();
         /** Standard attacks since the last gaze and since the last gas flares. */
         private int sinceGaze;
         private int sinceFlare;
@@ -979,14 +986,19 @@ final class EncounterScripts {
             if (!pillars) {
                 pillars = true;
                 // Four pillars to hide from his gaze, standing on the floor around the arena's centre: the same blocks on every
-                // summon (earlier versions stacked a new floating set around each spawn point), and never over scenery.
+                // summon (earlier versions stacked a new floating set around each spawn point), and never over scenery. In his
+                // arena they stay as its scenery; anywhere else they are cleared with him (onRemoved).
                 BlockPos c = arenaCentre(boss);
+                boolean scenery = inOwnArena(boss);
                 ServerLevel w = BossFx.world(boss);
                 for (int[] o : new int[][]{{-5, -4}, {5, -4}, {-5, 4}, {5, 4}}) {
                     for (int y = 0; y < 3; y++) {
                         BlockPos at = c.offset(o[0], y, o[1]);
                         if (w.getBlockState(at).isAir()) {
                             w.setBlockAndUpdate(at, Blocks.CHISELED_DEEPSLATE.defaultBlockState());
+                            if (!scenery) {
+                                pillarBlocks.add(at.immutable());
+                            }
                         }
                     }
                 }
@@ -1023,6 +1035,38 @@ final class EncounterScripts {
                                 }
                             }
                         });
+            }
+        }
+
+        /** Discarded, killed or reset away from his arena: the pillars raised around him go too. */
+        @Override
+        public void onRemoved(DataBossEntity boss) {
+            ServerLevel w = BossFx.world(boss);
+            for (BlockPos at : pillarBlocks) {
+                if (w.getBlockState(at).is(Blocks.CHISELED_DEEPSLATE)) {
+                    w.setBlockAndUpdate(at, Blocks.AIR.defaultBlockState());
+                }
+            }
+            pillarBlocks.clear();
+        }
+
+        /** The pillars outlive a chunk unload: a reloaded Duke neither raises a second set nor forgets to clear his own. */
+        @Override
+        public void writeNbt(DataBossEntity boss, CompoundTag nbt) {
+            if (pillars) {
+                nbt.putBoolean(NBT_PILLARS_UP, true);
+            }
+            if (!pillarBlocks.isEmpty()) {
+                nbt.putLongArray(NBT_PILLARS, pillarBlocks.stream().mapToLong(BlockPos::asLong).toArray());
+            }
+        }
+
+        @Override
+        public void readNbt(DataBossEntity boss, CompoundTag nbt) {
+            pillars = nbt.getBoolean(NBT_PILLARS_UP);
+            pillarBlocks.clear();
+            for (long at : nbt.getLongArray(NBT_PILLARS)) {
+                pillarBlocks.add(BlockPos.of(at));
             }
         }
     }

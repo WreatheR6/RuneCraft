@@ -199,15 +199,26 @@ public final class CannonService {
 
     /** Whether the 3x3 around {@code centre} is free floor. */
     static boolean clear(ServerLevel world, BlockPos centre) {
+        return obstruction(world, centre) == null;
+    }
+
+    /** What keeps the 3x3 around {@code centre} from being free floor (a block in the way, or no floor), or null if it is. */
+    public static String obstruction(ServerLevel world, BlockPos centre) {
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
                 BlockPos at = centre.offset(dx, 0, dz);
-                if (!world.getBlockState(at).isAir() || !world.getBlockState(at.above()).isAir() || world.getBlockState(at.below()).isAir()) {
-                    return false;
+                for (BlockPos b : new BlockPos[]{at, at.above()}) {
+                    if (!world.getBlockState(b).isAir()) {
+                        return net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(world.getBlockState(b).getBlock())
+                                + " at " + b.toShortString();
+                    }
+                }
+                if (world.getBlockState(at.below()).isAir()) {
+                    return "no floor under " + at.toShortString();
                 }
             }
         }
-        return true;
+        return null;
     }
 
     /** Starts setting up a cannon on the tile in front of the player; true if it began. */

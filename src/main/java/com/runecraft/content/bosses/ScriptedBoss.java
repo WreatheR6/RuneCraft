@@ -287,11 +287,21 @@ abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScaled {
      */
     protected static BlockPos arenaCentre(DataBossEntity boss) {
         BlockPos at = boss.blockPosition();
-        ArenaLayout.Arena a = boss.def() == null ? null : ArenaLayout.of(boss.def().id);
-        if (a == null || Math.hypot(at.getX() - a.x(), at.getZ() - a.z()) > a.radius() + 3) {
+        if (!inOwnArena(boss)) {
             return at;
         }
+        ArenaLayout.Arena a = ArenaLayout.of(boss.def().id);
         Vec3 floor = BossFx.ground(BossFx.world(boss), a.x() + 0.5, a.z() + 0.5, at.getY());
         return new BlockPos(a.x(), (int) Math.floor(floor.y), a.z());
+    }
+
+    /**
+     * Whether the boss stands in its own arena (the one {@link ArenaLayout} built for it), rather than somewhere it was spawned
+     * away from it (a quest version, a boss spawned by a command or a test).
+     */
+    protected static boolean inOwnArena(DataBossEntity boss) {
+        BlockPos at = boss.blockPosition();
+        ArenaLayout.Arena a = boss.def() == null ? null : ArenaLayout.of(boss.def().id);
+        return a != null && Math.hypot(at.getX() - a.x(), at.getZ() - a.z()) <= a.radius() + 3;
     }
 }
