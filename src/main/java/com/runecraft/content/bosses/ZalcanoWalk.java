@@ -172,6 +172,9 @@ public final class ZalcanoWalk {
             for (String id : BossMechanics.TEPHRA_ITEMS) {
                 Inv.remove(p, id, Inv.count(p, id));
             }
+            // Tephra carried while she is down (mined too early, as the wiki warns): her rise must destroy it. Given now, while
+            // she is still down: she rises after 12-16 s (20-27 ticks), inside the mining loop below.
+            Inv.give(p, BossMechanics.TEPHRA, 3);
             float before = boss.getHealth();
             double miningXp = xp(p, Skill.MINING);
             d.moveTo(boss.position().add(3, 0, 0), boss);
@@ -188,7 +191,6 @@ public final class ZalcanoWalk {
             }
             if (boss.isAlive()) {
                 // She rises armoured again and destroys every tephra in the prison.
-                Inv.give(p, BossMechanics.TEPHRA, 3);
                 if (until(boss, d, 40, () -> !z.selfTestDown()) < 0) {
                     throw fail("she never rose again");
                 }

@@ -54,6 +54,10 @@ public final class SkillingBossWalk {
     private int ticks;
     /** Run before every session tick: what a player keeps doing in the background (eating, tethering, dodging fires). */
     private Runnable perTick = () -> { };
+    /** Tempoross: totem poles the player repaired before a wave because earlier waves had broken both. */
+    private int polesRepaired;
+    /** Tempoross: a repair before a wave failed (noted once; the wave then hits the untethered player). */
+    private boolean poleRepairFailed;
 
     private SkillingBossWalk(ServerPlayer player) {
         this.player = player;
@@ -435,7 +439,8 @@ public final class SkillingBossWalk {
         expect(t.selfTestView(player).submerged(), "18 more cooked harpoonfish didn't make him submerge again");
         expect(t.selfTestView(player).storm() == 0, "the storm intensity stayed at " + t.selfTestView(player).storm()
                 + "% when he submerged again");
-        notes.add("second phase loaded at " + storm + "% storm (the bar started again from 0%)");
+        notes.add("second phase loaded at " + storm + "% storm (the bar started again from 0%)"
+                + (polesRepaired > 0 ? "; " + polesRepaired + " wave(s) had broken both totem poles: repaired one to tether" : ""));
         use(t.selfTestPool(), "tempoross_spirit_pool");
         int permits = Inv.count(player, "reward_permit");
         expect(until(TemporossSessionTicks.PHASE + 10, t::isEnded), "the second essence phase didn't subdue him (essence "
@@ -493,7 +498,12 @@ public final class SkillingBossWalk {
             }
             return !Inv.has(player, "raw_harpoonfish", 1);
         }), "cooking left " + Inv.count(player, "raw_harpoonfish") + " raw harpoonfish");
-        expect(Inv.count(player, "harpoonfish") >= n, "cooking made " + Inv.count(player, "harpoonfish") + " harpoonfish");
+        // Only a wave (untethered) or a fire the player stood in takes fish (OSRS Wiki): say which, if any, did.
+        expect(Inv.count(player, "harpoonfish") >= n, "cooking made " + Inv.count(player, "harpoonfish") + " harpoonfish of " + n
+                + (t.caFlags(player).contains(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_WAVE_HIT)
+                        ? " (a wave hit the player this game)" : "")
+                + (t.caFlags(player).contains(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_FIRE_HIT)
+                        ? " (a fire burnt the player's supplies this game)" : ""));
         Inv.remove(player, "harpoonfish", Inv.count(player, "harpoonfish") - n);
     }
 
@@ -536,23 +546,78 @@ public final class SkillingBossWalk {
         }
     }
 
-    /** Steps two blocks aside when a fire burns where the player stands (fires burn harpoonfish and tools). */
+    /**
+     * Keeps clear of fires as a player would. Standing in a fire burns a minigame item every 2 ticks (OSRS Wiki "Fire
+     * (Tempoross Cove)"), and a fire that can still spread may jump onto the tile you stand on ("Tempoross/Strategies": "be
+     * wary of nearby fires jumping to the tile you're standing on while fishing or cooking"). A spread lands during the
+     * session tick and can burn on that same tick, so stepping off afterwards is too late. Before each session tick the
+     * player therefore moves to the nearest free floor tile that is not next to a fire and is out of reach of every fire that
+     * can still spread. Fishing and cooking go on from there.
+     */
     private void stepOutOfFire(TemporossSession t) {
-        for (BlockPos f : t.selfTestFires()) {
-            if (Math.abs(player.getX() - (f.getX() + 0.5)) < 1.5 && Math.abs(player.getZ() - (f.getZ() + 0.5)) < 1.5) {
-                player.teleportTo(world, player.getX() + 3, player.getY(), player.getZ(), player.getYRot(), 0);
-                return;
+        List<BlockPos> fires = t.selfTestFires();
+        if (fires.isEmpty()) {
+            return;
+        }
+        List<BlockPos> spreading = t.selfTestSpreadingFires();
+        BlockPos at = player.blockPosition();
+        if (!nearFire(at, fires, spreading)) {
+            return;
+        }
+        for (int r = 1; r <= 8; r++) {
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dz = -r; dz <= r; dz++) {
+                    BlockPos c = at.offset(dx, 0, dz);
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) == r && standable(t, c) && !nearFire(c, fires, spreading)) {
+                        moveTo(c);
+                        return;
+                    }
+                }
             }
         }
     }
 
-    /** Tethers to a totem pole when a colossal wave is about to land (from wherever the player stands). */
+    /** Whether a tile is next to (or in) a fire, or within reach of a fire that can still spread. */
+    private static boolean nearFire(BlockPos at, List<BlockPos> fires, List<BlockPos> spreading) {
+        for (BlockPos f : fires) {
+            int d = Math.max(Math.abs(f.getX() - at.getX()), Math.abs(f.getZ() - at.getZ()));
+            if (d <= 1 || (d <= com.runecraft.osrs.content.minigames.TemporossStorm.FIRE_SPREAD_RADIUS && spreading.contains(f))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** A free tile of the arena floor: room to stand, on solid ground (not the sea). */
+    private boolean standable(MinigameSession s, BlockPos c) {
+        var below = world.getBlockState(c.below());
+        return s.box().contains(c.getX() + 0.5, c.getY(), c.getZ() + 0.5) && world.getBlockState(c).isAir()
+                && world.getBlockState(c.above()).isAir() && !below.isAir() && below.getFluidState().isEmpty();
+    }
+
+    /**
+     * Tethers to a totem pole when a colossal wave is about to land (from wherever the player stands). Each wave breaks each
+     * pole with a 15-25% chance (OSRS Wiki "Tempoross") and a broken pole can't be tethered to until it is repaired with a
+     * hammer ("Tempoross/Strategies"), so when earlier waves broke both, the player repairs one first, as a player would.
+     */
     private void surviveWave(TemporossSession t) {
         TemporossSession.View v = t.selfTestView(player);
         if (v.nextWave() <= MinigameRules.Tempoross.WAVE_WARNING && v.nextWave() > 0 && !v.tethered() && !v.submerged()) {
-            if (!Inv.has(player, "rope", 1)) {
+            boolean noPole = !t.selfTestTotemStanding(0) && !t.selfTestTotemStanding(1);
+            if (!Inv.has(player, "rope", 1) || (noPole && !Inv.has(player, "hammer", 1))) {
                 BlockPos at = t.selfTestSupplies();
                 BlockHooks.use(player, "tempoross_supplies", at, world.getBlockState(at));
+            }
+            if (noPole) {
+                BlockPos broken = t.selfTestTotem(0);
+                BlockHooks.use(player, "tempoross_broken_totem", broken, world.getBlockState(broken));
+                if (t.selfTestTotemStanding(0)) {
+                    polesRepaired++;
+                } else if (!poleRepairFailed) {
+                    poleRepairFailed = true;
+                    notes.add("a wave had broken both totem poles and repairing one failed (hammer: "
+                            + Inv.has(player, "hammer", 1) + "), so the next wave found nothing to tether to");
+                }
             }
             for (int i = 0; i < 2; i++) {
                 BlockPos totem = t.selfTestTotem(i);
@@ -571,7 +636,9 @@ public final class SkillingBossWalk {
      * points or XP), then the second through the rope exit (Petrified Pete pays the points and 3.8 Mining XP a point).
      */
     private void volcanicMineExit() {
-        String vm = com.runecraft.osrs.content.minigames.MinigameCurrencies.VOLCANIC_MINE;
+        // The balance Petrified Pete's Ore Shop spends: stored under the currency's key (MinigameSession.addPoints).
+        String vm = com.runecraft.osrs.content.minigames.MinigameCurrencies.key(
+                com.runecraft.osrs.content.minigames.MinigameCurrencies.VOLCANIC_MINE);
         int earned = 200;
         for (boolean rope : new boolean[]{false, true}) {
             step = rope ? "rope exit" : "leave command";
