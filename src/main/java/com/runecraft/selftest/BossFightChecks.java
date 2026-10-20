@@ -402,8 +402,23 @@ final class BossFightChecks {
         int pocketed = Math.max(0, inventoryCount(p) - invBefore);
         // loot kept for the player elsewhere (the Doom's delve loot waits in the burrow hole until claimed)
         pocketed += Math.max(0, com.runecraft.content.bosses.BossSelfTests.heldLoot(id, p) - heldBefore);
-        String emptyRoll = "";
-        if (ground + pocketed == 0) {
+        String lootNote = "";
+        int brother = boss instanceof BossEntity legacyBoss ? com.runecraft.osrs.content.dungeons.Barrows.indexOf(legacyBoss.boss()) : -1;
+        if (brother >= 0) {
+            // OSRS: the Barrows brothers drop nothing themselves; the Barrows chest rolls the run's loot (one roll per brother
+            // killed, plus one). Check the chest a run with this brother killed opens instead of the ground.
+            com.runecraft.osrs.content.dungeons.BarrowsRun run = com.runecraft.osrs.content.dungeons.BarrowsRun.of(1 << brother,
+                    1 << brother, (brother + 1) % 6, 0L, false);
+            List<com.runecraft.osrs.content.dungeons.BarrowsRun.Reward> chest = List.of();
+            for (int roll = 0; roll < 20 && chest.isEmpty(); roll++) {
+                chest = run.rollRewards(new java.util.Random(roll));
+            }
+            if (chest.isEmpty()) {
+                throw new AssertionError("killed (kc +" + kc + "), but the Barrows chest of a run with him killed gave nothing in 20 opens");
+            }
+            lootNote = " (a brother drops nothing himself: the Barrows chest of his run gives " + chest.get(0).count() + " "
+                    + chest.get(0).item() + (chest.size() > 1 ? " and " + (chest.size() - 1) + " more" : "") + ")";
+        } else if (ground + pocketed == 0) {
             // OSRS can leave a kill empty only through a shared table's "nothing" slot (the gem drop table's 63/128): the
             // kill's roll landed on drop lines that gave no item. Any other empty kill is a bug (an empty roll of the boss's
             // own table, or loot that landed out of the player's sight).
@@ -413,14 +428,14 @@ final class BossFightChecks {
                 throw new AssertionError("killed (kc +" + kc + ") but no loot: nothing on the ground or in the inventory"
                         + (rolled ? " (its roll: " + roll.lines() + " drop lines, " + roll.items() + " items)" : ""));
             }
-            emptyRoll = " (its roll landed on a shared table's nothing slot)";
+            lootNote = " (its roll landed on a shared table's nothing slot)";
         }
         String attacked = rec.firstAttackTick >= 0 ? "attacked @" + rec.firstAttackTick + " " + rec.attacks
                 : passive ? "passive" : "no attack reached the fake player (area attacks only reach listed players)";
         return attacked + ", hit it @" + firstHitTick + " " + (realAttacks ? describe(landed) : "(only its mechanic hurts it)")
                 + ", killed @" + killedAt + (forms.isEmpty() ? "" : " forms " + String.join(" ", forms))
                 + (assists.isEmpty() ? "" : " assists " + assists) + (cleared > 0 ? " adds " + cleared : "")
-                + ", kc +" + kc + ", loot " + ground + (pocketed > 0 ? "+" + pocketed + " pocketed" : "") + emptyRoll
+                + ", kc +" + kc + ", loot " + ground + (pocketed > 0 ? "+" + pocketed + " pocketed" : "") + lootNote
                 + ", log +" + (data.collectionLog().size() - logBefore);
     }
 
