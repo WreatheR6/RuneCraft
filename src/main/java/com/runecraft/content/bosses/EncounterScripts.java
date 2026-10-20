@@ -973,10 +973,16 @@ final class EncounterScripts {
         protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             if (!pillars) {
                 pillars = true;
-                BlockPos c = home;
-                for (int[] o : new int[][]{{-5, -3}, {5, -3}, {-5, 5}, {5, 5}}) {
-                    for (int y = 1; y <= 3; y++) {
-                        BossFx.world(boss).setBlockAndUpdate(c.offset(o[0], y, o[1]), Blocks.CHISELED_DEEPSLATE.defaultBlockState());
+                // Four pillars to hide from his gaze, standing on the floor around the arena's centre: the same blocks on every
+                // summon (earlier versions stacked a new floating set around each spawn point), and never over scenery.
+                BlockPos c = arenaCentre(boss);
+                ServerLevel w = BossFx.world(boss);
+                for (int[] o : new int[][]{{-5, -4}, {5, -4}, {-5, 4}, {5, 4}}) {
+                    for (int y = 0; y < 3; y++) {
+                        BlockPos at = c.offset(o[0], y, o[1]);
+                        if (w.getBlockState(at).isAir()) {
+                            w.setBlockAndUpdate(at, Blocks.CHISELED_DEEPSLATE.defaultBlockState());
+                        }
                     }
                 }
                 BossFx.say(boss, "Duke Sucellus stirs from his slumber...");

@@ -168,11 +168,17 @@ final class ClassicScripts {
         private boolean coreRoll;
         private int coreTick;
 
+        /** The core is rolled (1/8) on each attack it makes below 1,000 hitpoints (chooseAttack runs every tick, not per attack). */
+        @Override
+        public AttackDef beforeAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
+            if (boss.getHealth() < mcHp(boss, 1000)) {
+                coreRoll = true;
+            }
+            return attack;
+        }
+
         @Override
         public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
-            if (boss.getHealth() < mcHp(boss, 1000)) {
-                coreRoll = true; // rolled when it attacks below 1,000 hitpoints
-            }
             double dx = target.getX() - boss.getX();
             double dz = target.getZ() - boss.getZ();
             return dx * dx + dz * dz < boss.getBbWidth() * boss.getBbWidth() / 4 ? ClassicBosses.CORP_STOMP : null;

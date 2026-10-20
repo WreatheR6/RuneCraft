@@ -120,13 +120,30 @@ public final class DataBossService {
         }
         BiFunction<ServerPlayer, BossDef, BossVariant> chooser = VARIANTS.get(boss.id);
         BossVariant variant = chooser == null ? null : chooser.apply(player, boss);
-        DataBossEntity entity = spawn(world, pos.above().relative(player.getDirection(), 3), boss, player);
+        DataBossEntity entity = spawn(world, spawnPoint(world, pos, boss, player), boss, player);
         if (entity != null && variant != null) {
             entity.applyVariant(variant);
         }
         world.playSound(null, pos, SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 0.6f, 1.0f);
         Msg.red(player, (variant != null ? variant.name() : boss.name) + " (level-" + (variant != null ? variant.combatLevel()
                 : boss.combatLevel) + ") awakens!");
+    }
+
+    /**
+     * Where a summoned boss appears: the centre of its arena when the stone is its arena's (the stone stands by the north
+     * entrance, so a spawn next to it could land in the entrance or outside the ring, and the scripts lay their vents,
+     * totems, pools and spots out around where the boss first stands), else three blocks from the stone the way the player
+     * faces (stones in hand-built lairs: the Dagannoth Kings', the King Black Dragon's).
+     */
+    static BlockPos spawnPoint(ServerLevel world, BlockPos stone, BossDef boss, ServerPlayer player) {
+        com.runecraft.osrs.world.ArenaLayout.Arena a = com.runecraft.osrs.world.ArenaLayout.of(boss.id);
+        if (a != null && Math.hypot(stone.getX() - a.x(), stone.getZ() - a.z()) <= a.radius() + 3) {
+            world.getChunk(a.x() >> 4, a.z() >> 4);
+            int top = world.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, a.x(), a.z());
+            // the floor is level with the stone's base; a big gap means something stands over the centre (keep the stone's level)
+            return new BlockPos(a.x(), Math.abs(top - stone.getY()) <= 3 ? top : stone.getY(), a.z());
+        }
+        return stone.above().relative(player.getDirection(), 3);
     }
 
     /** Spawns a boss at a position, targeting {@code target} (nullable). */
