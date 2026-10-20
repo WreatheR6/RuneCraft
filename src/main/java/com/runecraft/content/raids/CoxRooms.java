@@ -6,6 +6,7 @@ import com.runecraft.combat.CombatHandler;
 import com.runecraft.combat.CombatHooks;
 import com.runecraft.combat.PoisonService;
 import com.runecraft.content.systems.CombatAchievementService;
+import com.runecraft.content.systems.SysCombat;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.raids.CoxRules;
@@ -212,6 +213,41 @@ final class CoxRooms {
         return type == AttackType.STAB || type == AttackType.SLASH || type == AttackType.CRUSH;
     }
 
+    private static final Skill[] DRAINABLE = {Skill.ATTACK, Skill.STRENGTH, Skill.DEFENCE, Skill.MAGIC, Skill.RANGED};
+
+    /**
+     * Drained stats of CoX creatures come back at each creature's own rate (Mod Ash: a level every 8 ticks for Stone
+     * Guardians, 15 for Tekton, ...; {@link CoxRules#statRegenTicks}). The server already gives every drain back one level
+     * each 100 ticks ({@link SysCombat#gameTick}); this adds the difference (called each raid tick for the current room).
+     */
+    static void regenerateStats(List<LivingEntity> creatures, long tick) {
+        for (LivingEntity e : creatures) {
+            if (e.isAlive() && CoxRules.extraRegenDue(CoxRules.statRegenTicks(RaidInstance.creatureId(e)), tick)) {
+                for (Skill s : DRAINABLE) {
+                    restoreDrain(e, s, 1);
+                }
+            }
+        }
+    }
+
+    /** Gives a creature back up to {@code levels} of a drained stat; returns the levels restored. */
+    static int restoreDrain(LivingEntity e, Skill skill, int levels) {
+        int drained = SysCombat.baseStatLevel(e, skill) - SysCombat.drainedStatLevel(e, skill);
+        int back = Math.min(drained, levels);
+        if (back <= 0) {
+            return 0;
+        }
+        SysCombat.Drain d = SysCombat.drain(e);
+        switch (skill) {
+            case ATTACK -> d.attack = Math.max(0, d.attack - back);
+            case STRENGTH -> d.strength = Math.max(0, d.strength - back);
+            case MAGIC -> d.magic = Math.max(0, d.magic - back);
+            case RANGED -> d.ranged = Math.max(0, d.ranged - back);
+            default -> d.defence = Math.max(0, d.defence - back);
+        }
+        return back;
+    }
+
     // ================================================================== Tekton
 
     /**
@@ -395,6 +431,11 @@ final class CoxRooms {
             w.until(() -> !atAnvil, 40, "Tekton never left his anvil");
             w.expect(enraged() && enrages > 0, "Tekton did not get up enraged");
             w.expect(enragedAccuracy(AttackType.CRUSH) < 0.7, "enraged Tekton's crush defence did not rise");
+            // Drained stats come back quickly in the Chambers (Mod Ash: a level every 15 ticks for Tekton).
+            SysCombat.drainDefence(tekton, 20);
+            int drainedTo = SysCombat.drainedStatLevel(tekton, Skill.DEFENCE);
+            w.tick(45);
+            w.expect(SysCombat.drainedStatLevel(tekton, Skill.DEFENCE) > drainedTo, "Tekton's drained Defence did not regenerate");
             w.kill(tekton, AttackType.CRUSH, "Tekton");
             return "anvil visits " + anvilVisits + ", " + enrages + " enrage(s), " + stomps + " stomp(s)";
         }
@@ -591,22 +632,17 @@ final class CoxRooms {
             }
         }
 
-        /** Vasa's scaled base Defence level. */
+        /** Vasa's scaled base Defence level (party and mode scaling, before drains). */
         private int baseDefence() {
-            return RaidScaling.coxScaledDefence("vasa_nistirio", vasa.def().defence, raid.partySize(),
-                    raid.mode() == com.runecraft.osrs.content.raids.RaidMode.CHALLENGE);
+            return SysCombat.baseStatLevel(vasa, Skill.DEFENCE);
         }
 
-        /** Each heal off a crystal also restores (10% + 1) of his Defence, up to his base level (Mod Ash). */
+        /**
+         * Each heal off a crystal also gives back (10% + 1) of his base Defence that special attacks drained, up to his base
+         * level (Mod Ash).
+         */
         private void restoreDefence(int heals) {
-            if (vasa.def() == null) {
-                return;
-            }
-            int base = baseDefence();
-            int restore = Math.min(base - vasa.stats().defence(), heals * CoxRules.vasaDefenceHeal(base));
-            if (restore > 0) {
-                raid.raiseDefence(vasa, restore);
-            }
+            restoreDrain(vasa, Skill.DEFENCE, heals * CoxRules.vasaDefenceHeal(baseDefence()));
         }
 
         /** The team disabled the lit crystal: its healing is lost and he goes back for another. */
@@ -735,13 +771,13 @@ final class CoxRooms {
             // Leave this crystal alone: the shared timer runs out, he takes the healing and teleports the team.
             w.until(() -> state == State.WALKING, 10, "Vasa never walked to the next crystal");
             w.hit(vasa, Math.max(10, raid.maxHitpoints(vasa) / 5), AttackType.CRUSH);
-            raid.raiseDefence(vasa, -Math.min(60, vasa.stats().defence() - 1)); // as if drained by special attacks
+            SysCombat.drainDefence(vasa, Math.min(60, baseDefence() - 1)); // as if drained by special attacks
             int hurt = raid.hitpoints(vasa);
             int before = teleports;
             w.until(() -> teleports > before, 90, "Vasa's teleport timer never ran out (" + timer + " left)");
             w.expect(drained == 1 && healed > 0 && raid.hitpoints(vasa) > hurt, "Vasa did not heal off the crystal he drained");
-            w.expect(vasa.stats().defence() == baseDefence(), "draining a crystal did not restore Vasa's Defence ("
-                    + vasa.stats().defence() + "/" + baseDefence() + ")");
+            w.expect(SysCombat.drainedStatLevel(vasa, Skill.DEFENCE) == baseDefence(), "draining a crystal did not restore Vasa's"
+                    + " Defence (" + SysCombat.drainedStatLevel(vasa, Skill.DEFENCE) + "/" + baseDefence() + ")");
             w.until(() -> state == State.WALKING || state == State.DRAINING, 30, "Vasa did not light a crystal after teleporting");
             w.expect(alive(crystals[target]), "the crystal Vasa picked was not lit");
             int guard = 0;

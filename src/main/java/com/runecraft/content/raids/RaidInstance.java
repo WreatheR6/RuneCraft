@@ -885,6 +885,9 @@ public final class RaidInstance {
                 logic.complete();
             }
         }
+        if (type == RaidType.COX) {
+            CoxRooms.regenerateStats(logics[current].spawned, tick); // CoX creatures' own stat regeneration (Mod Ash)
+        }
         if (logics[current].done && current + 1 < rooms.size() && logics[current].exitsEast()) {
             for (ServerPlayer p : activePlayers()) {
                 if (inRoom(p.position(), current + 1)) {

@@ -122,6 +122,43 @@ public final class CoxRules {
     /** Every Vanguard attack is three hits (OSRS wiki); the melee one lands all three on its target. */
     public static final int VANGUARD_HITS_PER_ATTACK = 3;
 
+    // ------------------------------------------------------------------ stat regeneration
+
+    /**
+     * Game ticks per level a CoX creature's drained stats regenerate (Mod Ash, 9 July 2026, quoted on the OSRS wiki's
+     * "Vespula"): Stone Guardians 8, Muttadiles 15, Vasa Nistirio 10, Vasa's crystals 9, Tekton 15, lizardman shamans 20,
+     * skeletal mystics 25, jewelled crabs 1, Vespula 10, her portal 45, flying vespine soldiers 16; everything else the
+     * usual 100. (Lux grubs and grounded soldiers never regenerate; here grubs have no stats and a grounded soldier explodes
+     * within 20 seconds, so they keep the flying soldier's rate.)
+     */
+    public static int statRegenTicks(String creatureId) {
+        return switch (creatureId) {
+            case "cox_guardian" -> 8;
+            case "small_muttadile", "muttadile", "tekton" -> 15;
+            case "vasa_nistirio", "vespula" -> 10;
+            case "vasa_crystal" -> 9;
+            case "cox_lizardman_shaman" -> 20;
+            case "skeletal_mystic" -> 25;
+            case "cox_crystal_crab" -> 1;
+            case "vespula_portal" -> 45;
+            case "vespine_soldier" -> 16;
+            default -> 100;
+        };
+    }
+
+    /**
+     * Whether a creature regenerating a level every {@code ticks} ticks is due an extra level at {@code tick}, on top of the
+     * level every 100 ticks that every drained creature gets anyway: spread evenly so that the two add up to its own rate.
+     */
+    public static boolean extraRegenDue(int ticks, long tick) {
+        if (ticks <= 0 || ticks >= 100 || tick <= 0) {
+            return false;
+        }
+        long per = 100L * ticks;
+        long gain = 100 - ticks;
+        return tick * gain / per != (tick - 1) * gain / per;
+    }
+
     // ------------------------------------------------------------------ Vespula
 
     /**

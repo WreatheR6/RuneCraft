@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -341,5 +342,31 @@ class CoxRulesTest {
         assertEquals(CoxSupplies.BURNT_BAT, CoxSupplies.burnt(CoxSupplies.foodByRaw("raw_psykk_bat")));
         assertTrue(RaidItems.RAID_ONLY_ITEMS.contains(CoxSupplies.KEYSTONE));
         assertTrue(RaidItems.RAID_ONLY_ITEMS.contains(CoxSupplies.BLOSSOM));
+    }
+
+    @Test
+    void drainedStatsRegenerateAtEachCreaturesRate() {
+        // Mod Ash (9 July 2026): ticks per level.
+        assertEquals(8, CoxRules.statRegenTicks("cox_guardian"));
+        assertEquals(15, CoxRules.statRegenTicks("tekton"));
+        assertEquals(15, CoxRules.statRegenTicks("muttadile"));
+        assertEquals(10, CoxRules.statRegenTicks("vasa_nistirio"));
+        assertEquals(9, CoxRules.statRegenTicks("vasa_crystal"));
+        assertEquals(20, CoxRules.statRegenTicks("cox_lizardman_shaman"));
+        assertEquals(25, CoxRules.statRegenTicks("skeletal_mystic"));
+        assertEquals(45, CoxRules.statRegenTicks("vespula_portal"));
+        assertEquals(100, CoxRules.statRegenTicks("great_olm"));
+        // The extra levels plus the usual level per 100 ticks add up to the creature's own rate.
+        for (int rate : new int[]{1, 8, 9, 10, 15, 16, 20, 25, 45}) {
+            int extra = 0;
+            for (long t = 1; t <= 3600; t++) {
+                if (CoxRules.extraRegenDue(rate, t)) {
+                    extra++;
+                }
+            }
+            assertEquals(3600 / rate, extra + 3600 / 100, 1, "rate " + rate);
+        }
+        assertFalse(CoxRules.extraRegenDue(100, 100));
+        assertFalse(CoxRules.extraRegenDue(15, 0));
     }
 }
