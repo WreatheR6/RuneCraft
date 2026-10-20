@@ -747,12 +747,21 @@ final class GameplayChecks {
         boss.setHealth(0f);
         boss.die(CombatHandler.source(p()));
         int kc = totalKills() - kcBefore;
-        if (kc <= 0) {
+        // A companion (Dawn beside Dusk, Eldric beside Branda) is part of its main boss's kill: OSRS counts one "Grotesque
+        // Guardians" / "Royal Titans" kill when the main boss dies (boss:fight:dusk and boss:fight:branda_the_fire_queen
+        // check that one), so its own death must add none.
+        boolean companion = DataBossService.isCompanion(id);
+        if (companion && kc != 0) {
+            throw failure("a companion boss added a kill count of its own (+" + kc + "): its death is part of the main boss's kill");
+        }
+        if (!companion && kc <= 0) {
             throw failure("killing it did not add a kill count (" + ticks + " ticks alive)");
         }
         int drops = c.world.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, new AABB(boss.blockPosition()).inflate(6),
                 e -> true).size();
-        return ticks + " ticks" + (forms.isEmpty() ? "" : ", forms " + String.join(" ", forms)) + ", kc +" + kc + ", " + drops + " drops, log +" + (data().collectionLog().size() - logBefore);
+        return ticks + " ticks" + (forms.isEmpty() ? "" : ", forms " + String.join(" ", forms))
+                + (companion ? ", companion: no kill count of its own (shared with its main boss)" : ", kc +" + kc) + ", " + drops
+                + " drops, log +" + (data().collectionLog().size() - logBefore);
     }
 
     private int totalKills() {
