@@ -556,6 +556,11 @@ public final class ClueService {
         };
     }
 
+    /**
+     * Whether the player wears {@code id}: armour, weapon or shield, this module's jewellery / cape / gloves / ammo slots, or
+     * another module's worn slots (the quests module's capes and gloves, such as the Cape of Legends an elite emote clue asks
+     * for).
+     */
     static boolean equipped(ServerPlayer p, SysState.SysPlayer sp, String id) {
         if (sp.wearing(id)) {
             return true;
@@ -566,7 +571,7 @@ public final class ClueService {
                 return true;
             }
         }
-        return false;
+        return com.runecraft.combat.HitCalcBridge.extraWornIds.apply(p).contains(id);
     }
 
     static boolean slotEmpty(ServerPlayer p, SysState.SysPlayer sp, String slot) {
@@ -1190,7 +1195,8 @@ public final class ClueService {
     /** Kill steps, key steps and Sherlock's kill challenges; guardians killed by their owner. */
     static void onKillEvent(ServerPlayer p, LivingEntity entity, MonsterStats stats) {
         Guard g = GUARDS.remove(entity.getUUID());
-        if (g != null && g.owner().equals(p.getUUID()) && !guardianAlive(p, g.tier())) {
+        // Only while the player still follows that clue (a guardian outliving its scroll guards nothing).
+        if (g != null && g.owner().equals(p.getUUID()) && following(p, g.tier()) && !guardianAlive(p, g.tier())) {
             Step step = current(p, g.tier());
             if (step != null && progress(SysState.of(p), g.tier())[1] == g.index()) {
                 setFlag(p, g.tier(), GUARDIAN_KILLED);
@@ -1658,16 +1664,35 @@ public final class ClueService {
         FORCED.remove(p.getUUID());
     }
 
-    /** The player's live guardians (self-test). */
-    static List<LivingEntity> guardians(ServerPlayer p) {
+    /** The live guardians summoned by the player's current step of a tier (self-test). */
+    static List<LivingEntity> guardians(ServerPlayer p, Tier tier) {
         List<LivingEntity> out = new ArrayList<>();
         ServerLevel world = (ServerLevel) p.level();
+        int index = stepIndex(p, tier);
         for (Map.Entry<UUID, Guard> e : GUARDS.entrySet()) {
-            if (e.getValue().owner().equals(p.getUUID()) && world.getEntity(e.getKey()) instanceof LivingEntity le && le.isAlive()) {
+            Guard g = e.getValue();
+            if (g.owner().equals(p.getUUID()) && g.tier() == tier && g.index() == index
+                    && world.getEntity(e.getKey()) instanceof LivingEntity le && le.isAlive()) {
                 out.add(le);
             }
         }
         return out;
+    }
+
+    /** Removes every guardian the player has summoned, of any tier (self-test clean-up). */
+    static void clearGuardians(ServerPlayer p) {
+        ServerLevel world = (ServerLevel) p.level();
+        Iterator<Map.Entry<UUID, Guard>> it = GUARDS.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<UUID, Guard> e = it.next();
+            if (e.getValue().owner().equals(p.getUUID())) {
+                Entity mob = world.getEntity(e.getKey());
+                if (mob != null) {
+                    mob.discard();
+                }
+                it.remove();
+            }
+        }
     }
 
     /** The index of the player's current step of a tier (self-test). */

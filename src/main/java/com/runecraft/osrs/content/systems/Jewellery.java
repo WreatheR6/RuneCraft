@@ -247,6 +247,18 @@ public final class Jewellery {
                 Perk.NONE, "A trimmed amulet of magic.");
         worn("amulet_of_power_t", "Amulet of power (t)", Slot.NECK, "amulet", 0xF0F0FF, 3525, s(6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 1),
                 Perk.NONE, "A trimmed amulet of power.");
+        // Unenchanted gold, gem and silver jewellery: OSRS lets every ring, necklace, strung amulet and bracelet be worn, with no
+        // bonuses (wiki infoboxes / DPS calculator's equipment.json), e.g. for emote clues ("Equip a gold ring and a gold
+        // necklace"). Items: ItemCatalog (gold ring, necklace and amulet, the gem rings) and the skilling module's crafted
+        // jewellery (bracelets, gem necklaces and amulets, dragonstone and up, silver opal/jade/topaz); unstrung amulets
+        // ("_u") can't be worn.
+        for (String jewel : new String[]{"gold", "sapphire", "emerald", "ruby", "diamond", "dragonstone", "onyx", "zenyte", "opal",
+                "jade", "topaz"}) {
+            wornExternal(jewel + "_ring", Slot.RING, NONE);
+            wornExternal(jewel + "_necklace", Slot.NECK, NONE);
+            wornExternal(jewel + "_amulet", Slot.NECK, NONE);
+            wornExternal(jewel + "_bracelet", Slot.HANDS, NONE);
+        }
         // Worn core/common items (stats only).
         wornExternal("amulet_of_accuracy", Slot.NECK, s(4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0));
         wornExternal("amulet_of_the_damned", Slot.NECK, s(10, 10, 10, 10, 10, 3, 3, 3, 3, 3, 6, 0, 0, 3)); // minigames module
