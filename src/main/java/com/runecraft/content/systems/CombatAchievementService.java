@@ -143,6 +143,7 @@ public final class CombatAchievementService {
         });
         CombatHooks.addDamageListener(CombatAchievementService::onDamaged);
         com.runecraft.boss.Mechanics.attackListener = CombatAchievementService::bossAttack;
+        com.runecraft.combat.PoisonService.monsterToxinListener = CombatAchievementService::toxinHit;
         com.runecraft.content.GameEvents.onKill(CombatAchievementService::onKill);
         SysTicks.everyPlayer(CombatAchievementService::tick);
     }
@@ -154,6 +155,96 @@ public final class CombatAchievementService {
     public static void flag(ServerPlayer p, String flag) {
         for (Tracker t : trackers(p)) {
             t.m.flags.add(flag);
+        }
+        checkpoint(p);
+    }
+
+    /**
+     * Judges the raid and minigame-run tasks marked {@code checkpoint} against the raid or run so far: OSRS awards "Perfect
+     * Het" as the room is completed and "Playing with Jads" as wave 68 is cleared, not at the end. Called whenever a flag is
+     * reported.
+     */
+    public static void checkpoint(ServerPlayer p) {
+        Tracker run = RUNS.get(p.getUUID());
+        if (run == null) {
+            return;
+        }
+        Metrics m = run.m;
+        if (run.raid != null) {
+            m.ticks = run.raid.elapsedTicks();
+            m.raid = raidInfo(run.raid, p, 0, 0);
+            judge(p, Track.RAID, run.raid.type.name(), m, true);
+            return;
+        }
+        // The session's own conditions count for this judgement only (they can still change before the run ends).
+        Set<String> added = new HashSet<>();
+        if (run.session != null) {
+            m.stage = run.session.caStage();
+            for (String f : run.session.caFlags(p)) {
+                if (m.flags.add(f)) {
+                    added.add(f);
+                }
+            }
+        }
+        m.ticks = SysTicks.now() - run.start;
+        judge(p, Track.RUN, run.key, m, true);
+        m.flags.removeAll(added);
+    }
+
+    /** Judges every not-yet-done task of a raid or run track aimed at {@code target} (only checkpoint tasks if asked). */
+    static void judge(ServerPlayer p, Track track, String target, Metrics m, boolean checkpointsOnly) {
+        SysState.SysPlayer sp = SysState.of(p);
+        for (Task t : CombatAchievements.tasks()) {
+            if (t.track() == track && !sp.caDone.contains(t.id()) && t.target().equals(target)
+                    && (!checkpointsOnly || CombatAchievementRules.hasFlag(t.rule(), "checkpoint"))
+                    && CombatAchievementRules.meets(t.rule(), m)) {
+                counted(p, sp, t);
+            }
+        }
+    }
+
+    /**
+     * Adds to the player's running total of a {@link Track#COUNTER} task ("Sit Back and Relax": damage dealt by thralls),
+     * completing it at its count.
+     */
+    public static void counter(ServerPlayer p, String key, int n) {
+        if (n <= 0) {
+            return;
+        }
+        SysState.SysPlayer sp = SysState.of(p);
+        for (Task t : CombatAchievements.tasks()) {
+            if (t.track() == Track.COUNTER && !sp.caDone.contains(t.id()) && t.target().equals(key)) {
+                int total = sp.caCounters.merge(t.id(), n, Integer::sum);
+                if (total >= t.count()) {
+                    sp.caCounters.remove(t.id());
+                    complete(p, t);
+                }
+            }
+        }
+    }
+
+    /** Poison or venom hurt a monster: it is the last damage of every fight with it until someone hits it again. */
+    private static void toxinHit(LivingEntity e) {
+        String key = fightKey(e);
+        if (key == null) {
+            return;
+        }
+        for (ServerPlayer p : near(e)) {
+            Tracker f = FIGHTS.get(p.getUUID());
+            if (f != null && f.key.equals(key)) {
+                f.m.flags.add(CombatAchievements.FLAG_TOXIN_LAST);
+            }
+        }
+    }
+
+    /** One cast of a freezing spell froze these creatures ("Nylocas, On the Rocks": four nylocas with one Ice Barrage). */
+    public static void froze(ServerPlayer p, String spell, List<LivingEntity> frozen) {
+        if (!"ice_barrage".equals(spell) || frozen.size() < 4) {
+            return;
+        }
+        long nylocas = frozen.stream().filter(e -> nameOf(e).startsWith("nylocas")).count();
+        if (nylocas >= 4) {
+            flag(p, CombatAchievements.FLAG_NYLO_BARRAGE);
         }
     }
 
@@ -310,6 +401,10 @@ public final class CombatAchievementService {
             }
             run.last = now;
         }
+        Tracker game = RUNS.get(p.getUUID());
+        if (game != null && !key.startsWith("kill:")) {
+            game.m.engagedAt.putIfAbsent(key, now); // "before fighting him" (Facing Jad Head-on II)
+        }
         Tracker f = FIGHTS.get(p.getUUID());
         if (f != null && !f.key.equals(key) && !f.key.startsWith("kill:")) {
             // A boss fight carries on while its minions, bodyguards or spawns join in.
@@ -330,6 +425,8 @@ public final class CombatAchievementService {
             }
             f.m.startPlayers = playersNear(p);
             f.m.maxPlayers = f.m.startPlayers;
+            // "... without a slayer task" (the DT2 speed tasks).
+            f.m.onTask = com.runecraft.content.slayer.SlayerService.isOnTask(p, other);
             if (other instanceof com.runecraft.boss.DataBossEntity boss) {
                 f.m.awakened = boss.awakened();
                 f.m.delve = boss.delve();
@@ -365,6 +462,7 @@ public final class CombatAchievementService {
         t.m.book = SysState.of(p).book.name();
         t.pos = p.position();
         t.m.gear(worn(p));
+        t.m.wield(p.getMainHandItem().isEmpty() ? "" : Inv.idOf(p.getMainHandItem()), SysTicks.now());
         for (Prayer pr : d.activePrayers()) {
             t.m.prayersEver.add(pr.name());
         }
@@ -427,6 +525,7 @@ public final class CombatAchievementService {
             }
             if (damage > 0) {
                 f.m.targetHits++;
+                f.m.flags.remove(CombatAchievements.FLAG_TOXIN_LAST);
             }
             f.pendingAttackTick = SysTicks.now();
             f.pendingAttackMob = target.getId();
@@ -589,7 +688,7 @@ public final class CombatAchievementService {
 
     /** What the player carries and wears this tick. */
     private record Snapshot(Map<String, Integer> food, int doses, String equipment, Set<String> prayers, String book, boolean running,
-                            float health, int prayer) {
+                            float health, int prayer, String weapon) {
     }
 
     private static final EquipmentSlot[] SLOTS = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET,
@@ -619,7 +718,7 @@ public final class CombatAchievementService {
             prayers.add(pr.name());
         }
         return new Snapshot(food, doses, String.join(",", worn(p)), prayers, SysState.of(p).book.name(), p.isSprinting(), p.getHealth(),
-                Players.data(p).prayerPoints());
+                Players.data(p).prayerPoints(), p.getMainHandItem().isEmpty() ? "" : Inv.idOf(p.getMainHandItem()));
     }
 
     /** Item ids of everything worn: armour and hands, plus the jewellery slots. */
@@ -684,6 +783,7 @@ public final class CombatAchievementService {
             }
         }
         t.pos = at;
+        m.wield(s.weapon(), SysTicks.now());
         m.prayersEver.addAll(s.prayers());
         if (s.running()) {
             m.ran = true;
@@ -695,7 +795,7 @@ public final class CombatAchievementService {
 
     // ------------------------------------------------------------------ kills
 
-    private static void onKill(ServerPlayer p, LivingEntity e, MonsterStats stats) {
+    static void onKill(ServerPlayer p, LivingEntity e, MonsterStats stats) {
         String name = (stats == null ? e.getName().getString() : stats.name()).toLowerCase(Locale.ROOT);
         SysState.SysPlayer sp = SysState.of(p);
         for (Task t : CombatAchievements.tasks()) {
@@ -705,6 +805,8 @@ public final class CombatAchievementService {
                     sp.caCounters.remove(t.id());
                     complete(p, t);
                 }
+            } else if (t.track() == Track.COLLECT && !sp.caDone.contains(t.id())) {
+                collect(p, sp, t, e, name);
             }
         }
         String key = fightKey(e);
@@ -735,6 +837,30 @@ public final class CombatAchievementService {
             if (key.startsWith("kill:") || bossKc(p, key) > f.kcAtStart) {
                 finish(p, f, e);
             }
+        }
+    }
+
+    /**
+     * A kill towards a {@link Track#COLLECT} task ("Into the Den of Giants": a hill, moss and fire giant in the Giants' Den):
+     * each listed monster killed where the task says sets its bit in the saved progress.
+     */
+    private static void collect(ServerPlayer p, SysState.SysPlayer sp, Task t, LivingEntity e, String name) {
+        int bit = CombatAchievements.collectBit(t, name);
+        if (bit == 0 || !com.runecraft.world.Gielinor.is(e)) {
+            return;
+        }
+        Metrics where = new Metrics();
+        int x = e.getBlockX();
+        int y = e.getBlockY();
+        int z = e.getBlockZ();
+        where.at = place -> com.runecraft.osrs.content.dungeons.Dungeons.inside(place, x, y, z);
+        if (!CombatAchievementRules.meets(t.rule(), where)) {
+            return;
+        }
+        int bits = sp.caCounters.merge(t.id(), bit, (a, b) -> a | b);
+        if (CombatAchievements.collectedAll(t, bits)) {
+            sp.caCounters.remove(t.id());
+            complete(p, t);
         }
     }
 
@@ -841,14 +967,21 @@ public final class CombatAchievementService {
                 || s.anchor.distanceToSqr(p.position()) > STREAK_RANGE * STREAK_RANGE);
     }
 
-    /** Progress of a counted task for the task list: kills, completions or the current streak. */
+    /**
+     * Progress of a counted task for the task list: the kill count, kills, completions, the running total, the monsters
+     * collected or the current streak.
+     */
     static int progress(ServerPlayer p, Task t) {
         if (t.track() == Track.STREAK) {
             Map<String, Streak> streaks = STREAKS.get(p.getUUID());
             Streak s = streaks == null ? null : streaks.get(t.id());
             return s == null ? 0 : s.count;
         }
-        return SysState.of(p).caCounters.getOrDefault(t.id(), 0);
+        if (t.track() == Track.KC) {
+            return Math.min(t.count(), CombatAchievements.kcValue(t.target(), k -> kc(p, k)));
+        }
+        int n = SysState.of(p).caCounters.getOrDefault(t.id(), 0);
+        return t.track() == Track.COLLECT ? Integer.bitCount(n) : n;
     }
 
     // ------------------------------------------------------------------ raids and minigame runs
@@ -914,13 +1047,7 @@ public final class CombatAchievementService {
         m.raid = raidInfo(raid, p, 0, 0);
         m.wornAtEnd.clear();
         m.wornAtEnd.addAll(worn(p));
-        SysState.SysPlayer sp = SysState.of(p);
-        for (Task t : CombatAchievements.tasks()) {
-            if (t.track() == Track.RAID && !sp.caDone.contains(t.id()) && t.target().equals(raid.type.name())
-                    && CombatAchievementRules.meets(t.rule(), m)) {
-                counted(p, sp, t);
-            }
-        }
+        judge(p, Track.RAID, raid.type.name(), m, false);
     }
 
     private static void completeRun(ServerPlayer p, Tracker run) {
@@ -932,13 +1059,7 @@ public final class CombatAchievementService {
         }
         m.wornAtEnd.clear();
         m.wornAtEnd.addAll(worn(p));
-        SysState.SysPlayer sp = SysState.of(p);
-        for (Task t : CombatAchievements.tasks()) {
-            if (t.track() == Track.RUN && !sp.caDone.contains(t.id()) && t.target().equals(run.key)
-                    && CombatAchievementRules.meets(t.rule(), m)) {
-                counted(p, sp, t);
-            }
-        }
+        judge(p, Track.RUN, run.key, m, false);
     }
 
     /** A delve level was completed: judges the delve run so far (time from the delve 1 fight, conditions over every level). */
@@ -952,12 +1073,7 @@ public final class CombatAchievementService {
         m.ticks = now - run.start;
         m.wornAtEnd.clear();
         m.wornAtEnd.addAll(worn(p));
-        for (Task t : CombatAchievements.tasks()) {
-            if (t.track() == Track.RUN && !sp.caDone.contains(t.id()) && t.target().equals(run.key)
-                    && CombatAchievementRules.meets(t.rule(), m)) {
-                counted(p, sp, t);
-            }
-        }
+        judge(p, Track.RUN, run.key, m, false);
     }
 
     /** Completes a task, or counts towards it when it needs several qualifying completions. */
@@ -980,6 +1096,10 @@ public final class CombatAchievementService {
         if (key.startsWith("mg:")) {
             return com.runecraft.content.minigames.MinigameData.of(p).stat(p.getUUID(), "kc:" + key.substring(3));
         }
+        if (key.startsWith(CombatAchievements.RAID_KC)) {
+            return com.runecraft.content.raids.RaidsState.get(p.getServer()).completions(p.getUUID(),
+                    key.substring(CombatAchievements.RAID_KC.length()));
+        }
         return Players.data(p).killCount(key);
     }
 
@@ -989,6 +1109,32 @@ public final class CombatAchievementService {
             if (t.track() == Track.KC && !sp.caDone.contains(t.id()) && CombatAchievements.kcValue(t.target(), k -> kc(p, k)) >= t.count()) {
                 complete(p, t);
             }
+        }
+    }
+
+    // ------------------------------------------------------------------ self-test hooks (CombatAchievementSelfTest)
+
+    /** Starts tracking a run as a minigame session would (no session: its own conditions are none). */
+    static void selfTestStartRun(ServerPlayer p, String key) {
+        Tracker run = new Tracker(key, SysTicks.now());
+        run.kcAtStart = kc(p, key);
+        start(p, run);
+        RUNS.put(p.getUUID(), run);
+    }
+
+    /** One game tick's measurements (weapons held, damage, supplies...) for the player's fight and run. */
+    static void selfTestMeasure(ServerPlayer p) {
+        Snapshot s = snapshot(p);
+        for (Tracker t : trackers(p)) {
+            measure(p, t, s);
+        }
+    }
+
+    /** Ends the tracked run as completed (judging its tasks), or just drops it. */
+    static void selfTestEndRun(ServerPlayer p, boolean completed) {
+        Tracker run = RUNS.remove(p.getUUID());
+        if (run != null && completed) {
+            completeRun(p, run);
         }
     }
 

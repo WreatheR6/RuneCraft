@@ -118,7 +118,8 @@ public final class CaMenus {
 
     private static String line(ServerPlayer p, SysState.SysPlayer sp, Task t) {
         boolean done = sp.caDone.contains(t.id());
-        boolean counted = t.track() == Track.KILLS || t.track() == Track.RAID || t.track() == Track.RUN || t.track() == Track.STREAK;
+        boolean counted = t.track() == Track.KILLS || t.track() == Track.RAID || t.track() == Track.RUN || t.track() == Track.STREAK
+                || t.track() == Track.KC || t.track() == Track.COUNTER || t.track() == Track.COLLECT;
         String progress = counted && t.count() > 1 && !done ? " (" + CombatAchievementService.progress(p, t) + "/" + t.count() + ")" : "";
         return (done ? "[x] " : t.track() == Track.UNTRACKED ? "[-] " : "[ ] ") + t.name() + " - " + t.description() + progress;
     }

@@ -196,6 +196,7 @@ final class GameplayChecks {
         // Items, combat and interactions (after the teleports, which generate the spell destinations' chunks).
         checks.addAll(ItemCombatChecks.all(context));
         checks.addAll(CannonChecks.all(context));
+        checks.addAll(com.runecraft.content.systems.CombatAchievementSelfTest.checks(context)); // round 39 CA sweep
         checks.addAll(DungeonWorldChecks.all(context));
         checks.addAll(SlayerChecks.all(context));
         checks.addAll(SeaChecks.all(context));

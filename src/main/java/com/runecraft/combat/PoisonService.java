@@ -19,6 +19,9 @@ import net.minecraft.world.entity.LivingEntity;
  */
 public final class PoisonService {
     private static final Map<UUID, Toxins.State> STATES = new ConcurrentHashMap<>();
+    /** Told when poison or venom hurts a monster (Combat Achievements: "A Slow Death"). */
+    public static java.util.function.Consumer<LivingEntity> monsterToxinListener = e -> {
+    };
 
     private PoisonService() {
     }
@@ -105,6 +108,9 @@ public final class PoisonService {
             CombatHooks.nameAttack("poison", null);
             CombatHandler.applyDamage(null, entity, damage);
             ServerNetworking.hitsplat(entity, damage, venom ? Net.SPLAT_VENOM : Net.SPLAT_POISON);
+            if (!(entity instanceof ServerPlayer)) {
+                monsterToxinListener.accept(entity);
+            }
             if (!s.active() && entity instanceof ServerPlayer p) {
                 Msg.game(p, "The poison has worn off.");
             }

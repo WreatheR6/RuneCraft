@@ -408,6 +408,7 @@ public final class SpellService {
             }
         }
         int totalDealt = 0;
+        List<LivingEntity> frozen = new ArrayList<>();
         for (LivingEntity t : targets) {
             double acc = 1.0;
             double dmgMult = 1.0;
@@ -446,7 +447,11 @@ public final class SpellService {
                 XpService.addTenths(p, Skill.HITPOINTS, CombatFormulas.hitpointsXpTenths(dealt));
             }
             applyEffect(p, s, t, dealt);
+            if (s.effect() == Effect.FREEZE) {
+                frozen.add(t);
+            }
         }
+        CombatAchievementService.froze(p, s.id(), frozen);
         if (s.effect() == Effect.HEAL && totalDealt > 0) {
             p.heal(totalDealt * s.param() / 100f);
         }
@@ -1302,7 +1307,9 @@ public final class SpellService {
                     thrallHitting = false;
                 }
             }
-            CombatHandler.applyDamage(p, target, dmg);
+            // Combat Achievement "Sit Back and Relax": 100 damage dealt by thralls.
+            CombatAchievementService.counter(p, com.runecraft.osrs.content.systems.CombatAchievements.COUNTER_THRALL_DAMAGE,
+                    CombatHandler.applyDamage(p, target, dmg));
         } else {
             CombatHandler.applyDamage(p, target, 0);
         }

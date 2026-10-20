@@ -289,6 +289,10 @@ public class InfernoSession extends TzHaarSession {
             jadsJudged = true;
             if (ticks - firstJadDeath <= 50) { // 30 seconds
                 caRunFlags.add(CombatAchievements.FLAG_JADS_QUICK);
+                // OSRS awards "Playing with Jads" as wave 68 is cleared, not when the run ends.
+                for (ServerPlayer p : online()) {
+                    com.runecraft.content.systems.CombatAchievementService.flag(p, CombatAchievements.FLAG_JADS_QUICK);
+                }
             }
         }
         super.gameTick();
