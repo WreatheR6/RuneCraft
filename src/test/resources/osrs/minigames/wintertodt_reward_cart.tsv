@@ -1,0 +1,63 @@
+# OSRS Wiki Module:Wintertodt supply crate (Flipping-Utilities/parsed-osrs data/modules, the reward cart calculator):
+# each skill table, best item first: skill|wiki name|min|max|lowRoll|highRoll (chance (interp+1)/256, level 1..99).
+# Diffed by SkillingBossDataTest (limestone's minimum is 3 on the Reward Cart drop table, 2 in the module).
+crafting|Uncut diamond|1|3|10|120
+crafting|Uncut ruby|2|4|50|140
+crafting|Uncut emerald|1|3|90|160
+crafting|Uncut sapphire|1|3|255|255
+herblore|Grimy torstol|1|3|-70|40
+herblore|Grimy dwarf weed|2|4|-50|50
+herblore|Grimy lantadyme|2|4|-30|60
+herblore|Grimy cadantine|2|4|-10|70
+herblore|Grimy kwuarm|2|4|10|85
+herblore|Grimy avantoe|3|5|20|100
+herblore|Grimy irit leaf|3|5|30|115
+herblore|Grimy ranarr weed|1|3|10|170
+herblore|Grimy tarromin|3|6|70|-20
+herblore|Grimy marrentill|3|6|100|-30
+herblore|Grimy guam leaf|3|6|170|-40
+herblore|Grimy harralander|3|6|255|255
+farming|Spirit seed|1|1|-20|5
+farming|Dwarf weed seed|1|3|-60|25
+farming|Lantadyme seed|1|3|-60|30
+farming|Cadantine seed|1|3|-40|40
+farming|Snapdragon seed|1|3|-15|60
+farming|Yew seed|1|2|-10|70
+farming|Snape grass seed|3|7|-8|78
+farming|Kwuarm seed|1|3|-10|80
+farming|Ranarr seed|1|3|0|110
+farming|Avantoe seed|1|3|0|130
+farming|Watermelon seed|3|7|-10|180
+farming|Irit seed|1|3|0|170
+farming|Teak seed|1|2|10|160
+farming|Maple seed|1|2|15|190
+farming|Mahogany seed|1|2|20|190
+farming|Toadflax seed|1|3|20|190
+farming|Banana tree seed|1|2|30|180
+farming|Willow seed|1|2|60|120
+farming|Harralander seed|1|3|80|-150
+farming|Tarromin seed|1|3|150|-150
+farming|Acorn|1|1|255|255
+woodcutting|Magic logs|10|20|-60|60
+woodcutting|Yew logs|10|20|-50|90
+woodcutting|Mahogany logs|10|20|-40|130
+woodcutting|Maple logs|10|20|0|160
+woodcutting|Teak logs|10|20|30|200
+woodcutting|Willow logs|10|20|120|100
+woodcutting|Oak logs|10|20|255|255
+mining|Runite ore|1|2|-60|40
+mining|Adamantite ore|2|3|-50|80
+mining|Mithril ore|3|5|-20|140
+mining|Gold ore|8|11|0|160
+mining|Coal|10|14|0|180
+mining|Pure essence|20|70|40|190
+mining|Silver ore|10|12|140|10
+mining|Limestone|2|7|200|-20
+mining|Iron ore|5|15|255|255
+fishing|Raw shark|6|11|-60|80
+fishing|Raw swordfish|6|11|-50|100
+fishing|Raw lobster|6|11|-20|130
+fishing|Raw tuna|6|11|10|160
+fishing|Raw salmon|6|11|40|180
+fishing|Raw anchovies|6|11|160|0
+fishing|Raw trout|6|11|255|255

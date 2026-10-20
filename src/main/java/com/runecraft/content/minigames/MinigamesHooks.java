@@ -131,6 +131,7 @@ public final class MinigamesHooks implements ModuleHooks {
         BlockHooks.register("rogues_den_jewel_trader", (player, pos, state) -> RoguesDenSession.tradeJewel(player));
         BlockHooks.register("tempoross_reward_pool", (player, pos, state) -> TemporossSession.rewardPool(player));
         BlockHooks.register("gotr_rift_search", (player, pos, state) -> GuardiansSession.rewardsGuardian(player));
+        com.runecraft.content.minigames.games.SkillingBossBlocks.register();
         QuestScripts.onTalk("mg_simon_templeton", (player, npc) -> PyramidPlunderSession.sellArtefacts(player));
         QuestScripts.onTalk("mg_brian_orichard", (player, npc) -> RoguesDenSession.tradeJewel(player));
         QuestScripts.onTalk("mg_tzhaar_mej_jal", (player, npc) -> com.runecraft.content.minigames.games.TzHaarNpcs.mejJal(player));
@@ -138,7 +139,7 @@ public final class MinigamesHooks implements ModuleHooks {
         talk("mg_tzhaar_mej_kah", "TzHaar-Mej-Kah", "The Fight Pit is where JalYt fight each other. Last one standing is champion: "
                 + "tokkul for every fighter beaten and the red skull. Fight Cave creatures join if you are slow, then the gas.");
         talk("mg_ignisia", "Ignisia", "The Wintertodt stirs. Chop bruma roots, fletch them into kindling and feed the braziers. "
-                + "Fix broken braziers with a hammer and keep the pyromancers alive. Earn 500 points for a supply crate.");
+                + "Fix broken braziers with a hammer and keep the pyromancers alive. Earn 500 points for rewards at the reward cart.");
         talk("mg_first_mate_deri", "First Mate Deri", "Tempoross brews a storm! Harpoon the harpoonfish, load the cannons, "
                 + "tether yourself when a wave comes, and strike the spirit pool when it falls. Permits buy from the reward pool.");
         talk("mg_harrallak_menarous", "Harrallak Menarous", "Welcome to the Warriors' Guild. Animate armour on the magical animators "

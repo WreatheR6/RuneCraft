@@ -261,7 +261,8 @@ public final class MinigameRules {
         /** Energy drained per raw / cooked harpoonfish loaded into a cannon (OSRS Wiki; the pools are {@link TemporossStorm}). */
         public static final int RAW_DAMAGE = TemporossStorm.RAW_ENERGY;
         public static final int COOKED_DAMAGE = TemporossStorm.COOKED_ENERGY;
-        public static final int VULNERABLE_TICKS = 25;
+        /** The essence phase: Tempoross stays under while its energy recharges (see {@link TemporossStorm}). */
+        public static final int VULNERABLE_TICKS = TemporossStorm.ESSENCE_PHASE_TICKS;
         public static final int WAVE_INTERVAL = 40;
         public static final int WAVE_WARNING = 6;
         /**

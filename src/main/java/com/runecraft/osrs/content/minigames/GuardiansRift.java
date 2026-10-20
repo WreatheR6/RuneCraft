@@ -10,7 +10,7 @@ import java.util.function.DoubleSupplier;
  * <p>Wiki values: uncharged cells come from the table by the entrance (at most ten carried, one charged
  * cell at a time) and are charged at the active altar, its tier set by the altar (air, mind and body
  * weak; water, cosmic and chaos medium; earth, nature and law strong; fire, death and blood
- * overcharged). A cell on an inactive tile raises a weak barrier (2 energy of each type); a cell of a
+ * overcharged). A cell on an inactive tile raises a weak barrier (17/20/24/30 energy of each type by the cell); a cell of a
  * higher tier than the barrier strengthens it one tier (7/13/22 energy for a medium/strong/overcharged
  * cell); any other cell recharges it (2/5/9/15 energy, healing 10/25/50/100), capped at 2,500 XP and 450
  * energy per game. Barrier tiers have 50/100/200/400 hitpoints. Cell uses give 30/100/180/250 Runecraft
@@ -48,28 +48,62 @@ public final class GuardiansRift {
 
     public static final String UNCHARGED_CELL = "uncharged_cell";
 
-    /** Cell tiers, weakest first: item, barrier hitpoints, strengthen / recharge / guardian energy, heal, Runecraft XP. */
+    // ---- mining and the workbench (OSRS Wiki: Guardian parts / remains / Large guardian remains / Huge guardian remains,
+    // Guardian fragments, Guardian essence) ----
+    /** Mining XP per successful swing at any remains. */
+    public static final double MINING_XP = 5;
+    /** Guardian parts and remains give 1-3 fragments a swing, the large remains (56 Agility, east shelf) 2-4. */
+    public static final int[] REMAINS_FRAGMENTS = {1, 3};
+    public static final int[] LARGE_REMAINS_FRAGMENTS = {2, 4};
+    public static final int LARGE_REMAINS_AGILITY = 56;
+    /** The huge guardian remains (west shelf, through the portal) give 4-6 guardian essence a swing. */
+    public static final int[] HUGE_REMAINS_ESSENCE = {4, 6};
+    /** The huge remains' portal: first after 160 seconds, then every 140, open about 25 seconds. */
+    public static final int PORTAL_FIRST_TICKS = 267;
+    public static final int PORTAL_INTERVAL_TICKS = 233;
+    public static final int PORTAL_OPEN_TICKS = 42;
+
+    /** Crafting XP per guardian essence made at the workbench: Crafting level / 10, clamped to 1-5. */
+    public static double workbenchXp(int crafting) {
+        return Math.max(1.0, Math.min(5.0, crafting / 10.0));
+    }
+
+    /** Whether the huge remains' portal is open at a game tick. */
+    public static boolean portalOpen(long ticks) {
+        if (ticks < PORTAL_FIRST_TICKS) {
+            return false;
+        }
+        return (ticks - PORTAL_FIRST_TICKS) % PORTAL_INTERVAL_TICKS < PORTAL_OPEN_TICKS;
+    }
+
+    /**
+     * Cell tiers, weakest first: item, barrier hitpoints, place / strengthen / recharge / guardian energy, heal, Runecraft
+     * XP. Placing a cell on an inactive tile always raises a weak barrier but gives 17/20/24/30 energy by the cell's tier
+     * (OSRS Wiki energy table; 2 before the 2022 change).
+     */
     public enum Cell {
-        WEAK("weak_cell", "Weak", 50, 0, 2, 6, 10, 30),
-        MEDIUM("medium_cell", "Medium", 100, 7, 5, 15, 25, 100),
-        STRONG("strong_cell", "Strong", 200, 13, 9, 27, 50, 180),
-        OVERCHARGED("overcharged_cell", "Overcharged", 400, 22, 15, 45, 100, 250);
+        WEAK("weak_cell", "Weak", 50, 17, 0, 2, 6, 10, 30),
+        MEDIUM("medium_cell", "Medium", 100, 20, 7, 5, 15, 25, 100),
+        STRONG("strong_cell", "Strong", 200, 24, 13, 9, 27, 50, 180),
+        OVERCHARGED("overcharged_cell", "Overcharged", 400, 30, 22, 15, 45, 100, 250);
 
         public final String item;
         public final String label;
         /** Hitpoints of the barrier of this tier. */
         public final int barrierHp;
+        public final int placeEnergy;
         public final int strengthenEnergy;
         public final int rechargeEnergy;
         public final int guardianEnergy;
         public final int heal;
         public final double xp;
 
-        Cell(String item, String label, int barrierHp, int strengthenEnergy, int rechargeEnergy, int guardianEnergy, int heal,
-             double xp) {
+        Cell(String item, String label, int barrierHp, int placeEnergy, int strengthenEnergy, int rechargeEnergy, int guardianEnergy,
+             int heal, double xp) {
             this.item = item;
             this.label = label;
             this.barrierHp = barrierHp;
+            this.placeEnergy = placeEnergy;
             this.strengthenEnergy = strengthenEnergy;
             this.rechargeEnergy = rechargeEnergy;
             this.guardianEnergy = guardianEnergy;
@@ -162,7 +196,7 @@ public final class GuardiansRift {
         if (t == -1) {
             tier[tile] = Cell.WEAK.ordinal();
             hp[tile] = Cell.WEAK.barrierHp;
-            return new Use(true, BUILD_ENERGY, BUILD_ENERGY, cell.xp, "You place the cell and a weak barrier rises.");
+            return new Use(true, cell.placeEnergy, cell.placeEnergy, cell.xp, "You place the cell and a weak barrier rises.");
         }
         if (cell.ordinal() > t) {
             Cell next = Cell.values()[t + 1];

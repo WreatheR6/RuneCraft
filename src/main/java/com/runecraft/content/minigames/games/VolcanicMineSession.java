@@ -66,6 +66,10 @@ public class VolcanicMineSession extends MinigameSession {
     private final boolean[] known = new boolean[3];
     private final List<Mob> beasts = new ArrayList<>();
     private int stability = VolcanicMine.START_STABILITY;
+    /** Players who died or logged out mid-game: their fragments disintegrate, no points or bonus XP (wiki). */
+    private final java.util.Set<UUID> forfeit = new java.util.HashSet<>();
+    /** The volcano erupted (or the mine collapsed) with these players still inside. */
+    private boolean erupted;
 
     public VolcanicMineSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.VOLCANIC_MINE, id, slot, world, variant);
@@ -185,8 +189,12 @@ public class VolcanicMineSession extends MinigameSession {
                 Inv.give(p, VolcanicMine.VESSEL, 1);
             }
         }
-        broadcastRed("The volcano rumbles. You have ten minutes before it erupts!"
-                + (boulders > 1 ? " " + boulders + " boulders are drifting down the channels." : ""));
+        broadcast("You have 30 seconds to prepare before the volcano rumbles.");
+    }
+
+    /** Game ticks since the volcano rumbled (negative during the 30 seconds of preparation). */
+    private long elapsed() {
+        return ticks - VolcanicMine.PREP_TICKS;
     }
 
     private int ventIndex(BlockPos pos) {
@@ -211,7 +219,11 @@ public class VolcanicMineSession extends MinigameSession {
                 return true;
             }
             case "vm_chamber" -> {
-                if (!VolcanicMine.workable(ticks)) {
+                if (elapsed() < 0) {
+                    Msg.game(player, "The volcano hasn't started rumbling yet.");
+                    return true;
+                }
+                if (!VolcanicMine.workable(elapsed())) {
                     Msg.game(player, "There's no time left to fix the chambers. Get out!");
                     return true;
                 }
@@ -241,6 +253,10 @@ public class VolcanicMineSession extends MinigameSession {
                     return true;
                 }
                 int b = boulderIndex(pos);
+                if (elapsed() < 0) {
+                    Msg.game(player, "The boulder is still stuck fast; wait for the volcano to rumble.");
+                    return true;
+                }
                 if (b >= boulders) {
                     Msg.game(player, "This boulder is stuck fast; it only drifts with more miners in the mine.");
                     return true;
@@ -250,7 +266,7 @@ public class VolcanicMineSession extends MinigameSession {
                     if (isEnded() || stage > VolcanicMine.BOULDER_STAGES) {
                         return false;
                     }
-                    if (!VolcanicMine.workable(ticks)) {
+                    if (!VolcanicMine.workable(elapsed())) {
                         Msg.game(p, "The volcano is about to erupt! There's no time to mine.");
                         return false;
                     }
@@ -261,9 +277,11 @@ public class VolcanicMineSession extends MinigameSession {
                     VolcanicMine.Hit hit = VolcanicMine.hit(mining, stage, random::nextDouble);
                     points.merge(p.getUUID(), hit.points(), Integer::sum);
                     xp(p, Skill.MINING, hit.xp());
-                    for (String byproduct : new String[]{"calcite", "pyrophosphite"}) {
-                        if (random.nextInt(VolcanicMine.BYPRODUCT_CHANCE) == 0) {
-                            reward(p, byproduct, 1 + random.nextInt(4));
+                    if (hit.tier() >= 0) {
+                        // Calcite or pyrophosphite only come with an ore fragment (1/10, one or the other).
+                        com.runecraft.osrs.content.minigames.MinigameReward mineral = VolcanicMine.byproduct(random::nextDouble);
+                        if (mineral != null) {
+                            reward(p, mineral.item(), mineral.amount());
                         }
                     }
                     if (hit.tier() < 0) {
@@ -311,6 +329,14 @@ public class VolcanicMineSession extends MinigameSession {
 
     @Override
     protected void gameTick() {
+        if (elapsed() < 0) {
+            return; // the preparation: nothing moves yet
+        }
+        if (elapsed() == 0) {
+            broadcastRed("The volcano rumbles. You have ten minutes before it erupts!"
+                    + (boulders > 1 ? " " + boulders + " boulders are drifting down the channels." : ""));
+        }
+        long ticks = elapsed();
         if (ticks % 5 == 0) {
             for (int i = 0; i < 3; i++) {
                 vents[i] = VolcanicMine.ventStep(vents[i], blocked[i]);
@@ -323,9 +349,10 @@ public class VolcanicMineSession extends MinigameSession {
             java.util.Arrays.fill(known, false);
             broadcastRed("The mine shifts! Check the vents: the chamber pressures have changed.");
         }
-        // Hardened lava melts after 90 seconds; anyone standing on it falls into the lava.
+        // Hardened lava melts after 90 seconds; anyone standing on it falls into the lava (melt ticks are session ticks).
+        long now = this.ticks;
         platforms.entrySet().removeIf(e -> {
-            if (ticks < e.getValue()) {
+            if (now < e.getValue()) {
                 return false;
             }
             world.setBlockAndUpdate(e.getKey(), Blocks.LAVA.defaultBlockState());
@@ -374,8 +401,7 @@ public class VolcanicMineSession extends MinigameSession {
                 }
             }
             if (stability <= 0) {
-                broadcastRed("The mine collapses! You scramble out with what you've earned.");
-                end(true);
+                erupt("The mine's stability gives out and the volcano erupts!");
                 return;
             }
         }
@@ -392,37 +418,87 @@ public class VolcanicMineSession extends MinigameSession {
             broadcastRed("The volcano is about to erupt! One minute left.");
         }
         if (ticks >= VolcanicMine.GAME_TICKS) {
-            broadcastRed("The volcano erupts! Petrified Pete pulls everyone out.");
-            end(true);
+            erupt("The volcano erupts!");
+        }
+    }
+
+    /**
+     * The eruption (or a collapse): anyone still inside is caught in it (OSRS: killed) and their ore fragments disintegrate,
+     * so they get no points or bonus experience. approx: the player is sent out instead of dying.
+     */
+    private void erupt(String message) {
+        erupted = true;
+        broadcastRed(message + " You are caught in the eruption and your ore fragments disintegrate.");
+        end(false);
+    }
+
+    @Override
+    protected void onPlayerHit(ServerPlayer player, LivingEntity target, int dealt) {
+        if (VolcanicMine.LAVA_BEAST.equals(com.runecraft.content.minigames.MinigameManager.creatureId(target))) {
+            points.merge(player.getUUID(), VolcanicMine.lavaBeastHitPoints(dealt), Integer::sum);
         }
     }
 
     @Override
     protected void onKill(ServerPlayer player, LivingEntity entity, String creatureId) {
         if (VolcanicMine.LAVA_BEAST.equals(creatureId)) {
-            int pts = VolcanicMine.lavaBeastPoints();
-            points.merge(player.getUUID(), pts, Integer::sum);
-            Msg.game(player, "You slay the lava beast (+" + pts + " points).");
+            points.merge(player.getUUID(), VolcanicMine.LAVA_BEAST_KILL_POINTS, Integer::sum);
+            Msg.game(player, "You slay the lava beast (+" + VolcanicMine.LAVA_BEAST_KILL_POINTS + " points).");
         }
+    }
+
+    @Override
+    protected void onDeath(ServerPlayer player) {
+        forfeit.add(player.getUUID());
+        super.onDeath(player);
+    }
+
+    @Override
+    protected void onDisconnect(ServerPlayer player) {
+        forfeit.add(player.getUUID());
     }
 
     private String vent(int i) {
         return VolcanicMine.VENTS[i] + " " + (known[i] ? vents[i] + "%" : "?") + (blocked[i] ? "*" : "");
     }
 
+    /**
+     * Leaving: a miner who leaves through the exit alive hands the ore fragments to Petrified Pete for the game's points and
+     * 3.8 Mining XP a point; one who died, logged out or was caught in the eruption gets nothing.
+     */
     @Override
-    protected void onEnd(boolean success) {
-        for (ServerPlayer p : online()) {
-            Inv.remove(p, VolcanicMine.VESSEL, 1000);
-            int pts = points.getOrDefault(p.getUUID(), 0);
-            if (pts <= 0) {
-                Msg.game(p, "You didn't mine anything from the boulder.");
-                continue;
+    protected void onLeave(ServerPlayer p) {
+        Inv.remove(p, VolcanicMine.VESSEL, 1000);
+        int pts = points.getOrDefault(p.getUUID(), 0);
+        points.remove(p.getUUID());
+        if (erupted || forfeit.contains(p.getUUID())) {
+            if (pts > 0) {
+                Msg.red(p, "Your ore fragments disintegrate: no points or experience from this game.");
             }
-            addPoints(p, MinigameCurrencies.VOLCANIC_MINE, pts);
-            int kc = MinigameData.of(p).incrementStat(p.getUUID(), "kc:" + game.id());
-            Msg.game(p, "You earned " + pts + " Volcanic Mine points. Games played: " + kc + ".");
+            return;
         }
+        if (pts <= 0) {
+            Msg.game(p, "You didn't mine anything from the boulder.");
+            return;
+        }
+        int held = MinigameData.of(p).points(p.getUUID(), MinigameCurrencies.VOLCANIC_MINE);
+        int paid = Math.max(0, Math.min(pts, VolcanicMine.MAX_POINTS - held));
+        addPoints(p, MinigameCurrencies.VOLCANIC_MINE, paid);
+        xp(p, Skill.MINING, VolcanicMine.endXp(paid));
+        int kc = MinigameData.of(p).incrementStat(p.getUUID(), "kc:" + game.id());
+        Msg.game(p, "Petrified Pete takes your ore fragments: " + paid + " Volcanic Mine points and "
+                + Math.round(VolcanicMine.endXp(paid)) + " Mining experience. Games played: " + kc + ".");
+    }
+
+    // ------------------------------------------------------------------ self-test
+
+    /** Self-test: the player's points this game. */
+    public int selfTestPoints(ServerPlayer p) {
+        return points.getOrDefault(p.getUUID(), 0);
+    }
+
+    public BlockPos selfTestBoulder() {
+        return rel(BOULDER_AT[0][0], 1, BOULDER_AT[0][1]);
     }
 
     @Override

@@ -53,7 +53,8 @@ public final class MinigameItemUse {
                 return InteractionResultHolder.pass(stack);
             }
             if (com.runecraft.content.minigames.games.NightmareZoneSession.drink(sp, stack, hand, id) || blighted(sp, stack, hand, id)
-                    || com.runecraft.content.minigames.games.VolcanicMineSession.useVessel(sp, id)) {
+                    || com.runecraft.content.minigames.games.VolcanicMineSession.useVessel(sp, id)
+                    || com.runecraft.content.minigames.games.WintertodtSession.useKnife(sp, id)) {
                 return InteractionResultHolder.success(stack);
             }
             boolean used = switch (id) {
@@ -71,6 +72,10 @@ public final class MinigameItemUse {
                 }
                 case "intricate_pouch" -> {
                     openPouch(sp);
+                    yield true;
+                }
+                case com.runecraft.osrs.content.minigames.TemporossRewards.CASKET -> {
+                    openPoolCasket(sp);
                     yield true;
                 }
                 case "aluft_aloft_box" -> {
@@ -263,19 +268,17 @@ public final class MinigameItemUse {
         return true;
     }
 
-    /** Wintertodt supply crate: N rolls of the wiki reward table (uniques first, then a skill/coin table). */
+    /**
+     * A Wintertodt supply crate from before the reward cart (October 2024): N rolls of the wiki reward table (uniques first,
+     * then a skill/coin table), with the player's levels and uniques owned now.
+     */
     public static void openSupplyCrate(ServerPlayer p, int rolls) {
-        java.util.Set<String> log = com.runecraft.player.Players.data(p).collectionLog();
-        com.runecraft.osrs.SkillSet skills = com.runecraft.player.Players.data(p).skills();
-        WintertodtRewards.Player who = new WintertodtRewards.Player(skills.level(Skill.CRAFTING), skills.level(Skill.HERBLORE),
-                skills.level(Skill.FARMING), skills.level(Skill.WOODCUTTING), skills.level(Skill.MINING), skills.level(Skill.FISHING),
-                log.contains("phoenix") || Inv.has(p, "phoenix", 1), log.contains("warm_gloves"), log.contains("bruma_torch"));
+        WintertodtRewards.Player who = com.runecraft.content.minigames.games.WintertodtSession.cartPlayer(p);
         for (int i = 0; i < rolls; i++) {
             MinigameReward r = WintertodtRewards.roll(who, RANDOM::nextDouble);
+            who = who.after(r.item());
             if (r.item().equals("phoenix")) {
                 pet(p, "phoenix");
-                who = new WintertodtRewards.Player(who.crafting(), who.herblore(), who.farming(), who.woodcutting(), who.mining(),
-                        who.fishing(), true, who.hasWarmGloves(), who.hasBrumaTorch());
                 continue;
             }
             give(p, r.item(), r.amount());
@@ -283,14 +286,36 @@ public final class MinigameItemUse {
         Msg.game(p, "You open the supply crate (" + rolls + " roll" + (rolls == 1 ? "" : "s") + ").");
     }
 
-    /** Guardians of the Rift intricate pouch (approx. contents; 1/200 blood essence pre-roll). */
+    /** Guardians of the Rift intricate pouch (OSRS Wiki table; the locket and lost bag only while never owned). */
     public static void openPouch(ServerPlayer p) {
-        boolean hasLocket = Inv.has(p, "tarnished_locket", 1) || Inv.has(p, "amulet_of_the_eye", 1)
-                || com.runecraft.player.Players.data(p).collectionLog().contains("tarnished_locket")
-                || com.runecraft.player.Players.data(p).collectionLog().contains("amulet_of_the_eye");
-        for (MinigameReward r : GuardiansRewards.openIntricatePouch(RANDOM::nextDouble, hasLocket)) {
-            give(p, r.item(), r.amount());
+        java.util.Set<String> log = com.runecraft.player.Players.data(p).collectionLog();
+        java.util.List<String> owned = new java.util.ArrayList<>();
+        if (Inv.has(p, "tarnished_locket", 1) || Inv.has(p, "amulet_of_the_eye", 1) || log.contains("tarnished_locket")
+                || log.contains("amulet_of_the_eye")) {
+            owned.add("tarnished_locket");
         }
+        if (Inv.has(p, GuardiansRewards.LOST_BAG, 1) || log.contains(GuardiansRewards.LOST_BAG)) {
+            owned.add(GuardiansRewards.LOST_BAG);
+        }
+        for (MinigameReward r : GuardiansRewards.openIntricatePouch(RANDOM::nextDouble, owned)) {
+            if (r.item().equals("pure_essence")) {
+                giveNoted(p, r.item(), r.amount());
+            } else {
+                give(p, r.item(), r.amount());
+            }
+        }
+    }
+
+    /** The Tempoross reward pool's casket (OSRS Wiki "Casket (Reward pool)"): one table line (noted) and maybe a clue. */
+    public static void openPoolCasket(ServerPlayer p) {
+        for (MinigameReward r : com.runecraft.osrs.content.minigames.TemporossRewards.openCasket(RANDOM::nextDouble)) {
+            if (r.amount() > 1 && !r.item().equals("coins")) {
+                giveNoted(p, r.item(), r.amount());
+            } else {
+                give(p, r.item(), r.amount());
+            }
+        }
+        Msg.game(p, "You open the casket.");
     }
 
     /** One Rewards Guardian search (costs one elemental and one catalytic point, paid by the caller). */

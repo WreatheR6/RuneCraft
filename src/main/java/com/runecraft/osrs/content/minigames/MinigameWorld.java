@@ -254,6 +254,9 @@ public final class MinigameWorld {
         for (String[] b : Gauntlet.blocks()) {
             list.add(BlockDef.scripted(b[0], b[1], Integer.parseInt(b[2], 16), b[3]));
         }
+        for (String[] b : SkillingBosses.BLOCKS) {
+            list.add(BlockDef.scripted(b[0], b[1], Integer.parseInt(b[2], 16), b[3]));
+        }
         for (String[] b : FortisColosseum.blocks()) {
             list.add(BlockDef.scripted(b[0], b[1], Integer.parseInt(b[2], 16), b[3]));
         }
@@ -278,6 +281,7 @@ public final class MinigameWorld {
         map.get(Minigame.ROGUES_DEN.place()).add("rogues_den_jewel_trader");
         map.get(Minigame.TEMPOROSS.place()).add("tempoross_reward_pool");
         map.get(Minigame.GUARDIANS_OF_THE_RIFT.place()).add("gotr_rift_search");
+        map.get(Minigame.WINTERTODT.place()).add(SkillingBosses.WT_REWARD_CART);
         map.get(Minigame.SORCERESS_GARDEN.place()).add(SORCERESS_SHELVES);
         map.get(Minigame.SHADES_OF_MORTTON.place()).addAll(MORTTON_BLOCKS);
         map.get(Minigame.TZHAAR_KET_RAK.place()).add(KET_RAK_SCOREBOARD);

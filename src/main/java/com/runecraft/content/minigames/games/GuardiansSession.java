@@ -45,7 +45,14 @@ import net.minecraft.world.level.block.Blocks;
  * Cosmic altar, 90 Runecraft, soul runes and aether catalysts make aether runes and polycatalytic stones.
  */
 public class GuardiansSession extends MinigameSession {
-    private static final int GAME_TICKS = 1000;
+    /** A safety cap on a game's length (approx: OSRS has no timer; the game ends when the rift is sealed or he falls). */
+    private static final int GAME_TICKS = 2500;
+    /** The west shelf with the huge guardian remains, walled off and reached through the portal (arena offsets). */
+    private static final int[] SHELF_PORTAL = {-21, 12};
+    private static final int[] MAIN_PORTAL = {-16, 12};
+    /** Portal guardian rotations so far: the first two are always medium tier or better (wiki, 2024). */
+    private int rotations;
+    private boolean portalShown;
     private static final int[] TILE_X = {-6, -2, 2, 6};
     private final Map<UUID, int[]> energy = new HashMap<>();
     /** Recharging done per player this game: Runecraft XP, energy (both capped). */
@@ -72,6 +79,24 @@ public class GuardiansSession extends MinigameSession {
         place(-18, -6, "guardian_remains");
         place(-18, 0, "guardian_remains");
         place(-18, 6, "guardian_remains");
+        // The east shelf's large guardian remains (56 Agility over the rubble).
+        place(20, -2, com.runecraft.osrs.content.minigames.SkillingBosses.GOTR_LARGE_REMAINS);
+        place(20, 2, com.runecraft.osrs.content.minigames.SkillingBosses.GOTR_LARGE_REMAINS);
+        // The west shelf: walled off, with the huge guardian remains and the portal back.
+        for (int z = 8; z <= 16; z++) {
+            for (int y = 1; y <= 3; y++) {
+                set(-19, y, z, Blocks.OBSIDIAN.defaultBlockState());
+            }
+        }
+        for (int x = -23; x <= -19; x++) {
+            for (int y = 1; y <= 3; y++) {
+                set(x, y, 8, Blocks.OBSIDIAN.defaultBlockState());
+                set(x, y, 16, Blocks.OBSIDIAN.defaultBlockState());
+            }
+        }
+        place(-22, 10, com.runecraft.osrs.content.minigames.SkillingBosses.GOTR_HUGE_REMAINS);
+        place(-22, 14, com.runecraft.osrs.content.minigames.SkillingBosses.GOTR_HUGE_REMAINS);
+        place(SHELF_PORTAL[0], SHELF_PORTAL[1], com.runecraft.osrs.content.minigames.SkillingBosses.GOTR_PORTAL);
         place(-8, 10, "gotr_workbench");
         place(12, -12, "elemental_rift");
         place(-12, -12, "catalytic_rift");
@@ -109,9 +134,20 @@ public class GuardiansSession extends MinigameSession {
         for (ServerPlayer p : online()) {
             minRc = Math.min(minRc, level(p, Skill.RUNECRAFT));
         }
+        boolean mediumUp = rotations++ < 2; // the first two rotations are medium tier or better
         for (int i = 0; i < Guardians.ALTARS.length; i++) {
-            if ((Integer) Guardians.ALTARS[i][2] <= Math.max(1, minRc)) {
+            if ((Integer) Guardians.ALTARS[i][2] <= Math.max(1, minRc)
+                    && (!mediumUp || GuardiansRift.cellFor((String) Guardians.ALTARS[i][0]).ordinal() >= GuardiansRift.Cell.MEDIUM.ordinal())) {
                 ((Boolean) Guardians.ALTARS[i][4] ? cat : el).add(i);
+            }
+        }
+        if (mediumUp && (el.isEmpty() || cat.isEmpty())) { // too low a Runecraft level for a medium altar of a kind
+            el.clear();
+            cat.clear();
+            for (int i = 0; i < Guardians.ALTARS.length; i++) {
+                if ((Integer) Guardians.ALTARS[i][2] <= Math.max(1, minRc)) {
+                    ((Boolean) Guardians.ALTARS[i][4] ? cat : el).add(i);
+                }
             }
         }
         elemental = el.isEmpty() ? 0 : el.get(random.nextInt(el.size()));
@@ -176,28 +212,48 @@ public class GuardiansSession extends MinigameSession {
                     Msg.game(player, "You need a pickaxe to mine the remains.");
                     return true;
                 }
-                repeat(player, p -> {
-                    if (!Inv.hasRoomFor(p, "guardian_fragments")) {
-                        return false;
-                    }
-                    int mining = level(p, Skill.MINING);
-                    if (random.nextInt(100) < 40 + mining / 2) {
-                        Inv.give(p, "guardian_fragments", 1 + (mining >= 70 && random.nextBoolean() ? 1 : 0));
-                        xp(p, Skill.MINING, mining * 0.15);
-                    }
+                mine(player, "guardian_fragments", GuardiansRift.REMAINS_FRAGMENTS);
+                return true;
+            }
+            case com.runecraft.osrs.content.minigames.SkillingBosses.GOTR_LARGE_REMAINS -> {
+                if (level(player, Skill.AGILITY) < GuardiansRift.LARGE_REMAINS_AGILITY) {
+                    Msg.game(player, "You need an Agility level of " + GuardiansRift.LARGE_REMAINS_AGILITY
+                            + " to climb the rubble to the large guardian remains.");
                     return true;
-                });
+                }
+                if (!hasPickaxe(player)) {
+                    Msg.game(player, "You need a pickaxe to mine the remains.");
+                    return true;
+                }
+                mine(player, "guardian_fragments", GuardiansRift.LARGE_REMAINS_FRAGMENTS);
+                return true;
+            }
+            case com.runecraft.osrs.content.minigames.SkillingBosses.GOTR_HUGE_REMAINS -> {
+                if (!hasPickaxe(player)) {
+                    Msg.game(player, "You need a pickaxe to mine the remains.");
+                    return true;
+                }
+                mine(player, "guardian_essence", GuardiansRift.HUGE_REMAINS_ESSENCE);
+                return true;
+            }
+            case com.runecraft.osrs.content.minigames.SkillingBosses.GOTR_PORTAL -> {
+                boolean onShelf = pos.getX() - origin.getX() <= -19;
+                int[] to = onShelf ? MAIN_PORTAL : SHELF_PORTAL;
+                BlockPos at = rel(to[0] + (onShelf ? 1 : -1), 1, to[1]);
+                player.teleportTo(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, player.getYRot(), player.getXRot());
+                Msg.game(player, onShelf ? "You step back through the portal into the temple."
+                        : "You step through the portal to the huge guardian remains.");
                 return true;
             }
             case "gotr_workbench" -> {
                 repeat(player, p -> {
-                    int n = Math.min(3, Inv.count(p, "guardian_fragments"));
+                    int n = Math.min(3, Inv.count(p, "guardian_fragments")); // approx pace: up to 3 a tick
                     if (n == 0) {
                         return false;
                     }
                     Inv.remove(p, "guardian_fragments", n);
                     Inv.give(p, "guardian_essence", n);
-                    xp(p, Skill.CRAFTING, 0.5 * n);
+                    xp(p, Skill.CRAFTING, GuardiansRift.workbenchXp(level(p, Skill.CRAFTING)) * n);
                     return true;
                 });
                 return true;
@@ -315,6 +371,24 @@ public class GuardiansSession extends MinigameSession {
         }
     }
 
+    /**
+     * Mines remains: each successful swing (approx rate) gives {@code qty} of the item (guardian fragments, or essence at
+     * the huge remains) and 5 Mining XP.
+     */
+    private void mine(ServerPlayer player, String item, int[] qty) {
+        repeat(player, p -> {
+            if (!Inv.hasRoomFor(p, item)) {
+                return false;
+            }
+            int mining = level(p, Skill.MINING);
+            if (random.nextInt(100) < 40 + mining / 2) {
+                Inv.give(p, item, qty[0] + random.nextInt(qty[1] - qty[0] + 1));
+                xp(p, Skill.MINING, GuardiansRift.MINING_XP);
+            }
+            return true;
+        });
+    }
+
     private static boolean hasPickaxe(ServerPlayer p) {
         for (String tier : new String[]{"bronze", "iron", "steel", "black", "mithril", "adamant", "rune", "dragon"}) {
             if (Inv.has(p, tier + "_pickaxe", 1)) {
@@ -428,6 +502,17 @@ public class GuardiansSession extends MinigameSession {
         if (ticks % Guardians.ALTAR_SWITCH_TICKS == 0) {
             rotateAltars();
         }
+        // The portal to the huge guardian remains opens 160 seconds in and every 140 seconds after, for about 25.
+        boolean open = GuardiansRift.portalOpen(ticks);
+        if (open != portalShown) {
+            portalShown = open;
+            if (open) {
+                place(MAIN_PORTAL[0], MAIN_PORTAL[1], com.runecraft.osrs.content.minigames.SkillingBosses.GOTR_PORTAL);
+                broadcast("A portal to the huge guardian remains has opened in the west of the temple!");
+            } else {
+                set(MAIN_PORTAL[0], 1, MAIN_PORTAL[1], Blocks.AIR.defaultBlockState());
+            }
+        }
         String msg = rift.tick(ticks, playerCount(), power, random::nextDouble);
         syncCreatures();
         if (ticks == GuardiansRift.PREP_TICKS) {
@@ -436,7 +521,12 @@ public class GuardiansSession extends MinigameSession {
         if (msg != null) {
             broadcastRed(msg);
         }
-        if (rift.guardianHealth() <= 0 || ticks >= GAME_TICKS) {
+        if (ticks >= GAME_TICKS) {
+            broadcastRed("The rift's power wanes; the Great Guardian could not seal it in time.");
+            end(false);
+            return;
+        }
+        if (rift.guardianHealth() <= 0) {
             broadcastRed("The Great Guardian was defeated!");
             end(false);
         }
@@ -565,6 +655,79 @@ public class GuardiansSession extends MinigameSession {
                 "Elemental: " + name(elemental) + "  Catalytic: " + name(catalytic),
                 "Energy: " + e[0] + " elemental / " + e[1] + " catalytic", barriers.toString(),
                 "Rift guardians: " + rift.activeRiftGuardians() + "  Creatures: " + rift.creatures().size(),
-                "Time left: " + time(GAME_TICKS - ticks));
+                portalShown ? "Portal to the huge remains: OPEN" : "Portal to the huge remains: closed");
+    }
+
+    // ------------------------------------------------------------------ self-test
+
+    /** Self-test view: Great Guardian power and health, the player's energy, the active altars, creatures out. */
+    public record View(double power, int health, int elemental, int catalytic, String elementalAltar, String catalyticAltar,
+                       int creatures, int riftGuardians, String barrier0) {
+    }
+
+    public View selfTestView(ServerPlayer p) {
+        int[] e = energy(p);
+        return new View(power, rift.guardianHealth(), e[0], e[1], (String) Guardians.ALTARS[elemental][0],
+                (String) Guardians.ALTARS[catalytic][0], rift.creatures().size(), rift.activeRiftGuardians(), rift.describe(0));
+    }
+
+    /** Self-test: block positions (remains, workbench, the rifts, the Great Guardian, cell tiles and table, piles, portal). */
+    public BlockPos selfTestRemains() {
+        return rel(-18, 1, 0);
+    }
+
+    public BlockPos selfTestLargeRemains() {
+        return rel(20, 1, -2);
+    }
+
+    public BlockPos selfTestHugeRemains() {
+        return rel(-22, 1, 10);
+    }
+
+    public BlockPos selfTestPortal(boolean shelf) {
+        int[] at = shelf ? SHELF_PORTAL : MAIN_PORTAL;
+        return rel(at[0], 1, at[1]);
+    }
+
+    public BlockPos selfTestWorkbench() {
+        return rel(-8, 1, 10);
+    }
+
+    public BlockPos selfTestRift(boolean catalytic) {
+        return catalytic ? rel(-12, 1, -12) : rel(12, 1, -12);
+    }
+
+    public BlockPos selfTestGreatGuardian() {
+        return rel(0, 1, -6);
+    }
+
+    public BlockPos selfTestCellTile(int i) {
+        return rel(TILE_X[i], 1, -2);
+    }
+
+    public BlockPos selfTestCellTable() {
+        return rel(8, 1, 10);
+    }
+
+    public BlockPos selfTestEssencePile(boolean catalytic) {
+        return catalytic ? rel(-12, 1, 6) : rel(14, 1, 6);
+    }
+
+    public BlockPos selfTestRewardsGuardian() {
+        return rel(16, 1, 16);
+    }
+
+    /** Self-test: the creatures shown for the rift (to check they can't be hurt). */
+    public List<Mob> selfTestCreatures() {
+        return new ArrayList<>(riftMobs.values());
+    }
+
+    /** Self-test: sets the Great Guardian's power (a long game cut short) and moves the clock (the portal, creatures). */
+    public void selfTestPower(double percent) {
+        power = Math.max(0, Math.min(99.9, percent));
+    }
+
+    public void selfTestClock(long gameTicks) {
+        ticks = gameTicks;
     }
 }

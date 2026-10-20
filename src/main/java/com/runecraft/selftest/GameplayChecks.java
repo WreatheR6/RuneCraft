@@ -100,6 +100,13 @@ final class GameplayChecks {
         }
         checks.addAll(MinigameRewardChecks.all(context));
         checks.add(new SelfTest.Check("minigame:wintertodt_warmth", g::wintertodtWarmth));
+        // Round 38: whole skilling-boss games played as the real player (SkillingBossWalk; Zalcano is boss:walk:zalcano).
+        checks.add(new SelfTest.Check("minigame:wintertodt_round",
+                () -> g.skillingWalk(com.runecraft.content.minigames.games.SkillingBossWalk::wintertodt)));
+        checks.add(new SelfTest.Check("minigame:tempoross_game",
+                () -> g.skillingWalk(com.runecraft.content.minigames.games.SkillingBossWalk::tempoross)));
+        checks.add(new SelfTest.Check("minigame:gotr_game",
+                () -> g.skillingWalk(com.runecraft.content.minigames.games.SkillingBossWalk::guardians)));
         checks.add(new SelfTest.Check("minigame:fight_caves_run", () -> g.tzhaarRun(
                 com.runecraft.content.minigames.games.TzHaarSelfTest::fightCaveRun)));
         checks.add(new SelfTest.Check("minigame:inferno_run", () -> g.tzhaarRun(
@@ -577,6 +584,19 @@ final class GameplayChecks {
         }
         try {
             return com.runecraft.content.raids.RaidSelfTest.toaDeaths(p(), c.near(0, 2));
+        } catch (AssertionError e) {
+            throw failure(e.getMessage());
+        }
+    }
+
+    /** A skilling-boss game walked as the real player (minigame sessions only see players in the player list). */
+    private String skillingWalk(java.util.function.Function<ServerPlayer, String> run) {
+        if (!c.realPlayer()) {
+            throw new SelfTest.Skip("minigame sessions only see players in the player list; runs in '/rc selftest real minigame:'");
+        }
+        c.completeQuests(null);
+        try {
+            return run.apply(p());
         } catch (AssertionError e) {
             throw failure(e.getMessage());
         }
