@@ -177,8 +177,12 @@ public final class QuestStepWalk {
         return t.tools.containsAll(o.tools);
     }
 
-    /** A planned step walk: the steps in order, why it gets stuck (null if it completes) and steps it would skip. */
-    public record StepPlan(List<Trigger> steps, String stuck, List<String> problems) {
+    /**
+     * A planned step walk: the steps in order, why it gets stuck (null if it completes), steps it would skip, and the
+     * triggers it left unfired because they were switched off by then (fallbacks for older saves, steps another route
+     * already covered).
+     */
+    public record StepPlan(List<Trigger> steps, String stuck, List<String> problems, Set<Trigger> switchedOff) {
         public boolean completes() {
             return stuck == null;
         }
@@ -208,6 +212,7 @@ public final class QuestStepWalk {
         Set<String> questItems = questItems(q);
         List<Trigger> steps = new ArrayList<>();
         List<String> problems = new ArrayList<>();
+        Set<Trigger> switchedOff = new LinkedHashSet<>();
         Set<Trigger> firedHere = new LinkedHashSet<>();
         int total = q.triggers().size();
         int s = 0;
@@ -215,19 +220,21 @@ public final class QuestStepWalk {
             QuestSpec.Stage stage = q.stages.get(s);
             Trigger t = nextStep(stage, view, questItems, firedHere);
             if (t == null) {
-                return new StepPlan(steps, "stage " + s + ": no step can fire (" + whyStuck(stage, view, questItems) + ")", problems);
+                return new StepPlan(steps, "stage " + s + ": no step can fire (" + whyStuck(stage, view, questItems) + ")", problems,
+                        switchedOff);
             }
             String where = "stage " + s + " step " + (steps.size() + 1) + " (" + QuestWalk.describe(t) + ")";
             for (Map<String, Integer> m : List.of(t.need, t.take, t.give)) {
                 for (String item : m.keySet()) {
                     if (!exists(item, itemExists)) {
-                        return new StepPlan(steps, where + " uses unknown item " + item, problems);
+                        return new StepPlan(steps, where + " uses unknown item " + item, problems, switchedOff);
                     }
                 }
             }
             for (String tool : t.tools) {
                 if (!exists(QuestSpec.toolItem(tool), itemExists)) {
-                    return new StepPlan(steps, where + " needs " + tool + " but " + QuestSpec.toolItem(tool) + " does not exist", problems);
+                    return new StepPlan(steps, where + " needs " + tool + " but " + QuestSpec.toolItem(tool) + " does not exist", problems,
+                            switchedOff);
                 }
             }
             if (t.kind == Trigger.Kind.TALK) {
@@ -235,13 +242,13 @@ public final class QuestStepWalk {
                 if (d != t) {
                     return new StepPlan(steps, where + ": talking to " + t.target + " fires "
                             + (d == null ? "nothing" : "another step first (" + QuestWalk.describe(d) + ", trigger "
-                            + stage.triggers.indexOf(d) + ")"), problems);
+                            + stage.triggers.indexOf(d) + ")"), problems, switchedOff);
                 }
             }
             if ((t.kind == Trigger.Kind.KILL || t.kind == Trigger.Kind.DROP) && !raisable.test(t.target)
                     && raised.getOrDefault(t.target, 0) <= 0) {
                 return new StepPlan(steps, where + ": nothing raises " + t.target + " (no arena to summon it, no earlier step spawns it)",
-                        problems);
+                        problems, switchedOff);
             }
             // fire it
             t.take.forEach((item, n) -> items.merge(item, -n, Integer::sum));
@@ -269,13 +276,19 @@ public final class QuestStepWalk {
                             + ") never fired: " + blocked(o, view, questItems));
                 }
             }
+            for (Trigger o : stage.triggers) {
+                String why = firedHere.contains(o) ? null : blocked(o, view, questItems);
+                if (why != null && why.startsWith("switched off")) {
+                    switchedOff.add(o);
+                }
+            }
             if (t.completes()) {
-                return new StepPlan(steps, null, problems);
+                return new StepPlan(steps, null, problems, switchedOff);
             }
             s = t.next;
             firedHere.clear();
         }
-        return new StepPlan(steps, "no completion after " + steps.size() + " steps (now at stage " + s + ")", problems);
+        return new StepPlan(steps, "no completion after " + steps.size() + " steps (now at stage " + s + ")", problems, switchedOff);
     }
 
     private static boolean exists(String item, Predicate<String> itemExists) {

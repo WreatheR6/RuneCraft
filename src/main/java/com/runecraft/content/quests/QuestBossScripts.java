@@ -28,6 +28,7 @@ final class QuestBossScripts {
         BossScripts.register("balance_elemental", BalanceForms::new);
         BossScripts.register("fragment_of_seren", FragmentSpecials::new);
         BossScripts.register("vanstrom_klause", Vanstrom::new);
+        Vanstrom.register();
     }
 
     /**
@@ -156,15 +157,50 @@ final class QuestBossScripts {
         }
     }
     /**
-     * Sins of the Father, Vanstrom Klause (wiki): magic attacks, some lowering Attack; every 8-10 attacks one of his three
-     * specials, never the same twice in a row. Brought to 0 hitpoints he heals 200, stops his specials and calls lightning.
+     * Sins of the Father, Vanstrom Klause (wiki): magic attacks, some lowering Attack. He may open with one of his three
+     * specials at any point, then uses one after every 9-12 regular attacks, picked at random but never the same twice in a
+     * row. Only the blisterwood flail hurts him (recoil and Vengeance do nothing). Brought to 0 hitpoints he heals 200, stops
+     * his specials, calls lightning, and his attacks ignore protection prayers.
      */
     static final class Vanstrom implements BossScript {
         private static final String[] SPECIALS = {"pets", "blood_orb", "stare_into_darkness"};
         private int sinceSpecial;
-        private int nextSpecial = 8;
+        private int nextSpecial = -1;
         private String lastSpecial;
         private boolean healed;
+        /** The game time a blisterwood hit passed {@link #modifyIncoming}: the one damage the gate lets through. */
+        private long approvedAt = Long.MIN_VALUE;
+        private AttackDef piercing;
+
+        /**
+         * Damage that skipped the blisterwood rule (a ring of recoil or suffering, Vengeance, thrown potions) never reaches
+         * him (wiki), and whatever else brings him to 0 still meets his heal before the second phase.
+         */
+        static void register() {
+            com.runecraft.combat.CombatHooks.addMonsterDamageGate((player, target) ->
+                    target instanceof DataBossEntity boss && boss.script() instanceof Vanstrom v && !v.consumeApproval(boss)
+                            ? "Only the blisterwood flail can hurt Vanstrom Klause." : null);
+            com.runecraft.platform.ServerLivingEntityEvents.ALLOW_DEATH.register((entity, source, amount) ->
+                    !(entity instanceof DataBossEntity boss && boss.script() instanceof Vanstrom v)
+                            || source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY) || !v.rise(boss));
+        }
+
+        private boolean consumeApproval(DataBossEntity boss) {
+            boolean ok = approvedAt == boss.level().getGameTime();
+            approvedAt = Long.MIN_VALUE;
+            return ok;
+        }
+
+        /** At 0 hitpoints the first time: heals 200 and starts the second phase. False when already risen. */
+        private boolean rise(DataBossEntity boss) {
+            if (healed) {
+                return false;
+            }
+            healed = true;
+            boss.setHealth(boss.getMaxHealth() * 200f / boss.trueHitpoints());
+            announce(boss, "Vanstrom Klause drinks deep of the blood around him and rises again!", ChatFormatting.DARK_RED);
+            return true;
+        }
 
         private AttackDef named(DataBossEntity boss, String name) {
             for (AttackDef a : boss.def().attacks) {
@@ -181,29 +217,45 @@ final class QuestBossScripts {
                 return null;
             }
             if (healed) {
-                return named(boss, boss.getRandom().nextInt(3) == 0 ? "lightning" : "blood_blast");
+                if (boss.getRandom().nextInt(3) == 0) {
+                    return named(boss, "lightning");
+                }
+                if (piercing == null) {
+                    AttackDef blast = named(boss, "blood_blast");
+                    // approx: typeless in OSRS; here his magic blast that protection prayers no longer stop
+                    piercing = blast == null ? null : blast.special(AttackDef.Special.PRAYER_PIERCING, 0);
+                }
+                return piercing;
+            }
+            if (nextSpecial < 0) {
+                nextSpecial = 1 + boss.getRandom().nextInt(13); // approx: "may use a special attack at any time" at the start
             }
             if (++sinceSpecial >= nextSpecial) {
                 sinceSpecial = 0;
-                nextSpecial = 8 + boss.getRandom().nextInt(3);
-                String pick;
-                do {
-                    pick = SPECIALS[boss.getRandom().nextInt(SPECIALS.length)];
-                } while (pick.equals(lastSpecial));
-                lastSpecial = pick;
-                return named(boss, pick);
+                nextSpecial = 10 + boss.getRandom().nextInt(4); // after 9-12 regular attacks
+                int pick = boss.getRandom().nextInt(lastSpecial == null ? SPECIALS.length : SPECIALS.length - 1);
+                if (lastSpecial != null && pick >= java.util.Arrays.asList(SPECIALS).indexOf(lastSpecial)) {
+                    pick++;
+                }
+                lastSpecial = SPECIALS[pick];
+                return named(boss, lastSpecial);
             }
             return named(boss, boss.getRandom().nextInt(4) == 0 ? "weaken" : "blood_blast");
         }
 
         @Override
         public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            if (damage > 0 && !type.isMelee()) {
+                Msg.action(attacker, "Only a blow from the blisterwood flail will hurt Vanstrom Klause.");
+                return 0;
+            }
             int hp = (int) Math.ceil(boss.getHealth() * boss.trueHitpoints() / boss.getMaxHealth());
             if (!healed && damage >= hp) {
-                healed = true;
-                boss.setHealth(boss.getMaxHealth() * 200f / boss.trueHitpoints());
-                announce(boss, "Vanstrom Klause drinks deep of the blood around him and rises again!", ChatFormatting.DARK_RED);
+                rise(boss);
                 return 0;
+            }
+            if (damage > 0) {
+                approvedAt = boss.level().getGameTime();
             }
             return damage;
         }

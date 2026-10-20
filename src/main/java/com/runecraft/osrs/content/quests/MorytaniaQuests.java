@@ -389,10 +389,11 @@ final class MorytaniaQuests {
                 .attack(AttackDef.of("magical_fire", AttackType.MAGIC, 1, 10, 1).special(Special.HAZARD, 8)
                         .telegraph(2, "Damien summons a magical fire! Stomp it out.")) // approx: his fires shield him in OSRS
                 .drops(Drop.always("bones")).skin(0xC8C8D0, 0x6A1A2A, 0x3A0A1A, 0x1A1A1A));
-        // Vanstrom Klause in Sins of the Father (wiki): level 459, 750 HP, magic up to 24 every 5 ticks, only blisterwood hurts him;
-        // every 8-10 attacks one of his three specials, never the same twice (QuestBossScripts.Vanstrom): "My pets will feast on
-        // your corpse!" (an acidic bloodveld that explodes for up to 50), "Blood will be my strength!" (a healing blood orb) and
-        // "Stare into darkness!" (heavy damage to a player facing him). At 0 hitpoints he heals 200 and calls lightning (up to 46).
+        // Vanstrom Klause in Sins of the Father (wiki): level 459, 750 HP, magic up to 24 every 5 ticks, only blisterwood hurts him
+        // (recoil and Vengeance do nothing); after every 9-12 regular attacks one of his three specials, never the same twice in a
+        // row (QuestBossScripts.Vanstrom): "My pets will feast on your corpse!" (an acidic bloodveld that explodes for up to 50),
+        // "Blood will be my strength!" (a healing blood orb) and "Stare into darkness!" (heavy damage to a player facing him). At
+        // 0 hitpoints he heals 200, calls lightning (up to 46) and his attacks ignore protection prayers.
         b.boss(BossDef.of("vanstrom_klause", "Vanstrom Klause").level(459).stats(750, 0, 0, 180, 180, 0).speed(5)
                 .defenceBonus(34, 34, 34, 34, 34)
                 .requiresWeapon("blisterwood_flail")

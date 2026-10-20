@@ -319,7 +319,7 @@ final class GrandmasterQuests {
         b.item("ds2_locator_orb", "Locator orb", "orb", 0x3A8A5A, "Ava's dragonstone locator. It hurts to use.");
         b.spot("ds2_mort_myre", "Mort Myre Swamp", 3440, 3400); // approx: the buried piece is at a random swamp tile in OSRS
         b.spot("ds2_kourend_tomb", "Kourend crypt", 1504, 3539); // approx: over the tomb at the bottom of the crypt (OSRS 1504, 9939)
-        b.quest("dragon_slayer_ii", "Dragon Slayer II", Difficulty.GRANDMASTER, 5)
+        QuestSpec q = b.quest("dragon_slayer_ii", "Dragon Slayer II", Difficulty.GRANDMASTER, 5)
                 .xp(Skill.SMITHING, 80000).xp(Skill.MINING, 60000).xp(Skill.AGILITY, 50000).xp(Skill.THIEVING, 50000) // OSRS (current quest XP rewards)
                 .qp(200).reqQuest("legends_quest", "animal_magnetism", "ghosts_ahoy", "bone_voyage")
                 .reqQuest("dream_mentor", "a_tail_of_two_cats", "client_of_kourend")
@@ -398,32 +398,11 @@ final class GrandmasterQuests {
                 .say("Meow! *Bob remembers: the dragon key was split into four pieces, hidden in Karamja, Morytania, Kourend and Ungael.*")
                 .missing("?!ds2_aivas|Meow? *Bob licks his paw.*", "?ds2_aivas|?!ds2_dream|Meow. *Bob's memories wait in a dream.*")
                 // ---- The dragon key (wiki quick guide) ----
-                .stage("I need the four pieces of the dragon key: the Kharazi maze, Mort Myre Swamp, a Kourend crypt, and Ungael beyond Rellekka.")
-                .reach("ds2_kharazi_maze", 6).stay().unless("ds2_key_karamja").unlessFlag("ds2_forged").reqSkill(Skill.THIEVING, 60)
-                .reqSkill(Skill.AGILITY, 60).need("machete").needTool("axe").give("ds2_key_karamja")
-                .say("* Down the staircase on the Kharazi coast, past spikes and coloured golems (red melee, green ranged, blue magic),",
-                        "* you take the dragon key piece from the plinth at the centre of the maze.")
-                .missing("* The Kharazi Jungle is overgrown: you'd need a machete and an axe to reach the maze.")
-                .talk("reldo").stay().unlessFlag("ds2_reldo").flag("ds2_reldo")
-                .say("> Ask about Tristan.", "Tristan, Robert's companion? The census records on the shelves might show his descendants.")
-                .reach("ds2_varrock_library", 3).stay().needFlag("ds2_reldo").unlessFlag("ds2_census").unless("varrock_census_records")
-                .give("varrock_census_records").say("* In the second bookcase from the north you find the Varrock census records.")
-                .talk("reldo").stay().needFlag("ds2_reldo").unlessFlag("ds2_census").take("varrock_census_records").flag("ds2_census")
-                .say("Tristan's line... Sarah, in Port Phasmatys. She may know where his key piece was hidden.")
-                .talk("sarah_phasmatys").stay().needFlag("ds2_census").unlessFlag("ds2_sarah").need("ghostspeak_amulet").flag("ds2_sarah")
-                .say("My ancestor's key piece? Buried somewhere in Mort Myre Swamp, they say. Ava in Draynor Manor could make a locator.")
-                .missing("* Sarah's words are lost to you without a ghostspeak amulet.")
-                .talk("ava").stay().needFlag("ds2_sarah").unless("ds2_locator_orb", "ds2_key_morytania").unlessFlag("ds2_forged")
-                .take("dragonstone", "molten_glass:2").need("glassblowing_pipe", "chisel").give("ds2_locator_orb")
-                .say("* You blow an inert orb around the dragonstone. Ava charges it into a locator orb.")
-                .missing("A locator orb? Bring a dragonstone, 2 molten glass, a glassblowing pipe and a chisel.")
-                .reach("ds2_mort_myre", 16).stay().need("ds2_locator_orb", "spade").unless("ds2_key_morytania").unlessFlag("ds2_forged").give("ds2_key_morytania")
-                .say("* The locator stings you each time you feel it, but it leads you to a patch of swamp. You dig up a key piece.")
-                .talk("amelia").stay().unlessFlag("ds2_amelia").flag("ds2_amelia")
-                .say("Camorra's tomb? In the crypt west of here. Take a light, and beware the skeletons.")
-                .puzzle("ds2_kourend_tomb", DS2_CRYPT).stay().needFlag("ds2_amelia").unless("ds2_key_kourend").unlessFlag("ds2_forged")
-                .give("ds2_key_kourend")
-                .say("* The last bust settles on its plinth. The tomb grinds open: a dragon key piece.")
+                .stage("I need the four pieces of the dragon key: the Kharazi maze, Mort Myre Swamp, a Kourend crypt, and Ungael beyond Rellekka.");
+        // OSRS takes the four pieces in any order (quest-helper: one quest state, 125-129, for all four), so the three mainland
+        // pieces stay open at the Vorkath and reforging stages too, until the key is forged: sailing to Ungael first can't
+        // strand them.
+        ds2MainlandPieces(q)
                 .talk("brundt").stay().need("ancient_mural_map").unlessFlag("ds2_brundt").flag("ds2_brundt")
                 .say("> Ask about the dragonkin fortress.", "The frozen island of Ungael? Torfinn on the docks will sail you. Mind the dragon.")
                 .talk("torfinn").needFlag("ds2_brundt").need("ancient_mural_map").travel("quest_ungael")
@@ -432,10 +411,16 @@ final class GrandmasterQuests {
                 .stage("I must defeat the undead dragon Vorkath on Ungael.")
                 .kill("ds2_vorkath").take("ancient_mural_map").give("ds2_key_ungael", "ds2_ancient_key")
                 .say("* Vorkath collapses. In the cave to the north-west you pull the lever and run for the east room before the timer ends:",
-                        "* the stone chest holds the last dragon key piece and an ancient key.")
+                        "* the stone chest holds the last dragon key piece and an ancient key.");
+        ds2MainlandPieces(q)
                 // ---- Reforging the key and A World United (wiki quick guide) ----
                 .stage("I should reforge the dragon key in the Ancient Cavern, open the dragonkin vault on Lithkren and unite the kingdoms "
                         + "against the dragons.")
+                // saves from before round 37 reached this stage with the Ungael piece but no ancient key (Vorkath's chest gave only
+                // the piece then): the key turns up here instead of stranding them before the mithril door
+                .reach("ds2_ancient_cavern", 8).stay().unless("ds2_ancient_key").unlessFlag("ds2_heads", "ds2_forged").need("ds2_key_ungael")
+                .give("ds2_ancient_key")
+                .say("* At the bottom of your pack, under the Ungael key piece, you find the ancient key from Vorkath's stone chest.")
                 .reach("ds2_ancient_cavern", 8).stay().unlessFlag("ds2_heads", "ds2_forged").need("ds2_ancient_key")
                 .take("fire_rune:21", "air_rune:15", "blood_rune:3").reqSkill(Skill.MAGIC, 75).flag("ds2_heads")
                 .say("* Past the mithril dragons, the ancient key opens the mithril door. You cast Fire Wave on each of the three dragon heads.")
@@ -445,7 +430,8 @@ final class GrandmasterQuests {
                 .take("ds2_key_karamja", "ds2_key_morytania", "ds2_key_kourend", "ds2_key_ungael").need("hammer").reqSkill(Skill.SMITHING, 70)
                 .flag("ds2_forged").give("dragonkin_key")
                 .say("* Up the rough-hewn steps in the south-west of the caverns, you forge the four pieces into the dragon key on an anvil.")
-                .missing("* The anvils wait up the rough-hewn steps. You'll need all four key pieces, a hammer and 70 Smithing.")
+                .missing("* The anvils wait up the rough-hewn steps. You'll need all four key pieces, a hammer and 70 Smithing.");
+        ds2MainlandPieces(q)
                 .reach("ds2_lithkren", 8).stay().needFlag("ds2_forged").unlessFlag("ds2_vault").take("dragonkin_key").flag("ds2_vault")
                 .say("* The dragon key turns in Lithkren's ancient doors. Inside, Dallas gasps: the vault is empty, and far away Galvek wakes.",
                         "@Bob the Cat: Meow. *The kingdoms must stand together. Start with King Roald.*")
@@ -500,6 +486,43 @@ final class GrandmasterQuests {
                 .stage("I should report to Alec Kincade at the Myths' Guild.")
                 .talk("alec_kincade").say("Galvek is dead! You are a true slayer of dragons. The Myths' Guild is open to you.")
                 .done("robert_the_strong", "It was an honour to see you fight. Galvek will not rise again.");
+    }
+
+    /**
+     * Dragon Slayer II, the three mainland dragon key pieces (wiki quick guide): the Kharazi maze; Reldo, the Varrock census,
+     * Sarah in Port Phasmatys, Ava's locator orb and Mort Myre Swamp; Amelia and the Kourend crypt. Added to every stage from
+     * the key hunt to the forge (the pieces come in any order), each switched off once its piece is held or the key forged.
+     */
+    private static QuestSpec ds2MainlandPieces(QuestSpec q) {
+        return q
+                .reach("ds2_kharazi_maze", 6).stay().unless("ds2_key_karamja").unlessFlag("ds2_forged").reqSkill(Skill.THIEVING, 60)
+                .reqSkill(Skill.AGILITY, 60).need("machete").needTool("axe").give("ds2_key_karamja")
+                .say("* Down the staircase on the Kharazi coast, past spikes and coloured golems (red melee, green ranged, blue magic),",
+                        "* you take the dragon key piece from the plinth at the centre of the maze.")
+                .missing("* The Kharazi Jungle is overgrown: you'd need a machete and an axe to reach the maze.")
+                .talk("reldo").stay().unless("ds2_key_morytania").unlessFlag("ds2_reldo", "ds2_forged").flag("ds2_reldo")
+                .say("> Ask about Tristan.", "Tristan, Robert's companion? The census records on the shelves might show his descendants.")
+                .reach("ds2_varrock_library", 3).stay().needFlag("ds2_reldo").unlessFlag("ds2_census", "ds2_forged")
+                .unless("varrock_census_records", "ds2_key_morytania")
+                .give("varrock_census_records").say("* In the second bookcase from the north you find the Varrock census records.")
+                .talk("reldo").stay().needFlag("ds2_reldo").unlessFlag("ds2_census", "ds2_forged").unless("ds2_key_morytania")
+                .take("varrock_census_records").flag("ds2_census")
+                .say("Tristan's line... Sarah, in Port Phasmatys. She may know where his key piece was hidden.")
+                .talk("sarah_phasmatys").stay().needFlag("ds2_census").unlessFlag("ds2_sarah", "ds2_forged").unless("ds2_key_morytania")
+                .need("ghostspeak_amulet").flag("ds2_sarah")
+                .say("My ancestor's key piece? Buried somewhere in Mort Myre Swamp, they say. Ava in Draynor Manor could make a locator.")
+                .missing("* Sarah's words are lost to you without a ghostspeak amulet.")
+                .talk("ava").stay().needFlag("ds2_sarah").unless("ds2_locator_orb", "ds2_key_morytania").unlessFlag("ds2_forged")
+                .take("dragonstone", "molten_glass:2").need("glassblowing_pipe", "chisel").give("ds2_locator_orb")
+                .say("* You blow an inert orb around the dragonstone. Ava charges it into a locator orb.")
+                .missing("A locator orb? Bring a dragonstone, 2 molten glass, a glassblowing pipe and a chisel.")
+                .reach("ds2_mort_myre", 16).stay().need("ds2_locator_orb", "spade").unless("ds2_key_morytania").unlessFlag("ds2_forged").give("ds2_key_morytania")
+                .say("* The locator stings you each time you feel it, but it leads you to a patch of swamp. You dig up a key piece.")
+                .talk("amelia").stay().unless("ds2_key_kourend").unlessFlag("ds2_amelia", "ds2_forged").flag("ds2_amelia")
+                .say("Camorra's tomb? In the crypt west of here. Take a light, and beware the skeletons.")
+                .puzzle("ds2_kourend_tomb", DS2_CRYPT).stay().needFlag("ds2_amelia").unless("ds2_key_kourend").unlessFlag("ds2_forged")
+                .give("ds2_key_kourend")
+                .say("* The last bust settles on its plinth. The tomb grinds open: a dragon key piece.");
     }
 
     /**
@@ -815,6 +838,10 @@ final class GrandmasterQuests {
                 .kill("dark_squall").stay().needFlag("wgs_silif").unlessFlag("wgs_surok").flag("wgs_surok").give("strange_teleorb")
                 .say("* Surok falls. You plant Silif's teleorb on him and he vanishes into the White Knights' cells.",
                         "* On the study's table lies the Dark Squall's strange teleorb.")
+                // saves from before round 37 beat Surok without picking up his strange teleorb (the old fight left none)
+                .talk("silif").stay().needFlag("wgs_surok").unlessFlag("wgs_camp", "wgs_orbed").unless("strange_teleorb").give("strange_teleorb")
+                .say("You left this on the study table upstairs: the Dark Squall's strange teleorb. In his robes, it might take you "
+                        + "wherever he was going.")
                 .reach("wgs_wk_cell", 3).stay().needFlag("wgs_surok").unlessFlag("wgs_camp", "wgs_orbed")
                 .need("strange_teleorb", "dark_squall_hood", "dark_squall_robe_top", "dark_squall_robe_bottom").flag("wgs_orbed")
                 .travel("wgs_lucien_camp")
@@ -836,6 +863,13 @@ final class GrandmasterQuests {
                 // ---- Into the Chasm (wiki quick guide) ----
                 .stage("I must follow Lucien into the Chasm of Tears in the Dark Squall's robes, open the Ancient Guthixian Temple and "
                         + "defeat the Balance Elemental guarding the Stone.")
+                // saves from before round 37 came here without the Dark Squall's robes (the old quest never handed them out), and
+                // Movario lets only his master by: Idria brings the set taken from the Dark Squall's base (every newer save has
+                // wgs_base, set where the robes are found)
+                .talk("idria").stay().unlessFlag("wgs_base", "wgs_movario").give("dark_squall_hood", "dark_squall_robe_top", "dark_squall_robe_bottom")
+                .flag("wgs_base")
+                .say("The Temple Knights searched the Dark Squall's base after you left. Take his robes: Movario will be at the chasm, and "
+                        + "he'll only make way for his master.")
                 .talk("idria").stay().unlessFlag("wgs_chasm").take("sapphire").need("tinderbox").reqSkill(Skill.FIREMAKING, 49)
                 .give("sapphire_lantern").flag("wgs_chasm")
                 .say("The Temple Knights follow you down. Light creatures carry travellers across the chasm, but only to a sapphire's glow.",
