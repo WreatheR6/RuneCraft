@@ -111,6 +111,11 @@ class RaidInvocationsTest {
         assertEquals(2, Invocation.kephriEggs(none));
         assertEquals(4, Invocation.kephriEggs(all));
         assertEquals(1, Invocation.kephriFireballRadius(all));
+        // Trios of swarms from path level 2, more often from 4.
+        assertEquals(0, Invocation.kephriTrioEvery(1));
+        assertTrue(Invocation.kephriTrioEvery(4) < Invocation.kephriTrioEvery(2) && Invocation.kephriTrioEvery(4) > 0);
+        // Zebak: Arterial Spray widens the blood blitz's splash.
+        assertTrue(Invocation.zebakBloodSplashRadius(all) > Invocation.zebakBloodSplashRadius(none));
         // Wardens
         assertEquals(0, Invocation.wardensSlamFaster(none));
         assertEquals(1, Invocation.wardensSlamFaster(EnumSet.of(Invocation.OVERCLOCKED)));

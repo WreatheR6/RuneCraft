@@ -253,6 +253,17 @@ public enum Invocation {
     }
 
     /**
+     * Tiles around a player that Zebak's blood blitz splashes onto (OSRS: clumped players take more; Arterial Spray gives
+     * it "increased range"). // approx: 1, or 2 with Arterial Spray
+     */
+    public static int zebakBloodSplashRadius(Set<Invocation> set) {
+        return set.contains(ARTERIAL_SPRAY) ? 2 : 1;
+    }
+
+    /** Extra blood blitz damage for each other player in the splash. // approx */
+    public static final int ZEBAK_SPLASH_DAMAGE = 3;
+
+    /**
      * Blood clouds (OSRS wiki): each loses 2 hitpoints every tick and hurts an adjacent player, healing itself by the
      * damage. // approx: 40 hitpoints, 3-6 damage a tick
      */

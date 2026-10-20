@@ -2145,9 +2145,19 @@ final class ToaBossRooms {
             if (rnd().nextBoolean()) {
                 say("Zebak casts blood magic!");
                 int total = 0;
-                for (ServerPlayer p : players()) {
+                // OSRS: 8-11 on everyone, more for players clumped together (the blitz splashes onto them); Arterial Spray
+                // widens the splash and heals Zebak more.
+                int splash = Invocation.zebakBloodSplashRadius(inv);
+                List<ServerPlayer> here = players();
+                for (ServerPlayer p : here) {
                     world().sendParticles(ParticleTypes.DAMAGE_INDICATOR, p.getX(), p.getY() + 1, p.getZ(), 6, 0.3, 0.4, 0.3, 0.1);
-                    total += RaidEffects.hit(zebak, p, 8 + rnd().nextInt(4), AttackType.MAGIC, false);
+                    int clumped = 0;
+                    for (ServerPlayer o : here) {
+                        if (o != p && Math.abs(o.getBlockX() - p.getBlockX()) <= splash && Math.abs(o.getBlockZ() - p.getBlockZ()) <= splash) {
+                            clumped++;
+                        }
+                    }
+                    total += RaidEffects.hit(zebak, p, 8 + rnd().nextInt(4) + Invocation.ZEBAK_SPLASH_DAMAGE * clumped, AttackType.MAGIC, false);
                 }
                 double share = inv.contains(Invocation.ARTERIAL_SPRAY) ? 1.0 : 2 / 3.0;
                 if (total > 0) {
