@@ -185,6 +185,10 @@ public class ColosseumSession extends MinigameSession {
                 forcedChunks.add(net.minecraft.world.level.ChunkPos.asLong(cx, cz));
             }
         }
+        // Nothing an earlier run in this slot left on the floor is handed to this one when it ends.
+        for (ItemEntity item : world.getEntitiesOfClass(ItemEntity.class, box(), e -> true)) {
+            item.discard();
+        }
         room(Blocks.SMOOTH_SANDSTONE, Blocks.CUT_SANDSTONE, Blocks.CHISELED_SANDSTONE);
         for (int sx = -1; sx <= 1; sx += 2) {
             for (int sz = -1; sz <= 1; sz += 2) {
@@ -323,6 +327,15 @@ public class ColosseumSession extends MinigameSession {
         broadcast("The Rewards Chest appears in the centre of the arena. Search it to claim your loot.");
     }
 
+    /** Clears monster drops off the arena floor; what a player in the run dropped themselves stays theirs to pick up. */
+    private void sweepFloor() {
+        for (ItemEntity item : world.getEntitiesOfClass(ItemEntity.class, box(), e -> true)) {
+            if (!(item.getOwner() instanceof ServerPlayer owner && online().contains(owner))) {
+                item.discard();
+            }
+        }
+    }
+
     /** Whether the run is over and the Rewards Chest waits in the arena (self-test). */
     public boolean rewardsReady() {
         return state == State.REWARDS;
@@ -333,13 +346,20 @@ public class ColosseumSession extends MinigameSession {
         return rel(0, 1, 0);
     }
 
-    /** Searching the Rewards Chest: hands over the loot and ends the run (Minimus sees the player out). */
+    /**
+     * Searching the Rewards Chest: hands over the loot and ends the run (Minimus sees the player out). Nothing is ever put
+     * on the arena floor (it would be left behind when the run ends): what doesn't fit in the inventory goes to the bank,
+     * and if even the bank can't take it the chest stays for another search.
+     */
     public boolean claimChest(ServerPlayer p) {
         if (state != State.REWARDS) {
             Msg.game(p, "The Rewards Chest is empty.");
             return false;
         }
-        claim(p);
+        if (!claim(p)) {
+            Msg.game(p, "Your bank is full. Make room in your inventory to take the rest of your loot.");
+            return false;
+        }
         claimed = true;
         state = State.DONE;
         set(0, 1, 0, Blocks.AIR.defaultBlockState());
@@ -348,20 +368,66 @@ public class ColosseumSession extends MinigameSession {
         return true;
     }
 
-    /** Gives the chest's contents to a player (once). */
-    public void claim(ServerPlayer p) {
+    /**
+     * Gives the chest's contents to a player: into the inventory while there's room, the rest to the bank (a run's
+     * splinters and cannonballs fill more 64-item stacks than an inventory holds). Returns true once the chest is empty;
+     * what neither can take stays in the chest.
+     */
+    public boolean claim(ServerPlayer p) {
         if (chest.isEmpty()) {
-            return;
+            return true;
         }
         Msg.game(p, "You search the Rewards Chest.");
+        List<ColosseumRewards.Reward> left = new ArrayList<>();
+        long banked = 0;
         for (ColosseumRewards.Reward r : chest) {
-            reward(p, r.item(), r.count());
-            if (ColosseumRewards.unique(r.item())) {
+            int carried = Math.min(r.count(), room(p, r.item()));
+            if (carried > 0) {
+                Inv.give(p, r.item(), carried);
+            }
+            int rest = r.count() - carried;
+            net.minecraft.world.item.ItemStack one = Inv.stack(r.item(), 1);
+            if (rest > 0 && !one.isEmpty()) {
+                long sent = com.runecraft.bank.BankService.depositStack(Players.data(p).bank(), one, rest, 0);
+                banked += sent;
+                rest -= (int) sent;
+            }
+            if (rest < r.count()) {
+                com.runecraft.collection.CollectionLog.obtain(p, r.item());
+            }
+            if (rest > 0) {
+                left.add(new ColosseumRewards.Reward(r.item(), rest));
+            } else if (ColosseumRewards.unique(r.item())) {
                 p.getServer().getPlayerList().broadcastSystemMessage(Component.literal(p.getName().getString() + " received a drop: "
                         + displayName(r.item()) + " from the Fortis Colosseum.").withStyle(ChatFormatting.GOLD), false);
             }
         }
         chest.clear();
+        chest.addAll(left);
+        if (banked > 0) {
+            Msg.game(p, "Your inventory is full: the rest of your loot is sent to your bank.");
+        }
+        return left.isEmpty();
+    }
+
+    /**
+     * How many of {@code item} the main inventory takes without anything spilling on the floor (a lower bound: the offhand
+     * isn't counted). An unknown item "fits" ({@link Inv#give} skips it).
+     */
+    static int room(ServerPlayer p, String item) {
+        net.minecraft.world.item.Item it = Inv.item(item);
+        if (Inv.COINS.equals(item) || it == net.minecraft.world.item.Items.AIR) {
+            return Integer.MAX_VALUE;
+        }
+        long room = 0;
+        for (net.minecraft.world.item.ItemStack s : p.getInventory().items) {
+            if (s.isEmpty()) {
+                room += it.getDefaultMaxStackSize();
+            } else if (s.is(it) && s.getComponentsPatch().isEmpty() && s.getCount() < s.getMaxStackSize()) {
+                room += s.getMaxStackSize() - s.getCount();
+            }
+        }
+        return (int) Math.min(Integer.MAX_VALUE, room);
     }
 
     private static String displayName(String item) {
@@ -398,9 +464,7 @@ public class ColosseumSession extends MinigameSession {
         }
         if (solDiedAt != null) {
             // Sol drops nothing in OSRS: the chest holds the loot.
-            for (ItemEntity item : world.getEntitiesOfClass(ItemEntity.class, box(), e -> true)) {
-                item.discard();
-            }
+            sweepFloor();
             solDiedAt = null;
             if (state == State.FIGHTING) {
                 completeWave();
@@ -596,9 +660,7 @@ public class ColosseumSession extends MinigameSession {
             }
         }
         // Leftover floor items (none drop in OSRS), molten sand that isn't permanent and totems go.
-        for (ItemEntity item : world.getEntitiesOfClass(ItemEntity.class, box(), e -> true)) {
-            item.discard();
-        }
+        sweepFloor();
         clearSand(false);
         for (Totem t : totems) {
             t.totem().discard();
@@ -667,7 +729,8 @@ public class ColosseumSession extends MinigameSession {
 
     /**
      * Wave 3 hands out a Varlamore token once a day when the player's name length is assigned the Colosseum that day, and
-     * no token is already in the inventory (OSRS also needs a partyhat, which RuneCraft doesn't have - approx).
+     * no token is already in the inventory (OSRS also needs a partyhat, which RuneCraft doesn't have - approx). With no free
+     * slot it isn't picked up (a dropped token would be swept off the floor with the wave).
      */
     public static boolean varlamoreToken(ServerPlayer p) {
         java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneOffset.UTC);
@@ -675,7 +738,7 @@ public class ColosseumSession extends MinigameSession {
         MinigameData data = MinigameData.of(p);
         int day = (int) today.toEpochDay() + 1;
         if (!activity.equals("colosseum") || data.stat(p.getUUID(), STAT_TOKEN_DAY) == day
-                || Inv.has(p, FortisColosseum.TOKEN, 1)) {
+                || Inv.has(p, FortisColosseum.TOKEN, 1) || !Inv.hasRoomFor(p, FortisColosseum.TOKEN)) {
             return false;
         }
         data.setStat(p.getUUID(), STAT_TOKEN_DAY, day);

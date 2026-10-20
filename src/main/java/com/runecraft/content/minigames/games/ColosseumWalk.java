@@ -44,11 +44,12 @@ import net.minecraft.world.item.ItemStack;
  * through the chat-link command before every wave, every wave's monsters killed through the player's real hit path, the
  * reinforcements, the warband's weak-style max hits, the Javelin Colossus's every-fifth-attack javelin, manticore patterns
  * and staggered volleys, the minotaur's heal, Totemic, Volatility, Bees! and Solarflare, then Sol Heredit behind the
- * gladiators: his attacks, the grapple (a perfect parry, and an undefended one tearing off armour), the phases down to the
- * enrage, Showboating salutes and the kill; the Rewards Chest (the exit refuses an unsearched chest), the quiver traded to
- * Minimus and the stairs back up. Two more runs check that dying loses the chest and that ending a run between waves leaves
- * the loot in the chest. The session is ticked by hand (accelerated); any broken step throws an {@link AssertionError}
- * naming it.
+ * gladiators: his attacks, the grapple (a perfect parry, an undefended one tearing off armour, and one that leaves it on
+ * with a full inventory), the phases down to the enrage, Showboating salutes and the kill; the Rewards Chest (the exit
+ * refuses an unsearched chest), the quiver traded to Minimus and the stairs back up. Two more runs check that dying loses
+ * the chest and that ending a run between waves leaves the loot in the chest, searched with one free slot (one stack
+ * carried, the rest banked, nothing on the floor). The session is ticked by hand (accelerated); any broken step throws an
+ * {@link AssertionError} naming it.
  */
 public final class ColosseumWalk {
     private final ServerPlayer player;
@@ -426,7 +427,18 @@ public final class ColosseumWalk {
         expect(player.getItemBySlot(EquipmentSlot.CHEST).isEmpty() && Inv.count(player, "rune_platebody") >= 1,
                 "an undefended body grapple did not tear the platebody into the inventory");
         Inv.remove(player, "rune_platebody", Inv.count(player, "rune_platebody"));
-        notes.add("grapple: perfect parry, armour torn off");
+        // With no room in the inventory the armour stays on: nothing is put on the floor, which the arena clears.
+        List<ItemStack> kept = fillInventory(0);
+        player.setItemSlot(EquipmentSlot.CHEST, Inv.stack("rune_platebody", 1));
+        script.selfTestGrapple(boss, player, SolHeredit.Grapple.BODY);
+        tick(SolHeredit.GRAPPLE_WINDOW_TICKS + 1);
+        expect(Inv.idOf(player.getItemBySlot(EquipmentSlot.CHEST)).equals("rune_platebody"),
+                "an undefended body grapple with a full inventory took the platebody off");
+        expect(world.getEntitiesOfClass(ItemEntity.class, session.box(), e -> Inv.idOf(e.getItem()).equals("rune_platebody")).isEmpty(),
+                "an undefended grapple with a full inventory put the armour on the floor");
+        player.setItemSlot(EquipmentSlot.CHEST, ItemStack.EMPTY);
+        restoreInventory(kept);
+        notes.add("grapple: perfect parry, armour torn off, kept on with a full inventory");
         // The phases down to the enrage.
         for (float f : new float[]{0.85f, 0.70f, 0.45f, 0.20f, 0.08f}) {
             session.selfTestWoundSol(f);
@@ -508,14 +520,48 @@ public final class ColosseumWalk {
         command("minigame colosseum leave");
         expect(session.rewardsReady(), "leaving between waves did not end the run");
         expect(Inv.count(player, ColosseumRewards.SPLINTERS) == splinters, "the loot skipped the chest");
+        // Searched with one free slot (a run ends with the inventory full of supplies): one stack is carried, the rest is
+        // banked, nothing is left on the arena floor.
+        List<ItemStack> kept = fillInventory(1);
+        com.runecraft.osrs.bank.BankModel bank = Players.data(player).bank();
+        long banked = bank.count(ColosseumRewards.SPLINTERS, "");
+        int stack = Inv.item(ColosseumRewards.SPLINTERS).getDefaultMaxStackSize();
         use(session.chestPos());
-        expect(session.isEnded(), "searching the chest did not end the run");
-        expect(Inv.count(player, ColosseumRewards.SPLINTERS) == splinters + 80, "the chest gave "
-                + (Inv.count(player, ColosseumRewards.SPLINTERS) - splinters) + " splinters (expected wave 1's 80)");
-        notes.add("left after wave 1 with 80 splinters");
+        expect(session.isEnded(), "searching the chest with a full inventory did not end the run");
+        expect(world.getEntitiesOfClass(ItemEntity.class, session.box(), e -> true).isEmpty(),
+                "searching the chest with a full inventory left loot on the arena floor");
+        int carried = Inv.count(player, ColosseumRewards.SPLINTERS);
+        long sent = bank.count(ColosseumRewards.SPLINTERS, "") - banked;
+        expect(carried == Math.min(80, stack) && carried + sent == 80, "the chest gave " + carried + " splinters to the inventory and "
+                + sent + " to the bank (expected wave 1's 80, " + Math.min(80, stack) + " carried)");
+        bank.withdraw(ColosseumRewards.SPLINTERS, "", sent);
+        Inv.remove(player, ColosseumRewards.SPLINTERS, carried);
+        restoreInventory(kept);
+        notes.add("left after wave 1: 80 splinters, " + carried + " carried in the free slot and " + sent + " banked");
     }
 
     // ------------------------------------------------------------------ driver
+
+    /** Fills the main inventory with sharks, leaving {@code free} slots empty; returns what it held, for {@link #restoreInventory}. */
+    private List<ItemStack> fillInventory(int free) {
+        List<ItemStack> kept = new ArrayList<>();
+        for (ItemStack s : player.getInventory().items) {
+            kept.add(s.copy());
+        }
+        ItemStack junk = Inv.stack("shark", 1);
+        expect(!junk.isEmpty(), "no shark item to fill the inventory with");
+        int size = player.getInventory().items.size();
+        for (int i = 0; i < size; i++) {
+            player.getInventory().items.set(i, i < size - free ? junk.copy() : ItemStack.EMPTY);
+        }
+        return kept;
+    }
+
+    private void restoreInventory(List<ItemStack> kept) {
+        for (int i = 0; i < kept.size(); i++) {
+            player.getInventory().items.set(i, kept.get(i));
+        }
+    }
 
     /** Advances the run by {@code n} game ticks: the world clock, Sol Heredit (when present), hazards and the session. */
     private void tick(int n) {

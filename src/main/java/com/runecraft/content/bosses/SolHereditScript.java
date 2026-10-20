@@ -380,7 +380,8 @@ public final class SolHereditScript extends ScriptedBoss {
     /**
      * An undefended grapple tears the called slot's item off into the inventory (wiki: "puts it into the player's inventory
      * if not blocked in time"). Body, legs and feet are the armour slots; the back and hands slots are worn as accessories
-     * here and stay on. // approx
+     * here and stay on. With no free inventory slot the item stays worn: it is never put on the arena floor, which is
+     * cleared when the wave ends. // approx (the wiki doesn't say what a full inventory does)
      */
     static boolean unequip(ServerPlayer p, Grapple g) {
         net.minecraft.world.entity.EquipmentSlot slot = SolHeredit.armourSlot(g) == null ? null
@@ -389,15 +390,15 @@ public final class SolHereditScript extends ScriptedBoss {
             return false;
         }
         net.minecraft.world.item.ItemStack worn = p.getItemBySlot(slot);
-        if (worn.isEmpty()) {
+        if (worn.isEmpty() || p.getInventory().getFreeSlot() < 0) {
             return false;
         }
         net.minecraft.world.item.ItemStack copy = worn.copy();
-        p.setItemSlot(slot, net.minecraft.world.item.ItemStack.EMPTY);
         if (!p.getInventory().add(copy)) {
-            p.drop(copy, false);
+            return false; // nothing was moved (add fills a free slot whole, but never risk the item)
         }
-        Msg.red(p, "Sol Heredit tears your " + copy.getHoverName().getString() + " off!");
+        p.setItemSlot(slot, net.minecraft.world.item.ItemStack.EMPTY);
+        Msg.red(p, "Sol Heredit tears your " + worn.getHoverName().getString() + " off!");
         return true;
     }
 
