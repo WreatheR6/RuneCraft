@@ -186,7 +186,7 @@ public final class GatheringHooks {
         }
         if (rock.blockId().equals(MiningData.SULPHUR)) {
             ItemStack head = player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD);
-            if (head.isEmpty() || !MiningData.BREATHING_FILTERS.contains(Inv.idOf(head))) {
+            if (head.isEmpty() || !MiningData.filtersFumes(Inv.idOf(head))) {
                 Msg.game(player, "You'll choke on the fumes if you try to mine without protection.");
                 return;
             }

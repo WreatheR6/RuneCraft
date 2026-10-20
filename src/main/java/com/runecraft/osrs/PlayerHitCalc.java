@@ -142,11 +142,22 @@ public final class PlayerHitCalc {
     }
 
     static boolean blackMask(Input in) {
-        return in.any("black_mask", "slayer_helmet") || imbuedMask(in);
+        return in.any("black_mask") || slayerHelm(in, false) || imbuedMask(in);
     }
 
     static boolean imbuedMask(Input in) {
-        return in.any("black_mask_i", "slayer_helmet_i");
+        return in.any("black_mask_i") || slayerHelm(in, true);
+    }
+
+    /** A slayer helmet, recoloured ones included ("black_slayer_helmet", "tzkal_slayer_helmet_i"...). */
+    private static boolean slayerHelm(Input in, boolean imbued) {
+        String suffix = imbued ? "slayer_helmet_i" : "slayer_helmet";
+        for (String id : in.worn) {
+            if (id.endsWith(suffix)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     static boolean tzhaarWeapon(Input in) {

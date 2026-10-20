@@ -113,7 +113,8 @@ final class SlayerScripts {
                 return;
             }
             for (ServerPlayer p : BossFx.players(boss, 14)) {
-                if (!MASKS.contains(Inv.idOf(p.getItemBySlot(EquipmentSlot.HEAD)))) {
+                String head = Inv.idOf(p.getItemBySlot(EquipmentSlot.HEAD));
+                if (!MASKS.contains(head) && !com.runecraft.osrs.content.slayer.SlayerGear.SLAYER_HELMETS.contains(head)) {
                     Msg.red(p, "The thick smoke chokes you! You need a face mask.");
                     CombatHandler.applyDamage(boss, p, 5 + p.getRandom().nextInt(11));
                     for (Skill s : new Skill[]{Skill.ATTACK, Skill.STRENGTH, Skill.DEFENCE, Skill.RANGED, Skill.MAGIC}) {

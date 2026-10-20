@@ -51,8 +51,9 @@ public final class SlayerMasters {
      * @param points             base points per task (0 for Turael and Spria)
      * @param wilderness         Krystilia: kills only count in the Wilderness; her tasks keep their own streak
      * @param locationRestricted Konar: kills only count in the assigned region; drops brimstone keys
-     * @param quest              quest that must be complete before the master gives tasks (Chaeldar: Lost City,
-     *                           Spria: A Porcine of Interest, Steve: Monkey Madness II), or null
+     * @param quest              quest that must be complete before the master gives tasks (Mazchna: Priest in Peril,
+     *                           Chaeldar: Lost City, Duradel: Shilo Village, Spria: A Porcine of Interest, Steve: Monkey
+     *                           Madness II; OSRS Wiki "Slayer Master"), or null
      * @param diary              achievement diary area whose elite tier raises the base points (Konar: Kourend &amp;
      *                           Kebos, 18 to 20; Nieve and Steve: Western Provinces, 12 to 15), or null
      * @param diaryPoints        base points with that elite diary done
@@ -257,7 +258,7 @@ public final class SlayerMasters {
                 a("spiders", 6, 15, 30),
                 a("wolves", 7, 15, 30).combat(20),
                 a("zombies", 7, 15, 30).combat(10));
-        master("mazchna", "Mazchna", "mazchna", 20, 1, 6, false, false, null, null, 0,
+        master("mazchna", "Mazchna", "mazchna", 20, 1, 6, false, false, "priest_in_peril", null, 0,
                 a("banshees", 8, 30, 50).combat(20).quests("priest_in_peril"),
                 a("bats", 7, 30, 50).combat(5),
                 a("bears", 6, 30, 50).combat(13),
@@ -419,7 +420,7 @@ public final class SlayerMasters {
         master("nieve", "Nieve", "nieve", 85, 1, 12, false, false, null, "western", 15, nieveTasks());
         // Steve replaces Nieve after Monkey Madness II and assigns the same tasks.
         master("steve", "Steve", "steve", 85, 1, 12, false, false, "monkey_madness_ii", "western", 15, nieveTasks());
-        master("duradel", "Duradel", "duradel", 100, 50, 15, false, false, null, null, 0,
+        master("duradel", "Duradel", "duradel", 100, 50, 15, false, false, "shilo_village", null, 0,
                 a("aberrant_spectres", 7, 130, 200).ext(200, 250).combat(65).quests("priest_in_peril"),
                 a("abyssal_demons", 12, 130, 200).ext(200, 250).combat(85).quests("priest_in_peril"),
                 a("ankou", 5, 50, 80).ext(91, 150).combat(40),

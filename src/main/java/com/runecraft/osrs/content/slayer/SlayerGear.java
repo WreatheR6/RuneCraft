@@ -1,7 +1,10 @@
 package com.runecraft.osrs.content.slayer;
 
 import com.runecraft.osrs.Skill;
+import com.runecraft.osrs.content.dungeons.Dungeons;
+import com.runecraft.osrs.world.StructureDef;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -13,8 +16,8 @@ public final class SlayerGear {
     private SlayerGear() {
     }
 
-    /** Where a protective item must be. */
-    public enum Where { HEAD, SHIELD, FEET, INVENTORY }
+    /** Where a protective item must be (NECK and HANDS are the systems module's extra worn slots). */
+    public enum Where { HEAD, SHIELD, FEET, INVENTORY, NECK, HANDS }
 
     /**
      * Protection against a creature's special attack. Without any of {@code items} in {@code where}
@@ -34,12 +37,18 @@ public final class SlayerGear {
     public record Finisher(String category, String item, int threshold, boolean consumed, String unlock, String verb) {
     }
 
-    /** Slayer helmets count as every head-slot protective item. */
-    public static final List<String> SLAYER_HELMETS = List.of("slayer_helmet", "slayer_helmet_i");
+    /** Slayer helmets (every recolour, plain and imbued) count as every head-slot protective item. */
+    public static final List<String> SLAYER_HELMETS = join(SlayerRewards.slayerHelmets(false), SlayerRewards.slayerHelmets(true));
     /** Black masks and slayer helmets: 7/6 melee accuracy and damage against the current task. */
-    public static final List<String> MELEE_BOOST_HEADGEAR = List.of("black_mask", "black_mask_i", "slayer_helmet", "slayer_helmet_i");
+    public static final List<String> MELEE_BOOST_HEADGEAR = join(List.of("black_mask", "black_mask_i"), SLAYER_HELMETS);
     /** Imbued variants also give 15% ranged and magic accuracy and damage on task. */
-    public static final List<String> IMBUED_HEADGEAR = List.of("black_mask_i", "slayer_helmet_i");
+    public static final List<String> IMBUED_HEADGEAR = join(List.of("black_mask_i"), SlayerRewards.slayerHelmets(true));
+
+    private static List<String> join(List<String> a, List<String> b) {
+        List<String> out = new ArrayList<>(a);
+        out.addAll(b);
+        return List.copyOf(out);
+    }
 
     private static final List<Skill> COMBAT = List.of(Skill.ATTACK, Skill.STRENGTH, Skill.DEFENCE, Skill.RANGED, Skill.MAGIC);
 
@@ -58,16 +67,10 @@ public final class SlayerGear {
                     Skill.STRENGTH, Skill.DEFENCE, Skill.RANGED, Skill.MAGIC, Skill.AGILITY), "The basilisk's gaze turns your blood cold!"),
             new Protection("killerwatts", List.of("insulated_boots"), Where.FEET, 15, 0, List.of(),
                     "You're shocked by a jolt of electricity through the floor!"),
-            new Protection("cave_horrors", List.of("witchwood_icon"), Where.INVENTORY, 10, 0, List.of(),
+            new Protection("cave_horrors", List.of("witchwood_icon"), Where.NECK, 10, 0, List.of(),
                     "The cave horror's terrible howl shakes you to the core!"),
-            new Protection("fever_spiders", List.of("slayer_gloves"), Where.INVENTORY, 6, 2, List.of(Skill.ATTACK,
-                    Skill.STRENGTH, Skill.DEFENCE), "The fever spider's bite gives you a terrible fever!"),
-            new Protection("drakes", List.of("boots_of_stone", "boots_of_brimstone"), Where.FEET, 4, 0, List.of(),
-                    "The volcanic floor of the dungeon burns your feet!"),
-            new Protection("wyrms", List.of("boots_of_stone", "boots_of_brimstone"), Where.FEET, 4, 0, List.of(),
-                    "The volcanic floor of the dungeon burns your feet!"),
-            new Protection("hydras", List.of("boots_of_stone", "boots_of_brimstone"), Where.FEET, 4, 0, List.of(),
-                    "The volcanic floor of the dungeon burns your feet!"));
+            new Protection("fever_spiders", List.of("slayer_gloves"), Where.HANDS, 6, 2, List.of(Skill.ATTACK,
+                    Skill.STRENGTH, Skill.DEFENCE), "The fever spider's bite gives you a terrible fever!"));
 
     /**
      * Creatures whose gaze is stronger than their task category's (basilisk knights and their superior count as
@@ -90,8 +93,18 @@ public final class SlayerGear {
     public static final List<String> LEAF_BLADED_CATEGORIES = List.of("turoth", "kurask");
     public static final List<String> LEAF_BLADED_WEAPONS = List.of("leaf_bladed_spear", "leaf_bladed_sword",
             "leaf_bladed_battleaxe");
-    public static final List<String> BROAD_AMMO = List.of("broad_arrows");
+    public static final List<String> BROAD_AMMO = List.of("broad_arrows", "broad_bolts", "amethyst_broad_bolts");
     public static final List<String> MAGIC_DART_STAVES = List.of("slayer_staff", "staff_of_the_dead");
+
+    /**
+     * Molanisks cling to the walls until a slayer bell (39 Slayer) is rung nearby (OSRS Wiki); until then they can't be
+     * hurt. A ring lures those within {@link #BELL_RADIUS} blocks for {@link #BELL_LURE_TICKS} game ticks (approx).
+     */
+    public static final String BELL_CATEGORY = "molanisks";
+    public static final String SLAYER_BELL = "slayer_bell";
+    public static final int BELL_SLAYER_LEVEL = 39;
+    public static final int BELL_RADIUS = 8;
+    public static final int BELL_LURE_TICKS = 100;
 
     /** Harpie bug swarms can only be damaged while carrying a lit bug lantern. */
     public static final Map<String, String> LIGHT_SOURCE = Map.of("harpie_bug_swarms", "bug_lantern");
@@ -116,9 +129,40 @@ public final class SlayerGear {
 
     /**
      * Creatures of a finisher or protection category that need neither: sulphur and grimy lizards die without an ice
-     * cooler, and Neypotzli's wyrmlings live off the Karuulm Slayer Dungeon's burning floor.
+     * cooler (Neypotzli's wyrmlings, like every wyrm, need no boots of their own: the Karuulm floor burns, see
+     * {@link #hotFloorAt}).
      */
     public static final List<String> EXEMPT = List.of("sulphur_lizard", "grimy_lizard", "wyrmling");
+
+    /**
+     * The Karuulm Slayer Dungeon's volcanic floor (OSRS Wiki): beyond the entrance chamber it burns a player for 4 every
+     * tick unless they wear boots of stone, boots of brimstone or granite boots, or have the elite Kourend &amp; Kebos
+     * Diary's reward. It burns wherever the player stands in the dungeon, whatever they fight (wyrms, drakes, hydras,
+     * sulphur lizards...).
+     */
+    public static final String HOT_FLOOR_DUNGEON = "dng_karuulm_slayer_dungeon";
+    public static final int HOT_FLOOR_DAMAGE = 4;
+    public static final List<String> HOT_FLOOR_BOOTS = List.of("boots_of_stone", "boots_of_brimstone", "granite_boots");
+    /** The dungeon's entrance tile (its carved entrance chamber spans this many blocks around it and is safe). */
+    public static final int KARUULM_ENTRANCE_X = 1299;
+    public static final int KARUULM_ENTRANCE_Y = 3806;
+    public static final int ENTRANCE_CHAMBER_RADIUS = 7;
+    public static final String HOT_FLOOR_MESSAGE = "The volcanic floor of the dungeon burns your feet!";
+
+    /** True if a player standing at this block is on the Karuulm Slayer Dungeon's burning floor. */
+    public static boolean hotFloorAt(int x, int y, int z) {
+        if (!Dungeons.inside(HOT_FLOOR_DUNGEON, x, y, z)) {
+            return false;
+        }
+        int ex = StructureDef.bx(KARUULM_ENTRANCE_X);
+        int ez = StructureDef.bz(KARUULM_ENTRANCE_Y);
+        return Math.max(Math.abs(x - ex), Math.abs(z - ez)) > ENTRANCE_CHAMBER_RADIUS;
+    }
+
+    /** Burn damage per tick for a player on the hot floor wearing {@code feet} (0 when protected). */
+    public static int hotFloorDamage(String feet, boolean eliteKourendDiary) {
+        return eliteKourendDiary || HOT_FLOOR_BOOTS.contains(feet) ? 0 : HOT_FLOOR_DAMAGE;
+    }
 
     /** The finishing item a creature needs: none for the {@link #EXEMPT} ones, else its task category's. */
     public static Finisher finisher(String creatureId, String category) {

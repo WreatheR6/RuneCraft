@@ -1,5 +1,5 @@
 # OSRS Wiki "Slayer Rewards" (raw wikitext, July 2026 snapshot from Kiyogitpy/osrs-wiki-data):
-# tab|reward|points. Tabs: unlock, extend, buy (item x amount), task (cancel/block).
+# tab|reward|points. Tabs: unlock, extend, cosmetic (slayer helmet recolours), buy (item x amount), task (cancel/block).
 unlock|Gargoyle Smasher|120
 unlock|Slug Salter|10
 unlock|Reptile Freezer|10
@@ -53,6 +53,16 @@ extend|Let's Stay All Aquanite|100
 extend|Can of Wyrms|100
 extend|Gryphon and on|50
 extend|I see Dragons|100
+cosmetic|King Black Bonnet|1000
+cosmetic|Kalphite Khat|1000
+cosmetic|Unholy Helmet|1000
+cosmetic|Dark Mantle|1000
+cosmetic|Undead Head|1000
+cosmetic|Use More Head|1000
+cosmetic|Eye see you|1000
+cosmetic|Twisted Vision|200
+cosmetic|Absolutely Slayin'|1000
+cosmetic|Oath Breaker|200
 buy|Slayer ring (8)|75
 buy|Broad bolts (x250)|35
 buy|Broad arrows (x250)|35

@@ -13,11 +13,16 @@ public final class SlayerRewards {
     public static final int SKIP_COST = 30;
     /** Cost (points) to block a task at Duradel and Krystilia (see {@link #blockCost}). */
     public static final int BLOCK_COST = 100;
-    /**
-     * Blocks per master's list: OSRS gives one slot per 50 quest points (6 at 300) plus one for the elite
-     * Lumbridge &amp; Draynor diary; here every list has all 7 (approx).
-     */
+    /** Most blocks a master's list can hold: 6 quest-point slots plus the elite Lumbridge &amp; Draynor Diary's. */
     public static final int MAX_BLOCKS = 7;
+
+    /**
+     * Block slots per master's list (OSRS Wiki "Slayer Rewards"): one for every 50 quest points, up to 6 at 300, plus one
+     * once the elite Lumbridge &amp; Draynor Diary is done.
+     */
+    public static int blockSlots(int questPoints, boolean eliteLumbridgeDiary) {
+        return Math.min(6, Math.max(0, questPoints) / 50) + (eliteLumbridgeDiary ? 1 : 0);
+    }
     /** Superior slayer creatures spawn at 1/200 on task once "Bigger and Badder" is unlocked. */
     public static final int SUPERIOR_CHANCE = 200;
 
@@ -27,7 +32,9 @@ public final class SlayerRewards {
         /** Allows a task to be assigned (Seeing red, Watch the birdie...). */
         TASK_UNLOCK,
         /** Extends a task's amount ("Augment my abbies"). */
-        EXTEND
+        EXTEND,
+        /** Learns a slayer helmet recolour (the wiki's "Cosmetics" tab: King Black Bonnet...). */
+        COSMETIC
     }
 
     /** @param target the category for EXTEND/TASK_UNLOCK rewards, or null */
@@ -38,13 +45,18 @@ public final class SlayerRewards {
     public record PointBuy(String item, int amount, int cost, String requiresUnlock) {
     }
 
-    /** Slayer equipment sold for coins by every slayer master. */
+    /**
+     * Slayer equipment sold for coins by every slayer master. {@code slayerLevel} is the level needed to buy it: 1 for
+     * everything, as in OSRS (wearing or using the item has its own requirement).
+     */
     public record ShopItem(String item, int price, int slayerLevel) {
     }
 
     /**
-     * The OSRS Wiki's Slayer Rewards "Unlock" and "Extend" tabs (July 2026; snapshot in
-     * {@code src/test/resources/osrs/slayer/reward_unlocks.tsv}). Not offered: Task Storage and Duly Noted.
+     * The OSRS Wiki's Slayer Rewards "Unlock", "Extend" and "Cosmetics" tabs (July 2026; snapshot in
+     * {@code src/test/resources/osrs/slayer/reward_shop.txt}). Not offered: Task Storage and Duly Noted, and the
+     * Twisted Vision, Absolutely Slayin' and Oath Breaker recolours (their twisted horns, slayer hood and demonic quill
+     * don't exist in RuneCraft yet).
      */
     public static final List<Unlock> UNLOCKS = List.of(
             new Unlock("gargoyle_smasher", "Gargoyle smasher", 120, Kind.FEATURE, null,
@@ -135,40 +147,64 @@ public final class SlayerRewards {
             new Unlock("can_of_wyrms", "Can of Wyrms", 100, Kind.EXTEND, "wyrms", "Wyrm tasks are longer (200-250)."),
             new Unlock("gryphon_and_on", "Gryphon and on", 50, Kind.EXTEND, "gryphons", "Gryphon tasks are longer (+80)."),
             new Unlock("i_see_dragons", "I see Dragons", 100, Kind.EXTEND, "frost_dragons",
-                    "Frost dragon tasks are longer (180-240)."));
+                    "Frost dragon tasks are longer (180-240)."),
+            new Unlock("king_black_bonnet", "King Black Bonnet", 1000, Kind.COSMETIC, null,
+                    "Combine KBD heads with a slayer helmet to colour it black."),
+            new Unlock("kalphite_khat", "Kalphite Khat", 1000, Kind.COSMETIC, null,
+                    "Combine a Kalphite Queen head with a slayer helmet to colour it green."),
+            new Unlock("unholy_helmet", "Unholy Helmet", 1000, Kind.COSMETIC, null,
+                    "Combine an abyssal head with a slayer helmet to colour it red."),
+            new Unlock("dark_mantle", "Dark Mantle", 1000, Kind.COSMETIC, null,
+                    "Combine a dark claw with a slayer helmet to colour it purple."),
+            new Unlock("undead_head", "Undead Head", 1000, Kind.COSMETIC, null,
+                    "Combine Vorkath's head with a slayer helmet to colour it turquoise."),
+            new Unlock("use_more_head", "Use More Head", 1000, Kind.COSMETIC, null,
+                    "Combine Alchemical Hydra heads with a slayer helmet to theme it like the Alchemical Hydra."),
+            new Unlock("eye_see_you", "Eye see you", 1000, Kind.COSMETIC, null,
+                    "Combine an araxyte head with a slayer helmet to theme it like Araxxor."));
 
     public static final List<PointBuy> BUY = List.of(
             new PointBuy("slayer_ring_8", 1, 75, null),
             new PointBuy("broad_arrows", 250, 35, null),
             new PointBuy("broad_bolts", 250, 35, null),
             new PointBuy("broad_arrowheads", 100, 25, "broader_fletching"),
-            new PointBuy("herb_sack", 1, 750, null));
+            new PointBuy("herb_sack", 1, 750, null),
+            new PointBuy("looting_bag", 1, 10, null));
 
+    /**
+     * The Slayer Equipment shop (OSRS Wiki "Slayer Equipment (shop)", July 2026): prices are the items' values and nothing
+     * needs a Slayer level to buy. Not stocked yet: fishing explosives, fungicide refills, the broad arrowhead and bolt
+     * packs, rock thrownhammers and reinforced goggles (RuneCraft has no such items).
+     */
     public static final List<ShopItem> SHOP = List.of(
             new ShopItem("enchanted_gem", 1, 1),
-            new ShopItem("rock_hammer", 500, 1),
+            new ShopItem("mirror_shield", 5000, 1),
+            new ShopItem("leaf_bladed_spear", 31000, 1),
+            new ShopItem("broad_arrows", 60, 1),
             new ShopItem("bag_of_salt", 10, 1),
-            new ShopItem("ice_cooler", 1, 1),
-            new ShopItem("fungicide_spray", 300, 1),
-            new ShopItem("insulated_boots", 200, 1),
-            new ShopItem("slayer_gloves", 200, 1),
-            new ShopItem("mirror_shield", 5000, 25),
-            new ShopItem("spiny_helmet", 650, 5),
-            new ShopItem("earmuffs", 200, 15),
-            new ShopItem("nose_peg", 200, 1),
+            new ShopItem("rock_hammer", 500, 1),
             new ShopItem("facemask", 200, 1),
+            new ShopItem("earmuffs", 200, 1),
+            new ShopItem("nose_peg", 200, 1),
+            new ShopItem("slayer_staff", 21000, 1),
+            new ShopItem("spiny_helmet", 650, 1),
+            new ShopItem("ice_cooler", 1, 1),
+            new ShopItem("slayer_gloves", 200, 1),
+            new ShopItem("unlit_bug_lantern", 130, 1),
+            new ShopItem("insulated_boots", 200, 1),
+            new ShopItem("fungicide_spray", 300, 1),
             new ShopItem("witchwood_icon", 900, 1),
             new ShopItem("slayer_bell", 150, 1),
-            new ShopItem("leaf_bladed_spear", 31000, 55),
-            new ShopItem("leaf_bladed_sword", 68000, 55),
-            new ShopItem("broad_arrows", 60, 55),
-            new ShopItem("unlit_bug_lantern", 130, 1),
-            // Approximation: OSRS boots of stone come from the Karuulm dungeon; sold here so the dungeon is accessible.
-            new ShopItem("boots_of_stone", 2000, 44),
-            new ShopItem("slayer_staff", 21000, 55),
+            new ShopItem("broad_arrowheads", 55, 1),
+            new ShopItem("unfinished_broad_bolts", 55, 1),
+            new ShopItem("boots_of_stone", 200, 1),
             // Not sold by slayer masters in OSRS (Duke Horacio / potion shops); offered here for convenience.
             new ShopItem("antifire_potion", 1500, 1),
             new ShopItem("anti_dragon_shield", 1000, 1));
+
+    /** Fletching recipes (skilling module) that need the "Broader fletching" unlock first (OSRS). */
+    public static final List<String> BROADER_FLETCHING_RECIPES = List.of("fletch_broad_arrows", "fletch_broad_bolts",
+            "fletch_amethyst_broad_bolts");
 
     /** Items combined into a slayer helmet (55 Crafting, "Malevolent masquerade"). */
     public static final List<String> HELMET_PARTS = List.of("black_mask", "earmuffs", "facemask", "nose_peg",
@@ -180,11 +216,40 @@ public final class SlayerRewards {
 
     /**
      * Slayer item assembly done through the master ("/slayer craft"): needs the skill level, the
-     * unlock (if any) and the tool (kept).
+     * unlock (if any), the tool (kept) and, for the Combat Achievement helmets, the CA tier claimed
+     * ({@code caTier}: a {@code CombatAchievements.Tier} name, or null).
      */
     public record Craft(String product, int count, List<Input> inputs, Skill skill, int level, double xp, String unlock,
-                        String tool) {
+                        String tool, String caTier) {
+        public Craft(String product, int count, List<Input> inputs, Skill skill, int level, double xp, String unlock,
+                     String tool) {
+            this(product, count, inputs, skill, level, xp, unlock, tool, null);
+        }
     }
+
+    /**
+     * Slayer helmet recolours (OSRS Wiki "Slayer helmet"): colour id, the head combined with the helmet, and the unlock
+     * that teaches it. Each makes {@code <colour>_slayer_helmet} from a slayer helmet and {@code <colour>_slayer_helmet_i}
+     * from an imbued one.
+     */
+    public record Recolour(String colour, String head, String unlock) {
+    }
+
+    public static final List<Recolour> RECOLOURS = List.of(
+            new Recolour("black", "kbd_heads", "king_black_bonnet"),
+            new Recolour("green", "kq_head", "kalphite_khat"),
+            new Recolour("red", "abyssal_head", "unholy_helmet"),
+            new Recolour("purple", "dark_claw", "dark_mantle"),
+            new Recolour("turquoise", "vorkaths_head", "undead_head"),
+            new Recolour("hydra", "alchemical_hydra_heads", "use_more_head"),
+            new Recolour("araxyte", "araxyte_head", "eye_see_you"));
+
+    /**
+     * The Combat Achievement helmets Ghommal and Laidee Gnonock style a slayer helmet into, with no other item (OSRS Wiki):
+     * TzTok after the elite tier, vampyric after the master tier, TzKal after the grandmaster tier ({colour, tier name}).
+     */
+    public static final List<String[]> CA_HELMETS = List.of(new String[]{"tztok", "ELITE"}, new String[]{"vampyric", "MASTER"},
+            new String[]{"tzkal", "GRANDMASTER"});
 
     public static final List<Craft> CRAFTS = List.of(
             new Craft("slayer_helmet", 1, HELMET_PARTS.stream().map(i -> new Input(i, 1)).toList(), Skill.CRAFTING, 55, 0,
@@ -201,7 +266,42 @@ public final class SlayerRewards {
                     Skill.SLAYER, 44, 0, null, null),
             new Craft("brimstone_ring", 1, List.of(new Input("hydras_eye", 1), new Input("hydras_fang", 1),
                     new Input("hydras_heart", 1)), Skill.CRAFTING, 1, 0, null, null),
-            new Craft("ferocious_gloves", 1, List.of(new Input("hydra_leather", 1)), Skill.CRAFTING, 1, 0, null, "hammer"));
+            new Craft("ferocious_gloves", 1, List.of(new Input("hydra_leather", 1)), Skill.CRAFTING, 1, 0, null, "hammer"),
+            // approx: Otto Godblessed repairs a broken dragon hasta for free in OSRS; here the slayer master does.
+            new Craft("dragon_hasta", 1, List.of(new Input("broken_dragon_hasta", 1)), Skill.ATTACK, 1, 0, null, null));
+
+    /** The recolour crafts: plain and imbued helmet for every {@link #RECOLOURS} line and {@link #CA_HELMETS} entry. */
+    public static final List<Craft> HELMET_CRAFTS = helmetCrafts();
+
+    private static List<Craft> helmetCrafts() {
+        List<Craft> out = new java.util.ArrayList<>();
+        for (Recolour r : RECOLOURS) {
+            out.add(new Craft(r.colour() + "_slayer_helmet", 1, List.of(new Input("slayer_helmet", 1), new Input(r.head(), 1)),
+                    Skill.CRAFTING, 1, 0, r.unlock(), null));
+            out.add(new Craft(r.colour() + "_slayer_helmet_i", 1, List.of(new Input("slayer_helmet_i", 1), new Input(r.head(), 1)),
+                    Skill.CRAFTING, 1, 0, r.unlock(), null));
+        }
+        for (String[] ca : CA_HELMETS) {
+            out.add(new Craft(ca[0] + "_slayer_helmet", 1, List.of(new Input("slayer_helmet", 1)), Skill.CRAFTING, 1, 0, null, null,
+                    ca[1]));
+            out.add(new Craft(ca[0] + "_slayer_helmet_i", 1, List.of(new Input("slayer_helmet_i", 1)), Skill.CRAFTING, 1, 0, null,
+                    null, ca[1]));
+        }
+        return List.copyOf(out);
+    }
+
+    /** Every slayer helmet id, plain or imbued, recoloured or not. */
+    public static List<String> slayerHelmets(boolean imbued) {
+        List<String> out = new java.util.ArrayList<>();
+        out.add(imbued ? "slayer_helmet_i" : "slayer_helmet");
+        for (Recolour r : RECOLOURS) {
+            out.add(r.colour() + "_slayer_helmet" + (imbued ? "_i" : ""));
+        }
+        for (String[] ca : CA_HELMETS) {
+            out.add(ca[0] + "_slayer_helmet" + (imbued ? "_i" : ""));
+        }
+        return List.copyOf(out);
+    }
 
     /**
      * Points to block the current task, by the master who assigned it (OSRS, August 2025): Turael and
@@ -285,12 +385,19 @@ public final class SlayerRewards {
     }
 
     public static Craft craft(String product) {
-        for (Craft c : CRAFTS) {
+        for (Craft c : allCrafts()) {
             if (c.product().equals(product)) {
                 return c;
             }
         }
         return null;
+    }
+
+    /** Everything the master can assemble: {@link #CRAFTS} then the helmet recolours. */
+    public static List<Craft> allCrafts() {
+        List<Craft> out = new java.util.ArrayList<>(CRAFTS);
+        out.addAll(HELMET_CRAFTS);
+        return out;
     }
 
     public static PointBuy pointBuy(String item) {

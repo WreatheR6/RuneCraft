@@ -98,6 +98,9 @@ class SlayerTaskMonsters2Test {
         assertNotNull(SlayerGear.finisher("desert_lizard", "lizards"));
         assertNotNull(SlayerGear.finisher("ancient_zygomite", "mutated_zygomites"));
         assertNull(SlayerGear.protection("wyrmling", "wyrms"));
-        assertNotNull(SlayerGear.protection("wyrm", "wyrms"));
+        // Wyrms need no boots of their own: the Karuulm Slayer Dungeon's floor burns whoever stands on it (SlayerGear.hotFloorAt).
+        assertNull(SlayerGear.protection("wyrm", "wyrms"));
+        assertEquals(4, SlayerGear.hotFloorDamage("rune_boots", false));
+        assertEquals(0, SlayerGear.hotFloorDamage("boots_of_stone", false));
     }
 }

@@ -38,6 +38,8 @@ public final class SlayerState extends SavedData {
         public final List<String> blocked = new ArrayList<>();
         /** Whether the legacy PlayerData task has been migrated. */
         public boolean migrated;
+        /** A boss task whose size the player hasn't chosen yet (OSRS: 3-35 kills, asked by the master). */
+        public boolean chooseAmount;
 
         public boolean hasTask() {
             return task != null && remaining > 0;
@@ -55,6 +57,7 @@ public final class SlayerState extends SavedData {
             nbt.putInt("Points", points);
             nbt.putInt("Completed", completed);
             nbt.putBoolean("Migrated", migrated);
+            nbt.putBoolean("ChooseAmount", chooseAmount);
             nbt.put("Unlocks", list(unlocks));
             nbt.put("Blocked", list(blocked));
             return nbt;
@@ -72,6 +75,7 @@ public final class SlayerState extends SavedData {
             p.points = nbt.getInt("Points");
             p.completed = nbt.getInt("Completed");
             p.migrated = nbt.getBoolean("Migrated");
+            p.chooseAmount = nbt.getBoolean("ChooseAmount");
             ListTag unlocks = nbt.getList("Unlocks", Tag.TAG_STRING);
             for (int i = 0; i < unlocks.size(); i++) {
                 p.unlocks.add(unlocks.getString(i));

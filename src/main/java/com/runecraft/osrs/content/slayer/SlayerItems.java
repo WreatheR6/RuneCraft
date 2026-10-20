@@ -14,8 +14,8 @@ import java.util.Map;
 
 /**
  * Slayer equipment, rewards and the unique drops of slayer creatures. Bonuses follow the OSRS
- * equipment screens. There is no hands, neck or ring slot, so gloves, the witchwood icon and the
- * occult necklace work from the inventory (or are plain items).
+ * equipment screens. Slayer gloves and the witchwood icon are worn in the systems module's hands and neck
+ * slots ({@code Jewellery}).
  */
 public final class SlayerItems {
     private SlayerItems() {
@@ -44,7 +44,19 @@ public final class SlayerItems {
 
     private static final EquipmentStats NONE = s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     private static final EquipmentStats SLAYER_HELM = s(0, 0, 0, -6, -2, 30, 32, 27, -1, 30, 0, 0, 0, 0);
-    private static final EquipmentStats SLAYER_HELM_I = s(0, 0, 0, -6, -2, 30, 32, 27, -1, 30, 0, 0, 0, 0);
+    private static final EquipmentStats SLAYER_HELM_I = s(0, 0, 0, 3, 3, 30, 32, 27, 10, 30, 0, 0, 0, 0);
+    /** Slayer helmet recolours: id prefix, name, texture colour and what it is themed after (matches SlayerRewards). */
+    private static final String[][] HELMET_COLOURS = {
+            {"black", "Black", "1A1A1A", "a King Black Dragon head"},
+            {"green", "Green", "3A6A2A", "a Kalphite Queen head"},
+            {"red", "Red", "8A1A1A", "an abyssal demon head"},
+            {"purple", "Purple", "5A2A7A", "a Skotizo dark claw"},
+            {"turquoise", "Turquoise", "2A8A8A", "Vorkath's head"},
+            {"hydra", "Hydra", "4A6A3A", "an Alchemical Hydra head"},
+            {"araxyte", "Araxyte", "6A6A7A", "an Araxyte head"},
+            {"tztok", "Tztok", "C05A1A", "TzTok-Jad's colours"},
+            {"vampyric", "Vampyric", "6A1A2A", "Verzik Vitur's colours"},
+            {"tzkal", "Tzkal", "D07A1A", "TzKal-Zuk's colours"}};
 
     // Shared slayer-boss uniques (hydra parts, trident, occult, abyssal dagger/head, granite maul,
     // dragon chainbody, brimstone ring, ferocious gloves, smouldering stone) are defined by the bosses module.
@@ -65,7 +77,7 @@ public final class SlayerItems {
         items.add("insulated_boots", "Insulated boots", Kind.ARMOUR, "boots", 0x4A3A2A).value(200).stack(1).tier("leather")
                 .equipment(wear(Slot.FEET, s(0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0), Skill.SLAYER, 37))
                 .examine("Protects me from killerwatts' electric shocks.");
-        items.add("boots_of_stone", "Boots of stone", Kind.ARMOUR, "boots", 0x7A7A70).value(2000).stack(1).tier("leather")
+        items.add("boots_of_stone", "Boots of stone", Kind.ARMOUR, "boots", 0x7A7A70).value(200).stack(1).tier("leather")
                 .equipment(wear(Slot.FEET, s(0, 0, 0, 0, 0, 2, 2, 2, 0, 2, 0, 0, 0, 0), Skill.SLAYER, 44))
                 .examine("Protects my feet from the heat of the Karuulm Slayer Dungeon.");
         items.add("boots_of_brimstone", "Boots of brimstone", Kind.ARMOUR, "boots", 0x9A4A2A).value(80000).stack(1).tier("rune")
@@ -73,9 +85,9 @@ public final class SlayerItems {
                         Skill.RANGED, 70, Skill.SLAYER, 44))
                 .examine("Smouldering boots made with a drake's claw.");
         items.add("slayer_gloves", "Slayer gloves", Kind.SIMPLE, "leather", 0x6A5A3A).value(200).stack(1)
-                .examine("Protects me from fever spiders (works from the inventory).");
+                .examine("These will protect my hands from fever spiders.");
         items.add("witchwood_icon", "Witchwood icon", Kind.SIMPLE, "amulet", 0x6A4A2A).value(900).stack(1)
-                .examine("Protects me from cave horrors' howls (works from the inventory).");
+                .examine("A small wooden icon that wards off cave horrors' howls when worn.");
         items.add("rock_hammer", "Rock hammer", Kind.TOOL, "hammer", 0x8A8A8A).value(500).stack(1)
                 .examine("Used for smashing gargoyles.");
         items.add("bag_of_salt", "Bag of salt", Kind.SIMPLE, "package", 0xE8E8E0).value(10).stack(64)
@@ -88,7 +100,7 @@ public final class SlayerItems {
                 .examine("Light it with a tinderbox (33 Firemaking).");
         // The lit bug lantern is in CommonItems (skilling: it lights lantern harpooning).
         items.add("slayer_bell", "Slayer bell", Kind.SIMPLE, "bell", 0xC8A030).value(150).stack(1)
-                .examine("Used to lure out wall beasts... or so they say.");
+                .examine("Don't make anyone jump when you ring this! (Rung to lure molanisks off the walls.)");
         items.add("slayer_ring_8", "Slayer ring (8)", Kind.SLAYER_GEM, "ring", 0x8A30C0).value(87).stack(1)
                 .examine("A ring that tells me my slayer task.");
         // Used charges (rubbed to teleport: Jewellery and Teleports.SLAYER in the systems module); the last one crumbles.
@@ -136,6 +148,18 @@ public final class SlayerItems {
         items.add("slayer_helmet_i", "Slayer helmet (i)", Kind.ARMOUR, "full_helm", 0x4A3A4A).value(1000).stack(1).tier("rune")
                 .equipment(wear(Slot.HEAD, SLAYER_HELM_I, Skill.DEFENCE, 10))
                 .examine("An imbued slayer helmet: also boosts ranged and magic on task.");
+        // Recoloured slayer helmets (Slayer Rewards "Cosmetics" and the Combat Achievement helmets): a slayer helmet in
+        // every way, with the OSRS values (40,000 / 90,000 imbued).
+        for (String[] c : HELMET_COLOURS) {
+            String name = c[1] + " slayer helmet";
+            int rgb = Integer.parseInt(c[2], 16);
+            items.add(c[0] + "_slayer_helmet", name, Kind.ARMOUR, "full_helm", rgb).value(40000).stack(1).tier("rune")
+                    .equipment(wear(Slot.HEAD, SLAYER_HELM, Skill.DEFENCE, 10))
+                    .examine("A slayer helmet with " + c[3] + ".");
+            items.add(c[0] + "_slayer_helmet_i", name + " (i)", Kind.ARMOUR, "full_helm", rgb).value(90000).stack(1).tier("rune")
+                    .equipment(wear(Slot.HEAD, SLAYER_HELM_I, Skill.DEFENCE, 10))
+                    .examine("An imbued slayer helmet with " + c[3] + ".");
+        }
 
         // --- Unique drops ---
         items.add("abyssal_ashes", "Abyssal ashes", Kind.SIMPLE, "ashes", 0x4A2A4A).value(100)
@@ -204,8 +228,26 @@ public final class SlayerItems {
                 .examine("The tooth end of a key that has been broken in half.");
         items.add("imbued_heart","Imbued heart", Kind.SIMPLE, "gem", 0xD02060).value(1).stack(1)
                 .examine("Temporarily boosts your Magic level (from superior slayer creatures).");
-        items.add("eternal_gem", "Eternal gem", Kind.SIMPLE, "gem", 0x8A30C0).value(1).stack(1)
+        items.add("eternal_gem", "Eternal gem", Kind.SLAYER_GEM, "gem", 0x8A30C0).value(1).stack(1)
                 .examine("An enchanted gem that never runs out of charges.");
+        // Slayer chest uniques (OSRS Wiki): the brimstone chest's broken dragon hasta, Larran's big chest's Dagon'hai robes.
+        items.add("broken_dragon_hasta", "Broken dragon hasta", Kind.SIMPLE, "spear", 0x8A3A2A).value(62400).stack(1)
+                .examine("The item to make into a hasta.");
+        items.add("dragon_hasta", "Dragon hasta", Kind.MELEE_WEAPON, "spear", 0xC02020).value(62400).stack(1).tier("dragon")
+                .equipment(weapon(s(55, 55, 55, 0, 0, -15, -15, -12, 0, -15, 60, 0, 0, 0), 4, AttackType.STAB, WeaponClass.MELEE,
+                        Skill.ATTACK, 60))
+                .examine("A one-handed dragon hasta.");
+        items.add("dagonhai_hat", "Dagon'hai hat", Kind.ARMOUR, "cowl", 0x3A2A4A).value(17000).stack(1).tier("leather")
+                .equipment(wear(Slot.HEAD, s(0, 0, 0, 5, 0, 0, 0, 0, 5, 0, 0, 0, 1, 2), Skill.MAGIC, 70, Skill.DEFENCE, 40))
+                .examine("A hat worn by members of the Dagon'hai.");
+        items.add("dagonhai_robe_top", "Dagon'hai robe top", Kind.ARMOUR, "leather_body", 0x3A2A4A).value(140000).stack(1)
+                .tier("leather").equipment(wear(Slot.CHEST, s(0, 0, 0, 25, 0, 0, 0, 0, 21, 0, 0, 0, 1, 2), Skill.MAGIC, 70,
+                        Skill.DEFENCE, 40))
+                .examine("A robe worn by members of the Dagon'hai.");
+        items.add("dagonhai_robe_bottom", "Dagon'hai robe bottom", Kind.ARMOUR, "chaps", 0x3A2A4A).value(90000).stack(1)
+                .tier("leather").equipment(wear(Slot.LEGS, s(0, 0, 0, 18, 0, 0, 0, 0, 14, 0, 0, 0, 1, 2), Skill.MAGIC, 70,
+                        Skill.DEFENCE, 40))
+                .examine("A robe worn by members of the Dagon'hai.");
         items.add("brimstone_key", "Brimstone key", Kind.SIMPLE, "key", 0xC06020).value(1).stack(64)
                 .examine("Opens the brimstone chest at Mount Karuulm.");
         items.add("larran_key", "Larran's key", Kind.SIMPLE, "key", 0xB09060).value(1).stack(64)

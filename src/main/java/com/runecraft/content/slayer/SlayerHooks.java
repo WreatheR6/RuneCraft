@@ -29,6 +29,11 @@ public final class SlayerHooks implements ModuleHooks {
         // once the server starts, she runs the quest until it is complete and gives Slayer tasks after.
         ServerLifecycleEvents.SERVER_STARTED.register(server -> wrapQuestMasters());
         SlayerCombat.register();
+        // Broad arrows and bolts can only be fletched after learning "Broader fletching" (300 points).
+        com.runecraft.menu.MenuService.REQUIREMENTS.add((player, recipe) ->
+                com.runecraft.osrs.content.slayer.SlayerRewards.BROADER_FLETCHING_RECIPES.contains(recipe.id())
+                        && !SlayerService.profile(player).unlocks.contains("broader_fletching")
+                        ? "You need to learn Broader Fletching from a Slayer master first." : null);
         TormentedDemonCombat.register();
         SlayerCommands.register();
         BlockHooks.register("brimstone_chest", (player, pos, state) -> openChest(player, "brimstone_key",
@@ -55,6 +60,10 @@ public final class SlayerHooks implements ModuleHooks {
         }
     }
 
+    /**
+     * Opens a slayer chest with its key (OSRS Wiki): one pre-roll for a unique, one weighted roll on the main table (its
+     * fish line rolls the fish table by Fishing level); main-table loot comes noted.
+     */
     private static void openChest(ServerPlayer player, String key, String name, List<Drop> main, List<Drop> rares) {
         if (!Inv.has(player, key, 1)) {
             Msg.game(player, "The " + name + " is locked. You need " + Msg.article(SlayerCommands.name(key)) + ".");
@@ -62,30 +71,22 @@ public final class SlayerHooks implements ModuleHooks {
         }
         Inv.remove(player, key, 1);
         Random random = new Random(player.getRandom().nextLong());
-        int total = 0;
-        for (Drop d : main) {
-            total += d.rarity();
+        Drop unique = SlayerChests.preRoll(rares, random);
+        if (unique != null) {
+            Inv.give(player, unique.item(), 1);
+            CollectionLog.obtain(player, unique.item());
+            Msg.red(player, "You find something special in the " + name + "!");
         }
-        int roll = random.nextInt(Math.max(1, total));
-        for (Drop d : main) {
-            roll -= d.rarity();
-            if (roll < 0) {
-                give(player, d, random);
-                break;
-            }
-        }
-        for (Drop d : rares) {
-            if (random.nextInt(d.rarity()) == 0) {
-                give(player, d, random);
-                Msg.red(player, "You find something special in the " + name + "!");
-            }
+        Drop d = SlayerChests.mainRoll(main, random);
+        if (d.item().equals(SlayerChests.FISH)) {
+            SlayerChests.Fish fish = SlayerChests.fish(com.runecraft.player.Players.data(player).skills()
+                    .level(com.runecraft.osrs.Skill.FISHING), key.equals("larran_key"), random);
+            com.runecraft.bank.Notes.giveNotedIfMany(player, fish.item(), fish.count());
+        } else {
+            int count = d.min() + (d.max() > d.min() ? random.nextInt(d.max() - d.min() + 1) : 0);
+            com.runecraft.bank.Notes.giveNotedIfMany(player, d.item(), count);
+            CollectionLog.obtain(player, d.item());
         }
         Msg.game(player, "You unlock the " + name + ".");
-    }
-
-    private static void give(ServerPlayer player, Drop d, Random random) {
-        int count = d.min() + (d.max() > d.min() ? random.nextInt(d.max() - d.min() + 1) : 0);
-        Inv.give(player, d.item(), count);
-        CollectionLog.obtain(player, d.item());
     }
 }

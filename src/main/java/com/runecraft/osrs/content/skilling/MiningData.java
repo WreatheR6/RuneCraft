@@ -124,6 +124,11 @@ public final class MiningData extends SkillingPart {
     /** Worn head items that filter the sulphur fumes (any slayer helmet counts). */
     public static final List<String> BREATHING_FILTERS = List.of("gas_mask", "facemask", "slayer_helmet", "slayer_helmet_i");
 
+    /** Whether the worn head item filters the sulphur fumes: a {@link #BREATHING_FILTERS} item or any recoloured slayer helmet. */
+    public static boolean filtersFumes(String head) {
+        return head != null && (BREATHING_FILTERS.contains(head) || head.endsWith("_slayer_helmet") || head.endsWith("_slayer_helmet_i"));
+    }
+
     /** Smithing level and XP for crushing a barronite deposit at the Barronite Crusher with a hammer. */
     public static final int CRUSH_LEVEL = 14;
     public static final double CRUSH_XP = 30.0;

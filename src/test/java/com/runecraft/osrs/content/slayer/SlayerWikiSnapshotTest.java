@@ -195,7 +195,9 @@ class SlayerWikiSnapshotTest {
         for (SlayerRewards.Unlock u : SlayerRewards.UNLOCKS) {
             ours.put(norm(u.name()), u);
         }
-        Set<String> notOffered = Set.of(norm("Duly Noted"), norm("Task Storage"));
+        // Duly Noted and Task Storage aren't modelled; the twisted horns, slayer hood and demonic quill don't exist yet.
+        Set<String> notOffered = Set.of(norm("Duly Noted"), norm("Task Storage"), norm("Twisted Vision"), norm("Absolutely Slayin'"),
+                norm("Oath Breaker"));
         Set<String> seen = new HashSet<>();
         List<String> bad = new ArrayList<>();
         Map<String, Integer> buy = new HashMap<>();
@@ -203,7 +205,7 @@ class SlayerWikiSnapshotTest {
             String[] f = row.split("\\|");
             int cost = Integer.parseInt(f[2]);
             switch (f[0]) {
-                case "unlock", "extend" -> {
+                case "unlock", "extend", "cosmetic" -> {
                     String key = norm(f[1]);
                     seen.add(key);
                     SlayerRewards.Unlock u = ours.get(key);
@@ -213,7 +215,8 @@ class SlayerWikiSnapshotTest {
                         }
                     } else if (u.cost() != cost) {
                         bad.add(f[1] + " costs " + u.cost() + ", wiki " + cost);
-                    } else if (f[0].equals("extend") != (u.kind() == SlayerRewards.Kind.EXTEND)) {
+                    } else if (f[0].equals("extend") != (u.kind() == SlayerRewards.Kind.EXTEND)
+                            || f[0].equals("cosmetic") != (u.kind() == SlayerRewards.Kind.COSMETIC)) {
                         bad.add(f[1] + " is in the wrong tab");
                     }
                 }
