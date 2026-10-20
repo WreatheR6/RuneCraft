@@ -46,6 +46,11 @@ public final class QuestBossRules {
     public static final int GNOME_MAX_HIT = 4;
     public static final int JUNGLE_DEMON_REGEN_PERCENT = 20;
 
+    /** Legends' Quest (wiki): Nezikchened drains Prayer to a tenth of the player's Prayer level as the fight begins. */
+    public static int nezikchenedPrayerCap(int prayerLevel) {
+        return prayerLevel / 10;
+    }
+
     /** Recipe for Disaster (wiki): Karamel's ice spell hits twice for up to 7. */
     public static final int KARAMEL_SPELL_HIT = 7;
     /** Recipe for Disaster (wiki, Mod Ash): the Culinaromancer's magic hits up to 25 with a flat 1-in-3 chance. */

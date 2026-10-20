@@ -87,14 +87,38 @@ final class KaramjaQuests {
                 .done("mosol_rei", "Welcome to Shilo Village.");
     }
 
+    /**
+     * The marked wall in the Viyeldi caves (wiki): soul, mind, earth and two law runes, in that order ("SMELL"), open it; the
+     * cut gems then go on the carved rocks and the binding book lies behind.
+     */
+    static final QuestPuzzle LQ_MARKED_WALL = QuestPuzzle.builder("lq_marked_wall").shuffle().room("wall").variant(null)
+            .prompt("* A marked wall bars the way. Ancient letters spell S, M, E, L, L. Runes might fit the marks, one after another.")
+            .options("Soul rune", "Mind rune", "Earth rune", "Law rune", "Air rune", "Fire rune", "Water rune", "Body rune", "Chaos rune", "Nature rune")
+            .solution(0, 1, 2, 3, 3)
+            .failLines("* The rune crumbles to dust in the mark. The wall is unmoved; you'll have to start the word again.").build();
+
     private static void legendsQuest(QuestBook b) {
         b.npc("radimus_erkle", "Radimus Erkle", "legends_guild", 0, 0, 0xE8C8A8, 0xE8E8E8, 0x3A3A6A, 0xB0B0B0);
         b.npc("gujuo", "Gujuo", "kharazi_jungle", 2, 2, 0x6A4A2A, 0xC0A040, 0x5A3A1A, 0x2A1A0A);
         b.npc("ungadulu", "Ungadulu", "kharazi_cave", 2, 2, 0x7A4A2A, 0x8A2A2A, 0x5A1A1A, 0xE0D0A0);
+        // quest-helper tiles: the sacred water pool and the fertile soil by it (the jungle forester is One Small Favour's; the mossy
+        // rock is the dungeons module's Shaman Caves entrance, by the kharazi_cave place)
+        b.npc("echned_zekin", "Echned Zekin", "kharazi_cave", -3, -3, 0xC8D8E0, 0x6A6A8A, 0x4A4A6A, 0xA0B0C0);
+        b.spot("lq_water_pool", "Kharazi water pool", 2838, 2916);
+        b.spot("lq_fertile_soil", "Fertile soil (Kharazi Jungle)", 2833, 2924);
         b.item("radimus_notes", "Radimus notes", "book", 0x6A5A3A, "Notes on the Kharazi Jungle, for mapping.");
         b.item("kharazi_map", "Kharazi jungle map", "note", 0x8AA05A, "A completed map of the Kharazi Jungle.");
         b.item("yommi_tree_seeds", "Yommi tree seeds", "seed", 0x8A6A2A, "Seeds of the sacred Yommi tree.");
-        b.item("totem_pole", "Totem pole", "log", 0xA0602A, "A carved, blessed totem pole.");
+        b.item("totem_pole", "Gilded totem", "log", 0xC0902A, "A carved Yommi totem, gilded by Gujuo's people.");
+        b.item("papyrus", "Papyrus", "note", 0xE8E0B8, "Used for making notes.");
+        b.item("bullroarer", "Bullroarer", "tool", 0x8A6A3A, "Swing it near a totem pole to call the Kharazi natives.");
+        b.item("lq_golden_bowl", "Golden bowl", "pot_item", 0xE0C040, "A golden bowl, blessed by Gujuo.");
+        b.item("lq_bowl_of_water", "Golden bowl (sacred water)", "pot_item", 0x80C0F0, "A blessed golden bowl full of sacred water.");
+        b.item("binding_book", "Binding book", "book", 0x5A2A6A, "An ancient book of binding spells.");
+        b.item("lq_crystal_piece", "Crystal piece", "gem", 0xC0E0F0, "A piece of a heart-shaped crystal.");
+        b.item("heart_crystal", "Heart crystal", "gem", 0xE0A0C0, "Three crystal pieces fused into a heart.");
+        b.item("dark_dagger", "Dark dagger", "dagger", 0x2A2A3A, "A dagger of dark metal. Echned Zekin wants Viyeldi dead with it.");
+        b.item("lq_yommi_totem", "Yommi totem", "log", 0xA0602A, "A totem carved from the sacred Yommi tree.");
         b.boss(BossDef.of("nezikchened", "Nezikchened").level(187).stats(150, 155, 155, 140, 160, 1).speed(4)
                 .defenceBonus(20, 20, 20, 30, 20)
                 .attack(AttackDef.of("claws", AttackType.SLASH, 20, 3, 6))
@@ -102,6 +126,13 @@ final class KaramjaQuests {
                 .attack(AttackDef.of("prayer_drain", AttackType.MAGIC, 10, 9, 2).special(Special.DRAIN_PRAYER, 10)
                         .message("Nezikchened drains your prayer!"))
                 .drops(Drop.always("bones")).size(1.0f, 2.4f, 1.0f).at("kharazi_cave").arena(11, "lava"));
+        // The three undead guardians of the crystal pieces (DPS calculator).
+        b.boss(BossDef.of("san_tojalon", "San Tojalon").level(106).stats(120, 86, 84, 86, 0, 0).speed(4).defenceBonus(18, 22, 20, -1, 20)
+                .attack(AttackDef.of("stab", AttackType.STAB, 12, 2, 1)).drops(Drop.always("bones")).model("skeleton").size(0.7f, 2.0f, 1.0f));
+        b.boss(BossDef.of("irvig_senay", "Irvig Senay").level(100).stats(125, 76, 74, 81, 0, 0).speed(4).defenceBonus(27, 31, 29, -1, 29)
+                .attack(AttackDef.of("slash", AttackType.SLASH, 12, 2, 1)).drops(Drop.always("bones")).model("skeleton").size(0.7f, 2.0f, 1.0f));
+        b.boss(BossDef.of("ranalph_devere", "Ranalph Devere").level(92).stats(130, 66, 67, 66, 0, 0).speed(4).defenceBonus(38, 40, 36, 0, 38)
+                .attack(AttackDef.of("slash", AttackType.SLASH, 13, 2, 1)).drops(Drop.always("bones")).model("skeleton").size(0.7f, 2.0f, 1.0f));
         b.quest("legends_quest", "Legends' Quest", Difficulty.MASTER, 4)
                 .qp(107).req(Skill.AGILITY, 50).req(Skill.CRAFTING, 50).req(Skill.HERBLORE, 45).req(Skill.MAGIC, 56)
                 .req(Skill.MINING, 52).req(Skill.PRAYER, 42).req(Skill.SMITHING, 50).req(Skill.STRENGTH, 50)
@@ -111,20 +142,102 @@ final class KaramjaQuests {
                 .reward("cape_of_legends")
                 .unlock("Access to the Legends' Guild")
                 .stage("I can start this quest by speaking to Radimus Erkle in the Legends' Guild. (Requires 107 quest points and many skills.)")
-                .talk("radimus_erkle").give("radimus_notes").say("To join the Legends you must map the Kharazi Jungle and bring us a gift from its people.")
+                .talk("radimus_erkle").give("radimus_notes", "papyrus:3", "charcoal:3") // approx: charcoal is bought in Shilo in OSRS
+                .say("To join the Legends you must map the Kharazi Jungle and bring us a gift from its people.",
+                        "Take my notes and some papyrus from the table. You'll find machetes in the cupboards.")
+                // Wiki: each of the three sections (west, middle, east) is mapped on a papyrus with charcoal, cutting in with an
+                // axe and a machete.
                 .stage("I should explore the Kharazi Jungle in southern Karamja and complete Radimus's map.")
-                .reach("kharazi_jungle", 12).take("radimus_notes").give("kharazi_map")
-                .say("* You chart the jungle. A young jungle native watches you from the trees.")
+                // more papyrus from Radimus's table (and for saves from before the papyrus)
+                .talk("radimus_erkle").stay().unless("papyrus", "kharazi_map").give("papyrus:3", "charcoal:3")
+                .say("Out of papyrus? Take some more from the table.")
+                .reach("kharazi_jungle", 12).stay().unlessFlag("lq_map_west").need("radimus_notes", "machete").needTool("axe")
+                .take("papyrus", "charcoal").flag("lq_map_west").say("* You hack your way into the western jungle and map it on a sheet of papyrus.")
+                .missing("* You'll need Radimus's notes, papyrus and charcoal, an axe and a machete to map the jungle.")
+                .reach("kharazi_jungle", 12).stay().needFlag("lq_map_west").unlessFlag("lq_map_middle").need("radimus_notes", "machete").needTool("axe")
+                .take("papyrus", "charcoal").flag("lq_map_middle").say("* You map the middle of the jungle.")
+                .reach("kharazi_jungle", 12).needFlag("lq_map_middle").need("machete").needTool("axe").take("radimus_notes", "papyrus", "charcoal")
+                .give("kharazi_map").say("* You map the eastern jungle and complete Radimus's map. A young jungle native watches you from the trees.")
                 .stage("I should speak to Gujuo, the jungle native.")
-                .talk("gujuo").say("My people's shaman, Ungadulu, is possessed by a demon in the caves below. Free him and we will trust you.")
+                // Wiki: a jungle forester south of Shilo copies the map for a bullroarer, which calls Gujuo at a totem pole.
+                .talk("jungle_forester").stay().need("kharazi_map").unless("bullroarer").give("bullroarer")
+                .say("A map of the Kharazi? Let me make a copy... Here, take this bullroarer. Swing it near a totem pole and the natives will come.")
+                .talk("gujuo").need("bullroarer").say("My people's shaman, Ungadulu, is possessed by a demon in the caves below. Free him and we will trust you.",
+                        "The cave is behind the mossy rock to the north-west.")
+                .missing("* The jungle is silent. Swinging a bullroarer by a totem pole might call someone.")
                 .stage("I should enter the shaman's cave and defeat the demon Nezikchened.")
-                .kill("nezikchened").say("* The demon Nezikchened is banished! Ungadulu staggers free of its control.")
+                // Wiki: a wall of magic fire surrounds Ungadulu; sacred water in a blessed golden bowl puts it out, and the binding
+                // book from the Viyeldi caves (lockpicked gate, three boulders, a 50 Strength gate, the SMELL wall) frees him.
+                .reach("kharazi_cave", 10).stay().unlessFlag("lq_fire_wall").reqSkill(Skill.AGILITY, 50).flag("lq_fire_wall")
+                .say("* You crawl in behind the mossy rock. Ungadulu stands within a wall of magic fire. Only pure water could douse it.")
+                .talk("gujuo").stay().needFlag("lq_fire_wall").unless("lq_golden_bowl", "lq_bowl_of_water").unlessFlag("lq_bound")
+                .reqSkill(Skill.PRAYER, 42).take("gold_bar:2").need("hammer").give("lq_golden_bowl")
+                .say("Pure water? The sacred pool, west of the centre of the jungle. Only a blessed vessel can hold it. "
+                        + "*You smith a golden bowl from the gold bars and Gujuo blesses it.*")
+                .missing("Bring two gold bars and a hammer for a golden bowl, and I will bless it. (Requires 42 Prayer.)")
+                .reach("lq_water_pool", 5).stay().need("machete").unlessFlag("lq_bound").take("lq_golden_bowl").give("lq_bowl_of_water")
+                .say("* You cut a reed with your machete and fill the blessed bowl with the pool's sacred water.")
+                .reach("kharazi_cave", 10).stay().needFlag("lq_fire_wall").unlessFlag("lq_viyeldi").need("lockpick").needTool("pickaxe")
+                .reqSkill(Skill.STRENGTH, 50).flag("lq_viyeldi")
+                .say("* Behind a bookcase a crevice leads into the Viyeldi caves. You pick the gate's lock, smash three boulders and force the next gate.")
+                .missing("* A locked gate and boulders: you'll need a lockpick, a pickaxe and 50 Strength.")
+                .puzzle("kharazi_cave", LQ_MARKED_WALL).stay().needFlag("lq_viyeldi").unless("binding_book").unlessFlag("lq_bound")
+                .take("soul_rune", "mind_rune", "earth_rune", "law_rune:2", "opal", "jade", "red_topaz", "sapphire", "emerald", "ruby", "diamond")
+                .give("binding_book")
+                .say("* The wall slides open. You set the seven cut gems into the carved rocks and the last door opens: a binding book lies inside.")
+                .talk("ungadulu").stay().need("binding_book").unlessFlag("lq_bound").take("lq_bowl_of_water").give("lq_golden_bowl").flag("lq_bound")
+                .spawn("nezikchened")
+                .say("* You pour the sacred water on the flames and read the binding book at Ungadulu. The demon is torn from him!",
+                        "@Nezikchened: Fool! Your god cannot save you here. *Your prayer drains away.*")
+                .missing("* The flames around Ungadulu roar. Sacred water and a binding book could free him.")
+                .reach("kharazi_cave", 10).stay().needFlag("lq_bound").spawn("nezikchened")
+                .kill("nezikchened").needFlag("lq_bound").say("* The demon Nezikchened is banished! Ungadulu staggers free of its control.")
                 .stage("I should speak to the freed shaman Ungadulu.")
                 .talk("ungadulu").give("yommi_tree_seeds").say("You saved me! My people need a sacred totem pole. Plant these Yommi seeds with pure water, then carve the tree.")
+                // Wiki: the pool has dried up. The spring lies deep in the Viyeldi caves: a bravery potion, a charged orb for the
+                // gate, a rope down the winch, three undead guardians' crystal pieces fused into a heart, and Echned Zekin, who is
+                // Nezikchened in disguise (the good path: Ungadulu's Holy Force reveals him).
                 .stage("I need to grow the Yommi tree (seeds + vial of water) and carve a totem pole with an axe.")
-                .talk("gujuo").take("yommi_tree_seeds", "vial_of_water").needTool("axe:rune").give("totem_pole")
-                .say("* The Yommi tree grows in an instant. You fell it with your axe and carve a totem pole; Gujuo blesses it.")
-                .missing("You'll need the Yommi seeds, a vial of pure water and a strong axe (rune).")
+                .talk("gujuo").stay().unlessFlag("lq_spring").flag("lq_spring")
+                .say("The water pool has dried up? Its spring lies deep in the Viyeldi caves. You'll need courage to go down: a bravery potion.")
+                .reach("kharazi_cave", 10).stay().needFlag("lq_spring").unlessFlag("lq_winch").take("ardrigal", "snake_weed", "vial_of_water", "unpowered_orb")
+                .need("rope").flag("lq_winch").spawn("san_tojalon")
+                .say("* You drink a bravery potion of ardrigal and snake weed, charge an orb to open the north gate and climb down the winch.",
+                        "* At the bottom, three undead guardians rise one after another: San Tojalon first!")
+                .missing("* A deep shaft. You need a bravery potion (ardrigal, snake weed, a vial of water), an unpowered orb to charge and a rope.")
+                .kill("san_tojalon").stay().needFlag("lq_winch").unless("heart_crystal").unlessFlag("lq_heart", "lq_irvig").give("lq_crystal_piece").flag("lq_irvig")
+                .spawn("irvig_senay").say("* San Tojalon falls and drops a crystal piece. Irvig Senay attacks!")
+                .kill("irvig_senay").stay().needFlag("lq_irvig").unless("heart_crystal").unlessFlag("lq_heart", "lq_ranalph").give("lq_crystal_piece").flag("lq_ranalph")
+                .spawn("ranalph_devere").say("* Irvig Senay falls and drops a crystal piece. Ranalph Devere attacks!")
+                .kill("ranalph_devere").stay().needFlag("lq_ranalph").unless("heart_crystal").unlessFlag("lq_heart", "lq_crystals").give("lq_crystal_piece").flag("lq_crystals")
+                .say("* Ranalph Devere falls and drops the last crystal piece.")
+                .reach("kharazi_cave", 10).stay().needFlag("lq_crystals").unlessFlag("lq_heart").take("lq_crystal_piece:3").give("heart_crystal").flag("lq_heart")
+                .say("* You melt the three crystal pieces together in the furnace: a heart crystal. It opens the recess by the barrier.")
+                .talk("echned_zekin").stay().needFlag("lq_heart").unless("dark_dagger").unlessFlag("lq_holy_force", "lq_zekin").give("dark_dagger").flag("lq_zekin")
+                .say("I am Echned Zekin. The water is mine to give, if you kill Viyeldi for me with this dark dagger.")
+                .talk("ungadulu").stay().needFlag("lq_zekin").unlessFlag("lq_holy_force").take("dark_dagger").flag("lq_holy_force")
+                .say("This dagger reeks of Nezikchened! Echned Zekin is no spirit... Cast the Holy Force upon him and his true form will show.")
+                .talk("echned_zekin").stay().needFlag("lq_holy_force").unlessFlag("lq_revealed").flag("lq_revealed").spawn("nezikchened")
+                .say("* You cast Holy Force on Echned Zekin. The disguise burns away: Nezikchened!")
+                .reach("kharazi_cave", 10).stay().needFlag("lq_revealed").unlessFlag("lq_spring_freed").spawn("nezikchened")
+                .kill("nezikchened").stay().needFlag("lq_revealed").unlessFlag("lq_spring_freed").flag("lq_spring_freed")
+                .say("* Nezikchened is banished again. You push the boulder aside and the sacred spring flows into the pool once more.")
+                .reach("lq_water_pool", 5).stay().needFlag("lq_spring_freed").unless("lq_bowl_of_water", "lq_yommi_totem").unlessFlag("lq_totem_placed")
+                .take("lq_golden_bowl").give("lq_bowl_of_water").say("* You refill the blessed bowl with sacred water.")
+                .reach("lq_fertile_soil", 5).stay().needFlag("lq_spring_freed").unless("lq_yommi_totem", "totem_pole").unlessFlag("lq_totem_placed")
+                .take("yommi_tree_seeds", "lq_bowl_of_water").needTool("axe:rune").give("lq_yommi_totem", "lq_golden_bowl")
+                .say("* You germinate the seeds in sacred water and plant them in the fertile soil. Watered, the Yommi grows into a great tree.",
+                        "* You fell it with your rune axe and carve it into a totem before it can rot.")
+                .missing("* The seeds need sacred water, and only a rune or dragon axe can fell a Yommi tree.")
+                .reach("kharazi_jungle", 12).stay().needFlag("lq_spring_freed").unlessFlag("lq_totem_placed").take("lq_yommi_totem").flag("lq_totem_placed")
+                .spawn("nezikchened")
+                .say("* You set the Yommi totem in place of an old totem pole. Nezikchened appears for the last time!")
+                .reach("kharazi_jungle", 12).stay().needFlag("lq_totem_placed").unlessFlag("lq_nez_final").spawn("nezikchened")
+                .kill("nezikchened").stay().needFlag("lq_totem_placed").unlessFlag("lq_nez_final").flag("lq_nez_final")
+                .say("* Nezikchened is destroyed for good.")
+                .talk("gujuo").needFlag("lq_nez_final").give("totem_pole")
+                .say("The Yommi totem stands! My people have gilded it for you to take to your guild, with our thanks.")
+                .missing("Plant the Yommi seeds with sacred water and carve the tree into a totem. Only a rune axe will do.")
                 .stage("I should take the map and the totem pole to Radimus Erkle.")
                 .talk("radimus_erkle").take("kharazi_map", "totem_pole").say("A complete map and a gift from the Kharazi people! Welcome to the Legends' Guild. Wear this cape with pride.")
                 .done("radimus_erkle", "Welcome, legend.");

@@ -43,6 +43,8 @@ class QuestStrictWalkTest {
             "monkey_madness_i 7 talk garkor",
             // the Guildmaster replaces a lost maze key
             "dragon_slayer_i 3 talk guildmaster",
+            // Radimus hands out more papyrus (and to saves from before the papyrus)
+            "legends_quest 1 talk radimus_erkle",
             // the priest's lines when the player arrives without the urn (the walk brings it)
             "beneath_cursed_sands 3 talk tumeken_priest");
 

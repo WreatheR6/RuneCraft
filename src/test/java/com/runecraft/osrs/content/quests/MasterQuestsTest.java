@@ -171,6 +171,25 @@ class MasterQuestsTest {
         }
     }
 
+    // ------------------------------------------------------------------ Legends' Quest
+
+    @Test
+    void legendsQuestWalksTheJungleTheCavesAndThreeDemonFights() {
+        inOrder("legends_quest", "talk radimus_erkle", "reach kharazi_jungle", "reach kharazi_jungle", "reach kharazi_jungle",
+                "talk jungle_forester", "talk gujuo",
+                "reach kharazi_cave", "talk gujuo", "reach lq_water_pool", "reach kharazi_cave", "puzzle kharazi_cave", "talk ungadulu",
+                "kill nezikchened", "talk ungadulu",
+                "talk gujuo", "reach kharazi_cave", "kill san_tojalon", "kill irvig_senay", "kill ranalph_devere", "reach kharazi_cave",
+                "talk echned_zekin", "talk ungadulu", "talk echned_zekin", "kill nezikchened", "reach lq_water_pool", "reach lq_fertile_soil",
+                "reach kharazi_jungle", "kill nezikchened", "talk gujuo", "talk radimus_erkle");
+        QuestPuzzle.Variant wall = KaramjaQuests.LQ_MARKED_WALL.rooms.get(0).variants().get(0);
+        List<String> smell = wall.solutions().get(0).stream().map(i -> wall.options().get(i)).toList();
+        assertEquals(List.of("Soul rune", "Mind rune", "Earth rune", "Law rune", "Law rune"), smell);
+        assertEquals(List.of(106, 100, 92), List.of("san_tojalon", "irvig_senay", "ranalph_devere").stream()
+                .map(id -> ContentRegistry.boss(id).combatLevel).toList());
+        assertEquals(9, QuestBossRules.nezikchenedPrayerCap(99));
+    }
+
     // ------------------------------------------------------------------ Monkey Madness I
 
     @Test

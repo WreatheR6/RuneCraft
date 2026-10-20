@@ -33,6 +33,7 @@ final class QuestBossScripts {
         BossScripts.register("dessous", Dessous::new);
         BossScripts.register("jungle_demon", JungleDemon::new);
         BossScripts.register("elvarg", Elvarg::new);
+        BossScripts.register("nezikchened", Nezikchened::new);
         BossScripts.register("head_menaphite_guard", FalseGods::new);
         BossScripts.register("dark_squall", MagicOnly::new);
         BossScripts.register("balance_elemental", BalanceForms::new);
@@ -487,6 +488,22 @@ final class QuestBossScripts {
             }
             return QuestBossRules.culinaromancerHits(boss.getRandom().nextInt(3))
                     ? boss.getRandom().nextInt(QuestBossRules.CULINAROMANCER_MAGIC_MAX + 1) : 0;
+        }
+    }
+
+    /** Legends' Quest (wiki): Nezikchened drains the player's Prayer to a tenth of their level when he appears. */
+    static final class Nezikchened implements BossScript {
+        @Override
+        public void onSpawn(DataBossEntity boss) {
+            if (boss.getTarget() instanceof ServerPlayer p) {
+                com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(p);
+                int cap = QuestBossRules.nezikchenedPrayerCap(data.skills().level(com.runecraft.osrs.Skill.PRAYER));
+                if (data.prayerPoints() > cap) {
+                    data.setPrayerPoints(cap);
+                    com.runecraft.network.ServerNetworking.sync(p);
+                    Msg.red(p, "Nezikchened drains your prayer!");
+                }
+            }
         }
     }
 
