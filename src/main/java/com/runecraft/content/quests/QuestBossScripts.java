@@ -12,6 +12,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import java.util.List;
 
 /** Mechanics for quest bosses that AttackDefs alone can't express. */
 final class QuestBossScripts {
@@ -25,6 +26,9 @@ final class QuestBossScripts {
         BossScripts.register("head_menaphite_guard", FalseGods::new);
         BossScripts.register("dark_squall", MagicOnly::new);
         BossScripts.register("balance_elemental", BalanceForms::new);
+        BossScripts.register("fragment_of_seren", FragmentSpecials::new);
+        BossScripts.register("vanstrom_klause", Vanstrom::new);
+        Vanstrom.register();
     }
 
     /**
@@ -107,8 +111,174 @@ final class QuestBossScripts {
     }
 
     /** While Guthix Sleeps: Surok Magis, the Dark Squall, can only be hurt with magic (wiki). */
+    /**
+     * Song of the Elves, the Fragment of Seren (wiki): about three normal attacks (crystal volleys at range, a swipe up close), then
+     * one of her four specials, always in this order: she pulls the player to her, splits into shadows, summons healing beams, and
+     * pins the player for an unblockable hit of their maximum hitpoints minus 5 (above two thirds of her health), minus 3, then
+     * minus 1 (below a third).
+     */
+    static final class FragmentSpecials implements BossScript {
+        private static final String[] SPECIALS = {"pull", "shadows", "healing_beams", "crystal_judgement"};
+        private int attacks;
+        private int special;
+        private String last;
+
+        @Override
+        public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
+            if (boss.def() == null) {
+                return null;
+            }
+            attacks++;
+            String name;
+            if (attacks % 4 == 0) {
+                name = SPECIALS[special];
+                special = (special + 1) % SPECIALS.length;
+            } else {
+                name = distance <= 2.5 ? "swipe" : "crystal_volley";
+            }
+            last = name;
+            for (AttackDef a : boss.def().attacks) {
+                if (a.name().equals(name)) {
+                    return a;
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
+            if (!"crystal_judgement".equals(last)) {
+                return damage;
+            }
+            float left = boss.getHealth() / boss.getMaxHealth();
+            int spare = left > 2 / 3f ? 5 : left > 1 / 3f ? 3 : 1;
+            int max = com.runecraft.player.Players.data(player).skills().level(com.runecraft.osrs.Skill.HITPOINTS);
+            return Math.max(1, max - spare);
+        }
+    }
+    /**
+     * Sins of the Father, Vanstrom Klause (wiki): magic attacks, some lowering Attack. He may open with one of his three
+     * specials at any point, then uses one after every 9-12 regular attacks, picked at random but never the same twice in a
+     * row. Only the blisterwood flail hurts him (recoil and Vengeance do nothing). Brought to 0 hitpoints he heals 200, stops
+     * his specials, calls lightning, and his attacks ignore protection prayers.
+     */
+    static final class Vanstrom implements BossScript {
+        private static final String[] SPECIALS = {"pets", "blood_orb", "stare_into_darkness"};
+        private int sinceSpecial;
+        private int nextSpecial = -1;
+        private String lastSpecial;
+        private boolean healed;
+        /** The game time a blisterwood hit passed {@link #modifyIncoming}: the one damage the gate lets through. */
+        private long approvedAt = Long.MIN_VALUE;
+        private AttackDef piercing;
+
+        /**
+         * Damage that skipped the blisterwood rule (a ring of recoil or suffering, Vengeance, thrown potions) never reaches
+         * him (wiki), and whatever else brings him to 0 still meets his heal before the second phase.
+         */
+        static void register() {
+            com.runecraft.combat.CombatHooks.addMonsterDamageGate((player, target) ->
+                    target instanceof DataBossEntity boss && boss.script() instanceof Vanstrom v && !v.consumeApproval(boss)
+                            ? "Only the blisterwood flail can hurt Vanstrom Klause." : null);
+            com.runecraft.platform.ServerLivingEntityEvents.ALLOW_DEATH.register((entity, source, amount) ->
+                    !(entity instanceof DataBossEntity boss && boss.script() instanceof Vanstrom v)
+                            || source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY) || !v.rise(boss));
+        }
+
+        private boolean consumeApproval(DataBossEntity boss) {
+            boolean ok = approvedAt == boss.level().getGameTime();
+            approvedAt = Long.MIN_VALUE;
+            return ok;
+        }
+
+        /** At 0 hitpoints the first time: heals 200 and starts the second phase. False when already risen. */
+        private boolean rise(DataBossEntity boss) {
+            if (healed) {
+                return false;
+            }
+            healed = true;
+            boss.setHealth(boss.getMaxHealth() * 200f / boss.trueHitpoints());
+            announce(boss, "Vanstrom Klause drinks deep of the blood around him and rises again!", ChatFormatting.DARK_RED);
+            return true;
+        }
+
+        private AttackDef named(DataBossEntity boss, String name) {
+            for (AttackDef a : boss.def().attacks) {
+                if (a.name().equals(name)) {
+                    return a;
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
+            if (boss.def() == null) {
+                return null;
+            }
+            if (healed) {
+                if (boss.getRandom().nextInt(3) == 0) {
+                    return named(boss, "lightning");
+                }
+                if (piercing == null) {
+                    AttackDef blast = named(boss, "blood_blast");
+                    // approx: typeless in OSRS; here his magic blast that protection prayers no longer stop
+                    piercing = blast == null ? null : blast.special(AttackDef.Special.PRAYER_PIERCING, 0);
+                }
+                return piercing;
+            }
+            if (nextSpecial < 0) {
+                nextSpecial = 1 + boss.getRandom().nextInt(13); // approx: "may use a special attack at any time" at the start
+            }
+            if (++sinceSpecial >= nextSpecial) {
+                sinceSpecial = 0;
+                nextSpecial = 10 + boss.getRandom().nextInt(4); // after 9-12 regular attacks
+                int pick = boss.getRandom().nextInt(lastSpecial == null ? SPECIALS.length : SPECIALS.length - 1);
+                if (lastSpecial != null && pick >= java.util.Arrays.asList(SPECIALS).indexOf(lastSpecial)) {
+                    pick++;
+                }
+                lastSpecial = SPECIALS[pick];
+                return named(boss, lastSpecial);
+            }
+            return named(boss, boss.getRandom().nextInt(4) == 0 ? "weaken" : "blood_blast");
+        }
+
+        @Override
+        public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            if (damage > 0 && !type.isMelee()) {
+                Msg.action(attacker, "Only a blow from the blisterwood flail will hurt Vanstrom Klause.");
+                return 0;
+            }
+            int hp = (int) Math.ceil(boss.getHealth() * boss.trueHitpoints() / boss.getMaxHealth());
+            if (!healed && damage >= hp) {
+                rise(boss);
+                return 0;
+            }
+            if (damage > 0) {
+                approvedAt = boss.level().getGameTime();
+            }
+            return damage;
+        }
+    }
+
     static final class MagicOnly implements BossScript {
         private long lastMessage;
+        private int attacks;
+
+        /** Wiki: Surok fights like Vorkath, six regular attacks and then one of his specials as the seventh. */
+        @Override
+        public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
+            if (boss.def() == null || boss.def().attacks.isEmpty()) {
+                return null;
+            }
+            List<AttackDef> all = boss.def().attacks;
+            attacks++;
+            if (attacks % 7 != 0) {
+                return all.get(0);
+            }
+            List<AttackDef> specials = all.subList(1, all.size());
+            return specials.isEmpty() ? all.get(0) : specials.get(boss.getRandom().nextInt(specials.size()));
+        }
 
         @Override
         public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {

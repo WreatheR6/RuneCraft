@@ -255,4 +255,37 @@ public final class MuspahRules {
         }
         return lines.get(lines.size() - 1);
     }
+
+    // ------------------------------------------------------------ the Strange Creature
+    /**
+     * The numbers a Muspah fight runs on. The Phantom Muspah's are above; the Strange Creature, Jhallan's shapeshifted form
+     * fought in Secrets of the North (OSRS Wiki "Strange Creature", "Secrets of the North#A Strange "Something""), has the same
+     * forms, specials, shield and spikes on smaller numbers: 550 hitpoints, its shockwave and 75-point shield at 20% health,
+     * max hits 32 ranged, 33 magic (its corrupting orb), 24 stab, 38 ranged once shielded, 40 for the shockwave and about 14
+     * for spikes and the orb barrage; its melee form's magic defence -10 and ranged defence 160; attack speed 6 in its ranged,
+     * shielded and post-shield forms.
+     */
+    public record Numbers(String name, int hitpoints, int firstSpecialHp, int secondSpecialHp, int shieldBelow, int ranged, int magic,
+                          int melee, int shieldedRanged, int shieldedMagic, int cloud, int shockwave, int spikeMax,
+                          int meleeFormMagicDefence, int meleeFormRangedDefence, int shieldedSpeed, boolean boss) {
+        public int rangedMax(boolean shieldedOrAfter) {
+            return shieldedOrAfter ? shieldedRanged : ranged;
+        }
+
+        public int magicMax(boolean shieldedOrAfter) {
+            return shieldedOrAfter ? shieldedMagic : magic;
+        }
+
+        /** How many specials are due at {@code health} (0, 1 or 2). */
+        public int specialsDue(int health) {
+            return health <= secondSpecialHp ? 2 : health <= firstSpecialHp ? 1 : 0;
+        }
+    }
+
+    public static final Numbers PHANTOM = new Numbers("The Phantom Muspah", HITPOINTS, FIRST_SPECIAL_HP, SECOND_SPECIAL_HP,
+            SHIELD_BELOW, RANGED, MAGIC, MELEE, SHIELDED_RANGED, SHIELDED_MAGIC, LIGHTNING_CLOUD, SHOCKWAVE, BossMechanics.MUSPAH_SPIKE_MAX,
+            MELEE_FORM_MAGIC_DEFENCE, MELEE_FORM_RANGED_DEFENCE, FAST_SPEED, true);
+    /** Its specials at 75% and 50% health like the Phantom's (approx: the wiki says only "during any phase"). */
+    public static final Numbers STRANGE_CREATURE = new Numbers("The Strange Creature", 550, 412, 275, 110, 32, 33, 24, 38, 33,
+            14, 40, 14, -10, 160, 6, false);
 }

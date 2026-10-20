@@ -1094,8 +1094,9 @@ public final class MonsterStatsTable {
         // Ranis Drakan (A Taste of Hope)
         row("ranis_drakan", 233, 400, 120, 120, 120, 120, 1, 5, 60, 60, 60, 60, 60, 0, 0, 0, "vampyre");
         // Vanstrom Klause (Vampyre)
-        row("vanstrom_klause", 169, 155, 150, 136, 150, 150, 150, 8, 0, 0, 0, 0, 0, 0, 0, 0, "vampyre");
-        maxHit("vanstrom_klause", "vampyric_claw", 16); // was 25
+        // the quests module's vanstrom_klause is the Sins of the Father fight (wiki "Vanstrom Klause", Sins of the Father version)
+        row("vanstrom_klause", 459, 750, 0, 0, 180, 180, 0, 5, 34, 34, 34, 34, 34, 0, 16, 0, "vampyre");
+        maxHit("vanstrom_klause", "blood_blast", 24); // was the level-169 vampyre form
         // Dad
         row("dad", 101, 120, 60, 120, 50, 1, 1, 8, 25, 25, 40, 200, 200, 40, 0, 0);
         maxHit("dad", "club", 27); // was 18
@@ -1109,7 +1110,7 @@ public final class MonsterStatsTable {
         row("fragment_of_seren", 494, 1000, 242, 288, 102, 102, 235, 7, 320, 220, 320, 10, 480, 236, 0, 224);
         // Kruk
         row("kruk", 207, 210, 130, 130, 150, 130, 170, 4, 100, 100, 100, 250, 100, 160, 0, 150);
-        maxHit("kruk", "slam", 33); // was 30
+        maxHit("kruk", "scimitars", 33); // was 30
         // Vorkath (Dragon Slayer II)
         row("ds2_vorkath", 392, 460, 560, 268, 164, 148, 268, 5, 66, 126, 126, 204, 80, 14, 148, 96, "dragon", "fiery", "undead");
         // Galvek (Air)

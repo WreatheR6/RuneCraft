@@ -9,6 +9,7 @@ import com.runecraft.osrs.content.AttackDef.Special;
 import com.runecraft.osrs.content.BossDef;
 import com.runecraft.osrs.content.PlaceDef;
 import com.runecraft.osrs.data.Drop;
+import java.util.List;
 
 /**
  * Mahjarrat and northern storylines: Enakhra's Lament, Devious Minds, The Garden of Death, Secrets of
@@ -142,12 +143,21 @@ final class MahjarratQuests {
                         .particle("minecraft:item_slime")) // OSRS: up to 30, poison starting at 6
                 .drops(Drop.always("bones")).skin(Cast.PALE, 0x1A1A1A, 0x101010, 0x2A2A2A).size(0.6f, 1.9f, 1.0f)
                 .at("sotn_weiss_cave").arena(10, "ice"));
-        b.boss(BossDef.of("quest_strange_creature", "Strange Creature").level(368).stats(550, 280, 280, 200, 150, 280).speed(5)
+        // Wiki "Strange Creature": level 368, 550 HP, the Phantom Muspah's fight on smaller numbers (MuspahRules.STRANGE_CREATURE,
+        // played by the bosses module's Muspah script): a ranged form (ice shards up to 32, speed 6, and a corrupting magic orb up
+        // to 33) and a melee form (stab up to 24, speed 5) that swap as it takes damage with spikes under the player; the orb
+        // barrage and homing spikes; at 20% health the shockwave (40, only spikes stop it) and a 75-point prayer shield with
+        // Soul Split, then its ranged form at 38 with spikes over the whole cave.
+        b.boss(BossDef.of("quest_strange_creature", "Strange Creature").level(368).stats(550, 280, 280, 200, 150, 280).speed(6)
                 .defenceBonus(110, 90, 80, 280, 0) // ranged form (melee form: magic -10, ranged 160)
-                .attack(AttackDef.of("claw", AttackType.STAB, 24, 3, 3))
-                .attack(AttackDef.of("prismatic_bolt", AttackType.RANGED, 32, 12, 4).particle("minecraft:crit"))
-                .attack(AttackDef.of("prismatic_spike", AttackType.MAGIC, 32, 12, 2).particle("minecraft:end_rod")) // approx
-                .phase(50, "The Strange Creature shrouds itself in a prismatic shield!", 1.2, false) // post-shield max hit 38
+                .attack(AttackDef.of("ice_shard", AttackType.RANGED, 32, 14, 5).particle("minecraft:snowflake"))
+                .attack(AttackDef.of("smite", AttackType.MAGIC, 33, 14, 1).particle("minecraft:soul_fire_flame")
+                        .telegraph(2, "The Strange Creature raises its arms, charging purple energy!"))
+                .attack(AttackDef.of("stomp", AttackType.STAB, 24, 4, 5))
+                .attack(AttackDef.of("lightning_cloud", AttackType.MAGIC, 14, 64, 1).special(Special.HAZARD, 0)
+                        .message("The Strange Creature vanishes and the cave dims - a barrage of orbs!").particle("minecraft:electric_spark"))
+                .attack(AttackDef.of("shockwave", AttackType.MAGIC, 40, 64, 1).special(Special.AOE, 32)
+                        .telegraph(5, "The Strange Creature teleports to the centre - hide behind a spike!").particle("minecraft:sonic_boom"))
                 .drops(Drop.always("bones")).model("phantom_muspah").size(2.0f, 2.6f, 1.6f)
                 .at("sotn_weiss_ritual_room").arena(12, "ice"));
         b.quest("secrets_of_the_north", "Secrets of the North", Difficulty.MASTER, 2)
@@ -178,9 +188,10 @@ final class MahjarratQuests {
                 .talk("sotn_hazeel").stay().needFlag("sotn_cult").unlessFlag("sotn_hazeel").flag("sotn_hazeel")
                 .say("I did not order a murder. But the Carnilleans hid something of mine: a scroll. Find what the killer missed.")
                 .reach("carnillean_house", 8).stay().needFlag("sotn_hazeel").unless("sotn_dusty_scroll").unlessFlag("sotn_scroll").give("sotn_dusty_scroll")
-                .reqSkill(Skill.THIEVING, 64)
+                .reqSkill(Skill.THIEVING, 64).need("lockpick") // quick guide: a lockpick or a hair clip (not in RuneCraft)
                 .say("* Claus the Chef lets you into the cellar. Behind the cooking shelves a button opens a passage to a locked chest.",
                         "* You pick the lock pin by pin and take a dusty scroll.")
+                .missing("* The chest in the hidden passage is locked. You'll need a lockpick.")
                 .talk("sotn_hazeel").needFlag("sotn_hazeel").take("sotn_dusty_scroll").flag("sotn_scroll")
                 .say("A ritual... in the north. Weiss. Whoever hired your killer is going there. Follow them.")
                 .missing("The scroll the Carnilleans hid. Search their cellar.")
@@ -196,16 +207,100 @@ final class MahjarratQuests {
                 .stage("I should open the ritual room's sealed gate under Weiss and face whatever lies beyond.")
                 .talk("sotn_hazeel").stay().needFlag("sotn_assassin").unlessFlag("sotn_hazeel_weiss").flag("sotn_hazeel_weiss")
                 .say("I followed you. The gate ahead is Zarosian work. Its locks answer to old words and old fire.")
-                .reach("sotn_weiss_ritual_room", 6).stay().needFlag("sotn_hazeel_weiss").unlessFlag("sotn_puzzles").need("tinderbox").flag("sotn_puzzles")
-                .say("* You find a lever handle in a barrel, open the gate with BLOOD and the chest with 7402, light the braziers NW, SE, NE, SW,",
-                        "* press LEFT, UP, LEFT, DOWN, pull the lever and join two jewel shards into an ancient jewel. It opens the icy chest: the icy key.")
-                .missing("* The braziers need lighting. You'll need a tinderbox.")
+                // the Ghorrock Dungeon's locks, in the walkthrough's order (SOTN_LOCKS)
+                .puzzle("sotn_weiss_ritual_room", SOTN_LOCKS.get(0)).stay().needFlag("sotn_hazeel_weiss").unlessFlag("sotn_north_gate", "sotn_puzzles")
+                .flag("sotn_north_gate")
+                .say("* The northern gate opens. In its chest, a strange list. You fit the lever handle from the barrel and pull the lever;",
+                        "* in the room where you fought the assassin, the south-western pillar gives up a jewel shard and a strange cipher.")
+                .puzzle("sotn_weiss_ritual_room", SOTN_LOCKS.get(1)).stay().needFlag("sotn_north_gate").unlessFlag("sotn_centre_gate", "sotn_puzzles")
+                .flag("sotn_centre_gate")
+                .say("* BLOOD. The centre gate swings open.")
+                .puzzle("sotn_weiss_ritual_room", SOTN_LOCKS.get(2)).stay().needFlag("sotn_centre_gate").unlessFlag("sotn_braziers", "sotn_puzzles")
+                .need("tinderbox").flag("sotn_braziers")
+                .say("* The last brazier catches. The western chest unlocks.")
+                .missing("* The braziers need lighting. You'll need a tinderbox (the crate in the western part of the room).")
+                .puzzle("sotn_weiss_ritual_room", SOTN_LOCKS.get(3)).stay().needFlag("sotn_braziers").unlessFlag("sotn_puzzles").flag("sotn_puzzles")
+                .say("* The northern chest gives up an icy chest. You join the two jewel shards into an ancient jewel; it opens the icy chest:",
+                        "* inside, an icy key. The key turns in the gate south-west of the centre room. Beyond it, a crevice.")
                 .reach("sotn_weiss_ritual_room", 6).stay().needFlag("sotn_puzzles").unlessFlag("sotn_creature").spawn("quest_strange_creature")
                 .say("* Beyond the icy gate, a crevice. Something prismatic unfolds from the dark: a Strange Creature!")
                 .kill("quest_strange_creature").stay().needFlag("sotn_puzzles").unlessFlag("sotn_creature").flag("sotn_creature")
                 .say("* The Strange Creature shatters and flees deeper into the ice. Hazeel teleports you back to Ardougne.")
                 .talk("sotn_carnillean_guard").needFlag("sotn_creature")
                 .say("A Zarosian ritual under Weiss? And a creature like that... Well. The captain will want this kept very quiet indeed. Thank you.");
+    }
+
+    /**
+     * Secrets of the North, the Ghorrock Dungeon's locks in order (wiki walkthrough "Secrets of the Dungeon"): the northern
+     * gate's arrows from Tullia's letter and the ancient map (left, up, left, down), the centre gate's word from the Duke note,
+     * strange list and strange cipher (BLOOD), the braziers by the numbers note (north-west, south-east, north-east,
+     * south-west), then the northern chest's code from the settlements note on the ancient map (7402).
+     */
+    static final List<QuestPuzzle> SOTN_LOCKS = List.of(
+            lock("sotn_north_gate", "* The gate stays shut. Better read Tullia's letter against the map again.",
+                    new String[]{"* Tullia's letter, from the chest in the south-eastern room: five of its letters are purple - S, p, c, d, l.",
+                            "* The ancient map, from the crate in the east: Senntisten, with Paddewwa to its west, Carrallanger north of",
+                            "* Paddewwa, Dareeyak west of Carrallanger and Lassar south of Dareeyak.",
+                            "* The northern gate's lock takes four arrows. Which do you press?"},
+                    new String[]{"Left", "Right", "Up", "Down"}, 0, 2, 0, 3),
+            lock("sotn_centre_gate", "* The lock doesn't budge. Better read the notes again.",
+                    new String[]{"* The strange list names twelve dukes; the strange cipher matches their symbols to letters.",
+                            "* Filled in from the list, the Duke note reads: Picus, Quirinius, Sucellus, Mantus, Nemesis, Cacus, Terminus, Ceres,",
+                            "* Orcus, Mephitis, Maximus, Festus. Through the cipher (Orcus's symbol reads L), its marked symbols spell",
+                            "* a hidden message: 'BOUND BY ...'. The centre gate's lock wants a five-letter word."}, // approx: the cipher told as letters
+                    new String[]{"B", "D", "L", "N", "O", "U", "Y"}, 0, 2, 4, 4, 1),
+            lock("sotn_braziers", "* The flames gutter out. The braziers must be lit in some order.",
+                    new String[]{"* The numbers note, from the damaged table: 3241, with '4: NE' in its corner. The strange cipher's corner says",
+                            "* '1: SW', the ancient map's '2: SE', the strange list's '3: NW'.",
+                            "* Four unlit braziers stand in the corners of the room. Light them in order."},
+                    new String[]{"North-west", "North-east", "South-west", "South-east"}, 0, 3, 1, 2),
+            lock("sotn_north_chest", "* The lock doesn't budge. Better read the settlements note against the map again.",
+                    new String[]{"* The western chest opens: a jewel shard and a settlements note. Joined on the ancient map as the note lists them,",
+                            "* Kharid-et - Kharyrll - Senntisten draws a 7; the next line draws a 4, the next a closed loop, the last a",
+                            "* hook and a base like a 2.", // approx: the other three lines' settlements
+                            "* The northern chest's lock takes four digits."},
+                    digits(), 7, 4, 0, 2));
+
+    /**
+     * Desert Treasure II, the keys of Ghorrock Prison in order (wiki walkthrough): the altar room's six candle stands
+     * (candles give the digit, the banner's strokes its place: 214013), the administration chests' grid and requisition note
+     * (LIES), the dormitory's seven bed chests followed by the magic lantern's arrows (up, right, left, down, right, up) and
+     * the strange slider read against the library note's phrase (WRATH).
+     */
+    static final List<QuestPuzzle> DT2_PRISON_KEYS = List.of(
+            lock("dt2_sapphire_key", "* The chest stays shut.",
+                    new String[]{"* The warning letter by the altar: 'Count the light, and let the banners keep the order.'",
+                            "* Six candle stands, each before a banner: north-east, 2 candles and a banner of 1 stroke; west, 1 candle and",
+                            "* 2 strokes; south-west, 4 candles and 3 strokes; north-west, no candles and 4 strokes; east, 1 candle and",
+                            "* 5 strokes; south, 3 candles and 6 strokes. The south-east chest wants six digits."}, // approx: only the north-east stand is on the wiki
+                    digits(), 2, 1, 4, 0, 1, 3),
+            lock("dt2_emerald_key", "* The chest stays shut.",
+                    new String[]{"* In the administration crate: a requisition note, its requesters' capitals spelling VIAL, its identifiers 24, 31,",
+                            "* 42 and 44 (row, then column); and a grid note of the chests' first letters, read facing west:",
+                            "* row 1: R C V H; row 2: B F T L (Lanterns); row 3: I A M N; row 4: P E K S.", // approx: the grid's other letters
+                            "* The vial chest (row 1, column 3) is locked by four letters."},
+                    new String[]{"A", "E", "I", "L", "S", "T", "V"}, 3, 2, 1, 4),
+            lock("dt2_ruby_key", "* The chest stays shut. Jhallan's laughter echoes down the corridor.",
+                    new String[]{"* Seven bed chests name their owners. The bottom row, west to east: Atreus, Nithrak, Baelys; Phalina above",
+                            "* Baelys; the top row: Grazon above Atreus, Marcus above Nithrak, Vedius at the east end.", // approx: the beds' layout
+                            "* Through the code converter, the magic lantern's arrows spell A G V M N B P.",
+                            "* The south-east chest takes six arrows."},
+                    new String[]{"Up", "Down", "Left", "Right"}, 0, 3, 2, 1, 3, 0),
+            lock("dt2_diamond_key", "* The chest stays shut.",
+                    new String[]{"* The library note: find Duke Quirinius's books, and remember 'Various people emerged near us'.",
+                            "* With Innocence set between Harmonious and Longing, the strange slider pairs its top letters with the bottom:",
+                            "* H-K, V-W, L-O, P-R, S-D, E-A, N-T, O-S, U-H.", // approx: the slider told as pairs
+                            "* The cell's locked chest wants five letters."},
+                    new String[]{"A", "D", "H", "K", "O", "R", "S", "T", "W"}, 8, 5, 0, 7, 2));
+
+    /** A one-room lock: its clues, its dial and the one sequence that opens it. */
+    private static QuestPuzzle lock(String key, String failLine, String[] prompt, String[] options, int... solution) {
+        return QuestPuzzle.builder(key).room("lock").variant(null).prompt(prompt).options(options).solution(solution)
+                .failLines(failLine).build();
+    }
+
+    private static String[] digits() {
+        return new String[]{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
     }
 
     private static void desertTreasureII(QuestBook b) {
@@ -230,9 +325,11 @@ final class MahjarratQuests {
                         "below_ice_mountain", "his_faithful_servants")
                 .req(Skill.FIREMAKING, 75).req(Skill.MAGIC, 75).req(Skill.THIEVING, 70).req(Skill.HERBLORE, 62)
                 .req(Skill.RUNECRAFT, 60).req(Skill.CONSTRUCTION, 60)
-                .xp(Skill.MAGIC, 35000).xp(Skill.FIREMAKING, 35000).xp(Skill.THIEVING, 35000) // approximate lamp rewards
+                // OSRS: three ancient lamps of 100,000 XP each in a combat skill or Prayer (level 60+). // approx: fixed skills
+                .xp(Skill.MAGIC, 100000).xp(Skill.RANGED, 100000).xp(Skill.HITPOINTS, 100000)
                 .reward("ring_of_shadows")
                 .unlock("Awakened versions of Vardorvis, Duke Sucellus, the Whisperer and the Leviathan; the Lassar Undercity")
+                .unlock("Access to the Scar essence mine").unlock("The ability to wear ancient rings")
                 .stage("I can start this quest by speaking to Asgarnia Smith at the Digsite Exam Centre. (Requires Desert Treasure I, Secrets of the North, Enakhra's Lament, Temple of the Eye, The Garden of Death, Below Ice Mountain, His Faithful Servants, 75 Firemaking, 75 Magic and more.)")
                 .talk("asgarnia_smith").say("A vault of the old Zarosian empire has been uncovered in the desert! I need someone brave, and preferably expendable, to open it.")
                 .stage("I should investigate the Vault in the Kharidian Desert.")
@@ -304,9 +401,15 @@ final class MahjarratQuests {
                 .say("* Beneath Weiss you reach the prison door - and are thrown into a cell. A voice in the wall talks you through it:",
                         "* a prisoner's letter in the skeleton, a knife in the bed, a lockpick in the bucket... and the door swings open.",
                         "* A hooded assassin watches you leave, then vanishes.")
-                .reach("dt2_ghorrock_refugee_camp", 6).stay().needFlag("dt2_d_escape").unlessFlag("dt2_d_keys").flag("dt2_d_keys")
-                .say("* Chest by chest you work through the prison: 214013 for the sapphire key, LIES for the emerald key,",
-                        "* up, right, left, down, right, up for the ruby key and WRATH for the diamond key.")
+                // the prison's four keys, in the walkthrough's order (DT2_PRISON_KEYS)
+                .puzzle("dt2_ghorrock_refugee_camp", DT2_PRISON_KEYS.get(0)).stay().needFlag("dt2_d_escape").unlessFlag("dt2_d_sapphire", "dt2_d_keys")
+                .flag("dt2_d_sapphire").say("* In the chest: the sapphire key. The gate north of the main block opens.")
+                .puzzle("dt2_ghorrock_refugee_camp", DT2_PRISON_KEYS.get(1)).stay().needFlag("dt2_d_sapphire").unlessFlag("dt2_d_emerald", "dt2_d_keys")
+                .flag("dt2_d_emerald").say("* In the vial chest: the emerald key. As you leave the room, Jhallan begins to hunt you.")
+                .puzzle("dt2_ghorrock_refugee_camp", DT2_PRISON_KEYS.get(2)).stay().needFlag("dt2_d_emerald").unlessFlag("dt2_d_ruby", "dt2_d_keys")
+                .flag("dt2_d_ruby").say("* In the chest: the ruby key.")
+                .puzzle("dt2_ghorrock_refugee_camp", DT2_PRISON_KEYS.get(3)).stay().needFlag("dt2_d_ruby").unlessFlag("dt2_d_keys").flag("dt2_d_keys")
+                .say("* In the chest: the diamond key. With the sapphire, emerald, ruby and diamond keys every gate of the prison opens to you.")
                 .talk("dt2_assassin").stay().needFlag("dt2_d_keys").unlessFlag("dt2_d_jhallan").flag("dt2_d_jhallan")
                 .say("You found your gear. Good. Light the firecrackers in the refugee camp and keep Jhallan busy until I return.",
                         "* Jhallan's illusions surround you. You pray against his magic and circle the pillar until the assassin returns and Jhallan withdraws.")
@@ -408,20 +511,20 @@ final class MahjarratQuests {
         b.boss(BossDef.of("dt2_quest_leviathan", "The Leviathan").level(593).stats(720, 250, 270, 200, 130, 130).speed(4)
                 .defenceBonus(200, 150, 180, 220, 50)
                 .attack(AttackDef.of("shadow_strike", AttackType.CRUSH, 34, 16, 1).particle("minecraft:squid_ink"))
-                .attack(AttackDef.of("boulder", AttackType.RANGED, 27, 16, 1).particle("minecraft:crit")) // approx: 40 x 34/50
-                .attack(AttackDef.of("abyssal_orb", AttackType.MAGIC, 27, 16, 1).particle("minecraft:witch")) // approx
+                .attack(AttackDef.of("boulder", AttackType.RANGED, 16, 16, 1).particle("minecraft:crit")) // wiki quest version: ranged orb 16
+                .attack(AttackDef.of("abyssal_orb", AttackType.MAGIC, 22, 16, 1).particle("minecraft:witch")) // magic orb 22
                 .drops(Drop.always("bones")).model("the_leviathan").size(2.2f, 2.2f, 2.0f).moveSpeed(0.0)
                 .at("dt2_perseriya_ship").arena(14, "water"));
         b.boss(BossDef.of("dt2_quest_duke_sucellus", "Duke Sucellus").level(538).stats(330, 250, 280, 215, 230, 1).speed(6)
                 .defenceBonus(210, 30, 160, 400, 300)
                 .attack(AttackDef.of("fist_slam", AttackType.CRUSH, 36, 5, 3))
-                .attack(AttackDef.of("magic_blast", AttackType.MAGIC, 26, 16, 4).particle("minecraft:witch")) // approx: 40 x 36/56
+                .attack(AttackDef.of("magic_blast", AttackType.MAGIC, 28, 16, 4).particle("minecraft:witch")) // wiki quest version: 28
                 .drops(Drop.always("bones")).model("duke_sucellus").size(1.8f, 2.4f, 2.0f).moveSpeed(0.0)
                 .at("dt2_ghorrock_asylum").arena(13, "ice"));
         b.boss(BossDef.of("dt2_quest_whisperer", "The Whisperer").level(587).stats(660, 240, 250, 200, 130, 130).speed(5)
                 .defenceBonus(150, 250, 180, -10, 250)
-                .attack(AttackDef.of("soul_bolt", AttackType.MAGIC, 25, 16, 3).particle("minecraft:soul")) // approx: 35 x 30/42
-                .attack(AttackDef.of("tentacle_lash", AttackType.RANGED, 25, 16, 3).particle("minecraft:squid_ink")) // approx
+                .attack(AttackDef.of("soul_bolt", AttackType.MAGIC, 26, 16, 3).particle("minecraft:soul")) // wiki quest version: magic 26
+                .attack(AttackDef.of("tentacle_lash", AttackType.RANGED, 28, 16, 3).particle("minecraft:squid_ink")) // ranged 28
                 .phase(50, "The Whisperer drags you into the Shadow Realm!", 1.0, false)
                 .drops(Drop.always("bones")).model("the_whisperer").flying().size(1.8f, 2.6f, 2.0f).moveSpeed(0.18)
                 .at("dt2_sunken_cathedral").arena(13, "void"));

@@ -2125,6 +2125,9 @@
     "staff_orb",
     "hand_glow"
   ],
+  "sote_mourner": [
+    "head"
+  ],
   "sotetseg": [
     "seam",
     "head",
@@ -2686,6 +2689,13 @@
   "waterfiend": [
     "core",
     "head"
+  ],
+  "wgs_mercenary_axeman": [
+    "head"
+  ],
+  "wgs_mercenary_mage": [
+    "head",
+    "w_orb"
   ],
   "wilderness_bandit": [
     "blade_glint"

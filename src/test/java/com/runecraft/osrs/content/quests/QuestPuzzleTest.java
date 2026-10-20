@@ -149,7 +149,8 @@ class QuestPuzzleTest {
         QuestSpec wgs = spec("while_guthix_sleeps");
         assertEquals(6, wgs.stages.size(), "saved stage count");
         assertEquals("ivy_sophista", wgs.stages.get(0).triggers.get(0).target, "OSRS start: Ivy Sophista");
-        assertEquals(3, puzzles(wgs).size());
+        // the rune door, the wired bookcases, the pressure gauge, the skulls and 8 of the 13 temple statues (round 37)
+        assertEquals(12, puzzles(wgs).size());
         assertTrue(wgs.triggers().stream().anyMatch(t -> t.kind == Trigger.Kind.KILL && t.target.equals("balance_elemental")
                 && t.needFlags.contains("wgs_skulls")));
         assertTrue(wgs.triggers().stream().anyMatch(t -> t.give.containsKey("movarios_notes") && t.needFlags.containsAll(List.of("wgs_door", "wgs_weights"))));

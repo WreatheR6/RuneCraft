@@ -302,6 +302,9 @@ public final class AccessGates {
                 questDone("bone_voyage", "The barge won't take you to Fossil Island until you have completed Bone Voyage."));
         gate("prifddinas", "Prifddinas", List.of(new Rect(3196, 6036, 3332, 6172)), 2240, 3285,
                 questDone("song_of_the_elves", "The crystal gates of Prifddinas stay sealed. You need to complete Song of the Elves."));
+        // Darkmeyer's walls (world module, EasternMorytania): OSRS lets only vyre nobles in, from Sins of the Father on.
+        gate("darkmeyer", "Darkmeyer", List.of(new Rect(3595, 3333, 3665, 3395)), 3590, 3363,
+                questStarted("sins_of_the_father", "The vyrewatch at the gate turn you away. (You need to start Sins of the Father to enter Darkmeyer.)"));
         gate("ape_atoll", "Ape Atoll", List.of(new Rect(2685, 2678, 2820, 2820)), 2465, 3495,
                 questStarted("monkey_madness_i", "You can't reach Ape Atoll yet. Start Monkey Madness I first."));
         gate("lunar_isle", "Lunar Isle", List.of(new Rect(2060, 3850, 2180, 3970)), 2213, 3800,
