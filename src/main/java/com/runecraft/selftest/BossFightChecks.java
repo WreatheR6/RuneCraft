@@ -64,7 +64,9 @@ import net.minecraft.world.phys.Vec3;
  *   shortbow, at 99s and with an accuracy boost so a few attacks are enough) take hitpoints off it;</li>
  *   <li>heavy hits through the boss's own damage rules kill it within {@value #KILL_TICKS} game ticks, its adds (minions,
  *   spawns, bodyguards, Nex's generals) being cleared and its scripted mechanic done for it when it can't be hurt
- *   ({@code BossSelfTests.assist});</li>
+ *   ({@code BossSelfTests.assist}): its script says so, or the player's attacks roll damage that its rules take to nothing
+ *   (Bryophyta behind her growthlings, the Abyssal Sire until its respiratory systems are gone); the player's own attack
+ *   also goes in right after the first heavy hit that gets through, so a boss hurtable only late isn't finished first;</li>
  *   <li>the kill adds a kill count and leaves loot (on the ground or in the inventory).</li>
  * </ol>
  * The player keeps a big health buffer and is healed every tick, so it never dies. A boss that swaps itself for another
@@ -277,6 +279,11 @@ final class BossFightChecks {
         Vec3 deathAt = boss.position();
         AttackType[] styles = {AttackType.SLASH, AttackType.MAGIC, AttackType.RANGED};
         int playerAttacks = 0;
+        // A player attack rolled damage that the boss's own rules took to nothing (Bryophyta behind her growthlings, the
+        // Abyssal Sire's first phase): it can't be hurt yet even when its script calls it vulnerable.
+        boolean blocked = false;
+        // The last heavy hit took hitpoints off it: the player's own attack goes in before the next one can finish it.
+        boolean heavyLanded = false;
         try {
             rec.bosses.add(boss.getUUID());
             for (; tick < ENGAGE_TICKS + KILL_TICKS; tick++) {
@@ -330,7 +337,7 @@ final class BossFightChecks {
                 }
                 boolean hurtable = !(boss instanceof DataBossEntity d) || d.script().isVulnerable(d);
                 // the player's own attacks, cycling melee, magic and ranged, until one has taken hitpoints off it
-                if (tick % PLAYER_SPEED == 0 && firstHitTick < 0) {
+                if (firstHitTick < 0 && (tick % PLAYER_SPEED == 0 || heavyLanded)) {
                     AttackType style = styles[playerAttacks++ % styles.length];
                     float hp = boss.getHealth();
                     rec.lastRoll = -1;
@@ -346,10 +353,11 @@ final class BossFightChecks {
                         firstHitTick = tick;
                     } else if (rec.lastRoll > 0) {
                         s[2]++;
+                        blocked = true;
                     }
                 }
                 if (killStart < 0) {
-                    if (!hurtable) {
+                    if (!hurtable || blocked && firstHitTick < 0) {
                         assist(boss, p, assists);
                         if (++invulnerableTicks % 10 == 0) {
                             cleared += clearAdds(p, rec.bosses, seen); // what shields it (totems, minions, spawns)
@@ -362,6 +370,7 @@ final class BossFightChecks {
                 }
                 // the kill: a heavy hit through the boss's own damage rules every game tick
                 float hp = boss.getHealth();
+                heavyLanded = false;
                 if (!heavyHit(p, boss)) {
                     invulnerableTicks++;
                     if (invulnerableTicks % 5 == 0) {
@@ -370,6 +379,8 @@ final class BossFightChecks {
                     assist(boss, p, assists);
                 } else if (boss.isAlive() && boss.getHealth() >= hp) {
                     invulnerableTicks++;
+                } else {
+                    heavyLanded = true;
                 }
             }
             if (rec.firstAttackTick < 0 && !passive && c.realPlayer()) {
