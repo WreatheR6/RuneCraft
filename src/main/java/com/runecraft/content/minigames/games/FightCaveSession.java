@@ -27,7 +27,7 @@ import net.minecraft.world.entity.Mob;
 public class FightCaveSession extends TzHaarSession {
     private boolean jadDead;
     /** The wiki rotation (1-15) this run spawns by. */
-    private final int rotation;
+    private int rotation;
 
     public FightCaveSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.FIGHT_CAVES, id, slot, world, variant);
@@ -119,6 +119,7 @@ public class FightCaveSession extends TzHaarSession {
         for (ServerPlayer p : online()) {
             TzHaarSlayer.enter(p, Minigame.FIGHT_CAVES);
         }
+        resumePaused();
     }
 
     @Override
@@ -178,8 +179,27 @@ public class FightCaveSession extends TzHaarSession {
 
     @Override
     protected void onLeave(ServerPlayer player) {
-        if (!jadDead) {
+        if (!jadDead && !pausing) {
             TzHaarSlayer.leave(player, Minigame.FIGHT_CAVES);
+        }
+    }
+
+    @Override
+    protected boolean pauses() {
+        return true;
+    }
+
+    /** A paused run keeps its rotation: the same spawns when it picks up again (OSRS Wiki "TzHaar Fight Cave", Changes). */
+    @Override
+    protected void savePause(MinigameData data, java.util.UUID player) {
+        data.setStat(player, pauseKey("rotation", game), rotation);
+    }
+
+    @Override
+    protected void loadPause(MinigameData data, java.util.UUID player) {
+        int r = data.stat(player, pauseKey("rotation", game));
+        if (r >= 1 && r <= TzHaarWaves.FIGHT_CAVE_ROTATIONS) {
+            rotation = r;
         }
     }
 

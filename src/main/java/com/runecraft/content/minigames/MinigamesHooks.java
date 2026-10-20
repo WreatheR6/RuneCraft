@@ -133,10 +133,8 @@ public final class MinigamesHooks implements ModuleHooks {
         BlockHooks.register("gotr_rift_search", (player, pos, state) -> GuardiansSession.rewardsGuardian(player));
         QuestScripts.onTalk("mg_simon_templeton", (player, npc) -> PyramidPlunderSession.sellArtefacts(player));
         QuestScripts.onTalk("mg_brian_orichard", (player, npc) -> RoguesDenSession.tradeJewel(player));
-        talk("mg_tzhaar_mej_jal", "TzHaar-Mej-Jal", "You want to challenge the Fight Cave, JalYt? Sixty-three waves of TzHaar await. "
-                + "Survive, and TzTok-Jad himself will face you. The fire cape is the prize.");
-        talk("mg_tzhaar_ket_keh", "TzHaar-Ket-Keh", "The Inferno is no place for JalYt. Sacrifice a fire cape and face TzKal-Zuk... "
-                + "if you dare. The infernal cape will be yours if you survive sixty-nine waves.");
+        QuestScripts.onTalk("mg_tzhaar_mej_jal", (player, npc) -> com.runecraft.content.minigames.games.TzHaarNpcs.mejJal(player));
+        QuestScripts.onTalk("mg_tzhaar_ket_keh", (player, npc) -> com.runecraft.content.minigames.games.TzHaarNpcs.ketKeh(player));
         talk("mg_tzhaar_mej_kah", "TzHaar-Mej-Kah", "The Fight Pit is where JalYt fight each other. Last one standing is champion: "
                 + "tokkul for every fighter beaten and the red skull. Fight Cave creatures join if you are slow, then the gas.");
         talk("mg_ignisia", "Ignisia", "The Wintertodt stirs. Chop bruma roots, fletch them into kindling and feed the braziers. "
@@ -379,6 +377,16 @@ public final class MinigamesHooks implements ModuleHooks {
                                     }
                                     return 1;
                                 })))
+                        .then(Commands.literal("tzhaar").then(Commands.argument("choice", StringArgumentType.word())
+                                .executes(ctx -> {
+                                    ServerPlayer p = ctx.getSource().getPlayer();
+                                    String choice = StringArgumentType.getString(ctx, "choice");
+                                    if (p != null && (choice.equals("metamorphosis")
+                                            || nearNpc(p, choice.startsWith("infernal") ? "mg_tzhaar_ket_keh" : "mg_tzhaar_mej_jal"))) {
+                                        com.runecraft.content.minigames.games.TzHaarNpcs.choose(p, choice);
+                                    }
+                                    return 1;
+                                })))
                         .then(Commands.literal("points").executes(ctx -> {
                             ServerPlayer p = ctx.getSource().getPlayer();
                             if (p != null) {
@@ -490,6 +498,12 @@ public final class MinigamesHooks implements ModuleHooks {
                 : "Defeat TzKal-Zuk in the Inferno and I will offer you the third challenge and beyond."));
         if (data.flag(p.getUUID(), com.runecraft.osrs.content.minigames.KetRakChallenges.METAMORPHOSIS)) {
             QuestApi.say(p, "TzHaar-Ket-Rak", "You have completed every challenge. Your TzRek-Jad may take the form of a JalRek-Jad.");
+            p.displayClientMessage(net.minecraft.network.chat.Component.literal("[Metamorphosis]").withStyle(s -> s
+                    .withColor(net.minecraft.ChatFormatting.GOLD)
+                    .withClickEvent(new net.minecraft.network.chat.ClickEvent(net.minecraft.network.chat.ClickEvent.Action.RUN_COMMAND,
+                            "/minigame tzhaar metamorphosis"))
+                    .withHoverEvent(new net.minecraft.network.chat.HoverEvent(net.minecraft.network.chat.HoverEvent.Action.SHOW_TEXT,
+                            net.minecraft.network.chat.Component.literal("Change a carried TzRek-Jad into JalRek-Jad, or back")))), false);
         }
     }
 

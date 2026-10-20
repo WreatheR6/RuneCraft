@@ -129,6 +129,25 @@ public abstract class MinigameSession {
     protected void onLeave(ServerPlayer player) {
     }
 
+    /**
+     * A player is logging out mid-game, just before they are removed (and {@link #onLeave} runs): games that pause instead
+     * of ending (the Fight Cave, the Inferno) save where to pick up.
+     */
+    protected void onDisconnect(ServerPlayer player) {
+    }
+
+    /** Where a player in this session goes back to when they leave (the spot they entered from), or null. */
+    protected final BlockPos returnPoint(ServerPlayer player) {
+        return returnTo.get(player.getUUID());
+    }
+
+    /** Sends a player somewhere else than where they entered from when they leave (a run resumed after logging out). */
+    protected final void setReturnPoint(ServerPlayer player, BlockPos pos) {
+        if (players.contains(player.getUUID()) && pos != null) {
+            returnTo.put(player.getUUID(), pos.immutable());
+        }
+    }
+
     /** Rewards and messages when the game finishes; players are still inside. */
     protected void onEnd(boolean success) {
     }

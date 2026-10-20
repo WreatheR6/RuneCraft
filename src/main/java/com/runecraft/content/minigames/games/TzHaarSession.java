@@ -2,6 +2,7 @@ package com.runecraft.content.minigames.games;
 
 import com.runecraft.boss.Mechanics;
 import com.runecraft.combat.MonsterStats;
+import com.runecraft.content.minigames.MinigameData;
 import com.runecraft.content.minigames.MinigameManager;
 import com.runecraft.content.minigames.MinigameSession;
 import com.runecraft.entity.OsrsMonsterEntity;
@@ -391,6 +392,101 @@ public abstract class TzHaarSession extends MinigameSession {
         mob.getLookControl().setLookAt(target, 30f, 30f);
         Mechanics.perform(mob, target, a, 1.0);
         return true;
+    }
+
+    // ------------------------------------------------------------------ pausing and resuming
+
+    /** Stats key prefix of a paused run: the wave to start again at (OSRS: logging out restarts the wave). */
+    private static final String RESUME = "tzhaar_resume:";
+    /** Set while the player logs out: the run pauses instead of ending (no tokkul, the Slayer task kept). */
+    protected boolean pausing;
+
+    /**
+     * Logging out of the Fight Cave or the Inferno pauses the run (OSRS Wiki "TzHaar Fight Cave", Tips; "Inferno"): the wave
+     * in progress starts again, with the same spawns, when the player logs back in.
+     */
+    @Override
+    protected void onDisconnect(ServerPlayer player) {
+        if (isEnded() || wave < 1 || playerCount() > 1 || !pauses()) {
+            return;
+        }
+        pausing = true;
+        MinigameData data = MinigameData.of(player);
+        java.util.UUID u = player.getUUID();
+        data.setStat(u, RESUME + game.id(), completedWaves + 1);
+        BlockPos back = returnPoint(player);
+        if (back != null) {
+            data.setStat(u, RESUME + "x:" + game.id(), back.getX());
+            data.setStat(u, RESUME + "y:" + game.id(), back.getY());
+            data.setStat(u, RESUME + "z:" + game.id(), back.getZ());
+        }
+        savePause(data, u);
+    }
+
+    /** Whether logging out pauses this game (the Fight Cave and the Inferno). */
+    protected boolean pauses() {
+        return false;
+    }
+
+    /** Saves what else a paused run needs (Fight Cave rotation, Inferno pillars). */
+    protected void savePause(MinigameData data, java.util.UUID player) {
+    }
+
+    /** Restores what {@link #savePause} saved. */
+    protected void loadPause(MinigameData data, java.util.UUID player) {
+    }
+
+    protected static String pauseKey(String what, Minigame game) {
+        return RESUME + what + ":" + game.id();
+    }
+
+    /** Picks up a paused run at {@code fromWave}. */
+    private void resumeAt(int fromWave) {
+        wave = fromWave - 1;
+        completedWaves = fromWave - 1;
+        nextWaveIn = 8;
+    }
+
+    /** The wave a paused run of {@code game} picks up at (0 = none paused). */
+    public static int pausedWave(ServerPlayer player, Minigame game) {
+        return MinigameData.of(player).stat(player.getUUID(), RESUME + game.id());
+    }
+
+    /** Called from {@link #start()}: a player who paused a run of this game (by logging out) picks it up where they left. */
+    protected final void resumePaused() {
+        for (ServerPlayer p : online()) {
+            MinigameData data = MinigameData.of(p);
+            int from = data.stat(p.getUUID(), RESUME + game.id());
+            if (from <= 0) {
+                continue;
+            }
+            data.setStat(p.getUUID(), RESUME + game.id(), 0);
+            loadPause(data, p.getUUID());
+            resumeAt(from);
+            Msg.game(p, "You resume " + game.displayName() + " at wave " + from + ".");
+        }
+    }
+
+    /** On login: restarts a paused Fight Cave or Inferno run (back where it was entered from); true if one was resumed. */
+    public static boolean resumeOnLogin(ServerPlayer player) {
+        for (Minigame game : new Minigame[]{Minigame.FIGHT_CAVES, Minigame.INFERNO}) {
+            MinigameData data = MinigameData.of(player);
+            java.util.UUID u = player.getUUID();
+            if (data.stat(u, RESUME + game.id()) <= 0) {
+                continue;
+            }
+            BlockPos back = new BlockPos(data.stat(u, RESUME + "x:" + game.id()), data.stat(u, RESUME + "y:" + game.id()),
+                    data.stat(u, RESUME + "z:" + game.id()));
+            MinigameSession s = MinigameManager.startFor(game, game.entranceBlock(), player);
+            if (!(s instanceof TzHaarSession t)) {
+                return false;
+            }
+            if (back.getY() != 0) {
+                t.setReturnPoint(player, back);
+            }
+            return true;
+        }
+        return false;
     }
 
     // ------------------------------------------------------------------ self-test hooks

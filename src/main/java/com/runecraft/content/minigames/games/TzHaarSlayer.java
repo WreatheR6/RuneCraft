@@ -44,10 +44,13 @@ public final class TzHaarSlayer {
             Msg.game(player, "Your Slayer master only offers TzKal-Zuk as a task once you have defeated him.");
             return;
         }
+        boolean already = data.stat(player.getUUID(), KEY + game.id()) > 0;
         p.remaining = 1;
         p.amount = 1;
         data.setStat(player.getUUID(), KEY + game.id(), 1);
-        Msg.game(player, "Your TzHaar Slayer task is now to kill " + bossName(game) + ".");
+        if (!already) {
+            Msg.game(player, "Your TzHaar Slayer task is now to kill " + bossName(game) + ".");
+        }
         SlayerNet.sync(player);
     }
 

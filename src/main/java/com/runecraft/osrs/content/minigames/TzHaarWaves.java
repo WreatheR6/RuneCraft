@@ -204,6 +204,24 @@ public final class TzHaarWaves {
     public static final int JAD_PET_CHANCE_TASK = 100;
     public static final int ZUK_PET_CHANCE = 100;
     public static final int ZUK_PET_CHANCE_TASK = 75;
+    /** TzHaar-Mej-Jal takes a spare fire cape for 8,000 tokkul or a 1/200 roll at TzRek-Jad (OSRS Wiki "TzTok-Jad"). */
+    public static final int FIRE_CAPE_TOKKUL = 8000;
+    public static final int FIRE_CAPE_PET_CHANCE = 200;
+    /** TzHaar-Ket-Keh takes a spare infernal cape for a 1/100 roll at Jal-nib-rek (OSRS Wiki "Jal-nib-rek"). */
+    public static final int INFERNAL_CAPE_PET_CHANCE = 100;
+
+    /**
+     * Whether a pet may change form: TzRek-Jad and JalRek-Jad once all six of TzHaar-Ket-Rak's challenges are done (OSRS Wiki
+     * "TzRek-Jad"), Jal-nib-rek and TzRek-Zuk always.
+     */
+    public static boolean canMetamorphose(String petId, boolean ketRakComplete) {
+        return switch (petId) {
+            case "tzrek_jad", "jalrek_jad" -> ketRakComplete;
+            case "jal_nib_rek", "tzrek_zuk" -> true;
+            default -> false;
+        };
+    }
+
     /** Slayer experience for TzTok-Jad and TzKal-Zuk on a TzHaar task (wiki infoboxes). */
     public static final int JAD_SLAYER_XP = 25250;
     public static final int ZUK_SLAYER_XP = 101890;

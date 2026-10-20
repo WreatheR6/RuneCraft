@@ -193,6 +193,7 @@ public class InfernoSession extends TzHaarSession {
             }
             TzHaarSlayer.enter(p, Minigame.INFERNO);
         }
+        resumePaused();
     }
 
     // ------------------------------------------------------------------ spawning
@@ -800,8 +801,34 @@ public class InfernoSession extends TzHaarSession {
 
     @Override
     protected void onLeave(ServerPlayer player) {
-        if (!zukDead) {
+        if (!zukDead && !pausing) {
             TzHaarSlayer.leave(player, Minigame.INFERNO);
+        }
+    }
+
+    @Override
+    protected boolean pauses() {
+        return true;
+    }
+
+    /** A paused run keeps its pillars' hitpoints. */
+    @Override
+    protected void savePause(MinigameData data, java.util.UUID player) {
+        for (int i = 0; i < PILLARS.length; i++) {
+            data.setStat(player, pauseKey("pillar" + i, game), pillarHp[i] + 1);
+        }
+    }
+
+    @Override
+    protected void loadPause(MinigameData data, java.util.UUID player) {
+        for (int i = 0; i < PILLARS.length; i++) {
+            int saved = data.stat(player, pauseKey("pillar" + i, game));
+            if (saved > 0) {
+                pillarHp[i] = Math.min(TzHaarWaves.PILLAR_HP, saved - 1);
+                if (pillarHp[i] == 0) {
+                    buildPillar(i, false);
+                }
+            }
         }
     }
 

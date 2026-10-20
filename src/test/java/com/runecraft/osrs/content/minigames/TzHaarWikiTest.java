@@ -190,6 +190,26 @@ class TzHaarWikiTest {
         assertEquals(TzHaarWaves.HURKOT_INFERNO, TzHaarWaves.healerOf(TzHaarWaves.JALTOK_JAD));
     }
 
+    /** TzRek-Jad's metamorphosis after TzHaar-Ket-Rak's challenges, Jal-nib-rek's always; forms have no log entry. */
+    @Test
+    void petMetamorphoses() {
+        assertFalse(TzHaarWaves.canMetamorphose("tzrek_jad", false));
+        assertTrue(TzHaarWaves.canMetamorphose("tzrek_jad", true));
+        assertTrue(TzHaarWaves.canMetamorphose("jalrek_jad", true));
+        assertTrue(TzHaarWaves.canMetamorphose("jal_nib_rek", false));
+        assertEquals("jalrek_jad", com.runecraft.osrs.content.extras.Pets.metamorphosis("tzrek_jad"));
+        assertEquals("tzrek_jad", com.runecraft.osrs.content.extras.Pets.metamorphosis("jalrek_jad"));
+        assertEquals("tzrek_zuk", com.runecraft.osrs.content.extras.Pets.metamorphosis("jal_nib_rek"));
+        assertTrue(com.runecraft.osrs.content.extras.Pets.isPet("jalrek_jad"));
+        assertTrue(com.runecraft.osrs.content.extras.Pets.isVariant("tzrek_zuk"));
+        assertTrue(com.runecraft.osrs.content.extras.Pets.all().stream().noneMatch(p -> p.id().equals("jalrek_jad")));
+        assertEquals("tztok_jad", com.runecraft.osrs.content.extras.Pets.get("tzrek_jad").look());
+        assertEquals("jaltok_jad", com.runecraft.osrs.content.extras.Pets.get("jalrek_jad").look());
+        com.runecraft.osrs.content.ContentRegistry.monsters();
+        assertTrue(com.runecraft.osrs.ItemCatalog.get("jalrek_jad") != null);
+        assertEquals(8000, TzHaarWaves.FIRE_CAPE_TOKKUL);
+    }
+
     @Test
     void zukTimers() {
         // Counting down normally, paused at 600 hitpoints until the Jad spawns, then running again.

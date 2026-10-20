@@ -145,6 +145,8 @@ public final class MinigameItems {
                 .tier("dragon").examine("A cape of solidified lava, earned in the Inferno.");
         pet(items, "jal_nib_rek", "Jal-nib-rek", 0xD05010, "A tiny nibbler from the Inferno.");
         pet(items, "tzrek_zuk", "TzRek-Zuk", 0xE06010, "A miniature TzKal-Zuk.");
+        // TzRek-Jad's metamorphosis once every TzHaar-Ket-Rak's challenge is done (OSRS Wiki "TzRek-Jad").
+        pet(items, "jalrek_jad", "JalRek-Jad", 0xC04A1C, "A miniature JalTok-Jad.");
         // Obsidian equipment sold for tokkul in Mor Ul Rek (TzHaar-Hur-Tel's and TzHaar-Mej-Roh's shops).
         wear(items, "obsidian_helmet", "Obsidian helmet", "full_helm", obsidian, Slot.HEAD, 84_480,
                 s(0, 0, 0, -5, -1, 30, 32, 27, -1, 30, 3, 0, 0, 1), Skill.DEFENCE, 60).tier("obsidian");
