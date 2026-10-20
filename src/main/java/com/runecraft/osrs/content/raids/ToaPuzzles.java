@@ -187,6 +187,28 @@ public final class ToaPuzzles {
         return (solved[NORTH_FIRST] && solved[SOUTH_SECOND]) || (solved[SOUTH_FIRST] && solved[NORTH_SECOND]);
     }
 
+    /**
+     * One key for a step on a Path of Scabaras board tile: {@code puzzle * 100 + board * 9 + tile}, where {@code puzzle} is
+     * the puzzle's index (the room's own list, the addition tablet included), {@code board} 0 or 1 (the matching puzzle's
+     * two boards) and {@code tile} 0-8, row by row.
+     */
+    public static long scabarasStepKey(int puzzle, int board, int tile) {
+        return puzzle * 100L + board * 9L + tile;
+    }
+
+    public static int scabarasStepPuzzle(long key) {
+        return (int) (key / 100);
+    }
+
+    public static int scabarasStepBoard(long key) {
+        return (int) (key % 100 / 9);
+    }
+
+    /** The tile (0-8) of a step key: from the board part only, since 100 is not a multiple of 9. */
+    public static int scabarasStepTile(long key) {
+        return (int) (key % 100 % 9);
+    }
+
     /** The obelisks puzzle: five obelisks to strike in one order (OSRS: 5! = 120 orders). */
     public static final int OBELISKS = 5;
 

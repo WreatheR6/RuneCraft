@@ -428,7 +428,7 @@ final class ToaPuzzleRooms {
                 for (int b = 0; b < boards; b++) {
                     for (int i = 0; i < 9; i++) {
                         if (tile(p, b, i).equals(floor)) {
-                            return p.ordinal() * 100L + b * 9L + i;
+                            return ToaPuzzles.scabarasStepKey(p.ordinal(), b, i);
                         }
                     }
                 }
@@ -437,9 +437,11 @@ final class ToaPuzzleRooms {
         }
 
         private void step(ServerPlayer p, long key) {
-            Puzzle puzzle = Puzzle.values()[(int) (key / 100)];
-            int board = (int) (key % 100 / 9);
-            int i = (int) (key % 9);
+            // The tile comes from the board part of the key: key % 9 would shift it by the puzzle's ordinal (100 % 9 != 0),
+            // so the lights flipped, the matching symbols showed and the addition tiles counted the wrong tiles.
+            Puzzle puzzle = Puzzle.values()[ToaPuzzles.scabarasStepPuzzle(key)];
+            int board = ToaPuzzles.scabarasStepBoard(key);
+            int i = ToaPuzzles.scabarasStepTile(key);
             switch (puzzle) {
                 case SEQUENCE -> stepSequence(p, i);
                 case LIGHTS -> {
@@ -734,7 +736,16 @@ final class ToaPuzzleRooms {
                     List<Integer> presses = ToaPuzzles.lightsSolution(lights);
                     RaidSelfTest.expect(presses != null, "Scabaras: the lights board can't be solved");
                     for (int i : presses) {
+                        // Each step must flip that plate and its neighbours, and the board must show it.
+                        int expected = ToaPuzzles.lightsPress(lights, i);
                         t.stepOn(tile(Puzzle.LIGHTS, 0, i));
+                        RaidSelfTest.expect(lights == expected, "Scabaras: stepping on light plate " + i + " gave board "
+                                + Integer.toBinaryString(lights) + ", not " + Integer.toBinaryString(expected));
+                        for (int j = 0; j < 9; j++) {
+                            boolean shownLit = world().getBlockState(tile(Puzzle.LIGHTS, 0, j)).is(Blocks.OCHRE_FROGLIGHT);
+                            RaidSelfTest.expect(shownLit == ((lights & (1 << j)) != 0), "Scabaras: light plate " + j + " shows "
+                                    + (shownLit ? "lit" : "dark") + " against the board");
+                        }
                         t.moveTo(neutral);
                         t.tick(1);
                     }
@@ -772,8 +783,12 @@ final class ToaPuzzleRooms {
                     RaidSelfTest.expect(target >= 20 && target <= 45, "Scabaras: the tablet gave no number");
                     List<Integer> tiles = ToaPuzzles.additionSolution(values, target);
                     RaidSelfTest.expect(tiles != null, "Scabaras: no tiles add up to " + target);
+                    int total = 0;
                     for (int i : tiles) {
+                        total += values[i];
                         t.stepOn(tile(Puzzle.ADDITION, 0, i));
+                        RaidSelfTest.expect(sum == total, "Scabaras: stepping on the " + VALUE_NAMES[values[i] - 1] + " tile (" + values[i]
+                                + ") made the total " + sum + ", not " + total);
                         t.moveTo(neutral);
                         t.tick(1);
                     }

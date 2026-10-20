@@ -125,6 +125,23 @@ class ToaPuzzlesTest {
         assertFalse(ToaPuzzles.scabarasRoomOpen(ToaPuzzles.SOUTH_SECOND, northFirst, false));
         assertFalse(ToaPuzzles.scabarasAdditionOpen(new boolean[]{true, false, false, true}, false));
         assertTrue(ToaPuzzles.scabarasAdditionOpen(new boolean[]{true, true, true, true}, false));
+        // Every room order a raider can take is open when reached: solo from either first room (its partner, then the other
+        // branch), and a group branch by branch; the tablet opens solo after a first room and its partner, in groups after all.
+        int[][] soloOrders = {{ToaPuzzles.NORTH_FIRST, ToaPuzzles.SOUTH_SECOND, ToaPuzzles.SOUTH_FIRST, ToaPuzzles.NORTH_SECOND},
+                {ToaPuzzles.SOUTH_FIRST, ToaPuzzles.NORTH_SECOND, ToaPuzzles.NORTH_FIRST, ToaPuzzles.SOUTH_SECOND}};
+        int[][] groupOrders = {{ToaPuzzles.NORTH_FIRST, ToaPuzzles.NORTH_SECOND, ToaPuzzles.SOUTH_FIRST, ToaPuzzles.SOUTH_SECOND},
+                {ToaPuzzles.SOUTH_FIRST, ToaPuzzles.SOUTH_SECOND, ToaPuzzles.NORTH_FIRST, ToaPuzzles.NORTH_SECOND}};
+        for (boolean solo : new boolean[]{true, false}) {
+            for (int[] order : solo ? soloOrders : groupOrders) {
+                boolean[] solved = new boolean[4];
+                for (int k = 0; k < 4; k++) {
+                    assertTrue(ToaPuzzles.scabarasRoomOpen(order[k], solved, solo), "room " + order[k] + " shut (solo " + solo + ")");
+                    assertEquals(solo ? k >= 2 : k >= 4, ToaPuzzles.scabarasAdditionOpen(solved, solo), "tablet after " + k + " rooms");
+                    solved[order[k]] = true;
+                }
+                assertTrue(ToaPuzzles.scabarasAdditionOpen(solved, solo));
+            }
+        }
         // Obelisks: five, struck in order; a wrong one puts them all out.
         List<Integer> order = ToaPuzzles.obeliskOrder(r);
         assertEquals(5, new HashSet<>(order).size());
@@ -136,6 +153,27 @@ class ToaPuzzlesTest {
             lit = ToaPuzzles.obeliskStrike(order, lit, o);
         }
         assertEquals(ToaPuzzles.OBELISKS, lit);
+    }
+
+    /**
+     * A step on a board tile is keyed by puzzle, board and tile, and decodes back to the same three for every puzzle (round
+     * 36 decoded the tile as key % 9, which shifted it by the puzzle's index: the lights board flipped plate i + 2).
+     */
+    @Test
+    void scabarasStepKeysRoundTrip() {
+        Set<Long> keys = new HashSet<>();
+        for (int puzzle = 0; puzzle < 5; puzzle++) {
+            for (int board = 0; board < 2; board++) {
+                for (int tile = 0; tile < 9; tile++) {
+                    long key = ToaPuzzles.scabarasStepKey(puzzle, board, tile);
+                    assertTrue(key >= 0);
+                    assertTrue(keys.add(key), "duplicate key " + key);
+                    assertEquals(puzzle, ToaPuzzles.scabarasStepPuzzle(key));
+                    assertEquals(board, ToaPuzzles.scabarasStepBoard(key));
+                    assertEquals(tile, ToaPuzzles.scabarasStepTile(key), "puzzle " + puzzle + " board " + board);
+                }
+            }
+        }
     }
 
     @Test
