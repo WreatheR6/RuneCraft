@@ -27,13 +27,21 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.locks.LockSupport;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ChunkHolder;
+import net.minecraft.server.level.ChunkLevel;
+import net.minecraft.server.level.FullChunkStatus;
+import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.phys.AABB;
 
 /**
  * Self-test driver for whole TzHaar runs ({@code com.runecraft.selftest}, "minigame:" checks in real-player mode): walks the
@@ -141,7 +149,55 @@ public final class TzHaarSelfTest {
             s.end(false);
             throw new AssertionError(game.id() + " started a " + s.getClass().getSimpleName());
         }
+        settle(s);
         return type.cast(s);
+    }
+
+    /** How long {@link #settle} waits for an arena's chunks (the server needs a few ticks at most). */
+    private static final long SETTLE_NANOS = 10_000_000_000L;
+
+    /**
+     * Lets the server finish loading a freshly built arena, as it does between ticks: in a live run the first wave comes 8
+     * game ticks after the entrance, but a check walks the whole run inside one server tick. A chunk lists its entities to box
+     * queries (the session's wave count and creature lookups, Jad's healers, the floor sweep at the end, this test's
+     * lookups) only once the server has run its queued full-status promotion, a main-thread task. A chunk the arena's build
+     * loads from disk gets it while the build waits for the next chunk; one the server demoted but has not unloaded yet (this
+     * slot's arena, built by the check two ticks earlier, whose one-tick load tickets just ran out) is handed back at once,
+     * its promotion still queued, so everything the run spawned there was invisible to the session and to this test (round
+     * 36: "wave 63 has 0 TzTok-Jads" though Jad had spawned). Runs the server's chunk tasks until every arena chunk is
+     * accessible, then the promotions those queued.
+     */
+    private static void settle(MinigameSession s) {
+        ServerChunkCache chunks = s.world.getChunkSource();
+        drainChunkTasks(chunks);
+        AABB box = s.box();
+        int full = ChunkLevel.byStatus(FullChunkStatus.FULL);
+        List<ChunkHolder> arena = new ArrayList<>();
+        for (int cx = Mth.floor(box.minX) >> 4; cx <= Mth.floor(box.maxX) >> 4; cx++) {
+            for (int cz = Mth.floor(box.minZ) >> 4; cz <= Mth.floor(box.maxZ) >> 4; cz++) {
+                ChunkHolder holder = chunks.chunkMap.getVisibleChunkIfPresent(ChunkPos.asLong(cx, cz));
+                if (holder != null && holder.getTicketLevel() <= full) {
+                    arena.add(holder); // a chunk the build loaded (one the box only grazes holds no part of the arena)
+                }
+            }
+        }
+        expect(!arena.isEmpty(), s.game.id() + ": none of the arena's chunks is loaded after its build");
+        long deadline = System.nanoTime() + SETTLE_NANOS;
+        while (arena.stream().anyMatch(h -> !h.getFullChunkFuture().isDone())) {
+            expect(System.nanoTime() < deadline, s.game.id() + ": the arena's chunks were still loading after "
+                    + SETTLE_NANOS / 1_000_000_000L + " s");
+            if (!chunks.pollTask()) {
+                LockSupport.parkNanos(100_000L); // the rest arrives from the chunk worker threads
+            }
+        }
+        drainChunkTasks(chunks); // the promotions the completed chunks queued
+    }
+
+    /** Runs the server's queued chunk tasks (bounded, in case loading keeps queuing more). */
+    private static void drainChunkTasks(ServerChunkCache chunks) {
+        for (int i = 0; i < 100_000 && chunks.pollTask(); i++) {
+            // each call runs one task
+        }
     }
 
     /** An x {@code blocks} from {@code x} towards the arena's centre (so a spot beside a monster stays inside the walls). */
@@ -361,6 +417,7 @@ public final class TzHaarSelfTest {
         MinigameManager.selfTestLogin(player);
         MinigameSession resumed = MinigameManager.session(player);
         expect(resumed instanceof FightCaveSession, "logging back in did not resume the Fight Cave");
+        settle(resumed);
         FightCaveSession r = (FightCaveSession) resumed;
         try {
             expect(r.rotation() == rotation, "the resumed run spawns by rotation " + r.rotation() + ", not " + rotation);
@@ -794,22 +851,25 @@ public final class TzHaarSelfTest {
         return Players.data(player).skills().xp(Skill.SLAYER);
     }
 
-    /** One Fight Cave run on the TzTok-Jad task, straight to wave 63 and Jad's kill; returns the Slayer XP it gave. */
-    private int jadRun() {
+    /**
+     * One Fight Cave run on the TzTok-Jad task, straight to wave 63 and Jad's kill; returns the Slayer XP it gave. {@code run}
+     * names the run in a failure (the check makes four).
+     */
+    private int jadRun(String run) {
         int xp = slayerXp();
         FightCaveSession s = start(Minigame.FIGHT_CAVES, FightCaveSession.class);
         try {
-            expect(TzHaarSlayer.onTask(player, Minigame.FIGHT_CAVES), "the Fight Cave run does not count as the TzTok-Jad task");
+            expect(TzHaarSlayer.onTask(player, Minigame.FIGHT_CAVES), run + ": the Fight Cave run does not count as the TzTok-Jad task");
             s.selfTestJumpTo(TzHaarWaves.FIGHT_CAVE_WAVES);
             reach(s, TzHaarWaves.FIGHT_CAVE_WAVES);
             List<LivingEntity> jads = s.selfTestCreatures(TzHaarWaves.JAD);
-            expect(jads.size() == 1, "wave 63 has " + jads.size() + " TzTok-Jads");
+            expect(jads.size() == 1, run + ": wave 63 (rotation " + s.rotation() + ") has " + jads.size() + " TzTok-Jads");
             kill(jads.get(0));
-            expect(s.isEnded(), "killing TzTok-Jad did not end the run");
+            expect(s.isEnded(), run + ": killing TzTok-Jad did not end the run");
         } finally {
             end(s);
         }
-        expect(MinigameManager.session(player) == null, "the player is still in the Fight Cave after Jad's kill");
+        expect(MinigameManager.session(player) == null, run + ": the player is still in the Fight Cave after Jad's kill");
         return slayerXp() - xp;
     }
 
@@ -844,7 +904,7 @@ public final class TzHaarSelfTest {
         int streak = task.streak;
         int points = task.points;
         int completed = task.completed;
-        int xp = jadRun();
+        int xp = jadRun("the first of a master-tier task's two Jads");
         expect(xp >= TzHaarWaves.JAD_SLAYER_XP, "the first Jad gave " + xp + " Slayer XP (expected 25,250)");
         expect("tzhaar".equals(task.task) && task.amount == 2 && task.remaining == 1 && TzHaarSlayer.onTask(player, Minigame.FIGHT_CAVES),
                 "after the first of two Jads the task is " + task.task + " " + task.remaining + "/" + task.amount
@@ -854,7 +914,7 @@ public final class TzHaarSelfTest {
         expect(!TzHaarSlayer.take(player, Minigame.FIGHT_CAVES, 2), "the TzTok-Jad task could be taken again between its kills");
         expect(bossTaskFlag(Minigame.FIGHT_CAVES) == 2, "the TzTok-Jad flag holds " + bossTaskFlag(Minigame.FIGHT_CAVES)
                 + " between the kills (expected the task's size, 2)");
-        xp = jadRun();
+        xp = jadRun("the second of a master-tier task's two Jads");
         expect(xp >= TzHaarWaves.JAD_SLAYER_XP, "the second Jad gave " + xp + " Slayer XP (expected 25,250)");
         expect(task.remaining == 0 && !task.hasTask() && !TzHaarSlayer.onTask(player, Minigame.FIGHT_CAVES),
                 "the second of two Jads left the task at " + task.remaining + "/" + task.amount);
@@ -871,7 +931,7 @@ public final class TzHaarSelfTest {
     private void cancelledAfterOneKill() {
         SlayerState.Profile task = tzhaarAssignment();
         expect(TzHaarSlayer.take(player, Minigame.FIGHT_CAVES) && task.remaining == 2, "the TzTok-Jad task was not taken as two kills");
-        jadRun();
+        jadRun("the first Jad of a task cancelled by a death");
         expect(task.remaining == 1 && TzHaarSlayer.onTask(player, Minigame.FIGHT_CAVES), "one of two Jads left the task at "
                 + task.remaining + "/" + task.amount);
         int points = task.points;
@@ -900,7 +960,7 @@ public final class TzHaarSelfTest {
         expect(TzHaarSlayer.onTask(player, Minigame.FIGHT_CAVES) && task.amount == 1 && task.remaining == 1,
                 "picking one TzTok-Jad made the task " + task.remaining + "/" + task.amount);
         int completed = task.completed;
-        jadRun();
+        jadRun("a one-Jad task");
         expect(!task.hasTask() && task.completed == completed + 1 && bossTaskFlag(Minigame.FIGHT_CAVES) == 0,
                 "a one-Jad task did not complete on its kill (" + task.remaining + "/" + task.amount + ")");
         log.append("; picking one Jad completed on its kill");
