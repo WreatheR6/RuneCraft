@@ -259,4 +259,27 @@ class PestControlTest {
             assertTrue(ItemCatalog.exists(l.item()), l.item());
         }
     }
+    @Test
+    void voidEquipmentNeedsTheWikiLevelsToBuyAndWear() {
+        assertEquals(List.of(Skill.ATTACK, Skill.STRENGTH, Skill.DEFENCE, Skill.HITPOINTS, Skill.RANGED, Skill.MAGIC, Skill.PRAYER),
+                List.copyOf(PestControlRules.VOID_REQUIREMENTS.keySet()));
+        assertEquals(List.of(42, 42, 42, 42, 42, 42, 22), List.copyOf(PestControlRules.VOID_REQUIREMENTS.values()));
+        // Every Void Knight item sold for points needs them (the gloves too, which wear in the extra hands slot), the seal doesn't.
+        for (RewardShop.Entry e : RewardShops.get("pest_control").entries()) {
+            if (e.reward() == RewardShop.Reward.XP || e.item().startsWith("#")) {
+                continue;
+            }
+            assertEquals(!e.item().equals("void_seal"), PestControlRules.isVoidEquipment(e.item()), e.item());
+        }
+        assertTrue(PestControlRules.isVoidEquipment("void_knight_gloves"));
+        assertEquals(PestControlRules.VOID_REQUIREMENTS, com.runecraft.osrs.content.systems.Jewellery.wearLevels("void_knight_gloves"));
+        assertEquals("Requires level 42 Attack", PestControlRules.voidLock("void_knight_gloves", s -> 3));
+        assertEquals("Requires level 22 Prayer", PestControlRules.voidLock("void_mage_helm", s -> s == Skill.PRAYER ? 21 : 99));
+        assertEquals(null, PestControlRules.voidLock("void_knight_gloves", s -> s == Skill.PRAYER ? 22 : 42));
+        assertEquals(null, PestControlRules.voidLock("void_seal", s -> 1));
+        for (String id : List.of("void_knight_top", "void_knight_robe", "void_melee_helm", "void_ranger_helm", "void_mage_helm",
+                "elite_void_top", "elite_void_robe", "void_knight_mace")) {
+            assertEquals(PestControlRules.VOID_REQUIREMENTS, ItemCatalog.get(id).equipment().requirements(), id);
+        }
+    }
 }

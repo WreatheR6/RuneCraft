@@ -178,8 +178,9 @@ public final class MinigameItems {
     // ------------------------------------------------------------------ Pest Control
     private static void pestControl(ItemSink items) {
         int voidCol = 0x3A3A3A;
-        Object[] req = {Skill.ATTACK, 42, Skill.STRENGTH, 42, Skill.DEFENCE, 42, Skill.HITPOINTS, 42, Skill.RANGED, 42,
-                Skill.MAGIC, 42, Skill.PRAYER, 22};
+        // 42 in every combat skill and 22 Prayer (PestControlRules.VOID_REQUIREMENTS; the gloves check them in Jewellery).
+        Object[] req = PestControlRules.VOID_REQUIREMENTS.entrySet().stream()
+                .flatMap(e -> java.util.stream.Stream.of(e.getKey(), e.getValue())).toArray();
         wear(items, "void_knight_top", "Void knight top", "platebody", voidCol, Slot.CHEST, 1,
                 s(0, 0, 0, 0, 0, 45, 45, 45, 45, 45, 0, 0, 0, 0), req).tier("void")
                 .examine("Torso armour from the order of the Void Knights.");

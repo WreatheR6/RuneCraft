@@ -87,6 +87,8 @@ public class PestControlSession extends MinigameSession {
     private int shieldsDropped;
     private Mob knight;
     private final Map<UUID, Integer> activity = new HashMap<>();
+    /** Session tick from which each player can rub the Void seal again (one rub per press, not per held use key). */
+    private final Map<UUID, Long> nextRub = new HashMap<>();
     final List<Pest> pests = new ArrayList<>();
     final List<Barrier> barriers = new ArrayList<>();
     /** Trunks of the island's trees still standing: once chopped down they never grow back (wiki "Tree (Pest Control)"). */
@@ -732,8 +734,15 @@ public class PestControlSession extends MinigameSession {
         return null;
     }
 
-    /** Rubs a Void seal: 8-12 damage to every pest within three tiles; eight charges. */
+    /**
+     * Rubs a Void seal: 8-12 damage to every pest within three tiles; eight charges. A rub during the previous one's
+     * {@link PestControlRules#SEAL_RUB_TICKS} is ignored and returns false (holding the use key repeats it every 4 client ticks).
+     */
     boolean rubSeal(ServerPlayer player, ItemStack seal) {
+        if (ticks < nextRub.getOrDefault(player.getUUID(), 0L)) {
+            return false;
+        }
+        nextRub.put(player.getUUID(), ticks + PestControlRules.SEAL_RUB_TICKS);
         int charges = StackData.get(seal).contains("SealCharges") ? StackData.get(seal).getInt("SealCharges") : PestControlRules.SEAL_CHARGES;
         world.sendParticles(ParticleTypes.WITCH, player.getX(), player.getY() + 1, player.getZ(), 30, 1.5, 0.5, 1.5, 0.1);
         int hit = 0;

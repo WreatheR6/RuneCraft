@@ -425,7 +425,9 @@ public final class Jewellery {
 
     /** Levels a worn item from another module needs to wear (OSRS Wiki): the soul cape needs 70 Prayer. */
     private static final Map<String, Map<com.runecraft.osrs.Skill, Integer>> WEAR_LEVELS =
-            Map.of("soul_cape", Map.of(com.runecraft.osrs.Skill.PRAYER, 70));
+            Map.of("soul_cape", Map.of(com.runecraft.osrs.Skill.PRAYER, 70),
+                    // Worn like the rest of the Void equipment (wiki "Void Knight equipment"): 42 combat skills, 22 Prayer.
+                    "void_knight_gloves", com.runecraft.osrs.content.minigames.PestControlRules.VOID_REQUIREMENTS);
 
     /** The skill levels needed to wear {@code id} in its extra slot (empty for none). */
     public static Map<com.runecraft.osrs.Skill, Integer> wearLevels(String id) {

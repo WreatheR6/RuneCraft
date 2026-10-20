@@ -1,11 +1,14 @@
 package com.runecraft.osrs.content.minigames;
 
+import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.minigames.MinigameRules.Loot;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.ToIntFunction;
 
 /**
  * Pest Control after the OSRS Wiki ("Pest Control", "Pest Control/Strategies", "Portal (Pest Control)", the pest pages,
@@ -329,6 +332,44 @@ public final class PestControlRules {
     public static final int SEAL_MIN = 8;
     public static final int SEAL_MAX = 12;
     public static final double SEAL_RADIUS = 3.0;
+    /** Game ticks between two rubs: each rub is its own action (approx; held use key repeats every 4 client ticks). */
+    public static final int SEAL_RUB_TICKS = 3; // approx
+
+    // ------------------------------------------------------------------ void knight equipment
+
+    /**
+     * Buying or wearing any Void Knight equipment but the seal needs 42 Attack, Strength, Defence, Hitpoints, Ranged and
+     * Magic and 22 Prayer (wiki "Void Knight equipment"; "Void Knights' Reward Options" cbreqs on every store line).
+     */
+    public static final Map<Skill, Integer> VOID_REQUIREMENTS;
+
+    static {
+        Map<Skill, Integer> m = new LinkedHashMap<>();
+        for (Skill s : new Skill[]{Skill.ATTACK, Skill.STRENGTH, Skill.DEFENCE, Skill.HITPOINTS, Skill.RANGED, Skill.MAGIC}) {
+            m.put(s, 42);
+        }
+        m.put(Skill.PRAYER, 22);
+        VOID_REQUIREMENTS = Collections.unmodifiableMap(m);
+    }
+
+    /** True for the Void Knight equipment with the {@link #VOID_REQUIREMENTS} (everything but the Void seal). */
+    public static boolean isVoidEquipment(String id) {
+        return id.startsWith("void_knight_") || id.startsWith("elite_void_")
+                || id.startsWith("void_") && id.endsWith("_helm");
+    }
+
+    /** Why {@code id} can't be bought or worn at these levels ("Requires level 42 Attack"), or null. */
+    public static String voidLock(String id, ToIntFunction<Skill> level) {
+        if (!isVoidEquipment(id)) {
+            return null;
+        }
+        for (Map.Entry<Skill, Integer> req : VOID_REQUIREMENTS.entrySet()) {
+            if (level.applyAsInt(req.getKey()) < req.getValue()) {
+                return "Requires level " + req.getValue() + " " + req.getKey().displayName();
+            }
+        }
+        return null;
+    }
 
     // ------------------------------------------------------------------ reward packs
 

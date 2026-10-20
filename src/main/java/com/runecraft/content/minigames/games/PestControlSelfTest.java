@@ -28,10 +28,13 @@ import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.StackData;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -334,6 +337,12 @@ public final class PestControlSelfTest {
         expect(lost >= PestControlRules.SEAL_MIN && lost <= PestControlRules.SEAL_MAX, "the Void seal hit the brawler for " + lost);
         expect(StackData.get(seal).getInt("SealCharges") == PestControlRules.SEAL_CHARGES - 1, "the seal has "
                 + StackData.get(seal).getInt("SealCharges") + " charges after one rub");
+        // Holding the use key repeats the rub every 4 client ticks: a rub right after another uses no charge.
+        expect(!pc.rubSeal(player, seal) && StackData.get(seal).getInt("SealCharges") == PestControlRules.SEAL_CHARGES - 1,
+                "a second rub in the same moment used a charge (" + StackData.get(seal).getInt("SealCharges") + " left)");
+        tick(pc, PestControlRules.SEAL_RUB_TICKS);
+        expect(pc.rubSeal(player, seal) && StackData.get(seal).getInt("SealCharges") == PestControlRules.SEAL_CHARGES - 2,
+                "a rub " + PestControlRules.SEAL_RUB_TICKS + " ticks later didn't use a charge");
         log.add("Void seal hit a brawler for " + lost);
         clearPests(pc, null);
 
@@ -365,6 +374,22 @@ public final class PestControlSelfTest {
         RewardShopService.buy(player, "pest_control", entryIndex("void_knight_top", 0), 1);
         expect(!Inv.has(player, "void_knight_top", 1) && points() == before, "a top was sold for " + before + " points");
         md.addPoints(uuid, "pest_control", 1000);
+        // Below 42 combat skills / 22 Prayer the Void equipment (the gloves too) can be neither bought nor worn.
+        PlayerData data = Players.data(player);
+        Map<Skill, Integer> saved = new LinkedHashMap<>();
+        for (Skill s : PestControlRules.VOID_REQUIREMENTS.keySet()) {
+            saved.put(s, data.skills().xpTenths(s));
+        }
+        combatLevelFor(41);
+        int low = points();
+        RewardShopService.buy(player, "pest_control", entryIndex("void_knight_gloves", 0), 1);
+        expect(!Inv.has(player, "void_knight_gloves", 1) && points() == low, "a level-41 player bought Void knight gloves");
+        player.setItemInHand(InteractionHand.MAIN_HAND, Inv.stack("void_knight_gloves", 1));
+        com.runecraft.content.systems.JewelleryService.wear(player, InteractionHand.MAIN_HAND);
+        expect(SysState.of(player).worn(Jewellery.Slot.HANDS).isEmpty(), "a level-41 player put on Void knight gloves");
+        player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+        saved.forEach((s, xp) -> data.skills().setXpTenths(s, xp));
+        XpService.updateMaxHealth(player);
         int bal = points();
         for (String id : List.of("void_knight_top", "void_knight_robe", "void_knight_gloves", "void_melee_helm")) {
             RewardShopService.buy(player, "pest_control", entryIndex(id, 0), 1);
@@ -385,7 +410,7 @@ public final class PestControlSelfTest {
         expect(got == want || Players.data(player).skills().xpTenths(Skill.ATTACK) >= Experience.MAX_XP_TENTHS,
                 "10 points gave " + got / 10.0 + " Attack XP, not " + want / 10.0);
         expect(bal - points() == 10, "10 points of experience cost " + (bal - points()));
-        log.add("bought top, robe, gloves and melee helm (850), elite top locked, 10 points = " + got / 10.0 + " Attack XP");
+        log.add("gloves locked below 42 combat / 22 Prayer; bought top, robe, gloves and melee helm (850), elite top locked, 10 points = " + got / 10.0 + " Attack XP");
     }
 
     private void voidSetEffect() {
