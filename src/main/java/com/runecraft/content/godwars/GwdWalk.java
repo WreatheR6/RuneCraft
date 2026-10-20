@@ -63,8 +63,8 @@ public final class GwdWalk {
     /** The obstacles' levels: 70 Strength, Ranged, Agility and Hitpoints; Prayer for the altars. */
     private static final Skill[] LEVELS = {Skill.STRENGTH, Skill.RANGED, Skill.AGILITY, Skill.HITPOINTS, Skill.PRAYER};
 
-    /** Runs the whole walk; returns a short summary. */
-    public static String run(ServerPlayer player) {
+    /** Runs the whole walk and puts the player back at {@code back}; returns a short summary or throws {@link AssertionError}. */
+    public static String run(ServerPlayer player, BlockPos back) {
         GwdKillcountState state = GwdKillcountState.get(player.getServer());
         int[] saved = state.snapshot(player.getUUID());
         PlayerData data = Players.data(player);
@@ -91,7 +91,12 @@ public final class GwdWalk {
                 health.removeModifier(HP_BUFFER);
                 health.addTransientModifier(new AttributeModifier(HP_BUFFER, 2000, AttributeModifier.Operation.ADD_VALUE));
             }
-            return new GwdWalk(player).walk();
+            GwdWalk w = new GwdWalk(player);
+            try {
+                return w.walk();
+            } catch (AssertionError e) {
+                throw new AssertionError(e.getMessage() + " (done: " + w.log + ")");
+            }
         } finally {
             AttributeInstance health = player.getAttribute(Attributes.MAX_HEALTH);
             if (health != null) {
@@ -114,6 +119,9 @@ public final class GwdWalk {
                 }
             }
             com.runecraft.network.ServerNetworking.sync(player);
+            if (back != null && player.isAlive()) {
+                player.teleportTo(back.getX() + 0.5, back.getY(), back.getZ() + 0.5);
+            }
         }
     }
 

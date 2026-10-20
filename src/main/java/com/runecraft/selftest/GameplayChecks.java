@@ -132,7 +132,7 @@ final class GameplayChecks {
                 () -> g.scripted("the_hueycoatl", com.runecraft.content.bosses.BossSelfTests::hueycoatlPhases)));
         checks.addAll(BossFightChecks.all(context));
         // The God Wars Dungeon walked end to end: the hole, kill count, each general's chamber, the prison and Nex.
-        checks.add(new SelfTest.Check("boss:gwd_walk", () -> com.runecraft.content.godwars.GwdWalk.run(context.player)));
+        checks.add(new SelfTest.Check("boss:gwd_walk", () -> g.walk(com.runecraft.content.godwars.GwdWalk::run)));
         for (Map.Entry<String, int[]> e : destinations().entrySet()) {
             checks.add(new SelfTest.Check("teleport:" + e.getKey(), () -> g.teleport(e.getValue()[0], e.getValue()[1])));
         }
@@ -576,7 +576,7 @@ final class GameplayChecks {
      */
     private String walk(java.util.function.BiFunction<ServerPlayer, BlockPos, String> run) {
         if (!c.realPlayer()) {
-            throw new SelfTest.Skip("raid rooms only see players in the player list; runs in '/rc selftest real raid:'");
+            throw new SelfTest.Skip("raid rooms and the God Wars Dungeon only see players in the player list; runs in '/rc selftest real'");
         }
         try {
             return run.apply(p(), c.near(0, 2));
