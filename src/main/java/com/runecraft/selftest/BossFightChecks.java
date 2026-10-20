@@ -589,7 +589,7 @@ final class BossFightChecks {
      * A heavy hit (a sixth of the boss's hitpoints, at least 50) through the boss's own rules (immunities, damage caps,
      * shields, forms), trying melee, magic and ranged until one is taken. False when no style could hurt it now.
      */
-    private static boolean heavyHit(ServerPlayer p, LivingEntity boss) {
+    static boolean heavyHit(ServerPlayer p, LivingEntity boss) {
         if (!(boss instanceof OsrsMonsterEntity monster)) {
             return CombatHandler.applyDamage(p, boss, 50) > 0;
         }

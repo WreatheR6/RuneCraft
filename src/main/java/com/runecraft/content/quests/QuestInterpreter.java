@@ -548,50 +548,79 @@ public final class QuestInterpreter {
             }
             // place objectives of the hand-scripted quests (Restless Ghost altar, cadava bushes...)
             com.runecraft.quest.QuestManager.spotTick(p);
-            for (QuestSpec q : book.quests) {
-                if (!active(p, q)) {
+            reach(p, server);
+        }
+    }
+
+    /** The place objectives (and place-presented puzzles) of a player's active quests, where the player stands now. */
+    static void reach(ServerPlayer p, MinecraftServer server) {
+        for (QuestSpec q : book.quests) {
+            if (!active(p, q)) {
+                continue;
+            }
+            for (Trigger t : q.stages.get(stage(p, q)).triggers) {
+                boolean depthOk = !t.underground || p.getY() < UNDERGROUND_Y;
+                if (t.kind == Trigger.Kind.PUZZLE && !skipped(p, t)) {
+                    int[] at = placeCentre(t.target);
+                    if (at != null) {
+                        double px = p.getX() - at[0];
+                        double pz = p.getZ() - at[1];
+                        QuestPuzzles.reach(p, q, t, depthOk && px * px + pz * pz <= t.radius * t.radius);
+                    }
                     continue;
                 }
-                for (Trigger t : q.stages.get(stage(p, q)).triggers) {
-                    boolean depthOk = !t.underground || p.getY() < UNDERGROUND_Y;
-                    if (t.kind == Trigger.Kind.PUZZLE && !skipped(p, t)) {
-                        int[] at = placeCentre(t.target);
-                        if (at != null) {
-                            double px = p.getX() - at[0];
-                            double pz = p.getZ() - at[1];
-                            QuestPuzzles.reach(p, q, t, depthOk && px * px + pz * pz <= t.radius * t.radius);
-                        }
-                        continue;
+                if (t.kind != Trigger.Kind.REACH || skipped(p, t) || !depthOk) {
+                    continue;
+                }
+                int[] c = placeCentre(t.target);
+                if (c == null) {
+                    continue;
+                }
+                double dx = p.getX() - c[0];
+                double dz = p.getZ() - c[1];
+                if (dx * dx + dz * dz > t.radius * t.radius) {
+                    continue;
+                }
+                String reason = unmet(p, t);
+                if (reason == null) {
+                    fire(p, q, t, "");
+                    break;
+                }
+                int last = REACH_NOTICE.getOrDefault(p.getUUID(), -10000);
+                if (server.getTickCount() - last > 600) {
+                    REACH_NOTICE.put(p.getUUID(), server.getTickCount());
+                    if (!t.missing.isEmpty()) {
+                        speak(p, "", t.missing);
                     }
-                    if (t.kind != Trigger.Kind.REACH || skipped(p, t) || !depthOk) {
-                        continue;
-                    }
-                    int[] c = placeCentre(t.target);
-                    if (c == null) {
-                        continue;
-                    }
-                    double dx = p.getX() - c[0];
-                    double dz = p.getZ() - c[1];
-                    if (dx * dx + dz * dz > t.radius * t.radius) {
-                        continue;
-                    }
-                    String reason = unmet(p, t);
-                    if (reason == null) {
-                        fire(p, q, t, "");
-                        break;
-                    }
-                    int last = REACH_NOTICE.getOrDefault(p.getUUID(), -10000);
-                    if (server.getTickCount() - last > 600) {
-                        REACH_NOTICE.put(p.getUUID(), server.getTickCount());
-                        if (!t.missing.isEmpty()) {
-                            speak(p, "", t.missing);
-                        }
-                        if (!reason.isEmpty()) {
-                            Msg.game(p, "[" + q.def.displayName() + "] " + reason);
-                        }
+                    if (!reason.isEmpty()) {
+                        Msg.game(p, "[" + q.def.displayName() + "] " + reason);
                     }
                 }
             }
         }
+    }
+
+    /**
+     * Self-test hook (the step walk): puts the player at a quest place's centre (underground: down in its dungeon) and runs
+     * the place objectives there once, as the reach tick does every second. False if the place is unknown.
+     */
+    public static boolean selfTestArrive(ServerPlayer p, String place, boolean underground) {
+        int[] c = placeCentre(place);
+        if (c == null || !(p.level() instanceof ServerLevel world)) {
+            return false;
+        }
+        double y = underground ? UNDERGROUND_Y - 16 : p.getY();
+        p.teleportTo(world, c[0] + 0.5, y, c[1] + 0.5, p.getYRot(), p.getXRot());
+        reach(p, p.getServer());
+        return true;
+    }
+
+    /** Self-test hook: why a trigger would not fire for the player now (switched off, or its first unmet condition), or null. */
+    public static String selfTestBlocked(ServerPlayer p, Trigger t) {
+        if (skipped(p, t)) {
+            return "switched off (an unless flag or item)";
+        }
+        String reason = unmet(p, t);
+        return reason == null ? null : reason.isEmpty() ? "a flag or place condition is unmet" : reason;
     }
 }
