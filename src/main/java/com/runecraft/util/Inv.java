@@ -116,6 +116,14 @@ public final class Inv {
 
     /** Gives items (coins and tokkul into their pouch), dropping any overflow at the player's feet. */
     public static void give(Player player, String id, int amount) {
+        give(player, id, amount, null);
+    }
+
+    /**
+     * {@link #give(Player, String, int)}; {@code dropped} (nullable) is handed each item entity the overflow lands in at the
+     * player's feet (to mark it, e.g. a minigame reward).
+     */
+    public static void give(Player player, String id, int amount, Consumer<ItemEntity> dropped) {
         int left = amount;
         if (pouched(id) && player instanceof ServerPlayer sp && left > 0) {
             left -= toPouch(sp, id, left);
@@ -130,16 +138,21 @@ public final class Inv {
         }
         while (left > 0) {
             int n = Math.min(left, item.getDefaultMaxStackSize());
-            give(player, new ItemStack(item, n));
+            give(player, new ItemStack(item, n), dropped);
             left -= n;
         }
     }
 
     /** Gives a stack (plain coins or tokkul into their pouch), dropping any overflow at the player's feet. */
     public static void give(Player player, ItemStack stack) {
+        give(player, stack, null);
+    }
+
+    /** {@link #give(Player, ItemStack)}; {@code dropped} (nullable) is handed each item entity the overflow lands in. */
+    public static void give(Player player, ItemStack stack, Consumer<ItemEntity> dropped) {
         ItemStack rest = insert(player, stack);
         if (!rest.isEmpty()) {
-            drop(player, rest, true);
+            drop(player, rest, true, dropped);
         }
     }
 
@@ -188,10 +201,20 @@ public final class Inv {
 
     /** {@link Player#drop(ItemStack, boolean)} at the player's feet, one item entity per full stack. */
     public static void drop(Player player, ItemStack stack, boolean noPickUpDelay) {
+        drop(player, stack, noPickUpDelay, null);
+    }
+
+    /** {@link #drop(Player, ItemStack, boolean)}; {@code dropped} (nullable) is handed each item entity. */
+    public static void drop(Player player, ItemStack stack, boolean noPickUpDelay, Consumer<ItemEntity> dropped) {
         splitStacks(stack, s -> {
             ItemEntity entity = player.drop(s, false);
-            if (entity != null && noPickUpDelay) {
-                entity.setNoPickUpDelay();
+            if (entity != null) {
+                if (noPickUpDelay) {
+                    entity.setNoPickUpDelay();
+                }
+                if (dropped != null) {
+                    dropped.accept(entity);
+                }
             }
         });
     }

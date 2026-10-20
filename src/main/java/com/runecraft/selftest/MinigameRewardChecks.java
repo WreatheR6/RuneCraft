@@ -67,6 +67,7 @@ final class MinigameRewardChecks {
         checks.add(new SelfTest.Check("minigame:shades_town", g::shadesTown));
         checks.add(new SelfTest.Check("minigame:blighted_sacks", g::blightedSacks));
         checks.add(new SelfTest.Check("minigame:emirs_ranked_build", g::emirsBuild));
+        checks.add(new SelfTest.Check("minigame:full_pack_reward", g::fullPackReward));
         return checks;
     }
 
@@ -296,6 +297,70 @@ final class MinigameRewardChecks {
 
     private static AssertionError failure(String message) {
         return new AssertionError(message);
+    }
+
+    /**
+     * A reward a full pack can't take lies at the player's feet in the arena and goes out with them, at their feet where they
+     * are sent back, whether they leave mid-game or the game ends (OSRS puts a reward that doesn't fit on the ground for the
+     * player); the arena floor is left empty. A Warriors' Guild animator room stands in for any game.
+     */
+    private String fullPackReward() {
+        if (!c.realPlayer()) {
+            throw new SelfTest.Skip("sessions only hand floor items to players in the player list; runs in '/rc selftest real minigame:'");
+        }
+        String prize = "rune_scimitar";
+        ItemStack junk = Inv.stack("shark", 1);
+        if (junk.isEmpty() || Inv.stack(prize, 1).isEmpty()) {
+            throw failure("no shark or rune scimitar item");
+        }
+        List<String> done = new ArrayList<>();
+        try {
+            for (boolean leave : new boolean[]{true, false}) {
+                for (int i = 0; i < p().getInventory().items.size(); i++) {
+                    p().getInventory().items.set(i, junk.copy());
+                }
+                MinigameSession s = MinigameManager.selfTestStart(Minigame.WARRIORS_GUILD, Minigame.WARRIORS_GUILD.entranceBlock(), p());
+                try {
+                    MinigameSession.selfTestReward(p(), prize, 1);
+                    if (s.world.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, s.box(),
+                            e -> e.isAlive() && prize.equals(Inv.idOf(e.getItem()))).isEmpty()) {
+                        throw failure("a reward a full pack can't take is not on the arena floor");
+                    }
+                    if (leave) {
+                        MinigameManager.leave(p());
+                    }
+                } finally {
+                    if (!s.isEnded()) {
+                        s.end(true);
+                    }
+                }
+                String how = leave ? "leaving mid-game" : "the game ending";
+                List<net.minecraft.world.entity.item.ItemEntity> left = s.world.getEntitiesOfClass(
+                        net.minecraft.world.entity.item.ItemEntity.class, s.box(), net.minecraft.world.entity.item.ItemEntity::isAlive);
+                if (!left.isEmpty()) {
+                    throw failure(how + " left " + left.size() + " item stack(s) on the arena floor, e.g. " + Inv.idOf(left.get(0).getItem()));
+                }
+                if (pickUpNearby(prize) == 0) {
+                    throw failure(how + " with a full pack lost the reward (none at the player's feet where they were sent back)");
+                }
+                done.add(how);
+            }
+        } finally {
+            pickUpNearby(prize);
+            p().getInventory().clearContent();
+        }
+        return "a reward a full pack couldn't take went out with the player on " + String.join(" and on ", done);
+    }
+
+    /** Discards the stacks of {@code item} lying around the player; returns how many there were. */
+    private int pickUpNearby(String item) {
+        int n = 0;
+        for (net.minecraft.world.entity.item.ItemEntity e : p().serverLevel().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+                p().getBoundingBox().inflate(3), x -> x.isAlive() && item.equals(Inv.idOf(x.getItem())))) {
+            e.discard();
+            n++;
+        }
+        return n;
     }
 
     private void use() {

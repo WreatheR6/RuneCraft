@@ -148,9 +148,10 @@ public abstract class TzHaarSession extends MinigameSession {
     }
 
     /**
-     * TzTok-Jad's fire cape and TzKal-Zuk's infernal cape are real rewards: with a full pack they are placed on the ground
-     * for the player outside (OSRS Wiki "Infernal cape": a full inventory puts the cape and tokkul on the ground). Tokkul
-     * itself never needs a slot: it goes to the tokkul pouch ({@link com.runecraft.util.Inv#pouched}).
+     * TzTok-Jad's fire cape (and his pet roll) drop on the floor as the run ends, from his drop table: with a full pack they are
+     * placed on the ground for the player outside (OSRS Wiki "Infernal cape": a full inventory puts the cape and tokkul on the
+     * ground). TzKal-Zuk's infernal cape is a {@link #reward}, which goes out with the player anyway. Tokkul itself never
+     * needs a slot: it goes to the tokkul pouch ({@link com.runecraft.util.Inv#pouched}).
      */
     @Override
     protected boolean overflowLeavesArena() {

@@ -40,6 +40,11 @@ import net.minecraft.world.phys.Vec3;
  */
 public abstract class MinigameSession {
     public static final String TAG = "rcmg";
+    /**
+     * Item entity tag of a reward a full pack couldn't take ({@link #reward}); the entity's target is its player. It goes out
+     * with them when they leave or the game ends, never stays with the arena.
+     */
+    private static final String REWARD_TAG = TAG + "_reward";
 
     public final Minigame game;
     public final int id;
@@ -153,10 +158,11 @@ public abstract class MinigameSession {
     }
 
     /**
-     * Whether floor loot a full pack can't take when the game ends goes out with the first player, at their feet where they
-     * are sent back (or into slots {@link #onLeave} freed): games whose floor holds real rewards (the Fight Cave's and the
-     * Inferno's capes: OSRS puts a reward that doesn't fit on the ground for the player, wiki "Infernal cape"). The default
-     * leaves it behind with the arena, as game-only supplies must not leave the game.
+     * Whether other floor items (drops, not {@link #reward}s, which always go out with their player) that a full pack can't
+     * take when the game ends go out with the first player, at their feet where they are sent back (or into slots
+     * {@link #onLeave} freed): games whose drops are real rewards the game ends on (TzTok-Jad's fire cape: OSRS puts a reward
+     * that doesn't fit on the ground for the player, wiki "Infernal cape"). The default leaves them behind with the arena, as
+     * game-only supplies must not leave the game, and tells the player.
      */
     protected boolean overflowLeavesArena() {
         return false;
@@ -272,14 +278,38 @@ public abstract class MinigameSession {
             player.teleportTo(world, back.getX() + 0.5, back.getY(), back.getZ() + 0.5, player.getYRot(), player.getXRot());
         }
         MinigameNet.sendHud(player, List.of());
+        handOverRewards(player);
         if (players.isEmpty() && !ended) {
             finish(false, false);
         }
     }
 
+    /** Gives {@code player} the rewards of theirs still lying in the arena ({@link #reward}): a player leaving takes them along. */
+    private void handOverRewards(ServerPlayer player) {
+        for (ItemEntity e : world.getEntitiesOfClass(ItemEntity.class, box(), x -> x.isAlive() && x.getTags().contains(REWARD_TAG)
+                && player.getUUID().equals(x.getTarget()))) {
+            net.minecraft.world.item.ItemStack stack = e.getItem().copy();
+            e.discard();
+            Inv.give(player, stack, rewardMark(player));
+        }
+    }
+
+    /** The session player a reward on the floor ({@link #reward}) belongs to, or null (another floor item, or its player left). */
+    private static ServerPlayer rewardOwner(ItemEntity item, List<ServerPlayer> online) {
+        if (!item.getTags().contains(REWARD_TAG) || item.getTarget() == null) {
+            return null;
+        }
+        for (ServerPlayer p : online) {
+            if (p.getUUID().equals(item.getTarget())) {
+                return p;
+            }
+        }
+        return null;
+    }
+
     /**
-     * Ends the game: rewards ({@link #onEnd}), loot on the floor goes to the first player (see {@link #overflowLeavesArena}),
-     * everyone is sent back.
+     * Ends the game: rewards ({@link #onEnd}), rewards on the floor go to their player and other loot on the floor to the first
+     * player (see {@link #overflowLeavesArena}), everyone is sent back.
      */
     public final void end(boolean success) {
         finish(success, true);
@@ -312,17 +342,25 @@ public abstract class MinigameSession {
                 }
             }
         }
-        // Loot on the floor (rewards a full pack couldn't take included) goes to the first player while they're still inside, so
-        // onLeave still strips game-only items from it. What their pack can't take either is never re-dropped on this arena
-        // floor, which is left behind (and handed to whoever ends the slot's next game).
+        // Rewards a full pack couldn't take go to their player, other loot on the floor to the first player, while they're still
+        // inside, so onLeave still strips game-only items from it. What their pack can't take either is never re-dropped on this
+        // arena floor, which is left behind (and handed to whoever ends the slot's next game): a reward goes out with its player.
         AABB box = box();
         ServerPlayer taker = online.isEmpty() ? null : online.get(0);
         List<net.minecraft.world.item.ItemStack> overflow = new ArrayList<>();
+        Map<ServerPlayer, List<net.minecraft.world.item.ItemStack>> rewardsOut = new java.util.LinkedHashMap<>();
         for (Entity e : world.getEntitiesOfClass(Entity.class, box, e -> !(e instanceof Player))) {
-            if (e instanceof ItemEntity item && taker != null) {
-                net.minecraft.world.item.ItemStack rest = Inv.insert(taker, item.getItem().copy());
+            if (e instanceof ItemEntity item) {
+                ServerPlayer owner = rewardOwner(item, online);
+                ServerPlayer to = owner != null ? owner : taker;
+                net.minecraft.world.item.ItemStack rest = to == null ? net.minecraft.world.item.ItemStack.EMPTY
+                        : Inv.insert(to, item.getItem().copy());
                 if (!rest.isEmpty()) {
-                    overflow.add(rest);
+                    if (owner != null) {
+                        rewardsOut.computeIfAbsent(owner, k -> new ArrayList<>()).add(rest);
+                    } else {
+                        overflow.add(rest);
+                    }
                 }
             }
             e.discard();
@@ -337,9 +375,17 @@ public abstract class MinigameSession {
             }
             MinigameNet.sendHud(p, List.of());
         }
-        if (taker != null && overflowLeavesArena()) {
-            for (net.minecraft.world.item.ItemStack rest : overflow) {
-                Inv.give(taker, rest);
+        rewardsOut.forEach((p, stacks) -> stacks.forEach(rest -> Inv.give(p, rest, rewardMark(p))));
+        if (taker != null && !overflow.isEmpty()) {
+            if (overflowLeavesArena()) {
+                for (net.minecraft.world.item.ItemStack rest : overflow) {
+                    Inv.give(taker, rest);
+                }
+            } else {
+                net.minecraft.world.item.ItemStack first = overflow.get(0);
+                Msg.game(taker, "Your inventory is full, so " + (overflow.size() == 1
+                        ? first.getCount() + " x " + first.getHoverName().getString() + " was"
+                        : overflow.size() + " item stacks were") + " left behind on the floor of " + game.displayName() + ".");
             }
         }
         players.clear();
@@ -487,13 +533,34 @@ public abstract class MinigameSession {
         }
     }
 
-    /** Gives an item reward, logs it and fires the obtain event. */
+    /**
+     * Gives an item reward, logs it and fires the obtain event. What a full pack can't take lies at the player's feet for them
+     * ({@link #rewardMark}) and goes out with them if they leave it behind.
+     */
     protected static void reward(ServerPlayer p, String item, int count) {
         if (count <= 0) {
             return;
         }
-        Inv.give(p, item, count);
+        Inv.give(p, item, count, rewardMark(p));
         CollectionLog.obtain(p, item);
+    }
+
+    /**
+     * Marks a reward a full pack couldn't take, dropped at the player's feet: theirs alone to pick up (and theirs for floor
+     * sweeps that keep what a player dropped), and handed to them if it is still on the arena floor when they leave or the
+     * game ends (OSRS puts a reward that doesn't fit on the ground for the player; it is never lost with the arena).
+     */
+    private static java.util.function.Consumer<ItemEntity> rewardMark(ServerPlayer p) {
+        return e -> {
+            e.addTag(REWARD_TAG);
+            e.setTarget(p.getUUID());
+            e.setThrower(p);
+        };
+    }
+
+    /** Self-test hook: hands out a reward as a session does ({@link #reward}). */
+    public static void selfTestReward(ServerPlayer p, String item, int count) {
+        reward(p, item, count);
     }
 
     /** Rolls a loot table once and gives the result. */
