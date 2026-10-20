@@ -664,6 +664,13 @@ final class MuspahScript extends ScriptedBoss {
 
     @Override
     protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
+        if (spawnForm == null) {
+            // Reloaded from disk (a fresh script): carry on in its ranged form, past the specials its health is already under.
+            spawnForm = Form.RANGED;
+            setForm(boss, Form.RANGED);
+            specialsDone = MuspahRules.specialsDue((int) Math.ceil(boss.getHealth()));
+            swapped = true;
+        }
         if (shockwaveQueued && (stage == Stage.FORMS || stage == Stage.CLOUDS)) {
             shockwaveQueued = false;
             specialQueued = false;
