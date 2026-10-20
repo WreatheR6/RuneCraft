@@ -456,6 +456,12 @@ public final class RaidInstance {
         setHitpoints(e, hp);
         coxPools.remove(e);
         scaleLevels(e, id);
+        // OSRS hits never knock anything back. Bosses the rooms drive without AI (Kephri, Zebak, the Wardens) aren't held
+        // in place by their anchors, so player hits would slowly push them off their spots.
+        AttributeInstance knockback = e.getAttribute(Attributes.KNOCKBACK_RESISTANCE);
+        if (knockback != null) {
+            knockback.setBaseValue(1.0);
+        }
     }
 
     /** CoX Guardian hitpoints from the party's average Mining level (OSRS), +50% in Challenge Mode. */
@@ -807,10 +813,12 @@ public final class RaidInstance {
                 }
             }
         }
-        // Bosses the room drives without AI (Kephri, Zebak, the Wardens) don't update their own boss bar.
+        // Bosses the room drives without AI (Kephri, Zebak, the Wardens) don't update their own boss bar, and their AI
+        // tick doesn't hold them on their anchor against players walking into them.
         for (LivingEntity e : logics[current].spawned) {
             if (e instanceof DataBossEntity b && b.isNoAi() && b.isAlive()) {
                 b.refreshBossBar();
+                logics[current].keepAnchored(b);
             }
         }
         RaidNet.sendHud(this);
