@@ -60,6 +60,7 @@ final class LateQuestsC {
                 // OSRS Wiki: 30 Firemaking is only recommended (karambwan can be cooked other ways).
                 .reqQuest("jungle_potion").req(Skill.AGILITY, 15).req(Skill.COOKING, 30).req(Skill.FISHING, 5)
                 .xp(Skill.ATTACK, 2500).xp(Skill.STRENGTH, 2500).xp(Skill.COOKING, 5000).xp(Skill.FISHING, 5000)
+                .reward("coins:2000") // wiki: 2,000 coins from Timfraku
                 .unlock("Karambwan fishing with a karambwan vessel; cooking karambwans thoroughly")
                 .stage("I can start this quest by speaking to Timfraku in Tai Bwo Wannai. (Requires Jungle Potion, 15 Agility, 30 Cooking, 5 Fishing, 30 Firemaking.)")
                 .talk("timfraku").say("My sons Tamayu, Tiadeche and Tinsay each seek greatness and none listen to their father. Help them, and you help the village.")
@@ -286,7 +287,7 @@ final class LateQuestsC {
                 .drops(Drop.always("bones")).skin(0x2A2A2A, 0x1A1A1A, 0x0A0A0A, 0xC0C0C0)
                 .at("quest_tolnas_rift").arena(8, "void"));
         b.quest("a_souls_bane", "A Soul's Bane", Difficulty.INTERMEDIATE, 1)
-                .xp(Skill.DEFENCE, 500).xp(Skill.HITPOINTS, 500)
+                .xp(Skill.DEFENCE, 500).xp(Skill.HITPOINTS, 500).reward("coins:500") // wiki: 500 coins
                 .unlock("Tolna's Rift, home of angry, fearful and confused souls")
                 .stage("I can start this quest by speaking to Launa by the rift north-east of Varrock.")
                 .talk("launa").say("My son Tolna climbed into this rift years ago and never came back. Will you go down and find him? Take a rope.")
@@ -377,9 +378,10 @@ final class LateQuestsC {
                 .reqQuest("a_taste_of_hope")
                 .xp(Skill.SLAYER, 20000).xp(Skill.HITPOINTS, 20000) // two 20,000 XP combat lamps (approximate)
                 .unlock("The Theatre of Blood entry mode; Ver Sinhaza's spider caves")
-                .stage("I can start this quest by speaking to Veliaf Hurtz in the Myreque hideout. (Requires A Taste of Hope.)")
-                .talk("veliaf_hurtz").say("Lady Verzik Vitur runs a theatre where the condemned fight for her amusement. A stranger in Ver Sinhaza says he can get us in.")
-                .stage("I should meet the Mysterious Stranger in Ver Sinhaza.")
+                .stage("I can start this quest by speaking to the Mysterious Stranger in Ver Sinhaza. (Requires A Taste of Hope.)")
+                .talk("quest_mysterious_stranger_tob").say("Lady Verzik Vitur runs a theatre where the condemned fight for her amusement.",
+                        "I can get you in, and help you bring her down. But first, show me you can be trusted.")
+                .stage("I should do what the Mysterious Stranger in Ver Sinhaza asks.")
                 // OSRS: beneath Ver Sinhaza, kill a vyrewatch for the key, unlock the gate and open the coffin for Ranis' head.
                 .kill("vyrewatch_sentinel").stay().unless("quest_ranis_head")
                 .give("quest_ranis_head").say("* The vyrewatch drops a key. Behind the gate below Ver Sinhaza you open a coffin: Ranis Drakan's head.")
@@ -407,7 +409,7 @@ final class LateQuestsC {
                 .drops(Drop.always("bones")).skin(0xC08A7A, 0x8A5A4A, 0x6A3A2A, 0x3A2A1A).size(1.2f, 1.0f, 1.0f)
                 .at("quest_sourhog_cave").arena(8, "stone"));
         b.quest("a_porcine_of_interest", "A Porcine of Interest", Difficulty.NOVICE, 1)
-                .xp(Skill.SLAYER, 1000)
+                .xp(Skill.SLAYER, 1000).reward("coins:5000") // wiki: 5,000 coins
                 .unlock("Spria, the Draynor Village Slayer master")
                 .stage("I can start this quest by reading the notice board in Draynor Village and speaking to Spria. ")
                 .talk("spria").say("A giant pig has been terrorising Sarah's farm. Folk call it the Sourhog. Fancy a bit of slaying?")

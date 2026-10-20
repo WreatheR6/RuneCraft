@@ -273,11 +273,16 @@ final class GameplayChecks {
 
     /** Hands the player whatever a trigger needs and removes what would make it skip. */
     private void prepare(Trigger t) {
+        if (t.emptyHanded) {
+            QuestInterpreter.selfTestEmptyHands(p());
+        }
         t.need.forEach((item, n) -> Inv.give(p(), item, n));
         t.take.forEach((item, n) -> Inv.give(p(), item, n));
         t.tools.forEach(tool -> Inv.give(p(), QuestSpec.toolItem(tool), 1));
         QuestsState state = QuestsState.get(p());
         t.needFlags.forEach(f -> state.setFlag(p().getUUID(), f));
+        // a flag that would skip the advancing trigger (another per-player route, Curse of the Empty Lord) is cleared
+        t.unlessFlags.forEach(f -> state.clearFlag(p().getUUID(), f));
         for (String item : t.unlessItems) {
             Inv.remove(p(), item, 10_000);
         }
@@ -445,6 +450,7 @@ final class GameplayChecks {
             throw failure("recruitment_drive is missing");
         }
         c.completeQuests(q);
+        QuestInterpreter.selfTestEmptyHands(p()); // the testing grounds take nothing in
         QuestsState state = QuestsState.get(p());
         Trigger first = rd.stages.get(1).triggers.stream().filter(t -> t.kind == Trigger.Kind.PUZZLE && t.slot == 0).findFirst()
                 .orElseThrow(() -> failure("no first test room"));

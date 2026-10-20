@@ -36,10 +36,32 @@ class MiniquestObjectivesTest {
     void curseOfTheEmptyLordVisitsTheSixGhostsForTheSixRobes() {
         QuestSpec q = spec("curse_of_the_empty_lord");
         assertEquals(3, q.stages.size());
-        // one piece per ghost (Viggora's once-only side triggers hand saves from the old version what they missed)
-        List<String> pieces = q.triggers().stream().filter(t -> !t.target.equals("quest_viggora") || t.completes())
-                .flatMap(t -> t.give.keySet().stream()).toList();
-        assertEquals(List.of("ghostly_robe_top", "ghostly_gloves", "ghostly_boots", "ghostly_robe_bottom", "ghostly_hood", "ghostly_cloak"), pieces);
+        // Valdez picks one of the wiki's three sequences; along each, one piece per ghost (Viggora's once-only side
+        // triggers hand saves from the old version what they missed)
+        Trigger valdez = q.stages.get(0).triggers.get(0);
+        assertEquals(List.of("cel_route1", "cel_route2", "cel_route3"), valdez.flagOneOf);
+        for (int route = 1; route <= 3; route++) {
+            String suffix = route == 1 ? "" : "_" + route;
+            String flag = "cel_route" + route;
+            List<String> pieces = new java.util.ArrayList<>(valdez.give.keySet());
+            for (String ghost : List.of("rennard", "kharrim", "lennissa", "dhalak", "viggora")) {
+                List<Trigger> own = q.triggers().stream().filter(t -> t.target.equals("quest_" + ghost + suffix) && t.give.size() == 1
+                        && !t.unlessFlags.contains("cel_valdez")).toList();
+                assertEquals(1, own.size(), ghost + suffix);
+                Trigger t = own.get(0);
+                assertTrue(route == 1 ? t.needFlags.stream().noneMatch(f -> f.startsWith("cel_route")) : t.needFlags.contains(flag), ghost + suffix);
+                for (int other = 1; other <= 3; other++) {
+                    assertEquals(other != route, t.unlessFlags.contains("cel_route" + other), ghost + suffix + " skipped on route " + other);
+                }
+                pieces.addAll(t.give.keySet());
+                assertNotNull(com.runecraft.osrs.content.ContentRegistry.npc("quest_" + ghost + suffix), ghost + suffix);
+            }
+            assertEquals(List.of("ghostly_robe_top", "ghostly_gloves", "ghostly_boots", "ghostly_robe_bottom", "ghostly_hood", "ghostly_cloak"),
+                    pieces, "route " + route);
+        }
+        // wiki tiles of the second and third sequences (Rennard at the Wilderness Bandit Camp, Lennissa by the gnomeball field)
+        assertEquals(com.runecraft.osrs.GielinorMap.toBlockX(3024), placeX("quest_rennard_2"));
+        assertEquals(com.runecraft.osrs.GielinorMap.toBlockX(2396), placeX("quest_lennissa_3"));
         assertTrue(q.triggers().stream().allMatch(t -> t.need.containsKey("ring_of_visibility") && t.need.containsKey("ghostspeak_amulet")));
         assertEquals("cel_glarials_tomb", com.runecraft.osrs.content.ContentRegistry.npc("quest_valdez").place(), "Valdez at Glarial's Tomb");
         List<Trigger> viggora = q.stages.get(2).triggers;
@@ -49,6 +71,13 @@ class MiniquestObjectivesTest {
                 "a save past old Valdez gets the robe top");
         assertTrue(q.triggers().stream().anyMatch(t -> t.target.equals("quest_valdez") && t.setFlags.contains("cel_valdez")));
         assertTrue(q.triggers().stream().anyMatch(t -> t.target.equals("quest_dhalak") && t.setFlags.contains("cel_dhalak")));
+    }
+
+    /** Block x an NPC stands at. */
+    private static int placeX(String npcId) {
+        com.runecraft.osrs.content.NpcDef n = com.runecraft.osrs.content.ContentRegistry.npc(npcId);
+        com.runecraft.osrs.content.PlaceDef place = com.runecraft.osrs.content.ContentRegistry.place(n.place());
+        return place.blockX() + n.dx();
     }
 
     @Test

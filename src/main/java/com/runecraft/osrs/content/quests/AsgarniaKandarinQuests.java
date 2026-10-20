@@ -309,7 +309,7 @@ final class AsgarniaKandarinQuests {
 
     // ---------------------------------------------------------------- Family Crest
     private static void familyCrest(QuestBook b) {
-        b.npc("dimintheis", "Dimintheis", "VARROCK", 7, 6, 0xE0C8B0, 0x5A2A5A, 0x3A1A3A, 0xC0C0C0);
+        b.npcAt("dimintheis", "Dimintheis", 3279, 3404, 0xE0C8B0, 0x5A2A5A, 0x3A1A3A, 0xC0C0C0);
         b.npc("caleb", "Caleb", "CATHERBY", -5, 5, 0xE0B898, 0xF0F0F0, 0x6A6A6A, 0xF0F0F0);
         b.npc("avan", "Avan", "AL_KHARID", -6, 4, 0xC8A070, 0x2A3A8A, 0x1A2A5A, 0x5A3A1A);
         b.npc("johnathon", "Johnathon", "jolly_boar_inn", 0, 0, 0xE8C0A0, 0x6A6A2A, 0x3A3A1A, 0x6A4A2A);
@@ -420,7 +420,7 @@ final class AsgarniaKandarinQuests {
 
     // ---------------------------------------------------------------- Plague City
     private static void plagueCity(QuestBook b) {
-        b.npc("edmond", "Edmond", "ARDOUGNE", -7, 6, 0xE0B898, 0x5A6A3A, 0x3A4A2A, 0x6A4A2A);
+        b.npcAt("edmond", "Edmond", 2568, 3334, 0xE0B898, 0x5A6A3A, 0x3A4A2A, 0x6A4A2A);
         b.npc("alrena", "Alrena", "ARDOUGNE", -7, 3, 0xF0C8A8, 0x8A4A6A, 0x5A2A4A, 0x8A5A2A);
         b.npc("jethick", "Jethick", "west_ardougne", 3, 3, 0xD8B898, 0x6A6A5A, 0x4A4A3A, 0x3A3A2A);
         b.npc("martha_rehnison", "Martha Rehnison", "west_ardougne", -3, 3, 0xE8C0A0, 0x6A3A3A, 0x4A2A2A, 0x9A9A9A);
@@ -487,7 +487,7 @@ final class AsgarniaKandarinQuests {
         b.npc("omart", "Omart", "ardougne_wall", -3, 3, 0xD0A880, 0x3A5A3A, 0x2A3A2A, 0x2A2A1A);
         b.npc("chemist", "Chemist", "rimmington_chemist", 0, 0, 0xE8D0C0, 0xF0F0F0, 0x5A5A5A, 0x8A8A8A);
         b.npc("guidor", "Guidor", "VARROCK", -7, 6, 0xE0C8B0, 0x3A3A6A, 0x2A2A4A, 0xE0E0E0);
-        b.npc("king_lathas", "King Lathas", "ARDOUGNE", 0, -7, 0xE8C8A8, 0x6A1A8A, 0x4A1A5A, 0xE0C030);
+        b.npcAt("king_lathas", "King Lathas", 2572, 3296, 0xE8C8A8, 0x6A1A8A, 0x4A1A5A, 0xE0C030);
         b.item("distillator", "Distillator", "pot", 0xA0A0C0, "Elena's distillator, for analysing the plague sample.");
         b.item("plague_sample", "Plague sample", "vial", 0x8AA05A, "A sample of the 'plague'.");
         b.boss(BossDef.of("head_mourner", "Head mourner").level(30).stats(40, 25, 25, 25, 1, 1).speed(4)
@@ -509,10 +509,11 @@ final class AsgarniaKandarinQuests {
         b.spot("biohazard_watchtower", "Watchtower by the Ardougne wall", 2562, 3301);
         b.spot("mourner_hq_cauldron", "Mourners' cauldron", 2543, 3332);
         b.spot("nurse_sarahs_house", "Nurse Sarah's house", 2518, 3276);
+        b.npcAt("elena_home", "Elena", 2592, 3336, 0xF0D0B9, 0x3A6A3B, 0x2A4A2B, 0xC06A2B); // her house in East Ardougne (cache tile)
         b.quest("biohazard", "Biohazard", Difficulty.NOVICE, 3)
                 .reqQuest("plague_city").xp(Skill.THIEVING, 1250)
-                .stage("I can start this quest by speaking to Elena in East Ardougne. (Requires Plague City.)")
-                .talk("elena").say("The mourners stole my distillator. I need it to analyse the plague! Jerico may help you get into their headquarters.")
+                .stage("I can start this quest by speaking to Elena in her house in East Ardougne. (Requires Plague City.)")
+                .talk("elena_home").say("The mourners stole my distillator. I need it to analyse the plague! Jerico may help you get into their headquarters.")
                 .stage("I should ask Jerico, who keeps carrier pigeons, for help.")
                 .talk("jerico").give("bird_feed", "pigeon_cage")
                 .say("Release my pigeons over the mourners' yard to distract them. Here's a cage of them and some bird feed from my cupboard.",
@@ -532,7 +533,7 @@ final class AsgarniaKandarinQuests {
                 .kill("head_mourner").needFlag("bh_stew").need("medical_gown").give("distillator")
                 .say("* Disguised as a doctor you're let in to treat the sick mourners. You defeat the mourner upstairs, take his key and find Elena's distillator.")
                 .stage("I should return the distillator to Elena.")
-                .talk("elena").take("distillator").give("plague_sample", "touch_paper", "ethenea", "liquid_honey", "sulphuric_broline")
+                .talk("elena_home").take("distillator").give("plague_sample", "touch_paper", "ethenea", "liquid_honey", "sulphuric_broline")
                 .say("My distillator! Take this plague sample and touch paper to Guidor in Varrock. He'll need these three chemicals for the test.",
                         "The guards search everyone at the Varrock gate. Ask the chemist in Rimmington how to smuggle the chemicals past them.")
                 .stage("I should get the plague sample and chemicals past the Varrock guards (the chemist in Rimmington has ideas) "

@@ -41,7 +41,7 @@ final class ElfQuests {
         b.quest("underground_pass", "Underground Pass", Difficulty.EXPERIENCED, 5)
                 .reqQuest("biohazard").req(Skill.RANGED, 25)
                 .xp(Skill.AGILITY, 3000).xp(Skill.ATTACK, 3000).reward("ibans_staff")
-                .stage("I can start this quest by speaking to King Lathas in East Ardougne. (Requires Biohazard, 25 Ranged.)")
+                .stage("I can start this quest by speaking to King Lathas in Ardougne Castle. (Requires Biohazard, 25 Ranged.)")
                 .talk("king_lathas").say("My scouts must reach the elven lands beyond the mountains. The only way is the Underground Pass, now ruled by the dark lord Iban. Find a way through.")
                 .stage("I should meet Koftik at the Underground Pass entrance west of West Ardougne, then find a way across the chasm inside.")
                 .talk("koftik").stay().unlessFlag("up_koftik").flag("up_koftik").travel("underground_pass")
@@ -84,9 +84,9 @@ final class ElfQuests {
                 .drops(Drop.always("bones")).skin(0xE8C0AD, 0xC0C0C8, 0x8A1A1A, 0xE0C030).at("tyras_camp").arena(10, "jungle"));
         b.quest("regicide", "Regicide", Difficulty.EXPERIENCED, 3)
                 .reqQuest("underground_pass").req(Skill.AGILITY, 56).req(Skill.CRAFTING, 10)
-                .xp(Skill.AGILITY, 13750)
+                .xp(Skill.AGILITY, 13750).reward("coins:15000") // wiki: 15,000 coins
                 .unlock("Access to Tirannwn and Lletya")
-                .stage("I can start this quest by speaking to King Lathas in East Ardougne. (Requires Underground Pass, 56 Agility, 10 Crafting.)")
+                .stage("I can start this quest by speaking to King Lathas in Ardougne Castle. (Requires Underground Pass, 56 Agility, 10 Crafting.)")
                 .talk("king_lathas").travel("LLETYA").say("My brother Tyras leads an army in Tirannwn. He must be stopped. Go through the pass, find the elves and destroy his camp.",
                         "* You travel through the Underground Pass, down Iban's well and out into the elven lands.")
                 // OSRS: Lord Iorwerth, then the Elf Tracker, whose tracks lead through the dense forest to the Tyras camp.

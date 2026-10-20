@@ -76,12 +76,19 @@ final class FremennikQuests {
                 .talk("sigli").stay().needFlag("ft_draugen").unlessFlag("ft_sigli").flag("ft_sigli")
                 .say("You hunted down the Draugen? Few could. You have my vote.")
                 .missing("Hunt the Draugen, the walking dead of our hunting grounds, and you shall have my vote.")
-                .reach("swensens_maze", 5).stay().unlessFlag("ft_maze").flag("ft_maze").say("* You find your way to the end of Swensen's maze.")
+                .puzzle("swensens_maze", SWENSEN_MAZE).stay().unlessFlag("ft_maze", "ft_swensen").flag("ft_maze")
+                .say("* The last portal brings you out at the end of Swensen's maze.")
                 .talk("swensen").stay().needFlag("ft_maze").unlessFlag("ft_swensen").flag("ft_swensen")
                 .say("You navigated my maze. A true navigator! You have my vote.")
-                .missing("Find your way through my maze of portals, west of the town.")
-                .talk("peer").stay().unlessFlag("ft_peer").flag("ft_peer")
-                .say("Answer my riddle: 'My first is in mage, but not in wizard...' *You answer: 'Mind'.* Correct. You have my vote.")
+                .missing("Find your way through my maze of portals, west of the town. A navigator never loses his way... or his name.")
+                // Peer the Seer's house (wiki): nothing may be carried in (Peer banks it all), the door's combination lock answers one
+                // of six riddles, and the chest upstairs opens under exactly four litres of water.
+                .puzzle("peer", PEER_DOOR).emptyHanded().banksItems().stay().unlessFlag("ft_peer_door", "ft_peer").flag("ft_peer_door")
+                .say("* The combination lock clicks and the door swings open. Upstairs, a chest is locked by a balancing mechanism.")
+                .puzzle("peer", PEER_CHEST).emptyHanded().stay().needFlag("ft_peer_door").unlessFlag("ft_peer").flag("ft_peer")
+                .say("* The chest opens on a vase. You seal water in it with the lid from the abstract mural (two red disks), set it on the",
+                        "* frozen table for a frozen key, thaw the key on the range and let yourself out of the back door.",
+                        "@Peer the Seer: You found your way out of my house with nothing but your wits. You have my vote.")
                 .kill("koschei_the_deathless").stay().unlessFlag("ft_koschei").flag("ft_koschei").say("* Koschei the Deathless is finally beaten.")
                 .talk("thorvald").stay().needFlag("ft_koschei").unlessFlag("ft_thorvald").flag("ft_thorvald")
                 .say("You defeated Koschei the Deathless! A true warrior. You have my vote.")
@@ -101,8 +108,53 @@ final class FremennikQuests {
                 .done("brundt", "Welcome, Fremennik!");
     }
 
+    /** Swensen's maze (wiki): one portal of four leads on from each lit room; the way spells his name, S W E N S E N. */
+    static final QuestPuzzle SWENSEN_MAZE = QuestPuzzle.builder("ft_maze").variant(null)
+            .prompt("* Swensen's maze of portals: each room has a portal in its north, east, south and west wall. In the lit rooms one of",
+                    "* them leads on; the others lead into dim dead ends, and you must climb the rope and start over. Seven rooms to the exit.")
+            .options("North portal", "East portal", "South portal", "West portal")
+            .solution(2, 3, 1, 0, 2, 1, 0)
+            .failLines("* The portal leads into a dim room: extinguished torches, cobwebs and skeletons. A dead end. You climb the rope and start over.")
+            .build();
+
+    /** Peer the Seer's door (wiki): a four-letter combination lock, the answer to one of six riddles. */
+    static final QuestPuzzle PEER_DOOR = peerDoor();
+    /** Peer's chest: exactly four litres of water from a 5-litre bucket and a 3-litre jug (wiki solution, 7 actions). */
+    static final QuestPuzzle PEER_CHEST = QuestPuzzle.builder("ft_peer_chest").variant(null)
+            .prompt("* The chest is locked by a balancing mechanism that needs exactly four litres of water. You have found an empty",
+                    "* bucket (5 litres) and an empty jug (3 litres); there is a tap by the range and a drain in the floor.")
+            .options("Fill the bucket at the tap", "Fill the jug at the tap", "Pour the bucket into the jug", "Pour the jug into the bucket",
+                    "Empty the bucket down the drain", "Empty the jug down the drain", "Put the bucket on the chest", "Put the jug on the chest")
+            .solution(0, 2, 5, 2, 0, 2, 6)
+            .failLines("* That isn't going to leave four litres in anything. You pour it all away and start again.")
+            .build();
+
+    private static QuestPuzzle peerDoor() {
+        String[][] riddles = {
+                {"My first is in mage, but not in wizard.", "My second in goblin, and also in lizard.", "My third in night, but not in the day.",
+                        "My last is in fields, but not in the hay.", "My whole is the most powerful tool you will possess.", "MIND"},
+                {"My first is in tar, but not in a swamp.", "My second in fire, but not in a camp.", "My third is in eagle, but never in air.",
+                        "My last is in hate, but also in care.", "My whole wears more rings the older I get.", "TREE"},
+                {"My first is in the well, but not at sea.", "My second in 'I', but not in 'me'.", "My third in flies, but insects not found.",
+                        "My last is in earth, but not in the ground.", "My whole when stolen from you causes you death.", "LIFE"},
+                {"My first is in fish, but not in the sea.", "My second in birds, but not in a tree.", "My third is in doors, but not in a hall.",
+                        "My last is everything, but nothing at all.", "My whole cannot die as long as it has food.", "FIRE"},
+                {"My first is in water, and also in tea.", "My second is in fish, but not in the sea.", "My third is in mountains, but not underground.",
+                        "My last is in strike, but not like in pound.",
+                        "My whole crushes mountains, drains rivers, and destroys civilisations. All that live fear my passing.", "TIME"},
+                {"My first is in wizard, but not in a mage.", "My second in jail, but not in a cage.", "My third is in anger, but not in a rage.",
+                        "My last in a drawing, but not on a page.", "My whole helps to make bread, let birds fly and boats sail.", "WIND"}};
+        QuestPuzzle.Builder b = QuestPuzzle.builder("ft_peer_door").room("door");
+        for (String[] r : riddles) {
+            b.variant(null).prompt("* Peer's front door has a combination lock of four lettered dials, and a riddle carved above it:",
+                            "* " + r[0], "* " + r[1], "* " + r[2], "* " + r[3], "* " + r[4])
+                    .options(QuestPuzzle.letters()).solution(QuestPuzzle.word(r[5]));
+        }
+        return b.failLines("* The lock doesn't budge. Read the riddle again.").build();
+    }
+
     private static void lunarDiplomacy(QuestBook b) {
-        b.npc("lokar_searunner", "Lokar Searunner", "RELLEKKA", -4, 7, 0xE8C0A2, 0x5A3A6A, 0x3A2A3A, 0xE0E0E0);
+        b.npcAt("lokar_searunner", "Lokar Searunner", 2620, 3693, 0xE8C0A2, 0x5A3A6A, 0x3A2A3A, 0xE0E0E0);
         b.npc("oneiromancer", "Oneiromancer", "quest_lunar_isle", 0, 3, 0xF0E0D0, 0x8AA0C0, 0x6A80A0, 0xC0D0F0);
         b.npc("pauline_polaris", "Pauline Polaris", "quest_lunar_isle", 3, -2, 0xF0D8C8, 0x6A6AA0, 0x4A4A7A, 0xD0C060);
         b.item("seal_of_passage", "Seal of passage", "amulet", 0x8AA0C0, "Lets you be understood by the Moon Clan of Lunar Isle.");
@@ -121,7 +173,7 @@ final class FremennikQuests {
                 .req(Skill.MAGIC, 65).req(Skill.MINING, 60).req(Skill.WOODCUTTING, 55)
                 .xp(Skill.MAGIC, 5000).xp(Skill.RUNECRAFT, 5000).reward("seal_of_passage", "lunar_staff")
                 .unlock("The Lunar spellbook")
-                .stage("I can start this quest by speaking to Lokar Searunner on the Rellekka docks. (Requires Fremennik Trials, Lost City, Rune Mysteries, Shilo Village and many skills.)")
+                .stage("I can start this quest by speaking to Lokar Searunner at the westernmost dock of Rellekka. (Requires Fremennik Trials, Lost City, Rune Mysteries, Shilo Village and many skills.)")
                 .talk("lokar_searunner").say("Lunar Isle? Few go there, and none without a seal of passage from Brundt. Get one and I'll take you... on my old crew's ship.")
                 // OSRS: Brundt's seal, then Captain Bentley's pirate ship: the cabin boy's emerald lens on a lit lantern reveals five symbols to rub away.
                 .stage("I need a seal of passage from Brundt; then Lokar's pirate friends will sail me to Lunar Isle, where I should speak to the Oneiromancer.")

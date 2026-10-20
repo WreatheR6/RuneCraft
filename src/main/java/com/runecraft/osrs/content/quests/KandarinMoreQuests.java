@@ -205,7 +205,7 @@ final class KandarinMoreQuests {
                 .attack(AttackDef.of("slime", AttackType.CRUSH, 4, 2.5, 10)).drops(Drop.always("bones"))
                 .skin(0x8A9A5B, 0x7A8A4A, 0x6A7A3A, 0x5A6A2A));
         b.quest("sea_slug", "Sea Slug", Difficulty.INTERMEDIATE, 1)
-                .req(Skill.FIREMAKING, 30).xp(Skill.FISHING, 7175).reward("coins:500")
+                .req(Skill.FIREMAKING, 30).xp(Skill.FISHING, 7175).reward("oyster_pearls") // wiki: oyster pearls
                 .stage("I can start this quest by speaking to Caroline in Witchaven. (Requires 30 Firemaking.)")
                 .talk("caroline").say("My husband Kent and son Kennith are on the fishing platform out at sea and haven't come home. Holgart can row you out.")
                 .stage("I should go to the fishing platform and find Kennith.")
@@ -301,6 +301,7 @@ final class KandarinMoreQuests {
         b.quest("zogre_flesh_eaters", "Zogre Flesh Eaters", Difficulty.INTERMEDIATE, 1)
                 .reqQuest("big_chompy_bird_hunting", "jungle_potion").req(Skill.SMITHING, 4).req(Skill.HERBLORE, 8).req(Skill.RANGED, 30)
                 .xp(Skill.FLETCHING, 2000).xp(Skill.RANGED, 2000).xp(Skill.HERBLORE, 2000)
+                .reward("zogre_bones:2") // wiki: also 3 ourg bones (not in the mod)
                 .stage("I can start this quest by speaking to Grish at Jiggig in the Feldip Hills. (Requires Big Chompy Bird Hunting, Jungle Potion.)")
                 .talk("grish").say("Zogres! Undead ogres rising from Jiggig's tombs! Someone curse our sacred place. Find out who!")
                 .stage("I should investigate the tombs beneath Jiggig.")
@@ -315,12 +316,14 @@ final class KandarinMoreQuests {
         b.npc("captain_braindeath", "Captain Braindeath", "braindeath_island", 0, 3, 0xD8A886, 0x6A1A1C, 0x2A2A2E, 0x1A1A1C);
         b.item("blindweed", "Blindweed", "herb", 0x5A6A3A, "A key ingredient of Braindeath rum.");
         b.item("stagnant_water", "Bucket of stagnant water", "pot", 0x5A7A5A, "Water from the island's foulest pool.");
+        // wiki: Pirate Pete on the dock north of Port Phasmatys (cache tile)
+        b.npcAt("pirate_pete_phasmatys", "Pirate Pete", 3680, 3537, 0xD8A886, 0x2A2A6B, 0x2A2A2C, 0x8A1A1C);
         b.quest("rum_deal", "Rum Deal", Difficulty.EXPERIENCED, 2)
                 .reqQuest("zogre_flesh_eaters", "priest_in_peril")
                 .req(Skill.CRAFTING, 42).req(Skill.FISHING, 50).req(Skill.FARMING, 40).req(Skill.PRAYER, 47).req(Skill.SLAYER, 42)
                 .xp(Skill.FISHING, 7000).xp(Skill.FARMING, 7000).xp(Skill.PRAYER, 7000).reward("holy_wrench:1")
                 .stage("I can start this quest by speaking to Pirate Pete in Port Phasmatys. (Requires Zogre Flesh Eaters, Priest in Peril and more.)")
-                .talk("pirate_pete").travel("braindeath_island").say("Captain Braindeath's rum distillery has been overrun by zombie pirates! He needs a hand. *Pete sails you to Braindeath Island.*")
+                .talk("pirate_pete_phasmatys").travel("braindeath_island").say("Captain Braindeath's rum distillery has been overrun by zombie pirates! He needs a hand. *Pete sails you to Braindeath Island.*")
                 .stage("I should help Captain Braindeath restart his rum distillery.")
                 .talk("captain_braindeath").need("rake", "seed_dibber", "small_fishing_net").missing("Arr! Ye'll need a rake, a seed dibber and a small fishing net for the work here.")
                 .say("Arr! I need blindweed from the patch, stagnant water from the pool, and someone to keep those zombies off!")
@@ -519,13 +522,13 @@ final class KandarinMoreQuests {
 
     private static void fishingContest(QuestBook b) {
         b.npc("bonzo", "Bonzo", "hemenster", 0, 2, 0xE8C0B6, 0x3A6A8B, 0x2A3A5B, 0x8A5A2B);
-        b.npc("vestri", "Vestri", "BURTHORPE", 6, 5, 0xD8A887, 0x6A3A2B, 0x3A2A1B, 0xC07A2C);
+        b.npcAt("vestri", "Vestri", 2820, 3487, 0xD8A887, 0x6A3A2B, 0x3A2A1B, 0xC07A2C);
         b.item("fishing_pass", "Fishing pass", "note", 0xE0D0A9, "A pass to the Hemenster fishing contest.");
         b.item("fishing_trophy", "Fishing trophy", "statue", 0xE0C043, "First prize in the Hemenster fishing contest.");
         b.items(s -> s.add("giant_carp", "Giant carp", Kind.SIMPLE, "fish_raw", 0xC0A060).value(1).examine("Wow, what a fish!"));
         b.quest("fishing_contest", "Fishing Contest", Difficulty.NOVICE, 1)
                 .req(Skill.FISHING, 10).xp(Skill.FISHING, 2437)
-                .stage("I can start this quest by speaking to Vestri, a dwarf in Burthorpe, who wants to use the White Wolf Mountain tunnel. (Requires 10 Fishing.)")
+                .stage("I can start this quest by speaking to Vestri by the tunnel entrance west of White Wolf Mountain. (Requires 10 Fishing.)")
                 .talk("vestri").give("fishing_pass").say("The dwarves of the tunnel want the fishing trophy from Hemenster. Win it and we'll let you through!")
                 .stage("I should enter the Hemenster fishing contest and catch the biggest fish. Garlic in the pipes keeps the rival anglers' fish away...")
                 .talk("bonzo").take("fishing_pass", "garlic").give("giant_carp", "fishing_trophy")

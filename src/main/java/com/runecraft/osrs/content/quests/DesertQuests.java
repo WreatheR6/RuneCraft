@@ -382,12 +382,13 @@ final class DesertQuests {
         b.npc("mage_of_zamorak", "Mage of Zamorak", "varrock_chaos_temple", 0, 0, 0xD8B898, 0xA01A1A, 0x5A0A0A, 0x2A0A0A);
         b.npc("apprentice_felix", "Apprentice Felix", "temple_of_the_eye", 2, 2, 0xF0C8AC, 0x3A3AA0, 0x2A2A7A, 0xC06A2A);
         b.item("abyssal_incantation", "Abyssal incantation", "note", 0xA02A2A, "A strange incantation to open a rift.");
+        b.npcAt("wizard_persten_al_kharid", "Wizard Persten", 3285, 3232, 0xF0D8CA, 0x6A2A8B, 0x4A1A6B, 0x6A3A1B);
         b.quest("temple_of_the_eye", "Temple of the Eye", Difficulty.INTERMEDIATE, 1)
                 .reqQuest("RUNE_MYSTERIES").req(Skill.RUNECRAFT, 10).reqQuest("enter_the_abyss")
                 .xp(Skill.RUNECRAFT, 5000) // + 4,210 Runecraft XP earned during the quest
                 .unlock("Access to Guardians of the Rift")
-                .stage("I can start this quest by speaking to Wizard Persten in the Wizards' Tower. (Requires Rune Mysteries, 10 Runecraft.)")
-                .talk("wizard_persten").say("I've found references to a lost temple of runecraft. The Zamorakian mages may know something. Visit the Mage of Zamorak in Varrock.")
+                .stage("I can start this quest by speaking to Wizard Persten north of Al Kharid, near the gate from Lumbridge. (Requires Rune Mysteries, 10 Runecraft.)")
+                .talk("wizard_persten_al_kharid").say("I've found references to a lost temple of runecraft. The Zamorakian mages may know something. Visit the Mage of Zamorak in Varrock.")
                 .stage("I should speak to the Mage of Zamorak in Varrock.")
                 .talk("mage_of_zamorak").take("cup_of_tea").missing("I'll talk, but not before a strong cup of tea.").give("abyssal_incantation").say("You want to find the Temple of the Eye? Use this incantation in the Abyss, and an amulet... I need a strong tea first.")
                 .stage("I should use the abyssal incantation near the Wizards' Tower to open a rift to the temple.")

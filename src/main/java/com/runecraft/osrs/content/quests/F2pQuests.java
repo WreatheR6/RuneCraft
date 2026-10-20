@@ -504,30 +504,97 @@ final class F2pQuests {
         b.npc("mandy", "Mandy", "misthalin_mansion", -2, 2, 0xD8B090, 0x2A6A2A, 0x1A3A1A, 0x8A4A1A);
         b.npc("kingston", "Kingston", "misthalin_mansion", 0, -2, 0xE8C0A0, 0x1A1A1A, 0x1A1A1A, 0xA0A0A0);
         b.item("mm_notes", "Notes", "note", 0xE0D8C8, "Scribbled notes from the mansion.");
-        b.boss(BossDef.of("misthalin_murderer", "Murderer").level(25).stats(30, 20, 20, 20, 1, 1).speed(4)
+        // Wiki: the Killer is Abigale herself (with her boyfriend Hewey); after the mirror showdown the player attacks her with
+        // the killer's knife before Mandy finishes her off.
+        b.boss(BossDef.of("misthalin_murderer", "Abigale (the Killer)").level(25).stats(30, 20, 20, 20, 1, 1).speed(4)
                 .attack(AttackDef.of("knife", AttackType.STAB, 4, 2.5, 10)).drops(Drop.always("bones"))
                 .skin(0xE8C0A0, 0x1A1A1A, 0x1A1A1A, 0x6A1A1A));
         b.quest("misthalin_mystery", "Misthalin Mystery", Difficulty.NOVICE, 1)
-                .xp(Skill.CRAFTING, 600).reward("coins:500", "uncut_sapphire", "uncut_emerald", "uncut_ruby")
+                // Wiki rewards: the three uncut gems and 600 Crafting XP (no coins).
+                .xp(Skill.CRAFTING, 600).reward("uncut_sapphire", "uncut_emerald", "uncut_ruby")
                 .stage("I can start this quest by speaking to Abigale on the jetty in Lumbridge Swamp.")
-                .talk("abigale").travel("misthalin_mansion").say("A guest has gone missing from Lacey's mansion on the island. Will you help investigate?",
-                        "* Abigale rows you across to the mansion.")
-                .stage("I should question the guests of the mansion: Lacey, Mandy and Kingston.")
-                .talk("lacey").stay().unlessFlag("mm_lacey").flag("mm_lacey").say("I was in the library all evening, I swear!")
-                .talk("mandy").stay().unlessFlag("mm_mandy").flag("mm_mandy").say("I heard footsteps on the stairs, then a scream.")
-                .talk("kingston").needFlag("mm_lacey", "mm_mandy").give("mm_notes").say("These notes... they're written in a hand I recognise. The killer is among us!",
-                        "* The 'murderer' lunges at you from the shadows!").spawn("misthalin_murderer")
-                .missing("Have you spoken to the others yet?")
-                .stage("I must survive the murderer's attack.")
-                .kill("misthalin_murderer").say("* The murderer falls. The mystery is solved.")
-                .stage("I should report back to Abigale.")
-                .talk("abigale").take("mm_notes").travel("lumbridge_swamp_dock").say("You solved it! Let me row you back. Please take these as thanks.");
+                .talk("abigale").travel("misthalin_mansion")
+                .say("Please, help us! We were at a party in the manor on the island when someone attacked my Hewey. Our friends are still there!",
+                        "* You take the rowboat across to the island.")
+                // The manor's three riddles (wiki), each opening the door with the matching gem knob.
+                .stage("A killer is loose in the manor on the island, leaving riddles for me. I should follow them and stop the killer.")
+                .talk("abigale").stay().say("* You take the rowboat across to the island.").travel("misthalin_mansion")
+                .puzzle("misthalin_mansion", MM_PAINTING).stay().unlessFlag("mm_ruby").flag("mm_ruby")
+                .say("* Behind the slashed canvas hangs a ruby key. Past the ruby door you light the four candles; their warmth dries the fuse",
+                        "* of a barrel of explosives by a damaged wall, and the blast opens the way to the back of the manor.")
+                .puzzle("misthalin_mansion", MM_PIANO).stay().needFlag("mm_ruby").unlessFlag("mm_emerald").flag("mm_emerald")
+                .say("* A compartment in the piano springs open: an emerald key.")
+                .puzzle("misthalin_mansion", MM_HEARTH).stay().needFlag("mm_emerald").unlessFlag("mm_sapphire").flag("mm_sapphire")
+                .say("* The hidden compartment in the fireplace slides open: a sapphire key.")
+                .reach("misthalin_mansion", 8).needFlag("mm_sapphire")
+                .say("* You unlock the westernmost door with the sapphire key. The Killer is waiting for you!")
+                .hint("lacey", "* Lacey is too frightened to speak. The killer's notes are your only lead.")
+                .hint("mandy", "Read the killer's notes carefully. Every riddle leads to a key, and every key to a door with its gem on the knob.")
+                .hint("kingston", "I saw nothing, I heard nothing. Just find whoever is doing this!")
+                // The showdown (wiki): the Killer hides in the wardrobes and throws knives; push the mirror to face the shadowed wardrobe
+                // and reflect the knives back. Solving it raises the unmasked Killer (again, should she be lost).
+                .stage("The Killer hides in the wardrobes of the westernmost room. I must turn the mirror on her and then finish her off.")
+                .talk("abigale").stay().say("* You take the rowboat across to the island.").travel("misthalin_mansion")
+                .puzzle("misthalin_mansion", MM_MIRROR).stay().flag("mm_mirror").spawn("misthalin_murderer")
+                .say("* The reflected knife strikes home and the Killer stumbles out of the wardrobe: it was Abigale all along!",
+                        "* Her boyfriend Hewey steps out of the shadows... and in a jealous rage Abigale kills him. You pick up the killer's knife.")
+                .kill("misthalin_murderer").needFlag("mm_mirror")
+                .say("* As Abigale reels, Mandy, who survived thanks to her heart being on the right side, finishes her off.")
+                .stage("I should speak to Mandy outside the manor.")
+                .talk("abigale").stay().say("* You take the rowboat across to the island.").travel("misthalin_mansion")
+                .talk("mandy").travel("lumbridge_swamp_dock")
+                .say("You saved my life! Take these gems from the manor's vault, and the rowboat back to the mainland.");
+    }
+
+    /** Riddle 1 (wiki): slash the painting of the gloomy valley for the ruby key. */
+    static final QuestPuzzle MM_PAINTING = QuestPuzzle.builder("mm_painting").variant(null)
+            .prompt("* The manor key was in the barrel of rainwater; inside, the Killer leaps from a wardrobe and Tayten falls. A note slides under the door:",
+                    "* 'Behind the gloom of a painted valley, a gem-red secret waits for a sharp blade.' You picked up a knife in the hall.",
+                    "* Which painting do you slash?")
+            .options("The portrait of a stern lady", "The ship on a stormy sea", "The bowl of fruit",
+                    "The gloomy valley: mountains, a blue river and the sun on the horizon")
+            .solution(3).failLines("* You slash the canvas, but there is nothing behind it.").build();
+
+    /** Riddle 2 (wiki): play D-E-A-D on the piano for the emerald key. */
+    static final QuestPuzzle MM_PIANO = QuestPuzzle.builder("mm_piano").variant(null)
+            .prompt("* Behind the manor the Killer ties up Lacey and leaves her dead with another note:",
+                    "* 'Music to my ears: the sweetest sound of all is the tune that spells out your fate.'",
+                    "* The piano in the north-eastern room has a hidden compartment. Play four notes.")
+            .options("C", "D", "E", "F", "G", "A", "B")
+            .solution(1, 2, 5, 1).failLines("* The piano plays a tune, but nothing happens.").build();
+
+    /** Riddle 3 (wiki): the hearth's gemstone switches, the last letters of the note's lines (S D Z E O R). */
+    static final QuestPuzzle MM_HEARTH = QuestPuzzle.builder("mm_hearth").shuffle().variant(null)
+            .prompt("* Mandy screams in the kitchen, and a third note lies outside its door:",
+                    "* Heed my final words.", "* Each friend you lost, you could not defend.", "* And still you fumble with my quiz.",
+                    "* Razor sharp is my blade.", "* The last thing you hear is your scream's echo.", "* How I love the end of a thriller.",
+                    "* A knife pries open the fireplace in the hearth room: a panel of gemstone switches. Press them in order.")
+            .options("Sapphire", "Diamond", "Zenyte", "Emerald", "Onyx", "Ruby", "Opal", "Jade", "Red topaz", "Dragonstone")
+            .solution(0, 1, 2, 3, 4, 5).failLines("* The switches click back into place.").build();
+
+    /** The showdown (wiki): push the mirror to face the wardrobe the Killer's shadow flickers around, three times. */
+    static final QuestPuzzle MM_MIRROR = mirrorPuzzle();
+
+    private static QuestPuzzle mirrorPuzzle() {
+        String[] wardrobes = {"north-west", "north-east", "south-west", "south-east"};
+        int[][] sequences = {{0, 3, 1}, {2, 1, 3}, {1, 2, 0}, {3, 0, 2}, {1, 3, 2}, {2, 0, 1}};
+        QuestPuzzle.Builder b = QuestPuzzle.builder("mm_mirror").room("showdown");
+        for (int[] seq : sequences) {
+            b.variant(null).prompt("* The Killer hides in the room's four wardrobes and throws knives at you. You can push the mirror in front of",
+                            "* any wardrobe. A brief black shadow betrays her: first around the " + wardrobes[seq[0]] + " wardrobe, then the "
+                                    + wardrobes[seq[1]] + ", then the " + wardrobes[seq[2]] + ".")
+                    .options("Push the mirror to the north-west wardrobe", "Push the mirror to the north-east wardrobe",
+                            "Push the mirror to the south-west wardrobe", "Push the mirror to the south-east wardrobe")
+                    .solution(seq);
+        }
+        return b.failLines("* The knife glances off the mirror and flies wide. The Killer is in another wardrobe!").build();
     }
 
     // ---------------------------------------------------------------- The Corsair Curse
     private static void corsairCurse(QuestBook b) {
         b.npc("captain_tock", "Captain Tock", "corsair_cove", 0, 2, 0xD8A880, 0x6A1A1A, 0x2A2A2A, 0x1A1A1A);
         b.npc("cabin_boy_colin", "Cabin boy Colin", "corsair_cove", 2, -2, 0xF0D0B0, 0xD0D0C0, 0x3A3A5A, 0x6A4A2A);
+        b.npcAt("captain_tock_sarim", "Captain Tock", 3030, 3273, 0xD8A881, 0x6A1A1B, 0x2A2A2B, 0x1A1A1B); // wiki: north of Port Sarim
         b.npc("gnocci_the_cook", "Gnocci the Cook", "corsair_cove", -2, -2, 0xE8C8A8, 0xF0F0F0, 0x8A8A8A, 0xF0F0F0);
         b.npc("arsen_the_thief", "Arsen the Thief", "corsair_cove", -3, 2, 0xC8A070, 0x3A3A2A, 0x2A2A1A, 0x5A5A3A);
         b.item("ogre_artefact", "Ogre artefact", "skull", 0x7A6A4A, "An ancient ogre artefact stolen by the Corsairs.");
@@ -535,11 +602,12 @@ final class F2pQuests {
                 .attack(AttackDef.of("wind_strike", AttackType.MAGIC, 6, 8, 6).particle("minecraft:cloud"))
                 .attack(AttackDef.of("punch", AttackType.CRUSH, 4, 2.5, 4))
                 .drops(Drop.always("bones")).skin(0xB8D0D0, 0x2A4A6A, 0x1A2A3A, 0x5A5A5A).at("ithoi_hut").arena(8, "sand"));
-        b.quest("the_corsair_curse", "The Corsair Curse", Difficulty.INTERMEDIATE, 2)
-                .reward("coins:500")
+        b.quest("the_corsair_curse", "The Corsair Curse", Difficulty.INTERMEDIATE, 2) // wiki: no item rewards
                 .unlock("Access to the Corsair Cove Dungeon")
-                .stage("I can start this quest by speaking to Captain Tock in Corsair Cove (reached via Captain Tock's ship in Port Sarim).")
-                .talk("captain_tock").say("My crew claims we're cursed. An ogre artefact we... found... is to blame, they say. Question my crew.")
+                .stage("I can start this quest by speaking to Captain Tock at the crossroads north of Port Sarim.")
+                .talk("captain_tock_sarim").travel("corsair_cove")
+                .say("My crew claims we're cursed. An ogre artefact we... found... is to blame, they say. Come to the cove and question my crew.",
+                        "* Captain Tock sails you to Corsair Cove.")
                 .stage("I should question Cabin boy Colin, Gnocci the Cook and Arsen the Thief.")
                 .talk("cabin_boy_colin").stay().unlessFlag("cc_colin").flag("cc_colin").say("Ithoi the navigator keeps to his hut since he got sick. Strange, that.")
                 .talk("gnocci_the_cook").stay().unlessFlag("cc_gnocci").flag("cc_gnocci").say("Ithoi always complained about my cooking. Then he got sick. Not my fault!")

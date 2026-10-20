@@ -161,7 +161,6 @@ class ZeahContentTest {
             boolean travel = ZeahTravel.agent(n.id()) != null;
             assertTrue(travel || !ZeahNpcs.dialogue(n.id()).isEmpty(), n.id() + " has nothing to say");
         }
-        assertFalse(ZeahNpcs.dialogue(ZeahNpcs.LADY_VULCANA).isEmpty());
     }
 
     @Test
