@@ -538,6 +538,11 @@ public final class MinigameManager {
         onJoin(player);
     }
 
+    /** Self-test hook: the player would die now; false when their minigame handled the death (a safe minigame). */
+    public static boolean selfTestDeath(ServerPlayer player) {
+        return allowDeath(player);
+    }
+
     /**
      * Players who log in inside an instance with no running game are sent to Lumbridge, unless they paused a Fight Cave or
      * Inferno run by logging out: that run picks up again.

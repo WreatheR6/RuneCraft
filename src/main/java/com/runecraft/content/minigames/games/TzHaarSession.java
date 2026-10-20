@@ -515,6 +515,11 @@ public abstract class TzHaarSession extends MinigameSession {
         return living(null);
     }
 
+    /** Self-test hook: the session's living creatures of one id. */
+    public final List<LivingEntity> selfTestCreatures(String creatureId) {
+        return living(creatureId);
+    }
+
     /** Self-test hook: runs one game tick. */
     public final void selfTestTick() {
         MinigameManager.selfTestTick(this);

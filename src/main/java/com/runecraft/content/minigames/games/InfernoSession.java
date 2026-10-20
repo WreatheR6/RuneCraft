@@ -890,9 +890,35 @@ public class InfernoSession extends TzHaarSession {
         }
     }
 
-    /** Self-test hook: knocks a pillar down to {@code hp} hitpoints through the nibblers' damage path. */
+    /** Self-test hook: damages a pillar through the nibblers' damage path. */
     public final void selfTestDamagePillar(int i, int damage) {
         damagePillar(i, damage);
+    }
+
+    /** Self-test hook: whether a pillar's blocks still stand. */
+    public final boolean selfTestPillarStanding(int i) {
+        return world.getBlockState(rel(PILLARS[i][0], 2, PILLARS[i][1])).is(Blocks.OBSIDIAN);
+    }
+
+    /** Self-test hook: the centre of the pillar a nibbler is going for, or null. */
+    public final BlockPos selfTestNibblerPillar(LivingEntity nib) {
+        Integer i = nibblerPillar.get(nib.getId());
+        return i == null ? null : rel(PILLARS[i][0], 1, PILLARS[i][1]);
+    }
+
+    /** Self-test hook: the style a Jal-Ak read and is about to attack with ("melee", "ranged", "magic"), or null. */
+    public final String selfTestBlobRead(LivingEntity blob) {
+        return blobStyle.get(blob.getId());
+    }
+
+    /** Self-test hook: the Ancestral Glyph, or null. */
+    public final LivingEntity selfTestGlyph() {
+        return glyph();
+    }
+
+    /** Self-test hook: whether a monster is still attacking the glyph. */
+    public final boolean selfTestShieldAttacker(LivingEntity e) {
+        return e.getTags().contains(SHIELD);
     }
 
     @Override
