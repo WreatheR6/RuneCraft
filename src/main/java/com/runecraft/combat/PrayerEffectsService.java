@@ -142,7 +142,14 @@ public final class PrayerEffectsService {
         }
     }
 
-    /** Protect Item / items kept on death: the 3 (4 with Protect Item) most valuable items stay with the player. */
+    /**
+     * Protect Item / items kept on death: the 3 (4 with Protect Item) most valuable items stay with the player. The coin and
+     * tokkul pouches ({@link com.runecraft.util.Inv#pouched}) aren't carried items here, and both stay with the player. For
+     * tokkul that is OSRS: it is untradeable, so an unsafe death never drops it for a killer; above level 20 Wilderness it is
+     * kept (an untradeable item without combat use), elsewhere it waits in the gravestone, from which it can be bought back
+     * (wiki "Tokkul", "Items Kept on Death"). There are no gravestones here, so it is simply kept (approx). Keeping the coin
+     * pouch is a known difference: OSRS loses coins like any other unprotected stack.
+     */
     private static void keepItems(ServerPlayer player) {
         if (KEPT.containsKey(player.getUUID())) {
             return;

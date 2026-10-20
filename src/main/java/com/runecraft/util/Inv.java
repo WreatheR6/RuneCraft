@@ -42,7 +42,8 @@ public final class Inv {
 
     /**
      * Whether {@code id} is a currency kept in a pouch in {@link PlayerData} instead of 64-item stacks: coins (the money pouch)
-     * and tokkul. Their items in the inventory are moved into the pouch every tick ({@code PlayerEvents}).
+     * and tokkul. Their items in the inventory are moved into the pouch every tick ({@code PlayerEvents}). Pouches stay with the
+     * player on death (see {@code PrayerEffectsService.keepItems}: OSRS never drops untradeable tokkul for a killer).
      */
     public static boolean pouched(String id) {
         return COINS.equals(id) || TOKKUL.equals(id);
