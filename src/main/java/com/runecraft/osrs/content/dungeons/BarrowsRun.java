@@ -20,8 +20,8 @@ import java.util.Random;
  * (row * 2 + column), edges 6..11 north-south (6 + row * 3 + column). Each run opens a random
  * spanning tree of the corridors plus one extra, so every room can be reached but the route changes.
  * About half of the doors into the chest room pose a puzzle ({@link BarrowsPuzzles}) that must be
- * solved once per run, brothers who are still alive may ambush the player in the tunnels
- * ({@link #tunnelEncounter(Random)}), and killing tunnel monsters adds their combat levels to the reward potential.
+ * solved once per run, each door opened may wake a brother still alive, a skeleton, a bloodworm or a crypt rat
+ * ({@link #doorEncounter}), and killing tunnel monsters adds their combat levels to the reward potential.
  */
 public final class BarrowsRun {
     public static final int EDGES = 12;
@@ -264,14 +264,41 @@ public final class BarrowsRun {
 
     // ------------------------------------------------------------------ tunnel brothers
 
-    /** OSRS-like chance (1 in this) that a living brother ambushes the player on entering a tunnel room. */
-    public static final int TUNNEL_ENCOUNTER_CHANCE = 6;
+    /**
+     * What opening a tunnel door wakes (OSRS Wiki, Barrows/Strategies "Navigating the tunnels"): 12/128 one of the brothers
+     * still alive this run, 52/128 a skeleton, 32/128 a bloodworm, 32/128 a crypt rat.
+     */
+    public enum DoorSpawn { BROTHER, SKELETON, BLOODWORM, CRYPT_RAT }
 
-    /** The brothers who may still appear in the tunnels: not killed this run and not the hidden one. */
+    /** Rolls out of 128 for each {@link DoorSpawn} (same order). */
+    public static final int[] DOOR_SPAWN_WEIGHTS = {12, 52, 32, 32};
+    /** A door opened into a room already holding this many enemies wakes nothing (OSRS Wiki). */
+    public static final int ROOM_ENEMY_CAP = 11;
+    /** Monster ids of the door spawns other than a brother (the dungeons module's Barrows skeleton is level 77). */
+    public static final String SKELETON = "barrows_skeleton";
+    public static final String BLOODWORM = "bloodworm";
+    public static final String CRYPT_RAT = "crypt_rat";
+
+    /** What a door wakes for a roll of 0..127. */
+    public static DoorSpawn doorSpawn(int roll128) {
+        int r = Math.floorMod(roll128, 128);
+        for (int i = 0; i < DOOR_SPAWN_WEIGHTS.length; i++) {
+            r -= DOOR_SPAWN_WEIGHTS[i];
+            if (r < 0) {
+                return DoorSpawn.values()[i];
+            }
+        }
+        return DoorSpawn.CRYPT_RAT;
+    }
+
+    /**
+     * The brothers who may still appear in the tunnels: every brother not killed this run, the hidden one too (if he comes out
+     * of a door he no longer waits in the chest, see {@link #summon(int)}).
+     */
     public List<Integer> tunnelCandidates() {
         List<Integer> list = new ArrayList<>();
         for (int i = 0; i < 6; i++) {
-            if (!killed(i) && !isTunnel(i)) {
+            if (!killed(i)) {
                 list.add(i);
             }
         }
@@ -279,16 +306,32 @@ public final class BarrowsRun {
     }
 
     /**
-     * Rolls a tunnel ambush on entering a room: the brother (index) who appears, or -1. The caller
-     * makes sure no brother is already up before summoning him (and then calls {@link #summon(int)},
-     * so his kill counts toward the run as usual).
+     * Rolls what opening a tunnel door wakes: a brother's index (0..5) for {@link DoorSpawn#BROTHER}, else -1 and the caller
+     * reads {@code spawn[0]}. A brother roll with every brother dead (or one already up, {@code brotherUp}) wakes nothing.
+     * The caller summons the brother and calls {@link #summon(int)}, so his kill counts toward the run as usual.
      */
-    public int tunnelEncounter(Random random) {
+    public int doorEncounter(Random random, boolean brotherUp, DoorSpawn[] spawn) {
+        DoorSpawn s = doorSpawn(random.nextInt(128));
+        spawn[0] = s;
+        if (s != DoorSpawn.BROTHER) {
+            return -1;
+        }
         List<Integer> candidates = tunnelCandidates();
-        if (candidates.isEmpty() || random.nextInt(TUNNEL_ENCOUNTER_CHANCE) != 0) {
+        if (candidates.isEmpty() || brotherUp) {
+            spawn[0] = null;
             return -1;
         }
         return candidates.get(random.nextInt(candidates.size()));
+    }
+
+    // ------------------------------------------------------------------ prayer drain
+
+    /** OSRS Wiki (Barrows/Strategies): the brothers' faces drain prayer every 18 seconds underground. */
+    public static final int PRAYER_DRAIN_TICKS = 30;
+
+    /** Prayer points each drain takes: 8, one more for each brother killed this run (14 with all six). */
+    public static int prayerDrain(int killed) {
+        return 8 + Math.max(0, Math.min(6, killed));
     }
 
     // ------------------------------------------------------------------ rewards
