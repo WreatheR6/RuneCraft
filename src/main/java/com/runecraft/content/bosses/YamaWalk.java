@@ -24,7 +24,8 @@ import net.minecraft.world.phys.Vec3;
  * back; phase 2's Meteor Strike outrun or Shadow Stomp blocked; the second exile at 33.3%; phase 3 with the glyphs gone and
  * half-health flares; the kill shared with a duo partner who rolls their own loot on their contribution. Then a second
  * challenge under the Contract of shard acquisition: exiles at 75% and 50%, no standard table, and the 45 shards for the
- * player who showed the contract.
+ * player who showed the contract. Last, a solo contract (divine severance): the partner walking in after the summon can't
+ * hurt him by any path.
  */
 public final class YamaWalk {
     private YamaWalk() {
@@ -43,6 +44,7 @@ public final class YamaWalk {
         List<String> log = new ArrayList<>();
         ServerPlayer partner = com.runecraft.platform.FakePlayer.get(world);
         DataBossEntity second = null;
+        DataBossEntity third = null;
         partner.getInventory().clearContent(); // room for the partner's own loot
         try {
             Vec3 c = y.homeVec();
@@ -120,10 +122,36 @@ public final class YamaWalk {
                 throw fail("the contract's 45 oathplate shards didn't come (" + (Inv.count(p, "oathplate_shards") - shards) + ")");
             }
             log.add("shard contract: exiles at 75%/50%, no standard table, 45 shards");
+
+            // a third challenge under a solo contract: the partner walking in after the summon can't hurt Yama
+            ModernScripts.Yama.walkOffer(p, YamaContract.DIVINE_SEVERANCE);
+            third = DataBossService.spawn(world, boss.blockPosition(), def, p);
+            if (third == null || !(third.script() instanceof ModernScripts.Yama y3)) {
+                throw fail("the solo contract challenge didn't spawn Yama");
+            }
+            d.ticks(third, 2);
+            if (y3.walkContract() != YamaContract.DIVINE_SEVERANCE) {
+                throw fail("Yama ignored the solo contract (" + y3.walkContract() + ")");
+            }
+            partner.teleportTo(world, c.x + 3, c.y, c.z + 6, 0, 0);
+            float health = third.getHealth();
+            int byHook = BossWalks.hit(third, partner, 300, AttackType.SLASH);
+            int byOtherPath = CombatHandler.applyDamage(partner, third, 300);
+            if (byHook != 0 || byOtherPath != 0 || third.getHealth() < health || y3.contribution(partner) != 0) {
+                throw fail("a partner who joined after the summon hurt Yama under a solo contract (" + byHook + "/"
+                        + byOtherPath + " damage, contribution " + y3.contribution(partner) + ")");
+            }
+            if (BossWalks.hit(third, p, 300, AttackType.SLASH) <= 0) {
+                throw fail("the solo contract's challenger couldn't hurt Yama");
+            }
+            log.add("solo contract: the late partner can't hurt Yama");
             return String.join("; ", log);
         } finally {
             if (second != null && second.isAlive()) {
                 second.discard();
+            }
+            if (third != null && third.isAlive()) {
+                third.discard();
             }
             partner.getInventory().clearContent();
         }

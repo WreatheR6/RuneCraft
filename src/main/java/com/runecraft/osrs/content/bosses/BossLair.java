@@ -93,4 +93,47 @@ public final class BossLair {
     public static boolean strandedBy(double distance, double meleeReach, boolean pathReaches) {
         return distance > meleeReach + 1.0 && !pathReaches;
     }
+
+    /** Spots around a centre a stranded boss tries (eight compass points). */
+    public static final int RING_SPOTS = 8;
+
+    /** The {@link #RING_SPOTS} spots ({x, z}) around a centre at a radius, the first toward the angle {@code start} (radians). */
+    public static double[][] ring(double cx, double cz, double radius, double start) {
+        double[][] out = new double[RING_SPOTS][];
+        for (int i = 0; i < RING_SPOTS; i++) {
+            double a = start + i * 2 * Math.PI / RING_SPOTS;
+            out[i] = new double[]{cx + Math.cos(a) * radius, cz + Math.sin(a) * radius};
+        }
+        return out;
+    }
+
+    /**
+     * How a stranded boss closes the gap: it steps to ({@code knockDown} false) or knocks its target down to
+     * ({@code knockDown} true) the spot {@code x, z}.
+     */
+    public record SafespotBreak(boolean knockDown, double x, double z) {
+    }
+
+    /**
+     * How a melee boss stranded by terrain ({@link #breaksSafespot}) reaches its target: it steps to the first spot beside
+     * the target where it fits ({@code bossFits}: open and on solid floor at the target's height). Where there is none (a
+     * 1x1 pillar or a one-wide shaft: every spot lies past the edge or inside a wall) the target is knocked off their perch
+     * instead, down to the first spot beside the boss where a player fits ({@code playerFits}), or onto the boss's own spot,
+     * which is always standable (the boss stands on it). So no terrain keeps a melee boss from hitting back.
+     */
+    public static SafespotBreak breakSafespot(double[][] besideTarget, java.util.function.Predicate<double[]> bossFits,
+                                              double[][] besideBoss, java.util.function.Predicate<double[]> playerFits,
+                                              double bossX, double bossZ) {
+        for (double[] spot : besideTarget) {
+            if (bossFits.test(spot)) {
+                return new SafespotBreak(false, spot[0], spot[1]);
+            }
+        }
+        for (double[] spot : besideBoss) {
+            if (playerFits.test(spot)) {
+                return new SafespotBreak(true, spot[0], spot[1]);
+            }
+        }
+        return new SafespotBreak(true, bossX, bossZ);
+    }
 }

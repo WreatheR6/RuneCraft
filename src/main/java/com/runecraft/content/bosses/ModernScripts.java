@@ -154,8 +154,9 @@ final class ModernScripts {
         /** Each fighter's damage to Yama (their contribution, YamaLoot) and the players themselves. */
         private final Map<UUID, Integer> damageBy = new java.util.LinkedHashMap<>();
         private final Map<UUID, ServerPlayer> fighters = new java.util.LinkedHashMap<>();
-        /** Who showed Yama the contract (only they receive its reward). */
+        /** Who showed Yama the contract (only they receive its reward) and their name. */
         private UUID contractHost;
+        private String contractHostName = "my challenger";
         /** Exile thresholds already passed (two: 66.6%/33.3%, or 75%/50% under a contract). */
         private int thresholdsPassed;
         /** Autos at the current target (in a duo he turns on the other player now and then). */
@@ -164,6 +165,29 @@ final class ModernScripts {
         /** The rewards of a kill: every fighter's own roll on their contribution; the killer's come back to drop. */
         static void register() {
             com.runecraft.boss.DataBossService.loot("yama", Yama::rollLoot);
+            // Under a solo contract only its challenger may hurt Yama, his flares or his Judge, whatever the damage path
+            // (the hit hook below refuses the usual paths before any contribution is credited).
+            com.runecraft.combat.CombatHooks.addMonsterDamageGate((player, target) -> {
+                Yama y = target instanceof DataBossEntity b && b.script() instanceof Yama s ? s : OWNED.get(target);
+                return y != null && y.intruder(player) ? y.intruderMessage() : null;
+            });
+        }
+
+        /** The void flares and Judge of each fight (for the solo-contract damage gate). */
+        private static final Map<net.minecraft.world.entity.Entity, Yama> OWNED = new java.util.WeakHashMap<>();
+
+        /**
+         * A player who isn't part of this fight's terms: a solo contract (OSRS Wiki "Yama#Contracts": the sigil, oathplate
+         * and harmony contracts, "Challenger must be alone") is between Yama and the player who showed it to him; anyone
+         * joining after the summon can't hurt him, isn't targeted or exiled, and rolls no loot.
+         */
+        boolean intruder(ServerPlayer p) {
+            return p != null && contract != null && !YamaLoot.duoAllowed(contract) && contractHost != null
+                    && !p.getUUID().equals(contractHost);
+        }
+
+        private String intruderMessage() {
+            return "Yama: These terms are between me and " + contractHostName + ".";
         }
 
         static List<com.runecraft.skill.Drops.Rolled> rollLoot(ServerPlayer killer, DataBossEntity boss,
@@ -176,7 +200,7 @@ final class ModernScripts {
                 return mine;
             }
             for (ServerPlayer p : y.fighters.values()) {
-                if (p == killer || !p.isAlive() || p.level() != boss.level() || p.distanceToSqr(boss) > 48 * 48) {
+                if (p == killer || y.intruder(p) || !p.isAlive() || p.level() != boss.level() || p.distanceToSqr(boss) > 48 * 48) {
                     continue;
                 }
                 double share = y.contribution(p);
@@ -349,6 +373,7 @@ final class ModernScripts {
             if (challenger != null) {
                 contract = PENDING.remove(challenger.getUUID());
                 contractHost = contract == null ? null : challenger.getUUID();
+                contractHostName = challenger.getName().getString();
             }
             fireStyle = boss.getRandom().nextBoolean();
             BossFx.say(boss, contract == null ? "Yama: Let us begin. Mind the glyphs, mortal."
@@ -388,6 +413,10 @@ final class ModernScripts {
 
         @Override
         protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            if (intruder(attacker)) {
+                Msg.game(attacker, intruderMessage()); // nothing lands and nothing counts toward a share of the loot
+                return 0;
+            }
             if (attacker != null && attacker == target(boss)) {
                 meleeStance = type.isMelee();
                 targetMaging = type == AttackType.MAGIC;
@@ -511,6 +540,7 @@ final class ModernScripts {
                 autosAtTarget = 0;
                 List<ServerPlayer> others = new ArrayList<>(BossFx.players(boss, 24));
                 others.remove(target);
+                others.removeIf(this::intruder);
                 if (!others.isEmpty()) {
                     ServerPlayer next = others.get(boss.getRandom().nextInt(others.size()));
                     boss.setTarget(next);
@@ -620,6 +650,7 @@ final class ModernScripts {
                 if (m == null) {
                     continue;
                 }
+                OWNED.put(m, this);
                 if (stage >= 3) {
                     m.setHealth(m.getMaxHealth() / 2); // 71 of 140 in phase 3
                 }
@@ -748,6 +779,9 @@ final class ModernScripts {
             // The exile spot and the Judge sit in the arena's west side, inside the ring wall.
             Vec3 spot = standable(w, floorSpot(boss, -12, 4));
             for (ServerPlayer p : BossFx.players(boss, 24)) {
+                if (intruder(p)) {
+                    continue;
+                }
                 p.teleportTo(spot.x, spot.y, spot.z);
                 exilees.add(p);
                 Msg.red(p, "Yama slams his axe down and exiles you from the arena! Defeat the Judge of Yama.");
@@ -755,6 +789,7 @@ final class ModernScripts {
             ServerPlayer target = exilees.isEmpty() ? null : exilees.get(0);
             judge = BossFx.spawnMinion(boss, BossMechanics.YAMA_JUDGE, floorSpot(boss, -12, -3), target);
             if (judge != null) {
+                OWNED.put(judge, this);
                 // The Judge prays against ranged and the last style it was hit with (melee at the start); other attacks
                 // always land, and always for their max hit.
                 AttackType[] last = {AttackType.CRUSH};

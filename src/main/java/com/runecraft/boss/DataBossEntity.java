@@ -219,23 +219,36 @@ public class DataBossEntity extends OsrsMonsterEntity {
         return true;
     }
 
-    /** Moves the boss to the first clear standing spot next to the target. */
+    /**
+     * Moves the boss to the first clear standing spot next to the target, or, where there is none (a 1x1 pillar, a one-wide
+     * shaft), knocks the target down beside the boss ({@link BossLair#breakSafespot}).
+     */
     private void stepBeside(LivingEntity target) {
-        double r = getBbWidth() / 2 + 1.2;
         double start = Math.atan2(getZ() - target.getZ(), getX() - target.getX());
-        for (int i = 0; i < 8; i++) {
-            double a = start + i * Math.PI / 4;
-            double x = target.getX() + Math.cos(a) * r;
-            double z = target.getZ() + Math.sin(a) * r;
-            double y = target.getY();
-            net.minecraft.core.BlockPos below = net.minecraft.core.BlockPos.containing(x, y - 0.5, z);
-            if (level().noCollision(this, getDimensions(getPose()).makeBoundingBox(x, y, z))
-                    && !level().getBlockState(below).getCollisionShape(level(), below).isEmpty()) {
-                getNavigation().stop();
-                teleportTo(x, y, z);
-                return;
-            }
+        double targetY = target.getY();
+        double bossY = getY();
+        BossLair.SafespotBreak b = BossLair.breakSafespot(
+                BossLair.ring(target.getX(), target.getZ(), getBbWidth() / 2 + 1.2, start), xz -> fits(this, xz[0], targetY, xz[1]),
+                BossLair.ring(getX(), getZ(), getBbWidth() / 2 + 1.0, start + Math.PI), xz -> fits(target, xz[0], bossY, xz[1]),
+                getX(), getZ());
+        if (!b.knockDown()) {
+            getNavigation().stop();
+            teleportTo(b.x(), targetY, b.z());
+            return;
         }
+        target.resetFallDistance();
+        target.teleportTo(b.x(), bossY, b.z());
+        if (target instanceof ServerPlayer p) {
+            BossDef def = def();
+            Msg.red(p, (def == null ? "The boss" : def.name) + " knocks you off your perch!");
+        }
+    }
+
+    /** Whether an entity fits standing at a spot: its box clear of blocks and solid floor under its feet. */
+    private boolean fits(net.minecraft.world.entity.Entity e, double x, double y, double z) {
+        net.minecraft.core.BlockPos below = net.minecraft.core.BlockPos.containing(x, y - 0.5, z);
+        return level().noCollision(e, e.getDimensions(e.getPose()).makeBoundingBox(x, y, z))
+                && !level().getBlockState(below).getCollisionShape(level(), below).isEmpty();
     }
 
     /** OSRS hitpoints of this boss (its variant's when it has one). */
