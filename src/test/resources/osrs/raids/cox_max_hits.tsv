@@ -1,0 +1,25 @@
+# Chambers of Xeric max hits (solo, normal mode) from weirdgloop/osrs-dps-calc cdn/json/monsters.json "max_hit" and the
+# OSRS wiki infoboxes (osrs-wiki-data dump, July 2026) where the calculator lists one value for several attacks.
+# Creatures whose max hit "varies" (Vasa, the Skeletal Mystics, the ice demon) are scripted by their rooms and left out.
+# The party size and Challenge Mode scale these in game (RaidScaling.coxOffence).
+# id	attack	max hit	source
+tekton	hammer stab	52	dps-calc Tekton (Normal)
+tekton	hammer slash	52	dps-calc Tekton (Normal)
+tekton	hammer crush	52	dps-calc Tekton (Normal)
+cox_guardian	stone fist	20	dps-calc Guardian (Chambers of Xeric)
+cox_lizardman_shaman	acid spit	21	wiki Lizardman shaman (ranged 21; the Chambers shamans share the attack set)
+cox_lizardman_shaman	claw	31	wiki Lizardman shaman (melee 31)
+small_muttadile	bite	28	wiki Muttadile (Small): 28 melee
+small_muttadile	water blast	30	wiki Muttadile (Small): 30 ranged
+muttadile	crushing bite	48	wiki Muttadile (Large): 48 melee
+muttadile	stomp	72	dps-calc Muttadile (Large): 72 stomp
+muttadile	water spit	45	wiki Muttadile (Large): 45 ranged
+muttadile	water blast	23	wiki Muttadile (Large): 23 magic
+vanguard_melee	blade swipe	18	dps-calc Vanguard (Melee)
+vanguard_ranged	rock fall	22	dps-calc Vanguard (Ranged)
+vanguard_magic	magic blast	22	dps-calc Vanguard (Magic)
+vespula	sting	14	dps-calc Vespula (14 ranged)
+vespine_soldier	sting	14	dps-calc Vespine soldier
+cox_scavenger_beast	bite	13	dps-calc Scavenger beast
+deathly_ranger	arrow	70	dps-calc Deathly ranger
+deathly_mage	blast	22	dps-calc Deathly mage

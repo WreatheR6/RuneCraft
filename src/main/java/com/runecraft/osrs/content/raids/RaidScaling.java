@@ -11,7 +11,10 @@ import java.util.Set;
  * values are approximations and are marked as such.
  */
 public final class RaidScaling {
-    /** CoX personal points cap (OSRS: 131,071). */
+    /**
+     * CoX personal points that count towards the common loot (OSRS: 131,071). Points earned past it still count towards
+     * the team's unique rolls (OSRS wiki "Chambers of Xeric", Reward system).
+     */
     public static final int COX_POINTS_CAP = 131_071;
     /** CoX team points per unique roll: a roll with this many points has its maximum 65.7% chance. */
     public static final int COX_POINTS_PER_ROLL = 570_000;
@@ -25,10 +28,6 @@ public final class RaidScaling {
     public static final int COX_TIGHTROPE_POINTS = 2_000;
     /** CoX crystal crabs room: 1,600 points for lighting every crystal (OSRS), split per crystal. */
     public static final int COX_CRABS_POINTS = 1_600;
-    /** Game ticks after one Olm claw dies within which the other must die, or the dead one regrows. // approx */
-    public static final int OLM_CLAW_REVIVE_TICKS = 20;
-    /** Game ticks the Great Olm's left (melee) claw stays clenched unless the right claw dies first. // approx */
-    public static final int OLM_CLENCH_TICKS = 16;
     /** ToA personal points cap (OSRS: 64,000). */
     public static final int TOA_POINTS_CAP = 64_000;
     /** ToB points a surviving player earns per room (6 rooms = 18 points, as in OSRS). */
@@ -53,10 +52,35 @@ public final class RaidScaling {
             "verzik_vitur_p3", 2400);
 
     /**
-     * Challenge Mode target time for the twisted ancestral colour kit. OSRS scales it by team size;
-     * this mod's rooms are smaller, so one generous target is used. // approx
+     * Challenge Mode target time for the twisted ancestral colour kit, the metamorphic dust and the 5,000 bonus points
+     * (OSRS wiki "Chambers of Xeric/Challenge Mode"): 1:10:00 solo, 1:05:00 for two, 50 minutes for three, 45 for four,
+     * 42 for 5-10, 45 for 11-15, an hour for 16-23 and 1:20:00 for 24 or more.
      */
-    public static final int COX_CM_TARGET_MINUTES = 50;
+    public static int coxCmTargetMinutes(int partySize) {
+        int n = Math.max(1, partySize);
+        if (n == 1) {
+            return 70;
+        }
+        if (n == 2) {
+            return 65;
+        }
+        if (n == 3) {
+            return 50;
+        }
+        if (n == 4) {
+            return 45;
+        }
+        if (n <= 10) {
+            return 42;
+        }
+        if (n <= 15) {
+            return 45;
+        }
+        return n <= 23 ? 60 : 80;
+    }
+
+    /** Points each player adds to the team total for finishing Challenge Mode within the target time (OSRS wiki). */
+    public static final int COX_CM_TARGET_BONUS = 5_000;
     /** ToB Hard mode challenge time for the ornament kits, sanguine dust and the larger chest. // approx */
     public static final int TOB_HM_TARGET_MINUTES = 35;
 
@@ -66,7 +90,7 @@ public final class RaidScaling {
     /** The mode's target time in game ticks (0.6 s), or {@link Long#MAX_VALUE} when the mode has none. */
     public static long targetTicks(RaidType type, RaidMode mode, int partySize) {
         if (type == RaidType.COX && mode == RaidMode.CHALLENGE) {
-            return COX_CM_TARGET_MINUTES * 100L;
+            return coxCmTargetMinutes(partySize) * 100L;
         }
         if (type == RaidType.TOB && mode == RaidMode.HARD) {
             return TOB_HM_TARGET_MINUTES * 100L;
@@ -287,6 +311,19 @@ public final class RaidScaling {
     /** CoX: a death costs 40% of your personal points. */
     public static int coxDeathPenalty(int points) {
         return points - points * 40 / 100;
+    }
+
+    /**
+     * Whether a CoX death costs the whole team 5% of its points instead (OSRS wiki: a player who dies with none, or less
+     * than 5% of the team's points before the death, so supplies can't be suicided into a boss room for free).
+     */
+    public static boolean coxDeathHitsTeam(int personalPoints, int teamPoints) {
+        return personalPoints * 20L < teamPoints || personalPoints <= 0;
+    }
+
+    /** The team's points after a low-points death: everyone loses 5%. */
+    public static int coxTeamDeathPenalty(int points) {
+        return points - points * 5 / 100;
     }
 
     // ------------------------------------------------------------------ Theatre of Blood

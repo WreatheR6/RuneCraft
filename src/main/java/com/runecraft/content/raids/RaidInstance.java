@@ -54,6 +54,8 @@ import net.minecraft.world.phys.Vec3;
  * four paths are walked the Nexus opens the way down to the Wardens. The raid timer runs from the first path.
  */
 public final class RaidInstance {
+    /** Completion-count key of CoX Challenge Mode (OSRS counts it apart from normal raids). */
+    public static final String COX_CM_KEY = "cox_cm";
     /** Entities' maximum health attribute is clamped at 1024; anything above that is held in reserve. */
     private static final int MC_MAX_HEALTH = 1024;
     /** Game ticks a ToA raid waits for anyone to log back in before it closes. */
@@ -63,8 +65,11 @@ public final class RaidInstance {
     public final int slot;
     public final RaidType type;
     public final ServerLevel world;
-    public final List<RoomDef> rooms;
+    /** The rooms in order. Final once the raid begins (CoX re-rolls them in the lobby: a reload or Challenge Mode). */
+    public List<RoomDef> rooms;
     public final Random random;
+    /** CoX: the layout's floors (where a death sends you back to) and its scouting summary; null for the other raids. */
+    private RaidLayouts.CoxPlan coxPlan;
     private final List<UUID> party = new ArrayList<>();
     private final Map<UUID, String> names = new HashMap<>();
     /** CoX/ToB points; ToA total reward points (starting at 5,000). */
@@ -78,8 +83,8 @@ public final class RaidInstance {
     private final Map<UUID, BlockPos> returnPos = new HashMap<>();
     /** ToA: members who logged out mid-raid (they may log back in), with the raid tick they left. */
     private final Map<UUID, Long> offline = new HashMap<>();
-    private final RoomLogic[] logics;
-    private final boolean[] built;
+    private RoomLogic[] logics;
+    private boolean[] built;
     /** Hidden hitpoints for creatures with more than 1024 HP, plus their true maximum. */
     private final Map<LivingEntity, int[]> reserve = new WeakHashMap<>();
     /** CoX: points left in each creature's damage pool (5 per hitpoint, OSRS). */
@@ -127,7 +132,12 @@ public final class RaidInstance {
         this.type = type;
         this.world = world;
         this.random = new Random(world.getRandom().nextLong() ^ System.nanoTime());
-        this.rooms = RaidLayouts.layout(type, random);
+        if (type == RaidType.COX) {
+            this.coxPlan = RaidLayouts.coxPlan(random);
+            this.rooms = coxPlan.rooms();
+        } else {
+            this.rooms = RaidLayouts.layout(type, random);
+        }
         this.logics = new RoomLogic[rooms.size()];
         this.built = new boolean[rooms.size()];
         for (int i = 0; i < rooms.size(); i++) {
@@ -274,13 +284,64 @@ public final class RaidInstance {
         return mode;
     }
 
-    /** Sets the difficulty mode (party leader, before the raid begins). */
+    /** Sets the difficulty mode (party leader, before the raid begins). CoX Challenge Mode has its own fixed layout. */
     public boolean setMode(RaidMode m) {
         if (begun || m == null || !m.availableFor(type)) {
             return false;
         }
+        boolean changed = mode != m;
         mode = m;
+        if (changed && type == RaidType.COX) {
+            relayout(m == RaidMode.CHALLENGE ? RaidLayouts.coxChallengePlan(random) : RaidLayouts.coxPlan(random));
+        }
         return true;
+    }
+
+    /** CoX: the scouted layout, floor by floor (null for the other raids). */
+    public String scout() {
+        return coxPlan == null ? null : coxPlan.scout();
+    }
+
+    /** CoX: the first room of the floor room {@code room} is on (the respawn point after a death). */
+    public int floorStart(int room) {
+        return coxPlan == null ? 0 : coxPlan.floorStart(room);
+    }
+
+    /**
+     * CoX "reload" (OSRS: the stairs in the lobby re-roll the layout before the raid starts; Challenge Mode's layout is
+     * fixed). Returns false once the raid has begun or in Challenge Mode.
+     */
+    public boolean reloadLayout() {
+        if (type != RaidType.COX || begun || mode == RaidMode.CHALLENGE) {
+            return false;
+        }
+        relayout(RaidLayouts.coxPlan(random));
+        return true;
+    }
+
+    /** Swaps in a new CoX room sequence while the party waits in the lobby, rebuilding the first room. */
+    private void relayout(RaidLayouts.CoxPlan plan) {
+        if (begun || plan.rooms().size() > RaidLayouts.MAX_ROOMS) {
+            return;
+        }
+        for (int i = 1; i < logics.length; i++) {
+            logics[i].cleanup();
+        }
+        RoomLogic lobby = logics[0];
+        coxPlan = plan;
+        rooms = plan.rooms();
+        logics = new RoomLogic[rooms.size()];
+        built = new boolean[rooms.size()];
+        logics[0] = lobby;
+        built[0] = true;
+        for (int i = 1; i < rooms.size(); i++) {
+            logics[i] = RoomLogic.create(this, rooms.get(i), i);
+        }
+        for (int i = 1; i < Math.min(3, rooms.size()); i++) {
+            RaidBuilder.prefetch(world, slot, i);
+        }
+        ensureBuilt(1);
+        say("Layout: " + plan.scout(), ChatFormatting.AQUA);
     }
 
     /** Whether the current room belongs to a ToA path (puzzle or path boss). */
@@ -357,7 +418,8 @@ public final class RaidInstance {
             roomPoints.put(u, Math.max(0, Math.min(ToaLoot.ROOM_POINTS_CAP, roomPoints.getOrDefault(u, 0) + amount)));
             return;
         }
-        points.put(u, Math.max(0, Math.min(RaidScaling.COX_POINTS_CAP, points.get(u) + amount)));
+        // OSRS: the 131,071 cap only limits the common loot; points past it still count towards the uniques.
+        points.put(u, Math.max(0, points.get(u) + amount));
     }
 
     /** The creature id of a raid entity (boss definition id, or entity type path). */
@@ -665,9 +727,9 @@ public final class RaidInstance {
         return !suppliesTaken.isEmpty();
     }
 
-    /** The raid timer: from the start barrier (CoX, ToB) or the first path (ToA) until the raid is complete. */
+    /** The raid timer: from the start barrier (CoX: when the leader starts the raid) or the first path (ToA) until the end. */
     public long elapsedTicks() {
-        long from = type == RaidType.TOA ? beginTick : startTick;
+        long from = type == RaidType.TOB ? startTick : beginTick;
         if (from < 0) {
             return 0;
         }
@@ -721,6 +783,12 @@ public final class RaidInstance {
         if (type == RaidType.TOA) {
             say("Raid level: " + raidLevel + " (" + Invocation.presets().get(presetIndex).name() + "). Use the obelisk to choose "
                     + "the invocations.", ChatFormatting.YELLOW);
+        } else if (type == RaidType.COX) {
+            // OSRS: the party scouts the layout before starting; the leader can reload it (/raids reload) or pick Challenge
+            // Mode, whose layout is fixed.
+            say("Layout: " + coxPlan.scout(), ChatFormatting.AQUA);
+            say("Mode: " + mode.displayName() + ". The leader can change it with /raids mode <normal|challenge>, or re-roll the "
+                    + "layout with /raids reload.", ChatFormatting.YELLOW);
         } else {
             say("Mode: " + mode.displayName() + ". The leader can change it with /raids mode "
                     + (type == RaidType.COX ? "<normal|challenge>" : "<entry|normal|hard>") + ".", ChatFormatting.YELLOW);
@@ -1141,6 +1209,13 @@ public final class RaidInstance {
             raidLevel = Math.max(0, raidLevel - Invocation.timeLimitPenalty(invocations));
             say("You missed the " + limit + "-minute time limit: the raid level drops to " + raidLevel + ".", ChatFormatting.RED);
         }
+        if (type == RaidType.COX && mode == RaidMode.CHALLENGE && withinTarget) {
+            // OSRS: a Challenge Mode raid within the target time adds 5,000 points per player to the team.
+            for (UUID u : party) {
+                addPoints(u, RaidScaling.COX_CM_TARGET_BONUS);
+            }
+            say("Challenge Mode within the target time: +" + RaidScaling.COX_CM_TARGET_BONUS + " points each.", ChatFormatting.AQUA);
+        }
         Map<String, Integer> pts = new LinkedHashMap<>();
         // ToA (OSRS): raiders who left before the end still count towards the team's unique chance (and can draw the
         // unique, which then goes to no one); the others only roll for whoever is still here.
@@ -1170,13 +1245,15 @@ public final class RaidInstance {
         RaidsState state = RaidsState.get(world.getServer());
         for (ServerPlayer p : players()) {
             boolean purple = result.purple(p.getUUID().toString());
-            int kc = state.addCompletion(p.getUUID(), type.id(), points(p.getUUID()), purple);
+            // OSRS keeps the Challenge Mode completion count apart from the normal one.
+            boolean cm = type == RaidType.COX && mode == RaidMode.CHALLENGE;
+            int kc = state.addCompletion(p.getUUID(), cm ? COX_CM_KEY : type.id(), points(p.getUUID()), purple);
             if (type == RaidType.TOA) {
                 // OSRS keeps Entry, Normal and Expert mode completion counts apart.
                 int modeKc = state.addCount(p.getUUID(), ToaLoot.modeKey(modeLevel));
                 Msg.game(p, "Your completed " + ToaLoot.modeCountName(modeLevel) + " count is: " + modeKc + ".");
             } else {
-                Msg.game(p, "Your completed " + type.displayName() + " count is: " + kc + ".");
+                Msg.game(p, "Your completed " + type.displayName() + (cm ? " Challenge Mode" : "") + " count is: " + kc + ".");
             }
             if (type != RaidType.TOB) {
                 Msg.game(p, "Personal points: " + points(p.getUUID()) + ".");
@@ -1315,9 +1392,19 @@ public final class RaidInstance {
         switch (type) {
             case COX -> {
                 int before = points(u);
-                points.put(u, RaidScaling.coxDeathPenalty(before));
-                say(p.getName().getString() + " has died and lost " + (before - points(u)) + " points.", ChatFormatting.RED);
-                teleport(p, spawn(0));
+                int team = totalPoints();
+                if (before > 0 && !RaidScaling.coxDeathHitsTeam(before, team)) {
+                    points.put(u, RaidScaling.coxDeathPenalty(before));
+                    say(p.getName().getString() + " has died and lost " + (before - points(u)) + " points.", ChatFormatting.RED);
+                } else {
+                    // OSRS: dying with (almost) no points costs the whole team 5% instead.
+                    for (UUID v : party) {
+                        points.put(v, RaidScaling.coxTeamDeathPenalty(points.getOrDefault(v, 0)));
+                    }
+                    say(p.getName().getString() + " has died with too few points: the team loses 5% of its points.", ChatFormatting.RED);
+                }
+                // OSRS: you respawn at the start of the floor you have reached.
+                teleport(p, spawn(floorStart(current)));
             }
             case TOB -> {
                 points.put(u, Math.max(0, points(u) - RaidScaling.TOB_DEATH_PENALTY));

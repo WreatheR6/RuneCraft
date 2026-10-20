@@ -12,16 +12,17 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 
 /**
- * Builds raid instances out of blocks. Each instance occupies its own 1024-block strip of the
+ * Builds raid instances out of blocks. Each instance occupies its own 1280-block strip of the
  * Gielinor dimension far from the map ({@link #BASE_X}); rooms are enclosed boxes floating at
  * {@link #FLOOR_Y}, laid out west to east and joined by short corridors. Chunks are generated
  * synchronously on the server thread and force-loaded while the raid runs.
  */
 public final class RaidBuilder {
-    /** Instances start here; instance {@code slot} occupies x in [BASE_X + 1024*slot, +1024). */
+    /** Instances start here; instance {@code slot} occupies x in [BASE_X + SLOT_WIDTH*slot, +SLOT_WIDTH). */
     public static final int BASE_X = 2_000_000;
     public static final int BASE_Z = 2_000_000;
-    public static final int SLOT_WIDTH = 1024;
+    /** Wide enough for the longest raid: CoX Challenge Mode's 21 rooms (32 + 20 x 56 + the last room's half and wall). */
+    public static final int SLOT_WIDTH = 1280;
     public static final int FLOOR_Y = 100;
     /** Distance between room centres. */
     public static final int SPACING = 56;

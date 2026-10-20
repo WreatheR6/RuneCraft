@@ -82,6 +82,47 @@ class CoxLayoutsTest {
         assertTrue(seen.size() > 15, "layouts used: " + seen.size());
     }
 
+    @Test
+    void challengeModeHasEveryRoomInTheWikiOrder() {
+        RaidLayouts.CoxPlan plan = RaidLayouts.coxChallengePlan(new Random(4));
+        List<String> ids = new ArrayList<>();
+        for (RoomDef r : plan.rooms()) {
+            ids.add(r.id().equals("cox_hunting") ? "cox_farming" : r.id());
+        }
+        // OSRS wiki "Chambers of Xeric/Challenge Mode": the same 18 rooms in the same order every run.
+        assertEquals(List.of("cox_lobby",
+                "tekton", "crystal_crabs", "cox_scavengers", "ice_demon", "shamans", "cox_farming",
+                "vanguards", "thieving", "cox_scavengers", "vespula", "cox_farming", "tightrope",
+                "guardians", "vasa", "cox_scavengers", "mystics", "muttadiles", "cox_farming",
+                "olm", "cox_reward"), ids);
+        assertEquals(RaidLayouts.MAX_ROOMS, plan.rooms().size());
+        Set<String> all = new HashSet<>(ids);
+        for (List<String> rot : RaidLayouts.COX_ROTATIONS) {
+            assertTrue(all.containsAll(rot), "every boss room");
+        }
+        assertTrue(all.containsAll(RaidLayouts.COX_PUZZLES), "every puzzle room");
+        // Deaths send a raider back to the start of their floor.
+        assertEquals(0, plan.floorStart(3));
+        assertEquals(7, plan.floorStart(9));
+        assertEquals(13, plan.floorStart(18));
+        assertEquals(19, plan.floorStart(19));
+        assertTrue(plan.scout().startsWith("Floor 1: Tekton, Crystal crabs, Scavengers, Ice demon"), plan.scout());
+        assertTrue(plan.scout().contains("Floor 3: Guardians"), plan.scout());
+    }
+
+    @Test
+    void normalPlansSplitTheFloorsAtTheStairs() {
+        RaidLayouts.CoxPlan plan = RaidLayouts.coxPlan("SCFCPC.CSPCSF", new Random(1));
+        assertEquals(15, plan.rooms().size());
+        // Lobby + 6 rooms on the first floor, so the second floor starts at room 7; the Olm at 13.
+        assertEquals(0, plan.floorStart(6));
+        assertEquals(7, plan.floorStart(7));
+        assertEquals(7, plan.floorStart(12));
+        assertEquals(13, plan.floorStart(13));
+        assertEquals("olm", plan.rooms().get(13).id());
+        assertEquals(2, plan.scout().split(" \\| ").length, plan.scout());
+    }
+
     /** Whether the rooms are consecutive in one of the two rotations (either direction). */
     private static boolean isWindow(List<String> combats) {
         for (List<String> rot : RaidLayouts.COX_ROTATIONS) {

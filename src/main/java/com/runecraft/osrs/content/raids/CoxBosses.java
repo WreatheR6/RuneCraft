@@ -70,25 +70,30 @@ public final class CoxBosses {
                         .size(0.6f, 2.1f, 1.1f),
                 raid("cox_lizardman_shaman", "Lizardman shaman").level(150).stats(190, 130, 130, 210, 130, 130).speed(4)
                         .defenceBonus(102, 160, 150, 160, 0)
-                        .attack(AttackDef.of("acid spit", AttackType.RANGED, 21, 12, 10).special(Special.POISON, 10)
+                        // OSRS wiki: the surface shaman's attack set (melee 31, ranged 21), poisoning from 12 in the Chambers.
+                        .attack(AttackDef.of("acid spit", AttackType.RANGED, 21, 12, 10).special(Special.POISON, CoxRules.SHAMAN_POISON)
                                 .particle("minecraft:item_slime"))
-                        .attack(AttackDef.of("claw", AttackType.STAB, 19, 2.5, 6))
-                        .attack(AttackDef.of("purple spawn", AttackType.MAGIC, 0, 14, 2).special(Special.SUMMON, 3)
-                                .message("The shaman spawns purple creatures!"))
+                        .attack(AttackDef.of("claw", AttackType.STAB, 31, 2.5, 6))
+                        // The leap, the purple poison blob and the spawns are the room's (CoxRooms.Shamans).
                         .minion("cox_lizardman_spawn", 3)
                         .drops(Drop.always("big_bones")).drops(seeds(CoxSupplies.MYSTIC_SEEDS[0], CoxSupplies.MYSTIC_SEEDS[1]))
                         .size(0.8f, 2.2f, 1.2f),
                 raid("small_muttadile", "Muttadile").level(250).stats(250, 150, 150, 138, 1, 150).speed(4)
                         .defenceBonus(-5, 72, 50, 60, 0)
+                        // OSRS wiki infobox: 28 melee, 30 ranged.
                         .attack(AttackDef.of("bite", AttackType.STAB, 28, 2.5, 10))
-                        .attack(AttackDef.of("water blast", AttackType.RANGED, 20, 12, 6).particle("minecraft:splash"))
+                        .attack(AttackDef.of("water blast", AttackType.RANGED, 30, 12, 6).particle("minecraft:splash"))
                         .drops(Drop.always("big_bones"), n(OVERLOAD_PLUS, 1), n(PRAYER_ENHANCE_PLUS, 1), Drop.of(CoxSupplies.STINKHORN, 1, 3, 1))
                         .size(1.0f, 1.0f, 1.2f),
                 raid("muttadile", "Muttadile").level(590).stats(250, 250, 250, 220, 250, 250).speed(4)
                         .defenceBonus(-5, 82, 60, 75, 0)
-                        .attack(AttackDef.of("crushing bite", AttackType.STAB, 39, 3, 10))
-                        .attack(AttackDef.of("water blast", AttackType.MAGIC, 35, 14, 6).particle("minecraft:splash"))
-                        .attack(AttackDef.of("tail sweep", AttackType.CRUSH, 25, 4, 3).special(Special.KNOCKBACK, 4))
+                        // OSRS wiki infobox: 48 melee, 45 ranged, 23 magic, and the stomp hits everyone in melee range for up
+                        // to 72 (50% over its melee, crush; Mod Ash).
+                        .attack(AttackDef.of("crushing bite", AttackType.STAB, 48, 3, 10))
+                        .attack(AttackDef.of("stomp", AttackType.CRUSH, 72, 3, 4).special(Special.AOE, 3)
+                                .telegraph(1, "The Muttadile rears up on its hind legs!").particle("minecraft:explosion"))
+                        .attack(AttackDef.of("water spit", AttackType.RANGED, 45, 14, 6).particle("minecraft:splash"))
+                        .attack(AttackDef.of("water blast", AttackType.MAGIC, CoxRules.MUTTADILE_MAGIC_MAX, 14, 6).particle("minecraft:splash"))
                         .drops(Drop.always("big_bones"), n(OVERLOAD_PLUS, 1), n(PRAYER_ENHANCE_PLUS, 1), n(XERICS_AID_PLUS, 1),
                                 n(REVITALISATION_PLUS, 1))
                         .size(1.4f, 1.3f, 1.8f).moveSpeed(0.22),
@@ -113,7 +118,7 @@ public final class CoxBosses {
                 raid("vespula", "Vespula").level(1051).stats(200, 150, 150, 88, 88, 150).speed(3)
                         // OSRS: only magic, ranged and halberds reach her while she flies; melee works once she lands (room logic).
                         .defenceBonus(0, 0, 0, 70, 60).flying()
-                        .attack(AttackDef.of("sting", AttackType.RANGED, 14, 16, 10).special(Special.POISON, 12)
+                        .attack(AttackDef.of("sting", AttackType.RANGED, 14, 16, 10).special(Special.POISON, CoxRules.VESPULA_POISON)
                                 .particle("minecraft:crit"))
                         .attack(AttackDef.of("venomous sting", AttackType.RANGED, 15, 16, 4).special(Special.DRAIN_PRAYER, 10)
                                 .message("Vespula's sting saps your prayer!"))
@@ -166,11 +171,12 @@ public final class CoxBosses {
                         .skin(0x8A3AB0, 0x6A2A90, 0x6A2A90, 0xE0A0FF).size(0.5f, 0.6f, 1.0f).moveSpeed(0.32),
                 MonsterDef.of("vespine_soldier", "Vespine soldier").level(93).stats(100, 150, 150, 40, 40, 1).speed(4)
                         .defenceBonus(0, 0, 0, 30, 0)
-                        .attack(AttackDef.of("sting", AttackType.CRUSH, 14, 2.5, 10).special(Special.POISON, 6))
+                        .attack(AttackDef.of("sting", AttackType.CRUSH, 14, 2.5, 10).special(Special.POISON, CoxRules.SOLDIER_POISON))
                         .skin(0xD0A020, 0x2A2A1A, 0x2A2A1A, 0xF0E060).size(0.7f, 1.0f, 1.0f).flying().moveSpeed(0.3),
                 MonsterDef.of("deathly_ranger", "Deathly ranger").level(147).stats(120, 1, 1, 155, 155, 210).speed(4)
                         .defenceBonus(0, 0, 0, 0, 0)
-                        .attack(AttackDef.of("arrow", AttackType.RANGED, 18, 14, 10).particle("minecraft:crit"))
+                        // OSRS wiki infobox / DPS calculator: 70 (protection prayers only reduce it).
+                        .attack(AttackDef.of("arrow", AttackType.RANGED, 70, 14, 10).particle("minecraft:crit"))
                         .skin(0x3A5A3A, 0x2A4A2A, 0x1A2A1A, 0x6AA06A).size(0.6f, 1.95f, 1.0f).moveSpeed(0.0),
                 MonsterDef.of("deathly_mage", "Deathly mage").level(147).stats(120, 1, 1, 155, 210, 1).speed(4)
                         .defenceBonus(0, 0, 0, 0, 0)
@@ -180,6 +186,11 @@ public final class CoxBosses {
                 MonsterDef.of("cox_crystal_crab", "Crystal crab").level(1).stats(200, 1, 1, 1, 1, 1).speed(10).passive()
                         .attack(AttackDef.of("pinch", AttackType.CRUSH, 0, 1, 10)).model("rock_crab")
                         .skin(0x9AD8E8, 0x6AB8D0, 0x6AB8D0, 0xE0F8FF).size(0.9f, 0.7f, 1.0f).moveSpeed(0.18),
+                // Ice demon room (OSRS wiki "Ice demon"): one unattackable icefiend per player (up to four) stands by a brazier
+                // and tries to put it out. // approx: the level-18 icefiend's stats; they never fight
+                MonsterDef.of("cox_icefiend", "Icefiend").level(18).stats(20, 12, 16, 19, 1, 1).speed(4).passive()
+                        .attack(AttackDef.of("chill", AttackType.CRUSH, 0, 1, 10)).model("icefiend")
+                        .skin(0x9AC8E8, 0x6A9AC0, 0x6A9AC0, 0xE0F4FF).size(0.7f, 1.5f, 1.0f).moveSpeed(0.0),
                 // OSRS: immune to ranged and 66% less damage from magic (room logic), so melee (stab) it.
                 MonsterDef.of("vasa_crystal", "Glowing crystal").level(1).stats(120, 1, 1, 100, 100, 1).speed(10).passive()
                         .defenceBonus(-5, 180, 180, 0, 0).immune(AttackType.RANGED)

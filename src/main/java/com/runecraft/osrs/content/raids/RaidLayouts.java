@@ -39,6 +39,52 @@ public final class RaidLayouts {
             "SCPFC.CCSSF");
     /** CoX resource rooms: half have fishing spots, half have bats (OSRS wiki, "Chambers of Xeric/Food"). */
     public static final List<String> COX_RESOURCE_ROOMS = List.of("cox_farming", "cox_hunting");
+    /**
+     * Challenge Mode's fixed layout (OSRS wiki "Chambers of Xeric/Challenge Mode"): every combat and puzzle room over three
+     * floors, in the same order every run. {@code F} is a resource room (fishing or bats at random).
+     */
+    public static final List<List<String>> COX_CM_FLOORS = List.of(
+            List.of("tekton", "crystal_crabs", "cox_scavengers", "ice_demon", "shamans", "F"),
+            List.of("vanguards", "thieving", "cox_scavengers", "vespula", "F", "tightrope"),
+            List.of("guardians", "vasa", "cox_scavengers", "mystics", "muttadiles", "F"));
+    /** The most rooms any raid lays out (Challenge Mode: lobby, 18 rooms, the Olm and the chest); the instance strip fits them. */
+    public static final int MAX_ROOMS = 21;
+
+    /**
+     * A Chambers of Xeric raid plan: its rooms (lobby first, the Olm and the chest last) and the index of the first room of
+     * each floor (the lobby, the first room past the stairs, the Olm). A death sends a raider back to the start of the floor
+     * they were on (OSRS wiki: the respawn point moves to the end of the previous floor).
+     */
+    public record CoxPlan(List<RoomDef> rooms, int[] floorStarts) {
+        /** The first room of the floor room {@code room} is on. */
+        public int floorStart(int room) {
+            int start = 0;
+            for (int f : floorStarts) {
+                if (f <= room) {
+                    start = f;
+                }
+            }
+            return start;
+        }
+
+        /** The scouted layout, floor by floor (OSRS players scout the rooms before starting the raid). */
+        public String scout() {
+            StringBuilder sb = new StringBuilder();
+            for (int f = 0; f + 2 < floorStarts.length; f++) {
+                if (sb.length() > 0) {
+                    sb.append(" | ");
+                }
+                sb.append("Floor ").append(f + 1).append(": ");
+                List<String> names = new ArrayList<>();
+                for (int i = Math.max(1, floorStarts[f]); i < floorStarts[f + 1]; i++) {
+                    names.add(rooms.get(i).name() + (rooms.get(i).id().equals("cox_hunting") ? " (bats)"
+                            : rooms.get(i).id().equals("cox_farming") ? " (fishing)" : ""));
+                }
+                sb.append(String.join(", ", names));
+            }
+            return sb.toString();
+        }
+    }
     /** ToA paths: puzzle room followed by the path's boss. */
     public static final List<List<String>> TOA_PATHS = List.of(
             List.of("scabaras_puzzle", "kephri"),
@@ -51,9 +97,11 @@ public final class RaidLayouts {
         room("cox_lobby", "Chambers of Xeric", RaidType.COX, Kind.LOBBY, "crypt", List.of(), 0,
                 "Take supplies from the storage chest, then pass the barrier to descend into the Chambers.");
         room("tekton", "Tekton", RaidType.COX, Kind.COMBAT, "lava", List.of("tekton"), 0,
-                "Tekton returns to his anvil to sharpen his hammer. Dodge the sparks and hit him with crush.");
+                "Tekton returns to his anvil to sharpen his hammer: don't stand under him, dodge the sparks, and mind his "
+                        + "enraged hammer afterwards. Hit him with crush.");
         room("vasa", "Vasa Nistirio", RaidType.COX, Kind.COMBAT, "void", List.of("vasa_nistirio"), 0,
-                "Destroy the glowing crystal Vasa draws power from, and run when he teleports you to him.");
+                "Destroy the glowing crystal Vasa draws power from before his timer runs out, keep out from under him, and "
+                        + "protect from magic when he teleports the party.");
         room("guardians", "Guardians", RaidType.COX, Kind.COMBAT, "stone", List.of("cox_guardian", "cox_guardian"), 0,
                 "The Guardians are made of stone. Only a pickaxe will chip them apart; Mining level and a better pickaxe hit harder.");
         room("mystics", "Skeletal Mystics", RaidType.COX, Kind.COMBAT, "crypt",
@@ -61,22 +109,26 @@ public final class RaidLayouts {
                 "Skeletal Mystics guard this cavern; more of them rise for larger parties.");
         room("shamans", "Lizardman Shamans", RaidType.COX, Kind.COMBAT, "jungle",
                 List.of("cox_lizardman_shaman", "cox_lizardman_shaman", "cox_lizardman_shaman"), 0,
-                "Move when a shaman leaps, and run from the purple spawn before they explode.");
+                "Move when a shaman leaps or lobs its purple poison, and run from the spawn before they explode.");
         room("muttadiles", "Muttadiles", RaidType.COX, Kind.COMBAT, "water", List.of("small_muttadile"), 0,
-                "Chop down the meat tree so the Muttadiles cannot feed. Its mother waits beneath the water.");
+                "Chop down the meat tree so the Muttadiles cannot feed (or bind them away from it). Its mother blasts you "
+                        + "from beneath the water.");
         room("vanguards", "Vanguards", RaidType.COX, Kind.COMBAT, "stone",
                 List.of("vanguard_melee", "vanguard_ranged", "vanguard_magic"), 0,
                 "Keep the three Vanguards' health even: if one falls too far behind, they all reset.");
         room("vespula", "Vespula", RaidType.COX, Kind.COMBAT, "jungle", List.of("vespula", "vespula_portal"), 0,
-                "Bring Vespula down to 20% so she lands, then destroy the abyssal portal. Kill any soldiers her lux grubs hatch into.");
+                "Feed the stung lux grubs blossoms, bring Vespula down to 20% so she lands, then destroy the abyssal portal. "
+                        + "Grounded soldiers only die to melee.");
         room("ice_demon", "Ice demon", RaidType.COX, Kind.PUZZLE, "ice", List.of(), 0,
-                "Chop the saplings for kindling and light the braziers to thaw the Ice demon, then slay it.");
+                "Chop the saplings for kindling and keep the braziers burning (the icefiends put them out) to thaw the Ice "
+                        + "demon, then slay it.");
         room("thieving", "Thieving", RaidType.COX, Kind.PUZZLE, "crypt", List.of(), 0,
                 "Search the grubby chests for cavern grubs and feed them to the scavenger's trough.");
         room("tightrope", "Tightrope", RaidType.COX, Kind.PUZZLE, "void", List.of(), 0,
                 "Kill the deathly mages and rangers, then cross the tightrope.");
         room("crystal_crabs", "Crystal crabs", RaidType.COX, Kind.PUZZLE, "ice", List.of(), 0,
-                "Strike the crystal crabs to make them shimmer, and lead a shimmering crab to each dark crystal to light it.");
+                "The orb turns right off every crab and takes its colour (red melee, blue magic, green ranged). Lead a crab "
+                        + "into its path at each crystal's row, colour it to match, and stun it with a hammer.");
         room("cox_scavengers", "Scavengers", RaidType.COX, Kind.RESOURCE, "crypt", List.of(), 0,
                 "Scavenger beasts drop tools, cave worms and potion secondaries. The way on is open; come back at any time.");
         room("cox_farming", "Resources", RaidType.COX, Kind.RESOURCE, "jungle", List.of(), 0,
@@ -170,7 +222,37 @@ public final class RaidLayouts {
      * one at random.
      */
     public static List<RoomDef> cox(Random random) {
-        return resolve(coxRooms(COX_LAYOUTS.get(random.nextInt(COX_LAYOUTS.size())), random));
+        return coxPlan(random).rooms();
+    }
+
+    /** A normal-mode raid plan: one of the {@link #COX_LAYOUTS} at random. */
+    public static CoxPlan coxPlan(Random random) {
+        return coxPlan(COX_LAYOUTS.get(random.nextInt(COX_LAYOUTS.size())), random);
+    }
+
+    /** The plan for one layout code (floors split at the dot). */
+    public static CoxPlan coxPlan(String layout, Random random) {
+        List<String> ids = coxRooms(layout, random);
+        int second = 1 + layout.indexOf('.');
+        return new CoxPlan(resolve(ids), new int[]{0, second, ids.size() - 2, ids.size()});
+    }
+
+    /** Challenge Mode's plan: {@link #COX_CM_FLOORS}, then the Olm and the chest. */
+    public static CoxPlan coxChallengePlan(Random random) {
+        List<String> ids = new ArrayList<>();
+        ids.add("cox_lobby");
+        int[] starts = new int[COX_CM_FLOORS.size() + 2];
+        for (int f = 0; f < COX_CM_FLOORS.size(); f++) {
+            starts[f] = f == 0 ? 0 : ids.size();
+            for (String id : COX_CM_FLOORS.get(f)) {
+                ids.add(id.equals("F") ? COX_RESOURCE_ROOMS.get(random.nextInt(COX_RESOURCE_ROOMS.size())) : id);
+            }
+        }
+        starts[COX_CM_FLOORS.size()] = ids.size();
+        ids.add("olm");
+        ids.add("cox_reward");
+        starts[COX_CM_FLOORS.size() + 1] = ids.size();
+        return new CoxPlan(resolve(ids), starts);
     }
 
     /** The room ids of a CoX raid built from one layout code (the lobby first, the Olm and the chest last). */

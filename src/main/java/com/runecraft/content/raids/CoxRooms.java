@@ -53,12 +53,41 @@ final class CoxRooms {
     /** Registers the combat hooks the rooms need (called once from {@link CoxSupplyService#init}). */
     static void init() {
         CombatHooks.addModifier(new CombatHooks.PlayerAttackModifier() {
+            /**
+             * Enraged Tekton's melee defence bonuses rise from 155/165/105 to 280/290/180 (OSRS wiki): the defence roll grows
+             * by (enraged + 64) / (normal + 64), the same as the attack roll shrinking by its inverse.
+             */
+            @Override
+            public double accuracy(ServerPlayer player, LivingEntity target, AttackType type) {
+                if (target == null || !melee(type) || !"tekton".equals(RaidInstance.creatureId(target))) {
+                    return 1.0;
+                }
+                RaidInstance raid = RaidManager.at(target);
+                int room = raid == null ? -1 : raid.roomAt(target.position());
+                if (room >= 0 && raid.logic(room) instanceof Tekton t && t.enraged()) {
+                    return Tekton.enragedAccuracy(type);
+                }
+                return 1.0;
+            }
+
             @Override
             public int afterRoll(ServerPlayer player, LivingEntity target, AttackType type, int damage) {
                 // OSRS: Vasa's glowing crystals take 66% less damage from magic (and none from ranged: MonsterDef immunity).
                 if (target != null && type == AttackType.MAGIC && "vasa_crystal".equals(RaidInstance.creatureId(target))
                         && RaidManager.at(target) != null) {
                     return damage * 34 / 100;
+                }
+                // OSRS: a flying vespine soldier is out of melee reach (halberds aside); a grounded one only takes melee.
+                if (target != null && "vespine_soldier".equals(RaidInstance.creatureId(target))) {
+                    RaidInstance raid = RaidManager.at(target);
+                    int room = raid == null ? -1 : raid.roomAt(target.position());
+                    if (room >= 0 && raid.logic(room) instanceof Vespula v && v.soldierSlot(target) >= 0) {
+                        boolean grounded = v.grounded(target);
+                        boolean halberd = Inv.idOf(player.getMainHandItem()).contains("halberd");
+                        if (grounded ? !melee(type) : melee(type) && !halberd) {
+                            return 0;
+                        }
+                    }
                 }
                 return damage;
             }
@@ -187,20 +216,36 @@ final class CoxRooms {
 
     /**
      * Tekton (OSRS): melee only (immune to ranged, 20% from magic). After 10-14 attacks, or when nobody is in reach when he
-     * scans, he walks back to his anvil, repairs 1.33% of his health per set of sparks and throws two sparks per player
-     * (3x3, 10-20); after five sets he gets up enraged (59 max hit instead of 52) for about five attacks.
+     * scans, he walks back to his anvil (stomping anyone left under him), repairs 1.33% of his health per set of sparks and
+     * throws two sparks per player (3x3, 10-20); after five sets he gets up enraged (59 max hit instead of 52, melee defence
+     * bonuses 280/290/180 instead of 155/165/105) for about five attacks.
      */
     static final class Tekton extends RoomLogic implements CoxTobWalk.Walkable {
+        /** Game ticks Tekton may take walking back to the anvil before he is put there. // approx */
+        private static final int RETURN_TICKS = 15;
         private DataBossEntity tekton;
         private Vec3 anvil;
         private int t;
         private int attacksLeft;
         private boolean atAnvil;
+        private int returning;
         private int sparkSets;
         private int sparkTimer;
         private int enragedAttacks;
         private int lonely;
         private int anvilVisits;
+        private int stomps;
+        private int enrages;
+
+        /** The attack roll factor against enraged Tekton for a melee style. */
+        static double enragedAccuracy(AttackType type) {
+            int i = type == AttackType.STAB ? 0 : type == AttackType.SLASH ? 1 : 2;
+            return (CoxRules.TEKTON_DEFENCE[i] + 64.0) / (CoxRules.TEKTON_ENRAGED_DEFENCE[i] + 64.0);
+        }
+
+        boolean enraged() {
+            return enragedAttacks > 0;
+        }
 
         Tekton(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -227,6 +272,22 @@ final class CoxRooms {
             if (!alive(tekton)) {
                 return;
             }
+            if (returning > 0) {
+                // OSRS: anyone left under Tekton as he walks back to the anvil takes rapid stomp damage.
+                for (ServerPlayer p : players()) {
+                    if (RaidEffects.horizontalDistSq(p.position(), tekton.position()) < 1.2 * 1.2) {
+                        stomps++;
+                        RaidEffects.hit(tekton, p, rnd().nextInt(CoxRules.TEKTON_STOMP_MAX + 1), null, true);
+                    }
+                }
+                if (--returning == 0 || RaidEffects.horizontalDistSq(tekton.position(), anvil) < 1.5 * 1.5) {
+                    returning = 0;
+                    reachAnvil();
+                } else {
+                    tekton.getNavigation().moveTo(anvil.x, anvil.y, anvil.z, 1.0);
+                }
+                return;
+            }
             if (atAnvil) {
                 tekton.getNavigation().stop();
                 if (++sparkTimer < CoxRules.TEKTON_SPARK_INTERVAL) {
@@ -246,6 +307,7 @@ final class CoxRooms {
                     atAnvil = false;
                     unanchor(tekton);
                     enragedAttacks = CoxRules.TEKTON_ENRAGED_ATTACKS;
+                    enrages++;
                     attacksLeft = CoxRules.tektonAttacksBeforeAnvil(rnd());
                     lonely = 0;
                     warn("Tekton's hammer glows red hot!");
@@ -267,14 +329,21 @@ final class CoxRooms {
         }
 
         private void goToAnvil() {
+            returning = RETURN_TICKS;
+            enragedAttacks = 0;
+            anvilVisits++;
+            say("Tekton retreats to his anvil to sharpen his hammer.");
+            CombatAchievementService.countNear(tekton, CombatAchievements.COUNT_TEKTON_ANVIL);
+            tekton.setTarget(null);
+            tekton.getNavigation().moveTo(anvil.x, anvil.y, anvil.z, 1.0);
+        }
+
+        private void reachAnvil() {
             atAnvil = true;
             sparkSets = 0;
             sparkTimer = 0;
-            anvilVisits++;
             move(tekton, anvil);
             anchor(tekton);
-            say("Tekton retreats to his anvil to sharpen his hammer.");
-            CombatAchievementService.countNear(tekton, CombatAchievements.COUNT_TEKTON_ANVIL);
         }
 
         /** OSRS: Tekton is immune to Ranged and takes 80% less Magic damage. */
@@ -293,15 +362,15 @@ final class CoxRooms {
             if (enragedAttacks > 0) {
                 // Enraged Tekton (fresh from the anvil) has a 59 max hit instead of 52 (OSRS).
                 enragedAttacks--;
-                return (int) Math.round(damage * 59 / 52.0);
+                return (int) Math.round(damage * (double) CoxRules.TEKTON_ENRAGED_MAX_HIT / CoxRules.TEKTON_MAX_HIT);
             }
             return damage;
         }
 
         @Override
         public void bossDeath(DataBossEntity boss, ServerPlayer killer) {
-            // OSRS: a rare onyx, likelier for a tougher (bigger party) Tekton. // approx: 1/450 solo to 1/70 at 11+ players
-            int rate = Math.max(70, 450 - 38 * (raid.partySize() - 1));
+            // OSRS: a rare onyx, likelier for a tougher (bigger party) Tekton and three times rarer in a small Challenge Mode.
+            int rate = CoxRules.tektonOnyxRate(raid.partySize(), raid.mode() == com.runecraft.osrs.content.raids.RaidMode.CHALLENGE);
             if (killer != null && rnd().nextInt(rate) == 0) {
                 Inv.give(killer, "onyx", 1);
                 raid.say(killer.getName().getString() + " finds an onyx among Tekton's remains!", net.minecraft.ChatFormatting.LIGHT_PURPLE);
@@ -315,36 +384,55 @@ final class CoxRooms {
             // Nobody stands next to him, so he soon goes back to the anvil and throws sparks.
             w.moveTo(at(-16, 0));
             w.until(() -> anvilVisits > 0, 40, "Tekton never went back to his anvil");
+            // Standing under him as he walks back gets you stomped.
+            if (returning > 0) {
+                w.moveTo(tekton.position());
+                w.tick(1);
+                w.expect(stomps > 0 || returning == 0, "Tekton walked back over the player without stomping");
+                w.moveTo(at(-16, 0));
+            }
+            w.until(() -> atAnvil, 30, "Tekton never reached his anvil");
             w.until(() -> !atAnvil, 40, "Tekton never left his anvil");
+            w.expect(enraged() && enrages > 0, "Tekton did not get up enraged");
+            w.expect(enragedAccuracy(AttackType.CRUSH) < 0.7, "enraged Tekton's crush defence did not rise");
             w.kill(tekton, AttackType.CRUSH, "Tekton");
-            return "anvil visits " + anvilVisits;
+            return "anvil visits " + anvilVisits + ", " + enrages + " enrage(s), " + stomps + " stomp(s)";
         }
     }
 
     // ================================================================== Vasa Nistirio
 
     /**
-     * Vasa Nistirio (OSRS): he opens with his teleport (half the team, the player when solo, is pulled next to him,
-     * stunned and stripped of prayers; the barrage hits everyone beside him for the stunned players' summed hitpoints minus
-     * 5, shared). Then he walks to one of the four glowing crystals, throwing boulders at everyone within 9 tiles, and
-     * drains it: invulnerable, he stores 1% of his health every 2 ticks. Destroying the crystal in time throws the healing
-     * away and he picks another; if he finishes, he heals, shatters the crystal himself and teleports the team again.
+     * Vasa Nistirio (OSRS wiki). He opens with his teleport: half the team (the player when solo) is pulled next to him,
+     * stunned and stripped of prayers, and the barrage hits everyone beside him for the stunned players' summed hitpoints
+     * minus 5, shared. Then he lights one of the four glowing crystals (never the one he just used, unless he has just
+     * teleported) and walks to it, throwing boulders at everyone within 9 tiles and stomping anyone under him (up to 8 a
+     * tick); at the crystal he is invulnerable and stores 1% of his health every 2 ticks. One 66- or 67-tick teleport timer
+     * starts when he first reaches a crystal and only runs while a crystal is lit: disabling the crystal throws its healing
+     * away and he picks another, but when the timer runs out he takes the healing, shatters the crystal himself and goes
+     * back to the centre to teleport the team. A disabled crystal can be lit again later.
      */
     static final class Vasa extends RoomLogic implements CoxTobWalk.Walkable {
         private enum State { CENTRE, WALKING, DRAINING, RETURNING }
 
+        private static final int[][] CORNERS = {{-13, -13}, {13, -13}, {-13, 13}, {13, 13}};
         private DataBossEntity vasa;
-        private final List<LivingEntity> crystals = new ArrayList<>();
+        private final LivingEntity[] crystals = new LivingEntity[CORNERS.length];
         private State state = State.CENTRE;
         private int stateTicks;
-        private LivingEntity crystal;
+        private int target = -1;
+        private int previous = -1;
+        private boolean justTeleported;
+        private int timer = -1;
         private int pendingHeal;
         private int disabled;
+        private int drained;
+        private int healed;
         private boolean teleportOnReturn;
         private int charging;
         private int t;
         private int teleports;
-        private int idleTimer;
+        private int stomps;
 
         Vasa(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -352,12 +440,10 @@ final class CoxRooms {
 
         @Override
         public void decorate() {
-            for (int sx = -1; sx <= 1; sx += 2) {
-                for (int sz = -1; sz <= 1; sz += 2) {
-                    BlockPos p = center().offset(sx * 13, 0, sz * 13);
-                    RaidBuilder.fill(world(), p.getX() - 1, p.getY(), p.getZ() - 1, p.getX() + 1, p.getY(), p.getZ() + 1,
-                            Blocks.PURPUR_BLOCK.defaultBlockState());
-                }
+            for (int[] c : CORNERS) {
+                BlockPos p = at(c[0], c[1]).below();
+                RaidBuilder.fill(world(), p.getX() - 1, p.getY(), p.getZ() - 1, p.getX() + 1, p.getY(), p.getZ() + 1,
+                        Blocks.PURPUR_BLOCK.defaultBlockState());
             }
         }
 
@@ -367,38 +453,39 @@ final class CoxRooms {
             if (vasa != null) {
                 anchor(vasa);
             }
-            crystals.clear();
-            for (int sx = -1; sx <= 1; sx += 2) {
-                for (int sz = -1; sz <= 1; sz += 2) {
-                    LivingEntity c = spawnMob("vasa_crystal", at(sx * 13, sz * 13), false);
-                    if (c != null) {
-                        crystals.add(c);
-                        anchor(c);
-                        if (c instanceof Mob m) {
-                            m.setNoAi(true);
-                        }
-                    }
-                }
+            for (int i = 0; i < CORNERS.length; i++) {
+                crystals[i] = null;
+                crystal(i);
             }
             state = State.CENTRE;
             // OSRS: the fight starts with his teleport attack.
             teleport();
         }
 
-        private List<LivingEntity> liveCrystals() {
-            List<LivingEntity> live = new ArrayList<>();
-            for (LivingEntity c : crystals) {
-                if (alive(c)) {
-                    live.add(c);
+        /** The crystal in corner {@code i}, lit afresh if it was disabled (OSRS: Vasa can light it again later). */
+        private LivingEntity crystal(int i) {
+            if (!alive(crystals[i])) {
+                LivingEntity c = spawnMob("vasa_crystal", at(CORNERS[i][0], CORNERS[i][1]), false);
+                if (c != null) {
+                    anchor(c);
+                    if (c instanceof Mob m) {
+                        m.setNoAi(true);
+                    }
                 }
+                crystals[i] = c;
             }
-            return live;
+            return crystals[i];
         }
 
         private void relocate(Vec3 to) {
             unanchor(vasa);
             move(vasa, to);
             anchor(vasa);
+        }
+
+        /** Whether the teleport timer is running (it pauses while no crystal is lit). */
+        private boolean crystalLit() {
+            return state == State.WALKING || state == State.DRAINING;
         }
 
         @Override
@@ -408,25 +495,30 @@ final class CoxRooms {
             if (!alive(vasa)) {
                 return;
             }
+            // OSRS: anyone standing under him takes rapid stomp damage.
+            for (ServerPlayer p : players()) {
+                if (RaidEffects.horizontalDistSq(p.position(), vasa.position()) < 1.2 * 1.2) {
+                    stomps++;
+                    RaidEffects.hit(vasa, p, rnd().nextInt(CoxRules.VASA_STOMP_MAX + 1), null, true);
+                }
+            }
             if (charging > 0) {
                 charging--;
                 return;
             }
+            if (crystalLit() && timer > 0) {
+                timer--;
+            }
             switch (state) {
                 case CENTRE -> {
-                    List<LivingEntity> live = liveCrystals();
-                    if (live.isEmpty()) {
-                        // Every crystal gone: he stays in the middle, throwing boulders and teleporting the team.
-                        if (t % 4 == 0) {
-                            boulders();
+                    List<Integer> choices = new ArrayList<>();
+                    for (int i = 0; i < CORNERS.length; i++) {
+                        if (i != previous || justTeleported) {
+                            choices.add(i);
                         }
-                        if (++idleTimer >= 25) {
-                            idleTimer = 0;
-                            teleport();
-                        }
-                        return;
                     }
-                    crystal = live.get(rnd().nextInt(live.size()));
+                    target = choices.get(rnd().nextInt(choices.size()));
+                    crystal(target);
                     state = State.WALKING;
                     stateTicks = CoxRules.VASA_WALK_TICKS;
                     warn("Vasa Nistirio heads for a glowing crystal!");
@@ -435,59 +527,80 @@ final class CoxRooms {
                     if (t % 4 == 0) {
                         boulders();
                     }
-                    if (!alive(crystal)) {
-                        state = State.CENTRE;
+                    LivingEntity c = crystals[target];
+                    if (!alive(c)) {
+                        lost();
+                        return;
+                    }
+                    if (timer == 0) {
+                        // The timer ran out on the way: he gives up on the crystal and teleports the team.
+                        returnTo(true);
                         return;
                     }
                     if (--stateTicks <= 0) {
-                        Vec3 dir = center().getCenter().subtract(crystal.position()).normalize().scale(2.5);
-                        relocate(crystal.position().add(dir.x, 0, dir.z));
+                        Vec3 dir = center().getCenter().subtract(c.position()).normalize().scale(2.5);
+                        relocate(c.position().add(dir.x, 0, dir.z));
                         state = State.DRAINING;
-                        stateTicks = CoxRules.vasaDrainTicks(disabled);
                         pendingHeal = 0;
+                        if (timer < 0) {
+                            timer = CoxRules.vasaTeleportTimer(rnd());
+                        }
                         warn("Vasa begins to drain the crystal! Destroy it before he finishes!");
                     }
                 }
                 case DRAINING -> {
-                    if (!alive(crystal)) {
-                        warn("The crystal shatters and Vasa's healing is lost!");
-                        pendingHeal = 0;
-                        disabled++;
-                        state = State.RETURNING;
-                        stateTicks = CoxRules.VASA_WALK_TICKS;
-                        teleportOnReturn = false;
+                    LivingEntity c = crystals[target];
+                    if (!alive(c)) {
+                        lost();
                         return;
                     }
                     if (t % CoxRules.VASA_HEAL_INTERVAL == 0) {
                         pendingHeal += Math.max(1, raid.maxHitpoints(vasa) / 100);
                     }
-                    Vec3 a = crystal.position().add(0, 1.5, 0);
+                    Vec3 a = c.position().add(0, 1.5, 0);
                     Vec3 b = vasa.position().add(0, 2, 0);
                     for (int i = 0; i <= 8; i++) {
                         Vec3 p = a.lerp(b, i / 8.0);
                         world().sendParticles(ParticleTypes.END_ROD, p.x, p.y, p.z, 1, 0, 0, 0, 0);
                     }
-                    if (--stateTicks <= 0) {
+                    if (timer == 0) {
                         raid.heal(vasa, pendingHeal);
+                        healed += pendingHeal;
+                        drained++;
                         say("Vasa drains the crystal and heals " + pendingHeal + " hitpoints!");
                         pendingHeal = 0;
-                        crystal.discard();
-                        // OSRS: if he finishes draining a crystal, the drain timer resets.
-                        disabled = 0;
-                        state = State.RETURNING;
-                        stateTicks = CoxRules.VASA_WALK_TICKS;
-                        teleportOnReturn = true;
+                        c.discard();
+                        returnTo(true);
                     }
                 }
                 case RETURNING -> {
                     if (--stateTicks <= 0) {
                         relocate(vec(0, 0));
                         state = State.CENTRE;
+                        previous = target;
+                        justTeleported = false;
                         if (teleportOnReturn) {
                             teleport();
                         }
                     }
                 }
+            }
+        }
+
+        /** The team disabled the lit crystal: its healing is lost and he goes back for another. */
+        private void lost() {
+            warn("The crystal shatters and Vasa's healing is lost!");
+            pendingHeal = 0;
+            disabled++;
+            returnTo(false);
+        }
+
+        private void returnTo(boolean teleportAfter) {
+            state = State.RETURNING;
+            stateTicks = CoxRules.VASA_WALK_TICKS;
+            teleportOnReturn = teleportAfter;
+            if (teleportAfter) {
+                timer = -1;
             }
         }
 
@@ -519,6 +632,7 @@ final class CoxRooms {
                 return;
             }
             teleports++;
+            justTeleported = true;
             java.util.Collections.shuffle(party, new java.util.Random(rnd().nextLong()));
             CombatAchievementService.countNear(vasa, CombatAchievements.COUNT_VASA_TELEPORT);
             int n = Math.min(party.size(), RaidScaling.vasaTeleportTargets(party.size()));
@@ -580,29 +694,57 @@ final class CoxRooms {
         public String walk(CoxTobWalk w) {
             w.expect(alive(vasa), "Vasa did not spawn");
             w.expect(teleports >= 1 && w.player().distanceToSqr(vasa) < 6 * 6, "Vasa's opening teleport did not pull the player to him");
+            // Stand under him: he stomps.
+            w.moveTo(vasa.position());
+            w.tick(1);
+            w.expect(stomps > 0, "standing under Vasa was never stomped");
+            w.moveTo(at(-8, 0));
             w.until(() -> state == State.DRAINING, 30, "Vasa never started draining a crystal");
+            w.expect(timer > 0, "the teleport timer did not start when Vasa reached his first crystal");
             w.expect(!bossVulnerable(vasa) && w.hit(vasa, 30, AttackType.CRUSH) == 0, "Vasa took damage while draining a crystal");
-            LivingEntity target = crystal;
-            w.expect(w.hit(target, 30, AttackType.RANGED) == 0, "a glowing crystal took ranged damage (it is immune)");
-            w.kill(target, AttackType.STAB, "the glowing crystal");
-            w.until(() -> state == State.CENTRE || state == State.WALKING, 20, "Vasa did not return after his crystal shattered");
-            w.until(() -> bossVulnerable(vasa), 20, "Vasa never became attackable");
+            int first = target;
+            LivingEntity c1 = crystals[first];
+            w.expect(w.hit(c1, 30, AttackType.RANGED) == 0, "a glowing crystal took ranged damage (it is immune)");
+            w.kill(c1, AttackType.STAB, "the glowing crystal");
+            int timerAfter = timer;
+            w.until(() -> state == State.WALKING || state == State.DRAINING, 30, "Vasa did not pick another crystal");
+            w.expect(target != first, "Vasa went straight back to the crystal the team had just disabled");
+            w.expect(disabled == 1 && timer <= timerAfter, "the teleport timer restarted after a disabled crystal (it is shared)");
+            // Leave this crystal alone: the shared timer runs out, he takes the healing and teleports the team.
+            w.until(() -> state == State.WALKING, 10, "Vasa never walked to the next crystal");
+            w.hit(vasa, Math.max(10, raid.maxHitpoints(vasa) / 5), AttackType.CRUSH);
+            int hurt = raid.hitpoints(vasa);
+            int before = teleports;
+            w.until(() -> teleports > before, 90, "Vasa's teleport timer never ran out (" + timer + " left)");
+            w.expect(drained == 1 && healed > 0 && raid.hitpoints(vasa) > hurt, "Vasa did not heal off the crystal he drained");
+            w.until(() -> state == State.WALKING || state == State.DRAINING, 30, "Vasa did not light a crystal after teleporting");
+            w.expect(alive(crystals[target]), "the crystal Vasa picked was not lit");
             int guard = 0;
             while (alive(vasa) && guard++ < 400) {
                 if (bossVulnerable(vasa)) {
                     w.hit(vasa, Math.max(10, raid.maxHitpoints(vasa) / 8), AttackType.CRUSH);
+                } else if (state == State.DRAINING && alive(crystals[target])) {
+                    w.hit(crystals[target], Math.max(10, raid.maxHitpoints(crystals[target]) / 2), AttackType.STAB);
                 }
                 w.tick(1);
             }
             w.expect(!alive(vasa), "Vasa did not die (state " + state + ")");
-            return "teleports " + teleports + ", crystals disabled";
+            return teleports + " teleports, " + disabled + " crystal(s) disabled, " + drained + " drained (+" + healed + "), "
+                    + stomps + " stomp(s)";
         }
     }
 
     // ================================================================== Guardians
 
-    /** Guardians (OSRS): only a pickaxe harms them; an iron pickaxe lies next to them for anyone who forgot one. */
+    /**
+     * Guardians (OSRS): only a pickaxe harms them; an iron pickaxe lies next to them for anyone who forgot one. Anyone who
+     * tries to slip past them while one stands is knocked back for moderate damage.
+     */
     static final class Guardians extends RoomLogic implements CoxTobWalk.Walkable {
+        /** Blocks east of the centre beyond which a player has slipped between the Guardians. */
+        private static final int PASSAGE_X = 11;
+        private int pushes;
+
         Guardians(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
         }
@@ -616,6 +758,29 @@ final class CoxRooms {
         public void start() {
             anchor(spawnBoss("cox_guardian", at(9, -4)));
             anchor(spawnBoss("cox_guardian", at(9, 4)));
+        }
+
+        @Override
+        public void gameTick(long tick) {
+            super.gameTick(tick);
+            if (done || allDead()) {
+                return;
+            }
+            LivingEntity guard = null;
+            for (LivingEntity e : spawned) {
+                if (alive(e)) {
+                    guard = e;
+                }
+            }
+            for (ServerPlayer p : players()) {
+                if (p.getX() > center().getX() + 0.5 + PASSAGE_X) {
+                    pushes++;
+                    raid.teleport(p, at(5, 0));
+                    RaidEffects.hit(guard, p, CoxRules.GUARDIAN_PUSH_MIN
+                            + rnd().nextInt(CoxRules.GUARDIAN_PUSH_MAX - CoxRules.GUARDIAN_PUSH_MIN + 1), null, true);
+                    Msg.red(p, "The Guardian shoves you back from the passage!");
+                }
+            }
         }
 
         @Override
@@ -648,6 +813,10 @@ final class CoxRooms {
             LivingEntity first = spawned.isEmpty() ? null : spawned.get(0);
             w.expect(first != null, "no Guardians spawned");
             w.expect(w.hit(first, 20, AttackType.CRUSH) == 0, "a Guardian took damage without a pickaxe");
+            // Slipping past them gets you shoved back.
+            w.moveTo(at(PASSAGE_X + 3, 0));
+            w.tick(1);
+            w.expect(pushes > 0 && w.player().getX() < center().getX() + PASSAGE_X, "the Guardians let the player walk past them");
             w.use(w.block(this, RaidsContent.COX_TOOLS));
             w.expect(w.count("iron_pickaxe") > 0, "the tools next to the Guardians gave no iron pickaxe");
             w.hold("iron_pickaxe");
@@ -655,16 +824,29 @@ final class CoxRooms {
                 w.kill(g, AttackType.CRUSH, "a Guardian");
             }
             w.hold(null);
-            return "killed with the room's iron pickaxe";
+            return "killed with the room's iron pickaxe, " + pushes + " push(es)";
         }
     }
 
     // ================================================================== Lizardman shamans
 
-    /** Lizardman shamans: leap onto players and release purple spawn that explode. */
-    static final class Shamans extends RoomLogic {
-        private final Map<LivingEntity, Integer> jumpCooldown = new HashMap<>();
+    /**
+     * Lizardman shamans (OSRS wiki "Lizardman shaman"): between attacks a shaman leaps onto a player's spot (3x3, 20-25
+     * typeless), lobs a purple poison blob there (3x3, about 25% stronger than outside, up to 39, poison from 12) or summons
+     * three spawns that run at the player and explode seconds later (5-10 each within two tiles); only the spawns have a
+     * cooldown. Shamans can't be hit mid-leap. Their count grows with the party (2, +1 per 5 players, up to 5).
+     */
+    static final class Shamans extends RoomLogic implements CoxTobWalk.Walkable {
+        enum Special { JUMP, ACID, SPAWNS }
+
+        private final Map<LivingEntity, Integer> specialCooldown = new HashMap<>();
+        private final Map<LivingEntity, Integer> spawnCooldown = new HashMap<>();
         private final Set<LivingEntity> jumping = new HashSet<>();
+        private final Map<LivingEntity, Integer> fuses = new HashMap<>();
+        private int jumpsLanded;
+        private int acidLanded;
+        private int spawnBlasts;
+        private int spawnsSummoned;
 
         Shamans(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -682,45 +864,112 @@ final class CoxRooms {
         @Override
         public void gameTick(long tick) {
             super.gameTick(tick);
-            for (LivingEntity e : spawned) {
+            for (LivingEntity e : new ArrayList<>(spawned)) {
                 if (!alive(e) || jumping.contains(e)) {
                     continue;
                 }
-                int cd = jumpCooldown.getOrDefault(e, 8 + rnd().nextInt(10)) - 1;
-                jumpCooldown.put(e, cd);
+                spawnCooldown.merge(e, -1, Integer::sum);
+                int cd = specialCooldown.getOrDefault(e, CoxRules.SHAMAN_SPECIAL_MIN + rnd().nextInt(CoxRules.SHAMAN_SPECIAL_SPREAD)) - 1;
+                specialCooldown.put(e, cd);
                 if (cd > 0) {
                     continue;
                 }
-                jumpCooldown.put(e, 14 + rnd().nextInt(8));
+                specialCooldown.put(e, CoxRules.SHAMAN_SPECIAL_MIN + rnd().nextInt(CoxRules.SHAMAN_SPECIAL_SPREAD));
                 ServerPlayer target = randomPlayer();
                 if (target == null) {
                     continue;
                 }
-                Vec3 mark = target.position();
-                jumping.add(e);
-                say("A lizardman shaman leaps into the air!");
-                world().sendParticles(ParticleTypes.CLOUD, e.getX(), e.getY(), e.getZ(), 15, 0.5, 0.2, 0.5, 0.05);
-                e.setInvisible(true);
-                RaidEffects.strike(world(), mark, 2.5, 30, 3, e, ParticleTypes.ITEM_SLIME);
-                RaidEffects.later(3, () -> {
-                    jumping.remove(e);
-                    e.setInvisible(false);
-                    if (alive(e)) {
-                        e.teleportTo(mark.x, mark.y, mark.z);
-                    }
-                });
+                List<Special> options = new ArrayList<>(List.of(Special.JUMP, Special.ACID));
+                if (spawnCooldown.getOrDefault(e, 0) <= 0) {
+                    options.add(Special.SPAWNS);
+                }
+                special(e, options.get(rnd().nextInt(options.size())), target);
             }
-            for (LivingEntity spawn : living("cox_lizardman_spawn")) {
-                if (spawn.tickCount > 6 * ActionManager.MC_TICKS_PER_GAME_TICK) {
-                    world().sendParticles(ParticleTypes.EXPLOSION, spawn.getX(), spawn.getY() + 0.5, spawn.getZ(), 2, 0.3, 0.3, 0.3, 0);
-                    for (ServerPlayer p : players()) {
-                        if (p.distanceToSqr(spawn) < 2.5 * 2.5) {
-                            RaidEffects.hit(null, p, rnd().nextInt(21), null, true);
+            for (Map.Entry<LivingEntity, Integer> f : new ArrayList<>(fuses.entrySet())) {
+                LivingEntity spawn = f.getKey();
+                if (!alive(spawn)) {
+                    fuses.remove(spawn);
+                    continue;
+                }
+                if (f.getValue() > 1) {
+                    fuses.put(spawn, f.getValue() - 1);
+                    continue;
+                }
+                fuses.remove(spawn);
+                world().sendParticles(ParticleTypes.EXPLOSION, spawn.getX(), spawn.getY() + 0.5, spawn.getZ(), 2, 0.3, 0.3, 0.3, 0);
+                for (ServerPlayer p : players()) {
+                    if (RaidEffects.horizontalDistSq(p.position(), spawn.position()) <= 2.5 * 2.5) {
+                        spawnBlasts++;
+                        RaidEffects.hit(spawn, p, CoxRules.SPAWN_BLAST_MIN
+                                + rnd().nextInt(CoxRules.SPAWN_BLAST_MAX - CoxRules.SPAWN_BLAST_MIN + 1), null, true);
+                    }
+                }
+                spawn.discard();
+            }
+        }
+
+        /** One of a shaman's special moves at a player. */
+        void special(LivingEntity shaman, Special kind, ServerPlayer target) {
+            Vec3 mark = target.position();
+            switch (kind) {
+                case JUMP -> {
+                    jumping.add(shaman);
+                    say("A lizardman shaman leaps into the air!");
+                    world().sendParticles(ParticleTypes.CLOUD, shaman.getX(), shaman.getY(), shaman.getZ(), 15, 0.5, 0.2, 0.5, 0.05);
+                    shaman.setInvisible(true);
+                    mark(mark, ParticleTypes.CLOUD, 3);
+                    later(3, () -> {
+                        jumping.remove(shaman);
+                        shaman.setInvisible(false);
+                        if (!alive(shaman)) {
+                            return;
+                        }
+                        shaman.teleportTo(mark.x, mark.y, mark.z);
+                        for (ServerPlayer p : players()) {
+                            if (RaidEffects.horizontalDistSq(p.position(), mark) <= 1.5 * 1.5) {
+                                jumpsLanded++;
+                                RaidEffects.hit(shaman, p, CoxRules.SHAMAN_JUMP_MIN
+                                        + rnd().nextInt(CoxRules.SHAMAN_JUMP_MAX - CoxRules.SHAMAN_JUMP_MIN + 1), null, true);
+                            }
+                        }
+                    });
+                }
+                case ACID -> {
+                    Msg.red(target, "A lizardman shaman lobs a blob of purple poison at you!");
+                    mark(mark, ParticleTypes.WITCH, 3);
+                    later(3, () -> {
+                        world().sendParticles(ParticleTypes.WITCH, mark.x, mark.y + 0.3, mark.z, 30, 1, 0.2, 1, 0.05);
+                        for (ServerPlayer p : players()) {
+                            if (RaidEffects.horizontalDistSq(p.position(), mark) <= 1.5 * 1.5) {
+                                acidLanded++;
+                                RaidEffects.hit(shaman, p, CoxRules.SHAMAN_ACID_MIN
+                                        + rnd().nextInt(CoxRules.SHAMAN_ACID_MAX - CoxRules.SHAMAN_ACID_MIN + 1), null, true);
+                                PoisonService.poison(p, CoxRules.SHAMAN_POISON, ActionManager.gameTick());
+                            }
+                        }
+                    });
+                }
+                case SPAWNS -> {
+                    spawnCooldown.put(shaman, CoxRules.SHAMAN_SPAWN_COOLDOWN);
+                    say("The ground shakes as a lizardman shaman summons spawn!");
+                    for (int i = 0; i < CoxRules.SHAMAN_SPAWNS; i++) {
+                        Mob spawn = spawnMob("cox_lizardman_spawn", BlockPos.containing(mark).offset(i - 1, 0, 1), false);
+                        if (spawn != null) {
+                            spawnsSummoned++;
+                            fuses.put(spawn, CoxRules.SPAWN_FUSE_TICKS);
+                            spawn.setTarget(target);
                         }
                     }
-                    spawn.discard();
                 }
             }
+        }
+
+        /** Marks a 3x3 landing area every tick until it lands. */
+        private void mark(Vec3 at, ParticleOptions look, int ticks) {
+            for (int i = 0; i < ticks; i++) {
+                later(i + 1, () -> world().sendParticles(look, at.x, at.y + 0.15, at.z, 12, 0.75, 0.02, 0.75, 0));
+            }
+            world().sendParticles(look, at.x, at.y + 0.15, at.z, 12, 0.75, 0.02, 0.75, 0);
         }
 
         @Override
@@ -734,25 +983,107 @@ final class CoxRooms {
             for (LivingEntity s : living("cox_lizardman_spawn")) {
                 s.discard();
             }
+            fuses.clear();
+        }
+
+        @Override
+        public String walk(CoxTobWalk w) {
+            w.expect(spawned.size() == RaidScaling.coxShamanCount(raid.partySize()),
+                    "expected " + RaidScaling.coxShamanCount(raid.partySize()) + " shamans, found " + spawned.size());
+            LivingEntity first = spawned.get(0);
+            for (LivingEntity e : spawned) {
+                specialCooldown.put(e, 1000); // the walk triggers the specials itself
+            }
+            w.moveTo(at(-6, 0));
+            special(first, Special.JUMP, w.player());
+            w.expect(!bossVulnerable((DataBossEntity) first), "a shaman could be hit in mid-leap");
+            w.tick(4);
+            w.expect(jumpsLanded > 0 && first.distanceToSqr(w.player()) < 2.5 * 2.5, "the shaman's leap did not land on the player");
+            special(first, Special.ACID, w.player());
+            w.tick(4);
+            w.expect(acidLanded > 0, "the purple poison blob did not land on the player");
+            special(first, Special.SPAWNS, w.player());
+            w.expect(spawnsSummoned == CoxRules.SHAMAN_SPAWNS, "a summon made " + spawnsSummoned + " spawns, expected 3");
+            w.until(() -> fuses.isEmpty(), CoxRules.SPAWN_FUSE_TICKS + 3, "the spawns never exploded");
+            w.expect(spawnBlasts > 0, "the spawns exploded without hurting the player next to them");
+            for (LivingEntity e : new ArrayList<>(spawned)) {
+                w.kill(e, AttackType.RANGED, "a lizardman shaman");
+            }
+            return spawned.size() + " shamans; leap, poison blob and " + spawnBlasts + " spawn blast(s) landed";
+        }
+    }
+
+    // ================================================================== Skeletal Mystics
+
+    /**
+     * Skeletal Mystics (OSRS wiki): they cast a bolt or a damaging Vulnerability, and punch a target that prays Protect from
+     * Magic if they can reach it. Their count grows with the party (3, +1 per 3 players, up to 12).
+     */
+    static final class Mystics extends RoomLogic implements CoxTobWalk.Walkable {
+        Mystics(RaidInstance raid, RoomDef def, int index) {
+            super(raid, def, index);
+        }
+
+        @Override
+        public com.runecraft.osrs.content.AttackDef bossAttack(DataBossEntity boss, ServerPlayer target, double distance) {
+            boolean melee = CoxRules.mysticMelees(RaidEffects.protectedFrom(target, AttackType.MAGIC), distance <= 2.5);
+            for (com.runecraft.osrs.content.AttackDef a : attacks(boss)) {
+                if (a.melee() == melee) {
+                    return a;
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public String walk(CoxTobWalk w) {
+            int want = RaidScaling.coxMysticCount(raid.partySize());
+            w.expect(spawned.size() == want, "expected " + want + " mystics, found " + spawned.size());
+            DataBossEntity first = (DataBossEntity) spawned.get(0);
+            var data = Players.data(w.player());
+            boolean had = data.isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC);
+            data.activePrayers().remove(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC);
+            com.runecraft.osrs.content.AttackDef cast = bossAttack(first, w.player(), 1.5);
+            w.expect(cast != null && !cast.melee(), "a mystic next to an unprotected player did not cast");
+            data.activePrayers().add(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC);
+            com.runecraft.osrs.content.AttackDef punch = bossAttack(first, w.player(), 1.5);
+            com.runecraft.osrs.content.AttackDef far = bossAttack(first, w.player(), 8);
+            if (!had) {
+                data.activePrayers().remove(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC);
+            }
+            w.expect(punch != null && punch.melee(), "a mystic did not punch a player praying Protect from Magic within reach");
+            w.expect(far != null && !far.melee(), "a mystic tried to punch a player out of reach");
+            for (LivingEntity e : new ArrayList<>(spawned)) {
+                w.kill(e, AttackType.CRUSH, "a Skeletal Mystic");
+            }
+            return want + " mystics: casts, and punches through Protect from Magic";
         }
     }
 
     // ================================================================== Muttadiles
 
     /**
-     * Muttadiles (OSRS): the small one first while its mother lurks in the water and blasts players with magic; below half
-     * health either goes to the meat tree and restores up to 40% of its health, until the tree is chopped down. The tree
-     * has 100-500 health by the team's Woodcutting; a swing lands 20-78% of the time for half the Woodcutting level -7/+3,
-     * whatever the axe (a bronze axe lies in the room).
+     * Muttadiles (OSRS wiki): the small one first while its mother lurks in the water; every 4 ticks the submerged mother
+     * picks each player in sight with a 1/3 chance for a magic blast (up to 23; protection prayers only reduce it). At about
+     * half health either goes to the meat tree and eats up to another half of its health, at most three times; one bound in
+     * place for about 15 seconds gives up on the tree. The tree has 5 x the team's total Woodcutting health (at least 100);
+     * a swing lands by the skilling roll (20% at level 1, 78% at 99) for half the Woodcutting level -7/+3, whatever the axe
+     * (a bronze axe lies in the room), and gives 45 XP. The mother stomps everyone in melee range for up to 72.
      */
     static final class Muttadiles extends RoomLogic implements CoxTobWalk.Walkable {
         private DataBossEntity small;
         private DataBossEntity big;
         private boolean treeAlive = true;
         private int treeHp;
+        private int treeMaxHp;
         private int t;
         private final Map<LivingEntity, Integer> feeding = new HashMap<>();
         private final Map<LivingEntity, Integer> feedCooldown = new HashMap<>();
+        private final Map<LivingEntity, Integer> feeds = new HashMap<>();
+        private final Map<LivingEntity, Integer> bound = new HashMap<>();
+        private final Set<LivingEntity> gaveUp = new HashSet<>();
+        private int waterBlasts;
+        private int healed;
 
         Muttadiles(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -776,8 +1107,19 @@ final class CoxRooms {
 
         @Override
         public void start() {
-            treeHp = CoxRules.meatTreeHp(averageLevel(raid, Skill.WOODCUTTING));
+            int total = 0;
+            for (ServerPlayer p : raid.players()) {
+                total += level(p, Skill.WOODCUTTING);
+            }
+            treeMaxHp = CoxRules.meatTreeHp(total);
+            treeHp = treeMaxHp;
             small = spawnBoss("small_muttadile", at(9, -9));
+        }
+
+        /** Whether a muttadile is bound or frozen in place (OSRS: a bind stops it reaching the tree). */
+        private static boolean held(LivingEntity m) {
+            var slow = m.getEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN);
+            return slow != null && slow.getAmplifier() >= 6;
         }
 
         @Override
@@ -795,7 +1137,10 @@ final class CoxRooms {
                         feedCooldown.put(m, 20); // approx
                     } else {
                         feeding.put(m, f - 1);
-                        raid.heal(m, Math.max(1, (int) (raid.maxHitpoints(m) * CoxRules.MUTTADILE_FEED_HEAL / CoxRules.MUTTADILE_FEED_TICKS)));
+                        int heal = Math.max(1, (int) (raid.maxHitpoints(m) * CoxRules.MUTTADILE_FEED_HEAL / CoxRules.MUTTADILE_FEED_TICKS));
+                        int before = raid.hitpoints(m);
+                        raid.heal(m, heal);
+                        healed += raid.hitpoints(m) - before;
                         CombatAchievementService.flagNear(m, CombatAchievements.FLAG_MEAT_TREE_HEAL);
                         world().sendParticles(ParticleTypes.HEART, m.getX(), m.getY() + 1.5, m.getZ(), 1, 0.3, 0.3, 0.3, 0);
                     }
@@ -804,22 +1149,42 @@ final class CoxRooms {
                 int cd = feedCooldown.getOrDefault(m, 0);
                 if (cd > 0) {
                     feedCooldown.put(m, cd - 1);
-                } else if (treeAlive && raid.healthFraction(m) < CoxRules.MUTTADILE_FEED_BELOW) {
-                    move(m, Vec3.atBottomCenterOf(tree().offset(2, 0, 0)));
-                    anchor(m);
-                    feeding.put(m, CoxRules.MUTTADILE_FEED_TICKS);
-                    warn("The Muttadile goes to feed on the meat tree!");
+                    continue;
                 }
+                boolean hungry = treeAlive && !gaveUp.contains(m) && feeds.getOrDefault(m, 0) < CoxRules.MUTTADILE_MAX_FEEDS
+                        && raid.healthFraction(m) < CoxRules.MUTTADILE_FEED_BELOW;
+                if (!hungry) {
+                    bound.remove(m);
+                    continue;
+                }
+                if (held(m)) {
+                    // OSRS: bound and unable to reach the tree for about 15 seconds, it gives up on it for good.
+                    int b = bound.merge(m, 1, Integer::sum);
+                    if (b >= CoxRules.MUTTADILE_FEED_GIVE_UP_TICKS) {
+                        gaveUp.add(m);
+                        say("The Muttadile gives up on the meat tree.");
+                    }
+                    continue;
+                }
+                move(m, Vec3.atBottomCenterOf(tree().offset(2, 0, 0)));
+                anchor(m);
+                feeding.put(m, CoxRules.MUTTADILE_FEED_TICKS);
+                feeds.merge(m, 1, Integer::sum);
+                warn("The Muttadile goes to feed on the meat tree!");
             }
-            // OSRS: while the small one fights, its mother blasts players with magic from the water.
+            // OSRS: while the small one fights, its mother blasts players in sight with magic from the water.
             if (alive(small) && big == null && t % CoxRules.MUTTADILE_WATER_BLAST_INTERVAL == 0) {
-                ServerPlayer p = randomPlayer();
-                if (p != null) {
-                    Vec3 from = vec(10, -9);
-                    world().sendParticles(ParticleTypes.SPLASH, from.x, from.y + 1, from.z, 20, 1, 0.5, 1, 0.1);
+                Vec3 from = vec(10, -9).add(0, 1, 0);
+                world().sendParticles(ParticleTypes.SPLASH, from.x, from.y, from.z, 10, 1, 0.5, 1, 0.1);
+                for (ServerPlayer p : players()) {
+                    if (rnd().nextDouble() >= CoxRules.MUTTADILE_WATER_BLAST_CHANCE || !clearLine(from, p.getEyePosition(), p)) {
+                        continue;
+                    }
+                    waterBlasts++;
                     RaidEffects.later(2, () -> {
                         if (p.isAlive() && inside(p.position())) {
-                            RaidEffects.hit(null, p, rnd().nextInt(36), AttackType.MAGIC, false);
+                            // approx: protection prayers halve it ("only reduce" the ranged and magic attacks)
+                            RaidEffects.hit(null, p, rnd().nextInt(CoxRules.MUTTADILE_MAGIC_MAX + 1), AttackType.MAGIC, 0.5);
                         }
                     });
                 }
@@ -852,9 +1217,8 @@ final class CoxRooms {
             player.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
             int wc = level(player, Skill.WOODCUTTING);
             if (rnd().nextDouble() < CoxRules.meatTreeAccuracy(wc)) {
-                int dmg = CoxRules.meatTreeChop(wc, rnd());
-                treeHp -= dmg;
-                XpService.add(player, Skill.WOODCUTTING, dmg / 2.0); // approx
+                treeHp -= CoxRules.meatTreeChop(wc, rnd());
+                XpService.add(player, Skill.WOODCUTTING, CoxRules.MEAT_TREE_XP);
                 if (treeHp <= 0) {
                     treeAlive = false;
                     RaidBuilder.fill(world(), tree().getX() - 1, tree().getY(), tree().getZ() - 1, tree().getX() + 1, tree().getY() + 3,
@@ -880,12 +1244,34 @@ final class CoxRooms {
 
         @Override
         public String walk(CoxTobWalk w) {
+            int total = 0;
+            for (ServerPlayer p : raid.players()) {
+                total += level(p, Skill.WOODCUTTING);
+            }
+            w.expect(treeMaxHp == CoxRules.meatTreeHp(total), "the meat tree has " + treeMaxHp + " health, expected "
+                    + CoxRules.meatTreeHp(total) + " (5 x the team's Woodcutting)");
+            // The small one feeds at half health, at most three times.
+            w.moveTo(at(-10, 0));
+            for (int i = 0; i < CoxRules.MUTTADILE_MAX_FEEDS; i++) {
+                int want = i + 1;
+                int hp = raid.hitpoints(small);
+                w.hit(small, Math.max(1, hp - (int) (raid.maxHitpoints(small) * 0.4)), AttackType.RANGED);
+                int low = raid.hitpoints(small);
+                w.until(() -> feeds.getOrDefault(small, 0) == want, 30, "the small Muttadile did not go to feed (feed " + want + ")");
+                w.until(() -> !feeding.containsKey(small), 20, "the small Muttadile never stopped feeding");
+                w.expect(raid.hitpoints(small) > low, "feeding on the meat tree did not heal the small Muttadile");
+            }
+            w.hit(small, Math.max(1, raid.hitpoints(small) - (int) (raid.maxHitpoints(small) * 0.4)), AttackType.RANGED);
+            w.tick(25);
+            w.expect(feeds.getOrDefault(small, 0) == CoxRules.MUTTADILE_MAX_FEEDS && !feeding.containsKey(small),
+                    "the small Muttadile fed a fourth time");
+            w.expect(waterBlasts > 0, "the submerged Muttadile never blasted the player");
             w.use(w.block(this, RaidsContent.COX_TOOLS));
             w.expect(w.count("bronze_axe") > 0, "the room's bronze axe spawn gave nothing");
             w.hold("bronze_axe");
             BlockPos treePos = tree();
             int swings = 0;
-            while (treeAlive && swings++ < 300) {
+            while (treeAlive && swings++ < 600) {
                 w.moveTo(treePos.offset(1, 0, 0));
                 w.use(treePos);
                 w.tick(4);
@@ -895,7 +1281,7 @@ final class CoxRooms {
             w.kill(small, AttackType.RANGED, "the small Muttadile");
             w.until(() -> alive(big), 5, "the large Muttadile did not emerge");
             w.kill(big, AttackType.RANGED, "the large Muttadile");
-            return "tree felled in " + swings + " swings";
+            return "3 feeds (+" + healed + "), " + waterBlasts + " water blast(s), tree felled in " + swings + " swings";
         }
     }
 
@@ -904,14 +1290,19 @@ final class CoxRooms {
     /**
      * Vanguards (OSRS wiki): three linked Vanguards; if one's health strays too far from the others (40% for four players
      * or fewer, 33.3% for five or more) they shuffle and heal to full. They change places every 20-36 ticks and can't be
-     * harmed in their shells; a fatal hit landing in the shell leaves 1 hitpoint. One overload (+) per room is guaranteed.
+     * harmed in their shells; a fatal hit landing in the shell leaves 1 hitpoint, and players in their path take 3-6 stomp
+     * damage. Every attack is three hits: the melee Vanguard lands all three on its target, the ranged and magic ones hit
+     * the target once and throw the other two around it. One overload (+) per room is guaranteed.
      */
     static final class Vanguards extends RoomLogic implements CoxTobWalk.Walkable {
         private static final String[] IDS = {"vanguard_melee", "vanguard_ranged", "vanguard_magic"};
         private final DataBossEntity[] guards = new DataBossEntity[3];
+        private final List<Vec3[]> paths = new ArrayList<>();
         private int shelled;
         private int shuffleTimer;
         private int resets;
+        private int stomps;
+        private int extraHits;
         private boolean overloadDropped;
 
         Vanguards(RaidInstance raid, RoomDef def, int index) {
@@ -945,8 +1336,24 @@ final class CoxRooms {
                 return;
             }
             List<DataBossEntity> live = live();
-            if (shelled > 0 && --shelled == 0) {
-                say("The Vanguards emerge from their shells.");
+            if (shelled > 0) {
+                // OSRS: players in the shuffling Vanguards' path take 3-6 rapid stomp damage every few ticks.
+                if (shelled % 2 == 0) {
+                    for (ServerPlayer p : players()) {
+                        for (Vec3[] path : paths) {
+                            if (nearSegment(p.position(), path[0], path[1], 1.5)) {
+                                stomps++;
+                                RaidEffects.hit(live.isEmpty() ? null : live.get(0), p, CoxRules.VANGUARD_STOMP_MIN
+                                        + rnd().nextInt(CoxRules.VANGUARD_STOMP_MAX - CoxRules.VANGUARD_STOMP_MIN + 1), null, true);
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (--shelled == 0) {
+                    paths.clear();
+                    say("The Vanguards emerge from their shells.");
+                }
             }
             if (live.size() > 1) {
                 double min = 1;
@@ -975,16 +1382,59 @@ final class CoxRooms {
         private void shuffle(List<DataBossEntity> live) {
             shuffleTimer = CoxRules.vanguardShuffleTicks(rnd());
             shelled = CoxRules.VANGUARD_SHELL_TICKS;
+            paths.clear();
             say("The Vanguards retreat into their shells and change places!");
             Vec3 first = live.get(0).position();
             for (int i = 0; i < live.size(); i++) {
                 DataBossEntity g = live.get(i);
                 Vec3 to = i + 1 < live.size() ? live.get(i + 1).position() : first;
+                paths.add(new Vec3[]{g.position(), to});
                 unanchor(g);
                 move(g, to);
                 anchor(g);
                 g.setTarget(null);
             }
+        }
+
+        /** Whether {@code p} stands within {@code r} blocks (horizontally) of the segment from {@code a} to {@code b}. */
+        private static boolean nearSegment(Vec3 p, Vec3 a, Vec3 b, double r) {
+            double dx = b.x - a.x;
+            double dz = b.z - a.z;
+            double len = dx * dx + dz * dz;
+            double k = len <= 0 ? 0 : Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.z - a.z) * dz) / len));
+            double ex = a.x + k * dx - p.x;
+            double ez = a.z + k * dz - p.z;
+            return ex * ex + ez * ez <= r * r;
+        }
+
+        /**
+         * OSRS wiki: every Vanguard attack is three hits. The melee Vanguard lands the other two on its target too; the ranged
+         * and magic ones throw them at tiles around the target (protection prayers reduce, but don't stop, them).
+         */
+        @Override
+        public int bossOutgoing(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
+            String id = RaidInstance.creatureId(boss);
+            int max = 0;
+            for (com.runecraft.osrs.content.AttackDef a : attacks(boss)) {
+                max = Math.max(max, a.maxHit());
+            }
+            int top = max;
+            for (int i = 1; i < CoxRules.VANGUARD_HITS_PER_ATTACK; i++) {
+                if (id.equals("vanguard_melee")) {
+                    later(i, () -> {
+                        if (alive(boss) && player.isAlive() && inside(player.position())) {
+                            extraHits++;
+                            RaidEffects.hit(boss, player, rnd().nextInt(top + 1), AttackType.SLASH, 0.5); // approx: prayer halves it
+                        }
+                    });
+                } else {
+                    Vec3 at = player.position().add(rnd().nextInt(5) - 2, 0, rnd().nextInt(5) - 2);
+                    extraHits++;
+                    RaidEffects.strike(world(), at, 1.0, top, 2, boss, id.equals("vanguard_magic") ? ParticleTypes.WITCH
+                            : ParticleTypes.CRIT, type, 0.5);
+                }
+            }
+            return damage;
         }
 
         @Override
@@ -1023,6 +1473,19 @@ final class CoxRooms {
             w.hit(first, (int) (raid.maxHitpoints(first) * 0.6), AttackType.MAGIC);
             w.tick(1);
             w.expect(resets > 0 && raid.healthFraction(first) > 0.99, "an uneven Vanguard did not make them reset");
+            // Standing in a shuffling Vanguard's path gets you stomped.
+            if (!paths.isEmpty()) {
+                Vec3[] path = paths.get(0);
+                w.moveTo(path[0].lerp(path[1], 0.5));
+                w.tick(2);
+                w.expect(stomps > 0, "the shuffling Vanguards walked through the player without stomping");
+                w.moveTo(at(-12, 0));
+            }
+            // Every attack is three hits.
+            int before = extraHits;
+            bossOutgoing(guards[0], w.player(), 0, AttackType.SLASH);
+            w.tick(3);
+            w.expect(extraHits - before == CoxRules.VANGUARD_HITS_PER_ATTACK - 1, "a melee Vanguard attack was not three hits");
             // Even damage brings them down together.
             int guard = 0;
             while (!live().isEmpty() && guard++ < 600) {
@@ -1034,18 +1497,21 @@ final class CoxRooms {
                 w.tick(1);
             }
             w.expect(live().isEmpty(), "the Vanguards did not all die (" + live().size() + " left)");
-            return resets + " reset(s), killed evenly";
+            return resets + " reset(s), " + stomps + " stomp(s), killed evenly";
         }
     }
 
     // ================================================================== Vespula
 
     /**
-     * Vespula (OSRS): four lux grubs (125 hitpoints) lie around the abyssal portal; Vespula stings them as she flies and a
-     * grub stung to death hatches into a vespine soldier that heals her and the portal, and explodes after 20 seconds; the
-     * grub reappears soon after. Medivaemia blossoms from the roots heal a grub by 30. While she flies only magic, ranged
-     * and halberds reach her; at 20% she lands. The portal pulses at anyone within 7 tiles (-3 prayer, 3 damage without),
-     * and attacking it while she flies enrages her. Destroying the portal ends the encounter.
+     * Vespula (OSRS wiki). She ignores the party until attacked. Four lux grubs (125 hitpoints) lie around the abyssal
+     * portal; while she flies she periodically stings a grub, injecting her eggs, and the stung grub's meter slowly drains
+     * until a vespine soldier bursts out, unless medivaemia blossoms from the roots keep it topped up (35 each). Soldiers
+     * heal her and the portal while they live; once their health is low they drop to the ground, where only melee harms
+     * them, and explode 20 seconds later; the grub then reappears. While she flies only magic, ranged and halberds reach
+     * her; at 20% she lands for about 20 seconds. The portal drains 3 prayer points every two ticks from anyone within 7 tiles
+     * while it is under attack (3 damage without prayer), and attacking it while she flies enrages her: she stings anyone
+     * next to her for 5-20 and stomps anyone under her for 2-8 a tick. Destroying the portal ends the encounter.
      */
     static final class Vespula extends RoomLogic implements CoxTobWalk.Walkable {
         /** Game ticks Vespula stays on the ground. // approx: about 20 seconds */
@@ -1054,14 +1520,21 @@ final class CoxRooms {
         private DataBossEntity vespula;
         private DataBossEntity portal;
         private final int[] grubHp = new int[GRUBS.length];
+        private final boolean[] stung = new boolean[GRUBS.length];
         private final Mob[] soldiers = new Mob[GRUBS.length];
-        private final int[] soldierAge = new int[GRUBS.length];
+        private final boolean[] landed = new boolean[GRUBS.length];
+        private final int[] fuse = new int[GRUBS.length];
         private final int[] respawnIn = new int[GRUBS.length];
         private int landedTicks;
         private boolean landedOnce;
         private int enragedTicks;
+        private boolean provoked;
+        private long portalHitAt = Long.MIN_VALUE / 2;
         private int t;
+        private int stings;
         private int hatched;
+        private int soldierHeals;
+        private int portalDrains;
 
         Vespula(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -1082,9 +1555,11 @@ final class CoxRooms {
         @Override
         public void start() {
             java.util.Arrays.fill(grubHp, CoxRules.LUX_GRUB_HP);
+            java.util.Arrays.fill(stung, false);
             landedTicks = 0;
             landedOnce = false;
             enragedTicks = 0;
+            provoked = false;
             portal = spawnBoss("vespula_portal", at(15, 0));
             if (portal != null) {
                 anchor(portal);
@@ -1106,12 +1581,36 @@ final class CoxRooms {
             return -1;
         }
 
+        /** The grub slot whose soldier this is, or -1. */
+        int soldierSlot(LivingEntity e) {
+            for (int i = 0; i < soldiers.length; i++) {
+                if (soldiers[i] == e) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        /** Whether a vespine soldier is on the ground (then only melee harms it; in the air, melee can't reach it). */
+        boolean grounded(LivingEntity soldier) {
+            int i = soldierSlot(soldier);
+            return i >= 0 && landed[i];
+        }
+
+        private boolean portalUnderAttack() {
+            return t - portalHitAt <= CoxRules.PORTAL_UNDER_ATTACK_TICKS;
+        }
+
         @Override
         public void gameTick(long tick) {
             t++;
             if (!alive(portal)) {
                 complete();
                 return;
+            }
+            if (alive(vespula) && !provoked) {
+                // OSRS: Vespula isn't aggressive; she only fights back once attacked.
+                vespula.setTarget(null);
             }
             if (alive(vespula) && !landedOnce && raid.healthFraction(vespula) <= 0.2) {
                 landedOnce = true;
@@ -1124,35 +1623,51 @@ final class CoxRooms {
                 vespula.setNoAi(false);
                 say("Vespula takes to the air again.");
             }
-            // Vespula stings the lux grubs while she flies.
+            // While she flies she stings a healthy grub now and then, injecting her eggs.
             if (flying() && t % CoxRules.VESPULA_STING_INTERVAL == 0) {
-                List<Integer> live = new ArrayList<>();
+                List<Integer> healthy = new ArrayList<>();
                 for (int i = 0; i < GRUBS.length; i++) {
-                    if (grubHp[i] > 0) {
-                        live.add(i);
+                    if (grubHp[i] > 0 && !stung[i]) {
+                        healthy.add(i);
                     }
                 }
-                if (!live.isEmpty()) {
-                    int g = live.get(rnd().nextInt(live.size()));
+                if (!healthy.isEmpty()) {
+                    int g = healthy.get(rnd().nextInt(healthy.size()));
+                    stung[g] = true;
+                    stings++;
                     BlockPos pos = at(GRUBS[g][0], GRUBS[g][1]);
                     world().sendParticles(ParticleTypes.CRIT, pos.getX() + 0.5, pos.getY() + 1.2, pos.getZ() + 0.5, 8, 0.3, 0.3, 0.3, 0.05);
-                    grubHp[g] -= CoxRules.VESPULA_STING_DAMAGE;
-                    if (grubHp[g] <= 0) {
-                        hatch(g, pos);
+                    say("Vespula stings a lux grub, injecting her eggs!");
+                }
+            }
+            for (int i = 0; i < GRUBS.length; i++) {
+                if (stung[i] && grubHp[i] > 0 && soldiers[i] == null) {
+                    grubHp[i] -= CoxRules.GRUB_DRAIN_PER_TICK;
+                    if (grubHp[i] <= 0) {
+                        hatch(i, at(GRUBS[i][0], GRUBS[i][1]));
                     }
                 }
             }
             for (int i = 0; i < GRUBS.length; i++) {
-                if (soldiers[i] != null) {
-                    if (!alive(soldiers[i])) {
+                Mob s = soldiers[i];
+                if (s != null) {
+                    if (!alive(s)) {
                         soldiers[i] = null;
                         respawnIn[i] = CoxRules.GRUB_RESPAWN_TICKS;
-                    } else if (++soldierAge[i] >= CoxRules.SOLDIER_FUSE_TICKS) {
-                        Mob s = soldiers[i];
+                        continue;
+                    }
+                    if (!landed[i] && raid.healthFraction(s) <= CoxRules.SOLDIER_LAND_BELOW) {
+                        landed[i] = true;
+                        fuse[i] = CoxRules.SOLDIER_FUSE_TICKS;
+                        s.setNoGravity(false);
+                        say("A vespine soldier drops to the ground - finish it in melee before it explodes!");
+                    }
+                    if (landed[i] && --fuse[i] <= 0) {
                         world().sendParticles(ParticleTypes.EXPLOSION, s.getX(), s.getY() + 0.5, s.getZ(), 2, 0.3, 0.3, 0.3, 0);
                         for (ServerPlayer p : players()) {
                             if (p.distanceToSqr(s) < 2.5 * 2.5) {
-                                RaidEffects.hit(s, p, 10 + rnd().nextInt(16), null, true); // approx: "moderate damage"
+                                RaidEffects.hit(s, p, CoxRules.SOLDIER_BLAST_MIN
+                                        + rnd().nextInt(CoxRules.SOLDIER_BLAST_MAX - CoxRules.SOLDIER_BLAST_MIN + 1), null, true);
                             }
                         }
                         s.discard();
@@ -1161,10 +1676,12 @@ final class CoxRooms {
                     }
                 } else if (grubHp[i] <= 0 && respawnIn[i] > 0 && --respawnIn[i] == 0) {
                     grubHp[i] = CoxRules.LUX_GRUB_HP;
+                    stung[i] = false;
+                    landed[i] = false;
                     RaidBuilder.set(world(), at(GRUBS[i][0], GRUBS[i][1]), RaidBuilder.module(RaidsContent.COX_LUX_GRUB));
                 }
             }
-            // Vespine soldiers heal Vespula and the portal while they live. // approx rate
+            // Vespine soldiers heal Vespula and the portal while they live. // approx: 1% per soldier every 4 ticks
             if (t % 4 == 0) {
                 int alive = 0;
                 for (Mob s : soldiers) {
@@ -1173,15 +1690,17 @@ final class CoxRooms {
                 if (alive > 0) {
                     for (DataBossEntity b : new DataBossEntity[]{vespula, portal}) {
                         if (alive(b)) {
+                            soldierHeals++;
                             raid.heal(b, alive * Math.max(1, raid.maxHitpoints(b) / 100));
                         }
                     }
                 }
             }
-            // The portal's pulse: -3 prayer (3 damage without prayer) to anyone within 7 tiles.
-            if (t % CoxRules.PORTAL_INTERVAL == 0) {
+            // The portal, while under attack: -3 prayer (3 damage without prayer) to anyone within 7 tiles, every two ticks.
+            if (portalUnderAttack() && t % CoxRules.PORTAL_INTERVAL == 0) {
                 for (ServerPlayer p : players()) {
                     if (p.distanceToSqr(portal) <= CoxRules.PORTAL_RANGE * CoxRules.PORTAL_RANGE) {
+                        portalDrains++;
                         var data = Players.data(p);
                         if (data.prayerPoints() > 0) {
                             data.setPrayerPoints(Math.max(0, data.prayerPoints() - CoxRules.PORTAL_DRAIN));
@@ -1214,9 +1733,9 @@ final class CoxRooms {
             RaidBuilder.set(world(), pos, Blocks.AIR.defaultBlockState());
             Mob s = spawnMob("vespine_soldier", pos, false);
             soldiers[g] = s;
-            soldierAge[g] = 0;
+            landed[g] = false;
             hatched++;
-            warn("A lux grub hatches into a vespine soldier! Its kin will heal Vespula and the portal.");
+            warn("A lux grub hatches into a vespine soldier! It will heal Vespula and the portal.");
         }
 
         @Override
@@ -1234,7 +1753,8 @@ final class CoxRooms {
                     return true;
                 }
                 if (!Inv.has(player, CoxSupplies.BLOSSOM, 1)) {
-                    Msg.game(player, "The lux grub has " + grubHp[g] + " health. Medivaemia blossoms from the roots heal it.");
+                    Msg.game(player, "The lux grub has " + grubHp[g] + " health" + (stung[g] ? " and Vespula's eggs inside" : "")
+                            + ". Medivaemia blossoms from the roots heal it.");
                     return true;
                 }
                 Inv.remove(player, CoxSupplies.BLOSSOM, 1);
@@ -1248,18 +1768,24 @@ final class CoxRooms {
 
         @Override
         public int bossIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
-            if (boss == vespula && flying() && melee(type) && !Inv.idOf(attacker.getMainHandItem()).contains("halberd")) {
-                Msg.action(attacker, "Vespula is flying out of reach of your melee attacks.");
-                return 0;
+            if (boss == vespula) {
+                provoked = true;
+                if (flying() && melee(type) && !Inv.idOf(attacker.getMainHandItem()).contains("halberd")) {
+                    Msg.action(attacker, "Vespula is flying out of reach of your melee attacks.");
+                    return 0;
+                }
             }
-            if (boss == portal && damage > 0) {
-                if (flying()) {
-                    if (enragedTicks <= 0) {
-                        warn("Vespula is enraged by the attack on her portal!");
+            if (boss == portal) {
+                portalHitAt = t;
+                if (damage > 0) {
+                    if (flying()) {
+                        if (enragedTicks <= 0) {
+                            warn("Vespula is enraged by the attack on her portal!");
+                        }
+                        enragedTicks = 6;
+                    } else if (landedOnce) {
+                        CombatAchievementService.flag(attacker, CombatAchievements.FLAG_VESPULA_LANDED);
                     }
-                    enragedTicks = 6;
-                } else if (landedOnce) {
-                    CombatAchievementService.flag(attacker, CombatAchievements.FLAG_VESPULA_LANDED);
                 }
             }
             return damage;
@@ -1293,55 +1819,103 @@ final class CoxRooms {
         @Override
         public String walk(CoxTobWalk w) {
             w.expect(alive(vespula) && alive(portal), "Vespula or her portal did not spawn");
+            w.tick(1);
+            w.expect(vespula.getTarget() == null, "Vespula attacked before anyone attacked her");
             BlockPos root = w.block(this, RaidsContent.COX_MEDIVAEMIA_ROOT);
             w.moveTo(root.offset(1, 0, 0));
             w.use(root);
             w.expect(w.count(CoxSupplies.BLOSSOM) > 0, "the medivaemia roots gave no blossom");
-            w.until(() -> {
-                for (int hp : grubHp) {
-                    if (hp > 0 && hp < CoxRules.LUX_GRUB_HP) {
-                        return true;
-                    }
-                }
-                return false;
-            }, 40, "Vespula never stung a lux grub");
-            int stung = -1;
+            w.until(() -> stings > 0, CoxRules.VESPULA_STING_INTERVAL + 2, "Vespula never stung a lux grub");
+            int g = -1;
             for (int i = 0; i < GRUBS.length; i++) {
-                if (grubHp[i] > 0 && grubHp[i] < CoxRules.LUX_GRUB_HP) {
-                    stung = i;
+                if (stung[i]) {
+                    g = i;
                 }
             }
-            int before = grubHp[stung];
-            w.use(at(GRUBS[stung][0], GRUBS[stung][1]));
-            w.expect(grubHp[stung] > before, "a blossom did not heal the lux grub");
-            w.expect(w.hit(vespula, 20, AttackType.SLASH) == 0, "Vespula took melee damage while flying");
+            int stungGrub = g;
+            int hp0 = grubHp[stungGrub];
+            w.tick(3);
+            w.expect(grubHp[stungGrub] < hp0, "a stung lux grub's meter did not drain");
+            int before = grubHp[stungGrub];
+            w.use(at(GRUBS[stungGrub][0], GRUBS[stungGrub][1]));
+            w.expect(grubHp[stungGrub] == Math.min(CoxRules.LUX_GRUB_HP, before + CoxRules.BLOSSOM_HEAL),
+                    "a blossom did not heal the lux grub by " + CoxRules.BLOSSOM_HEAL);
+            // The portal drains prayer only while it is under attack.
+            w.moveTo(portal.position().add(-5, 0, 0));
+            w.tick(4);
+            w.expect(portalDrains == 0, "the portal drained prayer while nobody attacked it");
+            w.hit(portal, 1, AttackType.MAGIC);
+            w.tick(2);
+            w.expect(portalDrains > 0, "the portal under attack did not drain prayer");
+            w.moveTo(at(-10, 0));
+            // Leave the grubs: one hatches into a soldier that heals Vespula and the portal.
+            w.until(() -> hatched > 0, 2 * CoxRules.LUX_GRUB_HP + 2 * CoxRules.VESPULA_STING_INTERVAL, "no lux grub ever hatched");
+            int heals = soldierHeals;
+            w.tick(5);
+            w.expect(soldierHeals > heals, "a vespine soldier did not heal Vespula and the portal");
+            Mob soldier = null;
+            for (Mob s : soldiers) {
+                if (alive(s)) {
+                    soldier = s;
+                }
+            }
+            w.expect(soldier != null, "the hatched vespine soldier is missing");
+            w.expect(w.hit(soldier, 20, AttackType.SLASH) == 0, "a flying vespine soldier took melee damage");
+            Mob s0 = soldier;
             int guard = 0;
+            while (!grounded(s0) && alive(s0) && guard++ < 40) {
+                w.hit(s0, Math.max(1, raid.maxHitpoints(s0) / 8), AttackType.RANGED);
+                w.tick(1);
+            }
+            w.expect(grounded(s0), "the vespine soldier never dropped to the ground");
+            w.expect(w.hit(s0, 20, AttackType.RANGED) == 0, "a grounded vespine soldier took ranged damage");
+            w.kill(s0, AttackType.SLASH, "the grounded vespine soldier");
+            w.expect(w.hit(vespula, 20, AttackType.SLASH) == 0, "Vespula took melee damage while flying");
+            guard = 0;
             while (!landedOnce && alive(vespula) && guard++ < 200) {
                 w.hit(vespula, Math.max(5, raid.maxHitpoints(vespula) / 10), AttackType.RANGED);
                 w.tick(1);
             }
+            w.expect(provoked, "Vespula never noticed she was attacked");
             w.expect(landedOnce, "Vespula never landed at 20% health");
             w.kill(portal, AttackType.MAGIC, "the abyssal portal");
-            return "grub healed, Vespula landed, " + hatched + " soldier(s) hatched";
+            return stings + " sting(s), grub healed, " + hatched + " soldier(s) hatched and grounded, portal drained "
+                    + portalDrains + " time(s), Vespula landed";
         }
     }
 
     // ================================================================== Ice demon
 
     /**
-     * Ice demon (OSRS): chop kindling from the saplings (a bronze axe and a tinderbox lie in the room) and burn it in the
-     * four braziers to thaw the demon: 54 kindling for a solo team. Once free it takes 67% less damage unless the weapon is
-     * demonbane (+15%) or the spell is a fire spell (+150%).
+     * Ice demon (OSRS wiki "Ice demon", "Brazier", "Kindling", Mod Ash). Chop kindling from the saplings (a bronze axe and a
+     * tinderbox lie in the room; Woodcutting / 12 at most per chop, 28 carried at most); a sapling falls with a 1/X chance
+     * (X = max(3, twice the party) x 5 here) and grows back a few seconds later. Lighting a brazier is a Firemaking roll (8%
+     * at level 1 to 78% at 99, 32 points); every kindling burnt in one is worth 36 points and 48 Firemaking XP. Lit braziers
+     * burn their kindling on a timer, and the burning kindling thaws the demon (54 kindling for a solo team); a brazier that
+     * runs out goes dark and must be lit again. One unattackable icefiend per player (up to four) stands by a brazier and
+     * tries to take a charge off it every 3 or 4 ticks, succeeding 1 time in 6. Once free the demon takes 67% less damage
+     * unless the weapon is demonbane (+15%) or the spell a fire spell (+150%).
      */
     static final class IceDemon extends RoomLogic implements CoxTobWalk.Walkable {
+        private static final int[][] BRAZIERS = {{-7, -7}, {7, -7}, {-7, 7}, {7, 7}};
         private DataBossEntity demon;
         private int heat;
         private int needed;
         private boolean thawed;
-        /** Braziers already lit (OSRS: lighting one is a Firemaking roll; fuelling a lit one always works). */
-        private final Set<BlockPos> lit = new HashSet<>();
+        /** Kindling burning in each brazier (0: dark). */
+        private final int[] charges = new int[BRAZIERS.length];
+        private final Mob[] fiends = new Mob[BRAZIERS.length];
+        private final int[] fiendDelay = new int[BRAZIERS.length];
+        /** Felled saplings and the raid tick they grow back. */
+        private final Map<BlockPos, Long> stumps = new HashMap<>();
         /** OSRS: the braziers are worth up to max(6,000, 10 x the party's total Firemaking levels) points. */
         private int pointsCap;
+        private int pointsGiven;
+        private int t;
+        private int felled;
+        private int fiendTakes;
+        private int fiendTries;
+        private int lightings;
 
         IceDemon(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -1349,10 +1923,8 @@ final class CoxRooms {
 
         @Override
         public void decorate() {
-            for (int sx = -1; sx <= 1; sx += 2) {
-                for (int sz = -1; sz <= 1; sz += 2) {
-                    RaidBuilder.set(world(), at(sx * 7, sz * 7), RaidBuilder.module(RaidsContent.BRAZIER));
-                }
+            for (int[] b : BRAZIERS) {
+                RaidBuilder.set(world(), at(b[0], b[1]), RaidBuilder.module(RaidsContent.BRAZIER));
             }
             for (int x = -12; x <= 12; x += 8) {
                 RaidBuilder.set(world(), at(x, -18), RaidBuilder.module(RaidsContent.SAPLING));
@@ -1370,6 +1942,15 @@ final class CoxRooms {
             }
         }
 
+        private int brazierAt(BlockPos pos) {
+            for (int i = 0; i < BRAZIERS.length; i++) {
+                if (at(BRAZIERS[i][0], BRAZIERS[i][1]).equals(pos)) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
         @Override
         public void start() {
             needed = CoxRules.iceDemonKindling(raid.partySize());
@@ -1383,6 +1964,17 @@ final class CoxRooms {
                 demon.setNoAi(true);
                 anchor(demon);
             }
+            for (int i = 0; i < CoxRules.icefiends(raid.partySize()); i++) {
+                int[] b = BRAZIERS[i];
+                Mob f = spawnMob("cox_icefiend", at(b[0] + Integer.signum(b[0]), b[1] + Integer.signum(b[1])), false);
+                if (f != null) {
+                    f.setNoAi(true);
+                    f.setInvulnerable(true);
+                    anchor(f);
+                    fiends[i] = f;
+                    fiendDelay[i] = CoxRules.icefiendDelay(rnd());
+                }
+            }
         }
 
         @Override
@@ -1390,7 +1982,7 @@ final class CoxRooms {
             super.reset();
             heat = 0;
             thawed = false;
-            lit.clear();
+            java.util.Arrays.fill(charges, 0);
         }
 
         @Override
@@ -1409,9 +2001,67 @@ final class CoxRooms {
         @Override
         public void gameTick(long tick) {
             super.gameTick(tick);
-            if (!thawed && alive(demon) && tick % 3 == 0) {
+            t++;
+            long now = RaidEffects.now();
+            for (Map.Entry<BlockPos, Long> e : new ArrayList<>(stumps.entrySet())) {
+                if (now >= e.getValue()) {
+                    stumps.remove(e.getKey());
+                    RaidBuilder.set(world(), e.getKey(), RaidBuilder.module(RaidsContent.SAPLING));
+                }
+            }
+            if (thawed) {
+                return;
+            }
+            if (alive(demon) && tick % 3 == 0) {
                 world().sendParticles(ParticleTypes.SNOWFLAKE, demon.getX(), demon.getY() + 1.5, demon.getZ(), 8, 1, 1, 1, 0.01);
             }
+            for (int i = 0; i < BRAZIERS.length; i++) {
+                if (charges[i] <= 0) {
+                    continue;
+                }
+                // The icefiend at this brazier tries to take a charge off it.
+                if (alive(fiends[i]) && --fiendDelay[i] <= 0) {
+                    fiendDelay[i] = CoxRules.icefiendDelay(rnd());
+                    fiendTries++;
+                    if (rnd().nextInt(CoxRules.ICEFIEND_SUCCESS) == 0) {
+                        charges[i]--;
+                        fiendTakes++;
+                        BlockPos p = at(BRAZIERS[i][0], BRAZIERS[i][1]);
+                        world().sendParticles(ParticleTypes.SNOWFLAKE, p.getX() + 0.5, p.getY() + 1.2, p.getZ() + 0.5, 12, 0.3, 0.3, 0.3, 0.02);
+                    }
+                }
+                if (charges[i] > 0 && t % CoxRules.BRAZIER_BURN_TICKS == 0) {
+                    charges[i]--;
+                    heat++;
+                }
+                if (charges[i] <= 0) {
+                    BlockPos p = at(BRAZIERS[i][0], BRAZIERS[i][1]);
+                    RaidBuilder.set(world(), p.above(), Blocks.AIR.defaultBlockState());
+                    say("A brazier burns out.");
+                }
+            }
+            if (heat >= needed && alive(demon)) {
+                thaw();
+            }
+        }
+
+        private void thaw() {
+            thawed = true;
+            ice(Blocks.AIR.defaultBlockState());
+            for (int i = 0; i < BRAZIERS.length; i++) {
+                if (alive(fiends[i])) {
+                    fiends[i].discard();
+                }
+            }
+            demon.setNoAi(false);
+            unanchor(demon);
+            warn("The ice cracks - the Ice demon breaks free!");
+        }
+
+        private void award(ServerPlayer player, int points) {
+            int give = Math.max(0, Math.min(points, pointsCap - pointsGiven));
+            pointsGiven += give;
+            raid.awardActionPoints(player, give);
         }
 
         @Override
@@ -1428,17 +2078,32 @@ final class CoxRooms {
                     Msg.game(player, "You need an axe to cut the sapling. There's a bronze axe by the entrance.");
                     return true;
                 }
+                int have = Inv.count(player, "cox_kindling");
+                if (have >= CoxRules.KINDLING_CAP) {
+                    Msg.game(player, "You can't carry any more kindling.");
+                    return true;
+                }
                 player.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
                 int wc = level(player, Skill.WOODCUTTING);
-                if (rnd().nextDouble() < 0.4 + wc / 150.0) { // approx
-                    int n = CoxRules.kindlingPerChop(wc, rnd());
+                if (rnd().nextDouble() < CoxRules.saplingChopChance(wc)) {
+                    int n = Math.min(CoxRules.kindlingPerChop(wc, rnd()), CoxRules.KINDLING_CAP - have);
                     Inv.give(player, "cox_kindling", n);
                     XpService.add(player, Skill.WOODCUTTING, CoxRules.kindlingXp(n));
                     Msg.action(player, "You cut some kindling.");
+                    if (rnd().nextInt(CoxRules.saplingDepletion(raid.partySize(), true)) == 0) {
+                        felled++;
+                        stumps.put(pos.immutable(), RaidEffects.now() + CoxRules.SAPLING_RESPAWN_TICKS);
+                        RaidBuilder.set(world(), pos, Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState());
+                        Msg.game(player, "The sapling falls. It will grow back shortly.");
+                    }
                 }
                 return true;
             }
             if (blockId.equals(RaidsContent.BRAZIER)) {
+                int b = brazierAt(pos);
+                if (b < 0) {
+                    return true;
+                }
                 if (thawed) {
                     Msg.game(player, "The Ice demon is already free.");
                     return true;
@@ -1448,7 +2113,7 @@ final class CoxRooms {
                     Msg.game(player, "You need some kindling to fuel the brazier.");
                     return true;
                 }
-                if (!lit.contains(pos)) {
+                if (charges[b] <= 0) {
                     if (!Inv.has(player, "tinderbox", 1)) {
                         Msg.game(player, "You need a tinderbox to light the brazier. There's one by the entrance.");
                         return true;
@@ -1460,62 +2125,113 @@ final class CoxRooms {
                         Msg.action(player, "You attempt to light the brazier...");
                         return true;
                     }
-                    lit.add(pos);
+                    lightings++;
+                    award(player, CoxRules.BRAZIER_LIGHT_POINTS);
+                    RaidBuilder.set(world(), pos.above(), Blocks.CAMPFIRE.defaultBlockState());
                     Msg.action(player, "The brazier catches light.");
                 }
                 Inv.remove(player, "cox_kindling", n);
-                XpService.add(player, Skill.FIREMAKING, n * 25.0);
-                // The brazier points are shared out over the kindling the room needs.
-                raid.awardActionPoints(player, Math.max(0, Math.min(n, needed - heat)) * pointsCap / Math.max(1, needed));
-                heat += n;
-                RaidBuilder.set(world(), pos.above(), Blocks.CAMPFIRE.defaultBlockState());
+                XpService.add(player, Skill.FIREMAKING, n * CoxRules.KINDLING_FIREMAKING_XP);
+                award(player, n * CoxRules.KINDLING_POINTS);
+                charges[b] += n;
                 world().sendParticles(ParticleTypes.FLAME, pos.getX() + 0.5, pos.getY() + 1.2, pos.getZ() + 0.5, 20, 0.3, 0.5, 0.3, 0.02);
-                say("The braziers warm the room... (" + Math.min(heat, needed) + "/" + needed + ")");
-                if (heat >= needed && alive(demon)) {
-                    thawed = true;
-                    ice(Blocks.AIR.defaultBlockState());
-                    demon.setNoAi(false);
-                    unanchor(demon);
-                    warn("The ice cracks - the Ice demon breaks free!");
-                }
+                say("The braziers warm the room... (" + Math.min(heat, needed) + "/" + needed + " burnt)");
                 return true;
             }
             return false;
         }
 
         @Override
-        public String walk(CoxTobWalk w) {
-            w.expect(!bossVulnerable(demon), "the Ice demon could be attacked while frozen");
-            w.use(w.block(this, RaidsContent.COX_TOOLS));
-            w.expect(w.count("bronze_axe") > 0 && w.count("tinderbox") > 0, "the room's tools gave no bronze axe and tinderbox");
-            BlockPos sapling = w.block(this, RaidsContent.SAPLING);
-            List<BlockPos> braziers = w.blocks(this, RaidsContent.BRAZIER);
-            w.expect(braziers.size() == 4, "expected four braziers, found " + braziers.size());
-            int chops = 0;
-            while (!thawed && chops++ < 600) {
-                w.moveTo(sapling.offset(1, 0, 0));
-                w.use(sapling);
-                w.tick(2);
-                if (w.count("cox_kindling") >= 20 || heat + w.count("cox_kindling") >= needed) {
-                    // Keep fuelling a lit brazier; lighting one is a Firemaking roll that can take a few tries.
-                    BlockPos b = lit.isEmpty() ? braziers.get(chops % braziers.size()) : lit.iterator().next();
-                    w.moveTo(b.offset(1, 0, 0));
-                    w.use(b);
+        public void cleanup() {
+            super.cleanup();
+            for (Mob f : fiends) {
+                if (alive(f)) {
+                    f.discard();
                 }
             }
-            w.expect(thawed, "the Ice demon never thawed (" + heat + "/" + needed + " kindling, " + lit.size() + " brazier(s) lit)");
+        }
+
+        @Override
+        public String walk(CoxTobWalk w) {
+            w.expect(!bossVulnerable(demon), "the Ice demon could be attacked while frozen");
+            int wantFiends = CoxRules.icefiends(raid.partySize());
+            int fiendCount = 0;
+            for (Mob f : fiends) {
+                fiendCount += alive(f) ? 1 : 0;
+            }
+            w.expect(fiendCount == wantFiends, "expected " + wantFiends + " icefiend(s), found " + fiendCount);
+            w.expect(w.hit(fiends[0], 10, AttackType.SLASH) == 0 && alive(fiends[0]), "an icefiend could be harmed");
+            w.use(w.block(this, RaidsContent.COX_TOOLS));
+            w.expect(w.count("bronze_axe") > 0 && w.count("tinderbox") > 0, "the room's tools gave no bronze axe and tinderbox");
+            List<BlockPos> saplings = w.blocks(this, RaidsContent.SAPLING);
+            List<BlockPos> braziers = w.blocks(this, RaidsContent.BRAZIER);
+            w.expect(braziers.size() == 4, "expected four braziers, found " + braziers.size());
+            BlockPos fiendBrazier = at(BRAZIERS[0][0], BRAZIERS[0][1]);
+            // Chop up to the 28 kindling cap; saplings fall now and then and grow back.
+            int chops = 0;
+            while (w.count("cox_kindling") < CoxRules.KINDLING_CAP && chops++ < 400) {
+                BlockPos s = saplings.get(chops % saplings.size());
+                if (stumps.containsKey(s)) {
+                    continue;
+                }
+                w.moveTo(s.offset(1, 0, 0));
+                w.use(s);
+                w.tick(2);
+            }
+            w.expect(w.count("cox_kindling") == CoxRules.KINDLING_CAP, "chopping stopped at " + w.count("cox_kindling") + " kindling");
+            BlockPos s0 = saplings.get(0);
+            w.moveTo(s0.offset(1, 0, 0));
+            w.use(s0);
+            w.tick(2);
+            w.expect(w.count("cox_kindling") == CoxRules.KINDLING_CAP, "a player carrying 28 kindling chopped more");
+            // Light the icefiend's brazier and fill it: the icefiend takes charges off it.
+            int tries = 0;
+            while (charges[0] <= 0 && tries++ < 200) {
+                w.moveTo(fiendBrazier.offset(-1, 0, 0));
+                w.use(fiendBrazier);
+                w.tick(2);
+            }
+            w.expect(charges[0] > 0 && lightings > 0, "the brazier was never lit");
+            int guard = 0;
+            while (!thawed && guard++ < 1500) {
+                if (w.count("cox_kindling") == 0) {
+                    BlockPos s = saplings.get(guard % saplings.size());
+                    if (!stumps.containsKey(s)) {
+                        w.moveTo(s.offset(1, 0, 0));
+                        w.use(s);
+                    }
+                } else {
+                    // Keep feeding the icefiend's brazier (lighting it again whenever it burns out).
+                    w.moveTo(fiendBrazier.offset(-1, 0, 0));
+                    w.use(fiendBrazier);
+                }
+                w.tick(2);
+            }
+            w.expect(thawed, "the Ice demon never thawed (" + heat + "/" + needed + " burnt, " + fiendTakes + " taken by icefiends)");
+            w.expect(fiendTries > 0, "the icefiend never tried to put out its brazier");
+            for (Mob f : fiends) {
+                w.expect(!alive(f), "an icefiend outlived the thaw");
+            }
+            if (felled > 0) {
+                w.tick(CoxRules.SAPLING_RESPAWN_TICKS + 1);
+                w.expect(stumps.isEmpty(), "a felled sapling never grew back");
+            }
             w.kill(demon, AttackType.MAGIC, "the Ice demon");
-            return needed + " kindling, " + chops + " chops";
+            return needed + " kindling burnt, " + chops + " chops, " + felled + " sapling(s) felled, " + fiendTakes + "/"
+                    + fiendTries + " icefiend tries took a charge";
         }
     }
 
     // ================================================================== Thieving
 
     /**
-     * Thieving (OSRS): the corrupted scavenger must be fed cavern grubs from the room's chests. Every chest holds grubs (1,
-     * up to +3 at Thieving 50/75/100) and locks itself shortly after it is opened, except three poisoned ones (1-3 damage
-     * to anyone next to it, no poison) and one that holds a one-off batch of psykk bats. A lockpick only opens them faster.
-     * The sleeping scavenger leaves a batch of secondaries.
+     * Thieving (OSRS wiki "Corrupted scavenger", "Chest", "Trough"): the corrupted scavenger must be fed cavern grubs from
+     * the room's chests. Each attempt at a chest (one a tick) opens it by the skilling roll, 39% at level 1 to 61% at 99, 21
+     * points better with a lockpick or hair clip; an opened chest holds 0 to Thieving / 25 grubs, at least 1 (2 from 95), and
+     * locks itself shortly after, except three poisoned ones (1-3 damage to anyone next to it, no poison) and one that holds
+     * a one-off batch of psykk bats. The scavenger eats the grubs from the trough and needs 30 solo, 16 per player in a team;
+     * left without food for 60 seconds it grows hungry again. Every grub fed is worth 115 points, up to max(4,500, total
+     * Thieving / 6 x 150). The sleeping scavenger leaves 5 stinkhorn, 5 endarkened juice and 4 cicely.
      */
     static final class Thieving extends RoomLogic implements CoxTobWalk.Walkable {
         private static final int GRUBS = 0;
@@ -1525,10 +2241,15 @@ final class CoxRooms {
         private final Map<BlockPos, Integer> openedAt = new HashMap<>();
         private boolean batsTaken;
         private int needed;
-        private int deposited;
+        /** Grubs waiting in the trough, and how full the scavenger is. */
+        private int trough;
+        private int eaten;
+        private int lastMeal;
+        private int pointGrubs;
+        private int pointGrubsGiven;
         private int t;
-        /** OSRS: the trough is worth up to max(4,500, 150 per 6 total Thieving levels) points. */
-        private int pointsCap;
+        private int attempts;
+        private int hungerLost;
 
         Thieving(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -1559,19 +2280,40 @@ final class CoxRooms {
             for (ServerPlayer p : raid.players()) {
                 thieving += level(p, Skill.THIEVING);
             }
-            pointsCap = RaidScaling.coxThievingPointsCap(thieving);
+            pointGrubs = CoxRules.pointGrubs(thieving);
         }
 
         @Override
         public void gameTick(long tick) {
             t++;
+            if (done) {
+                return;
+            }
+            if (trough > 0) {
+                if (t % CoxRules.SCAVENGER_EAT_TICKS == 0) {
+                    trough--;
+                    eaten++;
+                    lastMeal = t;
+                    if (eaten >= needed) {
+                        say("The corrupted scavenger has eaten its fill and falls asleep.");
+                        Vec3 at = vec(12, 0);
+                        dropItem(world(), at, CoxSupplies.STINKHORN, CoxRules.THIEVING_STINKHORN);
+                        dropItem(world(), at, CoxSupplies.ENDARKENED, CoxRules.THIEVING_ENDARKENED);
+                        dropItem(world(), at, CoxSupplies.CICELY, CoxRules.THIEVING_CICELY);
+                        complete();
+                    }
+                }
+            } else if (eaten > 0 && t - lastMeal > CoxRules.SCAVENGER_HUNGER_TICKS && t % CoxRules.SCAVENGER_HUNGER_RATE == 0) {
+                // OSRS: left without food for 60 seconds, the scavenger grows hungry again.
+                eaten--;
+                hungerLost++;
+            }
         }
 
         @Override
         public boolean useBlock(ServerPlayer player, String blockId, BlockPos pos) {
             if (blockId.equals(RaidsContent.GRUBBY_CHEST)) {
-                // OSRS: a lockpick (or hair clip) opens them much faster; bare hands work too.
-                if (cooldown(player, hasTool(player, "lockpick") || hasTool(player, "hair_clip") ? 2 : 4)) {
+                if (cooldown(player, 1)) {
                     return true;
                 }
                 Integer kind = chests.get(pos);
@@ -1584,6 +2326,12 @@ final class CoxRooms {
                     return true;
                 }
                 player.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+                attempts++;
+                boolean pick = hasTool(player, "lockpick") || hasTool(player, "hair_clip");
+                if (rnd().nextDouble() >= CoxRules.chestOpenChance(level(player, Skill.THIEVING), pick)) {
+                    Msg.action(player, "You fail to pick the lock.");
+                    return true;
+                }
                 openedAt.put(pos, t);
                 XpService.add(player, Skill.THIEVING, 30); // approx
                 if (kind == POISON) {
@@ -1609,21 +2357,17 @@ final class CoxRooms {
             if (blockId.equals(RaidsContent.TROUGH)) {
                 int n = Inv.count(player, "cavern_grubs");
                 if (n <= 0) {
-                    Msg.game(player, "The scavenger is hungry for cavern grubs. (" + deposited + "/" + needed + ")");
+                    Msg.game(player, "The scavenger is hungry for cavern grubs. (" + eaten + "/" + needed + ")");
                     return true;
                 }
                 Inv.remove(player, "cavern_grubs", n);
-                raid.awardActionPoints(player, Math.max(0, Math.min(n, needed - deposited)) * pointsCap / Math.max(1, needed));
-                deposited += n;
-                say(player.getName().getString() + " feeds " + n + " grubs to the scavenger. (" + Math.min(deposited, needed) + "/" + needed + ")");
-                if (deposited >= needed) {
-                    say("The corrupted scavenger has eaten its fill and falls asleep.");
-                    Vec3 at = vec(12, 0);
-                    dropItem(world(), at, CoxSupplies.STINKHORN, CoxRules.CLEAR_STINKHORN);
-                    dropItem(world(), at, CoxSupplies.ENDARKENED, CoxRules.CLEAR_ENDARKENED);
-                    dropItem(world(), at, CoxSupplies.CICELY, CoxRules.CLEAR_CICELY);
-                    complete();
-                }
+                int scoring = Math.max(0, Math.min(n, pointGrubs - pointGrubsGiven));
+                pointGrubsGiven += scoring;
+                raid.awardActionPoints(player, scoring * CoxRules.GRUB_POINTS);
+                trough += n;
+                lastMeal = t;
+                say(player.getName().getString() + " fills the trough with " + n + " grubs. (" + Math.min(eaten + trough, needed) + "/"
+                        + needed + ")");
                 return true;
             }
             return false;
@@ -1636,18 +2380,34 @@ final class CoxRooms {
             BlockPos trough = w.block(this, RaidsContent.TROUGH);
             int opens = 0;
             int i = 0;
-            while (!done && opens++ < 800) {
+            boolean hungerChecked = false;
+            while (!done && opens++ < 2000) {
                 BlockPos chest = list.get(i++ % list.size());
                 w.moveTo(chest.offset(1, 0, 0));
                 w.use(chest);
-                w.tick(4);
-                if (w.count("cavern_grubs") >= 10 || deposited + w.count("cavern_grubs") >= needed) {
+                w.tick(1);
+                int held = w.count("cavern_grubs");
+                if (held >= 6 || eaten + this.trough + held >= needed) {
                     w.moveTo(trough.offset(-1, 0, 0));
+                    int before = raid.points(w.player().getUUID());
+                    int scoring = Math.max(0, Math.min(held, pointGrubs - pointGrubsGiven));
                     w.use(trough);
+                    w.expect(raid.points(w.player().getUUID()) - before == scoring * CoxRules.GRUB_POINTS
+                            || before + scoring * CoxRules.GRUB_POINTS >= RaidScaling.COX_POINTS_CAP,
+                            "feeding " + held + " grubs gave " + (raid.points(w.player().getUUID()) - before) + " points, expected "
+                                    + scoring * CoxRules.GRUB_POINTS);
+                    if (!hungerChecked && eaten + this.trough < needed) {
+                        // Left without food for a minute, the scavenger grows hungry again.
+                        hungerChecked = true;
+                        w.until(() -> this.trough == 0, 40, "the scavenger never ate the grubs in the trough");
+                        int full = eaten;
+                        w.tick(CoxRules.SCAVENGER_HUNGER_TICKS + 3 * CoxRules.SCAVENGER_HUNGER_RATE);
+                        w.expect(eaten < full && hungerLost > 0, "the scavenger did not grow hungry after a minute without food");
+                    }
                 }
             }
-            w.expect(done, "the corrupted scavenger was not fed (" + deposited + "/" + needed + ")");
-            return needed + " grubs, " + opens + " chests opened" + (batsTaken ? ", psykk bats found" : "");
+            w.until(() -> done, 60, "the corrupted scavenger was not fed (" + eaten + "/" + needed + ")");
+            return needed + " grubs, " + attempts + " lock attempts, hunger -" + hungerLost + (batsTaken ? ", psykk bats found" : "");
         }
     }
 
@@ -1662,6 +2422,9 @@ final class CoxRooms {
         private int agility;
         private boolean keystoneTaken;
         private boolean crossed;
+        /** Deathly mages and rangers the party killed (CA "No Time for Death": clear the room without killing any). */
+        private int guardKills;
+        private boolean noKillsFlagged;
 
         Tightrope(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -1760,6 +2523,12 @@ final class CoxRooms {
                 }
                 Inv.remove(player, CoxSupplies.KEYSTONE, 1);
                 RaidBuilder.set(world(), pos, Blocks.AIR.defaultBlockState());
+                if (guardKills == 0) {
+                    noKillsFlagged = true;
+                    for (ServerPlayer p : players()) {
+                        CombatAchievementService.flag(p, CombatAchievements.FLAG_COX_TIGHTROPE_NO_KILLS);
+                    }
+                }
                 int killed = 0;
                 for (LivingEntity e : spawned) {
                     if (alive(e)) {
@@ -1772,6 +2541,13 @@ final class CoxRooms {
                 return true;
             }
             return false;
+        }
+
+        @Override
+        public void onCreatureHit(ServerPlayer player, LivingEntity target, int damage) {
+            if (spawned.contains(target) && (!target.isAlive() || target.getHealth() <= 0)) {
+                guardKills++;
+            }
         }
 
         @Override
@@ -1806,43 +2582,45 @@ final class CoxRooms {
             w.moveTo(barrier.offset(-1, 0, 0));
             w.use(barrier);
             w.expect(done && allDead(), "the keystone did not dispel the barrier and the guards");
-            return "crossed at Agility " + agility + ", keystone used";
+            w.expect(noKillsFlagged, "clearing the room without killing a guard did not count for No Time for Death");
+            return "crossed at Agility " + agility + ", keystone used, no guards killed";
         }
     }
 
     // ================================================================== Crystal crabs
 
     /**
-     * Crystal crabs (OSRS wiki "Crab puzzle"): a carved sculpture on the north wall sends one white orb at a time south
-     * down the middle of the room. Four crystals must be lit: the black one at the south end takes the white orb itself;
-     * the yellow, cyan and magenta crystals on the side walls take a blue, red and green orb. Striking a crystal crab
-     * colours it for about five seconds (red melee, blue magic, green ranged); an orb that meets a crab takes its colour,
-     * and at the three marked turning points it is reflected towards that point's crystal. A coloured orb that meets a crab
-     * of another colour, or a crab away from a turning point, is lost; a player caught by an orb is hurt. A hammer (one lies
-     * in the room) or a blunt weapon stuns a crab in place (50-60 ticks solo, less for bigger parties). The room is worth
-     * 1,600 points, 400 per crystal.
+     * Crystal crabs (OSRS wiki "Crab puzzle", "Jewelled Crab", "Energy focus"): a carved sculpture on one wall sends one white
+     * orb at a time across the room. Four crystals must be lit: the black one facing the sculpture takes the white orb itself;
+     * the yellow, cyan and magenta crystals on the wall to the orb's right take a blue, red and green orb. Striking a crab
+     * colours it for about five seconds (red melee, blue magic, green ranged). An orb that meets a crab bounces off it,
+     * always turning right from its own point of view: a white orb takes the crab's colour, a coloured orb keeps its colour
+     * off a crab of the same colour and disappears against any other. Every layout needs three crabs (one in the orb's lane
+     * at each coloured crystal's row); bigger parties get more crabs, which must be lured out of the orb's way. A player the
+     * orb runs into takes 10-30 damage. A hammer (one lies in the room) or a blunt weapon stuns a crab in place (50-60 ticks
+     * solo, less for bigger parties). The room is worth 1,600 points, 400 per crystal.
      */
     static final class CrystalCrabs extends RoomLogic implements CoxTobWalk.Walkable {
-        /** Orb lane (x = 0) from the sculpture at z = -19; turning points at z -12 (west), -4 (east) and 6 (west). */
-        static final int[] TURN_Z = {-12, -4, 6};
-        static final int[] TURN_SIDE = {-1, 1, -1};
-        static final CoxRules.Colour[] TURN_WANTS = {CoxRules.Colour.BLUE, CoxRules.Colour.RED, CoxRules.Colour.GREEN};
-        private static final int CRYSTAL_X = 19;
-        private static final int SOUTH_Z = 19;
         private final boolean[] lit = new boolean[4];
         private final Map<LivingEntity, CoxRules.Colour> colour = new HashMap<>();
         private final Map<LivingEntity, Integer> colourTicks = new HashMap<>();
         private final Map<LivingEntity, Integer> stunTicks = new HashMap<>();
         private final Map<LivingEntity, Vec3> stunAt = new HashMap<>();
         private final Map<LivingEntity, UUID> striker = new HashMap<>();
+        private CoxRules.CrabLayout layout;
+        /** The orb (relative to the room centre, in blocks), its heading and colour; null while none is out. */
         private Vec3 orb;
-        private Vec3 orbDir;
+        private int orbDx;
+        private int orbDz;
         private CoxRules.Colour orbColour;
         private UUID orbStriker;
-        private int orbTurn = -1;
+        private LivingEntity lastCrab;
         private int wanted;
         private int t;
         private int orbs;
+        private int bounces;
+        /** Orbs lost after the first crystal lit (CA "Playing with Lasers"). */
+        private int wasted;
         /** How the last orb was lost before reaching a crystal (self-test diagnostics), or null. */
         private String lost;
 
@@ -1862,13 +2640,15 @@ final class CoxRooms {
             };
         }
 
-        /** Crystal {@code i}: 0-2 the side crystals of the turning points, 3 the black crystal at the south end. */
+        /** Crystal {@code i}: 0-2 the side crystals (yellow, cyan, magenta), 3 the black crystal facing the sculpture. */
         BlockPos crystal(int i) {
-            return i < 3 ? at(TURN_SIDE[i] * CRYSTAL_X, TURN_Z[i]) : at(0, SOUTH_Z);
+            int[] c = layout.crystal(i);
+            return at(c[0], c[1]);
         }
 
+        /** Where a crab must stand in the orb's lane to bounce it into side crystal {@code i}. */
         Vec3 turnPoint(int i) {
-            return vec(0, TURN_Z[i]);
+            return vec(0, layout.rows()[i]);
         }
 
         boolean lit(int i) {
@@ -1882,15 +2662,18 @@ final class CoxRooms {
 
         @Override
         public void decorate() {
+            layout = CoxRules.crabLayout(rnd());
             for (int i = 0; i < 4; i++) {
                 paintCrystal(i);
             }
-            RaidBuilder.set(world(), at(0, -19), Blocks.CHISELED_QUARTZ_BLOCK.defaultBlockState());
-            RaidBuilder.set(world(), at(0, -19).above(), Blocks.END_ROD.defaultBlockState());
+            int[] s = layout.start();
+            BlockPos sculpture = at(0, s[1] - layout.lane());
+            RaidBuilder.set(world(), sculpture, Blocks.CHISELED_QUARTZ_BLOCK.defaultBlockState());
+            RaidBuilder.set(world(), sculpture.above(), Blocks.END_ROD.defaultBlockState());
             for (int i = 0; i < 3; i++) {
-                RaidBuilder.set(world(), at(0, TURN_Z[i]).below(), Blocks.GLOWSTONE.defaultBlockState());
+                RaidBuilder.set(world(), at(0, layout.rows()[i]).below(), Blocks.GLOWSTONE.defaultBlockState());
             }
-            RaidBuilder.set(world(), at(-14, 4), RaidBuilder.module(RaidsContent.COX_TOOLS));
+            RaidBuilder.set(world(), at(-14, -4 * layout.lane()), RaidBuilder.module(RaidsContent.COX_TOOLS));
         }
 
         @Override
@@ -1940,12 +2723,16 @@ final class CoxRooms {
             colour.put(crab, CoxRules.crabColour(type));
             colourTicks.put(crab, CoxRules.CRAB_COLOUR_TICKS);
             striker.put(crab, player.getUUID());
-            ParticleOptions p = switch (CoxRules.crabColour(type)) {
+            world().sendParticles(look(CoxRules.crabColour(type)), crab.getX(), crab.getY() + 0.6, crab.getZ(), 12, 0.4, 0.3, 0.4, 0.02);
+        }
+
+        private static ParticleOptions look(CoxRules.Colour c) {
+            return switch (c) {
+                case WHITE -> ParticleTypes.END_ROD;
                 case BLUE -> ParticleTypes.SOUL_FIRE_FLAME;
                 case GREEN -> ParticleTypes.HAPPY_VILLAGER;
                 default -> ParticleTypes.FLAME;
             };
-            world().sendParticles(p, crab.getX(), crab.getY() + 0.6, crab.getZ(), 12, 0.4, 0.3, 0.4, 0.02);
         }
 
         @Override
@@ -1996,9 +2783,7 @@ final class CoxRooms {
                     }
                 }
                 if (colour.containsKey(crab) && t % 2 == 0) {
-                    world().sendParticles(colour.get(crab) == CoxRules.Colour.BLUE ? ParticleTypes.SOUL_FIRE_FLAME
-                            : colour.get(crab) == CoxRules.Colour.GREEN ? ParticleTypes.HAPPY_VILLAGER : ParticleTypes.FLAME,
-                            crab.getX(), crab.getY() + 0.6, crab.getZ(), 2, 0.2, 0.2, 0.2, 0);
+                    world().sendParticles(look(colour.get(crab)), crab.getX(), crab.getY() + 0.6, crab.getZ(), 2, 0.2, 0.2, 0.2, 0);
                 }
             }
             tickOrb(crabs);
@@ -2008,131 +2793,152 @@ final class CoxRooms {
             }
             if (all) {
                 say("Every crystal shines - the way onward opens.");
+                if (wasted == 0) {
+                    for (ServerPlayer p : players()) {
+                        CombatAchievementService.flag(p, CombatAchievements.FLAG_COX_CRABS_PERFECT);
+                    }
+                }
                 complete();
             }
         }
 
-        private void tickOrb(List<LivingEntity> crabs) {
-            if (orb == null) {
-                orb = vec(0, -18);
-                orbDir = new Vec3(0, 0, 1);
-                orbColour = CoxRules.Colour.WHITE;
-                orbStriker = null;
-                orbTurn = -1;
-                orbs++;
-            }
-            orb = orb.add(orbDir);
-            world().sendParticles(orbColour == CoxRules.Colour.WHITE ? ParticleTypes.END_ROD : orbColour == CoxRules.Colour.BLUE
-                    ? ParticleTypes.SOUL_FIRE_FLAME : orbColour == CoxRules.Colour.GREEN ? ParticleTypes.HAPPY_VILLAGER : ParticleTypes.FLAME,
-                    orb.x, orb.y + 0.6, orb.z, 6, 0.15, 0.15, 0.15, 0);
-            for (ServerPlayer p : players()) {
-                if (RaidEffects.horizontalDistSq(p.position(), orb) < 0.7 * 0.7) {
-                    world().sendParticles(ParticleTypes.EXPLOSION, orb.x, orb.y + 0.5, orb.z, 1, 0, 0, 0, 0);
-                    RaidEffects.hit(null, p, CoxRules.orbDamage(Math.round(p.getHealth())), null, true);
-                    Msg.red(p, "The orb explodes against you!");
-                    lost = orbColour + " orb exploded against " + p.getName().getString() + " at " + where(orb);
-                    orb = null;
-                    return;
-                }
-            }
-            for (LivingEntity crab : crabs) {
-                if (RaidEffects.horizontalDistSq(crab.position(), orb) > 0.9 * 0.9) {
-                    continue;
-                }
-                int turn = -1;
-                if (orbDir.z > 0) {
-                    for (int i = 0; i < TURN_Z.length; i++) {
-                        if (RaidEffects.horizontalDistSq(crab.position(), turnPoint(i)) < 1.0) {
-                            turn = i;
-                        }
-                    }
-                }
-                CoxRules.Colour next = CoxRules.reflect(orbColour, colourOf(crab));
-                boolean pass = turn < 0 && next == orbColour && colourOf(crab) == orbColour && orbColour != CoxRules.Colour.WHITE;
-                if (next == null || (turn < 0 && !pass)) {
-                    lost = orbColour + " orb absorbed by a " + colourOf(crab) + " crab at " + where(crab.position());
-                    orb = null; // absorbed
-                    return;
-                }
-                if (turn >= 0) {
-                    orb = turnPoint(turn);
-                    orbDir = new Vec3(TURN_SIDE[turn], 0, 0);
-                    orbTurn = turn;
-                    orbColour = next;
-                    orbStriker = striker.get(crab);
-                }
-                break;
-            }
-            // Reached a crystal?
-            int target = orbTurn >= 0 ? orbTurn : 3;
-            Vec3 c = Vec3.atBottomCenterOf(crystal(target));
-            if (RaidEffects.horizontalDistSq(orb, c) < 1.0) {
-                CoxRules.Colour want = target == 3 ? CoxRules.Colour.WHITE : TURN_WANTS[target];
-                if (!lit[target] && orbColour == want) {
-                    lit[target] = true;
-                    paintCrystal(target);
-                    ServerPlayer who = orbStriker == null ? randomPlayer() : world().getServer().getPlayerList().getPlayer(orbStriker);
-                    if (who != null) {
-                        raid.awardActionPoints(who, RaidScaling.COX_CRABS_POINTS / 4);
-                    }
-                    int n = 0;
-                    for (boolean b : lit) {
-                        n += b ? 1 : 0;
-                    }
-                    say("A crystal flares with light! (" + n + "/4)");
-                }
-                orb = null;
-                return;
-            }
-            if (!inside(orb)) {
-                lost = orbColour + " orb left the room at " + where(orb);
-                orb = null;
-            }
-        }
-
-        /** A position relative to the room centre, in blocks (x east, z south). */
-        private String where(Vec3 pos) {
-            return Math.round(pos.x - (center().getX() + 0.5)) + ", " + Math.round(pos.z - (center().getZ() + 0.5));
-        }
-
-        private String lostNote() {
-            return lost == null ? "" : "; last orb lost: " + lost;
-        }
-
-        /**
-         * Whether a crab at {@code pos} stands where an orb can meet it: the lane from the sculpture to the black crystal, or a
-         * turning point's row out to its crystal (with half a block to spare over the orb's reach).
-         */
-        boolean onOrbPath(Vec3 pos) {
-            double dx = pos.x - (center().getX() + 0.5);
-            double dz = pos.z - (center().getZ() + 0.5);
-            if (Math.abs(dx) < 1.5 && dz > -20 && dz < SOUTH_Z + 1) {
-                return true;
-            }
-            for (int i = 0; i < TURN_Z.length; i++) {
-                if (Math.abs(dz - TURN_Z[i]) < 1.5 && dx * TURN_SIDE[i] > -1.5 && dx * TURN_SIDE[i] < CRYSTAL_X + 1) {
+        private boolean anyLit() {
+            for (boolean b : lit) {
+                if (b) {
                     return true;
                 }
             }
             return false;
         }
 
-        /** Spots away from every orb path where the walk leaves the crabs it lures off them. */
-        private static final int[][] CRAB_PARKING = {{9, 15}, {-9, 15}, {9, -16}, {-9, -16}, {15, 1}, {-15, 1}, {15, -8}, {-15, -8}};
+        /** The orb is gone without lighting anything (a wasted orb once a crystal is lit). */
+        private void lose(String why) {
+            lost = orbColour + " orb " + why;
+            if (anyLit()) {
+                wasted++;
+            }
+            orb = null;
+        }
+
+        private Vec3 orbWorld() {
+            return vec(orb.x, orb.z);
+        }
+
+        private void tickOrb(List<LivingEntity> crabs) {
+            if (orb == null) {
+                int[] s = layout.start();
+                orb = new Vec3(s[0], 0, s[1]);
+                orbDx = s[2];
+                orbDz = s[3];
+                orbColour = CoxRules.Colour.WHITE;
+                orbStriker = null;
+                lastCrab = null;
+                orbs++;
+            }
+            orb = orb.add(orbDx, 0, orbDz);
+            Vec3 w = orbWorld();
+            world().sendParticles(look(orbColour), w.x, w.y + 0.6, w.z, 6, 0.15, 0.15, 0.15, 0);
+            // Reached a crystal?
+            for (int i = 0; i < 4; i++) {
+                int[] c = layout.crystal(i);
+                if (Math.round(orb.x) == c[0] && Math.round(orb.z) == c[1]) {
+                    if (!lit[i] && orbColour == CoxRules.crystalWants(i)) {
+                        lit[i] = true;
+                        paintCrystal(i);
+                        ServerPlayer who = orbStriker == null ? randomPlayer() : world().getServer().getPlayerList().getPlayer(orbStriker);
+                        if (who != null) {
+                            raid.awardActionPoints(who, RaidScaling.COX_CRABS_POINTS / 4); // approx: an even split per crystal
+                        }
+                        int n = 0;
+                        for (boolean b : lit) {
+                            n += b ? 1 : 0;
+                        }
+                        say("A crystal flares with light! (" + n + "/4)");
+                        orb = null;
+                    } else {
+                        lose("reached crystal " + i + (lit[i] ? " (already lit)" : " with the wrong colour"));
+                    }
+                    return;
+                }
+            }
+            if (Math.abs(orb.x) >= CoxRules.CRAB_ROOM_REACH || Math.abs(orb.z) >= CoxRules.CRAB_ROOM_REACH) {
+                lose("hit the wall at " + Math.round(orb.x) + ", " + Math.round(orb.z));
+                return;
+            }
+            for (ServerPlayer p : players()) {
+                if (RaidEffects.horizontalDistSq(p.position(), w) < 0.7 * 0.7) {
+                    world().sendParticles(ParticleTypes.EXPLOSION, w.x, w.y + 0.5, w.z, 1, 0, 0, 0, 0);
+                    RaidEffects.hit(null, p, CoxRules.orbDamage(Math.round(p.getHealth())), null, true);
+                    Msg.red(p, "The orb explodes against you!");
+                    lose("exploded against " + p.getName().getString());
+                    return;
+                }
+            }
+            if (lastCrab != null && RaidEffects.horizontalDistSq(lastCrab.position(), w) > 1.5 * 1.5) {
+                lastCrab = null;
+            }
+            for (LivingEntity crab : crabs) {
+                if (crab == lastCrab || RaidEffects.horizontalDistSq(crab.position(), w) > 0.9 * 0.9) {
+                    continue;
+                }
+                CoxRules.Colour next = CoxRules.reflect(orbColour, colourOf(crab));
+                if (next == null) {
+                    lose("absorbed by a " + colourOf(crab) + " crab at " + Math.round(orb.x) + ", " + Math.round(orb.z));
+                    return;
+                }
+                // The orb bounces off the crab, turning right from its own point of view.
+                bounces++;
+                if (orbColour == CoxRules.Colour.WHITE) {
+                    orbStriker = striker.get(crab);
+                }
+                orbColour = next;
+                int[] turn = CoxRules.turnRight(orbDx, orbDz);
+                orbDx = turn[0];
+                orbDz = turn[1];
+                orb = new Vec3(Math.round(orb.x), 0, Math.round(orb.z));
+                lastCrab = crab;
+                break;
+            }
+        }
+
+        /**
+         * Whether a crab at {@code pos} stands where an orb can meet it: the lane from the sculpture to the black crystal, or a
+         * side crystal's row out to its crystal (with half a block to spare over the orb's reach).
+         */
+        boolean onOrbPath(Vec3 pos) {
+            double dx = pos.x - (center().getX() + 0.5);
+            double dz = pos.z - (center().getZ() + 0.5);
+            if (Math.abs(dx) < 1.5) {
+                return true;
+            }
+            int right = CoxRules.turnRight(0, layout.lane())[0];
+            for (int row : layout.rows()) {
+                if (Math.abs(dz - row) < 1.5 && dx * right > -1.5) {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         /** Self-test walk: lures every crab but {@code keep} that stands on an orb path to a spot clear of them. */
         private void lureOffPaths(LivingEntity keep) {
+            int right = CoxRules.turnRight(0, layout.lane())[0];
             int spot = 0;
             for (LivingEntity crab : crabs()) {
                 if (crab == keep || !onOrbPath(crab.position())) {
                     continue;
                 }
-                Vec3 to = vec(CRAB_PARKING[spot % CRAB_PARKING.length][0], CRAB_PARKING[spot % CRAB_PARKING.length][1]);
+                // Park them on the side away from the crystals, spread along the wall.
+                Vec3 to = vec(-right * (8 + 3 * (spot % 3)), -14 + 7 * (spot / 3 % 5));
                 spot++;
                 stunTicks.remove(crab);
                 stunAt.remove(crab);
                 crab.teleportTo(to.x, to.y, to.z);
             }
+        }
+
+        private String lostNote() {
+            return lost == null ? "" : "; last orb lost: " + lost;
         }
 
         @Override
@@ -2150,41 +2956,65 @@ final class CoxRooms {
             w.until(() -> crabs().size() >= 3, 20, "fewer than three crystal crabs appeared");
             w.use(w.block(this, RaidsContent.COX_TOOLS));
             w.expect(w.count("hammer") > 0, "the room's hammer spawn gave nothing");
-            // Clear the lane (and the turning rows) of crabs so the white orb reaches the black crystal.
-            w.moveTo(at(-10, 14));
-            lureOffPaths(null);
-            for (int i = 0; i < 60 && !lit[3]; i++) {
+            int right = CoxRules.turnRight(0, layout.lane())[0];
+            AttackType[] styles = {AttackType.MAGIC, AttackType.SLASH, AttackType.RANGED};
+            w.moveTo(vec(-right * 12, 0));
+            // Before any crystal is lit: a crab struck the wrong colour sends the orb into the yellow crystal as a green orb,
+            // which does nothing.
+            LivingEntity test = crabs().get(0);
+            Vec3 p0 = turnPoint(0);
+            test.teleportTo(p0.x, p0.y, p0.z);
+            lureOffPaths(test);
+            w.hold("hammer");
+            w.hit(test, 1, AttackType.CRUSH);
+            w.expect(stunned(test), "a hammer did not stun the crystal crab");
+            w.hold(null);
+            int startOrbs = orbs;
+            int guard = 0;
+            while (guard++ < 120 && (orbs == startOrbs || orb != null)) {
+                if (colourTicks.getOrDefault(test, 0) < 3 || colourOf(test) != CoxRules.Colour.GREEN) {
+                    w.hit(test, 1, AttackType.RANGED);
+                }
                 w.tick(1);
             }
-            w.expect(lit[3], "the white orb never lit the black crystal (waited 60 ticks)" + lostNote());
-            AttackType[] styles = {AttackType.MAGIC, AttackType.SLASH, AttackType.RANGED};
+            w.expect(!lit[0] && bounces > 0 && lost != null && lost.contains("crystal 0 with the wrong colour"),
+                    "a green orb bounced into the yellow crystal did not just vanish" + lostNote());
+            test.teleportTo(test.getX() - right * 8, test.getY(), test.getZ() + 3);
+            stunTicks.remove(test);
+            // Clear the lane (and the side rows) of crabs so the white orb crosses into the black crystal.
+            lureOffPaths(null);
+            for (int i = 0; i < 80 && !lit[3]; i++) {
+                w.tick(1);
+            }
+            w.expect(lit[3], "the white orb never lit the black crystal (waited 80 ticks)" + lostNote());
             for (int i = 0; i < 3; i++) {
-                final int turn = i;
+                final int crystal = i;
                 LivingEntity crab = crabs().get(0);
-                Vec3 p = turnPoint(turn);
+                Vec3 p = turnPoint(crystal);
                 crab.teleportTo(p.x, p.y, p.z); // lured there
-                // OSRS Wiki (Crab puzzle): the other crabs are lured away, or they run into the orb (a reflected orb that meets
-                // a crab of another colour away from a turning point is lost). The walk drives no creature AI, so a crab
-                // spawned on this turn's row would stand in the reflected orb's way for good.
+                // OSRS Wiki (Crab puzzle): the other crabs are lured away, or they run into the orb. The walk drives no
+                // creature AI, so a crab spawned on this crystal's row would stand in the bounced orb's way for good.
                 lureOffPaths(crab);
-                w.moveTo(new Vec3(p.x - TURN_SIDE[turn] * 2.5, p.y, p.z)); // beside the lane, away from the reflected orb
+                w.moveTo(new Vec3(p.x - right * 2.5, p.y, p.z)); // beside the lane, away from the bounced orb
                 w.hold("hammer");
                 w.hit(crab, 1, AttackType.CRUSH);
                 w.expect(stunned(crab), "a hammer did not stun the crystal crab");
                 w.hold(null);
-                int guard = 0;
-                while (!lit[turn] && guard++ < 80) {
-                    if (colourTicks.getOrDefault(crab, 0) < 3 || colourOf(crab) != TURN_WANTS[turn]) {
-                        w.hit(crab, 1, styles[turn]);
+                CoxRules.Colour want = CoxRules.crystalWants(crystal);
+                guard = 0;
+                while (!lit[crystal] && guard++ < 100) {
+                    if (colourTicks.getOrDefault(crab, 0) < 3 || colourOf(crab) != want) {
+                        w.hit(crab, 1, styles[crystal]);
                     }
                     w.tick(1);
                 }
-                w.expect(lit[turn], "the " + TURN_WANTS[turn] + " orb never lit its crystal (crab " + colourOf(crab) + ")" + lostNote());
-                crab.teleportTo(crab.getX() + 10, crab.getY(), crab.getZ()); // lead it away from the lane
+                w.expect(lit[crystal], "the " + want + " orb never lit its crystal (crab " + colourOf(crab) + ")" + lostNote());
+                crab.teleportTo(crab.getX() - right * 10, crab.getY(), crab.getZ()); // lead it away from the lane
                 stunTicks.remove(crab);
             }
             w.until(() -> done, 5, "lighting every crystal did not finish the room");
-            return orbs + " orbs, all four crystals lit";
+            w.expect(wasted == 0, wasted + " orb(s) wasted after the first crystal lit" + lostNote());
+            return orbs + " orbs, " + bounces + " bounce(s), all four crystals lit";
         }
     }
 
@@ -2232,6 +3062,8 @@ final class CoxRooms {
         private boolean imperfect;
         private boolean penultimateSpecial;
         private final Map<UUID, Pool> lastPool = new HashMap<>();
+        private int swaps;
+        private int lastSwapDamage = -1;
 
         Olm(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -2577,7 +3409,9 @@ final class CoxRooms {
                 style = style == AttackType.MAGIC ? AttackType.RANGED : AttackType.MAGIC;
             }
             AttackType st = style;
-            int max = CoxRules.olmMaxHit(penultimate(), headPhase());
+            // OSRS: 27/28/29 (38/39/41 in Challenge Mode) for a solo raid, scaled up by the party's offence bonus.
+            int max = (int) Math.round(CoxRules.olmMaxHit(penultimate(), headPhase(), raid.mode() == com.runecraft.osrs.content.raids.RaidMode.CHALLENGE)
+                    * RaidScaling.coxOffence(raid.partySize(), false));
             Vec3 a = head.getEyePosition();
             Vec3 b = target.getEyePosition();
             for (int i = 0; i <= 8; i++) {
@@ -2593,7 +3427,7 @@ final class CoxRooms {
                 if (RaidEffects.protectedFrom(target, st)) {
                     dmg = dmg * 22 / 100;
                 }
-                RaidEffects.hit(head, target, dmg, null, true);
+                RaidEffects.hitRaw(head, target, dmg);
             });
         }
 
@@ -2829,37 +3663,71 @@ final class CoxRooms {
             }
         }
 
-        /** Teleport: pairs of players swap places (hurting more the further they land); a lone player lands at random. */
-        private void portals(List<ServerPlayer> players) {
+        /**
+         * Teleport (OSRS wiki): up to six players are paired and swap places, taking 5 per tile they stood apart (nothing on
+         * top of each other, at most 50); with an odd number the one left over is spared. A solo player is sent to a random
+         * tile up to ten tiles away, hurt the same way by the distance.
+         */
+        void portals(List<ServerPlayer> players) {
             say("Portals open beneath you!");
             List<ServerPlayer> list = new ArrayList<>(players);
             java.util.Collections.shuffle(list, rnd());
-            for (int i = 0; i + 1 < list.size(); i += 2) {
+            if (list.size() == 1) {
+                ServerPlayer p = list.get(0);
+                Vec3 from = p.position();
+                Vec3 to = null;
+                for (int tries = 0; tries < 20 && to == null; tries++) {
+                    double a = rnd().nextDouble() * Math.PI * 2;
+                    double r = rnd().nextDouble() * CoxRules.OLM_SWAP_SOLO_RANGE;
+                    Vec3 c = new Vec3(from.x + Math.cos(a) * r, from.y, from.z + Math.sin(a) * r);
+                    BlockPos b = BlockPos.containing(c);
+                    if (inside(c) && world().getBlockState(b).isAir() && !world().getBlockState(b.below()).isAir()) {
+                        to = new Vec3(b.getX() + 0.5, b.getY(), b.getZ() + 0.5);
+                    }
+                }
+                Vec3 dest = to == null ? from : to;
+                world().sendParticles(ParticleTypes.PORTAL, dest.x, dest.y + 0.5, dest.z, 20, 0.4, 0.4, 0.4, 0.1);
+                later(4, () -> {
+                    if (p.isAlive() && inside(p.position())) {
+                        int dmg = CoxRules.olmTeleportDamage(Math.sqrt(RaidEffects.horizontalDistSq(p.position(), dest)));
+                        p.teleportTo(dest.x, dest.y, dest.z);
+                        swaps++;
+                        lastSwapDamage = dmg;
+                        specialRaw(head, p, dmg);
+                    }
+                });
+                return;
+            }
+            int paired = Math.min(CoxRules.OLM_SWAP_MAX_PLAYERS, list.size() - list.size() % 2);
+            for (int i = 0; i + 1 < paired; i += 2) {
                 ServerPlayer a = list.get(i);
                 ServerPlayer b = list.get(i + 1);
-                RaidEffects.later(4, () -> {
+                later(4, () -> {
                     if (a.isAlive() && b.isAlive()) {
                         Vec3 pa = a.position();
                         Vec3 pb = b.position();
-                        int dmg = CoxRules.olmTeleportDamage(pa.distanceTo(pb));
+                        int dmg = CoxRules.olmTeleportDamage(Math.sqrt(RaidEffects.horizontalDistSq(pa, pb)));
                         a.teleportTo(pb.x, pb.y, pb.z);
                         b.teleportTo(pa.x, pa.y, pa.z);
-                        special(head, a, dmg);
-                        special(head, b, dmg);
+                        swaps++;
+                        lastSwapDamage = dmg;
+                        specialRaw(head, a, dmg);
+                        specialRaw(head, b, dmg);
                     }
                 });
             }
-            if (list.size() % 2 == 1) {
-                ServerPlayer p = list.get(list.size() - 1);
-                Vec3 to = vec(rnd().nextInt(25) - 12, rnd().nextInt(17) - 8);
-                RaidEffects.later(4, () -> {
-                    if (p.isAlive() && inside(p.position())) {
-                        int dmg = CoxRules.olmTeleportDamage(p.position().distanceTo(to));
-                        p.teleportTo(to.x, to.y, to.z);
-                        special(head, p, dmg);
-                    }
-                });
+        }
+
+        /** A special whose damage is the wiki's fixed number (not scaled by the party): fails "Perfect Olm" if it lands. */
+        private int specialRaw(LivingEntity source, ServerPlayer p, int dmg) {
+            if (dmg <= 0) {
+                return 0;
             }
+            int dealt = RaidEffects.hitRaw(source, p, dmg);
+            if (dealt > 0) {
+                imperfect = true;
+            }
+            return dealt;
         }
 
         /** Life Siphon (final stand): two pools; anyone not on one within 6 seconds loses up to 18, healing the Olm 5x. */
@@ -2920,6 +3788,19 @@ final class CoxRooms {
             w.expect(raid.hitpoints(head) >= before, "the Olm's head did not heal back damage before its final stand");
             int dealt = w.hit(right, 50, AttackType.SLASH);
             w.expect(dealt <= 17, "the Olm's mage hand took " + dealt + " from a 50 melee hit (expected 66% less)");
+            // The swap: a solo player lands on a random tile up to ten tiles away, hurt 5 per tile.
+            Vec3 before0 = w.player().position();
+            portals(List.of(w.player()));
+            w.tick(5);
+            double moved = Math.sqrt(RaidEffects.horizontalDistSq(before0, w.player().position()));
+            w.expect(swaps == 1 && moved <= CoxRules.OLM_SWAP_SOLO_RANGE + 1, "the Olm's swap sent the player " + moved + " tiles");
+            w.expect(lastSwapDamage == CoxRules.olmTeleportDamage(moved), "the swap hurt " + lastSwapDamage + " for " + moved + " tiles");
+            w.moveTo(at(0, south ? 5 : -5));
+            // A heavy melee hit makes the left hand clench for about 30 seconds.
+            w.hit(left, Math.max(RaidScaling.olmClenchThreshold(raid.maxHitpoints(left)), 1) * 3, AttackType.SLASH);
+            w.expect(clench == CoxRules.OLM_CLENCH_TICKS, "a heavy hit did not clench the left hand for " + CoxRules.OLM_CLENCH_TICKS
+                    + " ticks (" + clench + ")");
+            w.expect(w.hit(left, 10, AttackType.SLASH) == 0, "the clenched left hand took damage");
             int guard = 0;
             int lastPhase = phase;
             while (stage != Stage.HEAD && guard++ < 3000) {

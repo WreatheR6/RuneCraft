@@ -28,6 +28,7 @@ final class RaidCommands {
                 Commands.literal("raids")
                         .executes(ctx -> stats(ctx.getSource().getPlayerOrException()))
                         .then(Commands.literal("leave").executes(ctx -> leave(ctx.getSource().getPlayerOrException())))
+                        .then(Commands.literal("reload").executes(ctx -> reload(ctx.getSource().getPlayerOrException())))
                         .then(Commands.literal("invocations").executes(ctx -> invocations(ctx.getSource().getPlayerOrException())))
                         .then(Commands.literal("invocation")
                                 .then(Commands.argument("name", StringArgumentType.greedyString())
@@ -62,6 +63,11 @@ final class RaidCommands {
             String best = t == RaidType.TOB ? "" : ", best points " + s.bestPoints.getOrDefault(t.id(), 0);
             p.displayClientMessage(Component.literal(t.displayName() + ": " + s.completions.getOrDefault(t.id(), 0) + " completions" + best
                     + ", " + s.purples.getOrDefault(t.id(), 0) + " purples").withStyle(ChatFormatting.YELLOW), false);
+            if (t == RaidType.COX) {
+                p.displayClientMessage(Component.literal("  Challenge Mode: " + s.completions.getOrDefault(RaidInstance.COX_CM_KEY, 0)
+                        + " completions, best points " + s.bestPoints.getOrDefault(RaidInstance.COX_CM_KEY, 0))
+                        .withStyle(ChatFormatting.GRAY), false);
+            }
             if (t == RaidType.TOA) {
                 p.displayClientMessage(Component.literal("  Entry " + s.completions.getOrDefault(ToaLoot.modeKey(0), 0) + ", Normal "
                         + s.completions.getOrDefault(ToaLoot.modeKey(150), 0) + ", Expert " + s.completions.getOrDefault(ToaLoot.modeKey(300), 0))
@@ -84,6 +90,24 @@ final class RaidCommands {
             RaidManager.close(raid);
         } else {
             raid.say(p.getName().getString() + " has left the raid.", ChatFormatting.GRAY);
+        }
+        return 1;
+    }
+
+    /** CoX "reload" (OSRS: the lobby stairs re-roll the layout before the raid starts; the leader only, not in Challenge Mode). */
+    private static int reload(ServerPlayer p) {
+        RaidInstance raid = RaidManager.of(p);
+        if (raid == null || raid.type != RaidType.COX) {
+            Msg.game(p, "You must be in the Chambers of Xeric lobby to reload the layout.");
+            return 0;
+        }
+        if (!raid.isLeader(p)) {
+            Msg.game(p, "Only the party leader can reload the layout.");
+            return 0;
+        }
+        if (!raid.reloadLayout()) {
+            Msg.game(p, raid.begun() ? "The raid has already begun." : "Challenge Mode's layout is always the same.");
+            return 0;
         }
         return 1;
     }
