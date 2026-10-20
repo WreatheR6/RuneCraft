@@ -69,12 +69,29 @@ public final class ClueService {
     private static List<ClueScrolls.Npc> npcs;
     /** Live guardians: entity id -> its owner and the step it guards. */
     private static final Map<UUID, Guard> GUARDS = new HashMap<>();
+    /** Marks a clue guardian, so one that outlived its entry (saved with its chunk, a server restart) goes when it loads. */
+    static final String GUARDIAN_TAG = "runecraft_clue_guardian";
+    /** Guardians loaded with no entry, discarded on the next tick (not while the world is adding them). */
+    private static final List<Entity> STRAY_GUARDIANS = new ArrayList<>();
     /** The strange device's last reading per player (distance in steps), for "warmer/colder than last time". */
     private static final Map<UUID, Integer> LAST_HOT_COLD = new HashMap<>();
     /** Trails the self-test forces on a player (tier -> steps), used instead of the seeded trail. */
     static final Map<UUID, Map<Tier, List<Step>>> FORCED = new HashMap<>();
 
-    private record Guard(UUID owner, Tier tier, int index, long spawnedAt) {
+    /**
+     * A summoned guardian. {@code mob} is the entity itself: an entity search ({@code ServerLevel.getEntity}) doesn't see a
+     * mob in a chunk the server hasn't made visible yet, but the guardian can still be discarded through it.
+     */
+    private record Guard(UUID owner, Tier tier, int index, long spawnedAt, Entity mob) {
+    }
+
+    /** The guardian's entity while it is in the world (also in a chunk entity searches don't see yet), else null. */
+    private static Entity guardEntity(ServerLevel world, UUID id, Guard g) {
+        Entity found = world.getEntity(id);
+        if (found != null) {
+            return found;
+        }
+        return g.mob() != null && !g.mob().isRemoved() ? g.mob() : null;
     }
 
     private ClueService() {
@@ -423,8 +440,13 @@ public final class ClueService {
             mob.moveTo(p.getX() + Math.cos(angle) * 2.5, p.getY(), p.getZ() + Math.sin(angle) * 2.5, p.getRandom().nextFloat() * 360f, 0);
             mob.finalizeSpawn(world, world.getCurrentDifficultyAt(mob.blockPosition()), MobSpawnType.MOB_SUMMONED, null);
             mob.setTarget(p);
-            world.addFreshEntity(mob);
-            GUARDS.put(mob.getUUID(), new Guard(p.getUUID(), tier, index, SysTicks.now()));
+            mob.addTag(GUARDIAN_TAG);
+            // Tracked before it joins the world, so the load hook doesn't take it for a stray.
+            GUARDS.put(mob.getUUID(), new Guard(p.getUUID(), tier, index, SysTicks.now(), mob));
+            if (!world.addFreshEntity(mob)) {
+                GUARDS.remove(mob.getUUID());
+                continue;
+            }
             spawned++;
         }
         if (spawned == 0) {
@@ -446,6 +468,23 @@ public final class ClueService {
         return false;
     }
 
+    /** Discards the guardians the load hook found with no entry. */
+    private static void discardStrayGuardians() {
+        List<Entity> strays;
+        synchronized (STRAY_GUARDIANS) {
+            if (STRAY_GUARDIANS.isEmpty()) {
+                return;
+            }
+            strays = new ArrayList<>(STRAY_GUARDIANS);
+            STRAY_GUARDIANS.clear();
+        }
+        for (Entity e : strays) {
+            if (!e.isRemoved() && !GUARDS.containsKey(e.getUUID())) {
+                e.discard();
+            }
+        }
+    }
+
     /** Despawns guardians whose owner left, logged out or moved on (called every second). */
     static void guardianTick(net.minecraft.server.MinecraftServer server) {
         ServerLevel world = Gielinor.world(server);
@@ -455,7 +494,7 @@ public final class ClueService {
         Iterator<Map.Entry<UUID, Guard>> it = GUARDS.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<UUID, Guard> e = it.next();
-            Entity mob = world.getEntity(e.getKey());
+            Entity mob = guardEntity(world, e.getKey(), e.getValue());
             ServerPlayer owner = server.getPlayerList().getPlayer(e.getValue().owner());
             boolean gone = mob == null || !mob.isAlive();
             boolean left = owner == null || owner.level() != world || mob == null || owner.distanceToSqr(mob) > 48 * 48
@@ -1266,6 +1305,15 @@ public final class ClueService {
             if (tick % 2 == 0) {
                 guardianTick(server);
             }
+            discardStrayGuardians();
+        });
+        // A guardian saved with its chunk (its owner teleported away, the server stopped) guards nothing once it loads again.
+        com.runecraft.platform.ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> {
+            if (entity.getTags().contains(GUARDIAN_TAG) && !GUARDS.containsKey(entity.getUUID())) {
+                synchronized (STRAY_GUARDIANS) {
+                    STRAY_GUARDIANS.add(entity);
+                }
+            }
         });
         // The Mimic: summoned with a mimic casket (kept between attempts), its loot by tier and attempt.
         com.runecraft.boss.DataBossService.requirement(MimicRewards.MIMIC, (p, boss) -> mimicChallenge(p));
@@ -1679,14 +1727,17 @@ public final class ClueService {
         return out;
     }
 
-    /** Removes every guardian the player has summoned, of any tier (self-test clean-up). */
+    /**
+     * Removes every guardian the player has summoned, of any tier (self-test clean-up), also one in a chunk the server hasn't
+     * made visible yet.
+     */
     static void clearGuardians(ServerPlayer p) {
         ServerLevel world = (ServerLevel) p.level();
         Iterator<Map.Entry<UUID, Guard>> it = GUARDS.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<UUID, Guard> e = it.next();
             if (e.getValue().owner().equals(p.getUUID())) {
-                Entity mob = world.getEntity(e.getKey());
+                Entity mob = guardEntity(world, e.getKey(), e.getValue());
                 if (mob != null) {
                     mob.discard();
                 }
