@@ -95,6 +95,33 @@ class BossMechanicsTest {
         assertEquals(6, BossMechanics.vardorvisStrangleSpores(9));
     }
 
+    /** Duke Sucellus and the Leviathan against "Duke Sucellus/Strategies" and "The Leviathan/Strategies". */
+    @Test
+    void dukeAndLeviathan() {
+        assertEquals(5, BossMechanics.dukeFlareInterval(90));
+        assertEquals(4, BossMechanics.dukeFlareInterval(50));
+        assertEquals(3, BossMechanics.dukeFlareInterval(20));
+        assertEquals(1, BossMechanics.dukeFlares(60, false));
+        assertEquals(2, BossMechanics.dukeFlares(40, false));
+        assertEquals(1, BossMechanics.dukeFlares(80, true));
+        assertEquals(4, BossMechanics.dukeFlares(70, true));
+        assertTrue(BossMechanics.dukeEnraged(25, false) && !BossMechanics.dukeEnraged(25.5, false));
+        assertTrue(BossMechanics.dukeEnraged(25.8, true) && !BossMechanics.dukeEnraged(26, true));
+        assertEquals(101, Dt2Bosses.DUKE_GAZE.maxHit());
+        assertEquals(121, AwakenedBosses.variant(ContentRegistry.boss("duke_sucellus")).maxHit(Dt2Bosses.DUKE_GAZE));
+        assertEquals(12, Dt2Bosses.DUKE_VENTS.maxHit());
+        // Volleys: 3-tick magic/ranged, 2-tick magic/ranged, 2-tick all three, 1-tick magic/ranged, 1-tick all three.
+        int[] ticks = {3, 2, 2, 1, 1, 1};
+        boolean[] melee = {false, false, true, false, true, true};
+        for (int v = 0; v < ticks.length; v++) {
+            assertEquals(ticks[v], BossMechanics.leviathanVolleyTicks(v, false, false), "volley " + v);
+            assertEquals(melee[v], BossMechanics.leviathanVolleyMelee(v, false), "volley " + v);
+        }
+        assertEquals(2, BossMechanics.leviathanVolleyTicks(0, true, false));
+        assertEquals(1, BossMechanics.leviathanVolleyTicks(0, true, true));
+        assertFalse(BossMechanics.leviathanVolleyMelee(4, true));
+    }
+
     /** Vardorvis' head: the post-quest gaze is always the green (ranged) one; awakened below half it fires one of each. */
     @Test
     void vardorvisHeadGazes() {

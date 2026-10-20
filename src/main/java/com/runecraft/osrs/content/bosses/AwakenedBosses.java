@@ -91,6 +91,7 @@ public final class AwakenedBosses {
                 m.put("fist_slam", 81);
                 m.put("magic_blast", 71);
                 m.put("freezing_gaze", 121);
+                m.put("gas_vent", 27);
             }
             case "the_leviathan" -> {
                 m.put("shadow_strike", 86);

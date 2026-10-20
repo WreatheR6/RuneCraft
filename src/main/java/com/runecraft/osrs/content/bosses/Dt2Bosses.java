@@ -23,10 +23,10 @@ public final class Dt2Bosses {
     public static final AttackDef DUKE_SLAM = AttackDef.of("fist_slam", AttackType.CRUSH, 46, 5, 3);
     public static final AttackDef DUKE_MAGIC = AttackDef.of("magic_blast", AttackType.MAGIC, 40, 16, 4).particle("minecraft:witch");
     /** The freezing gaze hits everyone the Duke can see; hide behind a pillar. */
-    public static final AttackDef DUKE_GAZE = AttackDef.of("freezing_gaze", AttackType.MAGIC, 75, 16, 1)
+    public static final AttackDef DUKE_GAZE = AttackDef.of("freezing_gaze", AttackType.MAGIC, 101, 16, 1)
             .special(Special.PRAYER_PIERCING, 0).telegraph(5, "Duke Sucellus' eyes begin to glow... break his line of sight!")
             .particle("minecraft:snowflake");
-    public static final AttackDef DUKE_VENTS = AttackDef.of("gas_vent", AttackType.MAGIC, 20, 16, 2).special(Special.HAZARD, 5)
+    public static final AttackDef DUKE_VENTS = AttackDef.of("gas_vent", AttackType.MAGIC, 12, 16, 2).special(Special.HAZARD, 5)
             .particle("minecraft:sneeze").message("Poisonous gas erupts from the vents!");
 
     // ---- The Leviathan ----

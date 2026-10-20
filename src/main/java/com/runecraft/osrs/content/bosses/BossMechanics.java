@@ -453,6 +453,64 @@ public final class BossMechanics {
         return hp > 500 ? 1 : hp >= 130 ? 2 : 3;
     }
 
+    // ------------------------------------------------------------ Duke Sucellus (OSRS Wiki "Duke Sucellus/Strategies")
+    /** Freezing Gaze: every fifth standard attack; it lands 5 ticks after it starts (6 ticks in all) unless a pillar hides you. */
+    public static final int DUKE_GAZE_EVERY = 5;
+    public static final int DUKE_GAZE_TICKS = 5;
+    /** Gas flares leave gas that deals up to 12 a tick (awakened ~27) for a few seconds (approx: 8 ticks). */
+    public static final int DUKE_GAS_MAX = 12;
+    public static final int DUKE_GAS_MAX_AWAKENED = 27;
+    public static final int DUKE_GAS_TICKS = 8;
+
+    /** Standard attacks between gas flares: 5 above 75% health, 4 above 25%, 3 below. */
+    public static int dukeFlareInterval(double percent) {
+        return percent > 75 ? 5 : percent > 25 ? 4 : 3;
+    }
+
+    /** Gas flares launched at once: 1 above 50% and 2 below; awakened 4 below 76%, else 1. */
+    public static int dukeFlares(double percent, boolean awakened) {
+        if (awakened) {
+            return percent < 76 ? 4 : 1;
+        }
+        return percent > 50 ? 1 : 2;
+    }
+
+    /** Enraged (attacks every 4 ticks instead of 5) at 25% health; awakened at 440 of 1,697 (25.9%). */
+    public static boolean dukeEnraged(double percent, boolean awakened) {
+        return percent <= (awakened ? 100.0 * 440 / 1697 : 25);
+    }
+
+    /**
+     * Awakened Duke from ~32% health: an Orb of Darkness rolls along the row in front of him every ~10 seconds, up to 27
+     * damage and every combat stat drained by 8 if it hits.
+     */
+    public static final int DUKE_ORB_PERCENT = 32;
+    public static final int DUKE_ORB_INTERVAL = 17;
+    public static final int DUKE_ORB_MAX = 27;
+    public static final int DUKE_ORB_DRAIN = 8;
+
+    // ------------------------------------------------------------ The Leviathan (OSRS Wiki "The Leviathan/Strategies")
+    /**
+     * Its volleys speed up through the fight: 3-tick magic/ranged, 2-tick magic/ranged, 2-tick all three styles, 1-tick
+     * magic/ranged, then 1-tick all three; enraged (below 20%) 2 ticks between attacks (awakened 1), magic and ranged only.
+     */
+    public static int leviathanVolleyTicks(int volley, boolean enraged, boolean awakened) {
+        if (enraged) {
+            return awakened ? 1 : 2;
+        }
+        int[] ticks = {3, 2, 2, 1, 1};
+        return ticks[Math.max(0, Math.min(ticks.length - 1, volley))];
+    }
+
+    /** Whether a volley mixes in the melee (shadow) projectile: from the third volley, but not the fourth; never enraged. */
+    public static boolean leviathanVolleyMelee(int volley, boolean enraged) {
+        return !enraged && volley >= 2 && volley != 3;
+    }
+
+    /** Awakened from 50% health: a tornado chases the player for 40+ on contact (approx: up to 45). */
+    public static final int LEVIATHAN_TORNADO_MIN = 40;
+    public static final int LEVIATHAN_TORNADO_MAX = 45;
+
     // ------------------------------------------------------------ Amoxliatl
     /** Unstable ice: 1-4 blocks, shatter after 15 ticks into 3x3 icy pools and heal her 16-25 each. */
     public static final int UNSTABLE_ICE_TICKS = 15;

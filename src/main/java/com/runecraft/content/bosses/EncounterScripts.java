@@ -890,12 +890,22 @@ final class EncounterScripts {
     }
 
     /**
-     * Duke Sucellus: fist slams and magic; every few attacks gas vents erupt; periodically his freezing
-     * gaze hits everyone he can see - hide behind one of the pillars.
+     * Duke Sucellus (OSRS Wiki "Duke Sucellus/Strategies"): fist slams up close and magic otherwise on a 5-tick cycle (4
+     * once enraged at 25%). Every fifth standard attack he turns his Freezing Gaze on everyone he can see (up to 101, 5 ticks
+     * to hide behind a pillar); gas flares follow every 5/4/3 standard attacks (above 75%/25%/below) and leave gas on the
+     * vents near the player (up to 12 a tick), one flare above 50% and two below. Awakened: 4 flares below 76%, gas up to 27,
+     * the gaze up to 121, enraged at 25.9%, and from 32% an Orb of Darkness every ~10 seconds (27, drains combat stats by 8).
      */
     static final class Duke extends ScriptedBoss {
-        private int gaze = 16;
         private boolean pillars;
+        /** Standard attacks since the last gaze and since the last gas flares. */
+        private int sinceGaze;
+        private int sinceFlare;
+        /** The flares never come straight after a gaze (he makes one more standard attack first). */
+        private boolean justGazed;
+        /** Game tick the current gaze lands, or -1. */
+        private long gazeAt = -1;
+        private int orbTimer = BossMechanics.DUKE_ORB_INTERVAL;
         /** Max hit scale: 1 for the boss, below 1 for the weaker Desert Treasure II quest version. */
         private final double scale;
 
@@ -912,7 +922,6 @@ final class EncounterScripts {
             return super.multiplier(boss) * scale;
         }
 
-
         @Override
         protected boolean driven() {
             return true;
@@ -920,22 +929,43 @@ final class EncounterScripts {
 
         @Override
         protected boolean canAttack(DataBossEntity boss) {
-            return gaze > 5;
+            return gazeAt < 0;
+        }
+
+        @Override
+        protected int attackDelay(DataBossEntity boss, AttackDef attack) {
+            return BossMechanics.dukeEnraged(percent(boss), boss.awakened()) ? 4 : 5;
         }
 
         @Override
         protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
-            int vents = boss.awakened() ? 4 : 5;
-            if (attackCount % vents == vents - 1) {
-                BossFx.warn(boss, "Poisonous gas erupts from the vents!");
-                for (int i = 0; i < (boss.awakened() ? 5 : 3); i++) {
-                    strike(boss, around(boss, target.position(), 4), 2, (int) Math.round(20 * scale), 1.3, ParticleTypes.SNEEZE, (hit, pos) ->
-                            com.runecraft.boss.Mechanics.addHazard(BossFx.world(boss), pos, 5, 8, boss));
+            double pct = percent(boss);
+            if (sinceGaze >= BossMechanics.DUKE_GAZE_EVERY) {
+                sinceGaze = 0;
+                justGazed = true;
+                gazeAt = now + BossMechanics.DUKE_GAZE_TICKS;
+                for (ServerPlayer p : BossFx.players(boss, 24)) {
+                    p.displayClientMessage(net.minecraft.network.chat.Component.literal("Duke Sucellus turns his gaze upon you...")
+                            .withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE), false);
                 }
-                attackCount++;
-                cooldown = 3;
                 return null;
             }
+            if (!justGazed && sinceFlare >= BossMechanics.dukeFlareInterval(pct)) {
+                sinceFlare = 0;
+                int flares = BossMechanics.dukeFlares(pct, boss.awakened());
+                int gas = (int) Math.round((boss.awakened() ? BossMechanics.DUKE_GAS_MAX_AWAKENED : BossMechanics.DUKE_GAS_MAX) * scale);
+                BossFx.warn(boss, "Duke Sucellus spits gas at the vents!");
+                for (int i = 0; i < flares; i++) {
+                    Vec3 at = i == 0 ? target.position() : around(boss, target.position(), 3);
+                    strike(boss, at, 2 + i, 0, 1.3, ParticleTypes.SNEEZE, (hit, pos) ->
+                            com.runecraft.boss.Mechanics.addHazard(BossFx.world(boss), pos, gas, BossMechanics.DUKE_GAS_TICKS, boss));
+                }
+                cooldown = 2;
+                return null;
+            }
+            justGazed = false;
+            sinceGaze++;
+            sinceFlare++;
             return distance < 5 ? Dt2Bosses.DUKE_SLAM : Dt2Bosses.DUKE_MAGIC;
         }
 
@@ -951,42 +981,58 @@ final class EncounterScripts {
                 }
                 BossFx.say(boss, "Duke Sucellus stirs from his slumber...");
             }
-            if (target == null) {
-                return;
-            }
-            gaze--;
-            if (gaze == 5) {
-                BossFx.say(boss, "Duke Sucellus' eyes begin to glow... break his line of sight!");
-            }
-            if (gaze > 0 && gaze <= 5) {
+            if (gazeAt >= 0) {
                 BossFx.burst(boss, ParticleTypes.SNOWFLAKE, 10, 1.5);
-            }
-            if (gaze <= 0) {
-                gaze = boss.awakened() ? 14 : 20; // approx: the awakened Duke gazes more often
-                for (ServerPlayer p : BossFx.players(boss, 24)) {
-                    if (boss.hasLineOfSight(p)) {
-                        BossFx.stun(p, 6);
-                        CombatHandler.applyDamage(boss, p, (int) Math.round((40 + boss.getRandom().nextInt(36))
-                                * boss.variantHitScale(Dt2Bosses.DUKE_GAZE) * scale));
-                        Msg.red(p, "The Duke's freezing gaze locks onto you!");
-                    } else {
-                        Msg.game(p, "You hide from the Duke's gaze.");
+                if (now >= gazeAt) {
+                    gazeAt = -1;
+                    cooldown = Math.max(cooldown, 1); // the gaze takes 6 ticks in all
+                    int max = (int) Math.round(maxHit(boss, Dt2Bosses.DUKE_GAZE) * scale);
+                    for (ServerPlayer p : BossFx.players(boss, 24)) {
+                        if (boss.hasLineOfSight(p)) {
+                            BossFx.stun(p, 6);
+                            CombatHooks.nameAttack("freezing_gaze", null);
+                            CombatHandler.applyDamage(boss, p, boss.getRandom().nextInt(max + 1));
+                            Msg.red(p, "The Duke's freezing gaze locks onto you!");
+                        } else {
+                            Msg.game(p, "You manage to avoid Duke Sucellus' gaze.");
+                        }
                     }
                 }
+            }
+            if (target != null && boss.awakened() && percent(boss) <= BossMechanics.DUKE_ORB_PERCENT && --orbTimer <= 0) {
+                orbTimer = BossMechanics.DUKE_ORB_INTERVAL;
+                BossFx.warn(boss, "An orb of darkness rolls out in front of Duke Sucellus!");
+                namedStrike("orb_of_darkness", boss, target.position(), 3, (int) Math.round(BossMechanics.DUKE_ORB_MAX * scale), 1.3,
+                        ParticleTypes.SQUID_INK, (hit, pos) -> {
+                            for (ServerPlayer h : hit) {
+                                for (com.runecraft.osrs.Skill s : new com.runecraft.osrs.Skill[]{com.runecraft.osrs.Skill.ATTACK,
+                                        com.runecraft.osrs.Skill.STRENGTH, com.runecraft.osrs.Skill.DEFENCE,
+                                        com.runecraft.osrs.Skill.RANGED, com.runecraft.osrs.Skill.MAGIC}) {
+                                    BossFx.drainStat(h, s, BossMechanics.DUKE_ORB_DRAIN);
+                                }
+                            }
+                        });
             }
         }
     }
 
     /**
-     * The Leviathan: volleys of 3-6 projectiles, each announced, alternating between boulders (ranged),
-     * orbs (magic) and shadows (melee) - switch prayers for every one. Debris and lightning fall between
-     * volleys; below 20% it enrages and fires faster.
+     * The Leviathan: volleys of 3-6 projectiles, each announced, of boulders (ranged), orbs (magic) and, from the third
+     * volley, shadows (melee), 3 ticks apart at first and faster later (OSRS Wiki) - switch prayers for every one. An
+     * awakened Leviathan sends a tornado after the player below 50%. Debris and lightning fall between volleys; below 20%
+     * it enrages: magic and ranged only, 2 ticks apart (awakened 1).
      */
     static final class Leviathan extends ScriptedBoss {
         private final List<AttackDef> volley = new ArrayList<>();
         private int pause;
         /** Game ticks left of a shadow-spell stun (OSRS Wiki: 15 ticks, halved when awakened). */
         private int stunned;
+        /** Volleys fired so far (they speed up) and the ticks between this volley's projectiles. */
+        private int volleys;
+        private int spacing = 3;
+        /** The awakened tornado's position, or null between tornadoes. */
+        private Vec3 tornado;
+        private int tornadoPause;
 
         /** Max hit scale: 1 for the boss, below 1 for the weaker Desert Treasure II quest version. */
         private final double scale;
@@ -1038,9 +1084,15 @@ final class EncounterScripts {
         protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             if (volley.isEmpty()) {
                 int n = (boss.awakened() ? 5 : 3) + boss.getRandom().nextInt(4); // approx: awakened volleys are longer
-                AttackDef[] styles = {Dt2Bosses.LEVI_RANGED, Dt2Bosses.LEVI_MAGIC, Dt2Bosses.LEVI_MELEE};
+                boolean enraged = percent(boss) < 20;
+                // The volleys grow faster and mix in the melee shadow as the fight goes on (OSRS Wiki); enraged: magic/ranged.
+                AttackDef[] styles = BossMechanics.leviathanVolleyMelee(volleys, enraged)
+                        ? new AttackDef[]{Dt2Bosses.LEVI_RANGED, Dt2Bosses.LEVI_MAGIC, Dt2Bosses.LEVI_MELEE}
+                        : new AttackDef[]{Dt2Bosses.LEVI_RANGED, Dt2Bosses.LEVI_MAGIC};
+                spacing = BossMechanics.leviathanVolleyTicks(volleys, enraged, boss.awakened());
+                volleys++;
                 for (int i = 0; i < n; i++) {
-                    volley.add(styles[boss.getRandom().nextInt(3)]);
+                    volley.add(styles[boss.getRandom().nextInt(styles.length)]);
                 }
                 BossFx.warn(boss, "The Leviathan prepares a barrage of " + n + " projectiles!");
                 for (int i = 0; i < 3; i++) {
@@ -1065,11 +1117,45 @@ final class EncounterScripts {
                 pause = 0;
                 return p;
             }
-            return percent(boss) < 20 ? 1 : 2;
+            return percent(boss) < 20 ? BossMechanics.leviathanVolleyTicks(volleys, true, boss.awakened()) : spacing;
+        }
+
+        /**
+         * Awakened, from 50% health: a tornado drifts after the player and hits for 40+ on contact (OSRS Wiki), then reforms
+         * at the edge of the arena (approx: its speed and the pause after a hit).
+         */
+        private void tickTornado(DataBossEntity boss, ServerPlayer target) {
+            if (!boss.awakened() || target == null || percent(boss) > 50) {
+                return;
+            }
+            ServerLevel w = BossFx.world(boss);
+            if (tornado == null) {
+                if (--tornadoPause > 0) {
+                    return;
+                }
+                double a = boss.getRandom().nextDouble() * Math.PI * 2;
+                tornado = BossFx.ground(w, homeVec().x + Math.cos(a) * 10, homeVec().z + Math.sin(a) * 10, homeVec().y);
+                BossFx.warn(boss, "A tornado forms in the cavern!");
+            }
+            Vec3 d = target.position().subtract(tornado);
+            double len = d.horizontalDistance();
+            if (len <= 0.9) {
+                CombatHooks.nameAttack("tornado", null);
+                CombatHandler.applyDamage(boss, target, (int) Math.round((BossMechanics.LEVIATHAN_TORNADO_MIN
+                        + boss.getRandom().nextInt(BossMechanics.LEVIATHAN_TORNADO_MAX - BossMechanics.LEVIATHAN_TORNADO_MIN + 1)) * scale));
+                Msg.red(target, "The tornado tears into you!");
+                tornado = null;
+                tornadoPause = 5;
+                return;
+            }
+            double step = Math.min(0.5, len); // approx: half a tile a tick, slower than a running player
+            tornado = BossFx.ground(w, tornado.x + d.x / len * step, tornado.z + d.z / len * step, tornado.y);
+            w.sendParticles(ParticleTypes.CLOUD, tornado.x, tornado.y + 0.5, tornado.z, 8, 0.3, 0.8, 0.3, 0.02);
         }
 
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
+            tickTornado(boss, target);
             if (stunned > 0) {
                 stunned--;
                 BossFx.burst(boss, ParticleTypes.SMOKE, 6, 1.5);
