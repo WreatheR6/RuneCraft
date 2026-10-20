@@ -159,6 +159,28 @@ class SlayerSystemTest {
     }
 
     @Test
+    void recolouredHelmetsWorkLikeTheHelmetElsewhere() {
+        for (String id : SlayerRewards.slayerHelmets(false)) {
+            // Nightmare Zone and Soul Wars imbue every recolour for the plain helmet's 1,250,000 points / 500 zeal (OSRS Wiki).
+            Object[] row = null;
+            for (Object[] r : com.runecraft.osrs.content.minigames.MinigameRules.Imbues.ITEMS) {
+                if (r[0].equals(id)) {
+                    row = r;
+                }
+            }
+            assertNotNull(row, id + " can't be imbued");
+            assertEquals(id + "_i", row[1]);
+            assertEquals(1_250_000, row[2], id);
+            assertEquals(500, row[3], id);
+            // Any slayer helmet filters the volcanic sulphur fumes.
+            assertTrue(com.runecraft.osrs.content.skilling.MiningData.filtersFumes(id), id);
+            assertTrue(com.runecraft.osrs.content.skilling.MiningData.filtersFumes(id + "_i"), id + "_i");
+        }
+        assertFalse(com.runecraft.osrs.content.skilling.MiningData.filtersFumes("black_mask"));
+        assertFalse(com.runecraft.osrs.content.skilling.MiningData.filtersFumes(""));
+    }
+
+    @Test
     void blockSlotsComeFromQuestPoints() {
         assertEquals(0, SlayerRewards.blockSlots(49, false));
         assertEquals(1, SlayerRewards.blockSlots(50, false));

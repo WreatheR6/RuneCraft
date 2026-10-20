@@ -226,6 +226,29 @@ final class SlayerChecks {
         if (!SlayerService.hasTaskFor(p(), "cerberus") || SlayerService.hasTaskFor(p(), "kraken")) {
             throw failure("a hellhound task should cover Cerberus and not the Kraken");
         }
+        // 8. Konar's hellhounds: a boss kill credited through the API counts only in the kingdom she named.
+        BlockPos at = p().blockPosition();
+        com.runecraft.osrs.Region here = com.runecraft.osrs.world.TaskRegions.at(at.getX(), at.getY(), at.getZ());
+        prof.master = "konar";
+        prof.region = (here == com.runecraft.osrs.Region.ASGARNIA ? com.runecraft.osrs.Region.WILDERNESS
+                : com.runecraft.osrs.Region.ASGARNIA).name();
+        try {
+            SlayerService.creditBossKill(p(), "cerberus");
+            if (prof.remaining != 10) {
+                throw failure("a Cerberus kill counted for Konar's hellhounds outside " + prof.region);
+            }
+            prof.region = here.name();
+            SlayerService.creditBossKill(p(), "cerberus");
+            if (prof.remaining != 9) {
+                throw failure("a Cerberus kill in " + here + " didn't count for Konar's hellhounds there (" + prof.remaining
+                        + " left, want 9)");
+            }
+        } finally {
+            prof.task = null;
+            prof.remaining = 0;
+            prof.region = null;
+        }
+        note.append(", Konar's kingdom rule holds for boss credit");
         return note.toString();
     }
 

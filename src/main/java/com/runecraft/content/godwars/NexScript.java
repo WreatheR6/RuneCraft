@@ -308,7 +308,8 @@ final class NexScript extends GwdScript {
 
     private static boolean masked(ServerPlayer p) {
         String head = com.runecraft.util.Inv.idOf(p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD));
-        return head.equals("gas_mask") || head.equals("facemask") || head.startsWith("slayer_helmet");
+        // Any slayer helmet, recoloured ones included ("black_slayer_helmet", "tzkal_slayer_helmet_i").
+        return head.equals("gas_mask") || head.equals("facemask") || head.endsWith("slayer_helmet") || head.endsWith("slayer_helmet_i");
     }
 
     private void infect(ServerPlayer p, long gameTick) {

@@ -863,8 +863,11 @@ public final class MinigameRules {
 
     // ---------------------------------------------------------------- Imbues (Nightmare Zone / Soul Wars)
     public static final class Imbues {
-        /** Item, imbued item, Nightmare Zone points, Soul Wars zeal (OSRS Wiki). */
-        public static final Object[][] ITEMS = {
+        /**
+         * Item, imbued item, Nightmare Zone points, Soul Wars zeal (OSRS Wiki). Every recoloured slayer helmet imbues for the
+         * plain helmet's price; those rows come last ({@link #withSlayerHelmets}).
+         */
+        public static final Object[][] ITEMS = withSlayerHelmets(new Object[][]{
                 {"black_mask", "black_mask_i", 1_250_000, 500},
                 {"slayer_helmet", "slayer_helmet_i", 1_250_000, 500},
                 {"salve_amulet", "salve_amulet_i", 800_000, 320},
@@ -877,9 +880,22 @@ public final class MinigameRules {
                 {"seers_ring", "seers_ring_i", 650_000, 260},
                 {"tyrannical_ring", "tyrannical_ring_i", 650_000, 260},
                 {"treasonous_ring", "treasonous_ring_i", 650_000, 260},
-                {"granite_ring", "granite_ring_i", 500_000, 200}};
+                {"granite_ring", "granite_ring_i", 500_000, 200}});
 
         private Imbues() {
+        }
+
+        /** {@code base} plus one row per recoloured slayer helmet (black, green ... TzKal), priced like the plain helmet. */
+        private static Object[][] withSlayerHelmets(Object[][] base) {
+            List<String> plain = com.runecraft.osrs.content.slayer.SlayerRewards.slayerHelmets(false);
+            List<String> imbued = com.runecraft.osrs.content.slayer.SlayerRewards.slayerHelmets(true);
+            List<Object[]> rows = new java.util.ArrayList<>(List.of(base));
+            for (int i = 0; i < plain.size(); i++) {
+                if (!plain.get(i).equals("slayer_helmet")) {
+                    rows.add(new Object[]{plain.get(i), imbued.get(i), 1_250_000, 500});
+                }
+            }
+            return rows.toArray(new Object[0][]);
         }
 
         /** A tool that must be carried (not used up) to imbue {@code item}, or null: the ring of the gods needs a holy wrench. */

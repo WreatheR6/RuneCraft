@@ -437,16 +437,31 @@ public final class SlayerService {
     /**
      * Public API for other modules: counts a boss kill towards the player's task when the boss died without the usual
      * death path ({@link #onKill}; e.g. a boss form or instance the boss script removes itself). Gives the boss's Slayer
-     * experience and one kill (two for the Grotesque Guardians with "Double Trouble"); does nothing off task.
+     * experience and one kill (two for the Grotesque Guardians with "Double Trouble"); does nothing off task. The location
+     * rules are judged where the player stands: see {@link #creditBossKill(ServerPlayer, String, Entity)}.
      */
     public static void creditBossKill(ServerPlayer player, String bossId) {
+        creditBossKill(player, bossId, null);
+    }
+
+    /**
+     * As {@link #creditBossKill(ServerPlayer, String)}, with the location rules (Krystilia's Wilderness, the kingdom Konar
+     * named: Cerberus counts for her hellhounds only when she sent the player to Asgarnia) judged where {@code boss} died,
+     * or where the player stands when it is null.
+     */
+    public static void creditBossKill(ServerPlayer player, String bossId, Entity boss) {
         SlayerState.Profile p = profile(player);
         if (!hasTaskFor(player, bossId) || noSlayerCredit(player)) {
             return;
         }
+        Entity at = boss != null ? boss : player;
         SlayerMasters.Master master = p.master == null ? null : SlayerMasters.get(p.master);
-        if (master != null && master.wilderness() && Gielinor.wildernessLevel(player) <= 0) {
+        if (master != null && master.wilderness() && Gielinor.wildernessLevel(at) <= 0) {
             Msg.game(player, "Krystilia's tasks only count in the Wilderness.");
+            return;
+        }
+        if (p.region != null && !taskRegion(at).name().equals(p.region)) {
+            Msg.game(player, "Konar wants you to kill these in " + Region.valueOf(p.region).displayName() + ".");
             return;
         }
         com.runecraft.osrs.content.BossDef def = ContentRegistry.boss(bossId);
@@ -591,6 +606,10 @@ public final class SlayerService {
      * elsewhere, with boots of stone, boots of brimstone or granite boots, or with the elite Kourend &amp; Kebos Diary.
      */
     public static int hotFloorDamage(ServerPlayer player) {
+        // The dungeon is carved in Gielinor only: the same block coordinates elsewhere (Overworld, Nether) are plain ground.
+        if (!com.runecraft.world.Gielinor.is(player)) {
+            return 0;
+        }
         net.minecraft.core.BlockPos at = player.blockPosition();
         if (!SlayerGear.hotFloorAt(at.getX(), at.getY(), at.getZ())) {
             return 0;
