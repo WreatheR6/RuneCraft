@@ -64,25 +64,45 @@ public final class RewardShops {
                 .itemSkill("#seeds", 1, PEST_CONTROL, 15, Skill.FARMING, 25)
                 .itemSkill("#ores", 1, PEST_CONTROL, 15, Skill.MINING, 25);
 
-        // TzHaar shops (TzHaar-Hur-Tel's equipment and TzHaar-Hur-Lek's ore and gem store), tokkul prices.
+        // The Mor Ul Rek stores in one (TzHaar-Hur-Zal's equipment, TzHaar-Mej-Roh's runes, TzHaar-Hur-Rin's ores and gems):
+        // tokkul prices are 150% of the item's value (OSRS Wiki store pages, sell multiplier 1500). Round 34: the obsidian
+        // platebody and platelegs cost 126,000 and 100,500 (were 1,331,200 and 768,000); nature runes aren't sold there.
         shop("tzhaar", "TzHaar-Hur-Tel's Equipment Store")
                 .item("obsidian_helmet", TOKKUL, 84_480)
-                .item("obsidian_platebody", TOKKUL, 1_331_200)
-                .item("obsidian_platelegs", TOKKUL, 768_000)
+                .item("obsidian_platebody", TOKKUL, 126_000)
+                .item("obsidian_platelegs", TOKKUL, 100_500)
                 .item("toktz_ket_xil", TOKKUL, 67_500)
-                .item("tzhaar_ket_om", TOKKUL, 75_000)
+                .item("tzhaar_ket_om", TOKKUL, 75_001)
                 .item("tzhaar_ket_em", TOKKUL, 45_000)
                 .item("toktz_xil_ak", TOKKUL, 60_000)
                 .item("toktz_xil_ek", TOKKUL, 37_500)
                 .item("toktz_mej_tal", TOKKUL, 52_500)
                 .item("toktz_xil_ul", TOKKUL, 375) // per ring
                 .item("obsidian_cape", TOKKUL, 90_000)
-                .item("uncut_onyx", TOKKUL, 300_000)
+                .item("fire_rune", 100, TOKKUL, 600)
+                .item("water_rune", 100, TOKKUL, 600)
+                .item("air_rune", 100, TOKKUL, 600)
+                .item("earth_rune", 100, TOKKUL, 600)
+                .item("mind_rune", 100, TOKKUL, 400)
+                .item("body_rune", 100, TOKKUL, 400)
                 .item("chaos_rune", 10, TOKKUL, 1_350)
                 .item("death_rune", 10, TOKKUL, 2_700)
-                .item("nature_rune", 10, TOKKUL, 1_350)
+                .item("tin_ore", TOKKUL, 4)
+                .item("copper_ore", TOKKUL, 4)
+                .item("iron_ore", TOKKUL, 25)
+                .item("silver_ore", TOKKUL, 112)
                 .item("coal", 10, TOKKUL, 670)
-                .item("runite_ore", TOKKUL, 4_800);
+                .item("gold_ore", TOKKUL, 225)
+                .item("mithril_ore", TOKKUL, 243)
+                .item("adamantite_ore", TOKKUL, 600)
+                .item("runite_ore", TOKKUL, 4_800)
+                .item("uncut_sapphire", TOKKUL, 37)
+                .item("uncut_emerald", TOKKUL, 75)
+                .item("uncut_ruby", TOKKUL, 150)
+                .item("uncut_diamond", TOKKUL, 300)
+                .item("uncut_dragonstone", TOKKUL, 1_500)
+                .item("uncut_onyx", TOKKUL, 300_000)
+                .item("onyx_bolt_tips", TOKKUL, 1_500);
 
         // Guardians of the Rift: Apprentice Felix's Temple Supplies (abyssal pearls; OSRS Wiki). The elemental and
         // catalytic talismans aren't sold. Approx: the colossal pouch stands in for using the abyssal needle on the pouches.
