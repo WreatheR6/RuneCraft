@@ -63,13 +63,12 @@ public final class SystemsHooks implements ModuleHooks {
             DiaryService.onKill(p, e, stats);
             SpellService.onKill(p, e);
             JewelleryService.onKill(p, e, stats);
-            if (com.runecraft.osrs.content.systems.MimicRewards.MIMIC.equals(
-                    net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()).getPath())) {
-                String unique = com.runecraft.osrs.content.systems.MimicRewards.roll(new java.util.Random(p.getRandom().nextLong()));
-                if (unique != null) {
-                    e.spawnAtLocation(Inv.stack(unique, 1));
-                    com.runecraft.collection.CollectionLog.obtain(p, unique);
-                }
+            boolean mimic = com.runecraft.osrs.content.systems.MimicRewards.MIMIC.equals(
+                    net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()).getPath())
+                    || (e instanceof com.runecraft.boss.DataBossEntity b && b.def() != null
+                    && com.runecraft.osrs.content.systems.MimicRewards.MIMIC.equals(b.def().id));
+            if (mimic) {
+                ClueService.onMimicKilled(p); // the mimic casket's own rewards (its pre-roll is ClueService.mimicLoot's)
             }
         });
         GameEvents.onXp(DiaryService::onXp);
@@ -147,7 +146,9 @@ public final class SystemsHooks implements ModuleHooks {
             QuestApi.say(p, "Diary master", "Let's see how your achievement diaries are coming along.");
             SysMenus.diaries(p);
         });
-        QuestScripts.onTalk("watson", SystemsHooks::watson);
+        QuestScripts.onTalk(SystemsContent.WATSON, (p, npc) -> ClueService.watson(p));
+        SysNet.onAction("watson", ClueService::watsonAction);
+        ClueService.register();
         QuestScripts.onTalk(SystemsContent.GHOMMAL, (p, npc) -> {
             QuestApi.say(p, "Ghommal", "Ghommal tests your strength. Show Ghommal what you have achieved in combat!");
             CaMenus.overview(p);
@@ -253,29 +254,22 @@ public final class SystemsHooks implements ModuleHooks {
         return Diaries.tierComplete(SysState.of(p).diaryDone, area, tier);
     }
 
-    private static void watson(ServerPlayer p, QuestNpcEntity npc) {
-        String[] needed = {"clue_scroll_easy", "clue_scroll_medium", "clue_scroll_hard", "clue_scroll_elite"};
-        for (String n : needed) {
-            if (!Inv.has(p, n, 1)) {
-                QuestApi.say(p, "Watson", "Bring me an easy, medium, hard and elite clue scroll and I'll give you a master clue in return.");
-                return;
+    /** The clue tier of a scroll box item, or null. */
+    static ClueScrolls.Tier scrollBoxTier(String id) {
+        for (ClueScrolls.Tier t : ClueScrolls.Tier.values()) {
+            if (com.runecraft.osrs.content.systems.ClueRewards.scrollBox(t).equals(id)) {
+                return t;
             }
         }
-        SysState.SysPlayer sp = SysState.of(p);
-        for (String n : needed) {
-            Inv.remove(p, n, 1);
-            ClueScrolls.Tier t = ClueScrolls.Tier.byScroll(n);
-            sp.clues.remove(t);
-        }
-        Inv.give(p, "clue_scroll_master", 1);
-        QuestApi.say(p, "Watson", "Splendid! Here is a master clue scroll. Good luck!");
+        return null;
     }
 
     /** Whether an item's right-click is decided purely by its id (so the client can predict it). */
     static boolean deterministic(String id, boolean sneaking) {
         if (ClueScrolls.Tier.byScroll(id) != null || ClueScrolls.Tier.byCasket(id) != null || Spellbooks.tablet(id) != null
                 || id.startsWith("antique_lamp_") || id.startsWith(CombatAchievements.LAMP_PREFIX) || RunEnergyService.isEnergyPotion(id) || id.equals("ectophial")
-                || id.equals(CluePuzzles.PUZZLE_BOX) || id.equals(CluePuzzles.LIGHT_BOX) || id.equals("basalt")) {
+                || id.equals(CluePuzzles.PUZZLE_BOX) || id.equals(CluePuzzles.LIGHT_BOX) || id.equals("basalt")
+                || scrollBoxTier(id) != null || id.equals("sextant") || id.startsWith("strange_device")) {
             return true;
         }
         if (Jewellery.worn(id) != null && ItemCatalog.get(id) != null) {
@@ -315,7 +309,7 @@ public final class SystemsHooks implements ModuleHooks {
         }
         ClueScrolls.Tier clue = ClueScrolls.Tier.byScroll(id);
         if (clue != null) {
-            if (!ClueService.dig(p, clue, false)) {
+            if (!ClueService.dig(p, clue, false) && !ClueService.search(p, clue, false)) {
                 ClueService.read(p, clue);
             }
             return true;
@@ -323,6 +317,18 @@ public final class SystemsHooks implements ModuleHooks {
         ClueScrolls.Tier casket = ClueScrolls.Tier.byCasket(id);
         if (casket != null) {
             ClueService.openCasket(p, stack, casket);
+            return true;
+        }
+        ClueScrolls.Tier box = scrollBoxTier(id);
+        if (box != null) {
+            return ClueService.openScrollBox(p, stack, box);
+        }
+        if (id.equals("sextant")) {
+            ClueService.sextant(p);
+            return true;
+        }
+        if (id.startsWith("strange_device")) {
+            ClueService.feel(p, id.endsWith("master") ? ClueScrolls.Tier.MASTER : ClueScrolls.Tier.BEGINNER);
             return true;
         }
         if (id.equals(CluePuzzles.PUZZLE_BOX) || id.equals(CluePuzzles.LIGHT_BOX)) {

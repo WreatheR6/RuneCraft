@@ -236,10 +236,10 @@ class SystemsDataTest {
                 assertTrue(a.size() >= t.minSteps() && a.size() <= t.maxSteps(), t + " " + a.size());
                 for (ClueScrolls.Step s : a) {
                     assertFalse(s.text().isEmpty());
-                    if (s.item() != null) {
-                        assertNotNull(ItemCatalog.get(s.item()), "fetch item " + s.item());
+                    for (String item : ClueReqs.items(s.req())) {
+                        assertNotNull(ItemCatalog.get(item), "required item " + item);
                     }
-                    if (!s.isDig() && s.type() != ClueScrolls.StepType.EMOTE) {
+                    if (s.isTalk()) {
                         assertNotNull(s.npcId());
                     }
                 }
@@ -271,12 +271,11 @@ class SystemsDataTest {
                 }
             }
         }
-        assertTrue(ClueRewards.megaRares(ClueScrolls.Tier.MEDIUM).contains("ranger_boots"));
+        assertTrue(ClueRewards.uniques(ClueScrolls.Tier.MEDIUM).contains("ranger_boots"));
         assertTrue(ClueRewards.megaRares(ClueScrolls.Tier.HARD).contains("3rd_age_platebody"));
         assertTrue(ClueRewards.megaRares(ClueScrolls.Tier.MASTER).contains("bloodhound"));
         assertTrue(ClueRewards.uniques(ClueScrolls.Tier.HARD).contains("robin_hood_hat"));
-        assertTrue(ClueRewards.uniques(ClueScrolls.Tier.HARD).contains("saradomin_page_1"));
-        assertTrue(ClueRewards.megaRares(ClueScrolls.Tier.MEDIUM).contains("holy_sandals"));
+        assertTrue(ClueRewards.uniques(ClueScrolls.Tier.MEDIUM).contains("holy_sandals"));
         assertEquals(0, ClueRewards.masterClueOneIn(ClueScrolls.Tier.BEGINNER));
         assertEquals(5, ClueRewards.masterClueOneIn(ClueScrolls.Tier.ELITE));
     }

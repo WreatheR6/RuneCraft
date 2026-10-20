@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "runecraft:item/staff_of_bob_the_cat"
+  }
+}

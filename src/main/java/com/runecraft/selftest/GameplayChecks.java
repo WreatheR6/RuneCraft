@@ -160,6 +160,12 @@ final class GameplayChecks {
         // The God Wars Dungeon walked end to end: the hole, kill count, each general's chamber, the prison and Nex.
         checks.add(new SelfTest.Check("boss:gwd_walk", () -> g.walk(com.runecraft.content.godwars.GwdWalk::run)));
         checks.addAll(BossWalkChecks.all(context));
+        // Treasure Trails as the real player: a trail of each tier through every step type, its casket, the Mimic and Watson
+        // (named minigame:* so the client walkthrough's real-player run includes them).
+        for (com.runecraft.osrs.content.systems.ClueScrolls.Tier t : com.runecraft.osrs.content.systems.ClueScrolls.Tier.values()) {
+            checks.add(new SelfTest.Check("minigame:clue_" + t.id(),
+                    () -> g.walk((p, back) -> com.runecraft.content.systems.ClueWalk.run(p, back, t))));
+        }
         for (Map.Entry<String, int[]> e : destinations().entrySet()) {
             checks.add(new SelfTest.Check("teleport:" + e.getKey(), () -> g.teleport(e.getValue()[0], e.getValue()[1])));
         }

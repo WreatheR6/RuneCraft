@@ -102,6 +102,15 @@
     "back_crystal_l",
     "back_crystal_r"
   ],
+  "ancient_wizard_mage": [
+    "w_orb"
+  ],
+  "ancient_wizard_melee": [
+    "w_orb"
+  ],
+  "ancient_wizard_ranger": [
+    "w_orb"
+  ],
   "ancient_zygomite": [
     "face",
     "spore0",
@@ -250,6 +259,9 @@
     "fire_core",
     "knuckle_spike_l",
     "knuckle_spike_r"
+  ],
+  "brassican_mage": [
+    "w_orb"
   ],
   "brawler": [
     "head",
@@ -1985,6 +1997,9 @@
   "sarachnis": [
     "eyes"
   ],
+  "saradomin_wizard": [
+    "w_orb"
+  ],
   "scorpia": [
     "eyes",
     "sting"
@@ -2816,6 +2831,9 @@
     "lava_seams"
   ],
   "zamorak_mage": [
+    "w_orb"
+  ],
+  "zamorak_wizard": [
     "w_orb"
   ],
   "zebak": [
