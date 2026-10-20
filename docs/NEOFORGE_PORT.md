@@ -181,4 +181,4 @@ Keep behaviour identical; only adapt to the new API. Shared helpers: `com.runecr
 - [x] Phase 5 1.21.1 API port (0 compile errors; review fixes merged)
 - [x] Phase 6 resources (1.21 data pack layout and formats, item tags)
 - [x] Phase 7 CI and smoke scripts (NeoForge installer server, runClientSmoke, classpath asset)
-- [ ] Phase 8 green self-tests, Fabric retired
+- [x] Phase 8 green self-tests, Fabric retired (CI green on caa4d8a4 and 276ed158 with the chunk-unload fix: server 3046/0, client 368/0, walkthrough OK, clean quit; no Fabric build, entry points or API left)

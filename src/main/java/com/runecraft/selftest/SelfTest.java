@@ -20,7 +20,7 @@ import java.util.Locale;
 
 /**
  * In-game play-test: {@code /rc selftest [filter]} (op) queues gameplay checks ({@link GameplayChecks}) that run
- * on the real server against a Fabric fake player, a few per server tick, and logs one line per check:
+ * on the real server against a fake player, a few per server tick, and logs one line per check:
  * {@code SELFTEST PASS <name>}, {@code SELFTEST SKIP <name>: <reason>} (the check can't run meaningfully, e.g. a
  * minion that only exists next to its boss) or {@code SELFTEST FAIL <name>: <exception>} plus the first stack frames,
  * then {@code SELFTEST <n> passed, <m> failed, <k> skipped} and {@code SELFTEST END}. Used by tools/smoke_server.sh in CI.

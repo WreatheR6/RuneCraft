@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Best-effort compile check without Minecraft/Fabric jars.
+"""Best-effort compile check without the Minecraft/NeoForge jars.
 
 Compiles every source file with javac and reports only errors that are NOT caused by the missing
-Minecraft / Fabric / Mojang / JOML / LWJGL / SLF4J classes. It catches mistakes between our own
+Minecraft / NeoForge / Mojang / JOML / LWJGL / SLF4J classes. It catches mistakes between our own
 classes (wrong method names, arity, missing imports of our types, syntax errors). It cannot verify
 calls into Minecraft itself.
 
@@ -14,7 +14,7 @@ import subprocess
 import sys
 import tempfile
 
-EXTERNAL = ("net.minecraft", "net.neoforged", "net.fabricmc", "com.mojang", "io.netty", "org.spongepowered", "it.unimi", "org.joml", "org.lwjgl", "org.slf4j")
+EXTERNAL = ("net.minecraft", "net.neoforged", "com.mojang", "io.netty", "org.spongepowered", "it.unimi", "org.joml", "org.lwjgl", "org.slf4j")
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 srcs = []
 for d, _, files in os.walk(os.path.join(root, "src/main/java")):

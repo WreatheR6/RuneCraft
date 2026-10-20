@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Runs every offline check a change must pass before it is committed or merged:
 # core unit tests, visibility check, best-effort compile, asset generation + validation, worldgen data.
-# The Minecraft layer only truly compiles in CI (the Fabric maven is often unreachable offline).
+# For the real Minecraft-layer compile run tools/compile_full.sh with the NeoForge classpath (docs/NEOFORGE_PORT.md).
 set -uo pipefail
 cd "$(dirname "$0")/../.."
 LOG="${TMPDIR:-/tmp}/runecraft-verify.log"

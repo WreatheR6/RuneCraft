@@ -36,7 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The self-test's world: a Fabric fake player (or, in real mode, the online player who ran the command) in Gielinor standing on a barrier-walled platform high above
+ * The self-test's world: a fake player ({@link com.runecraft.platform.FakePlayer}) (or, in real mode, the online player who ran the command) in Gielinor standing on a barrier-walled platform high above
  * Lumbridge (chunks the smoke test force-loads), reset to fresh, maxed player data before every check.
  */
 public final class TestContext {

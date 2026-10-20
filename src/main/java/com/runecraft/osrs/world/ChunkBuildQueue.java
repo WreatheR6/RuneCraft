@@ -17,7 +17,7 @@ import java.util.function.LongPredicate;
  * write at the edge of a chunk being built reads its neighbour (neighbour shape updates), which
  * loads that neighbour synchronously to full status on a ticket that expires a tick later. The
  * neighbour keeps its in-memory chunk at a lower ticket level, and when it is promoted to full
- * again (a player walks up, a forceload) Fabric's chunk-load event does <b>not</b> fire a second
+ * again (a player walks up, a forceload) the chunk-load event does <b>not</b> fire a second
  * time, because the chunk was never unloaded. Dropping such a chunk from the queue therefore meant
  * it was never built at all in that session (missing buildings and stations just outside loaded
  * areas). Instead such chunks wait here until they are loaded again, or until they really unload

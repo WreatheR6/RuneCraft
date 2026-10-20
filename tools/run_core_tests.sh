@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Compiles and tests the pure-Java OSRS core (com.runecraft.osrs) without Minecraft/Gradle.
-# Useful in environments where the Fabric maven is unreachable.
+# Useful for a quick check of the core alone (the full Minecraft compile is tools/compile_full.sh).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 OUT="${TMPDIR:-/tmp}/runecraft-core"
