@@ -72,6 +72,7 @@ public final class BossesHooks implements ModuleHooks {
         BossScripts.register("blue_moon", MoonScripts.BlueMoon::new);
         BossScripts.register("branda_the_fire_queen", EncounterScripts.RoyalTitans::new);
         MinionRules.register();
+        BossDots.register();
         BossScripts.register("yama", ModernScripts.Yama::new);
         BossScripts.register("amoxliatl", ModernScripts.Amoxliatl::new);
         BossScripts.register("maggot_king", ModernScripts.MaggotKing::new);

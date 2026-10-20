@@ -7,7 +7,9 @@ import com.runecraft.osrs.content.BossDef;
 import com.runecraft.osrs.data.Drop;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Desert Treasure II bosses: Duke Sucellus, The Leviathan, The Whisperer and Vardorvis. Each drops
@@ -85,6 +87,163 @@ public final class Dt2Bosses {
             List.of(new Object[]{"dragon_platelegs", 1, 0}, new Object[]{"dragon_dart_tip", 100, 0}, new Object[]{"blood_rune", 500, 0},
                     new Object[]{"tuna_potato", 100, 1}, new Object[]{"runite_ore", 20, 1}));
 
+    /**
+     * Supplies (OSRS Wiki drop tables, "These supplies are all dropped together"): rolled about 1 in 5 after the unique
+     * table, tablet, orb and quartz miss. approx: here each line rolls on its own at 1/5.
+     */
+    static List<Drop> supplies(String bossId) {
+        return switch (bossId) {
+            case "duke_sucellus" -> List.of(Drop.of("pineapple_pizza", 3, 4, 5), Drop.of(Drop.dosed("prayer_potion", 3), 1, 1, 5),
+                    Drop.of(Drop.dosed("super_combat_potion", 2), 1, 1, 5));
+            case "the_leviathan" -> List.of(Drop.of(Drop.dosed("prayer_potion", 3), 1, 1, 5),
+                    Drop.of(Drop.dosed("ranging_potion", 2), 1, 1, 5), Drop.of("sea_turtle", 3, 4, 5));
+            case "the_whisperer" -> List.of(Drop.of(Drop.dosed("ancient_brew", 2), 1, 1, 5),
+                    Drop.of(Drop.dosed("prayer_potion", 3), 1, 1, 5), Drop.of("manta_ray", 3, 4, 5));
+            case "vardorvis" -> List.of(Drop.of("tuna_potato", 3, 4, 5), Drop.of(Drop.dosed("prayer_potion", 3), 1, 1, 5),
+                    Drop.of(Drop.dosed("super_combat_potion", 2), 1, 1, 5));
+            default -> throw new IllegalArgumentException(bossId);
+        };
+    }
+
+    /**
+     * A perfect kill (no avoidable damage) gives 50% more loot from the standard drop table (OSRS Wiki). The wiki lists
+     * those quantities as "normal,perfect" (e.g. Vardorvis' soul runes "400,600"): the tables drop the normal amount and
+     * this map holds the perfect one, boss -> item -> {normal, perfect}.
+     */
+    private static final Map<String, Map<String, int[]>> PERFECT = new HashMap<>();
+
+    /**
+     * What counts as avoidable damage for a perfect kill, in the Combat Achievements rule language (the bosses' "Perfect"
+     * task conditions): special attacks, hazards and unprotected hits.
+     */
+    public static final Map<String, String> PERFECT_RULE = Map.of(
+            "duke_sucellus", "nodmg=mechanic,hazard,gas_vent,freezing_gaze,orb_of_darkness,offprayer",
+            "the_leviathan", "nodmg=mechanic,hazard,offprayer",
+            "the_whisperer", "nodmg=mechanic,hazard,offprayer",
+            "vardorvis", "nodmg=mechanic,hazard,swinging_axes,blood_splat,offprayer");
+
+    static {
+        // duke_sucellus
+        perfect("duke_sucellus", "bronze_chainbody", 11, 17);
+        perfect("duke_sucellus", "mithril_chainbody", 5, 7);
+        perfect("duke_sucellus", "adamant_chainbody", 6, 10);
+        perfect("duke_sucellus", "dragon_platelegs", 5, 7);
+        perfect("duke_sucellus", "pure_essence", 200, 300);
+        perfect("duke_sucellus", "iron_ore", 63, 95);
+        perfect("duke_sucellus", "coal", 216, 325);
+        perfect("duke_sucellus", "mithril_ore", 33, 50);
+        perfect("duke_sucellus", "adamantite_ore", 75, 112);
+        perfect("duke_sucellus", "runite_ore", 30, 45);
+        perfect("duke_sucellus", "sapphire", 28, 42);
+        perfect("duke_sucellus", "emerald", 28, 42);
+        perfect("duke_sucellus", "ruby", 28, 42);
+        perfect("duke_sucellus", "uncut_ruby", 41, 62);
+        perfect("duke_sucellus", "uncut_diamond", 41, 62);
+        perfect("duke_sucellus", "bronze_bar", 63, 95);
+        perfect("duke_sucellus", "dragon_arrowtips", 166, 250);
+        perfect("duke_sucellus", "rune_javelin_heads", 60, 90);
+        perfect("duke_sucellus", "dragon_javelin_heads", 60, 90);
+        perfect("duke_sucellus", "raw_sea_turtle", 200, 300);
+        perfect("duke_sucellus", "air_rune", 200, 300);
+        perfect("duke_sucellus", "mist_rune", 100, 150);
+        perfect("duke_sucellus", "chaos_rune", 100, 150);
+        perfect("duke_sucellus", "soul_rune", 666, 1000);
+        // the_leviathan
+        perfect("the_leviathan", "iron_ore", 57, 85);
+        perfect("the_leviathan", "silver_ore", 57, 85);
+        perfect("the_leviathan", "coal", 195, 292);
+        perfect("the_leviathan", "gold_ore", 67, 101);
+        perfect("the_leviathan", "adamantite_ore", 57, 85);
+        perfect("the_leviathan", "runite_ore", 27, 40);
+        perfect("the_leviathan", "sapphire", 25, 38);
+        perfect("the_leviathan", "emerald", 25, 38);
+        perfect("the_leviathan", "ruby", 25, 38);
+        perfect("the_leviathan", "uncut_ruby", 37, 56);
+        perfect("the_leviathan", "uncut_diamond", 37, 56);
+        perfect("the_leviathan", "dragon_javelin_heads", 54, 81);
+        perfect("the_leviathan", "dragon_bolts_unf", 150, 225);
+        perfect("the_leviathan", "onyx_bolt_tips", 90, 135);
+        perfect("the_leviathan", "raw_manta_ray", 180, 270);
+        perfect("the_leviathan", "anglerfish", 4, 6);
+        perfect("the_leviathan", "bronze_arrow", 63, 94);
+        perfect("the_leviathan", "mithril_arrow", 63, 94);
+        perfect("the_leviathan", "adamant_arrow", 63, 94);
+        perfect("the_leviathan", "rune_arrow", 54, 81);
+        perfect("the_leviathan", "body_rune", 180, 270);
+        perfect("the_leviathan", "earth_rune", 180, 270);
+        perfect("the_leviathan", "smoke_rune", 300, 450);
+        perfect("the_leviathan", "soul_rune", 600, 900);
+        // the_whisperer
+        perfect("the_whisperer", "bronze_longsword", 16, 24);
+        perfect("the_whisperer", "mithril_longsword", 7, 10);
+        perfect("the_whisperer", "adamant_longsword", 9, 14);
+        perfect("the_whisperer", "battlestaff", 70, 105);
+        perfect("the_whisperer", "dragon_plateskirt", 7, 10);
+        perfect("the_whisperer", "iron_ore", 88, 133);
+        perfect("the_whisperer", "coal", 303, 455);
+        perfect("the_whisperer", "gold_ore", 88, 133);
+        perfect("the_whisperer", "mithril_ore", 88, 133);
+        perfect("the_whisperer", "adamantite_ore", 105, 157);
+        perfect("the_whisperer", "runite_ore", 42, 63);
+        perfect("the_whisperer", "sapphire", 39, 59);
+        perfect("the_whisperer", "emerald", 39, 59);
+        perfect("the_whisperer", "ruby", 39, 59);
+        perfect("the_whisperer", "uncut_ruby", 58, 87);
+        perfect("the_whisperer", "uncut_diamond", 58, 87);
+        perfect("the_whisperer", "dragon_javelin_heads", 84, 126);
+        perfect("the_whisperer", "rune_bolts_unf", 84, 126);
+        perfect("the_whisperer", "raw_monkfish", 700, 1050);
+        perfect("the_whisperer", "water_rune", 280, 420);
+        perfect("the_whisperer", "steam_rune", 466, 700);
+        perfect("the_whisperer", "chaos_rune", 140, 210);
+        perfect("the_whisperer", "death_rune", 466, 700);
+        perfect("the_whisperer", "soul_rune", 933, 1400);
+        // vardorvis
+        perfect("vardorvis", "pure_essence", 120, 180);
+        perfect("vardorvis", "iron_ore", 38, 57);
+        perfect("vardorvis", "silver_ore", 38, 57);
+        perfect("vardorvis", "coal", 130, 195);
+        perfect("vardorvis", "mithril_ore", 38, 57);
+        perfect("vardorvis", "adamantite_ore", 45, 67);
+        perfect("vardorvis", "runite_ore", 18, 27);
+        perfect("vardorvis", "sapphire", 17, 25);
+        perfect("vardorvis", "emerald", 17, 25);
+        perfect("vardorvis", "ruby", 17, 25);
+        perfect("vardorvis", "uncut_ruby", 25, 37);
+        perfect("vardorvis", "uncut_diamond", 25, 37);
+        perfect("vardorvis", "rune_javelin_heads", 36, 54);
+        perfect("vardorvis", "dragon_javelin_heads", 36, 54);
+        perfect("vardorvis", "dragon_dart_tip", 100, 150);
+        perfect("vardorvis", "raw_shark", 200, 300);
+        perfect("vardorvis", "bronze_javelin", 42, 63);
+        perfect("vardorvis", "mithril_javelin", 42, 63);
+        perfect("vardorvis", "adamant_javelin", 42, 63);
+        perfect("vardorvis", "onyx_bolts_e", 60, 90);
+        perfect("vardorvis", "mind_rune", 120, 180);
+        perfect("vardorvis", "fire_rune", 120, 180);
+        perfect("vardorvis", "lava_rune", 200, 300);
+        perfect("vardorvis", "blood_rune", 200, 300);
+        perfect("vardorvis", "soul_rune", 400, 600);
+    }
+
+    private static void perfect(String boss, String item, int normal, int perfect) {
+        PERFECT.computeIfAbsent(boss, b -> new HashMap<>()).put(item, new int[]{normal, perfect});
+    }
+
+    /**
+     * The perfect-kill quantity of a standard-table drop of {@code count} (the normal quantity), or {@code count} when the
+     * item isn't on the boss's standard table.
+     */
+    public static int perfectQuantity(String bossId, String item, int count) {
+        int[] q = PERFECT.getOrDefault(bossId, Map.of()).get(item);
+        return q != null && q[0] == count ? q[1] : count;
+    }
+
+    /** The standard-table items with a perfect-kill quantity, item -> {normal, perfect}. */
+    public static Map<String, int[]> perfectQuantities(String bossId) {
+        return java.util.Collections.unmodifiableMap(PERFECT.getOrDefault(bossId, Map.of()));
+    }
+
     public static List<BossDef> all() {
         return List.of(duke(), leviathan(), whisperer(), vardorvis());
     }
@@ -108,6 +267,7 @@ public final class Dt2Bosses {
         // first 300 kills; that ramp isn't modelled. // approx
         d.add(Drop.of(tablet, 1, 1, TABLET_RATE));
         d.add(Drop.of(quartz, 1, 1, QUARTZ_RATE));
+        d.addAll(supplies(bossId));
         return d;
     }
 

@@ -200,6 +200,16 @@ public final class CombatAchievementService {
         }
     }
 
+    /**
+     * Whether the player's fight against {@code target} (still running: the kill's loot is rolled before the fight is
+     * judged) meets a rule-language condition, e.g. a perfect kill's {@code nodmg=...}. False when no such fight is tracked.
+     */
+    public static boolean fightMeets(ServerPlayer p, LivingEntity target, String rule) {
+        Tracker f = FIGHTS.get(p.getUUID());
+        String key = fightKey(target);
+        return f != null && key != null && key.equals(f.key) && CombatAchievementRules.meets(rule, f.m);
+    }
+
     /** Attack key of the latest damaging hit the player took ("mechanic" when it had no name). */
     public static String lastHitAttack(ServerPlayer p) {
         return LAST_HIT.getOrDefault(p.getUUID(), "mechanic");

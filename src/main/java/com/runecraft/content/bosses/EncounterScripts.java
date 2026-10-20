@@ -1299,7 +1299,7 @@ final class EncounterScripts {
                                     }
                                     CombatHooks.nameAttack("swinging_axe", null);
                                     CombatHandler.applyDamage(boss, h, roll);
-                                    BossDots.bleed(h, bleed);
+                                    BossDots.bleed(boss, h, bleed);
                                 }
                             });
                 }
@@ -1421,7 +1421,6 @@ final class EncounterScripts {
             int lost = (int) Math.round((1 - hpFraction(boss)) * BossMechanics.VARDORVIS_HITPOINTS);
             com.runecraft.content.systems.SysCombat.drain(boss).defence = BossMechanics.vardorvisDefenceReduction(lost);
             tickStrangle(boss);
-            BossDots.tick(boss, BossFx.players(boss, 24));
             if (target == null || home == null) {
                 return;
             }
