@@ -56,6 +56,7 @@ final class SlayerChecks {
         checks.add(new SelfTest.Check("slayer:protective_gear", g::protectiveGear));
         checks.add(new SelfTest.Check("slayer:leaf_bladed_and_finishers", g::weaponsAndFinishers));
         checks.add(new SelfTest.Check("slayer:karuulm_hot_floor", g::hotFloor));
+        checks.add(new SelfTest.Check("slayer:nightmare_zone_no_credit", g::nmzNoCredit));
         return checks;
     }
 
@@ -384,6 +385,38 @@ final class SlayerChecks {
             kurask.discard();
             gargoyle.discard();
         }
+    }
+
+    // ------------------------------------------------------------------ Nightmare Zone
+
+    /** A kill in a Nightmare Zone dream never counts for the task; the same kill outside does. */
+    private String nmzNoCredit() {
+        c.completeQuests(null);
+        EntityType<?> type = ModEntities.typeById("kurask");
+        if (type == null) {
+            throw new SelfTest.Skip("no kurask entity");
+        }
+        SlayerState.Profile prof = profile();
+        prof.task = "kurask";
+        prof.amount = 10;
+        prof.remaining = 10;
+        com.runecraft.content.minigames.MinigameSession s = com.runecraft.content.minigames.MinigameManager.selfTestStart(
+                com.runecraft.osrs.content.minigames.Minigame.NIGHTMARE_ZONE,
+                com.runecraft.osrs.content.minigames.Minigame.NIGHTMARE_ZONE.entranceBlock(), p());
+        try {
+            killAsPlayer(spawnAt(type, p().blockPosition().offset(2, 0, 0), true));
+            if (prof.remaining != 10) {
+                throw failure("a kurask killed in a Nightmare Zone dream counted for the kurask task");
+            }
+        } finally {
+            s.end(false);
+        }
+        c.home();
+        killAsPlayer(spawnAt(type, c.near(3, 0), true));
+        if (prof.remaining != 9) {
+            throw failure("a kurask killed outside the Nightmare Zone didn't count (" + prof.remaining + " left)");
+        }
+        return "dream kill 10 -> 10, outside 10 -> 9";
     }
 
     // ------------------------------------------------------------------ Karuulm hot floor
