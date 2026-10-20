@@ -46,6 +46,7 @@ This file is the shared memory of that loop. Update the round log and backlog at
    - Otherwise: verifies, commits the regenerated assets and pushes.
 4. Wait for CI on the last commit. If it fails, read the log, fix the problem, verify and push again.
 5. Update the round log and backlog here, then commit and push.
+6. Every round ends committed and pushed with a fresh jar: confirm the `dev-latest` release body names the round's final commit (`curl -s https://api.github.com/repos/WreatheR6/RuneCraft/releases/tags/dev-latest`); if the last push was docs-only and its run was cancelled, re-run CI on it (`run_workflow`, build.yml) so the jar is built from the final commit.
 
 Recurring conflict spots:
 - `MenuType` (append new values last; the client uses ordinals);
