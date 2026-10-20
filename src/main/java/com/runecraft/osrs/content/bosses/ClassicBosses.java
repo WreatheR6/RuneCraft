@@ -262,10 +262,11 @@ public final class ClassicBosses {
                 // the script summons dark ankou and re-summons slain spawns.
                 .phase(SkotizoRules.SPAWN_BELOW_PERCENT, "Gar mulno ful taglo!", 1.0, false)
                 .minion("reanimated_demon_spawn", SkotizoRules.DEMON_SPAWNS)
-                // OSRS Wiki: a hard clue scroll on every kill (his best-known drop) besides the 1/5 elite one.
+                // OSRS Wiki: a hard clue scroll on every kill (his best-known drop) besides the 1/5 elite one. Ancient shards:
+                // 1-5 on every kill, rolled by his script (skotizoShards); BossDropsTable puts the wiki's five shard lines here.
                 .drops(Drop.always("infernal_ashes"), Drop.always("clue_scroll_hard"), Drop.of("dark_claw", 1, 1, 25),
                         Drop.of("jar_of_darkness", 1, 1, 200),
-                        Drop.of("uncut_onyx", 1, 1, 1000), Drop.of("ancient_shard", 1, 3, 4), Drop.of("dark_totem_base", 1, 1, 8),
+                        Drop.of("uncut_onyx", 1, 1, 1000), Drop.always("ancient_shard"), Drop.of("dark_totem_base", 1, 1, 8),
                         Drop.of("soul_rune", 100, 200, 8), Drop.of("rune_platebody", 1, 1, 12), Drop.of("coins", 20000, 30000, 4),
                         Drop.of("clue_scroll_elite", 1, 1, 5))
                 .key("dark_totem").pet("pet_skotos").at("catacombs_of_kourend").arena(12, "crypt")
@@ -322,6 +323,11 @@ public final class ClassicBosses {
     /** At 80% he eats at a food pile: five bites of 5 or 10 hitpoints per player, only magic, ranged and bricks meanwhile. */
     public static final int SCURRIUS_EAT_BELOW = 80;
     public static final int SCURRIUS_BITES = 5;
+    /**
+     * Between 80% and 30% he keeps going back to a pile "occasionally" (OSRS Wiki): game ticks of melee after he finishes
+     * eating before the next pile. // approx: the wiki gives no interval
+     */
+    public static final int SCURRIUS_EAT_AGAIN_TICKS = 25;
     /** At 30% he holds the centre of the arena, only magic and ranged, faster; healed above it he goes back to eat. */
     public static final int SCURRIUS_CENTRE_BELOW = 30;
     /** Six giant rats a wave, at most twelve waves. */

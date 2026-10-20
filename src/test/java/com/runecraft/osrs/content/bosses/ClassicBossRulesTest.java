@@ -5,6 +5,7 @@ import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.BossDef;
 import com.runecraft.osrs.content.ContentRegistry;
 import com.runecraft.osrs.content.MonsterDef;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -143,6 +144,10 @@ class ClassicBossRulesTest {
         assertEquals(141, total, "1.41 shards a kill (wiki)");
         assertTrue(ContentRegistry.boss("skotizo").drops.stream()
                 .anyMatch(d -> d.item().equals("clue_scroll_hard") && d.rarity() == 1), "a hard clue on every kill");
+        // The table pages show the wiki's shard lines (1 always, 2 at 1/7 ... 5 at 1/100), never an invented 1-3 at 1/4.
+        List<String> shards = ContentRegistry.boss("skotizo").drops.stream().filter(d -> d.item().equals("ancient_shard"))
+                .map(d -> d.min() + "-" + d.max() + "/" + d.rarity()).toList();
+        assertEquals(List.of("1-1/1", "2-2/7", "3-3/20", "4-4/25", "5-5/100"), shards);
     }
 
     @Test

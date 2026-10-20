@@ -718,10 +718,10 @@ final class ClassicScripts {
     /**
      * Scurrius (OSRS Wiki "Scurrius/Strategies"), the private instance's fight: phase one, his tail swipe (melee) and falling
      * bricks; at 80% he goes to one of the food piles and eats five bites of 5 or 10 hitpoints per player, using only magic,
-     * ranged and the bricks meanwhile (and taking slightly less damage), then fights in melee again; at 30% he holds the
-     * centre of the arena with magic and ranged only, faster, and goes back to eat if healed above it. The falling bricks
-     * land on the player's tile and around the arena (15-22 each); he screeches for six giant rats now and then, at most
-     * twelve waves.
+     * ranged and the bricks meanwhile (and taking slightly less damage), then fights in melee again and goes back to a pile
+     * every so often until he is down to 30%; at 30% he holds the centre of the arena with magic and ranged only, faster,
+     * and goes back to eat if healed above it. The falling bricks land on the player's tile and around the arena (15-22
+     * each); he screeches for six giant rats now and then, at most twelve waves.
      */
     static final class Scurrius extends ScriptedBoss {
         /** Food piles: block offsets from his arena's centre (approx: the four corners of the lair). */
@@ -729,6 +729,8 @@ final class ClassicScripts {
         int phase = 1;
         boolean eating;
         int bites;
+        /** Game ticks until he goes back to a food pile in phase two (counted down once he has finished eating). */
+        int eatAgainIn;
         private int biteTimer;
         private Vec3 pile;
         int waves;
@@ -843,6 +845,8 @@ final class ClassicScripts {
                 boss.getNavigation().stop();
                 boss.teleportTo(c.x, c.y, c.z);
                 BossFx.say(boss, "Scurrius scurries to the centre of his lair!");
+            } else if (phase == 2 && !eating && --eatAgainIn <= 0) {
+                startEating(boss); // "occasionally" back to a pile between 80% and 30%
             }
             if (eating) {
                 if (pile != null && now % 3 == 0) {
@@ -855,6 +859,7 @@ final class ClassicScripts {
                     boss.heal(mcHp(boss, heal));
                     if (--bites <= 0) {
                         eating = false;
+                        eatAgainIn = ClassicBosses.SCURRIUS_EAT_AGAIN_TICKS;
                         BossFx.say(boss, "Scurrius finishes eating.");
                     }
                 }

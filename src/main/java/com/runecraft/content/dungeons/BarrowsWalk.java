@@ -34,7 +34,10 @@ import net.minecraft.world.phys.AABB;
  * (his kill counted in the run), the stairs back up; the sixth crypt's sarcophagus hiding the tunnel; the tunnels walked
  * through their open doors (puzzle doors answered, whatever a door wakes killed) to the chest, which first raises the hidden
  * brother, then gives the run's loot, counts a chest and sends the player back up. Real player only (the tunnels and crypts
- * must be built around them). The player's own run, prayer, spade and kill count are put back afterwards.
+ * must be built around them). The walk itself puts back the player's Barrows run, prayer points and spades; the kill counts,
+ * collection log, inventory (the chest's loot), coin pouch and combat achievement and diary progress the real kills and chest
+ * add are put back by the self-test harness ({@code TestContext} saves the real player's whole save before the checks and
+ * restores it afterwards).
  */
 public final class BarrowsWalk {
     private static final net.minecraft.resources.ResourceLocation HP_BUFFER = com.runecraft.RuneCraft.id("selftest_barrows_hp");

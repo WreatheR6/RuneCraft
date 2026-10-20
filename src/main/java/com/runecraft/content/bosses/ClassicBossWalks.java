@@ -488,6 +488,20 @@ final class ClassicBossWalks {
             expect(boss.getHealth() >= h + ClassicBosses.SCURRIUS_BITES * 5 - 0.01, "five bites healed him only "
                     + (boss.getHealth() - h));
             out.append("ate five bites (+").append(Math.round(boss.getHealth() - h)).append(")");
+            // Still between 80% and 30%: after a spell of melee he goes back to a pile.
+            boss.setHealth(boss.getMaxHealth() * 0.6f);
+            int waited = 0;
+            for (; waited < ClassicBosses.SCURRIUS_EAT_AGAIN_TICKS + 10 && !s.eating; waited++) {
+                now = tick(boss, p, now);
+                p.setHealth(p.getMaxHealth());
+            }
+            expect(s.eating && s.phase == 2, "he never went back to a food pile in phase two");
+            for (int i = 0; i < 40 && s.eating; i++) {
+                now = tick(boss, p, now);
+                p.setHealth(p.getMaxHealth());
+            }
+            expect(!s.eating, "he never finished his second meal");
+            out.append("; back to a pile after ").append(waited).append(" ticks");
             boss.setHealth(boss.getMaxHealth() * 0.29f);
             now = tick(boss, p, now);
             expect(s.phase == 3, "below 30% he didn't move to the centre (phase " + s.phase + ")");
