@@ -283,16 +283,17 @@ public final class RewardShops {
             }
         }
 
-        // Mahogany Homes: Amy's carpenter points shop.
-        shop("mahogany_homes", "Amy's Rewards")
+        // Mahogany Homes: Amy's carpenter points shop (OSRS Wiki "Mahogany Homes Reward Shop"); the supply crate is rolled
+        // when bought.
+        shop("mahogany_homes", "Mahogany Homes Reward Shop")
+                .labelled(MinigameRules.MahoganyHomes.SUPPLY_CRATE, "Supply crate", List.of(new Cost(CARPENTER, 25)))
+                .item("amys_saw", CARPENTER, 500)
+                .item("plank_sack", CARPENTER, 350)
+                .item("hosidius_blueprints", CARPENTER, 2000)
                 .item("carpenters_helmet", CARPENTER, 400)
                 .item("carpenters_shirt", CARPENTER, 800)
                 .item("carpenters_trousers", CARPENTER, 600)
-                .item("carpenters_boots", CARPENTER, 200)
-                .item("plank_sack", CARPENTER, 350)
-                .item("amys_saw", CARPENTER, 500)
-                .item("hosidius_blueprints", CARPENTER, 2000)
-                .item("steel_nails", 100, CARPENTER, 5);
+                .item("carpenters_boots", CARPENTER, 200);
 
         // Gnome Restaurant: a reward token (12 delivery points) is cashed in for one gnome dish delivered to you.
         // The scarf, goggles and mint cake are tips from customers (MinigameRules.GnomeRestaurant.TIPS).

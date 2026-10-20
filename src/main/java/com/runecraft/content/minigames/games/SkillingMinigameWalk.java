@@ -73,6 +73,10 @@ public final class SkillingMinigameWalk {
         return run(p, SkillingMinigameWalk::titheRound);
     }
 
+    public static String mahoganyHomes(ServerPlayer p) {
+        return run(p, SkillingMinigameWalk::mahoganyRound);
+    }
+
     // ------------------------------------------------------------------ helpers
 
     private static void expect(boolean ok, String message) {
@@ -449,6 +453,88 @@ public final class SkillingMinigameWalk {
         expect(MinigameManager.session(player) == null, "the exit didn't take the player out");
         expect(!Inv.has(player, "logavano_seed", 1) && !Inv.has(player, "gricollers_fertiliser", 1), "seeds or fertiliser left the farm");
         notes.add("left: seeds and fertiliser stayed behind");
+    }
+
+    // ------------------------------------------------------------------ Mahogany Homes
+
+    private void mahoganyRound() {
+        step = "contract";
+        player.getInventory().clearContent();
+        Inv.give(player, "hammer", 1);
+        Inv.give(player, "amys_saw", 1);
+        Inv.give(player, "mahogany_plank", 10);
+        Inv.give(player, "steel_bar", 2);
+        // Ten more planks in the plank sack: using it with planks carried fills it.
+        Inv.give(player, "plank_sack", 1);
+        net.minecraft.world.item.ItemStack sack = null;
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            if (Inv.idOf(player.getInventory().getItem(i)).equals("plank_sack")) {
+                sack = player.getInventory().getItem(i);
+            }
+        }
+        expect(sack != null, "no plank sack in the pack");
+        com.runecraft.content.minigames.PlankSack.use(player, sack);
+        expect(!Inv.has(player, "mahogany_plank", 1) && com.runecraft.content.minigames.PlankSack.count(player, "mahogany_plank") == 10,
+                "using the plank sack didn't take the 10 planks");
+        Inv.give(player, "mahogany_plank", 10);
+        MahoganyHomesSession mh = (MahoganyHomesSession) start(Minigame.MAHOGANY_HOMES);
+        use(mh.selfTestContractor(), "mh_contractor");
+        com.runecraft.osrs.content.minigames.MahoganyHomesLayouts.Layout layout = mh.selfTestLayout();
+        expect(layout != null && layout.tier() == 3, "a level-99 builder got " + (layout == null ? "no contract" : "tier " + layout.tier()));
+        notes.add("Expert contract for " + layout.owner() + " (" + layout.region() + "): " + layout.planks() + " planks, "
+                + layout.bars() + " bars");
+
+        step = "furniture";
+        double con = xp(Skill.CONSTRUCTION);
+        int planksBefore = Inv.count(player, "mahogany_plank") + com.runecraft.content.minigames.PlankSack.count(player, "mahogany_plank");
+        for (com.runecraft.osrs.content.minigames.MahoganyHomesLayouts.Hotspot h : layout.hotspots()) {
+            int k = h.slot();
+            expect(mh.selfTestState(k) == (h.repair() ? 1 : 3), h.name() + " starts in state " + mh.selfTestState(k));
+            if (!h.repair()) {
+                use(mh.selfTestSlot(k), "mh_hotspot");
+                expect(mh.selfTestState(k) == 2, "removing the old " + h.name() + " left state " + mh.selfTestState(k));
+            }
+            double before = xp(Skill.CONSTRUCTION);
+            use(mh.selfTestSlot(k), "mh_hotspot");
+            expect(mh.selfTestState(k) == 0, h.name() + " wasn't " + (h.repair() ? "repaired" : "built"));
+            double want = h.count() * MinigameRules.MahoganyHomes.hotspotXp(3, h.steelBar(), h.repair());
+            expect(Math.abs(xp(Skill.CONSTRUCTION) - before - want) < 0.05, h.name() + " gave " + (xp(Skill.CONSTRUCTION) - before)
+                    + " XP, not " + want);
+        }
+        int planksUsed = planksBefore - Inv.count(player, "mahogany_plank")
+                - com.runecraft.content.minigames.PlankSack.count(player, "mahogany_plank");
+        expect(planksUsed == layout.planks() && 2 - Inv.count(player, "steel_bar") == layout.bars(), "the house took " + planksUsed
+                + " planks and " + (2 - Inv.count(player, "steel_bar")) + " bars, not " + layout.planks() + " and " + layout.bars());
+        expect(Math.abs(xp(Skill.CONSTRUCTION) - con - layout.furnitureXp()) < 0.05, "the furniture gave " + (xp(Skill.CONSTRUCTION) - con)
+                + " XP, not " + layout.furnitureXp());
+        if (layout.planks() > 10) {
+            expect(com.runecraft.content.minigames.PlankSack.count(player, "mahogany_plank") < 10, "no plank came out of the sack");
+        }
+
+        step = "homeowner";
+        con = xp(Skill.CONSTRUCTION);
+        int pts = points("mahogany_homes");
+        use(mh.selfTestHomeowner(), "mh_homeowner");
+        expect(Math.abs(xp(Skill.CONSTRUCTION) - con - 2750) < 0.05, "completing an Expert contract gave " + (xp(Skill.CONSTRUCTION) - con)
+                + " XP, not 2,750");
+        expect(points("mahogany_homes") - pts == 5, "an Expert contract gave " + (points("mahogany_homes") - pts) + " points, not 5");
+        expect(mh.selfTestLayout() == null && MinigameData.of(player).stat(player.getUUID(), "kc:mahogany_homes") == 1,
+                "the contract wasn't closed and counted");
+        notes.add("furniture " + layout.furnitureXp() + " XP + 2,750 completion XP, 5 points");
+
+        step = "lower tier";
+        player.setShiftKeyDown(true);
+        use(mh.selfTestContractor(), "mh_contractor");
+        player.setShiftKeyDown(false);
+        expect(mh.selfTestLayout() != null && mh.selfTestLayout().tier() == 2, "a sneak-click at the desk didn't give an Adept contract");
+
+        step = "shop";
+        MinigameData.of(player).addPoints(player.getUUID(), "mahogany_homes", 1000);
+        buy("mahogany_homes", "mahogany_homes", MinigameRules.MahoganyHomes.SUPPLY_CRATE, 25);
+        buy("mahogany_homes", "mahogany_homes", "carpenters_helmet", 400);
+        buy("mahogany_homes", "mahogany_homes", "plank_sack", 350);
+        expect(Inv.has(player, "carpenters_helmet", 1), "the carpenter's helmet wasn't handed over");
+        notes.add("Adept contract by sneak-click; bought a supply crate, the carpenter's helmet and a plank sack");
     }
 
     /** Heats or cools the preform into [lo, hi], restarting the lava or waterfall near the goal to keep the steps small. */

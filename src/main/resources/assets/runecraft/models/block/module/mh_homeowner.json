@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/mh_homeowner_side",
+    "top": "runecraft:block/module/mh_homeowner_top",
+    "bottom": "runecraft:block/module/mh_homeowner_bottom"
+  }
+}

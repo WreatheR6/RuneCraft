@@ -172,6 +172,8 @@ public final class MinigameWorld {
             {"foundry_handin", "Kovac's bench", "8A6A4A", "chest"},
             // Mahogany Homes
             {"mh_hotspot", "Furniture hotspot", "9A7A4A", "crate"},
+            {"mh_homeowner", "Homeowner", "C09070", "statue"},
+            {"mh_contractor", "Mahogany Homes desk", "8A5A3A", "chest"},
             // Fishing Trawler
             {"trawler_leak", "Leak", "4080C0", "water_spot"},
             {"trawler_bucket", "Bailing bucket", "8A6A3A", "pot"},

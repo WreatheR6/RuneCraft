@@ -92,6 +92,10 @@ public final class MinigameItemUse {
                     bonesToPeaches(sp);
                     yield false;
                 }
+                case "plank_sack" -> {
+                    PlankSack.use(sp, stack);
+                    yield false;
+                }
                 case "scroll_of_redirection" -> {
                     showRedirects(sp);
                     yield false;

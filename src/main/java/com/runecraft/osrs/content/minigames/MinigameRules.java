@@ -758,15 +758,44 @@ public final class MinigameRules {
     }
 
     // ---------------------------------------------------------------- Mahogany Homes
+    /**
+     * Mahogany Homes (OSRS Wiki "Mahogany Homes"): contracts by tier, the plank each tier uses, carpenter points and the
+     * XP per material (the layouts are {@link MahoganyHomesLayouts}).
+     */
     public static final class MahoganyHomes {
         public static final String[] TIERS = {"Beginner", "Novice", "Adept", "Expert"};
+        public static final String[] TIER_IDS = {"BEGINNER", "NOVICE", "ADEPT", "EXPERT"};
         public static final String[] PLANKS = {"plank", "oak_plank", "teak_plank", "mahogany_plank"};
         public static final int[] LEVELS = {1, 20, 50, 70};
         public static final int[] POINTS = {2, 3, 4, 5};
-        public static final double[] XP_PER_PLANK = {30, 48, 72, 112}; // plank value approx
-        /** Construction XP for completing a contract (not boosted by the carpenter's outfit). */
+        /** Construction XP per plank used to build new furniture and per plank used in a repair, by tier. */
+        public static final double[] BUILD_XP = {22.5, 48, 72, 112};
+        public static final double[] REPAIR_XP = {127.5, 160, 190, 240};
+        /** Construction XP for a repair with a steel bar (any tier). */
+        public static final double BAR_XP = 120;
+        /** Construction XP for completing a contract (the carpenter's outfit boosts it by up to 2.5%). */
         public static final double[] COMPLETION_XP = {500, 1250, 2250, 2750};
-        public static final int HOTSPOTS = 4;
+        /** The contractors: Amy in Falador, Marlo in Varrock, Ellie in East Ardougne, Angelo in Hosidius. */
+        public static final String[] CONTRACTORS = {"Amy", "Marlo", "Ellie", "Angelo"};
+
+        /** Supply crate (25 carpenter points): one roll of the wiki's 144-weight table of noted materials. */
+        public static final String SUPPLY_CRATE = "#mh_supply_crate";
+        public static final List<Loot> SUPPLY_CRATE_TABLE = List.of(
+                new Loot("bolt_of_cloth", 9, 9, 5), new Loot("bolt_of_cloth", 10, 10, 1),
+                new Loot("limestone_brick", 9, 9, 5), new Loot("limestone_brick", 10, 10, 1),
+                new Loot("mahogany_plank", 6, 6, 15), new Loot("mahogany_plank", 7, 7, 3),
+                new Loot("oak_plank", 28, 28, 10), new Loot("oak_plank", 29, 29, 15), new Loot("oak_plank", 30, 30, 5),
+                new Loot("soft_clay", 45, 45, 5), new Loot("soft_clay", 46, 46, 10), new Loot("soft_clay", 47, 47, 10),
+                new Loot("soft_clay", 48, 48, 5),
+                new Loot("steel_bar", 23, 23, 5), new Loot("steel_bar", 24, 24, 20), new Loot("steel_bar", 25, 25, 5),
+                new Loot("teak_plank", 15, 15, 20), new Loot("teak_plank", 16, 16, 4));
+        /** Planks a plank sack holds (any mix of types). */
+        public static final int PLANK_SACK = 28;
+
+        /** XP per material of a hotspot at a tier. */
+        public static double hotspotXp(int tier, boolean steelBar, boolean repair) {
+            return steelBar ? BAR_XP : repair ? REPAIR_XP[tier] : BUILD_XP[tier];
+        }
 
         private MahoganyHomes() {
         }
