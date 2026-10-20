@@ -69,7 +69,7 @@ class HallowedSepulchreTest {
     @Test
     void collectionLogPagesMatchTheWiki() throws Exception {
         List<String> lines = Files.readAllLines(Path.of("src/test/resources/osrs/bosses/collection_log_pages.tsv"), StandardCharsets.UTF_8);
-        for (String page : List.of("Hallowed Sepulchre", "Rogues' Den")) {
+        for (String page : List.of("Hallowed Sepulchre", "Rogues' Den", "Brimhaven Agility Arena")) {
             java.util.Set<String> wiki = new java.util.TreeSet<>();
             for (String line : lines) {
                 String[] r = line.split("\\|");

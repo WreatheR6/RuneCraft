@@ -614,6 +614,9 @@ public final class MinigameItems {
         wear(items, "rogue_trousers", "Rogue trousers", "chaps", rogue, Slot.LEGS, 1, EquipmentStats.NONE);
         wear(items, "rogue_boots", "Rogue boots", "boots", rogue, Slot.FEET, 1, EquipmentStats.NONE);
         single(items, "rogue_gloves", "Rogue gloves", "boots", rogue, 1, "Part of the rogue equipment.");
-        single(items, "mystic_jewel", "Mystic jewel", "gem", 0xA040E0, 1, "Hand this to Brian O'Richard for a rogue reward.");
+        single(items, "mystic_jewel", "Mystic jewel", "gem", 0xA040E0, 1, "Takes you out of the Rogues' Den maze.");
+        single(items, "rogues_equipment_crate", "Rogue's equipment crate", "package", 0x5A4A3A, 1,
+                "It has a piece of Rogue equipment inside!");
+        single(items, "rogue_kit", "Rogue kit", "package", 0x3A3A40, 1, "Turns once into a rope, a chisel, a tinderbox or a spade.");
     }
 }

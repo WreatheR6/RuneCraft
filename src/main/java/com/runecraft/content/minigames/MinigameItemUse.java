@@ -87,6 +87,18 @@ public final class MinigameItemUse {
                     yield true;
                 }
                 case "hallowed_token" -> com.runecraft.content.minigames.games.SepulchreSession.useToken(sp);
+                case "rogues_equipment_crate" -> {
+                    com.runecraft.content.minigames.games.RoguesDenSession.openCrate(sp);
+                    yield true;
+                }
+                case "rogue_kit" -> {
+                    com.runecraft.content.minigames.games.RoguesDenSession.useKit(sp);
+                    yield true;
+                }
+                case "mystic_jewel" -> {
+                    com.runecraft.content.minigames.games.RoguesDenSession.useJewel(sp);
+                    yield false;
+                }
                 case "reward_token_blue", "reward_token_yellow", "reward_token_red" -> {
                     com.runecraft.content.minigames.games.TempleTrekkingSession.openToken(sp, stack);
                     yield false;

@@ -944,17 +944,66 @@ public final class MinigameRules {
     }
 
     // ---------------------------------------------------------------- Rogues' Den
+    /**
+     * The Rogues' Den maze below Burthorpe (OSRS Wiki "Rogues' Den"): 50 Agility and 50 Thieving (unboostable). Agility
+     * obstacles drain Agility (contortion bars 5, pendulums 3, floor blades 3, ledges 4 and 7 for the longest) and can't fail
+     * while points remain; floor and wall traps are searched, draining Thieving by 1; the mosaic door takes the right tile,
+     * the grills the right path, the rogue guard a handful of flash powder. 80 Thieving picks the locked doors past the long
+     * route. Nothing in the maze deals damage: running out of levels, a wrong move at the guard or the safe throws the player
+     * out. The wall safes at the end give a rogue kit or a rogue's equipment crate.
+     */
     public static final class RoguesDen {
-        public static final String[] OBSTACLES = {"Contortion bars", "Pendulum", "Floor spikes", "Wall safe trap",
-                "Grill", "Ledge", "Blade trap", "Tile maze"};
+        public enum Kind {
+            /** Drains Agility; can't fail while the points remain. */
+            AGILITY,
+            /** A floor or wall trap, searched to disarm: drains Thieving by 1. */
+            TRAP,
+            /** The mosaic door: four tiles, only the right one opens it. */
+            TILES,
+            /** The grill room: three grills, only the right one leads on (a wrong one sends you back). */
+            GRILLS,
+            /** A rogue guard: blind him with flash powder or be thrown out. */
+            GUARD,
+            /** The locked doors: 80 Thieving picks them and skips the long route. */
+            SHORTCUT
+        }
+
+        public record Obstacle(String name, Kind kind, int drain) {
+        }
+
+        /** The maze's route in order (the wiki's walkthrough: start, long route, then past the guard to the safes). */
+        public static final List<Obstacle> ROUTE = List.of(
+                new Obstacle("Floor traps", Kind.TRAP, 1),
+                new Obstacle("Contortion bars", Kind.AGILITY, 5),
+                new Obstacle("Pendulum", Kind.AGILITY, 3),
+                new Obstacle("Floor traps", Kind.TRAP, 1),
+                new Obstacle("Ledge", Kind.AGILITY, 4),
+                new Obstacle("Floor blades", Kind.AGILITY, 3),
+                new Obstacle("Pendulum", Kind.AGILITY, 3),
+                new Obstacle("Ledge", Kind.AGILITY, 4),
+                new Obstacle("Wall traps", Kind.TRAP, 1),
+                new Obstacle("Locked doors", Kind.SHORTCUT, 0),
+                new Obstacle("Floor blades", Kind.AGILITY, 3),
+                new Obstacle("Floor traps", Kind.TRAP, 1),
+                new Obstacle("Long ledge", Kind.AGILITY, 7),
+                new Obstacle("Wall traps", Kind.TRAP, 1),
+                new Obstacle("Mosaic door", Kind.TILES, 0),
+                new Obstacle("Grills", Kind.GRILLS, 0),
+                new Obstacle("Wall traps", Kind.TRAP, 1),
+                new Obstacle("Pendulum", Kind.AGILITY, 3),
+                new Obstacle("Floor traps", Kind.TRAP, 1),
+                new Obstacle("Rogue guard", Kind.GUARD, 0),
+                new Obstacle("Pendulum", Kind.AGILITY, 3),
+                new Obstacle("Pendulum", Kind.AGILITY, 3));
+        /** The locked doors' shortcut leads past the long route to this obstacle (the floor traps before the guard). */
+        public static final int SHORTCUT_TO = 18;
+        public static final int SHORTCUT_THIEVING = 80;
+        /** The mosaic door's right tile (of four; the wiki: the bottom right one) and the grills' right path (approx). */
+        public static final int RIGHT_TILE = 3;
+        public static final int RIGHT_GRILL = 1;
         public static final String[] OUTFIT = {"rogue_mask", "rogue_top", "rogue_trousers", "rogue_gloves", "rogue_boots"};
-        /** Whether each obstacle is an Agility obstacle (else a Thieving trap). */
-        public static final boolean[] AGILITY = {true, true, false, false, false, true, true, false};
-        /**
-         * Levels drained by each obstacle (OSRS Wiki: contortion bars 5, pendulum 3, ledge 4, floor
-         * blades 3; the Thieving traps' drains are approx.).
-         */
-        public static final int[] DRAIN = {5, 3, 2, 2, 2, 4, 3, 2};
+        /** What a rogue kit turns into, once. */
+        public static final String[] KIT_TOOLS = {"rope", "chisel", "tinderbox", "spade"};
         /** Both 50 Agility and 50 Thieving (unboostable) are needed to enter the maze. */
         public static final int LEVEL = 50;
         /** On cracking the safe: 12 XP in Agility and Thieving for every level drained from that skill. */
@@ -963,19 +1012,136 @@ public final class MinigameRules {
         private RoguesDen() {
         }
 
-        /** Chance to disarm a Thieving trap (Agility obstacles never fail while levels remain): 60% at 50 to 98% at 99 (approx.). */
-        public static double passChance(int level) {
-            return Math.min(0.98, 0.60 + Math.max(0, level - 50) * 0.0078);
+        public static int obstacles() {
+            return ROUTE.size();
+        }
+
+        /** What cracking a wall safe does. */
+        public enum Safe {
+            EJECTED, KIT, CRATE
+        }
+
+        /** A safe attempt's outcome and whether it drained a Thieving level first. */
+        public record Crack(Safe result, boolean drained) {
         }
 
         /**
-         * Experience on leaving the maze for the levels drained from a skill: the full 12 per level
-         * after cracking the safe, otherwise a share proportional to how far into the maze the
-         * player got (approx. of the wiki's "fraction depending on distance").
+         * Cracking a wall safe (Mod Ash, November 2020): a number 0-199 above the visible Thieving level gives a 50% chance
+         * of being ejected with no roll, else Thieving drains by 1 and the roll goes ahead; the roll is 3/8 a rogue kit,
+         * 5/8 a rogue's equipment crate. {@code r1}-{@code r3} are random values in [0,1).
+         */
+        public static Crack crack(int thieving, double r1, double r2, double r3) {
+            boolean drained = false;
+            if ((int) Math.floor(r1 * 200) > thieving) {
+                if (r2 < 0.5) {
+                    return new Crack(Safe.EJECTED, false);
+                }
+                drained = true;
+            }
+            return new Crack(r3 < 3 / 8.0 ? Safe.KIT : Safe.CRATE, drained);
+        }
+
+        /** Chance per safe attempt of a rogue's equipment crate (the wiki's table: 39.2% at 50 Thieving, 46.9% at 99). */
+        public static double crateChance(int thieving) {
+            double over = Math.max(0, Math.min(200, 199 - thieving)) / 200.0;
+            return (1 - 0.5 * over) * 5 / 8.0;
+        }
+
+        /**
+         * Experience on leaving the maze for the levels drained from a skill: the full 12 per level after cracking the
+         * safe, otherwise a share by how far into the maze the player got (approx. of the wiki's "fraction depending on
+         * distance").
          */
         public static double xp(int drained, int obstaclesPassed, boolean cracked) {
             double full = drained * (double) XP_PER_DRAINED_LEVEL;
-            return cracked ? full : full * obstaclesPassed / (double) (OBSTACLES.length + 1);
+            return cracked ? full : full * Math.min(obstaclesPassed, obstacles()) / (double) (obstacles() + 1);
+        }
+    }
+
+    // ---------------------------------------------------------------- Brimhaven Agility Arena
+    /**
+     * The Brimhaven Agility Arena since the May 2024 rework (OSRS Wiki "Brimhaven Agility Arena"): 25 pillars joined by
+     * obstacles, 24 with a ticket dispenser; one dispenser is active at a time and moves every minute. Tagging it gives an
+     * agility arena ticket, a Brimhaven voucher (two of each 10% of the time after the elite Karamja diary) and 30 Agility XP
+     * per 10 Agility levels, boosts and drains included (300 at 100). Karamja gloves 2-4 add 10% to the obstacles' XP.
+     */
+    public static final class BrimhavenArena {
+        public static final int GRID = 5;
+        public static final int DISPENSERS = 24;
+        /** The active dispenser moves every minute. */
+        public static final int MOVE_TICKS = 100;
+        public static final double DOUBLE_TICKET_CHANCE = 0.10;
+        public static final double GLOVES_BONUS = 1.10;
+        public static final List<String> BONUS_GLOVES = List.of("karamja_gloves_2", "karamja_gloves_3", "karamja_gloves_4");
+
+        /** The obstacles between pillars: Agility needed and XP (wiki table, before the gloves' 10%). */
+        public enum Obstacle {
+            ROPE_SWING("Rope swing", 1, 20), LOW_WALL("Low wall", 1, 8), PLANK("Plank", 1, 6),
+            BALANCING_ROPE("Balancing rope", 1, 10), LOG_BALANCE("Log balance", 1, 12), BALANCING_LEDGE("Balancing ledge", 1, 16),
+            MONKEY_BARS("Monkey bars", 1, 14), PILLAR("Pillar", 1, 18), PRESSURE_PAD("Pressure pad", 20, 26),
+            FLOOR_SPIKES("Floor spikes", 20, 24), HAND_HOLDS("Hand holds", 20, 22), SPINNING_BLADES("Spinning blades", 40, 28),
+            DARTS("Darts", 40, 30);
+
+            public final String title;
+            public final int level;
+            public final double xp;
+
+            Obstacle(String title, int level, double xp) {
+                this.title = title;
+                this.level = level;
+                this.xp = xp;
+            }
+
+            /** The obstacle tier (1 easy, 2 medium from 20 Agility, 3 hard from 40): failure rates are standardised per tier. */
+            public int tier() {
+                return level >= 40 ? 3 : level >= 20 ? 2 : 1;
+            }
+        }
+
+        /** Darts drain 2 Agility levels on a failure. */
+        public static final int DART_DRAIN = 2;
+
+        /** A piece the Agility Arena graceful recolour (Pirate Jackie, 250 vouchers for a full set) turns a graceful piece into. */
+        public record RecolourPiece(String item) {
+        }
+
+        public static final List<RecolourPiece> GRACEFUL_RECOLOUR = List.of(new RecolourPiece("graceful_hood_agility_arena"),
+                new RecolourPiece("graceful_top_agility_arena"), new RecolourPiece("graceful_legs_agility_arena"),
+                new RecolourPiece("graceful_gloves_agility_arena"), new RecolourPiece("graceful_boots_agility_arena"),
+                new RecolourPiece("graceful_cape_agility_arena"));
+
+        private BrimhavenArena() {
+        }
+
+        /** Agility XP for tagging the active dispenser: 30 per 10 levels of current Agility (boosts and drains count). */
+        public static int tagXp(int currentAgility) {
+            return 30 * Math.max(0, Math.min(10, currentAgility / 10));
+        }
+
+        /** Chance to fail an obstacle (approx: the wiki gives no rates, only that nothing fails at 99). */
+        public static double failChance(Obstacle o, int agility) {
+            if (agility >= 99) {
+                return 0;
+            }
+            double base = 0.05 * o.tier() + 0.05;
+            return Math.max(0, base * (99 - agility) / (99.0 - o.level + 1)); // approx
+        }
+
+        /** The obstacle on the link between two neighbouring pillars (fixed per link; approx of the wiki's map). */
+        public static Obstacle link(int a, int b) {
+            int lo = Math.min(a, b);
+            int hi = Math.max(a, b);
+            Obstacle[] all = Obstacle.values();
+            return all[Math.floorMod(lo * 7 + hi * 13 + (hi - lo == 1 ? 3 : 0), all.length)];
+        }
+
+        /** Whether two pillar indices (row-major on the 5x5 grid) are neighbours. */
+        public static boolean neighbours(int a, int b) {
+            int ax = a % GRID;
+            int az = a / GRID;
+            int bx = b % GRID;
+            int bz = b / GRID;
+            return Math.abs(ax - bx) + Math.abs(az - bz) == 1;
         }
     }
 

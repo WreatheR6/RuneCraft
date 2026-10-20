@@ -83,6 +83,163 @@ public final class AgilityMinigameWalk {
         return run(p, AgilityMinigameWalk::plunderRun);
     }
 
+    public static String roguesDen(ServerPlayer p) {
+        return run(p, AgilityMinigameWalk::roguesDenRun);
+    }
+
+    public static String brimhaven(ServerPlayer p) {
+        return run(p, AgilityMinigameWalk::brimhavenRun);
+    }
+
+    // ------------------------------------------------------------------ Rogues' Den
+
+    /**
+     * The Rogues' Den maze: the long route at 79 Thieving (the locked doors refuse), every obstacle in order, a wrong mosaic
+     * tile and a wrong grill first, the flash powder before the guard, then the wall safe (a later run takes the 80-Thieving
+     * shortcut if the safe ejects the player); the reward crate gives a rogue piece and the XP is paid.
+     */
+    private void roguesDenRun() {
+        player.getInventory().clearContent();
+        boolean cracked = false;
+        for (int attempt = 0; attempt < 6 && !cracked; attempt++) {
+            boolean shortcut = attempt > 0;
+            setLevel(Skill.THIEVING, shortcut ? 99 : 79);
+            step = "maze run " + (attempt + 1) + (shortcut ? " (shortcut)" : " (long route)");
+            start(Minigame.ROGUES_DEN);
+            RoguesDenSession s = (RoguesDenSession) session;
+            expect(Inv.has(player, "mystic_jewel", 1), "no mystic jewel on entering the maze");
+            double agility = xp(Skill.AGILITY);
+            List<com.runecraft.osrs.content.minigames.MinigameRules.RoguesDen.Obstacle> route =
+                    com.runecraft.osrs.content.minigames.MinigameRules.RoguesDen.ROUTE;
+            while (s.selfTestNext() < route.size()) {
+                int i = s.selfTestNext();
+                var o = route.get(i);
+                step = "maze run " + (attempt + 1) + " obstacle " + i + " " + o.name();
+                java.util.Map<BlockPos, Integer> blocks = s.selfTestObstacle(i);
+                moveTo(s.selfTestBefore(i));
+                switch (o.kind()) {
+                    case TILES, GRILLS -> {
+                        int right = o.kind() == com.runecraft.osrs.content.minigames.MinigameRules.RoguesDen.Kind.TILES
+                                ? com.runecraft.osrs.content.minigames.MinigameRules.RoguesDen.RIGHT_TILE
+                                : com.runecraft.osrs.content.minigames.MinigameRules.RoguesDen.RIGHT_GRILL;
+                        for (java.util.Map.Entry<BlockPos, Integer> e : blocks.entrySet()) {
+                            if (e.getValue() - 10 != right) {
+                                click(e.getKey(), "rd_obstacle");
+                                expect(s.selfTestNext() == i, "a wrong " + o.name().toLowerCase() + " choice let the player on");
+                                break;
+                            }
+                        }
+                        for (java.util.Map.Entry<BlockPos, Integer> e : blocks.entrySet()) {
+                            if (e.getValue() - 10 == right) {
+                                click(e.getKey(), "rd_obstacle");
+                            }
+                        }
+                    }
+                    case GUARD -> {
+                        blocks.forEach((pos, role) -> {
+                            if (role == 1) {
+                                click(pos, "rd_obstacle");
+                            }
+                        });
+                        blocks.forEach((pos, role) -> {
+                            if (role == 0) {
+                                click(pos, "rd_obstacle");
+                            }
+                        });
+                    }
+                    case SHORTCUT -> {
+                        BlockPos locked = null;
+                        BlockPos passage = null;
+                        for (java.util.Map.Entry<BlockPos, Integer> e : blocks.entrySet()) {
+                            if (e.getValue() == 2) {
+                                locked = e.getKey();
+                            } else {
+                                passage = e.getKey();
+                            }
+                        }
+                        click(locked, "rd_obstacle");
+                        if (!shortcut) {
+                            expect(s.selfTestNext() == i, "79 Thieving picked the locked doors");
+                            click(passage, "rd_obstacle");
+                        } else {
+                            expect(s.selfTestNext() == com.runecraft.osrs.content.minigames.MinigameRules.RoguesDen.SHORTCUT_TO,
+                                    "the locked doors didn't take the shortcut");
+                        }
+                    }
+                    default -> blocks.keySet().forEach(pos -> click(pos, "rd_obstacle"));
+                }
+                expect(!session.isEnded(), "thrown out of the maze at " + o.name());
+                expect(s.selfTestNext() > i, "couldn't get past the " + o.name().toLowerCase());
+                tick();
+            }
+            int[] drained = s.selfTestDrained();
+            expect(drained[0] > 0 && drained[1] > 0, "the maze drained Agility " + drained[0] + " and Thieving " + drained[1]);
+            step = "wall safe";
+            for (int i = 0; i < 20 && !session.isEnded(); i++) {
+                moveTo(s.selfTestSafe().south());
+                click(s.selfTestSafe(), "rd_safe");
+            }
+            expect(session.isEnded(), "the wall safe never opened or ejected");
+            expect(!Inv.has(player, "mystic_jewel", 1), "the mystic jewel left the maze");
+            cracked = Inv.has(player, "rogues_equipment_crate", 1) || Inv.has(player, "rogue_kit", 1);
+            expect(xp(Skill.AGILITY) > agility, "leaving the maze paid no Agility XP");
+            notes.add("maze run " + (attempt + 1) + (shortcut ? " by the shortcut" : " by the long route") + ": drained "
+                    + drained[0] + " Agility / " + drained[1] + " Thieving, " + (cracked ? "safe cracked" : "ejected by the safe"));
+        }
+        expect(cracked, "six maze runs and the safe never gave a reward");
+        if (Inv.has(player, "rogues_equipment_crate", 1)) {
+            Inv.remove(player, "rogues_equipment_crate", 1);
+            RoguesDenSession.openCrate(player);
+            boolean piece = false;
+            for (String id : com.runecraft.osrs.content.minigames.MinigameRules.RoguesDen.OUTFIT) {
+                piece |= Inv.has(player, id, 1);
+            }
+            expect(piece || Inv.has(player, "rogue_kit", 1), "the rogue's equipment crate gave nothing");
+            notes.add("the crate gave a piece of rogue equipment");
+        }
+        if (Inv.has(player, "rogue_kit", 1)) {
+            int tools = distinctItems();
+            Inv.remove(player, "rogue_kit", 1);
+            RoguesDenSession.useKit(player);
+            expect(distinctItems() >= tools, "the rogue kit gave no tool");
+        }
+    }
+
+    // ------------------------------------------------------------------ Brimhaven Agility Arena
+
+    /** The arena: an obstacle between two pillars (retried after a fall), the active dispenser tagged once for a ticket. */
+    private void brimhavenRun() {
+        player.getInventory().clearContent();
+        step = "arena";
+        start(Minigame.BRIMHAVEN_AGILITY_ARENA);
+        BrimhavenArenaSession s = (BrimhavenArenaSession) session;
+        double agility = xp(Skill.AGILITY);
+        BlockPos obstacle = s.selfTestObstacle(0, 1);
+        expect(obstacle != null, "no obstacle between the first two pillars");
+        for (int i = 0; i < 10 && xp(Skill.AGILITY) == agility; i++) {
+            moveTo(s.selfTestStand(0));
+            click(obstacle, "brimhaven_obstacle");
+            tick();
+        }
+        double crossed = xp(Skill.AGILITY) - agility;
+        double want = com.runecraft.osrs.content.minigames.MinigameRules.BrimhavenArena.link(0, 1).xp;
+        expect(crossed == want, "crossing the " + com.runecraft.osrs.content.minigames.MinigameRules.BrimhavenArena.link(0, 1).title
+                + " gave " + crossed + " XP, wanted " + want);
+        step = "dispenser";
+        BlockPos dispenser = s.selfTestDispenser();
+        moveTo(s.selfTestStand(s.selfTestActive()));
+        double before = xp(Skill.AGILITY);
+        click(dispenser, "agility_ticket_dispenser");
+        expect(Inv.count(player, "agility_arena_ticket") >= 1 && Inv.count(player, "brimhaven_voucher") >= 1,
+                "tagging the dispenser gave no ticket and voucher");
+        expect(xp(Skill.AGILITY) - before == 270, "tagging at 99 Agility gave " + (xp(Skill.AGILITY) - before) + " XP (wiki: 270)");
+        int tickets = Inv.count(player, "agility_arena_ticket");
+        click(dispenser, "agility_ticket_dispenser");
+        expect(Inv.count(player, "agility_arena_ticket") == tickets, "the same dispenser paid twice");
+        notes.add("crossed the " + com.runecraft.osrs.content.minigames.MinigameRules.BrimhavenArena.link(0, 1).title.toLowerCase()
+                + " (" + crossed + " XP), tagged a dispenser (270 XP, ticket and voucher)");
+    }
+
     // ------------------------------------------------------------------ helpers
 
     private static void expect(boolean ok, String message) {

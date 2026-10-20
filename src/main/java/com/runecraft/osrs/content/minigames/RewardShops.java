@@ -217,7 +217,9 @@ public final class RewardShops {
                 .item("pirates_hook", BRIMHAVEN_VOUCHERS, 800)
                 .item(GRACEFUL_RECOLOUR + "_agility_arena", BRIMHAVEN_VOUCHERS, 250)
                 .item("toadflax", BRIMHAVEN_VOUCHERS, 3)
-                .item("snapdragon", BRIMHAVEN_VOUCHERS, 10);
+                .item("snapdragon", BRIMHAVEN_VOUCHERS, 10)
+                // The amylase pack (60 vouchers) holds 100 amylase crystals.
+                .item("amylase_crystal", 100, BRIMHAVEN_VOUCHERS, 60);
 
         // Trouble Brewing: Honest Jimmy's House of Stuff (pieces of eight; OSRS Wiki: ten times each item's value,
         // rum 20).

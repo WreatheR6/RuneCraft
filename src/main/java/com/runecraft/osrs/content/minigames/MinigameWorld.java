@@ -135,6 +135,7 @@ public final class MinigameWorld {
             {"sep_platform", "Platform", "B0B0C0", "pressure_plate"},
             // Brimhaven Agility Arena
             {"agility_ticket_dispenser", "Ticket dispenser", "E0A040", "machine"},
+            {"brimhaven_obstacle", "Agility obstacle", "7A5A3A", "crate"},
             // Gnome Restaurant
             {"gnome_oven", "Gnome oven", "8A5A3A", "range"},
             {"gnome_customer", "Customer's door", "6A9A4A", "portal_door"},
@@ -485,7 +486,10 @@ public final class MinigameWorld {
                 "hallowed_focus", "hallowed_symbol", "hallowed_hammer", "hallowed_ring", "dark_dye", "dark_acorn",
                 "strange_old_lockpick", "ring_of_endurance", "mysterious_page", "mysterious_page_2", "mysterious_page_3",
                 "mysterious_page_4", "mysterious_page_5")));
-        pages.add(new CollectionLogData.Page(c, "Brimhaven Agility Arena", List.of("pirates_hook")));
+        // The wiki's page: tickets, vouchers, the pirate's hook and the Agility Arena graceful recolour (skilling module items).
+        pages.add(new CollectionLogData.Page(c, "Brimhaven Agility Arena", List.of("agility_arena_ticket", "brimhaven_voucher",
+                "pirates_hook", "graceful_hood_agility_arena", "graceful_top_agility_arena", "graceful_legs_agility_arena",
+                "graceful_gloves_agility_arena", "graceful_boots_agility_arena", "graceful_cape_agility_arena")));
         pages.add(new CollectionLogData.Page(c, "Gnome Restaurant", List.of("gnome_scarf", "gnome_goggles", "mint_cake")));
         List<String> naval = new ArrayList<>();
         for (String colour : MinigameItems.NAVAL_COLOURS) {
