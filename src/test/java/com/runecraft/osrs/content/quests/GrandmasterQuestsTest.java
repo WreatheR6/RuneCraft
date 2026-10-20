@@ -243,15 +243,10 @@ class GrandmasterQuestsTest {
         QuestSpec sotn = spec("secrets_of_the_north");
         // the Carnilleans' chest wants a lockpick; the Ghorrock Dungeon's four locks by the wiki's solutions
         assertTrue(find(sotn, t -> t.give.containsKey("sotn_dusty_scroll"), "the dusty scroll").need.containsKey("lockpick"));
-        assertEquals(4, MahjarratQuests.SOTN_DUNGEON.rooms.size());
-        List<String> answers = new ArrayList<>();
-        for (QuestPuzzle.Room room : MahjarratQuests.SOTN_DUNGEON.rooms) {
-            QuestPuzzle.Variant v = room.variants().get(0);
-            StringBuilder s = new StringBuilder();
-            v.solutions().get(0).forEach(i -> s.append(s.length() > 0 && v.options().get(i).length() > 1 ? " " : "").append(v.options().get(i)));
-            answers.add(s.toString());
-        }
-        assertEquals(List.of("Left Up Left Down", "BLOOD", "North-west South-east North-east South-west", "7402"), answers);
+        assertEquals(List.of("Left Up Left Down", "BLOOD", "North-west South-east North-east South-west", "7402"),
+                lockAnswers(sotn, MahjarratQuests.SOTN_LOCKS));
+        assertTrue(find(sotn, t -> t.puzzle == MahjarratQuests.SOTN_LOCKS.get(2), "the braziers").need.containsKey("tinderbox"));
+        assertTrue(find(sotn, t -> t.puzzle == MahjarratQuests.SOTN_LOCKS.get(3), "the northern chest").setFlags.contains("sotn_puzzles"));
         // the Strange Creature (wiki: level 368, 550 HP) runs the Phantom Muspah's fight on its own numbers
         stats("quest_strange_creature", 368, 550, 6);
         com.runecraft.osrs.content.bosses.MuspahRules.Numbers n = com.runecraft.osrs.content.bosses.MuspahRules.STRANGE_CREATURE;
@@ -268,6 +263,60 @@ class GrandmasterQuestsTest {
         com.runecraft.osrs.content.bosses.MuspahRules.Numbers phantom = com.runecraft.osrs.content.bosses.MuspahRules.PHANTOM;
         assertEquals(List.of(850, 127, 61, 72, 79, 34, 80), List.of(phantom.hitpoints(), phantom.shieldBelow(), phantom.rangedMax(false),
                 phantom.rangedMax(true), phantom.magicMax(true), phantom.melee(), phantom.shockwave()));
+    }
+
+    @Test
+    void desertTreasureIIFollowsTheQuickGuide() {
+        QuestSpec dt2 = spec("desert_treasure_ii");
+        assertEquals(6, dt2.stages.size(), "saved stage count");
+        // Ghorrock Prison's four keys by the wiki's solutions
+        assertEquals(List.of("214013", "LIES", "Up Right Left Down Right Up", "WRATH"), lockAnswers(dt2, MahjarratQuests.DT2_PRISON_KEYS));
+        assertTrue(find(dt2, t -> t.puzzle == MahjarratQuests.DT2_PRISON_KEYS.get(3), "the diamond key").setFlags.contains("dt2_d_keys"));
+        // the quest versions' max hits (wiki): Leviathan ranged orb 16, magic orb 22; Duke magic 28; Whisperer ranged 28, magic 26
+        for (String[] a : new String[][]{{"dt2_quest_leviathan", "boulder", "16"}, {"dt2_quest_leviathan", "abyssal_orb", "22"},
+                {"dt2_quest_duke_sucellus", "magic_blast", "28"}, {"dt2_quest_whisperer", "tentacle_lash", "28"},
+                {"dt2_quest_whisperer", "soul_bolt", "26"}}) {
+            assertEquals(Integer.parseInt(a[2]), boss(a[0]).attacks.stream().filter(x -> x.name().equals(a[1])).findFirst()
+                    .orElseThrow(() -> new AssertionError(a[0] + " " + a[1])).maxHit(), a[0] + " " + a[1]);
+        }
+        // three 100,000 XP ancient lamps, all in combat skills
+        assertEquals(300000.0, dt2.def.xpRewards().values().stream().mapToDouble(Double::doubleValue).sum());
+        assertTrue(dt2.def.xpRewards().keySet().stream().allMatch(s -> List.of(com.runecraft.osrs.Skill.ATTACK, com.runecraft.osrs.Skill.STRENGTH,
+                com.runecraft.osrs.Skill.DEFENCE, com.runecraft.osrs.Skill.HITPOINTS, com.runecraft.osrs.Skill.RANGED, com.runecraft.osrs.Skill.MAGIC,
+                com.runecraft.osrs.Skill.PRAYER).contains(s)));
+    }
+
+    /** A puzzle draws a player {@code picks} rooms: every one of those slots must be presented by some step. */
+    @Test
+    void everyPuzzleSlotIsPresented() {
+        for (String id : QuestStepWalk.STEP_WALKED) {
+            QuestSpec q = spec(id);
+            java.util.Map<QuestPuzzle, java.util.Set<Integer>> slots = new java.util.IdentityHashMap<>();
+            q.triggers().stream().filter(t -> t.puzzle != null).forEach(t -> slots.computeIfAbsent(t.puzzle, k -> new java.util.TreeSet<>()).add(t.slot));
+            slots.forEach((puzzle, used) -> assertEquals(puzzle.picks, used.size(), id + ": " + puzzle.key + " presents slots " + used
+                    + " of " + puzzle.picks));
+        }
+    }
+
+    /**
+     * Each one-room lock's solution as text (letters and digits run together, words spaced), after checking the quest presents
+     * every lock, in the list's order.
+     */
+    private static List<String> lockAnswers(QuestSpec q, List<QuestPuzzle> locks) {
+        List<String> answers = new ArrayList<>();
+        int last = -1;
+        for (QuestPuzzle lock : locks) {
+            Trigger t = find(q, x -> x.puzzle == lock, lock.key);
+            int at = q.triggers().indexOf(t);
+            assertTrue(at > last, lock.key + " out of order");
+            last = at;
+            assertEquals(1, lock.rooms.size(), lock.key);
+            QuestPuzzle.Variant v = lock.rooms.get(0).variants().get(0);
+            List<String> picked = new ArrayList<>();
+            v.solutions().get(0).forEach(i -> picked.add(v.options().get(i)));
+            answers.add(String.join(picked.get(0).length() > 1 ? " " : "", picked));
+        }
+        return answers;
     }
 
     private static int DS2_CRYPT_VARIANTS() {
