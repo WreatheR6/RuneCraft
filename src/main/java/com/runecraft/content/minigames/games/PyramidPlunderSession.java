@@ -314,19 +314,63 @@ public class PyramidPlunderSession extends MinigameSession {
                 "Artefacts: " + artefacts);
     }
 
-    /** Simon Templeton buys every artefact in the inventory. */
+    /** Simon Templeton buys every artefact in the inventory, and pyramid tops for 10,000 coins each. */
     public static void sellArtefacts(ServerPlayer player) {
         int total = 0;
         for (Object[] a : MinigameItems.ARTEFACTS) {
             int n = Inv.remove(player, (String) a[0], 1000);
             total += n * (Integer) a[2];
         }
+        total += Inv.remove(player, com.runecraft.osrs.content.minigames.MinigameRules.AgilityPyramid.TOP, 1000)
+                * com.runecraft.osrs.content.minigames.MinigameRules.AgilityPyramid.TOP_PRICE;
         if (total == 0) {
             Msg.game(player, "Simon Templeton: Bring me artefacts from the pyramids and I'll pay you handsomely!");
             return;
         }
         Inv.give(player, "coins", total);
         Msg.game(player, "Simon Templeton pays you " + String.format("%,d", total) + " coins for your artefacts.");
+    }
+
+    // ------------------------------------------------------------------ the Agility Pyramid's top
+
+    private static final String TOP_TAKEN = "pyramid_top_taken";
+    private static final String TOP_TIME = "pyramid_top_time";
+
+    /** Taking the pyramid top at the summit: the completion bonus and the top, once per trip through the doorway. */
+    public static void pyramidTop(ServerPlayer player) {
+        int agility = Players.data(player).skills().level(Skill.AGILITY);
+        if (agility < com.runecraft.osrs.content.minigames.MinigameRules.AgilityPyramid.LEVEL) {
+            Msg.game(player, "You need an Agility level of " + com.runecraft.osrs.content.minigames.MinigameRules.AgilityPyramid.LEVEL
+                    + " to climb the Agility Pyramid.");
+            return;
+        }
+        MinigameData data = MinigameData.of(player);
+        if (data.stat(player.getUUID(), TOP_TAKEN) == 1) {
+            Msg.game(player, "You've already taken the pyramid top. Go through the doorway to climb again.");
+            return;
+        }
+        int now = (int) (System.currentTimeMillis() / 1000L);
+        int last = data.stat(player.getUUID(), TOP_TIME);
+        if (last > 0 && now - last < com.runecraft.osrs.content.minigames.MinigameRules.AgilityPyramid.MIN_LAP_SECONDS) {
+            Msg.game(player, "The pyramid top hasn't reappeared yet.");
+            return;
+        }
+        data.setStat(player.getUUID(), TOP_TAKEN, 1);
+        data.setStat(player.getUUID(), TOP_TIME, now);
+        xp(player, Skill.AGILITY, com.runecraft.osrs.content.minigames.MinigameRules.AgilityPyramid.bonusXp(agility));
+        Inv.give(player, com.runecraft.osrs.content.minigames.MinigameRules.AgilityPyramid.TOP, 1);
+        Msg.game(player, "You take the pyramid top. Simon Templeton by the pyramid will pay 10,000 coins for it.");
+    }
+
+    /** The doorway at the summit: back to the pyramid's base, and a new top waits at the summit. */
+    public static void pyramidDoorway(ServerPlayer player) {
+        MinigameData.of(player).setStat(player.getUUID(), TOP_TAKEN, 0);
+        ServerLevel world = (ServerLevel) player.level();
+        BlockPos base = com.runecraft.world.Gielinor.safeSpot(world,
+                com.runecraft.osrs.GielinorMap.toBlockX(com.runecraft.osrs.content.minigames.MinigameRules.AgilityPyramid.BASE_X),
+                com.runecraft.osrs.GielinorMap.toBlockZ(com.runecraft.osrs.content.minigames.MinigameRules.AgilityPyramid.BASE_Y));
+        player.teleportTo(world, base.getX() + 0.5, base.getY(), base.getZ() + 0.5, player.getYRot(), player.getXRot());
+        Msg.game(player, "You go through the doorway and find yourself at the base of the pyramid.");
     }
 
     // ------------------------------------------------------------------ self-test hooks

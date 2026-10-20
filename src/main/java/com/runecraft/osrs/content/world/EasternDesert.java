@@ -1164,7 +1164,9 @@ final class EasternDesert {
         int cxp = (q[0] + q[2]) / 2;
         int czp = (q[1] + q[3]) / 2;
         k.fill(cxp - 1, top, czp - 1, cxp + 2, top + 1, czp + 2, GOLD);
-        k.set(cxp, top + 2, czp, GOLD);
+        // The pyramid top (taken for the completion bonus) on the capstone, and the doorway back to the base (minigames module).
+        k.set(cxp, top + 2, czp, "runecraft:agility_pyramid_top");
+        k.set(cxp - 3, top, czp, "runecraft:agility_pyramid_doorway");
         // Entrance stairs from the ground onto the first tier (north face).
         for (int j = 0; j < 6; j++) {
             k.fill(cxp - 1, g + j, q[1] - 6 + j, cxp + 1, g + j, q[1] - 6 + j, SS_STAIRS + "[facing=south]");

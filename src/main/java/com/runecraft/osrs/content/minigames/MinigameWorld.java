@@ -212,6 +212,10 @@ public final class MinigameWorld {
             // Shared
             {"minigame_exit", "Exit portal", "C0C0FF", "portal_glow"}};
 
+    /** The Agility Pyramid's top at the summit and the doorway back to the base (see MinigameRules.AgilityPyramid). */
+    public static final String AGILITY_PYRAMID_TOP = "agility_pyramid_top";
+    public static final String AGILITY_PYRAMID_DOORWAY = "agility_pyramid_doorway";
+
     /** The scoreboard beside TzHaar-Ket-Rak: personal best times, completions and deaths for each challenge. */
     public static final String KET_RAK_SCOREBOARD = "ket_rak_scoreboard";
 
@@ -245,6 +249,9 @@ public final class MinigameWorld {
             list.add(BlockDef.scripted(e.getKey(), RewardShops.get(e.getValue()).title(), 0xC09040, "chest"));
         }
         list.add(BlockDef.scripted("pyramid_plunder_artefact_trader", "Simon Templeton's artefact crate", 0xC0A060, "chest"));
+        // The Agility Pyramid's summit (the world module's structure places them): the pyramid top and the doorway down.
+        list.add(BlockDef.scripted(AGILITY_PYRAMID_TOP, "Pyramid top", 0xE8C040, "statue"));
+        list.add(BlockDef.scripted(AGILITY_PYRAMID_DOORWAY, "Doorway (Agility Pyramid)", 0x8A7A5A, "portal_door"));
         list.add(BlockDef.scripted("rogues_den_jewel_trader", "Brian O'Richard's crate", 0x5A5A60, "chest"));
         list.add(BlockDef.scripted(SORCERESS_SHELVES, "Shelves", 0x8A6A3A, "crate"));
         list.add(BlockDef.scripted(KET_RAK_SCOREBOARD, "Scoreboard (TzHaar-Ket-Rak)", 0x6A2A10, "statue"));

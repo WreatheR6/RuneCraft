@@ -129,6 +129,8 @@ public final class MinigamesHooks implements ModuleHooks {
         com.runecraft.content.minigames.games.NightmareZoneSession.register();
         BlockHooks.register("pyramid_plunder_artefact_trader", (player, pos, state) -> PyramidPlunderSession.sellArtefacts(player));
         BlockHooks.register("rogues_den_jewel_trader", (player, pos, state) -> RoguesDenSession.tradeJewel(player));
+        BlockHooks.register(MinigameWorld.AGILITY_PYRAMID_TOP, (player, pos, state) -> PyramidPlunderSession.pyramidTop(player));
+        BlockHooks.register(MinigameWorld.AGILITY_PYRAMID_DOORWAY, (player, pos, state) -> PyramidPlunderSession.pyramidDoorway(player));
         BlockHooks.register("tempoross_reward_pool", (player, pos, state) -> TemporossSession.rewardPool(player));
         BlockHooks.register("gotr_rift_search", (player, pos, state) -> GuardiansSession.rewardsGuardian(player));
         com.runecraft.content.minigames.games.SkillingBossBlocks.register();

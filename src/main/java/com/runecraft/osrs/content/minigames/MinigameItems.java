@@ -436,6 +436,7 @@ public final class MinigameItems {
         weapon(items, "pharaohs_sceptre", "Pharaoh's sceptre", Kind.MELEE_WEAPON, "staff_orb", 0xE0B030, 1,
                 s(-2, -2, 16, 0, 0, 0, 0, 0, 0, 0, 12, 0, 0, 0), 5, AttackType.CRUSH, WeaponClass.MELEE)
                 .examine("Teleports to the pyramids. Fabulously rare.");
+        single(items, MinigameRules.AgilityPyramid.TOP, "Pyramid top", "gem", 0xE8C040, 1, "It's a solid gold pyramid!");
     }
 
     // ------------------------------------------------------------------ Hallowed Sepulchre

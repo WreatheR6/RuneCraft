@@ -811,6 +811,31 @@ public final class MinigameRules {
         }
     }
 
+    // ---------------------------------------------------------------- Agility Pyramid
+    /**
+     * The Agility Pyramid's top (OSRS Wiki "Agility Pyramid", "Pyramid top"): 30 Agility; the pyramid top at the summit gives
+     * the course's completion bonus of 300 + 8 per Agility level (1,000 from level 88; boosts don't count) and is worth 10,000
+     * coins to Simon Templeton. A new top only appears after the player has gone through the doorway at the top, which
+     * returns them to the base. The pyramid's obstacles aren't modelled (the stepped pyramid is climbed by its stairs), so a
+     * top needs a lap's time since the last one: at most 26 laps an hour (approx).
+     */
+    public static final class AgilityPyramid {
+        public static final int LEVEL = 30;
+        public static final String TOP = "pyramid_top";
+        public static final int TOP_PRICE = 10_000;
+        public static final int MIN_LAP_SECONDS = 3600 / 26; // approx
+        /** Where the doorway returns the player: in front of the pyramid's north stairs (OSRS tile, approx). */
+        public static final int BASE_X = 3355;
+        public static final int BASE_Y = 2869;
+
+        private AgilityPyramid() {
+        }
+
+        public static int bonusXp(int baseAgility) {
+            return Math.min(1000, 300 + 8 * baseAgility);
+        }
+    }
+
     // Hallowed Sepulchre: see HallowedSepulchre.
 
     // ---------------------------------------------------------------- Tithe Farm

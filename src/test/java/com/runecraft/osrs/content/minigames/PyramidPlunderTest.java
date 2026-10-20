@@ -84,6 +84,18 @@ class PyramidPlunderTest {
     }
 
     @Test
+    void agilityPyramidTop() {
+        // Completion bonus 300 + 8 x Agility, capped at 1,000 from level 88; Simon pays 10,000 per top.
+        assertEquals(540, MinigameRules.AgilityPyramid.bonusXp(30));
+        assertEquals(996, MinigameRules.AgilityPyramid.bonusXp(87));
+        assertEquals(1000, MinigameRules.AgilityPyramid.bonusXp(88));
+        assertEquals(1000, MinigameRules.AgilityPyramid.bonusXp(99));
+        assertEquals(10_000, MinigameRules.AgilityPyramid.TOP_PRICE);
+        assertEquals(30, MinigameRules.AgilityPyramid.LEVEL);
+        assertTrue(3600 / MinigameRules.AgilityPyramid.MIN_LAP_SECONDS <= 26, "at most 26 tops an hour");
+    }
+
+    @Test
     void successCharts() {
         // Urns: 100-180 in room 1, 1/256 less every room.
         assertEquals(101 / 256.0, PyramidPlunder.urnChance(1, 1), 1e-9);
