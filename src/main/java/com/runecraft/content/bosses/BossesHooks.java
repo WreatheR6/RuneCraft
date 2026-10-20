@@ -71,6 +71,9 @@ public final class BossesHooks implements ModuleHooks {
         BossScripts.register("eclipse_moon", MoonScripts.EclipseMoon::new);
         BossScripts.register("blue_moon", MoonScripts.BlueMoon::new);
         BossScripts.register("branda_the_fire_queen", EncounterScripts.RoyalTitans::new);
+        // Fought beside the main boss, whose kill count they share (one "Royal Titans" / "Grotesque Guardians" kill).
+        com.runecraft.boss.DataBossService.companion("eldric_the_ice_king");
+        com.runecraft.boss.DataBossService.companion("dawn");
         MinionRules.register();
         BossDots.register();
         BossScripts.register("yama", ModernScripts.Yama::new);

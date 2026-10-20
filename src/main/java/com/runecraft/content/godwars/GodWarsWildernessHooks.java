@@ -24,6 +24,7 @@ public final class GodWarsWildernessHooks implements ModuleHooks {
         BossScripts.register("nex", NexScript::new);
         for (String minion : GwdBosses.NEX_MINIONS) {
             BossScripts.register(minion, NexMinionScript::new);
+            DataBossService.companion(minion); // part of Nex's kill: no kill count of their own
         }
         // Wilderness.
         for (String id : new String[]{"callisto", "artio", "venenatis", "spindel"}) {

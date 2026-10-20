@@ -290,6 +290,13 @@ public class DataBossEntity extends OsrsMonsterEntity {
             Inv.spawnAtLocation(this, Drops.withDoses(com.runecraft.combat.CombatHooks.dropStack(player, this, r.item(), r.count()), r.doses()));
             CollectionLog.obtain(player, r.item());
         }
+        if (variant == null && DataBossService.isCompanion(def.id)) {
+            // part of the main boss's kill (Eldric, Dawn, Nex's generals): no kill count or pet of its own
+            script.onDeath(this, player);
+            DataBossService.killed(player, this);
+            bossBar.removeAllPlayers();
+            return;
+        }
         int petRate = variant != null && variant.petRate() >= 0 ? variant.petRate()
                 : com.runecraft.osrs.content.extras.Pets.engineRate(def.id);
         if (def.pet != null && petRate > 0 && getRandom().nextInt(petRate) == 0) {

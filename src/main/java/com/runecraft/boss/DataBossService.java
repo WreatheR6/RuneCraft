@@ -42,6 +42,21 @@ public final class DataBossService {
 
     private static final java.util.Map<String, LootRoller> LOOT = new java.util.HashMap<>();
 
+    /** Bosses fought beside a main boss whose kill they are part of (see {@link #companion}). */
+    private static final java.util.Set<String> COMPANIONS = new java.util.HashSet<>();
+
+    /**
+     * Marks a boss fought beside a main boss (Eldric beside Branda, Dawn beside Dusk, Nex's generals): its death is part of
+     * the main boss's kill, so it counts no kill count and rolls no pet of its own (its drop table, if any, still drops).
+     */
+    public static void companion(String bossId) {
+        COMPANIONS.add(bossId);
+    }
+
+    public static boolean isCompanion(String bossId) {
+        return COMPANIONS.contains(bossId);
+    }
+
     private DataBossService() {
     }
 
