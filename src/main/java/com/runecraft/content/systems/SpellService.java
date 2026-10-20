@@ -206,6 +206,23 @@ public final class SpellService {
         return s.book() == current;
     }
 
+    /**
+     * Extra casting rules from other content modules (the quests module's Mage Arena: the god spells need Mage Arena I and,
+     * outside the arena, 100 casts in it): a refusal message, or null to allow.
+     */
+    public static java.util.function.BiFunction<ServerPlayer, String, String> castRule = (p, spellId) -> null;
+
+    /** A combat spell cast at a target, after its runes were paid (the Mage Arena counts god spells cast on its battle mages). */
+    public interface CombatCast {
+        void cast(ServerPlayer player, String spellId, LivingEntity target);
+    }
+
+    private static final List<CombatCast> COMBAT_CASTS = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+    public static void onCombatCast(CombatCast listener) {
+        COMBAT_CASTS.add(listener);
+    }
+
     static boolean canCast(ServerPlayer p, Spell s, boolean quiet) {
         SysState.SysPlayer sp = SysState.of(p);
         if (!inBook(sp, s)) {
@@ -220,6 +237,13 @@ public final class SpellService {
         if (Players.data(p).skills().currentLevel(Skill.MAGIC) < s.level()) {
             if (!quiet) {
                 Msg.game(p, "You need a Magic level of " + s.level() + " to cast " + s.name() + ".");
+            }
+            return false;
+        }
+        String denied = castRule.apply(p, s.id());
+        if (denied != null) {
+            if (!quiet) {
+                Msg.game(p, denied);
             }
             return false;
         }
@@ -376,6 +400,9 @@ public final class SpellService {
         }
         data.lastAttackTick = now;
         pay(p, s);
+        for (CombatCast l : COMBAT_CASTS) {
+            l.cast(p, s.id(), target);
+        }
         if (target instanceof net.minecraft.world.entity.player.Player) {
             // Combat spells cast on another player (the God spells task of the hard Wilderness diary).
             com.runecraft.content.GameEvents.fireActivity(p, "cast_on_player:" + s.id());

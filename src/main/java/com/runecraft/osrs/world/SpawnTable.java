@@ -527,6 +527,10 @@ public final class SpawnTable {
             out.add(new CampRef("revenant_caves", s.creature(), s.x(), s.y() + com.runecraft.osrs.content.godwars.RevenantCaves.DY,
                     com.runecraft.osrs.content.godwars.RevenantCaves.feetY(), 1));
         }
+        // The Mage Arena's battle mages (quests module, at their OSRS tiles).
+        for (com.runecraft.osrs.content.quests.MageArena.Spawn s : com.runecraft.osrs.content.quests.MageArena.BATTLE_MAGES) {
+            out.add(new CampRef(com.runecraft.osrs.content.quests.MageArena.PLACE, s.creature(), s.x(), s.y(), SpawnPoint.SURFACE, 1));
+        }
         for (IslandsPlaces.Camp c : IslandsPlaces.camps()) {
             addPlaceCamp(out, c.place(), c.dx(), c.dz(), c.radius(), c.surface() ? SpawnPoint.SURFACE : c.floorY(), c.creatures());
         }
