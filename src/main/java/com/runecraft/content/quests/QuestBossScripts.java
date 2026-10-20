@@ -313,12 +313,16 @@ final class QuestBossScripts {
          * The {@code boss:<id>} check's kill, played as the fight goes (wiki, Sins of the Father): he dies only the second time
          * he reaches 0 hitpoints, so the check's outright kill meets his rise instead. A whip does nothing and a hit outside
          * his rules (a ring of recoil's or Vengeance's) is refused; blisterwood flail blows take him to 0, where he heals 200
-         * and starts his second phase; blows in that phase kill him. Returns what was played, or null for another boss.
+         * and starts his second phase; blows in that phase kill him. Nothing hurts him while the check lets him act, so he must
+         * still be in his first phase when the play starts: a rise before it means something other than a blisterwood blow took
+         * him to 0. Returns what was played, or null for another boss.
          */
         static String selfTestToKill(DataBossEntity boss, ServerPlayer p) {
             if (!(boss.script() instanceof Vanstrom v)) {
                 return null;
             }
+            expect(!v.healed, "he had already risen before any blow (" + hp(boss) + " hitpoints): something other than a blisterwood "
+                    + "blow took him to 0 while he was left to act");
             net.minecraft.world.item.ItemStack held = p.getMainHandItem().copy();
             try {
                 p.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, Inv.stack("abyssal_whip", 1));
@@ -328,7 +332,6 @@ final class QuestBossScripts {
                 com.runecraft.combat.CombatHandler.applyDamage(p, boss, 10);
                 expect(boss.getHealth() >= before, "a hit outside his rules (recoil, Vengeance) hurt him");
                 p.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, Inv.stack("blisterwood_flail", 1));
-                boolean risen = v.healed;
                 int first = 0;
                 for (; !v.healed && boss.isAlive() && first < 100; first++) {
                     blow(boss, p, 60, AttackType.CRUSH);
@@ -336,15 +339,14 @@ final class QuestBossScripts {
                 }
                 expect(v.healed && boss.isAlive(), "blisterwood blows didn't bring him to his second phase (" + hp(boss) + " hitpoints left, "
                         + (boss.isAlive() ? "alive" : "dead") + ")");
-                expect(risen || hp(boss) == 200, "he rose with " + hp(boss) + " hitpoints (wiki: heals 200)");
+                expect(hp(boss) == 200, "he rose with " + hp(boss) + " hitpoints (wiki: heals 200)");
                 int second = 0;
                 for (; boss.isAlive() && second < 100; second++) {
                     blow(boss, p, 60, AttackType.CRUSH);
                     p.setHealth(p.getMaxHealth());
                 }
                 expect(!boss.isAlive(), "blisterwood blows in his second phase didn't kill him (" + hp(boss) + " hitpoints left)");
-                return "only blisterwood hurt him; " + (risen ? "already risen" : "risen with 200 hitpoints after " + first + " blows")
-                        + ", slain " + second + " blows later";
+                return "only blisterwood hurt him; risen with 200 hitpoints after " + first + " blows, slain " + second + " blows later";
             } finally {
                 p.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, held);
                 p.setHealth(p.getMaxHealth());
