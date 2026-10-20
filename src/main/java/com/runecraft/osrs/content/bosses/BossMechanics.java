@@ -678,7 +678,7 @@ public final class BossMechanics {
     /** Hitpoints of a weakened parasite (a dose of sanfew serum or relicym's balm before it bursts) and of a full one. */
     public static final int PARASITE_HP_WEAKENED = 40;
     public static final int PARASITE_HP = 80;
-    /** Each support blast restores 31-50 of the Nightmare's shield (or health here, where the shield is the totems). */
+    /** Each support blast restores 31-50 of the Nightmare's shield, or discharges the least charged totem (Phosani's: NightmareRules). */
     public static final int PARASITE_HEAL_MIN = 31;
     public static final int PARASITE_HEAL_MAX = 50;
     /** Game ticks between a parasite's support blasts (approx: the wiki only says "periodically"). */
