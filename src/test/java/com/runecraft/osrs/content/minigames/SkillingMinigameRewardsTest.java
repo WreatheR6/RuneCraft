@@ -423,7 +423,7 @@ class SkillingMinigameRewardsTest {
         assertNotNull(pete);
         Map<String, Integer> prices = new HashMap<>();
         for (RewardShop.Entry e : pete.entries()) {
-            assertTrue(ItemCatalog.exists(e.item()), e.item());
+            assertTrue(e.reward() == RewardShop.Reward.UNLOCK || ItemCatalog.exists(e.item()), e.item());
             prices.put(e.item(), e.costs().get(0).amount());
             assertEquals(MinigameCurrencies.VOLCANIC_MINE, e.costs().get(0).currency());
         }

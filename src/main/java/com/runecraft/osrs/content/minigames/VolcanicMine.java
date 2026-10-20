@@ -109,6 +109,8 @@ public final class VolcanicMine {
     public static final int VESSEL_USES = 36;
     public static final int LARGE_VESSEL_USES = 72;
     public static final int LARGE_VESSEL_POINTS = 10_000;
+    /** The minigame flag Petrified Pete's "Large water container" unlock sets. */
+    public static final String LARGE_VESSEL_FLAG = "volcanic_mine_large_vessel";
     public static final int PLATFORM_TICKS = 150;
     /** Blocks ahead a throw of water can reach (approx). */
     public static final int THROW_RANGE = 3;

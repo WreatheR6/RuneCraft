@@ -307,5 +307,15 @@ class SkillingBossDataTest {
         assertEquals(0.1, minerals / (double) n, 0.004);
         assertEquals(VolcanicMine.PREP_TICKS, 50);
         assertEquals(VolcanicMine.MAX_POINTS, (1 << 21) - 1);
+        // Petrified Pete sells the large water container (doubling the vessel's throws) for 10,000 points.
+        boolean found = false;
+        for (RewardShop.Entry e : RewardShops.get("volcanic_mine").entries()) {
+            if (e.reward() == RewardShop.Reward.UNLOCK && e.item().equals(VolcanicMine.LARGE_VESSEL_FLAG)) {
+                assertEquals(10_000, e.costs().get(0).amount());
+                found = true;
+            }
+        }
+        assertTrue(found, "no large water container in Petrified Pete's Ore Shop");
+        assertEquals(2 * VolcanicMine.vesselUses(false), VolcanicMine.vesselUses(true));
     }
 }

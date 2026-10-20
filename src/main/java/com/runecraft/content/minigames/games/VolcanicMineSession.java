@@ -38,7 +38,10 @@ import net.minecraft.world.level.block.Blocks;
  * often as stability falls. The last 30 seconds are for leaving.
  *
  * <p>A lava channel cuts the cavern in two: harden it with the heat-proof vessel Petrified Pete hands out
- * (36 throws; platforms melt after 90 seconds) or feel a gas hole to be shot across for a little damage.
+ * (36 throws, 72 with the large water container from his shop; platforms melt after 90 seconds) or feel a gas hole to be
+ * shot across for a little damage. The game starts 30 seconds after entering; only miners who leave through the exit before
+ * the eruption are paid (points and 3.8 Mining XP a point); dying, logging out or being caught in the eruption forfeits the
+ * game's ore fragments.
  * Ten or more miners get a second boulder (western channel), twenty or more a third (eastern).
  */
 public class VolcanicMineSession extends MinigameSession {
@@ -48,7 +51,7 @@ public class VolcanicMineSession extends MinigameSession {
     /** The lava channel (arena z rows, floor level) and the gas holes on either side of it. */
     private static final int[] LAVA_Z = {3, 4};
     private static final int[][] GAS_HOLES = {{-10, 6}, {-10, 1}, {10, 6}, {10, 1}};
-    private static final String LARGE_VESSEL_FLAG = "volcanic_mine_large_vessel";
+    private static final String LARGE_VESSEL_FLAG = VolcanicMine.LARGE_VESSEL_FLAG;
     private final Map<UUID, Integer> water = new HashMap<>();
     /** Hardened lava platforms and the game tick they melt. */
     private final Map<BlockPos, Long> platforms = new HashMap<>();
