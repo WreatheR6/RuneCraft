@@ -19,8 +19,8 @@ final class GrandmasterQuests {
         b.place("myths_guild", "Myths' Guild", 2458, 2847, PlaceDef.Style.TOWN);
         b.place("quest_ungael", "Ungael", 2270, 4050, PlaceDef.Style.RUINS);
         b.place("galveks_sea", "The Western Sea", 2440, 2880, PlaceDef.Style.ARENA);
-        b.spot("temple_knight_hq", "Temple Knight headquarters", 2962, 3382);
-        b.place("movarios_base", "Movario's base", 3240, 3170, PlaceDef.Style.CAVE);
+        // the broken table over Movario's base, in the run-down house on the Khazard side of the battlefield (quest-helper tile)
+        b.spot("movarios_base", "Movario's base", 2519, 3249);
         b.place("guthix_sanctum", "Guthix's sanctum", 3220, 3150, PlaceDef.Style.CAVE);
         monkeyMadnessII(b);
         dragonSlayerII(b);
@@ -213,16 +213,56 @@ final class GrandmasterQuests {
     }
 
     private static void whileGuthixSleeps(QuestBook b) {
-        b.npc("akrisae", "Akrisae", "temple_knight_hq", 0, 0, 0xE8C0AF, 0xE0E0F0, 0x6A6AA0, 0xC0A061);
-        b.npc("ivy_sophista", "Ivy Sophista", "temple_knight_hq", 3, 2, 0xF0D0BC, 0x3A6A9A, 0x2A4A6A, 0xE0A041);
+        // Ivy Sophista and Thaerisk Cemphier in the house with the ladder in Taverley (Thaerisk upstairs in OSRS), Akrisae and Idria in
+        // the White Knights' Castle, the Khazard launderer by the Fight Arena, a shady stranger by Draynor bank and Silif in the Black
+        // Knights' catacombs (quest-helper tiles; Silif stands at the fortress door).
+        b.npcAt("ivy_sophista", "Ivy Sophista", 2907, 3450, 0xF0D0BC, 0x3A6A9A, 0x2A4A6A, 0xE0A041);
+        b.npcAt("thaerisk", "Thaerisk Cemphier", 2909, 3449, 0xE8C8B0, 0xE0E0F1, 0x3A3A6A, 0xC0A062);
+        b.npcAt("akrisae", "Akrisae", 2989, 3342, 0xE8C0AF, 0xE0E0F0, 0x6A6AA0, 0xC0A061);
+        b.npcAt("idria", "Idria", 2989, 3339, 0xF0D0B0, 0x5A3A6A, 0x3A2A4A, 0x2A1A10);
+        b.npcAt("khazard_launderer", "Khazard Launderer", 2564, 3172, 0xD8B090, 0xE0E0D8, 0x6A5A4A, 0x8A6A4A);
+        b.npcAt("shady_stranger", "Shady stranger", 3085, 3243, 0xC8A080, 0x2A2A30, 0x1A1A20, 0x101014);
+        b.npcAt("silif", "Silif", 3017, 3512, 0xE0B8A0, 0x8A8A90, 0x4A4A50, 0xC0A063);
+        b.spot("wgs_pit_trap", "Feldip Hills pit trap", 2499, 2910); // west of the Hunting expert
+        b.spot("wgs_bettys_counter", "Betty's counter", 3013, 3258);
+        b.spot("wgs_snapdragon_patch", "White Knights' Castle snapdragon patch", 2962, 3338); // top of the castle
         b.item("movarios_notes", "Movario's notes", "book", 0x3A2A4A, "Notes revealing the location of Guthix's resting place.");
-        b.boss(BossDef.of("balance_elemental", "Balance Elemental").level(454).stats(800, 300, 300, 250, 300, 300).speed(4)
-                .defenceBonus(150, 150, 150, 150, 150)
+        b.item("dirty_shirt", "Dirty shirt", "cloth", 0xB0A890, "One of Movario's shirts. It smells.");
+        b.item("broav", "Broav", "creature", 0x7A5A3A, "A broav trained to follow a scent.");
+        b.item("wgs_teleorb", "Teleorb", "orb", 0x8AD0E0, "Akrisae's teleorb: it swaps its bearer into the White Knights' cells.");
+        b.item("enriched_snapdragon_seed", "Enriched snapdragon seed", "seed", 0xE06A9A, "A snapdragon seed bathed in rose-tinted light.");
+        // Wiki: level 167, 275 HP, ranged up to 20 every 5 ticks; every 12 seconds one yells "Now!" and looses a glowing arrow
+        // (21-40) while the other teleports in with a dragon dagger special (up to 72).
+        b.boss(BossDef.of("wgs_assassin", "Assassin").level(167).stats(275, 50, 70, 70, 30, 110).speed(5)
+                .defenceBonus(10, 10, 15, 30, 20)
+                .attack(AttackDef.of("arrow", AttackType.RANGED, 20, 8, 6))
+                .attack(AttackDef.of("glowing_arrow", AttackType.RANGED, 40, 8, 1).telegraph(2, "Assassin: Now!"))
+                .attack(AttackDef.of("dagger_special", AttackType.STAB, 72, 10, 1).special(Special.BLINK, 0)
+                        .telegraph(2, "Assassin: I'm on it!"))
+                .drops(Drop.always("bones")).skin(0xC8A080, 0x2A2A2A, 0x1A1A1A, 0x3A1A1A));
+        // Wiki: level 138, 90 HP, slashes up to 13 every 6 ticks.
+        b.boss(BossDef.of("elite_black_knight", "Elite Black Knight").level(138).stats(90, 90, 120, 90, 70, 20).speed(6)
+                .defenceBonus(110, 130, 40, -5, 135)
+                .attack(AttackDef.of("slash", AttackType.SLASH, 13, 2.5, 10))
+                .drops(Drop.always("bones")).skin(0xD8B090, 0x1A1A1A, 0x101010, 0x2A2A2A));
+        // Wiki (Surok Magis, Dagon'hai): level 265, 450 HP, magic only (QuestBossScripts.MagicOnly), every seventh attack a special:
+        // elemental surges or an explosive orb (45+). The henchmen special (bind/weaken counters) is not modelled; regular max hit approx.
+        b.boss(BossDef.of("dark_squall", "Surok Magis").level(265).stats(450, 1, 1, 160, 160, 1).speed(5)
+                .defenceBonus(30, 20, 40, 0, 20)
+                .attack(AttackDef.of("chaos_bolt", AttackType.MAGIC, 25, 12, 6).particle("minecraft:witch"))
+                .attack(AttackDef.of("elemental_surge", AttackType.MAGIC, 45, 12, 1).telegraph(2, "Surok Magis: Witness true sorcery!"))
+                .attack(AttackDef.of("explosive_orb", AttackType.MAGIC, 45, 12, 1).special(Special.SKY_STRIKE, 0)
+                        .telegraph(3, "Surok throws an explosive orb at your feet!"))
+                .drops(Drop.always("bones")).skin(0xD8C0C0, 0x1A1A2A, 0x101018, 0x6A1A1D));
+        // Wiki: level 524, 750 HP (275 in every stat but 286 Strength), 40 in each form every 6 ticks; it prays against the
+        // player's style from 50% and attacks harder from 25%.
+        b.boss(BossDef.of("balance_elemental", "Balance Elemental").level(524).stats(750, 275, 286, 275, 275, 275).speed(6)
+                .defenceBonus(5, 0, -40, -40, 0)
                 .attack(AttackDef.of("melee_form", AttackType.CRUSH, 40, 3, 4))
                 .attack(AttackDef.of("ranged_form", AttackType.RANGED, 40, 10, 4))
                 .attack(AttackDef.of("magic_form", AttackType.MAGIC, 40, 10, 4).particle("minecraft:enchant"))
-                .phase(66, "The Balance Elemental shifts its form!", 1.1, false)
-                .phase(33, "The Balance Elemental shifts its form again!", 1.2, false)
+                .phase(50, "The Balance Elemental begins praying against your attacks!", 1.0, false)
+                .phase(25, "The Balance Elemental shifts faster and hits harder!", 1.25, false)
                 .drops(Drop.always("coins")).size(1.2f, 2.6f, 1.0f).at("guthix_sanctum").arena(12, "void"));
         b.quest("while_guthix_sleeps", "While Guthix Sleeps", Difficulty.GRANDMASTER, 5)
                 .reqQuest("defender_of_varrock", "the_path_of_glouphrie", "fight_arena", "dream_mentor", "the_hand_in_the_sand", "wanted", "temple_of_the_eye", "a_tail_of_two_cats", "tears_of_guthix", "nature_spirit")
@@ -231,29 +271,116 @@ final class GrandmasterQuests {
                 .qp(180)
                 .req(Skill.THIEVING, 72).req(Skill.MAGIC, 67).req(Skill.AGILITY, 66).req(Skill.FARMING, 65)
                 .req(Skill.HERBLORE, 65).req(Skill.HUNTER, 62).req(Skill.FIREMAKING, 49) // 49 Firemaking: sapphire lantern
-                .stage("I can start this quest by speaking to Ivy Sophista. (Requires 180 quest points and much more.)")
-                .talk("ivy_sophista").say("Lucien seeks the resting place of Guthix himself. Thaerisk and the Temple Knights need an agent.",
-                        "*Two assassins burst in; you fight them off.* Clearly someone doesn't want us talking. Track down Lucien's man, Movario.")
-                .stage("I should track Movario to his base under the battlefield west of Ardougne and search it for his notes.")
-                .puzzle("movarios_base", WGS_DOOR).reqSkill(Skill.HUNTER, 62).unlessFlag("wgs_door").flag("wgs_door").stay()
+                .stage("I can start this quest by speaking to Ivy Sophista in Taverley. (Requires 180 quest points and much more.)")
+                .talk("ivy_sophista").say("Lucien seeks the resting place of Guthix himself. The Temple Knights need an agent.",
+                        "Thaerisk Cemphier will brief you. He's here in the house.")
+                // Wiki: Thaerisk and the two assassins; the Khazard launderer (500 coins); a broav from the Hunting expert's pit trap;
+                // the broken table on the Khazard battlefield; Movario's base (rune door, wires, ruby key, pressure gauge).
+                .stage("I should speak to Thaerisk, then track Lucien's man Movario: the Khazard launderer by the Fight Arena, a broav from "
+                        + "the Feldip Hills and his base under the Khazard battlefield.")
+                .talk("thaerisk").stay().unlessFlag("wgs_assassins").spawn("wgs_assassin")
+                .say("?!wgs_assassin1|Lucien means to find Guthix and take his power. His agent, Movario, is our only lead...",
+                        "?!wgs_assassin1|* Two assassins burst in! Pray against their arrows, but watch for the dagger.",
+                        "?wgs_assassin1|The other assassin is still about! Deal with him!")
+                .hint("thaerisk", "Movario has his laundry done by the Fight Arena. Start with the Khazard launderer.")
+                .hint("ivy_sophista", "Thaerisk knows more about Lucien's plans than I do. Help him.")
+                .kill("wgs_assassin").stay().unlessFlag("wgs_assassin1", "wgs_assassins").flag("wgs_assassin1").spawn("wgs_assassin")
+                .say("* One assassin falls. The other leaps at you!")
+                .kill("wgs_assassin").stay().needFlag("wgs_assassin1").unlessFlag("wgs_assassins").flag("wgs_assassins")
+                .say("* The second assassin falls.", "@Thaerisk Cemphier: Lucien knows we're onto him. Movario has his laundry done by the "
+                        + "Fight Arena: start there.")
+                .talk("khazard_launderer").stay().needFlag("wgs_assassins").unlessFlag("wgs_shirt").take("coins:500").give("dirty_shirt")
+                .flag("wgs_shirt")
+                .say("Movario? Five hundred coins buys a lot of memory... He never collected this shirt. Lives out on the battlefield, I think.",
+                        "* A creature with a good nose could follow that smell. The Hunting expert in the Feldip Hills would know one.")
+                .missing("I don't talk about my customers. Not for nothing, anyway. (500 coins)")
+                .reach("wgs_pit_trap", 4).stay().needFlag("wgs_shirt").unlessFlag("wgs_trapdoor").unless("broav").need("logs", "knife")
+                .reqSkill(Skill.HUNTER, 62).give("broav")
+                .say("* The Hunting expert suggests a broav. You set a pit trap west of her camp, bait it and catch an unconscious broav,",
+                        "* which she trains to follow a scent.")
+                .missing("* The Hunting expert says a broav could track a person. A pit trap needs logs and a knife.")
+                .reach("movarios_base", 4).stay().needFlag("wgs_shirt").unlessFlag("wgs_trapdoor").need("broav", "dirty_shirt")
+                .flag("wgs_trapdoor")
+                .say("* You drop the broav and let it sniff the dirty shirt. It squeals at a broken table: beneath it, a trapdoor!",
+                        "* You climb down into Movario's base and take the runes from the open chest.")
+                .missing("* A broken table stands in a run-down house. Something's odd about it, but you'd need a nose to find out what.")
+                .puzzle("movarios_base", WGS_DOOR).reqSkill(Skill.HUNTER, 62).needFlag("wgs_trapdoor").unlessFlag("wgs_door").flag("wgs_door").stay()
                 .say("* The rune's power flows into the door's lock and it creaks open.")
                 .puzzle("movarios_base", WGS_WEIGHTS).needFlag("wgs_door").unlessFlag("wgs_weights").flag("wgs_weights").stay()
                 .say("* The gauge settles on your weight: the floor beneath the study stops humming and the way upstairs is safe.")
                 .reach("movarios_base", 10).needFlag("wgs_door", "wgs_weights").give("movarios_notes")
                 .say("* From the desk and the trapped bed chest you take both volumes of Movario's notes. They point to Guthix's sanctum, deep below.")
                 .missing("* Movario's base is sealed by a door marked PROHIBITED and a pressure-gauged study.")
-                .stage("I should show Movario's notes to Akrisae.")
-                .talk("akrisae").take("movarios_notes").say("Guthix's sanctum! Lucien and his generals are already moving. Go, and hurry. Ivy will brief you.")
-                .stage("I should speak to Ivy Sophista, then descend to Guthix's sanctum.")
-                .talk("ivy_sophista").say("The Mahjarrat are converging on the sanctum. Something is guarding the way: a creature of pure balance.")
+                .stage("I should take Movario's notes back to Thaerisk in Taverley.")
+                .talk("thaerisk").take("movarios_notes").say("Guthix's sanctum! Lucien and his generals are already moving.",
+                        "* Thaerisk sends you to rescue Idria from Lucien's mercenaries north of McGrubor's Wood; she joins you at the White "
+                                + "Knights' Castle.")
+                .missing("Movario's notes: did you find them in his base?")
+                // Wiki: Akrisae's teleorb on a shady stranger, the enriched snapdragon (Betty's rose-tinted lens), the super truth serum
+                // and the suspect sketch, then the Dark Squall's base under the Black Knights' Fortress, Silif and Surok Magis. NPC Contact
+                // with the slayer masters and the Warriors' Guild recruits are narrated (approx).
+                .stage("I should help Akrisae unmask Lucien's spy network: plant a teleorb on a spy, grow an enriched snapdragon for a truth "
+                        + "serum, and infiltrate the Dark Squall's base under the Black Knights' Fortress.")
+                .talk("akrisae").stay().unlessFlag("wgs_teleorb").unless("wgs_teleorb").give("wgs_teleorb").travel("DRAYNOR_VILLAGE")
+                .say("Lucien's spies are everywhere. Plant this teleorb on one of them and it will bring him straight to our cells.",
+                        "Shady strangers have been seen around Draynor Village. I'll send you there.")
+                .talk("shady_stranger").stay().unlessFlag("wgs_teleorb").take("wgs_teleorb").flag("wgs_teleorb")
+                .say("What do you want? Move along.", "* You slip the teleorb into his pocket. With a flash, he's gone.")
+                .talk("akrisae").stay().needFlag("wgs_teleorb").unlessFlag("wgs_seed").give("snapdragon_seed").flag("wgs_seed")
+                .travel("PORT_SARIM")
+                .say("The spy is in our cell, but he won't talk. Thaerisk can brew a truth serum, if it's strong enough.",
+                        "@Thaerisk Cemphier: Take this snapdragon seed. Betty in Port Sarim can help you enrich it. I'll send you there.")
+                .reach("wgs_bettys_counter", 3).stay().needFlag("wgs_seed").unlessFlag("wgs_planted").unless("enriched_snapdragon_seed")
+                .take("snapdragon_seed", "coins:20").give("enriched_snapdragon_seed")
+                .say("* Betty sells you some pink dye for 20 coins. You tint a lantern lens rose and, standing in her doorway, focus the",
+                        "* light onto the seed on her counter. It glows: an enriched snapdragon seed.")
+                .missing("* Betty can enrich a snapdragon seed (and sells pink dye for 20 coins).")
+                .reach("wgs_snapdragon_patch", 4).stay().needFlag("wgs_seed").unlessFlag("wgs_planted").take("enriched_snapdragon_seed")
+                .need("seed_dibber").flag("wgs_planted")
+                .say("* At the top of the castle you plant the enriched snapdragon seed in the special patch. It sprouts at once.")
+                .missing("* The special patch at the top of the castle is ready for an enriched snapdragon seed (and a seed dibber).")
+                .talk("akrisae").stay().needFlag("wgs_planted").unlessFlag("wgs_sketch").flag("wgs_sketch")
+                .say("* You harvest the enriched snapdragon and add it to Thaerisk's truth serum. In the cell, the shady stranger talks, and",
+                        "* you draw a sketch of his master from charcoal and papyrus.",
+                        "@Idria: The Dark Squall! Lucien's spymaster. And the masters of the slayer guilds and the Warriors' Guild will stand with us.",
+                        "Disguise yourself in Black Knight armour (a bronze med helm and an iron chainbody will do) and find his base under their "
+                                + "fortress.")
+                .talk("silif").stay().needFlag("wgs_sketch").unlessFlag("wgs_elite").need("bronze_med_helm", "iron_chainbody")
+                .spawn("elite_black_knight")
+                .say("* Disguised, you push the hidden wall, charge an orb on the carved tile and drop into the Black Knight catacombs.",
+                        "* Silif, a Temple Knight, lies starving in a locked cell. An elite black knight spots you!")
+                .missing("* The guards won't let you near the fortress unless you look like a Black Knight: a bronze med helm and an iron chainbody.")
+                .kill("elite_black_knight").stay().needFlag("wgs_sketch").unlessFlag("wgs_elite").flag("wgs_elite")
+                .say("* In its elite black armour you walk into the Dark Squall's base: a spare set of armour, the Dark Squall's robes,",
+                        "* a lobster, a restore potion and the key to Silif's cell.")
+                .talk("silif").stay().needFlag("wgs_elite").unlessFlag("wgs_silif", "wgs_surok").flag("wgs_silif").spawn("dark_squall")
+                .say("* You feed Silif the lobster and the restore potion and give him the spare armour.",
+                        "Thank you, friend. Those maps on the wall... Lucien's camp. Take this teleorb, and beware: the Dark Squall is upstairs.",
+                        "* You climb the ladder. The Dark Squall throws back his hood: Surok Magis! Only magic will touch him.")
+                .talk("silif").stay().needFlag("wgs_silif").unlessFlag("wgs_surok").spawn("dark_squall")
+                .say("The Dark Squall is still up there! Use magic: nothing else will touch Surok.")
+                .kill("dark_squall").stay().needFlag("wgs_elite").unlessFlag("wgs_surok").flag("wgs_surok")
+                .say("* Surok falls. You plant Silif's teleorb on him and he vanishes into the White Knights' cells.",
+                        "* In the Dark Squall's robes you use his strange teleorb and spy on Lucien's camp from the Chaos Temple's roof:",
+                        "* the Mahjarrat gather at Guthix's resting place!")
+                .talk("akrisae").needFlag("wgs_surok")
+                .say("Surok, the Dark Squall? And Lucien is at the Chasm of Tears already. Idria will lead the Temple Knights: go, now.")
+                .missing("?!wgs_teleorb|Plant the teleorb on one of Lucien's spies in Draynor Village.",
+                        "?wgs_teleorb|?!wgs_planted|Thaerisk's serum needs an enriched snapdragon from the castle's special patch.",
+                        "?wgs_planted|?!wgs_surok|Find the Dark Squall's base under the Black Knights' Fortress.")
+                // saves from before round 33 reached this stage without the assassins' flag: the old briefing goes on to the chasm
+                .talk("ivy_sophista").unlessFlag("wgs_assassins")
+                .say("The Mahjarrat are converging on the sanctum. Something is guarding the way: a creature of pure balance.")
                 .stage("I must open the way through the Chasm of Tears and defeat the Balance Elemental guarding Guthix's sanctum.")
                 .puzzle("guthix_sanctum", WGS_SKULLS).unlessFlag("wgs_skulls").flag("wgs_skulls").stay()
                 .say("* The last block clicks into place and the stone cube in the fourth skull grinds open.")
                 .kill("balance_elemental").needFlag("wgs_skulls")
                 .say("* The Balance Elemental dissolves. Guthix stirs... and the Temple Knights drive back the Mahjarrat.")
                 .missing("* The way into the sanctum is sealed by the three skulls' mechanisms.")
-                .stage("I should report to Akrisae.")
-                .talk("akrisae").say("Guthix sleeps on, and Lucien has been stopped... for now. Gielinor owes you more than it will ever know.");
+                // Wiki: Idria teleports the player back to the White Knights' Castle and ends the quest there. The two tormented demons
+                // fought beside the Guardians of Armadyl after the Balance Elemental are not modelled.
+                .stage("I should report to Idria at the White Knights' Castle.")
+                .talk("idria").say("Guthix sleeps on, and Lucien has been stopped... for now. Gielinor owes you more than it will ever know.");
     }
 
     /**

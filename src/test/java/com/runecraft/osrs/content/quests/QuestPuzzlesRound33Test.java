@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Round 33: real puzzles for the Fremennik Trials, Misthalin Mystery and The Grand Tree (wiki solutions; stage counts are saved). */
+/** Round 33: real puzzles and missing steps for ten quests (wiki solutions and steps; stage counts are saved). */
 class QuestPuzzlesRound33Test {
     private static QuestSpec spec(String id) {
         QuestSpec q = QuestBook.get().spec(id);
@@ -191,6 +191,61 @@ class QuestPuzzlesRound33Test {
             }
         }
         assertTrue(fsk.stages.get(1).triggers.get(0).setFlags.contains("fsk_undor"), "every new save meets Undor first");
+    }
+
+    private static Trigger find(QuestSpec.Stage s, java.util.function.Predicate<Trigger> p, String what) {
+        return s.triggers.stream().filter(p).findFirst().orElseThrow(() -> new AssertionError("stage " + s.index + " lacks " + what));
+    }
+
+    @Test
+    void whileGuthixSleepsAssassinsBroavSnapdragonAndTheDarkSquall() {
+        QuestSpec wgs = spec("while_guthix_sleeps");
+        assertEquals(6, wgs.stages.size(), "saved stage count");
+        assertEquals("ivy_sophista", wgs.stages.get(0).triggers.get(0).target);
+        com.runecraft.osrs.content.PlaceDef ivy = com.runecraft.osrs.content.ContentRegistry.place("at_ivy_sophista");
+        assertEquals(2907, ivy.osrsX(), "Ivy in Taverley (quest-helper tile)");
+        com.runecraft.osrs.content.PlaceDef base = com.runecraft.osrs.content.ContentRegistry.place("movarios_base");
+        assertEquals(List.of(2519, 3249), List.of(base.osrsX(), base.osrsY()), "the broken table on the Khazard battlefield");
+
+        // Thaerisk's two assassins: the first kill raises the second, the second ends the fight
+        QuestSpec.Stage track = wgs.stages.get(1);
+        Trigger first = find(track, t -> t.kind == Trigger.Kind.KILL && "wgs_assassin".equals(t.spawn), "the first assassin");
+        Trigger second = find(track, t -> t.kind == Trigger.Kind.KILL && t.setFlags.contains("wgs_assassins"), "the second assassin");
+        assertTrue(first.setFlags.contains("wgs_assassin1") && second.needFlags.contains("wgs_assassin1"));
+        assertEquals("wgs_assassin", second.target);
+        assertEquals(167, com.runecraft.osrs.content.ContentRegistry.boss("wgs_assassin").combatLevel);
+        // the launderer's 500 coins, the broav from the pit trap and its nose at the broken table
+        assertEquals(500, find(track, t -> t.target.equals("khazard_launderer"), "the launderer").take.get("coins"));
+        assertTrue(find(track, t -> t.target.equals("wgs_pit_trap"), "the pit trap").give.containsKey("broav"));
+        Trigger table = find(track, t -> t.kind == Trigger.Kind.REACH && t.setFlags.contains("wgs_trapdoor"), "the broken table");
+        assertTrue(table.need.containsKey("broav") && table.need.containsKey("dirty_shirt"));
+        assertTrue(puzzle(wgs, GrandmasterQuests.WGS_DOOR).needFlags.contains("wgs_trapdoor"), "the rune door lies under the table");
+        assertEquals("thaerisk", wgs.stages.get(2).triggers.get(0).target, "the notes go back to Thaerisk");
+
+        // the snapdragon: Thaerisk's seed, Betty's counter, the castle's special patch
+        QuestSpec.Stage spies = wgs.stages.get(3);
+        assertTrue(find(spies, t -> t.give.containsKey("snapdragon_seed"), "the seed").setFlags.contains("wgs_seed"), "one free seed");
+        Trigger betty = find(spies, t -> t.target.equals("wgs_bettys_counter"), "Betty's counter");
+        assertTrue(betty.take.containsKey("snapdragon_seed") && betty.give.containsKey("enriched_snapdragon_seed"));
+        Trigger patch = find(spies, t -> t.target.equals("wgs_snapdragon_patch"), "the patch");
+        assertTrue(patch.take.containsKey("enriched_snapdragon_seed") && patch.need.containsKey("seed_dibber"));
+        // the Dark Squall's base: the disguise, an elite black knight, Silif, then Surok (magic only, wiki stats)
+        Trigger silif = find(spies, t -> t.target.equals("silif") && "elite_black_knight".equals(t.spawn), "Silif");
+        assertTrue(silif.need.containsKey("bronze_med_helm") && silif.need.containsKey("iron_chainbody"));
+        assertTrue(spies.triggers.stream().anyMatch(t -> t.target.equals("silif") && "dark_squall".equals(t.spawn)));
+        com.runecraft.osrs.content.BossDef surok = com.runecraft.osrs.content.ContentRegistry.boss("dark_squall");
+        assertEquals(265, surok.combatLevel);
+        assertEquals(450, surok.hitpoints);
+        Trigger onward = QuestWalk.advancing(spies);
+        assertEquals("akrisae", onward.target);
+        assertTrue(onward.needFlags.contains("wgs_surok"));
+        assertTrue(spies.triggers.stream().anyMatch(t -> t.target.equals("ivy_sophista") && t.unlessFlags.contains("wgs_assassins")),
+                "saves from before round 33 keep the old briefing");
+
+        com.runecraft.osrs.content.BossDef balance = com.runecraft.osrs.content.ContentRegistry.boss("balance_elemental");
+        assertEquals(524, balance.combatLevel);
+        assertEquals(750, balance.hitpoints);
+        assertEquals("idria", QuestWalk.advancing(wgs.stages.get(5)).target);
     }
 
     @Test

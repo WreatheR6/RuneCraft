@@ -21,6 +21,25 @@ final class QuestBossScripts {
         BossScripts.register("gelatinnoth_mother", () -> new ColourShift("The Gelatinnoth Mother"));
         BossScripts.register("fareed", Fareed::new);
         BossScripts.register("head_menaphite_guard", FalseGods::new);
+        BossScripts.register("dark_squall", MagicOnly::new);
+    }
+
+    /** While Guthix Sleeps: Surok Magis, the Dark Squall, can only be hurt with magic (wiki). */
+    static final class MagicOnly implements BossScript {
+        private long lastMessage;
+
+        @Override
+        public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            if (type == AttackType.MAGIC) {
+                return damage;
+            }
+            long now = boss.level().getGameTime();
+            if (now - lastMessage > 40) {
+                lastMessage = now;
+                Msg.action(attacker, "Surok's wards turn your blow aside. Only magic will hurt him.");
+            }
+            return 0;
+        }
     }
 
     /**
