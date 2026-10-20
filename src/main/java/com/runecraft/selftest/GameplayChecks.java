@@ -879,8 +879,15 @@ final class GameplayChecks {
         int kcBefore = totalKills();
         int logBefore = data().collectionLog().size();
         // A boss whose death only counts at the end of its scripted mechanic (OSRS: The Nightmare's totems, the Phantom
-        // Muspah's prayer shield) is played there first, as a player would; its script may end it itself (the totems' blast).
-        String played = boss instanceof DataBossEntity d ? com.runecraft.content.bosses.BossSelfTests.playToKill(d, p()) : null;
+        // Muspah's prayer shield, Vanstrom Klause's rise at 0 hitpoints into his second phase) is played there first, as a
+        // player would; its script may end it itself (the totems' blast).
+        String played = null;
+        if (boss instanceof DataBossEntity d) {
+            played = com.runecraft.content.bosses.BossSelfTests.playToKill(d, p());
+            if (played == null) {
+                played = com.runecraft.content.quests.QuestBossSelfTests.playToKill(d, p());
+            }
+        }
         if (boss.isAlive()) {
             boss.setHealth(0f);
             boss.die(CombatHandler.source(p()));
