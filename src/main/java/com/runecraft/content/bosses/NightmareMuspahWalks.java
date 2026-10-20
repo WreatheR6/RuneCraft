@@ -230,6 +230,13 @@ final class NightmareMuspahWalks {
                 // A ring of recoil or Vengeance off her hits counts toward her shield like any hit (OSRS), though not toward
                 // the player's share of the loot.
                 step(boss, p, 1);
+                // So it does right after a hit of theirs too small to move her bar: her rules count a 1, but scaled to her
+                // health cap it comes to 0 more often than not and never lands (a 1 that comes to 1 here isn't applied).
+                int small;
+                int tries = 0;
+                do {
+                    small = boss.modifyIncoming(p, 1, AttackType.CRUSH);
+                } while (small > 0 && ++tries < 30);
                 int shieldBefore = n.shieldLeft;
                 int[] share = n.contribution(p).clone();
                 CombatHandler.applyDamage(p, boss, REFLECTED);

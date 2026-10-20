@@ -150,9 +150,10 @@ final class NightmareScript extends ScriptedBoss {
     final Map<UUID, int[]> contribution = new LinkedHashMap<>();
     /**
      * A hit her damage rules just took ({@link #incoming}) is on its way (its damage lands right after, in the same call):
-     * who dealt it. Any other damage reaching her is from outside her rules ({@link #allowDamage}). Cleared every game tick.
+     * what reaches her health ({@link #incomingScaled}; 0: none on its way) and who dealt it. Any other damage reaching her
+     * is from outside her rules ({@link #allowDamage}). Cleared every game tick.
      */
-    private boolean ruleHit;
+    private int ruleHit;
     private UUID ruleHitBy;
     List<NightmareRules.PhosaniSet> sets;
     private final Deque<Special> round = new ArrayDeque<>();
@@ -458,7 +459,8 @@ final class NightmareScript extends ScriptedBoss {
     }
 
     /**
-     * Damage about to reach her. A hit her rules just took ({@link #incoming}) and the script's own killing blow go through.
+     * Damage about to reach her. A hit her rules just took ({@link #incoming}: that player's, of the scaled amount marked)
+     * and the script's own killing blow go through.
      * Anything else never passed her rules: a player's ring of recoil or Vengeance off her own hits counts toward her shield
      * or desperation health like any of their hits ({@link #reflected}); while she is immune (asleep, the totems, the
      * sleepwalkers) nothing hurts her, nor does anything that isn't a player's (she is immune to poison and venom).
@@ -468,8 +470,9 @@ final class NightmareScript extends ScriptedBoss {
             return true;
         }
         net.minecraft.world.entity.Entity by = source.getEntity();
-        if (ruleHit && java.util.Objects.equals(ruleHitBy, by == null ? null : by.getUUID())) {
-            ruleHit = false;
+        if (ruleHit > 0 && Math.round(amount) == ruleHit
+                && java.util.Objects.equals(ruleHitBy, by == null ? null : by.getUUID())) {
+            ruleHit = 0;
             return true; // her rules already counted it
         }
         if (by instanceof ServerPlayer && (stage == Stage.SHIELD || stage == Stage.DESPERATION)) {
@@ -505,12 +508,20 @@ final class NightmareScript extends ScriptedBoss {
 
     @Override
     protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
-        int d = rulesIncoming(boss, attacker, damage);
-        if (d > 0) {
-            ruleHit = true; // its damage reaches her next (allowDamage lets it through)
-            ruleHitBy = attacker == null ? null : attacker.getUUID();
-        }
-        return d;
+        return rulesIncoming(boss, attacker, damage);
+    }
+
+    /**
+     * The hit her rules took, scaled to her health cap: exactly that reaches her health next (allowDamage lets it through).
+     * A small hit the scaling rounds down to 0 never lands, so nothing is marked: the same player's recoil or Vengeance
+     * before her next game tick (off her grasping claws, which land first) then still counts toward her shield or
+     * desperation health. A hit refused on its way keeps its mark until then, but only that player's hit of that amount
+     * is taken for it.
+     */
+    @Override
+    protected void incomingScaled(DataBossEntity boss, ServerPlayer attacker, int damage) {
+        ruleHit = Math.max(0, damage);
+        ruleHitBy = attacker == null ? null : attacker.getUUID();
     }
 
     private int rulesIncoming(DataBossEntity boss, ServerPlayer attacker, int damage) {
@@ -1327,7 +1338,7 @@ final class NightmareScript extends ScriptedBoss {
 
     @Override
     protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
-        ruleHit = false; // a hit her rules took lands in the same call, so none is still on its way (one that came to 0 never lands)
+        ruleHit = 0; // a hit her rules took lands in the same call, so none is still on its way (one refused on its way never will)
         if (!cleanedUp) {
             cleanedUp = true;
             clearStrays(boss); // a boss reloaded from disk: what its old script placed is no longer tracked
