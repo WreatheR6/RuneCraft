@@ -100,7 +100,8 @@ public final class BossesHooks implements ModuleHooks {
                 "Brutus won't eat anything that hasn't been touched by the Abyss. (Desert Treasure II)"));
         // Entry requirements (OSRS Wiki strategy pages): the Desert Treasure II bosses after the quest (the Whisperer also needs
         // her blackstone fragment: WhispererScript), the Hueycoatl after Children of the Sun, Amoxliatl after The Heart of
-        // Darkness. The Royal Titans have none; the Moons' Lunar Chest needs Perilous Moons (LunarChest).
+        // Darkness, the Moons of Peril after Perilous Moons ("is required to fight them", as is the Lunar Chest: LunarChest).
+        // The Royal Titans have none.
         for (String dt2 : new String[]{"duke_sucellus", "the_leviathan", "vardorvis"}) {
             com.runecraft.boss.DataBossService.requirement(dt2, (player, def) -> questDone(player, "desert_treasure_ii",
                     "You need to complete Desert Treasure II to fight " + def.name + "."));
@@ -109,6 +110,10 @@ public final class BossesHooks implements ModuleHooks {
                 "You need to complete Children of the Sun to fight the Hueycoatl."));
         com.runecraft.boss.DataBossService.requirement("amoxliatl", (player, def) -> questDone(player, "the_heart_of_darkness",
                 "You need to complete The Heart of Darkness to fight Amoxliatl."));
+        for (String moon : com.runecraft.osrs.content.bosses.MoonsRules.MOONS) {
+            com.runecraft.boss.DataBossService.requirement(moon, (player, def) -> questDone(player, "perilous_moons",
+                    "You need to complete Perilous Moons to challenge " + def.name + "."));
+        }
         // The Shellbane gryphon is a Slayer boss: only on a gryphon task (or a boss task for it).
         com.runecraft.boss.DataBossService.requirement("shellbane_gryphon", (player, def) -> {
             String task = com.runecraft.content.slayer.SlayerService.profile(player).hasTask()

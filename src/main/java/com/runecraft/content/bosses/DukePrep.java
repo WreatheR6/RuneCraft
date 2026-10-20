@@ -1,5 +1,7 @@
 package com.runecraft.content.bosses;
 
+import com.runecraft.action.Action;
+import com.runecraft.action.ActionManager;
 import com.runecraft.boss.DataBossEntity;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.bosses.DukeRules;
@@ -7,7 +9,12 @@ import com.runecraft.player.Players;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
+import java.util.Map;
+import java.util.WeakHashMap;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
 
@@ -22,7 +29,7 @@ final class DukePrep {
     static void register() {
         com.runecraft.content.BlockHooks.register(DukeRules.ARDER_MUSHROOMS, (p, pos, state) -> pick(p, DukeRules.ARDER_MUSHROOM));
         com.runecraft.content.BlockHooks.register(DukeRules.MUSCA_MUSHROOMS, (p, pos, state) -> pick(p, DukeRules.MUSCA_MUSHROOM));
-        com.runecraft.content.BlockHooks.register(DukeRules.SALT_PILE, (p, pos, state) -> mineSalt(p));
+        com.runecraft.content.BlockHooks.register(DukeRules.SALT_PILE, (p, pos, state) -> mineSalt(p, pos));
         com.runecraft.content.BlockHooks.register(DukeRules.VAT, (p, pos, state) -> ferment(p));
         com.runecraft.platform.UseItemCallback.EVENT.register((player, world, hand) -> {
             net.minecraft.world.item.ItemStack stack = player.getItemInHand(hand);
@@ -60,17 +67,76 @@ final class DukePrep {
         Msg.game(p, "You pick " + (mushroom.startsWith("arder") ? "an arder" : "a musca") + " mushroom.");
     }
 
-    /** Mines salax salt from a pile (a pickaxe needed). */
-    static void mineSalt(ServerPlayer p) {
-        var skills = Players.data(p).skills();
-        if (com.runecraft.skill.Tools.bestPickaxe(p, skills) == null) {
+    /** Players mining a salt deposit, with their running action (weak: a player who logged out is forgotten). */
+    private static final Map<ServerPlayer, SaltMining> MINING = new WeakHashMap<>();
+
+    /**
+     * Starts mining salax salt from a deposit (a pickaxe needed): one harvest each time the pickaxe swings, for five minutes
+     * ("Salt Deposit"). Clicking the deposit again while mining only restarts the five minutes, so holding the button down
+     * neither speeds it up nor restarts the swing.
+     */
+    static void mineSalt(ServerPlayer p, BlockPos pos) {
+        if (com.runecraft.skill.Tools.bestPickaxe(p, Players.data(p).skills()) == null) {
             Msg.game(p, "You need a pickaxe to mine the salt.");
             return;
         }
-        int n = DukeRules.saltPerHarvest(skills.level(Skill.MINING));
+        SaltMining running = MINING.get(p);
+        if (running != null && ActionManager.isBusy(p)) {
+            running.left = DukeRules.SALT_MINING_TICKS;
+            return;
+        }
+        Msg.action(p, "You swing your pickaxe at the salt deposit.");
+        SaltMining mining = new SaltMining(pos);
+        ActionManager.start(p, mining); // (stops whatever ran before, which forgets an older salt action first)
+        MINING.put(p, mining);
+    }
+
+    /** One harvest of the deposit: 3-6 salt by Mining level and 5 Mining XP; returns the salt mined. */
+    static int harvestSalt(ServerPlayer p) {
+        int n = DukeRules.saltPerHarvest(Players.data(p).skills().level(Skill.MINING));
         Inv.give(p, DukeRules.SALAX_SALT, n);
-        XpService.add(p, Skill.MINING, 2.0 * n); // approx
-        Msg.game(p, "You mine " + n + " salax salt.");
+        XpService.add(p, Skill.MINING, DukeRules.SALT_XP);
+        Msg.action(p, "You mine " + n + " salax salt.");
+        return n;
+    }
+
+    /** Mining a salt deposit: a harvest every pickaxe swing (3 ticks with a rune pickaxe) until five minutes pass. */
+    private static final class SaltMining implements Action {
+        private final BlockPos pos;
+        private int left = DukeRules.SALT_MINING_TICKS;
+        private int wait = -1;
+
+        SaltMining(BlockPos pos) {
+            this.pos = pos;
+        }
+
+        @Override
+        public boolean tick(ServerPlayer p, long gameTick) {
+            if (--left < 0) {
+                Msg.game(p, "You stop mining the salt deposit.");
+                return false;
+            }
+            com.runecraft.skill.Tools.Tool pick = com.runecraft.skill.Tools.bestPickaxeTool(p, Players.data(p).skills());
+            if (pick == null) {
+                return false;
+            }
+            if (wait < 0) {
+                wait = pick.miningTicks(p.getRandom().nextDouble());
+            }
+            if (--wait > 0) {
+                return true;
+            }
+            wait = -1;
+            p.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
+            p.level().playSound(null, pos, SoundEvents.STONE_HIT, SoundSource.PLAYERS, 1f, 1f);
+            harvestSalt(p);
+            return true;
+        }
+
+        @Override
+        public void stop(ServerPlayer p) {
+            MINING.remove(p, this);
+        }
     }
 
     /** Grinds every mushroom of one kind into powder (a pestle and mortar needed); returns the powder made. */
@@ -104,6 +170,7 @@ final class DukePrep {
         Inv.remove(p, DukeRules.ARDER_POWDER, take);
         Inv.remove(p, DukeRules.MUSCA_POWDER, take);
         Inv.give(p, DukeRules.POISON, n);
+        XpService.add(p, Skill.HERBLORE, DukeRules.POISON_XP * n); // (approx: all at once, OSRS 6 ticks each)
         Msg.game(p, "The mixture ferments into " + n + " arder-musca poison" + (n > 1 ? "s." : "."));
         return n;
     }

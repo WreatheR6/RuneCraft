@@ -55,7 +55,7 @@ public final class BossMechanics {
             "glyph_of_fire", "cavern_shake", "forfeit", "tentacle", "swinging_axe", "darting_spikes", "ice_spikes", "screech", "carrion",
             "slam", "larva", "fire_wall", "icicle_wall", "elemental_blast", "elemental_explosion", "sleepwalker", "power_blast",
             "bleed", "strangle", "burn", "knockback", "parasite_burst", "spike", "weakened_parasite_burst", "tail_shockwave", "spore", "explosion",
-            "ruptura_explosion", "rock_explosion", "zalcano_shockwave", "pebbles", "under_zalcano",
+            "ruptura_explosion", "rock_explosion", "zalcano_shockwave", "pebbles", "under_zalcano", "call_jaguar",
             // Wilderness bosses (godwars module scripts): the Chaos Fanatic's and crazy archaeologist's specials, the trio's traps
             "green_explosion", "explosive_book", "bear_trap", "sticky_web");
 

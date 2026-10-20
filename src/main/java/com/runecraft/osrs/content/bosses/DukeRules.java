@@ -5,8 +5,10 @@ package com.runecraft.osrs.content.bosses;
  * meter (200, awakened 370) is filled. Arder and musca mushrooms (from the asylum's far corridors) are ground with a pestle
  * and mortar into powder (5 a mushroom at 70 Herblore, 6 from 80), salax salt is mined from the salt piles, and six of each
  * in a fermentation vat make an arder-musca poison: two wake him (three awakened). Powder can also be fed to him directly,
- * 5 each. approx: a poison's share of the meter (125, so that two fill 200 and three 370), the salt a harvest gives and the
- * powder below 70 Herblore.
+ * 5 each. The salt deposit ("Salt Deposit", "Salax salt") gives 3-6 salt and 5 Mining XP a harvest, one harvest each time
+ * the pickaxe swings (about 10,000 XP an hour with a rune pickaxe), and keeps going for five minutes after a click; a poison
+ * gives 10 Herblore XP. approx: a poison's share of the meter (125, so that two fill 200 and three 370) and the powder below
+ * 70 Herblore.
  */
 public final class DukeRules {
     private DukeRules() {
@@ -31,6 +33,12 @@ public final class DukeRules {
     public static final int POWDER_VALUE = 5;
     /** Each ingredient a vat takes for one poison. */
     public static final int PER_POISON = 6;
+    /** Mining XP a salt harvest gives (whatever the salt count). */
+    public static final double SALT_XP = 5.0;
+    /** Herblore XP a fermented poison gives. */
+    public static final double POISON_XP = 10.0;
+    /** Game ticks a salt deposit keeps being mined after a click (five minutes; clicking again restarts it). */
+    public static final int SALT_MINING_TICKS = 500;
 
     public static int tolerance(boolean awakened) {
         return awakened ? TOLERANCE_AWAKENED : TOLERANCE;
@@ -41,9 +49,9 @@ public final class DukeRules {
         return herblore >= 80 ? 6 : herblore >= 70 ? 5 : 4;
     }
 
-    /** Salax salt from one harvest of a salt pile (12 in two harvests at 80 Mining, OSRS Wiki; approx otherwise). */
+    /** Salax salt from one harvest of a salt deposit: 3 below 70 Mining, 4 from 70, 5 from 75, 6 from 80 (OSRS Wiki). */
     public static int saltPerHarvest(int mining) {
-        return Math.max(2, Math.min(7, mining / 13));
+        return mining >= 80 ? 6 : mining >= 75 ? 5 : mining >= 70 ? 4 : 3;
     }
 
     /** How many poisons the inventory's ingredients make. */

@@ -907,7 +907,7 @@ public final class CombatAchievementRules {
             564;RULE;araxxor;1;count>=6:araxxor_eggs_destroyed
             566;RULE;araxxor;1;flag=araxyte_betrayal
             526;RULE;eclipse_moon;1;noflag=eclipse_direct_hit
-            531;WINDOW;MOONS;3;t<=30:00 fromstart distinct onlydmg=spear_thrust,shield_bash,macuahuitl_flurry
+            531;WINDOW;MOONS;3;t<=30:00 fromstart distinct onlydmg=spear_thrust,shield_bash,macuahuitl_flurry,call_jaguar
             572;RULE;the_hueycoatl;1;flag=huey_vulnerable_kill
             575;RULE;the_hueycoatl;1;wear=hueycoatl_hide_coif,hueycoatl_hide_body || wear=hueycoatl_hide_coif,hueycoatl_hide_chaps || wear=hueycoatl_hide_coif,hueycoatl_hide_vambraces || wear=hueycoatl_hide_body,hueycoatl_hide_chaps || wear=hueycoatl_hide_body,hueycoatl_hide_vambraces || wear=hueycoatl_hide_chaps,hueycoatl_hide_vambraces
             188;RULE;the_nightmare;1;nodmg=grasping_claws,surge,parasite_burst,offprayer noflag=nightmare_spored

@@ -845,12 +845,35 @@ public final class BossWalks {
         Inv.give(p, com.runecraft.osrs.content.bosses.DukeRules.MUSCA_MUSHROOM, mushrooms);
         DukePrep.grind(p, com.runecraft.osrs.content.bosses.DukeRules.ARDER_MUSHROOM);
         DukePrep.grind(p, com.runecraft.osrs.content.bosses.DukeRules.MUSCA_MUSHROOM);
-        for (int i = 0; i < 10 && Inv.count(p, com.runecraft.osrs.content.bosses.DukeRules.SALAX_SALT) < per; i++) {
-            DukePrep.mineSalt(p);
+        // the salt deposit: one harvest a pickaxe swing (rune: 3 ticks), 5 Mining XP each, and a second click changes nothing
+        int miningXp = com.runecraft.player.Players.data(p).skills().xpTenths(com.runecraft.osrs.Skill.MINING);
+        int salt0 = Inv.count(p, com.runecraft.osrs.content.bosses.DukeRules.SALAX_SALT);
+        DukePrep.mineSalt(p, p.blockPosition());
+        DukePrep.mineSalt(p, p.blockPosition());
+        if (Inv.count(p, com.runecraft.osrs.content.bosses.DukeRules.SALAX_SALT) != salt0) {
+            throw fail("clicking the salt deposit gave salt before the pickaxe swung");
         }
+        int saltTicks = 0;
+        while (saltTicks < 80 && Inv.count(p, com.runecraft.osrs.content.bosses.DukeRules.SALAX_SALT) < per
+                && com.runecraft.action.ActionManager.tickNow(p)) {
+            saltTicks++;
+        }
+        com.runecraft.action.ActionManager.cancel(p);
+        int salt = Inv.count(p, com.runecraft.osrs.content.bosses.DukeRules.SALAX_SALT);
+        int harvests = (salt - salt0) / com.runecraft.osrs.content.bosses.DukeRules.saltPerHarvest(
+                com.runecraft.player.Players.data(p).skills().level(com.runecraft.osrs.Skill.MINING));
+        int gained = com.runecraft.player.Players.data(p).skills().xpTenths(com.runecraft.osrs.Skill.MINING) - miningXp;
+        if (salt < per || saltTicks < 2 * harvests || gained > harvests * 50) {
+            throw fail("the salt deposit: " + salt + " salt (" + per + " needed) in " + saltTicks + " ticks for " + gained / 10.0
+                    + " Mining XP");
+        }
+        int herbloreXp = com.runecraft.player.Players.data(p).skills().xpTenths(com.runecraft.osrs.Skill.HERBLORE);
         int made = DukePrep.ferment(p);
         if (made < poisons) {
             throw fail("the vat made " + made + " poisons, " + poisons + " needed");
+        }
+        if (com.runecraft.player.Players.data(p).skills().xpTenths(com.runecraft.osrs.Skill.HERBLORE) - herbloreXp > made * 100) {
+            throw fail("the vat gave more than 10 Herblore XP a poison");
         }
         for (int i = 0; i < poisons; i++) {
             Inv.remove(p, com.runecraft.osrs.content.bosses.DukeRules.POISON, 1);
@@ -879,7 +902,8 @@ public final class BossWalks {
             throw fail("the gaze found the player behind a pillar (" + d.damage("freezing_gaze") + ")");
         }
         finish(boss, d, AttackType.SLASH, 120, 80);
-        return "asleep until " + poisons + " poisons (mushrooms ground, salt mined, fermented), gaze dodged behind a pillar, killed";
+        return "asleep until " + poisons + " poisons (mushrooms ground, " + salt + " salt mined in " + saltTicks
+                + " ticks, fermented), gaze dodged behind a pillar, killed";
     }
 
     /** Vardorvis: Strangle answered by destroying every spore in time; his head's gaze blocked by the matching protection. */

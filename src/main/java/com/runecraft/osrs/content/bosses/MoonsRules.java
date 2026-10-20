@@ -185,16 +185,18 @@ public final class MoonsRules {
         return (int) Math.round(damage * (double) lowered / max);
     }
 
-    /** Blood: what her {@code i}th (0-2) standard hit of {@code damage} heals her. */
+    /**
+     * Blood: what her {@code i}th (0-2) landed standard hit of {@code damage} heals her: 1x and 2x for the first two, and
+     * 30-50 for the third "regardless of the damage dealt" (OSRS Wiki "Moons of Peril/Strategies"), so even a landed 0.
+     */
     public static int bloodHeal(int i, int damage) {
+        if (i >= 2) {
+            return Math.max(BLOOD_THIRD_MIN, Math.min(BLOOD_THIRD_MAX, 3 * Math.max(0, damage)));
+        }
         if (damage <= 0) {
             return 0;
         }
-        return switch (i) {
-            case 0 -> damage;
-            case 1 -> 2 * damage;
-            default -> Math.max(BLOOD_THIRD_MIN, Math.min(BLOOD_THIRD_MAX, 3 * damage));
-        };
+        return i == 0 ? damage : 2 * damage;
     }
 
     /** Frost Storm: one heal with {@code unlit} braziers out. */

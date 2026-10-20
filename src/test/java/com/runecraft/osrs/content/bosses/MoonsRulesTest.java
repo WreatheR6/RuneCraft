@@ -98,7 +98,9 @@ class MoonsRulesTest {
         assertEquals(10, MoonsRules.bloodHeal(1, 5));
         assertEquals(30, MoonsRules.bloodHeal(2, 2), "the third heals at least 30");
         assertEquals(50, MoonsRules.bloodHeal(2, 20), "and at most 50");
-        assertEquals(0, MoonsRules.bloodHeal(2, 0), "a 0 hit heals nothing");
+        assertEquals(30, MoonsRules.bloodHeal(2, 0), "a landed third hit heals 30-50 regardless of the damage dealt");
+        assertEquals(0, MoonsRules.bloodHeal(0, 0), "a 0 first hit heals nothing");
+        assertEquals(0, MoonsRules.bloodHeal(1, 0), "nor a 0 second");
         assertEquals(20, MoonsRules.stormHeal(2));
         assertEquals(0, MoonsRules.stormHeal(0));
     }
@@ -174,5 +176,25 @@ class MoonsRulesTest {
         assertEquals(3.0 / 56, rate, 0.002);
         assertEquals(12, seen.size());
         assertTrue(MoonsRules.standardLines(tables.get(MoonsRules.BLUE)).stream().noneMatch(d -> d.rarity() >= 100));
+    }
+
+    /**
+     * Perilous Dancer (CA 531): only the Moons' standard attacks may hurt, and the Blood Moon's jaguar summon ("The initial
+     * damage taken from the jaguar special attack ... will not fail this task, however, taking a hit from the jaguars themselves
+     * will", OSRS Wiki); her pools and being hit off the glyph (unnamed damage) fail it.
+     */
+    @Test
+    void perilousDancerAllowsTheJaguarSummonOnly() {
+        String rule = com.runecraft.osrs.content.systems.CombatAchievements.task("ca_531").rule();
+        String onlydmg = java.util.Arrays.stream(rule.split("\\s+")).filter(t -> t.startsWith("onlydmg=")).findFirst().orElseThrow();
+        com.runecraft.osrs.content.systems.CombatAchievementRules.Metrics ok = new com.runecraft.osrs.content.systems.CombatAchievementRules.Metrics();
+        ok.took(new com.runecraft.osrs.content.systems.CombatAchievementRules.Hit(true, "blood moon", "macuahuitl flurry", null, 12, false));
+        ok.took(new com.runecraft.osrs.content.systems.CombatAchievementRules.Hit(true, "blood moon", MoonsRules.Special.BLOOD_JAGUARS.key, null, 15, false));
+        assertTrue(com.runecraft.osrs.content.systems.CombatAchievementRules.meets(onlydmg, ok), "the summon's hit is allowed");
+        for (String failing : new String[]{"jaguar_cleave", "blood_pool", null}) {
+            com.runecraft.osrs.content.systems.CombatAchievementRules.Metrics m = new com.runecraft.osrs.content.systems.CombatAchievementRules.Metrics();
+            m.took(new com.runecraft.osrs.content.systems.CombatAchievementRules.Hit(true, "blood moon", failing, null, 5, false));
+            assertFalse(com.runecraft.osrs.content.systems.CombatAchievementRules.meets(onlydmg, m), String.valueOf(failing));
+        }
     }
 }

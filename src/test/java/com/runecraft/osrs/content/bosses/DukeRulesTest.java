@@ -28,6 +28,17 @@ class DukeRulesTest {
         assertEquals(3, (per + DukeRules.powderPerMushroom(70) - 1) / DukeRules.powderPerMushroom(70));
         assertEquals(2, (per + DukeRules.powderPerMushroom(80) - 1) / DukeRules.powderPerMushroom(80));
         assertEquals(12, 2 * DukeRules.saltPerHarvest(80));
+        // "Salt Deposit": 3 at 1-69, 4 at 70-74, 5 at 75-79, 6 from 80
+        assertEquals(3, DukeRules.saltPerHarvest(1));
+        assertEquals(3, DukeRules.saltPerHarvest(69));
+        assertEquals(4, DukeRules.saltPerHarvest(70));
+        assertEquals(4, DukeRules.saltPerHarvest(74));
+        assertEquals(5, DukeRules.saltPerHarvest(75));
+        assertEquals(6, DukeRules.saltPerHarvest(99));
+        assertEquals(5.0, DukeRules.SALT_XP);
+        assertEquals(10.0, DukeRules.POISON_XP);
+        // a harvest every 3 ticks (rune pickaxe): 2,000 an hour, the wiki's 10,000 Mining XP an hour
+        assertEquals(10_000.0, 6000 / 3 * DukeRules.SALT_XP);
         assertEquals(2, DukeRules.poisons(12, 12, 13));
         assertEquals(1, DukeRules.poisons(12, 6, 12));
     }
