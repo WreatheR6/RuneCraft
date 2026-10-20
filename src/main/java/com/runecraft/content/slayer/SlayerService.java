@@ -163,6 +163,8 @@ public final class SlayerService {
         }
         say(player, master, "Your new task is to kill " + p.amount + " " + describe(p) + "."
                 + (master.wilderness() ? " They only count in the Wilderness." : ""));
+        // OSRS: a TzHaar assignment comes with the option to kill TzTok-Jad (or TzKal-Zuk) instead.
+        com.runecraft.content.minigames.games.TzHaarSlayer.offer(player);
         SlayerNet.sync(player);
     }
 

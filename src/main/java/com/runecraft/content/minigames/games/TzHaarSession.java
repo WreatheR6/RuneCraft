@@ -123,6 +123,9 @@ public abstract class TzHaarSession extends MinigameSession {
 
     @Override
     protected void gameTick() {
+        for (ServerPlayer p : online()) {
+            noteHitsTaken(p);
+        }
         healers();
         driveTick();
         if (wave > 0 && waveAlive() > 0) {
@@ -271,6 +274,7 @@ public abstract class TzHaarSession extends MinigameSession {
 
     @Override
     protected void onPlayerHit(ServerPlayer player, LivingEntity target, AttackType type, int dealt) {
+        lastCombat.put(player.getUUID(), ticks);
         if (target instanceof Mob mob && MinigameManager.creatureId(mob).startsWith(TzHaarWaves.HURKOT)
                 && !mob.getTags().contains(DISTRACTED)) {
             mob.addTag(DISTRACTED);
@@ -396,24 +400,96 @@ public abstract class TzHaarSession extends MinigameSession {
 
     // ------------------------------------------------------------------ pausing and resuming
 
-    /** Stats key prefix of a paused run: the wave to start again at (OSRS: logging out restarts the wave). */
+    /** Stats key prefix of a paused run: the wave it picks up at (the next one, or the one in progress started again). */
     private static final String RESUME = "tzhaar_resume:";
+    /** Stats key of a run that ended because the player dropped out in combat (told on their next login). */
+    private static final String DROPPED = "tzhaar_dropped:";
     /** Set while the player logs out: the run pauses instead of ending (no tokkul, the Slayer task kept). */
     protected boolean pausing;
+    /** Per player: the session tick they last took or dealt a hit (the 10-second logout rule). */
+    private final Map<java.util.UUID, Long> lastCombat = new HashMap<>();
+    /** Per player: the vanilla last-hurt-by-mob timestamp seen on the last game tick (a change is a hit taken). */
+    private final Map<java.util.UUID, Integer> hurtStamp = new HashMap<>();
+
+    /** Notes a hit the player took since the last game tick (every monster attack sets the attacker as last hurt by). */
+    private void noteHitsTaken(ServerPlayer p) {
+        int stamp = p.getLastHurtByMobTimestamp();
+        Integer seen = hurtStamp.put(p.getUUID(), stamp);
+        LivingEntity by = p.getLastHurtByMob();
+        if (by != null && (seen != null ? seen != stamp : MinigameManager.owner(by) == this)) {
+            lastCombat.put(p.getUUID(), ticks);
+        }
+    }
 
     /**
-     * Logging out of the Fight Cave or the Inferno pauses the run (OSRS Wiki "TzHaar Fight Cave", Tips; "Inferno"): the wave
-     * in progress starts again, with the same spawns, when the player logs back in.
+     * Game ticks since the player last took or dealt a hit in this run (a hit by one of its creatures since the last game tick
+     * counts by the server's clock).
+     */
+    protected final long ticksSinceCombat(ServerPlayer p) {
+        noteHitsTaken(p);
+        Long at = lastCombat.get(p.getUUID());
+        long since = at == null ? Long.MAX_VALUE : ticks - at;
+        LivingEntity by = p.getLastHurtByMob();
+        long mcTicks = p.tickCount - (long) p.getLastHurtByMobTimestamp();
+        if (by != null && MinigameManager.owner(by) == this && mcTicks >= 0) {
+            since = Math.min(since, mcTicks / com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK);
+        }
+        return since;
+    }
+
+    /** Whether a creature of this run is attacking the player: targeting them, within its attack range and in sight. */
+    protected final boolean underAttack(ServerPlayer p) {
+        for (LivingEntity e : living(null)) {
+            if (e instanceof Mob mob && mob.getTarget() == p && reach(mob, p) <= attackRange(mob) + 0.5 && mob.hasLineOfSight(p)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** The farthest a creature attacks from (tiles from its edge): its longest attack, or 10 unless it only fights in melee. */
+    private static double attackRange(Mob mob) {
+        MonsterStats s = mob instanceof OsrsMonsterEntity m ? m.stats() : null;
+        if (s != null && s.profile() != null && !s.profile().attacks.isEmpty()) {
+            double r = 1;
+            for (AttackDef a : s.profile().attacks) {
+                r = Math.max(r, a.range());
+            }
+            return r;
+        }
+        return s != null && s.style() != null && s.style().isMelee() && !(mob instanceof com.runecraft.entity.BossEntity) ? 1 : 10;
+    }
+
+    /**
+     * Logging out of the Fight Cave or the Inferno (OSRS Wiki "TzHaar Fight Cave/Strategies", "Inferno";
+     * {@link TzHaarWaves#logout}): between waves the run pauses and picks up at the next wave; mid-wave, 10 seconds out of
+     * combat, it pauses and the wave starts again with the same spawns; dropping out in combat (a disconnect removes the player
+     * at once here, where an OSRS character stays in the fight) ends the run as a death: forfeit tokkul, a TzTok-Jad / TzKal-Zuk
+     * Slayer task cancelled, nothing to resume.
      */
     @Override
     protected void onDisconnect(ServerPlayer player) {
-        if (isEnded() || wave < 1 || playerCount() > 1 || !pauses()) {
+        if (isEnded() || playerCount() > 1 || !pauses()) {
             return;
         }
-        pausing = true;
+        boolean cleared = wave >= 1 && waveAlive() == 0;
+        TzHaarWaves.Logout outcome = TzHaarWaves.logout(wave, cleared, ticksSinceCombat(player), !cleared && underAttack(player));
         MinigameData data = MinigameData.of(player);
         java.util.UUID u = player.getUUID();
-        data.setStat(u, RESUME + game.id(), completedWaves + 1);
+        switch (outcome) {
+            case END -> {
+                return;
+            }
+            case DEATH -> {
+                data.setStat(u, DROPPED + game.id(), wave);
+                onDeath(player);
+                return;
+            }
+            default -> {
+            }
+        }
+        pausing = true;
+        data.setStat(u, RESUME + game.id(), outcome == TzHaarWaves.Logout.PAUSE_NEXT_WAVE ? Math.min(totalWaves(), wave + 1) : wave);
         BlockPos back = returnPoint(player);
         if (back != null) {
             data.setStat(u, RESUME + "x:" + game.id(), back.getX());
@@ -472,6 +548,12 @@ public abstract class TzHaarSession extends MinigameSession {
         for (Minigame game : new Minigame[]{Minigame.FIGHT_CAVES, Minigame.INFERNO}) {
             MinigameData data = MinigameData.of(player);
             java.util.UUID u = player.getUUID();
+            int dropped = data.stat(u, DROPPED + game.id());
+            if (dropped > 0) {
+                data.setStat(u, DROPPED + game.id(), 0);
+                Msg.red(player, "You logged out in combat on wave " + dropped + " of " + game.displayName()
+                        + ", so the fight went on without you: you were defeated.");
+            }
             if (data.stat(u, RESUME + game.id()) <= 0) {
                 continue;
             }
@@ -518,6 +600,11 @@ public abstract class TzHaarSession extends MinigameSession {
     /** Self-test hook: the session's living creatures of one id. */
     public final List<LivingEntity> selfTestCreatures(String creatureId) {
         return living(creatureId);
+    }
+
+    /** Self-test hook: whether a creature of the run is attacking the player (in range and sight). */
+    public final boolean selfTestUnderAttack(ServerPlayer p) {
+        return underAttack(p);
     }
 
     /** Self-test hook: runs one game tick. */

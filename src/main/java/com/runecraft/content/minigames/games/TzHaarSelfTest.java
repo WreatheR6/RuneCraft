@@ -27,7 +27,8 @@ import net.minecraft.world.entity.Mob;
  * Self-test driver for whole TzHaar runs ({@code com.runecraft.selftest}, "minigame:" checks in real-player mode): walks the
  * Fight Cave and the Inferno wave by wave through the real session, spawn and kill paths (kills are the player's, so splits,
  * revivals and rewards run), checking each wave's monsters, the healers, the pillars, the Inferno's special monsters, TzKal-Zuk's
- * phases, the rewards, a death's tokkul and pausing by logging out. Every broken step throws an {@link AssertionError}.
+ * phases, the rewards, a death's tokkul, pausing by logging out (between waves or out of combat) and dropping out in combat (a
+ * death), and the TzHaar Slayer task taken as a TzTok-Jad task. Every broken step throws an {@link AssertionError}.
  */
 public final class TzHaarSelfTest {
     private final ServerPlayer player;
@@ -231,10 +232,43 @@ public final class TzHaarSelfTest {
         return log.toString();
     }
 
-    /** Dying after four waves pays 4 x 5 = 20 tokkul; logging out on wave 6 picks up at wave 6 with the same rotation. */
+    /**
+     * Dying after four waves pays 4 x 5 = 20 tokkul; logging out between waves 6 and 7 picks up at wave 7 with the same
+     * rotation; logging out mid-wave 10 seconds out of combat repeats the wave; dropping out in combat is a death. A TzHaar
+     * Slayer task is only fought as a TzTok-Jad task when the player takes it, and only that one is cancelled by a death.
+     */
     private void deathAndPause() {
+        com.runecraft.content.slayer.SlayerState.Profile task = com.runecraft.content.slayer.SlayerService.profile(player);
+        String savedTask = task.task;
+        int savedAmount = task.amount;
+        int savedRemaining = task.remaining;
+        String key = "tzhaar_boss_task:" + Minigame.FIGHT_CAVES.id();
+        int savedKey = MinigameData.of(player).stat(player.getUUID(), key);
+        try {
+            task.task = "tzhaar";
+            task.amount = 150;
+            task.remaining = 150;
+            death();
+            expect("tzhaar".equals(task.task) && task.amount == 150 && task.remaining == 150,
+                    "entering and dying in the Fight Cave changed an ordinary TzHaar task to " + task.task + " " + task.remaining + "/"
+                            + task.amount);
+            pauseBetweenWaves();
+            pauseOutOfCombat();
+            droppedInCombat(task);
+        } finally {
+            task.task = savedTask;
+            task.amount = savedAmount;
+            task.remaining = savedRemaining;
+            MinigameData.of(player).setStat(player.getUUID(), key, savedKey);
+        }
+        log.append("; a death after 4 waves paid 20 tokkul and kept an ordinary TzHaar task; logging out between waves resumed at"
+                + " the next, mid-wave out of combat repeated it, in combat was a death that cancelled a TzTok-Jad task");
+    }
+
+    private void death() {
         FightCaveSession s = start(Minigame.FIGHT_CAVES, FightCaveSession.class);
         try {
+            expect(!TzHaarSlayer.onTask(player, Minigame.FIGHT_CAVES), "an ordinary TzHaar task counts as a TzTok-Jad task");
             s.selfTestJumpTo(5);
             reach(s, 5);
             int before = Inv.count(player, "tokkul");
@@ -245,31 +279,92 @@ public final class TzHaarSelfTest {
         } finally {
             end(s);
         }
-        s = start(Minigame.FIGHT_CAVES, FightCaveSession.class);
+    }
+
+    /** Logs back in and checks the run resumed at {@code wave} with the same rotation. */
+    private void resumes(int rotation, int wave) {
+        expect(TzHaarSession.pausedWave(player, Minigame.FIGHT_CAVES) == wave, "the paused run saved wave "
+                + TzHaarSession.pausedWave(player, Minigame.FIGHT_CAVES) + " instead of " + wave);
+        MinigameManager.selfTestLogin(player);
+        MinigameSession resumed = MinigameManager.session(player);
+        expect(resumed instanceof FightCaveSession, "logging back in did not resume the Fight Cave");
+        FightCaveSession r = (FightCaveSession) resumed;
+        try {
+            expect(r.rotation() == rotation, "the resumed run spawns by rotation " + r.rotation() + ", not " + rotation);
+            reach(r, wave);
+            expect(alive(r).equals(count(TzHaarWaves.fightCave(wave))), "the resumed run's wave " + wave + " spawned " + alive(r));
+            expect(r.completedWaves() == wave - 1, "the resumed run counts " + r.completedWaves() + " waves cleared");
+            expect(TzHaarSession.pausedWave(player, Minigame.FIGHT_CAVES) == 0, "the paused run was not cleared");
+        } finally {
+            end(r);
+        }
+    }
+
+    private void pauseBetweenWaves() {
+        FightCaveSession s = start(Minigame.FIGHT_CAVES, FightCaveSession.class);
         int rotation = s.rotation();
         try {
             s.selfTestJumpTo(6);
             reach(s, 6);
+            clear(s, null);
+            int before = Inv.count(player, "tokkul");
             MinigameManager.selfTestLogout(player);
             expect(s.isEnded() && MinigameManager.session(player) == null, "logging out did not leave the cave");
-            expect(TzHaarSession.pausedWave(player, Minigame.FIGHT_CAVES) == 6, "logging out on wave 6 saved wave "
-                    + TzHaarSession.pausedWave(player, Minigame.FIGHT_CAVES));
-            MinigameManager.selfTestLogin(player);
-            MinigameSession resumed = MinigameManager.session(player);
-            expect(resumed instanceof FightCaveSession, "logging back in did not resume the Fight Cave");
-            FightCaveSession r = (FightCaveSession) resumed;
-            try {
-                expect(r.rotation() == rotation, "the resumed run spawns by rotation " + r.rotation() + ", not " + rotation);
-                reach(r, 6);
-                expect(alive(r).equals(count(TzHaarWaves.fightCave(6))), "the resumed run's wave 6 spawned " + alive(r));
-                expect(TzHaarSession.pausedWave(player, Minigame.FIGHT_CAVES) == 0, "the paused run was not cleared");
-            } finally {
-                end(r);
-            }
+            expect(Inv.count(player, "tokkul") == before, "pausing the run paid tokkul");
         } finally {
             end(s);
         }
-        log.append("; a death after 4 waves paid 20 tokkul; logging out on wave 6 resumed there");
+        resumes(rotation, 7);
+    }
+
+    private void pauseOutOfCombat() {
+        FightCaveSession s = start(Minigame.FIGHT_CAVES, FightCaveSession.class);
+        int rotation = s.rotation();
+        try {
+            s.selfTestJumpTo(6);
+            reach(s, 6);
+            // Nothing attacks the player (all lose their target) and no hit lands for 10 seconds.
+            for (LivingEntity e : s.selfTestCreatures()) {
+                ((Mob) e).setTarget(null);
+            }
+            tick(s, TzHaarWaves.LOGOUT_COMBAT_TICKS + 1);
+            MinigameManager.selfTestLogout(player);
+            expect(s.isEnded() && MinigameManager.session(player) == null, "logging out mid-wave did not leave the cave");
+        } finally {
+            end(s);
+        }
+        resumes(rotation, 6);
+    }
+
+    private void droppedInCombat(com.runecraft.content.slayer.SlayerState.Profile task) {
+        FightCaveSession s = start(Minigame.FIGHT_CAVES, FightCaveSession.class);
+        try {
+            expect(TzHaarSlayer.take(player, Minigame.FIGHT_CAVES), "the TzHaar task could not be taken as a TzTok-Jad task");
+            expect(TzHaarSlayer.onTask(player, Minigame.FIGHT_CAVES) && task.amount == 1 && task.remaining == 1,
+                    "taking TzTok-Jad did not make the task one Jad (" + task.remaining + "/" + task.amount + ")");
+            s.selfTestJumpTo(5);
+            reach(s, 5);
+            expect(!TzHaarSlayer.take(player, Minigame.FIGHT_CAVES), "a boss task could be taken again mid-run");
+            // A Tz-Kek's hit lands, then the player drops out.
+            for (LivingEntity e : s.selfTestCreatures()) {
+                ((Mob) e).setTarget(null);
+            }
+            LivingEntity attacker = s.selfTestCreatures().get(0);
+            CombatHandler.applyDamage(attacker, player, 1);
+            heal();
+            int before = Inv.count(player, "tokkul");
+            MinigameManager.selfTestLogout(player);
+            expect(s.isEnded() && MinigameManager.session(player) == null, "dropping out in combat did not end the run");
+            expect(TzHaarSession.pausedWave(player, Minigame.FIGHT_CAVES) == 0, "dropping out in combat paused the run at wave "
+                    + TzHaarSession.pausedWave(player, Minigame.FIGHT_CAVES));
+            int paid = Inv.count(player, "tokkul") - before;
+            expect(paid == TzHaarWaves.fightCaveTokkul(4, false), "dropping out in combat after 4 waves paid " + paid + " tokkul");
+            expect(task.task == null, "dropping out in combat kept the TzTok-Jad task");
+            MinigameManager.selfTestLogin(player);
+            expect(MinigameManager.session(player) == null, "logging back in after dropping out in combat resumed a run");
+        } finally {
+            end(s);
+        }
     }
 
     // ------------------------------------------------------------------ the Inferno
@@ -310,7 +405,40 @@ public final class TzHaarSelfTest {
             end(s);
         }
         expect(MinigameManager.session(player) == null, "the player is still in the Inferno after it ended");
+        infernoDroppedInCombat();
         return log.toString();
+    }
+
+    /** Dropping out of the Inferno with a monster attacking on wave 10 ends the run as a death: 9 waves' tokkul, no pause. */
+    private void infernoDroppedInCombat() {
+        InfernoSession s = start(Minigame.INFERNO, InfernoSession.class);
+        try {
+            s.selfTestJumpTo(10);
+            reach(s, 10);
+            // A monster that targets the player, beside them and in sight, is attacking them.
+            boolean attacked = false;
+            for (LivingEntity e : s.selfTestCreatures()) {
+                if (attacked || !(e instanceof Mob m) || MinigameManager.creatureId(e).equals(TzHaarWaves.JAL_NIB)) {
+                    continue;
+                }
+                m.setTarget(player);
+                player.teleportTo(towardCentre(s, e.getX(), e.getBbWidth() / 2 + 0.8), e.getY(), e.getZ());
+                attacked = s.selfTestUnderAttack(player);
+            }
+            expect(attacked, "no wave 10 monster beside the player and targeting them counts as attacking");
+            int before = Inv.count(player, "tokkul");
+            MinigameManager.selfTestLogout(player);
+            expect(s.isEnded() && MinigameManager.session(player) == null, "dropping out of the Inferno in combat did not end the run");
+            expect(TzHaarSession.pausedWave(player, Minigame.INFERNO) == 0, "dropping out of the Inferno in combat paused the run");
+            int paid = Inv.count(player, "tokkul") - before;
+            int due = TzHaarWaves.infernoTokkul(9);
+            expect(paid == due || paid == due * 2, "dropping out of the Inferno after 9 waves paid " + paid + " tokkul (expected " + due + ")");
+            MinigameManager.selfTestLogin(player);
+            expect(MinigameManager.session(player) == null, "logging back in after dropping out of the Inferno resumed a run");
+        } finally {
+            end(s);
+        }
+        log.append("; dropping out in combat on wave 10 was a death");
     }
 
     /** Wave 1: nibblers go for a pillar and chew it 2-4 every 4 ticks; a pillar knocked down falls. */

@@ -191,9 +191,11 @@ public class InfernoSession extends TzHaarSession {
                 data.setFlag(p.getUUID(), "inferno_cape_sacrificed");
                 Msg.game(p, "You sacrifice your fire cape to the Inferno. You may now enter freely.");
             }
-            TzHaarSlayer.enter(p, Minigame.INFERNO);
         }
         resumePaused();
+        for (ServerPlayer p : online()) {
+            TzHaarSlayer.enter(p, Minigame.INFERNO, wave < 1);
+        }
     }
 
     // ------------------------------------------------------------------ spawning

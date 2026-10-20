@@ -22,7 +22,8 @@ import net.minecraft.world.entity.Mob;
  * appeared. Jad drops the fire cape and the 8,032 tokkul completion reward ({@link TzHaarWaves#FIGHT_CAVE_TOKKUL}, doubled by
  * the elite Karamja Diary); at half hitpoints his four Yt-HurKot come from their fixed spawn points and come back if they
  * heal him to full. Tz-Kek recoil 1 damage at melee attackers and split into two smaller Tz-Kek. Dying or leaving early pays
- * N(N+1) tokkul for the N waves completed. On a TzHaar Slayer task the run is a TzTok-Jad task (see {@link TzHaarSlayer}).
+ * N(N+1) tokkul for the N waves completed. A TzHaar Slayer task the player took as a TzTok-Jad task makes the run count for it
+ * (see {@link TzHaarSlayer}); logging out pauses or ends the run by {@link TzHaarSession#onDisconnect}.
  */
 public class FightCaveSession extends TzHaarSession {
     private boolean jadDead;
@@ -116,10 +117,10 @@ public class FightCaveSession extends TzHaarSession {
 
     @Override
     protected void start() {
-        for (ServerPlayer p : online()) {
-            TzHaarSlayer.enter(p, Minigame.FIGHT_CAVES);
-        }
         resumePaused();
+        for (ServerPlayer p : online()) {
+            TzHaarSlayer.enter(p, Minigame.FIGHT_CAVES, wave < 1);
+        }
     }
 
     @Override

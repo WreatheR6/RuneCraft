@@ -19,8 +19,9 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * The TzHaar minigame officials: TzHaar-Mej-Jal (the Fight Cave; trades a spare fire cape for 8,000 tokkul or a 1/200 roll at
  * TzRek-Jad), TzHaar-Ket-Keh (the Inferno; takes the fire cape sacrifice and trades a spare infernal cape for a 1/100 roll at
- * Jal-nib-rek) and the pets' metamorphosis (TzRek-Jad into JalRek-Jad after TzHaar-Ket-Rak's six challenges, Jal-nib-rek into
- * TzRek-Zuk). Choices are clickable chat options running {@code /minigame tzhaar <choice>}.
+ * Jal-nib-rek), the pets' metamorphosis (TzRek-Jad into JalRek-Jad after TzHaar-Ket-Rak's six challenges, Jal-nib-rek into
+ * TzRek-Zuk) and the offer to fight a TzHaar Slayer task as a TzTok-Jad / TzKal-Zuk task ({@link TzHaarSlayer#offer}). Choices
+ * are clickable chat options running {@code /minigame tzhaar <choice>}.
  */
 public final class TzHaarNpcs {
     private static final Random RANDOM = new Random();
@@ -39,13 +40,14 @@ public final class TzHaarNpcs {
         int paused = TzHaarSession.pausedWave(p, Minigame.FIGHT_CAVES);
         QuestApi.say(p, "TzHaar-Mej-Jal", "You want to challenge the Fight Cave, JalYt? Sixty-three waves of TzHaar await. "
                 + "Survive, and TzTok-Jad himself will face you. The fire cape is the prize."
-                + (paused > 0 ? " You left a fight unfinished: enter and you will face wave " + paused + " again." : ""));
+                + (paused > 0 ? " You left a fight unfinished: enter and you will pick up at wave " + paused + "." : ""));
         if (Inv.has(p, "fire_cape", 1)) {
             p.displayClientMessage(Component.literal("Your spare fire cape: ").withStyle(ChatFormatting.GRAY)
                     .append(option("8,000 TokKul", "firecape_tokkul", "Trade one fire cape for 8,000 TokKul"))
                     .append(Component.literal(" "))
                     .append(option("Gamble for TzRek-Jad", "firecape_pet", "Sacrifice one fire cape for a 1/200 chance at the pet")), false);
         }
+        TzHaarSlayer.offer(p);
     }
 
     /** TzHaar-Ket-Keh by the Inferno. */
@@ -61,6 +63,7 @@ public final class TzHaarNpcs {
                     .append(option("Gamble for Jal-nib-rek", "infernal_pet", "Sacrifice one infernal cape for a 1/100 chance at the pet")),
                     false);
         }
+        TzHaarSlayer.offer(p);
     }
 
     /** "/minigame tzhaar &lt;choice&gt;" (near the right official for the cape trades). */
@@ -83,6 +86,8 @@ public final class TzHaarNpcs {
                 }
             }
             case "metamorphosis" -> metamorphosis(p);
+            case "task_jad" -> TzHaarSlayer.take(p, Minigame.FIGHT_CAVES);
+            case "task_zuk" -> TzHaarSlayer.take(p, Minigame.INFERNO);
             default -> {
             }
         }

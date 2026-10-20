@@ -381,7 +381,7 @@ public final class MinigamesHooks implements ModuleHooks {
                                 .executes(ctx -> {
                                     ServerPlayer p = ctx.getSource().getPlayer();
                                     String choice = StringArgumentType.getString(ctx, "choice");
-                                    if (p != null && (choice.equals("metamorphosis")
+                                    if (p != null && (choice.equals("metamorphosis") || choice.startsWith("task_")
                                             || nearNpc(p, choice.startsWith("infernal") ? "mg_tzhaar_ket_keh" : "mg_tzhaar_mej_jal"))) {
                                         com.runecraft.content.minigames.games.TzHaarNpcs.choose(p, choice);
                                     }

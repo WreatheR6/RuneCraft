@@ -223,4 +223,19 @@ class TzHaarWikiTest {
         assertEquals(175, TzHaarWaves.ZUK_SET_DELAY);
         assertEquals(7, TzHaarWaves.ZUK_ENRAGED_SPEED);
     }
+
+    /** Logging out pauses a run between waves or 10 s out of combat; dropping out in combat is a death (no free retries). */
+    @Test
+    void loggingOut() {
+        assertEquals(17, TzHaarWaves.LOGOUT_COMBAT_TICKS);
+        assertEquals(TzHaarWaves.Logout.END, TzHaarWaves.logout(0, true, Long.MAX_VALUE, false));
+        // Between waves: always a pause, even right after the last kill.
+        assertEquals(TzHaarWaves.Logout.PAUSE_NEXT_WAVE, TzHaarWaves.logout(12, true, 0, false));
+        // Mid-wave: only out of combat for 10 seconds and with nothing attacking.
+        assertEquals(TzHaarWaves.Logout.PAUSE_REPEAT_WAVE, TzHaarWaves.logout(12, false, 17, false));
+        assertEquals(TzHaarWaves.Logout.DEATH, TzHaarWaves.logout(12, false, 16, false));
+        assertEquals(TzHaarWaves.Logout.DEATH, TzHaarWaves.logout(63, false, Long.MAX_VALUE, true));
+        // Jad rearing up while the player prays wrong: the hit is 3 ticks off, the last one 8 ticks ago.
+        assertEquals(TzHaarWaves.Logout.DEATH, TzHaarWaves.logout(63, false, 8, true));
+    }
 }

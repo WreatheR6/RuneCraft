@@ -389,4 +389,41 @@ public final class TzHaarWaves {
     public static int zukHitpoints(float health, float maxHealth) {
         return maxHealth <= 0 ? 0 : (int) Math.ceil(health * ZUK_HP / maxHealth - 1e-6);
     }
+
+    // ------------------------------------------------------------------ logging out
+
+    /** Game ticks after a hit taken or dealt during which a player can't log out (OSRS: 10 seconds out of combat; 10 / 0.6). */
+    public static final int LOGOUT_COMBAT_TICKS = 17;
+
+    /** What a player dropping out of a Fight Cave or Inferno run does to it. */
+    public enum Logout {
+        /** Before the first wave: the run just ends (nothing to keep or lose). */
+        END,
+        /** Between waves: the run pauses and the next wave starts when the player comes back. */
+        PAUSE_NEXT_WAVE,
+        /** Mid-wave but out of combat: the run pauses and the wave in progress starts again. */
+        PAUSE_REPEAT_WAVE,
+        /** Mid-wave in combat: the run ends as a death (forfeit tokkul, a TzTok-Jad / TzKal-Zuk Slayer task cancelled). */
+        DEATH
+    }
+
+    /**
+     * A player logging out of a Fight Cave or Inferno run (OSRS Wiki "TzHaar Fight Cave/Strategies", "Inferno"): the logout
+     * button pauses the run at the end of the wave, logging out mid-wave (possible only 10 seconds out of combat) makes that wave
+     * start again, and a player who drops in combat stays in the fight for up to a minute. A Minecraft disconnect removes the
+     * player at once, so dropping out in combat counts as dying there.
+     *
+     * @param waveCleared      whether the current wave's monsters are all dead
+     * @param ticksSinceCombat game ticks since the player last took or dealt a hit
+     * @param underAttack      whether a monster of the run is attacking the player (targeting them, in range and in sight)
+     */
+    public static Logout logout(int wave, boolean waveCleared, long ticksSinceCombat, boolean underAttack) {
+        if (wave < 1) {
+            return Logout.END;
+        }
+        if (waveCleared) {
+            return Logout.PAUSE_NEXT_WAVE;
+        }
+        return underAttack || ticksSinceCombat < LOGOUT_COMBAT_TICKS ? Logout.DEATH : Logout.PAUSE_REPEAT_WAVE;
+    }
 }
