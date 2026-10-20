@@ -344,9 +344,11 @@ public final class WildernessWalk {
         expect(AgilityRewards.inWildernessCourse(GielinorMap.toOsrsX(player.getBlockX()), GielinorMap.toOsrsY(player.getBlockZ())),
                 "not inside the course after teleporting to its middle");
         // Sneak + use the dispenser: the 150,000 coin fee for lap loot.
+        BlockState dispenser = BuiltInRegistries.BLOCK.get(com.runecraft.RuneCraft.id("agility_ticket_dispenser")).defaultBlockState();
+        // a plain tag first collects any tickets still waiting from earlier laps
+        BlockHooks.use(player, "agility_ticket_dispenser", player.blockPosition(), dispenser);
         Inv.give(player, Inv.COINS, AgilityRewards.WILDERNESS_FEE);
         int coins = Inv.count(player, Inv.COINS);
-        BlockState dispenser = BuiltInRegistries.BLOCK.get(com.runecraft.RuneCraft.id("agility_ticket_dispenser")).defaultBlockState();
         player.setShiftKeyDown(true);
         try {
             BlockHooks.use(player, "agility_ticket_dispenser", player.blockPosition(), dispenser);
@@ -358,8 +360,12 @@ public final class WildernessWalk {
         PlayerData data = Players.data(player);
         int laps = data.agilityLaps(course);
         int xp = data.skills().xpTenths(Skill.AGILITY);
-        for (int step = 0; step < course.obstacles(); step++) {
-            com.runecraft.skill.AgilityService.step(player, course, step);
+        // (an obstacle can be failed: the player falls and starts the lap again, as on the real course)
+        for (int attempt = 0; attempt < 12 && data.agilityLaps(course) == laps; attempt++) {
+            for (int step = 0; step < course.obstacles(); step++) {
+                com.runecraft.skill.AgilityService.step(player, course, step);
+            }
+            heal();
         }
         expect(data.agilityLaps(course) == laps + 1, "the " + course.obstacles() + " obstacles in order didn't complete a lap");
         expect(data.skills().xpTenths(Skill.AGILITY) > xp, "no Agility XP for the lap");
