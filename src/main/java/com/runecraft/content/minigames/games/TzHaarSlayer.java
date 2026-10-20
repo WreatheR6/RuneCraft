@@ -104,8 +104,9 @@ public final class TzHaarSlayer {
     }
 
     /**
-     * "/minigame tzhaar task_jad_&lt;n&gt;|task_zuk_&lt;n&gt;": takes the TzHaar task as {@code n} kills of that boss. False for
-     * anything else (or a refused take).
+     * "/minigame tzhaar task_jad_&lt;n&gt;|task_zuk_&lt;n&gt;": takes the TzHaar task as {@code n} kills of that boss; an
+     * {@code n} that is not a number is refused like one out of range, with {@link #take(ServerPlayer, Minigame, int)}'s
+     * message. False for anything else (or a refused take).
      */
     public static boolean choose(ServerPlayer player, String choice) {
         Minigame game = choice.startsWith("task_jad_") ? Minigame.FIGHT_CAVES : choice.startsWith("task_zuk_") ? Minigame.INFERNO : null;
@@ -116,7 +117,7 @@ public final class TzHaarSlayer {
         try {
             n = Integer.parseInt(choice.substring("task_jad_".length()));
         } catch (NumberFormatException e) {
-            return false;
+            n = 0; // never a valid size: take() says what the player may pick instead of failing silently
         }
         return take(player, game, n);
     }

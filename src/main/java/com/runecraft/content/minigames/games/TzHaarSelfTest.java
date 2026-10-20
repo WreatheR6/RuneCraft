@@ -709,7 +709,9 @@ public final class TzHaarSelfTest {
      * one Jad already killed, cancels the whole task without costing points or the streak ("Slayer task/TzHaar": "If the
      * player dies or leaves, the task is cancelled and no points are used"). Picking one Jad completes on its kill; a
      * grandmaster-tier TzKal-Zuk task is three, and an Inferno kill leaves two. The player's Combat Achievements, Slayer
-     * profile, minigame data and pack are put back afterwards.
+     * profile, minigame data and pack are put back afterwards; the Slayer, Ranged and Hitpoints experience the kills give needs
+     * no putting back (every check starts from {@code TestContext.reset}'s level 99 in every skill, and the self-test's
+     * teardown restores the real player's own PlayerData, skills included).
      */
     public static String tzhaarTaskRun(ServerPlayer player) {
         return new TzHaarSelfTest(player).tzhaarTask();
@@ -889,9 +891,11 @@ public final class TzHaarSelfTest {
         log.append("; dying in the second run after one Jad cancelled the whole task (no points or streak lost)");
     }
 
-    /** The player may pick fewer than allowed: one Jad, completed on its one kill. */
+    /** The player may pick fewer than allowed (a pick that is not a number is refused): one Jad, completed on its one kill. */
     private void oneJadPicked() {
         SlayerState.Profile task = tzhaarAssignment();
+        expect(!TzHaarSlayer.choose(player, "task_jad_x") && !TzHaarSlayer.onTask(player, Minigame.FIGHT_CAVES) && task.amount == 150,
+                "a TzTok-Jad pick that is not a number changed the TzHaar task to " + task.remaining + "/" + task.amount);
         expect(TzHaarSlayer.choose(player, "task_jad_1"), "a master-tier player could not pick one TzTok-Jad");
         expect(TzHaarSlayer.onTask(player, Minigame.FIGHT_CAVES) && task.amount == 1 && task.remaining == 1,
                 "picking one TzTok-Jad made the task " + task.remaining + "/" + task.amount);
