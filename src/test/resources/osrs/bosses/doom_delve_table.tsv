@@ -1,0 +1,37 @@
+# The Doom of Mokhaiotl's regular delve table (OSRS Wiki "Doom of Mokhaiotl", Kiyogitpy/osrs-wiki-data, July 2026),
+# quantities at delve level 3. Diffed by DoomDelveTableTest against DoomDelves.TABLE (weights out of 312).
+# wiki name|quantity|rarity|id
+Dragon med helm|1|5/104|dragon_med_helm
+Dragon platelegs|2-4|1/104|dragon_platelegs
+Mystic earth staff|1|5/104|mystic_earth_staff
+Rune pickaxe|1-3|5/104|rune_pickaxe
+Death rune|50-70|5/104|death_rune
+Chaos rune|50-70|5/104|chaos_rune
+Earth rune|500-1000|5/104|earth_rune
+Fire rune|500-1000|5/104|fire_rune
+Steel cannonball|200-600|5/104|cannonball
+Onyx bolts|5-15|5/104|onyx_bolts
+Coal|15-50|5/104|coal
+Gold ore|20-60|5/104|gold_ore
+Runite ore|3-6|5/104|runite_ore
+Celastrus seed|1|3/104|celastrus_seed
+Ranarr seed|1-3|2/104|ranarr_seed
+Spirit seed|1|3/104|spirit_seed
+Aether catalyst|151-400|5/104|aether_catalyst
+Dragon dart tip|30-90|5/104|dragon_dart_tip
+Raw shark|20-35|10/312|raw_shark
+Shark lure|40-70|5/312|shark_lure
+Sun-kissed bones|18-75|5/104|sun_kissed_bones
+Tooth half of key (moon key)|1|1/104|tooth_half_of_key
+Demon tear|100-300|7/104|demon_tear
+Mokhaiotl waystone|1-2|7/104|mokhaiotl_waystone
+# delve|quantity multiplier|guaranteed tears|overall unique 1/n (0: none)|Dom 1/n (0: none)
+1|-0.5|0|0|0
+2|-0.35|0|2500|0
+3|0|50|1000|0
+4|0.05|60|450|0
+5|0.1|70|270|0
+6|0.12|80|255|1000
+7|0.14|90|240|750
+8|0.17|100|210|500
+9|0.2|100|180|250
