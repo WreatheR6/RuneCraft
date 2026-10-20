@@ -290,6 +290,7 @@ final class LateQuestsB {
                 .drops(Drop.always("big_bones")).size(1.2f, 2.6f, 1.0f).at("piscatoris").arena(12, "water"));
         b.quest("swan_song", "Swan Song", Difficulty.MASTER, 2)
                 .xp(Skill.FISHING, 50000).xp(Skill.MAGIC, 15000).xp(Skill.PRAYER, 10000) // OSRS (current quest XP rewards)
+                .reward("coins:25000") // wiki: 25,000 coins
                 .qp(100).reqQuest("garden_of_tranquillity").reqQuest("one_small_favour")
                 .req(Skill.MAGIC, 66).req(Skill.COOKING, 62).req(Skill.FISHING, 62).req(Skill.SMITHING, 45).req(Skill.FIREMAKING, 42).req(Skill.CRAFTING, 40)
                 .unlock("Fishing monkfish at the Piscatoris Fishing Colony")
@@ -429,7 +430,7 @@ final class LateQuestsB {
                 .drops(Drop.always("bones")).size(1.0f, 2.4f, 1.0f).at("kebos_lowlands").arena(12, "void"));
 
         b.quest("the_depths_of_despair", "The Depths of Despair", Difficulty.INTERMEDIATE, 1)
-                .reqQuest("client_of_kourend").req(Skill.AGILITY, 18).xp(Skill.AGILITY, 1500)
+                .reqQuest("client_of_kourend").req(Skill.AGILITY, 18).xp(Skill.AGILITY, 1500).reward("coins:4000") // wiki: 4,000 coins
                 .stage("I can start this quest by speaking to Lord Kandur Hosidius in Hosidius. (Requires Client of Kourend, 18 Agility.)")
                 .talk("lord_kandur_hosidius").say("An ancient Hosidius heir, Lady Arceuus? No... a relic of our house was lost in the Crabclaw Caves. Find it.")
                 .stage("I should search for the lost Hosidius relic beneath Hosidius.")
@@ -442,7 +443,7 @@ final class LateQuestsB {
                 .talk("lord_kandur_hosidius").needFlag("dod_chest").missing("Any news from the Crabclaw Caves?").say("The relic is home! Hosidius is grateful.");
         b.item("qot_letter", "Letter", "note", 0xE0D8C2, "A letter found in Councillor Hughes's chest.");
         b.quest("the_queen_of_thieves", "The Queen of Thieves", Difficulty.INTERMEDIATE, 1)
-                .reqQuest("client_of_kourend").req(Skill.THIEVING, 20).xp(Skill.THIEVING, 2000)
+                .reqQuest("client_of_kourend").req(Skill.THIEVING, 20).xp(Skill.THIEVING, 2000).reward("coins:2000") // wiki: 2,000 coins
                 .stage("I can start this quest by speaking to Lady Shauna Piscarilius in Port Piscarilius. (Requires Client of Kourend, 20 Thieving.)")
                 .talk("lady_shauna_piscarilius").say("Councillor Hughes is corrupt, and only a thief can prove it. The Queen of Thieves runs the Piscarilius underworld. Help her, and she'll help us.")
                 .stage("I should prove myself to the Queen of Thieves, then steal evidence from Councillor Hughes's house in Kingstown.")
@@ -503,6 +504,7 @@ final class LateQuestsB {
                 .say("The tower's power flows to our forges again? Then Kourend owes you. Take this, and ride our minecarts freely.");
         b.quest("the_ascent_of_arceuus", "The Ascent of Arceuus", Difficulty.INTERMEDIATE, 1)
                 .xp(Skill.HUNTER, 1500).xp(Skill.RUNECRAFT, 500) // OSRS (current quest XP rewards)
+                .reward("coins:2000") // wiki: 2,000 coins
                 .reqQuest("client_of_kourend").req(Skill.HUNTER, 12)
                 .stage("I can start this quest by speaking to Lord Trobin Arceuus in Arceuus. (Requires Client of Kourend, 12 Hunter.)")
                 .talk("lord_trobin_arceuus").say("Strange tormented souls are rising near the Dark Altar. My house's magic may be to blame. Investigate.")
@@ -512,7 +514,7 @@ final class LateQuestsB {
                 .talk("lord_trobin_arceuus").take("dark_essence_fragment:10").say("The souls are at rest. Arceuus's magic is safe... for now.");
         b.quest("getting_ahead", "Getting Ahead", Difficulty.INTERMEDIATE, 1)
                 .req(Skill.CRAFTING, 30).req(Skill.CONSTRUCTION, 26)
-                .xp(Skill.CRAFTING, 4000).xp(Skill.CONSTRUCTION, 3200)
+                .xp(Skill.CRAFTING, 4000).xp(Skill.CONSTRUCTION, 3200).reward("coins:3000") // wiki: 3,000 coins
                 .stage("I can start this quest by speaking to Councillor Andrews in Port Piscarilius, who needs help for the Kebos farmers. (Requires Client of Kourend, 30 Crafting, 26 Construction.)")
                 .talk("councillor_andrews").say("A beast terrorises the farms of Kebos. The farmers want to scare it off with a fake head. Help them build one.")
                 .stage("I should follow the flour trail to the beast, then make a fake head (soft clay, fur) and mount it with 2 planks and nails.")

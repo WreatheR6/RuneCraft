@@ -392,7 +392,7 @@ final class LateQuestsA {
                 .drops(Drop.always("bones")).size(1.2f, 1.6f, 1.0f).at("etceteria_caves").arena(11, "water"));
         b.quest("royal_trouble", "Royal Trouble", Difficulty.EXPERIENCED, 1)
                 .reqQuest("throne_of_miscellania").req(Skill.AGILITY, 40).req(Skill.SLAYER, 40)
-                .xp(Skill.AGILITY, 5000).xp(Skill.SLAYER, 5000).xp(Skill.HITPOINTS, 5000)
+                .xp(Skill.AGILITY, 5000).xp(Skill.SLAYER, 5000).xp(Skill.HITPOINTS, 5000).reward("coins:20000") // wiki: 20,000 coins
                 .stage("I can start this quest by speaking to Advisor Ghrim in Miscellania castle. (Requires Throne of Miscellania, 40 Agility, 40 Slayer.)")
                 .talk("advisor_ghrim").say("Villagers are vanishing from Miscellania and Etceteria! The royal families blame each other. Investigate the caves.")
                 .stage("I should search the caves beneath Miscellania for the missing villagers.")

@@ -265,6 +265,7 @@ final class VarlamoreQuests {
         b.item("quest_varlamore_relic", "Varlamorian relic", "statue", 0xE0B040, "A relic that belongs to Varlamore.");
         b.quest("ethically_acquired_antiquities", "Ethically Acquired Antiquities", Difficulty.NOVICE, 1)
                 .xp(Skill.THIEVING, 6000) // OSRS (current quest XP rewards)
+                .reward("coins:5000") // wiki: 5,000 coins
                 .reqQuest("children_of_the_sun", "shield_of_arrav").req(Skill.THIEVING, 25)
                 .unlock("New Varlamorian displays in the Varrock Museum")
                 .stage("I can start this quest by speaking to the Varlamorian delegate in the Varrock Museum. (Requires Children of the Sun, Shield of Arrav, 25 Thieving.)")

@@ -205,7 +205,7 @@ final class KandarinMoreQuests {
                 .attack(AttackDef.of("slime", AttackType.CRUSH, 4, 2.5, 10)).drops(Drop.always("bones"))
                 .skin(0x8A9A5B, 0x7A8A4A, 0x6A7A3A, 0x5A6A2A));
         b.quest("sea_slug", "Sea Slug", Difficulty.INTERMEDIATE, 1)
-                .req(Skill.FIREMAKING, 30).xp(Skill.FISHING, 7175).reward("coins:500")
+                .req(Skill.FIREMAKING, 30).xp(Skill.FISHING, 7175).reward("oyster_pearls") // wiki: oyster pearls
                 .stage("I can start this quest by speaking to Caroline in Witchaven. (Requires 30 Firemaking.)")
                 .talk("caroline").say("My husband Kent and son Kennith are on the fishing platform out at sea and haven't come home. Holgart can row you out.")
                 .stage("I should go to the fishing platform and find Kennith.")
@@ -301,6 +301,7 @@ final class KandarinMoreQuests {
         b.quest("zogre_flesh_eaters", "Zogre Flesh Eaters", Difficulty.INTERMEDIATE, 1)
                 .reqQuest("big_chompy_bird_hunting", "jungle_potion").req(Skill.SMITHING, 4).req(Skill.HERBLORE, 8).req(Skill.RANGED, 30)
                 .xp(Skill.FLETCHING, 2000).xp(Skill.RANGED, 2000).xp(Skill.HERBLORE, 2000)
+                .reward("zogre_bones:2") // wiki: also 3 ourg bones (not in the mod)
                 .stage("I can start this quest by speaking to Grish at Jiggig in the Feldip Hills. (Requires Big Chompy Bird Hunting, Jungle Potion.)")
                 .talk("grish").say("Zogres! Undead ogres rising from Jiggig's tombs! Someone curse our sacred place. Find out who!")
                 .stage("I should investigate the tombs beneath Jiggig.")

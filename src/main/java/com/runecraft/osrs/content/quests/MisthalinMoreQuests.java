@@ -421,7 +421,7 @@ final class MisthalinMoreQuests {
         QuestPuzzle tests = recruitmentDriveTests();
         b.quest("recruitment_drive", "Recruitment Drive", Difficulty.NOVICE, 1)
                 .reqQuest("black_knights_fortress", "DRUIDIC_RITUAL")
-                .xp(Skill.PRAYER, 1000.5).xp(Skill.HERBLORE, 1000.5).xp(Skill.AGILITY, 1000.5).reward("initiate_sallet")
+                .xp(Skill.PRAYER, 1000.5).xp(Skill.HERBLORE, 1000.5).xp(Skill.AGILITY, 1000.5).reward("initiate_sallet", "coins:3000") // wiki: 3,000 coins and the sallet
                 .stage("I can start this quest by speaking to Sir Amik Varze in the White Knights' Castle in Falador. (Requires Black Knights' Fortress, Druidic Ritual.)")
                 .talk("sir_amik_varze").say("The Temple Knights are recruiting, and I've put your name forward. Sir Tiffy Cashien in Falador Park will test you.")
                 .stage("I must pass five of the Temple Knights' tests in a row (they are picked at random; Sir Kuam's duel with Sir Leye is always one). "

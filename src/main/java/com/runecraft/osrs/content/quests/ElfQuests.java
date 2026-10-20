@@ -84,7 +84,7 @@ final class ElfQuests {
                 .drops(Drop.always("bones")).skin(0xE8C0AD, 0xC0C0C8, 0x8A1A1A, 0xE0C030).at("tyras_camp").arena(10, "jungle"));
         b.quest("regicide", "Regicide", Difficulty.EXPERIENCED, 3)
                 .reqQuest("underground_pass").req(Skill.AGILITY, 56).req(Skill.CRAFTING, 10)
-                .xp(Skill.AGILITY, 13750)
+                .xp(Skill.AGILITY, 13750).reward("coins:15000") // wiki: 15,000 coins
                 .unlock("Access to Tirannwn and Lletya")
                 .stage("I can start this quest by speaking to King Lathas in East Ardougne. (Requires Underground Pass, 56 Agility, 10 Crafting.)")
                 .talk("king_lathas").travel("LLETYA").say("My brother Tyras leads an army in Tirannwn. He must be stopped. Go through the pass, find the elves and destroy his camp.",

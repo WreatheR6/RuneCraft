@@ -601,8 +601,7 @@ final class F2pQuests {
                 .attack(AttackDef.of("wind_strike", AttackType.MAGIC, 6, 8, 6).particle("minecraft:cloud"))
                 .attack(AttackDef.of("punch", AttackType.CRUSH, 4, 2.5, 4))
                 .drops(Drop.always("bones")).skin(0xB8D0D0, 0x2A4A6A, 0x1A2A3A, 0x5A5A5A).at("ithoi_hut").arena(8, "sand"));
-        b.quest("the_corsair_curse", "The Corsair Curse", Difficulty.INTERMEDIATE, 2)
-                .reward("coins:500")
+        b.quest("the_corsair_curse", "The Corsair Curse", Difficulty.INTERMEDIATE, 2) // wiki: no item rewards
                 .unlock("Access to the Corsair Cove Dungeon")
                 .stage("I can start this quest by speaking to Captain Tock in Corsair Cove (reached via Captain Tock's ship in Port Sarim).")
                 .talk("captain_tock").say("My crew claims we're cursed. An ogre artefact we... found... is to blame, they say. Question my crew.")
