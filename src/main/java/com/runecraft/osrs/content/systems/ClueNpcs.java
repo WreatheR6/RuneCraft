@@ -44,7 +44,7 @@ public final class ClueNpcs {
             new ClueNpc("clue_charlie_the_tramp", "Charlie the Tramp", 3209, 3392, 0xA07850, 0x3A6A9A, 0x3A3A4A, 0x2A2A3A, "ANAGRAM/MEDIUM"),
             new ClueNpc("clue_clerris", "Clerris", 1761, 3850, 0xE8C0A0, 0x6A4A2A, 0x5A3A2A, 0x5A3A6A, "ANAGRAM/MEDIUM"),
             new ClueNpc("clue_cook", "Cook", 3230, 3401, 0xA07850, 0x8A6A3A, 0x3A3A4A, 0x8A6A3A, "CRYPTIC/EASY"),
-            new ClueNpc("clue_daer_krand", "Daer Krand", 3728, 3302, 0xE0B090, 0x8A2A2A, 0x5A3A2A, 0x2A2A3A, "ANAGRAM/HARD"),
+            // Daer Krand: Beneath Cursed Sands' Daer Krand (quests module, 3726,3302) answers this clue.
             new ClueNpc("clue_dockmaster", "Dockmaster", 1822, 3739, 0xE8C0A0, 0x8A6A3A, 0x3A2A1A, 0xA08040, "ANAGRAM/MEDIUM"),
             new ClueNpc("clue_donovan_the_family_handyman", "Donovan the Family Handyman", 2737, 3580, 0xE8C0A0, 0x2A2A3A, 0x4A4A2A, 0xA08040, "CRYPTIC/MEDIUM"),
             new ClueNpc("clue_doris", "Doris", 3079, 3493, 0xE8C0A0, 0x8A2A2A, 0x2A2A2A, 0x5A3A6A, "CRYPTIC/EASY"),
