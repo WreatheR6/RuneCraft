@@ -62,6 +62,7 @@ final class RevenantBehaviour {
         });
         Aggression.addPeaceful((mob, player) -> RevenantRewards.isRevenant(RevenantLoot.creatureId(mob)) && chargedBracelet(player));
         HitCalcBridge.forinthrySurge = RevenantBehaviour::surge;
+        com.runecraft.combat.PrayerEffectsService.beforeKeep = RevenantBehaviour::wildernessDeath;
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             if (++ticks % 20 != 0) {
                 return;
@@ -81,6 +82,31 @@ final class RevenantBehaviour {
                 }
             }
         });
+    }
+
+    /**
+     * A death in the Wilderness empties every Wilderness weapon the player carries (wiki, Craw's bow: the stored ether is
+     * always dropped and the 1,000 activation ether always disappears, even on a protected weapon).
+     */
+    static void wildernessDeath(ServerPlayer player) {
+        if (com.runecraft.world.Gielinor.wildernessLevel(player) <= 0) {
+            return;
+        }
+        var inv = player.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            var stack = inv.getItem(i);
+            if (stack.isEmpty() || !com.runecraft.osrs.content.systems.Charges.needsActivation(Inv.idOf(stack))) {
+                continue;
+            }
+            int ether = ItemCharges.get(stack);
+            ItemCharges.set(stack, 0);
+            ItemCharges.setActivated(stack, false);
+            for (int left = ether; left > 0; ) {
+                int n = Math.min(64, left);
+                player.drop(Inv.stack("revenant_ether", n), true, false);
+                left -= n;
+            }
+        }
     }
 
     /** Gives a revenant its fighting behaviour (once). */

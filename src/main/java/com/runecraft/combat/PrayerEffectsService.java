@@ -150,10 +150,18 @@ public final class PrayerEffectsService {
      * (wiki "Tokkul", "Items Kept on Death"). There are no gravestones here, so it is simply kept (approx). Keeping the coin
      * pouch is a known difference: OSRS loses coins like any other unprotected stack.
      */
+    /**
+     * Runs on a Gielinor death before the kept items are set aside (the godwars module empties Wilderness weapons: their
+     * stored ether drops and the activation ether is lost even on a kept weapon).
+     */
+    public static java.util.function.Consumer<ServerPlayer> beforeKeep = p -> {
+    };
+
     private static void keepItems(ServerPlayer player) {
         if (KEPT.containsKey(player.getUUID())) {
             return;
         }
+        beforeKeep.accept(player);
         boolean protect = Players.data(player).isActive(Prayer.PROTECT_ITEM);
         int keep = SkullService.itemsKept(player, protect); // 0 (+1) while skulled
         Inventory inv = player.getInventory();

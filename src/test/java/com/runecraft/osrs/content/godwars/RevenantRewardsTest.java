@@ -74,6 +74,13 @@ class RevenantRewardsTest {
             assertEquals(Charges.Drain.ATTACK, s.drain());
             assertEquals(1, s.materials().get("revenant_ether"));
             assertTrue(Charges.depleted(s, 0));
+            // Wiki: first activated with 1,000 ether (never fired, lost on a Wilderness death), then up to 16,000 more.
+            assertTrue(Charges.needsActivation(w), w);
+        }
+        assertEquals(1000, Charges.WILDERNESS_WEAPON_ACTIVATION);
+        assertFalse(Charges.needsActivation("bracelet_of_ethereum"));
+        for (String w : RevenantRewards.WEAPONS) {
+            assertTrue(Charges.needsActivation(w), w);
         }
     }
 

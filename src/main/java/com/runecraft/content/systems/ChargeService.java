@@ -127,6 +127,10 @@ public final class ChargeService {
     private static String denyAttack(ServerPlayer p, AttackType type) {
         ItemStack weapon = p.getMainHandItem();
         Charges.Spec s = ItemCharges.spec(weapon);
+        if (s != null && !ItemCharges.activated(weapon)) {
+            return "Your " + name(s) + " must first be activated with " + Charges.WILDERNESS_WEAPON_ACTIVATION
+                    + " revenant ether. (Sneak + use it with revenant ether in your inventory.)";
+        }
         if (s == null || s.drain() == Charges.Drain.TELEPORT || !ItemCharges.depleted(weapon)) {
             return null;
         }
@@ -241,6 +245,19 @@ public final class ChargeService {
             AccessGates.Gate prif = AccessGates.byId("prifddinas");
             if (!LLETYA.contains(x, y) && (prif == null || !prif.contains(x, y))) {
                 Msg.game(p, "Crystal equipment can only be recharged by the elves in Lletya or Prifddinas.");
+                return;
+            }
+        }
+        if (!ItemCharges.activated(stack)) {
+            // A Wilderness weapon first takes 1,000 revenant ether to activate; that ether is never fired.
+            if (Inv.count(p, "revenant_ether") < Charges.WILDERNESS_WEAPON_ACTIVATION) {
+                Msg.game(p, "You need " + Charges.WILDERNESS_WEAPON_ACTIVATION + " revenant ether to activate your " + name(s) + ".");
+                return;
+            }
+            Inv.remove(p, "revenant_ether", Charges.WILDERNESS_WEAPON_ACTIVATION);
+            ItemCharges.setActivated(stack, true);
+            Msg.game(p, "You activate your " + name(s) + " with " + Charges.WILDERNESS_WEAPON_ACTIVATION + " revenant ether.");
+            if (Inv.count(p, "revenant_ether") <= 0) {
                 return;
             }
         }
