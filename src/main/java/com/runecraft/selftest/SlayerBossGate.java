@@ -79,6 +79,11 @@ final class SlayerBossGate {
         }
         remainingBefore = profile().remaining;
         slayerXpBefore = Players.data(c.player).skills().xp(Skill.SLAYER);
+        // Dressed as a player on task would be: a slayer helmet (Thermy's smoke) and boots of stone (Karuulm's floor).
+        c.player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, Inv.stack("slayer_helmet_i", 1));
+        if (def.id.startsWith("alchemical_hydra")) {
+            c.player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.FEET, Inv.stack("boots_of_stone", 1));
+        }
     }
 
     private void assign(String task) {

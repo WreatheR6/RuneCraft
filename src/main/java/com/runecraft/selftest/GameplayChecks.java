@@ -122,6 +122,10 @@ final class GameplayChecks {
                 () -> g.scripted("phantom_muspah", com.runecraft.content.bosses.BossSelfTests::muspahShield)));
         checks.add(new SelfTest.Check("boss:araxxor_eggs",
                 () -> g.scripted("araxxor", com.runecraft.content.bosses.BossSelfTests::araxxorEggs)));
+        checks.add(new SelfTest.Check("boss:sire_spawns",
+                () -> g.scripted("abyssal_sire", com.runecraft.content.bosses.BossSelfTests::sireSpawns)));
+        checks.add(new SelfTest.Check("boss:kraken_whirlpools",
+                () -> g.scripted("kraken", com.runecraft.content.bosses.BossSelfTests::krakenWhirlpools)));
         checks.add(new SelfTest.Check("boss:eclipse_clones",
                 () -> g.scripted("eclipse_moon", com.runecraft.content.bosses.BossSelfTests::eclipseClones)));
         checks.add(new SelfTest.Check("boss:zalcano_tephra",

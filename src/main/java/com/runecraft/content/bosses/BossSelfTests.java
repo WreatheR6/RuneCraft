@@ -26,6 +26,16 @@ public final class BossSelfTests {
         return SlayerScripts.selfTestAraxxor(boss, p);
     }
 
+    /** The Abyssal Sire's spawns mature into scions after 15 seconds and die with it. */
+    public static String sireSpawns(DataBossEntity boss, ServerPlayer p) {
+        return SlayerScripts.selfTestSire(boss, p);
+    }
+
+    /** The Kraken's whirlpools: disturbed in order, then it rises; ranged hits deal a seventh. */
+    public static String krakenWhirlpools(DataBossEntity boss, ServerPlayer p) {
+        return SlayerScripts.selfTestKraken(boss, p);
+    }
+
     /** The Eclipse Moon's clones: a faced clone is parried, one behind the player hits. */
     public static String eclipseClones(DataBossEntity boss, ServerPlayer p) {
         return MoonScripts.selfTestEclipse(boss, p);

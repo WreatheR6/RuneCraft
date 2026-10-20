@@ -1332,6 +1332,63 @@ final class SlayerScripts {
     }
 
     /**
+     * Self-test (boss:sire_spawns): a spawn left 15 seconds matures into a scion, and every spawn and scion dies with the Sire.
+     */
+    static String selfTestSire(DataBossEntity boss, ServerPlayer p) {
+        if (!(boss.script() instanceof Sire s)) {
+            throw new IllegalStateException("the Abyssal Sire has no Sire script");
+        }
+        long t0 = com.runecraft.action.ActionManager.gameTick();
+        s.gameTick(boss, t0);
+        s.spawn(boss, p, boss.position().add(2.5, 0, 0));
+        s.spawn(boss, p, boss.position().add(-2.5, 0, 0));
+        if (s.minions() != 2 || !s.scions.isEmpty()) {
+            throw new IllegalStateException(s.minions() + " minions after two spawns");
+        }
+        s.gameTick(boss, t0 + SlayerBosses.SIRE_SPAWN_MATURES - 1);
+        if (!s.scions.isEmpty()) {
+            throw new IllegalStateException("a spawn matured before 15 seconds");
+        }
+        s.gameTick(boss, t0 + SlayerBosses.SIRE_SPAWN_MATURES);
+        if (s.scions.size() != 2 || !s.spawns.isEmpty()) {
+            throw new IllegalStateException("after 15 s: " + s.spawns.size() + " spawns, " + s.scions.size() + " scions");
+        }
+        List<Mob> all = new ArrayList<>(s.scions);
+        s.onDeath(boss, p);
+        if (all.stream().anyMatch(Mob::isAlive)) {
+            throw new IllegalStateException("scions outlived the Sire");
+        }
+        return "2 spawns matured into scions after 15 s and died with the Sire";
+    }
+
+    /**
+     * Self-test (boss:kraken_whirlpools): the whirlpools stay still until disturbed, the large one can only be disturbed after
+     * the four small ones, the Kraken then rises, and ranged hits deal a seventh.
+     */
+    static String selfTestKraken(DataBossEntity boss, ServerPlayer p) {
+        if (!(boss.script() instanceof Kraken k)) {
+            throw new IllegalStateException("the Kraken has no Kraken script");
+        }
+        if (k.tentacles.size() != 4 || k.tentacles.stream().anyMatch(t -> !t.isNoAi())) {
+            throw new IllegalStateException(k.tentacles.size() + " whirlpools, some already awake");
+        }
+        if (k.isVulnerable(boss)) {
+            throw new IllegalStateException("the large whirlpool could be disturbed before the small ones");
+        }
+        k.selfTestDisturb(p);
+        k.gameTick(boss, com.runecraft.action.ActionManager.gameTick());
+        if (k.tentacles.stream().anyMatch(Mob::isNoAi) || !k.isVulnerable(boss)) {
+            throw new IllegalStateException("disturbed whirlpools didn't wake their tentacles");
+        }
+        int first = k.incoming(boss, p, 50, AttackType.MAGIC);
+        int ranged = k.incoming(boss, p, 50, AttackType.RANGED);
+        if (first != 0 || !k.risen || ranged != 7) {
+            throw new IllegalStateException("disturbing hit dealt " + first + ", risen " + k.risen + ", ranged 50 -> " + ranged);
+        }
+        return "4 whirlpools disturbed, the Kraken rose, ranged 50 -> 7";
+    }
+
+    /**
      * Self-test (boss:araxxor_eggs): nine eggs ring the lair, the third standard attack hatches the first, a destroyed egg is
      * dropped from the rotation, the sixth standard attack brings the special of the south-easternmost egg, and a mirrorback
      * araxyte takes a fifth of the damage dealt to Araxxor.
