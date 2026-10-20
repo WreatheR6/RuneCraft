@@ -54,6 +54,8 @@ public final class SkillingBossWalk {
     private int ticks;
     /** Run before every session tick: what a player keeps doing in the background (eating, tethering, dodging fires). */
     private Runnable perTick = () -> { };
+    /** Tempoross: totem poles the player repaired before a wave because earlier waves had broken both. */
+    private int polesRepaired;
 
     private SkillingBossWalk(ServerPlayer player) {
         this.player = player;
@@ -435,7 +437,8 @@ public final class SkillingBossWalk {
         expect(t.selfTestView(player).submerged(), "18 more cooked harpoonfish didn't make him submerge again");
         expect(t.selfTestView(player).storm() == 0, "the storm intensity stayed at " + t.selfTestView(player).storm()
                 + "% when he submerged again");
-        notes.add("second phase loaded at " + storm + "% storm (the bar started again from 0%)");
+        notes.add("second phase loaded at " + storm + "% storm (the bar started again from 0%)"
+                + (polesRepaired > 0 ? "; " + polesRepaired + " wave(s) had broken both totem poles: repaired one to tether" : ""));
         use(t.selfTestPool(), "tempoross_spirit_pool");
         int permits = Inv.count(player, "reward_permit");
         expect(until(TemporossSessionTicks.PHASE + 10, t::isEnded), "the second essence phase didn't subdue him (essence "
@@ -493,7 +496,12 @@ public final class SkillingBossWalk {
             }
             return !Inv.has(player, "raw_harpoonfish", 1);
         }), "cooking left " + Inv.count(player, "raw_harpoonfish") + " raw harpoonfish");
-        expect(Inv.count(player, "harpoonfish") >= n, "cooking made " + Inv.count(player, "harpoonfish") + " harpoonfish");
+        // Only a wave (untethered) or a fire the player stood in takes fish (OSRS Wiki): say which, if any, did.
+        expect(Inv.count(player, "harpoonfish") >= n, "cooking made " + Inv.count(player, "harpoonfish") + " harpoonfish of " + n
+                + (t.caFlags(player).contains(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_WAVE_HIT)
+                        ? " (a wave hit the player this game)" : "")
+                + (t.caFlags(player).contains(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_FIRE_HIT)
+                        ? " (a fire burnt the player's supplies this game)" : ""));
         Inv.remove(player, "harpoonfish", Inv.count(player, "harpoonfish") - n);
     }
 
@@ -546,13 +554,23 @@ public final class SkillingBossWalk {
         }
     }
 
-    /** Tethers to a totem pole when a colossal wave is about to land (from wherever the player stands). */
+    /**
+     * Tethers to a totem pole when a colossal wave is about to land (from wherever the player stands). Each wave breaks each
+     * pole with a 15-25% chance (OSRS Wiki "Tempoross") and a broken pole can't be tethered to until it is repaired with a
+     * hammer ("Tempoross/Strategies"), so when earlier waves broke both, the player repairs one first, as a player would.
+     */
     private void surviveWave(TemporossSession t) {
         TemporossSession.View v = t.selfTestView(player);
         if (v.nextWave() <= MinigameRules.Tempoross.WAVE_WARNING && v.nextWave() > 0 && !v.tethered() && !v.submerged()) {
-            if (!Inv.has(player, "rope", 1)) {
+            boolean noPole = !t.selfTestTotemStanding(0) && !t.selfTestTotemStanding(1);
+            if (!Inv.has(player, "rope", 1) || (noPole && !Inv.has(player, "hammer", 1))) {
                 BlockPos at = t.selfTestSupplies();
                 BlockHooks.use(player, "tempoross_supplies", at, world.getBlockState(at));
+            }
+            if (noPole) {
+                BlockPos broken = t.selfTestTotem(0);
+                BlockHooks.use(player, "tempoross_broken_totem", broken, world.getBlockState(broken));
+                polesRepaired++;
             }
             for (int i = 0; i < 2; i++) {
                 BlockPos totem = t.selfTestTotem(i);
