@@ -3619,29 +3619,44 @@ final class CoxRooms {
             drip.keySet().removeIf(u -> world().getServer().getPlayerList().getPlayer(u) == null);
         }
 
-        /** Fire walls in place (their centres); a doused wall no longer burns anyone (OSRS wiki). */
-        private final Set<Vec3> walls = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
-        /** Players each fire wall trapped (by wall, for the self-test). */
-        private final Map<Vec3, Integer> wallTraps = new java.util.IdentityHashMap<>();
+        /**
+         * One Fire Wall attack: the target's position when the Olm breathed it and the players it caught (for the self-test).
+         * Each attack is its own object: two walls breathed at a player who has not moved in between share one position.
+         */
+        static final class FireWall {
+            final Vec3 centre;
+            int trapped;
+
+            FireWall(Vec3 centre) {
+                this.centre = centre;
+            }
+        }
+
+        /** Fire walls still burning; a doused wall no longer burns anyone (OSRS wiki). */
+        private final List<FireWall> walls = new ArrayList<>();
         private int doused;
 
         /**
          * A player douses the fire wall with water (OSRS wiki: water and ice spells, Humidify, a filled watering can or a
-         * water-filled gourd vial put out a segment, freeing whoever it trapped). Returns whether there was a wall to douse
-         * near the player.
+         * water-filled gourd vial put out a segment, freeing whoever it trapped). The segment poured on belongs to the
+         * nearest burning wall within reach. Returns whether there was a wall to douse near the player.
          */
         boolean douse(ServerPlayer p) {
-            Vec3 c = null;
-            for (Vec3 w : walls) {
-                if (RaidEffects.horizontalDistSq(p.position(), w) <= 4.5 * 4.5) {
-                    c = w;
+            FireWall wall = null;
+            double best = 4.5 * 4.5;
+            for (FireWall w : walls) {
+                double d = RaidEffects.horizontalDistSq(p.position(), w.centre);
+                if (d <= best) {
+                    best = d;
+                    wall = w;
                 }
             }
-            if (c == null) {
+            if (wall == null) {
                 return false;
             }
-            walls.remove(c);
+            walls.remove(wall);
             doused++;
+            Vec3 c = wall.centre;
             world().sendParticles(ParticleTypes.SPLASH, c.x, c.y + 0.5, c.z, 40, 2, 0.5, 3, 0.1);
             world().sendParticles(ParticleTypes.CLOUD, c.x, c.y + 0.5, c.z, 20, 2, 0.5, 3, 0.02);
             say(p.getName().getString() + " douses the wall of fire.");
@@ -3649,9 +3664,10 @@ final class CoxRooms {
         }
 
         /** Fire Wall: two walls of fire either side of the target; leap out of a wall (8-10) or burn inside (50-65). */
-        Vec3 fireWall(ServerPlayer target) {
+        FireWall fireWall(ServerPlayer target) {
             Vec3 c = target.position();
-            walls.add(c);
+            FireWall wall = new FireWall(c);
+            walls.add(wall);
             say("The Great Olm breathes walls of fire around " + target.getName().getString() + "!");
             for (ServerPlayer p : players()) {
                 for (int side = -1; side <= 1; side += 2) {
@@ -3664,7 +3680,7 @@ final class CoxRooms {
             }
             for (int i = 0; i < CoxRules.OLM_WALL_TICKS; i++) {
                 RaidEffects.later(i, () -> {
-                    if (!walls.contains(c)) {
+                    if (!walls.contains(wall)) {
                         return;
                     }
                     for (int dz = -3; dz <= 3; dz++) {
@@ -3675,18 +3691,18 @@ final class CoxRooms {
                 });
             }
             RaidEffects.later(CoxRules.OLM_WALL_TICKS, () -> {
-                if (!walls.remove(c)) {
+                if (!walls.remove(wall)) {
                     return; // doused
                 }
                 for (ServerPlayer p : players()) {
                     if (Math.abs(p.getX() - c.x) < 2 && Math.abs(p.getZ() - c.z) <= 3.5) {
-                        wallTraps.merge(c, 1, Integer::sum);
+                        wall.trapped++;
                         special(head, p, CoxRules.OLM_WALL_MIN + rnd().nextInt(CoxRules.OLM_WALL_MAX - CoxRules.OLM_WALL_MIN + 1));
                         Msg.red(p, "You are caught between the walls of fire!");
                     }
                 }
             });
-            return c;
+            return wall;
         }
 
         /** Crystal bombs: 2-3 bombs near the players explode over 4 tiles (15, +15 for every tile closer). */
@@ -3909,24 +3925,29 @@ final class CoxRooms {
             w.expect(clench == CoxRules.OLM_CLENCH_TICKS, "a heavy hit did not clench the left hand for " + CoxRules.OLM_CLENCH_TICKS
                     + " ticks (" + clench + ")");
             w.expect(w.hit(left, 10, AttackType.SLASH) == 0, "the clenched left hand took damage");
-            // A fire wall traps the player; a water-filled gourd vial puts it out before it burns.
+            // A fire wall traps the player; a water-filled gourd vial puts it out before it burns. The player may already carry
+            // vials filled in a resource room: the one poured must be the one given here.
             Vec3 trap = w.player().position();
-            Vec3 first = fireWall(w.player());
+            FireWall first = fireWall(w.player());
+            int vials = w.count(CoxSupplies.WATER_GOURD);
+            int dousedBefore = doused;
             w.give(CoxSupplies.WATER_GOURD, 1);
             w.expect(CoxSupplyService.useWaterGourd(w.player()), "a water-filled gourd vial did not douse the fire wall");
             for (int i = 0; i <= CoxRules.OLM_WALL_TICKS; i++) {
                 w.moveTo(trap); // stay inside (the Olm's own swaps and bursts would move the player)
                 w.tick(1);
             }
-            w.expect(doused == 1 && wallTraps.getOrDefault(first, 0) == 0 && w.count(CoxSupplies.WATER_GOURD) == 0,
-                    "the doused fire wall still burned the player (or the vial was not used)");
+            w.expect(doused == dousedBefore + 1 && first.trapped == 0 && w.count(CoxSupplies.WATER_GOURD) == vials,
+                    "the doused fire wall still burned the player (or the vial was not used): caught " + first.trapped + ", "
+                    + w.count(CoxSupplies.WATER_GOURD) + " vial(s) left (" + vials + " before the one given), doused "
+                    + (doused - dousedBefore));
             w.moveTo(trap);
-            Vec3 second = fireWall(w.player());
+            FireWall second = fireWall(w.player());
             for (int i = 0; i <= CoxRules.OLM_WALL_TICKS; i++) {
                 w.moveTo(trap);
                 w.tick(1);
             }
-            w.expect(wallTraps.getOrDefault(second, 0) == 1, "a fire wall left alone did not burn the trapped player");
+            w.expect(second.trapped == 1, "a fire wall left alone did not burn the trapped player (caught " + second.trapped + ")");
             int guard = 0;
             int lastPhase = phase;
             while (stage != Stage.HEAD && guard++ < 3000) {
