@@ -37,6 +37,13 @@ public class BossSummonBlock extends Block {
     @SuppressWarnings("deprecation")
     protected InteractionResult useWithoutItem(BlockState state, Level world, BlockPos pos, Player player, BlockHitResult hit) {
         if (!world.isClientSide() && player instanceof ServerPlayer sp) {
+            if (boss == Boss.TZTOK_JAD) {
+                // TzTok-Jad is only fought at the end of the Fight Cave (OSRS): his stone leads into the cave.
+                com.runecraft.util.Msg.game(sp, "TzTok-Jad waits at the end of the Fight Cave. You step into the cave.");
+                com.runecraft.content.minigames.MinigameManager.enter(sp, com.runecraft.osrs.content.minigames.Minigame.FIGHT_CAVES,
+                        com.runecraft.osrs.content.minigames.Minigame.FIGHT_CAVES.entranceBlock());
+                return InteractionResult.SUCCESS;
+            }
             BossService.summon(sp, (ServerLevel) world, pos, boss);
         }
         return InteractionResult.sidedSuccess(world.isClientSide());

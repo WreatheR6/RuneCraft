@@ -189,6 +189,7 @@ public final class MonsterDefenceTable {
         x("yt_mejkot", 0, 0, "water", 40); // Yt-MejKot (Standard)
         x("ket_zek", 0, 0, "water", 40); // Ket-Zek (Standard)
         x("yt_hurkot", 100, 100, "water", 40); // Yt-HurKot (Level 108)
+        x("yt_hurkot_inferno", 130, 130, "water", 40); // Yt-HurKot (Level 141)
         x("jal_nib", -20, -20, "water", 40); // Jal-Nib
         x("jal_mejrah", 45, 45, "water", 40); // Jal-MejRah
         x("jal_ak", 25, 25, "water", 40); // Jal-Ak

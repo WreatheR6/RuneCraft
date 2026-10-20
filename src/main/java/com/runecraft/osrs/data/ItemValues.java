@@ -2354,6 +2354,7 @@ public final class ItemValues {
             infernal_cape|80000|1.814||
             jal_nib_rek|-1|0.015||
             tzrek_zuk|-1|0.015||
+            jalrek_jad|-1|0.015||
             obsidian_helmet|56320|3.628|gt|Provides excellent protection.
             obsidian_platebody|84000|9.979|gt|Provides excellent protection.
             obsidian_platelegs|67000|9.071|gt|Provides excellent protection.

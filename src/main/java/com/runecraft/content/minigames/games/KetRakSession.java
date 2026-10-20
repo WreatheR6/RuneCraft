@@ -146,7 +146,7 @@ public class KetRakSession extends TzHaarSession {
         }
         completed = true;
         finishTicks = ticks - Math.max(0, jadsAt);
-        for (LivingEntity healer : living("yt_hurkot")) {
+        for (LivingEntity healer : living(TzHaarWaves.HURKOT_INFERNO)) {
             healer.discard();
         }
         end(true);

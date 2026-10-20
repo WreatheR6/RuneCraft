@@ -99,6 +99,10 @@ final class GameplayChecks {
             checks.add(new SelfTest.Check("minigame:" + m.id(), () -> g.minigame(m)));
         }
         checks.addAll(MinigameRewardChecks.all(context));
+        checks.add(new SelfTest.Check("minigame:fight_caves_run", () -> g.tzhaarRun(
+                com.runecraft.content.minigames.games.TzHaarSelfTest::fightCaveRun)));
+        checks.add(new SelfTest.Check("minigame:inferno_run", () -> g.tzhaarRun(
+                com.runecraft.content.minigames.games.TzHaarSelfTest::infernoRun)));
         for (RaidType r : RaidType.values()) {
             checks.add(new SelfTest.Check("raid:" + r.id(), () -> g.raid(r)));
         }
@@ -547,6 +551,21 @@ final class GameplayChecks {
         }
         try {
             return com.runecraft.content.raids.RaidSelfTest.toaDeaths(p(), c.near(0, 2));
+        } catch (AssertionError e) {
+            throw failure(e.getMessage());
+        }
+    }
+
+    /**
+     * A whole Fight Cave or Inferno run as the real player (round 34, {@code TzHaarSelfTest}): minigame sessions only see
+     * players in the server's player list, so the fake player can't do it.
+     */
+    private String tzhaarRun(java.util.function.Function<ServerPlayer, String> run) {
+        if (!c.realPlayer()) {
+            throw new SelfTest.Skip("minigame sessions only see players in the player list; runs in '/rc selftest real minigame:'");
+        }
+        try {
+            return run.apply(p());
         } catch (AssertionError e) {
             throw failure(e.getMessage());
         }

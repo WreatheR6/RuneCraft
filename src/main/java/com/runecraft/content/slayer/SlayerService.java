@@ -163,6 +163,8 @@ public final class SlayerService {
         }
         say(player, master, "Your new task is to kill " + p.amount + " " + describe(p) + "."
                 + (master.wilderness() ? " They only count in the Wilderness." : ""));
+        // OSRS: a TzHaar assignment comes with the option to kill TzTok-Jad (or TzKal-Zuk) instead.
+        com.runecraft.content.minigames.games.TzHaarSlayer.offer(player);
         SlayerNet.sync(player);
     }
 
@@ -333,6 +335,20 @@ public final class SlayerService {
         if (p.remaining <= 0) {
             complete(player, p, master, master != null && eliteDiary(player, master));
         }
+        SlayerNet.sync(player);
+    }
+
+    /**
+     * Completes the current task now, with its streak and points: a TzTok-Jad / TzKal-Zuk kill ends a TzHaar task taken as
+     * a boss task ({@code content.minigames.games.TzHaarSlayer}).
+     */
+    public static void completeTask(ServerPlayer player) {
+        SlayerState.Profile p = profile(player);
+        if (p.task == null) {
+            return;
+        }
+        SlayerMasters.Master master = p.master == null ? null : SlayerMasters.get(p.master);
+        complete(player, p, master, master != null && eliteDiary(player, master));
         SlayerNet.sync(player);
     }
 

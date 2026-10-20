@@ -110,7 +110,7 @@ public final class Pets {
         boss("pet_gull", "Gull", "shellbane_gryphon", 2.0f, "shellbane_gryphon", 3000); // approx
         boss("pet_beef", "Beef", "brutus", 1.8f, "brutus", 1000, "demonic_brutus", 400);
         boss("pet_maggot_marquess", "Maggot marquess", "maggot_king", 2.6f, "maggot_king", 3500);
-        boss("tzrek_jad", "TzRek-Jad", "jaltok_jad", 2.6f, "tztok_jad", 200);
+        boss("tzrek_jad", "TzRek-Jad", "tztok_jad", 1.8f, "tztok_jad", 200);
         // --- Raids (raids module rolls these from its own reward logic) ---
         add("olmlet", "Olmlet", Source.RAID, "great_olm", 2.6f, false, 0, null, "1/53 of a Chambers of Xeric purple", "great_olm", 0);
         add("lil_zik", "Lil' Zik", Source.RAID, "verzik_vitur_p3", 2.6f, false, 0, null, "1/650 per Theatre of Blood completion",
@@ -167,16 +167,47 @@ public final class Pets {
     private Pets() {
     }
 
+    /**
+     * Metamorphosis forms (the OSRS "Metamorphosis" option): another look of a pet, a follower and item of its own but no
+     * collection log entry. JalRek-Jad needs every TzHaar-Ket-Rak's challenge completed; TzRek-Zuk is free.
+     */
+    private static final Map<String, PetDef> VARIANTS = new LinkedHashMap<>();
+    private static final Map<String, String> VARIANT_OF = new LinkedHashMap<>();
+
+    private static void variant(String id, String name, String look, float lookHeight, String base) {
+        PetDef b = BY_ID.get(base);
+        VARIANTS.put(id, new PetDef(id, name, b.source(), b.sources(), Collections.nCopies(b.sources().size(), 0), b.skill(), look,
+                lookHeight, false, b.color(), "Metamorphosis of " + b.name()));
+        VARIANT_OF.put(id, base);
+        VARIANT_OF.put(base, id);
+    }
+
+    static {
+        variant("jalrek_jad", "JalRek-Jad", "jaltok_jad", 3.2f, "tzrek_jad");
+        variant("tzrek_zuk", "TzRek-Zuk", "tzkal_zuk", 3.5f, "jal_nib_rek");
+    }
+
     public static List<PetDef> all() {
         return Collections.unmodifiableList(ALL);
     }
 
     public static PetDef get(String id) {
-        return BY_ID.get(id);
+        PetDef p = BY_ID.get(id);
+        return p != null ? p : VARIANTS.get(id);
     }
 
     public static boolean isPet(String itemId) {
-        return BY_ID.containsKey(itemId);
+        return BY_ID.containsKey(itemId) || VARIANTS.containsKey(itemId);
+    }
+
+    /** The other form of a pet with a metamorphosis (TzRek-Jad and JalRek-Jad, Jal-nib-rek and TzRek-Zuk), or null. */
+    public static String metamorphosis(String petId) {
+        return VARIANT_OF.get(petId);
+    }
+
+    /** Whether a pet id is a metamorphosis form rather than the pet itself. */
+    public static boolean isVariant(String petId) {
+        return VARIANTS.containsKey(petId);
     }
 
     /** Pets this module defines as items. */

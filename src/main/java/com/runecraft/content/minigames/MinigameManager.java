@@ -497,12 +497,61 @@ public final class MinigameManager {
         }
         MinigameSession s = session(player);
         if (s != null) {
+            try {
+                s.onDisconnect(player);
+            } catch (RuntimeException e) {
+                RuneCraft.LOGGER.error("Minigame {} failed to pause for {}", s.game.id(), player.getGameProfile().getName(), e);
+            }
             s.removePlayer(player, true);
         }
     }
 
-    /** Players who log in inside an instance with no running game are sent to Lumbridge. */
+    /**
+     * Starts a session for one player at once, without lobby or requirements (a Fight Cave or Inferno run resumed on login);
+     * null if it failed to start.
+     */
+    public static MinigameSession startFor(Minigame game, String variant, ServerPlayer player) {
+        ServerLevel world = Gielinor.world(player.getServer());
+        if (world == null || session(player) != null) {
+            return null;
+        }
+        MinigameSession s = create(game, nextId++, allocateSlot(game), world, variant);
+        SESSIONS.put(s.id, s);
+        BY_PLAYER.put(player.getUUID(), s);
+        CHOSEN.put(player.getUUID(), variant);
+        try {
+            s.begin(List.of(player));
+        } catch (RuntimeException e) {
+            RuneCraft.LOGGER.error("Failed to start minigame {}", game.id(), e);
+            s.end(false);
+            return null;
+        }
+        return s;
+    }
+
+    /** Self-test hook: the player logging out (paused games save their run) and logging back in. */
+    public static void selfTestLogout(ServerPlayer player) {
+        onDisconnect(player);
+    }
+
+    public static void selfTestLogin(ServerPlayer player) {
+        onJoin(player);
+    }
+
+    /** Self-test hook: the player would die now; false when their minigame handled the death (a safe minigame). */
+    public static boolean selfTestDeath(ServerPlayer player) {
+        return allowDeath(player);
+    }
+
+    /**
+     * Players who log in inside an instance with no running game are sent to Lumbridge, unless they paused a Fight Cave or
+     * Inferno run by logging out: that run picks up again.
+     */
     static void onJoin(ServerPlayer player) {
+        if (Gielinor.is(player) && session(player) == null
+                && com.runecraft.content.minigames.games.TzHaarSession.resumeOnLogin(player)) {
+            return;
+        }
         if (Gielinor.is(player) && Arena.inInstanceArea(player.blockPosition()) && session(player) == null) {
             Msg.game(player, "The minigame you were in has ended.");
             Gielinor.teleport(player, com.runecraft.osrs.Landmark.LUMBRIDGE);

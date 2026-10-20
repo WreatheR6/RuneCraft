@@ -785,6 +785,7 @@ public final class MonsterTraits {
         t("yellow_portal", 3, true, true, 0); // Portal (Pest Control) (Blue, Intermediate/veteran)
         t("young_impling", 0, false, false, 0); // Young impling
         t("yt_hurkot", 1, false, false, 60); // Yt-HurKot (Level 108)
+        t("yt_hurkot_inferno", 1, false, false, 90); // Yt-HurKot (Level 141)
         t("yt_mejkot", 4, false, false, 80); // Yt-MejKot (Standard)
         t("zakln_gritch", 2, false, false, 150, "demon"); // Zakl'n Gritch
         t("zamorak_crafter", 1, false, false, 0); // Zamorak crafter
