@@ -28,6 +28,8 @@ import net.minecraft.world.phys.Vec3;
  * code doing each mechanic, and every step is checked. Any broken step throws with what went wrong.
  */
 final class NightmareMuspahWalks {
+    /** A reflected hit (a ring of recoil's or Vengeance's) in the walks. */
+    private static final int REFLECTED = 12;
     /** The player's health buffer while {@link #playToKill} plays a fight on. */
     private static final net.minecraft.resources.ResourceLocation KILL_HP_BUFFER = com.runecraft.RuneCraft.id("selftest_kill_hp");
     private static long tick;
@@ -225,6 +227,15 @@ final class NightmareMuspahWalks {
                 for (Special s : specials) {
                     did.add(special(boss, p, n, s));
                 }
+                // A ring of recoil or Vengeance off her hits counts toward her shield like any hit (OSRS), though not toward
+                // the player's share of the loot.
+                step(boss, p, 1);
+                int shieldBefore = n.shieldLeft;
+                int[] share = n.contribution(p).clone();
+                CombatHandler.applyDamage(p, boss, REFLECTED);
+                check(n.stage == NightmareScript.Stage.SHIELD && n.shieldLeft == Math.max(0, shieldBefore - REFLECTED),
+                        "a reflected hit didn't count toward her shield (" + shieldBefore + " -> " + n.shieldLeft + ", " + n.stage + ")");
+                check(java.util.Arrays.equals(share, n.contribution(p)), "a reflected hit counted toward the player's share of the loot");
                 // The shield, broken by the player's hits; her bar falls with it.
                 float before = boss.getHealth();
                 int hits = 0;
@@ -236,15 +247,19 @@ final class NightmareMuspahWalks {
                 check(boss.getHealth() < before, "her health didn't fall with her shield (" + before + " -> " + boss.getHealth() + ")");
                 check(!n.isVulnerable(boss) && boss.modifyIncoming(p, 50, AttackType.SLASH) == 0, "hurt while the totems are up");
                 check(n.totems.size() == NightmareRules.TOTEMS, n.totems.size() + " totems");
-                // A ring of recoil or Vengeance off her hits while she is immune can't end her (her health is what is
-                // left to deal to her, 1 once the last shield is down): only the totems' blast does.
+                // A ring of recoil or Vengeance off her hits while she is immune does nothing, let alone end her: only the
+                // totems' blast does. Her health is what is left to deal to her (1 once the last shield is down) from her
+                // next game tick on; the shield hits took it down on their own scale until then.
+                step(boss, p, 1);
                 float immune = boss.getHealth();
                 CombatHandler.applyDamage(p, boss, (int) Math.ceil(immune) + 5);
                 check(boss.isAlive() && n.stage == NightmareScript.Stage.TOTEMS, "a reflected hit killed her while the totems were up ("
                         + n.stage + ")");
-                step(boss, p, 1);
-                check(Math.abs(boss.getHealth() - immune) <= 1f, "her health didn't come back after a reflected hit (" + immune + " -> "
+                check(Math.abs(boss.getHealth() - immune) <= 1f, "a reflected hit hurt her while the totems were up (" + immune + " -> "
                         + boss.getHealth() + ")");
+                step(boss, p, 1);
+                check(Math.abs(boss.getHealth() - immune) <= 1f, "her health moved after a reflected hit while the totems were up ("
+                        + immune + " -> " + boss.getHealth() + ")");
                 Mob first = n.totems.get(0);
                 boolean xpBefore = com.runecraft.skill.XpService.allowed(p, com.runecraft.osrs.Skill.MAGIC);
                 int magic = n.totemDamage(p, first, AttackType.MAGIC, 10);
@@ -293,6 +308,11 @@ final class NightmareMuspahWalks {
                 for (Mob w : new ArrayList<>(n.walkers)) {
                     kill(p, w);
                 }
+                // Vengeance or a ring of recoil counts toward her desperation health too.
+                int left = n.desperationLeft;
+                CombatHandler.applyDamage(p, boss, REFLECTED);
+                check(boss.isAlive() && n.desperationLeft == left - REFLECTED, "a reflected hit didn't count toward her desperation health ("
+                        + left + " -> " + n.desperationLeft + ")");
                 int hits = 0;
                 while (boss.isAlive() && hits < 20) {
                     hurt(boss, p, 60, AttackType.CRUSH);

@@ -58,7 +58,8 @@ import net.minecraft.world.phys.Vec3;
  * set the fight's scale. Each phase players break her shield (her boss bar), she becomes immune and they charge the four
  * totems in the corners (magic charges twice as fast); charged, the totems blast her. The Nightmare dies to the third blast;
  * sleepwalkers come at the start of her second and third phases. Phosani survives hers: sleepwalkers come after each, then
- * her desperation phase (150 health, Grasping Claws over and over, a sleepwalker at a time).
+ * her desperation phase (150 health, Grasping Claws over and over, a sleepwalker at a time). A ring of recoil or Vengeance off
+ * her hits counts toward her shield or desperation health like any hit; while she is immune nothing hurts her.
  *
  * <p>Her standard attacks wind up (melee 2 ticks, magic and ranged 3) and land on whoever stays in reach: the right
  * protection prayer takes The Nightmare's to 20% (a wrong one raises them to 120%) and blocks Phosani's. Her specials by phase:
@@ -119,8 +120,12 @@ final class NightmareScript extends ScriptedBoss {
         });
         com.runecraft.combat.PrayerService.REDIRECTS.add((p, prayer) -> cursed(p) ? NightmareRules.cursed(prayer) : prayer);
         com.runecraft.skill.XpService.addGate((p, skill) -> !chargedTotemNow(p) || !COMBAT_SKILLS.contains(skill));
-        // Only the script's own blast or killing blow ends her: a hit from outside her damage rules (a ring of recoil,
-        // Vengeance, poison) can bring her health to 0 while she is immune; she keeps what is left to deal to her.
+        // A hit that never passed her damage rules (a ring of recoil or Vengeance off her own hits) counts toward her shield
+        // or desperation health like any hit, and does nothing while she is immune (allowDamage).
+        com.runecraft.platform.ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) ->
+                !(entity instanceof DataBossEntity boss && boss.script() instanceof NightmareScript n) || n.allowDamage(boss, source, amount));
+        // Only the script's own blast or killing blow ends her (a backstop: whatever else brings her health to 0 leaves her
+        // what is left to deal to her).
         com.runecraft.platform.ServerLivingEntityEvents.ALLOW_DEATH.register((entity, source, amount) ->
                 !(entity instanceof DataBossEntity boss && boss.script() instanceof NightmareScript n)
                         || source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY) || n.allowDeath(boss));
@@ -143,6 +148,12 @@ final class NightmareScript extends ScriptedBoss {
     private final List<Vec3> charged = new ArrayList<>();
     /** Damage each player dealt to her shield (and desperation health) and charge they put into totems. */
     final Map<UUID, int[]> contribution = new LinkedHashMap<>();
+    /**
+     * A hit her damage rules just took ({@link #incoming}) is on its way (its damage lands right after, in the same call):
+     * who dealt it. Any other damage reaching her is from outside her rules ({@link #allowDamage}). Cleared every game tick.
+     */
+    private boolean ruleHit;
+    private UUID ruleHitBy;
     List<NightmareRules.PhosaniSet> sets;
     private final Deque<Special> round = new ArrayDeque<>();
     private int sinceSpecial;
@@ -435,8 +446,8 @@ final class NightmareScript extends ScriptedBoss {
 
     /**
      * Her death, asked whatever brought her health to 0: only the script's kill (the third blast, Phosani's last hit) may
-     * end her. Anything else (recoil or Vengeance off her own hits while the totems are up, poison) leaves her what is left
-     * to deal to her.
+     * end her. Anything else leaves her what is left to deal to her (a backstop: {@link #allowDamage} already keeps hits
+     * from outside her rules from touching her health).
      */
     boolean allowDeath(DataBossEntity boss) {
         if (stage == Stage.DEAD) {
@@ -446,8 +457,63 @@ final class NightmareScript extends ScriptedBoss {
         return false;
     }
 
+    /**
+     * Damage about to reach her. A hit her rules just took ({@link #incoming}) and the script's own killing blow go through.
+     * Anything else never passed her rules: a player's ring of recoil or Vengeance off her own hits counts toward her shield
+     * or desperation health like any of their hits ({@link #reflected}); while she is immune (asleep, the totems, the
+     * sleepwalkers) nothing hurts her, nor does anything that isn't a player's (she is immune to poison and venom).
+     */
+    boolean allowDamage(DataBossEntity boss, net.minecraft.world.damagesource.DamageSource source, float amount) {
+        if (stage == Stage.DEAD || source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)) {
+            return true;
+        }
+        net.minecraft.world.entity.Entity by = source.getEntity();
+        if (ruleHit && java.util.Objects.equals(ruleHitBy, by == null ? null : by.getUUID())) {
+            ruleHit = false;
+            return true; // her rules already counted it
+        }
+        if (by instanceof ServerPlayer && (stage == Stage.SHIELD || stage == Stage.DESPERATION)) {
+            reflected(boss, Math.round(amount));
+        }
+        return false;
+    }
+
+    /**
+     * A player's hit from outside her damage rules (a ring of recoil or Vengeance off her hits, Retribution): OSRS counts it
+     * toward her shield, or Phosani's desperation health, like any hit (it can break the shield or end her). It doesn't count
+     * toward the player's share of the loot (approx: OSRS leaves recoil and Vengeance out of drop contribution). Her health
+     * follows at once.
+     */
+    void reflected(DataBossEntity boss, int damage) {
+        int d = Math.max(0, damage);
+        if (stage == Stage.SHIELD) {
+            shieldLeft -= Math.min(d, shieldLeft);
+            if (shieldLeft <= 0) {
+                breakShield(boss);
+            }
+        } else if (stage == Stage.DESPERATION) {
+            desperationLeft -= Math.min(d, desperationLeft);
+            if (desperationLeft <= 0) {
+                stage = Stage.DEAD; // her next game tick lands the killing blow (kill(): the MVP's kill)
+                return;
+            }
+        }
+        if (boss.isAlive()) {
+            boss.setHealth(Math.max(1f, mappedHealth(boss)));
+        }
+    }
+
     @Override
     protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+        int d = rulesIncoming(boss, attacker, damage);
+        if (d > 0) {
+            ruleHit = true; // its damage reaches her next (allowDamage lets it through)
+            ruleHitBy = attacker == null ? null : attacker.getUUID();
+        }
+        return d;
+    }
+
+    private int rulesIncoming(DataBossEntity boss, ServerPlayer attacker, int damage) {
         if (stage != Stage.SHIELD && stage != Stage.DESPERATION) {
             return 0;
         }
@@ -896,6 +962,9 @@ final class NightmareScript extends ScriptedBoss {
                 continue;
             }
             ServerPlayer p = BossFx.world(boss).getServer().getPlayerList().getPlayer(e.getKey());
+            if (p == null && boss.getTarget() instanceof ServerPlayer t && t.getUUID().equals(e.getKey())) {
+                p = t; // her target, even when it isn't in the server's player list (the self-test's player)
+            }
             if (!inFight(boss, p) || com.runecraft.action.ActionManager.gameTick() > c.until()) {
                 CURSED.remove(e.getKey(), c);
             } else if (c.attacksLeft() <= 1) {
@@ -1258,6 +1327,7 @@ final class NightmareScript extends ScriptedBoss {
 
     @Override
     protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
+        ruleHit = false; // a hit her rules took lands in the same call, so none is still on its way (one that came to 0 never lands)
         if (!cleanedUp) {
             cleanedUp = true;
             clearStrays(boss); // a boss reloaded from disk: what its old script placed is no longer tracked
