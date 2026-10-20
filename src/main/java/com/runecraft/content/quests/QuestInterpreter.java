@@ -150,7 +150,7 @@ public final class QuestInterpreter {
             }
         }
         for (Map.Entry<String, Integer> e : t.need.entrySet()) {
-            if (!Inv.has(p, e.getKey(), e.getValue())) {
+            if (!Inv.has(p, e.getKey(), e.getValue()) && !(e.getValue() == 1 && wears(p, e.getKey()))) {
                 return "You need " + describe(e.getKey(), e.getValue()) + ".";
             }
         }
@@ -186,6 +186,15 @@ public final class QuestInterpreter {
         double dz = p.getZ() - c[1];
         double r = tiles * (double) com.runecraft.osrs.GielinorMap.SCALE;
         return dx * dx + dz * dz <= r * r;
+    }
+
+    /**
+     * Whether the player wears {@code id} in a slot the inventory doesn't hold: the systems module's ring, neck, hands and cape
+     * slots or a quest gear slot. A needed item counts worn too (a ghostspeak amulet, the leather gloves for the Witch's House
+     * gate, which OSRS wants equipped).
+     */
+    static boolean wears(ServerPlayer p, String id) {
+        return com.runecraft.content.systems.SysState.of(p).wearing(id) || QuestsState.get(p).wornAll(p.getUUID()).containsValue(id);
     }
 
     /** Nothing carried and nothing worn: inventory, armour and off-hand, and the virtual ring, neck, hands and cape slots. */

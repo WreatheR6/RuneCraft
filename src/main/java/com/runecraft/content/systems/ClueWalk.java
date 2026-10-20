@@ -95,9 +95,8 @@ public final class ClueWalk {
                     e.discard();
                 }
             }
-            for (LivingEntity g : ClueService.guardians(player)) {
-                g.discard();
-            }
+            // Every guardian of this walk, also one a failed step left behind (it must not answer the next tier's dig).
+            ClueService.clearGuardians(player);
             ClueService.unforce(player);
             if (health != null) {
                 health.removeModifier(HP_BUFFER);
@@ -217,10 +216,13 @@ public final class ClueWalk {
         } else {
             goTile(s.x(), s.y());
         }
+        if (s.guardian() != null) {
+            settle(); // the guardian appears in the chunks around the player, loaded as for a player who walked here
+        }
         expect(ClueService.dig(player, tier, true), "the dig at " + s.x() + "," + s.y() + " wasn't taken (player at "
                 + java.util.Arrays.toString(SysTeleport.osrs(player)) + ")");
         if (s.guardian() != null) {
-            List<LivingEntity> guards = ClueService.guardians(player);
+            List<LivingEntity> guards = ClueService.guardians(player, tier);
             expect(!guards.isEmpty(), s.guardian() + " didn't appear");
             for (LivingEntity g : guards) {
                 expect(ClueService.dropsNoClues(g), g.getName().getString() + " rolls clue scroll drops");
@@ -271,6 +273,7 @@ public final class ClueWalk {
     private void search(Step s) {
         goTile(s.x(), s.y());
         if (s.keyMonster() != null) {
+            settle(); // the key drops where the monster dies, in the chunks around the player
             expect(ClueService.search(player, tier, true), "search wasn't taken");
             expect(ClueService.stepIndex(player, tier) >= 0 && ClueService.current(player, tier) == s, "a locked search advanced");
             kill(spawnMonster(monsterId(s.keyMonster())));
@@ -314,30 +317,33 @@ public final class ClueWalk {
             expect(SysState.of(player).stash.get(stash.name()).isEmpty(), "items not taken out of the STASH unit");
             log.append("[STASH] ");
         }
+        if (s.guardian() != null) {
+            settle(); // the double agent appears in the chunks around the player
+        }
         // Uri is not pleased without the items: emote first with nothing worn.
-        List<String> emotes = s.emotes();
         if (!s.req().isEmpty()) {
-            for (String e : emotes) {
-                ClueService.emote(player, tier, e);
-            }
+            performEmotes(s);
             expect(ClueService.current(player, tier) == s, "the emote step advanced without its items");
         }
         for (ClueReqs.Token t : ClueReqs.firstChoice(s.req())) {
             equip(t.item());
         }
-        for (String e : emotes) {
-            ClueService.emote(player, tier, e);
-        }
+        performEmotes(s);
         if (s.guardian() != null) {
-            List<LivingEntity> agents = ClueService.guardians(player);
+            List<LivingEntity> agents = ClueService.guardians(player, tier);
             expect(!agents.isEmpty(), "no double agent appeared");
             for (LivingEntity a : agents) {
                 kill(a);
             }
-            for (String e : emotes) {
-                ClueService.emote(player, tier, e);
-            }
+            performEmotes(s);
             log.append("[double agent] ");
+        }
+    }
+
+    /** Performs the step's emotes in order from the clue scroll's buttons ("emote:TIER:i"), as the player does. */
+    private void performEmotes(Step s) {
+        for (int i = 0; i < s.emotes().size(); i++) {
+            ClueService.action(player, "emote:" + tier.name() + ":" + i, java.util.Map.of());
         }
     }
 
@@ -442,12 +448,25 @@ public final class ClueWalk {
         ItemStack casket = find(tier.casketItem());
         expect(casket != null, "casket not in the inventory");
         SysState.of(player).mimicEnabled = false;
-        int items = countItems();
+        // The casket itself is used up, so a single reward item can take its slot: count what arrived besides it.
+        int stacks = countItems() - 1;
+        long amount = countAmount() - 1;
+        int coins = Inv.count(player, Inv.COINS);
         ClueService.openCasket(player, casket, tier);
         expect(SysState.of(player).cluesCompleted.getOrDefault(tier, 0) == done + 1, "completed count not raised");
         expect(!Inv.has(player, tier.casketItem(), 1), "casket not used up");
-        expect(countItems() > items || Inv.count(player, Inv.COINS) > 0, "the casket gave nothing");
-        return "casket gave " + (countItems() - items) + " stacks, log +" + (Players.data(player).collectionLog().size() - before);
+        expect(countAmount() > amount || Inv.count(player, Inv.COINS) > coins, "the casket gave nothing");
+        return "casket gave " + (countItems() - stacks) + " stacks" + (Inv.count(player, Inv.COINS) > coins ? " and "
+                + (Inv.count(player, Inv.COINS) - coins) + " coins" : "") + ", log +" + (Players.data(player).collectionLog().size() - before);
+    }
+
+    /** Items in the inventory, counting every item of a stack. */
+    private long countAmount() {
+        long n = 0;
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            n += player.getInventory().getItem(i).getCount();
+        }
+        return n;
     }
 
     /**
@@ -476,6 +495,7 @@ public final class ClueWalk {
         expect(def != null, "no Mimic boss");
         expect(def.key == null, "the Mimic's summon uses up a key");
         goTile(com.runecraft.osrs.content.systems.SystemsContent.WATSON_X, com.runecraft.osrs.content.systems.SystemsContent.WATSON_Y);
+        settle(); // the Mimic appears by the strange casket, in the chunks around the player
         int items = countItems();
         // First attempt: the player leaves and the Mimic resets; the casket stays with one try used.
         com.runecraft.boss.DataBossEntity boss = summonMimic(def);
@@ -581,6 +601,50 @@ public final class ClueWalk {
         player.teleportTo(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, player.getYRot(), player.getXRot());
     }
 
+    /** Holds the chunks around a spot the walk settles at; the ticket lapses by itself a few seconds after the walk. */
+    private static final net.minecraft.server.level.TicketType<net.minecraft.world.level.ChunkPos> SETTLE =
+            net.minecraft.server.level.TicketType.create("runecraft_clue_walk",
+                    java.util.Comparator.comparingLong(net.minecraft.world.level.ChunkPos::toLong), 100);
+    /** How long {@link #settle} waits for the chunks at most. */
+    private static final long SETTLE_NANOS = 5_000_000_000L;
+
+    /**
+     * Gives the server the moment a player walking in real time always gives it on arriving at a spot (as CoxTobWalk does
+     * for its rooms). The walk plays a whole trail inside one server tick and teleports from step to step; a chunk it loads
+     * on arrival only becomes visible to entity searches once the server confirms it on its main thread, normally between
+     * ticks. A guardian or double agent summoned there, a key dropped there or the Mimic is then left out of every search
+     * (ClueService.guardians, the item pick-up), and a guardian the walk can't see is never killed or cleared. This holds the
+     * chunks around the player (as the player's own view does) and runs the server's queued chunk work until they are
+     * entity-ticking, at most {@link #SETTLE_NANOS}.
+     */
+    private void settle() {
+        net.minecraft.server.level.ServerChunkCache chunks = world.getChunkSource();
+        net.minecraft.world.level.ChunkPos at = player.chunkPosition();
+        chunks.addRegionTicket(SETTLE, at, 3, at); // ticket level 30: this chunk and the ring around it entity-tick
+        long deadline = System.nanoTime() + SETTLE_NANOS;
+        while (!entityTicking(player.blockPosition(), 8)) {
+            if (System.nanoTime() > deadline) {
+                log.append("(chunks at ").append(at).append(" still loading after ").append(SETTLE_NANOS / 1_000_000_000L).append(" s) ");
+                return;
+            }
+            if (!chunks.pollTask()) {
+                java.util.concurrent.locks.LockSupport.parkNanos(100_000L); // wait for the chunk workers
+            }
+        }
+    }
+
+    /** Whether every chunk within {@code r} blocks of {@code c} is loaded, visible and ticking for entities. */
+    private boolean entityTicking(BlockPos c, int r) {
+        for (int x = (c.getX() - r) >> 4; x <= (c.getX() + r) >> 4; x++) {
+            for (int z = (c.getZ() - r) >> 4; z <= (c.getZ() + r) >> 4; z++) {
+                if (!world.isPositionEntityTicking(new BlockPos(x << 4, c.getY(), z << 4))) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     private void heal() {
         player.setHealth(player.getMaxHealth());
     }
@@ -591,25 +655,63 @@ public final class ClueWalk {
         }
     }
 
-    /** Wears an item where it goes (armour slots, weapon, shield, or this module's extra slots). */
+    /**
+     * Wears an item from the pack the way a player does: jewellery, capes and gloves through the item's own "Wear"
+     * ({@link JewelleryService#wear}, from the off hand), armour and shields into their slot, and a weapon wielded into the
+     * selected hotbar slot, whatever was held there going back into the pack. (Putting it straight into the main hand used
+     * to overwrite the held stack, which was the clue scroll: the trail then ignored the player.) An item the game can't
+     * wear at all fails the walk.
+     */
     private void equip(String id) {
-        ItemStack stack = Inv.stack(id, 1);
+        ItemStack stack = takeOne(id);
         expect(!stack.isEmpty(), "no item " + id);
         Jewellery.Worn worn = Jewellery.worn(id);
         if (worn != null) {
-            SysState.of(player).worn.put(worn.slot(), stack);
+            ItemStack off = player.getOffhandItem();
+            player.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND, stack);
+            JewelleryService.wear(player, net.minecraft.world.InteractionHand.OFF_HAND);
+            ItemStack replaced = player.getOffhandItem(); // what the slot held before, or nothing
+            player.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND, off);
+            if (!replaced.isEmpty()) {
+                Inv.give(player, replaced);
+            }
+            expect(Inv.idOf(SysState.of(player).worn(worn.slot())).equals(id), "couldn't wear the " + id);
             return;
         }
         ItemDef def = ItemCatalog.get(id);
-        EquipmentSlot slot = def == null || def.equipment() == null ? EquipmentSlot.MAINHAND : switch (def.equipment().slot()) {
+        expect(def != null && def.equipment() != null, "the game can't wear or wield " + id);
+        if (def.equipment().slot() == com.runecraft.osrs.EquipmentDef.Slot.WEAPON) {
+            int selected = player.getInventory().selected;
+            ItemStack held = player.getInventory().getItem(selected);
+            player.getInventory().setItem(selected, stack);
+            if (!held.isEmpty()) {
+                Inv.give(player, held);
+            }
+            return;
+        }
+        EquipmentSlot slot = switch (def.equipment().slot()) {
             case HEAD -> EquipmentSlot.HEAD;
             case CHEST -> EquipmentSlot.CHEST;
             case LEGS -> EquipmentSlot.LEGS;
             case FEET -> EquipmentSlot.FEET;
             case SHIELD -> EquipmentSlot.OFFHAND;
-            case WEAPON -> EquipmentSlot.MAINHAND;
+            case WEAPON -> EquipmentSlot.MAINHAND; // handled above
         };
+        ItemStack old = player.getItemBySlot(slot);
         player.setItemSlot(slot, stack);
+        if (!old.isEmpty()) {
+            Inv.give(player, old);
+        }
+    }
+
+    /** One of an item taken out of the pack (the 36 inventory slots), or a new one when the pack has none. */
+    private ItemStack takeOne(String id) {
+        for (ItemStack s : player.getInventory().items) {
+            if (!s.isEmpty() && Inv.idOf(s).equals(id)) {
+                return s.split(1);
+            }
+        }
+        return Inv.stack(id, 1);
     }
 
     private ItemStack find(String id) {

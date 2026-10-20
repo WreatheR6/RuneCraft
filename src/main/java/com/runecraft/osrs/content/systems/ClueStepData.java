@@ -5,7 +5,9 @@ package com.runecraft.osrs.content.systems;
  * {@code src/test/resources/osrs/clues/clue_steps.tsv}, diffed by ClueStepDataTest). One tab-separated row per step:
  * type, tier, x, y, plane, npc, object, enemy, emotes, stash, answer, text, solution, question, task (cryptic clues: the
  * wiki guide's dig/search/talk/puzzle/key/kill/sherlock/hotcold), then the RuneCraft item
- * requirement (groups split by ";", alternatives by "|", items worn together by "+", "!slots" = empty slots).
+ * requirement (groups split by ";", alternatives by "|", items worn together by "+", "!slots" = empty slots). An emote
+ * step lists what Uri checks, the worn items: RuneLite's and the wiki's carried extras are left out (the magic axe hut
+ * step's lockpick only opens the hut's door, with 23 Thieving, and can't be stored in the STASH unit).
  * Text blocks strip trailing tabs, so short rows are padded when read.
  */
 final class ClueStepData {
@@ -740,7 +742,7 @@ EMOTE	master	1946	4074	0			DOUBLE_AGENT_141	Bow	BRITTLE_ISLE		Bow in front of th
 EMOTE	master	2205	3252	0			DOUBLE_AGENT_141	Bow	TENT_IN_LORD_IORWERTHS_ENCAMPMENT		Bow in the Iorwerth Camp. Beware of double agents! Equip a charged crystal bow.	Lord Iorwerth's camp			
 EMOTE	master	2205	3252	0			DOUBLE_AGENT_141	Bow	TENT_IN_LORD_IORWERTHS_ENCAMPMENT		Bow near Lord Iorwerth. Beware of double agents! Equip a charged crystal bow.	Lord Iorwerth's camp			
 EMOTE	master	2852	3349	0			DOUBLE_AGENT_141	Cheer	ENTRANA_CHAPEL		Cheer in the Entrana church. Beware of double agents! Equip a full set of black dragonhide armour.	Entrana church			black_dhide_vambraces;black_dhide_chaps;black_dhide_body
-EMOTE	master	3191	3960	0			DOUBLE_AGENT_141	Clap	OUTSIDE_THE_WILDERNESS_AXE_HUT		Clap in the magic axe hut. Beware of double agents! Equip only some flared trousers.	Magic axe hut			flared_trousers;lockpick;!head,cape,amulet,weapon,body,shield,gloves,boots,ring,ammo
+EMOTE	master	3191	3960	0			DOUBLE_AGENT_141	Clap	OUTSIDE_THE_WILDERNESS_AXE_HUT		Clap in the magic axe hut. Beware of double agents! Equip only some flared trousers.	Magic axe hut			flared_trousers;!head,cape,amulet,weapon,body,shield,gloves,boots,ring,ammo
 EMOTE	master	2463	5149	0			DOUBLE_AGENT_141	Cry	TZHAAR_GEM_STORE		Cry in the TzHaar gem store. Beware of double agents! Equip a fire cape and TokTz-Xil-Ul.	Tzhaar gem store			fire_cape|infernal_cape;toktz_xil_ul
 EMOTE	master	2011	4712	0			DOUBLE_AGENT_141	Dance	WELL_OF_VOYAGE		Dance in Iban's temple. Beware of double agents! Equip Iban's staff, a black mystic top and a black mystic bottom.	Iban's temple			ibans_staff;mystic_robe_top_dark;mystic_robe_bottom_dark
 EMOTE	master	2271	4680	0			DOUBLE_AGENT_141	Dance	KING_BLACK_DRAGONS_LAIR		Dance in the King Black Dragon's lair. Beware of double agents! Equip a black dragonhide body, black dragonhide vambraces and a black dragon mask.	King black dragon's lair			black_dhide_body;black_dhide_vambraces

@@ -247,6 +247,18 @@ public final class Jewellery {
                 Perk.NONE, "A trimmed amulet of magic.");
         worn("amulet_of_power_t", "Amulet of power (t)", Slot.NECK, "amulet", 0xF0F0FF, 3525, s(6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 1),
                 Perk.NONE, "A trimmed amulet of power.");
+        // Unenchanted gold, gem and silver jewellery: OSRS lets every ring, necklace, strung amulet and bracelet be worn, with no
+        // bonuses (wiki infoboxes / DPS calculator's equipment.json), e.g. for emote clues ("Equip a gold ring and a gold
+        // necklace"). Items: ItemCatalog (gold ring, necklace and amulet, the gem rings) and the skilling module's crafted
+        // jewellery (bracelets, gem necklaces and amulets, dragonstone and up, silver opal/jade/topaz); unstrung amulets
+        // ("_u") can't be worn.
+        for (String jewel : new String[]{"gold", "sapphire", "emerald", "ruby", "diamond", "dragonstone", "onyx", "zenyte", "opal",
+                "jade", "topaz"}) {
+            wornExternal(jewel + "_ring", Slot.RING, NONE);
+            wornExternal(jewel + "_necklace", Slot.NECK, NONE);
+            wornExternal(jewel + "_amulet", Slot.NECK, NONE);
+            wornExternal(jewel + "_bracelet", Slot.HANDS, NONE);
+        }
         // Worn core/common items (stats only).
         wornExternal("amulet_of_accuracy", Slot.NECK, s(4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0));
         wornExternal("amulet_of_the_damned", Slot.NECK, s(10, 10, 10, 10, 10, 3, 3, 3, 3, 3, 6, 0, 0, 3)); // minigames module
@@ -326,6 +338,19 @@ public final class Jewellery {
         }
         wornExternal("ancient_ceremonial_gloves", Slot.HANDS, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1));
         wornExternal("fremennik_brown_cloak", Slot.CAPE, s(0, 0, 0, 0, 0, 0, 1, 1, 0, 2, 0, 0, 0, 0));
+        // Crafted leather gloves and leather, snakeskin and dragonhide vambraces (skilling module, CraftingData), the
+        // Hueycoatl's vambraces (bosses module, BossItems.ACCESSORIES) and the plain red cape (npcs module, Thessalia's shop):
+        // OSRS wears them in the hands and cape slots (DPS calculator equipment.json bonuses; wear levels in WEAR_LEVELS).
+        // Emote clues ask for them ("Equip a coif, an iron platebody and leather gloves").
+        wornExternal("leather_gloves", Slot.HANDS, s(0, 0, 0, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0));
+        wornExternal("leather_vambraces", Slot.HANDS, s(0, 0, 0, 0, 4, 2, 2, 1, 0, 0, 0, 0, 0, 0));
+        wornExternal("snakeskin_vambraces", Slot.HANDS, s(0, 0, 0, -5, 6, 2, 2, 2, 1, 0, 0, 0, 0, 0));
+        wornExternal("green_dhide_vambraces", Slot.HANDS, s(0, 0, 0, -10, 8, 1, 2, 2, 2, 0, 0, 0, 0, 0));
+        wornExternal("blue_dhide_vambraces", Slot.HANDS, s(0, 0, 0, -10, 9, 2, 3, 3, 4, 0, 0, 0, 0, 0));
+        wornExternal("red_dhide_vambraces", Slot.HANDS, s(0, 0, 0, -10, 10, 3, 4, 4, 6, 0, 0, 0, 0, 0));
+        wornExternal("black_dhide_vambraces", Slot.HANDS, s(0, 0, 0, -10, 11, 4, 5, 5, 8, 0, 0, 0, 0, 0));
+        wornExternal("hueycoatl_hide_vambraces", Slot.HANDS, s(0, 0, 0, -10, 11, 6, 5, 7, 8, 0, 0, 0, 0, 1));
+        wornExternal("red_cape", Slot.CAPE, s(0, 0, 0, 0, 0, 0, 1, 1, 0, 2, 0, 0, 0, 0));
     }
 
     private Jewellery() {
@@ -423,11 +448,21 @@ public final class Jewellery {
         return WORN.get(id);
     }
 
-    /** Levels a worn item from another module needs to wear (OSRS Wiki): the soul cape needs 70 Prayer. */
-    private static final Map<String, Map<com.runecraft.osrs.Skill, Integer>> WEAR_LEVELS =
-            Map.of("soul_cape", Map.of(com.runecraft.osrs.Skill.PRAYER, 70),
-                    // Worn like the rest of the Void equipment (wiki "Void Knight equipment"): 42 combat skills, 22 Prayer.
-                    "void_knight_gloves", com.runecraft.osrs.content.minigames.PestControlRules.VOID_REQUIREMENTS);
+    /**
+     * Levels a worn item from another module needs to wear (OSRS Wiki): the soul cape needs 70 Prayer; snakeskin vambraces
+     * 30 Ranged and 30 Defence; green, blue, red and black d'hide vambraces 40, 50, 60 and 70 Ranged; Hueycoatl hide
+     * vambraces 70 Ranged. Leather gloves and vambraces have none.
+     */
+    private static final Map<String, Map<com.runecraft.osrs.Skill, Integer>> WEAR_LEVELS = Map.of(
+            "soul_cape", Map.of(com.runecraft.osrs.Skill.PRAYER, 70),
+            "snakeskin_vambraces", Map.of(com.runecraft.osrs.Skill.RANGED, 30, com.runecraft.osrs.Skill.DEFENCE, 30),
+            "green_dhide_vambraces", Map.of(com.runecraft.osrs.Skill.RANGED, 40),
+            "blue_dhide_vambraces", Map.of(com.runecraft.osrs.Skill.RANGED, 50),
+            "red_dhide_vambraces", Map.of(com.runecraft.osrs.Skill.RANGED, 60),
+            "black_dhide_vambraces", Map.of(com.runecraft.osrs.Skill.RANGED, 70),
+            "hueycoatl_hide_vambraces", Map.of(com.runecraft.osrs.Skill.RANGED, 70),
+            // Worn like the rest of the Void equipment (wiki "Void Knight equipment"): 42 combat skills, 22 Prayer.
+            "void_knight_gloves", com.runecraft.osrs.content.minigames.PestControlRules.VOID_REQUIREMENTS);
 
     /** The skill levels needed to wear {@code id} in its extra slot (empty for none). */
     public static Map<com.runecraft.osrs.Skill, Integer> wearLevels(String id) {

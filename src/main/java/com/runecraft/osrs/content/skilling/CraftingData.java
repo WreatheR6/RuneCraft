@@ -183,7 +183,8 @@ public final class CraftingData extends SkillingPart {
                     .equipment(wear(Slot.HEAD, stats(0, 0, 0, -3, -1, 7, 8, 6, -1, 7, 0, 0, 0, 0)))
                     .examine("A snail shell helmet.");
         }
-        // Leather extras (no hands slot yet: gloves and vambraces are carried, not worn)
+        // Leather extras: gloves and vambraces (and the snakeskin and dragonhide vambraces below) are worn in the systems
+        // module's hands slot (Jewellery), with their OSRS bonuses and Ranged/Defence levels.
         simple(s, "leather_gloves", "Leather gloves", "gloves", 0x9A6A3A, 6).stack(1).examine("These will keep my hands warm!");
         simple(s, "leather_vambraces", "Leather vambraces", "vambraces", 0x9A6A3A, 18).stack(1);
         s.add("coif", "Coif", Kind.ARMOUR, "cowl", 0x8A5A2A).value(200).stack(1).tier("leather")
@@ -290,7 +291,11 @@ public final class CraftingData extends SkillingPart {
         simple(s, "unblessed_symbol", "Unblessed symbol", "amulet", 0xD8D8E8, 200).stack(1);
         simple(s, "unstrung_emblem", "Unstrung emblem", "amulet", 0x8A8A9A, 120).stack(1);
         simple(s, "unpowered_symbol", "Unpowered symbol", "amulet", 0x8A8A9A, 200).stack(1);
-        simple(s, "tiara", "Tiara", "tiara", 0xD8D8E8, 100).stack(1);
+        // Tiara (23 Crafting, silver): worn on the head with no bonuses (wiki / DPS calculator), e.g. for the Ardougne windmill
+        // emote clue; bound into an elemental tiara at a runecrafting altar with its talisman (RunecraftHooks).
+        s.add("tiara", "Tiara", Kind.ARMOUR, "tiara", 0xD8D8E8).value(100).stack(1).tier("tiara")
+                .equipment(wear(Slot.HEAD, stats(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)))
+                .examine("Makes me feel like a Princess.");
         // Gold tiara (42 Crafting): a cosmetic head piece with no bonuses (wiki / DPS calculator).
         s.add("gold_tiara", "Gold tiara", Kind.ARMOUR, "tiara", 0xE8C030).value(100).stack(1)
                 .equipment(wear(Slot.HEAD, stats(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)))
