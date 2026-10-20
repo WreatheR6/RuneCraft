@@ -937,6 +937,8 @@ public final class MonsterStatsTable {
         row("skotizo", 321, 450, 240, 250, 200, 280, 1, 5, 80, 80, 80, 80, 130, 160, 0, 0, "demon");
         // Hespori
         row("hespori", 284, 300, 1, 1, 120, 126, 150, 6, 60, 20, 60, 80, 80, 0, 150, 150);
+        // Hespori (A Night at the Theatre)
+        row("ant_hespori", 302, 360, 1, 1, 120, 126, 150, 6, 60, 20, 60, 80, 80, 0, 150, 150);
         // Scurrius (Solo): a summoned Scurrius is the private instance's (round 36; the public room's Group version has
         // 1,500 hitpoints and level 250)
         row("scurrius", 200, 500, 300, 100, 60, 50, 50, 4, 20, 20, 20, 10, 20, 150, 150, 150, "rat");
@@ -1180,7 +1182,8 @@ public final class MonsterStatsTable {
         maxHit("corrupt_lizardman", "spear", 6); // was 18
         maxHit("corrupt_lizardman", "acid", 6); // was 14
         // Judge of Yama
-        row("judge_of_yama", 168, 400, 200, 200, 150, 250, 200, 5, 0, 0, 0, 0, 0, 0, 0, 0, "demon");
+        // A Kingdom Divided's Judge (wiki infobox; the DPS calculator's line is Yama's own Judge, BossMechanics.YAMA_JUDGE)
+        row("judge_of_yama", 168, 260, 186, 112, 84, 84, 0, 4, 40, 40, 40, 600, 600, 0, 0, 0, "demon");
         // Agrith-Na-Na
         row("agrith_na_na", 146, 200, 83, 150, 82, 100, 100, 4, 100, 100, 60, 100, 100, 100, 0, 0);
         maxHit("agrith_na_na", "claws", 16); // was 20

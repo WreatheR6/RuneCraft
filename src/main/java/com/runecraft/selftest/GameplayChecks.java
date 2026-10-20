@@ -96,6 +96,7 @@ final class GameplayChecks {
         }
         checks.add(new SelfTest.Check("quest:puzzle_retry", g::puzzleRetry));
         checks.addAll(QuestStepChecks.all(context)); // grandmaster quests walked step by step
+        checks.addAll(QuestWalkChecks.all(context));
         for (Minigame m : Minigame.values()) {
             checks.add(new SelfTest.Check("minigame:" + m.id(), () -> g.minigame(m)));
         }

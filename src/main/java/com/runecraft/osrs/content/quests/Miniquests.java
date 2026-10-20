@@ -54,7 +54,8 @@ final class Miniquests {
 
     private static void architecturalAlliance(QuestBook b) {
         Cast.npc(b, "quest_hosa", "Hosa", "quest_kourend_castle", 0, 2, Cast.GHOST, 0x8A8AA0);
-        Cast.npc(b, "quest_archeio", "Archeio", "arceuus", 3, -3, Cast.PALE, 0x5A2A6A);
+        // Archeio works in the Arceuus Library (wiki); moved there from the town square (QuestNpcMoves)
+        Cast.npcAt(b, "quest_archeio", "Archeio", 1624, 3808, Cast.PALE, 0x5A2A6A);
         b.item("quest_kourend_plans", "Building plans", "note", 0xD8D0B0, "Old plans of Kourend's architecture.");
         // The five houses' architects (wiki map pins); Hosa (Hosidius) waits by the statue of King Rada I.
         b.spot("aa_arcis", "Arcis's house", 1652, 3754);

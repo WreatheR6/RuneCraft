@@ -156,7 +156,8 @@ class QuestChainsDepthTest {
         assertTrue(find(q, Trigger.Kind.KILL, "damis").need.containsKey("ring_of_visibility"));
         // Ice: troll child, ice trolls, Kamil, spiked boots.
         assertTrue(find(q, Trigger.Kind.KILL, "kamil").needFlags.contains("dt_ice_trolls"));
-        assertTrue(any(q, t -> t.need.containsKey("spiked_boots") && t.give.containsKey("ice_diamond")));
+        assertTrue(any(q, t -> t.need.containsKey("spiked_boots") && t.setFlags.contains("dt_trolls_thawed")));
+        assertTrue(any(q, t -> t.target.equals("dt_troll_mother") && t.needFlags.contains("dt_trolls_thawed") && t.give.containsKey("ice_diamond")));
         // Blood: silver pot blessed on Entrana, blood from Malak, Dessous lured from his tomb.
         assertTrue(any(q, t -> t.target.equals("high_priest_entrana") && t.give.containsKey("dt_blessed_pot")));
         Trigger tomb = find(q, Trigger.Kind.REACH, "dessous_graveyard");

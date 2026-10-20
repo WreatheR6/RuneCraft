@@ -2067,6 +2067,9 @@
     "hand_wisp_l",
     "hand_wisp_r"
   ],
+  "shadow_rift": [
+    "head"
+  ],
   "shadow_warrior": [
     "visor_glow",
     "wisp0",

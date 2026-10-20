@@ -461,6 +461,7 @@ public final class SpawnTable {
                 m.put(c.id(), "sea creature: spawned at sea around Sailing boats");
             }
             m.put("blood_reaver", "minion of nex");
+            m.put("shadow_rift", "minion of champion_of_scabaras (its Shadow Rift special, Beneath Cursed Sands)");
             m.put("skeleton_hellhound", "minion of vetion");
             m.put("greater_skeleton_hellhound", "minion of vetion");
             m.put("venenatis_spiderling", "minion of venenatis");

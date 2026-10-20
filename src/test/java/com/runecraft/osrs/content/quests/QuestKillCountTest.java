@@ -73,7 +73,7 @@ class QuestKillCountTest {
 
     @Test
     void dreamMentorAndLunarItems() {
-        assertTrue(BOOK.spec("dream_mentor").triggers().stream().anyMatch(t -> t.target.equals("oneiromancer") && t.take.containsKey("goutweed")));
+        assertTrue(BOOK.spec("dream_mentor").triggers().stream().anyMatch(t -> t.target.equals("dm_moonclan_sink") && t.take.containsKey("goutweed")));
         assertTrue(BOOK.spec("eadgars_ruse").triggers().stream().anyMatch(t -> t.target.equals("burntmeat") && t.give.containsKey("goutweed")));
         boolean lantern = false;
         for (Trigger t : BOOK.spec("lunar_diplomacy").triggers()) {

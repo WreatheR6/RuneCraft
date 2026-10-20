@@ -25,6 +25,86 @@ final class RecipeForDisaster {
     private RecipeForDisaster() {
     }
 
+    private static final String[] MYSTERY_PEOPLE = {"Reldo", "Velorina", "Ali Morrisane", "Islwyn", "Unferth", "Professor Gronigen",
+            "Gertrude", "Hetty", "Pirate Pete", "King Lathas"};
+
+    /** Freeing the Lumbridge Guide (wiki): Traiborn shows a mystery person; naming them enchants the egg. */
+    static final QuestPuzzle RFD_TRAIBORN_EGG = mystery();
+
+    private static QuestPuzzle mystery() {
+        String[] looks = {"a man with a ponytail and a book", "a ghostly green woman", "a man in desert robes with a white beard", "an elf",
+                "a man in a purple shirt", "a man in a brown vest", "a woman in a pink top", "a green witch", "a hooded man", "a man with a crown"};
+        QuestPuzzle.Builder b = QuestPuzzle.builder("rfd_traiborn_egg").shuffle().room("egg");
+        for (int i = 0; i < looks.length; i++) {
+            b.variant(null).prompt("Let's start with the egg. *Traiborn conjures a picture of " + looks[i] + ".* Who is this?")
+                    .options(MYSTERY_PEOPLE).solution(i);
+        }
+        return b.failLines("No, no, no! That's not right at all. Let's try that again.").build();
+    }
+
+    /** Freeing the Lumbridge Guide (wiki): a trivia question enchants the milk. */
+    static final QuestPuzzle RFD_TRAIBORN_MILK = QuestPuzzle.builder("rfd_traiborn_milk").shuffle().room("milk")
+            .variant(null).prompt("Now the milk. What Defence level do you need to wear a mystic hat?").options("20", "1", "40", "10").solution(0)
+            .variant(null).prompt("Now the milk. What goes into a cake?").options("Flour, egg and milk", "Flour, water and salt",
+                    "Egg, sugar and butter", "Milk, oats and honey").solution(0)
+            .variant(null).prompt("Now the milk. What is the combat level of the goblins near Lumbridge?").options("2", "5", "13", "1").solution(0)
+            .variant(null).prompt("Now the milk. How many coins does it cost to bribe an Al Kharid gate guard?").options("10", "5", "50", "100").solution(0)
+            .variant(null).prompt("Now the milk. What doesn't lie between Morytania and Asgarnia?").options("Keep Le Faye", "Varrock", "Draynor Village",
+                    "the River Salve").solution(0)
+            .variant(null).prompt("Now the milk. A gold ring is to 5 as a holy symbol is to...?").options("16", "8", "21", "30").solution(0)
+            .variant(null).prompt("Now the milk. A glass vial is to 33 as a glass orb is to...?").options("46", "42", "49", "52").solution(0)
+            .variant(null).prompt("Now the milk. Which guild is closest to the Fishing Platform?").options("Legends'", "Fishing", "Ranging", "Cooks'")
+            .solution(0)
+            .variant(null).prompt("Now the milk. What is the bar west of Pollnivneach?").options("the Bandit Camp", "the Rising Sun", "the Blue Moon",
+                    "the Dead Man's Chest").solution(0)
+            .variant(null).prompt("Now the milk. Which way does the River Salve run?").options("North to south", "South to north", "East to west",
+                    "West to east").solution(0)
+            .variant(null).prompt("Now the milk. I can hear howling one way and buzzing the other. Where am I?").options("Catherby", "Seers' Village",
+                    "Burthorpe", "Taverley").solution(0)
+            .variant(null).prompt("Now the milk. If I'm going to need glass, first I will need...?").options("Sand, a bucket, soda ash and a glassblowing pipe",
+                    "Clay, water and a furnace", "Sand and a chisel", "Seaweed and a needle").solution(0)
+            .variant(null).prompt("Now the milk. Which tower is closest to the Crafting Guild?").options("the Dark Wizards' Tower", "the Wizards' Tower",
+                    "the Tower of Life", "the Sorcerer's Tower").solution(0)
+            .variant(null).prompt("Now the milk. Fire runes for Fire Strike, times air runes for Wind Strike, plus earth runes for Earth Wave?")
+            .options("10", "8", "12", "6").solution(0)
+            .failLines("Wrong, I'm afraid. Let's try another.").build();
+
+    /** Freeing the Lumbridge Guide (wiki): a memory test about the items Traiborn shows enchants the flour. */
+    static final QuestPuzzle RFD_TRAIBORN_FLOUR = flour();
+
+    private static QuestPuzzle flour() {
+        String shown = "*Traiborn shows you: a mind talisman, a maple longbow, a magic shortbow, a black longsword, a fire rune, a chaos rune, "
+                + "a Guthix prayer book, some magic logs and a pike. Then he hides them.*";
+        return QuestPuzzle.builder("rfd_traiborn_flour").shuffle().room("flour")
+                .variant(null).prompt("Finally the flour: a memory test.", shown, "Which item began with the letter 'm'?")
+                .options("Mind talisman", "Trout", "Chaos rune", "Pike").solution(0)
+                .variant(null).prompt("Finally the flour: a memory test.", shown, "Which of these items was NOT shown to you?")
+                .options("Trout", "Pike", "Magic logs", "Fire rune").solution(0)
+                .variant(null).prompt("Finally the flour: a memory test.", shown, "How many weapons were you shown?")
+                .options("Three", "Two", "Four", "Five").solution(0)
+                .variant(null).prompt("Finally the flour: a memory test.", shown, "How many types of rune were there?")
+                .options("Two", "One", "Three", "Four").solution(0)
+                .variant(null).prompt("Finally the flour: a memory test.", shown, "Which of these items was among those you were shown?")
+                .options("Magic logs", "Yew logs", "Shark", "Air rune").solution(0)
+                .failLines("Oh dear, your memory isn't what it was. Let's try again.").build();
+    }
+
+    /**
+     * Freeing Evil Dave (wiki): a stew needs one, two or three doses of each of the four hell-rat spices; Dave says when the
+     * stew isn't right, and the doses are found by trying again.
+     */
+    static final QuestPuzzle RFD_SPICY_STEW = spicyStew();
+
+    private static QuestPuzzle spicyStew() {
+        int[][] doses = {{0, 2, 1, 0}, {1, 0, 2, 2}, {2, 1, 0, 1}, {0, 0, 2, 1}, {1, 2, 1, 0}, {2, 0, 1, 2}};
+        QuestPuzzle.Builder b = QuestPuzzle.builder("rfd_spicy_stew").room("stew");
+        for (int[] d : doses) {
+            b.variant(null).prompt("* You spice the stew for Evil Dave a colour at a time: yellow, then orange, then red, then brown.")
+                    .options("1 dose", "2 doses", "3 doses").solution(d);
+        }
+        return b.failLines("Evil Dave: Bleurgh! That's not right... not spicy enough, or too spicy. Try again!").build();
+    }
+
     static void register(QuestBook b) {
         b.place("rfd_lumbridge_cellar", "Lumbridge Castle cellar", 3190, 3240, PlaceDef.Style.CAVE);
         b.spot("feldip_hills", "Feldip Hills", 2630, 2980);
@@ -35,17 +115,19 @@ final class RecipeForDisaster {
         b.npc("evil_dave", "Evil Dave", "EDGEVILLE", 6, -6, 0xE0B8A3, 0x1A1A1A, 0x2A2A2D, 0x2A1A0F);
         b.npc("skrach_uglogwee", "Skrach Uglogwee", "feldip_hills", 0, 0, 0x8A9A5A, 0x6A4A2A, 0x4A3A1A, 0x5A6A3A);
 
+        // The Culinaromancer's minions (wiki): Prayer can't be used in their dimension (QuestBossScripts.Culinary).
         b.boss(BossDef.of("agrith_na_na", "Agrith-Na-Na").level(146).stats(200, 120, 120, 100, 100, 1).speed(4)
-                .attack(AttackDef.of("claws", AttackType.SLASH, 20, 3, 6))
+                .attack(AttackDef.of("claws", AttackType.CRUSH, 20, 3, 6))
                 .attack(AttackDef.of("fire_blast", AttackType.MAGIC, 18, 8, 4).particle("minecraft:flame"))
                 .drops(Drop.always("bones")).size(1.0f, 2.4f, 1.0f).at("rfd_lumbridge_cellar").arena(9, "crypt"));
         b.boss(BossDef.of("flambeed", "Flambeed").level(149).stats(210, 120, 120, 100, 1, 1).speed(4)
                 .attack(AttackDef.of("flaming_fists", AttackType.CRUSH, 20, 2.5, 10).particle("minecraft:flame"))
                 .drops(Drop.always("bones")).skin(0xE88A4A, 0xF0F0F0, 0xE04A1A, 0xFFB040).size(0.9f, 2.4f, 1.2f)
                 .at("rfd_lumbridge_cellar").arena(9, "lava"));
-        b.boss(BossDef.of("karamel", "Karamel").level(136).stats(250, 100, 100, 100, 120, 1).speed(4)
-                .attack(AttackDef.of("ice_spell", AttackType.MAGIC, 20, 8, 6).special(Special.DRAIN_STAT, Skill.ATTACK.ordinal()).particle("minecraft:snowflake"))
-                .attack(AttackDef.of("punch", AttackType.CRUSH, 15, 2.5, 4))
+        // Wiki: a draining ice spell (7 twice) from afar, a ranged attack up to 20 in melee distance.
+        b.boss(BossDef.of("karamel", "Karamel").level(136).stats(250, 100, 100, 100, 120, 1).speed(3)
+                .attack(AttackDef.of("ice_spell", AttackType.MAGIC, 7, 8, 6).special(Special.DRAIN_STAT, Skill.ATTACK.ordinal()).particle("minecraft:snowflake"))
+                .attack(AttackDef.of("toffee_shot", AttackType.RANGED, 20, 2.5, 4))
                 .drops(Drop.always("bones")).skin(0xE0C0A0, 0xA06A3A, 0x6A3A1A, 0xF0E0C0).at("rfd_lumbridge_cellar").arena(9, "ice"));
         b.boss(BossDef.of("dessourt", "Dessourt").level(121).stats(130, 100, 100, 100, 100, 1).speed(4)
                 .attack(AttackDef.of("ghostly_blast", AttackType.MAGIC, 23, 8, 6).particle("minecraft:soul"))
@@ -54,10 +136,10 @@ final class RecipeForDisaster {
         b.boss(BossDef.of("gelatinnoth_mother", "Gelatinnoth Mother").level(130).stats(240, 100, 100, 100, 1, 1).speed(4)
                 .attack(AttackDef.of("slam", AttackType.CRUSH, 17, 2.5, 10))
                 .drops(Drop.always("bones")).size(1.2f, 2.6f, 1.0f).at("rfd_lumbridge_cellar").arena(9, "water"));
-        b.boss(BossDef.of("culinaromancer", "Culinaromancer").level(75).stats(150, 75, 75, 75, 75, 1).speed(4)
-                .attack(AttackDef.of("rolling_pin", AttackType.CRUSH, 20, 2.5, 8))
-                .attack(AttackDef.of("food_magic", AttackType.MAGIC, 16, 8, 3).particle("minecraft:happy_villager"))
-                .phase(50, "The Culinaromancer: You can't beat me, I'm the greatest chef in Gielinor!", 1.2, false)
+        // Wiki: magic up to 25 with a flat 1-in-3 chance to hit, a crush up to 11.
+        b.boss(BossDef.of("culinaromancer", "Culinaromancer").level(75).stats(150, 10, 100, 10, 1, 1).speed(4)
+                .attack(AttackDef.of("rolling_pin", AttackType.CRUSH, 11, 2.5, 4))
+                .attack(AttackDef.of("food_magic", AttackType.MAGIC, 25, 8, 6).particle("minecraft:happy_villager"))
                 .drops(Drop.always("bones")).skin(0xE8C0B2, 0xF0F0F2, 0x5A1A6A, 0xF0F0F3).at("rfd_lumbridge_cellar").arena(9, "stone"));
 
         b.item("rfd_rock_cake", "Dwarven rock cake", "cake", 0x8A7A6A, "A cake made of... rock? Rohak loves them.");
@@ -132,8 +214,15 @@ final class RecipeForDisaster {
                 .take("minecraft:milk_bucket", "minecraft:egg", "pot_of_flour", "bowl_of_water").need("leather_gloves").give("rfd_rock_cake")
                 .say("* You mix the batter as Rohak slurs out the recipe and bake it. Your gloves save your fingers from the red-hot cake.")
                 .missing("Gran's rock cake needs a bucket of milk, an egg, a pot of flour and a bowl of water. And gloves: it comes out very hot.")
-                .talk("rohak").stay().unlessFlag("rfd_dwarf_ale", "rfd_dwarf").reqDone("fishing_contest").take("asgarnian_ale:4").flag("rfd_dwarf_ale")
-                .say("*hic* Four ales! Shure, I'll tell you gran's rock cake recipe... milk, egg, flour and water, *hic*, baked till it glowsh.")
+                // Wiki: Emily at the Rising Sun Inn teaches how to make Asgoldian ale (200 coins); gilded ales loosen Rohak's tongue.
+                .talk("emily_bartender").stay().unlessFlag("rfd_asgoldian", "rfd_dwarf_ale", "rfd_dwarf").reqDone("fishing_contest").take("coins:200")
+                .flag("rfd_asgoldian").say("Dwarves and ale? For 200 gold I'll tell you a secret: add a little gold to an Asgarnian ale and you've got "
+                        + "Asgoldian ale. No dwarf can resist it.")
+                .missing("I could tell you a thing or two about dwarves and ale... for 200 gold.")
+                .talk("rohak").stay().needFlag("rfd_asgoldian").unlessFlag("rfd_dwarf_ale", "rfd_dwarf").reqDone("fishing_contest").take("asgarnian_ale:4")
+                .flag("rfd_dwarf_ale")
+                .say("* You gild your four Asgarnian ales into Asgoldian ales and give them to the old dwarf.",
+                        "*hic* Asgoldian ale! Shure, I'll tell you gran's rock cake recipe... milk, egg, flour and water, *hic*, baked till it glowsh.")
                 .missing("A dwarf can't talk recipes sober. Four Asgarnian ales should loosen my tongue. (Requires Fishing Contest.)")
                 // --- Goblin generals: slop of compromise.
                 .talk("general_bentnoze").stay().unlessFlag("rfd_goblins").reqDone("goblin_diplomacy")
@@ -166,23 +255,28 @@ final class RecipeForDisaster {
                 .unlessFlag("rfd_pete").give("rfd_ground_crab_meat")
                 .say("* The crab falls. You grind its giant crab meat with your pestle and mortar.")
                 // --- Lumbridge Guide: cake of guidance from Wizard Traiborn's enchanted egg, milk and flour.
-                .talk("rfd_traiborn").stay().unless("rfd_enchanted_egg").unlessFlag("rfd_guide").reqSkill(Skill.COOKING, 40)
+                // Wiki: Traiborn enchants the egg (name the mystery person), the milk (a trivia question) and the flour (a memory test).
+                .puzzle("rfd_traiborn", RFD_TRAIBORN_EGG).stay().unless("rfd_enchanted_egg").unlessFlag("rfd_guide").reqSkill(Skill.COOKING, 40)
                 .reqDone("big_chompy_bird_hunting", "biohazard", "DEMON_SLAYER", "nature_spirit", "witchs_house", "murder_mystery")
-                .take("minecraft:egg", "minecraft:milk_bucket", "pot_of_flour").give("rfd_enchanted_egg", "rfd_enchanted_milk", "rfd_enchanted_flour")
-                .say("Who has a ponytail and a book? > Reldo. Ingredients in a cake? > Flour, egg and milk. Combat level of a Lumbridge goblin? > Two.",
-                        "Splendid! *Traiborn enchants your egg, milk and flour.*")
-                .missing("Enchant cake ingredients for the Guide? Bring me an egg, a bucket of milk and a pot of flour... and know your trivia. "
+                .take("minecraft:egg").give("rfd_enchanted_egg").say("Splendid! *Traiborn enchants your egg.*")
+                .puzzle("rfd_traiborn", RFD_TRAIBORN_MILK).stay().unless("rfd_enchanted_milk").unlessFlag("rfd_guide").reqSkill(Skill.COOKING, 40)
+                .reqDone("big_chompy_bird_hunting", "biohazard", "DEMON_SLAYER", "nature_spirit", "witchs_house", "murder_mystery")
+                .take("minecraft:milk_bucket").give("rfd_enchanted_milk").say("Correct! *Traiborn enchants your milk.*")
+                .puzzle("rfd_traiborn", RFD_TRAIBORN_FLOUR).stay().unless("rfd_enchanted_flour").unlessFlag("rfd_guide").reqSkill(Skill.COOKING, 40)
+                .reqDone("big_chompy_bird_hunting", "biohazard", "DEMON_SLAYER", "nature_spirit", "witchs_house", "murder_mystery")
+                .take("pot_of_flour").give("rfd_enchanted_flour").say("What a memory! *Traiborn enchants your flour.*")
+                .hint("rfd_traiborn", "Enchant cake ingredients for the Guide? Bring me an egg, a bucket of milk and a pot of flour... and know your trivia. "
                         + "(Requires 40 Cooking, Big Chompy Bird Hunting, Biohazard, Demon Slayer, Murder Mystery, Nature Spirit and Witch's House.)")
                 .talk("lumbridge_guide").stay().unlessFlag("rfd_guide").take("rfd_enchanted_egg", "rfd_enchanted_milk", "rfd_enchanted_flour", "cake_tin")
                 .flag("rfd_guide").grantXp(Skill.COOKING, 2500).grantXp(Skill.MAGIC, 2500)
                 .say("* You bake the enchanted ingredients in the cake tin: a cake of guidance!", "Just like the cakes I give to new adventurers. *The Lumbridge Guide is freed.*")
                 .missing("A cake of guidance... Wizard Traiborn can enchant the ingredients. Bring them with a cake tin.")
                 // --- Evil Dave: spicy stew with hell-rat spices caught by a cat in his basement.
-                .talk("evil_dave").stay().needFlag("rfd_dave_basement").unlessFlag("rfd_dave").take("stew", "rfd_hell_rat_spices").flag("rfd_dave")
-                .grantXp(Skill.COOKING, 7000)
-                .say("* You stir the four colours of spice into the stew, a dose at a time, until Dave stops complaining.",
-                        "Spicy stew! The darkness... it's so spicy... *Evil Dave is freed. He seems even more evil.*")
-                .missing("Spicy stew. Proper spicy. The hell-rats in my basement have the spices; send a cat after them.")
+                // Wiki: the right number of doses (1-3) of each of the four spices is found by trying stews on Dave.
+                .puzzle("evil_dave", RFD_SPICY_STEW).stay().needFlag("rfd_dave_basement").unlessFlag("rfd_dave").take("stew", "rfd_hell_rat_spices")
+                .flag("rfd_dave").grantXp(Skill.COOKING, 7000)
+                .say("Spicy stew! The darkness... it's so spicy... *Evil Dave is freed. He seems even more evil.*")
+                .hint("evil_dave", "Spicy stew. Proper spicy. The hell-rats in my basement have the spices; send a cat after them.")
                 .talk("evil_dave").stay().unlessFlag("rfd_dave_basement", "rfd_dave").reqSkill(Skill.COOKING, 25).reqDone("gertrudes_cat", "shadow_of_the_storm")
                 .flag("rfd_dave_basement")
                 .say("What did I eat at the council? Why should I... oh, the magic requires it. Spicy stew. Mother keeps hell-rats in the basement for the spices.")
@@ -223,7 +317,7 @@ final class RecipeForDisaster {
                 .kill("rfd_evil_chicken").stay().needFlag("rfd_amik_start").take("minecraft:chicken").unless("rfd_evil_chicken_egg").unlessFlag("rfd_amik")
                 .give("rfd_evil_chicken_egg").say("* You offered a raw chicken at the shrine and its master came. The Evil Chicken drops a warm egg.")
                 .missing("* The Evil Chicken only answers an offering of a raw chicken at its shrine.")
-                .drop("black_dragon", "rfd_dragon_token", 1)
+                .drop("black_dragon", "rfd_dragon_token", 1).unlessFlag("rfd_amik")
                 // --- King Awowogei: stuffed snake with red banana and tchiki nuts, cooked on a hot rock under the temple.
                 .talk("king_awowogei").stay().needFlag("rfd_awo_start").unlessFlag("rfd_awowogei").reqSkill(Skill.COOKING, 70)
                 .take("rfd_snake_corpse", "rfd_red_banana", "rfd_tchiki_nuts").need("monkey_greegree").flag("rfd_awowogei")

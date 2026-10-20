@@ -1,0 +1,501 @@
+package com.runecraft.osrs.content.quests;
+
+import com.runecraft.osrs.content.BossDef;
+import com.runecraft.osrs.content.ContentRegistry;
+import com.runecraft.osrs.content.quests.QuestSpec.Trigger;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/** The master and late experienced quests' steps, puzzles and boss rules against the OSRS Wiki and quest-helper. */
+class MasterQuestsTest {
+    private static final QuestBook BOOK = QuestBook.get();
+
+    private static QuestSpec spec(String id) {
+        QuestSpec q = BOOK.spec(id);
+        assertNotNull(q, id);
+        return q;
+    }
+
+    /** The strict walk's steps as "kind target" in order. */
+    private static List<String> walk(String id) {
+        QuestStrictWalk.Plan plan = QuestStrictWalk.plan(spec(id), "tester");
+        assertTrue(plan.completes(), plan.stuck());
+        return plan.steps().stream().map(s -> s.kind().name().toLowerCase(java.util.Locale.ROOT) + " " + s.target()).toList();
+    }
+
+    /** {@code beats} appear in the walk in this order (other steps may come between them). */
+    private static void inOrder(String id, String... beats) {
+        List<String> steps = walk(id);
+        int at = 0;
+        for (String beat : beats) {
+            int found = -1;
+            for (int i = at; i < steps.size(); i++) {
+                if (steps.get(i).equals(beat)) {
+                    found = i;
+                    break;
+                }
+            }
+            assertTrue(found >= 0, id + ": no \"" + beat + "\" after step " + at + " in " + steps);
+            at = found + 1;
+        }
+    }
+
+    // ------------------------------------------------------------------ puzzles
+
+    @Test
+    void slidingBoardsSolveInTheirShortestMoves() {
+        int[] board = {0, 1, 3, 5, 2, 7, 4, 8, 6};
+        List<List<Integer>> sols = QuestPuzzle.shortestSlides(board);
+        assertFalse(sols.isEmpty());
+        for (List<Integer> s : sols) {
+            int[] b = board;
+            for (int m : s) {
+                b = QuestPuzzle.slideOnce(b, m);
+                assertNotNull(b);
+            }
+            assertArrayEquals(new int[]{1, 2, 3, 4, 5, 6, 7, 8, 0}, b);
+        }
+        // the gap in the top-left corner has nothing above it or left of it to slide in
+        assertNull(QuestPuzzle.slideOnce(board, 0));
+        assertNull(QuestPuzzle.slideOnce(board, 2));
+        assertEquals(10, sols.get(0).size());
+        for (QuestPuzzle.Variant v : KandarinGnomeQuests.MM_PANEL.rooms.get(0).variants()) {
+            assertEquals(4, v.options().size());
+            assertTrue(v.sliding());
+            assertEquals(1, v.check(v.solutions().get(0)));
+        }
+    }
+
+    @Test
+    void slidingBoardsAcceptAnySortingSequence() {
+        QuestPuzzle.Variant v = KandarinGnomeQuests.MM_PANEL.rooms.get(0).variants().get(0);
+        assertEquals("_ 1 3 / 5 2 7 / 4 8 6", QuestPuzzle.board(v.slideBoard(List.of())));
+        // a detour (slide the 1 left, then back right) before the shortest solve: 12 slides, still solved
+        List<Integer> longer = new java.util.ArrayList<>(List.of(3, 2));
+        longer.addAll(v.solutions().get(0));
+        for (int i = 1; i < longer.size(); i++) {
+            assertEquals(0, v.check(longer.subList(0, i)), "still playing after " + i + " slides");
+        }
+        assertEquals(1, v.check(longer));
+        assertEquals(12, longer.size());
+        assertEquals("1 2 3 / 4 5 6 / 7 8 _", QuestPuzzle.board(v.slideBoard(longer)));
+        // a slide with no tile on that side of the gap changes nothing
+        assertArrayEquals(v.slideBoard(List.of()), v.slideBoard(List.of(0, 2)));
+        // the panel resets only after the move limit
+        List<Integer> wander = new java.util.ArrayList<>();
+        for (int i = 0; i < QuestPuzzle.SLIDE_MOVE_LIMIT; i++) {
+            wander.add(i % 2 == 0 ? 3 : 2);
+        }
+        assertEquals(0, v.check(wander.subList(0, QuestPuzzle.SLIDE_MOVE_LIMIT - 1)));
+        assertEquals(-1, v.check(wander));
+        // other puzzles still follow their solution lists
+        assertFalse(KaramjaQuests.LQ_MARKED_WALL.rooms.get(0).variants().get(0).sliding());
+    }
+
+    // ------------------------------------------------------------------ Desert Treasure I
+
+    @Test
+    void desertTreasureWalksTheWikiRoute() {
+        inOrder("desert_treasure_i", "talk archaeologist", "talk terry_balando", "talk archaeologist", "talk dt_bartender", "talk eblis",
+                "reach dt_mirrors",
+                "reach smoke_dungeon", "kill fareed",
+                "talk rasolo", "reach bandit_camp", "talk rasolo", "kill damis",
+                "talk troll_child", "kill ice_troll", "kill kamil", "reach ice_path", "talk dt_troll_mother",
+                "talk malak", "talk ruantun", "talk high_priest_entrana", "talk malak", "reach dessous_graveyard", "kill dessous", "talk malak",
+                "reach quest_jaldraocht_pyramid", "reach quest_jaldraocht_pyramid", "talk azzanadra");
+    }
+
+    @Test
+    void desertTreasureBossRules() {
+        assertTrue(QuestBossRules.spellHurts("fareed", "water"));
+        assertFalse(QuestBossRules.spellHurts("fareed", "fire"));
+        assertFalse(QuestBossRules.spellHurts("fareed", null));
+        assertTrue(QuestBossRules.spellHurts("kamil", "fire"));
+        assertFalse(QuestBossRules.spellHurts("kamil", "water"));
+        assertTrue(QuestBossRules.spellHurts("damis", null));
+        // Damis: two forms (DPS calculator), no immunities; his first form is the BossDef
+        BossDef damis = ContentRegistry.boss("damis");
+        assertEquals(QuestBossRules.DAMIS_FIRST[0], damis.combatLevel);
+        assertEquals(QuestBossRules.DAMIS_FIRST[1], damis.hitpoints);
+        assertTrue(damis.phases.isEmpty(), "the second form is a transformation, not a damage phase");
+        assertEquals(List.of(174, 200), List.of(QuestBossRules.DAMIS_SECOND[0], QuestBossRules.DAMIS_SECOND[1]));
+        // Dessous: melee 19 and the bat swarm
+        BossDef dessous = ContentRegistry.boss("dessous");
+        assertTrue(dessous.attacks.stream().anyMatch(a -> a.name().equals("bat_swarm") && a.maxHit() == QuestBossRules.DESSOUS_BATS_MAX));
+        assertTrue(dessous.attacks.stream().anyMatch(a -> a.name().equals("vampyric_slash") && a.maxHit() == QuestBossRules.DESSOUS_MELEE_MAX));
+        // the pot of blood is made once: the chain stops once it has been poured
+        QuestSpec q = spec("desert_treasure_i");
+        for (Trigger t : q.stages.get(2).triggers) {
+            if (t.give.containsKey("dt_silver_pot") || t.give.containsKey("dt_blessed_pot") || t.give.containsKey("dt_pot_of_blood")) {
+                assertTrue(t.unlessFlags.contains("dt_blood_poured"), QuestWalk.describe(t));
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ Dragon Slayer I
+
+    @Test
+    void dragonSlayerWalksMelzarsMazeAndTheMagicDoor() {
+        inOrder("dragon_slayer_i", "talk guildmaster", "talk oziach", "talk guildmaster",
+                "reach melzars_maze", "kill zombie_rat", "kill maze_ghost", "kill maze_skeleton", "kill maze_zombie", "kill melzar_the_mad",
+                "kill maze_lesser_demon", "talk wormbrain", "talk oracle", "reach dwarven_mine_north", "talk klarense", "talk klarense", "talk ned",
+                "kill elvarg", "talk oziach");
+        BossDef elvarg = ContentRegistry.boss("elvarg");
+        assertTrue(elvarg.attacks.stream().anyMatch(a -> a.name().equals("dragonfire") && a.maxHit() == QuestBossRules.ELVARG_DRAGONFIRE_MAX
+                && a.style() == com.runecraft.osrs.AttackType.MAGIC)); // Protect from Magic is the prayer that softens it
+        assertTrue(elvarg.phases.isEmpty());
+        // the maze's key-holders (DPS calculator levels), each called up by the kill before it
+        assertEquals(List.of(19, 22, 24, 82), List.of("maze_ghost", "maze_skeleton", "maze_zombie", "maze_lesser_demon").stream()
+                .map(id -> ContentRegistry.boss(id).combatLevel).toList());
+        QuestSpec q = spec("dragon_slayer_i");
+        assertTrue(q.triggers().stream().anyMatch(t -> t.target.equals("zombie_rat") && "maze_ghost".equals(t.spawn)));
+        assertTrue(q.triggers().stream().anyMatch(t -> t.target.equals("melzar_the_mad") && "maze_lesser_demon".equals(t.spawn)));
+    }
+
+    // ------------------------------------------------------------------ Recipe for Disaster
+
+    @Test
+    void recipeForDisasterSubquestsAndFinalFights() {
+        inOrder("recipe_for_disaster", "talk rfd_gypsy", "talk rfd_gypsy",
+                "talk emily_bartender", "talk rohak", "talk rohak", "talk rohak",
+                "talk general_bentnoze",
+                "talk pirate_pete", "talk rfd_murphy", "drop mudskipper", "reach rfd_crab_pen", "kill rfd_crab", "talk pirate_pete",
+                "puzzle rfd_traiborn", "puzzle rfd_traiborn", "puzzle rfd_traiborn", "talk lumbridge_guide",
+                "talk evil_dave", "kill rfd_hell_rat", "puzzle evil_dave",
+                "talk skrach_uglogwee", "reach feldip_hills", "kill rfd_jubbly_bird", "talk skrach_uglogwee",
+                "talk sir_amik_varze", "reach kharazi_jungle", "kill rfd_evil_chicken", "drop black_dragon", "talk sir_amik_varze",
+                "talk king_awowogei", "reach rfd_crash_island_pit", "kill rfd_big_snake", "reach ape_atoll", "talk king_awowogei",
+                "talk rfd_gypsy");
+        List<String> steps = walk("recipe_for_disaster");
+        List<String> fights = steps.stream().filter(s -> s.startsWith("kill ")).map(s -> s.substring(5))
+                .filter(QuestBossRules.CULINAROMANCER_FIGHTS::contains).toList();
+        assertEquals(QuestBossRules.CULINAROMANCER_FIGHTS, fights);
+        // the Culinaromancer's magic: 25, landing one time in three
+        BossDef c = ContentRegistry.boss("culinaromancer");
+        assertTrue(c.attacks.stream().anyMatch(a -> a.style() == com.runecraft.osrs.AttackType.MAGIC && a.maxHit() == QuestBossRules.CULINAROMANCER_MAGIC_MAX));
+        assertTrue(QuestBossRules.culinaromancerHits(0) && !QuestBossRules.culinaromancerHits(1) && !QuestBossRules.culinaromancerHits(2));
+        assertTrue(c.phases.isEmpty());
+        // Traiborn's three tests and Evil Dave's stew are real puzzles
+        for (QuestPuzzle p : List.of(RecipeForDisaster.RFD_TRAIBORN_EGG, RecipeForDisaster.RFD_TRAIBORN_MILK, RecipeForDisaster.RFD_TRAIBORN_FLOUR)) {
+            for (QuestPuzzle.Variant v : p.rooms.get(0).variants()) {
+                assertEquals(1, v.solutions().size());
+                assertEquals(1, v.length());
+            }
+        }
+        assertEquals(10, RecipeForDisaster.RFD_TRAIBORN_EGG.rooms.get(0).variants().size());
+        assertEquals(14, RecipeForDisaster.RFD_TRAIBORN_MILK.rooms.get(0).variants().size());
+        for (QuestPuzzle.Variant v : RecipeForDisaster.RFD_SPICY_STEW.rooms.get(0).variants()) {
+            assertEquals(4, v.length(), "a dose count for each of the four spices");
+            assertEquals(3, v.options().size());
+        }
+    }
+
+    // ------------------------------------------------------------------ Legends' Quest
+
+    @Test
+    void legendsQuestWalksTheJungleTheCavesAndThreeDemonFights() {
+        inOrder("legends_quest", "talk radimus_erkle", "reach kharazi_jungle", "reach kharazi_jungle", "reach kharazi_jungle",
+                "talk jungle_forester", "talk gujuo",
+                "reach kharazi_cave", "talk gujuo", "reach lq_water_pool", "reach kharazi_cave", "puzzle kharazi_cave", "talk ungadulu",
+                "kill nezikchened", "talk ungadulu",
+                "talk gujuo", "reach kharazi_cave", "kill san_tojalon", "kill irvig_senay", "kill ranalph_devere", "reach kharazi_cave",
+                "talk echned_zekin", "talk ungadulu", "talk echned_zekin", "kill nezikchened", "reach lq_water_pool", "reach lq_fertile_soil",
+                "reach kharazi_jungle", "kill nezikchened", "talk gujuo", "talk radimus_erkle");
+        QuestPuzzle.Variant wall = KaramjaQuests.LQ_MARKED_WALL.rooms.get(0).variants().get(0);
+        List<String> smell = wall.solutions().get(0).stream().map(i -> wall.options().get(i)).toList();
+        assertEquals(List.of("Soul rune", "Mind rune", "Earth rune", "Law rune", "Law rune"), smell);
+        assertEquals(List.of(106, 100, 92), List.of("san_tojalon", "irvig_senay", "ranalph_devere").stream()
+                .map(id -> ContentRegistry.boss(id).combatLevel).toList());
+        assertEquals(9, QuestBossRules.nezikchenedPrayerCap(99));
+        // the guardians have no summoning stone: the one still to beat rises again on coming back down to the furnace
+        QuestSpec lq = spec("legends_quest");
+        for (String[] g : new String[][]{{"san_tojalon", "lq_winch", "lq_irvig"}, {"irvig_senay", "lq_irvig", "lq_ranalph"},
+                {"ranalph_devere", "lq_ranalph", "lq_crystals"}}) {
+            assertTrue(lq.triggers().stream().anyMatch(t -> t.kind == Trigger.Kind.REACH && t.target.equals("kharazi_cave")
+                    && g[0].equals(t.spawn) && t.setFlags.isEmpty() && t.give.isEmpty() && t.next == t.stage
+                    && t.needFlags.contains(g[1]) && t.unlessFlags.contains(g[2]) && t.unlessFlags.contains("lq_heart")), g[0]);
+        }
+        // crystal pieces lost after the kills are found again
+        assertTrue(lq.triggers().stream().anyMatch(t -> t.kind == Trigger.Kind.REACH && t.needFlags.contains("lq_crystals")
+                && t.unlessItems.contains("lq_crystal_piece") && t.give.getOrDefault("lq_crystal_piece", 0) == 3));
+    }
+
+    // ------------------------------------------------------------------ the elves, Haunted Mine, Lunar Diplomacy
+
+    @Test
+    void mourningsEndTwoSolvesTheTempleOfLight() {
+        inOrder("mournings_end_part_ii", "talk arianwyn", "talk essyllt", "reach temple_of_light", "talk arianwyn", "reach temple_of_light",
+                "puzzle temple_of_light", "puzzle temple_of_light", "puzzle temple_of_light", "puzzle temple_of_light",
+                "kill shadow_of_light", "talk arianwyn");
+        // chest 1 (wiki): mirror 1 north, 2 west, 3 south, the yellow crystal, mirror 4 east
+        QuestPuzzle.Variant v = KandarinMoreQuests.ME2_CHEST_YELLOW.rooms.get(0).variants().get(0);
+        assertEquals(List.of("Point it north", "Point it west", "Point it south", "Place the yellow crystal", "Point it east"),
+                v.solutions().get(0).stream().map(i -> v.options().get(i)).toList());
+        QuestPuzzle.Variant g = KandarinMoreQuests.ME2_CHEST_GREEN.rooms.get(0).variants().get(0);
+        assertTrue(g.solutions().get(0).contains(7) && g.solutions().get(0).contains(6), "green light needs the cyan and the yellow crystal");
+    }
+
+    @Test
+    void rovingElvesTakesTheSeedFromGlarialsTombToTheFalls() {
+        inOrder("roving_elves", "talk islwyn", "talk eluned", "kill moss_guardian", "talk eluned", "reach baxtorian_falls", "talk islwyn");
+        assertTrue(spec("roving_elves").triggers().stream().anyMatch(t -> t.target.equals("glarials_tomb") && "moss_guardian".equals(t.spawn)
+                && t.need.containsKey("glarials_pebble")));
+    }
+
+    @Test
+    void hauntedMineSetsThePointsAndFightsTreusDayth() {
+        inOrder("haunted_mine", "talk zealot", "talk zealot", "reach abandoned_mine", "puzzle abandoned_mine", "reach abandoned_mine",
+                "kill treus_dayth", "reach abandoned_mine");
+        for (QuestPuzzle.Variant v : MorytaniaQuests.HM_POINTS.rooms.get(0).variants()) {
+            List<Integer> s = v.solutions().get(0);
+            assertEquals(11, s.get(s.size() - 1), "the cart is started last");
+            for (int i = 1; i < s.size() - 1; i++) {
+                assertTrue(s.get(i) > s.get(i - 1), "levers are pulled from A to K");
+            }
+        }
+        BossDef treus = ContentRegistry.boss("treus_dayth");
+        assertTrue(treus.attacks.stream().anyMatch(a -> a.style() == com.runecraft.osrs.AttackType.RANGED && a.maxHit() == 15));
+        assertEquals(2, QuestBossRules.treusShiftOneIn(0.1f));
+    }
+
+    @Test
+    void lunarDiplomacyRunsTheDreamChallenges() {
+        inOrder("lunar_diplomacy", "talk lokar_searunner", "talk brundt", "talk oneiromancer", "drop suqah", "reach AIR_ALTAR", "reach FIRE_ALTAR",
+                "reach WATER_ALTAR", "reach EARTH_ALTAR", "reach lunar_isle_mine", "talk pauline_polaris", "talk oneiromancer",
+                "puzzle lunar_dream_world", "puzzle lunar_dream_world", "puzzle lunar_dream_world", "puzzle lunar_dream_world",
+                "reach lunar_dream_world", "kill me", "talk oneiromancer");
+        assertEquals(4, FremennikQuests.LD_DREAM.picks);
+        // every accepted dice answer flips dice to the target sum
+        for (int target : new int[]{12, 30, 17}) {
+            List<List<Integer>> sols = FremennikQuests.diceSolutions(target);
+            assertFalse(sols.isEmpty(), "sum " + target);
+            for (List<Integer> s : sols) {
+                int sum = 0;
+                for (int i = 0; i < FremennikQuests.LD_DICE.length; i++) {
+                    sum += s.contains(i) ? 7 - FremennikQuests.LD_DICE[i] : FremennikQuests.LD_DICE[i];
+                }
+                assertEquals(target, sum);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ Monkey Madness I
+
+    @Test
+    void monkeyMadnessWalksTheWikiRoute() {
+        inOrder("monkey_madness_i", "talk king_narnode", "talk glo_caranock", "talk king_narnode", "talk daero",
+                "puzzle gnome_glider_hangar", "talk waydar", "talk mm_lumdo",
+                "reach ape_atoll_jail", "talk garkor",
+                "reach ape_atoll_crates", "reach ape_atoll_crates", "talk zooknock", "reach ape_atoll_temple", "talk monkey_child", "talk zooknock",
+                "talk monkey_minder", "talk elder_guard", "talk mm_kruk", "talk king_awowogei",
+                "talk garkor", "kill jungle_demon", "talk king_narnode");
+        QuestSpec q = spec("monkey_madness_i");
+        assertTrue(q.triggers().stream().anyMatch(t -> t.kind == Trigger.Kind.KILL && t.target.equals("jungle_demon")
+                && t.need.containsKey("tenth_squad_sigil")));
+        assertEquals(20, QuestBossRules.JUNGLE_DEMON_REGEN_PERCENT);
+    }
+
+    // ------------------------------------------------------------------ Swan Song, Fremennik Isles, Making Friends with My Arm
+
+    @Test
+    void swanSongWalksTheColonyRepairsAndTheQueen() {
+        inOrder("swan_song", "talk herman_caranos", "talk quest_wise_old_man", "kill ss_sea_troll", "talk franklin_caranos",
+                "reach piscatoris", "talk arnold_lydspor", "talk arnold_lydspor", "talk franklin_caranos", "talk wizard_frumscone",
+                "talk malignius_mortifer", "talk master_crafter", "talk malignius_mortifer", "talk herman_caranos",
+                "kill sea_troll_queen", "talk herman_caranos");
+        QuestSpec q = spec("swan_song");
+        assertTrue(q.triggers().stream().anyMatch(t -> t.kind == Trigger.Kind.KILL && t.target.equals("ss_sea_troll") && t.count == 3));
+    }
+
+    @Test
+    void fremennikIslesSpiesOnJatizsoAndFightsTheTrollKing() {
+        inOrder("the_fremennik_isles", "talk mord_gunnars", "talk gjuki_sorvott", "talk slug_hemligssen", "talk mawnis_burowgar",
+                "puzzle slug_hemligssen", "talk mawnis_burowgar", "reach neitiznot", "talk gjuki_sorvott", "talk slug_hemligssen",
+                "talk gjuki_sorvott", "talk mawnis_burowgar", "kill ice_troll_runt", "kill ice_troll_king", "talk mawnis_burowgar");
+    }
+
+    @Test
+    void makingFriendsWithMyArmDousesTheFireBeforeMother() {
+        inOrder("making_friends_with_my_arm", "talk my_arm", "talk quest_odd_mushroom", "reach quest_weiss", "reach quest_weiss",
+                "puzzle quest_weiss", "talk snowflake", "talk quest_wise_old_man", "reach DRAYNOR_VILLAGE", "talk quest_wise_old_man",
+                "talk snowflake", "kill dont_know_what", "reach quest_weiss", "kill quest_mother", "talk snowflake", "talk my_arm");
+        assertEquals("mfa_fire_out", QuestBossRules.MOTHER_FIRE_OUT_FLAG);
+        assertTrue(spec("making_friends_with_my_arm").triggers().stream().anyMatch(t -> t.kind == Trigger.Kind.REACH
+                && t.setFlags.contains(QuestBossRules.MOTHER_FIRE_OUT_FLAG)));
+    }
+
+    // ------------------------------------------------------------------ Dream Mentor
+
+    @Test
+    void dreamMentorNursesCyrisusThenFightsHisFears() {
+        inOrder("dream_mentor", "talk cyrisus", "talk cyrisus", "talk cyrisus", "puzzle cyrisus", "talk cyrisus", "puzzle cyrisus",
+                "puzzle birds_eye_jack", "talk cyrisus", "talk cyrisus", "talk cyrisus", "talk oneiromancer", "reach troll_stronghold",
+                "reach dm_moonclan_sink", "reach dm_dream_hall", "talk cyrisus", "kill the_inadequacy", "kill the_everlasting",
+                "kill the_untouchable", "kill the_illusive", "talk oneiromancer");
+        // twenty pieces of food: seven cabbages, seven potatoes and six onions (wiki)
+        java.util.Map<String, Integer> fed = new java.util.HashMap<>();
+        for (Trigger t : spec("dream_mentor").triggers()) {
+            if (t.target.equals("cyrisus")) {
+                t.take.forEach((item, n) -> fed.merge(item, n, Integer::sum));
+            }
+        }
+        assertEquals(java.util.Map.of("cabbage", 7, "potato", 7, "onion", 6, "cyrisus_chest", 1, "dream_potion", 1), fed);
+        // each of Cyrisus's sets is a helmet, body, legs, boots and weapon, one of each slot
+        for (QuestPuzzle.Variant v : MisthalinMoreQuests.DM_ARMOUR.rooms.get(0).variants()) {
+            List<Integer> set = v.solutions().get(0);
+            for (int slot = 0; slot < 5; slot++) {
+                assertEquals(slot, set.get(slot) / 3, v.options().get(set.get(slot)));
+            }
+        }
+        assertEquals(2, MisthalinMoreQuests.DM_SPIRIT.picks);
+        assertEquals(List.of("the_inadequacy", "the_everlasting", "the_untouchable", "the_illusive"), QuestBossRules.DREAM_FEARS);
+        assertEquals("a_doubt", ContentRegistry.boss("the_inadequacy").minion);
+    }
+
+    // ------------------------------------------------------------------ A Kingdom Divided
+
+    @Test
+    void aKingdomDividedFollowsHughesRoseXamphurAndTheFiveHouses() {
+        inOrder("a_kingdom_divided", "talk martin_holt", "talk commander_fullore", "reach akd_hughes_house", "talk tomas_lawry",
+                "talk commander_fullore", "talk fuggy", "talk cabin_boy_herbert", "kill judge_of_yama", "talk councillor_andrews",
+                "talk commander_fullore", "talk martin_holt", "talk quest_archeio", "talk martin_holt", "reach isk_forthos", "puzzle isk_forthos",
+                "kill akd_assassin", "reach akd_settlement_ruins", "reach akd_legless_faun", "puzzle akd_legless_faun", "reach akd_rose_shack",
+                "talk kaht_bbalam", "reach akd_lizard_eggs", "talk kaht_bbalam", "kill xamphur", "reach akd_rose_shack",
+                "reach akd_xerics_lookout", "kill akd_assassin", "talk jorra", "kill barbarian_warlord", "reach akd_vinery_office",
+                "talk mori", "reach akd_chasm_of_fire", "reach akd_mount_karuulm", "reach fsk_wintertodt_camp", "talk commander_fullore");
+        // the panel takes the stone piles' numbers for R, O, S and E, in that order
+        for (QuestPuzzle.Variant v : LateQuestsB.AKD_ROSE.rooms.get(0).variants()) {
+            String prompt = String.join(" ", v.prompt());
+            List<Integer> code = v.solutions().get(0);
+            String[] letters = {"R", "O", "S", "E"};
+            for (int i = 0; i < 4; i++) {
+                assertTrue(prompt.contains("'" + letters[i] + " - " + code.get(i) + "'"), prompt);
+            }
+        }
+        // the statues are pressed in the order the panel lists the cities
+        for (QuestPuzzle.Variant v : LateQuestsB.AKD_STATUES.rooms.get(0).variants()) {
+            String prompt = String.join(" ", v.prompt());
+            int last = -1;
+            for (int o : v.solutions().get(0)) {
+                String city = v.options().get(o).replace("Press in the ", "").replace(" statue", "");
+                int at = prompt.indexOf(city);
+                assertTrue(at > last, prompt);
+                last = at;
+            }
+        }
+        assertTrue(QuestBossRules.judgeOfYamaHurtBy(com.runecraft.osrs.AttackType.SLASH));
+        assertFalse(QuestBossRules.judgeOfYamaHurtBy(com.runecraft.osrs.AttackType.MAGIC));
+        assertFalse(QuestBossRules.judgeOfYamaHurtBy(com.runecraft.osrs.AttackType.RANGED));
+        assertNull(QuestBossRules.xamphurSpecial(9));
+        assertEquals("falling_hands", QuestBossRules.xamphurSpecial(10));
+        assertEquals("phantom_hands", QuestBossRules.xamphurSpecial(20));
+        assertEquals("phantom_hand", ContentRegistry.boss("xamphur").minion);
+    }
+
+    // ------------------------------------------------------------------ The Path of Glouphrie
+
+    @Test
+    void pathOfGlouphrieUnmasksDumplingAndClearsTheWarpedDepths() {
+        inOrder("the_path_of_glouphrie", "talk king_bolren", "talk golrie", "puzzle pog_storeroom", "reach pog_strongroom",
+                "puzzle pog_strongroom", "kill evil_creature", "talk king_bolren", "talk aluft_gianne_jnr", "talk longramble",
+                "reach pog_incomitatus", "reach pog_warped_depths", "kill warped_terrorbird", "talk hazelmere");
+        assertTrue(spec("the_path_of_glouphrie").triggers().stream().anyMatch(t -> t.kind == Trigger.Kind.KILL
+                && t.target.equals("warped_terrorbird") && t.count == 3 && t.need.containsKey(QuestBossRules.TERRORBIRD_CHIME)));
+        // Colour-shape value (quest-helper's disc table): orange square 8, yellow triangle 9, blue triangle 15, indigo triangle 18
+        assertEquals(8, LateQuestsA.discValue(1, 2));
+        assertEquals(9, LateQuestsA.discValue(2, 1));
+        assertEquals(15, LateQuestsA.discValue(4, 1));
+        assertEquals(18, LateQuestsA.discValue(5, 1));
+        assertEquals(10, LateQuestsA.discValue(1, 3));
+        // every machine answer: one disc worth the top pair, then two different discs worth the bottom one
+        for (QuestPuzzle.Variant v : LateQuestsA.POG_MACHINE.rooms.get(0).variants()) {
+            assertFalse(v.solutions().isEmpty(), v.prompt().get(0));
+            for (List<Integer> s : v.solutions()) {
+                assertEquals(3, s.size());
+                assertTrue(!s.get(1).equals(s.get(2)));
+            }
+        }
+        assertEquals(1, LateQuestsA.POG_MONOLITHS.rooms.get(0).variants().get(0).solutions().size());
+    }
+
+    // ------------------------------------------------------------------ Beneath Cursed Sands
+
+    @Test
+    void beneathCursedSandsChampionUsesItsThreeSpecials() {
+        inOrder("beneath_cursed_sands", "talk jamila", "talk maisa_bcs", "kill head_menaphite_guard",
+                "talk maisa_bcs", "puzzle bcs_ruins_of_ullek", "puzzle bcs_ruins_of_ullek", "reach bcs_ruins_of_ullek",
+                "kill champion_of_scabaras", "talk zahur", "reach bcs_elid_lily", "talk zahur", "talk high_priest_sophanem",
+                "kill menaphite_akh", "talk high_priest_sophanem");
+        // Wiki: Shadow Burst -> Shadow Rift -> Shadow Burst -> Shadow Flames -> repeat
+        assertNull(QuestBossRules.scabarasSpecial(4));
+        List<String> cycle = new java.util.ArrayList<>();
+        for (int n = 1; n <= 8 * QuestBossRules.SCABARAS_SPECIAL_EVERY; n++) {
+            String s = QuestBossRules.scabarasSpecial(n);
+            assertEquals(n % QuestBossRules.SCABARAS_SPECIAL_EVERY == 0, s != null, "attack " + n);
+            if (s != null) {
+                cycle.add(s);
+            }
+        }
+        assertEquals(List.of("shadow_burst", "shadow_rift", "shadow_burst", "shadow_flames",
+                "shadow_burst", "shadow_rift", "shadow_burst", "shadow_flames"), cycle);
+        BossDef champion = ContentRegistry.boss("champion_of_scabaras");
+        assertTrue(champion.attacks.stream().anyMatch(a -> a.name().equals("shadow_burst") && a.maxHit() == 40));
+        // the rift's explosion: "35+" (strategy), up to 48 (Shadow Rift infobox)
+        for (int roll = 0; roll < 100; roll++) {
+            int hit = QuestBossRules.scabarasRiftDamage(new java.util.Random(roll));
+            assertTrue(hit >= 35 && hit <= 48, "rift hit " + hit);
+        }
+    }
+
+    // ------------------------------------------------------------------ A Night at the Theatre
+
+    @Test
+    void aNightAtTheTheatreNeedsARealTheatreOfBloodRun() {
+        inOrder("a_night_at_the_theatre", "talk quest_mysterious_stranger_tob", "kill vyrewatch_sentinel", "reach ant_ranis_crypt",
+                "talk quest_mysterious_stranger_tob", "reach ant_araxyte_nest", "talk daer_krand", "reach ant_araxyte_nest",
+                "talk quest_mysterious_stranger_tob", "talk nature_spirit", "kill ant_hespori", "reach ant_hespori_island",
+                "talk quest_mysterious_stranger_tob", "talk quest_mysterious_stranger_tob", "talk quest_mysterious_stranger_tob");
+        // the Theatre stage advances only on the flag a completed raid sets (RaidInstance), never on a trigger of the quest
+        QuestSpec q = spec("a_night_at_the_theatre");
+        assertTrue(q.triggers().stream().anyMatch(t -> t.stage == 3 && t.needFlags.contains(QuestBossRules.TOB_COMPLETED_FLAG)));
+        assertTrue(q.triggers().stream().noneMatch(t -> t.setFlags.contains(QuestBossRules.TOB_COMPLETED_FLAG)));
+        assertTrue(q.stages.get(3).triggers.stream().allMatch(t -> t.kind == Trigger.Kind.TALK));
+        // its own wild Hespori (wiki infobox), not the Farming Guild's: no loot, and a Farming Guild kill doesn't count
+        BossDef wild = ContentRegistry.boss("ant_hespori");
+        assertEquals("Hespori", wild.name);
+        assertEquals(302, wild.combatLevel);
+        assertEquals(360, wild.hitpoints);
+        assertEquals(6, wild.attackSpeed);
+        assertTrue(wild.drops.isEmpty());
+        assertEquals(2, wild.phases.size(), "the flowers bloom again at 66% and 33%");
+        assertTrue(q.triggers().stream().noneMatch(t -> "hespori".equals(t.target) || "hespori".equals(t.spawn)));
+        assertEquals(284, ContentRegistry.boss("hespori").combatLevel);
+        // Wiki rewards: four 20,000 XP combat lamps
+        assertEquals(80000.0, q.def.xpRewards().values().stream().mapToDouble(Double::doubleValue).sum());
+    }
+
+    @Test
+    void lampRewardsMatchTheWiki() {
+        // Monkey Madness I: 35,000 in the two skills chosen with Daero and 20,000 in the other two (110,000)
+        QuestSpec mm = spec("monkey_madness_i");
+        assertEquals(110000.0, mm.def.xpRewards().values().stream().mapToDouble(Double::doubleValue).sum());
+        assertEquals(35000.0, mm.def.xpRewards().get(com.runecraft.osrs.Skill.ATTACK));
+        assertEquals(20000.0, mm.def.xpRewards().get(com.runecraft.osrs.Skill.HITPOINTS));
+        // A Kingdom Divided: two 10,000 XP lamps and the book of the dead
+        QuestSpec akd = spec("a_kingdom_divided");
+        assertEquals(20000.0, akd.def.xpRewards().values().stream().mapToDouble(Double::doubleValue).sum());
+        assertTrue(akd.def.itemRewards().contains("book_of_the_dead"));
+        // A Kingdom Divided talks to the one Archeio, in the Arceuus Library
+        assertNull(ContentRegistry.npc("archeio"));
+        assertTrue(akd.triggers().stream().anyMatch(t -> t.kind == Trigger.Kind.TALK && t.target.equals("quest_archeio")));
+        assertTrue(QuestNpcMoves.RELOCATED.contains("quest_archeio"));
+    }
+}

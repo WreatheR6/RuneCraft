@@ -239,6 +239,9 @@ final class DesertQuests {
         b.item("dt_blessed_pot", "Blessed pot", "pot_item", 0xE0E0F0, "A silver pot blessed by the High Priest of Entrana.");
         b.item("dt_pot_of_blood", "Blessed pot of blood", "pot_item", 0x8A1A1A, "Your blood, in a blessed pot. Dessous will smell it.");
         b.spot("dt_draynor_sewer", "Draynor sewer entrance", 3118, 3244);
+        // Eblis's six mirrors, south-east of the Bandit Camp (his second spawn, mejrs/data_osrs).
+        b.spot("dt_mirrors", "Eblis's mirrors", 3213, 2956);
+        b.npc("dt_troll_mother", "Troll mother", "ice_path", 3, -2, 0x8A9A88, 0x5A6A4A, 0x4A5A3A, 0x6A7A5A);
         Cast.npc(b, "terry_balando", "Terry Balando", "exam_centre", 3, -3, Cast.FAIR, 0x6A5A3A);
         Cast.npc(b, "dt_bartender", "Bartender", "bandit_camp", -4, 2, Cast.TAN, 0x8A6A3A);
         Cast.npc(b, "ruantun", "Ruantun", "dt_draynor_sewer", 0, 0, Cast.VAMPYRE, 0x2A2A2A); // stands in for his room in the Draynor sewers
@@ -248,10 +251,12 @@ final class DesertQuests {
                 .attack(AttackDef.of("ice_barrage", AttackType.MAGIC, 16, 8, 4).special(Special.FREEZE, 8)
                         .telegraph(1, "Kamil casts a freezing spell!").particle("minecraft:snowflake"))
                 .drops(Drop.always("bones")).skin(0xC0E0F0, 0x2A3A6A, 0x1A2A4A, 0xE0F0FF).at("ice_path").arena(10, "ice"));
-        b.boss(BossDef.of("dessous", "Dessous").level(139).stats(200, 110, 110, 100, 100, 1).speed(4)
-                .defenceBonus(50, 50, 50, 0, 50)
-                .attack(AttackDef.of("vampyric_slash", AttackType.SLASH, 26, 2.5, 6).special(Special.LIFESTEAL, 25))
-                .attack(AttackDef.of("blood_spell", AttackType.MAGIC, 20, 8, 3).special(Special.LIFESTEAL, 50).particle("minecraft:crimson_spore"))
+        // Wiki: a rapid 3-tick melee up to 19, and a bat swarm (half Magic, half Ranged, 5 + 5) against Protect from Melee
+        // (QuestBossScripts.Dessous picks between them and teleports to a player hitting him from afar).
+        b.boss(BossDef.of("dessous", "Dessous").level(139).stats(200, 99, 99, 99, 1, 1).speed(3)
+                .defenceBonus(10, 150, 150, 0, 0)
+                .attack(AttackDef.of("vampyric_slash", AttackType.CRUSH, 19, 2.5, 6))
+                .attack(AttackDef.of("bat_swarm", AttackType.MAGIC, 10, 8, 3).message("Dessous: Hssssssssssss!").particle("minecraft:crimson_spore"))
                 .drops(Drop.always("bones")).size(0.8f, 2.4f, 1.0f).at("dessous_graveyard").arena(10, "crypt"));
         // OSRS Wiki: 130 HP, 190 Attack, 120 Strength, 135 Defence, +100 melee defence, 0 magic/ranged; max hit 40 (37 against ice gloves).
         b.boss(BossDef.of("fareed", "Fareed").level(167).stats(130, 190, 120, 135, 1, 1).speed(4)
@@ -259,12 +264,11 @@ final class DesertQuests {
                 .attack(AttackDef.of("flaming_scimitar", AttackType.SLASH, 40, 2.5, 8).particle("minecraft:flame"))
                 .attack(AttackDef.of("fire_burst", AttackType.MAGIC, 18, 5, 3).special(Special.AOE, 3).particle("minecraft:flame"))
                 .drops(Drop.always("bones")).skin(0xE06A1A, 0xA03A0A, 0x5A1A0A, 0xFFB040).at("smoke_dungeon").arena(10, "lava"));
-        b.boss(BossDef.of("damis", "Damis").level(103).stats(90, 100, 100, 90, 1, 1).speed(4)
-                .defenceBonus(30, 30, 30, 1000, 1000)
-                .immune(AttackType.MAGIC, AttackType.RANGED)
-                .attack(AttackDef.of("shadow_strike", AttackType.SLASH, 17, 2.5, 10).special(Special.DRAIN_PRAYER, 2))
-                .phase(50, "Damis transforms into his second form! (level 174)", 1.6, false,
-                        AttackDef.of("shadow_slash", AttackType.SLASH, 29, 2.5, 10).special(Special.DRAIN_PRAYER, 4))
+        // Wiki/DPS calculator: two forms, 90 then 200 Hitpoints (QuestBossScripts.Damis turns the first into the second); crush
+        // up to 22 (28 in the second form, which also drains Prayer in melee distance); no immunities (magic is recommended).
+        b.boss(BossDef.of("damis", "Damis").level(103).stats(90, 90, 90, 90, 1, 1).speed(4)
+                .defenceBonus(60, 60, 60, 60, 60)
+                .attack(AttackDef.of("shadow_strike", AttackType.CRUSH, 22, 2.5, 10))
                 .drops(Drop.always("bones")).skin(0x2A2A3A, 0x1A1A2A, 0x0A0A1A, 0x6A2A8A).at("shadow_dungeon").arena(10, "void"));
         b.quest("desert_treasure_i", "Desert Treasure I", Difficulty.MASTER, 3)
                 .reqQuest("the_dig_site", "temple_of_ikov", "the_tourist_trap", "troll_stronghold", "priest_in_peril", "waterfall_quest")
@@ -283,11 +287,16 @@ final class DesertQuests {
                 .talk("dt_bartender").stay().needFlag("dt_translated").unlessFlag("dt_bar").take("coins:650").flag("dt_bar")
                 .say("That's 650 for the beer. *He pockets the coins.* Four diamonds? You want Eblis. He's in the building east of the bar.")
                 .missing("Drinks are 650 coins here. No coin, no talk.")
-                .talk("eblis").needFlag("dt_bar")
-                .take("magic_logs:12", "steel_bar:6", "molten_glass:6", "ashes", "charcoal", "blood_rune", "bones").give("ancient_diary")
-                .say("*Eblis builds six mirrors from your glass and steel and performs the ritual over the magic logs, ashes, charcoal, blood rune and bones.*",
-                        "I see... four warriors of Zaros guard the diamonds: Damis of Shadow, Fareed of Smoke, Kamil of Ice and Dessous of Blood.")
+                .talk("eblis").stay().needFlag("dt_bar").unlessFlag("dt_supplies")
+                .take("magic_logs:12", "steel_bar:6", "molten_glass:6", "ashes", "charcoal", "blood_rune", "bones").flag("dt_supplies")
+                .say("*You hand Eblis the magic logs, steel bars, molten glass, ashes, charcoal, blood rune and bones.*",
+                        "With these I can make the mirrors and the ritual fire. Meet me at the mirrors, south-east of the camp.")
                 .missing("To scry where the diamonds are I need 12 magic logs, 6 steel bars, 6 molten glass, ashes, charcoal, a blood rune and some bones.")
+                // Wiki: Eblis builds six mirrors south-east of the camp and shows the four warriors in them.
+                .reach("dt_mirrors", 6).needFlag("dt_supplies")
+                .say("* Eblis performs the ritual before the six mirrors. In each appears a warrior of Zaros and the place he guards:",
+                        "@Eblis: Fareed of Smoke in the dungeon west of Pollnivneach, Damis of Shadow in the dungeon by Rasolo's camp, "
+                                + "Kamil of Ice on the Ice Path past Trollheim, and Dessous of Blood in the graveyard of Mort Myre.")
                 .stage("I must recover the Smoke, Shadow, Ice and Blood diamonds from Fareed, Damis, Kamil and Dessous.")
                 // --- Smoke diamond: light the four torches in the Smoke Dungeon (facemask) and take the warm key; Fareed waits behind the gate.
                 .reach("smoke_dungeon", 10).stay().unlessFlag("dt_torches").unless("smoke_diamond").need("facemask", "tinderbox").flag("dt_torches")
@@ -318,24 +327,29 @@ final class DesertQuests {
                 .say("* The five ice trolls guarding the gate are slain. The Ice Path lies open.") // OSRS: kill 5 ice trolls at the ice gate
                 .kill("kamil").stay().needFlag("dt_ice_trolls").unlessFlag("dt_kamil").flag("dt_kamil")
                 .say("* Kamil shatters into shards of ice. Further west, two trolls stand frozen in ice.")
-                .reach("ice_path", 10).stay().needFlag("dt_kamil").unless("ice_diamond").unlessFlag("dt_ice_freed").need("spiked_boots").take("fire_rune:5")
-                .flag("dt_ice_freed").give("ice_diamond")
-                .say("* In spiked boots you climb the ice ledge, then melt the frozen trolls with fire spells.",
-                        "@Troll mother: Our baby's hero! Take this diamond; Kamil left it behind.")
+                .reach("ice_path", 10).stay().needFlag("dt_kamil").unless("ice_diamond").unlessFlag("dt_ice_freed", "dt_trolls_thawed")
+                .need("spiked_boots").take("fire_rune:5").flag("dt_trolls_thawed")
+                .say("* In spiked boots you climb the ice ledge and follow the path west, then melt the two frozen trolls with fire spells.")
                 .missing("* The frozen trolls are up an icy ledge. You'll need spiked boots to climb it and fire runes to melt the ice.")
+                // Wiki: talk to the freed troll parents for the Ice diamond (saves from before this step already have it: dt_ice_freed).
+                .talk("dt_troll_mother").stay().needFlag("dt_trolls_thawed").unlessFlag("dt_ice_freed").flag("dt_ice_freed").give("ice_diamond")
+                .say("Our baby's hero! Kamil froze us solid for helping you humans.", "@Troll father: Take this shiny rock; Kamil left it behind.")
                 // --- Blood diamond: Malak wants Dessous dead; a blessed silver pot of blood, spiced and garlicked, lures him from his tomb.
                 .talk("malak").stay().needFlag("dt_dessous").unless("blood_diamond").unlessFlag("dt_blood_given").give("blood_diamond").flag("dt_blood_given")
                 .say("Dessous is gone? Then I keep my word. *Malak hands you the Blood diamond.*")
                 .talk("malak").stay().unlessFlag("dt_malak").flag("dt_malak")
                 .say("Dessous, the vampyre? Kill him and the diamond is yours. He'll only rise for blood in a pot blessed by a priest: "
                         + "Ruantun in the Draynor sewers can make a silver pot, and the High Priest of Entrana can bless it.")
-                .talk("ruantun").stay().needFlag("dt_malak").unless("dt_silver_pot", "dt_blessed_pot", "dt_pot_of_blood").take("silver_bar").give("dt_silver_pot")
+                // (once the blood is poured Dessous is raised again at his grave's stone; no second pot is needed)
+                .talk("ruantun").stay().needFlag("dt_malak").unless("dt_silver_pot", "dt_blessed_pot", "dt_pot_of_blood")
+                .unlessFlag("dt_blood_poured", "dt_dessous").take("silver_bar").give("dt_silver_pot")
                 .say("Silver for the master? Ruantun makes a pot. *He hammers the bar into a silver pot.*")
                 .missing("Ruantun needs silver. A silver bar.")
-                .talk("high_priest_entrana").stay().take("dt_silver_pot").give("dt_blessed_pot")
+                .talk("high_priest_entrana").stay().unlessFlag("dt_blood_poured", "dt_dessous").take("dt_silver_pot").give("dt_blessed_pot")
                 .say("A vessel for a holy purpose? Saradomin's blessing upon it.")
-                .talk("malak").stay().needFlag("dt_malak").take("dt_blessed_pot").give("dt_pot_of_blood")
-                .say("*Malak bites you and fills the pot with your blood.* Add spice and garlic and pour it on Dessous' tomb, south of Canifis.")
+                .talk("malak").stay().needFlag("dt_malak").unlessFlag("dt_blood_poured", "dt_dessous").take("dt_blessed_pot").give("dt_pot_of_blood")
+                .say("*Malak bites you (5 damage) and fills the pot with your blood.* Add spice and garlic powder and pour it on Dessous' tomb, "
+                        + "in the graveyard at the south-east of Mort Myre.")
                 .reach("dessous_graveyard", 8).stay().unlessFlag("dt_blood_poured", "dt_dessous").take("dt_pot_of_blood", "spice", "garlic").need("pestle_and_mortar")
                 .flag("dt_blood_poured").spawn("dessous")
                 .say("* You grind the garlic, stir it and the spice into the blood and pour it over the tomb. Dessous rises, hungry!")
@@ -346,8 +360,14 @@ final class DesertQuests {
                 .reach("quest_jaldraocht_pyramid", 10).take("smoke_diamond", "shadow_diamond", "ice_diamond", "blood_diamond").flag("dt_smoke_placed")
                 .say("* You place the four diamonds in the obelisks around the Jaldraocht Pyramid. The doors grind open...")
                 .stage("I should enter the pyramid and speak to whoever was imprisoned within.")
-                .talk("azzanadra").say("Free... after millennia! I am Azzanadra, servant of Zaros. You have my gratitude, mortal.",
+                // Wiki: in from the top, then four floors run without stopping (traps throw the player back), mummies and scarabs.
+                .reach("quest_jaldraocht_pyramid", 10).stay().unlessFlag("dt_pyramid").flag("dt_pyramid")
+                .say("* You climb in at the top of the pyramid and run through its four floors without stopping, past the traps, "
+                        + "the mummies and the scarabs, down to a sealed chamber.")
+                .talk("azzanadra").needFlag("dt_pyramid")
+                .say("Free... after millennia! I am Azzanadra, servant of Zaros. You have my gratitude, mortal.",
                         "Pray at the altar in this pyramid and you may use the Ancient Magicks of my lord.")
+                .missing("* A powerful presence waits deep inside the pyramid. You'll have to get through its four floors first.")
                 .done("azzanadra", "The Ancient Magicks are yours. Use them wisely.");
     }
 

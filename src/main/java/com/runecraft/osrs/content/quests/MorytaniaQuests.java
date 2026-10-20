@@ -235,25 +235,88 @@ final class MorytaniaQuests {
                 .done("velorina", "Thank you for freeing my people.");
     }
 
+    /**
+     * Haunted Mine's points settings (wiki): the board shows how the levers stand and how the track must be set for the cart
+     * to reach the ladder; the levers that differ are pulled (A to K here) and the cart started. Each player gets one board.
+     */
+    static final QuestPuzzle HM_POINTS = points();
+
+    private static QuestPuzzle points() {
+        String[] levers = {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"};
+        String[] options = new String[levers.length + 1];
+        for (int i = 0; i < levers.length; i++) {
+            options[i] = "Pull lever " + levers[i];
+        }
+        options[levers.length] = "Start the cart";
+        // per board: the levers that start the wrong way (the rest are already set)
+        int[][] wrong = {{1, 3, 6, 9}, {0, 2, 4, 7, 10}, {2, 5, 8}, {0, 3, 6, 7}, {1, 4, 5, 9, 10}};
+        QuestPuzzle.Builder b = QuestPuzzle.builder("hm_points").room("points");
+        for (int[] w : wrong) {
+            StringBuilder now = new StringBuilder();
+            StringBuilder want = new StringBuilder();
+            for (int i = 0; i < levers.length; i++) {
+                boolean off = contains(w, i);
+                boolean up = ((i * 7 + w.length) % 3) != 0;
+                now.append(i > 0 ? ", " : "").append(levers[i]).append(up ? " up" : " down");
+                want.append(i > 0 ? ", " : "").append(levers[i]).append(up != off ? " up" : " down");
+            }
+            int[] solution = java.util.Arrays.copyOf(w, w.length + 1);
+            solution[w.length] = levers.length;
+            b.variant(null).prompt("* The points settings board. The levers now: " + now + ".",
+                    "* To send the cart to the ladder in the far corner they must be: " + want + ". Pull the levers that differ, from A to K, "
+                            + "then start the cart.").options(options).solution(solution);
+        }
+        return b.failLines("* The cart rattles off the wrong way and crashes. You'll need another glowing fungus in the cart and to set the "
+                + "levers again.").build();
+    }
+
+    private static boolean contains(int[] a, int v) {
+        for (int x : a) {
+            if (x == v) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static void hauntedMine(QuestBook b) {
         b.npc("zealot", "Zealot", "abandoned_mine", 3, 3, 0xD8B8A8, 0x6A6A2A, 0x4A4A1A, 0x3A3A1A);
         b.item("crystal_mine_key", "Crystal-mine key", "key", 0x9AE0E0, "A key to the crystal-filled cavern of the Abandoned Mine.");
         b.item("salve_shard", "Salve shard", "gem", 0x9AE0C0, "A shard of salve crystal. Crafted into an amulet, it harms the undead.");
-        b.boss(BossDef.of("treus_dayth", "Treus Dayth").level(95).stats(100, 90, 90, 80, 1, 1).speed(4)
-                .attack(AttackDef.of("ghostly_touch", AttackType.CRUSH, 13, 2.5, 8).special(Special.DRAIN_STAT, Skill.STRENGTH.ordinal()))
-                .attack(AttackDef.of("soul_blast", AttackType.MAGIC, 12, 8, 3).particle("minecraft:soul"))
+        b.item("zealots_key", "Zealot's key", "key", 0xB0A060, "A key pickpocketed from the Zealot.");
+        b.item("glowing_fungus", "Glowing fungus", "produce", 0x9AE0A0, "It glows in the dark. Teleporting turns it to ash.");
+        // Wiki/DPS calculator: thrown pickaxes (ranged) up to 15; he moves about the room and turns its carts and cranes on the player
+        // (QuestBossScripts.TreusDayth); weak to air spells.
+        b.boss(BossDef.of("treus_dayth", "Treus Dayth").level(95).stats(100, 70, 70, 100, 1, 1).speed(4)
+                .attack(AttackDef.of("thrown_pickaxe", AttackType.RANGED, 15, 6, 8))
+                .attack(AttackDef.of("ghostly_touch", AttackType.CRUSH, 13, 2.5, 4))
                 .drops(Drop.always("bones")).skin(0xC8E8E5, 0x6A7A7A, 0x4A5A5A, 0x9AB0B0).at("abandoned_mine").arena(10, "crypt"));
         b.quest("haunted_mine", "Haunted Mine", Difficulty.EXPERIENCED, 2)
                 .reqQuest("priest_in_peril").req(Skill.CRAFTING, 35)
                 .xp(Skill.STRENGTH, 22000).reward("salve_shard")
-                .stage("I can start this quest by speaking to the Zealot outside the Abandoned Mine in southern Morytania. (Requires Priest in Peril, 15 Agility, 35 Crafting.)")
+                .stage("I can start this quest by speaking to the Zealot outside the Abandoned Mine in southern Morytania. (Requires Priest in Peril, 35 Crafting.)")
                 .talk("zealot").say("The mine is haunted by the ghost of Treus Dayth, the old owner. There are glowing crystals deep inside, if you dare.")
                 .stage("I should explore the Abandoned Mine and find a way into its deepest level.")
-                .reach("abandoned_mine", 10).give("crystal_mine_key").say("* Deep in the mine you find a key to a crystal-filled cavern... and a terrible chill.")
+                // Wiki: pickpocket the Zealot's key, crawl down the cart tunnel to the fourth level, send a glowing fungus down the
+                // track by setting the points, fetch it, open the water valve with the key and take the lift to the flooded level.
+                .talk("zealot").stay().unless("zealots_key").unlessFlag("hm_valve").give("zealots_key")
+                .say("* While the Zealot preaches, you slip his key out of his robes.")
+                .reach("abandoned_mine", 10).stay().unless("glowing_fungus").unlessFlag("hm_cart").give("glowing_fungus")
+                .say("* You climb over the cart and crawl down the cart tunnel, through four levels of the mine, dodging the runaway carts. "
+                        + "On the fourth level you pick a glowing fungus and put it in a mine cart.")
+                .puzzle("abandoned_mine", HM_POINTS).stay().need("glowing_fungus").unlessFlag("hm_cart").flag("hm_cart")
+                .say("* The cart rattles off along the track and reaches the ladder in the far corner.")
+                .reach("abandoned_mine", 10).needFlag("hm_cart").need("glowing_fungus").take("zealots_key").give("crystal_mine_key")
+                .flag("hm_valve").spawn("treus_dayth")
+                .say("* You fetch the fungus from the cart, open the water valve with the Zealot's key and race to the lift.",
+                        "* On the flooded level, behind a door, lies an innocent-looking key. As you pick it up, the ghost of Treus Dayth appears!")
+                .missing("* The mine's depths are dark. You'll need the glowing fungus sent down by the cart, and the Zealot's key for the water valve.")
                 .stage("The ghost of Treus Dayth attacks!")
+                .reach("abandoned_mine", 10).stay().spawn("treus_dayth")
                 .kill("treus_dayth").say("* Treus Dayth's ghost is destroyed. The crystal cavern is open.")
                 .stage("I should take a shard of the salve crystal from the cavern.")
-                .reach("abandoned_mine", 10).take("crystal_mine_key").say("* You chip a shard from the glowing salve crystal.").finish()
+                .reach("abandoned_mine", 10).take("crystal_mine_key").need("chisel").say("* By the fungus's glow you cut a shard from the salve crystal outcrop.")
+                .missing("* The crystal outcrop is too hard to break by hand. A chisel would do it.").finish()
                 .done("zealot", "You survived the mine? Saradomin truly watches over you.");
     }
 

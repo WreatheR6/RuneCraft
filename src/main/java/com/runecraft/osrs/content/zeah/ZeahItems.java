@@ -79,8 +79,6 @@ public final class ZeahItems {
                 "Dropped by lizardmen. Charges Xeric's talisman.");
         simple(items, "xerics_talisman_inert", "Xeric's talisman (inert)", "talisman", 0x5A8A80, 100, 1,
                 "An inert talisman. Lizardman fangs would bring it back to life.");
-        simple(items, "book_of_the_dead", "Book of the dead", "book", 0x3A1A4A, 1, 1,
-                "A tome of Arceuus necromancy. Its pages allow teleports to the Kourend graveyards.");
         items.add("lovakite_ore", "Lovakite ore", Kind.SIMPLE, "ore", 0x4A6A7A).value(60).stack(64)
                 .examine("Lovakite ore, mined beneath Lovakengj.");
         items.add("lovakite_bar", "Lovakite bar", Kind.SIMPLE, "bar", 0x5A7A8A).value(120).stack(64)

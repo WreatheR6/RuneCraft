@@ -392,12 +392,57 @@ final class KandarinMoreQuests {
                 .stage("I can start this quest by speaking to Islwyn in the elf camp in Tirannwn. (Requires Regicide, Waterfall Quest, 56 Agility.)")
                 .talk("islwyn").say("Glarial's tomb was disturbed and her remains moved... by you. Eluned can perform a rite to consecrate a new resting place.")
                 .stage("I should speak to Eluned about the consecration rite.")
-                .talk("eluned").give("consecration_seed").say("Take this crystal seed. It must be charged with Glarial's spirit at the Baxtorian Falls, but a moss guardian protects the tree there.")
+                // Wiki: the consecration seed lies in Glarial's old tomb, guarded by a moss guardian; Eluned sings it, and it is
+                // planted in the Waterfall Dungeon's final room.
+                .talk("eluned").say("To consecrate a new resting place we need a consecration seed. One lies in Glarial's old tomb, north-west of "
+                        + "the Fishing Guild. Use her pebble on the tombstone, but beware the moss guardian.")
                 .stage("I must defeat the moss guardian at the Baxtorian Falls and charge the seed.")
-                .kill("moss_guardian").say("* The moss guardian falls. You charge the consecration seed in the falls.")
+                .reach("glarials_tomb", 8).stay().need("glarials_pebble").unless("consecration_seed").spawn("moss_guardian")
+                .say("* You use Glarial's pebble on the tombstone. Inside, a moss guardian lumbers towards you!")
+                .missing("* Glarial's tombstone has a hollow shaped like a pebble.")
+                .kill("moss_guardian").unless("consecration_seed").give("consecration_seed")
+                .say("* The moss guardian falls, dropping a consecration seed.")
+                .kill("moss_guardian").need("consecration_seed").say("* The moss guardian falls.") // saves from before: Eluned gave the seed
                 .stage("I should return the seed to Islwyn.")
-                .talk("islwyn").take("consecration_seed").say("Glarial's spirit rests again. You have earned the elves' trust. Take this crystal bow.");
+                .talk("eluned").stay().need("consecration_seed").unlessFlag("re_sung", "re_planted").flag("re_sung")
+                .say("*Eluned sings to the seed until it glows.* Plant it in the last room of the Waterfall Dungeon, where Glarial lies now.")
+                .reach("baxtorian_falls", 10).stay().needFlag("re_sung").unlessFlag("re_planted").need("rope").take("consecration_seed").flag("re_planted")
+                .say("* You raft to the falls, rope across the rock and the dead tree, find the key in the crates and plant the seed in the final room.")
+                .missing("* You'll need a rope to reach the Waterfall Dungeon.")
+                .talk("islwyn").needFlag("re_planted").say("Glarial's spirit rests again. You have earned the elves' trust. Take this crystal bow.")
+                .missing("Eluned must sing to the seed, and then it must be planted where Glarial now lies.");
     }
+
+    /** The Temple of Light's mirror and crystal options (wiki quick guide), in click order. */
+    private static final String[] LIGHT_MOVES = {"Point it north", "Point it east", "Point it south", "Point it west", "Point it up",
+            "Point it down", "Place the yellow crystal", "Place the cyan crystal", "Place the blue crystal", "Place a fractured crystal"};
+
+    private static QuestPuzzle light(String key, String prompt, int... solution) {
+        return QuestPuzzle.builder(key).room(key).variant(null).prompt(prompt).options(LIGHT_MOVES).solution(solution)
+                .failLines("* The light scatters into the dark. You pull the dispenser's lever to reset the mirrors and start again.").build();
+    }
+
+    /**
+     * Mourning's End Part II's light puzzles (wiki quick guide), each a run of mirror turns and crystals described by where
+     * the mirrors stand: chest 1 (yellow barrier), chest 2 (green: cyan and yellow), the blue crystal's chest (yellow
+     * through the red pane) and the death altar's pillar (condensed, approx).
+     */
+    static final QuestPuzzle ME2_CHEST_YELLOW = light("me2_chest_yellow",
+            "* The crystal dispenser's beam strikes mirror 1. Mirror 2 lies north of mirror 1, mirror 3 west of mirror 2, and south of mirror 3 "
+                    + "a crystal stand with mirror 4 just past it. The chest waits east of mirror 4, across the gap, behind a yellow barrier. "
+                    + "Point each mirror (and place a crystal) in the order the light reaches them.", 0, 3, 2, 6, 1);
+    static final QuestPuzzle ME2_CHEST_GREEN = light("me2_chest_green",
+            "* Mirror 2 lies north of mirror 1, a crystal stand west of mirror 2 with mirror 3 just past it, mirror 4 north of mirror 3, and "
+                    + "a second stand east of mirror 4 before the chest. The chest's barrier is green: cyan light first, then yellow.",
+            0, 3, 7, 0, 1, 6);
+    static final QuestPuzzle ME2_CHEST_BLUE = light("me2_chest_blue",
+            "* The cyan crystal still sits in the middle floor's stand. Above it, mirror 7 on the top floor can send the beam south through a red "
+                    + "pane to mirror 8, which can send it down to the blue crystal's chest. The pane only turns yellow light red.", 6, 2, 5);
+    static final QuestPuzzle ME2_DEATH_ALTAR = light("me2_death_altar",
+            "* The death altar's door opens when every colour reaches the central pillar. Mirror 1 sends the beam north to mirror 2, which can "
+                    + "send it down a floor to mirror 3; west of mirror 3 a stand takes a fractured crystal that splits the beam. One half must "
+                    + "go up again, through the yellow stand and then the blue stand, to the last mirror, which turns west onto the pillar.",
+            0, 5, 3, 9, 4, 6, 8, 3);
 
     private static void mourningsEnd(QuestBook b) {
         b.npc("mourner_spy", "Mourner", "west_ardougne_mourners", 0, 0, 0xE0B8A5, 0x2A2A2B, 0x2A2A2C, 0x1A1A1D);
@@ -488,15 +533,20 @@ final class KandarinMoreQuests {
                 .missing("* The temple caves are locked: Essyllt has the new key. You'd want a chisel too.")
                 .talk("arianwyn").stay().take("me2_black_crystal").give("me2_newly_made_crystal").flag("me2_crystal")
                 .say("A shard of the dark crystal! *Arianwyn sings it into a newly made crystal.* It will focus the temple's light.")
-                .reach("temple_of_light", 10).stay().needFlag("me2_crystal").unlessFlag("me2_yellow").need("rope", "me2_newly_made_crystal")
-                .flag("me2_yellow").say("* You rope down the rocks and collect mirrors and a yellow crystal from the dispenser. The beam turns yellow.")
-                .reach("temple_of_light", 10).stay().needFlag("me2_yellow").unlessFlag("me2_green").flag("me2_green")
-                .say("* Across the gap a chest holds a cyan crystal. Cyan and yellow together: the beam turns green and opens the next barrier.")
-                .reach("temple_of_light", 10).stay().needFlag("me2_green").unlessFlag("me2_blue").flag("me2_blue")
-                .say("* On the top floor a mirror turns the light blue; below, a chest gives up the fractured crystals.")
-                .reach("temple_of_light", 10).needFlag("me2_yellow", "me2_green", "me2_blue").take("me2_newly_made_crystal").flag("me2_light")
-                .say("* With the fractured crystals in place, every colour reaches the central pillar. You set the newly made crystal in it:"
-                        + " light pours into the chamber... and a shadow rises from the darkness!")
+                .reach("temple_of_light", 10).stay().needFlag("me2_crystal").unlessFlag("me2_rope").need("rope", "me2_newly_made_crystal")
+                .flag("me2_rope").say("* You tie your rope to the rocks on the middle floor and collect mirrors and a yellow crystal from the dispenser.")
+                .missing("* The temple's middle floor drops away. You'll need a rope, and Arianwyn's newly made crystal.")
+                .puzzle("temple_of_light", ME2_CHEST_YELLOW).stay().needFlag("me2_rope").unlessFlag("me2_yellow").flag("me2_yellow")
+                .say("* Yellow light opens the barrier. Across the gap the chest holds two mirrors and a cyan crystal.")
+                .puzzle("temple_of_light", ME2_CHEST_GREEN).stay().needFlag("me2_yellow").unlessFlag("me2_green").flag("me2_green")
+                .say("* Cyan and yellow make green: the next chest opens. Two more mirrors. Then mirrors past the top floor turn the light blue "
+                        + "and a chest below gives up a fractured crystal.")
+                .puzzle("temple_of_light", ME2_CHEST_BLUE).stay().needFlag("me2_green").unlessFlag("me2_blue").flag("me2_blue")
+                .say("* The red light opens the bottom floor's chest: a blue crystal. With it, another chest gives the second fractured crystal.")
+                .puzzle("temple_of_light", ME2_DEATH_ALTAR).needFlag("me2_yellow", "me2_green", "me2_blue").take("me2_newly_made_crystal")
+                .flag("me2_light")
+                .say("* Every colour reaches the central pillar and the way to the Death Altar opens. You charge the newly made crystal at the altar"
+                        + " and set it in the black crystal: light pours into the chamber... and a shadow rises from the darkness!")
                 .stage("I must defeat the shadow guarding the temple.")
                 .kill("shadow_of_light").take("light_crystal").say("* The shadow is banished. The mourners will never reach the Death Altar now.")
                 .stage("I should report to Arianwyn.")

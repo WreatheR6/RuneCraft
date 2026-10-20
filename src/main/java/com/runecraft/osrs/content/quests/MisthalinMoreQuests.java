@@ -9,6 +9,7 @@ import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.AttackDef.Special;
 import com.runecraft.osrs.content.BossDef;
+import com.runecraft.osrs.content.MonsterDef;
 import com.runecraft.osrs.content.PlaceDef;
 import com.runecraft.osrs.data.Drop;
 
@@ -123,14 +124,82 @@ final class MisthalinMoreQuests {
                 .done("historian_minas", "Jorral's Outpost is a museum now? Splendid! History preserved.");
     }
 
+    /** Cyrisus's bank in 'Birds-Eye' Jack's keeping (wiki): helmets, bodies, legs, boots and weapons of the three sets. */
+    static final String[] DM_BANK = {"Dragon med helm", "Splitbark helm", "Robin Hood hat", "Ahrim's robetop", "Karil's leathertop",
+            "Dragon chainbody", "Ahrim's robeskirt", "Torag's platelegs", "Black d'hide chaps", "Ranger boots", "Adamant boots",
+            "Infinity boots", "Abyssal whip", "Magic shortbow", "Ancient staff"};
+
+    /**
+     * Dream Mentor (wiki, quest-helper): lifting Cyrisus's spirits. Each talk is three kind things to say among unkind ones,
+     * in any order (quest-helper's dialogue choices).
+     */
+    static final QuestPuzzle DM_SPIRIT = QuestPuzzle.builder("dm_spirit").shuffle()
+            .room("weak").variant(null)
+            .prompt("* Cyrisus props himself up on an elbow. Lift his spirits: say three kind things.")
+            .options("You're looking better now: you look and sound more lively.", "Are you looking forward to getting out? That's the spirit!",
+                    "You seem like a nice guy. Just being honest.", "You still look half dead.", "Don't expect me to stay long.",
+                    "I nearly left you for the suqah.")
+            .anyOrder(0, 1, 2)
+            .variant(null)
+            .prompt("* Cyrisus manages a weak smile. Lift his spirits: say three kind things.")
+            .options("When we get out of here I'll buy you a drink: whatever and wherever you want, my treat.",
+                    "I'm very impressed you managed to get into this cave. I would have given up personally.",
+                    "You'll survive this easily. Think of all the places you can visit when you get out!", "You smell like a troll's larder.",
+                    "Real warriors don't faint in caves.", "Hurry up and get better, I'm busy.")
+            .anyOrder(0, 1, 2)
+            .room("stronger").variant(null)
+            .prompt("* Cyrisus sits up on his own now. Lift his spirits: say three kind things.")
+            .options("Just don't worry. Of course you'll be fine.", "What are you going to do when you get out of here? You could travel with me!",
+                    "It's a good thing you have me to look after you. Not that I'm bragging or anything.", "You'll never be a warrior again.",
+                    "This cave is a dump.", "I only came for the reward.")
+            .anyOrder(0, 1, 2)
+            .variant(null)
+            .prompt("* Cyrisus is almost on his feet. Lift his spirits: say three kind things.")
+            .options("Not long now and you'll be back on your feet!", "You're sounding much better. If you need anything, just let me know.",
+                    "You're very safe in this little cave. The suqah will never fit through that tunnel.", "The suqah are waiting outside for you.",
+                    "Your armour's probably been sold by now.", "Stop whining.")
+            .anyOrder(0, 1, 2)
+            .always("weak", "stronger").failLines("@Cyrisus: ...Maybe I'm better off alone. *His spirits sink. Try again.*").build();
+
+    /**
+     * Dream Mentor (wiki): 'Birds-Eye' Jack opens Cyrisus's bank and the right helmet, body, legs, boots and weapon go to him.
+     * OSRS picks the set by the player's own combat style and leaves it to guesswork; here Cyrisus's note names it (approx).
+     */
+    static final QuestPuzzle DM_ARMOUR = QuestPuzzle.builder("dm_armour").room("cyrisus_bank")
+            .variant(null).prompt("* 'Birds-Eye' Jack opens Cyrisus's bank. Choose his helmet, body, legs, boots and weapon, in that order.",
+                    "@'Birds-Eye' Jack: He fights up close. His note says: a dragon's helm, a Barrows mage's robes, a ranger's boots and a demon's whip.")
+            .options(DM_BANK).solution(0, 3, 6, 9, 12)
+            .variant(null).prompt("* 'Birds-Eye' Jack opens Cyrisus's bank. Choose his helmet, body, legs, boots and weapon, in that order.",
+                    "@'Birds-Eye' Jack: He fights from afar. His note says: a druid's bark helm, a Barrows archer's top, a Barrows warrior's "
+                            + "legs, adamant boots and a magic bow.")
+            .options(DM_BANK).solution(1, 4, 7, 10, 13)
+            .variant(null).prompt("* 'Birds-Eye' Jack opens Cyrisus's bank. Choose his helmet, body, legs, boots and weapon, in that order.",
+                    "@'Birds-Eye' Jack: He fights with spells. His note says: an outlaw's hat, a dragon's chainmail, black dragonhide legs, "
+                            + "infinity boots and an ancient staff.")
+            .options(DM_BANK).solution(2, 5, 8, 11, 14)
+            .failLines("@'Birds-Eye' Jack: Cyrisus would never wear that together. Let's start over.").build();
+
     private static void dreamMentor(QuestBook b) {
         b.npc("cyrisus", "Cyrisus", "quest_lunar_isle", -3, -2, 0xE8C0B8, 0x8A8AA0, 0x5A5A7A, 0x5A3A1E);
+        b.npcAt("birds_eye_jack", "'Birds-Eye' Jack", 2099, 3921, 0xE8C0A8, 0x6A6AA0, 0x4A4A7A, 0x8A6A3A); // the Lunar Isle bank
+        b.spot("dm_moonclan_sink", "Moon Clan sink", 2091, 3922); // the house west of the bank
+        b.spot("dm_dream_hall", "Dream Hall", 2073, 3912); // its brazier
         b.item("goutweed", "Goutweed", "herb", 0x6A8A3A, "A rather smelly weed. Trolls use it in their cooking.");
-        // Cyrisus's four fears, fought one after another in his dream (OSRS Wiki infoboxes: levels, HP, stats, max hits, speeds).
+        b.item("dream_vial", "Dream vial", "vial", 0xC0C8E0, "A vial from the Oneiromancer, for a dream potion.");
+        b.item("dream_potion", "Dream potion", "vial", 0x8A80C0, "Shares a dream with whoever drinks it beside you.");
+        b.item("cyrisus_chest", "Cyrisus's chest", "package", 0x6A4A2A, "Cyrisus's helmet, armour, boots and weapon.");
+        // The Inadequacy summons Doubts, which vanish when it falls (wiki: A Doubt).
+        b.monster(MonsterDef.of("a_doubt", "A Doubt").level(78).stats(59, 72, 58, 85, 1, 1).speed(6)
+                .attack(AttackDef.of("crush", AttackType.CRUSH, 8, 2.5, 1))
+                .skin(0x6A6A8A, 0x4A4A6A, 0x2A2A4A, 0x9A9AC0).size(0.8f, 1.8f, 0.8f));
+        // Cyrisus's four fears, fought one after another in his dream (OSRS Wiki infoboxes: levels, HP, stats, max hits, speeds);
+        // prayers don't work there (QuestBossScripts.DreamFear).
         b.boss(BossDef.of("the_inadequacy", "The Inadequacy").level(343).stats(180, 564, 170, 240, 1, 170).speed(4)
                 .defenceBonus(0, 0, 0, 0, 0)
                 .attack(AttackDef.of("crush", AttackType.CRUSH, 18, 3, 6))
                 .attack(AttackDef.of("doubt", AttackType.RANGED, 20, 10, 3))
+                .attack(AttackDef.of("summon_doubts", AttackType.MAGIC, 0, 10, 1).special(Special.SUMMON, 2))
+                .minion("a_doubt", 2)
                 .phase(50, "The Inadequacy: You'll never be good enough!", 1.0, false)
                 .drops(Drop.always("coins")).size(1.0f, 2.6f, 1.5f).at("dream_world_cyrisus").arena(11, "void"));
         b.boss(BossDef.of("the_everlasting", "The Everlasting").level(223).stats(230, 187, 231, 120, 1, 1).speed(6)
@@ -145,31 +214,74 @@ final class MisthalinMoreQuests {
         b.quest("dream_mentor", "Dream Mentor", Difficulty.MASTER, 2)
                 .reqQuest("lunar_diplomacy", "eadgars_ruse")                .xp(Skill.HITPOINTS, 15000).xp(Skill.MAGIC, 10000)
                 .unlock("The Dream Lunar spell")
-                .stage("I can start this quest by speaking to the Oneiromancer on Lunar Isle. (Requires Lunar Diplomacy, Eadgar's Ruse.)")
-                .talk("oneiromancer").reqCombat(85).missing("Cyrisus's dreams are too dangerous for you yet. (Requires combat level 85.)")
-                .say("Cyrisus, a Fremennik warrior, lies in a stupor in the mine. Help him regain his confidence through the dream world.")
-                .stage("I should talk to Cyrisus and restore his spirit (bring him food and gear).")
-                .talk("cyrisus").take("shark:5", "rune_full_helm").say("Food... armour... I feel stronger. But I fear what's in my dreams.")
-                .missing("I'm too weak... I need food (5 sharks) and some armour (a rune full helm)...")
-                .stage("I should enter Cyrisus's dream with him and face his fears.")
+                .stage("I can start this quest by talking to Cyrisus, a fallen Fremennik warrior on Lunar Isle. (Requires Lunar Diplomacy, Eadgar's Ruse, combat level 85.)")
+                .talk("cyrisus").reqCombat(85).missing("* The fallen man is in a bad way. You don't feel ready to help him yet. (Requires combat level 85.)")
+                .say("* The fallen man barely stirs. He's starving, his spirit is broken, and his armour is gone.",
+                        "...Help me. Please.")
+                // Wiki: health, spirit and armament in that order; 20 pieces of at least three kinds of food fed in turn (seven,
+                // seven and six), four lots of talk, then Cyrisus's bank set from 'Birds-Eye' Jack.
+                .stage("I should nurse Cyrisus back to health: feed him three kinds of food in turn (7 cabbages, 7 potatoes and 6 onions), "
+                        + "lift his spirits, and fetch his armour from 'Birds-Eye' Jack in the Lunar Isle bank.")
+                .talk("cyrisus").stay().unlessFlag("dm_fed_1").take("cabbage", "potato", "onion:2").flag("dm_fed_1")
+                .say("* You feed him a cabbage, a potato and two onions, one kind after another. (Health: 20%)", "...More...")
+                .missing("* He needs food: a cabbage, a potato and two onions, fed one kind after another.")
+                .talk("cyrisus").stay().needFlag("dm_fed_1").unlessFlag("dm_fed_2").take("cabbage:2", "potato", "onion").flag("dm_fed_2")
+                .say("* You feed him two cabbages, a potato and an onion. He opens his eyes. (Health: 40%)", "Thank you... friend.")
+                .missing("* He needs more food: two cabbages, a potato and an onion.")
+                .puzzle("cyrisus", DM_SPIRIT, 0).stay().needFlag("dm_fed_2").unlessFlag("dm_spirit_1").flag("dm_spirit_1")
+                .say("@Cyrisus: You're right... maybe I will get out of here. (Spirit: 40%)")
+                .talk("cyrisus").stay().needFlag("dm_spirit_1").unlessFlag("dm_fed_3").take("cabbage:2", "potato:2", "onion:2").flag("dm_fed_3")
+                .say("* You feed him two of each. He sits up on his own. (Health: 70%)")
+                .missing("* He needs more food: two cabbages, two potatoes and two onions.")
+                .puzzle("cyrisus", DM_SPIRIT, 1).stay().needFlag("dm_fed_3").unlessFlag("dm_spirit_2").flag("dm_spirit_2")
+                .say("@Cyrisus: I feel like myself again. But I can't face anything without my armour: 'Birds-Eye' Jack keeps my bank. (Spirit: 72%)")
+                .puzzle("birds_eye_jack", DM_ARMOUR).stay().needFlag("dm_spirit_2").unless("cyrisus_chest").unlessFlag("dm_armed")
+                .need("seal_of_passage").give("cyrisus_chest")
+                .say("@'Birds-Eye' Jack: That's his set, all right. Here: his chest. Take it down to him.")
+                .talk("cyrisus").stay().needFlag("dm_spirit_2").unlessFlag("dm_armed").take("cyrisus_chest").flag("dm_armed")
+                .say("* Cyrisus pulls on his armour and grips his weapon. (Armament: 100%)", "Now I look like a warrior again.")
+                .missing("I can't go anywhere like this. 'Birds-Eye' Jack in the bank keeps my things.")
+                .talk("cyrisus").stay().needFlag("dm_armed").unlessFlag("dm_fed_4").take("cabbage:2", "potato:3", "onion").flag("dm_fed_4")
+                .say("* You feed him the last of the food. He stands tall. (Health: 100%)")
+                .missing("* He could eat a little more: two cabbages, three potatoes and an onion.")
+                .talk("cyrisus").needFlag("dm_fed_4")
+                .say("I'm strong again, I have my armour and my spirit... but I can't fight. Every time I raise my weapon, I freeze.",
+                        "Will you take me to the Oneiromancer? Maybe she can help.")
+                .stage("Cyrisus is afraid of combat. I should talk to the Oneiromancer, make a dream potion and light the brazier in the Dream Hall.")
+                .talk("oneiromancer").stay().unless("dream_vial").unless("dream_potion").unlessFlag("dm_brazier").give("dream_vial")
+                .say("His fear lives in his dreams. Share his dream and face it with him.",
+                        "Take this dream vial. Fill it with water, add goutweed, then an astral rune: crush it with a hammer and grind it with a pestle and mortar.")
                 // Goutweed: the Troll Stronghold storeroom, open to you since Eadgar's Ruse.
-                .reach("troll_stronghold", 8).stay().unless("goutweed").give("goutweed")
+                .reach("troll_stronghold", 8).stay().unless("goutweed").unless("dream_potion").give("goutweed")
                 .say("* You slip into the trolls' storeroom and take some goutweed.")
-                .talk("oneiromancer").take("vial_of_water", "astral_rune", "goutweed").need("pestle_and_mortar", "seal_of_passage").travel("dream_world_cyrisus")
-                .say("* The Oneiromancer hands you a dream vial. You fill it with water, add the goutweed and a ground astral rune.",
-                        "Drink this dream potion and share his dream... *The world fades.*")
-                .missing("To share his dream you need a dream potion: a vial of water, goutweed from the trolls' storeroom, an astral rune "
-                        + "and a pestle and mortar to grind it. And keep your seal of passage on you.")
+                .reach("dm_moonclan_sink", 6).stay().take("dream_vial", "goutweed", "astral_rune").need("hammer", "pestle_and_mortar").give("dream_potion")
+                .say("* You fill the dream vial at the sink and add the goutweed. Your hammer cracks the astral rune into shards, the pestle and "
+                        + "mortar grinds them, and the powder turns it all into a dream potion.")
+                .missing("* A sink. The dream potion needs the Oneiromancer's vial, goutweed, an astral rune, a hammer and a pestle and mortar.")
+                .reach("dm_dream_hall", 6).stay().need("dream_potion", "tinderbox").unlessFlag("dm_brazier").flag("dm_brazier")
+                .say("* You light the brazier in the Dream Hall. Its smoke smells of sleep.")
+                .missing("* The Dream Hall's brazier is cold. Light it with a tinderbox once you have the dream potion.")
+                .talk("cyrisus").needFlag("dm_brazier").take("dream_potion").need("seal_of_passage").travel("dream_world_cyrisus")
+                .say("Together, then. *You drink the dream potion beside the brazier, and the world fades.*",
+                        "* Your prayers have no power here, and only the lectern leads out.")
+                .missing("We need the dream potion, and the brazier in the Dream Hall lit.")
                 .stage("I must defeat Cyrisus's four fears: The Inadequacy, The Everlasting, The Untouchable and The Illusive.")
+                // each fear rises again where it left off if the player comes back to the dream
+                .reach("dream_world_cyrisus", 12).stay().unlessFlag("dm_fear_1").spawn("the_inadequacy")
+                .reach("dream_world_cyrisus", 12).stay().needFlag("dm_fear_1").unlessFlag("dm_fear_2").spawn("the_everlasting")
+                .reach("dream_world_cyrisus", 12).stay().needFlag("dm_fear_2").unlessFlag("dm_fear_3").spawn("the_untouchable")
+                .reach("dream_world_cyrisus", 12).stay().needFlag("dm_fear_3").spawn("the_illusive")
                 .kill("the_inadequacy").stay().unlessFlag("dm_fear_1").flag("dm_fear_1").spawn("the_everlasting")
-                .say("* The Inadequacy fades away... and The Everlasting rises in its place.")
+                .say("* The Inadequacy fades away, and its Doubts with it... The Everlasting rises in its place.")
                 .kill("the_everlasting").stay().needFlag("dm_fear_1").unlessFlag("dm_fear_2").flag("dm_fear_2").spawn("the_untouchable")
                 .say("* The Everlasting finally falls. The Untouchable steps out of the dark.")
                 .kill("the_untouchable").stay().needFlag("dm_fear_2").unlessFlag("dm_fear_3").flag("dm_fear_3").spawn("the_illusive")
                 .say("* The Untouchable shatters. Only The Illusive remains.")
-                .kill("the_illusive").needFlag("dm_fear_3").travel("quest_lunar_isle").say("* The Illusive fades away. Cyrisus wakes with new courage.")
-                .stage("I should speak to Cyrisus.")
-                .talk("cyrisus").say("I'm free of my fears! Thank you. The Oneiromancer says you've earned the Dream spell.");
+                .kill("the_illusive").needFlag("dm_fear_3").travel("quest_lunar_isle")
+                .say("* Cyrisus stomps The Illusive into nothing and wakes with new courage.")
+                .stage("I should return to the Oneiromancer.")
+                .talk("oneiromancer").say("Cyrisus is free of his fears. He wants to thank you with what he knows of lunar magic.",
+                        "@Cyrisus: Thank you, friend. Take these spells, and may your dreams be kinder than mine.");
     }
 
     private static void clientOfKourend(QuestBook b) {

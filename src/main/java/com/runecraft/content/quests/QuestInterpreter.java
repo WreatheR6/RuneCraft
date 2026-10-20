@@ -552,6 +552,12 @@ public final class QuestInterpreter {
         }
     }
 
+    /** Self-test hook: runs the place objectives for one player where they stand now, as the 20-tick check does. */
+    public static void selfTestReach(ServerPlayer p) {
+        REACH_NOTICE.remove(p.getUUID());
+        reach(p, p.getServer());
+    }
+
     /** The place objectives (and place-presented puzzles) of a player's active quests, where the player stands now. */
     static void reach(ServerPlayer p, MinecraftServer server) {
         for (QuestSpec q : book.quests) {

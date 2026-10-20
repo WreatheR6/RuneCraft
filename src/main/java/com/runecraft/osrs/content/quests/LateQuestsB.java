@@ -9,6 +9,7 @@ import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.AttackDef.Special;
 import com.runecraft.osrs.content.BossDef;
+import com.runecraft.osrs.content.MonsterDef;
 import com.runecraft.osrs.content.PlaceDef;
 import com.runecraft.osrs.data.Drop;
 
@@ -119,12 +120,23 @@ final class LateQuestsB {
     private static void beneathCursedSands(QuestBook b) {
         b.npc("tumeken_priest", "Priest of Tumeken", "necropolis", 3, 3, 0xA86A45, 0xE0C051, 0xF0F0F4, 0xE0C052);
         // Wiki monster stats: level 379, 600 HP, 160 in every combat stat but Ranged, melee and magic up to 24, every 4 ticks.
+        // Wiki (the quest guide): shadow magic, melee up close, and after several attacks one of three specials: a shadow burst
+        // around itself, a Shadow Rift that explodes unless destroyed, a scarab swarm (QuestBossScripts.ChampionOfScabaras).
         b.boss(BossDef.of("champion_of_scabaras", "Champion of Scabaras").level(379).stats(600, 160, 160, 160, 160, 1).speed(4)
                 .defenceBonus(120, 160, 160, 340, 5)
                 .attack(AttackDef.of("crush", AttackType.CRUSH, 24, 3, 6))
-                .attack(AttackDef.of("locust_swarm", AttackType.MAGIC, 24, 9, 3).special(Special.AOE, 5).telegraph(2, "Locusts swarm from the champion's shell!"))
-                .attack(AttackDef.of("sand_spike", AttackType.MAGIC, 24, 10, 3).special(Special.SKY_STRIKE, 0).telegraph(2, "The sand ripples beneath you!"))
+                .attack(AttackDef.of("shadow", AttackType.MAGIC, 24, 10, 6).particle("minecraft:smoke"))
+                .attack(AttackDef.of("shadow_burst", AttackType.MAGIC, 40, 4, 0).special(Special.AOE, 4)
+                        .telegraph(2, "A shadow spreads beneath the Champion of Scabaras!"))
+                .attack(AttackDef.of("shadow_flames", AttackType.MAGIC, 8, 10, 0).special(Special.HAZARD, 4).particle("minecraft:soul_fire_flame"))
+                .minion("scabaras_scarab_swarm", 1)
                 .drops(Drop.always("bones")).size(1.6f, 1.4f, 1.2f).at("necropolis").arena(12, "sand"));
+        b.monster(MonsterDef.of("shadow_rift", "Shadow Rift").level(1).stats(20, 1, 1, 1, 1, 1)
+                .attack(AttackDef.of("inert", AttackType.MAGIC, 0, 0.5, 1)).passive().moveSpeed(0.0)
+                .skin(0x1A0A2A, 0x2A1A3A, 0x0A0A1A, 0x6A3A9A).size(1.0f, 1.0f, 1.0f));
+        b.monster(MonsterDef.of("scabaras_scarab_swarm", "Scarab swarm").level(5).stats(5, 1, 1, 1, 1, 1).speed(4)
+                .attack(AttackDef.of("bite", AttackType.STAB, 3, 1.5, 1).special(Special.POISON, 4))
+                .skin(0x3A2A1A, 0x2A1A0A, 0x1A0A0A, 0x8A6A2A).size(0.8f, 0.5f, 0.8f));
         // Wiki: level 174, 180 HP, stabs up to 16; an overhead protection prayer costs a third of the player's Hitpoints
         // (QuestBossScripts.FalseGods).
         b.boss(BossDef.of("head_menaphite_guard", "Head Menaphite Guard").level(174).stats(180, 180, 150, 150, 150, 1).speed(4)
@@ -287,6 +299,19 @@ final class LateQuestsB {
     private static void swanSong(QuestBook b) {
         b.npc("herman_caranos", "Herman Caranos", "piscatoris", 0, 3, 0xE0B8B4, 0x3A5A8E, 0x2A3A5E, 0xA0A0A5);
         b.npc("franklin_caranos", "Franklin Caranos", "piscatoris", 3, -2, 0xE0B8B5, 0x6A5A40, 0x4A3A30, 0x6A4A23);
+        // mejrs/data_osrs tiles: Arnold in the colony bank, Frumscone in the Wizards' Guild basement (placed above it), the Master
+        // Crafter in the Crafting Guild
+        b.npcAt("arnold_lydspor", "Arnold Lydspor", 2330, 3691, 0xE0B8B0, 0x5A6A3A, 0x3A4A2A, 0x8A6A3A);
+        b.npcAt("wizard_frumscone", "Wizard Frumscone", 2590, 3089, 0xF0D8C8, 0x3A3A8A, 0x2A2A5A, 0x9A9AA0);
+        b.npcAt("master_crafter", "Master Crafter", 2937, 3290, 0xE0B898, 0x6A4A2A, 0x4A3A1A, 0x3A2A1A);
+        b.item("iron_sheet", "Iron sheet", "bar", 0xA0A0A8, "A sheet of iron, pressed in the colony's metal press.");
+        b.item("fresh_monkfish", "Fresh monkfish", "fish_raw", 0x8A7A5A, "A fresh monkfish from the colony's waters.");
+        b.item("airtight_pot", "Airtight pot", "pot_item", 0xA06A3A, "A pot with a lid, sealed tight.");
+        b.item("bone_seeds", "Bone seeds", "seed", 0xE8E0C8, "Malignius's seeds. Planted in the ground, they raise an army of the dead.");
+        // the level-79 sea trolls that storm the colony (DPS calculator), raised outside its walls
+        b.boss(BossDef.of("ss_sea_troll", "Sea troll").level(79).stats(100, 60, 60, 60, 1, 1).speed(3)
+                .attack(AttackDef.of("crush", AttackType.CRUSH, 7, 2.5, 1)).drops(Drop.always("bones"))
+                .skin(0x4A7A6A, 0x3A6A5A, 0x2A4A3A, 0x6A9A8A).size(0.9f, 2.4f, 1.1f));
         b.boss(BossDef.of("sea_troll_queen", "Sea Troll Queen").level(170).stats(200, 160, 160, 140, 140, 1).speed(5)
                 .attack(AttackDef.of("crush", AttackType.CRUSH, 25, 3, 6))
                 .attack(AttackDef.of("water_blast", AttackType.MAGIC, 22, 10, 4).particle("minecraft:splash"))
@@ -298,12 +323,51 @@ final class LateQuestsB {
                 .req(Skill.MAGIC, 66).req(Skill.COOKING, 62).req(Skill.FISHING, 62).req(Skill.SMITHING, 45).req(Skill.FIREMAKING, 42).req(Skill.CRAFTING, 40)
                 .unlock("Fishing monkfish at the Piscatoris Fishing Colony")
                 .stage("I can start this quest by speaking to Herman Caranos in the Piscatoris Fishing Colony. (Requires 100 quest points, Garden of Tranquillity and more.)")
-                .talk("herman_caranos").say("Sea trolls are attacking the colony! The wall is broken and we've no food. Help us!")
+                .talk("herman_caranos").say("Sea trolls are attacking the colony! The wall is broken and we've no food. Help us!",
+                        "A mage might drive them off. The Wise Old Man in Draynor, perhaps?")
+                // Wiki: the Wise Old Man (for runes) comes to the colony; the sea trolls at the gate are fought off; Franklin's furnace,
+                // metal press and the broken walls; Arnold's net, five fresh monkfish cooked for the colony.
                 .stage("I should repair the colony wall (5 planks, 2 iron bars) and help Franklin cook for the fishermen.")
-                .talk("franklin_caranos").take("plank:5", "iron_bar:2", "raw_monkfish:5").say("*You fix the wall and cook monkfish for the colony.* The sea trolls are coming again, and their queen leads them!")
-                .missing("We need 5 planks and 2 iron bars for the wall, and 5 raw monkfish to feed everyone.")
+                .talk("quest_wise_old_man").stay().unlessFlag("ss_wom").take("blood_rune:5", "mist_rune:10", "lava_rune:10").flag("ss_wom")
+                .say("Sea trolls at Piscatoris? I'll come, if you bring the runes I'll need: 5 blood runes, 10 mist runes and 10 lava runes. "
+                        + "*He takes them.* Meet me at the colony.")
+                .missing("Help a fishing colony? Bring me 5 blood runes, 10 mist runes and 10 lava runes and I'll come.")
+                .reach("piscatoris", 12).stay().needFlag("ss_wom").unlessFlag("ss_gate").spawn("ss_sea_troll")
+                .say("* Sea trolls swarm the colony's gate!")
+                .kill("ss_sea_troll", 3).stay().needFlag("ss_wom").unlessFlag("ss_gate").flag("ss_gate")
+                .say("* The sea trolls at the gate are beaten back and you get into the colony. Herman and the Wise Old Man wait in the east building.")
+                .talk("franklin_caranos").stay().needFlag("ss_gate").unlessFlag("ss_franklin").flag("ss_franklin")
+                .say("The walls! Light the furnace's firebox, press iron bars into sheets and patch the western wall. Then Arnold needs fish.")
+                .reach("piscatoris", 12).stay().needFlag("ss_franklin").unlessFlag("ss_walls").take("logs", "iron_bar:5").need("tinderbox", "hammer")
+                .reqSkill(Skill.SMITHING, 45).flag("ss_walls")
+                .say("* You light the firebox, press the five iron bars into iron sheets and hammer them over the broken western walls.")
+                .missing("* The furnace's firebox needs logs and a tinderbox; the metal press needs 5 iron bars; the walls need a hammer.")
+                .talk("arnold_lydspor").stay().needFlag("ss_walls").unless("fresh_monkfish").unlessFlag("ss_fed").need("small_fishing_net")
+                .reqSkill(Skill.FISHING, 62).give("fresh_monkfish:5")
+                .say("Fish for the colony? The spot to the north-west is full of monkfish. *You net five fresh monkfish, fighting off a sea troll.*")
+                .missing("You'll need a small fishing net for the monkfish. (Requires 62 Fishing.)")
+                .talk("arnold_lydspor").stay().needFlag("ss_walls").unlessFlag("ss_fed").reqSkill(Skill.COOKING, 62).take("fresh_monkfish:5").flag("ss_fed")
+                .say("* You cook the five monkfish in the kitchen. Arnold shares them out.", "That'll keep the fishermen going. Tell Franklin.")
+                .talk("franklin_caranos").needFlag("ss_fed").say("Walls up, bellies full! The Wise Old Man and Herman want a word in the east building.",
+                        "@Wise Old Man: The trolls will return with their queen. We'll need an army... of the dead. Wizard Frumscone in Yanille knows a necromancer.")
+                .missing("Light the furnace, press the iron sheets and fix the walls, then see Arnold about food.")
+                // Wiki: Frumscone sends the player to Malignius Mortifer; his brown apron gets them into the Crafting Guild, where the
+                // Master Crafter helps make an airtight pot for the bone seeds.
                 .stage("I must defeat the Sea Troll Queen.")
-                .kill("sea_troll_queen").say("* The Sea Troll Queen sinks beneath the waves. The colony is saved!")
+                .talk("wizard_frumscone").stay().unlessFlag("ss_frumscone").flag("ss_frumscone")
+                .say("An army of the dead? Malignius Mortifer, south of Falador, can grow one. Tell him I sent you.")
+                .talk("malignius_mortifer").stay().needFlag("ss_frumscone").unlessFlag("ss_apron").give("brown_apron").flag("ss_apron")
+                .say("Bone seeds need an airtight pot. Wear this apron and the Crafting Guild will let you in to make one.")
+                .talk("master_crafter").stay().needFlag("ss_apron").unless("airtight_pot", "bone_seeds").take("soft_clay:2").reqSkill(Skill.CRAFTING, 40)
+                .give("airtight_pot").say("* At the Master Crafter's wheel and oven you make a pot and a lid and seal them together: an airtight pot.")
+                .missing("Bring some soft clay and I'll show you the wheel and the oven. (Requires 40 Crafting.)")
+                .talk("malignius_mortifer").stay().needFlag("ss_apron").unless("bone_seeds").take("airtight_pot", "bones:7").give("bone_seeds")
+                .travel("piscatoris").say("Seven bones and an airtight pot. *He fills the pot with bone seeds and sends you back to the colony.*")
+                .missing("I need an airtight pot and seven bones for the seeds.")
+                .talk("herman_caranos").stay().need("bone_seeds").unlessFlag("ss_battle").flag("ss_battle").spawn("sea_troll_queen")
+                .say("Bone seeds? Then plant them and fight! *The skeletons rise as the Sea Troll Queen storms the colony!*")
+                .reach("piscatoris", 12).stay().needFlag("ss_battle").spawn("sea_troll_queen")
+                .kill("sea_troll_queen").needFlag("ss_battle").say("* The Sea Troll Queen sinks beneath the waves. The colony is saved!")
                 .stage("I should tell Herman Caranos.")
                 .talk("herman_caranos").say("The colony is safe! You can fish here any time, friend.");
     }
@@ -432,10 +496,13 @@ final class LateQuestsB {
                 .attack(AttackDef.of("spear", AttackType.STAB, 18, 3, 6))
                 .attack(AttackDef.of("acid", AttackType.RANGED, 14, 8, 3).special(Special.HAZARD, 3))
                 .drops(Drop.always("bones")).skin(0x4A6A3A, 0x2A4A2A, 0x1A3A1A, 0x6A8A4A).size(0.9f, 2.4f, 1.3f).at("lizardman_canyon").arena(10, "jungle"));
-        b.boss(BossDef.of("judge_of_yama", "Judge of Yama").level(168).stats(180, 150, 150, 130, 150, 1).speed(4)
-                .defenceBonus(60, 60, 60, 40, 60)
-                .attack(AttackDef.of("claws", AttackType.SLASH, 24, 3, 6))
-                .attack(AttackDef.of("void_flare", AttackType.MAGIC, 22, 10, 4).special(Special.DRAIN_PRAYER, 6).particle("minecraft:soul_fire_flame"))
+        // A Kingdom Divided's Judge (wiki infobox; MonsterStatsTable): melee up close and waves of fire down the pier, max 12; only
+        // melee hurts it (QuestBossScripts.JudgeOfYama).
+        b.boss(BossDef.of("judge_of_yama", "Judge of Yama").level(168).stats(260, 186, 112, 84, 84, 1).speed(4)
+                .defenceBonus(40, 40, 40, 600, 600)
+                .attack(AttackDef.of("claws", AttackType.SLASH, 12, 3, 6))
+                .attack(AttackDef.of("fire_wave", AttackType.MAGIC, 12, 12, 4).special(Special.SKY_STRIKE, 0)
+                        .telegraph(2, "The Judge of Yama sends waves of fire down the pier! Find the gap.").particle("minecraft:soul_fire_flame"))
                 .drops(Drop.always("bones")).size(1.0f, 2.4f, 1.0f).at("kebos_lowlands").arena(12, "void"));
 
         b.quest("the_depths_of_despair", "The Depths of Despair", Difficulty.INTERMEDIATE, 1)
@@ -541,21 +608,272 @@ final class LateQuestsB {
                 .missing("A head needs soft clay and bear fur (knife, needle and thread), then 2 planks and 6 nails to mount it, and a hammer.")
                 .stage("I should report the beast is gone.")
                 .talk("gordon_kebos").needFlag("ga_head").give("kourend_favour_letter").say("The farms are safe! Take this, and a letter of thanks for the council.");
+        // A Kingdom Divided (wiki, quest-helper): the hunt for Sophia Hughes, Rose's trail, the mage Xamphur and the five houses.
+        b.npcAt("commander_fullore", "Commander Fullore", 1612, 3669, 0xE0B8A0, 0x8A2A2A, 0x3A2A2A, 0xA0A0A8); // Kourend Castle
+        b.npcAt("fuggy", "Fuggy", 1570, 3760, 0xC8A080, 0x6A5A3A, 0x3A3A2A, 0x8A6A3A); // The Deeper Lode, Lovakengj
+        b.npcAt("cabin_boy_herbert", "Cabin Boy Herbert", 1826, 3691, 0xE0C0A0, 0x3A5A8A, 0x2A2A3A, 0x6A4A2A); // Veos's ship
+        b.npcAt("jorra", "Jorra", 1496, 3557, 0xC8987A, 0x6A6A6C, 0x3A3A3F, 0xC07A30); // the Graveyard of Heroes
+        b.spot("akd_hughes_house", "Councillor Hughes's house", 1680, 3684); // approx: north of the square
+        b.spot("akd_settlement_ruins", "Settlement Ruins", 1550, 3880); // approx: south-west of the Wintertodt camp
+        b.spot("akd_legless_faun", "The Legless Faun", 1838, 3672); // approx: Port Piscarilius's southern edge
+        b.spot("akd_rose_shack", "Shack south of Mount Karuulm", 1275, 3760);
+        b.spot("akd_lizard_eggs", "Lizardman egg piles", 1280, 3625); // approx: across the stone bridge west of the temple
+        b.spot("akd_molch_temple", "Lizardman temple, Molch", 1300, 3670); // approx
+        b.spot("akd_xerics_lookout", "Xeric's Lookout", 1591, 3528);
+        b.spot("akd_shayzien_prison", "Shayzien prison", 1475, 3560); // approx: west of the Graveyard of Heroes
+        b.spot("akd_barbarian_camp", "Barbarian camp, Kourend Woodland", 1575, 3475); // approx
+        b.spot("akd_vinery_office", "Lord Hosidius's office, Hosidius Vinery", 1808, 3550); // approx: the vinery's southern end
+        b.spot("akd_chasm_of_fire", "Chasm of Fire", 1435, 3670); // approx
+        b.spot("akd_mount_karuulm", "Mount Karuulm", 1311, 3807);
+        b.item("hughes_receipt", "Receipt", "note", 0xE0D8C0, "An order for a bed, delivered to The Deeper Lode.");
+        b.item("roses_diary", "Rose's diary", "book", 0x8A3A5A, "The diary of Rose, the old king's daughter.");
+        b.item("lizardman_egg", "Lizardman egg", "orb", 0x7A9A5A, "Kaht B'alam's last egg.");
+        b.item("damp_key", "Damp key", "key", 0x5A6A5A, "Kaht B'alam's key to a door in the lizardman temple.");
+        b.item("unkar_declaration", "Declaration", "note", 0xE0D0B0, "A plan to overthrow Lady Lovakengj, in Councillor Unkar's hand.");
+        b.item("shayzien_journal", "Shayzien journal", "book", 0xA02A2C, "King Shayzien VII's journal.");
+        b.item("dark_essence_block", "Dark essence block", "essence", 0x3A2A5A, "A block of dense essence, imbued at the Dark Altar.");
+        b.item("dark_nullifier", "Dark nullifier", "orb", 0x2A1A3A, "Mori's device, to cut the cult of Yama off from Yama.");
+        b.item("broken_redirector", "Broken redirector", "orb", 0x6A5A7A, "A broken magical redirector from Lord Arceuus.");
+        b.item("shielding_potion", "Shielding potion", "potion", 0x6A8AC0, "The Tasakaal's potion, to strengthen the Doors of Dinh.");
+        // Wiki infoboxes (A Kingdom Divided's versions).
+        b.boss(BossDef.of("akd_assassin", "Assassin").level(132).stats(120, 112, 112, 92, 92, 112).speed(4)
+                .defenceBonus(50, 50, 50, 20, 50)
+                .attack(AttackDef.of("dragon_dagger", AttackType.STAB, 12, 2.5, 6))
+                .attack(AttackDef.of("dragon_darts", AttackType.RANGED, 12, 8, 4))
+                .drops(Drop.always("bones")).skin(0xD8B090, 0x2A2A2A, 0x1A1A1A, 0x2A2A2A).size(0.8f, 1.9f, 0.6f));
+        b.boss(BossDef.of("barbarian_warlord", "Barbarian Warlord").level(91).stats(80, 90, 90, 50, 40, 1).speed(6)
+                .defenceBonus(15, 20, 15, 0, 10)
+                .attack(AttackDef.of("crush", AttackType.CRUSH, 10, 2.5, 1))
+                .drops(Drop.always("bones")).skin(0xD8A880, 0x8A5A2A, 0x5A3A1A, 0xC0A060).size(0.9f, 2.0f, 0.7f));
+        b.monster(MonsterDef.of("phantom_hand", "Phantom hand").level(47).stats(12, 100, 50, 8, 8, 1).speed(4)
+                .attack(AttackDef.of("crush", AttackType.CRUSH, 6, 2.5, 1))
+                .skin(0x3A2A4A, 0x2A1A3A, 0x1A0A2A, 0x8A6AC0).size(0.6f, 0.8f, 0.6f));
+        // Immune to magic; every tenth attack the hands fall or two Phantom hands appear (QuestBossScripts.Xamphur).
+        b.boss(BossDef.of("xamphur", "Xamphur").level(239).stats(450, 1, 1, 100, 140, 1).speed(5)
+                .defenceBonus(180, 180, 180, 260, 30)
+                .attack(AttackDef.of("dark_bolt", AttackType.MAGIC, 18, 10, 1))
+                .attack(AttackDef.of("falling_hands", AttackType.MAGIC, 10, 12, 0).special(Special.HAZARD, 10)
+                        .telegraph(2, "Hands fall from the ceiling!"))
+                .attack(AttackDef.of("phantom_hands", AttackType.MAGIC, 0, 12, 0).special(Special.SUMMON, 2))
+                .minion("phantom_hand", 2)
+                .drops(Drop.always("bones")).skin(0xB0A8C0, 0x1A1A2A, 0x0A0A1A, 0x5A3A8A).size(1.0f, 2.4f, 1.0f));
         b.quest("a_kingdom_divided", "A Kingdom Divided", Difficulty.EXPERIENCED, 2)
                 .reqQuest("the_depths_of_despair", "the_queen_of_thieves", "tale_of_the_righteous", "the_forsaken_tower", "the_ascent_of_arceuus")
                 .req(Skill.AGILITY, 54).req(Skill.THIEVING, 52).req(Skill.WOODCUTTING, 52).req(Skill.HERBLORE, 50)
                 .req(Skill.MINING, 42).req(Skill.CRAFTING, 38).req(Skill.MAGIC, 35)
-                .xp(Skill.AGILITY, 10000).xp(Skill.THIEVING, 10000).xp(Skill.WOODCUTTING, 10000).xp(Skill.HERBLORE, 10000)
+                // Wiki and quest-helper: the book of the dead and two antique lamps of 10,000 XP in any skill of level 40 or above.
+                // approx: the player picks the lamps' skills in OSRS
+                .xp(Skill.AGILITY, 10000).xp(Skill.HERBLORE, 10000)
+                .reward("book_of_the_dead")
                 .unlock("The Kourend Council's favour and the Kebos Lowlands")
                 .stage("I can start this quest by speaking to Martin Holt at the entrance to Kourend Castle. (Requires the five Kourend house quests and more.)")
-                .talk("martin_holt").say("The Kourend Council is being picked off one by one. Someone wants the throne. Investigate the attacks.")
-                .stage("I should speak to Kaht B'alam, the lizardman shaman in the Kebos Lowlands, about the dark magic behind the attacks.")
-                .reach("kebos_lowlands", 12).stay().unlessFlag("akd_shrine").flag("akd_shrine")
-                .say("* In the swamps of the Kebos Lowlands you find the remains of a ritual circle, still warm. Kaht B'alam's hut is close by.")
-                .talk("kaht_bbalam").needFlag("akd_shrine").missing("Hsss. Show me you have seen the ritual site in the lowlands first.").say("The Judge of Yama, a demon of the void, has been summoned. Its servant hides among your council. Face it, and the kingdom may unite.")
-                .stage("I must defeat the Judge of Yama in the Kebos Lowlands.")
-                .kill("judge_of_yama").flag("akd_judge").say("* The Judge of Yama is banished back to the void!")
-                .stage("I should report to Councillor Andrews.")
-                .talk("councillor_andrews").needFlag("akd_judge").say("The council is safe and the five houses united. Great Kourend is in your debt.");
+                .talk("martin_holt").say("The Council took the throne that should have gone to the old king's daughter, and now Councillor Sophia Hughes "
+                        + "has vanished. Commander Fullore leads the search, inside the castle. Help her, and we'll learn the truth.")
+                // Wiki: Fullore's orders, Hughes's house and the receipt, Tomas Lawry sent off to Mount Quidamortem, The Deeper
+                // Lode, then Veos's ship, where Hughes summons a Judge of Yama.
+                .stage("I should help Commander Fullore find Councillor Sophia Hughes.")
+                .talk("commander_fullore").stay().unlessFlag("akd_fullore").flag("akd_fullore")
+                .say("The Council has served Kourend well, whatever those protesters say. Help me find Hughes, and follow my orders.",
+                        "@Tomas Lawry: The Council has given ME the authority to lead this investigation!",
+                        "Search her house, north of the square.")
+                .reach("akd_hughes_house", 6).stay().needFlag("akd_fullore").unlessFlag("akd_receipt").give("hughes_receipt").flag("akd_receipt")
+                .say("* You search the house: roses, a map of Kourend, demonic incantations, a bloody knife, a cultist robe... and in the "
+                        + "bedroom drawers, a receipt for a bed delivered to The Deeper Lode.", "* A lesser demon lurks on the top floor. You leave it be.")
+                .talk("tomas_lawry").stay().needFlag("akd_receipt").unlessFlag("akd_lawry").flag("akd_lawry")
+                .say("Found something, have you? Mount Quidamortem? I knew it! *He hurries off without a second thought.*")
+                .talk("commander_fullore").stay().needFlag("akd_lawry").unlessFlag("akd_deeper_lode").flag("akd_deeper_lode")
+                .say("A bed for The Deeper Lode? Then she went to Lovakengj. Find out who stayed there.")
+                .talk("fuggy").stay().needFlag("akd_deeper_lode").unlessFlag("akd_fuggy").take("hughes_receipt").flag("akd_fuggy")
+                .say("Councillors? Only one human lately, a woman who didn't look like one. Said she was catching a ship at Port Piscarilius...",
+                        "* The ground shakes. ...Veos's ship, it was.")
+                .missing("A bed? Show me the receipt and I'll tell you who it was for.")
+                .talk("cabin_boy_herbert").needFlag("akd_fuggy").spawn("judge_of_yama")
+                .say("Captain Veos wandered off in a trance right after the earthquake. The councillor? She's aboard: we sail soon!",
+                        "@Sophia Hughes: The whole Council planned it, and now they betray me! *She summons a Judge of Yama... and it burns her to ash.*",
+                        "@Judge of Yama: You too are judged. Defeat me, and your sins are forgiven.", "* Only melee can hurt the Judge.")
+                .missing("Captain Veos isn't here. Who are you looking for?")
+                // Wiki: on the pier the Judge is immune to magic and ranged, banishes you down the docks and sends waves of fire
+                // (QuestBossScripts.JudgeOfYama); a portal by Veos's ship leads back into the fight.
+                .stage("I must defeat the Judge of Yama on the docks of Port Piscarilius.")
+                .reach("at_cabin_boy_herbert", 8).stay().spawn("judge_of_yama")
+                .kill("judge_of_yama").flag("akd_judge").say("* The Judge of Yama is banished back to Yama!")
+                .stage("I should find out what became of Rose, the old king's daughter, then unite the five houses of Kourend against the Council.")
+                // Kourend's Last Princess (wiki): Martin, Rose's diary from the Library Historical Archive, then her notes: the
+                // Forthos Ruins (ROSE on the stone piles), the Settlement Ruins (an assassin, a fire spell on the ice), the Legless
+                // Faun (the statues in the panel's order) and the shack south of Mount Karuulm, where Councillor Orson confesses.
+                .talk("councillor_andrews").stay().needFlag("akd_judge").unlessFlag("akd_andrews").flag("akd_andrews")
+                .say("The Council thanks you. We will look into how Hughes escaped. Tell Martin Holt the matter is settled: his protesters "
+                        + "can go home.", "* Commander Fullore asks you to meet her outside, south of the castle.")
+                .talk("commander_fullore").stay().needFlag("akd_andrews").unlessFlag("akd_rose_task").flag("akd_rose_task")
+                .say("Hughes said the Council plotted against the old king. He had a daughter, Rose. Martin Holt knows the royal family best.")
+                .talk("martin_holt").stay().needFlag("akd_rose_task").unlessFlag("akd_archive").flag("akd_archive")
+                .say("Rose wrote Kharedst's memoirs. Her own diary is in the Library Historical Archive: ask Archeio in the Arceuus Library.")
+                .talk("quest_archeio").stay().needFlag("akd_archive").unless("roses_diary").unlessFlag("akd_note_1").give("roses_diary")
+                .say("* Archeio teleports you to the Archive. You pick Istoria's pocket for a bluish key, open the purple display case and "
+                        + "take Rose's diary.")
+                .talk("martin_holt").stay().needFlag("akd_archive").unlessFlag("akd_note_1").take("roses_diary").flag("akd_note_1")
+                .say("There's a note hidden in the cover! 'Where the old faith fell'... the Forthos Ruins. Bring an axe: I'll meet you there.")
+                .missing("Rose's diary is in the Library Historical Archive. Archeio can take you there.")
+                .reach("isk_forthos", 10).stay().needFlag("akd_note_1").unlessFlag("akd_vines").needTool("axe").reqSkill(Skill.WOODCUTTING, 52)
+                .flag("akd_vines")
+                .say("@Martin Holt: The four stone piles around the ruins each carry a letter and a number. Rose spelled her name, I'm sure of it.",
+                        "* You read the stone piles, chop through the vines south of Martin and squeeze into a small room with a panel.")
+                .missing("* Thick vines block the way. You'd need an axe to cut through.")
+                .puzzle("isk_forthos", AKD_ROSE).stay().needFlag("akd_vines").unlessFlag("akd_note_2").flag("akd_note_2")
+                .say("* The panel opens on another of Rose's notes: the Settlement Ruins, south-west of the Wintertodt camp.")
+                .reach("akd_settlement_ruins", 10).stay().needFlag("akd_note_2").unlessFlag("akd_assassin_1").spawn("akd_assassin")
+                .kill("akd_assassin").stay().needFlag("akd_note_2").unlessFlag("akd_assassin_1").flag("akd_assassin_1")
+                .say("@Martin Holt: An assassin! The Council must want me dead... though he only ever named me.")
+                .reach("akd_settlement_ruins", 10).stay().needFlag("akd_assassin_1").unlessFlag("akd_note_3")
+                .take("fire_rune:4", "air_rune:3", "chaos_rune").reqSkill(Skill.MAGIC, 35).flag("akd_note_3")
+                .say("* Your Fire Bolt melts the ice chunks. Inside is a cold key, and the panel on the west wall holds another note: "
+                        + "The Legless Faun, in Port Piscarilius.")
+                .missing("* A key is frozen in the ice. A fire spell (Fire Bolt or better: 4 fire, 3 air and a chaos rune) would melt it.")
+                .reach("akd_legless_faun", 8).stay().needFlag("akd_note_3").unlessFlag("akd_faun").reqSkill(Skill.AGILITY, 54).flag("akd_faun")
+                .say("* You climb the pillar to the upper floor. The panel on the north wall lists the cities of Kourend in order.")
+                .puzzle("akd_legless_faun", AKD_STATUES).stay().needFlag("akd_faun").unlessFlag("akd_note_4").flag("akd_note_4")
+                .say("* Click. Back upstairs, the panel holds Rose's last note. From the balcony you watch Tomas Lawry arrest Martin for "
+                        + "inciting the protests.", "* The note points to a small house south of Mount Karuulm.")
+                .reach("akd_rose_shack", 8).stay().needFlag("akd_note_4").unlessFlag("akd_orson").flag("akd_orson")
+                .say("* A tatty note to Rose from 'L.O.'... Behind the crates, a trapdoor. Below lies a woman on a stone slab: Rose.",
+                        "@Councillor Orson: We killed the king to save the kingdom. Her potions come from a mage who lives with the lizardmen.",
+                        "@Commander Fullore: Then we find that mage.")
+                // The Mysterious Mage (wiki): Kaht B'alam's last egg (a lizardman brute guards the piles), his damp key, then Xamphur.
+                .talk("kaht_bbalam").stay().needFlag("akd_orson").unlessFlag("akd_egg_task").flag("akd_egg_task")
+                .say("Yo'kal ahk, the mage? I lead you. But first, my last egg: in the piles west, across the stone bridge. Then I leave this war.")
+                .reach("akd_lizard_eggs", 8).stay().needFlag("akd_egg_task").unless("lizardman_egg").unlessFlag("akd_damp_key").give("lizardman_egg")
+                .say("* You search the egg piles until you find Kaht's. A lizardman brute charges, but you get away with the egg.")
+                .talk("kaht_bbalam").stay().needFlag("akd_egg_task").unlessFlag("akd_damp_key").take("lizardman_egg").give("damp_key").flag("akd_damp_key")
+                .say("Hsss, my egg! Take this key: the small door by the bones, in the temple corridor.")
+                .missing("My egg, human. In the piles west, across the stone bridge.")
+                .reach("akd_molch_temple", 8).stay().needFlag("akd_damp_key").unlessFlag("akd_xamphur").need("damp_key").spawn("xamphur")
+                .kill("xamphur").stay().needFlag("akd_damp_key").unlessFlag("akd_xamphur").take("damp_key").flag("akd_xamphur")
+                .say("@Xamphur: Amusing. *His bolt strikes you down... You come round as two lizardmen flee from the 'zombie'.*",
+                        "* A note on the table: Xamphur was behind the troubles of The Ascent of Arceuus.")
+                .reach("akd_rose_shack", 8).stay().needFlag("akd_xamphur").unlessFlag("akd_houses").flag("akd_houses")
+                .say("@Commander Fullore: The potions were all that kept Rose alive. She has been gone for twenty years. *You bury her outside.*",
+                        "@Commander Fullore: Only the five houses can bring down the Council. Ask their leaders to meet us at Xeric's Lookout.")
+                // The Houses of Kourend (wiki): each leader is asked to Xeric's Lookout, then helped with their own doubt about the accord.
+                .talk("lord_trobin_arceuus").stay().needFlag("akd_houses").unlessFlag("akd_ask_arceuus").flag("akd_ask_arceuus")
+                .say("Xeric's Lookout? Very well. Arceuus will hear Fullore out.")
+                .talk("lord_kandur_hosidius").stay().needFlag("akd_houses").unlessFlag("akd_ask_hosidius").flag("akd_ask_hosidius")
+                .say("If the Council has rotted, Hosidius will not stand by. I will come.")
+                .talk("lord_kandur_lovakengj").stay().needFlag("akd_houses").unlessFlag("akd_ask_lovakengj").flag("akd_ask_lovakengj")
+                .say("Lovakengj will come, but I promise nothing.")
+                .talk("lady_shauna_piscarilius").stay().needFlag("akd_houses").unlessFlag("akd_ask_piscarilius").flag("akd_ask_piscarilius")
+                .say("A meeting at the lookout? The Warrens hear everything anyway. I'll be there.")
+                .talk("lord_shiro_shayzien").stay().needFlag("akd_houses").unlessFlag("akd_ask_shayzien").flag("akd_ask_shayzien")
+                .say("Shayzien answers when Kourend calls.")
+                .reach("akd_xerics_lookout", 10).stay()
+                .needFlag("akd_ask_arceuus", "akd_ask_hosidius", "akd_ask_lovakengj", "akd_ask_piscarilius", "akd_ask_shayzien")
+                .unlessFlag("akd_accord").flag("akd_accord")
+                .say("* The five leaders, Fullore and Orson meet at Xeric's Lookout. Orson is confronted, and Lord Hosidius sets out the Royal "
+                        + "Accord of Twill. Each leader has a doubt to settle before they sign.")
+                .missing("* Fullore waits at the lookout. Have you asked all five house leaders to come?")
+                // Lady Lovakengj: Unkar's part in the plot, through Martin in the Shayzien prison and Jorra at the Graveyard of Heroes.
+                .talk("lord_kandur_lovakengj").stay().needFlag("akd_accord").unlessFlag("akd_lova_task").flag("akd_lova_task")
+                .say("I'd see Councillor Unkar replace Andrews. Prove he's no innocent, and I'll sign.")
+                .talk("commander_fullore").stay().needFlag("akd_lova_task").unlessFlag("akd_lova_help").flag("akd_lova_help")
+                .say("Unkar? Martin Holt might know. He's in the Shayzien prison, west of the Graveyard of Heroes.")
+                .reach("akd_shayzien_prison", 8).stay().needFlag("akd_lova_help").unlessFlag("akd_passphrase").flag("akd_passphrase")
+                .say("@Martin Holt: No proof, but the Royal Society meets at the Graveyard of Heroes. Tell the dwarf: 'Evil only triumphs when "
+                        + "the good do nothing.'")
+                .talk("jorra").stay().needFlag("akd_passphrase").unlessFlag("akd_assassin_2").spawn("akd_assassin")
+                .say("Evil only triumphs... aye, you're with Martin. Unkar has been- *An assassin leaps from the graves!*")
+                .kill("akd_assassin").stay().needFlag("akd_passphrase").unlessFlag("akd_assassin_2").flag("akd_assassin_2")
+                .say("* The assassin falls.")
+                .talk("jorra").stay().needFlag("akd_assassin_2").unless("unkar_declaration").unlessFlag("akd_lova_signed").give("unkar_declaration")
+                .say("As I was saying: Unkar's own declaration. He meant to overthrow Lady Lovakengj.")
+                .talk("lord_kandur_lovakengj").stay().needFlag("akd_assassin_2").unlessFlag("akd_lova_signed").take("unkar_declaration")
+                .flag("akd_lova_signed").say("Unkar, against me? ...Then I will sign the accord.")
+                // Lord Hosidius: the barbarians who seized Phileas Rimor.
+                .talk("lord_kandur_hosidius").stay().needFlag("akd_accord").unlessFlag("akd_hosi_task").flag("akd_hosi_task")
+                .say("Barbarians camp south of the lookout, and I hear Shayzien had dealings with them. Find out why.")
+                .reach("akd_barbarian_camp", 8).stay().needFlag("akd_hosi_task").unlessFlag("akd_warlord").spawn("barbarian_warlord")
+                .kill("barbarian_warlord").stay().needFlag("akd_hosi_task").unlessFlag("akd_warlord").flag("akd_warlord")
+                .say("@Phileas Rimor: They held me for someone, and stole my package: King Shayzien VII's journal!")
+                .talk("lord_kandur_hosidius").stay().needFlag("akd_warlord").unlessFlag("akd_hosi_signed").flag("akd_hosi_signed")
+                .say("Shiro hides his house's ties to Xeric, then. Hosidius will sign.")
+                // Lord Shayzien: King Shayzien VII's journal, hidden in Lord Hosidius's office under the vinery.
+                .talk("lord_shiro_shayzien").stay().needFlag("akd_accord").unlessFlag("akd_shay_task").flag("akd_shay_task")
+                .say("Hosidius has my ancestor's journal hidden in his office, under the vinery. Bring it to me.")
+                .reach("akd_vinery_office", 8).stay().needFlag("akd_shay_task").unless("shayzien_journal").unlessFlag("akd_shay_signed")
+                .reqSkill(Skill.THIEVING, 52).give("shayzien_journal")
+                .say("* Behind the eastern wine barrel is a trapdoor. You picklock the chest below and take the Shayzien journal.")
+                .talk("lord_shiro_shayzien").stay().needFlag("akd_shay_task").unlessFlag("akd_shay_signed").take("shayzien_journal")
+                .flag("akd_shay_signed").say("My ancestor's journal. Shayzien will sign.")
+                // Lady Piscarilius: Mori's dark nullifier for the Chasm of Fire.
+                .talk("lady_shauna_piscarilius").stay().needFlag("akd_accord").unlessFlag("akd_pisc_task").flag("akd_pisc_task")
+                .say("The cult of Yama worries me more than any Council. Mori of Arceuus has a plan to cut them off.")
+                .reach("arceuus", 10).stay().needFlag("akd_pisc_task").unless("dark_essence_block", "dark_nullifier").unlessFlag("akd_nullifier")
+                .needTool("pickaxe").need("chisel").reqSkill(Skill.MINING, 38).reqSkill(Skill.CRAFTING, 38).give("dark_essence_block")
+                .say("* You mine a dense essence block, chisel it and imbue it at the Dark Altar.")
+                .talk("mori").stay().needFlag("akd_pisc_task").unless("dark_nullifier").unlessFlag("akd_nullifier")
+                .take("molten_glass", "dark_essence_block").give("dark_nullifier")
+                .say("With these I can cut the Voice of Yama off from Yama himself. Hide this nullifier in the Chasm of Fire.")
+                .missing("I need molten glass and a dark essence block for the nullifier.")
+                .reach("akd_chasm_of_fire", 8).stay().needFlag("akd_pisc_task").unlessFlag("akd_nullifier").take("dark_nullifier").flag("akd_nullifier")
+                .say("* A Disciple of Yama stops you at the chasm and takes the device... You wake in the forest, sure the nullifier is hidden.")
+                .talk("lady_shauna_piscarilius").stay().needFlag("akd_nullifier").unlessFlag("akd_pisc_signed").flag("akd_pisc_signed")
+                .say("It's done? Then I'll sign, though I still say it's a bad idea.")
+                // Lord Arceuus: the Tasakaal read the broken redirector and enchant a shielding potion for the Doors of Dinh.
+                .talk("lord_trobin_arceuus").stay().needFlag("akd_accord").unlessFlag("akd_arc_task").flag("akd_arc_task").give("broken_redirector")
+                .say("Is your Xamphur the mage who served Xeric? Show the Tasakaal in Mount Karuulm this broken redirector.")
+                .reach("akd_mount_karuulm", 8).stay().needFlag("akd_arc_task").unless("shielding_potion").unlessFlag("akd_doors")
+                .take("broken_redirector", "defence_potion", "volcanic_sulphur").reqSkill(Skill.HERBLORE, 50).give("shielding_potion")
+                .say("@Tasakaal: Touched by fire, and touched by darkness: one who served Xeric. We will shield the Doors of Dinh.",
+                        "* You add volcanic sulphur to a defence potion and the Tasakaal enchant it into a shielding potion.")
+                .missing("* The Tasakaal want the broken redirector, and a defence potion (3 doses) and volcanic sulphur for a potion.")
+                .reach("fsk_wintertodt_camp", 8).stay().needFlag("akd_arc_task").unlessFlag("akd_doors").take("shielding_potion").flag("akd_doors")
+                .say("* You pour the shielding potion over the Doors of Dinh.")
+                .talk("lord_trobin_arceuus").stay().needFlag("akd_doors").unlessFlag("akd_arc_signed").flag("akd_arc_signed")
+                .say("The same Xamphur, and a pyromancer in league with him... The Council comes first. Arceuus will sign.")
+                // The Council's End (wiki): Rose's Accord, a coronation, an assassin, and Fullore's reward.
+                .talk("commander_fullore").needFlag("akd_lova_signed", "akd_hosi_signed", "akd_shay_signed", "akd_pisc_signed", "akd_arc_signed")
+                .say("Orson fell from the lookout. The five leaders signed Rose's Accord, and Lord Hosidius was crowned... and struck down by an "
+                        + "assassin at his own banquet. His son is king now.", "We buried a king as fast as we crowned one. Take this, with Kourend's thanks.")
+                .missing("Each house leader at the lookout has something to settle before they sign.");
+    }
+
+    /** A Kingdom Divided (wiki): each stone pile maps a letter to a number; the panel takes ROSE's numbers (per player). */
+    static final QuestPuzzle AKD_ROSE = rosePanel();
+
+    private static QuestPuzzle rosePanel() {
+        QuestPuzzle.Builder b = QuestPuzzle.builder("akd_rose").room("panel");
+        String[] digits = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+        int[][] codes = {{8, 6, 3, 1}, {2, 9, 4, 7}, {5, 0, 7, 2}, {3, 1, 8, 6}};
+        String[] piles = {"north", "east", "south", "west"};
+        for (int[] c : codes) {
+            // the piles show R, O, S and E in a different place for each code
+            int shift = c[0] % 4;
+            String[] letters = {"R", "O", "S", "E"};
+            StringBuilder shown = new StringBuilder();
+            for (int i = 0; i < 4; i++) {
+                int letter = (i + shift) % 4;
+                shown.append(i == 0 ? "" : ", ").append(piles[i]).append(" pile '").append(letters[letter]).append(" - ").append(c[letter]).append("'");
+            }
+            b.variant(null).prompt("* The stone piles read: " + shown + ". The panel wants four numbers.").options(digits).solution(c);
+        }
+        return b.failLines("* The panel clunks and resets.").build();
+    }
+
+    /** A Kingdom Divided (wiki): press the Legless Faun's statues in the order its upstairs panel lists the cities (per player). */
+    static final QuestPuzzle AKD_STATUES = statues();
+
+    private static QuestPuzzle statues() {
+        String[] cities = {"Arceuus", "Hosidius", "Lovakengj", "Piscarilius", "Shayzien"};
+        String[] options = new String[cities.length];
+        for (int i = 0; i < cities.length; i++) {
+            options[i] = "Press in the " + cities[i] + " statue";
+        }
+        QuestPuzzle.Builder b = QuestPuzzle.builder("akd_statues").room("faun");
+        for (int[] order : new int[][]{{4, 2, 0, 1, 3}, {1, 3, 4, 0, 2}, {3, 0, 2, 4, 1}, {2, 4, 1, 3, 0}}) {
+            StringBuilder shown = new StringBuilder();
+            for (int c : order) {
+                shown.append(shown.length() == 0 ? "" : ", ").append(cities[c]);
+            }
+            b.variant(null).prompt("* The panel upstairs lists: " + shown + ". Downstairs stand the five cities' statues.").options(options).solution(order);
+        }
+        return b.failLines("* Nothing happens. The statues slide back out.").build();
     }
 }

@@ -29,6 +29,7 @@ public final class BossesHooks implements ModuleHooks {
         ClassicScripts.Skotizo.registerAltarBreaker();
         com.runecraft.boss.DataBossService.loot("skotizo", ClassicScripts.Skotizo::rollLoot);
         BossScripts.register("hespori", ClassicScripts.Hespori::new);
+        BossScripts.register("ant_hespori", ClassicScripts.Hespori::new); // A Night at the Theatre's wild Hespori (quests module)
         BossScripts.register("scurrius", ClassicScripts.Scurrius::new);
         BossScripts.register("sarachnis", ClassicScripts.Sarachnis::new);
         BossScripts.register("zalcano", ClassicScripts.Zalcano::new);

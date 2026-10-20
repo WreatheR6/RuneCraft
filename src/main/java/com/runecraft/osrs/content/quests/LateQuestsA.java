@@ -21,6 +21,18 @@ import java.util.Map;
  * comments is a best-known value where OSRS gives a choice of lamps.
  */
 final class LateQuestsA {
+    /**
+     * The Fremennik Isles (wiki): Slug's questions after the first spying job, answered from what Mawnis said ("Yes I have",
+     * "They will be ready in two days", "Seventeen militia have been trained", "There are two bridges to repair").
+     */
+    static final QuestPuzzle FI_SLUG_QUIZ = QuestPuzzle.builder("fi_slug_quiz").room("report").variant(null)
+            .prompt("Well, jester? Have you been spying on Mawnis? When will their shields be ready? How many militia have they trained? "
+                    + "How many bridges need repairing? Answer in that order.")
+            .options("Yes, I have", "Not yet", "They will be ready in two days", "They will be ready in a week", "Seventeen militia have been trained",
+                    "Seventy militia have been trained", "There are two bridges to repair", "There are four bridges to repair")
+            .solution(0, 2, 4, 6)
+            .failLines("That doesn't match what my other spies say. Go and listen again!").build();
+
     private LateQuestsA() {
     }
 
@@ -205,24 +217,139 @@ final class LateQuestsA {
                 .missing("I'm far too busy for gardens. *Perhaps the activated ring of charos would make him more agreeable.*");
     }
 
+    /**
+     * The Path of Glouphrie (wiki, quest-helper): the monoliths in Bolrie's storeroom, pushed in the order that opens the way
+     * to the wood, silver and gold chests and then the strongroom gate.
+     */
+    static final QuestPuzzle POG_MONOLITHS = QuestPuzzle.builder("pog_monoliths").room("storeroom").variant(null)
+            .prompt("* Monoliths fill Bolrie's storeroom: one by the entrance, then a south-west, a north-west, a small and a south-east one.",
+                    "* Each push should open the way to the next chest (wood, silver, gold), and last of all to the strongroom gate.")
+            .options("Push the entrance monolith north", "Push the entrance monolith south", "Push the south-west monolith north",
+                    "Push the south-west monolith east", "Push the north-west monolith east", "Push the north-west monolith west",
+                    "Push the north-west monolith south", "Push the small monolith south", "Push the small monolith north",
+                    "Push the south-east monolith west", "Push the south-east monolith north")
+            .solution(0, 2, 4, 7, 5, 9)
+            .failLines("* The monoliths jam. You heave them back where they started.").build();
+
+    /** The discs' colours and shapes (Colour-shape value): a disc is worth its colour's number times its shape's. */
+    static final String[] POG_COLOURS = {"red", "orange", "yellow", "green", "blue", "indigo", "violet"};
+    static final String[] POG_SHAPES = {"circle", "triangle", "square", "pentagon"};
+    static final int[] POG_SHAPE_VALUES = {1, 3, 4, 5};
+
+    /** A disc's value: colour 1 (red) to 7 (violet) times the shape's (circle 1, triangle 3, square 4, pentagon 5). */
+    static int discValue(int colour, int shape) {
+        return (colour + 1) * POG_SHAPE_VALUES[shape];
+    }
+
+    /** The discs to hand at Yewnock's machine (after the exchanger), as colour and shape indices. */
+    static final int[][] POG_DISCS = {{0, 0}, {1, 0}, {2, 0}, {0, 1}, {3, 0}, {0, 2}, {4, 0}, {5, 0}, {1, 1}, {6, 0}, {1, 2}, {2, 1},
+            {1, 3}, {2, 2}, {4, 1}, {3, 2}};
+
+    /**
+     * The Path of Glouphrie (wiki): Yewnock's machine wants one disc worth the two shown at the top, then two discs worth the
+     * one shown at the bottom.
+     */
+    static final QuestPuzzle POG_MACHINE = machine();
+
+    private static String disc(int[] d) {
+        return POG_COLOURS[d[0]] + " " + POG_SHAPES[d[1]];
+    }
+
+    private static QuestPuzzle machine() {
+        String[] options = new String[POG_DISCS.length];
+        for (int i = 0; i < POG_DISCS.length; i++) {
+            options[i] = "Insert the " + disc(POG_DISCS[i]) + " disc";
+        }
+        QuestPuzzle.Builder b = QuestPuzzle.builder("pog_machine").room("machine");
+        // top pair, bottom single: (red triangle + yellow circle, orange pentagon), (orange circle + violet circle, yellow square),
+        // (red square + orange square, blue triangle)
+        int[][][] variants = {{{0, 1}, {2, 0}, {1, 3}}, {{1, 0}, {6, 0}, {2, 2}}, {{0, 2}, {1, 2}, {4, 1}}};
+        for (int[][] v : variants) {
+            int top = discValue(v[0][0], v[0][1]) + discValue(v[1][0], v[1][1]);
+            int bottom = discValue(v[2][0], v[2][1]);
+            b.variant(null).prompt("* Yewnock's machine shows a " + disc(v[0]) + " and a " + disc(v[1]) + " at the top, and a " + disc(v[2])
+                    + " at the bottom.", "* Insert one disc worth the two at the top, then two discs worth the one at the bottom.").options(options);
+            for (int a = 0; a < POG_DISCS.length; a++) {
+                if (discValue(POG_DISCS[a][0], POG_DISCS[a][1]) != top) {
+                    continue;
+                }
+                for (int c = 0; c < POG_DISCS.length; c++) {
+                    for (int d = 0; d < POG_DISCS.length; d++) {
+                        if (c != d && discValue(POG_DISCS[c][0], POG_DISCS[c][1]) + discValue(POG_DISCS[d][0], POG_DISCS[d][1]) == bottom) {
+                            b.solution(a, c, d);
+                        }
+                    }
+                }
+            }
+        }
+        return b.failLines("* The machine rejects the discs. They clatter back out.").build();
+    }
+
     private static void pathOfGlouphrie(QuestBook b) {
         b.npc("longramble", "Longramble", "glouphrie_tunnels", 2, 2, 0xD0A073, 0x3A6A3D, 0x2A4A2E, 0x8A6A3E);
-        b.boss(BossDef.of("warped_terrorbird", "Warped terrorbird").level(138).stats(150, 110, 110, 100, 100, 1).speed(4)
-                .attack(AttackDef.of("peck", AttackType.STAB, 18, 2.5, 6))
-                .attack(AttackDef.of("warp_bolt", AttackType.MAGIC, 16, 8, 4).particle("minecraft:portal"))
+        b.npcAt("aluft_gianne_jnr", "Aluft Gianne jnr.", 2449, 3501, 0xD0A070, 0xE0E0E0, 0x6A4A2A, 0xF0F0F0); // approx: the Grand Tree, first floor
+        b.spot("pog_storeroom", "Bolrie's storeroom", 2545, 3158); // approx: the Tree Gnome Village dungeon's eastern storeroom
+        b.spot("pog_strongroom", "Yewnock's strongroom", 2537, 3158); // approx
+        b.spot("pog_incomitatus", "Spirit tree (Poison Waste)", 2339, 3109);
+        b.spot("pog_warped_depths", "The Warped Depths", 2330, 3090); // approx: the sewer entrance south-west of the spirit tree
+        b.item("crystal_chime", "Crystal chime", "orb", 0xC0E0F0, "A chime sung from a crystal seed. Glouphrie's warped creatures hate it.");
+        // DPS calculator (level 138): ranged and crush up to 16; only hurt by a player carrying the crystal chime, and earmuffs
+        // soften its screech (QuestBossScripts.WarpedTerrorbird).
+        b.boss(BossDef.of("warped_terrorbird", "Warped terrorbird").level(138).stats(200, 80, 150, 60, 160, 70).speed(4)
+                .attack(AttackDef.of("peck", AttackType.CRUSH, 16, 2.5, 4))
+                .attack(AttackDef.of("screech", AttackType.RANGED, 16, 8, 6))
                 .drops(Drop.always("bones")).size(1.0f, 2.0f, 1.0f).at("glouphrie_tunnels").arena(10, "void"));
         b.quest("the_path_of_glouphrie", "The Path of Glouphrie", Difficulty.EXPERIENCED, 2)
                 .xp(Skill.STRENGTH, 30000).xp(Skill.SLAYER, 20000).xp(Skill.THIEVING, 5000).xp(Skill.MAGIC, 5000) // OSRS (current quest XP rewards)
                 .reqQuest("the_eyes_of_glouphrie", "waterfall_quest", "tree_gnome_village")
                 .req(Skill.STRENGTH, 60).req(Skill.SLAYER, 56).req(Skill.THIEVING, 56).req(Skill.RANGED, 47).req(Skill.AGILITY, 45)
-                .stage("I can start this quest by speaking to Longramble west of the Tree Gnome Stronghold. (Requires The Eyes of Glouphrie and more.)")
-                .talk("longramble").say("Glouphrie's warped creatures are spilling out of his old tunnels! Gnomes are going missing. Will you go in?")
-                .stage("I should search Glouphrie's tunnels for the source of the warping.")
-                .reach("glouphrie_tunnels", 8).say("* Deep in the tunnels, a twisted terrorbird shrieks and charges!")
-                .stage("I must defeat the warped terrorbird.")
-                .kill("warped_terrorbird").say("* The warped terrorbird falls. You find Glouphrie's warping device and destroy it.")
-                .stage("I should report to King Narnode.")
-                .talk("king_narnode").say("The warping is stopped! Glouphrie's legacy haunts us still... thank you.");
+                .stage("I can start this quest by speaking to King Bolren in the Tree Gnome Village. (Requires The Eyes of Glouphrie and more.)")
+                .talk("king_bolren").say("Meet Dumpling, my new pet! Isn't he adorable?", "* Dumpling is one of Glouphrie's evil creatures in disguise!",
+                        "Nonsense. Prove it! ...Yewnock, Oaknock's son, used to bring odd machines here. Ask down below about an anti-illusion machine.")
+                // Wiki: Golrie, Bolrie's storeroom (the monoliths, the chests, the crystal chime), Bolrie's diary, Yewnock's machine;
+                // Dumpling unmasked; Gianne jnr.'s coordinates; Longramble; the spirit tree Incomitatus healed; the Warped Depths.
+                .stage("I should prove Dumpling is one of Glouphrie's creatures, then find the gnome explorer Longramble.")
+                .talk("golrie").stay().unlessFlag("pog_golrie").flag("pog_golrie")
+                .say("A device? My grandfather Bolrie stored elven things in his storeroom, east past the tunnel. The strongroom needs a key.")
+                .puzzle("pog_storeroom", POG_MONOLITHS).stay().needFlag("pog_golrie").unless("crystal_chime").unlessFlag("pog_strongroom")
+                .reqSkill(Skill.THIEVING, 56).give("crystal_chime").flag("pog_strongroom")
+                .say("* In the chests: discs, Yewnock's notes, the strongroom key and a crystal chime seed. You sing the seed into a crystal "
+                        + "chime at the singing bowl.")
+                .reach("pog_strongroom", 6).stay().needFlag("pog_strongroom").unlessFlag("pog_diary").flag("pog_diary")
+                .say("* Bolrie's diary: his advisor turned him against King Healthorg... until Yewnock's anti-illusion machine showed the "
+                        + "advisor was Glouphrie the Untrusted.")
+                .puzzle("pog_strongroom", POG_MACHINE).stay().needFlag("pog_diary").unlessFlag("pog_machine").flag("pog_machine")
+                .say("* The machine hums. Up in the village, Dumpling's disguise melts away: an evil creature!")
+                .reach("tree_gnome_village", 10).stay().needFlag("pog_machine").unlessFlag("pog_dumpling").spawn("evil_creature")
+                .kill("evil_creature").stay().needFlag("pog_machine").unlessFlag("pog_dumpling").flag("pog_dumpling")
+                .say("* Dumpling is no more.")
+                .talk("king_bolren").stay().needFlag("pog_dumpling").unlessFlag("pog_bolren").flag("pog_bolren")
+                .say("You were right... Longramble went looking for the lost city of Arposandra. Aluft Gianne jnr. at the Grand Tree may know where.")
+                .talk("aluft_gianne_jnr").stay().needFlag("pog_bolren").unlessFlag("pog_coords").flag("pog_coords")
+                .say("We can never deliver his tangled toads' legs! He's at 2 degrees 7 minutes south, 3 degrees 7 minutes west: the "
+                        + "Galarpos Mountains, east of the Poison Waste.")
+                .talk("longramble").stay().needFlag("pog_coords").unlessFlag("pog_longramble").need("mith_grapple")
+                .reqSkill(Skill.RANGED, 47).reqSkill(Skill.AGILITY, 45).flag("pog_longramble")
+                .say("* You grapple across the river by the tree in the middle.", "Arposandra must be near the Poison Waste. Can you feel it calling?")
+                .missing("* Longramble is across the river. A crossbow and a mith grapple would get you over by the tree in the middle.")
+                .reach("pog_incomitatus", 8).stay().needFlag("pog_longramble").unlessFlag("pog_tree").need("crystal_chime").flag("pog_tree")
+                .say("@Incomitatus: The poison in my roots... I am cut off from the Anima Mundi.",
+                        "@Hazelmere: Elven magic can cleanse it. Use the chime.", "* The chime rings out. Incomitatus is healed and joins the spirit trees.")
+                .missing("* The sick spirit tree needs cleansing. The crystal chime might do it.")
+                .reach("pog_warped_depths", 8).needFlag("pog_tree")
+                .say("* You enter the sewer into the Warped Depths. Warped tortoises lumber past; warped terrorbirds shriek.")
+                .missing("* Warped roots block the way. Perhaps the sick spirit tree nearby has something to do with it.")
+                // Wiki: three warped terrorbirds at the end of the Warped Depths, hurt only by a player carrying the crystal chime;
+                // the guards' tar trap and Hazelmere's rescue.
+                .stage("I must defeat the warped terrorbirds at the end of the Warped Depths.")
+                .reach("pog_warped_depths", 8).stay().spawn("warped_terrorbird")
+                .kill("warped_terrorbird").times(3).need("crystal_chime").travel("hazelmeres_island")
+                .say("* The third terrorbird falls. Behind the heavy door two terrorbird guards panic and flood the room with tar and gas...",
+                        "* As you black out, Hazelmere appears and his seed pod carries you both away.")
+                .talk("golrie").stay().unless("crystal_chime").give("crystal_chime") // a lost chime
+                .say("Lost your chime? Grandfather's singing bowl makes another from a seed.")
+                .stage("I should speak to Hazelmere.")
+                .talk("hazelmere").say("Argento's seed pod saved us both. I have seen the future, and you are in it. Much is to come.");
     }
 
     private static void elementalWorkshopII(QuestBook b) {
@@ -343,24 +470,63 @@ final class LateQuestsA {
                 .drops(Drop.always("big_bones")).size(1.2f, 2.6f, 1.0f).at("ice_troll_cave").arena(11, "ice"));
         b.npc("slug_hemligssen", "Slug Hemligssen", "neitiznot", -3, 3, 0xE0B8B0, 0x2A2A2A, 0x1A1A1A, 0x3A3A3A);
         b.item("jester_costume", "Jester costume", "cloth", 0xC03AA0, "A jester's hat, top, tights and boots.");
+        b.item("royal_decree", "Royal decree", "note", 0xE0D0A0, "King Gjuki Sorvott's decree calling for war on the trolls.");
         b.quest("the_fremennik_isles", "The Fremennik Isles", Difficulty.EXPERIENCED, 1)
                 .reqQuest("fremennik_trials").req(Skill.CONSTRUCTION, 20) // 40 Agility only for the optional mine shortcut
                 .xp(Skill.CONSTRUCTION, 5000).xp(Skill.CRAFTING, 5000).xp(Skill.WOODCUTTING, 10000).reward("helm_of_neitiznot")
                 // Plus two 10,000 XP rewards in Attack, Strength, Defence or Hitpoints (player's choice). // approx: fixed skills
                 .xp(Skill.STRENGTH, 10000).xp(Skill.DEFENCE, 10000)
                 .stage("I can start this quest by speaking to Mord Gunnars at the northernmost dock of Rellekka. (Requires The Fremennik Trials, 20 Construction, 40 Agility.)")
-                .talk("mord_gunnars").travel("neitiznot").say("To the isles? Neitiznot and Jatizso are at war with each other... and with the ice trolls. Off we go.")
+                .talk("mord_gunnars").travel("jatizso").say("To the isles? Jatizso and Neitiznot are at war with each other... and with the ice trolls. Off we go.")
+                // Wiki: on Jatizso King Gjuki's cat wants a raw tuna and the king his tax in ore, which buys the jester outfit; on
+                // Neitiznot the spymaster Slug sends the "jester" to watch Mawnis and asks what was learned.
                 .stage("I should speak to Mawnis Burowgar, the Burgher of Neitiznot.")
-                .talk("mawnis_burowgar").say("The trolls attack us both. Spy on Jatizso for me, then we'll deal with the trolls together.")
+                .talk("gjuki_sorvott").stay().unlessFlag("fi_cat").flag("fi_cat")
+                .say("Who are you? *His cat, HRH Hrafn, hisses at you and won't let you near the throne.*")
+                .talk("gjuki_sorvott").stay().needFlag("fi_cat").unlessFlag("fi_tuna").take("raw_tuna").flag("fi_tuna")
+                .say("* You give the king's cat a raw tuna. It purrs and lets you approach.")
+                .missing("* The king's cat hisses at you. It looks hungry for fish: a raw tuna, maybe.")
+                .talk("gjuki_sorvott").stay().needFlag("fi_tuna").unless("jester_costume").unlessFlag("fi_jester").take("mithril_ore:6")
+                .give("jester_costume").flag("fi_jester")
+                .say("Ore for the crown? Six mithril ore will do. *He waves at the chest behind his throne.* Take the old jester's outfit, then.")
+                .missing("Everyone pays their tax in ore here. Six mithril ore from you. (8 tin ore below 2 Mining, 7 coal below 55 in OSRS.)")
+                .talk("slug_hemligssen").stay().need("jester_costume").unlessFlag("fi_slug").flag("fi_slug")
+                .say("A new jester? Perfect. Wear the outfit and juggle for Mawnis. Listen well, and tell me everything.")
+                .talk("mawnis_burowgar").stay().needFlag("fi_slug").need("jester_costume").unlessFlag("fi_spied").flag("fi_spied")
+                .say("* Dressed as a jester, you follow Mawnis's commands and listen in: seventeen militia trained, two bridges to repair, "
+                        + "shields ready in two days.")
+                .puzzle("slug_hemligssen", FI_SLUG_QUIZ).stay().needFlag("fi_spied").unlessFlag("fi_reported").flag("fi_reported").give("coins:2500")
+                .say("Excellent work. Here's 2,500 coins for your trouble.")
+                .talk("mawnis_burowgar").needFlag("fi_reported")
+                .say("The trolls attack us both. Our bridges to the north are broken; help repair them and we'll deal with the trolls together.")
+                .missing("Hmm? Come back without that silly outfit if you want to talk business.")
+                // Wiki: the bridges (8 ropes, 8 split logs, a knife) under the trolls' rocks; King Gjuki's tax collecting on
+                // Jatizso; the second spying job; the king's royal decree.
                 .stage("I should get a jester's disguise from Slug Hemligssen, Neitiznot's spymaster, and learn King Gjuki Sorvott's plans on Jatizso.")
-                .talk("slug_hemligssen").stay().unless("jester_costume").give("jester_costume")
-                .say("A spy? Then you'll need a disguise. The king of Jatizso is looking for a new jester. Wear this and juggle well.")
-                .talk("gjuki_sorvott").need("jester_costume")
-                .say("* Dressed as a jester, you juggle for the king and listen in.",
-                        "Neitiznot? Ha! The ice trolls are their problem. Though... their king is a threat to us all.")
-                .missing("Who let you in? Guards! *You'll need a disguise to get close to the king.*")
+                .reach("neitiznot", 12).stay().unlessFlag("fi_bridges").take("rope:8", "split_log:8").need("knife")
+                .flag("fi_bridges").say("* Thakkrad shows you how; you repair the eastern and western rope bridges while the ice trolls throw rocks.")
+                .missing("* The two bridges north of Neitiznot need 8 ropes, 8 split logs and a knife.")
+                .talk("gjuki_sorvott").stay().needFlag("fi_bridges").unlessFlag("fi_tax").flag("fi_tax")
+                .say("Neitiznot's helper? Hmph. Make yourself useful: collect the taxes. Hring Hring, Skuli, Vanligga and Keepa owe me.")
+                .reach("jatizso", 12).stay().needFlag("fi_tax").unlessFlag("fi_taxed").flag("fi_taxed")
+                .say("* You collect the taxes from Hring Hring, Skuli Myrka, Vanligga Gastfrihet and Keepa Kettilon, then the extra 1,000 from "
+                        + "Hring, Raum, Skuli, Keepa and Flosi.")
+                .talk("slug_hemligssen").stay().needFlag("fi_taxed").need("jester_costume").unlessFlag("fi_spy2").flag("fi_spy2")
+                .say("* Once more in the jester's outfit you listen in on Mawnis: the troll king hides in a secluded bay near Etceteria.",
+                        "Good. Now find out what Gjuki means to do about it.")
+                .talk("gjuki_sorvott").needFlag("fi_spy2").give("royal_decree")
+                .say("The trolls must be destroyed, even if it means working with Neitiznot. Take this royal decree to Mawnis.")
+                .missing("Taxes first, jester.")
+                // Wiki: yak-hide armour and a Neitiznot shield for the cave; ten trolls, then the king, whose head is taken.
                 .stage("The islands must unite against the trolls. I should slay the Ice Troll King in the caves north of the isles.")
-                .kill("ice_troll_king").give("ice_troll_king_head").say("* The Ice Troll King falls! You take his head as proof.")
+                .talk("mawnis_burowgar").stay().unlessFlag("fi_decree").take("royal_decree").flag("fi_decree")
+                .say("A royal decree from Gjuki? Then we fight together. Get yourself yak-hide armour and a Neitiznot shield, and go north.")
+                .missing("Bring me Gjuki's word that Jatizso will fight.")
+                .kill("ice_troll_runt", 10).stay().needFlag("fi_decree").unlessFlag("fi_trolls").flag("fi_trolls")
+                .say("* You have defeated enough trolls to attack the King.")
+                .kill("ice_troll_king").needFlag("fi_trolls").give("ice_troll_king_head")
+                .say("* The Ice Troll King falls! You cut off his head as proof.")
+                .missing("* Too many trolls guard their king: ten must fall first.")
                 .stage("I should bring the troll king's head to Mawnis Burowgar.")
                 .talk("mawnis_burowgar").take("ice_troll_king_head").say("The troll king is dead! Neitiznot is in your debt. Wear this helm with pride.");
     }

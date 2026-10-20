@@ -142,7 +142,7 @@ class QuestsContentTest {
     @Test
     void flagsThatAreNeededAreSet() {
         // Flags are per player, so a quest may need a flag another quest sets (MM2 needs RFD's rfd_awowogei).
-        Set<String> set = new HashSet<>();
+        Set<String> set = new HashSet<>(QuestBossRules.EXTERNAL_FLAGS);
         BOOK.quests.forEach(q -> q.triggers().forEach(t -> {
             set.addAll(t.setFlags);
             set.addAll(t.flagOneOf); // a per-player route (Curse of the Empty Lord)
