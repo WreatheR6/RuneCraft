@@ -63,6 +63,15 @@ public class PyramidPlunderSession extends MinigameSession {
         }
     }
 
+    /** Sophanem is open once Icthlarin's Little Helper has been started; 21 Thieving is checked by the manager. */
+    public static String requirement(ServerPlayer player) {
+        if (com.runecraft.osrs.content.ContentRegistry.quest("icthlarins_little_helper") != null
+                && com.runecraft.quest.QuestApi.stage(player, "icthlarins_little_helper") <= 0) {
+            return "The guardian mummy won't let strangers into Jalsavrah. (Start Icthlarin's Little Helper.)";
+        }
+        return null;
+    }
+
     @Override
     protected int halfX() {
         return HALF;

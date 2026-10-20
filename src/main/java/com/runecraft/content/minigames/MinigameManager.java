@@ -223,6 +223,12 @@ public final class MinigameManager {
         if (game == Minigame.HALLOWED_SEPULCHRE) {
             return SepulchreSession.requirement(player);
         }
+        if (game == Minigame.PYRAMID_PLUNDER) {
+            String quest = PyramidPlunderSession.requirement(player);
+            if (quest != null) {
+                return quest;
+            }
+        }
         if (game == Minigame.ROGUES_DEN && skills.level(Skill.AGILITY) < MinigameRules.RoguesDen.LEVEL) {
             return "You need an Agility level of " + MinigameRules.RoguesDen.LEVEL + " to enter the Rogues' Den maze.";
         }

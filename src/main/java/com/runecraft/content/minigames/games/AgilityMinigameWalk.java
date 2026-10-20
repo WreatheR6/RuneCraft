@@ -180,7 +180,7 @@ public final class AgilityMinigameWalk {
                 click(s.selfTestSafe(), "rd_safe");
             }
             expect(session.isEnded(), "the wall safe never opened or ejected");
-            expect(!Inv.has(player, "mystic_jewel", 1), "the mystic jewel left the maze");
+            expect(!Inv.has(player, "mystic_jewel", 1), "the mystic jewel came out of the maze with the player");
             cracked = Inv.has(player, "rogues_equipment_crate", 1) || Inv.has(player, "rogue_kit", 1);
             expect(xp(Skill.AGILITY) > agility, "leaving the maze paid no Agility XP");
             notes.add("maze run " + (attempt + 1) + (shortcut ? " by the shortcut" : " by the long route") + ": drained "

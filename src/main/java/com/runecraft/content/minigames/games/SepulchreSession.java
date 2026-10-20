@@ -163,6 +163,11 @@ public class SepulchreSession extends MinigameSession {
 
     private static void give(ServerPlayer p, HallowedSepulchre.Loot l, java.util.Random r) {
         int n = l.min() + r.nextInt(l.max() - l.min() + 1);
+        if (l.doses() == 0 && MinigameManager.session(p) instanceof SepulchreSession) {
+            // Coffin loot a full pack can't take goes out with the player (MinigameSession.reward).
+            reward(p, l.item(), n);
+            return;
+        }
         ItemStack stack = Inv.stack(l.item(), n);
         if (stack.isEmpty()) {
             return;
@@ -481,7 +486,7 @@ public class SepulchreSession extends MinigameSession {
                 Msg.action(p, "A blue tile carries you forwards.");
             }
             case STUN -> {
-                recoverUntil = ticks + HallowedSepulchre.STUN_TICKS;
+                // Stunned, not safe: the other traps still catch a player standing in the lightning (wiki).
                 com.runecraft.content.systems.SysCombat.freeze(p, HallowedSepulchre.STUN_TICKS);
                 Msg.red(p, "Lightning strikes you and you're stunned!");
             }
