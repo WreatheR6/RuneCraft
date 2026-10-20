@@ -29,9 +29,9 @@ final class ZilyanaScript extends GwdScript {
         homeX = boss.getX();
         homeY = boss.getY();
         homeZ = boss.getZ();
-        guards.add(spawnMinion(boss, "starlight", 3, 0));
-        guards.add(spawnMinion(boss, "growler", -3, 2));
-        guards.add(spawnMinion(boss, "bree", 0, -3));
+        guards.add(spawnGuard(boss, "starlight", 3, 0));
+        guards.add(spawnGuard(boss, "growler", -3, 2));
+        guards.add(spawnGuard(boss, "bree", 0, -3));
     }
 
     @Override

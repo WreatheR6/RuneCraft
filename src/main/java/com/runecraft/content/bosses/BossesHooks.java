@@ -57,12 +57,12 @@ public final class BossesHooks implements ModuleHooks {
         BossScripts.register("phantom_muspah", EncounterScripts.Muspah::new);
         BossScripts.register("duke_sucellus", EncounterScripts.Duke::new);
         BossScripts.register("the_leviathan", EncounterScripts.Leviathan::new);
-        BossScripts.register("the_whisperer", EncounterScripts.Whisperer::new);
+        BossScripts.register("the_whisperer", WhispererScript::new);
         BossScripts.register("vardorvis", EncounterScripts.Vardorvis::new);
         // Desert Treasure II's quest versions (quests module ids): the same fights with lower max hits.
         BossScripts.register("dt2_quest_duke_sucellus", () -> new EncounterScripts.Duke(Dt2Bosses.QUEST_DUKE_SCALE));
         BossScripts.register("dt2_quest_leviathan", () -> new EncounterScripts.Leviathan(Dt2Bosses.QUEST_LEVIATHAN_SCALE));
-        BossScripts.register("dt2_quest_whisperer", () -> new EncounterScripts.Whisperer(Dt2Bosses.QUEST_WHISPERER_SCALE));
+        BossScripts.register("dt2_quest_whisperer", () -> new WhispererScript(Dt2Bosses.QUEST_WHISPERER_SCALE));
         BossScripts.register("dt2_quest_vardorvis", () -> new EncounterScripts.Vardorvis(Dt2Bosses.QUEST_VARDORVIS_SCALE));
         AwakenedService.init();
         DoomDelveService.init();
@@ -71,7 +71,11 @@ public final class BossesHooks implements ModuleHooks {
         BossScripts.register("eclipse_moon", MoonScripts.EclipseMoon::new);
         BossScripts.register("blue_moon", MoonScripts.BlueMoon::new);
         BossScripts.register("branda_the_fire_queen", EncounterScripts.RoyalTitans::new);
+        // Fought beside the main boss, whose kill count they share (one "Royal Titans" / "Grotesque Guardians" kill).
+        com.runecraft.boss.DataBossService.companion("eldric_the_ice_king");
+        com.runecraft.boss.DataBossService.companion("dawn");
         MinionRules.register();
+        BossDots.register();
         BossScripts.register("yama", ModernScripts.Yama::new);
         BossScripts.register("amoxliatl", ModernScripts.Amoxliatl::new);
         BossScripts.register("maggot_king", ModernScripts.MaggotKing::new);

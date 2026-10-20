@@ -55,7 +55,9 @@ public final class BossMechanics {
             "glyph_of_fire", "cavern_shake", "forfeit", "tentacle", "swinging_axe", "darting_spikes", "ice_spikes", "screech", "carrion",
             "slam", "larva", "fire_wall", "icicle_wall", "elemental_blast", "elemental_explosion", "sleepwalker", "power_blast",
             "bleed", "strangle", "burn", "knockback", "parasite_burst", "spike", "weakened_parasite_burst", "tail_shockwave", "spore", "explosion",
-            "ruptura_explosion", "rock_explosion", "zalcano_shockwave", "pebbles", "under_zalcano");
+            "ruptura_explosion", "rock_explosion", "zalcano_shockwave", "pebbles", "under_zalcano",
+            // Wilderness bosses (godwars module scripts): the Chaos Fanatic's and crazy archaeologist's specials, the trio's traps
+            "green_explosion", "explosive_book", "bear_trap", "sticky_web");
 
     // ------------------------------------------------------------ minion ids
     public static final String YAMA_JUDGE = "yama_judge";
@@ -382,8 +384,36 @@ public final class BossMechanics {
     public static final int VARDORVIS_STRANGLE_TICKS_AWAKENED = 4;
     public static final int VARDORVIS_STRANGLE_DAMAGE = 25;
     public static final int VARDORVIS_STRANGLE_DAMAGE_AWAKENED = 40;
-    /** Spores to destroy per Strangle (the wiki says "several"; approx). */
-    public static final int VARDORVIS_STRANGLE_SPORES = 3;
+    /**
+     * Spores to destroy per Strangle (OSRS Wiki "Vardorvis/Strategies"): at least four, more the more often he has used
+     * it, up to six. approx: one more per earlier Strangle of the fight.
+     */
+    public static int vardorvisStrangleSpores(int earlierStrangles) {
+        return Math.min(6, 4 + Math.max(0, earlierStrangles));
+    }
+
+    /**
+     * Vardorvis' head (OSRS Wiki "Vardorvis' Head"): below 570 hitpoints it gazes at the player with a projectile that
+     * deals no damage; unless Protect from Missiles (the green gaze) or Protect from Magic (the awakened blue gaze) blocks
+     * it, it drains 10 Prayer points, switches overhead prayers off and keeps them off for 3 ticks. He doesn't melee while
+     * it flies and attacks 2 ticks after it lands. Awakened below 50% the head gazes in pairs, one of each, 1 tick apart.
+     */
+    public static final int VARDORVIS_HEAD_PRAYER_DRAIN = 10;
+    public static final int VARDORVIS_HEAD_LOCK_TICKS = 3;
+    /** Game ticks the gaze is in the air (approx: not documented). */
+    public static final int VARDORVIS_HEAD_FLIGHT_TICKS = 3;
+    public static final int VARDORVIS_HEAD_AFTER_TICKS = 2;
+
+    /**
+     * The gazes of one head appearance, as "magic" flags in firing order: post-quest a single green (ranged) gaze;
+     * awakened a random one, or below half his hitpoints a pair of both styles in random order.
+     */
+    public static boolean[] vardorvisGazes(boolean awakened, double hpFraction, boolean coin) {
+        if (!awakened) {
+            return new boolean[]{false};
+        }
+        return hpFraction < 0.5 ? new boolean[]{coin, !coin} : new boolean[]{coin};
+    }
 
     /** A Vardorvis bleed: damage per game tick, more often while the player is running. */
     public static final class Bleed {
@@ -424,6 +454,74 @@ public final class BossMechanics {
     public static int vardorvisDarts(int hp) {
         return hp > 500 ? 1 : hp >= 130 ? 2 : 3;
     }
+
+    // ------------------------------------------------------------ Hespori (OSRS Wiki "Hespori")
+    /** Four flower buds (10 hitpoints, one hit kills) keep it invulnerable; they open at the start, 66% and 33%. */
+    public static final int HESPORI_BUDS = 4;
+    /** Entangle: rooted for 10 ticks, then 40+ damage, unless the player struggles free (the sixth click frees them). */
+    public static final int HESPORI_ENTANGLE_TICKS = 10;
+    public static final int HESPORI_ENTANGLE_MIN = 40;
+    public static final int HESPORI_STRUGGLES = 6;
+    /** Game ticks between entangles (approx: the wiki says a fight lasting over 30-40 seconds gets one). */
+    public static final int HESPORI_ENTANGLE_INTERVAL = 58;
+
+    // ------------------------------------------------------------ Duke Sucellus (OSRS Wiki "Duke Sucellus/Strategies")
+    /** Freezing Gaze: every fifth standard attack; it lands 5 ticks after it starts (6 ticks in all) unless a pillar hides you. */
+    public static final int DUKE_GAZE_EVERY = 5;
+    public static final int DUKE_GAZE_TICKS = 5;
+    /** Gas flares leave gas that deals up to 12 a tick (awakened ~27) for a few seconds (approx: 8 ticks). */
+    public static final int DUKE_GAS_MAX = 12;
+    public static final int DUKE_GAS_MAX_AWAKENED = 27;
+    public static final int DUKE_GAS_TICKS = 8;
+
+    /** Standard attacks between gas flares: 5 above 75% health, 4 above 25%, 3 below. */
+    public static int dukeFlareInterval(double percent) {
+        return percent > 75 ? 5 : percent > 25 ? 4 : 3;
+    }
+
+    /** Gas flares launched at once: 1 above 50% and 2 below; awakened 4 below 76%, else 1. */
+    public static int dukeFlares(double percent, boolean awakened) {
+        if (awakened) {
+            return percent < 76 ? 4 : 1;
+        }
+        return percent > 50 ? 1 : 2;
+    }
+
+    /** Enraged (attacks every 4 ticks instead of 5) at 25% health; awakened at 440 of 1,697 (25.9%). */
+    public static boolean dukeEnraged(double percent, boolean awakened) {
+        return percent <= (awakened ? 100.0 * 440 / 1697 : 25);
+    }
+
+    /**
+     * Awakened Duke from ~32% health: an Orb of Darkness rolls along the row in front of him every ~10 seconds, up to 27
+     * damage and every combat stat drained by 8 if it hits.
+     */
+    public static final int DUKE_ORB_PERCENT = 32;
+    public static final int DUKE_ORB_INTERVAL = 17;
+    public static final int DUKE_ORB_MAX = 27;
+    public static final int DUKE_ORB_DRAIN = 8;
+
+    // ------------------------------------------------------------ The Leviathan (OSRS Wiki "The Leviathan/Strategies")
+    /**
+     * Its volleys speed up through the fight: 3-tick magic/ranged, 2-tick magic/ranged, 2-tick all three styles, 1-tick
+     * magic/ranged, then 1-tick all three; enraged (below 20%) 2 ticks between attacks (awakened 1), magic and ranged only.
+     */
+    public static int leviathanVolleyTicks(int volley, boolean enraged, boolean awakened) {
+        if (enraged) {
+            return awakened ? 1 : 2;
+        }
+        int[] ticks = {3, 2, 2, 1, 1};
+        return ticks[Math.max(0, Math.min(ticks.length - 1, volley))];
+    }
+
+    /** Whether a volley mixes in the melee (shadow) projectile: from the third volley, but not the fourth; never enraged. */
+    public static boolean leviathanVolleyMelee(int volley, boolean enraged) {
+        return !enraged && volley >= 2 && volley != 3;
+    }
+
+    /** Awakened from 50% health: a tornado chases the player for 40+ on contact (approx: up to 45). */
+    public static final int LEVIATHAN_TORNADO_MIN = 40;
+    public static final int LEVIATHAN_TORNADO_MAX = 45;
 
     // ------------------------------------------------------------ Amoxliatl
     /** Unstable ice: 1-4 blocks, shatter after 15 ticks into 3x3 icy pools and heal her 16-25 each. */
@@ -511,6 +609,25 @@ public final class BossMechanics {
     }
 
     public static final int DESPERATION_SLEEPWALKER_DAMAGE = 15;
+
+    /**
+     * Phosani's Nightmare (OSRS Wiki): three phases of 400 shield durability, then a desperation phase of 150 health, 1,350
+     * physical damage in all. Her health bar here is that damage, so a phase ends at these percentages of it left: 70.4%,
+     * 40.7% and 11.1% (the third phase's sleepwalkers, then the desperation phase).
+     */
+    public static final int PHOSANI_PHASE_SHIELD = 400;
+    public static final int PHOSANI_DESPERATION_HEALTH = 150;
+
+    public static double phosaniPhaseEnd(int phase) {
+        int total = 3 * PHOSANI_PHASE_SHIELD + PHOSANI_DESPERATION_HEALTH;
+        return 100.0 * (total - PHOSANI_PHASE_SHIELD * Math.max(1, Math.min(3, phase))) / total;
+    }
+
+    /**
+     * Desperation phase: one sleepwalker at a time walks in from the edge of the arena; the first reaches her about 20 ticks
+     * after it appears (OSRS Wiki "Phosani's Nightmare/Strategies").
+     */
+    public static final int DESPERATION_WALKER_TICKS = 20;
 
     // ------------------------------------------------------------ Burn (OSRS Wiki "Burn")
     /** A burn hits every 4 ticks; a full burn is 10 hits (40 ticks); up to 5 burns stack, each adding 1 to every hit. */
@@ -890,5 +1007,95 @@ public final class BossMechanics {
             return 0;
         }
         return tiles <= 0 ? 80 : Math.max(33, 80 - 16 * tiles);
+    }
+
+    // ---------------- The Whisperer (OSRS Wiki "The Whisperer/Strategies", "Lost Soul (The Whisperer)") ----------------
+    /** The lost souls of her Soul Siphon. */
+    public static final String WHISPERER_LOST_SOUL = "whisperer_lost_soul";
+    /** Her three special attacks come at these shares of her 900 hitpoints (720, 495 and 270). */
+    public static final int[] WHISPERER_SPECIAL_PERCENT = {80, 55, 30};
+    /** Awakened, she uses one at roughly every tenth of her 2,700 hitpoints instead. */
+    public static final int[] WHISPERER_AWAKENED_SPECIAL_HP = {2400, 2120, 1820, 1600, 1310, 1050, 800, 500};
+    public static final int WHISPERER_AWAKENED_HP = 2700;
+    /** The specials in order: Corrupted Seeds, Screech, Soul Siphon (or the same cycle started at the Screech). */
+    public static final String[] WHISPERER_SPECIALS = {"seeds", "screech", "siphon"};
+    /** The tentacles after each volley (20, awakened 30, whatever how many hit; dodged by moving off the tile). */
+    public static final int WHISPERER_TENTACLE = 20;
+    public static final int WHISPERER_TENTACLE_AWAKENED = 30;
+    /** Screech: three blasts (awakened five) of 45 (70) for anyone she can see; hide behind the floating columns. */
+    public static final int WHISPERER_SCREECHES = 3;
+    public static final int WHISPERER_SCREECHES_AWAKENED = 5;
+    /** Soul Siphon: 20 ticks (awakened 35) to kill a full set of lost souls, else 50 to the player and she heals 100. */
+    public static final int WHISPERER_SIPHON_TICKS = 20;
+    public static final int WHISPERER_SIPHON_TICKS_AWAKENED = 35;
+    public static final int WHISPERER_SIPHON_HEAL = 100;
+    /** Lost soul sets: Vita (heal 20% hitpoints), Oratio (20% prayer), Sanitas (sanity), Mors (50 to her, 75 if all die). */
+    public static final String[] WHISPERER_SOUL_SETS = {"vita", "oratio", "sanitas", "mors"};
+    public static final int[] WHISPERER_SOUL_SET_SIZES = {2, 3, 3, 4};
+    public static final int WHISPERER_MORS_DAMAGE = 50;
+    public static final int WHISPERER_MORS_DAMAGE_ALL = 75;
+    /** Corrupted Seeds: step on every light seed in time (awakened 26 ticks; approx 33 normally) or take 75. */
+    public static final int WHISPERER_SEED_TICKS = 33; // approx
+    public static final int WHISPERER_SEED_TICKS_AWAKENED = 26;
+    public static final int WHISPERER_SEED_FAIL = 75;
+    /** A dark seed stepped on: 15-25 (awakened 60-75). */
+    public static final int[] WHISPERER_DARK_SEED = {15, 25};
+    public static final int[] WHISPERER_DARK_SEED_AWAKENED = {60, 75};
+    /** During a special's animation she takes 70% less damage. */
+    public static final double WHISPERER_SPECIAL_DAMAGE = 0.3;
+    /** The binding projectile after a special: ~8 seconds. */
+    public static final int WHISPERER_BIND_TICKS = 13;
+    /** At 0 hitpoints she heals 140 (awakened 250), pulls the player into the Shadow Realm and attacks every 2 ticks. */
+    public static final int WHISPERER_ENRAGE_HEAL = 140;
+    public static final int WHISPERER_ENRAGE_HEAL_AWAKENED = 250;
+    /** Her melee (next to her): two hits, the second the same as the first; Protect from Melee only trims it (approx 3/4). */
+    public static final double WHISPERER_MELEE_THROUGH_PRAYER = 0.75; // approx: "slightly reduces damage"
+
+    /** The special attack used as her {@code n}th (from 0) when the rotation starts at {@code start} (0 seeds, 1 screech). */
+    public static String whispererSpecial(int start, int n) {
+        return WHISPERER_SPECIALS[(start + n) % WHISPERER_SPECIALS.length];
+    }
+
+    /**
+     * Styles of one of her volleys (true = magic), {@code first} being its first projectile's: three projectiles, all one style
+     * before her first special, then two and one (M-M-R), after the third special alternating (M-R-M); awakened five: three and
+     * two (R-R-R-M-M), from the second special one, two, two (R-M-M-R-R), from the seventh alternating.
+     */
+    public static boolean[] whispererVolley(int specialsDone, boolean awakened, boolean first) {
+        boolean[] v = new boolean[awakened ? 5 : 3];
+        for (int i = 0; i < v.length; i++) {
+            boolean same;
+            if (!awakened) {
+                same = specialsDone == 0 || (specialsDone < 3 ? i < 2 : i % 2 == 0);
+            } else if (specialsDone < 2) {
+                same = i < 3;
+            } else if (specialsDone < 7) {
+                same = i == 0 || i >= 3;
+            } else {
+                same = i % 2 == 0;
+            }
+            v[i] = same == first;
+        }
+        return v;
+    }
+
+    /** Whether her special number {@code done} (from 0) is due at {@code hp} of {@code maxHp} (her variant's hitpoints). */
+    public static boolean whispererSpecialDue(int done, double hp, int maxHp, boolean awakened) {
+        if (awakened) {
+            return done < WHISPERER_AWAKENED_SPECIAL_HP.length
+                    && hp * WHISPERER_AWAKENED_HP / maxHp <= WHISPERER_AWAKENED_SPECIAL_HP[done];
+        }
+        return done < WHISPERER_SPECIAL_PERCENT.length && hp * 100.0 / maxHp <= WHISPERER_SPECIAL_PERCENT[done];
+    }
+
+    /**
+     * Pre-enrage Shadow Realm time (game ticks; Dark Memories, CA 502, wants under 10 = 6 seconds) a player adds by killing a lost
+     * soul at tick {@code specialTick} of a Soul Siphon, having been counted {@code counted} ticks of it already. OSRS Wiki: the
+     * souls can only be damaged in the Shadow Realm, so a player enters as the siphon starts and leaves after their last soul;
+     * the realm isn't modelled, so that stay is counted up to their latest soul kill. Ignoring the siphon (the task's way, or
+     * guessing the seeds and pillars, which the mod shows openly) adds nothing. approx
+     */
+    public static int whispererRealmTicks(int specialTick, int counted) {
+        return Math.max(0, specialTick - counted);
     }
 }

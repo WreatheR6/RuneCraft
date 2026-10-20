@@ -91,6 +91,7 @@ public final class AwakenedBosses {
                 m.put("fist_slam", 81);
                 m.put("magic_blast", 71);
                 m.put("freezing_gaze", 121);
+                m.put("gas_vent", 27);
             }
             case "the_leviathan" -> {
                 m.put("shadow_strike", 86);
@@ -103,10 +104,12 @@ public final class AwakenedBosses {
                 m.put("tentacle_lash", 53);
                 m.put("screech", 70);
                 m.put("soul_siphon", 75);
+                m.put("tentacle_whack", 72); // 50-72 off prayer (OSRS Wiki "The Whisperer/Strategies", awakened mode)
             }
             case "vardorvis" -> {
                 m.put("axe_swing", 61);
                 m.put("swinging_axes", 96);
+                m.put("darting_spikes", 40);
             }
             default -> throw new IllegalArgumentException(bossId);
         }

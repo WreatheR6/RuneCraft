@@ -60,7 +60,7 @@ class BossesContentTest {
         assertEquals(41, boss("zulrah").maxHit());
         assertEquals(732, boss("vorkath").combatLevel);
         assertEquals(750, boss("vorkath").hitpoints);
-        assertEquals(73, attack(boss("vorkath"), "dragonfire").maxHit());
+        assertEquals(80, attack(boss("vorkath"), "dragonfire").maxHit()); // OSRS Wiki post-quest (72 in Dragon Slayer II)
         assertEquals(121, attack(boss("vorkath"), "dragonfire_bomb").maxHit());
         assertEquals(2000, boss("corporeal_beast").hitpoints);
         assertEquals(785, boss("corporeal_beast").combatLevel);
@@ -120,7 +120,7 @@ class BossesContentTest {
         assertTrue(attack(boss("cerberus"), "lava_pool").telegraphTicks() >= 3);
         assertTrue(Dt2Bosses.DUKE_GAZE.telegraphTicks() >= 4);
         assertTrue(SlayerBosses.SIRE_EXPLOSION.telegraphTicks() >= 6);
-        assertTrue(SlayerBosses.DUSK_EXPLOSION.telegraphTicks() >= 4);
+        assertTrue(SlayerBosses.DAWN_STONE_BALL.telegraphTicks() >= 3);
         assertTrue(Dt2Bosses.WHISPER_SCREECH.telegraphTicks() >= 4);
     }
 

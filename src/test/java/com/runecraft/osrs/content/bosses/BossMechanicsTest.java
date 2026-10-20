@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -88,6 +89,53 @@ class BossMechanicsTest {
         assertEquals(1, BossMechanics.vardorvisDarts(600));
         assertEquals(2, BossMechanics.vardorvisDarts(300));
         assertEquals(3, BossMechanics.vardorvisDarts(100));
+        // Strangle: at least four spores, more with each use, up to six.
+        assertEquals(4, BossMechanics.vardorvisStrangleSpores(0));
+        assertEquals(5, BossMechanics.vardorvisStrangleSpores(1));
+        assertEquals(6, BossMechanics.vardorvisStrangleSpores(9));
+    }
+
+    /** Duke Sucellus and the Leviathan against "Duke Sucellus/Strategies" and "The Leviathan/Strategies". */
+    @Test
+    void dukeAndLeviathan() {
+        assertEquals(5, BossMechanics.dukeFlareInterval(90));
+        assertEquals(4, BossMechanics.dukeFlareInterval(50));
+        assertEquals(3, BossMechanics.dukeFlareInterval(20));
+        assertEquals(1, BossMechanics.dukeFlares(60, false));
+        assertEquals(2, BossMechanics.dukeFlares(40, false));
+        assertEquals(1, BossMechanics.dukeFlares(80, true));
+        assertEquals(4, BossMechanics.dukeFlares(70, true));
+        assertTrue(BossMechanics.dukeEnraged(25, false) && !BossMechanics.dukeEnraged(25.5, false));
+        assertTrue(BossMechanics.dukeEnraged(25.8, true) && !BossMechanics.dukeEnraged(26, true));
+        assertEquals(101, Dt2Bosses.DUKE_GAZE.maxHit());
+        assertEquals(121, AwakenedBosses.variant(ContentRegistry.boss("duke_sucellus")).maxHit(Dt2Bosses.DUKE_GAZE));
+        assertEquals(12, Dt2Bosses.DUKE_VENTS.maxHit());
+        // Volleys: 3-tick magic/ranged, 2-tick magic/ranged, 2-tick all three, 1-tick magic/ranged, 1-tick all three.
+        int[] ticks = {3, 2, 2, 1, 1, 1};
+        boolean[] melee = {false, false, true, false, true, true};
+        for (int v = 0; v < ticks.length; v++) {
+            assertEquals(ticks[v], BossMechanics.leviathanVolleyTicks(v, false, false), "volley " + v);
+            assertEquals(melee[v], BossMechanics.leviathanVolleyMelee(v, false), "volley " + v);
+        }
+        assertEquals(2, BossMechanics.leviathanVolleyTicks(0, true, false));
+        assertEquals(1, BossMechanics.leviathanVolleyTicks(0, true, true));
+        assertFalse(BossMechanics.leviathanVolleyMelee(4, true));
+    }
+
+    /** Vardorvis' head: the post-quest gaze is always the green (ranged) one; awakened below half it fires one of each. */
+    @Test
+    void vardorvisHeadGazes() {
+        assertArrayEquals(new boolean[]{false}, BossMechanics.vardorvisGazes(false, 0.2, true));
+        assertArrayEquals(new boolean[]{true}, BossMechanics.vardorvisGazes(true, 0.7, true));
+        assertArrayEquals(new boolean[]{false, true}, BossMechanics.vardorvisGazes(true, 0.4, false));
+        assertEquals(10, BossMechanics.VARDORVIS_HEAD_PRAYER_DRAIN);
+        assertEquals(3, BossMechanics.VARDORVIS_HEAD_LOCK_TICKS);
+        // The head deals no damage, so it isn't one of his attacks; his darting spikes are (25, awakened 40).
+        BossDef v = ContentRegistry.boss("vardorvis");
+        assertTrue(v.attacks.stream().noneMatch(a -> a.name().startsWith("head")));
+        assertEquals(25, Dt2Bosses.VARD_SPIKES.maxHit());
+        assertEquals(35, Dt2Bosses.VARD_AXES.maxHit());
+        assertEquals(40, AwakenedBosses.variant(v).maxHit(Dt2Bosses.VARD_SPIKES));
     }
 
     @Test
@@ -107,6 +155,14 @@ class BossMechanicsTest {
 
     @Test
     void phosaniSleepwalkers() {
+        // Three 400 shields and 150 desperation health (1,350): phases end at 70.4%, 40.7% and 11.1% of her bar.
+        assertEquals(70.37, BossMechanics.phosaniPhaseEnd(1), 0.01);
+        assertEquals(40.74, BossMechanics.phosaniPhaseEnd(2), 0.01);
+        assertEquals(11.11, BossMechanics.phosaniPhaseEnd(3), 0.01);
+        BossDef phosani = ContentRegistry.boss("phosanis_nightmare");
+        assertEquals(70, phosani.phases.get(0).belowPercent());
+        assertEquals(40, phosani.phases.get(1).belowPercent());
+        assertEquals(66, ContentRegistry.boss("the_nightmare").phases.get(0).belowPercent());
         assertEquals(2, BossMechanics.sleepwalkers(1));
         assertEquals(3, BossMechanics.sleepwalkers(2));
         assertEquals(4, BossMechanics.sleepwalkers(3));
@@ -406,5 +462,39 @@ class BossMechanicsTest {
         assertEquals(64, BossMechanics.rupturaEnemyDamage(1));
         assertEquals(33, BossMechanics.rupturaEnemyDamage(3));
         assertEquals(0, BossMechanics.rupturaEnemyDamage(5));
+    }
+
+    /**
+     * The Whisperer (OSRS Wiki "The Whisperer/Strategies"): volley patterns by specials used, specials at 80/55/30% (awakened at
+     * her listed hitpoints), the two rotations, the soul sets, and no invented health phase.
+     */
+    @Test
+    void whisperer() {
+        // M = true. Normal: all one style, then M-M-R, after the third special M-R-M.
+        assertArrayEquals(new boolean[]{true, true, true}, BossMechanics.whispererVolley(0, false, true));
+        assertArrayEquals(new boolean[]{true, true, false}, BossMechanics.whispererVolley(1, false, true));
+        assertArrayEquals(new boolean[]{false, false, true}, BossMechanics.whispererVolley(2, false, false));
+        assertArrayEquals(new boolean[]{true, false, true}, BossMechanics.whispererVolley(3, false, true));
+        // Awakened: R-R-R-M-M, from the second special R-M-M-R-R, from the seventh alternating.
+        assertArrayEquals(new boolean[]{false, false, false, true, true}, BossMechanics.whispererVolley(0, true, false));
+        assertArrayEquals(new boolean[]{false, true, true, false, false}, BossMechanics.whispererVolley(2, true, false));
+        assertArrayEquals(new boolean[]{false, true, false, true, false}, BossMechanics.whispererVolley(7, true, false));
+        // Specials: 720 / 495 / 270 of 900; awakened 2400 ... 500 of 2700.
+        assertFalse(BossMechanics.whispererSpecialDue(0, 721, 900, false));
+        assertTrue(BossMechanics.whispererSpecialDue(0, 720, 900, false));
+        assertTrue(BossMechanics.whispererSpecialDue(2, 270, 900, false));
+        assertFalse(BossMechanics.whispererSpecialDue(3, 1, 900, false));
+        assertTrue(BossMechanics.whispererSpecialDue(0, 2400, 2700, true));
+        assertTrue(BossMechanics.whispererSpecialDue(7, 500, 2700, true));
+        assertFalse(BossMechanics.whispererSpecialDue(8, 1, 2700, true));
+        // Rotations: Seeds -> Screech -> Siphon, or Screech -> Siphon -> Seeds (awakened repeating).
+        assertEquals("seeds", BossMechanics.whispererSpecial(0, 0));
+        assertEquals("siphon", BossMechanics.whispererSpecial(0, 2));
+        assertEquals("screech", BossMechanics.whispererSpecial(1, 0));
+        assertEquals("seeds", BossMechanics.whispererSpecial(1, 2));
+        assertEquals("screech", BossMechanics.whispererSpecial(1, 3));
+        assertEquals(12, java.util.Arrays.stream(BossMechanics.WHISPERER_SOUL_SET_SIZES).sum());
+        assertTrue(ContentRegistry.boss("the_whisperer").phases.isEmpty(), "her specials and enrage are scripted");
+        assertTrue(ContentRegistry.monsters().stream().anyMatch(m -> m.id.equals(BossMechanics.WHISPERER_LOST_SOUL)));
     }
 }

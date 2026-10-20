@@ -74,7 +74,7 @@ public final class ModernBosses {
 
     // ================= Brutus =================
     public static final AttackDef BRUTUS_HEADBUTT = AttackDef.of("headbutt", AttackType.CRUSH, 3, 3.5, 4);
-    public static final AttackDef BRUTUS_CHARGE = AttackDef.of("charge", AttackType.CRUSH, 6, 12, 1) // approx
+    public static final AttackDef BRUTUS_CHARGE = AttackDef.of("charge", AttackType.CRUSH, 19, 12, 1) // special up to 19 (OSRS Wiki)
             .special(Special.SKY_STRIKE, 0).telegraph(3, "Brutus paws at the ground...");
     public static final AttackDef DEMONIC_HORNS = AttackDef.of("horn_gore", AttackType.CRUSH, 43, 3.5, 4);
     public static final AttackDef DEMONIC_CHARGE = AttackDef.of("hellfire_charge", AttackType.CRUSH, 60, 12, 1) // approx

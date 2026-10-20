@@ -51,4 +51,34 @@ public final class BossSelfTests {
     public static String hueycoatlPhases(DataBossEntity boss, ServerPlayer p) {
         return EncounterScripts.selfTestHueycoatl(boss, p);
     }
+
+    /**
+     * The fight self-test ({@code boss:fight:<id>}) asks this while a boss can't be hurt: does the part of its mechanic a
+     * player would do that isn't killing its adds (the test clears those itself), and returns what it did, or null.
+     */
+    public static String assist(DataBossEntity boss, ServerPlayer p) {
+        if (boss.script() instanceof SlayerScripts.Kraken k) {
+            return k.selfTestDisturb(p) ? "disturbed the whirlpools" : null;
+        }
+        if (boss.script() instanceof ClassicScripts.Zalcano) {
+            return ClassicScripts.selfTestAssistZalcano(boss, p);
+        }
+        return null;
+    }
+
+    /**
+     * Loot a kill leaves somewhere other than the ground or the inventory: the Doom of Mokhaiotl's delve loot waits in the
+     * burrow hole until claimed at the stone. Returns the number of stacks held for the player.
+     */
+    public static int heldLoot(String bossId, ServerPlayer p) {
+        return com.runecraft.osrs.content.bosses.DoomDelves.BOSS.equals(bossId) ? DoomDelveService.heldLoot(p) : 0;
+    }
+
+    /**
+     * Whether a player's ordinary weapon attacks can take hitpoints off this boss at all. False for Zalcano, who is only hurt
+     * by imbued tephra (her armour) and pickaxes (once she falls).
+     */
+    public static boolean realAttacksHurt(String bossId) {
+        return !"zalcano".equals(bossId);
+    }
 }

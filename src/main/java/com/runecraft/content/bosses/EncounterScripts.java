@@ -17,6 +17,7 @@ import com.runecraft.osrs.Prayer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
@@ -414,7 +415,8 @@ final class EncounterScripts {
                     BossFx.burst(boss, ParticleTypes.WITCH, 10, 1.0);
                     continue;
                 }
-                double step = Math.min(0.35, len);
+                // Desperation sleepwalkers reach her ~20 ticks after appearing at the arena's edge (11 blocks away).
+                double step = Math.min(desperate ? 11.0 / BossMechanics.DESPERATION_WALKER_TICKS : 0.35, len);
                 m.teleportTo(m.getX() + d.x / len * step, m.getY(), m.getZ() + d.z / len * step);
             }
             if (setTotal > 0 && walkers.isEmpty()) {
@@ -428,7 +430,7 @@ final class EncounterScripts {
                 }
                 if (finalSet && !desperate) {
                     desperate = true;
-                    walkerTimer = 20;
+                    walkerTimer = 3; // approx: she moves to the centre first
                     BossFx.warn(boss, "Phosani's Nightmare lashes out in desperation!");
                 }
             }
@@ -439,12 +441,14 @@ final class EncounterScripts {
             tickSpores(boss);
             if (phosani) {
                 tickWalkers(boss, target);
-                if (!finalSet && !shielded && percent(boss) <= 10) { // approx: the end of her third phase
+                // The end of her third phase: 150 of her 1,350 physical health left (OSRS Wiki).
+                if (!finalSet && !shielded && percent(boss) <= BossMechanics.phosaniPhaseEnd(3)) {
                     finalSet = true;
                     summonWalkers(boss, BossMechanics.sleepwalkers(3));
                 }
-                if (desperate && target != null && --walkerTimer <= 0) {
-                    walkerTimer = 8; // approx: how often they spawn in the desperation phase
+                // Desperation: one sleepwalker at a time, the next as soon as the last is gone (approx: a 2-tick gap).
+                if (desperate && target != null && walkers.isEmpty() && --walkerTimer <= 0) {
+                    walkerTimer = 2;
                     summonWalkers(boss, 1);
                     walkersMoveAt = now;
                 }
@@ -615,6 +619,11 @@ final class EncounterScripts {
             husks.forEach(Mob::discard);
             walkers.forEach(Mob::discard);
             parasites.forEach(Mob::discard);
+        }
+
+        @Override
+        public void onRemoved(DataBossEntity boss) {
+            onDeath(boss, null); // reset: totems, husks, sleepwalkers and parasites go, and nobody stays slowed
         }
     }
 
@@ -886,12 +895,22 @@ final class EncounterScripts {
     }
 
     /**
-     * Duke Sucellus: fist slams and magic; every few attacks gas vents erupt; periodically his freezing
-     * gaze hits everyone he can see - hide behind one of the pillars.
+     * Duke Sucellus (OSRS Wiki "Duke Sucellus/Strategies"): fist slams up close and magic otherwise on a 5-tick cycle (4
+     * once enraged at 25%). Every fifth standard attack he turns his Freezing Gaze on everyone he can see (up to 101, 5 ticks
+     * to hide behind a pillar); gas flares follow every 5/4/3 standard attacks (above 75%/25%/below) and leave gas on the
+     * vents near the player (up to 12 a tick), one flare above 50% and two below. Awakened: 4 flares below 76%, gas up to 27,
+     * the gaze up to 121, enraged at 25.9%, and from 32% an Orb of Darkness every ~10 seconds (27, drains combat stats by 8).
      */
     static final class Duke extends ScriptedBoss {
-        private int gaze = 16;
         private boolean pillars;
+        /** Standard attacks since the last gaze and since the last gas flares. */
+        private int sinceGaze;
+        private int sinceFlare;
+        /** The flares never come straight after a gaze (he makes one more standard attack first). */
+        private boolean justGazed;
+        /** Game tick the current gaze lands, or -1. */
+        private long gazeAt = -1;
+        private int orbTimer = BossMechanics.DUKE_ORB_INTERVAL;
         /** Max hit scale: 1 for the boss, below 1 for the weaker Desert Treasure II quest version. */
         private final double scale;
 
@@ -908,7 +927,6 @@ final class EncounterScripts {
             return super.multiplier(boss) * scale;
         }
 
-
         @Override
         protected boolean driven() {
             return true;
@@ -916,22 +934,43 @@ final class EncounterScripts {
 
         @Override
         protected boolean canAttack(DataBossEntity boss) {
-            return gaze > 5;
+            return gazeAt < 0;
+        }
+
+        @Override
+        protected int attackDelay(DataBossEntity boss, AttackDef attack) {
+            return BossMechanics.dukeEnraged(percent(boss), boss.awakened()) ? 4 : 5;
         }
 
         @Override
         protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
-            int vents = boss.awakened() ? 4 : 5;
-            if (attackCount % vents == vents - 1) {
-                BossFx.warn(boss, "Poisonous gas erupts from the vents!");
-                for (int i = 0; i < (boss.awakened() ? 5 : 3); i++) {
-                    strike(boss, around(boss, target.position(), 4), 2, (int) Math.round(20 * scale), 1.3, ParticleTypes.SNEEZE, (hit, pos) ->
-                            com.runecraft.boss.Mechanics.addHazard(BossFx.world(boss), pos, 5, 8, boss));
+            double pct = percent(boss);
+            if (sinceGaze >= BossMechanics.DUKE_GAZE_EVERY) {
+                sinceGaze = 0;
+                justGazed = true;
+                gazeAt = now + BossMechanics.DUKE_GAZE_TICKS;
+                for (ServerPlayer p : BossFx.players(boss, 24)) {
+                    p.displayClientMessage(net.minecraft.network.chat.Component.literal("Duke Sucellus turns his gaze upon you...")
+                            .withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE), false);
                 }
-                attackCount++;
-                cooldown = 3;
                 return null;
             }
+            if (!justGazed && sinceFlare >= BossMechanics.dukeFlareInterval(pct)) {
+                sinceFlare = 0;
+                int flares = BossMechanics.dukeFlares(pct, boss.awakened());
+                int gas = (int) Math.round((boss.awakened() ? BossMechanics.DUKE_GAS_MAX_AWAKENED : BossMechanics.DUKE_GAS_MAX) * scale);
+                BossFx.warn(boss, "Duke Sucellus spits gas at the vents!");
+                for (int i = 0; i < flares; i++) {
+                    Vec3 at = i == 0 ? target.position() : around(boss, target.position(), 3);
+                    strike(boss, at, 2 + i, 0, 1.3, ParticleTypes.SNEEZE, (hit, pos) ->
+                            com.runecraft.boss.Mechanics.addHazard(BossFx.world(boss), pos, gas, BossMechanics.DUKE_GAS_TICKS, boss));
+                }
+                cooldown = 2;
+                return null;
+            }
+            justGazed = false;
+            sinceGaze++;
+            sinceFlare++;
             return distance < 5 ? Dt2Bosses.DUKE_SLAM : Dt2Bosses.DUKE_MAGIC;
         }
 
@@ -939,50 +978,72 @@ final class EncounterScripts {
         protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             if (!pillars) {
                 pillars = true;
-                BlockPos c = home;
-                for (int[] o : new int[][]{{-5, -3}, {5, -3}, {-5, 5}, {5, 5}}) {
-                    for (int y = 1; y <= 3; y++) {
-                        BossFx.world(boss).setBlockAndUpdate(c.offset(o[0], y, o[1]), Blocks.CHISELED_DEEPSLATE.defaultBlockState());
+                // Four pillars to hide from his gaze, standing on the floor around the arena's centre: the same blocks on every
+                // summon (earlier versions stacked a new floating set around each spawn point), and never over scenery.
+                BlockPos c = arenaCentre(boss);
+                ServerLevel w = BossFx.world(boss);
+                for (int[] o : new int[][]{{-5, -4}, {5, -4}, {-5, 4}, {5, 4}}) {
+                    for (int y = 0; y < 3; y++) {
+                        BlockPos at = c.offset(o[0], y, o[1]);
+                        if (w.getBlockState(at).isAir()) {
+                            w.setBlockAndUpdate(at, Blocks.CHISELED_DEEPSLATE.defaultBlockState());
+                        }
                     }
                 }
                 BossFx.say(boss, "Duke Sucellus stirs from his slumber...");
             }
-            if (target == null) {
-                return;
-            }
-            gaze--;
-            if (gaze == 5) {
-                BossFx.say(boss, "Duke Sucellus' eyes begin to glow... break his line of sight!");
-            }
-            if (gaze > 0 && gaze <= 5) {
+            if (gazeAt >= 0) {
                 BossFx.burst(boss, ParticleTypes.SNOWFLAKE, 10, 1.5);
-            }
-            if (gaze <= 0) {
-                gaze = boss.awakened() ? 14 : 20; // approx: the awakened Duke gazes more often
-                for (ServerPlayer p : BossFx.players(boss, 24)) {
-                    if (boss.hasLineOfSight(p)) {
-                        BossFx.stun(p, 6);
-                        CombatHandler.applyDamage(boss, p, (int) Math.round((40 + boss.getRandom().nextInt(36))
-                                * boss.variantHitScale(Dt2Bosses.DUKE_GAZE) * scale));
-                        Msg.red(p, "The Duke's freezing gaze locks onto you!");
-                    } else {
-                        Msg.game(p, "You hide from the Duke's gaze.");
+                if (now >= gazeAt) {
+                    gazeAt = -1;
+                    cooldown = Math.max(cooldown, 1); // the gaze takes 6 ticks in all
+                    int max = (int) Math.round(maxHit(boss, Dt2Bosses.DUKE_GAZE) * scale);
+                    for (ServerPlayer p : BossFx.players(boss, 24)) {
+                        if (boss.hasLineOfSight(p)) {
+                            BossFx.stun(p, 6);
+                            CombatHooks.nameAttack("freezing_gaze", null);
+                            CombatHandler.applyDamage(boss, p, boss.getRandom().nextInt(max + 1));
+                            Msg.red(p, "The Duke's freezing gaze locks onto you!");
+                        } else {
+                            Msg.game(p, "You manage to avoid Duke Sucellus' gaze.");
+                        }
                     }
                 }
+            }
+            if (target != null && boss.awakened() && percent(boss) <= BossMechanics.DUKE_ORB_PERCENT && --orbTimer <= 0) {
+                orbTimer = BossMechanics.DUKE_ORB_INTERVAL;
+                BossFx.warn(boss, "An orb of darkness rolls out in front of Duke Sucellus!");
+                namedStrike("orb_of_darkness", boss, target.position(), 3, (int) Math.round(BossMechanics.DUKE_ORB_MAX * scale), 1.3,
+                        ParticleTypes.SQUID_INK, (hit, pos) -> {
+                            for (ServerPlayer h : hit) {
+                                for (com.runecraft.osrs.Skill s : new com.runecraft.osrs.Skill[]{com.runecraft.osrs.Skill.ATTACK,
+                                        com.runecraft.osrs.Skill.STRENGTH, com.runecraft.osrs.Skill.DEFENCE,
+                                        com.runecraft.osrs.Skill.RANGED, com.runecraft.osrs.Skill.MAGIC}) {
+                                    BossFx.drainStat(h, s, BossMechanics.DUKE_ORB_DRAIN);
+                                }
+                            }
+                        });
             }
         }
     }
 
     /**
-     * The Leviathan: volleys of 3-6 projectiles, each announced, alternating between boulders (ranged),
-     * orbs (magic) and shadows (melee) - switch prayers for every one. Debris and lightning fall between
-     * volleys; below 20% it enrages and fires faster.
+     * The Leviathan: volleys of 3-6 projectiles, each announced, of boulders (ranged), orbs (magic) and, from the third
+     * volley, shadows (melee), 3 ticks apart at first and faster later (OSRS Wiki) - switch prayers for every one. An
+     * awakened Leviathan sends a tornado after the player below 50%. Debris and lightning fall between volleys; below 20%
+     * it enrages: magic and ranged only, 2 ticks apart (awakened 1).
      */
     static final class Leviathan extends ScriptedBoss {
         private final List<AttackDef> volley = new ArrayList<>();
         private int pause;
         /** Game ticks left of a shadow-spell stun (OSRS Wiki: 15 ticks, halved when awakened). */
         private int stunned;
+        /** Volleys fired so far (they speed up) and the ticks between this volley's projectiles. */
+        private int volleys;
+        private int spacing = 3;
+        /** The awakened tornado's position, or null between tornadoes. */
+        private Vec3 tornado;
+        private int tornadoPause;
 
         /** Max hit scale: 1 for the boss, below 1 for the weaker Desert Treasure II quest version. */
         private final double scale;
@@ -1034,9 +1095,15 @@ final class EncounterScripts {
         protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             if (volley.isEmpty()) {
                 int n = (boss.awakened() ? 5 : 3) + boss.getRandom().nextInt(4); // approx: awakened volleys are longer
-                AttackDef[] styles = {Dt2Bosses.LEVI_RANGED, Dt2Bosses.LEVI_MAGIC, Dt2Bosses.LEVI_MELEE};
+                boolean enraged = percent(boss) < 20;
+                // The volleys grow faster and mix in the melee shadow as the fight goes on (OSRS Wiki); enraged: magic/ranged.
+                AttackDef[] styles = BossMechanics.leviathanVolleyMelee(volleys, enraged)
+                        ? new AttackDef[]{Dt2Bosses.LEVI_RANGED, Dt2Bosses.LEVI_MAGIC, Dt2Bosses.LEVI_MELEE}
+                        : new AttackDef[]{Dt2Bosses.LEVI_RANGED, Dt2Bosses.LEVI_MAGIC};
+                spacing = BossMechanics.leviathanVolleyTicks(volleys, enraged, boss.awakened());
+                volleys++;
                 for (int i = 0; i < n; i++) {
-                    volley.add(styles[boss.getRandom().nextInt(3)]);
+                    volley.add(styles[boss.getRandom().nextInt(styles.length)]);
                 }
                 BossFx.warn(boss, "The Leviathan prepares a barrage of " + n + " projectiles!");
                 for (int i = 0; i < 3; i++) {
@@ -1061,11 +1128,45 @@ final class EncounterScripts {
                 pause = 0;
                 return p;
             }
-            return percent(boss) < 20 ? 1 : 2;
+            return percent(boss) < 20 ? BossMechanics.leviathanVolleyTicks(volleys, true, boss.awakened()) : spacing;
+        }
+
+        /**
+         * Awakened, from 50% health: a tornado drifts after the player and hits for 40+ on contact (OSRS Wiki), then reforms
+         * at the edge of the arena (approx: its speed and the pause after a hit).
+         */
+        private void tickTornado(DataBossEntity boss, ServerPlayer target) {
+            if (!boss.awakened() || target == null || percent(boss) > 50) {
+                return;
+            }
+            ServerLevel w = BossFx.world(boss);
+            if (tornado == null) {
+                if (--tornadoPause > 0) {
+                    return;
+                }
+                double a = boss.getRandom().nextDouble() * Math.PI * 2;
+                tornado = BossFx.ground(w, homeVec().x + Math.cos(a) * 10, homeVec().z + Math.sin(a) * 10, homeVec().y);
+                BossFx.warn(boss, "A tornado forms in the cavern!");
+            }
+            Vec3 d = target.position().subtract(tornado);
+            double len = d.horizontalDistance();
+            if (len <= 0.9) {
+                CombatHooks.nameAttack("tornado", null);
+                CombatHandler.applyDamage(boss, target, (int) Math.round((BossMechanics.LEVIATHAN_TORNADO_MIN
+                        + boss.getRandom().nextInt(BossMechanics.LEVIATHAN_TORNADO_MAX - BossMechanics.LEVIATHAN_TORNADO_MIN + 1)) * scale));
+                Msg.red(target, "The tornado tears into you!");
+                tornado = null;
+                tornadoPause = 5;
+                return;
+            }
+            double step = Math.min(0.5, len); // approx: half a tile a tick, slower than a running player
+            tornado = BossFx.ground(w, tornado.x + d.x / len * step, tornado.z + d.z / len * step, tornado.y);
+            w.sendParticles(ParticleTypes.CLOUD, tornado.x, tornado.y + 0.5, tornado.z, 8, 0.3, 0.8, 0.3, 0.02);
         }
 
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
+            tickTornado(boss, target);
             if (stunned > 0) {
                 stunned--;
                 BossFx.burst(boss, ParticleTypes.SMOKE, 6, 1.5);
@@ -1074,101 +1175,6 @@ final class EncounterScripts {
             if (target != null && boss.getRandom().nextInt(boss.awakened() ? 18 : 30) == 0) {
                 strike(boss, target.position(), 3, (int) Math.round(maxHit(boss, Dt2Bosses.LEVI_LIGHTNING) * scale), 1.3, ParticleTypes.ELECTRIC_SPARK);
                 BossFx.warn(boss, "The Leviathan's shell crackles with lightning!");
-            }
-        }
-    }
-
-    /**
-     * The Whisperer: soul bolts and tentacle lashes, a piercing screech every tenth attack (run!) and,
-     * below 50%, the Shadow Realm: she becomes untouchable until you destroy her tentacles in time.
-     */
-    static final class Whisperer extends ScriptedBoss {
-        private final List<Mob> tentacles = new ArrayList<>();
-        private int shadowTicks = -1;
-        /** Max hit scale: 1 for the boss, below 1 for the weaker Desert Treasure II quest version. */
-        private final double scale;
-
-        Whisperer() {
-            this(1.0);
-        }
-
-        Whisperer(double scale) {
-            this.scale = scale;
-        }
-
-        @Override
-        protected double multiplier(DataBossEntity boss) {
-            return super.multiplier(boss) * scale;
-        }
-
-
-        @Override
-        protected boolean driven() {
-            return true;
-        }
-
-        @Override
-        protected boolean canAttack(DataBossEntity boss) {
-            return shadowTicks < 0;
-        }
-
-        @Override
-        public boolean isVulnerable(DataBossEntity boss) {
-            return shadowTicks < 0;
-        }
-
-        @Override
-        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
-            int screech = boss.awakened() ? 7 : 10;
-            if (attackCount > 0 && attackCount % screech == 0) {
-                return Dt2Bosses.WHISPER_SCREECH;
-            }
-            if (boss.getRandom().nextInt(boss.awakened() ? 5 : 8) == 0) {
-                return Dt2Bosses.WHISPER_SIPHON;
-            }
-            return attackCount % 2 == 0 ? Dt2Bosses.WHISPER_MAGIC : Dt2Bosses.WHISPER_RANGED;
-        }
-
-        @Override
-        public void onPhase(DataBossEntity boss, int phase) {
-            ServerPlayer target = target(boss);
-            if (target == null) {
-                return;
-            }
-            shadowTicks = boss.awakened() ? 24 : 30; // approx: less time to escape when awakened
-            for (int i = 0; i < 3; i++) {
-                Mob t = BossFx.spawnMinion(boss, "whisperer_tentacle", around(boss, target.position(), 5), target);
-                if (t != null) {
-                    tentacles.add(t);
-                }
-            }
-            target.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 30 * 12, 0, false, false));
-            BossFx.say(boss, "You are dragged into the Shadow Realm! Destroy the tentacles before your soul is consumed!");
-        }
-
-        @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
-            if (shadowTicks < 0) {
-                return;
-            }
-            shadowTicks--;
-            if (target != null) {
-                CombatAchievementService.count(target, CombatAchievements.COUNT_SHADOW_REALM_TICKS, 1);
-            }
-            boolean cleared = tentacles.stream().noneMatch(Mob::isAlive);
-            if (cleared || shadowTicks == 0) {
-                if (!cleared && target != null) {
-                    CombatHandler.applyDamage(boss, target, (int) Math.round((30 + boss.getRandom().nextInt(21))
-                            * boss.variantHitScale(Dt2Bosses.WHISPER_SIPHON) * scale));
-                    Msg.red(target, "The Whisperer consumes part of your soul!");
-                }
-                tentacles.forEach(Mob::discard);
-                tentacles.clear();
-                shadowTicks = -1;
-                if (target != null) {
-                    target.removeEffect(MobEffects.DARKNESS);
-                }
-                BossFx.say(boss, "You escape the Shadow Realm.");
             }
         }
     }
@@ -1190,6 +1196,11 @@ final class EncounterScripts {
         private long strangleDue = -1;
         private ServerPlayer strangled;
         private boolean lastStrangle;
+        /** Strangles so far this fight (each adds a spore, up to six). */
+        private int strangles;
+        /** Head gazes in the air: {game tick it lands, 1 for the blue magic gaze / 0 for the green ranged one}. */
+        private final List<long[]> gazes = new ArrayList<>();
+        private ServerPlayer gazed;
 
         Vardorvis() {
             this(1.0);
@@ -1299,7 +1310,7 @@ final class EncounterScripts {
                                     }
                                     CombatHooks.nameAttack("swinging_axe", null);
                                     CombatHandler.applyDamage(boss, h, roll);
-                                    BossDots.bleed(h, bleed);
+                                    BossDots.bleed(boss, h, bleed);
                                 }
                             });
                 }
@@ -1318,8 +1329,9 @@ final class EncounterScripts {
                     ticks * 12, 10, false, true));
             spores.forEach(Mob::discard);
             spores.clear();
-            for (int i = 0; i < BossMechanics.VARDORVIS_STRANGLE_SPORES; i++) {
-                double a = Math.PI * 2 * i / BossMechanics.VARDORVIS_STRANGLE_SPORES + boss.getRandom().nextDouble();
+            int count = BossMechanics.vardorvisStrangleSpores(strangles++);
+            for (int i = 0; i < count; i++) {
+                double a = Math.PI * 2 * i / count + boss.getRandom().nextDouble();
                 Vec3 at = BossFx.ground(BossFx.world(boss), target.getX() + Math.cos(a) * 1.6, target.getZ() + Math.sin(a) * 1.6,
                         target.getY());
                 Mob spore = BossFx.spawnMinion(boss, BossMechanics.STRANGLER_SPORE, at, null);
@@ -1367,12 +1379,53 @@ final class EncounterScripts {
         public void onDeath(DataBossEntity boss, ServerPlayer killer) {
             spores.forEach(Mob::discard);
             spores.clear();
+            gazes.clear(); // a gaze still in the air when he dies does nothing
+        }
+
+        /**
+         * Head gaze (OSRS Wiki "Vardorvis' Head"): a projectile that deals no damage; unblocked it drains 10 Prayer and keeps
+         * overhead prayers off for 3 ticks. Post-quest it's the green (ranged) gaze; awakened also the blue (magic) one, in
+         * pairs below half health. He holds his melee while it flies and attacks 2 ticks after it lands.
+         */
+        private void gaze(DataBossEntity boss, ServerPlayer target) {
+            boolean[] magic = BossMechanics.vardorvisGazes(boss.awakened(), hpFraction(boss), boss.getRandom().nextBoolean());
+            Msg.red(target, "Vardorvis' head gazes upon you...");
+            for (int i = 0; i < magic.length; i++) {
+                gazes.add(new long[]{now + BossMechanics.VARDORVIS_HEAD_FLIGHT_TICKS + i, magic[i] ? 1 : 0});
+            }
+            gazed = target;
+            BossFx.burst(boss, magic[0] ? ParticleTypes.WITCH : ParticleTypes.HAPPY_VILLAGER, 12, 1.0);
+            cooldown = Math.max(cooldown, BossMechanics.VARDORVIS_HEAD_FLIGHT_TICKS + magic.length - 1
+                    + BossMechanics.VARDORVIS_HEAD_AFTER_TICKS);
+        }
+
+        private void tickGazes() {
+            Iterator<long[]> it = gazes.iterator();
+            while (it.hasNext()) {
+                long[] g = it.next();
+                if (g[0] > now) {
+                    continue;
+                }
+                it.remove();
+                ServerPlayer p = gazed;
+                if (p == null || !p.isAlive()) {
+                    continue;
+                }
+                Prayer block = g[1] == 1 ? Prayer.PROTECT_FROM_MAGIC : Prayer.PROTECT_FROM_MISSILES;
+                BossFx.world(p).sendParticles(g[1] == 1 ? ParticleTypes.WITCH : ParticleTypes.HAPPY_VILLAGER,
+                        p.getX(), p.getY() + 1.2, p.getZ(), 10, 0.3, 0.4, 0.3, 0.02);
+                if (!BossFx.protects(p, block)) {
+                    BossFx.drainPrayer(p, BossMechanics.VARDORVIS_HEAD_PRAYER_DRAIN);
+                    BossDots.lockOverheads(p, BossMechanics.VARDORVIS_HEAD_LOCK_TICKS);
+                    Msg.red(p, "The gaze disables your overhead prayers!");
+                }
+            }
         }
 
         private void darts(DataBossEntity boss, ServerPlayer target) {
             int n = BossMechanics.vardorvisDarts(hp(boss));
             BossFx.warn(boss, "Vardorvis darts around you, leaving cracks in the ground!");
-            int max = (int) Math.round((boss.awakened() ? 40 : 25) * scale);
+            int max = (int) Math.round(maxHit(boss, Dt2Bosses.VARD_SPIKES) * scale); // 25, awakened 40
             for (int i = 0; i < n; i++) {
                 Vec3 at = i == 0 ? target.position() : around(boss, target.position(), 3);
                 namedStrike("darting_spikes", boss, at, 4 + i, max, 1.3, ParticleTypes.DAMAGE_INDICATOR, (hit, pos) -> {
@@ -1398,8 +1451,9 @@ final class EncounterScripts {
             if (autos > 3 && autos % axeEvery == 0) {
                 axes(boss, target);
             }
-            if (hp < BossMechanics.VARDORVIS_HEAD_HP && boss.getRandom().nextInt(enraged ? 3 : 6) == 0) {
-                return boss.getRandom().nextBoolean() ? Dt2Bosses.VARD_HEAD_RANGED : Dt2Bosses.VARD_HEAD_MAGIC;
+            if (hp < BossMechanics.VARDORVIS_HEAD_HP && gazes.isEmpty() && boss.getRandom().nextInt(enraged ? 3 : 6) == 0) { // approx rate
+                gaze(boss, target);
+                return null;
             }
             if (hp < BossMechanics.VARDORVIS_HEAD_HP && !lastStrangle && strangleDue < 0 && boss.getRandom().nextInt(8) == 0) { // approx rate
                 lastStrangle = true;
@@ -1421,7 +1475,7 @@ final class EncounterScripts {
             int lost = (int) Math.round((1 - hpFraction(boss)) * BossMechanics.VARDORVIS_HITPOINTS);
             com.runecraft.content.systems.SysCombat.drain(boss).defence = BossMechanics.vardorvisDefenceReduction(lost);
             tickStrangle(boss);
-            BossDots.tick(boss, BossFx.players(boss, 24));
+            tickGazes();
             if (target == null || home == null) {
                 return;
             }

@@ -107,6 +107,11 @@ final class BossFx {
         if (target != null) {
             mob.setTarget(target);
         }
+        if (boss instanceof DataBossEntity d) {
+            d.claimMinion(mob); // a reset of the boss clears it
+        } else if (boss instanceof com.runecraft.entity.BossEntity b) {
+            b.claimMinion(mob);
+        }
         world.addFreshEntity(mob);
         world.sendParticles(ParticleTypes.POOF, pos.x, pos.y + 0.5, pos.z, 10, 0.3, 0.3, 0.3, 0.02);
         return mob;
@@ -118,7 +123,11 @@ final class BossFx {
         if (def == null) {
             return null;
         }
-        return DataBossService.spawn(world(near), pos, def, target);
+        DataBossEntity spawned = DataBossService.spawn(world(near), pos, def, target);
+        if (spawned != null && near instanceof DataBossEntity from) {
+            spawned.copyHomeFrom(from); // same lair: the same leash and reset as the boss that brought it
+        }
+        return spawned;
     }
 
     /**
@@ -151,7 +160,9 @@ final class BossFx {
             return;
         }
         for (Drops.Rolled r : Drops.roll(def.drops, form.getRandom(), false)) {
-            Inv.spawnAtLocation(form, Drops.withDoses(Inv.stack(r.item(), r.count()), r.doses()));
+            // through the drop transformers like any kill (ring of wealth coins, noted drops from diaries...)
+            Inv.spawnAtLocation(form, Drops.withDoses(com.runecraft.combat.CombatHooks.dropStack(killer, form, r.item(), r.count()),
+                    r.doses()));
             CollectionLog.obtain(killer, r.item());
         }
         int petRate = com.runecraft.osrs.content.extras.Pets.engineRate(def.id);
@@ -164,8 +175,12 @@ final class BossFx {
         PlayerData data = Players.data(killer);
         int kc = data.incrementKillCount(def.id);
         Msg.game(killer, "Your " + def.name + " kill count is: " + kc + ".");
-        // The form is discarded rather than killed, so credit the slayer task (hydras, boss tasks) here.
-        com.runecraft.combat.Slayer.onKill(killer, form, com.runecraft.combat.MonsterStats.from(def));
+        // The form is discarded rather than killed, so do here what a death does: the Slayer task (hydras, boss tasks), the
+        // kill listeners (Combat Achievement kill counts, diaries, clue scrolls) and the form's own clean-up (snakelings...).
+        com.runecraft.combat.MonsterStats stats = com.runecraft.combat.MonsterStats.from(def);
+        com.runecraft.combat.Slayer.onKill(killer, form, stats);
+        form.script().onDeath(form, killer);
+        com.runecraft.content.GameEvents.fireKill(killer, form, stats);
         burst(form, ParticleTypes.EXPLOSION, 6, 1.0);
         sound(form, SoundEvents.GENERIC_EXPLODE.value(), 0.8f);
         form.discard();

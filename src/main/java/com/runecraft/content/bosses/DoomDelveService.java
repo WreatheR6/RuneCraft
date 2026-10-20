@@ -142,6 +142,12 @@ final class DoomDelveService {
         Msg.game(player, "Use the summoning stone to delve deeper (level " + (level + 1) + "), or sneak and use it to claim your loot.");
     }
 
+    /** Self-test: stacks of loot this player's run holds in the burrow hole (claimed at the stone), 0 without a run. */
+    static int heldLoot(ServerPlayer player) {
+        DoomDelveState.Run run = state(player).get(player.getUUID());
+        return run == null ? 0 : run.pending.size();
+    }
+
     private static void claim(ServerPlayer player, DoomDelveState.Run run) {
         state(player).remove(player.getUUID());
         ACID.remove(player.getUUID());

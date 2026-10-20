@@ -31,7 +31,45 @@ public final class DataBossService {
     private static final java.util.Map<String, java.util.List<BiConsumer<ServerPlayer, DataBossEntity>>> KILLED =
             new java.util.HashMap<>();
 
+    /**
+     * Rolls a boss's kill loot instead of the plain drop table (the Desert Treasure II bosses' roll-until-success order and
+     * perfect kills): {@code (killer, boss, table) -> items}.
+     */
+    public interface LootRoller {
+        java.util.List<com.runecraft.skill.Drops.Rolled> roll(ServerPlayer killer, DataBossEntity boss,
+                java.util.List<com.runecraft.osrs.data.Drop> table);
+    }
+
+    private static final java.util.Map<String, LootRoller> LOOT = new java.util.HashMap<>();
+
+    /** Bosses fought beside a main boss whose kill they are part of (see {@link #companion}). */
+    private static final java.util.Set<String> COMPANIONS = new java.util.HashSet<>();
+
+    /**
+     * Marks a boss fought beside a main boss (Eldric beside Branda, Dawn beside Dusk, Nex's generals): its death is part of
+     * the main boss's kill, so it counts no kill count and rolls no pet of its own (its drop table, if any, still drops).
+     */
+    public static void companion(String bossId) {
+        COMPANIONS.add(bossId);
+    }
+
+    public static boolean isCompanion(String bossId) {
+        return COMPANIONS.contains(bossId);
+    }
+
     private DataBossService() {
+    }
+
+    public static void loot(String bossId, LootRoller roller) {
+        LOOT.put(bossId, roller);
+    }
+
+    /** The loot of a kill: the boss's roller when it has one, else an ordinary roll of {@code table}. */
+    static java.util.List<com.runecraft.skill.Drops.Rolled> rollLoot(ServerPlayer killer, DataBossEntity boss,
+            java.util.List<com.runecraft.osrs.data.Drop> table) {
+        BossDef def = boss.def();
+        LootRoller r = def == null ? null : LOOT.get(def.id);
+        return r != null ? r.roll(killer, boss, table) : com.runecraft.skill.Drops.roll(table, boss.getRandom(), false);
     }
 
     public static void requirement(String bossId, BiPredicate<ServerPlayer, BossDef> check) {
@@ -82,7 +120,10 @@ public final class DataBossService {
         }
         BiFunction<ServerPlayer, BossDef, BossVariant> chooser = VARIANTS.get(boss.id);
         BossVariant variant = chooser == null ? null : chooser.apply(player, boss);
-        DataBossEntity entity = spawn(world, pos.above().relative(player.getDirection(), 3), boss, player);
+        BlockPos at = spawnPoint(world, pos, boss, player);
+        com.runecraft.osrs.world.ArenaLayout.Arena arena = com.runecraft.osrs.world.ArenaLayout.of(boss.id);
+        DataBossEntity entity = spawn(world, at, boss, player,
+                arena != null && at.getX() == arena.x() && at.getZ() == arena.z() ? arena.radius() + 8 : 24);
         if (entity != null && variant != null) {
             entity.applyVariant(variant);
         }
@@ -91,8 +132,33 @@ public final class DataBossService {
                 : boss.combatLevel) + ") awakens!");
     }
 
+    /**
+     * Where a summoned boss appears: the centre of its arena when the stone is its arena's (the stone stands by the north
+     * entrance, so a spawn next to it could land in the entrance or outside the ring, and the scripts lay their vents,
+     * totems, pools and spots out around where the boss first stands), else three blocks from the stone the way the player
+     * faces (stones in hand-built lairs: the Dagannoth Kings', the King Black Dragon's).
+     */
+    static BlockPos spawnPoint(ServerLevel world, BlockPos stone, BossDef boss, ServerPlayer player) {
+        com.runecraft.osrs.world.ArenaLayout.Arena a = com.runecraft.osrs.world.ArenaLayout.of(boss.id);
+        if (a != null && Math.hypot(stone.getX() - a.x(), stone.getZ() - a.z()) <= a.radius() + 3) {
+            world.getChunk(a.x() >> 4, a.z() >> 4);
+            int top = world.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, a.x(), a.z());
+            // the floor is level with the stone's base; a big gap means something stands over the centre (keep the stone's level)
+            return new BlockPos(a.x(), Math.abs(top - stone.getY()) <= 3 ? top : stone.getY(), a.z());
+        }
+        return stone.above().relative(player.getDirection(), 3);
+    }
+
     /** Spawns a boss at a position, targeting {@code target} (nullable). */
     public static DataBossEntity spawn(ServerLevel world, BlockPos at, BossDef boss, ServerPlayer target) {
+        return spawn(world, at, boss, target, 0);
+    }
+
+    /**
+     * Spawns a boss; with {@code leash > 0} it is summoned at a stone and kept in its lair
+     * ({@link DataBossEntity#markSummoned}), set before its script's onSpawn so the guards it places belong to the lair.
+     */
+    static DataBossEntity spawn(ServerLevel world, BlockPos at, BossDef boss, ServerPlayer target, int leash) {
         EntityType<DataBossEntity> type = ModEntities.DATA_BOSS_TYPES.get(boss.id);
         if (type == null) {
             return null;
@@ -105,6 +171,9 @@ public final class DataBossService {
         entity.finalizeSpawn(world, world.getCurrentDifficultyAt(at), MobSpawnType.EVENT, null);
         if (target != null) {
             entity.setTarget(target);
+        }
+        if (leash > 0) {
+            entity.markSummoned(at, leash);
         }
         world.addFreshEntity(entity);
         entity.script().onSpawn(entity);

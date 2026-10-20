@@ -585,7 +585,7 @@ public final class CombatAchievementRules {
             236;WINDOW;dagannoth_rex|dagannoth_prime|dagannoth_supreme;3;t<=0:09 distinct
             78;RULE;deranged_archaeologist;1;style=magic
             79;RULE;deranged_archaeologist;1;nodmg=mechanic
-            518;STREAK;duke_sucellus;5;nodmg=mechanic,hazard,gas_vent,freezing_gaze
+            518;STREAK;duke_sucellus;5;nodmg=mechanic,hazard,gas_vent,freezing_gaze,fist_slam,magic_blast,offprayer
             519;RULE;duke_sucellus;1;nodmg=mechanic,hazard,gas_vent,freezing_gaze norun
             541;RULE;sol_heredit;1;norun
             543;RULE;sol_heredit;1;nodmg=spear,shield_bash,grapple,triple_attack
@@ -638,7 +638,7 @@ public final class CombatAchievementRules {
             13;RULE;kreearra;1;nodmg=melee
             14;RULE;kreearra;1;weapon=*salamander
             15;STREAK;kreearra;30;
-            509;STREAK;the_leviathan;5;nodmg=mechanic,hazard,offprayer
+            509;STREAK;the_leviathan;5;nodmg=mechanic,hazard,falling_debris,lightning,offprayer
             175;RULE;kill:lizardman shaman;1;nodmg=boss
             639;STREAK;maggot_king;12;
             640;WINDOW;maggot_king;5;t<=9:00 fromstart
@@ -777,10 +777,10 @@ public final class CombatAchievementRules {
             154;RUN;mg:fight_caves;1;noprayloss
             155;RUN;mg:fight_caves;1;t<30:00
             156;RUN;mg:fight_caves;1;t<26:30
-            491;STREAK;vardorvis;5;nodmg=mechanic,hazard,swinging_axes,blood_splat,offprayer
+            491;STREAK;vardorvis;5;nodmg=mechanic,hazard,swinging_axe,darting_spikes,strangle,offprayer
             272;STREAK;vorkath;5;nodmg=dragonfire_bomb,venomous_dragonfire,pink_dragonfire,mechanic,hazard
             278;STREAK;vorkath;10;
-            500;STREAK;the_whisperer;5;nodmg=mechanic,hazard,offprayer
+            500;STREAK;the_whisperer;5;nodmg=mechanic,hazard,soul_bolt,tentacle_lash,tentacle_whack,screech,soul_siphon,offprayer
             501;RULE;the_whisperer;1;book=ARCEUUS
             601;AVERAGE;yama;4;t<3:38
             602;AVERAGE;yama;4;t<3:00

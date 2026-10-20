@@ -40,7 +40,7 @@ import net.minecraft.world.phys.Vec3;
 abstract class GwdScript implements BossScript {
     /** A marked spot that explodes after a delay, hitting players within {@code radius} blocks. */
     protected record Strike(ServerLevel world, Vec3 pos, long dueGameTick, int maxHit, double radius, ParticleOptions warning,
-                            ParticleOptions blast, BiConsumer<ServerPlayer, Integer> onHit) {
+                            ParticleOptions blast, BiConsumer<ServerPlayer, Integer> onHit, String name) {
     }
 
     protected AttackDef current;
@@ -135,6 +135,9 @@ abstract class GwdScript implements BossScript {
             for (ServerPlayer p : s.world().getPlayers(pl -> pl.isAlive() && !pl.isSpectator()
                     && pl.position().distanceToSqr(s.pos()) <= s.radius() * s.radius())) {
                 int dmg = boss.getRandom().nextInt(s.maxHit() + 1);
+                if (s.name() != null) {
+                    com.runecraft.combat.CombatHooks.nameAttack(s.name(), null); // "no damage from ..." Combat Achievements
+                }
                 int dealt = CombatHandler.applyDamage(boss, p, dmg);
                 if (s.onHit() != null) {
                     s.onHit().accept(p, dealt);
@@ -146,8 +149,14 @@ abstract class GwdScript implements BossScript {
     /** Marks a spot that explodes after {@code delay} game ticks. */
     protected void strike(DataBossEntity boss, Vec3 pos, int delay, int maxHit, double radius, ParticleOptions warning,
                           ParticleOptions blast, BiConsumer<ServerPlayer, Integer> onHit) {
+        strike(null, boss, pos, delay, maxHit, radius, warning, blast, onHit);
+    }
+
+    /** {@link #strike} whose damage carries an attack name (e.g. "green explosion", for the "no damage from" tasks). */
+    protected void strike(String name, DataBossEntity boss, Vec3 pos, int delay, int maxHit, double radius, ParticleOptions warning,
+                          ParticleOptions blast, BiConsumer<ServerPlayer, Integer> onHit) {
         strikes.add(new Strike((ServerLevel) boss.level(), pos, ActionManager.gameTick() + delay, maxHit, radius, warning, blast,
-                onHit));
+                onHit, name));
     }
 
     protected static List<ServerPlayer> players(DataBossEntity boss, double radius) {
@@ -162,6 +171,23 @@ abstract class GwdScript implements BossScript {
         for (ServerPlayer p : players(boss, 40)) {
             p.displayClientMessage(Component.literal(name + ": " + text).withStyle(ChatFormatting.YELLOW), false);
         }
+    }
+
+    /**
+     * A bodyguard next to the boss: one of this kind still alive in the room from an earlier fight stays (OSRS bodyguards
+     * outlive their general), else a new one; either way it joins the boss's lair.
+     */
+    protected static Mob spawnGuard(DataBossEntity boss, String id, double dx, double dz) {
+        EntityType<?> type = ModEntities.typeById(id);
+        if (type != null) {
+            for (var e : ((ServerLevel) boss.level()).getEntities(type, boss.getBoundingBox().inflate(48), e -> e.isAlive())) {
+                if (e instanceof Mob mob) {
+                    boss.claimMinion(mob);
+                    return mob;
+                }
+            }
+        }
+        return spawnMinion(boss, id, dx, dz);
     }
 
     /** Spawns a module creature next to the boss and sets it on the boss's target. */
@@ -180,6 +206,7 @@ abstract class GwdScript implements BossScript {
         if (boss.getTarget() != null) {
             mob.setTarget(boss.getTarget());
         }
+        boss.claimMinion(mob); // a reset of the boss clears it
         world.addFreshEntity(mob);
         return mob;
     }

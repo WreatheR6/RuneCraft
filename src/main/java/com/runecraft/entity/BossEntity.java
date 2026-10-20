@@ -127,9 +127,81 @@ public class BossEntity extends OsrsMonsterEntity {
         bossBar.removePlayer(player);
     }
 
+    /** Where the boss was summoned (null for one placed by other code); it stays near there and resets when left alone. */
+    private net.minecraft.core.BlockPos home;
+    private int lonelyTicks;
+    /** Blocks a summoned boss may stray from where it appeared before it walks back (its lair is a small pad). */
+    private static final int LEASH = 16;
+
+    /** Marks a boss summoned at its stone (BossService): leashed to {@code at}, reset after a minute with nobody near. */
+    public void markSummoned(net.minecraft.core.BlockPos at) {
+        this.home = at.immutable();
+    }
+
+    /** Tags a minion summoned in this boss's lair so its reset clears it (as {@link com.runecraft.boss.DataBossEntity#claimMinion}). */
+    public void claimMinion(net.minecraft.world.entity.Entity minion) {
+        if (home != null && minion != null) {
+            minion.addTag(com.runecraft.osrs.content.bosses.BossLair.minionTag(home.asLong()));
+        }
+    }
+
+    @Override
+    public void addAdditionalSaveData(net.minecraft.nbt.CompoundTag nbt) {
+        super.addAdditionalSaveData(nbt);
+        if (home != null) {
+            nbt.putLong("RcHome", home.asLong());
+        }
+    }
+
+    @Override
+    public void readAdditionalSaveData(net.minecraft.nbt.CompoundTag nbt) {
+        super.readAdditionalSaveData(nbt);
+        if (nbt.contains("RcHome")) {
+            home = net.minecraft.core.BlockPos.of(nbt.getLong("RcHome"));
+        }
+    }
+
+    /** A game tick of the leash and reset (as DataBossEntity's); false when the boss reset. */
+    private boolean tickHome() {
+        if (home == null) {
+            return true;
+        }
+        double presence = com.runecraft.osrs.content.bosses.BossLair.PRESENCE_RANGE;
+        boolean someone = getTarget() instanceof ServerPlayer t && t.isAlive() && t.distanceToSqr(this) < presence * presence;
+        if (!someone) {
+            for (ServerPlayer p : ((ServerLevel) level()).players()) {
+                if (p.isAlive() && !p.isSpectator() && !p.isCreative() && p.distanceToSqr(this) < presence * presence) {
+                    someone = true;
+                    break;
+                }
+            }
+        }
+        lonelyTicks = com.runecraft.osrs.content.bosses.BossLair.lonely(lonelyTicks, someone);
+        if (com.runecraft.osrs.content.bosses.BossLair.resets(lonelyTicks)) {
+            com.runecraft.boss.DataBossEntity.clearLair((ServerLevel) level(), home); // minions it summoned go with it
+            discard();
+            return false;
+        }
+        net.minecraft.world.entity.LivingEntity target = getTarget();
+        double targetDistSq = target == null ? 0 : target.distanceToSqr(home.getX() + 0.5, home.getY(), home.getZ() + 0.5);
+        // put back only once its fight has left the lair: a target still in it is chased (no free hits from past the leash)
+        if (com.runecraft.osrs.content.bosses.BossLair.returnsHome(distanceToSqr(home.getX() + 0.5, home.getY(), home.getZ() + 0.5),
+                LEASH, target != null, targetDistSq)) {
+            getNavigation().stop();
+            teleportTo(home.getX() + 0.5, home.getY(), home.getZ() + 0.5);
+            if (target != null) {
+                setTarget(null);
+            }
+        }
+        return true;
+    }
+
     @Override
     protected void customServerAiStep() {
         super.customServerAiStep();
+        if (tickCount % ActionManager.MC_TICKS_PER_GAME_TICK == 0 && !tickHome()) {
+            return;
+        }
         bossBar.setProgress(getHealth() / getMaxHealth());
         if (script() != null && tickCount % ActionManager.MC_TICKS_PER_GAME_TICK == 0 && isAlive()) {
             script.gameTick(this);
@@ -149,6 +221,16 @@ public class BossEntity extends OsrsMonsterEntity {
         return script() != null ? script.chooseStyle(this, target, distanceSq, chosen) : chosen;
     }
 
+    /** Graardor's next attack is his ranged slam (rolled 1/3 per attack, kept until the attack is made). */
+    private Boolean slamNext;
+
+    private boolean nextIsSlam() {
+        if (slamNext == null) {
+            slamNext = random.nextInt(3) == 0;
+        }
+        return slamNext;
+    }
+
     /** Whether a target at this squared distance is in melee reach. */
     public boolean adjacent(double distanceSq) {
         return distanceSq < Math.pow(getBbWidth() * 1.4 + 1.2, 2);
@@ -159,7 +241,9 @@ public class BossEntity extends OsrsMonsterEntity {
         boolean adjacent = adjacent(distanceSq);
         return switch (boss.mechanic()) {
             case MIXED_MAGIC -> adjacent && random.nextBoolean() ? AttackType.CRUSH : AttackType.MAGIC;
-            case GRAARDOR -> adjacent && attackCounter % 3 != 2 ? AttackType.CRUSH : AttackType.RANGED;
+            // OSRS Wiki: 2/3 melee, 1/3 the ranged slam at everyone in the room, which he only uses within melee range of
+            // his target (out of reach he walks up to it). The style is rolled once per attack (the goal asks every tick).
+            case GRAARDOR -> adjacent && nextIsSlam() ? AttackType.RANGED : AttackType.CRUSH;
             // OSRS Wiki: 2/3 melee, 1/3 magic, and the magic attack is only used in melee range.
             case KRIL -> adjacent && random.nextInt(3) == 0 ? AttackType.MAGIC : AttackType.SLASH;
             case JAD -> boss.meleeWhenAdjacent() && adjacent && random.nextInt(3) == 0 ? AttackType.CRUSH
@@ -183,6 +267,7 @@ public class BossEntity extends OsrsMonsterEntity {
     private void bossAttack(ServerPlayer target, AttackType type) {
         Boss boss = boss();
         attackCounter++;
+        slamNext = null; // Graardor rolls his next style afresh
         ServerLevel world = (ServerLevel) level();
         switch (boss.mechanic()) {
             case JAD -> {
@@ -286,6 +371,21 @@ public class BossEntity extends OsrsMonsterEntity {
             return damage;
         }
         switch (boss.mechanic()) {
+            // OSRS Wiki (Mod Ash): Graardor's slam rolls 15-35 evenly when it hits; K'ril's magic 10-30, and his melee poisons
+            // (16; approx: a 1/4 chance per damaging hit).
+            case GRAARDOR -> {
+                if (type == AttackType.RANGED) {
+                    return 15 + random.nextInt(21);
+                }
+            }
+            case KRIL -> {
+                if (type == AttackType.MAGIC) {
+                    return 10 + random.nextInt(21);
+                }
+                if (type.isMelee() && random.nextInt(4) == 0) {
+                    com.runecraft.combat.PoisonService.poison(player, 16, ActionManager.gameTick());
+                }
+            }
             case GUTHAN -> {
                 if (random.nextInt(4) == 0) {
                     heal(damage);
@@ -321,6 +421,11 @@ public class BossEntity extends OsrsMonsterEntity {
 
     @Override
     public int modifyIncoming(ServerPlayer attacker, int damage, AttackType type) {
+        if (home != null && !com.runecraft.osrs.content.bosses.BossLair.inReach(
+                attacker.distanceToSqr(home.getX() + 0.5, home.getY(), home.getZ() + 0.5), LEASH)) {
+            Msg.action(attacker, "You can't reach " + boss().displayName() + " from out here.");
+            return 0;
+        }
         if (script() != null) {
             damage = script.modifyIncoming(this, attacker, damage, type);
         }

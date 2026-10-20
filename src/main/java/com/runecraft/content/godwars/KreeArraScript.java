@@ -18,9 +18,9 @@ final class KreeArraScript extends GwdScript {
 
     @Override
     public void onSpawn(DataBossEntity boss) {
-        guards.add(spawnMinion(boss, "flight_kilisa", 4, 0));
-        guards.add(spawnMinion(boss, "wingman_skree", -4, 2));
-        guards.add(spawnMinion(boss, "flockleader_geerin", 0, -4));
+        guards.add(spawnGuard(boss, "flight_kilisa", 4, 0));
+        guards.add(spawnGuard(boss, "wingman_skree", -4, 2));
+        guards.add(spawnGuard(boss, "flockleader_geerin", 0, -4));
         shout(boss, "Kraaaw!");
     }
 

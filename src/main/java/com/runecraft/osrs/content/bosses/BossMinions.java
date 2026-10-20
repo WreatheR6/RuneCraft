@@ -118,6 +118,9 @@ public final class BossMinions {
                 MonsterDef.of("zalcano_golem", "Golem").level(64).stats(14, 1, 1, 1, 1, 1).speed(5)
                         .attack(AttackDef.of("slam", AttackType.CRUSH, 0, 2.5, 1))
                         .skin(0x7A6A5A, 0x5A4A3A, 0x4A3A2A, 0xE07020).size(0.9f, 2.0f, 1.2f).moveSpeed(0.12),
+                // The Whisperer's lost souls (Soul Siphon): ghosts that die to any hit and never attack.
+                MonsterDef.of(BossMechanics.WHISPERER_LOST_SOUL, "Lost Soul").level(1).stats(1, 1, 1, 1, 1, 1).attack(inert()).passive()
+                        .flying().skin(0xA8D8E8, 0x7AB0C8, 0x5A90A8, 0xE0F8FF).size(0.6f, 1.6f, 0.9f).moveSpeed(0.0),
                 // The Whisperer's shadow tentacles
                 MonsterDef.of("whisperer_tentacle", "Tentacle").level(1).stats(40, 1, 1, 20, 1, 1).speed(4)
                         .attack(AttackDef.of("lash", AttackType.MAGIC, 10, 6, 1).particle("minecraft:squid_ink"))

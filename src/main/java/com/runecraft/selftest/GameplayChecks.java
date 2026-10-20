@@ -130,6 +130,7 @@ final class GameplayChecks {
                 () -> g.scripted("yama", com.runecraft.content.bosses.BossSelfTests::yamaDossier)));
         checks.add(new SelfTest.Check("boss:hueycoatl_phases",
                 () -> g.scripted("the_hueycoatl", com.runecraft.content.bosses.BossSelfTests::hueycoatlPhases)));
+        checks.addAll(BossFightChecks.all(context));
         for (Map.Entry<String, int[]> e : destinations().entrySet()) {
             checks.add(new SelfTest.Check("teleport:" + e.getKey(), () -> g.teleport(e.getValue()[0], e.getValue()[1])));
         }

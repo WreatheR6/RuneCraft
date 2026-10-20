@@ -26,6 +26,10 @@ public final class SlayerBosses {
             .special(Special.SKY_STRIKE, 0).telegraph(4, "Cerberus: Grrrrrrrrrrrrrr!").particle("minecraft:lava");
 
     // ---- Alchemical Hydra ----
+    /** Hydra max hits by phase (OSRS Wiki): serpentine 17 (two hits), electric and flame 35, extinguished 55. */
+    public static final int HYDRA_MAX_SERPENTINE = 17;
+    public static final int HYDRA_MAX_ELECTRIC_FLAME = 35;
+    public static final int HYDRA_MAX_ENRAGED = 55;
     public static final AttackDef HYDRA_RANGED = AttackDef.of("ranged", AttackType.RANGED, 28, 14, 1).particle("minecraft:crit");
     public static final AttackDef HYDRA_MAGIC = AttackDef.of("magic", AttackType.MAGIC, 28, 14, 1).particle("minecraft:witch");
     public static final AttackDef HYDRA_POISON = AttackDef.of("poison_pool", AttackType.RANGED, 12, 14, 1)
@@ -84,13 +88,21 @@ public final class SlayerBosses {
     public static final double HYDRA_SHIELD_MULTIPLIER = 0.25;
 
     // ---- Grotesque Guardians ----
-    public static final AttackDef DUSK_MELEE = AttackDef.of("claw", AttackType.SLASH, 28, 3.5, 1);
-    public static final AttackDef DUSK_EXPLOSION = AttackDef.of("explosion", AttackType.CRUSH, 50, 3, 1)
-            .special(Special.AOE, 3).telegraph(5, "Dusk gathers a great power... get away from him!").particle("minecraft:explosion");
-    public static final AttackDef DAWN_RANGED = AttackDef.of("rock", AttackType.RANGED, 28, 14, 1).particle("minecraft:crit");
-    public static final AttackDef DAWN_SPHERES = AttackDef.of("energy_sphere", AttackType.MAGIC, 25, 14, 1)
-            .special(Special.SKY_STRIKE, 0).telegraph(5, "Dawn fires energy spheres - stand on them to absorb them!")
-            .particle("minecraft:end_rod");
+    /**
+     * Grotesque Guardians (OSRS Wiki "Grotesque Guardians/Strategies"): Dusk claws for up to 15 in the first three phases
+     * and 26 in the fourth, where he also fires two orbs of up to 15 (ranged) and tramples anyone under him for up to 40.
+     * Dawn throws two rocks of up to 9 (ranged), kicks for up to 15 when next to the player and launches a stone ball
+     * (3x3, up to 15 and a 10-tick stun).
+     */
+    public static final AttackDef DUSK_MELEE = AttackDef.of("claw", AttackType.SLASH, 26, 3.5, 1);
+    public static final int DUSK_MELEE_EARLY = 15;
+    public static final AttackDef DUSK_RANGED = AttackDef.of("orbs", AttackType.RANGED, 15, 14, 1).particle("minecraft:soul_fire_flame");
+    public static final int DUSK_TRAMPLE_MAX = 40;
+    public static final AttackDef DAWN_RANGED = AttackDef.of("rock", AttackType.RANGED, 9, 14, 3).particle("minecraft:crit");
+    public static final AttackDef DAWN_KICK = AttackDef.of("kick", AttackType.CRUSH, 15, 2.5, 1);
+    public static final AttackDef DAWN_STONE_BALL = AttackDef.of("stone_ball", AttackType.CRUSH, 15, 14, 1)
+            .special(Special.SKY_STRIKE, 0).telegraph(3, "Dawn launches a ball of stone!").particle("minecraft:ash");
+    public static final int DAWN_STONE_STUN_TICKS = 10;
     public static final AttackDef GUARDIAN_LIGHTNING = AttackDef.of("lightning", AttackType.MAGIC, 15, 14, 1)
             .special(Special.SKY_STRIKE, 0).telegraph(3, "Lightning crackles across the rooftop!").particle("minecraft:electric_spark");
     public static final AttackDef GUARDIAN_ROCKFALL = AttackDef.of("falling_rocks", AttackType.CRUSH, 22, 14, 1)
@@ -98,8 +110,10 @@ public final class SlayerBosses {
 
     // ---- Abyssal Sire ----
     public static final AttackDef SIRE_TENDRIL = AttackDef.of("tendril_swipe", AttackType.SLASH, 32, 4, 4);
-    public static final AttackDef SIRE_SLAM = AttackDef.of("tentacle_slam", AttackType.CRUSH, 40, 4, 2).special(Special.FREEZE, 3);
-    public static final AttackDef SIRE_MIASMA = AttackDef.of("miasma", AttackType.MAGIC, 15, 12, 2).special(Special.HAZARD, 5)
+    /** Phase 2 melee (OSRS Wiki): an arm swipe, a tendril flick, or the double tendril flick for up to 66 (26 through prayer). */
+    public static final AttackDef SIRE_SLAM = AttackDef.of("tentacle_slam", AttackType.CRUSH, 66, 4, 2);
+    /** Miasma: no hit of its own, a pool dealing 10-30 a tick on its centre tile (OSRS Wiki; approx: the 2-8 edge isn't modelled). */
+    public static final AttackDef SIRE_MIASMA = AttackDef.of("miasma", AttackType.MAGIC, 0, 12, 2).special(Special.HAZARD, 30)
             .particle("minecraft:squid_ink");
     public static final AttackDef SIRE_EXPLOSION = AttackDef.of("explosion", AttackType.MAGIC, 72, 6, 1).special(Special.AOE, 6)
             .telegraph(8, "The Abyssal Sire begins to swell... RUN!").particle("minecraft:explosion");
@@ -192,7 +206,7 @@ public final class SlayerBosses {
     static BossDef dusk() {
         return BossDef.of("dusk", "Dusk").level(328).stats(450, 160, 160, 160, 1, 1).speed(6)
                 .defenceBonus(90, 110, 70, 400, 400).immune(AttackType.MAGIC, AttackType.RANGED)
-                .attack(DUSK_MELEE).attack(GUARDIAN_ROCKFALL)
+                .attack(DUSK_MELEE).attack(DUSK_RANGED)
                 .drops(Drop.of("granite_dust", 50, 100, 1), Drop.of("granite_maul", 1, 1, 125), Drop.of("granite_ring", 1, 1, 250),
                         Drop.of("granite_gloves", 1, 1, 250), Drop.of("granite_hammer", 1, 1, 375),
                         Drop.of("black_tourmaline_core", 1, 1, 500), Drop.of("jar_of_stone", 1, 1, 5000),
@@ -205,7 +219,7 @@ public final class SlayerBosses {
     static BossDef dawn() {
         return BossDef.of("dawn", "Dawn").level(328).stats(450, 140, 140, 140, 140, 140).speed(6)
                 .defenceBonus(400, 400, 400, 80, 80).immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH)
-                .attack(DAWN_RANGED).attack(DAWN_SPHERES)
+                .attack(DAWN_RANGED).attack(DAWN_KICK).attack(DAWN_STONE_BALL)
                 .slayer(75, "gargoyles").raidOnly().flying().size(1.0f, 2.2f, 1.6f).moveSpeed(0.24);
     }
 

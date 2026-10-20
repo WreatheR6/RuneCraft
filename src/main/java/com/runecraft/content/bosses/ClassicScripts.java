@@ -168,11 +168,17 @@ final class ClassicScripts {
         private boolean coreRoll;
         private int coreTick;
 
+        /** The core is rolled (1/8) on each attack it makes below 1,000 hitpoints (chooseAttack runs every tick, not per attack). */
+        @Override
+        public AttackDef beforeAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
+            if (boss.getHealth() < mcHp(boss, 1000)) {
+                coreRoll = true;
+            }
+            return attack;
+        }
+
         @Override
         public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
-            if (boss.getHealth() < mcHp(boss, 1000)) {
-                coreRoll = true; // rolled when it attacks below 1,000 hitpoints
-            }
             double dx = target.getX() - boss.getX();
             double dz = target.getZ() - boss.getZ();
             return dx * dx + dz * dz < boss.getBbWidth() * boss.getBbWidth() / 4 ? ClassicBosses.CORP_STOMP : null;
@@ -393,18 +399,56 @@ final class ClassicScripts {
     }
 
     /** Hespori: at 2/3 and 1/3 health it becomes invulnerable until its flowers are cut down. */
+    /**
+     * Hespori (OSRS Wiki): its four flower buds open at the start of the fight and at 66% and 33% health and keep it
+     * invulnerable until cut down (any hit kills one). It throws green spores (two hits of up to 8, ranged) or a green wave
+     * (up to 14, magic), and now and then entangles the player: rooted for 10 ticks, then 40+ damage unless they struggle
+     * free first (here: sneak, the closest thing to clicking to move; the sixth struggle frees them).
+     */
     static final class Hespori extends ScriptedBoss {
         private final List<Mob> flowers = new ArrayList<>();
+        private boolean bloomed;
+        private int entangleTimer = BossMechanics.HESPORI_ENTANGLE_INTERVAL;
+        private ServerPlayer rooted;
+        private long rootEnds;
+        private int struggles;
+        private boolean sneaking;
+
+        @Override
+        protected boolean driven() {
+            return true;
+        }
+
+        @Override
+        protected boolean canAttack(DataBossEntity boss) {
+            return rooted == null;
+        }
 
         @Override
         public void onPhase(DataBossEntity boss, int phase) {
+            bloom(boss);
+        }
+
+        private void bloom(DataBossEntity boss) {
+            flowers.forEach(Mob::discard);
             flowers.clear();
             Vec3 c = boss.position();
-            for (int i = 0; i < 6; i++) {
-                double a = Math.PI * 2 * i / 6;
+            for (int i = 0; i < BossMechanics.HESPORI_BUDS; i++) {
+                double a = Math.PI * 2 * i / BossMechanics.HESPORI_BUDS + Math.PI / 4;
                 Mob f = BossFx.spawnMinion(boss, "hesporis_flower",
-                        BossFx.ground(BossFx.world(boss), c.x + Math.cos(a) * 5, c.z + Math.sin(a) * 5, c.y), null);
+                        BossFx.ground(BossFx.world(boss), c.x + Math.cos(a) * 3, c.z + Math.sin(a) * 3, c.y), null);
                 if (f != null) {
+                    MinionRules.set(f, new MinionRules.Rule() {
+                        @Override
+                        public double accuracy(ServerPlayer p, net.minecraft.world.entity.LivingEntity m, AttackType t) {
+                            return MinionRules.ALWAYS_HITS;
+                        }
+
+                        @Override
+                        public int damage(ServerPlayer p, net.minecraft.world.entity.LivingEntity m, AttackType t, int d) {
+                            return MinionRules.lethal(m); // a bud dies to one hit from any weapon
+                        }
+                    });
                     flowers.add(f);
                 }
             }
@@ -417,8 +461,66 @@ final class ClassicScripts {
         }
 
         @Override
+        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
+            return boss.getRandom().nextBoolean() ? ClassicBosses.HESPORI_SPORES : ClassicBosses.HESPORI_WAVE;
+        }
+
+        @Override
+        protected void perform(DataBossEntity boss, ServerPlayer target, AttackDef a) {
+            super.perform(boss, target, a);
+            if (a == ClassicBosses.HESPORI_SPORES) {
+                super.perform(boss, target, a); // the spores hit twice
+            }
+        }
+
+        @Override
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
+            if (!bloomed) {
+                bloomed = true;
+                bloom(boss); // the buds open as the fight starts
+            }
+            if (rooted != null) {
+                boolean s = rooted.isShiftKeyDown();
+                if (s && !sneaking && ++struggles < BossMechanics.HESPORI_STRUGGLES) {
+                    Msg.game(rooted, "You feel the vines loosen slightly as you try to move.");
+                }
+                sneaking = s;
+                if (struggles >= BossMechanics.HESPORI_STRUGGLES) {
+                    BossFx.unstun(rooted);
+                    Msg.game(rooted, "You break free of the vines.");
+                    rooted = null;
+                } else if (now >= rootEnds) {
+                    if (rooted.isAlive()) {
+                        CombatHooks.nameAttack("entangle", null);
+                        CombatHandler.applyDamage(boss, rooted, BossMechanics.HESPORI_ENTANGLE_MIN + boss.getRandom().nextInt(5));
+                    }
+                    BossFx.unstun(rooted);
+                    rooted = null;
+                }
+                return;
+            }
+            if (target != null && --entangleTimer <= 0) {
+                entangleTimer = BossMechanics.HESPORI_ENTANGLE_INTERVAL;
+                rooted = target;
+                struggles = 0;
+                sneaking = target.isShiftKeyDown();
+                rootEnds = now + BossMechanics.HESPORI_ENTANGLE_TICKS;
+                BossFx.stun(target, BossMechanics.HESPORI_ENTANGLE_TICKS);
+                Msg.red(target, "Hespori entangles you in some vines! (Sneak repeatedly to struggle free.)");
+            }
+        }
+
+        @Override
         public void onDeath(DataBossEntity boss, ServerPlayer killer) {
             flowers.forEach(Mob::discard);
+            if (rooted != null) {
+                BossFx.unstun(rooted);
+            }
+        }
+
+        @Override
+        public void onRemoved(DataBossEntity boss) {
+            onDeath(boss, null); // reset: the flowers go and an entangled player is freed
         }
     }
 
@@ -883,6 +985,27 @@ final class ClassicScripts {
         public void onRemoved(DataBossEntity boss) {
             onDeath(boss, null);
         }
+    }
+
+    /**
+     * Self-test (boss:fight:zalcano): what a team does for the player: imbued tephra thrown at her armour until she falls,
+     * then a pickaxe in hand to mine her. Null when there is nothing to do.
+     */
+    static String selfTestAssistZalcano(DataBossEntity boss, ServerPlayer p) {
+        if (!(boss.script() instanceof Zalcano z)) {
+            return null;
+        }
+        if (!z.down()) {
+            Inv.give(p, BossMechanics.IMBUED_TEPHRA, 40);
+            for (int i = 0; i < 40 && !z.down() && Inv.has(p, BossMechanics.IMBUED_TEPHRA, 1); i++) {
+                z.incoming(boss, p, 0, AttackType.CRUSH);
+            }
+            Zalcano.destroyTephra(p);
+        }
+        if (z.down() && !BossFx.heldId(p).endsWith("pickaxe")) {
+            p.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, Inv.stack("rune_pickaxe", 1));
+        }
+        return z.down() ? "tephra downed her, mined with a pickaxe" : "tephra thrown";
     }
 
     /**
