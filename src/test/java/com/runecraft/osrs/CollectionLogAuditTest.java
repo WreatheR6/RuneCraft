@@ -37,9 +37,9 @@ class CollectionLogAuditTest {
         try (Stream<Path> files = Files.walk(Path.of("src/main/java/com/runecraft"))) {
             for (Path f : (Iterable<Path>) files::iterator) {
                 String name = f.getFileName().toString();
-                // Minecraft-side game code, plus the pure reward rules it rolls (e.g. MinigameRules' reward pools).
+                // Minecraft-side game code, plus the pure reward rules it rolls (e.g. MinigameRules' reward pools, ToaLoot's chest).
                 boolean core = f.toString().replace('\\', '/').contains("/com/runecraft/osrs/");
-                boolean rewardRules = name.endsWith("Rules.java") || name.endsWith("Rewards.java");
+                boolean rewardRules = name.endsWith("Rules.java") || name.endsWith("Rewards.java") || name.endsWith("Loot.java");
                 if (!name.endsWith(".java") || definitionFile(name) || (core && !rewardRules)) {
                     continue;
                 }

@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/toa_worn_barrier_side",
+    "top": "runecraft:block/module/toa_worn_barrier_top",
+    "bottom": "runecraft:block/module/toa_worn_barrier_bottom"
+  }
+}

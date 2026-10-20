@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/toa_pickaxe_statue_side",
+    "top": "runecraft:block/module/toa_pickaxe_statue_top",
+    "bottom": "runecraft:block/module/toa_pickaxe_statue_bottom"
+  }
+}
