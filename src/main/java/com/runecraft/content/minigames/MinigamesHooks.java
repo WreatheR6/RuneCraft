@@ -53,6 +53,7 @@ public final class MinigamesHooks implements ModuleHooks {
         com.runecraft.entity.BossEntity.registerScript(com.runecraft.osrs.data.Boss.TZTOK_JAD,
                 com.runecraft.content.minigames.games.TzTokJadScript::new);
         com.runecraft.content.minigames.games.InfernoSession.register();
+        com.runecraft.content.minigames.games.PestControlSession.register();
         BossScripts.register("penance_queen", PenanceQueenScript::new);
 
         // Entrances.

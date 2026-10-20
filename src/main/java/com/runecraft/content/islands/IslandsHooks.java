@@ -28,6 +28,11 @@ public final class IslandsHooks implements ModuleHooks {
         for (NpcDef npc : IslandsNpcs.all()) {
             QuestScripts.onTalk(npc.id(), (player, entity) -> talk(player, npc.id(), npc.name()));
         }
+        // Any Void Knight at the outpost opens the Void Knights' Reward Options (OSRS Wiki).
+        QuestScripts.onTalk("isl_void_knight", (player, entity) -> {
+            talk(player, "isl_void_knight", "Void Knight");
+            com.runecraft.content.minigames.RewardShopService.open(player, "pest_control");
+        });
         for (IslandsTravel.Network network : IslandsTravel.networks()) {
             BlockHooks.register(network.blockId(), (player, pos, state) -> IslandsTravelService.use(player, pos, network));
         }

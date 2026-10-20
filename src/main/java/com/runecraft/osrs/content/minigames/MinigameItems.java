@@ -178,8 +178,9 @@ public final class MinigameItems {
     // ------------------------------------------------------------------ Pest Control
     private static void pestControl(ItemSink items) {
         int voidCol = 0x3A3A3A;
-        Object[] req = {Skill.ATTACK, 42, Skill.STRENGTH, 42, Skill.DEFENCE, 42, Skill.HITPOINTS, 42, Skill.RANGED, 42,
-                Skill.MAGIC, 42, Skill.PRAYER, 22};
+        // 42 in every combat skill and 22 Prayer (PestControlRules.VOID_REQUIREMENTS; the gloves check them in Jewellery).
+        Object[] req = PestControlRules.VOID_REQUIREMENTS.entrySet().stream()
+                .flatMap(e -> java.util.stream.Stream.of(e.getKey(), e.getValue())).toArray();
         wear(items, "void_knight_top", "Void knight top", "platebody", voidCol, Slot.CHEST, 1,
                 s(0, 0, 0, 0, 0, 45, 45, 45, 45, 45, 0, 0, 0, 0), req).tier("void")
                 .examine("Torso armour from the order of the Void Knights.");
@@ -187,7 +188,7 @@ public final class MinigameItems {
                 s(0, 0, 0, 0, 0, 30, 30, 30, 30, 30, 0, 0, 0, 0), req).tier("void")
                 .examine("Leg armour from the order of the Void Knights.");
         single(items, "void_knight_gloves", "Void knight gloves", "boots", 0x4A4A4A, 1,
-                "Gloves from the order of the Void Knights. Worn in the hands slot; part of the Void set.");
+                "Gloves as used by the order of the Void Knights.");
         wear(items, "void_melee_helm", "Void melee helm", "full_helm", 0x6A3A2A, Slot.HEAD, 1,
                 s(0, 0, 0, 0, 0, 6, 6, 6, 6, 6, 0, 0, 0, 0), req).tier("void");
         wear(items, "void_ranger_helm", "Void ranger helm", "full_helm", 0x3A6A2A, Slot.HEAD, 1,
@@ -203,7 +204,9 @@ public final class MinigameItems {
         weapon(items, "void_knight_mace", "Void knight mace", Kind.MELEE_WEAPON, "warhammer", 0x6A6A70, 1,
                 s(22, 0, 41, 8, 0, 0, 0, 0, 2, 0, 38, 0, 0, 0), 5, AttackType.CRUSH, WeaponClass.MELEE, req)
                 .tier("void");
-        single(items, "void_seal", "Void seal", "amulet", 0x8A6AC0, 1, "A seal of the Void Knights. Pests hate it.");
+        // Void seal(8): rubbed inside a Pest Control game it hits the pests around the player for 8-12, eight times
+        // (PestControlRules.SEAL_*; the charges left are kept on the stack).
+        single(items, "void_seal", "Void seal", "amulet", 0x8A6AC0, 100, "A seal storing the power of the Void Knights.");
     }
 
     // ------------------------------------------------------------------ Wintertodt

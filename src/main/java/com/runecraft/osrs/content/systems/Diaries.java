@@ -876,7 +876,7 @@ public final class Diaries {
         // ======================= Western Provinces (11 / 13 / 13 / 7) =======================
         in("western", Tier.EASY);
         xp("Catch a Copper Longtail", HUNTER, 9);
-        combat("Complete a novice game of Pest Control", 40);
+        event("Complete a novice game of Pest Control", "minigame_win:pest_control_novice", null);
         get("Mine some Iron Ore near Piscatoris", "iron_ore", 1, MINING, 15);
         xpAt("Complete a lap of the Gnome Agility Course", AGILITY, 1, at(2474, 3436, 25));
         visit("Score a goal in a Gnome Ball match", 2400, 3487, 12);
@@ -892,7 +892,7 @@ public final class Diaries {
         xp("Trap a Spined Larupia", HUNTER, 31);
         getAt("Fish some Bass on Ape Atoll", "raw_bass", 1, at(2755, 2775, 50), FISHING, 46);
         getAt("Chop and burn some teak logs on Ape Atoll", "teak_logs", 1, at(2755, 2775, 50), WOODCUTTING, 35, FIREMAKING, 35);
-        combat("Complete an intermediate game of Pest Control", 70);
+        event("Complete an intermediate game of Pest Control", "minigame_win:pest_control_intermediate", null);
         quest("Travel to the Feldip Hills by Gnome Glider", "one_small_favour"); approx(); // approx
         quest("Claim a Chompy bird hat from Rantz after registering at least 30 kills", "big_chompy_bird_hunting"); approx(); // approx
         quest("Travel from Eagles' Peak to the Feldip Hills by Eagle", "eagles_peak"); approx(); // approx: no eagle transport
@@ -903,7 +903,7 @@ public final class Diaries {
         in("western", Tier.HARD);
         kill("Kill an Elf with a Crystal bow", "elf", 1, RANGED, 70);
         makeHere("Catch and cook a Monkfish in Piscatoris", "monkfish", 1, FISHING, 62, COOKING, 62);
-        combat("Complete a Veteran game of Pest Control", 100);
+        event("Complete a Veteran game of Pest Control", "minigame_win:pest_control_veteran", null);
         xpAt("Catch a Dashing Kebbit", HUNTER, 69, null);
         xpAt("Complete a lap of the Ape Atoll agility course", AGILITY, 48, at(2755, 2775, 50));
         getAt("Chop and burn some Mahogany logs on Ape Atoll", "mahogany_logs", 1, at(2755, 2775, 50), WOODCUTTING, 50, FIREMAKING, 50);

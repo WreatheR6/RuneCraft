@@ -544,6 +544,30 @@ public final class MinigameManager {
     }
 
     /**
+     * Self-test hook: the lobby (lander) the player waits in departs now, its countdown skipped, with everyone aboard who
+     * still meets the requirements; returns the player's new session, or null when they wait in no lobby.
+     */
+    public static MinigameSession selfTestDepart(ServerPlayer player) {
+        for (Iterator<Lobby> it = LOBBIES.values().iterator(); it.hasNext(); ) {
+            Lobby l = it.next();
+            if (!l.waiting.contains(player.getUUID())) {
+                continue;
+            }
+            it.remove();
+            List<ServerPlayer> aboard = new ArrayList<>();
+            for (UUID u : l.waiting) {
+                ServerPlayer p = player.getServer().getPlayerList().getPlayer(u);
+                if (p != null && requirement(p, l.game, l.variant) == null) {
+                    aboard.add(p);
+                }
+            }
+            start(l.game, l.variant, aboard);
+            return session(player);
+        }
+        return null;
+    }
+
+    /**
      * Players who log in inside an instance with no running game are sent to Lumbridge, unless they paused a Fight Cave or
      * Inferno run by logging out: that run picks up again.
      */

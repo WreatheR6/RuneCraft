@@ -41,15 +41,17 @@ public final class RewardShops {
     private static final Map<String, RewardShop> SHOPS = new LinkedHashMap<>();
 
     static {
-        // Void Knight squire / Void Knights' reward shop (Pest Control commendation points).
+        // Void Knights' Reward Options (Pest Control commendation points; OSRS Wiki): experience in any combat skill of level 25+
+        // by 1, 10 (+1%) or 100 (+10%) points, the Void Knight equipment, the elite upgrades (the Elite Void Knight turns a carried
+        // top or robe into the elite one after the hard Western Provinces diary) and the resource packs.
         RewardShop pc = shop("pest_control", "Void Knights' Rewards");
         for (Skill s : new Skill[]{Skill.ATTACK, Skill.STRENGTH, Skill.DEFENCE, Skill.HITPOINTS}) {
-            pc.xp(s, 35, PEST_CONTROL, 10, 25).xp(s, 35, PEST_CONTROL, 100, 25);
+            pc.xp(s, 35, PEST_CONTROL, 1, 25).xp(s, 35, PEST_CONTROL, 10, 25).xp(s, 35, PEST_CONTROL, 100, 25);
         }
         for (Skill s : new Skill[]{Skill.RANGED, Skill.MAGIC}) {
-            pc.xp(s, 32, PEST_CONTROL, 10, 25).xp(s, 32, PEST_CONTROL, 100, 25);
+            pc.xp(s, 32, PEST_CONTROL, 1, 25).xp(s, 32, PEST_CONTROL, 10, 25).xp(s, 32, PEST_CONTROL, 100, 25);
         }
-        pc.xp(Skill.PRAYER, 18, PEST_CONTROL, 10, 25).xp(Skill.PRAYER, 18, PEST_CONTROL, 100, 25);
+        pc.xp(Skill.PRAYER, 18, PEST_CONTROL, 1, 25).xp(Skill.PRAYER, 18, PEST_CONTROL, 10, 25).xp(Skill.PRAYER, 18, PEST_CONTROL, 100, 25);
         pc.item("void_knight_mace", PEST_CONTROL, 250)
                 .item("void_knight_top", PEST_CONTROL, 250)
                 .item("void_knight_robe", PEST_CONTROL, 250)
@@ -57,8 +59,8 @@ public final class RewardShops {
                 .item("void_mage_helm", PEST_CONTROL, 200)
                 .item("void_ranger_helm", PEST_CONTROL, 200)
                 .item("void_melee_helm", PEST_CONTROL, 200)
-                .itemReq("elite_void_top", PEST_CONTROL, 200, "void_knight_top")
-                .itemReq("elite_void_robe", PEST_CONTROL, 200, "void_knight_robe")
+                .upgrade("void_knight_top", "elite_void_top", PEST_CONTROL, 200)
+                .upgrade("void_knight_robe", "elite_void_robe", PEST_CONTROL, 200)
                 .item("void_seal", PEST_CONTROL, 10)
                 .itemSkill("#herbs", 1, PEST_CONTROL, 30, Skill.HERBLORE, 25)
                 .itemSkill("#seeds", 1, PEST_CONTROL, 15, Skill.FARMING, 25)

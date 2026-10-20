@@ -168,12 +168,15 @@ public final class RewardShop {
      * gets no bulk bonus (OSRS Wiki).
      */
     public static int xpReward(Entry e, int level) {
+        return xpRewardTenths(e, level) / 10;
+    }
+
+    /** {@link #xpReward} in tenths of experience: 10 commendation points at level 25-34 give 353.5 Attack XP (OSRS Wiki). */
+    public static int xpRewardTenths(Entry e, int level) {
         Cost c = e.costs().get(0);
-        int per = pestControlXpPerPoint(level, e.count());
         if (c.currency().equals(MinigameCurrencies.ZEAL)) {
-            return per * c.amount();
+            return pestControlXpPerPoint(level, e.count()) * c.amount() * 10;
         }
-        double bonus = c.amount() >= 100 ? 1.10 : c.amount() >= 10 ? 1.01 : 1.0;
-        return (int) Math.floor(per * c.amount() * bonus);
+        return PestControlRules.xpTenths(level, e.count(), c.amount());
     }
 }

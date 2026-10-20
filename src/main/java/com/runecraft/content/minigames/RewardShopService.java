@@ -9,7 +9,6 @@ import com.runecraft.osrs.content.minigames.MinigameCurrencies;
 import com.runecraft.osrs.content.minigames.RewardShop;
 import com.runecraft.osrs.content.minigames.RewardShops;
 import com.runecraft.player.Players;
-import com.runecraft.skill.Drops;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
@@ -116,6 +115,15 @@ public final class RewardShopService {
     private static String locked(ServerPlayer player, RewardShop.Entry e) {
         if (e.requiredSkill() != null && Players.data(player).skills().level(e.requiredSkill()) < e.requiredLevel()) {
             return "Requires level " + e.requiredLevel() + " " + e.requiredSkill().displayName();
+        }
+        // Void Knight equipment (all but the seal, gloves included) can only be bought by those who can wear it (OSRS Wiki:
+        // 42 combat skills and 22 Prayer); the elite upgrades too.
+        if (e.costs().stream().anyMatch(c -> c.currency().equals(MinigameCurrencies.PEST_CONTROL))) {
+            String voidLock = com.runecraft.osrs.content.minigames.PestControlRules.voidLock(e.item(),
+                    s -> Players.data(player).skills().level(s));
+            if (voidLock != null) {
+                return voidLock;
+            }
         }
         if (e.requiresItem() != null && !Inv.has(player, e.requiresItem(), 1)) {
             ItemDef def = ItemCatalog.get(e.requiresItem());
@@ -269,20 +277,8 @@ public final class RewardShopService {
                     open(player, shopId);
                     return;
                 }
-                if (RewardShops.noted(shop.id(), e.item())
-                        && com.runecraft.osrs.bank.BankNotes.canNote(e.item())) {
-                    // Handed out as bank notes; whatever doesn't fit drops at the player's feet.
-                    int n = e.count() * times;
-                    net.minecraft.world.item.ItemStack note = com.runecraft.bank.Notes.note(e.item(), "", 1);
-                    int in = note.isEmpty() ? 0 : com.runecraft.bank.Notes.insert(player, note, n);
-                    if (note.isEmpty()) {
-                        give(player, e.item(), n);
-                    } else {
-                        if (in < n) {
-                            Inv.drop(player, note.copyWithCount(n - in), false);
-                        }
-                        CollectionLog.obtain(player, e.item());
-                    }
+                if (RewardShops.noted(shop.id(), e.item())) {
+                    giveNoted(player, e.item(), e.count() * times);
                 } else {
                     for (int i = 0; i < times; i++) {
                         giveItem(player, e);
@@ -293,10 +289,12 @@ public final class RewardShopService {
             case XP -> {
                 Skill skill = Skill.valueOf(e.item());
                 int level = Players.data(player).skills().level(skill);
-                // Flat-rate entries (negative count, e.g. Agility tickets) use xpFor; points shops use xpReward.
-                int xp = e.count() < 0 ? (int) Math.floor(RewardShop.xpFor(e, level)) : RewardShop.xpReward(e, level);
-                XpService.add(player, skill, xp);
-                Msg.game(player, "You gain " + String.format("%,d", xp) + " " + skill.displayName() + " experience.");
+                // Flat-rate entries (negative count, e.g. Agility tickets) use xpFor; points shops use xpReward, in tenths
+                // (10 Pest Control points at level 25-34 give 353.5 XP).
+                int tenths = e.count() < 0 ? (int) Math.floor(RewardShop.xpFor(e, level)) * 10 : RewardShop.xpRewardTenths(e, level);
+                XpService.addTenths(player, skill, tenths);
+                Msg.game(player, "You gain " + (tenths % 10 == 0 ? String.format("%,d", tenths / 10)
+                        : String.format("%,.1f", tenths / 10.0)) + " " + skill.displayName() + " experience.");
             }
             case UNLOCK -> {
                 MinigameData.of(player).setFlag(player.getUUID(), e.item());
@@ -320,21 +318,26 @@ public final class RewardShopService {
     private static void giveItem(ServerPlayer player, RewardShop.Entry e) {
         switch (e.item()) {
             case "#herbs" -> {
-                for (int i = 0; i < 3 + RANDOM.nextInt(4); i++) {
-                    give(player, Drops.rollHerb(player.getRandom()), 1);
+                // Herb pack (OSRS Wiki): always 2-4 harralander, 2-3 ranarr, 1-4 toadflax, 2-4 irit, 1-4 avantoe, 1-5 kwuarm, noted.
+                for (com.runecraft.osrs.content.minigames.MinigameRules.Loot l : com.runecraft.osrs.content.minigames.PestControlRules.HERB_PACK) {
+                    giveNoted(player, l.item(), l.min() + RANDOM.nextInt(l.max() - l.min() + 1));
                 }
             }
             case "#seeds" -> {
-                for (int i = 0; i < 3 + RANDOM.nextInt(3); i++) {
-                    give(player, Drops.rollSeed(player.getRandom()), 1);
+                // Seed pack (OSRS Wiki): three rolls of a 1,061-weight table of mostly low-tier seeds.
+                for (int i = 0; i < com.runecraft.osrs.content.minigames.PestControlRules.SEED_PACK_ROLLS; i++) {
+                    com.runecraft.osrs.content.minigames.MinigameRules.Loot l = com.runecraft.osrs.content.minigames.MinigameRules.pick(
+                            com.runecraft.osrs.content.minigames.PestControlRules.SEED_PACK, RANDOM.nextDouble());
+                    give(player, l.item(), l.min());
                 }
             }
             case "#ba_gamble_low", "#ba_gamble_medium", "#ba_gamble_high" -> com.runecraft.content.minigames.games.BarbarianAssaultSession
                     .gamble(player, com.runecraft.osrs.content.minigames.BaGambles.Tier.of(e.item()));
             case "#ores" -> {
-                // Mineral pack (OSRS Wiki): 25 coal and 18 iron ore.
-                give(player, "coal", 25);
-                give(player, "iron_ore", 18);
+                // Mineral pack (OSRS Wiki): 25 coal and 18 iron ore, noted.
+                for (com.runecraft.osrs.content.minigames.MinigameRules.Loot l : com.runecraft.osrs.content.minigames.PestControlRules.MINERAL_PACK) {
+                    giveNoted(player, l.item(), l.min());
+                }
             }
             default -> {
                 if (e.item().startsWith(com.runecraft.osrs.content.minigames.RewardShops.GRACEFUL_RECOLOUR)) {
@@ -349,6 +352,21 @@ public final class RewardShopService {
                 }
             }
         }
+    }
+
+    /** Hands out {@code n} of an item as bank notes; whatever doesn't fit drops at the player's feet (unnotable items: plain). */
+    private static void giveNoted(ServerPlayer player, String item, int n) {
+        net.minecraft.world.item.ItemStack note = com.runecraft.osrs.bank.BankNotes.canNote(item)
+                ? com.runecraft.bank.Notes.note(item, "", 1) : net.minecraft.world.item.ItemStack.EMPTY;
+        if (note.isEmpty()) {
+            give(player, item, n);
+            return;
+        }
+        int in = com.runecraft.bank.Notes.insert(player, note, n);
+        if (in < n) {
+            Inv.drop(player, note.copyWithCount(n - in), false);
+        }
+        CollectionLog.obtain(player, item);
     }
 
     private static void give(ServerPlayer player, String item, int count) {

@@ -32,6 +32,7 @@ public final class Untradeables {
                 "ca_antique_lamp_medium", "ca_antique_lamp_hard", "ca_antique_lamp_elite", "ca_antique_lamp_master",
                 "ca_antique_lamp_grandmaster");
         add("varlamore_token");
+        add("void_seal"); // wiki "Void seal": tradeable no
         // Pest Control and Barbarian Assault.
         add("void_knight_top", "void_knight_robe", "void_melee_helm", "void_ranger_helm", "void_mage_helm", "elite_void_top",
                 "elite_void_robe", "void_knight_mace", "void_knight_gloves", "fighter_torso", "penance_skirt", "fighter_hat",
