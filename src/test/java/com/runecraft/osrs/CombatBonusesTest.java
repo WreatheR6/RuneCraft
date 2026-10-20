@@ -76,6 +76,7 @@ class CombatBonusesTest {
         assertEquals(31, CombatBonuses.poweredStaffMaxHit("trident_of_the_swamp", 99));
         assertEquals(33, CombatBonuses.poweredStaffMaxHit("sanguinesti_staff", 99)); // wiki / DPS calculator: floor(Magic / 3)
         assertEquals(34, CombatBonuses.poweredStaffMaxHit("tumekens_shadow", 99));
+        assertEquals(31, CombatBonuses.poweredStaffMaxHit("dawnbringer", 99)); // halved to 15 by PlayerHitCalc
         assertEquals(-1, CombatBonuses.poweredStaffMaxHit("staff_of_air", 99));
         // Shadow triples magic damage, capped at +100%.
         assertEquals(30, CombatBonuses.shadowMagicDamage(10, false));

@@ -41,6 +41,10 @@ final class RaidCommands {
                                 .then(Commands.argument("bundle", StringArgumentType.word())
                                         .executes(ctx -> ToaSupplyService.claim(ctx.getSource().getPlayerOrException(),
                                                 StringArgumentType.getString(ctx, "bundle")))))
+                        .then(Commands.literal("buy")
+                                .then(Commands.argument("item", StringArgumentType.word())
+                                        .executes(ctx -> TobRooms.buy(ctx.getSource().getPlayerOrException(),
+                                                StringArgumentType.getString(ctx, "item")))))
                         .then(Commands.literal("mode")
                                 .then(Commands.argument("mode", StringArgumentType.word())
                                         .executes(ctx -> mode(ctx.getSource().getPlayerOrException(),

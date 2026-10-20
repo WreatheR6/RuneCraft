@@ -36,13 +36,19 @@ class CoxSuppliesTest {
         assertEquals("buchu_seed", Herb.BUCHU.seed());
         assertEquals("grimy_buchu_leaf", Herb.BUCHU.grimy());
         assertEquals(Herb.NOXIFER, Herb.bySeed("noxifer_seed"));
-        // Raking never yields a seed above the Farming level.
+        // Weeds (OSRS wiki): 1-3 golpar, buchu or noxifer seeds, a third each.
         Random r = new Random(3);
-        for (int i = 0; i < 200; i++) {
-            String seed = CoxSupplies.rakeSeed(30, r);
-            assertEquals("golpar_seed", seed);
+        java.util.Map<String, Integer> raked = new java.util.HashMap<>();
+        for (int i = 0; i < 3000; i++) {
+            java.util.Map.Entry<String, Integer> e = CoxSupplies.rakeSeeds(r);
+            assertTrue(e.getValue() >= 1 && e.getValue() <= 3, "seeds " + e.getValue());
+            raked.merge(e.getKey(), 1, Integer::sum);
         }
-        assertNull(CoxSupplies.rakeSeed(10, r));
+        assertEquals(3, raked.size());
+        for (int n : raked.values()) {
+            assertTrue(n > 850 && n < 1150, "rakes " + raked);
+        }
+        assertEquals(50, CoxSupplies.HERB_GROW_TICKS, "herbs grow in 30 seconds");
     }
 
     @Test
@@ -152,9 +158,10 @@ class CoxSuppliesTest {
     void coxLayoutHasResourceRooms() {
         for (int seed = 0; seed < 20; seed++) {
             List<RoomDef> cox = RaidLayouts.cox(new Random(seed));
-            assertEquals(2, cox.stream().filter(x -> x.kind() == RoomDef.Kind.RESOURCE).count());
-            assertTrue(cox.stream().anyMatch(x -> x.id().equals("cox_scavengers")));
-            assertTrue(cox.stream().anyMatch(x -> x.id().equals("cox_farming")));
+            // OSRS: one resource room (fishing or bats) per floor and one or two scavenger rooms per floor.
+            assertEquals(2, cox.stream().filter(x -> RaidLayouts.COX_RESOURCE_ROOMS.contains(x.id())).count());
+            long scavengers = cox.stream().filter(x -> x.id().equals("cox_scavengers")).count();
+            assertTrue(scavengers >= 2 && scavengers <= 3, "scavenger rooms " + scavengers);
         }
     }
 

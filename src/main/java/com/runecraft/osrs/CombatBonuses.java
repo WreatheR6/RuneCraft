@@ -116,6 +116,7 @@ public final class CombatBonuses {
         return switch (weaponId) {
             case "trident_of_the_seas", "trident_of_the_seas_e" -> Math.max(1, third - 5);
             case "trident_of_the_swamp", "trident_of_the_swamp_e" -> Math.max(1, third - 2);
+            case "dawnbringer" -> Math.max(1, third - 2); // the swamp trident's spell, halved in PlayerHitCalc (wiki)
             case "sanguinesti_staff", "holy_sanguinesti_staff" -> Math.max(1, third); // DPS calculator: magic / 3
             case "tumekens_shadow" -> Math.max(1, third + 1);
             case "thammarons_sceptre" -> Math.max(1, third - 8);

@@ -5,6 +5,7 @@ import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.AttackDef.Special;
 import com.runecraft.osrs.content.BossDef;
 import com.runecraft.osrs.content.MonsterDef;
+import com.runecraft.osrs.data.Drop;
 
 import java.util.List;
 
@@ -22,6 +23,20 @@ public final class CoxBosses {
         return BossDef.of(id, name).raidOnly().category("Raids").arena(18, "crypt");
     }
 
+    private static Drop n(String item, int count) {
+        return Drop.of(item, count, count, 1);
+    }
+
+    private static Drop[] seeds(int min, int max) {
+        return new Drop[]{Drop.of("buchu_seed", min, max, 1), Drop.of("golpar_seed", min, max, 1), Drop.of("noxifer_seed", min, max, 1)};
+    }
+
+    /** CoX potion ids (4 doses): the (+) strengths the bosses drop. */
+    static final String OVERLOAD_PLUS = "cox_overload_plus";
+    static final String PRAYER_ENHANCE_PLUS = "prayer_enhance_plus";
+    static final String REVITALISATION_PLUS = "revitalisation_plus";
+    static final String XERICS_AID_PLUS = "xerics_aid_plus";
+
     public static List<BossDef> bosses() {
         return List.of(
                 raid("tekton", "Tekton").level(1244).stats(300, 390, 390, 205, 205, 1).speed(3)
@@ -29,12 +44,15 @@ public final class CoxBosses {
                         .attack(AttackDef.of("hammer stab", AttackType.STAB, 52, 3, 10))
                         .attack(AttackDef.of("hammer slash", AttackType.SLASH, 52, 3, 10))
                         .attack(AttackDef.of("hammer crush", AttackType.CRUSH, 52, 3, 10))
+                        // OSRS wiki drops (round 33); the rare onyx is rolled by the room (its chance grows with the party).
+                        .drops(n(CoxSupplies.STINKHORN, 5), n(OVERLOAD_PLUS, 2), n(PRAYER_ENHANCE_PLUS, 1), n(REVITALISATION_PLUS, 1))
                         .size(1.1f, 2.6f, 1.6f).moveSpeed(0.22),
                 raid("vasa_nistirio", "Vasa Nistirio").level(1065).stats(300, 1, 1, 175, 230, 230).speed(3)
                         .defenceBonus(170, 190, 40, 400, 40)
                         .attack(AttackDef.of("crystal boulder", AttackType.RANGED, 18, 16, 10).special(Special.AOE, 3)
                                 .particle("minecraft:end_rod").message("Vasa hurls a crystal boulder!"))
                         .attack(AttackDef.of("crystal bolt", AttackType.MAGIC, 22, 16, 10).particle("minecraft:end_rod"))
+                        .drops(n(OVERLOAD_PLUS, 1), n(CoxSupplies.ENDARKENED, 5), n(XERICS_AID_PLUS, 2), n("twisted_plus", 2))
                         .size(1.2f, 2.4f, 1.6f).moveSpeed(0.15),
                 raid("cox_guardian", "Guardian").level(140).stats(250, 140, 140, 100, 1, 1).speed(4)
                         // OSRS: no magic/ranged defence bonuses; only pickaxes can damage them (room logic).
@@ -42,11 +60,13 @@ public final class CoxBosses {
                         .attack(AttackDef.of("stone fist", AttackType.SLASH, 20, 3, 10))
                         .attack(AttackDef.of("ground slam", AttackType.CRUSH, 25, 4, 3).special(Special.AOE, 3)
                                 .telegraph(2, "The Guardian raises its fists...").particle("minecraft:explosion"))
+                        .drops(seeds(CoxSupplies.GUARDIAN_SEEDS[0], CoxSupplies.GUARDIAN_SEEDS[1]))
                         .size(1.0f, 2.2f, 1.4f).moveSpeed(0.0),
                 raid("skeletal_mystic", "Skeletal Mystic").level(187).stats(160, 140, 140, 187, 140, 1).speed(4)
                         .defenceBonus(155, 155, 75, 140, 115)
                         .attack(AttackDef.of("shadow bolt", AttackType.MAGIC, 21, 14, 10).particle("minecraft:witch"))
                         .attack(AttackDef.of("staff bash", AttackType.CRUSH, 18, 2.5, 6))
+                        .drops(Drop.always("big_bones")).drops(seeds(CoxSupplies.MYSTIC_SEEDS[0], CoxSupplies.MYSTIC_SEEDS[1]))
                         .size(0.6f, 2.1f, 1.1f),
                 raid("cox_lizardman_shaman", "Lizardman shaman").level(150).stats(190, 130, 130, 210, 130, 130).speed(4)
                         .defenceBonus(102, 160, 150, 160, 0)
@@ -56,34 +76,43 @@ public final class CoxBosses {
                         .attack(AttackDef.of("purple spawn", AttackType.MAGIC, 0, 14, 2).special(Special.SUMMON, 3)
                                 .message("The shaman spawns purple creatures!"))
                         .minion("cox_lizardman_spawn", 3)
+                        .drops(Drop.always("big_bones")).drops(seeds(CoxSupplies.MYSTIC_SEEDS[0], CoxSupplies.MYSTIC_SEEDS[1]))
                         .size(0.8f, 2.2f, 1.2f),
                 raid("small_muttadile", "Muttadile").level(250).stats(250, 150, 150, 138, 1, 150).speed(4)
                         .defenceBonus(-5, 72, 50, 60, 0)
                         .attack(AttackDef.of("bite", AttackType.STAB, 28, 2.5, 10))
                         .attack(AttackDef.of("water blast", AttackType.RANGED, 20, 12, 6).particle("minecraft:splash"))
+                        .drops(Drop.always("big_bones"), n(OVERLOAD_PLUS, 1), n(PRAYER_ENHANCE_PLUS, 1), Drop.of(CoxSupplies.STINKHORN, 1, 3, 1))
                         .size(1.0f, 1.0f, 1.2f),
                 raid("muttadile", "Muttadile").level(590).stats(250, 250, 250, 220, 250, 250).speed(4)
                         .defenceBonus(-5, 82, 60, 75, 0)
                         .attack(AttackDef.of("crushing bite", AttackType.STAB, 39, 3, 10))
                         .attack(AttackDef.of("water blast", AttackType.MAGIC, 35, 14, 6).particle("minecraft:splash"))
                         .attack(AttackDef.of("tail sweep", AttackType.CRUSH, 25, 4, 3).special(Special.KNOCKBACK, 4))
+                        .drops(Drop.always("big_bones"), n(OVERLOAD_PLUS, 1), n(PRAYER_ENHANCE_PLUS, 1), n(XERICS_AID_PLUS, 1),
+                                n(REVITALISATION_PLUS, 1))
                         .size(1.4f, 1.3f, 1.8f).moveSpeed(0.22),
                 raid("vanguard_melee", "Vanguard").level(1014).stats(180, 150, 150, 160, 150, 150).speed(4)
                         .defenceBonus(150, 150, 150, 20, 400)
                         .attack(AttackDef.of("blade swipe", AttackType.SLASH, 18, 2.5, 10))
+                        // OSRS: each Vanguard drops its combat potion; one overload (+) per room is guaranteed (the room adds it).
+                        .drops(n("elder_plus", 1), n(XERICS_AID_PLUS, 2), Drop.of(OVERLOAD_PLUS, 1, 1, 3))
                         .size(0.9f, 1.9f, 1.4f),
                 raid("vanguard_ranged", "Vanguard").level(1014).stats(180, 150, 150, 160, 150, 150).speed(4)
                         .defenceBonus(55, 60, 100, 400, 300)
                         .attack(AttackDef.of("rock fall", AttackType.RANGED, 22, 18, 10).special(Special.SKY_STRIKE, 0)
                                 .particle("minecraft:falling_dust"))
+                        .drops(n("twisted_plus", 1), n(XERICS_AID_PLUS, 1), n(REVITALISATION_PLUS, 2), Drop.of(OVERLOAD_PLUS, 1, 1, 3))
                         .size(0.9f, 1.9f, 1.4f),
                 raid("vanguard_magic", "Vanguard").level(1014).stats(180, 150, 150, 160, 150, 150).speed(4)
                         .defenceBonus(315, 340, 400, 110, 50)
                         .attack(AttackDef.of("magic blast", AttackType.MAGIC, 22, 18, 10).special(Special.AOE, 3)
                                 .particle("minecraft:witch"))
+                        .drops(n("kodai_plus", 1), n(XERICS_AID_PLUS, 1), n(PRAYER_ENHANCE_PLUS, 1), Drop.of(OVERLOAD_PLUS, 1, 1, 3))
                         .size(0.9f, 1.9f, 1.4f),
                 raid("vespula", "Vespula").level(1051).stats(200, 150, 150, 88, 88, 150).speed(3)
-                        .defenceBonus(0, 0, 0, 70, 60).immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH).flying()
+                        // OSRS: only magic, ranged and halberds reach her while she flies; melee works once she lands (room logic).
+                        .defenceBonus(0, 0, 0, 70, 60).flying()
                         .attack(AttackDef.of("sting", AttackType.RANGED, 14, 16, 10).special(Special.POISON, 12)
                                 .particle("minecraft:crit"))
                         .attack(AttackDef.of("venomous sting", AttackType.RANGED, 15, 16, 4).special(Special.DRAIN_PRAYER, 10)
@@ -96,12 +125,16 @@ public final class CoxBosses {
                         .attack(AttackDef.of("abyssal pulse", AttackType.MAGIC, 12, 20, 10).special(Special.AOE, 6)
                                 .particle("minecraft:portal"))
                         .minion("vespine_soldier", 1)
+                        // OSRS: destroying the portal drops these (Vespula herself vanishes).
+                        .drops(n(XERICS_AID_PLUS, 2), n(REVITALISATION_PLUS, 1), n(PRAYER_ENHANCE_PLUS, 1), n(OVERLOAD_PLUS, 1))
                         .size(1.4f, 2.6f, 1.0f).moveSpeed(0.0),
                 raid("cox_ice_demon", "Ice demon").level(372).stats(140, 1, 1, 160, 390, 390).speed(3)
                         .defenceBonus(70, 70, 110, 40, 140)
                         .attack(AttackDef.of("ice barrage", AttackType.MAGIC, 22, 16, 10).special(Special.FREEZE, 8)
                                 .particle("minecraft:snowflake"))
                         .attack(AttackDef.of("icicle", AttackType.RANGED, 20, 16, 6).particle("minecraft:snowflake"))
+                        .drops(Drop.always("fiendish_ashes"), n(CoxSupplies.STINKHORN, CoxRules.CLEAR_STINKHORN),
+                                n(CoxSupplies.ENDARKENED, CoxRules.CLEAR_ENDARKENED), n(CoxSupplies.CICELY, CoxRules.CLEAR_CICELY))
                         .size(1.0f, 2.4f, 1.6f).moveSpeed(0.2),
                 raid("great_olm", "Great Olm").level(1043).stats(800, 250, 250, 150, 250, 250).speed(4)
                         .defenceBonus(200, 200, 200, 200, 50)
@@ -147,8 +180,9 @@ public final class CoxBosses {
                 MonsterDef.of("cox_crystal_crab", "Crystal crab").level(1).stats(200, 1, 1, 1, 1, 1).speed(10).passive()
                         .attack(AttackDef.of("pinch", AttackType.CRUSH, 0, 1, 10)).model("rock_crab")
                         .skin(0x9AD8E8, 0x6AB8D0, 0x6AB8D0, 0xE0F8FF).size(0.9f, 0.7f, 1.0f).moveSpeed(0.18),
+                // OSRS: immune to ranged and 66% less damage from magic (room logic), so melee (stab) it.
                 MonsterDef.of("vasa_crystal", "Glowing crystal").level(1).stats(120, 1, 1, 100, 100, 1).speed(10).passive()
-                        .defenceBonus(-5, 180, 180, 0, 0)
+                        .defenceBonus(-5, 180, 180, 0, 0).immune(AttackType.RANGED)
                         .attack(AttackDef.of("hum", AttackType.MAGIC, 0, 1, 10))
                         .size(0.9f, 1.6f, 1.2f).moveSpeed(0.0));
     }

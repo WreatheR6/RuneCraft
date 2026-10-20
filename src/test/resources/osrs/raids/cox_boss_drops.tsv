@@ -1,0 +1,53 @@
+# Chambers of Xeric creature drops, from the OSRS wiki DropsLines (osrs-wiki-data raw dump, July 2026): Tekton, Vasa Nistirio,
+# Guardian (Chambers of Xeric), Skeletal Mystic, Lizardman shaman (Chambers of Xeric), Muttadile (small/large), Vanguard (per style),
+# Vespula (dropped when the abyssal portal is destroyed) and Ice demon. Potions are 4-dose (+) potions.
+# Left out on purpose: the lore books (one-off), Tekton's onyx and the long/curved bones (rolled by the rooms, so they make no
+# collection log pages).
+# boss	item	min	max	rarity (1/n)
+tekton	stinkhorn_mushroom	5	5	1
+tekton	cox_overload_plus	2	2	1
+tekton	prayer_enhance_plus	1	1	1
+tekton	revitalisation_plus	1	1	1
+vasa_nistirio	cox_overload_plus	1	1	1
+vasa_nistirio	endarkened_juice	5	5	1
+vasa_nistirio	xerics_aid_plus	2	2	1
+vasa_nistirio	twisted_plus	2	2	1
+cox_guardian	buchu_seed	3	5	1
+cox_guardian	golpar_seed	3	5	1
+cox_guardian	noxifer_seed	3	5	1
+skeletal_mystic	big_bones	1	1	1
+skeletal_mystic	buchu_seed	5	10	1
+skeletal_mystic	golpar_seed	5	10	1
+skeletal_mystic	noxifer_seed	5	10	1
+cox_lizardman_shaman	big_bones	1	1	1
+cox_lizardman_shaman	buchu_seed	5	10	1
+cox_lizardman_shaman	golpar_seed	5	10	1
+cox_lizardman_shaman	noxifer_seed	5	10	1
+small_muttadile	big_bones	1	1	1
+small_muttadile	cox_overload_plus	1	1	1
+small_muttadile	prayer_enhance_plus	1	1	1
+small_muttadile	stinkhorn_mushroom	1	3	1
+muttadile	big_bones	1	1	1
+muttadile	cox_overload_plus	1	1	1
+muttadile	prayer_enhance_plus	1	1	1
+muttadile	xerics_aid_plus	1	1	1
+muttadile	revitalisation_plus	1	1	1
+vanguard_melee	elder_plus	1	1	1
+vanguard_melee	xerics_aid_plus	2	2	1
+vanguard_melee	cox_overload_plus	1	1	3
+vanguard_ranged	twisted_plus	1	1	1
+vanguard_ranged	xerics_aid_plus	1	1	1
+vanguard_ranged	revitalisation_plus	2	2	1
+vanguard_ranged	cox_overload_plus	1	1	3
+vanguard_magic	kodai_plus	1	1	1
+vanguard_magic	xerics_aid_plus	1	1	1
+vanguard_magic	prayer_enhance_plus	1	1	1
+vanguard_magic	cox_overload_plus	1	1	3
+vespula_portal	xerics_aid_plus	2	2	1
+vespula_portal	revitalisation_plus	1	1	1
+vespula_portal	prayer_enhance_plus	1	1	1
+vespula_portal	cox_overload_plus	1	1	1
+cox_ice_demon	fiendish_ashes	1	1	1
+cox_ice_demon	stinkhorn_mushroom	7	7	1
+cox_ice_demon	endarkened_juice	7	7	1
+cox_ice_demon	cicely	5	5	1

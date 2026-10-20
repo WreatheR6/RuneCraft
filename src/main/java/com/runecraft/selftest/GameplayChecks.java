@@ -102,6 +102,9 @@ final class GameplayChecks {
         for (RaidType r : RaidType.values()) {
             checks.add(new SelfTest.Check("raid:" + r.id(), () -> g.raid(r)));
         }
+        checks.add(new SelfTest.Check("raid:cox_walk", () -> g.walk(com.runecraft.content.raids.CoxTobWalk::coxRun)));
+        checks.add(new SelfTest.Check("raid:tob_walk", () -> g.walk(com.runecraft.content.raids.CoxTobWalk::tobRun)));
+        checks.add(new SelfTest.Check("raid:tob_wipe", () -> g.walk(com.runecraft.content.raids.CoxTobWalk::tobWipe)));
         checks.add(new SelfTest.Check("raid:cox_supplies", g::coxSupplies));
         checks.add(new SelfTest.Check("raid:toa_full_run", g::toaFullRun));
         checks.add(new SelfTest.Check("raid:toa_deaths", g::toaDeaths));
@@ -555,6 +558,21 @@ final class GameplayChecks {
             throw failure(e.getMessage());
         } finally {
             RaidManager.selfTestClose(raid);
+        }
+    }
+
+    /**
+     * A whole CoX or ToB run walked room by room as the real player (round 33, {@code CoxTobWalk}). Raid rooms only see
+     * players in the server's player list, so the fake player can't do it.
+     */
+    private String walk(java.util.function.BiFunction<ServerPlayer, BlockPos, String> run) {
+        if (!c.realPlayer()) {
+            throw new SelfTest.Skip("raid rooms only see players in the player list; runs in '/rc selftest real raid:'");
+        }
+        try {
+            return run.apply(p(), c.near(0, 2));
+        } catch (AssertionError e) {
+            throw failure(e.getMessage());
         }
     }
 

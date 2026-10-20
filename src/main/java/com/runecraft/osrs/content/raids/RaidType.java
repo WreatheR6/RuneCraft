@@ -6,11 +6,10 @@ package com.runecraft.osrs.content.raids;
  */
 public enum RaidType {
     /**
-     * Chambers of Xeric. In OSRS the entrance is on Mount Quidamortem in Great Kourend (~1233, 3573),
-     * which lies off this map; it is placed on the north-west coast of Tirannwn instead, looking out
-     * west over the sea towards where Kourend would be.
+     * Chambers of Xeric, entered on Mount Quidamortem in Great Kourend (OSRS ~1233, 3573; round 33 moved it there from
+     * the Tirannwn coast, under a new place id so existing worlds build it).
      */
-    COX("chambers_of_xeric", "Chambers of Xeric", "mount_quidamortem", "Mount Quidamortem", 2180, 3400, 100),
+    COX("chambers_of_xeric", "Chambers of Xeric", "cox_mount_quidamortem", "Mount Quidamortem", 1233, 3573, 100),
     /** Theatre of Blood, beneath Ver Sinhaza in Morytania. */
     TOB("theatre_of_blood", "Theatre of Blood", "ver_sinhaza", "Ver Sinhaza", 3650, 3220, 5),
     /**

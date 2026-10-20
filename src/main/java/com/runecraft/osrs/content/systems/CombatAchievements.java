@@ -262,6 +262,20 @@ public final class CombatAchievements {
     public static final String FLAG_PRINKIPAS_CHANGED = "prinkipas_changed";
     /** A supporting pillar collapsed during Verzik's first phase (ToB Entry "No-Pillar"). */
     public static final String FLAG_VERZIK_PILLAR_LOST = "verzik_pillar_lost";
+    /** The fight broke a ToB room's "Perfect" condition ("Perfect Maiden", "Perfect Bloat", ... round 33). */
+    public static final String FLAG_MAIDEN_IMPERFECT = "maiden_imperfect";
+    public static final String FLAG_BLOAT_IMPERFECT = "bloat_imperfect";
+    public static final String FLAG_SOTETSEG_IMPERFECT = "sotetseg_imperfect";
+    public static final String FLAG_XARPUS_IMPERFECT = "xarpus_imperfect";
+    public static final String FLAG_VERZIK_IMPERFECT = "verzik_imperfect";
+    /** A Verzik nylocas exploded on someone (ToB "Pop It"). */
+    public static final String FLAG_VERZIK_NYLO_DAMAGE = "verzik_nylo_damage";
+    /** Sotetseg's ball of death taken alone and survived (ToB "A Timely Snack"). */
+    public static final String COUNT_SOTETSEG_BALL_ALONE = "sotetseg_ball_alone";
+    /** The Great Olm fight broke "Perfect Olm" (listed specials, a claw regrowing, one acid pool twice running). */
+    public static final String FLAG_OLM_IMPERFECT = "olm_imperfect";
+    /** The Olm used Crystal Burst, lightning, portals or the healing claw in his penultimate phase (CoX "A Not So Special Lizard"). */
+    public static final String FLAG_OLM_PENULTIMATE_SPECIAL = "olm_penultimate_special";
     /** Rolling boulders destroyed in Ba-Ba's room (ToA "I'm in a rush"). */
     public static final String COUNT_BABA_BOULDER = "baba_boulder";
     /** Times a Warden's core was ejected in phase 2 (ToA "Down Do Specs"). */

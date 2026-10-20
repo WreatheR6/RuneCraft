@@ -98,27 +98,23 @@ public final class CoxSupplies {
     public static final String WATER_GOURD = "water_filled_gourd_vial";
     public static final String CAVE_WORMS = "cave_worms";
 
-    /** Game ticks a CoX herb takes to grow. // approx: about a minute */
-    public static final int HERB_GROW_TICKS = 100;
+    /** Game ticks a CoX herb takes to grow (OSRS wiki: fully grown in 30 seconds). */
+    public static final int HERB_GROW_TICKS = 50;
 
     /** Herbs one patch yields. // approx: 3 plus one per 15 Farming levels above the herb's level, at most 7 */
     public static int herbYield(Herb herb, int farmingLevel) {
         return Math.min(7, 3 + Math.max(0, farmingLevel - herb.farmingLevel) / 15);
     }
 
-    /**
-     * The seed raking a patch's weeds turns up, or null (OSRS: seeds come from raking the weeds at the end of a
-     * floor; the odds are not published). // approx: 1/2 golpar, 1/3 buchu, 1/6 noxifer, never one above the Farming
-     * level (falls back to the best allowed)
-     */
-    public static String rakeSeed(int farmingLevel, Random random) {
-        int r = random.nextInt(6);
-        Herb herb = r < 3 ? Herb.GOLPAR : r < 5 ? Herb.BUCHU : Herb.NOXIFER;
-        while (herb.ordinal() > 0 && farmingLevel < herb.farmingLevel) {
-            herb = Herb.values()[herb.ordinal() - 1];
-        }
-        return farmingLevel < herb.farmingLevel ? null : herb.seed();
+    /** One rake of the Chambers' weeds (OSRS wiki, "Weeds (Chambers of Xeric)"): 1-3 golpar, buchu or noxifer seeds, 1/3 each. */
+    public static Map.Entry<String, Integer> rakeSeeds(Random random) {
+        Herb herb = Herb.values()[random.nextInt(3)];
+        return Map.entry(herb.seed(), 1 + random.nextInt(3));
     }
+
+    /** Seeds the demi-bosses drop (OSRS wiki): 5-10 of each from mystics and shamans, 3-5 of each from a Guardian. */
+    public static final int[] MYSTIC_SEEDS = {5, 10};
+    public static final int[] GUARDIAN_SEEDS = {3, 5};
 
     // ------------------------------------------------------------------ potions
 
@@ -374,6 +370,35 @@ public final class CoxSupplies {
         return best;
     }
 
+    /**
+     * The chance of burning raw CoX food on the fire (OSRS: CoX fish and bats can burn; their stop-burn levels aren't
+     * published). // approx: 50% at the required Cooking level, falling to none 30 levels above it
+     */
+    public static double burnChance(int cookingLevel, Food food) {
+        int over = cookingLevel - food.level();
+        return over >= 30 ? 0 : Math.max(0, 0.5 - over * 0.5 / 30);
+    }
+
+    /** The burnt item a CoX fish or bat turns into. */
+    public static String burnt(Food food) {
+        return food.skill() == Skill.FISHING ? BURNT_FISH : BURNT_BAT;
+    }
+
+    public static final String BURNT_FISH = "burnt_cox_fish";
+    public static final String BURNT_BAT = "burnt_bat";
+    /** Vespula's room: medivaemia blossoms heal the lux grubs (OSRS). */
+    public static final String BLOSSOM = "medivaemia_blossom";
+    /** Tightrope room: the keystone crystal from the far side dispels the shimmering barrier (OSRS). */
+    public static final String KEYSTONE = "keystone_crystal";
+
+    /**
+     * The CoX food tier a resource room yields (OSRS wiki: "the tier being determined by the team's overall Hunter/Fishing
+     * level"): the best tier the team's average level allows. // approx: average rather than the hidden team formula
+     */
+    public static Food teamCatch(Skill skill, int averageLevel) {
+        return catchFor(skill, averageLevel);
+    }
+
     public static Food foodByRaw(String id) {
         for (Food f : FOODS) {
             if (f.raw().equals(id)) {
@@ -429,7 +454,8 @@ public final class CoxSupplies {
             ids.add(h.grimy());
             ids.add(h.clean);
         }
-        ids.addAll(List.of(STINKHORN, ENDARKENED, CICELY, EMPTY_GOURD, WATER_GOURD, CAVE_WORMS));
+        ids.addAll(List.of(STINKHORN, ENDARKENED, CICELY, EMPTY_GOURD, WATER_GOURD, CAVE_WORMS, BURNT_FISH, BURNT_BAT, BLOSSOM,
+                KEYSTONE));
         for (Food f : FOODS) {
             ids.add(f.raw());
             ids.add(f.cooked());
@@ -462,6 +488,12 @@ public final class CoxSupplies {
             items.add(f.cooked(), cap(f.name().toLowerCase(java.util.Locale.ROOT)), Kind.FOOD, fish ? "fish_cooked" : "meat_cooked",
                     fish ? 0xB08A5A : 0x9A6A3A).value(1).heal(f.heal()).examine("Heals " + f.heal() + " hitpoints.");
         }
+        items.add(BURNT_FISH, "Burnt fish", Kind.SIMPLE, "fish_burnt", 0x2A2A2A).value(1).examine("Oops!");
+        items.add(BURNT_BAT, "Burnt bat", Kind.SIMPLE, "meat_burnt", 0x2A2A2A).value(1).examine("Oops!");
+        items.add(BLOSSOM, "Medivaemia blossom", Kind.SIMPLE, "secondary", 0xE070B0).value(1)
+                .examine("Use it on a lux grub to heal it.");
+        items.add(KEYSTONE, "Keystone crystal", Kind.SIMPLE, "shard", 0x9AE0F0).value(1).stack(1)
+                .examine("Use it on the shimmering barrier.");
         for (Brew b : BREWS.values()) {
             items.add(b.id(), b.potion().displayName(b.strength()), Kind.POTION, "potion", b.potion().colour).value(1).stack(1)
                     .examine("A potion brewed in the Chambers of Xeric. It cannot leave them.");

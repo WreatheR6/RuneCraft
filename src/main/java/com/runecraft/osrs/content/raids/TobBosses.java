@@ -13,6 +13,12 @@ import java.util.List;
  * parties as OSRS does). Stats are OSRS values where known, approximations otherwise.
  */
 public final class TobBosses {
+    /**
+     * The Dawnbringer (OSRS): from the skeleton at the entrance to Verzik's throne room; its special breaks her phase 1
+     * shield, then it crumbles. Theatre only.
+     */
+    public static final String DAWNBRINGER = "dawnbringer";
+
     private TobBosses() {
     }
 
@@ -61,16 +67,18 @@ public final class TobBosses {
                         .size(1.2f, 2.2f, 1.6f).moveSpeed(0.0),
                 raid("verzik_vitur_p2", "Verzik Vitur").level(1265).stats(3500, 400, 400, 200, 400, 400).speed(4)
                         .defenceBonus(100, 60, 100, 70, 250)
-                        .attack(AttackDef.of("bouncing bomb", AttackType.RANGED, 40, 25, 10).particle("minecraft:flame"))
-                        .attack(AttackDef.of("electric bolt", AttackType.MAGIC, 40, 25, 10).particle("minecraft:electric_spark"))
-                        .attack(AttackDef.of("bounce", AttackType.CRUSH, 30, 3, 6).special(Special.KNOCKBACK, 6))
+                        // OSRS wiki: urnbomb 44, lightning 48, body slam 45 (the room drives her attacks; see TobRules).
+                        .attack(AttackDef.of("bouncing bomb", AttackType.RANGED, 44, 25, 10).particle("minecraft:flame"))
+                        .attack(AttackDef.of("electric bolt", AttackType.MAGIC, 48, 25, 10).particle("minecraft:electric_spark"))
+                        .attack(AttackDef.of("bounce", AttackType.CRUSH, 45, 3, 6).special(Special.KNOCKBACK, 6))
                         .minion("nylocas_matomenos", 2)
                         .size(1.4f, 2.2f, 1.8f).moveSpeed(0.22),
                 raid("verzik_vitur_p3", "Verzik Vitur").level(1520).stats(3500, 400, 400, 150, 300, 300).speed(7)
                         .defenceBonus(70, 30, 70, 100, 230)
-                        .attack(AttackDef.of("spider bite", AttackType.STAB, 34, 3, 10))
-                        .attack(AttackDef.of("ranged spit", AttackType.RANGED, 34, 25, 10).particle("minecraft:crit"))
-                        .attack(AttackDef.of("magic web", AttackType.MAGIC, 34, 25, 10).particle("minecraft:witch"))
+                        // OSRS wiki: melee 63, projectiles 33 (34 enraged; the room drives her attacks; see TobRules).
+                        .attack(AttackDef.of("spider bite", AttackType.STAB, 63, 3, 10))
+                        .attack(AttackDef.of("ranged spit", AttackType.RANGED, 33, 25, 10).particle("minecraft:crit"))
+                        .attack(AttackDef.of("magic web", AttackType.MAGIC, 33, 25, 10).particle("minecraft:witch"))
                         .phase(20, "Verzik Vitur: I'm not finished with you just yet!", 1.15, false)
                         .size(1.8f, 1.6f, 2.0f).moveSpeed(0.24));
     }

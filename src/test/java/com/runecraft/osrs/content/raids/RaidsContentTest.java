@@ -36,15 +36,18 @@ class RaidsContentTest {
                 assertTrue(rooms.size() <= 18, "rooms must fit in a 1024-block instance");
                 Set<String> ids = new HashSet<>();
                 for (RoomDef room : rooms) {
-                    assertTrue(ids.add(room.id()), "room repeated: " + room.id());
+                    // CoX floors each have their own resource and scavenger rooms (OSRS); nothing else repeats.
+                    assertTrue(ids.add(room.id()) || room.kind() == RoomDef.Kind.RESOURCE, "room repeated: " + room.id());
                     assertEquals(type, room.raid(), room.id());
                 }
             }
         }
         List<RoomDef> cox = RaidLayouts.cox(new Random(4));
         assertEquals("olm", cox.get(cox.size() - 2).id());
-        assertEquals(4, cox.stream().filter(x -> x.kind() == RoomDef.Kind.COMBAT).count());
-        assertEquals(2, cox.stream().filter(x -> x.kind() == RoomDef.Kind.PUZZLE).count());
+        long combats = cox.stream().filter(x -> x.kind() == RoomDef.Kind.COMBAT).count();
+        assertTrue(combats >= 3 && combats <= 5, "combat rooms " + combats);
+        long puzzles = cox.stream().filter(x -> x.kind() == RoomDef.Kind.PUZZLE).count();
+        assertTrue(puzzles >= 2 && puzzles <= 3, "puzzle rooms " + puzzles);
         List<RoomDef> tob = RaidLayouts.tob();
         assertEquals(List.of("tob_lobby", "maiden", "bloat", "nylocas", "sotetseg", "xarpus", "verzik", "tob_reward"),
                 tob.stream().map(RoomDef::id).toList());

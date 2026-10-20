@@ -545,8 +545,9 @@ public final class CombatAchievementRules {
             312;RAID;COX;1;deathless
             313;RAID;COX;1;size=1 nodeath
             314;RULE;cox_lizardman_shaman;1;nodmg
-            317;RULE;great_olm;1;size=1 nodmg=mechanic,hazard,crystal_burst
-            318;RULE;great_olm;1;size=3 nodmg=mechanic,hazard,crystal_burst
+            317;RULE;great_olm;1;size=1 noflag=olm_imperfect
+            318;RULE;great_olm;1;size=3 noflag=olm_imperfect
+            306;RULE;great_olm;1;size=1 noflag=olm_penultimate_special
             320;RULE;cox_ice_demon;1;noprayer=PROTECT_FROM_MISSILES
             321;RULE;cox_ice_demon;1;finishspell=*fire
             322;RAID;COX;1;mode=normal size=1 t<21:00
@@ -677,10 +678,13 @@ public final class CombatAchievementRules {
             194;RULE;the_nightmare;1;players>=5 t<5:00
             195;RULE;the_nightmare;1;players>=5 t<4:00
             196;RULE;the_nightmare;1;players>=5 t<3:30
-            244;RULE;the_maiden_of_sugadinti;1;nodmg=mechanic,hazard,other,offprayer
-            245;RULE;pestilent_bloat;1;nodmg=boss,mechanic,hazard
-            247;RULE;sotetseg;1;nodmg=mechanic,hazard,offprayer
-            248;RULE;xarpus;1;nodmg=boss
+            244;RULE;the_maiden_of_sugadinti;1;mode=normal noflag=maiden_imperfect
+            245;RULE;pestilent_bloat;1;mode=normal noflag=bloat_imperfect
+            247;RULE;sotetseg;1;mode=normal noflag=sotetseg_imperfect
+            248;RULE;xarpus;1;mode=normal noflag=xarpus_imperfect
+            249;RULE;verzik_vitur_p3;1;mode=normal noflag=verzik_imperfect
+            241;RULE;verzik_vitur_p3;1;mode=normal noflag=verzik_nylo_damage
+            242;RULE;sotetseg;1;mode=normal count>=3:sotetseg_ball_alone
             250;RULE;the_maiden_of_sugadinti;1;noprayloss
             251;RULE;xarpus;1;style=melee
             386;RULE;the_maiden_of_sugadinti;1;mode=entry noflag=bloodspawn_old

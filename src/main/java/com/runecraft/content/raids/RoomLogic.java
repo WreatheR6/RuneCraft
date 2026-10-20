@@ -64,7 +64,7 @@ public class RoomLogic {
             case "crystal_crabs" -> new CoxRooms.CrystalCrabs(raid, def, index);
             case "olm" -> new CoxRooms.Olm(raid, def, index);
             case "cox_scavengers" -> new CoxRooms.Scavengers(raid, def, index);
-            case "cox_farming" -> new CoxRooms.Farming(raid, def, index);
+            case "cox_farming", "cox_hunting" -> new CoxRooms.Farming(raid, def, index);
             case "maiden" -> new TobRooms.Maiden(raid, def, index);
             case "bloat" -> new TobRooms.Bloat(raid, def, index);
             case "nylocas" -> new TobRooms.Nylocas(raid, def, index);
