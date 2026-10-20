@@ -53,6 +53,47 @@ class ToaBossRulesTest {
         assertEquals(3, ToaBossRules.ZEBAK_ROCK_HP / ToaBossRules.ZEBAK_ROAR_ON_ROCK, "a rock shelters from one whole roar");
     }
 
+    /** Boulder hitpoints match the wiki's measured table (src/test/resources/osrs/raids/toa_boulder_hp.tsv). */
+    @Test
+    void babaBouldersMatchTheWikiTable() throws Exception {
+        int rows = 0;
+        for (String line : java.nio.file.Files.readAllLines(java.nio.file.Path.of("src/test/resources/osrs/raids/toa_boulder_hp.tsv"))) {
+            if (line.isBlank() || line.startsWith("#")) {
+                continue;
+            }
+            String[] r = line.split("\t");
+            int team = Integer.parseInt(r[0]);
+            for (int path = 0; path <= 4; path++) {
+                assertEquals(Integer.parseInt(r[path + 1]), ToaBossRules.babaBoulderHp(team, path), "team " + team + " path " + path);
+            }
+            rows++;
+        }
+        assertEquals(8, rows);
+        assertEquals(31, ToaBossRules.babaBoulderHp(1, 6), "path levels above 4 add nothing more");
+    }
+
+    @Test
+    void babaShockwaveAndSarcophagi() {
+        // A 3x3 plus one tile straight out on each side (13 tiles); 5x5 plus one out with Shaking Things Up (29 tiles).
+        int normal = 0;
+        int shaking = 0;
+        for (int dx = -4; dx <= 4; dx++) {
+            for (int dz = -4; dz <= 4; dz++) {
+                normal += ToaBossRules.babaShockwaveHits(dx, dz, false) ? 1 : 0;
+                shaking += ToaBossRules.babaShockwaveHits(dx, dz, true) ? 1 : 0;
+            }
+        }
+        assertEquals(13, normal);
+        assertEquals(29, shaking);
+        assertTrue(ToaBossRules.babaShockwaveHits(0, 2, false) && !ToaBossRules.babaShockwaveHits(1, 2, false));
+        assertTrue(ToaBossRules.babaShockwaveHits(0, 3, true) && !ToaBossRules.babaShockwaveHits(0, 3, false));
+        // Opened sarcophagi hit a single tile (since September 2022), more from path level 2.
+        assertEquals(0, ToaBossRules.babaSarcophagusBlastRadius(0));
+        assertEquals(0, ToaBossRules.babaSarcophagusBlastRadius(1));
+        assertEquals(1, ToaBossRules.babaSarcophagusBlastRadius(2));
+        assertEquals(2, ToaBossRules.babaSarcophagusBlastRadius(5));
+    }
+
     @Test
     void wardens() {
         assertEquals(7, ToaBossRules.wardenSlamEvery(Set.of()));

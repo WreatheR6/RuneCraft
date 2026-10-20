@@ -582,8 +582,9 @@ final class ToaBossRooms {
         private static final String[] STYLES = {"melee", "ranged", "magic"};
         DataBossEntity akkha;
         int style;
+        /** Attacks made (autos and specials), and auto-attacks since the last special. */
+        int attacks;
         private int autos;
-        private int styleAttacks;
         private long lastAttack;
         final LivingEntity[] shadows = new LivingEntity[4];
         private final int[] shadowCharge = new int[4];
@@ -627,8 +628,8 @@ final class ToaBossRooms {
             thresholds = 0;
             hidden = false;
             autos = 0;
+            attacks = 0;
             style = 0;
-            styleAttacks = 0;
             lastAttack = now();
             trailTicks = 0;
             trailLast.clear();
@@ -735,13 +736,29 @@ final class ToaBossRooms {
             return list.size() >= 3 ? list.get(style) : null;
         }
 
-        /** Each of Akkha's auto-attacks: partial protection, ranged/magic on everyone, Keep Back, specials. */
+        /**
+         * Each of Akkha's attacks: every seventh (sixth with Stay Vigilant) is a special instead of an auto-attack, after
+         * which he changes style; the autos get partial protection, ranged/magic hit everyone, Keep Back.
+         */
         @Override
         public int bossOutgoing(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
             if (boss != akkha || hidden || finalStand) {
                 return 0;
             }
             Set<Invocation> inv = raid.invocations();
+            lastAttack = now();
+            attacks++;
+            if (Invocation.akkhaSpecialTurn(inv, attacks)) {
+                // OSRS: six auto-attacks, then the special takes the seventh attack's place.
+                boolean switches = Invocation.akkhaSwitchesAfter(inv, true, autos);
+                autos = 0;
+                later(1, () -> specials(inv));
+                if (switches) {
+                    switchStyle();
+                }
+                return 0;
+            }
+            autos++;
             int max = attacks(akkha).get(style).maxHit();
             if (damage == 0 && RaidEffects.protectedFrom(player, type)) {
                 damage = (int) Math.round(rnd().nextInt(max + 1)
@@ -763,18 +780,6 @@ final class ToaBossRooms {
                     }
                 }
             }
-            lastAttack = now();
-            autos++;
-            styleAttacks++;
-            boolean special = autos % Invocation.akkhaSpecialEvery(inv) == 0;
-            if (special) {
-                later(1, () -> specials(inv));
-            }
-            int oneIn = Invocation.akkhaSwitchOneIn(inv, special);
-            boolean early = inv.contains(Invocation.STAY_VIGILANT) && styleAttacks < Invocation.AKKHA_MIN_STYLE_ATTACKS;
-            if (oneIn > 0 && !early && rnd().nextInt(oneIn) == 0) {
-                switchStyle();
-            }
             return damage;
         }
 
@@ -788,7 +793,6 @@ final class ToaBossRooms {
 
         private void switchStyle() {
             style = Invocation.akkhaNextStyle(style);
-            styleAttacks = 0;
             warn("Akkha switches to " + STYLES[style] + " - and prays against it!");
         }
 
@@ -1323,8 +1327,24 @@ final class ToaBossRooms {
                         shield.hurt(world().damageSources().generic(), ToaBossRules.THROW_ON_BABOON);
                         continue;
                     }
+                    int dmg = (raid.partySize() > 1 ? 35 : 45) + rnd().nextInt(16); // approx: massive, less in groups
+                    ServerPlayer buddy = null;
+                    for (ServerPlayer o : players()) {
+                        if (o != p && Math.abs(o.getBlockX() - stand.getX()) <= 1 && Math.abs(o.getBlockZ() - stand.getZ()) <= 1) {
+                            buddy = o;
+                            break;
+                        }
+                    }
+                    if (buddy != null) {
+                        // OSRS (Ba-Ba page): standing next to another player also shields you; the boulder's damage is
+                        // shared with them. // approx: halved for each
+                        Msg.red(p, "You and " + buddy.getName().getString() + " share the boulder's impact.");
+                        hurt(baba, p, dmg / 2);
+                        hurt(baba, buddy, dmg / 2);
+                        continue;
+                    }
                     Msg.red(p, "The boulder crushes you!");
-                    hurt(baba, p, (raid.partySize() > 1 ? 35 : 45) + rnd().nextInt(16)); // approx: massive, less in groups
+                    hurt(baba, p, dmg);
                 }
                 if (debrisLost) {
                     // OSRS: if debris was destroyed, Ba-Ba follows up with another Rockfall.
@@ -1333,7 +1353,10 @@ final class ToaBossRooms {
             });
         }
 
-        /** Shockwave: Ba-Ba slams the ground in front of her target, 5x5 (7x7 with Shaking Things Up). */
+        /**
+         * Shockwave (OSRS): Ba-Ba faces her nearest target and shadows spread over the ground there - a 3x3 plus one tile out
+         * on each side (5x5 plus one out with Shaking Things Up); a few ticks later the swipe hits every tile marked.
+         */
         private void shockwave(Set<Invocation> inv) {
             ServerPlayer target = null;
             double best = 7 * 7;
@@ -1344,10 +1367,30 @@ final class ToaBossRooms {
                     target = p;
                 }
             }
-            if (target != null) {
-                RaidEffects.strike(world(), target.position(), Invocation.babaSlamRadius(inv) + 0.5, 20, 3, baba, ParticleTypes.CLOUD,
-                        AttackType.CRUSH, true);
+            if (target == null) {
+                return;
             }
+            boolean shaking = inv.contains(Invocation.SHAKING_THINGS_UP);
+            BlockPos centre = target.blockPosition();
+            for (int dx = -3; dx <= 3; dx++) {
+                for (int dz = -3; dz <= 3; dz++) {
+                    if (ToaBossRules.babaShockwaveHits(dx, dz, shaking)) {
+                        world().sendParticles(ParticleTypes.CLOUD, centre.getX() + dx + 0.5, centre.getY() + 0.1, centre.getZ() + dz + 0.5, 2, 0.3, 0,
+                                0.3, 0);
+                    }
+                }
+            }
+            later(3, () -> {
+                if (!alive(baba) || rolling) {
+                    return;
+                }
+                for (ServerPlayer p : players()) {
+                    if (ToaBossRules.babaShockwaveHits(p.getBlockX() - centre.getX(), p.getBlockZ() - centre.getZ(), shaking)) {
+                        Msg.red(p, "Ba-Ba's shockwave knocks the wind out of you!");
+                        hurt(baba, p, rnd().nextInt(21)); // approx: up to 20, "dependent on the player's position"
+                    }
+                }
+            });
         }
 
         /**
@@ -1366,7 +1409,9 @@ final class ToaBossRooms {
             boolean gap = Invocation.babaMindTheGap(raid.invocations());
             for (ServerPlayer p : players()) {
                 double dz = p.getZ() - (center().getZ() + 0.5);
-                if (gap && Math.abs(dz) < 14) { // approx: the room's north and south edges are safe
+                double dx = p.getX() - (center().getX() + 0.5);
+                // OSRS: with Mind the Gap! only the north and south sides, or the very top row by her throne, are safe.
+                if (gap && Math.abs(dz) < PIT_HALF_WIDTH && dx < TOP_ROW_X) {
                     Msg.red(p, "You are flung into the gap!");
                     RaidEffects.hitRaw(baba, p, 999);
                     continue;
@@ -1383,7 +1428,8 @@ final class ToaBossRooms {
                 // OSRS: one cracked boulder a column (ranged always max-hits it), near the last column's.
                 int crackedAt = ToaBossRules.crackedBoulder(lastCracked, rnd());
                 lastCracked = crackedAt;
-                int hp = RaidScaling.toaScaledHp(ToaBossRules.babaBoulderHp(raid.pathLevel()), 0, 0, raid.partySize(), false);
+                // OSRS: team size counts half for boulders, path level +10% / +25%, raid level not at all.
+                int hp = ToaBossRules.babaBoulderHp(raid.partySize(), raid.pathLevel());
                 for (int i = 0; i < ToaBossRules.BOULDERS_PER_SET; i++) {
                     LivingEntity b = spawnMob("baba_boulder", at(12, -8 + i * 4), false);
                     if (b != null) {
@@ -1412,8 +1458,7 @@ final class ToaBossRooms {
                     if (p.distanceToSqr(b) < 1.4 * 1.4 && !cooldown(p, 2)) {
                         Msg.red(p, "A rolling boulder crushes you!");
                         hurt(null, p, 15 + rnd().nextInt(10)); // approx: heavy
-                        p.push(-1.2, 0.3, 0);
-                        p.hurtMarked = true;
+                        boulderKnockback(p);
                     }
                 }
                 for (LivingEntity bab : living("toa_baba_baboon")) {
@@ -1429,6 +1474,32 @@ final class ToaBossRooms {
             if (setsLeft <= 0 && rolling.isEmpty()) {
                 endRolling();
             }
+        }
+
+        /** The pit at the bottom (west) of the room: the middle columns, west of this line. */
+        static final int PIT_X = -18;
+        static final int PIT_HALF_WIDTH = 14;
+        /** The very top row, beside her throne, where her scream doesn't reach the pit (OSRS Mind the Gap!). */
+        static final int TOP_ROW_X = 15;
+
+        /**
+         * A rolling boulder knocks its victim four tiles back down the slope (OSRS); with Mind the Gap! a knock into the pit
+         * at the bottom kills.
+         */
+        void boulderKnockback(ServerPlayer p) {
+            double x = p.getX() - 4;
+            double dz = p.getZ() - (center().getZ() + 0.5);
+            double pit = center().getX() + 0.5 + PIT_X;
+            if (x < pit && Math.abs(dz) < PIT_HALF_WIDTH) {
+                if (Invocation.babaMindTheGap(raid.invocations())) {
+                    Msg.red(p, "The boulder knocks you into the gap!");
+                    RaidEffects.hitRaw(baba, p, 999);
+                    return;
+                }
+                x = pit + 1;
+            }
+            p.teleportTo(Math.max(x, center().getX() + 0.5 - RaidBuilder.HALF + 1), p.getY(), p.getZ());
+            p.hurtMarked = true;
         }
 
         private void endRolling() {
@@ -1490,15 +1561,25 @@ final class ToaBossRooms {
             }
         }
 
+        /**
+         * An opened sarcophagus launches unstable energy in a cone in front of it (OSRS): each blast lands on one tile (a
+         * wider area every two path levels), with Gotta Have Faith hurting more the more prayer points you have left.
+         */
         private void sarcophagusBlast(BlockPos s, Set<Invocation> inv) {
             int dz = s.getZ() < center().getZ() ? 1 : -1;
-            Vec3 at = Vec3.atBottomCenterOf(s.offset(0, 0, dz * (2 + Math.min(4, raid.pathLevel()) / 2)));
-            double radius = 1.2 + 0.6 * (Math.min(4, raid.pathLevel()) / 2);
-            world().sendParticles(ParticleTypes.SOUL, at.x, at.y + 0.2, at.z, 20, radius / 2, 0.1, radius / 2, 0.01);
+            int reach = 2 + rnd().nextInt(6);
+            BlockPos at = s.offset(rnd().nextInt(reach + 1) - reach / 2, 0, dz * reach);
+            int r = ToaBossRules.babaSarcophagusBlastRadius(raid.pathLevel());
+            for (int x = -r; x <= r; x++) {
+                for (int z = -r; z <= r; z++) {
+                    world().sendParticles(ParticleTypes.SOUL, at.getX() + x + 0.5, at.getY() + 0.2, at.getZ() + z + 0.5, 4, 0.3, 0.1, 0.3, 0.01);
+                }
+            }
             later(3, () -> {
                 for (ServerPlayer pl : players()) {
-                    if (RaidEffects.horizontalDistSq(pl.position(), at) <= radius * radius) {
-                        int dmg = rnd().nextInt(13) + Invocation.babaFaithDamage(inv, RoomLogic.prayerPoints(pl)); // approx: 0-12
+                    if (Math.abs(pl.getBlockX() - at.getX()) <= r && Math.abs(pl.getBlockZ() - at.getZ()) <= r) {
+                        int dmg = rnd().nextInt(13) + Invocation.babaFaithDamage(inv, RoomLogic.prayerPoints(pl),
+                                RoomLogic.level(pl, Skill.PRAYER)); // approx: 0-12
                         hurt(baba, pl, dmg);
                     }
                 }

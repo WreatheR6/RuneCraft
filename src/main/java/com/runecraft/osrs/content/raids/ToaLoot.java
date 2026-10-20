@@ -196,6 +196,21 @@ public final class ToaLoot {
         return SHROUDS.get(tier - 1);
     }
 
+    /**
+     * The shroud's "Change" option (OSRS wiki: "alter the cape's appearance to other tiers, providing that they have met the
+     * completion count required for them"): the next unlocked tier after {@code current}, wrapping round to tier 1, or
+     * null when {@code current} isn't a shroud or no other tier is unlocked.
+     */
+    public static String shroudChange(String current, int normalOrExpertCompletions) {
+        int at = SHROUDS.indexOf(current);
+        int unlocked = shroudTier(normalOrExpertCompletions);
+        if (at < 0 || unlocked <= 1) {
+            return null;
+        }
+        int next = (at + 1) % unlocked;
+        return next == at ? null : SHROUDS.get(next);
+    }
+
     /** The completion-count key of a raid's mode (OSRS keeps Entry, Normal and Expert mode counts apart). */
     public static String modeKey(int raidLevel) {
         return raidLevel < 150 ? "tombs_of_amascut_entry" : raidLevel < 300 ? "tombs_of_amascut_normal" : "tombs_of_amascut_expert";

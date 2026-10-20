@@ -481,6 +481,10 @@ public final class RaidManager {
             Msg.game(player, "You search the chest beside the obelisk and find Icthlarin's shroud (tier "
                     + (com.runecraft.osrs.content.raids.ToaLoot.SHROUDS.indexOf(shroud) + 1) + ").");
         }
+        if (tier >= 2) {
+            // OSRS: the shroud's Change option switches between the unlocked tiers.
+            Msg.game(player, "You have unlocked " + tier + " tiers of Icthlarin's shroud: use /raids shroud to change its appearance.");
+        }
     }
 
     /**

@@ -1022,7 +1022,8 @@ final class ToaWardens extends RoomLogic {
      * furthest row of floor every so often, up to the row in front of the Warden. // approx: rates
      */
     private void enrageTick(long tick, long now, List<ServerPlayer> players) {
-        if (tick % 2 == 0) {
+        boolean insanity = raid.invocations().contains(Invocation.INSANITY);
+        if (tick % ToaBossRules.wardenLightningEvery(insanity) == 0) {
             int x = -18 + rippedColumns + rnd().nextInt(Math.max(1, 30 - rippedColumns));
             RaidEffects.strike(world(), vec(x, -18 + rnd().nextInt(37)), 1.0, 20, 4, warden, ParticleTypes.SMOKE, null, true);
         }
@@ -1033,7 +1034,7 @@ final class ToaWardens extends RoomLogic {
         }
         int lastColumn = OBELISK_X - 3 + RaidBuilder.HALF - 1; // columns counted from the west wall
         if (now >= nextRip && rippedColumns < lastColumn) {
-            nextRip = now + 8;
+            nextRip = now + ToaBossRules.wardenRipEvery(insanity);
             int x = -RaidBuilder.HALF + 1 + rippedColumns;
             rippedColumns++;
             BlockPos c = center();

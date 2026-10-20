@@ -322,11 +322,18 @@ public final class RaidSelfTest {
                     "the lobby chest gave " + given + " for 100 completions");
             expect(RaidManager.giveShroud(p, 100) == null && Inv.count(p, given) == 1,
                     "a second search gave another shroud while one was carried");
+            // OSRS: the shroud's Change option cycles through the unlocked tiers.
+            expect(ToaSupplyService.changeShroud(p, 100) == 0 && Inv.count(p, given) == 1, "the shroud changed with only tier 1 unlocked");
+            expect(ToaSupplyService.changeShroud(p, 500) == 1 && Inv.count(p, ToaLoot.SHROUDS.get(1)) == 1 && Inv.count(p, given) == 0,
+                    "changing the shroud with 500 completions did not give tier 2");
+            expect(ToaSupplyService.changeShroud(p, 500) == 1 && Inv.count(p, given) == 1, "changing it again did not wrap back to tier 1");
             Inv.remove(p, given, 1);
             sys.worn.put(capeSlot, Inv.stack(given, 1));
             String again = RaidManager.giveShroud(p, 2_000);
             expect(again == null, "searching the chest with a shroud worn gave " + again);
-            return "the lobby chest gives one shroud, none while one is worn";
+            expect(ToaSupplyService.changeShroud(p, 2_000) == 1 && ToaLoot.SHROUDS.get(1).equals(Inv.idOf(sys.worn.get(capeSlot))),
+                    "the worn shroud did not change");
+            return "the lobby chest gives one shroud, none while one is worn; the shroud changes between unlocked tiers";
         } finally {
             for (String s : ToaLoot.SHROUDS) {
                 Inv.remove(p, s, Inv.count(p, s));

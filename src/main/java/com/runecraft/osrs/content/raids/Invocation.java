@@ -259,9 +259,17 @@ public enum Invocation {
     public static final int BLOOD_CLOUD_HP = 40;
     public static final int BLOOD_CLOUD_COST_PER_TILE = 2;
 
-    /** Akkha's special attack interval in attacks (OSRS: every 7th attack, every 6th with Stay Vigilant). */
+    /**
+     * Akkha's special attack interval in attacks (OSRS, since 25 June 2025): every 7th attack (six auto-attacks, then the
+     * special), every 6th with Stay Vigilant.
+     */
     public static int akkhaSpecialEvery(Set<Invocation> set) {
         return set.contains(STAY_VIGILANT) ? 6 : 7;
+    }
+
+    /** Whether Akkha's {@code attackNumber}th attack (1-based) is a special attack rather than an auto-attack. */
+    public static boolean akkhaSpecialTurn(Set<Invocation> set, int attackNumber) {
+        return attackNumber > 0 && attackNumber % akkhaSpecialEvery(set) == 0;
     }
 
     // ------------------------------------------------------------------ Akkha
@@ -272,18 +280,16 @@ public enum Invocation {
     }
 
     /**
-     * Odds (one in n) that Akkha changes style after an attack, or 0 for never (OSRS wiki): normally only after each
-     * special attack; with Stay Vigilant a 1/4 roll after an auto-attack and a 1/5 roll after a special.
+     * Whether Akkha changes style (and prayer) after an attack (OSRS wiki, 25 June 2025 "Summer Sweep Up: Combat"): only
+     * after a special attack; with Stay Vigilant only if he used a regular attack since his last special (so the second of
+     * two specials in a row doesn't switch again). The earlier random 1/4 and 1/5 rolls of Stay Vigilant were removed.
      */
-    public static int akkhaSwitchOneIn(Set<Invocation> set, boolean afterSpecial) {
-        if (!set.contains(STAY_VIGILANT)) {
-            return afterSpecial ? 1 : 0;
+    public static boolean akkhaSwitchesAfter(Set<Invocation> set, boolean special, int autosSinceLastSpecial) {
+        if (!special) {
+            return false;
         }
-        return afterSpecial ? 5 : 4;
+        return !set.contains(STAY_VIGILANT) || autosSinceLastSpecial > 0;
     }
-
-    /** Attacks Akkha makes with a style before Stay Vigilant may switch it again (OSRS: at least two). */
-    public static final int AKKHA_MIN_STYLE_ATTACKS = 2;
 
     /** Keep Back (OSRS): Akkha also melees whoever stands next to him, just before each ranged or magic attack. */
     public static boolean akkhaKeepBack(Set<Invocation> set) {
@@ -337,11 +343,11 @@ public enum Invocation {
     }
 
     /**
-     * Extra damage of an open sarcophagus's energy blast with Gotta Have Faith (OSRS: based on the player's remaining
-     * prayer points). // approx: a fifth of them
+     * Extra damage of an open sarcophagus's energy blast with Gotta Have Faith (OSRS wiki: based on the player's remaining
+     * prayer points, "increasing in damage the lower the player's Prayer points"). // approx: a fifth of the points missing
      */
-    public static int babaFaithDamage(Set<Invocation> set, int prayerPoints) {
-        return set.contains(GOTTA_HAVE_FAITH) ? Math.max(0, prayerPoints) / 5 : 0;
+    public static int babaFaithDamage(Set<Invocation> set, int prayerPoints, int prayerLevel) {
+        return set.contains(GOTTA_HAVE_FAITH) ? Math.max(0, prayerLevel - Math.max(0, prayerPoints)) / 5 : 0;
     }
 
     /** Radius in tiles of Ba-Ba's slam shockwave (OSRS: 5x5, 7x7 with Shaking Things Up). */

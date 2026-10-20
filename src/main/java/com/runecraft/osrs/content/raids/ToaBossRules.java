@@ -77,8 +77,42 @@ public final class ToaBossRules {
 
     /** Rolling boulder hitpoints (OSRS, solo: 25, 27 at path level 2, 31 at path level 4). */
     public static int babaBoulderHp(int pathLevel) {
+        return babaBoulderHp(1, pathLevel);
+    }
+
+    /**
+     * Rolling boulder hitpoints (OSRS wiki "Boulder (Tombs of Amascut)", measured in game): 25 at base, the team size
+     * counting only half as much as for other ToA creatures (x1.45 for two, x1.9 for three, +0.3 for each further player),
+     * rounded down; then +10% at path levels 2-3 or +25% from path level 4, rounded down. The raid level doesn't scale
+     * them.
+     */
+    public static int babaBoulderHp(int partySize, int pathLevel) {
+        int n = Math.max(1, Math.min(8, partySize));
+        int teamTenths = 9 * Math.min(n - 1, 2) + 6 * Math.max(0, n - 3);
+        int hp = 25 * (20 + teamTenths) / 20;
         int p = Math.max(0, pathLevel);
-        return 25 + (p >= 2 ? 2 : 0) + (p >= 4 ? 4 : 0);
+        int pathPct = p >= 4 ? 25 : p >= 2 ? 10 : 0;
+        return hp * (100 + pathPct) / 100;
+    }
+
+    /**
+     * Ba-Ba's shockwave area around its centre tile (OSRS wiki): a 3x3 with one more tile straight out on each side, or a
+     * 5x5 with one more tile out on each side with Shaking Things Up.
+     */
+    public static boolean babaShockwaveHits(int dx, int dz, boolean shakingThingsUp) {
+        int r = shakingThingsUp ? 2 : 1;
+        int ax = Math.abs(dx);
+        int az = Math.abs(dz);
+        return (ax <= r && az <= r) || (ax == 0 && az == r + 1) || (az == 0 && ax == r + 1);
+    }
+
+    /**
+     * Tiles out from its centre an opened sarcophagus's energy blast reaches (OSRS: a single tile since 1 September 2022;
+     * "the potential AoE from opened sarcophagi increases" every two path levels). // approx: 3x3 from path level 2,
+     * 5x5 from 4
+     */
+    public static int babaSarcophagusBlastRadius(int pathLevel) {
+        return Math.min(4, Math.max(0, pathLevel)) / 2;
     }
 
     /**
@@ -222,6 +256,19 @@ public final class ToaBossRules {
     /** The Warden's one-time heal at 5% before its final enrage (OSRS: 20% of its maximum). */
     public static final int WARDEN_ENRAGE_AT = 5;
     public static final int WARDEN_ENRAGE_HEAL = 20;
+    /**
+     * Enraged Warden: game ticks between the red lightning strikes and between the rows of floor the phantom rips away.
+     * Invocations don't change them, except Insanity ("red lightning strikes faster", "each row of floor tiles is removed
+     * at a faster pace", OSRS wiki). // approx: 2 / 1 and 8 / 6 ticks
+     */
+    public static int wardenLightningEvery(boolean insanity) {
+        return insanity ? 1 : 2;
+    }
+
+    public static int wardenRipEvery(boolean insanity) {
+        return insanity ? 6 : 8;
+    }
+
     /** Defence levels the enraged Warden gains (OSRS: 150 -> 180, the DPS calculator's "Enraged" version). */
     public static final int WARDEN_ENRAGE_DEFENCE = 30;
 

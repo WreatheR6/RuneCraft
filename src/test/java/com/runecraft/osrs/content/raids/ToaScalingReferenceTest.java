@@ -107,10 +107,20 @@ class ToaScalingReferenceTest {
         assertEquals(0, Invocation.akkhaNextStyle(2));
         Set<Invocation> none = EnumSet.noneOf(Invocation.class);
         Set<Invocation> vigilant = EnumSet.of(Invocation.STAY_VIGILANT);
-        assertEquals(1, Invocation.akkhaSwitchOneIn(none, true), "always switches after a special");
-        assertEquals(0, Invocation.akkhaSwitchOneIn(none, false));
-        assertEquals(5, Invocation.akkhaSwitchOneIn(vigilant, true));
-        assertEquals(4, Invocation.akkhaSwitchOneIn(vigilant, false));
+        // OSRS (25 June 2025): six autos, then a special as the seventh attack (sixth with Stay Vigilant); he only changes
+        // style after a special, with Stay Vigilant only if he used a regular attack since the last one.
+        for (int a = 1; a <= 6; a++) {
+            assertFalse(Invocation.akkhaSpecialTurn(none, a), "attack " + a);
+        }
+        assertTrue(Invocation.akkhaSpecialTurn(none, 7));
+        assertTrue(Invocation.akkhaSpecialTurn(none, 14));
+        assertTrue(Invocation.akkhaSpecialTurn(vigilant, 6));
+        assertFalse(Invocation.akkhaSpecialTurn(vigilant, 7));
+        assertTrue(Invocation.akkhaSwitchesAfter(none, true, 6));
+        assertFalse(Invocation.akkhaSwitchesAfter(none, false, 3));
+        assertFalse(Invocation.akkhaSwitchesAfter(vigilant, false, 3), "no more random switches after autos");
+        assertTrue(Invocation.akkhaSwitchesAfter(vigilant, true, 5));
+        assertFalse(Invocation.akkhaSwitchesAfter(vigilant, true, 0), "two specials in a row switch once");
         assertEquals(0.5, Invocation.kephriMedicSwarmSpeed(EnumSet.of(Invocation.MEDIC)), 1e-9);
         assertEquals(1.0, Invocation.kephriMedicSwarmSpeed(none), 1e-9);
     }
@@ -139,9 +149,19 @@ class ToaScalingReferenceTest {
         assertEquals(1.0, ToaSupplies.supplyFactor(none), 1e-9);
         assertEquals(0.66, ToaSupplies.supplyFactor(EnumSet.of(Invocation.NEED_SOME_HELP)), 1e-9);
         assertEquals(0.33, ToaSupplies.supplyFactor(EnumSet.of(Invocation.NEED_LESS_HELP)), 1e-9);
-        assertEquals(3, ToaSupplies.reduce(5, 0.66));
-        assertEquals(1, ToaSupplies.reduce(5, 0.10));
-        assertEquals(0, ToaSupplies.reduce(0, 0.66));
+        assertEquals(0, ToaSupplies.reduce(0, 0.66, new Random(1)));
+        assertEquals(5, ToaSupplies.reduce(5, 1.0, new Random(1)));
+        // OSRS: "the reduction may or may not occur" - Power's two salts at 66% are sometimes 2, sometimes 1, never 0.
+        java.util.Set<Integer> salts = new java.util.HashSet<>();
+        Random rr = new Random(3);
+        for (int i = 0; i < 200; i++) {
+            int n = ToaSupplies.reduce(2, 0.66, rr);
+            salts.add(n);
+            int five = ToaSupplies.reduce(5, 0.66, rr);
+            assertTrue(five == 3 || five == 4, "5 x 66% " + five);
+            assertEquals(1, ToaSupplies.reduce(5, 0.10, rr), "at least one");
+        }
+        assertEquals(java.util.Set.of(1, 2), salts);
         assertTrue(ToaSupplies.offeredAfter(2) && ToaSupplies.offeredAfter(4));
         assertFalse(ToaSupplies.offeredAfter(1) || ToaSupplies.offeredAfter(3));
         assertEquals(0, ToaSupplies.honeyLocustsOnWipe(EnumSet.of(Invocation.ON_A_DIET)));

@@ -98,8 +98,9 @@ class RaidInvocationsTest {
         assertEquals(2, Invocation.babaSlamRadius(none));
         assertEquals(3, Invocation.babaSlamRadius(all));
         assertTrue(Invocation.babaMindTheGap(all));
-        assertEquals(0, Invocation.babaFaithDamage(none, 99));
-        assertTrue(Invocation.babaFaithDamage(all, 99) > Invocation.babaFaithDamage(all, 10));
+        assertEquals(0, Invocation.babaFaithDamage(none, 10, 99));
+        assertTrue(Invocation.babaFaithDamage(all, 10, 99) > Invocation.babaFaithDamage(all, 99, 99), "lower prayer, more damage");
+        assertEquals(0, Invocation.babaFaithDamage(all, 99, 99));
         // Kephri
         assertEquals(1, Invocation.kephriDungTargets(all, 1), "Blowing Mud has no effect solo");
         assertEquals(2, Invocation.kephriDungTargets(all, 4));

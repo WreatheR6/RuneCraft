@@ -177,6 +177,17 @@ class ToaLootTest {
      * The lobby chest gives one shroud only while the player owns none (worn included), and the shroud is worth nothing
      * (OSRS: untradeable and can't be alchemised), so taking another after losing one is no source of coins.
      */
+    /** The shroud's Change option cycles through the unlocked tiers (OSRS wiki). */
+    @Test
+    void shroudChangesBetweenUnlockedTiers() {
+        assertNull(ToaLoot.shroudChange("icthlarins_shroud_tier_1", 499), "only tier 1 unlocked");
+        assertEquals("icthlarins_shroud_tier_2", ToaLoot.shroudChange("icthlarins_shroud_tier_1", 500));
+        assertEquals("icthlarins_shroud_tier_1", ToaLoot.shroudChange("icthlarins_shroud_tier_2", 500), "wraps round");
+        assertEquals("icthlarins_shroud_tier_4", ToaLoot.shroudChange("icthlarins_shroud_tier_3", 2_000));
+        assertEquals("icthlarins_shroud_tier_1", ToaLoot.shroudChange("icthlarins_shroud_tier_5", 2_000));
+        assertNull(ToaLoot.shroudChange("cape_of_legends", 2_000));
+    }
+
     @Test
     void shroudChestGivesOneAndShroudsAreWorthless() {
         assertNull(ToaLoot.shroudFromChest(99, s -> false));
