@@ -46,6 +46,9 @@ public final class QuestBossRules {
     public static final int GNOME_MAX_HIT = 4;
     public static final int JUNGLE_DEMON_REGEN_PERCENT = 20;
 
+    /** Making Friends with My Arm: the quest flag set when the Fire of Domination is doused; Mother can't be hurt before. */
+    public static final String MOTHER_FIRE_OUT_FLAG = "mfa_fire_out";
+
     /** Haunted Mine: Treus Dayth's carts and cranes hit up to this every few game ticks (approx; the wiki gives no numbers). */
     public static final int TREUS_MACHINERY_TICKS = 6;
     public static final int TREUS_MACHINERY_MAX = 4;

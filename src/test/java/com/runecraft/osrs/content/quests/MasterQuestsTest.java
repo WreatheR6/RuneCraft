@@ -264,4 +264,33 @@ class MasterQuestsTest {
                 && t.need.containsKey("tenth_squad_sigil")));
         assertEquals(20, QuestBossRules.JUNGLE_DEMON_REGEN_PERCENT);
     }
+
+    // ------------------------------------------------------------------ Swan Song, Fremennik Isles, Making Friends with My Arm
+
+    @Test
+    void swanSongWalksTheColonyRepairsAndTheQueen() {
+        inOrder("swan_song", "talk herman_caranos", "talk quest_wise_old_man", "kill ss_sea_troll", "talk franklin_caranos",
+                "reach piscatoris", "talk arnold_lydspor", "talk arnold_lydspor", "talk franklin_caranos", "talk wizard_frumscone",
+                "talk malignius_mortifer", "talk master_crafter", "talk malignius_mortifer", "talk herman_caranos",
+                "kill sea_troll_queen", "talk herman_caranos");
+        QuestSpec q = spec("swan_song");
+        assertTrue(q.triggers().stream().anyMatch(t -> t.kind == Trigger.Kind.KILL && t.target.equals("ss_sea_troll") && t.count == 3));
+    }
+
+    @Test
+    void fremennikIslesSpiesOnJatizsoAndFightsTheTrollKing() {
+        inOrder("the_fremennik_isles", "talk mord_gunnars", "talk gjuki_sorvott", "talk slug_hemligssen", "talk mawnis_burowgar",
+                "puzzle slug_hemligssen", "talk mawnis_burowgar", "reach neitiznot", "talk gjuki_sorvott", "talk slug_hemligssen",
+                "talk gjuki_sorvott", "talk mawnis_burowgar", "kill ice_troll_runt", "kill ice_troll_king", "talk mawnis_burowgar");
+    }
+
+    @Test
+    void makingFriendsWithMyArmDousesTheFireBeforeMother() {
+        inOrder("making_friends_with_my_arm", "talk my_arm", "talk quest_odd_mushroom", "reach quest_weiss", "reach quest_weiss",
+                "puzzle quest_weiss", "talk snowflake", "talk quest_wise_old_man", "reach DRAYNOR_VILLAGE", "talk quest_wise_old_man",
+                "talk snowflake", "kill dont_know_what", "reach quest_weiss", "kill quest_mother", "talk snowflake", "talk my_arm");
+        assertEquals("mfa_fire_out", QuestBossRules.MOTHER_FIRE_OUT_FLAG);
+        assertTrue(spec("making_friends_with_my_arm").triggers().stream().anyMatch(t -> t.kind == Trigger.Kind.REACH
+                && t.setFlags.contains(QuestBossRules.MOTHER_FIRE_OUT_FLAG)));
+    }
 }

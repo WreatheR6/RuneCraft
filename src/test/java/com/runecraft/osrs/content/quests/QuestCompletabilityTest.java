@@ -33,7 +33,7 @@ class QuestCompletabilityTest {
      * replaced, and a later step still accepts it so those players can finish.
      */
     private static final Set<String> LEGACY_SAVE_ITEMS = Set.of("in_search_of_knowledge:quest_lost_tome",
-            "monkey_madness_i:narnodes_orders");
+            "monkey_madness_i:narnodes_orders", "making_friends_with_my_arm:bucket_of_salt");
 
     private static String snake(String name) {
         return name.toLowerCase(Locale.ROOT).replace(' ', '_').replace("'", "");

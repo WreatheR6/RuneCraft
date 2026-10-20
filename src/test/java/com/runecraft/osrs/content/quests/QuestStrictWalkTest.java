@@ -47,6 +47,8 @@ class QuestStrictWalkTest {
             "legends_quest 1 talk radimus_erkle",
             // saves from before carry Eluned's seed already: the moss guardian's kill just moves on
             "roving_elves 2 kill moss_guardian",
+            // saves from before carry the Weiss salt: My Arm finishes the quest with it
+            "making_friends_with_my_arm 5 talk my_arm",
             // the priest's lines when the player arrives without the urn (the walk brings it)
             "beneath_cursed_sands 3 talk tumeken_priest");
 

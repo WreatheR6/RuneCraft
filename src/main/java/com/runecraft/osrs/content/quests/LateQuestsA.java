@@ -21,6 +21,18 @@ import java.util.Map;
  * comments is a best-known value where OSRS gives a choice of lamps.
  */
 final class LateQuestsA {
+    /**
+     * The Fremennik Isles (wiki): Slug's questions after the first spying job, answered from what Mawnis said ("Yes I have",
+     * "They will be ready in two days", "Seventeen militia have been trained", "There are two bridges to repair").
+     */
+    static final QuestPuzzle FI_SLUG_QUIZ = QuestPuzzle.builder("fi_slug_quiz").room("report").variant(null)
+            .prompt("Well, jester? Have you been spying on Mawnis? When will their shields be ready? How many militia have they trained? "
+                    + "How many bridges need repairing? Answer in that order.")
+            .options("Yes, I have", "Not yet", "They will be ready in two days", "They will be ready in a week", "Seventeen militia have been trained",
+                    "Seventy militia have been trained", "There are two bridges to repair", "There are four bridges to repair")
+            .solution(0, 2, 4, 6)
+            .failLines("That doesn't match what my other spies say. Go and listen again!").build();
+
     private LateQuestsA() {
     }
 
@@ -343,24 +355,63 @@ final class LateQuestsA {
                 .drops(Drop.always("big_bones")).size(1.2f, 2.6f, 1.0f).at("ice_troll_cave").arena(11, "ice"));
         b.npc("slug_hemligssen", "Slug Hemligssen", "neitiznot", -3, 3, 0xE0B8B0, 0x2A2A2A, 0x1A1A1A, 0x3A3A3A);
         b.item("jester_costume", "Jester costume", "cloth", 0xC03AA0, "A jester's hat, top, tights and boots.");
+        b.item("royal_decree", "Royal decree", "note", 0xE0D0A0, "King Gjuki Sorvott's decree calling for war on the trolls.");
         b.quest("the_fremennik_isles", "The Fremennik Isles", Difficulty.EXPERIENCED, 1)
                 .reqQuest("fremennik_trials").req(Skill.CONSTRUCTION, 20) // 40 Agility only for the optional mine shortcut
                 .xp(Skill.CONSTRUCTION, 5000).xp(Skill.CRAFTING, 5000).xp(Skill.WOODCUTTING, 10000).reward("helm_of_neitiznot")
                 // Plus two 10,000 XP rewards in Attack, Strength, Defence or Hitpoints (player's choice). // approx: fixed skills
                 .xp(Skill.STRENGTH, 10000).xp(Skill.DEFENCE, 10000)
                 .stage("I can start this quest by speaking to Mord Gunnars at the northernmost dock of Rellekka. (Requires The Fremennik Trials, 20 Construction, 40 Agility.)")
-                .talk("mord_gunnars").travel("neitiznot").say("To the isles? Neitiznot and Jatizso are at war with each other... and with the ice trolls. Off we go.")
+                .talk("mord_gunnars").travel("jatizso").say("To the isles? Jatizso and Neitiznot are at war with each other... and with the ice trolls. Off we go.")
+                // Wiki: on Jatizso King Gjuki's cat wants a raw tuna and the king his tax in ore, which buys the jester outfit; on
+                // Neitiznot the spymaster Slug sends the "jester" to watch Mawnis and asks what was learned.
                 .stage("I should speak to Mawnis Burowgar, the Burgher of Neitiznot.")
-                .talk("mawnis_burowgar").say("The trolls attack us both. Spy on Jatizso for me, then we'll deal with the trolls together.")
+                .talk("gjuki_sorvott").stay().unlessFlag("fi_cat").flag("fi_cat")
+                .say("Who are you? *His cat, HRH Hrafn, hisses at you and won't let you near the throne.*")
+                .talk("gjuki_sorvott").stay().needFlag("fi_cat").unlessFlag("fi_tuna").take("raw_tuna").flag("fi_tuna")
+                .say("* You give the king's cat a raw tuna. It purrs and lets you approach.")
+                .missing("* The king's cat hisses at you. It looks hungry for fish: a raw tuna, maybe.")
+                .talk("gjuki_sorvott").stay().needFlag("fi_tuna").unless("jester_costume").unlessFlag("fi_jester").take("mithril_ore:6")
+                .give("jester_costume").flag("fi_jester")
+                .say("Ore for the crown? Six mithril ore will do. *He waves at the chest behind his throne.* Take the old jester's outfit, then.")
+                .missing("Everyone pays their tax in ore here. Six mithril ore from you. (8 tin ore below 2 Mining, 7 coal below 55 in OSRS.)")
+                .talk("slug_hemligssen").stay().need("jester_costume").unlessFlag("fi_slug").flag("fi_slug")
+                .say("A new jester? Perfect. Wear the outfit and juggle for Mawnis. Listen well, and tell me everything.")
+                .talk("mawnis_burowgar").stay().needFlag("fi_slug").need("jester_costume").unlessFlag("fi_spied").flag("fi_spied")
+                .say("* Dressed as a jester, you follow Mawnis's commands and listen in: seventeen militia trained, two bridges to repair, "
+                        + "shields ready in two days.")
+                .puzzle("slug_hemligssen", FI_SLUG_QUIZ).stay().needFlag("fi_spied").unlessFlag("fi_reported").flag("fi_reported").give("coins:2500")
+                .say("Excellent work. Here's 2,500 coins for your trouble.")
+                .talk("mawnis_burowgar").needFlag("fi_reported")
+                .say("The trolls attack us both. Our bridges to the north are broken; help repair them and we'll deal with the trolls together.")
+                .missing("Hmm? Come back without that silly outfit if you want to talk business.")
+                // Wiki: the bridges (8 ropes, 8 split logs, a knife) under the trolls' rocks; King Gjuki's tax collecting on
+                // Jatizso; the second spying job; the king's royal decree.
                 .stage("I should get a jester's disguise from Slug Hemligssen, Neitiznot's spymaster, and learn King Gjuki Sorvott's plans on Jatizso.")
-                .talk("slug_hemligssen").stay().unless("jester_costume").give("jester_costume")
-                .say("A spy? Then you'll need a disguise. The king of Jatizso is looking for a new jester. Wear this and juggle well.")
-                .talk("gjuki_sorvott").need("jester_costume")
-                .say("* Dressed as a jester, you juggle for the king and listen in.",
-                        "Neitiznot? Ha! The ice trolls are their problem. Though... their king is a threat to us all.")
-                .missing("Who let you in? Guards! *You'll need a disguise to get close to the king.*")
+                .reach("neitiznot", 12).stay().unlessFlag("fi_bridges").take("rope:8", "split_log:8").need("knife")
+                .flag("fi_bridges").say("* Thakkrad shows you how; you repair the eastern and western rope bridges while the ice trolls throw rocks.")
+                .missing("* The two bridges north of Neitiznot need 8 ropes, 8 split logs and a knife.")
+                .talk("gjuki_sorvott").stay().needFlag("fi_bridges").unlessFlag("fi_tax").flag("fi_tax")
+                .say("Neitiznot's helper? Hmph. Make yourself useful: collect the taxes. Hring Hring, Skuli, Vanligga and Keepa owe me.")
+                .reach("jatizso", 12).stay().needFlag("fi_tax").unlessFlag("fi_taxed").flag("fi_taxed")
+                .say("* You collect the taxes from Hring Hring, Skuli Myrka, Vanligga Gastfrihet and Keepa Kettilon, then the extra 1,000 from "
+                        + "Hring, Raum, Skuli, Keepa and Flosi.")
+                .talk("slug_hemligssen").stay().needFlag("fi_taxed").need("jester_costume").unlessFlag("fi_spy2").flag("fi_spy2")
+                .say("* Once more in the jester's outfit you listen in on Mawnis: the troll king hides in a secluded bay near Etceteria.",
+                        "Good. Now find out what Gjuki means to do about it.")
+                .talk("gjuki_sorvott").needFlag("fi_spy2").give("royal_decree")
+                .say("The trolls must be destroyed, even if it means working with Neitiznot. Take this royal decree to Mawnis.")
+                .missing("Taxes first, jester.")
+                // Wiki: yak-hide armour and a Neitiznot shield for the cave; ten trolls, then the king, whose head is taken.
                 .stage("The islands must unite against the trolls. I should slay the Ice Troll King in the caves north of the isles.")
-                .kill("ice_troll_king").give("ice_troll_king_head").say("* The Ice Troll King falls! You take his head as proof.")
+                .talk("mawnis_burowgar").stay().unlessFlag("fi_decree").take("royal_decree").flag("fi_decree")
+                .say("A royal decree from Gjuki? Then we fight together. Get yourself yak-hide armour and a Neitiznot shield, and go north.")
+                .missing("Bring me Gjuki's word that Jatizso will fight.")
+                .kill("ice_troll_runt", 10).stay().needFlag("fi_decree").unlessFlag("fi_trolls").flag("fi_trolls")
+                .say("* You have defeated enough trolls to attack the King.")
+                .kill("ice_troll_king").needFlag("fi_trolls").give("ice_troll_king_head")
+                .say("* The Ice Troll King falls! You cut off his head as proof.")
+                .missing("* Too many trolls guard their king: ten must fall first.")
                 .stage("I should bring the troll king's head to Mawnis Burowgar.")
                 .talk("mawnis_burowgar").take("ice_troll_king_head").say("The troll king is dead! Neitiznot is in your debt. Wear this helm with pride.");
     }

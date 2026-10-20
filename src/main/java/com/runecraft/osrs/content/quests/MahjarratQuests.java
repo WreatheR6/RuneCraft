@@ -549,14 +549,35 @@ final class MahjarratQuests {
                 .talk("my_arm").needFlag("mab_roc").say("My Arm farmer now! You can use patch too. Thank you, human friend.");
     }
 
+    /**
+     * Making Friends with My Arm (wiki): after Snowflake leaves, Mother is talked round by picking every argument: goutweed is
+     * delicious, Stronghold trolls are tough, she should respect her daughter, and you love her daughter.
+     */
+    static final QuestPuzzle MFA_MOTHER = QuestPuzzle.builder("mfa_mother").shuffle().room("mother").variant(null)
+            .prompt("* Mother glowers at My Arm. Every good argument might win her round; a bad one will end the talk.")
+            .options("Tell him goutweed is delicious", "Tell him how tough Stronghold trolls are", "Tell him to show respect to his daughter",
+                    "Tell him you love his daughter", "Insult his cooking", "Challenge him to a fight now")
+            .anyOrder(0, 1, 2, 3)
+            .failLines("@Mother: Bah! Get out of my sight. *You'll have to start the talk again.*").build();
+
     private static void makingFriendsWithMyArm(QuestBook b) {
         Cast.npc(b, "snowflake", "Snowflake", "quest_weiss", 0, 3, Cast.TROLL, 0xE0E8F0);
         Cast.npc(b, "quest_odd_mushroom", "Odd Mushroom", "troll_stronghold", -4, -1, 0xC0A0C0, 0x8A4A8A);
         b.item("bucket_of_salt", "Bucket of salt", "pot", 0xF0F0F0, "Salt from the Weiss salt mine.");
-        b.boss(BossDef.of("quest_mother", "Mother").level(255).stats(350, 200, 200, 180, 150, 1).speed(5)
-                .attack(AttackDef.of("crush", AttackType.CRUSH, 25, 3, 6))
-                .attack(AttackDef.of("ice_breath", AttackType.MAGIC, 20, 9, 3).special(Special.FREEZE, 4).particle("minecraft:snowflake"))
-                .attack(AttackDef.of("fire_breath", AttackType.MAGIC, 20, 9, 3).particle("minecraft:flame"))
+        b.item("old_mans_coffin", "Old man's coffin", "log", 0x6A3A1A, "A coffin with a living Wise Old Man inside. Shh.");
+        b.item("goat_dung", "Goat dung", "pot", 0x6A5A3A, "A bucket of goat dung. Snowflake wants it for the fire.");
+        b.item("weiss_fire_notes", "Weiss fire notes", "note", 0xE0D0B0, "Snowflake's notes on keeping the Weiss fire pit burning.");
+        // DPS calculator: ranged and crush, magic defence +200; Mother's attacks only land once the Fire of Domination is doused
+        // (QuestBossScripts.MotherOfWeiss).
+        b.boss(BossDef.of("dont_know_what", "Don't Know What").level(163).stats(220, 120, 90, 160, 60, 115).speed(3)
+                .defenceBonus(0, 0, 0, 200, 0)
+                .attack(AttackDef.of("rock_throw", AttackType.RANGED, 10, 8, 6))
+                .attack(AttackDef.of("crush", AttackType.CRUSH, 10, 2.5, 4))
+                .drops(Drop.always("big_bones")).skin(0x7A7A68, 0x4A4A3A, 0x3A3A2A, 0xC0C8D0).size(1.2f, 2.8f, 1.2f));
+        b.boss(BossDef.of("quest_mother", "Mother").level(198).stats(235, 150, 150, 170, 60, 105).speed(4)
+                .defenceBonus(0, 0, 0, 200, 0)
+                .attack(AttackDef.of("crush", AttackType.CRUSH, 16, 3, 6))
+                .attack(AttackDef.of("rock_throw", AttackType.RANGED, 16, 9, 4))
                 .drops(Drop.always("big_bones")).skin(0x8A8A78, 0x5A5A4A, 0x4A4A3A, 0xE0E8F0).size(1.4f, 3.0f, 1.3f)
                 .at("quest_weiss").arena(12, "ice"));
         b.quest("making_friends_with_my_arm", "Making Friends with My Arm", Difficulty.MASTER, 2)
@@ -567,16 +588,60 @@ final class MahjarratQuests {
                 .stage("I can start this quest by speaking to My Arm on the Troll Stronghold roof. (Requires My Arm's Big Adventure, Swan Song, Cold War, Romeo & Juliet, 66 Firemaking, 72 Mining, 35 Construction, 68 Agility.)")
                 .talk("my_arm").say("My Arm's old home is Weiss, in the north. My Arm want to go back and see Mother... but trolls there not friendly.")
                 .stage("I should ask the Odd Mushroom in the Troll Stronghold how to reach Weiss.")
-                .talk("quest_odd_mushroom").say("Weiss lies past the ice. You'll need a boat... and a lot of nerve. *The mushroom winks. Mushrooms shouldn't wink.*")
+                .talk("quest_odd_mushroom").say("Weiss lies past the ice. You'll need a boat... and a lot of nerve. *The mushroom winks. Mushrooms shouldn't wink.*",
+                        "Larry, east of Rellekka, has a boat that might carry a troll.")
+                // Wiki: the wreck's rope, the rockslides and the ledge, Boulder at the fence, sneaking past the city's trolls and
+                // crossing the cave by their thrown stones, mining the exit; Mother is talked round, then Snowflake takes over.
                 .stage("I should sail to Weiss and speak to Snowflake.")
-                .talk("snowflake").travel("quest_weiss").say("You come with My Arm? Mother is angry. Mother always angry. Bring salt from the mine to show you are friend.")
-                .stage("I should mine salt in the Weiss salt mine and build a fire pit for the trolls (4 logs).")
-                .talk("snowflake").take("logs:4").need("tinderbox").give("bucket_of_salt")
-                .say("*You mine salt and light a great fire pit.* Warm! Trolls like fire. Now Mother come...")
-                .missing("Need 4 logs and a tinderbox for fire pit.")
-                .stage("Mother, the troll queen of Weiss, attacks! I must defeat her.")
-                .kill("quest_mother").say("* Mother is defeated. The trolls of Weiss bow to My Arm, their new leader.")
+                .reach("quest_weiss", 12).stay().unlessFlag("mfa_climbed").need("rope").needTool("pickaxe").reqSkill(Skill.AGILITY, 68)
+                .flag("mfa_climbed")
+                .say("* Larry's boat leaves you and My Arm by a wreck. You climb the rockslides, rope across to the ledge and pass the fallen tree.",
+                        "@Boulder: Wolfbone sent My Arm? Hmph. Come back when Mother will see you.")
+                .reach("quest_weiss", 12).stay().needFlag("mfa_climbed").unlessFlag("mfa_inside").needTool("pickaxe").reqSkill(Skill.MINING, 72)
+                .flag("mfa_inside")
+                .say("* You sneak through the broken fence past the angry trolls, swim the cave over the stepping stones the trolls throw, "
+                        + "and mine your way out by Mother's hall.")
+                .puzzle("quest_weiss", MFA_MOTHER).stay().needFlag("mfa_inside").unlessFlag("mfa_mother").flag("mfa_mother")
+                .say("@Mother: ...Fine. The weakling can stay. For now.")
+                .talk("snowflake").needFlag("mfa_mother").travel("quest_weiss")
+                .say("You come with My Arm? Mother is angry. Mother always angry. Mother only respect fighting... or the wise.",
+                        "Bring a wise man to Weiss and maybe Mother listen. Or maybe he eat him.")
+                .missing("Who you? Get past the trolls and see Mother first.")
+                // Wiki: the Wise Old Man plays dead in a mahogany coffin, a cadava potion making it convincing.
+                .stage("I should get a wise man to Weiss: the Wise Old Man in Draynor Village might play dead in a coffin for Mother.")
+                .talk("quest_wise_old_man").stay().unlessFlag("mfa_wom").flag("mfa_wom")
+                .say("Pretend I'm dead? Well, I do owe you for the fishing colony. Build me a coffin and fetch something to make me look the part.")
+                .reach("DRAYNOR_VILLAGE", 12).stay().needFlag("mfa_wom").unlessFlag("mfa_coffin").take("mahogany_plank:5", "bolt_of_cloth")
+                .need("hammer").reqSkill(Skill.CONSTRUCTION, 35).flag("mfa_coffin")
+                .say("* You build a mahogany coffin beside the Wise Old Man's house and line it with cloth.")
+                .missing("* A coffin takes 5 mahogany planks, a bolt of cloth and a hammer.")
+                .talk("quest_wise_old_man").stay().needFlag("mfa_coffin").unless("old_mans_coffin").unlessFlag("mfa_fight").take("cadava_berries")
+                .give("old_mans_coffin")
+                .say("* The Apothecary's potion of cadava berries makes him deathly pale. He climbs into the coffin.", "Carry me carefully, now.")
+                .missing("I need to look dead, not just sleepy. Cadava berries from the Apothecary should do it.")
+                .talk("snowflake").need("old_mans_coffin").say("Wise man... dead? Mother will want to see. *She takes you to Mother's hall.*",
+                        "You can't teleport out of there, and if you fall, maybe you lose stuff.")
+                .missing("Bring the wise man.")
+                // Wiki: Don't Know What first, then Mother; the Fire of Domination makes him untouchable until a bucket of water from
+                // the large barrel puts it out.
+                .stage("Mother, the troll chief of Weiss, attacks! I must defeat him.")
+                .reach("quest_weiss", 12).stay().unlessFlag("mfa_dkw").spawn("dont_know_what")
+                .kill("dont_know_what").stay().unlessFlag("mfa_dkw").flag("mfa_dkw").spawn("quest_mother")
+                .say("* Don't Know What falls. Mother rises from his throne, wreathed in the Fire of Domination!")
+                .reach("quest_weiss", 12).stay().needFlag("mfa_dkw").unlessFlag("mfa_fire_out").take("minecraft:bucket").flag("mfa_fire_out")
+                .say("* You fill a bucket at the large barrel of water and throw it on the Fire of Domination. Mother's flames go out!")
+                .missing("* The Fire of Domination protects Mother. A bucket of water from the large barrel might put it out.")
+                .reach("quest_weiss", 12).stay().needFlag("mfa_dkw").spawn("quest_mother")
+                .kill("quest_mother").needFlag("mfa_dkw").say("* Mother is defeated. The trolls of Weiss look to My Arm.")
+                // Wiki: Snowflake becomes the new leader; goat dung keeps the fire pit burning, and her fire notes teach the Weiss fire.
                 .stage("I should return to My Arm.")
-                .talk("my_arm").take("bucket_of_salt").say("My Arm is chief of Weiss now! You always welcome. Use fire pit to come back any time.");
+                .talk("snowflake").stay().unless("goat_dung").unlessFlag("mfa_dung").take("minecraft:bucket").give("goat_dung")
+                .say("New leader need warm fire. Goat dung burn best! *You scoop up goat poo in the north-east building.*")
+                .talk("snowflake").stay().unlessFlag("mfa_dung").take("goat_dung").give("weiss_fire_notes").flag("mfa_dung")
+                .say("Good dung! Read these notes: they tell how to keep the Weiss fire burning.")
+                .talk("my_arm").needFlag("mfa_dung").say("Snowflake is chief of Weiss now, and My Arm her friend! You always welcome. Use fire pit to come back any time.")
+                .missing("Help Snowflake with the fire first!")
+                .talk("my_arm").need("bucket_of_salt").take("bucket_of_salt") // saves from before: the salt and fire pit route
+                .say("My Arm is chief of Weiss now! You always welcome. Use fire pit to come back any time.");
     }
 }

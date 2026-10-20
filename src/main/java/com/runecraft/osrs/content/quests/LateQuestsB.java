@@ -287,6 +287,19 @@ final class LateQuestsB {
     private static void swanSong(QuestBook b) {
         b.npc("herman_caranos", "Herman Caranos", "piscatoris", 0, 3, 0xE0B8B4, 0x3A5A8E, 0x2A3A5E, 0xA0A0A5);
         b.npc("franklin_caranos", "Franklin Caranos", "piscatoris", 3, -2, 0xE0B8B5, 0x6A5A40, 0x4A3A30, 0x6A4A23);
+        // mejrs/data_osrs tiles: Arnold in the colony bank, Frumscone in the Wizards' Guild basement (placed above it), the Master
+        // Crafter in the Crafting Guild
+        b.npcAt("arnold_lydspor", "Arnold Lydspor", 2330, 3691, 0xE0B8B0, 0x5A6A3A, 0x3A4A2A, 0x8A6A3A);
+        b.npcAt("wizard_frumscone", "Wizard Frumscone", 2590, 3089, 0xF0D8C8, 0x3A3A8A, 0x2A2A5A, 0x9A9AA0);
+        b.npcAt("master_crafter", "Master Crafter", 2937, 3290, 0xE0B898, 0x6A4A2A, 0x4A3A1A, 0x3A2A1A);
+        b.item("iron_sheet", "Iron sheet", "bar", 0xA0A0A8, "A sheet of iron, pressed in the colony's metal press.");
+        b.item("fresh_monkfish", "Fresh monkfish", "fish_raw", 0x8A7A5A, "A fresh monkfish from the colony's waters.");
+        b.item("airtight_pot", "Airtight pot", "pot_item", 0xA06A3A, "A pot with a lid, sealed tight.");
+        b.item("bone_seeds", "Bone seeds", "seed", 0xE8E0C8, "Malignius's seeds. Planted in the ground, they raise an army of the dead.");
+        // the level-79 sea trolls that storm the colony (DPS calculator), raised outside its walls
+        b.boss(BossDef.of("ss_sea_troll", "Sea troll").level(79).stats(100, 60, 60, 60, 1, 1).speed(3)
+                .attack(AttackDef.of("crush", AttackType.CRUSH, 7, 2.5, 1)).drops(Drop.always("bones"))
+                .skin(0x4A7A6A, 0x3A6A5A, 0x2A4A3A, 0x6A9A8A).size(0.9f, 2.4f, 1.1f));
         b.boss(BossDef.of("sea_troll_queen", "Sea Troll Queen").level(170).stats(200, 160, 160, 140, 140, 1).speed(5)
                 .attack(AttackDef.of("crush", AttackType.CRUSH, 25, 3, 6))
                 .attack(AttackDef.of("water_blast", AttackType.MAGIC, 22, 10, 4).particle("minecraft:splash"))
@@ -298,12 +311,51 @@ final class LateQuestsB {
                 .req(Skill.MAGIC, 66).req(Skill.COOKING, 62).req(Skill.FISHING, 62).req(Skill.SMITHING, 45).req(Skill.FIREMAKING, 42).req(Skill.CRAFTING, 40)
                 .unlock("Fishing monkfish at the Piscatoris Fishing Colony")
                 .stage("I can start this quest by speaking to Herman Caranos in the Piscatoris Fishing Colony. (Requires 100 quest points, Garden of Tranquillity and more.)")
-                .talk("herman_caranos").say("Sea trolls are attacking the colony! The wall is broken and we've no food. Help us!")
+                .talk("herman_caranos").say("Sea trolls are attacking the colony! The wall is broken and we've no food. Help us!",
+                        "A mage might drive them off. The Wise Old Man in Draynor, perhaps?")
+                // Wiki: the Wise Old Man (for runes) comes to the colony; the sea trolls at the gate are fought off; Franklin's furnace,
+                // metal press and the broken walls; Arnold's net, five fresh monkfish cooked for the colony.
                 .stage("I should repair the colony wall (5 planks, 2 iron bars) and help Franklin cook for the fishermen.")
-                .talk("franklin_caranos").take("plank:5", "iron_bar:2", "raw_monkfish:5").say("*You fix the wall and cook monkfish for the colony.* The sea trolls are coming again, and their queen leads them!")
-                .missing("We need 5 planks and 2 iron bars for the wall, and 5 raw monkfish to feed everyone.")
+                .talk("quest_wise_old_man").stay().unlessFlag("ss_wom").take("blood_rune:5", "mist_rune:10", "lava_rune:10").flag("ss_wom")
+                .say("Sea trolls at Piscatoris? I'll come, if you bring the runes I'll need: 5 blood runes, 10 mist runes and 10 lava runes. "
+                        + "*He takes them.* Meet me at the colony.")
+                .missing("Help a fishing colony? Bring me 5 blood runes, 10 mist runes and 10 lava runes and I'll come.")
+                .reach("piscatoris", 12).stay().needFlag("ss_wom").unlessFlag("ss_gate").spawn("ss_sea_troll")
+                .say("* Sea trolls swarm the colony's gate!")
+                .kill("ss_sea_troll", 3).stay().needFlag("ss_wom").unlessFlag("ss_gate").flag("ss_gate")
+                .say("* The sea trolls at the gate are beaten back and you get into the colony. Herman and the Wise Old Man wait in the east building.")
+                .talk("franklin_caranos").stay().needFlag("ss_gate").unlessFlag("ss_franklin").flag("ss_franklin")
+                .say("The walls! Light the furnace's firebox, press iron bars into sheets and patch the western wall. Then Arnold needs fish.")
+                .reach("piscatoris", 12).stay().needFlag("ss_franklin").unlessFlag("ss_walls").take("logs", "iron_bar:5").need("tinderbox", "hammer")
+                .reqSkill(Skill.SMITHING, 45).flag("ss_walls")
+                .say("* You light the firebox, press the five iron bars into iron sheets and hammer them over the broken western walls.")
+                .missing("* The furnace's firebox needs logs and a tinderbox; the metal press needs 5 iron bars; the walls need a hammer.")
+                .talk("arnold_lydspor").stay().needFlag("ss_walls").unless("fresh_monkfish").unlessFlag("ss_fed").need("small_fishing_net")
+                .reqSkill(Skill.FISHING, 62).give("fresh_monkfish:5")
+                .say("Fish for the colony? The spot to the north-west is full of monkfish. *You net five fresh monkfish, fighting off a sea troll.*")
+                .missing("You'll need a small fishing net for the monkfish. (Requires 62 Fishing.)")
+                .talk("arnold_lydspor").stay().needFlag("ss_walls").unlessFlag("ss_fed").reqSkill(Skill.COOKING, 62).take("fresh_monkfish:5").flag("ss_fed")
+                .say("* You cook the five monkfish in the kitchen. Arnold shares them out.", "That'll keep the fishermen going. Tell Franklin.")
+                .talk("franklin_caranos").needFlag("ss_fed").say("Walls up, bellies full! The Wise Old Man and Herman want a word in the east building.",
+                        "@Wise Old Man: The trolls will return with their queen. We'll need an army... of the dead. Wizard Frumscone in Yanille knows a necromancer.")
+                .missing("Light the furnace, press the iron sheets and fix the walls, then see Arnold about food.")
+                // Wiki: Frumscone sends the player to Malignius Mortifer; his brown apron gets them into the Crafting Guild, where the
+                // Master Crafter helps make an airtight pot for the bone seeds.
                 .stage("I must defeat the Sea Troll Queen.")
-                .kill("sea_troll_queen").say("* The Sea Troll Queen sinks beneath the waves. The colony is saved!")
+                .talk("wizard_frumscone").stay().unlessFlag("ss_frumscone").flag("ss_frumscone")
+                .say("An army of the dead? Malignius Mortifer, south of Falador, can grow one. Tell him I sent you.")
+                .talk("malignius_mortifer").stay().needFlag("ss_frumscone").unlessFlag("ss_apron").give("brown_apron").flag("ss_apron")
+                .say("Bone seeds need an airtight pot. Wear this apron and the Crafting Guild will let you in to make one.")
+                .talk("master_crafter").stay().needFlag("ss_apron").unless("airtight_pot", "bone_seeds").take("soft_clay:2").reqSkill(Skill.CRAFTING, 40)
+                .give("airtight_pot").say("* At the Master Crafter's wheel and oven you make a pot and a lid and seal them together: an airtight pot.")
+                .missing("Bring some soft clay and I'll show you the wheel and the oven. (Requires 40 Crafting.)")
+                .talk("malignius_mortifer").stay().needFlag("ss_apron").unless("bone_seeds").take("airtight_pot", "bones:7").give("bone_seeds")
+                .travel("piscatoris").say("Seven bones and an airtight pot. *He fills the pot with bone seeds and sends you back to the colony.*")
+                .missing("I need an airtight pot and seven bones for the seeds.")
+                .talk("herman_caranos").stay().need("bone_seeds").unlessFlag("ss_battle").flag("ss_battle").spawn("sea_troll_queen")
+                .say("Bone seeds? Then plant them and fight! *The skeletons rise as the Sea Troll Queen storms the colony!*")
+                .reach("piscatoris", 12).stay().needFlag("ss_battle").spawn("sea_troll_queen")
+                .kill("sea_troll_queen").needFlag("ss_battle").say("* The Sea Troll Queen sinks beneath the waves. The colony is saved!")
                 .stage("I should tell Herman Caranos.")
                 .talk("herman_caranos").say("The colony is safe! You can fish here any time, friend.");
     }

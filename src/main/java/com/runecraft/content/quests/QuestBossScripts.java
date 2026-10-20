@@ -35,6 +35,7 @@ final class QuestBossScripts {
         BossScripts.register("elvarg", Elvarg::new);
         BossScripts.register("nezikchened", Nezikchened::new);
         BossScripts.register("treus_dayth", TreusDayth::new);
+        BossScripts.register("quest_mother", MotherOfWeiss::new);
         BossScripts.register("head_menaphite_guard", FalseGods::new);
         BossScripts.register("dark_squall", MagicOnly::new);
         BossScripts.register("balance_elemental", BalanceForms::new);
@@ -519,6 +520,25 @@ final class QuestBossScripts {
                 Msg.red(p, boss.getRandom().nextBoolean() ? "A mine cart rolls into you!" : "A crane swings into you!");
                 com.runecraft.combat.CombatHandler.applyDamage(null, p, hit);
             }
+        }
+    }
+
+    /**
+     * Making Friends with My Arm (wiki): the Fire of Domination makes Mother untouchable until the player has doused it with a
+     * bucket of water (the quest's {@code mfa_fire_out} flag).
+     */
+    static final class MotherOfWeiss implements BossScript {
+        private final long[] lastMessage = {-100};
+
+        @Override
+        public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            if (QuestsState.get(attacker).hasFlag(attacker.getUUID(), QuestBossRules.MOTHER_FIRE_OUT_FLAG)) {
+                return damage;
+            }
+            if (!quiet(boss, lastMessage)) {
+                Msg.action(attacker, "The Fire of Domination shields Mother. Douse it with a bucket of water from the large barrel.");
+            }
+            return 0;
         }
     }
 
