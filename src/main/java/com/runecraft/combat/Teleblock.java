@@ -41,6 +41,12 @@ public final class Teleblock {
         return true;
     }
 
+    /** True if the player is tele blocked, without telling them (the Ferox Enclave's barriers check it every tick). */
+    public static boolean active(ServerPlayer player) {
+        CombatEffects.Teleblock tb = STATES.get(player.getUUID());
+        return tb != null && tb.blocked(ActionManager.gameTick());
+    }
+
     /** Removes the tele block (death, logout). */
     public static void forget(UUID player) {
         STATES.remove(player);

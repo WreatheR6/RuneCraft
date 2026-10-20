@@ -58,6 +58,7 @@ public final class GodWarsWildernessHooks implements ModuleHooks {
         RevenantLoot.register();
         RevenantBehaviour.register();
         RevenantCavesService.register();
+        FeroxService.register();
         BossScripts.register(com.runecraft.osrs.content.godwars.RevenantRewards.MALEDICTUS, MaledictusService.Script::new);
         GwdCamps.register();
     }

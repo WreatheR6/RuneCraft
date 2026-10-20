@@ -457,12 +457,14 @@ public final class SpellService {
             }
             int damage = max > 0 ? p.getRandom().nextInt(max + 1) : 0;
             casting = s;
+            int dealt;
             try {
                 damage = CombatHandler.hookAfterRoll(p, t, AttackType.MAGIC, damage, max);
+                // the target's own damage rules see the spell too (Mage Arena II's followers: only their god spell harms them)
+                dealt = max > 0 ? SysCombat.hit(p, t, AttackType.MAGIC, damage) : 0;
             } finally {
                 casting = null;
             }
-            int dealt = max > 0 ? SysCombat.hit(p, t, AttackType.MAGIC, damage) : 0;
             if (max == 0) {
                 t.setLastHurtByMob(p);
             }

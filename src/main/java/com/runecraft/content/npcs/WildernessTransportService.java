@@ -172,6 +172,46 @@ public final class WildernessTransportService {
         }
     }
 
+    // ------------------------------------------------------------------ self-test hooks (the Wilderness walk)
+
+    /** Lays an obelisk now and returns where a player stands in the middle of its platform. */
+    public static BlockPos selfTestPrepare(ServerLevel world, WildernessTransport.Obelisk o) {
+        layObelisk(world, o);
+        int cx = GielinorMap.toBlockX(o.x());
+        int cz = GielinorMap.toBlockZ(o.y());
+        return new BlockPos(cx, world.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, cx, cz), cz);
+    }
+
+    /** A pillar block of a laid obelisk, or null. */
+    public static BlockPos selfTestPillar(ServerLevel world, WildernessTransport.Obelisk o) {
+        int x1 = GielinorMap.toBlockX(o.x() - 2);
+        int z1 = GielinorMap.toBlockZ(o.y() + 2);
+        for (int y = world.getMaxBuildHeight() - 1; y > world.getMinBuildHeight(); y--) {
+            BlockPos pos = new BlockPos(x1, y, z1);
+            if (pillar(world.getBlockState(pos))) {
+                return pos;
+            }
+        }
+        return null;
+    }
+
+    /** Server ticks until an armed obelisk fires, or -1 when it isn't armed. */
+    public static long selfTestArmedIn(WildernessTransport.Obelisk o, MinecraftServer server) {
+        Long at = ARMED.get(o);
+        return at == null ? -1 : at - server.getTickCount();
+    }
+
+    /**
+     * Fires every armed obelisk now (the synchronous self-test runs no server ticks for the countdown); returns how many
+     * fired.
+     */
+    public static int selfTestFireArmed(MinecraftServer server) {
+        int n = ARMED.size();
+        ARMED.replaceAll((o, at) -> (long) server.getTickCount());
+        tick(server);
+        return n;
+    }
+
     /** Whether a player has completed the hard Wilderness Diary (Set Destination on the obelisks). */
     static boolean hardDiary(ServerPlayer p) {
         return com.runecraft.osrs.content.systems.Diaries.tierComplete(com.runecraft.content.systems.SysState.of(p).diaryDone,

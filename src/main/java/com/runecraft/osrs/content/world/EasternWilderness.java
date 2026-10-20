@@ -232,7 +232,10 @@ final class EasternWilderness {
         int[] pool = k.hall(3125, 3636, 3134, 3645, 1, FEROX, "south");
         int pmx = (pool[0] + pool[2]) / 2;
         int pmz = (pool[1] + pool[3]) / 2;
-        k.set(pmx, g, pmz, "runecraft:poh_ornate_rejuvenation_pool");
+        // The chapel's two pools of refreshment (the godwars module's FeroxService: no special attack restored, unlike a
+        // house's ornate pool).
+        k.set(pmx - 1, g, pmz, "runecraft:ferox_pool_of_refreshment");
+        k.set(pmx + 1, g, pmz, "runecraft:ferox_pool_of_refreshment");
         k.ring(pmx, g - 1, g - 1, pmz, 3.5, 1.0, "minecraft:prismarine_bricks");
         k.set(pool[0] + 1, g, pool[1] + 1, ALTAR);
         int[] inn = k.hall(3145, 3636, 3154, 3645, 2, FEROX, "south");

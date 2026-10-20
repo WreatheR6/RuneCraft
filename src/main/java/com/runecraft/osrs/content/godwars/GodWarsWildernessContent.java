@@ -80,7 +80,8 @@ public final class GodWarsWildernessContent implements ContentModule {
                 BlockDef.scripted(RevenantCaves.BLOCK_CREVICE, "Crevice (Revenant Caves)", 0x22222A, "pit"),
                 BlockDef.scripted(RevenantCaves.BLOCK_STAIRS, "Stairs (Revenant Caves)", 0x5A5A66, "stairs"),
                 BlockDef.scripted(RevenantCaves.BLOCK_PILLAR, "Pillar (Revenant Caves)", 0x6A6A78, "pillar"),
-                BlockDef.scripted(RevenantCaves.BLOCK_TRAPDOOR, "Trapdoor (Revenant Caves)", 0x4A3A2A, "hatch"));
+                BlockDef.scripted(RevenantCaves.BLOCK_TRAPDOOR, "Trapdoor (Revenant Caves)", 0x4A3A2A, "hatch"),
+                BlockDef.scripted(FeroxEnclave.BLOCK_POOL, "Pool of Refreshment", 0x40B8D8, "pool"));
     }
 
     /** The God Wars Dungeon and the Revenant Caves, carved at their real tiles, and the caves' surface entrances. */

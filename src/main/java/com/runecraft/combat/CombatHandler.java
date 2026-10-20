@@ -245,6 +245,9 @@ public final class CombatHandler {
         if (override != null) {
             return override;
         }
+        if (Gielinor.inSafeZone(attacker) || Gielinor.inSafeZone(target)) {
+            return false; // the Ferox Enclave: no player fights inside its walls
+        }
         return com.runecraft.osrs.CombatBonuses.canAttackInWilderness(Players.data(attacker).skills().combatLevel(),
                 Players.data(target).skills().combatLevel(), Gielinor.wildernessLevel(attacker), Gielinor.wildernessLevel(target));
     }

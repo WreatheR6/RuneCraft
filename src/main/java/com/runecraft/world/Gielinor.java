@@ -44,6 +44,15 @@ public final class Gielinor {
         return is(entity) ? GielinorMap.wildernessLevel(entity.blockPosition().getX(), entity.blockPosition().getZ()) : 0;
     }
 
+    /**
+     * In a safe zone inside the Wilderness: the Ferox Enclave on the surface (no player fights, no looting bag; the
+     * Wilderness level still shows for teleports and the like).
+     */
+    public static boolean inSafeZone(Entity entity) {
+        return is(entity) && entity.getY() >= 45
+                && GielinorMap.inFeroxEnclave(entity.blockPosition().getX(), entity.blockPosition().getZ());
+    }
+
     /** Finds a safe standing position at the given column (loads/generates the chunk). */
     public static BlockPos safeSpot(ServerLevel world, int x, int z) {
         BlockPos first = column(world, x, z);
