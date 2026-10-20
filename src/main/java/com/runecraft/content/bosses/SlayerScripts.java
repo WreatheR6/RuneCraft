@@ -31,7 +31,12 @@ final class SlayerScripts {
     private SlayerScripts() {
     }
 
-    /** Kraken: starts as a whirlpool; disturb all four tentacles before the Kraken itself surfaces. */
+    /**
+     * Kraken (OSRS Wiki "Kraken/Strategies"): it lies under a large whirlpool among four small ones. Disturbing a small whirlpool
+     * (any hit) brings up its Enormous Tentacle, which then attacks; once all four are up, disturbing the large whirlpool (a
+     * ranged or magic attack, melee can't reach it) wakes the Kraken. Its blast and the tentacles' splashes are typeless.
+     * Ranged attacks deal a seventh of their damage to it.
+     */
     static final class Kraken extends ScriptedBoss {
         private final List<Mob> tentacles = new ArrayList<>();
         private boolean risen;
@@ -44,11 +49,12 @@ final class SlayerScripts {
                 Mob t = BossFx.spawnMinion(boss, "enormous_tentacle",
                         BossFx.ground(BossFx.world(boss), c.x + Math.cos(a) * 6, c.z + Math.sin(a) * 6, c.y), null);
                 if (t != null) {
+                    t.setNoAi(true); // a whirlpool until it is disturbed
                     tentacles.add(t);
                 }
             }
             boss.setInvisible(true);
-            BossFx.say(boss, "Four whirlpools churn around a larger one... Disturb the tentacles first!");
+            BossFx.say(boss, "Four whirlpools churn around a larger one... Disturb the small ones first!");
         }
 
         /** Self-test (boss:fight:kraken): a player disturbs every whirlpool with one hit each. Returns whether one was left. */
@@ -63,6 +69,7 @@ final class SlayerScripts {
             return any;
         }
 
+        /** Whether all four small whirlpools have been disturbed (or their tentacles killed). */
         private boolean disturbed() {
             for (Mob t : tentacles) {
                 if (t.isAlive() && t.getHealth() >= t.getMaxHealth()) {
@@ -77,21 +84,46 @@ final class SlayerScripts {
             return risen ? null : IDLE_RANGED;
         }
 
+        /** The large whirlpool can be disturbed once the four small ones are; then the Kraken itself. */
         @Override
         public boolean isVulnerable(DataBossEntity boss) {
-            return risen;
+            return risen || disturbed();
+        }
+
+        @Override
+        protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            if (!risen) {
+                if (!type.isMelee()) {
+                    rise(boss); // the disturbing attack only wakes it
+                }
+                return 0;
+            }
+            return type == AttackType.RANGED ? SlayerBosses.krakenRangedDamage(damage) : damage;
+        }
+
+        private void rise(DataBossEntity boss) {
+            risen = true;
+            boss.setInvisible(false);
+            BossFx.burst(boss, ParticleTypes.SPLASH, 60, 2.0);
+            BossFx.say(boss, "The Kraken rises from the whirlpool!");
         }
 
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
+            for (Mob t : tentacles) {
+                if (t.isAlive() && t.isNoAi()) {
+                    if (t.getHealth() < t.getMaxHealth()) {
+                        t.setNoAi(false); // disturbed: the Enormous Tentacle surfaces and attacks
+                        if (target != null) {
+                            t.setTarget(target);
+                        }
+                    } else {
+                        BossFx.ring(BossFx.world(boss), t.position(), 1.0, ParticleTypes.BUBBLE);
+                    }
+                }
+            }
             if (!risen) {
                 BossFx.ring(BossFx.world(boss), boss.position(), 2.0, ParticleTypes.BUBBLE);
-                if (disturbed()) {
-                    risen = true;
-                    boss.setInvisible(false);
-                    BossFx.burst(boss, ParticleTypes.SPLASH, 60, 2.0);
-                    BossFx.say(boss, "The Kraken rises from the whirlpool!");
-                }
             }
         }
 
@@ -99,42 +131,93 @@ final class SlayerScripts {
         public void onDeath(DataBossEntity boss, ServerPlayer killer) {
             tentacles.forEach(Mob::discard);
         }
-    }
-
-    /** Thermonuclear smoke devil: without a face mask or slayer helmet its smoke chokes and drains you. */
-    static final class Thermy extends ScriptedBoss {
-        private static final Set<String> MASKS = Set.of("facemask", "face_mask", "gas_mask", "slayer_helmet", "slayer_helmet_i",
-                "black_slayer_helmet", "green_slayer_helmet", "red_slayer_helmet", "purple_slayer_helmet");
 
         @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
-            BossFx.burst(boss, ParticleTypes.LARGE_SMOKE, 6, 1.5);
-            if (now % 4 != 0) {
-                return;
-            }
-            for (ServerPlayer p : BossFx.players(boss, 14)) {
-                if (!MASKS.contains(Inv.idOf(p.getItemBySlot(EquipmentSlot.HEAD)))) {
-                    Msg.red(p, "The thick smoke chokes you! You need a face mask.");
-                    CombatHandler.applyDamage(boss, p, 5 + p.getRandom().nextInt(11));
-                    for (Skill s : new Skill[]{Skill.ATTACK, Skill.STRENGTH, Skill.DEFENCE, Skill.RANGED, Skill.MAGIC}) {
-                        BossFx.drainStat(p, s, 1);
-                    }
-                }
-            }
+        public void onRemoved(DataBossEntity boss) {
+            tentacles.forEach(Mob::discard);
         }
     }
 
     /**
-     * Cerberus: auto attacks by distance; a triple attack (magic, ranged, melee) opens the fight and
-     * every tenth attack; summoned souls below 400 hp (pray correctly: an unprotected soul hits 30, a
-     * protected one drains 30 prayer); lava pools below 200 hp.
+     * Thermonuclear smoke devil (OSRS Wiki, "Smoke Devil Dungeon"): its typeless blast is in the data. Without a facemask, gas
+     * mask or slayer helmet the cave's smoke makes you cough (it can't kill, approx damage), and the devil's own smoke drains
+     * every combat stat and Agility to 1 when it hits you (the Slayer module adds the smoke devils' stronger hits).
+     */
+    static final class Thermy extends ScriptedBoss {
+        private static final Set<String> MASKS = Set.of("facemask", "gas_mask", "slayer_helmet", "slayer_helmet_i");
+        private static final Skill[] DRAINED = {Skill.ATTACK, Skill.STRENGTH, Skill.DEFENCE, Skill.RANGED, Skill.MAGIC, Skill.AGILITY};
+        /** How often the cave's smoke makes an unmasked player cough (approx: the wiki guesses every 20 ticks). */
+        private static final int COUGH_EVERY = 20;
+        private static final int COUGH_MAX = 6; // approx
+
+        static boolean masked(ServerPlayer p) {
+            return MASKS.contains(Inv.idOf(p.getItemBySlot(EquipmentSlot.HEAD)));
+        }
+
+        @Override
+        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
+            BossFx.burst(boss, ParticleTypes.LARGE_SMOKE, 6, 1.5);
+            if (now % COUGH_EVERY != 0) {
+                return;
+            }
+            for (ServerPlayer p : BossFx.players(boss, 16)) {
+                if (!masked(p)) {
+                    int hp = (int) Math.ceil(p.getHealth());
+                    int cough = Math.min(1 + p.getRandom().nextInt(COUGH_MAX), Math.max(0, hp - 1)); // the smoke can't kill
+                    Msg.red(p, cough > 0 && hp - cough <= 1 ? "*wheeze*" : "*cough* The thick smoke burns your lungs! You need a facemask.");
+                    if (cough > 0) {
+                        com.runecraft.combat.CombatHooks.nameAttack("smoke", null);
+                        CombatHandler.applyDamage(null, p, cough);
+                    }
+                }
+            }
+        }
+
+        @Override
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
+            if (!masked(player)) {
+                com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(player);
+                boolean drained = false;
+                for (Skill s : DRAINED) {
+                    int to = 1 - data.skills().level(s);
+                    if (data.skills().boost(s) > to) {
+                        data.skills().setBoost(s, to);
+                        drained = true;
+                    }
+                }
+                if (drained) {
+                    com.runecraft.network.ServerNetworking.sync(player);
+                    Msg.red(player, "You inhale the devil's smoke and your strength leaves you!");
+                }
+            }
+            return damage;
+        }
+    }
+
+    /**
+     * Cerberus (OSRS Wiki "Cerberus/Strategies"), on her attack pattern ({@link SlayerBosses#cerberusMove}): the triple attack
+     * (magic, ranged, then a bite at any distance, 2 ticks apart) first and every tenth attack; under 400 hitpoints the
+     * summoned souls every seventh (they appear in a random order and attack west to east: unprotected 30, 22 with an
+     * elysian; protected a 30 prayer drain, 15 with a spectral); under 200 three lava pools every fifth (one under the player,
+     * 10 as they form and 15 every two ticks on them). Auto attacks bite in melee range, else ranged or magic.
      */
     static final class Cerberus extends ScriptedBoss {
+        private static final String[] SOUL_IDS = {"summoned_soul_ranged", "summoned_soul_magic", "summoned_soul_melee"};
+        private static final Prayer[] SOUL_PRAYERS = {Prayer.PROTECT_FROM_MISSILES, Prayer.PROTECT_FROM_MAGIC, Prayer.PROTECT_FROM_MELEE};
+        private static final String[] SOUL_NAMES = {"ranged", "magic", "melee"};
+
+        private record LavaPool(Vec3 pos, long until) {
+        }
+
         private final List<AttackDef> queue = new ArrayList<>();
-        private int souls = 20;
-        private int lava = 12;
+        private final List<LavaPool> pools = new ArrayList<>();
+        /** Her attacks so far in her pattern (the triple attack counts as one). */
+        private int pattern;
         private int soulStep = -1;
+        private int soulWait;
         private final Mob[] soulMobs = new Mob[3];
+        /** The style (index into SOUL_IDS) of the soul in each place, west to east. */
+        private final int[] soulStyle = {0, 1, 2};
 
         @Override
         protected boolean driven() {
@@ -148,16 +231,36 @@ final class SlayerScripts {
 
         @Override
         protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
-            if (attackCount % 10 == 0 && queue.isEmpty()) {
-                BossFx.say(boss, "Cerberus: Grrrrr!");
-                queue.add(SlayerBosses.CERB_MAGIC);
-                queue.add(SlayerBosses.CERB_RANGED);
-                queue.add(distance < 3.5 ? SlayerBosses.CERB_MELEE : SlayerBosses.CERB_MAGIC);
-            }
             if (!queue.isEmpty()) {
                 return queue.remove(0);
             }
-            if (distance < 3.5 && boss.getRandom().nextInt(3) > 0) {
+            pattern++;
+            SlayerBosses.CerberusMove move = SlayerBosses.cerberusMove(pattern, (int) Math.ceil(boss.getHealth()),
+                    boss.getRandom().nextInt(10) == 0);
+            switch (move) {
+                case TRIPLE -> {
+                    queue.add(SlayerBosses.CERB_RANGED);
+                    queue.add(SlayerBosses.CERB_TRIPLE_MELEE);
+                    return SlayerBosses.CERB_MAGIC;
+                }
+                case SOULS -> {
+                    if (soulStep < 0) {
+                        summonSouls(boss);
+                        cooldown = attackDelay(boss, SlayerBosses.CERB_MAGIC) - 1;
+                        attackCount++;
+                        return null;
+                    }
+                }
+                case LAVA -> {
+                    lava(boss, target);
+                    cooldown = attackDelay(boss, SlayerBosses.CERB_MAGIC) - 1;
+                    attackCount++;
+                    return null;
+                }
+                default -> {
+                }
+            }
+            if (distance < SlayerBosses.CERB_MELEE.range() && boss.getRandom().nextInt(3) > 0) {
                 return SlayerBosses.CERB_MELEE;
             }
             return boss.getRandom().nextBoolean() ? SlayerBosses.CERB_RANGED : SlayerBosses.CERB_MAGIC;
@@ -165,94 +268,139 @@ final class SlayerScripts {
 
         @Override
         protected int attackDelay(DataBossEntity boss, AttackDef attack) {
-            // Auto-attacks every 6 ticks (wiki attack speed); the "Grrrrr" triple attack fires its three styles 2 ticks apart.
+            // Auto-attacks every 6 ticks (wiki attack speed); the triple attack fires its three styles 2 ticks apart.
             return queue.isEmpty() ? super.attackDelay(boss, attack) : 2;
         }
 
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
-            if (target == null) {
-                return;
-            }
-            double hp = boss.getHealth();
-            if (hp <= 400 && soulStep < 0 && --souls <= 0) {
-                souls = 32;
-                summonSouls(boss, target);
-            }
-            if (soulStep >= 0) {
+            if (soulStep >= 0 && target != null) {
                 tickSouls(boss, target);
             }
-            if (hp <= 200 && --lava <= 0) {
-                lava = 20;
-                BossFx.say(boss, "Cerberus: Grrrrrrrrrrrrrr!");
-                Vec3 p = target.position();
-                namedStrike("lava_pool", boss, p, 4, 15, 1.4, ParticleTypes.LAVA);
-                namedStrike("lava_pool", boss, around(boss, p, 3), 4, 15, 1.4, ParticleTypes.LAVA);
-                namedStrike("lava_pool", boss, around(boss, p, 3), 4, 15, 1.4, ParticleTypes.LAVA);
-            }
+            tickLava(boss);
         }
 
-        private void summonSouls(DataBossEntity boss, ServerPlayer target) {
-            BossFx.say(boss, "Cerberus: Aaarrrooooooo! Summoned souls float in - ranged, then magic, then melee!");
+        private void summonSouls(DataBossEntity boss) {
+            BossFx.say(boss, "Cerberus: Aaarrrooooooo!");
             CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_CERBERUS_SOULS);
-            String[] ids = {"summoned_soul_ranged", "summoned_soul_magic", "summoned_soul_melee"};
+            // A random order, standing west to east behind the archaic skull (north of the arena centre).
+            List<Integer> order = new ArrayList<>(List.of(0, 1, 2));
+            java.util.Collections.shuffle(order, new java.util.Random(boss.getRandom().nextLong()));
             Vec3 c = homeVec();
             for (int i = 0; i < 3; i++) {
-                soulMobs[i] = BossFx.spawnMinion(boss, ids[i], BossFx.ground(BossFx.world(boss), c.x - 3 + i * 3, c.z - 9, c.y), null);
+                soulStyle[i] = order.get(i);
+                soulMobs[i] = BossFx.spawnMinion(boss, SOUL_IDS[soulStyle[i]],
+                        BossFx.ground(BossFx.world(boss), c.x - 3 + i * 3, c.z - 9, c.y), null);
             }
+            BossFx.warn(boss, "Summoned souls: " + SOUL_NAMES[soulStyle[0]] + ", " + SOUL_NAMES[soulStyle[1]] + ", "
+                    + SOUL_NAMES[soulStyle[2]] + " (west to east)");
             soulStep = 0;
-            cooldownSouls = 6;
+            soulWait = 6;
         }
 
-        private int cooldownSouls;
-
         private void tickSouls(DataBossEntity boss, ServerPlayer target) {
-            if (--cooldownSouls > 0) {
+            if (--soulWait > 0) {
                 return;
             }
-            Prayer[] prayers = {Prayer.PROTECT_FROM_MISSILES, Prayer.PROTECT_FROM_MAGIC, Prayer.PROTECT_FROM_MELEE};
-            String[] names = {"ranged", "magic", "melee"};
+            int style = soulStyle[soulStep];
             Mob soul = soulMobs[soulStep];
             if (soul != null && soul.isAlive()) {
                 BossFx.world(boss).sendParticles(ParticleTypes.SOUL, soul.getX(), soul.getY() + 1, soul.getZ(), 15, 0.3, 0.5, 0.3, 0.05);
-                if (BossFx.protects(target, prayers[soulStep])) {
+                if (BossFx.protects(target, SOUL_PRAYERS[style])) {
                     boolean spectral = "spectral_spirit_shield".equals(Inv.idOf(target.getOffhandItem()));
-                    BossFx.drainPrayer(target, spectral ? 15 : 30);
+                    BossFx.drainPrayer(target, spectral ? SlayerBosses.CERB_SOUL_DRAIN_SPECTRAL : SlayerBosses.CERB_SOUL_DRAIN);
                     CombatAchievementService.count(target, CombatAchievements.COUNT_SOUL_NEGATED, 1);
-                    Msg.game(target, "The " + names[soulStep] + " soul drains your prayer.");
+                    Msg.game(target, "The " + SOUL_NAMES[style] + " soul drains your prayer.");
                 } else {
+                    boolean elysian = "elysian_spirit_shield".equals(Inv.idOf(target.getOffhandItem()));
                     com.runecraft.combat.CombatHooks.nameAttack("summoned_soul", null);
-                    CombatHandler.applyDamage(boss, target, 30);
-                    Msg.red(target, "The " + names[soulStep] + " soul strikes you!");
+                    CombatHandler.applyDamage(boss, target, elysian ? SlayerBosses.CERB_SOUL_HIT_ELYSIAN : SlayerBosses.CERB_SOUL_HIT);
+                    Msg.red(target, "The " + SOUL_NAMES[style] + " soul strikes you!");
                 }
                 soul.discard();
             }
             soulStep++;
-            cooldownSouls = 2;
+            soulWait = 2;
             if (soulStep >= 3) {
                 soulStep = -1;
             }
         }
+
+        /** "Grrrrrrrrrrrrrr!": three single-tile pools, one under the player and two elsewhere in the arena. */
+        private void lava(DataBossEntity boss, ServerPlayer target) {
+            BossFx.say(boss, "Cerberus: Grrrrrrrrrrrrrr!");
+            Vec3 p = target.position();
+            Vec3[] at = {p, around(boss, homeVec(), 8), around(boss, homeVec(), 8)};
+            for (Vec3 v : at) {
+                namedStrike("lava_pool", boss, v, 3, SlayerBosses.CERB_LAVA_LANDING, 0.8, ParticleTypes.LAVA,
+                        (hit, pos) -> pools.add(new LavaPool(pos, now + SlayerBosses.CERB_LAVA_TICKS)));
+            }
+        }
+
+        private void tickLava(DataBossEntity boss) {
+            pools.removeIf(l -> now > l.until());
+            for (LavaPool l : pools) {
+                BossFx.world(boss).sendParticles(ParticleTypes.LAVA, l.pos().x, l.pos().y + 0.1, l.pos().z, 2, 0.3, 0.02, 0.3, 0);
+                if ((l.until() - now) % 2 != 0) {
+                    continue;
+                }
+                for (ServerPlayer p : BossFx.world(boss).getPlayers(pl -> pl.isAlive() && pl.position().distanceToSqr(l.pos()) <= 0.64)) {
+                    com.runecraft.combat.CombatHooks.nameAttack("lava_pool", null);
+                    CombatHandler.applyDamage(boss, p, SlayerBosses.CERB_LAVA_TICK);
+                }
+            }
+        }
+
+        private void clearSouls() {
+            for (Mob m : soulMobs) {
+                if (m != null) {
+                    m.discard();
+                }
+            }
+            soulStep = -1;
+        }
+
+        @Override
+        public void onDeath(DataBossEntity boss, ServerPlayer killer) {
+            clearSouls(); // they despawn when she dies; her pools stop burning
+            pools.clear();
+        }
+
+        @Override
+        public void onRemoved(DataBossEntity boss) {
+            clearSouls();
+        }
     }
 
     /**
-     * Abyssal Sire. Phase 1: it sleeps until attacked; awake, its six tentacles lash anyone near them (up to 30) and shield
-     * the four respiratory systems (0-3 damage) while it throws miasma pools and spawns. Disorient it - 75 ranged/magic
-     * damage or a shadow spell (Rush 25%, Burst 50%, Blitz 75%, Barrage always) - and for 30 seconds (the tentacles wake
-     * after 27) the systems are open; damage to the Sire itself in this phase only counts towards disorienting it. With all
-     * four systems gone it awakens in a fury (phase 2: tendril swipes, slams and miasma); below 50% (phase 3) its
-     * tentacles return, spawns grow into scions and it swells up and explodes - get far away.
+     * Abyssal Sire (OSRS Wiki "Abyssal Sire" and its Strategies). Phase 1: it sleeps until attacked; awake, its six tentacles
+     * lash anyone near them (up to 30) and shield the four respiratory systems (0-3 damage) while it throws miasma pools and
+     * spawns. Disorient it - 75 ranged/magic damage or a shadow spell (Rush 25%, Burst 50%, Blitz 75%, Barrage always) - and
+     * for 30 seconds (the tentacles wake after 27) the systems are open; damage to the Sire itself in this phase only counts
+     * towards disorienting it, and each system gives 50 Slayer XP. With all four systems gone it awakens in a fury (phase 2):
+     * melee swipes and flicks (6, 6 and 26 through Protect from Melee), miasma and spawns from range, and attacking it from
+     * more than two tiles away pulls the player in for a portal blast of up to 60. Under 210 hitpoints (phase 3) it walks to
+     * the middle of the room and stops, its tentacles wake, four spawns come and miasma pools are its attacks; under 140 it
+     * teleports the player next to itself and explodes two ticks later for up to 96, then spawns pour out until 15 minions
+     * are alive. A spawn left 15 seconds matures into a scion; every spawn and scion dies with the Sire.
      */
     static final class Sire extends ScriptedBoss {
         private final List<Mob> systems = new ArrayList<>();
         private final List<Vec3> tentacles = new ArrayList<>();
+        /** Its spawns and the game tick each appeared (they mature into scions), then its scions. */
+        private final java.util.Map<Mob, Long> spawns = new java.util.LinkedHashMap<>();
+        private final List<Mob> scions = new ArrayList<>();
+        /** 1 systems, 2 melee, 3 latched in the middle, 4 after the explosion. */
         private int stage = 1;
         private boolean awake;
         private int disoriented;
         private int disorientDamage;
         private int spawnTimer = 10;
-        private int explodeTimer = -1;
         private int miasmaTimer = 6;
+        private int miasmasAfterExplosion;
+        private long portalReadyAt;
+        /** A hit took it to 0 before its next phase: it starts the next phase instead (at 20% for phase 3). */
+        private boolean clamped;
 
         @Override
         public void onSpawn(DataBossEntity boss) {
@@ -295,7 +443,7 @@ final class SlayerScripts {
             return disoriented > 0;
         }
 
-        /** The tentacles lash out while the Sire is awake in phase 1 (from 27 s into a disorientation) and again in phase 3. */
+        /** The tentacles lash out while the Sire is awake in phase 1 (from 27 s into a disorientation) and again from phase 3. */
         private boolean tentaclesActive() {
             if (stage == 1) {
                 return awake && disoriented <= BossMechanics.SIRE_DISORIENT_TICKS - BossMechanics.SIRE_TENTACLE_WAKE_TICKS;
@@ -320,12 +468,24 @@ final class SlayerScripts {
 
         @Override
         protected boolean canAttack(DataBossEntity boss) {
-            return stage >= 2 && explodeTimer < 0;
+            return stage >= 2;
+        }
+
+        /** Distance from the Sire's edge, in blocks. */
+        private static double edge(DataBossEntity boss, net.minecraft.world.entity.Entity e) {
+            return Math.sqrt(boss.distanceToSqr(e)) - boss.getBbWidth() / 2;
         }
 
         @Override
         protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             if (stage != 1) {
+                if (stage == 2 && attacker != null && edge(boss, attacker) > 2.5 && now >= portalReadyAt) {
+                    portalBlast(boss, attacker); // no safespotting it in phase 2
+                }
+                if ((stage == 2 || stage == 3) && damage >= boss.getHealth()) {
+                    clamped = true; // it can't die before its next phase: the phase change comes first
+                    return Math.max(0, (int) Math.ceil(boss.getHealth()) - 1);
+                }
                 return damage;
             }
             if (!awake) {
@@ -352,13 +512,57 @@ final class SlayerScripts {
             return 0; // phase 1 damage only counts towards disorienting it
         }
 
+        /** Pulls a player attacking from afar next to it and discharges its portal two ticks later. */
+        private void portalBlast(DataBossEntity boss, ServerPlayer p) {
+            portalReadyAt = now + 8;
+            pullIn(boss, p);
+            perform(boss, p, SlayerBosses.SIRE_PORTAL_BLAST);
+        }
+
+        /** Teleports a player to the Sire's edge, on their side of it. */
+        private static void pullIn(DataBossEntity boss, ServerPlayer p) {
+            Vec3 dir = p.position().subtract(boss.position()).multiply(1, 0, 1);
+            dir = dir.lengthSqr() < 0.01 ? new Vec3(-1, 0, 0) : dir.normalize(); // OSRS: the western tile of the row
+            Vec3 at = boss.position().add(dir.scale(boss.getBbWidth() / 2 + 0.6));
+            Vec3 ground = BossFx.ground(BossFx.world(boss), at.x, at.z, boss.getY());
+            p.teleportTo(ground.x, ground.y, ground.z);
+            Msg.red(p, "The Abyssal Sire drags you towards it!");
+        }
+
         @Override
         protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
-            if (distance > 4) {
+            if (stage >= 3) {
+                // Latched to the floor: its "attacks" are miasma pools (after the explosion, until three more pools and 15 minions).
+                if (stage == 4 && miasmasAfterExplosion >= SlayerBosses.SIRE_MIASMAS_AFTER_EXPLOSION
+                        && minions() >= SlayerBosses.SIRE_MAX_MINIONS) {
+                    return null;
+                }
+                if (stage == 4) {
+                    miasmasAfterExplosion++;
+                }
                 return SlayerBosses.SIRE_MIASMA;
             }
-            int r = boss.getRandom().nextInt(8);
-            return r < 4 ? SlayerBosses.SIRE_TENDRIL : r < 6 ? SlayerBosses.SIRE_SLAM : SlayerBosses.SIRE_MIASMA;
+            if (distance > 2.5) {
+                // Out of its reach: spawns or a miasma pool.
+                if (boss.getRandom().nextBoolean()) {
+                    spawn(boss, target, around(boss, boss.position(), 3));
+                    attackCount++;
+                    cooldown = attackDelay(boss, SlayerBosses.SIRE_MIASMA) - 1;
+                    return null;
+                }
+                return SlayerBosses.SIRE_MIASMA;
+            }
+            return boss.getRandom().nextInt(3) < 2 ? SlayerBosses.SIRE_TENDRIL : SlayerBosses.SIRE_SLAM;
+        }
+
+        /** Protect from Melee doesn't fully block its melee: 6, 6 and 26 get through. */
+        @Override
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
+            if ((last == SlayerBosses.SIRE_TENDRIL || last == SlayerBosses.SIRE_SLAM) && type.isMelee()
+                    && BossFx.protects(player, Prayer.PROTECT_FROM_MELEE)) {
+                return SlayerBosses.sireThroughPrayer(last, damage);
+            }
+            return damage;
         }
 
         private void tickTentacles(DataBossEntity boss) {
@@ -387,10 +591,58 @@ final class SlayerScripts {
             }
         }
 
+        private int minions() {
+            spawns.keySet().removeIf(m -> !m.isAlive());
+            scions.removeIf(m -> !m.isAlive());
+            return spawns.size() + scions.size();
+        }
+
+        private void spawn(DataBossEntity boss, ServerPlayer target, Vec3 at) {
+            Mob m = BossFx.spawnMinion(boss, "abyssal_spawn", at, target);
+            if (m != null) {
+                spawns.put(m, now);
+            }
+        }
+
+        /** A spawn left alive 15 seconds matures into a scion ("They Grow Up Too Fast"). */
+        private void tickSpawns(DataBossEntity boss, ServerPlayer target) {
+            for (java.util.Iterator<java.util.Map.Entry<Mob, Long>> it = spawns.entrySet().iterator(); it.hasNext(); ) {
+                java.util.Map.Entry<Mob, Long> e = it.next();
+                Mob s = e.getKey();
+                if (!s.isAlive()) {
+                    it.remove();
+                } else if (now - e.getValue() >= SlayerBosses.SIRE_SPAWN_MATURES) {
+                    it.remove();
+                    Vec3 at = s.position();
+                    s.discard();
+                    Mob scion = BossFx.spawnMinion(boss, "abyssal_scion", at, target);
+                    if (scion != null) {
+                        scions.add(scion);
+                    }
+                    CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_SIRE_SCION);
+                }
+            }
+        }
+
+        /** Respiratory systems that just died give their 50 Slayer XP. */
+        private void tickSystems(ServerPlayer target) {
+            for (java.util.Iterator<Mob> it = systems.iterator(); it.hasNext(); ) {
+                Mob m = it.next();
+                if (!m.isAlive()) {
+                    it.remove();
+                    if (m.isDeadOrDying() && target != null) {
+                        com.runecraft.skill.XpService.add(target, Skill.SLAYER, SlayerBosses.SIRE_SYSTEM_SLAYER_XP);
+                    }
+                }
+            }
+        }
+
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             tickTentacles(boss);
+            tickSpawns(boss, target);
             if (stage == 1) {
+                tickSystems(target);
                 if (disoriented > 0) {
                     disoriented--;
                     BossFx.burst(boss, ParticleTypes.ENCHANTED_HIT, 4, 1.0);
@@ -400,9 +652,10 @@ final class SlayerScripts {
                 } else {
                     BossFx.burst(boss, ParticleTypes.SQUID_INK, 3, 1.0);
                 }
-                if (systems.stream().noneMatch(Mob::isAlive)) {
+                if (systems.isEmpty()) {
                     stage = 2;
                     disoriented = 0;
+                    boss.setHealth(boss.getMaxHealth()); // phase 1 damage only ever counted towards disorienting it
                     BossFx.say(boss, "The Abyssal Sire awakens in a fury!");
                     BossFx.sound(boss, SoundEvents.WITHER_SPAWN, 0.6f);
                     return;
@@ -415,7 +668,7 @@ final class SlayerScripts {
                     }
                     if (--spawnTimer <= 0) {
                         spawnTimer = 15;
-                        BossFx.spawnMinion(boss, "abyssal_spawn", around(boss, boss.position(), 3), target);
+                        spawn(boss, target, around(boss, boss.position(), 3));
                     }
                 }
                 return;
@@ -423,53 +676,97 @@ final class SlayerScripts {
             if (target == null) {
                 return;
             }
-            if (stage == 2 && percent(boss) <= 50) {
+            if (stage == 2 && (clamped || boss.getHealth() < SlayerBosses.SIRE_PHASE3_BELOW)) {
                 stage = 3;
-                explodeTimer = 8;
-                BossFx.say(boss, "The Abyssal Sire begins to swell... RUN! Its tentacles thrash again!");
-            }
-            if (explodeTimer > 0) {
-                explodeTimer--;
-                BossFx.burst(boss, ParticleTypes.SQUID_INK, 25, 2.0);
-                if (explodeTimer == 0) {
-                    perform(boss, target, SlayerBosses.SIRE_EXPLOSION.telegraph(0, null));
-                    explodeTimer = -1;
+                if (clamped) {
+                    clamped = false;
+                    boss.setHealth(Math.max(boss.getHealth(), (float) (boss.getMaxHealth() * SlayerBosses.SIRE_PHASE3_FLOOR)));
                 }
+                BossFx.say(boss, "The Abyssal Sire retreats to the middle of the chamber and latches onto the floor! Its tentacles thrash again!");
+                boss.getNavigation().moveTo(home.getX() + 0.5, home.getY(), home.getZ() + 0.5, 1.0);
+                for (int i = 0; i < 4; i++) {
+                    spawn(boss, target, around(boss, homeVec(), 3));
+                }
+                spawnTimer = 12;
+            } else if (stage == 3 && (clamped || boss.getHealth() < SlayerBosses.SIRE_EXPLODE_BELOW)) {
+                stage = 4;
+                clamped = false;
+                pullIn(boss, target);
+                perform(boss, target, SlayerBosses.SIRE_EXPLOSION);
+                cooldown = Math.max(cooldown, SlayerBosses.SIRE_EXPLOSION.telegraphTicks() + 1);
+                for (int i = 0; i < 6; i++) {
+                    spawn(boss, target, around(boss, boss.position(), 4));
+                }
+                spawnTimer = 4;
             }
             if (--spawnTimer <= 0) {
-                spawnTimer = stage >= 3 ? 12 : 15;
-                BossFx.spawnMinion(boss, stage >= 3 ? "abyssal_scion" : "abyssal_spawn", around(boss, boss.position(), 3), target);
-                if (stage >= 3) {
-                    CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_SIRE_SCION);
+                if (stage == 4) {
+                    spawnTimer = 4; // spawns pour out of its portal until 15 minions are alive
+                    if (minions() < SlayerBosses.SIRE_MAX_MINIONS) {
+                        spawn(boss, target, around(boss, boss.position(), 2));
+                    }
+                } else {
+                    spawnTimer = stage == 3 ? 12 : 15;
+                    spawn(boss, target, around(boss, boss.position(), 3));
                 }
             }
+        }
+
+        /** Its spawns, scions and respiratory systems all die with it (and go when it resets). */
+        private void clearMinions() {
+            systems.forEach(Mob::discard);
+            spawns.keySet().forEach(Mob::discard);
+            scions.forEach(Mob::discard);
+            spawns.clear();
+            scions.clear();
         }
 
         @Override
         public void onDeath(DataBossEntity boss, ServerPlayer killer) {
-            systems.forEach(Mob::discard);
+            clearMinions();
         }
 
         @Override
         public void onRemoved(DataBossEntity boss) {
-            systems.forEach(Mob::discard); // reset: its respiratory systems go (the lair sweep takes the spawns)
+            clearMinions();
         }
     }
 
     /**
-     * Alchemical Hydra. Each colour phase is a separate form (one head is lost per phase). Its chemical
-     * shield cuts damage by 75% until it is lured next to the vent whose colour beats its carapace (green to
-     * red, blue to green, red to blue) while the vents erupt.
-     * Ranged and magic alternate every three attacks; every ninth attack is the phase special (poison
-     * pools, chasing lightning, fire walls). The final enraged phase has no shield and attacks faster.
+     * Alchemical Hydra (OSRS Wiki "Alchemical Hydra/Strategies"). Each colour phase is a separate form (one head is lost per
+     * phase, at 75/50/25%). Its chemical shield cuts damage by 75% until it is lured over the vent whose colour beats its
+     * carapace while the vents erupt (green to the red vent in the south-east, blue to the green vent in the north-east, red to
+     * the blue vent in the north-west); a wrong vent empowers it (26x2 serpentine and electric, 52 flame). It switches between
+     * ranged and magic after every three basic attacks, carried across the phases; each phase opens with three basic attacks
+     * and then its special (poison blobs, lightning currents from the corners converging on the player, a stun and walls of
+     * fire with a tracking flame), then a special after every nine. The extinguished phase has no shield, attacks every four
+     * ticks for up to 55, alternates styles every attack starting with the one it didn't use last, and spits poison on its
+     * fourth attack and every ninth after.
      */
     static final class Hydra extends ScriptedBoss {
+        /** A lightning current or the tracking flame, chasing the player one block a tick until it strikes or fades. */
+        private static final class Chaser {
+            Vec3 pos;
+            final long until;
+            final boolean fire;
+
+            Chaser(Vec3 pos, long until, boolean fire) {
+                this.pos = pos;
+                this.until = until;
+                this.fire = fire;
+            }
+        }
+
         private final HydraPhase phase;
         private boolean shielded;
+        private boolean empowered;
         private int ventTimer = 8;
         private int styleCount;
         private boolean magicStyle;
+        private int autos;
+        private int specials;
         private boolean restored;
+        private final List<Chaser> chasers = new ArrayList<>();
 
         Hydra(HydraPhase phase) {
             this.phase = phase;
@@ -494,9 +791,9 @@ final class SlayerScripts {
         private Vec3 vent(String colour) {
             Vec3 c = homeVec();
             return switch (colour) {
-                case "red" -> c.add(-7, 0, -6);
-                case "green" -> c.add(7, 0, -6);
-                default -> c.add(0, 0, 8);
+                case "red" -> c.add(7, 0, 6); // south-east (Minecraft +x east, +z south)
+                case "green" -> c.add(7, 0, -6); // north-east
+                default -> c.add(-7, 0, -6); // blue: north-west
             };
         }
 
@@ -521,90 +818,129 @@ final class SlayerScripts {
             }
         }
 
-        /**
-         * Max hits by phase (OSRS Wiki "Alchemical Hydra"): two hits of up to 17 in the serpentine phase, 35 in the electric
-         * and flame phases and 55 once extinguished. approx: the "empowered" damage after a wrong vent isn't modelled.
-         */
+        /** Max hits by phase ({@link SlayerBosses#hydraMaxHit}): 17 (x2), 35, 35 and 55 once extinguished; more when empowered. */
         @Override
         protected double multiplier(DataBossEntity boss) {
-            double base = SlayerBosses.HYDRA_RANGED.maxHit();
-            return super.multiplier(boss) * switch (phase) {
-                case GREEN -> SlayerBosses.HYDRA_MAX_SERPENTINE / base;
-                case ENRAGED -> SlayerBosses.HYDRA_MAX_ENRAGED / base;
-                default -> SlayerBosses.HYDRA_MAX_ELECTRIC_FLAME / base;
-            };
+            return super.multiplier(boss) * SlayerBosses.hydraMaxHit(phase, empowered) / (double) SlayerBosses.HYDRA_RANGED.maxHit();
         }
 
         @Override
         protected void perform(DataBossEntity boss, ServerPlayer target, AttackDef a) {
             super.perform(boss, target, a);
-            if (phase == HydraPhase.GREEN && (a == SlayerBosses.HYDRA_RANGED || a == SlayerBosses.HYDRA_MAGIC)) {
-                super.perform(boss, target, a); // "17x2"
+            if (SlayerBosses.hydraHitsTwice(phase, empowered) && (a == SlayerBosses.HYDRA_RANGED || a == SlayerBosses.HYDRA_MAGIC)) {
+                super.perform(boss, target, a); // "17x2", "26x2 (empowered)"
             }
         }
 
         @Override
         protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
-            if (phase == HydraPhase.ENRAGED) {
-                // Extinguished: alternates styles every attack; poison on the 4th attack and every 9th after (OSRS Wiki).
-                if (attackCount == 3 || attackCount > 3 && (attackCount - 3) % 9 == 0) {
-                    special(boss, target);
-                    attackCount++;
-                    cooldown = attackDelay(boss, SlayerBosses.HYDRA_MAGIC);
-                    return null;
-                }
-                magicStyle = !magicStyle;
-                return magicStyle ? SlayerBosses.HYDRA_MAGIC : SlayerBosses.HYDRA_RANGED;
-            }
-            if (attackCount > 0 && attackCount % 9 == 0) {
-                special(boss, target);
+            if (SlayerBosses.hydraSpecialDue(autos, specials)) {
+                autos = 0;
+                specials++;
                 attackCount++;
-                cooldown = attackDelay(boss, SlayerBosses.HYDRA_MAGIC);
+                special(boss, target);
                 return null;
             }
-            if (styleCount >= 3) {
-                styleCount = 0;
-                magicStyle = !magicStyle;
-                BossFx.warn(boss, "The Alchemical Hydra switches to " + (magicStyle ? "magic" : "ranged") + " attacks!");
+            if (phase == HydraPhase.ENRAGED) {
+                magicStyle = !magicStyle; // every attack, starting with the style it didn't use last
+            } else {
+                if (styleCount >= SlayerBosses.HYDRA_STYLE_EVERY) {
+                    styleCount = 0;
+                    magicStyle = !magicStyle;
+                    BossFx.warn(boss, "The Alchemical Hydra sways its heads back... it switches to " + (magicStyle ? "magic" : "ranged") + "!");
+                }
+                styleCount++;
             }
-            styleCount++;
+            autos++;
             return magicStyle ? SlayerBosses.HYDRA_MAGIC : SlayerBosses.HYDRA_RANGED;
         }
 
         private void special(DataBossEntity boss, ServerPlayer target) {
+            cooldown = attackDelay(boss, SlayerBosses.HYDRA_MAGIC) - 1;
             Vec3 p = target.position();
             switch (phase) {
                 case GREEN, ENRAGED -> {
                     BossFx.warn(boss, "The Alchemical Hydra spits poison!");
                     for (int i = 0; i < 5; i++) {
-                        Vec3 at = i == 0 ? p : around(boss, p, 3);
-                        namedStrike("poison_pool", boss, at, 2, 12, 1.2, ParticleTypes.SNEEZE, (hit, pos) ->
-                                com.runecraft.boss.Mechanics.addHazard(BossFx.world(boss), pos, 4, 10, boss));
-                    }
-                }
-                case BLUE -> {
-                    BossFx.warn(boss, "The Alchemical Hydra calls down lightning - keep moving!");
-                    for (int i = 0; i < 4; i++) {
-                        final int delay = 2 + i * 2;
-                        namedStrike("lightning", boss, around(boss, p, 2 + i), delay, 20, 1.3, ParticleTypes.ELECTRIC_SPARK, (hit, pos) -> {
+                        boolean aimed = i == 0;
+                        Vec3 at = aimed ? p : around(boss, p, 3);
+                        namedStrike("poison_pool", boss, at, 2, SlayerBosses.HYDRA_SPLATTER_MAX, 1.5, ParticleTypes.SNEEZE, (hit, pos) -> {
                             for (ServerPlayer h : hit) {
-                                BossFx.stun(h, 2);
+                                com.runecraft.combat.PoisonService.poison(h, aimed ? 6 : 4, now);
                             }
+                            com.runecraft.boss.Mechanics.addHazard(BossFx.world(boss), pos, SlayerBosses.HYDRA_POOL_MAX, 10, boss);
                         });
                     }
                 }
-                case RED -> {
-                    BossFx.warn(boss, "The Alchemical Hydra breathes walls of fire - get between them!");
-                    CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_HYDRA_FLAME_WALL);
-                    Vec3 dir = p.subtract(boss.position()).normalize();
-                    Vec3 side = new Vec3(-dir.z, 0, dir.x);
-                    for (int i = -5; i <= 5; i++) {
-                        for (int s : new int[]{-2, 2}) {
-                            Vec3 at = p.add(dir.scale(i * 1.2)).add(side.scale(s));
-                            namedStrike("fire_wall", boss, BossFx.ground(BossFx.world(boss), at.x, at.z, p.y), 3, 20, 1.0, ParticleTypes.FLAME);
-                        }
+                case BLUE -> {
+                    BossFx.warn(boss, "The Alchemical Hydra calls down lightning - the currents converge on you!");
+                    Vec3 c = homeVec();
+                    for (int[] corner : new int[][]{{-9, -9}, {9, -9}, {-9, 9}, {9, 9}}) {
+                        chasers.add(new Chaser(BossFx.ground(BossFx.world(boss), c.x + corner[0], c.z + corner[1], c.y), now + 24, false));
                     }
-                    namedStrike("fire_wall", boss, p, 6, 20, 1.0, ParticleTypes.FLAME);
+                }
+                case RED -> fire(boss, target);
+            }
+        }
+
+        /**
+         * The flame phase's special: the Hydra stuns the player, breathes 5x5 walls of fire to either side of them, then
+         * sends a tracking flame after them, and doesn't attack for about seven ticks.
+         */
+        private void fire(DataBossEntity boss, ServerPlayer target) {
+            BossFx.warn(boss, "The Alchemical Hydra breathes walls of fire - walk away from the tracking flame!");
+            CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_HYDRA_FLAME_WALL);
+            BossFx.stun(target, 2);
+            Vec3 p = target.position();
+            Vec3 dir = p.subtract(boss.position()).multiply(1, 0, 1).normalize();
+            Vec3 side = new Vec3(-dir.z, 0, dir.x);
+            for (int s : new int[]{-1, 1}) {
+                for (int i = -2; i <= 2; i++) {
+                    for (int j = 2; j <= 4; j++) { // approx: 5 long and 3 wide (the wiki's 5x5 layers)
+                        Vec3 at = p.add(dir.scale(i)).add(side.scale(s * j));
+                        namedStrike("fire_wall", boss, BossFx.ground(BossFx.world(boss), at.x, at.z, p.y), 3,
+                                SlayerBosses.HYDRA_FIRE.maxHit(), 0.8, ParticleTypes.FLAME, (hit, pos) -> hit.forEach(h -> burn(boss, h)));
+                    }
+                }
+            }
+            chasers.add(new Chaser(boss.position(), now + 16, true));
+            cooldown += SlayerBosses.HYDRA_FIRE_PAUSE;
+        }
+
+        /** "A subsequent burn of 5 damage for 5 hits": five stacks of a five-hit burn. */
+        private static void burn(DataBossEntity boss, ServerPlayer p) {
+            for (int i = 0; i < 5; i++) {
+                BossDots.burn(boss, p, 5);
+            }
+        }
+
+        private void tickChasers(DataBossEntity boss, ServerPlayer target) {
+            if (chasers.isEmpty()) {
+                return;
+            }
+            java.util.Iterator<Chaser> it = chasers.iterator();
+            while (it.hasNext()) {
+                Chaser ch = it.next();
+                if (now > ch.until || target == null) {
+                    it.remove();
+                    continue;
+                }
+                Vec3 to = target.position().subtract(ch.pos).multiply(1, 0, 1);
+                // the tracking flame speeds up the further away the player is (OSRS: it travels faster when you run)
+                double step = ch.fire ? Math.min(2.0, 0.8 + to.length() / 8) : 1.0;
+                ch.pos = to.length() <= step ? new Vec3(target.getX(), ch.pos.y, target.getZ()) : ch.pos.add(to.normalize().scale(step));
+                BossFx.world(boss).sendParticles(ch.fire ? ParticleTypes.FLAME : ParticleTypes.ELECTRIC_SPARK, ch.pos.x, ch.pos.y + 0.3,
+                        ch.pos.z, 6, 0.2, 0.2, 0.2, 0.01);
+                if (target.position().distanceToSqr(ch.pos.x, target.getY(), ch.pos.z) <= 0.8) {
+                    com.runecraft.combat.CombatHooks.nameAttack(ch.fire ? "fire_wall" : "lightning", null);
+                    int max = ch.fire ? SlayerBosses.HYDRA_FIRE.maxHit() : SlayerBosses.HYDRA_LIGHTNING.maxHit();
+                    CombatHandler.applyDamage(boss, target, target.getRandom().nextInt(max + 1));
+                    if (ch.fire) {
+                        burn(boss, target);
+                    } else {
+                        BossFx.stun(target, 3); // bound
+                    }
+                    it.remove();
                 }
             }
         }
@@ -626,8 +962,13 @@ final class SlayerScripts {
                 if (boss.instanceTag != null && boss.instanceTag.startsWith("hydra;")) {
                     String[] p = boss.instanceTag.split(";");
                     home = new BlockPos(Integer.parseInt(p[1]), Integer.parseInt(p[2]), Integer.parseInt(p[3]));
+                    if (p.length >= 6) {
+                        magicStyle = "magic".equals(p[4]); // the style rotation carries on from the last phase
+                        styleCount = Integer.parseInt(p[5]);
+                    }
                 } else {
                     placeVents(boss);
+                    magicStyle = boss.getRandom().nextBoolean(); // "will begin the fight with either combat style"
                 }
                 if (phase == HydraPhase.ENRAGED) {
                     BossFx.say(boss, "The Alchemical Hydra becomes enraged!");
@@ -635,6 +976,7 @@ final class SlayerScripts {
                     BossFx.say(boss, "The Alchemical Hydra's chemical shield reforms as it turns " + phase.colour + "!");
                 }
             }
+            tickChasers(boss, target);
             if (phase.vent != null && --ventTimer <= 0) {
                 ventTimer = 8;
                 for (String c : new String[]{"red", "green", "blue"}) {
@@ -646,12 +988,12 @@ final class SlayerScripts {
                         if (c.equals(phase.vent)) {
                             if (shielded) {
                                 shielded = false;
-                                BossFx.say(boss, "The chemicals neutralise the Alchemical Hydra's defences!");
+                                BossFx.say(boss, "Roaaaaaaaaaaar! The chemicals neutralise the Alchemical Hydra's defences!");
                             }
-                        } else {
-                            shielded = true;
-                            boss.heal(mcHp(boss, 20));
-                            BossFx.say(boss, "The Alchemical Hydra absorbs the wrong chemicals and its defences return!");
+                        } else if (!empowered) {
+                            // A wrong vent doesn't restore the shield: it empowers the Hydra's attacks (OSRS Wiki).
+                            empowered = true;
+                            BossFx.say(boss, "The Alchemical Hydra absorbs the wrong chemicals and grows more powerful!");
                             CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_HYDRA_EMPOWERED);
                         }
                     }
@@ -659,8 +1001,10 @@ final class SlayerScripts {
             }
             if (phase != HydraPhase.ENRAGED && percent(boss) <= phase.endsAtPercent) {
                 HydraPhase next = phase.next();
+                chasers.clear(); // currents dissipate at a phase change
                 BossFx.swapForm(boss, next.bossId, boss.blockPosition(), false,
-                        "hydra;" + home.getX() + ";" + home.getY() + ";" + home.getZ());
+                        "hydra;" + home.getX() + ";" + home.getY() + ";" + home.getZ() + ";" + (magicStyle ? "magic" : "ranged") + ";"
+                                + styleCount);
             }
         }
     }

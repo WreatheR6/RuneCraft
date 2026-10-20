@@ -119,7 +119,8 @@ class BossesContentTest {
         assertTrue(attack(boss("zulrah_magma"), "tail_slam").telegraphTicks() >= 3);
         assertTrue(attack(boss("cerberus"), "lava_pool").telegraphTicks() >= 3);
         assertTrue(Dt2Bosses.DUKE_GAZE.telegraphTicks() >= 4);
-        assertTrue(SlayerBosses.SIRE_EXPLOSION.telegraphTicks() >= 6);
+        // The Sire teleports the player next to itself first; "two ticks later it explodes" (OSRS Wiki).
+        assertEquals(2, SlayerBosses.SIRE_EXPLOSION.telegraphTicks());
         assertTrue(SlayerBosses.DAWN_STONE_BALL.telegraphTicks() >= 3);
         assertTrue(Dt2Bosses.WHISPER_SCREECH.telegraphTicks() >= 4);
     }
