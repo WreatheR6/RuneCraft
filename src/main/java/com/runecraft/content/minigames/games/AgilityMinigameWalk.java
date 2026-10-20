@@ -207,24 +207,55 @@ public final class AgilityMinigameWalk {
 
     // ------------------------------------------------------------------ Brimhaven Agility Arena
 
-    /** The arena: an obstacle between two pillars (retried after a fall), the active dispenser tagged once for a ticket. */
+    /**
+     * The arena: an obstacle between two pillars (retried after a fall) taking the wiki's time, with clicks mid-crossing
+     * ignored; a pressure pad crossed three times in a row (XP twice, then none while its timer runs); the active dispenser
+     * tagged once for a ticket.
+     */
     private void brimhavenRun() {
         player.getInventory().clearContent();
+        setLevel(Skill.AGILITY, 99);
+        Players.data(player).skills().setBoost(Skill.AGILITY, 0); // 99 current: no obstacle fails
         step = "arena";
         start(Minigame.BRIMHAVEN_AGILITY_ARENA);
         BrimhavenArenaSession s = (BrimhavenArenaSession) session;
         double agility = xp(Skill.AGILITY);
         BlockPos obstacle = s.selfTestObstacle(0, 1);
         expect(obstacle != null, "no obstacle between the first two pillars");
+        var o = com.runecraft.osrs.content.minigames.MinigameRules.BrimhavenArena.link(0, 1);
         for (int i = 0; i < 10 && xp(Skill.AGILITY) == agility; i++) {
             moveTo(s.selfTestStand(0));
-            click(obstacle, "brimhaven_obstacle");
-            tick();
+            int took = brimhavenCross(s, obstacle);
+            expect(took == o.ticks, "crossing the " + o.title.toLowerCase() + " took " + took + " ticks (wiki: " + o.ticks + ")");
         }
         double crossed = xp(Skill.AGILITY) - agility;
-        double want = com.runecraft.osrs.content.minigames.MinigameRules.BrimhavenArena.link(0, 1).xp;
-        expect(crossed == want, "crossing the " + com.runecraft.osrs.content.minigames.MinigameRules.BrimhavenArena.link(0, 1).title
-                + " gave " + crossed + " XP, wanted " + want);
+        expect(crossed == o.xp, "crossing the " + o.title + " gave " + crossed + " XP, wanted " + o.xp);
+        step = "pressure pad";
+        int[] pad = null;
+        for (int a = 0; a < 25 && pad == null; a++) {
+            for (int b : new int[]{a + 1, a + 5}) {
+                if (com.runecraft.osrs.content.minigames.MinigameRules.BrimhavenArena.neighbours(a, b) && b < 25
+                        && com.runecraft.osrs.content.minigames.MinigameRules.BrimhavenArena.link(a, b)
+                        == com.runecraft.osrs.content.minigames.MinigameRules.BrimhavenArena.Obstacle.PRESSURE_PAD) {
+                    pad = new int[]{a, b};
+                    break;
+                }
+            }
+        }
+        expect(pad != null, "no pressure pad in the arena");
+        double[] gained = new double[3];
+        for (int k = 0; k < 3; k++) {
+            int from = pad[k % 2];
+            int to = pad[1 - k % 2];
+            BlockPos at = s.selfTestObstacle(from, to);
+            expect(at != null, "no pressure pad block from pillar " + from + " to " + to);
+            moveTo(s.selfTestStand(from));
+            double was = xp(Skill.AGILITY);
+            brimhavenCross(s, at);
+            gained[k] = xp(Skill.AGILITY) - was;
+        }
+        expect(gained[0] >= 26 && gained[1] == gained[0] && gained[2] == 0,
+                "pressure pads paid " + java.util.Arrays.toString(gained) + " (wiki: XP twice, then none for 8 ticks)");
         step = "dispenser";
         BlockPos dispenser = s.selfTestDispenser();
         moveTo(s.selfTestStand(s.selfTestActive()));
@@ -236,8 +267,24 @@ public final class AgilityMinigameWalk {
         int tickets = Inv.count(player, "agility_arena_ticket");
         click(dispenser, "agility_ticket_dispenser");
         expect(Inv.count(player, "agility_arena_ticket") == tickets, "the same dispenser paid twice");
-        notes.add("crossed the " + com.runecraft.osrs.content.minigames.MinigameRules.BrimhavenArena.link(0, 1).title.toLowerCase()
-                + " (" + crossed + " XP), tagged a dispenser (270 XP, ticket and voucher)");
+        notes.add("crossed the " + o.title.toLowerCase() + " (" + o.ticks + " ticks, " + crossed
+                + " XP), a pressure pad three times (26, 26, 0 XP), tagged a dispenser (270 XP, ticket and voucher)");
+    }
+
+    /** Clicks an obstacle twice (the second click mid-crossing must do nothing) and ticks until the crossing ends. */
+    private int brimhavenCross(BrimhavenArenaSession s, BlockPos obstacle) {
+        double before = xp(Skill.AGILITY);
+        click(obstacle, "brimhaven_obstacle");
+        expect(s.selfTestCrossing(player), "clicking the obstacle didn't start a crossing");
+        click(obstacle, "brimhaven_obstacle");
+        int took = 0;
+        while (s.selfTestCrossing(player) && took < 20) {
+            expect(xp(Skill.AGILITY) == before, "XP paid before the crossing was over");
+            tick();
+            took++;
+        }
+        expect(!s.selfTestCrossing(player), "the crossing never ended");
+        return took;
     }
 
     // ------------------------------------------------------------------ helpers
@@ -584,7 +631,8 @@ public final class AgilityMinigameWalk {
     /**
      * A whole Pyramid Plunder run to the last room: in each room the speartrap, every urn, the Grand Gold Chest and the
      * sarcophagus, then the tomb doors (dead ends until the right one, and the fourth always leads on); in room 8 the chest
-     * holds the Pharaoh's sceptre and the guardian mummy throws the player out.
+     * holds the Pharaoh's sceptre and the guardian mummy throws the player out. Then a sarcophagus search rolling the sceptre
+     * and a player leaving early by the exit past the speartrap.
      */
     private void plunderRun() {
         step = "plunder start";
@@ -675,6 +723,40 @@ public final class AgilityMinigameWalk {
         expect(session.isEnded(), "finding the sceptre didn't throw the player out");
         notes.add("the Pharaoh's sceptre ends the run");
 
+        step = "sarcophagus sceptre";
+        start(Minigame.PYRAMID_PLUNDER);
+        PyramidPlunderSession u = (PyramidPlunderSession) session;
+        u.selfTestSceptre(true);
+        moveTo(u.selfTestSpot(0, 7));
+        for (int i = 0; i < 15 && !u.selfTestSpearPassed(); i++) {
+            click(u.selfTestSpear(), "pp_speartrap");
+            tick();
+        }
+        int sceptres = Inv.count(player, "pharaohs_sceptre");
+        int strength = Players.data(player).skills().xpTenths(Skill.STRENGTH);
+        setLevel(Skill.STRENGTH, 1); // the lid likely won't move: the roll comes first all the same
+        moveTo(u.selfTestSarcophagus().south());
+        click(u.selfTestSarcophagus(), "pp_sarcophagus");
+        Players.data(player).skills().setXpTenths(Skill.STRENGTH, strength);
+        expect(Inv.count(player, "pharaohs_sceptre") == sceptres + 1, "searching the sarcophagus didn't roll the sceptre");
+        expect(session.isEnded(), "the sarcophagus sceptre didn't throw the player out");
+        notes.add("the sarcophagus rolls the sceptre on every search");
+
+        step = "leave early";
+        start(Minigame.PYRAMID_PLUNDER);
+        PyramidPlunderSession v = (PyramidPlunderSession) session;
+        v.selfTestSceptre(false);
+        moveTo(v.selfTestSpot(0, 7));
+        for (int i = 0; i < 15 && !v.selfTestSpearPassed(); i++) {
+            click(v.selfTestSpear(), "pp_speartrap");
+            tick();
+        }
+        expect(v.selfTestSpearPassed(), "couldn't pass the speartrap");
+        moveTo(v.selfTestSpot(-3, 4));
+        click(v.selfTestInnerExit(), "minigame_exit");
+        expect(MinigameManager.session(player) == null, "the exit past the speartrap didn't let the player out");
+        notes.add("the exit past the speartrap lets the player leave early");
+
         step = "simon";
         long coins = Inv.count(player, "coins");
         PyramidPlunderSession.sellArtefacts(player);
@@ -697,19 +779,26 @@ public final class AgilityMinigameWalk {
         s.selfTestSetTime(2);
         until(4, s::selfTestTimeUp);
         expect(s.selfTestTimeUp(), "the clock didn't run out");
-        SepulchreSession.SelfTestSection coffin = null;
+        int challenges = 0;
         for (SepulchreSession.SelfTestSection sec : s.selfTestSections()) {
-            if (sec.section().kind() == Kind.COFFIN && sec.section().challenge() != HallowedSepulchre.Challenge.PILLAR) {
-                coffin = sec;
-                break;
+            if (sec.section().kind() != Kind.COFFIN) {
+                continue;
             }
+            // Every challenge refuses on the way in, a pillar too (grappling across used to skip the check)...
+            String id = blockId(sec.block());
+            String what = sec.section().challenge().title.toLowerCase();
+            moveTo(s.selfTestSpot(sec.u0() + 2, 1));
+            double was = xp(Skill.AGILITY);
+            click(sec.block(), id);
+            expect(s.selfTestWhere(player)[1] == 1, "the " + what + " took the player to the coffin after the clock ran out");
+            expect(xp(Skill.AGILITY) == was, "the " + what + " paid crossing XP after the clock ran out");
+            // ...but a player still in the alcove can always come back out.
+            moveTo(s.selfTestSpot(sec.u0() + 2, SepulchreSession.selfTestAlcoveLane()));
+            click(sec.block(), id);
+            expect(s.selfTestWhere(player)[1] == 1, "the " + what + " kept the player in the alcove after the clock ran out");
+            challenges++;
         }
-        if (coffin != null) {
-            String id = blockId(coffin.block());
-            moveTo(s.selfTestSpot(coffin.u0() + 2, 1));
-            click(coffin.block(), id);
-            expect(s.selfTestWhere(player)[1] == 1, "a challenge worked after the clock ran out");
-        }
+        expect(challenges > 0, "no coffin challenge on floor 1 to try");
         expect(!SepulchreSession.useToken(player), "a hallowed token worked after the clock ran out");
         moveTo(s.selfTestSpot(s.selfTestEndU() + 2, 0));
         click(s.selfTestEndStairs(), "sep_stairs");
@@ -718,6 +807,6 @@ public final class AgilityMinigameWalk {
         click(s.selfTestObelisk(), "sep_obelisk");
         expect(session.isEnded(), "the obelisk didn't let the player out");
         expect(xp(Skill.AGILITY) - before == HallowedSepulchre.FLOOR_XP[0], "out of time the obelisk paid " + (xp(Skill.AGILITY) - before));
-        notes.add("out of time: challenges, tokens and the stairs refuse; the obelisk still pays 500 XP");
+        notes.add("out of time: challenges (pillars too; the way out stays open), tokens and the stairs refuse; the obelisk still pays 500 XP");
     }
 }

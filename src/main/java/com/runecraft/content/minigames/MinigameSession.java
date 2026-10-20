@@ -550,7 +550,7 @@ public abstract class MinigameSession {
      * sweeps that keep what a player dropped), and handed to them if it is still on the arena floor when they leave or the
      * game ends (OSRS puts a reward that doesn't fit on the ground for the player; it is never lost with the arena).
      */
-    private static java.util.function.Consumer<ItemEntity> rewardMark(ServerPlayer p) {
+    protected static java.util.function.Consumer<ItemEntity> rewardMark(ServerPlayer p) {
         return e -> {
             e.addTag(REWARD_TAG);
             e.setTarget(p.getUUID());

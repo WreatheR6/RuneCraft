@@ -4,6 +4,7 @@ import com.runecraft.osrs.content.minigames.MinigameRules.BrimhavenArena;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** The Brimhaven Agility Arena after the May 2024 rework (OSRS Wiki "Brimhaven Agility Arena"). */
@@ -35,5 +36,33 @@ class BrimhavenArenaTest {
         assertTrue(BrimhavenArena.neighbours(0, 1) && BrimhavenArena.neighbours(0, 5));
         assertTrue(!BrimhavenArena.neighbours(4, 5), "no wrapping across rows");
         assertEquals(BrimhavenArena.link(3, 8), BrimhavenArena.link(8, 3), "a link is the same obstacle both ways");
+    }
+
+    @Test
+    void obstaclesTakeTheWikiSpeed() {
+        int[] wiki = {4, 5, 9, 9, 9, 9, 13, 9, 4, 4, 10, 5, 10};
+        BrimhavenArena.Obstacle[] all = BrimhavenArena.Obstacle.values();
+        assertEquals(wiki.length, all.length);
+        for (int i = 0; i < all.length; i++) {
+            assertEquals(wiki[i], all[i].ticks, all[i].title);
+        }
+        // The best obstacle can't beat about 6.5 XP a tick; the old instant crossings allowed a click every half second.
+        for (BrimhavenArena.Obstacle o : all) {
+            assertTrue(o.xp / o.ticks <= 6.5, o.title);
+        }
+    }
+
+    @Test
+    void pressurePadsPayTwiceThenRestFor8Ticks() {
+        BrimhavenArena.PadTimer t = new BrimhavenArena.PadTimer();
+        int pad = BrimhavenArena.Obstacle.PRESSURE_PAD.ticks;
+        assertTrue(t.award(pad));
+        assertTrue(t.award(2L * pad));
+        assertFalse(t.award(3L * pad), "the third crossing in a row lands inside the 8-tick timer");
+        assertTrue(t.award(2L * pad + BrimhavenArena.PAD_COOLDOWN_TICKS), "XP again once the timer is over");
+        assertTrue(t.award(2L * pad + BrimhavenArena.PAD_COOLDOWN_TICKS + pad));
+        assertFalse(t.award(2L * pad + BrimhavenArena.PAD_COOLDOWN_TICKS + 2L * pad));
+        assertEquals(2, BrimhavenArena.PAD_XP_CROSSINGS);
+        assertEquals(8, BrimhavenArena.PAD_COOLDOWN_TICKS);
     }
 }

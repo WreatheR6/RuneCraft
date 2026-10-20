@@ -767,7 +767,7 @@ public final class MinigameRules {
             return com.runecraft.osrs.Chance.lerp(strength, 80 - lvl, 270 - lvl);
         }
 
-        /** A mummy rises from the sarcophagus with chance room/9; the sceptre then isn't rolled. */
+        /** A mummy rises from the sarcophagus with chance room/9; the sceptre is rolled either way. */
         public static double mummyChance(int room) {
             return room / 9.0;
         }
@@ -1099,22 +1099,28 @@ public final class MinigameRules {
         public static final double GLOVES_BONUS = 1.10;
         public static final List<String> BONUS_GLOVES = List.of("karamja_gloves_2", "karamja_gloves_3", "karamja_gloves_4");
 
-        /** The obstacles between pillars: Agility needed and XP (wiki table, before the gloves' 10%). */
+        /**
+         * The obstacles between pillars: Agility needed, XP (before the gloves' 10%) and how many game ticks crossing takes
+         * (the wiki table's "Speed" column); the player can't start another crossing until one is over.
+         */
         public enum Obstacle {
-            ROPE_SWING("Rope swing", 1, 20), LOW_WALL("Low wall", 1, 8), PLANK("Plank", 1, 6),
-            BALANCING_ROPE("Balancing rope", 1, 10), LOG_BALANCE("Log balance", 1, 12), BALANCING_LEDGE("Balancing ledge", 1, 16),
-            MONKEY_BARS("Monkey bars", 1, 14), PILLAR("Pillar", 1, 18), PRESSURE_PAD("Pressure pad", 20, 26),
-            FLOOR_SPIKES("Floor spikes", 20, 24), HAND_HOLDS("Hand holds", 20, 22), SPINNING_BLADES("Spinning blades", 40, 28),
-            DARTS("Darts", 40, 30);
+            ROPE_SWING("Rope swing", 1, 20, 4), LOW_WALL("Low wall", 1, 8, 5), PLANK("Plank", 1, 6, 9),
+            BALANCING_ROPE("Balancing rope", 1, 10, 9), LOG_BALANCE("Log balance", 1, 12, 9),
+            BALANCING_LEDGE("Balancing ledge", 1, 16, 9), MONKEY_BARS("Monkey bars", 1, 14, 13), PILLAR("Pillar", 1, 18, 9),
+            PRESSURE_PAD("Pressure pad", 20, 26, 4), FLOOR_SPIKES("Floor spikes", 20, 24, 4), HAND_HOLDS("Hand holds", 20, 22, 10),
+            SPINNING_BLADES("Spinning blades", 40, 28, 5), DARTS("Darts", 40, 30, 10);
 
             public final String title;
             public final int level;
             public final double xp;
+            /** Game ticks a crossing takes. */
+            public final int ticks;
 
-            Obstacle(String title, int level, double xp) {
+            Obstacle(String title, int level, double xp, int ticks) {
                 this.title = title;
                 this.level = level;
                 this.xp = xp;
+                this.ticks = ticks;
             }
 
             /** The obstacle tier (1 easy, 2 medium from 20 Agility, 3 hard from 40): failure rates are standardised per tier. */
@@ -1125,6 +1131,30 @@ public final class MinigameRules {
 
         /** Darts drain 2 Agility levels on a failure. */
         public static final int DART_DRAIN = 2;
+        /**
+         * Pressure pads give XP for two crossings, then an 8-tick (4.8 s) timer starts during which crossing them gives none
+         * (the wiki: "they only give experience twice, before a timer of 8-ticks starts").
+         */
+        public static final int PAD_XP_CROSSINGS = 2;
+        public static final int PAD_COOLDOWN_TICKS = 8;
+
+        /** One player's pressure-pad XP timer ({@link #PAD_XP_CROSSINGS}, {@link #PAD_COOLDOWN_TICKS}). */
+        public static final class PadTimer {
+            private int paid;
+            private long noXpUntil = Long.MIN_VALUE;
+
+            /** Whether a pressure-pad crossing finished at game tick {@code now} pays XP; counts it if so. */
+            public boolean award(long now) {
+                if (now < noXpUntil) {
+                    return false;
+                }
+                if (++paid >= PAD_XP_CROSSINGS) {
+                    paid = 0;
+                    noXpUntil = now + PAD_COOLDOWN_TICKS;
+                }
+                return true;
+            }
+        }
 
         /** A piece the Agility Arena graceful recolour (Pirate Jackie, 250 vouchers for a full set) turns a graceful piece into. */
         public record RecolourPiece(String item) {

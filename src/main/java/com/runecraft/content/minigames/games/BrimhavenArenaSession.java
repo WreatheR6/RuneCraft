@@ -12,6 +12,7 @@ import com.runecraft.util.Msg;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
@@ -24,7 +25,8 @@ import net.minecraft.world.level.block.LadderBlock;
 /**
  * Brimhaven Agility Arena (the May 2024 rework; see {@link BrimhavenArena}): 25 pillars on a 5x5 grid over a spiked pit, each
  * neighbouring pair joined by an obstacle (rope swings, planks, ledges... pressure pads, floor spikes and hand holds from 20
- * Agility, spinning blades and darts from 40). Crossing gives the obstacle's XP (10% more with Karamja gloves 2-4); a failure
+ * Agility, spinning blades and darts from 40). A crossing takes the obstacle's time (4-13 ticks, no other crossing meanwhile)
+ * and then gives its XP (10% more with Karamja gloves 2-4; pressure pads pay twice, then nothing for 8 ticks); a failure
  * drops the player into the pit, hurt (darts drain Agility too), with ladders back up. One of the 24 ticket dispensers is
  * active and moves every minute: tagging it gives a ticket, a voucher (two of each 10% of the time after the elite Karamja
  * diary) and 30 Agility XP per 10 levels. Pirate Jackie the Fruit trades tickets for 345 XP and vouchers for rewards; entry
@@ -42,6 +44,13 @@ public class BrimhavenArenaSession extends MinigameSession {
     private int tickets;
     /** Obstacle blocks: position -> {from pillar, to pillar}. */
     private final Map<Long, int[]> obstacles = new HashMap<>();
+
+    /** A crossing under way: the link, the session tick it finishes on and where the player set off from. */
+    private record Crossing(int from, int to, long until, net.minecraft.world.phys.Vec3 start) {
+    }
+
+    private final Map<UUID, Crossing> crossing = new HashMap<>();
+    private final Map<UUID, BrimhavenArena.PadTimer> pads = new HashMap<>();
 
     public BrimhavenArenaSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.BRIMHAVEN_AGILITY_ARENA, id, slot, world, variant);
@@ -133,6 +142,16 @@ public class BrimhavenArenaSession extends MinigameSession {
 
     @Override
     protected void gameTick() {
+        crossing.keySet().removeIf(u -> !players.contains(u));
+        for (ServerPlayer pl : online()) {
+            Crossing c = crossing.get(pl.getUUID());
+            if (c != null && ticks >= c.until()) {
+                crossing.remove(pl.getUUID());
+                if (pl.position().distanceToSqr(c.start()) <= 4.0) {
+                    finish(pl, c.from(), c.to()); // walking off the pillar meanwhile abandons the crossing
+                }
+            }
+        }
         if (ticks - movedAt >= BrimhavenArena.MOVE_TICKS) {
             moveDispenser();
         }
@@ -185,15 +204,28 @@ public class BrimhavenArenaSession extends MinigameSession {
         return true;
     }
 
-    /** Crosses the obstacle between two pillars: XP on success, a fall into the pit on a failure. */
+    /**
+     * Starts across the obstacle between two pillars; the crossing ends after the obstacle's time ({@link #finish}). Clicks
+     * while a crossing is under way do nothing, as in OSRS.
+     */
     private void cross(ServerPlayer p, int from, int to) {
+        if (crossing.containsKey(p.getUUID())) {
+            return;
+        }
         BrimhavenArena.Obstacle o = BrimhavenArena.link(from, to);
-        var skills = Players.data(p).skills();
-        int agility = skills.currentLevel(Skill.AGILITY);
+        int agility = Players.data(p).skills().currentLevel(Skill.AGILITY);
         if (agility < o.level) {
             Msg.game(p, "You need an Agility level of " + o.level + " to attempt the " + o.title.toLowerCase() + ".");
             return;
         }
+        crossing.put(p.getUUID(), new Crossing(from, to, ticks + o.ticks, p.position()));
+    }
+
+    /** The end of a crossing: XP and the far pillar on success, a fall into the pit on a failure. */
+    private void finish(ServerPlayer p, int from, int to) {
+        BrimhavenArena.Obstacle o = BrimhavenArena.link(from, to);
+        var skills = Players.data(p).skills();
+        int agility = skills.currentLevel(Skill.AGILITY);
         if (random.nextDouble() < BrimhavenArena.failChance(o, agility)) {
             BlockPos pit = rel((px(from) + px(to)) / 2, 1, (pz(from) + pz(to)) / 2);
             p.teleportTo(world, pit.getX() + 0.5, pit.getY(), pit.getZ() + 0.5, p.getYRot(), p.getXRot());
@@ -213,6 +245,11 @@ public class BrimhavenArenaSession extends MinigameSession {
                 : rel(px(to) + 1, TOP + 1, pz(to) + (dz < 0 ? -1 : 1));
         p.teleportTo(world, land.getX() + 0.5, land.getY(), land.getZ() + 0.5, p.getYRot(), p.getXRot());
         p.fallDistance = 0;
+        if (o == BrimhavenArena.Obstacle.PRESSURE_PAD
+                && !pads.computeIfAbsent(p.getUUID(), u -> new BrimhavenArena.PadTimer()).award(ticks)) {
+            Msg.game(p, "You cross the pressure pad.");
+            return; // no XP while the pads' timer runs
+        }
         xp(p, Skill.AGILITY, gloves(p) ? o.xp * BrimhavenArena.GLOVES_BONUS : o.xp);
         Msg.game(p, "You cross the " + o.title.toLowerCase() + ".");
     }
@@ -235,6 +272,11 @@ public class BrimhavenArenaSession extends MinigameSession {
 
     public int selfTestActive() {
         return active;
+    }
+
+    /** Whether the player is part-way across an obstacle. */
+    public boolean selfTestCrossing(ServerPlayer p) {
+        return crossing.containsKey(p.getUUID());
     }
 
     /** The obstacle block on {@code from} leading to {@code to}, or null. */

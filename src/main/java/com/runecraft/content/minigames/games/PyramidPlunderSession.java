@@ -42,6 +42,9 @@ public class PyramidPlunderSession extends MinigameSession {
     private static final int[][] URN_SPOTS = {{-8, 4}, {-8, 1}, {-8, -2}, {-8, -5}, {8, 4}, {8, 1}, {8, -2}, {8, -5}, {-5, -8},
             {5, -8}, {-4, 3}, {4, 3}, {0, 4}};
     private static final int[] DOOR_X = {-6, -2, 2, 6};
+    /** The exit inside the room, just past the speartrap. */
+    private static final int INNER_EXIT_X = -3;
+    private static final int INNER_EXIT_Z = SPEAR_Z - 1;
 
     private int room = 1;
     private final Set<Long> urnsLooted = new HashSet<>();
@@ -110,7 +113,9 @@ public class PyramidPlunderSession extends MinigameSession {
             set(DOOR_X[d], 2, -HALF - 1, wall);
             doors.put(rel(DOOR_X[d], 1, -HALF - 1).asLong(), d);
         }
+        // An exit on both sides of the speartrap: players may leave at any time (the trap only lets them in).
         place(3, 9, "minigame_exit");
+        place(INNER_EXIT_X, INNER_EXIT_Z, "minigame_exit");
         urnsLooted.clear();
         doorsTried.clear();
         chestOpened = false;
@@ -232,9 +237,16 @@ public class PyramidPlunderSession extends MinigameSession {
         }
     }
 
+    /**
+     * Heaving at the sarcophagus: every search rolls the sceptre, whether the lid moves or not and whether a mummy rises
+     * (the wiki: "upon searching the sarcophagus regardless of if the player fails or succeeds").
+     */
     private void sarcophagus(ServerPlayer p) {
         if (sarcophagusOpened) {
             Msg.game(p, "The sarcophagus has been plundered.");
+            return;
+        }
+        if (sceptre(p)) {
             return;
         }
         int strength = Players.data(p).skills().currentLevel(Skill.STRENGTH);
@@ -250,8 +262,6 @@ public class PyramidPlunderSession extends MinigameSession {
                 m.setTarget(p);
             }
             Msg.red(p, "A mummy rises from the sarcophagus!");
-        } else if (sceptre(p)) {
-            return;
         }
         artefact(p, PyramidPlunder.artefact(PyramidPlunder.SARCOPHAGUS, room, random.nextDouble()));
         Msg.game(p, "You heave the lid off the sarcophagus.");
@@ -398,6 +408,11 @@ public class PyramidPlunderSession extends MinigameSession {
 
     public BlockPos selfTestSpear() {
         return rel(0, 1, SPEAR_Z);
+    }
+
+    /** The exit inside the room, past the speartrap. */
+    public BlockPos selfTestInnerExit() {
+        return rel(INNER_EXIT_X, 1, INNER_EXIT_Z);
     }
 
     public BlockPos selfTestSpot(int x, int z) {

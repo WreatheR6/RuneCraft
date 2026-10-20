@@ -618,6 +618,6 @@ public final class MinigameItems {
         single(items, "mystic_jewel", "Mystic jewel", "gem", 0xA040E0, 1, "Takes you out of the Rogues' Den maze.");
         single(items, "rogues_equipment_crate", "Rogue's equipment crate", "package", 0x5A4A3A, 1,
                 "It has a piece of Rogue equipment inside!");
-        single(items, "rogue_kit", "Rogue kit", "package", 0x3A3A40, 1, "Turns once into a rope, a chisel, a tinderbox or a spade.");
+        simple(items, "rogue_kit", "Rogue kit", "package", 0x3A3A40, 1, "Turns once into a rope, a chisel, a tinderbox or a spade.");
     }
 }

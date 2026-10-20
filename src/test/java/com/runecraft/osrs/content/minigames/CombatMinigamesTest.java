@@ -238,6 +238,7 @@ class CombatMinigamesTest {
         assertTrue(drained.drained());
         assertEquals(RoguesDen.Safe.KIT, RoguesDen.crack(99, 0.1, 0.1, 0.2).result());
         assertTrue(!RoguesDen.crack(99, 0.1, 0.1, 0.2).drained());
+        assertTrue(ItemCatalog.get("rogue_kit").maxStack() > 1, "rogue kits stack (the wiki: many carried in one slot)");
     }
 
     @Test

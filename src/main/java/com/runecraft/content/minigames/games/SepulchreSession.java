@@ -175,7 +175,11 @@ public class SepulchreSession extends MinigameSession {
         if (l.doses() > 0) {
             stack = com.runecraft.skill.Drops.withDoses(stack, l.doses());
         }
-        Inv.give(p, stack);
+        if (MinigameManager.session(p) instanceof SepulchreSession) {
+            Inv.give(p, stack, rewardMark(p)); // a full pack's overflow goes out with the player, as reward() does
+        } else {
+            Inv.give(p, stack);
+        }
         CollectionLog.obtain(p, l.item());
     }
 
@@ -643,15 +647,18 @@ public class SepulchreSession extends MinigameSession {
         return laneOf(p) >= 3;
     }
 
-    /** A coffin's skill challenge: unlock it (while time remains), then cross to the coffin and back. */
+    /**
+     * A coffin's skill challenge: unlock it, then cross to the coffin and back. Out of time nothing takes the player over to a
+     * coffin, a pillar included (the wiki's changelog); the way back out of the alcove stays open.
+     */
     private void challenge(ServerPlayer p, int i, Section s) {
         boolean inside = inAlcove(p);
         Challenge c = s.challenge();
+        if (!inside && timeUp) {
+            Msg.game(p, "You've run out of time to do that.");
+            return;
+        }
         if (!inside && !done[i] && c != Challenge.PILLAR) {
-            if (timeUp) {
-                Msg.game(p, "You've run out of time to do that.");
-                return;
-            }
             if (!unlock(p, i, c)) {
                 return;
             }
