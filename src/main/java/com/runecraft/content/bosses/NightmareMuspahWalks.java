@@ -539,21 +539,43 @@ final class NightmareMuspahWalks {
             check(m.stage == MuspahScript.Stage.SHOCKWAVE, "no shockwave below " + MuspahRules.SHIELD_BELOW + " (" + m.stage + ")");
             int cx = boss.getBlockX();
             int cz = boss.getBlockZ();
-            int half = (int) Math.ceil(boss.getBbWidth() / 2);
-            m.spikes.removeIf(t -> t == BossMechanics.tile(p.getBlockX(), p.getBlockZ()));
-            for (long t : MuspahRules.line(cx, cz, p.getBlockX(), p.getBlockZ())) {
-                int x = (int) (t >> 32);
-                int z = (int) t;
-                if (Math.max(Math.abs(x - cx), Math.abs(z - cz)) > half && (x != p.getBlockX() || z != p.getBlockZ())) {
-                    m.spikes.add(t);
-                    break;
+            int half = MuspahScript.footprintHalf(boss);
+            // The player hides behind a spike: a spike on the line to it, past its body. Right beside its body there is no
+            // room for one, so a player standing there steps back first (as in OSRS).
+            Vec3 stood = p.position();
+            boolean stepped = Math.max(Math.abs(p.getBlockX() - cx), Math.abs(p.getBlockZ() - cz)) < half + 2;
+            if (stepped) {
+                p.setPos(cx + half + 2 + 0.5, stood.y, cz + 0.5);
+            }
+            try {
+                int px = p.getBlockX();
+                int pz = p.getBlockZ();
+                m.spikes.removeIf(t -> t == BossMechanics.tile(px, pz));
+                long shelter = 0;
+                boolean placed = false;
+                for (long t : MuspahRules.line(cx, cz, px, pz)) {
+                    int x = (int) (t >> 32);
+                    int z = (int) t;
+                    if (Math.max(Math.abs(x - cx), Math.abs(z - cz)) > half && (x != px || z != pz)) {
+                        m.spikes.add(t);
+                        shelter = t;
+                        placed = true;
+                        break;
+                    }
+                }
+                check(placed, "no tile between the Muspah (footprint half-size " + half + " at " + cx + "," + cz + ") and the player at "
+                        + px + "," + pz + " for a spike");
+                check(MuspahRules.sheltered(m.spikes, cx, cz, px, pz, half), "the spike doesn't shelter the player");
+                step(boss, p, MuspahRules.SHOCKWAVE_WIND_UP);
+                check(m.stage == MuspahScript.Stage.SHIELDED && m.shield() == BossMechanics.MUSPAH_SHIELD, "no prayer shield after the shockwave ("
+                        + m.stage + ")");
+                log.add("shockwave behind a spike" + (stepped ? " (stepped back to " + px + "," + pz + ")" : "") + ", spike at "
+                        + (int) (shelter >> 32) + "," + (int) shelter);
+            } finally {
+                if (stepped) {
+                    p.setPos(stood.x, stood.y, stood.z);
                 }
             }
-            check(MuspahRules.sheltered(m.spikes, cx, cz, p.getBlockX(), p.getBlockZ(), half), "the spike doesn't shelter the player");
-            step(boss, p, MuspahRules.SHOCKWAVE_WIND_UP);
-            check(m.stage == MuspahScript.Stage.SHIELDED && m.shield() == BossMechanics.MUSPAH_SHIELD, "no prayer shield after the shockwave ("
-                    + m.stage + ")");
-            log.add("shockwave behind a spike");
             // Immune while shielded: Vengeance or a ring of recoil off its hits can't hurt it, let alone kill it.
             float shielded = boss.getHealth();
             CombatHandler.applyDamage(p, boss, (int) Math.ceil(shielded) + 10);
