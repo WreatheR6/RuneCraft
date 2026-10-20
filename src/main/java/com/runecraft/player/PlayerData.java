@@ -30,6 +30,8 @@ public final class PlayerData {
     private Spell autocast;
     private boolean autoRetaliate = true;
     private long coins;
+    /** Tokkul pouch: OSRS stacks tokkul in one slot (up to 2,147,483,647), a Minecraft stack holds 64 (see {@link com.runecraft.util.Inv}). */
+    private long tokkul;
     private Monster slayerTask;
     private int slayerRemaining;
     private int slayerStreak;
@@ -112,6 +114,14 @@ public final class PlayerData {
 
     public void setCoins(long coins) {
         this.coins = Math.max(0, Math.min(coins, Integer.MAX_VALUE));
+    }
+
+    public long tokkul() {
+        return tokkul;
+    }
+
+    public void setTokkul(long tokkul) {
+        this.tokkul = Math.max(0, Math.min(tokkul, Integer.MAX_VALUE));
     }
 
     public Monster slayerTask() {
@@ -222,6 +232,7 @@ public final class PlayerData {
         nbt.putString("Autocast", autocast == null ? "" : autocast.name());
         nbt.putBoolean("NoAutoRetaliate", !autoRetaliate);
         nbt.putLong("Coins", coins);
+        nbt.putLong("Tokkul", tokkul);
         nbt.putString("SlayerTask", slayerTask == null ? "" : slayerTask.name());
         nbt.putInt("SlayerRemaining", slayerRemaining);
         nbt.putInt("SlayerStreak", slayerStreak);
@@ -261,6 +272,7 @@ public final class PlayerData {
         autocast = parse(Spell.class, nbt.getString("Autocast"), null);
         autoRetaliate = !nbt.getBoolean("NoAutoRetaliate");
         coins = nbt.getLong("Coins");
+        tokkul = nbt.getLong("Tokkul");
         slayerTask = parse(Monster.class, nbt.getString("SlayerTask"), null);
         slayerRemaining = nbt.getInt("SlayerRemaining");
         slayerStreak = nbt.getInt("SlayerStreak");

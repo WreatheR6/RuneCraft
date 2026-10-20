@@ -111,7 +111,7 @@ Implement the methods you need on your module class (`ContentModule`):
 - `LandmarkBuilder.registerCustom(placeIdOrLandmarkName, (world, centre) -> ...)` builds extra structures (dungeon rooms, minigame arenas) once.
 - `MenuService.open(player, MenuType, stationPos, range)`.
 - `XpService.add(player, Skill, xp)`.
-- `Inv.has/count/remove/give/stack/idOf`. Coins live in a money pouch, so use `Inv` with "coins".
+- `Inv.has/count/remove/give/stack/idOf`. Coins and tokkul live in pouches (OSRS stacks them in one slot up to 2,147,483,647, a Minecraft stack holds 64), so use `Inv` with "coins" or "tokkul".
 - `Msg.game/red/action`.
 - `Players.data(player)` gives `PlayerData`: skills, prayer, quest stages, kill counts, collection log, bank, coins.
 - `ServerNetworking.sync(player)`.

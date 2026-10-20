@@ -147,6 +147,16 @@ public abstract class TzHaarSession extends MinigameSession {
         spawnWave(wave, waveMonsters(wave));
     }
 
+    /**
+     * TzTok-Jad's fire cape and TzKal-Zuk's infernal cape are real rewards: with a full pack they are placed on the ground
+     * for the player outside (OSRS Wiki "Infernal cape": a full inventory puts the cape and tokkul on the ground). Tokkul
+     * itself never needs a slot: it goes to the tokkul pouch ({@link com.runecraft.util.Inv#pouched}).
+     */
+    @Override
+    protected boolean overflowLeavesArena() {
+        return true;
+    }
+
     /** Creatures that keep the current wave going (everything the session spawned, by default). */
     protected int waveAlive() {
         return mobsAlive();

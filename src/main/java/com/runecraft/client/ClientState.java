@@ -27,6 +27,8 @@ public final class ClientState {
     /** Standing in a multicombat area (shows the crossed-swords icon). */
     public static boolean inMulti;
     public static long coins;
+    /** The tokkul pouch (OSRS's single tokkul stack). */
+    public static long tokkul;
     public static String slayerTask = "";
     public static int slayerRemaining;
     /** Quest stages indexed like {@code ContentRegistry.quests()}. */

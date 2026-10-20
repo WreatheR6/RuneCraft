@@ -14,9 +14,14 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-/** Inventory helpers keyed by catalog item ids. Coins live in the player's money pouch. */
+/**
+ * Inventory helpers keyed by catalog item ids. Coins and tokkul live in pouches ({@link #pouched}): OSRS stacks either in one
+ * inventory slot up to 2,147,483,647, but a Minecraft stack holds 64 (and a saved one at most 99), so a Fight Cave's 8,032
+ * tokkul would need 126 slots.
+ */
 public final class Inv {
     public static final String COINS = "coins";
+    public static final String TOKKUL = "tokkul";
 
     private Inv() {
     }
@@ -35,14 +40,42 @@ public final class Inv {
         return key.getNamespace().equals(RuneCraft.MOD_ID) ? key.getPath() : key.toString();
     }
 
-    public static int count(Player player, String id) {
-        if (COINS.equals(id) && player instanceof ServerPlayer sp) {
-            long coins = Players.data(sp).coins();
-            return (int) Math.min(Integer.MAX_VALUE, coins);
+    /**
+     * Whether {@code id} is a currency kept in a pouch in {@link PlayerData} instead of 64-item stacks: coins (the money pouch)
+     * and tokkul. Their items in the inventory are moved into the pouch every tick ({@code PlayerEvents}).
+     */
+    public static boolean pouched(String id) {
+        return COINS.equals(id) || TOKKUL.equals(id);
+    }
+
+    /** The pouch balance of a {@link #pouched} currency. */
+    public static long pouch(PlayerData data, String id) {
+        return COINS.equals(id) ? data.coins() : data.tokkul();
+    }
+
+    /** Sets the pouch balance of a {@link #pouched} currency (clamped to 0..2,147,483,647, OSRS's largest stack). */
+    public static void setPouch(PlayerData data, String id, long amount) {
+        if (COINS.equals(id)) {
+            data.setCoins(amount);
+        } else {
+            data.setTokkul(amount);
         }
+    }
+
+    /** How many of {@code id} the player holds: a pouch (coins, tokkul) plus the inventory's stacks. */
+    public static int count(Player player, String id) {
+        long pouch = 0;
+        if (pouched(id) && player instanceof ServerPlayer sp) {
+            pouch = pouch(Players.data(sp), id);
+        }
+        return (int) Math.min(Integer.MAX_VALUE, pouch + stacked(player, id));
+    }
+
+    /** The items of {@code id} held in inventory slots (armour and offhand included), pouches aside. */
+    private static long stacked(Player player, String id) {
         Item item = item(id);
         Inventory inv = player.getInventory();
-        int total = 0;
+        long total = 0;
         for (int i = 0; i < inv.getContainerSize(); i++) {
             ItemStack s = inv.getItem(i);
             if (s.is(item)) {
@@ -56,17 +89,17 @@ public final class Inv {
         return count(player, id) >= amount;
     }
 
-    /** Removes items (main inventory first, then armour/offhand); returns how many were removed. */
+    /** Removes items (a pouch first, then the main inventory, then armour/offhand); returns how many were removed. */
     public static int remove(Player player, String id, int amount) {
-        if (COINS.equals(id) && player instanceof ServerPlayer sp) {
+        int left = amount;
+        if (pouched(id) && player instanceof ServerPlayer sp && left > 0) {
             PlayerData data = Players.data(sp);
-            long take = Math.min(amount, data.coins());
-            data.setCoins(data.coins() - take);
-            return (int) take;
+            long take = Math.min(left, pouch(data, id));
+            setPouch(data, id, pouch(data, id) - take);
+            left -= (int) take;
         }
         Item item = item(id);
         Inventory inv = player.getInventory();
-        int left = amount;
         for (int i = 0; i < inv.getContainerSize() && left > 0; i++) {
             ItemStack s = inv.getItem(i);
             if (s.is(item)) {
@@ -78,11 +111,13 @@ public final class Inv {
         return amount - left;
     }
 
-    /** Gives items, dropping any overflow at the player's feet. */
+    /** Gives items (coins and tokkul into their pouch), dropping any overflow at the player's feet. */
     public static void give(Player player, String id, int amount) {
-        if (COINS.equals(id) && player instanceof ServerPlayer sp) {
-            PlayerData data = Players.data(sp);
-            data.setCoins(data.coins() + amount);
+        int left = amount;
+        if (pouched(id) && player instanceof ServerPlayer sp && left > 0) {
+            left -= toPouch(sp, id, left);
+        }
+        if (left <= 0) {
             return;
         }
         Item item = item(id);
@@ -90,7 +125,6 @@ public final class Inv {
             RuneCraft.LOGGER.warn("Unknown item {}", id);
             return;
         }
-        int left = amount;
         while (left > 0) {
             int n = Math.min(left, item.getDefaultMaxStackSize());
             give(player, new ItemStack(item, n));
@@ -98,10 +132,38 @@ public final class Inv {
         }
     }
 
+    /** Gives a stack (plain coins or tokkul into their pouch), dropping any overflow at the player's feet. */
     public static void give(Player player, ItemStack stack) {
-        if (!player.getInventory().add(stack) && !stack.isEmpty()) {
-            drop(player, stack, true);
+        ItemStack rest = insert(player, stack);
+        if (!rest.isEmpty()) {
+            drop(player, rest, true);
         }
+    }
+
+    /**
+     * Puts a stack in the inventory (plain coins or tokkul in their pouch) and returns what didn't fit, empty when all of it
+     * did. {@code stack} is used up as it goes in.
+     */
+    public static ItemStack insert(Player player, ItemStack stack) {
+        if (!stack.isEmpty() && player instanceof ServerPlayer sp && stack.getComponentsPatch().isEmpty() && pouched(idOf(stack))) {
+            stack.shrink(toPouch(sp, idOf(stack), stack.getCount()));
+        }
+        if (!stack.isEmpty()) {
+            player.getInventory().add(stack);
+        }
+        return stack.isEmpty() ? ItemStack.EMPTY : stack;
+    }
+
+    /**
+     * Puts up to {@code amount} of a {@link #pouched} currency in its pouch, which stops at 2,147,483,647 (OSRS's largest
+     * stack); returns how many went in.
+     */
+    private static int toPouch(ServerPlayer player, String id, int amount) {
+        PlayerData data = Players.data(player);
+        long have = pouch(data, id);
+        long in = Math.max(0, Math.min(amount, (long) Integer.MAX_VALUE - have));
+        setPouch(data, id, have + in);
+        return (int) in;
     }
 
     /**
@@ -133,7 +195,7 @@ public final class Inv {
 
     /** True if one more of {@code id} would fit in the inventory. */
     public static boolean hasRoomFor(Player player, String id) {
-        if (COINS.equals(id)) {
+        if (COINS.equals(id) || (pouched(id) && player instanceof ServerPlayer)) {
             return true;
         }
         Item item = item(id);

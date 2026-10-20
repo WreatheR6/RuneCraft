@@ -172,7 +172,9 @@ public class RuneCraftClient {
                 String key = buf.readUtf();
                 kills.put(key, buf.readVarInt());
             }
+            long tokkul = buf.isReadable() ? buf.readVarLong() : 0;
             client.execute(() -> {
+                ClientState.tokkul = tokkul;
                 ClientState.SKILLS.load(xp, boosts);
                 ClientState.prayerPoints = prayer;
                 ClientState.prayerMask = mask;

@@ -152,6 +152,16 @@ public abstract class MinigameSession {
     protected void onEnd(boolean success) {
     }
 
+    /**
+     * Whether floor loot a full pack can't take when the game ends goes out with the first player, at their feet where they
+     * are sent back (or into slots {@link #onLeave} freed): games whose floor holds real rewards (the Fight Cave's and the
+     * Inferno's capes: OSRS puts a reward that doesn't fit on the ground for the player, wiki "Infernal cape"). The default
+     * leaves it behind with the arena, as game-only supplies must not leave the game.
+     */
+    protected boolean overflowLeavesArena() {
+        return false;
+    }
+
     /** The session is gone (after rewards and after every player left): release chunks or other resources. */
     protected void onClose() {
     }
@@ -267,7 +277,10 @@ public abstract class MinigameSession {
         }
     }
 
-    /** Ends the game: rewards ({@link #onEnd}), loot on the floor goes to a player, everyone is sent back. */
+    /**
+     * Ends the game: rewards ({@link #onEnd}), loot on the floor goes to the first player (see {@link #overflowLeavesArena}),
+     * everyone is sent back.
+     */
     public final void end(boolean success) {
         finish(success, true);
     }
@@ -299,10 +312,18 @@ public abstract class MinigameSession {
                 }
             }
         }
+        // Loot on the floor (rewards a full pack couldn't take included) goes to the first player while they're still inside, so
+        // onLeave still strips game-only items from it. What their pack can't take either is never re-dropped on this arena
+        // floor, which is left behind (and handed to whoever ends the slot's next game).
         AABB box = box();
+        ServerPlayer taker = online.isEmpty() ? null : online.get(0);
+        List<net.minecraft.world.item.ItemStack> overflow = new ArrayList<>();
         for (Entity e : world.getEntitiesOfClass(Entity.class, box, e -> !(e instanceof Player))) {
-            if (e instanceof ItemEntity item && !online.isEmpty()) {
-                Inv.give(online.get(0), item.getItem().copy());
+            if (e instanceof ItemEntity item && taker != null) {
+                net.minecraft.world.item.ItemStack rest = Inv.insert(taker, item.getItem().copy());
+                if (!rest.isEmpty()) {
+                    overflow.add(rest);
+                }
             }
             e.discard();
         }
@@ -315,6 +336,11 @@ public abstract class MinigameSession {
                 p.teleportTo(world, back.getX() + 0.5, back.getY(), back.getZ() + 0.5, p.getYRot(), p.getXRot());
             }
             MinigameNet.sendHud(p, List.of());
+        }
+        if (taker != null && overflowLeavesArena()) {
+            for (net.minecraft.world.item.ItemStack rest : overflow) {
+                Inv.give(taker, rest);
+            }
         }
         players.clear();
         try {

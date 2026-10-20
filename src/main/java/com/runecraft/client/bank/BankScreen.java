@@ -169,7 +169,7 @@ public class BankScreen extends Screen {
 
     private void depositButtons(int x, int y) {
         addRenderableWidget(Button.builder(Component.literal("Deposit inv."), b -> send(BankService.OP_DEPOSIT_INVENTORY, 0))
-                .bounds(x, y, 62, 18).tooltip(Tooltip.create(Component.literal("Deposit inventory (and coin pouch)"))).build());
+                .bounds(x, y, 62, 18).tooltip(Tooltip.create(Component.literal("Deposit inventory (and the coin and tokkul pouches)"))).build());
         addRenderableWidget(Button.builder(Component.literal("Deposit worn"), b -> send(BankService.OP_DEPOSIT_WORN, 0))
                 .bounds(x + 64, y, 62, 18).tooltip(Tooltip.create(Component.literal("Deposit worn items"))).build());
     }

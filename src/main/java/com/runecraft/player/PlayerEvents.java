@@ -103,13 +103,21 @@ public final class PlayerEvents {
             if (hunger.getFoodLevel() != 17 || hunger.getSaturationLevel() != 0f) {
                 setFood(player, 17, 0f);
             }
-            // Coins go straight into the money pouch.
+            // Coins go straight into the money pouch, tokkul into the tokkul pouch (OSRS stacks both in one slot, up to
+            // 2,147,483,647; a Minecraft stack holds 64). What a full pouch can't take stays in the slot.
             for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
                 ItemStack s = player.getInventory().getItem(i);
-                if (!s.isEmpty() && Inv.COINS.equals(Inv.idOf(s))) {
+                if (!s.isEmpty() && Inv.pouched(Inv.idOf(s))) {
+                    String id = Inv.idOf(s);
                     PlayerData data = Players.data(player);
-                    data.setCoins(data.coins() + s.getCount());
-                    player.getInventory().setItem(i, ItemStack.EMPTY);
+                    long have = Inv.pouch(data, id);
+                    int in = (int) Math.min(s.getCount(), Integer.MAX_VALUE - have);
+                    if (in <= 0) {
+                        continue;
+                    }
+                    Inv.setPouch(data, id, have + in);
+                    s.shrink(in);
+                    player.getInventory().setChanged();
                     ServerNetworking.sync(player);
                 }
             }

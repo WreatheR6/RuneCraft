@@ -46,6 +46,13 @@ public final class HudOverlay {
         orb(ctx, tr, x, y + 14, "Pr", ClientState.prayerPoints + "/" + prayerMax, 0xFF20A0C0, ClientState.prayerPoints / (float) prayerMax);
         ctx.fill(x, y + 28, x + 88, y + 40, 0xA0201810);
         ctx.drawString(tr, "Cb " + ClientState.SKILLS.combatLevel() + "  " + formatCoins(ClientState.coins) + " gp", x + 3, y + 30, 0xFFFFD700);
+        // The tokkul pouch (OSRS's one tokkul stack), once the player has any.
+        int below = y + 44;
+        if (ClientState.tokkul > 0) {
+            ctx.fill(x, y + 40, x + 88, y + 52, 0xA0201810);
+            ctx.drawString(tr, formatCoins(ClientState.tokkul) + " tokkul", x + 3, y + 42, 0xFFE08040);
+            below += 12;
+        }
         // Multicombat area: OSRS shows crossed swords.
         if (gielinor && ClientState.inMulti) {
             ctx.fill(x - 22, y, x - 2, y + 20, 0xA0201810);
@@ -98,7 +105,7 @@ public final class HudOverlay {
         }
         if (!ClientState.slayerTask.isEmpty() && ClientState.slayerRemaining > 0) {
             String task = "Slayer: " + ClientState.slayerRemaining + " x " + ClientState.slayerTask.toLowerCase(Locale.ROOT).replace('_', ' ');
-            ctx.drawString(tr, task, w - tr.width(task) - 4, y + 44, 0xFFC0C0C0);
+            ctx.drawString(tr, task, w - tr.width(task) - 4, below, 0xFFC0C0C0);
         }
 
         // OSRS side panel (bottom right). While the cursor is free SidePanelScreen draws it instead,

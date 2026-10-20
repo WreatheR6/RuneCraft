@@ -22,6 +22,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Self-test driver for whole TzHaar runs ({@code com.runecraft.selftest}, "minigame:" checks in real-player mode): walks the
@@ -147,6 +149,46 @@ public final class TzHaarSelfTest {
         }
     }
 
+    // ------------------------------------------------------------------ a full pack
+
+    /** Fills the main inventory with sharks, leaving {@code free} slots empty; returns what it held, for {@link #restorePack}. */
+    private List<ItemStack> fillPack(int free) {
+        List<ItemStack> kept = new ArrayList<>();
+        for (ItemStack s : player.getInventory().items) {
+            kept.add(s.copy());
+        }
+        ItemStack junk = Inv.stack("shark", 1);
+        expect(!junk.isEmpty(), "no shark item to fill the inventory with");
+        int size = player.getInventory().items.size();
+        for (int i = 0; i < size; i++) {
+            player.getInventory().items.set(i, i < size - free ? junk.copy() : ItemStack.EMPTY);
+        }
+        return kept;
+    }
+
+    private void restorePack(List<ItemStack> kept) {
+        for (int i = 0; i < kept.size(); i++) {
+            player.getInventory().items.set(i, kept.get(i));
+        }
+    }
+
+    /** Takes {@code item} off the ground at the player's feet (where a reward a full pack can't take is placed); true if it lay there. */
+    private boolean takeFromGround(String item) {
+        for (ItemEntity e : player.serverLevel().getEntitiesOfClass(ItemEntity.class, player.getBoundingBox().inflate(3),
+                x -> x.isAlive() && item.equals(Inv.idOf(x.getItem())))) {
+            e.discard();
+            return true;
+        }
+        return false;
+    }
+
+    /** Nothing of a finished run may be left on its arena floor (it would be lost with the arena). */
+    private void floorEmpty(MinigameSession s, String run) {
+        List<ItemEntity> left = s.world.getEntitiesOfClass(ItemEntity.class, s.box(), ItemEntity::isAlive);
+        expect(left.isEmpty(), run + " left " + left.size() + " item stack(s) on the arena floor, e.g. "
+                + (left.isEmpty() ? "" : left.get(0).getItem().getCount() + " x " + Inv.idOf(left.get(0).getItem())));
+    }
+
     // ------------------------------------------------------------------ the Fight Cave
 
     /** A whole Fight Cave run, a death's tokkul and pausing by logging out. */
@@ -214,16 +256,28 @@ public final class TzHaarSelfTest {
             hit(tagged, 1, AttackType.RANGED);
             expect(tagged instanceof Mob m && m.getTarget() == player, "a healer the player hit did not turn on them");
             log.append("; Jad at wave 3's point with healers that heal and return");
-            int tokkulBefore = Inv.count(player, "tokkul");
+            // Jad dies with one free slot (a run ends with the pack full of supplies): the fire cape takes it, and the 8,032
+            // tokkul are one stack, in the tokkul pouch, not 126 64-item stacks spilling onto the floor and lost with it.
             int kc = MinigameData.of(player).stat(player.getUUID(), "kc:" + Minigame.FIGHT_CAVES.id());
-            kill(jad);
-            expect(s.isEnded(), "killing TzTok-Jad did not end the run");
-            expect(Inv.has(player, "fire_cape", 1), "no fire cape after killing TzTok-Jad");
-            int tokkul = Inv.count(player, "tokkul") - tokkulBefore;
+            List<ItemStack> kept = fillPack(1);
+            int tokkulBefore = Inv.count(player, "tokkul");
+            boolean cape;
+            int tokkul;
+            try {
+                kill(jad);
+                expect(s.isEnded(), "killing TzTok-Jad did not end the run");
+                floorEmpty(s, "the Fight Cave");
+                // A pet (1/200) swept up before the cape takes the slot; the cape then lies at the player's feet outside.
+                cape = Inv.has(player, "fire_cape", 1) || takeFromGround("fire_cape");
+                tokkul = Inv.count(player, "tokkul") - tokkulBefore;
+            } finally {
+                restorePack(kept);
+            }
+            expect(cape, "no fire cape after killing TzTok-Jad with one free slot");
             expect(tokkul >= TzHaarWaves.FIGHT_CAVE_TOKKUL, "the run paid " + tokkul + " tokkul (expected 8,032)");
             expect(MinigameData.of(player).stat(player.getUUID(), "kc:" + Minigame.FIGHT_CAVES.id()) == kc + 1,
                     "no Fight Cave completion counted");
-            log.append("; fire cape and ").append(tokkul).append(" tokkul");
+            log.append("; fire cape and ").append(tokkul).append(" tokkul with one free slot");
         } finally {
             end(s);
         }
@@ -261,7 +315,7 @@ public final class TzHaarSelfTest {
             task.remaining = savedRemaining;
             MinigameData.of(player).setStat(player.getUUID(), key, savedKey);
         }
-        log.append("; a death after 4 waves paid 20 tokkul and kept an ordinary TzHaar task; logging out between waves resumed at"
+        log.append("; a death after 4 waves with a full pack paid 20 tokkul and kept an ordinary TzHaar task; logging out between waves resumed at"
                 + " the next, mid-wave out of combat repeated it, in combat was a death that cancelled a TzTok-Jad task");
     }
 
@@ -271,10 +325,18 @@ public final class TzHaarSelfTest {
             expect(!TzHaarSlayer.onTask(player, Minigame.FIGHT_CAVES), "an ordinary TzHaar task counts as a TzTok-Jad task");
             s.selfTestJumpTo(5);
             reach(s, 5);
+            // With a full pack: tokkul needs no free slot (one stack, in the tokkul pouch), so none of it is lost.
+            List<ItemStack> kept = fillPack(0);
             int before = Inv.count(player, "tokkul");
-            expect(MinigameManager.selfTestDeath(player) == false, "a Fight Cave death was a real death");
-            int paid = Inv.count(player, "tokkul") - before;
-            expect(paid == TzHaarWaves.fightCaveTokkul(4, false), "dying after 4 waves paid " + paid + " tokkul (expected 20)");
+            int paid;
+            try {
+                expect(MinigameManager.selfTestDeath(player) == false, "a Fight Cave death was a real death");
+                paid = Inv.count(player, "tokkul") - before;
+            } finally {
+                restorePack(kept);
+            }
+            expect(paid == TzHaarWaves.fightCaveTokkul(4, false), "dying after 4 waves with a full pack paid " + paid
+                    + " tokkul (expected 20)");
             expect(MinigameManager.session(player) == null, "the player stayed in the cave after dying");
         } finally {
             end(s);
@@ -602,13 +664,24 @@ public final class TzHaarSelfTest {
         tick(s, TzHaarWaves.MEJJAK_HEAL_TICKS);
         expect(s.zukHitpoints() > hp, "the Jal-MejJak did not heal Zuk (" + hp + " -> " + s.zukHitpoints() + ")");
         log.append("; Zuk: glyph, set, Jad at 480, enrage and healers at 240");
+        // Zuk dies with a full pack: the infernal cape is placed on the ground for the player outside (OSRS Wiki "Infernal
+        // cape"), never left on the arena floor; the 16,440 tokkul are one stack, in the tokkul pouch.
+        List<ItemStack> kept = fillPack(0);
         int tokkulBefore = Inv.count(player, "tokkul");
-        kill(zuk);
-        expect(s.isEnded(), "killing TzKal-Zuk did not end the run");
-        expect(Inv.has(player, "infernal_cape", 1), "no infernal cape after killing TzKal-Zuk");
-        int tokkul = Inv.count(player, "tokkul") - tokkulBefore;
+        boolean cape;
+        int tokkul;
+        try {
+            kill(zuk);
+            expect(s.isEnded(), "killing TzKal-Zuk did not end the run");
+            floorEmpty(s, "the Inferno");
+            cape = Inv.has(player, "infernal_cape", 1) || takeFromGround("infernal_cape");
+            tokkul = Inv.count(player, "tokkul") - tokkulBefore;
+        } finally {
+            restorePack(kept);
+        }
+        expect(cape, "killing TzKal-Zuk with a full pack gave no infernal cape (none at the player's feet outside)");
         expect(tokkul >= TzHaarWaves.INFERNO_TOKKUL, "the Inferno paid " + tokkul + " tokkul (expected 16,440)");
         expect(MinigameData.of(player).stat(player.getUUID(), "kc:" + Minigame.INFERNO.id()) >= 1, "no Inferno completion counted");
-        log.append("; infernal cape and ").append(tokkul).append(" tokkul");
+        log.append("; infernal cape (on the ground: full pack) and ").append(tokkul).append(" tokkul");
     }
 }

@@ -98,6 +98,7 @@ public final class ServerNetworking {
             buf.writeUtf(key);
             buf.writeVarInt(kc);
         });
+        buf.writeVarLong(data.tokkul());
         ServerPlayNetworking.send(player, Net.SYNC, buf);
     }
 

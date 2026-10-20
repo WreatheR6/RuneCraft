@@ -242,14 +242,15 @@ public final class BankService {
         if (want <= 0) {
             return;
         }
-        if (e.item.equals(Inv.COINS)) {
+        if (Inv.pouched(e.item)) {
+            // Coins and tokkul go to their pouch (one OSRS stack, however many 64-item stacks it would fill).
             PlayerData data = Players.data(player);
-            long n = Math.min(want, Integer.MAX_VALUE - data.coins());
+            long n = Math.min(want, Integer.MAX_VALUE - Inv.pouch(data, e.item));
             if (n <= 0) {
-                Msg.game(player, "You can't carry any more coins.");
+                Msg.game(player, "You can't carry any more " + (e.item.equals(Inv.COINS) ? "coins." : "tokkul."));
                 return;
             }
-            data.setCoins(data.coins() + bank.withdraw(e.item, e.tag, n));
+            Inv.setPouch(data, e.item, Inv.pouch(data, e.item) + bank.withdraw(e.item, e.tag, n));
             return;
         }
         boolean asNote = bank.noted && Notes.canNote(e.item, e.tag);
@@ -395,6 +396,13 @@ public final class BankService {
             full |= !s.isEmpty();
         }
         depositPouch(player, bank, BankQuantity.Mode.ALL, 0, tab);
+        // The tokkul pouch is OSRS's tokkul stack in the inventory: "Deposit inventory" banks it too.
+        if (!refused(player, Inv.TOKKUL)) {
+            PlayerData data = Players.data(player);
+            long put = bank.deposit(Inv.TOKKUL, "", data.tokkul(), tab);
+            data.setTokkul(data.tokkul() - put);
+            full |= data.tokkul() > 0;
+        }
         if (full) {
             Msg.game(player, "Your bank is full.");
         }
