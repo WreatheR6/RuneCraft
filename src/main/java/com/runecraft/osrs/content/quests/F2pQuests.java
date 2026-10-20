@@ -80,12 +80,23 @@ final class F2pQuests {
                 .attack(AttackDef.of("staff", AttackType.CRUSH, 4, 2.5, 4))
                 .drops(Drop.always("bones"), Drop.of("mind_rune", 5, 10, 2))
                 .skin(0xE0C0A0, 0x6A2A8A, 0x4A1A5A, 0x9A9A9A).at("melzars_maze").arena(8, "crypt"));
+        b.item("maze_key", "Maze key", "key", 0xC0A040, "The key to Melzar's Maze.");
+        // Melzar's Maze's key-holders (DPS calculator stats); each appears in its room when the key before it is found.
+        b.boss(BossDef.of("maze_ghost", "Ghost").level(19).stats(25, 13, 13, 18, 1, 1).speed(4).defenceBonus(5, 5, 5, -5, 5)
+                .attack(AttackDef.of("touch", AttackType.CRUSH, 2, 2, 1)).drops(Drop.always("ashes")).model("ghost").size(0.8f, 2.0f, 1.0f));
+        b.boss(BossDef.of("maze_skeleton", "Skeleton").level(22).stats(29, 15, 18, 17, 1, 1).speed(4).defenceBonus(5, 5, -5, 0, 5)
+                .attack(AttackDef.of("crush", AttackType.CRUSH, 3, 2, 1)).drops(Drop.always("bones")).model("skeleton").size(0.7f, 2.0f, 1.0f));
+        b.boss(BossDef.of("maze_zombie", "Zombie").level(24).stats(30, 19, 21, 16, 1, 1).speed(5).defenceBonus(9, 8, 12, 10, 11)
+                .attack(AttackDef.of("slash", AttackType.SLASH, 3, 2, 1)).drops(Drop.always("bones")).model("zombie").size(0.7f, 2.0f, 1.0f));
+        b.boss(BossDef.of("maze_lesser_demon", "Lesser demon").level(82).stats(79, 68, 70, 71, 1, 1).speed(4).defenceBonus(0, 0, 0, -10, 0)
+                .attack(AttackDef.of("claws", AttackType.SLASH, 8, 2.5, 1)).drops(Drop.always("ashes")).model("lesser_demon").size(1.0f, 2.4f, 1.0f));
+        // Wiki: slash up to 8 and a ranged dragonfire up to 70 (10 behind an anti-dragon shield) that also drains a tenth of
+        // the player's Prayer (QuestBossScripts.Elvarg).
         b.boss(BossDef.of("elvarg", "Elvarg").level(83).stats(80, 70, 70, 70, 70, 1).speed(4)
-                .defenceBonus(40, 40, 40, 30, 40)
+                .defenceBonus(20, 40, 40, 30, 20)
                 .attack(AttackDef.of("claw", AttackType.SLASH, 8, 3, 6))
-                .attack(AttackDef.of("dragonfire", AttackType.MAGIC, 50, 10, 5).special(Special.DRAGONFIRE, 0)
+                .attack(AttackDef.of("dragonfire", AttackType.RANGED, 70, 10, 5).special(Special.DRAGONFIRE, 0)
                         .telegraph(2, "Elvarg rears back and breathes fire!").particle("minecraft:flame"))
-                .phase(40, "Elvarg roars in fury!", 1.2, false)
                 .drops(Drop.always("dragon_bones"))
                 .size(2.2f, 2.0f, 1.0f).at("crandor").arena(14, "lava"));
 
@@ -99,23 +110,51 @@ final class F2pQuests {
                 .talk("oziach").say("> I'd like to buy a rune platebody.", "Ha! Ye'll have to prove yerself first. Go and slay the dragon of Crandor!",
                         "> A dragon? Where is Crandor?", "Ask the Guildmaster, he knows more about such things than old Oziach.")
                 .stage("I should ask the Guildmaster how to reach Crandor and slay Elvarg.")
-                .talk("guildmaster").say("Elvarg! The great dragon who laid waste to Crandor. To get there you'll need a map, a ship and protection from her fire.",
+                .talk("guildmaster").give("maze_key")
+                .say("Elvarg! The great dragon who laid waste to Crandor. To get there you'll need a map, a ship and protection from her fire.",
                         "The map was split into three pieces. Melzar the Mad has one in his maze near Rimmington, Lozar's piece was stolen by the goblin Wormbrain, now in Port Sarim jail, and Thalzar's lies behind a magic door in the Dwarven Mine. The Oracle on Ice Mountain knows how to open it.",
                         "Klarense in Port Sarim has a ship for sale, and the Duke of Lumbridge has anti-dragon shields. Hans in the castle can fetch you one.")
                 .stage("I need the three pieces of the Crandor map, the ship Lady Lumbridge from Klarense (patched with 3 planks and 90 steel nails), a captain (Ned in Draynor) and an anti-dragon shield.")
-                .kill("melzar_the_mad").stay().unless("map_part_melzar", "crandor_map").give("map_part_melzar")
-                .say("* Melzar collapses. Behind him you find a dusty chest holding a piece of the map.")
+                // Melzar's Maze (wiki): the maze key opens it, then each room's creature drops the key to the next door: a zombie rat
+                // (red), a ghost (orange), a skeleton (yellow), the zombies (blue), Melzar (magenta) and a lesser demon (green), whose
+                // door hides the chest with Melzar's map piece.
+                .talk("guildmaster").stay().unless("maze_key", "map_part_melzar", "crandor_map").unlessFlag("ds1_maze")
+                .give("maze_key").say("Lost the maze key? Here's another. Melzar's Maze is north of Rimmington.")
+                .reach("melzars_maze", 10).stay().need("maze_key").unless("map_part_melzar", "crandor_map").unlessFlag("ds1_maze").flag("ds1_maze")
+                .say("* The maze key opens the gate of Melzar's Maze. Its rooms are locked by coloured doors.")
+                .kill("zombie_rat").stay().near("melzars_maze", 12).needFlag("ds1_maze").unlessFlag("ds1_red").unless("map_part_melzar", "crandor_map")
+                .flag("ds1_red").spawn("maze_ghost").say("* The zombie rat drops a red key. Upstairs, past the red door, a ghost floats towards you.")
+                .kill("maze_ghost").stay().needFlag("ds1_red").unlessFlag("ds1_orange").unless("map_part_melzar", "crandor_map")
+                .flag("ds1_orange").spawn("maze_skeleton").say("* The ghost fades, leaving an orange key. Up the next ladder a skeleton rattles.")
+                .kill("maze_skeleton").stay().needFlag("ds1_orange").unlessFlag("ds1_yellow")
+                .unless("map_part_melzar", "crandor_map").flag("ds1_yellow").spawn("maze_zombie")
+                .say("* The skeleton crumbles. A yellow key lies in its bones. Three ladders down, the zombies shamble.")
+                .kill("maze_zombie").stay().needFlag("ds1_yellow").unlessFlag("ds1_blue")
+                .unless("map_part_melzar", "crandor_map").flag("ds1_blue").say("* The zombie drops a blue key. Melzar the Mad waits behind the blue door.")
+                .kill("melzar_the_mad").stay().needFlag("ds1_blue").unlessFlag("ds1_magenta").unless("map_part_melzar", "crandor_map")
+                .flag("ds1_magenta").spawn("maze_lesser_demon").say("* Melzar collapses, dropping a magenta key. Behind the magenta door, a lesser demon!")
+                .kill("maze_lesser_demon").stay().needFlag("ds1_magenta").unless("map_part_melzar", "crandor_map")
+                .give("map_part_melzar")
+                .say("* The lesser demon falls, leaving a green key. Behind the green door, a dusty chest holds a piece of the map.")
+                // back in the maze after leaving, the room's creature is there again
+                .reach("melzars_maze", 10).stay().needFlag("ds1_red").unlessFlag("ds1_orange").unless("map_part_melzar", "crandor_map").spawn("maze_ghost")
+                .reach("melzars_maze", 10).stay().needFlag("ds1_orange").unlessFlag("ds1_yellow").unless("map_part_melzar", "crandor_map").spawn("maze_skeleton")
+                .reach("melzars_maze", 10).stay().needFlag("ds1_yellow").unlessFlag("ds1_blue").unless("map_part_melzar", "crandor_map").spawn("maze_zombie")
+                .reach("melzars_maze", 10).stay().needFlag("ds1_magenta").unless("map_part_melzar", "crandor_map").spawn("maze_lesser_demon")
                 .talk("wormbrain").stay().unless("map_part_lozar", "crandor_map").take("coins:10000").give("map_part_lozar")
                 .say("> I hear you stole a map piece.", "Me no stupid. Me sell map piece. 10,000 coins!", "> Fine. Here.")
                 .missing("Map piece cost 10,000 shiny coins. You not have. Go away.")
-                .talk("oracle").stay().unless("map_part_thalzar", "crandor_map").take("unfired_bowl", "silk", "lobster_pot", "wizards_mind_bomb").give("map_part_thalzar")
-                .say("The magic door seeks a bowl unfired, silk of a merchant, a pot for lobsters and a mind's bomb.",
-                        "* You place the items before the door in the Dwarven Mine. It swings open, and inside is Thalzar's map piece.")
-                .missing("The door seeks 'a thing which is not quite a bowl, silk that is fine, a pot for lobsters and that which makes the mind explode'.",
-                        "* (You need an unfired bowl, silk, a lobster pot and a wizard's mind bomb.)")
-                .talk("emily_bartender").stay().unless("wizards_mind_bomb").take("coins:3").give("wizards_mind_bomb")
+                // Wiki: the Oracle gives the riddle; the four items are used on the magic door in the north-east of the Dwarven Mine.
+                .talk("oracle").stay().unless("map_part_thalzar", "crandor_map").unlessFlag("ds1_oracle").flag("ds1_oracle")
+                .say("The magic door seeks 'a thing which is not quite a bowl, silk that is fine, a pot for lobsters and that which makes the mind explode'.")
+                .reach("dwarven_mine_north", 10).stay().needFlag("ds1_oracle").unless("map_part_thalzar", "crandor_map")
+                .take("unfired_bowl", "silk", "lobster_pot", "wizards_mind_bomb").give("map_part_thalzar")
+                .say("* You use the unfired bowl, silk, lobster pot and wizard's mind bomb on the magic door in the Dwarven Mine. "
+                        + "It swings open, and in the chest inside is Thalzar's map piece.")
+                .missing("* A magic door in the Dwarven Mine. It seeks an unfired bowl, silk, a lobster pot and a wizard's mind bomb.")
+                .talk("emily_bartender").stay().unless("wizards_mind_bomb", "map_part_thalzar", "crandor_map").take("coins:3").give("wizards_mind_bomb")
                 .say("One Wizard's Mind Bomb coming up. That's 3 coins.")
-                .talk("hans").stay().unless("anti_dragon_shield").give("anti_dragon_shield")
+                .talk("hans").stay().unless("anti_dragon_shield").give("anti_dragon_shield") // approx: Duke Horacio (a hand-scripted NPC here) in OSRS
                 .say("The Duke heard you're going to fight a dragon. He asked me to give you this anti-dragon shield.")
                 .talk("klarense").stay().unlessFlag("ds1_ship").take("coins:2000").flag("ds1_ship")
                 .say("The Lady Lumbridge? She's yours for 2,000 coins. Bit of a hole in the hull, mind.", "> I'll patch it up.")

@@ -45,4 +45,22 @@ public final class QuestBossRules {
     public static final int GNOME_HIT_TICKS = 4;
     public static final int GNOME_MAX_HIT = 4;
     public static final int JUNGLE_DEMON_REGEN_PERCENT = 20;
+
+    /** Recipe for Disaster (wiki): Karamel's ice spell hits twice for up to 7. */
+    public static final int KARAMEL_SPELL_HIT = 7;
+    /** Recipe for Disaster (wiki, Mod Ash): the Culinaromancer's magic hits up to 25 with a flat 1-in-3 chance. */
+    public static final int CULINAROMANCER_MAGIC_MAX = 25;
+
+    /** Whether the Culinaromancer's spell lands, from a roll of 0-2. */
+    public static boolean culinaromancerHits(int roll0to2) {
+        return roll0to2 == 0;
+    }
+
+    /** The Culinaromancer's minions fought in order before him (wiki, quest-helper RFDFinal). */
+    public static final java.util.List<String> CULINAROMANCER_FIGHTS = java.util.List.of("agrith_na_na", "flambeed", "karamel", "dessourt",
+            "gelatinnoth_mother", "culinaromancer");
+
+    /** Dragon Slayer I (wiki): Elvarg's dragonfire hits up to 70 (10 behind an anti-dragon shield) and drains 10% of Prayer. */
+    public static final int ELVARG_DRAGONFIRE_MAX = 70;
+    public static final int ELVARG_PRAYER_DRAIN_PERCENT = 10;
 }

@@ -21,12 +21,18 @@ final class QuestBossScripts {
 
     static void init() {
         BossScripts.register("dagannoth_mother", () -> new ColourShift("The Dagannoth Mother"));
-        BossScripts.register("gelatinnoth_mother", () -> new ColourShift("The Gelatinnoth Mother"));
+        BossScripts.register("gelatinnoth_mother", Gelatinnoth::new);
+        BossScripts.register("agrith_na_na", AgrithNaNa::new);
+        BossScripts.register("flambeed", Flambeed::new);
+        BossScripts.register("karamel", Karamel::new);
+        BossScripts.register("dessourt", Culinary::new);
+        BossScripts.register("culinaromancer", Culinaromancer::new);
         BossScripts.register("fareed", Fareed::new);
         BossScripts.register("kamil", Kamil::new);
         BossScripts.register("damis", Damis::new);
         BossScripts.register("dessous", Dessous::new);
         BossScripts.register("jungle_demon", JungleDemon::new);
+        BossScripts.register("elvarg", Elvarg::new);
         BossScripts.register("head_menaphite_guard", FalseGods::new);
         BossScripts.register("dark_squall", MagicOnly::new);
         BossScripts.register("balance_elemental", BalanceForms::new);
@@ -163,7 +169,7 @@ final class QuestBossScripts {
      * the matching style: white = air, blue = water, brown = earth, red = fire spells (any magic here),
      * green = ranged, orange = melee.
      */
-    static final class ColourShift implements BossScript {
+    static class ColourShift implements BossScript {
         private static final String[] COLOURS = {"white", "blue", "brown", "red", "green", "orange"};
         private final String name;
         private int colour;
@@ -379,6 +385,129 @@ final class QuestBossScripts {
                 transform(boss);
                 boss.setHealth(Math.min(hp, SECOND_FORM_HP));
             }
+        }
+    }
+
+    /**
+     * Recipe for Disaster's final fights (wiki): Prayer can't be used in the Culinaromancer's dimension, so the protection and
+     * boosting prayers of the player fighting there switch off.
+     */
+    static class Culinary implements BossScript {
+        private final java.util.Set<java.util.UUID> told = new java.util.HashSet<>();
+
+        @Override
+        public void gameTick(DataBossEntity boss, long gameTick) {
+            if (!(boss.level() instanceof ServerLevel world)) {
+                return;
+            }
+            for (ServerPlayer p : world.getPlayers(x -> x.distanceToSqr(boss) < 24 * 24)) {
+                com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(p);
+                if (!data.activePrayers().isEmpty()) {
+                    data.activePrayers().clear();
+                    com.runecraft.network.ServerNetworking.sync(p);
+                    if (told.add(p.getUUID())) {
+                        Msg.red(p, "Your prayers have no power in this dimension.");
+                    }
+                }
+            }
+        }
+
+        /** The boss's attack of this name, or null. */
+        static AttackDef attack(DataBossEntity boss, String name) {
+            if (boss.def() != null) {
+                for (AttackDef a : boss.def().attacks) {
+                    if (a.name().equals(name)) {
+                        return a;
+                    }
+                }
+            }
+            return null;
+        }
+    }
+
+    /** Agrith-Na-Na: melee up close, Fire Blast from a distance (wiki). */
+    static final class AgrithNaNa extends Culinary {
+        @Override
+        public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
+            return attack(boss, distance <= 2.5 ? "claws" : "fire_blast");
+        }
+    }
+
+    /** Flambeed (wiki): like Fareed, he disarms anyone hitting him in melee without ice gloves; water spells work best. */
+    static final class Flambeed extends Culinary {
+        private final long[] lastMessage = {-100};
+
+        @Override
+        public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            if (type.isMelee() && !hasOrWears(attacker, "ice_gloves")) {
+                if (!quiet(boss, lastMessage)) {
+                    Msg.action(attacker, "Flambeed's flames make you drop your weapon! Ice gloves would protect your hands.");
+                }
+                return 0;
+            }
+            return damage;
+        }
+    }
+
+    /** Karamel (wiki): a draining ice spell that hits twice from afar, a ranged attack in melee distance. */
+    static final class Karamel extends Culinary {
+        @Override
+        public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
+            return attack(boss, distance <= 2.5 ? "toffee_shot" : "ice_spell");
+        }
+
+        @Override
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
+            // the spell's second hit (7 each)
+            return type == AttackType.MAGIC ? damage + boss.getRandom().nextInt(QuestBossRules.KARAMEL_SPELL_HIT + 1) : damage;
+        }
+    }
+
+    /** The Gelatinnoth Mother: the Dagannoth Mother's colours, in the prayerless dimension. */
+    static final class Gelatinnoth extends ColourShift {
+        private final Culinary dimension = new Culinary();
+
+        Gelatinnoth() {
+            super("The Gelatinnoth Mother");
+        }
+
+        @Override
+        public void gameTick(DataBossEntity boss, long gameTick) {
+            super.gameTick(boss, gameTick);
+            dimension.gameTick(boss, gameTick);
+        }
+    }
+
+    /** The Culinaromancer (wiki): his magic has a flat 1-in-3 chance to hit, up to 25. */
+    static final class Culinaromancer extends Culinary {
+        @Override
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
+            if (type != AttackType.MAGIC) {
+                return damage;
+            }
+            return QuestBossRules.culinaromancerHits(boss.getRandom().nextInt(3))
+                    ? boss.getRandom().nextInt(QuestBossRules.CULINAROMANCER_MAGIC_MAX + 1) : 0;
+        }
+    }
+
+    /** Dragon Slayer I (wiki): every one of Elvarg's dragonfire breaths drains a tenth of the player's Prayer points. */
+    static final class Elvarg implements BossScript {
+        private boolean breathing;
+
+        @Override
+        public AttackDef beforeAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
+            breathing = attack != null && attack.special() == AttackDef.Special.DRAGONFIRE;
+            return attack;
+        }
+
+        @Override
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
+            if (breathing) {
+                com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(player);
+                data.setPrayerPoints(data.prayerPoints() - data.prayerPoints() * QuestBossRules.ELVARG_PRAYER_DRAIN_PERCENT / 100);
+                breathing = false;
+            }
+            return damage;
         }
     }
 

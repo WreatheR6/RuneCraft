@@ -113,6 +113,64 @@ class MasterQuestsTest {
         }
     }
 
+    // ------------------------------------------------------------------ Dragon Slayer I
+
+    @Test
+    void dragonSlayerWalksMelzarsMazeAndTheMagicDoor() {
+        inOrder("dragon_slayer_i", "talk guildmaster", "talk oziach", "talk guildmaster",
+                "reach melzars_maze", "kill zombie_rat", "kill maze_ghost", "kill maze_skeleton", "kill maze_zombie", "kill melzar_the_mad",
+                "kill maze_lesser_demon", "talk wormbrain", "talk oracle", "reach dwarven_mine_north", "talk klarense", "talk klarense", "talk ned",
+                "kill elvarg", "talk oziach");
+        BossDef elvarg = ContentRegistry.boss("elvarg");
+        assertTrue(elvarg.attacks.stream().anyMatch(a -> a.name().equals("dragonfire") && a.maxHit() == QuestBossRules.ELVARG_DRAGONFIRE_MAX
+                && a.style() == com.runecraft.osrs.AttackType.RANGED));
+        assertTrue(elvarg.phases.isEmpty());
+        // the maze's key-holders (DPS calculator levels), each called up by the kill before it
+        assertEquals(List.of(19, 22, 24, 82), List.of("maze_ghost", "maze_skeleton", "maze_zombie", "maze_lesser_demon").stream()
+                .map(id -> ContentRegistry.boss(id).combatLevel).toList());
+        QuestSpec q = spec("dragon_slayer_i");
+        assertTrue(q.triggers().stream().anyMatch(t -> t.target.equals("zombie_rat") && "maze_ghost".equals(t.spawn)));
+        assertTrue(q.triggers().stream().anyMatch(t -> t.target.equals("melzar_the_mad") && "maze_lesser_demon".equals(t.spawn)));
+    }
+
+    // ------------------------------------------------------------------ Recipe for Disaster
+
+    @Test
+    void recipeForDisasterSubquestsAndFinalFights() {
+        inOrder("recipe_for_disaster", "talk rfd_gypsy", "talk rfd_gypsy",
+                "talk emily_bartender", "talk rohak", "talk rohak", "talk rohak",
+                "talk general_bentnoze",
+                "talk pirate_pete", "talk rfd_murphy", "drop mudskipper", "reach rfd_crab_pen", "kill rfd_crab", "talk pirate_pete",
+                "puzzle rfd_traiborn", "puzzle rfd_traiborn", "puzzle rfd_traiborn", "talk lumbridge_guide",
+                "talk evil_dave", "kill rfd_hell_rat", "puzzle evil_dave",
+                "talk skrach_uglogwee", "reach feldip_hills", "kill rfd_jubbly_bird", "talk skrach_uglogwee",
+                "talk sir_amik_varze", "reach kharazi_jungle", "kill rfd_evil_chicken", "drop black_dragon", "talk sir_amik_varze",
+                "talk king_awowogei", "reach rfd_crash_island_pit", "kill rfd_big_snake", "reach ape_atoll", "talk king_awowogei",
+                "talk rfd_gypsy");
+        List<String> steps = walk("recipe_for_disaster");
+        List<String> fights = steps.stream().filter(s -> s.startsWith("kill ")).map(s -> s.substring(5))
+                .filter(QuestBossRules.CULINAROMANCER_FIGHTS::contains).toList();
+        assertEquals(QuestBossRules.CULINAROMANCER_FIGHTS, fights);
+        // the Culinaromancer's magic: 25, landing one time in three
+        BossDef c = ContentRegistry.boss("culinaromancer");
+        assertTrue(c.attacks.stream().anyMatch(a -> a.style() == com.runecraft.osrs.AttackType.MAGIC && a.maxHit() == QuestBossRules.CULINAROMANCER_MAGIC_MAX));
+        assertTrue(QuestBossRules.culinaromancerHits(0) && !QuestBossRules.culinaromancerHits(1) && !QuestBossRules.culinaromancerHits(2));
+        assertTrue(c.phases.isEmpty());
+        // Traiborn's three tests and Evil Dave's stew are real puzzles
+        for (QuestPuzzle p : List.of(RecipeForDisaster.RFD_TRAIBORN_EGG, RecipeForDisaster.RFD_TRAIBORN_MILK, RecipeForDisaster.RFD_TRAIBORN_FLOUR)) {
+            for (QuestPuzzle.Variant v : p.rooms.get(0).variants()) {
+                assertEquals(1, v.solutions().size());
+                assertEquals(1, v.length());
+            }
+        }
+        assertEquals(10, RecipeForDisaster.RFD_TRAIBORN_EGG.rooms.get(0).variants().size());
+        assertEquals(14, RecipeForDisaster.RFD_TRAIBORN_MILK.rooms.get(0).variants().size());
+        for (QuestPuzzle.Variant v : RecipeForDisaster.RFD_SPICY_STEW.rooms.get(0).variants()) {
+            assertEquals(4, v.length(), "a dose count for each of the four spices");
+            assertEquals(3, v.options().size());
+        }
+    }
+
     // ------------------------------------------------------------------ Monkey Madness I
 
     @Test

@@ -41,6 +41,8 @@ class QuestStrictWalkTest {
             "monkey_madness_i 4 talk tutab",
             // Garkor replaces a lost 10th squad sigil
             "monkey_madness_i 7 talk garkor",
+            // the Guildmaster replaces a lost maze key
+            "dragon_slayer_i 3 talk guildmaster",
             // the priest's lines when the player arrives without the urn (the walk brings it)
             "beneath_cursed_sands 3 talk tumeken_priest");
 
