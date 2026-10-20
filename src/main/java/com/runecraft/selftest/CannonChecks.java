@@ -40,6 +40,15 @@ final class CannonChecks {
         sp.cannonGranite = 0;
     }
 
+    /** Why the cannon couldn't be set up: the area rule that forbids it, or what is in the way of its 3x3. */
+    private static AssertionError setUpFailed(TestContext c, BlockPos centre) {
+        String why = CannonService.prohibited(c.player, centre);
+        if (why == null) {
+            why = CannonService.obstruction(c.world, centre);
+        }
+        return new AssertionError("couldn't set up a cannon at " + centre.toShortString() + (why == null ? "" : " (" + why + ")"));
+    }
+
     private static String cycle(TestContext c) {
         ServerPlayer p = c.player;
         clean(p);
@@ -50,7 +59,7 @@ final class CannonChecks {
         BlockPos centre = c.near(-4, 0);
         try {
             if (!CannonService.setUp(p, centre, true)) {
-                throw new AssertionError("couldn't set up a cannon at " + centre.toShortString());
+                throw setUpFailed(c, centre);
             }
             CannonService.Cannon cannon = CannonService.of(p);
             if (cannon == null || !cannon.complete()) {
@@ -153,7 +162,7 @@ final class CannonChecks {
                 throw new SelfTest.Skip("no sand_crab entity");
             }
             if (!CannonService.setUp(p, centre, true)) {
-                throw new AssertionError("couldn't set up a cannon at " + centre.toShortString());
+                throw setUpFailed(c, centre);
             }
             CannonService.Cannon cannon = CannonService.of(p);
             Inv.give(p, Multicannon.STEEL_BALL, 30);
