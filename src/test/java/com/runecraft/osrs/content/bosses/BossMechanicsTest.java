@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -88,6 +89,26 @@ class BossMechanicsTest {
         assertEquals(1, BossMechanics.vardorvisDarts(600));
         assertEquals(2, BossMechanics.vardorvisDarts(300));
         assertEquals(3, BossMechanics.vardorvisDarts(100));
+        // Strangle: at least four spores, more with each use, up to six.
+        assertEquals(4, BossMechanics.vardorvisStrangleSpores(0));
+        assertEquals(5, BossMechanics.vardorvisStrangleSpores(1));
+        assertEquals(6, BossMechanics.vardorvisStrangleSpores(9));
+    }
+
+    /** Vardorvis' head: the post-quest gaze is always the green (ranged) one; awakened below half it fires one of each. */
+    @Test
+    void vardorvisHeadGazes() {
+        assertArrayEquals(new boolean[]{false}, BossMechanics.vardorvisGazes(false, 0.2, true));
+        assertArrayEquals(new boolean[]{true}, BossMechanics.vardorvisGazes(true, 0.7, true));
+        assertArrayEquals(new boolean[]{false, true}, BossMechanics.vardorvisGazes(true, 0.4, false));
+        assertEquals(10, BossMechanics.VARDORVIS_HEAD_PRAYER_DRAIN);
+        assertEquals(3, BossMechanics.VARDORVIS_HEAD_LOCK_TICKS);
+        // The head deals no damage, so it isn't one of his attacks; his darting spikes are (25, awakened 40).
+        BossDef v = ContentRegistry.boss("vardorvis");
+        assertTrue(v.attacks.stream().noneMatch(a -> a.name().startsWith("head")));
+        assertEquals(25, Dt2Bosses.VARD_SPIKES.maxHit());
+        assertEquals(35, Dt2Bosses.VARD_AXES.maxHit());
+        assertEquals(40, AwakenedBosses.variant(v).maxHit(Dt2Bosses.VARD_SPIKES));
     }
 
     @Test

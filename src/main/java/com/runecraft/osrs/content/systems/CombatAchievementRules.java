@@ -773,7 +773,7 @@ public final class CombatAchievementRules {
             154;RUN;mg:fight_caves;1;noprayloss
             155;RUN;mg:fight_caves;1;t<30:00
             156;RUN;mg:fight_caves;1;t<26:30
-            491;STREAK;vardorvis;5;nodmg=mechanic,hazard,swinging_axe,darting_spikes,strangle,blood_splat,offprayer
+            491;STREAK;vardorvis;5;nodmg=mechanic,hazard,swinging_axe,darting_spikes,strangle,offprayer
             272;STREAK;vorkath;5;nodmg=dragonfire_bomb,venomous_dragonfire,pink_dragonfire,mechanic,hazard
             278;STREAK;vorkath;10;
             500;STREAK;the_whisperer;5;nodmg=mechanic,hazard,soul_bolt,tentacle_lash,screech,soul_siphon,offprayer

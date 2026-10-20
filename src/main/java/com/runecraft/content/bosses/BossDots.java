@@ -47,6 +47,7 @@ final class BossDots {
     }
 
     private static void clear(UUID id) {
+        OVERHEAD_LOCK.remove(id);
         BURNS.remove(id);
         BLEEDS.remove(id);
         LAST_POS.remove(id);
@@ -87,6 +88,26 @@ final class BossDots {
         }
     }
 
+    /** Game ticks each player's overhead prayers stay switched off (Vardorvis' head gaze). */
+    private static final Map<UUID, Integer> OVERHEAD_LOCK = new HashMap<>();
+
+    /** Switches the player's overhead prayers off and keeps them off for {@code ticks} game ticks. */
+    static void lockOverheads(ServerPlayer p, int ticks) {
+        OVERHEAD_LOCK.merge(p.getUUID(), ticks, Math::max);
+        dropOverheads(p);
+    }
+
+    static boolean overheadsLocked(ServerPlayer p) {
+        return OVERHEAD_LOCK.getOrDefault(p.getUUID(), 0) > 0;
+    }
+
+    private static void dropOverheads(ServerPlayer p) {
+        com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(p);
+        if (data.activePrayers().removeIf(com.runecraft.osrs.Prayer::isOverhead)) {
+            com.runecraft.network.ServerNetworking.sync(p);
+        }
+    }
+
     static boolean burning(ServerPlayer p) {
         BossMechanics.Burn b = BURNS.get(p.getUUID());
         return b != null && b.stacks() > 0;
@@ -103,8 +124,18 @@ final class BossDots {
             return;
         }
         lastGameTick = gameTick;
-        if (BURNS.isEmpty() && BLEEDS.isEmpty()) {
+        if (BURNS.isEmpty() && BLEEDS.isEmpty() && OVERHEAD_LOCK.isEmpty()) {
             return;
+        }
+        for (UUID id : new ArrayList<>(OVERHEAD_LOCK.keySet())) {
+            ServerPlayer p = server.getPlayerList().getPlayer(id);
+            int left = OVERHEAD_LOCK.get(id) - 1;
+            if (p == null || left <= 0) {
+                OVERHEAD_LOCK.remove(id);
+            } else {
+                OVERHEAD_LOCK.put(id, left);
+                dropOverheads(p); // an overhead switched back on while locked goes off again
+            }
         }
         java.util.Set<UUID> ids = new java.util.HashSet<>(BURNS.keySet());
         ids.addAll(BLEEDS.keySet());

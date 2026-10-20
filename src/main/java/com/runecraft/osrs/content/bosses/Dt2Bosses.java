@@ -48,14 +48,15 @@ public final class Dt2Bosses {
 
     // ---- Vardorvis ----
     public static final AttackDef VARD_SLASH = AttackDef.of("axe_swing", AttackType.SLASH, 35, 4, 6);
-    public static final AttackDef VARD_AXES = AttackDef.of("swinging_axes", AttackType.SLASH, 50, 16, 2).special(Special.SKY_STRIKE, 0)
+    /** Swinging axes: up to 35 (OSRS Wiki; awakened 96), halved by Protect from Melee, and a bleed. */
+    public static final AttackDef VARD_AXES = AttackDef.of("swinging_axes", AttackType.SLASH, 35, 16, 2).special(Special.SKY_STRIKE, 0)
             .telegraph(3, "Axes swing out from the walls!").particle("minecraft:sweep_attack");
-    public static final AttackDef VARD_HEAD_RANGED = AttackDef.of("head_ranged", AttackType.RANGED, 30, 16, 1)
-            .telegraph(2, "Vardorvis' head emerges and glares at you - its eyes glow green!").particle("minecraft:crit");
-    public static final AttackDef VARD_HEAD_MAGIC = AttackDef.of("head_magic", AttackType.MAGIC, 30, 16, 1)
-            .telegraph(2, "Vardorvis' head emerges and glares at you - its eyes glow blue!").particle("minecraft:witch");
-    public static final AttackDef VARD_BLOOD = AttackDef.of("blood_splat", AttackType.MAGIC, 20, 16, 1).special(Special.SKY_STRIKE, 0)
-            .telegraph(3, "Blood splatters across the ground - don't let it heal him!").particle("minecraft:damage_indicator");
+    /**
+     * Darting spikes: tendrils burst from the cracks he leaves for up to 25 (awakened 40), healing him for half. (The
+     * head's gaze deals no damage: an unblocked gaze drains 10 Prayer and disables overhead prayers; it's scripted.)
+     */
+    public static final AttackDef VARD_SPIKES = AttackDef.of("darting_spikes", AttackType.SLASH, 25, 16, 1).special(Special.SKY_STRIKE, 0)
+            .telegraph(3, "Vardorvis darts around you, leaving cracks in the ground!").particle("minecraft:damage_indicator");
 
     /**
      * The weaker versions fought during Desert Treasure II (quest module ids {@code dt2_quest_*}) reuse these bosses'
@@ -126,7 +127,7 @@ public final class Dt2Bosses {
             "duke_sucellus", "nodmg=mechanic,hazard,gas_vent,freezing_gaze,fist_slam,magic_blast,offprayer",
             "the_leviathan", "nodmg=mechanic,hazard,falling_debris,lightning,offprayer",
             "the_whisperer", "nodmg=mechanic,hazard,soul_bolt,tentacle_lash,screech,soul_siphon,offprayer",
-            "vardorvis", "nodmg=mechanic,hazard,swinging_axe,darting_spikes,strangle,blood_splat,offprayer");
+            "vardorvis", "nodmg=mechanic,hazard,swinging_axe,darting_spikes,strangle,offprayer");
 
     static {
         // duke_sucellus
@@ -315,7 +316,7 @@ public final class Dt2Bosses {
     static BossDef vardorvis() {
         BossDef b = BossDef.of("vardorvis", "Vardorvis").level(784).stats(700, 280, 270, 215, 215, 1).speed(5)
                 .defenceBonus(215, 65, 85, 580, 580)
-                .attack(VARD_SLASH).attack(VARD_AXES).attack(VARD_BLOOD)
+                .attack(VARD_SLASH).attack(VARD_AXES).attack(VARD_SPIKES)
                 .pet("pet_butch").at("stranglewood").arena(12, "crypt").size(0.9f, 2.4f, 1.6f).moveSpeed(0.28);
         b.drops.addAll(dt2Drops(b.id, "ultor_vestige", "executioners_axe_head", "strangled_tablet", "blood_quartz"));
         return b;

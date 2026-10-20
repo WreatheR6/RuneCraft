@@ -107,6 +107,7 @@ public final class AwakenedBosses {
             case "vardorvis" -> {
                 m.put("axe_swing", 61);
                 m.put("swinging_axes", 96);
+                m.put("darting_spikes", 40);
             }
             default -> throw new IllegalArgumentException(bossId);
         }

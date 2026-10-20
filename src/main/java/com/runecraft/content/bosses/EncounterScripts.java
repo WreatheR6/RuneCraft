@@ -17,6 +17,7 @@ import com.runecraft.osrs.Prayer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
@@ -1190,6 +1191,11 @@ final class EncounterScripts {
         private long strangleDue = -1;
         private ServerPlayer strangled;
         private boolean lastStrangle;
+        /** Strangles so far this fight (each adds a spore, up to six). */
+        private int strangles;
+        /** Head gazes in the air: {game tick it lands, 1 for the blue magic gaze / 0 for the green ranged one}. */
+        private final List<long[]> gazes = new ArrayList<>();
+        private ServerPlayer gazed;
 
         Vardorvis() {
             this(1.0);
@@ -1318,8 +1324,9 @@ final class EncounterScripts {
                     ticks * 12, 10, false, true));
             spores.forEach(Mob::discard);
             spores.clear();
-            for (int i = 0; i < BossMechanics.VARDORVIS_STRANGLE_SPORES; i++) {
-                double a = Math.PI * 2 * i / BossMechanics.VARDORVIS_STRANGLE_SPORES + boss.getRandom().nextDouble();
+            int count = BossMechanics.vardorvisStrangleSpores(strangles++);
+            for (int i = 0; i < count; i++) {
+                double a = Math.PI * 2 * i / count + boss.getRandom().nextDouble();
                 Vec3 at = BossFx.ground(BossFx.world(boss), target.getX() + Math.cos(a) * 1.6, target.getZ() + Math.sin(a) * 1.6,
                         target.getY());
                 Mob spore = BossFx.spawnMinion(boss, BossMechanics.STRANGLER_SPORE, at, null);
@@ -1367,12 +1374,53 @@ final class EncounterScripts {
         public void onDeath(DataBossEntity boss, ServerPlayer killer) {
             spores.forEach(Mob::discard);
             spores.clear();
+            gazes.clear(); // a gaze still in the air when he dies does nothing
+        }
+
+        /**
+         * Head gaze (OSRS Wiki "Vardorvis' Head"): a projectile that deals no damage; unblocked it drains 10 Prayer and keeps
+         * overhead prayers off for 3 ticks. Post-quest it's the green (ranged) gaze; awakened also the blue (magic) one, in
+         * pairs below half health. He holds his melee while it flies and attacks 2 ticks after it lands.
+         */
+        private void gaze(DataBossEntity boss, ServerPlayer target) {
+            boolean[] magic = BossMechanics.vardorvisGazes(boss.awakened(), hpFraction(boss), boss.getRandom().nextBoolean());
+            Msg.red(target, "Vardorvis' head gazes upon you...");
+            for (int i = 0; i < magic.length; i++) {
+                gazes.add(new long[]{now + BossMechanics.VARDORVIS_HEAD_FLIGHT_TICKS + i, magic[i] ? 1 : 0});
+            }
+            gazed = target;
+            BossFx.burst(boss, magic[0] ? ParticleTypes.WITCH : ParticleTypes.HAPPY_VILLAGER, 12, 1.0);
+            cooldown = Math.max(cooldown, BossMechanics.VARDORVIS_HEAD_FLIGHT_TICKS + magic.length - 1
+                    + BossMechanics.VARDORVIS_HEAD_AFTER_TICKS);
+        }
+
+        private void tickGazes() {
+            Iterator<long[]> it = gazes.iterator();
+            while (it.hasNext()) {
+                long[] g = it.next();
+                if (g[0] > now) {
+                    continue;
+                }
+                it.remove();
+                ServerPlayer p = gazed;
+                if (p == null || !p.isAlive()) {
+                    continue;
+                }
+                Prayer block = g[1] == 1 ? Prayer.PROTECT_FROM_MAGIC : Prayer.PROTECT_FROM_MISSILES;
+                BossFx.world(p).sendParticles(g[1] == 1 ? ParticleTypes.WITCH : ParticleTypes.HAPPY_VILLAGER,
+                        p.getX(), p.getY() + 1.2, p.getZ(), 10, 0.3, 0.4, 0.3, 0.02);
+                if (!BossFx.protects(p, block)) {
+                    BossFx.drainPrayer(p, BossMechanics.VARDORVIS_HEAD_PRAYER_DRAIN);
+                    BossDots.lockOverheads(p, BossMechanics.VARDORVIS_HEAD_LOCK_TICKS);
+                    Msg.red(p, "The gaze disables your overhead prayers!");
+                }
+            }
         }
 
         private void darts(DataBossEntity boss, ServerPlayer target) {
             int n = BossMechanics.vardorvisDarts(hp(boss));
             BossFx.warn(boss, "Vardorvis darts around you, leaving cracks in the ground!");
-            int max = (int) Math.round((boss.awakened() ? 40 : 25) * scale);
+            int max = (int) Math.round(maxHit(boss, Dt2Bosses.VARD_SPIKES) * scale); // 25, awakened 40
             for (int i = 0; i < n; i++) {
                 Vec3 at = i == 0 ? target.position() : around(boss, target.position(), 3);
                 namedStrike("darting_spikes", boss, at, 4 + i, max, 1.3, ParticleTypes.DAMAGE_INDICATOR, (hit, pos) -> {
@@ -1398,8 +1446,9 @@ final class EncounterScripts {
             if (autos > 3 && autos % axeEvery == 0) {
                 axes(boss, target);
             }
-            if (hp < BossMechanics.VARDORVIS_HEAD_HP && boss.getRandom().nextInt(enraged ? 3 : 6) == 0) {
-                return boss.getRandom().nextBoolean() ? Dt2Bosses.VARD_HEAD_RANGED : Dt2Bosses.VARD_HEAD_MAGIC;
+            if (hp < BossMechanics.VARDORVIS_HEAD_HP && gazes.isEmpty() && boss.getRandom().nextInt(enraged ? 3 : 6) == 0) { // approx rate
+                gaze(boss, target);
+                return null;
             }
             if (hp < BossMechanics.VARDORVIS_HEAD_HP && !lastStrangle && strangleDue < 0 && boss.getRandom().nextInt(8) == 0) { // approx rate
                 lastStrangle = true;
@@ -1421,6 +1470,7 @@ final class EncounterScripts {
             int lost = (int) Math.round((1 - hpFraction(boss)) * BossMechanics.VARDORVIS_HITPOINTS);
             com.runecraft.content.systems.SysCombat.drain(boss).defence = BossMechanics.vardorvisDefenceReduction(lost);
             tickStrangle(boss);
+            tickGazes();
             if (target == null || home == null) {
                 return;
             }

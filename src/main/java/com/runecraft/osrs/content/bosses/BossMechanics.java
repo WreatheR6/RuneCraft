@@ -382,8 +382,36 @@ public final class BossMechanics {
     public static final int VARDORVIS_STRANGLE_TICKS_AWAKENED = 4;
     public static final int VARDORVIS_STRANGLE_DAMAGE = 25;
     public static final int VARDORVIS_STRANGLE_DAMAGE_AWAKENED = 40;
-    /** Spores to destroy per Strangle (the wiki says "several"; approx). */
-    public static final int VARDORVIS_STRANGLE_SPORES = 3;
+    /**
+     * Spores to destroy per Strangle (OSRS Wiki "Vardorvis/Strategies"): at least four, more the more often he has used
+     * it, up to six. approx: one more per earlier Strangle of the fight.
+     */
+    public static int vardorvisStrangleSpores(int earlierStrangles) {
+        return Math.min(6, 4 + Math.max(0, earlierStrangles));
+    }
+
+    /**
+     * Vardorvis' head (OSRS Wiki "Vardorvis' Head"): below 570 hitpoints it gazes at the player with a projectile that
+     * deals no damage; unless Protect from Missiles (the green gaze) or Protect from Magic (the awakened blue gaze) blocks
+     * it, it drains 10 Prayer points, switches overhead prayers off and keeps them off for 3 ticks. He doesn't melee while
+     * it flies and attacks 2 ticks after it lands. Awakened below 50% the head gazes in pairs, one of each, 1 tick apart.
+     */
+    public static final int VARDORVIS_HEAD_PRAYER_DRAIN = 10;
+    public static final int VARDORVIS_HEAD_LOCK_TICKS = 3;
+    /** Game ticks the gaze is in the air (approx: not documented). */
+    public static final int VARDORVIS_HEAD_FLIGHT_TICKS = 3;
+    public static final int VARDORVIS_HEAD_AFTER_TICKS = 2;
+
+    /**
+     * The gazes of one head appearance, as "magic" flags in firing order: post-quest a single green (ranged) gaze;
+     * awakened a random one, or below half his hitpoints a pair of both styles in random order.
+     */
+    public static boolean[] vardorvisGazes(boolean awakened, double hpFraction, boolean coin) {
+        if (!awakened) {
+            return new boolean[]{false};
+        }
+        return hpFraction < 0.5 ? new boolean[]{coin, !coin} : new boolean[]{coin};
+    }
 
     /** A Vardorvis bleed: damage per game tick, more often while the player is running. */
     public static final class Bleed {
