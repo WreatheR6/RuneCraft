@@ -411,6 +411,14 @@ public class DataBossEntity extends OsrsMonsterEntity {
             bossBar.removeAllPlayers();
             return;
         }
+        if (variant == null && def.questBoss()) {
+            // OSRS keeps no kill count for quest bosses (wiki, Boss: "Excluding minigame and quest bosses, each boss has its own
+            // hiscore table") and they have no pet: the kill is the quest's, which hears it through the kill event.
+            script.onDeath(this, player);
+            DataBossService.killed(player, this);
+            bossBar.removeAllPlayers();
+            return;
+        }
         int petRate = variant != null && variant.petRate() >= 0 ? variant.petRate()
                 : com.runecraft.osrs.content.extras.Pets.engineRate(def.id);
         if (def.pet != null && petRate > 0 && getRandom().nextInt(petRate) == 0) {

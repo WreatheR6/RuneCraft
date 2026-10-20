@@ -152,7 +152,7 @@ public final class QuestBook {
 
     /** Adds a quest boss (category "Quest bosses"). */
     public BossDef boss(BossDef boss) {
-        boss.category("Quest bosses");
+        boss.category(BossDef.QUEST_BOSSES);
         bosses.add(boss);
         return boss;
     }

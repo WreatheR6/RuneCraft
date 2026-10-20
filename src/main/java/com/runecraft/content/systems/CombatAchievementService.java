@@ -264,6 +264,14 @@ public final class CombatAchievementService {
         return null;
     }
 
+    /** A boss fought as part of a quest, which keeps no kill count (wiki, Boss: no hiscore table for quest bosses). */
+    private static boolean questBoss(LivingEntity e) {
+        if (e instanceof com.runecraft.boss.DataBossEntity b && b.def() != null) {
+            return b.def().questBoss();
+        }
+        return e instanceof com.runecraft.entity.BossEntity b && b.boss() != null && b.boss().questBoss();
+    }
+
     private static String fightKey(LivingEntity e) {
         if (e == null || e instanceof ServerPlayer) {
             return null;
@@ -731,8 +739,9 @@ public final class CombatAchievementService {
                     o -> o != e && o.isAlive()).isEmpty();
             String raw = bossId(e);
             m.killedId = raw != null ? raw : name;
-            // Bosses finish their fight when their kill count goes up; that has happened by now.
-            if (key.startsWith("kill:") || bossKc(p, key) > f.kcAtStart) {
+            // Bosses finish their fight when their kill count goes up; that has happened by now. A quest boss keeps no kill
+            // count (OSRS), so its kill itself ends the fight (Galvek, the Fragment of Seren and Glough speed tasks).
+            if (key.startsWith("kill:") || bossKc(p, key) > f.kcAtStart || questBoss(e)) {
                 finish(p, f, e);
             }
         }

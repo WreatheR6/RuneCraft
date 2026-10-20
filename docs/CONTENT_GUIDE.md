@@ -57,6 +57,7 @@ Implement the methods you need on your module class (`ContentModule`):
   - Arena styles: stone, lava, ice, crypt, jungle, void, water, sand.
   - `at(place)` is a `Landmark` enum name (e.g. "EDGEVILLE") or one of your `PlaceDef` ids. An arena with a summoning stone is generated there automatically.
   - Drops with rarity ≥ 24, plus the pet, form the boss's collection log page automatically.
+  - A kill adds to the boss's kill count, except for a quest boss (`QuestBook.boss`, category "Quest bosses", `BossDef.questBoss()`): OSRS keeps no kill count for quest bosses (wiki, Boss: only non-minigame, non-quest bosses have a hiscore table), so the kill only reaches the quest's kill hooks.
 - `AttackDef`: `AttackDef.of(name, AttackType, maxHit, rangeBlocks, weight)`, then `.special(Special, param)`, `.telegraph(ticks, "message")`, `.particle("minecraft:flame")` and `.message("...")`.
   - **Specials:** AOE, SKY_STRIKE (dodgeable), PRAYER_PIERCING, DRAIN_PRAYER, POISON, VENOM, LIFESTEAL, SUMMON, KNOCKBACK, FREEZE, PULL, DRAGONFIRE (anti-dragon shield / antifire reduce it), HAZARD (ground pool), DRAIN_STAT, BLINK, HEAL_SELF.
   - Telegraphed attacks give players time to switch protection prayers (Jad-style).

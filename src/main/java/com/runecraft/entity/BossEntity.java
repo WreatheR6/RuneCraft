@@ -471,9 +471,13 @@ public class BossEntity extends OsrsMonsterEntity {
                 CollectionLog.obtain(player, r.item());
             }
         }
-        PlayerData data = Players.data(player);
-        int kc = data.incrementKillCount(boss.entityId());
-        Msg.game(player, "Your " + boss.displayName() + " kill count is: " + kc + ".");
+        // OSRS keeps no kill count for quest bosses (wiki, Boss: "Excluding minigame and quest bosses, each boss has its own
+        // hiscore table"): Count Draynor's and Delrith's kills are their quests' (QuestManager.onKill).
+        if (!boss.questBoss()) {
+            PlayerData data = Players.data(player);
+            int kc = data.incrementKillCount(boss.entityId());
+            Msg.game(player, "Your " + boss.displayName() + " kill count is: " + kc + ".");
+        }
         bossBar.removeAllPlayers();
     }
 

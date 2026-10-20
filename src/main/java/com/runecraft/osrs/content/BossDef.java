@@ -31,6 +31,8 @@ public final class BossDef extends CombatProfile<BossDef> {
     public boolean raidOnly;
     public boolean wilderness;
     public String category = "Bosses";
+    /** The category of the bosses a quest adds ({@code QuestBook.boss}). */
+    public static final String QUEST_BOSSES = "Quest bosses";
 
     public BossDef(String id, String name) {
         super(id, name);
@@ -86,6 +88,14 @@ public final class BossDef extends CombatProfile<BossDef> {
     public BossDef category(String category) {
         this.category = category;
         return this;
+    }
+
+    /**
+     * A boss fought as part of a quest. OSRS keeps no kill count for these (wiki, Boss: "Excluding minigame and quest
+     * bosses, each boss has its own hiscore table"): no kill count message, no boss log line; the kill is the quest's.
+     */
+    public boolean questBoss() {
+        return QUEST_BOSSES.equals(category);
     }
 
     public String summonBlockId() {
