@@ -1047,13 +1047,7 @@ public class ColosseumSession extends MinigameSession {
     }
 
     private void raiseTotem(LivingEntity enemy) {
-        int off = (FortisColosseum.size(MinigameManager.creatureId(enemy)) + 1) / 2 + 1;
-        BlockPos at = enemy.blockPosition().offset(-off, 0, off); // south-west of it
-        BlockPos d = at.subtract(origin);
-        if (Math.abs(d.getX()) >= HALF - 1 || Math.abs(d.getZ()) >= HALF - 1) {
-            at = enemy.blockPosition().offset(random.nextInt(5) - 2, 0, random.nextInt(5) - 2);
-        }
-        Mob totem = spawn(FortisColosseum.HEALING_TOTEM, at);
+        Mob totem = spawn(FortisColosseum.HEALING_TOTEM, totemSpot(enemy));
         if (totem != null) {
             totem.setNoAi(true);
             totems.add(new Totem(totem, enemy, ticks));
@@ -1061,10 +1055,72 @@ public class ColosseumSession extends MinigameSession {
         }
     }
 
+    /**
+     * Where a healing totem rises: on the tile diagonally past the enemy's south-west tile "if space permits, spawning
+     * elsewhere if this is not possible" (wiki strategy guide; on Sol Heredit "near Sol's SW tile"). Elsewhere is the nearest
+     * open tile to that spot outside the enemy's own tiles, inside the fight's bounds: the gladiators' ring on wave 12, the
+     * arena walls otherwise. A 1-hitpoint totem put inside a pillar or the ring would suffocate at once, or stand out of the
+     * player's reach.
+     *
+     * <p>The enemy's tiles are its size x size OSRS tiles centred on where it stands, snapped to the tile grid: centre ± size/2
+     * for an odd size (a 1x1 shaman's totem rises one tile south-west of it, Sol Heredit's three tiles out from his centre),
+     * and for a 2x2 jaguar the four tiles nearest its true position.
+     */
+    private BlockPos totemSpot(LivingEntity enemy) {
+        int size = FortisColosseum.size(MinigameManager.creatureId(enemy));
+        // The enemy's tiles: x in [west, west + size), z in [north, north + size) (north is -z, south +z, west -x).
+        int west = (int) Math.floor(enemy.getX() - size / 2.0 + 0.5);
+        int north = (int) Math.floor(enemy.getZ() - size / 2.0 + 0.5);
+        BlockPos centre = enemy.blockPosition();
+        BlockPos sw = new BlockPos(west - 1, centre.getY(), north + size);
+        for (int r = 0; r <= 3; r++) {
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dz = -r; dz <= r; dz++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) != r) {
+                        continue;
+                    }
+                    BlockPos p = sw.offset(dx, 0, dz);
+                    boolean underEnemy = p.getX() >= west && p.getX() < west + size && p.getZ() >= north && p.getZ() < north + size;
+                    if (!underEnemy && totemFits(p)) {
+                        return p;
+                    }
+                }
+            }
+        }
+        return centre; // boxed in: on the enemy's own tile, which is open floor
+    }
+
+    /** Open floor for a totem inside the fight's bounds (not molten sand, which would burn its 1 hitpoint away). */
+    private boolean totemFits(BlockPos p) {
+        BlockPos d = p.subtract(origin);
+        int bound = wave >= FortisColosseum.WAVES ? PILLAR - 1 : HALF - 2;
+        if (Math.abs(d.getX()) > bound || Math.abs(d.getZ()) > bound) {
+            return false;
+        }
+        BlockState below = world.getBlockState(p.below());
+        return world.getBlockState(p).getCollisionShape(world, p).isEmpty()
+                && world.getBlockState(p.above()).getCollisionShape(world, p.above()).isEmpty()
+                && !below.getCollisionShape(world, p.below()).isEmpty() && !below.is(Blocks.MAGMA_BLOCK);
+    }
+
     /** The healing totems standing (self-test). */
     public int totemCount() {
         totems.removeIf(t -> !t.totem().isAlive());
         return totems.size();
+    }
+
+    /**
+     * The healing totems standing for {@code enemy} (self-test). Tracked directly: an entity box query can miss a mob that
+     * rose in an arena chunk that isn't entity-ticking yet (the self-test runs a whole run inside one server tick).
+     */
+    public List<LivingEntity> totemsFor(LivingEntity enemy) {
+        List<LivingEntity> out = new ArrayList<>();
+        for (Totem t : totems) {
+            if (t.enemy() == enemy && t.totem().isAlive() && !t.totem().isRemoved()) {
+                out.add(t.totem());
+            }
+        }
+        return out;
     }
 
     private void spawnBee() {

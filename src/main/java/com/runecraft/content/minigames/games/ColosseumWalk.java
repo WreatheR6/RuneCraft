@@ -441,18 +441,26 @@ public final class ColosseumWalk {
         player.setItemSlot(EquipmentSlot.CHEST, ItemStack.EMPTY);
         restoreInventory(kept);
         notes.add("grapple: perfect parry, armour torn off, kept on with a full inventory");
-        // The phases down to the enrage. Totemic (forced on wave 4) raises a healing totem beside him at half health that heals
-        // him 75 every 7 ticks (wiki "Healing totem"): it is broken as soon as it rises (1 hitpoint; a totem destroyed before
-        // its projectile lands heals nothing), or a heal could lift him back over 10% and refuse the salutes.
+        // The phases down to the enrage. Totemic (forced on wave 4, kept for the run) raises a healing totem near his south-west
+        // tile once he is at half health, healing him 75 every 7 ticks (wiki "Healing totem", strategy guide): it is broken as
+        // soon as it rises (1 hitpoint; a totem destroyed before its projectile lands heals nothing), or a heal could lift him
+        // back over 10% and refuse the salutes. None rises above 50%, and a broken one only comes back two minutes later.
+        boolean totemic = session.modifiers().containsKey(Modifier.TOTEMIC);
         int totems = 0;
         for (float f : new float[]{0.85f, 0.70f, 0.45f, 0.20f, 0.08f}) {
             session.selfTestWoundSol(f);
             tick(2);
-            totems += breakTotems();
+            int broken = breakTotems(sol);
+            expect(broken == 0 || f <= 0.5f, "a healing totem rose beside Sol Heredit at " + Math.round(f * 100) + "% (Totemic waits "
+                    + "for 50%)");
+            expect(broken == 0 || totems == 0, "another healing totem rose at " + Math.round(f * 100) + "%, a few ticks after the first "
+                    + "was broken (it comes back two minutes later)");
+            expect(!totemic || f > 0.5f || totems + broken > 0, "Totemic raised no healing totem beside Sol Heredit at half health "
+                    + "(" + Math.round(f * 100) + "%)");
+            totems += broken;
         }
         expect(script.phase() == 6, "Sol Heredit is in phase " + script.phase() + " below 10% (expected the enrage, 6)");
-        expect(totems > 0 || !session.modifiers().containsKey(Modifier.TOTEMIC), "Totemic raised no healing totem beside Sol "
-                + "Heredit at half health");
+        expect(totems > 0 || !totemic, "Totemic raised no healing totem beside Sol Heredit at half health");
         expect(sol.getHealth() < sol.getMaxHealth() * FortisColosseum.SHOWBOATING_BELOW_PERCENT / 100f, "Sol Heredit is back at "
                 + Math.round(sol.getHealth() * 100f / sol.getMaxHealth()) + "% before the salutes (" + totems + " totems broken)");
         notes.add("phases to the enrage" + (totems > 0 ? ", " + totems + " healing totem(s) broken" : ""));
@@ -559,11 +567,21 @@ public final class ColosseumWalk {
         notes.add("left after wave 1: 80 splinters, " + carried + " carried in the free slot and " + sent + " banked");
     }
 
-    /** Breaks every healing totem standing in the arena through the player's real hit path; returns how many. */
-    private int breakTotems() {
+    /**
+     * Breaks every healing totem standing for Sol Heredit through the player's real hit path; returns how many. The totems
+     * come from the session's own list: the walk runs inside one server tick, and an entity box query misses a mob that rose
+     * in an arena chunk that isn't entity-ticking yet (CI's box query found none on wave 12). Each must stand inside the
+     * gladiators' ring, where the player can reach it.
+     */
+    private int breakTotems(LivingEntity enemy) {
         int n = 0;
-        for (LivingEntity totem : world.getEntitiesOfClass(LivingEntity.class, session.box(),
-                e -> e.isAlive() && MinigameManager.creatureId(e).equals(FortisColosseum.HEALING_TOTEM))) {
+        for (LivingEntity totem : session.totemsFor(enemy)) {
+            expect(FortisColosseum.HEALING_TOTEM.equals(MinigameManager.creatureId(totem)), "the session's totem is a "
+                    + MinigameManager.creatureId(totem));
+            BlockPos d = totem.blockPosition().subtract(session.arena(0, 0, 0));
+            int ring = FortisColosseum.PILLAR_OFFSET;
+            expect(Math.abs(d.getX()) < ring && Math.abs(d.getZ()) < ring, "a healing totem rose outside the gladiators' ring at "
+                    + d.getX() + "," + d.getZ() + " from the arena's centre");
             kill(totem, AttackType.SLASH, "a healing totem");
             n++;
         }
