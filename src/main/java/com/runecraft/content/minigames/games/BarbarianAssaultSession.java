@@ -187,6 +187,13 @@ public class BarbarianAssaultSession extends MinigameSession {
     private final Map<UUID, Poison> foodPoison = new HashMap<>();
     private final Map<UUID, Poison> eggPoison = new HashMap<>();
     private final Map<UUID, Long> stunned = new HashMap<>();
+    /**
+     * The creatures this session raised (the Penance, the queen and her spawn), tracked directly ({@link #mobs}). An entity
+     * box query misses a mob standing in an arena chunk that isn't entity-ticking yet: a fresh instance's last-loaded corner
+     * chunk, the lure cave's, only becomes visible to queries a tick later, and the self-test plays a whole wave inside one
+     * server tick, so a runner that reached the lure cave there was never seen escaping.
+     */
+    private final List<LivingEntity> raised = new ArrayList<>();
     /** The tick each player can fire their next red, green or blue egg (one at a time, OSRS Wiki). */
     private final Map<UUID, Long> nextFire = new HashMap<>();
     private Mob queen;
@@ -450,9 +457,47 @@ public class BarbarianAssaultSession extends MinigameSession {
     int penanceAlive() {
         int n = 0;
         for (String id : BarbarianAssault.PENANCE) {
-            n += living(id).size();
+            n += mobs(id).size();
         }
         return n;
+    }
+
+    /** Spawns one of the session's creatures and tracks it ({@link #raised}). */
+    private Mob raise(String creatureId, BlockPos at) {
+        Mob mob = spawn(creatureId, at);
+        if (mob != null) {
+            raised.add(mob);
+        }
+        return mob;
+    }
+
+    /**
+     * The session's living creatures of an id (null: all of them): the ones it raised, wherever they stand, and any other a
+     * box query finds (one reloaded with its chunk is a new entity object).
+     */
+    private List<LivingEntity> mobs(String creatureId) {
+        raised.removeIf(e -> !e.isAlive() || e.isRemoved());
+        List<LivingEntity> list = new ArrayList<>();
+        java.util.Set<UUID> seen = new java.util.HashSet<>();
+        for (LivingEntity e : raised) {
+            if ((creatureId == null || creatureId.equals(MinigameManager.creatureId(e))) && seen.add(e.getUUID())) {
+                list.add(e);
+            }
+        }
+        for (LivingEntity e : living(creatureId)) {
+            if (seen.add(e.getUUID())) {
+                list.add(e);
+            }
+        }
+        return list;
+    }
+
+    /** Removes every creature the session raised (a wave's end or restart, the session closing). */
+    private void discardMobs() {
+        for (LivingEntity e : mobs(null)) {
+            e.discard();
+        }
+        raised.clear();
     }
 
     private static int typeOf(String creatureId) {
@@ -480,7 +525,7 @@ public class BarbarianAssaultSession extends MinigameSession {
 
     Mob spawnOne(int type) {
         int[] cave = type <= BaWaves.RANGER ? FIGHTER_CAVE : HEALER_CAVE;
-        Mob mob = spawn(BarbarianAssault.PENANCE[type], randomFloor(cave[0], cave[1], 2));
+        Mob mob = raise(BarbarianAssault.PENANCE[type], randomFloor(cave[0], cave[1], 2));
         if (mob == null) {
             return null;
         }
@@ -579,9 +624,7 @@ public class BarbarianAssaultSession extends MinigameSession {
             stripItems(p, false);
         }
         clearFloor();
-        for (LivingEntity e : living(null)) {
-            e.discard();
-        }
+        discardMobs();
         wave++;
         phase = Phase.WAITING;
         nextWaveIn = BaWaves.NEXT_WAVE_TICKS;
@@ -612,9 +655,7 @@ public class BarbarianAssaultSession extends MinigameSession {
     /** A death, or a teammate leaving, restarts the wave for the whole team (OSRS Wiki). */
     void restartWave(String why) {
         broadcastRed(why + " The wave must be restarted.");
-        for (LivingEntity e : living(null)) {
-            e.discard();
-        }
+        discardMobs();
         clearFloor();
         queen = null;
         int i = 0;
@@ -678,6 +719,12 @@ public class BarbarianAssaultSession extends MinigameSession {
             GameEvents.fireActivity(p, "ba_wave");
             offerLevel(p, r);
         }
+    }
+
+    @Override
+    protected void onClose() {
+        // The arena sweep at the end only finds what box queries see: the creatures the session raised go with it too.
+        discardMobs();
     }
 
     /** Adds honour points in a role, capped at 5,000; returns the amount added. */
@@ -1142,7 +1189,7 @@ public class BarbarianAssaultSession extends MinigameSession {
             }
             MutableComponent line = Component.literal(" " + COLOURS[c] + " egg at: ").withStyle(ChatFormatting.GRAY);
             for (int t = 0; t < TARGETS.length; t++) {
-                if (!living(BarbarianAssault.PENANCE[t]).isEmpty()) {
+                if (!mobs(BarbarianAssault.PENANCE[t]).isEmpty()) {
                     line.append(link("[" + TARGETS[t] + "] ", "/ba fire " + COLOURS[c] + " " + TARGETS[t]));
                 }
             }
@@ -1191,7 +1238,7 @@ public class BarbarianAssaultSession extends MinigameSession {
             return;
         }
         int t = java.util.Arrays.asList(TARGETS).indexOf(target);
-        LivingEntity mob = t < 0 ? null : nearest(living(BarbarianAssault.PENANCE[t]), rel(LAUNCHERS[launcher][0], 1, LAUNCHERS[launcher][1]));
+        LivingEntity mob = t < 0 ? null : nearest(mobs(BarbarianAssault.PENANCE[t]), rel(LAUNCHERS[launcher][0], 1, LAUNCHERS[launcher][1]));
         if (mob == null) {
             Msg.game(p, "There's no Penance " + target + " to fire at.");
             return;
@@ -1221,7 +1268,7 @@ public class BarbarianAssaultSession extends MinigameSession {
                 world.sendParticles(ParticleTypes.EXPLOSION, mob.getX(), mob.getY() + 1, mob.getZ(), 1, 0, 0, 0, 0);
                 List<LivingEntity> near = new ArrayList<>();
                 for (String id : BarbarianAssault.PENANCE) {
-                    for (LivingEntity o : living(id)) {
+                    for (LivingEntity o : mobs(id)) {
                         if (o != mob && o.distanceToSqr(mob) <= BaRules.RED_SPLASH_RANGE * BaRules.RED_SPLASH_RANGE) {
                             near.add(o);
                         }
@@ -1273,7 +1320,7 @@ public class BarbarianAssaultSession extends MinigameSession {
             if (ticks < e.getValue()) {
                 return false;
             }
-            for (LivingEntity m : living(null)) {
+            for (LivingEntity m : mobs(null)) {
                 if (m.getUUID().equals(e.getKey()) && m instanceof Mob mob) {
                     mob.setNoAi(false);
                 }
@@ -1301,7 +1348,7 @@ public class BarbarianAssaultSession extends MinigameSession {
     private void runners() {
         int lure = BaRules.lureRange(coveringLevel(BaRules.DEFENDER));
         BlockPos cave = rel(LURE_CAVE[0], 1, LURE_CAVE[1]);
-        for (LivingEntity e : living("penance_runner")) {
+        for (LivingEntity e : mobs("penance_runner")) {
             if (!(e instanceof Mob m) || stunned.containsKey(m.getUUID())) {
                 continue;
             }
@@ -1448,8 +1495,8 @@ public class BarbarianAssaultSession extends MinigameSession {
     // ------------------------------------------------------------------ healer
 
     private void healers() {
-        List<LivingEntity> runnerMobs = living("penance_runner");
-        for (LivingEntity e : living("penance_healer")) {
+        List<LivingEntity> runnerMobs = mobs("penance_runner");
+        for (LivingEntity e : mobs("penance_healer")) {
             if (!(e instanceof Mob m) || stunned.containsKey(m.getUUID())) {
                 continue;
             }
@@ -1552,7 +1599,7 @@ public class BarbarianAssaultSession extends MinigameSession {
                 continue;
             }
             LivingEntity mob = null;
-            for (LivingEntity l : living(null)) {
+            for (LivingEntity l : mobs(null)) {
                 if (l.getUUID().equals(e.getKey())) {
                     mob = l;
                 }
@@ -1641,8 +1688,8 @@ public class BarbarianAssaultSession extends MinigameSession {
         }
         if (ticks >= nextQueenSpawn) {
             nextQueenSpawn = ticks + BaWaves.QUEEN_SPAWN_TICKS;
-            if (living("queen_spawn").size() < BaWaves.QUEEN_SPAWN_MAX) {
-                Mob spawn = spawn("queen_spawn", randomFloor(QUEEN_TRAPDOOR[0], QUEEN_TRAPDOOR[1] + 3, 3));
+            if (mobs("queen_spawn").size() < BaWaves.QUEEN_SPAWN_MAX) {
+                Mob spawn = raise("queen_spawn", randomFloor(QUEEN_TRAPDOOR[0], QUEEN_TRAPDOOR[1] + 3, 3));
                 if (spawn != null) {
                     setHitpoints(spawn, BaWaves.QUEEN_SPAWN.hitpoints());
                     aggro(spawn);
@@ -1656,7 +1703,7 @@ public class BarbarianAssaultSession extends MinigameSession {
     }
 
     void emergeQueen() {
-        queen = spawn("penance_queen", rel(QUEEN_TRAPDOOR[0], 1, QUEEN_TRAPDOOR[1]));
+        queen = raise("penance_queen", rel(QUEEN_TRAPDOOR[0], 1, QUEEN_TRAPDOOR[1]));
         if (queen == null) {
             return;
         }
@@ -1861,8 +1908,8 @@ public class BarbarianAssaultSession extends MinigameSession {
                     lines.add("Do (" + BarbarianAssault.ROLES[c.receiver()] + "): " + c.label(callValue[c.ordinal()]));
                 }
             }
-            lines.add("Penance: " + living("penance_fighter").size() + " F, " + living("penance_ranger").size() + " R, "
-                    + living("penance_runner").size() + " Ru, " + living("penance_healer").size() + " H");
+            lines.add("Penance: " + mobs("penance_fighter").size() + " F, " + mobs("penance_ranger").size() + " R, "
+                    + mobs("penance_runner").size() + " Ru, " + mobs("penance_healer").size() + " H");
         }
         if (phase != Phase.WAITING) {
             if (covers(player, BaRules.COLLECTOR)) {
@@ -2205,7 +2252,7 @@ public class BarbarianAssaultSession extends MinigameSession {
     }
 
     List<LivingEntity> penance(int type) {
-        return living(BarbarianAssault.PENANCE[type]);
+        return mobs(BarbarianAssault.PENANCE[type]);
     }
 
     /** Whether a poisoned food's poison is running on a Penance creature. */
