@@ -1615,7 +1615,7 @@ final class TobRooms {
                 int total = TobRules.xarpusExhumeds(raid.partySize());
                 if (t % TobRules.XARPUS_EXHUMED_INTERVAL == 0 && resolved + exhumeds.size() < total && !players.isEmpty()) {
                     ServerPlayer p = players.get(rnd().nextInt(players.size()));
-                    exhumeds.add(new Exhumed(p.position().add(rnd().nextInt(9) - 4, 0, rnd().nextInt(9) - 4), t + TobRules.XARPUS_EXHUMED_TICKS));
+                    exhumeds.add(new Exhumed(exhumedTile(p), t + TobRules.XARPUS_EXHUMED_TICKS));
                 }
                 for (int i = exhumeds.size() - 1; i >= 0; i--) {
                     Exhumed e = exhumeds.get(i);
@@ -1687,6 +1687,41 @@ final class TobRooms {
             }
         }
 
+        /**
+         * The tile a new exhumed rises from. OSRS: exhumeds come up out of the floor of Xarpus's arena (the wiki's Exhumed
+         * map covers the arena's tiles), and a player stops one by standing on its tile. Here they rise within 4 tiles of a
+         * player (// approx: the room is wider than his 16x16 arena, so one anywhere would be out of reach), always on a
+         * free floor tile of the room: never in its walls, corner columns or the doorway, where nobody standing on it is in
+         * the arena.
+         */
+        private Vec3 exhumedTile(ServerPlayer p) {
+            for (int tries = 0; tries < 16; tries++) {
+                Vec3 at = tile(p.getBlockX() + rnd().nextInt(9) - 4, p.getBlockZ() + rnd().nextInt(9) - 4);
+                if (onArenaFloor(at)) {
+                    return at;
+                }
+            }
+            return tile(p.getBlockX(), p.getBlockZ()); // the player's own tile (players() only holds players in the arena)
+        }
+
+        /** The standing position at the centre of the block column (x, z). */
+        private Vec3 tile(int x, int z) {
+            return new Vec3(x + 0.5, center().getY() + 1, z + 0.5);
+        }
+
+        /** Whether a standing position is on a free floor tile of the arena (inside the room, not in a wall or column). */
+        private boolean onArenaFloor(Vec3 at) {
+            BlockPos b = BlockPos.containing(at);
+            return inside(at) && b.getY() == center().getY() + 1 && !world().getBlockState(b).isCollisionShapeFullBlock(world(), b)
+                    && !world().getBlockState(b.above()).isCollisionShapeFullBlock(world(), b.above())
+                    && world().getBlockState(b.below()).isCollisionShapeFullBlock(world(), b.below());
+        }
+
+        /** A position relative to the room centre, in blocks (x east, z south). */
+        private String where(Vec3 pos) {
+            return Math.round(pos.x - (center().getX() + 0.5)) + ", " + Math.round(pos.z - (center().getZ() + 0.5));
+        }
+
         private void tickPools(List<ServerPlayer> players) {
             for (CoxRooms.Pool pool : pools) {
                 if (t % 3 == 0) {
@@ -1739,11 +1774,21 @@ final class TobRooms {
         public String walk(CoxTobWalk w) {
             w.expect(alive(xarpus) && !bossVulnerable(xarpus), "Xarpus did not start weakened and unattackable");
             w.expect(raid.healthFraction(xarpus) < 0.76, "Xarpus did not start at 75% health");
-            // Stand on the first exhumed so it can't heal him.
+            // Stand on the first exhumed so it can't heal him. OSRS: exhumeds rise from the arena floor, so every one must be
+            // on a free floor tile of the room (one in the wall or the doorway can't be stood on from inside the arena).
             w.until(() -> !exhumeds.isEmpty(), 10, "no exhumed appeared");
-            w.moveTo(exhumeds.get(0).pos());
-            w.until(() -> intercepted > 0 || phase > 1, 15, "standing on an exhumed did not stop it");
-            w.until(() -> phase > 1, 120, "Xarpus never woke (" + resolved + "/" + TobRules.xarpusExhumeds(raid.partySize()) + " exhumeds)");
+            Exhumed first = exhumeds.get(0);
+            w.expect(onArenaFloor(first.pos()), "the first exhumed rose off the arena floor (at " + where(first.pos()) + ")");
+            w.moveTo(first.pos());
+            w.until(() -> intercepted > 0 || phase > 1, TobRules.XARPUS_EXHUMED_TICKS + 2, "standing on an exhumed (at " + where(first.pos())
+                    + ") did not stop it");
+            for (int i = 0; i < 120 && phase == 1; i++) {
+                for (Exhumed e : exhumeds) {
+                    w.expect(onArenaFloor(e.pos()), "an exhumed rose off the arena floor (at " + where(e.pos()) + ")");
+                }
+                w.tick(1);
+            }
+            w.expect(phase > 1, "Xarpus never woke (" + resolved + "/" + TobRules.xarpusExhumeds(raid.partySize()) + " exhumeds; waited 120 ticks)");
             int guard = 0;
             while (alive(xarpus) && guard++ < 800) {
                 if (phase == 3) {
