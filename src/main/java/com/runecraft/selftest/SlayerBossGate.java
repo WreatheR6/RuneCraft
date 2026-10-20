@@ -48,6 +48,7 @@ final class SlayerBossGate {
             return null;
         }
         SlayerBossGate g = new SlayerBossGate(c, def, access);
+        g.harvestCorpse(); // an earlier Araxxor kill's corpse would hide this kill's loot
         g.refuseThenAssign();
         return g;
     }
@@ -135,8 +136,16 @@ final class SlayerBossGate {
         return refusals.toString();
     }
 
-    /** Puts the roof unlock back as it was (the profile is TestContext's). */
+    /** Araxxor's loot waits on its corpse: harvested here so it lands on the ground (and nothing is left pending). */
+    private void harvestCorpse() {
+        if (com.runecraft.content.bosses.AraxxorCorpse.held(c.player) > 0) {
+            com.runecraft.content.bosses.AraxxorCorpse.decide(c.player, true);
+        }
+    }
+
+    /** Puts the roof unlock back as it was (the profile is TestContext's) and harvests an Araxxor corpse. */
     void close() {
+        harvestCorpse();
         SlayerBossAccess.setRoofUnlocked(c.player, roofBefore);
         Inv.remove(c.player, SlayerBossRules.BRITTLE_KEY, Inv.count(c.player, SlayerBossRules.BRITTLE_KEY));
     }

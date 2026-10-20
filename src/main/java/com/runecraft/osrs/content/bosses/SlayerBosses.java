@@ -188,12 +188,45 @@ public final class SlayerBosses {
      * Dawn throws two rocks of up to 9 (ranged), kicks for up to 15 when next to the player and launches a stone ball
      * (3x3, up to 15 and a 10-tick stun).
      */
-    public static final AttackDef DUSK_MELEE = AttackDef.of("claw", AttackType.SLASH, 26, 3.5, 1);
+    public static final AttackDef DUSK_MELEE = AttackDef.of("claw", AttackType.SLASH, 26, 3.5, 1).special(Special.PRAYER_PIERCING, 0);
     public static final int DUSK_MELEE_EARLY = 15;
-    public static final AttackDef DUSK_RANGED = AttackDef.of("orbs", AttackType.RANGED, 15, 14, 1).particle("minecraft:soul_fire_flame");
+    public static final AttackDef DUSK_RANGED = AttackDef.of("orbs", AttackType.RANGED, 15, 14, 1).special(Special.PRAYER_PIERCING, 0)
+            .particle("minecraft:soul_fire_flame");
     public static final int DUSK_TRAMPLE_MAX = 40;
-    public static final AttackDef DAWN_RANGED = AttackDef.of("rock", AttackType.RANGED, 9, 14, 3).particle("minecraft:crit");
-    public static final AttackDef DAWN_KICK = AttackDef.of("kick", AttackType.CRUSH, 15, 2.5, 1);
+    public static final AttackDef DAWN_RANGED = AttackDef.of("rock", AttackType.RANGED, 9, 14, 3).special(Special.PRAYER_PIERCING, 0)
+            .particle("minecraft:crit");
+    public static final AttackDef DAWN_KICK = AttackDef.of("kick", AttackType.CRUSH, 15, 2.5, 1).special(Special.PRAYER_PIERCING, 0);
+    /**
+     * The Guardians' attacks are only partly blocked by prayer (OSRS Wiki "Grotesque Guardians/Strategies"): Protect from Melee
+     * cuts Dusk's claws by 80% and Dawn's kick to at most 2; Dusk's orbs are halved (Mod Ash). approx: Dawn's rocks through
+     * Protect from Missiles (the wiki says only "partially blocked"; taken as Dusk's ranged 55%).
+     */
+    public static final double DUSK_CLAW_THROUGH_PRAYER = 0.2;
+    public static final double DUSK_ORB_THROUGH_PRAYER = 0.5;
+    public static final int DAWN_KICK_THROUGH_PRAYER = 2;
+    public static final double DAWN_ROCK_THROUGH_PRAYER = 0.45; // approx
+    /** Dusk's first orb: 60% of his max hit with no roll when it hits; the second rolls, then re-rolls between 0 and that. */
+    public static final double DUSK_FIRST_ORB = 0.6;
+    /** Dawn's rockfall: 9-10 pieces of debris at four different speeds; a direct hit stuns for 10 ticks. */
+    public static final int GUARDIAN_ROCKFALL_PIECES = 9;
+    public static final int GUARDIAN_ROCKFALL_STUN = 10;
+
+    /** A Guardian's hit after the player's protection prayer against it. */
+    public static int guardianThroughPrayer(AttackDef attack, int damage) {
+        if (attack == DUSK_MELEE) {
+            return (int) Math.round(damage * DUSK_CLAW_THROUGH_PRAYER);
+        }
+        if (attack == DUSK_RANGED) {
+            return (int) Math.round(damage * DUSK_ORB_THROUGH_PRAYER);
+        }
+        if (attack == DAWN_KICK) {
+            return (int) Math.round(damage * (double) DAWN_KICK_THROUGH_PRAYER / DAWN_KICK.maxHit());
+        }
+        if (attack == DAWN_RANGED) {
+            return (int) Math.round(damage * DAWN_ROCK_THROUGH_PRAYER);
+        }
+        return damage;
+    }
     public static final AttackDef DAWN_STONE_BALL = AttackDef.of("stone_ball", AttackType.CRUSH, 15, 14, 1)
             .special(Special.SKY_STRIKE, 0).telegraph(3, "Dawn launches a ball of stone!").particle("minecraft:ash");
     public static final int DAWN_STONE_STUN_TICKS = 10;
@@ -243,14 +276,74 @@ public final class SlayerBosses {
     }
 
     // ---- Araxxor ----
-    public static final AttackDef ARAXXOR_MELEE = AttackDef.of("fangs", AttackType.STAB, 38, 4, 5);
-    public static final AttackDef ARAXXOR_RANGED = AttackDef.of("acid_spit", AttackType.RANGED, 30, 14, 3).special(Special.VENOM, 0)
-            .particle("minecraft:sneeze");
-    public static final AttackDef ARAXXOR_MAGIC = AttackDef.of("web_magic", AttackType.MAGIC, 30, 14, 2).particle("minecraft:witch");
-    public static final AttackDef ARAXXOR_ACID = AttackDef.of("acid_ball", AttackType.RANGED, 20, 14, 1).special(Special.HAZARD, 6)
+    /**
+     * Araxxor's attacks (OSRS Wiki "Araxxor/Strategies"): melee up to 38 in reach, else magic (21) or ranged (34), whichever
+     * the player's defence roll is lower against. Prayer only cuts them (melee to at most 5, ranged by 45%, magic by 50%),
+     * so they pierce prayer and the script scales them; a successful ranged hit drains 9% of the player's Defence, a magic
+     * one 9% of their Prayer, and any can envenom.
+     */
+    public static final AttackDef ARAXXOR_MELEE = AttackDef.of("fangs", AttackType.CRUSH, 38, 1.5, 5).special(Special.PRAYER_PIERCING, 0);
+    public static final AttackDef ARAXXOR_RANGED = AttackDef.of("acid_spit", AttackType.RANGED, 34, 14, 3)
+            .special(Special.PRAYER_PIERCING, 0).particle("minecraft:sneeze");
+    public static final AttackDef ARAXXOR_MAGIC = AttackDef.of("web_magic", AttackType.MAGIC, 21, 14, 2)
+            .special(Special.PRAYER_PIERCING, 0).particle("minecraft:witch");
+    public static final AttackDef ARAXXOR_ACID = AttackDef.of("acid_ball", AttackType.RANGED, 18, 14, 1).special(Special.HAZARD, 4)
             .telegraph(3, "Araxxor sprays acid across the cave!").particle("minecraft:sneeze");
-    public static final AttackDef ARAXXOR_CLEAVE = AttackDef.of("cleave", AttackType.SLASH, 60, 5, 1).special(Special.AOE, 5)
-            .telegraph(4, "Araxxor rears up for a cleave... get back!").particle("minecraft:sweep_attack");
+    /** Enraged, the melee is a cleave over a 1x3 area around the player ("Skree!"), up to ~38, 66% off through prayer. */
+    public static final AttackDef ARAXXOR_CLEAVE = AttackDef.of("cleave", AttackType.SLASH, 38, 5, 1).special(Special.AOE, 5)
+            .telegraph(2, "Araxxor: Skree!").particle("minecraft:sweep_attack");
+    public static final int ARAXXOR_MELEE_THROUGH_PRAYER = 5;
+    public static final double ARAXXOR_RANGED_THROUGH_PRAYER = 0.55;
+    public static final double ARAXXOR_MAGIC_THROUGH_PRAYER = 0.5;
+    public static final double ARAXXOR_CLEAVE_THROUGH_PRAYER = 0.34;
+    /** A successful ranged hit drains 9% of the player's Defence, a magic one 9% of their Prayer. */
+    public static final double ARAXXOR_DRAIN = 0.09;
+    /** Enraged under 255 hitpoints: Defence +35, Magic +28 (Ranged +31: not modelled), attacks every 4 ticks instead of 6. */
+    public static final int ARAXXOR_ENRAGE_BELOW = 255;
+    public static final int ARAXXOR_ENRAGE_DEFENCE = 35;
+    public static final int ARAXXOR_ENRAGE_MAGIC = 28;
+    public static final int ARAXXOR_ENRAGED_SPEED = 4;
+    /** Every six standard attacks, the special of the south-easternmost egg's araxyte, for the whole fight. */
+    public static final int ARAXXOR_SPECIAL_EVERY = 6;
+    /** The acid ball's trajectory (3x3) hits for about 18 venom damage; acid pools start at 4 a tick. */
+    public static final int ARAXXOR_ACID_BALL_MAX = 18;
+    public static final int ARAXXOR_SPLATTER_MAX = 6; // approx: "low venom damage"
+    public static final int ARAXXOR_DRIP_MAX = 10; // approx
+    public static final int ARAXXOR_DRIP_TICKS = 6;
+    public static final int ARAXXOR_POOL_DAMAGE = 4;
+    /** A mirrorback araxyte takes 20% of the damage dealt to Araxxor and recoils half of it; melee on it recoils 50%. */
+    public static final double MIRRORBACK_REDIRECT = 0.2;
+    public static final double MIRRORBACK_RECOIL = 0.5;
+
+    /** Araxxor's special for the fight, from the araxyte in the south-easternmost egg. */
+    public static String araxxorSpecial(String southEastEgg) {
+        if ("acidic_araxyte".equals(southEastEgg)) {
+            return "acid_ball";
+        }
+        return "mirrorback_araxyte".equals(southEastEgg) ? "acid_splatter" : "acid_drip";
+    }
+
+    /** Whether Araxxor's {@code standardAttacks}-th standard attack is followed by its special (every sixth). */
+    public static boolean araxxorSpecialNext(int standardAttacks) {
+        return standardAttacks > 0 && standardAttacks % ARAXXOR_SPECIAL_EVERY == 0;
+    }
+
+    /** One of Araxxor's attacks after the player's protection prayer against it. */
+    public static int araxxorThroughPrayer(AttackDef attack, int damage) {
+        if (attack == ARAXXOR_MELEE) {
+            return (int) Math.round(damage * (double) ARAXXOR_MELEE_THROUGH_PRAYER / ARAXXOR_MELEE.maxHit());
+        }
+        if (attack == ARAXXOR_RANGED) {
+            return (int) Math.round(damage * ARAXXOR_RANGED_THROUGH_PRAYER);
+        }
+        if (attack == ARAXXOR_MAGIC) {
+            return (int) Math.round(damage * ARAXXOR_MAGIC_THROUGH_PRAYER);
+        }
+        if (attack == ARAXXOR_CLEAVE) {
+            return (int) Math.round(damage * ARAXXOR_CLEAVE_THROUGH_PRAYER);
+        }
+        return damage;
+    }
 
     public static List<BossDef> all() {
         return List.of(kraken(), thermy(), cerberus(), abyssalSire(), hydra(HydraPhase.GREEN), hydra(HydraPhase.BLUE),
@@ -351,7 +444,8 @@ public final class SlayerBosses {
         return BossDef.of("araxxor", "Araxxor").level(731).stats(1020, 470, 350, 220, 220, 220).speed(4)
                 .defenceBonus(100, 90, 120, 200, 280)
                 .attack(ARAXXOR_MELEE).attack(ARAXXOR_RANGED).attack(ARAXXOR_MAGIC).attack(ARAXXOR_ACID)
-                .phase(25, "Araxxor becomes enraged!", 1.25, false, ARAXXOR_MELEE, ARAXXOR_CLEAVE, ARAXXOR_ACID)
+                // Enraged under 255 hitpoints: faster and tougher (the script), not harder hitting (was an invented 1.25x).
+                .phase(25, "Araxxor becomes enraged!", 1.0, false, ARAXXOR_MELEE, ARAXXOR_CLEAVE, ARAXXOR_ACID)
                 .drops(Drop.of("noxious_point", 1, 1, 600), Drop.of("noxious_blade", 1, 1, 600), Drop.of("noxious_pommel", 1, 1, 600),
                         Drop.of("araxyte_fang", 1, 1, 1500), Drop.of("coagulated_venom", 1, 1, 400), Drop.of("araxyte_head", 1, 1, 2000),
                         Drop.of("echo_crystal", 1, 1, 750), Drop.of("jar_of_venom", 1, 1, 1500),

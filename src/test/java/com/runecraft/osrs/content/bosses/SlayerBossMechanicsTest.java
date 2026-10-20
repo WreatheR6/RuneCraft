@@ -77,6 +77,43 @@ class SlayerBossMechanicsTest {
     }
 
     @Test
+    void guardiansThroughPrayer() {
+        // "Protect from Melee will reduce the damage dealt by 80%"; Dawn's kick "to 2"; Dusk's orbs halved (Mod Ash).
+        assertEquals(3, SlayerBosses.guardianThroughPrayer(SlayerBosses.DUSK_MELEE, 15));
+        assertEquals(5, SlayerBosses.guardianThroughPrayer(SlayerBosses.DUSK_MELEE, 26));
+        assertEquals(2, SlayerBosses.guardianThroughPrayer(SlayerBosses.DAWN_KICK, 15));
+        assertEquals(7, SlayerBosses.guardianThroughPrayer(SlayerBosses.DUSK_RANGED, 14));
+        assertEquals(9, (int) Math.round(SlayerBosses.DUSK_RANGED.maxHit() * SlayerBosses.DUSK_FIRST_ORB), "first orb: 60% of 15");
+        for (AttackDef a : List.of(SlayerBosses.DUSK_MELEE, SlayerBosses.DUSK_RANGED, SlayerBosses.DAWN_RANGED, SlayerBosses.DAWN_KICK)) {
+            assertEquals(AttackDef.Special.PRAYER_PIERCING, a.special(), a.name() + " is only partly blocked by prayer");
+        }
+        assertEquals(10, SlayerBosses.GUARDIAN_ROCKFALL_STUN);
+    }
+
+    @Test
+    void araxxor() {
+        // The south-easternmost egg's araxyte picks the special: acidic ball, mirrorback splatter, ruptura drip.
+        assertEquals("acid_ball", SlayerBosses.araxxorSpecial("acidic_araxyte"));
+        assertEquals("acid_splatter", SlayerBosses.araxxorSpecial("mirrorback_araxyte"));
+        assertEquals("acid_drip", SlayerBosses.araxxorSpecial("ruptura_araxyte"));
+        assertFalse(SlayerBosses.araxxorSpecialNext(5));
+        assertTrue(SlayerBosses.araxxorSpecialNext(6));
+        assertTrue(SlayerBosses.araxxorSpecialNext(12));
+        // Through prayer: melee to at most 5, ranged 45% off (34 -> 18-19), magic halved, the cleave 66% off.
+        assertEquals(5, SlayerBosses.araxxorThroughPrayer(SlayerBosses.ARAXXOR_MELEE, 38));
+        assertEquals(19, SlayerBosses.araxxorThroughPrayer(SlayerBosses.ARAXXOR_RANGED, 34));
+        assertEquals(11, SlayerBosses.araxxorThroughPrayer(SlayerBosses.ARAXXOR_MAGIC, 21));
+        assertEquals(13, SlayerBosses.araxxorThroughPrayer(SlayerBosses.ARAXXOR_CLEAVE, 38));
+        assertEquals(34, SlayerBosses.ARAXXOR_RANGED.maxHit());
+        assertEquals(21, SlayerBosses.ARAXXOR_MAGIC.maxHit());
+        assertEquals(38, SlayerBosses.ARAXXOR_CLEAVE.maxHit());
+        assertEquals(255, SlayerBosses.ARAXXOR_ENRAGE_BELOW);
+        assertEquals(1020 / 4, SlayerBosses.ARAXXOR_ENRAGE_BELOW, "the enrage is the 25% phase");
+        com.runecraft.osrs.content.BossDef def = com.runecraft.osrs.content.ContentRegistry.boss("araxxor");
+        assertEquals(1.0, def.phases.get(0).damageMultiplier(), 1e-9, "no invented damage boost when enraged");
+    }
+
+    @Test
     void hydraSpecialsAndMaxHits() {
         // Three basic attacks open each phase, then the special, then one after every nine.
         assertFalse(SlayerBosses.hydraSpecialDue(2, 0));

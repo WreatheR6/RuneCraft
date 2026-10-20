@@ -1047,9 +1047,20 @@ final class SlayerScripts {
                     : super.multiplier(boss);
         }
 
+        /** Which of Dusk's two orbs is being thrown (1 or 2), for its damage rules. */
+        private int orb;
+        private boolean p4Opened;
+
         @Override
         protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
-            if (stage == 4 && attackCount > 0) {
+            if (stage == 4 && !p4Opened) {
+                // His first attack of phase 4: twice as likely to be the style the player isn't praying against (Mod Ash).
+                p4Opened = true;
+                boolean meleePrayer = BossFx.protects(target, com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE);
+                boolean rangedPrayer = BossFx.protects(target, com.runecraft.osrs.Prayer.PROTECT_FROM_MISSILES);
+                boolean pick = boss.getRandom().nextInt(3) < 2;
+                ranged = meleePrayer ? pick : rangedPrayer ? !pick : boss.getRandom().nextBoolean();
+            } else if (stage == 4 && attackCount > 0) {
                 // Phase 4 (OSRS Wiki): a 1/6 chance to switch style each attack, 1/3 while the player prays against it.
                 boolean prayed = BossFx.protects(target, ranged ? com.runecraft.osrs.Prayer.PROTECT_FROM_MISSILES
                         : com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE);
@@ -1066,10 +1077,32 @@ final class SlayerScripts {
 
         @Override
         protected void perform(DataBossEntity boss, ServerPlayer target, AttackDef a) {
+            orb = a == SlayerBosses.DUSK_RANGED ? 1 : 0;
             super.perform(boss, target, a);
             if (a == SlayerBosses.DUSK_RANGED) {
+                orb = 2;
                 super.perform(boss, target, a); // two orbs
+                orb = 0;
             }
+        }
+
+        /**
+         * Dusk's orbs (Mod Ash): the first deals 60% of his max hit, unrolled, when it hits; the second rolls, then rolls again
+         * between 0 and that; praying halves both. His claws go 80% through Protect from Melee.
+         */
+        @Override
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
+            if (orb == 1 && damage > 0) {
+                damage = (int) Math.round(maxHit(boss, SlayerBosses.DUSK_RANGED) * SlayerBosses.DUSK_FIRST_ORB);
+            } else if (orb == 2 && damage > 0) {
+                damage = boss.getRandom().nextInt(damage + 1);
+            }
+            AttackDef a = orb > 0 ? SlayerBosses.DUSK_RANGED : last;
+            if (a == SlayerBosses.DUSK_RANGED && BossFx.protects(player, com.runecraft.osrs.Prayer.PROTECT_FROM_MISSILES)
+                    || a == SlayerBosses.DUSK_MELEE && BossFx.protects(player, com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE)) {
+                damage = SlayerBosses.guardianThroughPrayer(a, damage);
+            }
+            return damage;
         }
 
         @Override
@@ -1143,9 +1176,19 @@ final class SlayerScripts {
             if (!dawnAlive()) {
                 return;
             }
-            BossFx.warn(boss, "Rocks fall from above!");
-            for (int i = 0; i < 4; i++) {
-                namedStrike("falling_rocks", boss, i == 0 ? target.position() : around(boss, target.position(), 4), 3, 22, 1.3, ParticleTypes.ASH);
+            BossFx.warn(boss, "Shadows loom overhead - rocks fall from above!");
+            for (int i = 0; i < SlayerBosses.GUARDIAN_ROCKFALL_PIECES; i++) {
+                // 3x3 each, at four different speeds; the edges hit for up to 22, a direct hit also knocks the player out.
+                Vec3 at = i == 0 ? target.position() : around(boss, target.position(), 5);
+                namedStrike("falling_rocks", boss, at, 3 + i % 4, SlayerBosses.GUARDIAN_ROCKFALL.maxHit(), 1.5, ParticleTypes.ASH,
+                        (hit, pos) -> {
+                            for (ServerPlayer h : hit) {
+                                if (h.position().distanceToSqr(pos.x, h.getY(), pos.z) <= 0.36) {
+                                    BossFx.stun(h, SlayerBosses.GUARDIAN_ROCKFALL_STUN);
+                                    Msg.red(h, "You're knocked out by the falling rocks!");
+                                }
+                            }
+                        });
             }
         }
 
@@ -1250,6 +1293,16 @@ final class SlayerScripts {
             }
         }
 
+        /** Prayer only partly blocks her: the kick gets 2 through Protect from Melee, the rocks part of their damage. */
+        @Override
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
+            if (last == SlayerBosses.DAWN_KICK && BossFx.protects(player, com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE)
+                    || last == SlayerBosses.DAWN_RANGED && BossFx.protects(player, com.runecraft.osrs.Prayer.PROTECT_FROM_MISSILES)) {
+                return SlayerBosses.guardianThroughPrayer(last, damage);
+            }
+            return damage;
+        }
+
         @Override
         public boolean isVulnerable(DataBossEntity boss) {
             return dusk == null || dusk.stage != 2;
@@ -1278,10 +1331,10 @@ final class SlayerScripts {
         }
     }
 
-    /** Araxxor: hatches araxytes from eggs until it enrages at 25% (then cleaves and stops hatching). */
     /**
-     * Self-test (boss:araxxor_eggs): nine eggs ring the lair, the third standard attack hatches the first, and a destroyed
-     * egg is dropped from the rotation.
+     * Self-test (boss:araxxor_eggs): nine eggs ring the lair, the third standard attack hatches the first, a destroyed egg is
+     * dropped from the rotation, the sixth standard attack brings the special of the south-easternmost egg, and a mirrorback
+     * araxyte takes a fifth of the damage dealt to Araxxor.
      */
     static String selfTestAraxxor(DataBossEntity boss, ServerPlayer p) {
         if (!(boss.script() instanceof Araxxor a)) {
@@ -1289,11 +1342,11 @@ final class SlayerScripts {
         }
         try {
             a.gameTick(boss, com.runecraft.action.ActionManager.gameTick());
-            if (a.eggsLeft() != com.runecraft.osrs.content.bosses.BossMechanics.ARAXXOR_EGGS) {
+            if (a.eggsLeft() != BossMechanics.ARAXXOR_EGGS) {
                 throw new IllegalStateException(a.eggsLeft() + " eggs placed, expected 9");
             }
-            for (int i = 0; i < com.runecraft.osrs.content.bosses.BossMechanics.ARAXXOR_FIRST_HATCH; i++) {
-                a.onHitPlayer(boss, p, 0, AttackType.RANGED);
+            for (int i = 0; i < BossMechanics.ARAXXOR_FIRST_HATCH; i++) {
+                a.standard(boss, p);
             }
             a.araxytes.removeIf(m -> !m.isAlive());
             if (a.eggsLeft() != 8 || a.araxytes.size() != 1) {
@@ -1305,35 +1358,241 @@ final class SlayerScripts {
             if (a.eggsLeft() != 7) {
                 throw new IllegalStateException(a.eggsLeft() + " eggs after destroying one, expected 7");
             }
-            return "9 eggs, first hatched into " + a.eggKinds.get(0) + ", destroyed egg skipped";
+            for (int i = BossMechanics.ARAXXOR_FIRST_HATCH; i < SlayerBosses.ARAXXOR_SPECIAL_EVERY; i++) {
+                a.standard(boss, p);
+            }
+            if (!a.specialNext) {
+                throw new IllegalStateException("no special after six standard attacks");
+            }
+            String special = SlayerBosses.araxxorSpecial(a.eggKinds.get(0));
+            String mirror = "";
+            Mob m = BossFx.spawnMinion(boss, "mirrorback_araxyte", ScriptedBoss.around(boss, boss.position(), 3), null);
+            if (m != null) {
+                a.araxytes.add(m);
+                a.kinds.put(m, "mirrorback_araxyte");
+                float before = m.getHealth();
+                int dealt = a.incoming(boss, null, 50, AttackType.SLASH);
+                if (dealt != 40 || m.getHealth() >= before) {
+                    throw new IllegalStateException("a mirrorback took " + (before - m.getHealth()) + " and Araxxor " + dealt + " of 50");
+                }
+                mirror = ", mirrorback took 10 of 50";
+            }
+            return "9 eggs, first hatched into " + a.eggKinds.get(0) + ", destroyed egg skipped, special " + special + mirror;
         } finally {
             a.onDeath(boss, p);
         }
     }
 
     /**
-     * Araxxor (OSRS Wiki "Araxxor/Strategies"): nine eggs ring the lair, three of each colour in one of the three wiki
-     * patterns; the first hatches after three standard attacks, clockwise from the south-easternmost, then one every six.
-     * Players may destroy eggs (65 hitpoints; a destroyed egg is skipped); damage on an egg carries over to its araxyte, and
-     * an egg that took more than the araxyte's 58 hitpoints just crumbles when its turn comes.
+     * Araxxor (OSRS Wiki "Araxxor" and its Strategies). It walks up to the player and bites (up to 38, 5 through prayer); out of
+     * reach it uses magic or ranged, whichever the player's defence roll is lower against (prayer takes 50% / 45% off; a
+     * ranged hit drains 9% Defence, a magic one 9% Prayer). Nine eggs ring the lair, three of each colour in one of the three
+     * wiki patterns; the first hatches after three standard attacks, clockwise from the south-easternmost, then one every six.
+     * Players may destroy eggs (65 hitpoints; a destroyed egg is skipped); damage on an egg carries over to its araxyte, and an
+     * egg that took more than the araxyte's 58 hitpoints just crumbles when its turn comes. Every six standard attacks comes
+     * the special of the south-easternmost egg's kind: an acid ball (acidic), an acid splatter (mirrorback) or an acid drip
+     * (ruptura), all leaving acid pools. Mirrorback araxytes take a fifth of the damage dealt to Araxxor and recoil half of it;
+     * acidic ones splatter acid as they die; rupturas walk up and explode. Under 255 hitpoints it enrages: every 4 ticks, +35
+     * Defence and +28 Magic, and its melee becomes a cleave over three tiles ("Skree!"). The kill's loot waits on the corpse:
+     * harvest or destroy it ({@link AraxxorCorpse}).
      */
     static final class Araxxor extends ScriptedBoss {
         private final List<Mob> araxytes = new ArrayList<>();
+        /** The kind of each hatched araxyte. */
+        private final java.util.Map<Mob, String> kinds = new java.util.HashMap<>();
         /** The hatched ruptura araxytes (they explode instead of attacking). */
         private final List<Mob> rupturas = new ArrayList<>();
         private final List<Mob> eggs = new ArrayList<>();
         private List<String> eggKinds = List.of();
         private int nextEgg;
         private int standardAttacks;
+        private boolean specialNext;
+        private int dripTicks;
+
+        private boolean enraged(DataBossEntity boss) {
+            return boss.phase() >= 0;
+        }
+
+        @Override
+        protected boolean driven() {
+            return true;
+        }
+
+        @Override
+        protected boolean wantsMelee(DataBossEntity boss, ServerPlayer target) {
+            return true; // it closes the distance, using magic or ranged until it is in reach
+        }
+
+        @Override
+        protected int attackDelay(DataBossEntity boss, AttackDef attack) {
+            return enraged(boss) ? SlayerBosses.ARAXXOR_ENRAGED_SPEED : super.attackDelay(boss, attack);
+        }
+
+        @Override
+        public void adjustDefence(DataBossEntity boss, ServerPlayer attacker, AttackType type, com.runecraft.osrs.PlayerHitCalc.Input in) {
+            if (enraged(boss)) {
+                in.targetDefenceLevel += SlayerBosses.ARAXXOR_ENRAGE_DEFENCE;
+                in.targetMagicLevel += SlayerBosses.ARAXXOR_ENRAGE_MAGIC;
+            }
+        }
 
         private void placeEggs(DataBossEntity boss) {
-            eggKinds = com.runecraft.osrs.content.bosses.BossMechanics.araxxorEggs(boss.getRandom().nextInt(3));
+            eggKinds = BossMechanics.araxxorEggs(boss.getRandom().nextInt(3));
             Vec3 c = homeVec();
             for (int i = 0; i < eggKinds.size(); i++) {
                 // Clockwise from the south-east (Minecraft +x east, +z south: increasing angle turns clockwise from above).
                 double a = Math.PI / 4 + i * 2 * Math.PI / eggKinds.size();
-                eggs.add(BossFx.spawnMinion(boss, com.runecraft.osrs.content.bosses.BossMechanics.ARAXYTE_EGG,
+                eggs.add(BossFx.spawnMinion(boss, BossMechanics.ARAXYTE_EGG,
                         BossFx.ground(BossFx.world(boss), c.x + Math.cos(a) * 9, c.z + Math.sin(a) * 9, c.y), null));
+            }
+        }
+
+        @Override
+        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
+            if (specialNext && !eggKinds.isEmpty()) {
+                specialNext = false;
+                attackCount++;
+                cooldown = attackDelay(boss, null) - 1;
+                special(boss, target, SlayerBosses.araxxorSpecial(eggKinds.get(0)));
+                return null;
+            }
+            if (distance <= SlayerBosses.ARAXXOR_MELEE.range()) {
+                if (enraged(boss)) {
+                    attackCount++;
+                    cooldown = attackDelay(boss, null) - 1;
+                    cleave(boss, target);
+                    standard(boss, target);
+                    return null;
+                }
+                standard(boss, target);
+                return SlayerBosses.ARAXXOR_MELEE;
+            }
+            if (distance > SlayerBosses.ARAXXOR_RANGED.range()) {
+                return null; // still walking up
+            }
+            standard(boss, target);
+            // whichever of the player's defence rolls is lower
+            long magic = CombatHandler.defenceRoll(target, AttackType.MAGIC);
+            long ranged = CombatHandler.defenceRoll(target, AttackType.RANGED);
+            return magic <= ranged ? SlayerBosses.ARAXXOR_MAGIC : SlayerBosses.ARAXXOR_RANGED;
+        }
+
+        /** One standard attack: the 3rd, 9th, 15th... hatch the next egg (until it enrages); every 6th brings the special. */
+        void standard(DataBossEntity boss, ServerPlayer target) {
+            standardAttacks++;
+            if (!enraged(boss) && BossMechanics.araxxorHatches(standardAttacks)) {
+                hatch(boss, target);
+            }
+            if (SlayerBosses.araxxorSpecialNext(standardAttacks)) {
+                specialNext = true;
+            }
+        }
+
+        /** Prayer only cuts its attacks; ranged and magic hits drain Defence and Prayer; any hit can envenom. */
+        @Override
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
+            AttackDef a = last;
+            if (a != SlayerBosses.ARAXXOR_MELEE && a != SlayerBosses.ARAXXOR_RANGED && a != SlayerBosses.ARAXXOR_MAGIC) {
+                return damage;
+            }
+            com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(player);
+            if (damage > 0) {
+                if (a == SlayerBosses.ARAXXOR_RANGED) {
+                    int drain = (int) Math.ceil(data.skills().currentLevel(Skill.DEFENCE) * SlayerBosses.ARAXXOR_DRAIN);
+                    data.skills().setBoost(Skill.DEFENCE, data.skills().boost(Skill.DEFENCE) - drain);
+                    com.runecraft.network.ServerNetworking.sync(player);
+                } else if (a == SlayerBosses.ARAXXOR_MAGIC) {
+                    BossFx.drainPrayer(player, (int) Math.ceil(data.skills().level(Skill.PRAYER) * SlayerBosses.ARAXXOR_DRAIN));
+                }
+                if (boss.getRandom().nextInt(4) == 0) {
+                    com.runecraft.combat.PoisonService.venom(player, now); // approx: how often its hits envenom
+                }
+            }
+            Prayer prayer = a == SlayerBosses.ARAXXOR_MELEE ? Prayer.PROTECT_FROM_MELEE
+                    : a == SlayerBosses.ARAXXOR_RANGED ? Prayer.PROTECT_FROM_MISSILES : Prayer.PROTECT_FROM_MAGIC;
+            return BossFx.protects(player, prayer) ? SlayerBosses.araxxorThroughPrayer(a, damage) : damage;
+        }
+
+        /** An acid pool (venom, 4 a tick) on a tile. */
+        private void pool(DataBossEntity boss, Vec3 at) {
+            com.runecraft.boss.Mechanics.addHazard(BossFx.world(boss), at, SlayerBosses.ARAXXOR_POOL_DAMAGE, 15, boss);
+        }
+
+        private void venomed(List<ServerPlayer> hit) {
+            for (ServerPlayer h : hit) {
+                com.runecraft.combat.PoisonService.venom(h, now);
+            }
+        }
+
+        private void special(DataBossEntity boss, ServerPlayer target, String kind) {
+            Vec3 from = boss.position();
+            Vec3 p = target.position();
+            switch (kind) {
+                case "acid_ball" -> {
+                    // A ball flies in a straight line at the player (3x3 along its path), leaving pools, and splatters at the end.
+                    BossFx.warn(boss, "Araxxor spits a ball of acid - get out of its path!");
+                    Vec3 dir = p.subtract(from).multiply(1, 0, 1);
+                    dir = dir.lengthSqr() < 0.01 ? new Vec3(1, 0, 0) : dir.normalize();
+                    int length = 12;
+                    for (int i = 2; i <= length; i++) {
+                        Vec3 at = from.add(dir.scale(i));
+                        namedStrike("acid_ball", boss, BossFx.ground(BossFx.world(boss), at.x, at.z, from.y), 1 + i / 3,
+                                SlayerBosses.ARAXXOR_ACID_BALL_MAX, 1.5, ParticleTypes.SNEEZE, (hit, pos) -> {
+                                    venomed(hit);
+                                    pool(boss, pos);
+                                });
+                    }
+                    Vec3 end = from.add(dir.scale(length));
+                    for (int i = 0; i < 6; i++) {
+                        namedStrike("acid_ball", boss, around(boss, end, 3.5), 2 + length / 3, SlayerBosses.ARAXXOR_SPLATTER_MAX, 1.0,
+                                ParticleTypes.SNEEZE, (hit, pos) -> {
+                                    venomed(hit);
+                                    pool(boss, pos);
+                                });
+                    }
+                }
+                case "acid_splatter" -> {
+                    BossFx.warn(boss, "Araxxor sprays venom all around you!");
+                    for (int i = 0; i < 8; i++) {
+                        double a = Math.PI * 2 * i / 8;
+                        Vec3 at = BossFx.ground(BossFx.world(boss), p.x + Math.cos(a) * 2.2, p.z + Math.sin(a) * 2.2, p.y);
+                        namedStrike("acid_ball", boss, at, 2, SlayerBosses.ARAXXOR_SPLATTER_MAX, 1.2, ParticleTypes.SNEEZE, (hit, pos) -> {
+                            venomed(hit);
+                            pool(boss, pos);
+                        });
+                    }
+                }
+                default -> {
+                    // Acid drip: a homing blob; the player then drips venom for 6 ticks, leaving a pool wherever they stand.
+                    BossFx.warn(boss, "Araxxor's venom drips onto you - keep moving!");
+                    com.runecraft.combat.CombatHooks.nameAttack("acid_ball", null);
+                    CombatHandler.applyDamage(boss, target, boss.getRandom().nextInt(SlayerBosses.ARAXXOR_DRIP_MAX + 1));
+                    com.runecraft.combat.PoisonService.venom(target, now);
+                    dripTicks = SlayerBosses.ARAXXOR_DRIP_TICKS;
+                }
+            }
+        }
+
+        /** Enraged melee: a cleave over the player's tile and the two beside it, 2 ticks after "Skree!", leaving acid. */
+        private void cleave(DataBossEntity boss, ServerPlayer target) {
+            BossFx.say(boss, "Araxxor: Skree!");
+            Vec3 p = target.position();
+            Vec3 dir = p.subtract(boss.position()).multiply(1, 0, 1);
+            dir = dir.lengthSqr() < 0.01 ? new Vec3(1, 0, 0) : dir.normalize();
+            Vec3 side = new Vec3(-dir.z, 0, dir.x);
+            for (int k = -1; k <= 1; k++) {
+                Vec3 at = BossFx.ground(BossFx.world(boss), p.x + side.x * k, p.z + side.z * k, p.y);
+                namedStrike("cleave", boss, at, 2, 0, 0.8, ParticleTypes.SWEEP_ATTACK, (hit, pos) -> {
+                    for (ServerPlayer h : hit) {
+                        int dmg = h.getRandom().nextInt(SlayerBosses.ARAXXOR_CLEAVE.maxHit() + 1);
+                        if (BossFx.protects(h, Prayer.PROTECT_FROM_MELEE)) {
+                            dmg = SlayerBosses.araxxorThroughPrayer(SlayerBosses.ARAXXOR_CLEAVE, dmg);
+                        }
+                        com.runecraft.combat.CombatHooks.nameAttack("cleave", AttackType.SLASH);
+                        CombatHandler.applyDamage(boss, h, dmg);
+                    }
+                    pool(boss, pos);
+                });
             }
         }
 
@@ -1342,7 +1601,12 @@ final class SlayerScripts {
             if (eggs.isEmpty() && target != null) {
                 placeEggs(boss);
             }
+            if (dripTicks > 0 && target != null) {
+                dripTicks--;
+                pool(boss, target.position());
+            }
             tickRupturas(boss);
+            tickAraxytes(boss);
             for (int i = 0; i < eggs.size(); i++) {
                 Mob egg = eggs.get(i);
                 if (egg != null && !egg.isAlive()) {
@@ -1353,20 +1617,30 @@ final class SlayerScripts {
                             near.add(target);
                         }
                         for (ServerPlayer p : near) {
-                            CombatAchievementService.count(p, com.runecraft.osrs.content.bosses.BossMechanics.COUNT_ARAXXOR_EGGS, 1);
+                            CombatAchievementService.count(p, BossMechanics.COUNT_ARAXXOR_EGGS, 1);
                         }
                     }
                 }
             }
         }
 
-        /** Counts Araxxor's standard attacks (before it enrages) and hatches the next egg on the 3rd, 9th, 15th... */
-        @Override
-        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
-            if (boss.phase() < 0 && com.runecraft.osrs.content.bosses.BossMechanics.araxxorHatches(++standardAttacks)) {
-                hatch(boss, player);
+        /** Acidic araxytes splatter acid around them as they die (a 7x7 area). */
+        private void tickAraxytes(DataBossEntity boss) {
+            for (java.util.Iterator<Mob> it = araxytes.iterator(); it.hasNext(); ) {
+                Mob m = it.next();
+                if (m.isAlive()) {
+                    continue;
+                }
+                it.remove();
+                if (m.isDeadOrDying() && "acidic_araxyte".equals(kinds.remove(m))) {
+                    for (int i = 0; i < 5; i++) {
+                        namedStrike("acid_ball", boss, around(boss, m.position(), 3.5), 1, SlayerBosses.ARAXXOR_SPLATTER_MAX, 1.0,
+                                ParticleTypes.SNEEZE, (hit, pos) -> pool(boss, pos));
+                    }
+                } else {
+                    kinds.remove(m);
+                }
             }
-            return damage;
         }
 
         private void hatch(DataBossEntity boss, ServerPlayer target) {
@@ -1379,8 +1653,8 @@ final class SlayerScripts {
                 }
                 nextEgg = i + 1;
                 int eggDamage = (int) Math.round((egg.getMaxHealth() - egg.getHealth()) / Math.max(1f, egg.getMaxHealth())
-                        * com.runecraft.osrs.content.bosses.BossMechanics.ARAXYTE_EGG_HP);
-                int hp = com.runecraft.osrs.content.bosses.BossMechanics.araxyteHitpoints(eggDamage);
+                        * BossMechanics.ARAXYTE_EGG_HP);
+                int hp = BossMechanics.araxyteHitpoints(eggDamage);
                 Vec3 at = egg.position();
                 egg.discard();
                 eggs.set(i, null);
@@ -1391,10 +1665,20 @@ final class SlayerScripts {
                 String kind = eggKinds.get(i);
                 Mob m = BossFx.spawnMinion(boss, kind, at, target);
                 if (m != null) {
-                    m.setHealth(Math.max(1f, m.getMaxHealth() * hp / com.runecraft.osrs.content.bosses.BossMechanics.ARAXYTE_HP));
+                    m.setHealth(Math.max(1f, m.getMaxHealth() * hp / BossMechanics.ARAXYTE_HP));
                     araxytes.add(m);
+                    kinds.put(m, kind);
                     if ("ruptura_araxyte".equals(kind)) {
                         rupturas.add(m);
+                    } else if ("mirrorback_araxyte".equals(kind)) {
+                        // Melee on a mirrorback recoils half the damage back at the attacker (halberd reach not modelled).
+                        MinionRules.set(m, (player, mob, type, d) -> {
+                            if (type.isMelee() && d > 0) {
+                                com.runecraft.combat.CombatHooks.nameAttack("mirrorback_recoil", null);
+                                CombatHandler.applyDamage(mob, player, (int) Math.round(d * SlayerBosses.MIRRORBACK_RECOIL));
+                            }
+                            return d;
+                        });
                     }
                     BossFx.say(boss, "An egg hatches into " + com.runecraft.util.Msg.article(kind.replace('_', ' ')) + "!");
                 }
@@ -1424,6 +1708,7 @@ final class SlayerScripts {
             Vec3 at = r.position();
             double hp = r.getHealth() / Math.max(1f, r.getMaxHealth());
             rupturas.remove(r);
+            kinds.remove(r);
             r.discard();
             BossFx.world(boss).sendParticles(ParticleTypes.EXPLOSION, at.x, at.y + 0.5, at.z, 4, 1.2, 0.4, 1.2, 0);
             BossFx.sound(r, SoundEvents.GENERIC_EXPLODE.value(), 0.8f);
@@ -1477,13 +1762,36 @@ final class SlayerScripts {
             araxytes.forEach(Mob::discard);
             araxytes.clear();
             rupturas.clear();
+            kinds.clear();
         }
 
-        /** "Perfect Araxxor 2": no damage on it once it has enraged. */
+        /**
+         * A living mirrorback araxyte takes a fifth of the damage dealt to Araxxor and recoils half of that to the attacker.
+         * "Perfect Araxxor 2": no damage on it once it has enraged.
+         */
         @Override
         protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
-            if (boss.phase() >= 0 && damage > 0 && attacker != null) {
+            if (enraged(boss) && damage > 0 && attacker != null) {
                 CombatAchievementService.flag(attacker, CombatAchievements.FLAG_ARAXXOR_ENRAGE_HIT);
+            }
+            Mob mirror = null;
+            for (java.util.Map.Entry<Mob, String> e : kinds.entrySet()) {
+                if ("mirrorback_araxyte".equals(e.getValue()) && e.getKey().isAlive()) {
+                    mirror = e.getKey();
+                    break;
+                }
+            }
+            if (mirror != null && damage > 0) {
+                int redirected = (int) Math.round(damage * SlayerBosses.MIRRORBACK_REDIRECT);
+                if (redirected > 0) {
+                    CombatHandler.applyDamage(null, mirror, redirected);
+                    int recoil = (int) Math.round(redirected * SlayerBosses.MIRRORBACK_RECOIL);
+                    if (attacker != null && recoil > 0) {
+                        com.runecraft.combat.CombatHooks.nameAttack("mirrorback_recoil", null);
+                        CombatHandler.applyDamage(mirror, attacker, recoil);
+                    }
+                    return damage - redirected;
+                }
             }
             return damage;
         }
@@ -1491,11 +1799,19 @@ final class SlayerScripts {
         @Override
         public void onDeath(DataBossEntity boss, ServerPlayer killer) {
             araxytes.forEach(Mob::discard);
+            araxytes.clear();
+            kinds.clear();
             eggs.forEach(e -> {
                 if (e != null) {
                     e.discard();
                 }
             });
         }
+
+        @Override
+        public void onRemoved(DataBossEntity boss) {
+            onDeath(boss, null);
+        }
     }
+
 }

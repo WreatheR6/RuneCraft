@@ -68,9 +68,13 @@ public final class BossSelfTests {
 
     /**
      * Loot a kill leaves somewhere other than the ground or the inventory: the Doom of Mokhaiotl's delve loot waits in the
-     * burrow hole until claimed at the stone. Returns the number of stacks held for the player.
+     * burrow hole until claimed at the stone; Araxxor's waits on its corpse until harvested. Returns the number of stacks held
+     * for the player.
      */
     public static int heldLoot(String bossId, ServerPlayer p) {
+        if (AraxxorCorpse.BOSS.equals(bossId)) {
+            return AraxxorCorpse.held(p);
+        }
         return com.runecraft.osrs.content.bosses.DoomDelves.BOSS.equals(bossId) ? DoomDelveService.heldLoot(p) : 0;
     }
 
