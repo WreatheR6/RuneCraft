@@ -131,7 +131,7 @@ class RaidInvocationsTest {
         assertEquals(10, RaidScaling.tobMaidenNylocas(5, false));
         assertEquals(10, RaidScaling.tobMaidenNylocas(1, true));
         // Bloat: first walk 39-47 ticks, later walks 34-42, 19.2 s down.
-        assertEquals(39, RaidScaling.TOB_BLOAT_FIRST_WALK);
+        assertEquals(38, RaidScaling.TOB_BLOAT_FIRST_WALK);
         assertEquals(34, RaidScaling.TOB_BLOAT_WALK);
         assertEquals(32, RaidScaling.TOB_BLOAT_DOWN);
         assertEquals(188, RaidScaling.TOB_SOTETSEG_BALL);

@@ -353,8 +353,11 @@ public final class RaidScaling {
         return hard ? 10 : Math.min(10, 2 * Math.max(1, partySize));
     }
 
-    /** The Pestilent Bloat's first walk (OSRS: 39-47 game ticks; this is the minimum, plus 0-8). */
-    public static final int TOB_BLOAT_FIRST_WALK = 39;
+    /**
+     * The Pestilent Bloat's first walk (OSRS wiki: 38-46 game ticks, its usual 34-42 plus 4 for not having been attacked
+     * during the "previous" shutdown; this is the minimum, plus 0-8).
+     */
+    public static final int TOB_BLOAT_FIRST_WALK = 38;
 
     /**
      * Players Vasa Nistirio's teleport pulls next to him (OSRS wiki: half the team, always the player when solo). The

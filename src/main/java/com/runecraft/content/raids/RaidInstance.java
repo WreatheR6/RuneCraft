@@ -861,6 +861,11 @@ public final class RaidInstance {
             Msg.game(p, "The storage unit is for your own items. Gather and brew your supplies in the resource rooms.");
             return;
         }
+        if (type == RaidType.TOB) {
+            // OSRS: the Theatre's supply chests after the Bloat and Sotetseg sell supplies for points (round 33).
+            TobRooms.supplyChest(this, p);
+            return;
+        }
         if (!suppliesTaken.add(p.getUUID())) {
             Msg.game(p, "You have already taken your share of the supplies.");
             return;

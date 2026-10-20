@@ -2,12 +2,22 @@ package com.runecraft.content.raids;
 
 import com.runecraft.action.ActionManager;
 import com.runecraft.boss.DataBossEntity;
-import com.runecraft.boss.Mechanics;
+import com.runecraft.combat.CombatHooks;
+import com.runecraft.content.systems.CombatAchievementService;
 import com.runecraft.osrs.AttackType;
+import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.AttackDef;
+import com.runecraft.osrs.content.raids.RaidMode;
+import com.runecraft.osrs.content.raids.RaidScaling;
+import com.runecraft.osrs.content.raids.RaidType;
+import com.runecraft.osrs.content.raids.RaidsContent;
 import com.runecraft.osrs.content.raids.RoomDef;
+import com.runecraft.osrs.content.raids.TobBosses;
 import com.runecraft.osrs.content.raids.TobNylocas;
+import com.runecraft.osrs.content.raids.TobRules;
 import com.runecraft.osrs.content.systems.CombatAchievements;
+import com.runecraft.player.Players;
+import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -16,23 +26,48 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.WeakHashMap;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
-/** Theatre of Blood rooms. */
+/**
+ * Theatre of Blood rooms (round 33 rebuild after the OSRS wiki's "Theatre of Blood/Strategies" and the bosses' pages;
+ * numbers in {@link TobRules}). Each room keeps its own tick counter, so its timers follow the raid clock whether the
+ * server or the self-test ({@link CoxTobWalk}) drives it. When a boss dies the whole team is restored (hitpoints, prayer,
+ * special attack); the supply chests after the Pestilent Bloat and Sotetseg sell supplies for points.
+ */
 final class TobRooms {
     private TobRooms() {
     }
 
     /** Registers the hooks the ToB rooms need (called once from {@link CoxSupplyService#init}). */
     static void init() {
+        CombatHooks.addModifier(new CombatHooks.PlayerAttackModifier() {
+            @Override
+            public int afterRoll(ServerPlayer player, LivingEntity target, AttackType type, int damage) {
+                // OSRS: only poison and venom harm the Nylocas Athanatos (Verzik phase 2).
+                if (target == null || !"nylocas_athanatos".equals(RaidInstance.creatureId(target))) {
+                    return damage;
+                }
+                RaidInstance raid = RaidManager.at(target);
+                int room = raid == null ? -1 : raid.roomAt(target.position());
+                return room >= 0 && raid.logic(room) instanceof Verzik verzik ? verzik.athanatosHit(player, damage) : damage;
+            }
+        });
     }
 
     /** Moves passive crabs/spawn toward a point. */
@@ -45,15 +80,206 @@ final class TobRooms {
         }
     }
 
-    /** The Maiden of Sugadinti: nylocas heal her, blood spawn leave trails, blood splats everywhere. */
-    static final class Maiden extends RoomLogic {
+    // ================================================================== the whole Theatre
+
+    /** Supply chest state per raid: points (they carry over), what was bought per chest, deaths and MVPs since a chest. */
+    private static final class Supplies {
+        int unlocked;
+        final Map<UUID, Integer> points = new HashMap<>();
+        final Map<UUID, Integer> awardedFor = new HashMap<>();
+        final Map<UUID, Integer> staminas = new HashMap<>();
+        final Map<UUID, Integer> deathsAtChest = new HashMap<>();
+        final Map<UUID, Integer> roomDeaths = new HashMap<>();
+        final Set<UUID> mvp = new HashSet<>();
+        final List<Map<UUID, Integer>> lastFights = new ArrayList<>();
+    }
+
+    private static final Map<RaidInstance, Supplies> SUPPLIES = new WeakHashMap<>();
+
+    private static Supplies supplies(RaidInstance raid) {
+        return SUPPLIES.computeIfAbsent(raid, r -> new Supplies());
+    }
+
+    /**
+     * A boss died (OSRS): the team's hitpoints, prayer and special attack energy are restored (drained stats are not),
+     * and the room's deaths and MVP count towards the next supply chest.
+     */
+    static void bossCleared(RoomLogic room, Map<UUID, Integer> damage) {
+        RaidInstance raid = room.raid;
+        for (ServerPlayer p : raid.players()) {
+            if (raid.isDowned(p)) {
+                continue;
+            }
+            p.setHealth(p.getMaxHealth());
+            var data = Players.data(p);
+            data.setPrayerPoints(data.skills().level(Skill.PRAYER));
+            com.runecraft.content.systems.SpecialAttackService.restoreEnergy(p, com.runecraft.osrs.content.systems.SpecialAttacks.MAX_ENERGY);
+            com.runecraft.network.ServerNetworking.sync(p);
+        }
+        room.say("Your hitpoints, prayer and special attack energy are restored.");
+        Supplies s = supplies(raid);
+        UUID mvp = null;
+        for (Map.Entry<UUID, Integer> e : damage.entrySet()) {
+            if (mvp == null || e.getValue() > damage.get(mvp)) {
+                mvp = e.getKey();
+            }
+        }
+        if (mvp != null) {
+            s.mvp.add(mvp);
+        }
+        Map<UUID, Integer> fight = new HashMap<>();
+        for (UUID u : raid.party()) {
+            int total = raid.deaths(u);
+            fight.put(u, total - s.roomDeaths.getOrDefault(u, 0));
+            s.roomDeaths.put(u, total);
+        }
+        s.lastFights.add(fight);
+        while (s.lastFights.size() > 2) {
+            s.lastFights.remove(0);
+        }
+    }
+
+    /** Opens the next supply chest in a cleared room (after the Bloat and Sotetseg). */
+    static void placeChest(RoomLogic room) {
+        Supplies s = supplies(room.raid);
+        s.unlocked++;
+        BlockPos at = room.at(RaidBuilder.HALF - 3, 4);
+        RaidBuilder.set(room.world(), at, RaidBuilder.module(RaidsContent.SUPPLIES));
+        room.say("A chest of supplies from the entertained vampyres appears. Spend your points on it before you go on.");
+    }
+
+    /** The supply chest (OSRS): points for the fights since the last chest, then the stock to buy from. */
+    static void supplyChest(RaidInstance raid, ServerPlayer p) {
+        Supplies s = supplies(raid);
+        if (raid.roomAt(p.position()) == 0) {
+            Msg.game(p, "The storage unit is for your own items. The vampyres leave supply chests after the Pestilent Bloat and Sotetseg.");
+            return;
+        }
+        if (s.unlocked == 0) {
+            Msg.game(p, "The chest is empty. The vampyres leave supplies after the Pestilent Bloat and Sotetseg.");
+            return;
+        }
+        UUID u = p.getUUID();
+        if (s.awardedFor.getOrDefault(u, 0) < s.unlocked) {
+            s.awardedFor.put(u, s.unlocked);
+            s.staminas.remove(u);
+            int deathsInLastTwo = 0;
+            for (Map<UUID, Integer> f : s.lastFights) {
+                deathsInLastTwo += f.getOrDefault(u, 0) > 0 ? 1 : 0;
+            }
+            int deaths = raid.deaths(u) - s.deathsAtChest.getOrDefault(u, 0);
+            s.deathsAtChest.put(u, raid.deaths(u));
+            boolean mvp = s.mvp.remove(u);
+            if (raid.mode() == RaidMode.ENTRY) {
+                // OSRS Entry mode: ten bandages instead. // approx: ten sharks stand in for the bandages
+                Inv.give(p, "shark", 10);
+                Msg.game(p, "You take ten sharks from the chest.");
+                return;
+            }
+            if (TobRules.onionOnly(deathsInLastTwo)) {
+                Inv.give(p, "onion", 1);
+                Msg.red(p, "You died in both of the last two fights: the vampyres leave you only an onion.");
+                return;
+            }
+            int got = TobRules.chestPoints(TobRules.performance(deaths, mvp), new java.util.Random(p.getRandom().nextLong()));
+            s.points.merge(u, got, Integer::sum);
+            Msg.game(p, "The vampyres were entertained: you earn " + got + " supply points.");
+        }
+        showStock(p, s.points.getOrDefault(u, 0));
+    }
+
+    private static void showStock(ServerPlayer p, int points) {
+        p.displayClientMessage(Component.literal("Supply chest - " + points + " point" + (points == 1 ? "" : "s") + " to spend:")
+                .withStyle(ChatFormatting.GOLD), false);
+        MutableComponent line = Component.literal("");
+        for (TobRules.Supply s : TobRules.SUPPLIES) {
+            line.append(Component.literal("[" + s.name() + " " + s.cost() + "] ").withStyle(st -> st.withColor(ChatFormatting.GREEN)
+                    .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/raids buy " + s.item()))
+                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                            Component.literal(s.cost() + " point" + (s.cost() == 1 ? "" : "s") + (s.perChest() > 0 ? ", one per chest" : ""))))));
+        }
+        p.displayClientMessage(line, false);
+    }
+
+    /** Buys one item from an open supply chest ({@code /raids buy <item>}). */
+    static int buy(ServerPlayer p, String item) {
+        RaidInstance raid = RaidManager.of(p);
+        if (raid == null || raid.type != RaidType.TOB) {
+            Msg.game(p, "There is no supply chest here.");
+            return 0;
+        }
+        Supplies s = supplies(raid);
+        TobRules.Supply supply = TobRules.supply(item);
+        if (s.unlocked == 0 || s.awardedFor.getOrDefault(p.getUUID(), 0) < s.unlocked) {
+            Msg.game(p, "Open the supply chest first.");
+            return 0;
+        }
+        if (supply == null) {
+            Msg.game(p, "The chest has no such supply.");
+            return 0;
+        }
+        int points = s.points.getOrDefault(p.getUUID(), 0);
+        if (points < supply.cost()) {
+            Msg.game(p, "You need " + supply.cost() + " points for that; you have " + points + ".");
+            return 0;
+        }
+        if (supply.perChest() > 0 && s.staminas.getOrDefault(p.getUUID(), 0) >= supply.perChest()) {
+            Msg.game(p, "You can only take one " + supply.name() + " from each chest.");
+            return 0;
+        }
+        s.points.put(p.getUUID(), points - supply.cost());
+        if (supply.perChest() > 0) {
+            s.staminas.merge(p.getUUID(), 1, Integer::sum);
+        }
+        Inv.give(p, supply.item(), 1);
+        Msg.game(p, "You take a " + supply.name() + ". (" + (points - supply.cost()) + " points left)");
+        return 1;
+    }
+
+    /** Supply points a player has left (self-test). */
+    static int points(RaidInstance raid, ServerPlayer p) {
+        return supplies(raid).points.getOrDefault(p.getUUID(), 0);
+    }
+
+    /** A ToB room that tracks each player's damage (the room's MVP feeds the supply points). */
+    abstract static class TobRoom extends RoomLogic implements CoxTobWalk.Walkable {
+        final Map<UUID, Integer> damage = new HashMap<>();
+        int t;
+
+        TobRoom(RaidInstance raid, RoomDef def, int index) {
+            super(raid, def, index);
+        }
+
+        @Override
+        public void onCreatureHit(ServerPlayer player, LivingEntity target, int dealt) {
+            damage.merge(player.getUUID(), dealt, Integer::sum);
+        }
+
+        @Override
+        protected void onComplete() {
+            bossCleared(this, damage);
+            cleanup();
+        }
+    }
+
+    // ================================================================== The Maiden of Sugadinti
+
+    /**
+     * The Maiden of Sugadinti (OSRS wiki). Every 10 ticks she attacks: Blackstorm at the closest player (always lands, up to
+     * 36.5 + 3.5 per Matomenos that reached her, halved by Protect from Magic, half the time draining the target's combat
+     * stats), or blood splats (a spot under every player and two more around one of them: 10 + 2 per Matomenos, healing
+     * her by the same; a spot becomes a blood spawn 10% of the time, 20% if stepped on), after which she throws Blackstorm
+     * twice. At 70%, 50% and 30% she calls two Nylocas Matomenos per player (ten in Hard mode); one that reaches her heals
+     * her by twice its hitpoints. Blood spawns leave trails that hurt and heal her, drying in 20-30 seconds.
+     */
+    static final class Maiden extends TobRoom {
         private DataBossEntity maiden;
         private final Set<Integer> thresholds = new HashSet<>();
-        /** Nylocas Matomenos that reached her (each makes her tornadoes hit harder; Hard mode: the first five faster). */
         private int fed;
-        /** Blood trails left by blood spawn, with the tick they dry (never in Hard mode). */
-        private final Map<Vec3, Long> trail = new HashMap<>();
+        private int splatCooldown;
+        private final Map<Vec3, Integer> trail = new HashMap<>();
         private final Set<BlockPos> trailTiles = new HashSet<>();
+        private int matomenosCalled;
 
         Maiden(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -78,113 +304,164 @@ final class TobRooms {
             trail.clear();
             trailTiles.clear();
             maiden = spawnBoss("the_maiden_of_sugadinti", at(15, 0));
-            anchor(maiden);
+            if (maiden != null) {
+                maiden.setNoAi(true);
+                anchor(maiden);
+            }
         }
 
         @Override
         public void gameTick(long tick) {
             super.gameTick(tick);
+            t++;
             if (!alive(maiden)) {
                 return;
             }
             // Hard mode (OSRS): each of the first five Matomenos to reach her speeds up her attacks. // approx: a tick each
-            autoAttack(maiden, tick, hard() ? 10 - Math.min(5, fed) : 10);
+            int speed = TobRules.MAIDEN_ATTACK_SPEED - (hard() ? Math.min(5, fed) : 0);
+            if (t % speed == 0) {
+                attack();
+            }
             double hp = raid.healthFraction(maiden);
-            for (int t : new int[]{70, 50, 30}) {
-                if (hp * 100 <= t && thresholds.add(t)) {
-                    // OSRS: two Nylocas Matomenos per player (up to 10; always 10 in Hard mode), from the north and south walls.
-                    int n = com.runecraft.osrs.content.raids.RaidScaling.tobMaidenNylocas(raid.partySize(), hard());
+            for (int th : new int[]{70, 50, 30}) {
+                if (hp * 100 <= th && thresholds.add(th)) {
+                    int n = RaidScaling.tobMaidenNylocas(raid.partySize(), hard());
                     for (int i = 0; i < n; i++) {
                         int z = (i % 2 == 0 ? -1 : 1) * 18;
                         spawnMob("nylocas_matomenos", at(4 + (i / 2) * 3, z), false);
                     }
-                    warn("The Maiden calls upon the Nylocas! (" + t + "%)");
+                    matomenosCalled += n;
+                    warn("The Maiden calls upon the Nylocas! (" + th + "%)");
                 }
             }
-            // OSRS: a Matomenos that reaches her heals her for twice its remaining hitpoints.
             fed += healers("nylocas_matomenos", maiden, 2.0, "A Nylocas Matomenos reaches the Maiden and heals her!");
             List<LivingEntity> spawns = living("blood_spawn");
             for (LivingEntity sp : spawns) {
-                if (tick % 2 == 0) {
-                    trail.put(sp.position(), hard() ? Long.MAX_VALUE : tick + 16);
+                if (t % 2 == 0) {
+                    trail.put(sp.position(), hard() ? Integer.MAX_VALUE : t + TobRules.MAIDEN_TRAIL_TICKS);
                     if (trailTiles.add(sp.blockPosition())) {
-                        com.runecraft.content.systems.CombatAchievementService.countNear(maiden, com.runecraft.osrs.content.systems.CombatAchievements.COUNT_MAIDEN_TRAIL);
+                        CombatAchievementService.countNear(maiden, CombatAchievements.COUNT_MAIDEN_TRAIL);
                     }
                 }
                 if (sp.tickCount > 200) {
-                    com.runecraft.content.systems.CombatAchievementService.flagNear(maiden, com.runecraft.osrs.content.systems.CombatAchievements.FLAG_BLOODSPAWN_OLD);
+                    CombatAchievementService.flagNear(maiden, CombatAchievements.FLAG_BLOODSPAWN_OLD);
                 }
                 if (sp.tickCount % 60 == 0) {
-                    walk(sp, vec(rnd().nextInt(30) - 15, rnd().nextInt(30) - 15));
+                    TobRooms.walk(sp, vec(rnd().nextInt(30) - 15, rnd().nextInt(30) - 15));
                 }
             }
-            trail.entrySet().removeIf(e -> e.getValue() < tick);
+            trail.entrySet().removeIf(e -> e.getValue() < t);
             for (ServerPlayer p : players()) {
-                for (Vec3 t : trail.keySet()) {
-                    if (RaidEffects.horizontalDistSq(p.position(), t) < 0.8 * 0.8) {
-                        if (tick % 2 == 0) {
-                            world().sendParticles(ParticleTypes.DAMAGE_INDICATOR, t.x, t.y + 0.3, t.z, 2, 0.2, 0.1, 0.2, 0);
+                for (Vec3 tr : trail.keySet()) {
+                    if (RaidEffects.horizontalDistSq(p.position(), tr) < 0.8 * 0.8) {
+                        if (t % 2 == 0) {
+                            world().sendParticles(ParticleTypes.DAMAGE_INDICATOR, tr.x, tr.y + 0.3, tr.z, 2, 0.2, 0.1, 0.2, 0);
                         }
-                        if (!cooldown(p, 1)) {
-                            // OSRS: standing in a blood trail hurts and heals the Maiden by the damage taken.
-                            int dealt = RaidEffects.hit(maiden, p, 3 + rnd().nextInt(5), null, true); // approx: trail damage
-                            raid.heal(maiden, dealt);
-                        }
+                        // OSRS: standing in a blood trail hurts and heals the Maiden by the damage taken. // approx: 3-7
+                        int dealt = RaidEffects.hit(maiden, p, 3 + rnd().nextInt(5), null, true);
+                        raid.heal(maiden, dealt);
                         break;
                     }
                 }
             }
-            if (tick % 10 == 5) {
-                bloodSpots(spawns.size());
-            }
         }
 
-        /**
-         * Blood Splat (OSRS): a blood spot at every player and three more at the player furthest away; a spot that hits
-         * heals the Maiden by the damage dealt, and spots may turn into blood spawn.
-         */
-        private void bloodSpots(int spawnCount) {
+        private ServerPlayer closest() {
+            ServerPlayer best = null;
+            for (ServerPlayer p : players()) {
+                if (best == null || p.distanceToSqr(maiden) < best.distanceToSqr(maiden)) {
+                    best = p;
+                }
+            }
+            return best;
+        }
+
+        private void attack() {
+            ServerPlayer target = closest();
+            if (target == null) {
+                return;
+            }
+            if (splatCooldown <= 0 && rnd().nextBoolean()) {
+                splatCooldown = TobRules.MAIDEN_SPLAT_COOLDOWN;
+                bloodSplats();
+                return;
+            }
+            splatCooldown--;
+            Vec3 a = maiden.getEyePosition();
+            Vec3 b = target.getEyePosition();
+            for (int i = 0; i <= 8; i++) {
+                Vec3 v = a.lerp(b, i / 8.0);
+                world().sendParticles(ParticleTypes.DAMAGE_INDICATOR, v.x, v.y, v.z, 1, 0, 0, 0, 0);
+            }
+            int max = TobRules.maidenBlackstormMax(fed);
+            RaidEffects.later(2, () -> {
+                if (!alive(maiden) || !target.isAlive() || !inside(target.position())) {
+                    return;
+                }
+                int dmg = 1 + rnd().nextInt(max);
+                if (RaidEffects.protectedFrom(target, AttackType.MAGIC)) {
+                    dmg /= 2;
+                }
+                int dealt = RaidEffects.hit(maiden, target, dmg, null, true);
+                if (rnd().nextBoolean()) {
+                    drain(target, TobRules.maidenDrain(dealt));
+                }
+            });
+        }
+
+        /** Blackstorm's drain hits the stats of the target's best attack style. // approx: chosen from the weapon */
+        private void drain(ServerPlayer p, int amount) {
+            if (amount <= 0) {
+                return;
+            }
+            String weapon = Inv.idOf(p.getMainHandItem());
+            Skill[] skills = weapon.contains("bow") || weapon.contains("dart") || weapon.contains("blowpipe") || weapon.contains("chinchompa")
+                    ? new Skill[]{Skill.RANGED} : weapon.contains("staff") || weapon.contains("trident") || weapon.contains("wand")
+                    || weapon.contains("sceptre") ? new Skill[]{Skill.MAGIC} : new Skill[]{Skill.ATTACK, Skill.STRENGTH};
+            var data = Players.data(p).skills();
+            for (Skill s : skills) {
+                data.setBoost(s, data.boost(s) - amount);
+            }
+            com.runecraft.network.ServerNetworking.sync(p);
+            Msg.red(p, "The Maiden's Blackstorm saps your strength!");
+        }
+
+        /** Blood Splat: a spot under every player and two more around one of them. */
+        private void bloodSplats() {
             List<ServerPlayer> players = players();
             if (players.isEmpty()) {
                 return;
             }
             List<Vec3> spots = new ArrayList<>();
-            ServerPlayer far = null;
             for (ServerPlayer p : players) {
                 spots.add(p.position());
-                if (far == null || p.distanceToSqr(maiden) > far.distanceToSqr(maiden)) {
-                    far = p;
-                }
             }
-            for (int i = 0; i < 3; i++) {
-                spots.add(far.position().add(rnd().nextInt(3) - 1, 0, rnd().nextInt(3) - 1));
+            ServerPlayer extra = players.get(rnd().nextInt(players.size()));
+            for (int i = 0; i < TobRules.MAIDEN_EXTRA_SPLATS; i++) {
+                spots.add(extra.position().add(rnd().nextInt(5) - 2, 0, rnd().nextInt(5) - 2));
             }
-            int cap = hard() ? 5 : 3;
-            int[] spawned = {spawnCount};
+            int cap = hard() ? 5 : 3; // approx: blood spawn alive at once
             for (Vec3 at : spots) {
                 world().sendParticles(ParticleTypes.DAMAGE_INDICATOR, at.x, at.y + 0.2, at.z, 6, 0.4, 0.1, 0.4, 0);
                 RaidEffects.later(3, () -> {
                     if (!alive(maiden)) {
                         return;
                     }
+                    boolean stepped = false;
                     for (ServerPlayer p : players()) {
                         if (RaidEffects.horizontalDistSq(p.position(), at) < 0.9 * 0.9) {
-                            int dealt = RaidEffects.hit(maiden, p, rnd().nextInt(26), null, true); // approx: blood spot up to 25
+                            stepped = true;
+                            int dealt = RaidEffects.hit(maiden, p, TobRules.maidenSplat(fed), null, true);
                             raid.heal(maiden, dealt);
+                            var data = Players.data(p);
+                            data.setPrayerPoints(Math.max(0, data.prayerPoints() - 5)); // approx: "prayer points are also drained"
                         }
                     }
-                    if (spawned[0] < cap && rnd().nextInt(5) == 0) { // approx: 1 in 5 spots become blood spawn
-                        spawned[0]++;
+                    if (living("blood_spawn").size() < cap && rnd().nextDouble() < TobRules.bloodSpawnChance(stepped)) {
                         spawnMob("blood_spawn", BlockPos.containing(at), false);
                     }
                 });
             }
-        }
-
-        @Override
-        public int bossOutgoing(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
-            // OSRS: every Matomenos that reaches the Maiden increases her tornado damage. // approx: +10% each
-            return boss == maiden ? (int) Math.round(damage * (1 + 0.1 * fed)) : damage;
         }
 
         @Override
@@ -193,18 +470,48 @@ final class TobRooms {
             living("nylocas_matomenos").forEach(LivingEntity::discard);
             living("blood_spawn").forEach(LivingEntity::discard);
         }
+
+        @Override
+        public String walk(CoxTobWalk w) {
+            w.expect(alive(maiden), "the Maiden did not spawn");
+            int guard = 0;
+            boolean sawNylocas = false;
+            while (alive(maiden) && guard++ < 800) {
+                List<LivingEntity> nylos = living("nylocas_matomenos");
+                sawNylocas |= !nylos.isEmpty();
+                for (LivingEntity n : nylos) {
+                    w.kill(n, AttackType.MAGIC, "a Nylocas Matomenos");
+                }
+                w.hit(maiden, Math.max(10, raid.maxHitpoints(maiden) / 12), AttackType.SLASH);
+                w.tick(1);
+            }
+            w.expect(!alive(maiden), "the Maiden did not die");
+            w.expect(sawNylocas && matomenosCalled >= 3 * RaidScaling.tobMaidenNylocas(raid.partySize(), hard()),
+                    "the Maiden called " + matomenosCalled + " Matomenos (expected three groups)");
+            return matomenosCalled + " Matomenos called";
+        }
     }
 
-    /** The Pestilent Bloat: walks the room dropping limbs and flies; only harmed while it rests. */
-    static final class Bloat extends RoomLogic {
+    // ================================================================== The Pestilent Bloat
+
+    /**
+     * The Pestilent Bloat (OSRS wiki): it walks its path round the central tank, its flies hitting everyone in sight for up
+     * to 20 a tick (25% less with Protect from Missiles) and halving damage taken; below 90% health hands fall from the
+     * ceiling (30-50 and a stun). After 34-42 ticks (38-46 the first time; +4 if nobody hit it during its last shutdown)
+     * it shuts down for 32 ticks and stomps on the 30th (40-80 to anyone close). It may turn around every 32 ticks (16 in
+     * Hard mode) and can't go down for 5 ticks after a turn. It runs between 40% and 60% health.
+     */
+    static final class Bloat extends TobRoom {
         private DataBossEntity bloat;
         private boolean walking = true;
         private int stateTicks;
-        private int stateLength = com.runecraft.osrs.content.raids.RaidScaling.TOB_BLOAT_FIRST_WALK;
+        private int stateLength = RaidScaling.TOB_BLOAT_FIRST_WALK;
         private int waypoint;
-        /** +1 walks the corners clockwise, -1 after a turn. */
         private int direction = 1;
         private int turnTicks;
+        private boolean hitWhileDown;
+        private int hitsBelow40;
+        private int shutdowns;
 
         Bloat(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -229,10 +536,9 @@ final class TobRooms {
         public void start() {
             walking = true;
             stateTicks = 0;
-            direction = 1;
+            direction = rnd().nextBoolean() ? 1 : -1;
             turnTicks = 0;
-            // OSRS: the first walk lasts 39-47 ticks.
-            stateLength = com.runecraft.osrs.content.raids.RaidScaling.TOB_BLOAT_FIRST_WALK + rnd().nextInt(9);
+            stateLength = RaidScaling.TOB_BLOAT_FIRST_WALK + rnd().nextInt(9);
             bloat = spawnBoss("pestilent_bloat", BlockPos.containing(waypoint(0)));
         }
 
@@ -249,17 +555,13 @@ final class TobRooms {
                 wp = waypoint(waypoint);
             }
             if (boss.tickCount % 10 == 0 || boss.getNavigation().isDone()) {
-                boss.getNavigation().moveTo(wp.x, wp.y, wp.z, 1.3);
+                boolean runs = TobRules.bloatRuns(raid.healthFraction(boss), hitsBelow40);
+                boss.getNavigation().moveTo(wp.x, wp.y, wp.z, runs ? 2.0 : 1.3);
             }
         }
 
-        /**
-         * OSRS: the Bloat may turn around while it walks, once every 32 ticks at most (Hard mode: every 16 ticks, and it
-         * turns more often); a turn near the end of a walk keeps it up for another 5 ticks.
-         */
         private void maybeTurn() {
-            int every = hard() ? com.runecraft.osrs.content.raids.RaidScaling.TOB_BLOAT_TURN_HARD
-                    : com.runecraft.osrs.content.raids.RaidScaling.TOB_BLOAT_TURN;
+            int every = hard() ? RaidScaling.TOB_BLOAT_TURN_HARD : RaidScaling.TOB_BLOAT_TURN;
             if (++turnTicks < every) {
                 return;
             }
@@ -277,6 +579,12 @@ final class TobRooms {
 
         @Override
         public int bossIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            if (!walking) {
+                hitWhileDown = true;
+            }
+            if (raid.healthFraction(boss) < 0.4) {
+                hitsBelow40++;
+            }
             // OSRS: the Bloat takes 50% less damage (rounded down) while it moves.
             return walking ? damage / 2 : damage;
         }
@@ -284,56 +592,46 @@ final class TobRooms {
         @Override
         public void gameTick(long tick) {
             super.gameTick(tick);
+            t++;
             if (!alive(bloat)) {
                 return;
             }
             stateTicks++;
             List<ServerPlayer> players = players();
             if (walking) {
-                // OSRS: while it walks, its flies hit everyone in its line of sight for 10-20 every tick
-                // (Protect from Missiles takes 25% off).
                 for (ServerPlayer p : players) {
                     if (canSee(bloat, p)) {
-                        int dmg = 10 + rnd().nextInt(11);
+                        int dmg = rnd().nextInt(TobRules.BLOAT_FLIES_MAX + 1);
                         if (RaidEffects.protectedFrom(p, AttackType.RANGED)) {
                             dmg = dmg * 3 / 4;
                         }
                         RaidEffects.hit(bloat, p, dmg, null, true);
                     }
                 }
-                if (tick % 3 == 0 && !players.isEmpty()) {
-                    // OSRS: mutilated flesh falls from the ceiling for 30-50 (Hard mode: all fight long).
-                    ServerPlayer p = players.get(rnd().nextInt(players.size()));
-                    Vec3 at = p.position().add(rnd().nextInt(5) - 2, 0, rnd().nextInt(5) - 2);
-                    RaidEffects.strike(world(), at, 1.0, 50, 3, bloat, ParticleTypes.FALLING_LAVA);
+                if ((hard() || raid.healthFraction(bloat) < TobRules.BLOAT_HANDS_BELOW) && t % 3 == 0 && !players.isEmpty()) {
+                    hands(players);
                 }
                 maybeTurn();
                 if (stateTicks >= stateLength) {
                     walking = false;
                     stateTicks = 0;
-                    stateLength = com.runecraft.osrs.content.raids.RaidScaling.TOB_BLOAT_DOWN;
+                    stateLength = RaidScaling.TOB_BLOAT_DOWN;
+                    hitWhileDown = false;
+                    shutdowns++;
                     say("The Bloat shuts down. Attack it now!");
-                    com.runecraft.content.systems.CombatAchievementService.countNear(bloat, com.runecraft.osrs.content.systems.CombatAchievements.COUNT_BLOAT_SHUTDOWN);
+                    CombatAchievementService.countNear(bloat, CombatAchievements.COUNT_BLOAT_SHUTDOWN);
                 }
             } else {
                 world().sendParticles(ParticleTypes.SMOKE, bloat.getX(), bloat.getY() + 2, bloat.getZ(), 4, 0.8, 0.4, 0.8, 0.01);
-                if (stateTicks == stateLength - 1) {
-                    warn("The Bloat stirs...");
+                if (hard() && t % 3 == 0 && !players.isEmpty()) {
+                    hands(players);
                 }
-                if (hard() && tick % 3 == 0 && !players.isEmpty()) {
-                    ServerPlayer p = players.get(rnd().nextInt(players.size()));
-                    RaidEffects.strike(world(), p.position().add(rnd().nextInt(5) - 2, 0, rnd().nextInt(5) - 2), 1.0, 50, 3, bloat,
-                            ParticleTypes.FALLING_LAVA);
-                }
-                if (stateTicks >= stateLength) {
-                    walking = true;
-                    stateTicks = 0;
-                    // OSRS: after the stomp it walks for 34-42 ticks.
-                    stateLength = com.runecraft.osrs.content.raids.RaidScaling.TOB_BLOAT_WALK + rnd().nextInt(9);
+                if (stateTicks == TobRules.BLOAT_STOMP_TICK) {
                     world().sendParticles(ParticleTypes.EXPLOSION_EMITTER, bloat.getX(), bloat.getY(), bloat.getZ(), 1, 0, 0, 0, 0);
                     for (ServerPlayer p : players) {
                         if (p.distanceToSqr(bloat) < 4.5 * 4.5) {
-                            RaidEffects.hit(bloat, p, 40 + rnd().nextInt(41), null, true); // OSRS: the stomp deals 40-80
+                            RaidEffects.hit(bloat, p, TobRules.BLOAT_STOMP_MIN + rnd().nextInt(TobRules.BLOAT_STOMP_MAX - TobRules.BLOAT_STOMP_MIN + 1),
+                                    null, true);
                             Vec3 push = p.position().subtract(bloat.position()).normalize().scale(1.2);
                             p.push(push.x, 0.5, push.z);
                             p.hurtMarked = true;
@@ -341,9 +639,61 @@ final class TobRooms {
                         }
                     }
                 }
+                if (stateTicks >= stateLength) {
+                    walking = true;
+                    stateTicks = 0;
+                    stateLength = RaidScaling.TOB_BLOAT_WALK + rnd().nextInt(9) + (hitWhileDown ? 0 : TobRules.BLOAT_UNATTACKED_BONUS);
+                }
             }
         }
+
+        /** Hands fall from the ceiling: 30-50 and a short stun. */
+        private void hands(List<ServerPlayer> players) {
+            ServerPlayer p = players.get(rnd().nextInt(players.size()));
+            Vec3 at = p.position().add(rnd().nextInt(5) - 2, 0, rnd().nextInt(5) - 2);
+            world().sendParticles(ParticleTypes.FALLING_LAVA, at.x, at.y + 3, at.z, 10, 0.4, 0.2, 0.4, 0);
+            RaidEffects.later(3, () -> {
+                for (ServerPlayer q : players()) {
+                    if (RaidEffects.horizontalDistSq(q.position(), at) < 1.0) {
+                        RaidEffects.hit(bloat, q, TobRules.BLOAT_HANDS_MIN + rnd().nextInt(TobRules.BLOAT_HANDS_MAX - TobRules.BLOAT_HANDS_MIN + 1),
+                                null, true);
+                        com.runecraft.content.systems.SysCombat.freeze(q, 3);
+                    }
+                }
+            });
+        }
+
+        @Override
+        protected void onComplete() {
+            super.onComplete();
+            placeChest(this);
+        }
+
+        @Override
+        public String walk(CoxTobWalk w) {
+            w.expect(alive(bloat) && walking, "the Bloat did not start walking");
+            int halved = w.hit(bloat, 20, AttackType.SLASH);
+            w.expect(halved <= 10, "the walking Bloat took " + halved + " from a 20 hit (expected half)");
+            w.until(() -> !walking, 60, "the Bloat never shut down");
+            int guard = 0;
+            while (alive(bloat) && guard++ < 1000) {
+                w.hit(bloat, Math.max(10, raid.maxHitpoints(bloat) / 10), AttackType.SLASH);
+                w.tick(1);
+            }
+            w.expect(!alive(bloat), "the Bloat did not die");
+            // The supply chest appears; spend the points.
+            BlockPos chest = w.block(this, RaidsContent.SUPPLIES);
+            w.moveTo(chest.offset(-1, 0, 0));
+            w.use(chest);
+            int points = TobRooms.points(raid, w.player());
+            w.expect(points >= 6 && points <= 13, "the first supply chest gave " + points + " points (expected 6-13)");
+            w.expect(buy(w.player(), "stamina_potion") == 1 && buy(w.player(), "stamina_potion") == 0, "the chest sold more than one stamina potion");
+            w.expect(buy(w.player(), "shark") == 1 && w.count("shark") > 0, "buying a shark from the chest failed");
+            return shutdowns + " shutdown(s); chest gave " + points + " points";
+        }
     }
+
+    // ================================================================== The Nylocas
 
     /**
      * The Nylocas (OSRS wiki): 31 fixed waves of nylocas walk in from the east, south and west lanes; most attack the
@@ -353,13 +703,11 @@ final class TobRooms {
      * mode a Nylocas Prinkipas drops in with waves 10, 20 and 30. Then the Nylocas Vasilias: it changes form every 10
      * ticks, and a hit of the wrong style is reflected onto the attacker and heals it.
      */
-    static final class Nylocas extends RoomLogic {
+    static final class Nylocas extends TobRoom {
         private static final String[] FORMS = {"grey (melee)", "green (ranged)", "blue (magic)"};
-        /** Support positions (room offsets) and the east, south and west lane mouths. */
         private static final int[][] PILLARS = {{-5, -5}, {-5, 5}, {5, -5}, {5, 5}};
         private static final int[][] LANES = {{19, 0}, {0, 19}, {-19, 8}};
 
-        /** One live wave nylocas. */
         private static final class Nylo {
             final Mob mob;
             final TobNylocas.Breed breed;
@@ -388,6 +736,7 @@ final class TobRooms {
         private boolean wrongStyle;
         private boolean pillarLost;
         private boolean prinkipasChanged;
+        private int killed;
 
         Nylocas(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -430,8 +779,7 @@ final class TobRooms {
         /** The Nylocas room a player is fighting in, if any. */
         static Nylocas of(ServerPlayer p) {
             RaidInstance raid = RaidManager.of(p);
-            return raid != null && raid.type == com.runecraft.osrs.content.raids.RaidType.TOB && raid.logic() instanceof Nylocas n
-                    ? n : null;
+            return raid != null && raid.type == RaidType.TOB && raid.logic() instanceof Nylocas n ? n : null;
         }
 
         private int standing() {
@@ -450,8 +798,7 @@ final class TobRooms {
                 return;
             }
             if (big) {
-                raid.setHitpoints(m, com.runecraft.osrs.content.raids.RaidScaling.tobScaledHp(breed.creatureId, TobNylocas.BIG_HP,
-                        raid.partySize(), raid.mode()));
+                raid.setHitpoints(m, RaidScaling.tobScaledHp(breed.creatureId, TobNylocas.BIG_HP, raid.partySize(), raid.mode()));
             }
             if (!aggressive) {
                 m.setTarget(null);
@@ -486,6 +833,7 @@ final class TobRooms {
         @Override
         public void gameTick(long tick) {
             super.gameTick(tick);
+            t++;
             tickNylos();
             if (standing() == 0) {
                 return;
@@ -515,13 +863,13 @@ final class TobRooms {
                 return;
             }
             if (wrongStyle) {
-                com.runecraft.content.systems.CombatAchievementService.flagNear(vasilias, CombatAchievements.FLAG_NYLO_WRONG_STYLE);
+                CombatAchievementService.flagNear(vasilias, CombatAchievements.FLAG_NYLO_WRONG_STYLE);
             }
             if (pillarLost) {
-                com.runecraft.content.systems.CombatAchievementService.flagNear(vasilias, CombatAchievements.FLAG_NYLO_PILLAR_LOST);
+                CombatAchievementService.flagNear(vasilias, CombatAchievements.FLAG_NYLO_PILLAR_LOST);
             }
             if (prinkipasChanged) {
-                com.runecraft.content.systems.CombatAchievementService.flagNear(vasilias, CombatAchievements.FLAG_PRINKIPAS_CHANGED);
+                CombatAchievementService.flagNear(vasilias, CombatAchievements.FLAG_PRINKIPAS_CHANGED);
             }
             if (--formTimer <= 0) {
                 formTimer = formTicks();
@@ -538,7 +886,7 @@ final class TobRooms {
 
         /** Entry mode Vasilias changes form more slowly. // approx: 14 ticks */
         private int formTicks() {
-            return raid.mode() == com.runecraft.osrs.content.raids.RaidMode.ENTRY ? 14 : TobNylocas.FORM_TICKS;
+            return raid.mode() == RaidMode.ENTRY ? 14 : TobNylocas.FORM_TICKS;
         }
 
         private void tickNylos() {
@@ -548,8 +896,11 @@ final class TobRooms {
                 Nylo n = it.next();
                 if (!alive(n.mob)) {
                     it.remove();
-                    if (n.big && n.mob.isDeadOrDying()) {
-                        split.add(n);
+                    if (n.mob.isDeadOrDying()) {
+                        killed++;
+                        if (n.big) {
+                            split.add(n);
+                        }
                     }
                     continue;
                 }
@@ -560,9 +911,9 @@ final class TobRooms {
                 }
                 if (n.aggressive) {
                     if (!(n.mob.getTarget() instanceof ServerPlayer current) || !current.isAlive()) {
-                        ServerPlayer t = randomPlayer();
-                        if (t != null) {
-                            n.mob.setTarget(t);
+                        ServerPlayer target = randomPlayer();
+                        if (target != null) {
+                            n.mob.setTarget(target);
                         }
                     }
                     continue;
@@ -579,7 +930,6 @@ final class TobRooms {
                         n.mob.getNavigation().moveTo(pc.x, pc.y, pc.z, 1.0);
                     }
                 } else if (n.age % 3 == 0) {
-                    // Nylocas attack every 3 ticks.
                     pillarHp[p] -= TobNylocas.pillarDamage(n.big, rnd());
                     world().sendParticles(ParticleTypes.CRIT, pc.x, pc.y + 1, pc.z, 2, 0.6, 0.6, 0.6, 0.01);
                     if (pillarHp[p] <= 0) {
@@ -613,7 +963,6 @@ final class TobRooms {
             return best;
         }
 
-        /** A nylocas self-destructs: players next to it take up to 18 (small) or 21 (big). */
         private void explode(Nylo n) {
             Vec3 pos = n.mob.position();
             world().sendParticles(ParticleTypes.EXPLOSION, pos.x, pos.y + 0.5, pos.z, 1, 0, 0, 0, 0);
@@ -627,7 +976,6 @@ final class TobRooms {
             n.mob.discard();
         }
 
-        /** A support breaks: rocks fall on the whole team (up to 50); with all four gone the roof caves in. */
         private void collapse(int i) {
             pillarHp[i] = 0;
             pillarLost = true;
@@ -696,14 +1044,66 @@ final class TobRooms {
                 living(b.creatureId).forEach(LivingEntity::discard);
             }
         }
+
+        private static AttackType styleFor(TobNylocas.Breed breed) {
+            for (AttackType t : new AttackType[]{AttackType.SLASH, AttackType.RANGED, AttackType.MAGIC}) {
+                if (breed.weakTo(t)) {
+                    return t;
+                }
+            }
+            return AttackType.SLASH;
+        }
+
+        private static AttackType formStyle(int form) {
+            for (AttackType t : new AttackType[]{AttackType.SLASH, AttackType.RANGED, AttackType.MAGIC}) {
+                if (TobNylocas.formWeakTo(form, t)) {
+                    return t;
+                }
+            }
+            return AttackType.SLASH;
+        }
+
+        @Override
+        public String walk(CoxTobWalk w) {
+            int guard = 0;
+            boolean triedWrong = false;
+            while (vasilias == null && guard++ < 1500) {
+                for (Nylo n : new ArrayList<>(nylos)) {
+                    if (alive(n.mob)) {
+                        if (!triedWrong) {
+                            triedWrong = true;
+                            AttackType wrong = n.breed.weakTo(AttackType.MAGIC) ? AttackType.RANGED : AttackType.MAGIC;
+                            w.expect(w.hit(n.mob, 10, wrong) == 0, "a " + n.breed + " nylocas took damage from the wrong style");
+                        }
+                        w.kill(n.mob, styleFor(n.breed), "a " + n.breed + " nylocas");
+                    }
+                }
+                w.tick(1);
+            }
+            w.expect(vasilias != null, "the Nylocas Vasilias never emerged (wave " + wave + "/" + TobNylocas.WAVES + ", " + nylos.size() + " alive)");
+            w.expect(wave == TobNylocas.WAVES && standing() == TobNylocas.PILLARS, "waves " + wave + ", supports standing " + standing());
+            guard = 0;
+            while (alive(vasilias) && guard++ < 800) {
+                w.hit(vasilias, Math.max(10, raid.maxHitpoints(vasilias) / 12), formStyle(form));
+                w.tick(1);
+            }
+            w.expect(!alive(vasilias), "the Nylocas Vasilias did not die");
+            w.expect(!wrongStyle || triedWrong, "a wrong-style hit was recorded");
+            return TobNylocas.WAVES + " waves, " + killed + " nylocas killed, Vasilias slain";
+        }
     }
 
+    // ================================================================== Sotetseg
+
     /**
-     * Sotetseg: shared death balls, and the shadow-realm maze at 66% and 33% (OSRS wiki). One player (Hard mode: all but
-     * one) is dragged into the shadow realm and follows the red path; the players left in the arena must walk the same
-     * path on the arena floor, seeing only the runner's position, and every wrong tile hurts.
+     * Sotetseg (OSRS wiki): every 5 ticks it lunges (up to 45, halved by Protect from Melee) at someone in reach or fires a
+     * red orb (up to 50, fully blocked by Protect from Magic) that splits into up to two more red or black (ranged) orbs at
+     * other players; a hit knocks off protection prayers. After 10 magic attacks it launches the ball of death, shared by
+     * everyone within 3x3 of the target. At 66% and 33% it drags one player (Hard mode: all but one) into the shadow realm,
+     * whose maze they must walk while the others follow the same path on the arena floor (a wrong tile: 6.67% of current
+     * hitpoints + 15 a tick); the runner takes 1-3 every 7 ticks.
      */
-    static final class Sotetseg extends RoomLogic {
+    static final class Sotetseg extends TobRoom {
         private static final int COLS = 7;
         private static final int ROWS = 14;
         private DataBossEntity sotetseg;
@@ -712,7 +1112,9 @@ final class TobRooms {
         private int mazeTicks;
         private boolean maze66;
         private boolean maze33;
-        private int ballCooldown = 20;
+        private int magicAttacks;
+        private int mazes;
+        private int balls;
 
         Sotetseg(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -722,7 +1124,6 @@ final class TobRooms {
             return center().offset(-COLS, 0, RaidBuilder.MAZE_OFFSET_Z - ROWS);
         }
 
-        /** The arena copy of the maze: the same grid laid on the arena floor, west of Sotetseg. */
         private BlockPos arenaOrigin() {
             return center().offset(-COLS, 0, -ROWS);
         }
@@ -744,11 +1145,10 @@ final class TobRooms {
                     Blocks.RED_NETHER_BRICKS.defaultBlockState());
             RaidBuilder.fill(world(), o.getX(), y, o.getZ(), o.getX() + COLS * 2 - 1, y, o.getZ() + ROWS * 2 - 1,
                     Blocks.POLISHED_BLACKSTONE.defaultBlockState());
-            // The arena's tiled maze floor (the path itself is invisible from the arena).
             BlockPos a = arenaOrigin();
             RaidBuilder.fill(world(), a.getX(), a.getY(), a.getZ(), a.getX() + COLS * 2 - 1, a.getY(), a.getZ() + ROWS * 2 - 1,
                     Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState());
-            RaidBuilder.pillar(world(), center().offset(-12, 0, -8), 1, 2, Blocks.CRIMSON_HYPHAE.defaultBlockState()); // clear of the arena maze
+            RaidBuilder.pillar(world(), center().offset(-12, 0, -8), 1, 2, Blocks.CRIMSON_HYPHAE.defaultBlockState());
             RaidBuilder.pillar(world(), center().offset(-12, 0, 8), 1, 2, Blocks.CRIMSON_HYPHAE.defaultBlockState());
         }
 
@@ -758,7 +1158,10 @@ final class TobRooms {
             maze33 = false;
             runners.clear();
             sotetseg = spawnBoss("sotetseg", at(13, 0));
-            anchor(sotetseg);
+            if (sotetseg != null) {
+                sotetseg.setNoAi(true);
+                anchor(sotetseg);
+            }
         }
 
         private static long key(int col, int row) {
@@ -766,11 +1169,6 @@ final class TobRooms {
         }
 
         private ServerPlayer player(UUID id) {
-            for (ServerPlayer p : raid.activePlayers()) {
-                if (p.getUUID().equals(id)) {
-                    return p;
-                }
-            }
             return world().getServer().getPlayerList().getPlayer(id);
         }
 
@@ -779,6 +1177,7 @@ final class TobRooms {
             if (party.isEmpty()) {
                 return;
             }
+            mazes++;
             path.clear();
             int col = rnd().nextInt(COLS);
             for (int r = 0; r < ROWS; r++) {
@@ -789,8 +1188,6 @@ final class TobRooms {
                 }
                 col = next;
             }
-            // OSRS: one player is taken; in Hard mode all but one (they share the maze between them). // approx: each
-            // runner walks the whole path
             java.util.Collections.shuffle(party, new java.util.Random(rnd().nextLong()));
             int taken = hard() && party.size() > 1 ? party.size() - 1 : 1;
             runners.clear();
@@ -800,10 +1197,12 @@ final class TobRooms {
                 ServerPlayer p = party.get(i);
                 runners.add(p.getUUID());
                 raid.teleport(p, new BlockPos(o.getX() + COLS - taken / 2 + i, o.getY() + 1, o.getZ() - 2));
-                warn("Sotetseg drags " + p.getName().getString() + " into the shadow realm! Find the hidden path.");
+                warn("Sotetseg chooses " + p.getName().getString() + "... They are dragged into the shadow realm!");
                 Msg.game(p, "Follow the souls through the maze. Stepping off the path hurts.");
             }
             for (int i = taken; i < party.size(); i++) {
+                // OSRS: the others are thrown to the far end of the arena.
+                raid.teleport(party.get(i), at(-16, i % 2 == 0 ? -3 : 3));
                 Msg.game(party.get(i), "Follow the red glow across the tiled floor: only the shadow realm runner can see the path.");
             }
         }
@@ -816,6 +1215,7 @@ final class TobRooms {
         @Override
         public void gameTick(long tick) {
             super.gameTick(tick);
+            t++;
             if (!alive(sotetseg)) {
                 return;
             }
@@ -832,23 +1232,68 @@ final class TobRooms {
                 startMaze();
                 return;
             }
-            autoAttack(sotetseg, tick, 5);
-            if (--ballCooldown <= 0) {
-                // OSRS: the ball of death follows every 10 projectiles (one every 5 ticks); Hard mode launches two at a time.
-                ballCooldown = 50;
-                List<ServerPlayer> party = players();
-                int balls = hard() && party.size() > 1 ? 2 : 1;
-                java.util.Collections.shuffle(party, new java.util.Random(rnd().nextLong()));
-                for (int i = 0; i < Math.min(balls, party.size()); i++) {
-                    deathBall(party.get(i));
-                }
+            if (t % TobRules.SOTETSEG_ATTACK_SPEED == 0) {
+                attack();
             }
         }
 
+        private void attack() {
+            List<ServerPlayer> party = players();
+            if (party.isEmpty()) {
+                return;
+            }
+            ServerPlayer target = party.get(rnd().nextInt(party.size()));
+            if (target.distanceToSqr(sotetseg) < 3.5 * 3.5 && rnd().nextBoolean()) {
+                int dmg = rnd().nextInt(TobRules.SOTETSEG_MELEE_MAX + 1);
+                if (RaidEffects.protectedFrom(target, AttackType.CRUSH)) {
+                    dmg /= 2;
+                }
+                RaidEffects.hit(sotetseg, target, dmg, null, true);
+                return;
+            }
+            if (++magicAttacks % TobRules.SOTETSEG_ATTACKS_PER_BALL == 0) {
+                int count = hard() && party.size() > 1 ? 2 : 1;
+                java.util.Collections.shuffle(party, new java.util.Random(rnd().nextLong()));
+                for (int i = 0; i < Math.min(count, party.size()); i++) {
+                    deathBall(party.get(i));
+                }
+                return;
+            }
+            orb(target, AttackType.MAGIC, true);
+        }
+
+        /** A red (magic) or black (ranged) orb; the first one splits into up to two more at other players. */
+        private void orb(ServerPlayer target, AttackType style, boolean split) {
+            Vec3 a = sotetseg.getEyePosition();
+            Vec3 b = target.getEyePosition();
+            for (int i = 0; i <= 8; i++) {
+                Vec3 v = a.lerp(b, i / 8.0);
+                world().sendParticles(style == AttackType.MAGIC ? ParticleTypes.FLAME : ParticleTypes.SMOKE, v.x, v.y, v.z, 1, 0, 0, 0, 0);
+            }
+            RaidEffects.later(3, () -> {
+                if (!alive(sotetseg) || !target.isAlive() || !inside(target.position())) {
+                    return;
+                }
+                if (!RaidEffects.protectedFrom(target, style)) {
+                    RaidEffects.hit(sotetseg, target, 1 + rnd().nextInt(TobRules.SOTETSEG_ORB_MAX), null, true);
+                    dropOverheads(target, "Sotetseg's orb knocks out your protection prayers!");
+                }
+                if (split) {
+                    List<ServerPlayer> others = new ArrayList<>(players());
+                    others.remove(target);
+                    java.util.Collections.shuffle(others, new java.util.Random(rnd().nextLong()));
+                    for (int i = 0; i < Math.min(2, others.size()); i++) {
+                        orb(others.get(i), rnd().nextBoolean() ? AttackType.MAGIC : AttackType.RANGED, false);
+                    }
+                }
+            });
+        }
+
         private void deathBall(ServerPlayer target) {
-            warn("Sotetseg launches a ball of death at " + target.getName().getString() + "! Stand together to share it!");
+            balls++;
+            warn(target.getName().getString() + " has discovered a large ball of energy coming their way... Stand together to share it!");
             RaidEffects.later(4, () -> {
-                if (!target.isAlive() || !alive(sotetseg)) {
+                if (!target.isAlive() || !alive(sotetseg) || !runners.isEmpty()) {
                     return;
                 }
                 List<ServerPlayer> share = new ArrayList<>();
@@ -862,7 +1307,7 @@ final class TobRooms {
                 }
                 world().sendParticles(ParticleTypes.EXPLOSION, target.getX(), target.getY() + 1, target.getZ(), 3, 1, 0.5, 1, 0);
                 // OSRS: up to 188 split between everyone within 3x3 of the target. // approx: scaled like the HP by party
-                int each = (int) (com.runecraft.osrs.content.raids.RaidScaling.TOB_SOTETSEG_BALL * com.runecraft.osrs.content.raids.RaidScaling.tobHp(raid.partySize())) / share.size();
+                int each = (int) (RaidScaling.TOB_SOTETSEG_BALL * RaidScaling.tobHp(raid.partySize())) / share.size();
                 for (ServerPlayer p : share) {
                     RaidEffects.hit(sotetseg, p, each, null, true);
                 }
@@ -896,19 +1341,17 @@ final class TobRooms {
                     continue;
                 }
                 if (mazeTicks % 7 == 0) {
-                    // OSRS: the shadow realm chips the runner for 1-3 every 7 ticks.
                     RaidEffects.hit(sotetseg, p, 1 + rnd().nextInt(3), null, true);
                 }
-                if (col >= 0 && col < COLS && row >= 0 && row < ROWS && !path.contains(key(col, row)) && !cooldown(p, 2)) {
-                    RaidEffects.hit(sotetseg, p, 15, null, true);
+                if (col >= 0 && col < COLS && row >= 0 && row < ROWS && !path.contains(key(col, row))) {
+                    RaidEffects.hit(sotetseg, p, TobRules.mazeWrongTile(Math.round(p.getHealth())), null, true);
                     Msg.red(p, "The shadows lash at you!");
                 }
                 int from = Math.max(0, row);
                 for (int r = from; r < Math.min(ROWS, from + 3); r++) {
                     for (int c = 0; c < COLS; c++) {
                         if (path.contains(key(c, r))) {
-                            world().sendParticles(ParticleTypes.SOUL, o.getX() + c * 2 + 1, o.getY() + 1.1, o.getZ() + r * 2 + 1, 1, 0.3, 0,
-                                    0.3, 0);
+                            world().sendParticles(ParticleTypes.SOUL, o.getX() + c * 2 + 1, o.getY() + 1.1, o.getZ() + r * 2 + 1, 1, 0.3, 0, 0.3, 0);
                         }
                     }
                 }
@@ -922,10 +1365,6 @@ final class TobRooms {
             }
         }
 
-        /**
-         * The players left in the arena see only the runner's position (a red glow on the arena's tiles) and must walk
-         * the same path: a wrong tile hits for 15 plus 6.67% of current hitpoints every tick (OSRS).
-         */
         private void arenaTick(BlockPos o, ServerPlayer lead) {
             BlockPos a = arenaOrigin();
             int col = (int) Math.floor((lead.getX() - o.getX()) / 2);
@@ -941,12 +1380,18 @@ final class TobRooms {
                 int c = (int) Math.floor((p.getX() - a.getX()) / 2);
                 int r = (int) Math.floor((p.getZ() - a.getZ()) / 2);
                 if (c >= 0 && c < COLS && r >= 0 && r < ROWS && !path.contains(key(c, r))) {
-                    RaidEffects.hit(sotetseg, p, 15 + (int) (p.getHealth() * 0.0667), null, true);
+                    RaidEffects.hit(sotetseg, p, TobRules.mazeWrongTile(Math.round(p.getHealth())), null, true);
                     if (!cooldown(p, 4)) {
                         Msg.red(p, "That tile isn't on the path!");
                     }
                 }
             }
+        }
+
+        @Override
+        protected void onComplete() {
+            super.onComplete();
+            placeChest(this);
         }
 
         @Override
@@ -960,19 +1405,72 @@ final class TobRooms {
             }
             runners.clear();
         }
+
+        /** Walks the shadow realm maze along the path, one row at a time, out at the far end. */
+        private void runMaze(CoxTobWalk w) {
+            BlockPos o = mazeOrigin();
+            w.expect(runners.contains(w.player().getUUID()), "Sotetseg did not take the player into the shadow realm");
+            for (int r = 0; r < ROWS; r++) {
+                int col = -1;
+                for (int c = 0; c < COLS && col < 0; c++) {
+                    if (path.contains(key(c, r))) {
+                        col = c;
+                    }
+                }
+                w.expect(col >= 0, "the maze has no path tile in row " + r);
+                w.moveTo(new Vec3(o.getX() + col * 2 + 1, o.getY() + 1, o.getZ() + r * 2 + 1));
+                w.tick(1);
+            }
+            w.moveTo(new Vec3(o.getX() + COLS, o.getY() + 1, o.getZ() + ROWS * 2 + 1.5));
+            w.tick(1);
+            w.expect(runners.isEmpty() && inside(w.player().position()), "walking out of the maze did not return the player to the arena");
+        }
+
+        @Override
+        public String walk(CoxTobWalk w) {
+            int guard = 0;
+            while (alive(sotetseg) && guard++ < 1200) {
+                if (!runners.isEmpty()) {
+                    runMaze(w);
+                    continue;
+                }
+                w.hit(sotetseg, Math.max(10, raid.maxHitpoints(sotetseg) / 15), AttackType.SLASH);
+                w.tick(1);
+            }
+            w.expect(!alive(sotetseg), "Sotetseg did not die");
+            w.expect(mazes == 2, "Sotetseg ran " + mazes + " mazes (expected two, at 66% and 33%)");
+            BlockPos chest = w.block(this, RaidsContent.SUPPLIES);
+            w.moveTo(chest.offset(-1, 0, 0));
+            w.use(chest);
+            int points = TobRooms.points(raid, w.player());
+            w.expect(points >= 6, "the second supply chest gave no points (" + points + " left)");
+            return mazes + " mazes, " + balls + " death ball(s); " + points + " supply points";
+        }
     }
 
-    /** Xarpus: exhumed acid to absorb, acid spit, then the reflecting screech phase. */
-    static final class Xarpus extends RoomLogic {
-        private record Exhumed(Vec3 pos, long expires) {
+    // ================================================================== Xarpus
+
+    /**
+     * Xarpus (OSRS wiki). Phase 1: weakened to 75% health, he doesn't attack but unearths exhumeds; one nobody stands on
+     * heals him. After 12 exhumeds (15 for four or five players) he wakes. Phase 2: he spits poison at players; the
+     * splatter stays on its tile for the rest of the fight (4-8 a tick, more for every exhumed absorbed); anyone under him
+     * is pelted for up to 9 a tick. Phase 3 at 25%: he stops spitting and stares at one quadrant at a time, turning every 8
+     * ticks (never back to the same one); attacking from the quadrant he stares at draws a 50-75 poison retaliation. When
+     * he dies the Dawnbringer is left for Verzik.
+     */
+    static final class Xarpus extends TobRoom {
+        private record Exhumed(Vec3 pos, int expires) {
         }
 
         private DataBossEntity xarpus;
         private int phase;
-        private float facing;
-        /** Exhumed Xarpus absorbed in phase 1 (each makes his poison pools hurt more). */
+        private int quadrant = -1;
         private int absorbed;
+        private int resolved;
+        private int intercepted;
+        private int turnTimer;
         private final List<Exhumed> exhumeds = new ArrayList<>();
+        private final List<CoxRooms.Pool> pools = new ArrayList<>();
 
         Xarpus(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -994,12 +1492,13 @@ final class TobRooms {
         public void start() {
             phase = 1;
             absorbed = 0;
+            resolved = 0;
             exhumeds.clear();
+            pools.clear();
             xarpus = spawnBoss("xarpus", at(0, 0));
             if (xarpus != null) {
                 anchor(xarpus);
                 xarpus.setNoAi(true);
-                // OSRS: Xarpus starts severely weakened; the exhumeds can restore the missing quarter of his health.
                 raid.setCurrentHitpoints(xarpus, raid.maxHitpoints(xarpus) * 3 / 4);
             }
         }
@@ -1009,117 +1508,217 @@ final class TobRooms {
             return phase > 1;
         }
 
+        /** Yaw for a quadrant (0-3: south-east, south-west, north-west, north-east as he faces them). */
+        private static float yaw(int q) {
+            return new float[]{-45, 45, 135, -135}[Math.floorMod(q, 4)];
+        }
+
         @Override
         public void bossTick(DataBossEntity boss) {
             if (phase == 3) {
-                boss.setTarget(null);
-                boss.setYRot(facing);
-                boss.setYHeadRot(facing);
-                boss.setYBodyRot(facing);
+                boss.setYRot(yaw(quadrant));
+                boss.setYHeadRot(yaw(quadrant));
+                boss.setYBodyRot(yaw(quadrant));
             }
         }
 
         @Override
         public void gameTick(long tick) {
             super.gameTick(tick);
+            t++;
             if (!alive(xarpus)) {
                 return;
             }
-            long now = ActionManager.gameTick();
             List<ServerPlayer> players = players();
+            tickPools(players);
             if (phase == 1) {
-                if (tick % 3 == 0 && !players.isEmpty()) {
+                int total = TobRules.xarpusExhumeds(raid.partySize());
+                if (t % TobRules.XARPUS_EXHUMED_INTERVAL == 0 && resolved + exhumeds.size() < total && !players.isEmpty()) {
                     ServerPlayer p = players.get(rnd().nextInt(players.size()));
-                    exhumeds.add(new Exhumed(p.position().add(rnd().nextInt(9) - 4, 0, rnd().nextInt(9) - 4), now + 8));
+                    exhumeds.add(new Exhumed(p.position().add(rnd().nextInt(9) - 4, 0, rnd().nextInt(9) - 4), t + TobRules.XARPUS_EXHUMED_TICKS));
                 }
                 for (int i = exhumeds.size() - 1; i >= 0; i--) {
                     Exhumed e = exhumeds.get(i);
                     world().sendParticles(ParticleTypes.SNEEZE, e.pos().x, e.pos().y + 0.1, e.pos().z, 5, 0.3, 0.02, 0.3, 0);
-                    if (now >= e.expires()) {
-                        exhumeds.remove(i);
-                        ServerPlayer absorber = null;
-                        for (ServerPlayer p : players) {
-                            if (RaidEffects.horizontalDistSq(p.position(), e.pos()) < 1.2) {
-                                absorber = p;
-                                break;
-                            }
+                    if (t < e.expires()) {
+                        continue;
+                    }
+                    exhumeds.remove(i);
+                    resolved++;
+                    ServerPlayer absorber = null;
+                    for (ServerPlayer p : players) {
+                        if (RaidEffects.horizontalDistSq(p.position(), e.pos()) < 1.2) {
+                            absorber = p;
+                            break;
                         }
-                        if (absorber != null) {
-                            RaidEffects.hit(null, absorber, 3, null, true);
-                            absorber.heal(3);
-                        } else {
-                            raid.heal(xarpus, Math.max(1, raid.maxHitpoints(xarpus) / 25));
-                            absorbed++;
-                            say("Xarpus absorbs the exhumed acid!");
-                            if (raid.healthFraction(xarpus) >= 0.999) {
-                                com.runecraft.content.systems.CombatAchievementService.flagNear(xarpus, com.runecraft.osrs.content.systems.CombatAchievements.FLAG_XARPUS_FULL_HEAL);
-                            }
+                    }
+                    if (absorber != null) {
+                        intercepted++;
+                        RaidEffects.hit(null, absorber, 3, null, true);
+                        absorber.heal(3);
+                    } else {
+                        raid.heal(xarpus, Math.max(1, raid.maxHitpoints(xarpus) / 25)); // approx
+                        absorbed++;
+                        say("Xarpus absorbs the exhumed acid!");
+                        if (raid.healthFraction(xarpus) >= 0.999) {
+                            CombatAchievementService.flagNear(xarpus, CombatAchievements.FLAG_XARPUS_FULL_HEAL);
                         }
                     }
                 }
-                if (raid.roomTicks() >= 30) {
+                if (resolved >= total) {
                     phase = 2;
                     exhumeds.clear();
-                    xarpus.setNoAi(false);
                     warn("Xarpus awakens!");
                 }
                 return;
             }
-            if (phase == 2 && tick % 6 == 0 && !players.isEmpty()) {
-                // OSRS: the poison splashes a 3x3 area lightly and then stays on the floor for the rest of the fight,
-                // dealing 4-8 a tick, more for every exhumed Xarpus absorbed. // approx: 6 + 1 per exhumed, up to 16
+            // Pebbles for anyone standing under him.
+            for (ServerPlayer p : players) {
+                if (RaidEffects.horizontalDistSq(p.position(), xarpus.position()) < 1.5 * 1.5) {
+                    RaidEffects.hit(xarpus, p, rnd().nextInt(TobRules.XARPUS_STOMP_MAX + 1), null, true);
+                }
+            }
+            if (phase == 2 && t % 4 == 0 && !players.isEmpty()) {
                 ServerPlayer p = players.get(rnd().nextInt(players.size()));
                 Vec3 at = p.position();
-                int pool = Math.min(16, 6 + absorbed);
-                RaidEffects.strike(world(), at, 1.6, 8, 3, xarpus, ParticleTypes.ITEM_SLIME);
-                RaidEffects.later(3, () -> Mechanics.addHazard(world(), at, pool, 3000, xarpus));
+                world().sendParticles(ParticleTypes.ITEM_SLIME, at.x, at.y + 0.2, at.z, 10, 0.8, 0.05, 0.8, 0);
+                RaidEffects.later(3, () -> {
+                    for (ServerPlayer q : players()) {
+                        if (RaidEffects.horizontalDistSq(q.position(), at) <= 1.5 * 1.5) {
+                            RaidEffects.hit(xarpus, q, 1 + rnd().nextInt(4), null, true); // the splash "lightly damages"
+                        }
+                    }
+                    pools.add(new CoxRooms.Pool(at, Integer.MAX_VALUE, 4, 8, 0));
+                });
             }
-            if (phase == 2 && raid.healthFraction(xarpus) <= 0.25) {
+            if (phase == 2 && raid.healthFraction(xarpus) <= TobRules.XARPUS_SCREECH_AT) {
                 phase = 3;
-                warn("Xarpus shrieks and turns away! Do not attack him while he faces you!");
+                quadrant = rnd().nextInt(4);
+                turnTimer = TobRules.XARPUS_TURN_TICKS;
+                warn("Xarpus shrieks and stares intently at one corner! Do not attack him from where he looks!");
             }
-            if (phase == 3) {
-                if (raid.roomTicks() % 8 == 0) {
-                    facing = new float[]{0, 90, 180, -90}[rnd().nextInt(4)];
-                    say("Xarpus turns to face another direction.");
+            if (phase == 3 && --turnTimer <= 0) {
+                turnTimer = TobRules.XARPUS_TURN_TICKS;
+                quadrant = TobRules.xarpusNextQuadrant(quadrant, rnd());
+                say("Xarpus turns to stare at another corner.");
+            }
+        }
+
+        private void tickPools(List<ServerPlayer> players) {
+            for (CoxRooms.Pool pool : pools) {
+                if (t % 3 == 0) {
+                    world().sendParticles(ParticleTypes.ITEM_SLIME, pool.pos().x, pool.pos().y + 0.1, pool.pos().z, 2, 0.4, 0.02, 0.4, 0);
                 }
-                // OSRS: in this phase Xarpus stops spitting poison and only stares at one quadrant at a time.
             }
+            for (ServerPlayer p : players) {
+                for (CoxRooms.Pool pool : pools) {
+                    if (Math.abs(p.getX() - pool.pos().x) < 1.5 && Math.abs(p.getZ() - pool.pos().z) < 1.5) {
+                        RaidEffects.hit(xarpus, p, TobRules.xarpusPoison(4 + rnd().nextInt(5), absorbed), null, true);
+                        break;
+                    }
+                }
+            }
+        }
+
+        /** The quadrant (0-3) a position lies in, seen from Xarpus. */
+        private int quadrantOf(Vec3 pos) {
+            double dx = pos.x - xarpus.getX();
+            double dz = pos.z - xarpus.getZ();
+            float angle = (float) Math.toDegrees(Math.atan2(-dx, dz));
+            int best = 0;
+            for (int q = 1; q < 4; q++) {
+                if (Math.abs(Mth.wrapDegrees(angle - yaw(q))) < Math.abs(Mth.wrapDegrees(angle - yaw(best)))) {
+                    best = q;
+                }
+            }
+            return best;
+        }
+
+        @Override
+        public int bossIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            if (phase == 3 && quadrantOf(attacker.position()) == quadrant) {
+                Msg.red(attacker, "Xarpus is staring in your direction and retaliates with a powerful attack!");
+                CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_XARPUS_REFLECT);
+                RaidEffects.hit(boss, attacker, TobRules.xarpusRetaliation(50 + rnd().nextInt(26), absorbed), null, true);
+            }
+            return damage;
         }
 
         @Override
         protected void onComplete() {
             super.onComplete();
-            // The poison pools last for the rest of the fight, not beyond it.
-            Mechanics.clearHazards(world(), RaidBuilder.roomBox(raid.slot, index));
+            pools.clear();
+            // OSRS: the Dawnbringer lies in the room for whoever will use it on Verzik's shield.
+            CoxRooms.dropItem(world(), vec(RaidBuilder.HALF - 4, 0), TobBosses.DAWNBRINGER, 1);
+            say("The Dawnbringer appears where Xarpus fell. Take it to break Verzik's shield.");
         }
 
         @Override
-        public int bossIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
-            if (phase != 3) {
-                return damage;
+        public String walk(CoxTobWalk w) {
+            w.expect(alive(xarpus) && !bossVulnerable(xarpus), "Xarpus did not start weakened and unattackable");
+            w.expect(raid.healthFraction(xarpus) < 0.76, "Xarpus did not start at 75% health");
+            // Stand on the first exhumed so it can't heal him.
+            w.until(() -> !exhumeds.isEmpty(), 10, "no exhumed appeared");
+            w.moveTo(exhumeds.get(0).pos());
+            w.until(() -> intercepted > 0 || phase > 1, 15, "standing on an exhumed did not stop it");
+            w.until(() -> phase > 1, 120, "Xarpus never woke (" + resolved + "/" + TobRules.xarpusExhumeds(raid.partySize()) + " exhumeds)");
+            int guard = 0;
+            while (alive(xarpus) && guard++ < 800) {
+                if (phase == 3) {
+                    // Attack from the corner opposite the one he stares at.
+                    float yaw = yaw(quadrant + 2);
+                    double rad = Math.toRadians(yaw);
+                    w.moveTo(new Vec3(xarpus.getX() - Math.sin(rad) * 4, xarpus.getY(), xarpus.getZ() + Math.cos(rad) * 4));
+                    w.expect(quadrantOf(w.player().position()) != quadrant, "could not find a corner Xarpus isn't staring at");
+                }
+                w.hit(xarpus, Math.max(10, raid.maxHitpoints(xarpus) / 15), AttackType.RANGED);
+                w.tick(1);
             }
-            double dx = attacker.getX() - boss.getX();
-            double dz = attacker.getZ() - boss.getZ();
-            float angle = (float) Math.toDegrees(Math.atan2(-dx, dz));
-            if (Math.abs(Mth.wrapDegrees(angle - facing)) < 50) {
-                // OSRS: attacking from the quadrant he stares at draws a poison retaliation of 50-75.
-                Msg.red(attacker, "Xarpus spits poison back at you!");
-                com.runecraft.content.systems.CombatAchievementService.flagNear(boss, com.runecraft.osrs.content.systems.CombatAchievements.FLAG_XARPUS_REFLECT);
-                RaidEffects.hit(boss, attacker, 50 + rnd().nextInt(26), null, true);
-                return damage;
+            w.expect(!alive(xarpus), "Xarpus did not die (phase " + phase + ")");
+            w.until(() -> !world().getEntitiesOfClass(ItemEntity.class, net.minecraft.world.phys.AABB.ofSize(vec(RaidBuilder.HALF - 4, 0), 4, 4, 4),
+                    e -> TobBosses.DAWNBRINGER.equals(Inv.idOf(e.getItem()))).isEmpty(), 2, "the Dawnbringer was not left behind");
+            for (ItemEntity e : world().getEntitiesOfClass(ItemEntity.class, net.minecraft.world.phys.AABB.ofSize(vec(RaidBuilder.HALF - 4, 0), 4, 4, 4),
+                    e -> TobBosses.DAWNBRINGER.equals(Inv.idOf(e.getItem())))) {
+                e.discard();
+                w.give(TobBosses.DAWNBRINGER, 1); // picked up
             }
-            return damage;
+            return intercepted + " exhumed(s) stopped, " + absorbed + " absorbed; Dawnbringer taken";
         }
     }
 
-    /** Verzik Vitur: throne blasts (hide behind pillars), her second form, then the spider form. */
-    static final class Verzik extends RoomLogic {
+    // ================================================================== Verzik Vitur
+
+    /**
+     * Verzik Vitur (OSRS wiki). Phase 1 on her throne: her shield caps hits at 10 (melee) and 3 (ranged, magic) except the
+     * Dawnbringer's; every 14 ticks a blast of up to 137 (halved by Protect from Magic) hits everyone she can see, a pillar
+     * absorbing it for anyone behind it. Phase 2: urnbombs at every player (up to 44, halved by Protect from Missiles), a
+     * body slam (45, knocked back and stunned) on anyone in reach, a stomp (82) under her, and every fifth attack a
+     * bouncing lightning ball; nylocas home in and explode, a Nylocas Athanatos heals her (only poison kills it, dealing
+     * up to 70 to her). Below 35% she summons two Matomenos and mostly casts a healing spell (up to 45, halved by prayer,
+     * healing half). Phase 3: every 7 ticks projectiles at everyone (up to 33, halved by the right prayer) or a melee hit
+     * (63) on anyone next to her; after every four attacks a special in turn: nylocas, webs, yellows (stand alone on a
+     * pool or take up to 80), the green ball (75% of the Hitpoints level, bounced to a neighbour). At 20% she enrages:
+     * attacks every 5 ticks, projectiles up to 34, and a purple tornado chases every player (half their hitpoints, healing
+     * her three times that).
+     */
+    static final class Verzik extends TobRoom {
         private static final int[][] PILLARS = {{0, -7}, {0, 7}, {-8, -7}, {-8, 7}};
         private DataBossEntity verzik;
         private int form;
-        private final Map<UUID, Vec3> lastPos = new HashMap<>();
-        private boolean purpleSpawned;
+        private final int[] pillarBlasts = new int[PILLARS.length];
+        private boolean pillarLost;
+        private int attacks;
+        private int lightnings;
+        private boolean p25;
+        private int summoning;
+        private LivingEntity athanatos;
+        private boolean enraged;
+        private int invulnerable;
+        private final Map<UUID, Vec3> tornadoes = new HashMap<>();
+        private final Map<UUID, Integer> tornadoRespawn = new HashMap<>();
+        private final Map<BlockPos, Integer> webs = new HashMap<>();
+        private final List<Vec3> yellows = new ArrayList<>();
+        private int specials;
 
         Verzik(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -1135,21 +1734,16 @@ final class TobRooms {
             pillars(Blocks.STONE_BRICKS.defaultBlockState());
         }
 
-        private void pillars(net.minecraft.world.level.block.state.BlockState state) {
+        private void pillars(BlockState state) {
             for (int[] p : PILLARS) {
                 RaidBuilder.pillar(world(), center().offset(p[0], 0, p[1]), 1, 5, state);
             }
         }
 
-        /** Phase 1 blasts each supporting pillar has absorbed; -1 once it collapsed. */
-        private final int[] pillarBlasts = new int[PILLARS.length];
-        private boolean pillarLost;
-
         private Vec3 pillarCentre(int i) {
             return Vec3.atBottomCenterOf(center().offset(PILLARS[i][0], 1, PILLARS[i][1]));
         }
 
-        /** The standing pillar sheltering a player from Verzik (the nearest one between them), or -1. */
         private int shelter(ServerPlayer p) {
             int best = -1;
             double bestD = 3.5 * 3.5;
@@ -1166,16 +1760,12 @@ final class TobRooms {
             return best;
         }
 
-        /**
-         * A pillar collapses (OSRS wiki): players next to it take up to 70 (50 in Entry mode) and are stunned and pushed
-         * away.
-         */
         private void collapse(int i) {
             pillarBlasts[i] = -1;
             Vec3 c = pillarCentre(i);
             RaidBuilder.pillar(world(), center().offset(PILLARS[i][0], 0, PILLARS[i][1]), 1, 5, Blocks.AIR.defaultBlockState());
             world().sendParticles(ParticleTypes.EXPLOSION, c.x, c.y + 1, c.z, 4, 1, 1, 1, 0);
-            int max = com.runecraft.osrs.content.raids.RaidScaling.verzikPillarCollapse(raid.mode());
+            int max = RaidScaling.verzikPillarCollapse(raid.mode());
             for (ServerPlayer p : players()) {
                 if (RaidEffects.horizontalDistSq(p.position(), c) <= 2.6 * 2.6) {
                     RaidEffects.hit(verzik, p, rnd().nextInt(max + 1), null, true);
@@ -1191,25 +1781,41 @@ final class TobRooms {
         @Override
         public void start() {
             form = 1;
-            purpleSpawned = false;
             java.util.Arrays.fill(pillarBlasts, 0);
             pillarLost = false;
             verzik = spawnBoss("verzik_vitur", at(15, 0).above());
             if (verzik != null) {
-                // Phase 1 only attacks with the room's pillar-blocked blast (OSRS); the generic attack AI would hit through pillars.
                 verzik.setNoAi(true);
             }
             anchor(verzik);
         }
 
         @Override
+        public boolean bossVulnerable(DataBossEntity boss) {
+            return boss != verzik || invulnerable <= 0;
+        }
+
+        @Override
         public int bossIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
-            // Phase 1: without a Dawnbringer every hit is capped at 10 (as in OSRS).
-            return form == 1 ? Math.min(damage, 10) : damage;
+            if (boss != verzik) {
+                return damage;
+            }
+            if (form == 1) {
+                boolean dawnbringer = TobBosses.DAWNBRINGER.equals(Inv.idOf(attacker.getMainHandItem()));
+                return TobRules.verzikP1Cap(damage, CoxRooms.melee(type), dawnbringer);
+            }
+            if (form == 2 && summoning > 0 && damage > 0) {
+                // OSRS: during the summoning animation of phase 2.5, damage heals her.
+                raid.heal(verzik, damage);
+                Msg.action(attacker, "Verzik absorbs the blow and heals!");
+                return 0;
+            }
+            return damage;
         }
 
         @Override
         public void gameTick(long tick) {
+            t++;
             if (verzik == null) {
                 return;
             }
@@ -1217,89 +1823,225 @@ final class TobRooms {
             if (!alive(verzik)) {
                 if (form == 1) {
                     form = 2;
-                    // Verzik leaves her throne and every remaining pillar collapses.
                     for (int i = 0; i < PILLARS.length; i++) {
                         if (pillarBlasts[i] >= 0) {
                             collapse(i);
                         }
                     }
                     pillars(Blocks.AIR.defaultBlockState());
-                    verzik = spawnBoss("verzik_vitur_p2", BlockPos.containing(pos).offset(-3, 0, 0));
+                    verzik = spawnBoss("verzik_vitur_p2", BlockPos.containing(vec(0, 0)));
+                    if (verzik != null) {
+                        verzik.setNoAi(true);
+                    }
+                    attacks = 0;
                     warn("Verzik Vitur: Let's see how you handle this! The pillars crumble!");
+                    summonNylocas(true);
                 } else if (form == 2) {
                     form = 3;
                     verzik = spawnBoss("verzik_vitur_p3", BlockPos.containing(pos));
+                    if (verzik != null) {
+                        verzik.setNoAi(true);
+                    }
+                    attacks = 0;
                     warn("Verzik Vitur: Behold my true nature!");
                 } else {
                     complete();
                 }
                 return;
             }
+            if (invulnerable > 0) {
+                invulnerable--;
+            }
+            tickNylocas();
             List<ServerPlayer> players = players();
             switch (form) {
-                case 1 -> phaseOne(tick, players);
-                case 2 -> phaseTwo(tick, players);
-                default -> phaseThree(tick, players);
+                case 1 -> phaseOne();
+                case 2 -> phaseTwo(players);
+                default -> phaseThree(players);
             }
         }
 
-        private void phaseOne(long tick, List<ServerPlayer> players) {
+        // ---------------- phase 1
+
+        private void phaseOne() {
             if (pillarLost) {
-                com.runecraft.content.systems.CombatAchievementService.flagNear(verzik, CombatAchievements.FLAG_VERZIK_PILLAR_LOST);
+                CombatAchievementService.flagNear(verzik, CombatAchievements.FLAG_VERZIK_PILLAR_LOST);
             }
-            if (raid.roomTicks() % 14 == 6) {
-                warn("Verzik charges a blast of energy! Hide behind a pillar!");
-                RaidEffects.later(2, () -> {
-                    if (!alive(verzik) || form != 1) {
-                        return;
-                    }
-                    Set<Integer> struck = new HashSet<>();
-                    for (ServerPlayer p : players()) {
-                        if (canSee(verzik, p)) {
-                            Vec3 a = verzik.getEyePosition();
-                            Vec3 b = p.getEyePosition();
-                            for (int i = 0; i <= 10; i++) {
-                                Vec3 v = a.lerp(b, i / 10.0);
-                                world().sendParticles(ParticleTypes.ELECTRIC_SPARK, v.x, v.y, v.z, 2, 0.1, 0.1, 0.1, 0);
-                            }
-                            // OSRS: an unshielded P1 blast hits up to 137 in normal mode.
-                            RaidEffects.hit(verzik, p, rnd().nextInt(138), null, true);
-                        } else {
-                            Msg.action(p, "The pillar shields you from the blast.");
-                            int pillar = shelter(p);
-                            if (pillar >= 0) {
-                                struck.add(pillar);
-                            }
+            if (t % TobRules.VERZIK_P1_BLAST_TICKS != 6) {
+                return;
+            }
+            warn("Verzik charges a blast of energy! Hide behind a pillar!");
+            RaidEffects.later(2, () -> {
+                if (!alive(verzik) || form != 1) {
+                    return;
+                }
+                Set<Integer> struck = new HashSet<>();
+                for (ServerPlayer p : players()) {
+                    if (canSee(verzik, p)) {
+                        Vec3 a = verzik.getEyePosition();
+                        Vec3 b = p.getEyePosition();
+                        for (int i = 0; i <= 10; i++) {
+                            Vec3 v = a.lerp(b, i / 10.0);
+                            world().sendParticles(ParticleTypes.ELECTRIC_SPARK, v.x, v.y, v.z, 2, 0.1, 0.1, 0.1, 0);
+                        }
+                        int dmg = rnd().nextInt(TobRules.VERZIK_P1_BLAST_MAX + 1);
+                        if (RaidEffects.protectedFrom(p, AttackType.MAGIC)) {
+                            dmg /= 2;
+                        }
+                        RaidEffects.hit(verzik, p, dmg, null, true);
+                    } else {
+                        Msg.action(p, "The pillar shields you from the blast.");
+                        int pillar = shelter(p);
+                        if (pillar >= 0) {
+                            struck.add(pillar);
                         }
                     }
-                    // Several players behind one pillar only damage it once.
-                    for (int i : struck) {
-                        if (pillarBlasts[i] >= 0 && ++pillarBlasts[i] >= com.runecraft.osrs.content.raids.RaidScaling.VERZIK_PILLAR_BLASTS) {
-                            pillarLost = true;
-                            warn("A supporting pillar crumbles under Verzik's blasts!");
-                            collapse(i);
+                }
+                for (int i : struck) {
+                    if (pillarBlasts[i] >= 0 && ++pillarBlasts[i] >= RaidScaling.VERZIK_PILLAR_BLASTS) {
+                        pillarLost = true;
+                        warn("A supporting pillar crumbles under Verzik's blasts!");
+                        collapse(i);
+                    }
+                }
+            });
+        }
+
+        // ---------------- phase 2
+
+        private void phaseTwo(List<ServerPlayer> players) {
+            if (summoning > 0) {
+                summoning--;
+                return;
+            }
+            if (!p25 && raid.healthFraction(verzik) < TobRules.VERZIK_P25_AT) {
+                p25 = true;
+                summoning = 4; // approx: the summoning animation
+                for (int side = -1; side <= 1; side += 2) {
+                    spawnMob("nylocas_matomenos", BlockPos.containing(verzik.position()).offset(0, 0, side * 3), false);
+                }
+                warn("Verzik summons two Nylocas Matomenos - attacking her now only heals her!");
+                return;
+            }
+            if (alive(athanatos)) {
+                if (t % 4 == 0) {
+                    raid.heal(verzik, TobRules.ATHANATOS_HEAL_MIN + rnd().nextInt(TobRules.ATHANATOS_HEAL_MAX - TobRules.ATHANATOS_HEAL_MIN + 1));
+                    world().sendParticles(ParticleTypes.HEART, verzik.getX(), verzik.getY() + 2, verzik.getZ(), 2, 0.4, 0.3, 0.4, 0);
+                }
+                TobRooms.walk(athanatos, verzik.position());
+            }
+            if (players.isEmpty() || t % TobRules.VERZIK_P2_SPEED != 0) {
+                return;
+            }
+            attacks++;
+            if (attacks % TobRules.VERZIK_LIGHTNING_EVERY == 0) {
+                lightning(players);
+                return;
+            }
+            if (p25 && rnd().nextDouble() < TobRules.VERZIK_HEAL_SPELL_CHANCE) {
+                healingSpell(players.get(rnd().nextInt(players.size())));
+                return;
+            }
+            for (ServerPlayer p : players) {
+                double d = p.distanceToSqr(verzik);
+                if (d < 1.2 * 1.2) {
+                    // Stomp: anyone underneath, always lands; Protect from Melee doesn't help.
+                    RaidEffects.hit(verzik, p, rnd().nextInt(TobRules.VERZIK_STOMP_MAX + 1), null, true);
+                    knockBack(p, 3);
+                    Msg.red(p, "Verzik Vitur: There's nothing for you there!");
+                    return;
+                }
+            }
+            for (ServerPlayer p : players) {
+                if (p.distanceToSqr(verzik) < 2.8 * 2.8 && rnd().nextInt(4) != 0) {
+                    RaidEffects.hit(verzik, p, rnd().nextInt(TobRules.VERZIK_SLAM_MAX + 1), null, true);
+                    knockBack(p, 3);
+                    com.runecraft.content.systems.SysCombat.freeze(p, 5);
+                    Msg.red(p, "Verzik body slams you!");
+                    return;
+                }
+            }
+            // Urnbombs at every player's spot, landing a few ticks later.
+            for (ServerPlayer p : players) {
+                Vec3 at = p.position();
+                world().sendParticles(ParticleTypes.FLAME, at.x, at.y + 0.2, at.z, 8, 0.3, 0.05, 0.3, 0);
+                RaidEffects.later(3, () -> {
+                    for (ServerPlayer q : players()) {
+                        if (RaidEffects.horizontalDistSq(q.position(), at) < 0.8 * 0.8) {
+                            int dmg = 1 + rnd().nextInt(TobRules.VERZIK_URN_MAX);
+                            if (RaidEffects.protectedFrom(q, AttackType.RANGED)) {
+                                dmg /= 2;
+                            }
+                            RaidEffects.hit(verzik, q, dmg, null, true);
                         }
                     }
                 });
             }
         }
 
-        private void phaseTwo(long tick, List<ServerPlayer> players) {
-            autoAttack(verzik, tick, 4);
-            if (tick % 20 == 0) {
-                say("Verzik summons lightning!");
-                for (ServerPlayer p : players) {
-                    RaidEffects.strike(world(), p.position(), 1.4, 30, 3, verzik, ParticleTypes.ELECTRIC_SPARK);
+        private void knockBack(ServerPlayer p, double strength) {
+            Vec3 push = p.position().subtract(verzik.position()).multiply(1, 0, 1);
+            if (push.lengthSqr() < 1e-4) {
+                push = new Vec3(1, 0, 0);
+            }
+            push = push.normalize().scale(strength * 0.4);
+            p.push(push.x, 0.4, push.z);
+            p.hurtMarked = true;
+        }
+
+        /** The lightning ball bounces between players up to four times; through Verzik it hurts her, else up to 48. */
+        private void lightning(List<ServerPlayer> players) {
+            lightnings++;
+            ServerPlayer at = players.get(rnd().nextInt(players.size()));
+            say("Verzik fires a ball of lightning!");
+            for (int bounce = 0; bounce < 4; bounce++) {
+                if (players.size() > 1 && rnd().nextBoolean()) {
+                    // approx: a well-spread team bounces it through her half the time
+                    com.runecraft.combat.CombatHandler.applyDamage(null, verzik, 15 + rnd().nextInt(6));
+                    say("The lightning arcs through Verzik!");
+                    return;
                 }
             }
-            if (tick % 30 == 15) {
-                for (int i = 0; i < 2; i++) {
-                    spawnMob("nylocas_matomenos", BlockPos.containing(verzik.position()).offset(rnd().nextInt(5) - 2, 0, rnd().nextInt(5) - 2),
-                            false);
-                }
-                say("Verzik spawns explosive Nylocas!");
+            RaidEffects.hit(verzik, at, rnd().nextInt(TobRules.VERZIK_LIGHTNING_MAX + 1), null, true);
+            if (lightnings % 3 == 0 && !alive(athanatos) && !p25 && rnd().nextDouble() < TobRules.VERZIK_RESUMMON_CHANCE) {
+                summonNylocas(false);
             }
+        }
+
+        private void healingSpell(ServerPlayer target) {
+            int total = 0;
+            for (ServerPlayer p : players()) {
+                if (p.distanceToSqr(target) <= 1.5 * 1.5) {
+                    int dmg = rnd().nextInt(TobRules.VERZIK_HEAL_SPELL_MAX + 1);
+                    if (RaidEffects.protectedFrom(p, AttackType.MAGIC)) {
+                        dmg /= 2;
+                    }
+                    total += dmg;
+                    RaidEffects.hit(verzik, p, dmg, null, true);
+                }
+            }
+            raid.heal(verzik, total / 2);
+            world().sendParticles(ParticleTypes.WITCH, target.getX(), target.getY() + 1, target.getZ(), 15, 0.8, 0.5, 0.8, 0);
+        }
+
+        /** Nylocas that home in on players and explode (up to 46 next to them, 8 three tiles away); P2's first group brings the Athanatos. */
+        private void summonNylocas(boolean athanatosToo) {
+            for (int i = 0; i < Math.max(2, players().size() * 2); i++) {
+                spawnMob("nylocas_matomenos", BlockPos.containing(verzik.position()).offset(rnd().nextInt(5) - 2, 0, rnd().nextInt(5) - 2), false);
+            }
+            say("Verzik summons explosive Nylocas!");
+            if (athanatosToo && !alive(athanatos)) {
+                athanatos = spawnMob("nylocas_athanatos", at(-10, rnd().nextBoolean() ? -10 : 10), false);
+                warn("A Nylocas Athanatos crawls towards Verzik to heal her - poison it!");
+            }
+        }
+
+        private void tickNylocas() {
+            List<ServerPlayer> players = players();
             for (LivingEntity crab : living("nylocas_matomenos")) {
+                if (form == 2 && p25) {
+                    continue; // phase 2.5's Matomenos just stand by her
+                }
                 ServerPlayer nearest = null;
                 double best = Double.MAX_VALUE;
                 for (ServerPlayer p : players) {
@@ -1310,112 +2052,228 @@ final class TobRooms {
                     }
                 }
                 if (nearest != null) {
-                    walk(crab, nearest.position());
+                    TobRooms.walk(crab, nearest.position());
                 }
-                if (best < 1.8 * 1.8 || crab.tickCount > 20 * ActionManager.MC_TICKS_PER_GAME_TICK) {
+                if (best < 1.8 * 1.8 || crab.tickCount > TobRules.VERZIK_NYLO_TICKS * ActionManager.MC_TICKS_PER_GAME_TICK) {
                     world().sendParticles(ParticleTypes.EXPLOSION, crab.getX(), crab.getY() + 0.5, crab.getZ(), 2, 0.4, 0.4, 0.4, 0);
                     for (ServerPlayer p : players) {
-                        if (p.distanceToSqr(crab) < 2.5 * 2.5) {
-                            RaidEffects.hit(verzik, p, 10 + rnd().nextInt(16), null, true);
+                        double d = p.distanceToSqr(crab);
+                        if (d < 1.8 * 1.8) {
+                            RaidEffects.hit(verzik, p, rnd().nextInt(TobRules.VERZIK_NYLO_MAX + 1), null, true);
+                        } else if (d < 3.5 * 3.5) {
+                            RaidEffects.hit(verzik, p, rnd().nextInt(TobRules.VERZIK_NYLO_FAR + 1), null, true);
                         }
                     }
                     crab.discard();
                 }
             }
-            if (!purpleSpawned && raid.healthFraction(verzik) < 0.5) {
-                purpleSpawned = true;
-                spawnMob("nylocas_athanatos", at(-10, rnd().nextBoolean() ? -10 : 10), false);
-                warn("A Nylocas Athanatos crawls towards Verzik to heal her - kill it!");
-            }
-            healers("nylocas_athanatos", verzik, 0.75, "The Nylocas Athanatos heals Verzik!");
         }
 
-        private void phaseThree(long tick, List<ServerPlayer> players) {
-            if (players.isEmpty()) {
+        /** Only poison and venom harm the Athanatos; it absorbs the poison and deals up to 70 to Verzik as it dies. */
+        boolean poisonous(ServerPlayer p) {
+            String w = Inv.idOf(p.getMainHandItem());
+            return w.contains("blowpipe") || w.contains("toxic") || w.contains("serpentine") || w.contains("venom") || w.endsWith("_p")
+                    || w.contains("_p_") || w.endsWith("_kp") || w.contains("(p");
+        }
+
+        /** The Athanatos rule, called from the hit filter registered in {@link TobRooms#init}. */
+        int athanatosHit(ServerPlayer attacker, int damage) {
+            if (!poisonous(attacker)) {
+                Msg.action(attacker, "The Nylocas Athanatos shrugs it off. Only poison will harm it.");
+                return 0;
+            }
+            if (alive(verzik)) {
+                com.runecraft.combat.CombatHandler.applyDamage(attacker, verzik, rnd().nextInt(TobRules.ATHANATOS_POISON_MAX + 1));
+            }
+            say("The Nylocas Athanatos absorbs the poison and bursts against Verzik!");
+            return Math.max(damage, raid.hitpoints(athanatos));
+        }
+
+        // ---------------- phase 3
+
+        private void phaseThree(List<ServerPlayer> players) {
+            if (!enraged && raid.healthFraction(verzik) < TobRules.VERZIK_ENRAGE_AT) {
+                enraged = true;
+                warn("Verzik Vitur: I'm not finished with you just yet!");
+                for (ServerPlayer p : players) {
+                    tornadoes.put(p.getUUID(), verzik.position());
+                }
+            }
+            tickWebs(players);
+            tickTornadoes(players);
+            if (players.isEmpty() || invulnerable > 0) {
                 return;
             }
-            long t = raid.roomTicks();
-            // Hard mode: Verzik spins webs more often and in greater number. // approx
-            if (t % (hard() ? 20 : 30) == 10) {
-                say("Verzik spins sticky webs!");
-                List<BlockPos> webs = new ArrayList<>();
-                int count = 6 + players.size() * 2;
-                for (int i = 0; i < (hard() ? count * 3 / 2 : count); i++) {
-                    ServerPlayer p = players.get(rnd().nextInt(players.size()));
-                    BlockPos w = p.blockPosition().offset(rnd().nextInt(7) - 3, 0, rnd().nextInt(7) - 3);
-                    if (world().getBlockState(w).isAir() && inside(Vec3.atBottomCenterOf(w))) {
-                        RaidBuilder.set(world(), w, Blocks.COBWEB.defaultBlockState());
-                        webs.add(w);
+            int speed = enraged ? TobRules.VERZIK_P3_ENRAGED_SPEED : TobRules.VERZIK_P3_SPEED;
+            if (t % speed != 0) {
+                return;
+            }
+            attacks++;
+            if (attacks % (TobRules.VERZIK_P3_ATTACKS_PER_SPECIAL + 1) == 0) {
+                TobRules.P3Special s = TobRules.P3_ROTATION.get(specials++ % TobRules.P3_ROTATION.size());
+                switch (s) {
+                    case NYLOCAS -> summonNylocas(false);
+                    case WEBS -> webs(players);
+                    case YELLOWS -> yellows(players);
+                    default -> greenBall(players.get(rnd().nextInt(players.size())));
+                }
+                return;
+            }
+            boolean melee = false;
+            for (ServerPlayer p : players) {
+                if (p.distanceToSqr(verzik) < 2.5 * 2.5 && rnd().nextBoolean()) {
+                    melee = true;
+                }
+            }
+            if (melee) {
+                for (ServerPlayer p : players) {
+                    if (p.distanceToSqr(verzik) < 2.5 * 2.5) {
+                        RaidEffects.hit(verzik, p, rnd().nextInt(TobRules.VERZIK_P3_MELEE_MAX + 1), null, true);
                     }
                 }
-                RaidEffects.later(15, () -> {
-                    for (BlockPos w : webs) {
-                        if (world().getBlockState(w).is(Blocks.COBWEB)) {
-                            RaidBuilder.set(world(), w, Blocks.AIR.defaultBlockState());
+                return;
+            }
+            AttackType style = rnd().nextBoolean() ? AttackType.RANGED : AttackType.MAGIC;
+            int max = enraged ? TobRules.VERZIK_ENRAGED_PROJECTILE_MAX : TobRules.VERZIK_P3_PROJECTILE_MAX;
+            for (ServerPlayer p : players) {
+                int dmg = rnd().nextInt(max + 1);
+                if (RaidEffects.protectedFrom(p, style)) {
+                    dmg /= 2;
+                }
+                RaidEffects.hit(verzik, p, dmg, null, true);
+            }
+        }
+
+        /** Sticky webs: she moves to the middle (invulnerable) and throws webs at the players; a web left too long snaps. */
+        private void webs(List<ServerPlayer> players) {
+            say("Verzik spins sticky webs!");
+            invulnerable = 3;
+            move(verzik, vec(0, 0));
+            for (ServerPlayer p : players) {
+                for (int i = 0; i < 3; i++) {
+                    BlockPos w = p.blockPosition().offset(rnd().nextInt(5) - 2, 0, rnd().nextInt(5) - 2);
+                    if (world().getBlockState(w).isAir() && inside(Vec3.atBottomCenterOf(w))) {
+                        RaidBuilder.set(world(), w, Blocks.COBWEB.defaultBlockState());
+                        webs.put(w, t + TobRules.WEB_SNAP_TICKS);
+                    }
+                }
+            }
+        }
+
+        private void tickWebs(List<ServerPlayer> players) {
+            for (java.util.Iterator<Map.Entry<BlockPos, Integer>> it = webs.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<BlockPos, Integer> e = it.next();
+                if (!world().getBlockState(e.getKey()).is(Blocks.COBWEB)) {
+                    it.remove();
+                    continue;
+                }
+                if (t >= e.getValue()) {
+                    for (ServerPlayer p : players) {
+                        if (p.blockPosition().equals(e.getKey())) {
+                            RaidEffects.hit(verzik, p, TobRules.WEB_SNAP_MIN + rnd().nextInt(TobRules.WEB_SNAP_MAX - TobRules.WEB_SNAP_MIN + 1), null, true);
+                            Msg.red(p, "The web snaps around you!");
                         }
+                    }
+                    RaidBuilder.set(world(), e.getKey(), Blocks.AIR.defaultBlockState());
+                    it.remove();
+                }
+            }
+        }
+
+        /** Power blast: one pool per player; anyone not alone on a pool takes up to 80. Verzik can't be hurt meanwhile. */
+        private void yellows(List<ServerPlayer> players) {
+            warn("Verzik charges a powerful blast! Stand alone on a yellow pool!");
+            invulnerable = 7;
+            yellows.clear();
+            for (ServerPlayer p : players) {
+                yellows.add(p.position().add(rnd().nextInt(7) - 3, 0, rnd().nextInt(7) - 3));
+            }
+            for (int k = 0; k < 6; k++) {
+                RaidEffects.later(k, () -> {
+                    for (Vec3 v : yellows) {
+                        world().sendParticles(ParticleTypes.WAX_ON, v.x, v.y + 0.1, v.z, 8, 0.4, 0.05, 0.4, 0);
                     }
                 });
             }
-            if (t % 40 == 25) {
-                warn("Verzik spits yellow pools! Stand in one to lessen the damage!");
-                List<Vec3> pools = new ArrayList<>();
-                for (ServerPlayer p : players) {
-                    pools.add(p.position().add(rnd().nextInt(7) - 3, 0, rnd().nextInt(7) - 3));
+            RaidEffects.later(6, () -> {
+                if (!alive(verzik)) {
+                    return;
                 }
-                for (int burst = 0; burst < 3; burst++) {
-                    for (int s = 0; s < 2; s++) {
-                        RaidEffects.later(1 + burst * 2 + s, () -> {
-                            for (Vec3 v : pools) {
-                                world().sendParticles(ParticleTypes.WAX_ON, v.x, v.y + 0.1, v.z, 8, 0.4, 0.05, 0.4, 0);
-                            }
-                        });
-                    }
-                    RaidEffects.later(4 + burst * 2, () -> {
-                        if (!alive(verzik)) {
-                            return;
-                        }
-                        for (ServerPlayer p : players()) {
-                            boolean safe = false;
-                            for (Vec3 v : pools) {
-                                if (RaidEffects.horizontalDistSq(p.position(), v) < 1.4) {
-                                    safe = true;
-                                    break;
-                                }
-                            }
-                            RaidEffects.hit(verzik, p, safe ? 8 : 30, null, true);
-                        }
-                    });
-                }
-            }
-            if (t % 25 == 5) {
-                ServerPlayer target = players.get(rnd().nextInt(players.size()));
-                warn("Verzik hurls a green ball at " + target.getName().getString() + "!");
-                RaidEffects.later(4, () -> {
-                    if (!target.isAlive() || !alive(verzik)) {
-                        return;
-                    }
-                    ServerPlayer buddy = null;
-                    for (ServerPlayer p : players()) {
-                        if (p != target && p.distanceToSqr(target) < 36) {
-                            buddy = p;
+                Map<Vec3, Integer> occupancy = new HashMap<>();
+                Map<ServerPlayer, Vec3> on = new HashMap<>();
+                for (ServerPlayer p : players()) {
+                    for (Vec3 v : yellows) {
+                        if (RaidEffects.horizontalDistSq(p.position(), v) < 1.0) {
+                            occupancy.merge(v, 1, Integer::sum);
+                            on.put(p, v);
                             break;
                         }
                     }
-                    world().sendParticles(ParticleTypes.HAPPY_VILLAGER, target.getX(), target.getY() + 1, target.getZ(), 20, 0.5, 0.5, 0.5, 0);
-                    if (buddy != null) {
-                        RaidEffects.hit(verzik, target, 25, AttackType.RANGED, false);
-                        RaidEffects.hit(verzik, buddy, 25, AttackType.RANGED, false);
-                    } else {
-                        RaidEffects.hit(verzik, target, 50, null, true);
+                }
+                for (ServerPlayer p : players()) {
+                    Vec3 v = on.get(p);
+                    if (v == null || occupancy.get(v) > 1) {
+                        RaidEffects.hit(verzik, p, rnd().nextInt(TobRules.VERZIK_YELLOW_MAX + 1), null, true);
                     }
-                });
+                }
+                yellows.clear();
+            });
+        }
+
+        /** The green ball: 75% of the Hitpoints level, or bounced on to a neighbour. */
+        private void greenBall(ServerPlayer target) {
+            Msg.red(target, "Verzik Vitur fires a powerful projectile in your direction...");
+            RaidEffects.later(4, () -> {
+                if (!target.isAlive() || !alive(verzik)) {
+                    return;
+                }
+                ServerPlayer buddy = null;
+                for (ServerPlayer p : players()) {
+                    if (p != target && p.distanceToSqr(target) < 1.5 * 1.5) {
+                        buddy = p;
+                        break;
+                    }
+                }
+                world().sendParticles(ParticleTypes.HAPPY_VILLAGER, target.getX(), target.getY() + 1, target.getZ(), 20, 0.5, 0.5, 0.5, 0);
+                if (buddy != null) {
+                    say("The green ball bounces to " + buddy.getName().getString() + " and fizzles out.");
+                } else {
+                    RaidEffects.hit(verzik, target, TobRules.greenBall(Players.data(target).skills().level(Skill.HITPOINTS)), null, true);
+                }
+            });
+        }
+
+        /** Enrage: a purple tornado per player creeps after them; contact takes half their hitpoints and heals her 3x. */
+        private void tickTornadoes(List<ServerPlayer> players) {
+            if (!enraged) {
+                return;
             }
-            if (raid.healthFraction(verzik) < 0.2 && tick % 2 == 0) {
-                for (ServerPlayer p : players) {
-                    Vec3 last = lastPos.put(p.getUUID(), p.position());
-                    if (last != null) {
-                        RaidEffects.strike(world(), last, 1.2, 15, 2, verzik, ParticleTypes.CLOUD);
+            for (ServerPlayer p : players) {
+                UUID u = p.getUUID();
+                Integer respawn = tornadoRespawn.get(u);
+                if (respawn != null) {
+                    if (t >= respawn) {
+                        tornadoRespawn.remove(u);
+                        tornadoes.put(u, verzik.position());
                     }
+                    continue;
+                }
+                Vec3 at = tornadoes.get(u);
+                if (at == null) {
+                    tornadoes.put(u, verzik.position());
+                    continue;
+                }
+                Vec3 to = p.position().subtract(at);
+                Vec3 step = to.lengthSqr() > 0.36 ? to.normalize().scale(0.6) : to;
+                at = at.add(step.x, 0, step.z);
+                tornadoes.put(u, at);
+                world().sendParticles(ParticleTypes.WITCH, at.x, at.y + 0.5, at.z, 6, 0.3, 0.6, 0.3, 0);
+                if (RaidEffects.horizontalDistSq(at, p.position()) < 0.7 * 0.7) {
+                    int dealt = RaidEffects.hit(verzik, p, Math.max(1, Math.round(p.getHealth()) / 2), null, true);
+                    raid.heal(verzik, dealt * 3);
+                    tornadoes.remove(u);
+                    tornadoRespawn.put(u, t + TobRules.TORNADO_RESPAWN_TICKS);
+                    Msg.red(p, "The purple tornado tears into you!");
                 }
             }
         }
@@ -1426,8 +2284,63 @@ final class TobRooms {
             if (alive(verzik)) {
                 verzik.discard();
             }
+            if (alive(athanatos)) {
+                athanatos.discard();
+            }
             living("nylocas_matomenos").forEach(LivingEntity::discard);
             living("nylocas_athanatos").forEach(LivingEntity::discard);
+            for (BlockPos w : webs.keySet()) {
+                if (world().getBlockState(w).is(Blocks.COBWEB)) {
+                    RaidBuilder.set(world(), w, Blocks.AIR.defaultBlockState());
+                }
+            }
+            webs.clear();
+            tornadoes.clear();
+        }
+
+        @Override
+        public String walk(CoxTobWalk w) {
+            w.expect(form == 1 && alive(verzik), "Verzik did not sit on her throne");
+            w.hold(null);
+            int capped = w.hit(verzik, 50, AttackType.SLASH);
+            w.expect(capped <= 10, "Verzik's phase 1 shield let a melee hit of " + capped + " through (cap 10)");
+            int rangedCapped = w.hit(verzik, 50, AttackType.RANGED);
+            w.expect(rangedCapped <= 3, "Verzik's phase 1 shield let a ranged hit of " + rangedCapped + " through (cap 3)");
+            w.expect(w.count(TobBosses.DAWNBRINGER) > 0, "the player has no Dawnbringer from Xarpus's room");
+            w.hold(TobBosses.DAWNBRINGER);
+            int guard = 0;
+            while (form == 1 && guard++ < 300) {
+                w.hit(verzik, 100, AttackType.MAGIC);
+                w.tick(1);
+            }
+            w.expect(form == 2, "the Dawnbringer did not break Verzik's phase 1 shield");
+            w.hold(null);
+            w.until(() -> alive(athanatos), 3, "no Nylocas Athanatos came in phase 2");
+            w.expect(w.hit(athanatos, 50, AttackType.SLASH) == 0, "the Athanatos took damage from a non-poison weapon");
+            w.hold("toxic_blowpipe");
+            w.kill(athanatos, AttackType.RANGED, "the Nylocas Athanatos (with poison)");
+            w.hold(null);
+            guard = 0;
+            while (form == 2 && guard++ < 800) {
+                for (LivingEntity n : living("nylocas_matomenos")) {
+                    w.kill(n, AttackType.MAGIC, "a nylocas");
+                }
+                w.hit(verzik, Math.max(10, raid.maxHitpoints(verzik) / 15), AttackType.SLASH);
+                w.tick(1);
+            }
+            w.expect(form == 3, "Verzik did not reach phase 3 (phase 2.5 " + p25 + ")");
+            w.expect(p25, "Verzik skipped phase 2.5");
+            guard = 0;
+            while (alive(verzik) && form == 3 && guard++ < 1200) {
+                for (LivingEntity n : living("nylocas_matomenos")) {
+                    w.kill(n, AttackType.MAGIC, "a nylocas");
+                }
+                w.hit(verzik, Math.max(10, raid.maxHitpoints(verzik) / 20), AttackType.SLASH);
+                w.tick(1);
+            }
+            w.until(() -> done, 3, "Verzik's death did not end the fight");
+            w.expect(enraged, "Verzik never enraged at 20%");
+            return "three phases, " + specials + " phase 3 special(s), " + lightnings + " lightning ball(s)";
         }
     }
 }
