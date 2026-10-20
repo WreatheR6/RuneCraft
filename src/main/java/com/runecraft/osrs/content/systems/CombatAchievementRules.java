@@ -638,7 +638,7 @@ public final class CombatAchievementRules {
             13;RULE;kreearra;1;nodmg=melee
             14;RULE;kreearra;1;weapon=*salamander
             15;STREAK;kreearra;30;
-            509;STREAK;the_leviathan;5;nodmg=mechanic,hazard,falling_debris,lightning,offprayer
+            509;STREAK;the_leviathan;5;nodmg=mechanic,hazard,falling_debris,lightning,smoke_blast,tornado,offprayer
             175;RULE;kill:lizardman shaman;1;nodmg=boss
             639;STREAK;maggot_king;12;
             640;WINDOW;maggot_king;5;t<=9:00 fromstart

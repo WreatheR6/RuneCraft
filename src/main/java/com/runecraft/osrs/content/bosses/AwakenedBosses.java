@@ -97,7 +97,9 @@ public final class AwakenedBosses {
                 m.put("shadow_strike", 86);
                 m.put("boulder", 41);
                 m.put("abyssal_orb", 55);
-                m.put("falling_debris", 75); // the smoke blast's max; approx for the debris
+                m.put("smoke_blast", 70); // "70+" (OSRS Wiki "The Leviathan/Strategies", awakened mode)
+                m.put("falling_debris", 25); // approx: the wiki gives no awakened debris damage
+                m.put("tornado", 45); // "40+"
             }
             case "the_whisperer" -> {
                 m.put("soul_bolt", 45);

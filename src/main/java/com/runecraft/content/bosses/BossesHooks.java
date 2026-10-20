@@ -56,13 +56,13 @@ public final class BossesHooks implements ModuleHooks {
         BossScripts.register("phosanis_nightmare", () -> new EncounterScripts.Nightmare(true));
         BossScripts.register("phantom_muspah", EncounterScripts.Muspah::new);
         BossScripts.register("duke_sucellus", EncounterScripts.Duke::new);
-        BossScripts.register("the_leviathan", EncounterScripts.Leviathan::new);
+        BossScripts.register("the_leviathan", LeviathanScript::new);
         BossScripts.register("the_whisperer", WhispererScript::new);
         WhispererScript.register(); // the blackstone fragment, Ketla's workbench and her entry requirement
         BossScripts.register("vardorvis", EncounterScripts.Vardorvis::new);
         // Desert Treasure II's quest versions (quests module ids): the same fights with lower max hits.
         BossScripts.register("dt2_quest_duke_sucellus", () -> new EncounterScripts.Duke(Dt2Bosses.QUEST_DUKE_SCALE));
-        BossScripts.register("dt2_quest_leviathan", () -> new EncounterScripts.Leviathan(Dt2Bosses.QUEST_LEVIATHAN_SCALE));
+        BossScripts.register("dt2_quest_leviathan", () -> new LeviathanScript(Dt2Bosses.QUEST_LEVIATHAN_SCALE));
         BossScripts.register("dt2_quest_whisperer", () -> new WhispererScript(Dt2Bosses.QUEST_WHISPERER_SCALE));
         BossScripts.register("dt2_quest_vardorvis", () -> new EncounterScripts.Vardorvis(Dt2Bosses.QUEST_VARDORVIS_SCALE));
         AwakenedService.init();
@@ -97,6 +97,17 @@ public final class BossesHooks implements ModuleHooks {
         com.runecraft.boss.DataBossService.requirement("demonic_brutus", (player, def) -> questDone(player, "the_ides_of_milk",
                 "You need to complete The Ides of Milk to fight Brutus.") && questDone(player, "desert_treasure_ii",
                 "Brutus won't eat anything that hasn't been touched by the Abyss. (Desert Treasure II)"));
+        // Entry requirements (OSRS Wiki strategy pages): the Desert Treasure II bosses after the quest (the Whisperer also needs
+        // her blackstone fragment: WhispererScript), the Hueycoatl after Children of the Sun, Amoxliatl after The Heart of
+        // Darkness. The Royal Titans have none; the Moons' Lunar Chest needs Perilous Moons (LunarChest).
+        for (String dt2 : new String[]{"duke_sucellus", "the_leviathan", "vardorvis"}) {
+            com.runecraft.boss.DataBossService.requirement(dt2, (player, def) -> questDone(player, "desert_treasure_ii",
+                    "You need to complete Desert Treasure II to fight " + def.name + "."));
+        }
+        com.runecraft.boss.DataBossService.requirement("the_hueycoatl", (player, def) -> questDone(player, "children_of_the_sun",
+                "You need to complete Children of the Sun to fight the Hueycoatl."));
+        com.runecraft.boss.DataBossService.requirement("amoxliatl", (player, def) -> questDone(player, "the_heart_of_darkness",
+                "You need to complete The Heart of Darkness to fight Amoxliatl."));
         // The Shellbane gryphon is a Slayer boss: only on a gryphon task (or a boss task for it).
         com.runecraft.boss.DataBossService.requirement("shellbane_gryphon", (player, def) -> {
             String task = com.runecraft.content.slayer.SlayerService.profile(player).hasTask()

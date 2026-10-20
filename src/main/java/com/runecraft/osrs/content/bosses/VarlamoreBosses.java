@@ -33,8 +33,6 @@ public final class VarlamoreBosses {
 
     // ---- Amoxliatl: a magic-only spectral boss (0 Attack/Strength); 22 standard, 34 Icicle Crash ----
     public static final AttackDef AMOX_ICE = AttackDef.of("ice_shard", AttackType.MAGIC, 22, 14, 4).particle("minecraft:snowflake");
-    public static final AttackDef AMOX_FREEZE = AttackDef.of("glacial_burst", AttackType.MAGIC, 20, 14, 2).special(Special.FREEZE, 5)
-            .telegraph(3, "Amoxliatl chills the air around you!").particle("minecraft:snowflake");
     /** Icicle Crash: her prayers-off special; re-activating Protect from Magic before it lands negates it (OSRS Wiki). */
     public static final AttackDef AMOX_SPIKES = AttackDef.of("icicle_crash", AttackType.MAGIC, 34, 14, 2)
             .telegraph(3, "Amoxliatl disables your prayers and launches an icicle attack!").particle("minecraft:item_snowball");
@@ -66,7 +64,7 @@ public final class VarlamoreBosses {
     static BossDef amoxliatl() {
         return BossDef.of("amoxliatl", "Amoxliatl").level(300).stats(400, 180, 180, 160, 200, 1).speed(4)
                 .defenceBonus(60, 60, 60, 120, 60)
-                .attack(AMOX_ICE).attack(AMOX_FREEZE).attack(AMOX_SPIKES)
+                .attack(AMOX_ICE).attack(AMOX_SPIKES) // her Unstable Ice is scripted (ModernScripts); no freezing burst in OSRS
                 .drops(Drop.of("frozen_tear", 2, 6, 1), Drop.of("glacial_temotli", 1, 1, 100), Drop.of("pendant_of_ates", 1, 1, 25),
                         Drop.of("water_rune", 200, 400, 4), Drop.of("adamantite_bar", 5, 10, 8), Drop.of("coins", 5000, 15000, 4))
                 .pet("pet_moxi").at("neypotzli").arena(12, "ice").size(1.2f, 1.4f, 1.8f).moveSpeed(0.26);

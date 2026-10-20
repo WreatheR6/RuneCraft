@@ -33,10 +33,18 @@ public final class Dt2Bosses {
     public static final AttackDef LEVI_RANGED = AttackDef.of("boulder", AttackType.RANGED, 24, 16, 1).particle("minecraft:crit");
     public static final AttackDef LEVI_MAGIC = AttackDef.of("abyssal_orb", AttackType.MAGIC, 32, 16, 1).particle("minecraft:witch");
     public static final AttackDef LEVI_MELEE = AttackDef.of("shadow_strike", AttackType.CRUSH, 50, 16, 1).particle("minecraft:squid_ink");
-    public static final AttackDef LEVI_DEBRIS = AttackDef.of("falling_debris", AttackType.CRUSH, 45, 16, 1).special(Special.SKY_STRIKE, 0)
+    /** Falling debris (the wiki's "Rocks": up to 25; move off the shadow). Was 45. */
+    public static final AttackDef LEVI_DEBRIS = AttackDef.of("falling_debris", AttackType.CRUSH, 25, 16, 1).special(Special.SKY_STRIKE, 0)
             .telegraph(3, "Debris shakes loose from the cavern roof!").particle("minecraft:ash");
     public static final AttackDef LEVI_LIGHTNING = AttackDef.of("lightning", AttackType.MAGIC, 35, 16, 1).special(Special.SKY_STRIKE, 0)
             .telegraph(3, "The Leviathan's shell crackles with lightning!").particle("minecraft:electric_spark");
+
+    /** The Smoke Blast after its ten debris: up to 59 (awakened 70+) for anyone it can see (LeviathanScript). */
+    public static final AttackDef LEVI_SMOKE = AttackDef.of("smoke_blast", AttackType.MAGIC, 59, 16, 1);
+    /** Its bite next to the pool (Protect from Melee blocks it). */
+    public static final AttackDef LEVI_BITE = AttackDef.of("bite", AttackType.CRUSH, 50, 2.5, 1);
+    /** Awakened, from 50%: a tornado chasing the player, 40+ on contact. */
+    public static final AttackDef LEVI_TORNADO = AttackDef.of("tornado", AttackType.MAGIC, 45, 16, 1);
 
     // ---- The Whisperer ----
     public static final AttackDef WHISPER_MAGIC = AttackDef.of("soul_bolt", AttackType.MAGIC, 36, 16, 3).particle("minecraft:soul");
@@ -131,7 +139,7 @@ public final class Dt2Bosses {
      */
     public static final Map<String, String> PERFECT_RULE = Map.of(
             "duke_sucellus", "nodmg=mechanic,hazard,gas_vent,freezing_gaze,fist_slam,magic_blast,offprayer",
-            "the_leviathan", "nodmg=mechanic,hazard,falling_debris,lightning,offprayer",
+            "the_leviathan", "nodmg=mechanic,hazard,falling_debris,lightning,smoke_blast,tornado,offprayer",
             "the_whisperer", "nodmg=mechanic,hazard,soul_bolt,tentacle_lash,tentacle_whack,screech,soul_siphon,offprayer",
             "vardorvis", "nodmg=mechanic,hazard,swinging_axe,darting_spikes,strangle,offprayer");
 
@@ -303,7 +311,8 @@ public final class Dt2Bosses {
     static BossDef leviathan() {
         BossDef b = BossDef.of("the_leviathan", "The Leviathan").level(798).stats(900, 300, 360, 250, 160, 160).speed(4)
                 .defenceBonus(260, 190, 230, 280, 50)
-                .attack(LEVI_RANGED).attack(LEVI_MAGIC).attack(LEVI_MELEE).attack(LEVI_DEBRIS)
+                .attack(LEVI_RANGED).attack(LEVI_MAGIC).attack(LEVI_MELEE).attack(LEVI_DEBRIS).attack(LEVI_LIGHTNING).attack(LEVI_SMOKE)
+                .attack(LEVI_BITE).attack(LEVI_TORNADO)
                 .pet("pet_lilviathan").at("the_scar").arena(14, "water").size(2.2f, 2.2f, 2.0f).moveSpeed(0.0);
         b.drops.addAll(dt2Drops(b.id, "venator_vestige", "leviathans_lure", "scarred_tablet", "smoke_quartz"));
         return b;
