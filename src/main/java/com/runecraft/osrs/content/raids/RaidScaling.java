@@ -426,13 +426,17 @@ public final class RaidScaling {
         return tobPointsRatio(teamPoints, partySize) * base;
     }
 
+    /** Personal ToB points at which the tertiaries reach their full rate (OSRS wiki "Lil' zik", Mod Kieren). */
+    public static final int TOB_FULL_RATE_POINTS = 10;
+
     /**
      * How a player's own performance scales their ToB tertiary rolls (OSRS wiki "Monumental chest": the elite clue, Lil'
-     * Zik and the Hard mode kits and dust "scale down based on the individual's performance"). // approx: personal points
-     * out of the 18 a deathless player keeps, at most 1
+     * Zik and the Hard mode kits and dust "scale down based on the individual's performance"). "Lil' zik": the rate runs
+     * from 1/650 to 1/6,500 and is full at 10 individual points (two deaths at most); a player with no points gets none.
+     * // approx: linear between one tenth and the full rate
      */
     public static double tobPerformance(int personalPoints) {
-        return Math.max(0, Math.min(1.0, personalPoints / (double) (6 * TOB_POINTS_PER_ROOM)));
+        return personalPoints <= 0 ? 0 : Math.max(0.1, Math.min(1.0, personalPoints / (double) TOB_FULL_RATE_POINTS));
     }
 
     /** The share of the possible ToB points the party kept (deaths cost 4 each). */

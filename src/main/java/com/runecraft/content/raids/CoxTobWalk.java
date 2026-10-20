@@ -81,11 +81,14 @@ public final class CoxTobWalk {
             expect(raid.currentRoom() == 1 && raid.logic(1).started, "walking in did not start the Maiden");
             w.take(com.runecraft.osrs.content.raids.TobRules.BANDAGES);
             for (int attempt = 1; attempt <= 2; attempt++) {
+                // Each wipe adds ten bandages to those carried (OSRS wiki: dying on purpose stacks them).
+                int carried = w.count(com.runecraft.osrs.content.raids.TobRules.BANDAGES);
                 raid.onDeath(p);
                 expect(RaidManager.of(p) == raid && raid.contains(p), "an Entry mode wipe (attempt " + attempt + ") ended the raid");
                 expect(!raid.isDowned(p) && raid.logic(1).started && !raid.logic(1).done, "the Maiden's room did not reset after the wipe");
-                expect(w.count(com.runecraft.osrs.content.raids.TobRules.BANDAGES) == com.runecraft.osrs.content.raids.TobRules.ENTRY_BANDAGES,
-                        "the wipe handed out " + w.count(com.runecraft.osrs.content.raids.TobRules.BANDAGES) + " bandages (expected ten)");
+                int now = w.count(com.runecraft.osrs.content.raids.TobRules.BANDAGES);
+                expect(now == carried + com.runecraft.osrs.content.raids.TobRules.ENTRY_BANDAGES,
+                        "the wipe left " + now + " bandages (carried " + carried + ", expected ten more)");
                 w.tick(1);
             }
             // A bandage heals 20 and boosts Attack like a (slightly weaker) super attack.
@@ -94,14 +97,14 @@ public final class CoxTobWalk {
             p.setHealth(p.getMaxHealth() / 2);
             float before = p.getHealth();
             w.hold(com.runecraft.osrs.content.raids.TobRules.BANDAGES);
+            int held = w.count(com.runecraft.osrs.content.raids.TobRules.BANDAGES);
             com.runecraft.platform.UseItemCallback.EVENT.invoker().interact(p, raid.world, InteractionHand.MAIN_HAND);
             expect(p.getHealth() > before, "a bandage did not heal");
             expect(skills.boost(com.runecraft.osrs.Skill.ATTACK) == com.runecraft.osrs.content.raids.TobRules.bandageMeleeBoost(
                     skills.level(com.runecraft.osrs.Skill.ATTACK)), "a bandage did not boost Attack");
-            expect(w.count(com.runecraft.osrs.content.raids.TobRules.BANDAGES) == com.runecraft.osrs.content.raids.TobRules.ENTRY_BANDAGES - 1,
-                    "using a bandage did not use it up");
+            expect(w.count(com.runecraft.osrs.content.raids.TobRules.BANDAGES) == held - 1, "using a bandage did not use it up");
             skills.setBoost(com.runecraft.osrs.Skill.ATTACK, 0);
-            return "two Entry mode wipes reset the Maiden's room and handed out bandages";
+            return "two Entry mode wipes reset the Maiden's room and stacked ten bandages each";
         } finally {
             p.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
             if (RaidManager.of(p) == raid) {

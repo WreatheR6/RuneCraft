@@ -344,8 +344,8 @@ public final class TobRules {
     public static final int VERZIK_NYLO_FAR = 8;
     public static final int VERZIK_NYLO_TICKS = 25;
     /**
-     * Hard mode (OSRS wiki): the nylocas never time out (they pop only when killed or on reaching their target) and cycle
-     * melee, ranged, magic at set intervals. // approx: every 10 ticks
+     * Hard mode (OSRS wiki): the nylocas never time out (they pop only when killed or on reaching their target) and change
+     * colour "from green to blue to grey" (ranged, magic, melee) at set intervals. // approx: every 10 ticks, round again
      */
     public static final int VERZIK_HARD_NYLO_CYCLE_TICKS = 10;
     /**

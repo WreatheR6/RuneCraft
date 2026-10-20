@@ -177,11 +177,11 @@ final class TobRooms {
 
     /**
      * An Entry mode wipe (OSRS, March 2023): unlimited attempts, so the party is put back outside the boss room and
-     * handed ten bandages each.
+     * handed ten more bandages each, on top of those they carry (OSRS wiki "Theatre of Blood/Entry Mode": "you may choose
+     * to die repeatedly on purpose to stack additional bandages").
      */
     static void entryWipe(RaidInstance raid) {
         for (ServerPlayer p : raid.players()) {
-            Inv.remove(p, TobRules.BANDAGES, Inv.count(p, TobRules.BANDAGES));
             Inv.give(p, TobRules.BANDAGES, TobRules.ENTRY_BANDAGES);
             Msg.game(p, "The vampyres send you ten bandages for your next attempt.");
         }
@@ -676,7 +676,8 @@ final class TobRooms {
                     }
                 }
                 int allowed = TobRules.bloodSpawnsFromThrow(anyStepped, spawnAt.size());
-                for (int i = 0; i < allowed && living("blood_spawn").size() < TobRules.MAIDEN_BLOOD_SPAWN_CAP; i++) {
+                // At most eight blood spawns appear in the whole fight (OSRS wiki "Blood spawn"), killed ones included.
+                for (int i = 0; i < allowed && bloodSpawns < TobRules.MAIDEN_BLOOD_SPAWN_CAP; i++) {
                     spawnMob("blood_spawn", BlockPos.containing(spawnAt.get(i)), false);
                     bloodSpawns++;
                 }
@@ -723,7 +724,7 @@ final class TobRooms {
                     LivingEntity spawn = living("blood_spawn").isEmpty() ? spawnMob("blood_spawn", at(0, 6), false) : living("blood_spawn").get(0);
                     w.expect(w.hit(spawn, 20, AttackType.RANGED) == 0, "a Hard mode blood spawn took damage");
                 }
-                w.expect(living("blood_spawn").size() <= TobRules.MAIDEN_BLOOD_SPAWN_CAP, "more than eight blood spawns at once");
+                w.expect(bloodSpawns <= TobRules.MAIDEN_BLOOD_SPAWN_CAP, "the Maiden made " + bloodSpawns + " blood spawns (at most eight a fight)");
                 w.hit(maiden, Math.max(10, raid.maxHitpoints(maiden) / 12), AttackType.SLASH);
                 w.tick(1);
             }
@@ -2601,6 +2602,8 @@ final class TobRooms {
             tornadoRespawn.clear();
             yellows.clear();
             urnPools.clear();
+            // A retry (Entry mode) is a new fight for the combat achievements too.
+            nyloDamage = nyloPopped = p3Melee = bounced = greenPassed = teamwork = yellowHit = false;
             // A retry (Entry mode) finds the throne room as it was: the pillars and the skeleton stand again.
             pillars(Blocks.STONE_BRICKS.defaultBlockState());
             RaidBuilder.set(world(), skeleton(), RaidBuilder.module(RaidsContent.TOB_DAWNBRINGER_SKELETON));
@@ -2980,7 +2983,8 @@ final class TobRooms {
         private void summonNylocas(boolean athanatosToo) {
             List<ServerPlayer> players = players();
             for (int i = 0; i < Math.max(2, players.size() * 2); i++) {
-                int breed = hard() ? 0 : rnd().nextInt(BREEDS.length);
+                // Hard mode (OSRS wiki): they come green (Toxobolos) and turn blue, then grey.
+                int breed = hard() ? TobNylocas.Breed.TOXOBOLOS.ordinal() : rnd().nextInt(BREEDS.length);
                 Mob m = spawnMob(BREEDS[breed].creatureId, BlockPos.containing(verzik.position()).offset(rnd().nextInt(5) - 2, 0,
                         rnd().nextInt(5) - 2), false);
                 if (m != null) {
@@ -3084,7 +3088,7 @@ final class TobRooms {
                     TobRooms.walk(c.mob, c.target.position());
                 }
                 if (hard()) {
-                    // Hard mode (OSRS wiki): they never time out and cycle melee, ranged, magic.
+                    // Hard mode (OSRS wiki): they never time out and change colour green, blue, grey (ranged, magic, melee).
                     if (c.age % TobRules.VERZIK_HARD_NYLO_CYCLE_TICKS == 0) {
                         cycle(c);
                     }
@@ -3549,6 +3553,8 @@ final class TobRooms {
             w.moveTo(at(-12, 0));
             // The first group of combat nylocas: one reaching its player explodes; the rest are killed with their style.
             w.expect(!crabs.isEmpty(), "phase 2 began without its nylocas");
+            w.expect(!hard() || crabs.stream().allMatch(c -> c.age >= TobRules.VERZIK_HARD_NYLO_CYCLE_TICKS
+                    || c.breed == TobNylocas.Breed.TOXOBOLOS.ordinal()), "Hard mode nylocas did not come green (Toxobolos)");
             dealWithCrabs(w);
             // The Athanatos is thrown at a player and heals her; only poison truly hurts it, and one killed without poison
             // comes back.

@@ -451,8 +451,12 @@ class RaidsContentTest {
         assertEquals(1 / 25.0, RaidRewards.tobEliteClueChance(RaidMode.ENTRY), 1e-9);
         assertEquals(3.5 / 25.0, RaidRewards.tobEliteClueChance(RaidMode.HARD), 1e-9);
         // Deaths scale a player's tertiaries down; a player with no points gets only the cabbage.
+        // OSRS wiki "Lil' zik": full rate at 10 individual points (two deaths), down to a tenth (1/6,500).
         assertEquals(1.0, RaidScaling.tobPerformance(32), 1e-9);
-        assertEquals(14 / 18.0, RaidScaling.tobPerformance(14), 1e-9);
+        assertEquals(1.0, RaidScaling.tobPerformance(14), 1e-9);
+        assertEquals(1.0, RaidScaling.tobPerformance(10), 1e-9);
+        assertEquals(0.5, RaidScaling.tobPerformance(5), 1e-9);
+        assertEquals(0.1, RaidScaling.tobPerformance(1), 1e-9);
         assertEquals(0.0, RaidScaling.tobPerformance(0), 1e-9);
     }
 
