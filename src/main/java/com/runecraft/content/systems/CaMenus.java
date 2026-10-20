@@ -92,6 +92,11 @@ public final class CaMenus {
                     + (CombatAchievements.threshold(next) - points) + " to go). Points from any tier count.", 0xC0C0C0);
         }
         s.line("Claim rewards from Ghommal outside the Warriors' Guild, or here.", 0xA0A0A0);
+        long untracked = CombatAchievements.tasks().stream().filter(t -> t.track() == Track.UNTRACKED).count();
+        if (untracked > 0) {
+            s.line(untracked + " task" + (untracked == 1 ? " needs a mechanic" : "s need mechanics")
+                    + " this world doesn't have yet (shown as [-]).", 0xA0A0A0);
+        }
         for (Tier t : Tier.values()) {
             int done = 0;
             int total = 0;

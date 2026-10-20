@@ -345,6 +345,8 @@ public final class CombatAchievements {
     public static final String BARROWS_RUN = "run:barrows";
     /** The player's last damage on the target was poison or venom ("A Slow Death"; cleared by the player's next hit). */
     public static final String FLAG_TOXIN_LAST = "toxin_last";
+    /** Another player fighting the same boss died during the fight ("Nex Survivors": without anyone dying). */
+    public static final String FLAG_ALLY_DIED = "ally_died";
     /** One Ice Barrage froze four or more nylocas ("Nylocas, On the Rocks"). */
     public static final String FLAG_NYLO_BARRAGE = "nylo_barrage4";
     /** {@link Track#COUNTER} key: damage dealt by the player's thralls ("Sit Back and Relax"). */

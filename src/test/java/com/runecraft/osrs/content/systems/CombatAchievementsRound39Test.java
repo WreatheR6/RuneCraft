@@ -133,6 +133,8 @@ class CombatAchievementsRound39Test {
         assertEquals("magic", CombatAchievementRules.weaponStyle("trident_of_the_seas"));
         assertEquals("", CombatAchievementRules.weaponStyle(""));
         assertEquals("", CombatAchievementRules.weaponStyle("bones"));
+        assertEquals("magic", CombatAchievementRules.weaponStyle("keris_partisan")); // a polestaff counts as a magic weapon
+        assertEquals("ranged", CombatAchievementRules.weaponStyle("red_chinchompa"));
         // Facing Jad Head-on: only melee weapons held for the whole run.
         Metrics fc = new Metrics();
         fc.wield("", 0);
@@ -170,6 +172,7 @@ class CombatAchievementsRound39Test {
         bar.raid = raid("TOB", "HARD", 3, 0);
         bar.wield("dharoks_greataxe", 1);
         bar.wield("dawnbringer", 2);
+        bar.wield("shark", 3); // eating from the main hand is no weapon
         assertTrue(meets(252, bar));
         bar.raid = raid("TOB", "ENTRY", 3, 0);
         assertFalse(meets(252, bar));
@@ -221,10 +224,32 @@ class CombatAchievementsRound39Test {
         v.onTask = false;
         v.ticks = 125;
         assertFalse(meets(485, v));
-        for (int id : new int[]{485, 486, 487, 494, 495, 496, 503, 504, 505, 512, 513, 514}) {
+        for (int id : new int[]{485, 486, 487, 494, 495, 496, 503, 504, 505, 512, 513, 514, 230, 231, 232, 475, 476, 477}) {
             assertEquals(Track.RULE, task(id).track(), task(id).name());
             assertTrue(CombatAchievementRules.hasFlag(task(id).rule(), "notask"), task(id).name());
         }
+        // Hueycoatl speed tasks: 2:30 or less, with five / three or fewer players.
+        Metrics huey = new Metrics();
+        huey.ticks = 250;
+        huey.maxPlayers = 4;
+        assertTrue(meets(576, huey));
+        assertTrue(meets(577, huey));
+        assertFalse(meets(578, huey));
+        huey.maxPlayers = 3;
+        assertTrue(meets(578, huey));
+        // The Flincher / I Can't Reach That: only the boss's own damage fails them.
+        Metrics flinch = new Metrics();
+        flinch.took(new CombatAchievementRules.Hit(false, "scorpia's guardian", "magic", com.runecraft.osrs.AttackType.MAGIC, 3, false));
+        assertTrue(meets(220, flinch));
+        flinch.took(new CombatAchievementRules.Hit(true, "scorpia", "sting", com.runecraft.osrs.AttackType.STAB, 5, false));
+        assertFalse(meets(220, flinch));
+        // Nex Survivors: nobody fighting Nex dies, not only you.
+        Metrics nex = new Metrics();
+        assertTrue(meets(412, nex));
+        nex.flags.add(CombatAchievements.FLAG_ALLY_DIED);
+        assertFalse(meets(412, nex));
+        // Back to Our Roots: all three Moons in one run (no 8-minute limit; that's the speed task's).
+        assertEquals(CombatAchievementRules.parseTime("30:00"), task(534).ticks());
         // Grotesque Guardians and Hespori: exactly the time counts (wiki task pages).
         Metrics gg = new Metrics();
         gg.ticks = 200;

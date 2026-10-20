@@ -620,7 +620,16 @@ public final class CombatAchievementService {
 
     private static void tick(ServerPlayer p, long tick) {
         if (!p.isAlive()) {
-            FIGHTS.remove(p.getUUID());
+            Tracker dead = FIGHTS.remove(p.getUUID());
+            if (dead != null && dead.fight()) {
+                // "... without anyone dying": the others fighting the same boss see the death.
+                for (ServerPlayer o : near(p)) {
+                    Tracker of = FIGHTS.get(o.getUUID());
+                    if (o != p && of != null && of.key.equals(dead.key)) {
+                        of.m.flags.add(CombatAchievements.FLAG_ALLY_DIED);
+                    }
+                }
+            }
             STREAKS.remove(p.getUUID());
             DELVES.remove(p.getUUID());
             BARROWS.remove(p.getUUID());
@@ -1043,7 +1052,11 @@ public final class CombatAchievementService {
     private static void completeRaid(ServerPlayer p, Tracker run) {
         RaidInstance raid = run.raid;
         Metrics m = run.m;
-        m.ticks = raid.elapsedTicks();
+        // OSRS: ToB speed tasks count the challenge time (the rooms' times added up), except Hard mode's "overall time";
+        // CoX and ToA count the overall time.
+        boolean challengeTime = raid.type == com.runecraft.osrs.content.raids.RaidType.TOB
+                && raid.mode() != com.runecraft.osrs.content.raids.RaidMode.HARD;
+        m.ticks = challengeTime ? raid.challengeTicks() : raid.elapsedTicks();
         m.raid = raidInfo(raid, p, 0, 0);
         m.wornAtEnd.clear();
         m.wornAtEnd.addAll(worn(p));

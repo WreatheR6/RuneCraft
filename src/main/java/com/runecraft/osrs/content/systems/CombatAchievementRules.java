@@ -202,6 +202,12 @@ public final class CombatAchievementRules {
         if (id == null || id.isEmpty()) {
             return "";
         }
+        if (id.contains("keris_partisan") || id.contains("pharaohs_sceptre")) {
+            return "magic"; // polestaves can't autocast but "are still considered magic weapons" (Facing Jad Head-on II)
+        }
+        if (id.contains("chinchompa")) {
+            return "ranged";
+        }
         com.runecraft.osrs.ItemDef d = com.runecraft.osrs.ItemCatalog.get(id);
         if (d == null) {
             return "";
@@ -443,7 +449,8 @@ public final class CombatAchievementRules {
             case "onehand" -> !m.weapons.isEmpty() && m.weapons.stream().noneMatch(com.runecraft.osrs.data.EquipmentBonuses::twoHanded);
             case "notask" -> !m.onTask;
             // Weapons held (equipped, used or not): every one matches / none matches / every one attacks with these styles.
-            case "wield" -> m.wielded.stream().allMatch(w -> matches(v, w.id()));
+            // Things held that aren't weapons (food being eaten, a pickaxe) don't count.
+            case "wield" -> m.wielded.stream().allMatch(w -> weaponStyle(w.id()).isEmpty() || matches(v, w.id()));
             case "nowield" -> m.wielded.stream().noneMatch(w -> !w.id().isEmpty() && matches(v, w.id()));
             case "wieldstyle" -> m.wielded.stream().allMatch(w -> weaponStyle(w.id()).isEmpty()
                     || list(v, ",").contains(weaponStyle(w.id())));
@@ -721,11 +728,11 @@ public final class CombatAchievementRules {
             640;WINDOW;maggot_king;5;t<=9:00 fromstart
             532;RULE;MOONS;1;nosupplies
             533;RULE;MOONS;1;id=blue_moon weapon=blue_moon_spear || id=eclipse_moon weapon=eclipse_atlatl || id=blood_moon weapon=dual_macuahuitl
-            534;WINDOW;MOONS;3;t<=8:00 fromstart distinct weapon=dragon_scimitar
+            534;WINDOW;MOONS;3;t<=30:00 fromstart distinct weapon=dragon_scimitar
             535;WINDOW;MOONS;3;t<8:00 fromstart distinct
             536;WINDOW;MOONS;3;t<6:00 fromstart distinct
             537;STREAK;MOONS;30;
-            412;RULE;nex;1;nodeath
+            412;RULE;nex;1;nodeath noflag=ally_died
             416;RULE;nex;1;startplayers<=3
             417;RULE;nex;1;startplayers<=2
             131;RULE;obor;1;frozen
@@ -1027,6 +1034,17 @@ public final class CombatAchievementRules {
             512;!RULE;duke_sucellus;1;t<1:00 notask
             513;!RULE;duke_sucellus;1;t<0:50 notask
             514;!RULE;duke_sucellus;1;t<0:40 notask
+            230;!RULE;zulrah;1;t<1:20 notask
+            231;!RULE;zulrah;1;t<1:00 notask
+            232;!RULE;zulrah;1;t<0:54 notask
+            475;!RULE;phantom_muspah;1;t<3:00 notask
+            476;!RULE;phantom_muspah;1;t<2:00 notask
+            477;!RULE;phantom_muspah;1;t<1:30 notask
+            576;!RULE;the_hueycoatl;1;t<=2:30
+            577;!RULE;the_hueycoatl;1;t<=2:30 players<=5
+            578;!RULE;the_hueycoatl;1;t<=2:30 players<=3
+            60;!RULE;chaos_elemental;1;nodmg=boss
+            220;!RULE;scorpia;1;nodmg=boss
             """;
 
     private static final Map<Integer, Spec> SPECS = new LinkedHashMap<>();
