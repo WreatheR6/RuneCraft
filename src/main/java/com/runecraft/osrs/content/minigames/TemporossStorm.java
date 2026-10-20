@@ -58,6 +58,8 @@ public final class TemporossStorm {
 
     /** Each fire spreads at most twice before it stabilises. */
     public static final int FIRE_SPREADS = 2;
+    /** A fire spreads onto a random tile up to this many tiles away (approx: the wiki only says a nearby tile). */
+    public static final int FIRE_SPREAD_RADIUS = 2;
 
     // ---- the essence phase and the storm (OSRS Wiki "Tempoross", "Tempoross/Strategies") ----
 

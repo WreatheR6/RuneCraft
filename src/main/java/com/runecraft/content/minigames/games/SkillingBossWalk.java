@@ -56,6 +56,8 @@ public final class SkillingBossWalk {
     private Runnable perTick = () -> { };
     /** Tempoross: totem poles the player repaired before a wave because earlier waves had broken both. */
     private int polesRepaired;
+    /** Tempoross: a repair before a wave failed (noted once; the wave then hits the untethered player). */
+    private boolean poleRepairFailed;
 
     private SkillingBossWalk(ServerPlayer player) {
         this.player = player;
@@ -544,14 +546,53 @@ public final class SkillingBossWalk {
         }
     }
 
-    /** Steps two blocks aside when a fire burns where the player stands (fires burn harpoonfish and tools). */
+    /**
+     * Keeps clear of fires as a player would. Standing in a fire burns a minigame item every 2 ticks (OSRS Wiki "Fire
+     * (Tempoross Cove)"), and a fire that can still spread may jump onto the tile you stand on ("Tempoross/Strategies": "be
+     * wary of nearby fires jumping to the tile you're standing on while fishing or cooking"). A spread lands during the
+     * session tick and can burn on that same tick, so stepping off afterwards is too late. Before each session tick the
+     * player therefore moves to the nearest free floor tile that is not next to a fire and is out of reach of every fire that
+     * can still spread. Fishing and cooking go on from there.
+     */
     private void stepOutOfFire(TemporossSession t) {
-        for (BlockPos f : t.selfTestFires()) {
-            if (Math.abs(player.getX() - (f.getX() + 0.5)) < 1.5 && Math.abs(player.getZ() - (f.getZ() + 0.5)) < 1.5) {
-                player.teleportTo(world, player.getX() + 3, player.getY(), player.getZ(), player.getYRot(), 0);
-                return;
+        List<BlockPos> fires = t.selfTestFires();
+        if (fires.isEmpty()) {
+            return;
+        }
+        List<BlockPos> spreading = t.selfTestSpreadingFires();
+        BlockPos at = player.blockPosition();
+        if (!nearFire(at, fires, spreading)) {
+            return;
+        }
+        for (int r = 1; r <= 8; r++) {
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dz = -r; dz <= r; dz++) {
+                    BlockPos c = at.offset(dx, 0, dz);
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) == r && standable(t, c) && !nearFire(c, fires, spreading)) {
+                        moveTo(c);
+                        return;
+                    }
+                }
             }
         }
+    }
+
+    /** Whether a tile is next to (or in) a fire, or within reach of a fire that can still spread. */
+    private static boolean nearFire(BlockPos at, List<BlockPos> fires, List<BlockPos> spreading) {
+        for (BlockPos f : fires) {
+            int d = Math.max(Math.abs(f.getX() - at.getX()), Math.abs(f.getZ() - at.getZ()));
+            if (d <= 1 || (d <= com.runecraft.osrs.content.minigames.TemporossStorm.FIRE_SPREAD_RADIUS && spreading.contains(f))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** A free tile of the arena floor: room to stand, on solid ground (not the sea). */
+    private boolean standable(MinigameSession s, BlockPos c) {
+        var below = world.getBlockState(c.below());
+        return s.box().contains(c.getX() + 0.5, c.getY(), c.getZ() + 0.5) && world.getBlockState(c).isAir()
+                && world.getBlockState(c.above()).isAir() && !below.isAir() && below.getFluidState().isEmpty();
     }
 
     /**
@@ -570,7 +611,13 @@ public final class SkillingBossWalk {
             if (noPole) {
                 BlockPos broken = t.selfTestTotem(0);
                 BlockHooks.use(player, "tempoross_broken_totem", broken, world.getBlockState(broken));
-                polesRepaired++;
+                if (t.selfTestTotemStanding(0)) {
+                    polesRepaired++;
+                } else if (!poleRepairFailed) {
+                    poleRepairFailed = true;
+                    notes.add("a wave had broken both totem poles and repairing one failed (hammer: "
+                            + Inv.has(player, "hammer", 1) + "), so the next wave found nothing to tether to");
+                }
             }
             for (int i = 0; i < 2; i++) {
                 BlockPos totem = t.selfTestTotem(i);

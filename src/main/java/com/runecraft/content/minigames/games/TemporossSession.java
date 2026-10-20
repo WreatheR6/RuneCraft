@@ -494,7 +494,7 @@ public class TemporossSession extends MinigameSession {
                     && fireSpreads.getOrDefault(at, 0) < TemporossStorm.FIRE_SPREADS) {
                 fireSpreads.merge(at, 1, Integer::sum);
                 BlockPos rel = at.subtract(origin);
-                light(randomFloor(rel.getX(), rel.getZ(), 2));
+                light(randomFloor(rel.getX(), rel.getZ(), TemporossStorm.FIRE_SPREAD_RADIUS));
             }
         }
         if (ticks % Tempoross.FIRE_BURN_INTERVAL != 0) {
@@ -685,6 +685,17 @@ public class TemporossSession extends MinigameSession {
 
     public List<BlockPos> selfTestFires() {
         return new java.util.ArrayList<>(fires.keySet());
+    }
+
+    /** Self-test: the fires that can still spread (each spreads at most {@link TemporossStorm#FIRE_SPREADS} times). */
+    public List<BlockPos> selfTestSpreadingFires() {
+        List<BlockPos> out = new java.util.ArrayList<>();
+        for (BlockPos f : fires.keySet()) {
+            if (fireSpreads.getOrDefault(f, 0) < TemporossStorm.FIRE_SPREADS) {
+                out.add(f);
+            }
+        }
+        return out;
     }
 
     /** Self-test: whether a totem pole stands (not broken by a wave). */
