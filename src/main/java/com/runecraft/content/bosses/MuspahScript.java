@@ -31,7 +31,8 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * The Phantom Muspah (OSRS Wiki; numbers in {@link MuspahRules}).
+ * The Phantom Muspah (OSRS Wiki; numbers in {@link MuspahRules}), and on its own numbers ({@link MuspahRules#STRANGE_CREATURE})
+ * the Strange Creature fought in Secrets of the North: the same forms, specials, shockwave, shield and spikes.
  *
  * <p>It spawns in its ranged or melee form and swaps after 100 damage in the ranged form or 80 in the melee form (from its
  * second form on, also only after four hits), slamming up spikes as it does, one marked under the player: step off before
@@ -48,6 +49,17 @@ import net.minecraft.world.phys.Vec3;
  */
 final class MuspahScript extends ScriptedBoss {
     enum Stage { FORMS, CLOUDS, SHOCKWAVE, SHIELDED, POST }
+
+    /** Its numbers: the Phantom Muspah's, or the Strange Creature's in Secrets of the North (MuspahRules.Numbers). */
+    final MuspahRules.Numbers n;
+
+    MuspahScript() {
+        this(MuspahRules.PHANTOM);
+    }
+
+    MuspahScript(MuspahRules.Numbers numbers) {
+        this.n = numbers;
+    }
 
     Stage stage = Stage.FORMS;
     Form spawnForm;
@@ -138,7 +150,7 @@ final class MuspahScript extends ScriptedBoss {
         home = boss.blockPosition();
         spawnForm = boss.getRandom().nextBoolean() ? Form.RANGED : Form.MELEE;
         setForm(boss, spawnForm);
-        BossFx.say(boss, "The Phantom Muspah takes its " + (spawnForm == Form.RANGED ? "ranged" : "melee") + " form!");
+        BossFx.say(boss, n.name() + " takes its " + (spawnForm == Form.RANGED ? "ranged" : "melee") + " form!");
     }
 
     private void setForm(DataBossEntity boss, Form f) {
@@ -164,11 +176,10 @@ final class MuspahScript extends ScriptedBoss {
             return;
         }
         if (type == AttackType.MAGIC) {
-            in.targetDefenceBonus = MuspahRules.MELEE_FORM_MAGIC_DEFENCE;
+            in.targetDefenceBonus = n.meleeFormMagicDefence();
         } else if (type == AttackType.RANGED) {
-            in.targetDefenceBonus = MuspahRules.MELEE_FORM_RANGED_DEFENCE;
-            in.targetRangedDefence = new int[]{MuspahRules.MELEE_FORM_RANGED_DEFENCE, MuspahRules.MELEE_FORM_RANGED_DEFENCE,
-                    MuspahRules.MELEE_FORM_RANGED_DEFENCE};
+            in.targetDefenceBonus = n.meleeFormRangedDefence();
+            in.targetRangedDefence = new int[]{n.meleeFormRangedDefence(), n.meleeFormRangedDefence(), n.meleeFormRangedDefence()};
         }
     }
 
@@ -202,15 +213,30 @@ final class MuspahScript extends ScriptedBoss {
 
     @Override
     protected int attackDelay(DataBossEntity boss, AttackDef attack) {
-        return stage == Stage.FORMS && form == Form.RANGED ? MuspahRules.RANGED_SPEED : MuspahRules.FAST_SPEED;
+        if (stage == Stage.FORMS) {
+            return form == Form.RANGED ? MuspahRules.RANGED_SPEED : MuspahRules.FAST_SPEED;
+        }
+        return n.shieldedSpeed();
     }
 
     @Override
     protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
         if (stage == Stage.FORMS && form == Form.MELEE) {
-            return distance <= MinigameBosses.MUSPAH_MELEE.range() ? MinigameBosses.MUSPAH_MELEE : null;
+            return distance <= MinigameBosses.MUSPAH_MELEE.range() ? own(boss, MinigameBosses.MUSPAH_MELEE) : null;
         }
-        return boss.getRandom().nextInt(MuspahRules.MAGIC_ONE_IN) == 0 ? MinigameBosses.MUSPAH_SMITE : MinigameBosses.MUSPAH_RANGED;
+        return own(boss, boss.getRandom().nextInt(MuspahRules.MAGIC_ONE_IN) == 0 ? MinigameBosses.MUSPAH_SMITE : MinigameBosses.MUSPAH_RANGED);
+    }
+
+    /** The boss's own attack of that name (the Strange Creature's carry its own lines), else the Phantom Muspah's. */
+    private static AttackDef own(DataBossEntity boss, AttackDef fallback) {
+        if (boss.def() != null) {
+            for (AttackDef a : boss.def().attacks) {
+                if (a.name().equals(fallback.name())) {
+                    return a;
+                }
+            }
+        }
+        return fallback;
     }
 
     @Override
@@ -222,7 +248,7 @@ final class MuspahScript extends ScriptedBoss {
         switch (a.name()) {
             case "ice_shard" -> {
                 // Calculated as the attack starts: Protect from Missiles must already be up.
-                int d = BossHits.roll(target, AttackType.RANGED, MuspahRules.rangedMax(shieldedOrAfter()),
+                int d = BossHits.roll(target, AttackType.RANGED, n.rangedMax(shieldedOrAfter()),
                         attackRoll(boss, AttackType.RANGED), false, r);
                 if (BossHits.protectedFrom(target, AttackType.RANGED)) {
                     d = 0;
@@ -232,15 +258,15 @@ final class MuspahScript extends ScriptedBoss {
             }
             case "smite" -> {
                 boolean prayed = BossHits.protectedFrom(target, AttackType.MAGIC);
-                BossFx.warn(boss, "The Phantom Muspah launches a purple orb!");
-                orbs.add(new Orb(target, now + MuspahRules.MAGIC_FLIGHT_TICKS, prayed, MuspahRules.magicMax(shieldedOrAfter())));
+                BossFx.warn(boss, n.name() + " launches a purple orb!");
+                orbs.add(new Orb(target, now + MuspahRules.MAGIC_FLIGHT_TICKS, prayed, n.magicMax(shieldedOrAfter())));
             }
             case "stomp" -> {
                 // It chased the player into reach: Protect from Melee blocks it; standing still, more gets through.
                 boolean moved = lastMeleeAt == null || lastMeleeAt.distanceToSqr(boss.position()) > 0.25;
                 inPlace = moved ? 0 : inPlace + 1;
                 lastMeleeAt = boss.position();
-                int d = BossHits.roll(target, AttackType.STAB, MuspahRules.MELEE, BossHits.attackRoll(boss, AttackType.STAB), false, r);
+                int d = BossHits.roll(target, AttackType.STAB, n.melee(), BossHits.attackRoll(boss, AttackType.STAB), false, r);
                 if (BossHits.protectedFrom(target, AttackType.STAB)) {
                     d = (int) Math.floor(d * MuspahRules.meleeThroughPrayer(inPlace));
                 }
@@ -377,7 +403,7 @@ final class MuspahScript extends ScriptedBoss {
             shield -= BossMechanics.MUSPAH_SHIELD_PER_ATTACK;
             if (attacker != null) {
                 shield -= drainShield(attacker, damage, type);
-                if (BossMechanics.versatileDrainer(drains)) {
+                if (n.boss() && BossMechanics.versatileDrainer(drains)) {
                     CombatAchievementService.flag(attacker, BossMechanics.FLAG_MUSPAH_THREE_DRAINS);
                 }
             }
@@ -386,7 +412,7 @@ final class MuspahScript extends ScriptedBoss {
                 shield = 0;
                 breakShield(boss, attacker);
             } else if (attacker != null) {
-                Msg.action(attacker, "The Phantom Muspah's prayer shield absorbs your attack. (" + shield + " left)");
+                Msg.action(attacker, n.name() + "'s prayer shield absorbs your attack. (" + shield + " left)");
             }
             return 0;
         }
@@ -410,17 +436,17 @@ final class MuspahScript extends ScriptedBoss {
                 formDamage += d;
                 formHits++;
             }
-            if (after < MuspahRules.SHIELD_BELOW) {
+            if (after < n.shieldBelow()) {
                 shockwaveQueued = true;
-            } else if (MuspahRules.specialsDue(after) > specialsDone) {
+            } else if (n.specialsDue(after) > specialsDone) {
                 specialQueued = true;
             } else if (MuspahRules.swaps(form, formDamage, formHits, swapped)) {
                 swapped = true;
                 setForm(boss, form == Form.RANGED ? Form.MELEE : Form.RANGED);
-                BossFx.say(boss, "The Phantom Muspah shifts into its " + (form == Form.RANGED ? "ranged" : "melee") + " form!");
+                BossFx.say(boss, n.name() + " shifts into its " + (form == Form.RANGED ? "ranged" : "melee") + " form!");
                 markSpikes(boss, attacker != null ? attacker : target(boss), randomTiles(boss, 6));
             }
-        } else if (stage == Stage.CLOUDS && after < MuspahRules.SHIELD_BELOW) {
+        } else if (stage == Stage.CLOUDS && after < n.shieldBelow()) {
             shockwaveQueued = true; // damage during the clouds doesn't count for its forms, but its health still falls
         }
         return d;
@@ -465,7 +491,7 @@ final class MuspahScript extends ScriptedBoss {
         if (s == MuspahRules.Special.LIGHTNING_CLOUDS) {
             stage = Stage.CLOUDS;
             cloudTeleports = MuspahRules.CLOUD_TELEPORTS;
-            BossFx.say(boss, "The Phantom Muspah vanishes into the darkness!");
+            BossFx.say(boss, n.name() + " vanishes into the darkness!");
         } else {
             homingSpikes(boss, target);
         }
@@ -475,9 +501,9 @@ final class MuspahScript extends ScriptedBoss {
     void homingSpikes(DataBossEntity boss, ServerPlayer target) {
         homing.clear();
         Random r = new Random(boss.getRandom().nextLong());
-        int n = MuspahRules.HOMING_MIN + r.nextInt(MuspahRules.HOMING_MAX - MuspahRules.HOMING_MIN + 1);
+        int count = MuspahRules.HOMING_MIN + r.nextInt(MuspahRules.HOMING_MAX - MuspahRules.HOMING_MIN + 1);
         double half = boss.getBbWidth() / 2 + 1;
-        for (int i = 0, tries = 0; i < n && tries < 40; tries++) {
+        for (int i = 0, tries = 0; i < count && tries < 40; tries++) {
             Vec3 v = around(boss, homeVec(), 8);
             if (target != null && v.distanceToSqr(target.position()) < 9 || Math.abs(v.x - boss.getX()) <= half && Math.abs(v.z - boss.getZ()) <= half) {
                 continue;
@@ -486,7 +512,7 @@ final class MuspahScript extends ScriptedBoss {
             i++;
         }
         homingTicks = MuspahRules.HOMING_TICKS;
-        BossFx.say(boss, "The Phantom Muspah slams the ground - spikes crawl towards you!");
+        BossFx.say(boss, n.name() + " slams the ground - spikes crawl towards you!");
         BossFx.sound(boss, SoundEvents.ANVIL_LAND, 0.6f);
     }
 
@@ -564,7 +590,7 @@ final class MuspahScript extends ScriptedBoss {
                 double dx = p.getX() - c.pos()[0];
                 double dz = p.getZ() - c.pos()[2];
                 if (dx * dx + dz * dz <= 1.44 && c.hit().add(p.getUUID())) {
-                    hit(boss, p, "lightning_cloud", null, r.nextInt(MuspahRules.LIGHTNING_CLOUD + 1));
+                    hit(boss, p, "lightning_cloud", null, r.nextInt(n.cloud() + 1));
                 }
             }
             if (--c.life()[0] <= 0) {
@@ -582,7 +608,7 @@ final class MuspahScript extends ScriptedBoss {
         Vec3 c = homeVec();
         boss.teleportTo(c.x, c.y, c.z);
         boss.getNavigation().stop();
-        BossFx.say(boss, "The Phantom Muspah teleports to the centre and gathers its power - hide behind a spike!");
+        BossFx.say(boss, n.name() + " teleports to the centre and gathers its power - hide behind a spike!");
         BossFx.sound(boss, SoundEvents.WARDEN_SONIC_CHARGE, 0.8f);
     }
 
@@ -600,14 +626,14 @@ final class MuspahScript extends ScriptedBoss {
                 Msg.action(p, "The spike shelters you from the shockwave.");
                 continue;
             }
-            hit(boss, p, "shockwave", null, r.nextInt(MuspahRules.SHOCKWAVE + 1));
+            hit(boss, p, "shockwave", null, r.nextInt(n.shockwave() + 1));
             corrupt(p, true);
         }
         BossFx.sound(boss, SoundEvents.WARDEN_SONIC_BOOM, 0.8f);
         hardenHoming(); // entering the shielded form ends its homing spikes
         if (shieldSkip) {
             stage = Stage.POST;
-            BossFx.say(boss, "The Phantom Muspah has no strength left to raise its shield!");
+            BossFx.say(boss, n.name() + " has no strength left to raise its shield!");
             return;
         }
         stage = Stage.SHIELDED;
@@ -616,13 +642,13 @@ final class MuspahScript extends ScriptedBoss {
         drains.clear();
         attacksShielded = 0;
         setForm(boss, Form.RANGED);
-        BossFx.say(boss, "The Phantom Muspah surrounds itself with a frozen prayer shield!");
+        BossFx.say(boss, n.name() + " surrounds itself with a frozen prayer shield!");
     }
 
     void breakShield(DataBossEntity boss, ServerPlayer attacker) {
         stage = Stage.POST;
         attacksPost = 0;
-        BossFx.say(boss, "The Phantom Muspah's prayer shield shatters!");
+        BossFx.say(boss, n.name() + "'s prayer shield shatters!");
         markSpikes(boss, attacker != null ? attacker : target(boss), randomTiles(boss, 10));
     }
 
@@ -696,7 +722,7 @@ final class MuspahScript extends ScriptedBoss {
 
     /** A spike hits a player: damage, knocked aside, and it heals the Muspah ~75% of the damage. */
     void spikeHit(DataBossEntity boss, ServerPlayer p) {
-        int dmg = 1 + boss.getRandom().nextInt(BossMechanics.MUSPAH_SPIKE_MAX);
+        int dmg = 1 + boss.getRandom().nextInt(n.spikeMax());
         int dealt = hit(boss, p, "spike", null, dmg);
         heal(boss, mcHp(boss, BossMechanics.muspahSpikeHeal(dealt)));
         Vec3 away = p.position().subtract(boss.position()).multiply(1, 0, 1);
@@ -714,7 +740,7 @@ final class MuspahScript extends ScriptedBoss {
             // Reloaded from disk (a fresh script): carry on in its ranged form, past the specials its health is already under.
             spawnForm = Form.RANGED;
             setForm(boss, Form.RANGED);
-            specialsDone = MuspahRules.specialsDue((int) Math.ceil(boss.getHealth()));
+            specialsDone = n.specialsDue((int) Math.ceil(boss.getHealth()));
             swapped = true;
         }
         if (shockwaveQueued && (stage == Stage.FORMS || stage == Stage.CLOUDS)) {
@@ -737,7 +763,7 @@ final class MuspahScript extends ScriptedBoss {
             guardShield(boss);
             BossFx.ring(BossFx.world(boss), boss.position(), 2.2, ParticleTypes.SNOWFLAKE);
         }
-        if (stage == Stage.POST) {
+        if (stage == Stage.POST && n.boss()) {
             // "Space is Tight": spikes on every tile around its footprint.
             int size = Math.max(1, (int) Math.ceil(boss.getBbWidth()));
             int x = (int) Math.floor(boss.getX() - size / 2.0);

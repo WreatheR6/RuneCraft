@@ -59,6 +59,8 @@ public final class BossesHooks implements ModuleHooks {
         BossScripts.register("phosanis_nightmare", () -> new NightmareScript(true));
         NightmareScript.register();
         BossScripts.register("phantom_muspah", MuspahScript::new);
+        // its first form, fought in Secrets of the North, on the Strange Creature's numbers
+        BossScripts.register("quest_strange_creature", () -> new MuspahScript(com.runecraft.osrs.content.bosses.MuspahRules.STRANGE_CREATURE));
         MuspahScript.register();
         // The Phantom Muspah is fought after Secrets of the North (OSRS Wiki).
         com.runecraft.boss.DataBossService.requirement("phantom_muspah", (player, def) -> questDone(player, "secrets_of_the_north",

@@ -80,7 +80,7 @@ class QuestFinalChaptersTest {
         assertEquals("quest_evelot", find(q, Trigger.Kind.REACH, "sotn_evelot_trail").spawn);
         assertTrue(find(q, Trigger.Kind.TALK, "sotn_hazeel").setFlags.contains("sotn_hazeel"));
         assertTrue(any(q, t -> t.target.equals("sotn_hazeel") && t.take.containsKey("sotn_dusty_scroll")));
-        assertTrue(any(q, t -> t.kind == Trigger.Kind.REACH && t.target.equals("sotn_weiss_ritual_room") && t.need.containsKey("tinderbox")));
+        assertTrue(any(q, t -> t.kind == Trigger.Kind.PUZZLE && t.target.equals("sotn_weiss_ritual_room") && t.need.containsKey("tinderbox")));
         assertTrue(any(q, t -> t.target.equals("sotn_carnillean_guard") && t.completes() && t.needFlags.contains("sotn_creature")));
         assertEquals(148, ContentRegistry.boss("quest_evelot").combatLevel);
         assertEquals(262, ContentRegistry.boss("quest_assassin").combatLevel);

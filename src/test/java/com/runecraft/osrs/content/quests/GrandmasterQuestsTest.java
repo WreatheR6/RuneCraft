@@ -238,6 +238,38 @@ class GrandmasterQuestsTest {
                 .containsAll(List.of("pets", "blood_orb", "stare_into_darkness", "lightning")));
     }
 
+    @Test
+    void secretsOfTheNorthFightsTheStrangeCreature() {
+        QuestSpec sotn = spec("secrets_of_the_north");
+        // the Carnilleans' chest wants a lockpick; the Ghorrock Dungeon's four locks by the wiki's solutions
+        assertTrue(find(sotn, t -> t.give.containsKey("sotn_dusty_scroll"), "the dusty scroll").need.containsKey("lockpick"));
+        assertEquals(4, MahjarratQuests.SOTN_DUNGEON.rooms.size());
+        List<String> answers = new ArrayList<>();
+        for (QuestPuzzle.Room room : MahjarratQuests.SOTN_DUNGEON.rooms) {
+            QuestPuzzle.Variant v = room.variants().get(0);
+            StringBuilder s = new StringBuilder();
+            v.solutions().get(0).forEach(i -> s.append(s.length() > 0 && v.options().get(i).length() > 1 ? " " : "").append(v.options().get(i)));
+            answers.add(s.toString());
+        }
+        assertEquals(List.of("Left Up Left Down", "BLOOD", "North-west South-east North-east South-west", "7402"), answers);
+        // the Strange Creature (wiki: level 368, 550 HP) runs the Phantom Muspah's fight on its own numbers
+        stats("quest_strange_creature", 368, 550, 6);
+        com.runecraft.osrs.content.bosses.MuspahRules.Numbers n = com.runecraft.osrs.content.bosses.MuspahRules.STRANGE_CREATURE;
+        assertEquals(550, n.hitpoints());
+        assertEquals(110, n.shieldBelow(), "shield at 20% health");
+        assertEquals(List.of(32, 38, 33, 24, 40), List.of(n.rangedMax(false), n.rangedMax(true), n.magicMax(false), n.melee(), n.shockwave()));
+        assertEquals(List.of(-10, 160), List.of(n.meleeFormMagicDefence(), n.meleeFormRangedDefence()), "melee form defences");
+        BossDef creature = boss("quest_strange_creature");
+        for (String[] a : new String[][]{{"ice_shard", "32"}, {"smite", "33"}, {"stomp", "24"}, {"shockwave", "40"}}) {
+            assertEquals(Integer.parseInt(a[1]), creature.attacks.stream().filter(x -> x.name().equals(a[0])).findFirst()
+                    .orElseThrow(() -> new AssertionError(a[0])).maxHit(), a[0]);
+        }
+        // and the Phantom Muspah keeps its own
+        com.runecraft.osrs.content.bosses.MuspahRules.Numbers phantom = com.runecraft.osrs.content.bosses.MuspahRules.PHANTOM;
+        assertEquals(List.of(850, 127, 61, 72, 79, 34, 80), List.of(phantom.hitpoints(), phantom.shieldBelow(), phantom.rangedMax(false),
+                phantom.rangedMax(true), phantom.magicMax(true), phantom.melee(), phantom.shockwave()));
+    }
+
     private static int DS2_CRYPT_VARIANTS() {
         return GrandmasterQuests.DS2_CRYPT.rooms.get(0).variants().size();
     }

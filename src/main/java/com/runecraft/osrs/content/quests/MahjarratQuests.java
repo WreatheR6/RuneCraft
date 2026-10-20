@@ -142,12 +142,21 @@ final class MahjarratQuests {
                         .particle("minecraft:item_slime")) // OSRS: up to 30, poison starting at 6
                 .drops(Drop.always("bones")).skin(Cast.PALE, 0x1A1A1A, 0x101010, 0x2A2A2A).size(0.6f, 1.9f, 1.0f)
                 .at("sotn_weiss_cave").arena(10, "ice"));
-        b.boss(BossDef.of("quest_strange_creature", "Strange Creature").level(368).stats(550, 280, 280, 200, 150, 280).speed(5)
+        // Wiki "Strange Creature": level 368, 550 HP, the Phantom Muspah's fight on smaller numbers (MuspahRules.STRANGE_CREATURE,
+        // played by the bosses module's Muspah script): a ranged form (ice shards up to 32, speed 6, and a corrupting magic orb up
+        // to 33) and a melee form (stab up to 24, speed 5) that swap as it takes damage with spikes under the player; the orb
+        // barrage and homing spikes; at 20% health the shockwave (40, only spikes stop it) and a 75-point prayer shield with
+        // Soul Split, then its ranged form at 38 with spikes over the whole cave.
+        b.boss(BossDef.of("quest_strange_creature", "Strange Creature").level(368).stats(550, 280, 280, 200, 150, 280).speed(6)
                 .defenceBonus(110, 90, 80, 280, 0) // ranged form (melee form: magic -10, ranged 160)
-                .attack(AttackDef.of("claw", AttackType.STAB, 24, 3, 3))
-                .attack(AttackDef.of("prismatic_bolt", AttackType.RANGED, 32, 12, 4).particle("minecraft:crit"))
-                .attack(AttackDef.of("prismatic_spike", AttackType.MAGIC, 32, 12, 2).particle("minecraft:end_rod")) // approx
-                .phase(50, "The Strange Creature shrouds itself in a prismatic shield!", 1.2, false) // post-shield max hit 38
+                .attack(AttackDef.of("ice_shard", AttackType.RANGED, 32, 14, 5).particle("minecraft:snowflake"))
+                .attack(AttackDef.of("smite", AttackType.MAGIC, 33, 14, 1).particle("minecraft:soul_fire_flame")
+                        .telegraph(2, "The Strange Creature raises its arms, charging purple energy!"))
+                .attack(AttackDef.of("stomp", AttackType.STAB, 24, 4, 5))
+                .attack(AttackDef.of("lightning_cloud", AttackType.MAGIC, 14, 64, 1).special(Special.HAZARD, 0)
+                        .message("The Strange Creature vanishes and the cave dims - a barrage of orbs!").particle("minecraft:electric_spark"))
+                .attack(AttackDef.of("shockwave", AttackType.MAGIC, 40, 64, 1).special(Special.AOE, 32)
+                        .telegraph(5, "The Strange Creature teleports to the centre - hide behind a spike!").particle("minecraft:sonic_boom"))
                 .drops(Drop.always("bones")).model("phantom_muspah").size(2.0f, 2.6f, 1.6f)
                 .at("sotn_weiss_ritual_room").arena(12, "ice"));
         b.quest("secrets_of_the_north", "Secrets of the North", Difficulty.MASTER, 2)
@@ -178,9 +187,10 @@ final class MahjarratQuests {
                 .talk("sotn_hazeel").stay().needFlag("sotn_cult").unlessFlag("sotn_hazeel").flag("sotn_hazeel")
                 .say("I did not order a murder. But the Carnilleans hid something of mine: a scroll. Find what the killer missed.")
                 .reach("carnillean_house", 8).stay().needFlag("sotn_hazeel").unless("sotn_dusty_scroll").unlessFlag("sotn_scroll").give("sotn_dusty_scroll")
-                .reqSkill(Skill.THIEVING, 64)
+                .reqSkill(Skill.THIEVING, 64).need("lockpick") // quick guide: a lockpick or a hair clip (not in RuneCraft)
                 .say("* Claus the Chef lets you into the cellar. Behind the cooking shelves a button opens a passage to a locked chest.",
                         "* You pick the lock pin by pin and take a dusty scroll.")
+                .missing("* The chest in the hidden passage is locked. You'll need a lockpick.")
                 .talk("sotn_hazeel").needFlag("sotn_hazeel").take("sotn_dusty_scroll").flag("sotn_scroll")
                 .say("A ritual... in the north. Weiss. Whoever hired your killer is going there. Follow them.")
                 .missing("The scroll the Carnilleans hid. Search their cellar.")
@@ -196,16 +206,57 @@ final class MahjarratQuests {
                 .stage("I should open the ritual room's sealed gate under Weiss and face whatever lies beyond.")
                 .talk("sotn_hazeel").stay().needFlag("sotn_assassin").unlessFlag("sotn_hazeel_weiss").flag("sotn_hazeel_weiss")
                 .say("I followed you. The gate ahead is Zarosian work. Its locks answer to old words and old fire.")
-                .reach("sotn_weiss_ritual_room", 6).stay().needFlag("sotn_hazeel_weiss").unlessFlag("sotn_puzzles").need("tinderbox").flag("sotn_puzzles")
-                .say("* You find a lever handle in a barrel, open the gate with BLOOD and the chest with 7402, light the braziers NW, SE, NE, SW,",
-                        "* press LEFT, UP, LEFT, DOWN, pull the lever and join two jewel shards into an ancient jewel. It opens the icy chest: the icy key.")
-                .missing("* The braziers need lighting. You'll need a tinderbox.")
+                .puzzle("sotn_weiss_ritual_room", SOTN_DUNGEON).stay().needFlag("sotn_hazeel_weiss").unlessFlag("sotn_puzzles").need("tinderbox")
+                .flag("sotn_puzzles")
+                .say("* You join the two jewel shards into an ancient jewel. It opens the icy chest: inside, an icy key.",
+                        "* The key turns in the gate south-west of the centre room. Beyond it, a crevice.")
+                .missing("* The braziers need lighting. You'll need a tinderbox (the crate in the western part of the room).")
                 .reach("sotn_weiss_ritual_room", 6).stay().needFlag("sotn_puzzles").unlessFlag("sotn_creature").spawn("quest_strange_creature")
                 .say("* Beyond the icy gate, a crevice. Something prismatic unfolds from the dark: a Strange Creature!")
                 .kill("quest_strange_creature").stay().needFlag("sotn_puzzles").unlessFlag("sotn_creature").flag("sotn_creature")
                 .say("* The Strange Creature shatters and flees deeper into the ice. Hazeel teleports you back to Ardougne.")
                 .talk("sotn_carnillean_guard").needFlag("sotn_creature")
                 .say("A Zarosian ritual under Weiss? And a creature like that... Well. The captain will want this kept very quiet indeed. Thank you.");
+    }
+
+    /**
+     * Secrets of the North, the Ghorrock Dungeon (wiki walkthrough "Secrets of the Dungeon"): the northern gate's arrows from
+     * Tullia's letter and the ancient map (left, up, left, down), the centre gate's word from the Duke note, strange list and
+     * strange cipher (BLOOD), the braziers by the numbers note (north-west, south-east, north-east, south-west), then the
+     * northern chest's code from the settlements note on the ancient map (7402).
+     */
+    static final QuestPuzzle SOTN_DUNGEON = sotnDungeon();
+
+    private static QuestPuzzle sotnDungeon() {
+        return QuestPuzzle.builder("sotn_dungeon")
+                .room("north_gate").variant(null)
+                .prompt("* Tullia's letter, from the chest in the south-eastern room: five of its letters are purple - S, p, c, d, l.",
+                        "* The ancient map, from the crate in the east: Senntisten, with Paddewwa to its west, Carrallanger north of",
+                        "* Paddewwa, Dareeyak west of Carrallanger and Lassar south of Dareeyak.",
+                        "* The northern gate's lock takes four arrows. Which do you press?")
+                .options("Left", "Right", "Up", "Down")
+                .solution(0, 2, 0, 3)
+                .room("centre_gate").variant(null)
+                .prompt("* Behind the northern gate: a strange list of twelve names. Under the lever's pillar: a strange cipher of symbols.",
+                        "* Filled in from the list, the Duke note reads: Picus, Quirinius, Sucellus, Mantus, Nemesis, Cacus, Terminus, Ceres,",
+                        "* Orcus, Mephitis, Maximus, Festus. Matched through the cipher (Orcus's symbol reads L), the dukes' symbols spell",
+                        "* a hidden message: 'BOUND BY ...'. The centre gate's lock wants a five-letter word.") // approx: the cipher told as letters
+                .options("B", "D", "L", "N", "O", "U", "Y")
+                .solution(0, 2, 4, 4, 1)
+                .room("braziers").variant(null)
+                .prompt("* The numbers note, from the damaged table: 3241, with '4: NE' in its corner. The strange cipher's corner says",
+                        "* '1: SW', the ancient map's '2: SE', the strange list's '3: NW'.",
+                        "* Four unlit braziers stand in the corners of the room. Light them in order.")
+                .options("North-west", "North-east", "South-west", "South-east")
+                .solution(0, 3, 1, 2)
+                .room("north_chest").variant(null)
+                .prompt("* The western chest opens: a jewel shard and a settlements note. Joined on the ancient map as the note lists them,",
+                        "* Kharid-et - Kharyrll - Senntisten draws a 7; the next line draws a 4, the next a closed loop, the last a",
+                        "* hook and a base like a 2.", // approx: the other three lines' settlements
+                        "* The northern chest's lock takes four digits.")
+                .options("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
+                .solution(7, 4, 0, 2)
+                .failLines("* The lock doesn't budge. Better read the notes again.").build();
     }
 
     private static void desertTreasureII(QuestBook b) {
