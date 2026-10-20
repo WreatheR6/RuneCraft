@@ -332,8 +332,11 @@ class CoxRulesTest {
     @Test
     void foodBurnsAndRakes() {
         CoxSupplies.Food kyren = CoxSupplies.foodByRaw("raw_kyren_fish");
-        assertTrue(CoxSupplies.burnChance(90, kyren) > 0.4);
+        // Kyren fish (wiki cooking chart, low 163 / high 255): about 3% burnt at 90, none at 99.
+        assertEquals(1 - 248 / 256.0, CoxSupplies.burnChance(90, kyren), 1e-9);
+        assertEquals(0.0, CoxSupplies.burnChance(99, kyren), 1e-9);
         assertEquals(0.0, CoxSupplies.burnChance(99, CoxSupplies.foodByRaw("raw_pysk_fish")), 1e-9);
+        assertEquals(0.5, CoxSupplies.burnChance(1, CoxSupplies.foodByRaw("raw_pysk_fish")), 1e-9);
         assertEquals(CoxSupplies.BURNT_FISH, CoxSupplies.burnt(kyren));
         assertEquals(CoxSupplies.BURNT_BAT, CoxSupplies.burnt(CoxSupplies.foodByRaw("raw_psykk_bat")));
         assertTrue(RaidItems.RAID_ONLY_ITEMS.contains(CoxSupplies.KEYSTONE));

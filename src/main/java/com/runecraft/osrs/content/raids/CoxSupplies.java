@@ -388,10 +388,15 @@ public final class CoxSupplies {
     }
 
     /**
-     * The chance of burning raw CoX food on the fire (OSRS: CoX fish and bats can burn; their stop-burn levels aren't
-     * published). // approx: 50% at the required Cooking level, falling to none 30 levels above it
+     * The chance of burning raw CoX food on the fire. The top tier (kyren fish, psykk bat; level 90) follows the OSRS
+     * wiki's kyren cooking chart: the skilling roll with low 163, high 255, so about 3% burn at 90 and none at 99.
+     * // approx: the wiki charts only the kyren fish; the psykk bat shares it and the lower tiers burn 50% at their
+     * level, falling to none 30 levels above it
      */
     public static double burnChance(int cookingLevel, Food food) {
+        if (food.level() >= 90) {
+            return Math.max(0, 1 - CoxRules.skillRoll(cookingLevel, 163, 255));
+        }
         int over = cookingLevel - food.level();
         return over >= 30 ? 0 : Math.max(0, 0.5 - over * 0.5 / 30);
     }
