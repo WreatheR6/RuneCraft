@@ -193,7 +193,7 @@ final class BossFightChecks {
         if (found.isEmpty()) {
             throw new AssertionError("BossService.summon spawned nothing");
         }
-        return fight(found.get(0), false, true);
+        return fight(found.get(0), boss.entityId(), false, true);
     }
 
     private String data(String id) {
@@ -221,7 +221,7 @@ final class BossFightChecks {
         for (AttackDef a : def.attacks) {
             passive &= a.maxHit() <= 0;
         }
-        return how + fight(found.get(0), passive, com.runecraft.content.bosses.BossSelfTests.realAttacksHurt(id));
+        return how + fight(found.get(0), id, passive, com.runecraft.content.bosses.BossSelfTests.realAttacksHurt(id));
     }
 
     // ------------------------------------------------------------------ the fight
@@ -230,7 +230,7 @@ final class BossFightChecks {
      * @param passive     the boss never attacks (no attack is expected)
      * @param realAttacks whether ordinary weapon attacks can hurt it at all (else only its mechanic does: Zalcano)
      */
-    private String fight(LivingEntity first, boolean passive, boolean realAttacks) {
+    private String fight(LivingEntity first, String id, boolean passive, boolean realAttacks) {
         hook();
         ServerPlayer p = c.player;
         // the weapon goes in the main hand first, so the runes don't take its slot
@@ -262,6 +262,7 @@ final class BossFightChecks {
         List<String> forms = new ArrayList<>();
         Map<AttackType, int[]> landed = new LinkedHashMap<>(); // style -> {attacks, hits (hp taken off), rolled > 0 but no hp lost}
         int kcBefore = totalKills(data);
+        int heldBefore = com.runecraft.content.bosses.BossSelfTests.heldLoot(id, p);
         int logBefore = data.collectionLog().size();
         Set<UUID> items = new HashSet<>();
         int invBefore = 0;
@@ -398,6 +399,8 @@ final class BossFightChecks {
             }
         }
         int pocketed = Math.max(0, inventoryCount(p) - invBefore);
+        // loot kept for the player elsewhere (the Doom's delve loot waits in the burrow hole until claimed)
+        pocketed += Math.max(0, com.runecraft.content.bosses.BossSelfTests.heldLoot(id, p) - heldBefore);
         if (ground + pocketed == 0) {
             throw new AssertionError("killed (kc +" + kc + ") but no loot: nothing on the ground or in the inventory");
         }

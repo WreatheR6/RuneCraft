@@ -67,6 +67,14 @@ public final class BossSelfTests {
     }
 
     /**
+     * Loot a kill leaves somewhere other than the ground or the inventory: the Doom of Mokhaiotl's delve loot waits in the
+     * burrow hole until claimed at the stone. Returns the number of stacks held for the player.
+     */
+    public static int heldLoot(String bossId, ServerPlayer p) {
+        return com.runecraft.osrs.content.bosses.DoomDelves.BOSS.equals(bossId) ? DoomDelveService.heldLoot(p) : 0;
+    }
+
+    /**
      * Whether a player's ordinary weapon attacks can take hitpoints off this boss at all. False for Zalcano, who is only hurt
      * by imbued tephra (her armour) and pickaxes (once she falls).
      */
