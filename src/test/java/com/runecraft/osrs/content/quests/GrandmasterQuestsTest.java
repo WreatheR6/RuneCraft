@@ -205,6 +205,39 @@ class GrandmasterQuestsTest {
         assertEquals(10, boss("fragment_of_seren").defenceBonus(com.runecraft.osrs.AttackType.MAGIC), "magic defence");
     }
 
+    @Test
+    void sinsOfTheFatherFollowsTheQuickGuide() {
+        QuestSpec sotf = spec("sins_of_the_father");
+        assertEquals(5, sotf.stages.size(), "saved stage count");
+        // following Carl: four hiding spots in order, then Kroy (wiki: level 133, 209 HP) in his lab
+        assertEquals(List.of(0, 1, 2, 3), MorytaniaQuests.SOTF_FOLLOW.rooms.get(0).variants().get(0).solutions().get(0));
+        stats("sotf_kroy", 133, 209, 4);
+        // the trek: two nail beasts, three logs for the bridge, two juvinates that only an Ivandis flail hurts
+        assertEquals(2, find(sotf, t -> t.kind == Trigger.Kind.KILL && t.target.equals("sotf_nail_beast"), "the nail beasts").count);
+        assertEquals(3, find(sotf, t -> t.setFlags.contains("sotf_bridge"), "the bridge").take.get("logs"));
+        assertEquals("ivandis_flail", boss("sotf_juvinate").requiredWeapon);
+        stats("sotf_damien", 204, 217, 5);
+        // the arboretum's valves: 7 gallons a north turn, 4 a south turn, every amount with one setting
+        List<String> amounts = new ArrayList<>();
+        for (QuestPuzzle.Variant v : MorytaniaQuests.SOTF_VALVES.rooms.get(0).variants()) {
+            List<Integer> turns = v.solutions().get(0);
+            String gallons = v.prompt().get(0).replaceAll("\\D+", "");
+            assertEquals(7 * turns.get(0) + 4 * turns.get(1), Integer.parseInt(gallons));
+            assertTrue(!amounts.contains(gallons), "one setting for " + gallons + " gallons");
+            amounts.add(gallons);
+        }
+        assertEquals(35, amounts.size());
+        // the blisterwood flail: eight logs (seven kept by Vertida), a ruby, 5 fire and 1 cosmic, the Ivandis flail
+        Trigger flail = find(sotf, t -> t.setFlags.contains("sotf_flail"), "the flail");
+        assertEquals(8, flail.take.get("blisterwood_logs"));
+        assertTrue(flail.take.keySet().containsAll(List.of("ruby", "fire_rune", "cosmic_rune", "ivandis_flail")));
+        // Vanstrom Klause at his Sins of the Father stats (wiki: level 459, 750 HP, magic every 5 ticks, blisterwood only)
+        stats("vanstrom_klause", 459, 750, 5);
+        assertEquals("blisterwood_flail", boss("vanstrom_klause").requiredWeapon);
+        assertTrue(boss("vanstrom_klause").attacks.stream().map(a -> a.name()).toList()
+                .containsAll(List.of("pets", "blood_orb", "stare_into_darkness", "lightning")));
+    }
+
     private static int DS2_CRYPT_VARIANTS() {
         return GrandmasterQuests.DS2_CRYPT.rooms.get(0).variants().size();
     }

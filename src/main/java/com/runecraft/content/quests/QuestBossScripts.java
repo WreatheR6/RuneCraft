@@ -27,6 +27,7 @@ final class QuestBossScripts {
         BossScripts.register("dark_squall", MagicOnly::new);
         BossScripts.register("balance_elemental", BalanceForms::new);
         BossScripts.register("fragment_of_seren", FragmentSpecials::new);
+        BossScripts.register("vanstrom_klause", Vanstrom::new);
     }
 
     /**
@@ -154,6 +155,60 @@ final class QuestBossScripts {
             return Math.max(1, max - spare);
         }
     }
+    /**
+     * Sins of the Father, Vanstrom Klause (wiki): magic attacks, some lowering Attack; every 8-10 attacks one of his three
+     * specials, never the same twice in a row. Brought to 0 hitpoints he heals 200, stops his specials and calls lightning.
+     */
+    static final class Vanstrom implements BossScript {
+        private static final String[] SPECIALS = {"pets", "blood_orb", "stare_into_darkness"};
+        private int sinceSpecial;
+        private int nextSpecial = 8;
+        private String lastSpecial;
+        private boolean healed;
+
+        private AttackDef named(DataBossEntity boss, String name) {
+            for (AttackDef a : boss.def().attacks) {
+                if (a.name().equals(name)) {
+                    return a;
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
+            if (boss.def() == null) {
+                return null;
+            }
+            if (healed) {
+                return named(boss, boss.getRandom().nextInt(3) == 0 ? "lightning" : "blood_blast");
+            }
+            if (++sinceSpecial >= nextSpecial) {
+                sinceSpecial = 0;
+                nextSpecial = 8 + boss.getRandom().nextInt(3);
+                String pick;
+                do {
+                    pick = SPECIALS[boss.getRandom().nextInt(SPECIALS.length)];
+                } while (pick.equals(lastSpecial));
+                lastSpecial = pick;
+                return named(boss, pick);
+            }
+            return named(boss, boss.getRandom().nextInt(4) == 0 ? "weaken" : "blood_blast");
+        }
+
+        @Override
+        public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            int hp = (int) Math.ceil(boss.getHealth() * boss.trueHitpoints() / boss.getMaxHealth());
+            if (!healed && damage >= hp) {
+                healed = true;
+                boss.setHealth(boss.getMaxHealth() * 200f / boss.trueHitpoints());
+                announce(boss, "Vanstrom Klause drinks deep of the blood around him and rises again!", ChatFormatting.DARK_RED);
+                return 0;
+            }
+            return damage;
+        }
+    }
+
     static final class MagicOnly implements BossScript {
         private long lastMessage;
         private int attacks;

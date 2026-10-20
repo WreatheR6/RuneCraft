@@ -1093,8 +1093,9 @@ public final class MonsterStatsTable {
         // Ranis Drakan (A Taste of Hope)
         row("ranis_drakan", 233, 400, 120, 120, 120, 120, 1, 5, 60, 60, 60, 60, 60, 0, 0, 0, "vampyre");
         // Vanstrom Klause (Vampyre)
-        row("vanstrom_klause", 169, 155, 150, 136, 150, 150, 150, 8, 0, 0, 0, 0, 0, 0, 0, 0, "vampyre");
-        maxHit("vanstrom_klause", "vampyric_claw", 16); // was 25
+        // the quests module's vanstrom_klause is the Sins of the Father fight (wiki "Vanstrom Klause", Sins of the Father version)
+        row("vanstrom_klause", 459, 750, 0, 0, 180, 180, 0, 5, 34, 34, 34, 34, 34, 0, 16, 0, "vampyre");
+        maxHit("vanstrom_klause", "blood_blast", 24); // was the level-169 vampyre form
         // Dad
         row("dad", 101, 120, 60, 120, 50, 1, 1, 8, 25, 25, 40, 200, 200, 40, 0, 0);
         maxHit("dad", "club", 27); // was 18

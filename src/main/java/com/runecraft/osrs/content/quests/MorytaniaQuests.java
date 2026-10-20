@@ -361,14 +361,52 @@ final class MorytaniaQuests {
     private static void sinsOfTheFather(QuestBook b) {
         b.npc("vanescula_drakan", "Vanescula Drakan", "darkmeyer", 2, 3, 0xE0D8D8, 0x6A1A2A, 0x3A0A1A, 0x1A1A1A);
         b.item("blisterwood_logs", "Blisterwood logs", "log", 0x6A4A6A, "Logs from the Blisterwood tree. Deadly to vampyres.");
-        b.boss(BossDef.of("vanstrom_klause", "Vanstrom Klause").level(169).stats(155, 150, 150, 120, 120, 1).speed(4)
-                .defenceBonus(70, 70, 70, 50, 70)
+        b.item("sotf_vyre_noble_clothing", "Vyre noble clothing", "robe_top", 0x5A1A2A, "Fine vyre noble clothing: Darkmeyer's guards won't look twice.");
+        // quest-helper tiles: the Darkmeyer arboretum and its blisterwood tree, Old Man Ral's house over the Myreque's lair in Meiyerditch
+        b.spot("sotf_arboretum", "Darkmeyer Arboretum", 3618, 3370); // approx: east of the bank, north of the furnace
+        b.spot("sotf_meiyerditch_lair", "Old Man Ral's house", 3604, 3204); // approx
+        b.spot("sotf_daeyalt_mine", "Ver Sinhaza mines", 3640, 3240); // approx: the Vyrewatch send prisoners down by the bank
+        // Wiki infoboxes: Kroy (level 133, 209 HP, magic and melee up to 15), Damien Leucurte (level 204, 217 HP, ranged and magic
+        // up to 20, magical fires), the trek's nail beasts (level 141, 75 HP, three slashes of up to 4) and vampyre juvinates (level 119,
+        // 150 HP, slash up to 9).
+        b.boss(BossDef.of("sotf_kroy", "Kroy").level(133).stats(209, 80, 80, 80, 80, 0).speed(4)
+                .defenceBonus(50, 50, 50, 50, 50)
+                .attack(AttackDef.of("punch", AttackType.CRUSH, 15, 2, 3))
+                .attack(AttackDef.of("magic", AttackType.MAGIC, 15, 10, 3).particle("minecraft:witch"))
+                .attack(AttackDef.of("potion_throw", AttackType.MAGIC, 15, 10, 1).special(Special.SKY_STRIKE, 0)
+                        .telegraph(2, "Kroy throws a potion!")) // wiki: dodge it
+                .drops(Drop.always("bones")).skin(0xE0B898, 0x5A4A3A, 0x3A2A1A, 0x2A2A2A));
+        b.boss(BossDef.of("sotf_nail_beast", "Nail beast").level(141).stats(75, 320, 26, 40, 1, 1).speed(8)
+                .attack(AttackDef.of("nails", AttackType.SLASH, 12, 2, 1)) // three hits of up to 4
+                .drops(Drop.always("bones")).skin(0x8A6A4A, 0x6A4A2A, 0x4A3A1A, 0x3A2A1A).size(1.2f, 1.4f, 1.0f));
+        b.boss(BossDef.of("sotf_juvinate", "Vampyre Juvinate").level(119).stats(150, 127, 76, 65, 50, 50).speed(4)
+                .attack(AttackDef.of("claws", AttackType.SLASH, 9, 2, 1))
+                .drops(Drop.always("bones")).skin(0xC8C8D0, 0x3A1A2A, 0x2A0A1A, 0x1A1A1A).requiresWeapon("ivandis_flail"));
+        b.boss(BossDef.of("sotf_damien", "Damien Leucurte").level(204).stats(217, 0, 0, 160, 160, 160).speed(5)
+                .defenceBonus(30, 30, 30, 30, 30).requiresWeapon("ivandis_flail")
+                .attack(AttackDef.of("blood_bolt", AttackType.MAGIC, 20, 10, 3).special(Special.POISON, 6).particle("minecraft:crimson_spore"))
+                .attack(AttackDef.of("arrows", AttackType.RANGED, 20, 10, 3))
+                .attack(AttackDef.of("magical_fire", AttackType.MAGIC, 1, 10, 1).special(Special.HAZARD, 8)
+                        .telegraph(2, "Damien summons a magical fire! Stomp it out.")) // approx: his fires shield him in OSRS
+                .drops(Drop.always("bones")).skin(0xC8C8D0, 0x6A1A2A, 0x3A0A1A, 0x1A1A1A));
+        // Vanstrom Klause in Sins of the Father (wiki): level 459, 750 HP, magic up to 24 every 5 ticks, only blisterwood hurts him;
+        // every 8-10 attacks one of his three specials, never the same twice (QuestBossScripts.Vanstrom): "My pets will feast on
+        // your corpse!" (an acidic bloodveld that explodes for up to 50), "Blood will be my strength!" (a healing blood orb) and
+        // "Stare into darkness!" (heavy damage to a player facing him). At 0 hitpoints he heals 200 and calls lightning (up to 46).
+        b.boss(BossDef.of("vanstrom_klause", "Vanstrom Klause").level(459).stats(750, 0, 0, 180, 180, 0).speed(5)
+                .defenceBonus(34, 34, 34, 34, 34)
                 .requiresWeapon("blisterwood_flail")
-                .attack(AttackDef.of("vampyric_claw", AttackType.SLASH, 25, 2.5, 6).special(Special.LIFESTEAL, 25))
-                .attack(AttackDef.of("blood_pool", AttackType.MAGIC, 15, 8, 3).special(Special.HAZARD, 4)
-                        .telegraph(2, "Vanstrom summons a pool of blood beneath you!").particle("minecraft:crimson_spore"))
-                .attack(AttackDef.of("vanish", AttackType.MAGIC, 10, 12, 2).special(Special.BLINK, 0).message("Vanstrom vanishes into mist!"))
-                .phase(50, "Vanstrom: You cannot defeat a Drakan!", 1.2, false)
+                .attack(AttackDef.of("blood_blast", AttackType.MAGIC, 24, 10, 6).particle("minecraft:crimson_spore"))
+                .attack(AttackDef.of("weaken", AttackType.MAGIC, 24, 10, 2).special(Special.DRAIN_STAT, 0) // lowers Attack like a shadow spell
+                        .particle("minecraft:squid_ink"))
+                .attack(AttackDef.of("pets", AttackType.MAGIC, 50, 12, 1).special(Special.SKY_STRIKE, 0)
+                        .telegraph(3, "Vanstrom Klause: My pets will feast on your corpse!"))
+                .attack(AttackDef.of("blood_orb", AttackType.MAGIC, 0, 12, 1).special(Special.HEAL_SELF, 40)
+                        .message("Vanstrom Klause: Blood will be my strength!").particle("minecraft:crimson_spore"))
+                .attack(AttackDef.of("stare_into_darkness", AttackType.MAGIC, 40, 12, 1)
+                        .telegraph(1, "Vanstrom Klause: Stare into darkness!")) // approx: OSRS hurts a player facing him
+                .attack(AttackDef.of("lightning", AttackType.MAGIC, 46, 14, 1).special(Special.SKY_STRIKE, 0)
+                        .telegraph(2, "Dark clouds gather over the graveyard!"))
                 .drops(Drop.always("bones")).size(0.8f, 2.4f, 1.0f).at("darkmeyer").arena(12, "crypt"));
         b.quest("sins_of_the_father", "Sins of the Father", Difficulty.MASTER, 2)
                 .reqQuest("a_taste_of_hope", "VAMPYRE_SLAYER")
@@ -377,26 +415,119 @@ final class MorytaniaQuests {
                 // OSRS: a tome of experience, 6 x 15,000 XP in skills of the player's choice (level 60+). // approx: fixed skills
                 .xp(Skill.WOODCUTTING, 15000).xp(Skill.FLETCHING, 15000).xp(Skill.CRAFTING, 15000)
                 .xp(Skill.AGILITY, 15000).xp(Skill.ATTACK, 15000).xp(Skill.SLAYER, 15000)
-                .unlock("Access to Darkmeyer").unlock("Access to the Hallowed Sepulchre")
+                .unlock("Access to Darkmeyer and the Daeyalt essence mine").unlock("Access to the Hallowed Sepulchre")
                 .stage("I can start this quest by speaking to Veliaf Hurtz in the Myreque hideout. (Requires A Taste of Hope, Vampyre Slayer and more.)")
-                .talk("veliaf_hurtz").say("Vanescula Drakan, Lord Drakan's own sister, wants to meet. It could be a trap... but we must hear her out.")
-                // OSRS: Kroy's herb lab in Slepe, the trek with Ivan Strom and the Icyene graveyard, then Vanescula.
+                .talk("veliaf_hurtz").say("Vanescula Drakan, Lord Drakan's own sister, wants to meet. It could be a trap... but we must hear her out.",
+                        "First, a sleeper plague in Slepe: Hameln the Jester says a man called Carl gets his Bloody Bracers from somewhere.")
+                // ---- Slepe's Sleeper Plague, An Unwelcome Surprise, A Nice and Simple Plan (wiki quick guide) ----
                 .stage("I should help Veliaf deal with the herb dealer in Slepe, then join the trek to the Icyene graveyard and meet Vanescula Drakan.")
-                .reach("quest_slepe_pub", 8).stay().unlessFlag("sotf_kroy").flag("sotf_kroy")
-                .say("* You follow Carl from the pub to his supplier. In the lab you kill Kroy and destroy both lab tables.")
-                .reach("quest_icyene_graveyard", 8).stay().needFlag("sotf_kroy").unlessFlag("sotf_trek").flag("sotf_trek")
-                .say("* With Ivan Strom you trek across Morytania and take the boat to the Icyene graveyard. Veliaf is waiting.")
-                .talk("vanescula_drakan").needFlag("sotf_trek")
-                .missing("Not yet. Deal with the herb dealer in Slepe and come with the Myreque to the Icyene graveyard.").say("I want my brother overthrown. The Blisterwood tree can kill any vampyre. Cut its logs and craft a weapon.",
+                .puzzle("quest_slepe_pub", SOTF_FOLLOW).stay().unlessFlag("sotf_followed", "sotf_kroy").flag("sotf_followed").spawn("sotf_kroy")
+                .say("* Carl leads you to a hidden herb lab. Kroy, the supplier, attacks!")
+                .kill("sotf_kroy").stay().needFlag("sotf_followed").unlessFlag("sotf_kroy").flag("sotf_kroy")
+                .say("* Kroy falls. You destroy both lab tables and leave by the southern gate.")
+                .reach("quest_slepe_pub", 8).stay().needFlag("sotf_followed").unlessFlag("sotf_kroy").spawn("sotf_kroy")
+                .say("* Kroy is still in his lab!")
+                .talk("ivan_strom").stay().needFlag("sotf_kroy").unlessFlag("sotf_trek_start").flag("sotf_trek_start").spawn("sotf_nail_beast")
+                .say("> I'm ready.", "* You swing across the swamp on a long vine. Nail beasts burst out of the mud!")
+                .kill("sotf_nail_beast", 2).stay().needFlag("sotf_trek_start").unlessFlag("sotf_nails").flag("sotf_nails")
+                .say("* The nail beasts fall. Ivan patches himself up.")
+                .talk("ivan_strom").stay().needFlag("sotf_trek_start").unlessFlag("sotf_nails").spawn("sotf_nail_beast")
+                .say("Another nail beast! Behind you!")
+                .talk("ivan_strom").stay().needFlag("sotf_nails").unlessFlag("sotf_bridge").take("logs:3").flag("sotf_bridge").spawn("sotf_juvinate")
+                .say("* You lay three logs across the broken bridge. On the far side, vampyres leap at Ivan!")
+                .missing("The bridge is broken. Three logs would mend it.")
+                .kill("sotf_juvinate", 2).stay().needFlag("sotf_bridge").unlessFlag("sotf_trek").flag("sotf_trek")
+                .say("* Your Ivandis flail cuts the vampyres down. You reach Burgh de Rott and Ivan heads for the boathouse.")
+                .talk("ivan_strom").stay().needFlag("sotf_bridge").unlessFlag("sotf_trek").spawn("sotf_juvinate")
+                .say("A vampyre is still on us!")
+                .reach("quest_icyene_graveyard", 8).stay().needFlag("sotf_trek").unlessFlag("sotf_graveyard").flag("sotf_graveyard")
+                .say("* Ivan rows you to the Icyene graveyard. You solve the mausoleum door, and Vertida, Kael, Radigad, Polmafi, Ivan and",
+                        "* Veliaf each have their say.")
+                .reach("sotf_daeyalt_mine", 8).stay().needFlag("sotf_graveyard").unlessFlag("sotf_mine").needTool("pickaxe").flag("sotf_mine")
+                .say("* The Vyrewatch send you to the mines. You mine 15 daeyalt ore into the cart, then slip through a slashed tapestry",
+                        "* to Safalaan's hideout.")
+                .missing("* The mines below Ver Sinhaza: you'd need a pickaxe for the daeyalt.")
+                .kill("mutated_bloodveld").stay().needFlag("sotf_mine").unlessFlag("sotf_bloodveld").flag("sotf_bloodveld")
+                .say("* The mutated bloodveld falls. Safalaan finds his notes in the bookshelf on the west wall.")
+                .talk("vanescula_drakan").needFlag("sotf_bloodveld")
+                .missing("Not yet. Deal with the herb dealer in Slepe and come with the Myreque to the Icyene graveyard.")
+                .say("I want my brother overthrown. The Blisterwood tree in Darkmeyer can kill any vampyre. You will need to pass as a vyre noble.",
                         "But Vanstrom Klause hunts you. Be ready.")
-                .stage("I should cut blisterwood logs (rune axe) and craft a blisterwood flail.")
-                .talk("vanescula_drakan").needTool("axe").reqSkill(Skill.WOODCUTTING, 62).reqSkill(Skill.FLETCHING, 60).give("blisterwood_logs", "blisterwood_flail")
-                .say("* You cut logs from the Blisterwood tree and fletch them into a flail with silver from Vanescula's smiths.")
-                .missing("The Blisterwood tree needs a strong axe. Bring a rune axe.")
+                // ---- A Vyre-ry Noble Disguise, The Branches of Darkmeyer, The Final Preparations (wiki quick guide) ----
+                .stage("I should get a vyre noble disguise, deal with Damien Leucurte, cut blisterwood in Darkmeyer's arboretum and have a "
+                        + "blisterwood flail made.")
+                .reach("sotf_meiyerditch_lair", 6).stay().unlessFlag("sotf_noble").take("coins:1950").give("sotf_vyre_noble_clothing").flag("sotf_noble")
+                .say("* Trader Sven sells you a Vyrewatch outfit, and under Old Man Ral's house Polmafi Ferdygris makes it noble.")
+                .missing("* Trader Sven wants 1,950 coins for a Vyrewatch outfit.")
+                .talk("veliaf_hurtz").stay().needFlag("sotf_noble").unlessFlag("sotf_damien").spawn("sotf_damien")
+                .say("> Let's do this.", "* In Slepe's graveyard Damien Leucurte throws back his cloak: a vampyre!")
+                .kill("sotf_damien").stay().needFlag("sotf_noble").unlessFlag("sotf_damien").flag("sotf_damien")
+                .say("* Damien Leucurte falls.")
+                .reach("sotf_arboretum", 6).stay().needFlag("sotf_damien").unlessFlag("sotf_arboretum").need("sotf_vyre_noble_clothing")
+                .flag("sotf_arboretum")
+                .say("* In noble clothing you walk through Darkmeyer. The guard Desmodus, Mordan Nikazsi and Maria Gadderanks tell you how",
+                        "* the arboretum's blisterwood is watered. On the toppled shelves: an old note about its valves.")
+                .missing("* Darkmeyer's guards stop anyone who isn't dressed as a vyre noble.")
+                .puzzle("sotf_arboretum", SOTF_VALVES).stay().needFlag("sotf_arboretum").unlessFlag("sotf_valves").flag("sotf_valves")
+                .say("* The water drains from the roots. The blisterwood can be cut.")
+                .reach("sotf_arboretum", 6).stay().needFlag("sotf_valves").unless("blisterwood_logs").unlessFlag("sotf_flail")
+                .needTool("axe").reqSkill(Skill.WOODCUTTING, 62).give("blisterwood_logs:8")
+                .say("* You cut eight blisterwood logs.")
+                .talk("vertida_sefalatis").stay().needFlag("sotf_valves").unlessFlag("sotf_flail").take("blisterwood_logs:8", "ruby", "fire_rune:5",
+                        "cosmic_rune", "ivandis_flail").need("knife", "chisel").reqSkill(Skill.FLETCHING, 60).reqSkill(Skill.MAGIC, 49)
+                .give("blisterwood_flail").flag("sotf_flail")
+                .say("Seven logs for our weapons, thank you. Take this silver sickle (b) from the crate.",
+                        "* You set the ruby in the sickle, enchant it, carve a blisterwood log onto it and bind it to your Ivandis flail:",
+                        "* a blisterwood flail.")
+                .missing("Bring eight blisterwood logs. For your own weapon you'll need a ruby, runes to enchant it (5 fire, 1 cosmic), a knife, "
+                        + "a chisel and your Ivandis flail.")
+                .talk("vanescula_drakan").needFlag("sotf_flail")
+                .say("A blisterwood flail. Good. Safalaan waits north-east of the graveyard. My brother's dog Vanstrom will come for you there.")
+                // ---- A Bloody Show (wiki quick guide) ----
                 .stage("Vanstrom Klause has found me! I must defeat him with the blisterwood flail.")
-                .kill("vanstrom_klause").take("blisterwood_logs").say("* Vanstrom Klause falls, slain by blisterwood! Darkmeyer trembles.")
+                .talk("safalaan").stay().spawn("vanstrom_klause").say("> I'm ready.", "* Vanstrom Klause appears in a swirl of blood!")
+                .kill("vanstrom_klause").say("* Vanstrom Klause falls, slain by blisterwood! Darkmeyer trembles.")
                 .stage("I should report to Vanescula Drakan.")
                 .talk("vanescula_drakan").say("Vanstrom is dead. My brother will be next. Keep the flail, and enjoy the... hospitality of Darkmeyer.")
                 .done("vanescula_drakan", "Lord Drakan's days are numbered.");
+    }
+
+    /**
+     * Sins of the Father, following Carl (wiki quick guide): hide where he won't look as he walks to his supplier: the church's north
+     * doors, the east side of the hollow tree north of the graves, the north side of the hollow tree by the gallows, then the west
+     * side of the hollow tree west of the graveyard.
+     */
+    static final QuestPuzzle SOTF_FOLLOW = sotfFollow();
+    /**
+     * The arboretum's valves (wiki quick guide's table): the old note names the gallons the tree needs, 7 per turn of the north
+     * valve and 4 per turn of the south valve (0-5 each), so each amount has one setting.
+     */
+    static final QuestPuzzle SOTF_VALVES = sotfValves();
+
+    private static QuestPuzzle sotfFollow() {
+        return QuestPuzzle.builder("sotf_follow").shuffle().room("carl").variant(null)
+                .prompt("* You inspect the barrel south of the pub. Carl sets off: through the church, past the graves north of it, into",
+                        "* the town square by the gallows, then towards the graveyard. Where do you hide at each turn?")
+                .options("The church's north doors", "East of the hollow tree north of the graves", "North of the hollow tree by the gallows",
+                        "West of the hollow tree west of the graveyard", "Behind the pub barrel", "In the open square")
+                .solution(0, 1, 2, 3)
+                .failLines("* Carl spots you! He runs back to the pub. You'll have to follow him again.").build();
+    }
+
+    private static QuestPuzzle sotfValves() {
+        String[] turns = {"0", "1", "2", "3", "4", "5"};
+        QuestPuzzle.Builder b = QuestPuzzle.builder("sotf_valves").room("valves");
+        for (int north = 0; north <= 5; north++) {
+            for (int south = 0; south <= 5; south++) {
+                if (north + south == 0) {
+                    continue;
+                }
+                b.variant(null).prompt("* The old note: 'The blisterwood must be watered with exactly " + (7 * north + 4 * south) + " gallons before cutting.'",
+                                "* Each turn of the north valve lets 7 gallons through, each turn of the south valve 4.",
+                                "* Set the north valve, then the south valve (0 to 5 turns).")
+                        .options(turns).solution(north, south);
+            }
+        }
+        return b.failLines("* Water floods the arboretum floor. The valves spin back to zero.").build();
     }
 }
