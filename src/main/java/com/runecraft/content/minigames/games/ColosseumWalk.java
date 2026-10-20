@@ -23,6 +23,7 @@ import com.runecraft.osrs.content.minigames.Minigame;
 import com.runecraft.osrs.content.minigames.SolHeredit;
 import com.runecraft.player.Players;
 import com.runecraft.quest.QuestScripts;
+import com.runecraft.selftest.ChunkSettle;
 import com.runecraft.util.Inv;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +51,12 @@ import net.minecraft.world.item.ItemStack;
  * Two more runs check that dying loses the chest and that ending a run between waves leaves the loot in the chest, searched
  * with one free slot (one stack carried, the rest banked, nothing on the floor). The session is ticked by hand
  * (accelerated); any broken step throws an {@link AssertionError} naming it.
+ *
+ * <p>The whole walk runs inside one server tick. Before every wave and Sol Heredit the arena's chunks are settled
+ * ({@link ChunkSettle}) as a player's moment between waves would, and the lobby's before the quiver trade drops splinters
+ * there, so area searches (the session's floor sweeps, the walk's floor checks) see what is in them. The run's creatures,
+ * healing totems, bee swarms and molten sand are followed through the session's own lists, never area searches, and every
+ * modifier the walk relies on is forced with Minimus's offers drawn again, so no random offer or spawn can skip a step.
  */
 public final class ColosseumWalk {
     private final ServerPlayer player;
@@ -226,6 +233,7 @@ public final class ColosseumWalk {
         int kcBefore = MinigameData.of(player).stat(player.getUUID(), "kc:" + Minigame.FORTIS_COLOSSEUM.id());
         for (int wave = 1; wave < FortisColosseum.WAVES; wave++) {
             step = "wave " + wave;
+            settleArena();
             beforeWave(wave);
             pickAndStart();
             expect(session.monstersAlive() == expectedMonsters(wave), session.monstersAlive() + " monsters (expected "
@@ -234,14 +242,54 @@ public final class ColosseumWalk {
             int killed = killWave();
             until(session::choosing, 12, "the wave did not complete after its monsters died");
             expect(!session.chest().isEmpty(), "the Rewards Chest is empty after wave " + wave);
+            afterWave();
             notes.add("wave " + wave + ": " + killed + " killed" + (note.isEmpty() ? "" : ", " + note));
         }
         int kc = MinigameData.of(player).stat(player.getUUID(), "kc:" + Minigame.FORTIS_COLOSSEUM.id()) - kcBefore;
         expect(kc == 11, kc + " waves counted after 11 cleared");
+        settleArena();
         solWave();
     }
 
-    /** Forces modifiers ahead of some waves so their mechanics are walked whatever Minimus offered. */
+    /**
+     * Lets the arena's chunks become entity-ticking before the walk fights in them ({@link ChunkSettle}), as the moment a
+     * player takes between waves always does. The whole walk runs inside one server tick and the session force-loads the
+     * arena only as the run starts: until the server confirms those chunks, whatever is added there is left out of every
+     * area search, the session's own floor sweeps and stray-mob checks included, and the walk's floor checks would look at
+     * nothing. The walk itself follows the run's creatures, totems, swarms and sand through the session's own lists.
+     */
+    private void settleArena() {
+        if (!ChunkSettle.settle(world, session.box())) {
+            notes.add("(the arena's chunks were still loading after " + ChunkSettle.MAX_NANOS / 1_000_000_000L + " s)");
+        }
+    }
+
+    /** Where Volatility III's molten sand was left this wave (checked once the wave ends), or null. */
+    private BlockPos volatilitySand;
+
+    /**
+     * After a wave: Volatility III's molten sand is temporary, gone once the wave ends, unless Reentry II or III makes it
+     * permanent (wiki "Fortis Colosseum/Modifiers").
+     */
+    private void afterWave() {
+        if (volatilitySand == null) {
+            return;
+        }
+        boolean permanent = session.modifiers().getOrDefault(Modifier.REENTRY, 0) >= 2;
+        boolean left = session.sandAt(volatilitySand);
+        expect(left == permanent, "Volatility III's molten sand " + (left ? "outlived the wave" : "vanished with the wave")
+                + (permanent ? " under Reentry II/III, which makes it permanent" : ""));
+        expect("magma_block".equals(blockId(volatilitySand.below())) == permanent, "the floor under Volatility III's sand is "
+                + blockId(volatilitySand.below()) + " after the wave");
+        volatilitySand = null;
+    }
+
+    /**
+     * Forces modifiers ahead of some waves so their mechanics are walked whatever Minimus offered. Forced while his offers
+     * are on the table, the offers are drawn again from the new set (ColosseumSession.selfTestForce): an offer made before,
+     * such as Volatility I, would otherwise replace the forced tier when the walk picked it (CI: "[wave 4] Volatility III
+     * left no molten sand").
+     */
     private void beforeWave(int wave) {
         switch (wave) {
             case 4 -> {
@@ -320,30 +368,39 @@ public final class ColosseumWalk {
             tick(3);
             expect(session.orbsPending() == 0, "the orbs never landed");
             done.add("manticore " + pattern);
-            // Totemic: a totem rises beside a monster at half health and heals it.
+            // Totemic: a totem rises beside a monster at half health and heals it (followed through the session's list).
             LivingEntity shaman = first(FortisColosseum.SHAMAN);
+            expect(shaman != null, "no serpent shaman on wave 4");
             shaman.setHealth(shaman.getMaxHealth() * 0.4f);
             tick(1);
-            expect(session.totemCount() >= 1, "no healing totem rose beside the wounded shaman");
+            expect(!session.totemsFor(shaman).isEmpty(), "no healing totem rose beside the wounded shaman");
             float before = shaman.getHealth();
             tick(FortisColosseum.TOTEM_FIRST_HEAL_TICKS + FortisColosseum.TOTEM_HEAL_TICKS + 1);
             expect(shaman.getHealth() > before, "the totem did not heal the shaman");
             done.add("totem healed the shaman");
-            // Volatility III: the shaman explodes and leaves molten sand.
-            int sand = session.sandTiles();
-            moveTo(shaman.blockPosition().east());
+            // Volatility III (wiki "Fortis Colosseum/Modifiers", "Molten Sand"): every enemy explodes on death, and the tile
+            // at the centre of the explosion is left molten sand until the wave ends. Every death, not a chance of one: the
+            // walk checks the shaman's own tile, through the session's sand list and the floor block.
+            int volatility = session.modifiers().getOrDefault(Modifier.VOLATILITY, 0);
+            expect(volatility >= 3, "Volatility is at tier " + volatility + " on wave 4, not the III forced for it");
+            BlockPos tile = sandFree(shaman);
+            moveTo(tile.east());
             kill(shaman, AttackType.SLASH, "the shaman");
-            expect(session.sandTiles() > sand, "Volatility III left no molten sand");
+            expect(session.sandAt(tile), "Volatility III left no molten sand on the shaman's tile");
+            expect("magma_block".equals(blockId(tile.below())), "Volatility III's molten sand is not on the floor under the shaman "
+                    + "(found " + blockId(tile.below()) + ")");
+            volatilitySand = tile;
             done.add("volatility sand");
         }
         if (wave == 7) {
             until(() -> first(FortisColosseum.MINOTAUR) != null, FortisColosseum.REINFORCEMENT_TICKS + 3, "no minotaur reinforcement");
             LivingEntity mino = first(FortisColosseum.MINOTAUR);
             LivingEntity colossus = first(FortisColosseum.JAVELIN);
+            expect(colossus != null, "no Javelin Colossus on wave 7");
             colossus.setHealth(colossus.getMaxHealth() * 0.6f); // wounded below 75%, above Totemic's 50%
-            BlockPos beside = clearBeside(colossus.blockPosition(), 3);
-            expect(beside != null, "no open floor beside the colossus for the minotaur");
-            mino.teleportTo(beside.getX() + 0.5, beside.getY(), beside.getZ() + 0.5);
+            // The minotaur heals a monster in its line of sight within 7 tiles: it is put 3 tiles from the colossus where it
+            // sees it (a pillar between them would rightly stop the heal).
+            expect(placeInSight(mino, colossus, 3), "no open floor 3 tiles from the colossus where the minotaur sees it");
             moveTo(session.arena(0, 1, 15));
             if (Math.sqrt(player.distanceToSqr(mino)) < 6) {
                 moveTo(session.arena(0, 1, -15));
@@ -472,13 +529,16 @@ public final class ColosseumWalk {
         }
         player.setYRot(yaw);
         expect(session.salutes().size() == 4, "salutes counted " + session.salutes());
-        // The kill.
+        // The kill. Sol drops nothing (the chest holds the loot): no item may appear on the floor that wasn't there before.
+        java.util.Set<ItemEntity> floorBefore = new java.util.HashSet<>(world.getEntitiesOfClass(ItemEntity.class, session.box(),
+                e -> true));
         kill(sol, AttackType.SLASH, "Sol Heredit");
         until(session::rewardsReady, 6, "the run did not end with Sol Heredit's death");
         expect(Players.data(player).killCount(FortisColosseum.SOL_HEREDIT) == solKc + 1, "no Sol Heredit kill count");
         expect(MinigameData.of(player).stat(player.getUUID(), FortisColosseum.STAT_COMPLETIONS) == completions + 1, "no completion counted");
         expect(session.chest().stream().anyMatch(r -> r.item().equals(ColosseumRewards.QUIVER)), "no Dizana's quiver in the chest");
-        expect(world.getEntitiesOfClass(ItemEntity.class, session.box(), e -> true).isEmpty(), "Sol Heredit dropped loot on the floor");
+        expect(world.getEntitiesOfClass(ItemEntity.class, session.box(), e -> !floorBefore.contains(e)).isEmpty(),
+                "Sol Heredit dropped loot on the floor");
         expect(session.wallBlocks() == 0, "the gladiators stayed after the fight");
         // The exit refuses an unsearched chest; searching it ends the run back in the lobby.
         BlockPos exit = find(session.arena(4, 1, 16).getX(), session.arena(4, 1, 16).getZ(), 2, session.arena(0, 0, 0).getY(),
@@ -499,6 +559,9 @@ public final class ColosseumWalk {
     private void afterRun() {
         step = "after the run";
         int splinters = Inv.count(player, ColosseumRewards.SPLINTERS);
+        // The run ended by sending the player back to the lobby inside this server tick: its chunks are held and settled as
+        // a player arriving there would have them, or what is dropped at the player's feet is hidden from the search below.
+        boolean settled = ChunkSettle.holdAndSettle(world, player.blockPosition(), 8);
         command("minigame colosseum quiver splinters");
         // 4,000 splinters are one OSRS stack but 63 Minecraft ones, more than a pack holds: what it can't take is dropped at
         // the player's feet as their reward (MinigameSession.reward), counted here and cleared away.
@@ -510,7 +573,8 @@ public final class ColosseumWalk {
         }
         int carried = Inv.count(player, ColosseumRewards.SPLINTERS) - splinters;
         expect(Inv.count(player, ColosseumRewards.QUIVER) == 0 && carried + dropped == FortisColosseum.QUIVER_SPLINTERS,
-                "Minimus did not trade the quiver for 4,000 splinters (" + carried + " in the pack, " + dropped + " at the feet)");
+                "Minimus did not trade the quiver for 4,000 splinters (" + carried + " in the pack, " + dropped + " at the feet"
+                        + (settled ? "" : "; the lobby's chunks were still loading") + ")");
         BlockPos stairs = lobbyBlock(1797, FortisColosseum.LOBBY_Y, FortisColosseum.LOBBY_EXIT);
         moveTo(stairs.east());
         use(stairs);
@@ -523,6 +587,7 @@ public final class ColosseumWalk {
         step = "death run";
         expect(ColosseumSession.toLobby(player), "could not go back down");
         enter();
+        settleArena();
         pickAndStart();
         killWave();
         until(session::choosing, 12, "wave 1 did not complete");
@@ -540,6 +605,7 @@ public final class ColosseumWalk {
     private void cashOutRun() {
         step = "leaving with the loot";
         enter();
+        settleArena();
         pickAndStart();
         killWave();
         until(session::choosing, 12, "wave 1 did not complete");
@@ -707,16 +773,48 @@ public final class ColosseumWalk {
         return null;
     }
 
-    /** An open spot {@code d} blocks from {@code at} (air for a 3-block-tall body over a solid floor), or null. */
-    private BlockPos clearBeside(BlockPos at, int d) {
+    /**
+     * Where {@code mob} dies for the Volatility III check: its own tile, unless molten sand already lies there (Reentry II's
+     * permanent pools from an earlier javelin), in which case it is moved to the nearest open arena floor tile without sand,
+     * so the check sees sand that its own explosion left.
+     */
+    private BlockPos sandFree(LivingEntity mob) {
+        BlockPos at = mob.blockPosition();
+        if (!session.sandAt(at)) {
+            return at;
+        }
+        for (int r = 1; r <= 3; r++) {
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dz = -r; dz <= r; dz++) {
+                    BlockPos p = at.offset(dx, 0, dz);
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) == r && !session.sandAt(p) && "smooth_sandstone".equals(blockId(p.below()))
+                            && world.getBlockState(p).isAir() && world.getBlockState(p.above()).isAir()) {
+                        mob.teleportTo(p.getX() + 0.5, p.getY(), p.getZ() + 0.5);
+                        return p;
+                    }
+                }
+            }
+        }
+        throw new AssertionError("no arena floor without molten sand near the shaman at " + at.subtract(session.arena(0, 0, 0)));
+    }
+
+    /**
+     * Puts {@code mob} on open floor {@code d} tiles from {@code target} where it has line of sight to it; false when no such
+     * spot exists.
+     */
+    private boolean placeInSight(LivingEntity mob, LivingEntity target, int d) {
+        BlockPos at = target.blockPosition();
         for (int[] o : new int[][]{{d, 0}, {-d, 0}, {0, d}, {0, -d}, {d, d}, {-d, -d}, {d, -d}, {-d, d}}) {
             BlockPos p = at.offset(o[0], 0, o[1]);
             if (world.getBlockState(p).isAir() && world.getBlockState(p.above()).isAir() && world.getBlockState(p.above(2)).isAir()
                     && !world.getBlockState(p.below()).isAir()) {
-                return p;
+                mob.teleportTo(p.getX() + 0.5, p.getY(), p.getZ() + 0.5);
+                if (mob.hasLineOfSight(target)) {
+                    return true;
+                }
             }
         }
-        return null;
+        return false;
     }
 
     private void moveTo(BlockPos stand) {

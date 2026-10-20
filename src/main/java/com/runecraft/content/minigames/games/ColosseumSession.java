@@ -901,9 +901,17 @@ public class ColosseumSession extends MinigameSession {
         return manticoreVolleys.getOrDefault(manticore.getId(), Long.MIN_VALUE / 2);
     }
 
-    /** Self-test: sets a modifier now, so its mechanics can be walked whatever Minimus offered. */
+    /**
+     * Self-test: sets a modifier now, so its mechanics can be walked whatever Minimus offered. Never a downgrade. Forced while
+     * Minimus's offers are on the table, the offers are drawn again from the new set (as he would have offered them): an
+     * offer made before, such as Volatility I, would otherwise replace the forced tier when picked
+     * ({@link FortisColosseum#choose} sets the offered tier).
+     */
     public void selfTestForce(Modifier modifier, int tier) {
-        active.merge(modifier, Math.max(1, Math.min(tier, modifier.maxTier())), Math::max); // never a downgrade
+        active.merge(modifier, Math.max(1, Math.min(tier, modifier.maxTier())), Math::max);
+        if (state == State.CHOOSING && !offers.isEmpty()) {
+            offer();
+        }
     }
 
     /** Self-test: the player dies in the arena (the minigame death path: the chest is lost, back to the lobby). */
@@ -1247,6 +1255,20 @@ public class ColosseumSession extends MinigameSession {
     /** Molten sand tiles (self-test). */
     public int sandTiles() {
         return sand.size();
+    }
+
+    /**
+     * Whether molten sand lies on the arena floor under {@code pos} (a world position in the arena; self-test). Read from the
+     * session's own list of sand tiles, which is also what burns the player ({@link #sandTick}).
+     */
+    public boolean sandAt(BlockPos pos) {
+        BlockPos d = pos.subtract(origin);
+        for (Sand s : sand) {
+            if (s.pos().getX() == d.getX() && s.pos().getZ() == d.getZ()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Molten sand: up to 15 damage every two ticks. */
@@ -1663,10 +1685,20 @@ public class ColosseumSession extends MinigameSession {
         orbs.clear();
         javelins.clear();
         com.runecraft.boss.Mechanics.clearHazards(world, box()); // Sol Heredit's molten sand
+        // A run ended mid-wave (a death, a logout) leaves its creatures, swarms and totems: discarded from the session's own
+        // lists, which an area sweep of a chunk that isn't entity-ticking yet would miss (see spawned).
         for (LivingEntity e : spawned) {
             e.discard();
         }
         spawned.clear();
+        for (LivingEntity b : bees) {
+            b.discard();
+        }
+        bees.clear();
+        for (Totem t : totems) {
+            t.totem().discard();
+        }
+        totems.clear();
         for (long c : forcedChunks) {
             world.setChunkForced(net.minecraft.world.level.ChunkPos.getX(c), net.minecraft.world.level.ChunkPos.getZ(c), false);
         }
