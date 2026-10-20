@@ -64,12 +64,47 @@ public final class DataBossService {
         LOOT.put(bossId, roller);
     }
 
-    /** The loot of a kill: the boss's roller when it has one, else an ordinary roll of {@code table}. */
+    /** The loot of a kill: the boss's roller when it has one, else its table rolled as a boss kill ({@link #rollLoot(ServerPlayer, DataBossEntity, String, java.util.List)}). */
     static java.util.List<com.runecraft.skill.Drops.Rolled> rollLoot(ServerPlayer killer, DataBossEntity boss,
             java.util.List<com.runecraft.osrs.data.Drop> table) {
         BossDef def = boss.def();
-        LootRoller r = def == null ? null : LOOT.get(def.id);
-        return r != null ? r.roll(killer, boss, table) : com.runecraft.skill.Drops.roll(table, boss.getRandom(), false);
+        return rollLoot(killer, boss, def == null ? "" : def.id, table);
+    }
+
+    /**
+     * The loot of a kill of {@code bossId} ({@code boss} is the entity that died: a later form credits the main boss): the
+     * boss's roller when it has one, else {@code table} rolled as OSRS rolls a boss's drop table
+     * ({@link com.runecraft.osrs.content.bosses.BossLoot}: its 100% lines, tertiaries on their own and one main-table roll,
+     * never nothing from a full table) rather than every line on its own like an ordinary monster's.
+     */
+    public static java.util.List<com.runecraft.skill.Drops.Rolled> rollLoot(ServerPlayer killer, DataBossEntity boss, String bossId,
+            java.util.List<com.runecraft.osrs.data.Drop> table) {
+        LootRoller r = LOOT.get(bossId);
+        if (r != null) {
+            java.util.List<com.runecraft.skill.Drops.Rolled> out = r.roll(killer, boss, table);
+            lastRoll = new LootRoll(bossId, out.size(), out.size());
+            return out;
+        }
+        net.minecraft.util.RandomSource random = boss.getRandom();
+        java.util.List<com.runecraft.osrs.data.Drop> lines = com.runecraft.osrs.content.bosses.BossLoot.pick(table,
+                com.runecraft.osrs.content.bosses.BossLoot.rolls(bossId), random::nextInt);
+        java.util.List<com.runecraft.skill.Drops.Rolled> out = com.runecraft.skill.Drops.resolve(lines, random);
+        lastRoll = new LootRoll(bossId, lines.size(), out.size());
+        return out;
+    }
+
+    /**
+     * What the last boss kill's loot roll landed on: drop lines and the items they gave. Fewer items than lines means a shared
+     * table's "nothing" slot (OSRS: the gem drop table gives nothing 63/128 of the time). Read by the fight self-test to tell an
+     * empty roll from loot that didn't land where the player can see it.
+     */
+    public record LootRoll(String bossId, int lines, int items) {
+    }
+
+    private static LootRoll lastRoll;
+
+    public static LootRoll lastRoll() {
+        return lastRoll;
     }
 
     public static void requirement(String bossId, BiPredicate<ServerPlayer, BossDef> check) {

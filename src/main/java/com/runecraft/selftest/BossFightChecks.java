@@ -263,6 +263,7 @@ final class BossFightChecks {
         Map<AttackType, int[]> landed = new LinkedHashMap<>(); // style -> {attacks, hits (hp taken off), rolled > 0 but no hp lost}
         int kcBefore = totalKills(data);
         int heldBefore = com.runecraft.content.bosses.BossSelfTests.heldLoot(id, p);
+        DataBossService.LootRoll rollBefore = DataBossService.lastRoll();
         int logBefore = data.collectionLog().size();
         Set<UUID> items = new HashSet<>();
         int invBefore = 0;
@@ -401,15 +402,25 @@ final class BossFightChecks {
         int pocketed = Math.max(0, inventoryCount(p) - invBefore);
         // loot kept for the player elsewhere (the Doom's delve loot waits in the burrow hole until claimed)
         pocketed += Math.max(0, com.runecraft.content.bosses.BossSelfTests.heldLoot(id, p) - heldBefore);
+        String emptyRoll = "";
         if (ground + pocketed == 0) {
-            throw new AssertionError("killed (kc +" + kc + ") but no loot: nothing on the ground or in the inventory");
+            // OSRS can leave a kill empty only through a shared table's "nothing" slot (the gem drop table's 63/128): the
+            // kill's roll landed on drop lines that gave no item. Any other empty kill is a bug (an empty roll of the boss's
+            // own table, or loot that landed out of the player's sight).
+            DataBossService.LootRoll roll = DataBossService.lastRoll();
+            boolean rolled = roll != null && roll != rollBefore && id.equals(roll.bossId());
+            if (!rolled || roll.lines() == 0 || roll.items() > 0) {
+                throw new AssertionError("killed (kc +" + kc + ") but no loot: nothing on the ground or in the inventory"
+                        + (rolled ? " (its roll: " + roll.lines() + " drop lines, " + roll.items() + " items)" : ""));
+            }
+            emptyRoll = " (its roll landed on a shared table's nothing slot)";
         }
         String attacked = rec.firstAttackTick >= 0 ? "attacked @" + rec.firstAttackTick + " " + rec.attacks
                 : passive ? "passive" : "no attack reached the fake player (area attacks only reach listed players)";
         return attacked + ", hit it @" + firstHitTick + " " + (realAttacks ? describe(landed) : "(only its mechanic hurts it)")
                 + ", killed @" + killedAt + (forms.isEmpty() ? "" : " forms " + String.join(" ", forms))
                 + (assists.isEmpty() ? "" : " assists " + assists) + (cleared > 0 ? " adds " + cleared : "")
-                + ", kc +" + kc + ", loot " + ground + (pocketed > 0 ? "+" + pocketed + " pocketed" : "")
+                + ", kc +" + kc + ", loot " + ground + (pocketed > 0 ? "+" + pocketed + " pocketed" : "") + emptyRoll
                 + ", log +" + (data.collectionLog().size() - logBefore);
     }
 

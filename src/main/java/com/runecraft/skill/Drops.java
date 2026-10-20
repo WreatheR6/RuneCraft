@@ -34,21 +34,33 @@ public final class Drops {
     }
 
     public static List<Rolled> roll(List<Drop> table, RandomSource random, boolean ringOfWealth) {
-        List<Rolled> out = new ArrayList<>();
+        List<Drop> hit = new ArrayList<>();
         for (Drop d : table) {
             if (d.rarity() <= 1 || random.nextInt(d.rarity()) == 0) {
-                if (d.item().startsWith("#")) {
-                    // Shared OSRS tables (gems, rare, herbs, seeds): some slots are empty; items not in this
-                    // build are skipped.
-                    DropTables.Result r = DropTables.roll(d.item(), random::nextInt);
-                    if (r != null && ItemCatalog.get(r.item()) != null) {
-                        out.add(new Rolled(r.item(), r.count()));
-                    }
-                    continue;
-                }
-                int count = d.min() + (d.max() > d.min() ? random.nextInt(d.max() - d.min() + 1) : 0);
-                out.add(new Rolled(d.baseItem(), count, d.doses()));
+                hit.add(d);
             }
+        }
+        return resolve(hit, random);
+    }
+
+    /**
+     * The items of drop lines that already dropped (e.g. a boss kill's lines, {@code osrs.content.bosses.BossLoot}): each
+     * line's quantity is rolled in its range and a shared table line is rolled on that table.
+     */
+    public static List<Rolled> resolve(List<Drop> lines, RandomSource random) {
+        List<Rolled> out = new ArrayList<>();
+        for (Drop d : lines) {
+            if (d.item().startsWith("#")) {
+                // Shared OSRS tables (gems, rare, herbs, seeds): some slots are empty; items not in this
+                // build are skipped.
+                DropTables.Result r = DropTables.roll(d.item(), random::nextInt);
+                if (r != null && ItemCatalog.get(r.item()) != null) {
+                    out.add(new Rolled(r.item(), r.count()));
+                }
+                continue;
+            }
+            int count = d.min() + (d.max() > d.min() ? random.nextInt(d.max() - d.min() + 1) : 0);
+            out.add(new Rolled(d.baseItem(), count, d.doses()));
         }
         return out;
     }

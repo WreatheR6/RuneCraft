@@ -159,7 +159,7 @@ final class BossFx {
             form.discard();
             return;
         }
-        for (Drops.Rolled r : Drops.roll(def.drops, form.getRandom(), false)) {
+        for (Drops.Rolled r : com.runecraft.boss.DataBossService.rollLoot(killer, form, def.id, def.drops)) {
             // through the drop transformers like any kill (ring of wealth coins, noted drops from diaries...)
             Inv.spawnAtLocation(form, Drops.withDoses(com.runecraft.combat.CombatHooks.dropStack(killer, form, r.item(), r.count()),
                     r.doses()));
