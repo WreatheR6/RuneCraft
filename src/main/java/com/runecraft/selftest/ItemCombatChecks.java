@@ -189,6 +189,7 @@ final class ItemCombatChecks {
         }
         checks.add(g.check("bank:deposit_withdraw_notes", g::bank));
         checks.add(g.check("item:looting_bag", g::lootingBag));
+        checks.add(g.check("item:pouch_pickup_full_pack", g::pouchPickup));
         checks.add(g.check("ge:instant_buy_sell", g::geInstant));
         checks.add(g.check("ge:offer_abort_collect", g::geOffer));
         for (ShopDef s : Shops.all()) {
@@ -1320,6 +1321,55 @@ final class ItemCombatChecks {
             Inv.remove(p(), bagId, Inv.count(p(), bagId));
             Inv.remove(p(), item, Inv.count(p(), item));
         }
+    }
+
+    /**
+     * With a full pack, tokkul on the ground goes into a tokkul pouch that holds some (OSRS adds to a stack the inventory
+     * already holds without a free slot), coins don't go into an empty coin pouch (no stack held, no free slot), and a pouch at
+     * 2,147,483,647 has no room.
+     */
+    private String pouchPickup() {
+        ItemStack junk = stack("shark", 1);
+        for (int i = 0; i < p().getInventory().items.size(); i++) {
+            p().getInventory().items.set(i, junk.copy());
+        }
+        data().setTokkul(10);
+        data().setCoins(0);
+        net.minecraft.world.entity.item.ItemEntity tokkul = onGround(Inv.TOKKUL, 5);
+        net.minecraft.world.entity.item.ItemEntity coins = onGround(Inv.COINS, 7);
+        try {
+            int took = Inv.pickUpPouched(p());
+            if (took != 5 || data().tokkul() != 15 || tokkul.isAlive()) {
+                throw failure("a full pack with 10 tokkul in the pouch took " + took + " of 5 tokkul off the ground (pouch "
+                        + data().tokkul() + ")");
+            }
+            if (!coins.isAlive() || coins.getItem().getCount() != 7 || data().coins() != 0) {
+                throw failure("a full pack with no coins took coins off the ground (pouch " + data().coins() + ")");
+            }
+            data().setTokkul(Integer.MAX_VALUE);
+            if (Inv.hasRoomFor(p(), Inv.TOKKUL)) {
+                throw failure("a full pack and a tokkul pouch at 2,147,483,647 still have room for tokkul");
+            }
+            data().setTokkul(10);
+            if (!Inv.hasRoomFor(p(), Inv.TOKKUL)) {
+                throw failure("a full pack has no room for tokkul although the pouch holds 10");
+            }
+        } finally {
+            tokkul.discard();
+            coins.discard();
+            p().getInventory().clearContent();
+        }
+        return "full pack: 5 tokkul into a 10-tokkul pouch, no coins into an empty pouch, no room at the cap";
+    }
+
+    /** An item stack lying at the player's feet, ready to be picked up. */
+    private net.minecraft.world.entity.item.ItemEntity onGround(String id, int count) {
+        net.minecraft.world.entity.item.ItemEntity e = new net.minecraft.world.entity.item.ItemEntity(c.world, p().getX(), p().getY(),
+                p().getZ(), stack(id, count));
+        e.setDeltaMovement(net.minecraft.world.phys.Vec3.ZERO);
+        e.setNoPickUpDelay();
+        c.world.addFreshEntity(e);
+        return e;
     }
 
     private String bank() {

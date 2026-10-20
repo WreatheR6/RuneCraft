@@ -121,6 +121,10 @@ public final class PlayerEvents {
                     ServerNetworking.sync(player);
                 }
             }
+            // With a full pack a pouch that holds some still takes more off the ground (OSRS: a held stack needs no free slot).
+            if (Inv.pickUpPouched(player) > 0) {
+                ServerNetworking.sync(player);
+            }
         }
     }
 

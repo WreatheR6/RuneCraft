@@ -13,6 +13,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.phys.AABB;
 
 /**
  * Inventory helpers keyed by catalog item ids. Coins and tokkul live in pouches ({@link #pouched}): OSRS stacks either in one
@@ -42,8 +43,9 @@ public final class Inv {
 
     /**
      * Whether {@code id} is a currency kept in a pouch in {@link PlayerData} instead of 64-item stacks: coins (the money pouch)
-     * and tokkul. Their items in the inventory are moved into the pouch every tick ({@code PlayerEvents}). Pouches stay with the
-     * player on death (see {@code PrayerEffectsService.keepItems}: OSRS never drops untradeable tokkul for a killer).
+     * and tokkul. Their items in the inventory are moved into the pouch every tick, and with a full pack a pouch that holds some
+     * picks more up off the ground ({@link #pickUpPouched}, from {@code PlayerEvents}). Pouches stay with the player on death
+     * (see {@code PrayerEffectsService.keepItems}: OSRS never drops untradeable tokkul for a killer).
      */
     public static boolean pouched(String id) {
         return COINS.equals(id) || TOKKUL.equals(id);
@@ -194,9 +196,53 @@ public final class Inv {
         });
     }
 
-    /** True if one more of {@code id} would fit in the inventory. */
+    /**
+     * Picks plain coins or tokkul lying within reach into their pouch while the pack is full: OSRS adds to a stack the
+     * inventory already holds without a free slot, but vanilla pickup needs one (with a free slot vanilla takes the stack, and
+     * it moves into the pouch on the next tick). An empty pouch is no stack held, so it takes nothing, as a full OSRS inventory
+     * without that item can't. Called every tick ({@code PlayerEvents}); returns how many items it took.
+     */
+    public static int pickUpPouched(ServerPlayer player) {
+        if (!player.isAlive() || player.isSpectator() || player.getInventory().getFreeSlot() >= 0) {
+            return 0;
+        }
+        PlayerData data = Players.data(player);
+        if (data.coins() <= 0 && data.tokkul() <= 0) {
+            return 0;
+        }
+        int took = 0;
+        // Vanilla's pickup reach (Player.aiStep); an item dropped for someone else stays theirs, as in ItemEntity.playerTouch.
+        AABB reach = player.getBoundingBox().inflate(1.0, 0.5, 1.0);
+        for (ItemEntity e : player.serverLevel().getEntitiesOfClass(ItemEntity.class, reach, x -> x.isAlive() && !x.hasPickUpDelay()
+                && (x.getTarget() == null || x.getTarget().equals(player.getUUID())))) {
+            ItemStack s = e.getItem();
+            String id = idOf(s);
+            if (!pouched(id) || !s.getComponentsPatch().isEmpty() || pouch(data, id) <= 0) {
+                continue;
+            }
+            int in = toPouch(player, id, s.getCount());
+            if (in <= 0) {
+                continue;
+            }
+            player.take(e, in);
+            took += in;
+            if (in >= s.getCount()) {
+                e.discard();
+            } else {
+                e.setItem(s.copyWithCount(s.getCount() - in));
+            }
+        }
+        return took;
+    }
+
+    /** True if one more of {@code id} would fit in the inventory (coins and tokkul: in their pouch, below its cap). */
     public static boolean hasRoomFor(Player player, String id) {
-        if (COINS.equals(id) || (pouched(id) && player instanceof ServerPlayer)) {
+        if (pouched(id) && player instanceof ServerPlayer sp) {
+            if (pouch(Players.data(sp), id) < Integer.MAX_VALUE) {
+                return true;
+            }
+            // A full pouch leaves the item in a pack slot (PlayerEvents), so a slot can still take it.
+        } else if (COINS.equals(id)) {
             return true;
         }
         Item item = item(id);
