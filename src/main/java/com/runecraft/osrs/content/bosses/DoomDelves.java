@@ -278,6 +278,9 @@ public final class DoomDelves {
     /** Blocks from its centre tile the earthen shield protects (a 3x3 area, approx). */
     public static final double EARTHEN_SHIELD_BLOCKS = 2.5;
 
+    /** Blocks around the Doom a car slam smashes unprotected rocks in (OSRS: 15 tiles in a much bigger cavern). */
+    public static final double SLAM_SMASH_BLOCKS = 8; // approx
+
     /** A car slam's max hit: the burrowed form's 55 at delve 6, 56 at 7, 58 at 8 and 60 deeper (wiki burrowed infobox). */
     public static int slamMaxHit(int level) {
         return level >= 9 ? 60 : level == 8 ? 58 : level == 7 ? 56 : 55;

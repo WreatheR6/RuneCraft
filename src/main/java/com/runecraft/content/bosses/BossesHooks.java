@@ -98,6 +98,7 @@ public final class BossesHooks implements ModuleHooks {
         BossScripts.register("blood_moon", MoonScripts.BloodMoon::new);
         LunarChest.init();
         BossScripts.register("branda_the_fire_queen", EncounterScripts.RoyalTitans::new);
+        TitansLoot.register(); // each fighter loots a Titan, sacrifices or takes pages, on their own contribution
         // Fought beside the main boss, whose kill count they share (one "Royal Titans" / "Grotesque Guardians" kill).
         com.runecraft.boss.DataBossService.companion("eldric_the_ice_king");
         com.runecraft.boss.DataBossService.companion("dawn");
@@ -109,6 +110,7 @@ public final class BossesHooks implements ModuleHooks {
         OldBossScripts.register();
         // Yama's sigil contracts: one held in the main hand when challenging him is shown to him (and consumed).
         com.runecraft.boss.DataBossService.requirement("yama", (player, def) -> ModernScripts.Yama.offerContract(player));
+        ModernScripts.Yama.register(); // per-player rewards on contribution (contracts skip the standard table)
 
         BlockHooks.register(BossPlaces.FONT_OF_CONSUMPTION, BossesHooks::offerUnsired);
 

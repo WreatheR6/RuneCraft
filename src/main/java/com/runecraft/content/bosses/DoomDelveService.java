@@ -262,6 +262,32 @@ final class DoomDelveService {
         return run == null ? 0 : run.stacks;
     }
 
+    /** Self-test: takes this player's run out of the save (restored by {@link #restoreRun}); null when they had none. */
+    static DoomDelveState.Run takeRun(ServerPlayer player) {
+        ACID.remove(player.getUUID());
+        return state(player).remove(player.getUUID());
+    }
+
+    static void restoreRun(ServerPlayer player, DoomDelveState.Run run) {
+        DoomDelveState st = state(player);
+        st.remove(player.getUUID());
+        if (run != null) {
+            st.all().put(player.getUUID(), run);
+            st.setDirty();
+        }
+    }
+
+    /** Self-test: the server tick's leave check for one player; true when it ended their run. */
+    static boolean checkLeft(ServerPlayer player) {
+        DoomDelveState st = state(player);
+        DoomDelveState.Run run = st.get(player.getUUID());
+        if (run == null || !run.active() || !hasLeft(player, run)) {
+            return false;
+        }
+        left(player, st, run);
+        return true;
+    }
+
     /** Self-test: forgets this player's run, chest and acid (a clean start). */
     static void resetRun(ServerPlayer player) {
         state(player).remove(player.getUUID());
@@ -823,7 +849,7 @@ final class DoomDelveService {
             double snapped = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
             Vec3 at = target.position().add(Math.cos(snapped) * 8, 0, Math.sin(snapped) * 8);
             Vec3 c = homeVec();
-            double max = Math.max(4, (boss.def() == null ? 14 : boss.def().arenaRadius) - 2);
+            double max = Math.max(4, (boss.def() == null ? 14 : boss.def().arenaRadius) - 4);
             Vec3 rel = at.subtract(c);
             double len = Math.sqrt(rel.x * rel.x + rel.z * rel.z);
             if (len > max) {
@@ -841,10 +867,11 @@ final class DoomDelveService {
                     CombatHandler.applyDamage(boss, p, boss.getRandom().nextInt(DoomDelves.slamMaxHit(level) + 1));
                 }
             }
-            // the slam smashes every rock within 15 tiles except those another rock protects
+            // OSRS: the slam smashes every rock within 15 tiles except those another rock protects. This arena is far smaller
+            // than the OSRS cavern, so only rocks near the Doom go (the falling rocks must last three slams). // approx
             List<Vec3> kept = new ArrayList<>();
             for (Vec3 r : rocks) {
-                if (flat(r, boss.position()) > 30 || sheltered(boss, r, rocks)) {
+                if (flat(r, boss.position()) > DoomDelves.SLAM_SMASH_BLOCKS || sheltered(boss, r, rocks)) {
                     kept.add(r);
                 }
             }
@@ -974,15 +1001,33 @@ final class DoomDelveService {
             earthBroken.clear();
             earthenShield = null;
             cleared = 0;
-            double radius = Math.max(6, (boss.def() == null ? 14 : boss.def().arenaRadius) - 2);
+            // spread around the arena, far enough apart for a shield that lasts through every shockwave
+            double radius = Math.max(6, (boss.def() == null ? 14 : boss.def().arenaRadius) - 3);
             for (int i = 0; i < DoomDelves.VOLATILE_EARTH; i++) {
                 double a = (i + boss.getRandom().nextDouble() * 0.6) * 2 * Math.PI / DoomDelves.VOLATILE_EARTH;
-                double r = radius * (0.45 + 0.55 * boss.getRandom().nextDouble());
+                double r = radius * (0.7 + 0.3 * boss.getRandom().nextDouble());
                 Vec3 c = homeVec();
                 Vec3 at = BossFx.ground(BossFx.world(boss), c.x + Math.cos(a) * r, c.z + Math.sin(a) * r, c.y);
                 Mob e = BossFx.spawnMinion(boss, ModernBosses.DOOM_VOLATILE_EARTH, at, null);
                 if (e != null) {
                     earth.add(e);
+                    // "a player will deal their maximum hit to a volatile earth (despite having 1 Hitpoint)"
+                    MinionRules.set(e, new MinionRules.Rule() {
+                        @Override
+                        public double accuracy(ServerPlayer p, LivingEntity minion, AttackType type) {
+                            return MinionRules.ALWAYS_HITS;
+                        }
+
+                        @Override
+                        public boolean alwaysMaxHit(ServerPlayer p, LivingEntity minion, AttackType type) {
+                            return true;
+                        }
+
+                        @Override
+                        public int damage(ServerPlayer p, LivingEntity minion, AttackType type, int d) {
+                            return Math.max(1, d);
+                        }
+                    });
                 }
             }
             BossFx.say(boss, "Volatile earth erupts! Destroy two to raise an earthen shield before the shockwave"
@@ -1278,6 +1323,15 @@ final class DoomDelveService {
 
         boolean walkLoopShield() {
             return loopShield;
+        }
+
+        /** Game ticks until the first shockwave lands (-1: no volatile earth up). */
+        long walkShockwaveTicksLeft() {
+            return shockwaveDue < 0 ? -1 : shockwaveDue - now;
+        }
+
+        int walkShockwavesLeft() {
+            return shockwaveDue < 0 ? 0 : shockwavesLeft;
         }
     }
 

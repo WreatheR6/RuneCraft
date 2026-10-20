@@ -1,0 +1,70 @@
+# The Royal Titans' loot (OSRS Wiki "Branda the Fire Queen" / "Eldric the Ice King", Kiyogitpy/osrs-wiki-data, July 2026),
+# solo (100% contribution). Diffed by RoyalTitansLootTest against RoyalTitansLoot.
+# titan|section (pages, pre, main: per roll, two rolls)|wiki name|quantity|rarity|id
+branda|pages|Desiccated page|10-19|Always|desiccated_page
+branda|pre|Fire element staff crown|1|1/75|fire_element_staff_crown
+branda|pre|Mystic vigour prayer scroll|1|1/75|mystic_vigour_prayer_scroll
+branda|pre|Giantsoul amulet|1|1/16|giantsoul_amulet
+branda|main|Mystic fire staff|4|2/55|mystic_fire_staff
+branda|main|Fire battlestaff|6|2/55|fire_battlestaff
+branda|main|Rune plateskirt|2|2/55|rune_plateskirt
+branda|main|Rune scimitar|2|2/55|rune_scimitar
+branda|main|Rune pickaxe|2|2/55|rune_pickaxe
+branda|main|Fire rune|1500-3000|2/55|fire_rune
+branda|main|Chaos rune|200-400|2/55|chaos_rune
+branda|main|Death rune|150-300|2/55|death_rune
+branda|main|Nature rune|100-150|2/55|nature_rune
+branda|main|Law rune|100-150|2/55|law_rune
+branda|main|Soul rune|100-150|2/55|soul_rune
+branda|main|Blood rune|100-150|2/55|blood_rune
+branda|main|Rune arrow|100-300|2/55|rune_arrow
+branda|main|Coal|280-320|2/55|coal
+branda|main|Gold ore|60-100|2/55|gold_ore
+branda|main|Fire orb|20-40|2/55|fire_orb
+branda|main|Grimy avantoe|6-8|2/55|grimy_avantoe
+branda|main|Grimy cadantine|6-8|2/55|grimy_cadantine
+branda|main|Grimy dwarf weed|6-8|2/55|grimy_dwarf_weed
+branda|main|Grimy irit leaf|6-8|2/55|grimy_irit_leaf
+branda|main|Grimy kwuarm|6-8|2/55|grimy_kwuarm
+branda|main|Grimy lantadyme|6-8|2/55|grimy_lantadyme
+branda|main|Grimy ranarr weed|6-8|2/55|grimy_ranarr_weed
+branda|main|Maple seed|4-6|1/55|maple_seed
+branda|main|Palm tree seed|2|1/55|palm_seed
+branda|main|Yew seed|2|1/55|yew_seed
+branda|main|Coins|10000-30000|2/55|coins
+branda|main|Prayer potion(4)|2-4|2/55|prayer_potion
+branda|main|Desiccated page|6-24|2/55|desiccated_page
+eldric|pages|Desiccated page|10-19|Always|desiccated_page
+eldric|pre|Ice element staff crown|1|1/75|ice_element_staff_crown
+eldric|pre|Deadeye prayer scroll|1|1/75|deadeye_prayer_scroll
+eldric|pre|Giantsoul amulet|1|1/16|giantsoul_amulet
+eldric|main|Mystic water staff|4|2/56|mystic_water_staff
+eldric|main|Water battlestaff|6|2/56|water_battlestaff
+eldric|main|Rune platelegs|2|2/56|rune_platelegs
+eldric|main|Rune sq shield|2|2/56|rune_sq_shield
+eldric|main|Rune axe|2|2/56|rune_axe
+eldric|main|Rune pickaxe|2|1/56|rune_pickaxe
+eldric|main|Water rune|1500-3000|2/56|water_rune
+eldric|main|Chaos rune|200-400|2/56|chaos_rune
+eldric|main|Death rune|150-300|2/56|death_rune
+eldric|main|Nature rune|100-150|2/56|nature_rune
+eldric|main|Law rune|100-150|2/56|law_rune
+eldric|main|Soul rune|100-150|2/56|soul_rune
+eldric|main|Blood rune|100-150|2/56|blood_rune
+eldric|main|Rune arrow|100-300|2/56|rune_arrow
+eldric|main|Coal|280-320|2/56|coal
+eldric|main|Gold ore|60-100|2/56|gold_ore
+eldric|main|Water orb|20-40|2/56|water_orb
+eldric|main|Avantoe seed|4|2/56|avantoe_seed
+eldric|main|Cadantine seed|4|2/56|cadantine_seed
+eldric|main|Dwarf weed seed|3|2/56|dwarf_weed_seed
+eldric|main|Irit seed|4|2/56|irit_seed
+eldric|main|Kwuarm seed|4|2/56|kwuarm_seed
+eldric|main|Lantadyme seed|4|2/56|lantadyme_seed
+eldric|main|Ranarr seed|4|2/56|ranarr_seed
+eldric|main|Maple seed|4-6|1/56|maple_seed
+eldric|main|Palm tree seed|2|1/56|palm_seed
+eldric|main|Yew seed|2|1/56|yew_seed
+eldric|main|Coins|10000-30000|2/56|coins
+eldric|main|Prayer potion(4)|2-4|2/56|prayer_potion
+eldric|main|Desiccated page|6-24|2/56|desiccated_page

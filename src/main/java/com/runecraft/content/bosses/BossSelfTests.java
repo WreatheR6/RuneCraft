@@ -145,6 +145,9 @@ public final class BossSelfTests {
         if (com.runecraft.osrs.content.bosses.MoonsRules.MOONS.contains(bossId)) {
             return LunarChest.pending(p); // a Moon's loot waits in the Lunar Chest
         }
+        if (com.runecraft.osrs.content.bosses.RoyalTitansLoot.BRANDA.equals(bossId)) {
+            return TitansLoot.held(p); // the fallen Titans wait for the player's choice (loot, sacrifice or pages)
+        }
         return com.runecraft.osrs.content.bosses.DoomDelves.BOSS.equals(bossId) ? DoomDelveService.heldLoot(p) : 0;
     }
 

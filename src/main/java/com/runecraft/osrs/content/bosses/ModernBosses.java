@@ -369,6 +369,9 @@ public final class ModernBosses {
                     .value(75000).weight(0.4).examine("A contract issued by Yama. Present it to him to discuss some new terms.");
         }
         BossItems.petItem(items, "pet_yami", "Yami", "Yama", 0x5A2A4A);
+        // Yama's junk table (YamaLoot): demon dung (OSRS Wiki value 10).
+        items.add("demon_dung", "Demon dung", Kind.SIMPLE, "secondary", 0x5A3A1A).value(10).weight(0.38)
+                .examine("I wonder how my crops would grow on this stuff!");
 
         // ---------------- Doom of Mokhaiotl ----------------
         // mokhaiotl_cloth, demon_tear and the Maggot King's elder_venator_fang are in osrs/content/CommonItems (the systems

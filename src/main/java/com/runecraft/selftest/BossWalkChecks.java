@@ -32,6 +32,8 @@ final class BossWalkChecks {
 
     /** A walk key ending in this fights the awakened variant. */
     private static final String AWAKENED = ":awakened";
+    /** A walk key ending in this fights the boss as a duo (the walk brings the partner). */
+    private static final String DUO = ":duo";
 
     /** Boss id (":awakened" for the variant) -> its walk. */
     private static final Map<String, BiFunction<DataBossEntity, BossWalks.Driver, String>> WALKS = new LinkedHashMap<>();
@@ -49,6 +51,11 @@ final class BossWalkChecks {
         WALKS.put("vardorvis", BossWalks::vardorvis);
         // Round 38: a whole Zalcano kill (tephra chain, golems, falls and mining).
         WALKS.put("zalcano", com.runecraft.content.bosses.ZalcanoWalk::walk);
+        // Round 39: a Doom of Mokhaiotl run from delve 1 to the first deep delve, Yama through his phases and a contract, the
+        // Royal Titans as a duo (each fighter's own loot choice on their contribution).
+        WALKS.put("doom_of_mokhaiotl", com.runecraft.content.bosses.DoomWalk::walk);
+        WALKS.put("yama", com.runecraft.content.bosses.YamaWalk::walk);
+        WALKS.put("branda_the_fire_queen" + DUO, com.runecraft.content.bosses.TitansWalk::duo);
         // The awakened Desert Treasure II fights walk the same way (their own numbers and rules apply).
         WALKS.put("the_whisperer" + AWAKENED, BossWalks::whisperer);
         WALKS.put("the_leviathan" + AWAKENED, BossWalks::leviathan);
@@ -79,7 +86,7 @@ final class BossWalkChecks {
 
     private String walk(String key, BiFunction<DataBossEntity, BossWalks.Driver, String> walk) {
         boolean awakened = key.endsWith(AWAKENED);
-        String id = awakened ? key.substring(0, key.length() - AWAKENED.length()) : key;
+        String id = key.indexOf(':') >= 0 ? key.substring(0, key.indexOf(':')) : key;
         BossDef def = ContentRegistry.boss(id);
         if (def == null) {
             throw new AssertionError("no BossDef " + id);
