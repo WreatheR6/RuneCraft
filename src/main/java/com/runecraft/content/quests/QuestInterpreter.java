@@ -615,10 +615,41 @@ public final class QuestInterpreter {
         if (c == null || !(p.level() instanceof ServerLevel world)) {
             return false;
         }
+        // A player who walks somewhere has the chunks around them loaded. The walk teleports there inside one server tick, so
+        // a foe the objective calls up beside the player would land in a chunk the server hasn't confirmed yet, hidden from
+        // every entity search (the walk couldn't find it, fight it or bring it home): load them first.
+        selfTestLoad(world, c[0], c[1], 8);
         double y = underground ? UNDERGROUND_Y - 16 : p.getY();
         p.teleportTo(world, c[0] + 0.5, y, c[1] + 0.5, p.getYRot(), p.getXRot());
         reach(p, p.getServer());
         return true;
+    }
+
+    /**
+     * Loads the chunks within {@code r} blocks of block ({@code x}, {@code z}) and runs the server's queued chunk work until
+     * each is a confirmed full chunk, whose entities area searches see (at most 5 s), as TzHaarSelfTest settles an arena.
+     */
+    static void selfTestLoad(ServerLevel world, int x, int z, int r) {
+        net.minecraft.server.level.ServerChunkCache chunks = world.getChunkSource();
+        List<net.minecraft.server.level.ChunkHolder> holders = new ArrayList<>();
+        for (int cx = (x - r) >> 4; cx <= (x + r) >> 4; cx++) {
+            for (int cz = (z - r) >> 4; cz <= (z + r) >> 4; cz++) {
+                world.getChunk(cx, cz);
+                net.minecraft.server.level.ChunkHolder holder = chunks.chunkMap.getVisibleChunkIfPresent(net.minecraft.world.level.ChunkPos.asLong(cx, cz));
+                if (holder != null) {
+                    holders.add(holder);
+                }
+            }
+        }
+        long deadline = System.nanoTime() + 5_000_000_000L;
+        while (holders.stream().anyMatch(h -> !h.getFullChunkFuture().isDone()) && System.nanoTime() < deadline) {
+            if (!chunks.pollTask()) {
+                java.util.concurrent.locks.LockSupport.parkNanos(100_000L); // the rest arrives from the chunk worker threads
+            }
+        }
+        for (int i = 0; i < 100_000 && chunks.pollTask(); i++) {
+            // the promotions the completed chunks queued (each call runs one task)
+        }
     }
 
     /** Self-test hook: why a trigger would not fire for the player now (switched off, or its first unmet condition), or null. */

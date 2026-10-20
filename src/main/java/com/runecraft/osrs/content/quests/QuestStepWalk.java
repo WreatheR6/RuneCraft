@@ -145,16 +145,114 @@ public final class QuestStepWalk {
      * presents first). The walk expects {@code t} itself.
      */
     public static Trigger dispatched(QuestSpec.Stage stage, Trigger t, Player p, Set<String> questItems) {
+        return dispatched(stage, t.target, t, p, questItems);
+    }
+
+    /**
+     * The trigger talking to {@code npc} fires while the player carries the quest items earned so far and the outside items
+     * the walk brought for {@code brought}'s step (the dialogue's rule: a puzzle the NPC presents, else its first satisfiable
+     * trigger).
+     */
+    public static Trigger dispatched(QuestSpec.Stage stage, String npc, Trigger brought, Player p, Set<String> questItems) {
         for (Trigger o : stage.triggers) {
-            if (o.kind == Trigger.Kind.PUZZLE && o.target.equals(t.target) && blocked(o, p, questItems) == null) {
+            if (o.kind == Trigger.Kind.PUZZLE && o.target.equals(npc) && blocked(o, p, questItems) == null) {
                 return o;
             }
         }
         for (Trigger o : stage.triggers) {
-            if (o.kind != Trigger.Kind.TALK || !o.target.equals(t.target) || blocked(o, p, questItems) != null) {
+            if (o.kind != Trigger.Kind.TALK || !o.target.equals(npc) || blocked(o, p, questItems) != null) {
                 continue;
             }
-            if (o == t || outsideItemsCovered(o, t, questItems)) {
+            if (o == brought || outsideItemsCovered(o, brought, questItems)) {
+                return o;
+            }
+        }
+        return null;
+    }
+
+    /** Distances between quest places, for the place objectives a player sets off by arriving somewhere. */
+    @FunctionalInterface
+    public interface Places {
+        /**
+         * Horizontal distance in blocks from a player standing at the centre of place {@code from} (as the step walk arrives
+         * there) to the centre of place {@code to}; NaN when either is not a place (an NPC, an unknown id).
+         */
+        double distance(String from, String to);
+    }
+
+    /** No place coordinates: the plan skips the arrival checks. */
+    public static final Places NO_PLACES = (from, to) -> Double.NaN;
+
+    /**
+     * The place objective that fires when the player arrives at {@code place} (in the dungeon below it when
+     * {@code underground}) carrying the quest items earned so far and the outside items the walk brought for
+     * {@code brought}'s step: the game's place check runs the stage's place objectives in order and fires the first whose
+     * place is within its radius and whose conditions are met (QuestInterpreter.reach), one per arrival. Null if none.
+     */
+    public static Trigger arrival(QuestSpec.Stage stage, String place, boolean underground, Trigger brought, Player p,
+            Set<String> questItems, Places places) {
+        for (Trigger o : stage.triggers) {
+            if (o.kind != Trigger.Kind.REACH || (o.underground && !underground)) {
+                continue;
+            }
+            double d = places.distance(place, o.target);
+            if (Double.isNaN(d) || d > o.radius || blocked(o, p, questItems) != null) {
+                continue;
+            }
+            if (o == brought || (outsideItemsCovered(o, brought, questItems) && (!o.emptyHanded || brought.emptyHanded))) {
+                return o;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * The objective a kill of {@code t}'s creature counts for: the game credits the first kill objective of the stage for
+     * that creature which isn't switched off and whose conditions are met (QuestInterpreter.onKill). The walk expects
+     * {@code t} itself.
+     */
+    public static Trigger credited(QuestSpec.Stage stage, Trigger t, Player p, Set<String> questItems) {
+        for (Trigger o : stage.triggers) {
+            if (o.kind == Trigger.Kind.KILL && o.target.equals(t.target) && blocked(o, p, questItems) == null
+                    && (o == t || outsideItemsCovered(o, t, questItems))) {
+                return o;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Why a quest boss's summoning stone refuses to raise {@code t}'s foe now, or null: the stone asks the first kill
+     * objective for it that isn't switched off (QuestInterpreter.canFight), which must be ready.
+     */
+    public static String summonRefused(QuestSpec.Stage stage, Trigger t, Player p, Set<String> questItems) {
+        for (Trigger o : stage.triggers) {
+            if (o.kind != Trigger.Kind.KILL || !o.target.equals(t.target) || switchedOff(o, p)) {
+                continue;
+            }
+            String why = blocked(o, p, questItems);
+            if (why == null && o != t && !outsideItemsCovered(o, t, questItems)) {
+                why = "needs outside items " + o.need.keySet() + o.take.keySet();
+            }
+            return why == null ? null : QuestWalk.describe(o) + " (trigger " + stage.triggers.indexOf(o) + ") " + why;
+        }
+        return "no kill objective for " + t.target;
+    }
+
+    private static boolean switchedOff(Trigger t, Player p) {
+        String why = blocked(t, p, Set.of());
+        return why != null && (why.startsWith("switched off") || why.startsWith("already"));
+    }
+
+    /**
+     * The objective that raises the next of several foes for a kill step whose creature has no arena (the second axeman,
+     * the next mourner): a place or talk objective of the stage that calls up that creature and can fire with what the walk
+     * brought for the kill. Null if none.
+     */
+    public static Trigger respawner(QuestSpec.Stage stage, Trigger kill, Player p, Set<String> questItems) {
+        for (Trigger o : stage.triggers) {
+            if (kill.target.equals(o.spawn) && o.kind != Trigger.Kind.KILL && blocked(o, p, questItems) == null
+                    && outsideItemsCovered(o, kill, questItems)) {
                 return o;
             }
         }
@@ -195,6 +293,18 @@ public final class QuestStepWalk {
      * raised by an earlier step. {@code player} picks the per-player routes ({@link QuestSpec#flagOneOf}).
      */
     public static StepPlan stepPlan(QuestSpec q, String player, Predicate<String> itemExists, Predicate<String> raisable) {
+        return stepPlan(q, player, itemExists, raisable, NO_PLACES);
+    }
+
+    /**
+     * Plans the step walk as above, and with {@code places} also as the game dispatches each step: arriving at a place fires
+     * the stage's first ready place objective there ({@link #arrival}), so a place step must be that one and a puzzle shown
+     * at a place must not set one off; a kill counts for the first ready kill objective for that creature ({@link #credited});
+     * a quest boss's summoning stone asks the first kill objective for it ({@link #summonRefused}); and the next of several
+     * foes without an arena is called up by a place or talk objective ({@link #respawner}).
+     */
+    public static StepPlan stepPlan(QuestSpec q, String player, Predicate<String> itemExists, Predicate<String> raisable,
+            Places places) {
         Set<String> flags = new LinkedHashSet<>(outsideFlags(q));
         Map<String, Integer> items = new java.util.HashMap<>();
         Map<String, Integer> raised = new java.util.HashMap<>();
@@ -250,6 +360,10 @@ public final class QuestStepWalk {
                 return new StepPlan(steps, where + ": nothing raises " + t.target + " (no arena to summon it, no earlier step spawns it)",
                         problems, switchedOff);
             }
+            String dispatch = dispatchProblem(stage, t, view, questItems, places, raisable, raised.getOrDefault(t.target, 0) > 0);
+            if (dispatch != null) {
+                return new StepPlan(steps, where + ": " + dispatch, problems, switchedOff);
+            }
             // fire it
             t.take.forEach((item, n) -> items.merge(item, -n, Integer::sum));
             flags.addAll(t.setFlags);
@@ -289,6 +403,57 @@ public final class QuestStepWalk {
             firedHere.clear();
         }
         return new StepPlan(steps, "no completion after " + steps.size() + " steps (now at stage " + s + ")", problems, switchedOff);
+    }
+
+    /**
+     * Why the game would not carry out step {@code t} as the walk means it (another objective fires first, nothing raises
+     * the foe), or null. {@code foeUp}: an earlier step raised {@code t}'s foe.
+     */
+    static String dispatchProblem(QuestSpec.Stage stage, Trigger t, Player p, Set<String> questItems, Places places,
+            Predicate<String> raisable, boolean foeUp) {
+        boolean atPlace = !Double.isNaN(places.distance(t.target, t.target));
+        if (t.kind == Trigger.Kind.REACH && places != NO_PLACES) {
+            if (!atPlace) {
+                return "no place " + t.target;
+            }
+            Trigger a = arrival(stage, t.target, t.underground, t, p, questItems, places);
+            if (a != t) {
+                return "arriving at " + t.target + " fires " + (a == null ? "nothing" : "another step first (" + QuestWalk.describe(a)
+                        + ", trigger " + stage.triggers.indexOf(a) + ")");
+            }
+        }
+        if (t.kind == Trigger.Kind.PUZZLE && atPlace) {
+            Trigger a = arrival(stage, t.target, t.underground, t, p, questItems, places);
+            if (a != null) {
+                return "arriving at " + t.target + " for the puzzle fires another step first (" + QuestWalk.describe(a) + ", trigger "
+                        + stage.triggers.indexOf(a) + ")";
+            }
+        }
+        if (t.kind != Trigger.Kind.KILL) {
+            return null;
+        }
+        Trigger k = credited(stage, t, p, questItems);
+        if (k != t) {
+            return "the kill counts for " + (k == null ? "nothing" : "another step first (" + QuestWalk.describe(k) + ", trigger "
+                    + stage.triggers.indexOf(k) + ")");
+        }
+        if (!foeUp && raisable.test(t.target)) {
+            String refused = summonRefused(stage, t, p, questItems);
+            if (refused != null) {
+                return "the summoning stone refuses " + t.target + ": " + refused;
+            }
+        }
+        if (Math.max(1, t.count) > 1 && !raisable.test(t.target)) {
+            Trigger r = respawner(stage, t, p, questItems);
+            Trigger fired = r == null ? null : r.kind == Trigger.Kind.REACH
+                    ? (places == NO_PLACES ? r : arrival(stage, r.target, r.underground, t, p, questItems, places))
+                    : r.kind == Trigger.Kind.TALK ? dispatched(stage, r.target, t, p, questItems) : null;
+            if (fired == null || !t.target.equals(fired.spawn)) {
+                return "nothing raises the next " + t.target + (r == null ? " (no place or talk step calls it up)"
+                        : " (" + QuestWalk.describe(r) + " sets off " + (fired == null ? "nothing" : QuestWalk.describe(fired)) + ")");
+            }
+        }
+        return null;
     }
 
     private static boolean exists(String item, Predicate<String> itemExists) {

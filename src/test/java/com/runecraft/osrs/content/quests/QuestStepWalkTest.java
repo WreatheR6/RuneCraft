@@ -1,7 +1,10 @@
 package com.runecraft.osrs.content.quests;
 
 import com.runecraft.osrs.ItemCatalog;
+import com.runecraft.osrs.Landmark;
 import com.runecraft.osrs.content.BossDef;
+import com.runecraft.osrs.content.ContentRegistry;
+import com.runecraft.osrs.content.PlaceDef;
 import com.runecraft.osrs.content.quests.QuestSpec.Trigger;
 import org.junit.jupiter.api.Test;
 
@@ -37,6 +40,30 @@ class QuestStepWalkTest {
         return true;
     };
 
+    /**
+     * Quest places as the game finds them (QuestInterpreter.placeCentre: a Landmark, else a place of any module) and the
+     * distance from a player the step walk put at one place's centre to another's.
+     */
+    static final QuestStepWalk.Places PLACES = (from, to) -> {
+        int[] a = centre(from);
+        int[] b = centre(to);
+        if (a == null || b == null) {
+            return Double.NaN;
+        }
+        double dx = a[0] + 0.5 - b[0];
+        double dz = a[1] + 0.5 - b[1];
+        return Math.sqrt(dx * dx + dz * dz);
+    };
+
+    private static int[] centre(String place) {
+        Landmark l = Landmark.byName(place);
+        if (l != null) {
+            return new int[]{l.blockX(), l.blockZ()};
+        }
+        PlaceDef d = ContentRegistry.place(place);
+        return d == null ? null : new int[]{d.blockX(), d.blockZ()};
+    }
+
     @Test
     void grandmasterQuestsWalkStepByStep() {
         List<String> failures = new ArrayList<>();
@@ -44,7 +71,7 @@ class QuestStepWalkTest {
             QuestSpec q = BOOK.spec(id);
             assertNotNull(q, id);
             for (String player : List.of("a-player", "another-player", "a-third-player")) {
-                QuestStepWalk.StepPlan plan = QuestStepWalk.stepPlan(q, player, ItemCatalog::exists, RAISABLE);
+                QuestStepWalk.StepPlan plan = QuestStepWalk.stepPlan(q, player, ItemCatalog::exists, RAISABLE, PLACES);
                 if (!plan.completes()) {
                     failures.add(id + ": " + plan.stuck());
                 }
@@ -66,7 +93,7 @@ class QuestStepWalkTest {
         List<String> missed = new ArrayList<>();
         for (String id : QuestStepWalk.STEP_WALKED) {
             QuestSpec q = BOOK.spec(id);
-            QuestStepWalk.StepPlan plan = QuestStepWalk.stepPlan(q, "a-player", ItemCatalog::exists, RAISABLE);
+            QuestStepWalk.StepPlan plan = QuestStepWalk.stepPlan(q, "a-player", ItemCatalog::exists, RAISABLE, PLACES);
             Set<Trigger> walked = new LinkedHashSet<>(plan.steps());
             for (Trigger t : q.triggers()) {
                 if ((!t.setFlags.isEmpty() || !t.give.isEmpty() || t.kind == Trigger.Kind.KILL || t.kind == Trigger.Kind.PUZZLE)
@@ -105,6 +132,51 @@ class QuestStepWalkTest {
                 .stage("B").talk("bob");
         left.seal();
         assertTrue(QuestStepWalk.stepPlan(left, "p", id -> true, id -> true).problems().get(0).contains("never fired"));
+    }
+
+    @Test
+    void stepsTheGameDispatchesElsewhereAreReported() {
+        // two spots 4 blocks apart: arriving at the second sets off the first's objective (listed first) instead
+        QuestStepWalk.Places twoSpots = (from, to) -> !Set.of("spot_a", "spot_b").containsAll(List.of(from, to)) ? Double.NaN
+                : from.equals(to) ? 0.5 : 4;
+        QuestSpec shared = new QuestSpec("step_shared", "Step shared", com.runecraft.osrs.Quest.Difficulty.NOVICE, 1)
+                .stage("A").reach("spot_a", 8)
+                .reach("spot_b", 8).stay().flag("x")
+                .stage("B").talk("bob");
+        shared.seal();
+        String stuck = QuestStepWalk.stepPlan(shared, "p", id -> true, id -> true, twoSpots).stuck();
+        assertTrue(stuck != null && stuck.contains("arriving at spot_b fires another step first (reach spot_a"), stuck);
+        assertNull(QuestStepWalk.stepPlan(shared, "p", id -> true, id -> true).stuck(), "without places the arrival isn't checked");
+        // a puzzle shown at a place where a place objective is ready
+        QuestSpec puzzleAt = new QuestSpec("step_puzzle_at", "Step puzzle at", com.runecraft.osrs.Quest.Difficulty.NOVICE, 1)
+                .stage("A").puzzle("spot_b", GrandmasterQuests.DS2_CRYPT).stay().unlessFlag("solved").flag("solved")
+                .reach("spot_a", 8).stay().unlessFlag("y").flag("y")
+                .talk("bob");
+        puzzleAt.seal();
+        stuck = QuestStepWalk.stepPlan(puzzleAt, "p", id -> true, id -> true, twoSpots).stuck();
+        assertTrue(stuck != null && stuck.contains("for the puzzle fires another step first"), stuck);
+        // the first kill objective for a creature takes every kill of it
+        QuestSpec kills = new QuestSpec("step_kills", "Step kills", com.runecraft.osrs.Quest.Difficulty.NOVICE, 1)
+                .stage("A").kill("rat").stay().flag("a")
+                .kill("rat").stay().flag("b")
+                .talk("bob").needFlag("a", "b");
+        kills.seal();
+        stuck = QuestStepWalk.stepPlan(kills, "p", id -> true, id -> true).stuck();
+        assertTrue(stuck != null && stuck.contains("the kill counts for another step first (kill rat, trigger 0)"), stuck);
+        // the next of three foes without an arena: the talk that raised the first is switched off by then
+        QuestSpec brutes = new QuestSpec("step_brutes", "Step brutes", com.runecraft.osrs.Quest.Difficulty.NOVICE, 1)
+                .stage("A").talk("bob").stay().unlessFlag("met").flag("met").spawn("brute")
+                .kill("brute", 3).needFlag("met");
+        brutes.seal();
+        Predicate<String> noArena = id -> !id.equals("brute");
+        stuck = QuestStepWalk.stepPlan(brutes, "p", id -> true, noArena).stuck();
+        assertTrue(stuck != null && stuck.contains("nothing raises the next brute"), stuck);
+        QuestSpec rebrutes = new QuestSpec("step_rebrutes", "Step rebrutes", com.runecraft.osrs.Quest.Difficulty.NOVICE, 1)
+                .stage("A").talk("bob").stay().unlessFlag("met").flag("met").spawn("brute")
+                .talk("bob").stay().needFlag("met").spawn("brute")
+                .kill("brute", 3).needFlag("met");
+        rebrutes.seal();
+        assertNull(QuestStepWalk.stepPlan(rebrutes, "p", id -> true, noArena).stuck());
     }
 
     /**
