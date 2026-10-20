@@ -297,7 +297,12 @@ final class F2pQuests {
         b.item("bronze_key", "Bronze key", "key", 0x9A6A3A, "A copy of the key to the cell.");
         b.item("blonde_wig", "Wig", "wool", 0xF0E080, "A blonde wig made of wool.");
         b.item("skin_paste", "Paste", "pot", 0xE8C8A0, "A paste to make skin look lighter.");
-        b.item("pink_skirt", "Pink skirt", "cloth", 0xF0A0C0, "A pink skirt.");
+        // The pink skirt is a legs-slot item with no bonuses (wiki / DPS calculator); an easy emote clue at the Grand Exchange
+        // asks for it worn.
+        b.items(s -> s.add("pink_skirt", "Pink skirt", com.runecraft.osrs.ItemDef.Kind.ARMOUR, "chaps", 0xF0A0C0).value(2).stack(1)
+                .equipment(com.runecraft.osrs.EquipmentDef.armour(com.runecraft.osrs.EquipmentDef.Slot.LEGS,
+                        com.runecraft.osrs.EquipmentStats.NONE, 1))
+                .examine("A ladies skirt."));
         b.quest("prince_ali_rescue", "Prince Ali Rescue", Difficulty.NOVICE, 3)
                 .reward("coins:700")
                 .stage("I can start this quest by speaking to Hassan in the Al Kharid palace.")

@@ -262,7 +262,8 @@ final class MuseumService {
     static void tools(ServerPlayer p) {
         List<String> given = new ArrayList<>();
         for (String t : List.of("trowel", "rock_pick", "specimen_brush", "leather_gloves", "leather_boots")) {
-            if (!Inv.has(p, t, 1) && !t.equals(Inv.idOf(p.getItemBySlot(EquipmentSlot.FEET)))) {
+            if (!Inv.has(p, t, 1) && !t.equals(Inv.idOf(p.getItemBySlot(EquipmentSlot.FEET)))
+                    && !com.runecraft.content.systems.SysState.of(p).wearing(t)) {
                 Inv.give(p, t, 1);
                 given.add(t);
             }
@@ -284,8 +285,10 @@ final class MuseumService {
             Msg.game(p, "You need an uncleaned find from the specimen rocks.");
             return;
         }
-        if (!"leather_boots".equals(Inv.idOf(p.getItemBySlot(EquipmentSlot.FEET))) || !Inv.has(p, "leather_gloves", 1)) {
-            Msg.game(p, "You need to wear leather boots and have leather gloves to protect yourself while cleaning.");
+        // OSRS: leather boots and leather gloves equipped (the gloves go in the systems module's hands slot).
+        if (!"leather_boots".equals(Inv.idOf(p.getItemBySlot(EquipmentSlot.FEET)))
+                || !com.runecraft.content.systems.SysState.of(p).wearing("leather_gloves")) {
+            Msg.game(p, "You need to wear leather boots and leather gloves to protect yourself while cleaning.");
             return;
         }
         for (String t : VarrockMuseum.TOOLS) {
