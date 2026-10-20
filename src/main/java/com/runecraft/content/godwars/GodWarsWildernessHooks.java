@@ -39,20 +39,19 @@ public final class GodWarsWildernessHooks implements ModuleHooks {
         BossScripts.register("crazy_archaeologist", WildernessScripts.CrazyArchaeologist::new);
         BossScripts.register("king_black_dragon", WildernessScripts.KingBlackDragon::new);
 
-        // Kill count gates.
-        DataBossService.requirement("kreearra", (player, def) -> GwdKillcount.enter(player, God.ARMADYL, def.name));
-        DataBossService.requirement("commander_zilyana", (player, def) -> GwdKillcount.enter(player, God.SARADOMIN, def.name));
-        DataBossService.requirement("nex", (player, def) -> {
-            if (Inv.has(player, "frozen_key", 1)) {
-                Msg.game(player, "You unlock the frozen door to the Ancient Prison.");
-                return true;
-            }
-            Msg.red(player, "The frozen door is sealed. You need a frozen key, made from the four frozen key pieces "
-                    + "carried by the generals' bodyguards.");
-            return false;
-        });
-        GwdKillcount.registerBuiltinGate();
+        // The God Wars Dungeon at its real tiles: obstacles, chambers, altars, spawns, essence. The generals stand in their
+        // chambers, so summoning stones left by older worlds only point the way.
+        for (String general : new String[]{"kreearra", "commander_zilyana", "nex"}) {
+            DataBossService.requirement(general, (player, def) -> {
+                GwdKillcount.redirect(player, def.name);
+                return false;
+            });
+        }
+        GwdKillcount.registerStoneRedirect();
         GameEvents.onKill(GwdKillcount::onKill);
+        GameEvents.onKill((player, entity, stats) -> GwdSpawner.onKill(entity));
+        GwdDungeonHooks.register();
+        GwdSpawner.register();
         GameEvents.onKill(RevenantLoot::onKill);
         GameEvents.onKill(MaledictusService::onKill);
         BossScripts.register(com.runecraft.osrs.content.godwars.RevenantRewards.MALEDICTUS, MaledictusService.Script::new);

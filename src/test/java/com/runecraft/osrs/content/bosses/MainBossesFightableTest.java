@@ -24,7 +24,7 @@ class MainBossesFightableTest {
     private static final Set<String> NO_PET = Set.of("crazy_archaeologist", "hespori", "the_mimic", "gemstone_crab",
             "deranged_archaeologist", "blue_moon", "eclipse_moon", "blood_moon");
     /** Fought from a summoning stone in a hand-built lair rather than an arena (the Dagannoth Kings in Waterbirth). */
-    private static final Set<String> LAIR_ONLY = Set.of("dagannoth_rex");
+    private static final Set<String> LAIR_ONLY = Set.of("dagannoth_rex", "kreearra", "commander_zilyana", "nex"); // GwdDungeon chambers
 
     private static List<BossDef> mainBosses() {
         List<BossDef> out = new ArrayList<>();

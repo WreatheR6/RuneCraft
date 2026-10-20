@@ -1021,10 +1021,20 @@
     "staff_orb",
     "hand_glow"
   ],
+  "gwd_spiritual_mage_zaros": [
+    "head",
+    "w_orb"
+  ],
   "gwd_spiritual_ranger_armadyl": [
     "head"
   ],
+  "gwd_spiritual_ranger_zaros": [
+    "head"
+  ],
   "gwd_spiritual_warrior_armadyl": [
+    "head"
+  ],
+  "gwd_spiritual_warrior_zaros": [
     "head"
   ],
   "gwd_vampire": [

@@ -22,27 +22,27 @@ public final class GwdBosses {
     }
 
     // --- Kree'arra ---
-    public static final AttackDef KREE_MELEE = AttackDef.of("talon swipe", AttackType.SLASH, 26, 3.5, 2);
+    public static final AttackDef KREE_MELEE = AttackDef.of("talon swipe", AttackType.SLASH, 25, 3.5, 2); // wiki infobox: 25 (Melee)
     public static final AttackDef KREE_TORNADO = AttackDef.of("tornado", AttackType.RANGED, 69, 24, 6)
             .special(Special.KNOCKBACK, 3).particle("minecraft:cloud");
     public static final AttackDef KREE_WIND = AttackDef.of("wind blast", AttackType.MAGIC, 21, 24, 3).particle("minecraft:sweep_attack");
 
     // --- Commander Zilyana ---
-    public static final AttackDef ZILY_MELEE = AttackDef.of("saradomin sword", AttackType.SLASH, 27, 3.0, 6);
+    public static final AttackDef ZILY_MELEE = AttackDef.of("saradomin sword", AttackType.CRUSH, 27, 3.0, 6); // wiki infobox: Crush, Magic
     public static final AttackDef ZILY_MAGIC = AttackDef.of("saradomin strike", AttackType.MAGIC, 20, 24, 3)
             .particle("minecraft:end_rod").message("Commander Zilyana calls down the power of Saradomin!");
 
     // --- Nex ---
-    public static final AttackDef NEX_MELEE = AttackDef.of("melee", AttackType.SLASH, 30, 3.0, 2);
+    public static final AttackDef NEX_MELEE = AttackDef.of("melee", AttackType.CRUSH, 27, 3.0, 2); // wiki infobox: 27 (Melee), crush
     public static final AttackDef NEX_SMOKE = AttackDef.of("smoke bullet", AttackType.MAGIC, 33, 24, 6)
             .special(Special.POISON, 8).particle("minecraft:large_smoke");
-    public static final AttackDef NEX_SHADOW = AttackDef.of("shadow shot", AttackType.RANGED, 30, 24, 6)
+    public static final AttackDef NEX_SHADOW = AttackDef.of("shadow shot", AttackType.RANGED, 60, 24, 6) // wiki: 60 (Ranged), less further away
             .particle("minecraft:squid_ink");
     /** Heals Nex for 25% of the damage dealt (applied by the script, scaled to her 3400 hitpoints). */
     public static final AttackDef NEX_BLOOD = AttackDef.of("blood barrage", AttackType.MAGIC, 33, 24, 6)
             .particle("minecraft:damage_indicator");
     public static final AttackDef NEX_ICE = AttackDef.of("ice barrage", AttackType.MAGIC, 33, 24, 6)
-            .special(Special.FREEZE, 8).particle("minecraft:snowflake");
+            .special(Special.FREEZE, 15).particle("minecraft:snowflake"); // Mod Ash: frozen 15 ticks
     public static final AttackDef NEX_ZAROS = AttackDef.of("zarosian blast", AttackType.MAGIC, 33, 24, 6)
             .special(Special.DRAIN_PRAYER, 5).particle("minecraft:dragon_breath");
 
@@ -94,7 +94,7 @@ public final class GwdBosses {
                         Drop.of("godsword_shard_1", 1, 1, 762), Drop.of("godsword_shard_2", 1, 1, 762),
                         Drop.of("godsword_shard_3", 1, 1, 762), Drop.of("clue_scroll_elite", 1, 1, 250))
                 .pet("pet_kreearra").minion("flight_kilisa", 1).flying()
-                .at("gwd_armadyl_eyrie").arena(14, "stone").category("God Wars Dungeon")
+                .arena(14, "stone").category("God Wars Dungeon")
                 .size(1.4f, 2.4f, 1.8f));
 
         list.add(BossDef.of("commander_zilyana", "Commander Zilyana").level(596).stats(255, 280, 196, 300, 300, 250).speed(2)
@@ -110,7 +110,7 @@ public final class GwdBosses {
                         Drop.of("godsword_shard_1", 1, 1, 762), Drop.of("godsword_shard_2", 1, 1, 762),
                         Drop.of("godsword_shard_3", 1, 1, 762), Drop.of("clue_scroll_elite", 1, 1, 250))
                 .pet("pet_zilyana").minion("starlight", 1)
-                .at("gwd_saradomin_encampment").arena(12, "stone").category("God Wars Dungeon")
+                .arena(12, "stone").category("God Wars Dungeon")
                 .moveSpeed(0.32).size(0.7f, 2.0f, 1.5f));
 
         // Nex: 3400 hitpoints (the script scales damage because Minecraft caps max health at 1024).
@@ -131,7 +131,7 @@ public final class GwdBosses {
                         Drop.of("zaryte_vambraces", 1, 1, 172), Drop.of("ancient_hilt", 1, 1, 516),
                         Drop.of("clue_scroll_elite", 1, 1, 48))
                 .pet("nexling").minion("blood_reaver", 2)
-                .at("gwd_ancient_prison").arena(16, "ice").category("God Wars Dungeon")
+                .arena(16, "ice").category("God Wars Dungeon")
                 .flying().size(0.9f, 2.2f, 1.7f));
 
         String[] names = {"Fumus", "Umbra", "Cruor", "Glacies"};
@@ -139,11 +139,11 @@ public final class GwdBosses {
                 AttackDef.of("smoke", AttackType.MAGIC, 18, 20, 10).special(Special.POISON, 6).particle("minecraft:large_smoke"),
                 AttackDef.of("shadow", AttackType.RANGED, 18, 20, 10).particle("minecraft:squid_ink"),
                 AttackDef.of("blood", AttackType.MAGIC, 18, 20, 10).special(Special.LIFESTEAL, 25).particle("minecraft:damage_indicator"),
-                AttackDef.of("ice", AttackType.MAGIC, 18, 20, 10).special(Special.FREEZE, 4).particle("minecraft:snowflake")};
+                AttackDef.of("ice", AttackType.MAGIC, 18, 20, 10).special(Special.FREEZE, 6).particle("minecraft:snowflake")};
         for (int i = 0; i < 4; i++) {
             list.add(BossDef.of(NEX_MINIONS[i], names[i]).level(285).stats(200, 1, 1, 150, 200, 200).speed(5)
                     .defenceBonus(100, 100, 100, 100, 100)
-                    .attack(attacks[i]).drops(Drop.always("bones"))
+                    .attack(attacks[i]) // OSRS: no bones; only the 1/200 ancient ceremonial robes (BossDropsTable)
                     .raidOnly().category("God Wars Dungeon").moveSpeed(0.0).flying().size(0.7f, 1.9f, 1.25f));
         }
         return list;

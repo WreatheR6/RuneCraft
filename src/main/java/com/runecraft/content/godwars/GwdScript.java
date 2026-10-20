@@ -10,6 +10,7 @@ import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.BossDef;
 import com.runecraft.osrs.content.godwars.GodWarsFactions;
+import com.runecraft.osrs.content.godwars.GwdDungeon;
 import com.runecraft.osrs.content.godwars.WildernessBosses;
 import com.runecraft.registry.ModEntities;
 import com.runecraft.util.Inv;
@@ -96,12 +97,29 @@ abstract class GwdScript implements BossScript {
         return result;
     }
 
-    /** Repeats an attack on every other player within 20 blocks (each hit is rolled separately). */
+    /** Repeats an attack on every other player in the room within 20 blocks (each hit is rolled separately). */
     protected void splash(DataBossEntity boss, AttackDef attack, ServerPlayer except) {
         spreading = true;
         try {
-            for (ServerPlayer p : players(boss, 20)) {
+            for (ServerPlayer p : roomPlayers(boss, 20)) {
                 if (p != except) {
+                    Mechanics.perform(boss, p, attack, 1.0);
+                }
+            }
+        } finally {
+            spreading = false;
+        }
+    }
+
+    /** Repeats an attack on every other player within {@code radius} blocks of {@code centre} (an area spell's splash). */
+    protected void splashAround(DataBossEntity boss, AttackDef attack, ServerPlayer centre, double radius) {
+        if (spreading) {
+            return;
+        }
+        spreading = true;
+        try {
+            for (ServerPlayer p : roomPlayers(boss, 40)) {
+                if (p != centre && p.distanceToSqr(centre) <= radius * radius) {
                     Mechanics.perform(boss, p, attack, 1.0);
                 }
             }
@@ -132,8 +150,9 @@ abstract class GwdScript implements BossScript {
             if (!boss.isAlive()) {
                 continue;
             }
+            GwdDungeon.Area in = room(boss);
             for (ServerPlayer p : s.world().getPlayers(pl -> pl.isAlive() && !pl.isSpectator()
-                    && pl.position().distanceToSqr(s.pos()) <= s.radius() * s.radius())) {
+                    && pl.position().distanceToSqr(s.pos()) <= s.radius() * s.radius() && inRoom(pl, in))) {
                 int dmg = boss.getRandom().nextInt(s.maxHit() + 1);
                 if (s.name() != null) {
                     com.runecraft.combat.CombatHooks.nameAttack(s.name(), null); // "no damage from ..." Combat Achievements
@@ -164,6 +183,41 @@ abstract class GwdScript implements BossScript {
                 && p.distanceToSqr(boss) <= radius * radius);
     }
 
+    /**
+     * The players a room-wide attack reaches: those within {@code radius} blocks who stand in the boss's room. In the God
+     * Wars Dungeon that is its chamber only (OSRS: nobody outside the walls, by the door or in Nex's refuge, is hit);
+     * outside the dungeon everyone in range.
+     */
+    protected List<ServerPlayer> roomPlayers(DataBossEntity boss, double radius) {
+        List<ServerPlayer> near = new ArrayList<>(players(boss, radius));
+        GwdDungeon.Area in = room(boss);
+        if (in != null) {
+            near.removeIf(p -> !inRoom(p, in));
+        }
+        return near;
+    }
+
+    /** The dungeon area the boss last stood in (a doorway tile has none), null once it is outside the dungeon. */
+    private GwdDungeon.Area room;
+
+    /** The God Wars Dungeon room (chamber) the boss fights in, or null when it is outside the dungeon. */
+    protected GwdDungeon.Area room(DataBossEntity boss) {
+        int x = boss.getBlockX();
+        int y = boss.getBlockY();
+        int z = boss.getBlockZ();
+        GwdDungeon.Area here = GwdDungeon.areaAt(x, y, z);
+        if (here != null) {
+            room = here;
+        } else if (!GwdDungeon.contains(x, y, z)) {
+            room = null;
+        }
+        return room;
+    }
+
+    private static boolean inRoom(ServerPlayer p, GwdDungeon.Area room) {
+        return GwdDungeon.inRoom(room, p.getBlockX(), p.getBlockY(), p.getBlockZ());
+    }
+
     /** Overhead-style shout shown to nearby players. */
     protected static void shout(DataBossEntity boss, String text) {
         BossDef def = boss.def();
@@ -171,6 +225,14 @@ abstract class GwdScript implements BossScript {
         for (ServerPlayer p : players(boss, 40)) {
             p.displayClientMessage(Component.literal(name + ": " + text).withStyle(ChatFormatting.YELLOW), false);
         }
+    }
+
+    /**
+     * True when the boss stands in the God Wars Dungeon: its bodyguards are then the dungeon's own (they respawn on their
+     * own tiles, {@code GwdSpawner}), not summoned with it.
+     */
+    protected static boolean inDungeon(DataBossEntity boss) {
+        return GwdDungeon.areaAt(boss.getBlockX(), boss.getBlockY(), boss.getBlockZ()) != null;
     }
 
     /**

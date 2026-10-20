@@ -9,6 +9,7 @@ import com.runecraft.osrs.content.MonsterDef;
 import com.runecraft.osrs.content.PlaceDef;
 import com.runecraft.osrs.content.bosses.BossesContent;
 import com.runecraft.osrs.content.dungeons.Dungeons;
+import com.runecraft.osrs.content.godwars.GwdDungeon;
 import com.runecraft.osrs.content.godwars.GwdPlaces;
 import com.runecraft.osrs.content.islands.IslandsPlaces;
 import com.runecraft.osrs.content.minigames.MinigamesContent;
@@ -508,6 +509,15 @@ public final class SpawnTable {
         }
         for (GwdPlaces.Camp c : GwdPlaces.camps()) {
             addPlaceCamp(out, c.place(), c.dx(), c.dz(), c.radius(), SpawnPoint.SURFACE, c.creatures());
+        }
+        // The God Wars Dungeon's followers and the generals' bodyguards (godwars module, at their OSRS tiles).
+        for (com.runecraft.osrs.content.godwars.GwdSpawns.Spawn s : com.runecraft.osrs.content.godwars.GwdSpawns.all()) {
+            out.add(new CampRef("gwd_dungeon", s.creature(), s.x(), s.y(), GwdDungeon.floorY(s.plane()) + 1, 1));
+        }
+        for (GwdDungeon.Lair l : GwdDungeon.lairs()) {
+            if (!l.general()) {
+                out.add(new CampRef("gwd_dungeon", l.creature(), l.spot().x(), l.spot().y(), l.spot().feetY(), 1));
+            }
         }
         for (IslandsPlaces.Camp c : IslandsPlaces.camps()) {
             addPlaceCamp(out, c.place(), c.dx(), c.dz(), c.radius(), c.surface() ? SpawnPoint.SURFACE : c.floorY(), c.creatures());
