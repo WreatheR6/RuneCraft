@@ -322,6 +322,13 @@ final class EncounterScripts {
         private static final String NBT_PILLARS = "DukePillars";
         private boolean pillars;
         /**
+         * Asleep until arder-musca poison fills his tolerance meter (DukeRules; the quest version is fought awake here).
+         * Saved with him: a reloaded Duke doesn't fall asleep again mid-fight.
+         */
+        private boolean asleep;
+        private int tolerance;
+        private static final String NBT_AWAKE = "DukeAwake";
+        /**
          * The pillar blocks raised around a Duke standing away from his arena (the Desert Treasure II quest version, a boss
          * spawned elsewhere): there they are his, not the arena's scenery, and go when he does instead of staying in the world.
          */
@@ -343,6 +350,34 @@ final class EncounterScripts {
 
         Duke(double scale) {
             this.scale = scale;
+            this.asleep = scale >= 1.0;
+        }
+
+        boolean asleep() {
+            return asleep;
+        }
+
+        @Override
+        public boolean isVulnerable(DataBossEntity boss) {
+            return !asleep;
+        }
+
+        /** Poison (or powder) used on the sleeping Duke: his tolerance fills, and full, he wakes. */
+        void feed(DataBossEntity boss, ServerPlayer p, int value) {
+            if (!asleep) {
+                return;
+            }
+            tolerance += value;
+            int need = com.runecraft.osrs.content.bosses.DukeRules.tolerance(boss.awakened());
+            BossFx.burst(boss, ParticleTypes.SNEEZE, 12, 1.0);
+            if (tolerance < need) {
+                Msg.game(p, "You feed Duke Sucellus the poison. (" + tolerance + "/" + need + ")");
+                return;
+            }
+            asleep = false;
+            boss.setTarget(p);
+            cooldown = 3;
+            BossFx.say(boss, "Duke Sucellus awakens!");
         }
 
         @Override
@@ -357,7 +392,7 @@ final class EncounterScripts {
 
         @Override
         protected boolean canAttack(DataBossEntity boss) {
-            return gazeAt < 0;
+            return gazeAt < 0 && !asleep;
         }
 
         @Override
@@ -420,6 +455,12 @@ final class EncounterScripts {
                 }
                 BossFx.say(boss, "Duke Sucellus stirs from his slumber...");
             }
+            if (asleep) {
+                if (now % 10 == 0) {
+                    BossFx.burst(boss, ParticleTypes.NOTE, 1, 0.6); // fast asleep
+                }
+                return;
+            }
             if (gazeAt >= 0) {
                 BossFx.burst(boss, ParticleTypes.SNOWFLAKE, 10, 1.5);
                 if (now >= gazeAt) {
@@ -454,6 +495,28 @@ final class EncounterScripts {
             }
         }
 
+        /** Whether his Freezing Gaze is coming (self-test walk). */
+        boolean walkGazing() {
+            return gazeAt >= 0;
+        }
+
+        /** Makes his next attack the Freezing Gaze. */
+        void walkGazeNext() {
+            sinceGaze = BossMechanics.DUKE_GAZE_EVERY;
+        }
+
+        /** Spots behind his four pillars, out of his sight (self-test walk). */
+        List<Vec3> walkHidingSpots(DataBossEntity boss) {
+            BlockPos c = arenaCentre(boss);
+            List<Vec3> out = new ArrayList<>();
+            for (int[] o : new int[][]{{-5, -4}, {5, -4}, {-5, 4}, {5, 4}}) {
+                Vec3 pillar = Vec3.atBottomCenterOf(c.offset(o[0], 0, o[1]));
+                Vec3 away = pillar.subtract(boss.position()).multiply(1, 0, 1).normalize();
+                out.add(pillar.add(away.scale(1.3)));
+            }
+            return out;
+        }
+
         /** Discarded, killed or reset away from his arena: the pillars raised around him go too. */
         @Override
         public void onRemoved(DataBossEntity boss) {
@@ -469,6 +532,9 @@ final class EncounterScripts {
         /** The pillars outlive a chunk unload: a reloaded Duke neither raises a second set nor forgets to clear his own. */
         @Override
         public void writeNbt(DataBossEntity boss, CompoundTag nbt) {
+            if (!asleep) {
+                nbt.putBoolean(NBT_AWAKE, true);
+            }
             if (pillars) {
                 nbt.putBoolean(NBT_PILLARS_UP, true);
             }
@@ -479,162 +545,13 @@ final class EncounterScripts {
 
         @Override
         public void readNbt(DataBossEntity boss, CompoundTag nbt) {
+            if (nbt.getBoolean(NBT_AWAKE)) {
+                asleep = false;
+            }
             pillars = nbt.getBoolean(NBT_PILLARS_UP);
             pillarBlocks.clear();
             for (long at : nbt.getLongArray(NBT_PILLARS)) {
                 pillarBlocks.add(BlockPos.of(at));
-            }
-        }
-    }
-
-    /**
-     * The Leviathan: volleys of 3-6 projectiles, each announced, of boulders (ranged), orbs (magic) and, from the third
-     * volley, shadows (melee), 3 ticks apart at first and faster later (OSRS Wiki) - switch prayers for every one. An
-     * awakened Leviathan sends a tornado after the player below 50%. Debris and lightning fall between volleys; below 20%
-     * it enrages: magic and ranged only, 2 ticks apart (awakened 1).
-     */
-    static final class Leviathan extends ScriptedBoss {
-        private final List<AttackDef> volley = new ArrayList<>();
-        private int pause;
-        /** Game ticks left of a shadow-spell stun (OSRS Wiki: 15 ticks, halved when awakened). */
-        private int stunned;
-        /** Volleys fired so far (they speed up) and the ticks between this volley's projectiles. */
-        private int volleys;
-        private int spacing = 3;
-        /** The awakened tornado's position, or null between tornadoes. */
-        private Vec3 tornado;
-        private int tornadoPause;
-
-        /** Max hit scale: 1 for the boss, below 1 for the weaker Desert Treasure II quest version. */
-        private final double scale;
-
-        Leviathan() {
-            this(1.0);
-        }
-
-        Leviathan(double scale) {
-            this.scale = scale;
-        }
-
-        @Override
-        protected double multiplier(DataBossEntity boss) {
-            return super.multiplier(boss) * scale;
-        }
-
-
-        @Override
-        protected boolean driven() {
-            return true;
-        }
-
-        @Override
-        protected boolean canAttack(DataBossEntity boss) {
-            return stunned <= 0;
-        }
-
-        /**
-         * A shadow spell during a volley stuns the Leviathan: the volley ends and it stands still for 15 ticks, taking at
-         * most 10 per hit (approx: the gaping wound on its back, which takes full damage, isn't modelled).
-         */
-        @Override
-        protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
-            if (stunned > 0) {
-                return Math.min(damage, 10);
-            }
-            if (attacker != null && type == AttackType.MAGIC && !volley.isEmpty()
-                    && String.valueOf(com.runecraft.content.systems.SysState.of(attacker).autocast).startsWith("shadow_")) {
-                stunned = boss.awakened() ? 7 : 15;
-                volley.clear();
-                CombatAchievementService.count(attacker, CombatAchievements.COUNT_LEVIATHAN_STUN, 1);
-                BossFx.say(boss, "The shadow spell stuns the Leviathan!");
-            }
-            return damage;
-        }
-
-        @Override
-        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
-            if (volley.isEmpty()) {
-                int n = (boss.awakened() ? 5 : 3) + boss.getRandom().nextInt(4); // approx: awakened volleys are longer
-                boolean enraged = percent(boss) < 20;
-                // The volleys grow faster and mix in the melee shadow as the fight goes on (OSRS Wiki); enraged: magic/ranged.
-                AttackDef[] styles = BossMechanics.leviathanVolleyMelee(volleys, enraged)
-                        ? new AttackDef[]{Dt2Bosses.LEVI_RANGED, Dt2Bosses.LEVI_MAGIC, Dt2Bosses.LEVI_MELEE}
-                        : new AttackDef[]{Dt2Bosses.LEVI_RANGED, Dt2Bosses.LEVI_MAGIC};
-                spacing = BossMechanics.leviathanVolleyTicks(volleys, enraged, boss.awakened());
-                volleys++;
-                for (int i = 0; i < n; i++) {
-                    volley.add(styles[boss.getRandom().nextInt(styles.length)]);
-                }
-                BossFx.warn(boss, "The Leviathan prepares a barrage of " + n + " projectiles!");
-                for (int i = 0; i < 3; i++) {
-                    strike(boss, around(boss, target.position(), 5), 3, (int) Math.round(maxHit(boss, Dt2Bosses.LEVI_DEBRIS) * scale), 1.3, ParticleTypes.ASH);
-                }
-                cooldown = 2;
-                return null;
-            }
-            AttackDef a = volley.remove(0);
-            Msg.action(target, a == Dt2Bosses.LEVI_RANGED ? "Boulder! (ranged)" : a == Dt2Bosses.LEVI_MAGIC ? "Abyssal orb! (magic)"
-                    : "Shadow! (melee)");
-            if (volley.isEmpty()) {
-                pause = boss.awakened() ? (percent(boss) < 20 ? 2 : 4) : percent(boss) < 20 ? 3 : 6;
-            }
-            return a;
-        }
-
-        @Override
-        protected int attackDelay(DataBossEntity boss, AttackDef attack) {
-            if (pause > 0) {
-                int p = pause;
-                pause = 0;
-                return p;
-            }
-            return percent(boss) < 20 ? BossMechanics.leviathanVolleyTicks(volleys, true, boss.awakened()) : spacing;
-        }
-
-        /**
-         * Awakened, from 50% health: a tornado drifts after the player and hits for 40+ on contact (OSRS Wiki), then reforms
-         * at the edge of the arena (approx: its speed and the pause after a hit).
-         */
-        private void tickTornado(DataBossEntity boss, ServerPlayer target) {
-            if (!boss.awakened() || target == null || percent(boss) > 50) {
-                return;
-            }
-            ServerLevel w = BossFx.world(boss);
-            if (tornado == null) {
-                if (--tornadoPause > 0) {
-                    return;
-                }
-                double a = boss.getRandom().nextDouble() * Math.PI * 2;
-                tornado = BossFx.ground(w, homeVec().x + Math.cos(a) * 10, homeVec().z + Math.sin(a) * 10, homeVec().y);
-                BossFx.warn(boss, "A tornado forms in the cavern!");
-            }
-            Vec3 d = target.position().subtract(tornado);
-            double len = d.horizontalDistance();
-            if (len <= 0.9) {
-                CombatHooks.nameAttack("tornado", null);
-                CombatHandler.applyDamage(boss, target, (int) Math.round((BossMechanics.LEVIATHAN_TORNADO_MIN
-                        + boss.getRandom().nextInt(BossMechanics.LEVIATHAN_TORNADO_MAX - BossMechanics.LEVIATHAN_TORNADO_MIN + 1)) * scale));
-                Msg.red(target, "The tornado tears into you!");
-                tornado = null;
-                tornadoPause = 5;
-                return;
-            }
-            double step = Math.min(0.5, len); // approx: half a tile a tick, slower than a running player
-            tornado = BossFx.ground(w, tornado.x + d.x / len * step, tornado.z + d.z / len * step, tornado.y);
-            w.sendParticles(ParticleTypes.CLOUD, tornado.x, tornado.y + 0.5, tornado.z, 8, 0.3, 0.8, 0.3, 0.02);
-        }
-
-        @Override
-        protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
-            tickTornado(boss, target);
-            if (stunned > 0) {
-                stunned--;
-                BossFx.burst(boss, ParticleTypes.SMOKE, 6, 1.5);
-                return;
-            }
-            if (target != null && boss.getRandom().nextInt(boss.awakened() ? 18 : 30) == 0) {
-                strike(boss, target.position(), 3, (int) Math.round(maxHit(boss, Dt2Bosses.LEVI_LIGHTNING) * scale), 1.3, ParticleTypes.ELECTRIC_SPARK);
-                BossFx.warn(boss, "The Leviathan's shell crackles with lightning!");
             }
         }
     }
@@ -840,6 +757,38 @@ final class EncounterScripts {
             spores.forEach(Mob::discard);
             spores.clear();
             gazes.clear(); // a gaze still in the air when he dies does nothing
+        }
+
+        // self-test walk
+        void walkStrangle(DataBossEntity boss, ServerPlayer p) {
+            strangle(boss, p);
+        }
+
+        List<Mob> walkSpores() {
+            return spores;
+        }
+
+        boolean walkStrangling() {
+            return strangleDue >= 0;
+        }
+
+        void walkGaze(DataBossEntity boss, ServerPlayer p) {
+            gaze(boss, p);
+        }
+
+        boolean walkGazing() {
+            return !gazes.isEmpty();
+        }
+
+        /** Whether the next gaze to land is the blue (magic) one (awakened); else the green (ranged). */
+        boolean walkGazeMagic() {
+            long[] next = null;
+            for (long[] g : gazes) {
+                if (next == null || g[0] < next[0]) {
+                    next = g;
+                }
+            }
+            return next != null && next[1] == 1;
         }
 
         /**
@@ -1103,9 +1052,8 @@ final class EncounterScripts {
                 cooldown = 3;
                 return null;
             }
-            if (distance < 6 && boss.getRandom().nextInt(5) == 0) {
-                return VarlamoreBosses.HUEY_TAIL;
-            }
+            // OSRS Wiki: her only attacks are the glowing symbols and rain fire (the tail's slam is the tail phases' shockwave);
+            // the knockback tail sweep she used up close isn't hers.
             AttackDef[] styles = {VarlamoreBosses.HUEY_MELEE, VarlamoreBosses.HUEY_RANGED, VarlamoreBosses.HUEY_MAGIC};
             return styles[boss.getRandom().nextInt(3)];
         }
@@ -1125,6 +1073,34 @@ final class EncounterScripts {
                 CombatAchievementService.flagNear(boss, BossMechanics.FLAG_HUEY_VULNERABLE_KILL);
             }
             return d;
+        }
+
+        // self-test walk
+        List<Mob> walkSegments() {
+            return segments;
+        }
+
+        int walkStage() {
+            return stage;
+        }
+
+        Mob walkTail() {
+            return tail;
+        }
+
+        boolean walkFinal() {
+            return stage == FINAL;
+        }
+
+        /** Rain Fire through the right protection prayer still deals 0-2 (OSRS Wiki), not nothing. */
+        @Override
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
+            Prayer pr = last == VarlamoreBosses.HUEY_MELEE ? Prayer.PROTECT_FROM_MELEE : last == VarlamoreBosses.HUEY_RANGED
+                    ? Prayer.PROTECT_FROM_MISSILES : last == VarlamoreBosses.HUEY_MAGIC ? Prayer.PROTECT_FROM_MAGIC : null;
+            if (pr != null && damage == 0 && BossFx.protects(player, pr)) {
+                return boss.getRandom().nextInt(3);
+            }
+            return damage;
         }
 
         /** The seer's bar: every player near her counts towards the team size and the pillar their protection prayer charges. */
@@ -1336,6 +1312,12 @@ final class EncounterScripts {
         private record Elemental(Mob mob, boolean fire, long explodeAt) {
         }
 
+        /** Branda and Eldric -> the script running them (for the ranged accuracy hook). */
+        private static final Map<net.minecraft.world.entity.LivingEntity, RoyalTitans> TITANS =
+                java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+        private static boolean hooked;
+        /** The ranged accuracy boost lasts a few ticks past the last Elemental Blast. */
+        private long boostUntil = -1;
         private DataBossEntity eldric;
         private final List<Elemental> elementals = new ArrayList<>();
         private final List<Wall> walls = new ArrayList<>();
@@ -1430,6 +1412,118 @@ final class EncounterScripts {
             return chargeUntil >= 0 && now <= chargeUntil;
         }
 
+        // self-test walk
+        DataBossEntity walkEldric() {
+            return eldric;
+        }
+
+        boolean walkPhaseTwo() {
+            return phaseTwo;
+        }
+
+        boolean walkBlasting() {
+            return charging() || blastsLeft > 0;
+        }
+
+        Vec3 walkSafe() {
+            return safe;
+        }
+
+        boolean walkSubdued() {
+            return subdued;
+        }
+
+        int walkWalls() {
+            return walls.size();
+        }
+
+        int walkElementals() {
+            elementals.removeIf(e -> !e.mob().isAlive());
+            return elementals.size();
+        }
+
+        /** Douses (or melts) the wall nearest a spot, as a Water Blast (Fire Blast) cast there does. */
+        void walkClearWall(DataBossEntity boss, Vec3 at, boolean fire) {
+            clearWall(boss, at, fire);
+        }
+
+        /** Where the nearest formed wall stands (fire or icicle), or null. */
+        Vec3 walkWallCell(boolean fire) {
+            for (Wall w : walls) {
+                if (w.fire == fire && w.formed) {
+                    for (int i = 0; i < w.cells.size(); i++) {
+                        if (w.gone == null || !w.gone[i]) {
+                            return w.cells.get(i);
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        /**
+         * OSRS Wiki "Royal Titans/Strategies": while the Titans keep their distance in phase 1, and from an Elemental Blast's
+         * charge until a few ticks after it, the player's ranged accuracy is six times as high (a hidden +500%).
+         */
+        boolean rangedBoost() {
+            return !phaseTwo && rangedMode || charging() || blastsLeft > 0 || now <= boostUntil;
+        }
+
+        private static void hookTitans() {
+            if (hooked) {
+                return;
+            }
+            hooked = true;
+            com.runecraft.combat.CombatHooks.addModifier(new com.runecraft.combat.CombatHooks.PlayerAttackModifier() {
+                @Override
+                public double accuracy(ServerPlayer player, net.minecraft.world.entity.LivingEntity target, AttackType type) {
+                    RoyalTitans t = type == AttackType.RANGED ? TITANS.get(target) : null;
+                    return t != null && t.rangedBoost() ? 6.0 : 1.0;
+                }
+            });
+        }
+
+        /**
+         * An elemental hit by the opposing element's spell (water on fire, fire on ice) from a player with +70 magic attack
+         * always hits for the max, and the spell splashes on the elementals around it (OSRS Wiki).
+         */
+        private static boolean elementalBane(ServerPlayer p, boolean fireElemental, AttackType type) {
+            if (type != AttackType.MAGIC) {
+                return false;
+            }
+            String spell = MinionRules.spell(p);
+            if (spell == null || com.runecraft.combat.HitCalcBridge.gearStats(p).magicAttack() < 70) {
+                return false;
+            }
+            return fireElemental ? spell.startsWith("water_") : spell.startsWith("fire_");
+        }
+
+        private void ruleElemental(Mob m, boolean fire) {
+            MinionRules.set(m, new MinionRules.Rule() {
+                @Override
+                public double accuracy(ServerPlayer p, net.minecraft.world.entity.LivingEntity mob, AttackType type) {
+                    return elementalBane(p, fire, type) ? MinionRules.ALWAYS_HITS : 1.0;
+                }
+
+                @Override
+                public boolean alwaysMaxHit(ServerPlayer p, net.minecraft.world.entity.LivingEntity mob, AttackType type) {
+                    return elementalBane(p, fire, type);
+                }
+
+                @Override
+                public int damage(ServerPlayer p, net.minecraft.world.entity.LivingEntity mob, AttackType type, int d) {
+                    if (d > 0 && elementalBane(p, fire, type)) {
+                        for (Elemental e : new ArrayList<>(elementals)) {
+                            if (e.mob() != mob && e.fire() == fire && e.mob().isAlive() && e.mob().distanceToSqr(mob) <= 2.5 * 2.5) {
+                                com.runecraft.combat.CombatHandler.applyDamage(p, e.mob(), d); // the 3x3 splash
+                            }
+                        }
+                    }
+                    return d;
+                }
+            });
+        }
+
         /** Removes the wall cell nearest {@code from} and the two next to it. */
         private void clearWall(DataBossEntity boss, Vec3 from, boolean fire) {
             Wall best = null;
@@ -1492,6 +1586,11 @@ final class EncounterScripts {
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             ServerLevel w = BossFx.world(boss);
+            TITANS.put(boss, this);
+            if (eldric != null) {
+                TITANS.put(eldric, this);
+            }
+            hookTitans();
             if (savedBlocks != null) {
                 clearSavedWalls(w);
             }
@@ -1581,6 +1680,7 @@ final class EncounterScripts {
                     if (blastsLeft == 0) {
                         chargeUntil = now; // the charging window closes with the last blast
                         blastCycle = 20;
+                        boostUntil = now + 4; // approx: "a few ticks after"
                     }
                 }
                 return;
@@ -1738,11 +1838,13 @@ final class EncounterScripts {
                 Mob f = BossFx.spawnMinion(boss, "titan_fire_elemental", around(boss, boss.position(), 3), target);
                 if (f != null) {
                     elementals.add(new Elemental(f, true, now + 20)); // approx: when they self-destruct
+                    ruleElemental(f, true);
                 }
                 if (eldricAlive()) {
                     Mob ice = BossFx.spawnMinion(boss, "titan_ice_elemental", around(boss, eldric.position(), 3), target);
                     if (ice != null) {
                         elementals.add(new Elemental(ice, false, now + 20));
+                        ruleElemental(ice, false);
                     }
                 }
             }

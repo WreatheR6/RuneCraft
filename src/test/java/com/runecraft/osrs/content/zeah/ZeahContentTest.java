@@ -235,7 +235,7 @@ class ZeahContentTest {
                 assertNotNull(ItemCatalog.get(item).equipment(), item);
             }
         }
-        assertNotNull(ContentRegistry.monster(ContentRegistry.boss("blood_moon").minion));
+        assertNotNull(ContentRegistry.monster("blood_jaguar"), "the Blood Moon summons blood jaguars (MoonScripts)");
         // Not duplicated: these bosses come from the bosses module.
         for (String id : new String[]{"sol_heredit", "the_hueycoatl", "amoxliatl", "skotizo", "sarachnis", "alchemical_hydra"}) {
             assertTrue(module.bosses().stream().noneMatch(b -> b.id.equals(id)), id);

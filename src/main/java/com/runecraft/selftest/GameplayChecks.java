@@ -137,6 +137,7 @@ final class GameplayChecks {
         checks.addAll(BossFightChecks.all(context));
         // The God Wars Dungeon walked end to end: the hole, kill count, each general's chamber, the prison and Nex.
         checks.add(new SelfTest.Check("boss:gwd_walk", () -> g.walk(com.runecraft.content.godwars.GwdWalk::run)));
+        checks.addAll(BossWalkChecks.all(context));
         for (Map.Entry<String, int[]> e : destinations().entrySet()) {
             checks.add(new SelfTest.Check("teleport:" + e.getKey(), () -> g.teleport(e.getValue()[0], e.getValue()[1])));
         }

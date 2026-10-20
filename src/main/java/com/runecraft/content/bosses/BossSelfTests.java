@@ -83,6 +83,12 @@ public final class BossSelfTests {
             n.wake(boss); // disturbed: no need to wait out her sleep
             return "woke her";
         }
+        if (boss.script() instanceof EncounterScripts.Duke duke && duke.asleep()) {
+            for (int i = 0; i < com.runecraft.osrs.content.bosses.DukeRules.poisonsToWake(boss.awakened()); i++) {
+                duke.feed(boss, p, com.runecraft.osrs.content.bosses.DukeRules.POISON_VALUE);
+            }
+            return "woke the Duke with arder-musca poison";
+        }
         return null;
     }
 
@@ -95,7 +101,19 @@ public final class BossSelfTests {
         if (AraxxorCorpse.BOSS.equals(bossId)) {
             return AraxxorCorpse.held(p);
         }
+        if (com.runecraft.osrs.content.bosses.MoonsRules.MOONS.contains(bossId)) {
+            return LunarChest.pending(p); // a Moon's loot waits in the Lunar Chest
+        }
         return com.runecraft.osrs.content.bosses.DoomDelves.BOSS.equals(bossId) ? DoomDelveService.heldLoot(p) : 0;
+    }
+
+    /** The Lunar Chest's record of a player's pacified Moons, saved and restored around the self-test (null: none). */
+    public static Object lunarChestSave(net.minecraft.server.MinecraftServer server, java.util.UUID player) {
+        return LunarChest.selfTestSave(server, player);
+    }
+
+    public static void lunarChestRestore(net.minecraft.server.MinecraftServer server, java.util.UUID player, Object saved) {
+        LunarChest.selfTestRestore(server, player, saved);
     }
 
     /**

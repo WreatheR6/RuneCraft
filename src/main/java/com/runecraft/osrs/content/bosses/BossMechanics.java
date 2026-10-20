@@ -57,7 +57,7 @@ public final class BossMechanics {
             "glyph_of_fire", "cavern_shake", "forfeit", "tentacle", "swinging_axe", "darting_spikes", "ice_spikes", "screech", "carrion",
             "slam", "larva", "fire_wall", "icicle_wall", "elemental_blast", "elemental_explosion", "sleepwalker", "power_blast",
             "bleed", "strangle", "burn", "knockback", "parasite_burst", "spike", "weakened_parasite_burst", "tail_shockwave", "spore", "explosion",
-            "ruptura_explosion", "rock_explosion", "zalcano_shockwave", "pebbles", "under_zalcano",
+            "ruptura_explosion", "rock_explosion", "zalcano_shockwave", "pebbles", "under_zalcano", "call_jaguar",
             // The Nightmare's corpse flowers and husks, the Phantom Muspah's lightning clouds and shockwave
             "corpse_flowers", "husk", "lightning_cloud", "shockwave",
             // Wilderness bosses (godwars module scripts): the Chaos Fanatic's and crazy archaeologist's specials, the trio's traps
@@ -1039,8 +1039,7 @@ public final class BossMechanics {
     /** A dark seed stepped on: 15-25 (awakened 60-75). */
     public static final int[] WHISPERER_DARK_SEED = {15, 25};
     public static final int[] WHISPERER_DARK_SEED_AWAKENED = {60, 75};
-    /** During a special's animation she takes 70% less damage. */
-    public static final double WHISPERER_SPECIAL_DAMAGE = 0.3;
+    /** During a special's animation she takes 70% less damage (60% from the Shadow Realm): {@link WhispererRules}. */
     /** The binding projectile after a special: ~8 seconds. */
     public static final int WHISPERER_BIND_TICKS = 13;
     /** At 0 hitpoints she heals 140 (awakened 250), pulls the player into the Shadow Realm and attacks every 2 ticks. */
@@ -1084,16 +1083,5 @@ public final class BossMechanics {
                     && hp * WHISPERER_AWAKENED_HP / maxHp <= WHISPERER_AWAKENED_SPECIAL_HP[done];
         }
         return done < WHISPERER_SPECIAL_PERCENT.length && hp * 100.0 / maxHp <= WHISPERER_SPECIAL_PERCENT[done];
-    }
-
-    /**
-     * Pre-enrage Shadow Realm time (game ticks; Dark Memories, CA 502, wants under 10 = 6 seconds) a player adds by killing a lost
-     * soul at tick {@code specialTick} of a Soul Siphon, having been counted {@code counted} ticks of it already. OSRS Wiki: the
-     * souls can only be damaged in the Shadow Realm, so a player enters as the siphon starts and leaves after their last soul;
-     * the realm isn't modelled, so that stay is counted up to their latest soul kill. Ignoring the siphon (the task's way, or
-     * guessing the seeds and pillars, which the mod shows openly) adds nothing. approx
-     */
-    public static int whispererRealmTicks(int specialTick, int counted) {
-        return Math.max(0, specialTick - counted);
     }
 }

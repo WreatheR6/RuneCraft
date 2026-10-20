@@ -638,7 +638,7 @@ public final class CombatAchievementRules {
             13;RULE;kreearra;1;nodmg=melee
             14;RULE;kreearra;1;weapon=*salamander
             15;STREAK;kreearra;30;
-            509;STREAK;the_leviathan;5;nodmg=mechanic,hazard,falling_debris,lightning,offprayer
+            509;STREAK;the_leviathan;5;nodmg=mechanic,hazard,falling_debris,lightning,smoke_blast,tornado,offprayer
             175;RULE;kill:lizardman shaman;1;nodmg=boss
             639;STREAK;maggot_king;12;
             640;WINDOW;maggot_king;5;t<=9:00 fromstart
@@ -656,7 +656,7 @@ public final class CombatAchievementRules {
             473;RULE;phantom_muspah;1;norun
             474;STREAK;phantom_muspah;10;
             409;STREAK;phosanis_nightmare;5;
-            588;RULE;branda_the_fire_queen;1;nodmg=molten_fist,frozen_fist,mechanic,hazard
+            588;RULE;branda_the_fire_queen;1;nodmg=molten_fist,frozen_fist,elemental_explosion,fire_wall,icicle_wall,elemental_blast,mechanic,hazard
             593;STREAK;branda_the_fire_queen;15;
             209;RULE;sarachnis;1;nodmg=boss
             221;RULE;scorpia;1;nokill=kill:scorpia's+guardian
@@ -908,7 +908,7 @@ public final class CombatAchievementRules {
             564;RULE;araxxor;1;count>=6:araxxor_eggs_destroyed
             566;RULE;araxxor;1;flag=araxyte_betrayal
             526;RULE;eclipse_moon;1;noflag=eclipse_direct_hit
-            531;WINDOW;MOONS;3;t<=30:00 fromstart distinct onlydmg=spear_thrust,shield_bash,atlatl_dart,macuahuitl_flurry
+            531;WINDOW;MOONS;3;t<=30:00 fromstart distinct onlydmg=spear_thrust,shield_bash,macuahuitl_flurry,call_jaguar
             572;RULE;the_hueycoatl;1;flag=huey_vulnerable_kill
             575;RULE;the_hueycoatl;1;wear=hueycoatl_hide_coif,hueycoatl_hide_body || wear=hueycoatl_hide_coif,hueycoatl_hide_chaps || wear=hueycoatl_hide_coif,hueycoatl_hide_vambraces || wear=hueycoatl_hide_body,hueycoatl_hide_chaps || wear=hueycoatl_hide_body,hueycoatl_hide_vambraces || wear=hueycoatl_hide_chaps,hueycoatl_hide_vambraces
             188;RULE;the_nightmare;1;nodmg=grasping_claws,surge,parasite_burst,corpse_flowers,offprayer noflag=nightmare_spored

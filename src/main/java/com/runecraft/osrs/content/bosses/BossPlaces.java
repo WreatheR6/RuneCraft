@@ -44,10 +44,12 @@ public final class BossPlaces {
                 PlaceDef.of("zalcano_chamber", "Zalcano's prison", 3034, 6068, Style.CAVE, List.of()),
                 PlaceDef.of("sisterhood_sanctuary", "Sisterhood Sanctuary", 3728, 3302, Style.RUINS, List.of()),
                 PlaceDef.of("ghorrock_dungeon", "Ghorrock Dungeon", 2911, 3950, Style.CAVE, List.of()),
-                PlaceDef.of("ghorrock_prison", "Ghorrock Prison", 2938, 3965, Style.RUINS, List.of()),
+                // Duke Sucellus' asylum: its mushrooms, salt piles and fermentation vats for the poison that wakes him.
+                PlaceDef.of("ghorrock_prison", "Ghorrock Prison", 2938, 3965, Style.RUINS, List.of(DukeRules.ARDER_MUSHROOMS,
+                        DukeRules.MUSCA_MUSHROOMS, DukeRules.SALT_PILE, DukeRules.VAT)),
                 // The Scar is reached from the Ruins of Ullek; the Lassar Undercity through the Ancient Vault by the Digsite.
                 PlaceDef.of("the_scar", "The Scar", 3418, 2790, Style.RUINS, List.of(SCAR_GROWTH)),
-                PlaceDef.of("lassar_undercity", "Lassar Undercity", 3360, 3432, Style.RUINS, List.of()),
+                PlaceDef.of("lassar_undercity", "Lassar Undercity", 3360, 3432, Style.RUINS, List.of(WhispererRules.WORKBENCH)),
                 PlaceDef.of("stranglewood", "The Stranglewood", 1160, 3430, Style.RUINS, List.of()),
                 // The Ancient Vault (an instance in OSRS): beside the Vault of Desert Treasure II, with its quartz chest. approx
                 PlaceDef.of("ancient_vault", "Ancient Vault", 3180, 2850, Style.RUINS, List.of(ANCIENT_VAULT_CHEST)),
@@ -82,6 +84,11 @@ public final class BossPlaces {
     public static List<BlockDef> blocks() {
         return List.of(BlockDef.scripted(FONT_OF_CONSUMPTION, "Font of Consumption", 0x6A1A3A, "altar"),
                 BlockDef.scripted(SCAR_GROWTH, "Growth", 0x4A2A4A, "plant"),
-                BlockDef.scripted(ANCIENT_VAULT_CHEST, "Chest", 0x6A4A6A, "chest"));
+                BlockDef.scripted(ANCIENT_VAULT_CHEST, "Chest", 0x6A4A6A, "chest"),
+                BlockDef.scripted(WhispererRules.WORKBENCH, "Ketla's workbench", 0x5A4A6A, "table"),
+                BlockDef.scripted(DukeRules.ARDER_MUSHROOMS, "Arder mushrooms", 0x8A6A3A, "mushroom"),
+                BlockDef.scripted(DukeRules.MUSCA_MUSHROOMS, "Musca mushrooms", 0x6A8A4A, "mushroom"),
+                BlockDef.scripted(DukeRules.SALT_PILE, "Salt pile", 0xE0E0E8, "rock"),
+                BlockDef.scripted(DukeRules.VAT, "Fermentation vat", 0x6A5A4A, "vat"));
     }
 }

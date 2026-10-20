@@ -132,6 +132,10 @@ public final class ModernBosses {
                 MonsterDef.of(BossMechanics.YAMA_JUDGE, "Judge of Yama").level(168).stats(BossMechanics.JUDGE_HITPOINTS, 150, 150, 130, 150, 1)
                         .attack(AttackDef.of("inert", AttackType.MAGIC, 0, 0.5, 1)).passive().attributes("demon").model("judge_of_yama")
                         .skin(0x5A1A2A, 0x1A0A10, 0x2A0A10, 0xFF6020).size(1.0f, 2.6f, 1.0f).moveSpeed(0.0),
+                // The Blue Moon's blocks of frozen weapons (Weapon Freeze): punch the glowing one with bare hands (MoonScripts).
+                MonsterDef.of("moon_frozen_weapons", "Frozen weapons").level(1).stats(30, 1, 1, 1, 1, 1)
+                        .attack(AttackDef.of("inert", AttackType.MAGIC, 0, 0.5, 1)).passive()
+                        .skin(0xC8F0FF, 0xA0D8F0, 0x80C0E8, 0xFFFFFF).size(1.0f, 1.2f, 1.0f).moveSpeed(0.0),
                 // Amoxliatl's unstable ice: only melee breaks it (in one hit); left alone it shatters after 15 ticks.
                 MonsterDef.of(BossMechanics.UNSTABLE_ICE, "Unstable ice").level(1).stats(20, 1, 1, 1, 1, 1) // hitpoints approx
                         .attack(AttackDef.of("inert", AttackType.MAGIC, 0, 0.5, 1)).passive()

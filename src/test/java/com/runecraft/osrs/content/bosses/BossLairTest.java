@@ -79,36 +79,32 @@ class BossLairTest {
     }
 
     /**
-     * Dark Memories (CA 502, "less than 6 seconds in the pre-enrage shadow realm"): realm time is counted while the player
-     * kills lost souls (only hittable in the realm) and the task fails from 10 ticks. Ignoring the siphon costs nothing.
+     * Dark Memories (CA 502, "less than 6 seconds in the pre-enrage shadow realm"): every pre-enrage tick a player stands in the
+     * Shadow Realm counts, the task fails from 10. Ignoring the realm (or only peeking) passes; the enrage's realm doesn't count.
      */
     @Test
-    void darkMemoriesCountsTimeSpentOnLostSouls() {
-        String rule = "count<10:" + CombatAchievements.COUNT_SHADOW_REALM_TICKS;
-        Metrics ignored = new Metrics();
-        assertTrue(CombatAchievementRules.meets(rule, ignored), "the siphon ignored, as the wiki suggests");
+    void darkMemoriesCountsPreEnrageRealmTicks() {
+        String rule = "count<" + WhispererRules.DARK_MEMORIES_TICKS + ":" + CombatAchievements.COUNT_SHADOW_REALM_TICKS;
+        assertTrue(CombatAchievementRules.meets(rule, new Metrics()), "never entered the realm");
 
-        // a quick dip: souls killed on ticks 4 and 7 of the siphon -> 7 ticks in the realm
+        WhispererRules.Sanity s = new WhispererRules.Sanity();
         Metrics quick = new Metrics();
-        int counted = 0;
-        for (int killTick : new int[]{4, 4, 7}) {
-            int add = BossMechanics.whispererRealmTicks(killTick, counted);
-            quick.count(CombatAchievements.COUNT_SHADOW_REALM_TICKS, add);
-            counted += add;
+        for (int t = 0; t < 7; t++) {
+            boolean in = t < 3 || t >= 5; // two peeks: 3 + 2 ticks
+            int before = s.realmTicks();
+            s.tick(in, false, false);
+            quick.count(CombatAchievements.COUNT_SHADOW_REALM_TICKS, s.realmTicks() - before);
         }
-        assertEquals(7, counted);
+        for (int t = 0; t < 40; t++) {
+            int before = s.realmTicks();
+            s.tick(true, true, false); // the enrage: in the realm, but not counted
+            quick.count(CombatAchievements.COUNT_SHADOW_REALM_TICKS, s.realmTicks() - before);
+        }
+        assertEquals(5, s.realmTicks());
         assertTrue(CombatAchievementRules.meets(rule, quick));
 
-        // every soul hunted down until tick 14: too long
         Metrics slow = new Metrics();
-        counted = 0;
-        for (int killTick : new int[]{5, 9, 14}) {
-            int add = BossMechanics.whispererRealmTicks(killTick, counted);
-            slow.count(CombatAchievements.COUNT_SHADOW_REALM_TICKS, add);
-            counted += add;
-        }
-        assertEquals(14, counted);
-        assertFalse(CombatAchievementRules.meets(rule, slow));
-        assertEquals(0, BossMechanics.whispererRealmTicks(3, 7), "never negative");
+        slow.count(CombatAchievements.COUNT_SHADOW_REALM_TICKS, WhispererRules.DARK_MEMORIES_TICKS);
+        assertFalse(CombatAchievementRules.meets(rule, slow), "a whole soul siphon spent in the realm");
     }
 }
