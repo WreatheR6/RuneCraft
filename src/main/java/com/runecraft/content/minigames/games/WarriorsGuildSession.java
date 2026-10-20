@@ -289,6 +289,17 @@ public class WarriorsGuildSession extends MinigameSession {
         return Character.toUpperCase(t.charAt(0)) + t.substring(1) + " defender";
     }
 
+    /** Self-test hook: spawns one of the room's cyclopes at once (the room keeps 4 + players and adds one every 10 ticks). */
+    public Mob selfTestSpawnCyclops() {
+        String kind = room == Room.BASEMENT ? "cyclops_elite" : random.nextBoolean() ? "warriors_guild_cyclops" : WarriorsGuild.CYCLOPS_76;
+        return spawn(kind, randomFloor(0, -6, 8));
+    }
+
+    /** Where the first magical animator stands (public for the self-test). */
+    public BlockPos animatorAt() {
+        return rel(-8, 1, -8);
+    }
+
     /** The defender the cyclopes drop for a player in this visit, -1 for none (public for the self-test). */
     public int target(ServerPlayer p) {
         return target.getOrDefault(p.getUUID(), -1);

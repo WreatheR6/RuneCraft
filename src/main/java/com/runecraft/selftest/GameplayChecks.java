@@ -127,6 +127,13 @@ final class GameplayChecks {
         // Barbarian Assault as a real player (round 37): wave 1 alone as an attacker, the queen wave, honour, a level, a torso.
         checks.add(new SelfTest.Check("minigame:barbarian_assault_run", () -> g.tzhaarRun(
                 com.runecraft.content.minigames.games.BarbarianAssaultSelfTest::run)));
+        // Round 40: an NMZ dream to a reward, a dragon defender at the Warriors' Guild, every MTA room and a reward.
+        checks.add(new SelfTest.Check("minigame:nmz_dream", () -> g.tzhaarRun(
+                com.runecraft.content.minigames.games.CombatMinigameSelfTest::nightmareZone)));
+        checks.add(new SelfTest.Check("minigame:warriors_guild_walk", () -> g.tzhaarRun(
+                com.runecraft.content.minigames.games.CombatMinigameSelfTest::warriorsGuild)));
+        checks.add(new SelfTest.Check("minigame:mta_walk", () -> g.tzhaarRun(
+                com.runecraft.content.minigames.games.CombatMinigameSelfTest::mageTrainingArena)));
         for (RaidType r : RaidType.values()) {
             checks.add(new SelfTest.Check("raid:" + r.id(), () -> g.raid(r)));
         }

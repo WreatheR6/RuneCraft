@@ -497,7 +497,7 @@ public final class MinigameRules {
         public static final Object[][] ARMOUR = {
                 {"bronze", 11, 10, 2, 5}, {"iron", 23, 20, 3, 10}, {"steel", 46, 40, 5, 15}, {"black", 69, 60, 7, 20},
                 {"mithril", 92, 80, 10, 25}, {"adamant", 113, 99, 12, 30}, {"rune", 138, 120, 14, 40}};
-        /** Animated armour that isn't defeated within five minutes goes back to its animator (and Shanomi keeps the armour). */
+        /** Animated armour that isn't defeated within five minutes falls apart and its pieces go back to the owner. // approx */
         public static final int ANIMATED_TICKS = 500;
         /** Tokens taken on entering the cyclops room and then every minute (100 game ticks). */
         public static final int CYCLOPS_TOKENS = 10;
