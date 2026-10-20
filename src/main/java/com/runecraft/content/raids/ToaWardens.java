@@ -604,7 +604,7 @@ final class ToaWardens extends RoomLogic {
         }
         if (core == null && now >= nextP2Attack) {
             wardenAttack(players);
-            nextP2Attack = now + Invocation.wardensAttackEvery(inv);
+            nextP2Attack = now + Invocation.wardensAttackEvery(inv, isElidinis(warden));
         }
         obeliskAttacks(tick, players, inv);
     }

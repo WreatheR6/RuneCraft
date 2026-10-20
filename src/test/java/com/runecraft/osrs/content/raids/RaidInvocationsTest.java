@@ -118,6 +118,10 @@ class RaidInvocationsTest {
         assertEquals(3, Invocation.wardensSlamFaster(all));
         assertTrue(Invocation.wardensChargeEvery(all) < Invocation.wardensChargeEvery(none));
         assertTrue(Invocation.wardensAttackEvery(all) < Invocation.wardensAttackEvery(none));
+        // DPS calculator: Elidinis' Warden attacks every 7 ticks, Tumeken's every 8.
+        assertEquals(7, Invocation.wardensAttackEvery(none, true));
+        assertEquals(8, Invocation.wardensAttackEvery(none, false));
+        assertTrue(Invocation.wardensAttackEvery(all, false) < 8);
         assertTrue(Invocation.wardensObeliskDamage(all) > 1.0);
         // Overly Draining
         assertEquals(100, Invocation.specialCost(all));

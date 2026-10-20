@@ -627,7 +627,7 @@ final class ToaPuzzleRooms {
                 // OSRS CA "Perfect Scabaras": under a minute without anyone taking damage from the puzzles.
                 if (!puzzleDamage && now() - startedAt < ToaLoot.PERFECT_SCABARAS_TICKS) {
                     for (ServerPlayer pl : players()) {
-                        com.runecraft.content.systems.CombatAchievementService.flag(pl, ToaLoot.CA_PERFECT_SCABARAS);
+                        com.runecraft.content.systems.CombatAchievementService.flag(pl, ToaLoot.FLAG_PERFECT_SCABARAS);
                     }
                 }
                 complete();
@@ -1244,7 +1244,7 @@ final class ToaPuzzleRooms {
                 // OSRS CA "Perfect Het": no damage from the beam or the orbs, and the seal broken in one exposure.
                 if (!hurtByRoom && exposures <= 1) {
                     for (ServerPlayer pl : players()) {
-                        com.runecraft.content.systems.CombatAchievementService.flag(pl, ToaLoot.CA_PERFECT_HET);
+                        com.runecraft.content.systems.CombatAchievementService.flag(pl, ToaLoot.FLAG_PERFECT_HET);
                     }
                 }
                 complete();
@@ -1362,6 +1362,9 @@ final class ToaPuzzleRooms {
         private final Map<LivingEntity, Integer> fuse = new HashMap<>();
         /** Venom pools: x, z, expiry tick. */
         private final List<double[]> pools = new ArrayList<>();
+        /** Perfect Apmeken: a danger triggered (missed or wrong fix), someone stood in venom or a volatile baboon hit. */
+        boolean imperfect;
+        private long startedAt;
 
         Apmeken(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -1397,6 +1400,8 @@ final class ToaPuzzleRooms {
             pools.clear();
             corrupted.clear();
             problem = Problem.NONE;
+            imperfect = false;
+            startedAt = now();
             ServerPlayer first = randomPlayer();
             sight = first == null ? null : first.getUUID();
             if (first != null) {
@@ -1453,6 +1458,12 @@ final class ToaPuzzleRooms {
                 nextWave();
             } else if (wave >= waves.size() - 1 && alive == 0 && baboons.isEmpty()) {
                 say("The last of Ba-Ba's troupe falls. The Path of Apmeken is open!");
+                // OSRS CA "Perfect Apmeken": a group, no danger triggered, no venom, no volatile hit, under three minutes.
+                if (!imperfect && raid.partySize() >= 2 && now() - startedAt < ToaLoot.PERFECT_APMEKEN_TICKS) {
+                    for (ServerPlayer p : players()) {
+                        com.runecraft.content.systems.CombatAchievementService.flag(p, ToaLoot.FLAG_PERFECT_APMEKEN);
+                    }
+                }
                 complete();
                 return;
             }
@@ -1494,6 +1505,7 @@ final class ToaPuzzleRooms {
             int dmg = 20 + 3 * raid.hitpoints(b); // approx: "based on its health", heavy
             for (ServerPlayer p : players()) {
                 if (RaidEffects.horizontalDistSq(p.position(), at) <= 1.6 * 1.6) {
+                    imperfect = true;
                     RaidEffects.hit(b, p, dmg, null, true);
                 }
             }
@@ -1531,6 +1543,7 @@ final class ToaPuzzleRooms {
             for (ServerPlayer p : players()) {
                 for (double[] pool : pools) {
                     if ((p.getX() - pool[0]) * (p.getX() - pool[0]) + (p.getZ() - pool[1]) * (p.getZ() - pool[1]) < 0.7 * 0.7) {
+                        imperfect = true;
                         hurt(p, 6 + rnd().nextInt(3));
                         if (!PoisonService.isVenomImmune(p, com.runecraft.action.ActionManager.gameTick())) {
                             PoisonService.venom(p, com.runecraft.action.ActionManager.gameTick());
@@ -1584,6 +1597,7 @@ final class ToaPuzzleRooms {
                     missed = corrupted.size();
                 }
                 if (missed > 0) {
+                    imperfect = true;
                     warn("The problem was not fixed in time - the room lashes out!");
                     for (ServerPlayer p : players()) {
                         hurt(p, (8 + rnd().nextInt(8)) * missed); // approx: scaled by the actions missed
@@ -1685,6 +1699,7 @@ final class ToaPuzzleRooms {
 
         private void useVent(ServerPlayer player, BlockPos v) {
             if (problem != Problem.VENT || fixedThisTime.contains(v)) {
+                imperfect = true;
                 Msg.red(player, "The vent was fine - the poison you stir up burns you.");
                 hurt(player, 5 + rnd().nextInt(6)); // approx
                 return;
@@ -1716,6 +1731,7 @@ final class ToaPuzzleRooms {
                 }
                 case RaidsContent.APMEKEN_PILLAR -> {
                     if (problem != Problem.ROOF || fixedThisTime.contains(pos)) {
+                        imperfect = true;
                         Msg.red(player, "The support was sound - knocking at it brings dust down on you.");
                         hurt(player, 5 + rnd().nextInt(6)); // approx
                         return true;
@@ -1811,6 +1827,9 @@ final class ToaPuzzleRooms {
         int growth;
         int needed;
         BlockPos palm;
+        /** Perfect Crondis: a crocodile reached the tree, or someone lost water. */
+        boolean imperfect;
+        private long startedAt;
 
         Crondis(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -1841,6 +1860,8 @@ final class ToaPuzzleRooms {
         public void start() {
             needed = ToaPuzzles.palmWaterNeeded(raid.partySize());
             growth = 0;
+            imperfect = false;
+            startedAt = now();
             water.clear();
             trapHits.clear();
             crocBite.clear();
@@ -1928,6 +1949,7 @@ final class ToaPuzzleRooms {
             hurt(p, 3 + rnd().nextInt(4)); // approx
             int w = water(p);
             if (w > 0) {
+                imperfect = true;
                 water.put(p.getUUID(), ToaPuzzles.spillFromTrap(w, rnd()));
                 Msg.action(p, "Water spills from your container. (" + water(p) + "%)");
             }
@@ -2001,6 +2023,7 @@ final class ToaPuzzleRooms {
                     bite(croc, target);
                 } else if (target == null && croc.distanceToSqr(Vec3.atCenterOf(palm)) < 2.6 * 2.6) {
                     crocBite.put(croc, now());
+                    imperfect = true;
                     growth = Math.max(0, growth - 10); // approx: a bite's worth of growth
                     world().sendParticles(ParticleTypes.DAMAGE_INDICATOR, palm.getX() + 0.5, palm.getY() + 1.5, palm.getZ() + 0.5, 6, 0.4, 0.4,
                             0.4, 0.1);
@@ -2021,6 +2044,7 @@ final class ToaPuzzleRooms {
             RaidEffects.hitRaw(croc, p, dmg);
             int w = water(p);
             if (w > 0) {
+                imperfect = true;
                 water.put(p.getUUID(), ToaPuzzles.spillFromBite(w));
                 Msg.red(p, "The crocodile's bite spills your water! (" + water(p) + "%)");
             }
@@ -2063,6 +2087,12 @@ final class ToaPuzzleRooms {
                 grow();
                 if (growth >= needed) {
                     say("The Palm of Resourcefulness flourishes! The Path of Crondis is open.");
+                    // OSRS CA "Perfect Crondis": no crocodile at the tree, no water lost, under a minute.
+                    if (!imperfect && now() - startedAt < ToaLoot.PERFECT_CRONDIS_TICKS) {
+                        for (ServerPlayer pl : players()) {
+                            com.runecraft.content.systems.CombatAchievementService.flag(pl, ToaLoot.FLAG_PERFECT_CRONDIS);
+                        }
+                    }
                     complete();
                 }
                 return true;

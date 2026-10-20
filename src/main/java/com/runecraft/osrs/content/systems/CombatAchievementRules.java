@@ -743,6 +743,17 @@ public final class CombatAchievementRules {
             469;RAID;TOA;1;level>=300
             470;RAID;TOA;25;level>=300
             471;RAID;TOA;50;level>=300
+            432;RAID;TOA;1;flag=toa_perfect_het
+            434;RAID;TOA;1;flag=toa_perfect_het flag=toa_perfect_akkha
+            435;RAID;TOA;1;size>=2 flag=toa_perfect_apmeken
+            437;RAID;TOA;1;flag=toa_perfect_apmeken flag=toa_perfect_baba
+            438;RAID;TOA;1;flag=toa_perfect_crondis
+            440;RAID;TOA;1;flag=toa_perfect_crondis flag=toa_perfect_zebak
+            441;RAID;TOA;1;flag=toa_perfect_scabaras
+            443;RAID;TOA;1;flag=toa_perfect_scabaras flag=toa_perfect_kephri
+            449;RULE;akkha;1;noflag=akkha_orb_dropped nodeath
+            451;RULE;baba;1;inv=BOULDERDASH noflag=baba_cracked_hit nodeath
+            457;RULE;kephri;1;inv=MEDIC noflag=kephri_over_25 nodeath
             553;WINDOW;kill:tormented demon;2;t<=0:02
             554;WINDOW;kill:tormented demon;3;t<=0:03
             341;KILLS;jal-zek;1;

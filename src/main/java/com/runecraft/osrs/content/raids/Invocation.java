@@ -399,6 +399,14 @@ public enum Invocation {
         return index < 4 ? 4 : index < 8 ? 3 : index < 12 ? 2 : 1;
     }
 
+    /**
+     * How often a trio of swarms comes instead of one in Kephri's intermissions (OSRS wiki: from path level 2, more often
+     * from path level 4), as "every n-th spawn", or 0 for never. // approx: every 4th, then every 2nd
+     */
+    public static int kephriTrioEvery(int pathLevel) {
+        return pathLevel >= 4 ? 2 : pathLevel >= 2 ? 4 : 0;
+    }
+
     /** Dark (hatching) eggs in one Mass Incubation (OSRS wiki: 2, or 3-5 with Lively Larvae). */
     public static int kephriDarkEggs(Set<Invocation> set, java.util.Random random) {
         return set.contains(LIVELY_LARVAE) ? 3 + random.nextInt(3) : 2;
@@ -436,7 +444,16 @@ public enum Invocation {
 
     /** A phase 2 Warden's attack interval in game ticks (OSRS infobox: 7; faster with Acceleration). // approx: 5 */
     public static int wardensAttackEvery(Set<Invocation> set) {
-        return set.contains(ACCELERATION) ? 5 : 7;
+        return wardensAttackEvery(set, true);
+    }
+
+    /**
+     * A phase 2 Warden's attack interval (OSRS infoboxes and DPS calculator: Elidinis' Warden 7 ticks, Tumeken's 8); the
+     * Acceleration invocation makes it attack faster. // approx: two ticks faster
+     */
+    public static int wardensAttackEvery(Set<Invocation> set, boolean elidinis) {
+        int base = elidinis ? 7 : 8;
+        return set.contains(ACCELERATION) ? base - 2 : base;
     }
 
     /** Game ticks between the obelisk's phase 2 strikes (OSRS: Acceleration charges it faster). // approx: 15 / 11 */

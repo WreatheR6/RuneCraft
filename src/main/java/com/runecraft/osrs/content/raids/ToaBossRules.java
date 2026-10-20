@@ -66,6 +66,11 @@ public final class ToaBossRules {
         return Math.min(25, (int) Math.round(d));
     }
 
+    /** Akkha's Shadow's max hit (OSRS infobox and DPS calculator: 22), its quadrant slam. */
+    public static final int AKKHA_SHADOW_MAX_HIT = 22;
+    /** The Arcane Scarab's max hit (OSRS infobox and DPS calculator: 22). */
+    public static final int ARCANE_SCARAB_MAX_HIT = 22;
+
     /** Share of Akkha's ranged/magic damage protection prayers let through (OSRS: they block about 80-90%). */
     public static final double AKKHA_PROTECTED_RANGED_MAGIC = 0.15;
     /** ... and of his melee (OSRS: about 75% blocked). */

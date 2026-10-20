@@ -49,10 +49,20 @@ public final class ToaLoot {
      * seal broken in one exposure), Perfect Crondis (no crocodile at the tree, no water spilled, under a minute) and
      * Perfect Apmeken (a group, no danger triggered, no venom, no volatile baboon hit, under three minutes).
      */
-    public static final String CA_PERFECT_SCABARAS = "toa_perfect_scabaras";
-    public static final String CA_PERFECT_HET = "toa_perfect_het";
-    public static final String CA_PERFECT_CRONDIS = "toa_perfect_crondis";
-    public static final String CA_PERFECT_APMEKEN = "toa_perfect_apmeken";
+    public static final String FLAG_PERFECT_SCABARAS = "toa_perfect_scabaras";
+    public static final String FLAG_PERFECT_HET = "toa_perfect_het";
+    public static final String FLAG_PERFECT_CRONDIS = "toa_perfect_crondis";
+    public static final String FLAG_PERFECT_APMEKEN = "toa_perfect_apmeken";
+    /** Perfect boss kills (the fight's damage conditions plus the room's), for the "Perfection of ..." tasks. */
+    public static final String FLAG_PERFECT_AKKHA = "toa_perfect_akkha";
+    public static final String FLAG_PERFECT_BABA = "toa_perfect_baba";
+    public static final String FLAG_PERFECT_ZEBAK = "toa_perfect_zebak";
+    public static final String FLAG_PERFECT_KEPHRI = "toa_perfect_kephri";
+    /** Fight flags that fail a task: a trailing orb dropped (Dropped the ball), a cracked boulder hit (No skipping allowed),
+     * Kephri healed above 25% after the first down (All out of medics). */
+    public static final String FLAG_AKKHA_ORB_DROPPED = "akkha_orb_dropped";
+    public static final String FLAG_BABA_CRACKED_HIT = "baba_cracked_hit";
+    public static final String FLAG_KEPHRI_OVER_25 = "kephri_over_25";
     /** Game ticks the timed perfect rooms allow: a minute (Scabaras, Crondis), three minutes (Apmeken). */
     public static final int PERFECT_SCABARAS_TICKS = 100;
     public static final int PERFECT_CRONDIS_TICKS = 100;

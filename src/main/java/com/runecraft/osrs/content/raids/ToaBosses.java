@@ -103,7 +103,8 @@ public final class ToaBosses {
                         .attack(AttackDef.of("spit", AttackType.RANGED, 10, 10, 10).particle("minecraft:item_slime")).model("toa_scarab")
                         .size(0.8f, 0.6f, 1.0f).moveSpeed(0.22),
                 MonsterDef.of("toa_arcane_scarab", "Arcane scarab").level(89).stats(40, 75, 80, 80, 100, 95).speed(6).defenceBonus(15, 250, 30, 75, 50)
-                        .attack(AttackDef.of("arcane bolt", AttackType.MAGIC, 8, 10, 10).particle("minecraft:witch")).model("toa_scarab")
+                        // OSRS infobox / DPS calculator: max hit 22 (its explosive swarm; it doesn't attack otherwise).
+                        .attack(AttackDef.of("arcane swarm", AttackType.MAGIC, 22, 10, 10).particle("minecraft:witch")).model("toa_scarab")
                         .size(0.8f, 0.6f, 1.0f).moveSpeed(0.22),
                 // OSRS (wiki/DPS calculator): hatched from Kephri's dark eggs; ranged, max hit 5, flees from players.
                 MonsterDef.of("toa_agile_scarab", "Agile Scarab").level(53).stats(30, 60, 20, 5, 30, 40).speed(4).defenceBonus(0, 0, 0, 0, 0)
@@ -123,8 +124,8 @@ public final class ToaBosses {
                         .attack(AttackDef.of("pulse", AttackType.MAGIC, 0, 1, 10))
                         .skin(0xF0D070, 0xC09030, 0xC09030, 0xFFF0A0).size(0.8f, 0.8f, 0.6f).flying().moveSpeed(0.0),
                 MonsterDef.of("akkhas_shadow", "Akkha's Shadow").level(108).stats(70, 100, 140, 30, 100, 100).speed(6).defenceBonus(60, 120, 120, 10, 60)
-                        .attack(AttackDef.of("shadow strike", AttackType.MAGIC, 15, 12, 10).particle("minecraft:squid_ink"))
-                        .attack(AttackDef.of("shadow slash", AttackType.SLASH, 15, 2.5, 10))
+                        // OSRS infobox / DPS calculator: max hit 22 (the shadows only slam their quadrant).
+                        .attack(AttackDef.of("shadow slam", AttackType.MAGIC, 22, 12, 10).particle("minecraft:squid_ink"))
                         .model("akkha").size(0.9f, 2.4f, 1.2f).moveSpeed(0.26),
                 MonsterDef.of("toa_baboon_brawler", "Baboon brawler").level(56).stats(25, 40, 40, 12, 40, 40).speed(4).defenceBonus(900, 900, 900, -60, 900)
                         .attack(AttackDef.of("punch", AttackType.CRUSH, 5, 2.5, 10)).model("toa_baboon")
