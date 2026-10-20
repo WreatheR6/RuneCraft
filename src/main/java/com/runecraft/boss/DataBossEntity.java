@@ -331,6 +331,11 @@ public class DataBossEntity extends OsrsMonsterEntity {
 
     @Override
     public void performAttack(ServerPlayer target, AttackType type) {
+        if (nextAttack != null && nextAttack.isIdle()) {
+            // The script's movement-only placeholder (a driven script attacks on its own cadence, a dormant one holds back):
+            // not an attack, so beforeAttack (which acts on the boss's real next attack) never sees it either.
+            return;
+        }
         if (nextAttack != null && attackList() != null) {
             AttackDef chosen = script.beforeAttack(this, target, nextAttack);
             if (chosen != null) {

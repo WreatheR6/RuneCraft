@@ -366,9 +366,7 @@ public final class GauntletSelfTest {
         Mechanics.AttackListener before = Mechanics.attackListener;
         Mechanics.attackListener = (mob, target, attack) -> {
             before.onAttack(mob, target, attack);
-            // The Hunllef's script drives every attack itself (ScriptedBoss driven mode) and hands the engine's attack goal a
-            // harmless "idle" attack (no damage, no minion) that only steers its movement; that one is not a Hunllef attack.
-            if (mob == boss && !isEngineIdle(attack)) {
+            if (mob == boss) {
                 attacks.add(attack.name());
             }
         };
@@ -455,11 +453,6 @@ public final class GauntletSelfTest {
         }
         heal();
         note("prayer-disabling orb through the right prayer: at most " + worst);
-    }
-
-    /** The movement-only attack a driven boss script gives the engine (ScriptedBoss.IDLE_RANGED / IDLE_MELEE). */
-    private static boolean isEngineIdle(com.runecraft.osrs.content.AttackDef attack) {
-        return "idle".equals(attack.name()) && attack.maxHit() == 0 && attack.special() == com.runecraft.osrs.content.AttackDef.Special.SUMMON;
     }
 
     private static boolean sameStyle(AttackType a, AttackType b) {
