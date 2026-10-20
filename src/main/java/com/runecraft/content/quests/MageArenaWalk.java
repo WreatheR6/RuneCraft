@@ -261,6 +261,16 @@ public final class MageArenaWalk {
         for (int i = 0; i < 4 && find(MageArena.KOLODION_FORMS.get(0).id()) == null; i++) {
             tick(raised);
         }
+        // The forms are the summoner's alone: another player's Kolodion can't be hurt, doesn't count and doesn't block the stone.
+        DataBossEntity first = find(MageArena.KOLODION_FORMS.get(0).id());
+        expect(first != null, "Kolodion didn't take his first form");
+        expect(player.getUUID().equals(MageArenaService.summoner(first)), "Kolodion's form doesn't know who raised it");
+        MageArenaService.setSummoner(first, java.util.UUID.randomUUID());
+        expect(hit(first, 5, AttackType.MAGIC) == 0, "the player hurt a Kolodion someone else raised");
+        expect(!MageArenaService.killCounts(player, first), "killing someone else's Kolodion would count for the player");
+        expect(MageArenaService.kolodionNear(player) == null, "someone else's Kolodion blocked the player's stone");
+        MageArenaService.setSummoner(first, player.getUUID());
+        expect(MageArenaService.kolodionNear(player) == first, "the player's own Kolodion doesn't block a second summon");
         StringBuilder forms = new StringBuilder();
         for (MageArena.Form f : MageArena.KOLODION_FORMS) {
             DataBossEntity form = find(f.id());
@@ -275,7 +285,7 @@ public final class MageArenaWalk {
             forms.append(forms.length() == 0 ? "" : " > ").append(f.model());
         }
         expect(stage("mage_arena_i") == 2, "killing Kolodion's demon form didn't move the miniquest on (stage " + stage("mage_arena_i") + ")");
-        note("Kolodion: " + forms + " (only magic hurt them)");
+        note("Kolodion: " + forms + " (only magic, only the summoner, hurt them)");
 
         // The statue's cape completes it; the chamber guardian hands over the staff of the god prayed to.
         int capes = Inv.count(player, "saradomin_cape");
@@ -296,43 +306,61 @@ public final class MageArenaWalk {
         BlockPos outside = Gielinor.safeSpot(world, GielinorMap.toBlockX(3105), GielinorMap.toBlockZ(3900));
         player.teleportTo(world, outside.getX() + 0.5, outside.getY(), outside.getZ() + 0.5, 0, 0);
         expect(MageArenaService.castRule(player, spell) != null, "Saradomin Strike was castable outside the arena before 100 casts");
-        MageArena.Spawn mageSpot = MageArena.BATTLE_MAGES.get(0);
-        int mx = GielinorMap.toBlockX(mageSpot.x());
-        int mz = GielinorMap.toBlockZ(mageSpot.y());
-        StructurePlacer.applyAround(world, mx, mz, 24);
-        BlockPos in = Gielinor.safeSpot(world, mx + 4, mz);
-        player.teleportTo(world, in.getX() + 0.5, in.getY(), in.getZ() + 0.5, 0, 0);
-        expect(MageArenaService.inArena(player), "the battle mages' tile isn't inside the arena");
+        enterArena();
         expect(MageArenaService.castRule(player, spell) == null, "Saradomin Strike was refused inside the arena");
-        Mob mage = spawn(mageSpot.creature(), in);
-        Mob other = spawn(MageArena.battleMage("zamorak"), in);
+        Mob mage = worldMage("saradomin");
+        Mob other = worldMage("zamorak");
         SysState.of(player).worn.put(Jewellery.Slot.CAPE, Inv.stack("saradomin_cape", 1));
         expect(Aggression.peaceful(mage, player), "a Saradomin battle mage attacked a player in a Saradomin cape");
         expect(!Aggression.peaceful(other, player), "a Zamorak battle mage left a Saradomin cape-wearer alone");
-        other.discard();
+        int casts = master("saradomin", mage);
+        expect(casts == MageArena.CASTS_TO_CHARGE, "it took " + casts + " casts to charge Saradomin Strike, not 100");
+        player.teleportTo(world, outside.getX() + 0.5, outside.getY(), outside.getZ() + 0.5, 0, 0);
+        expect(MageArenaService.castRule(player, spell) == null, "a charged Saradomin Strike was still refused outside the arena");
+        note("Saradomin Strike charged by " + casts + " casts on a battle mage the arena spawned");
+    }
+
+    /**
+     * Into the middle of the arena's ring (clear of every battle mage's tile, so the spawner can place them all), then the
+     * world's spawner runs for the battle mages' points as it would on its next pass.
+     */
+    private void enterArena() {
+        int cx = GielinorMap.toBlockX(3105);
+        int cz = GielinorMap.toBlockZ(3934);
+        StructurePlacer.applyAround(world, cx, cz, 40);
+        BlockPos in = Gielinor.safeSpot(world, cx, cz);
+        player.teleportTo(world, in.getX() + 0.5, in.getY(), in.getZ() + 0.5, 0, 0);
+        expect(MageArenaService.inArena(player), "the middle of the Mage Arena isn't inside the arena");
+        com.runecraft.world.LocationSpawner.stockForSelfTest(world, p -> MageArena.battleMageGod(p.monster()) != null);
+    }
+
+    /** The nearest living battle mage of a god that the world's spawner placed in the arena. */
+    private Mob worldMage(String god) {
+        EntityType<?> type = ModEntities.typeById(MageArena.battleMage(god));
+        expect(type != null, "no entity for " + MageArena.battleMage(god));
+        List<Mob> mages = world.getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(48), e -> e.isAlive()
+                && e.getType() == type && e.getTags().contains(com.runecraft.world.LocationSpawner.TAG));
+        expect(!mages.isEmpty(), "the Mage Arena has no " + god + " battle mage: its spawn points placed none");
+        mages.sort(java.util.Comparator.comparingDouble(e -> e.distanceToSqr(player)));
+        expect(MageArenaService.inArena(mages.get(0)), "the nearest " + god + " battle mage stands outside the arena's ring");
+        return mages.get(0);
+    }
+
+    /** Casts a god spell (its staff wielded) on a battle mage until it works outside the arena; the casts it took. */
+    private int master(String god, Mob mage) {
+        String spell = MageArena.godSpell(god);
+        wield(god + "_staff");
+        SpellService.setAutocast(player, spell);
         int casts = 0;
-        while (!MageArenaService.flag(player, MageArena.chargedFlag("saradomin")) && casts < 150) {
+        while (!MageArenaService.flag(player, MageArena.chargedFlag(god)) && casts < 150) {
+            expect(mage.isAlive(), "the battle mage died while " + spell + " was being charged");
             mage.setHealth(mage.getMaxHealth());
             cast(mage);
             casts++;
         }
-        expect(MageArenaService.flag(player, MageArena.chargedFlag("saradomin")), "100 casts of Saradomin Strike on a battle mage didn't charge it");
-        expect(casts == MageArena.CASTS_TO_CHARGE, "it took " + casts + " casts to charge Saradomin Strike, not 100");
-        mage.discard();
-        player.teleportTo(world, outside.getX() + 0.5, outside.getY(), outside.getZ() + 0.5, 0, 0);
-        expect(MageArenaService.castRule(player, spell) == null, "a charged Saradomin Strike was still refused outside the arena");
-        note("Saradomin Strike charged by " + casts + " casts on a battle mage");
-    }
-
-    private Mob spawn(String creature, BlockPos at) {
-        EntityType<?> type = ModEntities.typeById(creature);
-        expect(type != null, "no entity for " + creature);
-        Entity e = type.create(world);
-        expect(e instanceof Mob, creature + " is not a mob");
-        Mob mob = (Mob) e;
-        mob.moveTo(at.getX() + 2.5, at.getY(), at.getZ() + 0.5, 0, 0);
-        world.addFreshEntity(mob);
-        return mob;
+        expect(MageArenaService.flag(player, MageArena.chargedFlag(god)), casts + " casts of " + spell + " on a battle mage didn't charge it");
+        mage.setHealth(mage.getMaxHealth());
+        return casts;
     }
 
     // ------------------------------------------------------------------ Mage Arena II
@@ -348,13 +376,17 @@ public final class MageArenaWalk {
         // Not before the three god spells are mastered.
         talk(MageArena.KOLODION_NPC);
         expect(stage("mage_arena_ii") == 0, "Mage Arena II started without the god spells cast 100 times");
+        // Each god spell cast 100 times on the arena's battle mages (the real cast path counts them).
+        enterArena();
+        Mob mage = worldMage("guthix");
         for (String god : MageArena.GODS) {
-            state.setFlag(player.getUUID(), MageArena.chargedFlag(god));
+            int casts = master(god, mage);
+            expect(casts == MageArena.CASTS_TO_CHARGE, "it took " + casts + " casts to master " + god + "'s spell, not 100");
         }
         talk(MageArena.KOLODION_NPC);
         expect(stage("mage_arena_ii") == 1, "Kolodion didn't start Mage Arena II (stage " + stage("mage_arena_ii") + ")");
         expect(Inv.has(player, MageArena.SYMBOL, 1), "Kolodion gave no enchanted symbol");
-        note("started with the spells mastered; symbol");
+        note("the three god spells mastered on a battle mage; started; symbol");
 
         // The symbol does nothing outside the (surface) Wilderness.
         if (back != null) {

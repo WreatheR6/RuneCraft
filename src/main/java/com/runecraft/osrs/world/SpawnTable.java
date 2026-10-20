@@ -189,6 +189,10 @@ public final class SpawnTable {
         s("grizzly_bear", 3112, 3660, 4, 10);          // the Wilderness bears west of the graveyard
         s("grizzly_bear", 3079, 3602, 3, 6);
         s("giant_bat", 3076, 3957, 6, 6);              // the deep Wilderness bat spawn
+        // The Mage Arena's nine battle mages, one per OSRS tile (the god spells are charged by casting on them).
+        for (com.runecraft.osrs.content.quests.MageArena.Spawn m : com.runecraft.osrs.content.quests.MageArena.BATTLE_MAGES) {
+            s(m.creature(), m.x(), m.y(), 1, 1);
+        }
 
         // ============================================================ Kharidian Desert
         s("desert_lizard", 3388, 3050, 4, 8);          // east of the Kalphite Lair
@@ -526,10 +530,6 @@ public final class SpawnTable {
         for (com.runecraft.osrs.content.godwars.RevenantCaves.Spawn s : com.runecraft.osrs.content.godwars.RevenantCaves.SPAWNS) {
             out.add(new CampRef("revenant_caves", s.creature(), s.x(), s.y() + com.runecraft.osrs.content.godwars.RevenantCaves.DY,
                     com.runecraft.osrs.content.godwars.RevenantCaves.feetY(), 1));
-        }
-        // The Mage Arena's battle mages (quests module, at their OSRS tiles).
-        for (com.runecraft.osrs.content.quests.MageArena.Spawn s : com.runecraft.osrs.content.quests.MageArena.BATTLE_MAGES) {
-            out.add(new CampRef(com.runecraft.osrs.content.quests.MageArena.PLACE, s.creature(), s.x(), s.y(), SpawnPoint.SURFACE, 1));
         }
         for (IslandsPlaces.Camp c : IslandsPlaces.camps()) {
             addPlaceCamp(out, c.place(), c.dx(), c.dz(), c.radius(), c.surface() ? SpawnPoint.SURFACE : c.floorY(), c.creatures());

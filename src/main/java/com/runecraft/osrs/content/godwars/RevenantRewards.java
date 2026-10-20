@@ -261,8 +261,33 @@ public final class RevenantRewards {
         return skulled ? 0 : 6769.2 / root(level); // wiki: knight and dragon 1/615.38
     }
 
-    /** One rolled item: id and count. */
-    public record Rolled(String item, int count) {
+    /**
+     * One rolled item: id and count; {@code notable} is false for the rolls an amulet of avarice leaves unnoted (the
+     * secondary supplies roll and the rare chain's uniques).
+     */
+    public record Rolled(String item, int count, boolean notable) {
+        public Rolled(String item, int count) {
+            this(item, count, true);
+        }
+    }
+
+    /** Wilderness Chaos Temple (level 38), where the amulet of avarice also notes drops (approx: the temple's footprint). */
+    public static final int[] CHAOS_TEMPLE = {2944, 3810, 2962, 3830};
+    public static final String WILDERNESS_SLAYER_CAVE = "dng_wilderness_slayer_cave";
+
+    /**
+     * Whether an amulet of avarice notes an NPC's drop at this block (wiki: drops "from NPCs within the Revenant Caves,
+     * Wilderness Slayer Cave and Chaos Temple", except the secondary supply rolls and uniques: {@link Rolled#notable}).
+     */
+    public static boolean avariceNotesAt(int blockX, int blockY, int blockZ) {
+        if (RevenantCaves.contains(blockX, blockY, blockZ)
+                || com.runecraft.osrs.content.dungeons.Dungeons.inside(WILDERNESS_SLAYER_CAVE, blockX, blockY, blockZ)) {
+            return true;
+        }
+        int x = com.runecraft.osrs.GielinorMap.toOsrsX(blockX);
+        int y = com.runecraft.osrs.GielinorMap.toOsrsY(blockZ);
+        return blockY > com.runecraft.osrs.content.dungeons.Dungeons.DEEP_TOP && x >= CHAOS_TEMPLE[0] && x <= CHAOS_TEMPLE[2]
+                && y >= CHAOS_TEMPLE[1] && y <= CHAOS_TEMPLE[3];
     }
 
     /**
@@ -283,18 +308,18 @@ public final class RevenantRewards {
         List<Rolled> out = new ArrayList<>();
         if (hit(uniqueDenominator(level, skulled, onTask), random)) {
             int r = random.applyAsInt(5);
-            out.add(new Rolled(r < 2 ? "amulet_of_avarice" : WEAPONS.get(r - 2), 1));
+            out.add(new Rolled(r < 2 ? "amulet_of_avarice" : WEAPONS.get(r - 2), 1, false));
         } else {
             for (Rare rare : RARES) {
                 if (hit(rareDenominator(rare.item(), level, skulled), random)) {
-                    out.add(new Rolled(rare.item(), between(rare.min(), rare.max(), random)));
+                    out.add(new Rolled(rare.item(), between(rare.min(), rare.max(), random), false));
                     break;
                 }
             }
         }
         double helm = medHelmDenominator(level, skulled);
         if (helm > 0 && hit(helm, random)) {
-            out.add(new Rolled("dragon_med_helm", 1));
+            out.add(new Rolled("dragon_med_helm", 1, false));
         }
         return out;
     }
@@ -312,7 +337,8 @@ public final class RevenantRewards {
             return out;
         }
         out.add(pick(MAIN, random));
-        out.add(pick(SUPPLIES, random));
+        Rolled supply = pick(SUPPLIES, random);
+        out.add(new Rolled(supply.item(), supply.count(), false)); // the avarice amulet leaves the supplies roll unnoted
         return out;
     }
 

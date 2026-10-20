@@ -67,8 +67,21 @@ public final class CombatZones {
         boolean multi = isMulti(target) || isMulti(attacker);
         boolean pvp = attacker instanceof ServerPlayer && target instanceof ServerPlayer;
         ServerLevel world = attacker.level() instanceof ServerLevel w ? w : null;
+        if (!multi && (singlesPlus(target) || singlesPlus(attacker))) {
+            return TRACKER.checkSinglesPlus(attacker.getId(), target.getId(), ActionManager.gameTick(), pvp, id -> active(world, id),
+                    id -> isPlayer(world, id));
+        }
         return TRACKER.check(attacker.getId(), target.getId(), ActionManager.gameTick(), multi, pvp,
                 id -> active(world, id));
+    }
+
+    /** True if the entity stands in a singles-plus area (the Revenant Caves, the Wilderness Agility Course). */
+    public static boolean singlesPlus(Entity e) {
+        return Gielinor.is(e) && MultiCombat.isSinglesPlusAtBlock(e.getBlockX(), e.getBlockY(), e.getBlockZ());
+    }
+
+    private static boolean isPlayer(ServerLevel world, int id) {
+        return world != null && world.getEntity(id) instanceof ServerPlayer;
     }
 
     /** A recorded fighter still counts while it is alive, loaded and not a boss (bosses never block anyone). */

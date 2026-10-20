@@ -65,8 +65,11 @@ final class RevenantCavesService {
         GameEvents.onKill((player, entity, stats) -> onKill(entity));
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
             if (entity instanceof ServerPlayer p) {
-                boolean byPlayer = source.getEntity() instanceof ServerPlayer killer && killer != p;
-                if (inCaves(p) || (byPlayer && Gielinor.wildernessLevel(p) > 0)) {
+                ServerPlayer killer = source.getEntity() instanceof ServerPlayer k && k != p ? k : null;
+                if (inCaves(p) || (killer != null && Gielinor.wildernessLevel(p) > 0)) {
+                    if (killer != null && feePaid(p)) {
+                        feeToKiller(p, killer);
+                    }
                     loseFee(p);
                 }
             }
@@ -124,6 +127,15 @@ final class RevenantCavesService {
         }
         WildernessState.get(p.getServer()).set(p.getUUID(), WildernessState.REV_FEE, 1);
         return true;
+    }
+
+    /**
+     * "If the killer was another player, the 100,000 coins will be dropped as loot" (wiki). Here they go straight into the
+     * killer's money pouch: coins never lie on the ground in piles over 64 (approx: OSRS drops them for the killer to pick up).
+     */
+    static void feeToKiller(ServerPlayer victim, ServerPlayer killer) {
+        Inv.give(killer, Inv.COINS, RevenantCaves.FEE);
+        Msg.game(killer, "You loot the 100,000 coin Revenant Caves fee " + victim.getName().getString() + " had paid.");
     }
 
     static void loseFee(ServerPlayer p) {

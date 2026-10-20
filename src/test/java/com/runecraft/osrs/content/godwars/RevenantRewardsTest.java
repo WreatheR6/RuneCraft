@@ -50,6 +50,29 @@ class RevenantRewardsTest {
     }
 
     @Test
+    void amuletOfAvariceNotesExceptSuppliesAndUniques() {
+        // wiki "Amulet of avarice": noted drops "except for secondary supply rolls and uniques"
+        List<RevenantRewards.Rolled> kill = RevenantRewards.rollCommon(RevenantRewards.revenant("revenant_dragon"), bound -> 0);
+        assertTrue(kill.get(1).notable(), "the main table is noted");
+        assertFalse(kill.get(2).notable(), "the blighted supplies roll isn't");
+        for (RevenantRewards.Rolled r : RevenantRewards.rollRares(135, false, false, bound -> 0)) {
+            assertFalse(r.notable(), r.item() + " is a unique");
+        }
+        // in the Revenant Caves, the Wilderness Slayer Cave and the Chaos Temple, nowhere else
+        assertTrue(RevenantRewards.avariceNotesAt(com.runecraft.osrs.world.StructureDef.bx(3230), RevenantCaves.feetY(),
+                com.runecraft.osrs.world.StructureDef.bz(10201 + RevenantCaves.DY)), "Revenant Caves");
+        // the slayer cave's greater demons (cache 3428, 10150 shifted by the cave's -125, -6389) on its floor 20
+        assertTrue(RevenantRewards.avariceNotesAt(com.runecraft.osrs.world.StructureDef.bx(3428 - 125), 21,
+                com.runecraft.osrs.world.StructureDef.bz(10150 - 6389)), "Wilderness Slayer Cave");
+        assertTrue(RevenantRewards.avariceNotesAt(com.runecraft.osrs.GielinorMap.toBlockX(2952), 70,
+                com.runecraft.osrs.GielinorMap.toBlockZ(3820)), "Chaos Temple");
+        assertFalse(RevenantRewards.avariceNotesAt(com.runecraft.osrs.GielinorMap.toBlockX(3205), 70,
+                com.runecraft.osrs.GielinorMap.toBlockZ(3826)), "Lava Dragon Isle");
+        assertFalse(RevenantRewards.avariceNotesAt(com.runecraft.osrs.GielinorMap.toBlockX(3093), 70,
+                com.runecraft.osrs.GielinorMap.toBlockZ(3493)), "Edgeville");
+    }
+
+    @Test
     void revenantTablesLeaveUniquesToTheRoll() {
         int revs = 0;
         for (MonsterDef m : ContentRegistry.monsters()) {

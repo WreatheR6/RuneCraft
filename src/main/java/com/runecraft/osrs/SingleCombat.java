@@ -94,6 +94,18 @@ public final class SingleCombat {
         return Verdict.OK;
     }
 
+    /**
+     * The check in a singles-plus area (wiki "Singles-plus combat"): single-way, but a player attacking a player only counts
+     * the players either is fighting, so a player fighting a monster can still be attacked by another player (whose attack
+     * takes priority) and can hit back. Monsters keep the single-way rules. {@code player} tells which fighters are players.
+     */
+    public Verdict checkSinglesPlus(int attacker, int target, long tick, boolean pvp, IntPredicate active, IntPredicate player) {
+        if (!pvp) {
+            return check(attacker, target, tick, false, false, active);
+        }
+        return check(attacker, target, tick, false, true, id -> player.test(id) && (active == null || active.test(id)));
+    }
+
     private static boolean busyWithOther(int other, long at, int self, long tick, int window, IntPredicate active) {
         return other >= 0 && other != self && tick - at < window && (active == null || active.test(other));
     }

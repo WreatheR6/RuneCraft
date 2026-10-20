@@ -288,14 +288,51 @@ final class MageArenaService {
 
     // ------------------------------------------------------------------ Kolodion
 
-    /** A living Kolodion form near the player, or null. */
+    /** Command tag (saved with the entity) naming the player who raised a Kolodion form at the stone. */
+    static final String SUMMONER_TAG = "ma1_summoner:";
+
+    /** The player who raised this Kolodion form, or null (a form not raised at the stone). */
+    static UUID summoner(Entity form) {
+        for (String tag : form.getTags()) {
+            if (tag.startsWith(SUMMONER_TAG)) {
+                try {
+                    return UUID.fromString(tag.substring(SUMMONER_TAG.length()));
+                } catch (IllegalArgumentException e) {
+                    return null;
+                }
+            }
+        }
+        return null;
+    }
+
+    static void setSummoner(DataBossEntity form, UUID player) {
+        form.instanceTag = "ma1";
+        for (String tag : List.copyOf(form.getTags())) {
+            if (tag.startsWith(SUMMONER_TAG)) {
+                form.removeTag(tag);
+            }
+        }
+        form.addTag(SUMMONER_TAG + player);
+    }
+
+    /** False for a kill of a Kolodion form someone else raised: it counts for nobody's miniquest but its summoner's. */
+    static boolean killCounts(ServerPlayer p, LivingEntity entity) {
+        if (!(entity instanceof DataBossEntity boss) || boss.def() == null || MageArena.formIndex(boss.def().id) < 0) {
+            return true;
+        }
+        UUID owner = summoner(boss);
+        return owner == null || owner.equals(p.getUUID());
+    }
+
+    /** A living Kolodion form the player raised near them, or null. */
     static DataBossEntity kolodionNear(ServerPlayer p) {
         for (MageArena.Form f : MageArena.KOLODION_FORMS) {
             EntityType<DataBossEntity> type = ModEntities.DATA_BOSS_TYPES.get(f.id());
             if (type == null) {
                 continue;
             }
-            List<DataBossEntity> found = p.serverLevel().getEntities(type, p.getBoundingBox().inflate(64), Entity::isAlive);
+            List<DataBossEntity> found = p.serverLevel().getEntities(type, p.getBoundingBox().inflate(64),
+                    e -> e.isAlive() && p.getUUID().equals(summoner(e)));
             if (!found.isEmpty()) {
                 return found.get(0);
             }
@@ -325,7 +362,7 @@ final class MageArenaService {
         DataBossEntity next = DataBossService.spawn(world, from.blockPosition(), def, target);
         if (next != null) {
             next.copyHomeFrom(from);
-            next.instanceTag = "ma1";
+            setSummoner(next, target.getUUID());
             world.sendParticles(ParticleTypes.WITCH, from.getX(), from.getY() + 1, from.getZ(), 40, 0.6, 1.0, 0.6, 0.05);
         }
         from.discard();
@@ -334,10 +371,26 @@ final class MageArenaService {
 
     /**
      * Each form: a fresh summon of the demon (the stone's boss) turns into the form the player left off at; a form's death
-     * brings the next one; the demon's death ends the fight (the miniquest's kill).
+     * brings the next one; the demon's death ends the fight (the miniquest's kill). The forms are the summoner's alone: nobody
+     * else can harm them, and only the summoner's kill counts.
      */
     static final class KolodionForm implements BossScript {
         private boolean checked;
+        private long lastMessage;
+
+        @Override
+        public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            UUID owner = summoner(boss);
+            if (attacker == null || owner == null || owner.equals(attacker.getUUID())) {
+                return damage;
+            }
+            long now = boss.level().getGameTime();
+            if (now - lastMessage > 40) {
+                lastMessage = now;
+                Msg.action(attacker, "Kolodion is fighting someone else.");
+            }
+            return 0;
+        }
 
         @Override
         public void gameTick(DataBossEntity boss, long gameTick) {
@@ -353,7 +406,7 @@ final class MageArenaService {
             if (at == null || boss.level().getGameTime() - at > 100) {
                 return; // not raised at the stone (a test spawn): stays as spawned
             }
-            boss.instanceTag = "ma1";
+            setSummoner(boss, p.getUUID());
             int reached = formReached(p);
             if (reached < MageArena.KOLODION_FORMS.size() - 1) {
                 swap(boss, MageArena.KOLODION_FORMS.get(reached).id(), p);
@@ -365,8 +418,10 @@ final class MageArenaService {
 
         @Override
         public void onDeath(DataBossEntity boss, ServerPlayer killer) {
-            // only the stone's fight chains its forms (a form spawned on its own, e.g. by a test, just dies)
-            if (boss.def() == null || killer == null || !"ma1".equals(boss.instanceTag)) {
+            // only the stone's fight chains its forms (a form spawned on its own, e.g. by a test, just dies), and only for the
+            // player who raised it
+            UUID owner = summoner(boss);
+            if (boss.def() == null || killer == null || owner == null || !owner.equals(killer.getUUID())) {
                 return;
             }
             String next = MageArena.nextForm(boss.def().id);
@@ -386,7 +441,7 @@ final class MageArenaService {
             DataBossEntity next = DataBossService.spawn(world, dead.blockPosition(), def, target);
             if (next != null) {
                 next.copyHomeFrom(dead);
-                next.instanceTag = "ma1";
+                setSummoner(next, target.getUUID());
                 world.sendParticles(ParticleTypes.WITCH, dead.getX(), dead.getY() + 1, dead.getZ(), 40, 0.6, 1.0, 0.6, 0.05);
             }
             return next;

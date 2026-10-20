@@ -139,6 +139,9 @@ class MageArenaTest {
             assertTrue(tiles.add(s.x() + "," + s.y()));
             assertTrue(GielinorMap.wildernessLevel(GielinorMap.toBlockX(s.x()), GielinorMap.toBlockZ(s.y())) >= 50, s.toString());
             assertNotNull(ContentRegistry.monster(s.creature()), s.creature());
+            // the world spawns them: a real spawn point on the surface at the tile (not only a camp reference)
+            assertTrue(com.runecraft.osrs.world.SpawnTable.all().stream().anyMatch(p -> p.monster().equals(s.creature())
+                    && p.x() == s.x() && p.y() == s.y() && p.surface() && p.count() == 1), "no spawn point for " + s);
         }
         for (String god : MageArena.GODS) {
             assertEquals(3, MageArena.BATTLE_MAGES.stream().filter(s -> s.creature().equals(MageArena.battleMage(god))).count(), god);
@@ -216,6 +219,10 @@ class MageArenaTest {
             assertEquals(15, stats.magicDefence());
             assertEquals(0, stats.rangedDefence());
             assertEquals(2, stats.magicDamagePercent());
+            // wiki: value 80,000 (what a PvP death risks), but "can no longer be alchemised"
+            assertEquals(80_000, ItemCatalog.get("imbued_" + god + "_cape").value());
+            assertFalse(ItemCatalog.get("imbued_" + god + "_cape").alchable(), "imbued " + god + " cape is unalchable");
+            assertTrue(com.runecraft.osrs.data.Untradeables.untradeable("imbued_" + god + "_cape"));
             assertNotNull(ItemCatalog.get(god + "_cape"));
             assertNotNull(ItemCatalog.get(god + "_staff"));
         }

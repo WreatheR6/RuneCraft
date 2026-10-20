@@ -24,6 +24,7 @@ public final class ItemDef {
     private String examine;
     private double weight;
     private boolean drinkable = true;
+    private boolean alchable = true;
 
     public ItemDef(String id, String name, Kind kind, String shape, int color) {
         this.id = id;
@@ -78,6 +79,17 @@ public final class ItemDef {
     public ItemDef notDrinkable() {
         this.drinkable = false;
         return this;
+    }
+
+    /** An item OSRS won't let you alchemise (its value only counts for death and the price checker). */
+    public ItemDef unalchable() {
+        this.alchable = false;
+        return this;
+    }
+
+    /** False for items alchemy (the spells, the explorer's ring) refuses. */
+    public boolean alchable() {
+        return alchable;
     }
 
     /** Registry path in the runecraft namespace. */

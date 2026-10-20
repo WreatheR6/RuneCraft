@@ -4,8 +4,6 @@ import com.runecraft.action.ActionManager;
 import com.runecraft.boss.BossScript;
 import com.runecraft.boss.DataBossEntity;
 import com.runecraft.boss.DataBossService;
-import com.runecraft.collection.CollectionLog;
-import com.runecraft.combat.CombatHooks;
 import com.runecraft.combat.MonsterStats;
 import com.runecraft.combat.SkullService;
 import com.runecraft.osrs.AttackType;
@@ -147,16 +145,16 @@ final class MaledictusService {
                 return;
             }
             String artefact = boss.getRandom().nextBoolean() ? "ancient_emblem" : "ancient_totem";
-            give(boss, top, artefact, 1);
+            RevenantLoot.drop(top, boss, new RevenantRewards.Rolled(artefact, 1, false));
             boolean skulled = SkullService.isSkulled(top);
             RevenantRewards.Revenant dragon = RevenantRewards.revenant("revenant_dragon");
             for (int i = 0; i < RevenantRewards.MALEDICTUS_DRAGON_ROLLS; i++) {
                 for (RevenantRewards.Rolled r : RevenantRewards.rollCommon(dragon, boss.getRandom()::nextInt)) {
-                    give(boss, top, r.item(), r.count());
+                    RevenantLoot.drop(top, boss, r);
                 }
                 for (RevenantRewards.Rolled r : RevenantRewards.rollRares(RevenantRewards.REVENANT_DRAGON_LEVEL, skulled, false,
                         boss.getRandom()::nextInt)) {
-                    give(boss, top, r.item(), r.count());
+                    RevenantLoot.drop(top, boss, r);
                 }
             }
             if (RevenantLoot.wearingAvarice(top)) {
@@ -169,14 +167,6 @@ final class MaledictusService {
                     Inv.give(p, p.getRandom().nextBoolean() ? "blighted_manta_ray" : "blighted_anglerfish", 2);
                 }
             }
-        }
-
-        private static void give(DataBossEntity boss, ServerPlayer killer, String item, int count) {
-            if (count <= 0 || com.runecraft.osrs.ItemCatalog.get(item) == null) {
-                return;
-            }
-            Inv.spawnAtLocation(boss, CombatHooks.dropStack(killer, boss, item, count));
-            CollectionLog.obtain(killer, item);
         }
     }
 }

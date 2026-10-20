@@ -607,7 +607,8 @@ final class Miniquests {
         String[][] capes = {{"saradomin", "Saradomin", "2A4AC0"}, {"guthix", "Guthix", "2A8A2A"}, {"zamorak", "Zamorak", "A02A2A"}};
         for (String[] c : capes) {
             b.items(s -> s.add("imbued_" + c[0] + "_cape", "Imbued " + c[0] + " cape", Kind.SIMPLE, "cape", Integer.parseInt(c[2], 16))
-                    .value(80_000).stack(1).examine("A cape from the almighty god " + c[1] + ", imbued with great power."));
+                    .value(80_000).unalchable().stack(1) // wiki: worth 80,000 on death, "can no longer be alchemised"
+                    .examine("A cape from the almighty god " + c[1] + ", imbued with great power."));
         }
         // wiki "Imbued saradomin cape": +15 magic attack, 3/3/3 melee and 15 magic defence, no ranged defence, 2% magic damage
         EquipmentStats imbued = new EquipmentStats(0, 0, 0, 15, 0, 3, 3, 3, 15, 0, 0, 0, 2, 0);

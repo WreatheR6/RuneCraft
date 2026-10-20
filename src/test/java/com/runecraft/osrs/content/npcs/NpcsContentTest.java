@@ -104,6 +104,7 @@ class NpcsContentTest {
         assertEquals(0, stock.count("iron_axe"));
         assertFalse(stock.lines().stream().anyMatch(l -> l.item().equals("iron_axe")));
         assertFalse(stock.accepts("coins", 1));
+        assertFalse(stock.accepts("imbued_saradomin_cape", 80_000), "general stores only buy tradeable items");
 
         // Specialist shops only buy what they stock.
         ShopStock spec = new ShopStock(SPECIALIST);

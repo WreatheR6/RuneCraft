@@ -15,17 +15,25 @@ import net.minecraft.world.entity.LivingEntity;
  * A revenant's drop ({@link RevenantRewards}, the wiki template): coins or a main table and a blighted supplies roll, the
  * rare chain (the unique table, seeds, artefacts, the ancient crystal: better skulled, the unique table five times better
  * on a revenant Slayer task) and the dragon med helm. The ether every kill drops is the creature's own table, so a charged
- * bracelet of ethereum can absorb it. An amulet of avarice notes the drops ({@link #register}).
+ * bracelet of ethereum can absorb it. An amulet of avarice notes NPC drops in the caves, the Wilderness Slayer Cave and the
+ * Chaos Temple ({@link #register}).
  */
 final class RevenantLoot {
     private RevenantLoot() {
     }
 
-    /** The amulet of avarice notes revenant drops (wiki: "all of the revenants' drops to be noted if applicable"). */
+    /** Set while a drop the amulet of avarice leaves unnoted (a supplies roll or a unique) is being made. */
+    private static boolean unnoted;
+
+    /**
+     * The amulet of avarice notes the drops of NPCs in the Revenant Caves, the Wilderness Slayer Cave and the Chaos Temple,
+     * "except for secondary supply rolls and uniques" (wiki).
+     */
     static void register() {
         CombatHooks.addDropTransformer((killer, mob, item, count) -> {
-            if (killer == null || !RevenantRewards.isRevenant(creatureId(mob)) || !wearingAvarice(killer)
-                    || "revenant_ether".equals(item) || !com.runecraft.bank.Notes.canNote(item, "")) {
+            if (killer == null || unnoted || !wearingAvarice(killer) || "revenant_ether".equals(item)
+                    || !RevenantRewards.avariceNotesAt(mob.getBlockX(), mob.getBlockY(), mob.getBlockZ())
+                    || !com.runecraft.bank.Notes.canNote(item, "")) {
                 return null;
             }
             return com.runecraft.bank.Notes.note(item, "", count);
@@ -57,19 +65,25 @@ final class RevenantLoot {
             if (r.item().equals("revenant_ether")) {
                 continue; // the creature's own table dropped it already
             }
-            drop(player, entity, r.item(), r.count());
+            drop(player, entity, r);
         }
         for (RevenantRewards.Rolled r : RevenantRewards.rollRares(rev.level(), skulled, onTask, rnd)) {
-            drop(player, entity, r.item(), r.count());
+            drop(player, entity, r);
             Msg.game(player, "The revenant drops something valuable!");
         }
     }
 
-    static void drop(ServerPlayer player, LivingEntity entity, String item, int count) {
-        if (count <= 0 || com.runecraft.osrs.ItemCatalog.get(item) == null) {
+    /** Drops a rolled item (an amulet of avarice notes it unless the roll says otherwise). */
+    static void drop(ServerPlayer player, LivingEntity entity, RevenantRewards.Rolled r) {
+        if (r.count() <= 0 || com.runecraft.osrs.ItemCatalog.get(r.item()) == null) {
             return;
         }
-        Inv.spawnAtLocation(entity, CombatHooks.dropStack(player, entity, item, count));
-        CollectionLog.obtain(player, item);
+        unnoted = !r.notable();
+        try {
+            Inv.spawnAtLocation(entity, CombatHooks.dropStack(player, entity, r.item(), r.count()));
+        } finally {
+            unnoted = false;
+        }
+        CollectionLog.obtain(player, r.item());
     }
 }
