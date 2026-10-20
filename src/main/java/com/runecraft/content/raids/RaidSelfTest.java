@@ -33,10 +33,21 @@ public final class RaidSelfTest {
     private final ServerPlayer player;
     private final StringBuilder log = new StringBuilder();
     private int ticks;
+    /** Delayed raid tasks that had already failed before this run (they are global). */
+    private final int taskFailuresBefore = RaidEffects.failures();
 
     private RaidSelfTest(RaidInstance raid, ServerPlayer player) {
         this.raid = raid;
         this.player = player;
+    }
+
+    /**
+     * Fails when a room tick or a delayed raid task threw since the run began: the raid logs those and carries on (a
+     * room that throws is passed as cleared), which would otherwise hide a broken room behind a passing walk.
+     */
+    void healthy(String where) {
+        expect(raid.roomFailures() == 0, where + ": a room tick threw (" + raid.lastRoomFailure() + ")");
+        expect(RaidEffects.failures() == taskFailuresBefore, where + ": a delayed raid task threw (" + RaidEffects.lastFailure() + ")");
     }
 
     // ------------------------------------------------------------------ driver API (used by the rooms' solvers)
@@ -209,6 +220,7 @@ public final class RaidSelfTest {
         expect(raid.currentRoom() == wardens && raid.logic(wardens).started, "the Wardens' way did not open after four paths");
         expect(player.blockPosition().closerThan(raid.spawn(wardens), 3), "the Wardens' way did not take the player down");
         note(raid.logic(wardens).selfTestSolve(this));
+        healthy("wardens");
         expect(raid.logic(wardens).done, "the Wardens are not defeated");
         expect(isAir(raid.center(wardens).offset(RaidBuilder.HALF + 1, 2, 0)), "the Wardens' exit did not open");
         // --- the burial chamber.
@@ -227,6 +239,7 @@ public final class RaidSelfTest {
         expect(raid.hasClaimed(player), "opening the chest did not claim the loot");
         expect(Inv.count(player, first) > had || first.equals("coins"), "the chest did not hand over " + first);
         note("chest: " + result.lootFor(player.getUUID().toString()).size() + " items, " + raid.points(player.getUUID()) + " points");
+        healthy("the burial chamber");
         return log + "; " + ticks + " raid ticks";
     }
 
@@ -249,6 +262,7 @@ public final class RaidSelfTest {
         }
         tick(1);
         note(raid.logic(puzzle).selfTestSolve(this));
+        healthy(ids.get(0));
         expect(raid.logic(puzzle).done, ids.get(0) + ": the puzzle is not solved");
         expect(isAir(raid.center(puzzle).offset(RaidBuilder.HALF + 1, 2, 0)), ids.get(0) + ": the puzzle's exit did not open");
         // The boss.
@@ -259,6 +273,7 @@ public final class RaidSelfTest {
         expect(b != null && b.isAlive(), ids.get(1) + ": no boss spawned");
         expect(raid.maxHitpoints(b) > 0, ids.get(1) + ": the boss has no hitpoints");
         note(raid.logic(boss).selfTestSolve(this));
+        healthy(ids.get(1));
         expect(raid.logic(boss).done, ids.get(1) + ": the boss is not dead");
         expect(raid.pathDone(path), ids.get(1) + ": the path is not marked as done");
         BlockPos crystal = raid.center(boss).offset(RaidBuilder.HALF - 3, 1, 0);

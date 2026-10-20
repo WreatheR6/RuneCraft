@@ -118,6 +118,9 @@ public final class RaidInstance {
     private long emptySince = -1;
     /** Attacks that reached a party member (boss attacks and room mechanics), for the self-test. */
     private int attacksOnParty;
+    /** Room ticks that threw (the room was then passed as cleared); the self-test fails on any. */
+    private int roomFailures;
+    private String lastRoomFailure;
 
     RaidInstance(int slot, RaidType type, ServerLevel world, List<ServerPlayer> members, BlockPos entrance) {
         this.slot = slot;
@@ -409,6 +412,16 @@ public final class RaidInstance {
 
     int attacksOnParty() {
         return attacksOnParty;
+    }
+
+    /** Room ticks that threw so far (self-test). */
+    int roomFailures() {
+        return roomFailures;
+    }
+
+    /** The last room tick that threw: room id and exception, or null (self-test). */
+    String lastRoomFailure() {
+        return lastRoomFailure;
     }
 
     /** Sets a creature's hitpoints, keeping anything above Minecraft's 1024 cap in reserve. */
@@ -780,6 +793,8 @@ public final class RaidInstance {
             try {
                 logic.gameTick(tick);
             } catch (RuntimeException e) {
+                roomFailures++;
+                lastRoomFailure = logic.def.id() + ": " + e;
                 com.runecraft.RuneCraft.LOGGER.error("Raid room {} failed", logic.def.id(), e);
                 logic.complete();
             }

@@ -35,6 +35,9 @@ public final class RaidEffects {
     private static final List<Task> TASKS = new ArrayList<>();
     /** Game ticks the raid clock runs ahead of the server's (the self-test fast-forwards raids, see {@link #advance}). */
     private static long skew;
+    /** Delayed tasks that threw (logged and skipped); the self-test fails on any. */
+    private static int failures;
+    private static String lastFailure;
 
     private RaidEffects() {
     }
@@ -50,6 +53,16 @@ public final class RaidEffects {
     /** Self-test: moves the raid clock forward by {@code ticks} game ticks (it never goes back). */
     static void advance(int ticks) {
         skew += Math.max(0, ticks);
+    }
+
+    /** Delayed tasks that threw so far (self-test). */
+    static int failures() {
+        return failures;
+    }
+
+    /** The last failed delayed task's exception, or null (self-test). */
+    static String lastFailure() {
+        return lastFailure;
     }
 
     /** Runs {@code run} after {@code gameTicks} game ticks. */
@@ -90,6 +103,8 @@ public final class RaidEffects {
             try {
                 t.run().run();
             } catch (RuntimeException e) {
+                failures++;
+                lastFailure = e.toString();
                 com.runecraft.RuneCraft.LOGGER.error("Raid task failed", e);
             }
         }

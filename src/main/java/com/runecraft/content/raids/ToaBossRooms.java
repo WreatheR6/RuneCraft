@@ -77,12 +77,30 @@ final class ToaBossRooms {
                 if (alive(boss) && bossVulnerable(boss) && !selfTestHolds()) {
                     t.hit(boss, damage, styleFor(boss, style));
                 }
+                selfTestAutoAttack(t, boss, guard);
                 t.tick(1);
             }
             RaidSelfTest.expect(done, def.name() + ": the boss did not die (" + (alive(boss) ? raid.hitpoints(boss) + " hitpoints left" : "gone")
                     + ")");
             RaidSelfTest.expect(raid.attacksOnParty() > attacksBefore, def.name() + ": the boss never attacked");
             return def.name() + " killed in " + guard + " ticks";
+        }
+
+        /**
+         * Self-test: entities don't tick while a check runs, so a boss that attacks through its own AI (Akkha, Ba-Ba) gets
+         * its auto-attack driven here at its attack speed, through the real path (its style choice, the attack, the room's
+         * outgoing hook and specials).
+         */
+        void selfTestAutoAttack(RaidSelfTest t, DataBossEntity boss, int tick) {
+            if (!alive(boss) || boss.isNoAi() || boss.stats() == null) {
+                return;
+            }
+            int speed = Math.max(1, boss.stats().attackSpeed());
+            if (tick % speed == 0) {
+                ServerPlayer p = t.player();
+                AttackType s = boss.chooseStyle(p, boss.distanceToSqr(p));
+                boss.performAttack(p, s);
+            }
         }
 
         /** Self-test: whether a player would be busy with something else than the boss right now (Ba-Ba's boulders). */
