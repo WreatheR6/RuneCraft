@@ -606,30 +606,39 @@ public final class QuestInterpreter {
         }
     }
 
+    /** How long {@link #selfTestLoad} waits for the chunks it loads, in seconds. */
+    public static final int SELF_TEST_LOAD_SECONDS = 5;
+
     /**
      * Self-test hook (the step walk): puts the player at a quest place's centre (underground: down in its dungeon) and runs
-     * the place objectives there once, as the reach tick does every second. False if the place is unknown.
+     * the place objectives there once, as the reach tick does every second. Returns 0 when it did; -1 if the place is unknown;
+     * otherwise the number of chunks around the place still loading after {@link #SELF_TEST_LOAD_SECONDS} s, and the player
+     * stays put (a foe raised there would be invisible, so the caller reports the load rather than a missing foe).
      */
-    public static boolean selfTestArrive(ServerPlayer p, String place, boolean underground) {
+    public static int selfTestArrive(ServerPlayer p, String place, boolean underground) {
         int[] c = placeCentre(place);
         if (c == null || !(p.level() instanceof ServerLevel world)) {
-            return false;
+            return -1;
         }
         // A player who walks somewhere has the chunks around them loaded. The walk teleports there inside one server tick, so
         // a foe the objective calls up beside the player would land in a chunk the server hasn't confirmed yet, hidden from
         // every entity search (the walk couldn't find it, fight it or bring it home): load them first.
-        selfTestLoad(world, c[0], c[1], 8);
+        int loading = selfTestLoad(world, c[0], c[1], 8);
+        if (loading > 0) {
+            return loading;
+        }
         double y = underground ? UNDERGROUND_Y - 16 : p.getY();
         p.teleportTo(world, c[0] + 0.5, y, c[1] + 0.5, p.getYRot(), p.getXRot());
         reach(p, p.getServer());
-        return true;
+        return 0;
     }
 
     /**
      * Loads the chunks within {@code r} blocks of block ({@code x}, {@code z}) and runs the server's queued chunk work until
-     * each is a confirmed full chunk, whose entities area searches see (at most 5 s), as TzHaarSelfTest settles an arena.
+     * each is a confirmed full chunk, whose entities area searches see (at most {@link #SELF_TEST_LOAD_SECONDS} s), as
+     * TzHaarSelfTest settles an arena. Returns how many are still not full chunks when that time runs out (0: all are).
      */
-    static void selfTestLoad(ServerLevel world, int x, int z, int r) {
+    static int selfTestLoad(ServerLevel world, int x, int z, int r) {
         net.minecraft.server.level.ServerChunkCache chunks = world.getChunkSource();
         List<net.minecraft.server.level.ChunkHolder> holders = new ArrayList<>();
         for (int cx = (x - r) >> 4; cx <= (x + r) >> 4; cx++) {
@@ -641,7 +650,7 @@ public final class QuestInterpreter {
                 }
             }
         }
-        long deadline = System.nanoTime() + 5_000_000_000L;
+        long deadline = System.nanoTime() + SELF_TEST_LOAD_SECONDS * 1_000_000_000L;
         while (holders.stream().anyMatch(h -> !h.getFullChunkFuture().isDone()) && System.nanoTime() < deadline) {
             if (!chunks.pollTask()) {
                 java.util.concurrent.locks.LockSupport.parkNanos(100_000L); // the rest arrives from the chunk worker threads
@@ -650,6 +659,7 @@ public final class QuestInterpreter {
         for (int i = 0; i < 100_000 && chunks.pollTask(); i++) {
             // the promotions the completed chunks queued (each call runs one task)
         }
+        return (int) holders.stream().filter(h -> !h.getFullChunkFuture().isDone()).count();
     }
 
     /** Self-test hook: why a trigger would not fire for the player now (switched off, or its first unmet condition), or null. */

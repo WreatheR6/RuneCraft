@@ -99,6 +99,20 @@ final class QuestStepChecks {
         return new AssertionError(message);
     }
 
+    /**
+     * Puts the player at a quest place and runs its objectives ({@link QuestInterpreter#selfTestArrive}). False if the place
+     * is unknown. Chunks there that never finished loading fail the step as such: a foe raised in one would be invisible, and
+     * the step would otherwise fail later as a foe that never came, which points at the quest spec instead.
+     */
+    private boolean arrive(String where, String place, boolean underground) {
+        int loading = QuestInterpreter.selfTestArrive(p(), place, underground);
+        if (loading > 0) {
+            throw failure(where + ": " + loading + " chunk(s) at " + place + " were still loading after "
+                    + QuestInterpreter.SELF_TEST_LOAD_SECONDS + " s");
+        }
+        return loading == 0;
+    }
+
     private String walk(String id) {
         QuestSpec q = QuestBook.get().spec(id);
         QuestInfo info = ContentRegistry.quest(id);
@@ -170,13 +184,13 @@ final class QuestStepChecks {
                 switch (t.kind) {
                     case TALK -> QuestInterpreter.selfTestTalk(p(), t.target);
                     case REACH -> {
-                        if (!QuestInterpreter.selfTestArrive(p(), t.target, t.underground)) {
+                        if (!arrive(where, t.target, t.underground)) {
                             throw failure(where + ": no place " + t.target);
                         }
                         places++;
                     }
                     case PUZZLE -> {
-                        if (ContentRegistry.npc(t.target) == null && !QuestInterpreter.selfTestArrive(p(), t.target, t.underground)) {
+                        if (ContentRegistry.npc(t.target) == null && !arrive(where, t.target, t.underground)) {
                             throw failure(where + ": no place or NPC " + t.target);
                         }
                         String foe = QuestPuzzles.selfTestSolve(p(), q, t);
@@ -190,7 +204,7 @@ final class QuestStepChecks {
                     }
                     case KILL -> {
                         if (t.nearPlace != null) {
-                            QuestInterpreter.selfTestArrive(p(), t.nearPlace, false);
+                            arrive(where, t.nearPlace, false);
                         }
                         for (int i = 0; i < Math.max(1, t.count) && !snap.fired(); i++) {
                             notes.add(fight(where, t.target));
@@ -484,7 +498,7 @@ final class QuestStepChecks {
                     for (Trigger t : stage.triggers) {
                         if (id.equals(t.spawn) && t.kind != Trigger.Kind.KILL && QuestInterpreter.selfTestBlocked(p(), t) == null) {
                             if (t.kind == Trigger.Kind.REACH) {
-                                QuestInterpreter.selfTestArrive(p(), t.target, t.underground);
+                                arrive(where, t.target, t.underground);
                             } else if (t.kind == Trigger.Kind.TALK) {
                                 QuestInterpreter.selfTestTalk(p(), t.target);
                             }
