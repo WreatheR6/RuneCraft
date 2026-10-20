@@ -143,6 +143,9 @@ class BaWavesTest {
         assertEquals(-3, BaRules.runnerWalk(0.1, true, -3)[0]);
         // Healer drinks from the spring: level 5 with 99 hitpoints heals 5 + 49.
         assertEquals(54, BaRules.springSelfHeal(5, 99));
+        // Commander Connad takes gear back for 80% (wiki "buy" column: 300 / 220 / 120 / 80 each role).
+        assertEquals(List.of(300, 220, 120, 80), List.of(BaRules.refund(375), BaRules.refund(275), BaRules.refund(150),
+                BaRules.refund(100)));
     }
 
     @Test

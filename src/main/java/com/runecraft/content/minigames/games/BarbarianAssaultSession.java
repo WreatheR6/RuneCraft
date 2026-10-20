@@ -1783,6 +1783,10 @@ public class BarbarianAssaultSession extends MinigameSession {
             if (world.isClientSide() || hand != InteractionHand.MAIN_HAND || !(player instanceof ServerPlayer sp)) {
                 return InteractionResult.PASS;
             }
+            if (entity instanceof com.runecraft.entity.QuestNpcEntity npc && npc.npcId().equals("mg_commander_connad")
+                    && sellBack(sp, Inv.idOf(sp.getMainHandItem()))) {
+                return InteractionResult.SUCCESS;
+            }
             BarbarianAssaultSession s = of(sp);
             if (s == null) {
                 return InteractionResult.PASS;
@@ -1854,6 +1858,47 @@ public class BarbarianAssaultSession extends MinigameSession {
                             }
                             return 1;
                         }))));
+    }
+
+    /**
+     * Penance gear used on Commander Connad: he takes it back for 80% of its honour points in each role (OSRS Wiki); queen kills
+     * and coins (the granite body) aren't refunded. Returns false for anything he doesn't sell for honour points.
+     */
+    static boolean sellBack(ServerPlayer p, String item) {
+        com.runecraft.osrs.content.minigames.RewardShop shop = com.runecraft.osrs.content.minigames.RewardShops.get("barbarian_assault");
+        if (shop == null || item.isEmpty()) {
+            return false;
+        }
+        String[] currencies = {com.runecraft.osrs.content.minigames.MinigameCurrencies.BA_ATTACKER,
+                com.runecraft.osrs.content.minigames.MinigameCurrencies.BA_DEFENDER,
+                com.runecraft.osrs.content.minigames.MinigameCurrencies.BA_COLLECTOR,
+                com.runecraft.osrs.content.minigames.MinigameCurrencies.BA_HEALER};
+        for (com.runecraft.osrs.content.minigames.RewardShop.Entry e : shop.entries()) {
+            if (!e.item().equals(item)) {
+                continue;
+            }
+            int[] refund = new int[currencies.length];
+            boolean honour = false;
+            for (com.runecraft.osrs.content.minigames.RewardShop.Cost c : e.costs()) {
+                for (int r = 0; r < currencies.length; r++) {
+                    if (c.currency().equals(currencies[r])) {
+                        refund[r] = BaRules.refund(c.amount());
+                        honour = true;
+                    }
+                }
+            }
+            if (!honour || Inv.remove(p, item, 1) == 0) {
+                return false;
+            }
+            MinigameData data = MinigameData.of(p);
+            for (int r = 0; r < refund.length; r++) {
+                String key = "ba_" + BarbarianAssault.ROLES[r];
+                data.addPoints(p.getUUID(), key, BarbarianAssault.addHonour(data.points(p.getUUID(), key), refund[r]));
+            }
+            QuestApi.say(p, "Commander Connad", "I'll take that back. Here are " + refund[0] + " honour points in each role.");
+            return true;
+        }
+        return false;
     }
 
     /** Captain Cain: the tutorial in short, and resetting the player's round to wave 1. */

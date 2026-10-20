@@ -464,6 +464,17 @@ public final class BarbarianAssaultSelfTest {
             expect(honour(r) == had[r] - 375, BarbarianAssault.ROLES[r] + " paid " + (had[r] - honour(r)) + " for the torso");
         }
         expect(data.points(id, MinigameCurrencies.key(MinigameCurrencies.BA_QUEEN)) == queenKills - 1, "the torso didn't take a queen kill");
-        return "attacker level 2 and a fighter torso bought";
+        // Commander Connad takes it back for 80% of the points (not the queen kill).
+        int[] paid = new int[4];
+        for (int r = 0; r < 4; r++) {
+            paid[r] = honour(r);
+        }
+        expect(BarbarianAssaultSession.sellBack(player, "fighter_torso"), "Commander Connad wouldn't take the torso back");
+        expect(Inv.count(player, "fighter_torso") == torsos, "the torso is still in the pack after selling it back");
+        for (int r = 0; r < 4; r++) {
+            expect(honour(r) == paid[r] + BaRules.refund(375), BarbarianAssault.ROLES[r] + " got " + (honour(r) - paid[r]) + " back");
+        }
+        expect(!BarbarianAssaultSession.sellBack(player, "granite_body"), "a granite body (coins) was refunded in honour");
+        return "attacker level 2 and a fighter torso bought (and sold back for 300 each)";
     }
 }

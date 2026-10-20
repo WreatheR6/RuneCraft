@@ -364,6 +364,14 @@ public final class BaRules {
         return kandarinHard ? points * 11 / 10 : points;
     }
 
+    /**
+     * Penance gear used on Commander Connad is taken back for 80% of its honour point price in each role (375 -> 300,
+     * 275 -> 220, 150 -> 120, 100 -> 80); queen kills spent aren't refunded.
+     */
+    public static int refund(int honourCost) {
+        return honourCost * 4 / 5;
+    }
+
     /** A full round's clean points in a role (waves 1-10): attacker 370, defender 357, collector 278, healer 305 (wiki). */
     public static int fullRound(int role, boolean kandarinHard) {
         int total = 0;
