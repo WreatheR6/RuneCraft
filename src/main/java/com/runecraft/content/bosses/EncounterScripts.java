@@ -47,28 +47,53 @@ final class EncounterScripts {
     }
 
     /**
-     * Crystalline/Corrupted Hunllef: switches between ranged and magic every 4 attacks (announced),
-     * protects itself from one combat style and only switches after 6 hits from another style, stomps
-     * anyone underneath it, sends chasing tornadoes and (corrupted) corrupts floor tiles.
+     * Crystalline/Corrupted Hunllef (wiki): ranged first, switching between ranged and magic after every 4 attacks (standard,
+     * prayer-disabling or tornado summons; the stomp doesn't count), announced before the switch. Its standard attacks go
+     * through protection prayers, which only lower them (12 / 16 at most without armour, 50 / 68 unprayed). It protects
+     * itself from one combat style (picked at random per run) and switches to the style of every sixth off-prayer attack it
+     * takes, misses included. It stomps anyone underneath it (typeless), summons tornadoes that chase the player for 20 ticks
+     * (1-3 crystalline, 2-4 corrupted, more as it weakens), and lights the floor: tiles turn blue (crimson) and then orange,
+     * hurting 10-20 a tick, faster in each third of its health.
      */
     static final class Hunllef extends ScriptedBoss {
+        private static final String[] STYLE_NAMES = {"melee", "ranged", "magic"};
         private final boolean corrupted;
-        private boolean magic;
-        private int styleAttacks;
-        private Category protectedStyle = Category.MELEE;
-        private int hitsTaken;
+        private final com.runecraft.osrs.content.minigames.Gauntlet.Mode mode;
+        /** Its attack and protection-prayer cycles (pure rules, unit-tested). */
+        private com.runecraft.osrs.content.minigames.HunllefCycle cycle =
+                new com.runecraft.osrs.content.minigames.HunllefCycle(com.runecraft.osrs.content.minigames.HunllefCycle.Style.MELEE);
         private final List<Mob> tornadoes = new ArrayList<>();
         private int tornadoLife;
-        private int tornadoTimer = 20;
-        private int tileTimer = 10;
+        /** The current floor pattern: 2x2-block tiles (north-west block), blue until {@link #floorOrangeAt}, then orange. */
+        private final List<BlockPos> floor = new ArrayList<>();
+        private long floorOrangeAt;
+        private long floorEndAt;
+        private long nextFloorAt = -1;
 
         Hunllef(boolean corrupted) {
             this.corrupted = corrupted;
+            this.mode = corrupted ? com.runecraft.osrs.content.minigames.Gauntlet.Mode.CORRUPTED
+                    : com.runecraft.osrs.content.minigames.Gauntlet.Mode.NORMAL;
+        }
+
+        /** Self-test view: the attack style in use, the protected style, the cycle counters, tornadoes and floor. */
+        BossSelfTests.HunllefView view() {
+            AttackType prays = switch (cycle.prays()) {
+                case MELEE -> AttackType.SLASH;
+                case RANGED -> AttackType.RANGED;
+                case MAGIC -> AttackType.MAGIC;
+            };
+            return new BossSelfTests.HunllefView(cycle.magic(), prays, cycle.styleAttacks(), cycle.offPrayerHits(), tornadoes.size(),
+                    floor.size(),
+                    !floor.isEmpty() && now >= floorOrangeAt, attackCount);
         }
 
         @Override
         public void onSpawn(DataBossEntity boss) {
-            BossFx.say(boss, "The Hunllef protects itself from melee. Land 6 hits with another style to make it switch.");
+            com.runecraft.osrs.content.minigames.HunllefCycle.Style[] styles = com.runecraft.osrs.content.minigames.HunllefCycle.Style.values();
+            cycle = new com.runecraft.osrs.content.minigames.HunllefCycle(styles[boss.getRandom().nextInt(styles.length)]);
+            BossFx.say(boss, "The Hunllef protects itself from " + STYLE_NAMES[cycle.prays().ordinal()]
+                    + ". Land 6 hits with another style to make it switch.");
         }
 
         @Override
@@ -80,45 +105,111 @@ final class EncounterScripts {
         protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             double dx = target.getX() - boss.getX();
             double dz = target.getZ() - boss.getZ();
-            if (dx * dx + dz * dz < boss.getBbWidth() * boss.getBbWidth() / 4) {
-                return MinigameBosses.HUNLLEF_STOMP;
+            boolean underneath = dx * dx + dz * dz < boss.getBbWidth() * boss.getBbWidth() / 4;
+            var attack = cycle.next(underneath, boss.getRandom().nextInt(MinigameBosses.HUNLLEF_PRAYER_DISABLE_CHANCE) == 0);
+            if (cycle.switchedStyle()) {
+                BossFx.warn(boss, "The Hunllef switches to " + (cycle.magic() ? "magic" : "ranged") + " attacks!");
+                BossFx.burst(boss, cycle.magic() ? ParticleTypes.WITCH : ParticleTypes.CRIT, 20, 1.0);
             }
-            if (styleAttacks >= MinigameBosses.HUNLLEF_ATTACKS_PER_STYLE) {
-                styleAttacks = 0;
-                magic = !magic;
-                BossFx.warn(boss, "The Hunllef switches to " + (magic ? "magic" : "ranged") + " attacks!");
-                BossFx.burst(boss, magic ? ParticleTypes.WITCH : ParticleTypes.CRIT, 20, 1.0);
+            return switch (attack) {
+                case STOMP -> MinigameBosses.HUNLLEF_STOMP;
+                case TORNADO -> MinigameBosses.HUNLLEF_TORNADO;
+                case PRAYER_DISABLE -> corrupted ? MinigameBosses.CORRUPTED_PRAYER_DISABLE : MinigameBosses.HUNLLEF_PRAYER_DISABLE;
+                case MAGIC -> corrupted ? MinigameBosses.CORRUPTED_MAGIC : MinigameBosses.HUNLLEF_MAGIC;
+                case RANGED -> corrupted ? MinigameBosses.CORRUPTED_RANGED : MinigameBosses.HUNLLEF_RANGED;
+            };
+        }
+
+        @Override
+        protected void perform(DataBossEntity boss, ServerPlayer target, AttackDef a) {
+            if (a == MinigameBosses.HUNLLEF_TORNADO) {
+                last = a;
+                attackCount++;
+                summonTornadoes(boss);
+                return;
             }
-            styleAttacks++;
-            if (magic) {
-                if (boss.getRandom().nextInt(6) == 0) {
-                    return MinigameBosses.HUNLLEF_PRAYER_DISABLE;
+            if (a == MinigameBosses.HUNLLEF_STOMP) {
+                // Typeless: no protection prayer stops it.
+                last = a;
+                attackCount++;
+                BossFx.burst(boss, ParticleTypes.EXPLOSION, 6, 1.0);
+                Msg.red(target, "The Hunllef stomps on you!");
+                CombatHooks.nameAttack("stomp", null);
+                CombatHandler.applyDamage(boss, target, boss.getRandom().nextInt(MinigameBosses.HUNLLEF_STOMP.maxHit() + 1));
+                return;
+            }
+            super.perform(boss, target, a);
+        }
+
+        private void summonTornadoes(DataBossEntity boss) {
+            tornadoes.forEach(Mob::discard);
+            tornadoes.clear();
+            int count = com.runecraft.osrs.content.minigames.Gauntlet.tornadoes(mode, percent(boss));
+            tornadoLife = com.runecraft.osrs.content.minigames.Gauntlet.TORNADO_TICKS;
+            BossFx.warn(boss, "The Hunllef summons tornadoes!");
+            for (int i = 0; i < count; i++) {
+                // On the boss's own floor (a ground search would find the roof of an enclosed arena), around it.
+                double a = boss.getRandom().nextDouble() * Math.PI * 2;
+                double r = 2 + boss.getRandom().nextDouble() * 2;
+                Mob t = BossFx.spawnMinion(boss, "hunllef_tornado",
+                        new Vec3(boss.getX() + Math.cos(a) * r, boss.getY(), boss.getZ() + Math.sin(a) * r), null);
+                if (t != null) {
+                    if (boss.instanceTag != null) {
+                        t.addTag(boss.instanceTag); // part of the run: not a stray its minigame would clear
+                    }
+                    tornadoes.add(t);
                 }
-                return corrupted ? MinigameBosses.CORRUPTED_MAGIC : MinigameBosses.HUNLLEF_MAGIC;
             }
-            return corrupted ? MinigameBosses.CORRUPTED_RANGED : MinigameBosses.HUNLLEF_RANGED;
         }
 
         @Override
         public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
-            if (last == MinigameBosses.HUNLLEF_PRAYER_DISABLE) {
+            // The right protection prayer lowers the hit (top roll 50 -> 12, 68 -> 16) instead of blocking it. Decided before
+            // the prayer-disabling orb switches prayers off: that orb is a magic attack like the others (wiki), so Protect from
+            // Magic still lowers it.
+            boolean prayed = type != null && !type.isMelee()
+                    && com.runecraft.osrs.NpcHitCalc.protectedFrom(com.runecraft.player.Players.data(player).activePrayers(), type);
+            if (last == MinigameBosses.HUNLLEF_PRAYER_DISABLE || last == MinigameBosses.CORRUPTED_PRAYER_DISABLE) {
                 BossFx.disablePrayers(player, "The Hunllef's magic attack switches off your prayers!");
             }
-            return damage;
+            lastHitThrough = prayed ? com.runecraft.osrs.content.minigames.Gauntlet.prayedDamage(mode, damage) : damage;
+            return lastHitThrough;
+        }
+
+        /** Self-test: what the last hit on a player came through as, after the protection prayer (-1 before any). */
+        private int lastHitThrough = -1;
+
+        /**
+         * Self-test: the prayer-disabling orb hits the target, through the real attack path (accuracy roll and all) when
+         * {@code rolled} is negative, else only this script's on-hit rule for that roll. Returns the damage let through.
+         */
+        int selfTestPrayerDisable(DataBossEntity boss, ServerPlayer target, int rolled) {
+            AttackDef orb = corrupted ? MinigameBosses.CORRUPTED_PRAYER_DISABLE : MinigameBosses.HUNLLEF_PRAYER_DISABLE;
+            if (rolled < 0) {
+                lastHitThrough = -1;
+                perform(boss, target, orb);
+                return lastHitThrough;
+            }
+            AttackDef was = last;
+            last = orb;
+            try {
+                return onHitPlayer(boss, target, rolled, AttackType.MAGIC);
+            } finally {
+                last = was;
+            }
         }
 
         @Override
         protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             Category c = category(type);
-            if (c == protectedStyle) {
+            if (cycle.playerAttack(com.runecraft.osrs.content.minigames.HunllefCycle.Style.values()[c.ordinal()])) {
                 CombatAchievementService.flag(attacker, CombatAchievements.FLAG_HUNLLEF_WRONG_WEAPON);
-                Msg.action(attacker, "The Hunllef's prayer protects it from " + c.name().toLowerCase() + "!");
+                Msg.action(attacker, "The Hunllef's prayer protects it from " + STYLE_NAMES[c.ordinal()] + "!");
                 return 0;
             }
-            if (++hitsTaken >= MinigameBosses.HUNLLEF_HITS_PER_PRAYER) {
-                hitsTaken = 0;
-                protectedStyle = c;
-                BossFx.say(boss, "The Hunllef switches its prayer to protect from " + c.name().toLowerCase() + "!");
+            // Every sixth off-prayer attack (zero hits too) makes it pray against that attack's style.
+            if (cycle.prayerSwitched()) {
+                BossFx.say(boss, "The Hunllef switches its prayer to protect from " + STYLE_NAMES[c.ordinal()] + "!");
             }
             return damage;
         }
@@ -128,59 +219,94 @@ final class EncounterScripts {
             if (target == null) {
                 return;
             }
-            BossFx.world(boss).sendParticles(switch (protectedStyle) {
+            BossFx.world(boss).sendParticles(switch (cycle.prays()) {
                 case MELEE -> ParticleTypes.CRIT;
                 case RANGED -> ParticleTypes.HAPPY_VILLAGER;
                 case MAGIC -> ParticleTypes.WITCH;
             }, boss.getX(), boss.getY() + boss.getBbHeight() + 0.5, boss.getZ(), 3, 0.3, 0.1, 0.3, 0);
-            int count = corrupted ? 2 : 1;
-            if (percent(boss) < 66) {
-                count++;
+            tickTornadoes(boss, target);
+            tickFloor(boss, target);
+        }
+
+        private void tickTornadoes(DataBossEntity boss, ServerPlayer target) {
+            if (tornadoLife <= 0) {
+                return;
             }
-            if (percent(boss) < 33) {
-                count++;
+            tornadoLife--;
+            int[] dmg = com.runecraft.osrs.content.minigames.Gauntlet.tornadoDamage(mode);
+            tornadoes.removeIf(t -> !t.isAlive() || t.isRemoved());
+            for (Mob t : tornadoes) {
+                Vec3 d = target.position().subtract(t.position());
+                double len = d.horizontalDistance();
+                if (len < 1.2) {
+                    CombatHooks.nameAttack("tornado", null);
+                    CombatHandler.applyDamage(boss, target, dmg[0] + boss.getRandom().nextInt(dmg[1] - dmg[0] + 1));
+                } else {
+                    Vec3 step = new Vec3(d.x / len, 0, d.z / len);
+                    t.teleportTo(t.getX() + step.x, t.getY(), t.getZ() + step.z);
+                }
             }
-            if (--tornadoTimer <= 0) {
-                tornadoTimer = 25;
-                tornadoLife = 14;
-                BossFx.warn(boss, "The Hunllef summons tornadoes!");
-                for (int i = 0; i < count; i++) {
-                    Mob t = BossFx.spawnMinion(boss, "hunllef_tornado", around(boss, homeVec(), 8), null);
-                    if (t != null) {
-                        tornadoes.add(t);
+            if (tornadoLife == 0) {
+                tornadoes.forEach(Mob::discard);
+                tornadoes.clear();
+            }
+        }
+
+        /** The damaging floor: a pattern of tiles around the player turns blue (crimson), then orange (approx patterns). */
+        private void tickFloor(DataBossEntity boss, ServerPlayer target) {
+            int phase = com.runecraft.osrs.content.minigames.Gauntlet.floorPhase(percent(boss));
+            ServerLevel w = BossFx.world(boss);
+            if (nextFloorAt < 0) {
+                nextFloorAt = now + com.runecraft.osrs.content.minigames.Gauntlet.FLOOR_INTERVAL_TICKS[0];
+            }
+            if (floor.isEmpty() && now >= nextFloorAt) {
+                int tiles = 6 + 3 * phase;
+                BlockPos at = target.blockPosition();
+                for (int i = 0; i < tiles; i++) {
+                    int ox = (boss.getRandom().nextInt(7) - 3) * 2;
+                    int oz = (boss.getRandom().nextInt(7) - 3) * 2;
+                    floor.add(new BlockPos(at.getX() + ox, at.getY(), at.getZ() + oz));
+                }
+                floorOrangeAt = now + com.runecraft.osrs.content.minigames.Gauntlet.FLOOR_WARN_TICKS[phase];
+                floorEndAt = floorOrangeAt + com.runecraft.osrs.content.minigames.Gauntlet.FLOOR_ACTIVE_TICKS;
+                nextFloorAt = floorEndAt + com.runecraft.osrs.content.minigames.Gauntlet.FLOOR_INTERVAL_TICKS[phase];
+            }
+            if (floor.isEmpty()) {
+                return;
+            }
+            boolean orange = now >= floorOrangeAt;
+            for (BlockPos t : floor) {
+                w.sendParticles(orange ? ParticleTypes.FLAME : corrupted ? ParticleTypes.CRIMSON_SPORE : ParticleTypes.SOUL_FIRE_FLAME,
+                        t.getX() + 1.0, t.getY() + 0.1, t.getZ() + 1.0, 4, 0.5, 0.02, 0.5, 0);
+            }
+            if (orange) {
+                BlockPos p = target.blockPosition();
+                for (BlockPos t : floor) {
+                    if (p.getX() >= t.getX() && p.getX() <= t.getX() + 1 && p.getZ() >= t.getZ() && p.getZ() <= t.getZ() + 1
+                            && Math.abs(p.getY() - t.getY()) <= 1) {
+                        CombatHooks.nameAttack("damaging_floor", null);
+                        CombatHandler.applyDamage(boss, target, com.runecraft.osrs.content.minigames.Gauntlet.FLOOR_MIN + boss.getRandom()
+                                .nextInt(com.runecraft.osrs.content.minigames.Gauntlet.FLOOR_MAX - com.runecraft.osrs.content.minigames.Gauntlet.FLOOR_MIN + 1));
+                        break;
                     }
                 }
             }
-            if (tornadoLife > 0) {
-                tornadoLife--;
-                for (Mob t : tornadoes) {
-                    Vec3 d = target.position().subtract(t.position());
-                    double len = d.horizontalDistance();
-                    if (len < 1.2) {
-                        com.runecraft.combat.CombatHooks.nameAttack("tornado", null);
-                        CombatHandler.applyDamage(boss, target, (corrupted ? 15 : 10) + boss.getRandom().nextInt(11));
-                    } else {
-                        Vec3 step = new Vec3(d.x / len, 0, d.z / len);
-                        t.teleportTo(t.getX() + step.x, t.getY(), t.getZ() + step.z);
-                    }
-                }
-                if (tornadoLife == 0) {
-                    tornadoes.forEach(Mob::discard);
-                    tornadoes.clear();
-                }
-            }
-            if (corrupted && --tileTimer <= 0) {
-                tileTimer = 12;
-                BossFx.warn(boss, "The floor begins to corrupt!");
-                for (int i = 0; i < 7; i++) {
-                    namedStrike("damaging_floor", boss, around(boss, homeVec(), 10), 4, 20, 1.4, ParticleTypes.CRIMSON_SPORE);
-                }
+            if (now >= floorEndAt) {
+                floor.clear();
             }
         }
 
         @Override
         public void onDeath(DataBossEntity boss, ServerPlayer killer) {
             tornadoes.forEach(Mob::discard);
+            tornadoes.clear();
+            floor.clear();
+        }
+
+        @Override
+        public void onRemoved(DataBossEntity boss) {
+            tornadoes.forEach(Mob::discard);
+            tornadoes.clear();
         }
     }
 

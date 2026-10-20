@@ -41,6 +41,11 @@ import net.minecraft.world.level.block.Blocks;
  * (a room per OSRS 16x16-tile room) around the sealed boss room at the origin; the starting room lies just south of it.
  * A room's nodes and creatures appear when the player first walks in (lighting it with the sceptre in OSRS). The singing bowl
  * lists its recipes as clickable chat lines ({@code /minigame sing <recipe>}).
+ *
+ * <p>The run ends with the Hunllef's death, the player's death, the barrier's "Escape" during the fight, an escape crystal, the
+ * starting room's teleport platform or the timer... no: the timer only forces the fight. Loot always waits in the lobby's
+ * Reward Chest (wiki): a Hunllef kill rolls the main table; otherwise the run's points decide, except after leaving by the
+ * teleport platform or by an escape crystal used before the fight, which give nothing.
  */
 public final class GauntletSession extends MinigameSession {
     /** Blocks per room (13 inside plus a shared wall). */
@@ -49,24 +54,36 @@ public final class GauntletSession extends MinigameSession {
     private static final int HEIGHT = 5;
     private static final List<int[]> SPOTS = List.of(new int[]{-4, -4}, new int[]{4, 4}, new int[]{-4, 4}, new int[]{4, -4},
             new int[]{0, -4}, new int[]{0, 4}, new int[]{-4, 0}, new int[]{4, 0});
+    /** Game ticks per resource gathered (approx: the wiki gives no gathering time). */
+    private static final int GATHER_TICKS = 3;
 
     private final Mode mode;
     private final Gauntlet.Room[][] maze;
     private final boolean[][] lit = new boolean[Gauntlet.GRID][Gauntlet.GRID];
     private final Map<BlockPos, Integer> nodes = new HashMap<>();
+    private final Map<BlockPos, Node> nodeTypes = new HashMap<>();
+    /** Every creature this run woke, tracked directly (an instance chunk may not answer entity box queries yet). */
+    private final List<Mob> creatures = new ArrayList<>();
     private final Set<Piece> componentsGiven = EnumSet.noneOf(Piece.class);
     private final Set<String> demisKilled = new HashSet<>();
-    /** Loot owed when the player leaves: rolled table items and the Hunllef's floor drops. */
+    /** Loot owed when the player leaves: the Hunllef's chest rolls and anything left on the floor. */
     private final List<ItemStack> lootStacks = new ArrayList<>();
-    private final Map<String, Integer> lootItems = new HashMap<>();
-    private boolean weakFrameGiven;
+    /** In the order won (the Hunllef's shards first), so a full pack still gets them when the chest is opened. */
+    private final Map<String, Integer> lootItems = new java.util.LinkedHashMap<>();
+    private int weakKills;
+    private int strongKills;
+    private boolean weakFrame;
+    private boolean strongFrame;
     private int points;
     private boolean armourMade;
     private boolean egniolMade;
     private int attunedWeapons;
     private long prepLeft;
+    private long runTicks;
     private boolean bossFight;
     private boolean bossDead;
+    /** Left by the teleport platform, or by an escape crystal before the fight: the chest stays empty (wiki). */
+    private boolean noLoot;
     private int endIn;
     private final List<ServerPlayer> joining = new ArrayList<>();
     /** The Hunllef of this run once the fight has started. */
@@ -85,6 +102,10 @@ public final class GauntletSession extends MinigameSession {
 
     public boolean inBossFight() {
         return bossFight;
+    }
+
+    public int points() {
+        return points;
     }
 
     /** Entry requirement: Song of the Elves; the Corrupted Gauntlet also needs one Gauntlet completed. */
@@ -156,9 +177,11 @@ public final class GauntletSession extends MinigameSession {
         int sz = centre(Gauntlet.START_Y);
         place(sx - 4, sz - 3, Gauntlet.SINGING_BOWL);
         place(sx - 4, sz + 1, Gauntlet.RECIPES_BOOK);
+        place(sx - 4, sz + 4, Gauntlet.EGNIOL_BOOK);
         place(sx + 4, sz - 3, Gauntlet.RANGE);
         place(sx + 4, sz + 1, Gauntlet.WATER_PUMP);
-        place(sx, sz + 5, "minigame_exit");
+        place(sx + 4, sz + 4, Gauntlet.TOOL_STORAGE);
+        place(sx, sz + 5, Gauntlet.TELEPORT_PLATFORM);
         lit[Gauntlet.START_X][Gauntlet.START_Y] = true;
         lit[Gauntlet.BOSS][Gauntlet.BOSS] = true;
     }
@@ -217,6 +240,8 @@ public final class GauntletSession extends MinigameSession {
             return;
         }
         ServerPlayer p = on.get(0);
+        runTicks++;
+        creatures.removeIf(m -> !m.isAlive() || m.isRemoved());
         if (!bossFight) {
             prepLeft--;
             if (prepLeft == 100) {
@@ -250,11 +275,13 @@ public final class GauntletSession extends MinigameSession {
             BlockPos pos = rel(x0 + s[0], 1, z0 + s[1]);
             Arena.set(world, pos, Arena.module(n.block));
             nodes.put(pos, n.yield);
+            nodeTypes.put(pos, n);
         }
         for (String kind : room.creatures()) {
             Mob mob = spawn(Gauntlet.creature(mode, kind), rel(x0 + random.nextInt(5) - 2, 1, z0 + random.nextInt(5) - 2));
             if (mob != null) {
                 mob.setTarget(p);
+                creatures.add(mob);
             }
         }
         Msg.action(p, "Your sceptre lights the room.");
@@ -320,14 +347,77 @@ public final class GauntletSession extends MinigameSession {
         return hunllef != null && hunllef.isAlive() && !hunllef.isRemoved();
     }
 
+    /** This run's Hunllef (null before the fight). */
+    public Mob hunllef() {
+        return hunllef;
+    }
+
+    public boolean bossDead() {
+        return bossDead;
+    }
+
+    /** The run's maze (self-test and the room walk). */
+    public Gauntlet.Room room(int cx, int cy) {
+        return maze[cx][cy];
+    }
+
+    public boolean lit(int cx, int cy) {
+        return lit[cx][cy];
+    }
+
+    /** A standing spot near the middle of a room (one block off the centre, clear of the nodes). */
+    public BlockPos roomCentre(int cx, int cy) {
+        return rel(centre(cx) + 1, 1, centre(cy) + 1);
+    }
+
+    /** The creatures this run woke that are still alive. */
+    public List<Mob> creatures() {
+        creatures.removeIf(m -> !m.isAlive() || m.isRemoved());
+        return new ArrayList<>(creatures);
+    }
+
+    /** Resource nodes still standing: position to node type. */
+    public Map<BlockPos, Node> nodesLeft() {
+        Map<BlockPos, Node> left = new HashMap<>();
+        for (Map.Entry<BlockPos, Node> e : nodeTypes.entrySet()) {
+            Integer n = nodes.get(e.getKey());
+            if (n != null && n > 0) {
+                left.put(e.getKey(), e.getValue());
+            }
+        }
+        return left;
+    }
+
+    /** Where the starting room's objects stand (self-test). */
+    public BlockPos startObject(String blockId) {
+        int sx = centre(Gauntlet.START_X);
+        int sz = centre(Gauntlet.START_Y);
+        return switch (blockId) {
+            case Gauntlet.SINGING_BOWL -> rel(sx - 4, 1, sz - 3);
+            case Gauntlet.RANGE -> rel(sx + 4, 1, sz - 3);
+            case Gauntlet.WATER_PUMP -> rel(sx + 4, 1, sz + 1);
+            case Gauntlet.TOOL_STORAGE -> rel(sx + 4, 1, sz + 4);
+            case Gauntlet.TELEPORT_PLATFORM -> rel(sx, 1, sz + 5);
+            case Gauntlet.BARRIER -> rel(0, 1, PITCH / 2);
+            default -> null;
+        };
+    }
+
     @Override
     protected void onKill(ServerPlayer player, LivingEntity entity, String creatureId) {
         if (creatureId.equals(mode.boss)) {
             bossDead = true;
             endIn = 3;
-            int kc = MinigameData.of(player).incrementStat(player.getUUID(), "kc:" + game.id());
-            Msg.game(player, "Your " + (mode == Mode.NORMAL ? "Gauntlet" : "Corrupted Gauntlet") + " completion count is "
-                    + Players.data(player).killCount(mode.boss) + " (" + kc + " runs in all).");
+            MinigameData md = MinigameData.of(player);
+            int kc = md.incrementStat(player.getUUID(), "kc:" + game.id());
+            String best = "best:" + mode.boss;
+            int was = md.stat(player.getUUID(), best);
+            if (was <= 0 || runTicks < was) {
+                md.setStat(player.getUUID(), best, (int) runTicks);
+            }
+            Msg.game(player, "Your " + (mode == Mode.NORMAL ? "Gauntlet" : "Corrupted Gauntlet") + " completion count is: "
+                    + Players.data(player).killCount(mode.boss) + " (" + kc + " in all). Duration: " + time(runTicks)
+                    + (was > 0 && runTicks < was ? " (new personal best)" : "") + ".");
             return;
         }
         String kind = Gauntlet.kindOf(creatureId);
@@ -336,60 +426,48 @@ public final class GauntletSession extends MinigameSession {
             return;
         }
         points += Gauntlet.killPoints(foe);
+        // 100%: shards straight into the pack (wiki: placed in the inventory since July 2026).
         int[] shards = Gauntlet.creatureShards(foe);
         Inv.give(player, Gauntlet.shards(mode), shards[0] + random.nextInt(shards[1] - shards[0] + 1));
-        // Resource drops (wiki: "common" and "uncommon"; rates approx 1/3 and 1/18).
-        switch (foe) {
-            case WEAK -> {
-                if (!weakFrameGiven || random.nextInt(6) == 0) {
-                    weakFrameGiven = true;
-                    Inv.give(player, Gauntlet.frame(mode), 1);
-                }
-                if (random.nextInt(3) == 0) {
-                    Inv.give(player, Gauntlet.RAW_PADDLEFISH, 1 + random.nextInt(3));
-                }
-                if (random.nextInt(4) == 0) {
-                    Inv.give(player, Gauntlet.grym(mode), 1);
-                }
-            }
-            case STRONG -> {
-                if (random.nextInt(4) == 0) {
-                    Inv.give(player, Gauntlet.frame(mode), 1);
-                }
-                if (random.nextInt(3) == 0) {
-                    Inv.give(player, Gauntlet.RAW_PADDLEFISH, 4);
-                }
-            }
-            case DEMI -> {
-                Inv.give(player, Gauntlet.frame(mode), 1);
-                // Its own component if not yet owned, otherwise one of the others not yet owned.
-                Piece own = Gauntlet.componentOf(kind);
-                Piece give = null;
-                if (!componentsGiven.contains(own)) {
-                    give = own;
-                } else {
-                    List<Piece> left = new ArrayList<>();
-                    for (Piece pc : new Piece[]{Piece.HALBERD, Piece.STAFF, Piece.BOW}) {
-                        if (!componentsGiven.contains(pc)) {
-                            left.add(pc);
-                        }
-                    }
-                    if (!left.isEmpty()) {
-                        give = left.get(random.nextInt(left.size()));
-                    }
-                }
-                if (give != null) {
-                    componentsGiven.add(give);
-                    Inv.give(player, Gauntlet.component(mode, give), 1);
-                }
-                demisKilled.add(kind);
-                if (random.nextInt(3) == 0) {
-                    Inv.give(player, Gauntlet.RAW_PADDLEFISH, 5);
-                }
+        // Weapon frames: the first weak kill, 1/4 after; strong 2/7, the second strong kill without one; demi-bosses always.
+        int kill = foe == Foe.WEAK ? ++weakKills : foe == Foe.STRONG ? ++strongKills : 1;
+        boolean had = foe == Foe.WEAK ? weakFrame : foe == Foe.STRONG && strongFrame;
+        if (Gauntlet.dropsFrame(foe, kill, had, random)) {
+            Inv.give(player, Gauntlet.frame(mode), 1);
+            if (foe == Foe.WEAK) {
+                weakFrame = true;
+            } else if (foe == Foe.STRONG) {
+                strongFrame = true;
             }
         }
-        if (random.nextInt(18) == 0) {
-            Inv.give(player, Gauntlet.teleport(mode), 1);
+        if (foe == Foe.DEMI) {
+            // Its own component if not yet owned, otherwise one of the others not yet owned (wiki, 8 August 2019).
+            Piece own = Gauntlet.componentOf(kind);
+            Piece give = null;
+            if (!componentsGiven.contains(own)) {
+                give = own;
+            } else {
+                List<Piece> left = new ArrayList<>();
+                for (Piece pc : new Piece[]{Piece.HALBERD, Piece.STAFF, Piece.BOW}) {
+                    if (!componentsGiven.contains(pc)) {
+                        left.add(pc);
+                    }
+                }
+                if (!left.isEmpty()) {
+                    give = left.get(random.nextInt(left.size()));
+                }
+            }
+            if (give != null) {
+                componentsGiven.add(give);
+                Inv.give(player, Gauntlet.component(mode, give), 1);
+            }
+            demisKilled.add(kind);
+        }
+        // One resource roll (wiki drop log): more shards, raw paddlefish, a grym leaf or a teleport crystal, or nothing.
+        Gauntlet.Loot res = Gauntlet.resources(foe).roll(random);
+        String item = Gauntlet.resourceItem(mode, res.item());
+        if (item != null) {
+            Inv.give(player, item, res.min() + random.nextInt(res.max() - res.min() + 1));
         }
     }
 
@@ -404,29 +482,22 @@ public final class GauntletSession extends MinigameSession {
         }
         switch (blockId) {
             case Gauntlet.SINGING_BOWL -> showBowl(player);
-            case Gauntlet.RECIPES_BOOK -> {
-                Msg.game(player, "Crystal Singing Recipes: armour needs shards, ore, phren bark and linum tirinum; weapons need a "
-                        + "weapon frame, then 50 shards, then a spike (halberd), orb (staff) or bowstring (bow) from a demi-boss.");
-                Msg.game(player, "Egniol potion: fill a vial at the water pump, add a grym leaf, then ten crystal dust (grind shards "
-                        + "with the pestle and mortar).");
-            }
+            case Gauntlet.RECIPES_BOOK -> recipes(player);
+            case Gauntlet.EGNIOL_BOOK -> egniolBook(player);
             case Gauntlet.RANGE -> cook(player);
-            case Gauntlet.WATER_PUMP -> {
-                int n = Inv.count(player, Gauntlet.VIAL);
-                if (n == 0) {
-                    Msg.game(player, "You need an empty vial to fill.");
-                } else {
-                    Inv.remove(player, Gauntlet.VIAL, n);
-                    Inv.give(player, Gauntlet.WATER_VIAL, n);
-                    Msg.action(player, "You fill " + n + " vial" + (n > 1 ? "s" : "") + " with water.");
-                }
+            case Gauntlet.WATER_PUMP -> fillVials(player, true);
+            case Gauntlet.TOOL_STORAGE -> toolStorage(player);
+            case Gauntlet.TELEPORT_PLATFORM -> {
+                Msg.game(player, "You abandon the challenge. The reward chest will be empty.");
+                abandon(true);
             }
             case Gauntlet.BARRIER -> {
                 if (!bossFight) {
                     enterBoss(player);
                 } else {
+                    // "Escape" during the fight: the run's points still fill the chest (wiki).
                     Msg.red(player, "You escape from the Hunllef's lair.");
-                    end(false);
+                    abandon(false);
                 }
             }
             default -> {
@@ -434,6 +505,51 @@ public final class GauntletSession extends MinigameSession {
             }
         }
         return true;
+    }
+
+    /** Crystal Singing Recipes: the bowl's costs. */
+    public static void recipes(ServerPlayer player) {
+        Msg.game(player, "Crystal Singing Recipes: armour needs shards, ore, phren bark and linum tirinum (tier 1: 50 shards and "
+                + "one of each; body tier 2: 100 and two of each; tier 3: 100 and two of each). Weapons need a weapon frame, then 50 "
+                + "shards, then a spike (halberd), orb (staff) or bowstring (bow) from a demi-boss.");
+        Msg.game(player, "Vial: 10 shards. Teleport crystal: 50 shards. Escape crystal: 200 shards. Crystal paddlefish: a cooked "
+                + "paddlefish and 10 shards.");
+    }
+
+    /** The Egniol Potions bookstand. */
+    public static void egniolBook(ServerPlayer player) {
+        Msg.game(player, "Egniol potion: fill a vial at the water pump or a fishing spot, add a grym leaf, then ten crystal dust "
+                + "(grind ten shards with the pestle and mortar). It restores prayer and run energy and acts as a stamina potion.");
+    }
+
+    /** Fills every empty vial (water pump, or a fishing spot): one tick, doesn't stop fishing. */
+    private int fillVials(ServerPlayer player, boolean tell) {
+        int n = Inv.count(player, Gauntlet.VIAL);
+        if (n == 0) {
+            if (tell) {
+                Msg.game(player, "You need an empty vial to fill.");
+            }
+            return 0;
+        }
+        Inv.remove(player, Gauntlet.VIAL, n);
+        Inv.give(player, Gauntlet.WATER_VIAL, n);
+        Msg.action(player, "You fill " + n + " vial" + (n > 1 ? "s" : "") + " with water.");
+        return n;
+    }
+
+    /** The Tool Storage gives back the sceptre, the three tools and the pestle and mortar, one of each (wiki). */
+    private void toolStorage(ServerPlayer player) {
+        List<String> tools = List.of(Gauntlet.sceptre(mode), Node.BARK.tool(mode), Node.ORE.tool(mode), Node.FISH.tool(mode),
+                Gauntlet.PESTLE);
+        int given = 0;
+        for (String t : tools) {
+            boolean held = Inv.has(player, t, 1) || t.equals(Inv.idOf(player.getMainHandItem()));
+            if (!held) {
+                Inv.give(player, t, 1);
+                given++;
+            }
+        }
+        Msg.game(player, given == 0 ? "You already have all the tools you need." : "You take the tools you were missing.");
     }
 
     private void gather(ServerPlayer player, Node node, BlockPos pos) {
@@ -448,37 +564,49 @@ public final class GauntletSession extends MinigameSession {
                     + node.displayName.toLowerCase() + ".");
             return;
         }
+        if (node == Node.FISH) {
+            fillVials(player, false); // a fishing spot is also a water source
+        }
         Msg.action(player, "You start gathering from the " + node.displayName.toLowerCase() + ".");
         int[] wait = {0};
         repeat(player, p -> {
             if (isEnded() || p.blockPosition().distSqr(pos) > 25) {
                 return false;
             }
-            if (++wait[0] < 3) {
+            if (++wait[0] < GATHER_TICKS) {
                 return true;
             }
             wait[0] = 0;
-            Integer remaining = nodes.get(pos);
-            if (remaining == null || remaining <= 0) {
-                return false;
-            }
-            Inv.give(p, node.item(mode), 1);
-            if (random.nextInt(Gauntlet.NODE_SHARD_CHANCE) == 0) {
-                Inv.give(p, Gauntlet.shards(mode), Gauntlet.NODE_SHARD_MIN
-                        + random.nextInt(Gauntlet.NODE_SHARD_MAX - Gauntlet.NODE_SHARD_MIN + 1));
-            }
-            if (remaining <= 1) {
-                nodes.remove(pos);
-                Arena.set(world, pos, Blocks.AIR.defaultBlockState());
-                Msg.action(p, "The " + node.displayName.toLowerCase() + " is depleted.");
-                return false;
-            }
-            nodes.put(pos, remaining - 1);
-            return true;
+            return gatherOnce(p, node, pos);
         });
     }
 
-    /** Cooks every raw paddlefish (stops burning at 47 Cooking; the burn chance below it is approx). */
+    /**
+     * Gathers one resource from a node with its experience and the 1/3 chance of 10-30 shards (wiki node pages); removes the
+     * node when it is depleted. Returns whether the node has more.
+     */
+    public boolean gatherOnce(ServerPlayer p, Node node, BlockPos pos) {
+        Integer remaining = nodes.get(pos);
+        if (remaining == null || remaining <= 0) {
+            return false;
+        }
+        Inv.give(p, node.item(mode), 1);
+        xp(p, node.skill, node.xp);
+        if (random.nextInt(Gauntlet.NODE_SHARD_CHANCE) == 0) {
+            Inv.give(p, Gauntlet.shards(mode), Gauntlet.NODE_SHARD_MIN + random.nextInt(Gauntlet.NODE_SHARD_MAX - Gauntlet.NODE_SHARD_MIN + 1));
+        }
+        if (remaining <= 1) {
+            nodes.remove(pos);
+            nodeTypes.remove(pos);
+            Arena.set(world, pos, Blocks.AIR.defaultBlockState());
+            Msg.action(p, "The " + node.displayName.toLowerCase() + " is depleted.");
+            return false;
+        }
+        nodes.put(pos, remaining - 1);
+        return true;
+    }
+
+    /** Cooks every raw paddlefish (wiki success chart: low 155, high 368, never burnt from level 47; 15 Cooking XP each). */
     private void cook(ServerPlayer player) {
         int raw = Inv.count(player, Gauntlet.RAW_PADDLEFISH);
         if (raw == 0) {
@@ -489,8 +617,7 @@ public final class GauntletSession extends MinigameSession {
         int cooked = 0;
         Inv.remove(player, Gauntlet.RAW_PADDLEFISH, raw);
         for (int i = 0; i < raw; i++) {
-            double burn = level >= Gauntlet.PADDLEFISH_STOP_BURN ? 0 : (Gauntlet.PADDLEFISH_STOP_BURN - level) / 94.0;
-            if (random.nextDouble() < burn) {
+            if (random.nextDouble() >= Gauntlet.cookChance(level)) {
                 Inv.give(player, Gauntlet.BURNT_PADDLEFISH, 1);
             } else {
                 Inv.give(player, Gauntlet.PADDLEFISH, 1);
@@ -546,6 +673,40 @@ public final class GauntletSession extends MinigameSession {
         return Gauntlet.DUST_PER_GRIND;
     }
 
+    /** Right-clicking a spike, orb or bowstring: asks to crush it into 80 shards with the pestle and mortar (wiki). */
+    public static void offerCrush(ServerPlayer p, String componentId) {
+        if (!(MinigameManager.session(p) instanceof GauntletSession g)) {
+            return;
+        }
+        Piece piece = Gauntlet.pieceOfComponent(g.mode, componentId);
+        if (piece == null) {
+            return;
+        }
+        if (!Inv.has(p, Gauntlet.PESTLE, 1)) {
+            Msg.game(p, "You need a pestle and mortar to crush that.");
+            return;
+        }
+        MutableComponent line = Component.literal("[Crush] ").withStyle(st -> st.withColor(ChatFormatting.AQUA)
+                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/minigame sing crush_" + piece.key())));
+        line.append(Component.literal("the " + Inv.stack(componentId, 1).getHoverName().getString().toLowerCase() + " into "
+                + Gauntlet.COMPONENT_SHARDS + " shards? You won't be able to perfect a " + piece.key() + " with it.")
+                .withStyle(ChatFormatting.GRAY));
+        p.displayClientMessage(line, false);
+    }
+
+    /** Crushes a weapon component into 80 shards; returns whether it was crushed. */
+    public boolean crush(ServerPlayer p, Piece piece) {
+        String comp = Gauntlet.component(mode, piece);
+        if (comp == null || !Inv.has(p, comp, 1) || !Inv.has(p, Gauntlet.PESTLE, 1)) {
+            Msg.game(p, "You need the component and a pestle and mortar to crush it.");
+            return false;
+        }
+        Inv.remove(p, comp, 1);
+        Inv.give(p, Gauntlet.shards(mode), Gauntlet.COMPONENT_SHARDS);
+        Msg.action(p, "You crush it into " + Gauntlet.COMPONENT_SHARDS + " shards.");
+        return true;
+    }
+
     /** Right-clicking a grym leaf: mixes it into a water-filled vial (grym potion (unf)). */
     public static boolean mixGrym(ServerPlayer p) {
         if (!(MinigameManager.session(p) instanceof GauntletSession g)) {
@@ -581,10 +742,18 @@ public final class GauntletSession extends MinigameSession {
         return true;
     }
 
-    /** {@code /minigame sing <recipe>}: sings one recipe at the bowl. */
+    /** {@code /minigame sing <recipe>}: sings one recipe at the bowl (or crushes a component: {@code crush_<piece>}). */
     public static void sing(ServerPlayer p, String recipeId) {
         if (!(MinigameManager.session(p) instanceof GauntletSession g)) {
             Msg.game(p, "You can only sing crystal at the Gauntlet's singing bowl.");
+            return;
+        }
+        if (recipeId.startsWith("crush_")) {
+            for (Piece piece : new Piece[]{Piece.HALBERD, Piece.STAFF, Piece.BOW}) {
+                if (recipeId.equals("crush_" + piece.key())) {
+                    g.crush(p, piece);
+                }
+            }
             return;
         }
         g.singRecipe(p, recipeId);
@@ -604,18 +773,9 @@ public final class GauntletSession extends MinigameSession {
         for (Map.Entry<String, Integer> e : s.inputs(mode).entrySet()) {
             Inv.remove(p, e.getKey(), e.getValue());
         }
-        if (s.out().equals(Gauntlet.EGNIOL)) {
-            Inv.give(p, com.runecraft.skill.Drops.withDoses(Inv.stack(Gauntlet.EGNIOL, 1), Gauntlet.EGNIOL_DOSES));
-            egniolMade = true;
-        } else {
-            Inv.give(p, s.out(), s.outCount());
-        }
-        if (s.herbloreXp() > 0) {
-            xp(p, Skill.HERBLORE, s.herbloreXp());
-        } else {
-            xp(p, Skill.SMITHING, s.xpEach());
-            xp(p, Skill.CRAFTING, s.xpEach());
-        }
+        Inv.give(p, s.out(), s.outCount());
+        xp(p, Skill.SMITHING, s.xpEach());
+        xp(p, Skill.CRAFTING, s.xpEach());
         points += s.points();
         if (s.piece() != null && s.piece().armour()) {
             armourMade = true;
@@ -626,10 +786,18 @@ public final class GauntletSession extends MinigameSession {
         return true;
     }
 
-    /** The teleport crystal: back to the starting room (not from the boss room). */
+    /**
+     * The teleport crystal: back to the starting room (wiki messages: not needed in the starting room, useless in the boss
+     * room). Returns whether the crystal was used.
+     */
     public boolean teleportToStart(ServerPlayer p) {
         if (bossFight) {
-            Msg.game(p, "The Hunllef's lair blocks the crystal's magic.");
+            Msg.game(p, "That won't help you now. At this point in the Gauntlet, you win or you die.");
+            return false;
+        }
+        int[] cell = cellOf(p);
+        if (cell != null && cell[0] == Gauntlet.START_X && cell[1] == Gauntlet.START_Y) {
+            Msg.game(p, "You don't need to use that in this room.");
             return false;
         }
         BlockPos at = startPoint();
@@ -644,20 +812,33 @@ public final class GauntletSession extends MinigameSession {
         lootItems.merge(item, count, Integer::sum);
     }
 
+    /**
+     * Ends the run without the Hunllef: {@code empty} for the teleport platform and an escape crystal used before the fight,
+     * which leave the chest empty; otherwise (escaping the fight, dying) the run's points decide (wiki Reward Chest).
+     */
+    public void abandon(boolean empty) {
+        if (empty) {
+            noLoot = true;
+        }
+        end(false);
+    }
+
     @Override
     protected void onDeath(ServerPlayer player) {
         Msg.red(player, "Oh dear, you are dead! The Gauntlet spits you out.");
         player.setHealth(player.getMaxHealth());
+        MinigameData.of(player).incrementStat(player.getUUID(), "deaths:" + mode.boss);
         end(false);
     }
 
     @Override
     protected void onEnd(boolean success) {
         if (bossDead) {
+            sweepLoot();
             return;
         }
         // An unfinished run: the chest rolls by points (50+: incomplete table, 1-49: junk, 0: nothing).
-        Gauntlet.Table t = Gauntlet.unfinished(points);
+        Gauntlet.Table t = noLoot ? null : Gauntlet.unfinished(points);
         if (t != null) {
             Gauntlet.Loot l = t.roll(random);
             owe(l.item(), l.min() + random.nextInt(l.max() - l.min() + 1));
@@ -693,6 +874,17 @@ public final class GauntletSession extends MinigameSession {
     public static void rewardChest(ServerPlayer p) {
         int n = GauntletStash.claimChest(p);
         Msg.game(p, n == 0 ? "The reward chest is empty." : "You take your rewards from the chest.");
+    }
+
+    /** The lobby's scoreboard: completions, deaths and best times of both versions (wiki Scoreboard (The Gauntlet)). */
+    public static void scoreboard(ServerPlayer p) {
+        MinigameData md = MinigameData.of(p);
+        for (Mode m : Mode.values()) {
+            int best = md.stat(p.getUUID(), "best:" + m.boss);
+            Msg.game(p, (m == Mode.NORMAL ? "The Gauntlet" : "The Corrupted Gauntlet") + ": " + Players.data(p).killCount(m.boss)
+                    + " completions, " + md.stat(p.getUUID(), "deaths:" + m.boss) + " deaths, best time "
+                    + (best > 0 ? time(best) : "-") + ".");
+        }
     }
 
     @Override

@@ -6,6 +6,7 @@ import com.runecraft.osrs.EquipmentDef.Slot;
 import com.runecraft.osrs.EquipmentDef.WeaponClass;
 import com.runecraft.osrs.EquipmentStats;
 import com.runecraft.osrs.ItemDef.Kind;
+import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.ItemSink;
 import com.runecraft.osrs.content.MonsterDef;
@@ -71,11 +72,16 @@ public final class Gauntlet {
 
     /** Extra entrance block for the Corrupted Gauntlet (the normal one is the minigame's own entrance). */
     public static final String CORRUPTED_ENTRANCE = "corrupted_gauntlet_entrance";
-    /** The entrance place in the Gauntlet plaza of Prifddinas (wiki map: 3228, 6116). */
-    public static final String PLACE = "mg_gauntlet";
-    public static final int ENTRANCE_X = 3234;
-    public static final int ENTRANCE_Y = 6116;
-    /** The lobby (reward chest) at 3033, 6124 and the instanced maze (starting room around 1908, 5666). */
+    /**
+     * The Gauntlet Portal's place in north-west Prifddinas (wiki map 3228, 6116). The portal leads into the lobby
+     * ({@link GauntletLobby}), where the entrances and the reward chest are. Until round 34 the place was "mg_gauntlet" at
+     * 3234 with the entrances and chest in a row; a new id so worlds that built that row get the portal too (the old row
+     * keeps working).
+     */
+    public static final String PLACE = "mg_gauntlet_portal";
+    public static final int ENTRANCE_X = GauntletLobby.PORTAL_X;
+    public static final int ENTRANCE_Y = GauntletLobby.PORTAL_Y;
+    /** The instanced maze (starting room around 1908, 5666). */
     public static final int MAZE_X = 1908;
     public static final int MAZE_Y = 5666;
 
@@ -87,26 +93,33 @@ public final class Gauntlet {
     public static final String BARRIER = "gauntlet_barrier";
     public static final String RECIPES_BOOK = "gauntlet_recipes";
 
-    /** Resource nodes: block id, display name, yield per node (wiki), colour, look. */
+    /**
+     * Resource nodes: block id, display name, yield per node, colour, look, and the skill and experience of each resource
+     * gathered (wiki node pages, Skill info: Mining, Woodcutting and Fishing 10, Farming 1 for the plants; no level needed).
+     */
     public enum Node {
-        ORE("gauntlet_crystal_deposit", "Crystal deposit", 3, 0x9AD8F0, "rock"),
-        BARK("gauntlet_phren_roots", "Phren roots", 3, 0x8A6A9A, "roots"),
-        LINUM("gauntlet_linum_tirinum", "Linum tirinum", 3, 0xC0E0F0, "sapling"),
-        GRYM("gauntlet_grym_root", "Grym root", 1, 0x5AA05A, "roots"),
-        FISH("gauntlet_fishing_spot", "Fishing spot", 4, 0x4080C0, "water_spot");
+        ORE("gauntlet_crystal_deposit", "Crystal deposit", 3, 0x9AD8F0, "rock", Skill.MINING, 10),
+        BARK("gauntlet_phren_roots", "Phren roots", 3, 0x8A6A9A, "roots", Skill.WOODCUTTING, 10),
+        LINUM("gauntlet_linum_tirinum", "Linum tirinum", 3, 0xC0E0F0, "sapling", Skill.FARMING, 1),
+        GRYM("gauntlet_grym_root", "Grym root", 1, 0x5AA05A, "roots", Skill.FARMING, 1),
+        FISH("gauntlet_fishing_spot", "Fishing spot", 4, 0x4080C0, "water_spot", Skill.FISHING, 10);
 
         public final String block;
         public final String displayName;
         public final int yield;
         public final int colour;
         public final String look;
+        public final Skill skill;
+        public final double xp;
 
-        Node(String block, String displayName, int yield, int colour, String look) {
+        Node(String block, String displayName, int yield, int colour, String look, Skill skill, double xp) {
             this.block = block;
             this.displayName = displayName;
             this.yield = yield;
             this.colour = colour;
             this.look = look;
+            this.skill = skill;
+            this.xp = xp;
         }
 
         /** The tool gathering needs (wiki: crystal pickaxe, axe, harpoon; none for linum tirinum and grym roots), or null. */
@@ -145,7 +158,21 @@ public final class Gauntlet {
     public static final int NODE_SHARD_MIN = 10;
     public static final int NODE_SHARD_MAX = 30;
 
-    /** Every interactive block placed in the maze: id, name, colour, look (registered with the module's arena blocks). */
+    /** Starting room: gives back a lost sceptre, tool or pestle and mortar (wiki Tool Storage). */
+    public static final String TOOL_STORAGE = "gauntlet_tool_storage";
+    /**
+     * Teleport Platform (wiki): in the starting room it abandons the run with no loot; in the lobby it leads back to the
+     * Gauntlet Portal in Prifddinas.
+     */
+    public static final String TELEPORT_PLATFORM = "gauntlet_teleport_platform";
+    /** The Gauntlet Portal in the north-west of Prifddinas: leads into the lobby. */
+    public static final String PORTAL = "gauntlet_portal";
+    /** The lobby's scoreboard: completions, deaths and best times of both versions. */
+    public static final String SCOREBOARD = "gauntlet_scoreboard";
+    /** The lobby's and starting room's "Egniol Potions" bookstand. */
+    public static final String EGNIOL_BOOK = "gauntlet_egniol_potions";
+
+    /** Every interactive block placed in the maze or the lobby: id, name, colour, look (registered with the module's arena blocks). */
     public static List<String[]> blocks() {
         List<String[]> list = new ArrayList<>();
         list.add(new String[]{SINGING_BOWL, "Singing bowl", "9AD8F0", "altar"});
@@ -157,6 +184,12 @@ public final class Gauntlet {
         for (Node n : Node.values()) {
             list.add(new String[]{n.block, n.displayName, String.format("%06X", n.colour), n.look});
         }
+        // Round 34 (appended): the starting room's tool storage and teleport platform, the lobby and its portal.
+        list.add(new String[]{TOOL_STORAGE, "Tool Storage", "8A9AB0", "crate"});
+        list.add(new String[]{TELEPORT_PLATFORM, "Teleport Platform", "A0D8F0", "portal_glow"});
+        list.add(new String[]{PORTAL, "Gauntlet Portal", "8AD0F8", "portal_glow"});
+        list.add(new String[]{SCOREBOARD, "Scoreboard (The Gauntlet)", "6A8AA0", "notice_board"});
+        list.add(new String[]{EGNIOL_BOOK, "Egniol Potions", "60C0A0", "notice_board"});
         return list;
     }
 
@@ -191,6 +224,13 @@ public final class Gauntlet {
     public static final int CRYSTAL_PADDLEFISH_HEAL = 16;
     public static final int PADDLEFISH_STOP_BURN = 47;
     public static final double PADDLEFISH_COOK_XP = 15;
+    /** Paddlefish cooking chance on the range (wiki Skilling success chart: low 155, high 368; 100% from level 47). */
+    public static final int PADDLEFISH_LOW = 155;
+    public static final int PADDLEFISH_HIGH = 368;
+
+    public static double cookChance(int cookingLevel) {
+        return com.runecraft.osrs.Chance.lerp(cookingLevel, PADDLEFISH_LOW, PADDLEFISH_HIGH);
+    }
     /** Egniol potions are made with 3 doses; each restores prayer (floor(level / 4) + 7) and 40% run energy (a stamina). */
     public static final int EGNIOL_DOSES = 3;
 
@@ -700,6 +740,138 @@ public final class Gauntlet {
         };
     }
 
+    /** The creature resource rows' items, as their crystal (normal) ids; {@link #resourceItem} gives each mode's own. */
+    public static final String RES_SHARDS = "crystal_gauntlet_shards";
+    public static final String RES_FISH = "raw_paddlefish";
+    public static final String RES_GRYM = "crystal_grym_leaf";
+    public static final String RES_TELEPORT = "crystal_gauntlet_teleport";
+
+    /**
+     * A creature's resource roll on top of its 100% shards (wiki Drop Log Project rates of the corrupted creatures; one roll,
+     * item null = nothing): weak 15/24 (shards 3-7 9/24, raw paddlefish 1-3 3/24, grym leaf 2/24, teleport crystal 1/24),
+     * strong 15/21 (shards 7-14 9/21, paddlefish 2-4 3/21, grym 2/21, teleport 1/21), demi-bosses 15/18 (shards 10-21 9/18,
+     * paddlefish 3-5 3/18, grym 2/18, teleport 1/18). The crystalline pages list the same items without rates (approx: the
+     * same table).
+     */
+    public static Table resources(Foe f) {
+        return switch (f) {
+            case WEAK -> WEAK_RESOURCES;
+            case STRONG -> STRONG_RESOURCES;
+            case DEMI -> DEMI_RESOURCES;
+        };
+    }
+
+    private static final Table WEAK_RESOURCES = new Table(List.of(l(null, 0, 0, 9), l(RES_SHARDS, 3, 7, 9), l(RES_FISH, 1, 3, 3),
+            l(RES_GRYM, 1, 1, 2), l(RES_TELEPORT, 1, 1, 1)), 24, 1);
+    private static final Table STRONG_RESOURCES = new Table(List.of(l(null, 0, 0, 6), l(RES_SHARDS, 7, 14, 9), l(RES_FISH, 2, 4, 3),
+            l(RES_GRYM, 1, 1, 2), l(RES_TELEPORT, 1, 1, 1)), 21, 1);
+    private static final Table DEMI_RESOURCES = new Table(List.of(l(null, 0, 0, 3), l(RES_SHARDS, 10, 21, 9), l(RES_FISH, 3, 5, 3),
+            l(RES_GRYM, 1, 1, 2), l(RES_TELEPORT, 1, 1, 1)), 18, 1);
+
+    /** The item of a resource row in this mode (null stays null: nothing). */
+    public static String resourceItem(Mode m, String key) {
+        if (key == null) {
+            return null;
+        }
+        return switch (key) {
+            case RES_SHARDS -> shards(m);
+            case RES_GRYM -> grym(m);
+            case RES_TELEPORT -> teleport(m);
+            default -> key;
+        };
+    }
+
+    /** Weak creatures drop a weapon frame 1 time in 4, always from the first one killed in a run (wiki, 22 July 2026). */
+    public static final int WEAK_FRAME_CHANCE = 4;
+    /** Strong creatures drop a weapon frame 2 times in 7, guaranteed by the second one killed without one (wiki). */
+    public static final int STRONG_FRAME_NUM = 2;
+    public static final int STRONG_FRAME_DEN = 7;
+
+    /**
+     * Whether a kill drops a weapon frame. {@code kill} counts this run's kills of the creature's tier, this one included;
+     * {@code frameFromTier} says whether that tier has already dropped one. Demi-bosses always drop one.
+     */
+    public static boolean dropsFrame(Foe f, int kill, boolean frameFromTier, Random r) {
+        return switch (f) {
+            case WEAK -> kill <= 1 || r.nextInt(WEAK_FRAME_CHANCE) == 0;
+            case STRONG -> (!frameFromTier && kill >= 2) || r.nextInt(STRONG_FRAME_DEN) < STRONG_FRAME_NUM;
+            case DEMI -> true;
+        };
+    }
+
+    /** The pestle and mortar crushes a spike, orb or bowstring into 80 shards (wiki Crystal shards, Creation). */
+    public static final int COMPONENT_SHARDS = 80;
+
+    /** The weapon piece whose perfecting component this item is, or null. */
+    public static Piece pieceOfComponent(Mode m, String itemId) {
+        for (Piece p : new Piece[]{Piece.HALBERD, Piece.STAFF, Piece.BOW}) {
+            if (component(m, p).equals(itemId)) {
+                return p;
+            }
+        }
+        return null;
+    }
+
+    // ------------------------------------------------------------------ the Hunllef
+
+    /**
+     * The Hunllef's standard attacks' max hit without armour or the right protection prayer: the NPC formula with 240 Ranged
+     * and Magic and +64 (crystalline) or +112 (corrupted) strength bonus, 50 and 68 (wiki infoboxes: "50+" and 68).
+     */
+    public static int hunllefUnprayedMax(Mode m) {
+        return m == Mode.NORMAL ? 50 : 68;
+    }
+
+    /**
+     * Damage of a standard attack that lands through the right protection prayer: the roll is scaled from the unprayed max to
+     * the prayed one (12 / 16 without armour). Worn armour then lowers both by {@link #hunllefDamageScale} (unprayed with full
+     * T1/T2/T3 corrupted: 55/42/34; wiki 55/45/35, approx).
+     */
+    public static int prayedDamage(Mode m, int rolled) {
+        return (int) Math.round(rolled * hunllefMaxHit(m, 0) / (double) hunllefUnprayedMax(m));
+    }
+
+    /** Tornado damage per tick without armour (wiki): 10-20 crystalline, 15-30 corrupted; armour scales it like the attacks. */
+    public static int[] tornadoDamage(Mode m) {
+        return m == Mode.NORMAL ? new int[]{10, 20} : new int[]{15, 30};
+    }
+
+    /** Tornadoes last 20 ticks (wiki). */
+    public static final int TORNADO_TICKS = 20;
+
+    /**
+     * Tornadoes summoned at once: one (crystalline) or two (corrupted) above 66% health, one more between 33% and 66%, and
+     * another below 33% (wiki Tornado pages).
+     */
+    public static int tornadoes(Mode m, double healthPercent) {
+        int n = m == Mode.NORMAL ? 1 : 2;
+        if (healthPercent <= 66) {
+            n++;
+        }
+        if (healthPercent <= 33) {
+            n++;
+        }
+        return n;
+    }
+
+    /**
+     * The damaging floor's phase by the Hunllef's health (wiki Corrupted Hunllef: 1000-667 slow, 666-333 medium, 332 and
+     * below fast; both Hunllefs use the same mechanics): 0, 1 or 2.
+     */
+    public static int floorPhase(double healthPercent) {
+        return healthPercent > 66.6 ? 0 : healthPercent > 33.3 ? 1 : 2;
+    }
+
+    /** Damage per tick on an orange floor tile (wiki: 10-20). */
+    public static final int FLOOR_MIN = 10;
+    public static final int FLOOR_MAX = 20;
+    /** Game ticks a pattern of tiles stays blue (crimson) before turning orange, by phase (approx: slow, medium, fast). */
+    public static final int[] FLOOR_WARN_TICKS = {5, 4, 2};
+    /** Game ticks between floor patterns, by phase (approx). */
+    public static final int[] FLOOR_INTERVAL_TICKS = {16, 12, 8};
+    /** Game ticks a pattern stays orange (approx). */
+    public static final int FLOOR_ACTIVE_TICKS = 4;
+
     /**
      * Creature stats (osrs-dps-calc monsters.json): level, hitpoints, attack, strength, defence, magic, ranged, max hit,
      * attack bonus, strength bonus. Defensive bonuses are all 0 since the July 2026 standardisation.
@@ -716,6 +888,8 @@ public final class Gauntlet {
             case "unicorn" -> c ? new Stats(61, 38, 75, 72, 18, 24, 0, 17, 0, 0) : new Stats(45, 38, 50, 48, 18, 24, 0, 6, 0, 0);
             case "scorpion" -> c ? new Stats(89, 38, 72, 159, 18, 18, 0, 17, 0, 0) : new Stats(64, 38, 48, 106, 18, 18, 0, 11, 0, 0);
             case "wolf" -> c ? new Stats(97, 38, 159, 99, 18, 22, 0, 19, 0, 0) : new Stats(69, 38, 106, 66, 18, 22, 0, 8, 0, 0);
+            // The corrupted dragon's magic bonuses are +146 attack / +226 damage, not the bear's and dark beast's +81 / +132.
+            case "dragon" -> c ? new Stats(258, 100, 147, 147, 98, 98, 147, 48, 146, 226) : new Stats(172, 100, 98, 98, 98, 98, 98, 28, 54, 106);
             default -> c ? new Stats(258, 100, 147, 147, 98, 98, 147, 48, 81, 132) : new Stats(172, 100, 98, 98, 98, 98, 98, 28, 54, 106);
         };
     }

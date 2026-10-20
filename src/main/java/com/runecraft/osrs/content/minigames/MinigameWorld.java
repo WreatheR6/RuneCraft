@@ -283,7 +283,8 @@ public final class MinigameWorld {
         map.get(Minigame.BARBARIAN_ASSAULT.place()).add(BA_BLACKBOARD);
         map.get(Minigame.FORTIS_COLOSSEUM.place()).add(FortisColosseum.SCOREBOARD);
         map.get(Minigame.FORTIS_COLOSSEUM.place()).add(FortisColosseum.BANK_CHEST);
-        map.get(Minigame.GAUNTLET.place()).add(Gauntlet.REWARD_CHEST);
+        // The Gauntlet: only its portal stands in Prifddinas; the entrances and the reward chest are in the lobby (GauntletLobby).
+        map.put(Minigame.GAUNTLET.place(), new ArrayList<>(List.of(Gauntlet.PORTAL)));
         map.put(TempleTrekking.RAMBLE_PLACE, new ArrayList<>(List.of(TempleTrekking.RAMBLE_ENTRANCE)));
         return map;
     }

@@ -119,6 +119,29 @@ public final class GauntletStash extends SavedData {
         return list.size();
     }
 
+    /** Whether the player's stashed belongings (inventory and worn jewellery slots) hold this item. */
+    public static boolean stashHas(ServerPlayer player, String item) {
+        CompoundTag c = get(player.getServer()).stashed.get(player.getUUID());
+        if (c == null) {
+            return false;
+        }
+        ListTag inv = c.getList("Inventory", Tag.TAG_COMPOUND);
+        for (int i = 0; i < inv.size(); i++) {
+            ItemStack s = LegacyStacks.parse(player.registryAccess(), inv.getCompound(i));
+            if (!s.isEmpty() && item.equals(Inv.idOf(s))) {
+                return true;
+            }
+        }
+        CompoundTag worn = c.getCompound("Worn");
+        for (String key : worn.getAllKeys()) {
+            ItemStack s = LegacyStacks.parse(player.registryAccess(), worn.getCompound(key));
+            if (!s.isEmpty() && item.equals(Inv.idOf(s))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Whether an item exists only inside the Gauntlet. */
     public static boolean runItem(String id) {
         return RUN_ITEMS.contains(id);

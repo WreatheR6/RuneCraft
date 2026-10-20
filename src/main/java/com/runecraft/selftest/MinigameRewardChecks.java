@@ -55,6 +55,8 @@ final class MinigameRewardChecks {
         checks.add(new SelfTest.Check("minigame:spoils_of_war", g::spoils));
         checks.add(new SelfTest.Check("minigame:blighted_supplies", g::blighted));
         checks.add(new SelfTest.Check("minigame:gauntlet_run", g::gauntlet));
+        checks.add(new SelfTest.Check("minigame:gauntlet_walk", () -> g.gauntletWalk(false)));
+        checks.add(new SelfTest.Check("minigame:gauntlet_failures", () -> g.gauntletWalk(true)));
         checks.add(new SelfTest.Check("minigame:colosseum_cash_out", g::colosseumCashOut));
         checks.add(new SelfTest.Check("minigame:colosseum_waves", g::colosseumWaves));
         checks.add(new SelfTest.Check("minigame:colosseum_glory", g::colosseumGlory));
@@ -767,6 +769,22 @@ final class MinigameRewardChecks {
             }
         }
         return "refused outside the Wilderness";
+    }
+
+    /**
+     * A whole Gauntlet run walked as the real player (content/minigames/GauntletSelfTest): the portal and lobby, rooms,
+     * gathering, a demi-boss, the singing bowl, the Hunllef's mechanics and kill, the reward chest; or the ways a run fails.
+     */
+    private String gauntletWalk(boolean failures) {
+        if (!c.realPlayer()) {
+            throw new SelfTest.Skip("a run only sees players in the player list; runs in '/rc selftest real minigame:'");
+        }
+        try {
+            return failures ? com.runecraft.content.minigames.GauntletSelfTest.failures(p())
+                    : com.runecraft.content.minigames.GauntletSelfTest.walk(p());
+        } catch (AssertionError e) {
+            throw failure(e.getMessage());
+        }
     }
 
     /**
