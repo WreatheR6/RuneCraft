@@ -99,6 +99,7 @@ final class GameplayChecks {
             checks.add(new SelfTest.Check("minigame:" + m.id(), () -> g.minigame(m)));
         }
         checks.addAll(MinigameRewardChecks.all(context));
+        checks.add(new SelfTest.Check("minigame:wintertodt_warmth", g::wintertodtWarmth));
         checks.add(new SelfTest.Check("minigame:fight_caves_run", () -> g.tzhaarRun(
                 com.runecraft.content.minigames.games.TzHaarSelfTest::fightCaveRun)));
         checks.add(new SelfTest.Check("minigame:inferno_run", () -> g.tzhaarRun(
@@ -570,6 +571,59 @@ final class GameplayChecks {
             return com.runecraft.content.raids.RaidSelfTest.toaDeaths(p(), c.near(0, 2));
         } catch (AssertionError e) {
             throw failure(e.getMessage());
+        }
+    }
+
+    /**
+     * The Wintertodt's warmth and energy (round 36): the lit braziers' pyromancers drain its energy, the cold takes warmth
+     * (not Hitpoints), and food restores it.
+     */
+    private String wintertodtWarmth() {
+        data().skills().setXpTenths(Skill.FIREMAKING, Math.max(data().skills().xpTenths(Skill.FIREMAKING),
+                com.runecraft.osrs.Experience.xpForLevel(80) * 10));
+        MinigameSession s = MinigameManager.selfTestStart(Minigame.WINTERTODT, Minigame.WINTERTODT.entranceBlock(), p());
+        if (!(s instanceof com.runecraft.content.minigames.games.WintertodtSession w)) {
+            if (s != null) {
+                s.end(false);
+            }
+            throw failure("the Wintertodt didn't start a Wintertodt session");
+        }
+        try {
+            var start = w.selfTestView(p());
+            if (start.energy() != 100 || start.warmth() < 99.9) {
+                throw failure("a new game: energy " + start.energy() + "%, warmth " + start.warmth() + "%");
+            }
+            w.selfTestLightAll(p());
+            var lit = w.selfTestView(p());
+            if (lit.lit() != 4 || lit.points() < 100) {
+                throw failure("lighting the braziers: " + lit.lit() + " lit, " + lit.points() + " points");
+            }
+            for (int i = 0; i < 40 && !w.isEnded(); i++) {
+                MinigameManager.selfTestTick(w);
+                c.heal();
+            }
+            var drained = w.selfTestView(p());
+            if (drained.energy() >= 100) {
+                throw failure("40 ticks with the braziers lit didn't drain the Wintertodt (energy " + drained.energy() + "%)");
+            }
+            float hp = p().getHealth();
+            double before = drained.warmth();
+            w.selfTestChill(p());
+            double cold = w.selfTestView(p()).warmth();
+            if (cold >= before || p().getHealth() < hp) {
+                throw failure("the cold took warmth " + before + " -> " + cold + " and health " + hp + " -> " + p().getHealth());
+            }
+            w.selfTestWarm(p(), "shark");
+            double warmed = w.selfTestView(p()).warmth();
+            if (warmed <= cold) {
+                throw failure("eating a shark didn't restore warmth (" + cold + " -> " + warmed + ")");
+            }
+            return "energy 100% -> " + drained.energy() + "% in 40 ticks with four braziers lit; the cold took "
+                    + Math.round(before - cold) + "% warmth (no health), a shark gave back " + Math.round(warmed - cold) + "%";
+        } finally {
+            if (!w.isEnded()) {
+                w.end(false);
+            }
         }
     }
 

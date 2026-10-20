@@ -93,7 +93,8 @@ public final class MinigameRules {
         public static final int POINTS_KINDLING = 25;
         public static final int POINTS_LIGHT = 25;
         public static final int POINTS_FIX = 25;
-        public static final int POINTS_HEAL_PYROMANCER = 30;
+        /** OSRS Wiki (16 October 2024): healing a pyromancer is worth 75 points (was 30). */
+        public static final int POINTS_HEAL_PYROMANCER = 75;
         public static final int MIN_POINTS = WintertodtRewards.MIN_POINTS;
         public static final int MAX_ROLLS = WintertodtRewards.MAX_ROLLS;
         public static final int BRAZIERS = 4;
@@ -101,9 +102,105 @@ public final class MinigameRules {
         private Wintertodt() {
         }
 
-        /** Wintertodt energy: about 600 units plus 400 per player (approx. so a solo game lasts minutes). */
+        // ---- energy (OSRS Wiki "Wintertodt/Strategies", Wintertodt's energy) ----
+        /** The Wintertodt's energy meter, in percent; it doesn't grow with the number of players. */
+        public static final int MAX_ENERGY = 100;
+        /** Each pyromancer channelling from a lit brazier drains 1% every 14 ticks; feeding the brazier doesn't speed it up. */
+        public static final int PYROMANCER_DRAIN_TICKS = 14;
+        /** With every brazier out the Wintertodt regains 1% every 35 ticks. */
+        public static final int REGAIN_TICKS = 35;
+        /** A relit brazier's (or healed pyromancer's) channelling resumes after a short random delay of about 1-5 seconds. */
+        public static final int RESUME_MIN_TICKS = 2;
+        public static final int RESUME_MAX_TICKS = 8;
+        /** Pyromancers have 14 hitpoints: two of the Wintertodt's hits incapacitate one. */
+        public static final int PYROMANCER_HP = 14;
+        public static final int PYROMANCER_HIT = 7;
+
+        /** Wintertodt energy at the start of a game: always a full meter (was an approximation growing with the players). */
         public static int energy(int players) {
-            return 600 + 400 * Math.max(1, players);
+            return MAX_ENERGY;
+        }
+
+        /**
+         * Whether an attack attempt goes through (Mod Ash): a random number up to the maximum energy is compared with the
+         * remaining energy. Standard (and area) attacks happen when it is lower, so mostly early in the fight; attacks on the
+         * braziers and pyromancers when it is higher, so mostly late.
+         */
+        public static boolean attacksPlayers(int roll0toMax, int energy) {
+            return roll0toMax < energy;
+        }
+
+        public static boolean attacksBraziers(int roll0toMax, int energy) {
+            return roll0toMax > energy;
+        }
+
+        // ---- warmth (OSRS Wiki "Wintertodt", Warmth Meter, since 9 October 2024) ----
+        /**
+         * The warmth meter (0-100%) replaced Hitpoints inside the prison: the cold hits it, food that heals 4+ restores 35%, a
+         * dose of rejuvenation potion 30%, it regenerates 8% a minute plus 1% per warm item, and at 0% the player dies.
+         */
+        public static final int WARMTH_MAX = 100;
+        public static final int FOOD_WARMTH = 35;
+        public static final int FOOD_MIN_HEAL = 4;
+        public static final int POTION_WARMTH = 30;
+        /** The standard attack's cooldown on each player. */
+        public static final int STANDARD_COOLDOWN_TICKS = 10;
+
+        /** Warmth regenerated each game tick: (8% + 1% per warm item, up to 4) a minute of 100 ticks. */
+        public static double warmthRegenPerTick(int warmItems) {
+            return (8 + Math.max(0, Math.min(4, warmItems))) / 100.0;
+        }
+
+        /**
+         * The standard attack's warmth damage (Mod Ed's formulas, wiki): floor((16 - W - min(2B, 6)) x 100 / FM), with W the
+         * warm items worn (max 4), B the braziers lit (max 3) and FM the base Firemaking level.
+         */
+        public static int standardDamage(int firemaking, int warmItems, int litBraziers) {
+            int w = Math.max(0, Math.min(4, warmItems));
+            int b = Math.max(0, Math.min(3, litBraziers));
+            return Math.max(0, (16 - w - Math.min(2 * b, 6)) * 100 / Math.max(1, firemaking));
+        }
+
+        /** A shattering brazier's damage to the players next to it: 2 x floor((10 - W) x 100 / FM). */
+        public static int brazierDamage(int firemaking, int warmItems) {
+            return 2 * ((10 - Math.max(0, Math.min(4, warmItems))) * 100 / Math.max(1, firemaking));
+        }
+
+        /** The snowfall (3x3) area attack's damage: 3 x floor((10 - W) x 100 / FM). */
+        public static int areaDamage(int firemaking, int warmItems) {
+            return 3 * ((10 - Math.max(0, Math.min(4, warmItems))) * 100 / Math.max(1, firemaking));
+        }
+
+        /**
+         * The warm clothing that counts at the Wintertodt (OSRS Wiki "Warmth", the items RuneCraft has; snapshot
+         * {@code wintertodt_warmth.tsv}, diffed by {@code WintertodtWarmthTest}). Four worn count fully.
+         */
+        public static final java.util.Set<String> WARM_ITEMS = java.util.Set.of(
+                "larupia_hat", "graahk_headdress", "kyatt_hat", "pyromancer_hood", "bearhead", "fire_tiara", "lumberjack_hat", "earmuffs",
+                "wolf_mask", "slayer_helmet", "slayer_helmet_i", "gnome_scarf", "gloves_of_silence", "fremennik_gloves", "warm_gloves",
+                "red_gloves", "yellow_gloves", "teal_gloves", "purple_gloves", "firemaking_cape", "max_cape", "fire_cape", "infernal_cape",
+                "obsidian_cape", "wolf_cloak", "staff_of_fire", "fire_battlestaff", "lava_battlestaff", "steam_battlestaff",
+                "smoke_battlestaff", "mystic_fire_staff", "mystic_lava_staff", "infernal_axe", "infernal_pickaxe", "infernal_harpoon",
+                "ale_of_the_gods", "bruma_torch", "tome_of_fire", "bug_lantern", "polar_camo_top", "wood_camo_top", "jungle_camo_top",
+                "desert_camo_top", "larupia_top", "graahk_top", "kyatt_top", "pyromancer_garb", "polar_camo_legs", "wood_camo_legs",
+                "jungle_camo_legs", "desert_camo_legs", "larupia_legs", "graahk_legs", "kyatt_legs", "pyromancer_robe",
+                "ring_of_the_elements", "pyromancer_boots", "mole_slippers", "bear_feet", "demon_feet", "frog_slippers", "cow_slippers",
+                "brutus_slippers");
+
+        /** Warm items among the worn item ids (counted up to four). */
+        public static int warmItems(java.util.Collection<String> worn) {
+            int n = 0;
+            for (String id : worn) {
+                if (id != null && WARM_ITEMS.contains(id)) {
+                    n++;
+                }
+            }
+            return Math.min(4, n);
+        }
+
+        /** Herblore XP for mixing a rejuvenation potion: 0.1 x the Herblore level (wiki). */
+        public static double potionXp(int herblore) {
+            return herblore * 0.1;
         }
 
         public static double chopXp(int woodcutting) {
@@ -145,16 +242,6 @@ public final class MinigameRules {
             return WintertodtRewards.rolls(points, random);
         }
 
-        /**
-         * Cold damage per hit (OSRS wiki): floor((16 - W - 2B) * (H + 1) / 99), where W is the number
-         * of warm items worn (max 4), B is 1 when the player is beside a lit brazier and H is the
-         * Hitpoints level. At least 1.
-         */
-        public static int coldDamage(int hitpointsLevel, int warmItems, int litBraziersNearby) {
-            int w = Math.max(0, Math.min(4, warmItems));
-            int b = litBraziersNearby > 0 ? 1 : 0;
-            return Math.max(1, (16 - w - 2 * b) * (hitpointsLevel + 1) / 99);
-        }
     }
 
     // ---------------------------------------------------------------- Tempoross
