@@ -127,6 +127,8 @@ class GodWarsContentTest {
         assertEquals(596, z.combatLevel);
         assertEquals(2, z.attackSpeed);
         assertEquals(27, maxHit(z, "saradomin sword")); // wiki infobox: 27 (melee)
+        assertEquals(AttackType.CRUSH, GwdBosses.ZILY_MELEE.style()); // wiki infobox: attack style Crush, Magic
+        assertEquals(AttackType.MAGIC, GwdBosses.ZILY_MAGIC.style());
         assertEquals(20, maxHit(z, "saradomin strike"));
         assertEquals(127, rarity(z, "saradomin_sword"));
         assertEquals(254, rarity(z, "saradomins_light"));

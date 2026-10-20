@@ -260,7 +260,7 @@ final class NexScript extends GwdScript {
         resolvePrison(boss, world, gameTick);
         tickCough(boss, world, gameTick);
         tickDarkness(boss, gameTick);
-        List<ServerPlayer> nearby = players(boss, 24);
+        List<ServerPlayer> nearby = roomPlayers(boss, 24);
         if (nearby.isEmpty() || shieldIndex >= 0 || gameTick < nextSpecial) {
             return;
         }
@@ -344,7 +344,7 @@ final class NexScript extends GwdScript {
             inDarkness.clear();
             return;
         }
-        for (ServerPlayer p : players(boss, 24)) {
+        for (ServerPlayer p : roomPlayers(boss, 24)) {
             boolean close = p.distanceToSqr(boss) <= (meleeReach(boss) + 0.5) * (meleeReach(boss) + 0.5);
             int t = close ? inDarkness.merge(p, 1, Integer::sum) : 0;
             if (!close) {
@@ -427,7 +427,7 @@ final class NexScript extends GwdScript {
             Vec3 p = from.add(end.subtract(from).scale(i / 16.0));
             world.sendParticles(ParticleTypes.LARGE_SMOKE, p.x, p.y + 1, p.z, 4, 0.3, 0.5, 0.3, 0.01);
         }
-        for (ServerPlayer p : players(boss, 24)) {
+        for (ServerPlayer p : roomPlayers(boss, 24)) {
             if (segmentDistance(p.position(), from, end) < 1.6) {
                 CombatHooks.nameAttack("smoke_dash", null);
                 if (CombatHandler.applyDamage(boss, p, boss.getRandom().nextInt(51)) > 0) {
@@ -480,7 +480,7 @@ final class NexScript extends GwdScript {
                     Msg.action(p, "*Cough*");
                 }
             }
-            for (ServerPlayer o : players(boss, 24)) {
+            for (ServerPlayer o : roomPlayers(boss, 24)) {
                 if (o != p && o.distanceToSqr(p) < 2.5 * 2.5) {
                     infect(o, gameTick);
                 }
@@ -512,7 +512,7 @@ final class NexScript extends GwdScript {
             int dealt = CombatHandler.applyDamage(boss, sacrifice, boss.getRandom().nextInt(51));
             healReal(boss, dealt);
             Msg.red(sacrifice, "Nex drains your blood!");
-            for (ServerPlayer p : players(boss, meleeReach(boss) + 1)) {
+            for (ServerPlayer p : roomPlayers(boss, meleeReach(boss) + 1)) {
                 if (p != sacrifice) {
                     drainPrayer(p, Players.data(p).prayerPoints() / 3);
                     CombatHandler.applyDamage(boss, p, boss.getRandom().nextInt(13));
@@ -600,12 +600,14 @@ final class NexScript extends GwdScript {
         ServerLevel world = (ServerLevel) boss.level();
         // Wrath (OSRS Wiki): up to 50 to everyone in the 5x5 around her, three seconds after her death (time to run away).
         Vec3 at = boss.position();
+        GwdDungeon.Area in = room(boss);
         long seed = boss.getRandom().nextLong();
         com.runecraft.content.systems.SysTicks.later(WRATH_DELAY_TICKS, () -> {
             world.sendParticles(ParticleTypes.EXPLOSION_EMITTER, at.x, at.y + 1, at.z, 2, 1, 1, 1, 0);
             java.util.Random r = new java.util.Random(seed);
             for (ServerPlayer p : world.getPlayers(pl -> pl.isAlive() && !pl.isSpectator() && Math.abs(pl.getX() - at.x) <= WRATH_REACH
-                    && Math.abs(pl.getZ() - at.z) <= WRATH_REACH && Math.abs(pl.getY() - at.y) < 4)) {
+                    && Math.abs(pl.getZ() - at.z) <= WRATH_REACH && Math.abs(pl.getY() - at.y) < 4
+                    && GwdDungeon.inRoom(in, pl.getBlockX(), pl.getBlockY(), pl.getBlockZ()))) {
                 CombatHooks.nameAttack("wrath", null);
                 CombatHandler.applyDamage(null, p, r.nextInt(WRATH_MAX + 1));
             }

@@ -167,6 +167,31 @@ public final class GwdWalk {
         BlockHooks.use(player, id, pos, state);
     }
 
+    /**
+     * Sneak-uses an altar with a weapon in hand through the real right-click event, as a player teleports out of a chamber
+     * (vanilla never reaches the block's own use for a sneaking player holding something).
+     */
+    private void sneakUseAltar(GwdDungeon.Altar altar) {
+        Spot s = altar.spot();
+        StructurePlacer.applyAround(world, s.blockX(), s.blockZ(), 12);
+        BlockPos pos = new BlockPos(s.blockX(), s.feetY(), s.blockZ());
+        String id = BuiltInRegistries.BLOCK.getKey(world.getBlockState(pos).getBlock()).getPath();
+        expect(id.equals(altar.block()), "expected " + altar.block() + " at " + pos.toShortString() + " but found " + id);
+        net.minecraft.world.item.ItemStack held = player.getMainHandItem();
+        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, Inv.stack("rune_crossbow", 1));
+        player.setShiftKeyDown(true);
+        try {
+            var hit = new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(pos),
+                    net.minecraft.core.Direction.UP, pos, false);
+            var result = com.runecraft.platform.UseBlockCallback.EVENT.invoker().interact(player, world,
+                    net.minecraft.world.InteractionHand.MAIN_HAND, hit);
+            expect(result.consumesAction(), altar.name() + ": sneak-use with a weapon in hand wasn't handled (" + result + ")");
+        } finally {
+            player.setShiftKeyDown(false);
+            player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, held);
+        }
+    }
+
     /** The first block of a passage's block on a tile (carved first). */
     private BlockPos blockOf(Passage p, Spot s) {
         StructurePlacer.applyAround(world, s.blockX(), s.blockZ(), 12);
@@ -382,6 +407,23 @@ public final class GwdWalk {
         expect(GwdSpawner.respawnLeft(guardId) > 0, guardId + " has no respawn timer");
         GwdSpawner.stock(world, List.of(player));
         expect(GwdSpawner.find(world, guardId) == null, guardId + " came back at once");
+        GwdDungeon.Altar altar = null;
+        for (GwdDungeon.Altar a : GwdDungeon.altars()) {
+            if (a.god() == god) {
+                altar = a;
+            }
+        }
+        expect(altar != null, "no altar for " + god);
+        // Its room-wide attacks reach the player in the chamber but not by its door, outside the walls.
+        if (boss instanceof DataBossEntity d && d.script() instanceof GwdScript script) {
+            expect(script.roomPlayers(d, 64).contains(player), "the player in " + chamber + " isn't reached by its room-wide attacks");
+            net.minecraft.world.phys.Vec3 inside = player.position();
+            stand(altar.outside());
+            expect(here() != chamber && player.distanceToSqr(d) < 64 * 64, "not outside " + chamber + "'s door");
+            expect(!script.roomPlayers(d, 64).contains(player), general.creature() + "'s room-wide attacks reach past its chamber's walls");
+            player.teleportTo(inside.x, inside.y, inside.z);
+            expect(here() == chamber, "couldn't step back into " + chamber);
+        }
         // The general fights: let it attack a few ticks, then kill it.
         PlayerData data = Players.data(player);
         int kcBefore = data.killCount(general.creature());
@@ -397,24 +439,29 @@ public final class GwdWalk {
         expect(GwdSpawner.find(world, general.creature()) == null, general.creature() + " respawned at once");
         GwdSpawner.resetTimer(general.creature());
         GwdSpawner.resetTimer(guardId);
-        // The altar: Prayer restored (above the maximum with the god's items), then its teleport out of the chamber.
-        GwdDungeon.Altar altar = null;
-        for (GwdDungeon.Altar a : GwdDungeon.altars()) {
-            if (a.god() == god) {
-                altar = a;
+        // The altar: refused in combat (a bodyguard swings at the player), Prayer restored once the combat timer has run out
+        // (above the maximum with the god's items), then its teleport out of the chamber, which works in combat.
+        LivingEntity swinger = null;
+        for (LivingEntity e : guards) {
+            if (e.isAlive()) {
+                swinger = e;
             }
         }
-        expect(altar != null, "no altar for " + god);
+        expect(swinger != null, "no bodyguard left alive in " + chamber);
         data.setPrayerPoints(0);
         GwdDungeonHooks.resetAltar(player);
+        CombatHandler.applyDamage(swinger, player, 0);
+        expect(GwdDungeonHooks.inCombat(player), "a bodyguard's attack didn't put the player in combat");
+        GwdDungeonHooks.useAltar(player, altar);
+        expect(data.prayerPoints() == 0, "the altar restored Prayer in combat");
+        for (int t = 0; t < com.runecraft.osrs.SingleCombat.COMBAT_TICKS * ActionManager.MC_TICKS_PER_GAME_TICK; t++) {
+            ActionManager.advanceForSelfTest();
+        }
+        expect(!GwdDungeonHooks.inCombat(player), "still in combat after the combat timer");
         GwdDungeonHooks.useAltar(player, altar);
         expect(data.prayerPoints() >= data.skills().level(Skill.PRAYER), "the altar didn't restore Prayer");
-        player.setShiftKeyDown(true);
-        try {
-            GwdDungeonHooks.useAltar(player, altar);
-        } finally {
-            player.setShiftKeyDown(false);
-        }
+        CombatHandler.applyDamage(swinger, player, 0);
+        sneakUseAltar(altar);
         expect(here() != chamber, "the altar's teleport didn't leave " + chamber);
         // Clear the chamber for the next visitor.
         for (LivingEntity e : guards) {
@@ -524,6 +571,15 @@ public final class GwdWalk {
         DataBossEntity nex = GwdDungeonHooks.nex(world);
         expect(nex != null, "Nex didn't appear when the barrier was passed");
         refused("ancient_barrier", "out of Nex's chamber (the altar is the way out)");
+        // Her specials and spells pick their victims in her chamber, never in the refuge by the bank next door.
+        GwdScript nexScript = (GwdScript) nex.script();
+        expect(nexScript.roomPlayers(nex, 64).contains(player), "the player in Nex's chamber isn't among her targets");
+        net.minecraft.world.phys.Vec3 inside = player.position();
+        stand(Area.PRISON_REFUGE.seeds().get(0));
+        expect(here() == Area.PRISON_REFUGE && player.distanceToSqr(nex) < 64 * 64, "not in the refuge by Nex's chamber");
+        expect(!nexScript.roomPlayers(nex, 64).contains(player), "Nex's attacks reach into the refuge");
+        player.teleportTo(inside.x, inside.y, inside.z);
+        expect(here() == Area.NEX_CHAMBER, "couldn't step back into Nex's chamber");
         // The fight: Nex shields herself behind each mage in turn; the mage is killed, then she goes on.
         PlayerData data = Players.data(player);
         int kcBefore = data.killCount("nex");
@@ -556,13 +612,7 @@ public final class GwdWalk {
         expect(GwdKillcount.zaros(player) >= 5, "Nex gave no Zarosian essence");
         note("nex killed through " + phases + " mages");
         // Her altar teleports out to the refuge's door.
-        GwdDungeon.Altar altar = GwdDungeon.altar("gwd_ancient_altar");
-        player.setShiftKeyDown(true);
-        try {
-            GwdDungeonHooks.useAltar(player, altar);
-        } finally {
-            player.setShiftKeyDown(false);
-        }
+        sneakUseAltar(GwdDungeon.altar("gwd_ancient_altar"));
         expect(here() == Area.ANCIENT_PRISON, "Nex's altar didn't teleport out of the chamber (" + here() + ")");
         through("prison_door", Area.PRISON_ENTRANCE);
         through("frozen_door", Area.MAIN);

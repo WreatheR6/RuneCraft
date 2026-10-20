@@ -52,7 +52,8 @@ import net.minecraft.world.level.levelgen.Heightmap;
  * The God Wars Dungeon's ways in and between its areas ({@link GwdDungeon}): the hole north of Trollheim (Troll
  * Stronghold's Dad beaten, 60 Strength for the boulder or 60 Agility for the little crack, and a rope the first time),
  * the rope back up, every obstacle and door with its OSRS requirement, the altars by the generals (Prayer above the
- * maximum per god item worn, every 10 minutes; sneak-use to teleport out of the chamber), the ancient barrier before Nex
+ * maximum per god item worn, every 10 minutes and out of combat; sneak-use, even in combat or holding something, to
+ * teleport out of the chamber), the ancient barrier before Nex
  * (she appears when someone passes it while nobody is fighting her). Also: God Wars followers leave alone players who
  * wear an item of their god, and leaving the dungeon clears the essence.
  */
@@ -62,6 +63,8 @@ final class GwdDungeonHooks {
             "All those who oppose us will perish..."};
     /** Game tick each player last prayed at a God Wars altar. */
     private static final Map<UUID, Long> ALTAR_USED = new HashMap<>();
+    /** Game tick each player in the dungeon was last attacked (hit or missed) by a creature. */
+    private static final Map<UUID, Long> ATTACKED = new HashMap<>();
     private static long ticks;
 
     private GwdDungeonHooks() {
@@ -78,12 +81,27 @@ final class GwdDungeonHooks {
         BlockHooks.register(GwdDungeon.BLOCK_HOLE, (player, pos, state) -> climbDown(player));
         BlockHooks.register(GwdDungeon.BLOCK_ROPE, (player, pos, state) -> climbUp(player));
         com.runecraft.combat.Aggression.addPeaceful(GwdDungeonHooks::calmed);
+        com.runecraft.combat.CombatHooks.addDamageListener((player, attacker, attack, style, damage) -> {
+            if (attacker != null && attacker != player && GwdDungeon.contains(player.getBlockX(), player.getBlockY(), player.getBlockZ())) {
+                ATTACKED.put(player.getUUID(), ActionManager.gameTick());
+            }
+        });
         // the dungeon cannot be dug through or built in outside creative mode, so its doors and obstacles hold;
         // only the ice of Nex's prison breaks
         PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, blockEntity) -> player.isCreative() || !Gielinor.is(world)
                 || !GwdDungeon.contains(pos.getX(), pos.getY(), pos.getZ()) || state.is(Blocks.ICE));
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             BlockPos at = hit.getBlockPos();
+            // The altars are handled here, ahead of vanilla: a sneaking player holding anything never reaches the block's
+            // own use, and the sneak-use is how a player teleports out of a chamber.
+            Altar altar = world.getBlockState(at).getBlock() instanceof com.runecraft.block.ModuleBlock mb ? GwdDungeon.altar(mb.def().id())
+                    : null;
+            if (altar != null && !(player.isCreative() && player.getItemInHand(hand).getItem() instanceof BlockItem)) {
+                if (hand == net.minecraft.world.InteractionHand.MAIN_HAND && player instanceof ServerPlayer sp) {
+                    useAltar(sp, altar);
+                }
+                return InteractionResult.sidedSuccess(world.isClientSide());
+            }
             if (!world.isClientSide() && !player.isCreative() && player.getItemInHand(hand).getItem() instanceof BlockItem
                     && GwdDungeon.contains(at.getX(), at.getY(), at.getZ()) && Gielinor.is(world)) {
                 return InteractionResult.FAIL;
@@ -228,6 +246,8 @@ final class GwdDungeonHooks {
     }
 
     private static void tick(ServerLevel world) {
+        long now = ActionManager.gameTick();
+        ATTACKED.values().removeIf(at -> now - at > 100);
         Landmark gwd = Landmark.GOD_WARS_DUNGEON;
         for (ServerPlayer p : world.players()) {
             if (Math.abs(p.getX() - gwd.blockX()) < 48 && Math.abs(p.getZ() - gwd.blockZ()) < 48) {
@@ -442,6 +462,11 @@ final class GwdDungeonHooks {
             send(player, a.outside());
             return;
         }
+        if (inCombat(player)) {
+            // OSRS Wiki (God Wars Dungeon): the altar can only be used while the player isn't in combat; its teleport can.
+            Msg.game(player, "You can't use the altar while you are in combat. (Sneak and use it to teleport out of the chamber.)");
+            return;
+        }
         long now = ActionManager.gameTick();
         Long last = ALTAR_USED.get(player.getUUID());
         if (last != null && now - last < GwdDungeon.ALTAR_COOLDOWN_TICKS) {
@@ -474,6 +499,18 @@ final class GwdDungeonHooks {
     /** Forgets a player's altar cooldown (the self-test). */
     static void resetAltar(ServerPlayer player) {
         ALTAR_USED.remove(player.getUUID());
+    }
+
+    /**
+     * OSRS's combat timer: a player who attacked something or was attacked in the last
+     * {@link com.runecraft.osrs.SingleCombat#COMBAT_TICKS} game ticks is in combat.
+     */
+    static boolean inCombat(ServerPlayer player) {
+        long now = ActionManager.gameTick();
+        long attacking = com.runecraft.content.systems.SysState.of(player).lastCombatTick;
+        Long attacked = ATTACKED.get(player.getUUID());
+        int window = com.runecraft.osrs.SingleCombat.COMBAT_TICKS;
+        return (attacking > 0 && now - attacking < window) || (attacked != null && now - attacked < window);
     }
 
     // ------------------------------------------------------------------ Nex

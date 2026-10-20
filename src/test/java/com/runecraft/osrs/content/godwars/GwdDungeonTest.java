@@ -191,6 +191,40 @@ class GwdDungeonTest {
         }
     }
 
+    /**
+     * Room-wide attacks stay in their room: the spot each altar teleports to lies within a boss's splash range of its
+     * chamber (and the refuge right next to Nex's) yet is never reached; inside the chamber everyone is.
+     */
+    @Test
+    void roomWideAttacksStopAtTheChamberWalls() {
+        for (GwdDungeon.Altar a : GwdDungeon.altars()) {
+            Area chamber = area(a.spot());
+            Spot out = a.outside();
+            assertTrue(GwdDungeon.inRoom(chamber, a.spot().blockX(), a.spot().feetY(), a.spot().blockZ()), a.name());
+            assertFalse(GwdDungeon.inRoom(chamber, out.blockX(), out.feetY(), out.blockZ()), a.name() + " outside spot");
+            assertFalse(GwdDungeon.inRoom(chamber, out.blockX(), out.feetY() + 1, out.blockZ()), a.name() + " outside, jumping");
+            assertTrue(GwdDungeon.inRoom(null, out.blockX(), out.feetY(), out.blockZ()), "no room: everywhere");
+        }
+        // Kree'arra's chamber ends a few tiles from the spot outside its door: a 20-block sphere alone would reach it.
+        Spot outside = GwdDungeon.altar("gwd_armadyl_altar").outside();
+        double nearest = Double.MAX_VALUE;
+        for (int x = outside.x() - 15; x <= outside.x() + 15; x++) {
+            for (int y = outside.y() - 15; y <= outside.y() + 15; y++) {
+                if (GwdDungeon.areaOf(2, x, y) == Area.KREEARRA_CHAMBER) {
+                    double dx = StructureDef.bx(x) - outside.blockX();
+                    double dz = StructureDef.bz(y) - outside.blockZ();
+                    nearest = Math.min(nearest, Math.sqrt(dx * dx + dz * dz));
+                }
+            }
+        }
+        assertTrue(nearest < 20, "Kree'arra's chamber is " + nearest + " blocks from its door's outside spot");
+        // The refuge (bank) next to Nex's chamber is another room.
+        Spot refuge = Area.PRISON_REFUGE.seeds().get(0);
+        assertFalse(GwdDungeon.inRoom(Area.NEX_CHAMBER, refuge.blockX(), refuge.feetY(), refuge.blockZ()));
+        Spot nex = GwdDungeon.NEX_SPAWN;
+        assertTrue(GwdDungeon.inRoom(Area.NEX_CHAMBER, nex.blockX(), nex.feetY(), nex.blockZ()));
+    }
+
     /** Ashuelot Reis (quests module) stands before the frozen door, where The Frozen Door starts. */
     @Test
     void ashuelotReisStandsByTheFrozenDoor() {

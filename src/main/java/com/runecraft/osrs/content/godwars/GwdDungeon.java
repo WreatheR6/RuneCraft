@@ -275,6 +275,15 @@ public final class GwdDungeon {
         return areaOf(plane, GielinorMap.toOsrsX(blockX), GielinorMap.toOsrsY(blockZ));
     }
 
+    /**
+     * Whether a block position is reached by a room-wide attack made in {@code room}: OSRS generals' and Nex's area
+     * attacks hit only the players in their own room, never through its walls (the doorway is no part of the room). A null
+     * room (a boss outside the dungeon) reaches everywhere.
+     */
+    public static boolean inRoom(Area room, int blockX, int blockY, int blockZ) {
+        return room == null || areaAt(blockX, blockY, blockZ) == room;
+    }
+
     /** Number of tiles in an area. */
     public static int size(Area area) {
         int n = 0;

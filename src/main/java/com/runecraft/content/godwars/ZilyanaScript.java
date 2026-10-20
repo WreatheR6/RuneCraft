@@ -9,8 +9,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
 
 /**
- * Commander Zilyana: attacks every 2 ticks. Slashes with her Saradomin sword (up to 27) and, only when next to her
- * target, calls down Saradomin's power on everyone in the room (magic, up to 20). She never stands still for long: every
+ * Commander Zilyana: attacks every 2 ticks. Strikes with her Saradomin sword (crush, up to 27; OSRS Wiki infobox) and,
+ * only when next to her target, calls down Saradomin's power on everyone in her chamber (magic, up to 20). She never stands still for long: every
  * few ticks she dashes to another part of her chamber. Starlight, Growler and Bree are her chamber's own bodyguards in
  * the God Wars Dungeon; summoned anywhere else she brings them along.
  */

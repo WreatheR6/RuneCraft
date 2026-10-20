@@ -292,7 +292,10 @@ public class BossEntity extends OsrsMonsterEntity {
             case GRAARDOR -> {
                 if (type == AttackType.RANGED) {
                     world.sendParticles(ParticleTypes.EXPLOSION, getX(), getY() + 1, getZ(), 3, 1, 0.5, 1, 0);
-                    for (ServerPlayer p : world.getPlayers(pl -> pl.distanceToSqr(this) < 12 * 12 && pl.isAlive())) {
+                    // everyone in the room: in the God Wars Dungeon his chamber only, not past its walls
+                    var room = com.runecraft.osrs.content.godwars.GwdDungeon.areaAt(getBlockX(), getBlockY(), getBlockZ());
+                    for (ServerPlayer p : world.getPlayers(pl -> pl.distanceToSqr(this) < 12 * 12 && pl.isAlive()
+                            && com.runecraft.osrs.content.godwars.GwdDungeon.inRoom(room, pl.getBlockX(), pl.getBlockY(), pl.getBlockZ()))) {
                         CombatHandler.npcAttack(this, p, AttackType.RANGED);
                         resetCooldownHack();
                     }

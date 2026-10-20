@@ -28,7 +28,7 @@ public final class GwdBosses {
     public static final AttackDef KREE_WIND = AttackDef.of("wind blast", AttackType.MAGIC, 21, 24, 3).particle("minecraft:sweep_attack");
 
     // --- Commander Zilyana ---
-    public static final AttackDef ZILY_MELEE = AttackDef.of("saradomin sword", AttackType.SLASH, 27, 3.0, 6);
+    public static final AttackDef ZILY_MELEE = AttackDef.of("saradomin sword", AttackType.CRUSH, 27, 3.0, 6); // wiki infobox: Crush, Magic
     public static final AttackDef ZILY_MAGIC = AttackDef.of("saradomin strike", AttackType.MAGIC, 20, 24, 3)
             .particle("minecraft:end_rod").message("Commander Zilyana calls down the power of Saradomin!");
 
