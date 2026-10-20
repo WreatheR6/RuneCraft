@@ -104,7 +104,8 @@ class BossesContentTest {
                 && boss("dagannoth_supreme").defenceBonus(AttackType.SLASH) < 20);
         assertTrue(boss("zulrah").immuneTo.contains(AttackType.STAB));
         assertTrue(boss("dusk").immuneTo.contains(AttackType.MAGIC));
-        assertTrue(boss("dawn").immuneTo.contains(AttackType.CRUSH));
+        // Dawn flies out of melee reach except a halberd's: her script turns other melee away, so she is not immune to it.
+        assertTrue(boss("dawn").immuneTo.isEmpty());
         assertTrue(boss("kraken").immuneTo.contains(AttackType.CRUSH));
         // Zulrah's forms have different magic/ranged defences.
         assertTrue(boss("zulrah").defenceBonus(AttackType.MAGIC) < 0);

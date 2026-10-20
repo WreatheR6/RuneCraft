@@ -435,7 +435,8 @@ public final class SlayerBosses {
 
     static BossDef dawn() {
         return BossDef.of("dawn", "Dawn").level(328).stats(450, 140, 140, 140, 140, 140).speed(6)
-                .defenceBonus(400, 400, 400, 80, 80).immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH)
+                // Flying: out of reach of melee except halberds (OSRS Wiki), which the Dawn script lets through.
+                .defenceBonus(400, 400, 400, 80, 80)
                 .attack(DAWN_RANGED).attack(DAWN_KICK).attack(DAWN_STONE_BALL)
                 .slayer(75, "gargoyles").raidOnly().flying().size(1.0f, 2.2f, 1.6f).moveSpeed(0.24);
     }

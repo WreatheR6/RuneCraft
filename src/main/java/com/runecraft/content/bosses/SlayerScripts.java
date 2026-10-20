@@ -1254,6 +1254,20 @@ final class SlayerScripts {
         private int spheres = 12;
         Dusk dusk;
 
+        /** She flies: only a halberd's reach gets a melee attack to her (OSRS Wiki). */
+        static boolean reaches(ServerPlayer p, AttackType type) {
+            return !type.isMelee() || Inv.idOf(p.getMainHandItem()).contains("halberd");
+        }
+
+        @Override
+        protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            if (attacker != null && !reaches(attacker, type)) {
+                Msg.action(attacker, "Dawn flies out of reach of your weapon. (Use ranged, magic or a halberd.)");
+                return 0;
+            }
+            return damage;
+        }
+
         @Override
         protected boolean driven() {
             return true;
