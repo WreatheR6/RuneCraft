@@ -497,6 +497,14 @@ public final class JewelleryService {
     static int useCharge(ServerPlayer p, Jewellery.Slot slot, String id) {
         SysState.SysPlayer sp = SysState.of(p);
         int left = sp.jewelleryCharges.getOrDefault(id, Jewellery.chargePool(id)) - 1;
+        if (left <= 0 && com.runecraft.osrs.content.systems.CombatAchievements.braceletRecharges(CombatAchievementService.tier(p), id,
+                p.getRandom().nextDouble())) {
+            // Elite Combat Achievement reward: the bracelet fully recharges instead of crumbling.
+            sp.jewelleryCharges.put(id, Jewellery.chargePool(id));
+            ItemDef def = ItemCatalog.get(id);
+            Msg.game(p, "Your " + (def == null ? id : def.name()) + " glows and fully recharges.");
+            return Jewellery.chargePool(id);
+        }
         if (left <= 0) {
             sp.worn.remove(slot);
             sp.jewelleryCharges.remove(id);

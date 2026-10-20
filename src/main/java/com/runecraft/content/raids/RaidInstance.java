@@ -115,6 +115,8 @@ public final class RaidInstance {
     private final long startTick;
     private long endTick;
     private long roomStartTick;
+    /** The raid's challenge time: the scored rooms' durations added up (OSRS ToB speed tasks count it, not the overall time). */
+    private long challengeTicks;
     /** Raid tick the raid timer started: the start barrier (CoX, ToB) or the first path (ToA, OSRS); -1 before. */
     private long beginTick = -1;
     /** ToA: raid tick the final Warden died (the time-limit invocations stop there). */
@@ -750,6 +752,11 @@ public final class RaidInstance {
         return now() - roomStartTick;
     }
 
+    /** The scored rooms' durations so far (the challenge time). */
+    public long challengeTicks() {
+        return challengeTicks;
+    }
+
     /** Wipes the party can still recover from (-1: unlimited). */
     public int retriesLeft() {
         return retriesLeft;
@@ -1069,6 +1076,7 @@ public final class RaidInstance {
         boolean scored = def.kind() != RoomDef.Kind.LOBBY && def.kind() != RoomDef.Kind.REWARD && def.kind() != RoomDef.Kind.RESOURCE
                 && def.kind() != RoomDef.Kind.NEXUS;
         if (scored) {
+            challengeTicks += roomTicks();
             say(def.name() + " complete! Duration: " + secs / 60 + ":" + String.format("%02d", secs % 60), ChatFormatting.GREEN);
         }
         if (type == RaidType.TOA) {

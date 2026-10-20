@@ -61,6 +61,13 @@ class CombatAchievementsTest {
         for (Monster m : Monster.values()) {
             names.add(m.displayName().toLowerCase(Locale.ROOT));
         }
+        // Bosses are killed by name too ("Big, Black and Fiery" counts the King Black Dragon).
+        for (BossDef b : ContentRegistry.bosses()) {
+            names.add(b.name.toLowerCase(Locale.ROOT));
+        }
+        for (Boss b : Boss.values()) {
+            names.add(b.displayName().toLowerCase(Locale.ROOT));
+        }
         return names;
     }
 
@@ -100,7 +107,7 @@ class CombatAchievementsTest {
 
     @Test
     void awakenedAndDelveTasksAreTracked() {
-        assertEquals(634, CombatAchievements.tasks().stream().filter(t -> t.track() != Track.UNTRACKED).count());
+        assertEquals(640, CombatAchievements.tasks().stream().filter(t -> t.track() != Track.UNTRACKED).count());
         for (int id : new int[]{490, 499, 508, 517, 610, 611, 612, 616, 617, 618, 619, 621, 622, 623}) {
             assertTrue(CombatAchievements.task("ca_" + id).track() != Track.UNTRACKED, "ca_" + id);
         }
@@ -342,12 +349,23 @@ class CombatAchievementsTest {
             switch (t.track()) {
                 case KC -> {
                     for (String k : t.target().split("[|&]")) {
-                        boolean ok = k.startsWith("mg:") ? minigames.contains(k.substring(3)) : bosses.contains(k);
+                        k = k.startsWith("-") ? k.substring(1) : k;
+                        boolean ok = k.startsWith("mg:") ? minigames.contains(k.substring(3))
+                                : k.startsWith(CombatAchievements.RAID_KC) ? CombatAchievements.RAID_COMPLETION_KEYS.contains(k) : bosses.contains(k);
                         if (!ok) {
                             problems.add(t.name() + ": no kill count " + k);
                         }
                     }
                     assertTrue(t.count() >= 1, t.name());
+                }
+                case COUNTER -> assertEquals(CombatAchievements.COUNTER_THRALL_DAMAGE, t.target(), t.name());
+                case COLLECT -> {
+                    for (String n : CombatAchievements.collectList(t)) {
+                        if (!monsters.contains(n)) {
+                            problems.add(t.name() + ": no monster " + n);
+                        }
+                    }
+                    assertEquals(CombatAchievements.collectList(t).size(), t.count(), t.name());
                 }
                 case KILLS -> {
                     for (String n : t.target().split("\\|")) {

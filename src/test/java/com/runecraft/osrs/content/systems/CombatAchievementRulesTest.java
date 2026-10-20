@@ -59,10 +59,11 @@ class CombatAchievementRulesTest {
                     String key = eq < 0 ? token : token.substring(0, eq);
                     String value = eq < 0 ? "" : token.substring(eq + 1);
                     switch (key) {
-                        case "weapon", "noweapon", "finish", "wear", "foodonly" -> {
+                        case "weapon", "noweapon", "finish", "wear", "foodonly", "wield", "nowield" -> {
                             for (String spec : value.split("[,/]")) {
-                                boolean ok = spec.startsWith("*") ? ItemCatalog.all().stream().anyMatch(d -> d.id().contains(spec.substring(1)))
-                                        : ItemCatalog.get(spec) != null;
+                                boolean ok = spec.equals("fists") || (spec.startsWith("*")
+                                        ? ItemCatalog.all().stream().anyMatch(d -> d.id().contains(spec.substring(1)))
+                                        : ItemCatalog.get(spec) != null);
                                 if (!ok) {
                                     problems.add(t.name() + ": no item " + spec);
                                 }
@@ -85,7 +86,18 @@ class CombatAchievementRulesTest {
                             }
                         }
                         case "book" -> Spellbooks.Book.valueOf(value);
-                        case "mode" -> assertTrue(Set.of("normal", "challenge", "entry", "hard").contains(value), t.name());
+                        case "mode" -> {
+                            for (String mode : value.split("/")) {
+                                assertTrue(Set.of("normal", "challenge", "entry", "hard").contains(mode), t.name());
+                            }
+                        }
+                        case "wieldstyle" -> {
+                            for (String style : value.split(",")) {
+                                assertTrue(Set.of("melee", "ranged", "magic").contains(style), t.name());
+                            }
+                        }
+                        case "in" -> assertTrue(com.runecraft.osrs.content.dungeons.Dungeons.all().stream()
+                                .anyMatch(d -> d.id().equals(value)), t.name() + ": no dungeon " + value);
                         default -> {
                         }
                     }
@@ -339,8 +351,9 @@ class CombatAchievementRulesTest {
 
     @Test
     void taskShapes() {
-        assertEquals(Track.RAID, task(288).track());
-        assertEquals("COX", task(288).target());
+        // Challenge Mode completions are read from the raids' saved completion counts (they count from before tracking).
+        assertEquals(Track.KC, task(288).track());
+        assertEquals(CombatAchievements.COX_CM_COMPLETIONS, task(288).target());
         assertEquals(10, task(288).count());
         assertEquals(Track.STREAK, task(172).track());
         assertEquals(100, task(172).count());

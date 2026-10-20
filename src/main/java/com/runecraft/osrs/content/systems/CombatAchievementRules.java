@@ -49,6 +49,12 @@ import java.util.Set;
  *   <li>Boss variants: {@code awakened} (an awakened Desert Treasure II boss), {@code delve=N}/{@code delve>=N} (the Doom of
  *       Mokhaiotl's delve level; on a delve run, the level just completed).</li>
  *   <li>{@code noprayrestore} (prayer points never went up), {@code onehand} (no two-handed weapon used on the target).</li>
+ *   <li>Weapons held, used or not: {@code wield=a/b} (every one), {@code nowield=a/b} (none), {@code wieldstyle=melee}
+ *       (every one attacks with these styles), {@code nowieldbefore=boss:ranged,magic} (none of these styles held before the
+ *       boss was first engaged in the run).</li>
+ *   <li>{@code notask} (the target never counted towards your Slayer task), {@code in=dungeon} (where a kill happened).</li>
+ *   <li>Raid and run tasks marked {@code checkpoint} are also judged the moment a script reports a flag (a room completed
+ *       perfectly, a wave cleared in time), not only when the raid or run ends.</li>
  *   <li>{@code count<=N:a/b}: how often boss scripts counted something (summed over the alternatives); every monster attack
  *       is counted as {@code used:<attack>}, and the same attack twice in a row flags {@code repeat:<attack>}.</li>
  *   <li>{@code moved<=N} (tiles walked), {@code weight<N} (kg of worn gear, at its heaviest), {@code gearvalue<=N} (GE value
@@ -133,6 +139,22 @@ public final class CombatAchievementRules {
         public int maxGearTier;
         /** Fight keys of other creatures the player attacked during the fight (minions, elementals...). */
         public final Set<String> struck = new HashSet<>();
+        /** The fight's target counted towards the player's Slayer task at some point ("without a slayer task" fails). */
+        public boolean onTask;
+        /** Weapons held in the main hand, in the order they were picked up ({@link Wield}; "" for an empty hand). */
+        public final List<Wield> wielded = new ArrayList<>();
+        /** Runs: the game tick each boss (fight key) was first engaged. */
+        public final Map<String, Long> engagedAt = new HashMap<>();
+        /** Where a kill happened, for {@code in=}: whether it lies inside the named dungeon. */
+        public java.util.function.Predicate<String> at = place -> false;
+
+        /** Notes the weapon held at a game tick (only changes are kept). */
+        public void wield(String id, long tick) {
+            String w = id == null ? "" : id;
+            if (wielded.isEmpty() || !wielded.get(wielded.size() - 1).id().equals(w)) {
+                wielded.add(new Wield(w, tick));
+            }
+        }
 
         public void took(Hit h) {
             taken.add(h);
@@ -166,6 +188,40 @@ public final class CombatAchievementRules {
 
     /** A kill for streak and time-window tasks: the fight key, when the fight started and when the kill landed. */
     public record Kill(String key, long start, long end) {
+    }
+
+    /** A weapon taken into the main hand at a game tick ("" for an empty hand). */
+    public record Wield(String id, long tick) {
+    }
+
+    /**
+     * The combat style a held item attacks with: "melee", "ranged" or "magic", or "" for an empty hand or an item that is
+     * no weapon (OSRS Wiki: polestaves still count as magic weapons, thrown weapons as ranged ones).
+     */
+    public static String weaponStyle(String id) {
+        if (id == null || id.isEmpty()) {
+            return "";
+        }
+        if (id.contains("keris_partisan") || id.contains("pharaohs_sceptre")) {
+            return "magic"; // polestaves can't autocast but "are still considered magic weapons" (Facing Jad Head-on II)
+        }
+        if (id.contains("chinchompa")) {
+            return "ranged";
+        }
+        com.runecraft.osrs.ItemDef d = com.runecraft.osrs.ItemCatalog.get(id);
+        if (d == null) {
+            return "";
+        }
+        com.runecraft.osrs.EquipmentDef e = d.equipment();
+        if (e == null || e.slot() != com.runecraft.osrs.EquipmentDef.Slot.WEAPON) {
+            return d.kind() == com.runecraft.osrs.ItemDef.Kind.ARROW ? "ranged" : ""; // darts, knives, thrownaxes, chinchompas
+        }
+        return switch (e.weaponClass()) {
+            case BOW -> "ranged";
+            case STAFF -> "magic";
+            case MELEE -> "melee";
+            default -> e.attackType() == AttackType.RANGED ? "ranged" : e.attackType() == AttackType.MAGIC ? "magic" : "melee";
+        };
     }
 
     // ------------------------------------------------------------------ rule evaluation
@@ -375,7 +431,7 @@ public final class CombatAchievementRules {
             case "alone" -> !m.othersAlive;
             case "id" -> matches(v, m.killedId);
             case "nodeath" -> !m.died && (r == null || r.myDeaths() == 0);
-            case "mode" -> r != null && r.mode().equalsIgnoreCase(v);
+            case "mode" -> r != null && list(v, "/").stream().anyMatch(mode -> r.mode().equalsIgnoreCase(mode));
             case "size" -> r != null ? compare(r.size(), op, number(v)) : compare(m.maxPlayers, op, number(v));
             case "level" -> r != null && compare(r.level(), op, number(v));
             case "deathless" -> r != null && r.deaths() == 0;
@@ -391,7 +447,22 @@ public final class CombatAchievementRules {
             case "delve" -> compare(m.delve, op, number(v));
             case "noprayrestore" -> !m.prayerRestored;
             case "onehand" -> !m.weapons.isEmpty() && m.weapons.stream().noneMatch(com.runecraft.osrs.data.EquipmentBonuses::twoHanded);
-            case "distinct", "fromstart" -> true;
+            case "notask" -> !m.onTask;
+            // Weapons held (equipped, used or not): every one matches / none matches / every one attacks with these styles.
+            // Things held that aren't weapons (food being eaten, a pickaxe) don't count.
+            case "wield" -> m.wielded.stream().allMatch(w -> weaponStyle(w.id()).isEmpty() || matches(v, w.id()));
+            case "nowield" -> m.wielded.stream().noneMatch(w -> !w.id().isEmpty() && matches(v, w.id()));
+            case "wieldstyle" -> m.wielded.stream().allMatch(w -> weaponStyle(w.id()).isEmpty()
+                    || list(v, ",").contains(weaponStyle(w.id())));
+            // nowieldbefore=boss:styles - no weapon of these styles held before the boss was first engaged (or at all, if never).
+            case "nowieldbefore" -> {
+                int colon = v.indexOf(':');
+                long until = m.engagedAt.getOrDefault(v.substring(0, colon), Long.MAX_VALUE);
+                List<String> styles = list(v.substring(colon + 1), ",");
+                yield m.wielded.stream().noneMatch(w -> w.tick() < until && styles.contains(weaponStyle(w.id())));
+            }
+            case "in" -> m.at.test(v);
+            case "distinct", "fromstart", "checkpoint" -> true;
             default -> throw new IllegalArgumentException("Unknown combat achievement condition: " + token);
         };
     }
@@ -491,8 +562,11 @@ public final class CombatAchievementRules {
 
     // ------------------------------------------------------------------ the tracked tasks
 
-    /** How the game tracks one wiki task that the description parser leaves untracked. */
-    record Spec(Track track, String target, int count, String rule) {
+    /**
+     * How the game tracks one wiki task that the description parser leaves untracked ({@code override}: the table's track
+     * replaces what the parser made of the description, written {@code !TRACK} in the table).
+     */
+    record Spec(Track track, String target, int count, String rule, boolean override) {
     }
 
     /** ToA boss invocations (OSRS: the invocations listed under each boss). */
@@ -504,11 +578,21 @@ public final class CombatAchievementRules {
     /** Barrows weapons (OSRS also allows the Dawnbringer, which only exists inside the Theatre and isn't built here). */
     private static final String BARROWS_WEAPONS = "ahrims_staff/dharoks_greataxe/guthans_warspear/karils_crossbow/torags_hammers/veracs_flail";
     private static final String MOONS = "blue_moon|eclipse_moon|blood_moon";
+    /**
+     * "Trying to fit in": the weapons found in Vampyrium (OSRS Wiki task page table; its sunspear, blisterwood stake and
+     * adamant halberd are not items in this world). Spells cast by hand (an empty main hand) and thralls are allowed too.
+     */
+    static final String VAMPYRIUM_WEAPONS = "crimson_kisten/mithril_spear/mithril_2h_sword/adamant_spear/"
+            + "adamant_battleaxe/adamant_longsword/adamant_2h_sword/rune_spear/rune_battleaxe/rune_longsword/rune_halberd/"
+            + "rune_2h_sword/dragon_battleaxe/dragon_longsword/dragon_halberd";
 
     /**
      * wikiId;track;target;count;rule. Targets: fight keys (boss ids or "kill:" + monster name, '|' alternatives) for
      * RULE/STREAK/WINDOW/AVERAGE, a {@link com.runecraft.osrs.content.raids.RaidType} name for RAID, "mg:" + minigame id
-     * for RUN (or "delve:" + boss id for a delve run, judged at each level completed), monster names for KILLS.
+     * for RUN (or "delve:" + boss id for a delve run, judged at each level completed), monster names for KILLS and COLLECT
+     * (',' between the monsters to collect), a counter key for COUNTER. "!TRACK" replaces what the description parser made of
+     * the task (speed tasks "without a slayer task", "exactly the time counts"). Tasks listed under "Tombs of Amascut" or its
+     * Expert mode get "level>=150" / "level>=300" added ({@link CombatAchievements#toaModeLevel}).
      * Conditions marked approx in comments are stricter or looser than OSRS where
      * the exact mechanic isn't modelled (e.g. "perfect" kills read as "no scripted, ground or off-prayer damage";
      * "anyone in the team" reads as yourself; "without leaving" means staying within 64 blocks). Approx: 271 (Zombie
@@ -540,7 +624,7 @@ public final class CombatAchievementRules {
             55;RULE;cerberus;1;nodmg=lava_pool,hazard
             56;RULE;cerberus;1;nodmg=melee
             303;WINDOW;vanguard_melee|vanguard_ranged|vanguard_magic;3;t<=0:10 distinct
-            305;RAID;COX;1;size=1 points>40000
+            305;RAID;COX;1;mode=normal size=1 points>40000
             304;RAID;COX;1;flag=cox_tightrope_no_kills
             315;RAID;COX;1;flag=cox_crabs_perfect
             311;RULE;cox_guardian;1;nodmg=mechanic,hazard
@@ -558,8 +642,6 @@ public final class CombatAchievementRules {
             325;RAID;COX;1;mode=normal size=5 t<12:30
             326;RAID;COX;1;mode=normal size=3 t<16:30
             327;RAID;COX;1;mode=normal size=3 t<14:30
-            288;RAID;COX;10;mode=challenge
-            289;RAID;COX;25;mode=challenge
             290;RAID;COX;1;mode=challenge deathless
             291;RAID;COX;1;mode=challenge size=1 nodeath
             292;RAID;COX;1;mode=challenge target
@@ -646,11 +728,11 @@ public final class CombatAchievementRules {
             640;WINDOW;maggot_king;5;t<=9:00 fromstart
             532;RULE;MOONS;1;nosupplies
             533;RULE;MOONS;1;id=blue_moon weapon=blue_moon_spear || id=eclipse_moon weapon=eclipse_atlatl || id=blood_moon weapon=dual_macuahuitl
-            534;WINDOW;MOONS;3;t<=8:00 fromstart distinct weapon=dragon_scimitar
+            534;WINDOW;MOONS;3;t<=30:00 fromstart distinct weapon=dragon_scimitar
             535;WINDOW;MOONS;3;t<8:00 fromstart distinct
             536;WINDOW;MOONS;3;t<6:00 fromstart distinct
             537;STREAK;MOONS;30;
-            412;RULE;nex;1;nodeath
+            412;RULE;nex;1;nodeath noflag=ally_died
             416;RULE;nex;1;startplayers<=3
             417;RULE;nex;1;startplayers<=2
             131;RULE;obor;1;frozen
@@ -687,8 +769,8 @@ public final class CombatAchievementRules {
             249;RULE;verzik_vitur_p3;1;mode=normal noflag=verzik_imperfect
             241;RULE;verzik_vitur_p3;1;mode=normal noflag=verzik_nylo_damage
             242;RULE;sotetseg;1;mode=normal count>=3:sotetseg_ball_alone
-            250;RULE;the_maiden_of_sugadinti;1;noprayloss
-            251;RULE;xarpus;1;style=melee
+            250;RULE;the_maiden_of_sugadinti;1;mode=normal/hard noprayloss
+            251;RULE;xarpus;1;mode=normal/hard wieldstyle=melee
             386;RULE;the_maiden_of_sugadinti;1;mode=entry noflag=bloodspawn_old
             372;RULE;the_maiden_of_sugadinti;1;mode=hard count<=15:maiden_trail
             392;RULE;xarpus;1;mode=entry noflag=xarpus_reflect
@@ -702,8 +784,8 @@ public final class CombatAchievementRules {
             391;RULE;sotetseg;1;mode=entry size>=2 flag=sotetseg_team_split
             394;RULE;verzik_vitur_p2;1;mode=entry noflag=verzik_bounced
             395;RULE;verzik_vitur_p3;1;mode=entry flag=verzik_green_passed
-            252;RAID;TOB;1;weapon=BARROWS_WEAPONS
-            253;RAID;TOB;1;noweapon=scythe_of_vitur
+            252;RAID;TOB;1;mode=normal/hard wield=BARROWS_WEAPONS/dawnbringer/fists
+            253;RAID;TOB;1;mode=normal/hard nowield=*scythe_of_vitur
             254;RAID;TOB;1;mode=normal size=2 t<26:00
             255;RAID;TOB;1;mode=normal size=3 t<20:00
             256;RAID;TOB;1;mode=normal size=3 t<17:30
@@ -718,7 +800,6 @@ public final class CombatAchievementRules {
             382;RAID;TOB;1;mode=hard size=3 t<23:00
             383;RAID;TOB;1;mode=hard size=4 t<21:00
             384;RAID;TOB;1;mode=hard size=5 t<19:00
-            385;RAID;TOB;50;mode=hard
             262;RULE;thermonuclear_smoke_devil;1;nodmg=boss
             263;RULE;thermonuclear_smoke_devil;1;spec
             421;RAID;TOA;1;level>=150 t<18:00
@@ -731,10 +812,10 @@ public final class CombatAchievementRules {
             429;RULE;tumekens_warden;1;size>=2 style=melee inv=INSANITY nodeath
             430;RAID;TOA;1;size>=2 deathless
             431;RAID;TOA;1;size=1 nodeath
-            433;RULE;akkha;1;size>=2 inv=AKKHA nodmg=mechanic,hazard,offprayer
-            436;RULE;baba;1;size>=2 inv=BABA nodmg=slam,falling_rocks,mechanic,hazard,offprayer
-            439;RULE;zebak;1;inv=ZEBAK nodmg=poison,mechanic,hazard,other,offprayer
-            442;RULE;kephri;1;size>=2 nodmg=boss,other,mechanic,hazard
+            433;RAID;TOA;1;checkpoint size>=2 inv=AKKHA flag=toa_perfect_akkha
+            436;RAID;TOA;1;checkpoint size>=2 inv=BABA flag=toa_perfect_baba
+            439;RAID;TOA;1;checkpoint inv=ZEBAK flag=toa_perfect_zebak
+            442;RAID;TOA;1;checkpoint size>=2 flag=toa_perfect_kephri
             444;RULE;tumekens_warden;1;size>=2 inv=WARDENS nodmg=mechanic,hazard,other,offprayer
             445;RULE;tumekens_warden;1;size>=2 level>=300 inv=WARDENS nodmg=mechanic,hazard,other,offprayer
             446;RAID;TOA;1;level>=500 deathless
@@ -751,17 +832,14 @@ public final class CombatAchievementRules {
             460;RULE;tumekens_warden;1;inv=WARDENS level>=300 nodeath
             464;RAID;TOA;1;level>=50
             465;RAID;TOA;1;level>=100
-            469;RAID;TOA;1;level>=300
-            470;RAID;TOA;25;level>=300
-            471;RAID;TOA;50;level>=300
-            432;RAID;TOA;1;flag=toa_perfect_het
-            434;RAID;TOA;1;flag=toa_perfect_het flag=toa_perfect_akkha
-            435;RAID;TOA;1;size>=2 flag=toa_perfect_apmeken
-            437;RAID;TOA;1;flag=toa_perfect_apmeken flag=toa_perfect_baba
-            438;RAID;TOA;1;flag=toa_perfect_crondis
-            440;RAID;TOA;1;flag=toa_perfect_crondis flag=toa_perfect_zebak
-            441;RAID;TOA;1;flag=toa_perfect_scabaras
-            443;RAID;TOA;1;flag=toa_perfect_scabaras flag=toa_perfect_kephri
+            432;RAID;TOA;1;checkpoint flag=toa_perfect_het
+            434;RAID;TOA;1;checkpoint flag=toa_perfect_het flag=toa_perfect_akkha
+            435;RAID;TOA;1;checkpoint size>=2 flag=toa_perfect_apmeken
+            437;RAID;TOA;1;checkpoint flag=toa_perfect_apmeken flag=toa_perfect_baba
+            438;RAID;TOA;1;checkpoint flag=toa_perfect_crondis
+            440;RAID;TOA;1;checkpoint flag=toa_perfect_crondis flag=toa_perfect_zebak
+            441;RAID;TOA;1;checkpoint flag=toa_perfect_scabaras
+            443;RAID;TOA;1;checkpoint flag=toa_perfect_scabaras flag=toa_perfect_kephri
             449;RULE;akkha;1;noflag=akkha_orb_dropped nodeath
             451;RULE;baba;1;inv=BOULDERDASH noflag=baba_cracked_hit nodeath
             457;RULE;kephri;1;inv=MEDIC noflag=kephri_over_25 nodeath
@@ -770,7 +848,7 @@ public final class CombatAchievementRules {
             341;KILLS;jal-zek;1;
             345;RUN;mg:inferno;1;noattacker=tzkal-zuk nohitby=jaltok-jad
             347;RUN;mg:inferno;1;minhp>=50
-            348;RUN;mg:inferno;1;noweapon=twisted_bow
+            348;RUN;mg:inferno;1;nowield=twisted_bow
             349;RUN;mg:inferno;1;style=melee,ranged
             351;RUN;mg:inferno;1;nokill=kill:jaltok-jad
             352;RUN;mg:inferno;1;t<65:00
@@ -795,7 +873,7 @@ public final class CombatAchievementRules {
             544;RUN;mg:fortis_colosseum;1;stage=12 flag=showboating
             149;RUN;mg:fight_caves;1;offprayerhitby=tztok-jad
             152;RUN;mg:fight_caves;1;noattacker=tz-kih
-            153;RUN;mg:fight_caves;1;style=melee
+            153;RUN;mg:fight_caves;1;wieldstyle=melee
             154;RUN;mg:fight_caves;1;noprayloss
             155;RUN;mg:fight_caves;1;t<30:00
             156;RUN;mg:fight_caves;1;t<26:30
@@ -901,7 +979,7 @@ public final class CombatAchievementRules {
             555;RULE;kill:tormented demon;1;flag=rapid_reload
             159;RULE;kalphite_queen;1;flag=defence_lowered
             591;RULE;branda_the_fire_queen;1;noflag=titans_both
-            344;RUN;mg:inferno;1;flag=jads_quick
+            344;RUN;mg:inferno;1;checkpoint flag=jads_quick
             27;RUN;run:barrows;1;killed>=6:barrows_brother nodmg=boss
             30;RUN;run:barrows;1;killed>=6:barrows_brother noflag=had_prayer
             26;RUN;run:barrows;1;killed>=6:barrows_brother noattacker=*dharok/*verac/*torag/*guthan
@@ -936,13 +1014,45 @@ public final class CombatAchievementRules {
             188;RULE;the_nightmare;1;nodmg=grasping_claws,surge,parasite_burst,corpse_flowers,offprayer noflag=nightmare_spored
             403;RULE;phosanis_nightmare;1;onlydmg=husk,power_blast,weakened_parasite_burst noflag=nightmare_spored noflag=phosani_sleepwalker_any
             407;RULE;phosanis_nightmare;1;noflag=phosani_prayer_disabled
+            40;RULE;bryophyta;1;flag=toxin_last
+            350;RUN;mg:inferno;1;nowieldbefore=tzkal_zuk:ranged,magic
+            390;RAID;TOB;1;checkpoint mode=entry flag=nylo_barrage4
+            398;COLLECT;hill giant,moss giant,fire giant;3;in=dng_giants_den
+            399;COUNTER;thrall_damage;100;
+            641;RULE;maggot_king;1;weapon=VAMPYRIUM_WEAPONS/fists
+            92;!RULE;dusk;1;t<=2:00
+            127;!RULE;hespori;1;t<=0:48
+            485;!RULE;vardorvis;1;t<1:15 notask
+            486;!RULE;vardorvis;1;t<1:05 notask
+            487;!RULE;vardorvis;1;t<0:55 notask
+            494;!RULE;the_whisperer;1;t<3:00 notask
+            495;!RULE;the_whisperer;1;t<2:25 notask
+            496;!RULE;the_whisperer;1;t<2:05 notask
+            503;!RULE;the_leviathan;1;t<1:50 notask
+            504;!RULE;the_leviathan;1;t<1:25 notask
+            505;!RULE;the_leviathan;1;t<1:10 notask
+            512;!RULE;duke_sucellus;1;t<1:00 notask
+            513;!RULE;duke_sucellus;1;t<0:50 notask
+            514;!RULE;duke_sucellus;1;t<0:40 notask
+            230;!RULE;zulrah;1;t<1:20 notask
+            231;!RULE;zulrah;1;t<1:00 notask
+            232;!RULE;zulrah;1;t<0:54 notask
+            475;!RULE;phantom_muspah;1;t<3:00 notask
+            476;!RULE;phantom_muspah;1;t<2:00 notask
+            477;!RULE;phantom_muspah;1;t<1:30 notask
+            576;!RULE;the_hueycoatl;1;t<=2:30
+            577;!RULE;the_hueycoatl;1;t<=2:30 players<=5
+            578;!RULE;the_hueycoatl;1;t<=2:30 players<=3
+            60;!RULE;chaos_elemental;1;nodmg=boss
+            220;!RULE;scorpia;1;nodmg=boss
             """;
 
     private static final Map<Integer, Spec> SPECS = new LinkedHashMap<>();
 
     static {
         Map<String, String> macros = Map.of("AKKHA", AKKHA, "BABA", BABA, "KEPHRI", KEPHRI, "ZEBAK", ZEBAK, "WARDENS", WARDENS,
-                "BARROWS_WEAPONS", BARROWS_WEAPONS, "DEMONBANE", CombatAchievements.DEMONBANE.replace('|', '/'));
+                "BARROWS_WEAPONS", BARROWS_WEAPONS, "DEMONBANE", CombatAchievements.DEMONBANE.replace('|', '/'),
+                "VAMPYRIUM_WEAPONS", VAMPYRIUM_WEAPONS);
         for (String line : TABLE.split("\n")) {
             if (line.isBlank()) {
                 continue;
@@ -953,7 +1063,9 @@ public final class CombatAchievementRules {
             for (Map.Entry<String, String> e : macros.entrySet()) {
                 rule = rule.replace("=" + e.getKey(), "=" + e.getValue()).replace("," + e.getKey(), "," + e.getValue());
             }
-            Spec prev = SPECS.put(Integer.parseInt(f[0]), new Spec(Track.valueOf(f[1]), target, Integer.parseInt(f[3]), rule));
+            boolean override = f[1].startsWith("!");
+            Spec prev = SPECS.put(Integer.parseInt(f[0]), new Spec(Track.valueOf(override ? f[1].substring(1) : f[1]), target,
+                    Integer.parseInt(f[3]), rule, override));
             if (prev != null) {
                 throw new IllegalStateException("Duplicate combat achievement rule " + f[0]);
             }

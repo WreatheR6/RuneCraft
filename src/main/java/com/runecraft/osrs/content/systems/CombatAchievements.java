@@ -108,7 +108,10 @@ public final class CombatAchievements {
         WINDOW("Tracked: the kills must all land within the time limit."),
         AVERAGE("Tracked: average kill time over your most recent kills."),
         RAID("Tracked: raid completions meeting the task's conditions (mode, team size, time, deaths, invocations)."),
-        RUN("Tracked: a whole minigame run, from entering to the final kill, meeting the conditions.");
+        RUN("Tracked: a whole minigame run, from entering to the final kill, meeting the conditions."),
+        // Round 39 (appended: ordinals stay stable).
+        COUNTER("Tracked: a running total, kept across fights."),
+        COLLECT("Tracked: kill each of the listed monsters there, in any order and over several trips.");
 
         public final String hint;
 
@@ -340,6 +343,30 @@ public final class CombatAchievements {
     public static final String FLAG_JADS_QUICK = "jads_quick";
     /** Barrows runs: the run tracker's key (from the first brother fought to the chest). */
     public static final String BARROWS_RUN = "run:barrows";
+    /** The player's last damage on the target was poison or venom ("A Slow Death"; cleared by the player's next hit). */
+    public static final String FLAG_TOXIN_LAST = "toxin_last";
+    /** Another player fighting the same boss died during the fight ("Nex Survivors": without anyone dying). */
+    public static final String FLAG_ALLY_DIED = "ally_died";
+    /** One Ice Barrage froze four or more nylocas ("Nylocas, On the Rocks"). */
+    public static final String FLAG_NYLO_BARRAGE = "nylo_barrage4";
+    /** {@link Track#COUNTER} key: damage dealt by the player's thralls ("Sit Back and Relax"). */
+    public static final String COUNTER_THRALL_DAMAGE = "thrall_damage";
+    /**
+     * Kill count keys of raid completions ({@code "raid:" + completion key}, read from the raids' saved completion counts):
+     * every mode of a raid counts in its plain key, and the mode keys count each mode apart.
+     */
+    public static final String RAID_KC = "raid:";
+    public static final String COX_COMPLETIONS = RAID_KC + "chambers_of_xeric";
+    public static final String COX_CM_COMPLETIONS = RAID_KC + "cox_cm";
+    public static final String TOB_COMPLETIONS = RAID_KC + "theatre_of_blood";
+    public static final String TOB_ENTRY_COMPLETIONS = RAID_KC + "tob_entry";
+    public static final String TOB_HARD_COMPLETIONS = RAID_KC + "tob_hard";
+    public static final String TOA_COMPLETIONS = RAID_KC + "tombs_of_amascut";
+    public static final String TOA_ENTRY_COMPLETIONS = RAID_KC + "tombs_of_amascut_entry";
+    public static final String TOA_EXPERT_COMPLETIONS = RAID_KC + "tombs_of_amascut_expert";
+    /** Every raid completion key a kill count may read (for tests). */
+    public static final List<String> RAID_COMPLETION_KEYS = List.of(COX_COMPLETIONS, COX_CM_COMPLETIONS, TOB_COMPLETIONS,
+            TOB_ENTRY_COMPLETIONS, TOB_HARD_COMPLETIONS, TOA_COMPLETIONS, TOA_ENTRY_COMPLETIONS, TOA_EXPERT_COMPLETIONS);
     /** A fight is forgotten after this many game ticks without either side attacking. */
     public static final int FIGHT_TIMEOUT_TICKS = 100;
 
@@ -373,14 +400,19 @@ public final class CombatAchievements {
         // The reworked Wilderness bosses share their pages with their singles-plus variants (approx).
         boss("Callisto", "callisto|artio", "callisto");
         boss("Cerberus", "cerberus");
-        boss("Chambers of Xeric", "great_olm", null);
+        // Raid kill count tasks read the raids' completion counts (OSRS Wiki task pages): CoX counts Challenge Mode too,
+        // ToB counts Normal and Hard mode but not Entry mode, ToA "Entry mode (or above)" counts every mode and the plain
+        // ToA tasks need raid level 150 or above.
+        boss("Chambers of Xeric", COX_COMPLETIONS + "|" + COX_CM_COMPLETIONS, null);
+        boss("Chambers of Xeric: Challenge Mode", COX_CM_COMPLETIONS, null);
         boss("Chaos Elemental", "chaos_elemental");
         boss("Chaos Fanatic", "chaos_fanatic");
         boss("Commander Zilyana", "commander_zilyana");
         boss("Corporeal Beast", "corporeal_beast");
         boss("Corrupted Hunllef", "corrupted_hunllef");
         boss("Crazy Archaeologist", "crazy_archaeologist");
-        boss("Crystalline Hunllef", "crystalline_hunllef");
+        // "Completions of the Corrupted Gauntlet will also count towards this task" (Gauntlet Veteran / Master).
+        boss("Crystalline Hunllef", "crystalline_hunllef|corrupted_hunllef", "crystalline_hunllef");
         boss("Dagannoth Prime", "dagannoth_prime");
         boss("Dagannoth Rex", "dagannoth_rex");
         boss("Dagannoth Supreme", "dagannoth_supreme");
@@ -415,12 +447,15 @@ public final class CombatAchievements {
         boss("Tempoross", "mg:tempoross", null);
         boss("The Hueycoatl", "the_hueycoatl");
         boss("The Mimic", "the_mimic");
-        boss("The Nightmare", "the_nightmare");
-        boss("Theatre of Blood", "verzik_vitur_p3", null);
-        boss("Theatre of Blood: Entry Mode", "verzik_vitur_p3", null); // approx: no entry mode, a normal run counts
+        // Phosani's Nightmare kills count towards the Nightmare's kill count tasks (OSRS, 28 July 2021).
+        boss("The Nightmare", "the_nightmare|phosanis_nightmare", "the_nightmare");
+        boss("Theatre of Blood", TOB_COMPLETIONS + "|-" + TOB_ENTRY_COMPLETIONS, null);
+        boss("Theatre of Blood: Entry Mode", TOB_ENTRY_COMPLETIONS, null);
+        boss("Theatre of Blood: Hard Mode", TOB_HARD_COMPLETIONS, null);
         boss("Thermonuclear Smoke Devil", "thermonuclear_smoke_devil");
-        boss("Tombs of Amascut", "tumekens_warden", null);
-        boss("Tombs of Amascut: Entry Mode", "tumekens_warden", null); // "Entry mode (or above)"
+        boss("Tombs of Amascut", TOA_COMPLETIONS + "|-" + TOA_ENTRY_COMPLETIONS, null);
+        boss("Tombs of Amascut: Entry Mode", TOA_COMPLETIONS, null); // "Entry mode (or above)"
+        boss("Tombs of Amascut: Expert Mode", TOA_EXPERT_COMPLETIONS, null);
         boss("TzKal-Zuk", "tzkal_zuk");
         boss("TzTok-Jad", "mg:fight_caves", "tztok_jad");
         boss("Vardorvis", "vardorvis");
@@ -434,7 +469,8 @@ public final class CombatAchievements {
         boss("Zulrah", "zulrah");
         monster("Aberrant Spectre", "aberrant spectre");
         monster("Basilisk Knight", "basilisk knight");
-        monster("Black Dragon", "black dragon");
+        // "While the King Black Dragon and brutal black dragons count towards this task, baby black dragons do not."
+        monster("Black Dragon", "black dragon|brutal black dragon|king black dragon");
         monster("Bloodveld", "bloodveld|mutated bloodveld");
         monster("Brutal Black Dragon", "brutal black dragon");
         monster("Fire Giant", "fire giant");
@@ -637,12 +673,13 @@ public final class CombatAchievements {
         }
         String rule = null;
         CombatAchievementRules.Spec spec = CombatAchievementRules.spec(wikiId);
-        if (track == Track.UNTRACKED && spec != null) {
+        if (spec != null && (track == Track.UNTRACKED || spec.override())) {
             track = spec.track();
             target = spec.target();
             count = spec.count();
-            rule = spec.rule();
+            rule = toaModeLevel(monster, spec.rule());
             ticks = (int) CombatAchievementRules.timeLimit(rule);
+            style = null;
         }
         if (track == Track.UNTRACKED) {
             count = 1;
@@ -650,6 +687,18 @@ public final class CombatAchievements {
             style = null;
         }
         return new Task("ca_" + wikiId, wikiId, name, description, tier, monster, type, track, target, count, ticks, style, rule);
+    }
+
+    /**
+     * The raid level a Tombs of Amascut task's page implies (OSRS Wiki task pages): tasks listed under "Tombs of Amascut"
+     * need raid level 150 or above, those under "Tombs of Amascut: Expert Mode" 300 or above, Entry mode tasks any level.
+     * Rules that already name a level keep theirs.
+     */
+    static String toaModeLevel(String monster, String rule) {
+        if (rule == null || !monster.startsWith("Tombs of Amascut") || monster.endsWith("Entry Mode") || rule.contains("level>")) {
+            return rule;
+        }
+        return (monster.endsWith("Expert Mode") ? "level>=300 " : "level>=150 ") + rule;
     }
 
     private static final List<Task> TASKS = new ArrayList<>();
@@ -699,7 +748,9 @@ public final class CombatAchievements {
         List<String> keys = new ArrayList<>();
         for (Task t : TASKS) {
             if (t.track() != Track.UNTRACKED) {
-                Collections.addAll(keys, t.target().split("[|&]"));
+                for (String k : t.target().split("[|&,]")) {
+                    keys.add(k.startsWith("-") ? k.substring(1) : k);
+                }
             }
         }
         return keys;
@@ -763,7 +814,10 @@ public final class CombatAchievements {
         return monsterName == null ? null : "kill:" + monsterName.toLowerCase(Locale.ROOT);
     }
 
-    /** Value of a kill count expression ('|' sums, '&' takes the smallest). {@code kc} maps a key to its count. */
+    /**
+     * Value of a kill count expression ('|' sums, a '-' term is taken away, '&' takes the smallest). {@code kc} maps a key
+     * to its count.
+     */
     public static int kcValue(String expr, java.util.function.ToIntFunction<String> kc) {
         if (expr.contains("&")) {
             int min = Integer.MAX_VALUE;
@@ -774,9 +828,9 @@ public final class CombatAchievements {
         }
         int sum = 0;
         for (String k : expr.split("\\|")) {
-            sum += kc.applyAsInt(k);
+            sum += k.startsWith("-") ? -kc.applyAsInt(k.substring(1)) : kc.applyAsInt(k);
         }
-        return sum;
+        return Math.max(0, sum);
     }
 
     /** Whether a KILLS target names a monster (exact, case-insensitive). */
@@ -970,6 +1024,55 @@ public final class CombatAchievements {
         return unlocked.ordinal() >= needed ? 1.05 : 1.0;
     }
 
+    /** Elite tier: a bracelet of slaughter or expeditious bracelet has this chance to fully recharge instead of crumbling. */
+    public static final double BRACELET_RECHARGE_CHANCE = 0.10;
+
+    /** Whether a worn-out bracelet of slaughter / expeditious bracelet recharges instead ({@code roll} uniform in [0, 1)). */
+    public static boolean braceletRecharges(Tier unlocked, String braceletId, double roll) {
+        return unlocked != null && unlocked.ordinal() >= Tier.ELITE.ordinal()
+                && ("bracelet_of_slaughter".equals(braceletId) || "expeditious_bracelet".equals(braceletId))
+                && roll < BRACELET_RECHARGE_CHANCE;
+    }
+
+    /**
+     * Private instance fees with the Combat Achievement discounts (OSRS Wiki "Combat Achievements/Rewards"): God Wars
+     * Dungeon boss rooms open from the hard tier for 150,000 coins (125,000 elite, 100,000 master, 75,000 grandmaster); the
+     * Hueycoatl's 50,000 and Sarachnis's and the Giant Mole's 25,000 are halved from the hard tier. -1: no instance.
+     * Not used yet: this world has no private boss instances.
+     */
+    public static int instanceFee(String boss, Tier unlocked) {
+        int tier = unlocked == null ? -1 : unlocked.ordinal();
+        boolean hard = tier >= Tier.HARD.ordinal();
+        return switch (boss) {
+            case "general_graardor", "commander_zilyana", "kreearra", "kril_tsutsaroth" -> !hard ? -1
+                    : tier >= Tier.GRANDMASTER.ordinal() ? 75_000 : tier >= Tier.MASTER.ordinal() ? 100_000
+                    : tier >= Tier.ELITE.ordinal() ? 125_000 : 150_000;
+            case "the_hueycoatl" -> hard ? 25_000 : 50_000;
+            case "sarachnis", "giant_mole" -> hard ? 12_500 : 25_000;
+            default -> -1;
+        };
+    }
+
+    // ------------------------------------------------------------------ collect tasks
+
+    /** The monsters a {@link Track#COLLECT} task needs killed (lower-case names). */
+    public static List<String> collectList(Task t) {
+        return List.of(t.target().split(","));
+    }
+
+    /** The progress bit a kill sets on a {@link Track#COLLECT} task, or 0 when the monster isn't one of its list. */
+    public static int collectBit(Task t, String monsterName) {
+        List<String> list = collectList(t);
+        int i = list.indexOf(monsterName.toLowerCase(Locale.ROOT));
+        return i < 0 ? 0 : 1 << i;
+    }
+
+    /** Whether the progress bits hold every monster of a {@link Track#COLLECT} task. */
+    public static boolean collectedAll(Task t, int bits) {
+        int all = (1 << collectList(t).size()) - 1;
+        return (bits & all) == all;
+    }
+
     /** The rewards of a tier, as shown in the Combat Achievements screen (OSRS Wiki). */
     public static List<String> rewards(Tier tier) {
         return switch (tier) {
@@ -985,22 +1088,33 @@ public final class CombatAchievements {
                     "God Wars Dungeon boss rooms need 35 kill count", "+3 Void Knight commendation points per Pest Control game",
                     "Nightmare Zone and Soul Wars imbues cost half",
                     "Ghommal's hilt 3: attach King Black Dragon heads to a dragon hunter crossbow (b)",
-                    "Ecumenical keys drop 1/55 instead of 1/60", "The dwarf multicannon holds 45 cannonballs");
+                    "Ecumenical keys drop 1/55 instead of 1/60", "The dwarf multicannon holds 45 cannonballs",
+                    "Private instance fees: God Wars Dungeon 150,000, the Hueycoatl 25,000, Sarachnis and the Giant Mole 12,500"
+                            + " (no private instances in this world yet)");
             case ELITE -> List.of("Antique lamp: 25,000 XP in a skill of level 50+", "Ghommal's hilt 4: 3 daily teleports to Mor Ul Rek",
                     "5% higher elite clue scroll drop chance", "Like a boss: up to 55 boss kills per task",
                     "God Wars Dungeon boss rooms need 30 kill count",
                     "Superior slayer monsters appear 1/150 instead of 1/200",
                     "Ghommal's hilt 4: attach Vorkath's head to a dragon hunter crossbow (t)",
-                    "Ecumenical keys drop 1/50", "The dwarf multicannon holds 60 cannonballs");
+                    "Ecumenical keys drop 1/50", "The dwarf multicannon holds 60 cannonballs",
+                    // approx: OSRS has Ghommal or Laidee Gnonock style the CA helmets; here the slayer masters' crafting menu
+                    // does (SlayerRewards.CA_HELMETS, gated on the claimed tier).
+                    "Any slayer master's crafting menu styles a slayer helmet into a TzTok slayer helmet (OSRS: Ghommal or Laidee Gnonock)",
+                    "Bracelets of slaughter and expeditious bracelets have a 10% chance to fully recharge instead of crumbling",
+                    "God Wars Dungeon private instances cost 125,000 (no private instances in this world yet)");
             case MASTER -> List.of("Antique lamp: 35,000 XP in a skill of level 60+", "Ghommal's hilt 5: 5 daily teleports to Mor Ul Rek",
                     "Ghommal's lucky penny: 5% chance not to use a charge of a charged item",
                     "Combine the hilt with an avernic defender into Ghommal's avernic defender 5",
                     "Like a boss: up to 60 boss kills per task", "TzTok-Jad and TzKal-Zuk tasks are 2 kills",
-                    "God Wars Dungeon boss rooms need 25 kill count", "Thralls last twice as long", "Ecumenical keys drop 1/45");
+                    "God Wars Dungeon boss rooms need 25 kill count", "Thralls last twice as long", "Ecumenical keys drop 1/45",
+                    "Any slayer master's crafting menu styles a slayer helmet into a vampyric slayer helmet (OSRS: Ghommal or Laidee Gnonock)",
+                    "God Wars Dungeon private instances cost 100,000 (no private instances in this world yet)");
             case GRANDMASTER -> List.of("Antique lamp: 50,000 XP in a skill of level 70+", "Ghommal's hilt 6: unlimited teleports to Mor Ul Rek",
                     "Combine the hilt with an avernic defender into Ghommal's avernic defender 6",
                     "Like a boss: up to 65 boss kills per task", "TzTok-Jad and TzKal-Zuk tasks are 3 kills",
-                    "God Wars Dungeon boss rooms need 15 kill count", "Ecumenical keys drop 1/40");
+                    "God Wars Dungeon boss rooms need 15 kill count", "Ecumenical keys drop 1/40",
+                    "Any slayer master's crafting menu styles a slayer helmet into a TzKal slayer helmet (OSRS: Laidee Gnonock)",
+                    "God Wars Dungeon private instances cost 75,000 (no private instances in this world yet)");
         };
     }
 
