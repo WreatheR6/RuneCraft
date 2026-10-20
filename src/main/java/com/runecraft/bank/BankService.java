@@ -67,7 +67,11 @@ public final class BankService {
     /** How far (blocks) a player may walk from where they opened the bank before it closes. */
     private static final double MAX_DISTANCE_SQ = 8 * 8;
 
-    private record Session(Vec3 where, boolean depositOnly) {
+    /** An open bank; {@code refuse} names items this box won't take (e.g. the tomb's supplies at the ToA deposit pot). */
+    private record Session(Vec3 where, boolean depositOnly, java.util.function.Predicate<String> refuse) {
+        Session(Vec3 where, boolean depositOnly) {
+            this(where, depositOnly, id -> false);
+        }
     }
 
     private static final Map<UUID, Session> OPEN = new HashMap<>();
@@ -114,9 +118,20 @@ public final class BankService {
     }
 
     public static void openDepositBox(ServerPlayer player) {
+        openDepositBox(player, id -> false);
+    }
+
+    /** A deposit box that refuses some items ("You can't deposit that here."), e.g. raid-only supplies. */
+    public static void openDepositBox(ServerPlayer player, java.util.function.Predicate<String> refuse) {
         bankLootingBag(player);
-        OPEN.put(player.getUUID(), new Session(player.position(), true));
+        OPEN.put(player.getUUID(), new Session(player.position(), true, refuse));
         send(player, true);
+    }
+
+    /** Whether the player's open bank refuses this item (by bank item id; notes count as their item). */
+    private static boolean refused(ServerPlayer player, String item) {
+        Session s = OPEN.get(player.getUUID());
+        return s != null && s.refuse().test(item);
     }
 
     /** Holding the looting bag when the bank opens banks everything in it (OSRS: the bank's looting bag "deposit all"). */
@@ -285,6 +300,10 @@ public final class BankService {
         }
         ItemStack target = inv.items.get(slot);
         String[] k = keyOf(player.registryAccess(), target);
+        if (refused(player, k[0])) {
+            Msg.game(player, "You can't deposit that here.");
+            return;
+        }
         boolean noted = Notes.isNote(target);
         // Every stack of the same item counts towards the quantity, as in OSRS; notes and unnoted items are
         // different items there, so only stacks of the clicked kind count.
@@ -344,9 +363,14 @@ public final class BankService {
     static void depositInventory(ServerPlayer player, BankModel bank, int tab) {
         Inventory inv = player.getInventory();
         boolean full = false;
+        boolean kept = false;
         for (int i = 0; i < inv.items.size(); i++) {
             ItemStack s = inv.items.get(i);
             if (s.isEmpty()) {
+                continue;
+            }
+            if (refused(player, keyOf(player.registryAccess(), s)[0])) {
+                kept = true;
                 continue;
             }
             long put = depositStack(player.registryAccess(), bank, s, s.getCount(), tab);
@@ -357,6 +381,9 @@ public final class BankService {
         if (full) {
             Msg.game(player, "Your bank is full.");
         }
+        if (kept) {
+            Msg.game(player, "Some of your items can't be deposited here.");
+        }
     }
 
     static void depositWorn(ServerPlayer player, BankModel bank, int tab) {
@@ -364,7 +391,7 @@ public final class BankService {
         boolean any = false;
         for (List<ItemStack> list : List.of(inv.armor, inv.offhand)) {
             for (ItemStack s : list) {
-                if (!s.isEmpty()) {
+                if (!s.isEmpty() && !refused(player, keyOf(player.registryAccess(), s)[0])) {
                     long put = depositStack(player.registryAccess(), bank, s, s.getCount(), tab);
                     s.shrink((int) put);
                     any |= put > 0;
@@ -377,6 +404,9 @@ public final class BankService {
             ItemStack s = it.next().getValue();
             if (s.isEmpty()) {
                 it.remove();
+                continue;
+            }
+            if (refused(player, keyOf(player.registryAccess(), s)[0])) {
                 continue;
             }
             long put = depositStack(player.registryAccess(), bank, s, s.getCount(), tab);

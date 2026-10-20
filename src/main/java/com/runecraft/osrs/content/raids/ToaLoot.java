@@ -179,6 +179,23 @@ public final class ToaLoot {
         return tier;
     }
 
+    /**
+     * The shroud the lobby chest hands out: the highest tier these completions unlock, or null when none is unlocked or
+     * the player already owns one of the tiers anywhere ({@code owns}: inventory, bank or the worn cape slot).
+     */
+    public static String shroudFromChest(int normalOrExpertCompletions, java.util.function.Predicate<String> owns) {
+        int tier = shroudTier(normalOrExpertCompletions);
+        if (tier == 0) {
+            return null;
+        }
+        for (String s : SHROUDS) {
+            if (owns.test(s)) {
+                return null;
+            }
+        }
+        return SHROUDS.get(tier - 1);
+    }
+
     /** The completion-count key of a raid's mode (OSRS keeps Entry, Normal and Expert mode counts apart). */
     public static String modeKey(int raidLevel) {
         return raidLevel < 150 ? "tombs_of_amascut_entry" : raidLevel < 300 ? "tombs_of_amascut_normal" : "tombs_of_amascut_expert";

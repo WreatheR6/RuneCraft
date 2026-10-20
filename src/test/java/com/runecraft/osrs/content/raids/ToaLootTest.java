@@ -172,4 +172,24 @@ class ToaLootTest {
         assertEquals("Tombs of Amascut: Expert Mode", ToaLoot.modeCountName(500));
         assertEquals("Tombs of Amascut", ToaLoot.modeCountName(299));
     }
+
+    /**
+     * The lobby chest gives one shroud only while the player owns none (worn included), and the shroud is worth nothing
+     * (OSRS: untradeable and can't be alchemised), so taking another after losing one is no source of coins.
+     */
+    @Test
+    void shroudChestGivesOneAndShroudsAreWorthless() {
+        assertNull(ToaLoot.shroudFromChest(99, s -> false));
+        assertEquals("icthlarins_shroud_tier_1", ToaLoot.shroudFromChest(100, s -> false));
+        assertEquals("icthlarins_shroud_tier_3", ToaLoot.shroudFromChest(1_200, s -> false));
+        // Owning any tier (here worn in the cape slot) means the chest gives nothing more.
+        java.util.Set<String> worn = Set.of("icthlarins_shroud_tier_1");
+        assertNull(ToaLoot.shroudFromChest(100, worn::contains));
+        assertNull(ToaLoot.shroudFromChest(2_000, worn::contains));
+        for (String s : ToaLoot.SHROUDS) {
+            com.runecraft.osrs.ItemDef def = com.runecraft.osrs.ItemCatalog.get(s);
+            assertEquals(0, def.highAlch(), s + " alchemises for coins");
+            assertEquals(0, def.lowAlch(), s);
+        }
+    }
 }

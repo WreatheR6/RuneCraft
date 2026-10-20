@@ -289,6 +289,8 @@ public final class RaidManager {
         if (!p.isAlive() || of(p) != null) {
             return;
         }
+        // The raid closed while they were away: its supplies don't come out with them (they could be banked otherwise).
+        RaidInstance.stripRaidItems(p);
         RaidsState.Stats stats = RaidsState.get(p.getServer()).stats(p.getUUID());
         ServerLevel world = Gielinor.world(p.getServer());
         if (stats.lastEntrance != null && world != null) {
@@ -466,26 +468,33 @@ public final class RaidManager {
 
     /**
      * The lobby chest beside the obelisk (OSRS): Icthlarin's shroud for 100/500/1,000/1,500/2,000 Normal or Expert mode
-     * completions. A player who has none of the tiers unlocked gets the highest; each tier unlocked counts for the
-     * collection log (OSRS lets you change between them).
+     * completions. A player who owns none of the tiers gets the highest; each tier unlocked counts for the collection log
+     * (OSRS lets you change between them).
      */
     static void shroudChest(ServerPlayer player, int normalOrExpert) {
         int tier = com.runecraft.osrs.content.raids.ToaLoot.shroudTier(normalOrExpert);
-        if (tier == 0) {
-            return;
-        }
-        java.util.List<String> shrouds = com.runecraft.osrs.content.raids.ToaLoot.SHROUDS;
         for (int i = 0; i < tier; i++) {
-            com.runecraft.collection.CollectionLog.obtain(player, shrouds.get(i));
+            com.runecraft.collection.CollectionLog.obtain(player, com.runecraft.osrs.content.raids.ToaLoot.SHROUDS.get(i));
         }
+        String shroud = giveShroud(player, normalOrExpert);
+        if (shroud != null) {
+            Msg.game(player, "You search the chest beside the obelisk and find Icthlarin's shroud (tier "
+                    + (com.runecraft.osrs.content.raids.ToaLoot.SHROUDS.indexOf(shroud) + 1) + ").");
+        }
+    }
+
+    /**
+     * Hands out the highest unlocked shroud unless the player already owns one: carried, banked or worn in the cape slot
+     * (systems module). Returns the shroud given, or null.
+     */
+    static String giveShroud(ServerPlayer player, int normalOrExpert) {
         var bank = com.runecraft.player.Players.data(player).bank();
-        for (String s : shrouds) {
-            if (com.runecraft.util.Inv.has(player, s, 1) || (bank != null && bank.count(s, null) > 0)) {
-                return;
-            }
+        var worn = com.runecraft.content.systems.SysState.of(player);
+        String shroud = com.runecraft.osrs.content.raids.ToaLoot.shroudFromChest(normalOrExpert,
+                s -> com.runecraft.util.Inv.has(player, s, 1) || (bank != null && bank.count(s, null) > 0) || worn.wearing(s));
+        if (shroud != null) {
+            com.runecraft.util.Inv.give(player, shroud, 1);
         }
-        String best = shrouds.get(tier - 1);
-        com.runecraft.util.Inv.give(player, best, 1);
-        Msg.game(player, "You search the chest beside the obelisk and find Icthlarin's shroud (tier " + tier + ").");
+        return shroud;
     }
 }

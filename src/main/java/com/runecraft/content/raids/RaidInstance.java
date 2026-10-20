@@ -1276,8 +1276,9 @@ public final class RaidInstance {
     public void takeSupplies(ServerPlayer p) {
         if (type == RaidType.TOA) {
             // OSRS: the tomb has no free supply chest (the Helpful Spirit offers bundles after the second and fourth path),
-            // but a deposit pot beside the spirit acts as a bank deposit box to make room.
-            com.runecraft.bank.BankService.openDepositBox(p);
+            // but a deposit pot beside the spirit acts as a bank deposit box to make room. The tomb's own supplies can't be
+            // banked (they would leave the raid and skip the Helpful Spirit's limits next time).
+            com.runecraft.bank.BankService.openDepositBox(p, RaidItems.RAID_ONLY_ITEMS::contains);
             Msg.game(p, "You can deposit items here. The Helpful Spirit brings supplies after the second and fourth paths.");
             return;
         }
@@ -1458,9 +1459,7 @@ public final class RaidInstance {
         ToaSupplyService.forget(u);
         CoxSupplyService.forget(u);
         if (p != null) {
-            for (String item : RaidItems.RAID_ONLY_ITEMS) {
-                Inv.remove(p, item, Inv.count(p, item));
-            }
+            stripRaidItems(p);
             RaidNet.clearHud(p);
             if (teleportOut) {
                 restore(p);
@@ -1474,6 +1473,13 @@ public final class RaidInstance {
             if (type == RaidType.TOA) {
                 say(name(leader) + " now leads the party.", ChatFormatting.GRAY);
             }
+        }
+    }
+
+    /** Takes away the items that only exist inside a raid (supplies, raid potions, tools) when a player leaves it. */
+    static void stripRaidItems(ServerPlayer p) {
+        for (String item : RaidItems.RAID_ONLY_ITEMS) {
+            Inv.remove(p, item, Inv.count(p, item));
         }
     }
 

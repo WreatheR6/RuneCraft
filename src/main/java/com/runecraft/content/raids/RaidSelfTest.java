@@ -194,6 +194,7 @@ public final class RaidSelfTest {
         expect(raid.currentRoom() == nexusIndex, "walking into the Nexus did not make it the current room");
         ToaNexus nexus = raid.nexus();
         expect(nexus != null, "no Nexus logic");
+        note(depositPot(nexus));
         expect(raid.elapsedTicks() == 0, "the raid timer started before the first path");
         moveTo(raid.spawn(nexusIndex));
         use(nexus.entrance(4));
@@ -243,6 +244,100 @@ public final class RaidSelfTest {
         note("chest: " + result.lootFor(player.getUUID().toString()).size() + " items, " + raid.points(player.getUUID()) + " points");
         healthy("the burial chamber");
         return log + "; " + ticks + " raid ticks";
+    }
+
+    /**
+     * The Nexus deposit pot works as a bank deposit box, but the tomb's own supplies stay with the player: banked, they
+     * would leave the raid and skip the Helpful Spirit's limits next time. Leaves the player's inventory and bank as they
+     * were.
+     */
+    private String depositPot(ToaNexus nexus) {
+        var bank = Players.data(player).bank();
+        String supply = ToaSupplies.HONEY_LOCUST;
+        String own = "lobster";
+        int supplyBefore = Inv.count(player, supply);
+        int ownBefore = Inv.count(player, own);
+        long supplyBanked = bank.count(supply, "");
+        long ownBanked = bank.count(own, "");
+        Inv.give(player, supply, 1);
+        Inv.give(player, own, 1);
+        try {
+            use(nexus.at(-12, 3));
+            com.runecraft.bank.BankService.selfTestAction(player, com.runecraft.bank.BankService.OP_DEPOSIT, "", slotOf(supply),
+                    com.runecraft.osrs.bank.BankQuantity.Mode.ALL, 0);
+            expect(Inv.count(player, supply) == supplyBefore + 1 && bank.count(supply, "") == supplyBanked,
+                    "the deposit pot banked a honey locust (the tomb's supplies must not leave the raid)");
+            if (bank.hasRoomFor(own, "")) {
+                com.runecraft.bank.BankService.selfTestAction(player, com.runecraft.bank.BankService.OP_DEPOSIT, "", slotOf(own),
+                        com.runecraft.osrs.bank.BankQuantity.Mode.ONE, 0);
+                expect(bank.count(own, "") == ownBanked + 1, "the deposit pot did not take a lobster (it should be a deposit box)");
+            }
+            return "the deposit pot keeps the tomb's supplies";
+        } finally {
+            com.runecraft.bank.BankService.selfTestAction(player, com.runecraft.bank.BankService.OP_CLOSE, "", 0,
+                    com.runecraft.osrs.bank.BankQuantity.Mode.ONE, 0);
+            for (String item : List.of(supply, own)) {
+                long extra = bank.count(item, "") - (item.equals(own) ? ownBanked : supplyBanked);
+                if (extra > 0) {
+                    bank.withdraw(item, "", extra);
+                }
+            }
+            Inv.remove(player, supply, Math.max(0, Inv.count(player, supply) - supplyBefore));
+            Inv.remove(player, own, Math.max(0, Inv.count(player, own) - ownBefore));
+        }
+    }
+
+    /** The first main-inventory slot holding this item (not as a note), or -1. */
+    private static int slotOf(ServerPlayer p, String item) {
+        var items = p.getInventory().items;
+        for (int i = 0; i < items.size(); i++) {
+            if (!items.get(i).isEmpty() && item.equals(Inv.idOf(items.get(i))) && !com.runecraft.bank.Notes.isNote(items.get(i))) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private int slotOf(String item) {
+        return slotOf(player, item);
+    }
+
+    /**
+     * Icthlarin's shroud from the lobby chest (OSRS: 100+ Normal/Expert completions): one shroud while the player owns
+     * none; searching again with one carried or worn in the cape slot gives nothing. Puts the player's own cape back.
+     */
+    private static String shroudChest(ServerPlayer p) {
+        var bank = Players.data(p).bank();
+        var sys = com.runecraft.content.systems.SysState.of(p);
+        for (String s : ToaLoot.SHROUDS) {
+            if (Inv.has(p, s, 1) || bank.count(s, "") > 0 || sys.wearing(s)) {
+                return "lobby chest skipped (the player owns a shroud)";
+            }
+        }
+        var capeSlot = com.runecraft.osrs.content.systems.Jewellery.Slot.CAPE;
+        net.minecraft.world.item.ItemStack cape = sys.worn.get(capeSlot);
+        try {
+            String given = RaidManager.giveShroud(p, 100);
+            expect(ToaLoot.SHROUDS.get(0).equals(given) && Inv.count(p, given) == 1,
+                    "the lobby chest gave " + given + " for 100 completions");
+            expect(RaidManager.giveShroud(p, 100) == null && Inv.count(p, given) == 1,
+                    "a second search gave another shroud while one was carried");
+            Inv.remove(p, given, 1);
+            sys.worn.put(capeSlot, Inv.stack(given, 1));
+            String again = RaidManager.giveShroud(p, 2_000);
+            expect(again == null, "searching the chest with a shroud worn gave " + again);
+            return "the lobby chest gives one shroud, none while one is worn";
+        } finally {
+            for (String s : ToaLoot.SHROUDS) {
+                Inv.remove(p, s, Inv.count(p, s));
+            }
+            if (cape == null) {
+                sys.worn.remove(capeSlot);
+            } else {
+                sys.worn.put(capeSlot, cape);
+            }
+            com.runecraft.content.systems.SysNet.sendState(p);
+        }
     }
 
     private void walkPath(ToaNexus nexus, int nexusIndex, int path) {
@@ -372,7 +467,7 @@ public final class RaidSelfTest {
             expect(RaidManager.of(p) == null, "the lobby exit did not take the player out of the raid");
             expect(!raid.contains(p), "the lobby exit left the player in the instance");
             expect(Inv.count(p, ToaSupplies.HONEY_LOCUST) == 0, "the raid's supplies left the tomb with the player");
-            return "logout mid-fight is a death, rejoin wipes and retries, the exit takes you home";
+            return "logout mid-fight is a death, rejoin wipes and retries, the exit takes you home; " + shroudChest(p);
         } finally {
             if (RaidManager.of(p) == raid) {
                 RaidManager.selfTestClose(raid);
