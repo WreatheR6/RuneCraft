@@ -169,6 +169,42 @@ class GrandmasterQuestsTest {
         assertEquals(2, find(mm2, t -> t.kind == Trigger.Kind.KILL && t.target.equals("demonic_gorilla"), "demonic gorillas").count);
     }
 
+    @Test
+    void songOfTheElvesFollowsTheQuickGuide() {
+        QuestSpec sote = spec("song_of_the_elves");
+        assertEquals(5, sote.stages.size(), "saved stage count");
+        // Elena's escape: the knight disguise, the thick clear liquid from her house's cabinet
+        Trigger liquid = find(sote, t -> t.take.containsKey("sote_thick_liquid"), "the escape");
+        assertEquals("elena", liquid.target);
+        // the insurrection: three grain sacks burnt in mourner gear, then the market told of the new taxes
+        assertEquals(3, sote.triggers().stream().filter(t -> t.target.startsWith("sote_grain_")).count());
+        // the battles: 21 mourners (wiki: level 106, 100 HP), then the castle's knights and paladins (level 121)
+        assertEquals(21, find(sote, t -> t.kind == Trigger.Kind.KILL && t.target.equals("sote_mourner"), "the mourners").count);
+        stats("sote_mourner", 106, 100, 4);
+        stats("sote_paladin", 121, 82, 5);
+        // Baxtorian's tomb: six offerings by the pillars' numbers, in pillar order
+        Trigger pillars = find(sote, t -> t.puzzle == ElfQuests.SOTE_PILLARS, "the pillars");
+        assertTrue(pillars.take.keySet().containsAll(List.of("nature_rune", "irit_leaf", "black_knife", "wine_of_zamorak",
+                "adamant_chainbody", "cabbage")));
+        for (QuestPuzzle.Variant v : ElfQuests.SOTE_PILLARS.rooms.get(0).variants()) {
+            // the south-west pillar states its number, which is its offering
+            int sw = Integer.parseInt(v.prompt().get(1).replaceAll(".*South-west: 'I am (\\d)\\..*", "$1"));
+            assertEquals(sw - 1, v.solutions().get(0).get(0));
+        }
+        // the Seal of Cadarn (wiki solution): east, down, south, west, south, red crystal, east, south
+        QuestPuzzle.Variant cadarn = ElfQuests.SOTE_SEAL_CADARN.rooms.get(0).variants().get(0);
+        List<String> beam = new ArrayList<>();
+        cadarn.solutions().get(0).forEach(i -> beam.add(cadarn.options().get(i)));
+        assertEquals(List.of("East", "Down", "South", "West", "South", "Red crystal", "East", "South"), beam);
+        // Arianwyn the traitor (wiki: level 212, 300 HP), the orb, the elf lords, the clue digs and the spin with nothing equipped
+        stats("sote_arianwyn", 212, 300, 5);
+        assertTrue(find(sote, t -> t.setFlags.contains("sote_meilyr"), "Lady Meilyr").emptyHanded);
+        // the dwarf camp: seven explosive potions, then Essyllt (stab, wiki defences) and the Fragment's ordered specials
+        assertEquals(7, find(sote, t -> t.setFlags.contains("sote_holes"), "the holes").take.get("sote_explosive_potion"));
+        assertTrue(boss("sote_essyllt").attacks.stream().anyMatch(a -> a.name().equals("sword") && a.style() == com.runecraft.osrs.AttackType.STAB));
+        assertEquals(10, boss("fragment_of_seren").defenceBonus(com.runecraft.osrs.AttackType.MAGIC), "magic defence");
+    }
+
     private static int DS2_CRYPT_VARIANTS() {
         return GrandmasterQuests.DS2_CRYPT.rooms.get(0).variants().size();
     }

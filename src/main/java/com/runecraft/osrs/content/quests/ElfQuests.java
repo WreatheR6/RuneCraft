@@ -128,72 +128,302 @@ final class ElfQuests {
     private static void songOfTheElves(QuestBook b) {
         b.npc("lord_iorwerth", "Lord Iorwerth", "prifddinas_ruins", 3, 3, 0xF4E0D2, 0x2A2A2A, 0x1A1A1A, 0xA0A0A0);
         b.npc("baxtorian_elf", "Baxtorian", "prifddinas_ruins", -3, 3, 0xF4E0D3, 0x3A8AA0, 0x2A5A6A, 0xE0E0E2);
+        // quest-helper tiles: Ysgawyn on Lletya's upper platform, the four elf lords the player finds, the Mysterious Figure in the
+        // Enchanted Valley (Lord Amlodd)
+        b.npcAt("ysgawyn", "Ysgawyn", 2335, 3167, 0xF4E0D4, 0x2A2A2A, 0x1A1A1A, 0x6A6A6A);
+        b.npcAt("lady_tangwen_trahaearn", "Lady Tangwen Trahaearn", 2334, 3174, 0xF4E0D5, 0x8A8A8A, 0x5A5A5A, 0xC0C0C0); // approx: in the Underground Pass (2334, 9574)
+        b.npcAt("lady_hefin", "Lady Hefin", 2276, 3094, 0xF4E0D6, 0x3A8A3A, 0x2A5A2A, 0xE0D090);
+        b.npcAt("lord_crwys", "Lord Crwys", 2177, 3210, 0xF4E0D7, 0x6A4A2A, 0x4A3A1A, 0x6A5A2A);
         b.item("ardougne_knight_helm", "Ardougne knight helm", "helmet", 0xA02A2A, "A red steel full helm of the Ardougne knights.");
         b.item("ardougne_knight_platebody", "Ardougne knight platebody", "platebody", 0x8A8A9A, "A steel platebody with the Ardougne tabard.");
         b.item("crystal_seed_sote", "Crystal seed", "gem", 0xB8F0FF, "The seed of the great crystal of Prifddinas.");
-        // The cave on the north side of the Iorwerth Camp, where an archer and a warrior guard the stolen orb.
-        b.spot("sote_iorwerth_cave", "Iorwerth Camp cave", 2201, 3262); // approx
+        b.item("sote_thick_liquid", "Thick clear liquid", "vial", 0xE0E0E8, "From Elena's cabinet. A sleeping draught, of sorts.");
+        b.item("sote_enchanted_seed", "Enchanted crystal seed", "gem", 0x9AE0F0, "Baxtorian's crystal seed, enchanted by Eluned.");
+        b.item("sote_inversion_potion", "Inversion potion", "potion", 0xB0E0F0, "Elder cadantine and crystal dust: it reverses an elf's corruption.");
+        b.item("sote_orb_of_light", "Orb of light", "orb", 0xF0F0C0, "The orb the Iorwerth archers stole.");
+        b.item("sote_explosive_potion", "Explosive potion", "potion", 0xE06A2A, "Elena's explosive potion, for the holes outside the dwarf camp.");
+        // Spots (quest-helper tiles): Elena's house, the Rehnison house, the three grain sacks in West Ardougne, the market, the castle,
+        // the herb patch in Lletya, the Underground Pass crevice, Isafdar's clearing, the Grand Library, the dwarf camp.
+        b.spot("sote_elena_house", "Elena's house", 2590, 3338);
+        b.spot("sote_rehnison", "The Rehnison household", 2533, 3333);
+        b.spot("sote_grain_north", "Grain sacks by the clerk", 2517, 3315);
+        b.spot("sote_grain_church", "Grain sacks in the church", 2524, 3285);
+        b.spot("sote_grain_store", "Grain sacks by the general store", 2469, 3287);
+        b.spot("sote_ardougne_market", "Ardougne Market", 2662, 3305);
+        b.spot("sote_ardougne_castle", "Ardougne Castle", 2585, 3297);
+        b.spot("sote_baxtorian_falls", "Baxtorian's tomb", 2566, 3505); // approx: the Waterfall Dungeon's throne room (2603, 9905)
+        b.spot("sote_lletya_patch", "Lletya herb patch", 2322, 3152);
+        b.spot("sote_up_crevice", "Underground Pass crevice", 2341, 3216); // approx: south of the Well of Voyage (2341, 9616)
+        b.spot("sote_grand_library", "The Grand Library", 2240, 3300); // approx: the library lies beneath the ruins (2623, 6088)
+        b.spot("sote_ysgawyn_clearing", "Isafdar clearing", 2256, 3168);
+        b.spot("sote_lletya_statue", "Lletya's empty plinth", 2340, 3165); // approx: the centre of the village
+        b.spot("sote_dig_swamp", "South Isafdar swamp", 2225, 3133);
+        b.spot("sote_dig_zulandra", "North of Zul-Andra", 2197, 3058); // approx: two steps north of the STASH unit
+        b.spot("sote_dig_gates", "Outside Prifddinas' south gates", 2240, 3255); // approx
+        b.spot("sote_spin", "Western entry to the Underground Pass", 2312, 3213); // approx
         // OSRS Wiki "Iorwerth Warrior": level 108, 105 HP, 95 Attack/Strength, 80 Defence, stab max hit 10 every 4 ticks.
+        b.spot("sote_iorwerth_cave", "Iorwerth Camp cave", 2202, 3263); // the cave on the north side of the Iorwerth Camp (quest-helper tile)
         b.boss(BossDef.of("iorwerth_warrior", "Iorwerth Warrior").level(108).stats(105, 95, 95, 80, 1, 1).speed(4)
                 .defenceBonus(50, 70, 70, 60, 50)
                 .attack(AttackDef.of("stab", AttackType.STAB, 10, 2, 1))
                 .drops(Drop.always("bones")).model("elf_warrior").at("sote_iorwerth_cave").arena(7, "jungle"));
-        // Fragment of Seren and Essyllt: OSRS Wiki infoboxes (levels, hitpoints, combat stats, max hits, attack speed).
+        // The battles of West and East Ardougne (wiki): level-106 mourners (100 HP, stab up to 10) and the castle's level-121
+        // paladins (82 HP, slash up to 14) and level-53 Knights of Ardougne (54 HP, slash up to 6), every 4-5 ticks.
+        b.boss(BossDef.of("sote_mourner", "Mourner").level(106).stats(100, 95, 95, 80, 1, 1).speed(4)
+                .defenceBonus(40, 60, 60, 50, 40)
+                .attack(AttackDef.of("stab", AttackType.STAB, 10, 2, 1))
+                .drops(Drop.always("bones")).skin(0xE0C0A0, 0x2A2A2A, 0x1A1A1A, 0x3A3A3A));
+        b.boss(BossDef.of("sote_knight", "Knight of Ardougne").level(53).stats(54, 44, 52, 28, 1, 1).speed(4)
+                .defenceBonus(20, 40, 40, 30, 20)
+                .attack(AttackDef.of("slash", AttackType.SLASH, 6, 2, 1))
+                .drops(Drop.always("bones")).skin(0xE0C0A0, 0x8A8A9A, 0x5A5A6A, 0xA02A2A));
+        b.boss(BossDef.of("sote_paladin", "Paladin").level(121).stats(82, 54, 126, 64, 1, 1).speed(5)
+                .defenceBonus(87, 84, 76, -10, 79)
+                .attack(AttackDef.of("slash", AttackType.SLASH, 14, 2, 1))
+                .drops(Drop.always("bones")).skin(0xE0C0A0, 0xC0C0C9, 0x8A8A9A, 0xE0E0E3));
+        // Arianwyn turned traitor (wiki): level 212, 300 HP, ranged up to 38 every 5 ticks; purple arrows switch prayers off,
+        // orange arrows land as bombs (up to 47).
+        b.boss(BossDef.of("sote_arianwyn", "Arianwyn").level(212).stats(300, 0, 0, 102, 102, 368).speed(5)
+                .defenceBonus(80, 80, 80, 260, 180)
+                .attack(AttackDef.of("arrows", AttackType.RANGED, 38, 12, 6))
+                .attack(AttackDef.of("purple_arrow", AttackType.RANGED, 38, 12, 1).special(Special.DRAIN_PRAYER, 99)
+                        .message("A purple arrow switches your prayers off!").particle("minecraft:witch"))
+                .attack(AttackDef.of("orange_arrow", AttackType.RANGED, 47, 12, 1).special(Special.SKY_STRIKE, 0)
+                        .telegraph(2, "Arianwyn looses a glowing orange arrow!").particle("minecraft:flame"))
+                .drops(Drop.always("bones")).skin(0xF4E0D0, 0x3A8A3A, 0x2A5A2A, 0xE0D090));
+        // Fragment of Seren and Essyllt: OSRS Wiki infoboxes (levels, hitpoints, combat stats, max hits, attack speed). Essyllt stabs
+        // up to 40 and shoots up to 51, stuns and throws a stat-draining potion.
         b.boss(BossDef.of("sote_essyllt", "Essyllt").level(236).stats(320, 268, 268, 104, 104, 342).speed(4)
-                .attack(AttackDef.of("sword", AttackType.SLASH, 40, 2.5, 5))
+                .defenceBonus(40, 40, 20, 30, 120)
+                .attack(AttackDef.of("sword", AttackType.STAB, 40, 2.5, 5))
                 .attack(AttackDef.of("crossbow", AttackType.RANGED, 51, 10, 5))
-                .drops(Drop.always("bones")).skin(0xF4E0D0, 0x1A1A1A, 0x1A1A1A, 0x2A2A2A).at("west_ardougne_mourners").arena(10, "crypt"));
+                .attack(AttackDef.of("stun", AttackType.STAB, 20, 2.5, 1).special(Special.FREEZE, 3).message("Essyllt stuns you!")) // approx
+                .attack(AttackDef.of("potion", AttackType.RANGED, 10, 10, 1).special(Special.DRAIN_STAT, 0)
+                        .message("Essyllt hurls a potion: you feel weaker.").particle("minecraft:item_slime")) // approx
+                .drops(Drop.always("bones")).skin(0xF4E0D0, 0x1A1A1A, 0x1A1A1A, 0x2A2A2A).at("underground_pass").arena(10, "crypt"));
+        // The Fragment (wiki): 1,000 HP, every 7 ticks two crystals of up to 12 each (3 through Protect from Missiles) or a melee
+        // swipe; every fourth attack one of her four specials in order (QuestBossScripts.FragmentSpecials): she pulls the player in,
+        // splits into shadows, summons healing beams, then pins the player for a hit of their max hitpoints minus 1-5. Magic is the
+        // only effective style (Defence-based magic defence: her magic defence bonus is 10).
         b.boss(BossDef.of("fragment_of_seren", "Fragment of Seren").level(494).stats(1000, 242, 288, 102, 102, 235).speed(7)
-                .defenceBonus(100, 100, 100, 100, 100) // approx
+                .defenceBonus(320, 220, 320, 10, 480)
                 .attack(AttackDef.of("crystal_volley", AttackType.RANGED, 24, 10, 5)) // two hits of up to 12
-                .attack(AttackDef.of("crystal_spike", AttackType.MAGIC, 40, 10, 3).special(Special.SKY_STRIKE, 0) // approx: OSRS special hits max HP minus 1
-                        .telegraph(3, "Crystals rain down from the sky!").particle("minecraft:end_rod"))
-                .attack(AttackDef.of("fragment_drain", AttackType.MAGIC, 20, 10, 2).special(Special.DRAIN_PRAYER, 15))
-                .phase(66, "The Fragment of Seren shatters into crystals and reforms!", 1.2, false)
-                .phase(33, "Seren's fragment sings a terrible song!", 1.4, false)
+                .attack(AttackDef.of("swipe", AttackType.SLASH, 24, 2.5, 2))
+                .attack(AttackDef.of("pull", AttackType.SLASH, 24, 12, 1).special(Special.PULL, 0)
+                        .telegraph(2, "Fragment of Seren: Come closer!"))
+                .attack(AttackDef.of("shadows", AttackType.MAGIC, 0, 12, 1).special(Special.BLINK, 0)
+                        .message("The Fragment splits into shadows! Strike the lighter one."))
+                .attack(AttackDef.of("healing_beams", AttackType.MAGIC, 0, 12, 1).special(Special.HEAL_SELF, 30)
+                        .message("Crystal beams surround the Fragment, healing her!").particle("minecraft:end_rod"))
+                .attack(AttackDef.of("crystal_judgement", AttackType.MAGIC, 98, 12, 1).special(Special.FREEZE, 5)
+                        .telegraph(4, "The Fragment pins you in place and gathers her power! Heal above your maximum!")
+                        .particle("minecraft:end_rod"))
                 .drops(Drop.always("coins")).size(0.8f, 2.4f, 1.3f).at("prifddinas_ruins").arena(14, "void"));
         b.quest("song_of_the_elves", "Song of the Elves", Difficulty.GRANDMASTER, 4)
                 .xp(Skill.AGILITY, 40000).xp(Skill.CONSTRUCTION, 40000).xp(Skill.FARMING, 40000).xp(Skill.HERBLORE, 40000).xp(Skill.HUNTER, 40000).xp(Skill.MINING, 40000).xp(Skill.SMITHING, 40000).xp(Skill.WOODCUTTING, 40000) // OSRS (current quest XP rewards)
                 .reqQuest("regicide", "plague_city").reqQuest("mournings_end_part_ii", "making_history", "DRUIDIC_RITUAL")
                 .req(Skill.AGILITY, 70).req(Skill.CONSTRUCTION, 70).req(Skill.FARMING, 70).req(Skill.HERBLORE, 70)
                 .req(Skill.HUNTER, 70).req(Skill.MINING, 70).req(Skill.SMITHING, 70).req(Skill.WOODCUTTING, 70)
-                .unlock("Access to Prifddinas, the elven city")
+                .unlock("Access to Prifddinas, the elven city").unlock("Access to Zalcano and the Gauntlet")
+                .unlock("Ability to make divine potions and crystal tools, weapons and armour")
                 .stage("I can start this quest by speaking to Edmond in East Ardougne. (Requires Regicide and the Mourning's End quests; 70 in eight skills.)")
                 .talk("edmond").say("Elena has been arrested by the king's knights for stirring up trouble against the mourners! Please, help her.")
-                .stage("I should ask King Lathas about Elena, disguise myself as an Ardougne knight (Alrena can help) and speak to Elena in her cell.")
+                // ---- The escape of Elena, Causing an insurrection (wiki quick guide) ----
+                .stage("I should free Elena from Ardougne Castle's cells, stir both halves of Ardougne against King Lathas and lead the "
+                        + "battles against his mourners and knights.")
                 .talk("king_lathas").stay().unlessFlag("sote_lathas").flag("sote_lathas")
                 .say("Elena is a troublemaker. She stays where she is. Now leave, I have a war with Iorwerth to fight.")
-                .talk("alrena").stay().needFlag("sote_lathas").unless("ardougne_knight_helm")
-                .take("steel_full_helm", "steel_platebody", "redberries:3").give("ardougne_knight_helm", "ardougne_knight_platebody")
-                .say("A knight's disguise? Dye a steel full helm red and sew the Ardougne tabard onto a steel platebody... there.")
-                .missing("To pass as one of the king's knights you need a steel full helm, a steel platebody and redberries for dye.")
-                .talk("elena").needFlag("sote_lathas").need("ardougne_knight_helm", "ardougne_knight_platebody")
+                .talk("edmond").stay().needFlag("sote_lathas").unlessFlag("sote_disguise_brief").flag("sote_disguise_brief")
+                .say("> How do I get this disguise?", "Dye a steel full helm red, and Alrena can sew you the knights' tabard for a steel platebody.")
+                .talk("alrena").stay().needFlag("sote_disguise_brief").unless("ardougne_knight_helm")
+                .take("steel_full_helm", "steel_platebody", "redberries:3", "silk").give("ardougne_knight_helm", "ardougne_knight_platebody")
+                .say("* You dye the steel full helm red.", "A tabard of the king's knights, sewn from your silk... there. On the platebody it goes.")
+                .missing("To pass as one of the king's knights you need a steel full helm and red dye (redberries), and silk for the tabard on a steel platebody.")
+                .talk("elena").stay().needFlag("sote_lathas").unlessFlag("sote_cell").need("ardougne_knight_helm", "ardougne_knight_platebody", "steel_platelegs")
+                .flag("sote_cell")
                 .say("* The guards let a fellow knight through.",
-                        "You came! Lathas has been fighting Iorwerth in secret all along. Get word to the elves in Lletya: Ardougne will stand with them.")
-                .missing("* The prison guards turn you away. Perhaps dressed as one of the king's knights...")
-                .stage("I should travel to Lletya, help Baxtorian prepare (he needs a crystal tonic: cadantine and crystal dust in water) "
-                        + "and confront Lord Iorwerth.")
+                        "You came! In my house, in the cabinet, there's a thick clear liquid. Bring it to me: I have a plan.")
+                .missing("* The prison guards turn you away. Perhaps dressed as one of the king's knights (helm, platebody and steel platelegs)...")
+                .reach("sote_elena_house", 3).stay().needFlag("sote_cell").unlessFlag("sote_escape").unless("sote_thick_liquid").give("sote_thick_liquid")
+                .say("* In the cabinet of Elena's house you find the thick clear liquid.")
+                .talk("elena").stay().needFlag("sote_cell").unlessFlag("sote_escape").take("sote_thick_liquid").flag("sote_escape")
+                .say("* Elena drinks the liquid and drops as if dead. The guards carry her out of the castle.")
+                .talk("edmond").stay().needFlag("sote_escape").unlessFlag("sote_hideout").flag("sote_hideout")
+                .say("She's out! She's waiting for you in the Rehnison house in West Ardougne. There's a passage under the bed.")
+                .reach("sote_rehnison", 4).stay().needFlag("sote_hideout").unlessFlag("sote_halgrive").flag("sote_halgrive")
+                .say("* You climb through the bed into the hideout. Elena and Councillor Halgrive have a plan:",
+                        "* burn the mourners' grain and spread word of new taxes, so both halves of the city rise against the king.")
+                .reach("sote_grain_north", 3).stay().needFlag("sote_halgrive").unlessFlag("sote_grain1").need("tinderbox", "me_mourner_top")
+                .flag("sote_grain1").say("* Dressed as a mourner, you set the grain sacks by the clerk alight.")
+                .missing("* In mourner gear and with a tinderbox you could burn the mourners' grain.")
+                .reach("sote_grain_church", 3).stay().needFlag("sote_halgrive").unlessFlag("sote_grain2").need("tinderbox", "me_mourner_top")
+                .flag("sote_grain2").say("* You burn the sacks in the church. The priest and Nurse Sarah hear of the 'mourners' new taxes'.")
+                .reach("sote_grain_store", 3).stay().needFlag("sote_halgrive").unlessFlag("sote_grain3").need("tinderbox", "me_mourner_top")
+                .flag("sote_grain3").say("* The sacks outside the general store go up in flames. Chadwell is furious about the new taxes.")
+                .reach("sote_ardougne_market", 8).stay().needFlag("sote_grain1", "sote_grain2", "sote_grain3").unlessFlag("sote_taxes")
+                .need("ardougne_knight_helm", "ardougne_knight_platebody").flag("sote_taxes")
+                .say("* As a knight of Ardougne you tell the silver merchant, the bakers, the gem merchant, the fur trader, the spice seller,",
+                        "* the silk merchant, the town crier, Zenesha, the estate agent, Probita, Aemad and the priest about the king's new taxes.")
+                .missing("* The market traders would listen to a knight of Ardougne.")
+                .talk("elena").stay().needFlag("sote_taxes").unlessFlag("sote_battle_w").flag("sote_battle_w")
+                .say("> I'm ready.", "Then the Battle of West Ardougne begins. To the mourners' headquarters!")
+                .reach("west_ardougne_mourners", 8).stay().needFlag("sote_battle_w").unlessFlag("sote_west").spawn("sote_mourner")
+                .say("* Mourners pour out of their headquarters!")
+                .kill("sote_mourner", 21).stay().needFlag("sote_battle_w").unlessFlag("sote_west").flag("sote_west")
+                .say("* Ten mourners at the headquarters and eleven in its basement fall. West Ardougne is free.")
+                .talk("elena").stay().needFlag("sote_west").unlessFlag("sote_battle_e").flag("sote_battle_e")
+                .say("> I'm ready.", "Now the castle. The Battle of East Ardougne!")
+                .reach("sote_ardougne_castle", 8).stay().needFlag("sote_battle_e").unlessFlag("sote_knights").spawn("sote_knight")
+                .say("* Knights of Ardougne block the castle halls!")
+                .kill("sote_knight", 10).stay().needFlag("sote_battle_e").unlessFlag("sote_knights").flag("sote_knights")
+                .say("* The knights fall back. The paladins make their stand upstairs.") // approx: the wiki's 15 knights and paladins split 10/5
+                .reach("sote_ardougne_castle", 8).stay().needFlag("sote_knights").unlessFlag("sote_paladins").spawn("sote_paladin")
+                .say("* A paladin bars the stairs!")
+                .kill("sote_paladin", 5).stay().needFlag("sote_knights").unlessFlag("sote_paladins").flag("sote_paladins")
+                .say("* The last paladin falls. The castle is yours.")
+                .talk("king_lathas").needFlag("sote_paladins")
+                .say("> We're done here, take him away.", "* Lathas is led away. Arianwyn arrives with news, and you travel with him to Lletya.")
+                .missing("Guards! *The king's knights still hold the castle.*")
+                // ---- Arianwyn's plan, Baxtorian Falls, Preparing to enter Prifddinas, the Grand Library, the elf lords, the orb,
+                // Ysgawyn and the attack on Lletya (wiki quick guide) ----
+                .stage("I should help Arianwyn and Baxtorian in Lletya: free Baxtorian's memories, gather the elf lords, open the Grand "
+                        + "Library's seals, recover the orb and unmask the traitor.")
                 .talk("arianwyn").stay().unlessFlag("sote_arianwyn").flag("sote_arianwyn")
-                .say("The time has come to restore Prifddinas. But Lord Iorwerth's forces still hold the ruins. Baxtorian has returned to lead us.")
-                .talk("baxtorian_elf").stay().needFlag("sote_arianwyn").unlessFlag("sote_tonic")
-                .take("cadantine", "vial_of_water", "crystal_shard").need("pestle_and_mortar").reqSkill(Skill.HERBLORE, 70).flag("sote_tonic")
-                .say("* You grind the crystal shard to dust and mix it with cadantine in a vial of water.",
-                        "A crystal tonic! With this I can sing to the crystal again. Now, to Iorwerth.")
-                .missing("I need a tonic to sing to the crystal: cadantine, a crystal shard and a vial of water, ground and mixed with a pestle and mortar.")
-                .kill("iorwerth_archer").stay().needFlag("sote_arianwyn").unlessFlag("sote_archer", "sote_orb").flag("sote_archer")
+                .say("The time has come to restore Prifddinas. Speak to Ysgawyn, and Elena, then join our meeting.")
+                .talk("ysgawyn").stay().needFlag("sote_arianwyn").unlessFlag("sote_ysgawyn").flag("sote_ysgawyn")
+                .say("Humans in Lletya... Arianwyn trusts too easily.")
+                .talk("elena").stay().needFlag("sote_ysgawyn").unlessFlag("sote_elena_lletya").flag("sote_elena_lletya")
+                .say("Lletya is beautiful. Arianwyn's meeting is about to begin.")
+                .talk("arianwyn").stay().needFlag("sote_elena_lletya").unlessFlag("sote_meeting").flag("sote_meeting")
+                .say("Baxtorian's memories lie in his tomb behind the waterfall. Meet me there.")
+                .puzzle("sote_baxtorian_falls", SOTE_PILLARS).stay().needFlag("sote_meeting").unlessFlag("sote_pillars").need("rope")
+                .take("nature_rune", "irit_leaf", "black_knife", "wine_of_zamorak", "adamant_chainbody", "cabbage").flag("sote_pillars")
+                .say("* With the key from the crates and the 'Ode to eternity', the six pillars take their offerings. Baxtorian rises!")
+                .reach("sote_lletya_patch", 3).stay().needFlag("sote_pillars").unlessFlag("sote_planted").take("cadantine_seed").need("seed_dibber")
+                .flag("sote_planted").say("* At Elena's suggestion you plant a cadantine seed in the herb patch by the pond.")
+                .talk("baxtorian_elf").stay().needFlag("sote_pillars").unlessFlag("sote_clues").give("crystal_seed_sote").flag("sote_clues")
+                .say("> How do I find Lord Amlodd?", "With this crystal seed, once it is enchanted.",
+                        "> How do I find Lady Trahaearn?", "She went into the Underground Pass, long ago. Look south of the Well of Voyage.")
+                .talk("eluned").stay().needFlag("sote_clues").unless("sote_enchanted_seed").unlessFlag("sote_amlodd").take("crystal_seed_sote")
+                .give("sote_enchanted_seed")
+                .say("> I have a seed from Baxtorian that I think needs enchanting.", "*Eluned sings to the seed.* There.")
+                .reach("sote_up_crevice", 4).stay().needFlag("sote_clues").unlessFlag("sote_crevice", "sote_trahaearn").needTool("pickaxe")
+                .take("runite_bar").need("hammer").flag("sote_crevice")
+                .say("* You break through the blocked crevice. An elderly elf lies trapped in a broken exoskeleton; you mend it with a runite bar.")
+                .missing("* A crevice south of the Well of Voyage, blocked by rock: a pickaxe. Beyond it, something needs a hammer and a runite bar.")
+                .talk("lady_tangwen_trahaearn").stay().needFlag("sote_crevice").unlessFlag("sote_trahaearn").flag("sote_trahaearn")
+                .say("Baxtorian sent you? Then the Trahaearn clan will answer him.")
+                .reach("LLETYA", 12).stay().needFlag("sote_trahaearn").unlessFlag("sote_amlodd").take("sote_enchanted_seed")
+                .flag("sote_amlodd")
+                .say("* You rub the crystal seed and it carries you to the Enchanted Valley. A mysterious figure reveals himself:",
+                        "* Lord Ieuan Amlodd, who returns with you to Lletya.")
+                .missing("* The enchanted crystal seed would carry you to Lord Amlodd.")
+                .talk("arianwyn").stay().needFlag("sote_amlodd", "sote_planted").unlessFlag("sote_tonic").take("cadantine", "vial_of_water", "crystal_shard")
+                .need("pestle_and_mortar").reqSkill(Skill.HERBLORE, 70).give("sote_inversion_potion").flag("sote_tonic")
+                .say("* Elena hands you an elder cadantine from the patch; Arianwyn an old crystal. You grind it to dust and mix both in a vial of water.",
+                        "An inversion potion. With this, Lord Amlodd can open the Grand Library.")
+                .missing("The inversion potion needs the elder cadantine (a cadantine), crystal dust from a crystal shard and a vial of water, "
+                        + "and a pestle and mortar.")
+                .puzzle("sote_grand_library", SOTE_SEAL_CADARN).stay().needFlag("sote_tonic").unlessFlag("sote_library")
+                .take("sote_inversion_potion").flag("sote_library")
+                .say("* Lord Amlodd takes you into the Grand Library. Beam by beam the seals open; Cadarn's memory speaks of a fragment sealed away.")
+                .talk("baxtorian_elf").stay().needFlag("sote_library").unlessFlag("sote_lords").flag("sote_lords")
+                .say("> Lady Hefin?", "Past the stepping stones of the Poison Waste.", "> Lord Crwys?", "In a dead tree south of the Iorwerth Camp.")
+                .talk("lady_hefin").stay().needFlag("sote_lords").unlessFlag("sote_hefin").flag("sote_hefin")
+                .say("* Across the Poison Waste's stepping stones an elf hermit waits.", "I am Hefin. Tell Baxtorian my clan will come.")
+                .reach("at_lord_crwys", 4).stay().needFlag("sote_lords").unlessFlag("sote_crwys_tree", "sote_crwys").needTool("axe")
+                .flag("sote_crwys_tree").say("* You chop the dead tree north of the pond. An elf steps out of it.")
+                .missing("* The dead tree north of the pond looks odd. An axe would tell.")
+                .talk("lord_crwys").stay().needFlag("sote_crwys_tree").unlessFlag("sote_crwys").flag("sote_crwys")
+                .say("Crwys, at your service. The Crwys clan stands with Baxtorian.")
+                .kill("iorwerth_archer").stay().needFlag("sote_lords").unlessFlag("sote_archer", "sote_orb").flag("sote_archer")
                 .say("* The Iorwerth archer guarding the cave falls. His warrior companion is still inside.")
-                .kill("iorwerth_warrior").stay().needFlag("sote_archer").unlessFlag("sote_orb").flag("sote_orb")
-                .say("* The Iorwerth warrior falls. You recover the stolen orb.")
-                .talk("lord_iorwerth").needFlag("sote_tonic", "sote_orb")
-                .say("You're too late! I have corrupted the Fragment of Seren. The goddess's song will destroy you all!")
-                .missing("* Iorwerth's guards bar the way. Baxtorian needs his tonic, and the orb the Iorwerth archers stole must be recovered.")
-                .stage("I must defeat the corrupted Fragment of Seren.")
-                .kill("sote_essyllt").stay().unlessFlag("sote_essyllt").flag("sote_essyllt")
+                .kill("iorwerth_warrior").stay().needFlag("sote_archer").unlessFlag("sote_orb").flag("sote_orb").give("sote_orb_of_light")
+                .say("* The Iorwerth warrior falls. In the chest you find the stolen orb of light.")
+                .talk("baxtorian_elf").stay().needFlag("sote_orb", "sote_hefin", "sote_crwys").unlessFlag("sote_traitor_hunt").take("sote_orb_of_light")
+                .flag("sote_traitor_hunt")
+                .say("The orb! Someone told the Iorwerths where it was. Elena saw Ysgawyn slip out of Lletya. Follow him.")
+                .reach("sote_ysgawyn_clearing", 6).stay().needFlag("sote_traitor_hunt").unlessFlag("sote_traitor").flag("sote_traitor")
+                .say("* Mushrooms, rocks and lamps: his footsteps lead to a clearing in Isafdar. Ysgawyn is meeting Iorwerth's men!",
+                        "* Smoke rises over Lletya. The Iorwerths are attacking!")
+                .reach("LLETYA", 10).stay().needFlag("sote_traitor").unlessFlag("sote_arianwyn_dead").spawn("sote_arianwyn")
+                .say("* You find Eoin under a table and Iona among the cooking pots. Then Arianwyn draws his bow on you: he was the traitor!")
+                .kill("sote_arianwyn").stay().needFlag("sote_traitor").unlessFlag("sote_arianwyn_dead").flag("sote_arianwyn_dead")
+                .say("* Near death, Arianwyn animates an arrow... and falls.")
+                .reach("sote_lletya_statue", 4).stay().needFlag("sote_arianwyn_dead").unlessFlag("sote_ithell").take("limestone_brick:8")
+                .need("hammer").flag("sote_ithell")
+                .say("* The five glowing symbols lead you to the empty plinth. You build the statue from limestone bricks: Lady Ithell appears.")
+                .missing("* Lady Ithell's statue needs 8 limestone bricks and a hammer.")
+                .reach("sote_dig_swamp", 3).stay().needFlag("sote_ithell").unlessFlag("sote_clue1").need("spade").flag("sote_clue1")
+                .say("* You dig by the swamp in the south of Isafdar: the next clue.")
+                .reach("sote_dig_zulandra", 3).stay().needFlag("sote_clue1").unlessFlag("sote_clue2").need("spade").flag("sote_clue2")
+                .say("* You dig north of Zul-Andra: another clue.")
+                .reach("sote_dig_gates", 3).stay().needFlag("sote_clue2").unlessFlag("sote_clue3").need("spade").flag("sote_clue3")
+                .say("* You dig outside Prifddinas' south gates: the last clue.")
+                .reach("sote_spin", 3).stay().needFlag("sote_clue3").unlessFlag("sote_meilyr").emptyHanded().flag("sote_meilyr")
+                .say("* With nothing in your hands you spin outside the Underground Pass. Lady Meilyr appears: every clan stands with Baxtorian.")
+                .missing("* Lady Meilyr's clue: spin here with nothing equipped.")
+                .talk("baxtorian_elf").needFlag("sote_meilyr")
+                .say("All the clans are united. Now we must seal the Underground Pass before Iorwerth's forces reach the Temple of Light.")
+                .missing("?!sote_meeting|Arianwyn will tell you of our plans.", "?sote_meeting|?!sote_meilyr|The clans are not yet united.")
+                // ---- Sealing the Underground Pass and Fighting the Fragment (wiki quick guide) ----
+                .stage("I must seal the Underground Pass at the dwarf camp, defeat Essyllt and destroy the corrupted Fragment of Seren.")
+                .talk("elena").stay().unlessFlag("sote_holes").unless("sote_explosive_potion").give("sote_explosive_potion:7")
+                .say("> Baxtorian said you had an idea to help our defence.", "Explosive potions! Seven of them, for the holes outside the camp.")
+                .reach("underground_pass", 10).stay().unlessFlag("sote_holes").take("sote_explosive_potion:7").flag("sote_holes")
+                .say("* You fill the seven holes outside the dwarf camp with explosive potions.")
+                .kill("elf_warrior", 6).stay().needFlag("sote_holes").unlessFlag("sote_defended").flag("sote_defended") // approx: 4 minutes of attackers
+                .say("* For four minutes you hold the barricade against Iorwerth's elves. The explosives seal the pass behind them.")
+                .kill("sote_essyllt").stay().needFlag("sote_defended").unlessFlag("sote_essyllt").flag("sote_essyllt")
                 .say("* Essyllt, Iorwerth's agent among the mourners, falls. The Underground Pass is sealed behind you.")
-                .kill("fragment_of_seren").needFlag("sote_essyllt").give("crystal_seed_sote").say("* The Fragment of Seren falls silent. A crystal seed lies where she stood.")
+                .kill("fragment_of_seren").needFlag("sote_essyllt").give("crystal_seed_sote")
+                .say("* In the Temple of Light, the Fragment of Seren falls silent. A crystal seed lies where she stood.")
+                .missing("?!sote_holes|* The holes outside the dwarf camp are still empty.", "?sote_holes|?!sote_essyllt|* Essyllt still leads the attack.")
                 .stage("I should give the crystal seed to Baxtorian so Prifddinas can be rebuilt.")
                 .talk("baxtorian_elf").take("crystal_seed_sote").say("* Baxtorian sings to the seed. Crystal towers rise from the ruins: Prifddinas is restored!",
                         "The elven city welcomes you, hero of Prifddinas.")
                 .done("arianwyn", "Welcome to Prifddinas, friend.");
+    }
+
+    /**
+     * Song of the Elves, Baxtorian's tomb (wiki quick guide): six pillars, each with a number from 1 to 6 different for every
+     * player, take the offerings 1 nature rune, 2 irit leaf (or flowers), 3 black knife, 4 wine of zamorak, 5 adamant chainbody,
+     * 6 cabbage. The inscriptions: SW says its number; W what it isn't opposite (the SE pillar's); NW what it is next to (the W
+     * pillar's); NE what it is opposite (the NW pillar's); E what it isn't next to (its own); SE what it isn't (the NE pillar's).
+     */
+    static final QuestPuzzle SOTE_PILLARS = sotePillars();
+    /**
+     * The Grand Library, the Seal of Cadarn (wiki quick guide's solution): seven hand mirrors and a red crystal guide the beam
+     * east, down, south, west, south, through the red crystal, east and south to the seal.
+     */
+    static final QuestPuzzle SOTE_SEAL_CADARN = soteSealCadarn();
+
+    private static QuestPuzzle sotePillars() {
+        String[] items = {"Nature rune", "Irit leaf", "Black knife", "Wine of zamorak", "Adamant chainbody", "Cabbage"};
+        QuestPuzzle.Builder b = QuestPuzzle.builder("sote_pillars").room("pillars");
+        // pillars in order SW, W, NW, NE, E, SE; a few dozen of the 720 numberings are enough to vary between players
+        int[][] numberings = {{1, 2, 3, 4, 5, 6}, {3, 6, 1, 5, 2, 4}, {5, 1, 4, 2, 6, 3}, {2, 4, 6, 3, 1, 5}, {6, 3, 5, 1, 4, 2},
+                {4, 5, 2, 6, 3, 1}, {2, 6, 4, 1, 5, 3}, {5, 3, 1, 6, 2, 4}, {1, 4, 5, 3, 6, 2}, {6, 1, 2, 5, 4, 3},
+                {3, 5, 6, 2, 1, 4}, {4, 2, 3, 6, 5, 1}};
+        for (int[] n : numberings) {
+            b.variant(null).prompt("* Six pillars stand in Baxtorian's tomb. Their inscriptions read:",
+                            "* South-west: 'I am " + n[0] + ".' West: 'I am not opposite " + n[5] + ".' North-west: 'I am next to " + n[1] + ".'",
+                            "* North-east: 'I am opposite " + n[2] + ".' East: 'I am not next to " + n[4] + ".' South-east: 'I am not " + n[3] + ".'",
+                            "* The Ode to eternity: 1 nature, 2 flowers, 3 a black blade, 4 Zamorak's wine, 5 adamant links, 6 cabbage.",
+                            "* Make the offerings on the pillars in order: SW, W, NW, NE, E, SE.")
+                    .options(items).solution(n[0] - 1, n[1] - 1, n[2] - 1, n[3] - 1, n[4] - 1, n[5] - 1);
+        }
+        return b.failLines("* The pillar rejects the offering. You take everything back and start again.").build();
+    }
+
+    private static QuestPuzzle soteSealCadarn() {
+        return QuestPuzzle.builder("sote_seal_cadarn").room("cadarn").variant(null)
+                .prompt("* The Seal of Cadarn: a beam of light enters the room. Seven hand mirrors and a red crystal from the dispenser.",
+                        "* Mirror 1 stands west of mirror 2; mirror 2 over a hole down to mirror 3; mirror 4 south of mirror 3; mirror 5 west",
+                        "* of mirror 4; the crystal pillar south of mirror 5; mirror 6 beyond it, mirror 7 east of mirror 6 and the seal south of 7.",
+                        "* Place the mirrors and the crystal, in order, to carry the beam to the seal.")
+                .options("North", "East", "South", "West", "Up", "Down", "Red crystal")
+                .solution(1, 5, 2, 3, 2, 6, 1, 2)
+                .failLines("* The beam scatters against the wall. You collect the mirrors and start again.").build();
     }
 }

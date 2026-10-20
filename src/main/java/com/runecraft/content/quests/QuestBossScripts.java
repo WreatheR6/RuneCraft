@@ -26,6 +26,7 @@ final class QuestBossScripts {
         BossScripts.register("head_menaphite_guard", FalseGods::new);
         BossScripts.register("dark_squall", MagicOnly::new);
         BossScripts.register("balance_elemental", BalanceForms::new);
+        BossScripts.register("fragment_of_seren", FragmentSpecials::new);
     }
 
     /**
@@ -108,6 +109,51 @@ final class QuestBossScripts {
     }
 
     /** While Guthix Sleeps: Surok Magis, the Dark Squall, can only be hurt with magic (wiki). */
+    /**
+     * Song of the Elves, the Fragment of Seren (wiki): about three normal attacks (crystal volleys at range, a swipe up close), then
+     * one of her four specials, always in this order: she pulls the player to her, splits into shadows, summons healing beams, and
+     * pins the player for an unblockable hit of their maximum hitpoints minus 5 (above two thirds of her health), minus 3, then
+     * minus 1 (below a third).
+     */
+    static final class FragmentSpecials implements BossScript {
+        private static final String[] SPECIALS = {"pull", "shadows", "healing_beams", "crystal_judgement"};
+        private int attacks;
+        private int special;
+        private String last;
+
+        @Override
+        public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
+            if (boss.def() == null) {
+                return null;
+            }
+            attacks++;
+            String name;
+            if (attacks % 4 == 0) {
+                name = SPECIALS[special];
+                special = (special + 1) % SPECIALS.length;
+            } else {
+                name = distance <= 2.5 ? "swipe" : "crystal_volley";
+            }
+            last = name;
+            for (AttackDef a : boss.def().attacks) {
+                if (a.name().equals(name)) {
+                    return a;
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
+            if (!"crystal_judgement".equals(last)) {
+                return damage;
+            }
+            float left = boss.getHealth() / boss.getMaxHealth();
+            int spare = left > 2 / 3f ? 5 : left > 1 / 3f ? 3 : 1;
+            int max = com.runecraft.player.Players.data(player).skills().level(com.runecraft.osrs.Skill.HITPOINTS);
+            return Math.max(1, max - spare);
+        }
+    }
     static final class MagicOnly implements BossScript {
         private long lastMessage;
         private int attacks;
