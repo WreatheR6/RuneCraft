@@ -1,7 +1,8 @@
 # Boss drop tables from the OSRS Wiki (Flipping-Utilities/parsed-osrs data/monsters/all-monsters.json, Sep 2026).
 # Diffed by BossDropsTableTest: every "drop" (item:min-max/1-in-N) must be a line of the boss's table.
 # "-" drops are rows not applied (item not in the game, no parseable rate, or handled elsewhere).
-# <..> rows are shared tables (rolls = quantity column). Boss key Boss.X = built-in enum, else BossDef id.
+# <..> rows are shared tables (rolls = quantity column): the line's rarity is per kill (rate x rolls), or per roll for a boss
+# whose main table BossLoot.rolls rolls more than once. Boss key Boss.X = built-in enum, else BossDef id.
 # boss|wiki_name|wiki_level|item|quantity|rarity|drop
 Boss.GENERAL_GRAARDOR|General Graardor|624|Big bones|1|Always|big_bones:1-1/1
 Boss.GENERAL_GRAARDOR|General Graardor|624|Frozen key piece (Bandos)|1|Always|-handled elsewhere:frozen_key_piece_bandos
@@ -1345,7 +1346,7 @@ zulrah|Zulrah|725|Rune javelin|5|1/10199.0|-expanded shared table
 zulrah|Zulrah|725|Shield left half|1|1/3364.6|-expanded shared table
 zulrah|Zulrah|725|Dragon spear|1|1/4486.2|-expanded shared table
 zulrah|Zulrah|725|Nature talisman|1|1/3399.7|-expanded shared table
-zulrah|Zulrah|725|<rare_drop_table>|2|10/249|#rare:1-1/12
+zulrah|Zulrah|725|<rare_drop_table>|2|10/249|#rare:1-1/25
 vorkath|Vorkath|732|Superior dragon bones|2|Always|superior_dragon_bones:2-2/1
 vorkath|Vorkath|732|Blue dragonhide|2|Always|blue_dragonhide:2-2/1
 vorkath|Vorkath|732|Rune longsword|2-3|5/150|rune_longsword:2-3/30
@@ -1415,7 +1416,7 @@ vorkath|Vorkath|732|Rune javelin|5|1/12288.0|-expanded shared table
 vorkath|Vorkath|732|Shield left half|1|1/4053.8|-expanded shared table
 vorkath|Vorkath|732|Dragon spear|1|1/5405.0|-expanded shared table
 vorkath|Vorkath|732|Nature talisman|1|1/4096.0|-expanded shared table
-vorkath|Vorkath|732|<rare_drop_table>|2|5/150|#rare:1-1/15
+vorkath|Vorkath|732|<rare_drop_table>|2|5/150|#rare:1-1/30
 kraken|Kraken|291|Mystic water staff|1|3/128|mystic_water_staff:1-1/43
 kraken|Kraken|291|Rune warhammer|1|2/128|rune_warhammer:1-1/64
 kraken|Kraken|291|Rune longsword|1|2/128|rune_longsword:1-1/64
@@ -1716,7 +1717,7 @@ alchemical_hydra|Alchemical Hydra|426|Rune javelin|5|1/41369.6|-expanded shared 
 alchemical_hydra|Alchemical Hydra|426|Shield left half|1|1/13647.7|-expanded shared table
 alchemical_hydra|Alchemical Hydra|426|Dragon spear|1|1/18196.9|-expanded shared table
 alchemical_hydra|Alchemical Hydra|426|Nature talisman|1|1/13789.9|-expanded shared table
-alchemical_hydra|Alchemical Hydra|426|<rare_drop_table>|2|1/101|#rare:1-1/50
+alchemical_hydra|Alchemical Hydra|426|<rare_drop_table>|2|1/101|#rare:1-1/101
 the_nightmare|The Nightmare|814|Big bones|1|Always|big_bones:1-1/1
 the_nightmare|The Nightmare|814|Bones|1|Always|-handled elsewhere:bones
 the_nightmare|The Nightmare|814|Nightmare staff|1|1/300|nightmare_staff:1-1/300
@@ -1868,7 +1869,7 @@ phantom_muspah|Phantom Muspah|741|Rune javelin|5|1/19251.2|-expanded shared tabl
 phantom_muspah|Phantom Muspah|741|Shield left half|1|1/6350.9|-expanded shared table
 phantom_muspah|Phantom Muspah|741|Dragon spear|1|1/8467.9|-expanded shared table
 phantom_muspah|Phantom Muspah|741|Nature talisman|1|1/6417.1|-expanded shared table
-phantom_muspah|Phantom Muspah|741|<rare_drop_table>|2|5/235|#rare:1-1/24
+phantom_muspah|Phantom Muspah|741|<rare_drop_table>|2|5/235|#rare:1-1/47
 duke_sucellus|Duke Sucellus|758|Magus vestige|1|1/720|magus_vestige:1-1/720
 duke_sucellus|Duke Sucellus|758|Chromium ingot|1|3/720|chromium_ingot:1-1/240
 duke_sucellus|Duke Sucellus|758|Eye of the Duke|1|1/720|eye_of_the_duke:1-1/720
@@ -2198,7 +2199,7 @@ shellbane_gryphon|Shellbane gryphon|235|Rune spear|1|1/131072.0|-expanded shared
 shellbane_gryphon|Shellbane gryphon|235|Shield left half|1|1/262144.0|-expanded shared table
 shellbane_gryphon|Shellbane gryphon|235|Dragon spear|1|1/349525.3|-expanded shared table
 shellbane_gryphon|Shellbane gryphon|235|Nature talisman|1|1/2730.7|-expanded shared table
-shellbane_gryphon|Shellbane gryphon|235|<gem_drop_table>|2|1/128|#gems:1-1/64
+shellbane_gryphon|Shellbane gryphon|235|<gem_drop_table>|2|1/128|#gems:1-1/128
 brutus|Brutus|30|Bull bones|1|Always|-not in game
 brutus|Brutus|30|Raw t-bone steak|1|Always|-not in game
 brutus|Brutus|30|Mooleta|1|5/150|mooleta:1-1/30

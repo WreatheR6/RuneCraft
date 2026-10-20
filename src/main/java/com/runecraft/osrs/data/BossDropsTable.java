@@ -20,7 +20,9 @@ import java.util.Set;
  * quantities drop as plain stacks), removes common invented lines the wiki table doesn't list and appends the rest.
  * The dump often leaves out a boss's unique rows, so rare lines (1/50 or rarer) are never removed; pets, clue
  * scrolls, wilderness/brimstone keys, looting bags, frozen key pieces, awakened-only and other conditional rows are
- * left to the code that hands them out. Bosses whose wiki page has no ordinary per-kill table (Barrows, Gauntlet,
+ * left to the code that hands them out. A shared table rolled more than once ({@code <..>} rows, rolls in the quantity
+ * column) becomes one line at its rate per kill, except on a boss whose main table
+ * {@link com.runecraft.osrs.content.bosses.BossLoot#rolls} rolls more than once: its lines are all per roll. Bosses whose wiki page has no ordinary per-kill table (Barrows, Gauntlet,
  * Moons, Colosseum, Zalcano, Doom delves) or whose dump row is wrong (Obor, Bryophyta, the Mimic) have no patch.
  *
  * <p>The collection log is not built from these lines: boss pages use the wiki's page contents
@@ -31,6 +33,7 @@ public final class BossDropsTable {
 
     static {
         rows0(); rows1(); rows2(); rows3(); rows4(); rows5();
+        perRoll();
     }
 
     private BossDropsTable() {
@@ -443,7 +446,7 @@ public final class BossDropsTable {
                 d("raw_shark", 35, 35, 55), d("manta_ray", 35, 35, 83), d("zul_andra_teleport", 4, 4, 17),
                 d("antidote_plus_plus", 10, 10, 28), d("dragonstone_bolt_tips", 12, 12, 31), d("grapes", 250, 250, 42),
                 d("coconut", 20, 20, 42), d("swamp_tar", 1000, 1000, 50), d("zulrahs_scales", 500, 500, 50),
-                d("jar_of_swamp", 1, 1, 3000), d("#rare", 1, 1, 12));
+                d("jar_of_swamp", 1, 1, 3000), d("#rare", 1, 1, 25));
         // vorkath <- wiki:Vorkath(732)
         p("vorkath", rm("runite_ore"),
                 d("superior_dragon_bones", 2, 2, 1), d("blue_dragonhide", 2, 2, 1), d("rune_longsword", 2, 3, 30),
@@ -459,7 +462,7 @@ public final class BossDropsTable {
                 d("magic_logs", 50, 50, 30), d("dragon_bones", 15, 20, 38), d("diamond", 10, 20, 38),
                 d("wrath_talisman", 1, 1, 50), d("vorkaths_head", 1, 1, 50), d("dragonbone_necklace", 1, 1, 1000),
                 d("jar_of_decay", 1, 1, 3000), d("draconic_visage", 1, 1, 5000), d("skeletal_visage", 1, 1, 5000),
-                d("#rare", 1, 1, 15));
+                d("#rare", 1, 1, 30));
         // kraken <- wiki:Kraken(291)
         p("kraken", rm(),
                 d("mystic_water_staff", 1, 1, 43), d("rune_warhammer", 1, 1, 64), d("rune_longsword", 1, 1, 64),
@@ -528,7 +531,7 @@ public final class BossDropsTable {
                 d("astral_rune", 150, 300, 17), d("dragonstone_bolts_e", 100, 120, 50), d("onyx_bolts_e", 35, 50, 101),
                 d("shark", 2, 4, 14), d("ranging_potion(3)", 1, 1, 14), d("super_restore(3)", 2, 2, 14),
                 d("dragon_bones", 30, 30, 17), d("crystal_key", 1, 1, 101), d("alchemical_hydra_heads", 1, 1, 256),
-                d("jar_of_chemicals", 1, 1, 2000), d("#rare", 1, 1, 50));
+                d("jar_of_chemicals", 1, 1, 2000), d("#rare", 1, 1, 101));
         // the_nightmare <- wiki:The Nightmare(814)
         p("the_nightmare", rm("rune_platebody"),
                 d("big_bones", 1, 1, 1), d("nightmare_staff", 1, 1, 300), d("inquisitors_great_helm", 1, 1, 420),
@@ -572,7 +575,7 @@ public final class BossDropsTable {
                 d("teak_plank", 22, 22, 24), d("molten_glass", 89, 89, 16), d("pure_essence", 2314, 2314, 47),
                 d("coal", 163, 163, 47), d("runite_ore", 18, 18, 78), d("water_orb", 21, 21, 16),
                 d("dragon_bolts_unf", 89, 89, 24), d("limpwurt_root", 21, 21, 78), d("raw_shark", 28, 28, 63),
-                d("manta_ray", 28, 28, 94), d("#rare", 1, 1, 24));
+                d("manta_ray", 28, 28, 94), d("#rare", 1, 1, 47));
         // duke_sucellus <- wiki:Duke Sucellus(758)
         p("duke_sucellus", rm("coins", "death_rune", "runite_bar"),
                 d("magus_vestige", 1, 1, 720), d("chromium_ingot", 1, 1, 240), d("eye_of_the_duke", 1, 1, 720),
@@ -675,7 +678,7 @@ public final class BossDropsTable {
                 d("belles_folly_tarnished", 1, 1, 75), d("big_bones", 1, 1, 1), d("rune_claws", 1, 1, 13),
                 d("rune_scimitar", 1, 1, 16), d("raw_swordfish", 1, 1, 9), d("sweetcorn", 1, 1, 13), d("watermelon", 1, 1, 13),
                 d("raw_sea_turtle", 1, 1, 32), d("basket", 1, 1, 43), d("long_bone", 1, 1, 400),
-                d("jar_of_feathers", 1, 1, 2000), d("curved_bone", 1, 1, 5012), d("#gems", 1, 1, 64));
+                d("jar_of_feathers", 1, 1, 2000), d("curved_bone", 1, 1, 5012), d("#gems", 1, 1, 128));
         // brutus <- wiki:Brutus(30)
         p("brutus", rm("big_bones"),
                 d("mooleta", 1, 1, 30), d("bottomless_milk_bucket", 1, 1, 38), d("cow_slippers", 1, 1, 150),
@@ -748,6 +751,48 @@ public final class BossDropsTable {
         add("shellbane_gryphon", d("elkhorn_frag", 1, 1, 128));
         // Shellbane gryphon: Pillar frag (was "not in game")
         add("shellbane_gryphon", d("pillar_frag", 1, 1, 128));
+    }
+
+    /**
+     * The bosses whose main table OSRS rolls twice a kill ({@link com.runecraft.osrs.content.bosses.BossLoot#rolls}): their lines
+     * must all be per roll, as their wiki pages list them. These are the wiki rows (OSRS Wiki pages, July 2026 dump) that the
+     * parsed-osrs table lacks, replacing the module's own per-kill guesses for the same items, and the module lines the wiki
+     * doesn't list at all.
+     */
+    private static void perRoll() {
+        // Zulrah: death and law runes 12/249 (the module had 1/12), dragon med helm 2/249.
+        fix("zulrah", rm(), d("death_rune", 250, 250, 21), d("law_rune", 200, 200, 21), d("dragon_med_helm", 1, 1, 124));
+        // Vorkath: rune kiteshield 5/150, death runes 6/150, coins 5/150, dragonstones 3/150 (the module had 1/12, 1/12, 1/6,
+        // 1/16), the tree-herb seed table 3/150.
+        fix("vorkath", rm(), d("rune_kiteshield", 2, 3, 30), d("death_rune", 200, 300, 25), d("coins", 20000, 80000, 30),
+                d("dragonstone", 2, 3, 50), d("#tree_herb_seeds", 1, 1, 50));
+        // Alchemical Hydra: death runes 6/101, dragon med helm 3/101, coins 9.5/101 and 0.5/101 (the module had 20,000-40,000
+        // at 1/6); no runite bars on its table.
+        fix("alchemical_hydra", rm("runite_bar"), d("death_rune", 150, 300, 17), d("dragon_med_helm", 1, 1, 34),
+                d("coins", 40000, 60000, 11), d("coins", 5550, 25550, 202));
+        // Phantom Muspah: rune kiteshields, law and death runes 10/235 each (the module had 200 deaths at 1/10), silver ore
+        // 2/235; no coins on its table.
+        fix("phantom_muspah", rm("coins"), d("rune_kiteshield", 3, 3, 24), d("law_rune", 146, 146, 24),
+                d("death_rune", 428, 428, 24), d("silver_ore", 101, 101, 118));
+    }
+
+    /** Extends a boss's patch: {@code put} lines replace the lines of the items they name, the {@code remove} items go. */
+    private static void fix(String key, String[] remove, Drop... put) {
+        MonsterDropsTable.Patch old = PATCHES.get(key);
+        Set<String> gone = new java.util.HashSet<>(List.of(remove));
+        for (Drop d : put) {
+            gone.add(d.baseItem());
+        }
+        List<Drop> lines = new ArrayList<>();
+        for (Drop d : old == null ? List.<Drop>of() : old.put()) {
+            if (!gone.contains(d.baseItem())) {
+                lines.add(d);
+            }
+        }
+        lines.addAll(List.of(put));
+        Set<String> removed = new java.util.HashSet<>(old == null ? Set.of() : old.remove());
+        removed.addAll(List.of(remove));
+        PATCHES.put(key, new MonsterDropsTable.Patch(List.copyOf(lines), Set.copyOf(removed)));
     }
 
     private static void add(String key, Drop... put) {

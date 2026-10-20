@@ -74,8 +74,9 @@ public final class DataBossService {
     /**
      * The loot of a kill of {@code bossId} ({@code boss} is the entity that died: a later form credits the main boss): the
      * boss's roller when it has one, else {@code table} rolled as OSRS rolls a boss's drop table
-     * ({@link com.runecraft.osrs.content.bosses.BossLoot}: its 100% lines, tertiaries on their own and one main-table roll,
-     * never nothing from a full table) rather than every line on its own like an ordinary monster's.
+     * ({@link com.runecraft.osrs.content.bosses.BossLoot}: its 100% lines, tertiaries on their own and its main-table rolls
+     * (one, or two for Zulrah, Vorkath...), never nothing from a full table) rather than every line on its own like an ordinary
+     * monster's.
      */
     public static java.util.List<com.runecraft.skill.Drops.Rolled> rollLoot(ServerPlayer killer, DataBossEntity boss, String bossId,
             java.util.List<com.runecraft.osrs.data.Drop> table) {
@@ -86,8 +87,8 @@ public final class DataBossService {
             return out;
         }
         net.minecraft.util.RandomSource random = boss.getRandom();
-        java.util.List<com.runecraft.osrs.data.Drop> lines = com.runecraft.osrs.content.bosses.BossLoot.pick(table,
-                com.runecraft.osrs.content.bosses.BossLoot.rolls(bossId), random::nextInt);
+        java.util.List<com.runecraft.osrs.data.Drop> lines = com.runecraft.osrs.content.bosses.BossLoot.pick(bossId, table,
+                random::nextInt);
         java.util.List<com.runecraft.skill.Drops.Rolled> out = com.runecraft.skill.Drops.resolve(lines, random);
         lastRoll = new LootRoll(bossId, lines.size(), out.size());
         return out;

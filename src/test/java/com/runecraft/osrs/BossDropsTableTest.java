@@ -86,6 +86,28 @@ class BossDropsTableTest {
         assertEquals(bosses, new TreeSet<>(BossDropsTable.patches().keySet()));
     }
 
+    /**
+     * A boss whose main table BossLoot rolls more than once (Zulrah, Vorkath...) takes every line per roll, its shared tables
+     * too: their snapshot line is the wiki's per-roll rate, not the rate times the rolls.
+     */
+    @Test
+    void multiRollBossesTakeSharedTablesPerRoll() throws IOException {
+        int checked = 0;
+        for (String line : Files.readAllLines(SNAPSHOT)) {
+            String[] f = line.split("\\|", -1);
+            if (line.startsWith("#") || f.length < 7 || !f[3].startsWith("<") || f[6].startsWith("-")
+                    || com.runecraft.osrs.content.bosses.BossLoot.rolls(f[0]) == 1) {
+                continue;
+            }
+            String[] rate = f[5].split("/");
+            double perRoll = Double.parseDouble(rate[1]) / Double.parseDouble(rate[0]);
+            int n = Integer.parseInt(f[6].substring(f[6].lastIndexOf('/') + 1));
+            assertTrue(Math.abs(n - perRoll) <= 1, line + ": 1/" + n + " is not the per-roll 1/" + perRoll);
+            checked++;
+        }
+        assertTrue(checked >= 5, "checked " + checked);
+    }
+
     @Test
     void patchesTargetRealBossesAndItems() {
         Map<String, List<Drop>> drops = bossDrops();
