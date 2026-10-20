@@ -49,6 +49,9 @@ final class SlayerCommands {
                 .executes(ctx -> run(ctx, p -> SlayerService.checkTask(p), false))
                 .then(Commands.literal("task").executes(ctx -> run(ctx, SlayerService::checkTask, false)))
                 .then(Commands.literal("skip").executes(ctx -> run(ctx, SlayerCommands::skip, true)))
+                .then(Commands.literal("amount").then(Commands.argument("kills", IntegerArgumentType.integer(1, 100))
+                        .executes(ctx -> run(ctx, p -> SlayerService.chooseBossAmount(p,
+                                IntegerArgumentType.getInteger(ctx, "kills")), true))))
                 .then(Commands.literal("block").executes(ctx -> run(ctx, SlayerCommands::block, true)))
                 .then(Commands.literal("unblock").then(Commands.argument("task", StringArgumentType.greedyString())
                         .executes(ctx -> run(ctx, p -> unblock(p, StringArgumentType.getString(ctx, "task")), true))))
@@ -120,8 +123,10 @@ final class SlayerCommands {
         SlayerState.Profile p = SlayerService.profile(player);
         if (!p.hasTask()) {
             Msg.game(player, "You don't have a task to block.");
-        } else if (SlayerRewards.blockedFor(p.blocked, p.master).size() >= SlayerRewards.MAX_BLOCKS) {
-            Msg.game(player, "That master's block list is full. Unblock something first: "
+        } else if (SlayerRewards.blockedFor(p.blocked, p.master).size() >= blockSlots(player)) {
+            Msg.game(player, blockSlots(player) == 0 ? "You need 50 quest points to block a task."
+                    : "That master's block list is full (" + blockSlots(player) + " slots: one per 50 quest points, one for the"
+                    + " elite Lumbridge & Draynor Diary). Unblock something first: "
                     + String.join(", ", SlayerRewards.blockedFor(p.blocked, p.master)));
         } else if (p.points < SlayerRewards.blockCost(p.master)) {
             Msg.game(player, "You need " + SlayerRewards.blockCost(p.master) + " slayer points to block a task.");
@@ -136,6 +141,14 @@ final class SlayerCommands {
             p.region = null;
         }
         SlayerNet.sync(player);
+    }
+
+    /** Block slots on each master's list: one per 50 quest points (6 at 300) plus one for the elite Lumbridge diary. */
+    static int blockSlots(ServerPlayer player) {
+        boolean elite = com.runecraft.osrs.content.systems.Diaries.tierComplete(
+                com.runecraft.content.systems.SysState.of(player).diaryDone, "lumbridge",
+                com.runecraft.osrs.content.systems.Diaries.Tier.ELITE);
+        return SlayerRewards.blockSlots(Players.data(player).questPoints(), elite);
     }
 
     private static String masterName(String masterId) {
@@ -265,7 +278,7 @@ final class SlayerCommands {
 
     private static void crafts(ServerPlayer player) {
         player.displayClientMessage(Component.literal("--- Slayer crafting ---").withStyle(ChatFormatting.GOLD), false);
-        for (SlayerRewards.Craft c : SlayerRewards.CRAFTS) {
+        for (SlayerRewards.Craft c : SlayerRewards.allCrafts()) {
             StringBuilder needs = new StringBuilder();
             for (SlayerRewards.Input in : c.inputs()) {
                 needs.append(needs.length() == 0 ? "" : ", ").append(in.count()).append(" ").append(name(in.item()));
@@ -276,7 +289,9 @@ final class SlayerCommands {
             player.displayClientMessage(Component.literal(name(c.product()) + " ")
                     .append(SlayerService.button("[Make]", "/slayer craft " + c.product(),
                             "Needs " + needs + "; " + c.skill().displayName() + " " + c.level()
-                                    + (c.unlock() != null ? "; unlock " + SlayerRewards.unlock(c.unlock()).name() : ""))), false);
+                                    + (c.unlock() != null ? "; unlock " + SlayerRewards.unlock(c.unlock()).name() : "")
+                                    + (c.caTier() != null ? "; the " + c.caTier().toLowerCase(java.util.Locale.ROOT)
+                                    + " Combat Achievement rewards" : ""))), false);
         }
     }
 
@@ -289,6 +304,11 @@ final class SlayerCommands {
         SlayerState.Profile p = SlayerService.profile(player);
         if (c.unlock() != null && !p.unlocks.contains(c.unlock())) {
             Msg.game(player, "You need to learn " + SlayerRewards.unlock(c.unlock()).name() + " from a slayer master first.");
+            return;
+        }
+        if (c.caTier() != null && !caTierClaimed(player, c.caTier())) {
+            Msg.game(player, "Only those who have earned the " + c.caTier().toLowerCase(java.util.Locale.ROOT)
+                    + " Combat Achievement rewards may style their helmet so.");
             return;
         }
         if (Players.data(player).skills().level(c.skill()) < c.level()) {
@@ -313,6 +333,13 @@ final class SlayerCommands {
             XpService.add(player, c.skill(), c.xp());
         }
         Msg.game(player, "You make " + Msg.article(name(c.product())) + ".");
+    }
+
+    /** Whether the player has unlocked the Combat Achievement tier {@code tier} (a {@code CombatAchievements.Tier} name). */
+    private static boolean caTierClaimed(ServerPlayer player, String tier) {
+        com.runecraft.osrs.content.systems.CombatAchievements.Tier have =
+                com.runecraft.content.systems.CombatAchievementService.tier(player);
+        return have != null && have.ordinal() >= com.runecraft.osrs.content.systems.CombatAchievements.Tier.valueOf(tier).ordinal();
     }
 
     static String name(String item) {

@@ -23,7 +23,10 @@ public final class SlayerNet {
         buf.writeUtf(p.hasTask() ? SlayerTasks.displayName(p.task) : "");
         buf.writeVarInt(Math.max(0, p.remaining));
         buf.writeVarInt(p.points);
-        buf.writeVarInt(p.streak);
+        // Krystilia's Wilderness tasks keep their own streak: show the one the current task adds to.
+        com.runecraft.osrs.content.slayer.SlayerMasters.Master m = p.master == null ? null
+                : com.runecraft.osrs.content.slayer.SlayerMasters.get(p.master);
+        buf.writeVarInt(m != null && m.wilderness() ? p.wildyStreak : p.streak);
         buf.writeUtf(p.region == null ? "" : p.region.toLowerCase(Locale.ROOT).replace('_', ' '));
         if (ServerPlayNetworking.canSend(player, TASK)) {
             ServerPlayNetworking.send(player, TASK, buf);

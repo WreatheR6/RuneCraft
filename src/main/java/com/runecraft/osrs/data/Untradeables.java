@@ -74,6 +74,10 @@ public final class Untradeables {
         add("slayer_helmet", "slayer_helmet_i", "abyssal_tentacle", "ferocious_gloves", "crystal_helm", "crystal_body",
                 "crystal_legs", "harmonised_nightmare_staff", "volatile_nightmare_staff", "eldritch_nightmare_staff",
                 "colossal_blade", "saradomin_halo", "zamorak_halo");
+        // Slayer helmet recolours (slayer module), plain and imbued.
+        for (String c : new String[]{"black", "green", "red", "purple", "turquoise", "hydra", "araxyte", "tztok", "vampyric", "tzkal"}) {
+            add(c + "_slayer_helmet", c + "_slayer_helmet_i");
+        }
         // Skilling outfits.
         add("pyromancer_hood", "pyromancer_garb", "pyromancer_robe", "pyromancer_boots", "bruma_torch", "hat_of_the_eye",
                 "robe_top_of_the_eye", "robe_bottoms_of_the_eye", "boots_of_the_eye", "prospector_helmet", "prospector_jacket",

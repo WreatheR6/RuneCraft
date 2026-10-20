@@ -157,10 +157,14 @@ public final class Dungeons {
     }
 
     /**
-     * Dungeons whose monsters can only be fought on a Slayer task, by dungeon id: the task category the player must
-     * have. OSRS: the Kalphite Cave's kalphites can only be attacked on a kalphite task.
+     * Dungeons whose monsters can only be fought on a Slayer task, by dungeon id: the task they are known for (the gate
+     * itself lets a player hurt whatever counts towards their own task, so a waterfiend task works in the Kraken Cove).
+     * OSRS Wiki: the Kalphite Cave's kalphites, everything in the Kraken Cove, the Smoke Devil Dungeon and the Slayer Tower
+     * basement, and the Lizardman Caves' shamans can only be attacked on a matching task.
      */
-    public static final java.util.Map<String, String> TASK_ONLY = java.util.Map.of("dng_kalphite_cave", "kalphite");
+    public static final java.util.Map<String, String> TASK_ONLY = java.util.Map.of("dng_kalphite_cave", "kalphite",
+            "dng_kraken_cove", "cave_kraken", "dng_smoke_devil_dungeon", "smoke_devils", "dng_lizardman_caves", "lizardmen",
+            "dng_slayer_tower_basement", "nechryael");
 
     /** The Slayer task category needed to fight at this block (inside a {@link #TASK_ONLY} dungeon's carved air), or null. */
     public static String taskOnly(int x, int y, int z) {
@@ -169,17 +173,34 @@ public final class Dungeons {
         }
         for (Dungeon d : all()) {
             String task = TASK_ONLY.get(d.id());
-            if (task == null) {
-                continue;
-            }
-            for (StructureDef.Op op : d.structure().ops()) {
-                if (op.type() == StructureDef.Op.Type.CLEAR && op.y2() <= DEEP_TOP && x >= op.x1() && x <= op.x2()
-                        && z >= op.z1() && z <= op.z2() && y >= op.y1() - 1 && y <= op.y2()) {
-                    return task;
-                }
+            if (task != null && carved(d, x, y, z)) {
+                return task;
             }
         }
         return null;
+    }
+
+    /** True if the block lies in the carved air of the dungeon {@code id} (its rooms and halls below {@link #DEEP_TOP}). */
+    public static boolean inside(String id, int x, int y, int z) {
+        if (y > DEEP_TOP) {
+            return false;
+        }
+        for (Dungeon d : all()) {
+            if (d.id().equals(id)) {
+                return carved(d, x, y, z);
+            }
+        }
+        return false;
+    }
+
+    private static boolean carved(Dungeon d, int x, int y, int z) {
+        for (StructureDef.Op op : d.structure().ops()) {
+            if (op.type() == StructureDef.Op.Type.CLEAR && op.y2() <= DEEP_TOP && x >= op.x1() && x <= op.x2()
+                    && z >= op.z1() && z <= op.z2() && y >= op.y1() - 1 && y <= op.y2()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** The Abyss rifts (positions are filled in when the Abyss is built). */

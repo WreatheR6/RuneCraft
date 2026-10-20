@@ -162,8 +162,9 @@ class SlayerContentTest {
         for (SlayerRewards.PointBuy b : SlayerRewards.BUY) {
             assertNotNull(ItemCatalog.get(b.item()), b.item());
         }
-        for (SlayerRewards.Craft c : SlayerRewards.CRAFTS) {
+        for (SlayerRewards.Craft c : SlayerRewards.allCrafts()) {
             assertNotNull(ItemCatalog.get(c.product()), c.product());
+            assertTrue(c.caTier() == null || com.runecraft.osrs.content.systems.CombatAchievements.Tier.valueOf(c.caTier()) != null);
             c.inputs().forEach(i -> assertNotNull(ItemCatalog.get(i.item()), i.item()));
             assertTrue(c.tool() == null || ItemCatalog.get(c.tool()) != null, c.tool());
             assertTrue(c.unlock() == null || SlayerRewards.unlock(c.unlock()) != null, c.unlock());
@@ -176,7 +177,7 @@ class SlayerContentTest {
         assertEquals("pedal_to_the_metals", SlayerRewards.extensionFor("metal_dragons").id());
         for (List<Drop> table : List.of(SlayerChests.BRIMSTONE_MAIN, SlayerChests.BRIMSTONE_RARE, SlayerChests.LARRAN_MAIN,
                 SlayerChests.LARRAN_RARE)) {
-            table.forEach(d -> assertTrue(ItemCatalog.exists(d.item()), d.item()));
+            table.forEach(d -> assertTrue(d.item().equals(SlayerChests.FISH) || ItemCatalog.exists(d.item()), d.item()));
         }
     }
 
@@ -342,8 +343,12 @@ class SlayerContentTest {
         assertTrue(SlayerTasks.countsFor("crabs", "giant_rock_crab", null));
         assertTrue(SlayerTasks.countsFor("monkeys", "maniacal_monkey_archer", null));
         for (String id : SlayerCategories.secondCategories().keySet()) {
-            assertNotNull(ContentRegistry.monster(id), "second category of " + id + ": not a monster");
+            assertTrue(ContentRegistry.monster(id) != null || ContentRegistry.boss(id) != null,
+                    "second category of " + id + ": not a monster or boss");
         }
+        // Araxxor is fought on an araxyte or a spider task (OSRS Wiki).
+        assertTrue(SlayerTasks.countsFor("spiders", "araxxor", "araxytes"));
+        assertTrue(SlayerTasks.countsFor("araxytes", "araxxor", "araxytes"));
     }
 
     @Test

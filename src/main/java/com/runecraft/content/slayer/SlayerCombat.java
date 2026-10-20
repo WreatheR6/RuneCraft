@@ -10,7 +10,10 @@ import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.ItemDef;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.SkillSet;
+import com.runecraft.content.systems.SysState;
 import com.runecraft.osrs.content.slayer.SlayerGear;
+import com.runecraft.osrs.content.systems.Jewellery;
+import com.runecraft.osrs.data.AmmoRules;
 import com.runecraft.player.Players;
 import com.runecraft.registry.ModItems;
 import com.runecraft.util.Inv;
@@ -30,9 +33,10 @@ import java.util.WeakHashMap;
 
 /**
  * Slayer combat mechanics: black mask / slayer helmet bonuses, leaf-bladed weapons, finishing
- * items (rock hammer, bag of salt, ice cooler, fungicide) and protective equipment.
+ * items (rock hammer, bag of salt, ice cooler, fungicide) and protective equipment. Public for the self-test
+ * ({@code selftest.SlayerChecks}).
  */
-final class SlayerCombat {
+public final class SlayerCombat {
     /** Next game tick each creature may land its "unprotected" special effect. */
     private static final Map<LivingEntity, Long> NEXT_EFFECT = new WeakHashMap<>();
 
@@ -73,7 +77,8 @@ final class SlayerCombat {
 
     // ------------------------------------------------------------------ special weapons & finishers
 
-    static int afterRoll(ServerPlayer player, LivingEntity target, AttackType type, int damage) {
+    /** The damage a player's rolled hit really does: 0 without a leaf-bladed weapon or light, a finisher's rule at low HP. */
+    public static int afterRoll(ServerPlayer player, LivingEntity target, AttackType type, int damage) {
         String category = category(target);
         if (category == null) {
             return damage;
@@ -111,19 +116,22 @@ final class SlayerCombat {
         String held = Inv.idOf(player.getMainHandItem());
         return switch (type) {
             case MAGIC -> SlayerGear.MAGIC_DART_STAVES.contains(held);
-            case RANGED -> SlayerGear.BROAD_AMMO.contains(firstAmmo(player));
+            case RANGED -> SlayerGear.BROAD_AMMO.contains(firstAmmo(player, held));
             default -> SlayerGear.LEAF_BLADED_WEAPONS.contains(held);
         };
     }
 
-    /** The arrow stack a bow would fire (off hand first, then inventory order), like vanilla. */
-    private static String firstAmmo(ServerPlayer player) {
-        if (isArrow(player.getOffhandItem())) {
+    /**
+     * The ammunition stack the held bow or crossbow would fire (off hand first, then inventory order, like vanilla),
+     * skipping ammunition it can't fire (broad bolts in a crossbow, broad arrows in a bow).
+     */
+    private static String firstAmmo(ServerPlayer player, String weapon) {
+        if (isArrow(player.getOffhandItem()) && AmmoRules.canFire(weapon, Inv.idOf(player.getOffhandItem()))) {
             return Inv.idOf(player.getOffhandItem());
         }
         for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
             ItemStack s = player.getInventory().getItem(i);
-            if (isArrow(s)) {
+            if (isArrow(s) && AmmoRules.canFire(weapon, Inv.idOf(s))) {
                 return Inv.idOf(s);
             }
         }
@@ -170,6 +178,7 @@ final class SlayerCombat {
             if (!player.isAlive() || player.isCreative() || player.isSpectator()) {
                 continue;
             }
+            hotFloor(player, now);
             List<OsrsMonsterEntity> near = player.level().getEntitiesOfClass(OsrsMonsterEntity.class,
                     player.getBoundingBox().inflate(6), m -> m.isAlive() && m.getTarget() == player);
             for (OsrsMonsterEntity mob : near) {
@@ -190,7 +199,8 @@ final class SlayerCombat {
         }
     }
 
-    static boolean isProtected(ServerPlayer player, SlayerGear.Protection prot) {
+    /** Whether the player wears (or carries) the protective item the creature's special attack needs. */
+    public static boolean isProtected(ServerPlayer player, SlayerGear.Protection prot) {
         return switch (prot.where()) {
             case HEAD -> {
                 String head = Inv.idOf(player.getItemBySlot(EquipmentSlot.HEAD));
@@ -199,10 +209,31 @@ final class SlayerCombat {
             case SHIELD -> prot.items().contains(Inv.idOf(player.getOffhandItem()));
             case FEET -> prot.items().contains(Inv.idOf(player.getItemBySlot(EquipmentSlot.FEET)));
             case INVENTORY -> prot.items().stream().anyMatch(i -> Inv.has(player, i, 1));
+            // The witchwood icon and slayer gloves are worn in the systems module's neck and hands slots.
+            case NECK -> prot.items().contains(SysState.of(player).wornId(Jewellery.Slot.NECK));
+            case HANDS -> prot.items().contains(SysState.of(player).wornId(Jewellery.Slot.HANDS));
         };
     }
 
-    private static void unprotectedHit(ServerPlayer player, OsrsMonsterEntity mob, SlayerGear.Protection prot) {
+    /** Game tick the player was last warned about the Karuulm floor. */
+    private static final Map<ServerPlayer, Long> FLOOR_WARNED = new WeakHashMap<>();
+
+    /** The Karuulm Slayer Dungeon's burning floor: 4 damage every tick without boots of stone or the elite diary. */
+    private static void hotFloor(ServerPlayer player, long now) {
+        int damage = SlayerService.hotFloorDamage(player);
+        if (damage <= 0) {
+            return;
+        }
+        Long warned = FLOOR_WARNED.get(player);
+        if (warned == null || now - warned >= 10) {
+            FLOOR_WARNED.put(player, now);
+            Msg.red(player, SlayerGear.HOT_FLOOR_MESSAGE + " (Wear boots of stone, boots of brimstone or granite boots.)");
+        }
+        CombatHandler.applyDamage(null, player, damage);
+    }
+
+    /** The creature's special attack on an unprotected player: extra damage and drained levels. */
+    public static void unprotectedHit(ServerPlayer player, OsrsMonsterEntity mob, SlayerGear.Protection prot) {
         Msg.red(player, prot.message());
         int damage = 1 + player.getRandom().nextInt(Math.max(1, prot.damage()));
         CombatHandler.applyDamage(mob, player, damage);

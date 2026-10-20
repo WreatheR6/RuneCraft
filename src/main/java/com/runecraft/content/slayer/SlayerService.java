@@ -114,11 +114,63 @@ public final class SlayerService {
                 assign(player, master, p, combat, slayer);
                 return;
             }
+            if (p.chooseAmount) {
+                // A boss task whose amount hasn't been chosen yet: the master asks again (OSRS).
+                askBossAmount(player, master, p);
+                return;
+            }
             say(player, master, "You're still hunting " + describe(p) + "; you have " + p.remaining + " to go.");
             menu(player, p);
             return;
         }
         assign(player, master, p, combat, slayer);
+    }
+
+    /** "How many would you like to slay?": clickable boss-task amounts from 3 to the player's maximum. */
+    private static void askBossAmount(ServerPlayer player, SlayerMasters.Master master, SlayerState.Profile p) {
+        SlayerBossTasks.BossTask boss = SlayerBossTasks.get(p.task);
+        if (boss == null) {
+            p.chooseAmount = false;
+            return;
+        }
+        int max = bossMax(player, boss);
+        say(player, master, "How many would you like to slay? (" + boss.min() + "-" + max + "; until you choose, it's " + p.amount + ".)");
+        MutableComponent line = Component.literal("Amount: ").withStyle(ChatFormatting.GRAY);
+        java.util.Set<Integer> choices = new java.util.TreeSet<>(List.of(boss.min(), 10, 15, 20, 25, 30, max));
+        for (int n : choices) {
+            if (n <= max) {
+                line.append(button("[" + n + "]", "/slayer amount " + n, "Slay " + n + " " + boss.name()));
+                line.append(Component.literal(" "));
+            }
+        }
+        player.displayClientMessage(line, false);
+    }
+
+    /** The most kills the player may choose for a boss task: 35 (Barrows 36) plus 5 (6) per Combat Achievement tier. */
+    static int bossMax(ServerPlayer player, SlayerBossTasks.BossTask boss) {
+        com.runecraft.osrs.content.systems.CombatAchievements.Tier tier =
+                com.runecraft.content.systems.CombatAchievementService.tier(player);
+        return boss.maxKills(tier == null ? 0 : tier.ordinal() + 1);
+    }
+
+    /**
+     * Sets the size of a just-assigned boss task ({@code /slayer amount}): allowed until the first kill counts, clamped to
+     * 3 and the player's maximum. Returns false (and says why) when there is nothing to choose.
+     */
+    public static boolean chooseBossAmount(ServerPlayer player, int wanted) {
+        SlayerState.Profile p = profile(player);
+        SlayerBossTasks.BossTask boss = SlayerBossTasks.get(p.task);
+        if (!p.hasTask() || boss == null || !p.chooseAmount) {
+            Msg.game(player, "You don't have a boss task to choose the size of.");
+            return false;
+        }
+        int n = Math.max(boss.min(), Math.min(bossMax(player, boss), wanted));
+        p.amount = n;
+        p.remaining = n;
+        p.chooseAmount = false;
+        Msg.game(player, "Your task is to kill " + n + " " + boss.name() + ".");
+        SlayerNet.sync(player);
+        return true;
     }
 
     private static void assign(ServerPlayer player, SlayerMasters.Master master, SlayerState.Profile p, int combat,
@@ -141,17 +193,27 @@ public final class SlayerService {
         boolean extended = ext != null && p.unlocks.contains(ext.id());
         SlayerBossTasks.BossTask boss = null;
         if (a.category().equals(SlayerBossTasks.CATEGORY)) {
-            // "Like a Boss": one boss with equal chance (Krystilia: Wilderness bosses only).
-            boss = SlayerBossTasks.pick(random, slayer, master.wilderness(), blocked, previous);
+            // "Like a Boss": one boss the player can reach, with equal chance (Krystilia: Wilderness bosses only; the
+            // Alchemical Hydra: Konar only).
+            boss = SlayerBossTasks.pick(random, slayer, master.wilderness(), blocked, previous, master.id(),
+                    t -> bossReachable(player, t));
             if (boss == null) {
-                say(player, master, "I have nothing for you right now.");
-                return;
+                // No boss the player can reach (quests, skills): one of the master's other tasks instead.
+                a = master.pick(random, x -> !x.category().equals(SlayerBossTasks.CATEGORY)
+                        && SlayerTasks.eligible(x, slayer, combat, p.unlocks, blocked, previous, quests), p.unlocks);
+                if (a == null) {
+                    say(player, master, "I have nothing for you right now.");
+                    return;
+                }
+                ext = SlayerRewards.extensionFor(a.category());
+                extended = ext != null && p.unlocks.contains(ext.id());
             }
         }
         p.task = boss != null ? boss.id() : a.category();
-        // Combat Achievement tiers raise the boss task maximum ("Like a boss": 35, +5 per tier).
-        int bossMax = boss == null ? 0 : com.runecraft.content.systems.CombatAchievementService.bossTaskMax(player, boss.max());
-        p.amount = boss != null ? boss.min() + random.nextInt(bossMax - boss.min() + 1) : SlayerTasks.amount(a, extended, random);
+        // A boss task's size is the player's choice (3-35, +5 per Combat Achievement tier; Barrows 3-36, +6): it starts
+        // at the maximum until they pick one.
+        p.amount = boss != null ? bossMax(player, boss) : SlayerTasks.amount(a, extended, random);
+        p.chooseAmount = boss != null;
         p.remaining = p.amount;
         p.master = master.id();
         p.region = null;
@@ -161,9 +223,26 @@ public final class SlayerService {
                 p.region = regions.get(random.nextInt(regions.size())).name();
             }
         }
+        if (boss != null) {
+            say(player, master, "Excellent. You're now assigned to kill " + boss.name() + "."
+                    + (master.wilderness() ? " They only count in the Wilderness." : ""));
+            askBossAmount(player, master, p);
+            SlayerNet.sync(player);
+            return;
+        }
         say(player, master, "Your new task is to kill " + p.amount + " " + describe(p) + "."
                 + (master.wilderness() ? " They only count in the Wilderness." : ""));
         SlayerNet.sync(player);
+    }
+
+    /** A boss's own requirements for a boss task: its quests and other skill (God Wars generals: 70). */
+    private static boolean bossReachable(ServerPlayer player, SlayerBossTasks.BossTask t) {
+        for (String q : t.quests()) {
+            if (!questMet(player, q)) {
+                return false;
+            }
+        }
+        return t.skill() == null || Players.data(player).skills().level(t.skill()) >= t.skillLevel();
     }
 
     /**
@@ -256,6 +335,11 @@ public final class SlayerService {
 
     /** True if a kill of this creature counts towards {@code task}: its category, or a boss task for that boss. */
     static boolean counts(String task, MonsterStats stats) {
+        return counts(task, stats, null);
+    }
+
+    /** As {@link #counts(String, MonsterStats)} for a task set by {@code masterId} (Konar's boss tasks are stricter). */
+    static boolean counts(String task, MonsterStats stats, String masterId) {
         if (task == null || stats == null) {
             return false;
         }
@@ -267,7 +351,42 @@ public final class SlayerService {
             return true;
         }
         String id = stats.profile() != null ? stats.profile().id : stats.boss() != null ? stats.boss().entityId() : null;
-        return SlayerBossTasks.counts(task, id);
+        return SlayerBossTasks.counts(task, id, masterId);
+    }
+
+    /**
+     * Public API for other modules (slayer bosses, task-only areas): whether the player's current task is
+     * {@code categoryOrCreature} (a task category id such as "hellhounds" or "boss_cerberus") or counts kills of that
+     * creature or boss id ("cerberus": a hellhound task or a Cerberus boss task). Location rules (Konar's region,
+     * Krystilia's Wilderness) are not applied: see {@link #isOnTask} for those.
+     */
+    public static boolean hasTaskFor(ServerPlayer player, String categoryOrCreature) {
+        SlayerState.Profile p = profile(player);
+        if (!p.hasTask() || categoryOrCreature == null) {
+            return false;
+        }
+        if (p.task.equals(categoryOrCreature)) {
+            return true;
+        }
+        String declared = declaredCategory(categoryOrCreature);
+        return SlayerCategories.counts(p.task, categoryOrCreature, declared)
+                || SlayerBossTasks.counts(p.task, categoryOrCreature, p.master);
+    }
+
+    /** As {@link #hasTaskFor(ServerPlayer, String)} for a creature in the world (whatever counts towards the task). */
+    public static boolean taskCountsFor(ServerPlayer player, LivingEntity entity) {
+        SlayerState.Profile p = profile(player);
+        return p.hasTask() && counts(p.task, MonsterStats.of(entity), p.master);
+    }
+
+    /** The slayer category a module monster or boss declares, or null. */
+    private static String declaredCategory(String creatureId) {
+        com.runecraft.osrs.content.MonsterDef m = ContentRegistry.monster(creatureId);
+        if (m != null) {
+            return m.slayerCategory;
+        }
+        com.runecraft.osrs.content.BossDef b = ContentRegistry.boss(creatureId);
+        return b == null ? null : b.slayerCategory;
     }
 
     /** True if the entity counts towards the player's current task right now (location rules included). */
@@ -276,7 +395,7 @@ public final class SlayerService {
         if (!p.hasTask()) {
             return false;
         }
-        if (!counts(p.task, MonsterStats.of(entity))) {
+        if (!counts(p.task, MonsterStats.of(entity), p.master)) {
             return false;
         }
         SlayerMasters.Master m = p.master == null ? null : SlayerMasters.get(p.master);
@@ -286,13 +405,52 @@ public final class SlayerService {
         return p.region == null || taskRegion(entity).name().equals(p.region);
     }
 
-    public static void onKill(ServerPlayer player, LivingEntity entity, MonsterStats stats) {
+    /**
+     * Kills that never count for Slayer: those that give no experience (Nightmare Zone practice dreams) and every
+     * Nightmare Zone dream (OSRS: NMZ monsters give no Slayer experience or task progress).
+     */
+    private static boolean noSlayerCredit(ServerPlayer player) {
+        if (!XpService.allowed(player, Skill.SLAYER)) {
+            return true;
+        }
+        com.runecraft.content.minigames.MinigameSession s = com.runecraft.content.minigames.MinigameManager.session(player);
+        return s != null && s.game == com.runecraft.osrs.content.minigames.Minigame.NIGHTMARE_ZONE;
+    }
+
+    /**
+     * Public API for other modules: counts a boss kill towards the player's task when the boss died without the usual
+     * death path ({@link #onKill}; e.g. a boss form or instance the boss script removes itself). Gives the boss's Slayer
+     * experience and one kill (two for the Grotesque Guardians with "Double Trouble"); does nothing off task.
+     */
+    public static void creditBossKill(ServerPlayer player, String bossId) {
         SlayerState.Profile p = profile(player);
-        if (!p.hasTask() || !counts(p.task, stats)) {
+        if (!hasTaskFor(player, bossId) || noSlayerCredit(player)) {
             return;
         }
-        if (!XpService.allowed(player, Skill.SLAYER)) {
-            // Kills that give no experience (Nightmare Zone practice dreams) give no task credit either.
+        SlayerMasters.Master master = p.master == null ? null : SlayerMasters.get(p.master);
+        if (master != null && master.wilderness() && Gielinor.wildernessLevel(player) <= 0) {
+            Msg.game(player, "Krystilia's tasks only count in the Wilderness.");
+            return;
+        }
+        com.runecraft.osrs.content.BossDef def = ContentRegistry.boss(bossId);
+        com.runecraft.osrs.data.Boss legacy = com.runecraft.osrs.data.Boss.byEntity(bossId);
+        int hp = def != null ? def.hitpoints : legacy != null ? legacy.hitpoints() : 0;
+        XpService.add(player, Skill.SLAYER, com.runecraft.osrs.data.MonsterTraits.slayerXp(bossId, hp));
+        p.chooseAmount = false;
+        p.remaining = Math.max(0, p.remaining - SlayerTasks.killCredit(p.task, p.unlocks));
+        if (p.remaining <= 0) {
+            complete(player, p, master, master != null && eliteDiary(player, master));
+        }
+        SlayerNet.sync(player);
+    }
+
+    public static void onKill(ServerPlayer player, LivingEntity entity, MonsterStats stats) {
+        SlayerState.Profile p = profile(player);
+        if (!p.hasTask() || !counts(p.task, stats, p.master)) {
+            return;
+        }
+        if (noSlayerCredit(player)) {
+            // Kills that give no experience (practice dreams) and Nightmare Zone dreams give no task credit either.
             return;
         }
         SlayerMasters.Master master = p.master == null ? null : SlayerMasters.get(p.master);
@@ -304,6 +462,8 @@ public final class SlayerService {
             Msg.game(player, "Konar wants you to kill these in " + Region.valueOf(p.region).displayName() + ".");
             return;
         }
+        // The first kill fixes a boss task's size.
+        p.chooseAmount = false;
         CombatProfile<?> prof = stats.profile();
         Superiors.Superior superior = prof == null ? null : Superiors.byId(prof.id);
         // OSRS: a kill gives its hitpoints in Slayer XP unless the wiki lists another value (bosses, dragons, ...).
@@ -336,6 +496,20 @@ public final class SlayerService {
         SlayerNet.sync(player);
     }
 
+    /**
+     * Completes the current task now, with its streak and points: a TzTok-Jad / TzKal-Zuk kill ends a TzHaar task taken as
+     * a boss task ({@code content.minigames.games.TzHaarSlayer}).
+     */
+    public static void completeTask(ServerPlayer player) {
+        SlayerState.Profile p = profile(player);
+        if (p.task == null) {
+            return;
+        }
+        SlayerMasters.Master master = p.master == null ? null : SlayerMasters.get(p.master);
+        complete(player, p, master, master != null && eliteDiary(player, master));
+        SlayerNet.sync(player);
+    }
+
     private static void complete(ServerPlayer player, SlayerState.Profile p, SlayerMasters.Master master,
                                  boolean eliteDiary) {
         p.remaining = 0;
@@ -352,6 +526,11 @@ public final class SlayerService {
         Msg.red(player, "You have completed your task! You've completed " + streak + " tasks in a row"
                 + (points > 0 ? " and received " + points + " points, giving you a total of " + p.points : "")
                 + ". Return to a Slayer master.");
+        if (SlayerBossTasks.get(p.task) != null) {
+            // Every boss task ends with 5,000 bonus Slayer experience, whatever its length (OSRS).
+            XpService.add(player, Skill.SLAYER, SlayerBossTasks.COMPLETION_XP);
+        }
+        p.chooseAmount = false;
         p.region = null;
         ServerNetworking.sync(player);
     }
@@ -388,6 +567,21 @@ public final class SlayerService {
             return maxHit * 7 / 6;
         }
         return maxHit;
+    }
+
+    /**
+     * Burn damage the Karuulm Slayer Dungeon's volcanic floor deals the player this tick: 4 beyond the entrance chamber, 0
+     * elsewhere, with boots of stone, boots of brimstone or granite boots, or with the elite Kourend &amp; Kebos Diary.
+     */
+    public static int hotFloorDamage(ServerPlayer player) {
+        net.minecraft.core.BlockPos at = player.blockPosition();
+        if (!SlayerGear.hotFloorAt(at.getX(), at.getY(), at.getZ())) {
+            return 0;
+        }
+        boolean elite = com.runecraft.osrs.content.systems.Diaries.tierComplete(
+                com.runecraft.content.systems.SysState.of(player).diaryDone, "kourend",
+                com.runecraft.osrs.content.systems.Diaries.Tier.ELITE);
+        return SlayerGear.hotFloorDamage(Inv.idOf(player.getItemBySlot(EquipmentSlot.FEET)), elite);
     }
 
     static boolean wearingAny(ServerPlayer player, List<String> items) {

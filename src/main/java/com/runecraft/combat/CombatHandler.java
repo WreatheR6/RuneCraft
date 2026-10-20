@@ -96,7 +96,9 @@ public final class CombatHandler {
                 playerMelee(player, target);
                 return false;
             }
-            return true;
+            // Any other vanilla damage a player causes (thrown potions, fire, tridents...) still obeys the monster-damage
+            // gates (task-only dungeons).
+            return target instanceof ServerPlayer || CombatHooks.deniedDamage(player, target) == null;
         }
         if (target instanceof ServerPlayer player && attacker instanceof LivingEntity mob && !(attacker instanceof Player)) {
             if (gielinor || mob instanceof OsrsMonsterEntity) {

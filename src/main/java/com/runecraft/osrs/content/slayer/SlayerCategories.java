@@ -197,7 +197,8 @@ public final class SlayerCategories {
         also("monkeys", "demonic_gorilla");
         also("zombies", "undead_chicken", "zombie_rat");
         also("ogres", "zogre", "skogre");
-        also("spiders", "araxyte", "araxyte_lvl146");
+        // Wiki "cat = Araxytes, Bosses, Spiders": Araxxor is fought (and counts) on an araxyte or a spider task.
+        also("spiders", "araxyte", "araxyte_lvl146", "araxxor");
         member("aviansies", "gwd_aviansie", "gwd_aviansie_elite");
         member("tzhaar", "tzhaar_ket", "tzhaar_xil", "tzhaar_mej", "tzhaar_hur_citizen");
         member("crabs", "rock_crab", "sand_crab", "king_sand_crab", "ammonite_crab", "swamp_crab");

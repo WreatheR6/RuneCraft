@@ -132,7 +132,8 @@ public final class SlayerTasks {
             return false;
         }
         if (a.category().equals(SlayerBossTasks.CATEGORY)) {
-            return !SlayerBossTasks.choices(slayerLevel, false, blocked, previous).isEmpty();
+            return !SlayerBossTasks.choices(slayerLevel, false, blocked, previous, null,
+                    t -> t.quests().stream().allMatch(questMet)).isEmpty();
         }
         return available(a.category());
     }

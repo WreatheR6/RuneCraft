@@ -233,8 +233,9 @@ public final class DungeonsHooks implements ModuleHooks {
         if (needed == null) {
             return null;
         }
-        var profile = com.runecraft.content.slayer.SlayerService.profile(player);
-        if (profile.hasTask() && needed.equals(profile.task)) {
+        // Whatever counts towards the player's task may be fought (a waterfiend task in the Kraken Cove, a boss task for
+        // the boss of the cave).
+        if (com.runecraft.content.slayer.SlayerService.taskCountsFor(player, target)) {
             return null;
         }
         return "You can only fight the creatures of this cave while on a Slayer task to kill them.";

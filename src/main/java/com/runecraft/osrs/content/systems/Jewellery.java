@@ -262,6 +262,9 @@ public final class Jewellery {
         wornExternal("barrows_gloves", Slot.HANDS, s(12, 12, 12, 6, 12, 12, 12, 12, 6, 12, 12, 0, 0, 0));
         wornExternal("ferocious_gloves", Slot.HANDS, s(16, 16, 16, -16, -16, 0, 0, 0, 0, 0, 14, 0, 0, 0));
         wornExternal("occult_necklace", Slot.NECK, s(0, 0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0));
+        // Slayer protective gear worn in OSRS's neck and hands slots (items defined by the slayer module).
+        wornExternal("witchwood_icon", Slot.NECK, s(0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1));
+        wornExternal("slayer_gloves", Slot.HANDS, s(0, 0, 0, 0, 0, 4, 5, 3, 0, 0, 0, 0, 0, 0));
         // Items defined in osrs/content/CommonEquipment (the salve amulets below are too).
         wornExternal("mystic_gloves_light", Slot.HANDS, s(0, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0));
         wornExternal("mystic_gloves_dark", Slot.HANDS, s(0, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0));
