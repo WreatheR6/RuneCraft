@@ -185,6 +185,15 @@ public final class TestContext {
                     public void restore(java.util.UUID p, Object saved) {
                         quests.selfTestRestore(p, saved);
                     }
+                },
+                new ModuleState() { // the Moons pacified for the Lunar Chest
+                    public Object save(java.util.UUID p) {
+                        return com.runecraft.content.bosses.BossSelfTests.lunarChestSave(server, p);
+                    }
+
+                    public void restore(java.util.UUID p, Object saved) {
+                        com.runecraft.content.bosses.BossSelfTests.lunarChestRestore(server, p, saved);
+                    }
                 });
     }
 

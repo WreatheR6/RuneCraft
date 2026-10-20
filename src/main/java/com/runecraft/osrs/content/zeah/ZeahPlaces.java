@@ -171,7 +171,7 @@ public final class ZeahPlaces {
                 new PlaceDef(CAM_TORUM, "Cam Torum", 1436, 3129, Style.CAVE,
                         List.of(Station.BANK_BOOTH, Station.FURNACE, Station.ANVIL, Station.GENERAL_STORE), List.of()), // entrance
                 new PlaceDef(RALOS_RISE, "Ralos' Rise", 1466, 3172, Style.RUINS, List.of(Station.PRAYER_ALTAR), List.of()), // approx.
-                PlaceDef.of(MOONS_OF_PERIL, "Moons of Peril (Neypotzli)", 1420, 3212, Style.CAVE, List.of()), // approx. (entrance)
+                PlaceDef.of(MOONS_OF_PERIL, "Moons of Peril (Neypotzli)", 1420, 3212, Style.CAVE, List.of(ZeahBlocks.LUNAR_CHEST)), // approx. (entrance)
                 PlaceDef.of(QUETZACALLI_GORGE, "Quetzacalli Gorge", 1510, 3222, Style.CAMP, List.of()),
                 PlaceDef.town(ALDARIN, "Aldarin", 1390, 2938, Station.BANK_BOOTH, Station.GENERAL_STORE, Station.RANGE), // approx.
                 PlaceDef.of(MISTROCK, "Mistrock", 1382, 2866, Style.CAMP, List.of("runecraft:coal_rock", "runecraft:mithril_rock")), // approx.

@@ -68,9 +68,11 @@ public final class BossesHooks implements ModuleHooks {
         AwakenedService.init();
         DoomDelveService.init();
         BossScripts.register("the_hueycoatl", EncounterScripts.Hueycoatl::new);
-        // Moons of Peril (zeah module bosses): flat armour and the Eclipse Moon's clones.
+        // Moons of Peril (zeah module bosses): their curses, Eyatlalli's glyph, specials and the Lunar Chest.
         BossScripts.register("eclipse_moon", MoonScripts.EclipseMoon::new);
         BossScripts.register("blue_moon", MoonScripts.BlueMoon::new);
+        BossScripts.register("blood_moon", MoonScripts.BloodMoon::new);
+        LunarChest.init();
         BossScripts.register("branda_the_fire_queen", EncounterScripts.RoyalTitans::new);
         // Fought beside the main boss, whose kill count they share (one "Royal Titans" / "Grotesque Guardians" kill).
         com.runecraft.boss.DataBossService.companion("eldric_the_ice_king");

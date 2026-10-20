@@ -3,6 +3,7 @@ package com.runecraft.content.bosses;
 import com.runecraft.boss.DataBossEntity;
 import com.runecraft.combat.CombatHandler;
 import com.runecraft.osrs.AttackType;
+import com.runecraft.osrs.content.bosses.MoonsRules;
 import com.runecraft.osrs.content.bosses.WhispererRules;
 import com.runecraft.util.Inv;
 import java.util.ArrayList;
@@ -212,5 +213,273 @@ public final class BossWalks {
             throw fail("screech: still screeching after 40 ticks");
         }
         return "screech: hid behind the columns, over in " + ticks + " ticks";
+    }
+
+    // =====================================================================================================
+    // The Moons of Peril
+    // =====================================================================================================
+
+    /** Faces the player toward a point (the Eclipse Moon's clones are parried by facing them). */
+    static void face(ServerPlayer p, Vec3 at) {
+        float yaw = (float) (Math.toDegrees(Math.atan2(at.z - p.getZ(), at.x - p.getX())) - 90.0);
+        p.teleportTo(p.serverLevel(), p.getX(), p.getY(), p.getZ(), yaw, p.getXRot());
+    }
+
+    /** Stands on Eyatlalli's glyph and lets her make standard attacks; the glyph moving on, and standing off it, counted. */
+    private static String moonStandard(DataBossEntity boss, MoonScripts.Moon m, Driver d) {
+        ServerPlayer p = d.player();
+        d.moveTo(m.glyphPos(boss), boss);
+        int attacks = m.attackCount;
+        until(boss, d, 14, () -> {
+            d.moveTo(m.glyphPos(boss), boss);
+            return m.attackCount > attacks;
+        });
+        if (m.attackCount <= attacks) {
+            throw fail("no standard attack in 14 ticks");
+        }
+        d.ticks(boss, 3); // its three hits land a tick apart
+        int glyph = m.glyph;
+        if (m.offGlyphTicks(p) != 0) {
+            throw fail("standing on the glyph counted as off it");
+        }
+        Vec3 off = m.glyphPos(boss, (glyph + 4) % 8);
+        d.moveTo(off, boss);
+        d.ticks(boss, 2);
+        int offTicks = m.offGlyphTicks(p);
+        if (offTicks < 2) {
+            throw fail("2 ticks off the glyph were counted as " + offTicks + " (no glyph damage)");
+        }
+        d.moveTo(m.glyphPos(boss), boss);
+        d.ticks(boss, 1);
+        return "standard attack, glyph " + glyph + ", " + offTicks + " ticks off it hurt (curse " + m.curse(p).stacks() + ")";
+    }
+
+    /** Forces the full (true) or new moon special and waits for it to start. */
+    private static MoonsRules.Special moonSpecial(DataBossEntity boss, MoonScripts.Moon m, Driver d, boolean full) {
+        if (full) {
+            m.selfTestSpecialNow();
+        } else {
+            m.selfTestNewMoonNow();
+        }
+        if (until(boss, d, 8, () -> m.special != null) < 0) {
+            throw fail("no special started after the " + (full ? "full" : "new") + " moon");
+        }
+        return m.special;
+    }
+
+    /** Heavy hits through her rules until she dies (specials may come between); a Moon's loot waits in the Lunar Chest. */
+    private static void moonKill(DataBossEntity boss, Driver d, int before) {
+        ServerPlayer p = d.player();
+        for (int i = 0; i < 80 && boss.isAlive(); i++) {
+            if (boss.script().isVulnerable(boss)) {
+                hit(boss, p, 120);
+            }
+            d.ticks(boss, 1);
+        }
+        if (boss.isAlive()) {
+            throw fail("still alive after 80 ticks of heavy hits (" + Math.round(boss.getHealth()) + " health)");
+        }
+        if (LunarChest.pending(p) <= before) {
+            throw fail("killed, but the kill wasn't recorded for the Lunar Chest");
+        }
+    }
+
+    /** The Blue Moon: Weapon Freeze (punch the glowing block free) and Frost Storm (relight both braziers). */
+    public static String blueMoon(DataBossEntity boss, Driver d) {
+        if (!(boss.script() instanceof MoonScripts.BlueMoon m)) {
+            throw fail("the Blue Moon has no BlueMoon script");
+        }
+        ServerPlayer p = d.player();
+        int pendingBefore = LunarChest.pending(p);
+        List<String> log = new ArrayList<>();
+        log.add(moonStandard(boss, m, d));
+        p.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, Inv.stack("abyssal_whip", 1));
+        if (moonSpecial(boss, m, d, true) != MoonsRules.Special.WEAPON_FREEZE) {
+            throw fail("the full moon didn't bring Weapon Freeze but " + m.special);
+        }
+        if (!p.getMainHandItem().isEmpty() || !Inv.has(p, "abyssal_whip", 1)) {
+            throw fail("freeze: the weapon wasn't frozen out of the hand into the pack");
+        }
+        Mob block = m.selfTestRealBlock();
+        if (block == null) {
+            throw fail("freeze: no glowing block of ice");
+        }
+        int failures = m.failures;
+        d.moveTo(block.position().add(1.2, 0, 0), boss);
+        int punches = 0;
+        for (int i = 0; i < 10 && block.isAlive(); i++) {
+            attack(p, block);
+            punches++;
+            d.ticks(boss, 1);
+        }
+        d.ticks(boss, 1);
+        if (m.special != null || m.failures > failures) {
+            throw fail("freeze: the glowing block wasn't broken by " + punches + " punches");
+        }
+        if (!"abyssal_whip".equals(Inv.idOf(p.getMainHandItem()))) {
+            throw fail("freeze: the freed weapon didn't come back to the hand");
+        }
+        log.add("freeze: weapon to the pack, freed in " + punches + " punches and wielded again");
+        if (moonSpecial(boss, m, d, false) != MoonsRules.Special.FROST_STORM) {
+            throw fail("the new moon didn't bring Frost Storm but " + m.special);
+        }
+        d.moveTo(m.selfTestBrazier(0), boss);
+        d.ticks(boss, 1);
+        d.moveTo(m.selfTestBrazier(1), boss);
+        int ticks = until(boss, d, 30, () -> m.special == null);
+        if (ticks < 0 || m.failures > failures) {
+            throw fail("storm: relighting both braziers didn't stop her healing");
+        }
+        log.add("storm: both braziers relit");
+        d.moveTo(m.glyphPos(boss), boss);
+        moonKill(boss, d, pendingBefore);
+        return String.join("; ", log) + "; pacified, reward waits in the Lunar Chest";
+    }
+
+    /** The Eclipse Moon: Searing Rays (keep behind the turning shield) and Clones (face each to parry it). */
+    public static String eclipseMoon(DataBossEntity boss, Driver d) {
+        if (!(boss.script() instanceof MoonScripts.EclipseMoon m)) {
+            throw fail("the Eclipse Moon has no EclipseMoon script");
+        }
+        ServerPlayer p = d.player();
+        int pendingBefore = LunarChest.pending(p);
+        List<String> log = new ArrayList<>();
+        log.add(moonStandard(boss, m, d));
+        if (moonSpecial(boss, m, d, false) != MoonsRules.Special.SEARING_RAYS) {
+            throw fail("the new moon didn't bring Searing Rays but " + m.special);
+        }
+        m.curse(p).remove(200);
+        int ticks = until(boss, d, 24, () -> {
+            d.moveTo(m.shelter(boss), boss);
+            return m.special == null;
+        });
+        if (ticks < 0) {
+            throw fail("rays: the shield never finished its turn");
+        }
+        if (m.curse(p).stacks() >= MoonsRules.RAY_CURSE) {
+            throw fail("rays: a ray found the player behind the shield (" + m.curse(p).stacks() + " curse stacks)");
+        }
+        log.add("rays: kept behind the shield for its full turn (" + ticks + " ticks)");
+        if (moonSpecial(boss, m, d, true) != MoonsRules.Special.CLONES) {
+            throw fail("the full moon didn't bring the Clones but " + m.special);
+        }
+        p.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, Inv.stack("abyssal_whip", 1));
+        float hp = boss.getHealth();
+        int clones = until(boss, d, 80, () -> {
+            Vec3 clone = m.selfTestClone();
+            if (clone != null) {
+                face(p, clone);
+            }
+            return m.special == null;
+        });
+        if (clones < 0) {
+            throw fail("clones: still running after 80 ticks");
+        }
+        if (boss.getHealth() >= hp && boss.isAlive()) {
+            throw fail("clones: no parried clone hurt her");
+        }
+        log.add(String.format(java.util.Locale.ROOT, "clones: faced every clone, parries took %.0f health", hp - boss.getHealth()));
+        d.moveTo(m.glyphPos(boss), boss);
+        moonKill(boss, d, pendingBefore);
+        return String.join("; ", log) + "; pacified, reward waits in the Lunar Chest";
+    }
+
+    /** The Blood Moon: Blood Rain (stay off the pools; she can't be hit) and Blood Jaguars (glyph, strike its jaguar); then
+     *  the Lunar Chest pays out for the Moons. */
+    public static String bloodMoon(DataBossEntity boss, Driver d) {
+        if (!(boss.script() instanceof MoonScripts.BloodMoon m)) {
+            throw fail("the Blood Moon has no BloodMoon script");
+        }
+        ServerPlayer p = d.player();
+        int pendingBefore = LunarChest.pending(p);
+        List<String> log = new ArrayList<>();
+        log.add(moonStandard(boss, m, d));
+        if (moonSpecial(boss, m, d, true) != MoonsRules.Special.BLOOD_RAIN) {
+            throw fail("the full moon didn't bring Blood Rain but " + m.special);
+        }
+        if (m.isVulnerable(boss)) {
+            throw fail("rain: she can still be hit while she has vanished");
+        }
+        Vec3 c = m.homeVec();
+        Vec3[] spots = {c.add(9, 0, 0), c.add(-9, 0, 0), c.add(0, 0, 9), c.add(0, 0, -9), c.add(6, 0, 6), c.add(-6, 0, -6)};
+        int ticks = until(boss, d, 30, () -> {
+            Vec3 best = spots[0];
+            double bestGap = -1;
+            for (Vec3 s : spots) {
+                double gap = Double.MAX_VALUE;
+                for (Vec3 pool : m.selfTestPools()) {
+                    gap = Math.min(gap, pool.distanceToSqr(s.x, pool.y, s.z));
+                }
+                if (gap > bestGap) {
+                    bestGap = gap;
+                    best = s;
+                }
+            }
+            d.moveTo(best, boss);
+            return m.special == null;
+        });
+        if (ticks < 0 || !m.isVulnerable(boss)) {
+            throw fail("rain: it never stopped, or she never came back");
+        }
+        log.add("rain: kept off the pools for " + ticks + " ticks");
+        if (moonSpecial(boss, m, d, false) != MoonsRules.Special.BLOOD_JAGUARS) {
+            throw fail("the new moon didn't bring the Blood Jaguars but " + m.special);
+        }
+        List<Mob> jaguars = new ArrayList<>(m.selfTestJaguars());
+        if (jaguars.size() != MoonsRules.JAGUARS) {
+            throw fail("jaguars: " + jaguars.size() + " jaguars instead of " + MoonsRules.JAGUARS);
+        }
+        Vec3 glyph = m.glyphPos(boss);
+        Mob near = jaguars.get(0);
+        for (Mob j : jaguars) {
+            if (j.distanceToSqr(glyph) < near.distanceToSqr(glyph)) {
+                near = j;
+            }
+        }
+        Mob target = near;
+        Vec3 side = glyph.subtract(c).normalize().cross(new Vec3(0, 1, 0)).scale(0.6);
+        boolean[] flip = {false};
+        ticks = until(boss, d, 40, () -> {
+            // on the glyph, stepping between two of its tiles away from the pools forming under the player
+            Vec3 here = glyph.add(flip[0] ? side : side.reverse());
+            for (Vec3 pool : m.selfTestPools()) {
+                if (pool.distanceToSqr(here.x, pool.y, here.z) < 1.0) {
+                    flip[0] = !flip[0];
+                    here = glyph.add(flip[0] ? side : side.reverse());
+                    break;
+                }
+            }
+            d.moveTo(here, boss);
+            if (target.isAlive()) {
+                attack(p, target);
+            }
+            return m.special == null;
+        });
+        if (ticks < 0) {
+            throw fail("jaguars: the special never ended");
+        }
+        if (m.selfTestRestored() <= 0) {
+            throw fail("jaguars: hitting the glyph's jaguar gave no hitpoints back");
+        }
+        log.add("jaguars: on the glyph, " + m.selfTestRestored() + " hitpoints back off its jaguar");
+        moonKill(boss, d, pendingBefore);
+        // the chest: after Perilous Moons, once all three Moons are down, it pays out for the Moons pacified since the last claim
+        com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(p);
+        var quest = com.runecraft.osrs.content.ContentRegistry.quest("perilous_moons");
+        if (quest != null) {
+            data.setQuestStage(quest, quest.finalStage());
+        }
+        for (String moon : MoonsRules.MOONS) {
+            if (data.killCount(moon) <= 0) {
+                data.incrementKillCount(moon);
+            }
+        }
+        LunarChest.record(p, MoonsRules.BLUE);
+        int moons = LunarChest.pending(p);
+        List<String> got = LunarChest.claim(p);
+        if (got.isEmpty() || LunarChest.pending(p) != 0) {
+            throw fail("the Lunar Chest gave nothing for " + moons + " Moons, or kept them");
+        }
+        return String.join("; ", log) + "; pacified, Lunar Chest for " + moons + " Moons gave " + got.size() + " drops";
     }
 }

@@ -22,6 +22,8 @@ public final class ZeahBlocks {
     public static final String JERBOA_BURROW = "zeah_jerboa_burrow";
     /** The altar at the centre of the Catacombs of Kourend: Darklight + 3 ancient shards make Arclight. */
     public static final String CATACOMBS_ALTAR = "zeah_catacombs_altar";
+    /** The Lunar Chest in Neypotzli: the Moons of Peril's rewards (claimed through the bosses module's LunarChest). */
+    public static final String LUNAR_CHEST = "zeah_lunar_chest";
     /** Ancient shards needed to forge Arclight (wiki). */
     public static final int ARCLIGHT_SHARDS = 3;
 
@@ -35,6 +37,7 @@ public final class ZeahBlocks {
                 BlockDef.scripted(SUNLIGHT_MOTH_BUSH, "Sunlight moth bush", 0xE0C040, "young_tree"),
                 BlockDef.scripted(MOONLIGHT_MOTH_BUSH, "Moonlight moth bush", 0x8090D0, "young_tree"),
                 BlockDef.scripted(JERBOA_BURROW, "Embertailed jerboa burrow", 0xC06A3A, "boulder"),
-                BlockDef.scripted(CATACOMBS_ALTAR, "Altar", 0x5A5A6A, "altar"));
+                BlockDef.scripted(CATACOMBS_ALTAR, "Altar", 0x5A5A6A, "altar"),
+                BlockDef.scripted(LUNAR_CHEST, "Lunar Chest", 0x8A8AA0, "chest"));
     }
 }

@@ -71,7 +71,19 @@ public final class BossSelfTests {
      * burrow hole until claimed at the stone. Returns the number of stacks held for the player.
      */
     public static int heldLoot(String bossId, ServerPlayer p) {
+        if (com.runecraft.osrs.content.bosses.MoonsRules.MOONS.contains(bossId)) {
+            return LunarChest.pending(p); // a Moon's loot waits in the Lunar Chest
+        }
         return com.runecraft.osrs.content.bosses.DoomDelves.BOSS.equals(bossId) ? DoomDelveService.heldLoot(p) : 0;
+    }
+
+    /** The Lunar Chest's record of a player's pacified Moons, saved and restored around the self-test (null: none). */
+    public static Object lunarChestSave(net.minecraft.server.MinecraftServer server, java.util.UUID player) {
+        return LunarChest.selfTestSave(server, player);
+    }
+
+    public static void lunarChestRestore(net.minecraft.server.MinecraftServer server, java.util.UUID player, Object saved) {
+        LunarChest.selfTestRestore(server, player, saved);
     }
 
     /**

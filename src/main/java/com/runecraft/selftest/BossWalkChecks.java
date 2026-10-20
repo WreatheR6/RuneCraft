@@ -35,6 +35,9 @@ final class BossWalkChecks {
 
     static {
         WALKS.put("the_whisperer", BossWalks::whisperer);
+        WALKS.put("blue_moon", BossWalks::blueMoon);
+        WALKS.put("eclipse_moon", BossWalks::eclipseMoon);
+        WALKS.put("blood_moon", BossWalks::bloodMoon);
     }
 
     private final TestContext c;
