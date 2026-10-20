@@ -17,6 +17,9 @@ import java.util.List;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -25,6 +28,8 @@ import net.minecraft.world.phys.Vec3;
  * code doing each mechanic, and every step is checked. Any broken step throws with what went wrong.
  */
 final class NightmareMuspahWalks {
+    /** The player's health buffer while {@link #playToKill} plays a fight on. */
+    private static final net.minecraft.resources.ResourceLocation KILL_HP_BUFFER = com.runecraft.RuneCraft.id("selftest_kill_hp");
     private static long tick;
 
     private NightmareMuspahWalks() {
@@ -62,6 +67,124 @@ final class NightmareMuspahWalks {
         if (m.isAlive()) {
             m.kill();
         }
+    }
+
+    // ------------------------------------------------------------------ the boss:<id> kill
+
+    /**
+     * Plays a fight on to where its death counts, as a player would, for the {@code boss:<id>} check (which otherwise kills
+     * a boss outright, a death these scripts refuse until then). The Nightmare only dies to the third blast of her totems and
+     * Phosani at the end of her desperation phase: she is woken, her shields broken, her totems charged and her sleepwalkers
+     * killed, and the blast or Phosani's last hit ends her. The Phantom Muspah only dies in its post-shield form: it is hurt
+     * down to its shockwave and its prayer shield drained. Returns what was played, or null for other bosses.
+     */
+    static String playToKill(DataBossEntity boss, ServerPlayer p) {
+        if (!(boss.script() instanceof NightmareScript) && !(boss.script() instanceof MuspahScript)) {
+            return null;
+        }
+        // The check ticked the boss on a clock that stood still: the attacks it wound up meanwhile (standard attacks, claws,
+        // orbs) all land on the first game ticks played here. The player keeps a big health buffer, as in a fight check.
+        AttributeInstance health = p.getAttribute(Attributes.MAX_HEALTH);
+        if (health != null) {
+            health.removeModifier(KILL_HP_BUFFER);
+            health.addTransientModifier(new AttributeModifier(KILL_HP_BUFFER, 2000, AttributeModifier.Operation.ADD_VALUE));
+        }
+        p.setHealth(p.getMaxHealth());
+        try {
+            return boss.script() instanceof NightmareScript n ? nightmareToKill(boss, p, n)
+                    : muspahToKill(boss, p, (MuspahScript) boss.script());
+        } finally {
+            if (health != null) {
+                health.removeModifier(KILL_HP_BUFFER);
+            }
+            com.runecraft.skill.XpService.updateMaxHealth(p);
+            p.setHealth(p.getMaxHealth());
+        }
+    }
+
+    private static String nightmareToKill(DataBossEntity boss, ServerPlayer p, NightmareScript n) {
+        tick = Math.max(ActionManager.gameTick(), n.now);
+        boolean quiet = n.selfTestQuiet;
+        n.selfTestQuiet = true; // her standard attacks only from here: her specials don't change what ends the fight
+        int hits = 0;
+        int totems = 0;
+        int walkers = 0;
+        int ticks = 0;
+        boolean woke = n.stage == NightmareScript.Stage.ASLEEP;
+        try {
+            while (boss.isAlive() && ticks < 2000) {
+                switch (n.stage) {
+                    case ASLEEP -> n.wake(boss); // disturbed: no need to wait out her sleep
+                    case SHIELD, DESPERATION -> {
+                        if (n.flowersBloomed()) {
+                            step(boss, p, 1); // an attack from a berry quadrant would heal her: the flowers wither first
+                            ticks++;
+                        } else {
+                            hurt(boss, p, 97, AttackType.CRUSH);
+                            hits++;
+                        }
+                    }
+                    case TOTEMS -> {
+                        for (Mob t : new ArrayList<>(n.totems)) {
+                            for (int guard = 0; t.isAlive() && guard < 200; guard++) {
+                                CombatHandler.applyDamage(p, t, n.totemDamage(p, t, AttackType.MAGIC, 40));
+                            }
+                            totems++;
+                        }
+                        NightmareScript.CHARGING.remove(p.getUUID());
+                        step(boss, p, 1); // charged: they blast her
+                        ticks++;
+                    }
+                    case WALKERS -> {
+                        for (Mob w : new ArrayList<>(n.walkers)) {
+                            kill(p, w);
+                            walkers++;
+                        }
+                        step(boss, p, 1);
+                        ticks++;
+                    }
+                    default -> { // DEAD: the killing blow lands on her next game tick
+                        step(boss, p, 1);
+                        ticks++;
+                    }
+                }
+                if (hits > 1000) {
+                    break;
+                }
+            }
+        } finally {
+            n.selfTestQuiet = quiet;
+            NightmareScript.CHARGING.remove(p.getUUID());
+        }
+        return (woke ? "woke her, " : "") + hits + " hits on her shields" + (n.phosani() ? " and desperation" : "") + ", " + totems
+                + " totems charged, " + walkers + " sleepwalkers killed" + (boss.isAlive() ? ", still " + n.stage : ", killed by the "
+                + (n.phosani() ? "last hit" : "totems' blast"));
+    }
+
+    private static String muspahToKill(DataBossEntity boss, ServerPlayer p, MuspahScript m) {
+        tick = Math.max(ActionManager.gameTick(), m.now);
+        int hits = 0;
+        int drains = 0;
+        int ticks = 0;
+        while (boss.isAlive() && m.stage != MuspahScript.Stage.POST && ticks < 600 && drains < 200) {
+            switch (m.stage) {
+                case FORMS, CLOUDS -> {
+                    hurt(boss, p, 60, AttackType.RANGED);
+                    hits++;
+                }
+                case SHIELDED -> {
+                    boss.modifyIncoming(p, 10, AttackType.RANGED); // each attack takes 2 off its prayer shield
+                    drains++;
+                    continue;
+                }
+                default -> {
+                }
+            }
+            step(boss, p, 1); // SHOCKWAVE: it sends out its shockwave, then raises its shield (or skips it)
+            ticks++;
+        }
+        return hits + " hits to its shockwave, " + drains + " attacks on its prayer shield"
+                + (m.stage == MuspahScript.Stage.POST ? ", post-shield form" : ", still " + m.stage);
     }
 
     // ------------------------------------------------------------------ The Nightmare / Phosani's Nightmare
