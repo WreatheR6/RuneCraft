@@ -517,6 +517,11 @@ final class ClassicScripts {
                 BossFx.unstun(rooted);
             }
         }
+
+        @Override
+        public void onRemoved(DataBossEntity boss) {
+            onDeath(boss, null); // reset: the flowers go and an entangled player is freed
+        }
     }
 
     /** Scurrius: once below 40% he runs to his food pile and eats. */

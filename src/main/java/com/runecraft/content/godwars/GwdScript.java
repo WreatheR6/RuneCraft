@@ -173,6 +173,23 @@ abstract class GwdScript implements BossScript {
         }
     }
 
+    /**
+     * A bodyguard next to the boss: one of this kind still alive in the room from an earlier fight stays (OSRS bodyguards
+     * outlive their general), else a new one; either way it joins the boss's lair.
+     */
+    protected static Mob spawnGuard(DataBossEntity boss, String id, double dx, double dz) {
+        EntityType<?> type = ModEntities.typeById(id);
+        if (type != null) {
+            for (var e : ((ServerLevel) boss.level()).getEntities(type, boss.getBoundingBox().inflate(48), e -> e.isAlive())) {
+                if (e instanceof Mob mob) {
+                    boss.claimMinion(mob);
+                    return mob;
+                }
+            }
+        }
+        return spawnMinion(boss, id, dx, dz);
+    }
+
     /** Spawns a module creature next to the boss and sets it on the boss's target. */
     protected static Mob spawnMinion(DataBossEntity boss, String id, double dx, double dz) {
         EntityType<?> type = ModEntities.typeById(id);
@@ -189,6 +206,7 @@ abstract class GwdScript implements BossScript {
         if (boss.getTarget() != null) {
             mob.setTarget(boss.getTarget());
         }
+        boss.claimMinion(mob); // a reset of the boss clears it
         world.addFreshEntity(mob);
         return mob;
     }

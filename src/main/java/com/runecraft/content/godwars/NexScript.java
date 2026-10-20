@@ -103,6 +103,7 @@ final class NexScript extends GwdScript {
                 s.nex = boss;
                 s.active = false;
             }
+            boss.claimMinion(minion); // her reset clears them
             minions[i] = minion;
         }
         shout(boss, "AT LAST!");
@@ -454,5 +455,16 @@ final class NexScript extends GwdScript {
         }
         clearPrison(world);
         super.onDeath(boss, killer);
+    }
+
+    /** Gone without a kill (her lair reset): her generals and the ice prison go too. */
+    @Override
+    public void onRemoved(DataBossEntity boss) {
+        for (DataBossEntity minion : minions) {
+            if (minion != null && minion.isAlive()) {
+                minion.discard();
+            }
+        }
+        clearPrison((ServerLevel) boss.level());
     }
 }

@@ -302,12 +302,18 @@ final class WildernessScripts {
 
         @Override
         public void onDeath(DataBossEntity boss, ServerPlayer killer) {
+            onRemoved(boss);
+            super.onDeath(boss, killer);
+        }
+
+        /** Killed or reset: the spiderlings go with her. */
+        @Override
+        public void onRemoved(DataBossEntity boss) {
             spiderlings.forEach(m -> {
                 if (m != null) {
                     m.discard();
                 }
             });
-            super.onDeath(boss, killer);
         }
     }
 

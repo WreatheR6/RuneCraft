@@ -1087,4 +1087,15 @@ public final class BossMechanics {
         }
         return done < WHISPERER_SPECIAL_PERCENT.length && hp * 100.0 / maxHp <= WHISPERER_SPECIAL_PERCENT[done];
     }
+
+    /**
+     * Pre-enrage Shadow Realm time (game ticks; Dark Memories, CA 502, wants under 10 = 6 seconds) a player adds by killing a lost
+     * soul at tick {@code specialTick} of a Soul Siphon, having been counted {@code counted} ticks of it already. OSRS Wiki: the
+     * souls can only be damaged in the Shadow Realm, so a player enters as the siphon starts and leaves after their last soul;
+     * the realm isn't modelled, so that stay is counted up to their latest soul kill. Ignoring the siphon (the task's way, or
+     * guessing the seeds and pillars, which the mod shows openly) adds nothing. approx
+     */
+    public static int whispererRealmTicks(int specialTick, int counted) {
+        return Math.max(0, specialTick - counted);
+    }
 }

@@ -145,11 +145,17 @@ final class VetionScript extends GwdScript {
     @Override
     public void onDeath(DataBossEntity boss, ServerPlayer killer) {
         shout(boss, "Urk! I... failed...");
+        onRemoved(boss);
+        super.onDeath(boss, killer);
+    }
+
+    /** Killed or reset: his hellhounds go with him. */
+    @Override
+    public void onRemoved(DataBossEntity boss) {
         for (Mob h : hounds) {
             if (h != null && h.isAlive()) {
                 h.discard();
             }
         }
-        super.onDeath(boss, killer);
     }
 }

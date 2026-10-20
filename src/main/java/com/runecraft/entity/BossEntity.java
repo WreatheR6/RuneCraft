@@ -138,6 +138,13 @@ public class BossEntity extends OsrsMonsterEntity {
         this.home = at.immutable();
     }
 
+    /** Tags a minion summoned in this boss's lair so its reset clears it (as {@link com.runecraft.boss.DataBossEntity#claimMinion}). */
+    public void claimMinion(net.minecraft.world.entity.Entity minion) {
+        if (home != null && minion != null) {
+            minion.addTag(com.runecraft.osrs.content.bosses.BossLair.minionTag(home.asLong()));
+        }
+    }
+
     @Override
     public void addAdditionalSaveData(net.minecraft.nbt.CompoundTag nbt) {
         super.addAdditionalSaveData(nbt);
@@ -159,24 +166,30 @@ public class BossEntity extends OsrsMonsterEntity {
         if (home == null) {
             return true;
         }
-        boolean someone = getTarget() instanceof ServerPlayer t && t.isAlive() && t.distanceToSqr(this) < 32 * 32;
+        double presence = com.runecraft.osrs.content.bosses.BossLair.PRESENCE_RANGE;
+        boolean someone = getTarget() instanceof ServerPlayer t && t.isAlive() && t.distanceToSqr(this) < presence * presence;
         if (!someone) {
             for (ServerPlayer p : ((ServerLevel) level()).players()) {
-                if (p.isAlive() && !p.isSpectator() && !p.isCreative() && p.distanceToSqr(this) < 32 * 32) {
+                if (p.isAlive() && !p.isSpectator() && !p.isCreative() && p.distanceToSqr(this) < presence * presence) {
                     someone = true;
                     break;
                 }
             }
         }
-        lonelyTicks = someone ? 0 : lonelyTicks + 1;
-        if (lonelyTicks >= com.runecraft.boss.DataBossEntity.RESET_TICKS) {
+        lonelyTicks = com.runecraft.osrs.content.bosses.BossLair.lonely(lonelyTicks, someone);
+        if (com.runecraft.osrs.content.bosses.BossLair.resets(lonelyTicks)) {
+            com.runecraft.boss.DataBossEntity.clearLair((ServerLevel) level(), home); // minions it summoned go with it
             discard();
             return false;
         }
-        if (distanceToSqr(home.getX() + 0.5, home.getY(), home.getZ() + 0.5) > LEASH * LEASH) {
+        net.minecraft.world.entity.LivingEntity target = getTarget();
+        double targetDistSq = target == null ? 0 : target.distanceToSqr(home.getX() + 0.5, home.getY(), home.getZ() + 0.5);
+        // put back only once its fight has left the lair: a target still in it is chased (no free hits from past the leash)
+        if (com.runecraft.osrs.content.bosses.BossLair.returnsHome(distanceToSqr(home.getX() + 0.5, home.getY(), home.getZ() + 0.5),
+                LEASH, target != null, targetDistSq)) {
             getNavigation().stop();
             teleportTo(home.getX() + 0.5, home.getY(), home.getZ() + 0.5);
-            if (getTarget() != null && getTarget().distanceToSqr(home.getX() + 0.5, home.getY(), home.getZ() + 0.5) > LEASH * LEASH) {
+            if (target != null) {
                 setTarget(null);
             }
         }
@@ -408,6 +421,11 @@ public class BossEntity extends OsrsMonsterEntity {
 
     @Override
     public int modifyIncoming(ServerPlayer attacker, int damage, AttackType type) {
+        if (home != null && !com.runecraft.osrs.content.bosses.BossLair.inReach(
+                attacker.distanceToSqr(home.getX() + 0.5, home.getY(), home.getZ() + 0.5), LEASH)) {
+            Msg.action(attacker, "You can't reach " + boss().displayName() + " from out here.");
+            return 0;
+        }
         if (script() != null) {
             damage = script.modifyIncoming(this, attacker, damage, type);
         }

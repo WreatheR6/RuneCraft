@@ -3,12 +3,14 @@ package com.runecraft.content.bosses;
 import com.runecraft.boss.DataBossEntity;
 import com.runecraft.combat.CombatHandler;
 import com.runecraft.combat.CombatHooks;
+import com.runecraft.content.systems.CombatAchievementService;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.Prayer;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.bosses.BossMechanics;
 import com.runecraft.osrs.content.bosses.Dt2Bosses;
+import com.runecraft.osrs.content.systems.CombatAchievements;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
 import com.runecraft.util.Msg;
@@ -50,7 +52,9 @@ import net.minecraft.world.phys.Vec3;
  *   projectile at a time (ranged first, switching every two; awakened magic first, switching every attack), a tentacle
  *   with each.</li>
  * </ul>
- * approx: sanity, the blackstone fragment and the Shadow Realm are not modelled (seeds, columns and souls are always visible).
+ * approx: sanity, the blackstone fragment and the Shadow Realm are not modelled (seeds, columns and souls are always visible);
+ * for Dark Memories a player's pre-enrage realm time is the Soul Siphon up to their last lost-soul kill (souls are only hit
+ * from the realm), see {@link BossMechanics#whispererRealmTicks}.
  */
 final class WhispererScript extends ScriptedBoss {
     private enum Special { SEEDS, SCREECH, SIPHON }
@@ -94,6 +98,9 @@ final class WhispererScript extends ScriptedBoss {
     private final List<Mob> souls = new ArrayList<>();
     private final Map<Mob, Integer> soulSet = new HashMap<>();
     private final Set<Integer> setsDone = new LinkedHashSet<>();
+    /** Lost souls whose kill was counted as Shadow Realm time, and each killer's realm ticks counted this siphon. */
+    private final Set<Mob> soulsCounted = new java.util.HashSet<>();
+    private final Map<java.util.UUID, Integer> realmTicks = new HashMap<>();
     private final List<Seed> seeds = new ArrayList<>();
     /** Column blocks saved with her when she was unloaded mid-Screech: cleared on her first game tick back. */
     private long[] savedColumns;
@@ -335,6 +342,8 @@ final class WhispererScript extends ScriptedBoss {
         souls.clear();
         soulSet.clear();
         setsDone.clear();
+        soulsCounted.clear();
+        realmTicks.clear();
         seeds.clear();
         if (special == Special.SCREECH) {
             Vec3 c = homeVec();
@@ -460,6 +469,18 @@ final class WhispererScript extends ScriptedBoss {
     private void tickSiphon(DataBossEntity boss, ServerPlayer target) {
         for (Mob soul : souls) {
             BossFx.world(boss).sendParticles(ParticleTypes.SOUL, soul.getX(), soul.getY() + 1, soul.getZ(), 2, 0.2, 0.4, 0.2, 0.01);
+            if (!soul.isAlive() && soulsCounted.add(soul)) {
+                // souls are only hit from the Shadow Realm: its killer was in there until now (Dark Memories)
+                ServerPlayer killer = soul.getLastHurtByMob() instanceof ServerPlayer p ? p : target;
+                if (killer != null) {
+                    int counted = realmTicks.getOrDefault(killer.getUUID(), 0);
+                    int add = BossMechanics.whispererRealmTicks(specialTick, counted);
+                    if (add > 0) {
+                        CombatAchievementService.count(killer, CombatAchievements.COUNT_SHADOW_REALM_TICKS, add);
+                        realmTicks.put(killer.getUUID(), counted + add);
+                    }
+                }
+            }
         }
         boolean allDead = true;
         for (int set = 0; set < BossMechanics.WHISPERER_SOUL_SETS.length; set++) {

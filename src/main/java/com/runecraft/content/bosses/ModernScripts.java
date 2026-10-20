@@ -1293,5 +1293,10 @@ final class ModernScripts {
                 MinionRules.unwatch(watcher);
             }
         }
+
+        @Override
+        public void onRemoved(DataBossEntity boss) {
+            onDeath(boss, null);
+        }
     }
 }

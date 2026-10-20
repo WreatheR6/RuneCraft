@@ -168,6 +168,11 @@ public final class SolHereditScript extends ScriptedBoss {
         cleanUp(boss);
     }
 
+    @Override
+    public void onRemoved(DataBossEntity boss) {
+        cleanUp(boss);
+    }
+
     private void cleanUp(DataBossEntity boss) {
         GRAPPLED.values().removeIf(s -> s == this);
         Mechanics.clearHazards(BossFx.world(boss), boss.getBoundingBox().inflate(24, 6, 24));

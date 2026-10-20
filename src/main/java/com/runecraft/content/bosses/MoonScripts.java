@@ -204,6 +204,11 @@ final class MoonScripts {
         public void onDeath(DataBossEntity boss, ServerPlayer killer) {
             endClones();
         }
+
+        @Override
+        public void onRemoved(DataBossEntity boss) {
+            endClones();
+        }
     }
 
     /**

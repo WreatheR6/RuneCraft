@@ -620,6 +620,11 @@ final class EncounterScripts {
             walkers.forEach(Mob::discard);
             parasites.forEach(Mob::discard);
         }
+
+        @Override
+        public void onRemoved(DataBossEntity boss) {
+            onDeath(boss, null); // reset: totems, husks, sleepwalkers and parasites go, and nobody stays slowed
+        }
     }
 
     /**

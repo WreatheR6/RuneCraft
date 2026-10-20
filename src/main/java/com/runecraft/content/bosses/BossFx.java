@@ -107,6 +107,11 @@ final class BossFx {
         if (target != null) {
             mob.setTarget(target);
         }
+        if (boss instanceof DataBossEntity d) {
+            d.claimMinion(mob); // a reset of the boss clears it
+        } else if (boss instanceof com.runecraft.entity.BossEntity b) {
+            b.claimMinion(mob);
+        }
         world.addFreshEntity(mob);
         world.sendParticles(ParticleTypes.POOF, pos.x, pos.y + 0.5, pos.z, 10, 0.3, 0.3, 0.3, 0.02);
         return mob;

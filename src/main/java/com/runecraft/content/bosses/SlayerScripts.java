@@ -449,6 +449,11 @@ final class SlayerScripts {
         public void onDeath(DataBossEntity boss, ServerPlayer killer) {
             systems.forEach(Mob::discard);
         }
+
+        @Override
+        public void onRemoved(DataBossEntity boss) {
+            systems.forEach(Mob::discard); // reset: its respiratory systems go (the lair sweep takes the spawns)
+        }
     }
 
     /**

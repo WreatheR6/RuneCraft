@@ -7,6 +7,7 @@ import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.BossDef;
 import com.runecraft.osrs.content.bosses.AwakenedBosses;
+import com.runecraft.osrs.content.bosses.BossLair;
 import com.runecraft.osrs.content.bosses.BossVariant;
 import com.runecraft.osrs.content.bosses.DoomDelves;
 import com.runecraft.player.PlayerData;
@@ -53,12 +54,12 @@ public class DataBossEntity extends OsrsMonsterEntity {
      */
     private net.minecraft.core.BlockPos home;
     private int leash;
-    /** Game ticks in a row with no player around (a summoned boss resets after {@link #RESET_TICKS}). */
+    /** Game ticks in a row with no player around (a summoned boss resets after {@link BossLair#RESET_TICKS}). */
     private int lonelyTicks;
     /** A summoned boss with nobody near it for this long (game ticks: one minute) resets, like an OSRS instance left. */
-    public static final int RESET_TICKS = 100;
+    public static final int RESET_TICKS = BossLair.RESET_TICKS;
     /** Range within which a player keeps a summoned boss's fight going. */
-    private static final double PRESENCE_RANGE = 32;
+    private static final double PRESENCE_RANGE = BossLair.PRESENCE_RANGE;
 
     public DataBossEntity(EntityType<? extends Monster> type, Level world) {
         super(type, world);
@@ -109,6 +110,30 @@ public class DataBossEntity extends OsrsMonsterEntity {
         }
     }
 
+    /**
+     * Tags a minion summoned in this boss's lair (saved with the minion), so a reset clears it even when the script that
+     * spawned it is gone (a reload gives the boss a fresh script). Nothing for a boss with no lair.
+     */
+    public void claimMinion(net.minecraft.world.entity.Entity minion) {
+        if (home != null && minion != null) {
+            minion.addTag(BossLair.minionTag(home.asLong()));
+        }
+    }
+
+    /** Discards every minion still alive that was summoned in the lair at {@code home} (a boss's reset). */
+    public static void clearLair(ServerLevel world, net.minecraft.core.BlockPos home) {
+        String tag = BossLair.minionTag(home.asLong());
+        for (Mob m : world.getEntitiesOfClass(Mob.class, new net.minecraft.world.phys.AABB(home).inflate(64, 32, 64),
+                e -> e.getTags().contains(tag))) {
+            m.discard();
+        }
+    }
+
+    /** Whether an attack from this player reaches the boss: false from outside its lair (summoned bosses only). */
+    public boolean inLairReach(LivingEntity attacker) {
+        return home == null || BossLair.inReach(attacker.distanceToSqr(home.getX() + 0.5, home.getY(), home.getZ() + 0.5), leash);
+    }
+
     /** One game tick of a summoned boss's leash and reset; false when it reset (it is gone). */
     private boolean tickHome() {
         if (home == null) {
@@ -124,17 +149,20 @@ public class DataBossEntity extends OsrsMonsterEntity {
                 }
             }
         }
-        lonelyTicks = someone ? 0 : lonelyTicks + 1;
-        if (lonelyTicks >= RESET_TICKS) {
-            discard(); // the script's onRemoved clears what it placed
+        lonelyTicks = BossLair.lonely(lonelyTicks, someone);
+        if (BossLair.resets(lonelyTicks)) {
+            clearLair((ServerLevel) level(), home); // minions it summoned go with it
+            discard(); // the script's onRemoved clears what else it placed
             return false;
         }
         double dx = getX() - (home.getX() + 0.5);
         double dz = getZ() - (home.getZ() + 0.5);
-        if (dx * dx + dz * dz > (double) leash * leash) {
+        double targetDistSq = target == null ? 0 : target.distanceToSqr(home.getX() + 0.5, home.getY(), home.getZ() + 0.5);
+        // put back only once its fight has left the lair: a target still in it is chased (no free hits from past the leash)
+        if (BossLair.returnsHome(dx * dx + dz * dz, leash, target != null, targetDistSq)) {
             getNavigation().stop();
             teleportTo(home.getX() + 0.5, home.getY(), home.getZ() + 0.5);
-            if (target != null && target.distanceToSqr(home.getX() + 0.5, home.getY(), home.getZ() + 0.5) > (double) leash * leash) {
+            if (target != null) {
                 setTarget(null); // its target ran off: it waits in its lair
             }
         }
@@ -306,6 +334,11 @@ public class DataBossEntity extends OsrsMonsterEntity {
 
     @Override
     public int modifyIncoming(ServerPlayer attacker, int damage, AttackType type) {
+        if (!inLairReach(attacker)) {
+            BossDef def = def();
+            Msg.action(attacker, "You can't reach " + (def == null ? "the boss" : def.name) + " from out here.");
+            return 0;
+        }
         if (!script.isVulnerable(this)) {
             Msg.action(attacker, "Your attack has no effect right now.");
             return 0;
@@ -345,6 +378,7 @@ public class DataBossEntity extends OsrsMonsterEntity {
                 if (getTarget() != null) {
                     mob.setTarget(getTarget());
                 }
+                claimMinion(mob);
                 world.addFreshEntity(mob);
             }
         }

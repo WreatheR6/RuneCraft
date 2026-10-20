@@ -218,18 +218,24 @@ final class VorkathScript extends ScriptedBoss {
 
     @Override
     public void onDeath(DataBossEntity boss, ServerPlayer killer) {
+        onRemoved(boss);
+        int kc = com.runecraft.player.Players.data(killer).killCount("vorkath");
+        if (kc == 50) {
+            Inv.give(killer, "vorkaths_head", 1);
+            com.runecraft.collection.CollectionLog.obtain(killer, "vorkaths_head");
+            com.runecraft.util.Msg.game(killer, "You are rewarded with Vorkath's head for your 50th kill.");
+        }
+    }
+
+    /** Killed or reset: his zombified spawn goes and a player he froze can move again. */
+    @Override
+    public void onRemoved(DataBossEntity boss) {
         if (spawn != null) {
             SPAWNS.remove(spawn);
             spawn.discard();
         }
         if (frozen != null) {
             BossFx.unstun(frozen);
-        }
-        int kc = com.runecraft.player.Players.data(killer).killCount("vorkath");
-        if (kc == 50) {
-            Inv.give(killer, "vorkaths_head", 1);
-            com.runecraft.collection.CollectionLog.obtain(killer, "vorkaths_head");
-            com.runecraft.util.Msg.game(killer, "You are rewarded with Vorkath's head for your 50th kill.");
         }
     }
 }
