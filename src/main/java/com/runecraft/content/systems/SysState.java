@@ -16,6 +16,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.saveddata.SavedData;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -55,6 +56,14 @@ public final class SysState extends SavedData {
         public boolean warnedBook;
         /** The clue puzzle box / light box in progress: "TIER|S|board" or "TIER|L|box" ({@code CluePuzzles} encoding), or "". */
         public String cluePuzzle = "";
+        /** STASH units built (name -> stored item ids, comma separated; "" = built and empty). */
+        public final Map<String, String> stash = new LinkedHashMap<>();
+        /** Clue scrolls handed to Watson towards a master clue (bits: easy, medium, hard, elite). */
+        public int watsonHanded;
+        /** Whether elite and master caskets can be Mimics (toggled at Watson's strange casket; off by default as in OSRS). */
+        public boolean mimicEnabled;
+        /** The tier of the casket waiting for its Mimic fight, or "". */
+        public String mimicTier = "";
 
         // Transient combat state (game ticks)
         public boolean vengeance;
@@ -178,6 +187,12 @@ public final class SysState extends SavedData {
             n.put("PrayerScrolls", strings(prayerScrolls));
             n.put("Unlocks", strings(unlocks));
             n.putString("CluePuzzle", cluePuzzle);
+            CompoundTag stashTag = new CompoundTag();
+            stash.forEach(stashTag::putString);
+            n.put("Stash", stashTag);
+            n.putInt("WatsonHanded", watsonHanded);
+            n.putBoolean("MimicEnabled", mimicEnabled);
+            n.putString("MimicTier", mimicTier);
             if (cannonOut) {
                 CompoundTag cannon = new CompoundTag();
                 cannon.putInt("Steel", cannonSteel);
@@ -270,6 +285,14 @@ public final class SysState extends SavedData {
             readStrings(n.getList("PrayerScrolls", Tag.TAG_STRING), prayerScrolls);
             readStrings(n.getList("Unlocks", Tag.TAG_STRING), unlocks);
             cluePuzzle = n.getString("CluePuzzle");
+            stash.clear();
+            CompoundTag st = n.getCompound("Stash");
+            for (String k : st.getAllKeys()) {
+                stash.put(k, st.getString(k));
+            }
+            watsonHanded = n.getInt("WatsonHanded");
+            mimicEnabled = n.getBoolean("MimicEnabled");
+            mimicTier = n.getString("MimicTier");
             cannonOut = n.contains("Cannon");
             cannonSteel = n.getCompound("Cannon").getInt("Steel");
             cannonGranite = n.getCompound("Cannon").getInt("Granite");

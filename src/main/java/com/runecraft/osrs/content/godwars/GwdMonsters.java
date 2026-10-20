@@ -333,6 +333,8 @@ public final class GwdMonsters {
                             Drop.of("coins", 100 + lvl * 20, 500 + lvl * 80, 2),
                             Drop.of("bracelet_of_ethereum", 1, 1, Math.max(60, 400 - lvl * 2)), // approx
                             Drop.of("dragon_dagger", 1, 1, 400), // approx
+                            // OSRS: revenants drop revenant cave teleports (no longer a clue reward here). // approx rate
+                            Drop.of("revenant_cave_teleport", 1, 1, 40),
                             Drop.of("clue_scroll_elite", 1, 1, Math.max(150, 1000 - lvl * 6)))
                     .model(r.id()).size(0.7f, 1.8f, r.scale()).spawn(Region.WILDERNESS, 2, 1, 2));
         }

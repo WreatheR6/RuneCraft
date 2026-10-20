@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Treasure trail puzzles: puzzle boxes (sliding tile puzzles), light boxes (eight buttons, each toggling a
- * fixed set of the 25 lights; light them all) and Falo the Bard's songs on master clues.
+ * Treasure trail puzzles: puzzle boxes (5x5 sliding tile puzzles handed over by hard, elite and master clue NPCs) and
+ * light boxes (master clues: eight buttons, each toggling a fixed set of the 25 lights; light them all).
  */
 public final class CluePuzzles {
     public static final String PUZZLE_BOX = "puzzle_box";
@@ -19,9 +19,9 @@ public final class CluePuzzles {
     private CluePuzzles() {
     }
 
-    /** Side length of a tier's puzzle box: OSRS boxes are 5x5; medium clues use a 3x3 board (approx simplification). */
+    /** Side length of a tier's puzzle box: every OSRS puzzle box (hard, elite and master clues) is a 5x5 board. */
     public static int puzzleSize(Tier tier) {
-        return tier == Tier.MEDIUM ? 3 : 5;
+        return 5;
     }
 
     // ------------------------------------------------------------------ sliding puzzle
@@ -306,21 +306,4 @@ public final class CluePuzzles {
             return litCount() == LIGHTS;
         }
     }
-
-    // ------------------------------------------------------------------ Falo the Bard
-
-    /** A Falo the Bard step: the verse he sings and the item it names (all exist in the core catalog). */
-    public record Song(String item, String verse) {
-    }
-
-    /** Falo's songs (paraphrased) for master clues. */
-    public static final List<Song> SONGS = List.of(
-            new Song("abyssal_whip", "A lash of the deep, from a demon it fell; bring me the whip that the abyss knows well."),
-            new Song("dragon_scimitar", "A curved blade of red, from a monkey king's land; bring the dragon's own scimitar to my hand."),
-            new Song("dragon_defender", "Earned from the cyclops, a guard for the arm; the dragon defender keeps fighters from harm."),
-            new Song("amulet_of_glory", "Dipped in the fountain where heroes have been; an amulet of glory is what I would see."),
-            new Song("dragon_longsword", "Long is the blade and as red as the flame; a dragon longsword will add to your fame."),
-            new Song("rune_platebody", "Blue as the sky and as strong as a wall; a rune platebody, the heaviest of all."),
-            new Song("dragon_med_helm", "A helm made of dragon, the medium kind; bring it to Falo, and peace to my mind."),
-            new Song("granite_maul", "A hammer of stone from the gargoyle's lair; a granite maul, carried with care."));
 }

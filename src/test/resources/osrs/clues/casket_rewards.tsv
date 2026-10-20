@@ -1,0 +1,1070 @@
+# Treasure trail reward casket tables per roll (OSRS Wiki "Reward casket (tier)" pages, July 2026 dump; rarities are
+# per reward roll, as the wiki gives them, from the Mod Tide 2019 tables). Diffed by ClueRewardsTest.
+tier	section	name	id	min	max	noted	numerator	denominator
+beginner	unique	Mole slippers	mole_slippers	1	1		1	360
+beginner	unique	Frog slippers	frog_slippers	1	1		1	360
+beginner	unique	Bear feet	bear_feet	1	1		1	360
+beginner	unique	Demon feet	demon_feet	1	1		1	360
+beginner	unique	Jester cape	jester_cape	1	1		1	360
+beginner	unique	Shoulder parrot	shoulder_parrot	1	1		1	360
+beginner	unique	Monk's robe top (t)	monks_robe_top_t	1	1		1	360
+beginner	unique	Monk's robe (t)	monks_robe_t	1	1		1	360
+beginner	unique	Amulet of defence (t)	amulet_of_defence_t	1	1		1	360
+beginner	unique	Sandwich lady hat	sandwich_lady_hat	1	1		1	360
+beginner	unique	Sandwich lady top	sandwich_lady_top	1	1		1	360
+beginner	unique	Sandwich lady bottom	sandwich_lady_bottom	1	1		1	360
+beginner	unique	Rune scimitar ornament kit (guthix)	rune_scimitar_ornament_kit_guthix	1	1		1	360
+beginner	unique	Rune scimitar ornament kit (saradomin)	rune_scimitar_ornament_kit_saradomin	1	1		1	360
+beginner	unique	Rune scimitar ornament kit (zamorak)	rune_scimitar_ornament_kit_zamorak	1	1		1	360
+beginner	standard	Black 2h sword	black_2h_sword	1	1		11	8856
+beginner	standard	Black axe	black_axe	1	1		11	8856
+beginner	standard	Black battleaxe	black_battleaxe	1	1		11	8856
+beginner	standard	Black chainbody	black_chainbody	1	1		11	8856
+beginner	standard	Black dagger	black_dagger	1	1		11	8856
+beginner	standard	Black full helm	black_full_helm	1	1		11	8856
+beginner	standard	Black kiteshield	black_kiteshield	1	1		11	8856
+beginner	standard	Black longsword	black_longsword	1	1		11	8856
+beginner	standard	Black mace	black_mace	1	1		11	8856
+beginner	standard	Black med helm	black_med_helm	1	1		11	8856
+beginner	standard	Black pickaxe	black_pickaxe	1	1		11	8856
+beginner	standard	Black platebody	black_platebody	1	1		11	8856
+beginner	standard	Black plateskirt	black_plateskirt	1	1		11	8856
+beginner	standard	Black platelegs	black_platelegs	1	1		11	8856
+beginner	standard	Black sq shield	black_sq_shield	1	1		11	8856
+beginner	standard	Black scimitar	black_scimitar	1	1		11	8856
+beginner	standard	Black sword	black_sword	1	1		11	8856
+beginner	standard	Black warhammer	black_warhammer	1	1		11	8856
+beginner	standard	Shortbow	shortbow	1	1		11	492
+beginner	standard	Longbow	longbow	1	1		11	492
+beginner	standard	Oak shortbow	oak_shortbow	1	1		11	492
+beginner	standard	Oak longbow	oak_longbow	1	1		11	492
+beginner	standard	Iron pickaxe	iron_pickaxe	1	1		11	492
+beginner	standard	Staff of air	staff_of_air	1	1		11	492
+beginner	standard	Staff of water	staff_of_water	1	1		11	492
+beginner	standard	Staff of earth	staff_of_earth	1	1		11	492
+beginner	standard	Staff of fire	staff_of_fire	1	1		11	492
+beginner	standard	Steel full helm	steel_full_helm	1	1		11	492
+beginner	standard	Steel platebody	steel_platebody	1	1		11	492
+beginner	standard	Steel platelegs	steel_platelegs	1	1		11	492
+beginner	standard	Steel plateskirt	steel_plateskirt	1	1		11	492
+beginner	standard	Steel longsword	steel_longsword	1	1		11	492
+beginner	standard	Steel dagger	steel_dagger	1	1		11	492
+beginner	standard	Steel axe	steel_axe	1	1		11	492
+beginner	standard	Steel battleaxe	steel_battleaxe	1	1		11	492
+beginner	standard	Leather cowl	leather_cowl	1	1		11	492
+beginner	standard	Leather body	leather_body	1	1		11	492
+beginner	standard	Leather chaps	leather_chaps	1	1		11	492
+beginner	standard	Leather vambraces	leather_vambraces	1	1		11	492
+beginner	standard	Hardleather body	hard_leather_body	1	1		11	492
+beginner	standard	Blue wizard hat	blue_wizard_hat	1	1		11	492
+beginner	standard	Blue wizard robe	blue_wizard_robe	1	1		11	492
+beginner	standard	Wizard hat	wizard_hat	1	1		11	492
+beginner	standard	Black robe	black_robe	1	1		11	492
+beginner	standard	Air rune	air_rune	15	35		11	492
+beginner	standard	Mind rune	mind_rune	15	35		11	492
+beginner	standard	Water rune	water_rune	15	35		11	492
+beginner	standard	Earth rune	earth_rune	15	35		11	492
+beginner	standard	Fire rune	fire_rune	15	35		11	492
+beginner	standard	Body rune	body_rune	15	35		11	492
+beginner	standard	Chaos rune	chaos_rune	2	7		11	492
+beginner	standard	Nature rune	nature_rune	2	9		11	492
+beginner	standard	Law rune	law_rune	2	7		11	492
+beginner	standard	Bronze arrow	bronze_arrow	10	25		11	492
+beginner	standard	Iron arrow	iron_arrow	7	25		11	492
+beginner	standard	Cabbage	cabbage	5	9	noted	1	24
+beginner	standard	Shrimps	shrimps	5	14	noted	11	492
+beginner	standard	Sardine	sardine	5	17	noted	11	492
+beginner	standard	Herring	herring	5	9	noted	11	492
+easy	unique	Willow comp bow	willow_comp_bow	1	1		1	360
+easy	unique	Amulet of magic (t)	amulet_of_magic_t	1	1		1	360
+easy	unique	Team cape zero	team_cape_zero	1	1		1	5616
+easy	unique	Team cape i	team_cape_i	1	1		1	5616
+easy	unique	Team cape x	team_cape_x	1	1		1	5616
+easy	unique	Cape of skulls	cape_of_skulls	1	1		1	5616
+easy	unique	Golden chef's hat	golden_chef_hat	1	1		1	2808
+easy	unique	Golden apron	golden_apron	1	1		1	2808
+easy	unique	Wooden shield (g)	wooden_shield_g	1	1		1	1404
+easy	unique	Black full helm (t)	black_full_helm_t	1	1		1	1404
+easy	unique	Black platebody (t)	black_platebody_t	1	1		1	1404
+easy	unique	Black platelegs (t)	black_platelegs_t	1	1		1	1404
+easy	unique	Black plateskirt (t)	black_plateskirt_t	1	1		1	1404
+easy	unique	Black kiteshield (t)	black_kiteshield_t	1	1		1	1404
+easy	unique	Black full helm (g)	black_full_helm_g	1	1		1	1404
+easy	unique	Black platebody (g)	black_platebody_g	1	1		1	1404
+easy	unique	Black platelegs (g)	black_platelegs_g	1	1		1	1404
+easy	unique	Black plateskirt (g)	black_plateskirt_g	1	1		1	1404
+easy	unique	Black kiteshield (g)	black_kiteshield_g	1	1		1	1404
+easy	unique	Black shield (h1)	black_shield_h1	1	1		1	1404
+easy	unique	Black shield (h2)	black_shield_h2	1	1		1	1404
+easy	unique	Black shield (h3)	black_shield_h3	1	1		1	1404
+easy	unique	Black shield (h4)	black_shield_h4	1	1		1	1404
+easy	unique	Black shield (h5)	black_shield_h5	1	1		1	1404
+easy	unique	Black helm (h1)	black_helm_h1	1	1		1	1404
+easy	unique	Black helm (h2)	black_helm_h2	1	1		1	1404
+easy	unique	Black helm (h3)	black_helm_h3	1	1		1	1404
+easy	unique	Black helm (h4)	black_helm_h4	1	1		1	1404
+easy	unique	Black helm (h5)	black_helm_h5	1	1		1	1404
+easy	unique	Black platebody (h1)	black_platebody_h1	1	1		1	1404
+easy	unique	Black platebody (h2)	black_platebody_h2	1	1		1	1404
+easy	unique	Black platebody (h3)	black_platebody_h3	1	1		1	1404
+easy	unique	Black platebody (h4)	black_platebody_h4	1	1		1	1404
+easy	unique	Black platebody (h5)	black_platebody_h5	1	1		1	1404
+easy	unique	Steel full helm (t)	steel_full_helm_t	1	1		1	1404
+easy	unique	Steel platebody (t)	steel_platebody_t	1	1		1	1404
+easy	unique	Steel platelegs (t)	steel_platelegs_t	1	1		1	1404
+easy	unique	Steel plateskirt (t)	steel_plateskirt_t	1	1		1	1404
+easy	unique	Steel kiteshield (t)	steel_kiteshield_t	1	1		1	1404
+easy	unique	Steel full helm (g)	steel_full_helm_g	1	1		1	1404
+easy	unique	Steel platebody (g)	steel_platebody_g	1	1		1	1404
+easy	unique	Steel platelegs (g)	steel_platelegs_g	1	1		1	1404
+easy	unique	Steel plateskirt (g)	steel_plateskirt_g	1	1		1	1404
+easy	unique	Steel kiteshield (g)	steel_kiteshield_g	1	1		1	1404
+easy	unique	Iron full helm (t)	iron_full_helm_t	1	1		1	1404
+easy	unique	Iron platebody (t)	iron_platebody_t	1	1		1	1404
+easy	unique	Iron platelegs (t)	iron_platelegs_t	1	1		1	1404
+easy	unique	Iron plateskirt (t)	iron_plateskirt_t	1	1		1	1404
+easy	unique	Iron kiteshield (t)	iron_kiteshield_t	1	1		1	1404
+easy	unique	Iron full helm (g)	iron_full_helm_g	1	1		1	1404
+easy	unique	Iron platebody (g)	iron_platebody_g	1	1		1	1404
+easy	unique	Iron platelegs (g)	iron_platelegs_g	1	1		1	1404
+easy	unique	Iron plateskirt (g)	iron_plateskirt_g	1	1		1	1404
+easy	unique	Iron kiteshield (g)	iron_kiteshield_g	1	1		1	1404
+easy	unique	Bronze full helm (t)	bronze_full_helm_t	1	1		1	1404
+easy	unique	Bronze platebody (t)	bronze_platebody_t	1	1		1	1404
+easy	unique	Bronze platelegs (t)	bronze_platelegs_t	1	1		1	1404
+easy	unique	Bronze plateskirt (t)	bronze_plateskirt_t	1	1		1	1404
+easy	unique	Bronze kiteshield (t)	bronze_kiteshield_t	1	1		1	1404
+easy	unique	Bronze full helm (g)	bronze_full_helm_g	1	1		1	1404
+easy	unique	Bronze platebody (g)	bronze_platebody_g	1	1		1	1404
+easy	unique	Bronze platelegs (g)	bronze_platelegs_g	1	1		1	1404
+easy	unique	Bronze plateskirt (g)	bronze_plateskirt_g	1	1		1	1404
+easy	unique	Bronze kiteshield (g)	bronze_kiteshield_g	1	1		1	1404
+easy	unique	Studded body (g)	studded_body_g	1	1		1	1404
+easy	unique	Studded chaps (g)	studded_chaps_g	1	1		1	1404
+easy	unique	Studded body (t)	studded_body_t	1	1		1	1404
+easy	unique	Studded chaps (t)	studded_chaps_t	1	1		1	1404
+easy	unique	Leather body (g)	leather_body_g	1	1		1	1404
+easy	unique	Leather chaps (g)	leather_chaps_g	1	1		1	1404
+easy	unique	Blue wizard hat (g)	blue_wizard_hat_g	1	1		1	1404
+easy	unique	Blue wizard robe (g)	blue_wizard_robe_g	1	1		1	1404
+easy	unique	Blue skirt (g)	blue_skirt_g	1	1		1	1404
+easy	unique	Blue wizard hat (t)	blue_wizard_hat_t	1	1		1	1404
+easy	unique	Blue wizard robe (t)	blue_wizard_robe_t	1	1		1	1404
+easy	unique	Blue skirt (t)	blue_skirt_t	1	1		1	1404
+easy	unique	Black wizard hat (g)	black_wizard_hat_g	1	1		1	1404
+easy	unique	Black wizard robe (g)	black_wizard_robe_g	1	1		1	1404
+easy	unique	Black skirt (g)	black_skirt_g	1	1		1	1404
+easy	unique	Black wizard hat (t)	black_wizard_hat_t	1	1		1	1404
+easy	unique	Black wizard robe (t)	black_wizard_robe_t	1	1		1	1404
+easy	unique	Black skirt (t)	black_skirt_t	1	1		1	1404
+easy	unique	Monk's robe top (g)	monks_robe_top_g	1	1		1	14040
+easy	unique	Monk's robe (g)	monks_robe_g	1	1		1	14040
+easy	unique	Saradomin robe top	saradomin_robe_top	1	1		1	1404
+easy	unique	Saradomin robe legs	saradomin_robe_legs	1	1		1	1404
+easy	unique	Guthix robe top	guthix_robe_top	1	1		1	1404
+easy	unique	Guthix robe legs	guthix_robe_legs	1	1		1	1404
+easy	unique	Zamorak robe top	zamorak_robe_top	1	1		1	1404
+easy	unique	Zamorak robe legs	zamorak_robe_legs	1	1		1	1404
+easy	unique	Ancient robe top	ancient_robe_top	1	1		1	1404
+easy	unique	Ancient robe legs	ancient_robe_legs	1	1		1	1404
+easy	unique	Armadyl robe top	armadyl_robe_top	1	1		1	1404
+easy	unique	Armadyl robe legs	armadyl_robe_legs	1	1		1	1404
+easy	unique	Bandos robe top	bandos_robe_top	1	1		1	1404
+easy	unique	Bandos robe legs	bandos_robe_legs	1	1		1	1404
+easy	unique	Bob's red shirt	bobs_red_shirt	1	1		1	1404
+easy	unique	Bob's green shirt	bobs_green_shirt	1	1		1	1404
+easy	unique	Bob's blue shirt	bobs_blue_shirt	1	1		1	1404
+easy	unique	Bob's black shirt	bobs_black_shirt	1	1		1	1404
+easy	unique	Bob's purple shirt	bobs_purple_shirt	1	1		1	1404
+easy	unique	Highwayman mask	highwayman_mask	1	1		1	1404
+easy	unique	Blue beret	blue_beret	1	1		1	1404
+easy	unique	Black beret	black_beret	1	1		1	1404
+easy	unique	Red beret	red_beret	1	1		1	1404
+easy	unique	White beret	white_beret	1	1		1	1404
+easy	unique	A powdered wig	a_powdered_wig	1	1		1	1404
+easy	unique	Beanie	beanie	1	1		1	1404
+easy	unique	Imp mask	imp_mask	1	1		1	1404
+easy	unique	Goblin mask	goblin_mask	1	1		1	1404
+easy	unique	Sleeping cap	sleeping_cap	1	1		1	1404
+easy	unique	Flared trousers	flared_trousers	1	1		1	1404
+easy	unique	Pantaloons	pantaloons	1	1		1	1404
+easy	unique	Black cane	black_cane	1	1		1	1404
+easy	unique	Staff of bob the cat	staff_of_bob_the_cat	1	1		1	1404
+easy	unique	Red elegant shirt	red_elegant_shirt	1	1		1	2808
+easy	unique	Red elegant blouse	red_elegant_blouse	1	1		1	2808
+easy	unique	Red elegant legs	red_elegant_legs	1	1		1	2808
+easy	unique	Red elegant skirt	red_elegant_skirt	1	1		1	2808
+easy	unique	Green elegant shirt	green_elegant_shirt	1	1		1	2808
+easy	unique	Green elegant blouse	green_elegant_blouse	1	1		1	2808
+easy	unique	Green elegant legs	green_elegant_legs	1	1		1	2808
+easy	unique	Green elegant skirt	green_elegant_skirt	1	1		1	2808
+easy	unique	Blue elegant shirt	blue_elegant_shirt	1	1		1	2808
+easy	unique	Blue elegant blouse	blue_elegant_blouse	1	1		1	2808
+easy	unique	Blue elegant legs	blue_elegant_legs	1	1		1	2808
+easy	unique	Blue elegant skirt	blue_elegant_skirt	1	1		1	2808
+easy	unique	Amulet of power (t)	amulet_of_power_t	1	1		1	1404
+easy	unique	Ham joint	ham_joint	1	1		1	1404
+easy	unique	Rain bow	rain_bow	1	1		1	1404
+easy	standard	Black full helm	black_full_helm	1	1		1	36
+easy	standard	Black platebody	black_platebody	1	1		1	36
+easy	standard	Black platelegs	black_platelegs	1	1		1	36
+easy	standard	Black longsword	black_longsword	1	1		1	36
+easy	standard	Black battleaxe	black_battleaxe	1	1		1	36
+easy	standard	Black axe	black_axe	1	1		1	36
+easy	standard	Black dagger	black_dagger	1	1		1	36
+easy	standard	Steel pickaxe	steel_pickaxe	1	1		1	36
+easy	standard	Black pickaxe	black_pickaxe	1	1		1	36
+easy	standard	Coif	coif	1	1		1	36
+easy	standard	Studded body	studded_body	1	1		1	36
+easy	standard	Studded chaps	studded_chaps	1	1		1	36
+easy	standard	Willow shortbow	willow_shortbow	1	1		1	36
+easy	standard	Willow longbow	willow_longbow	1	1		1	40
+easy	standard	Staff of air	staff_of_air	1	1		1	36
+easy	standard	Amulet of magic	amulet_of_magic	1	1		1	40
+easy	standard	Air rune	air_rune	30	50		1	36
+easy	standard	Mind rune	mind_rune	30	50		1	36
+easy	standard	Water rune	water_rune	30	50		1	36
+easy	standard	Earth rune	earth_rune	30	50		1	36
+easy	standard	Fire rune	fire_rune	30	50		1	36
+easy	standard	Body rune	body_rune	30	50		1	36
+easy	standard	Chaos rune	chaos_rune	5	10		1	36
+easy	standard	Nature rune	nature_rune	5	10		1	36
+easy	standard	Law rune	law_rune	5	10		1	36
+easy	standard	Trout	trout	6	10	noted	1	36
+easy	standard	Salmon	salmon	6	10	noted	1	36
+easy	shared	Coins	coins	50	200		1	36
+easy	shared	Coins	coins	3000	7000		1	54
+easy	shared	Coins	coins	10000	15000		7	2160
+easy	shared	Coins	coins	3400	8200		1	1755
+easy	shared	Purple sweets	purple_sweets	2	6		1	36
+easy	shared	Purple sweets	purple_sweets	8	12		7	2160
+easy	shared	Red firelighter	red_firelighter	3	5		1	180
+easy	shared	Green firelighter	green_firelighter	3	5		1	180
+easy	shared	Blue firelighter	blue_firelighter	3	5		1	180
+easy	shared	Purple firelighter	purple_firelighter	3	5		1	180
+easy	shared	White firelighter	white_firelighter	3	5		1	180
+easy	shared	Holy blessing	holy_blessing	1	1		1	2160
+easy	shared	Unholy blessing	unholy_blessing	1	1		1	2160
+easy	shared	Peaceful blessing	peaceful_blessing	1	1		1	2160
+easy	shared	War blessing	war_blessing	1	1		1	2160
+easy	shared	Honourable blessing	honourable_blessing	1	1		1	2160
+easy	shared	Ancient blessing	ancient_blessing	1	1		1	2160
+easy	shared	Charge dragonstone jewellery scroll	charge_dragonstone_jewellery_scroll	5	15		7	3168
+easy	shared	Nardah teleport	nardah_teleport	5	15		7	3168
+easy	shared	Mos le'harmless teleport	mos_leharmless_teleport	5	15		7	3168
+easy	shared	Mort'ton teleport	mortton_teleport	5	15		7	3168
+easy	shared	Feldip hills teleport	feldip_hills_teleport	5	15		7	3168
+easy	shared	Lunar isle teleport	lunar_isle_teleport	5	15		7	3168
+easy	shared	Digsite teleport	digsite_teleport	5	15		7	3168
+easy	shared	Piscatoris teleport	piscatoris_teleport	5	15		7	3168
+easy	shared	Pest control teleport	pest_control_teleport	5	15		7	3168
+easy	shared	Tai bwo wannai teleport	tai_bwo_wannai_teleport	5	15		7	3168
+easy	shared	Lumberyard teleport	lumberyard_teleport	5	15		7	3168
+easy	shared	Iorwerth camp teleport	iorwerth_camp_teleport	5	15		7	3168
+easy	shared	Master scroll book (empty)	master_scroll_book_empty	1	1		1	792
+easy	shared	Saradomin page 1	saradomin_page_1	1	1		1	864
+easy	shared	Saradomin page 2	saradomin_page_2	1	1		1	864
+easy	shared	Saradomin page 3	saradomin_page_3	1	1		1	864
+easy	shared	Saradomin page 4	saradomin_page_4	1	1		1	864
+easy	shared	Zamorak page 1	zamorak_page_1	1	1		1	864
+easy	shared	Zamorak page 2	zamorak_page_2	1	1		1	864
+easy	shared	Zamorak page 3	zamorak_page_3	1	1		1	864
+easy	shared	Zamorak page 4	zamorak_page_4	1	1		1	864
+easy	shared	Guthix page 1	guthix_page_1	1	1		1	864
+easy	shared	Guthix page 2	guthix_page_2	1	1		1	864
+easy	shared	Guthix page 3	guthix_page_3	1	1		1	864
+easy	shared	Guthix page 4	guthix_page_4	1	1		1	864
+easy	shared	Bandos page 1	bandos_page_1	1	1		1	864
+easy	shared	Bandos page 2	bandos_page_2	1	1		1	864
+easy	shared	Bandos page 3	bandos_page_3	1	1		1	864
+easy	shared	Bandos page 4	bandos_page_4	1	1		1	864
+easy	shared	Armadyl page 1	armadyl_page_1	1	1		1	864
+easy	shared	Armadyl page 2	armadyl_page_2	1	1		1	864
+easy	shared	Armadyl page 3	armadyl_page_3	1	1		1	864
+easy	shared	Armadyl page 4	armadyl_page_4	1	1		1	864
+easy	shared	Ancient page 1	ancient_page_1	1	1		1	864
+easy	shared	Ancient page 2	ancient_page_2	1	1		1	864
+easy	shared	Ancient page 3	ancient_page_3	1	1		1	864
+easy	shared	Ancient page 4	ancient_page_4	1	1		1	864
+medium	unique	Gnomish firelighter	gnomish_firelighter	1	1		1	341
+medium	unique	Yew comp bow	yew_comp_bow	1	1		1	341
+medium	unique	Strength amulet (t)	amulet_of_strength_t	1	1		1	341
+medium	unique	Ranger boots	ranger_boots	1	1		1	1133
+medium	unique	Wizard boots	wizard_boots	1	1		1	1133
+medium	unique	Holy sandals	holy_sandals	1	1		1	1133
+medium	unique	Spiked manacles	spiked_manacles	1	1		1	1133
+medium	unique	Climbing boots (g)	climbing_boots_g	1	1		1	1133
+medium	unique	Adamant full helm (t)	adamant_full_helm_t	1	1		1	1133
+medium	unique	Adamant platebody (t)	adamant_platebody_t	1	1		1	1133
+medium	unique	Adamant platelegs (t)	adamant_platelegs_t	1	1		1	1133
+medium	unique	Adamant plateskirt (t)	adamant_plateskirt_t	1	1		1	1133
+medium	unique	Adamant kiteshield (t)	adamant_kiteshield_t	1	1		1	1133
+medium	unique	Adamant full helm (g)	adamant_full_helm_g	1	1		1	1133
+medium	unique	Adamant platebody (g)	adamant_platebody_g	1	1		1	1133
+medium	unique	Adamant platelegs (g)	adamant_platelegs_g	1	1		1	1133
+medium	unique	Adamant plateskirt (g)	adamant_plateskirt_g	1	1		1	1133
+medium	unique	Adamant kiteshield (g)	adamant_kiteshield_g	1	1		1	1133
+medium	unique	Adamant shield (h1)	adamant_shield_h1	1	1		1	1133
+medium	unique	Adamant shield (h2)	adamant_shield_h2	1	1		1	1133
+medium	unique	Adamant shield (h3)	adamant_shield_h3	1	1		1	1133
+medium	unique	Adamant shield (h4)	adamant_shield_h4	1	1		1	1133
+medium	unique	Adamant shield (h5)	adamant_shield_h5	1	1		1	1133
+medium	unique	Adamant helm (h1)	adamant_helm_h1	1	1		1	1133
+medium	unique	Adamant helm (h2)	adamant_helm_h2	1	1		1	1133
+medium	unique	Adamant helm (h3)	adamant_helm_h3	1	1		1	1133
+medium	unique	Adamant helm (h4)	adamant_helm_h4	1	1		1	1133
+medium	unique	Adamant helm (h5)	adamant_helm_h5	1	1		1	1133
+medium	unique	Adamant platebody (h1)	adamant_platebody_h1	1	1		1	1133
+medium	unique	Adamant platebody (h2)	adamant_platebody_h2	1	1		1	1133
+medium	unique	Adamant platebody (h3)	adamant_platebody_h3	1	1		1	1133
+medium	unique	Adamant platebody (h4)	adamant_platebody_h4	1	1		1	1133
+medium	unique	Adamant platebody (h5)	adamant_platebody_h5	1	1		1	1133
+medium	unique	Mithril full helm (g)	mithril_full_helm_g	1	1		1	1133
+medium	unique	Mithril platebody (g)	mithril_platebody_g	1	1		1	1133
+medium	unique	Mithril platelegs (g)	mithril_platelegs_g	1	1		1	1133
+medium	unique	Mithril plateskirt (g)	mithril_plateskirt_g	1	1		1	1133
+medium	unique	Mithril kiteshield (g)	mithril_kiteshield_g	1	1		1	1133
+medium	unique	Mithril full helm (t)	mithril_full_helm_t	1	1		1	1133
+medium	unique	Mithril platebody (t)	mithril_platebody_t	1	1		1	1133
+medium	unique	Mithril platelegs (t)	mithril_platelegs_t	1	1		1	1133
+medium	unique	Mithril plateskirt (t)	mithril_plateskirt_t	1	1		1	1133
+medium	unique	Mithril kiteshield (t)	mithril_kiteshield_t	1	1		1	1133
+medium	unique	Green d'hide body (g)	green_dhide_body_g	1	1		1	1133
+medium	unique	Green d'hide body (t)	green_dhide_body_t	1	1		1	1133
+medium	unique	Green d'hide chaps (g)	green_dhide_chaps_g	1	1		1	1133
+medium	unique	Green d'hide chaps (t)	green_dhide_chaps_t	1	1		1	1133
+medium	unique	Saradomin mitre	saradomin_mitre	1	1		1	1133
+medium	unique	Saradomin cloak	saradomin_cloak	1	1		1	1133
+medium	unique	Guthix mitre	guthix_mitre	1	1		1	1133
+medium	unique	Guthix cloak	guthix_cloak	1	1		1	1133
+medium	unique	Zamorak mitre	zamorak_mitre	1	1		1	1133
+medium	unique	Zamorak cloak	zamorak_cloak	1	1		1	1133
+medium	unique	Ancient mitre	ancient_mitre	1	1		1	1133
+medium	unique	Ancient cloak	ancient_cloak	1	1		1	1133
+medium	unique	Ancient stole	ancient_stole	1	1		1	1133
+medium	unique	Ancient crozier	ancient_crozier	1	1		1	1133
+medium	unique	Armadyl mitre	armadyl_mitre	1	1		1	1133
+medium	unique	Armadyl cloak	armadyl_cloak	1	1		1	1133
+medium	unique	Armadyl stole	armadyl_stole	1	1		1	1133
+medium	unique	Armadyl crozier	armadyl_crozier	1	1		1	1133
+medium	unique	Bandos mitre	bandos_mitre	1	1		1	1133
+medium	unique	Bandos cloak	bandos_cloak	1	1		1	1133
+medium	unique	Bandos stole	bandos_stole	1	1		1	1133
+medium	unique	Bandos crozier	bandos_crozier	1	1		1	1133
+medium	unique	Red boater	red_boater	1	1		1	1133
+medium	unique	Green boater	green_boater	1	1		1	1133
+medium	unique	Orange boater	orange_boater	1	1		1	1133
+medium	unique	Black boater	black_boater	1	1		1	1133
+medium	unique	Blue boater	blue_boater	1	1		1	1133
+medium	unique	Pink boater	pink_boater	1	1		1	1133
+medium	unique	Purple boater	purple_boater	1	1		1	1133
+medium	unique	White boater	white_boater	1	1		1	1133
+medium	unique	Red headband	red_headband	1	1		1	1133
+medium	unique	Black headband	black_headband	1	1		1	1133
+medium	unique	Brown headband	brown_headband	1	1		1	1133
+medium	unique	White headband	white_headband	1	1		1	1133
+medium	unique	Blue headband	blue_headband	1	1		1	1133
+medium	unique	Gold headband	gold_headband	1	1		1	1133
+medium	unique	Pink headband	pink_headband	1	1		1	1133
+medium	unique	Green headband	green_headband	1	1		1	1133
+medium	unique	Crier hat	crier_hat	1	1		1	1133
+medium	unique	Crier coat	crier_coat	1	1		1	1133
+medium	unique	Crier bell	crier_bell	1	1		1	1133
+medium	unique	Adamant cane	adamant_cane	1	1		1	1133
+medium	unique	Arceuus banner	arceuus_banner	1	1		1	1133
+medium	unique	Piscarilius banner	piscarilius_banner	1	1		1	1133
+medium	unique	Hosidius banner	hosidius_banner	1	1		1	1133
+medium	unique	Shayzien banner	shayzien_banner	1	1		1	1133
+medium	unique	Lovakengj banner	lovakengj_banner	1	1		1	1133
+medium	unique	Cabbage round shield	cabbage_round_shield	1	1		1	1133
+medium	unique	Black unicorn mask	black_unicorn_mask	1	1		1	2266
+medium	unique	White unicorn mask	white_unicorn_mask	1	1		1	2266
+medium	unique	Cat mask	cat_mask	1	1		1	1133
+medium	unique	Penguin mask	penguin_mask	1	1		1	1133
+medium	unique	Leprechaun hat	leprechaun_hat	1	1		1	1133
+medium	unique	Black leprechaun hat	black_leprechaun_hat	1	1		1	1133
+medium	unique	Wolf mask	wolf_mask	1	1		1	1133
+medium	unique	Wolf cloak	wolf_cloak	1	1		1	1133
+medium	unique	Purple elegant shirt	purple_elegant_shirt	1	1		1	2266
+medium	unique	Purple elegant blouse	purple_elegant_blouse	1	1		1	2266
+medium	unique	Purple elegant legs	purple_elegant_legs	1	1		1	2266
+medium	unique	Purple elegant skirt	purple_elegant_skirt	1	1		1	2266
+medium	unique	Black elegant shirt	black_elegant_shirt	1	1		1	2266
+medium	unique	White elegant blouse	white_elegant_blouse	1	1		1	2266
+medium	unique	Black elegant legs	black_elegant_legs	1	1		1	2266
+medium	unique	White elegant skirt	white_elegant_skirt	1	1		1	2266
+medium	unique	Pink elegant shirt	pink_elegant_shirt	1	1		1	2266
+medium	unique	Pink elegant blouse	pink_elegant_blouse	1	1		1	2266
+medium	unique	Pink elegant legs	pink_elegant_legs	1	1		1	2266
+medium	unique	Pink elegant skirt	pink_elegant_skirt	1	1		1	2266
+medium	unique	Gold elegant shirt	gold_elegant_shirt	1	1		1	2266
+medium	unique	Gold elegant blouse	gold_elegant_blouse	1	1		1	2266
+medium	unique	Gold elegant legs	gold_elegant_legs	1	1		1	2266
+medium	unique	Gold elegant skirt	gold_elegant_skirt	1	1		1	2266
+medium	standard	Adamant full helm	adamant_full_helm	1	1		10	341
+medium	standard	Adamant platebody	adamant_platebody	1	1		10	341
+medium	standard	Adamant platelegs	adamant_platelegs	1	1		10	341
+medium	standard	Adamant longsword	adamant_longsword	1	1		10	341
+medium	standard	Adamant dagger	adamant_dagger	1	1		10	341
+medium	standard	Adamant battleaxe	adamant_battleaxe	1	1		10	341
+medium	standard	Adamant axe	adamant_axe	1	1		10	341
+medium	standard	Adamant pickaxe	adamant_pickaxe	1	1		10	341
+medium	standard	Green d'hide body	green_dhide_body	1	1		10	341
+medium	standard	Green d'hide chaps	green_dhide_chaps	1	1		10	341
+medium	standard	Yew shortbow	yew_shortbow	1	1		10	341
+medium	standard	Yew longbow	yew_longbow	1	1		9	341
+medium	standard	Fire battlestaff	fire_battlestaff	1	1		10	341
+medium	standard	Amulet of power	amulet_of_power	1	1		9	341
+medium	standard	Air rune	air_rune	50	100		10	341
+medium	standard	Mind rune	mind_rune	50	100		10	341
+medium	standard	Water rune	water_rune	50	100		10	341
+medium	standard	Earth rune	earth_rune	50	100		10	341
+medium	standard	Fire rune	fire_rune	50	100		10	341
+medium	standard	Chaos rune	chaos_rune	10	20		10	341
+medium	standard	Nature rune	nature_rune	10	20		10	341
+medium	standard	Law rune	law_rune	10	20		10	341
+medium	standard	Death rune	death_rune	10	20		10	341
+medium	standard	Lobster	lobster	8	12	noted	10	341
+medium	standard	Swordfish	swordfish	8	12	noted	10	341
+medium	shared	Coins	coins	200	1000		10	341
+medium	shared	Coins	coins	10000	15000		7	682
+medium	shared	Purple sweets	purple_sweets	5	10		10	341
+medium	shared	Purple sweets	purple_sweets	8	12		7	682
+medium	shared	Red firelighter	red_firelighter	4	10		9	1705
+medium	shared	Green firelighter	green_firelighter	4	10		9	1705
+medium	shared	Blue firelighter	blue_firelighter	4	10		9	1705
+medium	shared	Purple firelighter	purple_firelighter	4	10		9	1705
+medium	shared	White firelighter	white_firelighter	4	10		9	1705
+medium	shared	Holy blessing	holy_blessing	1	1		1	682
+medium	shared	Unholy blessing	unholy_blessing	1	1		1	682
+medium	shared	Peaceful blessing	peaceful_blessing	1	1		1	682
+medium	shared	War blessing	war_blessing	1	1		1	682
+medium	shared	Honourable blessing	honourable_blessing	1	1		1	682
+medium	shared	Ancient blessing	ancient_blessing	1	1		1	682
+medium	shared	Charge dragonstone jewellery scroll	charge_dragonstone_jewellery_scroll	5	15		35	15004
+medium	shared	Nardah teleport	nardah_teleport	5	15		35	15004
+medium	shared	Mos le'harmless teleport	mos_leharmless_teleport	5	15		35	15004
+medium	shared	Mort'ton teleport	mortton_teleport	5	15		35	15004
+medium	shared	Feldip hills teleport	feldip_hills_teleport	5	15		35	15004
+medium	shared	Lunar isle teleport	lunar_isle_teleport	5	15		35	15004
+medium	shared	Digsite teleport	digsite_teleport	5	15		35	15004
+medium	shared	Piscatoris teleport	piscatoris_teleport	5	15		35	15004
+medium	shared	Pest control teleport	pest_control_teleport	5	15		35	15004
+medium	shared	Tai bwo wannai teleport	tai_bwo_wannai_teleport	5	15		35	15004
+medium	shared	Lumberyard teleport	lumberyard_teleport	5	15		35	15004
+medium	shared	Iorwerth camp teleport	iorwerth_camp_teleport	5	15		35	15004
+medium	shared	Master scroll book (empty)	master_scroll_book_empty	1	1		5	3751
+medium	shared	Saradomin page 1	saradomin_page_1	1	1		5	4092
+medium	shared	Saradomin page 2	saradomin_page_2	1	1		5	4092
+medium	shared	Saradomin page 3	saradomin_page_3	1	1		5	4092
+medium	shared	Saradomin page 4	saradomin_page_4	1	1		5	4092
+medium	shared	Zamorak page 1	zamorak_page_1	1	1		5	4092
+medium	shared	Zamorak page 2	zamorak_page_2	1	1		5	4092
+medium	shared	Zamorak page 3	zamorak_page_3	1	1		5	4092
+medium	shared	Zamorak page 4	zamorak_page_4	1	1		5	4092
+medium	shared	Guthix page 1	guthix_page_1	1	1		5	4092
+medium	shared	Guthix page 2	guthix_page_2	1	1		5	4092
+medium	shared	Guthix page 3	guthix_page_3	1	1		5	4092
+medium	shared	Guthix page 4	guthix_page_4	1	1		5	4092
+medium	shared	Bandos page 1	bandos_page_1	1	1		5	4092
+medium	shared	Bandos page 2	bandos_page_2	1	1		5	4092
+medium	shared	Bandos page 3	bandos_page_3	1	1		5	4092
+medium	shared	Bandos page 4	bandos_page_4	1	1		5	4092
+medium	shared	Armadyl page 1	armadyl_page_1	1	1		5	4092
+medium	shared	Armadyl page 2	armadyl_page_2	1	1		5	4092
+medium	shared	Armadyl page 3	armadyl_page_3	1	1		5	4092
+medium	shared	Armadyl page 4	armadyl_page_4	1	1		5	4092
+medium	shared	Ancient page 1	ancient_page_1	1	1		5	4092
+medium	shared	Ancient page 2	ancient_page_2	1	1		5	4092
+medium	shared	Ancient page 3	ancient_page_3	1	1		5	4092
+medium	shared	Ancient page 4	ancient_page_4	1	1		5	4092
+hard	unique	Magic comp bow	magic_comp_bow	1	1		6	1625
+hard	unique	Amulet of glory (t4)	amulet_of_glory_t_4	1	1		1	1625
+hard	unique	Robin hood hat	robin_hood_hat	1	1		1	1625
+hard	unique	Enchanted hat	enchanted_hat	1	1		1	1625
+hard	unique	Enchanted top	enchanted_top	1	1		1	1625
+hard	unique	Enchanted robe	enchanted_robe	1	1		1	1625
+hard	unique	Dragon boots ornament kit	dragon_boots_ornament_kit	1	1		1	1625
+hard	unique	Rune full helm (t)	rune_full_helm_t	1	1		1	1625
+hard	unique	Rune platebody (t)	rune_platebody_t	1	1		1	1625
+hard	unique	Rune platelegs (t)	rune_platelegs_t	1	1		1	1625
+hard	unique	Rune plateskirt (t)	rune_plateskirt_t	1	1		1	1625
+hard	unique	Rune kiteshield (t)	rune_kiteshield_t	1	1		1	1625
+hard	unique	Rune full helm (g)	rune_full_helm_g	1	1		1	1625
+hard	unique	Rune platebody (g)	rune_platebody_g	1	1		1	1625
+hard	unique	Rune platelegs (g)	rune_platelegs_g	1	1		1	1625
+hard	unique	Rune plateskirt (g)	rune_plateskirt_g	1	1		1	1625
+hard	unique	Rune kiteshield (g)	rune_kiteshield_g	1	1		1	1625
+hard	unique	Rune shield (h1)	rune_shield_h1	1	1		1	1625
+hard	unique	Rune shield (h2)	rune_shield_h2	1	1		1	1625
+hard	unique	Rune shield (h3)	rune_shield_h3	1	1		1	1625
+hard	unique	Rune shield (h4)	rune_shield_h4	1	1		1	1625
+hard	unique	Rune shield (h5)	rune_shield_h5	1	1		1	1625
+hard	unique	Rune helm (h1)	rune_helm_h1	1	1		1	1625
+hard	unique	Rune helm (h2)	rune_helm_h2	1	1		1	1625
+hard	unique	Rune helm (h3)	rune_helm_h3	1	1		1	1625
+hard	unique	Rune helm (h4)	rune_helm_h4	1	1		1	1625
+hard	unique	Rune helm (h5)	rune_helm_h5	1	1		1	1625
+hard	unique	Rune platebody (h1)	rune_platebody_h1	1	1		1	8125
+hard	unique	Rune platebody (h2)	rune_platebody_h2	1	1		1	8125
+hard	unique	Rune platebody (h3)	rune_platebody_h3	1	1		1	8125
+hard	unique	Rune platebody (h4)	rune_platebody_h4	1	1		1	8125
+hard	unique	Rune platebody (h5)	rune_platebody_h5	1	1		1	8125
+hard	unique	Zamorak full helm	zamorak_full_helm	1	1		1	1625
+hard	unique	Zamorak platebody	zamorak_platebody	1	1		1	1625
+hard	unique	Zamorak platelegs	zamorak_platelegs	1	1		1	1625
+hard	unique	Zamorak plateskirt	zamorak_plateskirt	1	1		1	1625
+hard	unique	Zamorak kiteshield	zamorak_kiteshield	1	1		1	1625
+hard	unique	Guthix full helm	guthix_full_helm	1	1		1	1625
+hard	unique	Guthix platebody	guthix_platebody	1	1		1	1625
+hard	unique	Guthix platelegs	guthix_platelegs	1	1		1	1625
+hard	unique	Guthix plateskirt	guthix_plateskirt	1	1		1	1625
+hard	unique	Guthix kiteshield	guthix_kiteshield	1	1		1	1625
+hard	unique	Saradomin full helm	saradomin_full_helm	1	1		1	1625
+hard	unique	Saradomin platebody	saradomin_platebody	1	1		1	1625
+hard	unique	Saradomin platelegs	saradomin_platelegs	1	1		1	1625
+hard	unique	Saradomin plateskirt	saradomin_plateskirt	1	1		1	1625
+hard	unique	Saradomin kiteshield	saradomin_kiteshield	1	1		1	1625
+hard	unique	Ancient full helm	ancient_full_helm	1	1		1	1625
+hard	unique	Ancient platebody	ancient_platebody	1	1		1	1625
+hard	unique	Ancient platelegs	ancient_platelegs	1	1		1	1625
+hard	unique	Ancient plateskirt	ancient_plateskirt	1	1		1	1625
+hard	unique	Ancient kiteshield	ancient_kiteshield	1	1		1	1625
+hard	unique	Armadyl full helm	armadyl_full_helm	1	1		1	1625
+hard	unique	Armadyl platebody	armadyl_platebody	1	1		1	1625
+hard	unique	Armadyl platelegs	armadyl_platelegs	1	1		1	1625
+hard	unique	Armadyl plateskirt	armadyl_plateskirt	1	1		1	1625
+hard	unique	Armadyl kiteshield	armadyl_kiteshield	1	1		1	1625
+hard	unique	Bandos full helm	bandos_full_helm	1	1		1	1625
+hard	unique	Bandos platebody	bandos_platebody	1	1		1	1625
+hard	unique	Bandos platelegs	bandos_platelegs	1	1		1	1625
+hard	unique	Bandos plateskirt	bandos_plateskirt	1	1		1	1625
+hard	unique	Bandos kiteshield	bandos_kiteshield	1	1		1	1625
+hard	unique	Red d'hide body (g)	red_dhide_body_g	1	1		1	1625
+hard	unique	Red d'hide body (t)	red_dhide_body_t	1	1		1	1625
+hard	unique	Red d'hide chaps (g)	red_dhide_chaps_g	1	1		1	1625
+hard	unique	Red d'hide chaps (t)	red_dhide_chaps_t	1	1		1	1625
+hard	unique	Blue d'hide body (g)	blue_dhide_body_g	1	1		1	1625
+hard	unique	Blue d'hide body (t)	blue_dhide_body_t	1	1		1	1625
+hard	unique	Blue d'hide chaps (g)	blue_dhide_chaps_g	1	1		1	1625
+hard	unique	Blue d'hide chaps (t)	blue_dhide_chaps_t	1	1		1	1625
+hard	unique	Saradomin coif	saradomin_coif	1	1		1	1625
+hard	unique	Saradomin d'hide body	saradomin_dhide_body	1	1		1	1625
+hard	unique	Saradomin chaps	saradomin_chaps	1	1		1	1625
+hard	unique	Saradomin bracers	saradomin_bracers	1	1		1	1625
+hard	unique	Saradomin d'hide boots	saradomin_dhide_boots	1	1		1	1625
+hard	unique	Saradomin d'hide shield	saradomin_dhide_shield	1	1		1	9750
+hard	unique	Guthix coif	guthix_coif	1	1		1	1625
+hard	unique	Guthix d'hide body	guthix_dhide_body	1	1		1	1625
+hard	unique	Guthix chaps	guthix_chaps	1	1		1	1625
+hard	unique	Guthix bracers	guthix_bracers	1	1		1	1625
+hard	unique	Guthix d'hide boots	guthix_dhide_boots	1	1		1	1625
+hard	unique	Guthix d'hide shield	guthix_dhide_shield	1	1		1	9750
+hard	unique	Zamorak coif	zamorak_coif	1	1		1	1625
+hard	unique	Zamorak d'hide body	zamorak_dhide_body	1	1		1	1625
+hard	unique	Zamorak chaps	zamorak_chaps	1	1		1	1625
+hard	unique	Zamorak bracers	zamorak_bracers	1	1		1	1625
+hard	unique	Zamorak d'hide boots	zamorak_dhide_boots	1	1		1	1625
+hard	unique	Zamorak d'hide shield	zamorak_dhide_shield	1	1		1	9750
+hard	unique	Bandos coif	bandos_coif	1	1		1	1625
+hard	unique	Bandos d'hide body	bandos_dhide_body	1	1		1	1625
+hard	unique	Bandos chaps	bandos_chaps	1	1		1	1625
+hard	unique	Bandos bracers	bandos_bracers	1	1		1	1625
+hard	unique	Bandos d'hide boots	bandos_dhide_boots	1	1		1	1625
+hard	unique	Bandos d'hide shield	bandos_dhide_shield	1	1		1	9750
+hard	unique	Armadyl coif	armadyl_coif	1	1		1	1625
+hard	unique	Armadyl d'hide body	armadyl_dhide_body	1	1		1	1625
+hard	unique	Armadyl chaps	armadyl_chaps	1	1		1	1625
+hard	unique	Armadyl bracers	armadyl_bracers	1	1		1	1625
+hard	unique	Armadyl d'hide boots	armadyl_dhide_boots	1	1		1	1625
+hard	unique	Armadyl d'hide shield	armadyl_dhide_shield	1	1		1	9750
+hard	unique	Ancient coif	ancient_coif	1	1		1	1625
+hard	unique	Ancient d'hide body	ancient_dhide_body	1	1		1	1625
+hard	unique	Ancient chaps	ancient_chaps	1	1		1	1625
+hard	unique	Ancient bracers	ancient_bracers	1	1		1	1625
+hard	unique	Ancient d'hide boots	ancient_dhide_boots	1	1		1	1625
+hard	unique	Ancient d'hide shield	ancient_dhide_shield	1	1		1	9750
+hard	unique	Saradomin stole	saradomin_stole	1	1		1	1625
+hard	unique	Saradomin crozier	saradomin_crozier	1	1		1	1625
+hard	unique	Guthix stole	guthix_stole	1	1		1	1625
+hard	unique	Guthix crozier	guthix_crozier	1	1		1	1625
+hard	unique	Zamorak stole	zamorak_stole	1	1		1	1625
+hard	unique	Zamorak crozier	zamorak_crozier	1	1		1	1625
+hard	unique	Zombie head (Treasure Trails)	zombie_head_tt	1	1		1	1625
+hard	unique	Cyclops head	cyclops_head	1	1		1	1625
+hard	unique	Pirate's hat	pirate_hat	1	1		1	1625
+hard	unique	Red cavalier	red_cavalier	1	1		1	1625
+hard	unique	White cavalier	white_cavalier	1	1		1	1625
+hard	unique	Navy cavalier	navy_cavalier	1	1		1	1625
+hard	unique	Tan cavalier	tan_cavalier	1	1		1	1625
+hard	unique	Dark cavalier	dark_cavalier	1	1		1	1625
+hard	unique	Black cavalier	black_cavalier	1	1		1	1625
+hard	unique	Pith helmet	pith_helmet	1	1		1	1625
+hard	unique	Explorer backpack	explorer_backpack	1	1		1	1625
+hard	unique	Green dragon mask	green_dragon_mask	1	1		1	1625
+hard	unique	Blue dragon mask	blue_dragon_mask	1	1		1	1625
+hard	unique	Red dragon mask	red_dragon_mask	1	1		1	1625
+hard	unique	Black dragon mask	black_dragon_mask	1	1		1	1625
+hard	unique	Nunchaku	nunchaku	1	1		1	1625
+hard	unique	Rune cane	rune_cane	1	1		1	1625
+hard	unique	Dual sai	dual_sai	1	1		1	1625
+hard	unique	Thieving bag	thieving_bag	1	1		1	1625
+hard	unique	Rune defender ornament kit	rune_defender_ornament_kit	1	1		1	1625
+hard	unique	Berserker necklace ornament kit	berserker_necklace_ornament_kit	1	1		1	1625
+hard	unique	Tzhaar-ket-om ornament kit	tzhaar_ket_om_ornament_kit	1	1		1	1625
+hard	mega	Super energy(4)	super_energy	15	15	noted	1	16250
+hard	mega	Super restore(4)	super_restore	15	15	noted	1	16250
+hard	mega	Antifire potion(4)	antifire_potion	15	15	noted	1	16250
+hard	mega	Super attack(4)	super_attack	5	5	noted	1	16250
+hard	mega	Super strength(4)	super_strength	5	5	noted	1	16250
+hard	mega	Super defence(4)	super_defence	5	5	noted	1	16250
+hard	mega	Gilded full helm	gilded_full_helm	1	1		1	35750
+hard	mega	Gilded platebody	gilded_platebody	1	1		1	35750
+hard	mega	Gilded platelegs	gilded_platelegs	1	1		1	35750
+hard	mega	Gilded plateskirt	gilded_plateskirt	1	1		1	35750
+hard	mega	Gilded kiteshield	gilded_kiteshield	1	1		1	35750
+hard	mega	Gilded med helm	gilded_med_helm	1	1		1	35750
+hard	mega	Gilded chainbody	gilded_chainbody	1	1		1	35750
+hard	mega	Gilded sq shield	gilded_sq_shield	1	1		1	35750
+hard	mega	Gilded 2h sword	gilded_2h_sword	1	1		1	35750
+hard	mega	Gilded spear	gilded_spear	1	1		1	35750
+hard	mega	Gilded hasta	gilded_hasta	1	1		1	35750
+hard	mega	3rd age full helmet	3rd_age_full_helmet	1	1		1	211250
+hard	mega	3rd age platebody	3rd_age_platebody	1	1		1	211250
+hard	mega	3rd age platelegs	3rd_age_platelegs	1	1		1	211250
+hard	mega	3rd age plateskirt	3rd_age_plateskirt	1	1		1	211250
+hard	mega	3rd age kiteshield	3rd_age_kiteshield	1	1		1	211250
+hard	mega	3rd age range coif	3rd_age_range_coif	1	1		1	211250
+hard	mega	3rd age range top	3rd_age_range_top	1	1		1	211250
+hard	mega	3rd age range legs	3rd_age_range_legs	1	1		1	211250
+hard	mega	3rd age vambraces	3rd_age_vambraces	1	1		1	211250
+hard	mega	3rd age mage hat	3rd_age_mage_hat	1	1		1	211250
+hard	mega	3rd age robe top	3rd_age_robe_top	1	1		1	211250
+hard	mega	3rd age robe	3rd_age_robe	1	1		1	211250
+hard	mega	3rd age amulet	3rd_age_amulet	1	1		1	211250
+hard	standard	Rune full helm	rune_full_helm	1	1		12	325
+hard	standard	Rune platebody	rune_platebody	1	1		12	325
+hard	standard	Rune platelegs	rune_platelegs	1	1		12	325
+hard	standard	Rune plateskirt	rune_plateskirt	1	1		12	325
+hard	standard	Rune kiteshield	rune_kiteshield	1	1		12	325
+hard	standard	Rune longsword	rune_longsword	1	1		12	325
+hard	standard	Rune dagger	rune_dagger	1	1		12	325
+hard	standard	Rune battleaxe	rune_battleaxe	1	1		12	325
+hard	standard	Rune axe	rune_axe	1	1		12	325
+hard	standard	Rune pickaxe	rune_pickaxe	1	1		12	325
+hard	standard	Black d'hide body	black_dhide_body	1	1		12	325
+hard	standard	Black d'hide chaps	black_dhide_chaps	1	1		12	325
+hard	standard	Magic shortbow	magic_shortbow	1	1		12	325
+hard	standard	Magic longbow	magic_longbow	1	1		54	1625
+hard	standard	Nature rune	nature_rune	30	50		12	325
+hard	standard	Law rune	law_rune	30	50		12	325
+hard	standard	Blood rune	blood_rune	20	30		12	325
+hard	standard	Lobster	lobster	12	15	noted	12	325
+hard	standard	Shark	shark	12	15	noted	12	325
+hard	shared	Coins	coins	1000	5000		12	325
+hard	shared	Coins	coins	10000	15000		21	1625
+hard	shared	Purple sweets	purple_sweets	7	15		12	325
+hard	shared	Purple sweets	purple_sweets	8	12		21	1625
+hard	shared	Red firelighter	red_firelighter	9	15		12	1625
+hard	shared	Green firelighter	green_firelighter	9	15		12	1625
+hard	shared	Blue firelighter	blue_firelighter	9	15		12	1625
+hard	shared	Purple firelighter	purple_firelighter	9	15		12	1625
+hard	shared	White firelighter	white_firelighter	9	15		12	1625
+hard	shared	Holy blessing	holy_blessing	1	1		3	1625
+hard	shared	Unholy blessing	unholy_blessing	1	1		3	1625
+hard	shared	Peaceful blessing	peaceful_blessing	1	1		3	1625
+hard	shared	War blessing	war_blessing	1	1		3	1625
+hard	shared	Honourable blessing	honourable_blessing	1	1		3	1625
+hard	shared	Ancient blessing	ancient_blessing	1	1		3	1625
+hard	shared	Charge dragonstone jewellery scroll	charge_dragonstone_jewellery_scroll	5	15		21	7150
+hard	shared	Nardah teleport	nardah_teleport	5	15		21	7150
+hard	shared	Mos le'harmless teleport	mos_leharmless_teleport	5	15		21	7150
+hard	shared	Mort'ton teleport	mortton_teleport	5	15		21	7150
+hard	shared	Feldip hills teleport	feldip_hills_teleport	5	15		21	7150
+hard	shared	Lunar isle teleport	lunar_isle_teleport	5	15		21	7150
+hard	shared	Digsite teleport	digsite_teleport	5	15		21	7150
+hard	shared	Piscatoris teleport	piscatoris_teleport	5	15		21	7150
+hard	shared	Pest control teleport	pest_control_teleport	5	15		21	7150
+hard	shared	Tai bwo wannai teleport	tai_bwo_wannai_teleport	5	15		21	7150
+hard	shared	Lumberyard teleport	lumberyard_teleport	5	15		21	7150
+hard	shared	Iorwerth camp teleport	iorwerth_camp_teleport	5	15		21	7150
+hard	shared	Master scroll book (empty)	master_scroll_book_empty	1	1		6	3575
+hard	shared	Saradomin page 1	saradomin_page_1	1	1		1	650
+hard	shared	Saradomin page 2	saradomin_page_2	1	1		1	650
+hard	shared	Saradomin page 3	saradomin_page_3	1	1		1	650
+hard	shared	Saradomin page 4	saradomin_page_4	1	1		1	650
+hard	shared	Zamorak page 1	zamorak_page_1	1	1		1	650
+hard	shared	Zamorak page 2	zamorak_page_2	1	1		1	650
+hard	shared	Zamorak page 3	zamorak_page_3	1	1		1	650
+hard	shared	Zamorak page 4	zamorak_page_4	1	1		1	650
+hard	shared	Guthix page 1	guthix_page_1	1	1		1	650
+hard	shared	Guthix page 2	guthix_page_2	1	1		1	650
+hard	shared	Guthix page 3	guthix_page_3	1	1		1	650
+hard	shared	Guthix page 4	guthix_page_4	1	1		1	650
+hard	shared	Bandos page 1	bandos_page_1	1	1		1	650
+hard	shared	Bandos page 2	bandos_page_2	1	1		1	650
+hard	shared	Bandos page 3	bandos_page_3	1	1		1	650
+hard	shared	Bandos page 4	bandos_page_4	1	1		1	650
+hard	shared	Armadyl page 1	armadyl_page_1	1	1		1	650
+hard	shared	Armadyl page 2	armadyl_page_2	1	1		1	650
+hard	shared	Armadyl page 3	armadyl_page_3	1	1		1	650
+hard	shared	Armadyl page 4	armadyl_page_4	1	1		1	650
+hard	shared	Ancient page 1	ancient_page_1	1	1		1	650
+hard	shared	Ancient page 2	ancient_page_2	1	1		1	650
+hard	shared	Ancient page 3	ancient_page_3	1	1		1	650
+hard	shared	Ancient page 4	ancient_page_4	1	1		1	650
+elite	unique	Dragon full helm ornament kit	dragon_full_helm_ornament_kit	1	1		1	1275
+elite	unique	Dragon chainbody ornament kit	dragon_chainbody_ornament_kit	1	1		1	1275
+elite	unique	Dragon legs/skirt ornament kit	dragon_legs_skirt_ornament_kit	1	1		1	1275
+elite	unique	Dragon sq shield ornament kit	dragon_sq_shield_ornament_kit	1	1		1	1275
+elite	unique	Dragon scimitar ornament kit	dragon_scimitar_ornament_kit	1	1		1	1275
+elite	unique	Fury ornament kit	fury_ornament_kit	1	1		1	1275
+elite	unique	Light infinity colour kit	light_infinity_colour_ornament_kit	1	1		1	1275
+elite	unique	Dark infinity colour kit	dark_infinity_colour_ornament_kit	1	1		1	1275
+elite	unique	Royal crown	royal_crown	1	1		1	1275
+elite	unique	Royal gown top	royal_gown_top	1	1		1	1275
+elite	unique	Royal gown bottom	royal_gown_bottom	1	1		1	1275
+elite	unique	Royal sceptre	royal_sceptre	1	1		1	1275
+elite	unique	Musketeer hat	musketeer_hat	1	1		1	1275
+elite	unique	Musketeer tabard	musketeer_tabard	1	1		1	1275
+elite	unique	Musketeer pants	musketeer_pants	1	1		1	1275
+elite	unique	Black d'hide body (g)	black_dhide_body_g	1	1		1	1275
+elite	unique	Black d'hide body (t)	black_dhide_body_t	1	1		1	1275
+elite	unique	Black d'hide chaps (g)	black_dhide_chaps_g	1	1		1	1275
+elite	unique	Black d'hide chaps (t)	black_dhide_chaps_t	1	1		1	1275
+elite	unique	Rangers' tunic	rangers_tunic	1	1		1	1275
+elite	unique	Ranger gloves	ranger_gloves	1	1		1	1275
+elite	unique	Holy wraps	holy_wraps	1	1		1	1275
+elite	unique	Bronze dragon mask	bronze_dragon_mask	1	1		1	1275
+elite	unique	Iron dragon mask	iron_dragon_mask	1	1		1	1275
+elite	unique	Steel dragon mask	steel_dragon_mask	1	1		1	1275
+elite	unique	Mithril dragon mask	mithril_dragon_mask	1	1		1	1275
+elite	unique	Adamant dragon mask	adamant_dragon_mask	1	1		1	1275
+elite	unique	Rune dragon mask	rune_dragon_mask	1	1		1	1275
+elite	unique	Arceuus scarf	arceuus_scarf	1	1		1	1275
+elite	unique	Hosidius scarf	hosidius_scarf	1	1		1	1275
+elite	unique	Lovakengj scarf	lovakengj_scarf	1	1		1	1275
+elite	unique	Piscarilius scarf	piscarilius_scarf	1	1		1	1275
+elite	unique	Shayzien scarf	shayzien_scarf	1	1		1	1275
+elite	unique	Katana	katana	1	1		1	1275
+elite	unique	Dragon cane	dragon_cane	1	1		1	1275
+elite	unique	Bucket helm	bucket_helm	1	1		1	1275
+elite	unique	Blacksmith's helm	blacksmiths_helm	1	1		1	1275
+elite	unique	Deerstalker	deerstalker	1	1		1	1275
+elite	unique	Afro	afro	1	1		1	1275
+elite	unique	Big pirate hat	big_pirate_hat	1	1		1	1275
+elite	unique	Top hat	top_hat	1	1		1	1275
+elite	unique	Monocle	monocle	1	1		1	1275
+elite	unique	Briefcase	briefcase	1	1		1	1275
+elite	unique	Sagacious spectacles	sagacious_spectacles	1	1		1	1275
+elite	unique	Dark bow tie	dark_bow_tie	1	1		1	12750
+elite	unique	Dark tuxedo jacket	dark_tuxedo_jacket	1	1		1	12750
+elite	unique	Dark tuxedo cuffs	dark_tuxedo_cuffs	1	1		1	12750
+elite	unique	Dark trousers	dark_trousers	1	1		1	12750
+elite	unique	Dark tuxedo shoes	dark_tuxedo_shoes	1	1		1	12750
+elite	unique	Light bow tie	light_bow_tie	1	1		1	12750
+elite	unique	Light tuxedo jacket	light_tuxedo_jacket	1	1		1	12750
+elite	unique	Light tuxedo cuffs	light_tuxedo_cuffs	1	1		1	12750
+elite	unique	Light trousers	light_trousers	1	1		1	12750
+elite	unique	Light tuxedo shoes	light_tuxedo_shoes	1	1		1	12750
+elite	unique	Rangers' tights	rangers_tights	1	1		1	1275
+elite	unique	Uri's hat	uris_hat	1	1		1	1275
+elite	unique	Giant boot	giant_boot	1	1		1	1275
+elite	unique	Fremennik kilt	fremennik_kilt	1	1		1	1275
+elite	mega	Ring of nature	ring_of_nature	1	1		2	29325
+elite	mega	Crystal key	crystal_key	1	1		2	29325
+elite	mega	Lava dragon mask	lava_dragon_mask	1	1		2	29325
+elite	mega	Battlestaff	battlestaff	100	100	noted	2	29325
+elite	mega	Extended antifire(4)	extended_antifire	30	30	noted	2	29325
+elite	mega	Super restore(4)	super_restore	30	30	noted	2	29325
+elite	mega	Saradomin brew(4)	saradomin_brew	30	30	noted	2	29325
+elite	mega	Ranging potion(4)	ranging_potion	30	30	noted	2	29325
+elite	mega	Gilded full helm	gilded_full_helm	1	1		2	64515
+elite	mega	Gilded platebody	gilded_platebody	1	1		2	64515
+elite	mega	Gilded platelegs	gilded_platelegs	1	1		2	64515
+elite	mega	Gilded plateskirt	gilded_plateskirt	1	1		2	64515
+elite	mega	Gilded kiteshield	gilded_kiteshield	1	1		2	64515
+elite	mega	Gilded med helm	gilded_med_helm	1	1		2	64515
+elite	mega	Gilded chainbody	gilded_chainbody	1	1		2	64515
+elite	mega	Gilded sq shield	gilded_sq_shield	1	1		2	64515
+elite	mega	Gilded 2h sword	gilded_2h_sword	1	1		2	64515
+elite	mega	Gilded spear	gilded_spear	1	1		2	64515
+elite	mega	Gilded hasta	gilded_hasta	1	1		2	64515
+elite	mega	Gilded scimitar	gilded_scimitar	1	1		2	29325
+elite	mega	Gilded boots	gilded_boots	1	1		2	29325
+elite	mega	Gilded coif	gilded_coif	1	1		2	29325
+elite	mega	Gilded d'hide vambraces	gilded_dhide_vambraces	1	1		2	29325
+elite	mega	Gilded d'hide body	gilded_dhide_body	1	1		2	29325
+elite	mega	Gilded d'hide chaps	gilded_dhide_chaps	1	1		2	29325
+elite	mega	Gilded pickaxe	gilded_pickaxe	1	1		2	29325
+elite	mega	Gilded axe	gilded_axe	1	1		2	29325
+elite	mega	Gilded spade	gilded_spade	1	1		2	29325
+elite	mega	3rd age full helmet	3rd_age_full_helmet	1	1		2	498525
+elite	mega	3rd age platebody	3rd_age_platebody	1	1		2	498525
+elite	mega	3rd age platelegs	3rd_age_platelegs	1	1		2	498525
+elite	mega	3rd age plateskirt	3rd_age_plateskirt	1	1		2	498525
+elite	mega	3rd age kiteshield	3rd_age_kiteshield	1	1		2	498525
+elite	mega	3rd age range coif	3rd_age_range_coif	1	1		2	498525
+elite	mega	3rd age range top	3rd_age_range_top	1	1		2	498525
+elite	mega	3rd age range legs	3rd_age_range_legs	1	1		2	498525
+elite	mega	3rd age vambraces	3rd_age_vambraces	1	1		2	498525
+elite	mega	3rd age mage hat	3rd_age_mage_hat	1	1		2	498525
+elite	mega	3rd age robe top	3rd_age_robe_top	1	1		2	498525
+elite	mega	3rd age robe	3rd_age_robe	1	1		2	498525
+elite	mega	3rd age amulet	3rd_age_amulet	1	1		2	498525
+elite	mega	3rd age longsword	3rd_age_longsword	1	1		2	498525
+elite	mega	3rd age wand	3rd_age_wand	1	1		2	498525
+elite	mega	3rd age cloak	3rd_age_cloak	1	1		2	498525
+elite	mega	3rd age bow	3rd_age_bow	1	1		2	498525
+elite	standard	Rune platebody	rune_platebody	1	1		24	775
+elite	standard	Rune platelegs	rune_platelegs	1	1		24	775
+elite	standard	Rune plateskirt	rune_plateskirt	1	1		24	775
+elite	standard	Rune kiteshield	rune_kiteshield	1	1		24	775
+elite	standard	Rune crossbow	rune_crossbow	1	1		24	775
+elite	standard	Dragon dagger	dragon_dagger	1	1		24	775
+elite	standard	Dragon mace	dragon_mace	1	1		24	775
+elite	standard	Dragon longsword	dragon_longsword	1	1		24	775
+elite	standard	Onyx bolt tips	onyx_bolt_tips	8	12		24	775
+elite	standard	Law rune	law_rune	50	75		24	775
+elite	standard	Death rune	death_rune	50	75		24	775
+elite	standard	Blood rune	blood_rune	50	75		24	775
+elite	standard	Soul rune	soul_rune	50	75		24	775
+elite	standard	Dragonstone bracelet	dragonstone_bracelet	1	1		24	775
+elite	standard	Dragon necklace	dragonstone_necklace	1	1		24	775
+elite	standard	Dragonstone ring	dragonstone_ring	1	1		24	775
+elite	standard	Tuna potato	tuna_potato	15	20	noted	24	775
+elite	standard	Summer pie	summer_pie	15	20	noted	24	775
+elite	standard	Oak plank	oak_plank	60	80	noted	24	775
+elite	standard	Teak plank	teak_plank	40	50	noted	24	775
+elite	standard	Mahogany plank	mahogany_plank	20	30	noted	24	775
+elite	standard	Runite bar	runite_bar	1	3	noted	24	775
+elite	standard	Tooth half of key	tooth_half_of_key	1	1		12	775
+elite	standard	Loop half of key	loop_half_of_key	1	1		12	775
+elite	standard	Palm tree seed	palm_seed	1	1		8	775
+elite	standard	Yew seed	yew_seed	1	1		8	775
+elite	standard	Magic seed	magic_seed	1	1		8	775
+elite	shared	Coins	coins	20000	30000		24	775
+elite	shared	Coins	coins	10000	15000		42	3875
+elite	shared	Purple sweets	purple_sweets	9	23		24	775
+elite	shared	Purple sweets	purple_sweets	8	12		42	3875
+elite	shared	Red firelighter	red_firelighter	9	15		24	3875
+elite	shared	Green firelighter	green_firelighter	9	15		24	3875
+elite	shared	Blue firelighter	blue_firelighter	9	15		24	3875
+elite	shared	Purple firelighter	purple_firelighter	9	15		24	3875
+elite	shared	White firelighter	white_firelighter	9	15		24	3875
+elite	shared	Holy blessing	holy_blessing	1	1		6	3875
+elite	shared	Unholy blessing	unholy_blessing	1	1		6	3875
+elite	shared	Peaceful blessing	peaceful_blessing	1	1		6	3875
+elite	shared	War blessing	war_blessing	1	1		6	3875
+elite	shared	Honourable blessing	honourable_blessing	1	1		6	3875
+elite	shared	Ancient blessing	ancient_blessing	1	1		6	3875
+elite	shared	Charge dragonstone jewellery scroll	charge_dragonstone_jewellery_scroll	5	15		42	8525
+elite	shared	Nardah teleport	nardah_teleport	5	15		42	8525
+elite	shared	Mos le'harmless teleport	mos_leharmless_teleport	5	15		42	8525
+elite	shared	Mort'ton teleport	mortton_teleport	5	15		42	8525
+elite	shared	Feldip hills teleport	feldip_hills_teleport	5	15		42	8525
+elite	shared	Lunar isle teleport	lunar_isle_teleport	5	15		42	8525
+elite	shared	Digsite teleport	digsite_teleport	5	15		42	8525
+elite	shared	Piscatoris teleport	piscatoris_teleport	5	15		42	8525
+elite	shared	Pest control teleport	pest_control_teleport	5	15		42	8525
+elite	shared	Tai bwo wannai teleport	tai_bwo_wannai_teleport	5	15		42	8525
+elite	shared	Lumberyard teleport	lumberyard_teleport	5	15		42	8525
+elite	shared	Iorwerth camp teleport	iorwerth_camp_teleport	5	15		42	8525
+elite	shared	Master scroll book (empty)	master_scroll_book_empty	1	1		24	8525
+elite	shared	Saradomin page 1	saradomin_page_1	1	1		1	775
+elite	shared	Saradomin page 2	saradomin_page_2	1	1		1	775
+elite	shared	Saradomin page 3	saradomin_page_3	1	1		1	775
+elite	shared	Saradomin page 4	saradomin_page_4	1	1		1	775
+elite	shared	Zamorak page 1	zamorak_page_1	1	1		1	775
+elite	shared	Zamorak page 2	zamorak_page_2	1	1		1	775
+elite	shared	Zamorak page 3	zamorak_page_3	1	1		1	775
+elite	shared	Zamorak page 4	zamorak_page_4	1	1		1	775
+elite	shared	Guthix page 1	guthix_page_1	1	1		1	775
+elite	shared	Guthix page 2	guthix_page_2	1	1		1	775
+elite	shared	Guthix page 3	guthix_page_3	1	1		1	775
+elite	shared	Guthix page 4	guthix_page_4	1	1		1	775
+elite	shared	Bandos page 1	bandos_page_1	1	1		1	775
+elite	shared	Bandos page 2	bandos_page_2	1	1		1	775
+elite	shared	Bandos page 3	bandos_page_3	1	1		1	775
+elite	shared	Bandos page 4	bandos_page_4	1	1		1	775
+elite	shared	Armadyl page 1	armadyl_page_1	1	1		1	775
+elite	shared	Armadyl page 2	armadyl_page_2	1	1		1	775
+elite	shared	Armadyl page 3	armadyl_page_3	1	1		1	775
+elite	shared	Armadyl page 4	armadyl_page_4	1	1		1	775
+elite	shared	Ancient page 1	ancient_page_1	1	1		1	775
+elite	shared	Ancient page 2	ancient_page_2	1	1		1	775
+elite	shared	Ancient page 3	ancient_page_3	1	1		1	775
+elite	shared	Ancient page 4	ancient_page_4	1	1		1	775
+master	unique	Occult ornament kit	occult_ornament_kit	1	1		1	851
+master	unique	Torture ornament kit	torture_ornament_kit	1	1		1	851
+master	unique	Anguish ornament kit	anguish_ornament_kit	1	1		1	851
+master	unique	Tormented ornament kit	tormented_ornament_kit	1	1		1	851
+master	unique	Dragon defender ornament kit	dragon_defender_ornament_kit	1	1		1	851
+master	unique	Dragon kiteshield ornament kit	dragon_kiteshield_ornament_kit	1	1		1	25530
+master	unique	Dragon platebody ornament kit	dragon_platebody_ornament_kit	1	1		1	12765
+master	unique	Hood of darkness	hood_of_darkness	1	1		1	851
+master	unique	Robe top of darkness	robe_top_of_darkness	1	1		1	851
+master	unique	Gloves of darkness	gloves_of_darkness	1	1		1	851
+master	unique	Robe bottom of darkness	robe_bottom_of_darkness	1	1		1	851
+master	unique	Boots of darkness	boots_of_darkness	1	1		1	851
+master	unique	Samurai kasa	samurai_kasa	1	1		1	851
+master	unique	Samurai shirt	samurai_shirt	1	1		1	851
+master	unique	Samurai gloves	samurai_gloves	1	1		1	851
+master	unique	Samurai greaves	samurai_greaves	1	1		1	851
+master	unique	Samurai boots	samurai_boots	1	1		1	851
+master	unique	Arceuus hood	arceuus_hood	1	1		1	851
+master	unique	Hosidius hood	hosidius_hood	1	1		1	851
+master	unique	Lovakengj hood	lovakengj_hood	1	1		1	851
+master	unique	Piscarilius hood	piscarilius_hood	1	1		1	851
+master	unique	Shayzien hood	shayzien_hood	1	1		1	851
+master	unique	Old demon mask	old_demon_mask	1	1		1	851
+master	unique	Lesser demon mask	lesser_demon_mask	1	1		1	851
+master	unique	Greater demon mask	greater_demon_mask	1	1		1	851
+master	unique	Black demon mask	black_demon_mask	1	1		1	851
+master	unique	Jungle demon mask	jungle_demon_mask	1	1		1	851
+master	unique	Left eye patch	left_eye_patch	1	1		1	851
+master	unique	Bowl wig	bowl_wig	1	1		1	851
+master	unique	Ale of the gods	ale_of_the_gods	1	1		1	851
+master	unique	Obsidian cape (r)	obsidian_cape_r	1	1		1	851
+master	unique	Fancy tiara	fancy_tiara	1	1		1	851
+master	unique	Half moon spectacles	half_moon_spectacles	1	1		1	851
+master	unique	Armadyl godsword ornament kit	armadyl_godsword_ornament_kit	1	1		1	3404
+master	unique	Bandos godsword ornament kit	bandos_godsword_ornament_kit	1	1		1	3404
+master	unique	Saradomin godsword ornament kit	saradomin_godsword_ornament_kit	1	1		1	3404
+master	unique	Zamorak godsword ornament kit	zamorak_godsword_ornament_kit	1	1		1	3404
+master	unique	Ankou mask	ankou_mask	1	1		1	12765
+master	unique	Ankou top	ankou_top	1	1		1	12765
+master	unique	Ankou gloves	ankou_gloves	1	1		1	12765
+master	unique	Ankou's leggings	ankou_legs	1	1		1	12765
+master	unique	Ankou socks	ankou_socks	1	1		1	12765
+master	unique	Mummy's head	mummys_head	1	1		1	12765
+master	unique	Mummy's body	mummys_body	1	1		1	12765
+master	unique	Mummy's hands	mummys_hands	1	1		1	12765
+master	unique	Mummy's legs	mummys_legs	1	1		1	12765
+master	unique	Mummy's feet	mummys_feet	1	1		1	12765
+master	mega	Bucket helm (g)	bucket_helm_g	1	1		1	13616
+master	mega	Ring of coins	ring_of_coins	1	1		1	13616
+master	mega	Cabbage	cabbage	3	3		1	13616
+master	mega	Anti-venom+(4)	anti_venom_plus	15	15	noted	1	13616
+master	mega	Torstol	torstol	50	50	noted	1	13616
+master	mega	Gilded full helm	gilded_full_helm	1	1		1	149776
+master	mega	Gilded platebody	gilded_platebody	1	1		1	149776
+master	mega	Gilded platelegs	gilded_platelegs	1	1		1	149776
+master	mega	Gilded plateskirt	gilded_plateskirt	1	1		1	149776
+master	mega	Gilded kiteshield	gilded_kiteshield	1	1		1	149776
+master	mega	Gilded med helm	gilded_med_helm	1	1		1	149776
+master	mega	Gilded chainbody	gilded_chainbody	1	1		1	149776
+master	mega	Gilded sq shield	gilded_sq_shield	1	1		1	149776
+master	mega	Gilded 2h sword	gilded_2h_sword	1	1		1	149776
+master	mega	Gilded spear	gilded_spear	1	1		1	149776
+master	mega	Gilded hasta	gilded_hasta	1	1		1	149776
+master	mega	Gilded scimitar	gilded_scimitar	1	1		1	13616
+master	mega	Gilded boots	gilded_boots	1	1		1	13616
+master	mega	Gilded coif	gilded_coif	1	1		1	13616
+master	mega	Gilded d'hide vambraces	gilded_dhide_vambraces	1	1		1	13616
+master	mega	Gilded d'hide body	gilded_dhide_body	1	1		1	13616
+master	mega	Gilded d'hide chaps	gilded_dhide_chaps	1	1		1	13616
+master	mega	Gilded pickaxe	gilded_pickaxe	1	1		1	13616
+master	mega	Gilded axe	gilded_axe	1	1		1	13616
+master	mega	Gilded spade	gilded_spade	1	1		1	13616
+master	mega	3rd age full helmet	3rd_age_full_helmet	1	1		1	313168
+master	mega	3rd age platebody	3rd_age_platebody	1	1		1	313168
+master	mega	3rd age platelegs	3rd_age_platelegs	1	1		1	313168
+master	mega	3rd age plateskirt	3rd_age_plateskirt	1	1		1	313168
+master	mega	3rd age kiteshield	3rd_age_kiteshield	1	1		1	313168
+master	mega	3rd age range coif	3rd_age_range_coif	1	1		1	313168
+master	mega	3rd age range top	3rd_age_range_top	1	1		1	313168
+master	mega	3rd age range legs	3rd_age_range_legs	1	1		1	313168
+master	mega	3rd age vambraces	3rd_age_vambraces	1	1		1	313168
+master	mega	3rd age mage hat	3rd_age_mage_hat	1	1		1	313168
+master	mega	3rd age robe top	3rd_age_robe_top	1	1		1	313168
+master	mega	3rd age robe	3rd_age_robe	1	1		1	313168
+master	mega	3rd age amulet	3rd_age_amulet	1	1		1	313168
+master	mega	3rd age druidic robe top	3rd_age_druidic_robe_top	1	1		1	313168
+master	mega	3rd age druidic robe bottoms	3rd_age_druidic_robe_bottoms	1	1		1	313168
+master	mega	3rd age druidic cloak	3rd_age_druidic_cloak	1	1		1	313168
+master	mega	3rd age longsword	3rd_age_longsword	1	1		1	313168
+master	mega	3rd age bow	3rd_age_bow	1	1		1	313168
+master	mega	3rd age wand	3rd_age_wand	1	1		1	313168
+master	mega	3rd age druidic staff	3rd_age_druidic_staff	1	1		1	313168
+master	mega	3rd age cloak	3rd_age_cloak	1	1		1	313168
+master	mega	3rd age pickaxe	3rd_age_pickaxe	1	1		1	313168
+master	mega	3rd age axe	3rd_age_axe	1	1		1	313168
+master	standard	Dragon dagger	dragon_dagger	1	1		22	667
+master	standard	Dragon mace	dragon_mace	1	1		22	667
+master	standard	Dragon longsword	dragon_longsword	1	1		22	667
+master	standard	Dragon scimitar	dragon_scimitar	1	1		22	667
+master	standard	Dragon battleaxe	dragon_battleaxe	1	1		22	667
+master	standard	Dragon halberd	dragon_halberd	1	1		22	667
+master	standard	Nature rune	nature_rune	100	200		22	667
+master	standard	Death rune	death_rune	100	200		22	667
+master	standard	Blood rune	blood_rune	100	200		22	667
+master	standard	Soul rune	soul_rune	100	200		22	667
+master	standard	Onyx bolts (e)	onyx_bolts_e	15	25		22	667
+master	standard	Manta ray	manta_ray	15	25	noted	22	667
+master	standard	Wine of zamorak	wine_of_zamorak	35	50	noted	22	667
+master	standard	Limpwurt root	limpwurt_root	40	60	noted	22	667
+master	standard	Grimy ranarr weed	grimy_ranarr_weed	5	10	noted	22	667
+master	standard	Grimy toadflax	grimy_toadflax	25	35	noted	22	667
+master	standard	Grimy snapdragon	grimy_snapdragon	5	10	noted	22	667
+master	standard	Runite ore	runite_ore	5	8	noted	22	667
+master	standard	Runite bar	runite_bar	5	7	noted	22	667
+master	standard	Black dragonhide	black_dragonhide	5	25	noted	22	667
+master	standard	Tooth half of key	tooth_half_of_key	1	1		11	667
+master	standard	Loop half of key	loop_half_of_key	1	1		11	667
+master	standard	Palm tree seed	palm_seed	1	2		22	2001
+master	standard	Yew seed	yew_seed	1	2		22	2001
+master	standard	Magic seed	magic_seed	1	2		22	2001
+master	shared	Coins	coins	20000	35000		22	667
+master	shared	Coins	coins	10000	15000		77	6670
+master	shared	Coins	coins	15000	30000		67	25530
+master	shared	Purple sweets	purple_sweets	14	33		22	667
+master	shared	Purple sweets	purple_sweets	8	12		77	6670
+master	shared	Red firelighter	red_firelighter	20	38		22	3335
+master	shared	Green firelighter	green_firelighter	20	38		22	3335
+master	shared	Blue firelighter	blue_firelighter	20	38		22	3335
+master	shared	Purple firelighter	purple_firelighter	20	38		22	3335
+master	shared	White firelighter	white_firelighter	20	38		22	3335
+master	shared	Holy blessing	holy_blessing	1	1		11	6670
+master	shared	Unholy blessing	unholy_blessing	1	1		11	6670
+master	shared	Peaceful blessing	peaceful_blessing	1	1		11	6670
+master	shared	War blessing	war_blessing	1	1		11	6670
+master	shared	Honourable blessing	honourable_blessing	1	1		11	6670
+master	shared	Ancient blessing	ancient_blessing	1	1		11	6670
+master	shared	Charge dragonstone jewellery scroll	charge_dragonstone_jewellery_scroll	5	15		7	1334
+master	shared	Nardah teleport	nardah_teleport	5	15		7	1334
+master	shared	Mos le'harmless teleport	mos_leharmless_teleport	5	15		7	1334
+master	shared	Mort'ton teleport	mortton_teleport	5	15		7	1334
+master	shared	Feldip hills teleport	feldip_hills_teleport	5	15		7	1334
+master	shared	Lunar isle teleport	lunar_isle_teleport	5	15		7	1334
+master	shared	Digsite teleport	digsite_teleport	5	15		7	1334
+master	shared	Piscatoris teleport	piscatoris_teleport	5	15		7	1334
+master	shared	Pest control teleport	pest_control_teleport	5	15		7	1334
+master	shared	Tai bwo wannai teleport	tai_bwo_wannai_teleport	5	15		7	1334
+master	shared	Lumberyard teleport	lumberyard_teleport	5	15		7	1334
+master	shared	Iorwerth camp teleport	iorwerth_camp_teleport	5	15		7	1334
+master	shared	Master scroll book (empty)	master_scroll_book_empty	1	1		2	667
+master	shared	Saradomin page 1	saradomin_page_1	1	1		281	197432
+master	shared	Saradomin page 2	saradomin_page_2	1	1		281	197432
+master	shared	Saradomin page 3	saradomin_page_3	1	1		281	197432
+master	shared	Saradomin page 4	saradomin_page_4	1	1		281	197432
+master	shared	Zamorak page 1	zamorak_page_1	1	1		281	197432
+master	shared	Zamorak page 2	zamorak_page_2	1	1		281	197432
+master	shared	Zamorak page 3	zamorak_page_3	1	1		281	197432
+master	shared	Zamorak page 4	zamorak_page_4	1	1		281	197432
+master	shared	Guthix page 1	guthix_page_1	1	1		281	197432
+master	shared	Guthix page 2	guthix_page_2	1	1		281	197432
+master	shared	Guthix page 3	guthix_page_3	1	1		281	197432
+master	shared	Guthix page 4	guthix_page_4	1	1		281	197432
+master	shared	Bandos page 1	bandos_page_1	1	1		281	197432
+master	shared	Bandos page 2	bandos_page_2	1	1		281	197432
+master	shared	Bandos page 3	bandos_page_3	1	1		281	197432
+master	shared	Bandos page 4	bandos_page_4	1	1		281	197432
+master	shared	Armadyl page 1	armadyl_page_1	1	1		281	197432
+master	shared	Armadyl page 2	armadyl_page_2	1	1		281	197432
+master	shared	Armadyl page 3	armadyl_page_3	1	1		281	197432
+master	shared	Armadyl page 4	armadyl_page_4	1	1		281	197432
+master	shared	Ancient page 1	ancient_page_1	1	1		281	197432
+master	shared	Ancient page 2	ancient_page_2	1	1		281	197432
+master	shared	Ancient page 3	ancient_page_3	1	1		281	197432
+master	shared	Ancient page 4	ancient_page_4	1	1		281	197432

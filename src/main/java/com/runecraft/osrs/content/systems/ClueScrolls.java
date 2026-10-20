@@ -1,42 +1,64 @@
 package com.runecraft.osrs.content.systems;
 
+import com.runecraft.osrs.GielinorMap;
 import com.runecraft.osrs.Landmark;
 import com.runecraft.osrs.QuestNpc;
+import com.runecraft.osrs.content.BossDef;
 import com.runecraft.osrs.content.ContentRegistry;
+import com.runecraft.osrs.content.MonsterDef;
 import com.runecraft.osrs.content.NpcDef;
 import com.runecraft.osrs.content.PlaceDef;
+import com.runecraft.osrs.data.Monster;
+import com.runecraft.osrs.world.Elevation;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 /**
- * Treasure trails: clue tiers, step generation (coordinate and map digs, hot/cold digs with the strange
- * device, emote clues, anagrams, ciphers, cryptic clues and Charlie-style item fetches) at real Gielinor
- * coordinates and for the NPCs that exist in the world. Step counts and the step types each tier can roll
- * follow the OSRS wiki. Medium and harder clues can hand over a puzzle box (a sliding puzzle: 3x3 on medium
- * clues as a simplification, 5x5 from hard up), elite and master clues a light box, and master clues send
- * the player to Falo the Bard with the item his song names (see {@link CluePuzzles}).
+ * Treasure Trails: clue tiers and the real OSRS clue steps ({@link ClueStepData}, extracted from RuneLite's
+ * cluescrolls plugin, which has every clue's text, tile, NPC, emotes and required items). A trail draws its steps
+ * from the tier's step list the way OSRS does, one clue scroll id at a time (each coordinate, map, anagram, cipher,
+ * cryptic, emote and music clue is one id; hot/cold, Charlie the Tramp, Falo the Bard and master Sherlock are one id
+ * with a random location, item, song or challenge; elite Sherlock has 15 ids). Steps whose tile is not on the
+ * surface of this world (dungeons, instances), or whose NPC does not stand here, are left out of the pool.
+ *
+ * <p>Talking to an anagram, cipher or cryptic NPC on medium and harder clues hands over a challenge scroll when OSRS
+ * has a question for it, otherwise (hard and up) a puzzle box, or on master clues a light box or a puzzle box. Hard
+ * and harder coordinate digs, master hot/cold digs and hard/master emote steps that say "Beware of double agents!"
+ * summon the wiki's guardian first.
  */
 public final class ClueScrolls {
     public enum Tier {
-        BEGINNER(1, 3, 1, 3, 0xC0B080), EASY(2, 4, 2, 4, 0x40A040), MEDIUM(3, 5, 3, 5, 0x40A0C0),
-        HARD(4, 6, 4, 6, 0xA040C0), ELITE(5, 7, 4, 6, 0xE0C030), MASTER(6, 8, 5, 7, 0xC03030);
+        BEGINNER(1, 3, 1, 3, 0xC0B080, 12, 150, "plank"), EASY(2, 4, 2, 4, 0x40A040, 27, 150, "plank"),
+        MEDIUM(3, 5, 3, 5, 0x40A0C0, 42, 250, "oak_plank"), HARD(4, 6, 4, 6, 0xA040C0, 55, 400, "teak_plank"),
+        ELITE(5, 7, 4, 6, 0xE0C030, 77, 600, "mahogany_plank"), MASTER(6, 8, 5, 7, 0xC03030, 88, 1500, "mahogany_plank");
 
         private final int minSteps;
         private final int maxSteps;
         private final int minRolls;
         private final int maxRolls;
         private final int color;
+        private final int stashLevel;
+        private final int stashXp;
+        private final String stashPlank;
 
-        Tier(int minSteps, int maxSteps, int minRolls, int maxRolls, int color) {
+        Tier(int minSteps, int maxSteps, int minRolls, int maxRolls, int color, int stashLevel, int stashXp, String stashPlank) {
             this.minSteps = minSteps;
             this.maxSteps = maxSteps;
             this.minRolls = minRolls;
             this.maxRolls = maxRolls;
             this.color = color;
+            this.stashLevel = stashLevel;
+            this.stashXp = stashXp;
+            this.stashPlank = stashPlank;
         }
 
         public String id() {
@@ -61,6 +83,21 @@ public final class ClueScrolls {
 
         public int color() {
             return color;
+        }
+
+        /** Construction level to build this tier's STASH units (OSRS Wiki "STASH"). */
+        public int stashLevel() {
+            return stashLevel;
+        }
+
+        /** Construction XP for building one of this tier's STASH units. */
+        public int stashXp() {
+            return stashXp;
+        }
+
+        /** The plank a STASH unit of this tier takes (two of them, ten nails; master units also a gold leaf). */
+        public String stashPlank() {
+            return stashPlank;
         }
 
         public String scrollItem() {
@@ -90,117 +127,258 @@ public final class ClueScrolls {
         }
     }
 
-    public enum StepType { COORDINATE, MAP, ANAGRAM, CRYPTIC, CHARLIE, EMOTE, CIPHER, HOT_COLD, PUZZLE, LIGHT_BOX, FALO }
+    /** OSRS step kinds. PUZZLE and LIGHT_BOX are no longer steps of their own (NPCs hand the boxes over); kept for ordinals. */
+    public enum StepType { COORDINATE, MAP, ANAGRAM, CRYPTIC, CHARLIE, EMOTE, CIPHER, HOT_COLD, PUZZLE, LIGHT_BOX, FALO,
+        MUSIC, SHERLOCK, FAIRY_RING }
 
-    /**
-     * One clue step. Dig and emote steps use (x, y); talk steps use npcId (and item for Charlie steps).
-     * Emote steps name the emote and may need an item carried or worn.
-     */
-    public record Step(StepType type, String text, int x, int y, String npcId, String npcName, String item, String emote) {
-        public Step(StepType type, String text, int x, int y, String npcId, String npcName, String item) {
-            this(type, text, x, y, npcId, npcName, item, null);
+    /** What the player does to finish a step. */
+    public enum Action { DIG, SEARCH, TALK, EMOTE, KILL }
+
+    /** The clue guardians (OSRS Wiki "Treasure Trails", Antagonists), as RuneLite tags each step. */
+    public enum Guardian {
+        DOUBLE_AGENT_65("Double agent", "double_agent_65"),
+        DOUBLE_AGENT_108("Double agent", "double_agent_108"),
+        DOUBLE_AGENT_141("Double agent", "double_agent_141"),
+        ZAMORAK_WIZARD("Zamorak wizard", "zamorak_wizard"),
+        SARADOMIN_WIZARD("Saradomin wizard", "saradomin_wizard"),
+        ARMADYLEAN_OR_BANDOSIAN_GUARD("Armadylean or Bandosian guard", "armadylean_guard", "bandosian_guard"),
+        ARMADYLEAN_GUARD("Armadylean guard", "armadylean_guard"),
+        BANDOSIAN_GUARD("Bandosian guard", "bandosian_guard"),
+        BRASSICAN_MAGE("Brassican Mage", "brassican_mage"),
+        ANCIENT_WIZARDS("Ancient Wizards", ANCIENT_TRIO),
+        BRASSICAN_OR_WIZARDS("Brassican Mage or Ancient Wizards", "brassican_mage", ANCIENT_TRIO);
+
+        private final String display;
+        private final List<String> options;
+
+        Guardian(String display, String... options) {
+            this.display = display;
+            this.options = List.of(options);
         }
 
-        public boolean isDig() {
-            return type == StepType.COORDINATE || type == StepType.MAP || type == StepType.HOT_COLD;
+        public String display() {
+            return display;
         }
 
-        public boolean isTalk() {
-            return npcId != null;
+        /** The monster ids that appear: one option at random (an option may be a group joined by "+"). */
+        public List<String> spawn(Random random) {
+            return List.of(options.get(random.nextInt(options.size())).split("\\+"));
+        }
+
+        /** Every monster id this guardian can be. */
+        public Set<String> monsterIds() {
+            Set<String> out = new java.util.LinkedHashSet<>();
+            for (String o : options) {
+                out.addAll(List.of(o.split("\\+")));
+            }
+            return out;
+        }
+
+        public boolean doubleAgent() {
+            return name().startsWith("DOUBLE_AGENT");
+        }
+
+        static Guardian parse(String s) {
+            return s == null || s.isEmpty() ? null : valueOf(s);
         }
     }
 
-    /** OSRS emotes used by emote clues. */
-    public static final List<String> EMOTES = List.of("Bow", "Wave", "Clap", "Cheer", "Dance", "Jig", "Spin", "Headbang", "Shrug",
-            "Think", "Yawn", "Salute", "Panic", "Beckon", "Cry", "Laugh", "Jump for Joy", "Raspberry", "Blow Kiss", "Angry", "Yes",
-            "No", "Goblin Salute", "Push up", "Idea", "Stamp", "Flap", "Slap Head");
+    private static final String ANCIENT_TRIO = "ancient_wizard_mage+ancient_wizard_ranger+ancient_wizard_melee";
 
-    /** Step types each tier can roll (repeats weight them), after the OSRS wiki. */
-    public static List<StepType> types(Tier tier) {
-        return switch (tier) {
-            case BEGINNER -> List.of(StepType.ANAGRAM, StepType.CRYPTIC, StepType.EMOTE, StepType.HOT_COLD, StepType.MAP, StepType.CHARLIE);
-            case EASY -> List.of(StepType.ANAGRAM, StepType.CRYPTIC, StepType.CRYPTIC, StepType.EMOTE, StepType.EMOTE, StepType.MAP);
-            case MEDIUM, HARD -> List.of(StepType.ANAGRAM, StepType.CIPHER, StepType.COORDINATE, StepType.COORDINATE, StepType.CRYPTIC,
-                    StepType.EMOTE, StepType.MAP, StepType.PUZZLE);
-            case ELITE -> List.of(StepType.ANAGRAM, StepType.COORDINATE, StepType.COORDINATE, StepType.CRYPTIC, StepType.EMOTE,
-                    StepType.MAP, StepType.PUZZLE, StepType.LIGHT_BOX);
-            case MASTER -> List.of(StepType.ANAGRAM, StepType.COORDINATE, StepType.COORDINATE, StepType.CRYPTIC, StepType.EMOTE,
-                    StepType.HOT_COLD, StepType.PUZZLE, StepType.LIGHT_BOX, StepType.FALO);
-        };
+    /** Every clue guardian monster id. */
+    public static Set<String> guardianMonsters() {
+        Set<String> out = new java.util.LinkedHashSet<>();
+        for (Guardian g : Guardian.values()) {
+            out.addAll(g.monsterIds());
+        }
+        return out;
+    }
+
+    /** One OSRS clue (a row of {@link ClueStepData}). */
+    public record Clue(int index, StepType type, Tier tier, int x, int y, int plane, String npc, String object, Guardian guardian,
+                       List<String> emotes, String stash, String answer, String text, String solution, String question,
+                       String task, String req) {
+        /** What the player has to do. */
+        public Action action() {
+            return switch (type) {
+                case COORDINATE, MAP, FAIRY_RING, HOT_COLD -> object.isEmpty() ? Action.DIG : Action.SEARCH;
+                case EMOTE -> Action.EMOTE;
+                case CRYPTIC -> switch (task) {
+                    case "dig" -> Action.DIG;
+                    case "search", "key" -> Action.SEARCH;
+                    case "kill" -> Action.KILL;
+                    default -> Action.TALK;
+                };
+                default -> Action.TALK;
+            };
+        }
+    }
+
+    /** A STASH unit: where its emote clue's items can be stored. */
+    public record Stash(String name, Tier tier, int x, int y, int plane) {
     }
 
     /** An NPC that can be the target of a talk step. */
     public record Npc(String id, String name, int x, int y) {
     }
 
-    record Spot(String description, int x, int y) {
+    /**
+     * One step of a player's trail: the OSRS clue, the NPC that stands for it here, what the NPC hands over ({@link
+     * CluePuzzles#PUZZLE_BOX}, {@link CluePuzzles#LIGHT_BOX} or null) and the monster whose key a key step needs.
+     */
+    public record Step(Clue clue, String npcId, String npcName, String box, String keyMonster) {
+        public StepType type() {
+            return clue.type();
+        }
+
+        public Tier tier() {
+            return clue.tier();
+        }
+
+        public Action action() {
+            return clue.action();
+        }
+
+        public int x() {
+            return clue.x();
+        }
+
+        public int y() {
+            return clue.y();
+        }
+
+        public boolean isDig() {
+            return action() == Action.DIG;
+        }
+
+        public boolean isTalk() {
+            return action() == Action.TALK;
+        }
+
+        public Guardian guardian() {
+            return clue.guardian();
+        }
+
+        public List<String> emotes() {
+            return clue.emotes();
+        }
+
+        public String emote() {
+            return clue.emotes().isEmpty() ? null : clue.emotes().get(0);
+        }
+
+        /** The item requirement ({@link ClueReqs} format), or "". */
+        public String req() {
+            return clue.req();
+        }
+
+        /** Whether this step's NPC sets a challenge question before giving the next clue. */
+        public boolean hasChallenge() {
+            return !clue.answer().isEmpty() && (clue.type() == StepType.ANAGRAM || clue.type() == StepType.CIPHER
+                    || clue.type() == StepType.CRYPTIC);
+        }
+
+        /** The text written on the clue scroll. */
+        public String text() {
+            Clue c = clue;
+            return switch (c.type()) {
+                case ANAGRAM -> (c.tier() == Tier.BEGINNER ? "The anagram reveals who to speak to next: "
+                        : "This anagram reveals who to speak to next: ") + c.text();
+                case CIPHER -> "The cipher reveals who to speak to next: " + c.text();
+                case COORDINATE -> coordinateText(c.x(), c.y());
+                case MAP -> "The map shows: " + c.solution() + (c.object().isEmpty() ? " X marks the spot." : " A cross marks a "
+                        + objectName(c.object()) + ".");
+                case FAIRY_RING -> "The cryptic reveals where to dig: " + c.text();
+                case HOT_COLD -> "Buried beneath the ground, who knows where it's found. Lucky for you, a man called "
+                        + (c.tier() == Tier.BEGINNER ? "Reldo" : "Jorral") + " may have a clue.";
+                case MUSIC -> "Cecilia, in Falador Park, would like to hear the song: \"" + c.text() + "\".";
+                case FALO -> "Falo the bard wants to see you.";
+                case CHARLIE -> "Talk to Charlie the Tramp in Varrock.";
+                case SHERLOCK -> "Show this to Sherlock.";
+                default -> c.text();
+            };
+        }
     }
 
-    private static final List<Spot> NEAR = List.of(
-            new Spot("the courtyard of Lumbridge Castle", 3222, 3226), new Spot("the windmill north of Lumbridge", 3166, 3304),
-            new Spot("Draynor Village market", 3081, 3251), new Spot("the Champions' Guild", 3191, 3360),
-            new Spot("Varrock Palace garden", 3215, 3474), new Spot("Barbarian Village", 3082, 3420),
-            new Spot("Falador Park", 3005, 3376), new Spot("Rimmington mine", 2977, 3240),
-            new Spot("the Port Sarim docks", 3029, 3205), new Spot("the Al Kharid toll gate", 3268, 3227),
-            new Spot("the Wizards' Tower", 3109, 3152), new Spot("the Lumbridge Swamp", 3166, 3172),
-            new Spot("Edgeville Monastery", 3051, 3484));
-    private static final List<Spot> MID = List.of(
-            new Spot("the flax field of Seers' Village", 2741, 3443), new Spot("Catherby beach", 2853, 3428),
-            new Spot("Camelot Castle", 2757, 3488), new Spot("East Ardougne market", 2662, 3305),
-            new Spot("Yanille", 2606, 3093), new Spot("the Tree Gnome Stronghold", 2461, 3444),
-            new Spot("Taverley", 2895, 3445), new Spot("Burthorpe", 2899, 3544), new Spot("Shilo Village", 2852, 2955),
-            new Spot("Brimhaven", 2760, 3178), new Spot("Canifis", 3496, 3488), new Spot("Pollnivneach", 3359, 2970),
-            new Spot("Rellekka", 2660, 3657));
-    private static final List<Spot> FAR = List.of(
-            new Spot("the Lava Maze", 3089, 3866), new Spot("the Mage Arena", 3105, 3934),
-            new Spot("Port Phasmatys", 3687, 3502), new Spot("Lletya", 2340, 3170), new Spot("Nardah", 3428, 2892),
-            new Spot("Trollheim", 2890, 3676), new Spot("the Barrows", 3565, 3288), new Spot("the TzHaar entrance", 2845, 3170),
-            new Spot("the Wilderness Agility Course", 2998, 3913), new Spot("the Chaos Temple in the Wilderness", 3236, 3635),
-            new Spot("Ape Atoll", 2755, 2780), new Spot("Mort'ton", 3489, 3288));
-    private static final List<Spot> EXOTIC = List.of(
-            new Spot("Lunar Isle", 2100, 3914), new Spot("Zul-Andra", 2197, 3055), new Spot("Fossil Island", 3724, 3808),
-            new Spot("Kourend Castle", 1643, 3673), new Spot("the Wintertodt camp", 1630, 3940),
-            new Spot("Piscatoris", 2340, 3650), new Spot("Iorwerth Camp", 2193, 3257),
-            new Spot("Mos Le'Harmless", 3700, 2996), new Spot("the Fremennik Isles", 2335, 3800));
+    /** Clue NPC aliases: RuneLite's name -> the name the character has here. */
+    private static final Map<String, String> ALIASES = Map.of(
+            "archmage sedridor", "sedridor",
+            "lumbridge guide", "lumbridge guide");
 
-    /** Items a Charlie-style step can ask for (all exist in the core catalog). */
-    private static final Map<Tier, List<String>> FETCH = Map.of(
-            Tier.BEGINNER, List.of("raw_shrimps", "raw_anchovies", "bronze_dagger", "leather_boots", "logs", "copper_ore", "bones"),
-            Tier.EASY, List.of("trout", "pike", "iron_dagger", "leather_body", "oak_logs", "iron_ore", "leather_cowl", "steel_full_helm"),
-            Tier.MEDIUM, List.of("lobster", "steel_platebody", "maple_shortbow", "mithril_bar", "willow_logs", "sapphire"),
-            Tier.HARD, List.of("swordfish", "rune_dagger", "yew_longbow", "adamantite_bar", "emerald", "magic_logs"),
-            Tier.ELITE, List.of("shark", "rune_platebody", "magic_longbow", "runite_bar", "ruby"),
-            Tier.MASTER, List.of("anglerfish", "dragon_dagger", "dragonstone", "dragon_bones"));
+    /** OSRS dungeon tiles lie 6400 tiles north of the surface above them. */
+    static final int DUNGEON_Y = 6400;
 
-    /** Hand-written cryptic clues for the core quest characters. */
-    private static final Map<String, String> CRYPTIC = Map.ofEntries(
-            Map.entry("COOK", "The Duke's birthday cake will not bake itself. Ask the one who stirs his pots."),
-            Map.entry("DUKE_HORACIO", "His castle stands by the River Lum. Speak to the man who rules it."),
-            Map.entry("FATHER_AERECK", "In Lumbridge church, a man of the cloth keeps your next clue."),
-            Map.entry("RESTLESS_GHOST", "He cannot rest until his skull is found. Speak to the spirit by the church."),
-            Map.entry("FRED_THE_FARMER", "His sheep need shearing and his chickens need feeding, north of the castle."),
-            Map.entry("FATHER_URHNEY", "A grumpy hermit in the swamp would rather you went away."),
-            Map.entry("SEDRIDOR", "Head of the tower, keeper of rune mysteries."),
-            Map.entry("WIZARD_MIZGOG", "He has lost his beads to the imps. Find him at the tower."),
-            Map.entry("WIZARD_TRAIBORN", "A forgetful wizard in the tower's halls could use a few bones."),
-            Map.entry("AUBURY", "He sells runes in Varrock and knows the way to the essence mine."),
-            Map.entry("ROMEO", "A lovestruck youth waits in Varrock square."),
-            Map.entry("JULIET", "She waits on her balcony west of Varrock for a message."),
-            Map.entry("FATHER_LAWRENCE", "Varrock's priest sleeps through his own sermons."),
-            Map.entry("APOTHECARY", "He brews potions in south-west Varrock, some more deadly than others."),
-            Map.entry("DR_HARLOW", "A former vampire hunter drowns his sorrows in a Varrock pub."),
-            Map.entry("GYPSY_ARIS", "She sees the future in her crystal ball, for a silver coin."),
-            Map.entry("SIR_PRYSIN", "Silverlight was entrusted to this knight of Varrock Palace."),
-            Map.entry("DORIC", "A dwarf smith north of Falador wants clay, copper and iron."),
-            Map.entry("HETTY", "Rimmington's witch brews in her cauldron."),
-            Map.entry("KAQEMEEX", "A druid by the stone circle north of Taverley."),
-            Map.entry("SANFEW", "Upstairs in Taverley, a druid awaits the ingredients of a ritual."),
-            Map.entry("MORGAN", "A worried man of Draynor fears the count in the manor."));
+    /** Steps whose tile is this far from the NPC we stand them on are left out (OSRS NPCs wander about 5-10 tiles). */
+    public static final int NPC_RANGE = 48;
+
+    /** Dig, search and hot/cold steps succeed within this many tiles of the spot (a block world is coarser than OSRS). */
+    public static final int DIG_RADIUS = 4;
+    /** Emote steps are performed within this many tiles of the spot. */
+    public static final int EMOTE_RADIUS = 6;
+
+    private static List<Clue> clues;
+    private static Map<String, Stash> stash;
+    private static final Map<Tier, List<Entry>> POOLS = new EnumMap<>(Tier.class);
+    private static List<Npc> poolNpcs;
 
     private ClueScrolls() {
     }
 
-    // ---------------- NPCs ----------------
+    // ------------------------------------------------------------------ data
+
+    /** Every OSRS clue step (all tiers, also the ones this world cannot host). */
+    public static synchronized List<Clue> clues() {
+        if (clues == null) {
+            List<Clue> out = new ArrayList<>();
+            for (String chunk : ClueStepData.ROWS) {
+                for (String line : chunk.split("\n")) {
+                    if (line.isBlank()) {
+                        continue;
+                    }
+                    String[] f = java.util.Arrays.copyOf(line.split("\t", -1), 16);
+                    for (int i = 0; i < f.length; i++) {
+                        f[i] = f[i] == null ? "" : f[i];
+                    }
+                    out.add(new Clue(out.size(), StepType.valueOf(f[0]), Tier.valueOf(f[1].toUpperCase(Locale.ROOT)),
+                            Integer.parseInt(f[2]), Integer.parseInt(f[3]), Integer.parseInt(f[4]), f[5], f[6], Guardian.parse(f[7]),
+                            f[8].isEmpty() ? List.of() : List.of(f[8].split("\\|")), f[9], f[10], f[11], f[12], f[13], f[14], f[15]));
+                }
+            }
+            clues = Collections.unmodifiableList(out);
+        }
+        return clues;
+    }
+
+    /** STASH units by name (RuneLite STASHUnit). */
+    public static synchronized Map<String, Stash> stashUnits() {
+        if (stash == null) {
+            Map<String, Stash> out = new LinkedHashMap<>();
+            for (String line : ClueStepData.STASH.split("\n")) {
+                String[] f = line.split("\t");
+                if (f.length == 5) {
+                    out.put(f[0], new Stash(f[0], Tier.valueOf(f[1].toUpperCase(Locale.ROOT)), Integer.parseInt(f[2]),
+                            Integer.parseInt(f[3]), Integer.parseInt(f[4])));
+                }
+            }
+            stash = Collections.unmodifiableMap(out);
+        }
+        return stash;
+    }
+
+    /** A readable name for a RuneLite object id ("CRATE2_OLD" -> "crate"). */
+    public static String objectName(String object) {
+        String o = object.toLowerCase(Locale.ROOT);
+        for (String k : new String[]{"drawers", "crate", "chest", "bookcase", "boxes", "box", "barrel", "bucket", "cupboard",
+                "wardrobe", "coffin", "haystack", "hay", "rack", "sack", "cabinet", "shelves", "stone", "bush", "rock", "pot", "table",
+                "log", "boulder", "tree"}) {
+            if (o.contains(k)) {
+                return k.equals("hay") ? "haystack" : k;
+            }
+        }
+        return "spot";
+    }
+
+    // ------------------------------------------------------------------ NPCs
 
     /** NPCs that exist in the world: the core quest characters and every module NPC with a resolvable place. */
     public static List<Npc> npcs() {
@@ -230,158 +408,231 @@ public final class ClueScrolls {
         return p == null ? null : new int[]{p.osrsX(), p.osrsY()};
     }
 
-    // ---------------- Generation ----------------
+    static String norm(String name) {
+        String n = name == null ? "" : name.toLowerCase(Locale.ROOT).replace('’', '\'');
+        n = n.replaceAll("[^a-z0-9' ]", " ").replaceAll("\\s+", " ").trim();
+        return ALIASES.getOrDefault(n, n);
+    }
+
+    /** The NPC of this world standing for a clue's NPC: same name, nearest to the clue's tile (dungeon tiles folded up). */
+    public static Npc resolveNpc(String name, int x, int y, List<Npc> npcs) {
+        String want = norm(name);
+        int ty = y >= DUNGEON_Y ? y - DUNGEON_Y : y;
+        Npc best = null;
+        double bestD = Double.MAX_VALUE;
+        for (Npc n : npcs) {
+            if (!norm(n.name()).equals(want)) {
+                continue;
+            }
+            int ny = n.y() >= DUNGEON_Y ? n.y() - DUNGEON_Y : n.y();
+            double d = Math.hypot(n.x() - x, ny - ty);
+            if (d < bestD) {
+                bestD = d;
+                best = n;
+            }
+        }
+        return best != null && bestD <= NPC_RANGE ? best : null;
+    }
+
+    private static Set<String> monsterNames;
+
+    /** Every monster name this world has (normalised), for kill steps and key steps. */
+    public static synchronized Set<String> monsterNames() {
+        if (monsterNames == null) {
+            Set<String> out = new HashSet<>();
+            for (Monster m : Monster.values()) {
+                out.add(norm(m.displayName()));
+            }
+            for (MonsterDef m : ContentRegistry.monsters()) {
+                out.add(norm(m.name));
+            }
+            for (BossDef b : ContentRegistry.bosses()) {
+                out.add(norm(b.name));
+            }
+            monsterNames = out;
+        }
+        return monsterNames;
+    }
+
+    /** Whether a killed monster's name counts for a clue's monster (alternatives split by "|"). */
+    public static boolean monsterMatches(String clueMonster, String killedName) {
+        if (clueMonster == null || clueMonster.isEmpty()) {
+            return false;
+        }
+        String k = norm(killedName);
+        for (String alt : clueMonster.split("\\|")) {
+            if (norm(alt).equals(k)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Whether any of a clue's monsters ("|" alternatives) lives in this world. */
+    public static boolean monsterExists(String clueMonster) {
+        for (String alt : clueMonster.split("\\|")) {
+            if (!alt.isBlank() && monsterNames().contains(norm(alt))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // ------------------------------------------------------------------ the step pool
+
+    /** One OSRS clue scroll id of a tier: its variants (one for most clues; every location/item/song for the shared ones). */
+    record Entry(List<Clue> variants, int weight) {
+    }
+
+    /** Whether a tile is on this world's surface (no dungeons, instances or upper-plane-only areas) and on land. */
+    public static boolean onSurfaceLand(int x, int y) {
+        if (y >= 4160 || x < 1000 || x > 4000 || y < 2400) {
+            return false;
+        }
+        for (int dx = -DIG_RADIUS; dx <= DIG_RADIUS; dx += 2) {
+            for (int dy = -DIG_RADIUS; dy <= DIG_RADIUS; dy += 2) {
+                if (!Elevation.isOcean(GielinorMap.toBlockX(x + dx), GielinorMap.toBlockZ(y + dy))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** Why a clue can't be part of a trail in this world, or null if it can. */
+    public static String unusable(Clue c, List<Npc> npcs) {
+        boolean npcStep = c.type() == StepType.ANAGRAM || c.type() == StepType.CIPHER || c.type() == StepType.MUSIC
+                || c.type() == StepType.FALO || c.type() == StepType.CHARLIE || c.type() == StepType.SHERLOCK
+                || (c.type() == StepType.CRYPTIC && c.action() == Action.TALK);
+        if (npcStep) {
+            if (c.type() == StepType.CRYPTIC && (c.task().equals("sherlock") || c.task().equals("hotcold"))) {
+                return "shared entry";
+            }
+            Npc n = resolveNpc(c.npc(), c.x(), c.y(), npcs);
+            if (n == null) {
+                return "no NPC " + c.npc();
+            }
+            int[] at = new int[]{n.x(), n.y() >= DUNGEON_Y ? n.y() - DUNGEON_Y : n.y()};
+            if (!onSurfaceLand(at[0], at[1])) {
+                return "NPC off the surface";
+            }
+            if ((c.type() == StepType.FALO || c.type() == StepType.CHARLIE) && ClueReqs.groups(c.req()).isEmpty()) {
+                return "item missing";
+            }
+            if (c.type() == StepType.SHERLOCK && ClueChallenges.of(c.text()) == null) {
+                return "challenge not modelled";
+            }
+            return null;
+        }
+        if (c.action() == Action.KILL) {
+            return monsterExists(c.npc()) ? null : "no monster " + c.npc();
+        }
+        if (!onSurfaceLand(c.x(), c.y())) {
+            return "not on the surface";
+        }
+        return null;
+    }
+
+    /** The tier's clue scroll ids that this world can host, with their OSRS weights. */
+    static synchronized List<Entry> pool(Tier tier, List<Npc> npcs) {
+        if (poolNpcs != npcs) {
+            POOLS.clear();
+            poolNpcs = npcs;
+        }
+        return POOLS.computeIfAbsent(tier, t -> {
+            List<Entry> out = new ArrayList<>();
+            Map<StepType, List<Clue>> shared = new EnumMap<>(StepType.class);
+            for (Clue c : clues()) {
+                if (c.tier() != t || unusable(c, npcs) != null) {
+                    continue;
+                }
+                if (c.type() == StepType.HOT_COLD || c.type() == StepType.CHARLIE || c.type() == StepType.FALO
+                        || c.type() == StepType.SHERLOCK) {
+                    shared.computeIfAbsent(c.type(), k -> new ArrayList<>()).add(c);
+                } else {
+                    out.add(new Entry(List.of(c), 1));
+                }
+            }
+            shared.forEach((type, list) -> out.add(new Entry(List.copyOf(list),
+                    type == StepType.SHERLOCK && t == Tier.ELITE ? 15 : 1)));
+            return List.copyOf(out);
+        });
+    }
+
+    /** The clues a tier's trails can use in this world (for tests and the self-test). */
+    public static List<Clue> usableClues(Tier tier, List<Npc> npcs) {
+        List<Clue> out = new ArrayList<>();
+        for (Entry e : pool(tier, npcs)) {
+            out.addAll(e.variants());
+        }
+        return out;
+    }
+
+    // ------------------------------------------------------------------ generation
 
     public static int stepCount(Tier tier, Random random) {
         return tier.minSteps() + random.nextInt(tier.maxSteps() - tier.minSteps() + 1);
     }
 
-    /** Generates the full trail for a clue from its seed. */
+    /** Generates the full trail for a clue from its seed. OSRS draws each step independently (repeats can happen). */
     public static List<Step> generate(Tier tier, long seed, List<Npc> npcs) {
         Random random = new Random(seed);
         int n = stepCount(tier, random);
+        List<Entry> pool = pool(tier, npcs);
+        int total = 0;
+        for (Entry e : pool) {
+            total += e.weight();
+        }
         List<Step> steps = new ArrayList<>();
-        boolean falo = false;
-        for (int i = 0; i < n; i++) {
-            Step s = step(tier, random, npcs);
-            if (s.type() == StepType.FALO) {
-                if (falo) {
-                    s = talkStep(StepType.ANAGRAM, random, npcs, null);
+        Clue last = null;
+        for (int i = 0; i < n && total > 0; i++) {
+            Clue c;
+            int guard = 0;
+            do {
+                int r = random.nextInt(total);
+                Entry pick = pool.get(0);
+                for (Entry e : pool) {
+                    r -= e.weight();
+                    if (r < 0) {
+                        pick = e;
+                        break;
+                    }
                 }
-                falo = true;
-            }
-            steps.add(s);
+                c = pick.variants().get(random.nextInt(pick.variants().size()));
+            } while (c.equals(last) && ++guard < 8); // never the same clue twice in a row
+            last = c;
+            steps.add(step(c, random, npcs));
         }
         return steps;
     }
 
-    static Step step(Tier tier, Random random, List<Npc> npcs) {
-        List<StepType> types = types(tier);
-        StepType type = types.get(random.nextInt(types.size()));
-        if ((type == StepType.ANAGRAM || type == StepType.CRYPTIC || type == StepType.CHARLIE || type == StepType.CIPHER
-                || type == StepType.PUZZLE || type == StepType.LIGHT_BOX || type == StepType.FALO) && npcs.isEmpty()) {
-            type = StepType.MAP;
-        }
-        switch (type) {
-            case PUZZLE -> {
-                return talkStep(type, random, npcs, CluePuzzles.PUZZLE_BOX);
-            }
-            case LIGHT_BOX -> {
-                return talkStep(type, random, npcs, CluePuzzles.LIGHT_BOX);
-            }
-            case FALO -> {
-                Npc falo = null;
-                for (Npc npc : npcs) {
-                    if (npc.id().equals(CluePuzzles.FALO)) {
-                        falo = npc;
-                    }
-                }
-                if (falo == null) {
-                    return talkStep(StepType.ANAGRAM, random, npcs, null);
-                }
-                CluePuzzles.Song song = CluePuzzles.SONGS.get(random.nextInt(CluePuzzles.SONGS.size()));
-                return new Step(type, "A bard's song is written on the scroll: \"" + song.verse() + "\" Bring Falo the Bard what it names.",
-                        falo.x(), falo.y(), falo.id(), falo.name(), song.item());
-            }
-            case COORDINATE -> {
-                Spot s = spot(tier, random);
-                int x = s.x() + random.nextInt(9) - 4;
-                int y = s.y() + random.nextInt(9) - 4;
-                return new Step(type, coordinateText(x, y), x, y, null, null, null);
-            }
-            case MAP -> {
-                Spot s = spot(tier, random);
-                return new Step(type, "The map shows a cross marked near " + s.description() + ". Dig there with a spade.",
-                        s.x(), s.y(), null, null, null);
-            }
-            case ANAGRAM -> {
-                Npc npc = npcs.get(random.nextInt(npcs.size()));
-                return new Step(type, "This anagram reveals who to speak to next: " + anagram(npc.name(), random), npc.x(), npc.y(),
-                        npc.id(), npc.name(), null);
-            }
-            case CRYPTIC -> {
-                Npc npc = npcs.get(random.nextInt(npcs.size()));
-                return new Step(type, cryptic(npc), npc.x(), npc.y(), npc.id(), npc.name(), null);
-            }
-            case CIPHER -> {
-                Npc npc = npcs.get(random.nextInt(npcs.size()));
-                return new Step(type, "The cipher reads: " + cipher(npc.name(), 1 + random.nextInt(25)), npc.x(), npc.y(), npc.id(),
-                        npc.name(), null);
-            }
-            case HOT_COLD -> {
-                Spot s = spot(tier, random);
-                int x = s.x() + random.nextInt(9) - 4;
-                int y = s.y() + random.nextInt(9) - 4;
-                return new Step(type, "Buried treasure awaits " + (tier == Tier.BEGINNER ? "somewhere in the lands around Lumbridge"
-                        : "somewhere in Gielinor") + ". Feel the strange device to find out how close you are, then dig.", x, y, null,
-                        null, null);
-            }
-            case EMOTE -> {
-                Spot s = spot(tier, random);
-                String emote = EMOTES.get(random.nextInt(EMOTES.size()));
-                String item = null;
-                if (tier != Tier.BEGINNER) {
-                    List<String> equip = FETCH.get(tier);
-                    item = equip.get(random.nextInt(equip.size()));
-                }
-                return new Step(type, emote + " at " + s.description() + "." + (item == null ? "" : " Equip or carry: "
-                        + item.replace('_', ' ') + "."), s.x(), s.y(), null, null, item, emote);
-            }
-            default -> {
-                Npc npc = npcs.get(random.nextInt(npcs.size()));
-                List<String> fetch = FETCH.get(tier);
-                String item = fetch.get(random.nextInt(fetch.size()));
-                return new Step(StepType.CHARLIE, "Talk to " + npc.name() + " while carrying: " + item.replace('_', ' ') + ".",
-                        npc.x(), npc.y(), npc.id(), npc.name(), item);
+    /** Builds a trail step for one clue: resolves its NPC, the box it hands over and the key monster. */
+    public static Step step(Clue c, Random random, List<Npc> npcs) {
+        String npcId = null;
+        String npcName = null;
+        if (c.action() == Action.TALK) {
+            Npc n = resolveNpc(c.npc(), c.x(), c.y(), npcs);
+            if (n != null) {
+                npcId = n.id();
+                npcName = n.name();
             }
         }
-    }
-
-    /**
-     * A talk step: an anagram or cryptic clue naming an NPC; for puzzle and light box steps the NPC hands
-     * over the box (item) and gives the next clue once it is solved.
-     */
-    static Step talkStep(StepType type, Random random, List<Npc> npcs, String box) {
-        Npc npc = npcs.get(random.nextInt(npcs.size()));
-        String who = random.nextBoolean() ? "This anagram reveals who to speak to next: " + anagram(npc.name(), random) : cryptic(npc);
-        String text = box == null ? who : who + " They will hand you " + (box.equals(CluePuzzles.LIGHT_BOX) ? "a light box" : "a puzzle box")
-                + " to solve.";
-        return new Step(type, text, npc.x(), npc.y(), npc.id(), npc.name(), box);
-    }
-
-    private static Spot spot(Tier tier, Random random) {
-        List<Spot> pool = switch (tier) {
-            case BEGINNER, EASY -> NEAR;
-            case MEDIUM -> random.nextBoolean() ? NEAR : MID;
-            case HARD -> random.nextBoolean() ? MID : FAR;
-            case ELITE -> random.nextInt(3) == 0 ? MID : random.nextBoolean() ? FAR : EXOTIC;
-            case MASTER -> random.nextBoolean() ? FAR : EXOTIC;
-        };
-        return pool.get(random.nextInt(pool.size()));
-    }
-
-    static String cryptic(Npc npc) {
-        String known = CRYPTIC.get(npc.id());
-        if (known != null) {
-            return known;
+        String box = null;
+        boolean boxable = c.type() == StepType.ANAGRAM || c.type() == StepType.CIPHER
+                || (c.type() == StepType.CRYPTIC && c.action() == Action.TALK);
+        if (c.type() == StepType.CRYPTIC && c.task().equals("puzzle")) {
+            box = CluePuzzles.PUZZLE_BOX;
+        } else if (boxable && c.answer().isEmpty() && c.type() != StepType.CRYPTIC && c.tier().ordinal() >= Tier.HARD.ordinal()) {
+            box = c.tier() == Tier.MASTER && random.nextBoolean() ? CluePuzzles.LIGHT_BOX : CluePuzzles.PUZZLE_BOX;
         }
-        String name = npc.name();
-        int letters = name.replaceAll("[^A-Za-z]", "").length();
-        return "Seek one whose name has " + letters + " letters and begins with '" + Character.toUpperCase(name.charAt(0))
-                + "'. They wait " + direction(npc.x(), npc.y()) + ".";
+        String key = null;
+        if (c.type() == StepType.CRYPTIC && c.task().equals("key") && !c.npc().isEmpty() && monsterExists(c.npc())) {
+            key = c.npc();
+        }
+        return new Step(c, npcId, npcName, box, key);
     }
 
-    /** A rough description of where coordinates are relative to Lumbridge. */
-    static String direction(int x, int y) {
-        int dx = x - 3222;
-        int dy = y - 3218;
-        if (Math.abs(dx) < 60 && Math.abs(dy) < 60) {
-            return "not far from Lumbridge";
-        }
-        String ns = dy > 60 ? "north" : dy < -60 ? "south" : "";
-        String ew = dx > 60 ? "east" : dx < -60 ? "west" : "";
-        return "far to the " + ns + (ns.isEmpty() || ew.isEmpty() ? "" : "-") + ew + " of Lumbridge";
-    }
+    // ------------------------------------------------------------------ text helpers
 
     /** OSRS cipher clues: the NPC's name Caesar-shifted by {@code shift} letters, in capitals. */
     public static String cipher(String name, int shift) {
@@ -390,53 +641,6 @@ public final class ClueScrolls {
             sb.append(c >= 'A' && c <= 'Z' ? (char) ('A' + (c - 'A' + shift) % 26) : c);
         }
         return sb.toString();
-    }
-
-    /** Hot/cold strange device reading for a distance in tiles (OSRS temperatures). */
-    public static String temperature(int distance) {
-        if (distance <= 4) {
-            return "incredibly hot";
-        }
-        if (distance <= 10) {
-            return "very hot";
-        }
-        if (distance <= 30) {
-            return "hot";
-        }
-        if (distance <= 70) {
-            return "warm";
-        }
-        if (distance <= 150) {
-            return "cold";
-        }
-        if (distance <= 300) {
-            return "very cold";
-        }
-        return "ice cold";
-    }
-
-    /** Emote steps are performed within this many tiles of the spot. */
-    public static final int EMOTE_RADIUS = 6;
-
-    /** Every dig/emote spot of every tier (for tests). */
-    public static List<int[]> allSpots() {
-        List<int[]> out = new ArrayList<>();
-        for (List<Spot> pool : List.of(NEAR, MID, FAR, EXOTIC)) {
-            for (Spot s : pool) {
-                out.add(new int[]{s.x(), s.y()});
-            }
-        }
-        return out;
-    }
-
-    /** Ids of the characters the hand-written cryptic clues point to (for tests). */
-    public static java.util.Set<String> crypticTargets() {
-        return CRYPTIC.keySet();
-    }
-
-    /** Items emote/Charlie steps can ask for (for tests). */
-    public static List<String> fetchItems(Tier tier) {
-        return FETCH.get(tier);
     }
 
     /** Scrambles a name into an upper-case anagram (never the name itself). */
@@ -479,8 +683,46 @@ public final class ClueScrolls {
         return (int) Math.round((degrees * 60 + minutes) * 1.875);
     }
 
-    /** Dig steps succeed within this many tiles of the spot. */
-    public static final int DIG_RADIUS = 4;
+    // ------------------------------------------------------------------ hot/cold
+
+    /**
+     * The strange device's reading for a distance in steps (Chebyshev distance, as RuneLite's solver uses), per the
+     * wiki: ice cold 500+, very cold 200+, cold 150+, warm 100+, hot 70+, very hot 30+, incredibly hot from 4 (beginner)
+     * or 5 (master), visibly shaking below that.
+     */
+    public static String temperature(Tier tier, int distance) {
+        if (distance >= 500) {
+            return "ice cold";
+        }
+        if (distance >= 200) {
+            return "very cold";
+        }
+        if (distance >= 150) {
+            return "cold";
+        }
+        if (distance >= 100) {
+            return "warm";
+        }
+        if (distance >= 70) {
+            return "hot";
+        }
+        if (distance >= 30) {
+            return "very hot";
+        }
+        return distance > (tier == Tier.MASTER ? 4 : 3) ? "incredibly hot" : "visibly shaking";
+    }
+
+    /** Chebyshev distance in tiles (the strange device counts steps, ignoring obstacles). */
+    public static int steps(int x1, int y1, int x2, int y2) {
+        return Math.max(Math.abs(x1 - x2), Math.abs(y1 - y2));
+    }
+
+    /** The strange device of a hot/cold tier (Reldo's beginner device, Jorral's master one). */
+    public static String strangeDevice(Tier tier) {
+        return tier == Tier.MASTER ? "strange_device_master" : "strange_device";
+    }
+
+    // ------------------------------------------------------------------ drops
 
     /**
      * Clue scroll drop rate (1 in n, 0 = none) for a monster: its OSRS wiki rate from {@link ClueDrops} when the
@@ -492,8 +734,8 @@ public final class ClueScrolls {
     }
 
     /** Clue tiers a monster's own drop table already rolls (so the generic clue roll skips them). */
-    public static java.util.Set<Tier> ownClueTiers(java.util.Collection<com.runecraft.osrs.data.Drop> drops) {
-        java.util.Set<Tier> out = java.util.EnumSet.noneOf(Tier.class);
+    public static Set<Tier> ownClueTiers(java.util.Collection<com.runecraft.osrs.data.Drop> drops) {
+        Set<Tier> out = java.util.EnumSet.noneOf(Tier.class);
         if (drops != null) {
             for (com.runecraft.osrs.data.Drop d : drops) {
                 Tier t = Tier.byScroll(d.item());

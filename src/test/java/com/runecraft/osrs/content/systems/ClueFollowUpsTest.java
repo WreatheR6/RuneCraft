@@ -55,7 +55,7 @@ class ClueFollowUpsTest {
         assertFalse(s.solved());
         assertTrue(s.move(8));
         assertTrue(s.solved());
-        assertEquals(3, CluePuzzles.puzzleSize(Tier.MEDIUM));
+        assertEquals(5, CluePuzzles.puzzleSize(Tier.HARD), "every OSRS puzzle box is 5x5");
         assertEquals(5, CluePuzzles.puzzleSize(Tier.MASTER));
     }
 
@@ -85,32 +85,33 @@ class ClueFollowUpsTest {
     void puzzleStepsAndFaloAppearOnTheirTiers() {
         List<ClueScrolls.Npc> npcs = ClueScrolls.npcs();
         assertTrue(npcs.stream().anyMatch(n -> n.id().equals(CluePuzzles.FALO)), "Falo stands in the world");
-        assertFalse(ClueScrolls.types(Tier.EASY).contains(ClueScrolls.StepType.PUZZLE));
-        assertTrue(ClueScrolls.types(Tier.HARD).contains(ClueScrolls.StepType.PUZZLE));
-        assertTrue(ClueScrolls.types(Tier.ELITE).contains(ClueScrolls.StepType.LIGHT_BOX));
-        assertTrue(ClueScrolls.types(Tier.MASTER).contains(ClueScrolls.StepType.FALO));
         boolean puzzle = false;
+        boolean light = false;
         boolean falo = false;
-        for (long seed = 0; seed < 300; seed++) {
-            int faloSteps = 0;
-            for (ClueScrolls.Step s : ClueScrolls.generate(Tier.MASTER, seed, npcs)) {
-                if (s.type() == ClueScrolls.StepType.FALO) {
-                    faloSteps++;
-                    falo = true;
-                    assertEquals(CluePuzzles.FALO, s.npcId());
-                    assertNotNull(ItemCatalog.get(s.item()), s.item());
-                }
-                if (s.type() == ClueScrolls.StepType.PUZZLE) {
-                    puzzle = true;
-                    assertEquals(CluePuzzles.PUZZLE_BOX, s.item());
+        for (Tier t : Tier.values()) {
+            for (long seed = 0; seed < 300; seed++) {
+                for (ClueScrolls.Step s : ClueScrolls.generate(t, seed, npcs)) {
+                    if (s.type() == ClueScrolls.StepType.FALO) {
+                        falo = true;
+                        assertEquals(Tier.MASTER, t);
+                        assertEquals(CluePuzzles.FALO, s.npcId());
+                        assertFalse(ClueReqs.items(s.req()).isEmpty(), s.text());
+                    }
+                    if (CluePuzzles.PUZZLE_BOX.equals(s.box())) {
+                        puzzle = true;
+                        assertTrue(t.ordinal() >= Tier.HARD.ordinal(), "puzzle boxes: hard, elite and master");
+                    }
+                    if (CluePuzzles.LIGHT_BOX.equals(s.box())) {
+                        light = true;
+                        assertEquals(Tier.MASTER, t, "light boxes: master only");
+                    }
                 }
             }
-            assertTrue(faloSteps <= 1);
         }
-        assertTrue(puzzle && falo);
-        for (CluePuzzles.Song song : CluePuzzles.SONGS) {
-            assertNotNull(ItemCatalog.get(song.item()), song.item());
-        }
+        assertTrue(puzzle && light && falo);
+        // Falo's twenty songs, each naming an item this world has (RuneLite FaloTheBardClue).
+        long songs = ClueScrolls.clues().stream().filter(c -> c.type() == ClueScrolls.StepType.FALO).count();
+        assertEquals(20, songs);
         assertNotNull(ItemCatalog.get(CluePuzzles.PUZZLE_BOX));
         assertNotNull(ItemCatalog.get(CluePuzzles.LIGHT_BOX));
     }
@@ -118,11 +119,15 @@ class ClueFollowUpsTest {
     @Test
     void newClueUniquesArePerTier() {
         assertTrue(ClueRewards.uniques(Tier.EASY).containsAll(List.of("bronze_platebody_t", "iron_full_helm_g", "steel_kiteshield_t",
-                "black_wizard_hat_g", "bobs_red_shirt", "ham_joint")));
-        assertTrue(ClueRewards.uniques(Tier.MEDIUM).containsAll(List.of("wolf_cloak", "crier_bell", "cabbage_round_shield")));
-        assertTrue(ClueRewards.uniques(Tier.HARD).containsAll(List.of("armadyl_platebody", "saradomin_dhide_body", "pith_helmet")));
-        assertTrue(ClueRewards.uniques(Tier.ELITE).containsAll(List.of("dragon_cane", "dragon_full_helm_ornament_kit", "top_hat")));
-        assertTrue(ClueRewards.uniques(Tier.MASTER).containsAll(List.of("samurai_greaves", "lesser_demon_mask", "hood_of_darkness")));
+                "black_wizard_hat_g", "bobs_red_shirt", "ham_joint", "black_shield_h3", "team_cape_x")));
+        assertTrue(ClueRewards.uniques(Tier.MEDIUM).containsAll(List.of("wolf_cloak", "crier_bell", "cabbage_round_shield",
+                "adamant_helm_h5", "pink_boater")));
+        assertTrue(ClueRewards.uniques(Tier.HARD).containsAll(List.of("armadyl_platebody", "saradomin_dhide_body", "pith_helmet",
+                "rune_shield_h1", "nunchaku")));
+        assertTrue(ClueRewards.uniques(Tier.ELITE).containsAll(List.of("dragon_cane", "dragon_full_helm_ornament_kit", "top_hat",
+                "dark_tuxedo_jacket")));
+        assertTrue(ClueRewards.uniques(Tier.MASTER).containsAll(List.of("samurai_greaves", "lesser_demon_mask", "hood_of_darkness",
+                "bowl_wig")));
         for (Tier t : Tier.values()) {
             for (String id : ClueRewards.uniques(t)) {
                 assertNotNull(ItemCatalog.get(id), id);

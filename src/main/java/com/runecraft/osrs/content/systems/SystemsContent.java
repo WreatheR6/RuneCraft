@@ -29,6 +29,10 @@ public final class SystemsContent implements ContentModule {
     /** Falo the Bard stands on the hill north of Seers' Village (OSRS ~2689, 3550). */
     public static final int FALO_X = 2689;
     public static final int FALO_Y = 3550;
+    /** Watson (master clue exchange) in his house in Hosidius (OSRS Wiki map 1646, 3574). */
+    public static final String WATSON = "watson";
+    public static final int WATSON_X = 1646;
+    public static final int WATSON_Y = 3574;
     /** Ghommal, the Combat Achievements taskmaster, outside the Warriors' Guild. */
     public static final String GHOMMAL = "ghommal";
 
@@ -48,6 +52,19 @@ public final class SystemsContent implements ContentModule {
                 .examine("Slide the pieces into order to solve the puzzle.");
         Defs.simple(items, CluePuzzles.LIGHT_BOX, "Light box", "package", 0xE0D060, 1).stack(1)
                 .examine("Turn all of the lights on to solve the puzzle.");
+        // Treasure trail tools (OSRS Wiki): the sextant (Murphy, Port Khazard), watch (Brother Kojo, Clock Tower) and chart
+        // (Observatory professor) locate the player for coordinate clues; Reldo's and Jorral's strange devices find hot/cold
+        // treasure; medium and elite key steps drop a key from the monster the clue names.
+        Defs.simple(items, "sextant", "Sextant", "tool_generic", 0xB09040, 50).stack(1).weight(0.2)
+                .examine("Used by navigators to find their position in Gielinor.");
+        Defs.simple(items, "watch", "Watch", "bracelet", 0xC0C0C8, 50).stack(1).weight(0.1).examine("A handy way to tell the time.");
+        Defs.simple(items, "chart", "Chart", "map", 0xE0D0A0, 50).stack(1).weight(0.1).examine("A chart of the stars.");
+        Defs.simple(items, ClueScrolls.strangeDevice(ClueScrolls.Tier.BEGINNER), "Strange device", "orb", 0x8AA0C0, 20).stack(1)
+                .weight(0.02).examine("You can sense strange powers emanating from it.");
+        Defs.simple(items, ClueScrolls.strangeDevice(ClueScrolls.Tier.MASTER), "Strange device", "orb", 0x6A3A8A, 2).stack(1)
+                .weight(0.01).examine("You can sense strange powers emanating from it.");
+        Defs.simple(items, "key_medium", "Key (medium)", "key", 0xB09040, 1).stack(1).examine("A key to unlock a treasure chest.");
+        Defs.simple(items, "key_elite", "Key (elite)", "key", 0xE0C030, 1).stack(1).examine("A key to unlock a treasure chest.");
         // Weiss Salt Mine (ItemSources): basalt and the three salts that make the basalt teleports (OSRS Wiki values; the salts
         // are in CommonItems, since the skilling module's eternal brazier takes them too).
         Defs.simple(items, "basalt", "Basalt", "ore", 0x3A3A40, 10).stack(1).weight(1).examine("A rock that holds salts well.");
@@ -117,6 +134,7 @@ public final class SystemsContent implements ContentModule {
                 PlaceDef.of("lunar_isle", "Lunar Isle", 2100, 3914, PlaceDef.Style.TOWN, List.of(LUNAR_ALTAR)),
                 PlaceDef.of("arceuus_dark_altar", "Dark Altar", 1715, 3883, PlaceDef.Style.RUINS, List.of(DARK_ALTAR)),
                 PlaceDef.of(CluePuzzles.FALO, "Falo the Bard", FALO_X, FALO_Y, PlaceDef.Style.NONE, List.of()),
+                PlaceDef.of(WATSON, "Watson", WATSON_X, WATSON_Y, PlaceDef.Style.NONE, List.of()),
                 PlaceDef.of(GHOMMAL, "Ghommal", CombatAchievements.GHOMMAL_X, CombatAchievements.GHOMMAL_Y, PlaceDef.Style.NONE, List.of()),
                 PlaceDef.of(DiaryExtras.TINDEL, "Tindel Marchant", DiaryExtras.TINDEL_X, DiaryExtras.TINDEL_Y, PlaceDef.Style.NONE, List.of()),
                 PlaceDef.of(DiaryExtras.GENIE, "Genie's crevice", DiaryExtras.GENIE_X, DiaryExtras.GENIE_Y, PlaceDef.Style.NONE, List.of()),
@@ -141,6 +159,7 @@ public final class SystemsContent implements ContentModule {
         }
         places.add(PlaceDef.of(ItemSources.SKULGRIMEN, "Skulgrimen's Battle Gear", 2662, 3693, PlaceDef.Style.NONE, List.of())); // approx tile
         places.add(PlaceDef.of(ItemSources.PEER_THE_SEER, "Peer the Seer", 2632, 3667, PlaceDef.Style.NONE, List.of())); // approx tile
+        places.addAll(ClueNpcs.places());
         // Bank deposit boxes: nothing is levelled; the hooks put the box on the ground at the spot.
         for (com.runecraft.osrs.bank.DepositBoxes.Spot spot : com.runecraft.osrs.bank.DepositBoxes.SPOTS) {
             places.add(PlaceDef.of(spot.id(), spot.name(), spot.osrsX(), spot.osrsY(), PlaceDef.Style.NONE, List.of()));
@@ -149,11 +168,17 @@ public final class SystemsContent implements ContentModule {
     }
 
     @Override
+    public List<com.runecraft.osrs.content.MonsterDef> monsters() {
+        return ClueGuardians.monsters();
+    }
+
+    @Override
     public List<NpcDef> npcs() {
-        return List.of(
+        List<NpcDef> npcs = new ArrayList<>(ClueNpcs.npcs());
+        npcs.addAll(List.of(
                 NpcDef.of("grand_exchange_clerk", "Grand Exchange Clerk", "grand_exchange", 3, 0, 0xE0B090, 0x3A6A3A, 0x2A2A2A, 0x3A6A3A),
                 NpcDef.of("wise_old_man", "Wise Old Man", "grand_exchange", -3, 2, 0xE0B090, 0x3050C0, 0x3050C0, 0xE0E0E0),
-                NpcDef.of("watson", "Watson", "grand_exchange", 0, 4, 0xE0B090, 0x6A4A2A, 0x2A2A2A, 0x6A4A2A),
+                NpcDef.of(WATSON, "Watson", WATSON, 0, 0, 0xE0B090, 0x6A4A2A, 0x2A2A2A, 0x6A4A2A),
                 NpcDef.of("achievement_diary_master", "Diary master", "grand_exchange", -4, -2, 0xE0B090, 0x8A6A3A, 0x5A3A2A, 0x8A6A3A),
                 NpcDef.of(CluePuzzles.FALO, "Falo the Bard", CluePuzzles.FALO, 0, 0, 0xE0B090, 0x3A6A9A, 0x5A3A2A, 0xC03030),
                 NpcDef.of(GHOMMAL, "Ghommal", GHOMMAL, 0, 0, 0xC8A080, 0x8A8A90, 0x5A5A60, 0x8A8A90),
@@ -163,7 +188,8 @@ public final class SystemsContent implements ContentModule {
                 NpcDef.of(DiaryExtras.SAWMILL_OPERATOR, "Sawmill operator", DiaryExtras.SAWMILL_OPERATOR, 0, 0, 0xE0B090, 0x6A4A2A,
                         0x3A3A4A, 0x8A6A3A),
                 NpcDef.of(ItemSources.SKULGRIMEN, "Skulgrimen", ItemSources.SKULGRIMEN, 0, 0, 0xE8C0A0, 0x6A5A4A, 0x3A2A1A, 0x8A6A3A),
-                NpcDef.of(ItemSources.PEER_THE_SEER, "Peer the Seer", ItemSources.PEER_THE_SEER, 0, 0, 0xE8C0A0, 0x3A3A6A, 0x2A2A3A, 0xE0C060));
+                NpcDef.of(ItemSources.PEER_THE_SEER, "Peer the Seer", ItemSources.PEER_THE_SEER, 0, 0, 0xE8C0A0, 0x3A3A6A, 0x2A2A3A, 0xE0C060)));
+        return npcs;
     }
 
     @Override

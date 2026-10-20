@@ -471,6 +471,9 @@ public final class SpawnTable {
             m.put("killerwatt", "lives in the Killerwatt plane, which isn't part of this world");
             m.put("sea_snake_young", "lives in the Royal Trouble quest's sea snake cave, which isn't part of this world");
             m.put("minecraft:villager", "stats for stray vanilla villagers; townsfolk spawn as \"man\" and \"woman\"");
+            for (String id : com.runecraft.osrs.content.systems.ClueScrolls.guardianMonsters()) {
+                m.put(id, "Treasure Trails guardian: appears at its clue step");
+            }
             encounterOnly = Collections.unmodifiableMap(m);
         }
         return encounterOnly;

@@ -20,111 +20,34 @@ import static com.runecraft.osrs.content.systems.Defs.req;
 import static com.runecraft.osrs.content.systems.Defs.st;
 
 /**
- * Treasure trail reward items and casket tables. Roll counts, unique rates, "mega-rare" rates and the
- * master clue chance follow the OSRS wiki closely (some tables are condensed).
+ * Treasure trail reward items and casket tables. The tables are the OSRS Wiki's reward casket pages, per reward roll
+ * ({@link ClueRewardData}: uniques, mega-rares, the standard table and the shared rewards, Mod Tide's 2019 rates);
+ * a casket rolls the tier's number of rewards (beginner 1-3, easy 2-4, medium 3-5, hard 4-6, elite 4-6, master 5-7)
+ * plus the tertiary master clue (easy 1/50, medium 1/30, hard 1/15, elite 1/5) and, from master caskets, the
+ * Bloodhound (1/1,000). Rows whose item this world lacks are left out and the rest of the roll scaled up.
  */
 public final class ClueRewards {
     public record Loot(String item, int min, int max, int weight) {
     }
 
-    public record Reward(String item, int count) {
+    public record Reward(String item, int count, boolean noted) {
+        public Reward(String item, int count) {
+            this(item, count, false);
+        }
     }
 
-    /** Uniques per tier (the clue collection log pages). */
-    private static final Map<Tier, List<String>> UNIQUES = new EnumMap<>(Tier.class);
-    /** Very rare rewards (3rd age, gilded, ranger boots, bloodhound...): item -> 1-in-n chance per casket. */
-    private static final Map<Tier, Map<String, Integer>> MEGA = new EnumMap<>(Tier.class);
-    private static final Map<Tier, List<Loot>> STANDARD = new EnumMap<>(Tier.class);
+    /** One row of a casket table: item, quantity range, noted, the probability per roll and the wiki section. */
+    public record Row(String section, String item, int min, int max, boolean noted, double chance) {
+    }
+
+    /** Items the item definitions below declare as a tier's uniques (checked against the wiki tables by the tests). */
+    private static final Map<Tier, List<String>> DECLARED = new EnumMap<>(Tier.class);
+    private static final Map<Tier, List<Row>> TABLES = new EnumMap<>(Tier.class);
 
     static {
         for (Tier t : Tier.values()) {
-            UNIQUES.put(t, new ArrayList<>());
-            MEGA.put(t, new LinkedHashMap<>());
-            STANDARD.put(t, new ArrayList<>());
+            DECLARED.put(t, new ArrayList<>());
         }
-        std(Tier.BEGINNER, "coins", 15, 195, 30);
-        std(Tier.BEGINNER, "trout", 1, 3, 10);
-        std(Tier.BEGINNER, "air_rune", 15, 35, 8);
-        std(Tier.BEGINNER, "mind_rune", 15, 35, 8);
-        std(Tier.BEGINNER, "water_rune", 15, 35, 8);
-        std(Tier.BEGINNER, "earth_rune", 15, 35, 8);
-        std(Tier.BEGINNER, "fire_rune", 15, 35, 8);
-        std(Tier.BEGINNER, "body_rune", 5, 10, 5);
-        std(Tier.BEGINNER, "staff_of_air", 1, 1, 2);
-        std(Tier.BEGINNER, "iron_dagger", 1, 1, 3);
-
-        std(Tier.EASY, "coins", 50, 500, 30);
-        std(Tier.EASY, "trout", 6, 10, 10);
-        std(Tier.EASY, "black_platebody", 1, 1, 4);
-        std(Tier.EASY, "black_full_helm", 1, 1, 4);
-        std(Tier.EASY, "black_scimitar", 1, 1, 4);
-        std(Tier.EASY, "willow_longbow", 1, 1, 4);
-        std(Tier.EASY, "law_rune", 5, 15, 6);
-        std(Tier.EASY, "nature_rune", 5, 15, 6);
-        std(Tier.EASY, "chaos_rune", 10, 25, 6);
-        std(Tier.EASY, "staff_of_water", 1, 1, 3);
-        std(Tier.EASY, "amulet_of_magic", 1, 1, 3);
-        std(Tier.EASY, "steel_platebody", 1, 1, 3);
-
-        std(Tier.MEDIUM, "coins", 200, 1000, 30);
-        std(Tier.MEDIUM, "lobster", 8, 12, 10);
-        std(Tier.MEDIUM, "adamant_platebody", 1, 1, 3);
-        std(Tier.MEDIUM, "adamant_full_helm", 1, 1, 3);
-        std(Tier.MEDIUM, "mithril_platebody", 1, 1, 4);
-        std(Tier.MEDIUM, "maple_longbow", 1, 1, 4);
-        std(Tier.MEDIUM, "law_rune", 10, 20, 6);
-        std(Tier.MEDIUM, "nature_rune", 10, 20, 6);
-        std(Tier.MEDIUM, "staff_of_fire", 1, 1, 3);
-        std(Tier.MEDIUM, "amulet_of_strength", 1, 1, 3);
-        std(Tier.MEDIUM, "adamant_scimitar", 1, 1, 3);
-
-        std(Tier.HARD, "coins", 1000, 5000, 30);
-        std(Tier.HARD, "shark", 12, 15, 10);
-        std(Tier.HARD, "rune_platebody", 1, 1, 3);
-        std(Tier.HARD, "rune_platelegs", 1, 1, 3);
-        std(Tier.HARD, "rune_full_helm", 1, 1, 3);
-        std(Tier.HARD, "rune_scimitar", 1, 1, 4);
-        std(Tier.HARD, "magic_longbow", 1, 1, 4);
-        std(Tier.HARD, "law_rune", 50, 100, 6);
-        std(Tier.HARD, "death_rune", 50, 100, 6);
-        std(Tier.HARD, "nature_rune", 50, 100, 6);
-        std(Tier.HARD, "amulet_of_power", 1, 1, 3);
-
-        std(Tier.ELITE, "coins", 20000, 30000, 25);
-        std(Tier.ELITE, "shark", 15, 20, 10);
-        std(Tier.ELITE, "dragon_dagger", 1, 1, 3);
-        std(Tier.ELITE, "rune_kiteshield", 1, 1, 4);
-        std(Tier.ELITE, "black_dragonhide", 4, 8, 5);
-        std(Tier.ELITE, "death_rune", 100, 200, 6);
-        std(Tier.ELITE, "blood_rune", 100, 200, 6);
-        std(Tier.ELITE, "soul_rune", 100, 200, 6);
-        std(Tier.ELITE, "dragon_bones", 10, 15, 6);
-        std(Tier.ELITE, "runite_bar", 1, 3, 4);
-        std(Tier.ELITE, "uncut_dragonstone", 1, 1, 3);
-
-        std(Tier.MASTER, "coins", 20000, 35000, 25);
-        std(Tier.MASTER, "anglerfish", 15, 25, 10);
-        std(Tier.MASTER, "dragon_longsword", 1, 1, 3);
-        std(Tier.MASTER, "dragon_battleaxe", 1, 1, 3);
-        std(Tier.MASTER, "death_rune", 200, 300, 6);
-        std(Tier.MASTER, "blood_rune", 200, 300, 6);
-        std(Tier.MASTER, "soul_rune", 200, 300, 6);
-        std(Tier.MASTER, "dragon_bones", 15, 25, 6);
-        std(Tier.MASTER, "runite_bar", 3, 5, 4);
-        std(Tier.MASTER, "uncut_dragonstone", 1, 3, 3);
-        std(Tier.MASTER, "uncut_onyx", 1, 1, 1);
-        // Treasure trail teleport scrolls (medium and up).
-        for (Spellbooks.Tablet tab : Spellbooks.TABLETS) {
-            if (tab.value() >= 2500) {
-                std(Tier.MEDIUM, tab.id(), 1, 5, 1);
-                std(Tier.HARD, tab.id(), 3, 8, 1);
-                std(Tier.ELITE, tab.id(), 5, 12, 1);
-            }
-        }
-    }
-
-    private static void std(Tier t, String item, int min, int max, int weight) {
-        STANDARD.get(t).add(new Loot(item, min, max, weight));
     }
 
     private ClueRewards() {
@@ -133,19 +56,19 @@ public final class ClueRewards {
     // ---------------- Item definitions ----------------
 
     private static void unique(Tier t, String id) {
-        if (!UNIQUES.get(t).contains(id)) {
-            UNIQUES.get(t).add(id);
+        if (!DECLARED.get(t).contains(id)) {
+            DECLARED.get(t).add(id);
         }
     }
 
-    /** OSRS per-casket rates of one 3rd age piece (wiki: hard 1/211,250, elite 1/249,262.5, master 1/313,168). */
-    public static final int THIRD_AGE_HARD = 211_250;
-    public static final int THIRD_AGE_ELITE = 249_262;
-    public static final int THIRD_AGE_MASTER = 313_168;
-
-    private static void mega(Tier t, String id, int oneInPerCasket) {
-        MEGA.get(t).putIfAbsent(id, oneInPerCasket);
+    private static void mega(Tier t, String id, int unused) {
+        unique(t, id);
     }
+
+    /** The Mimic casket (elite 1/35, master 1/15 when enabled at Watson's strange casket). */
+    public static final String MIMIC_ITEM = "mimic";
+    /** Bloodhound: master casket tertiary, 1/1,000 (OSRS Wiki "Reward casket (master)"). */
+    public static final int BLOODHOUND_ONE_IN = 1000;
 
     private static final EquipmentStats ZERO = EquipmentStats.NONE;
 
@@ -200,7 +123,13 @@ public final class ClueRewards {
         for (Tier t : Tier.values()) {
             items.add("reward_casket_" + t.id(), "Reward casket (" + t.id() + ")", Kind.SIMPLE, "casket", t.color()).value(50).stack(1)
                     .examine("Open it to receive your treasure trail reward.");
+            // Scroll boxes (after X Marks the Spot): stackable clue scrolls, opened one at a time.
+            items.add(scrollBox(t), "Scroll box (" + t.id() + ")", Kind.SIMPLE, "casket", t.color()).value(0)
+                    .examine("A box containing a clue scroll.");
         }
+        items.add(MIMIC_ITEM, "Mimic", Kind.SIMPLE, "casket", 0x8A2A2A).value(0).stack(1)
+                .examine("Present it to the strange casket in Watson's house to fight the Mimic.");
+        ClueRewardItems.items(items);
         // ---------------- Beginner ----------------
         Tier B = Tier.BEGINNER;
         cosmeticArmour(items, B, "mole_slippers", "Mole slippers", "boots", 0x5A4A3A, Slot.FEET, 5000);
@@ -589,18 +518,18 @@ public final class ClueRewards {
         for (String id : new String[]{"3rd_age_range_coif", "3rd_age_range_top", "3rd_age_range_legs", "3rd_age_vambraces",
                 "3rd_age_mage_hat", "3rd_age_robe_top", "3rd_age_robe", "3rd_age_amulet", "3rd_age_full_helmet",
                 "3rd_age_platebody", "3rd_age_platelegs", "3rd_age_kiteshield"}) {
-            mega(Tier.HARD, id, THIRD_AGE_HARD);
-            mega(Tier.ELITE, id, THIRD_AGE_ELITE);
-            mega(Tier.MASTER, id, THIRD_AGE_MASTER);
+            mega(Tier.HARD, id, 0);
+            mega(Tier.ELITE, id, 0);
+            mega(Tier.MASTER, id, 0);
         }
         Defs.worn(items, "3rd_age_cloak", "3rd age cloak", "cape", white, 5000000, Jewellery.Slot.CAPE,
                 st(0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 0, 0, 0, 3), Map.of(), Jewellery.Perk.NONE, List.of());
         Defs.staff(items, "3rd_age_wand", "3rd age wand", "staff", white, 5000000, st(0, 0, 0, 15, 0, 0, 0, 0, 15, 0, 0, 0, 0, 0),
                 req(Skill.MAGIC, 65));
-        mega(Tier.ELITE, "3rd_age_cloak", THIRD_AGE_ELITE);
-        mega(Tier.ELITE, "3rd_age_wand", THIRD_AGE_ELITE);
-        mega(Tier.MASTER, "3rd_age_cloak", THIRD_AGE_MASTER);
-        mega(Tier.MASTER, "3rd_age_wand", THIRD_AGE_MASTER);
+        mega(Tier.ELITE, "3rd_age_cloak", 0);
+        mega(Tier.ELITE, "3rd_age_wand", 0);
+        mega(Tier.MASTER, "3rd_age_cloak", 0);
+        mega(Tier.MASTER, "3rd_age_wand", 0);
         Defs.bow(items, "3rd_age_bow", "3rd age bow", "shortbow", white, 20000000, st(0, 0, 0, 0, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0),
                 req(Skill.RANGED, 65), 4);
         Defs.melee(items, "3rd_age_longsword", "3rd age longsword", "longsword", white, "dragon", 20000000,
@@ -622,7 +551,7 @@ public final class ClueRewards {
                 st(0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 30, 0, 0, 6), druid);
         for (String id : new String[]{"3rd_age_bow", "3rd_age_longsword", "3rd_age_pickaxe", "3rd_age_axe", "3rd_age_druidic_robe_top",
                 "3rd_age_druidic_robe_bottoms", "3rd_age_druidic_cloak", "3rd_age_druidic_staff"}) {
-            mega(Tier.MASTER, id, THIRD_AGE_MASTER);
+            mega(Tier.MASTER, id, 0);
         }
     }
 
@@ -669,38 +598,50 @@ public final class ClueRewards {
         }
     }
 
-    /**
-     * God pages are "universal" Treasure Trail rewards (every tier but beginner). Hard caskets have them on the unique
-     * table; easy, medium, elite and master caskets roll one with this chance per reward roll. // approx: rate unknown
-     */
-    public static final int SHARED_PAGE_ONE_IN = 60;
-    private static final String[] PAGE_GODS = {"saradomin", "zamorak", "guthix", "bandos", "armadyl", "ancient"};
-
-    private static boolean sharedPages(Tier t) {
-        return t == Tier.EASY || t == Tier.MEDIUM || t == Tier.ELITE || t == Tier.MASTER;
-    }
-
-    private static String randomPage(Random random) {
-        return PAGE_GODS[random.nextInt(PAGE_GODS.length)] + "_page_" + (1 + random.nextInt(4));
-    }
-
     // ---------------- Rolling ----------------
 
-    /** Chance (1 in n) per roll of hitting the tier's unique table. */
-    public static int uniqueOneIn(Tier t) {
-        return switch (t) {
-            case BEGINNER -> 8;
-            case EASY -> 7;
-            case MEDIUM -> 6;
-            case HARD, ELITE -> 5;
-            case MASTER -> 4;
-        };
+    /** The tier's table (rows whose item exists), filled after the item catalog is built. */
+    public static synchronized List<Row> table(Tier t) {
+        if (TABLES.isEmpty()) {
+            com.runecraft.osrs.ItemCatalog.exists("coins");
+            Map<Tier, List<Row>> all = new EnumMap<>(Tier.class);
+            for (Tier tier : Tier.values()) {
+                all.put(tier, new ArrayList<>());
+            }
+            for (String line : ClueRewardData.ROWS.split("\n")) {
+                String[] f = java.util.Arrays.copyOf(line.split("\t", -1), 8);
+                if (f[0] == null || f[0].isBlank()) {
+                    continue;
+                }
+                Tier tier = Tier.valueOf(f[0].toUpperCase(java.util.Locale.ROOT));
+                if (!com.runecraft.osrs.ItemCatalog.exists(f[2])) {
+                    continue;
+                }
+                double chance = Double.parseDouble(f[6]) / Double.parseDouble(f[7]);
+                all.get(tier).add(new Row(f[1], f[2], Integer.parseInt(f[3]), Integer.parseInt(f[4]), "noted".equals(f[5]), chance));
+            }
+            all.forEach((tier, rows) -> TABLES.put(tier, List.copyOf(rows)));
+        }
+        return TABLES.get(t);
     }
 
-    /** Chance (1 in n) per casket of a given mega-rare (0 = not on this tier's table). */
+    /** Chance per reward roll of an item on a tier's table (0 = not on it), summed over its rows, after scaling. */
+    public static double perRoll(Tier t, String item) {
+        double total = 0;
+        double sum = 0;
+        for (Row r : table(t)) {
+            total += r.chance();
+            if (r.item().equals(item)) {
+                sum += r.chance();
+            }
+        }
+        return total <= 0 ? 0 : sum / total;
+    }
+
+    /** One in how many reward rolls gives this item (0 = never), for display and tests. */
     public static int megaOneIn(Tier t, String item) {
-        ensureLoaded();
-        return MEGA.get(t).getOrDefault(item, 0);
+        double p = perRoll(t, item);
+        return p <= 0 ? 0 : (int) Math.round(1 / p);
     }
 
     /** Chance (1 in n) per casket of a master clue scroll (0 = none). */
@@ -714,90 +655,122 @@ public final class ClueRewards {
         };
     }
 
-    /** Reward tables are filled while the item catalog builds. */
-    private static void ensureLoaded() {
-        com.runecraft.osrs.ItemCatalog.exists("coins");
+    /** Chance (1 in n) that an opened casket is a Mimic (when enabled): elite 1/35, master 1/15. */
+    public static int mimicOneIn(Tier t) {
+        return t == Tier.ELITE ? 35 : t == Tier.MASTER ? 15 : 0;
+    }
+
+    /** The scroll box item of a tier. */
+    public static String scrollBox(Tier t) {
+        return "scroll_box_" + t.id();
+    }
+
+    /** Completed-clue counts at which a tier's minor and major scroll cases raise its stack limit (OSRS Wiki). */
+    public static int[] scrollCaseMilestones(Tier t) {
+        return switch (t) {
+            case BEGINNER -> new int[]{50, 100};
+            case EASY -> new int[]{100, 200};
+            case MEDIUM -> new int[]{100, 250};
+            case HARD, ELITE -> new int[]{50, 150};
+            case MASTER -> new int[]{25, 75};
+        };
+    }
+
+    /** How many clues of a tier (scroll plus scroll boxes) a player can hold: 2, +1 per scroll case milestone. */
+    public static int stackLimit(Tier t, int completed) {
+        int[] m = scrollCaseMilestones(t);
+        return 2 + (completed >= m[0] ? 1 : 0) + (completed >= m[1] ? 1 : 0);
     }
 
     public static List<Reward> roll(Tier tier, Random random) {
-        ensureLoaded();
         Map<String, Integer> out = new LinkedHashMap<>();
+        Map<String, Boolean> noted = new LinkedHashMap<>();
         int rolls = tier.minRolls() + random.nextInt(tier.maxRolls() - tier.minRolls() + 1);
-        List<String> uniques = UNIQUES.get(tier);
         for (int i = 0; i < rolls; i++) {
-            if (!uniques.isEmpty() && random.nextInt(uniqueOneIn(tier)) == 0) {
-                out.merge(uniques.get(random.nextInt(uniques.size())), 1, Integer::sum);
-                continue;
-            }
-            if (sharedPages(tier) && random.nextInt(SHARED_PAGE_ONE_IN) == 0) {
-                out.merge(randomPage(random), 1, Integer::sum);
-                continue;
-            }
-            Loot l = pick(STANDARD.get(tier), random);
-            out.merge(l.item(), l.min() + random.nextInt(l.max() - l.min() + 1), Integer::sum);
-        }
-        for (Map.Entry<String, Integer> m : MEGA.get(tier).entrySet()) {
-            if (random.nextInt(m.getValue()) == 0) {
-                out.merge(m.getKey(), 1, Integer::sum);
+            Row r = pick(table(tier), random);
+            if (r != null) {
+                out.merge(r.item(), r.min() + random.nextInt(r.max() - r.min() + 1), Integer::sum);
+                noted.merge(r.item(), r.noted(), Boolean::logicalOr);
             }
         }
         int master = masterClueOneIn(tier);
         if (master > 0 && random.nextInt(master) == 0) {
             out.merge("clue_scroll_master", 1, Integer::sum);
         }
+        if (tier == Tier.MASTER && random.nextInt(BLOODHOUND_ONE_IN) == 0) {
+            out.merge("bloodhound", 1, Integer::sum);
+        }
         List<Reward> list = new ArrayList<>();
-        out.forEach((k, v) -> list.add(new Reward(k, v)));
+        out.forEach((k, v) -> list.add(new Reward(k, v, noted.getOrDefault(k, false))));
         return list;
     }
 
-    /**
-     * One roll on a tier's reward table (a unique with the tier's unique chance, otherwise a standard line), with
-     * no mega-rare or master clue scroll rolls: what a lucky impling jar holds.
-     */
+    /** One roll on a tier's reward table, with no tertiary rolls: what a lucky impling jar holds. */
     public static Reward singleRoll(Tier tier, Random random) {
-        ensureLoaded();
-        List<String> uniques = UNIQUES.get(tier);
-        if (!uniques.isEmpty() && random.nextInt(uniqueOneIn(tier)) == 0) {
-            return new Reward(uniques.get(random.nextInt(uniques.size())), 1);
-        }
-        Loot l = pick(STANDARD.get(tier), random);
-        return new Reward(l.item(), l.min() + random.nextInt(l.max() - l.min() + 1));
+        Row r = pick(table(tier), random);
+        return r == null ? new Reward("coins", 1) : new Reward(r.item(), r.min() + random.nextInt(r.max() - r.min() + 1), r.noted());
     }
 
-    private static Loot pick(List<Loot> table, Random random) {
-        int total = 0;
-        for (Loot l : table) {
-            total += l.weight();
+    private static Row pick(List<Row> table, Random random) {
+        double total = 0;
+        for (Row r : table) {
+            total += r.chance();
         }
-        int r = random.nextInt(total);
-        for (Loot l : table) {
-            r -= l.weight();
-            if (r < 0) {
-                return l;
+        double x = random.nextDouble() * total;
+        for (Row r : table) {
+            x -= r.chance();
+            if (x < 0) {
+                return r;
             }
         }
-        return table.get(0);
+        return table.isEmpty() ? null : table.get(table.size() - 1);
     }
 
+    private static List<String> section(Tier t, String section) {
+        List<String> out = new ArrayList<>();
+        for (Row r : table(t)) {
+            if (r.section().equals(section) && !out.contains(r.item())) {
+                out.add(r.item());
+            }
+        }
+        return out;
+    }
+
+    /** The tier's uniques (wiki "clue uniques" table). */
     public static List<String> uniques(Tier t) {
-        ensureLoaded();
-        return UNIQUES.get(t);
+        return section(t, "unique");
     }
 
+    /** The tier's mega-rare table (gilded, 3rd age; hard, elite and master) and the master Bloodhound. */
     public static List<String> megaRares(Tier t) {
-        ensureLoaded();
-        return new ArrayList<>(MEGA.get(t).keySet());
+        List<String> out = section(t, "mega");
+        if (t == Tier.MASTER && com.runecraft.osrs.ItemCatalog.exists("bloodhound")) {
+            out.add("bloodhound");
+        }
+        return out;
     }
 
+    /** The standard and shared rows of a tier, for tests (weights are chances per million rolls). */
     public static List<Loot> standard(Tier t) {
-        return STANDARD.get(t);
+        List<Loot> out = new ArrayList<>();
+        for (Row r : table(t)) {
+            if (r.section().equals("standard") || r.section().equals("shared")) {
+                out.add(new Loot(r.item(), r.min(), r.max(), (int) Math.max(1, Math.round(r.chance() * 1_000_000))));
+            }
+        }
+        return out;
     }
 
-    /** All reward item ids of a tier, for the collection log. */
+    /** Items the definitions declare as the tier's uniques (for the tests' diff against the wiki tables). */
+    public static List<String> declared(Tier t) {
+        com.runecraft.osrs.ItemCatalog.exists("coins");
+        return DECLARED.get(t);
+    }
+
+    /** All reward item ids of a tier, for the collection log: its uniques and mega-rares. */
     public static List<String> logItems(Tier t) {
-        ensureLoaded();
-        List<String> all = new ArrayList<>(UNIQUES.get(t));
-        for (String m : MEGA.get(t).keySet()) {
+        List<String> all = new ArrayList<>(uniques(t));
+        for (String m : megaRares(t)) {
             if (!all.contains(m)) {
                 all.add(m);
             }

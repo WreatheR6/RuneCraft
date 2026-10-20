@@ -363,7 +363,7 @@ public final class ClassicBosses {
     }
 
     static BossDef mimic() {
-        // The Mimic guards elite/master caskets: summon it with a master clue and loot extra clue rewards.
+        // The Mimic: elite (1/35) and master (1/15) caskets can be a Mimic, fought at the strange casket in Watson's house.
         // OSRS Wiki infobox: 230 HP, 185/120/120, magic 60, ranged 1; +135 melee / +180 magic accuracy; defence 160/165/150,
         // magic 30, ranged 145; attack speed 3 (was 220 HP, 160/160/150, 150 magic, speed 4, flat 100 defences).
         return BossDef.of("the_mimic", "The Mimic").level(186).stats(230, 185, 120, 120, 60, 1).speed(3)
@@ -376,7 +376,7 @@ public final class ClassicBosses {
                         .telegraph(3, "The Mimic flings a barrage of candies!").particle("minecraft:totem_of_undying"))
                 .attack(AttackDef.of("lid_slam", AttackType.CRUSH, 6, 3, 2).special(Special.AOE, 1))
                 .drops(mimicDrops().toArray(new Drop[0]))
-                .key("clue_scroll_master").at("watsons_house").arena(10, "stone")
+                .key("mimic").at("watsons_house").arena(10, "stone") // the mimic casket from an elite or master casket
                 .size(1.0f, 1.0f, 1.8f).moveSpeed(0.2);
     }
 }
