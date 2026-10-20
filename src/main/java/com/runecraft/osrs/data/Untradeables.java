@@ -88,7 +88,7 @@ public final class Untradeables {
                 "blood_quartz", "blood_ancient_sceptre", "ice_ancient_sceptre", "smoke_ancient_sceptre", "shadow_ancient_sceptre",
                 "tephra", "refined_tephra", "imbued_tephra", "purifying_sigil", "purifying_sigil_top", "purifying_sigil_bottom",
                 "purifying_sigil_left", "purifying_sigil_right", "purifying_sigil_middle", "radiant_oathplate_helm",
-                "radiant_oathplate_chest", "radiant_oathplate_legs");
+                "radiant_oathplate_chest", "radiant_oathplate_legs", "blackstone_fragment");
         // Stuffable Slayer heads.
         add("cockatrice_head", "basilisk_head", "kurask_head", "crawling_hand");
     }

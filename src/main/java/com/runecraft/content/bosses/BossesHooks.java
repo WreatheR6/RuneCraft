@@ -58,6 +58,7 @@ public final class BossesHooks implements ModuleHooks {
         BossScripts.register("duke_sucellus", EncounterScripts.Duke::new);
         BossScripts.register("the_leviathan", EncounterScripts.Leviathan::new);
         BossScripts.register("the_whisperer", WhispererScript::new);
+        WhispererScript.register(); // the blackstone fragment, Ketla's workbench and her entry requirement
         BossScripts.register("vardorvis", EncounterScripts.Vardorvis::new);
         // Desert Treasure II's quest versions (quests module ids): the same fights with lower max hits.
         BossScripts.register("dt2_quest_duke_sucellus", () -> new EncounterScripts.Duke(Dt2Bosses.QUEST_DUKE_SCALE));

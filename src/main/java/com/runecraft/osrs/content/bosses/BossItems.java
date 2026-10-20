@@ -363,6 +363,9 @@ public final class BossItems {
         simple(items, "chromium_ingot", "Chromium ingot", "bar", 0x9AB0C0, 1, "Three are needed to forge a DT2 ring.");
         simple(items, "awakeners_orb", "Awakener's orb", "orb", 0xC03A3A, 1,
                 "A mysterious orb of unknown power. Use it on a Desert Treasure II boss's summoning stone to awaken the boss.");
+        // Needed to fight the Whisperer: activated to step into and out of the Shadow Realm (OSRS Wiki, untradeable).
+        simple(items, WhispererRules.FRAGMENT, "Blackstone fragment", "shard", 0x2A2A3A, 100,
+                "A strange shard of dark stone with various modifications.");
         simple(items, AwakenedBosses.BLOOD_KIT, "Ancient blood ornament kit", "package", 0x8A1A1A, 1,
                 "Earned by defeating all four awakened bosses. Turns Torva armour into sanguine Torva.");
         // Tablets (75k value) and quartzes (100k), untradeable (wiki). A tablet used on the ring of shadows unlocks its

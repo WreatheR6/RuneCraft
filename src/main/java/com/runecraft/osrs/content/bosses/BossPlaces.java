@@ -47,7 +47,7 @@ public final class BossPlaces {
                 PlaceDef.of("ghorrock_prison", "Ghorrock Prison", 2938, 3965, Style.RUINS, List.of()),
                 // The Scar is reached from the Ruins of Ullek; the Lassar Undercity through the Ancient Vault by the Digsite.
                 PlaceDef.of("the_scar", "The Scar", 3418, 2790, Style.RUINS, List.of(SCAR_GROWTH)),
-                PlaceDef.of("lassar_undercity", "Lassar Undercity", 3360, 3432, Style.RUINS, List.of()),
+                PlaceDef.of("lassar_undercity", "Lassar Undercity", 3360, 3432, Style.RUINS, List.of(WhispererRules.WORKBENCH)),
                 PlaceDef.of("stranglewood", "The Stranglewood", 1160, 3430, Style.RUINS, List.of()),
                 // The Ancient Vault (an instance in OSRS): beside the Vault of Desert Treasure II, with its quartz chest. approx
                 PlaceDef.of("ancient_vault", "Ancient Vault", 3180, 2850, Style.RUINS, List.of(ANCIENT_VAULT_CHEST)),
@@ -82,6 +82,7 @@ public final class BossPlaces {
     public static List<BlockDef> blocks() {
         return List.of(BlockDef.scripted(FONT_OF_CONSUMPTION, "Font of Consumption", 0x6A1A3A, "altar"),
                 BlockDef.scripted(SCAR_GROWTH, "Growth", 0x4A2A4A, "plant"),
-                BlockDef.scripted(ANCIENT_VAULT_CHEST, "Chest", 0x6A4A6A, "chest"));
+                BlockDef.scripted(ANCIENT_VAULT_CHEST, "Chest", 0x6A4A6A, "chest"),
+                BlockDef.scripted(WhispererRules.WORKBENCH, "Ketla's workbench", 0x5A4A6A, "table"));
     }
 }

@@ -10,19 +10,27 @@ import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.bosses.BossMechanics;
 import com.runecraft.osrs.content.bosses.Dt2Bosses;
+import com.runecraft.osrs.content.bosses.WhispererRules;
 import com.runecraft.osrs.content.systems.CombatAchievements;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
+import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.DustParticleOptions;
+import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -30,31 +38,38 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Vector3f;
 
 /**
  * The Whisperer (OSRS Wiki "The Whisperer/Strategies"; the Desert Treasure II quest version hits for less).
  * <ul>
  *   <li>Volleys of three projectiles a tick apart (five awakened), soul bolts (magic, 36) and tentacle lashes (ranged, 40),
  *   all one style before her first special, then two and one, after the third alternating; protection prayers block them.
- *   After each volley her tentacles converge on the player's tile: move off it or take 20 (awakened 30).</li>
+ *   After each volley her tentacles converge on the player's tile: move off it or take 20 (awakened 30) and lose as much
+ *   sanity.</li>
  *   <li>Next to her she whacks with her tentacles instead: two hits, the second the same as the first, through prayer (which
  *   only trims it) - stay away from her.</li>
  *   <li>At 80, 55 and 30% (awakened about every tenth of her 2,700 hitpoints) a special, in the order Corrupted Seeds,
- *   Screech, Soul Siphon (or starting at the Screech), taking 70% less damage meanwhile:
+ *   Screech, Soul Siphon (or starting at the Screech), taking 70% less damage meanwhile (60% from inside the Shadow Realm).
+ *   The blackstone fragment glows: activating it steps into the Shadow Realm (sanity and prayer drain there), activating it
+ *   again steps out, and the special's end brings everyone back.
  *   <b>Screech</b>: from the south end of the arena, three blasts (five awakened) of 45 (70) at anyone she can see - hide
- *   behind the floating columns, which crumble as she screeches and break when someone hides behind them;
- *   <b>Soul Siphon</b>: lost souls in four sets (Vita 2: heal 20% hitpoints, Oratio 3: 20% prayer, Sanitas 3, Mors 4: 50 to
- *   her, 75 if every soul dies); kill a full set within 20 ticks or take 50 while she heals 100 (awakened: every soul, 35
- *   ticks); <b>Corrupted Seeds</b>: step on every light seed before time runs out (or take 75), never on a dark one (15-25,
- *   awakened 60-75). After each special her binding orb holds the player for ~8 seconds while she comes for them.</li>
- *   <li>At 0 hitpoints she heals 140 (awakened 250), pulls the player into the Shadow Realm and attacks every 2 ticks, one
+ *   behind the floating columns, which crumble as she screeches and break when someone hides behind them (their health,
+ *   20/40/60, only shows in the realm);
+ *   <b>Soul Siphon</b>: lost souls in four sets (Vita 2: heal 20% hitpoints, Oratio 3: 20% prayer, Sanitas 3: 15% sanity,
+ *   Mors 4: 50 to her, 75 if every soul dies), only hurt from the realm; kill a full set within 20 ticks or take 50 while she
+ *   heals 100 (awakened: every soul, 35 ticks); <b>Corrupted Seeds</b>: one of two symmetric layouts; step on every light
+ *   seed (told apart only in the realm) before time runs out (or take 75 and lose 75% sanity), never on a dark one (15-25,
+ *   awakened 60-75); clean, it restores 15% sanity. After each special her binding orb holds the player for ~8 seconds
+ *   while she comes for them.</li>
+ *   <li>At 0 hitpoints she heals 140 (awakened 250), pulls everyone into the Shadow Realm and attacks every 2 ticks, one
  *   projectile at a time (ranged first, switching every two; awakened magic first, switching every attack), a tentacle
  *   with each.</li>
+ *   <li>Sanity ({@link WhispererRules}): shown on the action bar; at 0% the darkness deals 5, 10, 20... every 2 ticks.
+ *   Dark Memories counts each pre-enrage tick a player spends in the realm.</li>
  * </ul>
- * approx: sanity, the blackstone fragment and the Shadow Realm are not modelled (seeds, columns and souls are always visible);
- * for Dark Memories a player's pre-enrage realm time is the Soul Siphon up to their last lost-soul kill (souls are only hit
- * from the realm), see {@link BossMechanics#whispererRealmTicks}.
  */
 final class WhispererScript extends ScriptedBoss {
     private enum Special { SEEDS, SCREECH, SIPHON }
@@ -74,6 +89,11 @@ final class WhispererScript extends ScriptedBoss {
     }
 
     private static final String NBT_COLUMNS = "WhispererColumns";
+    /** Blocks per seed-layout tile offset (the arena is 13 blocks across its radius). approx */
+    private static final double SEED_SPACING = 1.5;
+    private static final DustParticleOptions LIGHT_SEED = new DustParticleOptions(new Vector3f(0.55f, 1.0f, 0.4f), 1.4f);
+    private static final DustParticleOptions DARK_SEED = new DustParticleOptions(new Vector3f(0.1f, 0.35f, 0.1f), 1.4f);
+    private static final DustParticleOptions HIDDEN_SEED = new DustParticleOptions(new Vector3f(0.45f, 0.45f, 0.45f), 1.2f);
 
     /** Max hit scale: 1 for the boss, below 1 for the weaker Desert Treasure II quest version. */
     private final double scale;
@@ -98,12 +118,14 @@ final class WhispererScript extends ScriptedBoss {
     private final List<Mob> souls = new ArrayList<>();
     private final Map<Mob, Integer> soulSet = new HashMap<>();
     private final Set<Integer> setsDone = new LinkedHashSet<>();
-    /** Lost souls whose kill was counted as Shadow Realm time, and each killer's realm ticks counted this siphon. */
-    private final Set<Mob> soulsCounted = new java.util.HashSet<>();
-    private final Map<java.util.UUID, Integer> realmTicks = new HashMap<>();
     private final List<Seed> seeds = new ArrayList<>();
+    /** Players who stepped on a dark seed during the current Corrupted Seeds (no sanity back for them). */
+    private final Set<UUID> steppedDark = new HashSet<>();
     /** Column blocks saved with her when she was unloaded mid-Screech: cleared on her first game tick back. */
     private long[] savedColumns;
+    /** Each fighting player's sanity, and who stands in the Shadow Realm now. */
+    private final Map<UUID, WhispererRules.Sanity> sanity = new HashMap<>();
+    private final Set<UUID> realm = new HashSet<>();
 
     WhispererScript() {
         this(1.0);
@@ -163,12 +185,124 @@ final class WhispererScript extends ScriptedBoss {
         return percent(boss) / 100.0 * boss.trueHitpoints();
     }
 
+    // ---------------- the Shadow Realm and sanity ----------------
+
+    private WhispererRules.Sanity sanityOf(ServerPlayer p) {
+        return sanity.computeIfAbsent(p.getUUID(), k -> new WhispererRules.Sanity());
+    }
+
+    boolean inRealm(ServerPlayer p) {
+        return p != null && realm.contains(p.getUUID());
+    }
+
+    int sanity(ServerPlayer p) {
+        return sanityOf(p).value();
+    }
+
+    private void drainSanity(ServerPlayer p, int amount) {
+        if (p != null && amount > 0) {
+            sanityOf(p).drain((int) Math.round(amount * scale));
+        }
+    }
+
+    private void restoreSanity(ServerPlayer p, int amount) {
+        if (p != null) {
+            sanityOf(p).restore(amount);
+        }
+    }
+
+    /** The blackstone fragment activated near her: into the Shadow Realm while it glows, or back out. */
+    boolean toggleRealm(DataBossEntity boss, ServerPlayer p) {
+        if (enraged || enragePending) {
+            Msg.game(p, "The Whisperer holds you in the Shadow Realm.");
+            return false;
+        }
+        if (realm.contains(p.getUUID())) {
+            leaveRealm(p);
+            Msg.game(p, "You step out of the Shadow Realm.");
+            return true;
+        }
+        if (!WhispererRules.fragmentGlows(special != null, enraged)) {
+            Msg.game(p, "Your blackstone fragment isn't glowing.");
+            return false;
+        }
+        enterRealm(boss, p);
+        Msg.action(p, "You step into the Shadow Realm...");
+        return true;
+    }
+
+    private void enterRealm(DataBossEntity boss, ServerPlayer p) {
+        realm.add(p.getUUID());
+        p.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 20 * 60 * 3, 0, false, false));
+        BossFx.world(boss).sendParticles(ParticleTypes.SCULK_SOUL, p.getX(), p.getY() + 1, p.getZ(), 12, 0.4, 0.6, 0.4, 0.02);
+        BossFx.sound(p, net.minecraft.sounds.SoundEvents.SCULK_SHRIEKER_SHRIEK, 1.4f);
+    }
+
+    private void leaveRealm(ServerPlayer p) {
+        if (realm.remove(p.getUUID())) {
+            p.removeEffect(MobEffects.DARKNESS);
+        }
+    }
+
+    private void leaveRealmAll(DataBossEntity boss) {
+        for (UUID id : new ArrayList<>(realm)) {
+            if (BossFx.world(boss).getPlayerByUUID(id) instanceof ServerPlayer p) {
+                leaveRealm(p);
+                Msg.game(p, "The Shadow Realm fades around you.");
+            }
+        }
+        realm.clear();
+    }
+
+    /** One game tick of everyone's sanity: realm drain and Dark Memories, restoration outside, the darkness at 0%. */
+    private void tickSanity(DataBossEntity boss, ServerPlayer target) {
+        List<ServerPlayer> here = fighters(boss, target);
+        Set<UUID> ids = new HashSet<>();
+        for (ServerPlayer p : here) {
+            ids.add(p.getUUID());
+        }
+        // gone from the fight (teleported away, died): sanity is fully restored for their next visit
+        sanity.keySet().removeIf(id -> !ids.contains(id));
+        for (UUID id : new ArrayList<>(realm)) {
+            if (!ids.contains(id)) {
+                realm.remove(id);
+                if (BossFx.world(boss).getPlayerByUUID(id) instanceof ServerPlayer gone) {
+                    gone.removeEffect(MobEffects.DARKNESS);
+                }
+            }
+        }
+        for (ServerPlayer p : here) {
+            WhispererRules.Sanity s = sanityOf(p);
+            boolean in = enraged || realm.contains(p.getUUID());
+            boolean wasInsane = s.insane();
+            int dmg = s.tick(in, enraged, boss.awakened());
+            if (in && !enraged) {
+                BossFx.drainPrayer(p, boss.awakened() ? WhispererRules.REALM_DRAIN_AWAKENED : WhispererRules.REALM_DRAIN);
+                CombatAchievementService.count(p, CombatAchievements.COUNT_SHADOW_REALM_TICKS, 1);
+            }
+            if (s.insane() && !wasInsane) {
+                Msg.red(p, "The darkness of the Shadow Realm begins to consume your mind!");
+            }
+            if (dmg > 0) {
+                CombatHandler.applyDamage(boss, p, dmg);
+            }
+            if (now % 2 == 0 || s.insane()) {
+                ChatFormatting colour = s.value() > 50 ? ChatFormatting.AQUA : s.value() > 20 ? ChatFormatting.YELLOW : ChatFormatting.RED;
+                p.displayClientMessage(Component.literal("Sanity: " + s.value() + "%" + (in ? "  (Shadow Realm)" : "")
+                        + (WhispererRules.fragmentGlows(special != null, enraged) && !in ? "  - your fragment glows" : ""))
+                        .withStyle(colour), true);
+            }
+        }
+    }
+
+    // ---------------- combat ----------------
+
     @Override
     protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
         if (enragePending) {
             return 0; // between her "death" and the enrage
         }
-        double d = special != null ? damage * BossMechanics.WHISPERER_SPECIAL_DAMAGE : damage;
+        double d = special != null ? damage * WhispererRules.specialDamage(inRealm(attacker)) : damage;
         int out = (int) d + (boss.getRandom().nextDouble() < d - (int) d ? 1 : 0);
         if (!enraged && !enragePending && out > 0) {
             int hp = boss.trueHitpoints();
@@ -208,12 +342,13 @@ final class WhispererScript extends ScriptedBoss {
         return a;
     }
 
-    /** Her tentacles surface around the player and converge on the tile they stood on (fixed damage, unnamed: "mechanic"). */
+    /** Her tentacles surface around the player and converge on the tile they stood on: damage and as much sanity, once. */
     private void tentacles(DataBossEntity boss, ServerPlayer target) {
         int dmg = scaled(boss, BossMechanics.WHISPERER_TENTACLE, BossMechanics.WHISPERER_TENTACLE_AWAKENED);
         strike(boss, target.position(), 3, 0, 0.9, ParticleTypes.SQUID_INK, (hit, pos) -> {
             for (ServerPlayer h : hit) {
                 CombatHandler.applyDamage(boss, h, dmg);
+                sanityOf(h).drain(dmg);
             }
         });
     }
@@ -247,6 +382,7 @@ final class WhispererScript extends ScriptedBoss {
             rotation = boss.getRandom().nextInt(2);
             nextMagic = boss.getRandom().nextBoolean();
         }
+        tickSanity(boss, target);
         if (echo >= 0) {
             if (echoTarget != null && echoTarget.isAlive() && echoTarget.distanceToSqr(boss) < 6 * 6) {
                 CombatHooks.nameAttack(Dt2Bosses.WHISPER_MELEE.name(), AttackType.CRUSH);
@@ -279,14 +415,14 @@ final class WhispererScript extends ScriptedBoss {
 
     private void enrage(DataBossEntity boss, ServerPlayer target) {
         enragePending = false;
-        enraged = true;
         endSpecial(boss, null, false);
+        enraged = true;
         volley.clear();
         boss.setHealth(Math.max(1f, mcHp(boss, boss.awakened() ? BossMechanics.WHISPERER_ENRAGE_HEAL_AWAKENED
                 : BossMechanics.WHISPERER_ENRAGE_HEAL)));
         BossFx.say(boss, "The Whisperer drags you into the Shadow Realm and attacks in a frenzy!");
         for (ServerPlayer p : fighters(boss, target)) {
-            p.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 20 * 60 * 3, 0, false, false));
+            enterRealm(boss, p);
         }
         cooldown = 2;
     }
@@ -326,6 +462,11 @@ final class WhispererScript extends ScriptedBoss {
                 BossFx.say(boss, "The Whisperer scatters corrupted seeds! Step on every light seed - avoid the dark ones!");
             }
         }
+        for (ServerPlayer p : fighters(boss, target)) {
+            if (Inv.has(p, WhispererRules.FRAGMENT, 1)) {
+                Msg.action(p, "Your blackstone fragment begins to glow.");
+            }
+        }
     }
 
     /** Ends the special: clears what it left, and (unless enraging) her binding orb holds the target while she comes. */
@@ -342,20 +483,33 @@ final class WhispererScript extends ScriptedBoss {
         souls.clear();
         soulSet.clear();
         setsDone.clear();
-        soulsCounted.clear();
-        realmTicks.clear();
         seeds.clear();
+        steppedDark.clear();
         if (special == Special.SCREECH) {
             Vec3 c = homeVec();
             boss.teleportTo(c.x, c.y, c.z);
         }
         special = null;
+        if (!enraged) {
+            leaveRealmAll(boss); // the fragment stops glowing
+        }
         if (bind && target != null) {
             target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, BossMechanics.WHISPERER_BIND_TICKS * 12, 10, false, true));
             Msg.red(target, "The Whisperer's orb binds you in place!");
             chase = 6;
         }
         cooldown = 2;
+    }
+
+    /** Sends a particle only to the players in (or out of) the Shadow Realm. */
+    private void realmParticle(DataBossEntity boss, ServerPlayer target, boolean inside, ParticleOptions particle, Vec3 at,
+                               int count, double spread) {
+        ServerLevel w = BossFx.world(boss);
+        for (ServerPlayer p : fighters(boss, target)) {
+            if ((enraged || realm.contains(p.getUUID())) == inside) {
+                w.sendParticles(p, particle, false, at.x, at.y, at.z, count, spread, spread * 0.2, spread, 0);
+            }
+        }
     }
 
     // Screech
@@ -387,7 +541,19 @@ final class WhispererScript extends ScriptedBoss {
         }
     }
 
+    /** A column's health as seen from the Shadow Realm: one mark per 20 above it, red to green. */
+    private void showColumns(DataBossEntity boss, ServerPlayer target) {
+        for (Column col : columns) {
+            float g = Math.min(1f, col.health / 60f);
+            DustParticleOptions dust = new DustParticleOptions(new Vector3f(1f - g, g, 0.1f), 1.3f);
+            for (int i = 0; i < Math.max(1, col.health / 20); i++) {
+                realmParticle(boss, target, true, dust, col.pos.add(0, 4.4 + i * 0.4, 0), 1, 0.05);
+            }
+        }
+    }
+
     private void tickScreech(DataBossEntity boss, ServerPlayer target) {
+        showColumns(boss, target);
         if (--nextScreech > 0) {
             BossFx.burst(boss, ParticleTypes.SONIC_BOOM, 1, 0.5);
             return;
@@ -397,11 +563,12 @@ final class WhispererScript extends ScriptedBoss {
         ServerLevel w = BossFx.world(boss);
         BossFx.sound(boss, net.minecraft.sounds.SoundEvents.WARDEN_SONIC_BOOM, 1.0f);
         int dmg = scaled(boss, Dt2Bosses.WHISPER_SCREECH);
-        Set<Column> hidingBehind = new java.util.HashSet<>();
+        Set<Column> hidingBehind = new HashSet<>();
         for (ServerPlayer p : fighters(boss, target)) {
             if (boss.hasLineOfSight(p)) {
                 CombatHooks.nameAttack(Dt2Bosses.WHISPER_SCREECH.name(), null);
                 CombatHandler.applyDamage(boss, p, dmg);
+                sanityOf(p).drain(dmg);
                 Msg.red(p, "The screech tears through you!");
             } else {
                 Column nearest = null;
@@ -446,7 +613,7 @@ final class WhispererScript extends ScriptedBoss {
                 if (soul == null) {
                     continue;
                 }
-                soul.setCustomName(net.minecraft.network.chat.Component.literal("Lost Soul ("
+                soul.setCustomName(Component.literal("Lost Soul ("
                         + Character.toUpperCase(BossMechanics.WHISPERER_SOUL_SETS[set].charAt(0))
                         + BossMechanics.WHISPERER_SOUL_SETS[set].substring(1) + "!)"));
                 MinionRules.set(soul, new MinionRules.Rule() {
@@ -457,6 +624,10 @@ final class WhispererScript extends ScriptedBoss {
 
                     @Override
                     public int damage(ServerPlayer p, net.minecraft.world.entity.LivingEntity mob, AttackType type, int d) {
+                        if (!WhispererRules.canHitSoul(inRealm(p))) {
+                            Msg.action(p, "Your attack passes through the lost soul: it is in the Shadow Realm.");
+                            return 0;
+                        }
                         return MinionRules.lethal(mob);
                     }
                 });
@@ -468,18 +639,8 @@ final class WhispererScript extends ScriptedBoss {
 
     private void tickSiphon(DataBossEntity boss, ServerPlayer target) {
         for (Mob soul : souls) {
-            BossFx.world(boss).sendParticles(ParticleTypes.SOUL, soul.getX(), soul.getY() + 1, soul.getZ(), 2, 0.2, 0.4, 0.2, 0.01);
-            if (!soul.isAlive() && soulsCounted.add(soul)) {
-                // souls are only hit from the Shadow Realm: its killer was in there until now (Dark Memories)
-                ServerPlayer killer = soul.getLastHurtByMob() instanceof ServerPlayer p ? p : target;
-                if (killer != null) {
-                    int counted = realmTicks.getOrDefault(killer.getUUID(), 0);
-                    int add = BossMechanics.whispererRealmTicks(specialTick, counted);
-                    if (add > 0) {
-                        CombatAchievementService.count(killer, CombatAchievements.COUNT_SHADOW_REALM_TICKS, add);
-                        realmTicks.put(killer.getUUID(), counted + add);
-                    }
-                }
+            if (soul.isAlive()) {
+                realmParticle(boss, target, true, ParticleTypes.SOUL, soul.position().add(0, 1, 0), 2, 0.3);
             }
         }
         boolean allDead = true;
@@ -492,7 +653,7 @@ final class WhispererScript extends ScriptedBoss {
                 }
             }
             if (dead && setsDone.add(set)) {
-                soulEffect(boss, target, set, false);
+                soulEffect(boss, target, set);
             }
         }
         int due = boss.awakened() ? BossMechanics.WHISPERER_SIPHON_TICKS_AWAKENED : BossMechanics.WHISPERER_SIPHON_TICKS;
@@ -507,8 +668,10 @@ final class WhispererScript extends ScriptedBoss {
         boolean failed = boss.awakened() ? !allDead : setsDone.isEmpty();
         if (failed && target != null) {
             int left = BossMechanics.WHISPERER_SOUL_SETS.length - setsDone.size();
+            int dmg = scaled(boss, Dt2Bosses.WHISPER_SIPHON);
             CombatHooks.nameAttack(Dt2Bosses.WHISPER_SIPHON.name(), null);
-            CombatHandler.applyDamage(boss, target, scaled(boss, Dt2Bosses.WHISPER_SIPHON));
+            CombatHandler.applyDamage(boss, target, dmg);
+            sanityOf(target).drain(dmg);
             boss.heal(mcHp(boss, BossMechanics.WHISPERER_SIPHON_HEAL * Math.max(1, boss.awakened() ? left : 1)));
             Msg.red(target, "The Whisperer's chant completes, siphoning your soul!");
         }
@@ -516,7 +679,7 @@ final class WhispererScript extends ScriptedBoss {
     }
 
     /** A full set of lost souls killed: its chant turns on the Whisperer. */
-    private void soulEffect(DataBossEntity boss, ServerPlayer target, int set, boolean quiet) {
+    private void soulEffect(DataBossEntity boss, ServerPlayer target, int set) {
         if (target == null) {
             return;
         }
@@ -532,7 +695,10 @@ final class WhispererScript extends ScriptedBoss {
                 com.runecraft.network.ServerNetworking.sync(target);
                 Msg.game(target, "Oratio! The souls restore your prayer.");
             }
-            case 2 -> Msg.game(target, "Sanitas! The souls steady your mind.");
+            case 2 -> { // Sanitas!
+                restoreSanity(target, WhispererRules.SANITAS_RESTORE);
+                Msg.game(target, "Sanitas! The souls steady your mind.");
+            }
             default -> { // Mors!
                 boss.setHealth(Math.max(1f, boss.getHealth() - mcHp(boss, BossMechanics.WHISPERER_MORS_DAMAGE)));
                 BossFx.burst(boss, ParticleTypes.SCULK_SOUL, 20, 1.0);
@@ -545,21 +711,22 @@ final class WhispererScript extends ScriptedBoss {
 
     private void scatterSeeds(DataBossEntity boss) {
         seeds.clear();
+        steppedDark.clear();
         Vec3 c = homeVec();
-        for (int i = 0; i < 16; i++) {
-            Vec3 at = around(boss, c, 10);
-            if (at.distanceToSqr(c) < 9) {
-                at = around(boss, c, 10);
-            }
-            seeds.add(new Seed(at, i < 6));
+        ServerLevel w = BossFx.world(boss);
+        int layout = boss.getRandom().nextInt(WhispererRules.seedLayouts());
+        for (WhispererRules.Seed s : WhispererRules.seeds(layout, boss.getRandom().nextInt(2))) {
+            seeds.add(new Seed(BossFx.ground(w, c.x + s.dx() * SEED_SPACING, c.z + s.dz() * SEED_SPACING, c.y), s.light()));
         }
     }
 
     private void tickSeeds(DataBossEntity boss, ServerPlayer target) {
         ServerLevel w = BossFx.world(boss);
         for (Seed s : seeds) {
-            w.sendParticles(s.light() ? ParticleTypes.HAPPY_VILLAGER : ParticleTypes.SQUID_INK, s.pos().x, s.pos().y + 0.1, s.pos().z,
-                    2, 0.2, 0.02, 0.2, 0);
+            Vec3 at = s.pos().add(0, 0.15, 0);
+            // light and dark seeds look alike from outside the realm
+            realmParticle(boss, target, true, s.light() ? LIGHT_SEED : DARK_SEED, at, 2, 0.2);
+            realmParticle(boss, target, false, HIDDEN_SEED, at, 2, 0.2);
         }
         int[] dark = boss.awakened() ? BossMechanics.WHISPERER_DARK_SEED_AWAKENED : BossMechanics.WHISPERER_DARK_SEED;
         for (ServerPlayer p : fighters(boss, target)) {
@@ -569,6 +736,7 @@ final class WhispererScript extends ScriptedBoss {
                 }
                 w.sendParticles(ParticleTypes.POOF, s.pos().x, s.pos().y + 0.3, s.pos().z, 6, 0.2, 0.2, 0.2, 0.02);
                 if (!s.light()) {
+                    steppedDark.add(p.getUUID());
                     CombatHandler.applyDamage(boss, p, (int) Math.round((dark[0] + boss.getRandom().nextInt(dark[1] - dark[0] + 1)) * scale));
                     Msg.red(p, "A corrupted seed bursts under you!");
                 }
@@ -579,10 +747,17 @@ final class WhispererScript extends ScriptedBoss {
         int due = boss.awakened() ? BossMechanics.WHISPERER_SEED_TICKS_AWAKENED : BossMechanics.WHISPERER_SEED_TICKS;
         if (!lightLeft) {
             BossFx.say(boss, "The corrupted seeds wither.");
+            for (ServerPlayer p : fighters(boss, target)) {
+                if (!steppedDark.contains(p.getUUID())) {
+                    restoreSanity(p, WhispererRules.SEEDS_CLEAN_RESTORE);
+                }
+            }
             endSpecial(boss, target, true);
         } else if (specialTick >= due) {
             if (target != null) {
-                CombatHandler.applyDamage(boss, target, (int) Math.round(BossMechanics.WHISPERER_SEED_FAIL * scale));
+                int dmg = (int) Math.round(BossMechanics.WHISPERER_SEED_FAIL * scale);
+                CombatHandler.applyDamage(boss, target, dmg);
+                sanityOf(target).drain(dmg);
                 Msg.red(target, "The corrupted seeds erupt around you!");
             }
             endSpecial(boss, target, true);
@@ -625,8 +800,122 @@ final class WhispererScript extends ScriptedBoss {
     @Override
     public void onRemoved(DataBossEntity boss) {
         endSpecial(boss, null, false);
+        realm.clear();
+        sanity.clear(); // her death restores everyone's sanity
         for (ServerPlayer p : BossFx.players(boss, 32)) {
             p.removeEffect(MobEffects.DARKNESS);
         }
+    }
+
+    // ---------------- the blackstone fragment, Ketla's workbench, the entry requirement ----------------
+
+    /** The Whisperer (normal or quest version) a player near her is fighting, or null. */
+    static DataBossEntity near(ServerPlayer p) {
+        DataBossEntity best = null;
+        for (DataBossEntity d : p.serverLevel().getEntitiesOfClass(DataBossEntity.class, new AABB(p.blockPosition()).inflate(32),
+                e -> e.isAlive() && e.script() instanceof WhispererScript)) {
+            if (best == null || d.distanceToSqr(p) < best.distanceToSqr(p)) {
+                best = d;
+            }
+        }
+        return best;
+    }
+
+    /** Activates a blackstone fragment (right-click): the Shadow Realm of the Whisperer the player fights. */
+    static boolean activateFragment(ServerPlayer p) {
+        DataBossEntity boss = near(p);
+        if (boss == null) {
+            Msg.game(p, "The fragment is dormant: there is no Shadow Realm to step into here.");
+            return false;
+        }
+        return ((WhispererScript) boss.script()).toggleRealm(boss, p);
+    }
+
+    static void register() {
+        com.runecraft.platform.UseItemCallback.EVENT.register((player, world, hand) -> {
+            net.minecraft.world.item.ItemStack stack = player.getItemInHand(hand);
+            if (world.isClientSide() || stack.isEmpty() || !(player instanceof ServerPlayer p)
+                    || !WhispererRules.FRAGMENT.equals(Inv.idOf(stack))) {
+                return net.minecraft.world.InteractionResultHolder.pass(stack);
+            }
+            activateFragment(p);
+            return net.minecraft.world.InteractionResultHolder.sidedSuccess(stack, false);
+        });
+        com.runecraft.content.BlockHooks.register(WhispererRules.WORKBENCH, (player, pos, state) -> {
+            if (!dt2Done(player)) {
+                Msg.game(player, "Ketla's tools lie on the workbench. (Complete Desert Treasure II.)");
+            } else if (Inv.has(player, WhispererRules.FRAGMENT, 1)) {
+                Msg.game(player, "You already have a blackstone fragment.");
+            } else {
+                Inv.give(player, WhispererRules.FRAGMENT, 1);
+                Msg.game(player, "You take a blackstone fragment from Ketla's workbench.");
+            }
+        });
+        // OSRS: the Whisperer is fought after Desert Treasure II, and the player refuses to without a blackstone fragment.
+        com.runecraft.boss.DataBossService.requirement("the_whisperer", (player, def) -> {
+            if (!dt2Done(player)) {
+                Msg.game(player, "You need to complete Desert Treasure II to fight the Whisperer.");
+                return false;
+            }
+            if (!Inv.has(player, WhispererRules.FRAGMENT, 1)) {
+                Msg.game(player, "You'll need your blackstone fragment to face the Whisperer. (Ketla's workbench in the Lassar "
+                        + "Undercity has another.)");
+                return false;
+            }
+            return true;
+        });
+    }
+
+    static boolean dt2Done(ServerPlayer player) {
+        var quest = com.runecraft.osrs.content.ContentRegistry.quest("desert_treasure_ii");
+        return quest == null || Players.data(player).questComplete(quest);
+    }
+
+    // ---------------- self-test ----------------
+
+    /** Starts her next special now (self-test walk). */
+    void selfTestSpecial(DataBossEntity boss, ServerPlayer target) {
+        if (rotation < 0) {
+            rotation = 0;
+        }
+        startSpecial(boss, target);
+    }
+
+    String selfTestSpecialName() {
+        return special == null ? null : special.name().toLowerCase(java.util.Locale.ROOT);
+    }
+
+    boolean selfTestEnraged() {
+        return enraged;
+    }
+
+    List<Mob> selfTestSouls() {
+        return souls;
+    }
+
+    /** The light seeds still to step on. */
+    List<Vec3> selfTestLightSeeds() {
+        List<Vec3> out = new ArrayList<>();
+        for (Seed s : seeds) {
+            if (s.light()) {
+                out.add(s.pos());
+            }
+        }
+        return out;
+    }
+
+    /** Where to stand behind the strongest column (the side away from her), or null. */
+    Vec3 selfTestHidingSpot(DataBossEntity boss) {
+        Column best = null;
+        for (Column col : columns) {
+            if (best == null || col.health > best.health) {
+                best = col;
+            }
+        }
+        if (best == null) {
+            return null;
+        }
+        Vec3 away = best.pos.subtract(boss.position()).multiply(1, 0, 1).normalize();
+        return best.pos.add(away.scale(1.2));
     }
 }
