@@ -72,7 +72,10 @@ public final class MinigamesContent implements ContentModule {
 
     @Override
     public List<ModelSpec.Variant> modelVariants() {
-        return Gauntlet.modelVariants();
+        List<ModelSpec.Variant> list = new java.util.ArrayList<>(Gauntlet.modelVariants());
+        // Barbarian Assault's queen spawns look like small Penance Queens.
+        list.add(ModelSpec.Variant.of("queen_spawn", "penance_queen", 0.35f));
+        return list;
     }
 
     @Override

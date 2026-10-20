@@ -1816,6 +1816,11 @@
     "fire1",
     "fire2"
   ],
+  "queen_spawn": [
+    "eggs",
+    "head",
+    "crown_gem"
+  ],
   "quest_arrg": [
     "head"
   ],

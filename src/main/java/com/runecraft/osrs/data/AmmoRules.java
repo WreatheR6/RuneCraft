@@ -32,6 +32,11 @@ public final class AmmoRules {
             Map.entry("adamant_arrow", new Ammo(Kind.ARROW, ADAMANT)),
             Map.entry("rune_arrow", new Ammo(Kind.ARROW, RUNE)),
             Map.entry("broad_arrows", new Ammo(Kind.ARROW, BRONZE)), // any bow (Slayer reward)
+            // Barbarian Assault's attacker arrows fire from any bow.
+            Map.entry("bullet_arrow", new Ammo(Kind.ARROW, BRONZE)),
+            Map.entry("field_arrow", new Ammo(Kind.ARROW, BRONZE)),
+            Map.entry("blunt_arrow", new Ammo(Kind.ARROW, BRONZE)),
+            Map.entry("barbed_arrow", new Ammo(Kind.ARROW, BRONZE)),
             Map.entry("amethyst_arrow", new Ammo(Kind.ARROW, AMETHYST)),
             Map.entry("dragon_arrow", new Ammo(Kind.ARROW, DRAGON)),
             Map.entry("bronze_bolts", new Ammo(Kind.BOLT, B_BRONZE)),

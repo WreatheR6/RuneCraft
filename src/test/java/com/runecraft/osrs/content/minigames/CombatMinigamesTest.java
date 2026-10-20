@@ -119,7 +119,9 @@ class CombatMinigamesTest {
         assertEquals(10, BarbarianAssault.runnerPenalty(0, 5, 3));
         assertEquals(20, BarbarianAssault.runnerPenalty(1, 5, 3));
         assertEquals(0, BarbarianAssault.runnerPenalty(1, 5, 10));
-        assertEquals(0, BarbarianAssault.waveHonour(0, 1, 9));
+        // Team points never go below 0, but the attacker keeps its own kills; the defender loses its own points too.
+        assertEquals(6, BarbarianAssault.waveHonour(0, 1, 9));
+        assertEquals(0, BarbarianAssault.waveHonour(1, 1, 9));
         assertEquals(10, BarbarianAssault.addHonour(4990, 50));
         // Commander Connad: torso 375 each role + a queen kill; gloves no queen kill; granite body only coins.
         assertEquals(375, cost("barbarian_assault", "fighter_torso", MinigameCurrencies.BA_HEALER));

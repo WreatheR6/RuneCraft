@@ -323,8 +323,58 @@ public final class MinigameItems {
                 s(0, 0, 0, 6, 0, 15, 15, 15, 6, 15, 0, 0, 0, 0), Skill.DEFENCE, 45);
         wear(items, "runner_boots", "Runner boots", "boots", 0x3A3A8A, Slot.FEET, 1,
                 s(0, 0, 0, 0, 0, 1, 2, 3, 0, 0, 0, 0, 0, 0), Skill.DEFENCE, 40);
+        // Before round 37 the only egg; kept so stacks of it still load (the arena no longer hands it out).
         simple(items, "penance_egg", "Penance egg", "bead", 0xD0C080, 0, "Collected from the Penance. Load it into the egg launcher.");
         pet(items, "pet_penance_queen", "Pet penance queen", 0x8A6A2A, "A tiny penance queen.");
+        baRoleItems(items);
+    }
+
+    /**
+     * The role items handed out inside Barbarian Assault (OSRS Wiki item pages; none of them leaves the arena, see
+     * BarbarianAssaultSession): the attacker's arrows, the eggs, the defender's bait, the healer's poisoned food and vial,
+     * the horns, the role icons and the collection bag. OSRS doesn't stack any of them except the arrows.
+     */
+    private static void baRoleItems(ItemSink items) {
+        String[][] arrows = {{"bullet_arrow", "Bullet arrow", "bullet", "C0C0C0"}, {"field_arrow", "Field arrow", "field", "4080E0"},
+                {"blunt_arrow", "Blunt arrow", "blunt", "6A9A3A"}, {"barbed_arrow", "Barbed arrow", "barbed", "D04020"}};
+        for (String[] a : arrows) {
+            items.add(a[0], a[1], Kind.ARROW, "arrow", Integer.parseInt(a[3], 16)).value(1).rangedStrength(BaRules.ARROW_RANGED_STRENGTH)
+                    .tier("barbarian").examine("Arrows with " + a[2] + " heads.");
+        }
+        items.add("red_egg", "Red egg", Kind.SIMPLE, "egg", 0xD03020).value(100).stack(1).examine("Will explode when fired!");
+        items.add("green_egg", "Green egg", Kind.SIMPLE, "egg", 0x40B040).value(100).stack(1).examine("Use to poison your enemies!");
+        items.add("blue_egg", "Blue egg", Kind.SIMPLE, "egg", 0x3060D0).value(100).stack(1).examine("Stun your foes!");
+        items.add(BaRules.YELLOW_EGG, "Yellow egg", Kind.SIMPLE, "egg", 0xE0D040).value(100).stack(1)
+                .examine("A yellow egg; it needs passing to a Healer to be poisoned.");
+        items.add(BaRules.POISONED_EGG, "Poisoned egg", Kind.SIMPLE, "egg", 0x9AC040).value(100).stack(1)
+                .examine("A poisoned yellow egg; pass to the Attacker for spikes to be added!");
+        items.add(BaRules.SPIKED_EGG, "Spiked/pois. egg", Kind.SIMPLE, "egg", 0x7A8A40).value(100).stack(1)
+                .examine("A poisoned, spiky egg; pass to the Defender for heating!");
+        items.add(BaRules.OMEGA_EGG, "Omega egg", Kind.SIMPLE, "egg", 0xE07020).value(100).stack(1)
+                .examine("A heated, poisoned, spiky egg - pass to the Collector for loading!");
+        items.add("tofu", "Tofu", Kind.SIMPLE, "bait", 0xE8E0C0).value(1).stack(1).examine("A block of tofu.");
+        items.add("crackers", "Crackers", Kind.SIMPLE, "bait", 0xC8A060).value(1).stack(1).examine("Some dry crackers.");
+        items.add("worms", "Worms", Kind.SIMPLE, "bait", 0xC07070).value(1).stack(1).examine("Some meaty worms.");
+        items.add("poisoned_tofu", "Poisoned tofu", Kind.SIMPLE, "bait", 0xA0C080).value(1).stack(1).examine("Some poisoned tofu.");
+        items.add("poisoned_worms", "Poisoned worms", Kind.SIMPLE, "bait", 0x80A060).value(1).stack(1).examine("Some poisoned worms.");
+        items.add("poisoned_meat", "Poisoned meat", Kind.SIMPLE, "meat_cooked", 0x6A8A40).value(1).stack(1)
+                .examine("A poisoned leg of meat.");
+        items.add(BaRules.HEALING_VIAL, "Healing vial", Kind.SIMPLE, "vial", 0xD0E0F0).value(1).stack(1).examine("An empty healing vial.");
+        String[] fill = {"A quarter-full", "A half-full", "A three-quarter full", "A full"};
+        for (int d = 1; d <= BaRules.VIAL_DOSES; d++) {
+            items.add(BaRules.HEALING_VIAL + "_" + d, "Healing vial(" + d + ")", Kind.SIMPLE, "vial_water", 0x60A0E0).value(1).stack(1)
+                    .examine(fill[d - 1] + " healing vial.");
+        }
+        int[] colours = {0xC03030, 0x3060C0, 0xE0C040, 0x40A040};
+        for (int r = 0; r < MinigameRules.BarbarianAssault.ROLES.length; r++) {
+            String role = MinigameRules.BarbarianAssault.ROLES[r];
+            String name = BaRules.cap(role);
+            items.add(role + "_horn", name + " horn", Kind.SIMPLE, "horn", 0xC8B080).value(1).stack(1)
+                    .examine(r == BaRules.COLLECTOR ? "A horn for communicating with your team members." : "A horn to call to others.");
+            items.add(role + "_icon", name + " icon", Kind.SIMPLE, "icon", colours[r]).value(1).stack(1).examine("An icon.");
+        }
+        items.add("collection_bag", "Collection bag", Kind.SIMPLE, "sack", 0x8A6A3A).value(1).stack(1)
+                .examine("A collection bag for penance eggs.");
     }
 
     // ------------------------------------------------------------------ Castle Wars
