@@ -919,11 +919,15 @@ final class WhispererScript extends ScriptedBoss {
         return out;
     }
 
-    /** Where to stand behind the strongest column (the side away from her), or null. */
+    /**
+     * Where to stand behind the weakest column still standing (the side away from her), or null. Each screech breaks the
+     * column hidden behind and takes 20 from the rest, so the strong ones are saved for the last screeches (wiki: "you must
+     * save the 60-health pillar for the final screech"); the awakened five need the 20, 40, 60, 80 and 100 in that order.
+     */
     Vec3 selfTestHidingSpot(DataBossEntity boss) {
         Column best = null;
         for (Column col : columns) {
-            if (best == null || col.health > best.health) {
+            if (best == null || col.health < best.health) {
                 best = col;
             }
         }

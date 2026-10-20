@@ -234,6 +234,7 @@ public final class BossWalks {
         }
         d.ticks(boss, 1); // a look at the columns' health
         WhispererScript.activateFragment(p);
+        d.clearDamage();
         int ticks = until(boss, d, 40, () -> {
             Vec3 spot = w.selfTestHidingSpot(boss);
             if (spot != null) {
@@ -243,6 +244,9 @@ public final class BossWalks {
         });
         if (ticks < 0) {
             throw fail("screech: still screeching after 40 ticks");
+        }
+        if (d.damage("screech") > 0) {
+            throw fail("screech: hiding behind the weakest standing column still took " + d.damage("screech") + " screech damage");
         }
         return "screech: hid behind the columns, over in " + ticks + " ticks";
     }
