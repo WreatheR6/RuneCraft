@@ -461,6 +461,11 @@ public final class RaidInstance {
     }
 
     /** Points a player earned for a puzzle action (CoX kindling, grubs, crystals; ToA puzzles, repairs, watering). */
+    /** CoX: damage to this creature earns no more points (OSRS: an Olm hand that recovered in the penultimate phase). */
+    public void emptyPointsPool(LivingEntity e) {
+        coxPools.put(e, 0);
+    }
+
     public void awardActionPoints(ServerPlayer player, int amount) {
         if (amount > 0) {
             addPoints(player.getUUID(), amount);
@@ -1219,7 +1224,8 @@ public final class RaidInstance {
         Map<String, Integer> pts = new LinkedHashMap<>();
         // ToA (OSRS): raiders who left before the end still count towards the team's unique chance (and can draw the
         // unique, which then goes to no one); the others only roll for whoever is still here.
-        for (UUID u : type == RaidType.TOA ? points.keySet() : party) {
+        // CoX (OSRS, January 2025): the same, so leaving no longer hands your loot chance to the others.
+        for (UUID u : type == RaidType.TOB ? party : points.keySet()) {
             pts.put(u.toString(), type == RaidType.TOA ? ToaLoot.rewardPoints(toaTotal(u)) : points(u));
         }
         if (type == RaidType.TOA) {

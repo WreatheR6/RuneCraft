@@ -1791,6 +1791,12 @@ final class CoxRooms {
             return damage;
         }
 
+        /** OSRS: Vespula isn't aggressive; until someone attacks her, her stings are for the grubs only. */
+        @Override
+        public int bossOutgoing(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
+            return boss == vespula && !provoked ? 0 : damage;
+        }
+
         @Override
         protected void onComplete() {
             if (alive(vespula)) {
@@ -2971,7 +2977,7 @@ final class CoxRooms {
             w.hold(null);
             int startOrbs = orbs;
             int guard = 0;
-            while (guard++ < 120 && (orbs == startOrbs || orb != null)) {
+            while (guard++ < 160 && (orbs == startOrbs || orb != null)) {
                 if (colourTicks.getOrDefault(test, 0) < 3 || colourOf(test) != CoxRules.Colour.GREEN) {
                     w.hit(test, 1, AttackType.RANGED);
                 }
@@ -3326,6 +3332,8 @@ final class CoxRooms {
                 } else {
                     right = spawnClaw("olm_right_claw", -leftX());
                 }
+                // OSRS: no points for damaging a hand the Olm took back.
+                raid.emptyPointsPool(l ? right : left);
                 imperfect = true; // "Perfect Olm": a claw regrew
                 handDownAt = -1;
                 warn("The Great Olm recovers its " + (l ? "right" : "left") + " hand!");
