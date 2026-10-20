@@ -104,7 +104,8 @@ class BossesContentTest {
                 && boss("dagannoth_supreme").defenceBonus(AttackType.SLASH) < 20);
         assertTrue(boss("zulrah").immuneTo.contains(AttackType.STAB));
         assertTrue(boss("dusk").immuneTo.contains(AttackType.MAGIC));
-        assertTrue(boss("dawn").immuneTo.contains(AttackType.CRUSH));
+        // Dawn flies out of melee reach except a halberd's: her script turns other melee away, so she is not immune to it.
+        assertTrue(boss("dawn").immuneTo.isEmpty());
         assertTrue(boss("kraken").immuneTo.contains(AttackType.CRUSH));
         // Zulrah's forms have different magic/ranged defences.
         assertTrue(boss("zulrah").defenceBonus(AttackType.MAGIC) < 0);
@@ -119,7 +120,8 @@ class BossesContentTest {
         assertTrue(attack(boss("zulrah_magma"), "tail_slam").telegraphTicks() >= 3);
         assertTrue(attack(boss("cerberus"), "lava_pool").telegraphTicks() >= 3);
         assertTrue(Dt2Bosses.DUKE_GAZE.telegraphTicks() >= 4);
-        assertTrue(SlayerBosses.SIRE_EXPLOSION.telegraphTicks() >= 6);
+        // The Sire teleports the player next to itself first; "two ticks later it explodes" (OSRS Wiki).
+        assertEquals(2, SlayerBosses.SIRE_EXPLOSION.telegraphTicks());
         assertTrue(SlayerBosses.DAWN_STONE_BALL.telegraphTicks() >= 3);
         assertTrue(Dt2Bosses.WHISPER_SCREECH.telegraphTicks() >= 4);
     }

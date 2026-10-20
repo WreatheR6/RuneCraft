@@ -26,6 +26,16 @@ public final class BossSelfTests {
         return SlayerScripts.selfTestAraxxor(boss, p);
     }
 
+    /** The Abyssal Sire's spawns mature into scions after 15 seconds and die with it. */
+    public static String sireSpawns(DataBossEntity boss, ServerPlayer p) {
+        return SlayerScripts.selfTestSire(boss, p);
+    }
+
+    /** The Kraken's whirlpools: disturbed in order, then it rises; ranged hits deal a seventh. */
+    public static String krakenWhirlpools(DataBossEntity boss, ServerPlayer p) {
+        return SlayerScripts.selfTestKraken(boss, p);
+    }
+
     /** The Eclipse Moon's clones: a faced clone is parried, one behind the player hits. */
     public static String eclipseClones(DataBossEntity boss, ServerPlayer p) {
         return MoonScripts.selfTestEclipse(boss, p);
@@ -68,9 +78,13 @@ public final class BossSelfTests {
 
     /**
      * Loot a kill leaves somewhere other than the ground or the inventory: the Doom of Mokhaiotl's delve loot waits in the
-     * burrow hole until claimed at the stone. Returns the number of stacks held for the player.
+     * burrow hole until claimed at the stone; Araxxor's waits on its corpse until harvested. Returns the number of stacks held
+     * for the player.
      */
     public static int heldLoot(String bossId, ServerPlayer p) {
+        if (AraxxorCorpse.BOSS.equals(bossId)) {
+            return AraxxorCorpse.held(p);
+        }
         return com.runecraft.osrs.content.bosses.DoomDelves.BOSS.equals(bossId) ? DoomDelveService.heldLoot(p) : 0;
     }
 

@@ -38,22 +38,26 @@ public final class BossMinions {
                 // Kraken
                 MonsterDef.of("enormous_tentacle", "Enormous tentacle").level(112).stats(120, 1, 1, 70, 150, 1).speed(4)
                         .defenceBonus(0, 0, 0, 0, 270).immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH)
-                        .attack(AttackDef.of("water_splash", AttackType.MAGIC, 4, 12, 1).particle("minecraft:splash"))
+                        // OSRS Wiki: a typeless "magical ranged" splash of up to 2 (accurate, unlike the Kraken's own blast).
+                        .attack(AttackDef.of("water_splash", AttackType.RANGED, 2, 12, 1).special(Special.PRAYER_PIERCING, 0)
+                                .particle("minecraft:splash"))
                         .size(0.8f, 2.4f, 1.0f).moveSpeed(0.0).slayer(87, "kraken"),
                 // Cerberus' summoned souls (ranged, magic, melee); the Cerberus script performs their attacks.
                 soul("summoned_soul_ranged", "Summoned Soul (ranged)"),
                 soul("summoned_soul_magic", "Summoned Soul (magic)"),
                 soul("summoned_soul_melee", "Summoned Soul (melee)"),
                 // Abyssal Sire
+                // Respiratory systems give 50 Slayer XP each (the Sire script) but are no abyssal demon task kills.
                 MonsterDef.of("respiratory_system", "Respiratory system").level(1).stats(100, 1, 1, 30, 1, 1)
-                        .attack(inert()).passive().size(1.0f, 1.4f, 1.0f).moveSpeed(0.0).slayer(85, "abyssal_demons"),
+                        .attack(inert()).passive().size(1.0f, 1.4f, 1.0f).moveSpeed(0.0).slayer(85, null),
+                // OSRS Wiki: spawns attack with ranged for up to 9 or crush for up to 4; scions ranged 16 or crush 10.
                 MonsterDef.of("abyssal_spawn", "Spawn").level(60).stats(30, 50, 50, 30, 1, 1).speed(4)
-                        .attack(AttackDef.of("lash", AttackType.CRUSH, 8, 2.5, 1).special(Special.POISON, 4))
+                        .attack(AttackDef.of("lash", AttackType.CRUSH, 4, 2.5, 1))
+                        .attack(AttackDef.of("spine", AttackType.RANGED, 9, 9, 1))
                         .size(0.6f, 0.7f, 1.0f).moveSpeed(0.3),
                 MonsterDef.of("abyssal_scion", "Scion").level(100).stats(50, 90, 90, 60, 90, 90).speed(4)
-                        .attack(AttackDef.of("stab", AttackType.STAB, 20, 2.5, 4))
-                        .attack(AttackDef.of("bolt", AttackType.MAGIC, 20, 9, 3))
-                        .attack(AttackDef.of("spine", AttackType.RANGED, 20, 9, 3))
+                        .attack(AttackDef.of("bite", AttackType.CRUSH, 10, 2.5, 4))
+                        .attack(AttackDef.of("spine", AttackType.RANGED, 16, 9, 3))
                         .size(0.8f, 1.6f, 1.0f).moveSpeed(0.26),
                 // Corporeal Beast
                 MonsterDef.of("dark_energy_core", "Dark energy core").level(75).stats(25, 1, 1, 1, 1, 1).speed(2)

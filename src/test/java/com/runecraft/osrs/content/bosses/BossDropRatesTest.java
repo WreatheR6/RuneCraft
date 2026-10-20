@@ -40,6 +40,7 @@ class BossDropRatesTest {
         assertEquals(500, rate("thermonuclear_smoke_devil", "clue_scroll_elite"));
         assertEquals(100, rate("cerberus", "clue_scroll_elite"));
         assertEquals(256, rate("alchemical_hydra", "clue_scroll_elite"));
+        assertEquals(50, rate("araxxor", "clue_scroll_elite"));
         assertEquals(450, rate("king_black_dragon", "clue_scroll_elite"));
     }
 
@@ -71,6 +72,15 @@ class BossDropRatesTest {
         assertEquals(500, rate("dusk", "black_tourmaline_core"));
         assertEquals(181, rate("alchemical_hydra", "hydras_eye"));
         assertEquals(25, rate("skotizo", "dark_claw"));
+        // Araxxor (wiki, confirmed by Jagex): a halberd piece 1/200 (1/600 each), the fang 1/600, the head 1/250.
+        for (String piece : new String[]{"noxious_point", "noxious_blade", "noxious_pommel"}) {
+            assertEquals(600, rate("araxxor", piece));
+        }
+        assertEquals(600, rate("araxxor", "araxyte_fang"));
+        assertEquals(250, rate("araxxor", "araxyte_head"));
+        assertEquals(1500, rate("araxxor", "jar_of_venom"));
+        assertTrue(ContentRegistry.boss("araxxor").drops.stream().noneMatch(d -> d.item().equals("echo_crystal")),
+                "echo crystals come from the Colosseum");
     }
 
     @Test

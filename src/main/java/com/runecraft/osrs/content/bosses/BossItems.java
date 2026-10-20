@@ -246,6 +246,9 @@ public final class BossItems {
         // Granite dust is in CommonItems (the systems module coats cannonballs with it).
         jar(items, "jar_of_stone", "Jar of stone", 0x7A7A7A);
         pet(items, "pet_noon", "Noon", "Grotesque Guardians", 0x7A7A8A);
+        // OSRS Wiki "Brittle key": dropped by gargoyles on a gargoyle task; opens the Slayer Tower roof for good.
+        simple(items, SlayerBossRules.BRITTLE_KEY, "Brittle key", "key", 0x9A9A8A, 1,
+                "This key will take you to the top! (Unlocks the gate to the roof of the Slayer Tower).");
 
         // ---------------- Corporeal Beast ----------------
         EquipmentStats spirit = st(0, 0, 0, 0, 0, 39, 41, 50, 1, 45, 0, 0, 0, 1);
