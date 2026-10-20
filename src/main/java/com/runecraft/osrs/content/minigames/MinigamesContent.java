@@ -77,7 +77,7 @@ public final class MinigamesContent implements ContentModule {
 
     @Override
     public List<com.runecraft.osrs.world.StructureDef> structures() {
-        return List.of(GauntletLobby.structure());
+        return List.of(GauntletLobby.structure(), ColosseumLobby.structure());
     }
 
     @Override

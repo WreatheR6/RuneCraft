@@ -242,6 +242,20 @@ public final class MinigamesHooks implements ModuleHooks {
                                     }
                                     return 1;
                                 }))
+                                .then(Commands.literal("enter").executes(ctx -> {
+                                    ServerPlayer p = ctx.getSource().getPlayer();
+                                    if (p != null) {
+                                        com.runecraft.content.minigames.games.ColosseumSession.enterArena(p);
+                                    }
+                                    return 1;
+                                }))
+                                .then(Commands.literal("claim").executes(ctx -> {
+                                    ServerPlayer p = ctx.getSource().getPlayer();
+                                    if (p != null && MinigameManager.session(p) instanceof com.runecraft.content.minigames.games.ColosseumSession c) {
+                                        c.claimChest(p);
+                                    }
+                                    return 1;
+                                }))
                                 .then(Commands.literal("salute").executes(ctx -> {
                                     ServerPlayer p = ctx.getSource().getPlayer();
                                     if (p != null) {

@@ -27,7 +27,8 @@ public final class NpcStoreys {
 
     /** The feet block y of an NPC that stands in a dungeon below its place, or null for one on the surface. */
     public static Integer undergroundFeetY(String npcId) {
-        return UNDERGROUND_FEET.get(npcId);
+        Integer y = UNDERGROUND_FEET.get(npcId);
+        return y != null ? y : com.runecraft.osrs.content.minigames.ColosseumLobby.feetY(npcId); // the Fortis Colosseum's lobby
     }
 
     /** The storey this NPC stands on (0 = ground floor). */

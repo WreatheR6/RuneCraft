@@ -60,6 +60,7 @@ final class MinigameRewardChecks {
         checks.add(new SelfTest.Check("minigame:colosseum_cash_out", g::colosseumCashOut));
         checks.add(new SelfTest.Check("minigame:colosseum_waves", g::colosseumWaves));
         checks.add(new SelfTest.Check("minigame:colosseum_glory", g::colosseumGlory));
+        checks.add(new SelfTest.Check("minigame:colosseum_walk", g::colosseumWalk));
         checks.add(new SelfTest.Check("minigame:nmz_modes", g::nmzModes));
         checks.add(new SelfTest.Check("minigame:nmz_barrels", g::nmzBarrels));
         checks.add(new SelfTest.Check("minigame:trek_tomes", g::trekTomes));
@@ -560,6 +561,17 @@ final class MinigameRewardChecks {
             if (!c.cashOut(p())) {
                 throw failure("cashing out between waves was refused");
             }
+            if (!c.rewardsReady() || Inv.count(p(), ColosseumRewards.SPLINTERS) != before) {
+                throw failure("ending the run did not leave the loot in the Rewards Chest");
+            }
+            String chestBlock = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(c.world.getBlockState(c.chestPos()).getBlock())
+                    .getPath();
+            if (!chestBlock.equals(ColosseumSession.REWARDS_CHEST)) {
+                throw failure("no Rewards Chest in the centre of the arena (found " + chestBlock + ")");
+            }
+            if (!c.claimChest(p()) || !c.isEnded()) {
+                throw failure("searching the Rewards Chest did not end the run");
+            }
             int got = Inv.count(p(), ColosseumRewards.SPLINTERS) - before;
             if (got != 80) {
                 throw failure("cashing out gave " + got + " sunfire splinters (expected 80)");
@@ -589,8 +601,9 @@ final class MinigameRewardChecks {
                 throw failure("no modifier to pick before wave 12");
             }
             c.startWave();
-            if (c.monstersAlive() != 1) {
-                throw failure("wave 12 has " + c.monstersAlive() + " monsters (expected Sol Heredit alone)");
+            int expected = c.modifiers().containsKey(FortisColosseum.Modifier.QUARTET) ? 2 : 1;
+            if (c.monstersAlive() != expected || c.sol() == null) {
+                throw failure("wave 12 has " + c.monstersAlive() + " monsters (expected Sol Heredit" + (expected == 2 ? " and Quartet's warbander)" : " alone)"));
             }
             if (c.wallBlocks() == 0) {
                 throw failure("no gladiator wall closed the arena for Sol Heredit");
@@ -626,6 +639,23 @@ final class MinigameRewardChecks {
         }
         return "11 waves cleared, Sol Heredit spawned on wave 12 behind the gladiator wall, four salutes counted; modifiers "
                 + String.join(", ", seen);
+    }
+
+    /**
+     * A whole Fortis Colosseum run walked as the real player (round 34, {@code ColosseumWalk}): the lobby, twelve waves and
+     * Sol Heredit, the Rewards Chest, a death and a cash-out. Sessions only see players in the server's player list, so the
+     * fake player can't do it.
+     */
+    private String colosseumWalk() {
+        if (!c.realPlayer()) {
+            throw new SelfTest.Skip("minigame sessions only see players in the player list; runs in '/rc selftest real minigame:'");
+        }
+        c.completeQuests(null);
+        try {
+            return com.runecraft.content.minigames.games.ColosseumWalk.run(p());
+        } catch (AssertionError e) {
+            throw failure(e.getMessage());
+        }
     }
 
     /** Glory unlocks (bank chest, respawn point, ring of dueling) and the daily Varlamore token from wave 3. */

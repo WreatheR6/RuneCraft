@@ -134,7 +134,9 @@ public final class ZeahNpcs {
                 "Test yourself in the Fortis Colosseum if you dare - Sol Heredit has never been defeated.");
         npc(out, PRIMIO_CIVITAS, "Primio", ZeahPlaces.CIVITAS, -4, 8, 0xB88860, 0x8A6A3A, 0x5A3A1A, 0x3A2A1A);
         npc(out, PRIMIO, "Primio", "VARROCK", 6, -7, 0xB88860, 0x8A6A3A, 0x5A3A1A, 0x3A2A1B);
-        npc(out, "zeah_minimus", "Minimus", ZeahPlaces.FORTIS_COLOSSEUM, -4, -4, 0xB88860, 0xC0A060, 0x6A4A2A, 0xE0C040,
+        // Minimus stands in the Colosseum's underground lobby (OSRS 1805, 9508): the minigames module's lobby place sits above
+        // 1810, 9510 (-> 3110), so he is 10 blocks west and 4 south of it (NpcStoreys gives his depth).
+        npc(out, "zeah_minimus", "Minimus", "mg_colosseum_lobby", -10, 4, 0xB88860, 0xC0A060, 0x6A4A2A, 0xE0C040,
                 "Welcome to the Fortis Colosseum! Twelve waves stand between you and Sol Heredit.",
                 "Glory awaits - and sunfire splinters for the fanatics among you.");
         npc(out, HUNTMASTER_GILMAN, "Huntmaster Gilman", ZeahPlaces.HUNTER_GUILD, -3, 3, 0xC89870, 0x5A6A2A, 0x3A4A1A, 0x8A6A3A,

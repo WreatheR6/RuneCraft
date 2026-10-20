@@ -323,7 +323,22 @@ public final class SolHereditScript extends ScriptedBoss {
     }
 
     private void startGrapple(DataBossEntity boss, ServerPlayer target) {
-        grapple = Grapple.values()[random.nextInt(Grapple.values().length)];
+        startGrapple(boss, target, Grapple.values()[random.nextInt(Grapple.values().length)]);
+    }
+
+    /** Self-test: Sol Heredit calls a grapple on {@code slot} now. */
+    public void selfTestGrapple(DataBossEntity boss, ServerPlayer target, Grapple slot) {
+        startGrapple(boss, target, slot);
+    }
+
+    /** Whether the player's next attack on Sol Heredit is a perfect parry's max hit (self-test). */
+    public static boolean perfectReady(ServerPlayer p) {
+        Long until = PERFECT.get(p.getUUID());
+        return until != null && com.runecraft.action.ActionManager.gameTick() <= until;
+    }
+
+    private void startGrapple(DataBossEntity boss, ServerPlayer target, Grapple slot) {
+        grapple = slot;
         grappleStart = now;
         grappled = target.getUUID();
         defended = false;
@@ -356,9 +371,35 @@ public final class SolHereditScript extends ScriptedBoss {
         if (p != null && !defended && boss.isAlive()) {
             CombatHooks.nameAttack("grapple", null);
             CombatHandler.applyDamage(boss, p, random.nextInt(SolHeredit.GRAPPLE_MAX_HIT + 1));
+            unequip(p, grapple);
         }
         GRAPPLED.remove(grappled);
         grapple = null;
+    }
+
+    /**
+     * An undefended grapple tears the called slot's item off into the inventory (wiki: "puts it into the player's inventory
+     * if not blocked in time"). Body, legs and feet are the armour slots; the back and hands slots are worn as accessories
+     * here and stay on. With no free inventory slot the item stays worn: it is never put on the arena floor, which is
+     * cleared when the wave ends. // approx (the wiki doesn't say what a full inventory does)
+     */
+    static boolean unequip(ServerPlayer p, Grapple g) {
+        net.minecraft.world.entity.EquipmentSlot slot = SolHeredit.armourSlot(g) == null ? null
+                : net.minecraft.world.entity.EquipmentSlot.valueOf(SolHeredit.armourSlot(g));
+        if (slot == null) {
+            return false;
+        }
+        net.minecraft.world.item.ItemStack worn = p.getItemBySlot(slot);
+        if (worn.isEmpty() || p.getInventory().getFreeSlot() < 0) {
+            return false;
+        }
+        net.minecraft.world.item.ItemStack copy = worn.copy();
+        if (!p.getInventory().add(copy)) {
+            return false; // nothing was moved (add fills a free slot whole, but never risk the item)
+        }
+        p.setItemSlot(slot, net.minecraft.world.item.ItemStack.EMPTY);
+        Msg.red(p, "Sol Heredit tears your " + worn.getHoverName().getString() + " off!");
+        return true;
     }
 
     /** Light-beam crystals: each shot targets the player's tile and lands a few ticks later. */

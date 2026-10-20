@@ -254,6 +254,9 @@ public final class MinigameWorld {
         for (String[] b : Gauntlet.blocks()) {
             list.add(BlockDef.scripted(b[0], b[1], Integer.parseInt(b[2], 16), b[3]));
         }
+        for (String[] b : FortisColosseum.blocks()) {
+            list.add(BlockDef.scripted(b[0], b[1], Integer.parseInt(b[2], 16), b[3]));
+        }
         return list;
     }
 
@@ -281,8 +284,7 @@ public final class MinigameWorld {
         map.get(Minigame.NIGHTMARE_ZONE.place()).add(NMZ_BARRELS);
         map.get(Minigame.SHADES_OF_MORTTON.place()).add(DAMPE_COFFINS);
         map.get(Minigame.BARBARIAN_ASSAULT.place()).add(BA_BLACKBOARD);
-        map.get(Minigame.FORTIS_COLOSSEUM.place()).add(FortisColosseum.SCOREBOARD);
-        map.get(Minigame.FORTIS_COLOSSEUM.place()).add(FortisColosseum.BANK_CHEST);
+        // The Colosseum's scoreboard and bank chest stand in its underground lobby (ColosseumLobby), not at the entrance.
         // The Gauntlet: only its portal stands in Prifddinas; the entrances and the reward chest are in the lobby (GauntletLobby).
         map.put(Minigame.GAUNTLET.place(), new ArrayList<>(List.of(Gauntlet.PORTAL)));
         map.put(TempleTrekking.RAMBLE_PLACE, new ArrayList<>(List.of(TempleTrekking.RAMBLE_ENTRANCE)));
@@ -330,6 +332,7 @@ public final class MinigameWorld {
                 TempleTrekking.PATERDOMUS_Y, PlaceDef.Style.NONE, blocks.get(TempleTrekking.RAMBLE_PLACE)));
         list.addAll(TaiBwoWannai.places());
         list.addAll(VarrockMuseum.places());
+        list.add(ColosseumLobby.place());
         return list;
     }
 
@@ -408,6 +411,7 @@ public final class MinigameWorld {
         }
         list.addAll(TaiBwoWannai.npcs());
         list.addAll(VarrockMuseum.npcs());
+        list.addAll(ColosseumLobby.npcs());
         return list;
     }
 

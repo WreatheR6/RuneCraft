@@ -8,14 +8,16 @@ import com.runecraft.combat.PoisonService;
 import com.runecraft.content.minigames.MinigameData;
 import com.runecraft.content.minigames.MinigameManager;
 import com.runecraft.content.minigames.MinigameSession;
+import com.runecraft.entity.OsrsMonsterEntity;
 import com.runecraft.osrs.AttackType;
-import com.runecraft.osrs.Prayer;
 import com.runecraft.osrs.Skill;
+import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.bosses.ColosseumRewards;
 import com.runecraft.osrs.content.minigames.FortisColosseum;
 import com.runecraft.osrs.content.minigames.FortisColosseum.Modifier;
 import com.runecraft.osrs.content.minigames.FortisColosseum.Offer;
 import com.runecraft.osrs.content.minigames.Minigame;
+import com.runecraft.osrs.content.minigames.SolHeredit;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
 import com.runecraft.quest.QuestApi;
@@ -25,7 +27,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -50,18 +51,29 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * The Fortis Colosseum (see {@link FortisColosseum}): before every wave Minimus offers three modifiers (chat links, or
  * {@code /minigame colosseum pick N}); the wave's monsters then spawn at random spots, reinforcements arrive from the gate
  * nearest the player after 40 seconds, and clearing the wave adds a chest roll ({@link ColosseumRewards}) and Glory.
- * Between waves the player may leave with the chest ({@code /minigame colosseum leave}, or the exit portal); dying,
- * logging out or leaving any other way forfeits it. Wave 12 is Sol Heredit; his death ends the run with Dizana's quiver in the chest.
+ * Between waves the player may end the run ({@code /minigame colosseum leave}, or the exit portal): the Rewards Chest then
+ * appears in the centre of the arena and must be searched before leaving. Dying, logging out or leaving any other way
+ * forfeits it. Wave 12 is Sol Heredit; his death ends the run with Dizana's quiver in the chest.
  *
- * <p>Modifiers modelled: Bees!, Blasphemy, Doom, Dynamic Duo, Frailty, Mantimayhem (manticores fire three orbs a tick
- * apart, magic/ranged then melee; I: each orb hits twice, II: unprotected orbs venom, III: the melee orb anywhere), Myopia (ranged and autocast attacks beyond the weapon's attack range less 2/4/6 tiles do nothing), Reentry,
- * Red Flag (without it minotaurs walk straight at the player and can be safespotted behind a pillar; with it they
- * path-find), Relentless (enemy accuracy as if the player's Defence were 33%/66% lower, or no accuracy roll at III, and
- * +1/+3/+6 max hit), Solarflare, Quartet, Totemic and Volatility. Javelin Colossi throw a prayer-ignoring javelin at the player's tile every fifth attack; minotaurs out of
- * melee reach heal wounded monsters to full.
+ * <p>The arena is built one block per OSRS tile. Monster mechanics: the warband attacks only from melee range (and always
+ * takes a max hit from its weak style); Javelin Colossi replace every fifth attack with a javelin landing on the player's
+ * tile 6 ticks later; manticores fire their own three-orb pattern a tick apart (a second manticore copies it and the two
+ * stagger their volleys 5 ticks apart); minotaurs out of melee reach heal wounded monsters in sight to full.
+ *
+ * <p>Modifiers modelled: Bees!, Blasphemy, Doom (any damage taken, hazards included), Dynamic Duo, Frailty, Mantimayhem
+ * (I: each orb hits twice, II: unprotected orbs venom, III: any order of the three orbs), Myopia (ranged and autocast
+ * attacks beyond the weapon's attack range less 2/4/6 tiles do nothing), Reentry, Red Flag (without it minotaurs walk
+ * straight at the player and can be safespotted behind a pillar; with it they path-find), Relentless (enemy accuracy as if
+ * the player's Defence were 33%/66% lower, or no accuracy roll at III, and +1/+3/+6 max hit), Solarflare (four orbs around
+ * the pillars on wave 12), Quartet (also beside Sol Heredit), Totemic and Volatility (Sol Heredit explodes too).
  */
 public class ColosseumSession extends MinigameSession {
-    private enum State { CHOOSING, STARTING, FIGHTING, DONE }
+    private enum State { CHOOSING, STARTING, FIGHTING, REWARDS, DONE }
+
+    /** The Rewards Chest block, placed in the centre of the arena when the run ends. */
+    public static final String REWARDS_CHEST = FortisColosseum.REWARDS_CHEST;
+    /** MinigameData flag: the player has spoken to Minimus (needed before entering the arena, as in OSRS). */
+    public static final String FLAG_BRIEFED = "colosseum_briefed";
 
     private State state = State.CHOOSING;
     private int wave;
@@ -75,27 +87,34 @@ public class ColosseumSession extends MinigameSession {
     private int glory;
     private boolean cashedOut;
     private boolean died;
+    private boolean claimed;
     // Per-wave tracking
     private boolean damaged;
     private boolean manticoreDamage;
     private boolean minotaurHealed;
     private int doom;
+    private boolean dooming;
     private final Set<String> waveFlags = new HashSet<>();
     private int flagsWave;
     // Modifier objects
     private final List<LivingEntity> bees = new ArrayList<>();
     private int beeRespawn;
-    private final Map<Integer, LivingEntity> totems = new HashMap<>();
+    private final List<Totem> totems = new ArrayList<>();
     private final Map<Integer, Long> totemCooldown = new HashMap<>();
+    private long nextSolTotem;
     private final List<Sand> sand = new ArrayList<>();
-    private final Map<Integer, Integer> javelinTimers = new HashMap<>();
-    private final List<long[]> javelins = new ArrayList<>();
-    /** Manticore orbs still to land: the second and third of each triple. */
+    private final int[] flareIndex = new int[4];
+    private final int[] flarePause = new int[4];
+    private final long[] flareMoved = new long[4];
+    // Monster mechanics
+    private final Map<Integer, Integer> javelinAttacks = new HashMap<>();
+    private final List<Javelin> javelins = new ArrayList<>();
+    private final Map<Integer, List<AttackType>> manticorePatterns = new HashMap<>();
+    private final Map<Integer, Long> manticoreVolleys = new HashMap<>();
+    /** Manticore orbs still to land. */
     private final List<Orb> orbs = new ArrayList<>();
     /** Blocks of the gladiator wall around Sol Heredit's arena (relative), removed when the fight ends. */
     private final List<BlockPos> wall = new ArrayList<>();
-    private int orbIndex;
-    private int orbPause;
     private boolean echoing;
     private long lastMyopiaMessage;
     /** Showboating: the sides of the arena saluted while Sol Heredit was below 10% hitpoints. */
@@ -115,17 +134,26 @@ public class ColosseumSession extends MinigameSession {
     private record Orb(LivingEntity mob, ServerPlayer player, AttackType type, long due, int hits) {
     }
 
+    private record Javelin(LivingEntity colossus, BlockPos target, long lands) {
+    }
+
+    private record Totem(LivingEntity totem, LivingEntity enemy, long born) {
+    }
+
     private static final int HALF = 18;
-    private static final int PILLAR = 8;
+    private static final int PILLAR = FortisColosseum.PILLAR_OFFSET;
 
     public ColosseumSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.FORTIS_COLOSSEUM, id, slot, world, variant);
     }
 
-    /** Children of the Sun opens Varlamore and the Colosseum. */
+    /** Children of the Sun opens Varlamore and the Colosseum; Minimus must have briefed the player once. */
     public static String requirement(ServerPlayer player) {
         if (!QuestApi.isComplete(player, "children_of_the_sun")) {
             return "You need to complete Children of the Sun to fight in the Fortis Colosseum.";
+        }
+        if (!MinigameData.of(player).flag(player.getUUID(), FLAG_BRIEFED)) {
+            return "A guard stops you. You should speak to Minimus, the Colosseum Master, before entering the arena.";
         }
         return null;
     }
@@ -156,6 +184,10 @@ public class ColosseumSession extends MinigameSession {
                 world.setChunkForced(cx, cz, true);
                 forcedChunks.add(net.minecraft.world.level.ChunkPos.asLong(cx, cz));
             }
+        }
+        // Nothing an earlier run in this slot left on the floor is handed to this one when it ends.
+        for (ItemEntity item : world.getEntitiesOfClass(ItemEntity.class, box(), e -> true)) {
+            item.discard();
         }
         room(Blocks.SMOOTH_SANDSTONE, Blocks.CUT_SANDSTONE, Blocks.CHISELED_SANDSTONE);
         for (int sx = -1; sx <= 1; sx += 2) {
@@ -188,7 +220,7 @@ public class ColosseumSession extends MinigameSession {
         offer();
     }
 
-    // ------------------------------------------------------------------ modifier choice and cashing out
+    // ------------------------------------------------------------------ modifier choice and ending the run
 
     private void offer() {
         state = State.CHOOSING;
@@ -207,7 +239,8 @@ public class ColosseumSession extends MinigameSession {
                     "Pick " + o.label(), ChatFormatting.GOLD)).append(Component.literal(" "));
         }
         if (wave >= 1) {
-            line.append(link("Leave with the loot", "/minigame colosseum leave", "End the run and claim the chest", ChatFormatting.GREEN));
+            line.append(link("Leave with the loot", "/minigame colosseum leave", "End the run: the Rewards Chest appears in the arena",
+                    ChatFormatting.GREEN));
         }
         p.displayClientMessage(line, false);
     }
@@ -231,6 +264,10 @@ public class ColosseumSession extends MinigameSession {
         return wave;
     }
 
+    public int glory() {
+        return glory;
+    }
+
     public List<ColosseumRewards.Reward> chest() {
         return List.copyOf(chest);
     }
@@ -250,32 +287,147 @@ public class ColosseumSession extends MinigameSession {
         return true;
     }
 
-    /** Ends the run between waves and hands over the chest. */
+    /**
+     * Ends the run between waves (OSRS: telling Minimus you're done): the Rewards Chest appears in the centre of the arena
+     * with everything earned so far.
+     */
     public boolean cashOut(ServerPlayer p) {
         if (state != State.CHOOSING || wave < 1) {
             Msg.game(p, "You can only leave with your loot between waves.");
             return false;
         }
         cashedOut = true;
-        claim(p);
+        offers = new ArrayList<>();
+        Msg.game(p, "Minimus: Wise choice. Your loot awaits you in the Rewards Chest.");
+        toRewards();
+        return true;
+    }
+
+    /** The run is over (cashed out or Sol Heredit slain): the Rewards Chest appears in the centre of the arena. */
+    private void toRewards() {
+        state = State.REWARDS;
+        removeWall();
+        clearSand(true);
+        com.runecraft.boss.Mechanics.clearHazards(world, box()); // Sol Heredit's molten sand subsides
+        javelins.clear();
+        orbs.clear();
+        for (LivingEntity e : spawned) {
+            e.discard();
+        }
+        spawned.clear();
+        for (LivingEntity b : bees) {
+            b.discard();
+        }
+        bees.clear();
+        for (Totem t : totems) {
+            t.totem().discard();
+        }
+        totems.clear();
+        place(0, 0, REWARDS_CHEST);
+        broadcast("The Rewards Chest appears in the centre of the arena. Search it to claim your loot.");
+    }
+
+    /** Clears monster drops off the arena floor; what a player in the run dropped themselves stays theirs to pick up. */
+    private void sweepFloor() {
+        for (ItemEntity item : world.getEntitiesOfClass(ItemEntity.class, box(), e -> true)) {
+            if (!(item.getOwner() instanceof ServerPlayer owner && online().contains(owner))) {
+                item.discard();
+            }
+        }
+    }
+
+    /** Whether the run is over and the Rewards Chest waits in the arena (self-test). */
+    public boolean rewardsReady() {
+        return state == State.REWARDS;
+    }
+
+    /** Where the Rewards Chest stands once the run is over (self-test). */
+    public BlockPos chestPos() {
+        return rel(0, 1, 0);
+    }
+
+    /**
+     * Searching the Rewards Chest: hands over the loot and ends the run (Minimus sees the player out). Nothing is ever put
+     * on the arena floor (it would be left behind when the run ends): what doesn't fit in the inventory goes to the bank,
+     * and if even the bank can't take it the chest stays for another search.
+     */
+    public boolean claimChest(ServerPlayer p) {
+        if (state != State.REWARDS) {
+            Msg.game(p, "The Rewards Chest is empty.");
+            return false;
+        }
+        if (!claim(p)) {
+            Msg.game(p, "Your bank is full. Make room in your inventory to take the rest of your loot.");
+            return false;
+        }
+        claimed = true;
+        state = State.DONE;
+        set(0, 1, 0, Blocks.AIR.defaultBlockState());
+        Msg.game(p, "Minimus escorts you back to the lobby.");
         end(true);
         return true;
     }
 
-    /** Gives the chest's contents to a player (once). */
-    public void claim(ServerPlayer p) {
+    /**
+     * Gives the chest's contents to a player: into the inventory while there's room, the rest to the bank (a run's
+     * splinters and cannonballs fill more 64-item stacks than an inventory holds). Returns true once the chest is empty;
+     * what neither can take stays in the chest.
+     */
+    public boolean claim(ServerPlayer p) {
         if (chest.isEmpty()) {
-            return;
+            return true;
         }
         Msg.game(p, "You search the Rewards Chest.");
+        List<ColosseumRewards.Reward> left = new ArrayList<>();
+        long banked = 0;
         for (ColosseumRewards.Reward r : chest) {
-            reward(p, r.item(), r.count());
-            if (ColosseumRewards.unique(r.item())) {
+            int carried = Math.min(r.count(), room(p, r.item()));
+            if (carried > 0) {
+                Inv.give(p, r.item(), carried);
+            }
+            int rest = r.count() - carried;
+            net.minecraft.world.item.ItemStack one = Inv.stack(r.item(), 1);
+            if (rest > 0 && !one.isEmpty()) {
+                long sent = com.runecraft.bank.BankService.depositStack(Players.data(p).bank(), one, rest, 0);
+                banked += sent;
+                rest -= (int) sent;
+            }
+            if (rest < r.count()) {
+                com.runecraft.collection.CollectionLog.obtain(p, r.item());
+            }
+            if (rest > 0) {
+                left.add(new ColosseumRewards.Reward(r.item(), rest));
+            } else if (ColosseumRewards.unique(r.item())) {
                 p.getServer().getPlayerList().broadcastSystemMessage(Component.literal(p.getName().getString() + " received a drop: "
                         + displayName(r.item()) + " from the Fortis Colosseum.").withStyle(ChatFormatting.GOLD), false);
             }
         }
         chest.clear();
+        chest.addAll(left);
+        if (banked > 0) {
+            Msg.game(p, "Your inventory is full: the rest of your loot is sent to your bank.");
+        }
+        return left.isEmpty();
+    }
+
+    /**
+     * How many of {@code item} the main inventory takes without anything spilling on the floor (a lower bound: the offhand
+     * isn't counted). An unknown item "fits" ({@link Inv#give} skips it).
+     */
+    static int room(ServerPlayer p, String item) {
+        net.minecraft.world.item.Item it = Inv.item(item);
+        if (Inv.COINS.equals(item) || it == net.minecraft.world.item.Items.AIR) {
+            return Integer.MAX_VALUE;
+        }
+        long room = 0;
+        for (net.minecraft.world.item.ItemStack s : p.getInventory().items) {
+            if (s.isEmpty()) {
+                room += it.getDefaultMaxStackSize();
+            } else if (s.is(it) && s.getComponentsPatch().isEmpty() && s.getCount() < s.getMaxStackSize()) {
+                room += s.getMaxStackSize() - s.getCount();
+            }
+        }
+        return (int) Math.min(Integer.MAX_VALUE, room);
     }
 
     private static String displayName(String item) {
@@ -301,20 +453,22 @@ public class ColosseumSession extends MinigameSession {
                 }
             }
             case FIGHTING -> fightTick();
-            case DONE -> {
+            case REWARDS, DONE -> {
             }
         }
+        if (state == State.FIGHTING) {
+            sandTick(); // molten sand only burns during a wave
+        }
         if (state != State.DONE) {
-            sandTick();
             frailtyTick();
         }
         if (solDiedAt != null) {
             // Sol drops nothing in OSRS: the chest holds the loot.
-            for (ItemEntity item : world.getEntitiesOfClass(ItemEntity.class, box(), e -> true)) {
-                item.discard();
-            }
+            sweepFloor();
             solDiedAt = null;
-            completeWave();
+            if (state == State.FIGHTING) {
+                completeWave();
+            }
         }
     }
 
@@ -328,16 +482,41 @@ public class ColosseumSession extends MinigameSession {
         manticoreDamage = false;
         minotaurHealed = false;
         doom = 0;
-        javelinTimers.clear();
+        javelinAttacks.clear();
         javelins.clear();
         orbs.clear();
-        if (wave == FortisColosseum.WAVES) {
+        manticorePatterns.clear();
+        manticoreVolleys.clear();
+        java.util.Arrays.fill(flareIndex, 0);
+        java.util.Arrays.fill(flarePause, 0);
+        java.util.Arrays.fill(flareMoved, 0L);
+        boolean solWave = wave == FortisColosseum.WAVES;
+        if (solWave) {
             gladiatorWall();
+            nextSolTotem = 0;
+            // The swarms re-form inside the gladiators' ring.
+            for (LivingEntity b : bees) {
+                b.discard();
+            }
+            bees.clear();
         }
-        broadcastRed("Wave: " + wave + (wave == FortisColosseum.WAVES ? " - Sol Heredit leaps into the arena!" : ""));
+        broadcastRed("Wave: " + wave + (solWave ? " - Sol Heredit leaps into the arena!" : ""));
         List<String> monsters = FortisColosseum.startingMonsters(wave, active, random);
+        BlockPos shockwave = null;
         for (String id : monsters) {
-            BlockPos at = id.equals(FortisColosseum.SOL_HEREDIT) ? rel(0, 1, -6) : spawnSpot();
+            BlockPos at;
+            if (id.equals(FortisColosseum.SOL_HEREDIT)) {
+                at = rel(0, 1, -6);
+            } else if (solWave) {
+                at = rel(random.nextInt(9) - 4, 1, -4); // Quartet's warbander, inside the ring
+            } else if (id.equals(FortisColosseum.SHOCKWAVE) && shockwave != null && active.containsKey(Modifier.DYNAMIC_DUO)) {
+                at = shockwave.offset(random.nextBoolean() ? 3 : -3, 0, random.nextInt(3) - 1); // Dynamic Duo: near its partner
+            } else {
+                at = spawnSpot();
+            }
+            if (id.equals(FortisColosseum.SHOCKWAVE) && shockwave == null) {
+                shockwave = at;
+            }
             spawnWaveMonster(id, at);
         }
         int beesWanted = active.getOrDefault(Modifier.BEES, 0);
@@ -365,6 +544,11 @@ public class ColosseumSession extends MinigameSession {
         return waveMonsters().size();
     }
 
+    /** The current wave's monsters (self-test: killed through the player's real hit path). */
+    public List<LivingEntity> waveMonstersForTest() {
+        return waveMonsters();
+    }
+
     /** Removes the current wave's monsters (self-test: the wave then completes on the next tick). */
     public void clearWaveForTest() {
         for (LivingEntity e : waveMonsters()) {
@@ -375,6 +559,11 @@ public class ColosseumSession extends MinigameSession {
     /** Whether the run is between waves, waiting for a modifier choice. */
     public boolean choosing() {
         return state == State.CHOOSING;
+    }
+
+    /** Whether a wave is being fought (self-test). */
+    public boolean fighting() {
+        return state == State.FIGHTING;
     }
 
     /** Monsters that hold up a wave (not bee swarms or healing totems). */
@@ -389,12 +578,36 @@ public class ColosseumSession extends MinigameSession {
             com.runecraft.RuneCraft.LOGGER.warn("Fortis Colosseum: could not spawn {}", id);
             return;
         }
+        if (mob instanceof OsrsMonsterEntity m) {
+            m.meleeRangeOnly = FortisColosseum.attacksFromMelee(id);
+            switch (id) {
+                case FortisColosseum.SHAMAN -> m.rangedReach = FortisColosseum.SHAMAN_RANGE;
+                case FortisColosseum.SHOCKWAVE -> m.rangedReach = FortisColosseum.COLOSSUS_RANGE;
+                case FortisColosseum.JAVELIN -> {
+                    m.rangedReach = FortisColosseum.COLOSSUS_RANGE;
+                    m.attackInterceptor = this::javelinAttack;
+                }
+                case FortisColosseum.MANTICORE -> {
+                    m.rangedReach = FortisColosseum.MANTICORE_RANGE;
+                    m.attackInterceptor = this::manticoreVolley;
+                }
+                case FortisColosseum.MINOTAUR -> m.directPathing = !active.containsKey(Modifier.RED_FLAG);
+                default -> {
+                }
+            }
+        }
         spawned.add(mob);
         aggro(mob);
     }
 
     private void fightTick() {
         long waveTicks = ticks - waveStart;
+        List<LivingEntity> monsters = waveMonsters();
+        // A wave cleared on the tick its reinforcements are due is complete (OSRS kills them as they arrive).
+        if (waveTicks > 2 && monsters.isEmpty() && wave < FortisColosseum.WAVES) {
+            completeWave();
+            return;
+        }
         if (!reinforced && wave < FortisColosseum.WAVES && waveTicks >= FortisColosseum.REINFORCEMENT_TICKS) {
             reinforced = true;
             List<ServerPlayer> online = online();
@@ -403,18 +616,16 @@ public class ColosseumSession extends MinigameSession {
                 spawnWaveMonster(id, rel(random.nextInt(5) - 2, 1, north ? -HALF + 2 : HALF - 2));
             }
             broadcastRed("Reinforcements arrive from the " + (north ? "north" : "south") + " gate!");
+            monsters = waveMonsters();
         }
-        List<LivingEntity> monsters = waveMonsters();
-        if (waveTicks > 2 && monsters.isEmpty() && wave < FortisColosseum.WAVES) {
-            completeWave();
-            return;
+        // Each step can end the run (a Doom death), after which the rest has nothing left to act on.
+        for (Runnable step : new Runnable[]{this::orbTick, this::javelinTick, () -> minotaurTick(waveMonsters()),
+                () -> totemTick(waveMonsters()), this::beeTick, this::solarflareTick}) {
+            if (isEnded() || state != State.FIGHTING) {
+                return;
+            }
+            step.run();
         }
-        orbTick();
-        javelinTick(monsters);
-        minotaurTick(monsters);
-        totemTick(monsters);
-        beeTick();
-        solarflareTick();
     }
 
     private void completeWave() {
@@ -422,6 +633,7 @@ public class ColosseumSession extends MinigameSession {
         totalTicks += waveTicks;
         int gained = FortisColosseum.glory(wave, waveTicks, !damaged, active);
         glory += gained;
+        doom = 0;
         waveFlags.clear();
         flagsWave = wave;
         if (!manticoreDamage) {
@@ -447,16 +659,16 @@ public class ColosseumSession extends MinigameSession {
                 waveFlags.add(FortisColosseum.FLAG_SHOWBOATING);
             }
         }
-        // Leftover floor items (none drop in OSRS), molten sand that isn't permanent, bees and totems go.
-        for (ItemEntity item : world.getEntitiesOfClass(ItemEntity.class, box(), e -> true)) {
-            item.discard();
-        }
+        // Leftover floor items (none drop in OSRS), molten sand that isn't permanent and totems go.
+        sweepFloor();
         clearSand(false);
-        for (LivingEntity t : totems.values()) {
-            t.discard();
+        for (Totem t : totems) {
+            t.totem().discard();
         }
         totems.clear();
         totemCooldown.clear();
+        javelins.clear();
+        orbs.clear();
         // One chest per run (solo): duplicate protection looks at the sunfire pieces in the players' collection logs.
         Set<String> owned = new HashSet<>();
         for (ServerPlayer p : online()) {
@@ -469,8 +681,7 @@ public class ColosseumSession extends MinigameSession {
             completeWaveFor(p, waveTicks, gained);
         }
         if (wave >= FortisColosseum.WAVES) {
-            state = State.DONE;
-            end(true);
+            toRewards();
         } else {
             offer();
         }
@@ -502,6 +713,15 @@ public class ColosseumSession extends MinigameSession {
         if (wave == FortisColosseum.TOKEN_WAVE) {
             varlamoreToken(p);
         }
+        if (wave == FortisColosseum.WAVES) {
+            int n = data.incrementStat(u, FortisColosseum.STAT_COMPLETIONS);
+            Msg.game(p, "Ralos has smiled upon you! Fortis Colosseum completions: " + n + ".");
+            int bestTime = data.stat(u, FortisColosseum.STAT_BEST_TIME);
+            if (bestTime == 0 || totalTicks < bestTime) {
+                data.setStat(u, FortisColosseum.STAT_BEST_TIME, (int) totalTicks);
+                Msg.game(p, "New personal best: " + time(totalTicks) + ".");
+            }
+        }
     }
 
     /** MinigameData stat: the epoch day (+1) of the last Varlamore token from the Colosseum. */
@@ -509,7 +729,8 @@ public class ColosseumSession extends MinigameSession {
 
     /**
      * Wave 3 hands out a Varlamore token once a day when the player's name length is assigned the Colosseum that day, and
-     * no token is already in the inventory (OSRS also needs a partyhat, which RuneCraft doesn't have - approx).
+     * no token is already in the inventory (OSRS also needs a partyhat, which RuneCraft doesn't have - approx). With no free
+     * slot it isn't picked up (a dropped token would be swept off the floor with the wave).
      */
     public static boolean varlamoreToken(ServerPlayer p) {
         java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneOffset.UTC);
@@ -517,7 +738,7 @@ public class ColosseumSession extends MinigameSession {
         MinigameData data = MinigameData.of(p);
         int day = (int) today.toEpochDay() + 1;
         if (!activity.equals("colosseum") || data.stat(p.getUUID(), STAT_TOKEN_DAY) == day
-                || Inv.has(p, FortisColosseum.TOKEN, 1)) {
+                || Inv.has(p, FortisColosseum.TOKEN, 1) || !Inv.hasRoomFor(p, FortisColosseum.TOKEN)) {
             return false;
         }
         data.setStat(p.getUUID(), STAT_TOKEN_DAY, day);
@@ -536,85 +757,197 @@ public class ColosseumSession extends MinigameSession {
 
     @Override
     protected void onKill(ServerPlayer player, LivingEntity entity, String creatureId) {
-        int volatility = active.getOrDefault(Modifier.VOLATILITY, 0);
-        if (volatility > 0 && !creatureId.equals(FortisColosseum.BEE_SWARM) && !creatureId.equals(FortisColosseum.HEALING_TOTEM)
-                && !creatureId.equals(FortisColosseum.SOL_HEREDIT)) {
-            int size = entity.getBbWidth() > 2.5f ? 3 : entity.getBbWidth() > 1.2f ? 2 : 1;
-            int radius = FortisColosseum.volatilityRadius(size, volatility) * 2 + 1;
-            BlockPos at = entity.blockPosition();
-            world.sendParticles(ParticleTypes.EXPLOSION, entity.getX(), entity.getY() + 1, entity.getZ(), 4, radius / 2.0, 0.5,
-                    radius / 2.0, 0);
-            for (ServerPlayer p : online()) {
-                if (Math.abs(p.getBlockX() - at.getX()) <= radius && Math.abs(p.getBlockZ() - at.getZ()) <= radius) {
-                    hurt(p, 1 + random.nextInt(FortisColosseum.VOLATILITY_DAMAGE));
-                }
-            }
-            if (volatility >= 3) {
-                addSand(at.subtract(origin), active.getOrDefault(Modifier.REENTRY, 0) >= 2);
-            }
+        if (!creatureId.equals(FortisColosseum.BEE_SWARM) && !creatureId.equals(FortisColosseum.HEALING_TOTEM)) {
+            explode(entity, creatureId);
         }
         if (creatureId.equals(FortisColosseum.BEE_SWARM)) {
             beeRespawn = FortisColosseum.BEE_RESPAWN_TICKS;
-        }
-        if (creatureId.equals(FortisColosseum.HEALING_TOTEM)) {
-            totems.entrySet().removeIf(e -> {
-                if (e.getValue() == entity) {
-                    totemCooldown.put(e.getKey(), ticks + FortisColosseum.TOTEM_RESPAWN_TICKS);
-                    return true;
-                }
-                return false;
-            });
         }
         if (creatureId.equals(FortisColosseum.SOL_HEREDIT) && state == State.FIGHTING) {
             solDiedAt = entity.blockPosition();
         }
     }
 
-    // ------------------------------------------------------------------ monster mechanics
-
-    /** Every fifth Javelin Colossus attack is a javelin thrown at the player's tile; it ignores prayer. */
-    private void javelinTick(List<LivingEntity> monsters) {
-        List<ServerPlayer> online = online();
-        if (!online.isEmpty()) {
-            for (LivingEntity e : monsters) {
-                if (!MinigameManager.creatureId(e).equals(FortisColosseum.JAVELIN)) {
-                    continue;
-                }
-                int t = javelinTimers.merge(e.getId(), 1, Integer::sum);
-                if (t % (FortisColosseum.JAVELIN_EVERY * 5) == 0) {
-                    ServerPlayer target = online.get(random.nextInt(online.size()));
-                    BlockPos at = target.blockPosition();
-                    javelins.add(new long[]{ticks + FortisColosseum.JAVELIN_FLIGHT_TICKS, at.getX(), at.getY(), at.getZ()});
-                    Msg.action(target, "A javelin is launched high into the air!");
-                }
+    /**
+     * Volatility: an enemy explodes on death one (I) or two (II, III) tiles beyond its size, Sol Heredit included (which can
+     * still kill the player and lose the loot); III leaves molten sand on the centre tile.
+     */
+    private void explode(LivingEntity entity, String creatureId) {
+        int tier = active.getOrDefault(Modifier.VOLATILITY, 0);
+        if (tier <= 0) {
+            return;
+        }
+        int size = FortisColosseum.size(creatureId);
+        BlockPos at = entity.blockPosition();
+        int r = FortisColosseum.volatilityRadius(size, tier);
+        world.sendParticles(ParticleTypes.EXPLOSION, entity.getX(), entity.getY() + 1, entity.getZ(), 4 + r, r / 2.0, 0.5, r / 2.0, 0);
+        for (ServerPlayer p : online()) {
+            if (FortisColosseum.volatilityHits(size, tier, p.getBlockX() - at.getX(), p.getBlockZ() - at.getZ())) {
+                CombatHooks.nameAttack("volatility", null);
+                hurt(p, 1 + random.nextInt(FortisColosseum.VOLATILITY_DAMAGE));
             }
         }
+        if (tier >= 3) {
+            addSand(at.subtract(origin), active.getOrDefault(Modifier.REENTRY, 0) >= 2);
+        }
+    }
+
+    // ------------------------------------------------------------------ monster mechanics
+
+    /**
+     * The Javelin Colossus's attacks: after four auto-attacks the fifth is a javelin launched high into the air at the tile
+     * the player stands on, landing 6 ticks later (up to 40 typeless damage; prayer doesn't help).
+     */
+    private boolean javelinAttack(OsrsMonsterEntity mob, ServerPlayer target, AttackDef attack) {
+        if (MinigameManager.owner(mob) != this || state != State.FIGHTING) {
+            return false;
+        }
+        int n = javelinAttacks.merge(mob.getId(), 1, Integer::sum);
+        if (!FortisColosseum.javelinThrow(n)) {
+            return false;
+        }
+        mob.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+        javelins.add(new Javelin(mob, target.blockPosition(), ticks + FortisColosseum.JAVELIN_FLIGHT_TICKS));
+        Msg.action(target, "The Javelin Colossus launches a javelin high into the air!");
+        return true;
+    }
+
+    private void javelinTick() {
+        // Landed javelins are taken off the list first: their damage can end the run (Doom), which clears it.
+        List<Javelin> landed = new ArrayList<>();
         javelins.removeIf(j -> {
-            world.sendParticles(ParticleTypes.CRIT, j[1] + 0.5, j[2] + 0.2, j[3] + 0.5, 3, 0.4, 0.1, 0.4, 0);
-            if (ticks < j[0]) {
+            BlockPos t = j.target();
+            world.sendParticles(ParticleTypes.CRIT, t.getX() + 0.5, t.getY() + 0.2, t.getZ() + 0.5, 3, 0.25, 0.05, 0.25, 0);
+            if (ticks < j.lands()) {
                 return false;
             }
+            landed.add(j);
+            return true;
+        });
+        for (Javelin j : landed) {
+            if (isEnded()) {
+                return;
+            }
+            BlockPos t = j.target();
+            world.sendParticles(ParticleTypes.EXPLOSION, t.getX() + 0.5, t.getY() + 0.5, t.getZ() + 0.5, 1, 0, 0, 0, 0);
+            LivingEntity source = j.colossus().isAlive() ? j.colossus() : null;
             for (ServerPlayer p : online()) {
-                if (Math.abs(p.getBlockX() - j[1]) <= 1 && Math.abs(p.getBlockZ() - j[3]) <= 1) {
-                    hurt(p, random.nextInt(49)); // approx: up to the colossus's 48
+                if (p.getBlockX() == t.getX() && p.getBlockZ() == t.getZ()) {
+                    CombatHooks.nameAttack("sky_javelin", null);
+                    int dmg = random.nextInt(FortisColosseum.JAVELIN_MAX_HIT + 1);
+                    if (source != null) {
+                        CombatHandler.applyDamage(source, p, dmg);
+                    } else {
+                        hurt(p, dmg);
+                    }
                 }
             }
             int reentry = active.getOrDefault(Modifier.REENTRY, 0);
-            if (reentry > 0) {
-                BlockPos d = new BlockPos((int) j[1], (int) j[2], (int) j[3]).subtract(origin);
-                addSand(d, reentry >= 2);
-                if (reentry >= 2) {
-                    addSand(d.offset(-2, 0, 2), true); // south-west
-                }
-                if (reentry >= 3) {
-                    addSand(d.offset(-2, 0, 0), true); // west
-                }
+            BlockPos d = t.subtract(origin);
+            for (int[] off : FortisColosseum.reentryTiles(reentry)) {
+                addSand(d.offset(off[0], 0, off[1]), reentry >= 2);
             }
-            return true;
-        });
+        }
     }
 
-    /** A minotaur out of melee reach heals a wounded monster (below 75%) within 7 tiles to full. */
+    /** A manticore's charged volley: its three orbs, in its own pattern, a tick apart (staggered behind another's). */
+    private boolean manticoreVolley(OsrsMonsterEntity mob, ServerPlayer target, AttackDef attack) {
+        if (MinigameManager.owner(mob) != this || state != State.FIGHTING) {
+            return false;
+        }
+        int id = mob.getId();
+        if (manticoreVolleys.getOrDefault(id, Long.MIN_VALUE / 2) > ticks) {
+            return true; // still waiting to launch the last one
+        }
+        int tier = active.getOrDefault(Modifier.MANTIMAYHEM, 0);
+        List<AttackType> pattern = manticorePatterns.get(id);
+        long other = Long.MIN_VALUE / 2;
+        List<AttackType> copy = null;
+        for (LivingEntity e : waveMonsters()) {
+            if (e != mob && MinigameManager.creatureId(e).equals(FortisColosseum.MANTICORE)) {
+                copy = copy != null ? copy : manticorePatterns.get(e.getId());
+                other = Math.max(other, manticoreVolleys.getOrDefault(e.getId(), Long.MIN_VALUE / 2));
+            }
+        }
+        if (pattern == null) {
+            pattern = FortisColosseum.manticorePattern(tier, copy, random);
+            manticorePatterns.put(id, pattern);
+        }
+        long at = FortisColosseum.manticoreVolleyTick(ticks, other);
+        manticoreVolleys.put(id, at);
+        int hits = FortisColosseum.manticoreHitsPerOrb(tier);
+        for (int i = 0; i < pattern.size(); i++) {
+            orbs.add(new Orb(mob, target, pattern.get(i), at + i, hits));
+        }
+        world.sendParticles(ParticleTypes.ENCHANT, mob.getX(), mob.getY() + mob.getBbHeight(), mob.getZ(), 20, 0.5, 0.4, 0.5, 0.2);
+        return true;
+    }
+
+    /** The tick a manticore's last volley was (or will be) launched (self-test). */
+    public long manticoreVolleyAt(LivingEntity manticore) {
+        return manticoreVolleys.getOrDefault(manticore.getId(), Long.MIN_VALUE / 2);
+    }
+
+    /** Self-test: sets a modifier now, so its mechanics can be walked whatever Minimus offered. */
+    public void selfTestForce(Modifier modifier, int tier) {
+        active.merge(modifier, Math.max(1, Math.min(tier, modifier.maxTier())), Math::max); // never a downgrade
+    }
+
+    /** Self-test: the player dies in the arena (the minigame death path: the chest is lost, back to the lobby). */
+    public void selfTestDie(ServerPlayer p) {
+        p.setHealth(p.getMaxHealth());
+        onDeath(p);
+    }
+
+    /** The orb pattern a manticore was given (self-test), or null before it first charged. */
+    public List<AttackType> manticorePattern(LivingEntity manticore) {
+        return manticorePatterns.get(manticore.getId());
+    }
+
+    /** How many manticore orbs and sky javelins are on their way (self-test). */
+    public int orbsPending() {
+        return orbs.size();
+    }
+
+    public int javelinsPending() {
+        return javelins.size();
+    }
+
+    private void mayhemVenom(ServerPlayer player, AttackType style, int tier) {
+        if (tier >= 2 && !CombatHandler.isProtected(Players.data(player), style)) {
+            PoisonService.venom(player, com.runecraft.action.ActionManager.gameTick());
+        }
+    }
+
+    private void orbTick() {
+        int tier = active.getOrDefault(Modifier.MANTIMAYHEM, 0);
+        // Due orbs are taken off the list first: a hit can end the run (Doom), which clears it.
+        List<Orb> due = new ArrayList<>();
+        orbs.removeIf(o -> {
+            if (ticks < o.due()) {
+                return false;
+            }
+            due.add(o);
+            return true;
+        });
+        for (Orb o : due) {
+            if (isEnded() || !o.mob().isAlive() || !o.player().isAlive() || MinigameManager.session(o.player()) != this) {
+                continue;
+            }
+            world.sendParticles(o.type() == AttackType.MAGIC ? ParticleTypes.WITCH : o.type() == AttackType.RANGED ? ParticleTypes.CRIT
+                    : ParticleTypes.FLAME, o.player().getX(), o.player().getY(0.6), o.player().getZ(), 6, 0.3, 0.3, 0.3, 0.0);
+            String name = o.type() == AttackType.MAGIC ? "magic_orb" : o.type() == AttackType.RANGED ? "ranged_orb" : "melee_orb";
+            for (int i = 0; i < o.hits(); i++) {
+                extraHit(o.mob(), o.player(), o.type(), FortisColosseum.manticoreOrbMaxHit(o.type()), name);
+            }
+            mayhemVenom(o.player(), o.type(), tier);
+        }
+    }
+
+    /**
+     * A minotaur out of melee reach heals a monster below 75% to full if that monster is within 7 tiles and in its line of
+     * sight (checked on its 5-tick attack timer).
+     */
     private void minotaurTick(List<LivingEntity> monsters) {
         if (ticks % 5 != 0) {
             return;
@@ -624,18 +957,20 @@ public class ColosseumSession extends MinigameSession {
                 continue;
             }
             // Red Flag gives the minotaurs smart pathing; otherwise they walk straight at the player (safespottable).
-            if (mino instanceof com.runecraft.entity.OsrsMonsterEntity m) {
+            if (mino instanceof OsrsMonsterEntity m) {
                 m.directPathing = !active.containsKey(Modifier.RED_FLAG);
             }
-            boolean inReach = online().stream().anyMatch(p -> p.distanceToSqr(mino) < 16);
+            double reach = mino.getBbWidth() * 1.4 + 1.2;
+            boolean inReach = online().stream().anyMatch(p -> p.distanceToSqr(mino) <= reach * reach);
             if (inReach) {
                 continue;
             }
-            double range = FortisColosseum.MINOTAUR_HEAL_RANGE * 2;
             for (LivingEntity other : monsters) {
-                if (other != mino && !MinigameManager.creatureId(other).equals(FortisColosseum.MINOTAUR)
-                        && other.distanceToSqr(mino) <= range * range
-                        && other.getHealth() < other.getMaxHealth() * FortisColosseum.MINOTAUR_HEAL_BELOW_PERCENT / 100f) {
+                if (other == mino || MinigameManager.creatureId(other).equals(FortisColosseum.MINOTAUR)) {
+                    continue;
+                }
+                double tiles = Math.sqrt(other.distanceToSqr(mino));
+                if (FortisColosseum.minotaurHeals(other.getHealth(), other.getMaxHealth(), tiles, mino.hasLineOfSight(other))) {
                     other.setHealth(other.getMaxHealth());
                     minotaurHealed = true;
                     world.sendParticles(ParticleTypes.HEART, other.getX(), other.getY() + other.getBbHeight(), other.getZ(), 4, 0.4, 0.3,
@@ -647,49 +982,96 @@ public class ColosseumSession extends MinigameSession {
         }
     }
 
-    /** Totemic: a healing totem rises beside a monster at half health and heals it 30% every few ticks. */
+    /**
+     * Totemic: a healing totem rises to the south-west of a monster at half health and, after about 5 ticks, heals it 30%
+     * (Sol Heredit 75) every 7 ticks until it is back to full. A destroyed totem comes back two minutes later; on wave 12
+     * another totem joins every two minutes after the first.
+     */
     private void totemTick(List<LivingEntity> monsters) {
         if (!active.containsKey(Modifier.TOTEMIC)) {
             return;
         }
-        for (LivingEntity e : monsters) {
-            int key = e.getId();
-            if (e.getHealth() > e.getMaxHealth() / 2 || totems.containsKey(key) || ticks < totemCooldown.getOrDefault(key, 0L)) {
-                continue;
+        totems.removeIf(t -> {
+            if (!t.enemy().isAlive() || t.enemy().isRemoved()) {
+                t.totem().discard();
+                return true;
             }
-            Mob totem = spawn(FortisColosseum.HEALING_TOTEM, e.blockPosition().offset(random.nextInt(5) - 2, 0, random.nextInt(5) - 2));
-            if (totem != null) {
-                totem.setNoAi(true);
-                totems.put(key, totem);
-                broadcastRed("A healing totem rises beside the " + e.getName().getString() + "!");
+            if (!t.totem().isAlive() || t.totem().isRemoved()) {
+                totemCooldown.put(t.enemy().getId(), ticks + FortisColosseum.TOTEM_RESPAWN_TICKS);
+                return true;
+            }
+            return false;
+        });
+        for (LivingEntity e : monsters) {
+            boolean sol = MinigameManager.creatureId(e).equals(FortisColosseum.SOL_HEREDIT);
+            boolean has = totems.stream().anyMatch(t -> t.enemy() == e);
+            if (!has && e.getHealth() <= e.getMaxHealth() / 2 && ticks >= totemCooldown.getOrDefault(e.getId(), 0L)) {
+                raiseTotem(e);
+                if (sol && nextSolTotem == 0) {
+                    nextSolTotem = ticks + SolHeredit.TOTEM_EVERY_TICKS;
+                }
+            } else if (sol && has && nextSolTotem > 0 && ticks >= nextSolTotem) {
+                raiseTotem(e);
+                nextSolTotem = ticks + SolHeredit.TOTEM_EVERY_TICKS;
             }
         }
         if (ticks % FortisColosseum.TOTEM_HEAL_TICKS != 0) {
             return;
         }
-        for (LivingEntity e : monsters) {
-            LivingEntity totem = totems.get(e.getId());
-            if (totem != null && totem.isAlive()) {
-                if (e instanceof com.runecraft.boss.DataBossEntity sol && MinigameManager.creatureId(e).equals(FortisColosseum.SOL_HEREDIT)) {
-                    // Sol Heredit: 75 of his 1,500 hitpoints per heal (Minecraft health is scaled to his true hitpoints).
-                    e.heal(com.runecraft.osrs.content.minigames.SolHeredit.TOTEM_HEAL * sol.getMaxHealth() / Math.max(1, sol.trueHitpoints()));
-                } else {
-                    e.heal(e.getMaxHealth() * FortisColosseum.TOTEM_HEAL_PERCENT / 100f);
-                }
-                world.sendParticles(ParticleTypes.HAPPY_VILLAGER, e.getX(), e.getY() + e.getBbHeight(), e.getZ(), 5, 0.4, 0.3, 0.4, 0);
+        for (Totem t : totems) {
+            LivingEntity e = t.enemy();
+            if (ticks - t.born() < FortisColosseum.TOTEM_FIRST_HEAL_TICKS || !FortisColosseum.totemHeals(e.getHealth(), e.getMaxHealth())) {
+                continue;
             }
+            if (e instanceof com.runecraft.boss.DataBossEntity sol && MinigameManager.creatureId(e).equals(FortisColosseum.SOL_HEREDIT)) {
+                // Sol Heredit: 75 of his 1,500 hitpoints per heal (Minecraft health is scaled to his true hitpoints).
+                e.heal(SolHeredit.TOTEM_HEAL * sol.getMaxHealth() / Math.max(1, sol.trueHitpoints()));
+            } else {
+                e.heal(e.getMaxHealth() * FortisColosseum.TOTEM_HEAL_PERCENT / 100f);
+            }
+            world.sendParticles(ParticleTypes.HAPPY_VILLAGER, e.getX(), e.getY() + e.getBbHeight(), e.getZ(), 5, 0.4, 0.3, 0.4, 0);
         }
     }
 
+    private void raiseTotem(LivingEntity enemy) {
+        int off = (FortisColosseum.size(MinigameManager.creatureId(enemy)) + 1) / 2 + 1;
+        BlockPos at = enemy.blockPosition().offset(-off, 0, off); // south-west of it
+        BlockPos d = at.subtract(origin);
+        if (Math.abs(d.getX()) >= HALF - 1 || Math.abs(d.getZ()) >= HALF - 1) {
+            at = enemy.blockPosition().offset(random.nextInt(5) - 2, 0, random.nextInt(5) - 2);
+        }
+        Mob totem = spawn(FortisColosseum.HEALING_TOTEM, at);
+        if (totem != null) {
+            totem.setNoAi(true);
+            totems.add(new Totem(totem, enemy, ticks));
+            broadcastRed("A healing totem rises beside the " + enemy.getName().getString() + "!");
+        }
+    }
+
+    /** The healing totems standing (self-test). */
+    public int totemCount() {
+        totems.removeIf(t -> !t.totem().isAlive());
+        return totems.size();
+    }
+
     private void spawnBee() {
-        Mob bee = spawn(FortisColosseum.BEE_SWARM, randomFloor(0, 0, HALF - 3));
+        int radius = wave >= FortisColosseum.WAVES ? PILLAR - 2 : HALF - 3;
+        BlockPos p = randomFloor(0, 0, radius);
+        Mob bee = spawn(FortisColosseum.BEE_SWARM, p);
         if (bee != null) {
             bee.setNoAi(true);
+            bee.moveTo(p.getX(), p.getY(), p.getZ(), 0, 0); // a 2x2 swarm: centred on a block corner
             bees.add(bee);
         }
     }
 
-    /** Bees!: the swarms drift a tile towards the player every 12 ticks and sting whoever stands under them. */
+    /** The bee swarms in the arena (self-test). */
+    public int beeCount() {
+        bees.removeIf(b -> !b.isAlive());
+        return bees.size();
+    }
+
+    /** Bees!: the 2x2 swarms drift a tile towards the player every 12 ticks and sting whoever stands under them every tick. */
     private void beeTick() {
         int wanted = active.getOrDefault(Modifier.BEES, 0);
         if (wanted <= 0) {
@@ -705,60 +1087,70 @@ public class ColosseumSession extends MinigameSession {
             return;
         }
         ServerPlayer target = online.get(0);
+        int limit = wave >= FortisColosseum.WAVES ? PILLAR - 1 : HALF - 2;
         for (LivingEntity bee : bees) {
             if (ticks % FortisColosseum.BEE_MOVE_TICKS == 0) {
-                double dx = Math.signum(target.getX() - bee.getX()) * 2;
-                double dz = Math.signum(target.getZ() - bee.getZ()) * 2;
-                bee.moveTo(bee.getX() + dx, bee.getY(), bee.getZ() + dz, bee.getYRot(), 0);
+                double step = FortisColosseum.BEE_STEP_TILES;
+                double nx = bee.getX() + Math.signum(Math.round(target.getX() - bee.getX())) * step;
+                double nz = bee.getZ() + Math.signum(Math.round(target.getZ() - bee.getZ())) * step;
+                nx = Math.max(origin.getX() - limit, Math.min(origin.getX() + limit, nx));
+                nz = Math.max(origin.getZ() - limit, Math.min(origin.getZ() + limit, nz));
+                bee.moveTo(nx, bee.getY(), nz, bee.getYRot(), 0);
             }
-            if (Math.abs(target.getX() - bee.getX()) < 1.5 && Math.abs(target.getZ() - bee.getZ()) < 1.5) {
+            if (Math.abs(target.getX() - bee.getX()) < 1.0 && Math.abs(target.getZ() - bee.getZ()) < 1.0) {
+                CombatHooks.nameAttack("bees", null);
                 hurt(target, random.nextInt(FortisColosseum.BEE_DAMAGE + 1));
                 PoisonService.poison(target, 1, com.runecraft.action.ActionManager.gameTick());
             }
         }
     }
 
-    /** Solarflare: an orb circles the pillars, pausing at the corners, and burns (III: and disables prayers) on contact. */
+    /**
+     * Solarflare: an orb circles the pillars (four orbs, one around each pillar, on wave 12), moving every 2 ticks (III:
+     * every tick) and pausing at corners; it burns the tile it stands on (I/II: only on the tick after it arrives) and III
+     * also scorches away prayers.
+     */
     private void solarflareTick() {
         int tier = active.getOrDefault(Modifier.SOLARFLARE, 0);
         if (tier <= 0) {
             return;
         }
-        int side = PILLAR * 2;
-        int perimeter = side * 4;
-        if (orbPause > 0) {
-            orbPause--;
-        } else if (ticks % FortisColosseum.solarflareMoveTicks(tier) == 0) {
-            orbIndex = (orbIndex + 1) % perimeter;
-            if (orbIndex % side == 0) {
-                orbPause = FortisColosseum.solarflareCornerPause(tier);
+        boolean solWave = wave >= FortisColosseum.WAVES;
+        for (int o = 0; o < FortisColosseum.solarflareOrbs(solWave); o++) {
+            List<int[]> path = FortisColosseum.solarflarePath(solWave, o);
+            if (flarePause[o] > 0) {
+                flarePause[o]--;
+            } else if (ticks % FortisColosseum.solarflareMoveTicks(tier) == 0) {
+                flareIndex[o] = (flareIndex[o] + 1) % path.size();
+                flareMoved[o] = ticks;
+                if (FortisColosseum.solarflareCorner(solWave, flareIndex[o])) {
+                    flarePause[o] = FortisColosseum.solarflareCornerPause(tier);
+                }
             }
-        }
-        int leg = orbIndex / side;
-        int along = orbIndex % side;
-        int ox = switch (leg) {
-            case 0 -> -PILLAR + along;
-            case 1 -> PILLAR;
-            case 2 -> PILLAR - along;
-            default -> -PILLAR;
-        };
-        int oz = switch (leg) {
-            case 0 -> -PILLAR;
-            case 1 -> -PILLAR + along;
-            case 2 -> PILLAR;
-            default -> PILLAR - along;
-        };
-        BlockPos orb = rel(ox, 1, oz);
-        world.sendParticles(ParticleTypes.FLAME, orb.getX() + 0.5, orb.getY() + 0.8, orb.getZ() + 0.5, 6, 0.3, 0.3, 0.3, 0.01);
-        for (ServerPlayer p : online()) {
-            if (Math.abs(p.getBlockX() - orb.getX()) <= 1 && Math.abs(p.getBlockZ() - orb.getZ()) <= 1 && ticks % 2 == 0) {
-                hurt(p, 1 + random.nextInt(FortisColosseum.solarflareDamage(tier)));
-                if (tier >= 3) {
-                    Players.data(p).activePrayers().clear();
-                    Msg.red(p, "The solar flare scorches away your prayers!");
+            int[] t = path.get(flareIndex[o] % path.size());
+            BlockPos orb = rel(t[0], 1, t[1]);
+            world.sendParticles(ParticleTypes.FLAME, orb.getX() + 0.5, orb.getY() + 0.8, orb.getZ() + 0.5, 6, 0.3, 0.3, 0.3, 0.01);
+            boolean burning = tier >= 3 || ticks > flareMoved[o];
+            if (!burning) {
+                continue;
+            }
+            for (ServerPlayer p : online()) {
+                if (p.getBlockX() == orb.getX() && p.getBlockZ() == orb.getZ()) {
+                    CombatHooks.nameAttack("solarflare", null);
+                    hurt(p, 1 + random.nextInt(FortisColosseum.solarflareDamage(tier)));
+                    if (tier >= 3) {
+                        Players.data(p).activePrayers().clear();
+                        com.runecraft.network.ServerNetworking.sync(p);
+                        Msg.red(p, "The solar flare scorches away your prayers!");
+                    }
                 }
             }
         }
+    }
+
+    /** Where Solarflare orb {@code o} burns now, relative to the arena centre (self-test). */
+    public int[] solarflareTile(int o) {
+        return FortisColosseum.solarflarePath(wave >= FortisColosseum.WAVES, o).get(flareIndex[o]);
     }
 
     // ------------------------------------------------------------------ molten sand
@@ -783,6 +1175,11 @@ public class ColosseumSession extends MinigameSession {
         });
     }
 
+    /** Molten sand tiles (self-test). */
+    public int sandTiles() {
+        return sand.size();
+    }
+
     /** Molten sand: up to 15 damage every two ticks. */
     private void sandTick() {
         if (sand.isEmpty() || ticks % 2 != 0) {
@@ -792,6 +1189,7 @@ public class ColosseumSession extends MinigameSession {
             BlockPos d = relPos(p);
             for (Sand s : sand) {
                 if (s.pos().getX() == d.getX() && s.pos().getZ() == d.getZ()) {
+                    CombatHooks.nameAttack("molten_sand", null);
                     hurt(p, 1 + random.nextInt(FortisColosseum.MOLTEN_SAND_DAMAGE));
                     break;
                 }
@@ -815,11 +1213,12 @@ public class ColosseumSession extends MinigameSession {
 
     // ------------------------------------------------------------------ player combat hooks
 
-    /** Registers the Colosseum's combat hooks (called once from the module's init). */
+    /** Registers the Colosseum's combat hooks and blocks (called once from the module's init). */
     public static void register() {
+        // Sol Heredit drops nothing: the Rewards Chest holds the loot (his pet roll and kill count still come with the kill).
+        com.runecraft.boss.DataBossService.loot(FortisColosseum.SOL_HEREDIT, (killer, boss, table) -> List.of());
         CombatHooks.addDamageListener((player, attacker, attack, style, damage) -> {
             if (MinigameManager.session(player) instanceof ColosseumSession s) {
-                s.manticoreOrb(player, attacker, attack, style);
                 s.playerDamaged(player, attacker, style, damage);
             }
         });
@@ -841,14 +1240,134 @@ public class ColosseumSession extends MinigameSession {
             }
         });
         CombatHooks.addModifier(new CombatHooks.PlayerAttackModifier() {
+            private boolean weak(LivingEntity target, AttackType type) {
+                String weak = FortisColosseum.warbandWeakness(MinigameManager.creatureId(target));
+                return weak != null && weak.equals(styleClass(type)) && MinigameManager.owner(target) instanceof ColosseumSession;
+            }
+
             @Override
             public double accuracy(ServerPlayer player, LivingEntity target, AttackType type) {
-                // Each warband member always takes a max hit from its weak style (approx: always hits).
-                String weak = FortisColosseum.warbandWeakness(MinigameManager.creatureId(target));
-                return weak != null && weak.equals(styleClass(type)) && MinigameManager.owner(target) instanceof ColosseumSession ? 100.0
-                        : 1.0;
+                return weak(target, type) ? 100.0 : 1.0;
+            }
+
+            @Override
+            public boolean alwaysMaxHit(ServerPlayer player, LivingEntity target, AttackType type) {
+                // Each warband member always takes a max hit from its weak style (wiki).
+                return weak(target, type);
             }
         });
+        com.runecraft.content.BlockHooks.register(REWARDS_CHEST, (player, pos, state) -> {
+            if (MinigameManager.session(player) instanceof ColosseumSession s) {
+                s.claimChest(player);
+            } else {
+                Msg.game(player, "The Rewards Chest is empty.");
+            }
+        });
+        // The lobby under the Colosseum: the entrance on the surface leads down, the stairs back up, the doorway into the arena.
+        com.runecraft.content.BlockHooks.register(Minigame.FORTIS_COLOSSEUM.entranceBlock(), (player, pos, state) -> toLobby(player));
+        com.runecraft.content.BlockHooks.register(FortisColosseum.LOBBY_EXIT, (player, pos, state) -> toSurface(player));
+        com.runecraft.content.BlockHooks.register(FortisColosseum.ARENA_ENTRANCE, (player, pos, state) -> enterArena(player));
+        // Minimus is the zeah module's NPC, whose hooks start after this module's and give every zeah NPC its generic
+        // dialogue: his Colosseum handler (briefing, quiver trade, Glory unlocks) is put back once the server has started.
+        com.runecraft.platform.ServerLifecycleEvents.SERVER_STARTED.register(server ->
+                com.runecraft.quest.QuestScripts.onTalk(FortisColosseum.MINIMUS, (player, npc) -> minimus(player)));
+        com.runecraft.quest.QuestScripts.onTalk(com.runecraft.osrs.content.minigames.ColosseumLobby.GLORIA, (player, npc) -> gloria(player));
+        com.runecraft.quest.QuestScripts.onTalk(com.runecraft.osrs.content.minigames.ColosseumLobby.UEMAN, (player, npc) ->
+                QuestApi.say(player, "Ueman", "You stand in one of the holiest sites in all of Varlamore. Each drop of blood spilt "
+                        + "here is a glorious offering to Ralos. It is these offerings that sustain him."));
+        com.runecraft.quest.QuestScripts.onTalk(com.runecraft.osrs.content.minigames.ColosseumLobby.SEIA, (player, npc) ->
+                QuestApi.say(player, "Seia", "Ranul watches over the fallen. Fight well, and may the moon guide you home."));
+        for (String g : new String[]{com.runecraft.osrs.content.minigames.ColosseumLobby.GLADIATOR,
+                com.runecraft.osrs.content.minigames.ColosseumLobby.GLADIATOR_2}) {
+            com.runecraft.quest.QuestScripts.onTalk(g, (player, npc) ->
+                    QuestApi.say(player, "Gladiator", "Sol Heredit is waiting for you up there. Most never make it past the manticores."));
+        }
+        for (String g : new String[]{com.runecraft.osrs.content.minigames.ColosseumLobby.GUARD,
+                com.runecraft.osrs.content.minigames.ColosseumLobby.GUARD_2}) {
+            com.runecraft.quest.QuestScripts.onTalk(g, (player, npc) ->
+                    QuestApi.say(player, "Guard", "Keep moving. Speak to Minimus if you want to fight."));
+        }
+    }
+
+    // ------------------------------------------------------------------ the lobby
+
+    /** Where the stairs from the surface come down: 1799, 9506. */
+    public static BlockPos lobbyArrival() {
+        int[] s = com.runecraft.osrs.content.minigames.ColosseumLobby.stand(FortisColosseum.LOBBY_X, FortisColosseum.LOBBY_Y);
+        return new BlockPos(s[0], s[1], s[2]);
+    }
+
+    /** Whether a player stands in the lobby (the arena doorway and Minimus' "Enter" only work there). */
+    public static boolean inLobby(ServerPlayer p) {
+        if (!com.runecraft.world.Gielinor.is(p)) {
+            return false;
+        }
+        BlockPos at = p.blockPosition();
+        for (int[] h : com.runecraft.osrs.content.minigames.ColosseumLobby.HALLS) {
+            int x1 = com.runecraft.osrs.content.minigames.ColosseumLobby.x(h[0]) - 1;
+            int x2 = com.runecraft.osrs.content.minigames.ColosseumLobby.x(h[2]) + 2;
+            int z1 = com.runecraft.osrs.content.minigames.ColosseumLobby.z(h[3]) - 1;
+            int z2 = com.runecraft.osrs.content.minigames.ColosseumLobby.z(h[1]) + 2;
+            int f = com.runecraft.osrs.content.minigames.ColosseumLobby.FLOOR;
+            if (at.getX() >= x1 && at.getX() <= x2 && at.getZ() >= z1 && at.getZ() <= z2 && at.getY() > f - 2
+                    && at.getY() <= f + com.runecraft.osrs.content.minigames.ColosseumLobby.HEIGHT + 1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** The Colosseum entrance on the surface: down the stairs into the lobby (Varlamore needs Children of the Sun). */
+    public static boolean toLobby(ServerPlayer p) {
+        if (!com.runecraft.world.Gielinor.is(p)) {
+            return false;
+        }
+        if (!QuestApi.isComplete(p, "children_of_the_sun")) {
+            Msg.game(p, "You need to complete Children of the Sun to enter the Fortis Colosseum.");
+            return false;
+        }
+        ServerLevel world = (ServerLevel) p.level();
+        BlockPos at = lobbyArrival();
+        com.runecraft.world.StructurePlacer.applyAround(world, at.getX(), at.getZ(), 72); // carve the lobby if not yet built
+        p.teleportTo(world, at.getX() + 0.5, at.getY(), at.getZ() + 1.0, -90f, 0f);
+        p.fallDistance = 0;
+        Msg.game(p, "You descend into the Fortis Colosseum.");
+        return true;
+    }
+
+    /**
+     * The lobby's stairs back up: out beside the entrance on the surface (OSRS: 1795, 3106 inside the west gate; RuneCraft's
+     * entrance stands just outside the gate, so the stairs come up next to it). // approx
+     */
+    public static boolean toSurface(ServerPlayer p) {
+        ServerLevel world = com.runecraft.world.Gielinor.world(p.getServer());
+        if (world == null) {
+            return false;
+        }
+        BlockPos at = com.runecraft.world.Gielinor.safeSpot(world, com.runecraft.osrs.GielinorMap.toBlockX(FortisColosseum.ENTRANCE_X),
+                com.runecraft.osrs.GielinorMap.toBlockZ(FortisColosseum.ENTRANCE_Y + 1));
+        p.teleportTo(world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, p.getYRot(), 0f);
+        p.fallDistance = 0;
+        Msg.game(p, "You climb the stairs out of the Colosseum.");
+        return true;
+    }
+
+    /** The lobby's doorway into the arena (Minimus must have briefed the player first). */
+    public static void enterArena(ServerPlayer p) {
+        if (!inLobby(p)) {
+            Msg.game(p, "You need to be in the Colosseum lobby to enter the arena.");
+            return;
+        }
+        MinigameManager.enter(p, Minigame.FORTIS_COLOSSEUM, Minigame.FORTIS_COLOSSEUM.entranceBlock());
+    }
+
+    /** Gloria: Glory and the scoreboard. */
+    public static void gloria(ServerPlayer p) {
+        int g = MinigameData.of(p).stat(p.getUUID(), FortisColosseum.STAT_GLORY);
+        String rank = FortisColosseum.rank(g);
+        QuestApi.say(p, "Gloria", "Every wave you clear earns you Glory: more for speed, for taking no damage and for the modifiers "
+                + "you dare to take. Only your best run counts. Your best is " + g + " Glory" + (rank != null ? ", " + rank : "")
+                + ". The scoreboard behind me keeps the records.");
     }
 
     /** Relentless: the factor on an enemy's attack roll against this player (see FortisColosseum.relentlessAccuracy). */
@@ -866,19 +1385,34 @@ public class ColosseumSession extends MinigameSession {
         return type == AttackType.MAGIC ? "magic" : type == AttackType.RANGED ? "ranged" : "melee";
     }
 
+    /** Doom stacks this wave (self-test and HUD). */
+    public int doom() {
+        return doom;
+    }
+
+    /**
+     * Damage taken in the arena: any damage counts as taken (the no-damage Glory bonus) and adds a stack of Doom (hazards
+     * included: wiki "Molten Sand" increments Doom); only enemies' damage drains prayer under Blasphemy; self-inflicted
+     * damage does neither.
+     */
     private void playerDamaged(ServerPlayer player, LivingEntity attacker, AttackType style, int damage) {
-        if (attacker == null || MinigameManager.owner(attacker) != this || damage <= 0) {
+        if (damage <= 0 || dooming || state != State.FIGHTING || attacker == player) {
+            return;
+        }
+        boolean ours = attacker != null && MinigameManager.owner(attacker) == this;
+        if (attacker != null && !ours) {
             return;
         }
         damaged = true;
-        String id = MinigameManager.creatureId(attacker);
-        if (id.equals(FortisColosseum.MANTICORE)) {
-            manticoreDamage = true;
-        }
         PlayerData data = Players.data(player);
-        int blasphemy = active.getOrDefault(Modifier.BLASPHEMY, 0);
-        if (blasphemy > 0) {
-            data.setPrayerPoints(data.prayerPoints() - damage * FortisColosseum.blasphemyPercent(blasphemy) / 100);
+        if (ours) {
+            if (MinigameManager.creatureId(attacker).equals(FortisColosseum.MANTICORE)) {
+                manticoreDamage = true;
+            }
+            int blasphemy = active.getOrDefault(Modifier.BLASPHEMY, 0);
+            if (blasphemy > 0) {
+                data.setPrayerPoints(data.prayerPoints() - damage * FortisColosseum.blasphemyPercent(blasphemy) / 100);
+            }
         }
         int doomTier = active.getOrDefault(Modifier.DOOM, 0);
         if (doomTier > 0) {
@@ -887,64 +1421,22 @@ public class ColosseumSession extends MinigameSession {
             Msg.red(player, "Doom: " + doom + " / " + limit);
             if (doom >= limit) {
                 Msg.red(player, "The doom upon you is complete.");
-                hurt(player, (int) Math.ceil(player.getHealth()) + 1);
+                dooming = true;
+                try {
+                    hurt(player, (int) Math.ceil(player.getHealth()) + 1);
+                } finally {
+                    dooming = false;
+                }
                 return;
             }
         }
-        if (echoing || style == null) {
+        if (!ours || echoing || style == null) {
             return;
         }
-        if (id.equals(FortisColosseum.JAGUAR)) {
-            // Jaguar warriors claw three times per attack.
-            extraHit(attacker, player, style, 47);
-            extraHit(attacker, player, style, 47);
-        }
-    }
-
-    /**
-     * A manticore's own attack is the first orb of its triple (hits and misses alike): Mantimayhem I adds its second hit,
-     * II venoms an unprotected orb, and the other two orbs of the pattern are queued a tick apart.
-     */
-    private void manticoreOrb(ServerPlayer player, LivingEntity attacker, String attack, AttackType style) {
-        if (echoing || attacker == null || style == null || attack == null || !attack.endsWith("_orb")
-                || MinigameManager.owner(attacker) != this || !MinigameManager.creatureId(attacker).equals(FortisColosseum.MANTICORE)) {
-            return;
-        }
-        int tier = active.getOrDefault(Modifier.MANTIMAYHEM, 0);
-        List<AttackType> pattern = FortisColosseum.manticorePattern(tier, style, random);
-        int hits = FortisColosseum.manticoreHitsPerOrb(tier);
-        mayhemVenom(player, style, tier);
-        for (int i = 1; i < hits; i++) {
-            extraHit(attacker, player, style, FortisColosseum.manticoreOrbMaxHit(style));
-        }
-        for (int i = 1; i < pattern.size(); i++) {
-            orbs.add(new Orb(attacker, player, pattern.get(i), ticks + i, hits));
-        }
-    }
-
-    private void mayhemVenom(ServerPlayer player, AttackType style, int tier) {
-        if (tier >= 2 && !CombatHandler.isProtected(Players.data(player), style)) {
-            PoisonService.venom(player, com.runecraft.action.ActionManager.gameTick());
-        }
-    }
-
-    private void orbTick() {
-        int tier = active.getOrDefault(Modifier.MANTIMAYHEM, 0);
-        for (java.util.Iterator<Orb> it = orbs.iterator(); it.hasNext(); ) {
-            Orb o = it.next();
-            if (ticks < o.due()) {
-                continue;
-            }
-            it.remove();
-            if (!o.mob().isAlive() || !o.player().isAlive() || MinigameManager.session(o.player()) != this) {
-                continue;
-            }
-            world.sendParticles(o.type() == AttackType.MAGIC ? ParticleTypes.WITCH : ParticleTypes.CRIT,
-                    o.player().getX(), o.player().getY(0.6), o.player().getZ(), 6, 0.3, 0.3, 0.3, 0.0);
-            for (int i = 0; i < o.hits(); i++) {
-                extraHit(o.mob(), o.player(), o.type(), FortisColosseum.manticoreOrbMaxHit(o.type()));
-            }
-            mayhemVenom(o.player(), o.type(), tier);
+        if (MinigameManager.creatureId(attacker).equals(FortisColosseum.JAGUAR)) {
+            // Jaguar warriors claw three times per attack, each with its own roll.
+            extraHit(attacker, player, style, 47, "claw");
+            extraHit(attacker, player, style, 47, "claw");
         }
     }
 
@@ -1017,7 +1509,7 @@ public class ColosseumSession extends MinigameSession {
     }
 
     /** A follow-up hit of a multi-hit attack (own accuracy roll, blocked by the matching protection prayer). */
-    private void extraHit(LivingEntity mob, ServerPlayer player, AttackType type, int max) {
+    private void extraHit(LivingEntity mob, ServerPlayer player, AttackType type, int max, String name) {
         MonsterStats st = MonsterStats.of(mob);
         int level = type == AttackType.MAGIC ? st.magic() : type == AttackType.RANGED ? st.ranged() : st.attack();
         long attack = CombatHooks.versusAttackRoll(mob, player, type, CombatHandler.npcAttackRoll(mob, st, type, level));
@@ -1029,7 +1521,7 @@ public class ColosseumSession extends MinigameSession {
         }
         echoing = true;
         try {
-            CombatHooks.nameAttack(type.name().toLowerCase(Locale.ROOT), type);
+            CombatHooks.nameAttack(name, type);
             CombatHandler.applyDamage(mob, player, damage);
         } finally {
             echoing = false;
@@ -1040,11 +1532,12 @@ public class ColosseumSession extends MinigameSession {
     protected double damageMultiplier(ServerPlayer player, LivingEntity target, AttackType type) {
         int myopia = active.getOrDefault(Modifier.MYOPIA, 0);
         if (myopia > 0 && (type == AttackType.RANGED || type == AttackType.MAGIC)) {
-            double tiles = Math.sqrt(player.distanceToSqr(target)) / 2;
+            // One block per tile in the arena: the distance to the target's nearest tile against the reduced attack range.
+            double tiles = Math.sqrt(player.distanceToSqr(target)) - FortisColosseum.size(MinigameManager.creatureId(target)) / 2.0;
             boolean longrange = Players.data(player).style().forRanged() == com.runecraft.osrs.CombatStyle.LONGRANGE;
             int range = FortisColosseum.myopiaRange(FortisColosseum.attackRange(Inv.idOf(player.getMainHandItem()),
                     type == AttackType.MAGIC, longrange), myopia);
-            if (tiles > range + 0.75) { // + the target's half width
+            if (tiles > range + 0.5) {
                 if (ticks - lastMyopiaMessage > 10) {
                     lastMyopiaMessage = ticks;
                     Msg.action(player, "Myopia: your target is too far away to hit.");
@@ -1067,17 +1560,27 @@ public class ColosseumSession extends MinigameSession {
 
     @Override
     protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
-        // The exit portal between waves ends the run with the chest, like telling Minimus you're done.
-        if (blockId.equals("minigame_exit") && state == State.CHOOSING && wave >= 1) {
-            return cashOut(player);
+        if (blockId.equals(REWARDS_CHEST)) {
+            claimChest(player);
+            return true;
+        }
+        if (blockId.equals("minigame_exit")) {
+            // The exit between waves ends the run, like telling Minimus you're done; with the chest waiting it must be searched.
+            if (state == State.CHOOSING && wave >= 1) {
+                return cashOut(player);
+            }
+            if (state == State.REWARDS) {
+                Msg.game(player, "Minimus: Don't forget your loot! Search the Rewards Chest first.");
+                return true;
+            }
         }
         return false;
     }
 
     @Override
     protected void onLeave(ServerPlayer player) {
-        // Dying, logging out, teleporting or leaving mid-wave forfeits the chest (only cashing out claims it).
-        if (!died && !cashedOut && !chest.isEmpty() && state != State.DONE) {
+        // Dying, logging out, teleporting or leaving without searching the chest forfeits it.
+        if (!died && !claimed && !chest.isEmpty()) {
             Msg.red(player, "You leave the arena without claiming the Rewards Chest; its loot is lost.");
             chest.clear();
         }
@@ -1089,6 +1592,7 @@ public class ColosseumSession extends MinigameSession {
     protected void onClose() {
         removeWall();
         orbs.clear();
+        javelins.clear();
         com.runecraft.boss.Mechanics.clearHazards(world, box()); // Sol Heredit's molten sand
         for (LivingEntity e : spawned) {
             e.discard();
@@ -1102,21 +1606,11 @@ public class ColosseumSession extends MinigameSession {
 
     @Override
     protected void onEnd(boolean success) {
-        if (!success) {
+        if (!success || claimed) {
             return;
         }
+        // A run ended with the chest still unsearched (only a self-test or shutdown path): hand it over.
         for (ServerPlayer p : online()) {
-            MinigameData data = MinigameData.of(p);
-            UUID u = p.getUUID();
-            if (wave >= FortisColosseum.WAVES && flagsWave == FortisColosseum.WAVES) {
-                int n = data.incrementStat(u, FortisColosseum.STAT_COMPLETIONS);
-                Msg.game(p, "Ralos has smiled upon you! Fortis Colosseum completions: " + n + ".");
-                int best = data.stat(u, FortisColosseum.STAT_BEST_TIME);
-                if (best == 0 || totalTicks < best) {
-                    data.setStat(u, FortisColosseum.STAT_BEST_TIME, (int) totalTicks);
-                    Msg.game(p, "New personal best: " + time(totalTicks) + ".");
-                }
-            }
             claim(p);
         }
     }
@@ -1135,7 +1629,11 @@ public class ColosseumSession extends MinigameSession {
     protected List<String> hud(ServerPlayer player) {
         List<String> lines = new ArrayList<>();
         lines.add(game.displayName());
-        lines.add("Wave: " + Math.max(1, wave) + " / " + FortisColosseum.WAVES + (state == State.CHOOSING ? " (choose a modifier)" : ""));
+        if (state == State.REWARDS) {
+            lines.add("Search the Rewards Chest");
+        } else {
+            lines.add("Wave: " + Math.max(1, wave) + " / " + FortisColosseum.WAVES + (state == State.CHOOSING ? " (choose a modifier)" : ""));
+        }
         if (state == State.FIGHTING) {
             lines.add("Monsters: " + waveMonsters().size() + "  Time: " + time(ticks - waveStart));
         }
@@ -1167,10 +1665,15 @@ public class ColosseumSession extends MinigameSession {
                 + (best > 0 ? time(best) : "-") + ". Sol Heredit kills: " + Players.data(p).killCount(FortisColosseum.SOL_HEREDIT) + ".");
     }
 
-    /** Minimus: how the Colosseum works and the quiver exchange. */
+    /** Minimus: how the Colosseum works (he must be spoken to once before the arena), the quiver exchange and unlocks. */
     public static void minimus(ServerPlayer p) {
         QuestApi.say(p, "Minimus", "Welcome to the Fortis Colosseum! Twelve waves stand between you and Sol Heredit. Before each wave "
                 + "I'll offer you three modifiers; between waves you may leave with the loot you've earned. Die, and it's lost.");
+        MinigameData.of(p).setFlag(p.getUUID(), FLAG_BRIEFED);
+        if (MinigameManager.session(p) == null) {
+            p.displayClientMessage(Component.literal("").withStyle(ChatFormatting.GRAY).append(link("Enter the arena",
+                    "/minigame colosseum enter", "Step through the entrance into the arena", ChatFormatting.GOLD)), false);
+        }
         int glory = MinigameData.of(p).stat(p.getUUID(), FortisColosseum.STAT_GLORY);
         if (glory >= FortisColosseum.GLORY_RESPAWN) {
             p.displayClientMessage(Component.literal("Challenger: ").withStyle(ChatFormatting.GRAY).append(link("Respawn in Civitas illa Fortis",
@@ -1195,7 +1698,7 @@ public class ColosseumSession extends MinigameSession {
     // ------------------------------------------------------------------ Showboating and the Glory unlocks
 
     /** Sol Heredit while he is alive in this run's arena, or null. */
-    private LivingEntity sol() {
+    public LivingEntity sol() {
         for (LivingEntity e : spawned) {
             if (e.isAlive() && MinigameManager.creatureId(e).equals(FortisColosseum.SOL_HEREDIT)) {
                 return e;
@@ -1246,6 +1749,11 @@ public class ColosseumSession extends MinigameSession {
     /** The sides saluted so far this run. */
     public Set<String> salutes() {
         return Set.copyOf(salutes);
+    }
+
+    /** Arena-relative block position (self-test). */
+    public BlockPos arena(int dx, int dy, int dz) {
+        return rel(dx, dy, dz);
     }
 
     /** The lobby bank chest: usable from 2,000 Glory (Brawler). */

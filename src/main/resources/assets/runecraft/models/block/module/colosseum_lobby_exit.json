@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/colosseum_lobby_exit_side",
+    "top": "runecraft:block/module/colosseum_lobby_exit_top",
+    "bottom": "runecraft:block/module/colosseum_lobby_exit_bottom"
+  }
+}

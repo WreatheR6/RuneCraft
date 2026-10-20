@@ -47,6 +47,27 @@ public class OsrsMonsterEntity extends Monster {
      */
     public boolean directPathing;
 
+    /**
+     * Closes to melee reach before attacking whatever its attack style (the Fortis Colosseum's warband archer and seer only
+     * attack from melee range). Not saved.
+     */
+    public boolean meleeRangeOnly;
+
+    /** Distance (blocks) a ranged or magic attacker attacks from; 0 keeps the default 10 (the Colosseum's colossi reach 15). */
+    public double rangedReach;
+
+    /** Takes over an attack this creature is about to make; returns true when it handled the attack itself. */
+    @FunctionalInterface
+    public interface AttackInterceptor {
+        boolean intercept(OsrsMonsterEntity mob, ServerPlayer target, com.runecraft.osrs.content.AttackDef attack);
+    }
+
+    /**
+     * A minigame's hook on this creature's attacks (the Colosseum's Javelin Colossus replacing every fifth throw, manticores
+     * launching their orb patterns). Not saved: set when the creature is spawned.
+     */
+    public AttackInterceptor attackInterceptor;
+
     public MonsterStats stats() {
         if (cachedStats == null) {
             cachedStats = ModEntities.stats(getType());
@@ -156,6 +177,9 @@ public class OsrsMonsterEntity extends Monster {
 
     /** Performs an attack now (called by the attack goal when the attack speed allows). */
     public void performAttack(ServerPlayer target, AttackType type) {
+        if (attackInterceptor != null && attackInterceptor.intercept(this, target, attackList() != null ? nextAttack : null)) {
+            return;
+        }
         if (nextAttack != null && attackList() != null) {
             com.runecraft.boss.Mechanics.perform(this, target, nextAttack, damageMultiplier());
             return;
