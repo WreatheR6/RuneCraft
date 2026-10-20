@@ -33,12 +33,16 @@ class RevenantRewardsTest {
         assertEquals(11000, RevenantRewards.artefactDenominator("ancient_totem", 7, false, false), 1);
         assertEquals(22000, RevenantRewards.artefactDenominator("ancient_statuette", 7, false, false), 1);
         assertEquals(44000, RevenantRewards.artefactDenominator("ancient_relic", 7, false, false), 1);
-        // A unique roll: amulet of avarice on 0-1 out of 5, then each weapon.
+        // A unique roll: amulet of avarice on 0-1 out of 5, then each weapon; it ends the rare chain (no artefact too). The
+        // unskulled dragon med helm is a roll of its own.
         List<String> hit = RevenantRewards.roll(135, false, false, bound -> bound == 5 ? 0 : 0);
-        assertEquals("amulet_of_avarice", hit.get(0));
-        assertEquals("ancient_emblem", hit.get(1));
+        assertEquals(List.of("amulet_of_avarice", "dragon_med_helm"), hit);
         assertEquals("viggoras_chainmace", RevenantRewards.roll(135, false, false, bound -> bound == 5 ? 4 : 0).get(0));
         assertTrue(RevenantRewards.roll(135, true, true, bound -> bound - 1).isEmpty());
+        // Missing the unique table, the first rare that hits: yew seeds come first in the chain.
+        int[] calls = {0};
+        List<String> rare = RevenantRewards.roll(135, false, false, bound -> bound == 1_000_000 && calls[0]++ == 0 ? 999_999 : 0);
+        assertEquals("yew_seed", rare.get(0));
         for (String w : RevenantRewards.WEAPONS) {
             assertNotNull(ItemCatalog.get(w), w);
         }

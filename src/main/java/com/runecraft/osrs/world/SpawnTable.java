@@ -522,6 +522,11 @@ public final class SpawnTable {
                 out.add(new CampRef("gwd_dungeon", l.creature(), l.spot().x(), l.spot().y(), l.spot().feetY(), 1));
             }
         }
+        // The Revenant Caves' revenants (godwars module, on their OSRS tiles under the Wilderness surface).
+        for (com.runecraft.osrs.content.godwars.RevenantCaves.Spawn s : com.runecraft.osrs.content.godwars.RevenantCaves.SPAWNS) {
+            out.add(new CampRef("revenant_caves", s.creature(), s.x(), s.y() + com.runecraft.osrs.content.godwars.RevenantCaves.DY,
+                    com.runecraft.osrs.content.godwars.RevenantCaves.feetY(), 1));
+        }
         for (IslandsPlaces.Camp c : IslandsPlaces.camps()) {
             addPlaceCamp(out, c.place(), c.dx(), c.dz(), c.radius(), c.surface() ? SpawnPoint.SURFACE : c.floorY(), c.creatures());
         }

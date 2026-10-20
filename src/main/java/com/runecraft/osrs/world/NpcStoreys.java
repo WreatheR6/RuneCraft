@@ -21,7 +21,8 @@ public final class NpcStoreys {
     private static final Map<String, Integer> UNDERGROUND_FEET = Map.of(
             "zooknock", 7, "bunkwicket", 7, "waymottin", 7, "bardur", 7,
             "quest_viggora_3", 27, // Curse of the Empty Lord, the Edgeville Dungeon's earth warrior room
-            "quest_ashuelot_reis", 21); // before the God Wars Dungeon's frozen door (godwars GwdDungeon, level 2 floor 20)
+            "quest_ashuelot_reis", 21, // before the God Wars Dungeon's frozen door (godwars GwdDungeon, level 2 floor 20)
+            "rev_emblem_trader", 5); // the Revenant Caves (godwars RevenantCaves, floor 4)
 
     private NpcStoreys() {
     }

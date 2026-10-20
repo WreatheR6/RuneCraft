@@ -105,6 +105,23 @@ public final class SkullService {
         return SKULLS.isSkulled(player.getUUID(), ActionManager.gameTick());
     }
 
+    /**
+     * Skulls a player for at least {@code ticks} more game ticks (an equipped amulet of avarice keeps its wearer skulled; the
+     * skull then fades like a PK skull once it is taken off). Never shortens a longer skull.
+     */
+    public static void skull(ServerPlayer player, int ticks) {
+        long now = ActionManager.gameTick();
+        if (SKULLS.ticksLeft(player.getUUID(), now) >= ticks) {
+            return;
+        }
+        boolean was = SKULLS.isSkulled(player.getUUID(), now);
+        SKULLS.skull(player.getUUID(), now, ticks);
+        addToTeam(player);
+        if (!was) {
+            Msg.red(player, "You are now skulled.");
+        }
+    }
+
     /** Items the player keeps on death: 0 when skulled, otherwise 3; Protect Item adds one. */
     public static int itemsKept(ServerPlayer player, boolean protectItem) {
         return SKULLS.itemsKept(player.getUUID(), ActionManager.gameTick(), protectItem);

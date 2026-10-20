@@ -10,8 +10,9 @@ import java.util.List;
 /**
  * Multi-way combat areas. Everywhere in Gielinor is single-way combat (one attacker per target) except the
  * areas listed here, which follow the OSRS multicombat map: the God Wars Dungeon, the Wilderness multi zones,
- * the Revenant Caves, the Catacombs of Kourend, the busy slayer dungeons and group boss lairs. Raids and
- * minigame instances are always multi; the Minecraft side checks those dynamically.
+ * the Catacombs of Kourend, the busy slayer dungeons and group boss lairs. Raids and minigame instances are always
+ * multi; the Minecraft side checks those dynamically. The Revenant Caves are singles-plus (single-way against monsters)
+ * whatever multi zone lies on the surface above them.
  *
  * <p>Areas are either OSRS tile boxes (real world-map coordinates) or a radius around a place (a module
  * {@link PlaceDef} id or a {@link Landmark} name), because many of this world's dungeons are laid out on the
@@ -251,7 +252,6 @@ public final class MultiCombat {
 
     /** Multicombat dungeons and lairs, by the place they are built around. */
     public static final List<Around> AROUND = List.of(
-            new Around("Revenant Caves", "revenant_caves", 25),
             new Around("Scorpia's cave", "scorpias_cave", 15),
             new Around("Catacombs of Kourend", "catacombs_of_kourend", 20),
             new Around("Smoke Devil Dungeon", "smoke_devil_dungeon", 20),
@@ -360,6 +360,9 @@ public final class MultiCombat {
 
     /** Multicombat check at a Minecraft block position, including the {@link #UNDERGROUND} dungeons. */
     public static boolean isMultiAtBlock(int blockX, int blockY, int blockZ) {
+        if (com.runecraft.osrs.content.godwars.RevenantCaves.contains(blockX, blockY, blockZ)) {
+            return false; // singles-plus since 2020 (single-way against monsters), whatever the surface above is
+        }
         return isMultiAtBlock(blockX, blockZ) || inUndergroundMulti(blockX, blockY, blockZ);
     }
 

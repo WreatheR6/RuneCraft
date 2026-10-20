@@ -48,7 +48,8 @@ class CombatRulesTest {
         assertTrue(MultiCombat.isMulti(2882, 5311), "God Wars Dungeon"); // at its real tiles (GwdDungeon)
         assertTrue(MultiCombat.isMulti(2832, 5302), "Kree'arra's chamber");
         assertTrue(MultiCombat.isMulti(2925, 5203), "Nex's chamber");
-        assertTrue(MultiCombat.isMulti(3127, 3833), "Revenant Caves");
+        assertFalse(MultiCombat.isMultiAtBlock(com.runecraft.osrs.world.StructureDef.bx(3230), com.runecraft.osrs.content.godwars.RevenantCaves.feetY(),
+                com.runecraft.osrs.world.StructureDef.bz(10201 + com.runecraft.osrs.content.godwars.RevenantCaves.DY)), "Revenant Caves: singles-plus");
         assertTrue(MultiCombat.isMulti(1636, 3673), "Catacombs of Kourend");
         assertTrue(MultiCombat.isMulti(3292, 3848), "Callisto's den");
         assertTrue(MultiCombat.isMulti(3266, 3912), "Rogues' Castle (Chaos Elemental)");

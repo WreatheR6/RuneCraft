@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/rev_cave_crevice_side",
+    "top": "runecraft:block/module/rev_cave_crevice_top",
+    "bottom": "runecraft:block/module/rev_cave_crevice_bottom"
+  }
+}

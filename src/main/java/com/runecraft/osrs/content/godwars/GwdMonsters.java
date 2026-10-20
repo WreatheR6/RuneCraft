@@ -300,43 +300,34 @@ public final class GwdMonsters {
                 .size(0.8f, 0.6f, 1.0f));
     }
 
-    private record Rev(String id, String name, int level, int hp, int max, int weaponRarity, int skin, float scale) {
-    }
+    /** Render scale per revenant (stats and drops are {@link RevenantRewards#REVENANTS}). */
+    private static final java.util.Map<String, Float> REV_SCALE = java.util.Map.ofEntries(
+            java.util.Map.entry("revenant_imp", 0.6f), java.util.Map.entry("revenant_goblin", 0.7f),
+            java.util.Map.entry("revenant_pyrefiend", 0.9f), java.util.Map.entry("revenant_hobgoblin", 1.0f),
+            java.util.Map.entry("revenant_cyclops", 1.3f), java.util.Map.entry("revenant_hellhound", 1.2f),
+            java.util.Map.entry("revenant_demon", 1.3f), java.util.Map.entry("revenant_ork", 1.2f),
+            java.util.Map.entry("revenant_dark_beast", 1.3f), java.util.Map.entry("revenant_knight", 1.2f),
+            java.util.Map.entry("revenant_dragon", 1.6f));
 
     /**
-     * Revenants switch between all three styles. The amulet of avarice, revenant weapons and ancient artefacts are
-     * rolled on kill by {@link RevenantRewards} (wiki formula: level, skull and Slayer task); the lines here are the
-     * ordinary table (ether, coins, bracelet: approx).
+     * Revenants switch between all three styles (the module's revenant behaviour picks the style the player is weakest
+     * against and heals them below half health); every attack hits up to the revenant's wiki max hit with its own melee
+     * style. Their drops (the wiki template: ether, then coins or a main and a blighted supplies table roll, and the rare
+     * chain) are rolled on kill by {@link RevenantRewards}; the table here only holds the ether every kill drops, so a
+     * charged bracelet of ethereum can absorb it.
      */
     private static void revenants(List<MonsterDef> list) {
-        Rev[] revs = {
-                new Rev("revenant_imp", "Revenant imp", 7, 10, 3, 6000, 0x60D0B0, 0.6f),
-                new Rev("revenant_goblin", "Revenant goblin", 15, 14, 4, 5000, 0x60C0A0, 0.7f),
-                new Rev("revenant_pyrefiend", "Revenant pyrefiend", 52, 48, 8, 3200, 0x70D0C0, 0.9f),
-                new Rev("revenant_hobgoblin", "Revenant hobgoblin", 60, 72, 10, 2800, 0x60B0A0, 1.0f),
-                new Rev("revenant_cyclops", "Revenant cyclops", 82, 110, 13, 2200, 0x70C0B0, 1.3f),
-                new Rev("revenant_hellhound", "Revenant hellhound", 90, 80, 14, 2000, 0x50B0A0, 1.2f),
-                new Rev("revenant_demon", "Revenant demon", 98, 80, 15, 1800, 0x60A090, 1.3f),
-                new Rev("revenant_ork", "Revenant ork", 105, 105, 16, 1600, 0x70B0A0, 1.2f),
-                new Rev("revenant_dark_beast", "Revenant dark beast", 120, 140, 18, 1300, 0x408070, 1.3f),
-                new Rev("revenant_knight", "Revenant knight", 126, 143, 20, 1200, 0x80D0C0, 1.2f),
-                new Rev("revenant_dragon", "Revenant dragon", 135, 155, 22, 1000, 0x50C0B0, 1.6f),
-        };
-        for (Rev r : revs) {
+        for (RevenantRewards.Revenant r : RevenantRewards.REVENANTS) {
             int lvl = r.level();
-            list.add(MonsterDef.of(r.id(), r.name()).level(lvl).stats(r.hp(), lvl, lvl, lvl, lvl, lvl).speed(4)
+            int[] ether = RevenantRewards.ether(lvl);
+            String name = "Revenant " + r.id().substring("revenant_".length()).replace('_', ' ');
+            list.add(MonsterDef.of(r.id(), name).level(lvl).stats(r.hitpoints(), lvl, lvl, lvl, lvl, lvl).speed(5)
                     .defenceBonus(lvl / 2, lvl / 2, lvl / 2, lvl / 2, lvl / 2)
-                    .attack(AttackDef.of("melee", AttackType.SLASH, r.max(), 2.5, 10))
-                    .attack(AttackDef.of("magic", AttackType.MAGIC, r.max(), 10, 8).particle("minecraft:soul_fire_flame"))
-                    .attack(AttackDef.of("ranged", AttackType.RANGED, r.max(), 10, 8).particle("minecraft:soul"))
-                    .drops(Drop.of("revenant_ether", 1 + lvl / 20, 3 + lvl / 6, 1),
-                            Drop.of("coins", 100 + lvl * 20, 500 + lvl * 80, 2),
-                            Drop.of("bracelet_of_ethereum", 1, 1, Math.max(60, 400 - lvl * 2)), // approx
-                            Drop.of("dragon_dagger", 1, 1, 400), // approx
-                            // OSRS: revenants drop revenant cave teleports (no longer a clue reward here). // approx rate
-                            Drop.of("revenant_cave_teleport", 1, 1, 40),
-                            Drop.of("clue_scroll_elite", 1, 1, Math.max(150, 1000 - lvl * 6)))
-                    .model(r.id()).size(0.7f, 1.8f, r.scale()).spawn(Region.WILDERNESS, 2, 1, 2));
+                    .attack(AttackDef.of("melee", r.melee(), r.maxHit(), 2.5, 10))
+                    .attack(AttackDef.of("magic", AttackType.MAGIC, r.maxHit(), 10, 8).particle("minecraft:soul_fire_flame"))
+                    .attack(AttackDef.of("ranged", AttackType.RANGED, r.maxHit(), 10, 8).particle("minecraft:soul"))
+                    .drops(Drop.of("revenant_ether", ether[0], ether[1], 1))
+                    .model(r.id()).size(0.7f, 1.8f, REV_SCALE.get(r.id())).spawn(Region.WILDERNESS, 2, 1, 2));
         }
     }
 }

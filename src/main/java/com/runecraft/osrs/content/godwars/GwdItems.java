@@ -12,6 +12,7 @@ import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.ItemSink;
 import com.runecraft.osrs.content.godwars.GodWarsFactions.God;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -186,8 +187,11 @@ public final class GwdItems {
     }
 
     private static void revenants(ItemSink items) {
-        items.add("revenant_ether", "Revenant ether", Kind.SIMPLE, "essence", 0x40C0A0).value(180).stack(64)
-                .examine("Spectral essence used to charge revenant weapons.");
+        items.add("revenant_ether", "Revenant ether", Kind.SIMPLE, "essence", 0x40C0A0).value(250).stack(64)
+                .examine("Ethereal essence of the revenants.");
+        // Ancient crystal (wiki): a rare revenant drop, four of which build a POH obelisk.
+        items.add("ancient_crystal", "Ancient crystal", Kind.SIMPLE, "gem", 0x8AD0E0).value(250_000).stack(1)
+                .examine("An ancient crystal containing magical energy.");
         items.add("ancient_emblem", "Ancient emblem", Kind.SIMPLE, "emblem", 0x8A8A9A).value(500000).stack(1)
                 .examine("An ancient artefact. Emir's Arena traders and the Emblem Trader value it.");
         items.add("ancient_totem", "Ancient totem", Kind.SIMPLE, "totem", 0x8A7A5A).value(1000000).stack(1)
@@ -298,5 +302,12 @@ public final class GwdItems {
                 .in("viggoras_chainmace", 1).in("claws_of_callisto", 1).out("ursine_chainmace", 1).ticks(2).build());
         recipes.accept(Recipe.builder("accursed_sceptre", MenuType.SMITHING, "Accursed sceptre")
                 .in("thammarons_sceptre", 1).in("skull_of_vetion", 1).out("accursed_sceptre", 1).ticks(2).build());
+        // A chisel breaks an ancient emblem or totem into revenant ether (wiki: one ether per 500 coins of value). The
+        // statuette and up (4,000-32,000 ether) aren't offered: ether stacks to 64 here.
+        for (String artefact : List.of("ancient_emblem", "ancient_totem")) {
+            recipes.accept(Recipe.builder("chisel_" + artefact, MenuType.GEM_CUTTING,
+                            RevenantRewards.artefactEther(artefact) + " revenant ether")
+                    .in(artefact, 1).out("revenant_ether", RevenantRewards.artefactEther(artefact)).tool("chisel").ticks(2).build());
+        }
     }
 }

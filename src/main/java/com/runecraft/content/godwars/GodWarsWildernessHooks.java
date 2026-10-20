@@ -52,8 +52,12 @@ public final class GodWarsWildernessHooks implements ModuleHooks {
         GameEvents.onKill((player, entity, stats) -> GwdSpawner.onKill(entity));
         GwdDungeonHooks.register();
         GwdSpawner.register();
+        // The Revenant Caves: revenant drops (wiki template), their fighting behaviour, the caves themselves, the maledictus.
         GameEvents.onKill(RevenantLoot::onKill);
         GameEvents.onKill(MaledictusService::onKill);
+        RevenantLoot.register();
+        RevenantBehaviour.register();
+        RevenantCavesService.register();
         BossScripts.register(com.runecraft.osrs.content.godwars.RevenantRewards.MALEDICTUS, MaledictusService.Script::new);
         GwdCamps.register();
     }

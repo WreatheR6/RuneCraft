@@ -1,0 +1,13 @@
+# Revenants (OSRS Wiki infoboxes, July 2026 dump; Revenant Caves "quantity" table): id, combat, hitpoints, max hit,
+# melee style (osrs-dps-calc monsters.json), attack speed, respawn ticks, spawns in the caves.
+revenant_imp	7	10	2	STAB	5	33	4
+revenant_goblin	15	14	3	CRUSH	5	83	2
+revenant_pyrefiend	52	48	5	CRUSH	5	60	4
+revenant_hobgoblin	60	72	8	SLASH	4	50	2
+revenant_cyclops	82	110	16	CRUSH	6	50	2
+revenant_hellhound	90	80	14	STAB	5	50	2
+revenant_demon	98	80	15	CRUSH	5	50	4
+revenant_ork	105	105	20	SLASH	5	27	4
+revenant_dark_beast	120	140	23	CRUSH	5	27	2
+revenant_knight	126	143	27	SLASH	5	20	2
+revenant_dragon	135	155	30	SLASH	5	20	2

@@ -72,7 +72,10 @@ public final class PlayerHitCalc {
         public int weaknessPercent;
         /** The target is a revenant (amulet of avarice). */
         public boolean revenant;
-        /** Forinthry surge: skulled while wearing the amulet of avarice (+35% instead of +20% against revenants). */
+        /**
+         * Forinthry surge: 30 minutes after being the revenant maledictus's top damager with an amulet of avarice on (+35%
+         * instead of +20% against revenants while the avarice is worn).
+         */
         public boolean forinthrySurge;
         /** The player is in the Wilderness (revenant weapons: +50% accuracy and damage while charged). */
         public boolean inWilderness;
