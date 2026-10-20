@@ -133,6 +133,9 @@ public final class YamaWalk {
             if (y3.walkContract() != YamaContract.DIVINE_SEVERANCE) {
                 throw fail("Yama ignored the solo contract (" + y3.walkContract() + ")");
             }
+            if (BossWalks.hit(third, p, 300, AttackType.SLASH) <= 0) {
+                throw fail("the solo contract's challenger couldn't hurt Yama");
+            }
             partner.teleportTo(world, c.x + 3, c.y, c.z + 6, 0, 0);
             float health = third.getHealth();
             int byHook = BossWalks.hit(third, partner, 300, AttackType.SLASH);
@@ -140,9 +143,6 @@ public final class YamaWalk {
             if (byHook != 0 || byOtherPath != 0 || third.getHealth() < health || y3.contribution(partner) != 0) {
                 throw fail("a partner who joined after the summon hurt Yama under a solo contract (" + byHook + "/"
                         + byOtherPath + " damage, contribution " + y3.contribution(partner) + ")");
-            }
-            if (BossWalks.hit(third, p, 300, AttackType.SLASH) <= 0) {
-                throw fail("the solo contract's challenger couldn't hurt Yama");
             }
             log.add("solo contract: the late partner can't hurt Yama");
             return String.join("; ", log);

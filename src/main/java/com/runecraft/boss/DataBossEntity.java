@@ -236,11 +236,12 @@ public class DataBossEntity extends OsrsMonsterEntity {
             teleportTo(b.x(), targetY, b.z());
             return;
         }
+        boolean above = targetY > bossY;
         target.resetFallDistance();
         target.teleportTo(b.x(), bossY, b.z());
         if (target instanceof ServerPlayer p) {
             BossDef def = def();
-            Msg.red(p, (def == null ? "The boss" : def.name) + " knocks you off your perch!");
+            Msg.red(p, (def == null ? "The boss" : def.name) + (above ? " knocks you off your perch!" : " drags you out of your hole!"));
         }
     }
 
