@@ -1,6 +1,7 @@
 package com.runecraft.boss;
 
 import com.runecraft.osrs.content.BossDef;
+import com.runecraft.osrs.content.bosses.BossLair;
 import com.runecraft.osrs.content.bosses.BossVariant;
 import com.runecraft.registry.ModEntities;
 import com.runecraft.util.Inv;
@@ -64,13 +65,6 @@ public final class DataBossService {
         LOOT.put(bossId, roller);
     }
 
-    /** The loot of a kill: the boss's roller when it has one, else its table rolled as a boss kill ({@link #rollLoot(ServerPlayer, DataBossEntity, String, java.util.List)}). */
-    static java.util.List<com.runecraft.skill.Drops.Rolled> rollLoot(ServerPlayer killer, DataBossEntity boss,
-            java.util.List<com.runecraft.osrs.data.Drop> table) {
-        BossDef def = boss.def();
-        return rollLoot(killer, boss, def == null ? "" : def.id, table);
-    }
-
     /**
      * The loot of a kill of {@code bossId} ({@code boss} is the entity that died: a later form credits the main boss): the
      * boss's roller when it has one, else {@code table} rolled as OSRS rolls a boss's drop table
@@ -83,29 +77,78 @@ public final class DataBossService {
         LootRoller r = LOOT.get(bossId);
         if (r != null) {
             java.util.List<com.runecraft.skill.Drops.Rolled> out = r.roll(killer, boss, table);
-            lastRoll = new LootRoll(bossId, out.size(), out.size());
+            lastRoll = new LootRoll(bossId, out.size(), out.size(), new java.util.ArrayList<>());
             return out;
         }
         net.minecraft.util.RandomSource random = boss.getRandom();
         java.util.List<com.runecraft.osrs.data.Drop> lines = com.runecraft.osrs.content.bosses.BossLoot.pick(bossId, table,
                 random::nextInt);
         java.util.List<com.runecraft.skill.Drops.Rolled> out = com.runecraft.skill.Drops.resolve(lines, random);
-        lastRoll = new LootRoll(bossId, lines.size(), out.size());
+        lastRoll = new LootRoll(bossId, lines.size(), out.size(), new java.util.ArrayList<>());
         return out;
     }
 
     /**
-     * What the last boss kill's loot roll landed on: drop lines and the items they gave. Fewer items than lines means a shared
-     * table's "nothing" slot (OSRS: the gem drop table gives nothing 63/128 of the time). Read by the fight self-test to tell an
-     * empty roll from loot that didn't land where the player can see it.
+     * A kill of {@code bossId} ({@code died} is the entity that died: a later form credits the main boss): rolls its loot
+     * ({@link #rollLoot}) and puts it down where the kill leaves it ({@link #lootSpot}), each item through the drop
+     * transformers (ring of wealth coins, noted drops from diaries...) and into the killer's collection log. The item entities
+     * are kept with the roll ({@link LootRoll#dropped}).
      */
-    public record LootRoll(String bossId, int lines, int items) {
+    public static void dropKillLoot(ServerPlayer killer, DataBossEntity died, String bossId,
+            java.util.List<com.runecraft.osrs.data.Drop> table) {
+        net.minecraft.world.entity.Entity at = lootSpot(bossId, died, killer);
+        java.util.List<com.runecraft.skill.Drops.Rolled> loot = rollLoot(killer, died, bossId, table);
+        LootRoll roll = lastRoll;
+        for (com.runecraft.skill.Drops.Rolled r : loot) {
+            Inv.spawnAtLocation(at, com.runecraft.skill.Drops.withDoses(com.runecraft.combat.CombatHooks.dropStack(killer, died,
+                    r.item(), r.count()), r.doses()), roll.dropped()::add);
+            com.runecraft.collection.CollectionLog.obtain(killer, r.item());
+        }
+    }
+
+    /**
+     * What the last boss kill's loot roll landed on: drop lines and the items they gave, and the item entities that loot became
+     * on the ground ({@link #dropKillLoot}; empty for loot handed over otherwise). Fewer items than lines means a shared table's
+     * "nothing" slot (OSRS: the gem drop table gives nothing 63/128 of the time). Read by the fight self-test to tell an empty
+     * roll from loot that didn't land where the player can see it, and to say where each stack went.
+     */
+    public record LootRoll(String bossId, int lines, int items, java.util.List<net.minecraft.world.entity.item.ItemEntity> dropped) {
     }
 
     private static LootRoll lastRoll;
 
     public static LootRoll lastRoll() {
         return lastRoll;
+    }
+
+    /** Bosses whose kill loot is received under the killer instead of where the boss died ({@link #lootUnderKiller}). */
+    private static final java.util.Set<String> LOOT_UNDER_KILLER = new java.util.HashSet<>();
+
+    /**
+     * Marks a boss whose kill loot appears under the player who killed it, not where it died (OSRS Wiki, Zulrah: "the drops
+     * will be received under the player, much like cave krakens"; Zulrah dies out in its swamp). Every form crediting the
+     * boss's kill drops there too.
+     */
+    public static void lootUnderKiller(String bossId) {
+        LOOT_UNDER_KILLER.add(bossId);
+    }
+
+    public static boolean lootsUnderKiller(String bossId) {
+        return LOOT_UNDER_KILLER.contains(bossId);
+    }
+
+    /**
+     * Where a kill of {@code bossId} leaves its loot: under the killer for a {@link #lootUnderKiller} boss while they are in
+     * its fight (within its lair's reach and {@link BossLair#PRESENCE_RANGE} blocks of it, the range in which a player keeps a
+     * boss's fight going), else where the entity that died ({@code died}) stands. OSRS hands Zulrah's drops out under a player
+     * standing in its shrine; a kill credited once the killer has left (a later form's pending death, a delayed hit) drops
+     * where the boss died, like any other boss's.
+     */
+    public static net.minecraft.world.entity.Entity lootSpot(String bossId, DataBossEntity died, ServerPlayer killer) {
+        double range = BossLair.PRESENCE_RANGE;
+        boolean inFight = killer != null && killer.level() == died.level() && died.inLairReach(killer)
+                && killer.distanceToSqr(died) <= range * range;
+        return inFight && LOOT_UNDER_KILLER.contains(bossId) ? killer : died;
     }
 
     public static void requirement(String bossId, BiPredicate<ServerPlayer, BossDef> check) {

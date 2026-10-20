@@ -11,7 +11,6 @@ import com.runecraft.osrs.content.ContentRegistry;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
 import com.runecraft.registry.ModEntities;
-import com.runecraft.skill.Drops;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import java.util.List;
@@ -159,12 +158,8 @@ final class BossFx {
             form.discard();
             return;
         }
-        for (Drops.Rolled r : com.runecraft.boss.DataBossService.rollLoot(killer, form, def.id, def.drops)) {
-            // through the drop transformers like any kill (ring of wealth coins, noted drops from diaries...)
-            Inv.spawnAtLocation(form, Drops.withDoses(com.runecraft.combat.CombatHooks.dropStack(killer, form, r.item(), r.count()),
-                    r.doses()));
-            CollectionLog.obtain(killer, r.item());
-        }
+        // the main boss's kill loot, through the drop transformers like any kill: where the form died, or under the killer (Zulrah)
+        com.runecraft.boss.DataBossService.dropKillLoot(killer, form, def.id, def.drops);
         int petRate = com.runecraft.osrs.content.extras.Pets.engineRate(def.id);
         if (def.pet != null && petRate > 0 && form.getRandom().nextInt(petRate) == 0) {
             Inv.give(killer, def.pet, 1);

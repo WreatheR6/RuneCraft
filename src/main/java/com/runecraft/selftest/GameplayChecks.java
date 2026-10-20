@@ -889,8 +889,12 @@ final class GameplayChecks {
             throw failure("killing it did not add a kill count (" + ticks + " ticks alive"
                     + (played == null ? "" : "; played to the kill: " + played) + ")");
         }
-        int drops = c.world.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, new AABB(boss.blockPosition()).inflate(6),
-                e -> true).size();
+        // Where the kill dropped: around the boss, or under the killer for a boss whose loot OSRS gives there (Zulrah).
+        AABB lootArea = new AABB(boss.blockPosition()).inflate(6);
+        if (DataBossService.lootsUnderKiller(id)) {
+            lootArea = lootArea.minmax(p().getBoundingBox().inflate(2));
+        }
+        int drops = c.world.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, lootArea, e -> true).size();
         return ticks + " ticks" + (forms.isEmpty() ? "" : ", forms " + String.join(" ", forms))
                 + (played == null ? "" : ", played to the kill (" + played + ")")
                 + (companion ? ", companion: no kill count of its own (shared with its main boss)" : ", kc +" + kc) + ", " + drops

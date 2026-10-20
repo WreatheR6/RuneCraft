@@ -13,7 +13,6 @@ import com.runecraft.osrs.content.bosses.DoomDelves;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
 import com.runecraft.registry.ModEntities;
-import com.runecraft.skill.Drops;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import java.util.List;
@@ -403,10 +402,8 @@ public class DataBossEntity extends OsrsMonsterEntity {
         if (def == null) {
             return;
         }
-        for (Drops.Rolled r : DataBossService.rollLoot(player, this, variant != null ? variant.drops() : def.drops)) {
-            Inv.spawnAtLocation(this, Drops.withDoses(com.runecraft.combat.CombatHooks.dropStack(player, this, r.item(), r.count()), r.doses()));
-            CollectionLog.obtain(player, r.item());
-        }
+        // where the boss died, or under the killer (Zulrah)
+        DataBossService.dropKillLoot(player, this, def.id, variant != null ? variant.drops() : def.drops);
         if (variant == null && DataBossService.isCompanion(def.id)) {
             // part of the main boss's kill (Eldric, Dawn, Nex's generals): no kill count or pet of its own
             script.onDeath(this, player);

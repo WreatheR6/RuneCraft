@@ -67,7 +67,9 @@ import net.minecraft.world.phys.Vec3;
  *   ({@code BossSelfTests.assist}): its script says so, or the player's attacks roll damage that its rules take to nothing
  *   (Bryophyta behind her growthlings, the Abyssal Sire until its respiratory systems are gone); the player's own attack
  *   also goes in right after the first heavy hit that gets through, so a boss hurtable only late isn't finished first;</li>
- *   <li>the kill adds a kill count and leaves loot (on the ground or in the inventory).</li>
+ *   <li>the kill adds a kill count and leaves loot (on the ground where it died, or under the player for a boss whose drops
+ *   OSRS gives there ({@code DataBossService.lootUnderKiller}: Zulrah), or in the inventory), every stack it put on the
+ *   ground among them (a failure says where each one went).</li>
  * </ol>
  * The player keeps a big health buffer and is healed every tick, so it never dies. A boss that swaps itself for another
  * entity (Zulrah's and the Hydra's forms) is followed. Nothing else in the world ticks during the fight (minions only
@@ -475,17 +477,45 @@ final class BossFightChecks {
             p.setHealth(p.getMaxHealth());
         }
         int kc = totalKills(data) - kcBefore;
-        int ground = 0;
-        for (ItemEntity e : c.world.getEntitiesOfClass(ItemEntity.class, new AABB(BlockPos.containing(deathAt)).inflate(12), e -> true)) {
-            if (!items.contains(e.getUUID())) {
-                ground++;
+        // The loot lies where the boss died (its last game tick's start, and where the entity ended: a form removed by its kill
+        // keeps its last position), or under the killer for a boss whose drops OSRS hands out there (Zulrah, which dies in its
+        // swamp: "the drops will be received under the player").
+        Set<UUID> dropped = new HashSet<>();
+        List<AABB> lootAreas = new ArrayList<>(List.of(new AABB(BlockPos.containing(deathAt)).inflate(12)));
+        if (killedAt >= 0 && boss.position().distanceToSqr(deathAt) > 1.0) {
+            lootAreas.add(new AABB(BlockPos.containing(boss.position())).inflate(12));
+        }
+        if (DataBossService.lootsUnderKiller(id)) {
+            lootAreas.add(p.getBoundingBox().inflate(2));
+        }
+        for (AABB area : lootAreas) {
+            for (ItemEntity e : c.world.getEntitiesOfClass(ItemEntity.class, area, e -> !items.contains(e.getUUID()))) {
+                dropped.add(e.getUUID());
             }
         }
+        int ground = dropped.size();
         int pocketed = Math.max(0, inventoryCount(p) - invBefore);
         // loot kept for the player elsewhere (the Doom's delve loot waits in the burrow hole until claimed)
         pocketed += Math.max(0, com.runecraft.content.bosses.BossSelfTests.heldLoot(id, p) - heldBefore);
+        // The roll of this boss's kill during the fight, with the item entities its loot became on the ground.
+        DataBossService.LootRoll roll = DataBossService.lastRoll();
+        boolean rolled = roll != null && roll != rollBefore && id.equals(roll.bossId());
         String lootNote = "";
         int brother = boss instanceof BossEntity legacyBoss ? com.runecraft.osrs.content.dungeons.Barrows.indexOf(legacyBoss.boss()) : -1;
+        if (rolled) {
+            // Every stack the kill put down must lie where the player finds it: some stacks found doesn't excuse the others,
+            // and loot that left the world or the player's sight (removed, out of a loaded area, far off) is a bug.
+            int astray = 0;
+            for (ItemEntity e : roll.dropped()) {
+                if (!dropped.contains(e.getUUID())) {
+                    astray++;
+                }
+            }
+            if (astray > 0) {
+                throw new AssertionError("killed (kc +" + kc + "), but " + astray + " of the " + roll.dropped().size()
+                        + " loot stacks it put down are not where the player would find them: " + lootReport(roll, deathAt, boss, p, items));
+            }
+        }
         if (brother >= 0) {
             // OSRS: the Barrows brothers drop nothing themselves; the Barrows chest rolls the run's loot (one roll per brother
             // killed, plus one). The kill must count in the player's run (legacy() summoned him in one, as his sarcophagus
@@ -497,8 +527,8 @@ final class BossFightChecks {
                         + "), so the chest would not roll for him");
             }
             List<com.runecraft.osrs.content.dungeons.BarrowsRun.Reward> chest = List.of();
-            for (int roll = 0; roll < 20 && chest.isEmpty(); roll++) {
-                chest = run.rollRewards(new java.util.Random(roll));
+            for (int open = 0; open < 20 && chest.isEmpty(); open++) {
+                chest = run.rollRewards(new java.util.Random(open));
             }
             if (chest.isEmpty()) {
                 throw new AssertionError("killed (kc +" + kc + "), but the Barrows chest of the run he died in gave nothing in 20 opens");
@@ -509,11 +539,10 @@ final class BossFightChecks {
             // OSRS can leave a kill empty only through a shared table's "nothing" slot (the gem drop table's 63/128): the
             // kill's roll landed on drop lines that gave no item. Any other empty kill is a bug (an empty roll of the boss's
             // own table, or loot that landed out of the player's sight).
-            DataBossService.LootRoll roll = DataBossService.lastRoll();
-            boolean rolled = roll != null && roll != rollBefore && id.equals(roll.bossId());
             if (!rolled || roll.lines() == 0 || roll.items() > 0) {
                 throw new AssertionError("killed (kc +" + kc + ") but no loot: nothing on the ground or in the inventory"
-                        + (rolled ? " (its roll: " + roll.lines() + " drop lines, " + roll.items() + " items)" : ""));
+                        + (rolled ? " (its roll: " + roll.lines() + " drop lines, " + roll.items() + " items; "
+                        + lootReport(roll, deathAt, boss, p, items) + ")" : ""));
             }
             lootNote = " (its roll landed on a shared table's nothing slot)";
         }
@@ -524,6 +553,50 @@ final class BossFightChecks {
                 + (assists.isEmpty() ? "" : " assists " + assists) + (cleared > 0 ? " adds " + cleared : "")
                 + ", kc +" + kc + ", loot " + ground + (pocketed > 0 ? "+" + pocketed + " pocketed" : "") + lootNote
                 + ", log +" + (data.collectionLog().size() - logBefore);
+    }
+
+    /**
+     * Where a kill's loot went, for a failure: each stack the kill put down (item, place, and whether it is still in the world
+     * and found by the level's entity lookups), where the boss died and ended and where the player stood, and the item
+     * entities that appeared since the kill started ({@code before}: those already there) within 48 blocks of the platform or
+     * of where the boss ended.
+     */
+    private String lootReport(DataBossService.LootRoll roll, Vec3 deathAt, LivingEntity boss, ServerPlayer p, Set<UUID> before) {
+        StringBuilder sb = new StringBuilder().append(roll.dropped().size()).append(" item entities put down");
+        int shown = 0;
+        for (ItemEntity e : roll.dropped()) {
+            if (shown++ == 6) {
+                sb.append("; ...");
+                break;
+            }
+            sb.append(shown == 1 ? ": " : "; ").append(Inv.idOf(e.getItem())).append(" x").append(e.getItem().getCount())
+                    .append(" at ").append(at(e.position()));
+            if (e.isRemoved()) {
+                sb.append(" removed (").append(e.getRemovalReason()).append(')');
+            } else if (c.world.getEntity(e.getUUID()) != e) {
+                sb.append(" not in the level's entity lookup (its chunk's entities aren't loaded)");
+            } else {
+                sb.append(String.format(Locale.ROOT, " %.1f from where it died, %.1f from the player",
+                        Math.sqrt(e.position().distanceToSqr(deathAt)), Math.sqrt(e.distanceToSqr(p))));
+            }
+        }
+        sb.append("; it died at ").append(at(deathAt)).append(" and ended at ").append(at(boss.position()))
+                .append(boss.isRemoved() ? " (removed: " + boss.getRemovalReason() + ")" : "").append(", the player at ").append(at(p.position()));
+        Set<UUID> fresh = new HashSet<>();
+        List<String> shownFresh = new ArrayList<>();
+        for (AABB area : List.of(around(), new AABB(BlockPos.containing(boss.position())).inflate(48))) {
+            for (ItemEntity e : c.world.getEntitiesOfClass(ItemEntity.class, area, e -> !before.contains(e.getUUID()))) {
+                if (fresh.add(e.getUUID()) && shownFresh.size() < 6) {
+                    shownFresh.add(Inv.idOf(e.getItem()) + " " + at(e.position()));
+                }
+            }
+        }
+        return sb.append("; ").append(fresh.size()).append(" new item entities within 48 blocks of the platform or where it ended")
+                .append(shownFresh.isEmpty() ? "" : " " + shownFresh).toString();
+    }
+
+    private static String at(Vec3 v) {
+        return String.format(Locale.ROOT, "(%.1f, %.1f, %.1f)", v.x, v.y, v.z);
     }
 
     /** Does the boss's scripted mechanic for the player while it can't be hurt (BossSelfTests.assist). */
