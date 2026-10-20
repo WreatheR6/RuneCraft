@@ -356,9 +356,34 @@ public final class SolHereditScript extends ScriptedBoss {
         if (p != null && !defended && boss.isAlive()) {
             CombatHooks.nameAttack("grapple", null);
             CombatHandler.applyDamage(boss, p, random.nextInt(SolHeredit.GRAPPLE_MAX_HIT + 1));
+            unequip(p, grapple);
         }
         GRAPPLED.remove(grappled);
         grapple = null;
+    }
+
+    /**
+     * An undefended grapple tears the called slot's item off into the inventory (wiki: "puts it into the player's inventory
+     * if not blocked in time"). Body, legs and feet are the armour slots; the back and hands slots are worn as accessories
+     * here and stay on. // approx
+     */
+    static boolean unequip(ServerPlayer p, Grapple g) {
+        net.minecraft.world.entity.EquipmentSlot slot = SolHeredit.armourSlot(g) == null ? null
+                : net.minecraft.world.entity.EquipmentSlot.valueOf(SolHeredit.armourSlot(g));
+        if (slot == null) {
+            return false;
+        }
+        net.minecraft.world.item.ItemStack worn = p.getItemBySlot(slot);
+        if (worn.isEmpty()) {
+            return false;
+        }
+        net.minecraft.world.item.ItemStack copy = worn.copy();
+        p.setItemSlot(slot, net.minecraft.world.item.ItemStack.EMPTY);
+        if (!p.getInventory().add(copy)) {
+            p.drop(copy, false);
+        }
+        Msg.red(p, "Sol Heredit tears your " + copy.getHoverName().getString() + " off!");
+        return true;
     }
 
     /** Light-beam crystals: each shot targets the player's tile and lands a few ticks later. */

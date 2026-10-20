@@ -212,7 +212,10 @@ class FortisColosseumTest {
         List<String> w11 = FortisColosseum.startingMonsters(11, active, new Random(1));
         assertEquals(4, w11.stream().filter(FortisColosseum.WARBAND::contains).count());
         assertEquals(2, w11.stream().filter(FortisColosseum.SHOCKWAVE::equals).count());
-        assertEquals(List.of(FortisColosseum.SOL_HEREDIT), FortisColosseum.startingMonsters(12, active, new Random(1)));
+        // Wave 12: Sol Heredit, and Quartet's extra warbander (wiki strategy guide, "If Quartet is active...").
+        List<String> w12 = FortisColosseum.startingMonsters(12, active, new Random(1));
+        assertEquals(FortisColosseum.SOL_HEREDIT, w12.get(0));
+        assertEquals(1, w12.stream().filter(FortisColosseum.WARBAND::contains).count());
     }
 
     @Test

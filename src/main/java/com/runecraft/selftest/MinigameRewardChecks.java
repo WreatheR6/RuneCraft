@@ -558,6 +558,17 @@ final class MinigameRewardChecks {
             if (!c.cashOut(p())) {
                 throw failure("cashing out between waves was refused");
             }
+            if (!c.rewardsReady() || Inv.count(p(), ColosseumRewards.SPLINTERS) != before) {
+                throw failure("ending the run did not leave the loot in the Rewards Chest");
+            }
+            String chestBlock = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(c.world.getBlockState(c.chestPos()).getBlock())
+                    .getPath();
+            if (!chestBlock.equals(ColosseumSession.REWARDS_CHEST)) {
+                throw failure("no Rewards Chest in the centre of the arena (found " + chestBlock + ")");
+            }
+            if (!c.claimChest(p()) || !c.isEnded()) {
+                throw failure("searching the Rewards Chest did not end the run");
+            }
             int got = Inv.count(p(), ColosseumRewards.SPLINTERS) - before;
             if (got != 80) {
                 throw failure("cashing out gave " + got + " sunfire splinters (expected 80)");
@@ -587,8 +598,9 @@ final class MinigameRewardChecks {
                 throw failure("no modifier to pick before wave 12");
             }
             c.startWave();
-            if (c.monstersAlive() != 1) {
-                throw failure("wave 12 has " + c.monstersAlive() + " monsters (expected Sol Heredit alone)");
+            int expected = c.modifiers().containsKey(FortisColosseum.Modifier.QUARTET) ? 2 : 1;
+            if (c.monstersAlive() != expected || c.sol() == null) {
+                throw failure("wave 12 has " + c.monstersAlive() + " monsters (expected Sol Heredit" + (expected == 2 ? " and Quartet's warbander)" : " alone)"));
             }
             if (c.wallBlocks() == 0) {
                 throw failure("no gladiator wall closed the arena for Sol Heredit");

@@ -79,4 +79,9 @@ public final class MinigamesContent implements ContentModule {
     public List<CollectionLogData.Page> collectionLog() {
         return MinigameWorld.collectionLog();
     }
+
+    @Override
+    public List<com.runecraft.osrs.world.StructureDef> structures() {
+        return List.of(ColosseumLobby.structure());
+    }
 }

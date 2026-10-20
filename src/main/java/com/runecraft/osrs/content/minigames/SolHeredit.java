@@ -110,6 +110,19 @@ public final class SolHeredit {
         }
     }
 
+    /**
+     * The armour slot (Minecraft {@code EquipmentSlot} name) an undefended grapple tears into the inventory: body, legs and
+     * feet; null for the back (cape) and hands (gloves), which RuneCraft wears as accessories.
+     */
+    public static String armourSlot(Grapple g) {
+        return switch (g) {
+            case BODY -> "CHEST";
+            case LEGS -> "LEGS";
+            case FEET -> "FEET";
+            case BACK, HANDS -> null;
+        };
+    }
+
     /** The phase (1 = opening ... 6 = enrage) at a hitpoint percentage. */
     public static int phase(double percent) {
         int phase = 1;

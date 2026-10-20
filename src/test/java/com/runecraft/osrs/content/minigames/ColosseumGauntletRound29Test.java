@@ -23,20 +23,34 @@ class ColosseumGauntletRound29Test {
     @Test
     void manticoreFiresThreeOrbsMeleeLast() {
         Random r = new Random(3);
-        for (int tier = 0; tier <= 2; tier++) {
-            assertEquals(List.of(AttackType.MAGIC, AttackType.RANGED, AttackType.CRUSH),
-                    FortisColosseum.manticorePattern(tier, AttackType.MAGIC, r));
-            assertEquals(List.of(AttackType.RANGED, AttackType.MAGIC, AttackType.CRUSH),
-                    FortisColosseum.manticorePattern(tier, AttackType.RANGED, r));
-        }
-        // Mantimayhem III: the melee orb can come anywhere after the first.
+        // Below Mantimayhem III: magic-ranged or ranged-magic, melee always last; the pattern is the manticore's own.
         Set<List<AttackType>> seen = new HashSet<>();
-        for (int i = 0; i < 200; i++) {
-            List<AttackType> p = FortisColosseum.manticorePattern(3, AttackType.MAGIC, r);
+        for (int tier = 0; tier <= 2; tier++) {
+            for (int i = 0; i < 100; i++) {
+                List<AttackType> p = FortisColosseum.manticorePattern(tier, null, r);
+                assertEquals(AttackType.CRUSH, p.get(2));
+                seen.add(p);
+            }
+        }
+        assertEquals(Set.of(List.of(AttackType.MAGIC, AttackType.RANGED, AttackType.CRUSH),
+                List.of(AttackType.RANGED, AttackType.MAGIC, AttackType.CRUSH)), seen);
+        // Mantimayhem III: any order of the three, melee first included.
+        seen.clear();
+        for (int i = 0; i < 400; i++) {
+            List<AttackType> p = FortisColosseum.manticorePattern(3, null, r);
             assertEquals(Set.of(AttackType.MAGIC, AttackType.RANGED, AttackType.CRUSH), new HashSet<>(p));
             seen.add(p);
         }
-        assertEquals(2, seen.size());
+        assertEquals(6, seen.size());
+        assertTrue(seen.stream().anyMatch(p -> p.get(0) == AttackType.CRUSH), "Mantimayhem III can lead with melee");
+        // A second manticore copies the first one's pattern.
+        List<AttackType> first = List.of(AttackType.RANGED, AttackType.CRUSH, AttackType.MAGIC);
+        assertEquals(first, FortisColosseum.manticorePattern(3, first, r));
+        assertEquals(first, FortisColosseum.manticorePattern(0, first, r));
+        // Two manticores stagger their volleys 5 ticks apart.
+        assertEquals(105, FortisColosseum.manticoreVolleyTick(100, 100));
+        assertEquals(120, FortisColosseum.manticoreVolleyTick(120, 100));
+        assertEquals(100, FortisColosseum.manticoreVolleyTick(100, Long.MIN_VALUE / 2));
         assertEquals(1, FortisColosseum.manticoreHitsPerOrb(0));
         assertEquals(2, FortisColosseum.manticoreHitsPerOrb(1)); // Mantimayhem I: each orb hits twice
         assertEquals(2, FortisColosseum.manticoreHitsPerOrb(3));
@@ -46,7 +60,6 @@ class ColosseumGauntletRound29Test {
         MonsterDef m = FortisColosseum.monsters().stream().filter(d -> d.id.equals(FortisColosseum.MANTICORE)).findFirst().orElseThrow();
         for (AttackDef a : m.attacks) {
             assertEquals(FortisColosseum.MANTICORE_RANGE, a.range(), 1e-9, a.name()); // 15-tile attack range
-            assertEquals(a.style().isMelee() ? 0 : 10, a.weight(), a.name() + ": its own attack is never the melee orb");
         }
         assertEquals(10, FortisColosseum.MANTICORE_CYCLE_TICKS);
     }

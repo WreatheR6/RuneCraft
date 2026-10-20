@@ -47,9 +47,10 @@ public class OsrsAttackGoal extends Goal {
         }
         double distSq = mob.distanceToSqr(target);
         AttackType style = mob.chooseStyle(target, distSq);
-        boolean melee = style.isMelee();
+        boolean melee = style.isMelee() || mob.meleeRangeOnly;
         double reach = mob.getBbWidth() * 1.4 + target.getBbWidth() + 0.6;
-        double range = melee ? reach * reach : 10.0 * 10.0;
+        double ranged = mob.rangedReach > 0 ? mob.rangedReach : 10.0;
+        double range = melee ? reach * reach : ranged * ranged;
         mob.getLookControl().setLookAt(target, 30.0f, 30.0f);
         boolean canSee = mob.getSensing().hasLineOfSight(target);
         if (distSq > range || !canSee) {

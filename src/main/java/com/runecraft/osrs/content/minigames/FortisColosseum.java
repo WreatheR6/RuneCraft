@@ -23,6 +23,9 @@ import java.util.Random;
  *
  * <p>Monster stats come from the wiki's DPS calculator data ({@code monsters.json}), waves and modifiers from the wiki
  * (snapshots in {@code src/test/resources/osrs/minigames/colosseum_*.tsv}).
+ *
+ * <p>Scale: the arena instance is built one block per OSRS tile (the pillars stand 16 tiles apart, as in OSRS), so every
+ * tile count here (attack ranges, Myopia, the minotaur's heal radius, explosion sizes) is a block count in the arena.
  */
 public final class FortisColosseum {
     private FortisColosseum() {
@@ -45,8 +48,46 @@ public final class FortisColosseum {
     public static final int WAVES = 12;
     /** Reinforcements arrive when a wave is not cleared within 40 seconds (67 game ticks). */
     public static final int REINFORCEMENT_TICKS = 67;
-    /** Ticks between a wave being cleared (or a modifier chosen) and the next wave's monsters appearing. */
-    public static final int WAVE_START_DELAY = 5; // approx
+    /** Ticks between a modifier being chosen and the next wave's monsters appearing. */
+    public static final int WAVE_START_DELAY = 5; // approx: the wiki gives no delay
+
+    // ------------------------------------------------------------------ the lobby under the Colosseum
+
+    /**
+     * The lobby under the Colosseum (OSRS Wiki "Fortis Colosseum entrance"; shortest-path transports 50749/50750): the
+     * entrance on the surface leads down to 1799, 9506 and the exit stairs back up to 1795, 3106. The lobby's NPCs stand on
+     * a style-NONE place of their own ({@link #LOBBY_PLACE}) above it.
+     */
+    public static final String LOBBY_PLACE = "mg_colosseum_lobby";
+    public static final int LOBBY_X = 1799;
+    public static final int LOBBY_Y = 9506;
+    /** Underground tiles map onto the surface 6,400 tiles south (the lobby lies under the Colosseum). */
+    public static final int UNDERGROUND_OFFSET = 6400;
+    public static final int SURFACE_EXIT_X = 1795;
+    public static final int SURFACE_EXIT_Y = 3106;
+    /** Map pins of the lobby's NPCs and objects (wiki). */
+    public static final int MINIMUS_X = 1805;
+    public static final int MINIMUS_Y = 9508;
+    public static final int GLORIA_X = 1803;
+    public static final int GLORIA_Y = 9512;
+    public static final int SCOREBOARD_X = 1804;
+    public static final int SCOREBOARD_Y = 9513;
+    public static final int BANK_CHEST_X = 1804;
+    public static final int BANK_CHEST_Y = 9501;
+    public static final int ARENA_ENTRANCE_X = 1810;
+    public static final int ARENA_ENTRANCE_Y = 9506;
+    /** Blocks: the lobby's doorway into the arena, its exit stairs and the arena's Rewards Chest. */
+    public static final String ARENA_ENTRANCE = "colosseum_arena_entrance";
+    public static final String LOBBY_EXIT = "colosseum_lobby_exit";
+    public static final String REWARDS_CHEST = "colosseum_rewards_chest";
+
+    /** The Colosseum's own blocks: id, name, colour, look. */
+    public static String[][] blocks() {
+        return new String[][]{
+                {ARENA_ENTRANCE, "Entrance (Fortis Colosseum)", "C09040", "portal_door"},
+                {LOBBY_EXIT, "Stairs (Fortis Colosseum)", "C8B080", "door"},
+                {REWARDS_CHEST, "Rewards Chest (Fortis Colosseum)", "C09030", "chest"}};
+    }
 
     // ------------------------------------------------------------------ monsters
 
@@ -78,6 +119,30 @@ public final class FortisColosseum {
         };
     }
 
+    /** Blocks within which the warband attacks: all three only attack from melee range. */
+    public static final double WARBAND_REACH = 2.5;
+    /** Serpent shamans cast from up to 10 tiles; the colossi and manticores attack from 15. */
+    public static final int SHAMAN_RANGE = 10;
+    public static final int COLOSSUS_RANGE = 15;
+
+    /** Whether a creature only attacks once it is next to the player, whatever its attack style (the warband). */
+    public static boolean attacksFromMelee(String creature) {
+        return WARBAND.contains(creature);
+    }
+
+    /**
+     * A creature's size in tiles (wiki strategy tables): 1 for the warband, shamans and totems, 2 for jaguars and bee swarms,
+     * 3 for the colossi, manticores and minotaurs, 5 for Sol Heredit.
+     */
+    public static int size(String creature) {
+        return switch (creature) {
+            case JAGUAR, BEE_SWARM -> 2;
+            case JAVELIN, MANTICORE, SHOCKWAVE, MINOTAUR -> 3;
+            case SOL_HEREDIT -> 5;
+            default -> 1;
+        };
+    }
+
     private static AttackDef melee(AttackType type, int max) {
         return AttackDef.of("melee", type, max, 2.5, 10);
     }
@@ -92,17 +157,18 @@ public final class FortisColosseum {
         list.add(m(BERSERKER, "Fremennik warband berserker", 103).stats(48, 110, 110, 80, 110, 110).speed(6)
                 .defenceBonus(50, 50, 50, 0, 75).attackBonus(150, 150, 0).attack(melee(AttackType.STAB, 29))
                 .size(0.7f, 1.9f, 1.0f).skin(0xD8B090, 0x6A4A2A, 0x4A3A2A, 0xB0B0B8));
+        // The archer and seer only attack once they reach melee range, like the berserker (wiki "Fortis Colosseum/Strategies").
         list.add(m(ARCHER, "Fremennik warband archer", 104).stats(50, 110, 110, 80, 110, 110).speed(6)
                 .defenceBonus(0, 0, 0, 75, 50).attackBonus(150, 150, 150)
-                .attack(AttackDef.of("ranged", AttackType.RANGED, 14, 8, 10).particle("minecraft:crit"))
+                .attack(AttackDef.of("ranged", AttackType.RANGED, 14, WARBAND_REACH, 10).particle("minecraft:crit"))
                 .size(0.7f, 1.9f, 1.0f).skin(0xD8B090, 0x3A5A2A, 0x4A3A2A, 0x8A6A3A));
         list.add(m(SEER, "Fremennik warband seer", 104).stats(50, 110, 110, 80, 110, 110).speed(6)
                 .defenceBonus(50, 50, 50, 30, 0).attackBonus(0, 150, 0)
-                .attack(AttackDef.of("magic", AttackType.MAGIC, 12, 8, 10).particle("minecraft:witch"))
+                .attack(AttackDef.of("magic", AttackType.MAGIC, 12, WARBAND_REACH, 10).particle("minecraft:witch"))
                 .size(0.7f, 1.9f, 1.0f).skin(0xD8B090, 0x3A3A6A, 0x4A3A2A, 0x6060C0));
         list.add(m(SHAMAN, "Serpent shaman", 161).stats(125, 100, 90, 90, 220, 160).speed(5)
                 .defenceBonus(30, 30, 30, 15, 50).attackBonus(0, 50, 0)
-                .attack(AttackDef.of("magic", AttackType.MAGIC, 28, 9, 10).particle("minecraft:witch"))
+                .attack(AttackDef.of("magic", AttackType.MAGIC, 28, SHAMAN_RANGE, 10).particle("minecraft:witch"))
                 .size(0.8f, 2.0f, 1.0f).skin(0x5A8A3A, 0x3A6A2A, 0x2A4A1A, 0xE0C040));
         // Jaguar warriors claw three times on a five-tick cycle (47 each).
         list.add(m(JAGUAR, "Jaguar warrior", 234).stats(125, 200, 330, 125, 100, 160).speed(5)
@@ -110,10 +176,10 @@ public final class FortisColosseum {
                 .size(1.0f, 2.2f, 1.2f).skin(0xC09040, 0x3A2A1A, 0x6A4A2A, 0x2A2A2A));
         list.add(m(JAVELIN, "Javelin Colossus", 278).stats(220, 200, 300, 190, 225, 360).speed(5)
                 .defenceBonus(15, 15, 15, 20, 30).attackBonus(0, 0, 25)
-                .attack(AttackDef.of("javelin", AttackType.RANGED, 48, 12, 10).particle("minecraft:crit"))
+                .attack(AttackDef.of("javelin", AttackType.RANGED, 48, COLOSSUS_RANGE, 10).particle("minecraft:crit"))
                 .size(1.6f, 3.4f, 1.6f).skin(0xA08060, 0xC0A060, 0x8A6A3A, 0xE0C040));
-        // The manticore fires three orbs per 10-tick cycle (manticorePattern): its own attack is the first orb (magic or
-        // ranged; the melee orb is never first, weight 0) and the Colosseum session fires the other two a tick apart. Range 15.
+        // The manticore fires three orbs per 10-tick cycle in the pattern it was given (manticorePattern): the Colosseum
+        // session takes over its attack and launches the three orbs a tick apart (the list only names them). Range 15.
         list.add(m(MANTICORE, "Manticore", 320).stats(250, 300, 300, 250, 300, 350).speed(MANTICORE_CYCLE_TICKS)
                 .defenceBonus(0, 0, 0, 10, 25).attackBonus(0, 0, 0)
                 .attack(AttackDef.of("melee_orb", AttackType.CRUSH, 31, MANTICORE_RANGE, 0).particle("minecraft:crit"))
@@ -122,7 +188,7 @@ public final class FortisColosseum {
                 .size(1.6f, 2.0f, 1.6f).skin(0xB06A2A, 0x8A4A1A, 0x6A3A1A, 0x3A2A1A));
         list.add(m(SHOCKWAVE, "Shockwave Colossus", 239).stats(125, 120, 190, 150, 350, 220).speed(5)
                 .defenceBonus(15, 15, 15, 5, 35).attackBonus(0, 55, 0)
-                .attack(AttackDef.of("shockwave", AttackType.MAGIC, 56, 12, 10).particle("minecraft:sonic_boom"))
+                .attack(AttackDef.of("shockwave", AttackType.MAGIC, 56, COLOSSUS_RANGE, 10).particle("minecraft:sonic_boom"))
                 .size(1.6f, 3.4f, 1.6f).skin(0x8A8AA0, 0x5A5A8A, 0x3A3A5A, 0x80C0FF));
         list.add(m(MINOTAUR, "Minotaur", 318).stats(225, 300, 360, 190, 250, 120).speed(5)
                 .defenceBonus(0, 0, 0, 0, 12).attackBonus(15, 0, 0).attack(melee(AttackType.CRUSH, 74))
@@ -175,14 +241,11 @@ public final class FortisColosseum {
     }
 
     /**
-     * The monsters a wave starts with under the active modifiers: Quartet adds a random warband member, Dynamic Duo pairs
-     * every Shockwave Colossus.
+     * The monsters a wave starts with under the active modifiers: Quartet adds a random warband member (on wave 12 too, beside
+     * Sol Heredit: wiki strategy guide), Dynamic Duo pairs every Shockwave Colossus.
      */
     public static List<String> startingMonsters(int n, Map<Modifier, Integer> active, Random random) {
         List<String> list = new ArrayList<>(wave(n).monsters());
-        if (n >= WAVES) {
-            return list;
-        }
         if (active.containsKey(Modifier.QUARTET)) {
             list.add(WARBAND.get(random.nextInt(WARBAND.size())));
         }
@@ -304,8 +367,9 @@ public final class FortisColosseum {
 
     // Modifier effects (tier is 1-based; 0 = not active).
 
-    /** Bees!: swarms in the arena (one per tier), moving a tile every 12 ticks, respawning 30 seconds after dying. */
+    /** Bees!: 2x2 swarms in the arena (one per tier), moving a tile every 12 ticks, respawning 30 seconds after dying. */
     public static final int BEE_MOVE_TICKS = 12;
+    public static final int BEE_STEP_TILES = 1;
     public static final int BEE_RESPAWN_TICKS = 50;
     /** Bees!: up to 10 unblockable damage a tick under the swarm, and poison starting at 1. */
     public static final int BEE_DAMAGE = 10;
@@ -402,7 +466,10 @@ public final class FortisColosseum {
         return Math.min(MAX_RANGE, base + (longrange ? 2 : 0));
     }
 
-    /** Myopia: the attack range left (at least 1 tile) after the tier's reduction. */
+    /**
+     * Myopia: the attack range left (at least 1 tile) after the tier's reduction. In the arena a tile is one block, so the
+     * session compares it with the block distance to the target.
+     */
     public static int myopiaRange(int range, int tier) {
         return Math.max(1, range - myopiaReduction(tier));
     }
@@ -421,33 +488,131 @@ public final class FortisColosseum {
         return 10 * tier; // approx
     }
 
+    /** Pillar centres sit 8 tiles either side of the arena's centre (16 tiles apart). */
+    public static final int PILLAR_OFFSET = 8;
+
+    /**
+     * The tiles of a Solarflare orbit, in order, as {east, south} offsets from the arena centre. Waves 1-11: one orb on the
+     * square through the four pillars (a corner every 16 tiles); wave 12: four orbs, one on the 5x5 ring around each pillar
+     * at the corners of Sol Heredit's arena (wiki: "they will circle around a set pattern within the allotted arena", "in a
+     * 5x5 pattern by the corners"). {@code orb} 0-3 picks the pillar on wave 12. // approx: the OSRS routes aren't documented
+     */
+    public static List<int[]> solarflarePath(boolean solWave, int orb) {
+        List<int[]> path = new ArrayList<>();
+        int cx = 0;
+        int cz = 0;
+        int half = PILLAR_OFFSET;
+        if (solWave) {
+            cx = (orb & 1) == 0 ? -PILLAR_OFFSET : PILLAR_OFFSET;
+            cz = (orb & 2) == 0 ? -PILLAR_OFFSET : PILLAR_OFFSET;
+            half = 2;
+        }
+        int side = 2 * half;
+        for (int i = 0; i < 4 * side; i++) {
+            int leg = i / side;
+            int along = i % side;
+            int x = switch (leg) {
+                case 0 -> -half + along;
+                case 1 -> half;
+                case 2 -> half - along;
+                default -> -half;
+            };
+            int z = switch (leg) {
+                case 0 -> -half;
+                case 1 -> -half + along;
+                case 2 -> half;
+                default -> half - along;
+            };
+            path.add(new int[]{cx + x, cz + z});
+        }
+        return path;
+    }
+
+    /** Whether step {@code index} of an orbit is a corner (the orb pauses there at tiers I and III). */
+    public static boolean solarflareCorner(boolean solWave, int index) {
+        int side = solWave ? 4 : 2 * PILLAR_OFFSET;
+        return index % side == 0;
+    }
+
+    /** How many Solarflare orbs circle: one on waves 1-11, four (one per pillar) on wave 12. */
+    public static int solarflareOrbs(boolean solWave) {
+        return solWave ? 4 : 1;
+    }
+
     /**
      * Totemic: a healing totem appears when an enemy drops to 50%; it heals 30% of the enemy's health "every few ticks". The
      * strategy guide times the heals on Sol Heredit (75 hitpoints) at every 4.2 seconds, i.e. 7 ticks, used for every enemy.
      */
     public static final int TOTEM_HEAL_PERCENT = 30;
     public static final int TOTEM_HEAL_TICKS = 7;
+    /** Two minutes after the totem is destroyed (or its enemy dies) before that enemy can raise another. */
     public static final int TOTEM_RESPAWN_TICKS = 200;
+    /** The totem rises to the enemy's south-west and launches its first heal "~5 or so ticks" later (strategy guide). */
+    public static final int TOTEM_FIRST_HEAL_TICKS = 5; // approx
 
-    /** Volatility: an enemy explodes on death, one (I) or two (II, III) tiles beyond its size; III leaves molten sand. */
+    /** A totem keeps healing its enemy until it is back to full health (strategy guide). */
+    public static boolean totemHeals(double health, double maxHealth) {
+        return health < maxHealth;
+    }
+
+    /**
+     * Volatility: an enemy explodes on death, one (I) or two (II, III) tiles beyond its size (a 3x3 manticore: 5x5, then 7x7);
+     * III leaves molten sand on the centre tile. Returns the explosion's half width in tiles from the enemy's centre tile.
+     */
     public static int volatilityRadius(int size, int tier) {
         return (size + 2 * Math.min(tier, 2)) / 2;
     }
 
-    public static final int VOLATILITY_DAMAGE = 15; // approx: "the explosions don't do heavy damage"
+    /** Whether a tile {@code (dx, dz)} from an exploding enemy's centre tile is caught in its blast. */
+    public static boolean volatilityHits(int size, int tier, int dx, int dz) {
+        int r = volatilityRadius(size, tier);
+        return tier > 0 && Math.abs(dx) <= r && Math.abs(dz) <= r;
+    }
+
+    public static final int VOLATILITY_DAMAGE = 15; // approx: "the explosions don't do heavy damage" (no wiki number)
 
     /** Molten sand (Reentry, Volatility III): up to 15 damage every two ticks while standing on it. */
     public static final int MOLTEN_SAND_DAMAGE = 15;
 
-    /** The Javelin Colossus replaces every fifth attack with a javelin thrown at the player's tile (ignores prayer). */
+    /**
+     * The Javelin Colossus: after every four auto-attacks its fifth is replaced by a javelin launched into the air, landing on
+     * the tile the player stood on 6 ticks later for up to 40 typeless damage (prayer doesn't help; wiki strategy guide).
+     */
     public static final int JAVELIN_EVERY = 5;
-    public static final int JAVELIN_FLIGHT_TICKS = 3; // approx
+    public static final int JAVELIN_FLIGHT_TICKS = 6;
+    public static final int JAVELIN_MAX_HIT = 40;
+
+    /** Whether a colossus's {@code n}th attack (1-based) is the sky javelin. */
+    public static boolean javelinThrow(int n) {
+        return n > 0 && n % JAVELIN_EVERY == 0;
+    }
+
+    /**
+     * Reentry: the tiles a landed javelin melts, as {east, south} offsets from its target tile: the target (I, temporary);
+     * the target and the tile south-west of it (II, permanent); and the tile west of the target as well (III).
+     */
+    public static List<int[]> reentryTiles(int tier) {
+        List<int[]> out = new ArrayList<>();
+        if (tier <= 0) {
+            return out;
+        }
+        out.add(new int[]{0, 0});
+        if (tier >= 2) {
+            out.add(new int[]{-1, 1});
+        }
+        if (tier >= 3) {
+            out.add(new int[]{-1, 0});
+        }
+        return out;
+    }
 
     // ------------------------------------------------------------------ manticores
 
     /** Manticores charge for 10 ticks and attack from up to 15 tiles (= blocks in the arena). */
     public static final int MANTICORE_CYCLE_TICKS = 10;
     public static final int MANTICORE_RANGE = 15;
+    /** Two manticores with sight of the player stagger their volleys 5 ticks apart (wiki "Manticore" strategy). */
+    public static final int MANTICORE_STAGGER_TICKS = 5;
 
     /** An orb's max hit: 31 melee, 36 ranged, 31 magic. */
     public static int manticoreOrbMaxHit(AttackType style) {
@@ -455,21 +620,30 @@ public final class FortisColosseum {
     }
 
     /**
-     * A manticore's three orbs, launched a tick apart (OSRS Wiki, "Manticore"): ranged-magic or magic-ranged, the last always
-     * melee; with Mantimayhem III the melee orb can come anywhere. {@code first} is the orb its own attack fired.
-     * // approx: with Mantimayhem III the melee orb is never first here, and paired manticores don't copy each other's pattern
+     * A manticore's three orbs, launched a tick apart (OSRS Wiki "Manticore", "Fortis Colosseum/Strategies#Manticore"): the
+     * pattern is set per manticore, magic-ranged or ranged-magic with melee always last; with Mantimayhem III any order of
+     * the three, melee first included. A manticore that charges while another already has a pattern copies it (the session
+     * passes that one as {@code copy}).
      */
-    public static List<AttackType> manticorePattern(int mayhemTier, AttackType first, Random random) {
-        List<AttackType> rest = new ArrayList<>(List.of(AttackType.MAGIC, AttackType.RANGED, AttackType.CRUSH));
-        rest.remove(first.isMelee() ? AttackType.CRUSH : first);
-        AttackType lead = first.isMelee() ? AttackType.CRUSH : first;
-        if (mayhemTier >= 3 || lead == AttackType.CRUSH) {
-            java.util.Collections.shuffle(rest, random);
+    public static List<AttackType> manticorePattern(int mayhemTier, List<AttackType> copy, Random random) {
+        if (copy != null && copy.size() == 3) {
+            return List.copyOf(copy);
         }
-        List<AttackType> out = new ArrayList<>();
-        out.add(lead);
-        out.addAll(rest);
-        return out;
+        List<AttackType> out = new ArrayList<>(List.of(AttackType.MAGIC, AttackType.RANGED, AttackType.CRUSH));
+        if (mayhemTier >= 3) {
+            Collections.shuffle(out, random);
+        } else if (random.nextBoolean()) {
+            Collections.swap(out, 0, 1);
+        }
+        return List.copyOf(out);
+    }
+
+    /**
+     * The tick a manticore's due volley is launched: no sooner than {@link #MANTICORE_STAGGER_TICKS} after the last volley
+     * another manticore launched ({@code otherLast}; a large negative number when there is none).
+     */
+    public static long manticoreVolleyTick(long now, long otherLast) {
+        return Math.max(now, otherLast + MANTICORE_STAGGER_TICKS);
     }
 
     /** Mantimayhem I: each orb hits twice. */
@@ -477,9 +651,17 @@ public final class FortisColosseum {
         return mayhemTier >= 1 ? 2 : 1;
     }
 
-    /** The minotaur heals another monster below 75% to full when the player is out of its melee reach (within 7 tiles). */
+    /**
+     * The minotaur heals another monster below 75% to full when the player is out of its melee reach, if that monster's centre
+     * is within 7 tiles of its own and in its line of sight (Mod Arcane, quoted on the wiki's "Minotaur (Fortis Colosseum)").
+     */
     public static final int MINOTAUR_HEAL_BELOW_PERCENT = 75;
     public static final int MINOTAUR_HEAL_RANGE = 7;
+
+    /** Whether a minotaur heals a monster at {@code health}/{@code maxHealth} whose centre is {@code tiles} away. */
+    public static boolean minotaurHeals(double health, double maxHealth, double tiles, boolean lineOfSight) {
+        return lineOfSight && tiles <= MINOTAUR_HEAL_RANGE && health < maxHealth * MINOTAUR_HEAL_BELOW_PERCENT / 100.0;
+    }
 
     // ------------------------------------------------------------------ glory
 
