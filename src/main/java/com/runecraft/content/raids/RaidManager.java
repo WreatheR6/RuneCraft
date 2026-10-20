@@ -134,8 +134,14 @@ public final class RaidManager {
                     return true;
                 }
                 RaidInstance raid = at(target);
-                return raid != null && raid.type == RaidType.TOA
-                        && com.runecraft.osrs.content.raids.ToaPuzzles.alwaysMaxHit(RaidInstance.creatureId(target), type);
+                if (raid == null || raid.type != RaidType.TOA) {
+                    return false;
+                }
+                // OSRS: ranged always hits Ba-Ba's cracked boulder for its maximum.
+                if (type == AttackType.RANGED && raid.logic() instanceof ToaBossRooms.Baba baba && baba.isCracked(target)) {
+                    return true;
+                }
+                return com.runecraft.osrs.content.raids.ToaPuzzles.alwaysMaxHit(RaidInstance.creatureId(target), type);
             }
 
             @Override

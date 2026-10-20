@@ -75,10 +75,10 @@ public class RoomLogic {
             case "het_puzzle" -> new ToaPuzzleRooms.Het(raid, def, index);
             case "apmeken_puzzle" -> new ToaPuzzleRooms.Apmeken(raid, def, index);
             case "crondis_puzzle" -> new ToaPuzzleRooms.Crondis(raid, def, index);
-            case "kephri" -> new ToaRooms.Kephri(raid, def, index);
-            case "akkha" -> new ToaRooms.Akkha(raid, def, index);
-            case "baba" -> new ToaRooms.Baba(raid, def, index);
-            case "zebak" -> new ToaRooms.Zebak(raid, def, index);
+            case "kephri" -> new ToaBossRooms.Kephri(raid, def, index);
+            case "akkha" -> new ToaBossRooms.Akkha(raid, def, index);
+            case "baba" -> new ToaBossRooms.Baba(raid, def, index);
+            case "zebak" -> new ToaBossRooms.Zebak(raid, def, index);
             case "wardens" -> new ToaRooms.Wardens(raid, def, index);
             default -> new RoomLogic(raid, def, index);
         };

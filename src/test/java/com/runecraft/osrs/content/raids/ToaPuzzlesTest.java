@@ -144,6 +144,8 @@ class ToaPuzzlesTest {
         assertTrue(ToaPuzzles.alwaysMaxHit(ToaPuzzles.SHAMAN, AttackType.RANGED));
         assertTrue(ToaPuzzles.alwaysMaxHit("toa_baba_baboon", AttackType.CRUSH));
         assertTrue(ToaPuzzles.alwaysMaxHit("toa_energy_siphon", AttackType.STAB));
+        assertFalse(ToaPuzzles.alwaysMaxHit("toa_energy_siphon", AttackType.MAGIC));
+        assertTrue(ToaPuzzles.alwaysMaxHit("toa_scarab_swarm", AttackType.MAGIC));
         assertFalse(ToaPuzzles.alwaysMaxHit("akkha", AttackType.STAB));
     }
 }

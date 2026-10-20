@@ -153,6 +153,27 @@ public final class RaidEffects {
         return dealt;
     }
 
+    /**
+     * Like {@link #hit} but without the raid's damage multiplier (for damage that is already scaled or capped, such as
+     * Akkha's unstable orbs).
+     */
+    public static int hitRaw(LivingEntity source, ServerPlayer player, int damage) {
+        RaidInstance raid = RaidManager.of(player);
+        if (raid != null) {
+            if (raid.isDowned(player)) {
+                return 0;
+            }
+            raid.noteAttack();
+        }
+        LivingEntity attacker = source != null && source.isAlive() ? source : null;
+        int dealt = CombatHandler.applyDamage(attacker, player, damage);
+        if (dealt > 0) {
+            RaidManager.hurt(player, dealt);
+            RaidManager.deadlyPrayers(player, dealt);
+        }
+        return dealt;
+    }
+
     public static boolean protectedFrom(ServerPlayer player, AttackType style) {
         var data = Players.data(player);
         return switch (style) {

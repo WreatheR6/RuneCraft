@@ -448,7 +448,8 @@ public final class ToaPuzzles {
     /**
      * Raid creatures that always take a player's maximum hit from a style (OSRS): the Path of Apmeken's combat baboons from
      * the style that beats them (brawler: magic, thrower: melee, mage: ranged), its shamans and special baboons from
-     * ranged, Ba-Ba's troupe from anything, and the Wardens' energy siphons from melee.
+     * ranged, Ba-Ba's troupe from anything, Kephri's scarab swarms from anything, and the Wardens' energy siphons from
+     * melee.
      */
     public static boolean alwaysMaxHit(String id, com.runecraft.osrs.AttackType type) {
         boolean melee = type.isMelee();
@@ -456,7 +457,7 @@ public final class ToaPuzzles {
             case BRAWLER -> type == com.runecraft.osrs.AttackType.MAGIC;
             case THROWER -> melee;
             case MAGE, SHAMAN, VOLATILE, CURSED -> type == com.runecraft.osrs.AttackType.RANGED;
-            case "toa_baba_baboon" -> true;
+            case "toa_baba_baboon", "toa_scarab_swarm" -> true;
             case "toa_energy_siphon" -> melee;
             default -> false;
         };
