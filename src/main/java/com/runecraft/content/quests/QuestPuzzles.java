@@ -83,8 +83,20 @@ public final class QuestPuzzles {
                 String reason = QuestInterpreter.unmet(p, t);
                 if (reason != null) {
                     if (t.emptyHanded && !QuestInterpreter.emptyHanded(p)) {
+                        if (t.banksItems) {
+                            // Peer the Seer sends the player's belongings to the bank before the trial
+                            QuestInterpreter.bankEverything(p);
+                            Msg.game(p, QuestInterpreter.npcName(npcId) + " sends everything you carry and wear to your bank.");
+                            reason = QuestInterpreter.unmet(p, t);
+                            if (reason == null) {
+                                show(p, q, t);
+                                return true;
+                            }
+                        }
                         // the examiner tells the recruit why the test can't start
-                        Msg.game(p, "[" + q.def.displayName() + "] " + reason);
+                        if (!reason.isEmpty()) {
+                            Msg.game(p, "[" + q.def.displayName() + "] " + reason);
+                        }
                         return true;
                     }
                     continue;

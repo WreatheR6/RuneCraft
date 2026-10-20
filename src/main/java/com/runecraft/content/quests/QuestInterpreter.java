@@ -201,6 +201,19 @@ public final class QuestInterpreter {
         return QuestsState.get(p).wornAll(p.getUUID()).isEmpty();
     }
 
+    /** Sends everything the player carries and wears, quest gear slots included, to their bank (a quest deposit service). */
+    static void bankEverything(ServerPlayer p) {
+        com.runecraft.bank.BankService.depositAll(p);
+        QuestsState state = QuestsState.get(p);
+        com.runecraft.osrs.bank.BankModel bank = Players.data(p).bank();
+        for (Map.Entry<String, String> e : new ArrayList<>(state.wornAll(p.getUUID()).entrySet())) {
+            if (e.getValue() != null && bank.deposit(e.getValue(), "", 1, 0) > 0) {
+                state.wear(p.getUUID(), e.getKey(), null);
+            }
+        }
+        ServerNetworking.sync(p);
+    }
+
     /** Self-test hook: empties the player's hands for an {@code emptyHanded} trigger (inventory and every worn slot). */
     public static void selfTestEmptyHands(ServerPlayer p) {
         p.getInventory().clearContent();

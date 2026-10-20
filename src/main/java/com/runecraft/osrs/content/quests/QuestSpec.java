@@ -354,6 +354,15 @@ public final class QuestSpec {
     }
 
     /**
+     * With {@link #emptyHanded}: the presenting NPC first sends everything the player carries and wears to their bank
+     * (Peer the Seer's deposit service before his trial).
+     */
+    public QuestSpec banksItems() {
+        cur().banksItems = true;
+        return this;
+    }
+
+    /**
      * Only counts while the player is underground: a reach or puzzle at a spot in a carved dungeon (the dungeon lies
      * below its surface tiles, so the surface above must not trigger it).
      */
@@ -505,6 +514,8 @@ public final class QuestSpec {
         public int radius = 8;
         /** Needs an empty inventory and nothing worn. */
         public boolean emptyHanded;
+        /** The presenter banks the player's items for an {@link #emptyHanded} trigger. */
+        public boolean banksItems;
         /** Only while the player is underground (a reach or puzzle at a dungeon spot). */
         public boolean underground;
         /** Only within {@link #nearRadius} tiles of this place (null: anywhere). */
