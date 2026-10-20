@@ -104,4 +104,38 @@ class ToaBossRulesTest {
         assertEquals("right", ToaBossRules.SLAMS[0]);
         assertNotEquals(ToaBossRules.wardenSlamEvery(Set.of()), ToaBossRules.wardenSlamEvery(EnumSet.of(Invocation.INSANITY)));
     }
+
+    /** Every ToA creature's own attacks top out at its DPS calculator max hit (src/test/resources/osrs/raids/toa_max_hits.tsv). */
+    @Test
+    void maxHitsMatchTheDpsCalculator() throws Exception {
+        List<String> diffs = new java.util.ArrayList<>();
+        int rows = 0;
+        for (String line : java.nio.file.Files.readAllLines(java.nio.file.Path.of("src/test/resources/osrs/raids/toa_max_hits.tsv"))) {
+            if (line.isBlank() || line.startsWith("#")) {
+                continue;
+            }
+            String[] r = line.split("\t", -1);
+            com.runecraft.osrs.content.CombatProfile<?> p = com.runecraft.osrs.content.ContentRegistry.boss(r[0]);
+            if (p == null) {
+                p = com.runecraft.osrs.content.ContentRegistry.monster(r[0]);
+            }
+            assertNotNull(p, r[0]);
+            int max = 0;
+            for (com.runecraft.osrs.content.AttackDef a : p.attacks) {
+                max = Math.max(max, a.maxHit());
+            }
+            if (max != Integer.parseInt(r[3])) {
+                diffs.add(r[0] + " " + max + " != " + r[3]);
+            }
+            rows++;
+        }
+        assertTrue(rows >= 14, "rows " + rows);
+        assertTrue(diffs.isEmpty(), String.join("\n", diffs));
+        // Scripted attacks (OSRS infoboxes): Zebak 38 melee / 16 projectiles, the Wardens 20 / 22 (phase 2) and 26 (phase 3).
+        assertEquals(38, ToaBossRules.ZEBAK_MELEE_MAX);
+        assertEquals(16, ToaBossRules.ZEBAK_RANGED_MAX);
+        assertEquals(20, ToaBossRules.ELIDINIS_P2_MAX_HIT);
+        assertEquals(22, ToaBossRules.TUMEKEN_P2_MAX_HIT);
+        assertEquals(26, ToaBossRules.WARDEN_P3_MAX_HIT);
+    }
 }

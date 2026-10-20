@@ -1,0 +1,17 @@
+# ToA creatures' max hits from weirdgloop/osrs-dps-calc cdn/json/monsters.json (raid level 0, solo). A creature's
+# own attacks (its AttackDefs) must top out at this value; scripted attacks live in the rooms (ToaBossRooms).
+# id	name	version	max_hit
+toa_soldier_scarab	Soldier Scarab		17
+toa_spitting_scarab	Spitting Scarab		10
+toa_agile_scarab	Agile Scarab		5
+toa_baboon_brawler	Baboon Brawler	Level 56	5
+toa_baboon_thrower	Baboon Thrower	Level 56	5
+toa_baboon_mage	Baboon Mage	Level 56	5
+toa_baboon_shaman	Baboon Shaman		7
+toa_baboon_thrall	Baboon Thrall		5
+toa_volatile_baboon	Volatile Baboon		7
+toa_cursed_baboon	Cursed Baboon		7
+toa_crocodile	Crocodile (Tombs of Amascut)		18
+toa_path_scarab	Scarab (Tombs of Amascut)		6
+baba	Ba-Ba		24
+zebak	Zebak	Normal	38

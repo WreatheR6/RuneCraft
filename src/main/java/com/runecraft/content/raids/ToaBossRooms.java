@@ -127,6 +127,11 @@ final class ToaBossRooms {
         private static final int[][] ARCANE_SPOTS = {{6, 8}, {-4, -10}, {0, 12}, {6, -8}};
         static final String[] CHILDREN = {"toa_scarab_swarm", "toa_soldier_scarab", "toa_spitting_scarab", "toa_arcane_scarab",
                 "toa_agile_scarab"};
+        /** Kephri's fireball max hit (OSRS infobox) and the share Protect from Magic lets through (wiki: ~66% blocked). */
+        static final int KEPHRI_MAX_HIT = 24;
+        static final double KEPHRI_PROTECTED_SHARE = 1 / 3.0;
+        /** The Spitting Scarab's max hit (OSRS infobox: 10). */
+        static final int SPITTING_MAX_HIT = 10;
         DataBossEntity kephri;
         final List<LivingEntity> guards = new ArrayList<>();
         int broken;
@@ -316,12 +321,16 @@ final class ToaBossRooms {
             });
         }
 
-        /** Kephri's fireball (and a bomber scarab's): lands where the target stood; 3x3 and harder with Aerial Assault. */
+        /**
+         * Kephri's fireball (and a bomber scarab's): lands where the target stood, max hit 24 (OSRS); 3x3 and harder with
+         * Aerial Assault. Protect from Magic takes about two thirds off (OSRS wiki).
+         */
         private void fireball(ServerPlayer p) {
             Set<Invocation> inv = raid.invocations();
             int radius = Invocation.kephriFireballRadius(inv);
-            int max = (int) Math.round(24 * Invocation.kephriFireballDamage(inv));
-            RaidEffects.strike(world(), p.position(), 0.8 + 1.5 * radius, max, 3, kephri, ParticleTypes.FLAME, AttackType.MAGIC, true);
+            int max = (int) Math.round(KEPHRI_MAX_HIT * Invocation.kephriFireballDamage(inv));
+            RaidEffects.strike(world(), p.position(), 0.8 + 1.5 * radius, max, 3, kephri, ParticleTypes.FLAME, AttackType.MAGIC,
+                    KEPHRI_PROTECTED_SHARE);
         }
 
         @Override
@@ -395,7 +404,9 @@ final class ToaBossRooms {
                     LivingEntity target = g instanceof Mob m ? m.getTarget() : null;
                     for (ServerPlayer p : players) {
                         if (p != target && p.distanceToSqr(g) < 8 * 8) {
-                            if (RaidEffects.hit(g, p, rnd().nextInt(9), AttackType.RANGED, false) > 0 && rnd().nextInt(4) == 0) {
+                            // OSRS: "fairly accurate and can hit through prayers". // approx: half through Protect from Missiles
+                            if (RaidEffects.hit(g, p, rnd().nextInt(SPITTING_MAX_HIT + 1), AttackType.RANGED, 0.5) > 0
+                                    && rnd().nextInt(4) == 0) {
                                 PoisonService.poison(p, 6, com.runecraft.action.ActionManager.gameTick());
                             }
                         }

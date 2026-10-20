@@ -612,9 +612,11 @@ final class ToaWardens extends RoomLogic {
             }
             return;
         }
+        // OSRS infobox: Elidinis' Warden hits up to 20, Tumeken's up to 22.
+        int max = isElidinis(warden) ? ToaBossRules.ELIDINIS_P2_MAX_HIT : ToaBossRules.TUMEKEN_P2_MAX_HIT;
         for (ServerPlayer p : players) {
             if (p.distanceToSqr(warden) < 3.2 * 3.2) {
-                RaidEffects.hit(warden, p, rnd().nextInt(21), AttackType.CRUSH, false);
+                RaidEffects.hit(warden, p, rnd().nextInt(max + 1), AttackType.CRUSH, false);
                 return;
             }
         }
@@ -622,10 +624,10 @@ final class ToaWardens extends RoomLogic {
         AttackType style = rnd().nextBoolean() ? AttackType.MAGIC : AttackType.RANGED;
         world().sendParticles(style == AttackType.MAGIC ? new DustParticleOptions(new Vector3f(0.9f, 0.1f, 0.1f), 1.6f)
                 : new DustParticleOptions(new Vector3f(0.9f, 0.9f, 0.9f), 1.6f), warden.getX(), warden.getY() + 2.5, warden.getZ(), 12, 0.3, 0.3, 0.3, 0);
-        // OSRS: like Zebak's, the skulls only hurt on impact, so a late prayer still works. Max hit 20 (infobox).
+        // OSRS: like Zebak's, the skulls only hurt on impact, so a late prayer still works.
         RaidEffects.later(2, () -> {
             if (alive(warden) && phase == 2 && target.isAlive()) {
-                RaidEffects.hit(warden, target, rnd().nextInt(21), style, false);
+                RaidEffects.hit(warden, target, rnd().nextInt(max + 1), style, false);
             }
         });
     }
@@ -912,7 +914,9 @@ final class ToaWardens extends RoomLogic {
             for (ServerPlayer p : players()) {
                 if (ToaBossRules.slamHits(kind, p.getBlockZ() - cz)) {
                     world().sendParticles(ParticleTypes.EXPLOSION, p.getX(), p.getY() + 0.3, p.getZ(), 1, 0, 0, 0, 0);
-                    RaidEffects.hit(warden, p, 15 + rnd().nextInt(16), null, true); // approx: moderate to heavy, typeless
+                    // OSRS: "moderate or heavy" typeless damage; the phase 3 infobox max hit is 26. // approx: 13-26
+                    int max = ToaBossRules.WARDEN_P3_MAX_HIT;
+                    RaidEffects.hit(warden, p, max / 2 + rnd().nextInt(max / 2 + 1), null, true);
                 }
             }
         });
@@ -1080,8 +1084,9 @@ final class ToaWardens extends RoomLogic {
             case "Kephri" -> {
                 if (tick % (6 - faster) == 3) {
                     int radius = Invocation.kephriFireballRadius(inv);
-                    int max = (int) Math.round(24 * Invocation.kephriFireballDamage(inv));
-                    RaidEffects.strike(world(), p.position(), 0.8 + 1.5 * radius, max, 3, warden, ParticleTypes.FLAME, AttackType.MAGIC, true);
+                    int max = (int) Math.round(ToaBossRooms.Kephri.KEPHRI_MAX_HIT * Invocation.kephriFireballDamage(inv));
+                    RaidEffects.strike(world(), p.position(), 0.8 + 1.5 * radius, max, 3, warden, ParticleTypes.FLAME, AttackType.MAGIC,
+                            ToaBossRooms.Kephri.KEPHRI_PROTECTED_SHARE);
                     wardenAttacks++;
                 }
             }

@@ -47,9 +47,9 @@ public final class ToaBosses {
                         .size(1.2f, 1.9f, 1.6f).moveSpeed(0.26),
                 raid("zebak", "Zebak").level(371).stats(580, 250, 140, 70, 100, 120).speed(7)
                         .defenceBonus(160, 160, 260, 200, 110)
-                        .attack(AttackDef.of("jaws", AttackType.STAB, 33, 3, 6))
-                        .attack(AttackDef.of("acid rock", AttackType.RANGED, 30, 25, 10).particle("minecraft:item_slime"))
-                        .attack(AttackDef.of("blood magic", AttackType.MAGIC, 30, 25, 10).special(Special.LIFESTEAL, 50)
+                        .attack(AttackDef.of("jaws", AttackType.STAB, 38, 3, 6))
+                        .attack(AttackDef.of("acid rock", AttackType.RANGED, 16, 25, 10).particle("minecraft:item_slime"))
+                        .attack(AttackDef.of("blood magic", AttackType.MAGIC, 16, 25, 10).special(Special.LIFESTEAL, 50)
                                 .particle("minecraft:damage_indicator"))
                         .attack(AttackDef.of("poison spit", AttackType.RANGED, 6, 25, 3).special(Special.HAZARD, 5)
                                 .particle("minecraft:item_slime"))
@@ -85,10 +85,10 @@ public final class ToaBosses {
                         .attack(AttackDef.of("nip", AttackType.STAB, 1, 2, 10)).model("toa_scarab")
                         .size(0.6f, 0.5f, 0.7f).moveSpeed(0.18),
                 MonsterDef.of("toa_soldier_scarab", "Soldier scarab").level(89).stats(40, 75, 80, 80, 100, 95).speed(7).defenceBonus(15, 250, 30, -15, 250)
-                        .attack(AttackDef.of("pincer", AttackType.CRUSH, 9, 2.5, 10)).model("toa_scarab")
+                        .attack(AttackDef.of("pincer", AttackType.SLASH, 17, 2.5, 10)).model("toa_scarab")
                         .size(0.8f, 0.6f, 1.0f).moveSpeed(0.26),
                 MonsterDef.of("toa_spitting_scarab", "Spitting scarab").level(89).stats(40, 1, 80, 80, 100, 95).speed(3).defenceBonus(15, 250, 30, 250, 125)
-                        .attack(AttackDef.of("spit", AttackType.RANGED, 8, 10, 10).particle("minecraft:item_slime")).model("toa_scarab")
+                        .attack(AttackDef.of("spit", AttackType.RANGED, 10, 10, 10).particle("minecraft:item_slime")).model("toa_scarab")
                         .size(0.8f, 0.6f, 1.0f).moveSpeed(0.22),
                 MonsterDef.of("toa_arcane_scarab", "Arcane scarab").level(89).stats(40, 75, 80, 80, 100, 95).speed(6).defenceBonus(15, 250, 30, 75, 50)
                         .attack(AttackDef.of("arcane bolt", AttackType.MAGIC, 8, 10, 10).particle("minecraft:witch")).model("toa_scarab")
@@ -107,13 +107,13 @@ public final class ToaBosses {
                         .attack(AttackDef.of("shadow slash", AttackType.SLASH, 15, 2.5, 10))
                         .model("akkha").size(0.9f, 2.4f, 1.2f).moveSpeed(0.26),
                 MonsterDef.of("toa_baboon_brawler", "Baboon brawler").level(56).stats(25, 40, 40, 12, 40, 40).speed(4).defenceBonus(900, 900, 900, -60, 900)
-                        .attack(AttackDef.of("punch", AttackType.CRUSH, 8, 2.5, 10)).model("toa_baboon")
+                        .attack(AttackDef.of("punch", AttackType.CRUSH, 5, 2.5, 10)).model("toa_baboon")
                         .size(0.7f, 1.1f, 1.0f).moveSpeed(0.3),
                 MonsterDef.of("toa_baboon_thrower", "Baboon thrower").level(56).stats(30, 40, 40, 12, 40, 40).speed(4).defenceBonus(-50, -50, -50, 900, 900)
-                        .attack(AttackDef.of("rock throw", AttackType.RANGED, 7, 10, 10)).model("toa_baboon")
+                        .attack(AttackDef.of("rock throw", AttackType.RANGED, 5, 10, 10)).model("toa_baboon")
                         .size(0.7f, 1.1f, 1.0f).moveSpeed(0.26),
                 MonsterDef.of("toa_baboon_mage", "Baboon mage").level(56).stats(20, 40, 40, 12, 40, 40).speed(4).defenceBonus(900, 900, 900, 900, -50)
-                        .attack(AttackDef.of("blast", AttackType.MAGIC, 7, 10, 10).particle("minecraft:witch")).model("toa_baboon")
+                        .attack(AttackDef.of("blast", AttackType.MAGIC, 5, 10, 10).particle("minecraft:witch")).model("toa_baboon")
                         .size(0.7f, 1.1f, 1.0f).moveSpeed(0.26),
                 MonsterDef.of("baba_boulder", "Boulder").level(1).stats(40, 1, 1, 1, 1, 1).speed(4).passive()
                         .attack(AttackDef.of("roll", AttackType.CRUSH, 1, 1.5, 10))

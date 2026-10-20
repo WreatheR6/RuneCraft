@@ -8,7 +8,6 @@ import com.runecraft.player.Players;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Predicate;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -24,8 +23,12 @@ import net.minecraft.world.phys.Vec3;
  */
 public final class RaidEffects {
     /** A marked area that explodes after a delay. */
+    /**
+     * A marked area that explodes after a delay. {@code protectedShare}: the share of the roll a matching protection
+     * prayer lets through (0 blocks it, the default unless piercing; Kephri's fireballs let a third through).
+     */
     private record Strike(ServerLevel world, Vec3 pos, double radius, int maxHit, AttackType style, boolean piercing,
-                          long due, LivingEntity source, ParticleOptions warn, Predicate<ServerPlayer> filter) {
+                          long due, LivingEntity source, ParticleOptions warn, double protectedShare) {
     }
 
     private record Task(long due, Runnable run) {
@@ -77,7 +80,17 @@ public final class RaidEffects {
     public static void strike(ServerLevel world, Vec3 pos, double radius, int maxHit, int delay, LivingEntity source,
                               ParticleOptions warn, AttackType style, boolean piercing) {
         STRIKES.add(new Strike(world, pos, radius, maxHit, style, piercing, now() + Math.max(1, delay), source,
-                warn == null ? ParticleTypes.FLAME : warn, p -> true));
+                warn == null ? ParticleTypes.FLAME : warn, piercing ? 1.0 : 0.0));
+    }
+
+    /**
+     * {@link #strike} whose damage a matching protection prayer only reduces: {@code protectedShare} of the roll still
+     * lands (at least Quiet Prayers' share in ToA).
+     */
+    public static void strike(ServerLevel world, Vec3 pos, double radius, int maxHit, int delay, LivingEntity source,
+                              ParticleOptions warn, AttackType style, double protectedShare) {
+        STRIKES.add(new Strike(world, pos, radius, maxHit, style, false, now() + Math.max(1, delay), source,
+                warn == null ? ParticleTypes.FLAME : warn, Math.max(0, Math.min(1, protectedShare))));
     }
 
     public static void strike(ServerLevel world, Vec3 pos, double radius, int maxHit, int delay, LivingEntity source,
@@ -127,7 +140,7 @@ public final class RaidEffects {
             double r2 = s.radius() * s.radius();
             for (ServerPlayer p : s.world().getPlayers(pl -> pl.isAlive() && !pl.isSpectator() && !pl.isCreative()
                     && horizontalDistSq(pl.position(), s.pos()) <= r2 && Math.abs(pl.getY() - s.pos().y) < 3)) {
-                hit(s.source(), p, p.getRandom().nextInt(s.maxHit() + 1), s.style(), s.piercing());
+                hit(s.source(), p, p.getRandom().nextInt(s.maxHit() + 1), s.style(), s.piercing() ? 1.0 : s.protectedShare());
             }
         }
     }
@@ -143,6 +156,14 @@ public final class RaidEffects {
      * Returns the damage dealt.
      */
     public static int hit(LivingEntity source, ServerPlayer player, int damage, AttackType style, boolean piercing) {
+        return hit(source, player, damage, style, piercing ? 1.0 : 0.0);
+    }
+
+    /**
+     * Deals damage from a raid mechanic; a matching protection prayer lets {@code protectedShare} of it through (0: blocks
+     * it, 1: ignores the prayer). Returns the damage dealt.
+     */
+    public static int hit(LivingEntity source, ServerPlayer player, int damage, AttackType style, double protectedShare) {
         RaidInstance raid = RaidManager.of(player);
         if (raid != null) {
             if (raid.isDowned(player)) {
@@ -150,11 +171,11 @@ public final class RaidEffects {
             }
             raid.noteAttack();
         }
-        if (!piercing && style != null && protectedFrom(player, style)) {
+        if (protectedShare < 1.0 && style != null && protectedFrom(player, style)) {
             // ToA Quiet Prayers (OSRS): protection prayers are 10% less effective.
             double leak = raid != null && raid.type == com.runecraft.osrs.content.raids.RaidType.TOA
                     ? com.runecraft.osrs.content.raids.Invocation.protectionLeak(raid.invocations()) : 0;
-            damage = (int) Math.round(damage * leak);
+            damage = (int) Math.round(damage * Math.max(protectedShare, leak));
         }
         if (raid != null) {
             damage = (int) Math.round(damage * raid.damageMultiplier(source));

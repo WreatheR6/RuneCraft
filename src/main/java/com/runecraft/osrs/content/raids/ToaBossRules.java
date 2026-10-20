@@ -203,4 +203,9 @@ public final class ToaBossRules {
 
     /** Health (percent) above which the phase 2 Warden fires its prayer-disabling Divine Projectile, below it Imprisonment. */
     public static final int WARDEN_P2_SPECIAL_SPLIT = 55;
+    /** Phase 2 Warden max hits (OSRS infobox / DPS calculator "Active"): Elidinis' 20, Tumeken's 22. */
+    public static final int ELIDINIS_P2_MAX_HIT = 20;
+    public static final int TUMEKEN_P2_MAX_HIT = 22;
+    /** Phase 3 ("Damaged") Warden max hit (OSRS infobox: 26). */
+    public static final int WARDEN_P3_MAX_HIT = 26;
 }
