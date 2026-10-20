@@ -117,6 +117,44 @@ public final class ToaBosses {
                         .size(0.7f, 1.1f, 1.0f).moveSpeed(0.26),
                 MonsterDef.of("baba_boulder", "Boulder").level(1).stats(40, 1, 1, 1, 1, 1).speed(4).passive()
                         .attack(AttackDef.of("roll", AttackType.CRUSH, 1, 1.5, 10))
-                        .size(1.0f, 1.0f, 1.2f).moveSpeed(0.22));
+                        .size(1.0f, 1.0f, 1.2f).moveSpeed(0.22),
+                // Path of Apmeken's special baboons (OSRS wiki / DPS calculator; static hitpoints). The shaman summons thralls,
+                // the volatile baboon chases a random raider and explodes, the cursed baboon wanders leaving venom pools.
+                MonsterDef.of("toa_baboon_shaman", "Baboon Shaman").level(74).stats(40, 60, 60, 20, 60, 60).speed(8)
+                        .defenceBonus(900, 900, 900, 900, -50)
+                        .attack(AttackDef.of("prayer blast", AttackType.MAGIC, 7, 10, 10).particle("minecraft:witch")).model("toa_baboon")
+                        .size(0.7f, 1.1f, 1.0f).moveSpeed(0.26),
+                MonsterDef.of("toa_baboon_thrall", "Baboon Thrall").level(52).stats(2, 40, 40, 12, 40, 40).speed(4)
+                        .defenceBonus(0, 0, 0, 0, 0)
+                        .attack(AttackDef.of("claw", AttackType.CRUSH, 5, 2.5, 10)).model("toa_baboon")
+                        .size(0.5f, 0.8f, 0.7f).moveSpeed(0.3),
+                MonsterDef.of("toa_volatile_baboon", "Volatile Baboon").level(72).stats(8, 60, 60, 20, 60, 60).speed(4).passive()
+                        .defenceBonus(900, 900, 900, -60, -50)
+                        .attack(AttackDef.of("explode", AttackType.CRUSH, 7, 1.5, 10)).model("toa_baboon")
+                        .size(0.7f, 1.1f, 1.0f).moveSpeed(0.3),
+                MonsterDef.of("toa_cursed_baboon", "Cursed Baboon").level(77).stats(20, 60, 60, 20, 60, 60).speed(4).passive()
+                        .defenceBonus(900, 900, 900, -60, -50)
+                        .attack(AttackDef.of("scratch", AttackType.CRUSH, 7, 2.5, 10)).model("toa_baboon")
+                        .size(0.7f, 1.1f, 1.0f).moveSpeed(0.2),
+                // Ba-Ba's troupe (OSRS: level 77, 10 hitpoints, ranged; players always hit them for their max hit).
+                MonsterDef.of("toa_baba_baboon", "Baboon").level(77).stats(10, 0, 0, 50, 50, 80).speed(4)
+                        .defenceBonus(10, 50, 50, 50, 50)
+                        .attack(AttackDef.of("pebble", AttackType.RANGED, 3, 10, 10)).model("toa_baboon") // approx: max hit "1?"
+                        .size(0.7f, 1.1f, 1.0f).moveSpeed(0.28),
+                // Path of Crondis: crocodiles go for raiders carrying water, then the palm (driven by the room, so passive).
+                MonsterDef.of("toa_crocodile", "Crocodile").level(71).stats(30, 150, 60, 100, 30, 1).speed(7).passive()
+                        .defenceBonus(150, 350, 350, 5, 150)
+                        .attack(AttackDef.of("bite", AttackType.CRUSH, 18, 2.5, 10)).model("crocodile")
+                        .size(0.9f, 0.6f, 0.8f).moveSpeed(0.24),
+                // Path of Scabaras: the scarabs that pester the puzzle solvers.
+                MonsterDef.of("toa_path_scarab", "Scarab").level(56).stats(12, 20, 32, 28, 1, 50).speed(4)
+                        .defenceBonus(0, 0, 0, 0, 0)
+                        .attack(AttackDef.of("spit", AttackType.RANGED, 6, 8, 10).particle("minecraft:item_slime")).model("toa_scarab")
+                        .size(0.5f, 0.4f, 0.6f).moveSpeed(0.26),
+                // The Wardens' phase 3 energy siphons: melee only, 1 hitpoint (more in big groups, set by the room).
+                MonsterDef.of("toa_energy_siphon", "Energy Siphon").level(1).stats(1, 1, 1, 1, 1, 1).speed(4).passive()
+                        .defenceBonus(-100, -100, -100, 0, 0).immune(AttackType.RANGED, AttackType.MAGIC)
+                        .attack(AttackDef.of("siphon", AttackType.MAGIC, 0, 1, 10)).model("wardens_obelisk")
+                        .size(0.6f, 1.2f, 0.4f).moveSpeed(0.0));
     }
 }

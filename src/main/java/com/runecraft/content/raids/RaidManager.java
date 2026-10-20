@@ -127,10 +127,15 @@ public final class RaidManager {
             return true;
         });
         CombatHooks.addModifier(new CombatHooks.PlayerAttackModifier() {
-            /** OSRS: melee always hits a Warden's ejected core for its maximum. */
+            /** OSRS: melee always hits a Warden's ejected core for its maximum; baboons and siphons see ToaPuzzles. */
             @Override
             public boolean alwaysMaxHit(ServerPlayer player, LivingEntity target, AttackType type) {
-                return ToaRooms.Wardens.isCore(target) && (type == AttackType.STAB || type == AttackType.SLASH || type == AttackType.CRUSH);
+                if (ToaRooms.Wardens.isCore(target) && (type == AttackType.STAB || type == AttackType.SLASH || type == AttackType.CRUSH)) {
+                    return true;
+                }
+                RaidInstance raid = at(target);
+                return raid != null && raid.type == RaidType.TOA
+                        && com.runecraft.osrs.content.raids.ToaPuzzles.alwaysMaxHit(RaidInstance.creatureId(target), type);
             }
 
             @Override
