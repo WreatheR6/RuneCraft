@@ -997,6 +997,9 @@ final class ClassicScripts {
         }
         if (!z.down()) {
             Inv.give(p, BossMechanics.IMBUED_TEPHRA, 40);
+            if (!Inv.has(p, BossMechanics.IMBUED_TEPHRA, 1)) {
+                return "no room in the pack for imbued tephra"; // a full pack drops it (the fight's runes once filled it)
+            }
             for (int i = 0; i < 40 && !z.down() && Inv.has(p, BossMechanics.IMBUED_TEPHRA, 1); i++) {
                 z.incoming(boss, p, 0, AttackType.CRUSH);
             }
