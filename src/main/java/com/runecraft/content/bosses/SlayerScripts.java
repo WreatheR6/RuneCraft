@@ -977,7 +977,9 @@ final class SlayerScripts {
                 }
             }
             tickChasers(boss, target);
-            if (phase.vent != null && --ventTimer <= 0) {
+            // The vents spray in every phase: once extinguished (grey) the Hydra has no shield left to lose and every vent
+            // empowers it ("Mixing Correctly": the grey phase "must never be touched by any of the three vents").
+            if (--ventTimer <= 0) {
                 ventTimer = 8;
                 for (String c : new String[]{"red", "green", "blue"}) {
                     Vec3 v = vent(c);
@@ -985,7 +987,7 @@ final class SlayerScripts {
                     double dx = boss.getX() - v.x;
                     double dz = boss.getZ() - v.z;
                     if (dx * dx + dz * dz < 6.25) {
-                        if (c.equals(phase.vent)) {
+                        if (SlayerBosses.hydraVentWeakens(phase, c)) {
                             if (shielded) {
                                 shielded = false;
                                 BossFx.say(boss, "Roaaaaaaaaaaar! The chemicals neutralise the Alchemical Hydra's defences!");
@@ -1479,6 +1481,8 @@ final class SlayerScripts {
         private int standardAttacks;
         private boolean specialNext;
         private int dripTicks;
+        /** The game tick of the first player hit on Araxxor (-1: not fought yet), timing the coagulated venom kill. */
+        private long firstHit = -1;
 
         private boolean enraged(DataBossEntity boss) {
             return boss.phase() >= 0;
@@ -1823,6 +1827,11 @@ final class SlayerScripts {
             return (int) Math.floor(Math.max(Math.abs(a.x - b.x), Math.abs(a.z - b.z)));
         }
 
+        /** Game ticks from the first player hit to now (the kill, when asked for its loot); -1 when never hit. */
+        long fightTicks() {
+            return firstHit < 0 ? -1 : now - firstHit;
+        }
+
         /** The eggs still standing (for the self-test). */
         long eggsLeft() {
             return eggs.stream().filter(e -> e != null && e.isAlive()).count();
@@ -1842,6 +1851,9 @@ final class SlayerScripts {
          */
         @Override
         protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            if (attacker != null && firstHit < 0) {
+                firstHit = now;
+            }
             if (enraged(boss) && damage > 0 && attacker != null) {
                 CombatAchievementService.flag(attacker, CombatAchievements.FLAG_ARAXXOR_ENRAGE_HIT);
             }

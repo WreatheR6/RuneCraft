@@ -135,5 +135,25 @@ class SlayerBossMechanicsTest {
         assertEquals("red", HydraPhase.GREEN.vent);
         assertEquals("green", HydraPhase.BLUE.vent);
         assertEquals("blue", HydraPhase.RED.vent);
+        // Only the phase's own vent weakens it; once grey, every vent empowers it ("Mixing Correctly") and it stays at 55.
+        for (String vent : new String[]{"red", "green", "blue"}) {
+            assertEquals(vent.equals("red"), SlayerBosses.hydraVentWeakens(HydraPhase.GREEN, vent), vent);
+            assertEquals(vent.equals("blue"), SlayerBosses.hydraVentWeakens(HydraPhase.RED, vent), vent);
+            assertFalse(SlayerBosses.hydraVentWeakens(HydraPhase.ENRAGED, vent), vent);
+        }
+        assertEquals(55, SlayerBosses.hydraMaxHit(HydraPhase.ENRAGED, true));
+    }
+
+    @Test
+    void coagulatedVenomForAKillUnderOneFifteen() {
+        assertEquals(125, SlayerBosses.COAGULATED_VENOM_TICKS, "1:15 is 125 game ticks");
+        assertTrue(SlayerBosses.coagulatedVenom(100, false));
+        assertTrue(SlayerBosses.coagulatedVenom(125, false));
+        assertFalse(SlayerBosses.coagulatedVenom(126, false));
+        assertFalse(SlayerBosses.coagulatedVenom(100, true), "not while the player has one");
+        assertFalse(SlayerBosses.coagulatedVenom(-1, false), "an untimed fight");
+        // It is no random line of the table any more.
+        assertTrue(com.runecraft.osrs.content.ContentRegistry.boss("araxxor").drops.stream()
+                .noneMatch(d -> d.item().equals("coagulated_venom")));
     }
 }

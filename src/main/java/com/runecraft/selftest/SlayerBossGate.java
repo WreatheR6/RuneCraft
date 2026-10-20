@@ -131,6 +131,10 @@ final class SlayerBossGate {
             throw new AssertionError("killed on a " + access.tasks().get(0) + " task, but the task didn't go down (" + p.remaining
                     + " left of " + remainingBefore + ")");
         }
+        if (def.id.equals("araxxor") && done != 1) {
+            // OSRS Wiki: the araxytes it hatches give Slayer XP but take no kill off the task.
+            throw new AssertionError("an Araxxor fight took " + done + " kills off the task: its araxytes must not count");
+        }
         if (xp < Math.floor(expected)) {
             throw new AssertionError("the kill gave " + xp + " Slayer XP, expected " + expected);
         }

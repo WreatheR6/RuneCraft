@@ -129,6 +129,15 @@ public final class SlayerBosses {
         };
     }
 
+    /**
+     * Whether a vent of colour {@code vent} spraying the Hydra removes its shield (the phase's vent); any other vent empowers
+     * it, every vent in the grey phase. Grey, it already hits its full 55 (OSRS Wiki "Alchemical Hydra/Strategies": "its
+     * enrage stack will increase to max"), so there being empowered only fails "Mixing Correctly".
+     */
+    public static boolean hydraVentWeakens(HydraPhase phase, String vent) {
+        return phase.vent != null && phase.vent.equals(vent);
+    }
+
     /** Whether its basic attacks hit twice: always in the serpentine phase, and in the electric phase once empowered. */
     public static boolean hydraHitsTwice(HydraPhase phase, boolean empowered) {
         return phase == HydraPhase.GREEN || phase == HydraPhase.BLUE && empowered;
@@ -315,6 +324,18 @@ public final class SlayerBosses {
     public static final double MIRRORBACK_REDIRECT = 0.2;
     public static final double MIRRORBACK_RECOIL = 0.5;
 
+    /**
+     * Coagulated venom (OSRS Wiki "Araxxor", Tertiary): guaranteed for a kill in under 1:15 (125 game ticks; the timer stops
+     * at Araxxor's death) when the player doesn't already have one. The fight is timed from the player's first hit on him
+     * // approx (the wiki doesn't say when the timer starts); having used one on Nid is not modelled (no Rax yet).
+     */
+    public static final int COAGULATED_VENOM_TICKS = 125;
+
+    /** Whether a kill that took {@code fightTicks} game ticks earns coagulated venom ({@code owned}: the player has one). */
+    public static boolean coagulatedVenom(long fightTicks, boolean owned) {
+        return !owned && fightTicks >= 0 && fightTicks <= COAGULATED_VENOM_TICKS;
+    }
+
     /** Araxxor's special for the fight, from the araxyte in the south-easternmost egg. */
     public static String araxxorSpecial(String southEastEgg) {
         if ("acidic_araxyte".equals(southEastEgg)) {
@@ -447,12 +468,15 @@ public final class SlayerBosses {
                 .attack(ARAXXOR_MELEE).attack(ARAXXOR_RANGED).attack(ARAXXOR_MAGIC).attack(ARAXXOR_ACID)
                 // Enraged under 255 hitpoints: faster and tougher (the script), not harder hitting (was an invented 1.25x).
                 .phase(25, "Araxxor becomes enraged!", 1.0, false, ARAXXOR_MELEE, ARAXXOR_CLEAVE, ARAXXOR_ACID)
+                // OSRS Wiki "Araxxor" drops: a 1/150 unique roll, 1/600 a halberd piece (any piece 1/200; duplicates are not
+                // held back here // approx) and 1/600 the fang; the head 1/250 on the "Other" table; tertiaries: the elite clue
+                // 1/50 (kept when the corpse is destroyed) and the jar 1/1500. The rest of the main table is the wiki's
+                // (BossDropsTable patch); coagulated venom is the kill-under-1:15 reward (AraxxorCorpse, not a random line).
                 .drops(Drop.of("noxious_point", 1, 1, 600), Drop.of("noxious_blade", 1, 1, 600), Drop.of("noxious_pommel", 1, 1, 600),
-                        Drop.of("araxyte_fang", 1, 1, 1500), Drop.of("coagulated_venom", 1, 1, 400), Drop.of("araxyte_head", 1, 1, 2000),
-                        Drop.of("echo_crystal", 1, 1, 750), Drop.of("jar_of_venom", 1, 1, 1500),
+                        Drop.of("araxyte_fang", 1, 1, 600), Drop.of("araxyte_head", 1, 1, 250), Drop.of("jar_of_venom", 1, 1, 1500),
                         Drop.of("rune_platebody", 1, 1, 12), Drop.of("runite_bar", 4, 4, 12), Drop.of("death_rune", 200, 200, 10),
                         Drop.of("blood_rune", 150, 150, 10), Drop.of("super_restore", 3, 3, 10), Drop.of("coins", 30000, 60000, 6),
-                        Drop.of("clue_scroll_elite", 1, 1, 250)) // approx
+                        Drop.of("clue_scroll_elite", 1, 1, 50))
                 .slayer(92, "araxytes").pet("pet_nid").at("araxyte_cave").arena(14, "crypt")
                 .size(2.0f, 1.4f, 2.2f).moveSpeed(0.22);
     }

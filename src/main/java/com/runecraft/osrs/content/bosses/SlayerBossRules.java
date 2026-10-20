@@ -3,6 +3,7 @@ package com.runecraft.osrs.content.bosses;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Who may fight the Slayer bosses (OSRS Wiki, each boss's page and "Slayer task"): every one of them can only be fought
@@ -26,6 +27,15 @@ public final class SlayerBossRules {
     public static final int BRITTLE_KEY_RATE = 150;
     /** The task categories whose kills can drop the brittle key (gargoyles and their superior, the marble gargoyle). */
     public static final String BRITTLE_KEY_TASK = "gargoyles";
+
+    /**
+     * Boss minions OSRS treats as their task's creatures (the slayer helmet's bonus and Slayer XP on task) that are no task
+     * kills: Araxxor's hatched araxytes (OSRS Wiki "Araxxor": "the spawned araxytes do not reduce the player's task kill
+     * count"; "Slayer task/Araxytes": "killing these awards experience but does not count towards the kill count"). Their XP
+     * is the wiki's (58, 58, 65; {@code MonsterTraits}). The Sire's respiratory systems have no task category at all and get
+     * their 50 XP from the Sire's script.
+     */
+    public static final Set<String> NO_TASK_KILL = Set.of("acidic_araxyte", "mirrorback_araxyte", "ruptura_araxyte");
 
     private static final Map<String, Access> ALL = new LinkedHashMap<>();
 
@@ -69,6 +79,11 @@ public final class SlayerBossRules {
     /** Every Slayer boss's rule, keyed by boss id. */
     public static Map<String, Access> all() {
         return java.util.Collections.unmodifiableMap(ALL);
+    }
+
+    /** Whether killing the creature {@code monsterId} (on task) takes a kill off the task: false for {@link #NO_TASK_KILL}. */
+    public static boolean taskKill(String monsterId) {
+        return monsterId == null || !NO_TASK_KILL.contains(monsterId);
     }
 
     /** Whether a player whose current task is {@code task} may fight {@code bossId} (true for bosses with no rule). */

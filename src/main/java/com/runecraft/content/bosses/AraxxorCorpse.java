@@ -3,6 +3,7 @@ package com.runecraft.content.bosses;
 import com.runecraft.boss.DataBossService;
 import com.runecraft.collection.CollectionLog;
 import com.runecraft.osrs.content.bosses.BossLoot;
+import com.runecraft.osrs.content.bosses.SlayerBosses;
 import com.runecraft.platform.CommandRegistrationCallback;
 import com.runecraft.skill.Drops;
 import com.runecraft.util.Inv;
@@ -30,11 +31,14 @@ import net.minecraft.world.phys.Vec3;
  * Araxxor's corpse (OSRS Wiki "Araxxor/Strategies"): after the kill the player chooses to harvest it, for the kill's loot,
  * or destroy it, forfeiting the loot (elite clue scrolls excepted) for a second roll at the pet. The loot is rolled at the
  * kill and held here until the choice (chat links run {@code /araxxor harvest|destroy}); an undecided corpse is harvested
- * when the player kills Araxxor again or after five minutes.
+ * when the player kills Araxxor again or after five minutes, and handed to a player still online when the server stops. A kill
+ * under 1:15 adds coagulated venom to the corpse's loot.
  */
 public final class AraxxorCorpse {
     static final String BOSS = "araxxor";
     private static final long TIMEOUT_MC_TICKS = 5 * 60 * 20;
+    /** The kill-under-1:15 reward ({@link SlayerBosses#coagulatedVenom}). */
+    static final String COAGULATED_VENOM = "coagulated_venom";
 
     /** One rolled drop and the stack it drops as (made at the kill, through the drop transformers, like any kill's loot). */
     private record Loot(Drops.Rolled rolled, ItemStack stack) {
@@ -52,13 +56,19 @@ public final class AraxxorCorpse {
         DataBossService.loot(BOSS, (killer, boss, table) -> {
             net.minecraft.util.RandomSource random = boss.getRandom();
             List<Loot> loot = new ArrayList<>();
-            for (Drops.Rolled r : Drops.resolve(BossLoot.pick(BOSS, table, random::nextInt), random)) {
-                loot.add(new Loot(r, Drops.withDoses(com.runecraft.combat.CombatHooks.dropStack(killer, boss, r.item(), r.count()),
-                        r.doses())));
-            }
+            List<Drops.Rolled> rolled = new ArrayList<>(Drops.resolve(BossLoot.pick(BOSS, table, random::nextInt), random));
             Pending before = PENDING.remove(killer.getUUID());
             if (before != null) {
                 harvest(killer, before); // a corpse left undecided is harvested
+            }
+            // A kill under 1:15 by a player without one guarantees coagulated venom (a tertiary: lost with the corpse).
+            if (boss.script() instanceof SlayerScripts.Araxxor a
+                    && SlayerBosses.coagulatedVenom(a.fightTicks(), owns(killer, COAGULATED_VENOM))) {
+                rolled.add(new Drops.Rolled(COAGULATED_VENOM, 1));
+            }
+            for (Drops.Rolled r : rolled) {
+                loot.add(new Loot(r, Drops.withDoses(com.runecraft.combat.CombatHooks.dropStack(killer, boss, r.item(), r.count()),
+                        r.doses())));
             }
             PENDING.put(killer.getUUID(), new Pending(loot, (ServerLevel) boss.level(), boss.position(),
                     killer.getServer().getTickCount()));
@@ -81,6 +91,35 @@ public final class AraxxorCorpse {
                     return 1;
                 }))));
         com.runecraft.platform.ServerTickEvents.END_SERVER_TICK.register(AraxxorCorpse::timeouts);
+        // No corpse outlives its server (it holds that server's world and tick count): a player still online gets the loot
+        // in their pack (overflow at their feet), as if harvested; the rest is gone, as an instance's loot is on logout.
+        com.runecraft.platform.ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            for (Map.Entry<UUID, Pending> e : PENDING.entrySet()) {
+                ServerPlayer p = server.getPlayerList().getPlayer(e.getKey());
+                if (p != null) {
+                    for (Loot l : e.getValue().loot()) {
+                        if (!l.stack().isEmpty()) {
+                            Inv.give(p, l.stack().copy());
+                        }
+                        CollectionLog.obtain(p, l.rolled().item());
+                    }
+                }
+            }
+            PENDING.clear();
+        });
+    }
+
+    /** Whether the player carries or banks the item. */
+    private static boolean owns(ServerPlayer p, String item) {
+        if (Inv.has(p, item, 1)) {
+            return true;
+        }
+        Pending held = PENDING.get(p.getUUID());
+        if (held != null && held.loot().stream().anyMatch(l -> l.rolled().item().equals(item))) {
+            return true;
+        }
+        var bank = com.runecraft.player.Players.data(p).bank();
+        return bank != null && bank.count(item, null) > 0;
     }
 
     private static MutableComponent button(String label, String command, String hover, ChatFormatting colour) {
@@ -136,9 +175,12 @@ public final class AraxxorCorpse {
     private static void drop(ServerPlayer p, Pending c) {
         for (Loot l : c.loot()) {
             if (!l.stack().isEmpty()) {
-                ItemEntity e = new ItemEntity(c.world(), c.at().x, c.at().y + 0.5, c.at().z, l.stack().copy());
-                e.setDefaultPickUpDelay();
-                c.world().addFreshEntity(e);
+                // one entity per full stack: one holding more than 99 (Araxxor's 1,200 pure essence) can't be saved
+                Inv.splitStacks(l.stack().copy(), stack -> {
+                    ItemEntity e = new ItemEntity(c.world(), c.at().x, c.at().y + 0.5, c.at().z, stack);
+                    e.setDefaultPickUpDelay();
+                    c.world().addFreshEntity(e);
+                });
             }
             CollectionLog.obtain(p, l.rolled().item());
         }

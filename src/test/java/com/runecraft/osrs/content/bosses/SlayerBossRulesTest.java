@@ -51,6 +51,20 @@ class SlayerBossRulesTest {
     }
 
     @Test
+    void araxxorsAraxytesAreNoTaskKills() {
+        // OSRS Wiki: Slayer XP and the helmet bonus as araxytes, but no kill off the task.
+        for (String id : new String[]{"acidic_araxyte", "mirrorback_araxyte", "ruptura_araxyte"}) {
+            assertFalse(SlayerBossRules.taskKill(id), id);
+            assertEquals("araxytes", ContentRegistry.monster(id).slayerCategory, id + " keeps its category (helmet bonus)");
+        }
+        assertEquals(58, com.runecraft.osrs.data.MonsterTraits.slayerXp("acidic_araxyte", 1), 1e-9);
+        assertEquals(65, com.runecraft.osrs.data.MonsterTraits.slayerXp("ruptura_araxyte", 1), 1e-9);
+        assertTrue(SlayerBossRules.taskKill("araxxor"));
+        assertTrue(SlayerBossRules.taskKill("araxyte"));
+        assertTrue(SlayerBossRules.taskKill(null));
+    }
+
+    @Test
     void brittleKey() {
         assertNotNull(ItemCatalog.get(SlayerBossRules.BRITTLE_KEY));
         assertEquals(150, SlayerBossRules.BRITTLE_KEY_RATE);
