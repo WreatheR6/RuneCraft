@@ -10,34 +10,40 @@ import com.runecraft.skill.Drops;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.Commands;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.saveddata.SavedData;
 
 /**
  * The fallen Royal Titans (OSRS Wiki "Royal Titans" Rewards): every player who damaged them chooses, through chat links
  * ({@code /titans loot|pages branda|eldric}, {@code /titans sacrifice}), to loot one Titan, sacrifice the loot for a better
  * pet chance, or take desiccated pages. Each player's rewards are rolled on their own contribution
- * ({@link RoyalTitansLoot}); the kill drops nothing itself. A choice left open for five minutes loots Branda.
+ * ({@link RoyalTitansLoot}); the kill drops nothing itself, but every fighter's kill count comes with it. A choice left open
+ * for five minutes loots Branda. Open choices are kept in the world save ({@link State}), so a restart or a crash before
+ * the choice loses nothing: the player is asked again when they next log in (or gets Branda's loot if the five minutes
+ * are up by then).
  */
 public final class TitansLoot {
+    /** Five minutes (Minecraft ticks of the overworld's game time, which carries over a restart). */
     private static final long TIMEOUT_MC_TICKS = 5 * 60 * 20;
 
-    /** A player's open choice: their damage to the Titans and the fallen Branda (for the drop transformers). */
-    private record Pending(int damage, DataBossEntity branda, long since, boolean killer) {
+    /** A player's open choice: their damage to the Titans, when the Titans fell and whether they landed the kill. */
+    private record Pending(int damage, long since, boolean killer) {
     }
 
-    private static final Map<UUID, Pending> PENDING = new HashMap<>();
+    /** The fallen Branda behind each open choice, while she is still loaded (for the drop transformers; gone after a restart). */
+    private static final Map<UUID, DataBossEntity> BRANDA = new HashMap<>();
     /** The last choice made (self-test: what each player received). */
     private static final Map<UUID, List<RoyalTitansLoot.Loot>> LAST = new HashMap<>();
 
@@ -72,32 +78,67 @@ public final class TitansLoot {
                     return 1;
                 }))));
         com.runecraft.platform.ServerTickEvents.END_SERVER_TICK.register(TitansLoot::timeouts);
+        // A choice still open from before a restart (or a logout) is asked again, or resolved if its time is up.
+        com.runecraft.platform.ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            ServerPlayer p = handler.getPlayer();
+            Pending pending = State.get(server).pending.get(p.getUUID());
+            if (pending == null) {
+                return;
+            }
+            if (expired(server, pending)) {
+                State.get(server).remove(p.getUUID());
+                resolve(p, pending, Choice.LOOT, RoyalTitansLoot.BRANDA);
+            } else {
+                prompt(p, pending);
+            }
+        });
+    }
+
+    private static long now(MinecraftServer server) {
+        return server.overworld().getGameTime();
+    }
+
+    private static boolean expired(MinecraftServer server, Pending pending) {
+        long elapsed = now(server) - pending.since();
+        return elapsed >= TIMEOUT_MC_TICKS || elapsed < 0;
     }
 
     /** The Titans fell: every fighter still in the lair (and the killer) gets their choice. */
     static void open(ServerPlayer killer, DataBossEntity branda) {
         EncounterScripts.RoyalTitans titans = branda.script() instanceof EncounterScripts.RoyalTitans t ? t : null;
-        long now = killer.getServer().getTickCount();
+        long now = now(killer.getServer());
         boolean killerFought = false;
         if (titans != null) {
             for (ServerPlayer p : titans.fighters()) {
                 boolean inLair = p.isAlive() && p.level() == branda.level() && p.distanceToSqr(branda) < 48 * 48;
                 if (p == killer || inLair) {
                     killerFought |= p == killer;
-                    offer(p, new Pending(titans.damageBy(p), branda, now, p == killer));
+                    offer(p, new Pending(titans.damageBy(p), now, p == killer), branda);
                 }
             }
         }
         if (!killerFought) {
             // a kill by a player the script didn't see hit (a damage path without the hit hook): full credit for the killer
-            offer(killer, new Pending(RoyalTitansLoot.TOTAL_HITPOINTS, branda, now, true));
+            offer(killer, new Pending(RoyalTitansLoot.TOTAL_HITPOINTS, now, true), branda);
         }
     }
 
-    private static void offer(ServerPlayer p, Pending pending) {
-        Pending before = PENDING.put(p.getUUID(), pending);
+    private static void offer(ServerPlayer p, Pending pending, DataBossEntity branda) {
+        State state = State.get(p.getServer());
+        Pending before = state.pending.get(p.getUUID());
         if (before != null) {
             resolve(p, before, Choice.LOOT, RoyalTitansLoot.BRANDA); // a choice left from an earlier kill loots Branda
+        }
+        state.put(p.getUUID(), pending);
+        BRANDA.put(p.getUUID(), branda);
+        if (!pending.killer()) {
+            // The killer's kill count and first pet roll came with the kill; the other fighters' kill count comes now too
+            // (whatever they choose, and even if the choice is never made).
+            int kc = com.runecraft.player.Players.data(p).incrementKillCount(RoyalTitansLoot.BRANDA);
+            Msg.game(p, "Your Royal Titans kill count is: " + kc + ".");
+            if (branda.def() != null) {
+                com.runecraft.content.GameEvents.fireKill(p, branda, com.runecraft.combat.MonsterStats.from(branda.def()));
+            }
         }
         prompt(p, pending);
     }
@@ -128,7 +169,7 @@ public final class TitansLoot {
             Msg.game(p, "Loot Branda or Eldric.");
             return false;
         }
-        Pending pending = PENDING.remove(p.getUUID());
+        Pending pending = State.get(p.getServer()).remove(p.getUUID());
         if (pending == null) {
             Msg.game(p, "There are no fallen Titans of yours to loot.");
             return false;
@@ -138,17 +179,19 @@ public final class TitansLoot {
     }
 
     private static void resolve(ServerPlayer p, Pending pending, Choice choice, String titan) {
+        DataBossEntity branda = BRANDA.remove(p.getUUID());
         List<RoyalTitansLoot.Loot> loot = RoyalTitansLoot.roll(titan, choice, pending.damage(),
                 new java.util.Random(p.getRandom().nextLong()));
         LAST.put(p.getUUID(), loot);
         for (RoyalTitansLoot.Loot l : loot) {
             int doses = com.runecraft.osrs.data.Drop.dosesOf(l.item());
             String item = com.runecraft.osrs.data.Drop.baseOf(l.item());
-            Inv.give(p, Drops.withDoses(com.runecraft.combat.CombatHooks.dropStack(p, pending.branda(), item, l.count()), doses));
+            Inv.give(p, Drops.withDoses(branda != null ? com.runecraft.combat.CombatHooks.dropStack(p, branda, item, l.count())
+                    : Inv.stack(item, l.count()), doses));
             CollectionLog.obtain(p, item);
         }
-        // The killer's kill count and first pet roll came with the kill; the others' come here. Sacrificing adds a pet roll
-        // (1/3,000 twice: about the wiki's 1/1,500).
+        // The killer's first pet roll came with the kill; the others' come here. Sacrificing adds a pet roll (1/3,000 twice:
+        // about the wiki's 1/1,500).
         int petRolls = (pending.killer() ? 0 : 1) + (choice == Choice.SACRIFICE ? 1 : 0);
         for (int i = 0; i < petRolls; i++) {
             if (p.getRandom().nextInt(RoyalTitansLoot.PET) == 0) {
@@ -160,13 +203,6 @@ public final class TitansLoot {
                 Msg.game(p, "You don't feel lucky during your sacrifice.");
             }
         }
-        if (!pending.killer()) {
-            int kc = com.runecraft.player.Players.data(p).incrementKillCount(RoyalTitansLoot.BRANDA);
-            Msg.game(p, "Your Royal Titans kill count is: " + kc + ".");
-            if (pending.branda().def() != null) {
-                com.runecraft.content.GameEvents.fireKill(p, pending.branda(), com.runecraft.combat.MonsterStats.from(pending.branda().def()));
-            }
-        }
         Msg.game(p, switch (choice) {
             case LOOT -> "You loot " + (RoyalTitansLoot.ELDRIC.equals(titan) ? "Eldric the Ice King." : "Branda the Fire Queen.");
             case SACRIFICE -> "You sacrifice the Titans' loot.";
@@ -174,18 +210,19 @@ public final class TitansLoot {
         });
     }
 
+    /** Every five seconds: an online player's choice open for five minutes loots Branda (an offline one waits for login). */
     private static void timeouts(MinecraftServer server) {
-        if (PENDING.isEmpty() || server.getTickCount() % 100 != 0) {
+        if (server.getTickCount() % 100 != 0) {
             return;
         }
-        for (Iterator<Map.Entry<UUID, Pending>> it = PENDING.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<UUID, Pending> e = it.next();
-            if (server.getTickCount() - e.getValue().since() < TIMEOUT_MC_TICKS) {
-                continue;
-            }
+        State state = State.get(server);
+        if (state.pending.isEmpty()) {
+            return;
+        }
+        for (Map.Entry<UUID, Pending> e : List.copyOf(state.pending.entrySet())) {
             ServerPlayer p = server.getPlayerList().getPlayer(e.getKey());
-            if (p != null) {
-                it.remove();
+            if (p != null && expired(server, e.getValue())) {
+                state.remove(e.getKey());
                 resolve(p, e.getValue(), Choice.LOOT, RoyalTitansLoot.BRANDA);
             }
         }
@@ -193,7 +230,7 @@ public final class TitansLoot {
 
     /** Self-test: the damage behind this player's open choice, or -1 when none is open. */
     public static int pendingDamage(ServerPlayer p) {
-        Pending pending = PENDING.get(p.getUUID());
+        Pending pending = State.get(p.getServer()).pending.get(p.getUUID());
         return pending == null ? -1 : pending.damage();
     }
 
@@ -204,6 +241,63 @@ public final class TitansLoot {
 
     /** Self-test: open choices held for the player (the fight check counts them as the kill's loot). */
     public static int held(ServerPlayer p) {
-        return PENDING.containsKey(p.getUUID()) ? 1 : 0;
+        return State.get(p.getServer()).pending.containsKey(p.getUUID()) ? 1 : 0;
+    }
+
+    /** Self-test: whether this player's open choice is in the world save (it survives a restart) with this damage. */
+    public static boolean savedChoice(ServerPlayer p, int damage) {
+        net.minecraft.core.HolderLookup.Provider registries = p.getServer().registryAccess();
+        CompoundTag saved = State.get(p.getServer()).save(new CompoundTag(), registries);
+        Pending pending = State.fromNbt(saved, registries).pending.get(p.getUUID());
+        return pending != null && pending.damage() == damage;
+    }
+
+    /** World-save storage of the open choices (player -> damage, when the Titans fell, killer). */
+    static final class State extends SavedData {
+        static final String KEY = "runecraft_bosses_titans";
+
+        private final Map<UUID, Pending> pending = new HashMap<>();
+
+        static State get(MinecraftServer server) {
+            return server.overworld().getDataStorage().computeIfAbsent(new SavedData.Factory<>(State::new, State::fromNbt, null), KEY);
+        }
+
+        void put(UUID uuid, Pending p) {
+            pending.put(uuid, p);
+            setDirty();
+        }
+
+        Pending remove(UUID uuid) {
+            Pending p = pending.remove(uuid);
+            if (p != null) {
+                setDirty();
+            }
+            return p;
+        }
+
+        @Override
+        public CompoundTag save(CompoundTag nbt, net.minecraft.core.HolderLookup.Provider registries) {
+            pending.forEach((uuid, p) -> {
+                CompoundTag c = new CompoundTag();
+                c.putInt("Damage", p.damage());
+                c.putLong("Since", p.since());
+                c.putBoolean("Killer", p.killer());
+                nbt.put(uuid.toString(), c);
+            });
+            return nbt;
+        }
+
+        static State fromNbt(CompoundTag nbt, net.minecraft.core.HolderLookup.Provider registries) {
+            State state = new State();
+            for (String key : nbt.getAllKeys()) {
+                try {
+                    CompoundTag c = nbt.getCompound(key);
+                    state.pending.put(UUID.fromString(key), new Pending(c.getInt("Damage"), c.getLong("Since"), c.getBoolean("Killer")));
+                } catch (IllegalArgumentException ignored) {
+                    // Not a player entry.
+                }
+            }
+            return state;
+        }
     }
 }

@@ -15,8 +15,9 @@ import net.minecraft.world.phys.Vec3;
 /**
  * The Royal Titans as a duo for the self-test ({@code boss:walk:branda_the_fire_queen:duo}): the player's hits on the Titans
  * count as their contribution (through the real combat path), a partner deals half the Titans' hitpoints, both Titans
- * fall, and each fighter makes their own choice: the player loots Eldric (two rolls on his table, or a unique, quantities
- * scaled to their small share), the partner takes pages (10-19 at 50%: 5-9) and gets their own kill count.
+ * fall, every fighter's kill count comes with the kill and their open choice is kept in the world save, and each makes
+ * their own choice: the player loots Eldric (two rolls on his table, or a unique, quantities scaled to their small share),
+ * the partner takes pages (10-19 at 50%: 5-9).
  */
 public final class TitansWalk {
     private TitansWalk() {
@@ -68,6 +69,12 @@ public final class TitansWalk {
             if (TitansLoot.pendingDamage(partner) != RoyalTitansLoot.TOTAL_HITPOINTS / 2) {
                 throw fail("the partner has no choice of their own (" + TitansLoot.pendingDamage(partner) + ")");
             }
+            if (!TitansLoot.savedChoice(p, mine) || !TitansLoot.savedChoice(partner, RoyalTitansLoot.TOTAL_HITPOINTS / 2)) {
+                throw fail("the open loot choices aren't in the world save (a restart would lose the kill's loot)");
+            }
+            if (Players.data(partner).killCount(RoyalTitansLoot.BRANDA) != partnerKc + 1) {
+                throw fail("the partner's kill count didn't come with the kill");
+            }
             // the player loots Eldric on their own share
             if (!TitansLoot.choose(p, RoyalTitansLoot.Choice.LOOT, "eldric")) {
                 throw fail("the player couldn't loot Eldric");
@@ -103,7 +110,7 @@ public final class TitansWalk {
                 throw fail("the partner took " + pages + " pages at 50% (5-9)");
             }
             if (Players.data(partner).killCount(RoyalTitansLoot.BRANDA) != partnerKc + 1) {
-                throw fail("the partner's kill count didn't rise");
+                throw fail("the partner's kill count rose again with their choice");
             }
             if (TitansLoot.choose(p, RoyalTitansLoot.Choice.LOOT, "branda")) {
                 throw fail("the player looted the Titans twice");
