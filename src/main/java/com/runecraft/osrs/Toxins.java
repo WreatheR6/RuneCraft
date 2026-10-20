@@ -68,6 +68,18 @@ public final class Toxins {
         public boolean idle(long tick) {
             return damage <= 0 && poisonImmuneUntil <= tick && venomImmuneUntil <= tick;
         }
+
+        /** An independent copy (the self-test saves a player's state and puts it back afterwards). */
+        public State copy() {
+            State c = new State();
+            c.damage = damage;
+            c.venom = venom;
+            c.hits = hits;
+            c.nextTick = nextTick;
+            c.poisonImmuneUntil = poisonImmuneUntil;
+            c.venomImmuneUntil = venomImmuneUntil;
+            return c;
+        }
     }
 
     private Toxins() {

@@ -69,6 +69,31 @@ public final class PoisonService {
         Toxins.cure(state(target), true, poisonImmunityTicks, venomImmunityTicks, gameTick);
     }
 
+    /**
+     * A copy of the entity's poison/venom state and immunity timers, or null when it has none. Self-tests save it with
+     * this, start from {@link #clear} and put it back with {@link #restore}: the state lives outside the player data,
+     * and the fake self-test player is never ticked (it isn't in the player list), so venom from an earlier check
+     * would otherwise stay on it for good.
+     */
+    public static Toxins.State snapshot(LivingEntity target) {
+        Toxins.State s = STATES.get(target.getUUID());
+        return s == null ? null : s.copy();
+    }
+
+    /** Puts back a state saved with {@link #snapshot} (null: no poison, venom or immunity). */
+    public static void restore(LivingEntity target, Toxins.State saved) {
+        if (saved == null) {
+            STATES.remove(target.getUUID());
+        } else {
+            STATES.put(target.getUUID(), saved.copy());
+        }
+    }
+
+    /** Forgets the entity's poison, venom and both immunity timers (self-test set-up). */
+    public static void clear(LivingEntity target) {
+        STATES.remove(target.getUUID());
+    }
+
     public static boolean isPoisoned(LivingEntity target) {
         Toxins.State s = STATES.get(target.getUUID());
         return s != null && s.active();
