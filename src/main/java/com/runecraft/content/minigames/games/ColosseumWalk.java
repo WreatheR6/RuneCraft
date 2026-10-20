@@ -247,7 +247,6 @@ public final class ColosseumWalk {
         }
         int kc = MinigameData.of(player).stat(player.getUUID(), "kc:" + Minigame.FORTIS_COLOSSEUM.id()) - kcBefore;
         expect(kc == 11, kc + " waves counted after 11 cleared");
-        settleArena();
         solWave();
     }
 
@@ -450,6 +449,14 @@ public final class ColosseumWalk {
 
     private void solWave() {
         step = "Sol Heredit";
+        settleArena();
+        // Nothing drops in the Colosseum (wiki "Fortis Colosseum": the loot is claimed from the Rewards Chest; Sol Heredit has no
+        // drop table). The floor is taken here, once the arena has settled and before the wave starts: an item on it after the
+        // kill that wasn't there now fails below, whenever in the wave it turned up (the kill, a grapple, a broken totem, Quartet's
+        // warbander). What is there now predates Sol: wave 11's end swept away every floor item but those the player dropped
+        // themselves, which ColosseumSession.sweepFloor leaves to them.
+        java.util.Set<ItemEntity> floorBefore = new java.util.HashSet<>(world.getEntitiesOfClass(ItemEntity.class, session.box(),
+                e -> true));
         int completions = MinigameData.of(player).stat(player.getUUID(), FortisColosseum.STAT_COMPLETIONS);
         int solKc = Players.data(player).killCount(FortisColosseum.SOL_HEREDIT);
         pickAndStart();
@@ -529,16 +536,18 @@ public final class ColosseumWalk {
         }
         player.setYRot(yaw);
         expect(session.salutes().size() == 4, "salutes counted " + session.salutes());
-        // The kill. Sol drops nothing (the chest holds the loot): no item may appear on the floor that wasn't there before.
-        java.util.Set<ItemEntity> floorBefore = new java.util.HashSet<>(world.getEntitiesOfClass(ItemEntity.class, session.box(),
-                e -> true));
+        // The kill. Sol drops nothing (the chest holds the loot).
         kill(sol, AttackType.SLASH, "Sol Heredit");
         until(session::rewardsReady, 6, "the run did not end with Sol Heredit's death");
         expect(Players.data(player).killCount(FortisColosseum.SOL_HEREDIT) == solKc + 1, "no Sol Heredit kill count");
         expect(MinigameData.of(player).stat(player.getUUID(), FortisColosseum.STAT_COMPLETIONS) == completions + 1, "no completion counted");
         expect(session.chest().stream().anyMatch(r -> r.item().equals(ColosseumRewards.QUIVER)), "no Dizana's quiver in the chest");
-        expect(world.getEntitiesOfClass(ItemEntity.class, session.box(), e -> !floorBefore.contains(e)).isEmpty(),
-                "Sol Heredit dropped loot on the floor");
+        List<String> appeared = new ArrayList<>();
+        for (ItemEntity e : world.getEntitiesOfClass(ItemEntity.class, session.box(), e -> !floorBefore.contains(e))) {
+            appeared.add(e.getItem().getCount() + " x " + Inv.idOf(e.getItem()));
+        }
+        expect(appeared.isEmpty(), "items were left on the arena floor during Sol Heredit's wave (nothing drops in the Colosseum): "
+                + appeared);
         expect(session.wallBlocks() == 0, "the gladiators stayed after the fight");
         // The exit refuses an unsearched chest; searching it ends the run back in the lobby.
         BlockPos exit = find(session.arena(4, 1, 16).getX(), session.arena(4, 1, 16).getZ(), 2, session.arena(0, 0, 0).getY(),
