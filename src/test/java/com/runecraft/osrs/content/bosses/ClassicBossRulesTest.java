@@ -154,4 +154,19 @@ class ClassicBossRulesTest {
         assertEquals(60, ZulrahVorkath.spawnExplosion(38, 38));
         assertEquals(20, ZulrahVorkath.SPAWN_DISTANCE_BLOCKS);
     }
+
+    @Test
+    void mimicMatchesTheWikiInfobox() {
+        BossDef m = ContentRegistry.boss("the_mimic");
+        assertEquals(230, m.hitpoints);
+        assertEquals(185, m.attack);
+        assertEquals(120, m.strength);
+        assertEquals(120, m.defence);
+        assertEquals(3, m.attackSpeed);
+        assertEquals(135, m.attackBonus(AttackType.CRUSH));
+        assertEquals(180, m.attackBonus(AttackType.MAGIC));
+        assertEquals(165, m.defenceBonus(AttackType.SLASH));
+        assertEquals(30, m.defenceBonus(AttackType.MAGIC), "weak to magic");
+        assertEquals(23, m.attacks.stream().mapToInt(a -> a.maxHit()).max().orElse(0), "max hit 23");
+    }
 }

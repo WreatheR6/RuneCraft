@@ -358,8 +358,11 @@ public final class ClassicBosses {
 
     static BossDef mimic() {
         // The Mimic guards elite/master caskets: summon it with a master clue and loot extra clue rewards.
-        return BossDef.of("the_mimic", "The Mimic").level(186).stats(220, 160, 160, 150, 1, 150).speed(4)
-                .defenceBonus(100, 100, 100, 60, 100)
+        // OSRS Wiki infobox: 230 HP, 185/120/120, magic 60, ranged 1; +135 melee / +180 magic accuracy; defence 160/165/150,
+        // magic 30, ranged 145; attack speed 3 (was 220 HP, 160/160/150, 150 magic, speed 4, flat 100 defences).
+        return BossDef.of("the_mimic", "The Mimic").level(186).stats(230, 185, 120, 120, 60, 1).speed(3)
+                .attackBonus(135, 180, 0)
+                .defenceBonus(160, 165, 150, 30, 145)
                 // OSRS Wiki: melee up to 23 (crush); six candies (magic) of about 10 each that can be stepped away from; its
                 // stomp hurts 1-6 a tick while the player stands under it (was 30/28/25).
                 .attack(AttackDef.of("chomp", AttackType.CRUSH, 23, 3.0, 5))
