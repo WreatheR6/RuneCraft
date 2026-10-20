@@ -164,15 +164,39 @@ final class EncounterScripts {
 
         @Override
         public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
+            // The right protection prayer lowers the hit (top roll 50 -> 12, 68 -> 16) instead of blocking it. Decided before
+            // the prayer-disabling orb switches prayers off: that orb is a magic attack like the others (wiki), so Protect from
+            // Magic still lowers it.
+            boolean prayed = type != null && !type.isMelee()
+                    && com.runecraft.osrs.NpcHitCalc.protectedFrom(com.runecraft.player.Players.data(player).activePrayers(), type);
             if (last == MinigameBosses.HUNLLEF_PRAYER_DISABLE || last == MinigameBosses.CORRUPTED_PRAYER_DISABLE) {
                 BossFx.disablePrayers(player, "The Hunllef's magic attack switches off your prayers!");
             }
-            // The right protection prayer lowers the hit (top roll 50 -> 12, 68 -> 16) instead of blocking it.
-            if (type != null && !type.isMelee()
-                    && com.runecraft.osrs.NpcHitCalc.protectedFrom(com.runecraft.player.Players.data(player).activePrayers(), type)) {
-                return com.runecraft.osrs.content.minigames.Gauntlet.prayedDamage(mode, damage);
+            lastHitThrough = prayed ? com.runecraft.osrs.content.minigames.Gauntlet.prayedDamage(mode, damage) : damage;
+            return lastHitThrough;
+        }
+
+        /** Self-test: what the last hit on a player came through as, after the protection prayer (-1 before any). */
+        private int lastHitThrough = -1;
+
+        /**
+         * Self-test: the prayer-disabling orb hits the target, through the real attack path (accuracy roll and all) when
+         * {@code rolled} is negative, else only this script's on-hit rule for that roll. Returns the damage let through.
+         */
+        int selfTestPrayerDisable(DataBossEntity boss, ServerPlayer target, int rolled) {
+            AttackDef orb = corrupted ? MinigameBosses.CORRUPTED_PRAYER_DISABLE : MinigameBosses.HUNLLEF_PRAYER_DISABLE;
+            if (rolled < 0) {
+                lastHitThrough = -1;
+                perform(boss, target, orb);
+                return lastHitThrough;
             }
-            return damage;
+            AttackDef was = last;
+            last = orb;
+            try {
+                return onHitPlayer(boss, target, rolled, AttackType.MAGIC);
+            } finally {
+                last = was;
+            }
         }
 
         @Override

@@ -397,6 +397,7 @@ public final class GauntletSelfTest {
         expect(sawMagic && backToRanged, "the Hunllef did not switch styles every four attacks (" + attacks + ")");
         expect(maxTornadoes == Gauntlet.tornadoes(mode, 100), "the Hunllef summoned " + maxTornadoes + " tornadoes at full health");
         expect(floor && orange, "the floor never lit up (tiles " + floor + ", orange " + orange + ")");
+        prayerDisable(mode, boss);
         // Its prayer: six off-prayer hits of one style make it protect from that style, which then does nothing.
         AttackType prays = BossSelfTests.hunllef(boss).prays();
         AttackType off = prays == AttackType.RANGED ? AttackType.MAGIC : AttackType.RANGED;
@@ -423,6 +424,35 @@ public final class GauntletSelfTest {
         expect(Players.data(p).killCount(mode.boss) == kc + 1, "the Hunllef's kill count did not go up");
         expect(g.bossDead(), "the run did not see the Hunllef's death");
         return "attacks " + attacks.subList(0, Math.min(10, attacks.size())) + ", tornadoes " + maxTornadoes;
+    }
+
+    /**
+     * The prayer-disabling orb is one of its magic attacks: Protect from Magic still lowers it to the prayed max (12 / 16,
+     * less with armour), and then every prayer goes off. Unprayed it lands in full.
+     */
+    private void prayerDisable(Mode mode, DataBossEntity boss) {
+        PlayerData d = Players.data(p);
+        int prayedMax = Gauntlet.hunllefMaxHit(mode, 0);
+        int top = Gauntlet.hunllefUnprayedMax(mode);
+        d.activePrayers().add(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC);
+        int through = BossSelfTests.hunllefPrayerDisable(boss, p, top);
+        expect(through >= 0 && through <= prayedMax,
+                "a top prayer-disable roll through Protect from Magic let " + through + " through (prayed max " + prayedMax + ")");
+        expect(d.activePrayers().isEmpty(), "the prayer-disabling orb left prayers on");
+        expect(BossSelfTests.hunllefPrayerDisable(boss, p, top) == top, "an unprayed prayer-disable roll was lowered");
+        // The real attack, accuracy roll and all, ten times through the right prayer: never above the prayed max.
+        int worst = 0;
+        for (int i = 0; i < 10; i++) {
+            heal();
+            d.activePrayers().add(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC);
+            int landed = BossSelfTests.hunllefPrayerDisable(boss, p, -1);
+            expect(landed >= 0, "the Hunllef's prayer-disabling orb never landed");
+            expect(landed <= prayedMax, "a prayer-disabling orb through Protect from Magic hit " + landed + " (prayed max " + prayedMax + ")");
+            expect(!d.isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC), "the prayer-disabling orb left Protect from Magic on");
+            worst = Math.max(worst, landed);
+        }
+        heal();
+        note("prayer-disabling orb through the right prayer: at most " + worst);
     }
 
     private static boolean sameStyle(AttackType a, AttackType b) {

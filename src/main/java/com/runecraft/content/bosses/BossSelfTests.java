@@ -89,6 +89,15 @@ public final class BossSelfTests {
     }
 
     /**
+     * Has a Hunllef's prayer-disabling orb hit the player: through the real attack path (accuracy roll and all) when
+     * {@code rolled} is negative, else only its on-hit rule for that roll. Returns the damage let through after the
+     * protection prayer (-1 when the orb never landed or the boss is not a Hunllef).
+     */
+    public static int hunllefPrayerDisable(DataBossEntity boss, ServerPlayer target, int rolled) {
+        return boss.script() instanceof EncounterScripts.Hunllef h ? h.selfTestPrayerDisable(boss, target, rolled) : -1;
+    }
+
+    /**
      * Whether a player's ordinary weapon attacks can take hitpoints off this boss at all. False for Zalcano, who is only hurt
      * by imbued tephra (her armour) and pickaxes (once she falls).
      */
