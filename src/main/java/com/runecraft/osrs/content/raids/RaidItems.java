@@ -25,7 +25,8 @@ public final class RaidItems {
     public static final List<String> RAID_ONLY_ITEMS = java.util.stream.Stream.concat(java.util.stream.Stream.of("cox_kindling",
             "cavern_grubs", "crondis_water_container", "neutralising_potion",
             ToaSupplies.NECTAR, ToaSupplies.TEARS, ToaSupplies.AMBROSIA, ToaSupplies.SILK_DRESSING, ToaSupplies.CRYSTAL_SCARAB,
-            ToaSupplies.SMELLING_SALTS, ToaSupplies.ADRENALINE, ToaSupplies.HONEY_LOCUST, TobBosses.DAWNBRINGER), CoxSupplies.ITEMS.stream())
+            ToaSupplies.SMELLING_SALTS, ToaSupplies.ADRENALINE, ToaSupplies.HONEY_LOCUST, TobBosses.DAWNBRINGER, TobRules.BANDAGES),
+            CoxSupplies.ITEMS.stream())
             .toList();
 
     private RaidItems() {
@@ -266,6 +267,10 @@ public final class RaidItems {
                 .examine("Halves the cost of performing special attacks for a short time.");
         items.add(ToaSupplies.HONEY_LOCUST, "Honey locust", Kind.FOOD, "produce", 0xC89A3A).value(1).heal(ToaSupplies.HONEY_LOCUST_HEAL)
                 .examine("A sweet treat, given to those who have fallen.");
+        // ToB Entry mode (OSRS "Bandages (Theatre of Blood)"): from the supply chests and after a wipe; the rest of their
+        // effect (prayer, run energy, poison, boosts, stamina) is applied by the Theatre's rooms.
+        items.add(TobRules.BANDAGES, "Bandages", Kind.FOOD, "cloth", 0xE8E0D0).value(10).heal(TobRules.BANDAGE_HEAL)
+                .examine("A box of bandages for healing.");
     }
 
     /** Collection log items per raid (uniques followed by the pet). */

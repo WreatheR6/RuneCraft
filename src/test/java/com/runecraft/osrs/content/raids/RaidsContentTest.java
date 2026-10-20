@@ -414,11 +414,50 @@ class RaidsContentTest {
                 RaidRewards.RangeCommon c = RaidRewards.TOB_COMMONS.stream().filter(x -> x.item().equals(l.item())).findFirst()
                         .orElse(null);
                 if (c != null) {
+                    // Three rolls with replacement: a common rolled twice or three times stacks.
                     int[] range = RaidScaling.tobCommonRange(c.min(), 32 / 50.0, RaidMode.NORMAL, false);
-                    assertTrue(l.count() >= Math.max(1, range[0]) && l.count() <= Math.max(1, range[1]), l.item() + " " + l.count());
+                    assertTrue(l.count() >= Math.max(1, range[0]) && l.count() <= 3 * Math.max(1, range[1]), l.item() + " " + l.count());
                 }
             }
         }
+    }
+
+    @Test
+    void tobCommonsRepeatAndTertiariesArePerPlayer() {
+        // OSRS wiki: three rolls of the common table, "possibly granting the same reward multiple times".
+        Random random = new Random(11);
+        int repeats = 0;
+        int clues = 0;
+        int zik = 0;
+        int n = 40_000;
+        Map<String, Integer> five = Map.of("a", 18, "b", 18, "c", 18, "d", 18, "e", 18);
+        for (int i = 0; i < n; i++) {
+            RaidRewards.Result r = RaidRewards.roll(RaidType.TOB, RaidMode.NORMAL, five, 0, random);
+            for (String p : five.keySet()) {
+                long commons = r.lootFor(p).stream().filter(l -> RaidRewards.TOB_COMMONS.stream().anyMatch(c -> c.item().equals(l.item())))
+                        .count();
+                if (!r.purple(p) && commons < 3) {
+                    repeats++;
+                }
+                clues += (int) r.lootFor(p).stream().filter(l -> l.item().equals("clue_scroll_elite")).count();
+                zik += (int) r.lootFor(p).stream().filter(l -> l.item().equals("lil_zik")).count();
+            }
+        }
+        assertTrue(repeats > 0, "the same common can come up twice");
+        // 3/25 per deathless player's chest in Normal mode: 24,000 expected over 200,000 chests.
+        assertTrue(clues > 22_000 && clues < 26_000, "elite clues " + clues);
+        // Lil' Zik 1/650 per player: ~308 over 200,000 chests.
+        assertTrue(zik > 220 && zik < 400, "Lil' Zik " + zik);
+        assertEquals(1 / 25.0, RaidRewards.tobEliteClueChance(RaidMode.ENTRY), 1e-9);
+        assertEquals(3.5 / 25.0, RaidRewards.tobEliteClueChance(RaidMode.HARD), 1e-9);
+        // Deaths scale a player's tertiaries down; a player with no points gets only the cabbage.
+        // OSRS wiki "Lil' zik": full rate at 10 individual points (two deaths), down to a tenth (1/6,500).
+        assertEquals(1.0, RaidScaling.tobPerformance(32), 1e-9);
+        assertEquals(1.0, RaidScaling.tobPerformance(14), 1e-9);
+        assertEquals(1.0, RaidScaling.tobPerformance(10), 1e-9);
+        assertEquals(0.5, RaidScaling.tobPerformance(5), 1e-9);
+        assertEquals(0.1, RaidScaling.tobPerformance(1), 1e-9);
+        assertEquals(0.0, RaidScaling.tobPerformance(0), 1e-9);
     }
 
     @Test

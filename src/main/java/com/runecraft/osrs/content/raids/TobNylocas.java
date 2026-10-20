@@ -105,6 +105,30 @@ public final class TobNylocas {
     /** Nylocas Vasilias max hit (normal mode; Hard mode 105 via {@link RaidScaling#tobHardMaxHit}). */
     public static final int VASILIAS_MAX_HIT = 70;
     public static final int PRINKIPAS_MAX_HIT = 38;
+    /**
+     * The right protection prayer doesn't block the Vasilias's ranged and magic attacks completely: they still hit up to
+     * 17 (OSRS wiki "Theatre of Blood/Strategies"; melee is fully blocked).
+     */
+    public static final int VASILIAS_PRAYED_MAX = 17;
+    /**
+     * Hard mode Vasilias (OSRS wiki): its ranged attack also hits everyone within 2 tiles of the target; its magic attack
+     * bounces to every other player, ignoring prayer, for half within 2 tiles of the target and more beyond (unless everyone
+     * stands on one tile). // approx: one and a half times beyond
+     */
+    public static final int VASILIAS_HARD_SPLASH_TILES = 2;
+
+    /** A Hard mode Vasilias magic bounce's damage to another player. */
+    public static int vasiliasHardBounce(int damage, boolean withinTwoTiles) {
+        return withinTwoTiles ? damage / 2 : damage * 3 / 2;
+    }
+
+    /**
+     * A wrong-style attack on a wave nylocas (OSRS wiki): the attacker can no longer damage it at all. In Hard mode the hit
+     * is also reflected onto the attacker, capped at the nylocas's hitpoints. Returns the damage reflected.
+     */
+    public static int wrongStyleReflect(int damage, int nyloHitpoints, boolean hard) {
+        return hard ? Math.max(0, Math.min(damage, nyloHitpoints)) : 0;
+    }
 
     /** Waves stall while this many nylocas are alive: 12 before wave 20, 24 from wave 20 on. */
     public static int cap(int nextWave) {

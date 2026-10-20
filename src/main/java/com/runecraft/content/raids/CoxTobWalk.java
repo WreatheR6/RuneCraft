@@ -69,6 +69,64 @@ public final class CoxTobWalk {
     }
 
     /**
+     * Walks a whole Theatre of Blood Hard mode raid as {@code p}: every room's Hard mode changes (Maiden's untouchable
+     * blood spawns, the reflecting nylocas and the Prinkipas, Xarpus's opening poison and forced stare, Verzik's debris,
+     * urn pools, cycling nylocas and last stand) are checked by the rooms' walks. Returns a summary or throws.
+     */
+    public static String tobHardRun(ServerPlayer p, BlockPos entrance) {
+        return run(p, RaidType.TOB, entrance, com.runecraft.osrs.content.raids.RaidMode.HARD);
+    }
+
+    /**
+     * ToB Entry mode deaths (OSRS, March 2023): unlimited attempts, so a solo wipe resets the room instead of ending the
+     * raid, and hands out ten bandages, which heal, restore prayer and boost combat stats. Returns a summary or throws.
+     */
+    public static String tobEntryWipe(ServerPlayer p, BlockPos entrance) {
+        RaidManager.enter(p, RaidType.TOB, entrance);
+        RaidInstance raid = RaidManager.of(p);
+        expect(raid != null, "RaidManager.enter did not start a raid");
+        CoxTobWalk w = new CoxTobWalk(raid, p);
+        try {
+            expect(raid.setMode(com.runecraft.osrs.content.raids.RaidMode.ENTRY), "could not choose Entry mode in the lobby");
+            w.begin();
+            w.moveTo(raid.spawn(1));
+            w.tick(1);
+            expect(raid.currentRoom() == 1 && raid.logic(1).started, "walking in did not start the Maiden");
+            w.take(com.runecraft.osrs.content.raids.TobRules.BANDAGES);
+            for (int attempt = 1; attempt <= 2; attempt++) {
+                // Each wipe adds ten bandages to those carried (OSRS wiki: dying on purpose stacks them).
+                int carried = w.count(com.runecraft.osrs.content.raids.TobRules.BANDAGES);
+                raid.onDeath(p);
+                expect(RaidManager.of(p) == raid && raid.contains(p), "an Entry mode wipe (attempt " + attempt + ") ended the raid");
+                expect(!raid.isDowned(p) && raid.logic(1).started && !raid.logic(1).done, "the Maiden's room did not reset after the wipe");
+                int now = w.count(com.runecraft.osrs.content.raids.TobRules.BANDAGES);
+                expect(now == carried + com.runecraft.osrs.content.raids.TobRules.ENTRY_BANDAGES,
+                        "the wipe left " + now + " bandages (carried " + carried + ", expected ten more)");
+                w.tick(1);
+            }
+            // A bandage heals 20 and boosts Attack like a (slightly weaker) super attack.
+            var skills = Players.data(p).skills();
+            skills.setBoost(com.runecraft.osrs.Skill.ATTACK, 0);
+            p.setHealth(p.getMaxHealth() / 2);
+            float before = p.getHealth();
+            w.hold(com.runecraft.osrs.content.raids.TobRules.BANDAGES);
+            int held = w.count(com.runecraft.osrs.content.raids.TobRules.BANDAGES);
+            com.runecraft.platform.UseItemCallback.EVENT.invoker().interact(p, raid.world, InteractionHand.MAIN_HAND);
+            expect(p.getHealth() > before, "a bandage did not heal");
+            expect(skills.boost(com.runecraft.osrs.Skill.ATTACK) == com.runecraft.osrs.content.raids.TobRules.bandageMeleeBoost(
+                    skills.level(com.runecraft.osrs.Skill.ATTACK)), "a bandage did not boost Attack");
+            expect(w.count(com.runecraft.osrs.content.raids.TobRules.BANDAGES) == held - 1, "using a bandage did not use it up");
+            skills.setBoost(com.runecraft.osrs.Skill.ATTACK, 0);
+            return "two Entry mode wipes reset the Maiden's room and stacked ten bandages each";
+        } finally {
+            p.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            if (RaidManager.of(p) == raid) {
+                RaidManager.selfTestClose(raid);
+            }
+        }
+    }
+
+    /**
      * ToB deaths (OSRS): a solo party dying in a fight is a wipe; the Theatre is lost and the player is sent back out.
      * Returns a summary or throws {@link AssertionError}.
      */
@@ -94,16 +152,23 @@ public final class CoxTobWalk {
     }
 
     private static String run(ServerPlayer p, RaidType type, BlockPos entrance) {
-        return run(p, type, entrance, false);
+        return run(p, type, entrance, com.runecraft.osrs.content.raids.RaidMode.NORMAL);
     }
 
     private static String run(ServerPlayer p, RaidType type, BlockPos entrance, boolean challenge) {
+        return run(p, type, entrance, challenge ? com.runecraft.osrs.content.raids.RaidMode.CHALLENGE
+                : com.runecraft.osrs.content.raids.RaidMode.NORMAL);
+    }
+
+    private static String run(ServerPlayer p, RaidType type, BlockPos entrance, com.runecraft.osrs.content.raids.RaidMode mode) {
         RaidManager.enter(p, type, entrance);
         RaidInstance raid = RaidManager.of(p);
         expect(raid != null, "RaidManager.enter did not start a raid (see the log for \"Failed to start a raid\")");
         CoxTobWalk w = new CoxTobWalk(raid, p);
-        w.challenge = challenge;
+        w.challenge = mode == com.runecraft.osrs.content.raids.RaidMode.CHALLENGE;
         try {
+            // Challenge Mode is picked by the leader in the CoX lobby (coxLobby); the other modes before the walk.
+            expect(w.challenge || (raid.setMode(mode) && raid.mode() == mode), "could not choose " + mode.displayName() + " in the lobby");
             return w.walk();
         } catch (AssertionError e) {
             throw new AssertionError("[" + w.room + "] " + e.getMessage() + " (after " + w.ticks + " ticks; done: " + String.join(", ", w.notes) + ")");

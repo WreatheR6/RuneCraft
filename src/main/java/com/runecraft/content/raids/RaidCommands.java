@@ -138,6 +138,11 @@ final class RaidCommands {
             return 0;
         }
         RaidMode m = RaidMode.byName(name);
+        String blocked = m == RaidMode.HARD && raid.type == RaidType.TOB ? TobRooms.hardModeBlocker(raid) : null;
+        if (blocked != null) {
+            Msg.game(p, blocked);
+            return 0;
+        }
         if (m == null || !raid.setMode(m)) {
             Msg.game(p, raid.type.displayName() + " modes: " + (raid.type == RaidType.COX ? "normal, challenge"
                     : raid.type == RaidType.TOB ? "entry, normal, hard" : "normal (use the obelisk to set the raid level)") + ".");

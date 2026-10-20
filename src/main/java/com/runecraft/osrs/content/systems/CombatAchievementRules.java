@@ -693,6 +693,15 @@ public final class CombatAchievementRules {
             372;RULE;the_maiden_of_sugadinti;1;mode=hard count<=15:maiden_trail
             392;RULE;xarpus;1;mode=entry noflag=xarpus_reflect
             376;RULE;xarpus;1;mode=hard flag=xarpus_full_heal nodmg
+            243;RAID;TOB;1;mode=normal deathless noflag=maiden_imperfect noflag=bloat_imperfect noflag=nylo_wrong_style noflag=nylo_pillar_lost noflag=nylo_off_prayer noflag=sotetseg_imperfect noflag=xarpus_imperfect noflag=verzik_imperfect
+            373;RULE;pestilent_bloat;1;mode=hard players>=3 noflag=bloat_stacked
+            375;RULE;sotetseg;1;mode=hard noflag=sotetseg_ball_shared noflag=sotetseg_hit
+            377;RULE;verzik_vitur_p3;1;mode=hard noflag=verzik_nylo_popped
+            378;RULE;verzik_vitur_p3;1;mode=hard flag=verzik_teamwork
+            379;RULE;verzik_vitur_p3;1;mode=hard noflag=verzik_p3_melee
+            391;RULE;sotetseg;1;mode=entry size>=2 flag=sotetseg_team_split
+            394;RULE;verzik_vitur_p2;1;mode=entry noflag=verzik_bounced
+            395;RULE;verzik_vitur_p3;1;mode=entry flag=verzik_green_passed
             252;RAID;TOB;1;weapon=BARROWS_WEAPONS
             253;RAID;TOB;1;noweapon=scythe_of_vitur
             254;RAID;TOB;1;mode=normal size=2 t<26:00

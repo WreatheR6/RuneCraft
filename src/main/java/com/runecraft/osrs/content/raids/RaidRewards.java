@@ -191,10 +191,22 @@ public final class RaidRewards {
 
     /** Olmlet chance per CoX unique (OSRS: 1/53). */
     public static final int OLMLET_RATE = 53;
-    /** Lil' Zik chance per ToB completion (OSRS normal mode: 1/650). */
+    /**
+     * Lil' Zik chance per ToB completion (OSRS normal mode: 1/650). Like the chest's other tertiaries it is rolled for each
+     * player's chest and scales down with their performance ({@link RaidScaling#tobPerformance}).
+     */
     public static final int LIL_ZIK_RATE = 650;
     /** Lil' Zik chance per ToB hard mode completion (OSRS: 1/500). */
     public static final int LIL_ZIK_HARD_RATE = 500;
+
+    /** The ToB chest's elite clue chance per player (OSRS wiki "Monumental chest"): 1/25 Entry, 3/25 Normal, 3.5/25 Hard. */
+    public static double tobEliteClueChance(RaidMode mode) {
+        return switch (mode) {
+            case ENTRY -> 1 / 25.0;
+            case HARD -> 3.5 / 25.0;
+            default -> 3 / 25.0;
+        };
+    }
     /** CoX resource table rolls per player. */
     public static final int COX_COMMON_ROLLS = 2;
     /** ToB and ToA common rolls per player. */
@@ -410,32 +422,53 @@ public final class RaidRewards {
                 pets.add(who);
             }
         }
-        if (type == RaidType.TOB && mode != RaidMode.ENTRY
-                && random.nextInt(mode == RaidMode.HARD ? LIL_ZIK_HARD_RATE : LIL_ZIK_RATE) == 0) {
-            String who = weightedPlayer(points, random);
-            loot.get(who).add(new Loot("lil_zik", 1));
-            pets.add(who);
-        }
-        Map<String, Integer> here = new LinkedHashMap<>();
-        for (Map.Entry<String, Integer> e : points.entrySet()) {
-            if (present.contains(e.getKey())) {
-                here.put(e.getKey(), e.getValue());
-            }
-        }
-        List<String> hereSorted = new ArrayList<>(here.keySet());
-        Collections.sort(hereSorted);
-        for (ExtraReward extra : extras(type, mode)) {
-            if (extra.needsTargetTime() && !withinTarget) {
-                continue;
-            }
-            if (extra.perPlayer()) {
-                for (String p : hereSorted) {
-                    if (random.nextInt(extra.rate()) == 0) {
-                        loot.get(p).add(new Loot(extra.item(), 1));
+        if (type == RaidType.TOB) {
+            // The ToB chest's tertiaries (OSRS wiki "Monumental chest"): rolled for each finishing player's chest, scaled
+            // down by that player's performance; a player who kept no points finds only a cabbage and gets none.
+            for (Map.Entry<String, Integer> e : points.entrySet()) {
+                if (!present.contains(e.getKey())) {
+                    continue;
+                }
+                double perf = RaidScaling.tobPerformance(Math.max(0, e.getValue()));
+                if (perf <= 0) {
+                    continue;
+                }
+                List<Loot> mine = loot.get(e.getKey());
+                if (mode != RaidMode.ENTRY && random.nextDouble() < perf / (mode == RaidMode.HARD ? LIL_ZIK_HARD_RATE : LIL_ZIK_RATE)) {
+                    mine.add(new Loot("lil_zik", 1));
+                    pets.add(e.getKey());
+                }
+                for (ExtraReward extra : extras(type, mode)) {
+                    if ((!extra.needsTargetTime() || withinTarget) && random.nextDouble() < perf / extra.rate()) {
+                        mine.add(new Loot(extra.item(), 1));
                     }
                 }
-            } else if (!here.isEmpty() && random.nextInt(extra.rate()) == 0) {
-                loot.get(weightedPlayer(here, random)).add(new Loot(extra.item(), 1));
+                if (random.nextDouble() < perf * tobEliteClueChance(mode)) {
+                    mine.add(new Loot("clue_scroll_elite", 1));
+                }
+            }
+        } else {
+            Map<String, Integer> here = new LinkedHashMap<>();
+            for (Map.Entry<String, Integer> e : points.entrySet()) {
+                if (present.contains(e.getKey())) {
+                    here.put(e.getKey(), e.getValue());
+                }
+            }
+            List<String> hereSorted = new ArrayList<>(here.keySet());
+            Collections.sort(hereSorted);
+            for (ExtraReward extra : extras(type, mode)) {
+                if (extra.needsTargetTime() && !withinTarget) {
+                    continue;
+                }
+                if (extra.perPlayer()) {
+                    for (String p : hereSorted) {
+                        if (random.nextInt(extra.rate()) == 0) {
+                            loot.get(p).add(new Loot(extra.item(), 1));
+                        }
+                    }
+                } else if (!here.isEmpty() && random.nextInt(extra.rate()) == 0) {
+                    loot.get(weightedPlayer(here, random)).add(new Loot(extra.item(), 1));
+                }
             }
         }
         double tobRatio = RaidScaling.tobPointsRatio(total, points.size());
@@ -460,15 +493,20 @@ public final class RaidRewards {
                         mine.add(new Loot("cabbage", 1));
                         continue;
                     }
-                    for (RangeCommon c : pickWeightedRange(TOB_COMMONS, TOB_COMMON_ROLLS, random)) {
+                    // OSRS wiki: the common table is rolled three times, possibly granting the same reward more than once.
+                    Map<String, Integer> commons = new LinkedHashMap<>();
+                    for (int roll = 0; roll < TOB_COMMON_ROLLS; roll++) {
+                        RangeCommon c = rollRange(TOB_COMMONS, random);
                         int[] range = RaidScaling.tobCommonRange(c.min(), tobRatio, mode, withinTarget);
                         int n = range[0] + random.nextInt(range[1] - range[0] + 1);
-                        // Entry mode chests hold far less. // approx: a fifth
-                        mine.add(new Loot(c.item(), Math.max(1, mode == RaidMode.ENTRY ? n / 5 : n)));
+                        // Entry mode chests hold 80% less (OSRS wiki).
+                        commons.merge(c.item(), Math.max(1, mode == RaidMode.ENTRY ? n / 5 : n), Integer::sum);
                     }
-                    if (mode != RaidMode.ENTRY && random.nextInt(25) == 0) { // approx
-                        mine.add(new Loot("clue_scroll_elite", 1));
-                    }
+                    // The tertiaries (clue, pet, Hard mode cosmetics) were rolled above; keep them after the commons.
+                    List<Loot> tertiary = new ArrayList<>(mine);
+                    mine.clear();
+                    commons.forEach((item, n) -> mine.add(new Loot(item, n)));
+                    mine.addAll(tertiary);
                 }
                 case TOA -> {
                 }
@@ -499,25 +537,19 @@ public final class RaidRewards {
         return out;
     }
 
-    /** {@code n} different ToB commons, each chosen by weight. */
-    static List<RangeCommon> pickWeightedRange(List<RangeCommon> table, int n, Random random) {
-        List<RangeCommon> left = new ArrayList<>(table);
-        List<RangeCommon> out = new ArrayList<>();
-        while (out.size() < n && !left.isEmpty()) {
-            int total = 0;
-            for (RangeCommon c : left) {
-                total += c.weight();
-            }
-            int r = random.nextInt(total);
-            for (RangeCommon c : left) {
-                r -= c.weight();
-                if (r < 0) {
-                    out.add(c);
-                    left.remove(c);
-                    break;
-                }
+    /** One ToB common chosen by weight (the table is rolled with replacement). */
+    static RangeCommon rollRange(List<RangeCommon> table, Random random) {
+        int total = 0;
+        for (RangeCommon c : table) {
+            total += c.weight();
+        }
+        int r = random.nextInt(total);
+        for (RangeCommon c : table) {
+            r -= c.weight();
+            if (r < 0) {
+                return c;
             }
         }
-        return out;
+        return table.get(table.size() - 1);
     }
 }

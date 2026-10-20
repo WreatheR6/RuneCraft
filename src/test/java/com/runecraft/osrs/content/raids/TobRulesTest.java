@@ -1,6 +1,8 @@
 package com.runecraft.osrs.content.raids;
 
 import com.runecraft.osrs.ItemCatalog;
+import com.runecraft.osrs.content.systems.CombatAchievementRules;
+import com.runecraft.osrs.content.systems.CombatAchievements;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
@@ -48,6 +50,25 @@ class TobRulesTest {
         assertEquals(TobRules.Performance.BELOW_AVERAGE, TobRules.performance(1, true));
         assertTrue(TobRules.onionOnly(2));
         assertFalse(TobRules.onionOnly(1));
+        // Hard mode chests give fewer points: at most 9 each, 18 over both (wiki "Theatre of Blood/Hard Mode").
+        for (int i = 0; i < 500; i++) {
+            int hard = TobRules.chestPoints(TobRules.Performance.ABOVE_AVERAGE, RaidMode.HARD, r);
+            assertTrue(hard >= 6 && hard <= 9, "hard mode " + hard);
+        }
+    }
+
+    @Test
+    void entryModeBandages() {
+        assertEquals(10, TobRules.ENTRY_BANDAGES);
+        assertTrue(ItemCatalog.exists(TobRules.BANDAGES));
+        assertTrue(RaidItems.RAID_ONLY_ITEMS.contains(TobRules.BANDAGES), "bandages never leave the Theatre");
+        assertEquals(20, ItemCatalog.get(TobRules.BANDAGES).heal());
+        // One level below a super potion (floor(15%) + 4) and a ranging potion's floor(10%) + 4 (wiki boost tables).
+        assertEquals(18, TobRules.bandageMeleeBoost(99));
+        assertEquals(4, TobRules.bandageMeleeBoost(6));
+        assertEquals(5, TobRules.bandageMeleeBoost(7));
+        assertEquals(13, TobRules.bandageRangedBoost(99));
+        assertEquals(4, TobRules.bandageRangedBoost(9));
     }
 
     @Test
@@ -60,6 +81,14 @@ class TobRulesTest {
         assertEquals(8, TobRules.maidenDrain(39));
         assertEquals(0.1, TobRules.bloodSpawnChance(false));
         assertEquals(0.2, TobRules.bloodSpawnChance(true));
+        // Wiki "Blood spawn": up to eight in a fight, one per throw when everyone dodged; trails 5-13 (2-5 Entry mode).
+        assertEquals(8, TobRules.MAIDEN_BLOOD_SPAWN_CAP);
+        assertEquals(1, TobRules.bloodSpawnsFromThrow(false, 4));
+        assertEquals(4, TobRules.bloodSpawnsFromThrow(true, 4));
+        assertEquals(5, TobRules.bloodTrailMin(RaidMode.NORMAL));
+        assertEquals(13, TobRules.bloodTrailMax(RaidMode.HARD));
+        assertEquals(2, TobRules.bloodTrailMin(RaidMode.ENTRY));
+        assertEquals(5, TobRules.bloodTrailMax(RaidMode.ENTRY));
     }
 
     @Test
@@ -77,6 +106,22 @@ class TobRulesTest {
     void sotetsegAndXarpus() {
         assertEquals(15, TobRules.mazeWrongTile(0));
         assertEquals(21, TobRules.mazeWrongTile(99));
+        assertEquals(17, TobRules.mazeWrongTile(99, RaidMode.ENTRY), "+ 11 in Entry mode (wiki)");
+        // The tornado comes once someone steps onto the fourth row (row 3).
+        assertFalse(TobRules.mazeTornado(2));
+        assertTrue(TobRules.mazeTornado(3));
+        assertEquals(100, TobRules.SOTETSEG_DEFENCE_FLOOR);
+        // Hard mode Xarpus: the two outer rings start poisoned except the six entrance tiles (west side, z = -1..1).
+        int half = 8;
+        assertTrue(TobRules.xarpusHardEdge(half, 0, half));
+        assertTrue(TobRules.xarpusHardEdge(half - 1, 3, half));
+        assertFalse(TobRules.xarpusHardEdge(half - 2, 0, half), "the third ring stays clear");
+        assertFalse(TobRules.xarpusHardEdge(-half, 0, half), "entrance");
+        assertFalse(TobRules.xarpusHardEdge(-half + 1, 1, half), "entrance");
+        assertTrue(TobRules.xarpusHardEdge(-half, 2, half));
+        assertFalse(TobRules.xarpusHardEdge(0, 0, half));
+        assertEquals(2, TobRules.xarpusHardStare(1, 2, true));
+        assertEquals(1, TobRules.xarpusHardStare(1, 2, false));
         assertEquals(12, TobRules.xarpusExhumeds(1));
         assertEquals(12, TobRules.xarpusExhumeds(3));
         assertEquals(15, TobRules.xarpusExhumeds(4));
@@ -108,5 +153,72 @@ class TobRulesTest {
         assertEquals(4, TobRules.P3_ROTATION.size());
         assertEquals(TobRules.P3Special.NYLOCAS, TobRules.P3_ROTATION.get(0));
         assertTrue(TobRules.VERZIK_ENRAGE_AT < TobRules.VERZIK_P25_AT);
+        assertTrue(TobRules.VERZIK_HARD_LAST_STAND_AT < TobRules.VERZIK_ENRAGE_AT);
+    }
+
+    @Test
+    void verzikPhaseTwoFromHerPage() {
+        // Wiki "Verzik Vitur" (and its infobox) settles the explosion numbers: nylocas up to 63, the Athanatos landing 78.
+        assertEquals(63, TobRules.VERZIK_NYLO_MAX);
+        assertEquals(78, TobRules.ATHANATOS_LANDING_MAX);
+        assertEquals(44, TobRules.VERZIK_URN_MAX);
+        assertEquals(50, TobRules.VERZIK_SLAM_MAX, "infobox: 50 (bounce)");
+        assertEquals(48, TobRules.VERZIK_LIGHTNING_MAX);
+        assertEquals(25, TobRules.VERZIK_LIGHTNING_INSULATED_MAX);
+        assertEquals(7, TobRules.DAWNBRINGER_RANGE_TILES);
+        // Raw damage barely hurts the Athanatos.
+        assertEquals(10, TobRules.athanatosRawDamage(40));
+        assertEquals(0, TobRules.athanatosRawDamage(-3));
+        // Phase 2.5: 200-hitpoint Matomenos, one when a single player is left alive (May 2024 update).
+        assertEquals(200, TobRules.VERZIK_MATOMENOS_HP);
+        assertEquals(2, TobRules.verzikMatomenos(3));
+        assertEquals(1, TobRules.verzikMatomenos(1));
+        // Phase 3: tornadoes take half the current hitpoints, at least 5.
+        assertEquals(5, TobRules.tornadoHit(6));
+        assertEquals(57, TobRules.tornadoHit(115));
+        // Hard mode green ball: lethal unbounced with company, 89 / 74 / 49 after one to three bounces.
+        assertEquals(100, TobRules.greenBallHard(99, 0, 2, 99));
+        assertEquals(74, TobRules.greenBallHard(99, 0, 1, 99), "a lone player takes the normal hit");
+        assertEquals(89, TobRules.greenBallHard(99, 1, 3, 99));
+        assertEquals(74, TobRules.greenBallHard(99, 2, 3, 99));
+        assertEquals(49, TobRules.greenBallHard(99, 3, 3, 99));
+        assertEquals(3, TobRules.yellowVolleys(RaidMode.HARD));
+        assertEquals(1, TobRules.yellowVolleys(RaidMode.NORMAL));
+    }
+
+    @Test
+    void round36CombatAchievementsAreTracked() {
+        for (int id : new int[]{243, 373, 375, 377, 378, 379, 391, 394, 395}) {
+            assertNotEquals(CombatAchievements.Track.UNTRACKED, CombatAchievements.task("ca_" + id).track(), "ca_" + id);
+        }
+        // Perfect Theatre: a deathless Normal mode raid with no room's perfect condition broken.
+        String perfect = CombatAchievements.task("ca_243").rule();
+        CombatAchievementRules.Metrics m = new CombatAchievementRules.Metrics();
+        m.raid = new CombatAchievementRules.Raid("TOB", "NORMAL", 3, 0, Set.of(), 0, 0, 0, false, 54, false);
+        assertTrue(CombatAchievementRules.meets(perfect, m));
+        m.flags.add(CombatAchievements.FLAG_NYLO_OFF_PRAYER);
+        assertFalse(CombatAchievementRules.meets(perfect, m));
+        // Harder Mode III: no melee on her third form in Hard mode.
+        CombatAchievementRules.Metrics hm = new CombatAchievementRules.Metrics();
+        hm.raid = new CombatAchievementRules.Raid("TOB", "HARD", 3, 0, Set.of(), 0, 0, 0, false, 54, false);
+        String harder3 = CombatAchievements.task("ca_379").rule();
+        assertTrue(CombatAchievementRules.meets(harder3, hm));
+        hm.flags.add(CombatAchievements.FLAG_VERZIK_P3_MELEE);
+        assertFalse(CombatAchievementRules.meets(harder3, hm));
+        // Just To Be Safe needs a team of at least two that split the ball together.
+        CombatAchievementRules.Metrics entry = new CombatAchievementRules.Metrics();
+        entry.raid = new CombatAchievementRules.Raid("TOB", "ENTRY", 1, 0, Set.of(), 0, 0, 0, false, 18, false);
+        entry.flags.add(CombatAchievements.FLAG_SOTETSEG_TEAM_SPLIT);
+        assertFalse(CombatAchievementRules.meets(CombatAchievements.task("ca_391").rule(), entry), "solo can't do it");
+    }
+
+    @Test
+    void nylocasStyleRules() {
+        assertEquals(0, TobNylocas.wrongStyleReflect(30, 11, false), "normal mode: immune to that player, nothing reflected");
+        assertEquals(11, TobNylocas.wrongStyleReflect(30, 11, true), "hard mode: reflected, capped at the nylocas's hitpoints");
+        assertEquals(7, TobNylocas.wrongStyleReflect(7, 11, true));
+        assertEquals(17, TobNylocas.VASILIAS_PRAYED_MAX);
+        assertEquals(20, TobNylocas.vasiliasHardBounce(40, true));
+        assertEquals(60, TobNylocas.vasiliasHardBounce(40, false));
     }
 }

@@ -333,6 +333,14 @@ public final class SpellService {
         return true;
     }
 
+    /** The combat spell whose hit the attack hooks are judging right now (cast by hand or autocast), or null. */
+    private static Spell casting;
+
+    /** The id of the combat spell being cast while the attack hooks run (e.g. ToB's Athanatos checks for Smoke spells), or null. */
+    public static String castingSpellId() {
+        return casting == null ? null : casting.id();
+    }
+
     static void castCombat(ServerPlayer p, Spell s, LivingEntity target) {
         PlayerData data = Players.data(p);
         if (target == null) {
@@ -421,7 +429,12 @@ public final class SpellService {
                 continue;
             }
             int damage = max > 0 ? p.getRandom().nextInt(max + 1) : 0;
-            damage = CombatHandler.hookAfterRoll(p, t, AttackType.MAGIC, damage, max);
+            casting = s;
+            try {
+                damage = CombatHandler.hookAfterRoll(p, t, AttackType.MAGIC, damage, max);
+            } finally {
+                casting = null;
+            }
             int dealt = max > 0 ? SysCombat.hit(p, t, AttackType.MAGIC, damage) : 0;
             if (max == 0) {
                 t.setLastHurtByMob(p);
