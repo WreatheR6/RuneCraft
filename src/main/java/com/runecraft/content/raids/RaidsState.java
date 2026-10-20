@@ -30,6 +30,19 @@ public final class RaidsState extends SavedData {
         public BlockPos lastEntrance;
         /** ToA loot left in the chest (OSRS Rewards Niche): "item:count" entries. */
         public final java.util.List<String> unclaimed = new java.util.ArrayList<>();
+        /** The pickaxe left in a Path of Het statue, kept for the next raid (OSRS). */
+        public net.minecraft.world.item.ItemStack pickaxe = net.minecraft.world.item.ItemStack.EMPTY;
+    }
+
+    /** The pickaxe a player left in a Path of Het statue, or an empty stack. */
+    public net.minecraft.world.item.ItemStack storedPickaxe(UUID player) {
+        Stats s = players.get(player);
+        return s == null ? net.minecraft.world.item.ItemStack.EMPTY : s.pickaxe;
+    }
+
+    public void setStoredPickaxe(UUID player, net.minecraft.world.item.ItemStack stack) {
+        stats(player).pickaxe = stack == null ? net.minecraft.world.item.ItemStack.EMPTY : stack.copy();
+        setDirty();
     }
 
     /** Puts a raider's unclaimed loot in the Rewards Niche. */
@@ -125,6 +138,9 @@ public final class RaidsState extends SavedData {
                 }
                 p.put("Unclaimed", loot);
             }
+            if (!s.pickaxe.isEmpty()) {
+                p.put("Pickaxe", s.pickaxe.saveOptional(registries));
+            }
             all.put(uuid.toString(), p);
         });
         nbt.put("Players", all);
@@ -165,6 +181,9 @@ public final class RaidsState extends SavedData {
                 ListTag loot = p.getList("Unclaimed", Tag.TAG_STRING);
                 for (int i = 0; i < loot.size(); i++) {
                     s.unclaimed.add(loot.getString(i));
+                }
+                if (p.contains("Pickaxe")) {
+                    s.pickaxe = com.runecraft.util.LegacyStacks.parse(registries, p.getCompound("Pickaxe"));
                 }
             } catch (IllegalArgumentException ignored) {
                 // skip malformed entries

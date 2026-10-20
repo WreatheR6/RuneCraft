@@ -69,23 +69,73 @@ class ToaPuzzlesTest {
     void hetPuzzlesNeedTheMirrorsAndBarriers() {
         Random r = new Random(11);
         for (int i = 0; i < 300; i++) {
-            ToaPuzzles.HetPuzzle p = ToaPuzzles.hetPuzzle(7, r);
-            assertFalse(ToaPuzzles.trace(p, Set.of()).hit(), "a fresh puzzle is not already solved");
-            assertTrue(p.mirrors().size() >= 1 && p.mirrors().size() <= 3, "one to three turns");
-            assertFalse(p.barriers().isEmpty());
-            for (int[] m : p.mirrors()) {
-                m[3] = m[2];
-            }
+            int party = 1 + i % 4;
+            ToaPuzzles.HetPuzzle p = ToaPuzzles.hetPuzzle(7, party, r);
             Set<Long> broken = new HashSet<>();
-            assertFalse(ToaPuzzles.trace(p, broken).hit(), "the worn barriers block the beam");
             for (int[] b : p.barriers()) {
                 broken.add(ToaPuzzles.key(b[0], b[1]));
             }
-            assertTrue(ToaPuzzles.trace(p, broken).hit(), "the right mirrors and broken barriers lead the beam to the statue");
+            assertFalse(ToaPuzzles.trace(p, broken).hit(), "a fresh puzzle is not already solved, even with the barriers broken");
+            assertEquals(ToaPuzzles.MOVABLE_MIRRORS, p.movable().size(), "three movable mirrors");
+            List<int[]> plan = ToaPuzzles.hetSolution(p);
+            // OSRS: "the light can always be reflected correctly using 1-3 mirrors".
+            assertTrue(plan.size() >= 1 && plan.size() <= 3, "one to three mirrors to place: " + plan.size());
+            assertFalse(p.barriers().isEmpty());
+            for (int[] step : plan) {
+                assertTrue(p.canPlace(step[1], step[2], broken), "the turn is free for a mirror");
+                int[] m = p.movable().get(step[0]);
+                m[0] = step[1];
+                m[1] = step[2];
+                m[2] = step[3];
+            }
+            for (int[] f : p.fixed()) {
+                if (party == 1) {
+                    assertEquals(0, f[3], "solo mirrors are never dirty");
+                }
+                f[3] = 0;
+            }
+            assertFalse(ToaPuzzles.trace(p, Set.of()).hit(), "the worn barriers block the beam");
+            assertTrue(ToaPuzzles.trace(p, broken).hit(), "the placed mirrors and broken barriers lead the beam to the statue");
         }
         // '/' turns an eastbound beam north, '\' south.
         assertEquals(List.of(0, -1), List.of(ToaPuzzles.reflect(ToaPuzzles.SLASH, 1, 0)[0], ToaPuzzles.reflect(ToaPuzzles.SLASH, 1, 0)[1]));
         assertEquals(List.of(0, 1), List.of(ToaPuzzles.reflect(ToaPuzzles.BACKSLASH, 1, 0)[0], ToaPuzzles.reflect(ToaPuzzles.BACKSLASH, 1, 0)[1]));
+    }
+
+    @Test
+    void scabarasBranches() {
+        Random r = new Random(4);
+        for (int i = 0; i < 50; i++) {
+            List<ToaPuzzles.ScabarasPuzzle> layout = ToaPuzzles.scabarasLayout(r);
+            assertEquals(4, new HashSet<>(layout).size(), "each puzzle in one room");
+        }
+        boolean[] none = new boolean[4];
+        assertTrue(ToaPuzzles.scabarasRoomOpen(ToaPuzzles.NORTH_FIRST, none, true));
+        assertTrue(ToaPuzzles.scabarasRoomOpen(ToaPuzzles.SOUTH_FIRST, none, false));
+        assertFalse(ToaPuzzles.scabarasRoomOpen(ToaPuzzles.NORTH_SECOND, none, true));
+        // Solo: the north first room opens the south second room, and those two open the tablet.
+        boolean[] northFirst = {true, false, false, false};
+        assertTrue(ToaPuzzles.scabarasRoomOpen(ToaPuzzles.SOUTH_SECOND, northFirst, true));
+        assertFalse(ToaPuzzles.scabarasRoomOpen(ToaPuzzles.NORTH_SECOND, northFirst, true));
+        assertFalse(ToaPuzzles.scabarasAdditionOpen(northFirst, true));
+        assertTrue(ToaPuzzles.scabarasAdditionOpen(new boolean[]{true, false, false, true}, true));
+        assertTrue(ToaPuzzles.scabarasAdditionOpen(new boolean[]{false, true, true, false}, true));
+        // Groups: each branch in turn, and both branches before the tablet.
+        assertTrue(ToaPuzzles.scabarasRoomOpen(ToaPuzzles.NORTH_SECOND, northFirst, false));
+        assertFalse(ToaPuzzles.scabarasRoomOpen(ToaPuzzles.SOUTH_SECOND, northFirst, false));
+        assertFalse(ToaPuzzles.scabarasAdditionOpen(new boolean[]{true, false, false, true}, false));
+        assertTrue(ToaPuzzles.scabarasAdditionOpen(new boolean[]{true, true, true, true}, false));
+        // Obelisks: five, struck in order; a wrong one puts them all out.
+        List<Integer> order = ToaPuzzles.obeliskOrder(r);
+        assertEquals(5, new HashSet<>(order).size());
+        assertEquals(1, ToaPuzzles.obeliskStrike(order, 0, order.get(0)));
+        assertEquals(1, ToaPuzzles.obeliskStrike(order, 1, order.get(0)), "a lit obelisk does nothing");
+        assertEquals(-1, ToaPuzzles.obeliskStrike(order, 1, order.get(2)));
+        int lit = 0;
+        for (int o : order) {
+            lit = ToaPuzzles.obeliskStrike(order, lit, o);
+        }
+        assertEquals(ToaPuzzles.OBELISKS, lit);
     }
 
     @Test

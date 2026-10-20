@@ -66,6 +66,10 @@ public final class RaidsContent implements ContentModule {
     public static final String TOA_SCABARAS_PANEL = "toa_scabaras_panel";
     /** Zebak: the water jugs that wash away his acid. */
     public static final String TOA_ZEBAK_JUG = "toa_zebak_jug";
+    /** Path of Scabaras: the obelisks struck in order (round 36). */
+    public static final String TOA_SCABARAS_OBELISK = "toa_scabaras_obelisk";
+    /** Path of Het: the grid's floor tiles, used to place a carried mirror (round 36). */
+    public static final String TOA_HET_FLOOR = "toa_het_floor";
     /** ToB: the skeleton by the entrance to Verzik's throne room that holds the Dawnbringer. */
     public static final String TOB_DAWNBRINGER_SKELETON = "tob_dawnbringer_skeleton";
 
@@ -143,6 +147,8 @@ public final class RaidsContent implements ContentModule {
                 BlockDef.scripted(TOA_APMEKEN_CRATE, "Crate", 0x8A6A4A, "crate"),
                 BlockDef.scripted(TOA_SCABARAS_PANEL, "Hieroglyph tablet", 0xC8A050, "tablet"),
                 BlockDef.scripted(TOA_ZEBAK_JUG, "Jug", 0xA06A3A, "pot"),
+                BlockDef.scripted(TOA_SCABARAS_OBELISK, "Obelisk", 0xD8C080, "obelisk"),
+                BlockDef.scripted(TOA_HET_FLOOR, "Floor", 0xC8A866, "pressure_plate"),
                 BlockDef.scripted(TOB_DAWNBRINGER_SKELETON, "Skeleton", 0xD8D0B8, "grave"));
     }
 

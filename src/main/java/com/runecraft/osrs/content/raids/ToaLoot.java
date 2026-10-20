@@ -43,6 +43,21 @@ public final class ToaLoot {
     /** Room points per damage to Het's seal (OSRS: x2.5). */
     public static final double HET_SEAL_POINTS = 2.5;
 
+    /**
+     * Combat Achievement flags the challenge rooms report on a perfect clear (checked when the raid completes, see
+     * CombatAchievementRules): Perfect Scabaras (under a minute, no puzzle damage), Perfect Het (no beam or orb damage, the
+     * seal broken in one exposure), Perfect Crondis (no crocodile at the tree, no water spilled, under a minute) and
+     * Perfect Apmeken (a group, no danger triggered, no venom, no volatile baboon hit, under three minutes).
+     */
+    public static final String CA_PERFECT_SCABARAS = "toa_perfect_scabaras";
+    public static final String CA_PERFECT_HET = "toa_perfect_het";
+    public static final String CA_PERFECT_CRONDIS = "toa_perfect_crondis";
+    public static final String CA_PERFECT_APMEKEN = "toa_perfect_apmeken";
+    /** Game ticks the timed perfect rooms allow: a minute (Scabaras, Crondis), three minutes (Apmeken). */
+    public static final int PERFECT_SCABARAS_TICKS = 100;
+    public static final int PERFECT_CRONDIS_TICKS = 100;
+    public static final int PERFECT_APMEKEN_TICKS = 300;
+
     /** The keris partisan jewels. */
     public static final List<String> JEWELS = List.of("eye_of_the_corruptor", "jewel_of_the_sun", "breach_of_the_scarab",
             "jewel_of_amascut");
