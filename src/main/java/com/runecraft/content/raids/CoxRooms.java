@@ -2453,6 +2453,12 @@ final class CoxRooms {
                 w.moveTo(chest.offset(1, 0, 0));
                 w.use(chest);
                 w.tick(1);
+                if (done) {
+                    // The scavenger ate its last grub this tick and fell asleep: the room is clear and the trough takes
+                    // no more grubs (the walk keeps feeding while it eats, up to the scoring cap), so any grubs still
+                    // carried are left over.
+                    break;
+                }
                 int held = w.count("cavern_grubs");
                 if (held >= 6 || eaten + this.trough + held >= needed) {
                     w.moveTo(trough.offset(-1, 0, 0));
@@ -2474,7 +2480,8 @@ final class CoxRooms {
                 }
             }
             w.until(() -> done, 60, "the corrupted scavenger was not fed (" + eaten + "/" + needed + ")");
-            return needed + " grubs, " + attempts + " lock attempts, hunger -" + hungerLost + (batsTaken ? ", psykk bats found" : "");
+            return needed + " grubs, " + pointGrubsGiven + "/" + pointGrubs + " scored, " + attempts + " lock attempts, hunger -"
+                    + hungerLost + (batsTaken ? ", psykk bats found" : "");
         }
     }
 
