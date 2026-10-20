@@ -482,7 +482,7 @@ public final class BossItems {
                 st(0, 0, 0, 0, 69, 0, 0, 0, 0, 0, 0, 75, 0, 0), 6, AttackType.RANGED, WeaponClass.BOW, Skill.RANGED, 75)
                 .examine("Thrown twice per attack.");
         accessory(items, "dizanas_quiver", "Dizana's quiver", "cape", 0x8A3A2A, 1, "cape",
-                st(0, 0, 0, 0, 18, 3, 3, 3, 3, 3, 0, 3, 0, 0), "A quiver earned in the Fortis Colosseum.");
+                st(0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 0, 3, 0, 0), "A quiver earned in the Fortis Colosseum."); // wiki: no defence
         items.add("sunfire_splinters", "Sunfire splinters", Kind.SIMPLE, "shard", 0xE0A030).value(1).stack(64000)
                 .examine("Smouldering splinters of sunfire.");
         pet(items, "pet_smol_heredit", "Smol heredit", "Sol Heredit", 0xC0A040);

@@ -827,7 +827,7 @@ public class ColosseumSession extends MinigameSession {
 
     /** Self-test: sets a modifier now, so its mechanics can be walked whatever Minimus offered. */
     public void selfTestForce(Modifier modifier, int tier) {
-        active.put(modifier, Math.max(1, Math.min(tier, modifier.maxTier())));
+        active.merge(modifier, Math.max(1, Math.min(tier, modifier.maxTier())), Math::max); // never a downgrade
     }
 
     /** Self-test: the player dies in the arena (the minigame death path: the chest is lost, back to the lobby). */
