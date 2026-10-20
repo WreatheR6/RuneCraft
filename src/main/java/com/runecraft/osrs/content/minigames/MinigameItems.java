@@ -577,7 +577,10 @@ public final class MinigameItems {
             simple(items, p + "_seed", cap + " seed", "seed", colors[i], 0, "A Tithe Farm seed (Farming " + TITHE_LEVELS[i] + ").");
             simple(items, p + "_fruit", cap + " fruit", "produce", colors[i], 0, "Deliver it to the sack for points.");
         }
-        single(items, "gricollers_can", "Gricoller's can", "pot_item", 0x6A8AA0, 1, "A watering can that holds 1,000 uses.");
+        single(items, "gricollers_can", "Gricoller's can", "pot_item", 0x6A8AA0, 1200,
+                "Contains far more water than should fit in such a small can.");
+        single(items, "gricollers_fertiliser", "Gricoller's fertiliser", "pot_item", 0x6A5A2A, 1,
+                "It's amazing how much fertiliser Gricoller can fit in one bucket.");
         wear(items, "farmers_strawhat", "Farmer's strawhat", "cowl", 0xE0C060, Slot.HEAD, 1, EquipmentStats.NONE)
                 .examine("+0.4% Farming XP (2.5% with the full outfit).");
         wear(items, "farmers_jacket", "Farmer's jacket", "leather_body", 0x8A6A3A, Slot.CHEST, 1, EquipmentStats.NONE)

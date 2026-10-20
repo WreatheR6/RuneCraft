@@ -9,8 +9,10 @@ import com.runecraft.content.minigames.RewardShopService;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.minigames.GiantsFoundry;
 import com.runecraft.osrs.content.minigames.Minigame;
+import com.runecraft.osrs.content.minigames.MinigameRules;
 import com.runecraft.osrs.content.minigames.RewardShop;
 import com.runecraft.osrs.content.minigames.RewardShops;
+import com.runecraft.osrs.content.minigames.SkillingOutfits;
 import com.runecraft.player.Players;
 import com.runecraft.selftest.ChunkSettle;
 import com.runecraft.util.Inv;
@@ -65,6 +67,10 @@ public final class SkillingMinigameWalk {
 
     public static String giantsFoundry(ServerPlayer p) {
         return run(p, SkillingMinigameWalk::foundryRound);
+    }
+
+    public static String titheFarm(ServerPlayer p) {
+        return run(p, SkillingMinigameWalk::titheRound);
     }
 
     // ------------------------------------------------------------------ helpers
@@ -123,6 +129,24 @@ public final class SkillingMinigameWalk {
 
     private int points(String key) {
         return MinigameData.of(player).points(player.getUUID(), key);
+    }
+
+    /** Selects the hotbar slot holding an item (moving it into the hotbar if needed), as a player picks it up to use it. */
+    private void hold(String id) {
+        net.minecraft.world.entity.player.Inventory inv = player.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            if (Inv.idOf(inv.getItem(i)).equals(id)) {
+                if (i > 8) {
+                    net.minecraft.world.item.ItemStack swap = inv.getItem(8);
+                    inv.setItem(8, inv.getItem(i));
+                    inv.setItem(i, swap);
+                    i = 8;
+                }
+                inv.selected = i;
+                return;
+            }
+        }
+        throw new AssertionError("no " + id + " to hold");
     }
 
     private MinigameSession start(Minigame game) {
@@ -277,6 +301,154 @@ public final class SkillingMinigameWalk {
         expect(withPoint[GiantsFoundry.Part.TIP.ordinal()] == point || withPoint[GiantsFoundry.Part.TIP.ordinal()].score(flat) >= point.score(flat),
                 "the best tip for Narrow Flat ignores The Point!");
         notes.add("bought The Point! mould, an ore pack and the smiths tunic; the colossal blade was refused at " + left);
+    }
+
+    // ------------------------------------------------------------------ Tithe Farm
+
+    private void titheRound() {
+        step = "seeds";
+        player.getInventory().clearContent();
+        Inv.give(player, "seed_dibber", 1);
+        Inv.give(player, "watering_can", 4);
+        TitheFarmSession tf = (TitheFarmSession) start(Minigame.TITHE_FARM);
+        expect(Inv.has(player, "gricollers_fertiliser", 1), "entering the farm handed out no Gricoller's fertiliser");
+        expect(tf.selfTestWater(player) == 4 * MinigameRules.TitheFarm.CAN_DOSES, "4 full watering cans hold "
+                + tf.selfTestWater(player) + " doses, not 32");
+        use(tf.selfTestBlock("tithe_seed_table"), "tithe_seed_table");
+        expect(Inv.count(player, "logavano_seed") == MinigameRules.TitheFarm.SEEDS_PER_TAKE, "a level-99 farmer took "
+                + Inv.count(player, "logavano_seed") + " logavano seeds");
+
+        step = "plant";
+        int patches = TitheFarmSession.selfTestPatches();
+        int dead = patches - 1;
+        int fert = 0;
+        double farming = xp(Skill.FARMING);
+        for (int i = 0; i < patches; i++) {
+            use(tf.selfTestPatch(i), "tithe_patch");
+            expect(tf.selfTestState(i).type() == 2 && tf.selfTestState(i).stage() == 0, "patch " + i + " wasn't planted");
+        }
+        expect(xp(Skill.FARMING) == farming, "planting gave Farming XP (OSRS gives none)");
+        // Gricoller's fertiliser on the first plant: held in hand and used on the plant.
+        hold("gricollers_fertiliser");
+        use(tf.selfTestPatch(fert), "tithe_patch");
+        expect(tf.selfTestState(fert).fertilised(), "the fertiliser didn't take");
+        expect(Inv.has(player, "gricollers_fertiliser", 1), "the fertiliser was used up (Gricoller's bucket never runs out)");
+        player.getInventory().selected = 8;
+        notes.add(patches + " logavano planted (no XP), one fertilised");
+
+        step = "grow";
+        int refills = 0;
+        int fertGrownAt = -1;
+        for (int t = 0; t < 320; t++) {
+            boolean allDone = true;
+            for (int i = 0; i < patches; i++) {
+                TitheFarmSession.Patch s = tf.selfTestState(i);
+                if (i == dead) {
+                    continue;
+                }
+                if (s.stage() == -2) {
+                    throw new AssertionError("watered patch " + i + " died");
+                }
+                if (s.stage() < MinigameRules.TitheFarm.WATERINGS) {
+                    allDone = false;
+                    if (!s.watered()) {
+                        if (tf.selfTestWater(player) == 0) {
+                            use(tf.selfTestBlock("tithe_water_barrel"), "tithe_water_barrel");
+                            refills++;
+                        }
+                        use(tf.selfTestPatch(i), "tithe_patch");
+                        expect(tf.selfTestState(i).watered(), "watering patch " + i + " failed (" + tf.selfTestWater(player) + " doses)");
+                    }
+                }
+            }
+            if (fertGrownAt < 0 && tf.selfTestState(fert).stage() == MinigameRules.TitheFarm.WATERINGS) {
+                fertGrownAt = t;
+            }
+            if (allDone) {
+                break;
+            }
+            tick();
+        }
+        for (int i = 0; i < patches; i++) {
+            expect(i == dead || tf.selfTestState(i).stage() == MinigameRules.TitheFarm.WATERINGS, "patch " + i + " didn't grow in 320 ticks "
+                    + "(stage " + tf.selfTestState(i).stage() + ")");
+        }
+        expect(tf.selfTestState(dead).stage() == -2, "the unwatered plant didn't die");
+        expect(fertGrownAt >= 3 * MinigameRules.TitheFarm.FERTILISED_GROW_TICKS - 2 && fertGrownAt < 3 * MinigameRules.TitheFarm.GROW_TICKS - 50,
+                "the fertilised plant grew in " + fertGrownAt + " ticks (half of 300 expected)");
+        expect(refills >= 1, "57 waterings never needed the barrel with 32 doses");
+        notes.add("watered 3 times each (" + refills + " barrel refills), the fertilised plant grew in " + fertGrownAt
+                + " ticks, the dry one died");
+
+        step = "harvest";
+        farming = xp(Skill.FARMING);
+        for (int i = 0; i < patches; i++) {
+            use(tf.selfTestPatch(i), "tithe_patch");
+            expect(tf.selfTestState(i).type() == -1, "patch " + i + " wasn't harvested or cleared");
+        }
+        int fruit = Inv.count(player, "logavano_fruit");
+        expect(fruit == patches - 1, "harvested " + fruit + " fruit from " + (patches - 1) + " grown plants (one each)");
+        expect(Math.abs(xp(Skill.FARMING) - farming - fruit * 23.0) < 0.05, "harvest XP " + (xp(Skill.FARMING) - farming)
+                + ", not 23 per fruit");
+
+        step = "sack";
+        farming = xp(Skill.FARMING);
+        int pts = points("tithe_farm");
+        use(tf.selfTestBlock("tithe_sack"), "tithe_sack");
+        expect(points("tithe_farm") - pts == MinigameRules.TitheFarm.points(fruit), "depositing " + fruit + " fruit gave "
+                + (points("tithe_farm") - pts) + " points");
+        expect(Math.abs(xp(Skill.FARMING) - farming - fruit * 230.0) < 0.05, "deposit XP " + (xp(Skill.FARMING) - farming));
+        // The rest of a 100-fruit batch (given, not grown): the 75th fruit's bonus, double XP from it on, 2 points for the 100th.
+        Inv.give(player, "logavano_fruit", 100);
+        farming = xp(Skill.FARMING);
+        use(tf.selfTestBlock("tithe_sack"), "tithe_sack");
+        int rest = 100 - fruit;
+        double want = 0;
+        for (int n = fruit + 1; n <= 100; n++) {
+            want += MinigameRules.TitheFarm.depositXp(2, n);
+        }
+        expect(points("tithe_farm") - pts == 35, "a full batch of 100 gave " + (points("tithe_farm") - pts) + " points, not 35");
+        expect(Math.abs(xp(Skill.FARMING) - farming - want) < 0.05, "the rest of the batch gave " + (xp(Skill.FARMING) - farming)
+                + " XP, not " + want);
+        expect(Inv.count(player, "logavano_fruit") == 100 - rest && tf.selfTestBatch(player) == 0,
+                "the sack took " + (100 - Inv.count(player, "logavano_fruit")) + " of " + 100 + " (batch now " + tf.selfTestBatch(player) + ")");
+        notes.add("a batch of 100: 35 points, " + Math.round(want + fruit * 230.0) + " deposit XP with the 5,750 bonus");
+
+        step = "shop";
+        MinigameData.of(player).addPoints(player.getUUID(), "tithe_farm", 1000);
+        for (String piece : SkillingOutfits.FARMER) {
+            RewardShop.Entry e = RewardShops.get("tithe_farm").entries().get(entry("tithe_farm", piece));
+            buy("tithe_farm", "tithe_farm", piece, e.costs().get(0).amount());
+            expect(Inv.has(player, piece, 1), piece + " wasn't handed over");
+        }
+        buy("tithe_farm", "tithe_farm", "gricollers_can", 200);
+        buy("tithe_farm", "tithe_farm", "seed_pack", 30);
+        expect(Inv.has(player, "seed_pack", 1) && Inv.has(player, "gricollers_can", 1), "the seed pack or the can wasn't handed over");
+        // The full farmer's outfit adds 2.5% to deposit XP.
+        net.minecraft.world.entity.EquipmentSlot[] slots = {net.minecraft.world.entity.EquipmentSlot.HEAD,
+                net.minecraft.world.entity.EquipmentSlot.CHEST, net.minecraft.world.entity.EquipmentSlot.LEGS,
+                net.minecraft.world.entity.EquipmentSlot.FEET};
+        for (int i = 0; i < 4; i++) {
+            Inv.remove(player, SkillingOutfits.FARMER.get(i), 1);
+            player.setItemSlot(slots[i], Inv.stack(SkillingOutfits.FARMER.get(i), 1));
+        }
+        farming = xp(Skill.FARMING);
+        Inv.remove(player, "logavano_fruit", Inv.count(player, "logavano_fruit"));
+        Inv.give(player, "logavano_fruit", 3);
+        use(tf.selfTestBlock("tithe_sack"), "tithe_sack");
+        double boosted = 3 * SkillingOutfits.boosted(230, 1.025);
+        expect(Math.abs(xp(Skill.FARMING) - farming - boosted) < 0.05, "3 fruit in the full farmer's outfit gave "
+                + (xp(Skill.FARMING) - farming) + " XP, not " + boosted);
+        for (net.minecraft.world.entity.EquipmentSlot s : slots) {
+            player.setItemSlot(s, net.minecraft.world.item.ItemStack.EMPTY);
+        }
+        notes.add("bought the farmer's outfit, Gricoller's can and a seed pack; the outfit adds 2.5% to deposits");
+
+        step = "leave";
+        use(tf.selfTestBlock("minigame_exit"), "minigame_exit");
+        expect(MinigameManager.session(player) == null, "the exit didn't take the player out");
+        expect(!Inv.has(player, "logavano_seed", 1) && !Inv.has(player, "gricollers_fertiliser", 1), "seeds or fertiliser left the farm");
+        notes.add("left: seeds and fertiliser stayed behind");
     }
 
     /** Heats or cools the preform into [lo, hi], restarting the lava or waterfall near the goal to keep the steps small. */

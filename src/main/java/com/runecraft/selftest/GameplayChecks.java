@@ -130,6 +130,8 @@ final class GameplayChecks {
         // Round 40: one round of each skilling minigame as the real player, then its points spent (SkillingMinigameWalk).
         checks.add(new SelfTest.Check("minigame:foundry_round",
                 () -> g.skillingWalk(com.runecraft.content.minigames.games.SkillingMinigameWalk::giantsFoundry)));
+        checks.add(new SelfTest.Check("minigame:tithe_round",
+                () -> g.skillingWalk(com.runecraft.content.minigames.games.SkillingMinigameWalk::titheFarm)));
         for (RaidType r : RaidType.values()) {
             checks.add(new SelfTest.Check("raid:" + r.id(), () -> g.raid(r)));
         }

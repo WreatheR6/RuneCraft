@@ -248,15 +248,22 @@ public final class RewardShops {
                 .item("prospector_legs", VOLCANIC_MINE, 34_000)
                 .item("prospector_boots", VOLCANIC_MINE, 21_000);
 
-        // Tithe Farm reward shop.
-        shop("tithe_farm", "Tithe Farm Rewards")
+        // Tithe Farm: Farmer Gricoller's Rewards (OSRS Wiki). The seed pack is a tier 3 farming contract pack (the skilling
+        // module's seed pack opens as tier 3 without a tier of its own); the herb box is the Nightmare Zone's. Not stocked:
+        // Bologa's blessing (needs Bologa's payment) and auto-weed (an unlock farming doesn't read).
+        shop("tithe_farm", "Farmer Gricoller's Rewards")
                 .item("farmers_strawhat", TITHE, 75)
                 .item("farmers_jacket", TITHE, 150)
                 .item("farmers_boro_trousers", TITHE, 125)
                 .item("farmers_boots", TITHE, 50)
-                .item("gricollers_can", TITHE, 200)
+                .item("compost", TITHE, 1)
+                .item("supercompost", TITHE, 5)
+                .item("grape_seed", TITHE, 2)
+                .item("herb_box", TITHE, 30)
+                .item("seed_pack", TITHE, 30)
                 .item("seed_box", TITHE, 250)
-                .item("herb_sack", TITHE, 250);
+                .itemSkill("herb_sack", 1, TITHE, 250, Skill.HERBLORE, 58)
+                .item("gricollers_can", TITHE, 200);
 
         // Giants' Foundry: Kovac (reputation; OSRS Wiki "Giants' Foundry Reward Shop"). The 15 moulds beyond the defaults are
         // unlocks (bought at any level, used only with their Smithing level). Not stocked: the smithing catalyst (its smelting

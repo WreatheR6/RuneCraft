@@ -685,20 +685,33 @@ public final class MinigameRules {
     }
 
     // ---------------------------------------------------------------- Tithe Farm
+    /**
+     * Tithe Farm (OSRS Wiki "Tithe Farm", the seed, plant and fertiliser pages): planting gives no XP; a plant must be
+     * watered in each of its three one-minute stages or it dies, then yields one fruit; Gricoller's fertiliser halves the
+     * growth time. Fruit go into the sack in batches of 100.
+     */
     public static final class TitheFarm {
-        /** Planting XP per seed (approx.; OSRS gives most Tithe XP on harvest and deposit). */
-        public static final double[] PLANT_XP = {3.5, 5.0, 7.0}; // approx
-        /** Farming XP per fruit harvested: golovanova 6, bologano 14, logavano 23. */
+        /** Farming XP per fruit harvested: golovanova 6, bologano 14, logavano 23 (planting gives none). */
         public static final double[] HARVEST_XP = {6, 14, 23};
-        /** Farming XP per fruit deposited (10x harvest XP); fruit 75-100 of a run pay double. */
+        /** Farming XP per fruit deposited (10x harvest XP); fruit 75-100 of a batch pay double. */
         public static final double[] DEPOSIT_XP = {60, 140, 230};
-        /** Fruit a sack holds per run; the 75th earns a 250x harvest XP bonus. */
+        /** Fruit a sack batch holds; the 75th earns a 250x harvest XP bonus, the 100th 2 extra points. */
         public static final int SACK_SIZE = 100;
         public static final int BONUS_FRUIT = 75;
         public static final int MAX_POINTS = 16_000;
+        /** Seeds and fruit a player may hold in one visit, and seeds taken from the table at a time. */
+        public static final int MAX_SEEDS = 10_000;
+        public static final int SEEDS_PER_TAKE = 100; // approx: the table asks for an amount
         public static final int WATERINGS = 3;
-        public static final int GROW_TICKS = 25;
-        public static final int GAME_TICKS = 1000;
+        /** Each growth stage lasts one minute (100 game ticks); a plant is fully grown after three. */
+        public static final int GROW_TICKS = 100;
+        /** Gricoller's fertiliser halves the growth time. */
+        public static final int FERTILISED_GROW_TICKS = 50;
+        /** Fruit a fully grown plant yields. */
+        public static final int YIELD = 1;
+        /** Doses of water: a watering can holds 8, Gricoller's can 1,000. */
+        public static final int CAN_DOSES = 8;
+        public static final int GRICOLLER_DOSES = 1000;
 
         private TitheFarm() {
         }
@@ -714,7 +727,7 @@ public final class MinigameRules {
             return best;
         }
 
-        /** Deposit XP for the n-th fruit (1-based) put in the sack this run. */
+        /** Deposit XP for the n-th fruit (1-based) of a sack batch (the bonus isn't boosted by the farmer's outfit). */
         public static double depositXp(int type, int n) {
             double xp = n >= BONUS_FRUIT ? DEPOSIT_XP[type] * 2 : DEPOSIT_XP[type];
             if (n == BONUS_FRUIT) {
@@ -723,7 +736,12 @@ public final class MinigameRules {
             return xp;
         }
 
-        /** Points for the n-th fruit (1-based) of a run: one per third fruit, plus 2 on the 100th. */
+        /** The part of {@link #depositXp} that is the 75th fruit's bonus (250x the harvest XP; the farmer's outfit doesn't boost it). */
+        public static double bonusXp(int type, int n) {
+            return n == BONUS_FRUIT ? HARVEST_XP[type] * 250 : 0;
+        }
+
+        /** Points for the n-th fruit (1-based) of a sack batch: one per third fruit, plus 2 on the 100th. */
         public static int depositPoints(int n) {
             int pts = n % 3 == 0 ? 1 : 0;
             return n == SACK_SIZE ? pts + 2 : pts;
