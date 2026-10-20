@@ -9,6 +9,7 @@ import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.AttackDef.Special;
 import com.runecraft.osrs.content.BossDef;
+import com.runecraft.osrs.content.NpcDef;
 import com.runecraft.osrs.content.PlaceDef;
 import com.runecraft.osrs.data.Drop;
 
@@ -148,17 +149,19 @@ final class Miniquests {
         b.npc("quest_viggora", "Viggora", "cel_rogues_castle", 0, 0, 0xD8E8F0, 0x1A1A1A, 0x0A0A0A, 0x8A1A1A);
         // The same five ghosts at the places of the wiki's second and third sequences (the upper-floor places stand on the
         // ground floor below them, approx). Viggora's third place is the Edgeville Dungeon's earth warrior cave (OSRS
-        // 3119, 9996), here in the dungeon's earth warrior room (NpcStoreys).
-        b.npcAt("quest_rennard_2", "Rennard", 3024, 3691, 0xD8E8F0, 0x3A3A5A, 0x2A2A3C, 0x6A6A8A); // Wilderness Bandit Camp
-        b.npcAt("quest_kharrim_2", "Kharrim", 3157, 3667, 0xD8E8F0, 0x5A3A2A, 0x3A2A1A, 0x8A8AB0); // Graveyard of Shadows
-        b.npcAt("quest_lennissa_2", "Lennissa", 3044, 3204, 0xD8E8F0, 0x6A2A4A, 0x4A1A2A, 0xB0A0C8); // Port Sarim docks
-        b.npcAt("quest_dhalak_2", "Dhalak", 3052, 3498, 0xD8E8F0, 0x2A2A6A, 0x1A1A4A, 0xA0B0D8); // Edgeville Monastery
-        b.npcAt("quest_viggora_2", "Viggora", 3448, 3550, 0xD8E8F0, 0x1A1A1A, 0x0A0A0A, 0x8A1A1A); // Slayer Tower
-        b.npcAt("quest_rennard_3", "Rennard", 3162, 2982, 0xD8E8F0, 0x3A3A5A, 0x2A2A3C, 0x6A6A8A); // desert Bandit Camp bar
-        b.npcAt("quest_kharrim_3", "Kharrim", 3068, 3858, 0xD8E8F0, 0x5A3A2A, 0x3A2A1A, 0x8A8AB0); // end of the Lava Maze
-        b.npcAt("quest_lennissa_3", "Lennissa", 2396, 3481, 0xD8E8F0, 0x6A2A4A, 0x4A1A2A, 0xB0A0C8); // south of the gnomeball field
-        b.npcAt("quest_dhalak_3", "Dhalak", 3046, 3379, 0xD8E8F0, 0x2A2A6A, 0x1A1A4A, 0xA0B0D8); // Falador Party Room
-        b.npcAt("quest_viggora_3", "Viggora", CEL_VIGGORA_3[0], CEL_VIGGORA_3[1], 0xD8E8F0, 0x1A1A1A, 0x0A0A0A, 0x8A1A1A);
+        // 3119, 9996), here in the dungeon's earth warrior room (NpcStoreys). Same clothes as the first sequence's ghost
+        // (the accent differs by one shade: every NPC has its own colours).
+        int[][] cel2 = {{3024, 3691}, {3157, 3667}, {3044, 3204}, {3052, 3498}, {3448, 3550}};
+        int[][] cel3 = {{3162, 2982}, {3068, 3858}, {2396, 3481}, {3046, 3379}, CEL_VIGGORA_3};
+        for (int g = 0; g < CEL_GHOSTS.length; g++) {
+            String firstId = "quest_" + CEL_GHOSTS[g];
+            NpcDef first = b.npcs.stream().filter(n -> n.id().equals(firstId)).findFirst().orElseThrow();
+            int[] c = first.colors();
+            for (int route = 2; route <= 3; route++) {
+                int[] at = (route == 2 ? cel2 : cel3)[g];
+                b.npcAt(firstId + "_" + route, first.name(), at[0], at[1], c[0], c[1], c[2], c[3] ^ (route - 1));
+            }
+        }
         b.items(s -> s.add("ring_of_visibility", "Ring of visibility", Kind.SIMPLE, "ring", 0xC0C0E0).value(1).stack(1)
                 .examine("A ring that reveals what is hidden."));
         b.items(s -> s.add("ghostly_hood", "Ghostly hood", Kind.ARMOUR, "cowl", 0xD8E8F0).value(1).stack(1)
@@ -184,14 +187,12 @@ final class Miniquests {
         // Wiki: Valdez's hint picks one of three sequences for the whole miniquest ("pirates and a shipwreck": 1, "north-east":
         // 2, "south-east": 3); the ghosts stand at all three places but only talk at the player's own. Saves from before the
         // routes have no route flag and follow sequence 1 (the ghosts they already met).
-        String r1 = "cel_route1";
-        String r2 = "cel_route2";
-        String r3 = "cel_route3";
-        b.quest("curse_of_the_empty_lord", "Curse of the Empty Lord (miniquest)", Difficulty.EXPERIENCED, 0)
+        String[] routes = {"cel_route1", "cel_route2", "cel_route3"};
+        QuestSpec q = b.quest("curse_of_the_empty_lord", "Curse of the Empty Lord (miniquest)", Difficulty.EXPERIENCED, 0)
                 .reqQuest("desert_treasure_i", "RESTLESS_GHOST").req(Skill.PRAYER, 31)
                 .stage("I can start this miniquest by speaking to the ghost Valdez at Glarial's Tomb, north-west of the Fishing Guild, while carrying "
                         + "a ring of visibility and an amulet of ghostspeak. (Requires Desert Treasure I, The Restless Ghost, 31 Prayer.)")
-                .talk("quest_valdez").need(sight).flag("cel_valdez").flagOneOf(r1, r2, r3).give("ghostly_robe_top")
+                .talk("quest_valdez").need(sight).flag("cel_valdez").flagOneOf(routes).give("ghostly_robe_top")
                 .say("You can see me? Then hear my tale of woe. I am Valdez, an explorer. In a buried temple I found the Staff of Armadyl, "
                                 + "and I was carrying it to Saradomin on Entrana when the thief Rennard waylaid and killed me.",
                         "Since that day I have been cursed to walk as a ghost. Take my robe, and find Rennard.")
@@ -199,51 +200,68 @@ final class Miniquests {
                 .missing("*Something is here, but you can't see or understand it. You need a ring of visibility and an amulet of ghostspeak.*")
                 .stage("I should follow the tale of woe from one cursed ghost to the next: the thief Rennard, the messenger Kharrim, the spy "
                         + "Lennissa and the wizard Dhalak. Valdez's hint tells me where my sequence leads.")
-                .talk("quest_valdez").need(sight).stay().say(VALDEZ_HINT)
-                // Rennard: gloves.
-                .talk("quest_rennard").need(sight).unlessFlag(r2, r3, "cel_rennard").stay().flag("cel_rennard").give("ghostly_gloves").say(RENNARD)
-                .say("Kharrim haunts the Chaos Temple in the Wilderness.")
-                .talk("quest_rennard_2").need(sight).needFlag(r2).unlessFlag("cel_rennard").stay().flag("cel_rennard").give("ghostly_gloves").say(RENNARD)
-                .say("Kharrim haunts the Graveyard of Shadows.")
-                .talk("quest_rennard_3").need(sight).needFlag(r3).unlessFlag("cel_rennard").stay().flag("cel_rennard").give("ghostly_gloves").say(RENNARD)
-                .say("Kharrim haunts the end of the Lava Maze, deep in the Wilderness.")
-                // Kharrim: boots.
-                .talk("quest_kharrim").need(sight).needFlag("cel_rennard").unlessFlag(r2, r3, "cel_kharrim").stay().flag("cel_kharrim")
-                .give("ghostly_boots").say(KHARRIM).say("Look for her in the church on Entrana.")
-                .talk("quest_kharrim_2").need(sight).needFlag(r2, "cel_rennard").unlessFlag("cel_kharrim").stay().flag("cel_kharrim")
-                .give("ghostly_boots").say(KHARRIM).say("Look for her on the Port Sarim docks.")
-                .talk("quest_kharrim_3").need(sight).needFlag(r3, "cel_rennard").unlessFlag("cel_kharrim").stay().flag("cel_kharrim")
-                .give("ghostly_boots").say(KHARRIM).say("Look for her by the gnomeball field of the Tree Gnome Stronghold.")
-                // Lennissa: robe bottoms.
-                .talk("quest_lennissa").need(sight).needFlag("cel_kharrim").unlessFlag(r2, r3, "cel_lennissa").stay().flag("cel_lennissa")
-                .give("ghostly_robe_bottom").say(LENNISSA).say("He haunts the Wizards' Tower, by the bookshelves.")
-                .talk("quest_lennissa_2").need(sight).needFlag(r2, "cel_kharrim").unlessFlag("cel_lennissa").stay().flag("cel_lennissa")
-                .give("ghostly_robe_bottom").say(LENNISSA).say("He haunts the Edgeville Monastery, by the altar upstairs.")
-                .talk("quest_lennissa_3").need(sight).needFlag(r3, "cel_kharrim").unlessFlag("cel_lennissa").stay().flag("cel_lennissa")
-                .give("ghostly_robe_bottom").say(LENNISSA).say("He haunts the Falador Party Room, upstairs.")
-                // Dhalak: hood, then on to Viggora.
-                .talk("quest_dhalak").need(sight).needFlag("cel_lennissa").unlessFlag(r2, r3).flag("cel_dhalak").give("ghostly_hood")
-                .say(DHALAK).say("He lingers in the Rogues' Castle, deep in the Wilderness.")
-                .talk("quest_dhalak_2").need(sight).needFlag(r2, "cel_lennissa").flag("cel_dhalak").give("ghostly_hood")
-                .say(DHALAK).say("He lingers in the tower he built in Morytania: the Slayer Tower.")
-                .talk("quest_dhalak_3").need(sight).needFlag(r3, "cel_lennissa").flag("cel_dhalak").give("ghostly_hood")
-                .say(DHALAK).say("He lingers in the Edgeville Dungeon, among the earth warriors.")
-                .hint("quest_rennard", GHOST_ELSEWHERE).hint("quest_rennard_2", GHOST_ELSEWHERE).hint("quest_rennard_3", GHOST_ELSEWHERE)
-                .hint("quest_kharrim", GHOST_ELSEWHERE).hint("quest_kharrim_2", GHOST_ELSEWHERE).hint("quest_kharrim_3", GHOST_ELSEWHERE)
-                .hint("quest_lennissa", GHOST_ELSEWHERE).hint("quest_lennissa_2", GHOST_ELSEWHERE).hint("quest_lennissa_3", GHOST_ELSEWHERE)
-                .hint("quest_dhalak", GHOST_ELSEWHERE).hint("quest_dhalak_2", GHOST_ELSEWHERE).hint("quest_dhalak_3", GHOST_ELSEWHERE)
-                .stage("I should find the last of the cursed: Viggora, once a general of Zaros.")
+                .talk("quest_valdez").need(sight).stay().say(VALDEZ_HINT);
+        // Rennard (gloves), Kharrim (boots), Lennissa (robe bottoms) once each, then Dhalak (hood) moves the miniquest on; in
+        // the order of the tale, at the places of the player's route.
+        String[] pieces = {"ghostly_gloves", "ghostly_boots", "ghostly_robe_bottom", "ghostly_hood", "ghostly_cloak"};
+        for (int g = 0; g < 4; g++) {
+            String done = "cel_" + CEL_GHOSTS[g];
+            for (int route = 1; route <= 3; route++) {
+                q.talk(celGhost(g, route)).need(sight);
+                celRoute(q, routes, route);
+                if (g > 0) {
+                    q.needFlag("cel_" + CEL_GHOSTS[g - 1]);
+                }
+                if (g < 3) {
+                    q.unlessFlag(done).stay();
+                }
+                q.flag(done).give(pieces[g]).say(CEL_TALES[g]).say(CEL_NEXT[g][route - 1]).missing(GHOST_NOT_YET);
+            }
+        }
+        for (int g = 0; g < 4; g++) {
+            for (int route = 1; route <= 3; route++) {
+                q.hint(celGhost(g, route), GHOST_ELSEWHERE);
+            }
+        }
+        q.stage("I should find the last of the cursed: Viggora, once a general of Zaros.")
                 // Saves from the old three-step version (whose completion gave the hood, top and bottoms) get the pieces they
                 // missed: past Rennard (old stage 2) all five, past Valdez only (old stage 1) the robe top.
                 .talk("quest_viggora").need(sight).stay().unlessFlag("cel_dhalak").flag("cel_dhalak", "cel_valdez")
                 .give("ghostly_robe_top", "ghostly_gloves", "ghostly_boots", "ghostly_robe_bottom", "ghostly_hood")
                 .say("The other ghosts' robes... they are bound to my curse. Take them, all of them, and hear me out.")
                 .talk("quest_viggora").need(sight).stay().unlessFlag("cel_valdez").flag("cel_valdez").give("ghostly_robe_top")
-                .say("Valdez's robe has drifted to me with the rest. Take it, and hear me out.")
-                .talk("quest_viggora").need(sight).unlessFlag(r2, r3).give("ghostly_cloak").say(VIGGORA)
-                .talk("quest_viggora_2").need(sight).needFlag(r2).give("ghostly_cloak").say(VIGGORA)
-                .talk("quest_viggora_3").need(sight).needFlag(r3).give("ghostly_cloak").say(VIGGORA)
-                .hint("quest_viggora", GHOST_ELSEWHERE).hint("quest_viggora_2", GHOST_ELSEWHERE).hint("quest_viggora_3", GHOST_ELSEWHERE);
+                .say("Valdez's robe has drifted to me with the rest. Take it, and hear me out.");
+        for (int route = 1; route <= 3; route++) {
+            q.talk(celGhost(4, route)).need(sight);
+            celRoute(q, routes, route);
+            q.give(pieces[4]).say(CEL_TALES[4]).missing(GHOST_NOT_YET);
+        }
+        for (int route = 1; route <= 3; route++) {
+            q.hint(celGhost(4, route), GHOST_ELSEWHERE);
+        }
+    }
+
+    /** The five ghosts after Valdez, in the order of the tale. */
+    static final String[] CEL_GHOSTS = {"rennard", "kharrim", "lennissa", "dhalak", "viggora"};
+
+    /** A ghost's NPC at a route's place: the first sequence keeps the original ids. */
+    static String celGhost(int ghost, int route) {
+        return "quest_" + CEL_GHOSTS[ghost] + (route == 1 ? "" : "_" + route);
+    }
+
+    /**
+     * Restricts the current trigger to a route: route 1 also serves saves from before the routes (no route flag), the
+     * others need their flag. The other routes' flags skip it, so their players hear the ghost's "elsewhere" hint.
+     */
+    private static void celRoute(QuestSpec q, String[] routes, int route) {
+        for (int r = 1; r <= 3; r++) {
+            if (r != route) {
+                q.unlessFlag(routes[r - 1]);
+            }
+        }
+        if (route > 1) {
+            q.needFlag(routes[route - 1]);
+        }
     }
 
     /** Surface tile above Viggora's third place: the north-east of the Edgeville Dungeon's earth warrior room. */
@@ -255,23 +273,32 @@ final class Miniquests {
             "?!cel_route2|?!cel_route3|The thief fled into the Wilderness. Look for him among the pirates, by their shipwreck.",
             "?cel_route2|The thief fled north-east of here, into the Wilderness: the bandits' camp would hide him.",
             "?cel_route3|The thief fled south-east of here, to the desert bandits' camp. Look in their bar."};
-    private static final String[] RENNARD = {
-            "Yes, I killed Valdez for his package, and it was the Staff of Armadyl! In a drunken stupor I asked a messenger, Kharrim, "
-                    + "to find me a buyer. That curse took me too. Take my gloves."};
-    private static final String[] KHARRIM = {
-            "Rennard wanted a buyer for the staff, so I took it to Zamorak, a general of Zaros. With it he rose against his own lord.",
-            "Take my boots. Lucien told me of a spy for Saradomin hidden among the Mahjarrat: Lennissa."};
-    private static final String[] LENNISSA = {
-            "I spied for Saradomin among Zaros's minions. When I learned the staff was being sold, I sent word to my superior, Dhalak, "
-                    + "to warn Saradomin: Lucien watched me too closely to go myself. Take my robes, and ask Dhalak what he did."};
-    private static final String[] DHALAK = {
-            "I never told Saradomin. I cast a spell of concealment on the staff, so Zamorak could steal up on Zaros unseen.",
-            "Take my hood. The last of us is Viggora, the general who marched with Zamorak."};
-    private static final String[] VIGGORA = {
-            "I am Viggora, once one of Zaros's generals, the only human among them. I joined Zamorak's assault on the Empty Lord's "
+    /** The ghosts' parts of the tale (Rennard, Kharrim, Lennissa, Dhalak, Viggora). */
+    private static final String[][] CEL_TALES = {
+            {"Yes, I killed Valdez for his package, and it was the Staff of Armadyl! In a drunken stupor I asked a messenger, Kharrim, "
+                    + "to find me a buyer. That curse took me too. Take my gloves."},
+            {"Rennard wanted a buyer for the staff, so I took it to Zamorak, a general of Zaros. With it he rose against his own lord.",
+                    "Take my boots. Lucien told me of a spy for Saradomin hidden among the Mahjarrat: Lennissa."},
+            {"I spied for Saradomin among Zaros's minions. When I learned the staff was being sold, I sent word to my superior, Dhalak, "
+                    + "to warn Saradomin: Lucien watched me too closely to go myself. Take my robes, and ask Dhalak what he did."},
+            {"I never told Saradomin. I cast a spell of concealment on the staff, so Zamorak could steal up on Zaros unseen.",
+                    "Take my hood. The last of us is Viggora, the general who marched with Zamorak."},
+            {"I am Viggora, once one of Zaros's generals, the only human among them. I joined Zamorak's assault on the Empty Lord's "
                     + "castle and watched Zamorak strike him down.",
-            "As Zaros fell he cursed all who had a hand in it, and being mortal I suffered the worst of it. Take my cloak: "
-                    + "the robes are yours now."};
+                    "As Zaros fell he cursed all who had a hand in it, and being mortal I suffered the worst of it. Take my cloak: "
+                            + "the robes are yours now."}};
+    /** Where each ghost sends the player next, per route (wiki sequences 1-3). */
+    private static final String[][] CEL_NEXT = {
+            {"Kharrim haunts the Chaos Temple in the Wilderness.", "Kharrim haunts the Graveyard of Shadows.",
+                    "Kharrim haunts the end of the Lava Maze, deep in the Wilderness."},
+            {"Look for her in the church on Entrana.", "Look for her on the Port Sarim docks.",
+                    "Look for her by the gnomeball field of the Tree Gnome Stronghold."},
+            {"He haunts the Wizards' Tower.", "He haunts the Edgeville Monastery, by the altar upstairs.",
+                    "He haunts the Falador Party Room, upstairs."},
+            {"He lingers in the Rogues' Castle, deep in the Wilderness.", "He lingers in the Slayer Tower in Morytania.",
+                    "He lingers in the Edgeville Dungeon, among the earth warriors."}};
+    /** A ghost of the player's route before its turn in the tale. */
+    private static final String[] GHOST_NOT_YET = {"* The ghost drifts past you, lost in its own sorrow. It isn't ready to tell you its part of the tale."};
     /** A ghost at another sequence's place. */
     private static final String[] GHOST_ELSEWHERE = {"* The ghost stares through you, lost in its own sorrow. Your tale doesn't lead here."};
 
