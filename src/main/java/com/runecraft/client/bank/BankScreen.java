@@ -37,6 +37,11 @@ public class BankScreen extends Screen {
     private static final int INV_COLS = 6;
     private static final int PANEL_BG = 0xF0302418;
     private static final int GRID_BG = 0xFF1E170F;
+    /** Inventory panel codes of the pouch cells under the pack (OSRS's coin and tokkul stacks), and their columns. */
+    private static final int SLOT_COINS = -2;
+    private static final int SLOT_TOKKUL = -3;
+    private static final int COL_COINS = 0;
+    private static final int COL_TOKKUL = 3;
 
     /** View state kept across refreshes and re-openings. */
     private static int tab;
@@ -235,7 +240,10 @@ public class BankScreen extends Screen {
         return idx < view.size() ? view.get(idx) : null;
     }
 
-    /** Inventory panel cell -> main inventory slot (rows of the backpack first, hotbar last); -2 = coin pouch. */
+    /**
+     * Inventory panel cell -> main inventory slot (rows of the backpack first, hotbar last); {@link #SLOT_COINS} and
+     * {@link #SLOT_TOKKUL} are the pouches, -1 nothing.
+     */
     private int invSlotAt(double mx, double my) {
         if (mx < invX || mx >= invX + INV_COLS * CELL || my < invY) {
             return -1;
@@ -245,8 +253,8 @@ public class BankScreen extends Screen {
         if (row < 6) {
             return displayToSlot(row * INV_COLS + col);
         }
-        if (row == 6 && my >= invY + 6 * CELL + 2 && col == 0) {
-            return -2;
+        if (row == 6 && my >= invY + 6 * CELL + 2) {
+            return col == COL_COINS ? SLOT_COINS : col == COL_TOKKUL ? SLOT_TOKKUL : -1;
         }
         return -1;
     }
@@ -287,8 +295,9 @@ public class BankScreen extends Screen {
         int slot = invSlotAt(mx, my);
         if (slot != -1) {
             BankQuantity.Mode mode = button == 1 ? BankQuantity.Mode.ALL : BankClient.BANK.quantity;
-            if (slot == -2) {
-                BankClient.send(BankService.OP_DEPOSIT_POUCH, "", "", 0, mode, xAmount(), depositTab());
+            if (slot == SLOT_COINS || slot == SLOT_TOKKUL) {
+                BankClient.send(BankService.OP_DEPOSIT_POUCH, "", "", slot == SLOT_TOKKUL ? BankService.POUCH_TOKKUL : BankService.POUCH_COINS,
+                        mode, xAmount(), depositTab());
             } else if (minecraft != null && minecraft.player != null && !minecraft.player.getInventory().items.get(slot).isEmpty()) {
                 BankClient.send(BankService.OP_DEPOSIT, "", "", slot, mode, xAmount(), depositTab());
             }
@@ -470,18 +479,24 @@ public class BankScreen extends Screen {
                 ctx.renderItemDecorations(font, s, x + 2, y + 2);
             }
         }
-        // Coin pouch.
+        // The coin and tokkul pouches (click deposits like a stack: the selected quantity, right-click All).
+        pouch(ctx, COL_COINS, Inv.COINS, ClientState.coins, "Coins");
+        pouch(ctx, COL_TOKKUL, Inv.TOKKUL, ClientState.tokkul, "Tokkul");
+    }
+
+    private void pouch(GuiGraphics ctx, int col, String item, long count, String label) {
+        int px = invX + col * CELL;
         int py = invY + 6 * CELL + 2;
-        ctx.fill(invX - 1, py - 1, invX + CELL + 1, py + CELL + 1, GRID_BG);
-        ItemStack coins = Inv.stack(Inv.COINS, 1);
-        if (!coins.isEmpty()) {
-            ctx.renderItem(coins, invX + 2, py + 2);
+        ctx.fill(px - 1, py - 1, px + CELL + 1, py + CELL + 1, GRID_BG);
+        ItemStack icon = Inv.stack(item, 1);
+        if (!icon.isEmpty()) {
+            ctx.renderItem(icon, px + 2, py + 2);
         }
         ctx.pose().pushPose();
         ctx.pose().translate(0, 0, 200);
-        countText(ctx, ClientState.coins, invX, py);
+        countText(ctx, count, px, py);
         ctx.pose().popPose();
-        ctx.drawString(font, "Coin pouch", invX + CELL + 4, py + 6, 0xFFC0C0C0);
+        ctx.drawString(font, label, px + CELL + 4, py + 6, 0xFFC0C0C0);
     }
 
     private void drawTooltip(GuiGraphics ctx, int mouseX, int mouseY) {
@@ -517,8 +532,12 @@ public class BankScreen extends Screen {
                 ctx.renderComponentTooltip(font, List.of(s.getHoverName().copy(),
                         Component.literal("Click: deposit " + BankClient.BANK.quantity.label + ", right-click: All").withStyle(ChatFormatting.DARK_GRAY)), mouseX, mouseY);
             }
-        } else if (slot == -2) {
-            ctx.renderTooltip(font, Component.literal("Coins: " + String.format(Locale.ROOT, "%,d", ClientState.coins)), mouseX, mouseY);
+        } else if (slot == SLOT_COINS || slot == SLOT_TOKKUL) {
+            boolean coins = slot == SLOT_COINS;
+            ctx.renderComponentTooltip(font, List.of(Component.literal((coins ? "Coins: " : "Tokkul: ")
+                            + String.format(Locale.ROOT, "%,d", coins ? ClientState.coins : ClientState.tokkul)),
+                    Component.literal("Click: deposit " + BankClient.BANK.quantity.label + ", right-click: All").withStyle(ChatFormatting.DARK_GRAY)),
+                    mouseX, mouseY);
         }
     }
 }

@@ -1366,8 +1366,23 @@ final class ItemCombatChecks {
         if (Inv.count(p(), item) != 10 || slotOf(item, true) >= 0 || Notes.isNote(p().getMainHandItem())) {
             throw failure("un-noting 10 notes left " + Inv.count(p(), item) + " lobsters and " + (slotOf(item, true) >= 0 ? "notes" : "no notes"));
         }
+        // The tokkul pouch (OSRS's one tokkul stack) deposits the chosen quantity, like the coin pouch, and leaves the coins alone.
+        data().setTokkul(20);
+        long coins = data().coins();
+        long banked = bank.count(Inv.TOKKUL, "");
+        BankService.open(p());
+        BankService.selfTestAction(p(), BankService.OP_DEPOSIT_POUCH, "", BankService.POUCH_TOKKUL, BankQuantity.Mode.FIVE, 0);
+        if (data().tokkul() != 15 || bank.count(Inv.TOKKUL, "") != banked + 5 || data().coins() != coins) {
+            throw failure("depositing 5 of 20 tokkul from the pouch left " + data().tokkul() + " in it, banked "
+                    + (bank.count(Inv.TOKKUL, "") - banked) + " and changed the coins by " + (data().coins() - coins));
+        }
+        BankService.selfTestAction(p(), BankService.OP_WITHDRAW, Inv.TOKKUL, 0, BankQuantity.Mode.ALL, 0);
+        if (data().tokkul() != 20 + banked || bank.count(Inv.TOKKUL, "") != 0) {
+            throw failure("withdrawing the banked tokkul left " + data().tokkul() + " in the pouch and " + bank.count(Inv.TOKKUL, "")
+                    + " in the bank");
+        }
         BankService.selfTestAction(p(), BankService.OP_CLOSE, "", 0, BankQuantity.Mode.ONE, 0);
-        return "deposit-all, withdraw 1/5, noted withdraw, deposit-inventory, un-note at a banker OK";
+        return "deposit-all, withdraw 1/5, noted withdraw, deposit-inventory, un-note at a banker, 5 of the tokkul pouch OK";
     }
 
     private String geInstant() {

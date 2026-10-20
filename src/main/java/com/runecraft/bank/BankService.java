@@ -63,6 +63,9 @@ public final class BankService {
     public static final int OP_RELEASE_PLACEHOLDERS = 9;
     public static final int OP_CLOSE = 10;
     public static final int OP_DEPOSIT_POUCH = 11;
+    /** {@link #OP_DEPOSIT_POUCH}'s slot argument: which pouch (OSRS's one coin or tokkul stack in the inventory). */
+    public static final int POUCH_COINS = 0;
+    public static final int POUCH_TOKKUL = 1;
 
     /** How far (blocks) a player may walk from where they opened the bank before it closes. */
     private static final double MAX_DISTANCE_SQ = 8 * 8;
@@ -207,7 +210,11 @@ public final class BankService {
                 withdraw(player, bank, key, mode, x);
             }
             case OP_DEPOSIT -> depositSlot(player, bank, slot, mode, x, tab);
-            case OP_DEPOSIT_POUCH -> depositPouch(player, bank, mode, x, tab);
+            case OP_DEPOSIT_POUCH -> {
+                if (!depositPouch(player, bank, slot == POUCH_TOKKUL ? Inv.TOKKUL : Inv.COINS, mode, x, tab)) {
+                    Msg.game(player, "Your bank is full.");
+                }
+            }
             case OP_DEPOSIT_INVENTORY -> depositInventory(player, bank, tab);
             case OP_DEPOSIT_WORN -> depositWorn(player, bank, tab);
             case OP_SET_NOTED -> bank.noted = slot != 0;
@@ -354,11 +361,23 @@ public final class BankService {
         }
     }
 
-    static void depositPouch(ServerPlayer player, BankModel bank, BankQuantity.Mode mode, long x, int tab) {
+    /**
+     * Deposits 1/5/10/X/All from a pouch ({@link Inv#pouched}: coins or tokkul, each OSRS's single stack of it in the
+     * inventory); returns false when the bank couldn't take all of it.
+     */
+    static boolean depositPouch(ServerPlayer player, BankModel bank, String id, BankQuantity.Mode mode, long x, int tab) {
         PlayerData data = Players.data(player);
-        long n = BankQuantity.amount(mode, x, data.coins());
-        long put = bank.deposit(Inv.COINS, "", n, tab);
-        data.setCoins(data.coins() - put);
+        long n = BankQuantity.amount(mode, x, Inv.pouch(data, id));
+        if (n <= 0) {
+            return true;
+        }
+        if (refused(player, id)) {
+            Msg.game(player, "You can't deposit that here.");
+            return true;
+        }
+        long put = bank.deposit(id, "", n, tab);
+        Inv.setPouch(data, id, Inv.pouch(data, id) - put);
+        return put >= n;
     }
 
     /**
@@ -395,13 +414,13 @@ public final class BankService {
             s.shrink((int) put);
             full |= !s.isEmpty();
         }
-        depositPouch(player, bank, BankQuantity.Mode.ALL, 0, tab);
-        // The tokkul pouch is OSRS's tokkul stack in the inventory: "Deposit inventory" banks it too.
-        if (!refused(player, Inv.TOKKUL)) {
-            PlayerData data = Players.data(player);
-            long put = bank.deposit(Inv.TOKKUL, "", data.tokkul(), tab);
-            data.setTokkul(data.tokkul() - put);
-            full |= data.tokkul() > 0;
+        // The coin and tokkul pouches are OSRS's coin and tokkul stacks in the inventory: "Deposit inventory" banks them too.
+        for (String id : List.of(Inv.COINS, Inv.TOKKUL)) {
+            if (refused(player, id)) {
+                kept |= Inv.pouch(Players.data(player), id) > 0;
+            } else {
+                full |= !depositPouch(player, bank, id, BankQuantity.Mode.ALL, 0, tab);
+            }
         }
         if (full) {
             Msg.game(player, "Your bank is full.");
