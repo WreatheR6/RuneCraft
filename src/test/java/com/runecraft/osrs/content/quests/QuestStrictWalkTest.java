@@ -45,6 +45,8 @@ class QuestStrictWalkTest {
             "dragon_slayer_i 3 talk guildmaster",
             // Radimus hands out more papyrus (and to saves from before the papyrus)
             "legends_quest 1 talk radimus_erkle",
+            // saves from before carry Eluned's seed already: the moss guardian's kill just moves on
+            "roving_elves 2 kill moss_guardian",
             // the priest's lines when the player arrives without the urn (the walk brings it)
             "beneath_cursed_sands 3 talk tumeken_priest");
 

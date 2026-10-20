@@ -34,6 +34,7 @@ final class QuestBossScripts {
         BossScripts.register("jungle_demon", JungleDemon::new);
         BossScripts.register("elvarg", Elvarg::new);
         BossScripts.register("nezikchened", Nezikchened::new);
+        BossScripts.register("treus_dayth", TreusDayth::new);
         BossScripts.register("head_menaphite_guard", FalseGods::new);
         BossScripts.register("dark_squall", MagicOnly::new);
         BossScripts.register("balance_elemental", BalanceForms::new);
@@ -488,6 +489,36 @@ final class QuestBossScripts {
             }
             return QuestBossRules.culinaromancerHits(boss.getRandom().nextInt(3))
                     ? boss.getRandom().nextInt(QuestBossRules.CULINAROMANCER_MAGIC_MAX + 1) : 0;
+        }
+    }
+
+    /**
+     * Haunted Mine (wiki): Treus Dayth shifts about the room when attacked, more often the closer he is to dying, and sets the
+     * mine carts and cranes on the player (small typeless hits every few ticks here, approx).
+     */
+    static final class TreusDayth implements BossScript {
+        @Override
+        public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            float left = boss.getHealth() / boss.getMaxHealth();
+            if (damage > 0 && boss.getRandom().nextInt(QuestBossRules.treusShiftOneIn(left)) == 0) {
+                double a = boss.getRandom().nextDouble() * Math.PI * 2;
+                boss.teleportTo(boss.getX() + Math.cos(a) * 5, boss.getY(), boss.getZ() + Math.sin(a) * 5);
+                announce(boss, "Treus Dayth shifts across the mine!", ChatFormatting.GRAY);
+            }
+            return damage;
+        }
+
+        @Override
+        public void gameTick(DataBossEntity boss, long gameTick) {
+            if (gameTick % QuestBossRules.TREUS_MACHINERY_TICKS != 0 || !(boss.getTarget() instanceof ServerPlayer p)
+                    || p.distanceToSqr(boss) > 20 * 20) {
+                return;
+            }
+            int hit = boss.getRandom().nextInt(QuestBossRules.TREUS_MACHINERY_MAX + 1);
+            if (hit > 0) {
+                Msg.red(p, boss.getRandom().nextBoolean() ? "A mine cart rolls into you!" : "A crane swings into you!");
+                com.runecraft.combat.CombatHandler.applyDamage(null, p, hit);
+            }
         }
     }
 

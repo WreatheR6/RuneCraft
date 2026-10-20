@@ -12,6 +12,7 @@ import com.runecraft.osrs.content.BossDef;
 import com.runecraft.osrs.content.PlaceDef;
 import com.runecraft.osrs.data.Drop;
 
+import java.util.List;
 import java.util.Map;
 
 /** Fremennik Province quests: The Fremennik Trials, Lunar Diplomacy, Mountain Daughter and Horror from the Deep. */
@@ -153,6 +154,117 @@ final class FremennikQuests {
         return b.failLines("* The lock doesn't budge. Read the riddle again.").build();
     }
 
+    /** Ethereal Fluke's six dice (quest-helper: their faces as the challenge starts, centre west to south east). */
+    static final int[] LD_DICE = {1, 6, 5, 2, 4, 3};
+    private static final String[] LD_DICE_NAMES = {"centre west", "centre east", "north west", "south west", "north east", "south east"};
+
+    /**
+     * Lunar Diplomacy's dream challenges (wiki, quest-helper), in the order each player draws them: Ethereal Fluke's dice
+     * (flipping a die turns it to its opposite face; the faces must add up to his number), the Numerator's number pattern,
+     * the Mimic's emotes and the memory tiles. The race is run separately.
+     */
+    static final QuestPuzzle LD_DREAM = dream();
+
+    private static QuestPuzzle dream() {
+        QuestPuzzle.Builder b = QuestPuzzle.builder("ld_dream").room("chance");
+        String[] dice = new String[LD_DICE.length + 1];
+        for (int i = 0; i < LD_DICE.length; i++) {
+            dice[i] = "Flip the " + LD_DICE_NAMES[i] + " die (" + LD_DICE[i] + ")";
+        }
+        dice[LD_DICE.length] = "That's my answer";
+        for (int target : new int[]{12, 30, 17}) {
+            b.variant(null).prompt("* Ethereal Fluke: Flip my dice, mortal. A flipped die shows its opposite face (seven minus it). Make them add up to "
+                    + target + " with as few flips as you can, then tell me you're done.").options(dice);
+            for (List<Integer> s : diceSolutions(target)) {
+                b.solution(s.stream().mapToInt(Integer::intValue).toArray());
+            }
+        }
+        b.room("numbers");
+        String[] digits = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+        int[][][] patterns = {{{0, 1, 2, 3, 4, 5}, {6, 7, 8}}, {{1, 3, 5, 7, 9, 1}, {3, 5, 7}}, {{9, 8, 7, 6, 5, 4}, {3, 2, 1}},
+                {{2, 4, 6, 8, 0, 2}, {4, 6, 8}}, {{1, 1, 2, 2, 3, 3}, {4, 4, 5}}};
+        for (int[][] p : patterns) {
+            StringBuilder shown = new StringBuilder();
+            for (int d : p[0]) {
+                shown.append(d).append(' ');
+            }
+            b.variant(null).prompt("* The Ethereal Numerator shows a row of numbers: " + shown + "_ _ _. Press the three that carry the pattern on.")
+                    .options(digits).solution(p[1]);
+        }
+        b.room("mimic");
+        String[] emotes = {"Cry", "Bow", "Dance", "Wave", "Think", "Clap", "Cheer", "Laugh"};
+        int[][] routines = {{0, 1, 2, 3, 4}, {4, 3, 5, 1, 0}, {2, 6, 0, 7, 3}};
+        for (int[] r : routines) {
+            StringBuilder shown = new StringBuilder();
+            for (int e : r) {
+                shown.append(shown.length() == 0 ? "" : ", ").append(emotes[e].toLowerCase(java.util.Locale.ROOT));
+            }
+            b.variant(null).prompt("* The Ethereal Mimic performs: " + shown + ". Copy each emote in turn.").options(emotes).solution(r);
+        }
+        b.room("memory");
+        String[] steps = {"Step north", "Step east", "Step south", "Step west"};
+        int[][] paths = {{0, 0, 1, 0, 3}, {1, 0, 0, 3, 0}, {0, 3, 0, 1, 1}};
+        for (int[] path : paths) {
+            StringBuilder shown = new StringBuilder();
+            for (int s : path) {
+                shown.append(shown.length() == 0 ? "" : ", ").append(steps[s].substring(5));
+            }
+            b.variant(null).prompt("* The safe tiles across the platform light up for a moment: " + shown + ". Walk them before you forget.")
+                    .options(steps).solution(path);
+        }
+        return b.picks(4).failLines("* The dream lurches and the challenge begins again.").build();
+    }
+
+    /**
+     * Every order of every smallest set of dice flips that makes the faces add up to {@code target}, followed by "done" (the
+     * puzzle accepts answers of one length).
+     */
+    static List<List<Integer>> diceSolutions(int target) {
+        List<List<Integer>> out = new java.util.ArrayList<>();
+        int fewest = Integer.MAX_VALUE;
+        for (int mask = 0; mask < (1 << LD_DICE.length); mask++) {
+            int sum = 0;
+            for (int i = 0; i < LD_DICE.length; i++) {
+                sum += (mask & (1 << i)) != 0 ? 7 - LD_DICE[i] : LD_DICE[i];
+            }
+            if (sum == target) {
+                fewest = Math.min(fewest, Integer.bitCount(mask));
+            }
+        }
+        for (int mask = 0; mask < (1 << LD_DICE.length); mask++) {
+            if (Integer.bitCount(mask) != fewest) {
+                continue;
+            }
+            int sum = 0;
+            List<Integer> flips = new java.util.ArrayList<>();
+            for (int i = 0; i < LD_DICE.length; i++) {
+                boolean flip = (mask & (1 << i)) != 0;
+                sum += flip ? 7 - LD_DICE[i] : LD_DICE[i];
+                if (flip) {
+                    flips.add(i);
+                }
+            }
+            if (sum == target) {
+                permute(flips, 0, out);
+            }
+        }
+        return out;
+    }
+
+    private static void permute(List<Integer> a, int k, List<List<Integer>> out) {
+        if (k == a.size()) {
+            List<Integer> s = new java.util.ArrayList<>(a);
+            s.add(LD_DICE.length);
+            out.add(s);
+            return;
+        }
+        for (int i = k; i < a.size(); i++) {
+            java.util.Collections.swap(a, k, i);
+            permute(a, k + 1, out);
+            java.util.Collections.swap(a, k, i);
+        }
+    }
+
     private static void lunarDiplomacy(QuestBook b) {
         b.npcAt("lokar_searunner", "Lokar Searunner", 2620, 3693, 0xE8C0A2, 0x5A3A6A, 0x3A2A3A, 0xE0E0E0);
         b.npc("oneiromancer", "Oneiromancer", "quest_lunar_isle", 0, 3, 0xF0E0D0, 0x8AA0C0, 0x6A80A0, 0xC0D0F0);
@@ -218,9 +330,18 @@ final class FremennikQuests {
                         + " and a spade for the ring. Pauline Polaris will help with the helm, and charge your dramen staff at the four elemental altars.")
                 .stage("I should drink the waking sleep potion and defeat 'Me' in the dream world.")
                 .talk("oneiromancer").stay().need("waking_sleep_vial").travel("lunar_dream_world").say("Drink the potion... *The world fades into a dream.*")
-                // OSRS dream world: five challenges (chance, numbers, mimic, race, memory) before the fight with "Me". Simplified.
-                .reach("lunar_dream_world", 10).stay().unlessFlag("ld_challenges").need("waking_sleep_vial").flag("ld_challenges")
-                .say("* Ethereal Fluke's dice, the Numerator's patterns, the Mimic's emotes, the race and the memory tiles: you pass every challenge.",
+                // OSRS dream world: five challenges (chance, numbers, mimic, race, memory) before the fight with "Me", in any order:
+                // four puzzles in the player's own order (LD_DREAM) and the race.
+                .puzzle("lunar_dream_world", LD_DREAM, 0).stay().need("waking_sleep_vial").unlessFlag("ld_dream_0", "ld_challenges").flag("ld_dream_0")
+                .say("* The first challenge is passed.")
+                .puzzle("lunar_dream_world", LD_DREAM, 1).stay().needFlag("ld_dream_0").unlessFlag("ld_dream_1", "ld_challenges").flag("ld_dream_1")
+                .say("* The second challenge is passed.")
+                .puzzle("lunar_dream_world", LD_DREAM, 2).stay().needFlag("ld_dream_1").unlessFlag("ld_dream_2", "ld_challenges").flag("ld_dream_2")
+                .say("* The third challenge is passed.")
+                .puzzle("lunar_dream_world", LD_DREAM, 3).stay().needFlag("ld_dream_2").unlessFlag("ld_dream_3", "ld_challenges").flag("ld_dream_3")
+                .say("* The fourth challenge is passed.")
+                .reach("lunar_dream_world", 10).stay().needFlag("ld_dream_3").unlessFlag("ld_challenges").need("waking_sleep_vial").flag("ld_challenges")
+                .say("* Last, the Ethereal Expert's race across the platforms. You win it.",
                         "* The Ethereal Being points to the last platform. Your reflection steps out to meet you.")
                 .kill("me").needFlag("ld_challenges").take("waking_sleep_vial").travel("quest_lunar_isle").say("* You defeat your dream self and wake up in the shrine.")
                 .stage("I should tell the Oneiromancer I've defeated myself.")

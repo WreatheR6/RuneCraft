@@ -78,9 +78,9 @@ final class ElfQuests {
         Cast.npc(b, "general_hining", "General Hining", "tyras_camp", 3, 3, Cast.FAIR, 0x8A1A1A);
         // OSRS: the player never fights King Tyras (the barrel bomb kills him); the level-110 fight is a Tyras guard in the
         // dense forest. The id stays "king_tyras" so saves and the creature model keep working.
-        b.boss(BossDef.of("king_tyras", "Tyras guard").level(110).stats(110, 90, 100, 90, 1, 1).speed(4)
-                .defenceBonus(60, 60, 60, 0, 60)
-                .attack(AttackDef.of("halberd", AttackType.SLASH, 17, 3, 10))
+        b.boss(BossDef.of("king_tyras", "Tyras guard").level(110).stats(110, 85, 95, 100, 1, 0).speed(5) // DPS calculator
+                .defenceBonus(87, 84, 76, -10, 79)
+                .attack(AttackDef.of("halberd", AttackType.STAB, 15, 3, 10))
                 .drops(Drop.always("bones")).skin(0xE8C0AD, 0xC0C0C8, 0x8A1A1A, 0xE0C030).at("tyras_camp").arena(10, "jungle"));
         b.quest("regicide", "Regicide", Difficulty.EXPERIENCED, 3)
                 .reqQuest("underground_pass").req(Skill.AGILITY, 56).req(Skill.CRAFTING, 10)

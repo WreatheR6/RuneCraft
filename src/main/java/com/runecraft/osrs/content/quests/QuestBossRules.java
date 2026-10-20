@@ -46,6 +46,15 @@ public final class QuestBossRules {
     public static final int GNOME_MAX_HIT = 4;
     public static final int JUNGLE_DEMON_REGEN_PERCENT = 20;
 
+    /** Haunted Mine: Treus Dayth's carts and cranes hit up to this every few game ticks (approx; the wiki gives no numbers). */
+    public static final int TREUS_MACHINERY_TICKS = 6;
+    public static final int TREUS_MACHINERY_MAX = 4;
+
+    /** Haunted Mine (wiki: more often the closer he is to dying): one hit in this many makes Treus Dayth shift (approx). */
+    public static int treusShiftOneIn(float healthLeft) {
+        return healthLeft > 0.5f ? 4 : healthLeft > 0.25f ? 3 : 2;
+    }
+
     /** Legends' Quest (wiki): Nezikchened drains Prayer to a tenth of the player's Prayer level as the fight begins. */
     public static int nezikchenedPrayerCap(int prayerLevel) {
         return prayerLevel / 10;

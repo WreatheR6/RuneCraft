@@ -190,6 +190,65 @@ class MasterQuestsTest {
         assertEquals(9, QuestBossRules.nezikchenedPrayerCap(99));
     }
 
+    // ------------------------------------------------------------------ the elves, Haunted Mine, Lunar Diplomacy
+
+    @Test
+    void mourningsEndTwoSolvesTheTempleOfLight() {
+        inOrder("mournings_end_part_ii", "talk arianwyn", "talk essyllt", "reach temple_of_light", "talk arianwyn", "reach temple_of_light",
+                "puzzle temple_of_light", "puzzle temple_of_light", "puzzle temple_of_light", "puzzle temple_of_light",
+                "kill shadow_of_light", "talk arianwyn");
+        // chest 1 (wiki): mirror 1 north, 2 west, 3 south, the yellow crystal, mirror 4 east
+        QuestPuzzle.Variant v = KandarinMoreQuests.ME2_CHEST_YELLOW.rooms.get(0).variants().get(0);
+        assertEquals(List.of("Point it north", "Point it west", "Point it south", "Place the yellow crystal", "Point it east"),
+                v.solutions().get(0).stream().map(i -> v.options().get(i)).toList());
+        QuestPuzzle.Variant g = KandarinMoreQuests.ME2_CHEST_GREEN.rooms.get(0).variants().get(0);
+        assertTrue(g.solutions().get(0).contains(7) && g.solutions().get(0).contains(6), "green light needs the cyan and the yellow crystal");
+    }
+
+    @Test
+    void rovingElvesTakesTheSeedFromGlarialsTombToTheFalls() {
+        inOrder("roving_elves", "talk islwyn", "talk eluned", "kill moss_guardian", "talk eluned", "reach baxtorian_falls", "talk islwyn");
+        assertTrue(spec("roving_elves").triggers().stream().anyMatch(t -> t.target.equals("glarials_tomb") && "moss_guardian".equals(t.spawn)
+                && t.need.containsKey("glarials_pebble")));
+    }
+
+    @Test
+    void hauntedMineSetsThePointsAndFightsTreusDayth() {
+        inOrder("haunted_mine", "talk zealot", "talk zealot", "reach abandoned_mine", "puzzle abandoned_mine", "reach abandoned_mine",
+                "kill treus_dayth", "reach abandoned_mine");
+        for (QuestPuzzle.Variant v : MorytaniaQuests.HM_POINTS.rooms.get(0).variants()) {
+            List<Integer> s = v.solutions().get(0);
+            assertEquals(11, s.get(s.size() - 1), "the cart is started last");
+            for (int i = 1; i < s.size() - 1; i++) {
+                assertTrue(s.get(i) > s.get(i - 1), "levers are pulled from A to K");
+            }
+        }
+        BossDef treus = ContentRegistry.boss("treus_dayth");
+        assertTrue(treus.attacks.stream().anyMatch(a -> a.style() == com.runecraft.osrs.AttackType.RANGED && a.maxHit() == 15));
+        assertEquals(2, QuestBossRules.treusShiftOneIn(0.1f));
+    }
+
+    @Test
+    void lunarDiplomacyRunsTheDreamChallenges() {
+        inOrder("lunar_diplomacy", "talk lokar_searunner", "talk brundt", "talk oneiromancer", "drop suqah", "reach AIR_ALTAR", "reach FIRE_ALTAR",
+                "reach WATER_ALTAR", "reach EARTH_ALTAR", "reach lunar_isle_mine", "talk pauline_polaris", "talk oneiromancer",
+                "puzzle lunar_dream_world", "puzzle lunar_dream_world", "puzzle lunar_dream_world", "puzzle lunar_dream_world",
+                "reach lunar_dream_world", "kill me", "talk oneiromancer");
+        assertEquals(4, FremennikQuests.LD_DREAM.picks);
+        // every accepted dice answer flips dice to the target sum
+        for (int target : new int[]{12, 30, 17}) {
+            List<List<Integer>> sols = FremennikQuests.diceSolutions(target);
+            assertFalse(sols.isEmpty(), "sum " + target);
+            for (List<Integer> s : sols) {
+                int sum = 0;
+                for (int i = 0; i < FremennikQuests.LD_DICE.length; i++) {
+                    sum += s.contains(i) ? 7 - FremennikQuests.LD_DICE[i] : FremennikQuests.LD_DICE[i];
+                }
+                assertEquals(target, sum);
+            }
+        }
+    }
+
     // ------------------------------------------------------------------ Monkey Madness I
 
     @Test
