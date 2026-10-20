@@ -60,7 +60,8 @@ import net.minecraft.world.phys.AABB;
  *   kill reaches the quest through the real death path;</li>
  *   <li>puzzles are shown where they are presented and answered through the chat-link handler;</li>
  *   <li>the only things handed over are what a player brings from outside the quest (tools, runes, coins, ingredients) and
- *   flags earned in other quests.</li>
+ *   flags earned in other quests;</li>
+ *   <li>a step may cost only the quest items it takes (a fight's weapon swap puts what was in hand back in the pack).</li>
  * </ul>
  * Any step that doesn't take effect fails the check with the stage, step and reason; so does a quest that doesn't end with
  * its quest points, XP and item rewards.
@@ -96,6 +97,20 @@ final class QuestStepChecks {
 
     private AssertionError failure(String message) {
         return new AssertionError(message);
+    }
+
+    /**
+     * Puts the player at a quest place and runs its objectives ({@link QuestInterpreter#selfTestArrive}). False if the place
+     * is unknown. Chunks there that never finished loading fail the step as such: a foe raised in one would be invisible, and
+     * the step would otherwise fail later as a foe that never came, which points at the quest spec instead.
+     */
+    private boolean arrive(String where, String place, boolean underground) {
+        int loading = QuestInterpreter.selfTestArrive(p(), place, underground);
+        if (loading > 0) {
+            throw failure(where + ": " + loading + " chunk(s) at " + place + " were still loading after "
+                    + QuestInterpreter.SELF_TEST_LOAD_SECONDS + " s");
+        }
+        return loading == 0;
     }
 
     private String walk(String id) {
@@ -164,18 +179,18 @@ final class QuestStepChecks {
                 }
                 String where = "stage " + s + " step " + (steps + 1) + " (" + QuestWalk.describe(t) + ", trigger "
                         + stage.triggers.indexOf(t) + ")";
-                prepare(t, questItems);
-                Snapshot snap = new Snapshot(t, s, info);
+                List<ItemStack> banked = prepare(t, questItems);
+                Snapshot snap = new Snapshot(t, s, info, questItems);
                 switch (t.kind) {
                     case TALK -> QuestInterpreter.selfTestTalk(p(), t.target);
                     case REACH -> {
-                        if (!QuestInterpreter.selfTestArrive(p(), t.target, t.underground)) {
+                        if (!arrive(where, t.target, t.underground)) {
                             throw failure(where + ": no place " + t.target);
                         }
                         places++;
                     }
                     case PUZZLE -> {
-                        if (ContentRegistry.npc(t.target) == null && !QuestInterpreter.selfTestArrive(p(), t.target, t.underground)) {
+                        if (ContentRegistry.npc(t.target) == null && !arrive(where, t.target, t.underground)) {
                             throw failure(where + ": no place or NPC " + t.target);
                         }
                         String foe = QuestPuzzles.selfTestSolve(p(), q, t);
@@ -189,7 +204,7 @@ final class QuestStepChecks {
                     }
                     case KILL -> {
                         if (t.nearPlace != null) {
-                            QuestInterpreter.selfTestArrive(p(), t.nearPlace, false);
+                            arrive(where, t.nearPlace, false);
                         }
                         for (int i = 0; i < Math.max(1, t.count) && !snap.fired(); i++) {
                             notes.add(fight(where, t.target));
@@ -203,9 +218,18 @@ final class QuestStepChecks {
                         }
                     }
                 }
-                if (!snap.fired()) {
+                String missing = snap.missing();
+                if (missing != null) {
+                    // what didn't happen, then the step's state now: still ready (the talk or place fired another step), or
+                    // switched off (it fired, e.g. its flag is set, but part of it - its foe - didn't come through)
                     String why = QuestInterpreter.selfTestBlocked(p(), t);
-                    throw failure(where + " did not take effect" + (why != null ? ": " + why : " (the talk or place fired another step)"));
+                    throw failure(where + " did not take effect (" + missing + "): " + (why != null ? "the step is now " + why
+                            : "the step is still ready, the talk or place fired another step"));
+                }
+                banked.forEach(stack -> Inv.give(p(), stack)); // back from the bank
+                String lost = snap.lostQuestItem();
+                if (lost != null) {
+                    throw failure(where + " lost the quest item " + lost + ", which it doesn't use up");
                 }
                 bringFoesHome();
                 c.home();
@@ -255,55 +279,85 @@ final class QuestStepChecks {
         final Map<String, Integer> carried = new HashMap<>();
         final boolean flagOneOfSet;
         final boolean foeUp;
+        /** The quest items carried before the step: only what it takes may go (a fight's weapon swap must not cost one). */
+        final Map<String, Integer> questCarried = new HashMap<>();
 
-        Snapshot(Trigger t, int stage, QuestInfo info) {
+        Snapshot(Trigger t, int stage, QuestInfo info, Set<String> questItems) {
             this.t = t;
             this.stage = stage;
             this.info = info;
             t.give.keySet().forEach(item -> carried.put(item, Inv.count(p(), item)));
+            for (String item : questItems) {
+                int n = Inv.count(p(), item);
+                if (n > 0) {
+                    questCarried.put(item, n);
+                }
+            }
             QuestsState state = QuestsState.get(p());
             flagOneOfSet = t.flagOneOf.stream().anyMatch(f -> state.hasFlag(p().getUUID(), f));
             foeUp = t.spawn != null && !foes(t.spawn, 64).isEmpty();
         }
 
         boolean fired() {
+            return missing() == null;
+        }
+
+        /** What the step should have done but didn't (its flag, its item, its foe), or null when it took effect. */
+        String missing() {
             PlayerData data = Players.data(p());
             if (data.questComplete(info) || data.questStage(info) != stage) {
-                return true;
+                return null;
             }
             QuestsState state = QuestsState.get(p());
             for (String f : t.setFlags) {
                 if (!state.hasFlag(p().getUUID(), f)) {
-                    return false;
+                    return "flag " + f + " not set";
                 }
             }
             if (!t.flagOneOf.isEmpty() && !flagOneOfSet && t.flagOneOf.stream().noneMatch(f -> state.hasFlag(p().getUUID(), f))) {
-                return false;
+                return "none of " + t.flagOneOf + " set";
             }
             for (Map.Entry<String, Integer> e : carried.entrySet()) {
                 int now = Inv.count(p(), e.getKey());
                 if (t.kind == Trigger.Kind.DROP ? now < Math.max(1, t.count) : now <= e.getValue() - t.take.getOrDefault(e.getKey(), 0)) {
-                    return false;
+                    return "no " + e.getKey() + " received";
                 }
             }
             if (t.spawn != null && !foeUp && foes(t.spawn, 64).isEmpty()) {
-                return false;
+                return "no " + t.spawn + " raised near the player";
             }
             // a side step that sets nothing and gives nothing (a respawn, a travel) took effect when it ran
-            return !t.setFlags.isEmpty() || !t.flagOneOf.isEmpty() || !t.give.isEmpty() || t.spawn != null || t.travel != null;
+            return !t.setFlags.isEmpty() || !t.flagOneOf.isEmpty() || !t.give.isEmpty() || t.spawn != null || t.travel != null
+                    ? null : "the stage did not move on";
+        }
+
+        /** A quest item the step lost although it doesn't take it (or takes fewer), or null. */
+        String lostQuestItem() {
+            for (Map.Entry<String, Integer> e : questCarried.entrySet()) {
+                int now = Inv.count(p(), e.getKey());
+                int left = e.getValue() - t.take.getOrDefault(e.getKey(), 0);
+                if (now < left) {
+                    return e.getKey() + " (" + e.getValue() + " before, " + now + " after)";
+                }
+            }
+            return null;
         }
     }
 
     /**
      * Before a step: the pack holds only the quest items earned so far plus what this step asks the player to bring from
-     * outside the quest (tools, ingredients, runes, coins).
+     * outside the quest (tools, ingredients, runes, coins). A step done empty-handed (Lady Meilyr's spin) has the player bank
+     * everything first: the quest items banked are returned, to be taken back after the step.
      */
-    private void prepare(Trigger t, Set<String> questItems) {
+    private List<ItemStack> prepare(Trigger t, Set<String> questItems) {
         ServerPlayer p = p();
+        List<ItemStack> banked = new ArrayList<>();
         for (int i = 0; i < p.getInventory().getContainerSize(); i++) {
             ItemStack stack = p.getInventory().getItem(i);
             if (!stack.isEmpty() && !questItems.contains(Inv.idOf(stack))) {
                 p.getInventory().setItem(i, ItemStack.EMPTY);
+            } else if (!stack.isEmpty() && t.emptyHanded) {
+                banked.add(stack.copy());
             }
         }
         if (t.emptyHanded) {
@@ -320,6 +374,7 @@ final class QuestStepChecks {
             });
         }
         t.tools.forEach(tool -> Inv.give(p, QuestSpec.toolItem(tool), 1));
+        return banked;
     }
 
     // ------------------------------------------------------------------ foes
@@ -364,7 +419,7 @@ final class QuestStepChecks {
         String note = "";
         if (profile != null && profile.requiredWeapon != null) {
             // its rule: ordinary weapons don't hurt it
-            p.setItemInHand(InteractionHand.MAIN_HAND, Inv.stack("abyssal_whip", 1));
+            wield(p, "abyssal_whip");
             float hp = foe.getHealth();
             BossFightChecks.heavyHit(p, foe);
             if (foe.getHealth() < hp) {
@@ -372,7 +427,7 @@ final class QuestStepChecks {
             }
             note = id + " only hurt by " + profile.requiredWeapon;
         }
-        p.setItemInHand(InteractionHand.MAIN_HAND, Inv.stack(weapon, 1));
+        wield(p, weapon);
         int tick = 0;
         for (; tick < ENGAGE_TICKS + KILL_TICKS && foe.isAlive(); tick++) {
             for (int m = 0; m < MC; m++) {
@@ -404,6 +459,18 @@ final class QuestStepChecks {
         return note;
     }
 
+    /**
+     * Wields a weapon as a player does: what was in hand goes back into the pack. A quest item held there (Kruk's greegree,
+     * which a player takes off to fight Kob and Keef) must not be lost to the swap.
+     */
+    private static void wield(ServerPlayer p, String weapon) {
+        ItemStack held = p.getMainHandItem();
+        p.setItemInHand(InteractionHand.MAIN_HAND, Inv.stack(weapon, 1));
+        if (!held.isEmpty() && !weapon.equals(Inv.idOf(held))) {
+            Inv.give(p, held);
+        }
+    }
+
     private static CombatProfile<?> profile(String id) {
         BossDef boss = ContentRegistry.boss(id);
         if (boss != null) {
@@ -431,7 +498,7 @@ final class QuestStepChecks {
                     for (Trigger t : stage.triggers) {
                         if (id.equals(t.spawn) && t.kind != Trigger.Kind.KILL && QuestInterpreter.selfTestBlocked(p(), t) == null) {
                             if (t.kind == Trigger.Kind.REACH) {
-                                QuestInterpreter.selfTestArrive(p(), t.target, t.underground);
+                                arrive(where, t.target, t.underground);
                             } else if (t.kind == Trigger.Kind.TALK) {
                                 QuestInterpreter.selfTestTalk(p(), t.target);
                             }
