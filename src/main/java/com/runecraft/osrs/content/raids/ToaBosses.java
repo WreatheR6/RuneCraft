@@ -16,6 +16,10 @@ public final class ToaBosses {
     private ToaBosses() {
     }
 
+    /** Kephri's small (bursting) and dark (hatching) eggs. */
+    public static final String KEPHRI_EGG = "toa_kephri_egg";
+    public static final String KEPHRI_DARK_EGG = "toa_kephri_dark_egg";
+
     private static BossDef raid(String id, String name) {
         return BossDef.of(id, name).raidOnly().category("Raids").arena(18, "sand");
     }
@@ -97,6 +101,14 @@ public final class ToaBosses {
                 MonsterDef.of("toa_agile_scarab", "Agile Scarab").level(53).stats(30, 60, 20, 5, 30, 40).speed(4).defenceBonus(0, 0, 0, 0, 0)
                         .attack(AttackDef.of("spit", AttackType.RANGED, 5, 8, 10).particle("minecraft:item_slime")).model("toa_scarab")
                         .size(0.5f, 0.4f, 0.6f).moveSpeed(0.34),
+                // Kephri's eggs (OSRS wiki: 35 hitpoints; players always hit them for their max): left alone, the small light
+                // ones burst in a 3x3 area and the large dark ones hatch an Agile Scarab (driven by the room, so passive).
+                MonsterDef.of(KEPHRI_EGG, "Egg").level(1).stats(35, 1, 1, 0, 1, 1).speed(4).passive().defenceBonus(0, 0, 0, 0, 0)
+                        .attack(AttackDef.of("burst", AttackType.CRUSH, 0, 1, 10)).model(KEPHRI_EGG)
+                        .size(0.5f, 0.6f, 1.0f).moveSpeed(0.0),
+                MonsterDef.of(KEPHRI_DARK_EGG, "Egg").level(1).stats(35, 1, 1, 0, 1, 1).speed(4).passive().defenceBonus(0, 0, 0, 0, 0)
+                        .attack(AttackDef.of("hatch", AttackType.CRUSH, 0, 1, 10)).model(KEPHRI_DARK_EGG)
+                        .size(0.7f, 0.8f, 1.0f).moveSpeed(0.0),
                 // The phase 2 Warden's core: damage to it counts five times against the Warden's 4,500 hitpoints (see the
                 // Wardens room). Its own hitpoints only keep it alive. // approx: defence
                 MonsterDef.of("toa_warden_core", "Core").level(1).stats(2000, 1, 1, 1, 1, 1).speed(4).passive().defenceBonus(0, 0, 0, 0, 0)

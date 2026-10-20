@@ -457,7 +457,7 @@ public final class ToaPuzzles {
             case BRAWLER -> type == com.runecraft.osrs.AttackType.MAGIC;
             case THROWER -> melee;
             case MAGE, SHAMAN, VOLATILE, CURSED -> type == com.runecraft.osrs.AttackType.RANGED;
-            case "toa_baba_baboon", "toa_scarab_swarm" -> true;
+            case "toa_baba_baboon", "toa_scarab_swarm", ToaBosses.KEPHRI_EGG, ToaBosses.KEPHRI_DARK_EGG -> true;
             case "toa_energy_siphon" -> melee;
             default -> false;
         };

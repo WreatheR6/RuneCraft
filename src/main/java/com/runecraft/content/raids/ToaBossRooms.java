@@ -126,7 +126,8 @@ final class ToaBossRooms {
         /** Arcane Scarab relocation spots around Kephri (OSRS: south-east, north-west, mid-south, north-east). */
         private static final int[][] ARCANE_SPOTS = {{6, 8}, {-4, -10}, {0, 12}, {6, -8}};
         static final String[] CHILDREN = {"toa_scarab_swarm", "toa_soldier_scarab", "toa_spitting_scarab", "toa_arcane_scarab",
-                "toa_agile_scarab"};
+                "toa_agile_scarab", com.runecraft.osrs.content.raids.ToaBosses.KEPHRI_EGG,
+                com.runecraft.osrs.content.raids.ToaBosses.KEPHRI_DARK_EGG};
         /** Kephri's fireball max hit (OSRS infobox) and the share Protect from Magic lets through (wiki: ~66% blocked). */
         static final int KEPHRI_MAX_HIT = 24;
         static final double KEPHRI_PROTECTED_SHARE = 1 / 3.0;
@@ -161,6 +162,7 @@ final class ToaBossRooms {
             leaked = 0;
             overcharge = 0;
             guards.clear();
+            eggs.clear();
             arcane = null;
             kephri = spawnBoss("kephri", at(14, 0));
             if (kephri != null) {
@@ -375,6 +377,7 @@ final class ToaBossRooms {
                 leaked += reached;
             }
             agileScarabs();
+            tickEggs();
         }
 
         /** Intermission: bomber scarabs, the Soldier's healing swarms, the Spitting Scarab's spray, the Arcane charge. */
@@ -448,31 +451,65 @@ final class ToaBossRooms {
                 }
             } else if (tick % 16 == 12) {
                 say("Kephri lays her eggs!");
+                // OSRS: two small light eggs and two large dark ones (3-5 with Lively Larvae) splatter around the arena.
                 for (int i = 0; i < 2; i++) {
-                    ServerPlayer p = players.get(rnd().nextInt(players.size()));
-                    Vec3 at = p.position().add(rnd().nextInt(7) - 3, 0, rnd().nextInt(7) - 3);
-                    // OSRS: unattended small eggs explode in a 3x3 area. // approx: 8 ticks, up to 12
-                    RaidEffects.strike(world(), at, 1.6, 12, 8, kephri, ParticleTypes.ITEM_SLIME, null, true);
+                    layEgg(com.runecraft.osrs.content.raids.ToaBosses.KEPHRI_EGG, players);
                 }
                 int dark = Invocation.kephriDarkEggs(inv, rnd());
                 for (int i = 0; i < dark; i++) {
-                    ServerPlayer p = players.get(rnd().nextInt(players.size()));
-                    BlockPos egg = inRoom(BlockPos.containing(p.position().add(rnd().nextInt(9) - 4, 0, rnd().nextInt(9) - 4)));
-                    world().sendParticles(ParticleTypes.SQUID_INK, egg.getX() + 0.5, egg.getY() + 0.3, egg.getZ() + 0.5, 8, 0.3, 0.1, 0.3, 0.01);
-                    later(8, () -> {
-                        if (!alive(kephri)) {
-                            return;
-                        }
-                        // A player standing on the dark egg crushes it before it hatches. // approx: OSRS eggs are attacked
-                        for (ServerPlayer q : players()) {
-                            if (q.blockPosition().distSqr(egg) <= 2) {
-                                Msg.game(q, "You crush a dark egg.");
-                                return;
-                            }
-                        }
-                        spawnMob("toa_agile_scarab", egg, false);
-                    });
+                    layEgg(com.runecraft.osrs.content.raids.ToaBosses.KEPHRI_DARK_EGG, players);
                 }
+            }
+        }
+
+        /** Game ticks before an unattended egg bursts or hatches. // approx */
+        static final int EGG_TICKS = 8;
+        /** Damage of a small egg's 3x3 burst. // approx: up to 12 */
+        static final int EGG_BURST_MAX = 12;
+        /** Eggs on the floor and the tick they burst or hatch. */
+        private final Map<LivingEntity, Long> eggs = new HashMap<>();
+
+        private void layEgg(String id, List<ServerPlayer> players) {
+            ServerPlayer p = players.get(rnd().nextInt(players.size()));
+            BlockPos at = inRoom(BlockPos.containing(p.position().add(rnd().nextInt(9) - 4, 0, rnd().nextInt(9) - 4)));
+            LivingEntity egg = spawnMob(id, at, false);
+            if (egg != null) {
+                if (egg instanceof Mob m) {
+                    m.setNoAi(true);
+                }
+                eggs.put(egg, now() + EGG_TICKS);
+            }
+        }
+
+        /**
+         * Eggs left alone (OSRS): the small ones burst in a 3x3 area, the dark ones hatch an Agile Scarab. Players always
+         * hit an egg for their max hit, so breaking them in time is quick.
+         */
+        private void tickEggs() {
+            java.util.Iterator<Map.Entry<LivingEntity, Long>> it = eggs.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry<LivingEntity, Long> e = it.next();
+                LivingEntity egg = e.getKey();
+                if (!alive(egg)) {
+                    it.remove();
+                    continue;
+                }
+                if (now() < e.getValue()) {
+                    continue;
+                }
+                it.remove();
+                Vec3 at = egg.position();
+                if (com.runecraft.osrs.content.raids.ToaBosses.KEPHRI_DARK_EGG.equals(RaidInstance.creatureId(egg))) {
+                    spawnMob("toa_agile_scarab", egg.blockPosition(), false);
+                } else {
+                    world().sendParticles(ParticleTypes.ITEM_SLIME, at.x, at.y + 0.3, at.z, 20, 1.0, 0.2, 1.0, 0.05);
+                    for (ServerPlayer q : players()) {
+                        if (Math.abs(q.getX() - at.x) <= 1.5 && Math.abs(q.getZ() - at.z) <= 1.5) {
+                            hurt(kephri, q, rnd().nextInt(EGG_BURST_MAX + 1));
+                        }
+                    }
+                }
+                egg.discard();
             }
         }
 
@@ -509,6 +546,7 @@ final class ToaBossRooms {
 
         @Override
         String selfTestSolve(RaidSelfTest t) {
+            int[] eggsBroken = {0};
             String r = grind(t, kephri, AttackType.STAB, 40, () -> {
                 for (LivingEntity g : guards) {
                     if (alive(g)) {
@@ -518,9 +556,15 @@ final class ToaBossRooms {
                 for (LivingEntity s : living("toa_scarab_swarm")) {
                     t.hit(s, 10, AttackType.RANGED);
                 }
+                for (LivingEntity e : new ArrayList<>(eggs.keySet())) {
+                    if (alive(e)) {
+                        t.hit(e, 40, AttackType.STAB);
+                        eggsBroken[0] += alive(e) ? 0 : 1;
+                    }
+                }
             });
             RaidSelfTest.expect(broken >= 3, "Kephri died before all three shields broke (" + broken + ")");
-            return r;
+            return r + ", " + eggsBroken[0] + " eggs broken";
         }
     }
 
