@@ -210,6 +210,9 @@ public final class TzHaarWaves {
 
     // ------------------------------------------------------------------ Jad healers
 
+    /** TzTok-Jad's magic attack hits up to 95 (his melee and ranged 97; OSRS Wiki "TzTok-Jad"). Melee is a stab. */
+    public static final int JAD_MAGIC_MAX = 95;
+
     /** TzTok-Jad's level-108 healers and JalTok-Jad's level-141 ones (OSRS Wiki "Yt-HurKot"). */
     public static final String HURKOT = "yt_hurkot";
     public static final String HURKOT_INFERNO = "yt_hurkot_inferno";

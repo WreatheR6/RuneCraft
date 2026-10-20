@@ -336,6 +336,20 @@ public final class SlayerService {
         SlayerNet.sync(player);
     }
 
+    /**
+     * Completes the current task now, with its streak and points: a TzTok-Jad / TzKal-Zuk kill ends a TzHaar task taken as
+     * a boss task ({@code content.minigames.games.TzHaarSlayer}).
+     */
+    public static void completeTask(ServerPlayer player) {
+        SlayerState.Profile p = profile(player);
+        if (p.task == null) {
+            return;
+        }
+        SlayerMasters.Master master = p.master == null ? null : SlayerMasters.get(p.master);
+        complete(player, p, master, master != null && eliteDiary(player, master));
+        SlayerNet.sync(player);
+    }
+
     private static void complete(ServerPlayer player, SlayerState.Profile p, SlayerMasters.Master master,
                                  boolean eliteDiary) {
         p.remaining = 0;

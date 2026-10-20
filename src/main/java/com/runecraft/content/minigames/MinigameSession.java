@@ -146,6 +146,11 @@ public abstract class MinigameSession {
     protected void onPlayerHit(ServerPlayer player, LivingEntity target, int dealt) {
     }
 
+    /** {@link #onPlayerHit(ServerPlayer, LivingEntity, int)} with the attack's style (null when unknown, e.g. PvP melee). */
+    protected void onPlayerHit(ServerPlayer player, LivingEntity target, com.runecraft.osrs.AttackType type, int dealt) {
+        onPlayerHit(player, target, dealt);
+    }
+
     /**
      * Whether players in this session gain experience (and Slayer task credit, which goes with the Slayer XP). Nightmare Zone
      * practice dreams return false.

@@ -50,6 +50,9 @@ public final class MinigamesHooks implements ModuleHooks {
         BlockHooks.register(MinigameWorld.BA_BLACKBOARD, (player, pos, state) ->
                 com.runecraft.content.minigames.games.BarbarianAssaultSession.readBlackboard(player));
         BossScripts.register("tzkal_zuk", ZukScript::new);
+        com.runecraft.entity.BossEntity.registerScript(com.runecraft.osrs.data.Boss.TZTOK_JAD,
+                com.runecraft.content.minigames.games.TzTokJadScript::new);
+        com.runecraft.content.minigames.games.InfernoSession.register();
         BossScripts.register("penance_queen", PenanceQueenScript::new);
 
         // Entrances.

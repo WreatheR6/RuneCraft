@@ -116,7 +116,7 @@ public final class MinigameCombat {
             public void afterHit(ServerPlayer player, LivingEntity target, AttackType type, int dealt) {
                 MinigameSession s = MinigameManager.owner(target);
                 if (s != null && !s.isEnded()) {
-                    s.onPlayerHit(player, target, dealt);
+                    s.onPlayerHit(player, target, type, dealt);
                 }
             }
         });
