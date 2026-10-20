@@ -41,9 +41,9 @@ public final class MinigameBosses {
     // through a wrong one; Phosani's are blocked by the right one); her specials by phase (Phosani: by special set).
     public static final AttackDef NIGHTMARE_MELEE = AttackDef.of("claw_swipe", AttackType.SLASH, 50, 4.5, 4) // wiki: 50 (60 vs wrong prayer)
             .telegraph(NightmareRules.MELEE_WIND_UP, "The Nightmare charges her claws...");
-    public static final AttackDef NIGHTMARE_MAGIC = AttackDef.of("dream_blast", AttackType.MAGIC, 33, 14, 3) // wiki: 33
+    public static final AttackDef NIGHTMARE_MAGIC = AttackDef.of("dream_blast", AttackType.MAGIC, 33, 32, 3) // wiki: 33
             .telegraph(NightmareRules.RANGED_WIND_UP, "The Nightmare raises her hands...").particle("minecraft:witch");
-    public static final AttackDef NIGHTMARE_RANGED = AttackDef.of("thrown_soul", AttackType.RANGED, 33, 14, 3) // wiki: 33
+    public static final AttackDef NIGHTMARE_RANGED = AttackDef.of("thrown_soul", AttackType.RANGED, 33, 32, 3) // wiki: 33
             .telegraph(NightmareRules.RANGED_WIND_UP, "The Nightmare winds up a throw...").particle("minecraft:soul");
     public static final AttackDef NIGHTMARE_CLAWS = AttackDef.of("grasping_claws", AttackType.MAGIC, NightmareRules.CLAWS_MAX, 64, 2)
             .special(Special.SKY_STRIKE, 0).telegraph(NightmareRules.CLAWS_DELAY, "Grasping claws reach up from the ground!")
@@ -66,9 +66,9 @@ public final class MinigameBosses {
     // melee 73, magic and ranged 80, Grasping Claws 50-65, the surge ~85).
     public static final AttackDef PHOSANI_MELEE = AttackDef.of("claw_swipe", AttackType.SLASH, 73, 4.5, 4)
             .telegraph(NightmareRules.MELEE_WIND_UP, "Phosani's Nightmare charges her claws...");
-    public static final AttackDef PHOSANI_MAGIC = AttackDef.of("dream_blast", AttackType.MAGIC, 80, 14, 3)
+    public static final AttackDef PHOSANI_MAGIC = AttackDef.of("dream_blast", AttackType.MAGIC, 80, 32, 3)
             .telegraph(NightmareRules.RANGED_WIND_UP, "Phosani's Nightmare raises her hands...").particle("minecraft:witch");
-    public static final AttackDef PHOSANI_RANGED = AttackDef.of("thrown_soul", AttackType.RANGED, 80, 14, 3)
+    public static final AttackDef PHOSANI_RANGED = AttackDef.of("thrown_soul", AttackType.RANGED, 80, 32, 3)
             .telegraph(NightmareRules.RANGED_WIND_UP, "Phosani's Nightmare winds up a throw...").particle("minecraft:soul");
     public static final AttackDef PHOSANI_CLAWS = AttackDef.of("grasping_claws", AttackType.MAGIC, NightmareRules.PHOSANI_CLAWS_MAX, 64, 2)
             .special(Special.SKY_STRIKE, 0).telegraph(NightmareRules.CLAWS_DELAY, "Grasping claws reach up around you!")

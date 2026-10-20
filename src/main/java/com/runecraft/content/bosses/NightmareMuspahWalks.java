@@ -300,11 +300,12 @@ final class NightmareMuspahWalks {
             check(m.spikes.contains(under), "the marked spike didn't erupt");
             m.spikes.remove(under); // the player stands there; the walk goes on without the spike
             // Its second swap needs four separate hits as well.
+            // (105 damage in four hits keeps it above 637, where its first special would come first)
             MuspahRules.Form second = m.form;
-            hurt(boss, p, 100, AttackType.MAGIC);
+            hurt(boss, p, 60, AttackType.MAGIC);
             check(m.form == second, "swapped again after a single hit");
             for (int i = 0; i < 3; i++) {
-                hurt(boss, p, 5, AttackType.MAGIC);
+                hurt(boss, p, 15, AttackType.MAGIC);
             }
             check(m.form != second, "no swap after four hits and the form's damage");
             log.add("spawned " + first + ", swapped twice, spike under the player");

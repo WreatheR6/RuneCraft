@@ -1176,6 +1176,9 @@ final class NightmareScript extends ScriptedBoss {
             clearStrays(boss); // a boss reloaded from disk: what its old script placed is no longer tracked
         }
         if (stage == Stage.DEAD) {
+            if (boss.isAlive()) {
+                kill(boss); // a killing blow that didn't land (a hit refused on its way): she still dies
+            }
             return;
         }
         if (stage == Stage.ASLEEP) {
