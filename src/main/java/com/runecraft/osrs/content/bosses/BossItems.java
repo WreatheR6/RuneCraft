@@ -491,6 +491,9 @@ public final class BossItems {
         simple(items, "fire_element_staff_crown", "Fire element staff crown", "crown", 0xE05010, 1, "Upgrades a fire staff.");
         simple(items, "ice_element_staff_crown", "Ice element staff crown", "crown", 0x80C0F0, 1, "Upgrades a water staff.");
         pet(items, "pet_bran", "Bran", "Royal Titans", 0xE07030);
+        // The Titans' "Take pages" reward and a standard drop (OSRS Wiki; turned into burnt/soaked/soiled pages at plinths).
+        items.add(RoyalTitansLoot.PAGE, "Desiccated page", Kind.SIMPLE, "note", 0xB8A070).value(500).stack(100000)
+                .examine("It seems to lack any elemental substance.");
 
         // ---------------- Fortis Colosseum ----------------
         wear(items, "sunfire_fanatic_helm", "Sunfire fanatic helm", Kind.ARMOUR, "full_helm", 0xE0A030, 5000000, Slot.HEAD,

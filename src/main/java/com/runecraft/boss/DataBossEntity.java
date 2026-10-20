@@ -106,6 +106,7 @@ public class DataBossEntity extends OsrsMonsterEntity {
     public void copyHomeFrom(DataBossEntity other) {
         if (other != null && other.home != null) {
             markSummoned(other.home, other.leash);
+            breakSafespots = other.breakSafespots;
         }
     }
 
@@ -164,8 +165,91 @@ public class DataBossEntity extends OsrsMonsterEntity {
             if (target != null) {
                 setTarget(null); // its target ran off: it waits in its lair
             }
+            strandedTicks = 0;
+            return true;
+        }
+        tickSafespot(target, targetDistSq);
+        return true;
+    }
+
+    /** Whether terrain safespots are broken for this boss (bosses summoned at their stones; quest bosses keep theirs). */
+    private boolean breakSafespots;
+    private int strandedTicks;
+
+    /** Makes a summoned boss close in on a target terrain keeps out of its melee reach ({@link BossLair#breaksSafespot}). */
+    public void breakSafespots(boolean on) {
+        this.breakSafespots = on;
+    }
+
+    /**
+     * A melee-only boss whose target stands in its lair where it can't walk (on a pillar, past a hole, behind a ledge) steps
+     * up beside the target after {@link BossLair#SAFESPOT_TICKS} game ticks: OSRS's flat lair floors have no such spots.
+     */
+    private void tickSafespot(LivingEntity target, double targetDistSq) {
+        if (!breakSafespots || !(target instanceof ServerPlayer) || !BossLair.inReach(targetDistSq, leash) || !meleeOnly()
+                || getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED) <= 0) {
+            strandedTicks = 0;
+            return;
+        }
+        double distance = Math.sqrt(distanceToSqr(target));
+        double reach = getBbWidth() / 2 + 2.0;
+        boolean stranded = false;
+        if (distance > reach + 1.0) {
+            net.minecraft.world.level.pathfinder.Path path = getNavigation().createPath(target, 1);
+            stranded = BossLair.strandedBy(distance, reach, path != null && path.canReach());
+        }
+        strandedTicks = BossLair.stranded(strandedTicks, stranded);
+        if (BossLair.breaksSafespot(strandedTicks)) {
+            strandedTicks = 0;
+            stepBeside(target);
+        }
+    }
+
+    /** True when every attack of the boss is a melee one (it can't answer a target out of reach). */
+    private boolean meleeOnly() {
+        BossDef def = def();
+        if (def == null || def.attacks.isEmpty()) {
+            return false;
+        }
+        for (AttackDef a : def.attacks) {
+            if (!a.melee() || a.range() > 5) {
+                return false;
+            }
         }
         return true;
+    }
+
+    /**
+     * Moves the boss to the first clear standing spot next to the target, or, where there is none (a 1x1 pillar, a one-wide
+     * shaft), knocks the target down beside the boss ({@link BossLair#breakSafespot}).
+     */
+    private void stepBeside(LivingEntity target) {
+        double start = Math.atan2(getZ() - target.getZ(), getX() - target.getX());
+        double targetY = target.getY();
+        double bossY = getY();
+        BossLair.SafespotBreak b = BossLair.breakSafespot(
+                BossLair.ring(target.getX(), target.getZ(), getBbWidth() / 2 + 1.2, start), xz -> fits(this, xz[0], targetY, xz[1]),
+                BossLair.ring(getX(), getZ(), getBbWidth() / 2 + 1.0, start + Math.PI), xz -> fits(target, xz[0], bossY, xz[1]),
+                getX(), getZ());
+        if (!b.knockDown()) {
+            getNavigation().stop();
+            teleportTo(b.x(), targetY, b.z());
+            return;
+        }
+        boolean above = targetY > bossY;
+        target.resetFallDistance();
+        target.teleportTo(b.x(), bossY, b.z());
+        if (target instanceof ServerPlayer p) {
+            BossDef def = def();
+            Msg.red(p, (def == null ? "The boss" : def.name) + (above ? " knocks you off your perch!" : " drags you out of your hole!"));
+        }
+    }
+
+    /** Whether an entity fits standing at a spot: its box clear of blocks and solid floor under its feet. */
+    private boolean fits(net.minecraft.world.entity.Entity e, double x, double y, double z) {
+        net.minecraft.core.BlockPos below = net.minecraft.core.BlockPos.containing(x, y - 0.5, z);
+        return level().noCollision(e, e.getDimensions(e.getPose()).makeBoundingBox(x, y, z))
+                && !level().getBlockState(below).getCollisionShape(level(), below).isEmpty();
     }
 
     /** OSRS hitpoints of this boss (its variant's when it has one). */
@@ -214,6 +298,7 @@ public class DataBossEntity extends OsrsMonsterEntity {
         if (home != null) {
             nbt.putLong("RcHome", home.asLong());
             nbt.putInt("RcLeash", leash);
+            nbt.putBoolean("RcSafespots", breakSafespots);
         }
         CompoundTag scriptData = new CompoundTag();
         script.writeNbt(this, scriptData);
@@ -232,10 +317,14 @@ public class DataBossEntity extends OsrsMonsterEntity {
                 applyVariant(AwakenedBosses.variant(def), false);
             } else if (BossVariant.DELVE.equals(kind) && DoomDelves.BOSS.equals(def.id)) {
                 applyVariant(DoomDelves.variant(def, nbt.getInt("RcVariantLevel")), false);
+            } else if (com.runecraft.osrs.content.bosses.ScurriusGroup.GROUP.equals(kind)
+                    && com.runecraft.osrs.content.bosses.ScurriusGroup.BOSS.equals(def.id)) {
+                applyVariant(com.runecraft.osrs.content.bosses.ScurriusGroup.variant(def), false);
             }
         }
         if (nbt.contains("RcHome")) {
             markSummoned(net.minecraft.core.BlockPos.of(nbt.getLong("RcHome")), nbt.getInt("RcLeash"));
+            breakSafespots = nbt.getBoolean("RcSafespots");
         }
         if (nbt.contains("RcScript")) {
             script.readNbt(this, nbt.getCompound("RcScript"));

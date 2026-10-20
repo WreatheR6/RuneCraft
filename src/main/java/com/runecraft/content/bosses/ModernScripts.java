@@ -16,6 +16,7 @@ import com.runecraft.osrs.content.bosses.BossMechanics;
 import com.runecraft.osrs.content.bosses.BossMechanics.YamaContract;
 import com.runecraft.osrs.content.bosses.ModernBosses;
 import com.runecraft.osrs.content.bosses.VarlamoreBosses;
+import com.runecraft.osrs.content.bosses.YamaLoot;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.world.Gielinor;
@@ -108,10 +109,24 @@ final class ModernScripts {
     static final class Yama extends ScriptedBoss {
         private static final Map<UUID, YamaContract> PENDING = new HashMap<>();
 
-        /** Called by the summon requirement: a contract held in the main hand is shown to Yama and consumed. */
+        /**
+         * Called by the summon requirement: Yama is fought after A Kingdom Divided; a contract held in the main hand is shown to
+         * him and consumed. The sigil, oathplate and harmony contracts are for one challenger alone (OSRS Wiki "Yama#Contracts":
+         * only the catalyst, worm and shard acquisition contracts allow a partner), so they are refused while another player
+         * stands by.
+         */
         static boolean offerContract(ServerPlayer player) {
+            var quest = com.runecraft.osrs.content.ContentRegistry.quest(YAMA_QUEST);
+            if (quest != null && !com.runecraft.player.Players.data(player).questComplete(quest)) {
+                Msg.game(player, "The Voice of Yama: The Master of Pacts has no business with you. (Complete A Kingdom Divided.)");
+                return false;
+            }
             YamaContract c = YamaContract.byItem(BossFx.heldId(player));
             if (c != null && Inv.has(player, c.item, 1)) {
+                if (!YamaLoot.duoAllowed(c) && othersNear(player)) {
+                    Msg.game(player, "Yama: The terms of the " + c.displayName() + " are for you alone. Come back without company.");
+                    return false;
+                }
                 Inv.remove(player, c.item, 1);
                 PENDING.put(player.getUUID(), c);
                 Msg.red(player, "Yama: " + c.displayName() + "? Very well. Let us see if you can honour these terms.");
@@ -119,6 +134,187 @@ final class ModernScripts {
                 PENDING.remove(player.getUUID());
             }
             return true;
+        }
+
+        private static final String YAMA_QUEST = "a_kingdom_divided";
+        /** Autos before Yama may turn on the other player of a duo. */
+        private static final int DUO_SWITCH_AUTOS = 6; // approx (wiki: "periodically")
+
+        /** Another player within the lair's presence range of this one. */
+        private static boolean othersNear(ServerPlayer player) {
+            double range = com.runecraft.osrs.content.bosses.BossLair.PRESENCE_RANGE;
+            for (ServerPlayer other : ((ServerLevel) player.level()).players()) {
+                if (other != player && other.isAlive() && !other.isSpectator() && other.distanceToSqr(player) < range * range) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /** Each fighter's damage to Yama (their contribution, YamaLoot) and the players themselves. */
+        private final Map<UUID, Integer> damageBy = new java.util.LinkedHashMap<>();
+        private final Map<UUID, ServerPlayer> fighters = new java.util.LinkedHashMap<>();
+        /** Who showed Yama the contract (only they receive its reward) and their name. */
+        private UUID contractHost;
+        private String contractHostName = "my challenger";
+        /** Exile thresholds already passed (two: 66.6%/33.3%, or 75%/50% under a contract). */
+        private int thresholdsPassed;
+        /** Autos at the current target (in a duo he turns on the other player now and then). */
+        private int autosAtTarget;
+
+        /** The rewards of a kill: every fighter's own roll on their contribution; the killer's come back to drop. */
+        static void register() {
+            com.runecraft.boss.DataBossService.loot("yama", Yama::rollLoot);
+            // Under a solo contract only its challenger may hurt Yama, his flares or his Judge, whatever the damage path
+            // (the hit hook below refuses the usual paths before any contribution is credited).
+            com.runecraft.combat.CombatHooks.addMonsterDamageGate((player, target) -> {
+                Yama y = target instanceof DataBossEntity b && b.script() instanceof Yama s ? s : OWNED.get(target);
+                return y != null && y.intruder(player) ? y.intruderMessage() : null;
+            });
+        }
+
+        /** The void flares and Judge of each fight (for the solo-contract damage gate). */
+        private static final Map<net.minecraft.world.entity.Entity, Yama> OWNED = new java.util.WeakHashMap<>();
+
+        /**
+         * A player who isn't part of this fight's terms: a solo contract (OSRS Wiki "Yama#Contracts": the sigil, oathplate
+         * and harmony contracts, "Challenger must be alone") is between Yama and the player who showed it to him; anyone
+         * joining after the summon can't hurt him, isn't targeted or exiled, and rolls no loot.
+         */
+        boolean intruder(ServerPlayer p) {
+            return p != null && contract != null && !YamaLoot.duoAllowed(contract) && contractHost != null
+                    && !p.getUUID().equals(contractHost);
+        }
+
+        private String intruderMessage() {
+            return "Yama: These terms are between me and " + contractHostName + ".";
+        }
+
+        static List<com.runecraft.skill.Drops.Rolled> rollLoot(ServerPlayer killer, DataBossEntity boss,
+                                                               List<com.runecraft.osrs.data.Drop> table) {
+            Yama y = boss.script() instanceof Yama s ? s : null;
+            YamaContract contract = y == null ? null : y.contract;
+            java.util.Random r = new java.util.Random(boss.getRandom().nextLong());
+            List<com.runecraft.skill.Drops.Rolled> mine = rolled(YamaLoot.roll(y == null ? 1.0 : y.contribution(killer), contract, r));
+            if (y == null) {
+                return mine;
+            }
+            for (ServerPlayer p : y.fighters.values()) {
+                if (p == killer || y.intruder(p) || !p.isAlive() || p.level() != boss.level() || p.distanceToSqr(boss) > 48 * 48) {
+                    continue;
+                }
+                double share = y.contribution(p);
+                for (com.runecraft.skill.Drops.Rolled d : rolled(YamaLoot.roll(share, contract, r))) {
+                    Inv.give(p, com.runecraft.skill.Drops.withDoses(CombatHooks.dropStack(p, boss, d.item(), d.count()), d.doses()));
+                    com.runecraft.collection.CollectionLog.obtain(p, d.item());
+                }
+                if (!YamaLoot.junk(share) && r.nextInt(YamaLoot.PET) == 0) {
+                    Inv.give(p, "pet_yami", 1);
+                    com.runecraft.collection.CollectionLog.obtain(p, "pet_yami");
+                    p.getServer().getPlayerList().broadcastSystemMessage(net.minecraft.network.chat.Component.literal(
+                            p.getName().getString() + " has a funny feeling like they're being followed.")
+                            .withStyle(net.minecraft.ChatFormatting.GOLD), false);
+                }
+                int kc = com.runecraft.player.Players.data(p).incrementKillCount("yama");
+                Msg.game(p, "Your Yama success count is: " + kc + ".");
+                if (boss.def() != null) {
+                    com.runecraft.content.GameEvents.fireKill(p, boss, com.runecraft.combat.MonsterStats.from(boss.def()));
+                }
+            }
+            return mine;
+        }
+
+        private static List<com.runecraft.skill.Drops.Rolled> rolled(List<YamaLoot.Loot> loot) {
+            List<com.runecraft.skill.Drops.Rolled> out = new ArrayList<>();
+            for (YamaLoot.Loot l : loot) {
+                out.add(new com.runecraft.skill.Drops.Rolled(com.runecraft.osrs.data.Drop.baseOf(l.item()), l.count(),
+                        com.runecraft.osrs.data.Drop.dosesOf(l.item())));
+            }
+            return out;
+        }
+
+        /** A fighter's share of Yama's hitpoints dealt (0-1); a killer the script never saw hit him gets full credit. */
+        double contribution(ServerPlayer p) {
+            Integer d = damageBy.get(p.getUUID());
+            return d == null ? (damageBy.isEmpty() ? 1.0 : 0.0) : YamaLoot.contribution(d, BossMechanics.YAMA_HITPOINTS);
+        }
+
+        // ---------------- self-test access (YamaWalk) ----------------
+
+        /** Shows Yama a contract for the player's next challenge (as holding it at the summon does). */
+        static void walkOffer(ServerPlayer p, YamaContract c) {
+            PENDING.put(p.getUUID(), c);
+        }
+
+        /** Credits damage to a fighter as if they had dealt it (the duo partner). */
+        void walkCredit(ServerPlayer p, int damage) {
+            damageBy.merge(p.getUUID(), damage, Integer::sum);
+            fighters.put(p.getUUID(), p);
+        }
+
+        YamaContract walkContract() {
+            return contract;
+        }
+
+        int walkStage() {
+            return stage;
+        }
+
+        boolean walkExiled() {
+            return exiled;
+        }
+
+        Mob walkJudge() {
+            return judge;
+        }
+
+        boolean walkExilePending() {
+            return exileDelay >= 0;
+        }
+
+        String walkPendingName() {
+            return pending == null ? null : pending.name();
+        }
+
+        List<Mob> walkFlareMobs() {
+            flares.removeIf(f -> !f.mob().isAlive());
+            List<Mob> out = new ArrayList<>();
+            for (Flare f : flares) {
+                out.add(f.mob());
+            }
+            return out;
+        }
+
+        /** The lit glyphs of an element (where a player must stand to block the matching special). */
+        List<Vec3> walkGlyphs(boolean fire) {
+            List<Vec3> out = new ArrayList<>();
+            for (Glyph g : glyphs) {
+                if (g.fire == fire && glyphReady(g)) {
+                    out.add(g.pos);
+                }
+            }
+            return out;
+        }
+
+        /** Starts his next special now (the walk doesn't wait out three autos). */
+        void walkStartSpecial(DataBossEntity boss, ServerPlayer target) {
+            startSpecial(boss, target);
+        }
+
+        boolean walkPendingFire() {
+            return pending == Special.GLYPH_FIRE || pending == Special.METEOR;
+        }
+
+        Vec3 walkPendingAt() {
+            return pendingAt;
+        }
+
+        int walkThresholdsPassed() {
+            return thresholdsPassed;
+        }
+
+        void walkSpawnFlares(DataBossEntity boss, int n) {
+            spawnFlares(boss, n);
         }
 
         private static final class Glyph {
@@ -176,6 +372,8 @@ final class ModernScripts {
             ServerPlayer challenger = boss.getTarget() instanceof ServerPlayer p ? p : null;
             if (challenger != null) {
                 contract = PENDING.remove(challenger.getUUID());
+                contractHost = contract == null ? null : challenger.getUUID();
+                contractHostName = challenger.getName().getString();
             }
             fireStyle = boss.getRandom().nextBoolean();
             BossFx.say(boss, contract == null ? "Yama: Let us begin. Mind the glyphs, mortal."
@@ -215,6 +413,10 @@ final class ModernScripts {
 
         @Override
         protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            if (intruder(attacker)) {
+                Msg.game(attacker, intruderMessage()); // nothing lands and nothing counts toward a share of the loot
+                return 0;
+            }
             if (attacker != null && attacker == target(boss)) {
                 meleeStance = type.isMelee();
                 targetMaging = type == AttackType.MAGIC;
@@ -230,7 +432,13 @@ final class ModernScripts {
                 d *= BossMechanics.YAMA_HITPOINTS / (double) contract.hitpoints;
             }
             int whole = (int) d;
-            return whole + (boss.getRandom().nextDouble() < d - whole ? 1 : 0);
+            int dealt = whole + (boss.getRandom().nextDouble() < d - whole ? 1 : 0);
+            if (attacker != null && dealt > 0) {
+                // contribution: the damage in Yama's own 2,500 hitpoints (a contract's extra hitpoints are scaled out above)
+                damageBy.merge(attacker.getUUID(), dealt, Integer::sum);
+                fighters.put(attacker.getUUID(), attacker);
+            }
+            return dealt;
         }
 
         /** Defence bonuses by phase, contract and his target's style (OSRS Wiki infobox; glyphic attenuation 666 but crush). */
@@ -327,6 +535,17 @@ final class ModernScripts {
                 }
                 fireStyle = !fireStyle;
                 return fireStyle ? ModernBosses.YAMA_FIRE : ModernBosses.YAMA_SHADOW;
+            }
+            if (++autosAtTarget >= DUO_SWITCH_AUTOS) {
+                autosAtTarget = 0;
+                List<ServerPlayer> others = new ArrayList<>(BossFx.players(boss, 24));
+                others.remove(target);
+                others.removeIf(this::intruder);
+                if (!others.isEmpty()) {
+                    ServerPlayer next = others.get(boss.getRandom().nextInt(others.size()));
+                    boss.setTarget(next);
+                    BossFx.say(boss, "Yama: Your turn, " + next.getName().getString() + ".");
+                }
             }
             if (autosToSpecial <= 0) {
                 startSpecial(boss, target);
@@ -431,6 +650,7 @@ final class ModernScripts {
                 if (m == null) {
                     continue;
                 }
+                OWNED.put(m, this);
                 if (stage >= 3) {
                     m.setHealth(m.getMaxHealth() / 2); // 71 of 140 in phase 3
                 }
@@ -520,9 +740,18 @@ final class ModernScripts {
             }
         }
 
+        /**
+         * The BossDef's 66%/33% phases only mark the base thresholds; the script keeps its own (66.6% and 33.3%, or 75% and
+         * 50% under a contract: OSRS Wiki, 29 May 2025) in {@link #checkThresholds}.
+         */
         @Override
         public void onPhase(DataBossEntity boss, int phase) {
-            if (phase <= 1) {
+        }
+
+        private void checkThresholds(DataBossEntity boss) {
+            double[] at = YamaLoot.thresholds(contract);
+            while (thresholdsPassed < at.length && percent(boss) <= at[thresholdsPassed]) {
+                thresholdsPassed++;
                 exilesQueued++; // both thresholds can pass with one hit: the second exile follows the first
                 if (!exiled && exileDelay < 0) {
                     exileDelay = 4;
@@ -550,6 +779,9 @@ final class ModernScripts {
             // The exile spot and the Judge sit in the arena's west side, inside the ring wall.
             Vec3 spot = standable(w, floorSpot(boss, -12, 4));
             for (ServerPlayer p : BossFx.players(boss, 24)) {
+                if (intruder(p)) {
+                    continue;
+                }
                 p.teleportTo(spot.x, spot.y, spot.z);
                 exilees.add(p);
                 Msg.red(p, "Yama slams his axe down and exiles you from the arena! Defeat the Judge of Yama.");
@@ -557,6 +789,7 @@ final class ModernScripts {
             ServerPlayer target = exilees.isEmpty() ? null : exilees.get(0);
             judge = BossFx.spawnMinion(boss, BossMechanics.YAMA_JUDGE, floorSpot(boss, -12, -3), target);
             if (judge != null) {
+                OWNED.put(judge, this);
                 // The Judge prays against ranged and the last style it was hit with (melee at the start); other attacks
                 // always land, and always for their max hit.
                 AttackType[] last = {AttackType.CRUSH};
@@ -647,6 +880,9 @@ final class ModernScripts {
         protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             if (glyphs.isEmpty()) {
                 placeGlyphs(boss);
+            }
+            if (boss.isAlive()) {
+                checkThresholds(boss);
             }
             ServerLevel w = BossFx.world(boss);
             List<ServerPlayer> players = BossFx.players(boss, 24);
@@ -820,6 +1056,11 @@ final class ModernScripts {
             if (contract != null && killer != null) {
                 // OSRS Wiki "Yama#Contracts": sigil contracts come back with their purifying sigil piece; acquisition
                 // contracts are used up and guarantee their reward (oathplate: the first piece the player isn't carrying).
+                // Only the player who showed Yama the contract receives it (the duo partner rolls the unique table only).
+                ServerPlayer host = contractHost == null ? null : fighters.get(contractHost);
+                if (host != null && host.isAlive()) {
+                    killer = host;
+                }
                 if (contract.returnedOnKill()) {
                     Inv.give(killer, contract.item, 1);
                     Msg.game(killer, "Yama returns your " + contract.displayName().toLowerCase(java.util.Locale.ROOT) + ".");

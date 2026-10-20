@@ -49,8 +49,41 @@ class DoomMechanicsTest {
     @Test
     void meleePunish() {
         assertEquals(30, DoomDelves.punishBonus(150));
-        assertEquals(6, DoomDelves.punishDelay(1));
-        assertEquals(8, DoomDelves.punishDelay(9));
+        // OSRS Wiki strategies: "8 tick delay at delves 1 and 2, 7 ticks at delves 3-6, and 6 ticks at delves 7+".
+        assertEquals(8, DoomDelves.punishDelay(1));
+        assertEquals(8, DoomDelves.punishDelay(2));
+        assertEquals(7, DoomDelves.punishDelay(3));
+        assertEquals(7, DoomDelves.punishDelay(6));
+        assertEquals(6, DoomDelves.punishDelay(7));
+        assertEquals(6, DoomDelves.punishDelay(9));
+    }
+
+    /** The strategy page's table of attacks by delve level. */
+    @Test
+    void attacksByDelveLevel() {
+        int[] projectiles = {1, 2, 2, 3, 3, 3, 3, 6, 6};
+        int[] shockwaves = {1, 1, 2, 2, 3, 3, 4, 5, 5};
+        int[] beam = {60, 60, 60, 80, 80, 99, 99, 99, 99};
+        int[] trample = {0, 0, 0, 0, 10, 20, 30, 40, 40};
+        int[] zooms = {0, 0, 0, 0, 2, 3, 3, 3, 3};
+        for (int lvl = 1; lvl <= 9; lvl++) {
+            assertEquals(projectiles[lvl - 1], DoomDelves.rockThrowProjectiles(lvl), "rock throw, delve " + lvl);
+            assertEquals(shockwaves[lvl - 1], DoomDelves.shockwaves(lvl), "shockwaves, delve " + lvl);
+            assertEquals(beam[lvl - 1], DoomDelves.chargeMaxHit(lvl), "beam, delve " + lvl);
+            assertEquals(trample[lvl - 1], DoomDelves.trampleDamage(lvl), "trample, delve " + lvl);
+            assertEquals(zooms[lvl - 1], DoomDelves.zooms(lvl), "zooms, delve " + lvl);
+            assertEquals(lvl >= 6, DoomDelves.carSlams(lvl), "car slams, delve " + lvl);
+        }
+        assertEquals(20, DoomDelves.SHOCKWAVE_WINDUP);
+        assertEquals(30, DoomDelves.SHOCKWAVE_MIN);
+        assertEquals(41, DoomDelves.SHOCKWAVE_MAX);
+        assertEquals(7, DoomDelves.ROCK_THROW_TICKS);
+        assertEquals(21, DoomDelves.LARVA_EXPLOSION_MAX);
+        assertEquals(40, DoomDelves.MELEE_MAX);
+        assertEquals(0.5, DoomDelves.earthenShieldSpeed(1));
+        assertEquals(1.0, DoomDelves.earthenShieldSpeed(2));
+        // The Doom's own BossDef carries no invented phase (the delve script runs its phases).
+        assertTrue(ContentRegistry.boss(DoomDelves.BOSS).phases.isEmpty());
     }
 
     @Test

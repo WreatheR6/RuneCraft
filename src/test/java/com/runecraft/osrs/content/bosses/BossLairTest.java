@@ -71,6 +71,65 @@ class BossLairTest {
     }
 
     /** Minions are tagged with their lair, so a reset clears exactly that lair's (also after a restart). */
+    /** A melee boss stranded by terrain (no path that reaches its target, out of reach) steps up after a few game ticks. */
+    @Test
+    void terrainSafespotsDontLast() {
+        assertTrue(BossLair.strandedBy(6, 3, false));
+        assertFalse(BossLair.strandedBy(6, 3, true), "a walkable target is chased, not jumped to");
+        assertFalse(BossLair.strandedBy(3.5, 3, false), "within a step of melee reach");
+        int t = 0;
+        for (int i = 1; i < BossLair.SAFESPOT_TICKS; i++) {
+            t = BossLair.stranded(t, true);
+            assertFalse(BossLair.breaksSafespot(t));
+        }
+        t = BossLair.stranded(t, true);
+        assertTrue(BossLair.breaksSafespot(t));
+        assertEquals(0, BossLair.stranded(t, false), "a reachable tick resets the count");
+        assertEquals(24, BossLair.QUEST_LEASH);
+    }
+
+    @Test
+    void ringCirclesTheCentre() {
+        double[][] ring = BossLair.ring(10, -4, 2.5, 0);
+        assertEquals(BossLair.RING_SPOTS, ring.length);
+        for (double[] spot : ring) {
+            assertEquals(2.5, Math.hypot(spot[0] - 10, spot[1] + 4), 1e-9);
+        }
+        assertEquals(12.5, ring[0][0], 1e-9); // the first spot lies toward the start angle
+        assertEquals(-4, ring[0][1], 1e-9);
+    }
+
+    /** A boss stranded beside a ledge steps up next to its target when there is floor beside the target. */
+    @Test
+    void strandedBossStepsUpBesideItsTarget() {
+        double[][] beside = BossLair.ring(0, 0, 2, 0);
+        BossLair.SafespotBreak b = BossLair.breakSafespot(beside, spot -> spot[1] > 1.5, // only the south spot has floor
+                BossLair.ring(8, 0, 2, Math.PI), spot -> true, 8, 0);
+        assertFalse(b.knockDown());
+        assertEquals(0, b.x(), 1e-9);
+        assertEquals(2, b.z(), 1e-9);
+    }
+
+    /**
+     * On a 1x1 pillar (or down a one-wide shaft) no spot beside the target fits the boss: the target is knocked down beside
+     * the boss instead, and when nothing there fits either, onto the boss's own spot. The safespot never survives.
+     */
+    @Test
+    void noSpotBesideThePerchKnocksTheTargetDown() {
+        double[][] beside = BossLair.ring(0, 0, 2, 0);
+        double[][] besideBoss = BossLair.ring(8, 0, 1.5, Math.PI);
+        BossLair.SafespotBreak b = BossLair.breakSafespot(beside, spot -> false, besideBoss, spot -> spot[1] < -1, 8, 0);
+        assertTrue(b.knockDown());
+        assertTrue(Math.hypot(b.x(), b.z()) > 6, "beside the boss, not beside the pillar");
+        assertEquals(1.5, Math.hypot(b.x() - 8, b.z()), 1e-9);
+        assertTrue(b.z() < -1);
+
+        BossLair.SafespotBreak cramped = BossLair.breakSafespot(beside, spot -> false, besideBoss, spot -> false, 8, 0);
+        assertTrue(cramped.knockDown());
+        assertEquals(8, cramped.x(), 1e-9);
+        assertEquals(0, cramped.z(), 1e-9);
+    }
+
     @Test
     void minionTagsNameTheirLair() {
         assertEquals("rc_lair_123", BossLair.minionTag(123));

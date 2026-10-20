@@ -1480,7 +1480,35 @@ final class EncounterScripts {
                     RoyalTitans t = type == AttackType.RANGED ? TITANS.get(target) : null;
                     return t != null && t.rangedBoost() ? 6.0 : 1.0;
                 }
+
+                /** Damage to either Titan is the player's contribution to the loot (elementals don't count). */
+                @Override
+                public void afterHit(ServerPlayer player, net.minecraft.world.entity.LivingEntity target, AttackType type, int dealt) {
+                    RoyalTitans t = TITANS.get(target);
+                    if (t != null && dealt > 0) {
+                        t.credit(player, dealt);
+                    }
+                }
             });
+        }
+
+        /** Each fighter's damage to the Titans (their contribution, RoyalTitansLoot), and the players themselves. */
+        private final Map<java.util.UUID, Integer> damage = new java.util.LinkedHashMap<>();
+        private final Map<java.util.UUID, ServerPlayer> fighters = new java.util.LinkedHashMap<>();
+
+        void credit(ServerPlayer p, int dealt) {
+            damage.merge(p.getUUID(), dealt, Integer::sum);
+            fighters.put(p.getUUID(), p);
+        }
+
+        /** Damage this player dealt to the Titans this fight. */
+        int damageBy(ServerPlayer p) {
+            return damage.getOrDefault(p.getUUID(), 0);
+        }
+
+        /** Everyone who damaged a Titan this fight. */
+        java.util.Collection<ServerPlayer> fighters() {
+            return fighters.values();
         }
 
         /**

@@ -31,6 +31,7 @@ public final class BossesHooks implements ModuleHooks {
         BossScripts.register("hespori", ClassicScripts.Hespori::new);
         BossScripts.register("ant_hespori", ClassicScripts.Hespori::new); // A Night at the Theatre's wild Hespori (quests module)
         BossScripts.register("scurrius", ClassicScripts.Scurrius::new);
+        ScurriusGroupService.register(); // the public room's group version: stronger, MVP and non-MVP loot
         BossScripts.register("sarachnis", ClassicScripts.Sarachnis::new);
         BossScripts.register("zalcano", ClassicScripts.Zalcano::new);
         BossScripts.register("sol_heredit", SolHereditScript::new);
@@ -98,6 +99,7 @@ public final class BossesHooks implements ModuleHooks {
         BossScripts.register("blood_moon", MoonScripts.BloodMoon::new);
         LunarChest.init();
         BossScripts.register("branda_the_fire_queen", EncounterScripts.RoyalTitans::new);
+        TitansLoot.register(); // each fighter loots a Titan, sacrifices or takes pages, on their own contribution
         // Fought beside the main boss, whose kill count they share (one "Royal Titans" / "Grotesque Guardians" kill).
         com.runecraft.boss.DataBossService.companion("eldric_the_ice_king");
         com.runecraft.boss.DataBossService.companion("dawn");
@@ -109,6 +111,7 @@ public final class BossesHooks implements ModuleHooks {
         OldBossScripts.register();
         // Yama's sigil contracts: one held in the main hand when challenging him is shown to him (and consumed).
         com.runecraft.boss.DataBossService.requirement("yama", (player, def) -> ModernScripts.Yama.offerContract(player));
+        ModernScripts.Yama.register(); // per-player rewards on contribution (contracts skip the standard table)
 
         BlockHooks.register(BossPlaces.FONT_OF_CONSUMPTION, BossesHooks::offerUnsired);
 
@@ -133,6 +136,9 @@ public final class BossesHooks implements ModuleHooks {
                 "You need to complete Children of the Sun to fight the Hueycoatl."));
         com.runecraft.boss.DataBossService.requirement("amoxliatl", (player, def) -> questDone(player, "the_heart_of_darkness",
                 "You need to complete The Heart of Darkness to fight Amoxliatl."));
+        // OSRS Wiki "Maggot King's lair": "Accessing it requires completion of The Blood Moon Rises."
+        com.runecraft.boss.DataBossService.requirement("maggot_king", (player, def) -> questDone(player, "the_blood_moon_rises",
+                "You need to complete The Blood Moon Rises to enter the Maggot King's lair."));
         for (String moon : com.runecraft.osrs.content.bosses.MoonsRules.MOONS) {
             com.runecraft.boss.DataBossService.requirement(moon, (player, def) -> questDone(player, "perilous_moons",
                     "You need to complete Perilous Moons to challenge " + def.name + "."));

@@ -171,6 +171,8 @@ final class GameplayChecks {
                 () -> g.scripted("zalcano", com.runecraft.content.bosses.BossSelfTests::zalcanoTephra)));
         checks.add(new SelfTest.Check("boss:yama_dossier",
                 () -> g.scripted("yama", com.runecraft.content.bosses.BossSelfTests::yamaDossier)));
+        checks.add(new SelfTest.Check("boss:scurrius_group",
+                () -> g.scripted("scurrius", com.runecraft.content.bosses.BossSelfTests::scurriusGroup)));
         checks.add(new SelfTest.Check("boss:hueycoatl_phases",
                 () -> g.scripted("the_hueycoatl", com.runecraft.content.bosses.BossSelfTests::hueycoatlPhases)));
         // Round 36: the classic bosses' mechanics, driven tick by tick (ClassicBossWalks).

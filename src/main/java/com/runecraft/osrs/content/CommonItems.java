@@ -29,8 +29,16 @@ public final class CommonItems {
     public static void add(ItemSink items) {
         // Aether runes (skilling: Cosmic Altar; minigames: Guardians of the Rift) and their catalyst (Doom of Mokhaiotl drop).
         items.add("aether_rune", "Aether rune", Kind.RUNE, "rune", 0xB070E0).value(300).examine("A combined cosmic and soul rune.");
-        items.add("aether_catalyst", "Aether catalyst", Kind.SIMPLE, "orb", 0x9A60D0).value(100)
-                .examine("Used with soul runes at the Cosmic Altar to make aether runes.");
+        items.add("aether_catalyst", "Aether catalyst", Kind.SIMPLE, "orb", 0x9A60D0).value(200).stack(100000)
+                .examine("A piece of the cosmos' soul? Or souls belonging to the cosmos?");
+        // Doom of Mokhaiotl delve table (bosses), also dropped by other bosses and Varlamore activities in OSRS (wiki values).
+        items.add("shark_lure", "Shark lure", Kind.SIMPLE, "bait", 0xC04A3A).value(10).stack(100000)
+                .examine("Sharks just can't get enough of these");
+        items.add("sun_kissed_bones", "Sun-kissed bones", Kind.SIMPLE, "bones", 0xE8D8A0).value(160).weight(1.8)
+                .examine("These bones have been left out a little too long.");
+        // Yama's junk table (bosses); also a random event and crystal chest reward in OSRS (systems: diary chests).
+        items.add("spinach_roll", "Spinach roll", Kind.FOOD, "cake", 0x6A9A3A).heal(2).value(1).weight(0.1)
+                .examine("A home made spinach thing.");
         // Weiss salts (systems: Weiss salt mine and basalt teleports; skilling: the Sailing eternal brazier takes 250 of each).
         items.add("te_salt", "Te salt", Kind.SIMPLE, "ore", 0xE0E0D0).value(1).stack(100000).examine("A salt from Weiss's salt mine.");
         items.add("efh_salt", "Efh salt", Kind.SIMPLE, "ore", 0xB0D8F0).value(1).stack(100000).examine("A salt from Weiss's salt mine.");

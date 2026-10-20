@@ -56,6 +56,9 @@ public final class ModernBosses {
             .telegraph(2, "The Doom's eye glows violet...").particle("minecraft:witch");
     public static final AttackDef DOOM_RANGED = AttackDef.of("rock_spit", AttackType.RANGED, 40, 16, 3) // approx
             .telegraph(2, "The Doom's maw fills with rocks...").particle("minecraft:crit");
+    /** The red (melee) orb from delve 2 (OSRS Wiki strategies): blocked by Protect from Melee, at any range. */
+    public static final AttackDef DOOM_MELEE_ORB = AttackDef.of("melee_orb", AttackType.CRUSH, 40, 16, 3) // approx base (the delve sets it)
+            .telegraph(2, "The Doom's eye glows red...").particle("minecraft:crimson_spore");
     /** The charge: 99 at the deepest delves, telegraphed so you can step out of its path. */
     public static final AttackDef DOOM_CHARGE = AttackDef.of("charge", AttackType.CRUSH, 99, 16, 1)
             .special(Special.SKY_STRIKE, 0).telegraph(4, "The Doom of Mokhaiotl rears up to charge!");
@@ -223,17 +226,14 @@ public final class ModernBosses {
     }
 
     static BossDef doom() {
-        // The "Deep Delve" (delve 9+) stat line: drops roll at their best rate from delve 9 on.
+        // The "Deep Delve" (delve 9+) stat line; each delve level is a BossVariant (DoomDelves.variant) with its own hitpoints,
+        // levels, attack speed and max hits, and no phases of its own (the delve script runs the shield, burrow and shockwave).
         return BossDef.of("doom_of_mokhaiotl", "Doom of Mokhaiotl").level(908).stats(625, 300, 190, 90, 275, 110).speed(4)
                 .attackBonus(210, 125, 120).defenceBonus(300, 300, 60, 160, 160).attributes("demon")
                 .attack(DOOM_MELEE).attack(DOOM_MAGIC).attack(DOOM_RANGED).attack(DOOM_CHARGE).attack(DOOM_ACID)
-                .phase(50, "The Doom of Mokhaiotl burrows into its shell and the cavern shakes!", 1.1, false,
-                        DOOM_MELEE, DOOM_MAGIC, DOOM_RANGED, DOOM_CHARGE, DOOM_ACID)
-                // Delve 9+: each unique 1/540, Dom 1/250 (rolled by the pet engine).
-                .drops(Drop.of("demon_tear", 20, 60, 1), // approx
-                        Drop.of("mokhaiotl_cloth", 1, 1, 540), Drop.of("eye_of_ayak", 1, 1, 540), Drop.of("avernic_treads", 1, 1, 540),
-                        Drop.of("death_rune", 200, 400, 8), Drop.of("soul_rune", 150, 300, 8), Drop.of("runite_ore", 6, 12, 10),
-                        Drop.of("adamantite_bar", 10, 20, 10), Drop.of("coins", 25000, 75000, 4), Drop.of("clue_scroll_elite", 1, 1, 40)) // approx
+                // What a deep delve (9+) level rolls, for reference (Dom 1/250 is the pet engine's): the loot itself is rolled by
+                // DoomDelves.roll and held in the burrow hole until claimed (DoomDelveService), never dropped by the kill.
+                .drops(DoomDelves.deepDelveDrops().toArray(new Drop[0]))
                 .pet("pet_dom").at("mokhaiotl_lair").arena(14, "crypt").size(2.2f, 2.4f, 2.2f).moveSpeed(0.14);
     }
 
@@ -369,6 +369,9 @@ public final class ModernBosses {
                     .value(75000).weight(0.4).examine("A contract issued by Yama. Present it to him to discuss some new terms.");
         }
         BossItems.petItem(items, "pet_yami", "Yami", "Yama", 0x5A2A4A);
+        // Yama's junk table (YamaLoot): demon dung (OSRS Wiki value 10).
+        items.add("demon_dung", "Demon dung", Kind.SIMPLE, "secondary", 0x5A3A1A).value(10).weight(0.38)
+                .examine("I wonder how my crops would grow on this stuff!");
 
         // ---------------- Doom of Mokhaiotl ----------------
         // mokhaiotl_cloth, demon_tear and the Maggot King's elder_venator_fang are in osrs/content/CommonItems (the systems
@@ -379,6 +382,9 @@ public final class ModernBosses {
         BossItems.wearItem(items, "avernic_treads", "Avernic treads", Kind.ARMOUR, "boots", 0x8A1A2A, 30_000_000, Slot.FEET,
                 st(5, 5, 5, 11, 15, 21, 25, 25, 10, 10, 4, 2, 1, 0), Skill.DEFENCE, 85).examine("Tribrid boots from the depths.");
         BossItems.petItem(items, "pet_dom", "Dom", "Doom of Mokhaiotl", 0x6A3A8A);
+        // A one-use teleport to the Ruins of Mokhaiotl after The Final Dawn (OSRS Wiki "Mokhaiotl waystone"; DoomDelveService).
+        items.add(DoomDelves.WAYSTONE, "Mokhaiotl waystone", Kind.SIMPLE, "shard", 0x7A6A9A).value(10_000).stack(100000)
+                .examine("A magical shard linked to Mokhaiotl.");
 
         // ---------------- Shellbane gryphon ----------------
         BossItems.simpleItem(items, "belles_folly_tarnished", "Belle's folly (tarnished)", "tail", 0x8A7A5A, 2_000_000,
