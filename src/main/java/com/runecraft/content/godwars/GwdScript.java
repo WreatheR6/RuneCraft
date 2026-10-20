@@ -110,6 +110,23 @@ abstract class GwdScript implements BossScript {
         }
     }
 
+    /** Repeats an attack on every other player within {@code radius} blocks of {@code centre} (an area spell's splash). */
+    protected void splashAround(DataBossEntity boss, AttackDef attack, ServerPlayer centre, double radius) {
+        if (spreading) {
+            return;
+        }
+        spreading = true;
+        try {
+            for (ServerPlayer p : players(boss, 40)) {
+                if (p != centre && p.distanceToSqr(centre) <= radius * radius) {
+                    Mechanics.perform(boss, p, attack, 1.0);
+                }
+            }
+        } finally {
+            spreading = false;
+        }
+    }
+
     @Override
     public void gameTick(DataBossEntity boss, long gameTick) {
         Iterator<Strike> it = strikes.iterator();
@@ -171,6 +188,14 @@ abstract class GwdScript implements BossScript {
         for (ServerPlayer p : players(boss, 40)) {
             p.displayClientMessage(Component.literal(name + ": " + text).withStyle(ChatFormatting.YELLOW), false);
         }
+    }
+
+    /**
+     * True when the boss stands in the God Wars Dungeon: its bodyguards are then the dungeon's own (they respawn on their
+     * own tiles, {@code GwdSpawner}), not summoned with it.
+     */
+    protected static boolean inDungeon(DataBossEntity boss) {
+        return com.runecraft.osrs.content.godwars.GwdDungeon.areaAt(boss.getBlockX(), boss.getBlockY(), boss.getBlockZ()) != null;
     }
 
     /**

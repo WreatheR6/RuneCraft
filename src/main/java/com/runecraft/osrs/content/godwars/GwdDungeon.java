@@ -598,7 +598,9 @@ public final class GwdDungeon {
             int f = FLOOR[a.spot().plane()];
             b.set(a.spot().blockX(), f + 1, a.spot().blockZ(), "runecraft:" + a.block());
         }
-        // Ashuelot Reis keeps the bank in the refuge before Nex's chamber (here a bank booth beside him).
+        // The rope hanging down the hole, beside the spot the climb lands on.
+        b.fill(ROPE.blockX(), FLOOR[2] + 1, ROPE.blockZ(), ROPE.blockX(), FLOOR[2] + 3, ROPE.blockZ(), "runecraft:" + BLOCK_ROPE);
+        // Ashuelot Reis keeps the bank in the refuge before Nex's chamber (here a bank booth).
         Spot bank = new Spot(0, 2905, 5207);
         b.set(bank.blockX(), FLOOR[0] + 1, bank.blockZ(), "runecraft:bank_booth");
         return b.build();

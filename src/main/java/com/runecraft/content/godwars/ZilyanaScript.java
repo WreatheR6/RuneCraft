@@ -9,10 +9,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
 
 /**
- * Commander Zilyana: attacks every 2 ticks. Slashes with her Saradomin sword (up to 31) when next to
- * her target, and calls down Saradomin's power on everyone in the room (magic, up to 20). She never
- * stands still for long: every few ticks she dashes to another part of her chamber. Spawns with
- * Starlight, Growler and Bree.
+ * Commander Zilyana: attacks every 2 ticks. Slashes with her Saradomin sword (up to 27) and, only when next to her
+ * target, calls down Saradomin's power on everyone in the room (magic, up to 20). She never stands still for long: every
+ * few ticks she dashes to another part of her chamber. Starlight, Growler and Bree are her chamber's own bodyguards in
+ * the God Wars Dungeon; summoned anywhere else she brings them along.
  */
 final class ZilyanaScript extends GwdScript {
     private static final String[] SHOUTS = {"Death to the enemies of the light!", "Slay the evil ones!",
@@ -29,17 +29,20 @@ final class ZilyanaScript extends GwdScript {
         homeX = boss.getX();
         homeY = boss.getY();
         homeZ = boss.getZ();
-        guards.add(spawnGuard(boss, "starlight", 3, 0));
-        guards.add(spawnGuard(boss, "growler", -3, 2));
-        guards.add(spawnGuard(boss, "bree", 0, -3));
+        if (!inDungeon(boss)) {
+            guards.add(spawnGuard(boss, "starlight", 3, 0));
+            guards.add(spawnGuard(boss, "growler", -3, 2));
+            guards.add(spawnGuard(boss, "bree", 0, -3));
+        }
     }
 
+    /** OSRS Wiki: she only casts her magic when she is in melee distance; further away she closes in to slash. */
     @Override
     protected AttackDef pick(DataBossEntity boss, ServerPlayer target, double distance) {
-        if (distance <= meleeReach(boss) && boss.getRandom().nextInt(4) != 0) {
-            return GwdBosses.ZILY_MELEE;
+        if (distance <= meleeReach(boss) && boss.getRandom().nextInt(4) == 0) {
+            return GwdBosses.ZILY_MAGIC;
         }
-        return GwdBosses.ZILY_MAGIC;
+        return GwdBosses.ZILY_MELEE;
     }
 
     @Override

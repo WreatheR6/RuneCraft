@@ -75,7 +75,8 @@ public class OsrsMonsterEntity extends Monster {
             return false;
         }
         boolean aggressive = s.monster() != null ? s.monster().aggressive() : s.profile().aggressive;
-        if (!aggressive || com.runecraft.combat.Aggression.tolerant(player, com.runecraft.action.ActionManager.gameTick())) {
+        if (!aggressive || com.runecraft.combat.Aggression.tolerant(player, com.runecraft.action.ActionManager.gameTick())
+                || com.runecraft.combat.Aggression.peaceful(this, player)) {
             return false;
         }
         // Single-way combat: don't pick a fight with someone already fighting something else.

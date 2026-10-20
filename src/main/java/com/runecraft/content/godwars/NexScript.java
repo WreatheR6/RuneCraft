@@ -13,6 +13,7 @@ import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.BossDef;
 import com.runecraft.osrs.content.ContentRegistry;
 import com.runecraft.osrs.content.godwars.GwdBosses;
+import com.runecraft.osrs.content.godwars.GwdDungeon;
 import com.runecraft.osrs.content.systems.CombatAchievements;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
@@ -31,24 +32,28 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Nex, the Zarosian general. Five phases:
+ * Nex, the Zarosian general, fought in her chamber of the Ancient Prison. Five phases:
  * <ol>
- *   <li><b>Smoke</b> (100-80%): smoke bullets poison everyone; <i>"There is... NO ESCAPE!"</i> dashes
- *       through players in a line; <i>"Let the virus flow through you!"</i> infects a player and
- *       everyone standing next to them.</li>
- *   <li><b>Shadow</b> (80-60%, after Fumus): shadow shots hit harder the closer you stand;
- *       <i>"Fear the shadow!"</i> shadow traps under every player (move!) and <i>"Embrace darkness!"</i>.</li>
- *   <li><b>Blood</b> (60-40%, after Umbra): blood barrage heals her; <i>"A siphon will solve this!"</i>
- *       turns damage into healing and summons blood reavers; <i>"I demand a blood sacrifice!"</i> marks a
- *       player who must get away from her.</li>
- *   <li><b>Ice</b> (40-20%, after Cruor): ice barrage freezes; <i>"Die now, in a prison of ice!"</i>
- *       and <i>"Contain this!"</i> (ice spikes around her: keep your distance).</li>
- *   <li><b>Zaros</b> (20-0%, after Glacies): <i>"NOW, THE POWER OF ZAROS!"</i> she heals 500 and her
- *       attacks drain prayer and soul-split.</li>
+ *   <li><b>Smoke</b> (100-80%): opens with <i>"Let the virus flow through you!"</i> (choke, spreads to
+ *       neighbours), then smoke bullets that poison, <i>"There is... NO ESCAPE!"</i> dashes and drags.</li>
+ *   <li><b>Shadow</b> (80-60%, after Fumus): shadow shots (max 60) hit harder the closer you stand;
+ *       <i>"Fear the shadow!"</i> shadow traps under every player and <i>"Embrace darkness!"</i>
+ *       (darkness, and damage while standing next to her).</li>
+ *   <li><b>Blood</b> (60-40%, after Umbra): blood barrage heals her and splashes 3x3; <i>"A siphon will solve
+ *       this!"</i> summons blood reavers (one per player, up to eight) that heal her when it ends;
+ *       <i>"I demand a blood sacrifice!"</i> marks a player who must get seven tiles away (up to 50, and
+ *       nearby players take damage and lose a third of their prayer).</li>
+ *   <li><b>Ice</b> (40-20%, after Cruor): ice barrage freezes for 15 ticks; <i>"Die now, in a prison of ice!"</i>
+ *       (up to 75 unless an ice block is broken) and <i>"Contain this!"</i> (ice spikes around her, up to 60;
+ *       both switch protection prayers off).</li>
+ *   <li><b>Zaros</b> (20-0%, after Glacies): <i>"NOW, THE POWER OF ZAROS!"</i> she heals 500 and, every four
+ *       attacks, switches between Soul Split (heals a quarter of her hits), Deflect Melee (melee hits nothing,
+ *       a tenth reflects) and no curse.</li>
  * </ol>
  * At each threshold Nex becomes immune and the matching general (waiting invulnerable in a corner)
- * must be killed first. On death: <i>"Taste my wrath!"</i>. Nex has 3400 hitpoints; Minecraft caps max
- * health at 1024, so incoming damage and healing are scaled to keep the fight's real length.
+ * must be killed first. On death: <i>"Taste my wrath!"</i>, up to 50 to everyone close by after
+ * five ticks. Nex has 3400 hitpoints; Minecraft caps max health at 1024, so incoming damage and healing are
+ * scaled to keep the fight's real length.
  */
 final class NexScript extends GwdScript {
     enum Stage { SMOKE, SHADOW, BLOOD, ICE, ZAROS }
@@ -56,7 +61,16 @@ final class NexScript extends GwdScript {
     private static final String[] STAGE_LINES = {"Fill my soul with smoke!", "Darken my shadow!", "Flood my lungs with blood!",
             "Infuse me with the power of ice!", "NOW, THE POWER OF ZAROS!"};
 
-    private Stage stage = Stage.SMOKE;
+    /** Blood Sacrifice: the marked player must be this far (blocks: seven tiles) from her. */
+    private static final double SACRIFICE_BLOCKS = 14;
+    /** Ice Prison's most damage (OSRS Wiki infobox: 75). */
+    private static final int PRISON_MAX = 75;
+    /** Wrath: most damage, delay after her death (3 seconds) and half-size of the 5x5 around her, in blocks. */
+    private static final int WRATH_MAX = 50;
+    private static final int WRATH_DELAY_TICKS = 5;
+    private static final double WRATH_REACH = 5.0;
+
+    Stage stage = Stage.SMOKE;
     private final DataBossEntity[] minions = new DataBossEntity[4];
     private int shieldIndex = -1;
     private double damageCarry;
@@ -92,13 +106,18 @@ final class NexScript extends GwdScript {
         homeY = boss.getY();
         homeZ = boss.getZ();
         ServerLevel world = (ServerLevel) boss.level();
-        int[][] corners = {{-9, -9}, {9, -9}, {9, 9}, {-9, 9}};
+        int[][] corners = {{-9, -9}, {9, -9}, {-9, 9}, {9, 9}};
+        boolean chamber = GwdDungeon.areaAt(boss.getBlockX(), boss.getBlockY(), boss.getBlockZ()) == GwdDungeon.Area.NEX_CHAMBER;
         for (int i = 0; i < 4; i++) {
             BossDef def = ContentRegistry.boss(GwdBosses.NEX_MINIONS[i]);
             if (def == null) {
                 continue;
             }
-            DataBossEntity minion = DataBossService.spawn(world, boss.blockPosition().offset(corners[i][0], 0, corners[i][1]), def, null);
+            // In her chamber the mages stand in the four corners of the cross (Fumus north-west ... Glacies south-east).
+            GwdDungeon.Spot corner = GwdDungeon.NEX_MAGES.get(i);
+            BlockPos at = chamber ? new BlockPos(corner.blockX(), corner.feetY(), corner.blockZ())
+                    : boss.blockPosition().offset(corners[i][0], 0, corners[i][1]);
+            DataBossEntity minion = DataBossService.spawn(world, at, def, null);
             if (minion != null && minion.script() instanceof NexMinionScript s) {
                 s.nex = boss;
                 s.active = false;
@@ -132,11 +151,27 @@ final class NexScript extends GwdScript {
         siphonUntil = -1;
     }
 
+    /** Melee attacks left in the current string (OSRS, June 2025: she always swings three times in a row). */
+    private int meleeStreak;
+    /** Auto-attacks made in the Zaros phase: her curse changes every four (Soul Split, Deflect Melee, none). */
+    private int zarosAttacks;
+
+    /** Nex's curse in the Zaros phase: 0 Soul Split, 1 Deflect Melee, 2 none. */
+    int zarosCurse() {
+        return (zarosAttacks / 4) % 3;
+    }
+
     @Override
     protected AttackDef pick(DataBossEntity boss, ServerPlayer target, double distance) {
-        if (distance <= meleeReach(boss) && boss.getRandom().nextInt(3) == 0) {
+        if (stage == Stage.ZAROS) {
+            zarosAttacks++;
+        }
+        boolean adjacent = distance <= meleeReach(boss);
+        if (adjacent && (meleeStreak > 0 || boss.getRandom().nextInt(3) == 0)) {
+            meleeStreak = meleeStreak > 0 ? meleeStreak - 1 : 2;
             return GwdBosses.NEX_MELEE;
         }
+        meleeStreak = 0;
         return switch (stage) {
             case SMOKE -> GwdBosses.NEX_SMOKE;
             case SHADOW -> GwdBosses.NEX_SHADOW;
@@ -146,26 +181,40 @@ final class NexScript extends GwdScript {
         };
     }
 
+    /** Her blood barrage is cast at one player and splashes the 3x3 around them; her other spells hit everyone. */
     @Override
     protected boolean isMultiTarget(AttackDef attack) {
-        return attack != GwdBosses.NEX_MELEE;
+        return attack != GwdBosses.NEX_MELEE && attack != GwdBosses.NEX_BLOOD;
     }
 
     @Override
     protected int landed(DataBossEntity boss, ServerPlayer player, int damage, AttackDef attack) {
+        int dealt = damage;
         if (attack == GwdBosses.NEX_SHADOW) {
+            // Shadow shots hit harder the closer the player stands (OSRS Wiki: up to 60, 30 through Protect from Missiles).
             double dist = Math.sqrt(player.distanceToSqr(boss));
             double factor = Math.max(0.2, Math.min(1.0, 1.0 - (dist - 2) / 14.0));
-            return (int) Math.round(damage * factor);
+            dealt = (int) Math.round(damage * factor);
         }
-        if (attack == GwdBosses.NEX_BLOOD || attack == GwdBosses.NEX_ZAROS) {
+        if (attack == GwdBosses.NEX_BLOOD) {
             healReal(boss, damage * 0.25);
+            splashAround(boss, attack, player, 3.0);
         }
-        return damage;
+        // Zaros phase: under Soul Split every hit heals her (approx: a quarter of the damage, like the players' Soul Split).
+        if (stage == Stage.ZAROS && zarosCurse() == 0) {
+            healReal(boss, dealt * 0.25);
+        }
+        return dealt;
     }
 
     @Override
     public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+        if (stage == Stage.ZAROS && zarosCurse() == 1 && type != null && type.isMelee() && damage > 0) {
+            // Deflect Melee: melee hits do nothing and a tenth comes back at the attacker (approx).
+            CombatHandler.applyDamage(boss, attacker, Math.max(1, damage / 10));
+            Msg.action(attacker, "Nex deflects your melee attack!");
+            return 0;
+        }
         if (siphonUntil > ActionManager.gameTick()) {
             healReal(boss, damage);
             if (damage > 0) {
@@ -191,6 +240,13 @@ final class NexScript extends GwdScript {
             shout(boss, STAGE_LINES[stage.ordinal()]);
             world.playSound(null, boss.getX(), boss.getY(), boss.getZ(), SoundEvents.WITHER_AMBIENT, SoundSource.HOSTILE,
                     1.0f, 0.7f);
+            if (stage == Stage.ICE) {
+                // the blood phase's reavers die when the ice phase begins
+                for (net.minecraft.world.entity.LivingEntity r : reavers) {
+                    r.discard();
+                }
+                reavers.clear();
+            }
             if (stage == Stage.ZAROS) {
                 healReal(boss, 500);
                 world.sendParticles(ParticleTypes.DRAGON_BREATH, boss.getX(), boss.getY() + 2, boss.getZ(), 60, 1, 1, 1, 0.05);
@@ -203,23 +259,28 @@ final class NexScript extends GwdScript {
         resolveSacrifice(boss, world, gameTick);
         resolvePrison(boss, world, gameTick);
         tickCough(boss, world, gameTick);
+        tickDarkness(boss, gameTick);
         List<ServerPlayer> nearby = players(boss, 24);
         if (nearby.isEmpty() || shieldIndex >= 0 || gameTick < nextSpecial) {
             return;
         }
         nextSpecial = gameTick + 15 + boss.getRandom().nextInt(10);
-        alternate = !alternate;
         ServerPlayer victim = nearby.get(boss.getRandom().nextInt(nearby.size()));
+        // OSRS: each phase's specials come in a random order; the smoke phase always opens with Choke.
+        int roll = boss.getRandom().nextInt(stage == Stage.SMOKE ? 3 : 2);
         switch (stage) {
             case SMOKE -> {
-                if (alternate) {
+                if (!choked || roll == 0) {
+                    choked = true;
+                    virus(boss, victim, nearby, gameTick);
+                } else if (roll == 1) {
                     smokeDash(boss, world, victim);
                 } else {
-                    virus(boss, victim, nearby, gameTick);
+                    drag(boss, world, nearby);
                 }
             }
             case SHADOW -> {
-                if (alternate) {
+                if (roll == 0) {
                     shout(boss, "Fear the shadow!");
                     for (ServerPlayer p : nearby) {
                         strike(boss, p.position(), 3, 50, 1.3, ParticleTypes.SQUID_INK, ParticleTypes.LARGE_SMOKE, (hit, dmg) -> {
@@ -231,30 +292,30 @@ final class NexScript extends GwdScript {
                     }
                 } else {
                     shout(boss, "Embrace darkness!");
+                    darknessUntil = gameTick + DARKNESS_TICKS;
                     for (ServerPlayer p : nearby) {
-                        p.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 100, 0, false, false));
+                        p.addEffect(new MobEffectInstance(MobEffects.DARKNESS, DARKNESS_TICKS * 12, 0, false, false));
                     }
                 }
             }
             case BLOOD -> {
-                if (alternate) {
-                    shout(boss, "A siphon will solve this!");
-                    siphonUntil = gameTick + 8;
-                    boss.summonMinions(2);
+                if (roll == 0) {
+                    siphon(boss, world, nearby, gameTick);
                 } else {
                     shout(boss, "I demand a blood sacrifice!");
                     sacrifice = victim;
                     sacrificeAt = gameTick + 7;
-                    Msg.red(victim, "Nex has marked you for a blood sacrifice! Get away from her!");
+                    Msg.red(victim, "Nex has marked you for a blood sacrifice! Get at least seven tiles away from her!");
                 }
             }
             case ICE -> {
-                if (alternate) {
+                if (roll == 0) {
                     iceprison(boss, world, victim, gameTick);
                 } else {
                     shout(boss, "Contain this!");
-                    strike(boss, boss.position(), 2, 60, 3.5, ParticleTypes.SNOWFLAKE, ParticleTypes.ITEM_SNOWBALL, (hit, dmg) -> {
-                        drainPrayer(hit, Players.data(hit).prayerPoints() / 4);
+                    // icicles in the 5x5 around her (she is 3x3): up to 60, and they switch off protection prayers
+                    strike(boss, boss.position(), 2, 60, 5.0, ParticleTypes.SNOWFLAKE, ParticleTypes.ITEM_SNOWBALL, (hit, dmg) -> {
+                        dropProtection(hit);
                         if (dmg > 0) {
                             CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_NEX_ICE);
                         }
@@ -262,13 +323,90 @@ final class NexScript extends GwdScript {
                 }
             }
             case ZAROS -> {
-                // Nex's Zarosian power: a burst of soul-draining energy around her.
-                shout(boss, "I fear no one!");
-                for (ServerPlayer p : nearby) {
-                    drainPrayer(p, 8);
-                }
+                // No specials: the Ruinous Powers (Soul Split, Deflect Melee, then none, four attacks each) do the work.
             }
         }
+    }
+
+    /** Smoke phase opened with Choke. */
+    private boolean choked;
+    /** Embrace Darkness: until this tick, standing next to her hurts. */
+    private long darknessUntil = -1;
+    /** Game ticks each player has stood next to her in the darkness. */
+    private final java.util.Map<ServerPlayer, Integer> inDarkness = new java.util.HashMap<>();
+    private static final int DARKNESS_TICKS = 25; // approx (the wiki gives no length)
+    /** Reavers of the current blood siphon. */
+    private final List<net.minecraft.world.entity.LivingEntity> reavers = new ArrayList<>();
+
+    /** Embrace Darkness: a player next to her for three ticks or more takes shadow damage every other tick (approx 5-10). */
+    private void tickDarkness(DataBossEntity boss, long gameTick) {
+        if (gameTick >= darknessUntil) {
+            inDarkness.clear();
+            return;
+        }
+        for (ServerPlayer p : players(boss, 24)) {
+            boolean close = p.distanceToSqr(boss) <= (meleeReach(boss) + 0.5) * (meleeReach(boss) + 0.5);
+            int t = close ? inDarkness.merge(p, 1, Integer::sum) : 0;
+            if (!close) {
+                inDarkness.remove(p);
+            }
+            if (t >= 3 && gameTick % 2 == 0) {
+                CombatHandler.applyDamage(boss, p, 5 + boss.getRandom().nextInt(6));
+                Msg.red(p, "The pure shadow around Nex burns you!");
+            }
+        }
+    }
+
+    /**
+     * "A siphon will solve this!": she kneels for 8 ticks, all damage healing her, and summons blood reavers (one per player
+     * here, up to eight); the reavers of the last siphon die and heal her for their remaining hitpoints.
+     */
+    private void siphon(DataBossEntity boss, ServerLevel world, List<ServerPlayer> nearby, long gameTick) {
+        shout(boss, "A siphon will solve this!");
+        for (net.minecraft.world.entity.LivingEntity r : reavers) {
+            if (r.isAlive()) {
+                healReal(boss, r.getHealth());
+                r.discard();
+            }
+        }
+        reavers.clear();
+        siphonUntil = gameTick + 8;
+        int n = Math.max(1, Math.min(8, nearby.size()));
+        for (int i = 0; i < n; i++) {
+            double a = Math.PI * 2 * i / n;
+            net.minecraft.world.entity.Mob m = spawnMinion(boss, "blood_reaver", Math.cos(a) * 4, Math.sin(a) * 4);
+            if (m != null) {
+                reavers.add(m);
+            }
+        }
+    }
+
+    /** Drag (smoke phase): pulls a player within 6 tiles next to her, stuns them and drops their protection prayers. */
+    private void drag(DataBossEntity boss, ServerLevel world, List<ServerPlayer> nearby) {
+        for (ServerPlayer p : nearby) {
+            if (p.distanceToSqr(boss) > 12 * 12) {
+                continue;
+            }
+            boolean praying = Players.data(p).isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC);
+            if (boss.getRandom().nextInt(praying ? 8 : 4) != 0) {
+                continue;
+            }
+            Vec3 dir = boss.position().subtract(p.position()).multiply(1, 0, 1);
+            Vec3 to = dir.lengthSqr() < 4 ? p.position() : p.position().add(dir.normalize().scale(dir.length() - 2));
+            p.teleportTo(to.x, p.getY(), to.z);
+            p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 10, false, true));
+            dropProtection(p);
+            Msg.red(p, "Nex drags you towards her!");
+            return;
+        }
+    }
+
+    /** Switches off a player's protection prayers (Containment, Ice Prison, Drag). */
+    private static void dropProtection(ServerPlayer p) {
+        PlayerData data = Players.data(p);
+        data.activePrayers().removeIf(pr -> pr == com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE
+                || pr == com.runecraft.osrs.Prayer.PROTECT_FROM_MISSILES || pr == com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC);
+        ServerNetworking.sync(p);
     }
 
     /** "There is... NO ESCAPE!": dash in a line through the target, hitting everyone in the way. */
@@ -366,12 +504,20 @@ final class NexScript extends GwdScript {
                     0.2, 0);
             return;
         }
-        PlayerData data = Players.data(sacrifice);
-        drainPrayer(sacrifice, data.prayerPoints() / 3);
-        if (sacrifice.distanceToSqr(boss) < 7 * 7) {
+        // OSRS Wiki: the marked player must be at least seven tiles away, else up to 50 through Protect from Magic (it heals
+        // her) and a third of their Prayer; the players closest to Nex take up to 12 and lose a third of their Prayer too.
+        if (sacrifice.distanceToSqr(boss) < SACRIFICE_BLOCKS * SACRIFICE_BLOCKS) {
+            PlayerData data = Players.data(sacrifice);
+            drainPrayer(sacrifice, data.prayerPoints() / 3);
             int dealt = CombatHandler.applyDamage(boss, sacrifice, boss.getRandom().nextInt(51));
             healReal(boss, dealt);
             Msg.red(sacrifice, "Nex drains your blood!");
+            for (ServerPlayer p : players(boss, meleeReach(boss) + 1)) {
+                if (p != sacrifice) {
+                    drainPrayer(p, Players.data(p).prayerPoints() / 3);
+                    CombatHandler.applyDamage(boss, p, boss.getRandom().nextInt(13));
+                }
+            }
         }
         sacrifice = null;
     }
@@ -381,8 +527,9 @@ final class NexScript extends GwdScript {
         clearPrison(world);
         prisoner = victim;
         prisonCentre = victim.position();
-        prisonAt = gameTick + 5;
-        victim.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 60, 10, false, true));
+        prisonAt = gameTick + 7; // shatters four seconds after it forms
+        victim.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 84, 10, false, true));
+        dropProtection(victim);
         BlockPos c = victim.blockPosition();
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
@@ -404,8 +551,15 @@ final class NexScript extends GwdScript {
         if (prisoner == null || gameTick < prisonAt) {
             return;
         }
-        if (prisoner.isAlive() && prisoner.position().distanceToSqr(prisonCentre) < 1.5 * 1.5) {
-            if (CombatHandler.applyDamage(boss, prisoner, boss.getRandom().nextInt(61)) > 0) {
+        // OSRS Wiki: up to 75 to everyone still inside, unless one of the stalagmites was broken (here: an ice block mined).
+        boolean broken = false;
+        for (BlockPos p : prisonBlocks) {
+            broken |= !world.getBlockState(p).is(Blocks.ICE);
+        }
+        if (broken) {
+            Msg.game(prisoner, "You broke out of the ice prison!");
+        } else if (prisoner.isAlive() && prisoner.position().distanceToSqr(prisonCentre) < 1.5 * 1.5) {
+            if (CombatHandler.applyDamage(boss, prisoner, boss.getRandom().nextInt(PRISON_MAX + 1)) > 0) {
                 CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_NEX_ICE);
             }
             Msg.red(prisoner, "The ice prison shatters around you!");
@@ -444,10 +598,22 @@ final class NexScript extends GwdScript {
     public void onDeath(DataBossEntity boss, ServerPlayer killer) {
         shout(boss, "Taste my wrath!");
         ServerLevel world = (ServerLevel) boss.level();
-        world.sendParticles(ParticleTypes.EXPLOSION_EMITTER, boss.getX(), boss.getY() + 1, boss.getZ(), 2, 1, 1, 1, 0);
-        for (ServerPlayer p : players(boss, 4)) {
-            CombatHandler.applyDamage(null, p, boss.getRandom().nextInt(41));
+        // Wrath (OSRS Wiki): up to 50 to everyone in the 5x5 around her, three seconds after her death (time to run away).
+        Vec3 at = boss.position();
+        long seed = boss.getRandom().nextLong();
+        com.runecraft.content.systems.SysTicks.later(WRATH_DELAY_TICKS, () -> {
+            world.sendParticles(ParticleTypes.EXPLOSION_EMITTER, at.x, at.y + 1, at.z, 2, 1, 1, 1, 0);
+            java.util.Random r = new java.util.Random(seed);
+            for (ServerPlayer p : world.getPlayers(pl -> pl.isAlive() && !pl.isSpectator() && Math.abs(pl.getX() - at.x) <= WRATH_REACH
+                    && Math.abs(pl.getZ() - at.z) <= WRATH_REACH && Math.abs(pl.getY() - at.y) < 4)) {
+                CombatHooks.nameAttack("wrath", null);
+                CombatHandler.applyDamage(null, p, r.nextInt(WRATH_MAX + 1));
+            }
+        });
+        for (net.minecraft.world.entity.LivingEntity r : reavers) {
+            r.discard();
         }
+        reavers.clear();
         for (DataBossEntity minion : minions) {
             if (minion != null && minion.isAlive()) {
                 minion.discard();

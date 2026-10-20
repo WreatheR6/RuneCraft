@@ -191,9 +191,9 @@ class GwdDungeonTest {
         }
     }
 
-    /** Ashuelot Reis (quests module) stands in the refuge before Nex. */
+    /** Ashuelot Reis (quests module) stands before the frozen door, where The Frozen Door starts. */
     @Test
-    void ashuelotReisStandsInTheRefuge() {
+    void ashuelotReisStandsByTheFrozenDoor() {
         PlaceDef place = ContentRegistry.place("gwd_ancient_prison");
         assertNotNull(place);
         com.runecraft.osrs.content.NpcDef npc = ContentRegistry.npc("quest_ashuelot_reis");
@@ -202,8 +202,11 @@ class GwdDungeonTest {
         int z = place.blockZ() + npc.dz();
         Integer feet = com.runecraft.osrs.world.NpcStoreys.undergroundFeetY(npc.id());
         assertNotNull(feet);
-        assertEquals(Area.PRISON_REFUGE, GwdDungeon.areaAt(x, feet, z));
-        assertEquals(GwdDungeon.floorY(0) + 1, (int) feet);
+        assertEquals(Area.MAIN, GwdDungeon.areaAt(x, feet, z));
+        assertEquals(GwdDungeon.floorY(2) + 1, (int) feet);
+        Spot outside = GwdDungeon.passage("frozen_door").a();
+        assertTrue(Math.abs(com.runecraft.osrs.GielinorMap.toOsrsX(x) - outside.x()) <= 3
+                && Math.abs(com.runecraft.osrs.GielinorMap.toOsrsY(z) - outside.y()) <= 3, "by the frozen door");
     }
 
     /** The carving stays deep under the sea (no shelf on the sea bed) and inside the dungeon's box. */

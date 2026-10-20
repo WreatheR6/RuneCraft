@@ -221,14 +221,17 @@ public final class GwdMonsters {
         list.add(MonsterDef.of("flight_kilisa", "Flight Kilisa").level(159).stats(159, 124, 118, 175, 1, 1).speed(5)
                 .defenceBonus(80, 80, 80, 80, 80)
                 .attack(AttackDef.of("melee", AttackType.SLASH, 16, 3.0, 10))
+                .immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH) // OSRS Wiki: Kree'arra's flock can't be meleed
                 .drops(guardDrops(God.ARMADYL)).flying().size(0.8f, 2.0f, 1.4f));
         list.add(MonsterDef.of("wingman_skree", "Wingman Skree").level(143).stats(121, 1, 1, 160, 150, 1).speed(5)
                 .defenceBonus(60, 60, 60, 60, 60)
                 .attack(AttackDef.of("wind strike", AttackType.MAGIC, 15, 12, 10).particle("minecraft:cloud"))
+                .immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH) // OSRS Wiki: Kree'arra's flock can't be meleed
                 .drops(guardDrops(God.ARMADYL)).flying().size(0.8f, 2.0f, 1.4f));
         list.add(MonsterDef.of("flockleader_geerin", "Flockleader Geerin").level(149).stats(132, 1, 1, 175, 1, 150).speed(5)
                 .defenceBonus(60, 60, 60, 60, 60)
                 .attack(AttackDef.of("feathers", AttackType.RANGED, 15, 12, 10).particle("minecraft:crit"))
+                .immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH) // OSRS Wiki: Kree'arra's flock can't be meleed
                 .drops(guardDrops(God.ARMADYL)).flying().size(0.8f, 2.0f, 1.4f));
         // Commander Zilyana's guard.
         list.add(MonsterDef.of("starlight", "Starlight").level(149).stats(160, 120, 125, 120, 1, 1).speed(2)

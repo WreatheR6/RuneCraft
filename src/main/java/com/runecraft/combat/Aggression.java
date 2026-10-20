@@ -31,4 +31,22 @@ public final class Aggression {
     public static void forget(UUID player) {
         TOLERANCE.remove(player);
     }
+
+    /** Rules under which a monster leaves a player alone on sight (God Wars followers and their gods' items). */
+    private static final java.util.List<java.util.function.BiPredicate<net.minecraft.world.entity.Mob, ServerPlayer>> PEACEFUL =
+            new java.util.concurrent.CopyOnWriteArrayList<>();
+
+    public static void addPeaceful(java.util.function.BiPredicate<net.minecraft.world.entity.Mob, ServerPlayer> rule) {
+        PEACEFUL.add(rule);
+    }
+
+    /** True if a module's rule keeps the monster from attacking the player on sight (it still fights back). */
+    public static boolean peaceful(net.minecraft.world.entity.Mob mob, ServerPlayer player) {
+        for (java.util.function.BiPredicate<net.minecraft.world.entity.Mob, ServerPlayer> rule : PEACEFUL) {
+            if (rule.test(mob, player)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

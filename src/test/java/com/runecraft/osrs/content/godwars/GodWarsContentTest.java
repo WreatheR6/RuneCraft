@@ -110,7 +110,7 @@ class GodWarsContentTest {
         assertEquals(3, kree.attackSpeed);
         assertEquals(69, maxHit(kree, "tornado")); // wiki infobox: 69 (ranged)
         assertEquals(21, maxHit(kree, "wind blast"));
-        assertEquals(26, maxHit(kree, "talon swipe"));
+        assertEquals(25, maxHit(kree, "talon swipe")); // wiki infobox: 25 (Melee)
         assertTrue(kree.immuneTo.contains(AttackType.SLASH) && !kree.immuneTo.contains(AttackType.RANGED));
         for (String piece : new String[]{"armadyl_helmet", "armadyl_chestplate", "armadyl_chainskirt"}) {
             assertEquals(381, rarity(kree, piece));
@@ -210,7 +210,7 @@ class GodWarsContentTest {
         PlaceDef p = ContentRegistry.place("gwd_ancient_prison");
         assertNotNull(p);
         assertEquals(PlaceDef.Style.NONE, p.style());
-        assertTrue(p.osrsX() > 2848 && p.osrsX() < 2944 && p.osrsY() > 5188 && p.osrsY() < 5230, "the prison at its OSRS tiles");
+        assertTrue(Math.abs(p.osrsX() - 2883) <= 3 && Math.abs(p.osrsY() - 5280) <= 3, "the frozen door at its OSRS tile");
         assertNull(ContentRegistry.place("gwd_armadyl_eyrie"));
         for (String id : new String[]{"kreearra", "commander_zilyana", "nex"}) {
             assertNull(boss(id).place, id + " has no surface arena: it waits in its chamber");
