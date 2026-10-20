@@ -416,6 +416,11 @@ final class LateQuestsB {
         b.npc("lord_trobin_arceuus", "Lord Trobin Arceuus", "arceuus", 0, 3, 0xE8D0C3, 0x5A2A8D, 0x3A1A5D, 0xE0E0EF);
         b.npc("kaht_bbalam", "Kaht B'alam", "kebos_lowlands", 2, 2, 0x8A9A6B, 0x3A6A3E, 0x2A4A2F, 0x6A8A4B);
         b.npc("councillor_andrews", "Councillor Andrews", "great_kourend", -3, -2, 0xE0B8B7, 0x2A2A2E, 0x1A1A1F, 0xA0A0A6);
+        b.npcAt("gordon_kebos", "Gordon", 1248, 3686, 0xD8A880, 0x6A5A2A, 0x3A3A2A, 0x8A6A3A); // his farm south of the Farming Guild
+        b.npcAt("tomas_lawry", "Tomas Lawry", 1796, 3782, 0xE0B898, 0x3A4A5A, 0x2A2A3A, 0x5A3A2A); // outside the Port Piscarilius bank
+        b.npcAt("phileas_rimor", "Phileas Rimor", 1543, 3571, 0xE8C8B0, 0x6A2A2A, 0x3A2A2A, 0xD0D0D0); // his house in Shayzien
+        b.npcAt("mori", "Mori", 1698, 3742, 0xE0C0A8, 0x4A2A6A, 0x2A1A3A, 0x2A2A2A); // in Arceuus
+        b.npcAt("martin_holt", "Martin Holt", 1664, 3670, 0xE0B8A0, 0x2A4A6A, 0x1A2A3A, 0x8A7A5A); // at the entrance to Kourend Castle
         b.item("lovakengj_plans", "Forsaken tower plans", "note", 0xD0C0A2, "Plans of the Forsaken Tower.");
         b.item("dark_essence_fragment", "Dark essence fragments", "essence", 0x3A2A5A, "Fragments of dark essence.");
         b.item("kourend_favour_letter", "Royal letter", "note", 0xE0D8C8, "A royal letter from the Kourend Council.");
@@ -444,8 +449,8 @@ final class LateQuestsB {
         b.item("qot_letter", "Letter", "note", 0xE0D8C2, "A letter found in Councillor Hughes's chest.");
         b.quest("the_queen_of_thieves", "The Queen of Thieves", Difficulty.INTERMEDIATE, 1)
                 .reqQuest("client_of_kourend").req(Skill.THIEVING, 20).xp(Skill.THIEVING, 2000).reward("coins:2000") // wiki: 2,000 coins
-                .stage("I can start this quest by speaking to Lady Shauna Piscarilius in Port Piscarilius. (Requires Client of Kourend, 20 Thieving.)")
-                .talk("lady_shauna_piscarilius").say("Councillor Hughes is corrupt, and only a thief can prove it. The Queen of Thieves runs the Piscarilius underworld. Help her, and she'll help us.")
+                .stage("I can start this quest by speaking to Tomas Lawry outside the Port Piscarilius bank. (Requires Client of Kourend, 20 Thieving.)")
+                .talk("tomas_lawry").say("I'm investigating Councillor Hughes for Lady Shauna Piscarilius.", "@Lady Shauna Piscarilius: Councillor Hughes is corrupt, and only a thief can prove it. The Queen of Thieves runs the Piscarilius underworld. Help her, and she'll help us.")
                 .stage("I should prove myself to the Queen of Thieves, then steal evidence from Councillor Hughes's house in Kingstown.")
                 .reach("great_kourend", 8).stay().unlessFlag("qot_warrens").take("stew").flag("qot_warrens")
                 .say("* Robert O'Reilly takes your stew and shows you the manhole into the Warrens. Devan Rutter sends you to 'deal with' Conrad King.",
@@ -459,8 +464,8 @@ final class LateQuestsB {
         b.quest("tale_of_the_righteous", "Tale of the Righteous", Difficulty.INTERMEDIATE, 1)
                 .reqQuest("client_of_kourend").req(Skill.STRENGTH, 16).req(Skill.MINING, 10)
                 .reward("coins:8000") // OSRS: no XP reward
-                .stage("I can start this quest by speaking to Lord Shiro Shayzien in Shayzien. (Requires Client of Kourend, 16 Strength, 10 Mining.)")
-                .talk("lord_shiro_shayzien").say("A historian discovered that a lizardman corrupted by the old shrine threatens our soldiers. Investigate Lizardman Canyon.")
+                .stage("I can start this quest by speaking to Phileas Rimor in his house in Shayzien. (Requires Client of Kourend, 16 Strength, 10 Mining.)")
+                .talk("phileas_rimor").say("I'm a historian, and I've found something Lord Shiro must hear.", "@Lord Shiro Shayzien: A historian discovered that a lizardman corrupted by the old shrine threatens our soldiers. Investigate Lizardman Canyon.")
                 .stage("I must defeat the corrupt lizardman in Lizardman Canyon.")
                 .talk("quest_archeio").stay().unlessFlag("totr_prison").need("rope").flag("totr_prison")
                 .say("Pagida can send you to the Library Historical Archive's Tower of Magic prison.",
@@ -506,8 +511,8 @@ final class LateQuestsB {
                 .xp(Skill.HUNTER, 1500).xp(Skill.RUNECRAFT, 500) // OSRS (current quest XP rewards)
                 .reward("coins:2000") // wiki: 2,000 coins
                 .reqQuest("client_of_kourend").req(Skill.HUNTER, 12)
-                .stage("I can start this quest by speaking to Lord Trobin Arceuus in Arceuus. (Requires Client of Kourend, 12 Hunter.)")
-                .talk("lord_trobin_arceuus").say("Strange tormented souls are rising near the Dark Altar. My house's magic may be to blame. Investigate.")
+                .stage("I can start this quest by speaking to Mori in Arceuus. (Requires Client of Kourend, 12 Hunter.)")
+                .talk("mori").say("Something is wrong in Arceuus. Lord Trobin must hear of it.", "@Lord Trobin Arceuus: Strange tormented souls are rising near the Dark Altar. My house's magic may be to blame. Investigate.")
                 .stage("I should investigate the Dark Altar and collect dark essence fragments.")
                 .reach("arceuus", 10).give("dark_essence_fragment:10").say("* Near the Dark Altar you trap the tormented souls and gather dark essence fragments.")
                 .stage("I should bring the fragments to Lord Trobin.")
@@ -515,27 +520,27 @@ final class LateQuestsB {
         b.quest("getting_ahead", "Getting Ahead", Difficulty.INTERMEDIATE, 1)
                 .req(Skill.CRAFTING, 30).req(Skill.CONSTRUCTION, 26)
                 .xp(Skill.CRAFTING, 4000).xp(Skill.CONSTRUCTION, 3200).reward("coins:3000") // wiki: 3,000 coins
-                .stage("I can start this quest by speaking to Councillor Andrews in Port Piscarilius, who needs help for the Kebos farmers. (Requires Client of Kourend, 30 Crafting, 26 Construction.)")
-                .talk("councillor_andrews").say("A beast terrorises the farms of Kebos. The farmers want to scare it off with a fake head. Help them build one.")
+                .stage("I can start this quest by speaking to Gordon on his farm south of the Farming Guild. (Requires 30 Crafting, 26 Construction.)")
+                .talk("gordon_kebos").say("A beast terrorises the farms of Kebos. The farmers want to scare it off with a fake head. Help them build one.")
                 .stage("I should follow the flour trail to the beast, then make a fake head (soft clay, fur) and mount it with 2 planks and nails.")
                 .reach("kebos_lowlands", 12).stay().unlessFlag("ga_beast").take("pot_of_flour").flag("ga_beast")
                 .say("* You pour flour on the gate by the cow pen and follow the trail to a cave in the Kebos Lowlands mine.",
                         "* The Headless Beast attacks! You defeat it, but the farmers want something to scare off the next one.")
                 .missing("* The beast leaves no tracks. A pot of flour on the gate by the cow pen would show its trail.")
-                .talk("councillor_andrews").needFlag("ga_beast").need("knife", "needle", "thread", "hammer")
+                .talk("gordon_kebos").needFlag("ga_beast").need("knife", "needle", "thread", "hammer")
                 .take("soft_clay", "bear_fur", "plank:2", "steel_nails:6").reqSkill(Skill.CRAFTING, 30).reqSkill(Skill.CONSTRUCTION, 26)
                 .flag("ga_head").say("*You carve a clay head, cover it in fur, paint it red and mount it on the wall with two planks and six nails.* The beast's kin will flee!")
                 .missing("A head needs soft clay and bear fur (knife, needle and thread), then 2 planks and 6 nails to mount it, and a hammer.")
                 .stage("I should report the beast is gone.")
-                .talk("councillor_andrews").needFlag("ga_head").give("kourend_favour_letter").say("The farms are safe! Take this letter of thanks from the council.");
+                .talk("gordon_kebos").needFlag("ga_head").give("kourend_favour_letter").say("The farms are safe! Take this, and a letter of thanks for the council.");
         b.quest("a_kingdom_divided", "A Kingdom Divided", Difficulty.EXPERIENCED, 2)
                 .reqQuest("the_depths_of_despair", "the_queen_of_thieves", "tale_of_the_righteous", "the_forsaken_tower", "the_ascent_of_arceuus")
                 .req(Skill.AGILITY, 54).req(Skill.THIEVING, 52).req(Skill.WOODCUTTING, 52).req(Skill.HERBLORE, 50)
                 .req(Skill.MINING, 42).req(Skill.CRAFTING, 38).req(Skill.MAGIC, 35)
                 .xp(Skill.AGILITY, 10000).xp(Skill.THIEVING, 10000).xp(Skill.WOODCUTTING, 10000).xp(Skill.HERBLORE, 10000)
                 .unlock("The Kourend Council's favour and the Kebos Lowlands")
-                .stage("I can start this quest by speaking to Councillor Andrews in Port Piscarilius. (Requires the five Kourend house quests and more.)")
-                .talk("councillor_andrews").say("The Kourend Council is being picked off one by one. Someone wants the throne. Investigate the attacks.")
+                .stage("I can start this quest by speaking to Martin Holt at the entrance to Kourend Castle. (Requires the five Kourend house quests and more.)")
+                .talk("martin_holt").say("The Kourend Council is being picked off one by one. Someone wants the throne. Investigate the attacks.")
                 .stage("I should speak to Kaht B'alam, the lizardman shaman in the Kebos Lowlands, about the dark magic behind the attacks.")
                 .reach("kebos_lowlands", 12).stay().unlessFlag("akd_shrine").flag("akd_shrine")
                 .say("* In the swamps of the Kebos Lowlands you find the remains of a ritual circle, still warm. Kaht B'alam's hut is close by.")

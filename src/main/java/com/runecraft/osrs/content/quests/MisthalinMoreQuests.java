@@ -215,13 +215,13 @@ final class MisthalinMoreQuests {
     }
 
     private static void theFeud(QuestBook b) {
-        b.npc("ali_morrisane", "Ali Morrisane", "POLLNIVNEACH", 3, 3, 0xB07A4B, 0xE0C081, 0xB09061, 0xE0E0E9);
+        b.npcAt("ali_morrisane", "Ali Morrisane", 3304, 3211, 0xB07A4B, 0xE0C081, 0xB09061, 0xE0E0E9);
         b.npc("ali_the_operator", "Ali the Operator", "POLLNIVNEACH", -3, 3, 0xA06A41, 0x3A3A3B, 0x2A2A2F, 0x1A1A1E);
         b.items(s -> s.add("desert_disguise_feud", "Kharidian headpiece", Kind.SIMPLE, "cowl", 0xE0D0A0).value(1).examine("A disguise worn by the people of Pollnivneach."));
         b.quest("the_feud", "The Feud", Difficulty.INTERMEDIATE, 1)
                 .xp(Skill.THIEVING, 15000) // OSRS (current quest XP rewards)
                 .req(Skill.THIEVING, 30).reward("coins:500")
-                .stage("I can start this quest by speaking to Ali Morrisane in Al Kharid... he's in Pollnivneach looking for his nephew. (Requires 30 Thieving.)")
+                .stage("I can start this quest by speaking to Ali Morrisane east of the Gem Trader in northern Al Kharid. (Requires 30 Thieving.)")
                 .talk("ali_morrisane").give("desert_disguise_feud").say("My nephew vanished in Pollnivneach, a town ruled by two feuding gangs. Wear this disguise and blend in.")
                 .stage("I should infiltrate the Menaphite gang. Ali the Operator runs the local rackets.")
                 .talk("ali_the_operator").need("desert_disguise_feud").say("New recruit? Prove yourself: pickpocket the Villager. *You do so with style.* Fine. You'll find the nephew in the mayor's house.")
@@ -230,7 +230,7 @@ final class MisthalinMoreQuests {
     }
 
     private static void icthlarin(QuestBook b) {
-        b.npc("wanderer_sophanem", "Wanderer", "sophanem", 3, 3, 0xB07A4C, 0xE0D0A1, 0x8A6A3F, 0xE0E0EA);
+        b.npcAt("wanderer_sophanem", "Wanderer", 3315, 2849, 0xB07A4C, 0xE0D0A1, 0x8A6A3F, 0xE0E0EA);
         b.npc("high_priest_sophanem", "High Priest", "sophanem", -3, 3, 0xA86A42, 0xE0C044, 0xF0F0F1, 0xE0C045);
         b.item("holy_symbol_icthlarin", "Holy symbol of Icthlarin", "amulet", 0xE0C046, "A symbol of the god of the dead.");
         b.item("canopic_jars", "Canopic jars", "pot", 0xC0A061, "Four canopic jars for the mummification ritual.");
@@ -238,7 +238,7 @@ final class MisthalinMoreQuests {
                 .xp(Skill.THIEVING, 4500).xp(Skill.AGILITY, 4000).xp(Skill.WOODCUTTING, 4000) // OSRS (current quest XP rewards)
                 .reqQuest("gertrudes_cat")
                 .unlock("Access to Sophanem")
-                .stage("I can start this quest by speaking to the Wanderer south of the Shantay Pass, with my cat. (Requires Gertrude's Cat.)")
+                .stage("I can start this quest by speaking to the Wanderer in the camp west of the Agility Pyramid, with my cat. (Requires Gertrude's Cat.)")
                 .talk("wanderer_sophanem").need("gertrudes_kitten").say("A cat! The cats of Sophanem are sacred. Come, Sophanem is plagued and needs a cat to fulfil a prophecy.")
                 .missing("You have no cat? Then I cannot help you.")
                 .stage("I should go to Sophanem and speak to the High Priest.")
@@ -316,10 +316,12 @@ final class MisthalinMoreQuests {
                 .attack(AttackDef.of("claws", AttackType.SLASH, 15, 3, 7))
                 .attack(AttackDef.of("fire", AttackType.MAGIC, 15, 8, 3).particle("minecraft:flame"))
                 .drops(Drop.always("bones")).size(1.0f, 2.4f, 1.0f).at("demon_temple_storm").arena(10, "lava"));
+        b.npcAt("father_reen_al_kharid", "Father Reen", 3271, 3159, 0xE0B8AA, 0x2A2A2E, 0x1A1A20, 0x6A6A6C); // cache tile
         b.quest("shadow_of_the_storm", "Shadow of the Storm", Difficulty.INTERMEDIATE, 1)
                 .reqQuest("DEMON_SLAYER", "the_golem").req(Skill.CRAFTING, 30).xp(Skill.STRENGTH, 10000).reward("darklight")
-                .stage("I can start this quest by speaking to Father Reen in the ruins of Uzer. (Requires Demon Slayer, The Golem, 30 Crafting.)")
-                .talk("father_reen").say("A cult in Uzer plans to summon the demon Agrith-Naar! Your Silverlight could stop it.")
+                .stage("I can start this quest by speaking to Father Reen south of the Al Kharid bank. (Requires Demon Slayer, The Golem, 30 Crafting.)")
+                .talk("father_reen_al_kharid").say("A cult in Uzer plans to summon the demon Agrith-Naar! Your Silverlight could stop it.",
+                        "Meet me in the ruins of Uzer.")
                 .stage("I should infiltrate the cult and stop the summoning, with Silverlight.")
                 .talk("father_reen").need("silverlight").say("Good, you have Silverlight. Go to the temple ruins; the cult is gathering now!")
                 .missing("You'll need Silverlight to face a demon.")
@@ -352,6 +354,7 @@ final class MisthalinMoreQuests {
 
     private static void defenderOfVarrock(QuestBook b) {
         b.npc("captain_rovin", "Captain Rovin", "varrock_palace", 3, -3, 0xE8C0BA, 0xC0C0CA, 0x2A3A6C, 0x8A8A8D);
+        b.npcAt("elias_white_dov", "Elias White", 3283, 3501, 0xE0B89B, 0x6A6A8B, 0x4A4A5C, 0x2A2A2C); // the Jolly Boar Inn
         b.boss(BossDef.of("arrav", "Arrav").level(159).stats(180, 130, 130, 120, 1, 1).speed(4)
                 .defenceBonus(60, 60, 60, 20, 60)
                 .attack(AttackDef.of("zombie_sword", AttackType.SLASH, 22, 2.5, 10))
@@ -361,8 +364,9 @@ final class MisthalinMoreQuests {
                 .reqQuest("shield_of_arrav", "temple_of_ikov", "below_ice_mountain", "family_crest", "what_lies_below", "ROMEO_AND_JULIET", "DEMON_SLAYER")
                 .reqQuest("garden_of_tranquillity")
                 .xp(Skill.SMITHING, 15000).xp(Skill.HUNTER, 15000)
-                .stage("I can start this quest by speaking to Captain Rovin in Varrock Palace. (Requires Shield of Arrav, What Lies Below and more.)")
-                .talk("captain_rovin").say("Zombies are rising beneath Varrock! An ancient hero, Arrav, leads them, raised by Zamorakians.")
+                .stage("I can start this quest by speaking to Elias White in the Jolly Boar Inn. (Requires Shield of Arrav, What Lies Below and more.)")
+                .talk("elias_white_dov").say("Zombies are rising beneath Varrock! An ancient hero, Arrav, leads them, raised by Zamorakians.",
+                        "Captain Rovin at the palace must be warned.")
                 .stage("I should go into the sewers and confront the undead hero Arrav.")
                 .reach("jolly_boar_inn", 8).stay().unlessFlag("dov_trail").flag("dov_trail")
                 .say("* With Elias White you follow the trail of plants, rocks and bushes to a trapdoor, collecting a grubby key on the way.")

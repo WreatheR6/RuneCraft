@@ -154,7 +154,7 @@ final class FremennikQuests {
     }
 
     private static void lunarDiplomacy(QuestBook b) {
-        b.npc("lokar_searunner", "Lokar Searunner", "RELLEKKA", -4, 7, 0xE8C0A2, 0x5A3A6A, 0x3A2A3A, 0xE0E0E0);
+        b.npcAt("lokar_searunner", "Lokar Searunner", 2620, 3693, 0xE8C0A2, 0x5A3A6A, 0x3A2A3A, 0xE0E0E0);
         b.npc("oneiromancer", "Oneiromancer", "quest_lunar_isle", 0, 3, 0xF0E0D0, 0x8AA0C0, 0x6A80A0, 0xC0D0F0);
         b.npc("pauline_polaris", "Pauline Polaris", "quest_lunar_isle", 3, -2, 0xF0D8C8, 0x6A6AA0, 0x4A4A7A, 0xD0C060);
         b.item("seal_of_passage", "Seal of passage", "amulet", 0x8AA0C0, "Lets you be understood by the Moon Clan of Lunar Isle.");
@@ -173,7 +173,7 @@ final class FremennikQuests {
                 .req(Skill.MAGIC, 65).req(Skill.MINING, 60).req(Skill.WOODCUTTING, 55)
                 .xp(Skill.MAGIC, 5000).xp(Skill.RUNECRAFT, 5000).reward("seal_of_passage", "lunar_staff")
                 .unlock("The Lunar spellbook")
-                .stage("I can start this quest by speaking to Lokar Searunner on the Rellekka docks. (Requires Fremennik Trials, Lost City, Rune Mysteries, Shilo Village and many skills.)")
+                .stage("I can start this quest by speaking to Lokar Searunner at the westernmost dock of Rellekka. (Requires Fremennik Trials, Lost City, Rune Mysteries, Shilo Village and many skills.)")
                 .talk("lokar_searunner").say("Lunar Isle? Few go there, and none without a seal of passage from Brundt. Get one and I'll take you... on my old crew's ship.")
                 // OSRS: Brundt's seal, then Captain Bentley's pirate ship: the cabin boy's emerald lens on a lit lantern reveals five symbols to rub away.
                 .stage("I need a seal of passage from Brundt; then Lokar's pirate friends will sail me to Lunar Isle, where I should speak to the Oneiromancer.")

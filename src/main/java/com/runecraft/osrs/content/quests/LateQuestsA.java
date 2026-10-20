@@ -330,7 +330,7 @@ final class LateQuestsA {
     }
 
     private static void fremennikIsles(QuestBook b) {
-        b.npc("mord_gunnars", "Mord Gunnars", "RELLEKKA", 2, 8, 0xE8C0BF, 0x3A3A6D, 0x2A2A3E, 0xE0A045);
+        b.npcAt("mord_gunnars", "Mord Gunnars", 2644, 3709, 0xE8C0BF, 0x3A3A6D, 0x2A2A3E, 0xE0A045);
         b.npc("mawnis_burowgar", "Mawnis Burowgar", "neitiznot", 0, 3, 0xE0B8AE, 0x6A6A6B, 0x3A3A3F, 0xE0E0EB);
         b.npc("gjuki_sorvott", "King Gjuki Sorvott IV", "jatizso", 0, 3, 0xE0B8AF, 0xC0A04A, 0x6A4A1F, 0xE0C04B);
         b.item("ice_troll_king_head", "Head of the troll king", "skull", 0x8AA0C0, "The head of the Ice Troll King.");
@@ -348,7 +348,7 @@ final class LateQuestsA {
                 .xp(Skill.CONSTRUCTION, 5000).xp(Skill.CRAFTING, 5000).xp(Skill.WOODCUTTING, 10000).reward("helm_of_neitiznot")
                 // Plus two 10,000 XP rewards in Attack, Strength, Defence or Hitpoints (player's choice). // approx: fixed skills
                 .xp(Skill.STRENGTH, 10000).xp(Skill.DEFENCE, 10000)
-                .stage("I can start this quest by speaking to Mord Gunnars on the Rellekka docks. (Requires The Fremennik Trials, 20 Construction, 40 Agility.)")
+                .stage("I can start this quest by speaking to Mord Gunnars at the northernmost dock of Rellekka. (Requires The Fremennik Trials, 20 Construction, 40 Agility.)")
                 .talk("mord_gunnars").travel("neitiznot").say("To the isles? Neitiznot and Jatizso are at war with each other... and with the ice trolls. Off we go.")
                 .stage("I should speak to Mawnis Burowgar, the Burgher of Neitiznot.")
                 .talk("mawnis_burowgar").say("The trolls attack us both. Spy on Jatizso for me, then we'll deal with the trolls together.")
@@ -431,8 +431,9 @@ final class LateQuestsA {
         b.quest("tower_of_life", "Tower of Life", Difficulty.NOVICE, 2)
                 .req(Skill.CONSTRUCTION, 10).xp(Skill.THIEVING, 500).xp(Skill.CRAFTING, 500).xp(Skill.CONSTRUCTION, 1000)
                 .unlock("The creature creation altars beneath the Tower of Life")
-                .stage("I can start this quest by speaking to Bonafido outside the Tower of Life south of Ardougne. (Requires 10 Construction.)")
-                .talk("bonafido").say("The builders walked off the job! Strange things happen in that tower. Finish building it and you'll get paid.")
+                .stage("I can start this quest by speaking to Effigy outside the Tower of Life south of Ardougne. (Requires 10 Construction.)")
+                .talk("effigy").say("The builders walked off the job! Strange things happen in that tower.",
+                        "@Bonafido: Finish building it and you'll get paid. I'm the foreman, ask me what it needs.")
                 .stage("I should finish building the tower: 4 planks and 2 steel bars.")
                 .talk("bonafido").take("plank:4", "steel_bar:2").give("homunculus_key").say("Splendid work! Here's the key. Mind the alchemists, they're... odd.")
                 .missing("I need 4 planks and 2 steel bars to finish the tower.")
@@ -467,7 +468,7 @@ final class LateQuestsA {
     }
 
     private static void kingsRansom(QuestBook b) {
-        b.npc("gossip_kr", "Gossip", "SEERS_VILLAGE", 6, 6, 0xE8C0C3, 0x6A3A6F, 0x4A2A4F, 0xC08A3E);
+        b.npcAt("gossip_kr", "Gossip", 2742, 3555, 0xE8C0C3, 0x6A3A6F, 0x4A2A4F, 0xC08A3E); // outside the Sinclair Mansion (cache tile)
         b.npc("sir_lancelot_prisoner", "Sir Lancelot (prisoner)", "castle_wars_knights", 2, 2, 0xF0C8A9, 0x8A8A8E, 0x2A2A8B, 0xE0C061);
         b.npc("black_knight_jailer", "Black Knight jailer", "castle_wars_knights", -2, 2, 0xE0B8B1, 0x1A1A1B, 0x1A1A1C, 0x2A2A2F);
         b.item("lockpick_kr", "Lockpick", "key", 0x5A5A5A, "Useful for opening locks.");
@@ -481,7 +482,7 @@ final class LateQuestsA {
                 .req(Skill.MAGIC, 45).req(Skill.DEFENCE, 65)
                 .xp(Skill.DEFENCE, 33000).xp(Skill.MAGIC, 5000)
                 .unlock("The Chivalry and Piety prayers (Knight Waves training ground)")
-                .stage("I can start this quest by speaking to Gossip in Seers' Village. (Requires Black Knights' Fortress, Holy Grail, Murder Mystery, 45 Magic, 65 Defence.)")
+                .stage("I can start this quest by speaking to the Gossip outside the Sinclair Mansion. (Requires Black Knights' Fortress, Holy Grail, Murder Mystery, 45 Magic, 65 Defence.)")
                 .talk("gossip_kr").say("Have you heard? The Knights of the Round Table have vanished! Folk say the Black Knights took them to a prison in the north.")
                 // OSRS: evidence from the Sinclair Mansion for the guard, then Anna's trial at the Seers' Village courthouse.
                 .stage("I should find evidence in the Sinclair Mansion for the guard, then prove Anna innocent at her trial in the Seers' Village courthouse.")

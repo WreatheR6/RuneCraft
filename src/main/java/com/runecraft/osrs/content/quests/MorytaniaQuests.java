@@ -340,12 +340,14 @@ final class MorytaniaQuests {
                 .attack(AttackDef.of("claw", AttackType.SLASH, 30, 2.5, 6).special(Special.LIFESTEAL, 30))
                 .attack(AttackDef.of("blood_storm", AttackType.MAGIC, 25, 8, 3).special(Special.AOE, 4).particle("minecraft:crimson_spore"))
                 .drops(Drop.always("bones")).size(0.8f, 2.4f, 1.2f).at("quest_ver_sinhaza").arena(12, "crypt"));
+        b.npcAt("garth_tob", "Garth", 3669, 3215, 0xD8B898, 0x5A4A3A, 0x3A2A1A, 0x6A6A6A); // by the Theatre of Blood (cache tile)
         b.quest("a_taste_of_hope", "A Taste of Hope", Difficulty.EXPERIENCED, 1)
                 .reqQuest("darkness_of_hallowvale")
                 .req(Skill.CRAFTING, 48).req(Skill.AGILITY, 45).req(Skill.ATTACK, 40).req(Skill.HERBLORE, 40).req(Skill.SLAYER, 38)
                 .xp(Skill.ATTACK, 2500).xp(Skill.AGILITY, 2500).xp(Skill.HERBLORE, 2500).xp(Skill.SLAYER, 2500)
-                .stage("I can start this quest by speaking to Safalaan Hallow in Meiyerditch. (Requires Darkness of Hallowvale and more.)")
-                .talk("safalaan").say("A vampyre in the Drakans' court, Flaygian, may help us. We must get to Ver Sinhaza, the vampyre stronghold.")
+                .stage("I can start this quest by speaking to Garth by the entrance to the Theatre of Blood in Ver Sinhaza. (Requires Darkness of Hallowvale and more.)")
+                .talk("garth_tob").say("Ranis Drakan and Vanstrom Klause just went into the Theatre. The Myreque would want to know.",
+                        "@Safalaan Hallow: A vampyre in the Drakans' court, Flaygian, may help us. We must get into Ver Sinhaza, the vampyre stronghold.")
                 .stage("I should go to Ver Sinhaza with the Myreque. Vertida will guide me.")
                 .talk("vertida_sefalatis").take("silver_bar").give("vial_of_blood", "ivandis_flail")
                 .say("We craft an Ivandis flail from blessed silver to harm Ranis Drakan. *You forge the flail with the silver bar.* Take this vial too.")

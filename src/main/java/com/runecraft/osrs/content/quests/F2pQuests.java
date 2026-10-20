@@ -594,6 +594,7 @@ final class F2pQuests {
     private static void corsairCurse(QuestBook b) {
         b.npc("captain_tock", "Captain Tock", "corsair_cove", 0, 2, 0xD8A880, 0x6A1A1A, 0x2A2A2A, 0x1A1A1A);
         b.npc("cabin_boy_colin", "Cabin boy Colin", "corsair_cove", 2, -2, 0xF0D0B0, 0xD0D0C0, 0x3A3A5A, 0x6A4A2A);
+        b.npcAt("captain_tock_sarim", "Captain Tock", 3030, 3273, 0xD8A881, 0x6A1A1B, 0x2A2A2B, 0x1A1A1B); // wiki: north of Port Sarim
         b.npc("gnocci_the_cook", "Gnocci the Cook", "corsair_cove", -2, -2, 0xE8C8A8, 0xF0F0F0, 0x8A8A8A, 0xF0F0F0);
         b.npc("arsen_the_thief", "Arsen the Thief", "corsair_cove", -3, 2, 0xC8A070, 0x3A3A2A, 0x2A2A1A, 0x5A5A3A);
         b.item("ogre_artefact", "Ogre artefact", "skull", 0x7A6A4A, "An ancient ogre artefact stolen by the Corsairs.");
@@ -603,8 +604,10 @@ final class F2pQuests {
                 .drops(Drop.always("bones")).skin(0xB8D0D0, 0x2A4A6A, 0x1A2A3A, 0x5A5A5A).at("ithoi_hut").arena(8, "sand"));
         b.quest("the_corsair_curse", "The Corsair Curse", Difficulty.INTERMEDIATE, 2) // wiki: no item rewards
                 .unlock("Access to the Corsair Cove Dungeon")
-                .stage("I can start this quest by speaking to Captain Tock in Corsair Cove (reached via Captain Tock's ship in Port Sarim).")
-                .talk("captain_tock").say("My crew claims we're cursed. An ogre artefact we... found... is to blame, they say. Question my crew.")
+                .stage("I can start this quest by speaking to Captain Tock at the crossroads north of Port Sarim.")
+                .talk("captain_tock_sarim").travel("corsair_cove")
+                .say("My crew claims we're cursed. An ogre artefact we... found... is to blame, they say. Come to the cove and question my crew.",
+                        "* Captain Tock sails you to Corsair Cove.")
                 .stage("I should question Cabin boy Colin, Gnocci the Cook and Arsen the Thief.")
                 .talk("cabin_boy_colin").stay().unlessFlag("cc_colin").flag("cc_colin").say("Ithoi the navigator keeps to his hut since he got sick. Strange, that.")
                 .talk("gnocci_the_cook").stay().unlessFlag("cc_gnocci").flag("cc_gnocci").say("Ithoi always complained about my cooking. Then he got sick. Not my fault!")

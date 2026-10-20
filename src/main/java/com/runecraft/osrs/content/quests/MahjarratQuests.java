@@ -39,7 +39,8 @@ final class MahjarratQuests {
     }
 
     private static void enakhrasLament(QuestBook b) {
-        Cast.npc(b, "lazim", "Lazim", "quest_enakhras_temple", 0, 3, Cast.BROWN, 0xC0A060);
+        b.spot("lazim_quarry", "Desert Quarry (Lazim)", 3191, 2926); // north-east of the Desert Quarry (cache tile)
+        Cast.npc(b, "lazim", "Lazim", "lazim_quarry", 0, 0, Cast.BROWN, 0xC0A060);
         Cast.npc(b, "akthanakos", "Akthanakos", "quest_enakhras_temple", 3, -3, Cast.BROWN, 0x6A4A2A);
         b.item("quest_sandstone_statue", "Sandstone statue", "statue", 0xE0C890, "A statue of Enakhra, carved from sandstone.");
         b.items(s -> s.add("camulet", "Camulet", Kind.SIMPLE, "amulet", 0xC0A060).value(1).stack(1)
@@ -54,7 +55,7 @@ final class MahjarratQuests {
                 .req(Skill.CRAFTING, 50).req(Skill.FIREMAKING, 45).req(Skill.PRAYER, 43).req(Skill.MAGIC, 39)
                 .xp(Skill.CRAFTING, 7000).xp(Skill.MINING, 7000).xp(Skill.FIREMAKING, 7000).xp(Skill.MAGIC, 7000).reward("camulet")
                 .unlock("Access to Enakhra's Temple; talking to camels with the camulet")
-                .stage("I can start this quest by speaking to Lazim at the temple south of the Bandit Camp. (Requires 50 Crafting, 45 Firemaking, 43 Prayer, 39 Magic.)")
+                .stage("I can start this quest by speaking to Lazim just north-east of the Desert Quarry. (Requires 50 Crafting, 45 Firemaking, 43 Prayer, 39 Magic.)")
                 .talk("lazim").say("I need a statue carved for this ancient temple. Bring me sandstone and granite from the Desert Quarry and I'll show you where to carve.")
                 .stage("I should carve a statue for Lazim from 10kg of sandstone and 5kg of granite, using a chisel.")
                 .talk("lazim").take("sandstone_10kg", "granite_5kg").need("chisel").give("quest_sandstone_statue")
@@ -493,13 +494,15 @@ final class MahjarratQuests {
                 .minion("minecraft:zombie", 3)
                 .drops(Drop.always("bones")).skin(0x6A7A6A, 0x2A1A2A, 0x1A0A1A, 0x8A2A2A).size(1.0f, 2.6f, 1.1f)
                 .at("quest_zemouregals_fort").arena(12, "crypt"));
+        b.npcAt("elias_white_uzer", "Elias White", 3505, 3037, 0xE0B89C, 0x6A6A8C, 0x4A4A5D, 0x2A2A2D); // south of the ruins of Uzer
         b.quest("the_curse_of_arrav", "The Curse of Arrav", Difficulty.MASTER, 2)
                 .reqQuest("defender_of_varrock", "troll_romance")
                 .req(Skill.MINING, 64).req(Skill.RANGED, 62).req(Skill.THIEVING, 62).req(Skill.AGILITY, 61).req(Skill.STRENGTH, 58).req(Skill.SLAYER, 37)
                 .xp(Skill.MINING, 40000).xp(Skill.THIEVING, 40000).xp(Skill.AGILITY, 40000) // approximate lamp rewards
                 .unlock("Arrav freed from Zemouregal's control")
-                .stage("I can start this quest by speaking to Elias White near Zemouregal's fort. (Requires Defender of Varrock, Troll Romance, 64 Mining, 62 Ranged, 62 Thieving, 61 Agility, 58 Strength, 37 Slayer.)")
-                .talk("elias_white").say("Arrav, the hero of Avarrocka, is still Zemouregal's undead slave. His heart is the key: Zemouregal keeps it in his fort.")
+                .stage("I can start this quest by speaking to Elias White at the Uzer Oasis. (Requires Defender of Varrock, Troll Romance, 64 Mining, 62 Ranged, 62 Thieving, 61 Agility, 58 Strength, 37 Slayer.)")
+                .talk("elias_white_uzer").say("Arrav, the hero of Avarrocka, is still Zemouregal's undead slave. His heart is the key: Zemouregal keeps it in his fort.",
+                        "Meet me by the fort when you have it.")
                 .stage("I should break into Zemouregal's fort and steal Arrav's heart.")
                 .reach("quest_zemouregals_fort", 8).give("arravs_heart").say("* Past the zombies and traps, you find a beating heart in a jar. Zemouregal will not be pleased.")
                 .stage("Arrav attacks under Zemouregal's command. I must subdue him.")

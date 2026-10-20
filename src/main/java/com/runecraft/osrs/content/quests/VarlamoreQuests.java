@@ -101,13 +101,14 @@ final class VarlamoreQuests {
     private static void twilightsPromise(QuestBook b) {
         Cast.npc(b, "prince_itzla_arkan", "Prince Itzla Arkan", "quest_sunrise_palace", 0, 2, Cast.TAN, 0xE0B040);
         Cast.npc(b, "quest_civitas_guard_captain", "Guard captain", "zeah_civitas_illa_fortis", 3, 3, Cast.BROWN, 0x8A2A2A);
+        b.npcAt("ennius_tullus", "Ennius Tullus", 1687, 3141, 0xC8946B, 0xE0C060, 0x8A6A3A, 0x6A2A2A); // in front of the Sunrise Palace
         b.item("twilight_cult_orders", "Cult orders", "note", 0x3A2A5A, "Orders from the Twilight Emissaries.");
         b.quest("twilights_promise", "Twilight's Promise", Difficulty.INTERMEDIATE, 1)
                 .reqQuest("children_of_the_sun")
                 .xp(Skill.THIEVING, 3000) // approximate
                 .unlock("Fortis Colosseum fights; the Twilight Emissaries' hideout")
-                .stage("I can start this quest by speaking to the Guard captain in Civitas illa Fortis. (Requires Children of the Sun.)")
-                .talk("quest_civitas_guard_captain").say("A cult calling themselves the Twilight Emissaries plans to strike during the colosseum games. The prince must be warned.")
+                .stage("I can start this quest by speaking to Ennius Tullus in front of the Sunrise Palace. (Requires Children of the Sun.)")
+                .talk("ennius_tullus").say("A cult calling themselves the Twilight Emissaries plans to strike during the colosseum games. The prince must be warned.")
                 .stage("I should find the cult's agents in the city.")
                 .drop("dark_wizard", "twilight_cult_orders", 2)
                 .talk("quest_civitas_guard_captain").need("twilight_cult_orders").say("These orders... they mean to kill Prince Itzla in the colosseum! Take them to him at once.")
@@ -177,12 +178,13 @@ final class VarlamoreQuests {
     private static void ribbitingTale(QuestBook b) {
         Cast.npc(b, "quest_frog_foreman", "Frog foreman", "quest_civitas_lily_pond", 0, 2, Cast.FROG, 0x8A6A2A);
         Cast.npc(b, "quest_lily_pad_worker", "Lily pad worker", "quest_civitas_lily_pond", 3, -2, Cast.FROG, 0x2A6A8A);
+        b.npcAt("marcellus", "Marcellus", 1683, 2973, 0xC8946C, 0x3A6A8A, 0x2A4A5A, 0xE0D0A0); // at the Locus Oasis
         b.item("quest_lily_pad_contract", "Labour contract", "note", 0xE0E0B0, "A fair contract for the frogs of the lily pond.");
         b.quest("the_ribbiting_tale_of_a_lily_pad_labour_dispute", "The Ribbiting Tale of a Lily Pad Labour Dispute", Difficulty.NOVICE, 1)
                 .reqQuest("children_of_the_sun").req(Skill.WOODCUTTING, 15)
                 .xp(Skill.WOODCUTTING, 2000) // approximate
-                .stage("I can start this quest by speaking to the Frog foreman at the lily pond in Civitas illa Fortis. (Requires Children of the Sun, 15 Woodcutting.)")
-                .talk("quest_frog_foreman").say("Ribbit! The workers have downed tools. No more lily pads until they get better... ribbits. Talk to them!")
+                .stage("I can start this quest by speaking to Marcellus at the Locus Oasis. (Requires Children of the Sun, 15 Woodcutting.)")
+                .talk("marcellus").say("The frogs at the lily pond have downed tools, and my business sinks with them. Talk to their foreman!")
                 .stage("I should hear the lily pad workers' grievances.")
                 .talk("quest_lily_pad_worker").say("We want shade! Cut us some logs for a shelter and a fair contract, and we'll go back to work.")
                 .stage("I should cut 5 logs for the workers' shelter and get the foreman to sign a fair contract.")
@@ -220,13 +222,15 @@ final class VarlamoreQuests {
     private static void meatAndGreet(QuestBook b) {
         Cast.npc(b, "quest_tal_teklan_chief", "Tal Teklan chieftain", "quest_tal_teklan", 0, 3, Cast.BROWN, 0x8A5A2A);
         Cast.npc(b, "quest_civitas_envoy", "Civitas envoy", "zeah_civitas_illa_fortis", -3, 3, Cast.TAN, 0xE0C060);
+        b.npcAt("emelio", "Emelio", 1753, 3074, 0xA86A46, 0xA05A3A, 0x6A3A2A, 0x2A1A16); // his home in Outer Fortis
         b.item("quest_feast_platter", "Feast platter", "meat_cooked", 0xA0603A, "A feast fit for two peoples.");
         b.quest("meat_and_greet", "Meat and Greet", Difficulty.EXPERIENCED, 1)
                 .xp(Skill.COOKING, 8000) // OSRS (current quest XP rewards)
                 .reqQuest("children_of_the_sun")
                 .unlock("Trade with Tal Teklan")
-                .stage("I can start this quest by speaking to the Civitas envoy in Civitas illa Fortis. (Requires Children of the Sun.)")
-                .talk("quest_civitas_envoy").say("The people of Tal Teklan distrust the city. A shared feast could change that. Will you cook it?")
+                .stage("I can start this quest by speaking to Emelio at his home in Outer Fortis. (Requires Children of the Sun.)")
+                .talk("emelio").say("The people of Tal Teklan distrust the city. A shared feast could change that.",
+                        "@Civitas envoy: Will you cook it? Come to me in the city when you're ready.")
                 .stage("I should cook a feast platter (2 lobsters, 2 trout and some bread) for the meeting.")
                 .talk("quest_civitas_envoy").take("lobster:2", "trout:2", "bread").give("quest_feast_platter").say("*You arrange the platter.* That smells wonderful. Take it to Tal Teklan.")
                 .missing("A feast needs 2 lobsters, 2 trout and some bread.")
@@ -279,14 +283,15 @@ final class VarlamoreQuests {
 
     private static void scrambled(QuestBook b) {
         Cast.npc(b, "quest_egg_collector", "Egg collector", "zeah_hunter_guild", 3, -3, Cast.TAN, 0xE0D0A0);
+        b.npcAt("alan_tal_teok", "Alan", 1247, 3167, 0xE0B898, 0x5A7A3A, 0x3A4A2A, 0x8A6A2A); // the temple of Tal Teok
         b.items(s -> s.add("quest_quetzal_egg", "Quetzal egg", Kind.SIMPLE, "pot_item", 0xE0E0C0).value(0)
                 .examine("A large speckled egg. Handle with care."));
         b.quest("scrambled", "Scrambled!", Difficulty.INTERMEDIATE, 1)
                 .req(Skill.CONSTRUCTION, 38).req(Skill.COOKING, 36).req(Skill.SMITHING, 35)
                 .xp(Skill.CONSTRUCTION, 5000).xp(Skill.COOKING, 5000).xp(Skill.SMITHING, 5000) // OSRS (current quest XP rewards)
                 .reqQuest("children_of_the_sun")
-                .stage("I can start this quest by speaking to the Egg collector at the Hunter Guild. (Requires Children of the Sun, 38 Construction, 36 Cooking, 35 Smithing.)")
-                .talk("quest_egg_collector").say("Someone's been raiding the quetzal nests on the savannah! Find the stolen eggs before they hatch somewhere awful.")
+                .stage("I can start this quest by speaking to Alan at the temple of Tal Teok, north of Tal Teklan. (Requires Children of the Sun, 38 Construction, 36 Cooking, 35 Smithing.)")
+                .talk("alan_tal_teok").say("Someone's been raiding the quetzal nests on the savannah! Find the stolen eggs before they hatch somewhere awful.")
                 .stage("I should search the Avium Savannah for the stolen eggs.")
                 .reach("avium_savannah", 8).give("quest_quetzal_egg:3").say("* Hidden in the grass you find three eggs, still warm.")
                 .stage("I should return the eggs to the Egg collector.")

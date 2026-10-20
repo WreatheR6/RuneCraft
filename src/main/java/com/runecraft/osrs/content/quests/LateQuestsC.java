@@ -378,9 +378,10 @@ final class LateQuestsC {
                 .reqQuest("a_taste_of_hope")
                 .xp(Skill.SLAYER, 20000).xp(Skill.HITPOINTS, 20000) // two 20,000 XP combat lamps (approximate)
                 .unlock("The Theatre of Blood entry mode; Ver Sinhaza's spider caves")
-                .stage("I can start this quest by speaking to Veliaf Hurtz in the Myreque hideout. (Requires A Taste of Hope.)")
-                .talk("veliaf_hurtz").say("Lady Verzik Vitur runs a theatre where the condemned fight for her amusement. A stranger in Ver Sinhaza says he can get us in.")
-                .stage("I should meet the Mysterious Stranger in Ver Sinhaza.")
+                .stage("I can start this quest by speaking to the Mysterious Stranger in Ver Sinhaza. (Requires A Taste of Hope.)")
+                .talk("quest_mysterious_stranger_tob").say("Lady Verzik Vitur runs a theatre where the condemned fight for her amusement.",
+                        "I can get you in, and help you bring her down. But first, show me you can be trusted.")
+                .stage("I should do what the Mysterious Stranger in Ver Sinhaza asks.")
                 // OSRS: beneath Ver Sinhaza, kill a vyrewatch for the key, unlock the gate and open the coffin for Ranis' head.
                 .kill("vyrewatch_sentinel").stay().unless("quest_ranis_head")
                 .give("quest_ranis_head").say("* The vyrewatch drops a key. Behind the gate below Ver Sinhaza you open a coffin: Ranis Drakan's head.")
