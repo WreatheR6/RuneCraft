@@ -890,7 +890,7 @@ public final class CombatAchievementRules {
             511;RULE;the_leviathan;1;weapon=*mithril maxhp<=25
             418;RULE;nex;1;flag=nex_coughing
             552;RULE;kill:tormented demon;1;flag=td_shield_down
-            331;RULE;zalcano;1;solo
+            331;RULE;zalcano;1;flag=zalcano_mvp
             330;RULE;zalcano;1;flag=zalcano_golem_tephra
             200;RULE;dagannoth_prime;1;finishspec finish=rune_thrownaxe
             6;RULE;abyssal_sire;1;flag=venge:explosion

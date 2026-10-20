@@ -59,6 +59,48 @@ public final class TemporossStorm {
     /** Each fire spreads at most twice before it stabilises. */
     public static final int FIRE_SPREADS = 2;
 
+    // ---- the essence phase and the storm (OSRS Wiki "Tempoross", "Tempoross/Strategies") ----
+
+    /**
+     * Game ticks Tempoross stays submerged with the spirit pool open while its energy recharges from 0% to full: about 18
+     * spirit pool scatters (one every 4 ticks) per the strategy guide (approx; it was a fixed 25 ticks here).
+     */
+    public static final int ESSENCE_PHASE_TICKS = 72;
+    /** Energy (percent) the energy-phase/essence-phase cycle can be restored: three times, then the storm is out of control. */
+    public static final int MAX_RECOVERIES = 3;
+    /**
+     * The storm intensity bar, the energy phase's failure timer: the encounter fails when it reaches 100%, and it resets to 0%
+     * whenever Tempoross submerges (OSRS Wiki "Tempoross"; the dev blog calls it the "phase one failure timer"), so each
+     * energy phase has the whole bar. It builds while Tempoross is up: approx 1% every 4 ticks, 400 ticks (4 minutes) a
+     * phase, sized from Tempoross/Strategies, where a solo player catches, cooks and loads about 36 harpoonfish in phase one
+     * and must be loading by 93-95%, leaving 5-7% of the bar for the run from the shrine and the loading. Once Tempoross has
+     * gathered too much energy (after its third recovery) it rises rapidly (approx 4% a tick, 25 ticks from empty) unless both
+     * cannons force him under again at once.
+     */
+    public static final int STORM_TICKS_PER_PERCENT = 4;
+    public static final int ENRAGED_STORM_PER_TICK = 4;
+    /** Ticks of an energy phase before the storm bar fills: {@code 100 x} {@link #STORM_TICKS_PER_PERCENT}. */
+    public static final int STORM_PHASE_TICKS = 100 * STORM_TICKS_PER_PERCENT;
+
+    /** Energy (in hitsplat units) back after {@code ticksUnder} of the essence phase's {@link #ESSENCE_PHASE_TICKS}. */
+    public static int recharged(int maxEnergy, long ticksUnder) {
+        return (int) Math.min(maxEnergy, Math.max(0, maxEnergy * ticksUnder / ESSENCE_PHASE_TICKS));
+    }
+
+    /** Storm intensity (percent) when Tempoross submerges: the bar resets to 0% for the next energy phase (OSRS Wiki). */
+    public static final int STORM_AFTER_SUBMERGE = 0;
+
+    /** Storm intensity (percent) gained in one game tick: slow while Tempoross is up, fast once enraged, none while under. */
+    public static int stormGain(boolean submerged, boolean enraged, long ticks) {
+        if (submerged) {
+            return 0;
+        }
+        if (enraged) {
+            return ENRAGED_STORM_PER_TICK;
+        }
+        return ticks % STORM_TICKS_PER_PERCENT == 0 ? 1 : 0;
+    }
+
     /**
      * Torrent attack: a charged torrent of water surges towards a cannon, disabling it for a while and stunning anyone
      * loading it. Interval, warning and durations are approx (the wiki gives none).

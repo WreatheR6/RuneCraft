@@ -248,6 +248,8 @@ public final class MinigameItems {
                 .examine("+10% magic damage (Water spells in OSRS; all spells here).");
         // dragon_harpoon is defined by the slayer module.
         pet(items, "tiny_tempor", "Tiny tempor", 0x40A0D0, "A tiny Tempoross.");
+        // The reward pool's own casket (OSRS Wiki "Casket (Reward pool)"), opened for TemporossRewards.CASKET_TABLE.
+        simple(items, TemporossRewards.CASKET, "Casket", "casket", 0x5A7A9A, 50, "I hope there's treasure in it.");
     }
 
     // ------------------------------------------------------------------ Guardians of the Rift
@@ -268,6 +270,8 @@ public final class MinigameItems {
         }
         simple(items, "abyssal_pearls", "Abyssal pearls", "bead", 0xE0E0F8, 1, "Currency of the Temple of the Eye.");
         single(items, "intricate_pouch", "Intricate pouch", "package", 0x6A4AA0, 1, "Guardians of the Rift rewards. Right-click to open.");
+        // A purely cosmetic back bag from the intricate pouch (OSRS Wiki "Lost bag"; no cape slot here, so it is carried).
+        single(items, GuardiansRewards.LOST_BAG, "Lost bag", "package", 0x5A3A7A, 1, "A bag someone lost in the Temple of the Eye.");
         // Cells: taken uncharged from the table, charged at the active altar, used on cell tiles or made into rift guardians.
         simple(items, GuardiansRift.UNCHARGED_CELL, "Uncharged cell", "orb", 0x8A8A9A, 0, "A cell waiting to be charged with runic energy.");
         int[] cellColours = {0x80C0E0, 0x60A0E0, 0x4060E0, 0xE04060};

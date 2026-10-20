@@ -305,31 +305,66 @@ public final class GuardiansRewards {
         return null;
     }
 
-    /** Chance an intricate pouch holds the tarnished locket while the player has never had one (approx). */
-    public static final double TARNISHED_LOCKET_CHANCE = 1.0 / 20;
+    // ------------------------------------------------------------------ intricate pouch (OSRS Wiki "Intricate pouch")
 
-    /** Contents of an intricate pouch (approx.: a bigger rune, pearl or essence roll). */
+    /** The pouch's cosmetic back bag (a unique pre-roll). */
+    public static final String LOST_BAG = "lost_bag";
+    /** Pre-rolls, tried in turn before the main table (the first hit replaces it): item, 1 in N. */
+    public static final Object[][] POUCH_PRE_ROLL = {{"blood_essence", 200}, {"tarnished_locket", 40}, {LOST_BAG, 60}};
+    /** Pre-rolled items given only to a player who has never had one. */
+    public static final List<String> POUCH_UNIQUES = List.of("tarnished_locket", LOST_BAG);
+    /** The main table, weights out of 45. */
+    public static final List<Line> POUCH_MAIN = List.of(
+            new Line("astral_rune", 150, 200, 5), new Line("blood_rune", 150, 200, 5), new Line("chaos_rune", 200, 300, 5),
+            new Line("cosmic_rune", 200, 300, 5), new Line("death_rune", 150, 200, 5), new Line("law_rune", 200, 250, 5),
+            new Line("nature_rune", 200, 300, 5), new Line("soul_rune", 150, 200, 5), new Line("shield_left_half", 1, 1, 1),
+            new Line("dragon_spear", 1, 1, 1), new Line("crystal_key", 1, 1, 1), new Line("dragon_med_helm", 1, 1, 1),
+            new Line("pure_essence", 500, 1000, 1));
+    public static final int POUCH_MAIN_TOTAL = 45;
+    /** Tertiary hard clue scroll: 1 in 10. */
+    public static final int POUCH_CLUE_CHANCE = 10;
+
+    /** Contents of an intricate pouch for a player who has had every pouch unique already. */
     public static List<MinigameReward> openIntricatePouch(DoubleSupplier random) {
-        return openIntricatePouch(random, true);
+        return openIntricatePouch(random, POUCH_UNIQUES);
+    }
+
+    /** Contents of an intricate pouch; {@code hasLocket} stands for owning both pouch uniques (older callers). */
+    public static List<MinigameReward> openIntricatePouch(DoubleSupplier random, boolean hasLocket) {
+        return openIntricatePouch(random, hasLocket ? POUCH_UNIQUES : List.of());
     }
 
     /**
-     * Contents of an intricate pouch; a player who has never owned the tarnished locket (shown to the Lumbridge Guide for
-     * the amulet of the eye, OSRS Wiki) may find it inside.
+     * Contents of an intricate pouch: the pre-rolls in turn (blood essence 1/200, the tarnished locket 1/40 and the lost
+     * bag 1/60 while never owned), otherwise one main-table line; a hard clue on a separate 1/10 roll. Approx: the 1/15 lamp
+     * pre-roll (10 x a chosen skill's level in XP) isn't modelled, so the other lines come a little more often.
      */
-    public static List<MinigameReward> openIntricatePouch(DoubleSupplier random, boolean hasLocket) {
+    public static List<MinigameReward> openIntricatePouch(DoubleSupplier random, List<String> owned) {
         List<MinigameReward> out = new ArrayList<>();
-        if (!hasLocket && random.getAsDouble() < TARNISHED_LOCKET_CHANCE) {
-            out.add(new MinigameReward("tarnished_locket", 1));
+        MinigameReward main = null;
+        for (Object[] pre : POUCH_PRE_ROLL) {
+            String item = (String) pre[0];
+            if (random.getAsDouble() < 1.0 / (Integer) pre[1] && !(POUCH_UNIQUES.contains(item) && owned.contains(item))) {
+                main = new MinigameReward(item, 1);
+                break;
+            }
         }
-        if (random.getAsDouble() < 1.0 / 200) {
-            out.add(new MinigameReward("blood_essence", 1));
+        if (main == null) {
+            int r = (int) (random.getAsDouble() * POUCH_MAIN_TOTAL);
+            Line hit = POUCH_MAIN.get(POUCH_MAIN.size() - 1);
+            for (Line l : POUCH_MAIN) {
+                r -= l.weight();
+                if (r < 0) {
+                    hit = l;
+                    break;
+                }
+            }
+            main = new MinigameReward(hit.item(), hit.min() + (int) (random.getAsDouble() * (hit.max() - hit.min() + 1)));
         }
-        String[] runes = {"nature_rune", "law_rune", "death_rune", "blood_rune", "cosmic_rune", "chaos_rune"};
-        String rune = runes[(int) (random.getAsDouble() * runes.length)];
-        out.add(new MinigameReward(rune, 50 + (int) (random.getAsDouble() * 101)));
-        out.add(new MinigameReward("abyssal_pearls", 5 + (int) (random.getAsDouble() * 11)));
-        out.add(new MinigameReward("pure_essence", 50 + (int) (random.getAsDouble() * 101)));
+        out.add(main);
+        if (random.getAsDouble() < 1.0 / POUCH_CLUE_CHANCE) {
+            out.add(new MinigameReward("clue_scroll_hard", 1));
+        }
         return out;
     }
 
@@ -347,9 +382,14 @@ public final class GuardiansRewards {
         for (Object[] r : TALISMAN_TABLE) {
             ids.add((String) r[0]);
         }
-        ids.add("tarnished_locket");
+        for (Object[] r : POUCH_PRE_ROLL) {
+            ids.add((String) r[0]);
+        }
+        for (Line l : POUCH_MAIN) {
+            ids.add(l.item());
+        }
         ids.addAll(POUCHES);
-        ids.addAll(List.of("abyssal_protector", "blood_essence", "pure_essence"));
+        ids.addAll(List.of("abyssal_protector", "clue_scroll_hard"));
         return ids;
     }
 }

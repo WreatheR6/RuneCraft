@@ -1,14 +1,17 @@
 package com.runecraft.content.minigames.games;
 
 import com.runecraft.action.ActionManager;
+import com.runecraft.collection.CollectionLog;
 import com.runecraft.combat.CombatHandler;
 import com.runecraft.content.minigames.MinigameData;
-import com.runecraft.content.minigames.MinigameItemUse;
 import com.runecraft.content.minigames.MinigameManager;
 import com.runecraft.content.minigames.MinigameSession;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.minigames.Minigame;
+import com.runecraft.osrs.content.minigames.MinigameReward;
 import com.runecraft.osrs.content.minigames.MinigameRules.Wintertodt;
+import com.runecraft.osrs.content.minigames.SkillingBosses;
+import com.runecraft.osrs.content.minigames.WintertodtRewards;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import java.util.ArrayList;
@@ -16,8 +19,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -29,15 +34,17 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Wintertodt (OSRS Wiki "Wintertodt", "Wintertodt/Strategies", after the 9 October 2024 update): chop bruma roots, fletch
- * them into kindling and feed the four braziers for points and experience. The pyromancers at the lit braziers drain the
- * Wintertodt's energy meter (1% every 14 ticks each; feeding doesn't speed it up; with every brazier out it regains 1% every
- * 35 ticks). The Wintertodt attacks the players' warmth meter (it replaced Hitpoints in the prison): the standard cold, a
+ * Wintertodt (OSRS Wiki "Wintertodt", "Wintertodt/Strategies", "Reward Cart", after the 9 October 2024 update): chop bruma
+ * roots, fletch them into kindling (use a knife on them; not in the safe area) and feed the four braziers for points and
+ * experience. The pyromancers at the lit braziers drain the Wintertodt's energy meter (1% every 14 ticks each; feeding
+ * doesn't speed it up; with every brazier out it regains 1% every 35 ticks). The Wintertodt attacks the players' warmth
+ * meter (it replaced Hitpoints in the prison): the standard cold (it interrupts fletching and feeding, never chopping), a
  * 3x3 snowfall, and shattering braziers, more often early in the fight, while late in the fight it goes for the braziers
  * (shattered: fix with a hammer; snuffed out) and the pyromancers (14 hitpoints, two hits: heal them with a rejuvenation
  * potion). Warm clothing (four pieces) cuts the cold; food restores 35% warmth, a rejuvenation potion 30%; warmth
- * regenerates 8% a minute plus 1% per warm item; at 0% the player dies. The lobby by the doors is safe. 500 points earn the
- * reward rolls (2 at 500 points, +1 per further 500, max 28) and bonus Firemaking experience.
+ * regenerates 8% a minute plus 1% per warm item; at 0% the player dies. The lobby by the doors is safe. 500 points earn
+ * rewards owed at the reward cart (2 at 500 points, +1 per further 500, a chance of one more for the rest; the cart holds
+ * 8,000) and bonus Firemaking experience. The cart stands in the Wintertodt Camp and in the prison's lobby.
  */
 public class WintertodtSession extends MinigameSession {
     private static final int[][] BRAZIERS = {{-8, -8}, {8, -8}, {-8, 8}, {8, 8}};
@@ -49,8 +56,15 @@ public class WintertodtSession extends MinigameSession {
     private static final int SNOWFALL_TICKS = 25;
     /** Warning before a snowfall or a brazier attack lands. */
     private static final int WARNING_TICKS = 3;
+    /** Rewards owed at the reward cart (a per-player minigame stat). */
+    public static final String CART_STAT = "wintertodt_cart";
+    /** Unfinished rejuvenation potions need the Druidic Ritual to mix yourself (otherwise Brew'ma mixes them, no XP). */
+    private static final String DRUIDIC_RITUAL = com.runecraft.osrs.Quest.DRUIDIC_RITUAL.questId();
 
     private enum State { UNLIT, LIT, BROKEN }
+
+    /** What a player is doing: the standard attack interrupts fletching and feeding but not chopping. */
+    private enum Activity { CHOP, FLETCH, FEED }
 
     private final State[] braziers = {State.UNLIT, State.UNLIT, State.UNLIT, State.UNLIT};
     private final int[] pyromancerHp = {Wintertodt.PYROMANCER_HP, Wintertodt.PYROMANCER_HP, Wintertodt.PYROMANCER_HP,
@@ -61,6 +75,7 @@ public class WintertodtSession extends MinigameSession {
     private final Map<UUID, Integer> points = new HashMap<>();
     private final Map<UUID, Double> warmth = new HashMap<>();
     private final Map<UUID, Long> lastCold = new HashMap<>();
+    private final Map<UUID, Activity> activity = new HashMap<>();
     /** Combat Achievement conditions: per player (healed a pyromancer, fixed a brazier) and for the whole fight. */
     private final Map<UUID, java.util.Set<String>> caPlayerFlags = new HashMap<>();
     private final java.util.Set<String> caRunFlags = new java.util.HashSet<>();
@@ -111,6 +126,7 @@ public class WintertodtSession extends MinigameSession {
         }
         place(-3, 18, "wintertodt_crate");
         place(3, 18, "sprouting_roots");
+        place(-6, 18, SkillingBosses.WT_REWARD_CART);
         place(0, 21, "minigame_exit");
         for (int x = -2; x <= 2; x++) {
             for (int z = -2; z <= 2; z++) {
@@ -173,21 +189,27 @@ public class WintertodtSession extends MinigameSession {
         return Wintertodt.RESUME_MIN_TICKS + random.nextInt(Wintertodt.RESUME_MAX_TICKS - Wintertodt.RESUME_MIN_TICKS + 1);
     }
 
+    /** Starts a repeating action and records what kind it is (for the standard attack's interruptions). */
+    private void act(ServerPlayer player, Activity kind, java.util.function.Predicate<ServerPlayer> step) {
+        repeat(player, step);
+        activity.put(player.getUUID(), kind);
+    }
+
     @Override
     protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         switch (blockId) {
             case "bruma_roots" -> {
-                if (!Inv.has(player, "bronze_axe", 1) && !hasAnyAxe(player)) {
+                if (!hasAnyAxe(player)) {
                     Msg.game(player, "You need an axe to chop the bruma roots. There are some in the supply crate.");
                     return true;
                 }
                 Msg.action(player, "You swing your axe at the roots.");
-                ActionManager.start(player, (p, t) -> {
+                act(player, Activity.CHOP, p -> {
                     if (!Inv.hasRoomFor(p, "bruma_root")) {
                         Msg.game(p, "Your inventory is too full to hold any more roots.");
                         return false;
                     }
-                    if (random.nextInt(100) < 35 + level(p, Skill.WOODCUTTING) / 2) {
+                    if (random.nextInt(100) < 35 + level(p, Skill.WOODCUTTING) / 2) { // approx chop rate
                         Inv.give(p, "bruma_root", 1);
                         xp(p, Skill.WOODCUTTING, Wintertodt.chopXp(level(p, Skill.WOODCUTTING)));
                         Msg.action(p, "You get a bruma root.");
@@ -219,35 +241,29 @@ public class WintertodtSession extends MinigameSession {
     }
 
     private static boolean hasAnyAxe(ServerPlayer p) {
-        for (String tier : new String[]{"bronze", "iron", "steel", "black", "mithril", "adamant", "rune", "dragon"}) {
-            if (Inv.has(p, tier + "_axe", 1)) {
+        for (String tier : new String[]{"bronze", "iron", "steel", "black", "mithril", "adamant", "rune", "dragon", "crystal", "infernal"}) {
+            if (Inv.has(p, tier + "_axe", 1) || (tier + "_axe").equals(Inv.idOf(p.getMainHandItem()))) {
                 return true;
             }
         }
         return false;
     }
 
+    /**
+     * The supply crates in the lobby: knives, hammers, tinderboxes and bronze axes, and bruma herbs mixed into
+     * rejuvenation potions (with the Druidic Ritual done, for 0.1 x Herblore level XP each; otherwise Brew'ma mixes them).
+     */
     private void crate(ServerPlayer player) {
         int herbs = Inv.count(player, "bruma_herb");
         if (herbs > 0) {
             Inv.remove(player, "bruma_herb", herbs);
             Inv.give(player, "rejuvenation_potion", herbs);
-            xp(player, Skill.HERBLORE, Wintertodt.potionXp(level(player, Skill.HERBLORE)) * herbs);
-            Msg.game(player, "You mix the bruma herbs into rejuvenation potions.");
-            return;
-        }
-        int roots = Inv.count(player, "bruma_root");
-        if (roots > 0 && Inv.has(player, "knife", 1)) {
-            Msg.action(player, "You begin fletching the bruma roots into kindling.");
-            ActionManager.start(player, (p, t) -> {
-                if (!Inv.has(p, "bruma_root", 1)) {
-                    return false;
-                }
-                Inv.remove(p, "bruma_root", 1);
-                Inv.give(p, "bruma_kindling", 1);
-                xp(p, Skill.FLETCHING, Wintertodt.fletchXp(level(p, Skill.FLETCHING)));
-                return true;
-            });
+            if (com.runecraft.quest.QuestApi.isComplete(player, DRUIDIC_RITUAL)) {
+                xp(player, Skill.HERBLORE, Wintertodt.potionXp(level(player, Skill.HERBLORE)) * herbs);
+                Msg.game(player, "You mix the bruma herbs into rejuvenation potions.");
+            } else {
+                Msg.game(player, "Brew'ma mixes your bruma herbs into rejuvenation potions for you.");
+            }
             return;
         }
         boolean gave = false;
@@ -262,7 +278,37 @@ public class WintertodtSession extends MinigameSession {
             gave = true;
         }
         Msg.game(player, gave ? "You take some tools from the crate." : "The crate has knives, hammers, tinderboxes and axes. "
-                + "Use it with bruma roots (and a knife) to fletch, or with bruma herbs to make potions.");
+                + "Use a knife on your bruma roots to fletch kindling, or bring bruma herbs here to make potions.");
+    }
+
+    /**
+     * A knife used (right-clicked) in the prison: fletches the carried bruma roots into kindling, one a tick, for 0.6 x
+     * Fletching level XP each. Not allowed in the safe area by the doors. True when the item was handled.
+     */
+    public static boolean useKnife(ServerPlayer p, String id) {
+        if (!(id.equals("knife") || id.equals("fletching_knife")) || !(MinigameManager.session(p) instanceof WintertodtSession s)
+                || !Inv.has(p, "bruma_root", 1)) {
+            return false;
+        }
+        s.fletch(p);
+        return true;
+    }
+
+    private void fletch(ServerPlayer player) {
+        if (safe(player)) {
+            Msg.game(player, "You can't fletch here; the area is too crowded. Step into the prison first.");
+            return;
+        }
+        Msg.action(player, "You begin fletching the bruma roots into kindling.");
+        act(player, Activity.FLETCH, p -> {
+            if (isEnded() || !Inv.has(p, "bruma_root", 1)) {
+                return false;
+            }
+            Inv.remove(p, "bruma_root", 1);
+            Inv.give(p, "bruma_kindling", 1);
+            xp(p, Skill.FLETCHING, Wintertodt.fletchXp(level(p, Skill.FLETCHING)));
+            return true;
+        });
     }
 
     private void brazier(ServerPlayer player, int i) {
@@ -281,7 +327,7 @@ public class WintertodtSession extends MinigameSession {
         }
         switch (braziers[i]) {
             case BROKEN -> {
-                if (!Inv.has(player, "hammer", 1)) {
+                if (!Inv.has(player, "hammer", 1) && !"imcando_hammer".equals(Inv.idOf(player.getMainHandItem()))) {
                     Msg.game(player, "You need a hammer to fix the brazier.");
                     return;
                 }
@@ -296,7 +342,8 @@ public class WintertodtSession extends MinigameSession {
                     Msg.game(player, "The pyromancer is down! Help her with a rejuvenation potion before relighting.");
                     return;
                 }
-                if (!Inv.has(player, "tinderbox", 1) && !"bruma_torch".equals(Inv.idOf(player.getMainHandItem()))) {
+                if (!Inv.has(player, "tinderbox", 1) && !Inv.has(player, "bruma_torch", 1)
+                        && !"bruma_torch".equals(Inv.idOf(player.getMainHandItem()))) {
                     Msg.game(player, "You need a tinderbox to light the brazier.");
                     return;
                 }
@@ -309,7 +356,7 @@ public class WintertodtSession extends MinigameSession {
             }
             case LIT -> {
                 Msg.action(player, "You start feeding the brazier.");
-                ActionManager.start(player, (p, t) -> {
+                act(player, Activity.FEED, p -> {
                     if (braziers[i] != State.LIT || isEnded()) {
                         return false;
                     }
@@ -380,6 +427,15 @@ public class WintertodtSession extends MinigameSession {
         }
     }
 
+    /** The standard attack interrupts fletching and feeding a brazier, but never chopping roots (wiki). */
+    private void interrupt(ServerPlayer p) {
+        Activity a = activity.get(p.getUUID());
+        if (ActionManager.isBusy(p) && (a == Activity.FLETCH || a == Activity.FEED)) {
+            ActionManager.cancel(p);
+            Msg.action(p, "The cold of the Wintertodt seeps into your bones.");
+        }
+    }
+
     /** Whether the player stands in the safe area by the doors, out of the Wintertodt's reach. */
     private boolean safe(ServerPlayer p) {
         return p.getZ() - origin.getZ() >= SAFE_FROM_Z;
@@ -430,10 +486,7 @@ public class WintertodtSession extends MinigameSession {
                 continue;
             }
             chill(p, Wintertodt.standardDamage(level(p, Skill.FIREMAKING), warmItems(p), lit()));
-            if (random.nextInt(3) == 0) {
-                ActionManager.cancel(p); // approx: it interrupts fletching and feeding, not chopping
-                Msg.action(p, "The cold of the Wintertodt seeps into your bones.");
-            }
+            interrupt(p);
         }
         // Snowfall: a telegraphed 3x3 area attack centred on a player.
         if (ticks % SNOWFALL_TICKS == 0 && Wintertodt.attacksPlayers(random.nextInt(maxEnergy + 1), energy)) {
@@ -450,6 +503,7 @@ public class WintertodtSession extends MinigameSession {
                 return false;
             }
             for (ServerPlayer p : online()) {
+                // 3x3 OSRS tiles (two blocks each) centred on the target.
                 if (Math.abs(p.getX() - at.x) <= 3 && Math.abs(p.getZ() - at.z) <= 3 && !safe(p)) {
                     chill(p, Wintertodt.areaDamage(level(p, Skill.FIREMAKING), warmItems(p)));
                 }
@@ -477,39 +531,46 @@ public class WintertodtSession extends MinigameSession {
                 return false;
             }
             switch (a[1]) {
-                case 0 -> {
-                    if (braziers[i] != State.BROKEN) {
-                        braziers[i] = State.BROKEN;
-                        broadcastRed("A brazier shatters!");
-                        if (java.util.Arrays.stream(braziers).allMatch(s -> s == State.BROKEN)) {
-                            caRunFlags.add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_ALL_BRAZIERS_BROKEN);
-                        }
-                        for (ServerPlayer p : online()) {
-                            if (p.blockPosition().distSqr(rel(BRAZIERS[i][0], 1, BRAZIERS[i][1])) <= 9) {
-                                chill(p, Wintertodt.brazierDamage(level(p, Skill.FIREMAKING), warmItems(p)));
-                            }
-                        }
-                    }
-                }
+                case 0 -> shatter(i);
                 case 1 -> {
                     if (braziers[i] == State.LIT) {
                         braziers[i] = State.UNLIT;
                         broadcast("The cold of the Wintertodt extinguishes a brazier.");
                     }
                 }
-                default -> {
-                    pyromancerHp[i] = Math.max(0, pyromancerHp[i] - Wintertodt.PYROMANCER_HIT);
-                    if (pyromancerHp[i] <= 0) {
-                        braziers[i] = braziers[i] == State.LIT ? State.UNLIT : braziers[i];
-                        caRunFlags.add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_PYROMANCER_FELL);
-                        broadcastRed("A pyromancer has fallen!");
-                    } else {
-                        broadcast("The cold of the Wintertodt hurts a pyromancer.");
-                    }
-                }
+                default -> hitPyromancer(i);
             }
             return true;
         });
+    }
+
+    /** A brazier shatters: anyone standing right next to it takes the brazier attack's damage. */
+    private void shatter(int i) {
+        if (braziers[i] == State.BROKEN) {
+            return;
+        }
+        braziers[i] = State.BROKEN;
+        broadcastRed("A brazier shatters!");
+        if (java.util.Arrays.stream(braziers).allMatch(s -> s == State.BROKEN)) {
+            caRunFlags.add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_ALL_BRAZIERS_BROKEN);
+        }
+        for (ServerPlayer p : online()) {
+            if (p.blockPosition().distSqr(rel(BRAZIERS[i][0], 1, BRAZIERS[i][1])) <= 9) {
+                chill(p, Wintertodt.brazierDamage(level(p, Skill.FIREMAKING), warmItems(p)));
+            }
+        }
+    }
+
+    /** The Wintertodt hits a pyromancer: two hits put her down, her brazier goes out until she is helped. */
+    private void hitPyromancer(int i) {
+        pyromancerHp[i] = Math.max(0, pyromancerHp[i] - Wintertodt.PYROMANCER_HIT);
+        if (pyromancerHp[i] <= 0) {
+            braziers[i] = braziers[i] == State.LIT ? State.UNLIT : braziers[i];
+            caRunFlags.add(com.runecraft.osrs.content.systems.CombatAchievements.FLAG_PYROMANCER_FELL);
+            broadcastRed("A pyromancer has fallen!");
+        } else {
+            broadcast("The cold of the Wintertodt hurts a pyromancer.");
+        }
     }
 
     @Override
@@ -532,13 +593,15 @@ public class WintertodtSession extends MinigameSession {
         }
         for (ServerPlayer p : online()) {
             int pts = points.getOrDefault(p.getUUID(), 0);
-            int rolls = Wintertodt.rolls(pts, random.nextDouble());
-            if (rolls > 0) {
+            int won = WintertodtRewards.rolls(pts, random.nextDouble());
+            if (won > 0) {
                 xp(p, Skill.FIREMAKING, Wintertodt.completionXp(level(p, Skill.FIREMAKING)));
-                Inv.give(p, MinigameItemUse.container("supply_crate", rolls));
-                int kc = MinigameData.of(p).incrementStat(p.getUUID(), "kc:" + game.id());
-                Msg.game(p, "You have helped to subdue the Wintertodt! You earned " + pts + " points and a supply crate (" + rolls + " rolls). "
-                        + "Your subdued Wintertodt count is: " + kc + ".");
+                MinigameData data = MinigameData.of(p);
+                int owed = WintertodtRewards.addToCart(data.stat(p.getUUID(), CART_STAT), won);
+                data.setStat(p.getUUID(), CART_STAT, owed);
+                int kc = data.incrementStat(p.getUUID(), "kc:" + game.id());
+                Msg.game(p, "You have helped to subdue the Wintertodt! You earned " + pts + " points and " + won + " rewards: search "
+                        + "the reward cart (" + owed + " owed). Your subdued Wintertodt count is: " + kc + ".");
             } else {
                 Msg.game(p, "You did not earn enough points (" + pts + "/500) to be worthy of a gift from the citizens of Kourend this time.");
             }
@@ -550,6 +613,96 @@ public class WintertodtSession extends MinigameSession {
         return List.of("Wintertodt", "Wintertodt's Energy: " + (maxEnergy == 0 ? 100 : energy * 100 / maxEnergy) + "%",
                 "Warmth: " + (int) Math.floor(warmthOf(player)) + "%", "Points: " + points.getOrDefault(player.getUUID(), 0),
                 "Braziers lit: " + lit() + " / 4", "Warm clothing: " + warmItems(player) + " / 4");
+    }
+
+    // ------------------------------------------------------------------ the reward cart
+
+    /** Copies of an item the player carries, banks or wears. */
+    static int owned(ServerPlayer p, String item) {
+        int n = Inv.count(p, item);
+        var bank = com.runecraft.player.Players.data(p).bank();
+        if (bank != null) {
+            n += bank.count(item, null);
+        }
+        for (EquipmentSlot slot : EquipmentSlot.values()) {
+            if (item.equals(Inv.idOf(p.getItemBySlot(slot)))) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    /** The player as the reward table sees them: levels at the time of searching, and the uniques owned. */
+    public static WintertodtRewards.Player cartPlayer(ServerPlayer p) {
+        com.runecraft.osrs.SkillSet s = com.runecraft.player.Players.data(p).skills();
+        int[] pyro = new int[WintertodtRewards.PYROMANCER.length];
+        for (int i = 0; i < pyro.length; i++) {
+            pyro[i] = owned(p, WintertodtRewards.PYROMANCER[i]);
+        }
+        boolean phoenix = com.runecraft.player.Players.data(p).collectionLog().contains("phoenix") || owned(p, "phoenix") > 0;
+        return new WintertodtRewards.Player(s.level(Skill.CRAFTING), s.level(Skill.HERBLORE), s.level(Skill.FARMING),
+                s.level(Skill.WOODCUTTING), s.level(Skill.MINING), s.level(Skill.FISHING), phoenix, owned(p, "warm_gloves"),
+                owned(p, "bruma_torch"), pyro);
+    }
+
+    /**
+     * The reward cart (Wintertodt Camp, and the prison's lobby): "Search" takes one reward every 3 ticks until the cart is
+     * empty or the pack is full; sneak-use is "Big-search", five at a time. Rewards are rolled as they are taken.
+     */
+    public static void rewardCart(ServerPlayer player) {
+        MinigameData data = MinigameData.of(player);
+        int owed = data.stat(player.getUUID(), CART_STAT);
+        if (owed <= 0) {
+            Msg.game(player, "The reward cart is empty. Subdue the Wintertodt with 500 or more points to earn rewards.");
+            return;
+        }
+        int batch = player.isShiftKeyDown() ? WintertodtRewards.BIG_SEARCH : 1;
+        Msg.action(player, "You search the reward cart (" + owed + " reward" + (owed == 1 ? "" : "s") + " left).");
+        int[] wait = {0};
+        ActionManager.start(player, (p, t) -> {
+            if (--wait[0] > 0) {
+                return true;
+            }
+            wait[0] = WintertodtRewards.SEARCH_TICKS;
+            return takeFromCart(p, batch) > 0 && data.stat(p.getUUID(), CART_STAT) > 0;
+        });
+    }
+
+    /** Takes up to {@code n} rewards from the cart now; returns how many were taken (0 when empty or the pack is full). */
+    public static int takeFromCart(ServerPlayer p, int n) {
+        MinigameData data = MinigameData.of(p);
+        int owed = data.stat(p.getUUID(), CART_STAT);
+        int taken = 0;
+        while (taken < n && owed > 0) {
+            if (p.getInventory().getFreeSlot() < 0) {
+                Msg.game(p, "You don't have enough inventory space to take any more rewards.");
+                break;
+            }
+            MinigameReward r = WintertodtRewards.roll(cartPlayer(p), random()::nextDouble);
+            owed--;
+            taken++;
+            data.setStat(p.getUUID(), CART_STAT, owed);
+            if (WintertodtRewards.noted(r.item())) {
+                com.runecraft.content.minigames.MinigameItemUse.giveNoted(p, r.item(), r.amount());
+            } else {
+                Inv.give(p, r.item(), r.amount());
+            }
+            CollectionLog.obtain(p, r.item());
+            if (r.item().equals("phoenix")) {
+                p.getServer().getPlayerList().broadcastSystemMessage(Component.literal(p.getName().getString()
+                        + " has a funny feeling like they're being followed.").withStyle(ChatFormatting.GOLD), false);
+            }
+        }
+        if (taken > 0) {
+            data.setStat(p.getUUID(), "wintertodt_cart_searched", data.stat(p.getUUID(), "wintertodt_cart_searched") + taken);
+        }
+        return taken;
+    }
+
+    private static final java.util.Random CART_RANDOM = new java.util.Random();
+
+    private static java.util.Random random() {
+        return CART_RANDOM;
     }
 
     // ------------------------------------------------------------------ self-test
@@ -572,13 +725,54 @@ public class WintertodtSession extends MinigameSession {
         }
     }
 
-    /** Self-test: one standard cold hit on the player (wherever they stand). */
+    /** Self-test: one standard cold hit on the player (wherever they stand), with its interruption. */
     public void selfTestChill(ServerPlayer p) {
         chill(p, Wintertodt.standardDamage(level(p, Skill.FIREMAKING), warmItems(p), lit()));
+        interrupt(p);
     }
 
     /** Self-test: the player eats as a player would ("eat:" activity). */
     public void selfTestWarm(ServerPlayer p, String food) {
         com.runecraft.content.GameEvents.fireActivity(p, "eat:" + food);
+    }
+
+    /** Self-test: where a block stands (arena-relative to world): a brazier, the roots, the crate, the herbs, the cart. */
+    public BlockPos selfTestBrazier(int i) {
+        return rel(BRAZIERS[i][0], 1, BRAZIERS[i][1]);
+    }
+
+    public BlockPos selfTestRoots(int i) {
+        return rel(ROOTS[i][0], 1, ROOTS[i][1]);
+    }
+
+    public BlockPos selfTestCrate() {
+        return rel(-3, 1, 18);
+    }
+
+    public BlockPos selfTestHerbs() {
+        return rel(3, 1, 18);
+    }
+
+    public BlockPos selfTestCart() {
+        return rel(-6, 1, 18);
+    }
+
+    /** Self-test: a brazier's state ("UNLIT", "LIT", "BROKEN") and its pyromancer's hitpoints. */
+    public String selfTestBrazierState(int i) {
+        return braziers[i].name() + " " + pyromancerHp[i];
+    }
+
+    /** Self-test: the Wintertodt's heavy snow lands on a brazier (it shatters) or on its pyromancer. */
+    public void selfTestShatter(int i) {
+        shatter(i);
+    }
+
+    public void selfTestHitPyromancer(int i) {
+        hitPyromancer(i);
+    }
+
+    /** Self-test: sets the Wintertodt's remaining energy (a long fight cut short). */
+    public void selfTestEnergy(int percent) {
+        energy = Math.max(0, Math.min(maxEnergy, percent));
     }
 }

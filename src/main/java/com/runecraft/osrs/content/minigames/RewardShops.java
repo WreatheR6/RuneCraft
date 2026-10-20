@@ -225,9 +225,12 @@ public final class RewardShops {
         }
         tb.item("bottle_of_rum", EIGHT, 20).item("the_stuff", EIGHT, 50);
 
-        // Volcanic Mine: Petrified Pete's Ore Shop (OSRS Wiki prices; ores and minerals come noted, see NOTED). Not stocked here: the
-        // volcanic mine teleport, the larger water container, the ash covered tome and ore packs.
+        // Volcanic Mine: Petrified Pete's Ore Shop (OSRS Wiki prices; ores and minerals come noted, see NOTED). The large water
+        // container (10,000 points) doubles the heat-proof vessel's throws (VolcanicMine.LARGE_VESSEL_FLAG). Not stocked here:
+        // the volcanic mine teleport, the ash covered tome and ore packs.
         shop("volcanic_mine", "Petrified Pete's Ore Shop")
+                .unlock(VolcanicMine.LARGE_VESSEL_FLAG, "Large water container",
+                        List.of(new Cost(VOLCANIC_MINE, VolcanicMine.LARGE_VESSEL_POINTS)))
                 .item("iron_ore", VOLCANIC_MINE, 30)
                 .item("silver_ore", VOLCANIC_MINE, 55)
                 .item("coal", VOLCANIC_MINE, 60)

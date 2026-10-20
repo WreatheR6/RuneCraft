@@ -1007,6 +1007,9 @@ final class ClassicScripts {
         private long explodeAt = -1;
         private float armouredHealth = -1;
         private final Map<UUID, Long> nextSwing = new HashMap<>();
+        /** Damage each player has dealt her (armour and hitpoints), for the MVP ("The Spurned Hero"). */
+        private final Map<UUID, Integer> dealt = new HashMap<>();
+        private UUID mvp;
 
         private record Symbol(Vec3 pos, boolean blue, long activeAt, long until) {
         }
@@ -1069,10 +1072,33 @@ final class ClassicScripts {
             return false;
         }
 
-        /** A thrown imbued tephra's damage (0 to the max). */
+        /** A thrown imbued tephra's damage (0 to the max, with the chance of +1 near the next threshold). */
         private int tephraHit(ServerPlayer p) {
-            int max = BossMechanics.tephraMaxHit(level(p, Skill.SMITHING), level(p, Skill.RUNECRAFT), onBlue(p));
+            int max = BossMechanics.tephraMaxHit(level(p, Skill.SMITHING), level(p, Skill.RUNECRAFT), onBlue(p),
+                    p.getRandom().nextDouble());
             return p.getRandom().nextInt(max + 1);
+        }
+
+        /**
+         * Counts damage a player dealt her and keeps the MVP flag ("The Spurned Hero": kill her as the player who dealt the
+         * most damage) on whoever leads, so it holds at the kill.
+         */
+        private void credit(DataBossEntity boss, ServerPlayer p, int damage) {
+            if (damage <= 0) {
+                return;
+            }
+            int total = dealt.merge(p.getUUID(), damage, Integer::sum);
+            if (mvp == null || (!mvp.equals(p.getUUID()) && total > dealt.getOrDefault(mvp, 0))) {
+                for (ServerPlayer q : BossFx.players(boss, 48)) {
+                    if (q.getUUID().equals(mvp)) {
+                        CombatAchievementService.unflag(q, BossMechanics.FLAG_ZALCANO_MVP);
+                    }
+                }
+                mvp = p.getUUID();
+            }
+            if (mvp.equals(p.getUUID())) {
+                CombatAchievementService.flag(p, BossMechanics.FLAG_ZALCANO_MVP);
+            }
         }
 
         @Override
@@ -1393,9 +1419,10 @@ final class ClassicScripts {
                         com.runecraft.osrs.content.raids.RaidScaling.pickaxeLevel(held));
                 XpService.add(attacker, Skill.MINING, BossMechanics.ZALCANO_MINING_XP);
                 BossFx.burst(boss, ParticleTypes.LAVA, 4, 0.6);
-                int dealt = 1 + boss.getRandom().nextInt(max);
-                armouredHealth = Math.max(0, boss.getHealth() - dealt);
-                return dealt;
+                int hit = 1 + boss.getRandom().nextInt(max);
+                armouredHealth = Math.max(0, boss.getHealth() - hit);
+                credit(boss, attacker, Math.min(hit, (int) Math.ceil(boss.getHealth())));
+                return hit;
             }
             if (!Inv.has(attacker, BossMechanics.IMBUED_TEPHRA, 1)) {
                 Msg.action(attacker, "Zalcano's stone armour can only be broken with imbued tephra.");
@@ -1403,6 +1430,7 @@ final class ClassicScripts {
             }
             Inv.remove(attacker, BossMechanics.IMBUED_TEPHRA, 1);
             int hit = tephraHit(attacker);
+            credit(boss, attacker, Math.min(hit, armour));
             armour = Math.max(0, armour - hit);
             Msg.action(attacker, "Your imbued tephra hits her armour for " + hit + " (" + armour + "/" + BossMechanics.ZALCANO_ARMOUR + ").");
             if (armour <= 0) {
@@ -1416,6 +1444,56 @@ final class ClassicScripts {
             golems.forEach(g -> g.mob.discard());
             golems.clear();
             symbols.clear();
+        }
+
+        // ---- self-test (ZalcanoWalk) ----
+
+        /** The glowing rock formation, the furnace and the altar (where to stand). */
+        Vec3 selfTestGlowingRock(DataBossEntity boss) {
+            return spot(boss, CORNERS[glowing]);
+        }
+
+        Vec3 selfTestFurnace(DataBossEntity boss) {
+            return spot(boss, FURNACE);
+        }
+
+        Vec3 selfTestAltar(DataBossEntity boss) {
+            return spot(boss, ALTAR);
+        }
+
+        int selfTestArmour() {
+            return armour;
+        }
+
+        boolean selfTestDown() {
+            return down();
+        }
+
+        /** The golems walking to her (alive). */
+        List<Mob> selfTestGolems() {
+            List<Mob> out = new ArrayList<>();
+            for (Golem g : golems) {
+                if (g.mob.isAlive()) {
+                    out.add(g.mob);
+                }
+            }
+            return out;
+        }
+
+        Mob selfTestSpawnGolem(DataBossEntity boss) {
+            Golem g = spawnGolem(boss);
+            return g == null ? null : g.mob;
+        }
+
+        UUID selfTestMvp() {
+            return mvp;
+        }
+
+        /** Makes her rise now (as her fall timer running out would). */
+        void selfTestRise(DataBossEntity boss) {
+            if (down()) {
+                downUntil = now;
+            }
         }
 
         @Override

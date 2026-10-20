@@ -47,6 +47,8 @@ final class BossWalkChecks {
         WALKS.put("branda_the_fire_queen", BossWalks::royalTitans);
         WALKS.put("duke_sucellus", BossWalks::duke);
         WALKS.put("vardorvis", BossWalks::vardorvis);
+        // Round 38: a whole Zalcano kill (tephra chain, golems, falls and mining).
+        WALKS.put("zalcano", com.runecraft.content.bosses.ZalcanoWalk::walk);
         // The awakened Desert Treasure II fights walk the same way (their own numbers and rules apply).
         WALKS.put("the_whisperer" + AWAKENED, BossWalks::whisperer);
         WALKS.put("the_leviathan" + AWAKENED, BossWalks::leviathan);

@@ -907,12 +907,30 @@ public final class BossMechanics {
 
     /**
      * Imbued tephra's max hit on her armour (Mod Ash): 5 + floor((Smithing + Runecraft) / 14), 50% more standing on a blue
-     * demonic symbol. approx: the chance of +1 as the average nears the next multiple of 7 isn't modelled.
+     * demonic symbol.
      */
     public static int tephraMaxHit(int smithing, int runecraft, boolean blueSymbol) {
         int base = 5 + (Math.max(1, smithing) + Math.max(1, runecraft)) / 14;
         return blueSymbol ? base * 3 / 2 : base;
     }
+
+    /**
+     * The chance of an extra +1 on the tephra max hit, growing as the Smithing/Runecraft average approaches the next
+     * multiple of 7 (Mod Ash; approx: linear in the remainder).
+     */
+    public static double tephraBonusChance(int smithing, int runecraft) {
+        int sum = Math.max(1, smithing) + Math.max(1, runecraft);
+        return (sum % 14) / 14.0;
+    }
+
+    /** The max hit of one throw, the +1 rolled with {@code roll} in [0, 1). */
+    public static int tephraMaxHit(int smithing, int runecraft, boolean blueSymbol, double roll) {
+        int base = 5 + (Math.max(1, smithing) + Math.max(1, runecraft)) / 14 + (roll < tephraBonusChance(smithing, runecraft) ? 1 : 0);
+        return blueSymbol ? base * 3 / 2 : base;
+    }
+
+    /** Combat Achievement flag: the player who has dealt Zalcano the most damage (armour and hitpoints; "The Spurned Hero"). */
+    public static final String FLAG_ZALCANO_MVP = "zalcano_mvp";
 
     /** Mining the fallen Zalcano: 30 (1-74 Mining), 31, 32, 33 (95+), plus max((pickaxe level - 40) / 15, 0). */
     public static int zalcanoMiningMaxHit(int mining, int pickaxeLevel) {

@@ -30,12 +30,13 @@ class SkillingMinigameRewardsTest {
         assertEquals(2, WintertodtRewards.rolls(999));
         assertEquals(3, WintertodtRewards.rolls(1000));
         assertEquals(28, WintertodtRewards.rolls(13_500));
-        assertEquals(28, WintertodtRewards.rolls(40_000));
+        // No cap since the reward cart (the old supply crate stopped at 28).
+        assertEquals(81, WintertodtRewards.rolls(40_000));
         // 750 points: 2 rolls and a 50% chance of a third (1% per 5 points past a milestone).
         assertEquals(3, WintertodtRewards.rolls(750, 0.49));
         assertEquals(2, WintertodtRewards.rolls(750, 0.51));
         assertEquals(3, WintertodtRewards.rolls(1000, 0.99));
-        assertEquals(28, WintertodtRewards.rolls(13_750, 0.0));
+        assertEquals(29, WintertodtRewards.rolls(13_750, 0.0));
         assertEquals(3.0, WintertodtRewards.expectedRolls(1000), 1e-9);
         assertEquals(0.0, WintertodtRewards.expectedRolls(400), 1e-9);
     }
@@ -137,7 +138,7 @@ class SkillingMinigameRewardsTest {
     @Test
     void temporossRewardPool() {
         assertEquals(0.25, TemporossRewards.uniqueChance("spirit_flakes"), 1e-9);
-        assertEquals(1 / 20.0, TemporossRewards.uniqueChance("casket"), 1e-9);
+        assertEquals(1 / 20.0, TemporossRewards.uniqueChance(TemporossRewards.CASKET), 1e-9);
         assertEquals(1 / 400.0, TemporossRewards.uniqueChance("fish_barrel"), 1e-9);
         assertEquals(1 / 400.0, TemporossRewards.uniqueChance("tackle_box"), 1e-9);
         assertEquals(1 / 1600.0, TemporossRewards.uniqueChance("big_harpoonfish"), 1e-9);
@@ -146,10 +147,17 @@ class SkillingMinigameRewardsTest {
         assertEquals(1 / 8000.0, TemporossRewards.uniqueChance("dragon_harpoon"), 1e-9);
         assertEquals(149 / 8000.0, TemporossRewards.uniqueChance("soaked_page"), 1e-9);
         assertTrue(TemporossRewards.fishFor(34).isEmpty());
-        assertEquals(1, TemporossRewards.fishFor(35).size());
-        assertEquals(7, TemporossRewards.fishFor(81).size());
-        for (TemporossRewards.Fish f : TemporossRewards.FISH) {
-            assertTrue(ItemCatalog.exists(f.item()), f.item());
+        assertEquals(5, TemporossRewards.fishFor(35).size());
+        assertEquals("raw_herring", TemporossRewards.fishFor(39).get(0).item());
+        assertEquals("raw_pike", TemporossRewards.fishFor(46).get(0).item());
+        assertEquals("raw_manta_ray", TemporossRewards.fishFor(81).get(4).item());
+        for (TemporossRewards.FishBracket b : TemporossRewards.FISH_BRACKETS) {
+            int weight = 0;
+            for (TemporossRewards.Fish f : b.fish()) {
+                assertTrue(ItemCatalog.exists(f.item()), f.item());
+                weight += f.weight();
+            }
+            assertEquals(TemporossRewards.FISH_WEIGHT, weight, "bracket " + b.level());
         }
         Random r = new Random(11);
         int barrels = 0;
@@ -289,10 +297,10 @@ class SkillingMinigameRewardsTest {
         }
         assertTrue(ItemCatalog.exists(GuardiansRift.UNCHARGED_CELL));
         GuardiansRift rift = new GuardiansRift();
-        // Any cell on an inactive tile raises a weak barrier for 2 energy of each type.
+        // Any cell on an inactive tile raises a weak barrier, for 17/20/24/30 energy of each type by the cell (wiki).
         GuardiansRift.Use u = rift.useCell(0, GuardiansRift.Cell.STRONG, 0, 0);
-        assertEquals(2, u.elemental());
-        assertEquals(2, u.catalytic());
+        assertEquals(24, u.elemental());
+        assertEquals(24, u.catalytic());
         assertEquals(180.0, u.xp(), 1e-9);
         assertEquals(50, rift.hp(0));
         // A higher-tier cell strengthens one tier at a time.
@@ -415,7 +423,7 @@ class SkillingMinigameRewardsTest {
         assertNotNull(pete);
         Map<String, Integer> prices = new HashMap<>();
         for (RewardShop.Entry e : pete.entries()) {
-            assertTrue(ItemCatalog.exists(e.item()), e.item());
+            assertTrue(e.reward() == RewardShop.Reward.UNLOCK || ItemCatalog.exists(e.item()), e.item());
             prices.put(e.item(), e.costs().get(0).amount());
             assertEquals(MinigameCurrencies.VOLCANIC_MINE, e.costs().get(0).currency());
         }

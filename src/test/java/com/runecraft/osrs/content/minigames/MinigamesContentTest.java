@@ -223,7 +223,7 @@ class MinigamesContentTest {
     void skillingMinigameFormulas() {
         assertEquals(0, MinigameRules.Wintertodt.rolls(499));
         assertEquals(2, MinigameRules.Wintertodt.rolls(500));
-        assertEquals(28, MinigameRules.Wintertodt.rolls(50000));
+        assertEquals(101, MinigameRules.Wintertodt.rolls(50000)); // no cap since the reward cart (the crate had 28)
         assertEquals(9900.0, MinigameRules.Wintertodt.completionXp(99));
         assertTrue(MinigameRules.Wintertodt.standardDamage(99, 0, 0) > MinigameRules.Wintertodt.standardDamage(99, 4, 4));
         // Warmth lost to a standard attack (since October 2024): floor((16 - W - min(2B, 6)) * 100 / FM).

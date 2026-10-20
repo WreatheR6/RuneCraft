@@ -7,7 +7,8 @@ import java.util.function.DoubleSupplier;
  * Ore Shop).
  *
  * <p>Wiki values: 50 Mining; Petrified Pete takes 30 numulite per entry (or 3,000 once for permanent
- * access); the volcano erupts ten minutes after the game starts. The boulder has five sizes (giant
+ * access); after 30 seconds to prepare the volcano rumbles and erupts ten minutes later, killing anyone still inside.
+ * Only miners who leave through the exit alive are paid their points and 3.8 Mining XP a point. The boulder has five sizes (giant
  * attached, giant, large, medium, small) with about 40 hitpoints per player each (60 for the small one);
  * each successful hit takes one. A hit gives an ore fragment with chance 1/20, 1/12, 1/8, 1/5 and 1/3 by
  * size, otherwise "part of the boulder" (1 point, 5 XP). The fragment is rolled on the standard 1-99 curve
@@ -54,8 +55,39 @@ public final class VolcanicMine {
     /** Points for blocking or unblocking a chamber, and the per-game limit. */
     public static final int CAP_POINTS = 50;
     public static final int CAP_LIMIT = 300;
-    /** Calcite and pyrophosphite: 1/20 each per successful hit, 1-4 at a time. */
+    /**
+     * Calcite and pyrophosphite (OSRS Wiki "Boulder (Volcanic Mine)", Mod Maz): on receiving an ore fragment there is a 1/10
+     * chance of one of the two (1/20 each), 1-4 of it; when that roll fails the fossil table is accessed (not modelled).
+     */
     public static final int BYPRODUCT_CHANCE = 20;
+    public static final String[] BYPRODUCTS = {"calcite", "pyrophosphite"};
+
+    /** The mineral (and amount) that comes with an ore fragment, or null: 1/10, calcite or pyrophosphite, 1-4. */
+    public static MinigameReward byproduct(DoubleSupplier random) {
+        double roll = random.getAsDouble();
+        if (roll >= 2.0 / BYPRODUCT_CHANCE) {
+            return null;
+        }
+        String item = roll < 1.0 / BYPRODUCT_CHANCE ? BYPRODUCTS[0] : BYPRODUCTS[1];
+        return new MinigameReward(item, 1 + (int) (random.getAsDouble() * 4));
+    }
+
+    /** The 30 seconds after entering before the volcano rumbles and the ten minutes start. */
+    public static final int PREP_TICKS = 50;
+    /** Mining XP Petrified Pete grants per point when a miner leaves through the exit (3.8; wiki). */
+    public static final double END_XP_PER_POINT = 3.8;
+    /** Most points a player can hold (2^21 - 1 since the cap was raised from 65,535). */
+    public static final int MAX_POINTS = (1 << 21) - 1;
+
+    /** The end-of-game Mining XP for a game's points. */
+    public static double endXp(int points) {
+        return Math.max(0, points) * END_XP_PER_POINT;
+    }
+
+    /** Points for one attack on a lava beast: one per 10 damage it dealt (wiki), the final blow adds 3 more. */
+    public static int lavaBeastHitPoints(int damage) {
+        return Math.max(0, damage) / LAVA_BEAST_DAMAGE_PER_POINT;
+    }
     public static final int PET_BASE = 60_000;
     public static final String[] VENTS = {"A", "B", "C"};
     public static final int START_STABILITY = 50;
@@ -77,6 +109,8 @@ public final class VolcanicMine {
     public static final int VESSEL_USES = 36;
     public static final int LARGE_VESSEL_USES = 72;
     public static final int LARGE_VESSEL_POINTS = 10_000;
+    /** The minigame flag Petrified Pete's "Large water container" unlock sets. */
+    public static final String LARGE_VESSEL_FLAG = "volcanic_mine_large_vessel";
     public static final int PLATFORM_TICKS = 150;
     /** Blocks ahead a throw of water can reach (approx). */
     public static final int THROW_RANGE = 3;
@@ -111,7 +145,7 @@ public final class VolcanicMine {
         return Math.max(0, Math.min(1, (70 - stability) / 120.0));
     }
 
-    /** Points for killing a lava beast: one per 10 damage dealt (the whole beast here) plus the final blow. */
+    /** Points for killing a whole lava beast alone: one per 10 damage dealt plus the final blow's 3. */
     public static int lavaBeastPoints() {
         return LAVA_BEAST_HP / LAVA_BEAST_DAMAGE_PER_POINT + LAVA_BEAST_KILL_POINTS;
     }

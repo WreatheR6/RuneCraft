@@ -460,7 +460,7 @@ public final class MinigameManager {
         }
     }
 
-    static void onBlock(ServerPlayer player, String blockId, BlockPos pos) {
+    public static void onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         MinigameSession s = session(player);
         if (s == null && com.runecraft.content.BlockHooks.useFallback(player, blockId, pos, player.level().getBlockState(pos))) {
             return;
