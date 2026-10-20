@@ -493,17 +493,36 @@ public final class MinigameRules {
 
     // ---------------------------------------------------------------- Warriors' Guild
     public static final class WarriorsGuild {
-        /** Animated armour: tier, combat level, hitpoints, max hit, tokens awarded. */
+        /** Animated armour: tier, combat level, hitpoints, max hit, tokens awarded (OSRS Wiki "Animated ... Armour" infoboxes). */
         public static final Object[][] ARMOUR = {
                 {"bronze", 11, 10, 2, 5}, {"iron", 23, 20, 3, 10}, {"steel", 46, 40, 5, 15}, {"black", 69, 60, 7, 20},
-                {"mithril", 92, 80, 9, 25}, {"adamant", 113, 99, 11, 30}, {"rune", 138, 118, 14, 40}};
+                {"mithril", 92, 80, 10, 25}, {"adamant", 113, 99, 12, 30}, {"rune", 138, 120, 14, 40}};
+        /** Animated armour that isn't defeated within five minutes goes back to its animator (and Shanomi keeps the armour). */
+        public static final int ANIMATED_TICKS = 500;
         /** Tokens taken on entering the cyclops room and then every minute (100 game ticks). */
         public static final int CYCLOPS_TOKENS = 10;
-        /** Kamfreena only lets players with at least 100 tokens into the cyclops room. */
+        /** Kamfreena (and Lorelai in the basement) only let players with at least 100 tokens in. */
         public static final int CYCLOPS_ENTRY_TOKENS = 100;
         public static final int CYCLOPS_TICKS_PER_CHARGE = 100;
+        /** A player who runs out of tokens has a minute left before being sent out (OSRS Wiki "Warriors' Guild"). */
+        public static final int CYCLOPS_GRACE_TICKS = 100;
+        /** Top floor: every defender up to rune at 2/100 (OSRS Wiki "Cyclops" drop table); basement: the dragon defender at 1/100. */
         public static final int DEFENDER_CHANCE = 50;
         public static final int DRAGON_DEFENDER_CHANCE = 100;
+        /** The top floor's level 76 cyclops (the level 56 one is "warriors_guild_cyclops", the basement's "cyclops_elite"). */
+        public static final String CYCLOPS_76 = "warriors_guild_cyclops_76";
+        /** Session variants (entrance blocks) of the guild's activities. */
+        public static final String CYCLOPS_ENTRANCE = "warriors_guild_cyclops_entrance";
+        public static final String BASEMENT_ENTRANCE = "warriors_guild_basement_entrance";
+        public static final String DUMMY_ENTRANCE = "warriors_guild_dummy_entrance";
+        public static final String CATAPULT_ENTRANCE = "warriors_guild_catapult_entrance";
+        public static final String SHOT_PUT_ENTRANCE = "warriors_guild_shotput_entrance";
+        public static final String KEG_ENTRANCE = "warriors_guild_keg_entrance";
+        /** Flag set once a rune defender has been shown to Lorelai: the basement then stays open (OSRS Wiki). */
+        public static final String BASEMENT_FLAG = "wg_basement_unlocked";
+        /** Defender tier indices (into {@link MinigameItems#DEFENDER_TIERS}). */
+        public static final int RUNE = 6;
+        public static final int DRAGON = 7;
 
         private WarriorsGuild() {
         }
@@ -516,6 +535,145 @@ public final class MinigameRules {
         /** Index (0=bronze..7=dragon) of the defender a player can get next, given the best one they own (-1 none). */
         public static int nextDefender(int bestOwned) {
             return Math.min(MinigameItems.DEFENDER_TIERS.length - 1, bestOwned + 1);
+        }
+
+        /**
+         * The tier a defender item counts as when shown to Kamfreena (0 bronze .. 7 dragon), or -1: the trimmed rune and dragon
+         * defenders and the avernic defenders made from a dragon defender count as what they were made from.
+         */
+        public static int defenderTier(String item) {
+            if (item == null) {
+                return -1;
+            }
+            switch (item) {
+                case "rune_defender_t" -> {
+                    return RUNE;
+                }
+                case "dragon_defender_t", "avernic_defender", "ghommals_avernic_defender_5", "ghommals_avernic_defender_6" -> {
+                    return DRAGON;
+                }
+                default -> {
+                    for (int i = 0; i < MinigameItems.DEFENDER_TIERS.length; i++) {
+                        if (item.equals(MinigameItems.DEFENDER_TIERS[i] + "_defender")) {
+                            return i;
+                        }
+                    }
+                    return -1;
+                }
+            }
+        }
+
+        /**
+         * The defender the cyclopes drop for a player who showed {@code best} on entering (OSRS Wiki "Warriors' Guild"): on the
+         * top floor the next one up to rune (rune again once shown), in the basement the dragon defender (players who never showed
+         * a rune defender can't enter). The drop is fixed when entering: a new defender has to be shown by leaving and
+         * re-entering.
+         */
+        public static int targetDefender(int best, boolean basement) {
+            return basement ? DRAGON : Math.min(RUNE, best + 1);
+        }
+
+        /** 1 in N chance of a cyclops dropping the target defender. */
+        public static int defenderChance(int target) {
+            return target == DRAGON ? DRAGON_DEFENDER_CHANCE : DEFENDER_CHANCE;
+        }
+
+        /**
+         * Chance in tenths that a defeated animated armour gives a piece back (OSRS Wiki drop tables): bronze 9/10 for each piece,
+         * iron's legs and steel's helm 9/10, everything else always.
+         */
+        public static int returnTenths(String tier, String piece) {
+            return switch (tier) {
+                case "bronze" -> 9;
+                case "iron" -> piece.equals("platelegs") ? 9 : 10;
+                case "steel" -> piece.equals("full_helm") ? 9 : 10;
+                default -> 10;
+            };
+        }
+
+        // ---- The dummy room (Ajjat): seven dummies, each hit with the right style gives 15 Attack XP and 2 tokens.
+        /** The seven dummies: the four melee combat styles and the three melee attack types (OSRS Wiki "Warriors' Guild"). */
+        public static final List<String> DUMMIES = List.of("accurate", "aggressive", "controlled", "defensive", "stab", "slash", "crush");
+        public static final int DUMMY_XP = 15;
+        public static final int DUMMY_TOKENS = 2;
+        /** A wrong style stuns the player for 3 ticks (OSRS Wiki "Dummy (Warriors' Guild)"). */
+        public static final int DUMMY_STUN_TICKS = 3;
+        /** A dummy rises every 8 ticks and stays up for 6. // approx: the wiki gives no timing */
+        public static final int DUMMY_INTERVAL = 8;
+        public static final int DUMMY_UP_TICKS = 6;
+
+        /** Whether hitting {@code dummy} with this combat style name and melee attack type is right. */
+        public static boolean dummyHit(String dummy, String combatStyle, String attackType) {
+            return switch (dummy) {
+                case "stab", "slash", "crush" -> dummy.equalsIgnoreCase(attackType);
+                default -> dummy.equalsIgnoreCase(combatStyle);
+            };
+        }
+
+        // ---- The catapult room (Gamfred): block the right attack type with the defensive shield.
+        /** The catapult's four ammunition types, blocked with the matching defensive option (OSRS Wiki "Defensive shield"). */
+        public static final List<String> CATAPULT_AMMO = List.of("stab", "blunt", "slash", "magic");
+        /** It fires every 8 ticks; each successful block gives 10 Defence XP and 1 token (OSRS Wiki). */
+        public static final int CATAPULT_INTERVAL = 8;
+        public static final int CATAPULT_XP = 10;
+        public static final int CATAPULT_TOKENS = 1;
+        /** Damage of a shot that isn't blocked. // approx */
+        public static final int CATAPULT_DAMAGE = 3;
+
+        // ---- The shot put room: 50 Strength to pass the heavy door.
+        public static final int SHOT_PUT_STRENGTH = 50;
+        /** Throwing styles and their factor S: standing 20, step and throw 10, spin and throw 0 (OSRS Wiki "18lb shot"). */
+        public static final List<String> SHOT_STYLES = List.of("standing", "step", "spin");
+        /** The longest shot (99 Strength, full run energy, standing throw, dusted hands, 18lb): 14 yards. */
+        public static final int SHOT_MAX_YARDS = 14;
+        /** One in 50 throws fails (dropped on the toe for 1 damage, or off the lane). // approx: the wiki says "rarely" */
+        public static final int SHOT_FAIL_CHANCE = 50;
+
+        public static int shotStyleFactor(String style) {
+            return switch (style) {
+                case "standing" -> 20;
+                case "step" -> 10;
+                default -> 0;
+            };
+        }
+
+        /** The wiki's shot variable X = L + R + S + D - W (base Strength, run energy %, style, dusted hands 5, weight in lb). */
+        public static int shotX(int strength, int energyPercent, String style, boolean dusted, int weight) {
+            return strength + energyPercent + shotStyleFactor(style) + (dusted ? 5 : 0) - weight;
+        }
+
+        /**
+         * Yards a shot travels: proportional to X, 14 at the wiki's best throw (X = 206), at least 1. // approx: the wiki's
+         * calculator formula isn't in the sources
+         */
+        public static int shotYards(int x) {
+            return Math.max(1, Math.min(SHOT_MAX_YARDS, Math.round(x * SHOT_MAX_YARDS / 206f)));
+        }
+
+        /** Strength XP of a shot: yards * (X + 10) * 0.05, which gives the wiki's 151.2 for its 14-yard example. // approx */
+        public static double shotXp(int yards, int x) {
+            return yards * (x + 10) * 0.05;
+        }
+
+        /** Tokens for a shot: the distance plus one (18lb) or plus three (22lb) (OSRS Wiki "18lb shot", "22lb shot"). */
+        public static int shotTokens(int yards, int weight) {
+            return yards + (weight >= 22 ? 3 : 1);
+        }
+
+        // ---- Jimmy's challenge: balance up to five kegs on your head.
+        public static final int MAX_KEGS = 5;
+        /** Picking up a keg costs run energy (hundredths of a percent). // approx */
+        public static final int KEG_ENERGY = 1000;
+        /** Every 8 ticks of balancing gives Strength XP and tokens per keg. // approx: the wiki gives no rates */
+        public static final int KEG_INTERVAL = 8;
+        public static final double KEG_XP = 2.0;
+        public static final int KEG_TOKENS = 1;
+        /** Falling kegs deal up to 4 damage (OSRS Wiki "Keg (Warriors' Guild)"). */
+        public static final int KEG_MAX_DAMAGE = 4;
+
+        /** Chance per keg tick that the kegs fall: higher as run energy drops (0 at full energy). // approx */
+        public static double kegFallChance(int energyPercent, int kegs) {
+            return Math.max(0, 100 - energyPercent) / 100.0 * (0.05 + 0.02 * kegs);
         }
 
         public static int tokens(String tier) {
@@ -1010,23 +1168,23 @@ public final class MinigameRules {
         /** At most four bosses at once for a solo rumble. */
         public static final int MAX_BOSSES = 4;
         /**
-         * The rumble's quest bosses: creature id, points per kill in a normal and in a hard rumble with every boss
-         * enabled, and hitpoints in a hard rumble (OSRS Wiki boss table; hard bosses keep their Defence).
+         * The dream bosses: creature id (the boss's first form), points per kill in a normal and in a hard dream with every boss
+         * enabled, and hitpoints of that form in a hard dream (OSRS Wiki boss table, {@link NmzBosses}; hard bosses keep their
+         * Defence).
          */
-        public static final Object[][] BOSSES = {
-                {"nmz_count_draynor", 224, 7135, 210}, {"nmz_king_roald", 448, 8056, 150}, {"nmz_the_kendal", 998, 10127, 150},
-                {"nmz_me", 1263, 9207, 135}, {"nmz_elvarg", 1385, 10357, 240}, {"nmz_tree_spirit", 2078, 8976, 187},
-                {"nmz_dad", 2078, 9207, 240}, {"nmz_khazard_warlord", 2547, 8286, 256}, {"nmz_arrg", 2588, 10127, 255},
-                {"nmz_black_knight_titan", 2934, 10127, 255}, {"nmz_bouncer", 3811, 13580, 232}, {"nmz_glod", 3872, 17493, 255}};
+        public static final Object[][] BOSSES = NmzBosses.ALL.stream()
+                .map(b -> new Object[]{b.id(), b.points(), b.hardPoints(), b.first().hardHitpoints()}).toArray(Object[][]::new);
 
-        /** The quest that unlocks each rumble boss (OSRS Wiki boss table). */
-        public static final java.util.Map<String, String> BOSS_QUEST = java.util.Map.ofEntries(
-                java.util.Map.entry("nmz_count_draynor", "VAMPYRE_SLAYER"), java.util.Map.entry("nmz_king_roald", "what_lies_below"),
-                java.util.Map.entry("nmz_the_kendal", "mountain_daughter"), java.util.Map.entry("nmz_me", "lunar_diplomacy"),
-                java.util.Map.entry("nmz_elvarg", "dragon_slayer_i"), java.util.Map.entry("nmz_tree_spirit", "lost_city"),
-                java.util.Map.entry("nmz_dad", "troll_stronghold"), java.util.Map.entry("nmz_khazard_warlord", "tree_gnome_village"),
-                java.util.Map.entry("nmz_arrg", "troll_romance"), java.util.Map.entry("nmz_black_knight_titan", "holy_grail"),
-                java.util.Map.entry("nmz_bouncer", "fight_arena"), java.util.Map.entry("nmz_glod", "grim_tales"));
+        /** The quest that unlocks each dream boss (OSRS Wiki boss table). */
+        public static final java.util.Map<String, String> BOSS_QUEST;
+
+        static {
+            java.util.Map<String, String> quests = new java.util.LinkedHashMap<>();
+            for (NmzBosses.Boss b : NmzBosses.ALL) {
+                quests.put(b.id(), b.quest());
+            }
+            BOSS_QUEST = java.util.Collections.unmodifiableMap(quests);
+        }
 
         /** Dream modes and their fee in coins, normal / hard (OSRS Wiki "Nightmare Zone", cost per dream). */
         public enum Mode {
@@ -1088,8 +1246,23 @@ public final class MinigameRules {
             }
         }
 
+        /** Whether a creature is a dream boss (any of a boss's forms). */
         public static boolean isBoss(String id) {
-            return BOSS_QUEST.containsKey(id);
+            return NmzBosses.ofForm(id) != null;
+        }
+
+        /**
+         * Whether killing this creature defeats its boss: the last form of Witch's experiment, Nazastarool and Damis, or a
+         * one-form boss. Earlier forms turn into the next one instead (OSRS Wiki "Four forms must be defeated").
+         */
+        public static boolean finalForm(String id) {
+            return isBoss(id) && NmzBosses.nextForm(id) == null;
+        }
+
+        /** The boss a creature (any form) belongs to, or {@code id} itself. */
+        public static String bossOf(String id) {
+            NmzBosses.Boss b = NmzBosses.ofForm(id);
+            return b == null ? id : b.id();
         }
 
         /**
@@ -1098,9 +1271,9 @@ public final class MinigameRules {
          */
         public static List<String> unlocked(java.util.function.Predicate<String> questComplete) {
             List<String> out = new java.util.ArrayList<>();
-            for (Object[] b : BOSSES) {
-                if (questComplete.test(BOSS_QUEST.get((String) b[0]))) {
-                    out.add((String) b[0]);
+            for (NmzBosses.Boss b : NmzBosses.ALL) {
+                if (questComplete.test(b.quest())) {
+                    out.add(b.id());
                 }
             }
             return out;
@@ -1112,9 +1285,46 @@ public final class MinigameRules {
         }
 
         /**
-         * Points for a kill when only {@code included} of the rumble's bosses are in the dream: the wiki's values are the
-         * maximum, with every boss enabled, and "point values increase based on the number of bosses included".
-         * Linear in the share of bosses included. // approx: the exact scaling isn't documented
+         * The bosses of the same quest as {@code boss}: a customisable rumble switches them on and off together (OSRS Wiki
+         * "Nightmare Zone/Strategies": "Disabling a boss also disables every boss from that quest").
+         */
+        public static List<String> questGroup(String boss) {
+            String quest = BOSS_QUEST.get(bossOf(boss));
+            List<String> out = new java.util.ArrayList<>();
+            for (NmzBosses.Boss b : NmzBosses.ALL) {
+                if (b.quest().equals(quest)) {
+                    out.add(b.id());
+                }
+            }
+            return out;
+        }
+
+        /** The quest whose bosses trigger the points penalty when on without {@link #PENALTY_UNLESS}'s. */
+        public static final String PENALTY_QUEST = "dream_mentor";
+        public static final String PENALTY_UNLESS = "desert_treasure_i";
+        /** "A large 83.33% point penalty": points divided by 6 (Mod Ash, Docter_Bogs; OSRS Wiki). */
+        public static final int PENALTY_DIVISOR = 6;
+
+        /**
+         * Whether a dream's bosses carry the point penalty: the Dream Mentor bosses enabled while every Desert Treasure I boss
+         * is off (OSRS Wiki "Rumble"; Recipe for Disaster has no effect).
+         */
+        public static boolean penalised(java.util.Collection<String> pool) {
+            boolean dreamMentor = false;
+            boolean desertTreasure = false;
+            for (String id : pool) {
+                String q = BOSS_QUEST.get(bossOf(id));
+                dreamMentor |= PENALTY_QUEST.equals(q);
+                desertTreasure |= PENALTY_UNLESS.equals(q);
+            }
+            return dreamMentor && !desertTreasure;
+        }
+
+        /**
+         * Points for a kill when only {@code included} of the dream's bosses are in it: the wiki's values are the maximum,
+         * with every boss enabled, and "point values increase based on the number of bosses included". Linear in the share of
+         * the fifty bosses included. // approx: the exact per-boss multipliers aren't documented (Docter_Bogs found each boss
+         * has a multiplier and the dream sums those of the enabled bosses; equal multipliers give this formula)
          */
         public static int points(String boss, boolean hard, int included) {
             int max = points(boss, hard);
@@ -1122,27 +1332,27 @@ public final class MinigameRules {
             return (int) ((long) max * Math.max(0, Math.min(included, all)) / all);
         }
 
+        /** {@link #points(String, boolean, int)} for a dream holding {@code pool}, with the Dream Mentor penalty. */
+        public static int points(String boss, boolean hard, java.util.Collection<String> pool) {
+            java.util.Set<String> bosses = new java.util.HashSet<>();
+            for (String id : pool) {
+                bosses.add(bossOf(id));
+            }
+            int pts = points(boss, hard, bosses.size());
+            return penalised(bosses) ? pts / PENALTY_DIVISOR : pts;
+        }
+
         /**
-         * Hard-mode offence per boss (OSRS Wiki infoboxes, normal / hard): attack level, max hit of the melee (or main)
-         * attack, and ranged and magic levels. Defence and defensive bonuses stay the same in hard mode.
+         * Hard-mode offence per form (OSRS Wiki infoboxes, normal / hard): attack level, max hit of the main attack, and
+         * ranged and magic levels. Defence and defensive bonuses stay the same in hard mode.
          */
         public record HardStats(String boss, int attack, int hardAttack, int maxHit, int hardMaxHit, int ranged, int hardRanged,
                                 int magic, int hardMagic) {
         }
 
-        public static final List<HardStats> HARD_STATS = List.of(
-                new HardStats("nmz_count_draynor", 30, 198, 3, 17, 1, 1, 1, 1),
-                new HardStats("nmz_king_roald", 35, 140, 3, 9, 1, 1, 1, 1),
-                new HardStats("nmz_the_kendal", 65, 195, 9, 24, 1, 1, 1, 1),
-                new HardStats("nmz_me", 75, 225, 9, 24, 1, 1, 1, 1),
-                new HardStats("nmz_elvarg", 70, 210, 8, 22, 1, 1, 70, 210),
-                new HardStats("nmz_tree_spirit", 90, 200, 10, 22, 1, 1, 1, 1),
-                new HardStats("nmz_dad", 60, 132, 27, 57, 1, 1, 1, 1),
-                new HardStats("nmz_khazard_warlord", 75, 165, 10, 18, 1, 1, 1, 1),
-                new HardStats("nmz_arrg", 70, 140, 38, 74, 70, 140, 1, 1),
-                new HardStats("nmz_black_knight_titan", 91, 182, 15, 28, 1, 1, 1, 1),
-                new HardStats("nmz_bouncer", 120, 240, 13, 25, 1, 1, 1, 1),
-                new HardStats("nmz_glod", 115, 230, 13, 25, 1, 1, 1, 1));
+        public static final List<HardStats> HARD_STATS = NmzBosses.forms().stream()
+                .map(f -> new HardStats(f.id(), f.attack(), f.hardAttack(), f.maxHit(), f.hardMaxHit(), f.ranged(), f.hardRanged(),
+                        f.magic(), f.hardMagic())).toList();
 
         public static HardStats hardStats(String boss) {
             for (HardStats h : HARD_STATS) {
@@ -1164,13 +1374,54 @@ public final class MinigameRules {
             }
             int from = melee ? h.attack() : ranged ? h.ranged() : h.magic();
             int to = melee ? h.hardAttack() : ranged ? h.hardRanged() : h.hardMagic();
-            return (to + 9) / (double) (from + 9);
+            return (to + 9) / (double) (Math.max(0, from) + 9);
         }
 
-        /** Extra max hit of a hard boss's melee attack (its ranged and dragonfire max hits don't change). */
+        /**
+         * Extra max hit of a hard boss's main attack (the one its infobox max hit is for: Elvarg's slash, Arrg's melee; its other
+         * attacks and dragonfire keep their max hits): {@code melee} says whether the attack is a melee one.
+         */
+        public static int hardMaxHitBonus(String boss, boolean melee, boolean ranged) {
+            NmzBosses.Form f = NmzBosses.form(boss);
+            if (f == null) {
+                return 0;
+            }
+            boolean main = f.meleeMain() ? melee : f.hitStyle().equals("Ranged") ? ranged : !melee && !ranged;
+            return main ? Math.max(0, f.hardMaxHit() - f.maxHit()) : 0;
+        }
+
+        /** Extra max hit of a hard boss's main attack. */
         public static int hardMaxHitBonus(String boss) {
             HardStats h = hardStats(boss);
             return h == null ? 0 : Math.max(0, h.hardMaxHit() - h.maxHit());
+        }
+
+        /**
+         * Slayer task category and Slayer XP (normal / hard dream) of the bosses that count for a task (OSRS Wiki "Nightmare
+         * Zone", Slayer training: every other boss gives no task credit; practice dreams never do).
+         */
+        public record SlayerCredit(String category, double xp, double hardXp) {
+        }
+
+        public static final java.util.Map<String, SlayerCredit> SLAYER = java.util.Map.ofEntries(
+                java.util.Map.entry("nmz_evil_chicken", new SlayerCredit("birds", 120, 240)),
+                java.util.Map.entry("nmz_giant_roc", new SlayerCredit("birds", 250, 255)),
+                java.util.Map.entry("nmz_black_demon", new SlayerCredit("black_demons", 157, 255)),
+                java.util.Map.entry("nmz_dagannoth_mother", new SlayerCredit("dagannoth", 126, 252)),
+                java.util.Map.entry("nmz_elvarg", new SlayerCredit("green_dragons", 80, 246)),
+                java.util.Map.entry("nmz_kamil", new SlayerCredit("ice_warriors", 146, 312)),
+                java.util.Map.entry("nmz_corrupt_lizardman", new SlayerCredit("lizardmen", 50, 150)),
+                java.util.Map.entry("nmz_giant_scarab", new SlayerCredit("scabarites", 137, 280.5)),
+                java.util.Map.entry("nmz_dad", new SlayerCredit("trolls", 126, 264)),
+                java.util.Map.entry("nmz_arrg", new SlayerCredit("trolls", 150.5, 299.6)),
+                java.util.Map.entry("nmz_ice_troll_king", new SlayerCredit("trolls", 161, 287)),
+                java.util.Map.entry("nmz_count_draynor", new SlayerCredit("vampyres", 35, 210)),
+                java.util.Map.entry("nmz_dessous", new SlayerCredit("vampyres", 220, 299.6)));
+
+        /** Slayer XP of a dream boss kill on task, or -1 when it isn't one of {@link #SLAYER}. */
+        public static double slayerXp(String boss, boolean hard) {
+            SlayerCredit c = SLAYER.get(boss);
+            return c == null ? -1 : hard ? c.hardXp() : c.xp();
         }
 
         /** Each potion barrel holds up to 255 doses of its potion (OSRS Wiki). */
@@ -1203,21 +1454,40 @@ public final class MinigameRules {
         public static final int ABSORPTION_PER_DOSE = 50;
         public static final int ABSORPTION_MAX = 1000;
 
-        /** A power-up stays in the arena for one minute. */
+        /** A power-up stays in the arena for one minute; another can't appear while one waits (OSRS Wiki). */
         public static final int POWER_UP_LIFETIME = 100;
-        /** Game ticks between power-ups appearing in a rumble (approx.: the wiki gives no rate). */
+        /** Game ticks between power-ups appearing in a rumble. // approx: the wiki gives no rate */
         public static final int POWER_UP_INTERVAL = 150;
-        /** Zapper: max hit, and game ticks between zaps (interval approx.). */
+        /**
+         * Zapper: fires every two ticks at monsters near it, hitting each for about 3% of its maximum hitpoints, at most 8
+         * (OSRS Wiki "Zapper", "Nightmare Zone"). The number of zaps per firing varies: each nearby boss is zapped with a 1/2
+         * chance, approx; the reach (in blocks) is approx too.
+         */
         public static final int ZAPPER_MAX_HIT = 8;
-        public static final int ZAPPER_INTERVAL = 3;
+        public static final int ZAPPER_INTERVAL = 2;
+        public static final double ZAPPER_SHARE = 0.03;
+        public static final int ZAPPER_REACH = 12;
+        /** Bosses the zapper doesn't damage: those immune to normal attacks, and The Everlasting (OSRS Wiki). */
+        public static final java.util.Set<String> ZAPPER_IMMUNE = java.util.Set.of("nmz_dagannoth_mother", "nmz_gelatinnoth_mother",
+                "nmz_tanglefoot", "nmz_the_everlasting");
         /** Power surge: special attack energy restored per tick (20%). */
         public static final int POWER_SURGE_PER_TICK = 20;
+
+        /** One zap's damage against a boss with {@code maxHitpoints}: 3% of them, at least 1 and at most 8. */
+        public static int zapDamage(int maxHitpoints) {
+            return Math.max(1, Math.min(ZAPPER_MAX_HIT, (int) Math.round(maxHitpoints * ZAPPER_SHARE)));
+        }
+
+        /** Whether the zapper damages this boss at all. */
+        public static boolean zappable(String boss) {
+            return !ZAPPER_IMMUNE.contains(bossOf(boss));
+        }
 
         /** Power-ups (rumble only; OSRS Wiki). */
         public enum PowerUp {
             /** An extra hit of 3/4 of each hit's damage (no XP), 45 seconds. */
             RECURRENT_DAMAGE("Recurrent damage", 75),
-            /** Zaps nearby bosses for up to 8 damage over time, 1 minute. */
+            /** Stays where it was picked up and zaps the bosses near it every two ticks (3% of their hitpoints, at most 8), 1 minute. */
             ZAPPER("Zapper", 100),
             /** Fills the special attack bar and regenerates it by 20% a tick, 45 seconds. */
             POWER_SURGE("Power surge", 75),
@@ -1273,23 +1543,16 @@ public final class MinigameRules {
             return Math.max(0, damage) * 3 / 4;
         }
 
+        /** Points for a kill of {@code boss} (any form) with every boss enabled, normal or hard (0 for other creatures). */
         public static int points(String boss, boolean hard) {
-            for (Object[] b : BOSSES) {
-                if (b[0].equals(boss)) {
-                    return (Integer) b[hard ? 2 : 1];
-                }
-            }
-            return 0;
+            NmzBosses.Boss b = NmzBosses.ofForm(boss);
+            return b == null ? 0 : hard ? b.hardPoints() : b.points();
         }
 
-        /** Hitpoints of a boss in a hard rumble (0 if it isn't a rumble boss). */
+        /** Hitpoints of a boss form in a hard dream (0 if it isn't a dream boss). */
         public static int hardHitpoints(String boss) {
-            for (Object[] b : BOSSES) {
-                if (b[0].equals(boss)) {
-                    return (Integer) b[3];
-                }
-            }
-            return 0;
+            NmzBosses.Form f = NmzBosses.form(boss);
+            return f == null ? 0 : f.hardHitpoints();
         }
 
         /** Whether enough of the listed quests are complete, given a completion check. */

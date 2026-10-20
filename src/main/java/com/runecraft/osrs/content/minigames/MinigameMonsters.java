@@ -171,14 +171,26 @@ public final class MinigameMonsters {
             int max = (Integer) a[3];
             String name = Character.toUpperCase(tier.charAt(0)) + tier.substring(1);
             int c = armourColors[i];
+            // OSRS Wiki infoboxes: every tier has the same bonuses (stab 50, slash 25, crush 19, magic and ranged 400), bronze,
+            // iron and adamant crush and the others stab; animated armour must be fought in melee.
+            AttackType style = tier.equals("bronze") || tier.equals("iron") || tier.equals("adamant") ? AttackType.CRUSH : AttackType.STAB;
             list.add(MonsterDef.of("animated_" + tier + "_armour", "Animated " + name + " Armour").level(lvl)
-                    .stats(hp, lvl, lvl, lvl, 1, 1).speed(4).defenceBonus(20 + i * 15, 20 + i * 15, 20 + i * 15, -5, 20 + i * 15)
-                    .attack(melee(AttackType.SLASH, max)).skin(c, c, c, 0x101010));
+                    .stats(hp, lvl, lvl, lvl, 1, 1).speed(4).defenceBonus(50, 25, 19, 400, 400).attackBonus(4, 0, 0)
+                    .immune(AttackType.RANGED, AttackType.MAGIC).attack(melee(style, max)).skin(c, c, c, 0x101010));
         }
-        list.add(m("warriors_guild_cyclops", "Cyclops", 56).model("cyclops").stats(55, 50, 50, 50, 1, 1).speed(5)
+        // The guild's cyclopes (OSRS Wiki "Cyclops": levels 56 and 76 on the top floor, 106 in the basement) must be fought in
+        // melee.
+        list.add(m("warriors_guild_cyclops", "Cyclops", 56).model("cyclops").stats(75, 47, 50, 26, 1, 1).speed(4)
+                .immune(AttackType.RANGED, AttackType.MAGIC)
                 .attack(melee(AttackType.CRUSH, 6)).size(0.9f, 2.4f, 1.3f).skin(0xA08060, 0x6A4A2A, 0x4A3A2A, 0x202020));
-        list.add(m("cyclops_elite", "Cyclops", 106).model("cyclops").stats(75, 90, 105, 90, 1, 1).speed(5)
-                .attack(melee(AttackType.CRUSH, 11)).size(0.9f, 2.4f, 1.5f).skin(0x907050, 0x5A3A2A, 0x3A2A1A, 0x202020));
+        MonsterDef cyclops76 = m(MinigameRules.WarriorsGuild.CYCLOPS_76, "Cyclops", 76).model("cyclops").stats(100, 65, 65, 35, 1, 1)
+                .speed(4).immune(AttackType.RANGED, AttackType.MAGIC)
+                .attack(melee(AttackType.CRUSH, 7)).size(0.9f, 2.4f, 1.4f).skin(0x987858, 0x624226, 0x463626, 0x202020);
+        cyclops76.tiles = 2;
+        list.add(cyclops76);
+        list.add(m("cyclops_elite", "Cyclops", 106).model("cyclops").stats(150, 95, 75, 55, 1, 1).speed(4)
+                .immune(AttackType.RANGED, AttackType.MAGIC)
+                .attack(melee(AttackType.CRUSH, 8)).size(0.9f, 2.4f, 1.5f).skin(0x907050, 0x5A3A2A, 0x3A2A1A, 0x202020));
         // ---------------- Shades of Mort'ton ----------------
         // OSRS Wiki / dps-calc: crush, 4-tick; shades drop only their remains (keys come from cremating them).
         for (ShadesOfMortton.Shade s : ShadesOfMortton.Shade.values()) {
@@ -190,39 +202,10 @@ public final class MinigameMonsters {
                     .size(0.7f, 2.0f, 1.0f).skin(0x2A2A3A, 0x1A1A2A, 0x10101A, 0x8080FF)
                     .spawn(Region.MORYTANIA, 2, 1, 2).underground());
         }
-        // ---------------- Nightmare Zone (normal-mode quest bosses; stats per the OSRS Wiki infoboxes) ----------------
-        list.add(MonsterDef.of("nmz_count_draynor", "Count Draynor").level(34).stats(35, 30, 25, 30, 1, 1).speed(4)
-                .defenceBonus(2, 1, 3, 0, 0).attack(melee(AttackType.CRUSH, 3)).skin(0xE0E0E0, 0x2A2A2A, 0x1A1A1A, 0xA01010));
-        list.add(MonsterDef.of("nmz_king_roald", "King Roald").level(47).stats(75, 35, 30, 30, 1, 1).speed(4)
-                .attack(melee(AttackType.CRUSH, 3)).skin(0xC8A080, 0x8A2A8A, 0x6A1A6A, 0xE0C040));
-        list.add(MonsterDef.of("nmz_the_kendal", "The Kendal").level(70).stats(50, 65, 65, 60, 1, 1).speed(4)
-                .attackBonus(5, 0, 0).defenceBonus(10, 10, 10, -10, 0).attack(melee(AttackType.CRUSH, 9))
-                .size(1.0f, 2.2f, 1.3f).skin(0xD0D0D0, 0xB0B0B0, 0x909090, 0x5A3A2A));
-        list.add(MonsterDef.of("nmz_me", "Me").level(79).stats(45, 75, 78, 74, 1, 1).speed(4)
-                .attack(melee(AttackType.CRUSH, 9)).skin(0x2A2A2A, 0x1A1A1A, 0x101010, 0x8A2A8A));
-        list.add(MonsterDef.of("nmz_elvarg", "Elvarg").level(83).stats(80, 70, 70, 70, 70, 1).speed(4)
-                .defenceBonus(20, 40, 40, 30, 20).attack(melee(AttackType.SLASH, 8))
-                .attack(AttackDef.of("dragonfire", AttackType.MAGIC, 70, 8, 4).special(Special.DRAGONFIRE, 0).particle("minecraft:flame"))
-                .size(2.4f, 2.4f, 2.0f).skin(0x2A6A2A, 0x1A4A1A, 0x103010, 0xE04010)); // ranged defence approx
-        list.add(MonsterDef.of("nmz_tree_spirit", "Tree spirit").level(101).stats(85, 90, 95, 80, 1, 1).speed(4)
-                .attack(melee(AttackType.CRUSH, 10)).skin(0x5A7A3A, 0x4A6A2A, 0x3A5A1A, 0x8AB04A));
-        list.add(MonsterDef.of("nmz_dad", "Dad").level(101).stats(120, 60, 120, 50, 1, 1).speed(8)
-                .attackBonus(40, 0, 0).defenceBonus(25, 25, 40, 200, 200).attack(melee(AttackType.CRUSH, 27).special(Special.KNOCKBACK, 3))
-                .size(1.6f, 3.0f, 1.8f).skin(0x6A7A6A, 0x5A6A5A, 0x4A5A4A, 0x3A3A3A)); // ranged defence approx
-        list.add(MonsterDef.of("nmz_khazard_warlord", "Khazard warlord").level(112).stats(170, 75, 78, 80, 1, 1).speed(4)
-                .attack(melee(AttackType.CRUSH, 10)).skin(0xC8A080, 0x6A2A2A, 0x4A1A1A, 0x3A3A3A));
-        list.add(MonsterDef.of("nmz_arrg", "Arrg").level(113).stats(140, 70, 140, 40, 1, 70).speed(5)
-                .attackBonus(60, 0, 0).defenceBonus(35, 60, 35, 200, 200).attack(melee(AttackType.CRUSH, 38))
-                .attack(AttackDef.of("rock", AttackType.RANGED, 30, 8, 10).particle("minecraft:crit"))
-                .size(1.4f, 2.8f, 1.6f).skin(0x6A6A5A, 0x5A5A4A, 0x4A4A3A, 0x3A3A2A)); // ranged defence approx
-        list.add(MonsterDef.of("nmz_black_knight_titan", "Black Knight Titan").level(120).stats(142, 91, 100, 91, 1, 1).speed(7)
-                .attackBonus(27, 0, 0).defenceBonus(18, 27, 18, 1000, 1000).attack(melee(AttackType.CRUSH, 15))
-                .size(1.2f, 3.2f, 1.6f).skin(0x2A2A2A, 0x1A1A1A, 0x101010, 0x6A6A6A));
-        list.add(MonsterDef.of("nmz_bouncer", "Bouncer").level(137).stats(116, 120, 120, 120, 1, 1).speed(4)
-                .attack(melee(AttackType.STAB, 13)).size(1.2f, 1.2f, 1.4f).skin(0x6A2A1A, 0x4A1A10, 0x2A1008, 0xE06020));
-        list.add(MonsterDef.of("nmz_glod", "Glod").level(138).stats(160, 115, 120, 110, 1, 1).speed(4)
-                .defenceBonus(105, 110, 130, 125, 115).attack(melee(AttackType.CRUSH, 13))
-                .size(2.0f, 3.6f, 2.2f).skin(0x8A7A5A, 0x6A5A3A, 0x4A3A2A, 0x3A2A1A)); // ranged defence approx
+        // ---------------- Nightmare Zone: every dream boss form (normal-mode stats; hard dreams raise them in the session) ----------
+        for (NmzBosses.Form f : NmzBosses.forms()) {
+            list.add(nmzBoss(f));
+        }
         // ---------------- Soul Wars ----------------
         list.add(MonsterDef.of("forgotten_soul", "Forgotten Soul").level(58).stats(60, 40, 40, 40, 1, 1).speed(4) // approx stats
                 .attack(melee(AttackType.SLASH, 6)).drops(Drop.always("soul_fragment"))
@@ -245,6 +228,132 @@ public final class MinigameMonsters {
         }
         list.addAll(TempleTrekking.monsters());
         return list;
+    }
+
+
+    /** Hand-picked looks of the first twelve dream bosses: hitbox width, height and scale, then skin colours. */
+    private static final java.util.Map<String, float[]> NMZ_SIZE = java.util.Map.ofEntries(
+            java.util.Map.entry("nmz_the_kendal", new float[]{1.0f, 2.2f, 1.3f}),
+            java.util.Map.entry("nmz_elvarg", new float[]{2.4f, 2.4f, 2.0f}),
+            java.util.Map.entry("nmz_dad", new float[]{1.6f, 3.0f, 1.8f}),
+            java.util.Map.entry("nmz_arrg", new float[]{1.4f, 2.8f, 1.6f}),
+            java.util.Map.entry("nmz_black_knight_titan", new float[]{1.2f, 3.2f, 1.6f}),
+            java.util.Map.entry("nmz_bouncer", new float[]{1.2f, 1.2f, 1.4f}),
+            java.util.Map.entry("nmz_glod", new float[]{2.0f, 3.6f, 2.2f}));
+    private static final java.util.Map<String, int[]> NMZ_SKIN = java.util.Map.ofEntries(
+            java.util.Map.entry("nmz_count_draynor", new int[]{0xE0E0E0, 0x2A2A2A, 0x1A1A1A, 0xA01010}),
+            java.util.Map.entry("nmz_king_roald", new int[]{0xC8A080, 0x8A2A8A, 0x6A1A6A, 0xE0C040}),
+            java.util.Map.entry("nmz_the_kendal", new int[]{0xD0D0D0, 0xB0B0B0, 0x909090, 0x5A3A2A}),
+            java.util.Map.entry("nmz_me", new int[]{0x2A2A2A, 0x1A1A1A, 0x101010, 0x8A2A8A}),
+            java.util.Map.entry("nmz_elvarg", new int[]{0x2A6A2A, 0x1A4A1A, 0x103010, 0xE04010}),
+            java.util.Map.entry("nmz_tree_spirit", new int[]{0x5A7A3A, 0x4A6A2A, 0x3A5A1A, 0x8AB04A}),
+            java.util.Map.entry("nmz_dad", new int[]{0x6A7A6A, 0x5A6A5A, 0x4A5A4A, 0x3A3A3A}),
+            java.util.Map.entry("nmz_khazard_warlord", new int[]{0xC8A080, 0x6A2A2A, 0x4A1A1A, 0x3A3A3A}),
+            java.util.Map.entry("nmz_arrg", new int[]{0x6A6A5A, 0x5A5A4A, 0x4A4A3A, 0x3A3A2A}),
+            java.util.Map.entry("nmz_black_knight_titan", new int[]{0x2A2A2A, 0x1A1A1A, 0x101010, 0x6A6A6A}),
+            java.util.Map.entry("nmz_bouncer", new int[]{0x6A2A1A, 0x4A1A10, 0x2A1008, 0xE06020}),
+            java.util.Map.entry("nmz_glod", new int[]{0x8A7A5A, 0x6A5A3A, 0x4A3A2A, 0x3A2A1A}),
+            java.util.Map.entry("nmz_trapped_soul", new int[]{0xC0C8D0, 0x8A9AAA, 0x6A7A8A, 0x60A0FF}),
+            java.util.Map.entry("nmz_corsair_traitor", new int[]{0xC8A080, 0x7A2A2A, 0x3A2A1A, 0xE0C040}),
+            java.util.Map.entry("nmz_sand_snake", new int[]{0xC8A860, 0xA88A40, 0x8A6A30, 0x202020}),
+            java.util.Map.entry("nmz_headless_beast", new int[]{0x8A6A4A, 0x6A4A2A, 0x4A3A2A, 0x3A2A1A}),
+            java.util.Map.entry("nmz_elven_traitor", new int[]{0xE8C8A8, 0x3A6A3A, 0x2A4A2A, 0x80C060}));
+
+    /**
+     * Bones and remains a dream boss drops (OSRS Wiki boss table "Drops": "all bosses drop their bone-variation"), limited to
+     * the built-in items a module may reference; the boss table's ashes, leaves, bananas, choc-ices and chocolate cakes are
+     * not given. approx
+     */
+    private static final java.util.Map<String, String> NMZ_DROP = java.util.Map.ofEntries(
+            java.util.Map.entry("nmz_corsair_traitor", "bones"), java.util.Map.entry("nmz_king_roald", "bones"),
+            java.util.Map.entry("nmz_witchs_experiment_wolf", "wolf_bones"), java.util.Map.entry("nmz_the_kendal", "bones"),
+            java.util.Map.entry("nmz_me", "bones"), java.util.Map.entry("nmz_elvarg", "dragon_bones"),
+            java.util.Map.entry("nmz_moss_guardian", "big_bones"), java.util.Map.entry("nmz_skeleton_hellhound", "big_bones"),
+            java.util.Map.entry("nmz_dagannoth_mother", "bones"), java.util.Map.entry("nmz_dad", "big_bones"),
+            java.util.Map.entry("nmz_khazard_warlord", "bones"), java.util.Map.entry("nmz_arrg", "big_bones"),
+            java.util.Map.entry("nmz_black_knight_titan", "big_bones"), java.util.Map.entry("nmz_glod", "big_bones"),
+            java.util.Map.entry("nmz_evil_chicken", "bones"), java.util.Map.entry("nmz_flambeed", "cake"),
+            java.util.Map.entry("nmz_dessourt", "chocolate_dust"), java.util.Map.entry("nmz_gelatinnoth_mother", "bones"),
+            java.util.Map.entry("nmz_culinaromancer", "cake"), java.util.Map.entry("nmz_giant_roc", "big_bones"),
+            java.util.Map.entry("nmz_dessous", "vampyre_dust"), java.util.Map.entry("nmz_damis_second", "bones"));
+
+    private static AttackType nmzType(String style) {
+        return switch (style) {
+            case "Stab" -> AttackType.STAB;
+            case "Slash" -> AttackType.SLASH;
+            case "Magic", "Magic_melee", "Dragonfire" -> AttackType.MAGIC;
+            case "Ranged" -> AttackType.RANGED;
+            default -> AttackType.CRUSH;
+        };
+    }
+
+    /**
+     * A dream boss form from {@link NmzBosses}: the infobox's stats, bonuses and attack styles. Every style hits up to the
+     * infobox max hit (approx for the styles it isn't given for); Moss Guardian's magic melee ignores protection prayers,
+     * Elvarg breathes dragonfire, Dad knocks back.
+     */
+    private static MonsterDef nmzBoss(NmzBosses.Form f) {
+        NmzBosses.Boss b = NmzBosses.ofForm(f.id());
+        MonsterDef d = MonsterDef.of(f.id(), b.name()).level(f.level())
+                .stats(f.hitpoints(), f.attack(), f.strength(), f.defence(), f.magic(), f.ranged()).speed(f.speed())
+                .defenceBonus(f.stabDefence(), f.slashDefence(), f.crushDefence(), f.magicDefence(), f.rangedDefence())
+                .attackBonus(f.meleeAttackBonus(), f.magicAttackBonus(), f.rangedAttackBonus());
+        double reach = 2.5 + 0.5 * Math.max(0, f.size() - 1);
+        // The main attack (the one the infobox max hit is given for) first, then one attack per other style.
+        java.util.List<String> styles = new java.util.ArrayList<>();
+        styles.add(f.hitStyle());
+        styles.addAll(f.styles());
+        boolean melee = false;
+        boolean magic = false;
+        boolean ranged = false;
+        for (String style : styles) {
+            AttackType type = nmzType(style);
+            int weight = style.equals(f.hitStyle()) ? 10 : 5;
+            if (style.equals("Dragonfire")) {
+                // Elvarg's dragonfire (approx max hit; OSRS provides an anti-dragon shield in the arena).
+                d.attack(AttackDef.of("dragonfire", AttackType.MAGIC, 70, 8, 4).special(Special.DRAGONFIRE, 0)
+                        .particle("minecraft:flame"));
+            } else if (style.equals("Magic_melee")) {
+                d.attack(AttackDef.of("magic melee", AttackType.MAGIC, f.maxHit(), reach, weight)
+                        .special(Special.PRAYER_PIERCING, 0).particle("minecraft:witch"));
+            } else if (type == AttackType.MAGIC) {
+                if (!magic) {
+                    magic = true;
+                    d.attack(AttackDef.of("magic", AttackType.MAGIC, f.maxHit(), 8, weight).particle("minecraft:witch"));
+                }
+            } else if (type == AttackType.RANGED) {
+                if (!ranged) {
+                    ranged = true;
+                    d.attack(AttackDef.of("ranged", AttackType.RANGED, f.maxHit(), 8, weight).particle("minecraft:crit"));
+                }
+            } else if (!melee) {
+                melee = true;
+                AttackDef a = AttackDef.of("melee", type, f.maxHit(), reach, weight);
+                d.attack(f.id().equals("nmz_dad") ? a.special(Special.KNOCKBACK, 3) : a);
+            }
+        }
+        float[] size = NMZ_SIZE.get(f.id());
+        if (size == null && f.size() > 1) {
+            size = new float[]{0.8f + 0.2f * f.size(), 2.0f + 0.2f * f.size(), 1.0f + 0.2f * f.size()};
+        }
+        if (size != null) {
+            d.size(size[0], size[1], size[2]);
+        }
+        int[] skin = NMZ_SKIN.getOrDefault(f.id(), new int[]{0x8A7A6A, 0x5A4A3A, 0x3A2A1A, 0xC0A040});
+        d.skin(skin[0], skin[1], skin[2], skin[3]);
+        if (!f.attributes().isEmpty()) {
+            d.attributes(f.attributes().toArray(String[]::new));
+        }
+        MinigameRules.NightmareZone.SlayerCredit slayer = MinigameRules.NightmareZone.SLAYER.get(f.id());
+        if (slayer != null) {
+            d.slayer(1, slayer.category());
+        }
+        String drop = NMZ_DROP.get(f.id());
+        if (drop != null) {
+            d.drops(Drop.always(drop));
+        }
+        d.tiles = f.size();
+        return d;
     }
 
 

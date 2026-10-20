@@ -54,7 +54,8 @@ public final class MinigameItemUse {
             }
             if (com.runecraft.content.minigames.games.NightmareZoneSession.drink(sp, stack, hand, id) || blighted(sp, stack, hand, id)
                     || com.runecraft.content.minigames.games.VolcanicMineSession.useVessel(sp, id)
-                    || com.runecraft.content.minigames.games.WintertodtSession.useKnife(sp, id)) {
+                    || com.runecraft.content.minigames.games.WintertodtSession.useKnife(sp, id)
+                    || com.runecraft.content.minigames.games.MageArenaSession.useItem(sp, id)) {
                 return InteractionResultHolder.success(stack);
             }
             boolean used = switch (id) {

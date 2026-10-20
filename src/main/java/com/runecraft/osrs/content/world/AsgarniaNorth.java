@@ -806,6 +806,14 @@ final class AsgarniaNorth {
         k.f(bx(2862), 4, bz(3553), bx(2875) + 1, 4, bz(3553), mc("smooth_stone_slab[type=bottom]"));
         k.st(2861, 3551, 4, mc("cobblestone"));
         k.st(2861, 3547, 4, mc("cobblestone"));
+        // the activity entrances (round 40): Ajjat's dummy room, Gamfred's catapult, the shot put lanes, Jimmy's kegs, and the
+        // basement ladder down to the level 106 cyclopes (OSRS: just outside the back door at 2834,3542; inside the west wall
+        // here so it stands on the guild floor, approx)
+        k.st(2843, 3549, 4, rc("warriors_guild_dummy_entrance"));
+        k.st(2854, 3551, 4, rc("warriors_guild_catapult_entrance"));
+        k.st(2863, 3551, 4, rc("warriors_guild_shotput_entrance"));
+        k.st(2872, 3543, 4, rc("warriors_guild_keg_entrance"));
+        k.st(2838, 3542, 0, rc("warriors_guild_basement_entrance"));
         // top floor: the cyclops hall behind its barred gate (approx: the gate across the hall at 2848)
         k.f(bx(2848), 8, bz(3555), bx(2848), 10, bz(3535) + 1, mc("iron_bars"));
         k.st(2848, 3545, 8, rc("warriors_guild_cyclops_entrance"));

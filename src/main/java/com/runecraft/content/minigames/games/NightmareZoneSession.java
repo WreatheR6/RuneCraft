@@ -49,9 +49,12 @@ import net.minecraft.world.level.block.Blocks;
  * normal or hard: practice (one chosen boss, free, no points), endurance (every unlocked boss in turn, 1-on-1; 1,000 / 5,000
  * coins), rumble (up to four bosses at once, endlessly; 2,000 / 6,000) and customisable rumble (bosses can be switched off;
  * 22,000 / 26,000). Points per kill are the wiki's per-boss values scaled by how many bosses the dream includes. Hard bosses
- * have the wiki's hard hitpoints, attack levels and max hits. Power-ups appear in rumbles (recurrent damage, zapper, power surge,
- * ultimate force). Dom Onion's Reward Shop sells the dream potions by the dose into the lobby's potion barrels (255 doses each),
- * from which any number of doses is withdrawn; they only work inside a dream and are taken away on waking. Death is safe.
+ * have the wiki's hard hitpoints, attack levels and max hits. All fifty wiki bosses ({@code NmzBosses}) are in the pool, each
+ * unlocked by its quest; Witch's experiment, Nazastarool and Damis are fought form after form. A customisable rumble switches a
+ * quest's bosses on and off together, and Dream Mentor bosses without Desert Treasure I's divide the points by six. Power-ups
+ * appear in rumbles (recurrent damage, zapper, power surge, ultimate force) with the wiki's timings. Dom Onion's Reward Shop
+ * sells the dream potions by the dose into the lobby's potion barrels (255 doses each), from which any number of doses is
+ * withdrawn; they only work inside a dream and are taken away on waking. Death is safe.
  */
 public class NightmareZoneSession extends MinigameSession {
     private static final Skill[] OVERLOAD_SKILLS = {Skill.ATTACK, Skill.STRENGTH, Skill.DEFENCE, Skill.RANGED, Skill.MAGIC};
@@ -82,10 +85,15 @@ public class NightmareZoneSession extends MinigameSession {
     private final Map<UUID, Long> powerUntil = new HashMap<>();
     /** Bosses a player has hit at least once (the zapper may then finish Count Draynor). */
     private final Set<UUID> hitByPlayer = new HashSet<>();
+    /** Bosses a player has dealt at least 1 damage to: ultimate force kills only those with their loot and Slayer credit. */
+    private final Set<UUID> damagedByPlayer = new HashSet<>();
     /** The power-up waiting in the arena (null when none), where, and the tick it vanishes. */
     private NightmareZone.PowerUp spawned;
     private BlockPos spawnedAt;
     private long spawnedUntil;
+    /** An activated zapper: where it stands (it zaps the bosses near it) and whose it is. */
+    private BlockPos zapperAt;
+    private UUID zapperOwner;
     private long nextPowerUp = NightmareZone.POWER_UP_INTERVAL;
     /** Ultimate force kills pay no points. */
     private boolean forcing;
@@ -206,12 +214,17 @@ public class NightmareZoneSession extends MinigameSession {
                 mode == NightmareZone.Mode.PRACTICE ? boss : null).variant());
     }
 
-    /** "/minigame nmz bosses" and "/minigame nmz toggle <boss>": the customisable rumble's boss switches. */
+    /**
+     * "/minigame nmz bosses" and "/minigame nmz toggle <boss>": the customisable rumble's boss switches. A switch takes every
+     * boss of the same quest with it (OSRS Wiki: "Disabling a boss also disables every boss from that quest").
+     */
     public static void toggle(ServerPlayer player, String boss) {
         MinigameData data = MinigameData.of(player);
         if (boss != null && unlocked(player).contains(boss)) {
-            String key = OFF_PREFIX + boss;
-            data.setStat(player.getUUID(), key, data.stat(player.getUUID(), key) == 0 ? 1 : 0);
+            int to = data.stat(player.getUUID(), OFF_PREFIX + boss) == 0 ? 1 : 0;
+            for (String b : NightmareZone.questGroup(boss)) {
+                data.setStat(player.getUUID(), OFF_PREFIX + b, to);
+            }
         }
         MutableComponent line = Component.literal("Customisable rumble bosses: ").withStyle(ChatFormatting.GRAY);
         for (String b : unlocked(player)) {
@@ -356,13 +369,18 @@ public class NightmareZoneSession extends MinigameSession {
     }
 
     private Mob spawnBoss(String id) {
-        Mob mob = spawn(id, randomFloor(0, -6, 10));
+        return spawnBoss(id, randomFloor(0, -6, 10));
+    }
+
+    /** Spawns a boss form at {@code at} (a later form rises where the one before it fell). */
+    private Mob spawnBoss(String id, BlockPos at) {
+        Mob mob = spawn(id, at);
         if (mob == null) {
             return null;
         }
         spawnedBosses.add(mob);
         if (hard) {
-            // Hard rumble hitpoints from the wiki table; the attack levels and max hits are raised by the combat hook.
+            // Hard hitpoints from the form's infobox; the attack levels and max hits are raised by the combat hook.
             setHitpoints(mob, NightmareZone.hardHitpoints(id));
             mob.addTag(HARD_TAG);
         }
@@ -451,31 +469,51 @@ public class NightmareZoneSession extends MinigameSession {
         }
         if (ticks >= powerUntil.getOrDefault(p.getUUID(), 0L)) {
             power.remove(p.getUUID());
+            if (active == NightmareZone.PowerUp.ZAPPER && p.getUUID().equals(zapperOwner)) {
+                zapperAt = null;
+                zapperOwner = null;
+            }
             Msg.red(p, "Your " + active.displayName().toLowerCase() + " power-up has worn off.");
             return;
         }
         if (active == NightmareZone.PowerUp.POWER_SURGE) {
             com.runecraft.content.systems.SpecialAttackService.restoreEnergy(p, NightmareZone.POWER_SURGE_PER_TICK);
         } else if (active == NightmareZone.PowerUp.ZAPPER && ticks % NightmareZone.ZAPPER_INTERVAL == 0) {
-            for (LivingEntity boss : bossesNear(p, 6)) {
-                zap(p, boss, random.nextInt(NightmareZone.ZAPPER_MAX_HIT + 1));
+            // Every two ticks the zapper fires at some of the bosses near it, each zap about 3% of their hitpoints.
+            BlockPos at = zapperAt != null ? zapperAt : p.blockPosition();
+            world.sendParticles(new DustParticleOptions(colour(NightmareZone.PowerUp.ZAPPER), 1.2f), at.getX() + 0.5,
+                    at.getY() + 1.2, at.getZ() + 0.5, 4, 0.2, 0.3, 0.2, 0);
+            for (LivingEntity boss : bossesNear(at, NightmareZone.ZAPPER_REACH)) {
+                if (random.nextBoolean()) {
+                    zap(p, boss, NightmareZone.zapDamage(Math.round(boss.getMaxHealth())));
+                }
             }
         }
     }
 
     /**
-     * One zap: the zapper can finish any boss except Count Draynor, who it only kills once the player has hit him (OSRS
-     * Wiki). Returns the damage dealt (public for the self-test).
+     * One zap: the zapper can finish any boss except Count Draynor, who it only kills once the player has hit him, and it
+     * doesn't hurt the bosses immune to normal attacks or The Everlasting (OSRS Wiki). Returns the damage dealt (public for the
+     * self-test).
      */
     public int zap(ServerPlayer p, LivingEntity boss, int roll) {
+        String id = MinigameManager.creatureId(boss);
+        if (!NightmareZone.zappable(id)) {
+            return 0;
+        }
         int dmg = Math.max(0, roll);
-        if (!NightmareZone.zapperMayKill(MinigameManager.creatureId(boss), hitByPlayer.contains(boss.getUUID()))) {
+        if (!NightmareZone.zapperMayKill(id, hitByPlayer.contains(boss.getUUID()))) {
             dmg = Math.min(dmg, Math.max(0, (int) boss.getHealth() - 1));
         }
         if (dmg > 0) {
             CombatHandler.applyDamage(p, boss, dmg);
         }
         return dmg;
+    }
+
+    /** Where the activated zapper stands, or null (public for the self-test). */
+    public BlockPos zapperAt() {
+        return zapperAt;
     }
 
     private static Vector3f colour(NightmareZone.PowerUp up) {
@@ -487,10 +525,10 @@ public class NightmareZoneSession extends MinigameSession {
         };
     }
 
-    private List<LivingEntity> bossesNear(ServerPlayer p, double range) {
+    private List<LivingEntity> bossesNear(BlockPos at, double range) {
         List<LivingEntity> out = new ArrayList<>();
         for (LivingEntity e : bosses()) {
-            if (e.distanceToSqr(p) <= range * range) {
+            if (e.distanceToSqr(at.getX() + 0.5, at.getY(), at.getZ() + 0.5) <= range * range) {
                 out.add(e);
             }
         }
@@ -501,16 +539,30 @@ public class NightmareZoneSession extends MinigameSession {
     public void activate(ServerPlayer p, NightmareZone.PowerUp up) {
         world.playSound(null, p.blockPosition(), SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 1.0f, 0.8f);
         if (up == NightmareZone.PowerUp.ULTIMATE_FORCE) {
+            // Every boss in the arena dies, for no points; only bosses the player has dealt at least 1 damage to drop their
+            // loot and count for Slayer (OSRS Wiki "Ultimate force"): the others simply vanish.
             Msg.game(p, "You activate ultimate force! Every boss in the dream is destroyed.");
             forcing = true;
             try {
-                for (LivingEntity boss : bossesNear(p, 100)) {
-                    CombatHandler.applyDamage(p, boss, (int) Math.ceil(boss.getHealth()));
+                for (LivingEntity boss : bosses()) {
+                    if (damagedByPlayer.contains(boss.getUUID())) {
+                        CombatHandler.applyDamage(p, boss, (int) Math.ceil(boss.getHealth()));
+                    } else {
+                        world.sendParticles(new DustParticleOptions(colour(up), 2.0f), boss.getX(), boss.getY() + 1, boss.getZ(),
+                                20, 0.5, 1, 0.5, 0);
+                        boss.discard();
+                    }
                 }
+                spawnedBosses.removeIf(m -> m.isRemoved() || !m.isAlive());
             } finally {
                 forcing = false;
             }
             return;
+        }
+        if (up == NightmareZone.PowerUp.ZAPPER) {
+            // The zapper stays where it was picked up and zaps the bosses around it.
+            zapperAt = spawnedAt != null ? spawnedAt : p.blockPosition();
+            zapperOwner = p.getUUID();
         }
         power.put(p.getUUID(), up);
         powerUntil.put(p.getUUID(), ticks + up.ticks());
@@ -536,13 +588,41 @@ public class NightmareZoneSession extends MinigameSession {
         hitByPlayer.add(boss.getUUID());
     }
 
+    /** Records that a player dealt damage to a boss: ultimate force then kills it with its loot and Slayer credit. */
+    public void noteDamage(LivingEntity boss) {
+        hitByPlayer.add(boss.getUUID());
+        damagedByPlayer.add(boss.getUUID());
+    }
+
     @Override
     protected void onPlayerHit(ServerPlayer player, LivingEntity target, int dealt) {
         noteHit(target);
+        if (dealt > 0) {
+            damagedByPlayer.add(target.getUUID());
+        }
+        if (dealt > 0 && hard && MinigameManager.creatureId(target).equals("nmz_the_untouchable")) {
+            // Hard mode: The Untouchable reflects the floor of 20% of the damage dealt, at least 1 (OSRS Wiki boss table).
+            hurt(player, Math.max(1, dealt / 5));
+        }
         if (dealt > 0 && power.get(player.getUUID()) == NightmareZone.PowerUp.RECURRENT_DAMAGE && target.isAlive()) {
             // The extra hit gives no experience (applyDamage awards none).
             CombatHandler.applyDamage(player, target, NightmareZone.recurrent(dealt));
         }
+    }
+
+    /**
+     * Slagilith takes 66% less damage from anything but a pickaxe (OSRS Wiki boss table; OSRS awards experience for the damage
+     * before the reduction, here for the reduced hit).
+     */
+    @Override
+    protected double damageMultiplier(ServerPlayer player, LivingEntity target, AttackType type) {
+        if (MinigameManager.creatureId(target).equals("nmz_slagilith")) {
+            com.runecraft.osrs.ItemDef weapon = com.runecraft.registry.ModItems.def(player.getMainHandItem());
+            if (weapon == null || weapon.kind() != com.runecraft.osrs.ItemDef.Kind.PICKAXE) {
+                return 0.34;
+            }
+        }
+        return 1.0;
     }
 
     /** Hard dreams: the bosses attack with their hard attack levels and max hits (registered by the minigames module). */
@@ -559,10 +639,12 @@ public class NightmareZoneSession extends MinigameSession {
 
             @Override
             public int maxHitBonus(LivingEntity mob, ServerPlayer target, AttackType type) {
-                if (!mob.getTags().contains(HARD_TAG) || type == AttackType.RANGED || type == AttackType.MAGIC) {
+                if (!mob.getTags().contains(HARD_TAG)) {
                     return 0;
                 }
-                return NightmareZone.hardMaxHitBonus(MinigameManager.creatureId(mob));
+                // Only the main attack (the one the infobox max hit is for) hits harder.
+                return NightmareZone.hardMaxHitBonus(MinigameManager.creatureId(mob), type != AttackType.RANGED
+                        && type != AttackType.MAGIC, type == AttackType.RANGED);
             }
         });
     }
@@ -710,12 +792,25 @@ public class NightmareZoneSession extends MinigameSession {
         if (forcing || dream.mode() == NightmareZone.Mode.PRACTICE) {
             return 0;
         }
-        return NightmareZone.points(creatureId, hard, (int) pool.stream().distinct().count());
+        return NightmareZone.points(creatureId, hard, pool);
     }
 
     @Override
     protected void onKill(ServerPlayer player, LivingEntity entity, String creatureId) {
         if (!NightmareZone.isBoss(creatureId)) {
+            return;
+        }
+        String next = com.runecraft.osrs.content.minigames.NmzBosses.nextForm(creatureId);
+        if (next != null) {
+            // Witch's experiment, Nazastarool and Damis rise again in their next form where they fell; ultimate force ends
+            // them for good.
+            if (!forcing) {
+                Mob form = spawnBoss(next, entity.blockPosition());
+                if (form != null) {
+                    form.setTarget(player);
+                    Msg.game(player, entity.getName().getString() + " changes form!");
+                }
+            }
             return;
         }
         kills++;

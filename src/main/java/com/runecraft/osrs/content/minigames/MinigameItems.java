@@ -469,6 +469,26 @@ public final class MinigameItems {
         simple(items, "enchantment_shape", "Enchantment shape", "gem", 0x40C0C0, 0, "A shape from the Enchanting Chamber.");
         simple(items, "alchemy_item", "Cupboard item", "package", 0xC0A060, 0, "Something from the Alchemists' Playground.");
         simple(items, "graveyard_bones", "Animals' bones", "bones", 0xE8E0D0, 0, "Bones from the Creature Graveyard.");
+        // Round 40: the rooms' own items (OSRS Wiki): the Alchemists' Playground's five cupboard items, the Enchanting Chamber's
+        // four shapes, dragonstone and orb, and the Creature Graveyard's other three bone kinds (worth 2, 3 and 4 fruit).
+        simple(items, "mta_leather_boots", "Leather boots", "boots", 0x8A5A2A, 0, "Alchemise these in the Alchemists' Playground.");
+        simple(items, "mta_adamant_kiteshield", "Adamant kiteshield", "kiteshield", 0x4C7A4C, 0,
+                "Alchemise this in the Alchemists' Playground.");
+        simple(items, "mta_adamant_med_helm", "Adamant med helm", "full_helm", 0x4C7A4C, 0,
+                "Alchemise this in the Alchemists' Playground.");
+        simple(items, "mta_emerald", "Emerald", "gem", 0x40C060, 0, "Alchemise this in the Alchemists' Playground.");
+        simple(items, "mta_rune_longsword", "Rune longsword", "longsword", 0x4FB8C8, 0, "Alchemise this in the Alchemists' Playground.");
+        simple(items, "mta_cube", "Cube", "ore", 0x6080C0, 0, "Enchant it in the Enchanting Chamber.");
+        simple(items, "mta_cylinder", "Cylinder", "bar", 0x60C060, 0, "Enchant it in the Enchanting Chamber.");
+        simple(items, "mta_pentamid", "Pentamid", "gem", 0xC0C040, 0, "Enchant it in the Enchanting Chamber.");
+        simple(items, "mta_icosahedron", "Icosahedron", "gem_uncut", 0xC06060, 0, "Enchant it in the Enchanting Chamber.");
+        simple(items, "mta_dragonstone", "Dragonstone", "gem", 0xA040C0, 0, "Enchant it for double points.");
+        simple(items, "mta_orb", "Orb", "bead", 0x80E0FF, 0, "Deposit it in the hole in the middle of the room.");
+        simple(items, "graveyard_bones_2", "Animals' bones", "bones", 0xDCD0B8, 0, "Bones from the Creature Graveyard: two fruit each.");
+        simple(items, "graveyard_bones_3", "Animals' bones", "big_bones", 0xD0C4A8, 0,
+                "Bones from the Creature Graveyard: three fruit each.");
+        simple(items, "graveyard_bones_4", "Animals' bones", "big_bones", 0xC4B898, 0,
+                "Bones from the Creature Graveyard: four fruit each.");
     }
 
     // ------------------------------------------------------------------ Pyramid Plunder
