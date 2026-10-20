@@ -70,6 +70,9 @@ public final class BossSelfTests {
         }
         ServerPlayer partner = com.runecraft.platform.FakePlayer.get((net.minecraft.server.level.ServerLevel) boss.level());
         boolean duo = partner != p;
+        if (duo) {
+            partner.getInventory().clearContent(); // room for the partner's own loot
+        }
         try {
             int partnerKc = com.runecraft.player.Players.data(partner).killCount("scurrius");
             int bones = com.runecraft.util.Inv.count(partner, "big_bones");

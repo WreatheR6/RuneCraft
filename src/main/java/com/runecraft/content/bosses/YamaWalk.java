@@ -43,6 +43,7 @@ public final class YamaWalk {
         List<String> log = new ArrayList<>();
         ServerPlayer partner = com.runecraft.platform.FakePlayer.get(world);
         DataBossEntity second = null;
+        partner.getInventory().clearContent(); // room for the partner's own loot
         try {
             Vec3 c = y.homeVec();
             d.moveTo(c.add(0, 0, 8), boss);

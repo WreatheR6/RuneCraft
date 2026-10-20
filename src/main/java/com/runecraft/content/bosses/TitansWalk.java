@@ -33,6 +33,7 @@ public final class TitansWalk {
         ServerPlayer p = d.player();
         ServerLevel world = (ServerLevel) branda.level();
         ServerPlayer partner = com.runecraft.platform.FakePlayer.get(world);
+        partner.getInventory().clearContent(); // room for the partner's own loot
         try {
             d.moveTo(t.homeVec().add(0, 0, 3), branda);
             d.ticks(branda, 1);
