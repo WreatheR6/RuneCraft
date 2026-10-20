@@ -4,6 +4,7 @@ import com.runecraft.action.ActionManager;
 import com.runecraft.boss.DataBossEntity;
 import com.runecraft.boss.Mechanics;
 import com.runecraft.combat.CombatHandler;
+import com.runecraft.combat.CombatHooks;
 import com.runecraft.content.systems.SysCombat;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.content.bosses.ClassicBosses;
@@ -13,9 +14,11 @@ import com.runecraft.player.Players;
 import com.runecraft.registry.ModEntities;
 import com.runecraft.util.Inv;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.server.level.ServerPlayer;
@@ -36,6 +39,9 @@ import net.minecraft.world.phys.AABB;
  * drives a freshly spawned boss's script game tick by game tick, as a fight would, and checks the mechanic a player has to
  * answer actually happens (and what the player can do about it works). Area damage (strikes, stomps, splinters) only reaches a
  * player in the world's player list, so those parts are only checked as the real player ({@code /rc selftest real boss:}).
+ * The damage a mechanic deals is read from the combat hooks' damage rolls ({@link #taken}), not from the player's health: the
+ * test player is never actually hurt (the real one is made invulnerable for the run, the fake one is a NeoForge fake player,
+ * which no damage reaches), so its health never moves.
  * Each returns a summary or throws {@link AssertionError}.
  */
 final class ClassicBossWalks {
@@ -55,8 +61,40 @@ final class ClassicBossWalks {
         return p.serverLevel().players().contains(p);
     }
 
+    /** The player whose damage rolls are recorded ({@link #taken}), or null. */
+    private static ServerPlayer watching;
+    private static boolean hooked;
+    /** Per attack name: the damage rolled against the watched player, how many rolls and the biggest one. */
+    private static final Map<String, int[]> TAKEN = new HashMap<>();
+
+    /**
+     * Starts recording the damage every attack rolls against {@code p} (after its gear's reductions, as it goes on to the
+     * player's health), by attack name ({@code CombatHooks.nameAttack}): the self-test player's health can't show it.
+     */
+    private static void watch(ServerPlayer p) {
+        if (!hooked) {
+            hooked = true;
+            CombatHooks.addDamageListener((player, attacker, attack, style, damage) -> {
+                if (player == watching) {
+                    int[] t = TAKEN.computeIfAbsent(attack == null ? "?" : attack, k -> new int[3]);
+                    t[0] += Math.max(0, damage);
+                    t[1]++;
+                    t[2] = Math.max(t[2], damage);
+                }
+            });
+        }
+        TAKEN.clear();
+        watching = p;
+    }
+
+    /** {total damage, rolls, biggest roll} of an attack against the watched player so far. */
+    private static int[] taken(String attack) {
+        return TAKEN.getOrDefault(attack, new int[3]).clone();
+    }
+
     /** A health buffer so the boss's hits between two heals can't kill the test player; returns a restorer. */
     private static Runnable buffer(ServerPlayer p) {
+        watch(p);
         AttributeInstance health = p.getAttribute(Attributes.MAX_HEALTH);
         if (health != null) {
             health.removeModifier(HP_BUFFER);
@@ -64,6 +102,7 @@ final class ClassicBossWalks {
             p.setHealth(p.getMaxHealth());
         }
         return () -> {
+            watching = null;
             if (health != null) {
                 health.removeModifier(HP_BUFFER);
             }
@@ -218,18 +257,39 @@ final class ClassicBossWalks {
         long now = ActionManager.gameTick();
         StringBuilder out = new StringBuilder();
         try {
-            // Acid phase.
+            // One quiet tick first, as its first tick in a fight: the script learns its arena centre (the pools around it).
+            v.cooldown = 10;
+            now = tick(boss, p, now);
+            // Acid phase: the player stands still on the pool that landed under them.
+            boss.setHealth(boss.getMaxHealth() / 2); // room for the acid it leeches
+            float bossHp = boss.getHealth();
             v.startAcid(boss, p);
             expect(v.acidPhase(), "the acid phase didn't start");
             int half = boss.modifyIncoming(p, 40, AttackType.RANGED);
             expect(half == 20, "Vorkath took " + half + " of a 40 during the acid phase (expected half)");
-            float hp = p.getHealth();
+            int[] fire0 = taken("rapid_fire");
+            int acidTicks = 0;
             for (int i = 0; i < ZulrahVorkath.RAPID_FIRE_SHOTS + 2 && v.acidPhase(); i++) {
                 now = tick(boss, p, now);
+                acidTicks++;
             }
             expect(!v.acidPhase(), "the acid phase never ended");
-            expect(p.getHealth() < hp, "standing still in the acid phase hurt nothing (the pool under the player)");
-            out.append("acid: half damage, ").append(Math.round(hp - p.getHealth())).append(" taken standing still");
+            int[] acid = taken("acid_pool");
+            expect(acid[1] > 0 && acid[0] > 0, "standing still in the acid phase hurt nothing (the pool under the player)");
+            // OSRS Wiki (Vorkath/Strategies): standing on acid deals up to 10 a tick, which Vorkath leeches as health.
+            expect(acid[1] == acidTicks, "the pool under the player hit " + acid[1] + " of the acid phase's " + acidTicks + " ticks");
+            expect(acid[2] <= ZulrahVorkath.ACID_MAX && acid[0] >= acid[1], "an acid hit outside 1-" + ZulrahVorkath.ACID_MAX
+                    + " (" + acid[0] + " in " + acid[1] + " hits, biggest " + acid[2] + ")");
+            float leeched = boss.getHealth() - bossHp;
+            expect(leeched >= acid[0] - 0.01f, "Vorkath leeched " + leeched + " of the " + acid[0] + " its acid dealt");
+            out.append("acid: half damage, ").append(acid[0]).append(" taken in ").append(acid[1]).append(" ticks standing still (leeched)");
+            if (listed(p)) {
+                int[] fire = taken("rapid_fire");
+                int shots = fire[1] - fire0[1];
+                expect(shots > 0 && fire[2] <= ZulrahVorkath.VORKATH_RAPID_FIRE.maxHit(), "standing still, the rapid fire hit "
+                        + shots + " times (biggest " + fire[2] + ")");
+                out.append(", ").append(shots).append(" fireballs on the tile");
+            }
             p.setHealth(p.getMaxHealth());
             int full = boss.modifyIncoming(p, 40, AttackType.RANGED);
             expect(full == 40, "Vorkath still took " + full + " of a 40 after the acid phase");
@@ -251,27 +311,30 @@ final class ClassicBossWalks {
             spawn = v.spawn();
             expect(spawn != null, "no second zombified spawn");
             spawn.teleportTo(p.getX() + 0.5, p.getY(), p.getZ());
-            hp = p.getHealth();
+            int[] boom0 = taken("spawn_explosion");
             v.cooldown = 10; // no attack of Vorkath's own in the same tick: only the explosion is measured
             now = tick(boss, p, now);
             expect(!spawn.isAlive() || spawn.isRemoved(), "the spawn next to the player didn't explode");
-            float exploded = hp - p.getHealth();
-            expect(exploded > 0 && exploded <= ZulrahVorkath.SPAWN_EXPLOSION_MAX, "the spawn's explosion hit " + exploded);
-            out.append("; a spawn left alone exploded for ").append(Math.round(exploded));
+            int[] boom = taken("spawn_explosion");
+            int exploded = boom[0] - boom0[0];
+            expect(boom[1] == boom0[1] + 1 && exploded > 0 && exploded <= ZulrahVorkath.SPAWN_EXPLOSION_MAX,
+                    "the spawn's explosion hit " + exploded + " in " + (boom[1] - boom0[1]) + " hit(s)");
+            out.append("; a spawn left alone exploded for ").append(exploded);
             p.setHealth(p.getMaxHealth());
             now = tick(boss, p, now);
             // The dragonfire bomb, on the player's tile.
             v.bomb(boss, p);
             expect(v.strikesPending(), "the dragonfire bomb wasn't launched");
             v.cooldown = 20; // only the bomb lands while it is measured
-            hp = p.getHealth();
+            int[] bomb0 = taken("dragonfire_bomb");
             for (int i = 0; i <= ZulrahVorkath.VORKATH_BOMB.telegraphTicks(); i++) {
                 now = tick(boss, p, now);
             }
             if (listed(p)) {
-                float bomb = hp - p.getHealth();
-                expect(bomb <= ZulrahVorkath.VORKATH_BOMB.maxHit(), "the bomb hit " + bomb);
-                out.append("; bomb on the player's tile hit ").append(Math.round(bomb));
+                int[] bomb = taken("dragonfire_bomb");
+                expect(bomb[1] == bomb0[1] + 1, "the bomb on the player's tile hit them " + (bomb[1] - bomb0[1]) + " times");
+                expect(bomb[2] <= ZulrahVorkath.VORKATH_BOMB.maxHit(), "the bomb hit " + bomb[2]);
+                out.append("; bomb on the player's tile hit ").append(bomb[0] - bomb0[0]);
             } else {
                 out.append("; bomb launched (its strike only reaches listed players)");
             }
@@ -358,27 +421,33 @@ final class ClassicBossWalks {
             p.setItemInHand(InteractionHand.MAIN_HAND, held);
             // The splash orb: seven strikes (the orb and six splinters).
             int before = corp.splashes;
+            int[] splash0 = taken("splash_orb");
             corp.splash(boss, p);
             expect(corp.splashes == before + 1 && corp.strikesPending(), "the splash orb wasn't thrown");
-            float hp = p.getHealth();
             for (int i = 0; i < 6; i++) {
                 now = tick(boss, p, now);
             }
             expect(!corp.strikesPending(), "the splash orb's strikes never landed");
             if (listed(p)) {
-                float took = hp - p.getHealth();
-                expect(took <= ClassicBosses.CORP_SPLASH_DIRECT + 2 * ClassicBosses.CORP_SPLINTER_DIRECT,
-                        "the splash orb hit for " + took);
-                out.append("; splash orb landed (").append(Math.round(took)).append(" taken)");
+                // The orb lands on the player's tile (up to 40), each of its six splinters within three tiles (up to 30).
+                int[] splash = taken("splash_orb");
+                int took = splash[0] - splash0[0];
+                expect(splash[1] > splash0[1], "the splash orb aimed at the player's tile didn't hit them");
+                expect(splash[2] <= ClassicBosses.CORP_SPLASH_DIRECT
+                        && took <= ClassicBosses.CORP_SPLASH_DIRECT + ClassicBosses.CORP_SPLINTERS * ClassicBosses.CORP_SPLINTER_DIRECT,
+                        "the splash orb hit for " + took + " (biggest " + splash[2] + ")");
+                out.append("; splash orb landed (").append(took).append(" taken in ").append(splash[1] - splash0[1]).append(" hit(s))");
                 // The stomp: standing under it.
                 p.setHealth(p.getMaxHealth());
                 p.teleportTo(boss.getX(), boss.getY(), boss.getZ());
-                hp = p.getHealth();
+                int[] stomp0 = taken("stomp");
                 int stomped = corp.stomp(boss);
                 expect(stomped >= 1, "standing under the Corporeal Beast wasn't stomped");
-                float stomp = hp - p.getHealth();
-                expect(stomp >= ClassicBosses.CORP_STOMP_MIN && stomp <= ClassicBosses.CORP_STOMP.maxHit(), "the stomp hit " + stomp);
-                out.append("; stomp ").append(Math.round(stomp));
+                int[] stomps = taken("stomp");
+                int stomp = stomps[0] - stomp0[0];
+                expect(stomps[1] == stomp0[1] + 1 && stomp >= ClassicBosses.CORP_STOMP_MIN && stomp <= ClassicBosses.CORP_STOMP.maxHit(),
+                        "the stomp hit " + stomp + " in " + (stomps[1] - stomp0[1]) + " hit(s)");
+                out.append("; stomp ").append(stomp);
                 p.teleportTo(boss.getX() + 6, boss.getY(), boss.getZ()); // out from under it again
             } else {
                 out.append("; splash orb landed (strikes and stomps only reach listed players)");
