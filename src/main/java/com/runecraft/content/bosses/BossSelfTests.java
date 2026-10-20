@@ -75,6 +75,20 @@ public final class BossSelfTests {
     }
 
     /**
+     * What a Hunllef's script is doing (the Gauntlet walk in {@code content/minigames/GauntletSelfTest}): whether it is in its
+     * magic cycle, the style it protects from, attacks into the current cycle, off-prayer hits taken since its last prayer
+     * switch, tornadoes out, floor tiles out (and whether they are orange) and attacks made.
+     */
+    public record HunllefView(boolean magic, com.runecraft.osrs.AttackType prays, int styleAttacks, int offPrayerHits,
+                              int tornadoes, int floorTiles, boolean floorOrange, int attacks) {
+    }
+
+    /** The Hunllef script's view, or null when the boss is not a Hunllef. */
+    public static HunllefView hunllef(DataBossEntity boss) {
+        return boss.script() instanceof EncounterScripts.Hunllef h ? h.view() : null;
+    }
+
+    /**
      * Whether a player's ordinary weapon attacks can take hitpoints off this boss at all. False for Zalcano, who is only hurt
      * by imbued tephra (her armour) and pickaxes (once she falls).
      */

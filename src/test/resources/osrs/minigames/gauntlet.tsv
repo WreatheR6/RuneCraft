@@ -127,3 +127,19 @@ Corrupted	Crystal weapon seed	1	1	1	50	1
 Corrupted	Crystal armour seed	1	1	1	50	1
 Corrupted	Enhanced crystal weapon seed	1	1	1	400	1
 Corrupted	Youngllef	1	1	1	800	1
+# Creature resource roll (wiki creature pages, Drop Log Project rates of the corrupted creatures; one roll besides the 100% shards). Columns: Resource tier item min max rarity
+Resource	weak	Nothing	0	0	9/24
+Resource	weak	Corrupted shards	3	7	9/24
+Resource	weak	Raw paddlefish	1	3	3/24
+Resource	weak	Grym leaf (corrupted)	1	1	2/24
+Resource	weak	Corrupted teleport crystal	1	1	1/24
+Resource	strong	Corrupted shards	7	14	9/21
+Resource	strong	Nothing	0	0	6/21
+Resource	strong	Raw paddlefish	2	4	3/21
+Resource	strong	Grym leaf (corrupted)	1	1	2/21
+Resource	strong	Corrupted teleport crystal	1	1	1/21
+Resource	demi	Nothing	0	0	3/18
+Resource	demi	Corrupted shards	10	21	9/18
+Resource	demi	Raw paddlefish	3	5	3/18
+Resource	demi	Grym leaf (corrupted)	1	1	2/18
+Resource	demi	Corrupted teleport crystal	1	1	1/18

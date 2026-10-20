@@ -21,19 +21,36 @@ public final class MinigameBosses {
     public static final int HUNLLEF_ATTACKS_PER_STYLE = 4;
     /** Hunllef switches its protection prayer after taking this many hits from the protected style. */
     public static final int HUNLLEF_HITS_PER_PRAYER = 6;
-    public static final AttackDef HUNLLEF_RANGED = AttackDef.of("crystal_spikes", AttackType.RANGED, 16, 16, 1)
-            .particle("minecraft:end_rod");
-    public static final AttackDef HUNLLEF_MAGIC = AttackDef.of("crystal_orb", AttackType.MAGIC, 16, 16, 1)
-            .particle("minecraft:glow");
+    // The standard attacks go through protection prayers (PRAYER_PIERCING): the right prayer only lowers them, to 12
+    // (crystalline) or 16 (corrupted) without armour, which the Hunllef script applies; unprayed they can reach the NPC
+    // formula's 50 / 68 (wiki infobox max hits). Worn Gauntlet armour lowers both (minigames module, GauntletService).
+    public static final AttackDef HUNLLEF_RANGED = AttackDef.of("crystal_spikes", AttackType.RANGED, 50, 16, 1)
+            .special(Special.PRAYER_PIERCING, 0).particle("minecraft:end_rod");
+    public static final AttackDef HUNLLEF_MAGIC = AttackDef.of("crystal_orb", AttackType.MAGIC, 50, 16, 1)
+            .special(Special.PRAYER_PIERCING, 0).particle("minecraft:glow");
     /** Its magic attack sometimes switches off the target's prayers. */
-    public static final AttackDef HUNLLEF_PRAYER_DISABLE = AttackDef.of("prayer_disable", AttackType.MAGIC, 16, 16, 1)
-            .particle("minecraft:reverse_portal").message("The Hunllef's magic attack disrupts your prayers!");
+    public static final AttackDef HUNLLEF_PRAYER_DISABLE = AttackDef.of("prayer_disable", AttackType.MAGIC, 50, 16, 1)
+            .special(Special.PRAYER_PIERCING, 0).particle("minecraft:reverse_portal")
+            .message("The Hunllef's magic attack disrupts your prayers!");
     public static final AttackDef HUNLLEF_STOMP = AttackDef.of("stomp", AttackType.CRUSH, 68, 1.5, 1).special(Special.AOE, 1)
             .message("The Hunllef stomps on you!");
-    public static final AttackDef CORRUPTED_RANGED = AttackDef.of("corrupted_spikes", AttackType.RANGED, 20, 16, 1)
-            .particle("minecraft:crimson_spore");
-    public static final AttackDef CORRUPTED_MAGIC = AttackDef.of("corrupted_orb", AttackType.MAGIC, 20, 16, 1)
-            .particle("minecraft:crimson_spore");
+    public static final AttackDef CORRUPTED_RANGED = AttackDef.of("corrupted_spikes", AttackType.RANGED, 68, 16, 1)
+            .special(Special.PRAYER_PIERCING, 0).particle("minecraft:crimson_spore");
+    public static final AttackDef CORRUPTED_MAGIC = AttackDef.of("corrupted_orb", AttackType.MAGIC, 68, 16, 1)
+            .special(Special.PRAYER_PIERCING, 0).particle("minecraft:crimson_spore");
+    public static final AttackDef CORRUPTED_PRAYER_DISABLE = AttackDef.of("prayer_disable", AttackType.MAGIC, 68, 16, 1)
+            .special(Special.PRAYER_PIERCING, 0).particle("minecraft:reverse_portal")
+            .message("The Hunllef's magic attack disrupts your prayers!");
+    /** Max hit of the standard attacks through the right protection prayer, without armour (wiki): 12 and 16. */
+    public static final int HUNLLEF_PRAYED_MAX = 12;
+    public static final int CORRUPTED_PRAYED_MAX = 16;
+    /** One magic attack in this many switches prayers off (approx: the wiki only says "a chance"). */
+    public static final int HUNLLEF_PRAYER_DISABLE_CHANCE = 5;
+    /** Attacks between tornado summons (approx; the summon counts as one of the four attacks of a style). */
+    public static final int HUNLLEF_TORNADO_EVERY = 6;
+    /** The tornado summon: one of the Hunllef's attacks (performed by its script, no damage of its own). */
+    public static final AttackDef HUNLLEF_TORNADO = AttackDef.of("tornado_summon", AttackType.MAGIC, 0, 64, 1)
+            .message("The Hunllef summons tornadoes!");
 
     // ---- The Nightmare ----
     public static final AttackDef NIGHTMARE_MELEE = AttackDef.of("claw_swipe", AttackType.SLASH, 50, 4.5, 4); // wiki: 50 (60 vs wrong prayer)
@@ -95,7 +112,8 @@ public final class MinigameBosses {
                 // main-table rolls come from the minigames module (Gauntlet.REGULAR) on every Hunllef kill; the pet from Pets.
                 .drops(Drop.of("crystal_shard", 5, 9, 1), Drop.of("clue_scroll_elite", 1, 1, 25), Drop.of("crystal_weapon_seed", 1, 1, 120),
                         Drop.of("crystal_armour_seed", 1, 1, 120), Drop.of("enhanced_crystal_weapon_seed", 1, 1, 2000))
-                .pet("pet_youngllef").at("the_gauntlet").arena(12, "ice")
+                // Only fought at the end of a Gauntlet run (raidOnly: no summoning-stone arena in Prifddinas any more).
+                .pet("pet_youngllef").at("the_gauntlet").arena(12, "ice").raidOnly()
                 .size(1.6f, 1.8f, 1.8f).moveSpeed(0.22);
     }
 
@@ -108,7 +126,7 @@ public final class MinigameBosses {
                 .drops(Drop.of("crystal_shard", 7, 12, 1), Drop.of("gauntlet_cape", 1, 1, 1), Drop.of("clue_scroll_elite", 1, 1, 20),
                         Drop.of("crystal_weapon_seed", 1, 1, 50), Drop.of("crystal_armour_seed", 1, 1, 50),
                         Drop.of("enhanced_crystal_weapon_seed", 1, 1, 400))
-                .pet("pet_youngllef").at("the_gauntlet").arena(12, "lava")
+                .pet("pet_youngllef").at("the_gauntlet").arena(12, "lava").raidOnly()
                 .size(1.6f, 1.8f, 1.8f).moveSpeed(0.22);
     }
 
