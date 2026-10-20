@@ -19,6 +19,11 @@ import net.minecraft.world.entity.LivingEntity;
  */
 public final class PoisonService {
     private static final Map<UUID, Toxins.State> STATES = new ConcurrentHashMap<>();
+    /**
+     * Poisoned or envenomed monster -> the player whose hit last landed on it: a poison or venom tick that kills it gives
+     * that player the kill (loot, kill count, Slayer, quests), as in OSRS.
+     */
+    private static final Map<UUID, ServerPlayer> CREDIT = new ConcurrentHashMap<>();
     /** Told when poison or venom hurts a monster (Combat Achievements: "A Slow Death"). */
     public static java.util.function.Consumer<LivingEntity> monsterToxinListener = e -> {
     };
@@ -37,6 +42,30 @@ public final class PoisonService {
         if (Toxins.poison(state(target), damage, gameTick) && target instanceof ServerPlayer p) {
             p.displayClientMessage(Component.literal("You have been poisoned!").withStyle(ChatFormatting.DARK_GREEN), false);
         }
+        noteCredit(target);
+    }
+
+    /** Remembers the player whose hit last landed on a poisoned monster (weapons poison right after their hit lands). */
+    private static void noteCredit(LivingEntity target) {
+        if (!(target instanceof ServerPlayer) && target.getLastHurtByMob() instanceof ServerPlayer hitter
+                && STATES.containsKey(target.getUUID())) {
+            CREDIT.put(target.getUUID(), hitter);
+        }
+    }
+
+    /** The player a toxin kill of this monster is credited to (after a death or relog, the same player's new entity). */
+    private static ServerPlayer credit(LivingEntity target) {
+        noteCredit(target);
+        ServerPlayer hitter = CREDIT.get(target.getUUID());
+        if (hitter != null && (hitter.isRemoved() || hitter.hasDisconnected())) {
+            hitter = target.getServer() == null ? null : target.getServer().getPlayerList().getPlayer(hitter.getUUID());
+        }
+        return hitter;
+    }
+
+    private static void forget(LivingEntity entity) {
+        STATES.remove(entity.getUUID());
+        CREDIT.remove(entity.getUUID());
     }
 
     public static void venom(LivingEntity target, long gameTick) {
@@ -53,6 +82,7 @@ public final class PoisonService {
         if (Toxins.venom(state(target), gameTick) && target instanceof ServerPlayer p) {
             p.displayClientMessage(Component.literal("You have been envenomed!").withStyle(ChatFormatting.DARK_GREEN), false);
         }
+        noteCredit(target);
     }
 
     /**
@@ -99,24 +129,32 @@ public final class PoisonService {
             return;
         }
         if (!entity.isAlive()) {
-            STATES.remove(entity.getUUID());
+            forget(entity);
             return;
         }
         boolean venom = s.envenomed();
         int damage = Toxins.tick(s, gameTick);
         if (damage > 0) {
-            CombatHooks.nameAttack("poison", null);
-            CombatHandler.applyDamage(null, entity, damage);
-            ServerNetworking.hitsplat(entity, damage, venom ? Net.SPLAT_VENOM : Net.SPLAT_POISON);
+            ServerPlayer credit = null;
             if (!(entity instanceof ServerPlayer)) {
+                // Told first: a tick that kills is the fight's last damage when the kill is judged.
                 monsterToxinListener.accept(entity);
+                credit = credit(entity);
             }
+            CombatHooks.nameAttack("poison", null);
+            CombatHandler.typelessKillCredit = credit;
+            try {
+                CombatHandler.applyDamage(null, entity, damage);
+            } finally {
+                CombatHandler.typelessKillCredit = null;
+            }
+            ServerNetworking.hitsplat(entity, damage, venom ? Net.SPLAT_VENOM : Net.SPLAT_POISON);
             if (!s.active() && entity instanceof ServerPlayer p) {
                 Msg.game(p, "The poison has worn off.");
             }
         }
         if (s.idle(gameTick)) {
-            STATES.remove(entity.getUUID());
+            forget(entity);
         }
     }
 }

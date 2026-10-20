@@ -239,6 +239,11 @@ public class InfernoSession extends TzHaarSession {
                 aggro(mob);
             }
         }
+        if (monsters.contains(TzHaarWaves.ZUK)) {
+            for (ServerPlayer p : online()) { // wave 69 starting counts as engaging Zuk (Facing Jad Head-on II)
+                com.runecraft.content.systems.CombatAchievementService.engagedNow(p, TzHaarWaves.ZUK);
+            }
+        }
     }
 
     @Override

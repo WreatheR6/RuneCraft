@@ -148,6 +148,12 @@ class CombatAchievementsRound39Test {
         zuk.engagedAt.put("tzkal_zuk", 500L);
         zuk.wield("twisted_bow", 600);
         assertTrue(meets(350, zuk));
+        // Wave 69 starting counts as the engagement: a bow swapped to as the wave starts, before any attack, is fine.
+        Metrics swap = new Metrics();
+        swap.wield("abyssal_whip", 10);
+        swap.engagedAt.put("tzkal_zuk", 500L);
+        swap.wield("twisted_bow", 500);
+        assertTrue(meets(350, swap));
         Metrics early = new Metrics();
         early.wield("twisted_bow", 10);
         early.engagedAt.put("tzkal_zuk", 500L);
@@ -299,6 +305,18 @@ class CombatAchievementsRound39Test {
         assertTrue(CombatAchievements.rewards(Tier.ELITE).stream().anyMatch(r -> r.contains("Bracelets of slaughter")));
         // The bracelets exist with charges to save.
         ContentRegistry.bosses();
+        // The slayer helmets the elite/master/grandmaster rewards promise exist and are made only at that tier.
+        for (String[] ca : com.runecraft.osrs.content.slayer.SlayerRewards.CA_HELMETS) {
+            for (String id : new String[]{ca[0] + "_slayer_helmet", ca[0] + "_slayer_helmet_i"}) {
+                assertNotNull(ItemCatalog.get(id), id);
+                com.runecraft.osrs.content.slayer.SlayerRewards.Craft craft = com.runecraft.osrs.content.slayer.SlayerRewards.craft(id);
+                assertNotNull(craft, id);
+                assertEquals(ca[1], craft.caTier(), id);
+            }
+            String name = ItemCatalog.get(ca[0] + "_slayer_helmet").name().toLowerCase(java.util.Locale.ROOT);
+            assertTrue(CombatAchievements.rewards(Tier.valueOf(ca[1])).stream()
+                    .anyMatch(r -> r.toLowerCase(java.util.Locale.ROOT).contains(name)), name + " not in the " + ca[1] + " rewards");
+        }
         assertNotNull(ItemCatalog.get("bracelet_of_slaughter"));
         assertNotNull(ItemCatalog.get("expeditious_bracelet"));
         assertTrue(Jewellery.chargePool("bracelet_of_slaughter") > 0);

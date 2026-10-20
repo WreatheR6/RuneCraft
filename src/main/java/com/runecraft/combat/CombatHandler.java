@@ -460,8 +460,11 @@ public final class CombatHandler {
 
     // ---------------- Deaths ----------------
 
+    /** Set by {@link PoisonService} around a poison or venom tick: who a monster killed by it is credited to. */
+    static ServerPlayer typelessKillCredit;
+
     private static void afterDeath(LivingEntity entity, DamageSource source) {
-        Entity attacker = source.getEntity();
+        Entity attacker = source.getEntity() != null ? source.getEntity() : typelessKillCredit;
         if (entity instanceof ServerPlayer) {
             return;
         }

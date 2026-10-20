@@ -1097,22 +1097,24 @@ public final class CombatAchievements {
                     "Superior slayer monsters appear 1/150 instead of 1/200",
                     "Ghommal's hilt 4: attach Vorkath's head to a dragon hunter crossbow (t)",
                     "Ecumenical keys drop 1/50", "The dwarf multicannon holds 60 cannonballs",
-                    "A slayer master styles your slayer helmet into a TzTok slayer helmet",
+                    // approx: OSRS has Ghommal or Laidee Gnonock style the CA helmets; here the slayer masters' crafting menu
+                    // does (SlayerRewards.CA_HELMETS, gated on the claimed tier).
+                    "Any slayer master's crafting menu styles a slayer helmet into a TzTok slayer helmet (OSRS: Ghommal or Laidee Gnonock)",
                     "Bracelets of slaughter and expeditious bracelets have a 10% chance to fully recharge instead of crumbling",
-                    "God Wars Dungeon private instances cost 125,000");
+                    "God Wars Dungeon private instances cost 125,000 (no private instances in this world yet)");
             case MASTER -> List.of("Antique lamp: 35,000 XP in a skill of level 60+", "Ghommal's hilt 5: 5 daily teleports to Mor Ul Rek",
                     "Ghommal's lucky penny: 5% chance not to use a charge of a charged item",
                     "Combine the hilt with an avernic defender into Ghommal's avernic defender 5",
                     "Like a boss: up to 60 boss kills per task", "TzTok-Jad and TzKal-Zuk tasks are 2 kills",
                     "God Wars Dungeon boss rooms need 25 kill count", "Thralls last twice as long", "Ecumenical keys drop 1/45",
-                    "A slayer master styles your slayer helmet into a vampyric slayer helmet",
-                    "God Wars Dungeon private instances cost 100,000");
+                    "Any slayer master's crafting menu styles a slayer helmet into a vampyric slayer helmet (OSRS: Ghommal or Laidee Gnonock)",
+                    "God Wars Dungeon private instances cost 100,000 (no private instances in this world yet)");
             case GRANDMASTER -> List.of("Antique lamp: 50,000 XP in a skill of level 70+", "Ghommal's hilt 6: unlimited teleports to Mor Ul Rek",
                     "Combine the hilt with an avernic defender into Ghommal's avernic defender 6",
                     "Like a boss: up to 65 boss kills per task", "TzTok-Jad and TzKal-Zuk tasks are 3 kills",
                     "God Wars Dungeon boss rooms need 15 kill count", "Ecumenical keys drop 1/40",
-                    "A slayer master styles your slayer helmet into a TzKal slayer helmet",
-                    "God Wars Dungeon private instances cost 75,000");
+                    "Any slayer master's crafting menu styles a slayer helmet into a TzKal slayer helmet (OSRS: Laidee Gnonock)",
+                    "God Wars Dungeon private instances cost 75,000 (no private instances in this world yet)");
         };
     }
 

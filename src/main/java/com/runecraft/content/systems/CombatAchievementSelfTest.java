@@ -1,14 +1,22 @@
 package com.runecraft.content.systems;
 
+import com.runecraft.action.ActionManager;
+import com.runecraft.combat.CombatHandler;
 import com.runecraft.combat.MonsterStats;
+import com.runecraft.combat.PoisonService;
 import com.runecraft.content.raids.RaidsState;
+import com.runecraft.entity.BossEntity;
+import com.runecraft.osrs.Toxins;
 import com.runecraft.osrs.content.dungeons.Dungeons;
+import com.runecraft.osrs.content.minigames.TzHaarWaves;
 import com.runecraft.osrs.content.raids.ToaLoot;
 import com.runecraft.osrs.content.systems.CombatAchievementRules;
 import com.runecraft.osrs.content.systems.CombatAchievementRules.Metrics;
 import com.runecraft.osrs.content.systems.CombatAchievements;
 import com.runecraft.osrs.content.systems.CombatAchievements.Track;
+import com.runecraft.osrs.data.Boss;
 import com.runecraft.osrs.world.StructureDef;
+import com.runecraft.player.Players;
 import com.runecraft.registry.ModEntities;
 import com.runecraft.selftest.SelfTest;
 import com.runecraft.selftest.TestContext;
@@ -18,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -29,7 +38,8 @@ import net.minecraft.world.item.ItemStack;
  * own paths: each check meets a task's condition and expects it completed, and first misses it and expects it open.
  * Inferno (Playing with Jads on its wave-68 checkpoint), Fight Caves (only melee weapons held), Tombs of Amascut (perfect
  * rooms at raid level 150+), raid kill counts read from the completion counts (ToB without Entry mode, CoX with
- * Challenge Mode, ToA by mode), thralls (100 damage) and the Giants' Den collection.
+ * Challenge Mode, ToA by mode), thralls (100 damage), the Giants' Den collection, A Slow Death (a real poison tick kills
+ * Bryophyta and gives the kill) and Facing Jad Head-on II (wave 69 starting counts as engaging TzKal-Zuk).
  */
 public final class CombatAchievementSelfTest {
     private CombatAchievementSelfTest() {
@@ -43,6 +53,8 @@ public final class CombatAchievementSelfTest {
         checks.add(new SelfTest.Check("ca:raid_completion_counts", () -> raidCounts(c)));
         checks.add(new SelfTest.Check("ca:thrall_damage", () -> thralls(c)));
         checks.add(new SelfTest.Check("ca:giants_den", () -> giantsDen(c)));
+        checks.add(new SelfTest.Check("ca:slow_death_poison_kill", () -> slowDeath(c)));
+        checks.add(new SelfTest.Check("ca:inferno_zuk_wave_swap", () -> zukWaveSwap(c)));
         return checks;
     }
 
@@ -166,6 +178,87 @@ public final class CombatAchievementSelfTest {
         CombatAchievementService.counter(p, CombatAchievements.COUNTER_THRALL_DAMAGE, 40);
         expect(done(p, 399), "Sit Back and Relax not completed at 100 thrall damage");
         return "399";
+    }
+
+    /**
+     * A Slow Death: Bryophyta killed by the player's own hit after a poison tick stays open; hit to 3 hitpoints and then
+     * finished by a poison tick, she counts as the player's kill (kill count up) and the task completes.
+     */
+    private static String slowDeath(TestContext c) {
+        ServerPlayer p = c.player;
+        SysState.of(p).caDone.remove("ca_40");
+        BossEntity first = bryophyta(c);
+        try {
+            CombatAchievementService.selfTestAttack(p, first, 5);
+            CombatHandler.applyDamage(p, first, 5);
+            PoisonService.poison(first, 6, ActionManager.gameTick());
+            expect(PoisonService.isPoisoned(first), "Bryophyta couldn't be poisoned");
+            PoisonService.tick(first, ActionManager.gameTick() + Toxins.HIT_INTERVAL);
+            int hp = (int) Math.ceil(first.getHealth());
+            CombatAchievementService.selfTestAttack(p, first, hp);
+            CombatHandler.applyDamage(p, first, hp);
+            expect(!first.isAlive(), "Bryophyta survived a lethal hit");
+            expect(!done(p, 40), "A Slow Death completed although the player's own hit killed Bryophyta");
+        } finally {
+            first.discard();
+        }
+        BossEntity boss = bryophyta(c);
+        try {
+            int kc = Players.data(p).killCount(boss.boss().entityId());
+            CombatAchievementService.selfTestAttack(p, boss, 5);
+            CombatHandler.applyDamage(p, boss, 5);
+            PoisonService.poison(boss, 6, ActionManager.gameTick());
+            boss.setHealth(3);
+            PoisonService.tick(boss, ActionManager.gameTick() + Toxins.HIT_INTERVAL);
+            expect(!boss.isAlive(), "a 6 poison hit didn't kill Bryophyta at 3 hitpoints");
+            expect(Players.data(p).killCount(boss.boss().entityId()) == kc + 1, "the poison kill wasn't credited to the player");
+            expect(done(p, 40), "A Slow Death not completed when poison dealt the killing blow");
+        } finally {
+            boss.discard();
+        }
+        return "40 by a poison kill";
+    }
+
+    /** A Bryophyta next to the platform with no AI (no attacks, no growthlings): the check deals every hit itself. */
+    private static BossEntity bryophyta(TestContext c) {
+        BossEntity boss = ModEntities.BOSS_TYPES.get(Boss.BRYOPHYTA).create(c.world);
+        expect(boss != null, "couldn't create Bryophyta");
+        BlockPos at = c.near(3, 0).above();
+        boss.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0, 0);
+        boss.setNoAi(true);
+        c.world.addFreshEntity(boss);
+        return boss;
+    }
+
+    /**
+     * Facing Jad Head-on II: a twisted bow held before TzKal-Zuk's wave fails it; swapped to once wave 69 has started
+     * (before anyone strikes Zuk) it doesn't.
+     */
+    private static String zukWaveSwap(TestContext c) {
+        ServerPlayer p = c.player;
+        SysState.of(p).caDone.remove("ca_350");
+        ItemStack before = p.getItemBySlot(EquipmentSlot.MAINHAND).copy();
+        try {
+            hold(p, "abyssal_whip");
+            CombatAchievementService.selfTestStartRun(p, "mg:inferno");
+            CombatAchievementService.selfTestMeasure(p);
+            hold(p, "twisted_bow");
+            CombatAchievementService.selfTestMeasure(p); // still wave 68: Zuk's wave hasn't started
+            CombatAchievementService.selfTestEndRun(p, true);
+            expect(!done(p, 350), "Facing Jad Head-on II completed with a bow held before Zuk's wave");
+            hold(p, "abyssal_whip");
+            CombatAchievementService.selfTestStartRun(p, "mg:inferno");
+            CombatAchievementService.selfTestMeasure(p);
+            CombatAchievementService.engagedNow(p, TzHaarWaves.ZUK); // what InfernoSession.spawnWave reports for wave 69
+            hold(p, "twisted_bow");
+            CombatAchievementService.selfTestMeasure(p);
+            CombatAchievementService.selfTestEndRun(p, true);
+            expect(done(p, 350), "Facing Jad Head-on II not completed with the bow swapped to once wave 69 started");
+        } finally {
+            CombatAchievementService.selfTestEndRun(p, false);
+            p.setItemSlot(EquipmentSlot.MAINHAND, before);
+        }
+        return "350 with the wave-69 swap";
     }
 
     /** Into the Den of Giants: giants killed outside the den don't count; a hill, moss and fire giant inside do. */

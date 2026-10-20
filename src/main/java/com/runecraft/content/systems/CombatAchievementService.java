@@ -191,6 +191,18 @@ public final class CombatAchievementService {
         m.flags.removeAll(added);
     }
 
+    /**
+     * A minigame run reached a boss's fight before anyone struck: it counts as engaged from now ("before wave 69": Facing Jad
+     * Head-on II lets weapons be swapped once TzKal-Zuk's wave starts, before the first attack).
+     */
+    public static void engagedNow(ServerPlayer p, String bossId) {
+        Tracker run = RUNS.get(p.getUUID());
+        String key = CombatAchievements.fightKey(bossId, null);
+        if (run != null && key != null) {
+            run.m.engagedAt.putIfAbsent(key, SysTicks.now());
+        }
+    }
+
     /** Judges every not-yet-done task of a raid or run track aimed at {@code target} (only checkpoint tasks if asked). */
     static void judge(ServerPlayer p, Track track, String target, Metrics m, boolean checkpointsOnly) {
         SysState.SysPlayer sp = SysState.of(p);
@@ -229,11 +241,21 @@ public final class CombatAchievementService {
         if (key == null) {
             return;
         }
+        List<Tracker> fights = new ArrayList<>();
+        for (Tracker f : FIGHTS.values()) {
+            if (f.key.equals(key) && f.targetEntity == e) {
+                fights.add(f);
+            }
+        }
         for (ServerPlayer p : near(e)) {
             Tracker f = FIGHTS.get(p.getUUID());
             if (f != null && f.key.equals(key)) {
-                f.m.flags.add(CombatAchievements.FLAG_TOXIN_LAST);
+                fights.add(f);
             }
+        }
+        for (Tracker f : fights) {
+            f.m.flags.add(CombatAchievements.FLAG_TOXIN_LAST);
+            f.last = SysTicks.now(); // the fight goes on while the poison does the work
         }
     }
 
@@ -1133,6 +1155,18 @@ public final class CombatAchievementService {
         run.kcAtStart = kc(p, key);
         start(p, run);
         RUNS.put(p.getUUID(), run);
+    }
+
+    /**
+     * One melee attack by the player as the combat path reports it; a fight left over from an earlier check is dropped first
+     * (the fake player is never ticked, so its fights never time out).
+     */
+    static void selfTestAttack(ServerPlayer p, LivingEntity target, int damage) {
+        Tracker f = FIGHTS.get(p.getUUID());
+        if (f != null && f.targetEntity != target) {
+            FIGHTS.remove(p.getUUID());
+        }
+        onAttack(p, target, AttackType.SLASH, damage);
     }
 
     /** One game tick's measurements (weapons held, damage, supplies...) for the player's fight and run. */
