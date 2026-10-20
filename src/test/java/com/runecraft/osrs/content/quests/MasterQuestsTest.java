@@ -293,4 +293,72 @@ class MasterQuestsTest {
         assertTrue(spec("making_friends_with_my_arm").triggers().stream().anyMatch(t -> t.kind == Trigger.Kind.REACH
                 && t.setFlags.contains(QuestBossRules.MOTHER_FIRE_OUT_FLAG)));
     }
+
+    // ------------------------------------------------------------------ Dream Mentor
+
+    @Test
+    void dreamMentorNursesCyrisusThenFightsHisFears() {
+        inOrder("dream_mentor", "talk cyrisus", "talk cyrisus", "talk cyrisus", "puzzle cyrisus", "talk cyrisus", "puzzle cyrisus",
+                "puzzle birds_eye_jack", "talk cyrisus", "talk cyrisus", "talk cyrisus", "talk oneiromancer", "reach troll_stronghold",
+                "reach dm_moonclan_sink", "reach dm_dream_hall", "talk cyrisus", "kill the_inadequacy", "kill the_everlasting",
+                "kill the_untouchable", "kill the_illusive", "talk oneiromancer");
+        // twenty pieces of food: seven cabbages, seven potatoes and six onions (wiki)
+        java.util.Map<String, Integer> fed = new java.util.HashMap<>();
+        for (Trigger t : spec("dream_mentor").triggers()) {
+            if (t.target.equals("cyrisus")) {
+                t.take.forEach((item, n) -> fed.merge(item, n, Integer::sum));
+            }
+        }
+        assertEquals(java.util.Map.of("cabbage", 7, "potato", 7, "onion", 6, "cyrisus_chest", 1, "dream_potion", 1), fed);
+        // each of Cyrisus's sets is a helmet, body, legs, boots and weapon, one of each slot
+        for (QuestPuzzle.Variant v : MisthalinMoreQuests.DM_ARMOUR.rooms.get(0).variants()) {
+            List<Integer> set = v.solutions().get(0);
+            for (int slot = 0; slot < 5; slot++) {
+                assertEquals(slot, set.get(slot) / 3, v.options().get(set.get(slot)));
+            }
+        }
+        assertEquals(2, MisthalinMoreQuests.DM_SPIRIT.picks);
+        assertEquals(List.of("the_inadequacy", "the_everlasting", "the_untouchable", "the_illusive"), QuestBossRules.DREAM_FEARS);
+        assertEquals("a_doubt", ContentRegistry.boss("the_inadequacy").minion);
+    }
+
+    // ------------------------------------------------------------------ A Kingdom Divided
+
+    @Test
+    void aKingdomDividedFollowsHughesRoseXamphurAndTheFiveHouses() {
+        inOrder("a_kingdom_divided", "talk martin_holt", "talk commander_fullore", "reach akd_hughes_house", "talk tomas_lawry",
+                "talk commander_fullore", "talk fuggy", "talk cabin_boy_herbert", "kill judge_of_yama", "talk councillor_andrews",
+                "talk commander_fullore", "talk martin_holt", "talk archeio", "talk martin_holt", "reach isk_forthos", "puzzle isk_forthos",
+                "kill akd_assassin", "reach akd_settlement_ruins", "reach akd_legless_faun", "puzzle akd_legless_faun", "reach akd_rose_shack",
+                "talk kaht_bbalam", "reach akd_lizard_eggs", "talk kaht_bbalam", "kill xamphur", "reach akd_rose_shack",
+                "reach akd_xerics_lookout", "kill akd_assassin", "talk jorra", "kill barbarian_warlord", "reach akd_vinery_office",
+                "talk mori", "reach akd_chasm_of_fire", "reach akd_mount_karuulm", "reach fsk_wintertodt_camp", "talk commander_fullore");
+        // the panel takes the stone piles' numbers for R, O, S and E, in that order
+        for (QuestPuzzle.Variant v : LateQuestsB.AKD_ROSE.rooms.get(0).variants()) {
+            String prompt = String.join(" ", v.prompt());
+            List<Integer> code = v.solutions().get(0);
+            String[] letters = {"R", "O", "S", "E"};
+            for (int i = 0; i < 4; i++) {
+                assertTrue(prompt.contains("'" + letters[i] + " - " + code.get(i) + "'"), prompt);
+            }
+        }
+        // the statues are pressed in the order the panel lists the cities
+        for (QuestPuzzle.Variant v : LateQuestsB.AKD_STATUES.rooms.get(0).variants()) {
+            String prompt = String.join(" ", v.prompt());
+            int last = -1;
+            for (int o : v.solutions().get(0)) {
+                String city = v.options().get(o).replace("Press in the ", "").replace(" statue", "");
+                int at = prompt.indexOf(city);
+                assertTrue(at > last, prompt);
+                last = at;
+            }
+        }
+        assertTrue(QuestBossRules.judgeOfYamaHurtBy(com.runecraft.osrs.AttackType.SLASH));
+        assertFalse(QuestBossRules.judgeOfYamaHurtBy(com.runecraft.osrs.AttackType.MAGIC));
+        assertFalse(QuestBossRules.judgeOfYamaHurtBy(com.runecraft.osrs.AttackType.RANGED));
+        assertNull(QuestBossRules.xamphurSpecial(9));
+        assertEquals("falling_hands", QuestBossRules.xamphurSpecial(10));
+        assertEquals("phantom_hands", QuestBossRules.xamphurSpecial(20));
+        assertEquals("phantom_hand", ContentRegistry.boss("xamphur").minion);
+    }
 }

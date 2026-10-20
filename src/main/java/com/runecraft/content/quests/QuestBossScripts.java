@@ -36,6 +36,12 @@ final class QuestBossScripts {
         BossScripts.register("nezikchened", Nezikchened::new);
         BossScripts.register("treus_dayth", TreusDayth::new);
         BossScripts.register("quest_mother", MotherOfWeiss::new);
+        BossScripts.register("the_inadequacy", Inadequacy::new);
+        BossScripts.register("the_everlasting", DreamFear::new);
+        BossScripts.register("the_untouchable", DreamFear::new);
+        BossScripts.register("the_illusive", Illusive::new);
+        BossScripts.register("judge_of_yama", JudgeOfYama::new);
+        BossScripts.register("xamphur", Xamphur::new);
         BossScripts.register("head_menaphite_guard", FalseGods::new);
         BossScripts.register("dark_squall", MagicOnly::new);
         BossScripts.register("balance_elemental", BalanceForms::new);
@@ -409,10 +415,14 @@ final class QuestBossScripts {
                     data.activePrayers().clear();
                     com.runecraft.network.ServerNetworking.sync(p);
                     if (told.add(p.getUUID())) {
-                        Msg.red(p, "Your prayers have no power in this dimension.");
+                        Msg.red(p, noPrayerMessage());
                     }
                 }
             }
+        }
+
+        String noPrayerMessage() {
+            return "Your prayers have no power in this dimension.";
         }
 
         /** The boss's attack of this name, or null. */
@@ -539,6 +549,137 @@ final class QuestBossScripts {
                 Msg.action(attacker, "The Fire of Domination shields Mother. Douse it with a bucket of water from the large barrel.");
             }
             return 0;
+        }
+    }
+
+    /** Dream Mentor (wiki): Cyrisus's fears are fought in his dream, where prayers don't work. */
+    static class DreamFear extends Culinary {
+        @Override
+        String noPrayerMessage() {
+            return "Your prayers have no power in Cyrisus's dream.";
+        }
+    }
+
+    /**
+     * Dream Mentor (wiki): the Inadequacy uses melee up close and ranged from afar, and summons Doubts, which vanish when it
+     * falls.
+     */
+    static final class Inadequacy extends DreamFear {
+        private static java.util.List<? extends net.minecraft.world.entity.Entity> doubts(DataBossEntity boss) {
+            net.minecraft.world.entity.EntityType<?> type = com.runecraft.registry.ModEntities.typeById("a_doubt");
+            return type == null ? java.util.List.of()
+                    : ((ServerLevel) boss.level()).getEntities(type, boss.getBoundingBox().inflate(24),
+                            net.minecraft.world.entity.Entity::isAlive);
+        }
+
+        @Override
+        public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
+            if (boss.getRandom().nextInt(QuestBossRules.INADEQUACY_SUMMON_ONE_IN) == 0
+                    && doubts(boss).size() < QuestBossRules.INADEQUACY_MAX_DOUBTS) {
+                return attack(boss, "summon_doubts");
+            }
+            return attack(boss, distance <= 2.5 ? "crush" : "doubt");
+        }
+
+        @Override
+        public void onDeath(DataBossEntity boss, ServerPlayer killer) {
+            doubts(boss).forEach(net.minecraft.world.entity.Entity::discard);
+        }
+    }
+
+    /**
+     * Dream Mentor (wiki, quest-helper): the Illusive never attacks, but after every two hits that land it burrows into the
+     * ground and comes up somewhere else.
+     */
+    static final class Illusive extends DreamFear {
+        private static final AttackDef IDLE = AttackDef.idle(AttackType.CRUSH);
+        private int hits;
+
+        @Override
+        public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
+            return IDLE;
+        }
+
+        @Override
+        public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            if (damage > 0 && ++hits >= QuestBossRules.ILLUSIVE_HITS_BEFORE_BURROW) {
+                hits = 0;
+                double a = boss.getRandom().nextDouble() * Math.PI * 2;
+                boss.teleportTo(boss.getX() + Math.cos(a) * 6, boss.getY(), boss.getZ() + Math.sin(a) * 6);
+                Msg.action(attacker, "The Illusive burrows into the ground and comes up somewhere else!");
+            }
+            return damage;
+        }
+    }
+
+    /**
+     * A Kingdom Divided (wiki): on the pier only melee hurts the Judge of Yama; it claws up close, sends waves of fire from
+     * afar and now and then banishes the player down the docks.
+     */
+    static final class JudgeOfYama implements BossScript {
+        private final long[] lastMessage = {-100};
+        private int attacks;
+
+        @Override
+        public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            if (QuestBossRules.judgeOfYamaHurtBy(type)) {
+                return damage;
+            }
+            if (!quiet(boss, lastMessage)) {
+                Msg.action(attacker, "The Judge of Yama is immune to magic and ranged attacks.");
+            }
+            return 0;
+        }
+
+        @Override
+        public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
+            return Culinary.attack(boss, distance <= 2.5 ? "claws" : "fire_wave");
+        }
+
+        @Override
+        public AttackDef beforeAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
+            if (++attacks % QuestBossRules.JUDGE_BANISH_EVERY == 0) {
+                double dx = target.getX() - boss.getX();
+                double dz = target.getZ() - boss.getZ();
+                double len = Math.max(0.1, Math.sqrt(dx * dx + dz * dz));
+                target.teleportTo(target.getX() + dx / len * QuestBossRules.JUDGE_BANISH_BLOCKS, target.getY(),
+                        target.getZ() + dz / len * QuestBossRules.JUDGE_BANISH_BLOCKS);
+                Msg.red(target, "The Judge of Yama banishes you down the docks!");
+                return Culinary.attack(boss, "fire_wave");
+            }
+            return attack;
+        }
+    }
+
+    /**
+     * A Kingdom Divided (wiki): Xamphur is immune to magic; every tenth attack hands fall from the ceiling or two Phantom
+     * hands appear, in turn.
+     */
+    static final class Xamphur implements BossScript {
+        private final long[] lastMessage = {-100};
+        private int attacks;
+
+        @Override
+        public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            if (type != AttackType.MAGIC) {
+                return damage;
+            }
+            if (!quiet(boss, lastMessage)) {
+                Msg.action(attacker, "Xamphur is immune to magic.");
+            }
+            return 0;
+        }
+
+        @Override
+        public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
+            return Culinary.attack(boss, "dark_bolt");
+        }
+
+        @Override
+        public AttackDef beforeAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
+            String special = QuestBossRules.xamphurSpecial(++attacks);
+            AttackDef a = special == null ? null : Culinary.attack(boss, special);
+            return a != null ? a : attack;
         }
     }
 

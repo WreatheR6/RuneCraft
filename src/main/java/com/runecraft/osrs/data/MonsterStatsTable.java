@@ -1178,7 +1178,8 @@ public final class MonsterStatsTable {
         maxHit("corrupt_lizardman", "spear", 6); // was 18
         maxHit("corrupt_lizardman", "acid", 6); // was 14
         // Judge of Yama
-        row("judge_of_yama", 168, 400, 200, 200, 150, 250, 200, 5, 0, 0, 0, 0, 0, 0, 0, 0, "demon");
+        // A Kingdom Divided's Judge (wiki infobox; the DPS calculator's line is Yama's own Judge, BossMechanics.YAMA_JUDGE)
+        row("judge_of_yama", 168, 260, 186, 112, 84, 84, 0, 4, 40, 40, 40, 600, 600, 0, 0, 0, "demon");
         // Agrith-Na-Na
         row("agrith_na_na", 146, 200, 83, 150, 82, 100, 100, 4, 100, 100, 60, 100, 100, 100, 0, 0);
         maxHit("agrith_na_na", "claws", 16); // was 20

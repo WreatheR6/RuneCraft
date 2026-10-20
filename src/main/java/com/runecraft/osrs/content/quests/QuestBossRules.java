@@ -49,6 +49,35 @@ public final class QuestBossRules {
     /** Making Friends with My Arm: the quest flag set when the Fire of Domination is doused; Mother can't be hurt before. */
     public static final String MOTHER_FIRE_OUT_FLAG = "mfa_fire_out";
 
+    /** Dream Mentor (wiki): the Illusive burrows away after this many hits land on it. */
+    public static final int ILLUSIVE_HITS_BEFORE_BURROW = 2;
+    /** Dream Mentor: the Inadequacy summons Doubts on one attack in this many, while fewer than the cap are about (approx). */
+    public static final int INADEQUACY_SUMMON_ONE_IN = 6;
+    public static final int INADEQUACY_MAX_DOUBTS = 4;
+    /** Dream Mentor (wiki): Cyrisus's fears, fought in this order. */
+    public static final java.util.List<String> DREAM_FEARS = java.util.List.of("the_inadequacy", "the_everlasting", "the_untouchable",
+            "the_illusive");
+
+    /** A Kingdom Divided (wiki): only melee hurts the Judge of Yama on the pier. */
+    public static boolean judgeOfYamaHurtBy(com.runecraft.osrs.AttackType type) {
+        return type != com.runecraft.osrs.AttackType.MAGIC && type != com.runecraft.osrs.AttackType.RANGED;
+    }
+
+    /** A Kingdom Divided: the Judge banishes the player this far down the docks on one attack in this many (approx). */
+    public static final int JUDGE_BANISH_EVERY = 5;
+    public static final double JUDGE_BANISH_BLOCKS = 8;
+
+    /** A Kingdom Divided (wiki): Xamphur's special mechanics, every tenth attack, falling hands and Phantom hands in turn. */
+    public static final int XAMPHUR_SPECIAL_EVERY = 10;
+
+    /** Xamphur's attack on his {@code n}th (1-based): a special, or null for his basic magic attack. */
+    public static String xamphurSpecial(int n) {
+        if (n % XAMPHUR_SPECIAL_EVERY != 0) {
+            return null;
+        }
+        return (n / XAMPHUR_SPECIAL_EVERY) % 2 == 1 ? "falling_hands" : "phantom_hands";
+    }
+
     /** Haunted Mine: Treus Dayth's carts and cranes hit up to this every few game ticks (approx; the wiki gives no numbers). */
     public static final int TREUS_MACHINERY_TICKS = 6;
     public static final int TREUS_MACHINERY_MAX = 4;
