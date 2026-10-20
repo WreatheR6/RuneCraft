@@ -606,7 +606,7 @@ public final class BossDropsTable {
                 d("virtus_mask", 1, 1, 1536), d("virtus_robe_top", 1, 1, 1536), d("virtus_robe_bottom", 1, 1, 1536),
                 d("bronze_longsword", 16, 16, 100), d("mithril_longsword", 7, 7, 100),
                 d("adamant_longsword", 9, 9, 100), d("battlestaff", 70, 70, 50), d("dragon_plateskirt", 7, 7, 100),
-                d("pure_essence", 280, 420, 100), d("iron_ore", 88, 88, 100), d("coal", 303, 303, 12),
+                d("pure_essence", 280, 280, 100), d("iron_ore", 88, 88, 100), d("coal", 303, 303, 12),
                 d("gold_ore", 88, 88, 100), d("mithril_ore", 88, 88, 100), d("adamantite_ore", 105, 105, 12),
                 d("runite_ore", 42, 42, 50), d("sapphire", 39, 39, 100), d("emerald", 39, 39, 100),
                 d("ruby", 39, 39, 100), d("uncut_ruby", 58, 58, 20), d("uncut_diamond", 58, 58, 20),

@@ -286,7 +286,7 @@ public class DataBossEntity extends OsrsMonsterEntity {
         if (def == null) {
             return;
         }
-        for (Drops.Rolled r : Drops.roll(variant != null ? variant.drops() : def.drops, getRandom(), false)) {
+        for (Drops.Rolled r : DataBossService.rollLoot(player, this, variant != null ? variant.drops() : def.drops)) {
             Inv.spawnAtLocation(this, Drops.withDoses(com.runecraft.combat.CombatHooks.dropStack(player, this, r.item(), r.count()), r.doses()));
             CollectionLog.obtain(player, r.item());
         }

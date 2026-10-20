@@ -31,7 +31,30 @@ public final class DataBossService {
     private static final java.util.Map<String, java.util.List<BiConsumer<ServerPlayer, DataBossEntity>>> KILLED =
             new java.util.HashMap<>();
 
+    /**
+     * Rolls a boss's kill loot instead of the plain drop table (the Desert Treasure II bosses' roll-until-success order and
+     * perfect kills): {@code (killer, boss, table) -> items}.
+     */
+    public interface LootRoller {
+        java.util.List<com.runecraft.skill.Drops.Rolled> roll(ServerPlayer killer, DataBossEntity boss,
+                java.util.List<com.runecraft.osrs.data.Drop> table);
+    }
+
+    private static final java.util.Map<String, LootRoller> LOOT = new java.util.HashMap<>();
+
     private DataBossService() {
+    }
+
+    public static void loot(String bossId, LootRoller roller) {
+        LOOT.put(bossId, roller);
+    }
+
+    /** The loot of a kill: the boss's roller when it has one, else an ordinary roll of {@code table}. */
+    static java.util.List<com.runecraft.skill.Drops.Rolled> rollLoot(ServerPlayer killer, DataBossEntity boss,
+            java.util.List<com.runecraft.osrs.data.Drop> table) {
+        BossDef def = boss.def();
+        LootRoller r = def == null ? null : LOOT.get(def.id);
+        return r != null ? r.roll(killer, boss, table) : com.runecraft.skill.Drops.roll(table, boss.getRandom(), false);
     }
 
     public static void requirement(String bossId, BiPredicate<ServerPlayer, BossDef> check) {

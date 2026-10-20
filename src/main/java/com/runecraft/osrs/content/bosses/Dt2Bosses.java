@@ -87,20 +87,24 @@ public final class Dt2Bosses {
             List.of(new Object[]{"dragon_platelegs", 1, 0}, new Object[]{"dragon_dart_tip", 100, 0}, new Object[]{"blood_rune", 500, 0},
                     new Object[]{"tuna_potato", 100, 1}, new Object[]{"runite_ore", 20, 1}));
 
+    /** The supply table is rolled at 1/5 once the unique table, orb, tablet and quartz rolls have failed (OSRS Wiki). */
+    public static final int SUPPLY_RATE = 5;
+
     /**
-     * Supplies (OSRS Wiki drop tables, "These supplies are all dropped together"): rolled about 1 in 5 after the unique
-     * table, tablet, orb and quartz miss. approx: here each line rolls on its own at 1/5.
+     * Supplies (OSRS Wiki drop tables, "These supplies are all dropped together"): {@link Dt2Loot} drops the whole set on
+     * a successful supply roll; each line's rarity here is that roll's 1/5.
      */
-    static List<Drop> supplies(String bossId) {
+    public static List<Drop> supplies(String bossId) {
+        int r = SUPPLY_RATE;
         return switch (bossId) {
-            case "duke_sucellus" -> List.of(Drop.of("pineapple_pizza", 3, 4, 5), Drop.of(Drop.dosed("prayer_potion", 3), 1, 1, 5),
-                    Drop.of(Drop.dosed("super_combat_potion", 2), 1, 1, 5));
-            case "the_leviathan" -> List.of(Drop.of(Drop.dosed("prayer_potion", 3), 1, 1, 5),
-                    Drop.of(Drop.dosed("ranging_potion", 2), 1, 1, 5), Drop.of("sea_turtle", 3, 4, 5));
-            case "the_whisperer" -> List.of(Drop.of(Drop.dosed("ancient_brew", 2), 1, 1, 5),
-                    Drop.of(Drop.dosed("prayer_potion", 3), 1, 1, 5), Drop.of("manta_ray", 3, 4, 5));
-            case "vardorvis" -> List.of(Drop.of("tuna_potato", 3, 4, 5), Drop.of(Drop.dosed("prayer_potion", 3), 1, 1, 5),
-                    Drop.of(Drop.dosed("super_combat_potion", 2), 1, 1, 5));
+            case "duke_sucellus" -> List.of(Drop.of("pineapple_pizza", 3, 4, r), Drop.of(Drop.dosed("prayer_potion", 3), 1, 1, r),
+                    Drop.of(Drop.dosed("super_combat_potion", 2), 1, 1, r));
+            case "the_leviathan" -> List.of(Drop.of(Drop.dosed("prayer_potion", 3), 1, 1, r),
+                    Drop.of(Drop.dosed("ranging_potion", 2), 1, 1, r), Drop.of("sea_turtle", 3, 4, r));
+            case "the_whisperer" -> List.of(Drop.of(Drop.dosed("ancient_brew", 2), 1, 1, r),
+                    Drop.of(Drop.dosed("prayer_potion", 3), 1, 1, r), Drop.of("manta_ray", 3, 4, r));
+            case "vardorvis" -> List.of(Drop.of("tuna_potato", 3, 4, r), Drop.of(Drop.dosed("prayer_potion", 3), 1, 1, r),
+                    Drop.of(Drop.dosed("super_combat_potion", 2), 1, 1, r));
             default -> throw new IllegalArgumentException(bossId);
         };
     }
@@ -113,14 +117,16 @@ public final class Dt2Bosses {
     private static final Map<String, Map<String, int[]>> PERFECT = new HashMap<>();
 
     /**
-     * What counts as avoidable damage for a perfect kill, in the Combat Achievements rule language (the bosses' "Perfect"
-     * task conditions): special attacks, hazards and unprotected hits.
+     * What counts as avoidable damage for a perfect kill (OSRS Wiki, each boss's Drops/Mechanics list), in the Combat
+     * Achievements rule language: the Duke's slam and magic (even through prayer), gaze, vents and icefall; the
+     * Leviathan's volleys, debris and lightning; the Whisperer's ranged/magic, screech, siphon and tentacles; Vardorvis'
+     * unprotected melee and all of his specials. Unnamed scripted damage ("mechanic") and hazards always count.
      */
     public static final Map<String, String> PERFECT_RULE = Map.of(
-            "duke_sucellus", "nodmg=mechanic,hazard,gas_vent,freezing_gaze,orb_of_darkness,offprayer",
-            "the_leviathan", "nodmg=mechanic,hazard,offprayer",
-            "the_whisperer", "nodmg=mechanic,hazard,offprayer",
-            "vardorvis", "nodmg=mechanic,hazard,swinging_axes,blood_splat,offprayer");
+            "duke_sucellus", "nodmg=mechanic,hazard,gas_vent,freezing_gaze,fist_slam,magic_blast,offprayer",
+            "the_leviathan", "nodmg=mechanic,hazard,falling_debris,lightning,offprayer",
+            "the_whisperer", "nodmg=mechanic,hazard,soul_bolt,tentacle_lash,screech,soul_siphon,offprayer",
+            "vardorvis", "nodmg=mechanic,hazard,swinging_axe,darting_spikes,strangle,blood_splat,offprayer");
 
     static {
         // duke_sucellus
@@ -175,6 +181,7 @@ public final class Dt2Bosses {
         perfect("the_leviathan", "soul_rune", 600, 900);
         // the_whisperer
         perfect("the_whisperer", "bronze_longsword", 16, 24);
+        perfect("the_whisperer", "pure_essence", 280, 420); // the wiki writes "280; 420"
         perfect("the_whisperer", "mithril_longsword", 7, 10);
         perfect("the_whisperer", "adamant_longsword", 9, 14);
         perfect("the_whisperer", "battlestaff", 70, 105);
@@ -252,7 +259,8 @@ public final class Dt2Bosses {
      * OSRS (Desert Treasure II - Tweaks and Drop Rates): a 1/n roll for the tradeable unique table, which gives a vestige
      * roll 3/8 (three rolls make the vestige), a chromium ingot 3/8, the boss's axe piece/weapon 1/8 and a virtus piece
      * 1/8 (each of the three equally); the awakener's orb is rolled next. Awakened kills roll the unique table at 3/n
-     * ({@link AwakenedBosses#drops}).
+     * ({@link AwakenedBosses#drops}). These lines describe the table (drop viewer, collection log, snapshot tests; the
+     * standard lines come from {@code BossDropsTable}); a kill is rolled in the wiki's order by {@link Dt2Loot}.
      */
     static List<Drop> dt2Drops(String bossId, String vestige, String axePiece, String tablet, String quartz) {
         int n = AwakenedBosses.uniqueTableRate(bossId);
@@ -261,7 +269,10 @@ public final class Dt2Bosses {
                 Drop.of("virtus_robe_bottom", 1, 1, 24 * n), Drop.of(AwakenedBosses.ORB, 1, 1, AwakenedBosses.orbRate(bossId)),
                 Drop.of("runite_bar", 4, 8, 8), // approx: the standard table below is a simplification
                 Drop.of("death_rune", 200, 300, 8), Drop.of("soul_rune", 150, 250, 8), Drop.of("dragon_platelegs", 1, 1, 16),
-                Drop.of("coins", 30000, 90000, 4), Drop.of("clue_scroll_elite", 1, 1, 160)));
+                Drop.of("coins", 30000, 90000, 4)));
+        for (String clue : Dt2Loot.CLUES) {
+            d.add(Drop.of(clue, 1, 1, Dt2Loot.CLUE_RATE * Dt2Loot.CLUES.size())); // 1/40 for a clue, each tier alike
+        }
         // Wiki: the boss's tablet (unlocks the ring of shadows' teleport to the lair) 1/25 and its quartz 1/200, both rolled after the unique
         // table (shown as ~1/25.8 and ~1/206). Before the first quartz OSRS improves its rate from 1/200 to 1/50 over the
         // first 300 kills; that ramp isn't modelled. // approx
