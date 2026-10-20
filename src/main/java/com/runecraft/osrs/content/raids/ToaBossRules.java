@@ -200,6 +200,8 @@ public final class ToaBossRules {
     /** The Warden's one-time heal at 5% before its final enrage (OSRS: 20% of its maximum). */
     public static final int WARDEN_ENRAGE_AT = 5;
     public static final int WARDEN_ENRAGE_HEAL = 20;
+    /** Defence levels the enraged Warden gains (OSRS: 150 -> 180, the DPS calculator's "Enraged" version). */
+    public static final int WARDEN_ENRAGE_DEFENCE = 30;
 
     /** Health (percent) above which the phase 2 Warden fires its prayer-disabling Divine Projectile, below it Imprisonment. */
     public static final int WARDEN_P2_SPECIAL_SPLIT = 55;

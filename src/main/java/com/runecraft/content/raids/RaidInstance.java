@@ -493,6 +493,13 @@ public final class RaidInstance {
         }
     }
 
+    /** Raises a creature's Defence level (the enraged phase 3 Warden: +30, OSRS). */
+    void raiseDefence(LivingEntity e, int levels) {
+        if (e instanceof com.runecraft.entity.OsrsMonsterEntity m) {
+            m.overrideStats(s -> withLevels(s, -1, -1, s.defence() + levels, -1, -1));
+        }
+    }
+
     private static com.runecraft.combat.MonsterStats withLevels(com.runecraft.combat.MonsterStats s, int atk, int str, int def,
                                                                int mag, int rng) {
         return new com.runecraft.combat.MonsterStats(s.name(), s.combatLevel(), s.hitpoints(), atk < 0 ? s.attack() : atk,

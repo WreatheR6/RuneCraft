@@ -1011,6 +1011,8 @@ final class ToaWardens extends RoomLogic {
         enraged = true;
         clearSiphons();
         raid.heal(warden, raid.maxHitpoints(warden) * ToaBossRules.WARDEN_ENRAGE_HEAL / 100);
+        // OSRS: its Defence rises by 30 levels (150 -> 180) when it enrages.
+        raid.raiseDefence(warden, ToaBossRules.WARDEN_ENRAGE_DEFENCE);
         nextRip = RaidEffects.now() + 8;
         warn(name(warden) + " shakes violently and draws in the last of its power! The phantom begins to devour the arena!");
     }
