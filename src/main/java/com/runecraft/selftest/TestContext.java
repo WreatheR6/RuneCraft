@@ -245,6 +245,9 @@ public final class TestContext {
         data.setVisitedGielinor(true);
         XpService.updateMaxHealth(player);
         player.setHealth(player.getMaxHealth());
+        // Poison, venom and their immunities live outside the player's data, and the fake player is never ticked, so venom
+        // from one check's fight would otherwise block the next check's poison.
+        com.runecraft.combat.PoisonService.clear(player);
         player.getInventory().clearContent();
         home();
     }
