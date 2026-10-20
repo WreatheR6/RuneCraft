@@ -540,6 +540,25 @@ public final class BossMechanics {
 
     public static final int DESPERATION_SLEEPWALKER_DAMAGE = 15;
 
+    /**
+     * Phosani's Nightmare (OSRS Wiki): three phases of 400 shield durability, then a desperation phase of 150 health, 1,350
+     * physical damage in all. Her health bar here is that damage, so a phase ends at these percentages of it left: 70.4%,
+     * 40.7% and 11.1% (the third phase's sleepwalkers, then the desperation phase).
+     */
+    public static final int PHOSANI_PHASE_SHIELD = 400;
+    public static final int PHOSANI_DESPERATION_HEALTH = 150;
+
+    public static double phosaniPhaseEnd(int phase) {
+        int total = 3 * PHOSANI_PHASE_SHIELD + PHOSANI_DESPERATION_HEALTH;
+        return 100.0 * (total - PHOSANI_PHASE_SHIELD * Math.max(1, Math.min(3, phase))) / total;
+    }
+
+    /**
+     * Desperation phase: one sleepwalker at a time walks in from the edge of the arena; the first reaches her about 20 ticks
+     * after it appears (OSRS Wiki "Phosani's Nightmare/Strategies").
+     */
+    public static final int DESPERATION_WALKER_TICKS = 20;
+
     // ------------------------------------------------------------ Burn (OSRS Wiki "Burn")
     /** A burn hits every 4 ticks; a full burn is 10 hits (40 ticks); up to 5 burns stack, each adding 1 to every hit. */
     public static final int BURN_INTERVAL = 4;

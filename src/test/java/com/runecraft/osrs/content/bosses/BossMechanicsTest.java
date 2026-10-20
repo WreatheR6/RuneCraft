@@ -128,6 +128,14 @@ class BossMechanicsTest {
 
     @Test
     void phosaniSleepwalkers() {
+        // Three 400 shields and 150 desperation health (1,350): phases end at 70.4%, 40.7% and 11.1% of her bar.
+        assertEquals(70.37, BossMechanics.phosaniPhaseEnd(1), 0.01);
+        assertEquals(40.74, BossMechanics.phosaniPhaseEnd(2), 0.01);
+        assertEquals(11.11, BossMechanics.phosaniPhaseEnd(3), 0.01);
+        BossDef phosani = ContentRegistry.boss("phosanis_nightmare");
+        assertEquals(70, phosani.phases.get(0).belowPercent());
+        assertEquals(40, phosani.phases.get(1).belowPercent());
+        assertEquals(66, ContentRegistry.boss("the_nightmare").phases.get(0).belowPercent());
         assertEquals(2, BossMechanics.sleepwalkers(1));
         assertEquals(3, BossMechanics.sleepwalkers(2));
         assertEquals(4, BossMechanics.sleepwalkers(3));

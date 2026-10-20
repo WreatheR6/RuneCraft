@@ -139,20 +139,20 @@ public final class MinigameBosses {
     }
 
     private static BossDef nightmareBase(String id, String name, int level, int hp, AttackDef melee, AttackDef magic, AttackDef ranged,
-                                         AttackDef surge) {
+                                         AttackDef surge, int phase2, int phase3) {
         return BossDef.of(id, name).level(level).stats(hp, 150, 150, 150, 150, 150).speed(6)
                 .defenceBonus(120, 180, 40, 600, 600) // wiki/DPS calc: stab 120, slash 180, crush 40, magic/ranged 600
                 .attack(melee).attack(magic).attack(ranged).attack(NIGHTMARE_CLAWS)
-                .phase(66, "The Nightmare's shield reforms! Charge the totems!", 1.0, false,
+                .phase(phase2, "The Nightmare's shield reforms! Charge the totems!", 1.0, false,
                         melee, magic, ranged, NIGHTMARE_CLAWS, NIGHTMARE_SPORES, NIGHTMARE_CURSE)
-                .phase(33, "The Nightmare's shield reforms once more!", 1.1, false,
+                .phase(phase3, "The Nightmare's shield reforms once more!", 1.1, false,
                         melee, magic, ranged, NIGHTMARE_CLAWS, surge, NIGHTMARE_SPORES)
                 .at("sisterhood_sanctuary").arena(14, "crypt").size(1.4f, 3.2f, 1.8f).moveSpeed(0.2);
     }
 
     static BossDef nightmare() {
         return nightmareBase("the_nightmare", "The Nightmare", 814, 2400, NIGHTMARE_MELEE, NIGHTMARE_MAGIC, NIGHTMARE_RANGED,
-                NIGHTMARE_SURGE).attackBonus(140, 140, 140)
+                NIGHTMARE_SURGE, 66, 33).attackBonus(140, 140, 140)
                 .drops(Drop.of("nightmare_staff", 1, 1, 400), Drop.of("inquisitors_great_helm", 1, 1, 600),
                         Drop.of("inquisitors_hauberk", 1, 1, 600), Drop.of("inquisitors_plateskirt", 1, 1, 600),
                         Drop.of("inquisitors_mace", 1, 1, 1200), Drop.of("eldritch_orb", 1, 1, 1200), Drop.of("harmonised_orb", 1, 1, 1200),
@@ -166,7 +166,8 @@ public final class MinigameBosses {
         // Wiki/DPS calculator: level 1,024, 3,200 hitpoints. Uniques per kill: staff 69/35,000, mace 31/35,000, armour 1/700
         // each, orbs 1/1,600 each; parasitic egg 1/200, jar 1/4,000, clue 1/35 (Mod Arcane). Commons follow the wiki's /100 table.
         return nightmareBase("phosanis_nightmare", "Phosani's Nightmare", 1024, 3200, PHOSANI_MELEE, PHOSANI_MAGIC, PHOSANI_RANGED,
-                PHOSANI_SURGE).attackBonus(220, 220, 220)
+                // Three 400-durability shields, then 150 health: her phases end at 70.4% and 40.7% of the bar (wiki).
+                PHOSANI_SURGE, (int) BossMechanics.phosaniPhaseEnd(1), (int) BossMechanics.phosaniPhaseEnd(2)).attackBonus(220, 220, 220)
                 .drops(Drop.always("big_bones"), Drop.of("nightmare_staff", 1, 1, 507), Drop.of("inquisitors_great_helm", 1, 1, 700),
                         Drop.of("inquisitors_hauberk", 1, 1, 700), Drop.of("inquisitors_plateskirt", 1, 1, 700),
                         Drop.of("inquisitors_mace", 1, 1, 1129), Drop.of("eldritch_orb", 1, 1, 1600), Drop.of("harmonised_orb", 1, 1, 1600),

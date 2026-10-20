@@ -415,7 +415,8 @@ final class EncounterScripts {
                     BossFx.burst(boss, ParticleTypes.WITCH, 10, 1.0);
                     continue;
                 }
-                double step = Math.min(0.35, len);
+                // Desperation sleepwalkers reach her ~20 ticks after appearing at the arena's edge (11 blocks away).
+                double step = Math.min(desperate ? 11.0 / BossMechanics.DESPERATION_WALKER_TICKS : 0.35, len);
                 m.teleportTo(m.getX() + d.x / len * step, m.getY(), m.getZ() + d.z / len * step);
             }
             if (setTotal > 0 && walkers.isEmpty()) {
@@ -429,7 +430,7 @@ final class EncounterScripts {
                 }
                 if (finalSet && !desperate) {
                     desperate = true;
-                    walkerTimer = 20;
+                    walkerTimer = 3; // approx: she moves to the centre first
                     BossFx.warn(boss, "Phosani's Nightmare lashes out in desperation!");
                 }
             }
@@ -440,12 +441,14 @@ final class EncounterScripts {
             tickSpores(boss);
             if (phosani) {
                 tickWalkers(boss, target);
-                if (!finalSet && !shielded && percent(boss) <= 10) { // approx: the end of her third phase
+                // The end of her third phase: 150 of her 1,350 physical health left (OSRS Wiki).
+                if (!finalSet && !shielded && percent(boss) <= BossMechanics.phosaniPhaseEnd(3)) {
                     finalSet = true;
                     summonWalkers(boss, BossMechanics.sleepwalkers(3));
                 }
-                if (desperate && target != null && --walkerTimer <= 0) {
-                    walkerTimer = 8; // approx: how often they spawn in the desperation phase
+                // Desperation: one sleepwalker at a time, the next as soon as the last is gone (approx: a 2-tick gap).
+                if (desperate && target != null && walkers.isEmpty() && --walkerTimer <= 0) {
+                    walkerTimer = 2;
                     summonWalkers(boss, 1);
                     walkersMoveAt = now;
                 }
