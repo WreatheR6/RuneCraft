@@ -35,6 +35,16 @@ final class VorkathScript extends ScriptedBoss {
     private Mob spawn;
     private ServerPlayer frozen;
     private int normalsSinceSpecial;
+    /** Dragon Slayer II's Vorkath (quests module {@code ds2_vorkath}): bone spike up to 28 and dragonfire up to 72 (wiki). */
+    private final boolean quest;
+
+    VorkathScript() {
+        this(false);
+    }
+
+    VorkathScript(boolean quest) {
+        this.quest = quest;
+    }
     /** "The Walk": hits on Vorkath per player this acid phase, and who was hit by rapid fire or acid. */
     private final java.util.Map<java.util.UUID, Integer> walkHits = new java.util.HashMap<>();
     private final java.util.Set<java.util.UUID> walkFailed = new java.util.HashSet<>();
@@ -153,6 +163,11 @@ final class VorkathScript extends ScriptedBoss {
         if ((last == ZulrahVorkath.VORKATH_DRAGONFIRE || last == ZulrahVorkath.VORKATH_PINK_FIRE)
                 && "dragonfire_ward".equals(Inv.idOf(player.getOffhandItem()))) {
             damage = player.hasEffect(MobEffects.FIRE_RESISTANCE) ? 0 : Math.min(damage, player.getRandom().nextInt(11));
+        }
+        if (quest && last == ZulrahVorkath.VORKATH_SPIKE) {
+            damage = damage * 28 / 32;
+        } else if (quest && (last == ZulrahVorkath.VORKATH_DRAGONFIRE || last == ZulrahVorkath.VORKATH_PINK_FIRE)) {
+            damage = damage * 72 / 80;
         }
         return damage;
     }

@@ -74,6 +74,8 @@ final class QuestStepChecks {
     private static final ResourceLocation HP_BUFFER = RuneCraft.id("selftest_quest_hp");
 
     private final TestContext c;
+    /** The stage the walk is at (for raising the next of several foes). */
+    private QuestSpec.Stage stage;
 
     private QuestStepChecks(TestContext c) {
         this.c = c;
@@ -154,6 +156,7 @@ final class QuestStepChecks {
                     throw failure("stage " + s + " is outside the " + q.stages.size() + " stages");
                 }
                 QuestSpec.Stage stage = q.stages.get(s);
+                this.stage = stage;
                 Trigger t = QuestStepWalk.nextStep(stage, view, questItems, firedHere);
                 if (t == null) {
                     throw failure("stage " + s + " after " + steps + " steps: no step can fire ("
@@ -422,6 +425,25 @@ final class QuestStepChecks {
         boolean questBoss = boss != null && QuestBook.get().bosses.stream().anyMatch(b -> b.id.equals(id));
         if (questBoss) {
             if (boss.place == null) {
+                // the next of several (ten mourners, two axemen): a player stands at the place or talks again, and the step that
+                // raised the first raises the next
+                if (stage != null) {
+                    for (Trigger t : stage.triggers) {
+                        if (id.equals(t.spawn) && t.kind != Trigger.Kind.KILL && QuestInterpreter.selfTestBlocked(p(), t) == null) {
+                            if (t.kind == Trigger.Kind.REACH) {
+                                QuestInterpreter.selfTestArrive(p(), t.target, t.underground);
+                            } else if (t.kind == Trigger.Kind.TALK) {
+                                QuestInterpreter.selfTestTalk(p(), t.target);
+                            }
+                            bringFoesHome();
+                            c.home();
+                            up = foes(id, 48);
+                            if (!up.isEmpty()) {
+                                return up.get(0);
+                            }
+                        }
+                    }
+                }
                 throw failure(where + ": nothing raised " + id + " (no earlier step spawned it and it has no arena)");
             }
             // the summoning stone at its arena: it asks the quest whether the player may fight it now

@@ -1108,7 +1108,7 @@ public final class MonsterStatsTable {
         row("fragment_of_seren", 494, 1000, 242, 288, 102, 102, 235, 7, 320, 220, 320, 10, 480, 236, 0, 224);
         // Kruk
         row("kruk", 207, 210, 130, 130, 150, 130, 170, 4, 100, 100, 100, 250, 100, 160, 0, 150);
-        maxHit("kruk", "slam", 33); // was 30
+        maxHit("kruk", "scimitars", 33); // was 30
         // Vorkath (Dragon Slayer II)
         row("ds2_vorkath", 392, 460, 560, 268, 164, 148, 268, 5, 66, 126, 126, 204, 80, 14, 148, 96, "dragon", "fiery", "undead");
         // Galvek (Air)

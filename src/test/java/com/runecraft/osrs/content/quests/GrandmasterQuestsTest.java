@@ -95,4 +95,81 @@ class GrandmasterQuestsTest {
         assertEquals(46, body.equipment().stats().stabDefence());
         assertEquals(40, body.equipment().requirements().get(com.runecraft.osrs.Skill.DEFENCE));
     }
+
+    @Test
+    void dragonSlayerIIFollowsTheQuickGuide() {
+        QuestSpec ds2 = spec("dragon_slayer_ii");
+        assertEquals(8, ds2.stages.size(), "saved stage count");
+        // Dallas Jones in the Musa Point pub, then the mural in Elvarg's lair and its spawn (wiki: level 100, 80 HP)
+        com.runecraft.osrs.content.PlaceDef dallas = ContentRegistry.place("at_dallas_jones");
+        assertEquals(List.of(2924, 3146), List.of(dallas.osrsX(), dallas.osrsY()));
+        stats("ds2_spawn", 100, 80, 4);
+        Trigger mural = find(ds2, t -> t.setFlags.contains("ds2_mural"), "the mural");
+        assertTrue(mural.underground && mural.tools.contains("pickaxe") && "ds2_spawn".equals(mural.spawn));
+        // 24 map pieces: 8 in the house, 4 fungi, 7 hook briar, 5 mushtree
+        int pieces = ds2.triggers().stream().mapToInt(t -> t.give.getOrDefault("ds2_map_piece", 0)).sum();
+        assertEquals(24, pieces);
+        assertEquals(24, find(ds2, t -> t.setFlags.contains("ds2_map"), "the map").take.get("ds2_map_piece"));
+        // the rowboat: 8 oak planks, 10 swamp paste, 12 nails
+        Trigger boat = find(ds2, t -> t.setFlags.contains("ds2_boat"), "the rowboat");
+        assertEquals(8, boat.take.get("oak_plank"));
+        assertEquals(10, boat.take.get("swamp_paste"));
+        // Robert the Strong in Bob's dream: level 224, 280 HP, melee only
+        stats("ds2_robert_the_strong", 224, 280, 4);
+        assertTrue(boss("ds2_robert_the_strong").immuneTo.containsAll(List.of(com.runecraft.osrs.AttackType.RANGED,
+                com.runecraft.osrs.AttackType.MAGIC)));
+        // the Kourend crypt: the plaque's clues, every arrangement of the four busts
+        assertEquals(24, DS2_CRYPT_VARIANTS());
+        QuestPuzzle.Variant first = GrandmasterQuests.DS2_CRYPT.rooms.get(0).variants().get(0);
+        assertTrue(first.prompt().get(0).contains("Zartharim sat at the north"));
+        assertEquals("Aivas", first.options().get(first.solutions().get(0).get(0)), "Zartharim's hero (Aivas) sits north");
+        // the quest Vorkath (wiki: level 392, 460 HP), the Fire Waves on the mithril door's dragon heads, the four rulers
+        stats("ds2_vorkath", 392, 460, 5);
+        Trigger heads = find(ds2, t -> t.setFlags.contains("ds2_heads"), "the dragon heads");
+        assertEquals(21, heads.take.get("fire_rune"));
+        assertEquals(3, heads.take.get("blood_rune"));
+        assertTrue(find(ds2, t -> t.setFlags.contains("ds2_council"), "the council").needFlags
+                .containsAll(List.of("ds2_roald", "ds2_amik", "ds2_lathas", "ds2_brundt_army")));
+        // Galvek (wiki): 1,200 HP over four forms in order fire, air (stat drain), water (tsunamis), earth (bind)
+        BossDef galvek = boss("galvek");
+        assertEquals(1200, galvek.hitpoints);
+        assertEquals(6, galvek.attackSpeed);
+        assertEquals(List.of(75, 50, 25), galvek.phases.stream().map(p -> p.belowPercent()).toList());
+        assertTrue(galvek.phases.get(0).attacks().stream().anyMatch(a -> a.special() == com.runecraft.osrs.content.AttackDef.Special.DRAIN_STAT));
+        assertTrue(galvek.phases.get(1).attacks().stream().anyMatch(a -> a.name().equals("tsunami")));
+        assertTrue(galvek.phases.get(2).attacks().stream().anyMatch(a -> a.special() == com.runecraft.osrs.content.AttackDef.Special.FREEZE));
+        // the assault: red, iron and brutal green dragons on the way, then the three waves
+        for (String d : List.of("red_dragon", "iron_dragon", "brutal_green_dragon", "black_dragon", "rune_dragon")) {
+            find(ds2, t -> t.kind == Trigger.Kind.KILL && t.target.equals(d), d);
+        }
+    }
+
+    @Test
+    void monkeyMadnessIIFollowsTheQuickGuide() {
+        QuestSpec mm2 = spec("monkey_madness_ii");
+        assertEquals(5, mm2.stages.size(), "saved stage count");
+        // Kruk at his Monkey Madness II stats (wiki: combat 207, 210 HP, slash 33, ranged 37)
+        stats("kruk", 207, 210, 4);
+        assertEquals(37, boss("kruk").attacks.stream().filter(a -> a.style() == com.runecraft.osrs.AttackType.RANGED)
+                .mapToInt(com.runecraft.osrs.content.AttackDef::maxHit).max().orElse(0));
+        // chapter I: the handkerchief, Anita, the note, the translation, Assistant Lori, Auguste
+        for (String npc : List.of("anita", "assistant_lori", "auguste", "awowogei", "assistant_le_smith", "mm2_monkey_guard")) {
+            find(mm2, t -> t.kind == Trigger.Kind.TALK && t.target.equals(npc), npc);
+        }
+        // the troll generals fought until they give up (wiki: Kob 185 / 200 HP, Keef 178 / 180 HP)
+        stats("mm2_kob", 185, 200, 5);
+        stats("mm2_keef", 178, 180, 5);
+        assertEquals("mm2_kob", find(mm2, t -> t.target.equals("kob"), "Kob").spawn);
+        // Kruk's dungeon forks and the airship platform's six charges
+        assertEquals(16, GrandmasterQuests.MM2_MAZE.rooms.get(0).variants().size());
+        assertEquals(720, GrandmasterQuests.MM2_SABOTAGE.rooms.get(0).variants().get(0).solutions().size(), "six charges in any order");
+        // the lab no longer asks for an onyx of the player's own (the charged onyx is in Glough's device)
+        assertTrue(!find(mm2, t -> t.setFlags.contains("mm2_lab"), "the lab").take.containsKey("onyx"));
+        // chapter IV: 4 tortured gorillas in the Stronghold, then 2 tortured and 2 demonic gorillas before Glough
+        assertEquals(2, find(mm2, t -> t.kind == Trigger.Kind.KILL && t.target.equals("demonic_gorilla"), "demonic gorillas").count);
+    }
+
+    private static int DS2_CRYPT_VARIANTS() {
+        return GrandmasterQuests.DS2_CRYPT.rooms.get(0).variants().size();
+    }
 }

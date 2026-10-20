@@ -35,15 +35,24 @@ final class GrandmasterQuests {
 
     private static void monkeyMadnessII(QuestBook b) {
         b.npc("lumdo", "Lumdo", "ape_atoll", -4, -4, 0xC8A071, 0x3A5A2B, 0x2A3A1B, 0x6A6A3B);
+        // quest-helper tiles: Assistant Lori by the balloon south of the Grand Tree, Awowogei on his throne in Marim, Assistant Le
+        // Smith on the rooftops (one of four spots in OSRS), the monkey guard by the boat on Ape Atoll's north-west coast
+        b.npcAt("assistant_lori", "Assistant Lori", 2476, 3460, 0xD8A070, 0x8A6A3A, 0x5A4A2A, 0x6A4A1A);
+        b.npcAt("awowogei", "Awowogei", 2803, 2765, 0xC8A071, 0xC0A030, 0x8A6A1A, 0xE0C040);
+        b.npcAt("assistant_le_smith", "Assistant Le Smith", 2791, 2770, 0xD8A070, 0x6A6A3A, 0x4A4A2A, 0x3A3A2A); // approx: one of four rooftops
+        b.npcAt("mm2_monkey_guard", "Monkey guard", 2694, 2784, 0xC8A071, 0x5A5A5A, 0x3A3A3A, 0x6A6A6A);
+        b.spot("mm2_glough_house", "Glough's house", 2485, 3464);
+        b.spot("mm2_archers_hill", "Monkey archers' hill", 2713, 2758);
+        b.spot("mm2_kruk_trapdoor", "Kruk's dungeon forks", 2720, 2782); // approx: by the jungle grass trapdoor (2714, 2788), clear of its entrance
+        b.spot("mm2_platform", "Airship construction platform", 2690, 2790); // approx: reached by the monkey guard's boat
         b.item("royal_seed_pod", "Royal seed pod", "seed", 0xE0C040, "Teleports you to the Grand Tree.");
         b.item("kruks_paw", "Kruk's paw", "bones", 0x5A3A26, "Proof that Kruk is dead.");
-        b.boss(BossDef.of("kruk", "Kruk").level(149).stats(320, 150, 150, 140, 100, 150).speed(4)
-                .defenceBonus(80, 80, 80, 60, 80)
-                .attack(AttackDef.of("slam", AttackType.CRUSH, 30, 3, 6))
-                .attack(AttackDef.of("boulder", AttackType.RANGED, 25, 10, 3).special(Special.SKY_STRIKE, 0)
-                        .telegraph(2, "Kruk hurls a boulder into the air!").particle("minecraft:block_crumble"))
-                .attack(AttackDef.of("roar", AttackType.MAGIC, 18, 8, 2).special(Special.DRAIN_PRAYER, 8))
-                .phase(50, "Kruk roars and pounds his chest!", 1.25, false)
+        b.item("mm2_handkerchief", "Handkerchief", "cloth", 0xE0E0D0, "A handkerchief embroidered with the letter A.");
+        // Kruk (wiki, Monkey Madness II version): combat 207, 210 HP, slash up to 33 and ranged up to 37 every 4 ticks.
+        b.boss(BossDef.of("kruk", "Kruk").level(207).stats(210, 130, 130, 150, 130, 170).speed(4)
+                .defenceBonus(100, 100, 100, 250, 100)
+                .attack(AttackDef.of("scimitars", AttackType.SLASH, 33, 2.5, 6))
+                .attack(AttackDef.of("boulder", AttackType.RANGED, 37, 10, 4).particle("minecraft:block_crumble"))
                 .drops(Drop.always("big_bones")).size(1.3f, 2.4f, 1.0f).at("kruks_dungeon").arena(13, "jungle"));
         b.item("mm2_mysterious_note", "Mysterious note", "note", 0xE0D8B0, "A note from Glough's house, written in invisible ink.");
         b.item("mm2_kruk_greegree", "Kruk monkey greegree", "talisman", 0x5A3A26, "Zooknock's greegree, made from Kruk's paw.");
@@ -51,12 +60,25 @@ final class GrandmasterQuests {
         b.spot("glough_cave", "Glough's cave", 2490, 3520); // approx: north-east of the Gnome Stronghold
         Cast.npc(b, "kob", "Kob", "troll_stronghold", 4, 4, Cast.TROLL, 0x5A4A3A);
         Cast.npc(b, "keef", "Keef", "gu_tanoth", 3, -3, Cast.TROLL, 0x6A5A2A);
-        // Glough (Monkey Madness II final boss): OSRS Wiki infobox.
+        // The troll generals (wiki): Kob level 185, 200 HP, slashes up to 57 (27 through Protect from Melee); Keef level 178, 180 HP,
+        // crush up to 47 (he also hits through prayer). Both every 5 ticks; they give up when beaten.
+        b.boss(BossDef.of("mm2_kob", "Kob").level(185).stats(200, 180, 175, 80, 0, 0).speed(5)
+                .defenceBonus(60, 85, 90, 200, 200)
+                .attack(AttackDef.of("slash", AttackType.SLASH, 57, 2.5, 4))
+                .attack(AttackDef.of("crushing_blow", AttackType.SLASH, 27, 2.5, 1).special(Special.PRAYER_PIERCING, 0))
+                .drops(Drop.always("big_bones")).skin(Cast.TROLL, 0x5A4A3A, 0x3A2A1A, 0x4A3A2A).size(1.0f, 2.6f, 1.2f));
+        b.boss(BossDef.of("mm2_keef", "Keef").level(178).stats(180, 165, 120, 165, 1, 1).speed(5)
+                .defenceBonus(50, 50, 50, 0, 0)
+                .attack(AttackDef.of("club", AttackType.CRUSH, 47, 2.5, 4))
+                .attack(AttackDef.of("heavy_club", AttackType.CRUSH, 24, 2.5, 1).special(Special.PRAYER_PIERCING, 0)) // approx
+                .drops(Drop.always("big_bones")).skin(Cast.TROLL, 0x6A5A2A, 0x4A3A1A, 0x5A4A2A).size(1.0f, 2.6f, 1.2f));
+        // Glough (Monkey Madness II final boss): OSRS Wiki infobox (melee up to 61, ranged and magic 40+, pushes and pulls).
         b.boss(BossDef.of("mm2_glough", "Glough").level(431).stats(575, 260, 270, 248, 250, 262).speed(6)
                 .attack(AttackDef.of("staff_slam", AttackType.CRUSH, 61, 2.5, 6))
                 .attack(AttackDef.of("demonic_blast", AttackType.MAGIC, 45, 10, 3).particle("minecraft:soul_fire_flame")) // approx: 40+
                 .attack(AttackDef.of("rock_throw", AttackType.RANGED, 45, 10, 3).special(Special.SKY_STRIKE, 0)
                         .telegraph(2, "Glough hurls a rock into the air!"))
+                .attack(AttackDef.of("shove", AttackType.CRUSH, 20, 3, 1).special(Special.KNOCKBACK, 4)) // approx: his push
                 .drops(Drop.always("bones")).skin(0xC09060, 0x3A3A3A, 0x2A2A2A, 0x5A1A1A).size(0.9f, 2.0f, 1.2f)
                 .at("glough_cave").arena(12, "crypt"));
         b.quest("monkey_madness_ii", "Monkey Madness II", Difficulty.GRANDMASTER, 4)
@@ -66,79 +88,229 @@ final class GrandmasterQuests {
                 .req(Skill.SLAYER, 69).req(Skill.CRAFTING, 70).req(Skill.HUNTER, 60).req(Skill.AGILITY, 55)
                 .req(Skill.THIEVING, 55).req(Skill.FIREMAKING, 60)
                 .reward("royal_seed_pod")
-                .unlock("Access to demonic gorillas and the Kruk's dungeon")
+                .unlock("Access to demonic gorillas and the Kruk's dungeon").unlock("A gnome glider on Ape Atoll and a bank in Marim")
+                .unlock("Ability to wield the heavy ballista").unlock("Access to the maniacal monkey hunting area")
                 .stage("I can start this quest by speaking to King Narnode Shareen. (Requires Monkey Madness I, The Grand Tree, Troll Stronghold and more; 69 Slayer, 70 Crafting.)")
                 .talk("king_narnode").needFlag("rfd_awowogei")
                 .missing("King Awowogei is still frozen at the Lumbridge banquet. Free him first. (Requires Recipe for Disaster: Freeing King Awowogei.)")
                 .say("Glough has escaped from his prison! And there are rumours of monkeys sneaking into the Stronghold. Investigate, please.")
-                // OSRS chapter I: Glough's house hides a note in invisible ink (lemon juice, grapes, a candle); Auguste on Entrana saw the airships.
+                // ---- Chapter I (wiki quick guide): Glough's house, Anita, the invisible ink, the translation, Assistant Lori, Auguste ----
                 .stage("I should search Glough's house, have the king translate what I find and ask Auguste on Entrana about it. Then on to Ape Atoll.")
-                .reach("GNOME_STRONGHOLD", 12).stay().unless("mm2_mysterious_note").unlessFlag("mm2_note").need("pestle_and_mortar")
-                .take("lemon", "grapes").give("mm2_mysterious_note")
-                .say("* Up the trees of Glough's house you turn the gnome statue and search the cupboard. In the fire remains: a blank note.",
-                        "* You coat a brush in lemon and grape juice and paint the note. Writing appears!")
+                .reach("mm2_glough_house", 4).stay().unlessFlag("mm2_anita", "mm2_note").unless("mm2_handkerchief").give("mm2_handkerchief")
+                .say("* Up the trees of Glough's house you investigate a branch: a handkerchief, embroidered with an A.")
+                .talk("anita").stay().unlessFlag("mm2_anita").take("mm2_handkerchief").flag("mm2_anita")
+                .say("> What's wrong?", "That's Glough's! He gave it to me... He's been creeping about his house again. Up the tree, where nobody goes.")
+                .missing("Glough? I haven't seen him since they locked him away.")
+                .reach("mm2_glough_house", 4).stay().needFlag("mm2_anita").unless("mm2_mysterious_note").unlessFlag("mm2_note")
+                .need("pestle_and_mortar").take("lemon", "grapes").give("mm2_mysterious_note")
+                .say("* At the top of the tree you turn the gnome statue: the cupboard opens on a book of spyology. In the crates: a brush.",
+                        "* In the fire remains: a blank note. You warm it over the candles, coat the brush in lemon and grape juice and paint it.",
+                        "* Writing appears!")
                 .missing("* The note in the fire remains looks blank. Juice from a lemon and some grapes (and a pestle and mortar) might reveal it.")
                 .talk("king_narnode").stay().take("mm2_mysterious_note").flag("mm2_note")
-                .say("*He translates it.* 'Airships'... 'Ape Atoll'... 'the 10th squad'. Glough was building something. Ask Auguste on Entrana; he knows flying.")
-                .talk("auguste").stay().needFlag("mm2_note").unlessFlag("mm2_auguste").flag("mm2_auguste")
-                .say("Giant flying machines? Over Karamja? Mon dieu, I saw them myself from my balloon! They flew south-west.")
-                .talk("lumdo").needFlag("mm2_auguste").travel("ape_atoll").say("Back to Ape Atoll? Hold on. *Lumdo sails you across.*")
-                .missing("The king hasn't ordered me anywhere. Find out what Glough was up to first.")
-                // OSRS chapter II: Garkor and Awowogei, the monkey archers' tracks, the maze under the island and Kruk.
+                .say("*He hands you a translation book.* It's in the gnome tongue, but half of it is code. Anita knows his writing.")
+                .talk("anita").stay().needFlag("mm2_note").unlessFlag("mm2_translated").flag("mm2_translated")
+                .say("> Could you translate these notes?", "'Airships'... 'Ape Atoll'... 'the 10th squad'... and 'Assistant Le Smith'.")
+                .talk("assistant_lori").stay().needFlag("mm2_translated").unlessFlag("mm2_lori").flag("mm2_lori")
+                .say("> Who are you?", "Lori, Auguste's assistant. Le Smith? My old colleague left for... somewhere hot. Auguste would know more.")
+                .talk("auguste").stay().needFlag("mm2_lori").unlessFlag("mm2_auguste").flag("mm2_auguste")
+                .say("> Talk about Assistant Le Smith.", "Giant flying machines? Over Karamja? Mon dieu, I saw them myself from my balloon! They flew south-west.")
+                .talk("king_narnode").needFlag("mm2_auguste")
+                .say("Airships over Karamja, flying to Ape Atoll. Garkor and the 10th squad are there: find out what Glough is building.")
+                .missing("Find out what Glough was up to first: his house, Anita, Auguste.")
+                .hint("lumdo", "Back to Ape Atoll? Ask the king first.")
+                // ---- Chapter II (wiki quick guide): Garkor, Awowogei, the monkey archers, Kruk's dungeon, Kruk ----
                 .stage("I should talk to Garkor on Ape Atoll and follow the monkey archers' tracks to whoever is leading them.")
                 .talk("garkor").stay().unlessFlag("mm2_garkor").flag("mm2_garkor")
-                .say("Glough has allied with Kruk, a monkey general. Together they've made monstrous demonic gorillas. Ask the archers on the west hill about Kruk.")
-                .kill("kruk").needFlag("mm2_garkor").give("kruks_paw")
-                .say("* You follow the tracks to a trapdoor in the jungle grass and through the maze beneath. Kruk falls with a thunderous crash!")
-                .stage("I must stop Glough: a Kruk greegree from Zooknock, the troll generals Kob and Keef, Glough's laboratory and his gorillas.")
+                .say("> King Narnode has sent me.", "Glough has allied with someone on the island. Speak to King Awowogei, carefully.")
+                .talk("awowogei").stay().needFlag("mm2_garkor").unlessFlag("mm2_awowogei").need("monkey_greegree").flag("mm2_awowogei")
+                .say("> I'm here to discuss military strategies.", "Kruk trains my archers on the west hill. Ask him yourself.")
+                .missing("*Awowogei ignores you. Perhaps as a monkey...*")
+                .talk("garkor").stay().needFlag("mm2_awowogei").unlessFlag("mm2_archers").flag("mm2_archers")
+                .say("Kruk! A monkey general, and Glough's ally. Ask the monkey archers on the west hill where he goes.")
+                .reach("mm2_archers_hill", 6).stay().needFlag("mm2_archers").unlessFlag("mm2_tracks").flag("mm2_tracks")
+                .say("* A monkey archer tells you Kruk walks off alone. At the foot of the hill you find his tracks and follow them",
+                        "* to a trapdoor hidden in the jungle grass by a palm tree.")
+                .puzzle("mm2_kruk_trapdoor", MM2_MAZE).stay().needFlag("mm2_tracks").unlessFlag("mm2_maze").flag("mm2_maze")
+                .say("* The last fork feels right. You unlock the shortcut and step into Kruk's cave.")
+                .kill("kruk").needFlag("mm2_maze").give("kruks_paw")
+                .say("* Kruk falls with a thunderous crash! You take his paw.")
+                .missing("* Kruk waits at the end of the dungeon beneath the jungle grass.")
+                // ---- Chapters III and IV (wiki quick guide) ----
+                .stage("I must stop Glough: a Kruk greegree from Zooknock, the troll generals Kob and Keef, the airship platform, Glough's "
+                        + "laboratory and his gorillas.")
                 .talk("zooknock").stay().unless("mm2_kruk_greegree").take("kruks_paw", "monkey_talisman").give("mm2_kruk_greegree")
                 .say("Kruk's paw! With a talisman I can make a greegree from it. Glough won't suspect a thing.")
-                .talk("kob").stay().unlessFlag("mm2_kob").reqSkill(Skill.SLAYER, 69).flag("mm2_kob")
-                .say("* Kob fights until he gives up.", "Kob not fight for Glough no more. Kob promise.")
-                .talk("keef").stay().needFlag("mm2_kob").unlessFlag("mm2_keef").flag("mm2_keef")
-                .say("* Keef fights until he gives up.", "Okay, okay! Keef's trolls stay home.")
-                .reach("kruks_dungeon", 12).stay().needFlag("mm2_keef").unlessFlag("mm2_lab").need("mm2_kruk_greegree", "chisel", "hammer").take("onyx")
+                .talk("awowogei").stay().unlessFlag("mm2_as_kruk").need("mm2_kruk_greegree").flag("mm2_as_kruk")
+                .say("Kruk! The trolls, Kob and Keef, are ready? Good. Glough's fleet will need their numbers.")
+                .missing("*Awowogei only speaks of the war to Kruk.*")
+                .talk("garkor").stay().needFlag("mm2_as_kruk").unlessFlag("mm2_generals").flag("mm2_generals")
+                .say("Trolls too? Then stop them: Kob in the Troll Stronghold and Keef in Gu'Tanoth.")
+                .talk("kob").stay().needFlag("mm2_generals").unlessFlag("mm2_kob").reqSkill(Skill.SLAYER, 69).spawn("mm2_kob")
+                .say("> I know about your deal with the monkeys.", "Kob crush you!", "> I accept your challenge.")
+                .kill("mm2_kob").stay().needFlag("mm2_generals").unlessFlag("mm2_kob").flag("mm2_kob")
+                .say("* Kob gives up.", "@Kob: Kob not fight for Glough no more. Kob promise.")
+                .talk("keef").stay().needFlag("mm2_kob").unlessFlag("mm2_keef").spawn("mm2_keef")
+                .say("> I know about your deal with the monkeys.", "> I accept your challenge.")
+                .kill("mm2_keef").stay().needFlag("mm2_kob").unlessFlag("mm2_keef").flag("mm2_keef")
+                .say("* Keef gives up.", "@Keef: Okay, okay! Keef's trolls stay home.")
+                .talk("garkor").stay().needFlag("mm2_keef").unlessFlag("mm2_smith_brief").flag("mm2_smith_brief")
+                .say("The trolls are out. Now find Assistant Le Smith; he's somewhere up on Marim's rooftops.")
+                .talk("assistant_le_smith").stay().needFlag("mm2_smith_brief").unlessFlag("mm2_smith").flag("mm2_smith")
+                .say("> Awowogei has already informed me about the battleships.", "Then you know the fleet is at the construction platform, off the west coast.")
+                .talk("garkor").stay().needFlag("mm2_smith").unlessFlag("mm2_platform_brief").flag("mm2_platform_brief")
+                .say("Sabotage that platform. The monkey guard by the boat on the west side will take Kruk anywhere.")
+                .talk("mm2_monkey_guard").stay().needFlag("mm2_platform_brief").unlessFlag("mm2_platform").need("mm2_kruk_greegree")
+                .flag("mm2_platform").travel("mm2_platform")
+                .say("> Can I visit the platform?", "Of course, General Kruk. *He rows you across.*")
+                .puzzle("mm2_platform", MM2_SABOTAGE).stay().needFlag("mm2_platform").unlessFlag("mm2_sabotage").flag("mm2_sabotage")
+                .say("* Six satchels of explosives in place. You slip back to the boat before the ninja monkeys see you.")
+                .talk("garkor").stay().needFlag("mm2_sabotage").unlessFlag("mm2_lab_brief").flag("mm2_lab_brief")
+                .say("Now Glough's laboratory: past the monkey bars in Kruk's dungeon, where only Kruk may go.")
+                .reach("kruks_dungeon", 12).stay().needFlag("mm2_lab_brief").unlessFlag("mm2_lab").need("mm2_kruk_greegree", "chisel", "hammer")
                 .flag("mm2_lab")
-                .say("* As Kruk you swing across the monkey bars into Glough's laboratory and ride a stunted demonic gorilla downstairs.",
-                        "* You chisel the charged onyx apart and jam the device: the incubation chambers go dark.")
-                .missing("* Glough's laboratory lies beyond monkey bars only Kruk could use. You'd also want a chisel, a hammer and an onyx for his device.")
-                .kill("tortured_gorilla", 4).stay().needFlag("mm2_lab").unlessFlag("mm2_gorillas").flag("mm2_gorillas")
+                .say("* As Kruk you swing across the monkey bars into Glough's laboratory and ride a stunted demonic gorilla downstairs,",
+                        "* fighting three gorillas back into their cages. You chisel the device's charged onyx apart and jam it with the",
+                        "* deconstructed onyx: the incubation chambers go dark.")
+                .missing("* Glough's laboratory lies beyond monkey bars only Kruk could use. A chisel and a hammer would open his device.")
+                .talk("awowogei").stay().needFlag("mm2_lab").unlessFlag("mm2_kruk_stripped").flag("mm2_kruk_stripped")
+                .say("Sabotage! Kruk, you fool, you are stripped of your rank. Duke will lead my guard!")
+                .talk("garkor").stay().needFlag("mm2_kruk_stripped").unlessFlag("mm2_stronghold").flag("mm2_stronghold")
+                .say("Glough's gorillas are attacking the Gnome Stronghold! Get back to King Narnode!")
+                .talk("king_narnode").stay().needFlag("mm2_stronghold").unlessFlag("mm2_nieve").flag("mm2_nieve")
+                .say("Tortured gorillas in my Stronghold! Nieve, the slayer master, is fighting them south of the tree. Help her!")
+                .kill("tortured_gorilla", 4).stay().needFlag("mm2_nieve").unlessFlag("mm2_gorillas").flag("mm2_gorillas")
                 .say("* Nieve and you drive the tortured gorillas out of the Gnome Stronghold. Garkor has found Glough's cave.") // OSRS: kill 4 tortured gorillas
-                .kill("mm2_glough").needFlag("mm2_gorillas").say("* Glough falls at last. His gorilla army will never fly.")
+                .kill("tortured_gorilla", 2).stay().needFlag("mm2_gorillas").unlessFlag("mm2_cave_tortured").flag("mm2_cave_tortured")
+                .say("* In the cavern north-east of the Stronghold, two more tortured gorillas fall.")
+                .kill("demonic_gorilla", 2).stay().needFlag("mm2_gorillas").unlessFlag("mm2_cave_demonic").flag("mm2_cave_demonic")
+                .say("* The demonic gorillas that leapt down beside them fall too. Glough flees deeper into his cave.")
+                .kill("mm2_glough").needFlag("mm2_cave_tortured", "mm2_cave_demonic")
+                .say("* Through three rooms Glough fights on. At last he falls. His gorilla army will never fly.")
+                .missing("?!mm2_gorillas|* Help Nieve clear the tortured gorillas from the Stronghold first.",
+                        "?mm2_gorillas|* Two tortured and two demonic gorillas guard the way to Glough.")
                 .stage("I should report to King Narnode.")
-                .talk("king_narnode").say("Glough is dead and Kruk with him. Take this royal seed pod; it will always bring you home to the Grand Tree.")
+                .talk("king_narnode").say("* Zooknock teleports you back to the Grand Tree.",
+                        "Glough is dead and Kruk with him. Take this royal seed pod; it will always bring you home to the Grand Tree.")
                 .done("garkor", "The 10th squad will remember you.");
+    }
+
+    /**
+     * Monkey Madness II, Kruk's dungeon (wiki quick guide): at each fork one way "feels wrong" (an obstacle fails, a web won't cut,
+     * a rock won't break) and the player must take the other; the route differs from player to player. Four forks, left or
+     * right; a wrong way sends the player back to the start of the maze.
+     */
+    static final QuestPuzzle MM2_MAZE = mm2Maze();
+    /**
+     * The airship platform (wiki quick guide): six satchels of explosives on the two compromised floorboards, the two
+     * compromised supports and the two gas cylinders, in any order, avoiding everything else.
+     */
+    static final QuestPuzzle MM2_SABOTAGE = mm2Sabotage();
+
+    private static QuestPuzzle mm2Maze() {
+        String[] forks = {"the dodgy ground or the webbed tunnel", "the vine or the rocks", "the metal door or the bronze door",
+                "the eastern or western path to Kruk's room"};
+        QuestPuzzle.Builder b = QuestPuzzle.builder("mm2_maze").room("maze");
+        for (int route = 0; route < 16; route++) {
+            int[] sol = new int[4];
+            for (int f = 0; f < 4; f++) {
+                sol[f] = (route >> f) & 1;
+            }
+            b.variant(null).prompt("* Beneath the jungle grass, Kruk's dungeon forks four times: " + String.join("; ", forks) + ".",
+                            "* At each fork one way feels wrong. Choose left or right at each fork in turn.")
+                    .options("Left", "Right").solution(sol);
+        }
+        return b.failLines("* This route feels wrong... You fall into the pit of maniacal monkeys and climb back to the start.").build();
+    }
+
+    private static QuestPuzzle mm2Sabotage() {
+        return QuestPuzzle.builder("mm2_sabotage").shuffle().room("platform").variant(null)
+                .prompt("* The airship platform swarms with ninja monkeys. You have six satchels filled from the explosives barrel.",
+                        "* Where do you plant them? (Six places, in any order.)")
+                .options("Compromised floorboards (middle floor)", "Compromised floorboards (north fork)", "Compromised support (east)",
+                        "Compromised support (west fork)", "Gas cylinder (top floor, south)", "Gas cylinder (top floor, north)",
+                        "Satchel crate", "Explosives barrel", "The boat")
+                .anyOrder(0, 1, 2, 3, 4, 5)
+                .failLines("* A ninja monkey spots you! You're thrown back to the boat; the satchels you placed stay put.").build();
     }
 
     private static void dragonSlayerII(QuestBook b) {
         b.npc("alec_kincade", "Alec Kincade", "myths_guild", 0, 3, 0xE0B8A0, 0x2A3A2A, 0x1A2A1A, 0x8A8A8C);
-        b.npc("dallas_jones", "Dallas Jones", "varrock_museum", 3, 2, 0xE8C0AE, 0x8A6A3A, 0x4A3A2A, 0x6A4A1A);
+        // Dallas Jones waits in the pub on Musa Point (quest-helper tile), not in the Varrock Museum.
+        b.npcAt("dallas_jones", "Dallas Jones", 2924, 3146, 0xE8C0AE, 0x8A6A3A, 0x4A3A2A, 0x6A4A1A);
         b.npc("robert_the_strong", "Robert the Strong", "myths_guild", -3, 3, 0xD0C8B8, 0xC0C0C9, 0x5A5A6A, 0xE0E0E3);
+        // quest-helper tiles: Jardric at the museum camp, the Sphinx in Sophanem, Sarah in Port Phasmatys, Amelia south-west of
+        // the Shayzien archery store, Torfinn on the Rellekka docks
+        b.npcAt("jardric", "Jardric", 3719, 3812, 0xE0B898, 0x6A5A3A, 0x4A3A2A, 0x5A4A2A);
+        b.npcAt("sphinx", "Sphinx", 3301, 2785, 0xD8B060, 0xC09840, 0xA08030, 0x3A6AA0);
+        b.npcAt("sarah_phasmatys", "Sarah", 3674, 3469, 0xC8D0C8, 0x5A6A5A, 0x3A4A3A, 0x6A4A2A);
+        b.npcAt("amelia", "Amelia", 1540, 3545, 0xE8C0A0, 0x8A2A2A, 0x5A1A1A, 0x6A3A1A);
+        b.npcAt("torfinn", "Torfinn", 2640, 3696, 0xF0C8A8, 0x6A4A2A, 0x4A3A1A, 0xC0A060);
         b.item("dragonkin_key", "Dragonkin key", "key", 0x8A2A2A, "An ancient key of the dragonkin.");
         b.item("ancient_mural_map", "Map of Ungael", "note", 0xC0B080, "A map copied from a dragonkin mural.");
-        b.boss(BossDef.of("ds2_vorkath", "Vorkath").level(392).stats(750, 560, 308, 214, 150, 308).speed(5)
-                .defenceBonus(26, 108, 108, 240, 26)
-                .attack(AttackDef.of("dragonfire", AttackType.MAGIC, 73, 12, 6).special(Special.DRAGONFIRE, 0).particle("minecraft:flame"))
-                .attack(AttackDef.of("venomous_bolt", AttackType.RANGED, 32, 12, 4).special(Special.VENOM, 0))
-                .attack(AttackDef.of("bite", AttackType.STAB, 32, 3, 3))
+        b.item("ds2_map_piece", "Map piece", "note", 0xC8B888, "A torn piece of an old map.");
+        b.item("varrock_census_records", "Varrock census records", "book", 0x6A4A2A, "The census records of Varrock.");
+        b.item("ds2_ancient_key", "Ancient key", "key", 0x5A6A7A, "An ancient key from the stone chest on Ungael.");
+        // Spots (quest-helper tiles): Elvarg's lair under Crandor, the House on the Hill and the map-piece searches around it, the
+        // rowboat on Fossil Island's west coast, Lithkren's courtyard, Varrock's library and dining room, the Kharazi maze stairs,
+        // the Kourend crypt and the Ancient Cavern's whirlpool.
+        b.spot("ds2_crandor_lair", "Elvarg's lair", 2858, 3240); // OSRS 2858, 9640, below the surface tile
+        b.spot("ds2_house", "House on the Hill", 3762, 3868);
+        b.spot("ds2_house_fungi", "Fungi by the House on the Hill", 3755, 3873);
+        b.spot("ds2_house_briar", "Hook briar by the House on the Hill", 3765, 3862);
+        b.spot("ds2_house_mushtree", "Mushtree east of the House on the Hill", 3791, 3877);
+        b.spot("ds2_rowboat", "Fossil Island rowboat", 3659, 3849);
+        b.spot("ds2_lithkren", "Lithkren", 3555, 4004);
+        b.spot("ds2_varrock_library", "Varrock Palace library", 3211, 3495);
+        b.spot("ds2_varrock_dining", "Varrock Palace dining room", 3222, 3479);
+        b.spot("ds2_kharazi_maze", "Kharazi maze", 2944, 2895);
+        b.spot("ds2_ancient_cavern", "Ancient Cavern", 2512, 3508);
+        // Wiki infoboxes: the Spawn from the strange egg (level 100), Robert the Strong in Bob's dream (level 224, ranged, melee only).
+        b.boss(BossDef.of("ds2_spawn", "Spawn").level(100).stats(80, 100, 100, 60, 1, 1).speed(4)
+                .defenceBonus(5, 15, 15, 0, 5)
+                .attack(AttackDef.of("claws", AttackType.SLASH, 11, 2, 1))
+                .drops(Drop.always("bones")).skin(0xC0B090, 0x8A7A5A, 0x6A5A3A, 0x4A3A2A).size(0.8f, 1.0f, 0.8f));
+        b.boss(BossDef.of("ds2_robert_the_strong", "Robert the Strong").level(224).stats(280, 1, 1, 140, 128, 328).speed(4)
+                .defenceBonus(140, 180, 60, 940, 860).immune(AttackType.RANGED, AttackType.MAGIC)
+                .attack(AttackDef.of("arrows", AttackType.RANGED, 34, 10, 6))
+                .attack(AttackDef.of("hide_from_this", AttackType.RANGED, 60, 12, 1).special(Special.SKY_STRIKE, 0)
+                        .telegraph(3, "Robert the Strong: See if you can hide from this!")) // wiki: 50+, knocks prayers off; approx 60
+                .drops(Drop.always("bones")).skin(0xD0C8B8, 0xC0C0C9, 0x5A5A6A, 0xE0E0E3));
+        // The quest Vorkath (wiki "Vorkath (Dragon Slayer II)": level 392, 460 HP; MonsterStatsTable row). It fights with the main
+        // Vorkath's script (bosses module VorkathScript, quest max hits: magic 30, ranged 28, melee 32, dragonfire 72, bomb 121).
+        b.boss(BossDef.of("ds2_vorkath", "Vorkath").level(392).stats(460, 560, 268, 164, 148, 268).speed(5)
+                .defenceBonus(66, 126, 126, 204, 80)
+                .attack(AttackDef.of("dragonfire", AttackType.MAGIC, 72, 12, 6).special(Special.DRAGONFIRE, 0).particle("minecraft:flame"))
+                .attack(AttackDef.of("venomous_bolt", AttackType.RANGED, 28, 12, 4).special(Special.VENOM, 0))
+                .attack(AttackDef.of("bite", AttackType.SLASH, 32, 3, 3))
                 .attack(AttackDef.of("firebomb", AttackType.MAGIC, 121, 12, 1).special(Special.SKY_STRIKE, 0)
                         .telegraph(3, "Vorkath launches a fiery bomb high into the air!").particle("minecraft:flame"))
                 .drops(Drop.always("superior_dragon_bones")).size(2.4f, 2.0f, 1.0f).at("quest_ungael").arena(14, "ice"));
-        b.boss(BossDef.of("galvek", "Galvek").level(608).stats(1200, 632, 350, 350, 250, 1).speed(5)
-                .defenceBonus(100, 120, 120, 200, 200)
-                .attack(AttackDef.of("dragonfire", AttackType.MAGIC, 50, 12, 6).special(Special.DRAGONFIRE, 0).particle("minecraft:flame"))
-                .attack(AttackDef.of("fire_bomb", AttackType.MAGIC, 60, 12, 3).special(Special.SKY_STRIKE, 0)
+        // Galvek (wiki): four forms of 300 HP each (1,200), every 6 ticks; slash, ranged and magic up to 28, dragonfire up to 121
+        // and his ground-targeted fireballs. Phase 1 fire (fire traps), 2 air (a stat-draining projectile), 3 water (tsunamis from
+        // the ends of the ship) and 4 earth (projectiles that bind).
+        b.boss(BossDef.of("galvek", "Galvek").level(608).stats(1200, 632, 268, 188, 160, 246).speed(6)
+                .defenceBonus(80, 140, 140, 280, 86)
+                .attack(AttackDef.of("claws", AttackType.SLASH, 28, 4, 3))
+                .attack(AttackDef.of("ranged", AttackType.RANGED, 28, 14, 3))
+                .attack(AttackDef.of("magic", AttackType.MAGIC, 28, 14, 3).particle("minecraft:soul_fire_flame"))
+                .attack(AttackDef.of("dragonfire", AttackType.MAGIC, 121, 12, 2).special(Special.DRAGONFIRE, 0).particle("minecraft:flame"))
+                .attack(AttackDef.of("fireball", AttackType.MAGIC, 121, 14, 2).special(Special.SKY_STRIKE, 0)
                         .telegraph(3, "Galvek hurls a fireball into the sky!").particle("minecraft:flame"))
-                .attack(AttackDef.of("tail_swipe", AttackType.CRUSH, 40, 4, 3).special(Special.KNOCKBACK, 3))
-                .phase(75, "Galvek takes to the air: the sea churns! (Phase 2 - water)", 1.1, false,
-                        AttackDef.of("tsunami", AttackType.MAGIC, 40, 14, 4).special(Special.HAZARD, 8).telegraph(3, "A tsunami crashes towards you!"),
-                        AttackDef.of("dragonfire", AttackType.MAGIC, 50, 12, 6).special(Special.DRAGONFIRE, 0).particle("minecraft:flame"))
-                .phase(50, "Galvek's scales crack with lightning! (Phase 3 - air)", 1.2, false,
-                        AttackDef.of("lightning", AttackType.MAGIC, 45, 14, 5).special(Special.SKY_STRIKE, 0).telegraph(2, "Lightning gathers above you!"),
-                        AttackDef.of("dragonfire", AttackType.MAGIC, 50, 12, 4).special(Special.DRAGONFIRE, 0).particle("minecraft:flame"))
-                .phase(25, "Galvek erupts in flame! (Phase 4 - earth)", 1.35, false,
-                        AttackDef.of("earthquake", AttackType.CRUSH, 35, 10, 4).special(Special.AOE, 6).telegraph(2, "The ground shakes violently!"),
-                        AttackDef.of("dragonfire", AttackType.MAGIC, 55, 12, 5).special(Special.DRAGONFIRE, 0).particle("minecraft:flame"))
+                .attack(AttackDef.of("fire_trap", AttackType.MAGIC, 1, 14, 1).special(Special.HAZARD, 30)
+                        .telegraph(2, "Galvek scatters fire traps across the deck!"))
+                .phase(75, "Galvek turns to the air: a stat-draining projectile! (Phase 2 - air)", 1.0, false,
+                        AttackDef.of("drain", AttackType.MAGIC, 28, 14, 3).special(Special.DRAIN_STAT, 4).particle("minecraft:cloud"),
+                        AttackDef.of("dragonfire", AttackType.MAGIC, 121, 12, 2).special(Special.DRAGONFIRE, 0).particle("minecraft:flame"),
+                        AttackDef.of("ranged", AttackType.RANGED, 28, 14, 3))
+                .phase(50, "Galvek calls the sea against you: tsunamis roll down the ship! (Phase 3 - water)", 1.0, false,
+                        AttackDef.of("tsunami", AttackType.MAGIC, 121, 16, 3).special(Special.SKY_STRIKE, 0).telegraph(3, "A tsunami crashes towards you!"),
+                        AttackDef.of("dragonfire", AttackType.MAGIC, 121, 12, 2).special(Special.DRAGONFIRE, 0).particle("minecraft:flame"),
+                        AttackDef.of("ranged", AttackType.RANGED, 28, 14, 3))
+                .phase(25, "Galvek's scales turn to stone: earthen projectiles bind! (Phase 4 - earth)", 1.0, false,
+                        AttackDef.of("earth_bind", AttackType.MAGIC, 28, 14, 3).special(Special.FREEZE, 5).particle("minecraft:block_crumble"),
+                        AttackDef.of("dragonfire", AttackType.MAGIC, 121, 12, 2).special(Special.DRAGONFIRE, 0).particle("minecraft:flame"),
+                        AttackDef.of("ranged", AttackType.RANGED, 28, 14, 3))
                 .drops(Drop.always("superior_dragon_bones")).size(2.6f, 2.2f, 1.0f).at("galveks_sea").arena(16, "water"));
         b.item("ds2_key_karamja", "Dragon key piece (Karamja)", "key", 0x8A2A2A, "A piece of the dragon key, from the maze under the Kharazi Jungle.");
         b.item("ds2_key_morytania", "Dragon key piece (Morytania)", "key", 0x8A2A2B, "A piece of the dragon key, dug up in Mort Myre Swamp.");
@@ -146,57 +318,168 @@ final class GrandmasterQuests {
         b.item("ds2_key_ungael", "Dragon key piece (Ungael)", "key", 0x8A2A2D, "A piece of the dragon key, from Vorkath's stone chest.");
         b.item("ds2_locator_orb", "Locator orb", "orb", 0x3A8A5A, "Ava's dragonstone locator. It hurts to use.");
         b.spot("ds2_mort_myre", "Mort Myre Swamp", 3440, 3400); // approx: the buried piece is at a random swamp tile in OSRS
-        b.spot("ds2_kourend_tomb", "Kourend crypt", 1563, 3580); // approx
+        b.spot("ds2_kourend_tomb", "Kourend crypt", 1504, 3539); // approx: over the tomb at the bottom of the crypt (OSRS 1504, 9939)
         b.quest("dragon_slayer_ii", "Dragon Slayer II", Difficulty.GRANDMASTER, 5)
                 .xp(Skill.SMITHING, 80000).xp(Skill.MINING, 60000).xp(Skill.AGILITY, 50000).xp(Skill.THIEVING, 50000) // OSRS (current quest XP rewards)
                 .qp(200).reqQuest("legends_quest", "animal_magnetism", "ghosts_ahoy", "bone_voyage")
                 .reqQuest("dream_mentor", "a_tail_of_two_cats", "client_of_kourend")
+                .reqNote("Unlocked the Ancient Cavern during Barbarian Training")
                 .req(Skill.MAGIC, 75).req(Skill.SMITHING, 70).req(Skill.MINING, 68).req(Skill.CRAFTING, 62)
                 .req(Skill.AGILITY, 60).req(Skill.THIEVING, 60).req(Skill.CONSTRUCTION, 50).req(Skill.HITPOINTS, 50)
                 .unlock("Access to the Myths' Guild and Vorkath").unlock("Ability to smith dragon platebodies and kiteshields")
                 .stage("I can start this quest by speaking to Alec Kincade outside the Myths' Guild. (Requires 200 quest points, Legends' Quest and much more.)")
-                .talk("alec_kincade").say("Dragons are stirring all over Gielinor. Something is uniting them. An archaeologist, Dallas Jones, has been asking questions.")
-                .stage("I should speak to Dallas Jones.")
-                .talk("dallas_jones").say("A dragonkin journal! It mentions a house on a hill on Fossil Island... and a dragon named Galvek.")
-                // OSRS: the House on the Hill's map puzzle, then Lithkren with Dallas (Aivas' diary and the mural).
-                .stage("I should search the House on the Hill on Fossil Island, then sail to Lithkren with Dallas Jones.")
-                .reach("fossil_island", 12).stay().unlessFlag("ds2_house").flag("ds2_house")
-                .say("* In the House on the Hill you piece the torn map together. Jardric at the museum camp recognises the island on it: Lithkren.")
-                .talk("dallas_jones").needFlag("ds2_house").give("ancient_mural_map")
-                .say("* On Lithkren you find Aivas' skeleton and his diary. A dragonkin mural shows a sealed vault, opened only by a dragon key...",
-                        "The key was split in four: Karamja, Morytania, Kourend and a frozen island in the north. Ungael!")
-                .missing("Find out where that map leads first. The House on the Hill, on Fossil Island.")
-                // OSRS: the four dragon key pieces (Kharazi maze, Mort Myre via Reldo's research and Ava's locator orb, a Kourend tomb, Ungael).
-                .stage("I need the four pieces of the dragon key: the Kharazi maze, Mort Myre Swamp, a Kourend tomb, and Ungael beyond Rellekka.")
-                .reach("kharazi_jungle", 12).stay().unless("ds2_key_karamja").unlessFlag("ds2_forged").reqSkill(Skill.THIEVING, 60).reqSkill(Skill.AGILITY, 60)
-                .give("ds2_key_karamja")
-                .say("* Down the stairs on the Kharazi coast, past spikes and coloured golems, you take a key piece from the centre of the maze.")
+                .talk("alec_kincade").say("Dragons are stirring all over Gielinor. Something is uniting them.",
+                        "An archaeologist, Dallas Jones, has been asking questions. You'll find him in the pub on Musa Point.")
+                // ---- Starting off (wiki quick guide) ----
+                .stage("I should speak to Dallas Jones at Musa Point and follow him into Elvarg's lair under Crandor.")
+                .talk("dallas_jones").stay().unlessFlag("ds2_dallas").flag("ds2_dallas")
+                .say("You slew Elvarg? Then you know Crandor. There's something in her lair I need to see. Meet me there, and bring a pickaxe.")
+                .reach("ds2_crandor_lair", 10).underground().stay().needFlag("ds2_dallas").unlessFlag("ds2_mural").needTool("pickaxe")
+                .flag("ds2_mural").spawn("ds2_spawn")
+                .say("* You mine through the blockage in the north of Elvarg's lair. Beyond lies an ancient mural.",
+                        "* As you investigate it, a strange egg cracks open and a spawn leaps at you!")
+                .missing("* A blockage in the north wall of the lair. You'd need a pickaxe.")
+                .kill("ds2_spawn").stay().needFlag("ds2_mural").unlessFlag("ds2_spawned").flag("ds2_spawned")
+                .say("* The spawn dies. You investigate the mural again: dragonkin, and an island.")
+                .reach("ds2_crandor_lair", 10).underground().stay().needFlag("ds2_mural").unlessFlag("ds2_spawned").spawn("ds2_spawn")
+                .say("* The spawn is still loose in the tunnel!")
+                .talk("dallas_jones").needFlag("ds2_spawned")
+                .say("That mural matches a journal I found: it mentions a house on a hill on Fossil Island... and a dragon named Galvek.")
+                .missing("Meet me in Elvarg's lair under Crandor. And bring a pickaxe.")
+                // ---- The House on the Hill, To Lithkren!, Bob the Cat, Robert the Strong (wiki quick guide) ----
+                .stage("I should investigate the House on the Hill on Fossil Island and sail to Lithkren with Dallas Jones, then find Bob "
+                        + "the Cat and face Robert the Strong in a dream.")
+                .talk("dallas_jones").stay().unlessFlag("ds2_house_brief").flag("ds2_house_brief")
+                .say("> Ask about the island.", "In the basement of the House on the Hill: a map, torn into pieces. 24 of them are missing.")
+                .reach("ds2_house", 4).stay().needFlag("ds2_house_brief").unlessFlag("ds2_pieces_house", "ds2_map").give("ds2_map_piece:8")
+                .flag("ds2_pieces_house")
+                .say("* The open chest north of the map holds 5 pieces; the stone chest upstairs another 3.")
+                .reach("ds2_house_fungi", 3).stay().needFlag("ds2_house_brief").unlessFlag("ds2_pieces_fungi", "ds2_map").give("ds2_map_piece:4")
+                .flag("ds2_pieces_fungi").say("* Among the fungi north of the stairs: 4 map pieces.")
+                .reach("ds2_house_briar", 3).stay().needFlag("ds2_house_brief").unlessFlag("ds2_pieces_briar", "ds2_map").give("ds2_map_piece:7")
+                .flag("ds2_pieces_briar").say("* In the hook briar south of the house: 7 map pieces.")
+                .reach("ds2_house_mushtree", 3).stay().needFlag("ds2_house_brief").unlessFlag("ds2_pieces_tree", "ds2_map").give("ds2_map_piece:5")
+                .flag("ds2_pieces_tree").say("* In the mushtree east of the house: 5 map pieces.")
+                .talk("dallas_jones").stay().needFlag("ds2_house_brief").unlessFlag("ds2_map").take("ds2_map_piece:24").flag("ds2_map")
+                .say("* Together you fit the 24 pieces into the map, rotating and swapping them until the coastline is whole.",
+                        "An island to the north-west... Lithkren! Jardric at the museum camp knows those waters.")
+                .missing("We need all 24 pieces: the chests in the house, the fungi, the hook briar and the mushtree outside.")
+                .talk("jardric").stay().needFlag("ds2_map").unlessFlag("ds2_jardric").flag("ds2_jardric")
+                .say("Lithkren? You'll not get there without a boat. There's an old rowboat on the west coast; it needs mending.")
+                .reach("ds2_rowboat", 4).stay().needFlag("ds2_jardric").unlessFlag("ds2_boat").take("oak_plank:8", "swamp_paste:10", "iron_nails:12")
+                .need("hammer").flag("ds2_boat")
+                .say("* With 8 oak planks, 10 swamp paste and a dozen nails you build a rowboat on the west coast.")
+                .missing("* The rowboat needs 8 oak planks, 10 swamp paste, 12 nails and a hammer.")
+                .talk("dallas_jones").stay().needFlag("ds2_boat").unlessFlag("ds2_lithkren").flag("ds2_lithkren").travel("ds2_lithkren")
+                .say("> I'm ready.", "* Dallas rows you across to Lithkren.")
+                .reach("ds2_lithkren", 8).stay().needFlag("ds2_lithkren").unlessFlag("ds2_diary").flag("ds2_diary")
+                .say("* Up the courtyard stairs, down the trapdoor and two staircases into the dragonkin laboratory.",
+                        "* A skeleton in the far north: Aivas. You read his diary.")
+                .talk("dallas_jones").stay().needFlag("ds2_diary").unlessFlag("ds2_aivas").give("ancient_mural_map").flag("ds2_aivas")
+                .say("Aivas fought beside Robert the Strong! The vault here takes a dragon key, split in four long ago.",
+                        "Robert's memories live on... in a cat called Bob. Find him. I copied the mural's map of Ungael for you.")
+                .talk("bob_the_cat").stay().needFlag("ds2_aivas").unlessFlag("ds2_bob").flag("ds2_bob")
+                .say("Meow. *Bob's memories of Robert the Strong are locked away. The Sphinx in Sophanem could unlock them.*")
+                .talk("sphinx").stay().needFlag("ds2_bob").unlessFlag("ds2_sphinx").flag("ds2_sphinx")
+                .say("> Can you help with Bob's memories?", "I will enchant you to speak with cats. The memories themselves lie in dreams: "
+                        + "the Oneiromancer on Lunar Isle can take you there.")
+                .talk("oneiromancer").stay().needFlag("ds2_sphinx").unlessFlag("ds2_dream").take("vial_of_water", "goutweed", "astral_rune")
+                .need("seal_of_passage", "hammer", "pestle_and_mortar", "tinderbox").flag("ds2_dream")
+                .say("Bob's memories? A dream potion: crush an astral rune, grind the shards and add them and goutweed to a dream vial of water.",
+                        "* You light the ceremonial brazier and pour the dream potion onto the flame. Bob pads up beside you.")
+                .missing("A dream potion needs a vial of water, goutweed and an astral rune (a hammer and a pestle and mortar to grind it), "
+                        + "and a tinderbox for the brazier.")
+                .talk("bob_the_cat").stay().needFlag("ds2_dream").unlessFlag("ds2_robert").spawn("ds2_robert_the_strong")
+                .say("* In the dream, Bob and Not Bob argue. Beyond the barrier waits Robert the Strong himself!",
+                        "@Robert the Strong: Prove yourself worthy of my memories!")
+                .kill("ds2_robert_the_strong").stay().needFlag("ds2_dream").unlessFlag("ds2_robert").flag("ds2_robert")
+                .say("* Robert the Strong lowers his bow. 'You are worthy. Galvek must not rise again.'")
+                .talk("bob_the_cat").needFlag("ds2_robert")
+                .say("Meow! *Bob remembers: the dragon key was split into four pieces, hidden in Karamja, Morytania, Kourend and Ungael.*")
+                .missing("?!ds2_aivas|Meow? *Bob licks his paw.*", "?ds2_aivas|?!ds2_dream|Meow. *Bob's memories wait in a dream.*")
+                // ---- The dragon key (wiki quick guide) ----
+                .stage("I need the four pieces of the dragon key: the Kharazi maze, Mort Myre Swamp, a Kourend crypt, and Ungael beyond Rellekka.")
+                .reach("ds2_kharazi_maze", 6).stay().unless("ds2_key_karamja").unlessFlag("ds2_forged").reqSkill(Skill.THIEVING, 60)
+                .reqSkill(Skill.AGILITY, 60).need("machete").needTool("axe").give("ds2_key_karamja")
+                .say("* Down the staircase on the Kharazi coast, past spikes and coloured golems (red melee, green ranged, blue magic),",
+                        "* you take the dragon key piece from the plinth at the centre of the maze.")
+                .missing("* The Kharazi Jungle is overgrown: you'd need a machete and an axe to reach the maze.")
                 .talk("reldo").stay().unlessFlag("ds2_reldo").flag("ds2_reldo")
-                .say("A dragon key piece in Morytania? This book mentions it: buried in Mort Myre. Sarah in Port Phasmatys says Ava could make a locator.")
-                .talk("ava").stay().needFlag("ds2_reldo").unless("ds2_locator_orb", "ds2_key_morytania").unlessFlag("ds2_forged")
+                .say("> Ask about Tristan.", "Tristan, Robert's companion? The census records on the shelves might show his descendants.")
+                .reach("ds2_varrock_library", 3).stay().needFlag("ds2_reldo").unlessFlag("ds2_census").unless("varrock_census_records")
+                .give("varrock_census_records").say("* In the second bookcase from the north you find the Varrock census records.")
+                .talk("reldo").stay().needFlag("ds2_reldo").unlessFlag("ds2_census").take("varrock_census_records").flag("ds2_census")
+                .say("Tristan's line... Sarah, in Port Phasmatys. She may know where his key piece was hidden.")
+                .talk("sarah_phasmatys").stay().needFlag("ds2_census").unlessFlag("ds2_sarah").need("ghostspeak_amulet").flag("ds2_sarah")
+                .say("My ancestor's key piece? Buried somewhere in Mort Myre Swamp, they say. Ava in Draynor Manor could make a locator.")
+                .missing("* Sarah's words are lost to you without a ghostspeak amulet.")
+                .talk("ava").stay().needFlag("ds2_sarah").unless("ds2_locator_orb", "ds2_key_morytania").unlessFlag("ds2_forged")
                 .take("dragonstone", "molten_glass:2").need("glassblowing_pipe", "chisel").give("ds2_locator_orb")
                 .say("* You blow an inert orb around the dragonstone. Ava charges it into a locator orb.")
                 .missing("A locator orb? Bring a dragonstone, 2 molten glass, a glassblowing pipe and a chisel.")
                 .reach("ds2_mort_myre", 16).stay().need("ds2_locator_orb", "spade").unless("ds2_key_morytania").unlessFlag("ds2_forged").give("ds2_key_morytania")
                 .say("* The locator stings you each time you feel it, but it leads you to a patch of swamp. You dig up a key piece.")
-                .reach("ds2_kourend_tomb", 10).stay().unless("ds2_key_kourend").unlessFlag("ds2_forged").give("ds2_key_kourend")
-                .say("* You search the old tomb and find a dragon key piece.")
-                .talk("brundt").need("ancient_mural_map").travel("quest_ungael").say("The dragonkin fortress in the frozen north? Torfinn will sail you. *Your longship lands on Ungael.*")
+                .talk("amelia").stay().unlessFlag("ds2_amelia").flag("ds2_amelia")
+                .say("Camorra's tomb? In the crypt west of here. Take a light, and beware the skeletons.")
+                .puzzle("ds2_kourend_tomb", DS2_CRYPT).stay().needFlag("ds2_amelia").unless("ds2_key_kourend").unlessFlag("ds2_forged")
+                .give("ds2_key_kourend")
+                .say("* The last bust settles on its plinth. The tomb grinds open: a dragon key piece.")
+                .talk("brundt").stay().need("ancient_mural_map").unlessFlag("ds2_brundt").flag("ds2_brundt")
+                .say("> Ask about the dragonkin fortress.", "The frozen island of Ungael? Torfinn on the docks will sail you. Mind the dragon.")
+                .talk("torfinn").needFlag("ds2_brundt").need("ancient_mural_map").travel("quest_ungael")
+                .say("Ungael? Aye. Hold on to something. *Your longship lands on Ungael.*")
+                .missing("Brundt hasn't said anything about a voyage to me.")
                 .stage("I must defeat the undead dragon Vorkath on Ungael.")
-                .kill("ds2_vorkath").take("ancient_mural_map").give("ds2_key_ungael").say("* Vorkath collapses. In the stone chest you find the last dragon key piece.")
-                .stage("I should reforge the dragon key on Lithkren, open the dragonkin vault and tell Alec Kincade.")
-                .reach("fossil_island", 12).stay().unlessFlag("ds2_forged").take("ds2_key_karamja", "ds2_key_morytania", "ds2_key_kourend", "ds2_key_ungael")
-                .need("hammer").reqSkill(Skill.SMITHING, 70).flag("ds2_forged").give("dragonkin_key")
-                .say("* On Lithkren's dragonkin anvil you forge the four pieces into the dragon key.")
-                .missing("* The dragonkin anvil waits on Lithkren. You'll need all four key pieces, a hammer and 70 Smithing.")
-                .talk("alec_kincade").take("dragonkin_key").say("The key opens the dragonkin vault! But Galvek has risen and leads the dragons against us. Robert the Strong, the hero of old, has returned to fight beside you.")
-                .stage("I must defeat Galvek, the dragon of the dragonkin, on the Western Sea.")
-                .talk("robert_the_strong").stay().say("Together, as I fought beside Camorra of old! To the ships!")
-                // OSRS assault on the Myths' Guild: green, blue, black, steel, brutal red, mithril, adamant and rune dragons, then Galvek.
+                .kill("ds2_vorkath").take("ancient_mural_map").give("ds2_key_ungael", "ds2_ancient_key")
+                .say("* Vorkath collapses. In the cave to the north-west you pull the lever and run for the east room before the timer ends:",
+                        "* the stone chest holds the last dragon key piece and an ancient key.")
+                // ---- Reforging the key and A World United (wiki quick guide) ----
+                .stage("I should reforge the dragon key in the Ancient Cavern, open the dragonkin vault on Lithkren and unite the kingdoms "
+                        + "against the dragons.")
+                .reach("ds2_ancient_cavern", 8).stay().unlessFlag("ds2_heads", "ds2_forged").need("ds2_ancient_key")
+                .take("fire_rune:21", "air_rune:15", "blood_rune:3").reqSkill(Skill.MAGIC, 75).flag("ds2_heads")
+                .say("* Past the mithril dragons, the ancient key opens the mithril door. You cast Fire Wave on each of the three dragon heads.")
+                .missing("* The mithril door takes the ancient key, and the three dragon heads three casts of Fire Wave (21 fire, 15 air "
+                        + "and 3 blood runes).")
+                .reach("ds2_ancient_cavern", 8).stay().needFlag("ds2_heads").unlessFlag("ds2_forged")
+                .take("ds2_key_karamja", "ds2_key_morytania", "ds2_key_kourend", "ds2_key_ungael").need("hammer").reqSkill(Skill.SMITHING, 70)
+                .flag("ds2_forged").give("dragonkin_key")
+                .say("* Up the rough-hewn steps in the south-west of the caverns, you forge the four pieces into the dragon key on an anvil.")
+                .missing("* The anvils wait up the rough-hewn steps. You'll need all four key pieces, a hammer and 70 Smithing.")
+                .reach("ds2_lithkren", 8).stay().needFlag("ds2_forged").unlessFlag("ds2_vault").take("dragonkin_key").flag("ds2_vault")
+                .say("* The dragon key turns in Lithkren's ancient doors. Inside, Dallas gasps: the vault is empty, and far away Galvek wakes.",
+                        "@Bob the Cat: Meow. *The kingdoms must stand together. Start with King Roald.*")
+                .talk("king_roald").stay().needFlag("ds2_vault").unlessFlag("ds2_roald").flag("ds2_roald")
+                .say("> Talk about the dragon threat.", "Dragons, united? Varrock will stand. Gather the others and we'll meet in my dining room.")
+                .talk("sir_amik_varze").stay().needFlag("ds2_roald").unlessFlag("ds2_amik").flag("ds2_amik")
+                .say("> Talk about the dragon threat.", "The White Knights will sail with you.")
+                .talk("king_lathas").stay().needFlag("ds2_roald").unlessFlag("ds2_lathas").flag("ds2_lathas")
+                .say("> Talk about the dragon threat.", "Ardougne's fleet is yours.")
+                .talk("brundt").stay().needFlag("ds2_roald").unlessFlag("ds2_brundt_army").flag("ds2_brundt_army")
+                .say("> Talk about the dragon threat.", "The Fremennik fear no dragon. Our longships will be there.")
+                .reach("ds2_varrock_dining", 4).stay().needFlag("ds2_roald", "ds2_amik", "ds2_lathas", "ds2_brundt_army").unlessFlag("ds2_council")
+                .flag("ds2_council")
+                .say("* Around King Roald's table the rulers agree on a plan: one fleet, sailing for Ungael.", "> It's a good plan.")
+                .missing("* The rulers are not all here yet: Sir Amik Varze, King Lathas and Brundt must hear of the threat.")
+                .talk("bob_the_cat").needFlag("ds2_council")
+                .say("Meow. *Bob pads towards the docks. The fleet sails from Rellekka.*")
+                .missing("?!ds2_forged|Meow. *Bob looks at your empty hands. The key isn't forged yet.*",
+                        "?ds2_forged|?!ds2_council|Meow. *The rulers of Gielinor must meet first.*")
+                // ---- The Assault and the final battle (wiki quick guide) ----
+                .stage("I must sail with the allied fleet from Rellekka, survive the dragons' assault and defeat Galvek.")
+                .talk("torfinn").stay().unlessFlag("ds2_afloat", "ds2_assault").flag("ds2_afloat").travel("galveks_sea")
+                .say("To Ungael, and the fleet! Keep her afloat, friend.",
+                        "* For four minutes you fill leaks, douse fires, heal injured Fremennik warriors and repair the masts.")
+                .kill("red_dragon").stay().needFlag("ds2_afloat").unlessFlag("ds2_wave_red_way", "ds2_assault").flag("ds2_wave_red_way")
+                .say("* A red dragon falls on the way to Varrock's grand ship.")
+                .kill("iron_dragon").stay().needFlag("ds2_wave_red_way").unlessFlag("ds2_wave_iron_way", "ds2_assault").flag("ds2_wave_iron_way")
+                .say("* An iron dragon falls.")
+                .kill("brutal_green_dragon").stay().needFlag("ds2_wave_iron_way").unlessFlag("ds2_wave_way", "ds2_assault").flag("ds2_wave_way")
+                .say("* A brutal green dragon falls. Varrock's grand ship is ahead.")
                 // Wave 1: two green and two blue dragons battling the Varrockian soldiers (checkpoint).
-                .kill("green_dragon", 2).stay().unlessFlag("ds2_wave_green", "ds2_assault").flag("ds2_wave_green")
+                .kill("green_dragon", 2).stay().needFlag("ds2_wave_way").unlessFlag("ds2_wave_green", "ds2_assault").flag("ds2_wave_green")
                 .say("* The two green dragons fall beside the Varrockian soldiers.")
-                .kill("blue_dragon", 2).stay().unlessFlag("ds2_wave_blue", "ds2_assault").flag("ds2_wave_blue")
+                .kill("blue_dragon", 2).stay().needFlag("ds2_wave_way").unlessFlag("ds2_wave_blue", "ds2_assault").flag("ds2_wave_blue")
                 .say("* The two blue dragons fall. The first wave is beaten.")
                 // Wave 2: black, steel, then brutal red dragons land on the ship one at a time.
                 .kill("black_dragon").stay().needFlag("ds2_wave_green", "ds2_wave_blue").unlessFlag("ds2_wave_black", "ds2_assault").flag("ds2_wave_black")
@@ -213,11 +496,42 @@ final class GrandmasterQuests {
                 .kill("rune_dragon").stay().needFlag("ds2_wave_adamant").unlessFlag("ds2_assault").flag("ds2_assault")
                 .say("* The rune dragon falls: the assault is broken. Galvek himself descends on the ship.")
                 .kill("galvek").needFlag("ds2_assault").say("* Galvek falls into the sea. The dragon threat is ended.")
+                .missing("* The dragons still hold the skies over the fleet.")
                 .stage("I should report to Alec Kincade at the Myths' Guild.")
                 .talk("alec_kincade").say("Galvek is dead! You are a true slayer of dragons. The Myths' Guild is open to you.")
-                .done("robert_the_strong", "It was an honour to fight beside you.");
+                .done("robert_the_strong", "It was an honour to see you fight. Galvek will not rise again.");
     }
 
+    /**
+     * Dragon Slayer II, the Kourend crypt (wiki quick guide, quest-helper's CryptPuzzle): the plaque names where one hero sat,
+     * whom another sat opposite and what a third asked; the four heroes' busts go on the north, south, west and east plinths.
+     * Aivas: crossbow, Zartharim; Camorra: axe, Saranthium; Robert: bow, Arkney; Tristan: sword, Karville. The plaque is
+     * different for every player.
+     */
+    static final QuestPuzzle DS2_CRYPT = ds2Crypt();
+
+    private static QuestPuzzle ds2Crypt() {
+        String[] heroes = {"Aivas", "Camorra", "Robert", "Tristan"};
+        String[] weapons = {"crossbow", "axe", "bow", "sword"};
+        String[] homes = {"Zartharim", "Saranthium", "Arkney", "Karville"};
+        QuestPuzzle.Builder b = QuestPuzzle.builder("ds2_crypt").room("busts");
+        for (int n = 0; n < 4; n++) {
+            for (int s = 0; s < 4; s++) {
+                for (int w = 0; w < 4; w++) {
+                    if (n == s || s == w || n == w) {
+                        continue;
+                    }
+                    int e = 6 - n - s - w;
+                    b.variant(null).prompt("* The tomb's plaque reads: 'The one from " + homes[n] + " sat at the north of the table, opposite "
+                                            + "the one with the " + weapons[s] + ". The one with " + (w == 1 ? "an " : "a ") + weapons[w]
+                                            + " asked the others to stand fast.'",
+                                    "* Place the four busts on the plinths: north, south, west, then east.")
+                            .options(heroes).solution(n, s, w, e);
+                }
+            }
+        }
+        return b.failLines("* The busts slide back off their plinths. Read the plaque again.").build();
+    }
     private static void whileGuthixSleeps(QuestBook b) {
         // Ivy Sophista and Thaerisk Cemphier in the house with the ladder in Taverley (Thaerisk upstairs in OSRS), Akrisae and Idria in
         // the White Knights' Castle, the Khazard launderer by the Fight Arena, a shady stranger by Draynor bank, the Hunting expert in

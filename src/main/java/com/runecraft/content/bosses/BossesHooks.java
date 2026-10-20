@@ -37,6 +37,7 @@ public final class BossesHooks implements ModuleHooks {
             BossScripts.register(form, () -> new ZulrahScript(form));
         }
         BossScripts.register("vorkath", VorkathScript::new);
+        BossScripts.register("ds2_vorkath", () -> new VorkathScript(true)); // Dragon Slayer II's quest Vorkath fights the same way
         VorkathScript.registerCrumbleUndead();
 
         BossScripts.register("kraken", SlayerScripts.Kraken::new);

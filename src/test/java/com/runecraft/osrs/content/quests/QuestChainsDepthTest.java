@@ -204,7 +204,7 @@ class QuestChainsDepthTest {
     @Test
     void grandmasterBosses() {
         QuestSpec mm2 = spec("monkey_madness_ii");
-        assertTrue(find(mm2, Trigger.Kind.KILL, "mm2_glough").needFlags.contains("mm2_gorillas"));
+        assertTrue(find(mm2, Trigger.Kind.KILL, "mm2_glough").needFlags.containsAll(List.of("mm2_cave_tortured", "mm2_cave_demonic")));
         assertEquals(431, ContentRegistry.boss("mm2_glough").combatLevel);
         assertTrue(any(mm2, t -> t.take.containsKey("kruks_paw") && t.give.containsKey("mm2_kruk_greegree")));
 

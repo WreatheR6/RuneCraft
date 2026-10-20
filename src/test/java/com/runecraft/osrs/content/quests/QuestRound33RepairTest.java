@@ -97,7 +97,8 @@ class QuestRound33RepairTest {
             Map.entry("akrisae", new Object[]{"osrs:2962,3382", 0, 0}), // the old temple_knight_hq spot
             Map.entry("ivy_sophista", new Object[]{"osrs:2962,3382", 3, 2}),
             Map.entry("lord_kandur_lovakengj", new Object[]{"lovakengj", 0, 3}),
-            Map.entry("lazim", new Object[]{"quest_enakhras_temple", 0, 3}));
+            Map.entry("lazim", new Object[]{"quest_enakhras_temple", 0, 3}),
+            Map.entry("dallas_jones", new Object[]{"varrock_museum", 3, 2})); // round 37: to the Musa Point pub
 
     private static int[] oldBlock(Object[] before) {
         String place = (String) before[0];
