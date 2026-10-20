@@ -22,6 +22,7 @@ import com.runecraft.osrs.content.systems.ClueScrolls.Step;
 import com.runecraft.osrs.content.systems.ClueScrolls.StepType;
 import com.runecraft.osrs.content.systems.ClueScrolls.Tier;
 import com.runecraft.osrs.content.systems.Jewellery;
+import com.runecraft.osrs.content.systems.MimicRewards;
 import com.runecraft.osrs.content.systems.Teleports;
 import com.runecraft.player.Players;
 import com.runecraft.registry.ModEntities;
@@ -164,7 +165,7 @@ public final class ClueWalk {
         expect(Inv.has(player, tier.casketItem(), 1), "no reward casket");
         String reward = openCasket();
         if (tier == Tier.MASTER) {
-            reward += "; " + mimic() + "; " + watson();
+            reward += "; " + mimic() + "; " + lostClue() + "; " + watson();
         }
         return tier.id() + " trail: " + log.toString().trim() + "; " + reward;
     }
@@ -210,9 +211,7 @@ public final class ClueWalk {
             ClueService.feel(player, tier);
             heal();
         } else if (s.type() == StepType.COORDINATE) {
-            for (String tool : new String[]{"sextant", "watch", "chart"}) {
-                giveIfMissing(tool);
-            }
+            coordinateTools();
             goTile(s.x(), s.y());
             ClueService.sextant(player);
         } else {
@@ -224,12 +223,49 @@ public final class ClueWalk {
             List<LivingEntity> guards = ClueService.guardians(player);
             expect(!guards.isEmpty(), s.guardian() + " didn't appear");
             for (LivingEntity g : guards) {
+                expect(ClueService.dropsNoClues(g), g.getName().getString() + " rolls clue scroll drops");
                 kill(g);
             }
             expect(ClueService.flag(player, tier, ClueService.GUARDIAN_KILLED), "killing the guardian didn't count");
             expect(ClueService.dig(player, tier, true), "digging again after the guardian failed");
             log.append('[').append(s.guardian().display()).append("] ");
         }
+    }
+
+    /**
+     * The sextant, watch and chart from their NPCs (OSRS order: the Observatory professor's chart, Murphy's sextant, then
+     * Brother Kojo's watch; Kojo turns a hunter away before Murphy has).
+     */
+    private void coordinateTools() {
+        SysState.SysPlayer sp = SysState.of(player);
+        for (String tool : new String[]{"sextant", "watch", "chart"}) {
+            while (Inv.has(player, tool, 1)) {
+                Inv.remove(player, tool, 1);
+            }
+        }
+        sp.unlocks.remove(ClueService.CHART_FROM_PROFESSOR);
+        sp.unlocks.remove(ClueService.SEXTANT_FROM_MURPHY);
+        talkTo("brother_kojo");
+        expect(!Inv.has(player, "watch", 1), "Brother Kojo gave a watch before Murphy's sextant");
+        talkTo("observatory_professor");
+        expect(Inv.has(player, "chart", 1), "the Observatory professor gave no chart");
+        talkTo(firstNpc("mg_murphy", "rfd_murphy"));
+        expect(Inv.has(player, "sextant", 1), "Murphy gave no sextant");
+        talkTo("brother_kojo");
+        expect(Inv.has(player, "watch", 1), "Brother Kojo gave no watch");
+        log.append("[sextant, watch, chart] ");
+    }
+
+    /** The first of these NPC ids this world places. */
+    private String firstNpc(String... ids) {
+        for (String id : ids) {
+            for (ClueScrolls.Npc n : npcs) {
+                if (n.id().equals(id)) {
+                    return id;
+                }
+            }
+        }
+        throw new AssertionError("none of " + String.join(", ", ids) + " is placed");
     }
 
     private void search(Step s) {
@@ -254,11 +290,22 @@ public final class ClueWalk {
         if (stash != null && Teleports.within(stash.x(), stash.y(), s.x(), s.y(), ClueScrolls.EMOTE_RADIUS)) {
             Players.data(player).skills().setXpTenths(Skill.CONSTRUCTION, 130_344_310);
             Inv.give(player, stash.tier().stashPlank(), 2);
-            Inv.give(player, "bronze_nails", 10);
             giveIfMissing("hammer");
+            giveIfMissing("saw");
             if (stash.tier() == Tier.MASTER) {
                 Inv.give(player, "gold_leaf", 1);
             }
+            for (String metal : new String[]{"bronze", "iron", "steel", "black", "mithril", "adamant", "rune"}) {
+                while (Inv.has(player, metal + "_nails", 1)) {
+                    Inv.remove(player, metal + "_nails", 1);
+                }
+            }
+            if (ItemCatalog.get("dragon_nails") != null) {
+                Inv.give(player, "dragon_nails", 10);
+                ClueService.stash(player, tier);
+                expect(!SysState.of(player).stash.containsKey(stash.name()), "a STASH unit was built with dragon nails");
+            }
+            Inv.give(player, "bronze_nails", 10);
             ClueService.stash(player, tier);
             expect(SysState.of(player).stash.containsKey(stash.name()), "STASH unit not built");
             ClueService.stash(player, tier);
@@ -324,6 +371,10 @@ public final class ClueWalk {
                 ClueService.playSong(player, tier);
             }
             default -> {
+                if (s.hasChallenge()) {
+                    ClueService.answer(player, tier, s.clue().answer());
+                    expect(ClueService.current(player, tier) == s, "a challenge answer was accepted before the NPC set it");
+                }
                 talkStep(s);
                 if (s.box() != null) {
                     expect(Inv.has(player, s.box(), 1), "no " + s.box() + " handed over");
@@ -331,6 +382,12 @@ public final class ClueWalk {
                     talkStep(s);
                     log.append('[').append(s.box()).append("] ");
                 } else if (s.hasChallenge()) {
+                    // From afar the answer is refused; at the NPC a wrong one is, then the right one advances.
+                    int[] at = ClueService.target(player, s);
+                    goTile(at[0] + 60, at[1]);
+                    ClueService.answer(player, tier, s.clue().answer());
+                    expect(ClueService.current(player, tier) == s, "a challenge answer was accepted away from the NPC");
+                    npc(s.npcId());
                     ClueService.answer(player, tier, "-12345");
                     expect(ClueService.current(player, tier) == s, "a wrong challenge answer was accepted");
                     ClueService.answer(player, tier, s.clue().answer());
@@ -393,23 +450,96 @@ public final class ClueWalk {
         return "casket gave " + (countItems() - items) + " stacks, log +" + (Players.data(player).collectionLog().size() - before);
     }
 
-    /** A master casket that turns out to be a Mimic: fight it with the mimic casket at Watson's house. */
+    /**
+     * The Mimic: with Mimic encounters on, the 10th master casket is the guaranteed one. Its mimic casket is presented to the
+     * strange casket at Watson's house (the boss's summon); a failed attempt keeps the casket with one item roll fewer, the
+     * kill opens it and gives the Mimic scroll case, and a casket whose attempts are all spent crumbles.
+     */
     private String mimic() {
         SysState.SysPlayer sp = SysState.of(player);
-        sp.mimicTier = Tier.MASTER.name();
-        Inv.give(player, ClueRewards.MIMIC_ITEM, 1);
-        com.runecraft.osrs.content.BossDef def = ContentRegistry.boss(com.runecraft.osrs.content.systems.MimicRewards.MIMIC);
+        while (Inv.has(player, ClueRewards.MIMIC_ITEM, 1)) {
+            Inv.remove(player, ClueRewards.MIMIC_ITEM, 1);
+        }
+        sp.mimicEnabled = true;
+        sp.mimicSeen = false;
+        sp.mimicCase = false;
+        sp.mimicFight = "";
+        sp.cluesCompleted.put(Tier.MASTER, MimicRewards.GUARANTEED_MASTER - 1);
+        Inv.give(player, Tier.MASTER.casketItem(), 1);
+        ClueService.openCasket(player, find(Tier.MASTER.casketItem()), Tier.MASTER);
+        sp.mimicEnabled = false;
+        ItemStack mimic = ClueService.mimicStack(player, null);
+        expect(mimic != null, "the 10th master casket wasn't the guaranteed Mimic");
+        MimicRewards.Casket casket = ClueService.casketOf(mimic);
+        expect(casket.tier() == Tier.MASTER && casket.attempt() == 0 && casket.rolls() >= Tier.MASTER.minRolls(), "mimic casket " + casket);
+        com.runecraft.osrs.content.BossDef def = ContentRegistry.boss(MimicRewards.MIMIC);
         expect(def != null, "no Mimic boss");
-        expect(ClueRewards.MIMIC_ITEM.equals(def.key), "the Mimic isn't summoned with the mimic casket");
+        expect(def.key == null, "the Mimic's summon uses up a key");
         goTile(com.runecraft.osrs.content.systems.SystemsContent.WATSON_X, com.runecraft.osrs.content.systems.SystemsContent.WATSON_Y);
         int items = countItems();
-        com.runecraft.boss.DataBossEntity boss = com.runecraft.boss.DataBossService.spawn(world, player.blockPosition().offset(3, 0, 0),
-                def, player);
-        expect(boss != null, "the Mimic didn't spawn");
-        spawned.add(boss);
+        // First attempt: the player leaves and the Mimic resets; the casket stays with one try used.
+        com.runecraft.boss.DataBossEntity boss = summonMimic(def);
+        expect(Inv.has(player, ClueRewards.MIMIC_ITEM, 1), "presenting the mimic casket used it up");
+        boss.discard();
+        MimicRewards.Casket after = ClueService.casketOf(ClueService.mimicStack(player, null));
+        expect(after.attempt() == 1, "the first attempt wasn't counted: " + after);
+        // Second attempt: killed, with one casket roll fewer.
+        boss = summonMimic(def);
+        MimicRewards.Casket fought = ClueService.casketOf(ClueService.mimicStack(player, null));
+        expect(fought.attempt() == 2 && fought.rollsNow() == casket.rolls() - 1, "second attempt " + fought);
         kill(boss);
-        expect(sp.mimicTier.isEmpty(), "killing the Mimic didn't give the casket's rewards");
-        return "Mimic defeated (+" + (countItems() - items) + " stacks)";
+        expect(!Inv.has(player, ClueRewards.MIMIC_ITEM, 1), "killing the Mimic didn't open its casket");
+        expect(sp.mimicFight.isEmpty(), "the Mimic fight wasn't closed");
+        expect(sp.mimicCase, "no Mimic scroll case");
+        int limit = ClueRewards.stackLimit(Tier.EASY, sp.cluesCompleted.getOrDefault(Tier.EASY, 0));
+        expect(ClueService.stackLimit(player, Tier.EASY) == limit + 1, "the Mimic scroll case didn't raise the stack limit");
+        int gained = countItems() - items;
+        // A casket whose five elite tries are all spent crumbles at the strange casket.
+        ClueService.giveMimic(player, new MimicRewards.Casket(Tier.ELITE, 4, MimicRewards.attempts(Tier.ELITE)));
+        com.runecraft.boss.DataBossService.summon(player, world, player.blockPosition(), def);
+        expect(mimicsAround().isEmpty(), "a spent mimic casket summoned the Mimic");
+        expect(!Inv.has(player, ClueRewards.MIMIC_ITEM, 1), "a spent mimic casket didn't crumble");
+        return "Mimic guaranteed on the 10th master casket, killed on attempt 2 (+" + gained + " stacks), scroll case";
+    }
+
+    private com.runecraft.boss.DataBossEntity summonMimic(com.runecraft.osrs.content.BossDef def) {
+        com.runecraft.boss.DataBossService.summon(player, world, player.blockPosition(), def);
+        List<com.runecraft.boss.DataBossEntity> found = mimicsAround();
+        expect(!found.isEmpty(), "the strange casket didn't summon the Mimic");
+        spawned.add(found.get(0));
+        player.teleportTo(world, found.get(0).getX() + 2, found.get(0).getY(), found.get(0).getZ(), player.getYRot(), player.getXRot());
+        return found.get(0);
+    }
+
+    private List<com.runecraft.boss.DataBossEntity> mimicsAround() {
+        EntityType<com.runecraft.boss.DataBossEntity> type = ModEntities.DATA_BOSS_TYPES.get(MimicRewards.MIMIC);
+        return type == null ? List.of() : world.getEntities(type, player.getBoundingBox().inflate(64), e -> e.isAlive());
+    }
+
+    /**
+     * A clue scroll read and then lost (dropped, died with it) doesn't block its tier: a scroll box opens to a fresh scroll
+     * whose trail starts over, and with that scroll held the next box refuses.
+     */
+    private String lostClue() {
+        Tier t = Tier.EASY;
+        String box = ClueRewards.scrollBox(t);
+        if (Players.data(player).bank().count(t.scrollItem(), "") > 0) {
+            return "lost clue: skipped (an easy clue is banked)";
+        }
+        clearClues();
+        SysState.SysPlayer sp = SysState.of(player);
+        sp.clues.put(t, new long[]{7, 2, 0}); // read, two steps done, then the scroll was lost
+        Inv.give(player, box, 1);
+        ClueService.openScrollBox(player, find(box), t);
+        expect(Inv.has(player, t.scrollItem(), 1), "a lost easy clue kept the scroll box shut");
+        expect(!sp.clues.containsKey(t), "the lost clue's progress carried over to the new scroll");
+        Inv.give(player, box, 1);
+        ClueService.openScrollBox(player, find(box), t);
+        expect(Inv.count(player, box) == 1, "a scroll box opened with a clue already held");
+        while (Inv.has(player, box, 1)) {
+            Inv.remove(player, box, 1);
+        }
+        return "lost clue: scroll box opened afresh";
     }
 
     /** Watson: an easy, medium, hard and elite clue scroll for a master clue. */

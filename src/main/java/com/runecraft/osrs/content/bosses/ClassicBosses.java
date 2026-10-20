@@ -349,8 +349,8 @@ public final class ClassicBosses {
     /**
      * The Mimic from a master casket, killed on the first attempt (OSRS Wiki "The Mimic", master drops): always a mahogany
      * plank; main table 221/1,140 each of 600 death runes, 500 blood runes, 25 noted grimy ranarr weed, 25 noted wine of zamorak
-     * and 15 noted raw manta rays. The ring of 3rd age / 3rd age pre-roll is the systems module's (MimicRewards). Later
-     * attempts (smaller quantities, 6/240) aren't modelled.
+     * and 15 noted raw manta rays. The ring of 3rd age / 3rd age pre-roll, the elite casket's rates and the smaller
+     * quantities after failed attempts are the systems module's (MimicRewards, rolled by its loot roller).
      */
     static List<Drop> mimicDrops() {
         List<Drop> d = new java.util.ArrayList<>(List.of(Drop.always("mahogany_plank")));
@@ -376,7 +376,8 @@ public final class ClassicBosses {
                         .telegraph(3, "The Mimic flings a barrage of candies!").particle("minecraft:totem_of_undying"))
                 .attack(AttackDef.of("lid_slam", AttackType.CRUSH, 6, 3, 2).special(Special.AOE, 1))
                 .drops(mimicDrops().toArray(new Drop[0]))
-                .key("mimic").at("watsons_house").arena(10, "stone") // the mimic casket from an elite or master casket
+                // No key: the systems module's summon requirement checks the mimic casket (kept between attempts).
+                .at("watsons_house").arena(10, "stone")
                 .size(1.0f, 1.0f, 1.8f).moveSpeed(0.2);
     }
 }

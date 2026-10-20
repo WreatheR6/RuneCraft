@@ -18,6 +18,7 @@ import com.runecraft.osrs.content.systems.ClueScrolls.Step;
 import com.runecraft.osrs.content.systems.ClueScrolls.StepType;
 import com.runecraft.osrs.content.systems.ClueScrolls.Tier;
 import com.runecraft.osrs.content.systems.Jewellery;
+import com.runecraft.osrs.content.systems.MimicRewards;
 import com.runecraft.osrs.content.systems.Spellbooks;
 import com.runecraft.osrs.content.systems.Teleports;
 import com.runecraft.player.Players;
@@ -25,6 +26,7 @@ import com.runecraft.registry.ModEntities;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
+import com.runecraft.util.StackData;
 import com.runecraft.world.Gielinor;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,6 +35,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.particles.ParticleTypes;
@@ -153,7 +156,8 @@ public final class ClueService {
                             : "Reldo, in the Varrock Palace library") + ", for a strange device.", 0xA0A0A0);
                     s.button("feel:" + t, "Feel the device", "", device);
                 } else if (step.type() == StepType.COORDINATE) {
-                    s.button("sextant:" + t, "Use your sextant", "Needs a sextant, a watch and a chart.", true);
+                    s.button("sextant:" + t, "Use your sextant", "Needs a sextant (Murphy, Port Khazard), a watch (Brother Kojo,"
+                            + " Clock Tower) and a chart (the Observatory professor).", true);
                 }
                 s.line("Dig at the spot with a spade" + guardianNote(step), 0xA0A0A0);
                 s.button("dig:" + t, "Dig here");
@@ -308,7 +312,8 @@ public final class ClueService {
     /** Looking through a sextant (with a watch and a chart) tells the player their own coordinates. */
     static void sextant(ServerPlayer p) {
         if (!Inv.has(p, "sextant", 1) || !Inv.has(p, "watch", 1) || !Inv.has(p, "chart", 1)) {
-            Msg.game(p, "You need a sextant, a watch and a chart to work out where you are.");
+            Msg.game(p, "You need a sextant, a watch and a chart to work out where you are: the Observatory professor, Murphy in"
+                    + " Port Khazard and Brother Kojo at the Clock Tower hand them to treasure hunters.");
             return;
         }
         int[] at = SysTeleport.osrs(p);
@@ -583,8 +588,9 @@ public final class ClueService {
     }
 
     /**
-     * STASH units: build one (Construction level, two planks of the tier, ten nails of one metal and a hammer; master
-     * units also a gold leaf), fill it with the clue's items (the first listed option of each), or take them back out.
+     * STASH units: build one (Construction level, two planks of the tier, ten nails of one metal other than dragon, a hammer
+     * and a saw; master units also a gold leaf), fill it with the clue's items (the first listed option of each), or take
+     * them back out.
      */
     static void stash(ServerPlayer p, Tier tier) {
         Step step = current(p, tier);
@@ -655,18 +661,21 @@ public final class ClueService {
             return;
         }
         String nails = null;
-        for (String metal : new String[]{"bronze", "iron", "steel", "black", "mithril", "adamant", "rune", "dragon"}) {
+        // OSRS Wiki "STASH": any ten nails of one metal, but dragon nails do not work.
+        for (String metal : new String[]{"bronze", "iron", "steel", "black", "mithril", "adamant", "rune"}) {
             if (Inv.has(p, metal + "_nails", 10)) {
                 nails = metal + "_nails";
                 break;
             }
         }
         boolean leaf = t != Tier.MASTER || Inv.has(p, "gold_leaf", 1);
-        boolean saw = ItemCatalog.get("saw") == null || Inv.has(p, "saw", 1);
+        boolean sawExists = ItemCatalog.get("saw") != null;
+        boolean saw = !sawExists || Inv.has(p, "saw", 1) || Inv.has(p, "amys_saw", 1);
         if (!Inv.has(p, t.stashPlank(), 2) || nails == null || !leaf || !Inv.has(p, "hammer", 1) || !saw) {
             ItemDef plank = ItemCatalog.get(t.stashPlank());
-            Msg.game(p, "You need 2 " + (plank == null ? t.stashPlank() : plank.name().toLowerCase(Locale.ROOT)) + "s, 10 nails"
-                    + (t == Tier.MASTER ? ", a gold leaf" : "") + " and a hammer to build this STASH unit.");
+            Msg.game(p, "You need 2 " + (plank == null ? t.stashPlank() : plank.name().toLowerCase(Locale.ROOT))
+                    + "s, 10 nails of one metal (not dragon)" + (t == Tier.MASTER ? ", a gold leaf" : "") + ", a hammer"
+                    + (sawExists ? " and a saw" : "") + " to build this STASH unit.");
             return;
         }
         Inv.remove(p, t.stashPlank(), 2);
@@ -683,6 +692,9 @@ public final class ClueService {
 
     /** Talking to an NPC: completes talk steps. Returns true if the interaction was used by a clue. */
     public static boolean talk(ServerPlayer p, QuestNpcEntity npc) {
+        if (coordinateTool(p, npc)) {
+            return true;
+        }
         for (Tier tier : Tier.values()) {
             if (!following(p, tier)) {
                 continue;
@@ -712,6 +724,79 @@ public final class ClueService {
             return true;
         }
         return false;
+    }
+
+    /** Unlocks (in {@code SysPlayer.unlocks}) recording who has handed the coordinate tools over. */
+    static final String CHART_FROM_PROFESSOR = "clue_chart";
+    static final String SEXTANT_FROM_MURPHY = "clue_sextant";
+
+    /**
+     * The coordinate clue tools (OSRS Wiki "Sextant", "Watch", "Chart"): the Observatory professor gives a chart, then Murphy
+     * in Port Khazard a sextant, then Brother Kojo at the Clock Tower a watch, each to a player who lacks one. Only treasure
+     * hunters (carrying a clue scroll) are offered them, so everyone else gets the NPC's own dialogue; a hunter who already
+     * has the tool does too. Returns true when the conversation was this.
+     */
+    static boolean coordinateTool(ServerPlayer p, QuestNpcEntity npc) {
+        boolean hunter = false;
+        boolean coordinate = false;
+        for (Tier t : Tier.values()) {
+            if (following(p, t)) {
+                hunter = true;
+                Step step = current(p, t);
+                coordinate |= step != null && step.type() == StepType.COORDINATE;
+                if (step != null && step.action() == Action.TALK && npc.npcId().equals(step.npcId())) {
+                    return false; // the NPC is this clue's step: the step goes first
+                }
+            }
+        }
+        if (!hunter) {
+            return false;
+        }
+        SysState.SysPlayer sp = SysState.of(p);
+        String name = npc.getName().getString();
+        String tool;
+        String needs;
+        String line;
+        String hint;
+        switch (name.toLowerCase(Locale.ROOT)) {
+            case "observatory professor" -> {
+                tool = "chart";
+                needs = null;
+                line = "A treasure hunter? Take this star chart. With a sextant and a watch it tells you exactly where you are."
+                        + " Murphy, down at the Port Khazard docks, has a sextant.";
+                hint = null;
+            }
+            case "murphy" -> {
+                tool = "sextant";
+                needs = CHART_FROM_PROFESSOR;
+                line = "The professor sent you, did he? Here's a sextant: line the sun up with the horizon and it gives your"
+                        + " position. You'll want a watch to go with it: try Brother Kojo at the Clock Tower.";
+                hint = "A sextant? Speak to the professor at the Observatory first; he'll explain how it all works.";
+            }
+            case "brother kojo" -> {
+                tool = "watch";
+                needs = SEXTANT_FROM_MURPHY;
+                line = "Here, take this watch. With your sextant and a chart you'll be able to find any spot in Gielinor.";
+                hint = "A watch? Murphy in Port Khazard will give you a sextant first; come back when you have one.";
+            }
+            default -> {
+                return false;
+            }
+        }
+        if (Inv.has(p, tool, 1) || ItemCatalog.get(tool) == null) {
+            return false;
+        }
+        if (needs != null && !sp.unlocks.contains(needs) && !Inv.has(p, tool.equals("watch") ? "sextant" : "chart", 1)) {
+            if (!coordinate) {
+                return false;
+            }
+            say(p, name, hint);
+            return true;
+        }
+        Inv.give(p, tool, 1);
+        sp.unlocks.add(tool.equals("chart") ? CHART_FROM_PROFESSOR : tool.equals("sextant") ? SEXTANT_FROM_MURPHY : "clue_watch");
+        say(p, name, line);
+        return true;
     }
 
     private static boolean hotColdGiver(Tier tier, QuestNpcEntity npc) {
@@ -805,10 +890,21 @@ public final class ClueService {
         s.send(p);
     }
 
-    /** Answering a challenge scroll. OSRS takes the number; separators and spaces are ignored. */
+    /** How close (in tiles) the player has to stand to the NPC to give a challenge scroll's answer. */
+    static final int CHALLENGE_RADIUS = 10;
+
+    /**
+     * Answering a challenge scroll. OSRS takes the number; separators and spaces are ignored. The challenge only exists once
+     * the NPC has set it, and the answer is given to them in person.
+     */
     static void answer(ServerPlayer p, Tier tier, String given) {
         Step step = current(p, tier);
-        if (step == null || !step.hasChallenge()) {
+        if (step == null || !step.hasChallenge() || !flag(p, tier, TALKED)) {
+            return;
+        }
+        if (!nearStepNpc(p, step, CHALLENGE_RADIUS)) {
+            Msg.game(p, "You need to give your answer to " + (step.npcName() == null ? "the person who set the challenge"
+                    : step.npcName()) + " in person.");
             return;
         }
         if (normaliseAnswer(given).equals(normaliseAnswer(step.clue().answer()))) {
@@ -818,6 +914,21 @@ public final class ClueService {
         } else {
             Msg.game(p, "That isn't the right answer.");
         }
+    }
+
+    /** Whether the player stands by a talk step's NPC: its spawn tile, or wherever the NPC has wandered to. */
+    static boolean nearStepNpc(ServerPlayer p, Step step, int tiles) {
+        if (!Gielinor.is(p)) {
+            return false;
+        }
+        int[] at = SysTeleport.osrs(p);
+        int[] to = target(p, step);
+        if (Teleports.within(at[0], at[1], to[0], to[1], tiles)) {
+            return true;
+        }
+        String id = step.npcId();
+        return id != null && !p.level().getEntitiesOfClass(QuestNpcEntity.class,
+                p.getBoundingBox().inflate(tiles * com.runecraft.osrs.GielinorMap.SCALE), e -> e.isAlive() && id.equals(e.npcId())).isEmpty();
     }
 
     static String normaliseAnswer(String s) {
@@ -1150,6 +1261,9 @@ public final class ClueService {
                 guardianTick(server);
             }
         });
+        // The Mimic: summoned with a mimic casket (kept between attempts), its loot by tier and attempt.
+        com.runecraft.boss.DataBossService.requirement(MimicRewards.MIMIC, (p, boss) -> mimicChallenge(p));
+        com.runecraft.boss.DataBossService.loot(MimicRewards.MIMIC, ClueService::mimicLoot);
         // The clue characters with no other dialogue.
         for (ClueNpcs.ClueNpc n : ClueNpcs.ALL) {
             com.runecraft.quest.QuestScripts.onTalk(n.id(), (p, npc) -> com.runecraft.quest.QuestApi.say(p, n.name(), switch (n.id()) {
@@ -1163,7 +1277,10 @@ public final class ClueService {
 
     // ------------------------------------------------------------------ caskets
 
-    /** Opens a reward casket: counts the completed trail, may turn out to be a Mimic, else gives the rewards. */
+    /**
+     * Opens a reward casket: counts the completed trail, may turn out to be a Mimic (elite 1/35, master 1/15 when enabled, and
+     * the one-time guaranteed one on the 10th master or 25th elite casket; one Mimic carried at a time), else gives the rewards.
+     */
     public static void openCasket(ServerPlayer p, ItemStack stack, Tier tier) {
         stack.shrink(1);
         SysState.SysPlayer sp = SysState.of(p);
@@ -1172,14 +1289,20 @@ public final class ClueService {
         p.displayClientMessage(Component.literal("You have completed " + n + " " + tier.id() + " Treasure Trail" + (n == 1 ? "" : "s") + ".")
                 .withStyle(ChatFormatting.GOLD), false);
         DiaryService.onClue(p, tier);
+        Random random = new Random(p.getRandom().nextLong());
         int mimic = ClueRewards.mimicOneIn(tier);
-        if (mimic > 0 && sp.mimicEnabled && sp.mimicTier.isEmpty() && p.getRandom().nextInt(mimic) == 0) {
-            sp.mimicTier = tier.name();
-            Inv.give(p, ClueRewards.MIMIC_ITEM, 1);
-            Msg.red(p, "The casket is a Mimic! Take it to the strange casket upstairs in Watson's house in Hosidius to fight it.");
-            return;
+        if (mimic > 0 && sp.mimicEnabled && (MimicRewards.guaranteed(tier, n, sp.mimicSeen) || random.nextInt(mimic) == 0)) {
+            if (Inv.has(p, ClueRewards.MIMIC_ITEM, 1)) {
+                Msg.game(p, "You already have a Mimic, and cannot be given another one.");
+            } else {
+                sp.mimicSeen = true;
+                giveMimic(p, new MimicRewards.Casket(tier, ClueRewards.rollCount(tier, random), 0));
+                Msg.red(p, "The chest turned out to be the Mimic! Visit the strange casket, upstairs in Watson's house in Hosidius,"
+                        + " to attempt the Mimic's challenge.");
+                return;
+            }
         }
-        giveRewards(p, tier, ClueRewards.roll(tier, new Random(p.getRandom().nextLong())));
+        giveRewards(p, tier, ClueRewards.roll(tier, random));
     }
 
     /** Gives a casket's rewards and shows the reward screen. */
@@ -1194,8 +1317,7 @@ public final class ClueService {
             Tier scroll = Tier.byScroll(r.item());
             if (scroll != null) {
                 if (!giveClue(p, scroll)) {
-                    Msg.game(p, "You have a sneaking suspicion that you would have received " + Msg.article(scroll.id())
-                            + " clue scroll.");
+                    sneakingSuspicion(p, scroll);
                     continue;
                 }
             } else if (r.noted() && com.runecraft.bank.Notes.canNote(r.item(), "")) {
@@ -1214,39 +1336,173 @@ public final class ClueService {
         s.send(p);
     }
 
-    /** The Mimic died: the original casket's rewards (one roll fewer per failed attempt) plus its own pre-roll. */
+    // ------------------------------------------------------------------ the Mimic
+
+    /** The custom-data key of a mimic item's casket ({@link MimicRewards.Casket} encoding). */
+    static final String MIMIC_DATA = "rc_mimic_casket";
+
+    static void giveMimic(ServerPlayer p, MimicRewards.Casket casket) {
+        ItemStack mimic = Inv.stack(ClueRewards.MIMIC_ITEM, 1);
+        if (mimic.isEmpty()) {
+            return;
+        }
+        StackData.update(mimic, t -> t.putString(MIMIC_DATA, casket.encode()));
+        Inv.give(p, mimic);
+    }
+
+    /** The casket a mimic item holds (one with no saved casket counts as a master casket with its fewest rolls). */
+    static MimicRewards.Casket casketOf(ItemStack stack) {
+        MimicRewards.Casket c = StackData.contains(stack, MIMIC_DATA)
+                ? MimicRewards.Casket.decode(StackData.get(stack).getString(MIMIC_DATA)) : null;
+        return c != null ? c : new MimicRewards.Casket(Tier.MASTER, Tier.MASTER.minRolls(), 0); // approx
+    }
+
+    /** A mimic item in the inventory: the one holding {@code casket} (an encoding) if there is one, else the first; or null. */
+    static ItemStack mimicStack(ServerPlayer p, String casket) {
+        ItemStack first = null;
+        for (int i = 0; i < p.getInventory().getContainerSize(); i++) {
+            ItemStack s = p.getInventory().getItem(i);
+            if (s.isEmpty() || !Inv.idOf(s).equals(ClueRewards.MIMIC_ITEM)) {
+                continue;
+            }
+            if (casket == null || casketOf(s).encode().equals(casket)) {
+                return s;
+            }
+            if (first == null) {
+                first = s;
+            }
+        }
+        return first;
+    }
+
+    /**
+     * The strange casket in Watson's house (the Mimic's summon requirement): presenting a mimic casket starts a fight, which is
+     * one of the casket's attempts (six from a master casket, five from an elite one). The casket is kept until the Mimic dies;
+     * every failed attempt (leaving or dying) costs one of its item rolls, and once every attempt is spent its loot is lost.
+     */
+    static boolean mimicChallenge(ServerPlayer p) {
+        ItemStack stack = mimicStack(p, null);
+        if (stack == null) {
+            Msg.game(p, "The strange casket is waiting for a Mimic: an elite or master reward casket can turn out to be one.");
+            return false;
+        }
+        MimicRewards.Casket casket = casketOf(stack);
+        if (casket.exhausted()) {
+            stack.shrink(1);
+            Msg.red(p, "You've used every attempt at this Mimic: it crumbles away, and the casket's loot with it.");
+            return false;
+        }
+        MimicRewards.Casket next = casket.nextAttempt();
+        StackData.update(stack, t -> t.putString(MIMIC_DATA, next.encode()));
+        SysState.of(p).mimicFight = next.encode();
+        int left = MimicRewards.attempts(next.tier()) - next.attempt();
+        if (next.attempt() > 1) {
+            Msg.game(p, "Attempt " + next.attempt() + " at the Mimic: its casket now holds " + next.rollsNow() + " item roll"
+                    + (next.rollsNow() == 1 ? "" : "s") + (left == 0 ? ". This is your last chance." : "."));
+        }
+        return true;
+    }
+
+    /**
+     * The Mimic's own loot (OSRS Wiki "The Mimic"): the mahogany plank, then the pre-roll for its tier and attempt (a ring of
+     * 3rd age or a 3rd age piece) or else one main drop whose quantity shrinks by 1/5 (elite) or 1/6 (master) of the maximum
+     * for each failed attempt.
+     */
+    static List<com.runecraft.skill.Drops.Rolled> mimicLoot(ServerPlayer killer, com.runecraft.boss.DataBossEntity boss,
+            List<com.runecraft.osrs.data.Drop> table) {
+        MimicRewards.Casket c = MimicRewards.Casket.decode(SysState.of(killer).mimicFight);
+        Tier tier = c == null ? Tier.MASTER : c.tier();
+        int attempt = c == null ? 1 : Math.max(1, c.attempt());
+        net.minecraft.util.RandomSource random = boss.getRandom();
+        String unique = MimicRewards.roll(tier, attempt, new Random(random.nextLong()));
+        List<com.runecraft.osrs.data.Drop> always = new ArrayList<>();
+        List<com.runecraft.osrs.data.Drop> main = new ArrayList<>();
+        for (com.runecraft.osrs.data.Drop d : com.runecraft.osrs.content.bosses.BossLoot.pick(MimicRewards.MIMIC, table, random::nextInt)) {
+            (d.rarity() <= 1 ? always : main).add(d);
+        }
+        List<com.runecraft.skill.Drops.Rolled> out = new ArrayList<>(com.runecraft.skill.Drops.resolve(always, random));
+        if (unique != null) {
+            out.add(new com.runecraft.skill.Drops.Rolled(unique, 1));
+        } else {
+            for (com.runecraft.skill.Drops.Rolled r : com.runecraft.skill.Drops.resolve(main, random)) {
+                out.add(new com.runecraft.skill.Drops.Rolled(r.item(), MimicRewards.quantity(tier, r.count(), attempt), r.doses()));
+            }
+        }
+        return out;
+    }
+
+    /**
+     * The Mimic died: the Mimic scroll case (+1 scroll box of every tier) the first time, and the mimic casket's own rewards
+     * with one item roll fewer for each failed attempt.
+     */
     static void onMimicKilled(ServerPlayer p) {
         SysState.SysPlayer sp = SysState.of(p);
-        if (sp.mimicTier.isEmpty()) {
+        sp.mimicSeen = true;
+        if (!sp.mimicCase) {
+            sp.mimicCase = true;
+            Msg.action(p, "You find a Mimic scroll case: you can now stack one more scroll box of every tier.");
+        }
+        MimicRewards.Casket casket = MimicRewards.Casket.decode(sp.mimicFight);
+        sp.mimicFight = "";
+        if (casket == null) {
             return;
         }
-        Tier tier;
-        try {
-            tier = Tier.valueOf(sp.mimicTier);
-        } catch (IllegalArgumentException e) {
-            sp.mimicTier = "";
+        ItemStack stack = mimicStack(p, casket.encode());
+        if (stack == null) {
+            Msg.game(p, "You'd need the mimic casket with you to claim its treasure.");
             return;
         }
-        sp.mimicTier = "";
-        giveRewards(p, tier, ClueRewards.roll(tier, new Random(p.getRandom().nextLong())));
+        stack.shrink(1);
+        giveRewards(p, casket.tier(), ClueRewards.roll(casket.tier(), casket.rollsNow(), new Random(p.getRandom().nextLong())));
     }
 
     // ------------------------------------------------------------------ clue scrolls and scroll boxes
 
     /**
+     * Whether the player has a clue scroll of the tier in the inventory or the bank (the OSRS rule: one on the ground doesn't
+     * count). When it is gone (dropped, lost on death) the old trail is forgotten, so the next scroll of the tier starts afresh
+     * (OSRS Wiki "Scroll box": a new clue resets a juggled clue's progress).
+     */
+    static boolean heldClue(ServerPlayer p, Tier tier) {
+        if (Inv.has(p, tier.scrollItem(), 1) || Players.data(p).bank().count(tier.scrollItem(), "") > 0) {
+            return true;
+        }
+        SysState.of(p).clues.remove(tier);
+        return false;
+    }
+
+    /** The clues of a tier counted against the stack limit: the scroll and the scroll boxes, carried or banked. */
+    static int clueStack(ServerPlayer p, Tier tier) {
+        String box = ClueRewards.scrollBox(tier);
+        return (heldClue(p, tier) ? 1 : 0) + Inv.count(p, box) + (int) Math.min(Integer.MAX_VALUE, Players.data(p).bank().count(box, ""));
+    }
+
+    /** The tier's stack limit: 2, +1 at each of its minor and major scroll case milestones, +1 with the Mimic scroll case. */
+    static int stackLimit(ServerPlayer p, Tier tier) {
+        SysState.SysPlayer sp = SysState.of(p);
+        return ClueRewards.stackLimit(tier, sp.cluesCompleted.getOrDefault(tier, 0), sp.mimicCase);
+    }
+
+    /** Whether one more clue of the tier can be given (a scroll, or a scroll box after X Marks the Spot). */
+    static boolean canTakeClue(ServerPlayer p, Tier tier) {
+        return !heldClue(p, tier) || scrollBoxes(p) && clueStack(p, tier) < stackLimit(p, tier);
+    }
+
+    static void sneakingSuspicion(ServerPlayer p, Tier tier) {
+        Msg.game(p, "You have a sneaking suspicion that you would have received " + Msg.article(tier.id())
+                + (scrollBoxes(p) ? " scroll box." : " clue scroll."));
+    }
+
+    /**
      * Gives a clue scroll of a tier: the scroll itself, or after X Marks the Spot a scroll box when the player already
-     * has one, up to the tier's stack limit (2, +1 at each of the tier's minor and major scroll case milestones).
-     * Returns false when the player is at the limit.
+     * has one, up to the tier's stack limit. Returns false when the player is at the limit.
      */
     public static boolean giveClue(ServerPlayer p, Tier tier) {
-        SysState.SysPlayer sp = SysState.of(p);
-        boolean held = Inv.has(p, tier.scrollItem(), 1) || sp.clues.containsKey(tier);
-        if (!held) {
+        if (!heldClue(p, tier)) {
             Inv.give(p, tier.scrollItem(), 1);
             return true;
         }
-        if (!scrollBoxes(p) || 1 + Inv.count(p, ClueRewards.scrollBox(tier)) >= ClueRewards.stackLimit(tier,
-                sp.cluesCompleted.getOrDefault(tier, 0))) {
+        if (!canTakeClue(p, tier)) {
             return false;
         }
         Inv.give(p, ClueRewards.scrollBox(tier), 1);
@@ -1261,7 +1517,7 @@ public final class ClueService {
 
     /** Opening a scroll box: a clue scroll of its tier, unless the player already has one. */
     public static boolean openScrollBox(ServerPlayer p, ItemStack stack, Tier tier) {
-        if (Inv.has(p, tier.scrollItem(), 1) || SysState.of(p).clues.containsKey(tier)) {
+        if (heldClue(p, tier)) {
             Msg.game(p, "The clue box refuses to open - you already have a clue.");
             return true;
         }
@@ -1323,11 +1579,35 @@ public final class ClueService {
     // ------------------------------------------------------------------ drops
 
     public static void onKill(ServerPlayer p, LivingEntity entity, MonsterStats stats) {
+        boolean guardian = GUARDS.containsKey(entity.getUUID());
         onKillEvent(p, entity, stats);
         if (!Gielinor.is(entity) || stats == null) {
             return;
         }
-        SysState.SysPlayer sp = SysState.of(p);
+        if (!guardian && !dropsNoClues(entity)) {
+            rollClueDrop(p, entity, stats);
+        }
+        Spellbooks.Head head = Spellbooks.headFor(stats.name());
+        if (head != null && ItemCatalog.get(head.id()) != null && p.getRandom().nextInt(head.dropRate()) == 0) {
+            entity.spawnAtLocation(Inv.stack(head.id(), 1));
+        }
+    }
+
+    private static Set<String> noClueDrops;
+
+    /** Clue guardians, double agents and the Mimic drop no clue scrolls (OSRS: they drop nothing / their own table only). */
+    static boolean dropsNoClues(LivingEntity entity) {
+        if (noClueDrops == null) {
+            Set<String> ids = new java.util.HashSet<>(ClueScrolls.guardianMonsters());
+            ids.add(MimicRewards.MIMIC);
+            noClueDrops = ids;
+        }
+        String id = entity instanceof com.runecraft.boss.DataBossEntity b && b.def() != null ? b.def().id
+                : net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).getPath();
+        return noClueDrops.contains(id);
+    }
+
+    private static void rollClueDrop(ServerPlayer p, LivingEntity entity, MonsterStats stats) {
         java.util.Set<Tier> own = java.util.EnumSet.noneOf(Tier.class);
         if (stats.monster() != null) {
             own.addAll(ClueScrolls.ownClueTiers(stats.monster().drops()));
@@ -1349,23 +1629,17 @@ public final class ClueService {
                 continue;
             }
             if (p.getRandom().nextInt(oneIn) == 0) {
-                boolean held = Inv.has(p, tier.scrollItem(), 1) || sp.clues.containsKey(tier);
-                if (!held) {
+                if (!heldClue(p, tier)) {
                     entity.spawnAtLocation(Inv.stack(tier.scrollItem(), 1));
                     Msg.red(p, "A clue scroll (" + tier.id() + ") has dropped!");
-                } else if (scrollBoxes(p) && 1 + Inv.count(p, ClueRewards.scrollBox(tier))
-                        < ClueRewards.stackLimit(tier, sp.cluesCompleted.getOrDefault(tier, 0))) {
+                } else if (canTakeClue(p, tier)) {
                     entity.spawnAtLocation(Inv.stack(ClueRewards.scrollBox(tier), 1));
                     Msg.red(p, "A scroll box (" + tier.id() + ") has dropped!");
                 } else {
-                    Msg.game(p, "You have a sneaking suspicion that you would have received " + Msg.article(tier.id()) + " clue scroll.");
+                    sneakingSuspicion(p, tier);
                 }
                 break;
             }
-        }
-        Spellbooks.Head head = Spellbooks.headFor(stats.name());
-        if (head != null && ItemCatalog.get(head.id()) != null && p.getRandom().nextInt(head.dropRate()) == 0) {
-            entity.spawnAtLocation(Inv.stack(head.id(), 1));
         }
     }
 

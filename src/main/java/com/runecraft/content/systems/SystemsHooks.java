@@ -68,12 +68,7 @@ public final class SystemsHooks implements ModuleHooks {
                     || (e instanceof com.runecraft.boss.DataBossEntity b && b.def() != null
                     && com.runecraft.osrs.content.systems.MimicRewards.MIMIC.equals(b.def().id));
             if (mimic) {
-                String unique = com.runecraft.osrs.content.systems.MimicRewards.roll(new java.util.Random(p.getRandom().nextLong()));
-                if (unique != null) {
-                    e.spawnAtLocation(Inv.stack(unique, 1));
-                    com.runecraft.collection.CollectionLog.obtain(p, unique);
-                }
-                ClueService.onMimicKilled(p); // the mimic casket's own rewards
+                ClueService.onMimicKilled(p); // the mimic casket's own rewards (its pre-roll is ClueService.mimicLoot's)
             }
         });
         GameEvents.onXp(DiaryService::onXp);

@@ -65,7 +65,7 @@ public final class ClueRewards {
         unique(t, id);
     }
 
-    /** The Mimic casket (elite 1/35, master 1/15 when enabled at Watson's strange casket). */
+    /** The Mimic casket (elite 1/35, master 1/15 when enabled at Watson's strange casket); its casket is saved on the stack. */
     public static final String MIMIC_ITEM = "mimic";
     /** Bloodhound: master casket tertiary, 1/1,000 (OSRS Wiki "Reward casket (master)"). */
     public static final int BLOODHOUND_ONE_IN = 1000;
@@ -682,10 +682,27 @@ public final class ClueRewards {
         return 2 + (completed >= m[0] ? 1 : 0) + (completed >= m[1] ? 1 : 0);
     }
 
+    /**
+     * The stack limit with the Mimic scroll case (OSRS Wiki "Scroll box": rewarded on defeating the Mimic, +1 for every tier),
+     * so at most 5.
+     */
+    public static int stackLimit(Tier t, int completed, boolean mimicCase) {
+        return stackLimit(t, completed) + (mimicCase ? 1 : 0);
+    }
+
+    /** How many item rolls a casket of the tier holds (beginner 1-3 ... master 5-7). */
+    public static int rollCount(Tier tier, Random random) {
+        return tier.minRolls() + random.nextInt(tier.maxRolls() - tier.minRolls() + 1);
+    }
+
     public static List<Reward> roll(Tier tier, Random random) {
+        return roll(tier, rollCount(tier, random), random);
+    }
+
+    /** A casket's rewards with a given number of item rolls (a Mimic killed after failed attempts has fewer), plus tertiaries. */
+    public static List<Reward> roll(Tier tier, int rolls, Random random) {
         Map<String, Integer> out = new LinkedHashMap<>();
         Map<String, Boolean> noted = new LinkedHashMap<>();
-        int rolls = tier.minRolls() + random.nextInt(tier.maxRolls() - tier.minRolls() + 1);
         for (int i = 0; i < rolls; i++) {
             Row r = pick(table(tier), random);
             if (r != null) {

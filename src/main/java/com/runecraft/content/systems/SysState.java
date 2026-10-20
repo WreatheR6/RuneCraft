@@ -62,8 +62,12 @@ public final class SysState extends SavedData {
         public int watsonHanded;
         /** Whether elite and master caskets can be Mimics (toggled at Watson's strange casket; off by default as in OSRS). */
         public boolean mimicEnabled;
-        /** The tier of the casket waiting for its Mimic fight, or "". */
-        public String mimicTier = "";
+        /** The mimic casket of the Mimic fight under way ({@code MimicRewards.Casket} encoding), or "". */
+        public String mimicFight = "";
+        /** Whether a Mimic has been met (the one-time guaranteed Mimic on the 10th master / 25th elite casket is spent). */
+        public boolean mimicSeen;
+        /** The Mimic scroll case (defeating the Mimic): +1 scroll box stack limit for every tier. */
+        public boolean mimicCase;
 
         // Transient combat state (game ticks)
         public boolean vengeance;
@@ -192,7 +196,9 @@ public final class SysState extends SavedData {
             n.put("Stash", stashTag);
             n.putInt("WatsonHanded", watsonHanded);
             n.putBoolean("MimicEnabled", mimicEnabled);
-            n.putString("MimicTier", mimicTier);
+            n.putString("MimicFight", mimicFight);
+            n.putBoolean("MimicSeen", mimicSeen);
+            n.putBoolean("MimicCase", mimicCase);
             if (cannonOut) {
                 CompoundTag cannon = new CompoundTag();
                 cannon.putInt("Steel", cannonSteel);
@@ -292,7 +298,9 @@ public final class SysState extends SavedData {
             }
             watsonHanded = n.getInt("WatsonHanded");
             mimicEnabled = n.getBoolean("MimicEnabled");
-            mimicTier = n.getString("MimicTier");
+            mimicFight = n.getString("MimicFight");
+            mimicSeen = n.getBoolean("MimicSeen");
+            mimicCase = n.getBoolean("MimicCase");
             cannonOut = n.contains("Cannon");
             cannonSteel = n.getCompound("Cannon").getInt("Steel");
             cannonGranite = n.getCompound("Cannon").getInt("Granite");
