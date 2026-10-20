@@ -38,21 +38,16 @@ public final class MinigameRules {
         public static final int[] COMBAT = {40, 70, 100};
         public static final int[] POINTS = {3, 4, 5};
         public static final int[] PORTAL_HP = {200, 250, 250};
-        /** Hitpoint scale applied to pests by lander tier (approx. of the per-level pest variants). */
-        public static final double[] PEST_SCALE = {0.75, 1.0, 1.3};
         public static final int VOID_KNIGHT_HP = 200;
         /** The squire won't let anyone holding 4,000 commendation points board (OSRS Wiki). */
         public static final int MAX_POINTS = 4000;
         /** Coins for a win: ten times the player's combat level. */
         public static final int COINS_PER_COMBAT_LEVEL = 10;
-        /** A game lasts at most 20 minutes (2000 game ticks). */
+        /** A game lasts at most 20 minutes (2000 game ticks); a Void Knight still alive then wins it. */
         public static final int GAME_TICKS = 2000;
-        /** Activity needed to earn points (OSRS: 50 damage dealt / contribution). */
-        public static final int MIN_ACTIVITY = 50;
         public static final String[] PESTS = {"brawler", "defiler", "ravager", "shifter", "spinner", "splatter", "torcher"};
+        /** West, east, south-east and south-west; their stats, shields and pests are in {@link PestControlRules}. */
         public static final String[] PORTALS = {"purple_portal", "blue_portal", "yellow_portal", "red_portal"};
-        /** Ticks between portal shields dropping (one shield at a time, in random order). */
-        public static final int SHIELD_INTERVAL = 50;
 
         private PestControl() {
         }
@@ -66,11 +61,9 @@ public final class MinigameRules {
             return Math.max(0, Math.min(POINTS[tier], MAX_POINTS - balance));
         }
 
-        /** XP bought with points: floor(level^2 / 600) * N per point, +1% for 10 points, +10% for 100. */
+        /** Whole XP bought with points: floor(level^2 / 600) * N per point, +1% for 10 points, +10% for 100. */
         public static int xpFor(int level, int multiplier, int points) {
-            int per = RewardShop.pestControlXpPerPoint(level, multiplier);
-            double bonus = points >= 100 ? 1.10 : points >= 10 ? 1.01 : 1.0;
-            return (int) Math.floor(per * points * bonus);
+            return PestControlRules.xpTenths(level, multiplier, points) / 10;
         }
 
         /** Void set effects: accuracy and damage multipliers (style: 0 melee, 1 ranged, 2 magic). */

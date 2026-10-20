@@ -99,30 +99,37 @@ public final class MinigameMonsters {
         list.add(MonsterDef.of("void_knight", "Void Knight").level(0).stats(200, 1, 1, 1, 1, 1).passive().moveSpeed(0.0)
                 .immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH, AttackType.MAGIC, AttackType.RANGED)
                 .attack(NONE).skin(0xC8A080, 0x3A3A3A, 0x2A2A2A, 0xE0E0E0));
+        // Portals: level 120 Defence and +100 armour except against their weakness (Mod Ash; PestControlRules). The session sets
+        // their hitpoints by lander (200 novice, 250 intermediate and veteran).
         String[][] portals = {{"purple_portal", "Portal (purple)", "8030C0"}, {"blue_portal", "Portal (blue)", "3060E0"},
                 {"yellow_portal", "Portal (yellow)", "E0C030"}, {"red_portal", "Portal (red)", "C03030"}};
-        for (String[] p : portals) {
+        for (int i = 0; i < portals.length; i++) {
+            String[] p = portals[i];
             int c = Integer.parseInt(p[2], 16);
-            list.add(MonsterDef.of(p[0], p[1]).level(0).model("pest_portal").stats(250, 1, 1, 50, 1, 1).passive().moveSpeed(0.0)
-                    .attack(NONE).size(1.2f, 2.8f, 1.2f).skin(c, c, c, 0xFFFFFF));
+            int[] d = PestControlRules.portalDefenceBonuses(i);
+            list.add(MonsterDef.of(p[0], p[1]).level(0).model("pest_portal")
+                    .stats(250, 1, 1, PestControlRules.PORTAL_DEFENCE, 1, 1).defenceBonus(d[0], d[1], d[2], d[3], d[4])
+                    .passive().moveSpeed(0.0).attack(NONE).size(1.2f, 2.8f, 1.2f).skin(c, c, c, 0xFFFFFF));
         }
-        list.add(m("brawler", "Brawler", 129).stats(97, 85, 110, 80, 1, 1).speed(5)
-                .attack(melee(AttackType.CRUSH, 15)).size(1.0f, 2.0f, 1.3f).skin(0x6A7A4A, 0x4A5A2A, 0x3A4A1A, 0xA0C060));
-        list.add(m("defiler", "Defiler", 97).stats(52, 1, 1, 50, 1, 80).speed(4)
-                .attack(ranged(10, 9)).size(0.7f, 1.4f, 1.0f).skin(0x7A6A3A, 0x5A4A2A, 0x3A2A1A, 0xC0A060));
-        list.add(m("ravager", "Ravager", 106).stats(61, 70, 70, 50, 1, 1).speed(4)
-                .attack(melee(AttackType.CRUSH, 12)).size(0.9f, 1.4f, 1.1f).skin(0x5A4A6A, 0x3A2A4A, 0x2A1A3A, 0xA080C0));
-        list.add(m("shifter", "Shifter", 104).stats(57, 60, 70, 50, 1, 1).speed(4)
-                .attack(melee(AttackType.STAB, 13)).attack(melee(AttackType.STAB, 13).special(Special.BLINK, 0))
+        // Pests: these are the highest levels; the session gives each spawn the stats of a level of its lander
+        // (PestControlRules.VARIANTS, osrs-dps-calc). Ravagers and spinners don't seek players out (wiki pest pages).
+        list.add(m("brawler", "Brawler", 129).stats(143, 67, 132, 118, 0, 0).speed(4)
+                .attack(melee(AttackType.CRUSH, 14)).size(1.0f, 2.0f, 1.3f).skin(0x6A7A4A, 0x4A5A2A, 0x3A4A1A, 0xA0C060));
+        list.add(m("defiler", "Defiler", 97).stats(97, 0, 0, 65, 0, 117).speed(4)
+                .attack(ranged(13, 9)).size(0.7f, 1.4f, 1.0f).skin(0x7A6A3A, 0x5A4A2A, 0x3A2A1A, 0xC0A060));
+        list.add(m("ravager", "Ravager", 106).stats(83, 67, 157, 53, 0, 0).speed(4).passive()
+                .attack(melee(AttackType.CRUSH, 17)).size(0.9f, 1.4f, 1.1f).skin(0x5A4A6A, 0x3A2A4A, 0x2A1A3A, 0xA080C0));
+        list.add(m("shifter", "Shifter", 104).stats(83, 110, 83, 83, 60, 0).speed(4)
+                .attack(melee(AttackType.STAB, 9)).attack(melee(AttackType.STAB, 9).special(Special.BLINK, 0))
                 .size(0.7f, 1.2f, 1.0f).skin(0x4A6A6A, 0x2A4A4A, 0x1A3A3A, 0x80C0C0));
-        list.add(m("spinner", "Spinner", 74).stats(71, 40, 40, 60, 1, 1).speed(4)
-                .attack(melee(AttackType.CRUSH, 6).special(Special.POISON, 5)).size(0.8f, 0.8f, 1.0f)
+        list.add(m("spinner", "Spinner", 74).stats(73, 27, 27, 93, 67, 0).speed(4).passive()
+                .attack(melee(AttackType.CRUSH, 4)).size(0.8f, 0.8f, 1.0f)
                 .skin(0x8A6A3A, 0x6A4A2A, 0x4A3A1A, 0xE0C080));
-        list.add(m("splatter", "Splatter", 54).stats(23, 20, 20, 10, 1, 1).speed(4)
-                .attack(AttackDef.of("explode", AttackType.CRUSH, 12, 2.0, 10).special(Special.AOE, 2).particle("minecraft:explosion"))
-                .size(0.8f, 0.8f, 1.0f).skin(0x9A4A6A, 0x7A2A4A, 0x5A1A3A, 0xE080A0));
-        list.add(m("torcher", "Torcher", 79).stats(51, 1, 1, 40, 70, 1).speed(4)
-                .attack(magic(10, 10, "minecraft:flame")).size(0.7f, 1.2f, 1.0f).flying()
+        // Splatters bite for 3-5 like any melee pest; their 5-24 detonation is the session's (PestControlRules.SPLATTER_*).
+        list.add(m("splatter", "Splatter", 54).stats(43, 32, 32, 93, 32, 0).speed(4)
+                .attack(melee(AttackType.CRUSH, 4)).size(0.8f, 0.8f, 1.0f).skin(0x9A4A6A, 0x7A2A4A, 0x5A1A3A, 0xE080A0));
+        list.add(m("torcher", "Torcher", 79).stats(57, 0, 0, 73, 97, 0).speed(4)
+                .attack(magic(11, 10, "minecraft:flame")).size(0.7f, 1.2f, 1.0f).flying()
                 .skin(0xC06030, 0x904020, 0x602010, 0xFFC060));
         // ---------------- Barbarian Assault ----------------
         list.add(m("penance_fighter", "Penance Fighter", 58).stats(40, 60, 60, 40, 1, 1).speed(4)
