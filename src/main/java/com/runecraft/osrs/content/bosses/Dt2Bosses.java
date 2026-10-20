@@ -21,7 +21,7 @@ public final class Dt2Bosses {
 
     // ---- Duke Sucellus ----
     public static final AttackDef DUKE_SLAM = AttackDef.of("fist_slam", AttackType.CRUSH, 46, 5, 3);
-    public static final AttackDef DUKE_MAGIC = AttackDef.of("magic_blast", AttackType.MAGIC, 40, 16, 4).particle("minecraft:witch");
+    public static final AttackDef DUKE_MAGIC = AttackDef.of("magic_blast", AttackType.MAGIC, 48, 16, 4).particle("minecraft:witch");
     /** The freezing gaze hits everyone the Duke can see; hide behind a pillar. */
     public static final AttackDef DUKE_GAZE = AttackDef.of("freezing_gaze", AttackType.MAGIC, 101, 16, 1)
             .special(Special.PRAYER_PIERCING, 0).telegraph(5, "Duke Sucellus' eyes begin to glow... break his line of sight!")
@@ -30,20 +30,20 @@ public final class Dt2Bosses {
             .particle("minecraft:sneeze").message("Poisonous gas erupts from the vents!");
 
     // ---- The Leviathan ----
-    public static final AttackDef LEVI_RANGED = AttackDef.of("boulder", AttackType.RANGED, 40, 16, 1).particle("minecraft:crit");
-    public static final AttackDef LEVI_MAGIC = AttackDef.of("abyssal_orb", AttackType.MAGIC, 40, 16, 1).particle("minecraft:witch");
-    public static final AttackDef LEVI_MELEE = AttackDef.of("shadow_strike", AttackType.CRUSH, 40, 16, 1).particle("minecraft:squid_ink");
+    public static final AttackDef LEVI_RANGED = AttackDef.of("boulder", AttackType.RANGED, 24, 16, 1).particle("minecraft:crit");
+    public static final AttackDef LEVI_MAGIC = AttackDef.of("abyssal_orb", AttackType.MAGIC, 32, 16, 1).particle("minecraft:witch");
+    public static final AttackDef LEVI_MELEE = AttackDef.of("shadow_strike", AttackType.CRUSH, 50, 16, 1).particle("minecraft:squid_ink");
     public static final AttackDef LEVI_DEBRIS = AttackDef.of("falling_debris", AttackType.CRUSH, 45, 16, 1).special(Special.SKY_STRIKE, 0)
             .telegraph(3, "Debris shakes loose from the cavern roof!").particle("minecraft:ash");
     public static final AttackDef LEVI_LIGHTNING = AttackDef.of("lightning", AttackType.MAGIC, 35, 16, 1).special(Special.SKY_STRIKE, 0)
             .telegraph(3, "The Leviathan's shell crackles with lightning!").particle("minecraft:electric_spark");
 
     // ---- The Whisperer ----
-    public static final AttackDef WHISPER_MAGIC = AttackDef.of("soul_bolt", AttackType.MAGIC, 35, 16, 3).particle("minecraft:soul");
-    public static final AttackDef WHISPER_RANGED = AttackDef.of("tentacle_lash", AttackType.RANGED, 35, 16, 3).particle("minecraft:squid_ink");
-    public static final AttackDef WHISPER_SCREECH = AttackDef.of("screech", AttackType.MAGIC, 70, 16, 1).special(Special.AOE, 6)
+    public static final AttackDef WHISPER_MAGIC = AttackDef.of("soul_bolt", AttackType.MAGIC, 36, 16, 3).particle("minecraft:soul");
+    public static final AttackDef WHISPER_RANGED = AttackDef.of("tentacle_lash", AttackType.RANGED, 40, 16, 3).particle("minecraft:squid_ink");
+    public static final AttackDef WHISPER_SCREECH = AttackDef.of("screech", AttackType.MAGIC, 45, 16, 1).special(Special.AOE, 6)
             .telegraph(5, "The Whisperer lets out a piercing screech... get away!").particle("minecraft:sonic_boom");
-    public static final AttackDef WHISPER_SIPHON = AttackDef.of("soul_siphon", AttackType.MAGIC, 20, 16, 1).special(Special.LIFESTEAL, 100)
+    public static final AttackDef WHISPER_SIPHON = AttackDef.of("soul_siphon", AttackType.MAGIC, 50, 16, 1).special(Special.LIFESTEAL, 100)
             .particle("minecraft:sculk_soul").message("The Whisperer siphons your soul!");
 
     // ---- Vardorvis ----
@@ -306,7 +306,7 @@ public final class Dt2Bosses {
     static BossDef whisperer() {
         BossDef b = BossDef.of("the_whisperer", "The Whisperer").level(791).stats(900, 280, 280, 250, 180, 180).speed(5)
                 .defenceBonus(180, 300, 220, 10, 300)
-                .attack(WHISPER_MAGIC).attack(WHISPER_RANGED).attack(WHISPER_SIPHON)
+                .attack(WHISPER_MAGIC).attack(WHISPER_RANGED).attack(WHISPER_SCREECH).attack(WHISPER_SIPHON)
                 .phase(50, "The Whisperer drags you into the Shadow Realm!", 1.1, false)
                 .pet("pet_wisp").at("lassar_undercity").arena(13, "void").flying().size(1.8f, 2.6f, 2.0f).moveSpeed(0.18);
         b.drops.addAll(dt2Drops(b.id, "bellator_vestige", "sirens_staff", "sirenic_tablet", "shadow_quartz"));

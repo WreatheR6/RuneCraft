@@ -174,12 +174,23 @@ public final class ClassicBosses {
                 .size(1.2f, 2.4f, 1.8f).moveSpeed(0.22);
     }
 
+    /**
+     * Hespori (OSRS Wiki): green spores that hit twice for up to 8 each (ranged), a green wave up to 14 (magic), and the
+     * entangle special: rooted for 10 ticks, then 40+ unless the player struggles free (scripted). Its four flower buds
+     * open at the start of the fight and at 66% and 33% health.
+     */
+    public static final AttackDef HESPORI_SPORES = AttackDef.of("spores", AttackType.RANGED, 8, 12, 1)
+            .particle("minecraft:spore_blossom_air");
+    public static final AttackDef HESPORI_WAVE = AttackDef.of("green_wave", AttackType.MAGIC, 14, 12, 1).particle("minecraft:composter");
+    public static final AttackDef HESPORI_ENTANGLE = AttackDef.of("entangle", AttackType.MAGIC, 44, 12, 1)
+            .message("Hespori entangles you in some vines!");
+
     static BossDef hespori() {
         return BossDef.of("hespori", "Hespori").level(284).stats(300, 1, 1, 100, 150, 1).speed(5)
                 .defenceBonus(80, 20, 80, 60, 80)
-                .attack(AttackDef.of("thorn_spray", AttackType.MAGIC, 15, 12, 7).particle("minecraft:spore_blossom_air"))
-                .attack(AttackDef.of("entangle", AttackType.MAGIC, 8, 12, 3).special(Special.FREEZE, 6)
-                        .message("Hespori's vines entangle you!"))
+                .attack(HESPORI_SPORES).attack(HESPORI_WAVE).attack(HESPORI_ENTANGLE)
+                .phase(66, null, 1.0, false)
+                .phase(33, null, 1.0, false)
                 .drops(Drop.of("bottomless_compost_bucket", 1, 1, 35), Drop.of("attas_seed", 1, 1, 3), Drop.of("iasor_seed", 1, 1, 3),
                         Drop.of("kronos_seed", 1, 1, 3), Drop.seeds(1), Drop.herbs(2), Drop.of("snapdragon_seed", 1, 2, 12),
                         Drop.of("torstol_seed", 1, 1, 16))
@@ -190,10 +201,11 @@ public final class ClassicBosses {
     static BossDef scurrius() {
         return BossDef.of("scurrius", "Scurrius").level(250).stats(500, 140, 120, 80, 120, 120).speed(4)
                 .defenceBonus(20, 20, 20, 20, 20)
-                .attack(AttackDef.of("bite", AttackType.STAB, 18, 3.0, 6))
-                .attack(AttackDef.of("flying_rats", AttackType.RANGED, 12, 10, 2).particle("minecraft:crit"))
-                .attack(AttackDef.of("rat_magic", AttackType.MAGIC, 12, 10, 2).particle("minecraft:witch"))
-                .attack(AttackDef.of("falling_ceiling", AttackType.CRUSH, 20, 10, 2).special(Special.SKY_STRIKE, 0)
+                // OSRS Wiki solo max hits: 13 melee, 8 magic, 7 ranged, 22 falling ceiling (group: 13/14/13/24).
+                .attack(AttackDef.of("bite", AttackType.STAB, 13, 3.0, 6))
+                .attack(AttackDef.of("flying_rats", AttackType.RANGED, 7, 10, 2).particle("minecraft:crit"))
+                .attack(AttackDef.of("rat_magic", AttackType.MAGIC, 8, 10, 2).particle("minecraft:witch"))
+                .attack(AttackDef.of("falling_ceiling", AttackType.CRUSH, 22, 10, 2).special(Special.SKY_STRIKE, 0)
                         .telegraph(3, "Debris begins to fall from the ceiling!").particle("minecraft:ash"))
                 .phase(66, "Scurrius calls for his minions!", 1.0, true)
                 .phase(33, "Scurrius calls for his minions!", 1.1, true)
@@ -225,10 +237,12 @@ public final class ClassicBosses {
         // The Mimic guards elite/master caskets: summon it with a master clue and loot extra clue rewards.
         return BossDef.of("the_mimic", "The Mimic").level(186).stats(220, 160, 160, 150, 1, 150).speed(4)
                 .defenceBonus(100, 100, 100, 60, 100)
-                .attack(AttackDef.of("chomp", AttackType.CRUSH, 30, 3.0, 5))
-                .attack(AttackDef.of("candy_barrage", AttackType.RANGED, 28, 12, 3).special(Special.SKY_STRIKE, 0)
+                // OSRS Wiki: melee up to 23 (crush); six candies (magic) of about 10 each that can be stepped away from; its
+                // stomp hurts 1-6 a tick while the player stands under it (was 30/28/25).
+                .attack(AttackDef.of("chomp", AttackType.CRUSH, 23, 3.0, 5))
+                .attack(AttackDef.of("candy_barrage", AttackType.MAGIC, 10, 12, 3).special(Special.SKY_STRIKE, 0)
                         .telegraph(3, "The Mimic flings a barrage of candies!").particle("minecraft:totem_of_undying"))
-                .attack(AttackDef.of("lid_slam", AttackType.CRUSH, 25, 3, 2).special(Special.AOE, 3))
+                .attack(AttackDef.of("lid_slam", AttackType.CRUSH, 6, 3, 2).special(Special.AOE, 1))
                 .drops(mimicDrops().toArray(new Drop[0]))
                 .key("clue_scroll_master").at("watsons_house").arena(10, "stone")
                 .size(1.0f, 1.0f, 1.8f).moveSpeed(0.2);

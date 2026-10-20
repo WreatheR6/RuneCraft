@@ -61,9 +61,11 @@ public final class MinigameBosses {
 
     // ---- Phantom Muspah ----
     public static final AttackDef MUSPAH_RANGED = AttackDef.of("ice_shard", AttackType.RANGED, 33, 14, 5).particle("minecraft:snowflake");
-    public static final AttackDef MUSPAH_SMITE = AttackDef.of("smite", AttackType.MAGIC, 28, 14, 2).special(Special.DRAIN_PRAYER, 20)
+    /** Its charged magic attack: up to 72 and corruption, 18 Prayer over 18 s (OSRS Wiki; approx: drained at once). */
+    public static final AttackDef MUSPAH_SMITE = AttackDef.of("smite", AttackType.MAGIC, 72, 14, 2).special(Special.DRAIN_PRAYER, 18)
             .particle("minecraft:soul_fire_flame").message("The Phantom Muspah smites you, draining your prayer!");
-    public static final AttackDef MUSPAH_MELEE = AttackDef.of("stomp", AttackType.CRUSH, 54, 4, 5);
+    /** Melee form: up to 34 (OSRS Wiki). */
+    public static final AttackDef MUSPAH_MELEE = AttackDef.of("stomp", AttackType.CRUSH, 34, 4, 5);
     public static final AttackDef MUSPAH_SPIKES = AttackDef.of("spikes", AttackType.CRUSH, 30, 14, 2).special(Special.SKY_STRIKE, 0)
             .telegraph(3, "Icy spikes erupt from the ground!").particle("minecraft:snowflake");
     public static final AttackDef MUSPAH_DARKNESS = AttackDef.of("darkness", AttackType.MAGIC, 15, 14, 1).special(Special.AOE, 14)

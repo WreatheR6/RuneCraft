@@ -1,0 +1,73 @@
+# Boss attack max hits from the OSRS Wiki infoboxes and strategy pages (Kiyogitpy/osrs-wiki-data, July 2026).
+# Diffed by BossMaxHitsTest: the boss's attack of that name must have this max hit.
+# boss|attack|max|wiki
+giant_mole|claw|21|21
+kalphite_queen|mandibles|31|31
+sarachnis|bite|31|31
+corporeal_beast|crush|33|33 (Melee)
+corporeal_beast|spectral_orb|65|65 (Magic)
+skotizo|claws|38|38
+hespori|spores|8|8x2 (Ranged)
+hespori|green_wave|14|14 (Magic)
+scurrius|bite|13|13 (Melee) solo
+scurrius|rat_magic|8|8 (Magic) solo
+scurrius|flying_rats|7|7 (Ranged) solo
+scurrius|falling_ceiling|22|22 (Rockfall) solo
+the_mimic|chomp|23|23
+zulrah|venom_spit|41|41 (Serpentine)
+zulrah_magma|tail_slam|30|30 (Magma; 20-30 when it lands)
+zulrah_tanzanite|venom_bolt|41|41 (Tanzanite)
+vorkath|claw|32|32 (Melee)
+vorkath|bone_spike|32|32 (Ranged)
+vorkath|undead_magic|30|30 (Magic)
+vorkath|dragonfire|80|80 (Dragonfire, post-quest)
+vorkath|dragonfire_bomb|121|121 (Dragonfire Bomb/Special)
+kraken|water_blast|28|28
+thermonuclear_smoke_devil|smoke_blast|8|8
+cerberus|bite|23|23
+abyssal_sire|tentacle_slam|66|66 (Melee: double tendril flick)
+dusk|claw|26|26 (melee, second form)
+dusk|orbs|15|15x2 (ranged, second form)
+dawn|rock|9|two hits of up to 9 (Strategies)
+dawn|kick|15|kick up to 15 (Strategies)
+dawn|stone_ball|15|Stone Ball up to 15 (Strategies)
+araxxor|fangs|38|38 (melee)
+araxxor|acid_spit|34|34 (ranged)
+araxxor|web_magic|21|21 (magic)
+the_nightmare|claw_swipe|50|50/60 (Melee)
+the_nightmare|dream_blast|33|33/39 (Ranged and Magic)
+phosanis_nightmare|claw_swipe|73|73 (melee)
+phosanis_nightmare|dream_blast|80|80 (magic/ranged)
+phosanis_nightmare|thrown_soul|80|80 (magic/ranged)
+phantom_muspah|ice_shard|61|61 (Ranged)
+phantom_muspah|smite|72|72 (Magic)
+phantom_muspah|stomp|34|34 (Melee form)
+zalcano|rockfall|53|53
+duke_sucellus|fist_slam|56|56 (Melee)
+duke_sucellus|magic_blast|48|48 (Magic)
+duke_sucellus|freezing_gaze|101|101 (Gaze)
+the_leviathan|shadow_strike|50|50 (Melee orb & Bite)
+the_leviathan|boulder|24|24 (Ranged orb)
+the_leviathan|abyssal_orb|32|32 (Magic orb)
+the_whisperer|tentacle_lash|40|40 (Ranged)
+the_whisperer|soul_bolt|36|36 (Magic)
+the_whisperer|screech|45|45 (Screech)
+the_whisperer|soul_siphon|50|50 (Soul Siphon)
+vardorvis|axe_swing|43|32-43 (Melee)
+vardorvis|swinging_axes|35|35 (axes)
+vardorvis|darting_spikes|25|up to 25 (Darting Spikes)
+amoxliatl|ice_shard|22|22 (standard)
+amoxliatl|icicle_crash|34|34 (Icicle Crash)
+branda_the_fire_queen|molten_fist|26|26 (Melee)
+eldric_the_ice_king|frozen_fist|26|26 (Melee)
+yama|claw_swipe|46|46 (auto-attacks)
+yama|fire_orb|46|46 (auto-attacks)
+yama|shadow_orb|46|46 (auto-attacks)
+shellbane_gryphon|beak|22|22
+shellbane_gryphon|whirlwinds|64|64 (whirlwinds)
+shellbane_gryphon|wing_buffet|30|30 (knockback)
+brutus|headbutt|3|3 (melee)
+brutus|charge|19|19 (special)
+demonic_brutus|horn_gore|43|43 (Melee)
+maggot_king|bile_bolt|46|46 (Magic / Ranged)
+maggot_king|maggot_spit|46|46 (Magic / Ranged)

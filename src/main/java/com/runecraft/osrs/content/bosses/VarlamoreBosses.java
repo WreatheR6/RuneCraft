@@ -40,16 +40,13 @@ public final class VarlamoreBosses {
             .telegraph(3, "Amoxliatl disables your prayers and launches an icicle attack!").particle("minecraft:item_snowball");
 
     // ---- Royal Titans ----
+    /**
+     * The Titans' only auto-attack is the stomp in melee range, up to 26 (OSRS Wiki; MonsterStatsTable applies the 26). Their
+     * fire/icicle walls (12), elementals and Elemental Blast (30) are scripted; the firestorm, eruption, blizzard and
+     * avalanche attacks they had are not in OSRS.
+     */
     public static final AttackDef BRANDA_MELEE = AttackDef.of("molten_fist", AttackType.CRUSH, 35, 4, 5);
-    public static final AttackDef BRANDA_FIRE = AttackDef.of("firestorm", AttackType.MAGIC, 30, 14, 3).special(Special.HAZARD, 6)
-            .particle("minecraft:flame");
-    public static final AttackDef BRANDA_ERUPTION = AttackDef.of("eruption", AttackType.MAGIC, 45, 14, 1).special(Special.SKY_STRIKE, 0)
-            .telegraph(4, "Branda the Fire Queen: Burn!").particle("minecraft:lava");
     public static final AttackDef ELDRIC_MELEE = AttackDef.of("frozen_fist", AttackType.CRUSH, 35, 4, 5);
-    public static final AttackDef ELDRIC_ICE = AttackDef.of("blizzard", AttackType.RANGED, 30, 14, 3).special(Special.FREEZE, 3)
-            .particle("minecraft:snowflake");
-    public static final AttackDef ELDRIC_AVALANCHE = AttackDef.of("avalanche", AttackType.CRUSH, 45, 14, 1).special(Special.SKY_STRIKE, 0)
-            .telegraph(4, "Eldric the Ice King: Freeze!").particle("minecraft:item_snowball");
 
     public static List<BossDef> all() {
         return List.of(hueycoatl(), amoxliatl(), branda(), eldric());
@@ -78,7 +75,7 @@ public final class VarlamoreBosses {
     static BossDef branda() {
         return BossDef.of("branda_the_fire_queen", "Branda the Fire Queen").level(389).stats(600, 250, 250, 200, 250, 1).speed(5)
                 .defenceBonus(100, 100, 100, 60, 100)
-                .attack(BRANDA_MELEE).attack(BRANDA_FIRE).attack(BRANDA_ERUPTION)
+                .attack(BRANDA_MELEE) // the stomp; walls, elementals and the Elemental Blast are scripted (OSRS Wiki)
                 // Wiki (solo): giantsoul amulet 1/16, each staff crown and prayer scroll 1/75.
                 .drops(Drop.always("big_bones"), Drop.of("deadeye_prayer_scroll", 1, 1, 75), Drop.of("mystic_vigour_prayer_scroll", 1, 1, 75),
                         Drop.of("giantsoul_amulet", 1, 1, 16), Drop.of("fire_element_staff_crown", 1, 1, 75),
@@ -90,7 +87,7 @@ public final class VarlamoreBosses {
     static BossDef eldric() {
         return BossDef.of("eldric_the_ice_king", "Eldric the Ice King").level(389).stats(600, 250, 250, 200, 1, 250).speed(5)
                 .defenceBonus(100, 100, 100, 100, 60)
-                .attack(ELDRIC_MELEE).attack(ELDRIC_ICE).attack(ELDRIC_AVALANCHE)
+                .attack(ELDRIC_MELEE)
                 .raidOnly().size(1.1f, 2.6f, 2.0f).moveSpeed(0.2);
     }
 }

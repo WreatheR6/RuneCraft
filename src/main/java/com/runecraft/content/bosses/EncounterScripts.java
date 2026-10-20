@@ -1209,12 +1209,12 @@ final class EncounterScripts {
 
         @Override
         protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
-            int screech = boss.awakened() ? 7 : 10;
-            if (attackCount > 0 && attackCount % screech == 0) {
-                return Dt2Bosses.WHISPER_SCREECH;
-            }
-            if (boss.getRandom().nextInt(boss.awakened() ? 5 : 8) == 0) {
-                return Dt2Bosses.WHISPER_SIPHON;
+            // Her specials come in a fixed rotation (OSRS Wiki: Screech -> Soul Siphon -> ...), not at random. approx: every
+            // tenth attack (awakened seventh) instead of at health thresholds, and the siphon is a direct life-stealing hit
+            // (the lost souls and corrupted seeds aren't modelled).
+            int every = boss.awakened() ? 7 : 10;
+            if (attackCount > 0 && attackCount % every == 0) {
+                return (attackCount / every) % 2 == 1 ? Dt2Bosses.WHISPER_SCREECH : Dt2Bosses.WHISPER_SIPHON;
             }
             return attackCount % 2 == 0 ? Dt2Bosses.WHISPER_MAGIC : Dt2Bosses.WHISPER_RANGED;
         }

@@ -504,8 +504,41 @@ final class SlayerScripts {
             }
         }
 
+        /**
+         * Max hits by phase (OSRS Wiki "Alchemical Hydra"): two hits of up to 17 in the serpentine phase, 35 in the electric
+         * and flame phases and 55 once extinguished. approx: the "empowered" damage after a wrong vent isn't modelled.
+         */
+        @Override
+        protected double multiplier(DataBossEntity boss) {
+            double base = SlayerBosses.HYDRA_RANGED.maxHit();
+            return super.multiplier(boss) * switch (phase) {
+                case GREEN -> SlayerBosses.HYDRA_MAX_SERPENTINE / base;
+                case ENRAGED -> SlayerBosses.HYDRA_MAX_ENRAGED / base;
+                default -> SlayerBosses.HYDRA_MAX_ELECTRIC_FLAME / base;
+            };
+        }
+
+        @Override
+        protected void perform(DataBossEntity boss, ServerPlayer target, AttackDef a) {
+            super.perform(boss, target, a);
+            if (phase == HydraPhase.GREEN && (a == SlayerBosses.HYDRA_RANGED || a == SlayerBosses.HYDRA_MAGIC)) {
+                super.perform(boss, target, a); // "17x2"
+            }
+        }
+
         @Override
         protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
+            if (phase == HydraPhase.ENRAGED) {
+                // Extinguished: alternates styles every attack; poison on the 4th attack and every 9th after (OSRS Wiki).
+                if (attackCount == 3 || attackCount > 3 && (attackCount - 3) % 9 == 0) {
+                    special(boss, target);
+                    attackCount++;
+                    cooldown = attackDelay(boss, SlayerBosses.HYDRA_MAGIC);
+                    return null;
+                }
+                magicStyle = !magicStyle;
+                return magicStyle ? SlayerBosses.HYDRA_MAGIC : SlayerBosses.HYDRA_RANGED;
+            }
             if (attackCount > 0 && attackCount % 9 == 0) {
                 special(boss, target);
                 attackCount++;
@@ -621,7 +654,9 @@ final class SlayerScripts {
      * away or be knocked back for the high 20s) while Dawn throws rockfalls. Phase 3 (Dusk at 55%): lightning across
      * the rooftop, then Dawn is attackable again and Dusk immune; her energy spheres heal her 90 each unless absorbed.
      * Phase 4 (Dawn dead): Dusk absorbs her essence and immediately uses his prison attack (immune until it ends):
-     * escape the cell within 5 ticks or take up to 65, which heals him; he repeats it and explodes point blank.
+     * escape the cell within 5 ticks or take up to 65, which heals him; he repeats it. His claws hit up to 15 in phases 1-3
+     * and 26 in phase 4, where he also fires two orbs of up to 15 (1/6 chance to switch style, 1/3 if prayed against), and
+     * he tramples anyone standing under him (phases 2 and 4) for up to 40.
      */
     static final class Dusk extends ScriptedBoss {
         private DataBossEntity dawn;
@@ -630,7 +665,51 @@ final class SlayerScripts {
         int stage = 1;
         private boolean firstPrison;
         private boolean blindNext;
-        private boolean prisonNext = true;
+        /** Phase 4: his current style (orbs instead of claws) and the tick he last trampled someone. */
+        private boolean ranged;
+        private long trampledAt = -10;
+
+        @Override
+        protected boolean driven() {
+            return true;
+        }
+
+        @Override
+        protected boolean wantsMelee(DataBossEntity boss, ServerPlayer target) {
+            return stage < 4 || !ranged;
+        }
+
+        /** Claws up to 15 in the first three phases, 26 once he has absorbed Dawn (OSRS Wiki). */
+        @Override
+        protected double multiplier(DataBossEntity boss) {
+            return stage < 4 && last == SlayerBosses.DUSK_MELEE ? SlayerBosses.DUSK_MELEE_EARLY / (double) SlayerBosses.DUSK_MELEE.maxHit()
+                    : super.multiplier(boss);
+        }
+
+        @Override
+        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
+            if (stage == 4 && attackCount > 0) {
+                // Phase 4 (OSRS Wiki): a 1/6 chance to switch style each attack, 1/3 while the player prays against it.
+                boolean prayed = BossFx.protects(target, ranged ? com.runecraft.osrs.Prayer.PROTECT_FROM_MISSILES
+                        : com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE);
+                if (boss.getRandom().nextInt(prayed ? 3 : 6) == 0) {
+                    ranged = !ranged;
+                }
+            }
+            if (stage == 4 && ranged) {
+                return SlayerBosses.DUSK_RANGED;
+            }
+            last = SlayerBosses.DUSK_MELEE; // for multiplier()
+            return SlayerBosses.DUSK_MELEE;
+        }
+
+        @Override
+        protected void perform(DataBossEntity boss, ServerPlayer target, AttackDef a) {
+            super.perform(boss, target, a);
+            if (a == SlayerBosses.DUSK_RANGED) {
+                super.perform(boss, target, a); // two orbs
+            }
+        }
 
         @Override
         public void onSpawn(DataBossEntity boss) {
@@ -653,11 +732,16 @@ final class SlayerScripts {
 
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
+            if ((stage == 2 || stage == 4) && target != null && now - trampledAt >= 4 && target.getBoundingBox().intersects(boss.getBoundingBox())) {
+                // Standing under Dusk in phases 2 and 4: trampled for up to 40 (OSRS Wiki).
+                trampledAt = now;
+                com.runecraft.combat.CombatHooks.nameAttack("trample", null);
+                CombatHandler.applyDamage(boss, target, boss.getRandom().nextInt(SlayerBosses.DUSK_TRAMPLE_MAX + 1));
+            }
             if (stage < 4 && !dawnAlive()) {
                 stage = 4;
                 special = 1;
                 firstPrison = true;
-                prisonNext = true;
                 BossFx.say(boss, "Dusk absorbs the remnants of Dawn's essence!");
                 BossFx.burst(boss, ParticleTypes.SOUL_FIRE_FLAME, 30, 1.5);
             } else if (stage == 1 && dawn.getHealth() <= dawn.getMaxHealth() * 0.55f) {
@@ -688,13 +772,8 @@ final class SlayerScripts {
                     special = blindNext ? 8 : 10;
                 }
                 default -> {
-                    if (prisonNext) {
-                        prison(boss, target);
-                    } else {
-                        perform(boss, target, SlayerBosses.DUSK_EXPLOSION);
-                    }
-                    prisonNext = !prisonNext;
-                    special = 12;
+                    prison(boss, target); // approx: how often he repeats it (was alternated with an invented explosion)
+                    special = 24;
                 }
             }
         }
@@ -770,6 +849,45 @@ final class SlayerScripts {
     static final class Dawn extends ScriptedBoss {
         private int spheres = 12;
         Dusk dusk;
+
+        @Override
+        protected boolean driven() {
+            return true;
+        }
+
+        /**
+         * Two rocks of up to 9 (ranged); a kick for up to 15 when next to the player; now and then a stone ball (3x3, up to
+         * 15 and encased in stone for 10 ticks). approx: how often she kicks or throws the stone ball.
+         */
+        @Override
+        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
+            if (distance <= SlayerBosses.DAWN_KICK.range() && boss.getRandom().nextInt(3) == 0) {
+                return SlayerBosses.DAWN_KICK;
+            }
+            if (boss.getRandom().nextInt(6) == 0) {
+                last = SlayerBosses.DAWN_STONE_BALL;
+                attackCount++;
+                BossFx.warn(boss, "Dawn launches a ball of stone!");
+                namedStrike("stone_ball", boss, target.position(), SlayerBosses.DAWN_STONE_BALL.telegraphTicks(),
+                        maxHit(boss, SlayerBosses.DAWN_STONE_BALL), 1.5, ParticleTypes.ASH, (hit, pos) -> {
+                            for (ServerPlayer h : hit) {
+                                BossFx.stun(h, SlayerBosses.DAWN_STONE_STUN_TICKS);
+                                Msg.red(h, "You are encased in stone!");
+                            }
+                        });
+                cooldown = Math.max(1, attackDelay(boss, SlayerBosses.DAWN_STONE_BALL)) - 1;
+                return null;
+            }
+            return SlayerBosses.DAWN_RANGED;
+        }
+
+        @Override
+        protected void perform(DataBossEntity boss, ServerPlayer target, AttackDef a) {
+            super.perform(boss, target, a);
+            if (a == SlayerBosses.DAWN_RANGED) {
+                super.perform(boss, target, a); // two separate hits
+            }
+        }
 
         @Override
         public boolean isVulnerable(DataBossEntity boss) {

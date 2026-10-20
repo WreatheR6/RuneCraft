@@ -198,6 +198,7 @@ final class ZulrahScript extends ScriptedBoss {
     @Override
     public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
         if (last == ZulrahVorkath.ZULRAH_TAIL_SLAM && damage > 0) {
+            damage = Math.max(damage, ZulrahVorkath.ZULRAH_TAIL_SLAM_MIN); // 20-30 when it lands
             BossFx.stun(player, 3);
             com.runecraft.util.Msg.red(player, "Zulrah's tail slam stuns you!");
         }

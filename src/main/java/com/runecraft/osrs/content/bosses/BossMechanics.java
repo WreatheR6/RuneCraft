@@ -453,6 +453,16 @@ public final class BossMechanics {
         return hp > 500 ? 1 : hp >= 130 ? 2 : 3;
     }
 
+    // ------------------------------------------------------------ Hespori (OSRS Wiki "Hespori")
+    /** Four flower buds (10 hitpoints, one hit kills) keep it invulnerable; they open at the start, 66% and 33%. */
+    public static final int HESPORI_BUDS = 4;
+    /** Entangle: rooted for 10 ticks, then 40+ damage, unless the player struggles free (the sixth click frees them). */
+    public static final int HESPORI_ENTANGLE_TICKS = 10;
+    public static final int HESPORI_ENTANGLE_MIN = 40;
+    public static final int HESPORI_STRUGGLES = 6;
+    /** Game ticks between entangles (approx: the wiki says a fight lasting over 30-40 seconds gets one). */
+    public static final int HESPORI_ENTANGLE_INTERVAL = 58;
+
     // ------------------------------------------------------------ Duke Sucellus (OSRS Wiki "Duke Sucellus/Strategies")
     /** Freezing Gaze: every fifth standard attack; it lands 5 ticks after it starts (6 ticks in all) unless a pillar hides you. */
     public static final int DUKE_GAZE_EVERY = 5;

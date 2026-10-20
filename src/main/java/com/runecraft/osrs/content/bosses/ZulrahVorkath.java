@@ -140,10 +140,12 @@ public final class ZulrahVorkath {
             .special(Special.VENOM, 0).particle("minecraft:sneeze");
     public static final AttackDef ZULRAH_MAGIC = AttackDef.of("venom_bolt", AttackType.MAGIC, 41, 30, 1)
             .special(Special.VENOM, 0).particle("minecraft:witch");
-    /** Magma form stares at your tile, then slams its head down: step off the tile or be hit and stunned. */
-    public static final AttackDef ZULRAH_TAIL_SLAM = AttackDef.of("tail_slam", AttackType.CRUSH, 41, 30, 1)
+    /** Magma form stares at your tile, then whips its tail down: step off the tile or take 20-30 and a stun (OSRS Wiki). */
+    public static final AttackDef ZULRAH_TAIL_SLAM = AttackDef.of("tail_slam", AttackType.CRUSH, 30, 30, 1)
             .special(Special.SKY_STRIKE, 0).telegraph(4, "Zulrah stares at your position...").particle("minecraft:lava");
     /** Toxic fumes: the script places venom clouds where this lands. */
+    /** The tail slam's least damage when it lands. */
+    public static final int ZULRAH_TAIL_SLAM_MIN = 20;
     public static final AttackDef ZULRAH_CLOUD = AttackDef.of("toxic_cloud", AttackType.RANGED, 4, 30, 1)
             .special(Special.HAZARD, 4).particle("minecraft:sneeze");
 
@@ -181,13 +183,14 @@ public final class ZulrahVorkath {
 
     // ================= Vorkath =================
     public static final AttackDef VORKATH_CLAW = AttackDef.of("claw", AttackType.SLASH, 32, 3.5, 2);
-    public static final AttackDef VORKATH_SPIKE = AttackDef.of("bone_spike", AttackType.RANGED, 32, 30, 3).particle("minecraft:crit");
+    // Wiki: magic and ranged weighted 3 to 4 (Mod Ash); dragonfire up to 80 after the quest (72 in Dragon Slayer II).
+    public static final AttackDef VORKATH_SPIKE = AttackDef.of("bone_spike", AttackType.RANGED, 32, 30, 4).particle("minecraft:crit");
     public static final AttackDef VORKATH_MAGIC = AttackDef.of("undead_magic", AttackType.MAGIC, 30, 30, 3)
             .particle("minecraft:soul_fire_flame");
-    public static final AttackDef VORKATH_DRAGONFIRE = AttackDef.of("dragonfire", AttackType.MAGIC, 73, 30, 2)
+    public static final AttackDef VORKATH_DRAGONFIRE = AttackDef.of("dragonfire", AttackType.MAGIC, 80, 30, 2)
             .special(Special.DRAGONFIRE, 0).particle("minecraft:flame");
     /** Pink dragonfire switches off the target's prayers (script). */
-    public static final AttackDef VORKATH_PINK_FIRE = AttackDef.of("pink_dragonfire", AttackType.MAGIC, 73, 30, 1)
+    public static final AttackDef VORKATH_PINK_FIRE = AttackDef.of("pink_dragonfire", AttackType.MAGIC, 80, 30, 1)
             .special(Special.DRAGONFIRE, 0).particle("minecraft:dragon_breath");
     public static final AttackDef VORKATH_VENOM_FIRE = AttackDef.of("venomous_dragonfire", AttackType.MAGIC, 8, 30, 1)
             .special(Special.VENOM, 0).particle("minecraft:sneeze");
