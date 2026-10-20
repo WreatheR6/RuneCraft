@@ -291,6 +291,11 @@ final class BossFightChecks {
                         if (boss instanceof Mob mob && mob.getTarget() != p) {
                             mob.setTarget(p);
                         }
+                        // As ServerLevel.tickNonPassenger does: an entity never counts its own ticks, and the bosses run
+                        // their game tick (scripts, leash) every MC_TICKS_PER_GAME_TICK of them. Without this a boss
+                        // summoned here kept tickCount 0 and ran a game tick on every Minecraft tick: twelve a game tick
+                        // (Zulrah swapped forms every one to three game ticks and ran out of forms before it could die).
+                        boss.tickCount++;
                         boss.tick();
                     }
                     Mechanics.tickForSelfTest();
