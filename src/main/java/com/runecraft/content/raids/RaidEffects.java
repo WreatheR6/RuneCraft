@@ -181,12 +181,29 @@ public final class RaidEffects {
             damage = (int) Math.round(damage * raid.damageMultiplier(source));
         }
         LivingEntity attacker = source != null && source.isAlive() ? source : null;
-        int dealt = CombatHandler.applyDamage(attacker, player, damage);
+        int dealt = applyScaled(attacker, player, damage);
         if (dealt > 0) {
             RaidManager.hurt(player, dealt);
             RaidManager.deadlyPrayers(player, dealt);
         }
         return dealt;
+    }
+
+    /** True while a raid mechanic applies damage it has already scaled (see {@link RaidManager}'s minion scaling). */
+    private static boolean applying;
+
+    static boolean applyingScaled() {
+        return applying;
+    }
+
+    private static int applyScaled(LivingEntity attacker, ServerPlayer player, int damage) {
+        boolean was = applying;
+        applying = true;
+        try {
+            return CombatHandler.applyDamage(attacker, player, damage);
+        } finally {
+            applying = was;
+        }
     }
 
     /**
@@ -202,7 +219,7 @@ public final class RaidEffects {
             raid.noteAttack();
         }
         LivingEntity attacker = source != null && source.isAlive() ? source : null;
-        int dealt = CombatHandler.applyDamage(attacker, player, damage);
+        int dealt = applyScaled(attacker, player, damage);
         if (dealt > 0) {
             RaidManager.hurt(player, dealt);
             RaidManager.deadlyPrayers(player, dealt);

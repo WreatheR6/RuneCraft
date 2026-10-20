@@ -67,7 +67,8 @@ public final class RaidsHooks implements ModuleHooks {
         });
         com.runecraft.combat.CombatHooks.addNpcAccuracyModifier((mob, type) -> {
             RaidInstance raid = RaidManager.at(mob);
-            return raid == null || raid.type != RaidType.TOA ? 1.0 : RaidScaling.toaAccuracy(raid.raidLevel());
+            return raid == null || raid.type != RaidType.TOA || RaidScaling.toaUnscaledDamage(RaidInstance.creatureId(mob)) ? 1.0
+                    : RaidScaling.toaAccuracy(raid.raidLevel());
         });
         com.runecraft.content.systems.SpecialAttackService.addCostRule((player, spec) -> {
             RaidInstance raid = RaidManager.of(player);

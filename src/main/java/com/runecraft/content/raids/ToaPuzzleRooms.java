@@ -1544,7 +1544,8 @@ final class ToaPuzzleRooms {
                 PlayerData data = Players.data(p);
                 data.setPrayerPoints(Math.max(0, data.prayerPoints() - 12));
             }
-            RaidEffects.hit(croc, p, dmg, null, true);
+            // OSRS: the crocodiles don't scale with raid level (or path level).
+            RaidEffects.hitRaw(croc, p, dmg);
             int w = water(p);
             if (w > 0) {
                 water.put(p.getUUID(), ToaPuzzles.spillFromBite(w));

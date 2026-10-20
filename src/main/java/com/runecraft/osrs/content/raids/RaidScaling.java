@@ -518,6 +518,16 @@ public final class RaidScaling {
     /** ToA creatures whose Defence the raid level does not scale (OSRS DPS calculator: Kephri's overlords). */
     static final Set<String> TOA_UNSCALED_DEFENCE = Set.of("toa_soldier_scarab", "toa_spitting_scarab", "toa_arcane_scarab");
 
+    /**
+     * ToA creatures whose damage the raid level doesn't scale (OSRS wiki): the Path of Crondis' crocodiles ("do not scale
+     * with raid level, they will always hit a max of 18") and Kephri's Agile Scarabs ("not affected by raid levels").
+     */
+    static final Set<String> TOA_UNSCALED_DAMAGE = Set.of("toa_crocodile", "toa_agile_scarab");
+
+    public static boolean toaUnscaledDamage(String id) {
+        return TOA_UNSCALED_DAMAGE.contains(id);
+    }
+
     /** Multiplier of a ToA creature's defence roll at this raid level. */
     public static double toaDefence(String id, int raidLevel) {
         return TOA_UNSCALED_DEFENCE.contains(id) ? 1.0 : toaAccuracy(raidLevel);

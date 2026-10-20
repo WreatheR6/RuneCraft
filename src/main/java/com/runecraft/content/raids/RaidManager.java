@@ -159,6 +159,20 @@ public final class RaidManager {
                 }
             }
         });
+        // ToA (OSRS): the raid level (and path level) raise every creature's damage, not just the bosses' (scaled in
+        // RaidScript) and the rooms' mechanics (scaled in RaidEffects): the minions' own attacks are scaled here.
+        CombatHooks.addIncomingModifier((player, attacker, damage) -> {
+            if (damage <= 0 || attacker == null || RaidEffects.applyingScaled() || attacker instanceof com.runecraft.boss.DataBossEntity
+                    || attacker instanceof ServerPlayer) {
+                return damage;
+            }
+            RaidInstance raid = at(attacker);
+            if (raid == null || raid.type != RaidType.TOA
+                    || com.runecraft.osrs.content.raids.RaidScaling.toaUnscaledDamage(RaidInstance.creatureId(attacker))) {
+                return damage;
+            }
+            return (int) Math.round(damage * raid.damageMultiplier(attacker));
+        });
         CombatHooks.addHurtListener((player, attacker, damage) -> {
             hurt(player, damage);
             if (!(attacker instanceof com.runecraft.boss.DataBossEntity)) {

@@ -72,6 +72,8 @@ final class ToaNexus extends RoomLogic {
         }
         RaidBuilder.set(world(), at(-12, 0), RaidBuilder.module(RaidsContent.TOA_HELPFUL_SPIRIT));
         RaidBuilder.set(world(), at(-12, 0).above(), Blocks.SOUL_LANTERN.defaultBlockState());
+        // OSRS: a deposit pot beside the Helpful Spirit works as a bank deposit box.
+        RaidBuilder.set(world(), at(-12, 3), RaidBuilder.module(RaidsContent.SUPPLIES));
         RaidBuilder.pillar(world(), center().offset(0, 0, -6), 0, 6, Blocks.CHISELED_SANDSTONE.defaultBlockState());
         RaidBuilder.pillar(world(), center().offset(0, 0, 6), 0, 6, Blocks.CHISELED_SANDSTONE.defaultBlockState());
         refresh();

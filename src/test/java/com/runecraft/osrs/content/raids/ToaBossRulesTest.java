@@ -137,5 +137,8 @@ class ToaBossRulesTest {
         assertEquals(20, ToaBossRules.ELIDINIS_P2_MAX_HIT);
         assertEquals(22, ToaBossRules.TUMEKEN_P2_MAX_HIT);
         assertEquals(26, ToaBossRules.WARDEN_P3_MAX_HIT);
+        // The raid level scales every creature's damage except the crocodiles and Agile Scarabs (OSRS wiki).
+        assertTrue(RaidScaling.toaUnscaledDamage("toa_crocodile") && RaidScaling.toaUnscaledDamage("toa_agile_scarab"));
+        assertTrue(!RaidScaling.toaUnscaledDamage("toa_soldier_scarab") && !RaidScaling.toaUnscaledDamage("toa_baboon_brawler"));
     }
 }

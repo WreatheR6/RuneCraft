@@ -1255,8 +1255,10 @@ public final class RaidInstance {
 
     public void takeSupplies(ServerPlayer p) {
         if (type == RaidType.TOA) {
-            // OSRS: the tomb has no free supply chest; the Helpful Spirit offers bundles after the second and fourth path.
-            Msg.game(p, "The storage unit is for your own items. The Helpful Spirit brings supplies after the second and fourth paths.");
+            // OSRS: the tomb has no free supply chest (the Helpful Spirit offers bundles after the second and fourth path),
+            // but a deposit pot beside the spirit acts as a bank deposit box to make room.
+            com.runecraft.bank.BankService.openDepositBox(p);
+            Msg.game(p, "You can deposit items here. The Helpful Spirit brings supplies after the second and fourth paths.");
             return;
         }
         if (type == RaidType.COX) {
