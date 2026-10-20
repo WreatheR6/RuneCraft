@@ -32,7 +32,8 @@ class QuestCompletabilityTest {
      * "quest:item" pairs only saves from an older version of a quest carry: the step that handed the item out was
      * replaced, and a later step still accepts it so those players can finish.
      */
-    private static final Set<String> LEGACY_SAVE_ITEMS = Set.of("in_search_of_knowledge:quest_lost_tome");
+    private static final Set<String> LEGACY_SAVE_ITEMS = Set.of("in_search_of_knowledge:quest_lost_tome",
+            "monkey_madness_i:narnodes_orders");
 
     private static String snake(String name) {
         return name.toLowerCase(Locale.ROOT).replace(' ', '_').replace("'", "");

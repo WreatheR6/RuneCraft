@@ -316,7 +316,7 @@ public final class ClientSmokeTest {
         step("arena back screenshot", 60, () -> shot(client, "08_boss_arena_back"));
 
         // The in-game self-test with this real (online) player, so minigame sessions, raid rooms and boss targeting see it.
-        String filter = System.getProperty(PROPERTY + ".selftest", "minigame:,raid:,boss:,slayer:,skill:,enchant_,telekinetic,bake_pie,superglass,string_jewellery,plank_make");
+        String filter = System.getProperty(PROPERTY + ".selftest", "minigame:,raid:,boss:,slayer:,quest:walk:,skill:,enchant_,telekinetic,bake_pie,superglass,string_jewellery,plank_make");
         if (!filter.equalsIgnoreCase("none")) {
             long minutes = Long.getLong(PROPERTY + ".selftestMinutes", 14L);
             int[] before = new int[1];

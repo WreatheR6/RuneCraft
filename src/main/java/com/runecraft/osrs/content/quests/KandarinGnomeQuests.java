@@ -204,6 +204,16 @@ final class KandarinGnomeQuests {
             .options("Twigs shaped like T", "Twigs shaped like U", "Twigs shaped like Z", "Twigs shaped like O")
             .solution(0, 1, 2, 3).failLines("* Nothing happens. You take the twigs back off the pillars.").build();
 
+    /**
+     * The glider hangar's reinitialisation panel (quest-helper, wiki puzzle box guide): a sliding-tile puzzle, one of three
+     * boards per player; a wrong slide puts the tiles back.
+     */
+    static final QuestPuzzle MM_PANEL = QuestPuzzle.builder("mm_panel").room("panel")
+            .slide(null, "* The glider's reinitialisation panel is a sliding-tile puzzle.", 0, 1, 3, 5, 2, 7, 4, 8, 6)
+            .slide(null, "* The glider's reinitialisation panel is a sliding-tile puzzle.", 0, 1, 3, 6, 2, 8, 4, 7, 5)
+            .slide(null, "* The glider's reinitialisation panel is a sliding-tile puzzle.", 1, 3, 6, 7, 4, 2, 5, 8, 0)
+            .failLines("* The tiles slide back to where they started.").build();
+
     private static void monkeyMadness(QuestBook b) {
         b.npc("glo_caranock", "G.L.O. Caranock", "karamja_shipyard", 0, 0, 0xC89868, 0x3A5A8A, 0x2A3A5A, 0x8A6A3A);
         b.npc("daero", "Daero", "grand_tree", -4, 3, 0xD8A87A, 0x2A2A2A, 0x1A1A1A, 0x3A3A3A);
@@ -211,17 +221,31 @@ final class KandarinGnomeQuests {
         b.npc("zooknock", "Zooknock", "zooknock_cave", zooknockDx(), zooknockDz(), 0xC8A070, 0x5A2A6A, 0x3A1A4A, 0x9A9A9A);
         b.npc("tutab", "Tutab", "ape_atoll", 4, -4, 0x7A5A3A, 0x6A3A1A, 0x4A2A1A, 0x5A3A1A);
         b.npc("king_awowogei", "King Awowogei", "ape_atoll", 0, -6, 0xA08060, 0xE0C030, 0xA02020, 0xE0D040);
+        // The flight crew, the jailers' island and the monkeys the quest needs, on their OSRS tiles (mejrs/data_osrs).
+        b.npc("waydar", "Waydar", "gnome_glider_hangar", 3, 1, 0xD8A87B, 0x5A6A8A, 0x3A4A5A, 0x6A5A3A);
+        b.spot("mm_crash_island", "Crash Island", 2891, 2724);
+        b.npc("mm_lumdo", "Lumdo", "mm_crash_island", 0, 0, 0xD0A070, 0x6A4A2A, 0x4A3A1A, 0x5A4A2A);
+        b.spot("ape_atoll_jail", "Ape Atoll jail", 2771, 2795);
+        b.spot("ape_atoll_crates", "Marim storehouse", 2803, 2790);
+        b.npcAt("monkey_child", "Monkey child", 2743, 2795, 0x8A6A4A, 0x6A4A2A, 0x4A3A1A, 0x8A6A4A);
+        b.npcAt("elder_guard", "Elder Guard", 2798, 2760, 0x3A3A3A, 0x6A2A1A, 0x4A1A0A, 0xE0C030);
+        b.npcAt("mm_kruk", "Kruk", 2726, 2765, 0x5A4A3A, 0x4A3A2A, 0x3A2A1A, 0x6A5A4A);
+        b.npcAt("monkey_minder", "Monkey minder", 2602, 3274, 0xE0B898, 0x5A6A2A, 0x3A4A1A, 0x6A4A2A);
         b.item("narnodes_orders", "Narnode's orders", "note", 0xE8D8B0, "Royal orders from King Narnode.");
         b.item("monkey_dentures", "Monkey dentures", "bones", 0xE8E0C8, "A set of ape dentures, perfect for an amulet of monkey speak.");
         b.item("monkeyspeak_amulet", "Amulet of monkey speak", "amulet", 0xC0A040, "Lets you understand the monkeys of Ape Atoll.");
         b.item("monkey_talisman", "Monkey talisman", "talisman", 0x8A6A3A, "A talisman of a monkey.");
         b.item("monkey_greegree", "Karamjan monkey greegree", "talisman", 0xA07A3A, "Turns its wielder into a monkey.");
+        b.item("gnome_royal_seal", "Gnome royal seal", "note", 0xC0302A, "King Narnode's royal seal.");
+        b.item("mamulet_mould", "M'amulet mould", "mould", 0xA08A6A, "A mould for a monkey speak amulet.");
+        b.item("enchanted_bar", "Enchanted bar", "bar", 0xE0C060, "A gold bar enchanted by Zooknock.");
+        b.item("mm_karamjan_monkey", "Monkey", "creature", 0x8A6A3A, "A Karamjan monkey from the Ardougne Zoo. It's sitting in your bag.");
+        b.item("tenth_squad_sigil", "10th squad sigil", "amulet", 0x6A8A3A, "Wear it to be teleported to the 10th squad.");
         b.boss(BossDef.of("jungle_demon", "Jungle demon").level(195).stats(170, 170, 170, 150, 150, 1).speed(4)
                 .defenceBonus(25, 25, 25, 50, 25)
                 .attack(AttackDef.of("claws", AttackType.SLASH, 32, 3, 6))
                 .attack(AttackDef.of("fire_wave", AttackType.MAGIC, 20, 10, 2).particle("minecraft:flame"))
                 .attack(AttackDef.of("water_wave", AttackType.MAGIC, 20, 10, 2).particle("minecraft:splash"))
-                .phase(30, "The jungle demon howls with rage!", 1.15, false)
                 .drops(Drop.always("bones")).size(1.0f, 2.4f, 1.0f).at("ape_atoll_temple").arena(12, "jungle"));
         b.spot("gnome_glider_hangar", "Glider hangar beneath the Grand Tree", 2459, 3500); // approx: the hangar is underground (2390, 9886)
         b.quest("monkey_madness_i", "Monkey Madness I", Difficulty.MASTER, 3)
@@ -230,41 +254,81 @@ final class KandarinGnomeQuests {
                 .reward("coins:10000", "diamond:3")
                 .unlock("Ability to wield the dragon scimitar")
                 .stage("I can start this quest by speaking to King Narnode Shareen under the Grand Tree. (Requires Tree Gnome Village and The Grand Tree.)")
-                .talk("king_narnode").give("narnodes_orders").say("The 10th squad was sent to Ape Atoll and hasn't reported back. G.L.O. Caranock oversees the shipyard in Karamja; take him my orders.")
-                .stage("I should take the orders to G.L.O. Caranock at the Karamja shipyard.")
-                .talk("glo_caranock").take("narnodes_orders").say("Orders from the king? Fine. Daero in the Grand Tree will arrange your flight. ...Mind the monkeys.")
+                .talk("king_narnode").give("gnome_royal_seal")
+                .say("The 10th squad was sent to Ape Atoll and hasn't reported back. Take my royal seal to G.L.O. Caranock at the shipyard on Karamja; "
+                        + "he'll tell you what he knows.")
+                .stage("I should take the royal seal to G.L.O. Caranock at the Karamja shipyard.")
+                .talk("glo_caranock").take("gnome_royal_seal").say("The royal seal? Fine. The 10th squad flew out of here weeks ago... "
+                        + "Tell the king their glider never came back. ...Mind the monkeys.")
+                // Saves from before the royal seal carry Narnode's orders instead.
+                .talk("glo_caranock").take("narnodes_orders").say("Orders from the king? Fine. Daero in the Grand Tree will arrange your flight.")
                 .stage("I should speak to Daero in the Grand Tree about getting to Ape Atoll.")
-                // Quest-helper: talk to Daero, then operate the hangar's reinitialisation panel and solve its sliding puzzle.
-                .talk("daero").needFlag("mm_panel").travel("ape_atoll")
-                .say("Well done. Waydar will fly you. Hold on... *The glider crash-lands on the atoll!*")
-                .missing("The glider in the hangar won't fly until its reinitialisation panel is solved.")
-                .talk("daero").stay().unlessFlag("mm_daero").flag("mm_daero")
-                .say("The 10th squad? Hush. Meet me in the glider hangar beneath the Grand Tree. The glider's controls need reinitialising first.")
-                .reach("gnome_glider_hangar", 3).stay().needFlag("mm_daero").unlessFlag("mm_panel").flag("mm_panel")
-                .say("* You operate the reinitialisation panel and slide its tiles into place. The glider's systems hum back to life.")
+                // Quest-helper: back to Narnode for his orders, Daero takes the player to the hangar beneath the Grand Tree, the
+                // reinitialisation panel's sliding puzzle wakes the glider, and Waydar flies to Crash Island, where Lumdo has the boat.
+                .talk("king_narnode").stay().unlessFlag("mm_orders").flag("mm_orders").give("narnodes_orders")
+                .say("Caranock knows nothing? Then the 10th squad is lost. Take these orders to Daero; he'll arrange a flight to Ape Atoll.")
+                .talk("daero").stay().needFlag("mm_orders").unlessFlag("mm_daero").take("narnodes_orders").flag("mm_daero").travel("gnome_glider_hangar")
+                .say("The 10th squad? Hush. Let's talk in the hangar beneath the Grand Tree. *He takes you there.*",
+                        "The glider's controls need reinitialising first. Use the panel; it's a tile puzzle.")
+                .missing("Orders from the king, please. I don't fly anyone without them.")
+                .puzzle("gnome_glider_hangar", MM_PANEL).stay().needFlag("mm_daero").unlessFlag("mm_panel").flag("mm_panel")
+                .say("* The last tile slides home and the glider's systems hum back to life.")
+                .talk("waydar").stay().needFlag("mm_panel").unlessFlag("mm_crash_island").flag("mm_crash_island").travel("mm_crash_island")
+                .say("Glider's ready? Hold on tight! *Waydar flies you to Crash Island, near Ape Atoll.*")
+                .missing("The glider won't fly until its panel is reinitialised.")
+                .talk("mm_lumdo").needFlag("mm_crash_island").travel("ape_atoll")
+                .say("I'm not supposed to sail anyone to... oh, Waydar's orders. Fine! *Lumdo rows you to Ape Atoll.* "
+                        + "*Guards spot you on the beach and throw you into a cell!*")
                 .stage("I've crash-landed on Ape Atoll. I should find Garkor and the 10th squad.")
-                .talk("garkor").say("The 10th squad was turned into monkeys by Zooknock's magic, as a disguise. The monkey king Awowogei is allied with Glough!",
-                        "Zooknock can make you an amulet to speak with monkeys and a greegree to look like one.")
-                .stage("Zooknock needs a gold bar and monkey dentures to make an amulet of monkey speak, and a monkey talisman with Karamjan monkey bones for a greegree.")
-                // Wiki walkthrough: the dentures are in a crate on Ape Atoll; Tutab's Magical Market sells the talisman.
-                // (The M'amulet mould from the monkey child is folded into Zooknock's enchant.) // approx
-                .reach("ape_atoll", 12).stay().unless("monkey_dentures", "monkeyspeak_amulet").give("monkey_dentures")
-                .say("* You search a crate in a Marim hut and find some monkey dentures.")
-                .talk("tutab").stay().unless("monkey_talisman", "monkey_greegree").take("coins:1000").give("monkey_talisman")
+                // Wiki: the player is thrown in jail and picks the cell lock while the guards look away.
+                .reach("ape_atoll_jail", 6).stay().unlessFlag("mm_escaped").take("lockpick").flag("mm_escaped")
+                .say("* You watch the guards' rounds, pick the lock of your cell and slip out.")
+                .missing("* You're stuck in a jail cell. A lockpick would open it.")
+                .talk("garkor").needFlag("mm_escaped").say("The 10th squad was turned into monkeys by Zooknock's magic, as a disguise. The monkey king Awowogei is allied with Glough!",
+                        "Zooknock can make you an amulet to speak with monkeys and a greegree to look like one. He's at the end of the dungeon to the west.")
+                .stage("Zooknock needs a gold bar, monkey dentures and an M'amulet mould for an amulet of monkey speak, and a monkey talisman with Karamjan monkey bones for a greegree.")
+                // Wiki: the dentures and the mould are in the U-shaped storehouse's crates (the mould in the cave below).
+                .reach("ape_atoll_crates", 5).stay().unless("monkey_dentures", "enchanted_bar", "monkeyspeak_amulet").give("monkey_dentures")
+                .say("* Keeping to the dark floor, you search the stacked crates: monkey dentures.")
+                .reach("ape_atoll_crates", 5).stay().unless("mamulet_mould").give("mamulet_mould")
+                .say("* A crate gives way under you and you drop into a cave. In the crates there: an M'amulet mould.")
+                .talk("zooknock").stay().need("mamulet_mould").unless("enchanted_bar", "monkeyspeak_amulet").take("gold_bar", "monkey_dentures").give("enchanted_bar")
+                .say("* Zooknock enchants the gold bar with the dentures' power and hands back your mould. Cast it in the temple's wall of flames.")
+                .reach("ape_atoll_temple", 8).stay().need("mamulet_mould").unless("monkeyspeak_amulet").take("enchanted_bar", "ball_of_wool").give("monkeyspeak_amulet")
+                .say("* Down the trapdoor in the temple, you cast the enchanted bar in the wall of flames using the mould and string it: an M'speak amulet.")
+                .missing("* A wall of flames burns beneath the temple. With an enchanted bar, a mould and a ball of wool you could cast an amulet here.")
+                // Wiki: the monkey child gives a talisman for five bananas while his aunt isn't looking.
+                .talk("monkey_child").stay().need("monkeyspeak_amulet").unless("monkey_talisman", "monkey_greegree").take("banana:5").give("monkey_talisman")
+                .say("Ook! You talk like a monkey! Well I'll be a monkey's uncle... Five bananas for Aunty? *He hands you a monkey talisman once she's gone.*")
+                .missing("Ook ook! *You can't understand a word. Bring an M'speak amulet, and five bananas.*")
+                .talk("tutab").stay().need("monkeyspeak_amulet").unless("monkey_talisman", "monkey_greegree").take("coins:1000").give("monkey_talisman")
                 .say("Ook ook! Monkey talisman, 1,000 coins.")
-                .talk("zooknock").stay().unless("monkeyspeak_amulet").take("gold_bar", "monkey_dentures").give("monkeyspeak_amulet")
-                .say("* Zooknock enchants the dentures and gold into an amulet of monkey speak.")
                 .talk("zooknock").need("monkeyspeak_amulet").take("monkey_talisman", "monkey_bones").give("monkey_greegree")
-                .say("* Zooknock weaves a greegree from the talisman. Hold it and you'll look just like a monkey!")
-                .missing("I need a gold bar and monkey dentures for the amulet, and a monkey talisman from Tutab's shop with Karamjan monkey bones for the greegree.")
+                .say("* Zooknock weaves a greegree from the talisman and the bones. Hold it and you'll look just like a monkey!")
+                .missing("Bring me the dentures, a gold bar and an M'amulet mould for the amulet, then a monkey talisman and Karamjan monkey bones for a greegree.")
                 .stage("Disguised as a monkey, I should speak to King Awowogei.")
-                .talk("king_awowogei").need("monkey_greegree", "monkeyspeak_amulet")
-                .say("Ook! A new monkey? You will serve me. Glough promised us the Grand Tree... his jungle demon will guard our temple.")
-                .missing("* The monkey guards won't let a human near the king.")
+                // Wiki: a Karamjan monkey from the Ardougne Zoo vouches for you; Garkor, the Elder Guard and Kruk get you to the king.
+                .talk("monkey_minder").stay().need("monkey_greegree", "monkeyspeak_amulet").unless("mm_karamjan_monkey").unlessFlag("mm_awowogei")
+                .give("mm_karamjan_monkey")
+                .say("* Disguised as a monkey, you're put into the monkey enclosure. One of the Karamjan monkeys jumps into your bag. "
+                        + "You change back and the minder lets you out.")
+                .talk("elder_guard").stay().need("monkey_greegree", "monkeyspeak_amulet").unlessFlag("mm_elder")
+                .flag("mm_elder").say("Ook. Garkor sent you? Then Kruk will take you to the king. He waits on the hill to the west.")
+                .talk("mm_kruk").stay().needFlag("mm_elder").unlessFlag("mm_kruk").flag("mm_kruk")
+                .say("Ook! A new recruit? Follow me to King Awowogei.")
+                .talk("king_awowogei").needFlag("mm_kruk").need("monkey_greegree", "monkeyspeak_amulet").take("mm_karamjan_monkey").flag("mm_awowogei")
+                .say("Ook! A monkey from the mainland? You will serve me. Glough promised us the Grand Tree... his jungle demon will guard our temple.")
+                .missing("* The monkey guards won't let a human near the king, and the king wants proof you're one of his: a monkey from the mainland.")
                 .stage("I should tell Garkor what Awowogei said.")
-                .talk("garkor").say("A jungle demon! Glough means to unleash it. We must strike first: it's summoned in the temple of Marim. We'll fight with you.")
+                .talk("garkor").give("tenth_squad_sigil")
+                .say("A jungle demon! Glough means to unleash it. We must strike first: it's summoned in the temple of Marim. We'll fight with you.",
+                        "Wear this 10th squad sigil when you're ready and you'll be brought to us.")
                 .stage("I must defeat the jungle demon beneath the temple of Marim.")
-                .kill("jungle_demon").travel("grand_tree").say("* The jungle demon is destroyed! Waydar flies you and the 10th squad home.")
+                // a lost sigil (or a save from before it) is replaced by Garkor
+                .talk("garkor").stay().unless("tenth_squad_sigil").give("tenth_squad_sigil")
+                .say("Lost your sigil? Here's another. Wear it when you're ready to fight.")
+                .kill("jungle_demon").need("tenth_squad_sigil").travel("grand_tree").say("* The jungle demon is destroyed! Waydar flies you and the 10th squad home.")
+                .missing("* Garkor's 10th squad sigil takes you to the fight.")
                 .stage("I should report to King Narnode.")
                 .talk("king_narnode").say("The 10th squad is safe and Glough's plans are ruined again! Take this reward. And the dragon scimitar is now yours to wield.")
                 .done("garkor", "The 10th squad salutes you.")

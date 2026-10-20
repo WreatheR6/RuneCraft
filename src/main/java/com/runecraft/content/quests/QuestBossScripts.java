@@ -6,6 +6,7 @@ import com.runecraft.boss.DataBossEntity;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.quests.BalanceElemental;
+import com.runecraft.osrs.content.quests.QuestBossRules;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.minecraft.ChatFormatting;
@@ -22,6 +23,10 @@ final class QuestBossScripts {
         BossScripts.register("dagannoth_mother", () -> new ColourShift("The Dagannoth Mother"));
         BossScripts.register("gelatinnoth_mother", () -> new ColourShift("The Gelatinnoth Mother"));
         BossScripts.register("fareed", Fareed::new);
+        BossScripts.register("kamil", Kamil::new);
+        BossScripts.register("damis", Damis::new);
+        BossScripts.register("dessous", Dessous::new);
+        BossScripts.register("jungle_demon", JungleDemon::new);
         BossScripts.register("head_menaphite_guard", FalseGods::new);
         BossScripts.register("dark_squall", MagicOnly::new);
         BossScripts.register("balance_elemental", BalanceForms::new);
@@ -216,22 +221,223 @@ final class QuestBossScripts {
         }
     }
 
+    /** Whether the player carries an item or wears it in a quest gear slot (gloves, capes, amulets). */
+    static boolean hasOrWears(ServerPlayer p, String item) {
+        return Inv.has(p, item, 1) || QuestsState.get(p).wornAll(p.getUUID()).containsValue(item);
+    }
+
     /**
-     * Desert Treasure: Fareed disarms anyone who hits him in melee without ice gloves, so melee does nothing
-     * without them; ranged and magic (water spells in OSRS: any spell here, approx) work from a distance.
+     * The element of the spell a player attacks with ("air", "water", "earth", "fire"), as the game knows it: the elemental
+     * autocast spell, or null for a powered staff's own spell or a non-elemental one. Spells cast by hand from the
+     * spellbook count as the autocast spell (approx).
+     */
+    static String spellElement(ServerPlayer p) {
+        com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(p);
+        if (com.runecraft.osrs.CombatBonuses.poweredStaffMaxHit(Inv.idOf(p.getMainHandItem()), data.skills().currentLevel(
+                com.runecraft.osrs.Skill.MAGIC)) >= 0) {
+            return null;
+        }
+        com.runecraft.osrs.Spell spell = data.autocast();
+        return spell == null ? null : spell.element();
+    }
+
+    /** At most one message every two seconds per boss script. */
+    static boolean quiet(DataBossEntity boss, long[] last) {
+        long now = boss.level().getGameTime();
+        if (now - last[0] > 40) {
+            last[0] = now;
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Desert Treasure I (wiki): Fareed disarms anyone who hits him in melee without ice gloves, so melee does nothing
+     * without them; magic only hurts him with water spells (not a trident's); any ranged attack works. His melee hits up to
+     * 40, 37 against ice gloves.
      */
     static final class Fareed implements BossScript {
-        private long lastMessage;
+        private final long[] lastMessage = {-100};
 
         @Override
         public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
-            if (type.isMelee() && !Inv.has(attacker, "ice_gloves", 1)) {
-                long now = boss.level().getGameTime();
-                if (now - lastMessage > 40) {
-                    lastMessage = now;
+            if (type.isMelee() && !hasOrWears(attacker, "ice_gloves")) {
+                if (!quiet(boss, lastMessage)) {
                     Msg.action(attacker, "Fareed's flames scorch your hands and you can't keep hold of your weapon! Ice gloves would protect you.");
                 }
                 return 0;
+            }
+            if (type == AttackType.MAGIC && !QuestBossRules.spellHurts("fareed", spellElement(attacker))) {
+                if (!quiet(boss, lastMessage)) {
+                    Msg.action(attacker, "Your spell fizzles in Fareed's flames. Only water spells will hurt him.");
+                }
+                return 0;
+            }
+            return damage;
+        }
+
+        @Override
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
+            return type.isMelee() && hasOrWears(player, "ice_gloves") ? Math.min(damage, QuestBossRules.FAREED_MAX_ICE_GLOVES) : damage;
+        }
+    }
+
+    /**
+     * Desert Treasure I (wiki): Kamil is immune to every spell but fire spells, and the cold of the Ice Path keeps draining
+     * the combat stats of the player fighting him (one level of each every 10 game ticks here, approx).
+     */
+    static final class Kamil implements BossScript {
+        private static final com.runecraft.osrs.Skill[] CHILLED = {com.runecraft.osrs.Skill.ATTACK, com.runecraft.osrs.Skill.STRENGTH,
+                com.runecraft.osrs.Skill.DEFENCE, com.runecraft.osrs.Skill.RANGED, com.runecraft.osrs.Skill.MAGIC};
+        private final long[] lastMessage = {-100};
+
+        @Override
+        public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            if (type == AttackType.MAGIC && !QuestBossRules.spellHurts("kamil", spellElement(attacker))) {
+                if (!quiet(boss, lastMessage)) {
+                    Msg.action(attacker, "Kamil shrugs off the spell. Only fire spells can melt his armour of ice.");
+                }
+                return 0;
+            }
+            return damage;
+        }
+
+        @Override
+        public void gameTick(DataBossEntity boss, long gameTick) {
+            if (gameTick % 10 != 0 || !(boss.getTarget() instanceof ServerPlayer p) || p.distanceToSqr(boss) > 24 * 24) {
+                return;
+            }
+            com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(p);
+            for (com.runecraft.osrs.Skill s : CHILLED) {
+                if (data.skills().currentLevel(s) > 1) {
+                    data.skills().setBoost(s, data.skills().boost(s) - 1);
+                }
+            }
+            com.runecraft.network.ServerNetworking.sync(p);
+        }
+    }
+
+    /**
+     * Desert Treasure I (wiki, DPS calculator): Damis can only be seen (and so fought) with a ring of visibility. His first
+     * form (level 103, 90 Hitpoints) turns into the second (level 174, 200 Hitpoints, Defence 160, faster) when it falls,
+     * and the second form drains the Prayer of a player fighting him in melee distance.
+     */
+    static final class Damis implements BossScript {
+        static final int SECOND_FORM_HP = QuestBossRules.DAMIS_SECOND[1];
+        private boolean second;
+        private final long[] lastMessage = {-100};
+
+        @Override
+        public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            if (!Inv.has(attacker, "ring_of_visibility", 1)) {
+                if (!quiet(boss, lastMessage)) {
+                    Msg.action(attacker, "You can't see what you're attacking. A ring of visibility would show you.");
+                }
+                return 0;
+            }
+            if (!second && damage >= Math.ceil(boss.getHealth())) {
+                transform(boss);
+                return 0;
+            }
+            return damage;
+        }
+
+        private void transform(DataBossEntity boss) {
+            second = true;
+            int[] f = QuestBossRules.DAMIS_SECOND;
+            boss.overrideStats(s -> new com.runecraft.combat.MonsterStats(s.name(), f[0], f[1], f[2], f[3], f[4], s.magic(),
+                    s.ranged(), 100, f[5], s.style(), f[6], s.monster(), s.profile(), s.boss())); // +100 melee (80 magic, 120 ranged)
+            net.minecraft.world.entity.ai.attributes.AttributeInstance max = boss.getAttribute(
+                    net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH);
+            if (max != null) {
+                max.setBaseValue(SECOND_FORM_HP);
+            }
+            boss.setHealth(SECOND_FORM_HP);
+            announce(boss, "Damis transforms into his second form! (level 174)", ChatFormatting.RED);
+        }
+
+        @Override
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
+            if (second && player.distanceToSqr(boss) <= 4 * 4) {
+                com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(player);
+                data.setPrayerPoints(Math.max(0, data.prayerPoints() - Math.max(1, damage / 2))); // "drains Prayer rapidly", approx
+            }
+            return second ? Math.min(damage, QuestBossRules.DAMIS_SECOND[6]) : Math.min(damage, QuestBossRules.DAMIS_FIRST[6]);
+        }
+
+        @Override
+        public void writeNbt(DataBossEntity boss, net.minecraft.nbt.CompoundTag nbt) {
+            if (second) {
+                nbt.putBoolean("second", true);
+            }
+        }
+
+        @Override
+        public void readNbt(DataBossEntity boss, net.minecraft.nbt.CompoundTag nbt) {
+            if (nbt.getBoolean("second") && !second) {
+                float hp = boss.getHealth();
+                transform(boss);
+                boss.setHealth(Math.min(hp, SECOND_FORM_HP));
+            }
+        }
+    }
+
+    /**
+     * Monkey Madness I (wiki): the 10th squad's gnomes fight the Jungle demon beside the player, chipping at it, but the
+     * demon regenerates to a fifth of its hitpoints unless the player deals the final blow.
+     */
+    static final class JungleDemon implements BossScript {
+        @Override
+        public void gameTick(DataBossEntity boss, long gameTick) {
+            if (gameTick % QuestBossRules.GNOME_HIT_TICKS != 0 || !(boss.getTarget() instanceof ServerPlayer p)
+                    || p.distanceToSqr(boss) > 24 * 24) {
+                return;
+            }
+            int hit = boss.getRandom().nextInt(QuestBossRules.GNOME_MAX_HIT + 1);
+            if (hit <= 0) {
+                return;
+            }
+            if (hit >= boss.getHealth()) {
+                boss.setHealth(Math.max(1, boss.getMaxHealth() * QuestBossRules.JUNGLE_DEMON_REGEN_PERCENT / 100f));
+                announce(boss, "The jungle demon regenerates! Only you can deal the final blow.", ChatFormatting.RED);
+                return;
+            }
+            com.runecraft.combat.CombatHandler.applyDamage(null, boss, hit);
+        }
+    }
+
+    /**
+     * Desert Treasure I (wiki): Dessous answers a player's protection prayer: against Protect from Melee he sends his bats
+     * (half Magic, half Ranged, up to 10), otherwise he uses his fast melee attack. Hit from afar he teleports next to the
+     * player; the third time he grows bored and returns to his grave (the blood must be poured again).
+     */
+    static final class Dessous implements BossScript {
+        private int teleports;
+
+        @Override
+        public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
+            boolean meleePrayer = com.runecraft.player.Players.data(target).isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE);
+            String want = meleePrayer || distance > 3 ? "bat_swarm" : "vampyric_slash";
+            if (boss.def() != null) {
+                for (AttackDef a : boss.def().attacks) {
+                    if (a.name().equals(want)) {
+                        return a;
+                    }
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            if (attacker.distanceToSqr(boss) > 8 * 8) {
+                if (++teleports >= QuestBossRules.DESSOUS_TELEPORTS) {
+                    announce(boss, "Dessous: I grow bored of toying with you. *He sinks back into his grave.*", ChatFormatting.RED);
+                    boss.discard();
+                    return 0;
+                }
+                boss.teleportTo(attacker.getX() + 1, attacker.getY(), attacker.getZ());
+                announce(boss, "Dessous appears beside you!", ChatFormatting.RED);
             }
             return damage;
         }

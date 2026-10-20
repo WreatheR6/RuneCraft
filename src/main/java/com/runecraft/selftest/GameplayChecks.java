@@ -95,6 +95,7 @@ final class GameplayChecks {
             checks.add(new SelfTest.Check("quest:" + q.questId(), () -> g.quest(q, specs.get(q.questId()))));
         }
         checks.add(new SelfTest.Check("quest:puzzle_retry", g::puzzleRetry));
+        checks.addAll(QuestWalkChecks.all(context));
         for (Minigame m : Minigame.values()) {
             checks.add(new SelfTest.Check("minigame:" + m.id(), () -> g.minigame(m)));
         }

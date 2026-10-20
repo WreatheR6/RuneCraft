@@ -236,7 +236,7 @@ final class F2pQuests {
                 .talk("general_bentnoze").say("Red armour best!", "@General Wartface: No! Green armour best!",
                         "> Why not try a different colour entirely?", "Hmm... yes, human find us goblin mail of new colour!")
                 .stage("The generals want goblin mail of a new colour. I should collect three goblin mails from goblins.")
-                .drop("goblin", "goblin_mail", 4)
+                .drop("goblin", "goblin_mail", 4).times(3) // three mails: the drop kept stopping at the first one
                 .talk("aggie").take("goblin_mail:3", "coins:10").give("goblin_mail", "orange_goblin_mail", "blue_goblin_mail")
                 .say("Want some armour dyed, dearie? Red and yellow make orange, and woad leaves make blue.",
                         "* Aggie dyes two of your goblin mails orange and blue.")

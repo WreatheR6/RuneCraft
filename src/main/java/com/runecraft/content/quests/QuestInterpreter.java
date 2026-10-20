@@ -548,6 +548,19 @@ public final class QuestInterpreter {
             }
             // place objectives of the hand-scripted quests (Restless Ghost altar, cadava bushes...)
             com.runecraft.quest.QuestManager.spotTick(p);
+            reach(server, p);
+        }
+    }
+
+    /** Self-test hook: runs the place objectives for one player where they stand now, as the 20-tick check does. */
+    public static void selfTestReach(ServerPlayer p) {
+        REACH_NOTICE.remove(p.getUUID());
+        reach(p.getServer(), p);
+    }
+
+    /** Place objectives (and place-presented puzzles) of the player's active quests at where they stand. */
+    private static void reach(MinecraftServer server, ServerPlayer p) {
+        { // (kept as a block so the loop below reads as it did inside reachTick)
             for (QuestSpec q : book.quests) {
                 if (!active(p, q)) {
                     continue;

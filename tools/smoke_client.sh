@@ -46,7 +46,7 @@ EOF
 export LIBGL_ALWAYS_SOFTWARE=1
 echo "---- starting client (timeout ${CLIENT_TIMEOUT:-1500}s) ----"
 # Passed to the client JVM through the ModDevGradle run config (see build.gradle, clientSmoke).
-export RUNECRAFT_CLIENT_SELFTEST="${CLIENT_SELFTEST:-minigame:,raid:,boss:,skill:,enchant_,telekinetic,bake_pie,superglass,string_jewellery,plank_make}"
+export RUNECRAFT_CLIENT_SELFTEST="${CLIENT_SELFTEST:-minigame:,raid:,boss:,slayer:,quest:walk:,skill:,enchant_,telekinetic,bake_pie,superglass,string_jewellery,plank_make}"
 export RUNECRAFT_CLIENT_SELFTEST_MINUTES="${CLIENT_SELFTEST_MINUTES:-14}"
 timeout "${CLIENT_TIMEOUT:-1500}" xvfb-run -a -s "-screen 0 1280x720x24" \
     ./gradlew runClientSmoke --no-daemon --stacktrace > "$R/run.log" 2>&1

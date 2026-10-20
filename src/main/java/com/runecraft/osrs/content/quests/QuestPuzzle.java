@@ -168,6 +168,96 @@ public final class QuestPuzzle {
         return new Builder(key);
     }
 
+    // ------------------------------------------------------------------ sliding tiles
+
+    /** The sliding-board options: which tile moves into the gap. */
+    public static final String[] SLIDES = {"Slide the tile above the gap down", "Slide the tile below the gap up",
+            "Slide the tile left of the gap right", "Slide the tile right of the gap left"};
+    private static final int[] SLIDE_DX = {0, 0, -1, 1};
+    private static final int[] SLIDE_DY = {-1, 1, 0, 0};
+
+    /** "1 2 3 / 4 _ 6 / 7 5 8". */
+    static String board(int[] tiles) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 9; i++) {
+            sb.append(i > 0 ? (i % 3 == 0 ? " / " : " ") : "").append(tiles[i] == 0 ? "_" : String.valueOf(tiles[i]));
+        }
+        return sb.toString();
+    }
+
+    /** The board after sliding option {@code move}, or null when there is no tile on that side of the gap. */
+    public static int[] slideOnce(int[] tiles, int move) {
+        int gap = 0;
+        while (tiles[gap] != 0) {
+            gap++;
+        }
+        int x = gap % 3 + SLIDE_DX[move];
+        int y = gap / 3 + SLIDE_DY[move];
+        if (x < 0 || x > 2 || y < 0 || y > 2) {
+            return null;
+        }
+        int[] next = tiles.clone();
+        next[gap] = tiles[y * 3 + x];
+        next[y * 3 + x] = 0;
+        return next;
+    }
+
+    private static final String SOLVED = "123456780";
+
+    private static String code(int[] tiles) {
+        StringBuilder sb = new StringBuilder();
+        for (int t : tiles) {
+            sb.append(t);
+        }
+        return sb.toString();
+    }
+
+    /** Every shortest slide sequence that sorts the board (breadth-first from the sorted board). */
+    public static List<List<Integer>> shortestSlides(int[] start) {
+        java.util.Map<String, Integer> dist = new java.util.HashMap<>();
+        java.util.ArrayDeque<int[]> queue = new java.util.ArrayDeque<>();
+        int[] goal = new int[9];
+        for (int i = 0; i < 9; i++) {
+            goal[i] = SOLVED.charAt(i) - '0';
+        }
+        dist.put(SOLVED, 0);
+        queue.add(goal);
+        String target = code(start);
+        while (!queue.isEmpty() && !dist.containsKey(target)) {
+            int[] cur = queue.poll();
+            int d = dist.get(code(cur));
+            for (int m = 0; m < 4; m++) {
+                int[] next = slideOnce(cur, m);
+                if (next != null && dist.putIfAbsent(code(next), d + 1) == null) {
+                    queue.add(next);
+                }
+            }
+        }
+        if (!dist.containsKey(target)) {
+            throw new IllegalArgumentException("unsolvable sliding board " + board(start));
+        }
+        List<List<Integer>> out = new ArrayList<>();
+        collect(start, dist, new ArrayList<>(), out);
+        return out;
+    }
+
+    private static void collect(int[] cur, java.util.Map<String, Integer> dist, List<Integer> path, List<List<Integer>> out) {
+        int d = dist.get(code(cur));
+        if (d == 0) {
+            out.add(List.copyOf(path));
+            return;
+        }
+        for (int m = 0; m < 4; m++) {
+            int[] next = slideOnce(cur, m);
+            Integer nd = next == null ? null : dist.get(code(next));
+            if (nd != null && nd == d - 1) {
+                path.add(m);
+                collect(next, dist, path, out);
+                path.remove(path.size() - 1);
+            }
+        }
+    }
+
     /** Fluent definition: {@code room(id)} then {@code variant(npc).prompt(..).options(..).solution(..)}. */
     public static final class Builder {
         private final String key;
@@ -280,6 +370,24 @@ public final class QuestPuzzle {
                     used[i] = false;
                 }
             }
+        }
+
+        /**
+         * A sliding-tile variant (Monkey Madness I's glider panel, puzzle boxes): a 3x3 board, {@code start} its nine
+         * tiles row by row with 0 for the gap; each option slides the tile on one side of the gap into it. Every shortest
+         * sequence that puts the tiles in order (1-8, gap last) is accepted.
+         */
+        public Builder slide(String npc, String intro, int... start) {
+            if (start.length != 9) {
+                throw new IllegalArgumentException(key + ": a sliding board has nine tiles");
+            }
+            variant(npc);
+            prompt(intro, "* The tiles: " + board(start) + " (the gap is _). Put them in order, 1 to 8 with the gap last.");
+            options(SLIDES);
+            for (List<Integer> s : shortestSlides(start)) {
+                solution(s.stream().mapToInt(Integer::intValue).toArray());
+            }
+            return this;
         }
 
         /** Solving raises {@code bossId}; killing {@code creature} then completes the room. */
