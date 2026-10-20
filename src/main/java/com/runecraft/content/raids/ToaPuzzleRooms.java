@@ -389,7 +389,7 @@ final class ToaPuzzleRooms {
                 // Show both for a moment, then hide them again.
                 pendingBoard = -1;
                 RaidBuilder.set(world(), tile(board == 0 ? MATCH_A : MATCH_B, i), SYMBOLS[sym]);
-                RaidEffects.later(2, () -> {
+                later(2, () -> {
                     if (!done && current() == Puzzle.MATCHING) {
                         renderMatching();
                     }
@@ -1434,7 +1434,7 @@ final class ToaPuzzleRooms {
             for (Vec3 s : spots) {
                 world().sendParticles(warn, s.x, s.y + 0.2, s.z, 4, 0.3, 0.05, 0.3, 0);
             }
-            RaidEffects.later(2, () -> {
+            later(2, () -> {
                 if (done) {
                     return;
                 }

@@ -185,8 +185,25 @@ public class RoomLogic {
 
     /** A wiped ToA party retries the room. */
     public void reset() {
+        attempt++;
         cleanup();
         started = false;
+    }
+
+    /** Bumped whenever the room resets (a ToA wipe), so delayed effects of an earlier attempt are dropped. */
+    private int attempt;
+
+    /**
+     * Runs {@code run} after {@code ticks} game ticks, unless the room has been reset (a wipe) or finished meanwhile: a
+     * Memory Blast or a boulder throw from before a wipe must not land on the retry.
+     */
+    public void later(int ticks, Runnable run) {
+        int a = attempt;
+        RaidEffects.later(ticks, () -> {
+            if (a == attempt && started && !done) {
+                run.run();
+            }
+        });
     }
 
     /** Removes everything this room spawned. */

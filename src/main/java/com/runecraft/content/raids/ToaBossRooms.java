@@ -195,7 +195,7 @@ final class ToaBossRooms {
             damage -= absorbed;
             int hp = raid.hitpoints(kephri);
             if (damage >= hp) {
-                RaidEffects.later(1, this::shieldBroken);
+                later(1, this::shieldBroken);
                 return Math.max(0, hp - 1);
             }
             return damage;
@@ -209,7 +209,7 @@ final class ToaBossRooms {
             }
             raid.setCurrentHitpoints(kephri, 1);
             if (!dazed) {
-                RaidEffects.later(1, this::shieldBroken);
+                later(1, this::shieldBroken);
             }
             return false;
         }
@@ -256,7 +256,7 @@ final class ToaBossRooms {
                 delay += Invocation.kephriSwarmDelay(i);
                 int point = (start + i) % 6;
                 int n = trios && i % 4 == 3 ? 3 : 1; // approx: every fourth spawn a trio
-                RaidEffects.later(delay, () -> {
+                later(delay, () -> {
                     if (alive(kephri) && dazed) {
                         double a = Math.PI / 3 * point + Math.PI / 6;
                         for (int k = 0; k < n; k++) {
@@ -265,7 +265,7 @@ final class ToaBossRooms {
                     }
                 });
             }
-            RaidEffects.later(delay + 4, this::endIntermission);
+            later(delay + 4, this::endIntermission);
         }
 
         /** The swarms are spent: once her overlords are dead the shield is back at full strength. */
@@ -274,7 +274,7 @@ final class ToaBossRooms {
                 return;
             }
             if (guarded()) {
-                RaidEffects.later(5, this::endIntermission);
+                later(5, this::endIntermission);
                 return;
             }
             dazed = false;
@@ -308,7 +308,7 @@ final class ToaBossRooms {
 
         private void dungStrike(ServerPlayer p) {
             Msg.red(p, "Flies buzz around you...");
-            RaidEffects.later(3, () -> {
+            later(3, () -> {
                 if (!alive(kephri) || !p.isAlive()) {
                     return;
                 }
@@ -459,7 +459,7 @@ final class ToaBossRooms {
                     ServerPlayer p = players.get(rnd().nextInt(players.size()));
                     BlockPos egg = inRoom(BlockPos.containing(p.position().add(rnd().nextInt(9) - 4, 0, rnd().nextInt(9) - 4)));
                     world().sendParticles(ParticleTypes.SQUID_INK, egg.getX() + 0.5, egg.getY() + 0.3, egg.getZ() + 0.5, 8, 0.3, 0.1, 0.3, 0.01);
-                    RaidEffects.later(8, () -> {
+                    later(8, () -> {
                         if (!alive(kephri)) {
                             return;
                         }
@@ -724,7 +724,7 @@ final class ToaBossRooms {
             styleAttacks++;
             boolean special = autos % Invocation.akkhaSpecialEvery(inv) == 0;
             if (special) {
-                RaidEffects.later(1, () -> specials(inv));
+                later(1, () -> specials(inv));
             }
             int oneIn = Invocation.akkhaSwitchOneIn(inv, special);
             boolean early = inv.contains(Invocation.STAY_VIGILANT) && styleAttacks < Invocation.AKKHA_MIN_STYLE_ATTACKS;
@@ -841,7 +841,7 @@ final class ToaBossRooms {
                         d.skills().setBoost(s, d.skills().boost(s) - 3);
                     }
                     for (int i = 1; i <= 4; i++) {
-                        RaidEffects.later(i, () -> hurt(akkha, p, 1 + rnd().nextInt(3)));
+                        later(i, () -> hurt(akkha, p, 1 + rnd().nextInt(3)));
                     }
                     com.runecraft.network.ServerNetworking.sync(p);
                 }
@@ -851,7 +851,7 @@ final class ToaBossRooms {
                     Msg.red(p, "Ice encases your limbs, slowing you.");
                     p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 120, 1, false, true));
                     p.addEffect(new MobEffectInstance(MobEffects.DIG_SLOWDOWN, 120, 1, false, true));
-                    RaidEffects.later(10, () -> Msg.game(p, "The ice around you melts away."));
+                    later(10, () -> Msg.game(p, "The ice around you melts away."));
                 }
             }
         }
@@ -860,7 +860,7 @@ final class ToaBossRooms {
             if (times <= 0 || !alive(akkha)) {
                 return;
             }
-            RaidEffects.later(4, () -> {
+            later(4, () -> {
                 if (!p.isAlive() || raid.isDowned(p)) {
                     return;
                 }
@@ -911,7 +911,7 @@ final class ToaBossRooms {
             int gap = Invocation.akkhaMemoryBlastTicks(inv);
             for (int k = 0; k < order.size(); k++) {
                 int shown = order.get(k);
-                RaidEffects.later(1 + 2 * k, () -> {
+                later(1 + 2 * k, () -> {
                     Vec3 c = quadrantCentre(shown);
                     world().sendParticles(ParticleTypes.SOUL_FIRE_FLAME, c.x, c.y + 1, c.z, 60, 3, 0.5, 3, 0.01);
                     world().playSound(null, BlockPos.containing(c), SoundEvents.NOTE_BLOCK_PLING.value(), SoundSource.HOSTILE, 1f,
@@ -921,7 +921,7 @@ final class ToaBossRooms {
             int start = 3 + 2 * order.size();
             for (int k = 0; k < order.size(); k++) {
                 int safe = order.get(k);
-                RaidEffects.later(start + k * gap, () -> {
+                later(start + k * gap, () -> {
                     if (!alive(akkha)) {
                         return;
                     }
@@ -935,7 +935,7 @@ final class ToaBossRooms {
                     }
                 });
             }
-            RaidEffects.later(start + order.size() * gap, () -> hidden = false);
+            later(start + order.size() * gap, () -> hidden = false);
         }
 
         /** Trailing Orbs: every step a player takes leaves an orb behind (and one ahead with Feeling Special?). */
@@ -974,7 +974,7 @@ final class ToaBossRooms {
         private void detonate(Set<Invocation> inv) {
             warn("You have been marked for detonation!");
             boolean diagonals = Invocation.akkhaDetonateDiagonals(inv, raid.partySize());
-            RaidEffects.later(4, () -> {
+            later(4, () -> {
                 List<ServerPlayer> players = players();
                 for (ServerPlayer a : players) {
                     world().sendParticles(ParticleTypes.EXPLOSION, a.getX(), a.getY() + 1, a.getZ(), 1, 0, 0, 0, 0);
@@ -1209,7 +1209,7 @@ final class ToaBossRooms {
                     continue;
                 }
                 world().sendParticles(ParticleTypes.CLOUD, d.getX() + 0.5, d.getY() + 0.2, d.getZ() + 0.5, 30, 1.2, 0.05, 1.2, 0);
-                RaidEffects.later(3, () -> {
+                later(3, () -> {
                     if (!alive(baba)) {
                         return;
                     }
@@ -1235,7 +1235,7 @@ final class ToaBossRooms {
             for (ServerPlayer p : players()) {
                 world().sendParticles(ParticleTypes.LARGE_SMOKE, p.getX(), p.getY() + 2.5, p.getZ(), 10, 0.3, 0.3, 0.3, 0.02);
             }
-            RaidEffects.later(6, () -> {
+            later(6, () -> {
                 if (!alive(baba)) {
                     return;
                 }
@@ -1283,7 +1283,7 @@ final class ToaBossRooms {
                 }
                 if (debrisLost) {
                     // OSRS: if debris was destroyed, Ba-Ba follows up with another Rockfall.
-                    RaidEffects.later(2, this::rockfall);
+                    later(2, this::rockfall);
                 }
             });
         }
@@ -1448,7 +1448,7 @@ final class ToaBossRooms {
             Vec3 at = Vec3.atBottomCenterOf(s.offset(0, 0, dz * (2 + Math.min(4, raid.pathLevel()) / 2)));
             double radius = 1.2 + 0.6 * (Math.min(4, raid.pathLevel()) / 2);
             world().sendParticles(ParticleTypes.SOUL, at.x, at.y + 0.2, at.z, 20, radius / 2, 0.1, radius / 2, 0.01);
-            RaidEffects.later(3, () -> {
+            later(3, () -> {
                 for (ServerPlayer pl : players()) {
                     if (RaidEffects.horizontalDistSq(pl.position(), at) <= radius * radius) {
                         int dmg = rnd().nextInt(13) + Invocation.babaFaithDamage(inv, RoomLogic.prayerPoints(pl)); // approx: 0-12
@@ -1650,7 +1650,7 @@ final class ToaBossRooms {
             world().sendParticles(style == AttackType.MAGIC ? ParticleTypes.DAMAGE_INDICATOR : ParticleTypes.CRIT, zebak.getX(), zebak.getY() + 2,
                     zebak.getZ(), 10, 0.3, 0.3, 0.3, 0.05);
             // OSRS: the projectile only hurts on impact, so it can be prayed against late.
-            RaidEffects.later(2, () -> {
+            later(2, () -> {
                 if (alive(zebak) && target.isAlive()) {
                     RaidEffects.hit(zebak, target, rnd().nextInt(ToaBossRules.ZEBAK_RANGED_MAX + 1), style, false);
                 }
@@ -1728,7 +1728,7 @@ final class ToaBossRooms {
         private void roar() {
             warn("Zebak lets out a great roar!");
             for (int k = 0; k < roarHits; k++) {
-                RaidEffects.later(1 + k, () -> {
+                later(1 + k, () -> {
                     if (!alive(zebak)) {
                         return;
                     }
@@ -1775,7 +1775,7 @@ final class ToaBossRooms {
             for (int w = 0; w < 3; w++) {
                 int gapX = -14 + rnd().nextInt(28 - gap);
                 int delay = 3 + w * 4;
-                RaidEffects.later(delay, () -> wave(fromSouth, gapX, gap));
+                later(delay, () -> wave(fromSouth, gapX, gap));
             }
         }
 

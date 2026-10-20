@@ -295,7 +295,7 @@ final class ToaWardens extends RoomLogic {
         if (boss == obelisk && phase <= 2) {
             raid.setCurrentHitpoints(obelisk, 1);
             if (phase == 1) {
-                RaidEffects.later(1, this::beginPhaseTwo);
+                later(1, this::beginPhaseTwo);
             }
             return false;
         }
@@ -468,7 +468,7 @@ final class ToaWardens extends RoomLogic {
             world().sendParticles(side == 0 ? ParticleTypes.SOUL_FIRE_FLAME : ParticleTypes.FLAME, w.getX(), w.getY() + 2, w.getZ(), 20, 0.4,
                     0.4, 0.4, 0.05);
         }
-        RaidEffects.later(5, () -> {
+        later(5, () -> {
             if (!alive(w) || phase != 1) {
                 return;
             }
@@ -625,7 +625,7 @@ final class ToaWardens extends RoomLogic {
         world().sendParticles(style == AttackType.MAGIC ? new DustParticleOptions(new Vector3f(0.9f, 0.1f, 0.1f), 1.6f)
                 : new DustParticleOptions(new Vector3f(0.9f, 0.9f, 0.9f), 1.6f), warden.getX(), warden.getY() + 2.5, warden.getZ(), 12, 0.3, 0.3, 0.3, 0);
         // OSRS: like Zebak's, the skulls only hurt on impact, so a late prayer still works.
-        RaidEffects.later(2, () -> {
+        later(2, () -> {
             if (alive(warden) && phase == 2 && target.isAlive()) {
                 RaidEffects.hit(warden, target, rnd().nextInt(max + 1), style, false);
             }
@@ -645,7 +645,7 @@ final class ToaWardens extends RoomLogic {
             RoomLogic.dropOverheads(p, name(warden) + " disables your overhead prayers!");
             Msg.red(p, name(warden) + " fires " + what + " at you!");
         }
-        RaidEffects.later(3, () -> {
+        later(3, () -> {
             if (!alive(warden) || phase != 2) {
                 return;
             }
@@ -660,7 +660,7 @@ final class ToaWardens extends RoomLogic {
         Vec3 spot = target.position();
         world().sendParticles(ParticleTypes.SQUID_INK, spot.x, spot.y + 0.2, spot.z, 20, 0.4, 0.05, 0.4, 0.01);
         Msg.red(target, name(warden) + " launches a dark projectile at you!");
-        RaidEffects.later(3, () -> {
+        later(3, () -> {
             if (!alive(warden) || phase != 2) {
                 return;
             }
@@ -744,7 +744,7 @@ final class ToaWardens extends RoomLogic {
             Vec3 at = vec(west ? -dx : dx, north ? -dz : dz);
             world().sendParticles(new DustParticleOptions(new Vector3f(0.9f, 0.1f, 0.1f), 1.0f), at.x, at.y + 0.1, at.z, 2, 0.4, 0, 0.4, 0);
         }
-        RaidEffects.later(4, () -> {
+        later(4, () -> {
             if (!alive(obelisk) || phase != 2 || core != null) {
                 return;
             }
@@ -806,7 +806,7 @@ final class ToaWardens extends RoomLogic {
         for (BlockPos s : skulls) {
             world().sendParticles(ParticleTypes.SMOKE, s.getX() + 0.5, s.getY() + 0.1, s.getZ() + 0.5, 15, 0.3, 0.02, 0.3, 0);
         }
-        RaidEffects.later(4, () -> {
+        later(4, () -> {
             if (!alive(obelisk) || phase != 2) {
                 return;
             }
@@ -907,7 +907,7 @@ final class ToaWardens extends RoomLogic {
                 }
             }
         }
-        RaidEffects.later(2, () -> {
+        later(2, () -> {
             if (!alive(warden) || phase != 3) {
                 return;
             }
@@ -1098,7 +1098,7 @@ final class ToaWardens extends RoomLogic {
                     phantomAttacks[i]++;
                     AttackType style = magic ? AttackType.MAGIC : AttackType.RANGED;
                     world().sendParticles(magic ? ParticleTypes.WITCH : ParticleTypes.CRIT, at.x, at.y + 2, at.z, 10, 0.3, 0.3, 0.3, 0.05);
-                    RaidEffects.later(2, () -> {
+                    later(2, () -> {
                         if (alive(warden) && phase == 3) {
                             RaidEffects.hit(warden, p, rnd().nextInt(21), style, false); // approx: max 20
                         }
@@ -1110,7 +1110,7 @@ final class ToaWardens extends RoomLogic {
                     AttackType style = rnd().nextBoolean() ? AttackType.MAGIC : AttackType.RANGED;
                     world().sendParticles(style == AttackType.MAGIC ? ParticleTypes.DAMAGE_INDICATOR : ParticleTypes.CRIT, at.x, at.y + 2, at.z, 10,
                             0.3, 0.3, 0.3, 0.05);
-                    RaidEffects.later(2, () -> {
+                    later(2, () -> {
                         if (alive(warden) && phase == 3) {
                             RaidEffects.hit(warden, p, rnd().nextInt(ToaBossRules.ZEBAK_RANGED_MAX + 1), style, false);
                         }
