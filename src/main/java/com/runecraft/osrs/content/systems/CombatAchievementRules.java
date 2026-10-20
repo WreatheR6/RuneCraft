@@ -656,7 +656,7 @@ public final class CombatAchievementRules {
             473;RULE;phantom_muspah;1;norun
             474;STREAK;phantom_muspah;10;
             409;STREAK;phosanis_nightmare;5;
-            588;RULE;branda_the_fire_queen;1;nodmg=molten_fist,frozen_fist,mechanic,hazard
+            588;RULE;branda_the_fire_queen;1;nodmg=molten_fist,frozen_fist,elemental_explosion,fire_wall,icicle_wall,elemental_blast,mechanic,hazard
             593;STREAK;branda_the_fire_queen;15;
             209;RULE;sarachnis;1;nodmg=boss
             221;RULE;scorpia;1;nokill=kill:scorpia's+guardian

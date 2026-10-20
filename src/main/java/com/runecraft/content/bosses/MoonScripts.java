@@ -200,7 +200,8 @@ final class MoonScripts {
 
         /** The players in her chamber (and her target, which may be a test player). */
         List<ServerPlayer> fighters(DataBossEntity boss, ServerPlayer target) {
-            List<ServerPlayer> list = new ArrayList<>(BossFx.players(boss, 18));
+            double r = boss.def() == null ? 12 : boss.def().arenaRadius + 1;
+            List<ServerPlayer> list = new ArrayList<>(BossFx.players(boss, r));
             if (target != null && target.isAlive() && !list.contains(target)) {
                 list.add(target);
             }

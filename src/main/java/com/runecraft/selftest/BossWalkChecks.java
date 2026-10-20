@@ -157,6 +157,8 @@ final class BossWalkChecks {
             }
         };
         try {
+            // one game tick first: the scripts take their home (the arena centre their mechanics are laid out around) on it
+            driver.ticks(boss, 1);
             return walk.apply(boss, driver);
         } catch (IllegalStateException e) {
             throw new AssertionError(e.getMessage(), e);
