@@ -341,6 +341,23 @@ public final class BankService {
         data.setCoins(data.coins() - put);
     }
 
+    /**
+     * Sends the inventory, the money pouch and everything worn to the player's bank, as a quest NPC's deposit service
+     * does (Peer the Seer before his trial).
+     */
+    public static void depositAll(ServerPlayer player) {
+        BankModel bank = Players.data(player).bank();
+        depositInventory(player, bank, 0);
+        Inventory inv = player.getInventory();
+        boolean worn = !com.runecraft.content.systems.SysState.of(player).worn.isEmpty();
+        for (List<ItemStack> list : List.of(inv.armor, inv.offhand)) {
+            worn |= list.stream().anyMatch(s -> !s.isEmpty());
+        }
+        if (worn) {
+            depositWorn(player, bank, 0);
+        }
+    }
+
     static void depositInventory(ServerPlayer player, BankModel bank, int tab) {
         Inventory inv = player.getInventory();
         boolean full = false;

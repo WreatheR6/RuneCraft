@@ -95,6 +95,13 @@ final class KandarinGnomeQuests {
         b.item("hazelmeres_scroll", "Hazelmere's scroll", "note", 0xE0D8A0, "A scroll in an ancient gnome language.");
         b.item("invasion_plans", "Invasion plans", "note", 0xD0C0A0, "Glough's plans to invade with a fleet of gnome warships.");
         b.item("daconia_rock", "Daconia rock", "gem", 0x6A6AE0, "A rare magical rock. The roots of the Grand Tree feed on it.");
+        // Glough's treehouse south of the Grand Tree and Anita's house in the north-west of the stronghold (wiki map tiles).
+        b.spot("gt_glough_house", "Glough's house", 2477, 3463);
+        b.spot("gt_anitas_house", "Anita's house", 2391, 3511);
+        b.npc("anita", "Anita", "gt_anitas_house", 0, 0, 0xD8A878, 0xC05A8A, 0x6A3A5A, 0x6A3A1A);
+        b.item("lumber_order", "Lumber order", "note", 0xE0D0A0, "An order for thousands of logs, delivered to Glough's shipyard.");
+        b.item("glough_key", "Glough's key", "key", 0xA08A4A, "The key to Glough's chest.");
+        b.item("gt_twigs", "Twigs", "log", 0x8A6A3A, "Four bundles of twigs, shaped like gnome letters: T, U, Z and O.");
         b.boss(BossDef.of("glough_black_demon", "Black demon").level(172).stats(157, 145, 148, 152, 1, 1).speed(4)
                 .defenceBonus(0, 0, 0, -10, 0)
                 .attack(AttackDef.of("claw", AttackType.SLASH, 16, 3, 10))
@@ -105,21 +112,97 @@ final class KandarinGnomeQuests {
                 .stage("I can start this quest by speaking to King Narnode Shareen under the Grand Tree. (Requires 25 Agility.)")
                 .talk("king_narnode").give("bark_sample").say("The Grand Tree is dying! Take this bark sample to the wise gnome Hazelmere, on the island east of Yanille.")
                 .stage("I should take the bark sample to Hazelmere.")
-                .talk("hazelmere").take("bark_sample").give("hazelmeres_scroll").say("Ka. Lu. Min... *he writes you a scroll in the old tongue* Take this to your king.")
-                .stage("I should take Hazelmere's scroll to King Narnode.")
-                .talk("king_narnode").take("hazelmeres_scroll").say("'The tree is being poisoned by humans'? Glough, my advisor, will investigate.")
-                .stage("Glough has thrown me in jail! Charlie, the other prisoner, may know something.")
-                .talk("charlie_prisoner").say("Glough's no friend of the king. He's building warships at the shipyard in Karamja. Look in his house!")
-                .stage("I should search Glough's house for evidence and show it to the king.")
-                .talk("glough").give("invasion_plans").say("You'll never stop me, human! *As he storms out, you grab papers from his cupboard.*")
+                .talk("king_narnode").stay().unless("bark_sample").give("bark_sample").say("Lost the sample? Here's another. Hurry, to Hazelmere!")
+                .talk("hazelmere").take("bark_sample").give("hazelmeres_scroll")
+                .say("*He studies the bark, then writes you a message in the old gnome tongue.* Take this to your king.")
+                // The king asks for the translation (wiki): a man with the King's seal, daconia rocks, and they will kill the tree.
+                .stage("I should take Hazelmere's scroll to King Narnode and translate it for him.")
+                .talk("hazelmere").stay().unless("hazelmeres_scroll").give("hazelmeres_scroll").say("*He writes the message out again.*")
+                .puzzle("king_narnode", GT_TRANSLATION).take("hazelmeres_scroll")
+                .say("Someone forged my seal to take daconia rocks from Hazelmere! They were made as a fail-safe: the only thing that can kill the tree.",
+                        "Speak to Glough, my head tree guardian. He lives in the treehouse south of the Grand Tree.")
+                .stage("I should speak to Glough, then to the king, and question the human Glough has imprisoned at the top of the Grand Tree.")
+                .talk("glough").stay().unlessFlag("gt_glough").flag("gt_glough").say("Humans! I knew they couldn't be trusted. I'll take care of this.")
+                .talk("king_narnode").stay().needFlag("gt_glough").unlessFlag("gt_king").flag("gt_king")
+                .say("Glough has caught a human with the daconia rocks! He's in the cells at the top of the tree.")
+                .talk("charlie_prisoner").needFlag("gt_king")
+                .say("Glough paid me to fetch the rocks from Hazelmere, I swear! I don't know what he's up to. Search his house for evidence.")
+                .missing("Who are you? Leave me alone.")
+                .hint("king_narnode", "Speak to Glough, my head tree guardian. He'll get to the bottom of this.")
+                // Wiki: Glough's journal, the cells, Charlie's password Ka-Lu-Min, the glider to the Karamja shipyard, the foreman's
+                // questions and lumber order, then Glough's key from Anita and the invasion plans in his chest.
+                .stage("I should search Glough's house for evidence that will convince the king.")
+                .talk("glough").stay().unlessFlag("gt_jailed").flag("gt_jailed")
+                .say("* In Glough's cupboard you find his journal: he means to convince the gnomes that all humans are evil.",
+                        "You read my journal? Guards! Lock this human up with the other one!")
+                .talk("charlie_prisoner").stay().needFlag("gt_jailed").unlessFlag("gt_password").flag("gt_password").travel("karamja_shipyard")
+                .say("You too? I delivered a lot of gold to the shipyard on Karamja for Glough. Find out what he's building there. "
+                                + "The password at the gate is Ka-Lu-Min.",
+                        "@King Narnode Shareen: I'm sorry! Glough's guards watch every way out. Quickly, take the glider at the top of the tree.",
+                        "* The gnome glider crash lands just west of the shipyard.")
+                .talk("charlie_prisoner").stay().needFlag("gt_password").unlessFlag("gt_lumber").travel("karamja_shipyard")
+                .say("The shipyard on Karamja: the password is Ka-Lu-Min. Take the glider!")
+                .puzzle("karamja_shipyard", GT_GATE).stay().needFlag("gt_password").unlessFlag("gt_gate", "gt_lumber").flag("gt_gate")
+                .say("* The shipyard worker lets you through the gate.")
+                .puzzle("karamja_shipyard", GT_FOREMAN).stay().needFlag("gt_gate").unlessFlag("gt_lumber").flag("gt_lumber").give("lumber_order")
+                .say("Glough's man, all right. Here's the lumber order for his fleet; get it back to him. *Thousands of logs, for warships!*")
+                .talk("king_narnode").stay().needFlag("gt_lumber").unlessFlag("gt_shown").need("lumber_order").flag("gt_shown")
+                .say("A lumber order? Anyone could have written that. You're as paranoid as Glough! Leave, for your own safety.")
+                .talk("charlie_prisoner").stay().needFlag("gt_shown").unlessFlag("gt_charlie_key").flag("gt_charlie_key")
+                .say("I heard Glough mention a chest key he left at his girlfriend Anita's house, in the north-west of the stronghold.")
+                .talk("anita").needFlag("gt_charlie_key").stay().unless("glough_key").give("glough_key")
+                .say("You know my Glough? He left his key here again. Would you take it back to him?")
+                .reach("gt_glough_house", 5).take("glough_key").give("invasion_plans")
+                .say("* Glough's key opens the chest in his house. Inside: his plans to invade Gielinor with a fleet of gnome warships!")
+                .missing("* Glough's chest is locked.")
                 .stage("I should show the invasion plans to King Narnode.")
-                .talk("king_narnode").take("invasion_plans").say("Invasion plans! Glough is a traitor! He fled into the mine beneath the tree... and summoned a demon!")
-                .stage("I should go into the mine beneath the Grand Tree and defeat Glough's demon.")
-                .kill("glough_black_demon").give("daconia_rock").say("* The black demon falls. In the mine you find a glowing daconia rock.")
-                .stage("I should give the daconia rock to King Narnode to heal the tree.")
+                .talk("king_narnode").take("invasion_plans").give("gt_twigs")
+                .say("These could be anyone's plans. But here: four bundles of twigs, all my guards found in Glough's house. Make of them what you will.")
+                // Wiki: on the watchtower above Glough's house (25 Agility) the twigs spell TUZO, "open", on four pillars, opening a
+                // trapdoor to the tunnels where Glough sets a black demon on the player.
+                .stage("I should find out what Glough's twigs open, then face whatever waits below.")
+                .talk("king_narnode").stay().unless("gt_twigs").unlessFlag("gt_tuzo").give("gt_twigs")
+                .say("Lost the twigs? My guards found a few more bundles in Glough's house.")
+                .puzzle("gt_glough_house", GT_TUZO).stay().reqSkill(Skill.AGILITY, 25).take("gt_twigs").unlessFlag("gt_tuzo").flag("gt_tuzo")
+                .say("* Gears turn, and a trapdoor opens in the watchtower floor. Below, Glough waits: 'You'll never stop me, human!'")
+                .kill("glough_black_demon").needFlag("gt_tuzo").say("* The black demon falls. Along the passage King Narnode is waiting by a ladder.",
+                        "@King Narnode Shareen: A demon? Guards, find Glough! ... He was hiding among the stones. Forgive me, human. Find the last daconia rock!")
+                .stage("I should search the roots in the mine beneath the Grand Tree for the last daconia rock and give it to King Narnode.")
+                .reach("grand_tree_mine", 10).stay().unless("daconia_rock").give("daconia_rock")
+                .say("* You search the roots of the Grand Tree one after another... and find the last daconia rock.")
                 .talk("king_narnode").take("daconia_rock").say("The daconia rock! The roots will heal. The Grand Tree is saved, my friend.")
+                .missing("The last daconia rock is somewhere among the roots below. Search them all!")
                 .done("femi", "Thanks for helping the king!");
     }
+
+    /** The king's test of Hazelmere's message (wiki translation), the lines in order; the listing is shuffled per player. */
+    static final QuestPuzzle GT_TRANSLATION = QuestPuzzle.builder("gt_translation").shuffle().variant(null)
+            .prompt("What does Hazelmere's message say? *With the translation book you make out the gnome words: man, came, king's seal, gave, "
+                    + "daconia rocks, will, kill, tree.* Give me the three lines in order.")
+            .options("A man came to me with the King's seal.", "A man came to me with a sack of gold.", "I gave the man Daconia rocks.",
+                    "I gave the man a bark sample.", "And Daconia rocks will kill the tree!", "And Daconia rocks will save the tree!")
+            .solution(0, 2, 4).failLines("That makes no sense! Look at the message again.").build();
+
+    /** The shipyard gate (wiki): Charlie's password, Ka-Lu-Min. */
+    static final QuestPuzzle GT_GATE = QuestPuzzle.builder("gt_gate").shuffle().variant(null)
+            .prompt("* A shipyard worker blocks the gate: 'Who sent you? Glough? Then you know the password.'")
+            .options("Ka", "Lu", "Min", "Tuzo", "Zo", "Gnome")
+            .solution(0, 1, 2).failLines("* 'That's not the password! Clear off!'").build();
+
+    /** The foreman's questions about Glough (wiki answers: his wife has passed away, worm holes, Anita). */
+    static final QuestPuzzle GT_FOREMAN = QuestPuzzle.builder("gt_foreman").variant(null)
+            .prompt("* The foreman on the southern docks: 'Glough sent you, did he? Then answer me this. How's his wife? What's his favourite dish? "
+                    + "And what's his new girlfriend's name?'")
+            .options("His wife is well, thanks.", "Sadly his wife is no longer with us.", "He loves worm holes.", "He loves chocolate bombs.",
+                    "Anita.", "Alice.")
+            .solution(1, 2, 4).failLines("* 'You're no friend of Glough's! Get out of my shipyard!'").build();
+
+    /** The watchtower (wiki): the four twig bundles spell TUZO ("open") on the pillars, from the far left. */
+    static final QuestPuzzle GT_TUZO = QuestPuzzle.builder("gt_tuzo").shuffle().variant(null)
+            .prompt("* Up Glough's watchtower stand a stone stand and four pillars. Your four bundles of twigs are shaped like the gnome letters "
+                    + "T, U, Z and O; the translation book says the gnome word for 'open' is tuzo. Place them from the far left.")
+            .options("Twigs shaped like T", "Twigs shaped like U", "Twigs shaped like Z", "Twigs shaped like O")
+            .solution(0, 1, 2, 3).failLines("* Nothing happens. You take the twigs back off the pillars.").build();
 
     private static void monkeyMadness(QuestBook b) {
         b.npc("glo_caranock", "G.L.O. Caranock", "karamja_shipyard", 0, 0, 0xC89868, 0x3A5A8A, 0x2A3A5A, 0x8A6A3A);

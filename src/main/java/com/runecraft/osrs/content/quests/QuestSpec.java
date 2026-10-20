@@ -20,7 +20,8 @@ import java.util.Map;
  *
  * <p>Dialogue lines: plain text is spoken by the trigger's NPC, {@code "> text"} by the player,
  * {@code "* text"} is narration and {@code "Name: text"} after a {@code "@"} ({@code "@Name: text"})
- * is spoken by someone else.
+ * is spoken by someone else. A line {@code "?flag|text"} is only spoken when the player has that quest flag
+ * (flags the trigger itself sets count), {@code "?!flag|text"} only when they don't.
  *
  * <pre>
  * book.quest("lost_city", "Lost City", Quest.Difficulty.INTERMEDIATE, 3)
@@ -330,6 +331,53 @@ public final class QuestSpec {
         return this;
     }
 
+    /**
+     * On firing, sets one of these flags unless one is already set: the same one for a player every time (a per-player
+     * route, like Curse of the Empty Lord's three ghost sequences). Lines of the trigger can then depend on it
+     * ({@code "?flag|text"}, see {@link #say}); later triggers pick their route with {@link #needFlag}.
+     */
+    public QuestSpec flagOneOf(String... flags) {
+        cur().flagOneOf.addAll(List.of(flags));
+        return this;
+    }
+
+    /** The flag of {@code flags} a player gets from {@link #flagOneOf} (deterministic per player). */
+    public static String pickFlag(String player, List<String> flags) {
+        long seed = QuestPuzzle.seed(player, String.join(",", flags), 0);
+        return flags.get((int) Math.floorMod(seed, (long) flags.size()));
+    }
+
+    /** The trigger needs an empty inventory and nothing worn (Recruitment Drive's testing grounds). */
+    public QuestSpec emptyHanded() {
+        cur().emptyHanded = true;
+        return this;
+    }
+
+    /**
+     * With {@link #emptyHanded}: the presenting NPC first sends everything the player carries and wears to their bank
+     * (Peer the Seer's deposit service before his trial).
+     */
+    public QuestSpec banksItems() {
+        cur().banksItems = true;
+        return this;
+    }
+
+    /**
+     * Only counts while the player is underground: a reach or puzzle at a spot in a carved dungeon (the dungeon lies
+     * below its surface tiles, so the surface above must not trigger it).
+     */
+    public QuestSpec underground() {
+        cur().underground = true;
+        return this;
+    }
+
+    /** Only counts within {@code radius} tiles of a place: a kill or drop in one dungeon rather than anywhere. */
+    public QuestSpec near(String place, int radius) {
+        cur().nearPlace = place;
+        cur().nearRadius = radius;
+        return this;
+    }
+
     /** Requires flags to be set. */
     public QuestSpec needFlag(String... flags) {
         cur().needFlags.addAll(List.of(flags));
@@ -450,6 +498,8 @@ public final class QuestSpec {
         public final Map<String, Integer> give = new LinkedHashMap<>();
         public final List<String> unlessItems = new ArrayList<>();
         public final List<String> setFlags = new ArrayList<>();
+        /** One of these is set on firing, picked per player ({@link QuestSpec#flagOneOf}). */
+        public final List<String> flagOneOf = new ArrayList<>();
         public final List<String> needFlags = new ArrayList<>();
         public final List<String> unlessFlags = new ArrayList<>();
         public final Map<Skill, Integer> skills = new EnumMap<>(Skill.class);
@@ -462,6 +512,15 @@ public final class QuestSpec {
         /** Kills needed (KILL) or items to collect (DROP); see {@link QuestSpec#times}. */
         public int count = 1;
         public int radius = 8;
+        /** Needs an empty inventory and nothing worn. */
+        public boolean emptyHanded;
+        /** The presenter banks the player's items for an {@link #emptyHanded} trigger. */
+        public boolean banksItems;
+        /** Only while the player is underground (a reach or puzzle at a dungeon spot). */
+        public boolean underground;
+        /** Only within {@link #nearRadius} tiles of this place (null: anywhere). */
+        public String nearPlace;
+        public int nearRadius;
         public String spawn;
         public String travel;
         /** The puzzle a {@link Kind#PUZZLE} trigger shows, and which slot of the player's draw. */

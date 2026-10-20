@@ -134,6 +134,18 @@ public final class QuestBook {
         places.add(PlaceDef.of(id, name, osrsX, osrsY, PlaceDef.Style.NONE, List.of()));
     }
 
+    /**
+     * An NPC on an exact OSRS tile: a spot of its own ({@code "at_" + id}, so the NPC also appears in worlds where the
+     * places around it were built before it existed) and the offsets from the spot's chunk centre to that tile.
+     */
+    public void npcAt(String id, String name, int osrsX, int osrsY, int skin, int top, int bottom, int hat) {
+        String place = "at_" + id;
+        spot(place, name, osrsX, osrsY);
+        PlaceDef d = places.get(places.size() - 1);
+        npc(id, name, place, com.runecraft.osrs.GielinorMap.toBlockX(osrsX) - d.blockX(),
+                com.runecraft.osrs.GielinorMap.toBlockZ(osrsY) - d.blockZ(), skin, top, bottom, hat);
+    }
+
     public void place(String id, String name, int osrsX, int osrsY, PlaceDef.Style style, String... blocks) {
         places.add(PlaceDef.of(id, name, osrsX, osrsY, style, List.of(blocks)));
     }

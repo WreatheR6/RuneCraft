@@ -41,7 +41,10 @@ class QuestWalkTest {
     void realPlayersCanFireEveryAdvancingTrigger() {
         Set<String> settable = new HashSet<>();
         for (QuestSpec q : BOOK.quests) {
-            q.triggers().forEach(t -> settable.addAll(t.setFlags));
+            q.triggers().forEach(t -> {
+                settable.addAll(t.setFlags);
+                settable.addAll(t.flagOneOf);
+            });
         }
         List<String> problems = new ArrayList<>();
         for (QuestSpec q : BOOK.quests) {
