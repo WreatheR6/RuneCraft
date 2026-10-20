@@ -372,6 +372,11 @@ public class ColosseumSession extends MinigameSession {
      * Gives the chest's contents to a player: into the inventory while there's room, the rest to the bank (a run's
      * splinters and cannonballs fill more 64-item stacks than an inventory holds). Returns true once the chest is empty;
      * what neither can take stays in the chest.
+     *
+     * <p>In OSRS every line of the chest is one inventory slot (splinters, runes and cannonballs stack), so a searched chest
+     * puts all of it in the pack; here a full run's splinters alone can need more slots than the pack has. The lines that
+     * need the fewest Minecraft stacks go in first (Dizana's quiver, the uniques, single armour pieces), so the bulk
+     * stackables are what overflows into the bank, not the quiver the run was for.
      */
     public boolean claim(ServerPlayer p) {
         if (chest.isEmpty()) {
@@ -380,7 +385,9 @@ public class ColosseumSession extends MinigameSession {
         Msg.game(p, "You search the Rewards Chest.");
         List<ColosseumRewards.Reward> left = new ArrayList<>();
         long banked = 0;
-        for (ColosseumRewards.Reward r : chest) {
+        List<ColosseumRewards.Reward> order = new ArrayList<>(chest);
+        order.sort(java.util.Comparator.comparingInt(ColosseumSession::stacksNeeded)); // stable: ties keep the chest's order
+        for (ColosseumRewards.Reward r : order) {
             int carried = Math.min(r.count(), room(p, r.item()));
             if (carried > 0) {
                 Inv.give(p, r.item(), carried);
@@ -408,6 +415,12 @@ public class ColosseumSession extends MinigameSession {
             Msg.game(p, "Your inventory is full: the rest of your loot is sent to your bank.");
         }
         return left.isEmpty();
+    }
+
+    /** Minecraft stacks a chest line fills (1 for an unknown item, which {@link Inv#give} skips). */
+    private static int stacksNeeded(ColosseumRewards.Reward r) {
+        int max = Math.max(1, Inv.item(r.item()).getDefaultMaxStackSize());
+        return Math.max(1, (r.count() + max - 1) / max);
     }
 
     /**

@@ -81,7 +81,8 @@ public final class BossWalks {
     // =====================================================================================================
 
     /**
-     * The Whisperer: her three specials at 80/55/30% answered through the Shadow Realm (the fragment glows only then; the
+     * The Whisperer: her three specials at 80/55/30% (awakened: her first three of eight, at ~2,400/2,120/1,820 hitpoints,
+     * {@link #whispererSpecialSteps}) answered through the Shadow Realm (the fragment glows only then; the
      * realm drains sanity; souls die only to realm hits; stepping on every light seed withers them; hiding behind her
      * columns), none of them running out; then the enrage pulls the player into the realm, and she dies.
      */
@@ -98,8 +99,7 @@ public final class BossWalks {
             throw fail("the fragment let the player into the Shadow Realm with no special running");
         }
         List<String> log = new ArrayList<>();
-        double[] at = {79, 54, 29};
-        for (double pct : at) {
+        for (double pct : whispererSpecialSteps(boss)) {
             setPercent(boss, pct);
             if (until(boss, d, 6, () -> w.selfTestSpecialName() != null) < 0) {
                 throw fail("no special at " + pct + "% (specials so far: " + log + ")");
@@ -111,7 +111,12 @@ public final class BossWalks {
                 case "siphon" -> log.add(walkSiphon(boss, w, d));
                 default -> log.add(walkScreech(boss, w, d));
             }
-            if (w.selfTestSpecialName() != null) {
+            String next = w.selfTestSpecialName();
+            if (next != null && !next.equals(special)) {
+                throw fail(special + " answered, but the " + next + " started at once: her hitpoints (" + Math.round(pct)
+                        + "%) were already past the next special's threshold");
+            }
+            if (next != null) {
                 throw fail(special + " still running after it was answered");
             }
             if (w.selfTestFailures() > failures) {
@@ -146,6 +151,23 @@ public final class BossWalks {
             throw fail("the enraged Whisperer survived 20 heavy hits");
         }
         return String.join("; ", log) + "; enraged into the realm, killed";
+    }
+
+    /**
+     * Where the walk sets her hitpoints for her first three specials: just under each threshold of the fight it walks. The
+     * normal fight's are 80/55/30%; the awakened one (OSRS Wiki "The Whisperer/Strategies", Awakened mode) has eight, at
+     * about 2,400, 2,120, 1,820... of her 2,700 hitpoints. When a special ends with her already past the next threshold she
+     * starts that one at once ("she will immediately initiate it rather than launch the projectile"), so the normal fight's
+     * percentages would chain two awakened specials (54% is 1,458, past both 2,120 and 1,820).
+     */
+    private static double[] whispererSpecialSteps(DataBossEntity boss) {
+        double[] at = new double[BossMechanics.WHISPERER_SPECIAL_PERCENT.length];
+        for (int i = 0; i < at.length; i++) {
+            at[i] = boss.awakened()
+                    ? (BossMechanics.WHISPERER_AWAKENED_SPECIAL_HP[i] - 20) * 100.0 / BossMechanics.WHISPERER_AWAKENED_HP
+                    : BossMechanics.WHISPERER_SPECIAL_PERCENT[i] - 1;
+        }
+        return at;
     }
 
     private static String walkSeeds(DataBossEntity boss, WhispererScript w, Driver d) {
@@ -212,6 +234,7 @@ public final class BossWalks {
         }
         d.ticks(boss, 1); // a look at the columns' health
         WhispererScript.activateFragment(p);
+        d.clearDamage();
         int ticks = until(boss, d, 40, () -> {
             Vec3 spot = w.selfTestHidingSpot(boss);
             if (spot != null) {
@@ -221,6 +244,9 @@ public final class BossWalks {
         });
         if (ticks < 0) {
             throw fail("screech: still screeching after 40 ticks");
+        }
+        if (d.damage("screech") > 0) {
+            throw fail("screech: hiding behind the weakest standing column still took " + d.damage("screech") + " screech damage");
         }
         return "screech: hid behind the columns, over in " + ticks + " ticks";
     }

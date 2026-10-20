@@ -45,11 +45,11 @@ import net.minecraft.world.item.ItemStack;
  * reinforcements, the warband's weak-style max hits, the Javelin Colossus's every-fifth-attack javelin, manticore patterns
  * and staggered volleys, the minotaur's heal, Totemic, Volatility, Bees! and Solarflare, then Sol Heredit behind the
  * gladiators: his attacks, the grapple (a perfect parry, an undefended one tearing off armour, and one that leaves it on
- * with a full inventory), the phases down to the enrage, Showboating salutes and the kill; the Rewards Chest (the exit
- * refuses an unsearched chest), the quiver traded to Minimus and the stairs back up. Two more runs check that dying loses
- * the chest and that ending a run between waves leaves the loot in the chest, searched with one free slot (one stack
- * carried, the rest banked, nothing on the floor). The session is ticked by hand (accelerated); any broken step throws an
- * {@link AssertionError} naming it.
+ * with a full inventory), the phases down to the enrage (Totemic's healing totem broken as it rises), Showboating salutes and
+ * the kill; the Rewards Chest (the exit refuses an unsearched chest), the quiver traded to Minimus and the stairs back up.
+ * Two more runs check that dying loses the chest and that ending a run between waves leaves the loot in the chest, searched
+ * with one free slot (one stack carried, the rest banked, nothing on the floor). The session is ticked by hand
+ * (accelerated); any broken step throws an {@link AssertionError} naming it.
  */
 public final class ColosseumWalk {
     private final ServerPlayer player;
@@ -441,13 +441,21 @@ public final class ColosseumWalk {
         player.setItemSlot(EquipmentSlot.CHEST, ItemStack.EMPTY);
         restoreInventory(kept);
         notes.add("grapple: perfect parry, armour torn off, kept on with a full inventory");
-        // The phases down to the enrage.
+        // The phases down to the enrage. Totemic (forced on wave 4) raises a healing totem beside him at half health that heals
+        // him 75 every 7 ticks (wiki "Healing totem"): it is broken as soon as it rises (1 hitpoint; a totem destroyed before
+        // its projectile lands heals nothing), or a heal could lift him back over 10% and refuse the salutes.
+        int totems = 0;
         for (float f : new float[]{0.85f, 0.70f, 0.45f, 0.20f, 0.08f}) {
             session.selfTestWoundSol(f);
             tick(2);
+            totems += breakTotems();
         }
         expect(script.phase() == 6, "Sol Heredit is in phase " + script.phase() + " below 10% (expected the enrage, 6)");
-        notes.add("phases to the enrage");
+        expect(totems > 0 || !session.modifiers().containsKey(Modifier.TOTEMIC), "Totemic raised no healing totem beside Sol "
+                + "Heredit at half health");
+        expect(sol.getHealth() < sol.getMaxHealth() * FortisColosseum.SHOWBOATING_BELOW_PERCENT / 100f, "Sol Heredit is back at "
+                + Math.round(sol.getHealth() * 100f / sol.getMaxHealth()) + "% before the salutes (" + totems + " totems broken)");
+        notes.add("phases to the enrage" + (totems > 0 ? ", " + totems + " healing totem(s) broken" : ""));
         // Showboating: the four salutes while he is below 10%.
         float yaw = player.getYRot();
         for (float y : new float[]{180f, 270f, 0f, 90f}) {
@@ -484,8 +492,17 @@ public final class ColosseumWalk {
         step = "after the run";
         int splinters = Inv.count(player, ColosseumRewards.SPLINTERS);
         command("minigame colosseum quiver splinters");
-        expect(Inv.count(player, ColosseumRewards.QUIVER) == 0 && Inv.count(player, ColosseumRewards.SPLINTERS) == splinters
-                + FortisColosseum.QUIVER_SPLINTERS, "Minimus did not trade the quiver for 4,000 splinters");
+        // 4,000 splinters are one OSRS stack but 63 Minecraft ones, more than a pack holds: what it can't take is dropped at
+        // the player's feet as their reward (MinigameSession.reward), counted here and cleared away.
+        int dropped = 0;
+        for (ItemEntity e : world.getEntitiesOfClass(ItemEntity.class, player.getBoundingBox().inflate(4),
+                e -> e.getOwner() == player && ColosseumRewards.SPLINTERS.equals(Inv.idOf(e.getItem())))) {
+            dropped += e.getItem().getCount();
+            e.discard();
+        }
+        int carried = Inv.count(player, ColosseumRewards.SPLINTERS) - splinters;
+        expect(Inv.count(player, ColosseumRewards.QUIVER) == 0 && carried + dropped == FortisColosseum.QUIVER_SPLINTERS,
+                "Minimus did not trade the quiver for 4,000 splinters (" + carried + " in the pack, " + dropped + " at the feet)");
         BlockPos stairs = lobbyBlock(1797, FortisColosseum.LOBBY_Y, FortisColosseum.LOBBY_EXIT);
         moveTo(stairs.east());
         use(stairs);
@@ -540,6 +557,17 @@ public final class ColosseumWalk {
         Inv.remove(player, ColosseumRewards.SPLINTERS, carried);
         restoreInventory(kept);
         notes.add("left after wave 1: 80 splinters, " + carried + " carried in the free slot and " + sent + " banked");
+    }
+
+    /** Breaks every healing totem standing in the arena through the player's real hit path; returns how many. */
+    private int breakTotems() {
+        int n = 0;
+        for (LivingEntity totem : world.getEntitiesOfClass(LivingEntity.class, session.box(),
+                e -> e.isAlive() && MinigameManager.creatureId(e).equals(FortisColosseum.HEALING_TOTEM))) {
+            kill(totem, AttackType.SLASH, "a healing totem");
+            n++;
+        }
+        return n;
     }
 
     // ------------------------------------------------------------------ driver

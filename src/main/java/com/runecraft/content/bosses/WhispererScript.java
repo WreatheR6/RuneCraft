@@ -60,7 +60,8 @@ import org.joml.Vector3f;
  *   20/40/60, only shows in the realm);
  *   <b>Soul Siphon</b>: lost souls in four sets (Vita 2: heal 20% hitpoints, Oratio 3: 20% prayer, Sanitas 3: 15% sanity,
  *   Mors 4: 50 to her, 75 if every soul dies), only hurt from the realm; kill a full set within 20 ticks or take 50 while she
- *   heals 100 (awakened: every soul, 35 ticks); <b>Corrupted Seeds</b>: one of two symmetric layouts; step on every light
+ *   heals 100 (awakened: one more soul per set, alone at a cardinal point; every soul within 35 ticks, or she heals 100 for
+ *   each set left); <b>Corrupted Seeds</b>: one of two symmetric layouts; step on every light
  *   seed (told apart only in the realm) before time runs out (or take 75 and lose 75% sanity), never on a dark one (15-25,
  *   awakened 60-75); clean, it restores 15% sanity. After each special her binding orb holds the player for ~8 seconds
  *   while she comes for them.</li>
@@ -608,14 +609,24 @@ final class WhispererScript extends ScriptedBoss {
 
     private void summonSouls(DataBossEntity boss, ServerPlayer target) {
         Vec3 c = homeVec();
-        int extra = boss.awakened() ? 1 : 0; // awakened: one more soul in each set
+        // Awakened: one more soul in each set (16 in all), the four standing alone at the cardinal points while the sets' rows
+        // keep the diagonals (wiki "The Whisperer/Strategies", "Lost Soul"). approx: which set's lone soul stands at which point
+        int extra = boss.awakened() ? 1 : 0;
         for (int set = 0; set < BossMechanics.WHISPERER_SOUL_SETS.length; set++) {
             double a = Math.PI / 4 + set * Math.PI / 2;
-            int n = BossMechanics.WHISPERER_SOUL_SET_SIZES[set] + extra;
-            for (int i = 0; i < n; i++) {
-                double along = (i - (n - 1) / 2.0) * 1.4;
-                double x = c.x + Math.cos(a) * 6 - Math.sin(a) * along;
-                double z = c.z + Math.sin(a) * 6 + Math.cos(a) * along;
+            int row = BossMechanics.WHISPERER_SOUL_SET_SIZES[set];
+            for (int i = 0; i < row + extra; i++) {
+                double x;
+                double z;
+                if (i < row) {
+                    double along = (i - (row - 1) / 2.0) * 1.4;
+                    x = c.x + Math.cos(a) * 6 - Math.sin(a) * along;
+                    z = c.z + Math.sin(a) * 6 + Math.cos(a) * along;
+                } else {
+                    double cardinal = set * Math.PI / 2;
+                    x = c.x + Math.cos(cardinal) * 6;
+                    z = c.z + Math.sin(cardinal) * 6;
+                }
                 Mob soul = BossFx.spawnMinion(boss, BossMechanics.WHISPERER_LOST_SOUL, BossFx.ground(BossFx.world(boss), x, z, c.y), null);
                 if (soul == null) {
                     continue;
@@ -919,11 +930,15 @@ final class WhispererScript extends ScriptedBoss {
         return out;
     }
 
-    /** Where to stand behind the strongest column (the side away from her), or null. */
+    /**
+     * Where to stand behind the weakest column still standing (the side away from her), or null. Each screech breaks the
+     * column hidden behind and takes 20 from the rest, so the strong ones are saved for the last screeches (wiki: "you must
+     * save the 60-health pillar for the final screech"); the awakened five need the 20, 40, 60, 80 and 100 in that order.
+     */
     Vec3 selfTestHidingSpot(DataBossEntity boss) {
         Column best = null;
         for (Column col : columns) {
-            if (best == null || col.health > best.health) {
+            if (best == null || col.health < best.health) {
                 best = col;
             }
         }
