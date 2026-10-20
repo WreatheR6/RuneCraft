@@ -7,19 +7,19 @@ import com.runecraft.util.Msg;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * The Penance Queen shrugs off most weapon damage: in OSRS she is brought down with omega eggs
- * fired from the egg launcher. Here weapons deal a quarter damage and the launcher's eggs do the
- * rest (see {@link BarbarianAssaultSession}).
+ * The Penance Queen can only be harmed by omega eggs fired from the egg launcher (OSRS Wiki): weapons, spells, poison and
+ * recoil do nothing. The eggs' damage comes from {@link BarbarianAssaultSession}, past the session's damage gate; this script
+ * also stops a weapon hit that reaches her some other way.
  */
 public class PenanceQueenScript implements BossScript {
-    private long lastWarning;
+    private long lastWarning = -1000;
 
     @Override
     public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
         if (boss.tickCount - lastWarning > 200) {
             lastWarning = boss.tickCount;
-            Msg.action(attacker, "The Penance Queen barely notices. Load eggs into the egg launcher!");
+            Msg.action(attacker, "The Penance Queen can only be harmed by omega eggs. Make them and load the egg launcher!");
         }
-        return damage / 4;
+        return 0;
     }
 }

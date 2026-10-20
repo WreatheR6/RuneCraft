@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/ba_defender_machine_side",
+    "top": "runecraft:block/module/ba_defender_machine_top",
+    "bottom": "runecraft:block/module/ba_defender_machine_bottom"
+  }
+}

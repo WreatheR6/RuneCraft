@@ -340,8 +340,8 @@ public final class MinigameRules {
     public static final class BarbarianAssault {
         public static final String[] ROLES = {"attacker", "defender", "collector", "healer"};
         public static final String[] PENANCE = {"penance_fighter", "penance_ranger", "penance_runner", "penance_healer"};
-        public static final int WAVES = 10;
-        public static final int QUEEN_HP = 250;
+        public static final int WAVES = BaWaves.WAVES;
+        public static final int QUEEN_HP = BaWaves.QUEEN.hitpoints();
         /** Eight omega egg hits kill the Penance Queen. */
         public static final int QUEEN_EGG_HITS = 8;
         public static final int PET_CHANCE = 1000;
@@ -351,16 +351,6 @@ public final class MinigameRules {
         /** Honour points are capped at 5,000 per role and queen kills at 40. */
         public static final int MAX_HONOUR = 5000;
         public static final int MAX_QUEEN_KILLS = 40;
-        /**
-         * Base honour points for a full round (waves 1-10 including wave 10's 80) per role, from the
-         * wiki strategy guide: attacker 370, defender 357, collector 278, healer 305.
-         */
-        public static final int[] FULL_ROUND = {370, 357, 278, 305};
-        /** Penance hitpoints by wave (OSRS Wiki; wave 10 uses wave 7's). Runners always have 5. */
-        private static final int[] FIGHTER_HP = {28, 29, 32, 37, 38, 49, 50, 55, 56, 50};
-        private static final int[] RANGER_HP = {20, 28, 29, 34, 41, 50, 50, 54, 58, 50};
-        private static final int[] HEALER_HP = {27, 32, 37, 43, 49, 55, 60, 67, 76, 60};
-        public static final int RUNNER_HP = 5;
 
         /** Role levels run from 1 to 5; each upgrade is bought with that role's honour points. */
         public static final int MAX_ROLE_LEVEL = 5;
@@ -423,68 +413,52 @@ public final class MinigameRules {
             return true;
         }
 
-        /** Penance per wave: fighters, rangers, runners, healers (approx. of the wiki wave table). */
+        /** Every Penance of each type in a wave (initial + reserve): fighters, rangers, runners, healers (OSRS Wiki). */
         public static int[] wave(int wave) {
-            return new int[]{2 + (wave - 1) / 2, 2 + (wave - 1) / 2, 2 + wave / 3, 2 + (wave - 1) / 3};
+            int[] out = new int[BaWaves.TYPES];
+            for (int t = 0; t < out.length; t++) {
+                out[t] = BaWaves.total(wave, t);
+            }
+            return out;
         }
 
         /** Penance hitpoints for a type (0 fighter, 1 ranger, 2 runner, 3 healer) in a wave (OSRS Wiki). */
         public static int hitpoints(int type, int wave) {
-            int w = Math.max(1, Math.min(WAVES, wave)) - 1;
-            return switch (type) {
-                case 0 -> FIGHTER_HP[w];
-                case 1 -> RANGER_HP[w];
-                case 2 -> RUNNER_HP;
-                default -> HEALER_HP[w];
-            };
+            return BaWaves.stats(wave, type).hitpoints();
         }
 
-        /** Omega egg damage so that {@link #QUEEN_EGG_HITS} hits kill the queen. */
+        /** The queen's hitpoints split over {@link #QUEEN_EGG_HITS} eggs; real hits roll 30-39 ({@link BaRules#omegaEggDamage}). */
         public static int omegaEggDamage() {
             return (QUEEN_HP + QUEEN_EGG_HITS - 1) / QUEEN_EGG_HITS;
         }
 
-        /**
-         * Base honour points for clearing a wave (1-9) in a role with a clean performance. The wiki
-         * gives only each role's round total, so it's spread over the waves in proportion to the
-         * wave number (approx.; later waves pay more). Wave 10 pays {@link #WAVE_10_ROLE}.
-         */
+        /** Base honour points for clearing a wave in a role with every Penance killed and no mistakes ({@link BaRules#wavePoints}). */
         public static int honour(int role, int wave) {
-            if (wave >= WAVES) {
-                return WAVE_10_ROLE;
-            }
-            return cumulative(role, wave) - cumulative(role, wave - 1);
-        }
-
-        private static int cumulative(int role, int wave) {
-            int base = FULL_ROUND[role] - WAVE_10_ROLE;
-            return (int) Math.round(base * (wave * (wave + 1) / 2.0) / 45.0);
+            return BaRules.wavePoints(role, wave, BaRules.WaveStats.clean(wave), false);
         }
 
         /**
-         * Points lost to escaped runners: 3 per escape for everyone, capped at 10; defenders lose
-         * double (capped at 20). There are no penalties on wave 10.
+         * Points lost to escaped runners: 3 per escape for everyone, capped at 10; defenders lose them again (at most 20).
+         * There are no penalties on wave 10.
          */
         public static int runnerPenalty(int role, int escapes, int wave) {
             if (wave >= WAVES) {
                 return 0;
             }
             int team = Math.min(10, 3 * escapes);
-            return role == 1 ? Math.min(20, 2 * 3 * escapes) : team;
+            return role == BaRules.DEFENDER ? 2 * team : team;
         }
 
-        /** Honour for a wave after penalties, never negative. */
+        /** Honour for a clean wave except for escaped runners. */
         public static int waveHonour(int role, int wave, int escapes) {
-            return Math.max(0, honour(role, wave) - runnerPenalty(role, escapes, wave));
+            BaRules.WaveStats c = BaRules.WaveStats.clean(wave);
+            return BaRules.wavePoints(role, wave, new BaRules.WaveStats(c.fightersKilled(), c.rangersKilled(), c.runnersKilled(),
+                    c.healersKilled(), 0, 0, 0, 0, escapes, 0), false);
         }
 
-        /** Total clean honour points in a role for a full game (all ten waves). */
+        /** Total clean honour points in a role for a full game (all ten waves): 370 / 357 / 278 / 305. */
         public static int fullGameHonour(int role) {
-            int total = 0;
-            for (int w = 1; w <= WAVES; w++) {
-                total += honour(role, w);
-            }
-            return total;
+            return BaRules.fullRound(role, false);
         }
 
         /** Adds honour to a balance, respecting the 5,000 cap. */

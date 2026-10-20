@@ -97,6 +97,18 @@ public final class MinigameWorld {
             // Barbarian Assault
             {"ba_egg_launcher", "Egg launcher", "8A7A5A", "machine"},
             {"ba_healer_spring", "Healing spring", "60A0E0", "portal_glow"},
+            {"ba_attacker_machine", "Attacker item machine", "C03030", "machine"},
+            {"ba_defender_machine", "Defender item machine", "3060C0", "machine"},
+            {"ba_healer_machine", "Healer item machine", "40A040", "machine"},
+            {"ba_collector_converter", "Collector converter", "E0C040", "machine"},
+            {"ba_runner_trap", "Runner trap", "6A6A70", "pressure_plate"},
+            {"ba_log_pile", "Log pile", "6A4A2A", "crate"},
+            {"ba_hammer", "Hammer", "8A8A90", "crate"},
+            {"ba_lure_cave", "Lure cave", "2A2A2A", "pit"},
+            {"ba_ladder", "Ladder", "8A6A3A", "portal_door"},
+            {BaRules.POISON_CRATER, "Poison crater", "60C040", "pit"},
+            {BaRules.LAVA_CRATER, "Lava crater", "E05010", "fire_lava"},
+            {BaRules.PETRIFIED_MUSHROOM, "Petrified mushroom", "8A7A6A", "mushroom"},
             // Castle Wars
             {"cw_saradomin_stand", "Saradomin flag stand", "3060E0", "statue"},
             {"cw_zamorak_stand", "Zamorak flag stand", "C02020", "statue"},
@@ -374,6 +386,9 @@ public final class MinigameWorld {
                 0x6A2A8A, 0x4A1A6A, 0x8A3AAA));
         list.add(NpcDef.of("mg_commander_connad", "Commander Connad", Minigame.BARBARIAN_ASSAULT.place(), 2, 2, 0xC09070, 0x8A5A2A,
                 0x5A3A1A, 0xB08040));
+        // Captain Cain teaches the tutorial and resets a player's round to wave 1 (BarbarianAssaultSession).
+        list.add(NpcDef.of("mg_captain_cain", "Captain Cain", Minigame.BARBARIAN_ASSAULT.place(), -2, 2, 0xC09070, 0x6A3A1A,
+                0x4A2A1A, 0x8A5A2A));
         list.add(NpcDef.of("mg_lanthus", "Lanthus", Minigame.CASTLE_WARS.place(), 2, 2, 0xC8A080, 0xE0C060, 0x8A6A3A, 0x6A4A2A));
         list.add(NpcDef.of("mg_harrallak_menarous", "Harrallak Menarous", Minigame.WARRIORS_GUILD.place(), 2, 2, 0xC8A080, 0x9A9AA0,
                 0x6A6A70, 0x6A4A2A));
@@ -455,7 +470,8 @@ public final class MinigameWorld {
                 "catalytic_talisman", "elemental_talisman", "abyssal_green_dye", "abyssal_blue_dye", "abyssal_red_dye",
                 "intricate_pouch", "abyssal_pearls")));
         pages.add(new CollectionLogData.Page(c, "Barbarian Assault", List.of("pet_penance_queen", "fighter_torso", "penance_gloves",
-                "penance_skirt", "fighter_hat", "ranger_hat", "runner_hat", "healer_hat", "runner_boots", "granite_body")));
+                "penance_skirt", "fighter_hat", "ranger_hat", "runner_hat", "healer_hat", "runner_boots", "granite_body",
+                "granite_helm")));
         pages.add(new CollectionLogData.Page(c, "Castle Wars", List.of("saradomin_halo", "zamorak_halo", "saradomin_hood",
                 "zamorak_hood", "guthix_halo", "red_decorative_helm", "red_decorative_body", "white_decorative_helm",
                 "white_decorative_body", "gold_decorative_helm", "gold_decorative_body")));

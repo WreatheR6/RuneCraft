@@ -132,15 +132,20 @@ public final class MinigameMonsters {
                 .attack(magic(11, 10, "minecraft:flame")).size(0.7f, 1.2f, 1.0f).flying()
                 .skin(0xC06030, 0x904020, 0x602010, 0xFFC060));
         // ---------------- Barbarian Assault ----------------
-        list.add(m("penance_fighter", "Penance Fighter", 58).stats(40, 60, 60, 40, 1, 1).speed(4)
-                .attack(melee(AttackType.CRUSH, 10)).size(0.8f, 1.5f, 1.1f).skin(0x6A5A3A, 0x4A3A2A, 0x2A2A1A, 0xC0A060));
-        list.add(m("penance_ranger", "Penance Ranger", 57).stats(35, 1, 1, 30, 1, 60).speed(4)
-                .attack(ranged(9, 9)).size(0.8f, 1.5f, 1.1f).skin(0x5A6A3A, 0x3A4A2A, 0x2A3A1A, 0xA0C060));
-        list.add(m("penance_runner", "Penance Runner", 47).stats(30, 20, 20, 20, 1, 1).speed(4).passive().moveSpeed(0.32)
-                .attack(melee(AttackType.CRUSH, 3)).size(0.7f, 1.0f, 0.9f).skin(0x5A5A6A, 0x3A3A4A, 0x2A2A3A, 0xA0A0C0));
-        list.add(m("penance_healer", "Penance Healer", 60).stats(35, 30, 30, 30, 1, 1).speed(4)
-                .attack(melee(AttackType.CRUSH, 6).special(Special.POISON, 4)).size(0.7f, 1.3f, 1.0f)
-                .skin(0x6A5A5A, 0x4A3A3A, 0x2A2A2A, 0xE0A0A0));
+        // Wave 1 stats (OSRS Wiki); BarbarianAssaultSession sets each wave's stats and max hit (BaWaves). Fighters and rangers
+        // only take damage from the attacker's called style; runners are lured into traps and healers poisoned with food, so
+        // neither has an attack of its own (healers poison players for 2 through the session).
+        list.add(m("penance_fighter", "Penance Fighter", 30).stats(28, 26, 26, 25, 1, 1).speed(4)
+                .attack(melee(AttackType.CRUSH, 4)).size(0.8f, 1.5f, 1.1f).skin(0x6A5A3A, 0x4A3A2A, 0x2A2A1A, 0xC0A060));
+        list.add(m("penance_ranger", "Penance Ranger", 21).stats(20, 22, 1, 21, 1, 23).speed(4)
+                .attack(ranged(3, 9)).size(0.8f, 1.5f, 1.1f).skin(0x5A6A3A, 0x3A4A2A, 0x2A3A1A, 0xA0C060));
+        list.add(m("penance_runner", "Penance Runner", 1).stats(5, 1, 1, 1, 1, 1).speed(4).passive().moveSpeed(0.32)
+                .attack(NONE).size(0.7f, 1.0f, 0.9f).skin(0x5A5A6A, 0x3A3A4A, 0x2A2A3A, 0xA0A0C0));
+        list.add(m("penance_healer", "Penance Healer", 1).stats(27, 9, 8, 9, 1, 1).speed(4).passive()
+                .attack(NONE).size(0.7f, 1.3f, 1.0f).skin(0x6A5A5A, 0x4A3A3A, 0x2A2A2A, 0xE0A0A0));
+        // Wave 10's queen spawns: anyone may fight them with any style (OSRS Wiki, Queen spawn).
+        list.add(m("queen_spawn", "Queen spawn", 63).stats(45, 60, 62, 50, 1, 1).speed(4)
+                .attack(melee(AttackType.CRUSH, 7)).size(0.8f, 1.2f, 1.0f).skin(0x7A6A3A, 0x5A4A2A, 0x3A2A1A, 0xE0C060));
         // ---------------- Wintertodt / Tempoross / Guardians (scenery creatures) ----------------
         list.add(m("wintertodt", "Wintertodt", 0).stats(255, 1, 1, 1, 1, 1).passive().moveSpeed(0.0)
                 .immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH, AttackType.MAGIC, AttackType.RANGED)
@@ -251,13 +256,12 @@ public final class MinigameMonsters {
                         .particle("minecraft:flame").message("TzKal-Zuk unleashes a blast of fire!"))
                 .moveSpeed(0.0).raidOnly().category("Minigames").arena(16, "lava").size(2.0f, 3.5f, 2.6f)
                 .skin(0xC04010, 0x803010, 0x501808, 0xFFD040));
-        list.add(BossDef.of("penance_queen", "Penance Queen").level(209).stats(250, 300, 200, 260, 1, 1).speed(5)
+        list.add(BossDef.of("penance_queen", "Penance Queen").level(209).stats(250, 260, 92, 132, 1, 116).speed(4)
                 .model("penance_queen")
-                // OSRS Wiki: a ranged volley hitting every player for up to 13, and a melee attack up to 5.
+                // OSRS Wiki: a melee hit of up to 5 and ranged attacks of up to 13; her unblockable volley at every player every
+                // 15 ticks and her spawns are BarbarianAssaultSession's. Only omega eggs hurt her (PenanceQueenScript).
                 .attack(melee(AttackType.CRUSH, 5))
-                .attack(AttackDef.of("volley", AttackType.RANGED, 13, 10, 10).special(Special.AOE, 10).particle("minecraft:item_slime"))
-                .minion("penance_fighter", 2)
-                .phase(50, "The Penance Queen summons her spawn!", 1.1, true)
+                .attack(ranged(13, 10))
                 .raidOnly().category("Minigames").size(1.6f, 2.2f, 2.0f)
                 .skin(0x7A6A3A, 0x5A4A2A, 0x3A2A1A, 0xE0C060));
         return list;

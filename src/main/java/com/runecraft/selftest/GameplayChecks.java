@@ -118,6 +118,9 @@ final class GameplayChecks {
         // A whole Pest Control game as the real player: the lander, shields, pests, gates, portals, points and the Void shop.
         checks.add(new SelfTest.Check("minigame:pest_control_walk", () -> g.tzhaarRun(
                 com.runecraft.content.minigames.games.PestControlSelfTest::run)));
+        // Barbarian Assault as a real player (round 37): wave 1 alone as an attacker, the queen wave, honour, a level, a torso.
+        checks.add(new SelfTest.Check("minigame:barbarian_assault_run", () -> g.tzhaarRun(
+                com.runecraft.content.minigames.games.BarbarianAssaultSelfTest::run)));
         for (RaidType r : RaidType.values()) {
             checks.add(new SelfTest.Check("raid:" + r.id(), () -> g.raid(r)));
         }

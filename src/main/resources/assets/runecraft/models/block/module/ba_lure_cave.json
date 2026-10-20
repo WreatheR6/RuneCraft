@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/ba_lure_cave_side",
+    "top": "runecraft:block/module/ba_lure_cave_top",
+    "bottom": "runecraft:block/module/ba_lure_cave_bottom"
+  }
+}
