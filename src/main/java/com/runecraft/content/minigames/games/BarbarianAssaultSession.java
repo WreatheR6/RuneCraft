@@ -21,6 +21,7 @@ import com.runecraft.osrs.content.minigames.Minigame;
 import com.runecraft.osrs.content.minigames.MinigameRules.BarbarianAssault;
 import com.runecraft.platform.CommandRegistrationCallback;
 import com.runecraft.platform.ServerEntityEvents;
+import com.runecraft.platform.ServerPlayConnectionEvents;
 import com.runecraft.platform.UseEntityCallback;
 import com.runecraft.platform.UseItemCallback;
 import com.runecraft.player.Players;
@@ -28,6 +29,7 @@ import com.runecraft.quest.QuestApi;
 import com.runecraft.quest.QuestScripts;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
+import com.runecraft.util.StackData;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -61,10 +63,10 @@ import net.minecraft.world.phys.Vec3;
  * collector calls the attacker's style, the attacker the egg colour, the healer the defender's bait and the defender the
  * healer's poison, each with their horn. Attackers alone hurt fighters and rangers, and only with the called style (melee
  * stance, Barbarian Assault arrow or spell element; a wrong hit recoils for 2 and costs points); collectors pick up eggs of
- * the called colour into their bag and load the egg launcher, which anyone fires (red 3 + splash, green 1 + poison, blue
- * stun); defenders drop bait to lure runners onto the runner traps (repaired with a hammer and logs) before they escape
- * into the lure cave; healers poison the Penance healers with the called food and heal the team with the vial filled at
- * the spring. Wave 10 ends with the Penance Queen, who only takes omega eggs made by the whole team. Honour points are paid
+ * the called colour into their bag and load the egg launcher (five of each colour), which anyone fires one egg at a time (red
+ * 3 + splash, green 1 + poison, blue stun); defenders drop bait to lure runners onto the runner traps (repaired with a hammer
+ * and logs) before they escape into the lure cave; healers poison the Penance healers with the called food and heal the team
+ * with the vial filled at the spring. The runes, logs and hammer the arena hands out are its own ({@link #LENT_TAG}). Wave 10 ends with the Penance Queen, who only takes omega eggs made by the whole team. Honour points are paid
  * per wave by the wiki's formulas ({@link BaRules#wavePoints}); a death restarts the wave; no combat experience is given.
  *
  * <p>Playing alone or with roles missing (the mod's approach since the start): a role nobody plays is covered by everyone
@@ -93,6 +95,12 @@ public class BarbarianAssaultSession extends MinigameSession {
     static final String EGG_TAG = "rcba_egg";
     static final String GOOD_BAIT = "rcba_bait_good";
     static final String BAD_BAIT = "rcba_bait_bad";
+    /**
+     * Custom-data key on every stack the arena lends (the attacker machine's runes, the log pile's logs, the hammer): OSRS's
+     * untradeable arena variants, which vanish outside. They're taken from the pack and the floor whenever the arena's items
+     * are, and from a player logging in outside a game.
+     */
+    static final String LENT_TAG = "rcba_lent";
 
     /** Items that only exist inside the arena: taken away at the end of each wave (horn, icon and bag when leaving). */
     static final List<String> WAVE_ITEMS = new ArrayList<>();
@@ -135,8 +143,8 @@ public class BarbarianAssaultSession extends MinigameSession {
     /** Poison on a Penance creature: a poisoned food's (4 dropping to 1) or a green egg's (1, five times). */
     private static final class Poison {
         UUID by;
-        boolean food;
         int hits;
+        int interval;
         long next;
     }
 
@@ -175,10 +183,12 @@ public class BarbarianAssaultSession extends MinigameSession {
     private final Map<UUID, int[]> bags = new HashMap<>();
     private final Map<UUID, Runner> runnerAi = new HashMap<>();
     private final Map<UUID, Healer> healerAi = new HashMap<>();
-    private final Map<UUID, Poison> poisons = new HashMap<>();
+    /** A poisoned food's poison and a green egg's poison run side by side (OSRS Wiki, Green egg). */
+    private final Map<UUID, Poison> foodPoison = new HashMap<>();
+    private final Map<UUID, Poison> eggPoison = new HashMap<>();
     private final Map<UUID, Long> stunned = new HashMap<>();
-    /** Hammers, logs and runes the arena handed to each player (taken back, up to that many, when the wave ends). */
-    private final Map<UUID, Map<String, Integer>> lent = new HashMap<>();
+    /** The tick each player can fire their next red, green or blue egg (one at a time, OSRS Wiki). */
+    private final Map<UUID, Long> nextFire = new HashMap<>();
     private Mob queen;
     private boolean queenKilled;
     private long queenCheckAt;
@@ -394,8 +404,10 @@ public class BarbarianAssaultSession extends MinigameSession {
         bags.clear();
         runnerAi.clear();
         healerAi.clear();
-        poisons.clear();
+        foodPoison.clear();
+        eggPoison.clear();
         stunned.clear();
+        nextFire.clear();
         clearFloor();
         for (int t = 0; t < BaWaves.TYPES; t++) {
             pending[t] = BaWaves.initial(wave, t);
@@ -516,7 +528,8 @@ public class BarbarianAssaultSession extends MinigameSession {
             }
             runnerAi.remove(entity.getUUID());
             healerAi.remove(entity.getUUID());
-            poisons.remove(entity.getUUID());
+            foodPoison.remove(entity.getUUID());
+            eggPoison.remove(entity.getUUID());
             stunned.remove(entity.getUUID());
         } else if (creatureId.equals("penance_queen")) {
             queenKilled = true;
@@ -677,15 +690,85 @@ public class BarbarianAssaultSession extends MinigameSession {
 
     // ------------------------------------------------------------------ items handed out and taken back
 
-    private void lend(ServerPlayer p, String item, int count) {
-        if (count <= 0) {
-            return;
-        }
-        Inv.give(p, item, count);
-        lent.computeIfAbsent(p.getUUID(), k -> new HashMap<>()).merge(item, count, Integer::sum);
+    /** Whether a stack is one the arena lent ({@link #LENT_TAG}). */
+    static boolean isLent(ItemStack stack) {
+        return !stack.isEmpty() && StackData.contains(stack, LENT_TAG);
     }
 
-    /** Takes the arena's items back: the wave's supplies (and the horn, icon and bag when {@code all}). */
+    /** How many of {@code item} the player holds in lent stacks. */
+    static int lentCount(ServerPlayer p, String item) {
+        int n = 0;
+        var inv = p.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack s = inv.getItem(i);
+            if (isLent(s) && Inv.idOf(s).equals(item)) {
+                n += s.getCount();
+            }
+        }
+        return n;
+    }
+
+    /**
+     * Hands out arena items marked {@link #LENT_TAG}: spells and repairs still use them up (they match on the item alone), but
+     * they never leave the arena. The lent stacks are moved ahead of the player's own of that item, so they're used first.
+     */
+    void lend(ServerPlayer p, String item, int count) {
+        net.minecraft.world.item.Item it = Inv.item(item);
+        for (int left = count; left > 0; ) {
+            int n = Math.min(left, it.getDefaultMaxStackSize());
+            ItemStack stack = Inv.stack(item, n);
+            if (stack.isEmpty()) {
+                return;
+            }
+            StackData.update(stack, tag -> tag.putBoolean(LENT_TAG, true));
+            Inv.give(p, stack);
+            left -= n;
+        }
+        var inv = p.getInventory();
+        List<Integer> slots = new ArrayList<>();
+        List<ItemStack> order = new ArrayList<>();
+        List<ItemStack> own = new ArrayList<>();
+        for (int i = 0; i < inv.items.size(); i++) {
+            ItemStack s = inv.items.get(i);
+            if (s.is(it)) {
+                slots.add(i);
+                (isLent(s) ? order : own).add(s);
+            }
+        }
+        order.addAll(own);
+        for (int k = 0; k < slots.size(); k++) {
+            inv.setItem(slots.get(k), order.get(k));
+        }
+    }
+
+    /** Uses up one of {@code item}, a lent one first. */
+    private static void useLentFirst(ServerPlayer p, String item) {
+        var inv = p.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack s = inv.getItem(i);
+            if (isLent(s) && Inv.idOf(s).equals(item)) {
+                s.shrink(1);
+                return;
+            }
+        }
+        Inv.remove(p, item, 1);
+    }
+
+    /** Removes every lent stack from a player's pack, armour and offhand; returns how many items. */
+    static int stripLent(ServerPlayer p) {
+        int n = 0;
+        var inv = p.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack s = inv.getItem(i);
+            if (isLent(s)) {
+                n += s.getCount();
+                inv.setItem(i, ItemStack.EMPTY);
+            }
+        }
+        return n;
+    }
+
+    /** Takes the arena's items back: the wave's supplies and every lent stack (and the horn, icon and bag when {@code all}). */
     void stripItems(ServerPlayer p, boolean all) {
         for (String item : WAVE_ITEMS) {
             Inv.remove(p, item, 10_000);
@@ -695,18 +778,15 @@ public class BarbarianAssaultSession extends MinigameSession {
                 Inv.remove(p, item, 10_000);
             }
         }
-        Map<String, Integer> given = lent.remove(p.getUUID());
-        if (given != null) {
-            given.forEach((item, n) -> Inv.remove(p, item, Math.min(n, Inv.count(p, item))));
-        }
+        stripLent(p);
         bags.remove(p.getUUID());
     }
 
-    /** Removes the eggs and bait lying in the arena. */
+    /** Removes the eggs, bait and lent items (runes, logs, the hammer) lying in the arena. */
     private void clearFloor() {
         for (ItemEntity e : world.getEntitiesOfClass(ItemEntity.class, box(), ItemEntity::isAlive)) {
             String id = Inv.idOf(e.getItem());
-            if (WAVE_ITEMS.contains(id) || e.getTags().contains(EGG_TAG)) {
+            if (WAVE_ITEMS.contains(id) || e.getTags().contains(EGG_TAG) || isLent(e.getItem())) {
                 e.discard();
             }
         }
@@ -886,11 +966,16 @@ public class BarbarianAssaultSession extends MinigameSession {
     private void pickUpEggs() {
         for (ItemEntity item : world.getEntitiesOfClass(ItemEntity.class, box(), e -> e.isAlive() && e.getTags().contains(EGG_TAG))) {
             for (ServerPlayer p : online()) {
+                if (!covers(p, BaRules.COLLECTOR)) {
+                    continue; // someone else standing on the egg doesn't stop the collector taking it
+                }
                 double dx = p.getX() - item.getX();
                 double dz = p.getZ() - item.getZ();
                 if (dx * dx + dz * dz < 1.6 * 1.6 && Math.abs(p.getY() - item.getY()) < 2) {
                     pickUp(p, item);
-                    break;
+                    if (!item.isAlive()) {
+                        break;
+                    }
                 }
             }
         }
@@ -949,25 +1034,41 @@ public class BarbarianAssaultSession extends MinigameSession {
         hurt(p, BaRules.EXPLODE_DAMAGE);
     }
 
-    /** The collector converter: with collector level 2+, each egg in the pack has the level's chance to change colour. */
-    private void convert(ServerPlayer p) {
+    /**
+     * The collector converter: with collector level 2+, each egg in the pack has the level's chance to change colour (green to
+     * red, red and blue to green) and is destroyed otherwise (OSRS Wiki, Collector Converter).
+     */
+    void convert(ServerPlayer p) {
         int level = roleLevel(p, BaRules.COLLECTOR);
         if (level < 2) {
             Msg.game(p, "You need to be a level 2 collector to use the converter.");
             return;
         }
+        int[] made = new int[BaRules.EGGS.size()];
         int changed = 0;
+        int destroyed = 0;
         for (String egg : BaRules.EGGS) {
-            int n = Inv.count(p, egg);
+            int n = Inv.remove(p, egg, 10_000);
             for (int i = 0; i < n; i++) {
                 if (random.nextInt(100) < BaRules.convertPercent(level)) {
-                    Inv.remove(p, egg, 1);
-                    Inv.give(p, BaRules.converted(egg), 1);
+                    made[BaRules.eggColour(BaRules.converted(egg))]++;
                     changed++;
+                } else {
+                    destroyed++;
                 }
             }
         }
-        Msg.game(p, changed == 0 ? "None of your eggs change colour." : changed + " egg" + (changed == 1 ? "" : "s") + " change colour.");
+        for (int c = 0; c < made.length; c++) {
+            if (made[c] > 0) {
+                Inv.give(p, BaRules.EGGS.get(c), made[c]);
+            }
+        }
+        if (changed + destroyed == 0) {
+            Msg.game(p, "You have no eggs to convert.");
+            return;
+        }
+        Msg.game(p, changed + " egg" + (changed == 1 ? "" : "s") + " change colour" + (destroyed > 0 ? "; " + destroyed
+                + " " + (destroyed == 1 ? "is" : "are") + " destroyed." : "."));
     }
 
     // ------------------------------------------------------------------ the egg launcher
@@ -993,21 +1094,31 @@ public class BarbarianAssaultSession extends MinigameSession {
         fireMenu(p);
     }
 
-    /** The collector loads every egg in the bag and the pack (omega eggs too) into the hopper; returns how many. */
+    /**
+     * The collector loads the eggs in the bag and then the pack into the hopper, up to five of each colour (the rest stay where
+     * they were), and every omega egg; returns how many.
+     */
     int load(ServerPlayer p) {
         int n = 0;
+        boolean full = false;
         int[] bag = bag(p);
         for (int c = 0; c < 3; c++) {
-            int inv = Inv.remove(p, BaRules.EGGS.get(c), 10_000);
-            hopper[c] += bag[c] + inv;
-            n += bag[c] + inv;
-            bag[c] = 0;
+            int room = Math.max(0, BaRules.HOPPER_MAX_PER_COLOUR - hopper[c]);
+            int fromBag = Math.min(room, bag[c]);
+            bag[c] -= fromBag;
+            int fromPack = Inv.remove(p, BaRules.EGGS.get(c), room - fromBag);
+            hopper[c] += fromBag + fromPack;
+            n += fromBag + fromPack;
+            full |= bag[c] > 0 || Inv.has(p, BaRules.EGGS.get(c), 1);
         }
         int omega = Inv.remove(p, BaRules.OMEGA_EGG, 10_000);
         hopper[3] += omega;
         n += omega;
         if (n > 0) {
             Msg.game(p, "You load " + n + " egg" + (n == 1 ? "" : "s") + " into the egg hopper. (" + hopperText() + ")");
+        }
+        if (full) {
+            Msg.game(p, "The hopper holds at most " + BaRules.HOPPER_MAX_PER_COLOUR + " eggs of each colour.");
         }
         return n;
     }
@@ -1068,10 +1179,15 @@ public class BarbarianAssaultSession extends MinigameSession {
                 Msg.game(p, "Every other Penance must be dead before the omega eggs can hurt the queen.");
                 return;
             }
+            // Omega eggs have no firing delay (OSRS Wiki, Egg launcher) and hit for 30-39.
             hopper[3]--;
             Msg.game(p, "You fire an omega egg at the Penance Queen!");
             world.sendParticles(ParticleTypes.EXPLOSION, queen.getX(), queen.getY() + 1, queen.getZ(), 3, 1, 1, 1, 0);
-            sessionHit(p, queen, BaRules.omegaEggDamage());
+            sessionHit(p, queen, BaRules.omegaEggDamage(random.nextDouble()));
+            return;
+        }
+        if (ticks < nextFire.getOrDefault(p.getUUID(), 0L)) {
+            Msg.game(p, "You can only fire one egg at a time.");
             return;
         }
         int t = java.util.Arrays.asList(TARGETS).indexOf(target);
@@ -1081,6 +1197,7 @@ public class BarbarianAssaultSession extends MinigameSession {
             return;
         }
         hopper[c]--;
+        nextFire.put(p.getUUID(), ticks + BaRules.EGG_FIRE_DELAY_TICKS);
         launch(p, c, mob);
     }
 
@@ -1118,11 +1235,13 @@ public class BarbarianAssaultSession extends MinigameSession {
             case 1 -> {
                 world.sendParticles(ParticleTypes.ITEM_SLIME, mob.getX(), mob.getY() + 1, mob.getZ(), 8, 0.3, 0.3, 0.3, 0);
                 sessionHit(p, mob, BaRules.GREEN_DAMAGE);
-                if (mob.isAlive() && !(poisons.containsKey(mob.getUUID()) && poisons.get(mob.getUUID()).food)) {
+                if (mob.isAlive()) {
+                    // Beside any food poison, never resetting or delaying it; every 18 s on a Penance healer, 3 s on the others.
                     Poison ps = new Poison();
                     ps.by = p.getUUID();
-                    ps.next = ticks + BaRules.POISON_INTERVAL_TICKS;
-                    poisons.put(mob.getUUID(), ps);
+                    ps.interval = BaRules.greenPoisonInterval(typeOf(MinigameManager.creatureId(mob)) == BaWaves.HEALER);
+                    ps.next = ticks + ps.interval;
+                    eggPoison.put(mob.getUUID(), ps);
                 }
             }
             default -> {
@@ -1294,7 +1413,8 @@ public class BarbarianAssaultSession extends MinigameSession {
     /** A runner reaching the lure cave escapes (a penalty) and comes back out of the northern cave. */
     private void escape(Mob m) {
         runnerAi.remove(m.getUUID());
-        poisons.remove(m.getUUID());
+        foodPoison.remove(m.getUUID());
+        eggPoison.remove(m.getUUID());
         m.discard();
         if (wave < BaWaves.WAVES) {
             escapes++;
@@ -1320,11 +1440,7 @@ public class BarbarianAssaultSession extends MinigameSession {
             Msg.game(p, "You need logs to repair the trap.");
             return;
         }
-        Inv.remove(p, "logs", 1);
-        Map<String, Integer> given = lent.get(p.getUUID());
-        if (given != null && given.getOrDefault("logs", 0) > 0) {
-            given.merge("logs", -1, Integer::sum);
-        }
+        useLentFirst(p, "logs");
         trapCharges[trap] = BaRules.TRAP_CHARGES;
         Msg.game(p, "You repair the runner trap.");
     }
@@ -1368,6 +1484,7 @@ public class BarbarianAssaultSession extends MinigameSession {
                         h.until = ticks + 10;
                     } else if (m.distanceToSqr(runner) < 1.8 * 1.8) {
                         runner.setHealth(runner.getMaxHealth());
+                        eggPoison.remove(runner.getUUID()); // a green egg's poison hits five times "unless healed"
                         world.sendParticles(ParticleTypes.HEART, runner.getX(), runner.getY() + 1, runner.getZ(), 3, 0.3, 0.3, 0.3, 0);
                         h.mode = HEALER_CHASE_PLAYER;
                     } else if (ticks >= h.nextPath) {
@@ -1413,14 +1530,20 @@ public class BarbarianAssaultSession extends MinigameSession {
         }
         Poison ps = new Poison();
         ps.by = p.getUUID();
-        ps.food = true;
-        ps.next = ticks + BaRules.POISON_INTERVAL_TICKS;
-        poisons.put(healer.getUUID(), ps);
+        ps.interval = BaRules.POISON_INTERVAL_TICKS;
+        ps.next = ticks + ps.interval;
+        foodPoison.put(healer.getUUID(), ps);
         sessionHit(p, healer, BaRules.FOOD_DAMAGE);
         return true;
     }
 
+    /** Both kinds of poison tick on their own: the food's (4 dropping to 1) and the green egg's (1, five times). */
     private void poison() {
+        tickPoison(foodPoison, true);
+        tickPoison(eggPoison, false);
+    }
+
+    private void tickPoison(Map<UUID, Poison> poisons, boolean food) {
         List<UUID> done = new ArrayList<>();
         // A copy: a poison hit that kills its creature removes it from the map (onKill).
         for (Map.Entry<UUID, Poison> e : new ArrayList<>(poisons.entrySet())) {
@@ -1434,13 +1557,13 @@ public class BarbarianAssaultSession extends MinigameSession {
                     mob = l;
                 }
             }
-            int hit = ps.food ? BaRules.foodPoisonHit(ps.hits) : ps.hits < BaRules.GREEN_POISON_HITS ? BaRules.GREEN_POISON : 0;
+            int hit = food ? BaRules.foodPoisonHit(ps.hits) : BaRules.greenPoisonHit(ps.hits);
             if (mob == null || hit <= 0) {
                 done.add(e.getKey());
                 continue;
             }
             ps.hits++;
-            ps.next = ticks + BaRules.POISON_INTERVAL_TICKS;
+            ps.next = ticks + ps.interval;
             sessionHit(world.getServer().getPlayerList().getPlayer(ps.by), mob, hit);
         }
         done.forEach(poisons::remove);
@@ -1682,7 +1805,8 @@ public class BarbarianAssaultSession extends MinigameSession {
             runes.add(Rune.MIND);
         }
         for (Rune r : runes) {
-            int have = Inv.count(p, r.itemId());
+            // The arena's own runes (OSRS's untradeable variants): the player's own runes aren't counted or used first.
+            int have = lentCount(p, r.itemId());
             if (have < 64) {
                 lend(p, r.itemId(), 64 - have); // approx: OSRS hands out 1,000 of each, more than a Minecraft stack
             }
@@ -1723,7 +1847,9 @@ public class BarbarianAssaultSession extends MinigameSession {
         lines.add("Barbarian Assault - wave " + wave + " / " + BaWaves.WAVES
                 + (phase == Phase.WAITING ? " (starts in " + Math.max(0, nextWaveIn * 6 / 10) + "s)" : ""));
         lines.add("Role: " + roleName(r) + " lv " + roleLevel(player, r) + " (" + honour + " honour)");
-        if (phase == Phase.RUNNING) {
+        // The calls hold until every Penance is dead: on wave 10 the queen can come out (after 4 minutes) with some still alive,
+        // and the frozen calls still decide their style, eggs and food (calls stop changing and the horn falls silent then).
+        if (phase == Phase.RUNNING || phase == Phase.QUEEN && (penanceAlive() > 0 || !allOut())) {
             Call make = Call.madeBy(r);
             int value = callValue[make.ordinal()];
             lines.add("Call (" + roleName(make.receiver()) + "): " + make.label(value) + (called[make.ordinal()] == value ? " - called" : ""));
@@ -1822,6 +1948,14 @@ public class BarbarianAssaultSession extends MinigameSession {
                 return InteractionResultHolder.success(stack);
             }
             return InteractionResultHolder.pass(stack);
+        });
+        // The arena's lent runes, logs and hammer vanish outside it (OSRS's untradeable variants): a player logging in outside a
+        // game (after a crash or a restart mid-wave) loses any still in the pack.
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            ServerPlayer p = handler.getPlayer();
+            if (of(p) == null && stripLent(p) > 0) {
+                Msg.game(p, "The runes and tools you took from Barbarian Assault crumble away.");
+            }
         });
         QuestScripts.onTalk("mg_captain_cain", (player, npc) -> captainCain(player));
         java.util.function.BiFunction<ServerPlayer, com.runecraft.osrs.Prayer, String> otherRules = com.runecraft.combat.PrayerService.minigameRule;
@@ -2072,5 +2206,16 @@ public class BarbarianAssaultSession extends MinigameSession {
 
     List<LivingEntity> penance(int type) {
         return living(BarbarianAssault.PENANCE[type]);
+    }
+
+    /** Whether a poisoned food's poison is running on a Penance creature. */
+    boolean foodPoisoned(LivingEntity mob) {
+        return foodPoison.containsKey(mob.getUUID());
+    }
+
+    /** The interval (ticks) of a green egg's poison on a Penance creature, or -1 when none runs. */
+    int eggPoisonInterval(LivingEntity mob) {
+        Poison ps = eggPoison.get(mob.getUUID());
+        return ps == null ? -1 : ps.interval;
     }
 }

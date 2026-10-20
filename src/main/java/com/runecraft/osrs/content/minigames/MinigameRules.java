@@ -346,7 +346,7 @@ public final class MinigameRules {
             return BaWaves.stats(wave, type).hitpoints();
         }
 
-        /** Omega egg damage so that {@link #QUEEN_EGG_HITS} hits kill the queen. */
+        /** The queen's hitpoints split over {@link #QUEEN_EGG_HITS} eggs; real hits roll 30-39 ({@link BaRules#omegaEggDamage}). */
         public static int omegaEggDamage() {
             return (QUEEN_HP + QUEEN_EGG_HITS - 1) / QUEEN_EGG_HITS;
         }

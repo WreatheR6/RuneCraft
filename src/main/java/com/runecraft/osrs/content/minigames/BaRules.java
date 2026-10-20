@@ -147,11 +147,23 @@ public final class BaRules {
     public static final int RED_DAMAGE = 3, RED_SPLASH_MAX = 1, RED_SPLASH_RANGE = 3;
     /** Green eggs hit for 1 and poison for 1 five more times. */
     public static final int GREEN_DAMAGE = 1, GREEN_POISON = 1, GREEN_POISON_HITS = 5;
+    /**
+     * Green egg poison hits every 3 seconds on a runner, fighter or ranger but every 18 seconds on a Penance healer (OSRS Wiki,
+     * Green egg), and runs beside a poisoned food's poison without resetting, reducing or delaying it.
+     */
+    public static final int GREEN_POISON_INTERVAL_TICKS = 5, GREEN_POISON_HEALER_INTERVAL_TICKS = 30;
     /** Blue eggs stun for 6 seconds (the Penance can't move or be hurt meanwhile). */
     public static final int BLUE_STUN_TICKS = 10;
-    /** Poison from a green egg (and a poisoned food) hits every 5 ticks (3 seconds). */
+    /** A poisoned food's poison on a Penance healer hits every 5 ticks (3 seconds; OSRS Wiki, Penance Healer). */
     public static final int POISON_INTERVAL_TICKS = 5;
-    /** Collector converter success chance by collector level: none at 1, then ~20 / 40 / 60 / 80 %. */
+    /** The egg hopper holds at most five red, five green and five blue eggs (OSRS Wiki, Egg launcher); omega eggs have no cap. */
+    public static final int HOPPER_MAX_PER_COLOUR = 5;
+    /**
+     * A player fires one egg at a time, once every 3-4 seconds depending on how far it flies (OSRS Wiki, Egg launcher); omega
+     * eggs have no delay. // approx: 5 ticks whatever the distance
+     */
+    public static final int EGG_FIRE_DELAY_TICKS = 5;
+    /** Collector converter success chance by collector level: none at 1, then ~20 / 40 / 60 / 80 %; a failed egg is destroyed. */
     private static final int[] CONVERT_PERCENT = {0, 0, 20, 40, 60, 80}; // approx: the main page says ~85% at level 5
 
     /** The egg colour index of an egg item, or -1. */
@@ -159,7 +171,17 @@ public final class BaRules {
         return EGGS.indexOf(item);
     }
 
-    /** The converter's chance (percent) for a collector level. */
+    /** How often a green egg's poison hits: every 18 seconds on a Penance healer, every 3 seconds on the others. */
+    public static int greenPoisonInterval(boolean penanceHealer) {
+        return penanceHealer ? GREEN_POISON_HEALER_INTERVAL_TICKS : GREEN_POISON_INTERVAL_TICKS;
+    }
+
+    /** The green egg poison hit after {@code hitsTaken} of its hits: 1 five times, then 0. */
+    public static int greenPoisonHit(int hitsTaken) {
+        return hitsTaken < GREEN_POISON_HITS ? GREEN_POISON : 0;
+    }
+
+    /** The converter's chance (percent) for a collector level (an egg that fails is destroyed, OSRS Wiki). */
     public static int convertPercent(int level) {
         return CONVERT_PERCENT[Math.max(1, Math.min(5, level))];
     }
@@ -177,9 +199,48 @@ public final class BaRules {
         }
     }
 
-    /** One omega egg launched at the queen; eight of them kill her (250 hitpoints). */
-    public static int omegaEggDamage() {
-        return MinigameRules.BarbarianAssault.omegaEggDamage();
+    /** An omega egg hits the queen for 30-39 (OSRS Wiki, Omega egg; the Egg launcher page says 31-39). */
+    public static final int OMEGA_EGG_MIN = 30, OMEGA_EGG_MAX = 39;
+
+    /** One omega egg's hit on the queen for a uniform roll in [0, 1): 30 to 39. */
+    public static int omegaEggDamage(double roll) {
+        int spread = OMEGA_EGG_MAX - OMEGA_EGG_MIN + 1;
+        return OMEGA_EGG_MIN + Math.min(spread - 1, (int) (roll * spread));
+    }
+
+    /**
+     * The chance that the queen ({@code hitpoints}) dies to exactly {@code hits} omega eggs, each a uniform 30-39: the wiki
+     * works it out as 14.9568% for 7, 85.01889% for 8 and 0.02431% for 9.
+     */
+    public static double queenDiesInExactly(int hits, int hitpoints) {
+        int spread = OMEGA_EGG_MAX - OMEGA_EGG_MIN + 1;
+        // alive[d]: chance the queen has taken d damage (d < hitpoints) and is still alive.
+        double[] alive = new double[hitpoints];
+        alive[0] = 1;
+        double before = 1;
+        for (int k = 1; k <= hits; k++) {
+            double[] next = new double[hitpoints];
+            for (int d = 0; d < hitpoints; d++) {
+                if (alive[d] == 0) {
+                    continue;
+                }
+                for (int v = OMEGA_EGG_MIN; v <= OMEGA_EGG_MAX; v++) {
+                    if (d + v < hitpoints) {
+                        next[d + v] += alive[d] / spread;
+                    }
+                }
+            }
+            double still = 0;
+            for (double p : next) {
+                still += p;
+            }
+            if (k == hits) {
+                return before - still;
+            }
+            before = still;
+            alive = next;
+        }
+        return 0;
     }
 
     /**

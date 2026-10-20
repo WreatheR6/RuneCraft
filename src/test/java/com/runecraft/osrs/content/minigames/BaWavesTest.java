@@ -134,9 +134,23 @@ class BaWavesTest {
         assertEquals(BaRules.POISONED_EGG, BaRules.stepAt(BaRules.POISON_CRATER).result());
         assertEquals(BaRules.OMEGA_EGG, BaRules.stepAt(BaRules.LAVA_CRATER).result());
         assertEquals(BaRules.COLLECTOR, BaRules.handTo(BaRules.OMEGA_EGG));
-        // Eight omega eggs kill the queen; seven don't.
-        assertTrue(8 * BaRules.omegaEggDamage() >= BaWaves.QUEEN.hitpoints());
-        assertTrue(7 * BaRules.omegaEggDamage() < BaWaves.QUEEN.hitpoints());
+        // Omega eggs hit 30-39 (wiki); the queen dies to 7 (14.9568%), 8 (85.01889%) or 9 (0.02431%) of them, as the wiki works out.
+        assertEquals(30, BaRules.omegaEggDamage(0.0));
+        assertEquals(39, BaRules.omegaEggDamage(0.9999));
+        assertEquals(34, BaRules.omegaEggDamage(0.45));
+        int queen = BaWaves.QUEEN.hitpoints();
+        assertEquals(0.0, BaRules.queenDiesInExactly(6, queen), 1e-12);
+        assertEquals(14.9568, 100 * BaRules.queenDiesInExactly(7, queen), 5e-5);
+        assertEquals(85.01889, 100 * BaRules.queenDiesInExactly(8, queen), 5e-6);
+        assertEquals(0.02431, 100 * BaRules.queenDiesInExactly(9, queen), 5e-6);
+        assertEquals(0.0, BaRules.queenDiesInExactly(10, queen), 1e-12);
+        // Green egg poison: every 3 s on the others, every 18 s on a Penance healer, five hits of 1.
+        assertEquals(5, BaRules.greenPoisonInterval(false));
+        assertEquals(30, BaRules.greenPoisonInterval(true));
+        assertEquals(1, BaRules.greenPoisonHit(4));
+        assertEquals(0, BaRules.greenPoisonHit(5));
+        // The hopper holds five of each colour.
+        assertEquals(5, BaRules.HOPPER_MAX_PER_COLOUR);
         // Runners walk south 4 times in 6.
         assertEquals(BaRules.RUNNER_STEP, BaRules.runnerWalk(0.1, false, 0)[1]);
         assertEquals(-BaRules.RUNNER_STEP, BaRules.runnerWalk(0.7, false, 0)[0]);
