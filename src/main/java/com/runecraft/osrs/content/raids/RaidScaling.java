@@ -57,8 +57,12 @@ public final class RaidScaling {
      * this mod's rooms are smaller, so one generous target is used. // approx
      */
     public static final int COX_CM_TARGET_MINUTES = 50;
-    /** ToB Hard mode challenge time for the ornament kits, sanguine dust and the larger chest. // approx */
-    public static final int TOB_HM_TARGET_MINUTES = 35;
+    /**
+     * ToB Hard mode challenge time for the ornament kits, sanguine dust and the larger chest (OSRS wiki "Theatre of
+     * Blood/Hard Mode", total raid time including the time between rooms): 70 minutes solo, 35 duo, 30 trio, 27 for four
+     * and 25 for five.
+     */
+    public static final int[] TOB_HM_TARGET_MINUTES = {70, 35, 30, 27, 25};
 
     private RaidScaling() {
     }
@@ -69,7 +73,7 @@ public final class RaidScaling {
             return COX_CM_TARGET_MINUTES * 100L;
         }
         if (type == RaidType.TOB && mode == RaidMode.HARD) {
-            return TOB_HM_TARGET_MINUTES * 100L;
+            return TOB_HM_TARGET_MINUTES[clampParty(partySize, 5) - 1] * 100L;
         }
         return Long.MAX_VALUE;
     }
@@ -335,13 +339,13 @@ public final class RaidScaling {
     }
 
     /**
-     * ToB Hard mode max hit multiplier (OSRS wiki): Nylocas Vasilias hits up to 105 instead of 70, and Verzik's
-     * second form 44 instead of 47.
+     * ToB Hard mode max hit multiplier (OSRS wiki): Nylocas Vasilias hits up to 105 instead of 70. Verzik's second form
+     * isn't scaled here: her Hard mode urnbombs hit about 20% harder (the room applies {@link TobRules#verzikUrnMax}); the
+     * infobox's 47 / 44 contradicts the page, so it isn't used.
      */
     public static double tobHardMaxHit(String id) {
         return switch (id) {
             case "nylocas_vasilias" -> 105 / 70.0;
-            case "verzik_vitur_p2" -> 44 / 47.0;
             default -> 1.0;
         };
     }
@@ -420,6 +424,15 @@ public final class RaidScaling {
         }
         double base = mode == RaidMode.HARD ? 1 / 7.7 : 1 / 9.1;
         return tobPointsRatio(teamPoints, partySize) * base;
+    }
+
+    /**
+     * How a player's own performance scales their ToB tertiary rolls (OSRS wiki "Monumental chest": the elite clue, Lil'
+     * Zik and the Hard mode kits and dust "scale down based on the individual's performance"). // approx: personal points
+     * out of the 18 a deathless player keeps, at most 1
+     */
+    public static double tobPerformance(int personalPoints) {
+        return Math.max(0, Math.min(1.0, personalPoints / (double) (6 * TOB_POINTS_PER_ROOM)));
     }
 
     /** The share of the possible ToB points the party kept (deaths cost 4 each). */

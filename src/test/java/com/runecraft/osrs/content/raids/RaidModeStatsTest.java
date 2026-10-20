@@ -27,8 +27,18 @@ class RaidModeStatsTest {
         assertArrayEquals(new int[]{-1, -1, 200, -1, -1}, RaidScaling.tobHardLevels("xarpus"));
         assertNull(RaidScaling.tobHardLevels("the_maiden_of_sugadinti"));
         assertEquals(105, Math.round(70 * RaidScaling.tobHardMaxHit("nylocas_vasilias")));
-        assertEquals(44, Math.round(47 * RaidScaling.tobHardMaxHit("verzik_vitur_p2")));
+        // Verzik's Hard mode urnbombs hit ~20% harder (wiki "Theatre of Blood/Hard Mode"), applied by the room.
+        assertEquals(1.0, RaidScaling.tobHardMaxHit("verzik_vitur_p2"));
+        assertEquals(44, TobRules.verzikUrnMax(RaidMode.NORMAL));
+        assertEquals(53, TobRules.verzikUrnMax(RaidMode.HARD));
         assertEquals(1.0, RaidScaling.tobHardMaxHit("verzik_vitur"));
+        // Hard mode challenge times by team size (wiki).
+        assertEquals(70 * 100L, RaidScaling.targetTicks(RaidType.TOB, RaidMode.HARD, 1));
+        assertEquals(35 * 100L, RaidScaling.targetTicks(RaidType.TOB, RaidMode.HARD, 2));
+        assertEquals(30 * 100L, RaidScaling.targetTicks(RaidType.TOB, RaidMode.HARD, 3));
+        assertEquals(27 * 100L, RaidScaling.targetTicks(RaidType.TOB, RaidMode.HARD, 4));
+        assertEquals(25 * 100L, RaidScaling.targetTicks(RaidType.TOB, RaidMode.HARD, 5));
+        assertEquals(Long.MAX_VALUE, RaidScaling.targetTicks(RaidType.TOB, RaidMode.NORMAL, 5));
     }
 
     @Test

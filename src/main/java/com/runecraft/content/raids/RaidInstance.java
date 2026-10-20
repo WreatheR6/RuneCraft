@@ -1171,6 +1171,10 @@ public final class RaidInstance {
         for (ServerPlayer p : players()) {
             boolean purple = result.purple(p.getUUID().toString());
             int kc = state.addCompletion(p.getUUID(), type.id(), points(p.getUUID()), purple);
+            if (type == RaidType.TOB) {
+                // OSRS: Hard mode needs a Normal (or Hard) mode completion, so the modes are counted apart too.
+                state.addCount(p.getUUID(), TobRooms.modeKey(mode));
+            }
             if (type == RaidType.TOA) {
                 // OSRS keeps Entry, Normal and Expert mode completion counts apart.
                 int modeKc = state.addCount(p.getUUID(), ToaLoot.modeKey(modeLevel));
@@ -1307,6 +1311,9 @@ public final class RaidInstance {
     /** Called instead of a party member dying. */
     void onDeath(ServerPlayer p) {
         UUID u = p.getUUID();
+        if (type == RaidType.TOB) {
+            TobRooms.playerDied(this, p); // the Dawnbringer drops where they fell
+        }
         deaths.merge(u, 1, Integer::sum);
         restore(p);
         RoomDef room = rooms.get(current);
@@ -1351,14 +1358,20 @@ public final class RaidInstance {
     }
 
     private void wipe() {
-        if (type == RaidType.TOA && retriesLeft != 0) {
+        boolean entry = type == RaidType.TOB && mode == RaidMode.ENTRY;
+        if ((type == RaidType.TOA && retriesLeft != 0) || entry) {
             if (retriesLeft > 0) {
                 retriesLeft--;
             }
-            say("Your party has fallen! The room resets" + (retriesLeft >= 0 ? " (" + retriesLeft + " attempts left)." : "."),
+            say("Your party has fallen! The room resets" + (retriesLeft >= 0 && !entry ? " (" + retriesLeft + " attempts left)." : "."),
                     ChatFormatting.RED);
-            // OSRS: wiping hands out honey locusts (not with On a Diet).
-            ToaSupplyService.wiped(this);
+            if (entry) {
+                // OSRS (March 2023): Entry mode has unlimited attempts, and a wipe hands out bandages.
+                TobRooms.entryWipe(this);
+            } else {
+                // OSRS: wiping hands out honey locusts (not with On a Diet).
+                ToaSupplyService.wiped(this);
+            }
             RoomLogic logic = logics[current];
             logic.reset();
             for (ServerPlayer p : players()) {
@@ -1389,9 +1402,12 @@ public final class RaidInstance {
 
     // ------------------------------------------------------------------ logging out and back in (ToA)
 
-    /** Whether a member logging out stays in the party (ToA, OSRS: you may log back in and rejoin). */
+    /**
+     * Whether a member logging out stays in the party (OSRS: ToA lets you log back in and rejoin; in ToB a logout during a
+     * fight counts as a death and logging back in puts you in purgatory with your party).
+     */
     boolean keepsOfflineMembers() {
-        return type == RaidType.TOA;
+        return type == RaidType.TOA || type == RaidType.TOB;
     }
 
     /**
@@ -1406,10 +1422,16 @@ public final class RaidInstance {
         offline.put(u, now());
         if (unsafe) {
             deaths.merge(u, 1, Integer::sum);
-            int before = toaTotal(u);
-            points.put(u, ToaLoot.afterDeath(before));
+            int before = type == RaidType.TOA ? toaTotal(u) : points(u);
+            if (type == RaidType.TOB) {
+                TobRooms.playerDied(this, p);
+                points.put(u, Math.max(0, before - RaidScaling.TOB_DEATH_PENALTY));
+            } else {
+                points.put(u, ToaLoot.afterDeath(before));
+            }
             downed.add(u);
-            say(p.getName().getString() + " has logged out mid-fight and lost " + (before - toaTotal(u)) + " points.", ChatFormatting.RED);
+            int after = type == RaidType.TOA ? toaTotal(u) : points(u);
+            say(p.getName().getString() + " has logged out mid-fight and lost " + (before - after) + " points.", ChatFormatting.RED);
             if (activePlayers().isEmpty() && !players().isEmpty()) {
                 wipe();
             }
@@ -1464,6 +1486,9 @@ public final class RaidInstance {
         ToaSupplyService.forget(u);
         CoxSupplyService.forget(u);
         if (p != null) {
+            if (type == RaidType.TOB && !closed) {
+                TobRooms.dropDawnbringer(this, p); // OSRS: a leaver's Dawnbringer drops to the floor for the others
+            }
             stripRaidItems(p);
             RaidNet.clearHud(p);
             if (teleportOut) {

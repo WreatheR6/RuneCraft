@@ -80,17 +80,14 @@ public final class RaidsHooks implements ModuleHooks {
         });
     }
 
-    /** ToB Nylocas waves: note attacks of a style the nylocas is immune to ("Perfect Nylocas"). */
+    /** ToB Nylocas waves: wrong-style attacks (immunity per attacker, Hard mode reflection, "Perfect Nylocas"). */
     private static void registerNylocasStyles() {
         com.runecraft.combat.CombatHooks.addModifier(new com.runecraft.combat.CombatHooks.PlayerAttackModifier() {
             @Override
             public int afterRoll(net.minecraft.server.level.ServerPlayer player, net.minecraft.world.entity.LivingEntity target,
                                  com.runecraft.osrs.AttackType type, int damage) {
                 TobRooms.Nylocas room = target == null ? null : TobRooms.Nylocas.of(player);
-                if (room != null) {
-                    room.attacked(target, type);
-                }
-                return damage;
+                return room == null ? damage : room.attacked(player, target, type, damage);
             }
         });
     }

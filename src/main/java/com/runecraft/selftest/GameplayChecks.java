@@ -109,6 +109,8 @@ final class GameplayChecks {
         checks.add(new SelfTest.Check("raid:cox_walk", () -> g.walk(com.runecraft.content.raids.CoxTobWalk::coxRun)));
         checks.add(new SelfTest.Check("raid:tob_walk", () -> g.walk(com.runecraft.content.raids.CoxTobWalk::tobRun)));
         checks.add(new SelfTest.Check("raid:tob_wipe", () -> g.walk(com.runecraft.content.raids.CoxTobWalk::tobWipe)));
+        checks.add(new SelfTest.Check("raid:tob_hm_walk", () -> g.walk(com.runecraft.content.raids.CoxTobWalk::tobHardRun)));
+        checks.add(new SelfTest.Check("raid:tob_entry_wipe", () -> g.walk(com.runecraft.content.raids.CoxTobWalk::tobEntryWipe)));
         checks.add(new SelfTest.Check("raid:cox_supplies", g::coxSupplies));
         checks.add(new SelfTest.Check("raid:toa_full_run", g::toaFullRun));
         checks.add(new SelfTest.Check("raid:toa_deaths", g::toaDeaths));

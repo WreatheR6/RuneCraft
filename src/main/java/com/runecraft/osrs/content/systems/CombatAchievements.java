@@ -272,6 +272,22 @@ public final class CombatAchievements {
     public static final String FLAG_VERZIK_NYLO_DAMAGE = "verzik_nylo_damage";
     /** Sotetseg's ball of death taken alone and survived (ToB "A Timely Snack"). */
     public static final String COUNT_SOTETSEG_BALL_ALONE = "sotetseg_ball_alone";
+    /** ToB round 36: two players stood on one tile at the Hard mode Bloat ("Personal Space"). */
+    public static final String FLAG_BLOAT_STACKED = "bloat_stacked";
+    /** Someone took a Vasilias / Prinkipas hit off prayer ("Perfect Nylocas", "Perfect Theatre"). */
+    public static final String FLAG_NYLO_OFF_PRAYER = "nylo_off_prayer";
+    /** Sotetseg's ball was shared ("Harder Mode I"), split by the whole team ("Just To Be Safe"), or any other hit or a death. */
+    public static final String FLAG_SOTETSEG_BALL_SHARED = "sotetseg_ball_shared";
+    public static final String FLAG_SOTETSEG_TEAM_SPLIT = "sotetseg_team_split";
+    public static final String FLAG_SOTETSEG_HIT = "sotetseg_hit";
+    /** A Verzik nylocas reached its player ("Nylo Sniper"), someone used melee on her third form ("Harder Mode III"). */
+    public static final String FLAG_VERZIK_NYLO_POPPED = "verzik_nylo_popped";
+    public static final String FLAG_VERZIK_P3_MELEE = "verzik_p3_melee";
+    /** Verzik bounced someone in phase 2 ("Attack, Step, Wait"), the green ball was passed on ("Pass It On"). */
+    public static final String FLAG_VERZIK_BOUNCED = "verzik_bounced";
+    public static final String FLAG_VERZIK_GREEN_PASSED = "verzik_green_passed";
+    /** A Hard mode yellow power blast during the tornadoes hurt nobody ("Team Work Makes the Dream Work"). */
+    public static final String FLAG_VERZIK_TEAMWORK = "verzik_teamwork";
     /** The Great Olm fight broke "Perfect Olm" (listed specials, a claw regrowing, one acid pool twice running). */
     public static final String FLAG_OLM_IMPERFECT = "olm_imperfect";
     /** The Olm used Crystal Burst, lightning, portals or the healing claw in his penultimate phase (CoX "A Not So Special Lizard"). */
