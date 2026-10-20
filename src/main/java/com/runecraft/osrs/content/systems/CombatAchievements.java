@@ -242,6 +242,10 @@ public final class CombatAchievements {
     public static final String FLAG_MEAT_TREE_HEAL = "meat_tree_heal";
     /** Vespula was forced to land (CoX "Redemption Enthusiast"). */
     public static final String FLAG_VESPULA_LANDED = "vespula_landed";
+    /** The CoX tightrope room was cleared without killing a deathly mage or ranger (CoX "No Time for Death"). */
+    public static final String FLAG_COX_TIGHTROPE_NO_KILLS = "cox_tightrope_no_kills";
+    /** The CoX crab room was cleared without wasting an orb after the first crystal lit (CoX "Playing with Lasers"). */
+    public static final String FLAG_COX_CRABS_PERFECT = "cox_crabs_perfect";
     /** Times the Pestilent Bloat shut down. */
     public static final String COUNT_BLOAT_SHUTDOWN = "bloat_shutdown";
     /** A blood spawn lived longer than 10 seconds (ToB "Anticoagulants"). */

@@ -21,7 +21,8 @@ import java.util.Random;
  *       the farming room's herb patches with a seed dibber (plant XP 4/6/12, harvest XP 10/15/30 per herb).</li>
  *   <li>Secondaries (stinkhorn mushroom, endarkened juice, cicely) drop together from scavenger beasts.</li>
  *   <li>Potions: herb + water-filled gourd vial + secondary; the strength made follows the Herblore level
- *       ((-) / normal / (+)). Overloads mix noxifer with an elder, twisted and kodai potion of the same strength.</li>
+ *       ((-) / normal / (+)). Overloads mix noxifer with an elder, twisted and kodai potion of the same strength;
+ *       antipoisons are noxifer and cicely.</li>
  *   <li>Food: seven fish (Fishing) and seven bats (Hunter), tiers 0-6, healing 5 + 3 per tier.</li>
  * </ul>
  */
@@ -141,7 +142,10 @@ public final class CoxSupplies {
         PRAYER_ENHANCE("prayer_enhance", "Prayer enhance", Herb.BUCHU, CICELY, new int[]{52, 65, 78}, new double[]{13.5, 20, 26.5},
                 0x40C0C0),
         XERICS_AID("xerics_aid", "Xeric's aid", Herb.BUCHU, ENDARKENED, new int[]{52, 65, 78}, new double[]{13.5, 20, 26.5}, 0xE0D080),
-        OVERLOAD("overload", "Overload", Herb.NOXIFER, null, new int[]{60, 75, 90}, new double[]{33.5, 50, 66.5}, 0x2A2A2A);
+        OVERLOAD("overload", "Overload", Herb.NOXIFER, null, new int[]{60, 75, 90}, new double[]{33.5, 50, 66.5}, 0x2A2A2A),
+        /** Round 36: noxifer and cicely (OSRS wiki "Chambers of Xeric/Strategies", Herblore tables). */
+        ANTIPOISON("cox_antipoison", "Antipoison", Herb.NOXIFER, CICELY, new int[]{60, 75, 90}, new double[]{13.5, 20, 26.5},
+                0x60C060);
 
         public final String base;
         public final String name;
@@ -263,6 +267,18 @@ public final class CoxSupplies {
         };
     }
 
+    /**
+     * Raid antipoison: cures poison and protects against it for 90 seconds (-), six minutes (normal) or nine minutes (+),
+     * like an antipoison, a superantipoison and an antidote+ (OSRS wiki).
+     */
+    public static int antipoisonImmunityTicks(Strength s) {
+        return switch (s) {
+            case WEAK -> 150;
+            case NORMAL -> 600;
+            case STRONG -> 900;
+        };
+    }
+
     /** Overload: 50 hitpoints of damage in hits of 10, boosts re-applied every 15 s for 5 minutes, then 50 healed. */
     public static final int OVERLOAD_DAMAGE = 50;
     public static final int OVERLOAD_HIT = 10;
@@ -310,7 +326,8 @@ public final class CoxSupplies {
 
     /**
      * Prayer enhance restorations per dose (Mod Ash, Feb 2023, for the (+)): floor(Prayer / 2 + 31) points, one at a
-     * time. // approx: (-) and normal give 20 and 10 fewer
+     * time, every floor(500 / that) ticks (6 ticks at Prayer 82+), over about 290 seconds. The wiki has no numbers for the
+     * weaker two yet (they last 275 or 290 seconds). // approx: (-) and normal give 20 and 10 fewer
      */
     public static int prayerEnhanceTimes(Strength s, int prayerLevel) {
         int strong = prayerLevel / 2 + 31;
@@ -371,10 +388,15 @@ public final class CoxSupplies {
     }
 
     /**
-     * The chance of burning raw CoX food on the fire (OSRS: CoX fish and bats can burn; their stop-burn levels aren't
-     * published). // approx: 50% at the required Cooking level, falling to none 30 levels above it
+     * The chance of burning raw CoX food on the fire. The top tier (kyren fish, psykk bat; level 90) follows the OSRS
+     * wiki's kyren cooking chart: the skilling roll with low 163, high 255, so about 3% burn at 90 and none at 99.
+     * // approx: the wiki charts only the kyren fish; the psykk bat shares it and the lower tiers burn 50% at their
+     * level, falling to none 30 levels above it
      */
     public static double burnChance(int cookingLevel, Food food) {
+        if (food.level() >= 90) {
+            return Math.max(0, 1 - CoxRules.skillRoll(cookingLevel, 163, 255));
+        }
         int over = cookingLevel - food.level();
         return over >= 30 ? 0 : Math.max(0, 0.5 - over * 0.5 / 30);
     }

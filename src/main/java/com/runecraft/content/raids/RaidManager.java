@@ -36,7 +36,7 @@ import java.util.UUID;
 
 /** All running raids: party formation, instance slots, ticking, deaths and logouts. */
 public final class RaidManager {
-    /** At most this many raids run at once (each owns a 1024-block strip). */
+    /** At most this many raids run at once (each owns a RaidBuilder.SLOT_WIDTH-block strip). */
     public static final int MAX_INSTANCES = 64;
     private static final Map<Integer, RaidInstance> ACTIVE = new HashMap<>();
     private static final Map<UUID, RaidInstance> BY_PLAYER = new HashMap<>();

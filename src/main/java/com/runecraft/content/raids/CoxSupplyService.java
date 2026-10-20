@@ -48,6 +48,10 @@ public final class CoxSupplyService {
             if (id == null || !CoxSupplies.ITEMS.contains(id)) {
                 return InteractionResultHolder.pass(stack);
             }
+            if (id.equals(CoxSupplies.WATER_GOURD)) {
+                // OSRS: water from a gourd vial douses the Great Olm's fire wall.
+                return useWaterGourd(sp) ? InteractionResultHolder.success(stack) : InteractionResultHolder.pass(stack);
+            }
             CoxSupplies.Herb grimy = CoxSupplies.Herb.byGrimy(id);
             CoxSupplies.Brew brew = CoxSupplies.brew(id);
             boolean secondary = id.equals(CoxSupplies.STINKHORN) || id.equals(CoxSupplies.ENDARKENED) || id.equals(CoxSupplies.CICELY)
@@ -72,6 +76,25 @@ public final class CoxSupplyService {
             }
             return InteractionResultHolder.success(stack);
         });
+    }
+
+    /**
+     * Pours a water-filled gourd vial on the Great Olm's fire wall next to the player (OSRS wiki: "Water-filled gourd
+     * vial(s) can be used to douse the Fire Wall"). Returns whether a wall was doused (the vial is used up).
+     */
+    static boolean useWaterGourd(ServerPlayer p) {
+        RaidInstance raid = RaidManager.of(p);
+        if (raid == null || raid.type != RaidType.COX || !Inv.has(p, CoxSupplies.WATER_GOURD, 1)) {
+            return false;
+        }
+        int room = raid.roomAt(p.position());
+        if (room < 0 || !(raid.logic(room) instanceof CoxRooms.Olm olm) || !olm.douse(p)) {
+            return false;
+        }
+        Inv.remove(p, CoxSupplies.WATER_GOURD, 1);
+        Inv.give(p, CoxSupplies.EMPTY_GOURD, 1);
+        ServerNetworking.sync(p);
+        return true;
     }
 
     /** A player left a raid (called from {@link RaidInstance#removePlayer}): their overload ends and the room tools go back. */
@@ -119,6 +142,22 @@ public final class CoxSupplyService {
             mix(p, CoxSupplies.Herb.NOXIFER.clean);
             expect(p, CoxSupplies.Potion.OVERLOAD.id(strong), 1, "mixing an overload (+)");
             expect(p, CoxSupplies.Potion.ELDER.id(strong), 0, "the overload used the elder (+)");
+            // Round 36: noxifer + cicely brews an antipoison, which cures poison.
+            Inv.give(p, CoxSupplies.WATER_GOURD, 1);
+            Inv.give(p, CoxSupplies.Herb.NOXIFER.clean, 1);
+            Inv.give(p, CoxSupplies.CICELY, 1);
+            mix(p, CoxSupplies.CICELY);
+            String anti = CoxSupplies.Potion.ANTIPOISON.id(strong);
+            expect(p, anti, 1, "brewing an antipoison (+) from noxifer and cicely");
+            com.runecraft.combat.PoisonService.poison(p, 6, ActionManager.gameTick());
+            ItemStack antiDose = Inv.stack(anti, 1);
+            p.setItemInHand(InteractionHand.MAIN_HAND, antiDose);
+            p.getCooldowns().removeCooldown(antiDose.getItem());
+            drink(p, antiDose, InteractionHand.MAIN_HAND, CoxSupplies.brew(anti));
+            if (com.runecraft.combat.PoisonService.isPoisoned(p)
+                    || !com.runecraft.combat.PoisonService.isPoisonImmune(p, ActionManager.gameTick())) {
+                throw new AssertionError("the antipoison (+) did not cure poison and protect against it");
+            }
             String elder = CoxSupplies.Potion.ELDER.id(strong);
             ItemStack dose = Inv.stack(elder, 1);
             p.setItemInHand(InteractionHand.MAIN_HAND, dose);
@@ -132,7 +171,8 @@ public final class CoxSupplyService {
             if (p.getMainHandItem().getDamageValue() != 1) {
                 throw new AssertionError("drinking did not use a dose (damage " + p.getMainHandItem().getDamageValue() + ")");
             }
-            return "cleaned, brewed elder/twisted/kodai (+), mixed an overload (+), elder (+) Attack +" + want;
+            return "cleaned, brewed elder/twisted/kodai (+), mixed an overload (+), brewed and drank an antipoison (+), elder (+) Attack +"
+                    + want;
         } finally {
             for (String id : CoxSupplies.ITEMS) {
                 Inv.remove(p, id, Inv.count(p, id));
@@ -200,7 +240,12 @@ public final class CoxSupplyService {
                     }
                 }
                 if (best == null) {
-                    Msg.game(p, "You need an elder, a twisted and a kodai potion to make an overload.");
+                    if (Inv.has(p, CoxSupplies.CICELY, 1)) {
+                        // No overload ingredients, but a cicely: noxifer and cicely brew an antipoison.
+                        brew(p, CoxSupplies.Herb.NOXIFER, CoxSupplies.CICELY, herblore);
+                        return;
+                    }
+                    Msg.game(p, "You need an elder, a twisted and a kodai potion to make an overload (or a cicely for an antipoison).");
                     return;
                 }
                 if (best.ordinal() < t.ordinal()) {
@@ -226,14 +271,21 @@ public final class CoxSupplyService {
         }
         String offhand = Inv.idOf(p.getOffhandItem());
         CoxSupplies.Herb herb = CoxSupplies.Herb.byClean(offhand);
-        if (herb == null || herb == CoxSupplies.Herb.NOXIFER) {
+        boolean cicely = secondary.equals(CoxSupplies.CICELY);
+        if (herb == null || herb == CoxSupplies.Herb.NOXIFER && !cicely) {
             herb = Inv.has(p, CoxSupplies.Herb.GOLPAR.clean, 1) ? CoxSupplies.Herb.GOLPAR
-                    : Inv.has(p, CoxSupplies.Herb.BUCHU.clean, 1) ? CoxSupplies.Herb.BUCHU : null;
+                    : Inv.has(p, CoxSupplies.Herb.BUCHU.clean, 1) ? CoxSupplies.Herb.BUCHU
+                    : cicely && Inv.has(p, CoxSupplies.Herb.NOXIFER.clean, 1) ? CoxSupplies.Herb.NOXIFER : null;
         }
         if (herb == null) {
-            Msg.game(p, "You need a golpar or a buchu leaf to brew with this.");
+            Msg.game(p, "You need a golpar or a buchu leaf (or a noxifer, with cicely) to brew with this.");
             return;
         }
+        brew(p, herb, secondary, herblore);
+    }
+
+    /** Brews one potion from a herb, a water-filled gourd vial and a secondary, at the strength the Herblore level allows. */
+    private static void brew(ServerPlayer p, CoxSupplies.Herb herb, String secondary, int herblore) {
         CoxSupplies.Potion potion = CoxSupplies.potionOf(herb, secondary);
         CoxSupplies.Strength s = potion == null ? null : potion.strengthFor(herblore);
         if (s == null) {
@@ -307,6 +359,11 @@ public final class CoxSupplyService {
                 int prayerLevel = skills.level(Skill.PRAYER);
                 data.setPrayerPoints(Math.min(prayerLevel, data.prayerPoints() + CoxSupplies.revitalisationRestore(s, prayerLevel)));
                 Msg.action(p, "You drink some of your revitalisation potion.");
+            }
+            case ANTIPOISON -> {
+                // OSRS: like an antipoison, a superantipoison and an antidote+ (90 seconds, 6 and 9 minutes of immunity).
+                com.runecraft.combat.PoisonService.cure(p, false, CoxSupplies.antipoisonImmunityTicks(s), ActionManager.gameTick());
+                Msg.action(p, "You drink some of your " + brew.potion().displayName(s).toLowerCase(java.util.Locale.ROOT) + ".");
             }
             case PRAYER_ENHANCE -> {
                 int prayerLevel = skills.level(Skill.PRAYER);

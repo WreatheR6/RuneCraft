@@ -428,6 +428,7 @@ class RaidsContentTest {
         int dust = 0;
         int kit = 0;
         int kitLate = 0;
+        int dustLate = 0;
         for (int i = 0; i < 20_000; i++) {
             for (RaidRewards.Loot l : RaidRewards.roll(RaidType.COX, RaidMode.CHALLENGE, cox, 0, true, random).lootFor("a")) {
                 dust += l.item().equals("metamorphic_dust") ? 1 : 0;
@@ -435,6 +436,7 @@ class RaidsContentTest {
             }
             for (RaidRewards.Loot l : RaidRewards.roll(RaidType.COX, RaidMode.CHALLENGE, cox, 0, false, random).lootFor("a")) {
                 kitLate += l.item().equals("twisted_ancestral_colour_kit") ? 1 : 0;
+                dustLate += l.item().equals("metamorphic_dust") ? 1 : 0;
             }
             for (RaidRewards.Loot l : RaidRewards.roll(RaidType.COX, RaidMode.NORMAL, cox, 0, true, random).lootFor("a")) {
                 assertFalse(l.item().equals("metamorphic_dust") || l.item().equals("twisted_ancestral_colour_kit"));
@@ -443,6 +445,38 @@ class RaidsContentTest {
         assertTrue(dust > 20 && dust < 90, "metamorphic dust about 1/400: " + dust);
         assertTrue(kit > 170 && kit < 380, "colour kit about 1/75: " + kit);
         assertEquals(0, kitLate, "the colour kit needs the target time");
+        assertEquals(0, dustLate, "metamorphic dust needs the target time too");
+        // OSRS: each raider rolls the dust (1/400) and the kit (1/75) on their own: a 5-man team within the target
+        // gets about 5/400 dusts and 5/75 kits per raid, not one roll for the whole team.
+        Map<String, Integer> five = Map.of("a", 30_000, "b", 30_000, "c", 30_000, "d", 30_000, "e", 30_000);
+        int teamDust = 0;
+        int teamKit = 0;
+        int raids = 40_000;
+        for (int i = 0; i < raids; i++) {
+            RaidRewards.Result r = RaidRewards.roll(RaidType.COX, RaidMode.CHALLENGE, five, 0, true, random);
+            for (String p : five.keySet()) {
+                for (RaidRewards.Loot l : r.lootFor(p)) {
+                    teamDust += l.item().equals("metamorphic_dust") ? 1 : 0;
+                    teamKit += l.item().equals("twisted_ancestral_colour_kit") ? 1 : 0;
+                }
+            }
+        }
+        assertTrue(teamDust > 350 && teamDust < 650, "about 5/400 dusts per 5-man raid (500 expected): " + teamDust);
+        assertTrue(teamKit > 2350 && teamKit < 2990, "about 5/75 kits per 5-man raid (2,667 expected): " + teamKit);
+        // A raider who left keeps their unique chance (the unique is discarded) but never draws the extras: the one
+        // who stayed gets every tablet, kit and dust, at the full per-player rate.
+        Map<String, Integer> withLeaver = Map.of("stayer", 20_000, "leaver", 20_000);
+        int stayerTablets = 0;
+        for (int i = 0; i < 20_000; i++) {
+            RaidRewards.Result r = RaidRewards.roll(RaidType.COX, RaidMode.CHALLENGE, withLeaver, 0, true, Set.of("stayer"), random);
+            for (RaidRewards.Loot l : r.lootFor("leaver")) {
+                assertFalse(RaidRewards.COX_CM_EXTRAS.stream().anyMatch(x -> x.item().equals(l.item())), "a leaver drew " + l.item());
+            }
+            for (RaidRewards.Loot l : r.lootFor("stayer")) {
+                stayerTablets += l.item().equals("ancient_tablet") ? 1 : 0;
+            }
+        }
+        assertTrue(stayerTablets > 1800 && stayerTablets < 2200, "the stayer keeps the full 1/10 tablet chance: " + stayerTablets);
         int holy = 0;
         int hardLate = 0;
         Map<String, Integer> tob = Map.of("a", 32);

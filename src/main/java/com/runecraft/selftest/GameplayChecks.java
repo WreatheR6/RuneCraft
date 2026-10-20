@@ -107,6 +107,8 @@ final class GameplayChecks {
             checks.add(new SelfTest.Check("raid:" + r.id(), () -> g.raid(r)));
         }
         checks.add(new SelfTest.Check("raid:cox_walk", () -> g.walk(com.runecraft.content.raids.CoxTobWalk::coxRun)));
+        // CoX Challenge Mode's fixed layout holds every room, so this walk plays each CoX mechanic every run.
+        checks.add(new SelfTest.Check("raid:cox_cm_walk", () -> g.walk(com.runecraft.content.raids.CoxTobWalk::coxChallengeRun)));
         checks.add(new SelfTest.Check("raid:tob_walk", () -> g.walk(com.runecraft.content.raids.CoxTobWalk::tobRun)));
         checks.add(new SelfTest.Check("raid:tob_wipe", () -> g.walk(com.runecraft.content.raids.CoxTobWalk::tobWipe)));
         checks.add(new SelfTest.Check("raid:cox_supplies", g::coxSupplies));

@@ -18,6 +18,15 @@ public final class CoxRules {
         return Math.max(1, Math.min(100, partySize));
     }
 
+    /**
+     * The standard OSRS skilling roll ("Skilling success chart"): {@code (1 + floor(low x (99 - L) / 98 + high x (L - 1) / 98
+     * + 0.5)) / 256}, the level clamped to 1-99.
+     */
+    public static double skillRoll(int level, int low, int high) {
+        int l = Math.max(1, Math.min(99, level));
+        return (1 + Math.floor(low * (99 - l) / 98.0 + high * (l - 1) / 98.0 + 0.5)) / 256.0;
+    }
+
     // ------------------------------------------------------------------ Tekton
 
     /** Tekton returns to his anvil after 10-14 attacks (OSRS wiki). */
@@ -37,6 +46,28 @@ public final class CoxRules {
     public static final int TEKTON_REPAIR_PER_10K = 133;
     /** Attacks the enraged state lasts (OSRS: it wears off after about five attacks). */
     public static final int TEKTON_ENRAGED_ATTACKS = 5;
+    /** Tekton's max hit (OSRS wiki infobox: 52, 59 enraged). */
+    public static final int TEKTON_MAX_HIT = 52;
+    public static final int TEKTON_ENRAGED_MAX_HIT = 59;
+    /**
+     * Tekton's stab/slash/crush defence bonuses (OSRS wiki infobox and DPS calculator: 155/165/105 normally, 280/290/180
+     * enraged).
+     */
+    public static final int[] TEKTON_DEFENCE = {155, 165, 105};
+    public static final int[] TEKTON_ENRAGED_DEFENCE = {280, 290, 180};
+    /** Rapid stomp damage to a player left under Tekton as he walks back to the anvil. // approx: 0-8 a tick, like Vasa's */
+    public static final int TEKTON_STOMP_MAX = 8;
+
+    /**
+     * The 1-in-N chance of Tekton's onyx (OSRS wiki "Tekton": 1/450 solo, better for a tougher Tekton in a bigger party,
+     * and three times worse in Challenge Mode for parties of three or fewer, Mod Ash 2021/2026).
+     * // approx: 450 solo falling by 38 per extra player to 70
+     */
+    public static int tektonOnyxRate(int partySize, boolean challenge) {
+        int n = clampParty(partySize);
+        int rate = Math.max(70, 450 - 38 * (n - 1));
+        return challenge && n <= 3 ? rate * 3 : rate;
+    }
     /** Tekton attacks every 3 game ticks. */
     public static final int TEKTON_ATTACK_SPEED = 3;
 
@@ -53,16 +84,17 @@ public final class CoxRules {
     }
 
     /**
-     * Game ticks Vasa takes to drain a crystal; each crystal the team disables makes the next drain faster (OSRS: "to the
-     * point that it is generally impossible to disable every third crystal"). // approx: 34 ticks, x0.7 per disabled crystal
+     * Vasa's teleport timer (OSRS wiki "Vasa Nistirio"): when he first reaches a glowing crystal a 40-second (66- or
+     * 67-tick) timer starts; it only runs while a crystal is active and pauses while none is. When it runs out he takes the
+     * crystal's healing, leaves it and goes back to the centre to teleport the team, and the timer starts afresh. Every
+     * crystal the team disables in time eats into the same timer, which is why the third one in a row is out of reach.
      */
-    public static int vasaDrainTicks(int disabled) {
-        double t = 34;
-        for (int i = 0; i < disabled; i++) {
-            t *= 0.7;
-        }
-        return Math.max(8, (int) Math.round(t));
+    public static int vasaTeleportTimer(Random random) {
+        return 66 + random.nextInt(2);
     }
+
+    /** Rapid stomp damage to anyone standing under Vasa (OSRS wiki: up to 8 a tick). */
+    public static final int VASA_STOMP_MAX = 8;
 
     /** Game ticks Vasa walks from the centre to a crystal (and back). // approx */
     public static final int VASA_WALK_TICKS = 6;
@@ -84,58 +116,133 @@ public final class CoxRules {
 
     /** Game ticks the Vanguards spend in their shells while they change places. // approx */
     public static final int VANGUARD_SHELL_TICKS = 4;
+    /** Players in the shuffling Vanguards' path take 3-6 rapid stomp damage every few ticks (OSRS wiki). */
+    public static final int VANGUARD_STOMP_MIN = 3;
+    public static final int VANGUARD_STOMP_MAX = 6;
+    /** Every Vanguard attack is three hits (OSRS wiki); the melee one lands all three on its target. */
+    public static final int VANGUARD_HITS_PER_ATTACK = 3;
+
+    // ------------------------------------------------------------------ stat regeneration
+
+    /**
+     * Game ticks per level a CoX creature's drained stats regenerate (Mod Ash, 9 July 2026, quoted on the OSRS wiki's
+     * "Vespula"): Stone Guardians 8, Muttadiles 15, Vasa Nistirio 10, Vasa's crystals 9, Tekton 15, lizardman shamans 20,
+     * skeletal mystics 25, jewelled crabs 1, Vespula 10, her portal 45, flying vespine soldiers 16; everything else the
+     * usual 100. (Lux grubs and grounded soldiers never regenerate; here grubs have no stats and a grounded soldier explodes
+     * within 20 seconds, so they keep the flying soldier's rate.)
+     */
+    public static int statRegenTicks(String creatureId) {
+        return switch (creatureId) {
+            case "cox_guardian" -> 8;
+            case "small_muttadile", "muttadile", "tekton" -> 15;
+            case "vasa_nistirio", "vespula" -> 10;
+            case "vasa_crystal" -> 9;
+            case "cox_lizardman_shaman" -> 20;
+            case "skeletal_mystic" -> 25;
+            case "cox_crystal_crab" -> 1;
+            case "vespula_portal" -> 45;
+            case "vespine_soldier" -> 16;
+            default -> 100;
+        };
+    }
+
+    /**
+     * Whether a creature regenerating a level every {@code ticks} ticks is due an extra level at {@code tick}, on top of the
+     * level every 100 ticks that every drained creature gets anyway: spread evenly so that the two add up to its own rate.
+     */
+    public static boolean extraRegenDue(int ticks, long tick) {
+        if (ticks <= 0 || ticks >= 100 || tick <= 0) {
+            return false;
+        }
+        long per = 100L * ticks;
+        long gain = 100 - ticks;
+        return tick * gain / per != (tick - 1) * gain / per;
+    }
 
     // ------------------------------------------------------------------ Vespula
 
-    /** A lux grub's hitpoints, and what a medivaemia blossom heals (OSRS wiki). */
+    /**
+     * A lux grub's hitpoints, and what a medivaemia blossom heals (OSRS wiki: 125, and 35 since the 29 November 2023 update,
+     * up from 20).
+     */
     public static final int LUX_GRUB_HP = 125;
-    public static final int BLOSSOM_HEAL = 30;
+    public static final int BLOSSOM_HEAL = 35;
     /** Enraged Vespula stings anyone in melee range for 5-20 typeless damage and stomps anyone under her for 2-8 (OSRS wiki). */
     public static final int VESPULA_ENRAGED_STING_MIN = 5;
     public static final int VESPULA_ENRAGED_STING_MAX = 20;
     public static final int VESPULA_STOMP_MIN = 2;
     public static final int VESPULA_STOMP_MAX = 8;
-    /** Damage one of Vespula's stings does to a grub. // approx: five stings hatch a fresh grub */
-    public static final int VESPULA_STING_DAMAGE = 25;
-    /** Game ticks between Vespula's stings at the grubs. // approx */
-    public static final int VESPULA_STING_INTERVAL = 8;
+    /**
+     * Lux grubs (OSRS wiki): Vespula periodically stings a grub, injecting her eggs; its meter then slowly depletes until a
+     * vespine soldier bursts out, unless blossoms keep it topped up. // approx: a stung grub loses 1 a tick (75 seconds
+     * from full), and she stings the next healthy grub every 20 ticks while she flies
+     */
+    public static final int GRUB_DRAIN_PER_TICK = 1;
+    public static final int VESPULA_STING_INTERVAL = 20;
+    /** Vespula's sting poisons from 20, a vespine soldier's from 15 (OSRS wiki). */
+    public static final int VESPULA_POISON = 20;
+    public static final int SOLDIER_POISON = 15;
+    /** A vespine soldier drops to the ground once its health is low (then only melee harms it). // approx: half health */
+    public static final double SOLDIER_LAND_BELOW = 0.5;
     /** A grounded vespine soldier explodes after 20 seconds (OSRS). */
     public static final int SOLDIER_FUSE_TICKS = 33;
+    /** A grounded soldier's explosion. // approx: "moderate damage" */
+    public static final int SOLDIER_BLAST_MIN = 10;
+    public static final int SOLDIER_BLAST_MAX = 25;
     /** Game ticks after a soldier dies before its grub reappears. // approx: "soon after" */
     public static final int GRUB_RESPAWN_TICKS = 10;
     /** The abyssal portal hits players within 7 tiles, draining 3 prayer points (3 damage without prayer). */
     public static final int PORTAL_RANGE = 7;
     public static final int PORTAL_DRAIN = 3;
-    /** Game ticks between the portal's pulses. // approx: its attack speed */
-    public static final int PORTAL_INTERVAL = 4;
+    /**
+     * The portal drains 3 prayer points every two ticks (its attack speed) from players in range while it is under attack
+     * (OSRS wiki "Abyssal portal").
+     */
+    public static final int PORTAL_INTERVAL = 2;
+    /** Ticks after the last attack on the portal that it still counts as under attack. // approx */
+    public static final int PORTAL_UNDER_ATTACK_TICKS = 8;
 
     // ------------------------------------------------------------------ Muttadiles
 
-    /** A muttadile goes to feed below 50% health and restores up to 40% of its health at the tree (OSRS wiki). */
+    /**
+     * A muttadile goes to feed at about half health and eats up to another 50% of its health (back to full) at the tree,
+     * at most three times; one that can't reach the tree for about 15 seconds gives up (OSRS wiki "Muttadile").
+     */
     public static final double MUTTADILE_FEED_BELOW = 0.5;
-    public static final double MUTTADILE_FEED_HEAL = 0.4;
+    public static final double MUTTADILE_FEED_HEAL = 0.5;
+    public static final int MUTTADILE_MAX_FEEDS = 3;
+    public static final int MUTTADILE_FEED_GIVE_UP_TICKS = 25;
     /** Game ticks a muttadile feeds. // approx */
     public static final int MUTTADILE_FEED_TICKS = 8;
 
-    /** The meat tree's health (OSRS wiki): 100 at Woodcutting 1 rising to 500 at 99 (team average). // approx: linear */
-    public static int meatTreeHp(int averageWoodcutting) {
-        int wc = Math.max(1, Math.min(99, averageWoodcutting));
-        return 100 + (wc - 1) * 400 / 98;
+    /** The meat tree's health (Mod Ash, OSRS wiki "Meat tree"): 5 x the team's total Woodcutting levels, at least 100. */
+    public static int meatTreeHp(int totalWoodcutting) {
+        return Math.max(100, 5 * Math.max(0, totalWoodcutting));
     }
 
-    /** A swing's chance to damage the meat tree (OSRS wiki): 20% at level 1 to 78% at 99. // approx: linear */
+    /**
+     * A swing's chance to damage the meat tree (OSRS wiki "Meat tree": the skilling roll with low 50, high 200, i.e. 20% at
+     * level 1 and 78% at 99).
+     */
     public static double meatTreeAccuracy(int woodcutting) {
-        int wc = Math.max(1, Math.min(99, woodcutting));
-        return 0.20 + (wc - 1) * 0.58 / 98;
+        return skillRoll(woodcutting, 50, 200);
     }
+
+    /** Woodcutting XP for a successful swing at the meat tree (OSRS wiki: 45). */
+    public static final double MEAT_TREE_XP = 45;
 
     /** Damage of a successful chop (OSRS wiki): half the Woodcutting level, -7/+3, whatever the axe. */
     public static int meatTreeChop(int woodcutting, Random random) {
         return Math.max(1, Math.max(1, woodcutting) / 2 - 7 + random.nextInt(11));
     }
 
-    /** Game ticks between the large muttadile's magic blasts from the water while the small one fights. // approx */
-    public static final int MUTTADILE_WATER_BLAST_INTERVAL = 12;
+    /**
+     * While the small muttadile fights, its submerged mother attacks with magic (attack speed 4) and picks each player it
+     * can see with a 1/3 chance (Mod Ash); its magic max hit is 23 (OSRS wiki).
+     */
+    public static final int MUTTADILE_WATER_BLAST_INTERVAL = 4;
+    public static final double MUTTADILE_WATER_BLAST_CHANCE = 1.0 / 3;
+    public static final int MUTTADILE_MAGIC_MAX = 23;
 
     // ------------------------------------------------------------------ Ice demon
 
@@ -166,6 +273,51 @@ public final class CoxRules {
         return KINDLING_XP[KINDLING_XP.length - 1] + 3.5 * (kindling - KINDLING_XP.length); // approx: boosted past 107
     }
 
+    /** Kindling stacks to 28; a player carrying 28 can't chop more (OSRS wiki "Kindling (Chambers of Xeric)"). */
+    public static final int KINDLING_CAP = 28;
+    /** Firemaking XP per kindling burnt (OSRS wiki: 48). */
+    public static final double KINDLING_FIREMAKING_XP = 48;
+    /** Points (OSRS wiki "Brazier (Chambers of Xeric)"): 36 for every kindling lit in a brazier, 32 for lighting one. */
+    public static final int KINDLING_POINTS = 36;
+    public static final int BRAZIER_LIGHT_POINTS = 32;
+
+    /**
+     * A sapling falls when chopped with a 1/X chance (Mod Ash): X is 3 or twice the party size at the start, whichever is
+     * higher, and five times that in the ice demon room.
+     */
+    public static int saplingDepletion(int partySize, boolean iceDemonRoom) {
+        int x = Math.max(3, 2 * clampParty(partySize));
+        return iceDemonRoom ? x * 5 : x;
+    }
+
+    /** Game ticks a felled sapling's stump takes to grow back (OSRS wiki: "after a few seconds"). // approx */
+    public static final int SAPLING_RESPAWN_TICKS = 8;
+
+    /** A successful chop at a sapling. // approx: 40% plus 1% per 1.5 Woodcutting levels */
+    public static double saplingChopChance(int woodcutting) {
+        return Math.min(1, 0.4 + Math.max(1, woodcutting) / 150.0);
+    }
+
+    /** Icefiends at the braziers: one per player, at most four (OSRS wiki "Ice demon"). */
+    public static int icefiends(int partySize) {
+        return Math.min(4, clampParty(partySize));
+    }
+
+    /**
+     * An icefiend tries to take a charge (a burning kindling) off its lit brazier every 3 or 4 ticks at random, succeeding
+     * 1 time in 6 (Mod Ash, July 2026).
+     */
+    public static int icefiendDelay(Random random) {
+        return 3 + random.nextInt(2);
+    }
+
+    public static final int ICEFIEND_SUCCESS = 6;
+    /**
+     * Game ticks a brazier takes to burn one kindling (the braziers burn on a timer set by their fuel, and the burning
+     * kindling thaws the demon). // approx
+     */
+    public static final int BRAZIER_BURN_TICKS = 2;
+
     /**
      * Chance one attempt lights an unlit brazier (OSRS wiki "Ice demon", Mod Ash): a normal Firemaking skill roll, 8% at
      * level 1 rising linearly to 78% at 99.
@@ -191,22 +343,93 @@ public final class CoxRules {
         return damage * 33 / 100;
     }
 
-    /** The secondaries the ice demon and the corrupted scavenger leave (OSRS: 7 stinkhorn, 7 endarkened juice, 5 cicely). */
+    /** The secondaries the ice demon leaves (OSRS wiki: 7 stinkhorn, 7 endarkened juice, 5 cicely). */
     public static final int CLEAR_STINKHORN = 7;
     public static final int CLEAR_ENDARKENED = 7;
     public static final int CLEAR_CICELY = 5;
+    /** The sleeping corrupted scavenger's batch (OSRS wiki "Chambers of Xeric/Strategies": 5 stinkhorn, 5 juice, 4 cicely). */
+    public static final int THIEVING_STINKHORN = 5;
+    public static final int THIEVING_ENDARKENED = 5;
+    public static final int THIEVING_CICELY = 4;
+
+    // ------------------------------------------------------------------ Lizardman shamans and Skeletal Mystics
+
+    /** A shaman's jump lands on a 3x3 area for 20-25 typeless damage (OSRS wiki "Lizardman shaman"). */
+    public static final int SHAMAN_JUMP_MIN = 20;
+    public static final int SHAMAN_JUMP_MAX = 25;
+    /**
+     * The purple poison blob lands on the target's tile (3x3): 25-30 on the surface and about 25% stronger in the
+     * Chambers, up to 39, poisoning from 12 (OSRS wiki). // approx: 31-39
+     */
+    public static final int SHAMAN_ACID_MIN = 31;
+    public static final int SHAMAN_ACID_MAX = 39;
+    public static final int SHAMAN_POISON = 12;
+    /** Three spawns appear per summon and explode for 5-10 within two tiles (a 5x5 area) seconds later (OSRS wiki). */
+    public static final int SHAMAN_SPAWNS = 3;
+    public static final int SPAWN_BLAST_MIN = 5;
+    public static final int SPAWN_BLAST_MAX = 10;
+    /** Game ticks before a spawn self-destructs. // approx: "seconds later" */
+    public static final int SPAWN_FUSE_TICKS = 6;
+    /** Game ticks between a shaman's special moves (jump, blob, spawns). // approx: no cooldown except the spawns' */
+    public static final int SHAMAN_SPECIAL_MIN = 8;
+    public static final int SHAMAN_SPECIAL_SPREAD = 8;
+    /** Game ticks before one shaman may summon spawns again (OSRS: only spawns have a cooldown). // approx */
+    public static final int SHAMAN_SPAWN_COOLDOWN = 25;
+
+    /**
+     * A Skeletal Mystic melees a target praying Protect from Magic that it can reach; otherwise it casts (OSRS wiki).
+     * Its magic is a standard bolt or a damaging Vulnerability.
+     */
+    public static boolean mysticMelees(boolean targetPraysMagic, boolean inReach) {
+        return targetPraysMagic && inReach;
+    }
+
+    /** Teleport portals appear when the last mystic dies: at the start, the middle and the end of the room (OSRS wiki). */
+    public static final int MYSTIC_PORTALS = 3;
+
+    /** Guardians knock back anyone who tries to slip past them, for moderate damage (OSRS wiki). // approx: 10-15 */
+    public static final int GUARDIAN_PUSH_MIN = 10;
+    public static final int GUARDIAN_PUSH_MAX = 15;
 
     // ------------------------------------------------------------------ Thieving
 
-    /** Most grubs one chest gives (Mod Ash): 1, +1 each at Thieving 50, 75 and 100. */
-    public static int grubMax(int thieving) {
-        return 1 + (thieving >= 50 ? 1 : 0) + (thieving >= 75 ? 1 : 0) + (thieving >= 100 ? 1 : 0);
+    /**
+     * Grubs one opened chest gives (Mod Ash, OSRS wiki "Chest (Chambers of Xeric)"): a random 0 to Thieving / 25 inclusive,
+     * raised to at least 1 (2 from level 95).
+     */
+    public static int grubs(int thieving, Random random) {
+        int max = Math.max(0, thieving) / 25;
+        int min = thieving >= 95 ? 2 : 1;
+        return Math.max(min, random.nextInt(max + 1));
     }
 
-    /** Grubs one opened chest gives: 1 up to {@link #grubMax}. */
-    public static int grubs(int thieving, Random random) {
-        return 1 + random.nextInt(grubMax(thieving));
+    /** Most grubs a chest can give. */
+    public static int grubMax(int thieving) {
+        return Math.max(thieving >= 95 ? 2 : 1, Math.max(0, thieving) / 25);
     }
+
+    /**
+     * Chance one attempt (one per tick) opens a chest: the skilling roll 99/155 bare-handed, 39% at level 1 to 61% at 99,
+     * and 153/209 with a lockpick or hair clip, 21 points better (Mod Ash, January 2024).
+     */
+    public static double chestOpenChance(int thieving, boolean lockpick) {
+        return lockpick ? skillRoll(thieving, 153, 209) : skillRoll(thieving, 99, 155);
+    }
+
+    /** Points per cavern grub fed to the trough (OSRS wiki: 115). */
+    public static final int GRUB_POINTS = 115;
+
+    /** Grubs that still earn points: max(4,500, floor(total Thieving / 6) x 150) / 115, rounded up (OSRS wiki). */
+    public static int pointGrubs(int totalThievingLevels) {
+        int max = Math.max(4_500, Math.max(0, totalThievingLevels) / 6 * 150);
+        return (max + GRUB_POINTS - 1) / GRUB_POINTS;
+    }
+
+    /** The scavenger starts to get hungry again after 60 seconds without food (OSRS wiki "Corrupted scavenger"). */
+    public static final int SCAVENGER_HUNGER_TICKS = 100;
+    /** Game ticks the scavenger takes to eat a grub from the trough, and to lose one grub of fullness when hungry. // approx */
+    public static final int SCAVENGER_EAT_TICKS = 1;
+    public static final int SCAVENGER_HUNGER_RATE = 10;
 
     /** The one-off chest of psykk bats: one per player in the raid, 5 to 25 (Mod Ash). */
     public static int batChest(int partySize) {
@@ -217,9 +440,13 @@ public final class CoxRules {
     public static final int POISON_CHESTS = 3;
     /** Game ticks before an opened chest locks itself again. // approx: "shortly after" */
     public static final int CHEST_RELOCK_TICKS = 25;
-    /** Cavern grubs the corrupted scavenger eats before it falls asleep. // approx */
+    /**
+     * Cavern grubs the corrupted scavenger eats before it falls asleep (OSRS wiki "Trough (Chambers of Xeric)": it scales
+     * with the party's total Thieving, at least 16 per player or 30 solo). // approx: the minimum
+     */
     public static int troughGrubs(int partySize) {
-        return 12 + 6 * (clampParty(partySize) - 1);
+        int n = clampParty(partySize);
+        return n == 1 ? 30 : 16 * n;
     }
 
     // ------------------------------------------------------------------ Tightrope
@@ -245,6 +472,84 @@ public final class CoxRules {
         return Math.min(8, 4 + clampParty(partySize) / 2);
     }
 
+    /** How far from the room centre the crab room's walls (and so its crystals and sculpture) stand, in tiles. */
+    public static final int CRAB_ROOM_REACH = 19;
+    /** Rows the three coloured crystals can stand in along the side wall (relative to the centre, along the orb's lane). */
+    static final int[] CRAB_CRYSTAL_ROWS = {-13, -9, -5, -1, 3, 7, 11};
+
+    /**
+     * A crab room layout (OSRS wiki "Crab puzzle": a carved sculpture sends the orb across the room; every layout needs
+     * three crabs). The sculpture stands on the north wall ({@code lane} +1, the orb heading south) or the south wall
+     * ({@code lane} -1, heading north); the black crystal faces it across the room. The yellow, cyan and magenta crystals
+     * (0-2) stand on the wall to the orb's right, at {@code rows[i]} along the lane, so each needs one crab in the lane at
+     * its row, struck the right colour, to bounce the orb into it.
+     */
+    public record CrabLayout(int lane, int[] rows) {
+        /** The tile the orb leaves the sculpture from, and its heading {x, z}. */
+        public int[] start() {
+            return new int[]{0, -lane * (CRAB_ROOM_REACH - 1), 0, lane};
+        }
+
+        /** Crystal {@code i}'s tile {x, z}: 0-2 on the side wall to the orb's right, 3 (black) at the far end of the lane. */
+        public int[] crystal(int i) {
+            if (i == 3) {
+                return new int[]{0, lane * CRAB_ROOM_REACH};
+            }
+            int[] right = turnRight(0, lane);
+            return new int[]{right[0] * CRAB_ROOM_REACH, rows[i]};
+        }
+    }
+
+    /** A random crab layout: either wall for the sculpture and three different crystal rows. */
+    public static CrabLayout crabLayout(Random random) {
+        List<Integer> rows = new java.util.ArrayList<>();
+        for (int r : CRAB_CRYSTAL_ROWS) {
+            rows.add(r);
+        }
+        java.util.Collections.shuffle(rows, random);
+        return new CrabLayout(random.nextBoolean() ? 1 : -1, new int[]{rows.get(0), rows.get(1), rows.get(2)});
+    }
+
+    /**
+     * Traces the orb through a crab room on the tile grid (pure model of the room logic): it moves one tile at a time from
+     * the sculpture, bounces right off crabs (taking or keeping their colour, or vanishing), and stops at a wall, a player
+     * or a crystal. Returns the crystal it reaches with the right colour (0-3), or -1.
+     *
+     * @param crabs the crab colour on each occupied tile, keyed {@code x * 1000 + z}
+     */
+    public static int traceOrb(CrabLayout layout, java.util.Map<Integer, Colour> crabs) {
+        int[] s = layout.start();
+        int x = s[0];
+        int z = s[1];
+        int dx = s[2];
+        int dz = s[3];
+        Colour colour = Colour.WHITE;
+        for (int step = 0; step < 400; step++) {
+            x += dx;
+            z += dz;
+            for (int i = 0; i < 4; i++) {
+                int[] c = layout.crystal(i);
+                if (c[0] == x && c[1] == z) {
+                    return colour == crystalWants(i) ? i : -1;
+                }
+            }
+            if (Math.abs(x) >= CRAB_ROOM_REACH || Math.abs(z) >= CRAB_ROOM_REACH) {
+                return -1;
+            }
+            Colour crab = crabs.get(x * 1000 + z);
+            if (crab != null) {
+                colour = reflect(colour, crab);
+                if (colour == null) {
+                    return -1;
+                }
+                int[] t = turnRight(dx, dz);
+                dx = t[0];
+                dz = t[1];
+            }
+        }
+        return -1;
+    }
+
     /** The colour a crab (and the orb it reflects) takes from an attack style (OSRS: red melee, blue magic, green ranged). */
     public static Colour crabColour(AttackType type) {
         if (type == null) {
@@ -262,20 +567,40 @@ public final class CoxRules {
         WHITE, RED, BLUE, GREEN
     }
 
-    /** The orb an orb-and-crab collision leaves (null: the orb is gone): a coloured orb only passes a crab of its colour. */
+    /**
+     * The orb an orb-and-crab collision leaves (null: the orb is gone; OSRS wiki "Crab puzzle"): a white orb takes the
+     * crab's colour (and stays white off an uncoloured crab); a coloured orb can't change colour again, so it only bounces
+     * off a crab of its own colour and disappears against any other.
+     */
     public static Colour reflect(Colour orb, Colour crab) {
-        if (crab == Colour.WHITE) {
-            return orb;
-        }
-        if (orb == Colour.WHITE || orb == crab) {
+        if (orb == Colour.WHITE) {
             return crab;
         }
-        return null;
+        return orb == crab ? orb : null;
     }
 
-    /** Damage the orb does to a player who steps into it (OSRS: scaled to current health). // approx: 30% */
+    /**
+     * The orb's new heading after it bounces off a crab: it always turns right from its own point of view (OSRS wiki). In
+     * block coordinates (x east, z south), heading south turns west, west turns north, north turns east, east turns south.
+     */
+    public static int[] turnRight(int dx, int dz) {
+        return new int[]{-dz, dx};
+    }
+
+    /** The colour a crystal wants: yellow (0) blue, cyan (1) red, magenta (2) green, black (3) white (OSRS wiki). */
+    public static Colour crystalWants(int crystal) {
+        return switch (crystal) {
+            case 0 -> Colour.BLUE;
+            case 1 -> Colour.RED;
+            case 2 -> Colour.GREEN;
+            default -> Colour.WHITE;
+        };
+    }
+
+    /** Damage the orb does to a player who steps into it (OSRS wiki: 10-30, scaled to current health). // approx: 30% */
     public static int orbDamage(int currentHp) {
-        return Math.max(1, currentHp * 30 / 100);
+        int hp = Math.max(1, currentHp);
+        return Math.min(hp, Math.max(10, Math.min(30, hp * 30 / 100)));
     }
 
     // ------------------------------------------------------------------ the Great Olm
@@ -283,6 +608,14 @@ public final class CoxRules {
     /** The head's standard attack max hit (OSRS DPS calculator): 27, 28 in the penultimate phase, 29 in the last. */
     public static int olmMaxHit(boolean penultimate, boolean headPhase) {
         return headPhase ? 29 : penultimate ? 28 : 27;
+    }
+
+    /** Challenge Mode max hits (OSRS wiki "Great Olm": 38 in the early phases, 39, 41 in the final stand). */
+    public static int olmMaxHit(boolean penultimate, boolean headPhase, boolean challenge) {
+        if (!challenge) {
+            return olmMaxHit(penultimate, headPhase);
+        }
+        return headPhase ? 41 : penultimate ? 39 : 38;
     }
 
     /** One of the three parts of the Olm. */
@@ -337,8 +670,11 @@ public final class CoxRules {
         ACID, FLAME, CRYSTAL
     }
 
-    /** Game ticks the left hand stays clenched, unless the right hand goes down first. // approx */
-    public static final int OLM_CLENCH_TICKS = 16;
+    /**
+     * Game ticks the left hand stays clenched (invulnerable, and no generic special attacks), unless the right hand goes
+     * down first (OSRS wiki: "roughly 30 seconds").
+     */
+    public static final int OLM_CLENCH_TICKS = 50;
     /** Penultimate phase: a disabled hand recovers at full health if the other lives for roughly 30 seconds (OSRS wiki). */
     public static final int OLM_HAND_RECOVER_TICKS = 50;
     /** Falling crystals before the Olm re-emerges on the other side (OSRS: 7-8 targeting crystals). */
@@ -361,13 +697,16 @@ public final class CoxRules {
         return clampParty(partySize) >= 5 ? 3 : 2;
     }
 
-    /** A crystal bomb hits a radius of 4 tiles: 15, plus 15 for every tile closer (OSRS wiki). */
+    /**
+     * A crystal bomb hits a radius of 4 tiles: 15 at the rim, plus 15 for every tile closer, 60 directly on top (OSRS wiki
+     * "Chambers of Xeric/Strategies").
+     */
     public static int olmCrystalBombDamage(double distanceTiles) {
         if (distanceTiles > 4.5) {
             return 0;
         }
-        int tiles = (int) Math.round(Math.max(0, distanceTiles));
-        return 15 + 15 * (4 - Math.min(4, tiles));
+        int tiles = Math.max(1, (int) Math.round(Math.max(0, distanceTiles)));
+        return 15 * (5 - Math.min(4, tiles));
     }
 
     /** Game ticks before a crystal bomb explodes (OSRS: "several seconds"). // approx */
@@ -397,8 +736,16 @@ public final class CoxRules {
     public static final int OLM_SIPHON_TICKS = 10;
     public static final int OLM_SIPHON_MAX = 18;
     public static final int OLM_SIPHON_HEAL = 5;
-    /** Teleport: the further a swapped player lands from where they stood, the more damage. // approx: 2 per tile, up to 30 */
+    /**
+     * Teleport (OSRS wiki "Chambers of Xeric/Strategies"): no damage when the swapped players stand on each other, 5 when
+     * adjacent, 10 two tiles apart and so on, up to 50 as far apart as possible.
+     */
     public static int olmTeleportDamage(double distanceTiles) {
-        return (int) Math.min(30, Math.round(distanceTiles * 2));
+        return (int) Math.min(50, 5 * Math.round(Math.max(0, distanceTiles)));
     }
+
+    /** Up to six players are paired for the swap; an odd one out is left alone (OSRS wiki). */
+    public static final int OLM_SWAP_MAX_PLAYERS = 6;
+    /** A solo player is sent to a random tile up to ten tiles from where they stood (OSRS wiki). */
+    public static final int OLM_SWAP_SOLO_RANGE = 10;
 }

@@ -75,7 +75,19 @@ class CoxSuppliesTest {
         assertEquals("Elder potion", Potion.ELDER.displayName(Strength.NORMAL));
         assertEquals("Xeric's aid", Potion.XERICS_AID.displayName(Strength.NORMAL));
         assertEquals("cox_overload_plus", Potion.OVERLOAD.id(Strength.STRONG));
-        assertEquals(21, CoxSupplies.potionIds().size());
+        // Antipoison (wiki Herblore tables): noxifer + cicely, Herblore 60/75/90, 13.5/20/26.5 XP, immunity 90 s, 6 and 9 min.
+        assertEquals(Potion.ANTIPOISON, CoxSupplies.potionOf(Herb.NOXIFER, CoxSupplies.CICELY));
+        assertEquals(60, Potion.ANTIPOISON.level(Strength.WEAK));
+        assertEquals(90, Potion.ANTIPOISON.level(Strength.STRONG));
+        assertEquals(20.0, Potion.ANTIPOISON.xp(Strength.NORMAL));
+        assertEquals("Antipoison (+)", Potion.ANTIPOISON.displayName(Strength.STRONG));
+        assertEquals("Antipoison potion", Potion.ANTIPOISON.displayName(Strength.NORMAL));
+        assertEquals("cox_antipoison_minus", Potion.ANTIPOISON.id(Strength.WEAK));
+        assertEquals(150, CoxSupplies.antipoisonImmunityTicks(Strength.WEAK));
+        assertEquals(600, CoxSupplies.antipoisonImmunityTicks(Strength.NORMAL));
+        assertEquals(900, CoxSupplies.antipoisonImmunityTicks(Strength.STRONG));
+        assertNull(CoxSupplies.potionOf(Herb.NOXIFER, CoxSupplies.STINKHORN));
+        assertEquals(24, CoxSupplies.potionIds().size());
         assertEquals(new HashSet<>(CoxSupplies.potionIds()).size(), CoxSupplies.potionIds().size());
     }
 

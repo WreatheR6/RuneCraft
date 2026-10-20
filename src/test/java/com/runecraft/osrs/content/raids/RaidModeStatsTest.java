@@ -49,6 +49,25 @@ class RaidModeStatsTest {
     }
 
     @Test
+    void coxChallengeModeTargetTimesAndDeaths() {
+        // OSRS wiki "Chambers of Xeric/Challenge Mode": the target time by team size.
+        int[][] want = {{1, 70}, {2, 65}, {3, 50}, {4, 45}, {5, 42}, {10, 42}, {11, 45}, {15, 45}, {16, 60}, {23, 60}, {24, 80},
+                {100, 80}};
+        for (int[] w : want) {
+            assertEquals(w[1], RaidScaling.coxCmTargetMinutes(w[0]), "party " + w[0]);
+            assertEquals(w[1] * 100L, RaidScaling.targetTicks(RaidType.COX, RaidMode.CHALLENGE, w[0]));
+        }
+        assertEquals(Long.MAX_VALUE, RaidScaling.targetTicks(RaidType.COX, RaidMode.NORMAL, 1));
+        assertEquals(5_000, RaidScaling.COX_CM_TARGET_BONUS);
+        // A death costs 40% of your points; with under 5% of the team's points it costs the team 5% instead.
+        assertEquals(600, RaidScaling.coxDeathPenalty(1000));
+        assertFalse(RaidScaling.coxDeathHitsTeam(1000, 10_000));
+        assertTrue(RaidScaling.coxDeathHitsTeam(400, 10_000));
+        assertTrue(RaidScaling.coxDeathHitsTeam(0, 0));
+        assertEquals(9_500, RaidScaling.coxTeamDeathPenalty(10_000));
+    }
+
+    @Test
     void coxSoloCreaturesIgnoreParty() {
         assertEquals(30, RaidScaling.coxScaledHp("vespine_soldier", 30, 5, false));
         assertEquals(45, RaidScaling.coxScaledHp("vespine_soldier", 30, 5, true));

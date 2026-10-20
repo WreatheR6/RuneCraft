@@ -39,15 +39,28 @@ public final class CoxTobWalk {
     private final List<String> notes = new ArrayList<>();
     private int ticks;
     private String room = "lobby";
+    /** CoX: walk Challenge Mode (every room, in the fixed order) instead of a random normal layout. */
+    private boolean challenge;
 
     private CoxTobWalk(RaidInstance raid, ServerPlayer player) {
         this.raid = raid;
         this.player = player;
     }
 
-    /** Walks a whole Chambers of Xeric raid as {@code p}; returns a summary or throws {@link AssertionError}. */
+    /**
+     * Walks a whole Chambers of Xeric raid as {@code p}: scouts and reloads the layout in the lobby, then plays the random
+     * normal layout. Returns a summary or throws {@link AssertionError}.
+     */
     public static String coxRun(ServerPlayer p, BlockPos entrance) {
-        return run(p, RaidType.COX, entrance);
+        return run(p, RaidType.COX, entrance, false);
+    }
+
+    /**
+     * Walks a whole Chambers of Xeric Challenge Mode raid as {@code p}: the fixed layout holds every combat and puzzle room,
+     * so one run exercises them all. Returns a summary or throws {@link AssertionError}.
+     */
+    public static String coxChallengeRun(ServerPlayer p, BlockPos entrance) {
+        return run(p, RaidType.COX, entrance, true);
     }
 
     /** Walks a whole Theatre of Blood raid as {@code p}; returns a summary or throws {@link AssertionError}. */
@@ -81,10 +94,15 @@ public final class CoxTobWalk {
     }
 
     private static String run(ServerPlayer p, RaidType type, BlockPos entrance) {
+        return run(p, type, entrance, false);
+    }
+
+    private static String run(ServerPlayer p, RaidType type, BlockPos entrance, boolean challenge) {
         RaidManager.enter(p, type, entrance);
         RaidInstance raid = RaidManager.of(p);
         expect(raid != null, "RaidManager.enter did not start a raid (see the log for \"Failed to start a raid\")");
         CoxTobWalk w = new CoxTobWalk(raid, p);
+        w.challenge = challenge;
         try {
             return w.walk();
         } catch (AssertionError e) {
@@ -109,18 +127,67 @@ public final class CoxTobWalk {
         expect(raid.world.getBlockState(barrier).isAir(), "the start barrier did not open");
     }
 
+    /**
+     * The CoX lobby (OSRS): the party scouts the layout; the leader can reload it, or pick Challenge Mode, whose layout is
+     * fixed and holds every room.
+     */
+    private void coxLobby() {
+        String scouted = raid.scout();
+        expect(scouted != null && scouted.startsWith("Floor 1: "), "the lobby did not scout the layout (" + scouted + ")");
+        if (challenge) {
+            expect(raid.setMode(com.runecraft.osrs.content.raids.RaidMode.CHALLENGE), "the leader could not pick Challenge Mode");
+            List<String> ids = new ArrayList<>();
+            for (RoomDef r : raid.rooms) {
+                ids.add(r.id().equals("cox_hunting") || r.id().equals("cox_farming") ? "F" : r.id());
+            }
+            List<String> want = new ArrayList<>(List.of("cox_lobby"));
+            for (List<String> floor : com.runecraft.osrs.content.raids.RaidLayouts.COX_CM_FLOORS) {
+                want.addAll(floor);
+            }
+            want.add("olm");
+            want.add("cox_reward");
+            expect(ids.equals(want), "Challenge Mode did not lay out its fixed rooms: " + ids);
+            expect(!raid.reloadLayout(), "Challenge Mode's fixed layout could be reloaded");
+            notes.add("Challenge Mode, " + raid.rooms.size() + " rooms");
+        } else {
+            boolean changed = false;
+            for (int i = 0; i < 10 && !changed; i++) {
+                expect(raid.reloadLayout(), "the leader could not reload the layout");
+                changed = !raid.scout().equals(scouted);
+            }
+            expect(changed, "reloading the layout ten times never changed it");
+            expect(raid.logic(1).def.id().equals(raid.rooms.get(1).id()), "the reloaded first room has the old room's logic");
+            expect("red_stained_glass".equals(blockId(raid.center(1).offset(RaidBuilder.HALF + 1, 1, 0))),
+                    "the reloaded first room was not built");
+            notes.add("layout reloaded: " + raid.scout());
+        }
+    }
+
     private String walk() {
+        if (raid.type == RaidType.COX) {
+            coxLobby();
+        }
         begin();
         int last = raid.rooms.size() - 1;
         boolean diedOnce = false;
         for (int i = 1; i <= last; i++) {
             RoomDef def = raid.rooms.get(i);
             room = def.id() + " (room " + i + ")";
+            int pointsBefore = raid.points(player.getUUID());
             // The previous room's exit is open: walk down the corridor into this room.
             moveTo(raid.spawn(i));
             tick(1);
             expect(raid.currentRoom() == i && raid.logic(i).started, "walking in did not start the room");
             if (def.kind() == RoomDef.Kind.REWARD) {
+                if (raid.type == RaidType.COX && challenge) {
+                    // OSRS: Challenge Mode within the target time adds 5,000 points per player.
+                    boolean within = raid.elapsedTicks() <= com.runecraft.osrs.content.raids.RaidScaling.targetTicks(RaidType.COX,
+                            raid.mode(), raid.partySize());
+                    int bonus = raid.points(player.getUUID()) - pointsBefore;
+                    expect(bonus == (within ? com.runecraft.osrs.content.raids.RaidScaling.COX_CM_TARGET_BONUS : 0),
+                            "Challenge Mode " + (within ? "within" : "over") + " the target time gave " + bonus + " bonus points");
+                    notes.add("CM " + raid.elapsedTicks() + " ticks (" + (within ? "within" : "over") + " target, +" + bonus + ")");
+                }
                 break;
             }
             RoomLogic logic = raid.logic(i);
@@ -152,17 +219,25 @@ public final class CoxTobWalk {
         return raid.rooms.size() + " rooms in " + ticks + " ticks: " + String.join("; ", notes) + "; chest gave " + loot + " items";
     }
 
-    /** CoX deaths (OSRS): 40% of your points are lost and you respawn at the start of the floor. */
+    /**
+     * CoX deaths (OSRS): 40% of your points are lost (5% of the team's if you had almost none) and you respawn at the start
+     * of the floor you have reached.
+     */
     private String coxDeath(int room) {
         int before = raid.points(player.getUUID());
+        int team = raid.totalPoints();
         raid.onDeath(player);
         int after = raid.points(player.getUUID());
-        expect(after == com.runecraft.osrs.content.raids.RaidScaling.coxDeathPenalty(before), "a CoX death took " + before + " -> " + after
-                + " points (expected -40%)");
-        expect(raid.inRoom(player.position(), 0), "a CoX death did not send the player back to the start");
+        boolean teamHit = before <= 0 || com.runecraft.osrs.content.raids.RaidScaling.coxDeathHitsTeam(before, team);
+        int want = teamHit ? com.runecraft.osrs.content.raids.RaidScaling.coxTeamDeathPenalty(before)
+                : com.runecraft.osrs.content.raids.RaidScaling.coxDeathPenalty(before);
+        expect(after == want, "a CoX death took " + before + " -> " + after + " points (expected " + want + ")");
+        int floor = raid.floorStart(raid.currentRoom());
+        expect(raid.inRoom(player.position(), floor), "a CoX death did not send the player back to the start of the floor (room "
+                + floor + ")");
         expect(RaidManager.of(player) == raid, "a CoX death removed the player from the raid");
         moveTo(raid.spawn(room));
-        return "death: " + before + " -> " + after + " points";
+        return "death: " + before + " -> " + after + " points, respawned in room " + floor;
     }
 
     /** The default solve: kill every creature the room tracks. */

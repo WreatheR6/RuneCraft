@@ -541,6 +541,8 @@ public final class CombatAchievementRules {
             56;RULE;cerberus;1;nodmg=melee
             303;WINDOW;vanguard_melee|vanguard_ranged|vanguard_magic;3;t<=0:10 distinct
             305;RAID;COX;1;size=1 points>40000
+            304;RAID;COX;1;flag=cox_tightrope_no_kills
+            315;RAID;COX;1;flag=cox_crabs_perfect
             311;RULE;cox_guardian;1;nodmg=mechanic,hazard
             312;RAID;COX;1;deathless
             313;RAID;COX;1;size=1 nodeath

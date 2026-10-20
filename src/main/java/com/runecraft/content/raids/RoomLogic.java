@@ -55,6 +55,7 @@ public class RoomLogic {
             case "vasa" -> new CoxRooms.Vasa(raid, def, index);
             case "guardians" -> new CoxRooms.Guardians(raid, def, index);
             case "shamans" -> new CoxRooms.Shamans(raid, def, index);
+            case "mystics" -> new CoxRooms.Mystics(raid, def, index);
             case "muttadiles" -> new CoxRooms.Muttadiles(raid, def, index);
             case "vanguards" -> new CoxRooms.Vanguards(raid, def, index);
             case "vespula" -> new CoxRooms.Vespula(raid, def, index);
