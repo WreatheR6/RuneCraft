@@ -9,7 +9,7 @@ You're continuing an ongoing project: RuneCraft, a NeoForge 1.21.1 Minecraft mod
 Work on the branch `claude/busy-cray-anf3uw`. Pushing to it runs CI, which builds the jar, boots a real server and client, and publishes the jar to the `dev-latest` GitHub release.
 
 Read these first:
-1. `docs/WORKFLOW.md`: the audit/merge loop, the verification tools, the GitHub data sources that work (the OSRS wiki itself is blocked), the agent brief, the round log and the backlog.
+1. `docs/WORKFLOW.md`: the audit/merge loop, the verification tools, the GitHub data sources that work (the OSRS wiki itself is blocked), the agent brief and the backlog (the round log is docs/ROUND_LOG.md).
 2. `docs/CONTENT_GUIDE.md`: how content modules, items, structures and assets fit together.
 3. `README.md`.
 
@@ -18,7 +18,7 @@ Then continue the loop described in `docs/WORKFLOW.md`:
 - Run one sub-agent per scope in its own git worktree, using the agent brief from WORKFLOW.md plus the scope.
 - Merge each finished branch with `tools/loop/merge_branch.sh <branch>`. Resolve code conflicts by hand, keeping both sides' intent, and nothing is merged until `tools/loop/verify.sh` prints VERIFY OK.
 - Push, then wait for CI to go green and confirm `dev-latest` shows the new commit. If CI fails, read the job log, fix the problem and push again.
-- At the end of each round, update the round log and backlog in `docs/WORKFLOW.md`, commit and push.
+- At the end of each round, update `docs/ROUND_LOG.md` and the backlog in `docs/WORKFLOW.md`, commit and push.
 - Keep going round after round until I tell you to stop or set a usage limit. Give me a short summary after each round.
 
 Rules:

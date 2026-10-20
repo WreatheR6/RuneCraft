@@ -5,6 +5,8 @@
 #             3+ = a verification step failed (see tools/loop/verify.sh).
 # Conflicts confined to src/main/resources are taken from the branch: those files are regenerated anyway.
 # Commit trailers (attribution lines) can be supplied with the COMMIT_TRAILERS environment variable.
+# NO_PUSH=1 merges and verifies without pushing: merge every branch of a round that way, then push once
+# (each push starts a full CI run; a newer push cancels the older run anyway).
 set -uo pipefail
 cd "$(dirname "$0")/../.."
 BR="$1"
@@ -21,5 +23,5 @@ fi
 bash tools/loop/verify.sh || exit $?
 git add -A
 git diff --cached --quiet || git commit -qm "$(msg "Regenerate assets after merging $BR")"
-git push -q -u origin "$TARGET" 2>&1 | tail -1
+[ "${NO_PUSH:-0}" = 1 ] || git push -q -u origin "$TARGET" 2>&1 | tail -1
 git log --oneline -1

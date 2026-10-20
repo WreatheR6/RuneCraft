@@ -7456,6 +7456,8 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="Generate RuneCraft assets from the content catalog.")
     ap.add_argument("--catalog", default=CATALOG, help="catalog JSON (default: build/catalog.json)")
     ap.add_argument("--out", default=RES, help="resources root to write into (default: src/main/resources)")
+    ap.add_argument("--validate-only", action="store_true",
+                    help="skip generation and only validate the existing resources against the catalog")
     args = ap.parse_args(argv)
     CATALOG = os.path.abspath(args.catalog)
     RES = os.path.abspath(args.out)
@@ -7466,6 +7468,18 @@ def main(argv=None):
         cat = json.load(f)
     for key in ("monsters", "bosses", "npcs", "blocks", "models", "quest_npcs"):
         cat.setdefault(key, [])
+    if args.validate_only:
+        errors = validate(cat)
+        for w in WARNINGS:
+            print("  warning: " + w)
+        if errors:
+            print("VALIDATION FAILED:")
+            for e in errors[:50]:
+                print("  " + e)
+            sys.exit(1)
+        print("Validation passed (generation skipped: inputs unchanged): JSON parses, referenced textures/models "
+              "exist, every catalog item/block/model/creature has its assets.")
+        return
     gen_items(cat)
     gen_armour(cat)
     block_names = gen_blocks(cat)
