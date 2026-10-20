@@ -49,6 +49,7 @@ public final class BossesHooks implements ModuleHooks {
         BossScripts.register("dusk", SlayerScripts.Dusk::new);
         BossScripts.register("dawn", SlayerScripts.Dawn::new);
         BossScripts.register("araxxor", SlayerScripts.Araxxor::new);
+        SlayerBossAccess.register(); // a task they count towards (and the Guardians' roof key), not just the Slayer level
 
         BossScripts.register("crystalline_hunllef", () -> new EncounterScripts.Hunllef(false));
         BossScripts.register("corrupted_hunllef", () -> new EncounterScripts.Hunllef(true));

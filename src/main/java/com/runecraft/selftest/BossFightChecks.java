@@ -217,24 +217,39 @@ final class BossFightChecks {
         if (def.key != null) {
             Inv.give(c.player, def.key, 1);
         }
-        BlockPos at = c.near(0, 0);
-        EntityType<DataBossEntity> type = ModEntities.DATA_BOSS_TYPES.get(id);
-        DataBossService.summon(c.player, c.world, at, def);
-        List<DataBossEntity> found = c.world.getEntities(type, new AABB(at).inflate(48), e -> e.isAlive());
-        String how = "";
-        if (found.isEmpty()) {
-            DataBossEntity spawned = DataBossService.spawn(c.world, c.near(3, 0), def, c.player);
-            if (spawned == null) {
-                throw new AssertionError("DataBossService.spawn returned null");
+        // A Slayer boss: refused without its task, then fought on it (the task and its Slayer XP checked after the kill).
+        SlayerBossGate gate = SlayerBossGate.open(c, def);
+        try {
+            BlockPos at = c.near(0, 0);
+            EntityType<DataBossEntity> type = ModEntities.DATA_BOSS_TYPES.get(id);
+            DataBossService.summon(c.player, c.world, at, def);
+            List<DataBossEntity> found = c.world.getEntities(type, new AABB(at).inflate(48), e -> e.isAlive());
+            String how = "";
+            if (found.isEmpty()) {
+                if (gate != null) {
+                    throw new AssertionError(gate.refusals() + ", but not summoned on a " + com.runecraft.osrs.content.bosses
+                            .SlayerBossRules.of(id).tasks().get(0) + " task either");
+                }
+                DataBossEntity spawned = DataBossService.spawn(c.world, c.near(3, 0), def, c.player);
+                if (spawned == null) {
+                    throw new AssertionError("DataBossService.spawn returned null");
+                }
+                found = List.of(spawned);
+                how = "spawned directly, ";
+            } else if (gate != null) {
+                how = gate.refusals() + gate.afterSummon() + "; on task: ";
             }
-            found = List.of(spawned);
-            how = "spawned directly, ";
+            boolean passive = true;
+            for (AttackDef a : def.attacks) {
+                passive &= a.maxHit() <= 0;
+            }
+            String fought = fight(found.get(0), id, passive, com.runecraft.content.bosses.BossSelfTests.realAttacksHurt(id));
+            return how + fought + (gate == null ? "" : gate.credit());
+        } finally {
+            if (gate != null) {
+                gate.close();
+            }
         }
-        boolean passive = true;
-        for (AttackDef a : def.attacks) {
-            passive &= a.maxHit() <= 0;
-        }
-        return how + fight(found.get(0), id, passive, com.runecraft.content.bosses.BossSelfTests.realAttacksHurt(id));
     }
 
     // ------------------------------------------------------------------ the fight

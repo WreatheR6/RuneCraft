@@ -25,6 +25,11 @@ public final class Slayer {
 
     /** Kills on task give Slayer XP equal to the monster's hitpoints (superiors: their OSRS XP). */
     public static void onKill(ServerPlayer player, LivingEntity entity, MonsterStats stats) {
+        if (entity instanceof com.runecraft.boss.DataBossEntity d && d.def() != null && d.variant() == null
+                && com.runecraft.boss.DataBossService.isCompanion(d.def().id)) {
+            // A companion's death is part of its main boss's kill (Dawn: OSRS gives task progress and Slayer XP on Dusk's).
+            return;
+        }
         SlayerService.onKill(player, entity, stats);
     }
 
