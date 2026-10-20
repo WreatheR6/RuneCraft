@@ -585,6 +585,10 @@ final class LeviathanScript extends ScriptedBoss {
         return special == null ? null : special.name().toLowerCase(java.util.Locale.ROOT);
     }
 
+    int selfTestSpecialTick() {
+        return specialTick;
+    }
+
     boolean selfTestEnraged() {
         return enraged;
     }
@@ -595,6 +599,26 @@ final class LeviathanScript extends ScriptedBoss {
 
     int selfTestFlying() {
         return flying.size() + volley.size();
+    }
+
+    /** The next orb to land (the one to pray against), or null. */
+    AttackDef selfTestNextOrb() {
+        Orb next = null;
+        for (Orb o : flying) {
+            if (next == null || o.at() < next.at()) {
+                next = o;
+            }
+        }
+        return next == null ? null : next.attack();
+    }
+
+    /** The debris of the running Smoke Blast (to hide behind). */
+    List<BlockPos> selfTestSmokeDebris() {
+        return smokeDebris;
+    }
+
+    boolean selfTestInPathfinder(DataBossEntity boss, ServerPlayer p) {
+        return inPathfinder(boss, p);
     }
 
     int selfTestDebris() {

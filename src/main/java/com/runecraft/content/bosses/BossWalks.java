@@ -3,6 +3,8 @@ package com.runecraft.content.bosses;
 import com.runecraft.boss.DataBossEntity;
 import com.runecraft.combat.CombatHandler;
 import com.runecraft.osrs.AttackType;
+import com.runecraft.osrs.content.bosses.BossMechanics;
+import com.runecraft.osrs.content.bosses.LeviathanRules;
 import com.runecraft.osrs.content.bosses.MoonsRules;
 import com.runecraft.osrs.content.bosses.WhispererRules;
 import com.runecraft.util.Inv;
@@ -32,6 +34,14 @@ public final class BossWalks {
 
         /** Moves the player to a spot (facing the boss). */
         void moveTo(Vec3 at, DataBossEntity boss);
+
+        /** Damage the player has taken since the last {@link #clearDamage} from attacks of this name (rolled, before healing). */
+        int damage(String attack);
+
+        /** The biggest single hit of this attack name since the last {@link #clearDamage}. */
+        int biggest(String attack);
+
+        void clearDamage();
     }
 
     private static IllegalStateException fail(String message) {
@@ -481,5 +491,359 @@ public final class BossWalks {
             throw fail("the Lunar Chest gave nothing for " + moons + " Moons, or kept them");
         }
         return String.join("; ", log) + "; pacified, Lunar Chest for " + moons + " Moons gave " + got.size() + " drops";
+    }
+
+    // =====================================================================================================
+    // Desert Treasure II, Varlamore and the Royal Titans
+    // =====================================================================================================
+
+    /** A hit of a given style through the boss's own rules. */
+    static int hit(DataBossEntity boss, ServerPlayer p, int damage, AttackType type) {
+        int dmg = boss.modifyIncoming(p, damage, type);
+        return dmg > 0 ? CombatHandler.applyDamage(p, boss, dmg) : 0;
+    }
+
+    /** Switches the player's overhead to the protection against an attack's style (none for null). */
+    static void prayAgainst(ServerPlayer p, com.runecraft.osrs.content.AttackDef a) {
+        if (a == null) {
+            return;
+        }
+        com.runecraft.osrs.Prayer pr = switch (a.style()) {
+            case MAGIC -> com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC;
+            case RANGED -> com.runecraft.osrs.Prayer.PROTECT_FROM_MISSILES;
+            default -> com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE;
+        };
+        pray(p, pr);
+    }
+
+    static void pray(ServerPlayer p, com.runecraft.osrs.Prayer pr) {
+        com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(p);
+        data.setPrayerPoints(99);
+        if (!data.isActive(pr)) {
+            data.activePrayers().removeIf(x -> x == com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC
+                    || x == com.runecraft.osrs.Prayer.PROTECT_FROM_MISSILES || x == com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE);
+            data.activePrayers().add(pr);
+        }
+    }
+
+    /** Kills the boss with heavy hits of a style (between its mechanics); throws if it survives. */
+    static void finish(DataBossEntity boss, Driver d, AttackType type, int damage, int ticks) {
+        ServerPlayer p = d.player();
+        for (int i = 0; i < ticks && boss.isAlive(); i++) {
+            if (boss.script().isVulnerable(boss)) {
+                hit(boss, p, damage, type);
+            }
+            d.ticks(boss, 1);
+        }
+        if (boss.isAlive()) {
+            throw fail("still alive after " + ticks + " ticks of heavy hits (" + Math.round(boss.getHealth()) + " health)");
+        }
+    }
+
+    /**
+     * The Leviathan: melee can't reach it; its orbs are prayed against as they fly; after the roar its special is answered
+     * (keep moving through the barrage, hide behind the debris from the smoke blast); a stunned Leviathan takes 10 at most
+     * except on its wound, which breaks the stun into a special and resets the volleys; then the pathfinder's enrage.
+     */
+    public static String leviathan(DataBossEntity boss, Driver d) {
+        if (!(boss.script() instanceof LeviathanScript l)) {
+            throw fail("the Leviathan has no LeviathanScript");
+        }
+        ServerPlayer p = d.player();
+        Vec3 c = l.homeVec();
+        d.moveTo(c.add(0, 0, 8), boss);
+        List<String> log = new ArrayList<>();
+        if (boss.modifyIncoming(p, 30, AttackType.SLASH) != 0) {
+            throw fail("a melee hit reached the lure");
+        }
+        d.clearDamage();
+        int ticks = until(boss, d, 80, () -> {
+            prayAgainst(p, l.selfTestNextOrb());
+            return l.selfTestSpecial() != null;
+        });
+        if (ticks < 0) {
+            throw fail("no roar and special after the first volley (stage " + l.selfTestStage() + ")");
+        }
+        int orbs = d.damage("boulder") + d.damage("abyssal_orb") + d.damage("shadow_strike");
+        if (orbs > 0) {
+            throw fail("orbs prayed against while they flew still hit for " + orbs);
+        }
+        log.add("volley prayed through (" + ticks + " ticks), roar, " + l.selfTestSpecial());
+        log.add(answerLeviathanSpecial(boss, l, d));
+        if (l.selfTestStage() < 1) {
+            throw fail("the volleys didn't speed up after the first");
+        }
+        // a stun: hits capped off the wound; the wound breaks it
+        if (until(boss, d, 30, () -> {
+            prayAgainst(p, l.selfTestNextOrb());
+            return l.selfTestFlying() > 0;
+        }) < 0) {
+            throw fail("no second volley");
+        }
+        l.selfTestStun(boss, p);
+        if (!l.selfTestStunned()) {
+            throw fail("a shadow spell during a volley didn't stun it");
+        }
+        int front = boss.modifyIncoming(p, 40, AttackType.RANGED);
+        if (front > LeviathanRules.STUNNED_CAP) {
+            throw fail("a hit off its wound took " + front + " (capped at " + LeviathanRules.STUNNED_CAP + ")");
+        }
+        Vec3 wound = l.selfTestWound(boss);
+        d.moveTo(wound, boss);
+        int back = boss.modifyIncoming(p, 40, AttackType.RANGED);
+        if (back <= LeviathanRules.STUNNED_CAP || l.selfTestStunned() || l.selfTestSpecial() == null) {
+            throw fail("the wound: " + back + " damage, stunned " + l.selfTestStunned() + ", special " + l.selfTestSpecial());
+        }
+        if (l.selfTestStage() != LeviathanRules.afterStun(1)) {
+            throw fail("the wound didn't reset the volleys to the second speed (stage " + l.selfTestStage() + ")");
+        }
+        log.add("stunned: " + front + " off the wound, " + back + " on it, retaliation " + l.selfTestSpecial());
+        log.add(answerLeviathanSpecial(boss, l, d));
+        // the enrage: stay in the pathfinder's light
+        setPercent(boss, 19);
+        if (until(boss, d, 6, l::selfTestEnraged) < 0 || l.selfTestPathfinder() == null) {
+            throw fail("no enrage with an abyssal pathfinder below 20%");
+        }
+        d.clearDamage();
+        for (int i = 0; i < 20; i++) {
+            d.moveTo(l.selfTestPathfinder(), boss);
+            prayAgainst(p, l.selfTestNextOrb());
+            d.ticks(boss, 1);
+        }
+        d.moveTo(l.selfTestPathfinder(), boss);
+        if (!l.selfTestInPathfinder(boss, p)) {
+            throw fail("standing on the pathfinder isn't inside its area");
+        }
+        int pierced = d.damage("boulder") + d.damage("abyssal_orb");
+        if (pierced > 0) {
+            throw fail("inside the pathfinder, prayed orbs still hit for " + pierced);
+        }
+        for (int i = 0; i < 40 && boss.isAlive(); i++) {
+            d.moveTo(l.selfTestPathfinder(), boss);
+            prayAgainst(p, l.selfTestNextOrb());
+            hit(boss, p, 150, AttackType.RANGED);
+            d.ticks(boss, 1);
+        }
+        if (boss.isAlive()) {
+            throw fail("the enraged Leviathan survived 40 ranged hits from the pathfinder");
+        }
+        if (l.selfTestDebris() != 0) {
+            throw fail("its debris stayed after it died");
+        }
+        return String.join("; ", log) + "; enraged, killed from the pathfinder's light";
+    }
+
+    private static String answerLeviathanSpecial(DataBossEntity boss, LeviathanScript l, Driver d) {
+        ServerPlayer p = d.player();
+        String special = l.selfTestSpecial();
+        Vec3 c = l.homeVec();
+        double[] a = {Math.atan2(p.getZ() - c.z, p.getX() - c.x)};
+        d.clearDamage();
+        int ticks = until(boss, d, 30, () -> {
+            boolean smokeBlastNext = "smoke".equals(l.selfTestSpecial()) && !l.selfTestSmokeDebris().isEmpty()
+                    && l.selfTestSpecialTick() >= LeviathanRules.SMOKE_DEBRIS;
+            if (smokeBlastNext) {
+                // the ten debris are down: hide right behind a pile, away from it
+                net.minecraft.core.BlockPos pile = l.selfTestSmokeDebris().get(0);
+                Vec3 at = Vec3.atBottomCenterOf(pile);
+                Vec3 away = at.subtract(boss.position()).multiply(1, 0, 1).normalize();
+                d.moveTo(at.add(away.scale(1.0)), boss);
+            } else {
+                a[0] += 0.25; // keep moving round it (the current and the debris land where the player was)
+                d.moveTo(BossFx.ground(BossFx.world(boss), c.x + Math.cos(a[0]) * 8, c.z + Math.sin(a[0]) * 8, c.y), boss);
+            }
+            return l.selfTestSpecial() == null;
+        });
+        if (ticks < 0) {
+            throw fail(special + ": never ended");
+        }
+        if ("smoke".equals(special) && d.damage("smoke_blast") > 0) {
+            throw fail("smoke: the blast found the player behind the debris (" + d.damage("smoke_blast") + ")");
+        }
+        return special + " answered in " + ticks + " ticks";
+    }
+
+    /** Amoxliatl: Unstable Ice broken with melee before it shatters; Icicle Crash blocked by praying again in time. */
+    public static String amoxliatl(DataBossEntity boss, Driver d) {
+        if (!(boss.script() instanceof ModernScripts.Amoxliatl a)) {
+            throw fail("Amoxliatl has no Amoxliatl script");
+        }
+        ServerPlayer p = d.player();
+        p.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, Inv.stack("abyssal_whip", 1));
+        d.moveTo(a.homeVec().add(0, 0, 6), boss);
+        a.walkSpecialNext(true);
+        if (until(boss, d, 14, () -> !a.walkIce().isEmpty()) < 0) {
+            throw fail("no Unstable Ice");
+        }
+        List<Mob> ice = new ArrayList<>(a.walkIce());
+        for (Mob m : ice) {
+            d.moveTo(m.position().add(1.2, 0, 0), boss);
+            attack(p, m);
+            if (m.isAlive()) {
+                throw fail("a melee hit didn't break the unstable ice");
+            }
+        }
+        d.ticks(boss, 2);
+        if (a.walkShattered() > 0) {
+            throw fail("the ice shattered although every block was broken");
+        }
+        // Icicle Crash: she switches the prayers off; Protect from Magic again before it lands blocks it
+        pray(p, com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC);
+        a.walkSpecialNext(false);
+        d.clearDamage();
+        int[] disabled = {0};
+        until(boss, d, 16, () -> {
+            if (!com.runecraft.player.Players.data(p).isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC)) {
+                disabled[0]++;
+                pray(p, com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC);
+            }
+            return false;
+        });
+        if (disabled[0] == 0) {
+            throw fail("Icicle Crash never switched the prayers off");
+        }
+        if (d.damage("icicle_crash") > 0) {
+            throw fail("Icicle Crash hit for " + d.damage("icicle_crash") + " through Protect from Magic turned on again");
+        }
+        finish(boss, d, AttackType.CRUSH, 150, 60);
+        return ice.size() + " unstable ice broken, Icicle Crash blocked by praying again, killed";
+    }
+
+    /** The Hueycoatl: body parts first, rain fire through prayer for 0-2, the tail's capped hits, the final phase. */
+    public static String hueycoatl(DataBossEntity boss, Driver d) {
+        if (!(boss.script() instanceof EncounterScripts.Hueycoatl h)) {
+            throw fail("the Hueycoatl has no Hueycoatl script");
+        }
+        ServerPlayer p = d.player();
+        d.moveTo(h.homeVec().add(0, 0, 7), boss);
+        d.ticks(boss, 1);
+        if (h.isVulnerable(boss) || h.walkSegments().isEmpty()) {
+            throw fail("the head is open with no body parts in the way");
+        }
+        int parts = h.walkSegments().size();
+        for (Mob seg : new ArrayList<>(h.walkSegments())) {
+            CombatHandler.applyDamage(p, seg, 400);
+        }
+        if (until(boss, d, 4, () -> h.isVulnerable(boss)) < 0) {
+            throw fail("the head stayed shut with every body part down");
+        }
+        Vec3 c = h.homeVec();
+        pray(p, com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE);
+        d.clearDamage();
+        double[] a = {0};
+        for (int i = 0; i < 50; i++) {
+            a[0] += 0.3; // keep off her glowing symbols
+            d.moveTo(BossFx.ground(BossFx.world(boss), c.x + Math.cos(a[0]) * 7, c.z + Math.sin(a[0]) * 7, c.y), boss);
+            pray(p, com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE);
+            d.ticks(boss, 1);
+        }
+        if (d.biggest("tail_strike") > 2) {
+            throw fail("a red feather hit for " + d.biggest("tail_strike") + " through Protect from Melee (0-2)");
+        }
+        setPercent(boss, 49);
+        if (until(boss, d, 4, () -> h.walkTail() != null) < 0 || h.isVulnerable(boss)) {
+            throw fail("no shielded tail phase at 50%");
+        }
+        Mob tail = h.walkTail();
+        p.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, Inv.stack("abyssal_whip", 1));
+        float before = tail.getHealth();
+        attack(p, tail);
+        float took = before - tail.getHealth();
+        if (took > BossMechanics.HUEY_TAIL_CAP_CRUSH) {
+            throw fail("a hit on the tail took " + took + " (capped at 4, 9 with crush)");
+        }
+        CombatHandler.applyDamage(p, tail, 400);
+        if (until(boss, d, 4, h::walkFinal) < 0 || !h.isVulnerable(boss)) {
+            throw fail("the broken tail didn't open the final phase");
+        }
+        finish(boss, d, AttackType.SLASH, 400, 60);
+        return parts + " body parts, rain fire through prayer " + d.biggest("tail_strike") + " at most, tail hit capped (" + took
+                + "), final phase, killed";
+    }
+
+    /** The Royal Titans: walls doused, the ranged boost while they keep away, the Elemental Blast's safe spot, both together. */
+    public static String royalTitans(DataBossEntity boss, Driver d) {
+        if (!(boss.script() instanceof EncounterScripts.RoyalTitans t)) {
+            throw fail("Branda has no RoyalTitans script");
+        }
+        ServerPlayer p = d.player();
+        d.moveTo(t.homeVec().add(0, 0, 7), boss);
+        d.ticks(boss, 1);
+        DataBossEntity eldric = t.walkEldric();
+        if (eldric == null || !eldric.isAlive()) {
+            throw fail("Eldric didn't rise beside Branda");
+        }
+        if (!t.rangedBoost()) {
+            throw fail("no ranged accuracy boost while they keep their distance");
+        }
+        Vec3[] cell = {null};
+        if (until(boss, d, 30, () -> (cell[0] = t.walkWallCell(true)) != null) < 0) {
+            throw fail("no fire wall formed in 30 ticks");
+        }
+        t.walkClearWall(boss, cell[0], true);
+        Vec3 next = t.walkWallCell(true);
+        if (next != null && next.distanceToSqr(cell[0]) < 0.01) {
+            throw fail("a Water Blast didn't douse the fire");
+        }
+        // phase 2 below 210: the Elemental Blast's safe spot
+        boss.setHealth(boss.getMaxHealth() * 0.3f);
+        if (until(boss, d, 4, t::walkPhaseTwo) < 0) {
+            throw fail("no phase 2 below 210 hitpoints");
+        }
+        if (until(boss, d, 40, t::walkBlasting) < 0) {
+            throw fail("no Elemental Blast in phase 2");
+        }
+        d.clearDamage();
+        if (until(boss, d, 30, () -> {
+            if (t.walkSafe() != null) {
+                d.moveTo(t.walkSafe(), boss);
+            }
+            return !t.walkBlasting();
+        }) < 0) {
+            throw fail("the Elemental Blast never ended");
+        }
+        if (d.damage("elemental_blast") > 0) {
+            throw fail("the blast hit the player on the safe spot for " + d.damage("elemental_blast"));
+        }
+        // Branda brought down while Eldric stands is subdued; both fall together
+        hit(boss, p, 5000, AttackType.SLASH);
+        if (!t.walkSubdued() || !boss.isAlive()) {
+            throw fail("Branda wasn't subdued while Eldric still stood");
+        }
+        CombatHandler.applyDamage(p, eldric, 5000);
+        if (until(boss, d, 6, () -> !boss.isAlive()) < 0) {
+            throw fail("Branda didn't fall with Eldric");
+        }
+        return "fire wall doused, ranged boost, blast dodged on the safe spot, subdued and fell together";
+    }
+
+    /** Duke Sucellus: his Freezing Gaze dodged behind a pillar, then the kill. */
+    public static String duke(DataBossEntity boss, Driver d) {
+        if (!(boss.script() instanceof EncounterScripts.Duke duke)) {
+            throw fail("Duke Sucellus has no Duke script");
+        }
+        ServerPlayer p = d.player();
+        d.moveTo(duke.homeVec().add(0, 0, 6), boss);
+        d.ticks(boss, 2); // his pillars rise
+        duke.walkGazeNext();
+        if (until(boss, d, 12, duke::walkGazing) < 0) {
+            throw fail("no Freezing Gaze");
+        }
+        Vec3 best = null;
+        for (Vec3 spot : duke.walkHidingSpots(boss)) {
+            if (best == null || spot.distanceToSqr(p.position()) < best.distanceToSqr(p.position())) {
+                best = spot;
+            }
+        }
+        d.moveTo(best, boss);
+        d.clearDamage();
+        if (until(boss, d, 10, () -> !duke.walkGazing()) < 0) {
+            throw fail("the gaze never landed");
+        }
+        if (d.damage("freezing_gaze") > 0) {
+            throw fail("the gaze found the player behind a pillar (" + d.damage("freezing_gaze") + ")");
+        }
+        finish(boss, d, AttackType.SLASH, 120, 80);
+        return "gaze dodged behind a pillar, killed";
     }
 }

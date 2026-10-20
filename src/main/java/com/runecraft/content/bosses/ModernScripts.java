@@ -967,6 +967,7 @@ final class ModernScripts {
             }
             ice.clear();
             shatterAt = -1;
+            shattered++;
             CombatAchievementService.flagNear(boss, BossMechanics.FLAG_AMOX_ICE_SHATTERED);
             BossFx.say(boss, "The unstable ice shatters, and Amoxliatl draws strength from it!");
         }
@@ -974,6 +975,23 @@ final class ModernScripts {
         @Override
         public void onDeath(DataBossEntity boss, ServerPlayer killer) {
             ice.forEach(Mob::discard);
+        }
+
+        /** Times her unstable ice shattered (self-test walk). */
+        private int shattered;
+
+        int walkShattered() {
+            return shattered;
+        }
+
+        List<Mob> walkIce() {
+            return ice;
+        }
+
+        /** Makes her next attack a special: Unstable Ice ({@code ice}) or Icicle Crash. */
+        void walkSpecialNext(boolean ice) {
+            untilSpecial = 0;
+            iceNext = ice;
         }
     }
 

@@ -1038,6 +1038,28 @@ final class EncounterScripts {
             }
         }
 
+        /** Whether his Freezing Gaze is coming (self-test walk). */
+        boolean walkGazing() {
+            return gazeAt >= 0;
+        }
+
+        /** Makes his next attack the Freezing Gaze. */
+        void walkGazeNext() {
+            sinceGaze = BossMechanics.DUKE_GAZE_EVERY;
+        }
+
+        /** Spots behind his four pillars, out of his sight (self-test walk). */
+        List<Vec3> walkHidingSpots(DataBossEntity boss) {
+            BlockPos c = arenaCentre(boss);
+            List<Vec3> out = new ArrayList<>();
+            for (int[] o : new int[][]{{-5, -4}, {5, -4}, {-5, 4}, {5, 4}}) {
+                Vec3 pillar = Vec3.atBottomCenterOf(c.offset(o[0], 0, o[1]));
+                Vec3 away = pillar.subtract(boss.position()).multiply(1, 0, 1).normalize();
+                out.add(pillar.add(away.scale(1.3)));
+            }
+            return out;
+        }
+
         /** Discarded, killed or reset away from his arena: the pillars raised around him go too. */
         @Override
         public void onRemoved(DataBossEntity boss) {
@@ -1559,6 +1581,23 @@ final class EncounterScripts {
             return d;
         }
 
+        // self-test walk
+        List<Mob> walkSegments() {
+            return segments;
+        }
+
+        int walkStage() {
+            return stage;
+        }
+
+        Mob walkTail() {
+            return tail;
+        }
+
+        boolean walkFinal() {
+            return stage == FINAL;
+        }
+
         /** Rain Fire through the right protection prayer still deals 0-2 (OSRS Wiki), not nothing. */
         @Override
         public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
@@ -1877,6 +1916,55 @@ final class EncounterScripts {
 
         private boolean charging() {
             return chargeUntil >= 0 && now <= chargeUntil;
+        }
+
+        // self-test walk
+        DataBossEntity walkEldric() {
+            return eldric;
+        }
+
+        boolean walkPhaseTwo() {
+            return phaseTwo;
+        }
+
+        boolean walkBlasting() {
+            return charging() || blastsLeft > 0;
+        }
+
+        Vec3 walkSafe() {
+            return safe;
+        }
+
+        boolean walkSubdued() {
+            return subdued;
+        }
+
+        int walkWalls() {
+            return walls.size();
+        }
+
+        int walkElementals() {
+            elementals.removeIf(e -> !e.mob().isAlive());
+            return elementals.size();
+        }
+
+        /** Douses (or melts) the wall nearest a spot, as a Water Blast (Fire Blast) cast there does. */
+        void walkClearWall(DataBossEntity boss, Vec3 at, boolean fire) {
+            clearWall(boss, at, fire);
+        }
+
+        /** Where the nearest formed wall stands (fire or icicle), or null. */
+        Vec3 walkWallCell(boolean fire) {
+            for (Wall w : walls) {
+                if (w.fire == fire && w.formed) {
+                    for (int i = 0; i < w.cells.size(); i++) {
+                        if (w.gone == null || !w.gone[i]) {
+                            return w.cells.get(i);
+                        }
+                    }
+                }
+            }
+            return null;
         }
 
         /**

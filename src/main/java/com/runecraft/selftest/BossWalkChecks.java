@@ -38,7 +38,18 @@ final class BossWalkChecks {
         WALKS.put("blue_moon", BossWalks::blueMoon);
         WALKS.put("eclipse_moon", BossWalks::eclipseMoon);
         WALKS.put("blood_moon", BossWalks::bloodMoon);
+        WALKS.put("the_leviathan", BossWalks::leviathan);
+        WALKS.put("amoxliatl", BossWalks::amoxliatl);
+        WALKS.put("the_hueycoatl", BossWalks::hueycoatl);
+        WALKS.put("branda_the_fire_queen", BossWalks::royalTitans);
+        WALKS.put("duke_sucellus", BossWalks::duke);
     }
+
+    /** Damage the walking player took, by attack name (attack-less hits under their style, or "typeless"). */
+    private static final Map<String, Integer> DAMAGE = new java.util.HashMap<>();
+    private static final Map<String, Integer> BIGGEST = new java.util.HashMap<>();
+    private static ServerPlayer walking;
+    private static boolean hooked;
 
     private final TestContext c;
 
@@ -61,6 +72,19 @@ final class BossWalkChecks {
             throw new AssertionError("no BossDef " + id);
         }
         ServerPlayer p = c.player;
+        if (!hooked) {
+            hooked = true;
+            com.runecraft.combat.CombatHooks.addDamageListener((player, attacker, attack, style, damage) -> {
+                if (player == walking && damage > 0) {
+                    String key = attack != null ? attack : style != null ? style.name().toLowerCase(java.util.Locale.ROOT) : "typeless";
+                    DAMAGE.merge(key, damage, Integer::sum);
+                    BIGGEST.merge(key, damage, Math::max);
+                }
+            });
+        }
+        DAMAGE.clear();
+        BIGGEST.clear();
+        walking = p;
         DataBossEntity boss = DataBossService.spawn(c.world, c.near(0, 0), def, p);
         if (boss == null) {
             throw new AssertionError("DataBossService.spawn returned null for " + id);
@@ -95,6 +119,22 @@ final class BossWalkChecks {
             }
 
             @Override
+            public int damage(String attack) {
+                return DAMAGE.getOrDefault(attack, 0);
+            }
+
+            @Override
+            public int biggest(String attack) {
+                return BIGGEST.getOrDefault(attack, 0);
+            }
+
+            @Override
+            public void clearDamage() {
+                DAMAGE.clear();
+                BIGGEST.clear();
+            }
+
+            @Override
             public void moveTo(Vec3 at, DataBossEntity b) {
                 double dx = b.getX() - at.x;
                 double dz = b.getZ() - at.z;
@@ -107,6 +147,7 @@ final class BossWalkChecks {
         } catch (IllegalStateException e) {
             throw new AssertionError(e.getMessage(), e);
         } finally {
+            walking = null;
             if (boss.isAlive()) {
                 boss.discard();
             }
