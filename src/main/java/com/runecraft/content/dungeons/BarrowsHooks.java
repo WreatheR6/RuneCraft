@@ -395,6 +395,29 @@ public final class BarrowsHooks {
         return false;
     }
 
+    // ------------------------------------------------------------------ self-test
+
+    /**
+     * Self-test (the fight of a Barrows brother): gives {@code p} a run of the test's own in which brother {@code brother} is
+     * summoned, as searching his sarcophagus does (another brother holds the tunnel), so the fight's kill counts in it. Returns
+     * the player's own run (null when he had none), to hand back to {@link #endSelfTestRun} so a real player's run is kept.
+     */
+    public static BarrowsRun startSelfTestRun(ServerPlayer p, int brother) {
+        BarrowsRun run = BarrowsRun.of(0, 0, (brother + 1) % Barrows.BROTHERS.size(), 0L, false);
+        run.summon(brother);
+        return state(p).replace(p.getUUID(), run);
+    }
+
+    /** The player's current Barrows run, as the chest would read it (self-test: what the fight's kill did to the run). */
+    public static BarrowsRun selfTestRun(ServerPlayer p) {
+        return state(p).run(p.getUUID());
+    }
+
+    /** Puts back the run {@link #startSelfTestRun} replaced (none when null). */
+    public static void endSelfTestRun(ServerPlayer p, BarrowsRun saved) {
+        state(p).replace(p.getUUID(), saved);
+    }
+
     /** Rune quantity multiplier for a player's Barrows chest (Morytania hard diary perk; 1.0 = none). */
     public static java.util.function.ToDoubleFunction<ServerPlayer> runeBonus = p -> 1.0;
 

@@ -32,6 +32,13 @@ final class BarrowsState extends SavedData {
         return run;
     }
 
+    /** Puts {@code run} in place of the player's run (none when null); returns the run it replaced, or null. */
+    BarrowsRun replace(UUID uuid, BarrowsRun run) {
+        BarrowsRun old = run == null ? runs.remove(uuid) : runs.put(uuid, run);
+        setDirty();
+        return old;
+    }
+
     @Override
     public CompoundTag save(CompoundTag nbt, HolderLookup.Provider registries) {
         runs.forEach((uuid, run) -> {

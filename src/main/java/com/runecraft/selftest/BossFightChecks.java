@@ -196,13 +196,24 @@ final class BossFightChecks {
         if (boss.key() != null) {
             Inv.give(c.player, boss.key(), 1);
         }
-        BlockPos at = c.near(0, 0);
-        BossService.summon(c.player, c.world, at, boss);
-        List<BossEntity> found = c.world.getEntities(ModEntities.BOSS_TYPES.get(boss), new AABB(at).inflate(48), e -> e.isAlive());
-        if (found.isEmpty()) {
-            throw new AssertionError("BossService.summon spawned nothing");
+        // A Barrows brother is fought as one summoned from his sarcophagus: in a run of the test's own (the player's run is
+        // put back afterwards), so the kill must reach that run and its chest (fight()).
+        int brother = com.runecraft.osrs.content.dungeons.Barrows.indexOf(boss);
+        com.runecraft.osrs.content.dungeons.BarrowsRun saved = brother >= 0
+                ? com.runecraft.content.dungeons.BarrowsHooks.startSelfTestRun(c.player, brother) : null;
+        try {
+            BlockPos at = c.near(0, 0);
+            BossService.summon(c.player, c.world, at, boss);
+            List<BossEntity> found = c.world.getEntities(ModEntities.BOSS_TYPES.get(boss), new AABB(at).inflate(48), e -> e.isAlive());
+            if (found.isEmpty()) {
+                throw new AssertionError("BossService.summon spawned nothing");
+            }
+            return fight(found.get(0), boss.entityId(), false, true);
+        } finally {
+            if (brother >= 0) {
+                com.runecraft.content.dungeons.BarrowsHooks.endSelfTestRun(c.player, saved);
+            }
         }
-        return fight(found.get(0), boss.entityId(), false, true);
     }
 
     private String data(String id) {
@@ -429,18 +440,23 @@ final class BossFightChecks {
         int brother = boss instanceof BossEntity legacyBoss ? com.runecraft.osrs.content.dungeons.Barrows.indexOf(legacyBoss.boss()) : -1;
         if (brother >= 0) {
             // OSRS: the Barrows brothers drop nothing themselves; the Barrows chest rolls the run's loot (one roll per brother
-            // killed, plus one). Check the chest a run with this brother killed opens instead of the ground.
-            com.runecraft.osrs.content.dungeons.BarrowsRun run = com.runecraft.osrs.content.dungeons.BarrowsRun.of(1 << brother,
-                    1 << brother, (brother + 1) % 6, 0L, false);
+            // killed, plus one). The kill must count in the player's run (legacy() summoned him in one, as his sarcophagus
+            // does), and the chest of that run must give loot.
+            com.runecraft.osrs.content.dungeons.BarrowsRun run = com.runecraft.content.dungeons.BarrowsHooks.selfTestRun(p);
+            if (!run.killed(brother)) {
+                throw new AssertionError("killed (kc +" + kc + "), but the kill didn't count in the player's Barrows run (summoned "
+                        + Integer.toBinaryString(run.summonedMask()) + ", killed " + Integer.toBinaryString(run.killedMask())
+                        + "), so the chest would not roll for him");
+            }
             List<com.runecraft.osrs.content.dungeons.BarrowsRun.Reward> chest = List.of();
             for (int roll = 0; roll < 20 && chest.isEmpty(); roll++) {
                 chest = run.rollRewards(new java.util.Random(roll));
             }
             if (chest.isEmpty()) {
-                throw new AssertionError("killed (kc +" + kc + "), but the Barrows chest of a run with him killed gave nothing in 20 opens");
+                throw new AssertionError("killed (kc +" + kc + "), but the Barrows chest of the run he died in gave nothing in 20 opens");
             }
-            lootNote = " (a brother drops nothing himself: the Barrows chest of his run gives " + chest.get(0).count() + " "
-                    + chest.get(0).item() + (chest.size() > 1 ? " and " + (chest.size() - 1) + " more" : "") + ")";
+            lootNote = " (a brother drops nothing himself: the kill counted in the run, whose chest gives " + chest.get(0).count()
+                    + " " + chest.get(0).item() + (chest.size() > 1 ? " and " + (chest.size() - 1) + " more" : "") + ")";
         } else if (ground + pocketed == 0) {
             // OSRS can leave a kill empty only through a shared table's "nothing" slot (the gem drop table's 63/128): the
             // kill's roll landed on drop lines that gave no item. Any other empty kill is a bug (an empty roll of the boss's
