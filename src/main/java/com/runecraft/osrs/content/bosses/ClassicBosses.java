@@ -18,13 +18,21 @@ public final class ClassicBosses {
     }
 
     // ---- Kalphite Queen ----
+    // OSRS Wiki: every attack hits up to 31; her ranged and magic attacks have 100% accuracy (Mod Ash), the spines also hit
+    // players near her target and the lightning bounces from player to player: area attacks (which always roll 0 to the max
+    // hit; protection prayers still block them) over the players around her.
     public static final AttackDef KQ_MELEE = AttackDef.of("mandibles", AttackType.STAB, 31, 3.5, 6);
-    public static final AttackDef KQ_SPINES = AttackDef.of("spines", AttackType.RANGED, 31, 12, 4).particle("minecraft:crit");
-    public static final AttackDef KQ_MAGIC = AttackDef.of("lightning", AttackType.MAGIC, 31, 12, 4)
+    public static final AttackDef KQ_SPINES = AttackDef.of("spines", AttackType.RANGED, 31, 12, 4).special(Special.AOE, 12)
+            .particle("minecraft:crit");
+    public static final AttackDef KQ_MAGIC = AttackDef.of("lightning", AttackType.MAGIC, 31, 12, 4).special(Special.AOE, 12)
             .particle("minecraft:electric_spark");
     /** Airborne form: the magic bolt chains to every player nearby. */
     public static final AttackDef KQ_CHAIN_MAGIC = AttackDef.of("chain_lightning", AttackType.MAGIC, 31, 12, 3)
-            .special(Special.AOE, 8).particle("minecraft:electric_spark").message("The Kalphite Queen's lightning arcs!");
+            .special(Special.AOE, 12).particle("minecraft:electric_spark").message("The Kalphite Queen's lightning arcs!");
+    /** Each of her spines drains a prayer point (OSRS Wiki). */
+    public static final int KQ_SPINE_PRAYER_DRAIN = 1;
+    /** Game ticks her first form takes to shed its exoskeleton before the airborne form emerges (OSRS Wiki: 20, 12 seconds). */
+    public static final int KQ_TRANSFORM_TICKS = 20;
 
     // ---- Dagannoth Kings ----
     public static final AttackDef REX_MELEE = AttackDef.of("bite", AttackType.SLASH, 26, 3.5, 1);
@@ -32,21 +40,86 @@ public final class ClassicBosses {
     public static final AttackDef SUPREME_RANGED = AttackDef.of("spines", AttackType.RANGED, 30, 12, 1).particle("minecraft:crit");
 
     // ---- Corporeal Beast ----
+    // OSRS Wiki "Corporeal Beast/Strategies", Mechanics: in melee range it uses its melee attack 40% of the time and each of
+    // its three magic attacks 20%; out of range each magic attack a third (weights 2:1:1:1, melee only in reach). Protect from
+    // Magic blocks only a third of its magic damage, so the magic attacks pierce prayer and the script takes the third off.
+    /** The stomp at anyone standing under it: checked every 7 ticks, always 30-51, through prayer (scripted timer). */
     public static final AttackDef CORP_STOMP = AttackDef.of("stomp", AttackType.CRUSH, 51, 2.0, 1).special(Special.AOE, 2)
             .message("The Corporeal Beast stomps the ground!");
-    public static final AttackDef CORP_MELEE = AttackDef.of("crush", AttackType.CRUSH, 33, 3.5, 4); // wiki: 33 (51 before its rework; stomp keeps 51)
-    public static final AttackDef CORP_ORB = AttackDef.of("spectral_orb", AttackType.MAGIC, 65, 14, 4) // wiki: regular magic attack, up to 65
+    public static final AttackDef CORP_MELEE = AttackDef.of("crush", AttackType.CRUSH, 33, 3.5, 2); // wiki: 33 (51 before its rework; stomp keeps 51)
+    public static final AttackDef CORP_ORB = AttackDef.of("spectral_orb", AttackType.MAGIC, 65, 14, 1) // wiki: regular magic attack, up to 65
+            .special(Special.PRAYER_PIERCING, 0).particle("minecraft:soul_fire_flame");
+    /** Up to 55; a hit drains Magic or Prayer by 1-2 and heals the Beast for half the damage (script). */
+    public static final AttackDef CORP_DRAIN = AttackDef.of("draining_orb", AttackType.MAGIC, 55, 14, 1)
+            .special(Special.PRAYER_PIERCING, 0).particle("minecraft:soul");
+    /** Aimed at the player's tile, it splits into six smaller orbs over a 7x7 area (the script lands them). */
+    public static final AttackDef CORP_SPLASH = AttackDef.of("splash_orb", AttackType.MAGIC, 40, 14, 1)
+            .special(Special.PRAYER_PIERCING, 0).message("The Corporeal Beast hurls an orb that splits apart!")
             .particle("minecraft:soul_fire_flame");
-    public static final AttackDef CORP_DRAIN = AttackDef.of("draining_orb", AttackType.MAGIC, 55, 14, 3) // wiki: up to 55, drains Magic or Prayer
-            .special(Special.DRAIN_PRAYER, 12).particle("minecraft:soul");
-    public static final AttackDef CORP_SPLASH = AttackDef.of("splash_orb", AttackType.MAGIC, 42, 14, 3)
-            .special(Special.SKY_STRIKE, 0).telegraph(3, "The Corporeal Beast hurls an orb that splits apart!")
-            .particle("minecraft:soul_fire_flame");
+
+    /** Stomp: 30-51 to everyone under the Beast, checked every 7 game ticks (OSRS Wiki). */
+    public static final int CORP_STOMP_MIN = 30;
+    public static final int CORP_STOMP_TICKS = 7;
+    /** Splash orb: the main orb hits up to 40 on its tile, 30 next to it; each of the six splinters 30 / 20 (OSRS Wiki). */
+    public static final int CORP_SPLASH_DIRECT = 40;
+    public static final int CORP_SPLASH_ADJACENT = 30;
+    public static final int CORP_SPLINTER_DIRECT = 30;
+    public static final int CORP_SPLINTER_ADJACENT = 20;
+    public static final int CORP_SPLINTERS = 6;
+    /** The splinters land within 3 tiles of the targeted tile (a 7x7 area). */
+    public static final int CORP_SPLINTER_RANGE_TILES = 3;
+    /** Drained stats come back one level every 20 game ticks (OSRS Wiki). */
+    public static final int CORP_STAT_REGEN_TICKS = 20;
+    /** The dark energy core: 1/8 after a hit of 32+ or an attack below 1,000 hitpoints; it drains 5-13 every 2 ticks. */
+    public static final int CORE_CHANCE = 8;
+    public static final int CORE_BIG_HIT = 32;
+    public static final int CORE_BELOW_HP = 1000;
+
+    /**
+     * Corpbane weapons (OSRS Wiki "Corpbane weapons"): the spears and halberds enabled against the Corporeal Beast, Osmumten's
+     * fang, the thunder khopesh and King's barrage. Not hastas, the dragon hunter lance or the Moons' and Gauntlet's spears.
+     */
+    private static final java.util.Set<String> CORPBANE = java.util.Set.of(
+            "bronze_spear", "iron_spear", "steel_spear", "black_spear", "mithril_spear", "adamant_spear", "rune_spear", "dragon_spear",
+            "bone_spear", "gilded_spear", "leaf_bladed_spear", "zamorakian_spear", "sunspear",
+            "bronze_halberd", "iron_halberd", "steel_halberd", "black_halberd", "white_halberd", "mithril_halberd", "adamant_halberd",
+            "rune_halberd", "dragon_halberd", "crystal_halberd", "noxious_halberd",
+            "osmumtens_fang", "thunder_khopesh", "kings_barrage");
+
+    /** Whether a held weapon is a Corpbane weapon (poisoned variants and Guthan's warspear at any charge too). */
+    public static boolean corpbane(String weaponId) {
+        if (weaponId == null || weaponId.isEmpty()) {
+            return false;
+        }
+        String id = weaponId.replaceAll("_p+$", "");
+        return CORPBANE.contains(id) || id.startsWith("guthans_warspear");
+    }
+
+    /**
+     * Damage the Corporeal Beast takes (OSRS Wiki): magic in full, a Corpbane weapon on the stab style in full, every other
+     * melee and ranged hit halved (rounded down).
+     */
+    public static int corpDamage(int damage, AttackType type, String weaponId) {
+        if (type == AttackType.MAGIC || type == AttackType.STAB && corpbane(weaponId)) {
+            return damage;
+        }
+        return damage / 2;
+    }
+
+    /** Its magic damage under Protect from Magic: the prayer blocks a third (OSRS Wiki). */
+    public static int corpMagicThroughPrayer(int damage) {
+        return damage - damage / 3;
+    }
 
     public static List<BossDef> all() {
         return List.of(giantMole(), kalphiteQueen(), kalphiteQueenAirborne(), dagannothRex(), dagannothPrime(), dagannothSupreme(),
                 sarachnis(), corporealBeast(), skotizo(), hespori(), scurrius(), mimic());
     }
+
+    /** Giant Mole (OSRS Wiki, Mod Ash): each attack has a 1/4 chance to make her burrow between 50% and 5% of her health. */
+    public static final int MOLE_BURROW_CHANCE = 4;
+    public static final int MOLE_BURROW_BELOW = 50;
+    public static final int MOLE_BURROW_ABOVE = 5;
 
     static BossDef giantMole() {
         return BossDef.of("giant_mole", "Giant Mole").level(230).stats(200, 200, 200, 200, 200, 200).speed(4)
@@ -120,15 +193,30 @@ public final class ClassicBosses {
                 .pet(pet).arena(13, "water").size(1.0f, 2.2f, 1.6f).moveSpeed(0.24);
     }
 
+    // ---- Sarachnis (OSRS Wiki "Sarachnis/Strategies", Mechanics) ----
+    /** Her legs when the player is next to her (up to 31; a successful hit heals her 5). */
+    public static final AttackDef SARACHNIS_MELEE = AttackDef.of("bite", AttackType.STAB, 31, 3.5, 1);
+    /** Barbed projectiles when the player is out of reach (up to 31; a successful hit heals her 10). */
+    public static final AttackDef SARACHNIS_RANGED = AttackDef.of("web_spit", AttackType.RANGED, 31, 12, 1)
+            .particle("minecraft:crit");
+    /** "Hsss!": every fourth standard attack binds the player for 6 ticks (no damage), then she moves away. */
+    public static final AttackDef SARACHNIS_WEB = AttackDef.of("sticky_web", AttackType.RANGED, 0, 12, 1)
+            .particle("minecraft:item_snowball");
+    public static final int SARACHNIS_MELEE_HEAL = 5;
+    public static final int SARACHNIS_RANGED_HEAL = 10;
+    public static final int SARACHNIS_WEB_EVERY = 4;
+    public static final int SARACHNIS_WEB_BIND_TICKS = 6;
+    /** At 66% and 33% she summons a melee spawn (west) and a magic spawn (east) for each player. */
+    public static final String SARACHNIS_SPAWN_MAGE = "spawn_of_sarachnis_mage";
+    public static final String SARACHNIS_SPAWN_MELEE = "spawn_of_sarachnis";
+
     static BossDef sarachnis() {
         return BossDef.of("sarachnis", "Sarachnis").level(318).stats(400, 150, 150, 150, 150, 150).speed(4)
                 .defenceBonus(150, 150, 40, 60, 150)
-                .attack(AttackDef.of("bite", AttackType.STAB, 31, 3.5, 6).special(Special.POISON, 8))
-                .attack(AttackDef.of("web_spit", AttackType.RANGED, 15, 12, 4).special(Special.FREEZE, 4)
-                        .particle("minecraft:item_snowball").message("Sarachnis spits a sticky web!"))
-                .phase(66, "Sarachnis calls upon her children!", 1.0, true)
-                .phase(33, "Sarachnis calls upon her children once more!", 1.1, true)
-                .minion("spawn_of_sarachnis", 2)
+                .attack(SARACHNIS_MELEE).attack(SARACHNIS_RANGED)
+                .phase(66, "Sarachnis calls upon her children!", 1.0, false)
+                .phase(33, "Sarachnis calls upon her children once more!", 1.0, false)
+                .minion(SARACHNIS_SPAWN_MELEE, 2)
                 .drops(Drop.always("big_bones"), Drop.of("sarachnis_cudgel", 1, 1, 384), Drop.of("jar_of_eyes", 1, 1, 2000),
                         Drop.of("giant_egg_sac_full", 1, 1, 20), Drop.of("red_spiders_eggs", 30, 60, 8),
                         Drop.of("snapdragon_seed", 1, 2, 16), Drop.of("ranarr_seed", 1, 2, 16), Drop.of("coal", 50, 50, 16),
@@ -143,7 +231,6 @@ public final class ClassicBosses {
                 .attackBonus(50, 0, 0)
                 .defenceBonus(25, 200, 100, 150, 230)
                 .attack(CORP_MELEE).attack(CORP_ORB).attack(CORP_DRAIN).attack(CORP_SPLASH)
-                .phase(75, "The Corporeal Beast releases a dark energy core!", 1.0, false)
                 .drops(Drop.of("spirit_shield", 1, 1, 64), Drop.of("holy_elixir", 1, 1, 171), Drop.of("spectral_sigil", 1, 1, 1365),
                         Drop.of("arcane_sigil", 1, 1, 1365), Drop.of("elysian_sigil", 1, 1, 4095), Drop.of("jar_of_spirits", 1, 1, 1000),
                         Drop.of("death_rune", 300, 300, 8), Drop.of("soul_rune", 250, 250, 8), Drop.of("runite_bar", 10, 10, 16),
@@ -180,8 +267,21 @@ public final class ClassicBosses {
      * open at the start of the fight and at 66% and 33% health.
      */
     public static final AttackDef HESPORI_SPORES = AttackDef.of("spores", AttackType.RANGED, 8, 12, 1)
-            .particle("minecraft:spore_blossom_air");
-    public static final AttackDef HESPORI_WAVE = AttackDef.of("green_wave", AttackType.MAGIC, 14, 12, 1).particle("minecraft:composter");
+            .special(Special.PRAYER_PIERCING, 0).particle("minecraft:spore_blossom_air");
+    public static final AttackDef HESPORI_WAVE = AttackDef.of("green_wave", AttackType.MAGIC, 14, 12, 1)
+            .special(Special.PRAYER_PIERCING, 0).particle("minecraft:composter");
+    /**
+     * Protection prayers don't block Hespori's attacks, they cut them (OSRS Wiki "Hespori/Strategies"): each spore to a max of
+     * 2 under Protect from Missiles, the wave to 3 under Protect from Magic. The script scales the rolled hit down.
+     */
+    public static final int HESPORI_PRAYED_SPORE_MAX = 2;
+    public static final int HESPORI_PRAYED_WAVE_MAX = 3;
+
+    /** A rolled Hespori hit ({@code max} its unprayed max hit) under the matching protection prayer. */
+    public static int hesporiPrayed(int damage, AttackType type, int max) {
+        int cap = type == AttackType.RANGED ? HESPORI_PRAYED_SPORE_MAX : HESPORI_PRAYED_WAVE_MAX;
+        return max <= 0 ? 0 : damage * cap / max;
+    }
     public static final AttackDef HESPORI_ENTANGLE = AttackDef.of("entangle", AttackType.MAGIC, 44, 12, 1)
             .message("Hespori entangles you in some vines!");
 
@@ -198,18 +298,30 @@ public final class ClassicBosses {
                 .size(1.6f, 1.8f, 1.8f).moveSpeed(0.0);
     }
 
+    // ---- Scurrius (OSRS Wiki "Scurrius/Strategies"): the private instance's solo version ----
+    // OSRS Wiki solo max hits: 13 tail swipe (melee), 8 bolts of electricity (magic), 7 flying fur (ranged), falling bricks
+    // 15-22 (group: 13/14/13/24). A summoned Scurrius is a private fight, so the solo stats (MonsterStatsTable) apply.
+    public static final AttackDef SCURRIUS_TAIL = AttackDef.of("bite", AttackType.STAB, 13, 3.0, 1);
+    public static final AttackDef SCURRIUS_FUR = AttackDef.of("flying_rats", AttackType.RANGED, 7, 10, 1).particle("minecraft:crit");
+    public static final AttackDef SCURRIUS_BOLTS = AttackDef.of("rat_magic", AttackType.MAGIC, 8, 10, 1).particle("minecraft:witch");
+    /** Falling bricks: one at the player's tile, others around the arena; 15-22 each (script strikes). */
+    public static final AttackDef SCURRIUS_BRICKS = AttackDef.of("falling_ceiling", AttackType.CRUSH, 22, 10, 1)
+            .special(Special.SKY_STRIKE, 0).telegraph(3, "Debris begins to fall from the ceiling!").particle("minecraft:ash");
+    public static final int SCURRIUS_BRICKS_MIN = 15;
+    /** At 80% he eats at a food pile: five bites of 5 or 10 hitpoints per player, only magic, ranged and bricks meanwhile. */
+    public static final int SCURRIUS_EAT_BELOW = 80;
+    public static final int SCURRIUS_BITES = 5;
+    /** At 30% he holds the centre of the arena, only magic and ranged, faster; healed above it he goes back to eat. */
+    public static final int SCURRIUS_CENTRE_BELOW = 30;
+    /** Six giant rats a wave, at most twelve waves. */
+    public static final int SCURRIUS_RATS = 6;
+    public static final int SCURRIUS_RAT_WAVES = 12;
+
     static BossDef scurrius() {
-        return BossDef.of("scurrius", "Scurrius").level(250).stats(500, 140, 120, 80, 120, 120).speed(4)
+        return BossDef.of("scurrius", "Scurrius").level(200).stats(500, 300, 100, 60, 50, 50).speed(4)
                 .defenceBonus(20, 20, 20, 20, 20)
-                // OSRS Wiki solo max hits: 13 melee, 8 magic, 7 ranged, 22 falling ceiling (group: 13/14/13/24).
-                .attack(AttackDef.of("bite", AttackType.STAB, 13, 3.0, 6))
-                .attack(AttackDef.of("flying_rats", AttackType.RANGED, 7, 10, 2).particle("minecraft:crit"))
-                .attack(AttackDef.of("rat_magic", AttackType.MAGIC, 8, 10, 2).particle("minecraft:witch"))
-                .attack(AttackDef.of("falling_ceiling", AttackType.CRUSH, 22, 10, 2).special(Special.SKY_STRIKE, 0)
-                        .telegraph(3, "Debris begins to fall from the ceiling!").particle("minecraft:ash"))
-                .phase(66, "Scurrius calls for his minions!", 1.0, true)
-                .phase(33, "Scurrius calls for his minions!", 1.1, true)
-                .minion("scurrius_giant_rat", 3)
+                .attack(SCURRIUS_TAIL).attack(SCURRIUS_FUR).attack(SCURRIUS_BOLTS).attack(SCURRIUS_BRICKS)
+                .minion("scurrius_giant_rat", SCURRIUS_RATS)
                 .drops(Drop.always("big_bones"), Drop.of("scurrius_spine", 1, 1, 33), Drop.of("coins", 1000, 3000, 2),
                         Drop.of("iron_bar", 5, 10, 8), Drop.of("mithril_bar", 3, 6, 8), Drop.of("adamant_platebody", 1, 1, 16),
                         Drop.of("rune_full_helm", 1, 1, 20), Drop.of("law_rune", 20, 30, 8))

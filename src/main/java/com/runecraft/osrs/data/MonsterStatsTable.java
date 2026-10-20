@@ -937,8 +937,9 @@ public final class MonsterStatsTable {
         row("skotizo", 321, 450, 240, 250, 200, 280, 1, 5, 80, 80, 80, 80, 130, 160, 0, 0, "demon");
         // Hespori
         row("hespori", 284, 300, 1, 1, 120, 126, 150, 6, 60, 20, 60, 80, 80, 0, 150, 150);
-        // Scurrius (Group)
-        row("scurrius", 250, 1500, 300, 100, 100, 100, 100, 4, 20, 20, 20, 10, 20, 150, 150, 150, "rat");
+        // Scurrius (Solo): a summoned Scurrius is the private instance's (round 36; the public room's Group version has
+        // 1,500 hitpoints and level 250)
+        row("scurrius", 200, 500, 300, 100, 60, 50, 50, 4, 20, 20, 20, 10, 20, 150, 150, 150, "rat");
         // The Mimic
         row("the_mimic", 186, 230, 185, 120, 120, 60, 1, 3, 160, 165, 150, 30, 145, 135, 180, 0);
         // Zulrah (Serpentine)

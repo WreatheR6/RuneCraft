@@ -29,6 +29,7 @@ public final class BossesHooks implements ModuleHooks {
         ClassicScripts.Skotizo.registerAltarBreaker();
         BossScripts.register("hespori", ClassicScripts.Hespori::new);
         BossScripts.register("scurrius", ClassicScripts.Scurrius::new);
+        BossScripts.register("sarachnis", ClassicScripts.Sarachnis::new);
         BossScripts.register("zalcano", ClassicScripts.Zalcano::new);
         BossScripts.register("sol_heredit", SolHereditScript::new);
         SolHereditScript.register();
@@ -37,7 +38,15 @@ public final class BossesHooks implements ModuleHooks {
             BossScripts.register(form, () -> new ZulrahScript(form));
         }
         BossScripts.register("vorkath", VorkathScript::new);
+        // Dragon Slayer II's Vorkath (quests module boss): the same fight with the quest version's max hits.
+        BossScripts.register("ds2_vorkath", () -> new VorkathScript(true));
         VorkathScript.registerCrumbleUndead();
+        com.runecraft.boss.DataBossService.loot("vorkath", VorkathScript::rollLoot);
+        // OSRS Wiki: Zulrah's shrine needs Regicide (to reach Zul-Andra), Ungael needs Dragon Slayer II.
+        com.runecraft.boss.DataBossService.requirement("zulrah", (player, def) -> questDone(player, "regicide",
+                "Priestess Zul-Gwenwynig: Outsiders may not reach the shrine. (Complete Regicide to reach Zul-Andra.)"));
+        com.runecraft.boss.DataBossService.requirement("vorkath", (player, def) -> questDone(player, "dragon_slayer_ii",
+                "Torfinn: Ungael? Nobody sails there. (Complete Dragon Slayer II to fight Vorkath.)"));
 
         BossScripts.register("kraken", SlayerScripts.Kraken::new);
         BossScripts.register("thermonuclear_smoke_devil", SlayerScripts.Thermy::new);

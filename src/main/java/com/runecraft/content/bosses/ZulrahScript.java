@@ -49,6 +49,23 @@ final class ZulrahScript extends ScriptedBoss {
         this.formId = formId;
     }
 
+    /**
+     * Self-test: told of every surfacing ("surface FORM SPOT rotation/phase"), venom cloud barrage ("cloud") and snakeling orb
+     * ("snakeling"), across the form swaps (each form is its own entity and script). Null when nobody listens.
+     */
+    static java.util.function.Consumer<String> trace;
+
+    private static void trace(String event) {
+        if (trace != null) {
+            trace.accept(event);
+        }
+    }
+
+    /** The rotation (0-3) and the phase within it this form is in, or null before it surfaced (self-test). */
+    int[] position() {
+        return rotation < 0 ? null : new int[]{rotation, step};
+    }
+
     @Override
     protected boolean driven() {
         return true;
@@ -103,6 +120,7 @@ final class ZulrahScript extends ScriptedBoss {
         action = 0;
         surfacing = 2;
         jadMagic = s.form() == Form.JAD_MAGIC;
+        trace("surface " + s.form() + " " + s.spot() + " " + rotation + "/" + step);
         BossFx.burst(boss, ParticleTypes.SPLASH, 40, 1.5);
         BossFx.sound(boss, SoundEvents.GENERIC_SPLASH, 0.6f);
         String hint = switch (s.form()) {
@@ -142,7 +160,8 @@ final class ZulrahScript extends ScriptedBoss {
         return switch (s.form()) {
             case SERPENTINE -> ZulrahVorkath.ZULRAH_RANGED;
             case MAGMA -> ZulrahVorkath.ZULRAH_TAIL_SLAM;
-            case TANZANITE -> boss.getRandom().nextBoolean() ? ZulrahVorkath.ZULRAH_MAGIC : ZulrahVorkath.ZULRAH_RANGED;
+            case TANZANITE -> boss.getRandom().nextInt(4) < ZulrahVorkath.TANZANITE_MAGIC_IN_4
+                    ? ZulrahVorkath.ZULRAH_MAGIC : ZulrahVorkath.ZULRAH_RANGED;
             case JAD_RANGED, JAD_MAGIC -> {
                 AttackDef a = jadMagic ? ZulrahVorkath.ZULRAH_MAGIC : ZulrahVorkath.ZULRAH_RANGED;
                 jadMagic = !jadMagic;
@@ -172,11 +191,16 @@ final class ZulrahScript extends ScriptedBoss {
 
     @Override
     protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+        if (type.isMelee() && attacker != null && !ZulrahVorkath.reachesZulrah(BossFx.heldId(attacker))) {
+            com.runecraft.util.Msg.action(attacker, "Zulrah is out of reach in the swamp: only a halberd can reach it.");
+            return 0;
+        }
         return ZulrahVorkath.capDamage(damage, boss.getRandom().nextInt(6));
     }
 
     private void spawnSnakeling(DataBossEntity boss, ServerPlayer target) {
         snakelings.removeIf(sn -> !sn.mob().isAlive());
+        trace("snakeling");
         BossFx.world(boss).sendParticles(ParticleTypes.END_ROD, boss.getX(), boss.getY() + 2.5, boss.getZ(), 6, 0.3, 0.3, 0.3, 0.02);
         if (snakelings.size() >= 8) {
             return;
@@ -187,11 +211,18 @@ final class ZulrahScript extends ScriptedBoss {
         }
     }
 
+    /**
+     * A barrage of two venom clouds. The four-barrage phases fill the middle of the shrine (the opening leaves its east and
+     * west tips clear, OSRS Wiki); other barrages land around the player. approx: cloud spots and their 30-tick life.
+     */
     private void spitClouds(DataBossEntity boss, ServerPlayer target) {
+        Step s = current();
+        boolean fill = s == ZulrahVorkath.OPENING || s == ZulrahVorkath.LOOP_START || s.cloudBarrages() >= 4;
         for (int i = 0; i < 2; i++) {
-            Vec3 at = around(boss, target.position(), 3);
+            Vec3 at = fill ? around(boss, homeVec(), 5) : around(boss, target.position(), 6);
             clouds.add(new Cloud(at, now + 30));
         }
+        trace("cloud");
         BossFx.warn(boss, "Zulrah spits clouds of toxic fumes!");
     }
 
@@ -261,8 +292,10 @@ final class ZulrahScript extends ScriptedBoss {
                 it.remove();
                 continue;
             }
-            BossFx.world(boss).sendParticles(ParticleTypes.SNEEZE, c.pos().x, c.pos().y + 0.4, c.pos().z, 12, 1.0, 0.3, 1.0, 0.0);
-            for (ServerPlayer p : BossFx.world(boss).getPlayers(pl -> pl.isAlive() && pl.position().distanceToSqr(c.pos()) < 2.5)) {
+            BossFx.world(boss).sendParticles(ParticleTypes.SNEEZE, c.pos().x, c.pos().y + 0.4, c.pos().z, 16, 1.4, 0.3, 1.4, 0.0);
+            // A cloud covers a 3x3-tile area (OSRS Wiki): three blocks either way of its centre.
+            for (ServerPlayer p : BossFx.world(boss).getPlayers(pl -> pl.isAlive() && ZulrahVorkath.inCloud(
+                    pl.getX() - c.pos().x, pl.getY() - c.pos().y, pl.getZ() - c.pos().z))) {
                 // The clouds deal venom-like damage every tick but don't envenom (OSRS Wiki).
                 com.runecraft.combat.CombatHooks.nameAttack("toxic_cloud", null);
                 CombatHandler.applyDamage(boss, p, 1 + p.getRandom().nextInt(5));
