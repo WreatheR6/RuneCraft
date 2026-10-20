@@ -390,8 +390,9 @@ public final class SlayerService {
     }
 
     /**
-     * Public API for the TzHaar minigames: how many TzTok-Jad / TzKal-Zuk kills a TzHaar task taken as a boss task asks
-     * for (OSRS Combat Achievement rewards: 1, 2 from the master tier, 3 from the grandmaster tier).
+     * Public API for the TzHaar minigames: how many TzTok-Jad / TzKal-Zuk kills a TzHaar task taken as a boss task may ask
+     * for (OSRS Combat Achievement rewards: 1, 2 from the master tier, 3 from the grandmaster tier). The player is offered 1
+     * up to this many ({@code content.minigames.games.TzHaarSlayer}).
      */
     public static int tzhaarBossTaskKills(ServerPlayer player) {
         return com.runecraft.osrs.content.systems.CombatAchievements.tzhaarTaskKills(
@@ -483,6 +484,11 @@ public final class SlayerService {
         if (!p.hasTask() || !counts(p.task, stats, p.master)) {
             return;
         }
+        if (com.runecraft.content.minigames.games.TzHaarSlayer.bossTaskTaken(player)) {
+            // A TzHaar task taken as TzTok-Jad / TzKal-Zuk kills counts only those bosses, one per run (TzHaarSlayer): the
+            // TzHaar of Mor Ul Rek are no longer the task.
+            return;
+        }
         if (noSlayerCredit(player)) {
             // Kills that give no experience (practice dreams) and Nightmare Zone dreams give no task credit either.
             return;
@@ -531,8 +537,8 @@ public final class SlayerService {
     }
 
     /**
-     * Completes the current task now, with its streak and points: a TzTok-Jad / TzKal-Zuk kill ends a TzHaar task taken as
-     * a boss task ({@code content.minigames.games.TzHaarSlayer}).
+     * Completes the current task now, with its streak and points: the last TzTok-Jad / TzKal-Zuk kill ends a TzHaar task
+     * taken as a boss task ({@code content.minigames.games.TzHaarSlayer}).
      */
     public static void completeTask(ServerPlayer player) {
         SlayerState.Profile p = profile(player);

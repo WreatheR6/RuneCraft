@@ -226,6 +226,24 @@ public final class TzHaarWaves {
     public static final int JAD_SLAYER_XP = 25250;
     public static final int ZUK_SLAYER_XP = 101890;
 
+    /**
+     * A TzHaar Slayer task taken as a TzTok-Jad / TzKal-Zuk task (OSRS Wiki "TzTok-Jad", Slayer; "Slayer task/TzHaar"): the
+     * player is offered 1 to N kills, N being 1, 2 from the master Combat Achievement tier and 3 from the grandmaster one
+     * ({@code CombatAchievements.tzhaarTaskKills}). Each kill is a run of its own and takes one off the task, which completes
+     * with the last; dying or leaving a run before its kill cancels the whole task (no points lost, the streak kept).
+     */
+    public static final int SLAYER_BOSS_TASK_MAX_KILLS = 3;
+
+    /** Whether a player whose Combat Achievements allow {@code allowed} kills may take {@code chosen} (1 up to that). */
+    public static boolean slayerBossTaskSize(int chosen, int allowed) {
+        return chosen >= 1 && chosen <= Math.min(allowed, SLAYER_BOSS_TASK_MAX_KILLS);
+    }
+
+    /** Kills left on such a task after a boss kill: one less; the task completes at 0 (never before the last kill). */
+    public static int slayerBossTaskLeft(int remaining) {
+        return Math.max(0, remaining - 1);
+    }
+
     // ------------------------------------------------------------------ Jad healers
 
     /** TzTok-Jad's magic attack hits up to 95 (his melee and ranged 97; OSRS Wiki "TzTok-Jad"). Melee is a stab. */
