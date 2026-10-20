@@ -204,9 +204,13 @@ final class QuestStepChecks {
                         }
                     }
                 }
-                if (!snap.fired()) {
+                String missing = snap.missing();
+                if (missing != null) {
+                    // what didn't happen, then the step's state now: still ready (the talk or place fired another step), or
+                    // switched off (it fired, e.g. its flag is set, but part of it - its foe - didn't come through)
                     String why = QuestInterpreter.selfTestBlocked(p(), t);
-                    throw failure(where + " did not take effect" + (why != null ? ": " + why : " (the talk or place fired another step)"));
+                    throw failure(where + " did not take effect (" + missing + "): " + (why != null ? "the step is now " + why
+                            : "the step is still ready, the talk or place fired another step"));
                 }
                 banked.forEach(stack -> Inv.give(p(), stack)); // back from the bank
                 String lost = snap.lostQuestItem();
@@ -281,30 +285,36 @@ final class QuestStepChecks {
         }
 
         boolean fired() {
+            return missing() == null;
+        }
+
+        /** What the step should have done but didn't (its flag, its item, its foe), or null when it took effect. */
+        String missing() {
             PlayerData data = Players.data(p());
             if (data.questComplete(info) || data.questStage(info) != stage) {
-                return true;
+                return null;
             }
             QuestsState state = QuestsState.get(p());
             for (String f : t.setFlags) {
                 if (!state.hasFlag(p().getUUID(), f)) {
-                    return false;
+                    return "flag " + f + " not set";
                 }
             }
             if (!t.flagOneOf.isEmpty() && !flagOneOfSet && t.flagOneOf.stream().noneMatch(f -> state.hasFlag(p().getUUID(), f))) {
-                return false;
+                return "none of " + t.flagOneOf + " set";
             }
             for (Map.Entry<String, Integer> e : carried.entrySet()) {
                 int now = Inv.count(p(), e.getKey());
                 if (t.kind == Trigger.Kind.DROP ? now < Math.max(1, t.count) : now <= e.getValue() - t.take.getOrDefault(e.getKey(), 0)) {
-                    return false;
+                    return "no " + e.getKey() + " received";
                 }
             }
             if (t.spawn != null && !foeUp && foes(t.spawn, 64).isEmpty()) {
-                return false;
+                return "no " + t.spawn + " raised near the player";
             }
             // a side step that sets nothing and gives nothing (a respawn, a travel) took effect when it ran
-            return !t.setFlags.isEmpty() || !t.flagOneOf.isEmpty() || !t.give.isEmpty() || t.spawn != null || t.travel != null;
+            return !t.setFlags.isEmpty() || !t.flagOneOf.isEmpty() || !t.give.isEmpty() || t.spawn != null || t.travel != null
+                    ? null : "the stage did not move on";
         }
 
         /** A quest item the step lost although it doesn't take it (or takes fewer), or null. */
