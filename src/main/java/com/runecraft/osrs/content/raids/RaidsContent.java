@@ -40,6 +40,21 @@ public final class RaidsContent implements ContentModule {
     public static final String COOKING_FIRE = "cox_cooking_fire";
     public static final String GOURD_TREE = "cox_gourd_tree";
     public static final String GEYSER = "cox_geyser";
+    /** Tombs of Amascut: the Nexus's path entrances and the way down to the Wardens (which one is told by position). */
+    public static final String TOA_PATH_ENTRANCE = "toa_path_entrance";
+    /** Tombs of Amascut: the teleport crystal a path boss leaves behind, back to the Nexus. */
+    public static final String TOA_EXIT_CRYSTAL = "toa_teleport_crystal";
+    public static final String TOA_HELPFUL_SPIRIT = "toa_helpful_spirit";
+    /** Path of Het: the statues that lend a pickaxe, the turnable mirrors and the worn barriers a pickaxe breaks. */
+    public static final String TOA_PICKAXE_STATUE = "toa_pickaxe_statue";
+    public static final String TOA_MIRROR = "toa_mirror";
+    public static final String TOA_WORN_BARRIER = "toa_worn_barrier";
+    /** Path of Apmeken: the crate of hammers and neutralising potions. */
+    public static final String TOA_APMEKEN_CRATE = "toa_apmeken_crate";
+    /** Path of Scabaras: the button that replays the tile sequence and the tablet of the addition puzzle. */
+    public static final String TOA_SCABARAS_PANEL = "toa_scabaras_panel";
+    /** Zebak: the water jugs that wash away his acid. */
+    public static final String TOA_ZEBAK_JUG = "toa_zebak_jug";
 
     @Override
     public String id() {
@@ -98,7 +113,16 @@ public final class RaidsContent implements ContentModule {
                 BlockDef.scripted(BAT_ROOST, "Bat roost", 0x3A3A3A, "rock"),
                 BlockDef.scripted(COOKING_FIRE, "Fire", 0x8A4A1A, "fire"),
                 BlockDef.scripted(GOURD_TREE, "Gourd tree", 0x6A8A3A, "tree"),
-                BlockDef.scripted(GEYSER, "Geyser", 0x4A7AA0, "water"));
+                BlockDef.scripted(GEYSER, "Geyser", 0x4A7AA0, "water"),
+                BlockDef.scripted(TOA_PATH_ENTRANCE, "Path entrance", 0xD8B060, "portal_glow"),
+                BlockDef.scripted(TOA_EXIT_CRYSTAL, "Teleport crystal", 0xE8F0F8, "crystal_glow"),
+                BlockDef.scripted(TOA_HELPFUL_SPIRIT, "Helpful Spirit", 0x9AD8E8, "spirit_glow"),
+                BlockDef.scripted(TOA_PICKAXE_STATUE, "Statue", 0xC0A060, "statue"),
+                BlockDef.scripted(TOA_MIRROR, "Mirror", 0xC8D0D8, "mirror"),
+                BlockDef.scripted(TOA_WORN_BARRIER, "Barrier", 0xB09060, "rock"),
+                BlockDef.scripted(TOA_APMEKEN_CRATE, "Crate", 0x8A6A4A, "crate"),
+                BlockDef.scripted(TOA_SCABARAS_PANEL, "Hieroglyph tablet", 0xC8A050, "tablet"),
+                BlockDef.scripted(TOA_ZEBAK_JUG, "Jug", 0xA06A3A, "pot"));
     }
 
     @Override

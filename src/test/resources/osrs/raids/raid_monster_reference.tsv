@@ -52,4 +52,11 @@ toa_baboon_brawler	Baboon Brawler	Level 56	56	25	40	40	12	40	40	900	900	900	-60	
 toa_baboon_thrower	Baboon Thrower	Level 56	56	30	40	40	12	40	40	-50	-50	-50	900	900	4
 toa_baboon_mage	Baboon Mage	Level 56	56	20	40	40	12	40	40	900	900	900	900	-50	4
 toa_agile_scarab	Agile Scarab		53	30	60	20	5	30	40	0	0	0	0	0	4
+toa_baboon_shaman	Baboon Shaman		74	40	60	60	20	60	60	900	900	900	900	-50	8
+toa_baboon_thrall	Baboon Thrall		52	2	40	40	12	40	40	0	0	0	0	0	4
+toa_volatile_baboon	Volatile Baboon		72	8	60	60	20	60	60	900	900	900	-60	-50	4
+toa_cursed_baboon	Cursed Baboon		77	20	60	60	20	60	60	900	900	900	-60	-50	4
+toa_baba_baboon	Baboon (Ba-Ba)		77	10	0	0	50	50	80	10	50	50	50	50	4
+toa_crocodile	Crocodile (Tombs of Amascut)		71	30	150	60	100	30	1	150	350	350	5	150	7
+toa_path_scarab	Scarab (Tombs of Amascut)		56	12	20	32	28	1	50	0	0	0	0	0	4
 cox_scavenger_beast	Scavenger beast	Normal	0	30	120	120	45	1	1	0	0	0	0	0	0

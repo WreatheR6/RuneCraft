@@ -23,7 +23,7 @@ import java.util.Map;
 public final class RaidItems {
     /** Items handed out inside a raid that are removed when the player leaves. */
     public static final List<String> RAID_ONLY_ITEMS = java.util.stream.Stream.concat(java.util.stream.Stream.of("cox_kindling",
-            "cavern_grubs", "crondis_water_container",
+            "cavern_grubs", "crondis_water_container", "neutralising_potion",
             ToaSupplies.NECTAR, ToaSupplies.TEARS, ToaSupplies.AMBROSIA, ToaSupplies.SILK_DRESSING, ToaSupplies.CRYSTAL_SCARAB,
             ToaSupplies.SMELLING_SALTS, ToaSupplies.ADRENALINE, ToaSupplies.HONEY_LOCUST), CoxSupplies.ITEMS.stream()).toList();
 
@@ -160,6 +160,35 @@ public final class RaidItems {
                 .examine("A staff imbued with the power of Tumeken.");
         items.add("tumekens_guardian", "Tumeken's guardian", Kind.SIMPLE, "pet", 0xE0B040).value(1).stack(1)
                 .examine("A tiny Warden, sworn to protect you.");
+        // Tertiary and challenge rewards (OSRS wiki, "Chest (Tombs of Amascut)"); all untradeable cosmetics or upgrades.
+        items.add("thread_of_elidinis", "Thread of elidinis", Kind.SIMPLE, "string", 0x5AC0D0).value(1).stack(1)
+                .examine("A shimmering thread. Used to make a divine rune pouch.");
+        items.add("eye_of_the_corruptor", "Eye of the corruptor", Kind.SIMPLE, "gem", 0x8A2AA0).value(1).stack(1)
+                .examine("A jewel for a keris partisan.");
+        items.add("jewel_of_the_sun", "Jewel of the sun", Kind.SIMPLE, "gem", 0xF0C040).value(1).stack(1)
+                .examine("A jewel for a keris partisan.");
+        items.add("breach_of_the_scarab", "Breach of the scarab", Kind.SIMPLE, "gem", 0x3A8AC0).value(1).stack(1)
+                .examine("A jewel for a keris partisan.");
+        items.add("jewel_of_amascut", "Jewel of amascut", Kind.SIMPLE, "gem", 0x6A1A4A).value(1).stack(1)
+                .examine("A jewel for a keris partisan.");
+        items.add("masori_crafting_kit", "Masori crafting kit", Kind.SIMPLE, "package", 0x8A6A3A).value(1).stack(1)
+                .examine("Used to fortify Masori armour.");
+        items.add("menaphite_ornament_kit", "Menaphite ornament kit", Kind.SIMPLE, "package", 0xD8A838).value(1).stack(1)
+                .examine("Used to decorate the Tombs of Amascut's weapons.");
+        items.add("cursed_phalanx", "Cursed phalanx", Kind.SIMPLE, "bead", 0xE8E0C8).value(1).stack(1)
+                .examine("A cursed finger bone. Attach it to an Osmumten's fang.");
+        items.add("remnant_of_akkha", "Remnant of akkha", Kind.SIMPLE, "orb", 0x8A7A6A).value(1).stack(1)
+                .examine("Use it on Tumeken's guardian to change its form.");
+        items.add("remnant_of_baba", "Remnant of ba-ba", Kind.SIMPLE, "orb", 0x9A7A5A).value(1).stack(1)
+                .examine("Use it on Tumeken's guardian to change its form.");
+        items.add("remnant_of_kephri", "Remnant of kephri", Kind.SIMPLE, "orb", 0x2A5A7A).value(1).stack(1)
+                .examine("Use it on Tumeken's guardian to change its form.");
+        items.add("remnant_of_zebak", "Remnant of zebak", Kind.SIMPLE, "orb", 0x4A6A3A).value(1).stack(1)
+                .examine("Use it on Tumeken's guardian to change its form.");
+        items.add("ancient_remnant", "Ancient remnant", Kind.SIMPLE, "orb", 0x3AA0A8).value(1).stack(1)
+                .examine("Use it on Tumeken's guardian to change its form.");
+        items.add("fossilised_dung", "Fossilised dung", Kind.SIMPLE, "ore", 0x6A5A3A).value(1)
+                .examine("Your reward for not pulling your weight.");
 
         // ---------------- Challenge Mode / Hard mode rewards ----------------
         items.add("twisted_ancestral_colour_kit", "Twisted ancestral colour kit", Kind.SIMPLE, "package", 0x5A3A2A).value(1).stack(1)
@@ -201,6 +230,8 @@ public final class RaidItems {
                 .examine("Scavengers love these.");
         items.add("crondis_water_container", "Water container", Kind.SIMPLE, "vial_water", 0x3A7AC0).value(1).stack(1)
                 .examine("Full of precious water for the Palm of Resourcefulness.");
+        items.add("neutralising_potion", "Neutralising potion", Kind.SIMPLE, "potion", 0x9AE07A).value(1)
+                .examine("Pour it onto a vent to purge Apmeken's poison.");
 
         // ---------------- Tombs of Amascut supplies (Helpful Spirit; doses are item damage) ----------------
         items.add(ToaSupplies.NECTAR, "Nectar", Kind.POTION, "potion", 0xE0A030).value(1).stack(1)

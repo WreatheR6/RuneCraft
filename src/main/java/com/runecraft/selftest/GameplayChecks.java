@@ -103,6 +103,8 @@ final class GameplayChecks {
             checks.add(new SelfTest.Check("raid:" + r.id(), () -> g.raid(r)));
         }
         checks.add(new SelfTest.Check("raid:cox_supplies", g::coxSupplies));
+        checks.add(new SelfTest.Check("raid:toa_full_run", g::toaFullRun));
+        checks.add(new SelfTest.Check("raid:toa_deaths", g::toaDeaths));
         for (Boss b : ModEntities.BOSS_TYPES.keySet()) {
             checks.add(new SelfTest.Check("boss:" + b.entityId(), () -> g.legacyBoss(b)));
         }
@@ -507,6 +509,34 @@ final class GameplayChecks {
             throw failure("the player is still bound to the raid after it closed");
         }
         return raid.rooms.size() + " rooms, " + rooms + " started, party " + party + " online / " + active + " active";
+    }
+
+    /**
+     * A whole Tombs of Amascut run as the real player (round 33): invocations, the barrier, the Nexus, every path's puzzle
+     * solved and boss killed in a random order, the Helpful Spirit, the Wardens' three phases and the chest. Raid rooms
+     * only see players in the server's player list, so the fake player can't do it.
+     */
+    private String toaFullRun() {
+        if (!c.realPlayer()) {
+            throw new SelfTest.Skip("raid rooms only see players in the player list; runs in '/rc selftest real raid:'");
+        }
+        try {
+            return com.runecraft.content.raids.RaidSelfTest.toaRun(p(), c.near(0, 2));
+        } catch (AssertionError e) {
+            throw failure(e.getMessage());
+        }
+    }
+
+    /** Tombs of Amascut deaths: the death penalty, a wipe resetting the room with honey locusts, a Hardcore Run wipe. */
+    private String toaDeaths() {
+        if (!c.realPlayer()) {
+            throw new SelfTest.Skip("raid rooms only see players in the player list; runs in '/rc selftest real raid:'");
+        }
+        try {
+            return com.runecraft.content.raids.RaidSelfTest.toaDeaths(p(), c.near(0, 2));
+        } catch (AssertionError e) {
+            throw failure(e.getMessage());
+        }
     }
 
     /** CoX raid herblore through the real service: clean, brew, mix an overload and drink (round 29). */

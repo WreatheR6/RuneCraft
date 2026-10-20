@@ -13,8 +13,11 @@ public enum RaidType {
     COX("chambers_of_xeric", "Chambers of Xeric", "mount_quidamortem", "Mount Quidamortem", 2180, 3400, 100),
     /** Theatre of Blood, beneath Ver Sinhaza in Morytania. */
     TOB("theatre_of_blood", "Theatre of Blood", "ver_sinhaza", "Ver Sinhaza", 3650, 3220, 5),
-    /** Tombs of Amascut, in the Jaldraocht Pyramid in the Kharidian Desert. */
-    TOA("tombs_of_amascut", "Tombs of Amascut", "toa_jaldraocht_entrance", "Jaldraocht Pyramid", 3350, 2750, 8);
+    /**
+     * Tombs of Amascut, in the Jaltevas Pyramid at the Necropolis (OSRS map 3345, 2725; the pyramid here stands about 25
+     * tiles north-east of it). The place id keeps its old name.
+     */
+    TOA("tombs_of_amascut", "Tombs of Amascut", "toa_jaldraocht_entrance", "Jaltevas Pyramid", 3350, 2750, 8);
 
     private final String id;
     private final String displayName;

@@ -187,7 +187,8 @@ class CoxSuppliesTest {
 
     @Test
     void wardenCorePointsAndSupplies() {
-        assertEquals(10.0, RaidScaling.toaPointsPerDamage("toa_warden_core", false));
+        // OSRS wiki "Chest (Tombs of Amascut)": the Warden's core gives no points (the phase 2 body gives 2 a hitpoint).
+        assertEquals(0.0, RaidScaling.toaPointsPerDamage("toa_warden_core", false));
         assertTrue(ToaSupplies.givenInsideTomb(ToaSupplies.HONEY_LOCUST));
         assertTrue(ToaSupplies.givenInsideTomb(ToaSupplies.AMBROSIA));
         assertFalse(ToaSupplies.givenInsideTomb("saradomin_brew4"));

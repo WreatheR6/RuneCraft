@@ -94,7 +94,7 @@ public final class RaidManager {
             if (ActionManager.mcTick() % ActionManager.MC_TICKS_PER_GAME_TICK != 0) {
                 return;
             }
-            long tick = ActionManager.gameTick();
+            long tick = RaidEffects.now();
             RaidEffects.gameTick();
             for (RaidInstance raid : active()) {
                 try {
@@ -127,10 +127,28 @@ public final class RaidManager {
             return true;
         });
         CombatHooks.addModifier(new CombatHooks.PlayerAttackModifier() {
-            /** OSRS: melee always hits a Warden's ejected core for its maximum. */
+            /** OSRS: melee always hits a Warden's ejected core for its maximum; baboons and siphons see ToaPuzzles. */
+            /** OSRS: attacks on the phase 2 Warden always hit (its shield takes whatever the attack's accuracy allows). */
+            @Override
+            public double accuracy(ServerPlayer player, LivingEntity target, AttackType type) {
+                RaidInstance raid = at(target);
+                return raid != null && raid.logic() instanceof ToaWardens w && w.alwaysAccurate(target) ? 1000.0 : 1.0;
+            }
+
             @Override
             public boolean alwaysMaxHit(ServerPlayer player, LivingEntity target, AttackType type) {
-                return ToaRooms.Wardens.isCore(target) && (type == AttackType.STAB || type == AttackType.SLASH || type == AttackType.CRUSH);
+                if (ToaWardens.isCore(target) && (type == AttackType.STAB || type == AttackType.SLASH || type == AttackType.CRUSH)) {
+                    return true;
+                }
+                RaidInstance raid = at(target);
+                if (raid == null || raid.type != RaidType.TOA) {
+                    return false;
+                }
+                // OSRS: ranged always hits Ba-Ba's cracked boulder for its maximum.
+                if (type == AttackType.RANGED && raid.logic() instanceof ToaBossRooms.Baba baba && baba.isCracked(target)) {
+                    return true;
+                }
+                return com.runecraft.osrs.content.raids.ToaPuzzles.alwaysMaxHit(RaidInstance.creatureId(target), type);
             }
 
             @Override
@@ -174,6 +192,11 @@ public final class RaidManager {
             ServerPlayer p = handler.player;
             RaidInstance raid = of(p);
             if (raid != null) {
+                if (raid.keepsOfflineMembers() && raid.contains(p)) {
+                    // ToA (OSRS): a player who logs out stays in the party and may log back in to rejoin.
+                    raid.disconnected(p);
+                    return;
+                }
                 raid.removePlayer(p.getUUID(), false);
                 raid.say(p.getName().getString() + " has left the raid.", ChatFormatting.GRAY);
                 if (raid.party().isEmpty()) {
@@ -183,7 +206,19 @@ public final class RaidManager {
         });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             ServerPlayer p = handler.player;
-            if (of(p) == null && RaidBuilder.inInstanceArea(p.getX(), p.getZ()) && Gielinor.is(p)) {
+            RaidInstance raid = of(p);
+            if (raid != null && !raid.closed()) {
+                RaidEffects.later(1, () -> {
+                    if (of(p) == raid && !raid.closed()) {
+                        raid.reconnected(p);
+                    }
+                });
+                return;
+            }
+            if (raid != null) {
+                unbind(p.getUUID());
+            }
+            if (RaidBuilder.inInstanceArea(p.getX(), p.getZ()) && Gielinor.is(p)) {
                 RaidEffects.later(1, () -> sendHome(p));
             }
         });
@@ -320,10 +355,23 @@ public final class RaidManager {
     public static void useBlock(ServerPlayer player, String blockId, BlockPos pos) {
         RaidInstance raid = of(player);
         if (raid == null || RaidBuilder.slotAt(pos.getX(), pos.getZ()) != raid.slot) {
+            if (raid == null && blockId.equals(RaidsContent.INVOCATION_OBELISK)) {
+                groupingObelisk(player);
+                return;
+            }
             Msg.game(player, "Nothing interesting happens.");
             return;
         }
         switch (blockId) {
+            case RaidsContent.TOA_PATH_ENTRANCE -> {
+                if (!raid.begun()) {
+                    Msg.game(player, "The party must pass the barrier first.");
+                } else {
+                    raid.useNexusEntrance(player, pos);
+                }
+            }
+            case RaidsContent.TOA_EXIT_CRYSTAL -> raid.returnToNexus(player);
+            case RaidsContent.TOA_HELPFUL_SPIRIT -> ToaSupplyService.talk(player, raid);
             case RaidsContent.START_BARRIER -> raid.begin(player);
             case RaidsContent.SUPPLIES -> raid.takeSupplies(player);
             case RaidsContent.REWARD_CHEST -> raid.claim(player);
@@ -352,24 +400,26 @@ public final class RaidManager {
         }
     }
 
-    /** The invocation obelisk cycles the ToA presets (sneak to go back). */
+    /**
+     * The invocation obelisk shows the invocation interface (click a name to toggle it); sneaking cycles the presets
+     * (backwards). Only the party leader changes them, before the raid begins.
+     */
     static void invocations(ServerPlayer player, RaidInstance raid, int step) {
         if (raid.type != RaidType.TOA) {
             return;
         }
-        if (raid.begun()) {
-            Msg.game(player, "The invocations are locked in: raid level " + raid.raidLevel() + ".");
+        if (step < 0 && !raid.begun() && raid.isLeader(player)) {
+            ToaInvocationMenu.preset(player, Math.max(0, raid.presetIndex()) - 1);
             return;
         }
-        raid.applyPreset(raid.presetIndex() + step);
-        Invocation.Preset preset = Invocation.presets().get(raid.presetIndex());
-        raid.say(player.getName().getString() + " sets the invocations to " + preset.name() + " (raid level " + raid.raidLevel() + ").",
-                ChatFormatting.YELLOW);
-        StringBuilder list = new StringBuilder();
-        for (Invocation i : raid.invocations()) {
-            list.append(list.length() == 0 ? "" : ", ").append(i.displayName());
-        }
-        player.displayClientMessage(Component.literal(list.length() == 0 ? "No invocations active." : "Active: " + list).withStyle(ChatFormatting.GRAY),
-                false);
+        ToaInvocationMenu.show(player, raid);
+    }
+
+    /** The obelisk outside the tomb (OSRS Grouping Obelisk): how parties form, and the player's completions. */
+    private static void groupingObelisk(ServerPlayer player) {
+        int kc = RaidsState.get(player.getServer()).completions(player.getUUID(), RaidType.TOA.id());
+        Msg.game(player, "To raid the Tombs of Amascut, gather your party (up to " + RaidType.TOA.maxParty() + ") within 8 blocks of the "
+                + "entrance; whoever enters leads the party and picks the invocations inside.");
+        Msg.game(player, "Your Tombs of Amascut completion count is: " + kc + ".");
     }
 }

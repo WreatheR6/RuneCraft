@@ -149,9 +149,11 @@ final class OsrsPages {
         EXTEND.add(new Def("Raids", "Chambers of Xeric", null, l("great_olm"), l("metamorphic_dust", "twisted_ancestral_colour_kit")));
         EXTEND.add(new Def("Raids", "Theatre of Blood", null, l("verzik_vitur", "verzik_vitur_p2", "verzik_vitur_p3"),
                 l("sanguine_dust", "holy_ornament_kit", "sanguine_ornament_kit")));
-        EXTEND.add(new Def("Raids", "Tombs of Amascut", null, l("tumekens_warden"), l("thread_of_elidinis", "eye_of_the_corruptor",
-                "jewel_of_the_sun", "breach_of_the_scarab", "cursed_phalanx", "masori_crafting_kit", "menaphite_ornament_kit",
-                "remnant_of_akkha", "remnant_of_baba", "remnant_of_kephri", "remnant_of_zebak", "ancient_remnant")));
+        // OSRS counts completions: the Warden that dies last (either one) ends the raid.
+        EXTEND.add(new Def("Raids", "Tombs of Amascut", null, l("tumekens_warden", "elidinis_warden"), l("thread_of_elidinis",
+                "eye_of_the_corruptor", "jewel_of_the_sun", "breach_of_the_scarab", "jewel_of_amascut", "cursed_phalanx", "masori_crafting_kit", "menaphite_ornament_kit",
+                "remnant_of_akkha", "remnant_of_baba", "remnant_of_kephri", "remnant_of_zebak", "ancient_remnant",
+                "cache_of_runes")));
         for (String tier : new String[]{"Beginner", "Easy", "Medium", "Hard", "Elite", "Master"}) {
             EXTEND.add(new Def("Clues", tier + " Treasure Trails", null, l("clue_" + tier.toLowerCase(java.util.Locale.ROOT)), l()));
         }

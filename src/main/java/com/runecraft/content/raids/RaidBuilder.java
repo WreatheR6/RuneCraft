@@ -166,6 +166,17 @@ public final class RaidBuilder {
      * the corridor towards the next room (closed by a barrier until the room is cleared).
      */
     public static void buildRoom(ServerLevel world, int slot, int i, String style, boolean first, boolean last) {
+        buildRoomShell(world, slot, i, style, !first, !last);
+    }
+
+    /**
+     * Builds room {@code i}. {@code westDoor}: an open doorway in the west wall (rooms entered by teleport, such as the
+     * Tombs of Amascut's path rooms, keep the wall shut); {@code eastCorridor}: a doorway in the east wall, closed by a
+     * barrier until the room is cleared, and the corridor to the next room.
+     */
+    public static void buildRoomShell(ServerLevel world, int slot, int i, String style, boolean westDoor, boolean eastCorridor) {
+        boolean first = !westDoor;
+        boolean last = !eastCorridor;
         BlockPos c = center(slot, i);
         int cx = c.getX();
         int cz = c.getZ();

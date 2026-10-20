@@ -51,6 +51,7 @@ public final class RaidScript implements BossScript {
         if (raid.isDowned(player)) {
             return 0;
         }
+        raid.noteAttack();
         RoomLogic r = room(boss);
         if (damage == 0 && type != null && raid.type == com.runecraft.osrs.content.raids.RaidType.TOA
                 && RaidEffects.protectedFrom(player, type)) {

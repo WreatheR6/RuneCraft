@@ -49,10 +49,13 @@ class RaidsContentTest {
         assertEquals(List.of("tob_lobby", "maiden", "bloat", "nylocas", "sotetseg", "xarpus", "verzik", "tob_reward"),
                 tob.stream().map(RoomDef::id).toList());
         List<RoomDef> toa = RaidLayouts.toa(new Random(9));
-        assertEquals(11, toa.size());
-        assertEquals("wardens", toa.get(9).id());
-        for (int i = 1; i < 9; i += 2) {
+        assertEquals(12, toa.size());
+        assertEquals("toa_nexus", toa.get(1).id());
+        assertEquals(RoomDef.Kind.NEXUS, toa.get(1).kind());
+        assertEquals("wardens", toa.get(10).id());
+        for (int i = 2; i < 10; i += 2) {
             assertEquals(RoomDef.Kind.PUZZLE, toa.get(i).kind(), "each ToA path starts with its puzzle");
+            assertEquals(RoomDef.Kind.COMBAT, toa.get(i + 1).kind(), "each ToA path ends with its boss");
         }
     }
 
@@ -179,7 +182,10 @@ class RaidsContentTest {
         assertEquals(1.0, RaidScaling.toaHp(0, 1), 1e-9);
         assertEquals(2.2 * 2.8, RaidScaling.toaHp(300, 3), 1e-9);
         assertEquals(600, RaidScaling.coxDeathPenalty(1000));
-        assertEquals(800, RaidScaling.toaDeathPenalty(1000));
+        // OSRS: a ToA death costs 20% of the total reward points, at least 1,000.
+        assertEquals(0, RaidScaling.toaDeathPenalty(1000));
+        assertEquals(4000, RaidScaling.toaDeathPenalty(5000));
+        assertEquals(16_000, RaidScaling.toaDeathPenalty(20_000));
     }
 
     @Test
@@ -466,6 +472,9 @@ class RaidsContentTest {
         assertEquals(2.0, RaidScaling.toaPointsPerDamage("baba", false));
         assertEquals(2.5, RaidScaling.toaPointsPerDamage("tumekens_warden", true));
         assertEquals(0.5, RaidScaling.toaPointsPerDamage("scarab_swarm", false));
+        assertEquals(0.5, RaidScaling.toaPointsPerDamage("toa_soldier_scarab", false));
+        assertEquals(1.0, RaidScaling.toaPointsPerDamage("toa_scarab_swarm", false));
+        assertEquals(1.2, RaidScaling.toaPointsPerDamage("toa_baboon_brawler", false));
         assertEquals(1.0, RaidScaling.toaPointsPerDamage("akkha", false));
         RaidRewards.Unique fang = RaidRewards.TOA_UNIQUES.get(0);
         RaidRewards.Unique lightbearer = RaidRewards.TOA_UNIQUES.get(1);

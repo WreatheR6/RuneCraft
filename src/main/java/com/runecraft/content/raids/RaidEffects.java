@@ -33,13 +33,28 @@ public final class RaidEffects {
 
     private static final List<Strike> STRIKES = new ArrayList<>();
     private static final List<Task> TASKS = new ArrayList<>();
+    /** Game ticks the raid clock runs ahead of the server's (the self-test fast-forwards raids, see {@link #advance}). */
+    private static long skew;
 
     private RaidEffects() {
     }
 
+    /**
+     * The raid clock in game ticks: the server's game tick, plus whatever the self-test fast-forwarded. Every raid timer
+     * (delayed tasks, strikes, room deadlines, the raid timer) reads it, so a raid can be driven tick by tick in one go.
+     */
+    public static long now() {
+        return ActionManager.gameTick() + skew;
+    }
+
+    /** Self-test: moves the raid clock forward by {@code ticks} game ticks (it never goes back). */
+    static void advance(int ticks) {
+        skew += Math.max(0, ticks);
+    }
+
     /** Runs {@code run} after {@code gameTicks} game ticks. */
     public static void later(int gameTicks, Runnable run) {
-        TASKS.add(new Task(ActionManager.gameTick() + Math.max(1, gameTicks), run));
+        TASKS.add(new Task(now() + Math.max(1, gameTicks), run));
     }
 
     /**
@@ -48,7 +63,7 @@ public final class RaidEffects {
      */
     public static void strike(ServerLevel world, Vec3 pos, double radius, int maxHit, int delay, LivingEntity source,
                               ParticleOptions warn, AttackType style, boolean piercing) {
-        STRIKES.add(new Strike(world, pos, radius, maxHit, style, piercing, ActionManager.gameTick() + Math.max(1, delay), source,
+        STRIKES.add(new Strike(world, pos, radius, maxHit, style, piercing, now() + Math.max(1, delay), source,
                 warn == null ? ParticleTypes.FLAME : warn, p -> true));
     }
 
@@ -62,7 +77,7 @@ public final class RaidEffects {
     }
 
     public static void gameTick() {
-        long now = ActionManager.gameTick();
+        long now = now();
         List<Task> dueTasks = new ArrayList<>();
         for (Iterator<Task> it = TASKS.iterator(); it.hasNext(); ) {
             Task t = it.next();
@@ -114,6 +129,12 @@ public final class RaidEffects {
      */
     public static int hit(LivingEntity source, ServerPlayer player, int damage, AttackType style, boolean piercing) {
         RaidInstance raid = RaidManager.of(player);
+        if (raid != null) {
+            if (raid.isDowned(player)) {
+                return 0;
+            }
+            raid.noteAttack();
+        }
         if (!piercing && style != null && protectedFrom(player, style)) {
             // ToA Quiet Prayers (OSRS): protection prayers are 10% less effective.
             double leak = raid != null && raid.type == com.runecraft.osrs.content.raids.RaidType.TOA
@@ -122,6 +143,27 @@ public final class RaidEffects {
         }
         if (raid != null) {
             damage = (int) Math.round(damage * raid.damageMultiplier(source));
+        }
+        LivingEntity attacker = source != null && source.isAlive() ? source : null;
+        int dealt = CombatHandler.applyDamage(attacker, player, damage);
+        if (dealt > 0) {
+            RaidManager.hurt(player, dealt);
+            RaidManager.deadlyPrayers(player, dealt);
+        }
+        return dealt;
+    }
+
+    /**
+     * Like {@link #hit} but without the raid's damage multiplier (for damage that is already scaled or capped, such as
+     * Akkha's unstable orbs).
+     */
+    public static int hitRaw(LivingEntity source, ServerPlayer player, int damage) {
+        RaidInstance raid = RaidManager.of(player);
+        if (raid != null) {
+            if (raid.isDowned(player)) {
+                return 0;
+            }
+            raid.noteAttack();
         }
         LivingEntity attacker = source != null && source.isAlive() ? source : null;
         int dealt = CombatHandler.applyDamage(attacker, player, damage);
