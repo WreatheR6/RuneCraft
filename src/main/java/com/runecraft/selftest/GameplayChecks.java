@@ -527,7 +527,10 @@ final class GameplayChecks {
         }
     }
 
-    /** Tombs of Amascut deaths: the death penalty, a wipe resetting the room with honey locusts, a Hardcore Run wipe. */
+    /**
+     * Tombs of Amascut deaths: the death penalty, a wipe resetting the room with honey locusts, a Hardcore Run wipe; then
+     * logging out mid-fight and back in (a death, rejoining downed, the solo wipe) and leaving through the lobby exit.
+     */
     private String toaDeaths() {
         if (!c.realPlayer()) {
             throw new SelfTest.Skip("raid rooms only see players in the player list; runs in '/rc selftest real raid:'");

@@ -9,6 +9,7 @@ import com.runecraft.osrs.content.raids.RaidLayouts;
 import com.runecraft.osrs.content.raids.RaidRewards;
 import com.runecraft.osrs.content.raids.RaidType;
 import com.runecraft.osrs.content.raids.RaidsContent;
+import com.runecraft.osrs.content.raids.ToaLoot;
 import com.runecraft.osrs.content.raids.ToaSupplies;
 import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
@@ -330,6 +331,52 @@ public final class RaidSelfTest {
                 }
             }
         }
+        out.append("; ").append(toaRejoinAndLeave(p, entrance));
         return out.toString();
+    }
+
+    /**
+     * Logging out and back in, then leaving (OSRS): logging out mid-fight counts as a death and keeps the player in the
+     * party; logging back in rejoins downed, and a solo party then wipes and retries the room; the lobby's exit takes the
+     * player home without the raid's supplies.
+     */
+    private static String toaRejoinAndLeave(ServerPlayer p, BlockPos entrance) {
+        RaidManager.enter(p, RaidType.TOA, entrance);
+        RaidInstance raid = RaidManager.of(p);
+        expect(raid != null, "RaidManager.enter did not start a raid");
+        RaidSelfTest t = new RaidSelfTest(raid, p);
+        try {
+            ToaInvocationMenu.preset(p, 0);
+            t.use(raid.center(0).offset(RaidBuilder.HALF + 1, 1, 0));
+            int nexus = raid.roomIndex("toa_nexus");
+            t.moveTo(raid.spawn(nexus));
+            t.tick(2);
+            t.use(raid.nexus().entrance(3));
+            int room = raid.currentRoom();
+            expect(raid.logic(room).started && room != nexus, "the Path of Crondis did not start");
+            int before = raid.toaTotal(p.getUUID());
+            raid.disconnected(p);
+            expect(RaidManager.of(p) == raid, "logging out took the player out of the party");
+            expect(!raid.players().contains(p), "a logged-out player still counts as online");
+            expect(raid.isDowned(p) && raid.toaTotal(p.getUUID()) == ToaLoot.afterDeath(before), "logging out mid-fight was not a death");
+            t.tick(3);
+            expect(RaidManager.of(p) == raid, "the raid did not wait for the logged-out player");
+            raid.reconnected(p);
+            expect(raid.players().contains(p), "logging back in did not rejoin the raid");
+            expect(!raid.isDowned(p) && raid.logic(room).started && !raid.logic(room).done,
+                    "rejoining a solo raid downed did not wipe and retry the room");
+            expect(raid.inRoom(p.position(), room), "the rejoining player was not brought back into the room");
+            t.healthy("rejoin");
+            Inv.give(p, ToaSupplies.HONEY_LOCUST, 1);
+            t.use(raid.center(0).offset(-RaidBuilder.HALF + 1, 1, 3));
+            expect(RaidManager.of(p) == null, "the lobby exit did not take the player out of the raid");
+            expect(!raid.contains(p), "the lobby exit left the player in the instance");
+            expect(Inv.count(p, ToaSupplies.HONEY_LOCUST) == 0, "the raid's supplies left the tomb with the player");
+            return "logout mid-fight is a death, rejoin wipes and retries, the exit takes you home";
+        } finally {
+            if (RaidManager.of(p) == raid) {
+                RaidManager.selfTestClose(raid);
+            }
+        }
     }
 }
