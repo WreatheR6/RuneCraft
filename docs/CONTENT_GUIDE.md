@@ -25,6 +25,7 @@ Modules are listed in `osrs/content/Modules.java`, `content/ModuleHooksRegistry.
    - `bash tools/run_core_tests.sh` (data tests, including `ContentModulesTest`)
    - `python3 tools/check_compile.py` (best-effort compile of the Minecraft code against our own classes; must say `0 relevant error(s)`)
 5. **Be faithful to OSRS:** real levels, XP, stats, drop rates and mechanics. Approximations are fine where the exact value is unknown; note them in a comment.
+   **Playability comes first (user, session 2):** OSRS's 0.6 s tick timing does not translate well to Minecraft's real-time combat. Keep OSRS's numbers (levels, XP, max hits, accuracy formulas, damage per second, drop rates), but adapt timing and precision for a real-time player: attacks respond on click and follow the Minecraft attack cooldown; boss attacks and specials are telegraphed visibly (particles, markers, sounds, chat) with a fair reaction window measured in seconds, not ticks; tile-precise mechanics (stand on this tile, step off within N ticks, prayer switches on an exact tick) get readable area markers and lenient windows; a mechanic that can't be made fair in real time is simplified rather than kept tick-exact. Mark such adaptations `// playability` with the OSRS original in the comment.
 6. **Don't touch these:**
    - `src/main/resources` (assets are generated later from `build/catalog.json`)
    - `tools/`
