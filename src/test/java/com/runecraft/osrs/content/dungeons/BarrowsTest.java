@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -310,30 +311,56 @@ class BarrowsTest {
     }
 
     @Test
-    void livingBrothersOtherThanTheHiddenOneAmbushInTheTunnels() {
+    void tunnelDoorsWakeBrothersSkeletonsBloodwormsAndCryptRats() {
+        // OSRS Wiki: 12/128 a remaining brother, 52/128 a skeleton, 32/128 a bloodworm, 32/128 a crypt rat.
+        int[] counts = new int[4];
+        for (int r = 0; r < 128; r++) {
+            counts[BarrowsRun.doorSpawn(r).ordinal()]++;
+        }
+        assertArrayEquals(new int[]{12, 52, 32, 32}, counts);
+        // Every brother still alive may come out of a door, the hidden one too.
         BarrowsRun run = BarrowsRun.of(1 << 1, 1 << 1, 4, 99L, false);
-        assertEquals(List.of(0, 2, 3, 5), run.tunnelCandidates());
+        assertEquals(List.of(0, 2, 3, 4, 5), run.tunnelCandidates());
         Random random = new Random(5);
-        int hits = 0;
-        for (int i = 0; i < 6000; i++) {
-            int b = run.tunnelEncounter(random);
+        int brothers = 0;
+        BarrowsRun.DoorSpawn[] spawn = new BarrowsRun.DoorSpawn[1];
+        for (int i = 0; i < 12800; i++) {
+            int b = run.doorEncounter(random, false, spawn);
             if (b >= 0) {
-                hits++;
+                brothers++;
+                assertEquals(BarrowsRun.DoorSpawn.BROTHER, spawn[0]);
                 assertTrue(run.tunnelCandidates().contains(b));
+            } else {
+                assertNotEquals(BarrowsRun.DoorSpawn.BROTHER, spawn[0]);
             }
         }
-        assertTrue(hits > 800 && hits < 1200, "about 1 in " + BarrowsRun.TUNNEL_ENCOUNTER_CHANCE + ", got " + hits);
+        assertTrue(brothers > 1000 && brothers < 1400, "about 12/128 of the doors, got " + brothers + "/12800");
+        // A brother already up: a brother roll wakes nothing.
+        for (int i = 0; i < 500; i++) {
+            assertEquals(-1, run.doorEncounter(random, true, spawn));
+        }
+        // The hidden brother out of a door: the chest no longer summons him.
+        run.summon(4);
+        assertTrue(run.hiddenSummoned());
+        assertEquals(BarrowsRun.Open.LOOT, run.open());
         // A tunnel brother is summoned like any other: his kill counts, and he can't come back.
         run.summon(3);
-        assertFalse(run.hiddenSummoned());
         assertTrue(run.kill(3));
         assertFalse(run.tunnelCandidates().contains(3));
         assertEquals(2, run.killedCount());
-        // Nobody left but the hidden brother: no more ambushes.
-        BarrowsRun done = BarrowsRun.of(63 & ~(1 << 4), 63 & ~(1 << 4), 4, 1L, false);
-        for (int i = 0; i < 200; i++) {
-            assertEquals(-1, done.tunnelEncounter(random));
+        // Every brother dead: no more brothers from the doors.
+        BarrowsRun done = BarrowsRun.of(63, 63, 4, 1L, true);
+        for (int i = 0; i < 500; i++) {
+            assertEquals(-1, done.doorEncounter(random, false, spawn));
         }
+    }
+
+    @Test
+    void prayerDrainsEighteenSecondsApartAndGrowsWithEachBrother() {
+        assertEquals(30, BarrowsRun.PRAYER_DRAIN_TICKS);
+        assertEquals(8, BarrowsRun.prayerDrain(0));
+        assertEquals(11, BarrowsRun.prayerDrain(3));
+        assertEquals(14, BarrowsRun.prayerDrain(6));
     }
 
     private static boolean mainTable(String item) {

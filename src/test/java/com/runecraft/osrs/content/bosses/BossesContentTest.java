@@ -102,7 +102,10 @@ class BossesContentTest {
                 && boss("dagannoth_prime").defenceBonus(AttackType.RANGED) < 20);
         assertTrue(boss("dagannoth_supreme").defenceBonus(AttackType.RANGED) > 500
                 && boss("dagannoth_supreme").defenceBonus(AttackType.SLASH) < 20);
-        assertTrue(boss("zulrah").immuneTo.contains(AttackType.STAB));
+        // Zulrah lost its melee immunity in May 2025: only a halberd reaches it in the swamp (its script).
+        assertTrue(boss("zulrah").immuneTo.isEmpty());
+        assertTrue(ZulrahVorkath.reachesZulrah("dragon_halberd") && ZulrahVorkath.reachesZulrah("crystal_halberd_attuned"));
+        assertFalse(ZulrahVorkath.reachesZulrah("abyssal_whip") || ZulrahVorkath.reachesZulrah("dragon_spear"));
         assertTrue(boss("dusk").immuneTo.contains(AttackType.MAGIC));
         // Dawn flies out of melee reach except a halberd's: her script turns other melee away, so she is not immune to it.
         assertTrue(boss("dawn").immuneTo.isEmpty());

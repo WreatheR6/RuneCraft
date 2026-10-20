@@ -225,13 +225,13 @@ class MinigamesContentTest {
         assertEquals(2, MinigameRules.Wintertodt.rolls(500));
         assertEquals(28, MinigameRules.Wintertodt.rolls(50000));
         assertEquals(9900.0, MinigameRules.Wintertodt.completionXp(99));
-        assertTrue(MinigameRules.Wintertodt.coldDamage(99, 0, 0) > MinigameRules.Wintertodt.coldDamage(99, 4, 4));
-        // floor((16 - W - 2B) * (H + 1) / 99)
-        assertEquals(16, MinigameRules.Wintertodt.coldDamage(99, 0, 0));
-        assertEquals(10, MinigameRules.Wintertodt.coldDamage(99, 4, 1));
-        assertEquals(10, MinigameRules.Wintertodt.coldDamage(99, 4, 4));
-        assertEquals(6, MinigameRules.Wintertodt.coldDamage(50, 4, 0));
-        assertEquals(1, MinigameRules.Wintertodt.coldDamage(10, 4, 1));
+        assertTrue(MinigameRules.Wintertodt.standardDamage(99, 0, 0) > MinigameRules.Wintertodt.standardDamage(99, 4, 4));
+        // Warmth lost to a standard attack (since October 2024): floor((16 - W - min(2B, 6)) * 100 / FM).
+        assertEquals(16, MinigameRules.Wintertodt.standardDamage(99, 0, 0));
+        assertEquals(10, MinigameRules.Wintertodt.standardDamage(99, 4, 1));
+        assertEquals(6, MinigameRules.Wintertodt.standardDamage(99, 4, 4));
+        assertEquals(24, MinigameRules.Wintertodt.standardDamage(50, 4, 0));
+        assertEquals(100, MinigameRules.Wintertodt.standardDamage(10, 4, 1));
         // Tithe Farm: a full sack of 100 pays 35 points; golovanova deposit XP 74*60 + 26*120 + 1,500 = 9,060.
         assertEquals(35, MinigameRules.TitheFarm.points(100));
         assertEquals(1, MinigameRules.TitheFarm.points(3));

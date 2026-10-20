@@ -44,9 +44,11 @@ final class ClassicScripts {
 
         @Override
         protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
-            // OSRS Wiki: each attack has a 1/4 chance to make her burrow while she is between 50% and 5% of her hitpoints.
+            // OSRS Wiki: each attack (zeros too, not poison) has a 1/4 chance to make her burrow while she is between 50% and 5%
+            // of her hitpoints.
             double hp = percent(boss);
-            if (hp < 50 && hp > 5 && burrowIn < 0 && burrowCooldown == 0 && boss.getRandom().nextInt(4) == 0) {
+            if (attacker != null && hp <= ClassicBosses.MOLE_BURROW_BELOW && hp > ClassicBosses.MOLE_BURROW_ABOVE && burrowIn < 0
+                    && burrowCooldown == 0 && boss.getRandom().nextInt(ClassicBosses.MOLE_BURROW_CHANCE) == 0) {
                 burrowIn = 2;
                 BossFx.warn(boss, "The Giant Mole starts to dig...");
             }
@@ -70,13 +72,20 @@ final class ClassicScripts {
                 burrowIn--;
                 BossFx.burst(boss, ParticleTypes.CAMPFIRE_COSY_SMOKE, 12, 1.0);
                 if (burrowIn == 0) {
+                    // The dirt she throws as she digs may put out the light of the players in melee distance (OSRS Wiki).
+                    boolean dirt = false;
+                    for (ServerPlayer p : BossFx.players(boss, boss.getBbWidth() / 2 + 2.5)) {
+                        if (boss.getRandom().nextBoolean()) { // approx: "an additional chance"
+                            p.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 60, 0, false, false));
+                            com.runecraft.util.Msg.red(p, "The Giant Mole throws dirt at you; your light source is extinguished!");
+                            dirt = true;
+                        }
+                    }
                     Vec3 to = around(boss, homeVec(), 10);
                     boss.teleportTo(to.x, to.y, to.z);
+                    boss.setTarget(null); // she loses her aggression and must be chased
                     BossFx.sound(boss, SoundEvents.GRAVEL_BREAK, 0.6f);
-                    for (ServerPlayer p : BossFx.players(boss, 24)) {
-                        p.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 60, 0, false, false));
-                    }
-                    BossFx.say(boss, "The Giant Mole digs away! Your light source is extinguished.");
+                    BossFx.say(boss, dirt ? "The Giant Mole digs away!" : "The Giant Mole digs away to another part of her lair!");
                     CombatAchievementService.countNear(boss, CombatAchievements.COUNT_MOLE_BURROW);
                     CombatAchievementService.flagNear(boss, CombatAchievements.FLAG_MOLE_SURFACED);
                     surfacedFor = 17; // 10 seconds
@@ -87,8 +96,31 @@ final class ClassicScripts {
         }
     }
 
-    /** Kalphite Queen (crawling): Protect from Magic and Missiles (high magic/ranged defence); at 0 hp she takes flight. */
-    static final class KalphiteQueen extends ScriptedBoss {
+    /**
+     * The Kalphite Queen's rules shared by both forms (OSRS Wiki): her ranged and magic attacks always hit (the spines hit
+     * players near her target too, the lightning bounces between players: both are area attacks here) and each spine drains
+     * a prayer point.
+     */
+    abstract static class KalphiteForm extends ScriptedBoss {
+        @Override
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
+            if (type == AttackType.RANGED) {
+                var data = com.runecraft.player.Players.data(player);
+                if (data.prayerPoints() > 0) {
+                    data.setPrayerPoints(data.prayerPoints() - ClassicBosses.KQ_SPINE_PRAYER_DRAIN);
+                    com.runecraft.network.ServerNetworking.sync(player);
+                }
+            }
+            return damage;
+        }
+    }
+
+    /**
+     * Kalphite Queen (crawling): her Protect from Magic and Missiles only raise her defence (OSRS Wiki), which her defence
+     * bonuses already model. At 0 hitpoints she sheds her exoskeleton for 20 game ticks, then takes flight with full
+     * hitpoints; Defence (and other stats) drained on this form stay drained on the next.
+     */
+    static final class KalphiteQueen extends KalphiteForm {
         private boolean transforming;
         private int wait;
 
@@ -97,15 +129,26 @@ final class ClassicScripts {
             if (transforming) {
                 return 0;
             }
-            // Her protection prayers only raise her defence (OSRS Wiki), which her defence bonuses already model: no
-            // extra damage reduction.
             if (damage >= boss.getHealth()) {
                 damage = (int) Math.ceil(boss.getHealth()) - 1;
-                transforming = true;
-                wait = 3;
-                BossFx.say(boss, "The Kalphite Queen's shell splits open...");
+                startTransforming(boss);
             }
             return damage;
+        }
+
+        /** Her first form is spent: she sheds her shell. Package-private for the self-test. */
+        void startTransforming(DataBossEntity boss) {
+            if (transforming) {
+                return;
+            }
+            transforming = true;
+            wait = ClassicBosses.KQ_TRANSFORM_TICKS;
+            boss.getNavigation().stop();
+            BossFx.say(boss, "The Kalphite Queen's shell splits open...");
+        }
+
+        boolean transforming() {
+            return transforming;
         }
 
         @Override
@@ -113,30 +156,42 @@ final class ClassicScripts {
             return !transforming;
         }
 
+        /** No attacks while she sheds her shell. */
+        @Override
+        public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
+            return transforming ? IDLE_MELEE : null;
+        }
+
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             if (transforming) {
+                boss.getNavigation().stop();
                 BossFx.burst(boss, ParticleTypes.CRIT, 20, 1.2);
                 if (--wait <= 0) {
+                    transforming = false;
                     BossFx.say(boss, "The Kalphite Queen emerges from her shell and takes to the air!");
-                    BossFx.swapForm(boss, "kalphite_queen_airborne", boss.blockPosition(), true, null);
+                    DataBossEntity next = BossFx.swapForm(boss, "kalphite_queen_airborne", boss.blockPosition(), true, null);
+                    if (next != null) {
+                        // OSRS Wiki (Mod Ash): Defence lowered on her first form stays lowered on the second.
+                        com.runecraft.content.systems.SysCombat.Drain from = com.runecraft.content.systems.SysCombat.drain(boss);
+                        com.runecraft.content.systems.SysCombat.Drain to = com.runecraft.content.systems.SysCombat.drain(next);
+                        to.attack = from.attack;
+                        to.strength = from.strength;
+                        to.defence = from.defence;
+                        to.magic = from.magic;
+                        to.ranged = from.ranged;
+                    }
                 }
             }
         }
     }
 
     /** Kalphite Queen (airborne): Protect from Melee (high melee defence, no damage cut); lightning chains to everyone nearby. */
-    static final class KalphiteQueenAirborne extends ScriptedBoss {
+    static final class KalphiteQueenAirborne extends KalphiteForm {
 
         @Override
         protected String creditAs() {
             return "kalphite_queen";
-        }
-
-        /** A fresh form: Defence lowered on the grounded form no longer counts for "Chitin Penetrator". */
-        @Override
-        public void onSpawn(DataBossEntity boss) {
-            CombatAchievementService.unflagNear(boss, CombatAchievements.FLAG_DEFENCE_LOWERED);
         }
     }
 
@@ -158,40 +213,99 @@ final class ClassicScripts {
     }
 
     /**
-     * Corporeal Beast: only stab attacks with a spear or halberd deal full damage (everything else is halved); stomps
-     * anyone standing beneath it. The dark energy core (OSRS Wiki): a 1/8 chance after it takes a hit of 32 or more, or
-     * when it attacks below 1,000 hitpoints; the core hits players next to it for 5-13 every 2 ticks, healing the Beast
-     * for half, and jumps to a player when nobody is next to it.
+     * Corporeal Beast (OSRS Wiki "Corporeal Beast/Strategies", Mechanics): magic and Corpbane weapons on the stab style deal
+     * full damage, every other hit is halved; Protect from Magic blocks only a third of its magic damage; the draining orb
+     * drains Magic or Prayer by 1-2 and heals it for half its damage; the splash orb lands on the player's tile and splits
+     * into six smaller orbs over a 7x7 area; anyone standing under it is stomped for 30-51 (checked every 7 ticks); drained
+     * stats come back one level every 20 ticks. The dark energy core: a 1/8 chance after it takes a hit of 32 or more, or
+     * when it attacks below 1,000 hitpoints; the core hits players next to it for 5-13 every 2 ticks, healing the Beast for
+     * half, and jumps to a player when nobody is next to it.
      */
     static final class Corp extends ScriptedBoss {
         private Mob core;
         private boolean coreRoll;
         private int coreTick;
+        /** The attack the engine is making (its magic attacks share a style, so the on-hit rule needs to know which). */
+        private AttackDef making;
+        /** Splash orbs landed and stomps made (self-test). */
+        int splashes;
+        int stomps;
 
-        /** The core is rolled (1/8) on each attack it makes below 1,000 hitpoints (chooseAttack runs every tick, not per attack). */
         @Override
         public AttackDef beforeAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
-            if (boss.getHealth() < mcHp(boss, 1000)) {
+            // The core is rolled (1/8) on each attack it makes below 1,000 hitpoints.
+            if (boss.getHealth() < mcHp(boss, ClassicBosses.CORE_BELOW_HP)) {
                 coreRoll = true;
+            }
+            making = attack;
+            if (attack == ClassicBosses.CORP_SPLASH) {
+                splash(boss, target);
+                return IDLE_RANGED; // the orbs are the script's strikes
             }
             return attack;
         }
 
-        @Override
-        public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
-            double dx = target.getX() - boss.getX();
-            double dz = target.getZ() - boss.getZ();
-            return dx * dx + dz * dz < boss.getBbWidth() * boss.getBbWidth() / 4 ? ClassicBosses.CORP_STOMP : null;
+        /** The splash orb at the target's tile and its six splinters around it (OSRS Wiki). Package-private for the self-test. */
+        void splash(DataBossEntity boss, ServerPlayer target) {
+            com.runecraft.boss.Mechanics.attackListener.onAttack(boss, target, ClassicBosses.CORP_SPLASH);
+            BossFx.warn(boss, "The Corporeal Beast hurls an orb that splits apart!");
+            Vec3 at = target.position();
+            orb(boss, at, 3, ClassicBosses.CORP_SPLASH_DIRECT, ClassicBosses.CORP_SPLASH_ADJACENT);
+            double range = ClassicBosses.CORP_SPLINTER_RANGE_TILES * 2.0;
+            for (int i = 0; i < ClassicBosses.CORP_SPLINTERS; i++) {
+                Vec3 p = BossFx.ground(BossFx.world(boss), at.x + (boss.getRandom().nextDouble() * 2 - 1) * range,
+                        at.z + (boss.getRandom().nextDouble() * 2 - 1) * range, at.y);
+                orb(boss, p, 5, ClassicBosses.CORP_SPLINTER_DIRECT, ClassicBosses.CORP_SPLINTER_ADJACENT);
+            }
+            splashes++;
         }
 
-        static boolean spearOrHalberd(String id) {
-            return id.contains("spear") || id.contains("halberd") || id.contains("hasta") || id.endsWith("_lance");
+        /** One orb: up to {@code direct} on its tile, {@code adjacent} on the tiles around it, a third less under Protect from Magic. */
+        private void orb(DataBossEntity boss, Vec3 pos, int delay, int direct, int adjacent) {
+            namedStrike("splash_orb", boss, pos, delay, 0, 3.0, ParticleTypes.SOUL_FIRE_FLAME, (hit, at) -> {
+                for (ServerPlayer p : hit) {
+                    double dx = p.getX() - at.x;
+                    double dz = p.getZ() - at.z;
+                    int max = maxHit(boss, dx * dx + dz * dz <= 1.0 ? direct : adjacent);
+                    int dmg = p.getRandom().nextInt(max + 1);
+                    if (com.runecraft.player.Players.data(p).isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC)) {
+                        dmg = ClassicBosses.corpMagicThroughPrayer(dmg);
+                    }
+                    CombatHooks.nameAttack("splash_orb", AttackType.MAGIC);
+                    CombatHandler.applyDamage(boss.isAlive() ? boss : null, p, dmg);
+                }
+            });
+        }
+
+        private static int maxHit(DataBossEntity boss, int base) {
+            return (int) Math.round(base * boss.variantHitScale(null));
+        }
+
+        @Override
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
+            if (type == AttackType.MAGIC && com.runecraft.player.Players.data(player).isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC)) {
+                damage = ClassicBosses.corpMagicThroughPrayer(damage);
+            }
+            if (making == ClassicBosses.CORP_DRAIN && damage > 0) {
+                int amount = 1 + boss.getRandom().nextInt(2);
+                if (boss.getRandom().nextBoolean()) {
+                    BossFx.drainStat(player, Skill.MAGIC, amount);
+                } else {
+                    var data = com.runecraft.player.Players.data(player);
+                    data.setPrayerPoints(data.prayerPoints() - amount);
+                    com.runecraft.network.ServerNetworking.sync(player);
+                }
+                if (boss.isAlive()) {
+                    boss.heal(mcHp(boss, damage / 2));
+                }
+            }
+            return damage;
         }
 
         @Override
         protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
-            int d = type == AttackType.STAB && spearOrHalberd(BossFx.heldId(attacker)) ? damage : damage / 2;
-            if (d >= 32) {
+            int d = ClassicBosses.corpDamage(damage, type, attacker == null ? "" : BossFx.heldId(attacker));
+            if (d >= ClassicBosses.CORE_BIG_HIT) {
                 coreRoll = true;
             }
             return d;
@@ -201,11 +315,63 @@ final class ClassicScripts {
             return core != null && core.isAlive();
         }
 
+        /** The live dark energy core, or null (self-test). */
+        Mob core() {
+            return coreAlive() ? core : null;
+        }
+
+        /** Stomps everyone standing under it (every 7 ticks); returns how many it stomped. Package-private for the self-test. */
+        int stomp(DataBossEntity boss) {
+            double reach = boss.getBbWidth() / 2;
+            int n = 0;
+            for (ServerPlayer p : BossFx.players(boss, 8)) {
+                double dx = p.getX() - boss.getX();
+                double dz = p.getZ() - boss.getZ();
+                if (dx * dx + dz * dz < reach * reach) {
+                    CombatHooks.nameAttack("stomp", null);
+                    int max = maxHit(boss, ClassicBosses.CORP_STOMP.maxHit());
+                    int min = Math.min(max, maxHit(boss, ClassicBosses.CORP_STOMP_MIN));
+                    CombatHandler.applyDamage(boss, p, min + p.getRandom().nextInt(max - min + 1));
+                    n++;
+                }
+            }
+            if (n > 0) {
+                BossFx.say(boss, "The Corporeal Beast stomps the ground!");
+                BossFx.burst(boss, ParticleTypes.EXPLOSION, 3, 1.0);
+                stomps++;
+            }
+            return n;
+        }
+
+        /** Drained stats come back one level every 20 ticks (OSRS Wiki), faster than other monsters'. */
+        private static void regenerateStats(DataBossEntity boss) {
+            boolean drained = false;
+            for (Skill s : new Skill[]{Skill.ATTACK, Skill.STRENGTH, Skill.DEFENCE, Skill.MAGIC, Skill.RANGED}) {
+                drained |= com.runecraft.content.systems.SysCombat.drainedStatLevel(boss, s)
+                        < com.runecraft.content.systems.SysCombat.baseStatLevel(boss, s);
+            }
+            if (!drained) {
+                return;
+            }
+            com.runecraft.content.systems.SysCombat.Drain d = com.runecraft.content.systems.SysCombat.drain(boss);
+            d.attack = Math.max(0, d.attack - 1);
+            d.strength = Math.max(0, d.strength - 1);
+            d.defence = Math.max(0, d.defence - 1);
+            d.magic = Math.max(0, d.magic - 1);
+            d.ranged = Math.max(0, d.ranged - 1);
+        }
+
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
+            if (now % ClassicBosses.CORP_STOMP_TICKS == 0) {
+                stomp(boss);
+            }
+            if (now % ClassicBosses.CORP_STAT_REGEN_TICKS == 0) {
+                regenerateStats(boss);
+            }
             if (coreRoll) {
                 coreRoll = false;
-                if (!coreAlive() && target != null && boss.getRandom().nextInt(8) == 0) {
+                if (!coreAlive() && target != null && boss.getRandom().nextInt(ClassicBosses.CORE_CHANCE) == 0) {
                     BossFx.say(boss, "The Corporeal Beast releases a dark energy core!");
                     core = BossFx.spawnMinion(boss, "dark_energy_core", around(boss, target.position(), 2), target);
                 }
@@ -264,6 +430,20 @@ final class ClassicScripts {
         private boolean summoned;
 
         private static final int[][] SPOTS = {{0, -9}, {9, 0}, {0, 9}, {-9, 0}};
+
+        /**
+         * Skotizo's kill loot (registered as his loot roller): his table rolled as any boss's, with the ancient shards as the
+         * table of their own the wiki describes (1-5 on every kill, 1.41 on average) rather than lines of the main table.
+         */
+        static List<com.runecraft.skill.Drops.Rolled> rollLoot(ServerPlayer killer, DataBossEntity boss,
+                List<com.runecraft.osrs.data.Drop> table) {
+            List<com.runecraft.osrs.data.Drop> rest = table.stream().filter(d -> !d.item().equals("ancient_shard")).toList();
+            List<com.runecraft.osrs.data.Drop> lines = new ArrayList<>(com.runecraft.osrs.content.bosses.BossLoot.pick("skotizo", rest,
+                    boss.getRandom()::nextInt));
+            int shards = ClassicBosses.skotizoShards(boss.getRandom().nextInt(100));
+            lines.add(new com.runecraft.osrs.data.Drop("ancient_shard", shards, shards, 1));
+            return com.runecraft.skill.Drops.resolve(lines, boss.getRandom());
+        }
 
         /** Arclight and Emberlight disable an awakened altar in one hit (registered once by the module). */
         static void registerAltarBreaker() {
@@ -473,6 +653,17 @@ final class ClassicScripts {
             }
         }
 
+        /** Protection prayers cut her attacks rather than block them: spores to 2 each, the wave to 3 (OSRS Wiki). */
+        @Override
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
+            if ((type == AttackType.RANGED || type == AttackType.MAGIC) && com.runecraft.osrs.NpcHitCalc.protectedFrom(
+                    com.runecraft.player.Players.data(player).activePrayers(), type)) {
+                AttackDef a = type == AttackType.RANGED ? ClassicBosses.HESPORI_SPORES : ClassicBosses.HESPORI_WAVE;
+                return ClassicBosses.hesporiPrayed(damage, type, maxHit(boss, a));
+            }
+            return damage;
+        }
+
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             if (!bloomed) {
@@ -524,18 +715,264 @@ final class ClassicScripts {
         }
     }
 
-    /** Scurrius: once below 40% he runs to his food pile and eats. */
+    /**
+     * Scurrius (OSRS Wiki "Scurrius/Strategies"), the private instance's fight: phase one, his tail swipe (melee) and falling
+     * bricks; at 80% he goes to one of the food piles and eats five bites of 5 or 10 hitpoints per player, using only magic,
+     * ranged and the bricks meanwhile (and taking slightly less damage), then fights in melee again and goes back to a pile
+     * every so often until he is down to 30%; at 30% he holds the centre of the arena with magic and ranged only, faster,
+     * and goes back to eat if healed above it. The falling bricks land on the player's tile and around the arena (15-22
+     * each); he screeches for six giant rats now and then, at most twelve waves.
+     */
     static final class Scurrius extends ScriptedBoss {
-        private boolean ate;
+        /** Food piles: block offsets from his arena's centre (approx: the four corners of the lair). */
+        private static final int[][] PILES = {{-6, -6}, {6, -6}, {-6, 6}, {6, 6}};
+        int phase = 1;
+        boolean eating;
+        int bites;
+        /** Game ticks until he goes back to a food pile in phase two (counted down once he has finished eating). */
+        int eatAgainIn;
+        private int biteTimer;
+        private Vec3 pile;
+        int waves;
+        private final List<Mob> rats = new ArrayList<>();
+
+        @Override
+        public void onSpawn(DataBossEntity boss) {
+            home = arenaCentre(boss);
+        }
+
+        @Override
+        protected boolean driven() {
+            return true;
+        }
+
+        @Override
+        protected boolean wantsMelee(DataBossEntity boss, ServerPlayer target) {
+            return phase == 1 || phase == 2 && !eating;
+        }
+
+        @Override
+        protected int attackDelay(DataBossEntity boss, AttackDef attack) {
+            return phase == 3 ? 3 : 4; // approx: "at a faster rate" in phase three
+        }
+
+        @Override
+        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
+            boolean melee = wantsMelee(boss, target);
+            if (melee && distance > ClassicBosses.SCURRIUS_TAIL.range()) {
+                return null; // walks up to the player for his tail swipe
+            }
+            int r = boss.getRandom().nextInt(phase == 3 ? 4 : 6); // approx: how often the bricks fall
+            if (r == 0) {
+                bricks(boss, target);
+                attackCount++;
+                cooldown = Math.max(1, attackDelay(boss, null)) - 1;
+                return null;
+            }
+            rats.removeIf(m -> !m.isAlive());
+            if (phase > 1 && rats.isEmpty() && waves < ClassicBosses.SCURRIUS_RAT_WAVES && boss.getRandom().nextInt(8) == 0) { // approx rate
+                summonRats(boss, target);
+                cooldown = Math.max(1, attackDelay(boss, null)) - 1;
+                return null;
+            }
+            if (melee) {
+                return ClassicBosses.SCURRIUS_TAIL;
+            }
+            return boss.getRandom().nextBoolean() ? ClassicBosses.SCURRIUS_BOLTS : ClassicBosses.SCURRIUS_FUR;
+        }
+
+        /** The falling bricks: one at the player's tile, three more around the arena. Package-private for the self-test. */
+        void bricks(DataBossEntity boss, ServerPlayer target) {
+            com.runecraft.boss.Mechanics.attackListener.onAttack(boss, target, ClassicBosses.SCURRIUS_BRICKS);
+            BossFx.warn(boss, "Debris begins to fall from the ceiling!");
+            brick(boss, target.position());
+            for (int i = 0; i < 3; i++) {
+                brick(boss, around(boss, homeVec(), 9));
+            }
+        }
+
+        private void brick(DataBossEntity boss, Vec3 at) {
+            namedStrike("falling_ceiling", boss, at, 3, 0, 1.2, ParticleTypes.ASH, (hit, pos) -> {
+                for (ServerPlayer p : hit) {
+                    int max = maxHit(boss, ClassicBosses.SCURRIUS_BRICKS);
+                    int min = Math.min(max, ClassicBosses.SCURRIUS_BRICKS_MIN);
+                    CombatHooks.nameAttack("falling_ceiling", AttackType.CRUSH);
+                    CombatHandler.applyDamage(boss.isAlive() ? boss : null, p, min + p.getRandom().nextInt(max - min + 1));
+                }
+            });
+        }
+
+        /** Six giant rats around the arena. Package-private for the self-test. */
+        void summonRats(DataBossEntity boss, ServerPlayer target) {
+            waves++;
+            BossFx.say(boss, "Scurrius screeches, calling his giant rats!");
+            for (int i = 0; i < ClassicBosses.SCURRIUS_RATS; i++) {
+                Mob m = BossFx.spawnMinion(boss, "scurrius_giant_rat", around(boss, homeVec(), 8), target);
+                if (m != null) {
+                    rats.add(m);
+                }
+            }
+        }
+
+        private void startEating(DataBossEntity boss) {
+            phase = 2;
+            eating = true;
+            bites = ClassicBosses.SCURRIUS_BITES;
+            biteTimer = 4;
+            int[] p = PILES[boss.getRandom().nextInt(PILES.length)];
+            Vec3 c = homeVec();
+            pile = BossFx.ground(BossFx.world(boss), c.x + p[0], c.z + p[1], c.y);
+            boss.getNavigation().stop();
+            boss.teleportTo(pile.x, pile.y, pile.z);
+            BossFx.say(boss, "Scurrius scurries to a food pile and starts to eat!");
+        }
+
+        @Override
+        protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            return eating ? damage * 9 / 10 : damage; // approx: "a slight damage reduction" while he eats
+        }
 
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
-            if (!ate && percent(boss) < 40) {
-                ate = true;
-                BossFx.say(boss, "Scurrius scurries to his food pile and starts to eat!");
-                boss.heal(30);
-                BossFx.burst(boss, ParticleTypes.HAPPY_VILLAGER, 15, 1.0);
+            double hp = percent(boss);
+            if (phase == 1 && hp <= ClassicBosses.SCURRIUS_EAT_BELOW) {
+                startEating(boss);
+            } else if (phase == 3 && hp > ClassicBosses.SCURRIUS_CENTRE_BELOW) {
+                startEating(boss); // healed above 30%: back to the food
+            } else if (phase == 2 && !eating && hp <= ClassicBosses.SCURRIUS_CENTRE_BELOW) {
+                phase = 3;
+                Vec3 c = homeVec();
+                boss.getNavigation().stop();
+                boss.teleportTo(c.x, c.y, c.z);
+                BossFx.say(boss, "Scurrius scurries to the centre of his lair!");
+            } else if (phase == 2 && !eating && --eatAgainIn <= 0) {
+                startEating(boss); // "occasionally" back to a pile between 80% and 30%
             }
+            if (eating) {
+                if (pile != null && now % 3 == 0) {
+                    BossFx.world(boss).sendParticles(ParticleTypes.HAPPY_VILLAGER, pile.x, pile.y + 0.6, pile.z, 4, 0.5, 0.3, 0.5, 0);
+                }
+                if (--biteTimer <= 0) {
+                    biteTimer = 4; // approx: "every few seconds"
+                    int players = Math.max(1, BossFx.players(boss, 24).size());
+                    int heal = (boss.getRandom().nextBoolean() ? 5 : 10) * players;
+                    boss.heal(mcHp(boss, heal));
+                    if (--bites <= 0) {
+                        eating = false;
+                        eatAgainIn = ClassicBosses.SCURRIUS_EAT_AGAIN_TICKS;
+                        BossFx.say(boss, "Scurrius finishes eating.");
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void onRemoved(DataBossEntity boss) {
+            // OSRS: the rats outlive Scurrius; a reset of the lair clears them (claimed minions).
+        }
+    }
+
+    /**
+     * Sarachnis (OSRS Wiki "Sarachnis/Strategies"): her legs when the player is next to her, barbed projectiles when not (both
+     * up to 31, healing her 5 and 10 on a successful hit); every fourth standard attack a sticky web binds the player for 6
+     * ticks (no damage) and she moves a short way off; at 66% and 33% she summons a melee spawn (west) and a magic spawn (east)
+     * for each player, which die with her.
+     */
+    static final class Sarachnis extends ScriptedBoss {
+        private int standard;
+        private final List<Mob> spawns = new ArrayList<>();
+        /** Webs spun and spawns summoned (self-test). */
+        int webs;
+
+        @Override
+        protected boolean driven() {
+            return true;
+        }
+
+        @Override
+        protected boolean wantsMelee(DataBossEntity boss, ServerPlayer target) {
+            return true;
+        }
+
+        @Override
+        protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
+            if (distance > ClassicBosses.SARACHNIS_RANGED.range()) {
+                return null;
+            }
+            if (standard >= ClassicBosses.SARACHNIS_WEB_EVERY) {
+                standard = 0;
+                web(boss, target);
+                return null;
+            }
+            standard++;
+            return distance <= ClassicBosses.SARACHNIS_MELEE.range() ? ClassicBosses.SARACHNIS_MELEE : ClassicBosses.SARACHNIS_RANGED;
+        }
+
+        /** "Hsss!": binds the target for 6 ticks and moves off a little. Package-private for the self-test. */
+        void web(DataBossEntity boss, ServerPlayer target) {
+            com.runecraft.boss.Mechanics.attackListener.onAttack(boss, target, ClassicBosses.SARACHNIS_WEB);
+            BossFx.say(boss, "Sarachnis: Hsss!");
+            webs++;
+            attackCount++;
+            cooldown = Math.max(1, attackDelay(boss, null)) - 1;
+            String feet = com.runecraft.util.Inv.idOf(target.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.FEET));
+            if (feet.endsWith("aranea_boots")) {
+                com.runecraft.util.Msg.game(target, "Your aranea boots let you slip out of the web.");
+            } else {
+                BossFx.stun(target, ClassicBosses.SARACHNIS_WEB_BIND_TICKS);
+                com.runecraft.util.Msg.red(target, "Sarachnis binds you in a sticky web!");
+            }
+            Vec3 to = around(boss, homeVec(), 5);
+            boss.getNavigation().moveTo(to.x, to.y, to.z, 1.2);
+        }
+
+        @Override
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
+            // Healing strike: 5 for a melee hit, 10 for a ranged one (approx: on hits that deal damage; the wiki counts zeros
+            // that passed the accuracy roll too).
+            if (damage > 0 && boss.isAlive()) {
+                boss.heal(mcHp(boss, type == AttackType.RANGED ? ClassicBosses.SARACHNIS_RANGED_HEAL : ClassicBosses.SARACHNIS_MELEE_HEAL));
+            }
+            return damage;
+        }
+
+        @Override
+        public void onPhase(DataBossEntity boss, int phase) {
+            summonSpawns(boss);
+        }
+
+        /** A melee spawn to the west and a magic spawn to the east for each player. Package-private for the self-test. */
+        int summonSpawns(DataBossEntity boss) {
+            Vec3 c = homeVec();
+            int n = 0;
+            for (ServerPlayer p : BossFx.players(boss, 24)) {
+                Mob melee = BossFx.spawnMinion(boss, ClassicBosses.SARACHNIS_SPAWN_MELEE,
+                        BossFx.ground(BossFx.world(boss), c.x - 6, c.z, c.y), p);
+                Mob mage = BossFx.spawnMinion(boss, ClassicBosses.SARACHNIS_SPAWN_MAGE,
+                        BossFx.ground(BossFx.world(boss), c.x + 6, c.z, c.y), p);
+                for (Mob m : new Mob[]{melee, mage}) {
+                    if (m != null) {
+                        spawns.add(m);
+                        n++;
+                    }
+                }
+            }
+            if (n > 0) {
+                BossFx.warn(boss, "Sarachnis calls upon her children!");
+            }
+            return n;
+        }
+
+        @Override
+        public void onDeath(DataBossEntity boss, ServerPlayer killer) {
+            onRemoved(boss);
+        }
+
+        /** Her spawns die with her. */
+        @Override
+        public void onRemoved(DataBossEntity boss) {
+            spawns.forEach(Mob::discard);
+            spawns.clear();
         }
     }
 

@@ -72,6 +72,8 @@ public class BossEntity extends OsrsMonsterEntity {
     }
 
     private static final java.util.Map<Boss, java.util.function.Supplier<Script>> SCRIPTS = new java.util.EnumMap<>(Boss.class);
+    /** Verac's max hit when his hit goes through Protect from Melee (OSRS Wiki: 15 instead of 23). */
+    public static final int VERAC_THROUGH_PRAYER_MAX = 15;
 
     /** Gives every boss of this kind a script (called once from a module's hooks). */
     public static void registerScript(Boss boss, java.util.function.Supplier<Script> factory) {
@@ -359,7 +361,8 @@ public class BossEntity extends OsrsMonsterEntity {
         }
         Boss boss = boss();
         if (boss.mechanic() == Boss.Mechanic.VERAC && random.nextInt(4) == 0) {
-            return damage; // Verac's hits can pierce prayer
+            // Verac's Defiler: a quarter of his hits go through Protect from Melee, at a max hit of 15 instead of 23 (OSRS Wiki)
+            return damage * VERAC_THROUGH_PRAYER_MAX / Math.max(1, boss.maxHit());
         }
         if (boss.mechanic() == Boss.Mechanic.GRAARDOR || boss.mechanic() == Boss.Mechanic.KRIL) {
             return 0;
@@ -402,7 +405,8 @@ public class BossEntity extends OsrsMonsterEntity {
                 }
             }
             case AHRIM -> {
-                if (random.nextInt(4) == 0) {
+                // Blighted Aura (OSRS Wiki): a 20% chance on a successful hit to lower Strength by 5.
+                if (random.nextInt(5) == 0) {
                     PlayerData data = Players.data(player);
                     data.skills().setBoost(Skill.STRENGTH, data.skills().boost(Skill.STRENGTH) - 5);
                     ServerNetworking.sync(player);

@@ -21,7 +21,7 @@ final class MinionModels {
         return List.of(snakeling(), tentacle("enormous_tentacle", 0x8A3A6A, 0xC07090), zombifiedSpawn(),
                 soul("summoned_soul_ranged", 0x40C040), soul("summoned_soul_magic", 0x4060E0), soul("summoned_soul_melee", 0xE04040),
                 respiratorySystem(), abyssalSpawn(), darkCore(), awakenedAltar(), flower(), spider("spawn_of_sarachnis", 0x8A2A1A, 0xE0A040, 0.6f),
-                rat(), spider("acidic_araxyte", 0x4A6A2A, 0xC0E040, 0.8f),
+                spider(ClassicBosses.SARACHNIS_SPAWN_MAGE, 0x2A4A8A, 0x60B0F0, 0.6f), rat(), spider("acidic_araxyte", 0x4A6A2A, 0xC0E040, 0.8f),
                 spider("mirrorback_araxyte", 0x8A8A9A, 0xE0E0F0, 0.8f), spider("ruptura_araxyte", 0x8A2A3A, 0xF06040, 0.8f),
                 tentacle("whisperer_tentacle", 0x1A2A4A, 0x50E0E0), scion());
     }

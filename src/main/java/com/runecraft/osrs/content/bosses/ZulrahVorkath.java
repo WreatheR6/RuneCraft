@@ -133,6 +133,14 @@ public final class ZulrahVorkath {
         return damage > DAMAGE_CAP ? 45 + roll0to5 : damage;
     }
 
+    /** Half the width, in blocks, of a venom cloud: a 3x3-tile area (OSRS Wiki), a tile being two blocks. */
+    public static final double CLOUD_HALF_WIDTH = 3.0;
+
+    /** Whether a player this far (blocks) from a cloud's centre stands in it. */
+    public static boolean inCloud(double dx, double dy, double dz) {
+        return Math.abs(dx) <= CLOUD_HALF_WIDTH && Math.abs(dz) <= CLOUD_HALF_WIDTH && Math.abs(dy) < 2.0;
+    }
+
     /** Snakelings die off after 40 seconds (67 game ticks) and have 1 hitpoint. */
     public static final int SNAKELING_LIFE_TICKS = 67;
 
@@ -153,12 +161,26 @@ public final class ZulrahVorkath {
         return List.of(zulrah(), zulrahMagma(), zulrahTanzanite(), vorkath());
     }
 
+    /**
+     * OSRS Wiki (7 May 2025): Zulrah is no longer immune to melee, but swimming in the swamp it can only be reached with a
+     * halberd ({@link #reachesZulrah}); it has no melee defence.
+     */
     private static BossDef zulrahBase(String id) {
         return BossDef.of(id, "Zulrah").level(725).stats(500, 300, 300, 300, 300, 300).speed(4)
-                .attackBonus(0, 50, 50)
-                .immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH).poisonous()
+                .attackBonus(0, 50, 50).poisonous()
                 .size(1.4f, 3.4f, 1.6f).moveSpeed(0.0);
     }
+
+    /** Whether a melee weapon reaches Zulrah in the swamp: only halberds (OSRS Wiki). */
+    public static boolean reachesZulrah(String weaponId) {
+        return weaponId != null && weaponId.contains("halberd");
+    }
+
+    /**
+     * The tanzanite form's magic share: "it uses magic much more frequently compared to ranged" and can use ranged up to five
+     * times in a row (OSRS Wiki). approx: 3 in 4.
+     */
+    public static final int TANZANITE_MAGIC_IN_4 = 3;
 
     static BossDef zulrah() {
         return zulrahBase("zulrah").defenceBonus(0, 0, 0, -45, 50)
@@ -217,7 +239,30 @@ public final class ZulrahVorkath {
     public static final int SPAWN_EXPLOSION_MAX = 60;
 
     public static int spawnExplosion(double spawnHp, double spawnMaxHp) {
-        return (int) Math.floor(SPAWN_EXPLOSION_MAX * Math.max(0, Math.min(1, spawnHp / spawnMaxHp)));
+        return spawnExplosion(spawnHp, spawnMaxHp, SPAWN_EXPLOSION_MAX);
+    }
+
+    /** The explosion of a spawn whose full-health explosion is {@code max} (Dragon Slayer II's: 30). */
+    public static int spawnExplosion(double spawnHp, double spawnMaxHp, int max) {
+        return (int) Math.floor(max * Math.max(0, Math.min(1, spawnHp / spawnMaxHp)));
+    }
+
+    /** The zombified spawn always lands ten tiles from the player (OSRS Wiki): twenty blocks. */
+    public static final int SPAWN_DISTANCE_BLOCKS = 20;
+    /** Vorkath's head: 1/50 tertiary, and always on the 50th kill (one head, never two). */
+    public static final String HEAD = "vorkaths_head";
+    public static final int HEAD_KILL = 50;
+    /** Dragon Slayer II's Vorkath (OSRS Wiki infobox): ranged 28, dragonfire 72, its spawn's explosion 30. */
+    public static final int DS2_RANGED_MAX = 28;
+    public static final int DS2_DRAGONFIRE_MAX = 72;
+    public static final int DS2_SPAWN_EXPLOSION_MAX = 30;
+
+    /**
+     * The dragonfire bomb's max hit where it lands: {@code max} on the targeted tile, half on the tiles next to it (OSRS Wiki
+     * "Vorkath/Strategies": "if adjacent to the strike zone, it will deal half the damage").
+     */
+    public static int bombMax(int max, boolean direct) {
+        return direct ? max : max / 2;
     }
 
     /** Hits on Vorkath during one acid phase that complete "The Walk" (with no rapid fire or acid damage taken). */

@@ -34,6 +34,9 @@ public record MonsterStats(String name, int combatLevel, int hitpoints, int atta
         if (profile != null) {
             return profile.defenceBonus(type);
         }
+        if (boss != null && boss.defenceBonuses() != null) {
+            return boss.defenceBonus(type); // the Barrows brothers', Obor's and Bryophyta's per-style bonuses
+        }
         com.runecraft.osrs.data.MonsterEnumDefence.Row row = com.runecraft.osrs.data.MonsterEnumDefence.row(monster);
         return row != null ? row.bonus(type) : defenceBonus;
     }
@@ -79,6 +82,9 @@ public record MonsterStats(String name, int combatLevel, int hitpoints, int atta
         if (profile != null) {
             return profile.weakness;
         }
+        if (boss != null && boss.weakness() != null) {
+            return boss.weakness();
+        }
         com.runecraft.osrs.data.MonsterEnumDefence.Row row = com.runecraft.osrs.data.MonsterEnumDefence.row(monster);
         return row != null ? row.weakness() : null;
     }
@@ -87,6 +93,9 @@ public record MonsterStats(String name, int combatLevel, int hitpoints, int atta
     public int weaknessPercent() {
         if (profile != null) {
             return profile.weaknessPercent;
+        }
+        if (boss != null && boss.weakness() != null) {
+            return boss.weaknessPercent();
         }
         com.runecraft.osrs.data.MonsterEnumDefence.Row row = com.runecraft.osrs.data.MonsterEnumDefence.row(monster);
         return row != null ? row.weaknessPercent() : 0;

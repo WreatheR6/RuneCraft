@@ -1,0 +1,11 @@
+# weirdgloop/osrs-dps-calc cdn/json/monsters.json (October 2026) for the built-in Boss enum bosses of the classic-bosses scope
+# (the Barrows brothers, Obor, Bryophyta); see LegacyBossStatsTest. Max hit and style from the OSRS Wiki infoboxes.
+# id|name|level|hp|att|str|def|magic|ranged|speed|dstab|dslash|dcrush|dmagic|dranged(standard)|amelee|amagic|aranged|weakness|weakness%|max_hit|style
+ahrim|Ahrim the Blighted|98|100|1|1|100|100|1|6|103|85|117|73|0|0|73|-19|air|50|20|MAGIC
+dharok|Dharok the Wretched|115|100|100|100|100|1|1|7|252|250|244|-11|249|0|-58|-18|air|50|29|SLASH
+guthan|Guthan the Infested|115|100|100|100|100|1|1|5|259|257|241|-11|250|0|-50|-19|air|50|24|CRUSH
+karil|Karil the Tainted|98|100|1|1|100|1|100|4|79|71|90|106|100|0|-26|134|air|50|20|RANGED
+torag|Torag the Corrupted|115|100|100|100|100|1|1|5|221|235|222|0|221|0|-33|-11|air|50|23|CRUSH
+verac|Verac the Defiled|115|100|100|100|100|1|1|5|227|230|221|0|225|0|-42|-14|air|50|23|STAB
+obor|Obor|106|120|90|100|60|1|120|6|35|40|45|20|20|100|0|100|earth|20|22|CRUSH
+bryophyta|Bryophyta|128|115|130|100|100|90|1|6|0|0|0|0|0|33|0|0|fire|50|16|CRUSH

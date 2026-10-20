@@ -80,12 +80,15 @@ public final class BossMinions {
                 // Hespori
                 MonsterDef.of("hesporis_flower", "Flower").level(1).stats(1, 1, 1, 1, 1, 1)
                         .attack(inert()).passive().size(0.7f, 1.0f, 1.0f).moveSpeed(0.0),
-                // Sarachnis
-                MonsterDef.of("spawn_of_sarachnis", "Spawn of Sarachnis").level(92).stats(25, 80, 80, 40, 80, 80).speed(4)
-                        .attack(AttackDef.of("bite", AttackType.STAB, 12, 2.5, 4).special(Special.POISON, 6))
-                        .attack(AttackDef.of("venom_spit", AttackType.RANGED, 12, 8, 3).particle("minecraft:sneeze"))
-                        .attack(AttackDef.of("web_magic", AttackType.MAGIC, 12, 8, 3))
+                // Sarachnis (OSRS Wiki "Spawn of Sarachnis"): the orange level 107 melee spawn (crush, up to 13, every 3 ticks)
+                // and the blue level 68 magic spawn (up to 11), both with 30 hitpoints.
+                MonsterDef.of("spawn_of_sarachnis", "Spawn of Sarachnis").level(107).stats(30, 150, 120, 50, 1, 1).speed(3)
+                        .attack(AttackDef.of("bite", AttackType.CRUSH, 13, 2.5, 1))
                         .size(0.7f, 0.5f, 1.0f).moveSpeed(0.28),
+                MonsterDef.of(ClassicBosses.SARACHNIS_SPAWN_MAGE, "Spawn of Sarachnis").level(68).stats(30, 10, 10, 50, 100, 1).speed(4)
+                        .defenceBonus(50, 50, 50, 150, 0)
+                        .attack(AttackDef.of("web_magic", AttackType.MAGIC, 11, 8, 1).particle("minecraft:witch"))
+                        .skin(0x3A6AB0, 0x2A4A80, 0x1A2A50, 0xA0D0FF).size(0.7f, 0.5f, 1.0f).moveSpeed(0.28),
                 // Crystalline / Corrupted Hunllef tornadoes (driven by the Hunllef script)
                 MonsterDef.of("hunllef_tornado", "Tornado").level(1).stats(1, 1, 1, 1, 1, 1)
                         .attack(inert()).passive().immune(AttackType.values())

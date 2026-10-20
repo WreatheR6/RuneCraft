@@ -1,0 +1,173 @@
+# OSRS Wiki "Warmth" (Kiyogitpy/osrs-wiki-data, July 2026): the warm clothing that counts at the Wintertodt, by slot.
+# slot|wiki name|RuneCraft item id ('-': not in RuneCraft). Diffed by WintertodtWarmthTest.
+head|Santa mask|-
+head|Antisanta mask|-
+head|Bunnyman mask|-
+head|Larupia hat|larupia_hat
+head|Graahk headdress|graahk_headdress
+head|Kyatt hat|kyatt_hat
+head|Chicken head|-
+head|Evil chicken head|-
+head|Pyromancer hood|pyromancer_hood
+head|Santa hat|-
+head|Black santa hat|-
+head|Inverted santa hat|-
+head|Festive elf hat|-
+head|Festive games crown|-
+head|Bearhead|bearhead
+head|Fire tiara|fire_tiara
+head|Elemental tiara|-
+head|Lumberjack hat|lumberjack_hat
+head|Forestry hat|-
+head|Snow goggles & hat|-
+head|Snowglobe helmet|-
+head|Firemaking hood|-
+head|Fire max hood|-
+head|Infernal max hood|-
+head|Bomber cap|-
+head|Cap and goggles|-
+head|Bobble hat|-
+head|Earmuffs|earmuffs
+head|Wolf mask|wolf_mask
+head|Woolly hat|-
+head|Jester hat|-
+head|Tri-jester hat|-
+head|Slayer helmet|slayer_helmet
+head|Slayer helmet (i)|slayer_helmet_i
+head|Araxyte slayer helmet|-
+head|Araxyte slayer helmet (i)|-
+head|Black slayer helmet|-
+head|Black slayer helmet (i)|-
+head|Green slayer helmet|-
+head|Green slayer helmet (i)|-
+head|Hydra slayer helmet|-
+head|Hydra slayer helmet (i)|-
+head|Purple slayer helmet|-
+head|Purple slayer helmet (i)|-
+head|Red slayer helmet|-
+head|Red slayer helmet (i)|-
+head|Turquoise slayer helmet|-
+head|Turquoise slayer helmet (i)|-
+head|Twisted slayer helmet|-
+head|Twisted slayer helmet (i)|-
+head|Tzkal slayer helmet|-
+head|Tzkal slayer helmet (i)|-
+head|Tztok slayer helmet|-
+head|Tztok slayer helmet (i)|-
+head|Vampyric slayer helmet|-
+head|Vampyric slayer helmet (i)|-
+head|Hooded slayer helmet|-
+head|Hooded slayer helmet (i)|-
+neck|Jester scarf|-
+neck|Tri-jester scarf|-
+neck|Woolly scarf|-
+neck|Bobble scarf|-
+neck|Gnome scarf|gnome_scarf
+neck|Rainbow scarf|-
+neck|Festive scarf|-
+hands|Santa gloves|-
+hands|Antisanta gloves|-
+hands|Bunny paws|-
+hands|Clue hunter gloves|-
+hands|Gloves of silence|gloves_of_silence
+hands|Fremennik gloves|fremennik_gloves
+hands|Warm gloves|warm_gloves
+hands|Grey gloves|-
+hands|Red gloves|red_gloves
+hands|Yellow gloves|yellow_gloves
+hands|Teal gloves|teal_gloves
+hands|Purple gloves|purple_gloves
+cape|Firemaking cape|firemaking_cape
+cape|Max cape|max_cape
+cape|Fire cape|fire_cape
+cape|Fire max cape|-
+cape|Infernal cape|infernal_cape
+cape|Infernal max cape|-
+cape|Obsidian cape|obsidian_cape
+cape|Accumulator max cape|-
+cape|Ardougne max cape|-
+cape|Assembler max cape|-
+cape|Mythical max cape|-
+cape|Imbued guthix max cape|-
+cape|Imbued saradomin max cape|-
+cape|Imbued zamorak max cape|-
+cape|Guthix max cape|-
+cape|Saradomin max cape|-
+cape|Zamorak max cape|-
+cape|Wolf cloak|wolf_cloak
+cape|Rainbow cape|-
+cape|Clue hunter cloak|-
+weapon|Staff of fire|staff_of_fire
+weapon|Fire battlestaff|fire_battlestaff
+weapon|Lava battlestaff|lava_battlestaff
+weapon|Steam battlestaff|steam_battlestaff
+weapon|Smoke battlestaff|smoke_battlestaff
+weapon|Mystic fire staff|mystic_fire_staff
+weapon|Mystic lava staff|mystic_lava_staff
+weapon|Mystic steam staff|-
+weapon|Mystic smoke staff|-
+weapon|Twinflame staff|-
+weapon|Infernal axe|infernal_axe
+weapon|Infernal pickaxe|infernal_pickaxe
+weapon|Infernal harpoon|infernal_harpoon
+weapon|Volcanic abyssal whip|-
+weapon|Ale of the gods|ale_of_the_gods
+weapon|Bruma torch|bruma_torch
+weapon|Dragon candle dagger|-
+shield|Tome of fire|tome_of_fire
+shield|Bruma torch (off-hand)|-
+shield|Lit bug lantern|bug_lantern
+body|Santa jacket|-
+body|Antisanta jacket|-
+body|Bunny top|-
+body|Clue hunter garb|-
+body|Polar camo top|polar_camo_top
+body|Wood camo top|wood_camo_top
+body|Jungle camo top|jungle_camo_top
+body|Desert camo top|desert_camo_top
+body|Larupia top|larupia_top
+body|Graahk top|graahk_top
+body|Kyatt top|kyatt_top
+body|Bomber jacket|-
+body|Yak-hide armour (top)|-
+body|Pyromancer garb|pyromancer_garb
+body|Chicken wings|-
+body|Evil chicken wings|-
+body|Ugly halloween jumper|-
+body|Christmas jumper|-
+body|Oldschool jumper|-
+body|Rainbow jumper|-
+body|Icy jumper|-
+leg|Santa pantaloons|-
+leg|Antisanta pantaloons|-
+leg|Bunny legs|-
+leg|Clue hunter trousers|-
+leg|Polar camo legs|polar_camo_legs
+leg|Wood camo legs|wood_camo_legs
+leg|Jungle camo legs|jungle_camo_legs
+leg|Desert camo legs|desert_camo_legs
+leg|Larupia legs|larupia_legs
+leg|Graahk legs|graahk_legs
+leg|Kyatt legs|kyatt_legs
+leg|Yak-hide armour (legs)|-
+leg|Chicken legs|-
+leg|Evil chicken legs|-
+leg|Pyromancer robe|pyromancer_robe
+leg|Ring of the elements|ring_of_the_elements
+feet|Santa boots|-
+feet|Antisanta boots|-
+feet|Bunny feet|-
+feet|Clue hunter boots|-
+feet|Pyromancer boots|pyromancer_boots
+feet|Chicken feet|-
+feet|Evil chicken feet|-
+feet|Festive elf slippers|-
+feet|Mole slippers|mole_slippers
+feet|Holy moleys|-
+feet|Bear feet|bear_feet
+feet|Demon feet|demon_feet
+feet|Frog slippers|frog_slippers
+feet|Bob the cat slippers|-
+feet|Jad slippers|-
+feet|Cow slippers|cow_slippers
+feet|Brutus slippers|brutus_slippers

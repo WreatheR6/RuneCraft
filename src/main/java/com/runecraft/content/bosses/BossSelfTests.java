@@ -63,6 +63,36 @@ public final class BossSelfTests {
         return ClassicScripts.selfTestZalcano(boss, p);
     }
 
+    /** Zulrah through a whole rotation: phases, forms, spots, clouds and snakelings, then the next rotation's start. */
+    public static String zulrahRotation(DataBossEntity boss, ServerPlayer p) {
+        return ClassicBossWalks.zulrahRotation(boss, p);
+    }
+
+    /** Vorkath's acid phase, zombified spawn (killed and left to explode) and dragonfire bomb. */
+    public static String vorkathSpecials(DataBossEntity boss, ServerPlayer p) {
+        return ClassicBossWalks.vorkathSpecials(boss, p);
+    }
+
+    /** The Kalphite Queen's crawling form shedding its shell and the airborne form's kill. */
+    public static String kalphiteQueenForms(DataBossEntity boss, ServerPlayer p) {
+        return ClassicBossWalks.kalphiteQueenForms(boss, p);
+    }
+
+    /** The Corporeal Beast's damage rule, splash orb, stomp and dark energy core. */
+    public static String corpMechanics(DataBossEntity boss, ServerPlayer p) {
+        return ClassicBossWalks.corpMechanics(boss, p);
+    }
+
+    /** Sarachnis's healing strikes, web and spawns. */
+    public static String sarachnisWeb(DataBossEntity boss, ServerPlayer p) {
+        return ClassicBossWalks.sarachnisWeb(boss, p);
+    }
+
+    /** Scurrius's food piles, centre phase, bricks and rat waves. */
+    public static String scurriusFood(DataBossEntity boss, ServerPlayer p) {
+        return ClassicBossWalks.scurriusFood(boss, p);
+    }
+
     /** The Hueycoatl's body parts block the head until they are down. */
     public static String hueycoatlPhases(DataBossEntity boss, ServerPlayer p) {
         return EncounterScripts.selfTestHueycoatl(boss, p);

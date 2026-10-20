@@ -52,16 +52,14 @@ import java.util.UUID;
  * into its crypt, searching a sarcophagus summons its brother (or, for this run's tunnel brother,
  * offers the hidden tunnel), the tunnel doors open or stay locked per run, the chest summons the
  * hidden brother and then gives the reward and sends the player back to the surface. Prayer drains
- * slowly while underground, as in OSRS. About half of the doors into the chest room ask a
- * "Which item comes next?" puzzle (answered by clicking in chat), living brothers may ambush the
- * player on entering a tunnel room, and tunnel monster kills add reward potential.
+ * every 18 seconds underground (8 points, one more per brother killed), as in OSRS. About half of the doors into the chest
+ * room ask a "Which item comes next?" puzzle (answered by clicking in chat), every door opened may wake a brother still
+ * alive, a skeleton, a bloodworm or a crypt rat, and tunnel monster kills add reward potential.
  */
 public final class BarrowsHooks {
     private static final String SPADE = "spade";
-    /** OSRS drains prayer every 18 game ticks (12 Minecraft ticks each) in the crypts and tunnels. */
-    private static final int DRAIN_INTERVAL = 18 * 12;
-    /** How often (Minecraft ticks) to check which tunnel room each player is in. */
-    private static final int ROOM_CHECK_INTERVAL = 10;
+    /** OSRS drains prayer every 18 seconds (30 game ticks of 12 Minecraft ticks) in the crypts and tunnels. */
+    private static final int DRAIN_INTERVAL = BarrowsRun.PRAYER_DRAIN_TICKS * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK;
     private static long ticks;
 
     /** A puzzle door waiting for the player's answer. */
@@ -69,8 +67,6 @@ public final class BarrowsHooks {
     }
 
     private static final Map<UUID, Pending> PUZZLES = new HashMap<>();
-    /** The tunnel room each player was last seen in (so entering a room is noticed once). */
-    private static final Map<UUID, Integer> ROOMS = new HashMap<>();
 
     private BarrowsHooks() {
     }
@@ -147,9 +143,7 @@ public final class BarrowsHooks {
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             ++ticks;
-            boolean drain = ticks % DRAIN_INTERVAL == 0;
-            boolean rooms = ticks % ROOM_CHECK_INTERVAL == 0;
-            if (!drain && !rooms) {
+            if (ticks % DRAIN_INTERVAL != 0) {
                 return;
             }
             ServerLevel world = Gielinor.world(server);
@@ -159,14 +153,7 @@ public final class BarrowsHooks {
             for (ServerPlayer p : world.players()) {
                 BlockPos at = p.blockPosition();
                 boolean alive = p.isAlive() && !p.isSpectator();
-                if (rooms) {
-                    if (alive && Barrows.inTunnels(at.getX(), at.getY(), at.getZ())) {
-                        checkRoom(p, world, Barrows.roomAt(at.getX(), at.getZ()));
-                    } else {
-                        ROOMS.remove(p.getUUID());
-                    }
-                }
-                if (drain && alive && Barrows.underground(at.getX(), at.getY(), at.getZ())
+                if (alive && Barrows.underground(at.getX(), at.getY(), at.getZ())
                         && !com.runecraft.content.systems.CombatAchievementService.barrowsDrainNullified(p)) {
                     drainPrayer(p);
                 }
@@ -188,7 +175,7 @@ public final class BarrowsHooks {
     // ------------------------------------------------------------------ mounds and crypts
 
     /** Digging with a spade: on top of a mound the player breaks into its crypt. */
-    private static boolean dig(ServerPlayer p) {
+    static boolean dig(ServerPlayer p) {
         if (!Gielinor.is(p) || !(p.level() instanceof ServerLevel world)) {
             return false;
         }
@@ -294,12 +281,69 @@ public final class BarrowsHooks {
             askPuzzle(p, asked);
             return;
         }
-        openDoor(p, pos);
+        openDoor(p, pos, edge);
     }
 
-    private static void openDoor(ServerPlayer p, BlockPos pos) {
+    /** Opens a tunnel door: the player steps through, and the door may wake something in the room beyond. */
+    private static void openDoor(ServerPlayer p, BlockPos pos, int edge) {
+        int room = Barrows.roomBeyondDoor(edge, p.getBlockX(), p.getBlockZ());
         p.level().playSound(null, pos, SoundEvents.WOODEN_DOOR_OPEN, SoundSource.BLOCKS, 0.8f, 0.8f);
         DungeonsHooks.passThrough(p, pos);
+        if (p.level() instanceof ServerLevel world) {
+            wakeFromDoor(p, world, room);
+        }
+    }
+
+    /**
+     * What a door wakes in the room the player steps into (OSRS Wiki): a brother still alive this run (12/128, the hidden
+     * one too), a skeleton, a bloodworm or a crypt rat; nothing once the room holds {@value BarrowsRun#ROOM_ENEMY_CAP}
+     * enemies. Returns what came, or null. Public for the self-test.
+     */
+    public static String wakeFromDoor(ServerPlayer p, ServerLevel world, int room) {
+        if (room < 0) {
+            return null;
+        }
+        int[] c = Barrows.roomCentre(room);
+        AABB box = new AABB(c[0] - Barrows.ROOM_HALF, Barrows.TUNNEL_FLOOR, c[1] - Barrows.ROOM_HALF, c[0] + Barrows.ROOM_HALF + 1,
+                Barrows.TUNNEL_FLOOR + Barrows.TUNNEL_HEIGHT + 1, c[1] + Barrows.ROOM_HALF + 1);
+        int enemies = world.getEntitiesOfClass(net.minecraft.world.entity.Mob.class, box,
+                e -> e.isAlive() && e instanceof net.minecraft.world.entity.monster.Enemy).size();
+        if (enemies >= BarrowsRun.ROOM_ENEMY_CAP) {
+            return null;
+        }
+        BarrowsState state = state(p);
+        BarrowsRun run = state.run(p.getUUID());
+        BarrowsRun.DoorSpawn[] spawn = new BarrowsRun.DoorSpawn[1];
+        int brother = run.doorEncounter(new Random(p.getRandom().nextLong()), brotherUp(world, p.blockPosition()), spawn);
+        // A step further into the room than the player, so it doesn't land in the doorway.
+        int sx = Integer.signum(c[0] - p.getBlockX()) * 2;
+        int sz = Integer.signum(c[1] - p.getBlockZ()) * 2;
+        BlockPos at = new BlockPos(p.getBlockX() + sx, Barrows.TUNNEL_FLOOR, p.getBlockZ() + sz);
+        if (brother >= 0) {
+            Msg.game(p, "You hear footsteps in the darkness...");
+            Boss b = Barrows.BROTHERS.get(brother);
+            BossService.summon(p, world, at, b);
+            run.summon(brother);
+            state.setDirty();
+            return b.entityId();
+        }
+        if (spawn[0] == null) {
+            return null;
+        }
+        String id = switch (spawn[0]) {
+            case SKELETON -> BarrowsRun.SKELETON;
+            case BLOODWORM -> BarrowsRun.BLOODWORM;
+            default -> BarrowsRun.CRYPT_RAT;
+        };
+        EntityType<?> type = ModEntities.typeById(id);
+        if (type == null || !(type.create(world) instanceof net.minecraft.world.entity.Mob mob)) {
+            return null;
+        }
+        mob.moveTo(at.getX() + 0.5, at.getY() + 1, at.getZ() + 0.5, p.getRandom().nextFloat() * 360f, 0);
+        mob.finalizeSpawn(world, world.getCurrentDifficultyAt(at), net.minecraft.world.entity.MobSpawnType.EVENT, null);
+        mob.setTarget(p);
+        world.addFreshEntity(mob);
+        return id;
     }
 
     private static void askPuzzle(ServerPlayer p, BarrowsPuzzles.Asked asked) {
@@ -315,7 +359,7 @@ public final class BarrowsHooks {
     }
 
     /** A click on one of the puzzle answers ({@code choice} 0..2). */
-    private static int answerPuzzle(ServerPlayer p, int choice) {
+    static int answerPuzzle(ServerPlayer p, int choice) {
         if (p == null) {
             return 0;
         }
@@ -341,7 +385,7 @@ public final class BarrowsHooks {
             run.solve(pending.edge());
             state.setDirty();
             Msg.game(p, "You hear the door's locking mechanism grind open.");
-            openDoor(p, pending.door());
+            openDoor(p, pending.door(), pending.edge());
             return 1;
         }
         // OSRS: a wrong answer resets the door - it stays shut and asks something else next time.
@@ -352,36 +396,6 @@ public final class BarrowsHooks {
     }
 
     // ------------------------------------------------------------------ brothers in the tunnels
-
-    /** Called while a player is in the tunnels with the room he is in (-1 in a corridor). */
-    private static void checkRoom(ServerPlayer p, ServerLevel world, int room) {
-        if (room < 0) {
-            return;
-        }
-        Integer last = ROOMS.put(p.getUUID(), room);
-        if ((last != null && last == room) || room == Barrows.CHEST_ROOM) {
-            return;
-        }
-        if (brotherUp(world, p.blockPosition())) {
-            return;
-        }
-        BarrowsState state = state(p);
-        BarrowsRun run = state.run(p.getUUID());
-        int brother = run.tunnelEncounter(new Random(p.getRandom().nextLong()));
-        if (brother < 0) {
-            return;
-        }
-        int[] c = Barrows.roomCentre(room);
-        // Appear on the far side of the room centre from the player.
-        int dx = c[0] - p.getBlockX();
-        int dz = c[1] - p.getBlockZ();
-        int sx = Math.abs(dx) >= Math.abs(dz) ? (dx >= 0 ? 2 : -2) : 0;
-        int sz = sx == 0 ? (dz >= 0 ? 2 : -2) : 0;
-        Msg.game(p, "You hear footsteps in the darkness...");
-        BossService.summon(p, world, new BlockPos(c[0] + sx, Barrows.TUNNEL_FLOOR, c[1] + sz), Barrows.BROTHERS.get(brother));
-        run.summon(brother);
-        state.setDirty();
-    }
 
     /** True if any Barrows brother is alive near {@code pos} (at most one brother at a time). */
     private static boolean brotherUp(ServerLevel world, BlockPos pos) {
@@ -406,6 +420,20 @@ public final class BarrowsHooks {
         BarrowsRun run = BarrowsRun.of(0, 0, (brother + 1) % Barrows.BROTHERS.size(), 0L, false);
         run.summon(brother);
         return state(p).replace(p.getUUID(), run);
+    }
+
+    /** Self-test: the right answer (0..2) to the puzzle a door is asking the player, or -1 when none waits. */
+    static int selfTestPuzzleChoice(ServerPlayer p) {
+        Pending pending = PUZZLES.get(p.getUUID());
+        if (pending == null) {
+            return -1;
+        }
+        for (int i = 0; i < pending.asked().options().size(); i++) {
+            if (pending.asked().isCorrect(i)) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     /** The player's current Barrows run, as the chest would read it (self-test: what the fight's kill did to the run). */
@@ -472,14 +500,14 @@ public final class BarrowsHooks {
 
     // ------------------------------------------------------------------ prayer drain
 
-    /** OSRS: prayer drains in the crypts and tunnels, one point more for each brother killed this run. */
+    /** OSRS Wiki: the brothers' faces drain 8 prayer points in the crypts and tunnels, one more for each brother killed this run. */
     private static void drainPrayer(ServerPlayer p) {
         PlayerData data = Players.data(p);
         if (data.prayerPoints() <= 0) {
             return;
         }
         int killed = state(p).run(p.getUUID()).killedCount();
-        data.setPrayerPoints(data.prayerPoints() - (1 + killed));
+        data.setPrayerPoints(data.prayerPoints() - BarrowsRun.prayerDrain(killed));
         ServerNetworking.sync(p);
     }
 }

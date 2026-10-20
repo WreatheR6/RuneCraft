@@ -262,7 +262,8 @@ class CombatRulesTest {
         assertEquals(100, Boss.GENERAL_GRAARDOR.attackBonus(AttackType.RANGED));
         assertEquals(160, Boss.KRIL_TSUTSAROTH.attackBonus(AttackType.SLASH));
         assertEquals(60, Boss.TZTOK_JAD.attackBonus(AttackType.MAGIC));
-        assertEquals(0, Boss.OBOR.attackBonus(AttackType.CRUSH), "defaults to 0");
+        assertEquals(100, Boss.OBOR.attackBonus(AttackType.CRUSH), "the wiki's +100 (round 36)");
+        assertEquals(0, Boss.DHAROK.attackBonus(AttackType.SLASH), "defaults to 0");
         BossDef zily = ContentRegistry.boss("commander_zilyana");
         assertEquals(195, zily.attackBonus(AttackType.SLASH));
         assertEquals(200, zily.attackBonus(AttackType.MAGIC));

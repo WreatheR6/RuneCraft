@@ -97,6 +97,11 @@ public final class DungeonMonsters {
         list.add(m("bloodworm", "Bloodworm", 52, 45, 80, 20, 35, 1, 1).speed(4).attack(melee(AttackType.STAB, 3))
                 .defenceBonus(0, 0, 0, 0, 0).model("abyssal_leech").skin(0x8A1A1A, 0x6A1010, 0x6A1010, 0xC03030)
                 .size(0.8f, 0.6f, 0.8f));
+        // OSRS Wiki "Skeleton (Barrows)": level 77, woken by the tunnel doors (and roaming the rooms); +77 reward potential.
+        list.add(m(BarrowsRun.SKELETON, "Skeleton", 77, 51, 72, 72, 72, 1, 1).speed(4).attack(melee(AttackType.CRUSH, 10))
+                .defenceBonus(5, 5, -5, 0, 5).attributes("undead").weakness("earth", 35)
+                .drops(Drop.always("bones"), Drop.of("skeleton_champion_scroll", 1, 1, 5000))
+                .slayer(1, "skeletons").model("skeleton").skin(0xE0DCC8, 0xC8C4B0, 0xB0AC98, 0x202020));
         warpedCreatures(list);
         lavaStrykewyrm(list);
         return list;

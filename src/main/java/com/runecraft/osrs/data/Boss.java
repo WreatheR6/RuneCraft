@@ -40,17 +40,18 @@ public enum Boss {
                     Drop.of("runite_bar", 2, 2, 20), Drop.of("uncut_ruby", 5, 5, 30), Drop.of("uncut_diamond", 5, 5, 15),
                     Drop.of("steel_bar", 25, 25, 39), Drop.of("coins", 10000, 10000, 24), Drop.of("coins", 8000, 8000, 59),
                     Drop.of("strength_potion", 15, 15, 24), Drop.of("bryophytas_essence", 1, 1, 118), Drop.of("mossy_key", 1, 1, 16))),
-    AHRIM("ahrim", "Ahrim the Blighted", 98, 100, 1, 1, 100, 100, 1, 6, AttackType.MAGIC, 25, 0, Mechanic.AHRIM, 1.0f,
+    // Barrows brothers: OSRS Wiki infoboxes (round 36: Ahrim's max hit 25 -> 20, Guthan crush and Verac stab).
+    AHRIM("ahrim", "Ahrim the Blighted", 98, 100, 1, 1, 100, 100, 1, 6, AttackType.MAGIC, 20, 0, Mechanic.AHRIM, 1.0f,
             0x3A3A5A, Landmark.BARROWS, null, barrows("ahrims_hood", "ahrims_robetop", "ahrims_robeskirt", "ahrims_staff")),
     DHAROK("dharok", "Dharok the Wretched", 115, 100, 100, 100, 100, 1, 1, 7, AttackType.SLASH, 29, 0, Mechanic.DHAROK, 1.0f,
             0x5A5A5A, Landmark.BARROWS, null, barrows("dharoks_helm", "dharoks_platebody", "dharoks_platelegs", "dharoks_greataxe")),
-    GUTHAN("guthan", "Guthan the Infested", 115, 100, 100, 100, 100, 1, 1, 5, AttackType.STAB, 24, 0, Mechanic.GUTHAN, 1.0f,
+    GUTHAN("guthan", "Guthan the Infested", 115, 100, 100, 100, 100, 1, 1, 5, AttackType.CRUSH, 24, 0, Mechanic.GUTHAN, 1.0f,
             0x6A6A5A, Landmark.BARROWS, null, barrows("guthans_helm", "guthans_platebody", "guthans_chainskirt", "guthans_warspear")),
     KARIL("karil", "Karil the Tainted", 98, 100, 1, 1, 100, 1, 100, 4, AttackType.RANGED, 20, 0, Mechanic.KARIL, 1.0f,
             0x4A3A2A, Landmark.BARROWS, null, barrows("karils_coif", "karils_leathertop", "karils_leatherskirt", "karils_crossbow")),
     TORAG("torag", "Torag the Corrupted", 115, 100, 100, 100, 100, 1, 1, 5, AttackType.CRUSH, 23, 0, Mechanic.TORAG, 1.0f,
             0x5A4A3A, Landmark.BARROWS, null, barrows("torags_helm", "torags_platebody", "torags_platelegs", "torags_hammers")),
-    VERAC("verac", "Verac the Defiled", 115, 100, 100, 100, 100, 1, 1, 5, AttackType.CRUSH, 23, 0, Mechanic.VERAC, 1.0f,
+    VERAC("verac", "Verac the Defiled", 115, 100, 100, 100, 100, 1, 1, 5, AttackType.STAB, 23, 0, Mechanic.VERAC, 1.0f,
             0x6A5A4A, Landmark.BARROWS, null, barrows("veracs_helm", "veracs_brassard", "veracs_plateskirt", "veracs_flail")),
     GENERAL_GRAARDOR("general_graardor", "General Graardor", 624, 255, 280, 350, 250, 80, 350, 6, AttackType.CRUSH, 60, 90,
             Mechanic.GRAARDOR, 2.2f, 0x5A6A3A, Landmark.GOD_WARS_DUNGEON, null,
@@ -141,6 +142,56 @@ public enum Boss {
             case GENERAL_GRAARDOR -> melee ? 120 : type == AttackType.RANGED ? 100 : 0;
             case KRIL_TSUTSAROTH -> melee ? 160 : 0;
             case TZTOK_JAD -> type == AttackType.MAGIC ? 60 : 0;
+            // OSRS Wiki DPS calculator (round 36): Ahrim's +73 magic, Karil's +134 ranged, Obor's +100 melee and ranged,
+            // Bryophyta's +33 melee; the four melee brothers have +0 attack.
+            case AHRIM -> type == AttackType.MAGIC ? 73 : 0;
+            case KARIL -> type == AttackType.RANGED ? 134 : 0;
+            case OBOR -> melee || type == AttackType.RANGED ? 100 : 0;
+            case BRYOPHYTA -> melee ? 33 : 0;
+            default -> 0;
+        };
+    }
+
+    /**
+     * Defence bonuses {stab, slash, crush, magic, ranged} of the bosses that have per-style values (the Barrows brothers'
+     * heavy melee armour and low magic defence, Obor's), from the OSRS Wiki DPS calculator's monsters.json (round 36,
+     * locked by {@code LegacyBossStatsTest}); null for a boss that keeps its single {@link #defenceBonus()}.
+     */
+    public int[] defenceBonuses() {
+        return switch (this) {
+            case AHRIM -> new int[]{103, 85, 117, 73, 0};
+            case DHAROK -> new int[]{252, 250, 244, -11, 249};
+            case GUTHAN -> new int[]{259, 257, 241, -11, 250};
+            case KARIL -> new int[]{79, 71, 90, 106, 100};
+            case TORAG -> new int[]{221, 235, 222, 0, 221};
+            case VERAC -> new int[]{227, 230, 221, 0, 225};
+            case OBOR -> new int[]{35, 40, 45, 20, 20};
+            case BRYOPHYTA -> new int[]{0, 0, 0, 0, 0};
+            default -> null;
+        };
+    }
+
+    /** Defence bonus against an attack style: its per-style value ({@link #defenceBonuses()}) or the single one. */
+    public int defenceBonus(AttackType type) {
+        int[] d = defenceBonuses();
+        return d == null ? defenceBonus : d[type.ordinal()];
+    }
+
+    /** Elemental weakness ("air", "water", "earth", "fire") from the wiki DPS calculator, or null. */
+    public String weakness() {
+        return switch (this) {
+            case AHRIM, DHAROK, GUTHAN, KARIL, TORAG, VERAC -> "air";
+            case BRYOPHYTA -> "fire";
+            case OBOR -> "earth";
+            default -> null;
+        };
+    }
+
+    /** Severity of {@link #weakness()} in percent (0 for none). */
+    public int weaknessPercent() {
+        return switch (this) {
+            case AHRIM, DHAROK, GUTHAN, KARIL, TORAG, VERAC, BRYOPHYTA -> 50;
+            case OBOR -> 20;
             default -> 0;
         };
     }
