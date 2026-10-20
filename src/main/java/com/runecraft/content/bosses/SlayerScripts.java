@@ -51,6 +51,18 @@ final class SlayerScripts {
             BossFx.say(boss, "Four whirlpools churn around a larger one... Disturb the tentacles first!");
         }
 
+        /** Self-test (boss:fight:kraken): a player disturbs every whirlpool with one hit each. Returns whether one was left. */
+        boolean selfTestDisturb(ServerPlayer p) {
+            boolean any = false;
+            for (Mob t : tentacles) {
+                if (t.isAlive() && t.getHealth() >= t.getMaxHealth()) {
+                    CombatHandler.applyDamage(p, t, 1);
+                    any = true;
+                }
+            }
+            return any;
+        }
+
         private boolean disturbed() {
             for (Mob t : tentacles) {
                 if (t.isAlive() && t.getHealth() >= t.getMaxHealth()) {

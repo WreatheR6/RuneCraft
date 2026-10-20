@@ -53,26 +53,36 @@ public final class Mechanics {
     }
 
     public static void register() {
-        ServerTickEvents.END_SERVER_TICK.register(server -> {
-            long now = ActionManager.mcTick();
-            Iterator<Pending> it = PENDING.iterator();
-            List<Pending> due = new ArrayList<>();
-            while (it.hasNext()) {
-                Pending p = it.next();
-                if (now >= p.dueMcTick()) {
-                    due.add(p);
-                    it.remove();
-                }
+        ServerTickEvents.END_SERVER_TICK.register(server -> tick());
+    }
+
+    /**
+     * Self-test hook ({@code com.runecraft.selftest}): lands due telegraphed attacks and ticks the ground hazards now, for a
+     * fight simulated inside one server tick (see {@code ActionManager.advanceForSelfTest}).
+     */
+    public static void tickForSelfTest() {
+        tick();
+    }
+
+    private static void tick() {
+        long now = ActionManager.mcTick();
+        Iterator<Pending> it = PENDING.iterator();
+        List<Pending> due = new ArrayList<>();
+        while (it.hasNext()) {
+            Pending p = it.next();
+            if (now >= p.dueMcTick()) {
+                due.add(p);
+                it.remove();
             }
-            for (Pending p : due) {
-                if (p.mob().isAlive()) {
-                    land(p.mob(), p.target(), p.attack(), p.marked(), p.multiplier());
-                }
+        }
+        for (Pending p : due) {
+            if (p.mob().isAlive()) {
+                land(p.mob(), p.target(), p.attack(), p.marked(), p.multiplier());
             }
-            if (now % ActionManager.MC_TICKS_PER_GAME_TICK == 0) {
-                tickHazards(ActionManager.gameTick());
-            }
-        });
+        }
+        if (now % ActionManager.MC_TICKS_PER_GAME_TICK == 0) {
+            tickHazards(ActionManager.gameTick());
+        }
     }
 
     /** Starts an attack; telegraphed attacks land later. {@code multiplier} scales the max hit (enrage phases). */

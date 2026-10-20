@@ -74,6 +74,18 @@ public final class ActionManager {
         return true;
     }
 
+    /**
+     * Self-test hook ({@code com.runecraft.selftest}): moves the clocks on by one Minecraft tick (and a game tick every
+     * {@value #MC_TICKS_PER_GAME_TICK}) without running the per-tick work, so a fight simulated inside one server tick sees
+     * time pass (attack speeds, telegraphs, boss timers).
+     */
+    public static void advanceForSelfTest() {
+        mcTicks++;
+        if (mcTicks % MC_TICKS_PER_GAME_TICK == 0) {
+            gameTick++;
+        }
+    }
+
     public static boolean isBusy(ServerPlayer player) {
         return ACTIONS.containsKey(player.getUUID());
     }

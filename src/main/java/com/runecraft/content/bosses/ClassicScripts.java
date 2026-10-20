@@ -977,6 +977,27 @@ final class ClassicScripts {
     }
 
     /**
+     * Self-test (boss:fight:zalcano): what a team does for the player: imbued tephra thrown at her armour until she falls,
+     * then a pickaxe in hand to mine her. Null when there is nothing to do.
+     */
+    static String selfTestAssistZalcano(DataBossEntity boss, ServerPlayer p) {
+        if (!(boss.script() instanceof Zalcano z)) {
+            return null;
+        }
+        if (!z.down()) {
+            Inv.give(p, BossMechanics.IMBUED_TEPHRA, 40);
+            for (int i = 0; i < 40 && !z.down() && Inv.has(p, BossMechanics.IMBUED_TEPHRA, 1); i++) {
+                z.incoming(boss, p, 0, AttackType.CRUSH);
+            }
+            Zalcano.destroyTephra(p);
+        }
+        if (z.down() && !BossFx.heldId(p).endsWith("pickaxe")) {
+            p.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, Inv.stack("rune_pickaxe", 1));
+        }
+        return z.down() ? "tephra downed her, mined with a pickaxe" : "tephra thrown";
+    }
+
+    /**
      * Self-test (boss:zalcano_tephra): her armour ignores attacks without imbued tephra, tephra breaks it and she falls; a
      * golem killed with tephra leaves its attacker 16-24 imbued tephra.
      */
