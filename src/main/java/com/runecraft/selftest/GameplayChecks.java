@@ -107,6 +107,8 @@ final class GameplayChecks {
                 () -> g.skillingWalk(com.runecraft.content.minigames.games.SkillingBossWalk::tempoross)));
         checks.add(new SelfTest.Check("minigame:gotr_game",
                 () -> g.skillingWalk(com.runecraft.content.minigames.games.SkillingBossWalk::guardians)));
+        checks.add(new SelfTest.Check("minigame:volcanic_mine_exit",
+                () -> g.skillingWalk(com.runecraft.content.minigames.games.SkillingBossWalk::volcanicMineExit)));
         checks.add(new SelfTest.Check("minigame:fight_caves_run", () -> g.tzhaarRun(
                 com.runecraft.content.minigames.games.TzHaarSelfTest::fightCaveRun)));
         checks.add(new SelfTest.Check("minigame:inferno_run", () -> g.tzhaarRun(

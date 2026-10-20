@@ -184,10 +184,26 @@ class SkillingBossDataTest {
         assertEquals(0, TemporossStorm.recharged(260, 0));
         assertEquals(130, TemporossStorm.recharged(260, TemporossStorm.ESSENCE_PHASE_TICKS / 2));
         assertEquals(260, TemporossStorm.recharged(260, TemporossStorm.ESSENCE_PHASE_TICKS + 10));
-        assertEquals(0, TemporossStorm.stormGain(true, true, 9));
-        assertEquals(1, TemporossStorm.stormGain(false, false, 9));
-        assertEquals(0, TemporossStorm.stormGain(false, false, 10));
-        assertEquals(1, TemporossStorm.stormGain(false, true, 10));
+        int per = TemporossStorm.STORM_TICKS_PER_PERCENT;
+        assertEquals(0, TemporossStorm.stormGain(true, true, per));
+        assertEquals(1, TemporossStorm.stormGain(false, false, per));
+        assertEquals(0, TemporossStorm.stormGain(false, false, per + 1));
+        assertEquals(TemporossStorm.ENRAGED_STORM_PER_TICK, TemporossStorm.stormGain(false, true, per + 1));
+        // The bar is the energy phase's failure timer: it resets to 0% whenever he submerges (OSRS Wiki), so each phase has
+        // the whole bar. One phase is sized for a solo player catching, cooking and loading about 36 harpoonfish before
+        // 93-95% (Tempoross/Strategies): 4 minutes, approx.
+        assertEquals(0, TemporossStorm.STORM_AFTER_SUBMERGE);
+        assertEquals(100 * per, TemporossStorm.STORM_PHASE_TICKS);
+        int fishTicks = 36 * (TemporossStorm.CATCH_TICKS + TemporossStorm.COOK_TICKS); // at 99 Fishing, no double spots
+        assertTrue(TemporossStorm.STORM_PHASE_TICKS * 93 / 100 >= fishTicks * 8 / 10 // double spots save about a fifth
+                && TemporossStorm.STORM_PHASE_TICKS <= 2 * fishTicks, "phase " + TemporossStorm.STORM_PHASE_TICKS + " ticks");
+        int up = 0;
+        for (int storm = 0; storm < 100; ) {
+            storm += TemporossStorm.stormGain(false, false, ++up);
+        }
+        assertEquals(TemporossStorm.STORM_PHASE_TICKS, up);
+        // Enraged, the storm fills in seconds: only both cannons loaded at once force him under in time.
+        assertTrue(100 / TemporossStorm.ENRAGED_STORM_PER_TICK <= 30);
         assertEquals(3, TemporossStorm.MAX_RECOVERIES);
         assertEquals(TemporossStorm.ESSENCE_PHASE_TICKS, MinigameRules.Tempoross.VULNERABLE_TICKS);
         // A mast or totem breaks 15% of the time in a calm storm, 25% at its height (Mod Ash).

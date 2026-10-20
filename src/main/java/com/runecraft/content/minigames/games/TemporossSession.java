@@ -30,8 +30,9 @@ import net.minecraft.world.level.block.Blocks;
 /**
  * Tempoross: harpoon harpoonfish, cook them at the shrine, and load them into the cannons to drain
  * Tempoross's energy. At 0% energy he submerges and the spirit pool opens while his energy recharges; harpoon it to drain
- * his essence before he is back at full energy. After his third recovery the storm is out of control and its intensity
- * rises fast; the encounter fails when the storm intensity reaches 100%. His attacks deal no damage (OSRS Wiki): tether
+ * his essence before he is back at full energy. The storm intensity builds while he is up and resets when he submerges;
+ * the encounter fails when it reaches 100% in an energy phase. After his third recovery the storm is out of control and its
+ * intensity rises fast. His attacks deal no damage (OSRS Wiki): tether
  * to a totem pole with a rope when a colossal
  * wave comes or lose fish and tools, repair totems the wave breaks with a hammer, and douse the fires his
  * lightning lights with buckets of water (filled at the pump) before they spread and burn your supplies, and step away
@@ -65,7 +66,7 @@ public class TemporossSession extends MinigameSession {
     private long submergedAt = -1;
     /** Times Tempoross recovered from an essence phase; after the third the storm is out of control. */
     private int recoveries;
-    /** The storm intensity bar (percent): the encounter fails at 100%. */
+    /** The storm intensity bar (percent): the encounter fails at 100%; it resets to 0% each time he submerges. */
     private int storm;
     private long waveAt = -1;
     /** Torrent attack: when the next one surges, at which cannon (x offset), and cannons disabled until a tick. */
@@ -331,9 +332,13 @@ public class TemporossSession extends MinigameSession {
         }
     }
 
-    /** Energy gone: Tempoross submerges and the spirit pool opens while its energy recharges. */
+    /**
+     * Energy gone: Tempoross submerges, the storm intensity resets to 0% (OSRS Wiki: each energy phase gets the whole bar) and
+     * the spirit pool opens while its energy recharges.
+     */
     private void submerge() {
         submergedAt = ticks;
+        storm = TemporossStorm.STORM_AFTER_SUBMERGE;
         vulnerableUntil = ticks + TemporossStorm.ESSENCE_PHASE_TICKS;
         place(0, -12, "tempoross_spirit_pool");
         broadcastRed("Tempoross is vulnerable! Harpoon the spirit pool!");

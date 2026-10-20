@@ -36,12 +36,13 @@ import net.minecraft.world.entity.Mob;
  *       brazier fixed and relit, a fallen pyromancer helped, the Wintertodt subdued with 500+ points, the reward cart
  *       searched (one, then a big search).</li>
  *   <li>Tempoross: the supply crate and the water pump, harpoonfish caught and cooked, a wave survived tethered to a totem,
- *       a fire doused, a broken totem repaired, both cannons loaded until he submerges, the spirit pool harpooned through a
+ *       a fire doused, a broken totem repaired, both cannons loaded until he submerges (the storm bar resets), the spirit pool harpooned through a
  *       whole essence phase (energy recharging) and a second one, permits, the reward pool fished with a net.</li>
  *   <li>Guardians of the Rift: guardian remains and the large remains mined, essence at the workbench, cells charged at the
  *       altars, a barrier raised, a rift guardian assembled, stones given to the Great Guardian, the huge remains through
  *       the portal, the rift's creatures (they can't be hurt, no combat XP), the rift sealed, points and the Rewards
  *       Guardian.</li>
+ *   <li>Volcanic Mine ("minigame:volcanic_mine_exit"): only the rope exit pays; the leave command forfeits the fragments.</li>
  * </ul>
  */
 public final class SkillingBossWalk {
@@ -89,6 +90,10 @@ public final class SkillingBossWalk {
 
     public static String guardians(ServerPlayer p) {
         return run(p, SkillingBossWalk::guardiansGame);
+    }
+
+    public static String volcanicMineExit(ServerPlayer p) {
+        return run(p, SkillingBossWalk::volcanicMineExit);
     }
 
     // ------------------------------------------------------------------ helpers
@@ -393,6 +398,8 @@ public final class SkillingBossWalk {
             Inv.give(player, "harpoonfish", 18 - cooked); // approx: what a fire or wave took, caught again
         }
         int energy = t.selfTestView(player).energy();
+        int storm = t.selfTestView(player).storm();
+        expect(storm > 0 && storm < 100, "the storm intensity is " + storm + "% after " + ticks + " ticks of the first energy phase");
         Inv.remove(player, "harpoonfish", 9);
         load(t, 0);
         expect(t.selfTestView(player).energy() < energy, "loading the first cannon didn't drain his energy");
@@ -400,7 +407,9 @@ public final class SkillingBossWalk {
         load(t, 1);
         expect(t.selfTestView(player).submerged(), "18 cooked harpoonfish didn't bring his energy to 0 (energy "
                 + t.selfTestView(player).energy() + "%)");
-        notes.add("both cannons loaded: he submerges");
+        expect(t.selfTestView(player).storm() == 0, "the storm intensity stayed at " + t.selfTestView(player).storm()
+                + "% when he submerged (it resets to 0%)");
+        notes.add("both cannons loaded at " + storm + "% storm: he submerges and the storm resets");
 
         step = "spirit pool";
         int essence = t.selfTestView(player).essence();
@@ -420,8 +429,13 @@ public final class SkillingBossWalk {
         if (Inv.count(player, "harpoonfish") < 18) {
             Inv.give(player, "harpoonfish", 18 - Inv.count(player, "harpoonfish"));
         }
+        storm = t.selfTestView(player).storm();
+        expect(storm > 0 && storm < 100, "the storm intensity is " + storm + "% in the second energy phase");
         load(t, 0);
         expect(t.selfTestView(player).submerged(), "18 more cooked harpoonfish didn't make him submerge again");
+        expect(t.selfTestView(player).storm() == 0, "the storm intensity stayed at " + t.selfTestView(player).storm()
+                + "% when he submerged again");
+        notes.add("second phase loaded at " + storm + "% storm (the bar started again from 0%)");
         use(t.selfTestPool(), "tempoross_spirit_pool");
         int permits = Inv.count(player, "reward_permit");
         expect(until(TemporossSessionTicks.PHASE + 10, t::isEnded), "the second essence phase didn't subdue him (essence "
@@ -546,6 +560,43 @@ public final class SkillingBossWalk {
                     BlockHooks.use(player, "tempoross_totem", totem, world.getBlockState(totem));
                     return;
                 }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ Volcanic Mine
+
+    /**
+     * Two Volcanic Mine games: leaving the first with the leave command (a teleport out: the ore fragments disintegrate, no
+     * points or XP), then the second through the rope exit (Petrified Pete pays the points and 3.8 Mining XP a point).
+     */
+    private void volcanicMineExit() {
+        String vm = com.runecraft.osrs.content.minigames.MinigameCurrencies.VOLCANIC_MINE;
+        int earned = 200;
+        for (boolean rope : new boolean[]{false, true}) {
+            step = rope ? "rope exit" : "leave command";
+            Inv.give(player, "numulite", com.runecraft.osrs.content.minigames.VolcanicMine.ENTRY_NUMULITE);
+            VolcanicMineSession s = (VolcanicMineSession) start(Minigame.VOLCANIC_MINE);
+            expect(!s.isEnded(), "Petrified Pete didn't let the player in with 30 numulite");
+            s.selfTestAddPoints(player, earned);
+            int held = MinigameData.of(player).points(player.getUUID(), vm);
+            double mining = xp(Skill.MINING);
+            if (rope) {
+                use(s.selfTestExit(), "minigame_exit");
+            } else {
+                MinigameManager.leave(player);
+            }
+            expect(MinigameManager.session(player) == null, "the player is still in the mine after leaving");
+            int got = MinigameData.of(player).points(player.getUUID(), vm) - held;
+            double gotXp = xp(Skill.MINING) - mining;
+            if (rope) {
+                int paid = Math.min(earned, com.runecraft.osrs.content.minigames.VolcanicMine.MAX_POINTS - held);
+                expect(got == paid && Math.abs(gotXp - com.runecraft.osrs.content.minigames.VolcanicMine.endXp(paid)) < 1,
+                        "the rope exit paid " + got + " points and " + gotXp + " Mining XP for " + earned + " points");
+                notes.add("the rope exit paid " + got + " points and " + Math.round(gotXp) + " Mining XP");
+            } else {
+                expect(got == 0 && gotXp < 0.05, "leaving with the command paid " + got + " points and " + gotXp + " Mining XP");
+                notes.add("the leave command forfeited the fragments");
             }
         }
     }

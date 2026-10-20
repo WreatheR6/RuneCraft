@@ -40,8 +40,8 @@ import net.minecraft.world.level.block.Blocks;
  * <p>A lava channel cuts the cavern in two: harden it with the heat-proof vessel Petrified Pete hands out
  * (36 throws, 72 with the large water container from his shop; platforms melt after 90 seconds) or feel a gas hole to be
  * shot across for a little damage. The game starts 30 seconds after entering; only miners who leave through the exit before
- * the eruption are paid (points and 3.8 Mining XP a point); dying, logging out or being caught in the eruption forfeits the
- * game's ore fragments.
+ * the eruption are paid (points and 3.8 Mining XP a point); dying, logging out, leaving any other way (a teleport, the leave
+ * command) or being caught in the eruption forfeits the game's ore fragments.
  * Ten or more miners get a second boulder (western channel), twenty or more a third (eastern).
  */
 public class VolcanicMineSession extends MinigameSession {
@@ -71,6 +71,11 @@ public class VolcanicMineSession extends MinigameSession {
     private int stability = VolcanicMine.START_STABILITY;
     /** Players who died or logged out mid-game: their fragments disintegrate, no points or bonus XP (wiki). */
     private final java.util.Set<UUID> forfeit = new java.util.HashSet<>();
+    /**
+     * Players leaving alive through the rope exit, the only ones paid (OSRS Wiki): leaving any other way (the leave command,
+     * a teleport) is a teleport out, and their fragments disintegrate.
+     */
+    private final java.util.Set<UUID> exited = new java.util.HashSet<>();
     /** The volcano erupted (or the mine collapsed) with these players still inside. */
     private boolean erupted;
 
@@ -214,6 +219,10 @@ public class VolcanicMineSession extends MinigameSession {
     @Override
     protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         switch (blockId) {
+            case "minigame_exit" -> {
+                exited.add(player.getUUID());
+                return false; // the manager lets the player leave (onLeave pays them)
+            }
             case "vm_vent" -> {
                 int v = ventIndex(pos);
                 known[v] = true;
@@ -466,15 +475,17 @@ public class VolcanicMineSession extends MinigameSession {
     }
 
     /**
-     * Leaving: a miner who leaves through the exit alive hands the ore fragments to Petrified Pete for the game's points and
-     * 3.8 Mining XP a point; one who died, logged out or was caught in the eruption gets nothing.
+     * Leaving: a miner who leaves alive through the rope exit hands the ore fragments to Petrified Pete for the game's points
+     * and 3.8 Mining XP a point; one who died, logged out, left any other way (the leave command counts as teleporting out)
+     * or was caught in the eruption gets nothing (OSRS Wiki).
      */
     @Override
     protected void onLeave(ServerPlayer p) {
         Inv.remove(p, VolcanicMine.VESSEL, 1000);
         int pts = points.getOrDefault(p.getUUID(), 0);
         points.remove(p.getUUID());
-        if (erupted || forfeit.contains(p.getUUID())) {
+        boolean viaExit = exited.remove(p.getUUID());
+        if (erupted || forfeit.contains(p.getUUID()) || !viaExit) {
             if (pts > 0) {
                 Msg.red(p, "Your ore fragments disintegrate: no points or experience from this game.");
             }
@@ -498,6 +509,16 @@ public class VolcanicMineSession extends MinigameSession {
     /** Self-test: the player's points this game. */
     public int selfTestPoints(ServerPlayer p) {
         return points.getOrDefault(p.getUUID(), 0);
+    }
+
+    /** Self-test: credits points this game, as mining the boulder would. */
+    public void selfTestAddPoints(ServerPlayer p, int n) {
+        points.merge(p.getUUID(), n, Integer::sum);
+    }
+
+    /** Self-test: the rope exit. */
+    public BlockPos selfTestExit() {
+        return rel(0, 1, 20);
     }
 
     public BlockPos selfTestBoulder() {
