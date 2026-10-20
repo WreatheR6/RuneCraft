@@ -83,13 +83,6 @@ final class BossFightChecks {
     private static final int MC = ActionManager.MC_TICKS_PER_GAME_TICK;
     /** Player attack-roll multiplier during the fight: a few attacks must be enough to see damage go through. */
     private static final double ACCURACY_BOOST = 4.0;
-    /**
-     * Fire Surges the player carries runes for: at most one attack in three is a cast, and attacks stop at the first hit, so
-     * 40 is plenty. Runes stack to 64 a slot: the 200 casts carried before (2,000 fire, 1,400 air and 200 wrath runes, 58
-     * slots) filled the pack and dropped the rest, so nothing the fight hands the player (Zalcano's imbued tephra) or loot
-     * could go in.
-     */
-    private static final int CASTS = 40;
     private static final ResourceLocation HP_BUFFER = RuneCraft.id("selftest_fight_hp");
 
     /** Data bosses fought here: every non-raid boss of these categories, plus the Dagannoth Kings fought in their lair. */
@@ -265,9 +258,6 @@ final class BossFightChecks {
         if (health != null) {
             health.removeModifier(HP_BUFFER);
             health.addTransientModifier(new AttributeModifier(HP_BUFFER, 2000, AttributeModifier.Operation.ADD_VALUE));
-        }
-        for (Map.Entry<com.runecraft.osrs.Rune, Integer> e : Spell.FIRE_SURGE.runes().entrySet()) {
-            Inv.give(p, e.getKey().itemId(), e.getValue() * CASTS);
         }
         Mechanics.AttackListener before = Mechanics.attackListener;
         Mechanics.attackListener = (mob, target, attack) -> {
@@ -507,6 +497,15 @@ final class BossFightChecks {
         data.lastAttackTick = ActionManager.mcTick() - 10_000;
         switch (style) {
             case MAGIC -> {
+                // The runes of this one cast, handed over right before it: however many casts the fight takes (one attack in
+                // three, up to one attack a game tick once heavy hits land), the pack never runs dry nor fills up with runes
+                // (stacks of 64: carrying 200 casts' worth, 58 slots, dropped Zalcano's imbued tephra and the loot on the floor).
+                for (Map.Entry<com.runecraft.osrs.Rune, Integer> e : Spell.FIRE_SURGE.runes().entrySet()) {
+                    int lack = e.getValue() - Inv.count(p, e.getKey().itemId());
+                    if (lack > 0) {
+                        Inv.give(p, e.getKey().itemId(), lack);
+                    }
+                }
                 p.setItemInHand(InteractionHand.MAIN_HAND, Inv.stack("staff_of_fire", 1));
                 MagicService.setAutocast(p, Spell.FIRE_SURGE);
                 MagicService.autocastAttack(p, boss);
