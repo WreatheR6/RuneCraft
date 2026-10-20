@@ -88,6 +88,7 @@ public final class Untradeables {
                 "guild_hunter_legs", "guild_hunter_boots", "shayzien_helm_5", "shayzien_platebody_5", "shayzien_greaves_5",
                 "shayzien_boots_5");
         // Desert Treasure II boss tablets and quartzes.
+        add("slepey_tablet", "frozen_cache"); // Phosani's Nightmare, the Phantom Muspah
         add("frozen_tablet", "scarred_tablet", "sirenic_tablet", "strangled_tablet", "ice_quartz", "smoke_quartz", "shadow_quartz",
                 "blood_quartz", "blood_ancient_sceptre", "ice_ancient_sceptre", "smoke_ancient_sceptre", "shadow_ancient_sceptre",
                 "tephra", "refined_tephra", "imbued_tephra", "purifying_sigil", "purifying_sigil_top", "purifying_sigil_bottom",

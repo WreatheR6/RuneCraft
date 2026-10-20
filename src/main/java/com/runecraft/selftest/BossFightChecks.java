@@ -120,7 +120,49 @@ final class BossFightChecks {
                 checks.add(new SelfTest.Check("boss:fight:" + id, () -> f.data(id)));
             }
         }
+        // Phase walks: the fight played through every phase and mechanic, each step checked (BossSelfTests).
+        checks.add(new SelfTest.Check("boss:walk:the_nightmare",
+                () -> f.walk("the_nightmare", com.runecraft.content.bosses.BossSelfTests::nightmareWalk)));
+        checks.add(new SelfTest.Check("boss:walk:phosanis_nightmare",
+                () -> f.walk("phosanis_nightmare", com.runecraft.content.bosses.BossSelfTests::nightmareWalk)));
+        checks.add(new SelfTest.Check("boss:walk:phantom_muspah",
+                () -> f.walk("phantom_muspah", com.runecraft.content.bosses.BossSelfTests::muspahWalk)));
         return checks;
+    }
+
+    /**
+     * A phase walk: the boss spawned next to the player (who keeps a big health buffer), then {@code run} plays its fight
+     * through, phase by phase, and throws on the first broken step.
+     */
+    private String walk(String id, java.util.function.BiFunction<DataBossEntity, ServerPlayer, String> run) {
+        BossDef def = ContentRegistry.boss(id);
+        if (def == null) {
+            throw new AssertionError("no BossDef " + id);
+        }
+        DataBossEntity boss = DataBossService.spawn(c.world, c.near(3, 0), def, c.player);
+        if (boss == null) {
+            throw new AssertionError("DataBossService.spawn returned null");
+        }
+        AttributeInstance health = c.player.getAttribute(Attributes.MAX_HEALTH);
+        if (health != null) {
+            health.removeModifier(HP_BUFFER);
+            health.addTransientModifier(new AttributeModifier(HP_BUFFER, 2000, AttributeModifier.Operation.ADD_VALUE));
+        }
+        try {
+            boss.setTarget(c.player);
+            return run.apply(boss, c.player);
+        } catch (IllegalStateException e) {
+            throw new AssertionError(e.getMessage(), e);
+        } finally {
+            if (boss.isAlive()) {
+                boss.discard();
+            }
+            if (health != null) {
+                health.removeModifier(HP_BUFFER);
+            }
+            XpService.updateMaxHealth(c.player);
+            c.player.setHealth(c.player.getMaxHealth());
+        }
     }
 
     // ------------------------------------------------------------------ what the fight saw

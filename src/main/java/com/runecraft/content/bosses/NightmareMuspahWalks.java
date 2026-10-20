@@ -1,0 +1,464 @@
+package com.runecraft.content.bosses;
+
+import com.runecraft.action.ActionManager;
+import com.runecraft.boss.DataBossEntity;
+import com.runecraft.combat.CombatHandler;
+import com.runecraft.combat.PrayerService;
+import com.runecraft.osrs.AttackType;
+import com.runecraft.osrs.Prayer;
+import com.runecraft.osrs.content.bosses.BossMechanics;
+import com.runecraft.osrs.content.bosses.MuspahRules;
+import com.runecraft.osrs.content.bosses.NightmareRules;
+import com.runecraft.osrs.content.bosses.NightmareRules.Special;
+import com.runecraft.player.PlayerData;
+import com.runecraft.player.Players;
+import java.util.ArrayList;
+import java.util.List;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.phys.Vec3;
+
+/**
+ * The phase walks of the in-game self-test ({@code boss:walk:the_nightmare}, {@code boss:walk:phosanis_nightmare},
+ * {@code boss:walk:phantom_muspah}): a player fights the boss through every phase as the OSRS fight goes, the script's own
+ * code doing each mechanic, and every step is checked. Any broken step throws with what went wrong.
+ */
+final class NightmareMuspahWalks {
+    private static long tick;
+
+    private NightmareMuspahWalks() {
+    }
+
+    private static void check(boolean ok, String what) {
+        if (!ok) {
+            throw new IllegalStateException(what);
+        }
+    }
+
+    /** Game ticks of the boss's script, the player kept alive and targeted. */
+    private static void step(DataBossEntity boss, ServerPlayer p, int ticks) {
+        for (int i = 0; i < ticks && boss.isAlive(); i++) {
+            boss.setTarget(p);
+            boss.script().gameTick(boss, ++tick);
+            p.setHealth(p.getMaxHealth());
+        }
+    }
+
+    /** One of the player's hits through the boss's own damage rules; returns what it took. */
+    private static int hurt(DataBossEntity boss, ServerPlayer p, int damage, AttackType type) {
+        int d = boss.modifyIncoming(p, damage, type);
+        if (d > 0) {
+            CombatHandler.applyDamage(p, boss, d);
+        }
+        p.setHealth(p.getMaxHealth());
+        return d;
+    }
+
+    private static void kill(ServerPlayer p, Mob m) {
+        for (int i = 0; i < 4 && m.isAlive(); i++) {
+            CombatHandler.applyDamage(p, m, (int) Math.ceil(m.getHealth()) + 1);
+        }
+        if (m.isAlive()) {
+            m.kill();
+        }
+    }
+
+    // ------------------------------------------------------------------ The Nightmare / Phosani's Nightmare
+
+    static String nightmare(DataBossEntity boss, ServerPlayer p) {
+        if (!(boss.script() instanceof NightmareScript n)) {
+            throw new IllegalStateException("no Nightmare script");
+        }
+        boolean phosani = n.phosani();
+        String id = boss.def().id;
+        PlayerData data = Players.data(p);
+        int kcBefore = data.killCount(id);
+        tick = ActionManager.gameTick();
+        n.selfTestQuiet = true;
+        List<String> log = new ArrayList<>();
+        try {
+            check(n.stage == NightmareScript.Stage.ASLEEP && !n.isVulnerable(boss), "not asleep when disturbed (" + n.stage + ")");
+            check(boss.modifyIncoming(p, 50, AttackType.SLASH) == 0, "hurt while asleep");
+            int slept = 0;
+            while (n.stage == NightmareScript.Stage.ASLEEP && slept < 80) {
+                step(boss, p, 1);
+                slept++;
+            }
+            int wake = phosani ? NightmareRules.PHOSANI_WAKE_TICKS : NightmareRules.NIGHTMARE_WAKE_TICKS;
+            check(n.stage == NightmareScript.Stage.SHIELD && slept == wake, "woke after " + slept + " ticks (expected " + wake + "), " + n.stage);
+            check(n.shieldMax == NightmareRules.shield(phosani, n.players), "shield " + n.shieldMax);
+            log.add("woke @" + slept + " (" + n.players + "p, shield " + n.shieldMax + ", totems " + n.totemCharge + ")");
+            if (phosani) {
+                for (int i = 1; i < n.sets.size(); i++) {
+                    check(n.sets.get(i).a() != n.sets.get(i - 1).a(), "special sets don't alternate: " + n.sets);
+                }
+                log.add("sets " + n.sets);
+            }
+            for (int phase = 0; phase < NightmareRules.SHIELD_PHASES; phase++) {
+                check(n.phase == phase && n.stage == NightmareScript.Stage.SHIELD, "phase " + n.phase + " " + n.stage + " (expected " + phase + ")");
+                List<Special> specials = phosani ? n.sets.get(phase).specials() : NightmareRules.nightmareSpecials(phase);
+                List<String> did = new ArrayList<>();
+                for (Special s : specials) {
+                    did.add(special(boss, p, n, s));
+                }
+                // The shield, broken by the player's hits; her bar falls with it.
+                float before = boss.getHealth();
+                int hits = 0;
+                while (n.stage == NightmareScript.Stage.SHIELD && hits < 300) {
+                    hurt(boss, p, 97, AttackType.CRUSH);
+                    hits++;
+                }
+                check(n.stage == NightmareScript.Stage.TOTEMS, "shield not broken after " + hits + " hits (" + n.shieldLeft + " left)");
+                check(boss.getHealth() < before, "her health didn't fall with her shield (" + before + " -> " + boss.getHealth() + ")");
+                check(!n.isVulnerable(boss) && boss.modifyIncoming(p, 50, AttackType.SLASH) == 0, "hurt while the totems are up");
+                check(n.totems.size() == NightmareRules.TOTEMS, n.totems.size() + " totems");
+                // A ring of recoil or Vengeance off her hits while she is immune can't end her (her health is what is
+                // left to deal to her, 1 once the last shield is down): only the totems' blast does.
+                float immune = boss.getHealth();
+                CombatHandler.applyDamage(p, boss, (int) Math.ceil(immune) + 5);
+                check(boss.isAlive() && n.stage == NightmareScript.Stage.TOTEMS, "a reflected hit killed her while the totems were up ("
+                        + n.stage + ")");
+                step(boss, p, 1);
+                check(Math.abs(boss.getHealth() - immune) <= 1f, "her health didn't come back after a reflected hit (" + immune + " -> "
+                        + boss.getHealth() + ")");
+                Mob first = n.totems.get(0);
+                boolean xpBefore = com.runecraft.skill.XpService.allowed(p, com.runecraft.osrs.Skill.MAGIC);
+                int magic = n.totemDamage(p, first, AttackType.MAGIC, 10);
+                // Charging a totem gives no real combat experience (OSRS: fake XP drops).
+                check(!com.runecraft.skill.XpService.allowed(p, com.runecraft.osrs.Skill.MAGIC)
+                        && !com.runecraft.skill.XpService.allowed(p, com.runecraft.osrs.Skill.HITPOINTS)
+                        && com.runecraft.skill.XpService.allowed(p, com.runecraft.osrs.Skill.PRAYER) == xpBefore,
+                        "charging a totem gives combat experience");
+                int melee = n.totemDamage(p, first, AttackType.CRUSH, 10);
+                NightmareScript.CHARGING.remove(p.getUUID());
+                check(com.runecraft.skill.XpService.allowed(p, com.runecraft.osrs.Skill.MAGIC) == xpBefore,
+                        "combat experience still withheld after the totem hit");
+                check(magic == 2 * melee && melee > 0, "magic doesn't charge twice as fast (" + magic + " vs " + melee + ")");
+                for (Mob t : new ArrayList<>(n.totems)) {
+                    int guard = 0;
+                    while (t.isAlive() && guard++ < 200) {
+                        CombatHandler.applyDamage(p, t, n.totemDamage(p, t, AttackType.MAGIC, 40));
+                    }
+                }
+                NightmareScript.CHARGING.remove(p.getUUID());
+                step(boss, p, 1);
+                if (!phosani && phase == NightmareRules.SHIELD_PHASES - 1) {
+                    check(!boss.isAlive(), "the third blast didn't kill her (" + n.stage + ")");
+                    log.add("p" + (phase + 1) + " " + did + ", shield in " + hits + " hits, killed by the totems");
+                    break;
+                }
+                check(n.phase == phase + 1, "the totems' blast didn't end the phase (" + n.phase + ", " + n.stage + ")");
+                String walkers = "";
+                if (NightmareRules.sleepwalkersAfter(phosani, phase + 1)) {
+                    int expected = NightmareRules.sleepwalkers(phosani, phase + 1, n.players);
+                    check(n.stage == NightmareScript.Stage.WALKERS && n.walkers.size() == expected,
+                            n.walkers.size() + " sleepwalkers, expected " + expected + " (" + n.stage + ")");
+                    for (Mob w : new ArrayList<>(n.walkers)) {
+                        kill(p, w);
+                    }
+                    step(boss, p, 1);
+                    walkers = ", " + expected + " sleepwalkers killed";
+                }
+                log.add("p" + (phase + 1) + " " + did + ", shield in " + hits + " hits, totems" + walkers);
+            }
+            if (phosani) {
+                check(n.stage == NightmareScript.Stage.DESPERATION && n.isVulnerable(boss)
+                        && n.desperationLeft == NightmareRules.PHOSANI_DESPERATION_HEALTH, "no desperation phase (" + n.stage + ")");
+                step(boss, p, 4);
+                check(!n.walkers.isEmpty(), "no sleepwalker in her desperation phase");
+                for (Mob w : new ArrayList<>(n.walkers)) {
+                    kill(p, w);
+                }
+                int hits = 0;
+                while (boss.isAlive() && hits < 20) {
+                    hurt(boss, p, 60, AttackType.CRUSH);
+                    hits++;
+                }
+                check(!boss.isAlive(), "desperation phase not ended in 20 hits (" + n.desperationLeft + " left)");
+                log.add("desperation in " + hits + " hits");
+            }
+            int kc = data.killCount(id) - kcBefore;
+            check(kc == 1, "kill count +" + kc);
+            return String.join("; ", log) + ", kc +1";
+        } finally {
+            n.selfTestQuiet = false;
+            NightmareScript.CURSED.remove(p.getUUID());
+            NightmareScript.CHARGING.remove(p.getUUID());
+            NightmareScript.CURED.remove(p.getUUID());
+            NightmareScript.SLOWED.remove(p.getUUID());
+            BossFx.unstun(p);
+        }
+    }
+
+    /** Does one of her specials and checks what it must do; returns a short note. */
+    private static String special(DataBossEntity boss, ServerPlayer p, NightmareScript n, Special s) {
+        PlayerData data = Players.data(p);
+        switch (s) {
+            case GRASPING_CLAWS -> {
+                n.graspingClaws(boss, p);
+                step(boss, p, NightmareRules.CLAWS_DELAY);
+                return "claws";
+            }
+            case HUSKS -> {
+                n.husks(boss, p);
+                check(n.husks.size() == NightmareRules.HUSKS && n.husks.stream().allMatch(Mob::isAlive), n.husks.size() + " husks");
+                step(boss, p, 3); // they bind the player and attack
+                check(p.hasEffect(MobEffects.MOVEMENT_SLOWDOWN), "the husks didn't bind the player");
+                for (Mob h : new ArrayList<>(n.husks)) {
+                    kill(p, h);
+                }
+                step(boss, p, 1);
+                check(n.husks.isEmpty() && !p.hasEffect(MobEffects.MOVEMENT_SLOWDOWN), "still bound after the husks died");
+                return "husks";
+            }
+            case CORPSE_FLOWERS -> {
+                hurt(boss, p, 150, AttackType.CRUSH); // a dent in the shield the flowers can heal
+                n.corpseFlowers(boss);
+                step(boss, p, NightmareRules.FLOWER_BLOOM_TICKS + 1);
+                check(n.flowersBloomed(), "the corpse flowers didn't bloom");
+                // The player's quadrant made the one opposite the safe one: their attacks heal her instead.
+                Vec3 c = boss.position();
+                int q = NightmareRules.quadrant(p.getX() - c.x, p.getZ() - c.z);
+                n.flowerSafe = (q + 2) % 4;
+                int shield = n.shieldLeft;
+                int took = boss.modifyIncoming(p, 30, AttackType.CRUSH);
+                check(took == 0 && n.shieldLeft >= shield, "an attack from a berry quadrant hurt her (" + shield + " -> " + n.shieldLeft + ")");
+                n.flowerTicks = 0;
+                n.clawChain = 0;
+                step(boss, p, 1);
+                return "flowers";
+            }
+            case CURSE -> {
+                data.setPrayerPoints(Math.max(data.prayerPoints(), 50));
+                data.activePrayers().clear();
+                n.curse(boss, p);
+                check(NightmareScript.CURSED.containsKey(p.getUUID()), "not cursed");
+                PrayerService.toggle(p, Prayer.PROTECT_FROM_MELEE);
+                boolean shuffled = data.isActive(Prayer.PROTECT_FROM_MAGIC) && !data.isActive(Prayer.PROTECT_FROM_MELEE);
+                PrayerService.toggle(p, Prayer.PROTECT_FROM_MELEE); // off again
+                check(shuffled, "the curse didn't turn Protect from Melee into Protect from Magic (" + data.activePrayers() + ")");
+                // Five of her attacks lift it.
+                var ranged = n.phosani() ? com.runecraft.osrs.content.bosses.MinigameBosses.PHOSANI_RANGED
+                        : com.runecraft.osrs.content.bosses.MinigameBosses.NIGHTMARE_RANGED;
+                for (int i = 0; i < NightmareRules.CURSE_ATTACKS; i++) {
+                    check(NightmareScript.CURSED.containsKey(p.getUUID()), "the curse wore off after " + i + " attacks");
+                    n.perform(boss, p, ranged);
+                }
+                check(!NightmareScript.CURSED.containsKey(p.getUUID()), "the curse outlasted five attacks");
+                // Out of her dream (walked or teleported off, dead, logged out) the curse lets go, and so does her loot.
+                n.curse(boss, p);
+                Vec3 at = p.position();
+                p.setPos(at.x + NightmareScript.FIGHT_RADIUS + 16, at.y, at.z);
+                boolean away = !NightmareScript.inFight(boss, p);
+                PrayerService.toggle(p, Prayer.PROTECT_FROM_MELEE);
+                boolean freed = data.isActive(Prayer.PROTECT_FROM_MELEE) && !NightmareScript.CURSED.containsKey(p.getUUID());
+                String prayers = data.activePrayers().toString();
+                p.setPos(at.x, at.y, at.z);
+                data.activePrayers().clear();
+                check(away, "a player " + (int) (NightmareScript.FIGHT_RADIUS + 16) + " blocks away still counts as in her dream");
+                check(freed, "the curse still shuffled the prayers of a player who left her dream (" + prayers + ")");
+                // Nor does it outlast its time limit.
+                n.curse(boss, p);
+                NightmareScript.CURSED.computeIfPresent(p.getUUID(), (k, c) -> new NightmareScript.Curse(c.boss(), c.attacksLeft(),
+                        ActionManager.gameTick() - 1));
+                PrayerService.toggle(p, Prayer.PROTECT_FROM_MELEE);
+                boolean expired = data.isActive(Prayer.PROTECT_FROM_MELEE) && !NightmareScript.CURSED.containsKey(p.getUUID());
+                data.activePrayers().clear();
+                check(expired, "the curse outlasted its time limit");
+                step(boss, p, NightmareRules.RANGED_WIND_UP);
+                return "curse";
+            }
+            case PARASITES -> {
+                hurt(boss, p, 200, AttackType.CRUSH);
+                n.parasites(boss, p);
+                check(n.impregnated.containsKey(p.getUUID()), "no parasite on the player");
+                com.runecraft.content.skilling.ItemHooks.DISEASE_CURE.forEach(l -> l.accept(p)); // a sanfew serum dose
+                step(boss, p, BossMechanics.PARASITE_BURST_TICKS);
+                check(n.parasites.size() == 1 && n.parasites.get(0).weakened(), n.parasites.size() + " parasites after the burst");
+                Mob parasite = n.parasites.get(0).mob();
+                int hp = Math.round(parasite.getMaxHealth());
+                if (!n.phosani()) {
+                    check(hp == NightmareRules.parasiteHitpoints(false, true, 0), "weakened parasite with " + hp + " hp");
+                } else {
+                    check(hp == NightmareRules.parasiteHitpoints(true, true, 0), "Phosani's weakened parasite with " + hp + " hp");
+                }
+                int shield = n.shieldLeft;
+                step(boss, p, BossMechanics.PARASITE_HEAL_INTERVAL);
+                check(n.shieldLeft > shield, "the parasite didn't heal her shield (" + shield + " -> " + n.shieldLeft + ")");
+                kill(p, parasite);
+                return "parasite (" + hp + " hp)";
+            }
+            case SURGE -> {
+                n.surge(boss);
+                Vec3 from = boss.position();
+                step(boss, p, NightmareRules.SURGE_WIND_UP);
+                check(boss.position().distanceToSqr(from) > 12 * 12, "she didn't surge across the arena");
+                return "surge";
+            }
+            case SPORES -> {
+                n.placeSpores(boss);
+                check(n.spores.size() == BossMechanics.SPORES, n.spores.size() + " spores");
+                n.burstSpore(boss, p, p.position());
+                check(n.weary(p), "a burst spore didn't make the player weary");
+                n.spores.clear();
+                n.clawChain = 0;
+                return "spores";
+            }
+            default -> {
+                return s.name();
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ The Phantom Muspah
+
+    static String muspah(DataBossEntity boss, ServerPlayer p) {
+        if (!(boss.script() instanceof MuspahScript m)) {
+            throw new IllegalStateException("no Muspah script");
+        }
+        PlayerData data = Players.data(p);
+        var sp = com.runecraft.content.systems.SysState.of(p);
+        int kcBefore = data.killCount("phantom_muspah");
+        boolean hadSmite = data.activePrayers().contains(Prayer.SMITE);
+        tick = ActionManager.gameTick();
+        List<String> log = new ArrayList<>();
+        try {
+            step(boss, p, 1);
+            check(m.stage == MuspahScript.Stage.FORMS && m.form == m.spawnForm && m.spawnForm != null, "spawned in " + m.form);
+            MuspahRules.Form first = m.form;
+            // Its first swap: the form's damage (100 ranged, 80 melee).
+            int need = first == MuspahRules.Form.RANGED ? MuspahRules.RANGED_FORM_DAMAGE : MuspahRules.MELEE_FORM_DAMAGE;
+            for (int i = 0; i < 4 && m.form == first; i++) {
+                hurt(boss, p, need / 4 + 1, AttackType.RANGED);
+            }
+            check(m.form != first && m.swapped, "no swap after " + need + " damage in its " + first + " form");
+            long under = BossMechanics.tile(p.getBlockX(), p.getBlockZ());
+            check(m.erupting.containsKey(under), "no spike marked under the player on the swap");
+            step(boss, p, MuspahRules.SPIKE_ERUPT_TICKS);
+            check(m.spikes.contains(under), "the marked spike didn't erupt");
+            m.spikes.remove(under); // the player stands there; the walk goes on without the spike
+            // Its second swap needs four separate hits as well.
+            // (105 damage in four hits keeps it above 637, where its first special would come first)
+            MuspahRules.Form second = m.form;
+            hurt(boss, p, 60, AttackType.MAGIC);
+            check(m.form == second, "swapped again after a single hit");
+            for (int i = 0; i < 3; i++) {
+                hurt(boss, p, 15, AttackType.MAGIC);
+            }
+            check(m.form != second, "no swap after four hits and the form's damage");
+            log.add("spawned " + first + ", swapped twice, spike under the player");
+            // Both specials.
+            for (int s = 0; s < 2; s++) {
+                int threshold = s == 0 ? MuspahRules.FIRST_SPECIAL_HP : MuspahRules.SECOND_SPECIAL_HP;
+                int guard = 0;
+                while (m.specialsDone == s && guard++ < 60) {
+                    if (m.stage == MuspahScript.Stage.FORMS) {
+                        hurt(boss, p, Math.max(1, Math.min(60, (int) boss.getHealth() - threshold)), AttackType.RANGED);
+                    }
+                    step(boss, p, 1);
+                }
+                MuspahRules.Special special = MuspahRules.special(s, m.spawnForm);
+                check(m.specialsDone == s + 1, "special " + (s + 1) + " not used at " + threshold + " (" + boss.getHealth() + " health)");
+                if (special == MuspahRules.Special.LIGHTNING_CLOUDS) {
+                    check(m.stage == MuspahScript.Stage.CLOUDS, "no lightning clouds (" + m.stage + ")");
+                    step(boss, p, 2);
+                    check(p.hasEffect(MobEffects.DARKNESS), "the arena didn't darken");
+                    int t = 0;
+                    while (m.stage == MuspahScript.Stage.CLOUDS && t++ < 40) {
+                        step(boss, p, 1);
+                    }
+                    check(m.stage == MuspahScript.Stage.FORMS, "the clouds never ended");
+                    log.add("lightning clouds @" + threshold);
+                } else {
+                    check(m.homing.size() >= MuspahRules.HOMING_MIN && m.homing.size() <= MuspahRules.HOMING_MAX,
+                            m.homing.size() + " homing spikes");
+                    int[] h = m.homing.get(0);
+                    double d0 = Math.hypot(h[0] - p.getBlockX(), h[1] - p.getBlockZ());
+                    step(boss, p, 2 * MuspahRules.HOMING_STEP_TICKS);
+                    if (!m.homing.isEmpty()) {
+                        int[] h2 = m.homing.get(0);
+                        check(Math.hypot(h2[0] - p.getBlockX(), h2[1] - p.getBlockZ()) < d0 || h2 != h, "the homing spikes didn't move");
+                    }
+                    step(boss, p, MuspahRules.HOMING_TICKS);
+                    check(m.homing.isEmpty(), "the homing spikes didn't harden");
+                    log.add("homing spikes @" + threshold);
+                }
+            }
+            // Below 127: the shockwave, which a spike between it and the player stops.
+            int guard = 0;
+            while (m.stage != MuspahScript.Stage.SHOCKWAVE && guard++ < 60) {
+                if (m.stage == MuspahScript.Stage.FORMS) {
+                    hurt(boss, p, Math.max(1, Math.min(60, (int) boss.getHealth() - MuspahRules.SHIELD_BELOW + 1)), AttackType.RANGED);
+                }
+                step(boss, p, 1);
+            }
+            check(m.stage == MuspahScript.Stage.SHOCKWAVE, "no shockwave below " + MuspahRules.SHIELD_BELOW + " (" + m.stage + ")");
+            int cx = boss.getBlockX();
+            int cz = boss.getBlockZ();
+            int half = (int) Math.ceil(boss.getBbWidth() / 2);
+            m.spikes.removeIf(t -> t == BossMechanics.tile(p.getBlockX(), p.getBlockZ()));
+            for (long t : MuspahRules.line(cx, cz, p.getBlockX(), p.getBlockZ())) {
+                int x = (int) (t >> 32);
+                int z = (int) t;
+                if (Math.max(Math.abs(x - cx), Math.abs(z - cz)) > half && (x != p.getBlockX() || z != p.getBlockZ())) {
+                    m.spikes.add(t);
+                    break;
+                }
+            }
+            check(MuspahRules.sheltered(m.spikes, cx, cz, p.getBlockX(), p.getBlockZ(), half), "the spike doesn't shelter the player");
+            step(boss, p, MuspahRules.SHOCKWAVE_WIND_UP);
+            check(m.stage == MuspahScript.Stage.SHIELDED && m.shield() == BossMechanics.MUSPAH_SHIELD, "no prayer shield after the shockwave ("
+                    + m.stage + ")");
+            log.add("shockwave behind a spike");
+            // Immune while shielded: Vengeance or a ring of recoil off its hits can't hurt it, let alone kill it.
+            float shielded = boss.getHealth();
+            CombatHandler.applyDamage(p, boss, (int) Math.ceil(shielded) + 10);
+            check(boss.isAlive() && m.stage == MuspahScript.Stage.SHIELDED, "a reflected hit killed it through its shield (" + m.stage + ")");
+            step(boss, p, 1);
+            check(boss.getHealth() >= shielded - 0.5f, "a reflected hit hurt it through its shield (" + shielded + " -> " + boss.getHealth() + ")");
+            // The shield: Smite and a corruption spell drain it beyond its 2 an attack.
+            data.activePrayers().add(Prayer.SMITE);
+            int absorbed = boss.modifyIncoming(p, 20, AttackType.RANGED);
+            int afterSmite = m.shield();
+            int expected = BossMechanics.MUSPAH_SHIELD - BossMechanics.MUSPAH_SHIELD_PER_ATTACK - BossMechanics.muspahSmiteDrain(20);
+            check(absorbed == 0 && afterSmite <= expected, "Smite hit: took " + absorbed + ", shield " + afterSmite + " (expected <= " + expected + ")");
+            data.activePrayers().remove(Prayer.SMITE);
+            sp.corruptionPending = 2;
+            sp.corruptionPendingUntil = com.runecraft.content.systems.SysTicks.now() + 100;
+            boss.modifyIncoming(p, 0, AttackType.MAGIC);
+            int afterCorruption = m.shield();
+            check(afterSmite - afterCorruption == BossMechanics.MUSPAH_SHIELD_PER_ATTACK + BossMechanics.muspahCorruptionDrain(true),
+                    "Greater Corruption drained " + (afterSmite - afterCorruption) + " of the shield");
+            check(m.drains.containsAll(java.util.Set.of(BossMechanics.DRAIN_SMITE, BossMechanics.DRAIN_CORRUPTION)), "drain sources " + m.drains);
+            int hits = 0;
+            while (m.stage == MuspahScript.Stage.SHIELDED && hits++ < 60) {
+                boss.modifyIncoming(p, 10, AttackType.RANGED);
+            }
+            check(m.stage == MuspahScript.Stage.POST, "the shield never broke (" + m.shield() + " left)");
+            check(!m.erupting.isEmpty() || !m.spikes.isEmpty(), "no spikes when the shield shattered");
+            log.add("shield 75 -> " + afterSmite + " (Smite) -> " + afterCorruption + " (Greater Corruption) -> broken");
+            hits = 0;
+            while (boss.isAlive() && hits++ < 40) {
+                hurt(boss, p, 60, AttackType.RANGED);
+            }
+            check(!boss.isAlive(), "not killed after its shield (" + boss.getHealth() + " health)");
+            int kc = data.killCount("phantom_muspah") - kcBefore;
+            check(kc == 1, "kill count +" + kc);
+            // A frozen cache from its unique table opens into one roll of its own table.
+            int caches = com.runecraft.util.Inv.count(p, MuspahRules.FROZEN_CACHE);
+            com.runecraft.util.Inv.give(p, MuspahRules.FROZEN_CACHE, 1);
+            String got = MuspahScript.openCache(p);
+            check(got != null && (got.equals(MuspahRules.FROZEN_CACHE) || com.runecraft.util.Inv.count(p, MuspahRules.FROZEN_CACHE) == caches),
+                    "the frozen cache didn't open (" + got + ")");
+            log.add("frozen cache gave " + got);
+            return String.join("; ", log) + ", kc +1";
+        } finally {
+            if (!hadSmite) {
+                data.activePrayers().remove(Prayer.SMITE);
+            }
+            sp.corruptionPending = 0;
+            p.removeEffect(MobEffects.DARKNESS);
+        }
+    }
+}

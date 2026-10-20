@@ -11,14 +11,20 @@ public final class BossSelfTests {
     private BossSelfTests() {
     }
 
-    /** The Nightmare's parasites: weakened by a cure, heal her while they live. */
-    public static String nightmareParasites(DataBossEntity boss, ServerPlayer p) {
-        return EncounterScripts.selfTestNightmare(boss, p);
+    /**
+     * The Nightmare or Phosani's Nightmare walked through her phases ({@code boss:walk:<id>}): asleep, then each phase's
+     * shield, specials, totems, blast and sleepwalkers, Phosani's desperation phase, the kill and its loot.
+     */
+    public static String nightmareWalk(DataBossEntity boss, ServerPlayer p) {
+        return NightmareMuspahWalks.nightmare(boss, p);
     }
 
-    /** The Phantom Muspah's prayer shield drains (Smite, corruption) and spikes. */
-    public static String muspahShield(DataBossEntity boss, ServerPlayer p) {
-        return EncounterScripts.selfTestMuspah(boss, p);
+    /**
+     * The Phantom Muspah walked through its fight ({@code boss:walk:phantom_muspah}): form swaps and their spikes, both
+     * specials, the shockwave behind a spike, the prayer shield and its drains, the spikes after it, the kill.
+     */
+    public static String muspahWalk(DataBossEntity boss, ServerPlayer p) {
+        return NightmareMuspahWalks.muspah(boss, p);
     }
 
     /** Araxxor's nine eggs: hatching order and destroyed eggs. */
@@ -72,6 +78,10 @@ public final class BossSelfTests {
         }
         if (boss.script() instanceof ClassicScripts.Zalcano) {
             return ClassicScripts.selfTestAssistZalcano(boss, p);
+        }
+        if (boss.script() instanceof NightmareScript n && n.stage == NightmareScript.Stage.ASLEEP) {
+            n.wake(boss); // disturbed: no need to wait out her sleep
+            return "woke her";
         }
         return null;
     }

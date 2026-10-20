@@ -50,7 +50,7 @@ public final class BossLoot {
             Map.entry("vetion", Set.of("skeleton_champion_scroll")),
             Map.entry("calvarion", Set.of("skeleton_champion_scroll")),
             Map.entry("chaos_elemental", Set.of("weapon_poison_plus_plus")),
-            Map.entry("phosanis_nightmare", Set.of("parasitic_egg")),
+            Map.entry("phosanis_nightmare", Set.of("parasitic_egg", "slepey_tablet")),
             Map.entry("sarachnis", Set.of("giant_egg_sac_full")),
             Map.entry("scurrius", Set.of("scurrius_spine")),
             Map.entry("skotizo", Set.of("dark_claw", "dark_totem_base", "dark_totem_middle", "dark_totem_top", "dark_totem")));
@@ -63,9 +63,12 @@ public final class BossLoot {
 
     /**
      * Lines of a multi-roll boss that make a table of their own, rolled once a kill (their rarity is per kill): a hit takes the
-     * place of {@code takes} of the kill's main rolls.
+     * place of {@code takes} of the kill's main rolls; one of the {@code alone} items comes with no main roll at all.
      */
-    private record Once(Set<String> items, int takes) {
+    private record Once(Set<String> items, int takes, Set<String> alone) {
+        Once(Set<String> items, int takes) {
+            this(items, takes, Set.of());
+        }
     }
 
     private static final Map<String, Once> ONCE = Map.of(
@@ -74,9 +77,9 @@ public final class BossLoot {
                     "hydra_claw", "dragon_thrownaxe"), 1),
             // Wiki pre-roll, rolled once beside the two rolls; a hit taking a roll as the Hydra's does // approx
             "shellbane_gryphon", new Once(Set.of("belles_folly_tarnished"), 1),
-            // Wiki: "In addition to the unique drops, the player will also have two rolls on the secondary drop table" (a
-            // Venator shard alone should leave out the rest // approx).
-            "phantom_muspah", new Once(Set.of("ancient_essence", "ancient_icon", "venator_shard"), 0));
+            // Wiki: "In addition to the unique drops, the player will also have two rolls on the secondary drop table. If the
+            // player gets a Venator shard, they will not get any other drop."
+            "phantom_muspah", new Once(Set.of("ancient_essence", "frozen_cache", "ancient_icon", "venator_shard"), 0, Set.of("venator_shard")));
 
     private BossLoot() {
     }
@@ -154,7 +157,13 @@ public final class BossLoot {
             int before = out.size();
             sample(own, 1, nextInt, out);
             if (out.size() > before) {
-                r -= ONCE.get(bossId).takes();
+                Once o = ONCE.get(bossId);
+                r -= o.takes();
+                for (int i = before; i < out.size(); i++) {
+                    if (o.alone().contains(out.get(i).item())) {
+                        r = 0;
+                    }
+                }
             }
         }
         if (r > 0) {

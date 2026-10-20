@@ -100,7 +100,7 @@ class CombatAchievementsTest {
 
     @Test
     void awakenedAndDelveTasksAreTracked() {
-        assertEquals(611, CombatAchievements.tasks().stream().filter(t -> t.track() != Track.UNTRACKED).count());
+        assertEquals(612, CombatAchievements.tasks().stream().filter(t -> t.track() != Track.UNTRACKED).count());
         for (int id : new int[]{490, 499, 508, 517, 610, 611, 612, 616, 617, 618, 619, 621, 622, 623}) {
             assertTrue(CombatAchievements.task("ca_" + id).track() != Track.UNTRACKED, "ca_" + id);
         }
@@ -151,6 +151,39 @@ class CombatAchievementsTest {
         assertTrue(CombatAchievementRules.meets(CombatAchievements.task("ca_482").rule(), f));
         assertTrue(CombatAchievementRules.meets(CombatAchievements.task("ca_481").rule(), f));
         assertFalse(CombatAchievementRules.meets(CombatAchievements.task("ca_406").rule(), f));
+    }
+
+    @Test
+    void nightmareAndMuspahTasksFollowTheirMechanics() {
+        for (int id : new int[]{188, 403, 407, 483, 484}) {
+            assertTrue(CombatAchievements.task("ca_" + id).track() != Track.UNTRACKED, "ca_" + id);
+        }
+        // Phantom Muspah Manipulator: no damage (Walk Straight Pray True), surrounded by spikes, no running.
+        String manipulator = CombatAchievements.task("ca_484").rule();
+        CombatAchievementRules.Metrics m = new CombatAchievementRules.Metrics();
+        assertFalse(CombatAchievementRules.meets(manipulator, m));
+        m.flags.add(com.runecraft.osrs.content.bosses.BossMechanics.FLAG_MUSPAH_SURROUNDED);
+        assertTrue(CombatAchievementRules.meets(manipulator, m));
+        m.ran = true;
+        assertFalse(CombatAchievementRules.meets(manipulator, m));
+        m.ran = false;
+        m.took(new CombatAchievementRules.Hit(true, "phantom_muspah", "ice_shard", com.runecraft.osrs.AttackType.RANGED, 12, false));
+        assertFalse(CombatAchievementRules.meets(manipulator, m));
+        // Perfect Nightmare: corpse flowers fail it; a hit through the right prayer (20% of it) doesn't.
+        String perfect = CombatAchievements.task("ca_188").rule();
+        CombatAchievementRules.Metrics n = new CombatAchievementRules.Metrics();
+        n.took(new CombatAchievementRules.Hit(true, "the_nightmare", "dream_blast", com.runecraft.osrs.AttackType.MAGIC, 6, true));
+        assertTrue(CombatAchievementRules.meets(perfect, n));
+        n.took(new CombatAchievementRules.Hit(true, "the_nightmare", "corpse_flowers", null, 14, true));
+        assertFalse(CombatAchievementRules.meets(perfect, n));
+        // Perfect Phosani's Nightmare: any sleepwalker reaching her fails it, not only in her desperation phase.
+        String perfectPhosani = CombatAchievements.task("ca_403").rule();
+        CombatAchievementRules.Metrics q = new CombatAchievementRules.Metrics();
+        q.took(new CombatAchievementRules.Hit(true, "phosanis_nightmare", "power_blast", null, 5, false));
+        q.took(new CombatAchievementRules.Hit(false, "husk", "husk", com.runecraft.osrs.AttackType.MAGIC, 8, false));
+        assertTrue(CombatAchievementRules.meets(perfectPhosani, q));
+        q.flags.add(com.runecraft.osrs.content.bosses.BossMechanics.FLAG_PHOSANI_SLEEPWALKER_ANY);
+        assertFalse(CombatAchievementRules.meets(perfectPhosani, q));
     }
 
     @Test

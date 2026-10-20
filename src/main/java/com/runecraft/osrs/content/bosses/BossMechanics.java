@@ -44,6 +44,8 @@ public final class BossMechanics {
     public static final String FLAG_TITANS_CHARGE_KILL = "titans_charge_kill";
     /** Phosani's Nightmare: a sleepwalker reached her during the desperation phase ("Dreamland Express"). */
     public static final String FLAG_PHOSANI_SLEEPWALKER = "phosani_sleepwalker_reached";
+    /** Phosani's Nightmare: a sleepwalker reached her in any phase ("Perfect Phosani's Nightmare"). */
+    public static final String FLAG_PHOSANI_SLEEPWALKER_ANY = "phosani_sleepwalker_any";
     /** Bryophyta: all three growthlings of a batch died within 3 seconds of the first ("Quick Cutter"). */
     public static final String FLAG_BRYOPHYTA_QUICK_CUT = "bryophyta_quick_cut";
     /** Obor: his knockback pushed the player back more than one square ("Back to the Wall"). */
@@ -56,6 +58,8 @@ public final class BossMechanics {
             "slam", "larva", "fire_wall", "icicle_wall", "elemental_blast", "elemental_explosion", "sleepwalker", "power_blast",
             "bleed", "strangle", "burn", "knockback", "parasite_burst", "spike", "weakened_parasite_burst", "tail_shockwave", "spore", "explosion",
             "ruptura_explosion", "rock_explosion", "zalcano_shockwave", "pebbles", "under_zalcano",
+            // The Nightmare's corpse flowers and husks, the Phantom Muspah's lightning clouds and shockwave
+            "corpse_flowers", "husk", "lightning_cloud", "shockwave",
             // Wilderness bosses (godwars module scripts): the Chaos Fanatic's and crazy archaeologist's specials, the trio's traps
             "green_explosion", "explosive_book", "bear_trap", "sticky_web");
 
@@ -612,16 +616,10 @@ public final class BossMechanics {
 
     /**
      * Phosani's Nightmare (OSRS Wiki): three phases of 400 shield durability, then a desperation phase of 150 health, 1,350
-     * physical damage in all. Her health bar here is that damage, so a phase ends at these percentages of it left: 70.4%,
-     * 40.7% and 11.1% (the third phase's sleepwalkers, then the desperation phase).
+     * physical damage in all (the rest of her fight: {@link NightmareRules}).
      */
     public static final int PHOSANI_PHASE_SHIELD = 400;
     public static final int PHOSANI_DESPERATION_HEALTH = 150;
-
-    public static double phosaniPhaseEnd(int phase) {
-        int total = 3 * PHOSANI_PHASE_SHIELD + PHOSANI_DESPERATION_HEALTH;
-        return 100.0 * (total - PHOSANI_PHASE_SHIELD * Math.max(1, Math.min(3, phase))) / total;
-    }
 
     /**
      * Desperation phase: one sleepwalker at a time walks in from the edge of the arena; the first reaches her about 20 ticks
@@ -680,7 +678,7 @@ public final class BossMechanics {
     /** Hitpoints of a weakened parasite (a dose of sanfew serum or relicym's balm before it bursts) and of a full one. */
     public static final int PARASITE_HP_WEAKENED = 40;
     public static final int PARASITE_HP = 80;
-    /** Each support blast restores 31-50 of the Nightmare's shield (or health here, where the shield is the totems). */
+    /** Each support blast restores 31-50 of the Nightmare's shield, or discharges the least charged totem (Phosani's: NightmareRules). */
     public static final int PARASITE_HEAL_MIN = 31;
     public static final int PARASITE_HEAL_MAX = 50;
     /** Game ticks between a parasite's support blasts (approx: the wiki only says "periodically"). */

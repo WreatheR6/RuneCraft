@@ -350,6 +350,9 @@ public final class BossItems {
                 .examine("Crush bonus is boosted by each piece of inquisitor's armour worn.");
         jar(items, "jar_of_dreams", "Jar of dreams", 0x4A2A6A);
         simple(items, "parasitic_egg", "Parasitic egg", "egg", 0x6A8A4A, 1, "A fleshy egg from Phosani's Nightmare.");
+        // Phosani's Nightmare (1/25, always by the 25th kill): used on Drakan's medallion it unlocks its Slepe teleport
+        // (systems Teleports.unlockItem). Untradeable, 75,000 value (wiki).
+        simple(items, "slepey_tablet", "Slepey tablet", "tablet", 0x7A4A9A, 75000, "Strange glowing symbols are inscribed in this tablet.");
         pet(items, "pet_little_nightmare", "Little nightmare", "The Nightmare", 0x2A2A3A);
 
         // ---------------- Phantom Muspah ----------------
@@ -358,6 +361,8 @@ public final class BossItems {
                 st(0, 0, 0, 0, 90, 0, 0, 0, 0, 0, 0, 2, 0, 0), 5, AttackType.RANGED, WeaponClass.BOW, Skill.RANGED, 80)
                 .examine("Arrows bounce to two nearby enemies.");
         simple(items, "ancient_icon", "Ancient icon", "icon", 0x9AC0E0, 1, "A relic of the Ancient Zarosian empire.");
+        // Opened (use it) for a roll on its own table (MuspahRules.CACHE_LINES; bosses module).
+        simple(items, MuspahRules.FROZEN_CACHE, "Frozen cache", "package", 0x9AD0E8, 100, "Loot that has been frozen in time.");
         items.add("ancient_essence", "Ancient essence", Kind.SIMPLE, "essence", 0x8A6AC0).value(1).stack(64000)
                 .examine("Pure essence of Zarosian magic.");
         pet(items, "pet_muphin", "Muphin", "Phantom Muspah", 0x6A7A9A);

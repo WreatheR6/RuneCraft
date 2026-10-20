@@ -207,17 +207,27 @@ class BossLootTest {
         assertTrue(mainOtherwise / (KILLS - uniqueKills) > 1.9, "two standard rolls otherwise");
     }
 
-    /** OSRS Wiki "Phantom Muspah": one roll on its unique table beside two on its secondary table. */
+    /**
+     * OSRS Wiki "Phantom Muspah": one roll on its unique table beside two on its secondary table; "If the player gets a
+     * Venator shard, they will not get any other drop."
+     */
     @Test
     void theMuspahsUniqueTableIsRolledOnce() {
         Random random = new Random(10);
         List<Drop> drops = table("phantom_muspah");
+        int shards = 0;
         for (int i = 0; i < 20_000; i++) {
             List<Drop> got = BossLoot.pick("phantom_muspah", drops, random::nextInt);
             assertTrue(got.stream().filter(d -> BossLoot.once("phantom_muspah", d)).count() <= 1, "one unique-table line a kill");
-            assertTrue(got.stream().filter(d -> !BossLoot.once("phantom_muspah", d) && !BossLoot.tertiary("phantom_muspah", d))
-                    .count() >= 2, "two secondary rolls");
+            long secondary = got.stream().filter(d -> !BossLoot.once("phantom_muspah", d) && !BossLoot.tertiary("phantom_muspah", d)).count();
+            if (got.stream().anyMatch(d -> d.item().equals("venator_shard"))) {
+                shards++;
+                assertEquals(0, secondary, "a Venator shard comes alone");
+            } else {
+                assertTrue(secondary >= 2, "two secondary rolls");
+            }
         }
+        assertEquals(1 / 100.0, shards / 20_000.0, 0.004);
     }
 
     /** Every item a boss's own tertiary or once-a-kill list names is a line of its table (no typo hides a tertiary). */

@@ -53,40 +53,68 @@ public final class MinigameBosses {
             .message("The Hunllef summons tornadoes!");
 
     // ---- The Nightmare ----
-    public static final AttackDef NIGHTMARE_MELEE = AttackDef.of("claw_swipe", AttackType.SLASH, 50, 4.5, 4); // wiki: 50 (60 vs wrong prayer)
-    public static final AttackDef NIGHTMARE_MAGIC = AttackDef.of("dream_blast", AttackType.MAGIC, 33, 14, 3) // wiki: 33
-            .telegraph(2, "The Nightmare raises her hands...").particle("minecraft:witch");
-    public static final AttackDef NIGHTMARE_RANGED = AttackDef.of("thrown_soul", AttackType.RANGED, 33, 14, 3) // wiki: 33
-            .telegraph(2, "The Nightmare winds up a throw...").particle("minecraft:soul");
-    public static final AttackDef NIGHTMARE_CLAWS = AttackDef.of("grasping_claws", AttackType.MAGIC, 50, 14, 2)
-            .special(Special.SKY_STRIKE, 0).telegraph(4, "Grasping claws reach up from the ground!").particle("minecraft:squid_ink");
-    public static final AttackDef NIGHTMARE_SPORES = AttackDef.of("spores", AttackType.MAGIC, 0, 14, 1)
-            .special(Special.FREEZE, 6).particle("minecraft:spore_blossom_air").message("You inhale the spores and feel drowsy...");
-    public static final AttackDef NIGHTMARE_SURGE = AttackDef.of("surge", AttackType.MAGIC, 60, 14, 1).special(Special.BLINK, 0)
-            .telegraph(4, "The Nightmare prepares to surge across the arena!").particle("minecraft:portal");
-    public static final AttackDef NIGHTMARE_CURSE = AttackDef.of("curse", AttackType.MAGIC, 0, 14, 1)
+    // The Nightmare script (bosses module) performs every attack itself (NightmareRules): her standard attacks after their
+    // wind-up (2 ticks melee, 3 magic and ranged), through her prayer rules (20% through the right protection prayer, 120%
+    // through a wrong one; Phosani's are blocked by the right one); her specials by phase (Phosani: by special set).
+    public static final AttackDef NIGHTMARE_MELEE = AttackDef.of("claw_swipe", AttackType.SLASH, 50, 4.5, 4) // wiki: 50 (60 vs wrong prayer)
+            .telegraph(NightmareRules.MELEE_WIND_UP, "The Nightmare charges her claws...");
+    public static final AttackDef NIGHTMARE_MAGIC = AttackDef.of("dream_blast", AttackType.MAGIC, 33, 32, 3) // wiki: 33
+            .telegraph(NightmareRules.RANGED_WIND_UP, "The Nightmare raises her hands...").particle("minecraft:witch");
+    public static final AttackDef NIGHTMARE_RANGED = AttackDef.of("thrown_soul", AttackType.RANGED, 33, 32, 3) // wiki: 33
+            .telegraph(NightmareRules.RANGED_WIND_UP, "The Nightmare winds up a throw...").particle("minecraft:soul");
+    public static final AttackDef NIGHTMARE_CLAWS = AttackDef.of("grasping_claws", AttackType.MAGIC, NightmareRules.CLAWS_MAX, 64, 2)
+            .special(Special.SKY_STRIKE, 0).telegraph(NightmareRules.CLAWS_DELAY, "Grasping claws reach up from the ground!")
+            .particle("minecraft:squid_ink");
+    public static final AttackDef NIGHTMARE_SPORES = AttackDef.of("spores", AttackType.MAGIC, 0, 64, 1)
+            .special(Special.FREEZE, 6).particle("minecraft:spore_blossom_air").message("The Nightmare scatters spores around the arena!");
+    public static final AttackDef NIGHTMARE_SURGE = AttackDef.of("surge", AttackType.MAGIC, NightmareRules.SURGE_MAX, 64, 1)
+            .special(Special.BLINK, 0).telegraph(NightmareRules.SURGE_WIND_UP, "The Nightmare prepares to surge across the arena!")
+            .particle("minecraft:portal");
+    /** Her specials that hit nothing themselves (performed by the script; not in the BossDef's attack lists). */
+    public static final AttackDef NIGHTMARE_CURSE = AttackDef.of("curse", AttackType.MAGIC, 0, 64, 1)
             .message("The Nightmare curses you, shuffling your prayers!").particle("minecraft:enchant");
+    public static final AttackDef NIGHTMARE_HUSKS = AttackDef.of("husks", AttackType.MAGIC, 0, 64, 1).special(Special.SUMMON, 0)
+            .message("The Nightmare summons husks!");
+    public static final AttackDef NIGHTMARE_PARASITES = AttackDef.of("parasites", AttackType.MAGIC, 0, 64, 1).special(Special.SUMMON, 0)
+            .message("The Nightmare spits out parasites!");
+    public static final AttackDef NIGHTMARE_FLOWERS = AttackDef.of("corpse_flowers", AttackType.MAGIC, NightmareRules.FLOWER_MAX, 64, 1)
+            .special(Special.HAZARD, 0).message("The Nightmare splits the arena with corpse flowers!");
     // Phosani's Nightmare: the right protection prayer blocks her standard attacks fully, but they hit far harder (wiki:
-    // melee 73, magic and ranged 80, the surge ~85).
-    public static final AttackDef PHOSANI_MELEE = AttackDef.of("claw_swipe", AttackType.SLASH, 73, 4.5, 4);
-    public static final AttackDef PHOSANI_MAGIC = AttackDef.of("dream_blast", AttackType.MAGIC, 80, 14, 3)
-            .telegraph(2, "Phosani's Nightmare raises her hands...").particle("minecraft:witch");
-    public static final AttackDef PHOSANI_RANGED = AttackDef.of("thrown_soul", AttackType.RANGED, 80, 14, 3)
-            .telegraph(2, "Phosani's Nightmare winds up a throw...").particle("minecraft:soul");
-    public static final AttackDef PHOSANI_SURGE = AttackDef.of("surge", AttackType.MAGIC, 85, 14, 1).special(Special.BLINK, 0) // approx (~85)
-            .telegraph(4, "Phosani's Nightmare prepares to surge across the arena!").particle("minecraft:portal");
+    // melee 73, magic and ranged 80, Grasping Claws 50-65, the surge ~85).
+    public static final AttackDef PHOSANI_MELEE = AttackDef.of("claw_swipe", AttackType.SLASH, 73, 4.5, 4)
+            .telegraph(NightmareRules.MELEE_WIND_UP, "Phosani's Nightmare charges her claws...");
+    public static final AttackDef PHOSANI_MAGIC = AttackDef.of("dream_blast", AttackType.MAGIC, 80, 32, 3)
+            .telegraph(NightmareRules.RANGED_WIND_UP, "Phosani's Nightmare raises her hands...").particle("minecraft:witch");
+    public static final AttackDef PHOSANI_RANGED = AttackDef.of("thrown_soul", AttackType.RANGED, 80, 32, 3)
+            .telegraph(NightmareRules.RANGED_WIND_UP, "Phosani's Nightmare winds up a throw...").particle("minecraft:soul");
+    public static final AttackDef PHOSANI_CLAWS = AttackDef.of("grasping_claws", AttackType.MAGIC, NightmareRules.PHOSANI_CLAWS_MAX, 64, 2)
+            .special(Special.SKY_STRIKE, 0).telegraph(NightmareRules.CLAWS_DELAY, "Grasping claws reach up around you!")
+            .particle("minecraft:squid_ink");
+    public static final AttackDef PHOSANI_SURGE = AttackDef.of("surge", AttackType.MAGIC, NightmareRules.PHOSANI_SURGE_MAX, 64, 1)
+            .special(Special.BLINK, 0) // approx (~85)
+            .telegraph(NightmareRules.SURGE_WIND_UP, "Phosani's Nightmare prepares to surge across the arena!").particle("minecraft:portal");
 
     // ---- Phantom Muspah ----
-    public static final AttackDef MUSPAH_RANGED = AttackDef.of("ice_shard", AttackType.RANGED, 33, 14, 5).particle("minecraft:snowflake");
-    /** Its charged magic attack: up to 72 and corruption, 18 Prayer over 18 s (OSRS Wiki; approx: drained at once). */
-    public static final AttackDef MUSPAH_SMITE = AttackDef.of("smite", AttackType.MAGIC, 72, 14, 2).special(Special.DRAIN_PRAYER, 18)
-            .particle("minecraft:soul_fire_flame").message("The Phantom Muspah smites you, draining your prayer!");
-    /** Melee form: up to 34 (OSRS Wiki). */
-    public static final AttackDef MUSPAH_MELEE = AttackDef.of("stomp", AttackType.CRUSH, 34, 4, 5);
-    public static final AttackDef MUSPAH_SPIKES = AttackDef.of("spikes", AttackType.CRUSH, 30, 14, 2).special(Special.SKY_STRIKE, 0)
-            .telegraph(3, "Icy spikes erupt from the ground!").particle("minecraft:snowflake");
-    public static final AttackDef MUSPAH_DARKNESS = AttackDef.of("darkness", AttackType.MAGIC, 15, 14, 1).special(Special.AOE, 14)
-            .telegraph(3, "Darkness engulfs the arena!").particle("minecraft:squid_ink");
+    // The Muspah script (bosses module) performs every attack itself (MuspahRules): forms swap by damage, its magic attack
+    // corrupts, the shielded form and after hit harder (ranged 72, magic 79) at speed 5.
+    public static final AttackDef MUSPAH_RANGED = AttackDef.of("ice_shard", AttackType.RANGED, MuspahRules.RANGED, 14, 5)
+            .particle("minecraft:snowflake");
+    /** Its charged magic attack: up to 72 (79 shielded and after) and corruption, 18 Prayer over 18 s (OSRS Wiki). */
+    public static final AttackDef MUSPAH_SMITE = AttackDef.of("smite", AttackType.MAGIC, MuspahRules.MAGIC, 14, 1)
+            .telegraph(MuspahRules.MAGIC_FLIGHT_TICKS, "The Phantom Muspah charges a purple orb!").particle("minecraft:soul_fire_flame");
+    /** Melee form: up to 34, stab (OSRS Wiki). */
+    public static final AttackDef MUSPAH_MELEE = AttackDef.of("stomp", AttackType.STAB, MuspahRules.MELEE, 4, 5);
+    /** The spikes it raises: standing on one as it erupts, or walking onto one, hurts (approx 20) and heals it. */
+    public static final AttackDef MUSPAH_SPIKES = AttackDef.of("spike", AttackType.CRUSH, BossMechanics.MUSPAH_SPIKE_MAX, 64, 1)
+            .special(Special.SKY_STRIKE, 0).telegraph(MuspahRules.SPIKE_ERUPT_TICKS, "Spikes begin to rise from the ground!")
+            .particle("minecraft:snowflake");
+    /** Lightning Clouds: it teleports around the arena (the screen dims) leaving clouds that drift across it, up to 20. */
+    public static final AttackDef MUSPAH_CLOUDS = AttackDef.of("lightning_cloud", AttackType.MAGIC, MuspahRules.LIGHTNING_CLOUD, 64, 1)
+            .special(Special.HAZARD, 0).message("The Phantom Muspah vanishes into the darkness!").particle("minecraft:electric_spark");
+    /** Below 127 health: from the centre, a shockwave over the whole arena that only spikes stop, up to 80, and corruption. */
+    public static final AttackDef MUSPAH_SHOCKWAVE = AttackDef.of("shockwave", AttackType.MAGIC, MuspahRules.SHOCKWAVE, 64, 1)
+            .special(Special.AOE, 32).telegraph(MuspahRules.SHOCKWAVE_WIND_UP, "The Phantom Muspah gathers its power - hide behind a spike!")
+            .particle("minecraft:sonic_boom");
 
     // ---- Sol Heredit ----
     // Sol's attacks are scripted (SolHereditScript, rules in minigames.SolHeredit); these carry the wiki max hits and the
@@ -159,39 +187,40 @@ public final class MinigameBosses {
     }
 
     private static BossDef nightmareBase(String id, String name, int level, int hp, AttackDef melee, AttackDef magic, AttackDef ranged,
-                                         AttackDef surge, int phase2, int phase3) {
+                                         AttackDef claws, AttackDef surge) {
+        // No BossDef phases: the script runs her shield, totem and desperation phases itself (they don't follow her health).
         return BossDef.of(id, name).level(level).stats(hp, 150, 150, 150, 150, 150).speed(6)
                 .defenceBonus(120, 180, 40, 600, 600) // wiki/DPS calc: stab 120, slash 180, crush 40, magic/ranged 600
-                .attack(melee).attack(magic).attack(ranged).attack(NIGHTMARE_CLAWS)
-                .phase(phase2, "The Nightmare's shield reforms! Charge the totems!", 1.0, false,
-                        melee, magic, ranged, NIGHTMARE_CLAWS, NIGHTMARE_SPORES, NIGHTMARE_CURSE)
-                .phase(phase3, "The Nightmare's shield reforms once more!", 1.1, false,
-                        melee, magic, ranged, NIGHTMARE_CLAWS, surge, NIGHTMARE_SPORES)
+                .attack(melee).attack(magic).attack(ranged).attack(claws).attack(surge).attack(NIGHTMARE_SPORES)
                 .at("sisterhood_sanctuary").arena(14, "crypt").size(1.4f, 3.2f, 1.8f).moveSpeed(0.2);
     }
 
     static BossDef nightmare() {
+        // Wiki drop table (BossDropsTable patches the main lines); the elite clue 1/190 is the MVP's rate (1/200 for the
+        // others), as the jar of dreams' 1/1,900. Uniques are two tables of their own (the script's loot roll). Regular
+        // bones go to every player eligible for a unique, big bones (the patch) to the MVP.
         return nightmareBase("the_nightmare", "The Nightmare", 814, 2400, NIGHTMARE_MELEE, NIGHTMARE_MAGIC, NIGHTMARE_RANGED,
-                NIGHTMARE_SURGE, 66, 33).attackBonus(140, 140, 140)
-                .drops(Drop.of("nightmare_staff", 1, 1, 400), Drop.of("inquisitors_great_helm", 1, 1, 600),
-                        Drop.of("inquisitors_hauberk", 1, 1, 600), Drop.of("inquisitors_plateskirt", 1, 1, 600),
-                        Drop.of("inquisitors_mace", 1, 1, 1200), Drop.of("eldritch_orb", 1, 1, 1200), Drop.of("harmonised_orb", 1, 1, 1200),
-                        Drop.of("volatile_orb", 1, 1, 1200), Drop.of("jar_of_dreams", 1, 1, 2000),
-                        Drop.of("rune_platebody", 1, 1, 8), Drop.of("runite_ore", 10, 10, 8), Drop.of("soul_rune", 300, 300, 8),
-                        Drop.of("coins", 30000, 80000, 4), Drop.of("clue_scroll_elite", 1, 1, 23))
+                NIGHTMARE_CLAWS, NIGHTMARE_SURGE).attackBonus(140, 140, 140)
+                .drops(Drop.always("bones"), Drop.of("nightmare_staff", 1, 1, 300), Drop.of("inquisitors_great_helm", 1, 1, 420),
+                        Drop.of("inquisitors_hauberk", 1, 1, 420), Drop.of("inquisitors_plateskirt", 1, 1, 420),
+                        Drop.of("inquisitors_mace", 1, 1, 750), Drop.of("eldritch_orb", 1, 1, 960), Drop.of("harmonised_orb", 1, 1, 960),
+                        Drop.of("volatile_orb", 1, 1, 960), Drop.of("jar_of_dreams", 1, 1, NightmareRules.JAR_MVP),
+                        Drop.of("runite_ore", 1, 16, 50), Drop.of("coins", 2291, 43958, 50),
+                        Drop.of("clue_scroll_elite", 1, 1, NightmareRules.CLUE_MVP))
                 .pet("pet_little_nightmare");
     }
 
     static BossDef phosani() {
         // Wiki/DPS calculator: level 1,024, 3,200 hitpoints. Uniques per kill: staff 69/35,000, mace 31/35,000, armour 1/700
-        // each, orbs 1/1,600 each; parasitic egg 1/200, jar 1/4,000, clue 1/35 (Mod Arcane). Commons follow the wiki's /100 table.
+        // each, orbs 1/1,600 each; parasitic egg 1/200, jar 1/4,000, clue 1/35 (Mod Arcane), Slepey tablet 1/25 (and on the
+        // 25th kill). Commons follow the wiki's /100 table.
         return nightmareBase("phosanis_nightmare", "Phosani's Nightmare", 1024, 3200, PHOSANI_MELEE, PHOSANI_MAGIC, PHOSANI_RANGED,
-                // Three 400-durability shields, then 150 health: her phases end at 70.4% and 40.7% of the bar (wiki).
-                PHOSANI_SURGE, (int) BossMechanics.phosaniPhaseEnd(1), (int) BossMechanics.phosaniPhaseEnd(2)).attackBonus(220, 220, 220)
+                PHOSANI_CLAWS, PHOSANI_SURGE).attackBonus(220, 220, 220)
                 .drops(Drop.always("big_bones"), Drop.of("nightmare_staff", 1, 1, 507), Drop.of("inquisitors_great_helm", 1, 1, 700),
                         Drop.of("inquisitors_hauberk", 1, 1, 700), Drop.of("inquisitors_plateskirt", 1, 1, 700),
                         Drop.of("inquisitors_mace", 1, 1, 1129), Drop.of("eldritch_orb", 1, 1, 1600), Drop.of("harmonised_orb", 1, 1, 1600),
                         Drop.of("volatile_orb", 1, 1, 1600), Drop.of("parasitic_egg", 1, 1, 200), Drop.of("jar_of_dreams", 1, 1, 4000),
+                        Drop.of("slepey_tablet", 1, 1, NightmareRules.SLEPEY_TABLET_RATE),
                         Drop.of("runite_ore", 11, 26, 50), Drop.of("blood_rune", 343, 765, 25), Drop.of("soul_rune", 110, 228, 25),
                         Drop.of("death_rune", 165, 305, 25), Drop.of("magic_logs", 40, 95, 25), Drop.of("shark", 13, 26, 17),
                         Drop.of("coins", 41417, 74500, 50), Drop.of("clue_scroll_elite", 1, 1, 35))
@@ -199,15 +228,18 @@ public final class MinigameBosses {
     }
 
     static BossDef muspah() {
-        return BossDef.of("phantom_muspah", "Phantom Muspah").level(541).stats(850, 150, 150, 200, 200, 200).speed(5)
-                .defenceBonus(60, 60, 60, 300, 100)
-                .attack(MUSPAH_RANGED).attack(MUSPAH_SMITE)
-                .phase(60, "The Phantom Muspah shatters its prison and charges in!", 1.0, false, MUSPAH_MELEE, MUSPAH_SPIKES)
-                .phase(30, "The Phantom Muspah surrounds itself with a frozen shield!", 1.1, false,
-                        MUSPAH_RANGED, MUSPAH_SMITE, MUSPAH_SPIKES, MUSPAH_DARKNESS)
+        // No BossDef phases: the script swaps its forms by damage, uses its specials at 637 and 425 and raises its shield
+        // below 127 (MuspahRules). Its levels and defences are the DPS calculator's (MonsterStatsTable).
+        return BossDef.of("phantom_muspah", "Phantom Muspah").level(741).stats(850, 280, 280, 200, 150, 280).speed(MuspahRules.RANGED_SPEED)
+                .defenceBonus(185, 134, 120, 437, 56)
+                .attack(MUSPAH_RANGED).attack(MUSPAH_SMITE).attack(MUSPAH_MELEE).attack(MUSPAH_CLOUDS).attack(MUSPAH_SHOCKWAVE)
+                // Wiki: one roll on its unique table (essence, frozen cache 4/100, icon, shard) beside two on its secondary table
+                // (BossDropsTable; a Venator shard comes alone: BossLoot); tertiaries hard clue 1/30, elite clue 1/45; Muphin
+                // 1/2,500 (Pets).
                 .drops(Drop.of("ancient_essence", 540, 2060, 1), Drop.of("venator_shard", 1, 1, 100), Drop.of("ancient_icon", 1, 1, 50),
-                        Drop.of("runite_ore", 5, 5, 10), Drop.of("death_rune", 200, 200, 10), Drop.of("blood_rune", 100, 100, 10),
-                        Drop.of("super_restore", 3, 3, 12), Drop.of("coins", 20000, 50000, 6), Drop.of("clue_scroll_elite", 1, 1, 23))
+                        Drop.of(MuspahRules.FROZEN_CACHE, 1, 1, 25),
+                        Drop.of("runite_ore", 5, 5, 10), Drop.of("death_rune", 200, 200, 10),
+                        Drop.of("super_restore", 3, 3, 12), Drop.of("clue_scroll_hard", 1, 1, 30), Drop.of("clue_scroll_elite", 1, 1, 45))
                 .pet("pet_muphin").at("ghorrock_dungeon").arena(14, "ice")
                 .size(1.4f, 2.6f, 1.8f).moveSpeed(0.2);
     }

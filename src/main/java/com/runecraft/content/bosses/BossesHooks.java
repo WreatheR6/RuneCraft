@@ -54,9 +54,14 @@ public final class BossesHooks implements ModuleHooks {
 
         BossScripts.register("crystalline_hunllef", () -> new EncounterScripts.Hunllef(false));
         BossScripts.register("corrupted_hunllef", () -> new EncounterScripts.Hunllef(true));
-        BossScripts.register("the_nightmare", EncounterScripts.Nightmare::new);
-        BossScripts.register("phosanis_nightmare", () -> new EncounterScripts.Nightmare(true));
-        BossScripts.register("phantom_muspah", EncounterScripts.Muspah::new);
+        BossScripts.register("the_nightmare", NightmareScript::new);
+        BossScripts.register("phosanis_nightmare", () -> new NightmareScript(true));
+        NightmareScript.register();
+        BossScripts.register("phantom_muspah", MuspahScript::new);
+        MuspahScript.register();
+        // The Phantom Muspah is fought after Secrets of the North (OSRS Wiki).
+        com.runecraft.boss.DataBossService.requirement("phantom_muspah", (player, def) -> questDone(player, "secrets_of_the_north",
+                "You need to complete Secrets of the North to fight the Phantom Muspah."));
         BossScripts.register("duke_sucellus", EncounterScripts.Duke::new);
         BossScripts.register("the_leviathan", EncounterScripts.Leviathan::new);
         BossScripts.register("the_whisperer", WhispererScript::new);
