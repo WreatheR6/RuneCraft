@@ -146,6 +146,19 @@ final class Miniquests {
         b.npc("quest_lennissa", "Lennissa", "cel_entrana_church", 0, 0, 0xD8E8F0, 0x6A2A4A, 0x4A1A2A, 0xB0A0C8);
         b.npc("quest_dhalak", "Dhalak", "cel_wizards_tower", 0, 0, 0xD8E8F0, 0x2A2A6A, 0x1A1A4A, 0xA0B0D8);
         b.npc("quest_viggora", "Viggora", "cel_rogues_castle", 0, 0, 0xD8E8F0, 0x1A1A1A, 0x0A0A0A, 0x8A1A1A);
+        // The same five ghosts at the places of the wiki's second and third sequences (the upper-floor places stand on the
+        // ground floor below them, approx). Viggora's third place is the Edgeville Dungeon's earth warrior cave (OSRS
+        // 3119, 9996), here in the dungeon's earth warrior room (NpcStoreys).
+        b.npcAt("quest_rennard_2", "Rennard", 3024, 3691, 0xD8E8F0, 0x3A3A5A, 0x2A2A3C, 0x6A6A8A); // Wilderness Bandit Camp
+        b.npcAt("quest_kharrim_2", "Kharrim", 3157, 3667, 0xD8E8F0, 0x5A3A2A, 0x3A2A1A, 0x8A8AB0); // Graveyard of Shadows
+        b.npcAt("quest_lennissa_2", "Lennissa", 3044, 3204, 0xD8E8F0, 0x6A2A4A, 0x4A1A2A, 0xB0A0C8); // Port Sarim docks
+        b.npcAt("quest_dhalak_2", "Dhalak", 3052, 3498, 0xD8E8F0, 0x2A2A6A, 0x1A1A4A, 0xA0B0D8); // Edgeville Monastery
+        b.npcAt("quest_viggora_2", "Viggora", 3448, 3550, 0xD8E8F0, 0x1A1A1A, 0x0A0A0A, 0x8A1A1A); // Slayer Tower
+        b.npcAt("quest_rennard_3", "Rennard", 3162, 2982, 0xD8E8F0, 0x3A3A5A, 0x2A2A3C, 0x6A6A8A); // desert Bandit Camp bar
+        b.npcAt("quest_kharrim_3", "Kharrim", 3068, 3858, 0xD8E8F0, 0x5A3A2A, 0x3A2A1A, 0x8A8AB0); // end of the Lava Maze
+        b.npcAt("quest_lennissa_3", "Lennissa", 2396, 3481, 0xD8E8F0, 0x6A2A4A, 0x4A1A2A, 0xB0A0C8); // south of the gnomeball field
+        b.npcAt("quest_dhalak_3", "Dhalak", 3046, 3379, 0xD8E8F0, 0x2A2A6A, 0x1A1A4A, 0xA0B0D8); // Falador Party Room
+        b.npcAt("quest_viggora_3", "Viggora", CEL_VIGGORA_3[0], CEL_VIGGORA_3[1], 0xD8E8F0, 0x1A1A1A, 0x0A0A0A, 0x8A1A1A);
         b.items(s -> s.add("ring_of_visibility", "Ring of visibility", Kind.SIMPLE, "ring", 0xC0C0E0).value(1).stack(1)
                 .examine("A ring that reveals what is hidden."));
         b.items(s -> s.add("ghostly_hood", "Ghostly hood", Kind.ARMOUR, "cowl", 0xD8E8F0).value(1).stack(1)
@@ -168,25 +181,58 @@ final class Miniquests {
                 .examine("The cloak of the Empty Lord. Right-click to wear."));
         b.gear("ghostly_cloak", QuestBook.GearSlot.CAPE, new EquipmentStats(0, 0, 0, 5, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0), null);
         String[] sight = {"ring_of_visibility", "ghostspeak_amulet"};
+        // Wiki: Valdez's hint picks one of three sequences for the whole miniquest ("pirates and a shipwreck": 1, "north-east":
+        // 2, "south-east": 3); the ghosts stand at all three places but only talk at the player's own. Saves from before the
+        // routes have no route flag and follow sequence 1 (the ghosts they already met).
+        String r1 = "cel_route1";
+        String r2 = "cel_route2";
+        String r3 = "cel_route3";
         b.quest("curse_of_the_empty_lord", "Curse of the Empty Lord (miniquest)", Difficulty.EXPERIENCED, 0)
                 .reqQuest("desert_treasure_i", "RESTLESS_GHOST").req(Skill.PRAYER, 31)
                 .stage("I can start this miniquest by speaking to the ghost Valdez at Glarial's Tomb, north-west of the Fishing Guild, while carrying "
                         + "a ring of visibility and an amulet of ghostspeak. (Requires Desert Treasure I, The Restless Ghost, 31 Prayer.)")
-                .talk("quest_valdez").need(sight).flag("cel_valdez").give("ghostly_robe_top")
-                .say("You can see me? Then hear my tale. I was carrying the Staff of Armadyl to Entrana when the thief Rennard stole it.",
-                        "Since that day I've been cursed. Take my robe... and find Rennard by the pirates' shipwreck in the Wilderness.")
+                .talk("quest_valdez").need(sight).flag("cel_valdez").flagOneOf(r1, r2, r3).give("ghostly_robe_top")
+                .say("You can see me? Then hear my tale of woe. I am Valdez, an explorer. In a buried temple I found the Staff of Armadyl, "
+                                + "and I was carrying it to Saradomin on Entrana when the thief Rennard waylaid and killed me.",
+                        "Since that day I have been cursed to walk as a ghost. Take my robe, and find Rennard.")
+                .say(VALDEZ_HINT)
                 .missing("*Something is here, but you can't see or understand it. You need a ring of visibility and an amulet of ghostspeak.*")
-                .stage("I should follow the ghosts' tale: Rennard at the shipwreck in the Wilderness, Kharrim at the Chaos Temple, "
-                        + "Lennissa in Entrana's church and Dhalak in the Wizards' Tower.")
-                .talk("quest_rennard").need(sight).stay().unlessFlag("cel_rennard").flag("cel_rennard").give("ghostly_gloves")
-                .say("I stole the staff, aye, and sold it to Kharrim. Then the curse took me too. Take these gloves; seek him at the Chaos Temple.")
-                .talk("quest_kharrim").need(sight).needFlag("cel_rennard").stay().unlessFlag("cel_kharrim").flag("cel_kharrim").give("ghostly_boots")
-                .say("The staff? I lost it to Lennissa's band. Cursed, all of us. Wear these boots and look for her on Entrana.")
-                .talk("quest_lennissa").need(sight).needFlag("cel_kharrim").stay().unlessFlag("cel_lennissa").flag("cel_lennissa").give("ghostly_robe_bottom")
-                .say("I passed it to Dhalak, the wizard, to hide. Take these robes and ask him at the Wizards' Tower.")
-                .talk("quest_dhalak").need(sight).needFlag("cel_lennissa").flag("cel_dhalak").give("ghostly_hood")
-                .say("I hid the staff from the one who wanted it most: Viggora, the Empty Lord. His curse binds us. He lingers in the Rogues' Castle.")
-                .stage("I should confront Viggora, the Empty Lord, in the Rogues' Castle in the Wilderness.")
+                .stage("I should follow the tale of woe from one cursed ghost to the next: the thief Rennard, the messenger Kharrim, the spy "
+                        + "Lennissa and the wizard Dhalak. Valdez's hint tells me where my sequence leads.")
+                .talk("quest_valdez").need(sight).stay().say(VALDEZ_HINT)
+                // Rennard: gloves.
+                .talk("quest_rennard").need(sight).unlessFlag(r2, r3, "cel_rennard").stay().flag("cel_rennard").give("ghostly_gloves").say(RENNARD)
+                .say("Kharrim haunts the Chaos Temple in the Wilderness.")
+                .talk("quest_rennard_2").need(sight).needFlag(r2).unlessFlag("cel_rennard").stay().flag("cel_rennard").give("ghostly_gloves").say(RENNARD)
+                .say("Kharrim haunts the Graveyard of Shadows.")
+                .talk("quest_rennard_3").need(sight).needFlag(r3).unlessFlag("cel_rennard").stay().flag("cel_rennard").give("ghostly_gloves").say(RENNARD)
+                .say("Kharrim haunts the end of the Lava Maze, deep in the Wilderness.")
+                // Kharrim: boots.
+                .talk("quest_kharrim").need(sight).needFlag("cel_rennard").unlessFlag(r2, r3, "cel_kharrim").stay().flag("cel_kharrim")
+                .give("ghostly_boots").say(KHARRIM).say("Look for her in the church on Entrana.")
+                .talk("quest_kharrim_2").need(sight).needFlag(r2, "cel_rennard").unlessFlag("cel_kharrim").stay().flag("cel_kharrim")
+                .give("ghostly_boots").say(KHARRIM).say("Look for her on the Port Sarim docks.")
+                .talk("quest_kharrim_3").need(sight).needFlag(r3, "cel_rennard").unlessFlag("cel_kharrim").stay().flag("cel_kharrim")
+                .give("ghostly_boots").say(KHARRIM).say("Look for her by the gnomeball field of the Tree Gnome Stronghold.")
+                // Lennissa: robe bottoms.
+                .talk("quest_lennissa").need(sight).needFlag("cel_kharrim").unlessFlag(r2, r3, "cel_lennissa").stay().flag("cel_lennissa")
+                .give("ghostly_robe_bottom").say(LENNISSA).say("He haunts the Wizards' Tower, by the bookshelves.")
+                .talk("quest_lennissa_2").need(sight).needFlag(r2, "cel_kharrim").unlessFlag("cel_lennissa").stay().flag("cel_lennissa")
+                .give("ghostly_robe_bottom").say(LENNISSA).say("He haunts the Edgeville Monastery, by the altar upstairs.")
+                .talk("quest_lennissa_3").need(sight).needFlag(r3, "cel_kharrim").unlessFlag("cel_lennissa").stay().flag("cel_lennissa")
+                .give("ghostly_robe_bottom").say(LENNISSA).say("He haunts the Falador Party Room, upstairs.")
+                // Dhalak: hood, then on to Viggora.
+                .talk("quest_dhalak").need(sight).needFlag("cel_lennissa").unlessFlag(r2, r3).flag("cel_dhalak").give("ghostly_hood")
+                .say(DHALAK).say("He lingers in the Rogues' Castle, deep in the Wilderness.")
+                .talk("quest_dhalak_2").need(sight).needFlag(r2, "cel_lennissa").flag("cel_dhalak").give("ghostly_hood")
+                .say(DHALAK).say("He lingers in the tower he built in Morytania: the Slayer Tower.")
+                .talk("quest_dhalak_3").need(sight).needFlag(r3, "cel_lennissa").flag("cel_dhalak").give("ghostly_hood")
+                .say(DHALAK).say("He lingers in the Edgeville Dungeon, among the earth warriors.")
+                .hint("quest_rennard", GHOST_ELSEWHERE).hint("quest_rennard_2", GHOST_ELSEWHERE).hint("quest_rennard_3", GHOST_ELSEWHERE)
+                .hint("quest_kharrim", GHOST_ELSEWHERE).hint("quest_kharrim_2", GHOST_ELSEWHERE).hint("quest_kharrim_3", GHOST_ELSEWHERE)
+                .hint("quest_lennissa", GHOST_ELSEWHERE).hint("quest_lennissa_2", GHOST_ELSEWHERE).hint("quest_lennissa_3", GHOST_ELSEWHERE)
+                .hint("quest_dhalak", GHOST_ELSEWHERE).hint("quest_dhalak_2", GHOST_ELSEWHERE).hint("quest_dhalak_3", GHOST_ELSEWHERE)
+                .stage("I should find the last of the cursed: Viggora, once a general of Zaros.")
                 // Saves from the old three-step version (whose completion gave the hood, top and bottoms) get the pieces they
                 // missed: past Rennard (old stage 2) all five, past Valdez only (old stage 1) the robe top.
                 .talk("quest_viggora").need(sight).stay().unlessFlag("cel_dhalak").flag("cel_dhalak", "cel_valdez")
@@ -194,9 +240,40 @@ final class Miniquests {
                 .say("The other ghosts' robes... they are bound to my curse. Take them, all of them, and hear me out.")
                 .talk("quest_viggora").need(sight).stay().unlessFlag("cel_valdez").flag("cel_valdez").give("ghostly_robe_top")
                 .say("Valdez's robe has drifted to me with the rest. Take it, and hear me out.")
-                .talk("quest_viggora").need(sight).give("ghostly_cloak")
-                .say("So you know my name, and the tale of the staff. Very well: take my cloak. The robes are yours; their curse ends with you.");
+                .talk("quest_viggora").need(sight).unlessFlag(r2, r3).give("ghostly_cloak").say(VIGGORA)
+                .talk("quest_viggora_2").need(sight).needFlag(r2).give("ghostly_cloak").say(VIGGORA)
+                .talk("quest_viggora_3").need(sight).needFlag(r3).give("ghostly_cloak").say(VIGGORA)
+                .hint("quest_viggora", GHOST_ELSEWHERE).hint("quest_viggora_2", GHOST_ELSEWHERE).hint("quest_viggora_3", GHOST_ELSEWHERE);
     }
+
+    /** Surface tile above Viggora's third place: the north-east of the Edgeville Dungeon's earth warrior room. */
+    static final int[] CEL_VIGGORA_3 = {3105, 3545};
+
+    /** Valdez's hint: the start of the player's sequence (wiki: pirates and a shipwreck, north-east, south-east). */
+    private static final String[] VALDEZ_HINT = {
+            // sequence 1, also for saves from before the routes (no route flag)
+            "?!cel_route2|?!cel_route3|The thief fled into the Wilderness. Look for him among the pirates, by their shipwreck.",
+            "?cel_route2|The thief fled north-east of here, into the Wilderness: the bandits' camp would hide him.",
+            "?cel_route3|The thief fled south-east of here, to the desert bandits' camp. Look in their bar."};
+    private static final String[] RENNARD = {
+            "Yes, I killed Valdez for his package, and it was the Staff of Armadyl! In a drunken stupor I asked a messenger, Kharrim, "
+                    + "to find me a buyer. That curse took me too. Take my gloves."};
+    private static final String[] KHARRIM = {
+            "Rennard wanted a buyer for the staff, so I took it to Zamorak, a general of Zaros. With it he rose against his own lord.",
+            "Take my boots. Lucien told me of a spy for Saradomin hidden among the Mahjarrat: Lennissa."};
+    private static final String[] LENNISSA = {
+            "I spied for Saradomin among Zaros's minions. When I learned the staff was being sold, I sent word to my superior, Dhalak, "
+                    + "to warn Saradomin: Lucien watched me too closely to go myself. Take my robes, and ask Dhalak what he did."};
+    private static final String[] DHALAK = {
+            "I never told Saradomin. I cast a spell of concealment on the staff, so Zamorak could steal up on Zaros unseen.",
+            "Take my hood. The last of us is Viggora, the general who marched with Zamorak."};
+    private static final String[] VIGGORA = {
+            "I am Viggora, once one of Zaros's generals, the only human among them. I joined Zamorak's assault on the Empty Lord's "
+                    + "castle and watched Zamorak strike him down.",
+            "As Zaros fell he cursed all who had a hand in it, and being mortal I suffered the worst of it. Take my cloak: "
+                    + "the robes are yours now."};
+    /** A ghost at another sequence's place. */
+    private static final String[] GHOST_ELSEWHERE = {"* The ghost stares through you, lost in its own sorrow. Your tale doesn't lead here."};
 
     private static void daddysHome(QuestBook b) {
         Cast.npc(b, "marlo", "Marlo", "VARROCK", 8, 6, Cast.FAIR, 0x5A3A6A);
@@ -335,24 +412,46 @@ final class Miniquests {
         b.item("tattered_sun_page", "Tattered sun page", "note", 0xE8C870, "A tattered page from the tome of the sun.");
         b.item("tattered_moon_page", "Tattered moon page", "note", 0xB0B8D8, "A tattered page from the tome of the moon.");
         b.item("tattered_temple_page", "Tattered temple page", "note", 0xA0B890, "A tattered page from the tome of the temple.");
-        // Wiki: the three tomes are on the musty bookshelves in the undead druids' rooms, and four of each tattered page drop
-        // from the Forthos Dungeon's monsters. The druids drop the tomes here (no bookshelves) and the page rate is approx.
-        b.quest("in_search_of_knowledge", "In Search of Knowledge (miniquest)", Difficulty.NOVICE, 0)
+        // Wiki: the tomes are on the musty bookshelves in the corners of the temple library, the south-western room of the
+        // Forthos Dungeon (sun 1804,9934; moon 1804,9943; temple 1796,9935; the north-western set holds a scroll), here the
+        // west druid room, whose surface tiles (the dungeon is shifted by -128, -6398) are around (1672, 3540).
+        b.spot("isk_temple_library", "Forthos temple library", 1672, 3540);
+        b.quest("in_search_of_knowledge", "In Search of Knowledge (miniquest)", Difficulty.EXPERIENCED, 0)
                 .reward("book_of_knowledge")
                 .stage("I can start this miniquest by speaking to the starving Brother Aimeri in the Forthos Dungeon, by the entrance to Sarachnis' lair.")
                 .talk("quest_brother_aimeri").say("*He wolfs down the food you give him.* Thank you, friend. I came for the temple's old tomes, "
                         + "but the druids and the spiders... Find the tomes of the sun, moon and temple, and their lost pages, and take them to Logosia.")
-                .stage("I should find the tomes of the sun, moon and temple in the undead druids' rooms, and four tattered sun, moon and temple pages "
-                        + "from the Forthos Dungeon's monsters.")
-                .drop("undead_druid", "tome_of_the_sun", 1).drop("undead_druid", "tome_of_the_moon", 1).drop("undead_druid", "tome_of_the_temple", 1)
-                .drop("temple_spider", "tattered_sun_page", 4).times(4).drop("temple_spider", "tattered_moon_page", 4).times(4)
-                .drop("temple_spider", "tattered_temple_page", 4).times(4)
-                .drop("undead_druid", "tattered_sun_page", 4).times(4).drop("undead_druid", "tattered_moon_page", 4).times(4)
-                .drop("undead_druid", "tattered_temple_page", 4).times(4)
+                .stage("I should search the musty bookshelves in the temple library of the Forthos Dungeon for the tomes of the sun, moon and "
+                        + "temple, and collect four tattered sun, moon and temple pages from the dungeon's monsters.")
+                .reach("isk_temple_library", 14).underground().unless("tome_of_the_sun").stay().give("tome_of_the_sun")
+                .say("* You search the musty bookshelf in the library's south-east corner and find the tome of the sun.")
+                .reach("isk_temple_library", 14).underground().unless("tome_of_the_moon").stay().give("tome_of_the_moon")
+                .say("* You search the musty bookshelf in the north-east corner and find the tome of the moon.")
+                .reach("isk_temple_library", 14).underground().unless("tome_of_the_temple").stay().give("tome_of_the_temple")
+                .say("* You search the musty bookshelf in the south-west corner and find the tome of the temple.")
+                // Wiki page drop rates (one page of any kind): Sarachnis 1/5, red dragon 1/10, undead druid 1/20, baby red dragon
+                // 1/25, temple spider 1/30, only in the Forthos Dungeon. Each kind of page rolls on its own here at half the listed
+                // chance, so the twelve pages take about as many kills as in OSRS (approx).
+                .drop("sarachnis", "tattered_sun_page", 10).times(4).near("isk_forthos", 70)
+                .drop("sarachnis", "tattered_moon_page", 10).times(4).near("isk_forthos", 70)
+                .drop("sarachnis", "tattered_temple_page", 10).times(4).near("isk_forthos", 70)
+                .drop("red_dragon", "tattered_sun_page", 20).times(4).near("isk_forthos", 70)
+                .drop("red_dragon", "tattered_moon_page", 20).times(4).near("isk_forthos", 70)
+                .drop("red_dragon", "tattered_temple_page", 20).times(4).near("isk_forthos", 70)
+                .drop("undead_druid", "tattered_sun_page", 40).times(4).near("isk_forthos", 70)
+                .drop("undead_druid", "tattered_moon_page", 40).times(4).near("isk_forthos", 70)
+                .drop("undead_druid", "tattered_temple_page", 40).times(4).near("isk_forthos", 70)
+                .drop("baby_red_dragon", "tattered_sun_page", 50).times(4).near("isk_forthos", 70)
+                .drop("baby_red_dragon", "tattered_moon_page", 50).times(4).near("isk_forthos", 70)
+                .drop("baby_red_dragon", "tattered_temple_page", 50).times(4).near("isk_forthos", 70)
+                .drop("temple_spider", "tattered_sun_page", 60).times(4).near("isk_forthos", 70)
+                .drop("temple_spider", "tattered_moon_page", 60).times(4).near("isk_forthos", 70)
+                .drop("temple_spider", "tattered_temple_page", 60).times(4).near("isk_forthos", 70)
                 .talk("quest_brother_aimeri").need("tome_of_the_sun", "tome_of_the_moon", "tome_of_the_temple")
                 .take("tattered_sun_page:4", "tattered_moon_page:4", "tattered_temple_page:4")
                 .say("*You put the pages back in their tomes.* Complete! Take them to Logosia in the Arceuus Library.")
-                .missing("The three tomes, and four of each kind of page. The undead druids guard the tomes; the pages are scattered about.")
+                .missing("The three tomes, and four of each kind of page. The tomes are on the musty bookshelves of the temple library, "
+                        + "where the undead druids are; the dungeon's monsters carry the pages.")
                 .stage("I should take the tomes to Logosia in the Arceuus Library.")
                 .talk("quest_logosia").take("tome_of_the_sun", "tome_of_the_moon", "tome_of_the_temple")
                 .say("The lost tomes of the Forthos temple! The library is in your debt. Take this, and learn something new.")

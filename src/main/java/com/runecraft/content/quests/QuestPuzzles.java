@@ -44,6 +44,8 @@ public final class QuestPuzzles {
     private static final Map<UUID, Entry> ACTIVE = new HashMap<>();
     /** Place-presented puzzles already shown to a player since they arrived ("uuid|quest|stage|trigger"). */
     private static final Set<String> SHOWN = new HashSet<>();
+    /** Place-presented puzzles whose unmet condition the player was already told about this visit. */
+    private static final Set<String> TOLD = new HashSet<>();
 
     private QuestPuzzles() {
     }
@@ -78,7 +80,13 @@ public final class QuestPuzzles {
                 if (t.kind != Trigger.Kind.PUZZLE || QuestInterpreter.skipped(p, t) || !presenter(p, t).equals(npcId)) {
                     continue;
                 }
-                if (QuestInterpreter.unmet(p, t) != null) {
+                String reason = QuestInterpreter.unmet(p, t);
+                if (reason != null) {
+                    if (t.emptyHanded && !QuestInterpreter.emptyHanded(p)) {
+                        // the examiner tells the recruit why the test can't start
+                        Msg.game(p, "[" + q.def.displayName() + "] " + reason);
+                        return true;
+                    }
                     continue;
                 }
                 show(p, q, t);
@@ -93,13 +101,19 @@ public final class QuestPuzzles {
         String key = p.getStringUUID() + "|" + q.id() + "|" + t.stage + "|" + q.stages.get(t.stage).triggers.indexOf(t);
         if (!inside) {
             SHOWN.remove(key);
+            TOLD.remove(key);
             return;
         }
         if (SHOWN.add(key)) {
-            if (QuestInterpreter.unmet(p, t) == null) {
+            String reason = QuestInterpreter.unmet(p, t);
+            if (reason == null) {
                 show(p, q, t);
             } else {
                 SHOWN.remove(key);
+                // say once per visit why the puzzle isn't shown (Recruitment Drive: items carried into the testing grounds)
+                if (!reason.isEmpty() && TOLD.add(key)) {
+                    Msg.game(p, "[" + q.def.displayName() + "] " + reason);
+                }
             }
         }
     }
@@ -138,6 +152,7 @@ public final class QuestPuzzles {
         ACTIVE.remove(player);
         String prefix = player + "|";
         SHOWN.removeIf(k -> k.startsWith(prefix));
+        TOLD.removeIf(k -> k.startsWith(prefix));
     }
 
     /** {@code /questpuzzle <quest>}: shows the current puzzle of a quest again. */

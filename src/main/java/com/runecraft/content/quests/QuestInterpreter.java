@@ -164,7 +164,51 @@ public final class QuestInterpreter {
                 return "You need " + QuestSpec.toolName(tool) + ".";
             }
         }
+        if (t.emptyHanded && !emptyHanded(p)) {
+            return "You need an empty inventory and nothing worn.";
+        }
+        if (t.nearPlace != null && !near(p, t.nearPlace, t.nearRadius)) {
+            return "";
+        }
         return null;
+    }
+
+    /** Below this block y a player counts as underground (carved dungeons lie below y 56). */
+    static final int UNDERGROUND_Y = 56;
+
+    /** Whether the player is within {@code tiles} OSRS tiles (horizontally) of a place's centre. */
+    static boolean near(ServerPlayer p, String place, int tiles) {
+        int[] c = placeCentre(place);
+        if (c == null) {
+            return false;
+        }
+        double dx = p.getX() - c[0];
+        double dz = p.getZ() - c[1];
+        double r = tiles * (double) com.runecraft.osrs.GielinorMap.SCALE;
+        return dx * dx + dz * dz <= r * r;
+    }
+
+    /** Nothing carried and nothing worn: inventory, armour and off-hand, and the virtual ring, neck, hands and cape slots. */
+    static boolean emptyHanded(ServerPlayer p) {
+        if (!p.getInventory().isEmpty()) {
+            return false;
+        }
+        for (net.minecraft.world.item.ItemStack worn : com.runecraft.content.systems.SysState.of(p).worn.values()) {
+            if (worn != null && !worn.isEmpty()) {
+                return false;
+            }
+        }
+        return QuestsState.get(p).wornAll(p.getUUID()).isEmpty();
+    }
+
+    /** Self-test hook: empties the player's hands for an {@code emptyHanded} trigger (inventory and every worn slot). */
+    public static void selfTestEmptyHands(ServerPlayer p) {
+        p.getInventory().clearContent();
+        com.runecraft.content.systems.SysState.of(p).worn.clear();
+        QuestsState state = QuestsState.get(p);
+        for (String slot : new ArrayList<>(state.wornAll(p.getUUID()).keySet())) {
+            state.wear(p.getUUID(), slot, null);
+        }
     }
 
     /** Whether the player carries (or wields) any tool meeting a requirement such as "pickaxe" or "axe:mithril". */
@@ -197,6 +241,17 @@ public final class QuestInterpreter {
 
     static void speak(ServerPlayer p, String speaker, List<String> lines) {
         for (String line : lines) {
+            // "?flag|text" / "?!flag|text" (conditions can be chained): spoken only when the player has (hasn't) the flags
+            boolean spoken = true;
+            while (line.startsWith("?") && line.indexOf('|') > 1) {
+                int bar = line.indexOf('|');
+                boolean negate = line.charAt(1) == '!';
+                spoken &= flag(p, line.substring(negate ? 2 : 1, bar)) != negate;
+                line = line.substring(bar + 1);
+            }
+            if (!spoken) {
+                continue;
+            }
             if (line.startsWith("> ")) {
                 QuestApi.you(p, line.substring(2));
             } else if (line.startsWith("* ") || speaker.isEmpty()) {
@@ -311,11 +366,15 @@ public final class QuestInterpreter {
         if (!t.take.isEmpty() && !QuestApi.takeAll(p, t.take)) {
             return;
         }
+        // flags first, so the trigger's own lines can depend on them ("?flag|text")
+        QuestsState state = QuestsState.get(p);
+        t.setFlags.forEach(f -> state.setFlag(p.getUUID(), f));
+        if (!t.flagOneOf.isEmpty() && t.flagOneOf.stream().noneMatch(f -> state.hasFlag(p.getUUID(), f))) {
+            state.setFlag(p.getUUID(), QuestSpec.pickFlag(p.getStringUUID(), t.flagOneOf));
+        }
         speak(p, speaker, t.lines);
         t.give.forEach((item, n) -> Inv.give(p, item, n));
         t.xp.forEach((skill, xp) -> XpService.add(p, skill, xp));
-        QuestsState state = QuestsState.get(p);
-        t.setFlags.forEach(f -> state.setFlag(p.getUUID(), f));
         if (t.spawn != null) {
             spawnNear(p, t.spawn);
         }
@@ -475,16 +534,17 @@ public final class QuestInterpreter {
                     continue;
                 }
                 for (Trigger t : q.stages.get(stage(p, q)).triggers) {
+                    boolean depthOk = !t.underground || p.getY() < UNDERGROUND_Y;
                     if (t.kind == Trigger.Kind.PUZZLE && !skipped(p, t)) {
                         int[] at = placeCentre(t.target);
                         if (at != null) {
                             double px = p.getX() - at[0];
                             double pz = p.getZ() - at[1];
-                            QuestPuzzles.reach(p, q, t, px * px + pz * pz <= t.radius * t.radius);
+                            QuestPuzzles.reach(p, q, t, depthOk && px * px + pz * pz <= t.radius * t.radius);
                         }
                         continue;
                     }
-                    if (t.kind != Trigger.Kind.REACH || skipped(p, t)) {
+                    if (t.kind != Trigger.Kind.REACH || skipped(p, t) || !depthOk) {
                         continue;
                     }
                     int[] c = placeCentre(t.target);

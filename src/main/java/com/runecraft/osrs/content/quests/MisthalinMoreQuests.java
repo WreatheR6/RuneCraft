@@ -425,20 +425,23 @@ final class MisthalinMoreQuests {
                 .stage("I can start this quest by speaking to Sir Amik Varze in the White Knights' Castle in Falador. (Requires Black Knights' Fortress, Druidic Ritual.)")
                 .talk("sir_amik_varze").say("The Temple Knights are recruiting, and I've put your name forward. Sir Tiffy Cashien in Falador Park will test you.")
                 .stage("I must pass five of the Temple Knights' tests in a row (they are picked at random; Sir Kuam's duel with Sir Leye is always one). "
-                        + "Sir Tiffy Cashien in Falador Park takes me to the testing grounds.")
-                .talk("sir_tiffy_cashien").stay().travel("falador_temple_knights")
+                        + "Sir Tiffy Cashien in Falador Park takes me to the testing grounds, with an empty inventory and nothing worn.")
+                // Wiki: "In order to be able to be tested, you need to have an empty inventory and no items equipped."
+                .talk("sir_tiffy_cashien").stay().emptyHanded().travel("falador_temple_knights")
                 .say("I say, we're recruiting for the Temple Knights! Five tests, one after another. Fail one and it's back to the start with you.")
-                .puzzle("falador_temple_knights", tests, 0).unlessFlag("rd_test0").flag("rd_test0").stay()
+                .missing("You can't take anything into the testing grounds, old bean. Bank everything you carry and wear, then come back.")
+                .puzzle("falador_temple_knights", tests, 0).emptyHanded().unlessFlag("rd_test0").flag("rd_test0").stay()
                 .say("Well done! *A portal opens to the next room.*")
-                .puzzle("falador_temple_knights", tests, 1).needFlag("rd_test0").unlessFlag("rd_test1").flag("rd_test1").stay()
+                .puzzle("falador_temple_knights", tests, 1).emptyHanded().needFlag("rd_test0").unlessFlag("rd_test1").flag("rd_test1").stay()
                 .say("Well done! *A portal opens to the next room.*")
-                .puzzle("falador_temple_knights", tests, 2).needFlag("rd_test1").flag("rd_test2")
+                .puzzle("falador_temple_knights", tests, 2).emptyHanded().needFlag("rd_test1").flag("rd_test2")
                 .say("Well done! *A portal opens to the next room.*")
-                .stage("Three tests passed. I must pass the last two of the Temple Knights' tests.")
-                .talk("sir_tiffy_cashien").stay().travel("falador_temple_knights").say("Back to it! Two tests to go.")
-                .puzzle("falador_temple_knights", tests, 3).unlessFlag("rd_test3").flag("rd_test3").stay()
+                .stage("Three tests passed. I must pass the last two of the Temple Knights' tests (with an empty inventory and nothing worn).")
+                .talk("sir_tiffy_cashien").stay().emptyHanded().travel("falador_temple_knights").say("Back to it! Two tests to go.")
+                .missing("Nothing goes into the testing grounds, remember. Bank it all first.")
+                .puzzle("falador_temple_knights", tests, 3).emptyHanded().unlessFlag("rd_test3").flag("rd_test3").stay()
                 .say("Well done! *A portal opens to the last room.*")
-                .puzzle("falador_temple_knights", tests, 4).needFlag("rd_test3").travel("falador_park")
+                .puzzle("falador_temple_knights", tests, 4).emptyHanded().needFlag("rd_test3").travel("falador_park")
                 .say("* Your fifth test passed, you are teleported back to Falador Park.",
                         "@Sir Tiffy Cashien: Top-hole! You're a Temple Knight initiate now. Here's your sallet.");
     }
