@@ -91,6 +91,40 @@ public enum Invocation {
         return group;
     }
 
+    /** The invocation interface's category (OSRS wiki table): what the invocation changes. */
+    public String category() {
+        return switch (this) {
+            case TRY_AGAIN, PERSISTENCE, SOFTCORE_RUN, HARDCORE_RUN -> "Attempts";
+            case WALK_FOR_IT, JOG_FOR_IT, RUN_FOR_IT, SPRINT_FOR_IT -> "Time limit";
+            case NEED_SOME_HELP, NEED_LESS_HELP, NO_HELP_NEEDED -> "Helpful Spirit";
+            case WALK_THE_PATH, PATHSEEKER, PATHFINDER, PATHMASTER -> "Paths";
+            case QUIET_PRAYERS, DEADLY_PRAYERS -> "Prayer";
+            case ON_A_DIET, DEHYDRATION, OVERLY_DRAINING -> "Restoration";
+            case LIVELY_LARVAE, MORE_OVERLORDS, BLOWING_MUD, MEDIC, AERIAL_ASSAULT -> "Kephri";
+            case NOT_JUST_A_HEAD, ARTERIAL_SPRAY, BLOOD_THINNERS, UPSET_STOMACH -> "Zebak";
+            case DOUBLE_TROUBLE, KEEP_BACK, STAY_VIGILANT, FEELING_SPECIAL -> "Akkha";
+            case MIND_THE_GAP, GOTTA_HAVE_FAITH, JUNGLE_JAPES, SHAKING_THINGS_UP, BOULDERDASH -> "Ba-Ba";
+            default -> "The Wardens";
+        };
+    }
+
+    /** The invocation by enum name or display name (case and punctuation ignored), or null. */
+    public static Invocation byName(String name) {
+        String n = name.toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]", "");
+        for (Invocation i : values()) {
+            if (i.name().toLowerCase(java.util.Locale.ROOT).replace("_", "").equals(n)
+                    || i.displayName.toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]", "").equals(n)) {
+                return i;
+            }
+        }
+        return null;
+    }
+
+    /** The raid's mode by raid level (OSRS): Entry below 150, Normal below 300, then Expert. */
+    public static String modeName(int raidLevel) {
+        return raidLevel < 150 ? "Entry mode" : raidLevel < 300 ? "Normal mode" : "Expert mode";
+    }
+
     /** Invocation that must also be active (Overclocked 2 needs Overclocked, Insanity needs Overclocked 2). */
     public Invocation requires() {
         return switch (this) {

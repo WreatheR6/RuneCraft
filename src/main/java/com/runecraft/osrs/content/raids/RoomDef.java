@@ -31,7 +31,12 @@ public record RoomDef(String id, String name, RaidType raid, Kind kind, String s
          * CoX resource room (scavengers, farming): its exit opens at once and its stations stay usable for the rest of
          * the raid.
          */
-        RESOURCE
+        RESOURCE,
+        /**
+         * The Tombs of Amascut's Nexus: the party picks each path here, comes back after every path boss, and goes down
+         * to the Wardens once all four are done.
+         */
+        NEXUS
     }
 
     public boolean combat() {

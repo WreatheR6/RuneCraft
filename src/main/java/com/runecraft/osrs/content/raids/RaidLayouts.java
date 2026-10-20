@@ -90,28 +90,40 @@ public final class RaidLayouts {
                 "Claim the Monumental chest's reward.");
 
         // --- Tombs of Amascut ---
+        // OSRS: no points for clearing a room; damage earns room points and each room's MVP gets 300 x team size (see
+        // RaidInstance).
         room("toa_lobby", "Tombs of Amascut", RaidType.TOA, Kind.LOBBY, "sand", List.of(), 0,
-                "Choose your invocations at the obelisk to set the raid level, then begin.");
-        room("scabaras_puzzle", "Path of Scabaras", RaidType.TOA, Kind.PUZZLE, "sand", List.of(), RaidScaling.TOA_ROOM_POINTS,
-                "Watch the order the tiles light up, then step on them in the same order.");
-        room("kephri", "Kephri", RaidType.TOA, Kind.COMBAT, "sand", List.of("kephri"), RaidScaling.TOA_ROOM_POINTS,
-                "Kephri's shield regenerates; kill her scarabs before they reach her.");
-        room("het_puzzle", "Path of Het", RaidType.TOA, Kind.PUZZLE, "sand", List.of(), RaidScaling.TOA_ROOM_POINTS,
-                "Mine through Het's seal while the light of the sun burns the room.");
-        room("akkha", "Akkha", RaidType.TOA, Kind.COMBAT, "sand", List.of("akkha"), RaidScaling.TOA_ROOM_POINTS,
-                "Akkha switches styles and splits off shadows. Kill his shadow to make him vulnerable.");
-        room("apmeken_puzzle", "Path of Apmeken", RaidType.TOA, Kind.PUZZLE, "jungle", List.of(), RaidScaling.TOA_ROOM_POINTS,
-                "Listen to Apmeken's sight: repair the pillars, vents and roof supports as they fail.");
-        room("baba", "Ba-Ba", RaidType.TOA, Kind.COMBAT, "jungle", List.of("baba"), RaidScaling.TOA_ROOM_POINTS,
-                "Destroy the rolling boulders and stay out of the falling rocks.");
-        room("crondis_puzzle", "Path of Crondis", RaidType.TOA, Kind.PUZZLE, "water", List.of(), RaidScaling.TOA_ROOM_POINTS,
-                "Carry water from the container to the Palm of Resourcefulness.");
-        room("zebak", "Zebak", RaidType.TOA, Kind.COMBAT, "water", List.of("zebak"), RaidScaling.TOA_ROOM_POINTS,
-                "Hide behind the jugs when Zebak sends a wave.");
-        room("wardens", "The Wardens", RaidType.TOA, Kind.FINAL, "sand", List.of("wardens_obelisk"), RaidScaling.TOA_ROOM_POINTS,
-                "Destroy the obelisk, then defeat the Wardens.");
-        room("toa_reward", "Chest room", RaidType.TOA, Kind.REWARD, "sand", List.of(), 0,
-                "Open the sarcophagus chest for your reward.");
+                "Choose your invocations at the obelisk to set the raid level, then pass the barrier.");
+        room("toa_nexus", "The Nexus", RaidType.TOA, Kind.NEXUS, "sand", List.of(), 0,
+                "Pick a path: the party leader enters first. Return here after each path boss; the Wardens wait below once "
+                        + "all four paths are walked.");
+        room("scabaras_puzzle", "Path of Scabaras", RaidType.TOA, Kind.PUZZLE, "sand", List.of(), 0,
+                "Solve Scabaras' puzzles: repeat the tile sequence, light every plate, match the symbols and add up the tablet's "
+                        + "number.");
+        room("kephri", "Kephri", RaidType.TOA, Kind.COMBAT, "sand", List.of("kephri"), 0,
+                "Break Kephri's three shields; kill her overlords and the swarms before they reach her, then finish her.");
+        room("het_puzzle", "Path of Het", RaidType.TOA, Kind.PUZZLE, "sand", List.of(), 0,
+                "Turn the mirrors so the caster statue's beam strikes the shielded statue, then mine Het's seal while it is "
+                        + "weakened. A statue lends you a pickaxe.");
+        room("akkha", "Akkha", RaidType.TOA, Kind.COMBAT, "sand", List.of("akkha"), 0,
+                "Akkha prays against the style he attacks with. When his shadows appear, kill one and lure him into its "
+                        + "quadrant.");
+        room("apmeken_puzzle", "Path of Apmeken", RaidType.TOA, Kind.PUZZLE, "jungle", List.of(), 0,
+                "Clear eight waves of baboons. Take a hammer and neutralising potions from the crate: fix the roof supports "
+                        + "and purge the vents when Apmeken's sight warns you.");
+        room("baba", "Ba-Ba", RaidType.TOA, Kind.COMBAT, "jungle", List.of("baba"), 0,
+                "Hide next to debris or a sarcophagus from her boulder throw, dodge the falling rocks and destroy the rolling "
+                        + "boulders.");
+        room("crondis_puzzle", "Path of Crondis", RaidType.TOA, Kind.PUZZLE, "water", List.of(), 0,
+                "Fill a water container at the waterfalls and grow the Palm of Resourcefulness. Traps and crocodiles spill "
+                        + "your water.");
+        room("zebak", "Zebak", RaidType.TOA, Kind.COMBAT, "water", List.of("zebak"), 0,
+                "Break the jugs to wash away the acid, hide behind the rocks from his roar and dodge his tidal waves.");
+        room("wardens", "The Wardens", RaidType.TOA, Kind.FINAL, "sand", List.of("wardens_obelisk"), 0,
+                "Destroy the obelisk (block an energy trough to pick your Warden), eject the Warden's core and strike it, "
+                        + "then survive the other Warden's slams and reverse its energy siphons.");
+        room("toa_reward", "Osmumten's burial chamber", RaidType.TOA, Kind.REWARD, "sand", List.of(), 0,
+                "Open the chest for your reward. A purple-glowing sarcophagus means someone found something special.");
     }
 
     private RaidLayouts() {
@@ -153,13 +165,16 @@ public final class RaidLayouts {
         return resolve(List.of("tob_lobby", "maiden", "bloat", "nylocas", "sotetseg", "xarpus", "verzik", "tob_reward"));
     }
 
-    /** Tombs of Amascut: the four paths in a random order (chosen by the party in OSRS), then the Wardens. */
+    /**
+     * Tombs of Amascut: the lobby, the Nexus, the four paths (puzzle room, then the path's boss) and the Wardens. The
+     * party walks the paths in any order it chooses from the Nexus (OSRS), so they are laid out in a fixed order and
+     * reached by teleport; only the lobby, the Nexus and each path's two rooms are joined by corridors.
+     */
     public static List<RoomDef> toa(Random random) {
-        List<List<String>> paths = new ArrayList<>(TOA_PATHS);
-        Collections.shuffle(paths, random);
         List<String> ids = new ArrayList<>();
         ids.add("toa_lobby");
-        for (List<String> p : paths) {
+        ids.add("toa_nexus");
+        for (List<String> p : TOA_PATHS) {
             ids.addAll(p);
         }
         ids.add("wardens");

@@ -35,7 +35,7 @@ class CollectionLogSnapshotTest {
             "Kree'arra", "K'ril Tsutsaroth", "The Leviathan", "Maggot King", "Moons of Peril", "Nex", "The Nightmare", "Obor",
             "Phantom Muspah", "Royal Titans", "Sarachnis", "Scorpia", "Scurrius", "Shellbane Gryphon", "Skotizo",
             "Thermonuclear Smoke Devil", "Vardorvis", "Venenatis and Spindel", "Vet'ion and Calvar'ion", "Vorkath",
-            "The Whisperer", "Yama", "Zalcano", "Zulrah", "Revenants", "Tormented Demons");
+            "The Whisperer", "Yama", "Zalcano", "Zulrah", "Revenants", "Tormented Demons", "Tombs of Amascut");
 
     static Map<String, Set<String>> wikiPages() throws IOException {
         Map<String, Set<String>> out = new LinkedHashMap<>();

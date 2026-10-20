@@ -23,6 +23,8 @@ final class RaidHud {
     private static int alive;
     private static int partySize;
     private static boolean tob;
+    /** ToA path level, attempts and time limit; the CoX/ToB mode. */
+    private static String status = "";
 
     private RaidHud() {
     }
@@ -49,6 +51,7 @@ final class RaidHud {
         int al = buf.readVarInt();
         int ps = buf.readVarInt();
         boolean isTob = buf.readBoolean();
+        String st = buf.isReadable() ? buf.readUtf() : "";
         client.execute(() -> {
             active = true;
             raid = r;
@@ -66,6 +69,7 @@ final class RaidHud {
             alive = al;
             partySize = ps;
             tob = isTob;
+            status = st;
         });
     }
 
@@ -82,7 +86,7 @@ final class RaidHud {
         int width = 150;
         int x = ctx.guiWidth() - width - 6;
         int y = 6;
-        int lines = 5 + (raidLevel >= 0 ? 1 : 0) + (boss.isEmpty() ? 0 : 2);
+        int lines = 5 + (raidLevel >= 0 ? 1 : 0) + (status.isEmpty() ? 0 : 1) + (boss.isEmpty() ? 0 : 2);
         ctx.fill(x - 4, y - 4, x + width + 2, y + lines * 11 + 2, 0xA0201810);
         ctx.fill(x - 4, y - 4, x + width + 2, y - 3, 0xFFB08A40);
         ctx.drawString(tr, raid, x, y, 0xFFFFB000);
@@ -97,6 +101,10 @@ final class RaidHud {
         y += 11;
         if (raidLevel >= 0) {
             ctx.drawString(tr, "Raid level: " + raidLevel, x, y, 0xFFE0C060);
+            y += 11;
+        }
+        if (!status.isEmpty()) {
+            ctx.drawString(tr, status, x, y, 0xFFC8B070);
             y += 11;
         }
         ctx.drawString(tr, String.format("Time: %d:%02d", seconds / 60, seconds % 60), x, y, 0xFFC0C0C0);

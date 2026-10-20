@@ -24,6 +24,7 @@ public final class RaidNet {
         RoomLogic logic = raid.logic();
         DataBossEntity boss = logic.started && !logic.done ? logic.hudBoss() : null;
         int alive = raid.activePlayers().size();
+        String status = raid.hudStatus();
         for (ServerPlayer p : raid.players()) {
             if (!ServerPlayNetworking.canSend(p, HUD)) {
                 continue;
@@ -45,6 +46,7 @@ public final class RaidNet {
             buf.writeVarInt(alive);
             buf.writeVarInt(raid.party().size());
             buf.writeBoolean(raid.type == RaidType.TOB);
+            buf.writeUtf(status);
             ServerPlayNetworking.send(p, HUD, buf);
         }
     }

@@ -38,8 +38,6 @@ public final class RaidScaling {
     public static final int TOB_VERZIK_MVP_POINTS = 4;
     /** ToB points lost per death (OSRS: 4). */
     public static final int TOB_DEATH_PENALTY = 4;
-    /** ToA points every surviving player earns per room cleared (OSRS: 300 per room, 9 rooms). */
-    public static final int TOA_ROOM_POINTS = 300;
     /** Highest ToA path level (OSRS: 6). */
     public static final int TOA_MAX_PATH_LEVEL = 6;
 
@@ -628,8 +626,10 @@ public final class RaidScaling {
     }
 
     /**
-     * ToA points per damage by creature (OSRS wiki loot calculator): Ba-Ba x2, baboons x1.2, Zebak x1.5,
-     * scarabs x0.5, the obelisk x1.5, the Wardens x2 (phase 2) and x2.5 (phase 3); everything else x1.
+     * ToA room points per damage by creature (OSRS wiki, "Chest (Tombs of Amascut)"): Ba-Ba x2, the Path of Apmeken's
+     * baboons x1.2, Zebak x1.5, Kephri's scarabs x0.5 (her swarms x1, Module:Tombs of Amascut loot), the obelisk x1.5,
+     * the Wardens x2 (phase 2) and x2.5 (phase 3), the Warden's core x0 (Het's seal, x2.5, is scenery); everything
+     * else x1.
      */
     public static double toaPointsPerDamage(String id, boolean wardenPhaseThree) {
         return switch (id) {
@@ -637,8 +637,8 @@ public final class RaidScaling {
             case "zebak" -> 1.5;
             case "wardens_obelisk" -> 1.5;
             case "elidinis_warden", "tumekens_warden" -> wardenPhaseThree ? 2.5 : 2.0;
-            // Core damage counts five times against the phase 2 Warden, which is worth 2 points per hitpoint.
-            case "toa_warden_core" -> 2.0 * TOA_CORE_MULTIPLIER;
+            case "toa_warden_core" -> 0.0;
+            case "toa_scarab_swarm", "toa_baba_baboon" -> 1.0;
             default -> id.contains("baboon") ? 1.2 : id.contains("scarab") ? 0.5 : 1.0;
         };
     }
@@ -674,8 +674,8 @@ public final class RaidScaling {
         return wardenHealthFraction >= 0.6 ? 29 : 37;
     }
 
-    /** ToA: a death costs 20% of your personal points (approximation of the OSRS death penalty). */
-    public static int toaDeathPenalty(int points) {
-        return points - points * 20 / 100;
+    /** ToA: a death costs 20% of your total reward points, at least 1,000 (OSRS; see {@link ToaLoot#afterDeath}). */
+    public static int toaDeathPenalty(int totalPoints) {
+        return ToaLoot.afterDeath(totalPoints);
     }
 }

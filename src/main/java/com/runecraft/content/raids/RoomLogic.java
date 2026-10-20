@@ -49,6 +49,7 @@ public class RoomLogic {
     static RoomLogic create(RaidInstance raid, RoomDef def, int index) {
         return switch (def.id()) {
             case "cox_lobby", "tob_lobby", "toa_lobby" -> new CommonRooms.Lobby(raid, def, index);
+            case "toa_nexus" -> new ToaNexus(raid, def, index);
             case "cox_reward", "tob_reward", "toa_reward" -> new CommonRooms.Reward(raid, def, index);
             case "tekton" -> new CoxRooms.Tekton(raid, def, index);
             case "vasa" -> new CoxRooms.Vasa(raid, def, index);
@@ -87,6 +88,48 @@ public class RoomLogic {
 
     /** Extra blocks after the room shell is built. */
     public void decorate() {
+    }
+
+    /** Whether the party walks in through the west doorway (false: the room is reached by teleport). */
+    public boolean entersFromWest() {
+        return true;
+    }
+
+    /** Whether the room's east doorway and corridor lead on to the next room. */
+    public boolean exitsEast() {
+        return true;
+    }
+
+    /** ToA path bosses: the teleport crystal back to the Nexus appears when the boss dies. */
+    public void placeExitCrystal() {
+        BlockPos at = at(RaidBuilder.HALF - 3, 0);
+        RaidBuilder.set(world(), at, RaidBuilder.module(com.runecraft.osrs.content.raids.RaidsContent.TOA_EXIT_CRYSTAL));
+        RaidBuilder.set(world(), at.above(), net.minecraft.world.level.block.Blocks.END_ROD.defaultBlockState());
+    }
+
+    /**
+     * Self-test ({@link RaidSelfTest}): clears the room the way a player would, through the room's own interactions and
+     * hits. The default kills every creature the room tracks. Returns a short note, or throws when the room can't be
+     * cleared.
+     */
+    String selfTestSolve(RaidSelfTest t) {
+        int guard = 0;
+        while (!done && guard++ < 4000) {
+            LivingEntity target = null;
+            for (LivingEntity e : spawned) {
+                if (alive(e)) {
+                    target = e;
+                    break;
+                }
+            }
+            if (target == null) {
+                t.tick(1);
+                continue;
+            }
+            t.hit(target, 25);
+            t.tick(1);
+        }
+        return def.name() + " cleared in " + guard + " steps";
     }
 
     /**
@@ -354,7 +397,7 @@ public class RoomLogic {
     private final java.util.Map<java.util.UUID, Long> clickCooldown = new java.util.HashMap<>();
 
     public boolean cooldown(ServerPlayer p, int ticks) {
-        long now = com.runecraft.action.ActionManager.gameTick();
+        long now = RaidEffects.now();
         Long last = clickCooldown.get(p.getUUID());
         if (last != null && now - last < ticks) {
             return true;
@@ -449,6 +492,51 @@ public class RoomLogic {
             spawned.add(boss);
         }
         return boss;
+    }
+
+    /**
+     * Keeps a room's monsters on the party (OSRS: everything in a raid room is aggressive): any creature of these types
+     * whose target is gone, downed or out of the room picks the nearest active party member in the room.
+     */
+    public void keepAggressive(String... ids) {
+        List<ServerPlayer> here = players();
+        if (here.isEmpty()) {
+            return;
+        }
+        for (String id : ids) {
+            for (LivingEntity e : living(id)) {
+                if (!(e instanceof Mob mob) || mob.isNoAi()) {
+                    continue;
+                }
+                LivingEntity t = mob.getTarget();
+                boolean lost = !(t instanceof ServerPlayer sp) || !sp.isAlive() || raid.isDowned(sp) || !inside(sp.position());
+                if (lost) {
+                    ServerPlayer best = null;
+                    for (ServerPlayer p : here) {
+                        if (best == null || p.distanceToSqr(mob) < best.distanceToSqr(mob)) {
+                            best = p;
+                        }
+                    }
+                    mob.setTarget(best);
+                }
+            }
+        }
+    }
+
+    /** {@link #keepAggressive(String...)} for the room's tracked bosses. */
+    public void keepBossesAggressive() {
+        List<ServerPlayer> here = players();
+        if (here.isEmpty()) {
+            return;
+        }
+        for (LivingEntity e : spawned) {
+            if (e instanceof Mob mob && alive(mob) && !mob.isNoAi()) {
+                LivingEntity t = mob.getTarget();
+                if (!(t instanceof ServerPlayer sp) || !sp.isAlive() || raid.isDowned(sp) || !inside(sp.position())) {
+                    mob.setTarget(here.get(rnd().nextInt(here.size())));
+                }
+            }
+        }
     }
 
     /** Spawns a module creature (minion), scaled for the party, optionally tracked. */

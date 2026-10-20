@@ -351,6 +351,10 @@ public final class RaidRewards {
      */
     public static Result roll(RaidType type, RaidMode mode, Map<String, Integer> points, int raidLevel, boolean withinTarget,
                               Random random) {
+        if (type == RaidType.TOA) {
+            // The Tombs' chest has its own rules (reward points, 1/50 below a unique's raid level, dung, tertiaries).
+            return ToaLoot.roll(points, raidLevel, Map.of(), false, java.util.Set.of(), Map.of(), random);
+        }
         Map<String, List<Loot>> loot = new LinkedHashMap<>();
         List<String> purples = new ArrayList<>();
         List<String> pets = new ArrayList<>();
@@ -364,7 +368,7 @@ public final class RaidRewards {
         List<Double> rolls = switch (type) {
             case COX -> RaidScaling.coxUniqueRolls(total);
             case TOB -> List.of(RaidScaling.tobPurpleChance(total, points.size(), mode));
-            case TOA -> List.of(RaidScaling.toaPurpleChance(total, raidLevel));
+            case TOA -> throw new IllegalStateException("rolled by ToaLoot");
         };
         double chance = rolls.get(0);
         for (String p : points.keySet()) {
@@ -392,18 +396,10 @@ public final class RaidRewards {
             loot.get(who).add(new Loot("lil_zik", 1));
             pets.add(who);
         }
-        if (type == RaidType.TOA && random.nextDouble() < RaidScaling.toaPetChance(total, raidLevel)) {
-            String who = weightedPlayer(points, random);
-            loot.get(who).add(new Loot("tumekens_guardian", 1));
-            pets.add(who);
-        }
         for (ExtraReward extra : extras(type, mode)) {
             if ((!extra.needsTargetTime() || withinTarget) && random.nextInt(extra.rate()) == 0) {
                 loot.get(weightedPlayer(points, random)).add(new Loot(extra.item(), 1));
             }
-        }
-        if (type == RaidType.TOA && random.nextDouble() < RaidScaling.toaEliteClueChance(total)) {
-            loot.get(weightedPlayer(points, random)).add(new Loot("clue_scroll_elite", 1));
         }
         double tobRatio = RaidScaling.tobPointsRatio(total, points.size());
         for (Map.Entry<String, Integer> e : points.entrySet()) {
@@ -438,19 +434,10 @@ public final class RaidRewards {
                     }
                 }
                 case TOA -> {
-                    for (PointsCommon c : pick(TOA_COMMONS, TOA_COMMON_ROLLS, random)) {
-                        mine.add(new Loot(c.item(), RaidScaling.toaCommonQuantity(pts, c.divisor(), raidLevel)));
-                    }
                 }
             }
         }
         return new Result(loot, purples, pets, chance);
-    }
-
-    private static <T> List<T> pick(List<T> table, int n, Random random) {
-        List<T> copy = new ArrayList<>(table);
-        Collections.shuffle(copy, random);
-        return copy.subList(0, Math.min(n, copy.size()));
     }
 
     /** {@code n} different CoX commons, each chosen by weight. */

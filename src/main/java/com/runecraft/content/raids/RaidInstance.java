@@ -6,6 +6,7 @@ import com.runecraft.collection.CollectionLog;
 import com.runecraft.combat.PoisonService;
 import com.runecraft.osrs.ItemCatalog;
 import com.runecraft.osrs.ItemDef;
+import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.raids.Invocation;
 import com.runecraft.osrs.content.raids.RaidItems;
 import com.runecraft.osrs.content.raids.RaidLayouts;
@@ -15,6 +16,7 @@ import com.runecraft.osrs.content.raids.RaidScaling;
 import com.runecraft.osrs.content.raids.RaidType;
 import com.runecraft.osrs.content.raids.RoomDef;
 import com.runecraft.osrs.content.raids.RaidsContent;
+import com.runecraft.osrs.content.raids.ToaLoot;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import java.util.ArrayList;
@@ -46,10 +48,17 @@ import net.minecraft.world.phys.Vec3;
  * One running raid: its party, rooms, points, deaths, raid level and rewards. Rooms are built
  * lazily one ahead of the party; a room starts when a living party member walks into it and the
  * exit barrier opens when its logic reports completion.
+ *
+ * <p>The Tombs of Amascut works like OSRS: past the lobby lies the Nexus, where the party leader picks each path (the
+ * others follow); a path's puzzle room opens onto its boss, whose teleport crystal leads back to the Nexus, and once all
+ * four paths are walked the Nexus opens the way down to the Wardens. The raid timer runs from the first path.
  */
 public final class RaidInstance {
     /** Entities' maximum health attribute is clamped at 1024; anything above that is held in reserve. */
     private static final int MC_MAX_HEALTH = 1024;
+    /** Game ticks a ToA raid waits for anyone to log back in before it closes. */
+    private static final int OFFLINE_GRACE_TICKS = 500;
+    private static final String[] PATH_GODS = {"Scabaras", "Het", "Apmeken", "Crondis"};
 
     public final int slot;
     public final RaidType type;
@@ -58,12 +67,17 @@ public final class RaidInstance {
     public final Random random;
     private final List<UUID> party = new ArrayList<>();
     private final Map<UUID, String> names = new HashMap<>();
+    /** CoX/ToB points; ToA total reward points (starting at 5,000). */
     private final Map<UUID, Integer> points = new LinkedHashMap<>();
+    /** ToA room points in the current room (they join the total when the room is cleared). */
+    private final Map<UUID, Integer> roomPoints = new HashMap<>();
     private final Map<UUID, Integer> deaths = new HashMap<>();
     private final Set<UUID> downed = new HashSet<>();
     private final Set<UUID> suppliesTaken = new HashSet<>();
     private final Set<UUID> claimed = new HashSet<>();
     private final Map<UUID, BlockPos> returnPos = new HashMap<>();
+    /** ToA: members who logged out mid-raid (they may log back in), with the raid tick they left. */
+    private final Map<UUID, Long> offline = new HashMap<>();
     private final RoomLogic[] logics;
     private final boolean[] built;
     /** Hidden hitpoints for creatures with more than 1024 HP, plus their true maximum. */
@@ -89,11 +103,21 @@ public final class RaidInstance {
     /** ToA: Walk the Path level-ups each path (index in {@link RaidLayouts#TOA_PATHS}) has received. */
     private final int[] pathLevelUps = new int[RaidLayouts.TOA_PATHS.size()];
     private final boolean[] pathDone = new boolean[RaidLayouts.TOA_PATHS.size()];
+    /** ToA: the path being walked (index in {@link RaidLayouts#TOA_PATHS}), or -1 while the party is in the Nexus. */
+    private int pathInProgress = -1;
+    /** ToA: each path boss's path level when it died (the pet remnants need level 4). */
+    private final Map<String, Integer> pathLevelAtKill = new HashMap<>();
     private final long startTick;
     private long endTick;
     private long roomStartTick;
-    /** Game tick the party passed the start barrier (the ToA time-limit invocations count from here). */
+    /** Raid tick the raid timer started: the start barrier (CoX, ToB) or the first path (ToA, OSRS); -1 before. */
     private long beginTick = -1;
+    /** ToA: raid tick the final Warden died (the time-limit invocations stop there). */
+    private long wardensDownTick = -1;
+    /** Raid tick since when no party member has been online (ToA), or -1. */
+    private long emptySince = -1;
+    /** Attacks that reached a party member (boss attacks and room mechanics), for the self-test. */
+    private int attacksOnParty;
 
     RaidInstance(int slot, RaidType type, ServerLevel world, List<ServerPlayer> members, BlockPos entrance) {
         this.slot = slot;
@@ -109,15 +133,20 @@ public final class RaidInstance {
         for (ServerPlayer p : members) {
             party.add(p.getUUID());
             names.put(p.getUUID(), p.getName().getString());
-            points.put(p.getUUID(), 0);
+            points.put(p.getUUID(), type == RaidType.TOA ? ToaLoot.START_POINTS : 0);
             returnPos.put(p.getUUID(), entrance.above());
         }
         this.partySize = Math.max(1, members.size());
         this.leader = members.get(0).getUUID();
-        this.startTick = ActionManager.gameTick();
+        this.startTick = now();
         if (type == RaidType.TOA) {
             applyPreset(1);
         }
+    }
+
+    /** The raid clock (game ticks; see {@link RaidEffects#now}). */
+    public static long now() {
+        return RaidEffects.now();
     }
 
     // ------------------------------------------------------------------ geometry
@@ -155,6 +184,16 @@ public final class RaidInstance {
         return -1;
     }
 
+    /** Index of the room with this id, or -1. */
+    public int roomIndex(String id) {
+        for (int i = 0; i < rooms.size(); i++) {
+            if (rooms.get(i).id().equals(id)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     // ------------------------------------------------------------------ party
 
     public List<UUID> party() {
@@ -169,7 +208,7 @@ public final class RaidInstance {
         List<ServerPlayer> list = new ArrayList<>();
         for (UUID u : party) {
             ServerPlayer p = world.getServer().getPlayerList().getPlayer(u);
-            if (p != null) {
+            if (p != null && !offline.containsKey(u)) {
                 list.add(p);
             }
         }
@@ -253,8 +292,6 @@ public final class RaidInstance {
         return path < 0 ? 0 : RaidScaling.toaPathLevel(invocations, pathLevelUps[path]);
     }
 
-    private static final String[] PATH_GODS = {"Scabaras", "Het", "Apmeken", "Crondis"};
-
     /** Index in {@link RaidLayouts#TOA_PATHS} of the path a room belongs to, or -1. */
     static int pathIndex(String roomId) {
         for (int i = 0; i < RaidLayouts.TOA_PATHS.size(); i++) {
@@ -270,18 +307,40 @@ public final class RaidInstance {
         return pathsCompleted;
     }
 
+    /** Whether ToA path {@code path} (index in {@link RaidLayouts#TOA_PATHS}) is done. */
+    public boolean pathDone(int path) {
+        return path >= 0 && path < pathDone.length && pathDone[path];
+    }
+
+    /** The ToA path being walked, or -1. */
+    public int pathInProgress() {
+        return pathInProgress;
+    }
+
     public int raidLevel() {
         return raidLevel;
     }
 
+    /**
+     * A player's points: CoX/ToB points; ToA reward points (the total minus the starting 5,000) plus the room points of
+     * the room in progress.
+     */
     public int points(UUID u) {
+        if (type == RaidType.TOA) {
+            return ToaLoot.rewardPoints(points.getOrDefault(u, ToaLoot.START_POINTS)) + roomPoints.getOrDefault(u, 0);
+        }
         return points.getOrDefault(u, 0);
+    }
+
+    /** ToA total reward points (including the starting 5,000; room points in progress not yet added). */
+    int toaTotal(UUID u) {
+        return points.getOrDefault(u, ToaLoot.START_POINTS);
     }
 
     public int totalPoints() {
         int t = 0;
-        for (int p : points.values()) {
-            t += p;
+        for (UUID u : party) {
+            t += points(u);
         }
         return t;
     }
@@ -290,8 +349,12 @@ public final class RaidInstance {
         if (!points.containsKey(u) || amount == 0 || type == RaidType.TOB) {
             return;
         }
-        int cap = type == RaidType.COX ? RaidScaling.COX_POINTS_CAP : RaidScaling.TOA_POINTS_CAP;
-        points.put(u, Math.max(0, Math.min(cap, points.get(u) + amount)));
+        if (type == RaidType.TOA) {
+            // OSRS: damage earns room points (at most 20,000 a room); they join the total when the room is cleared.
+            roomPoints.put(u, Math.max(0, Math.min(ToaLoot.ROOM_POINTS_CAP, roomPoints.getOrDefault(u, 0) + amount)));
+            return;
+        }
+        points.put(u, Math.max(0, Math.min(RaidScaling.COX_POINTS_CAP, points.get(u) + amount)));
     }
 
     /** The creature id of a raid entity (boss definition id, or entity type path). */
@@ -304,7 +367,7 @@ public final class RaidInstance {
 
     /**
      * Points for damage dealt to a creature in this raid (OSRS): CoX draws on the creature's pool of 5
-     * points per hitpoint (full value while fresh, decaying as it drains); ToA gives 1 point per damage
+     * points per hitpoint (full value while fresh, decaying as it drains); ToA gives room points per damage
      * times the creature's multiplier; ToB counts the damage towards the room's MVP.
      */
     public void onDamage(ServerPlayer player, LivingEntity target, int dealt) {
@@ -332,11 +395,20 @@ public final class RaidInstance {
         topUp(target);
     }
 
-    /** Points a player earned for a CoX puzzle action (kindling, grubs, the tightrope crystal, crabs). */
+    /** Points a player earned for a puzzle action (CoX kindling, grubs, crystals; ToA puzzles, repairs, watering). */
     public void awardActionPoints(ServerPlayer player, int amount) {
         if (amount > 0) {
             addPoints(player.getUUID(), amount);
         }
+    }
+
+    /** A boss attack or room mechanic reached a party member (counted for the self-test). */
+    void noteAttack() {
+        attacksOnParty++;
+    }
+
+    int attacksOnParty() {
+        return attacksOnParty;
     }
 
     /** Sets a creature's hitpoints, keeping anything above Minecraft's 1024 cap in reserve. */
@@ -471,6 +543,7 @@ public final class RaidInstance {
 
     // ------------------------------------------------------------------ ToA invocations
 
+    /** The preset the invocations match, or -1 for a custom selection. */
     public int presetIndex() {
         return presetIndex;
     }
@@ -481,6 +554,40 @@ public final class RaidInstance {
         invocations = EnumSet.noneOf(Invocation.class);
         invocations.addAll(presets.get(presetIndex).invocations());
         raidLevel = Invocation.raidLevel(invocations);
+    }
+
+    /**
+     * Turns one invocation on or off (OSRS invocation interface): turning one on replaces any other of its group, and an
+     * invocation that needs another (Arterial Spray, Overclocked 2...) can only be turned on after it; turning one off
+     * also turns off the invocations that need it. Returns a message for the player, or null on success.
+     */
+    public String toggleInvocation(Invocation i) {
+        if (begun) {
+            return "The invocations are locked in: raid level " + raidLevel + ".";
+        }
+        if (invocations.contains(i)) {
+            invocations.remove(i);
+            boolean changed = true;
+            while (changed) {
+                changed = invocations.removeIf(x -> x.requires() != null && !invocations.contains(x.requires()));
+            }
+        } else {
+            if (i.requires() != null && !invocations.contains(i.requires())) {
+                return i.displayName() + " needs " + i.requires().displayName() + " first.";
+            }
+            if (i.group() != null) {
+                invocations.removeIf(x -> i.group().equals(x.group()));
+            }
+            invocations.add(i);
+        }
+        raidLevel = Invocation.raidLevel(invocations);
+        presetIndex = -1;
+        for (int p = 0; p < Invocation.presets().size(); p++) {
+            if (Invocation.presets().get(p).invocations().equals(invocations)) {
+                presetIndex = p;
+            }
+        }
+        return null;
     }
 
     public void setCustomLevel(int level) {
@@ -532,12 +639,22 @@ public final class RaidInstance {
         return !suppliesTaken.isEmpty();
     }
 
+    /** The raid timer: from the start barrier (CoX, ToB) or the first path (ToA) until the raid is complete. */
     public long elapsedTicks() {
-        return (finished ? endTick : ActionManager.gameTick()) - startTick;
+        long from = type == RaidType.TOA ? beginTick : startTick;
+        if (from < 0) {
+            return 0;
+        }
+        return (finished ? endTick : now()) - from;
     }
 
     public long roomTicks() {
-        return ActionManager.gameTick() - roomStartTick;
+        return now() - roomStartTick;
+    }
+
+    /** Wipes the party can still recover from (-1: unlimited). */
+    public int retriesLeft() {
+        return retriesLeft;
     }
 
     void ensureBuilt(int i) {
@@ -545,7 +662,11 @@ public final class RaidInstance {
             return;
         }
         built[i] = true;
-        RaidBuilder.buildRoom(world, slot, i, rooms.get(i).style(), i == 0, i == rooms.size() - 1);
+        // Rooms reached by teleport (the ToA paths and the Wardens) keep their west wall; a room only gets an exit corridor
+        // when the next room is entered through it.
+        boolean west = i > 0 && logics[i].entersFromWest() && logics[i - 1].exitsEast();
+        boolean east = i < rooms.size() - 1 && logics[i].exitsEast();
+        RaidBuilder.buildRoomShell(world, slot, i, rooms.get(i).style(), west, east);
         try {
             logics[i].decorate();
         } catch (RuntimeException e) {
@@ -562,7 +683,7 @@ public final class RaidInstance {
         ensureBuilt(1);
         RaidBuilder.closeExit(world, slot, 0, RaidBuilder.module(RaidsContent.START_BARRIER));
         current = 0;
-        roomStartTick = ActionManager.gameTick();
+        roomStartTick = now();
         logics[0].started = true;
         BlockPos spawn = spawn(0);
         for (ServerPlayer p : members) {
@@ -572,8 +693,8 @@ public final class RaidInstance {
             Msg.game(p, rooms.get(0).hint());
         }
         if (type == RaidType.TOA) {
-            say("Raid level: " + raidLevel + " (" + Invocation.presets().get(presetIndex).name() + "). Use the obelisk to change it.",
-                    ChatFormatting.YELLOW);
+            say("Raid level: " + raidLevel + " (" + Invocation.presets().get(presetIndex).name() + "). Use the obelisk to choose "
+                    + "the invocations.", ChatFormatting.YELLOW);
         } else {
             say("Mode: " + mode.displayName() + ". The leader can change it with /raids mode "
                     + (type == RaidType.COX ? "<normal|challenge>" : "<entry|normal|hard>") + ".", ChatFormatting.YELLOW);
@@ -590,20 +711,28 @@ public final class RaidInstance {
         if (begun) {
             return;
         }
+        if (type == RaidType.TOA && !isLeader(player)) {
+            Msg.game(player, "Your party leader must lead the way into the tomb.");
+            return;
+        }
         begun = true;
         RaidBuilder.openExit(world, slot, 0);
         logics[0].done = true;
-        beginTick = ActionManager.gameTick();
         if (type == RaidType.TOA) {
             // OSRS: the attempts invocations count wipes over the whole raid, not per room.
             retriesLeft = Invocation.roomRetries(invocations);
-            say("The raid begins at raid level " + raidLevel + ".", ChatFormatting.GOLD);
+            say("The invocations are locked in: raid level " + raidLevel + ".", ChatFormatting.GOLD);
             int limit = Invocation.timeLimitMinutes(invocations);
             if (limit > 0) {
-                say("You have " + limit + " minutes to complete the raid, or the raid level drops by "
+                say("You have " + limit + " minutes from the first path to the Wardens' defeat, or the raid level drops by "
                         + Invocation.timeLimitPenalty(invocations) + ".", ChatFormatting.YELLOW);
             }
+            // Generate the paths' chunks in the background while the party picks its first path.
+            for (int i = 2; i < rooms.size(); i++) {
+                RaidBuilder.prefetch(world, slot, i);
+            }
         } else {
+            beginTick = now();
             say(player.getName().getString() + " has started the raid (" + mode.displayName() + "). Good luck!", ChatFormatting.GOLD);
         }
         world.playSound(null, center(0), SoundEvents.END_PORTAL_FRAME_FILL, SoundSource.BLOCKS, 1f, 0.6f);
@@ -615,7 +744,7 @@ public final class RaidInstance {
         }
         for (UUID u : new ArrayList<>(party)) {
             ServerPlayer p = world.getServer().getPlayerList().getPlayer(u);
-            if (p != null && (!contains(p) || p.level() != world)) {
+            if (p != null && !offline.containsKey(u) && (!contains(p) || p.level() != world)) {
                 Msg.game(p, "You have left the " + type.displayName() + ".");
                 removePlayer(u, false);
             }
@@ -624,10 +753,29 @@ public final class RaidInstance {
             RaidManager.close(this);
             return;
         }
+        if (players().isEmpty()) {
+            // ToA: everyone logged out; the raid waits a while for someone to come back.
+            if (emptySince < 0) {
+                emptySince = now();
+            } else if (now() - emptySince > OFFLINE_GRACE_TICKS) {
+                RaidManager.close(this);
+                return;
+            }
+        } else {
+            emptySince = -1;
+        }
         for (LivingEntity e : new ArrayList<>(reserve.keySet())) {
             topUp(e);
         }
         RoomLogic logic = logics[current];
+        if (logic.started && !logic.done && type != RaidType.COX && !downed.isEmpty() && !players().isEmpty()
+                && activePlayers().isEmpty()) {
+            // Everyone still here is down (the others left or logged out): the party has wiped.
+            wipe();
+            if (closed) {
+                return;
+            }
+        }
         if (logic.started && !logic.done) {
             try {
                 logic.gameTick(tick);
@@ -636,7 +784,7 @@ public final class RaidInstance {
                 logic.complete();
             }
         }
-        if (logics[current].done && current + 1 < rooms.size()) {
+        if (logics[current].done && current + 1 < rooms.size() && logics[current].exitsEast()) {
             for (ServerPlayer p : activePlayers()) {
                 if (inRoom(p.position(), current + 1)) {
                     startRoom(current + 1);
@@ -653,7 +801,7 @@ public final class RaidInstance {
      * letting exceptions through. Returns how many rooms were started.
      */
     int selfTestRun(int ticks) {
-        long tick = ActionManager.gameTick();
+        long tick = now();
         for (int i = 0; i < ticks && !closed; i++) {
             gameTick(tick + i);
         }
@@ -670,20 +818,27 @@ public final class RaidInstance {
         return ran;
     }
 
-    private void startRoom(int i) {
+    void startRoom(int i) {
         current = i;
-        roomStartTick = ActionManager.gameTick();
+        roomStartTick = now();
         ensureBuilt(i);
-        ensureBuilt(i + 1);
-        if (i + 2 < rooms.size()) {
-            RaidBuilder.prefetch(world, slot, i + 2);
+        if (logics[i].exitsEast()) {
+            ensureBuilt(i + 1);
+            if (i + 2 < rooms.size()) {
+                RaidBuilder.prefetch(world, slot, i + 2);
+            }
         }
         RoomDef def = rooms.get(i);
         RoomLogic logic = logics[i];
         logic.started = true;
+        roomPoints.clear();
         for (ServerPlayer p : players()) {
             p.displayClientMessage(Component.literal(def.name()).withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD), true);
             Msg.game(p, def.hint());
+            if (type == RaidType.TOA && def.combat()) {
+                // OSRS: entering a boss chamber restores run energy.
+                com.runecraft.content.systems.RunEnergyService.restore(p, 10_000);
+            }
         }
         logic.start();
         if (def.kind() == RoomDef.Kind.REWARD) {
@@ -691,19 +846,125 @@ public final class RaidInstance {
         }
     }
 
+    /** Makes an already started room the current one (the party came back to the ToA Nexus). */
+    private void moveTo(int i) {
+        if (i >= 0 && i != current && logics[i].started) {
+            current = i;
+        }
+    }
+
+    // ------------------------------------------------------------------ the Tombs of Amascut's Nexus
+
+    /** The Nexus room logic, or null outside the Tombs of Amascut. */
+    ToaNexus nexus() {
+        int i = roomIndex("toa_nexus");
+        return i >= 0 && logics[i] instanceof ToaNexus n ? n : null;
+    }
+
+    /** One of the Nexus's entrances was used: a path, or the way down to the Wardens. */
+    void useNexusEntrance(ServerPlayer p, BlockPos pos) {
+        ToaNexus n = nexus();
+        int i = n == null ? -1 : n.entranceAt(pos);
+        if (i < 0) {
+            Msg.game(p, "Nothing interesting happens.");
+        } else if (i == ToaNexus.ENTRANCES.length - 1) {
+            enterWardens(p);
+        } else {
+            enterPath(p, i);
+        }
+    }
+
+    /**
+     * A path entrance in the Nexus (OSRS): the party leader starts a path and the others follow; while a path is being
+     * walked the other entrances are blocked, and a finished path is closed for good.
+     */
+    void enterPath(ServerPlayer p, int path) {
+        if (type != RaidType.TOA || path < 0 || path >= RaidLayouts.TOA_PATHS.size()) {
+            return;
+        }
+        String god = PATH_GODS[path];
+        if (pathDone[path]) {
+            Msg.game(p, "The Path of " + god + " has been completed.");
+            return;
+        }
+        if (pathInProgress >= 0 && pathInProgress != path) {
+            Msg.game(p, "Another path has been started.");
+            return;
+        }
+        int puzzle = roomIndex(RaidLayouts.TOA_PATHS.get(path).get(0));
+        if (pathInProgress < 0) {
+            if (!isLeader(p)) {
+                Msg.game(p, "Your party leader must enter a path first.");
+                return;
+            }
+            pathInProgress = path;
+            if (beginTick < 0) {
+                // OSRS: the raid timer (and the time-limit invocations) start with the first path.
+                beginTick = now();
+            }
+            startRoom(puzzle);
+            say(p.getName().getString() + " walks the Path of " + god + ".", ChatFormatting.YELLOW);
+        }
+        int target = logics[puzzle].done ? puzzle + 1 : puzzle;
+        teleport(p, spawn(target));
+        if (target == current && logics[target].started) {
+            Msg.game(p, rooms.get(target).hint());
+        }
+    }
+
+    /** The way down to the Wardens, open once all four paths are walked. */
+    void enterWardens(ServerPlayer p) {
+        if (type != RaidType.TOA) {
+            return;
+        }
+        if (pathsCompleted < RaidLayouts.TOA_PATHS.size()) {
+            Msg.game(p, "The way below is sealed until all four paths have been walked (" + pathsCompleted + "/4).");
+            return;
+        }
+        int wardens = roomIndex("wardens");
+        if (!logics[wardens].started) {
+            if (!isLeader(p)) {
+                Msg.game(p, "Your party leader must go down first.");
+                return;
+            }
+            startRoom(wardens);
+        }
+        teleport(p, spawn(wardens));
+    }
+
+    /** A path boss's teleport crystal: back to the Nexus. */
+    void returnToNexus(ServerPlayer p) {
+        int nexus = roomIndex("toa_nexus");
+        if (nexus < 0) {
+            return;
+        }
+        if (logics[current].done) {
+            moveTo(nexus);
+        }
+        teleport(p, spawn(nexus).offset(2, 0, 0));
+        Msg.game(p, pathsCompleted >= RaidLayouts.TOA_PATHS.size() ? "All four paths are walked: the way to the Wardens is open."
+                : "You return to the Nexus. Paths walked: " + pathsCompleted + "/4.");
+    }
+
     void onRoomComplete(RoomLogic logic) {
         RoomDef def = logic.def;
         long secs = roomTicks() * 6 / 10;
-        if (def.kind() != RoomDef.Kind.LOBBY && def.kind() != RoomDef.Kind.REWARD && def.kind() != RoomDef.Kind.RESOURCE) {
+        boolean scored = def.kind() != RoomDef.Kind.LOBBY && def.kind() != RoomDef.Kind.REWARD && def.kind() != RoomDef.Kind.RESOURCE
+                && def.kind() != RoomDef.Kind.NEXUS;
+        if (scored) {
             say(def.name() + " complete! Duration: " + secs / 60 + ":" + String.format("%02d", secs % 60), ChatFormatting.GREEN);
         }
-        for (UUID u : party) {
-            if (type == RaidType.TOB) {
-                if (!downed.contains(u)) {
-                    points.merge(u, RaidScaling.TOB_POINTS_PER_ROOM, Integer::sum);
+        if (type == RaidType.TOA) {
+            toaRoomPoints(def, scored);
+        } else {
+            for (UUID u : party) {
+                if (type == RaidType.TOB) {
+                    if (!downed.contains(u)) {
+                        points.merge(u, RaidScaling.TOB_POINTS_PER_ROOM, Integer::sum);
+                    }
+                } else if (!downed.contains(u)) {
+                    addPoints(u, def.completionPoints());
                 }
-            } else if (!downed.contains(u)) {
-                addPoints(u, def.completionPoints());
             }
         }
         if (type == RaidType.TOB && def.combat()) {
@@ -720,35 +981,101 @@ public final class RaidInstance {
             }
         }
         roomDamage.clear();
-        RaidBuilder.openExit(world, slot, logic.index);
-        world.playSound(null, center(logic.index), SoundEvents.IRON_DOOR_OPEN, SoundSource.BLOCKS, 1f, 0.8f);
+        if (logic.exitsEast()) {
+            RaidBuilder.openExit(world, slot, logic.index);
+            world.playSound(null, center(logic.index), SoundEvents.IRON_DOOR_OPEN, SoundSource.BLOCKS, 1f, 0.8f);
+        }
         reviveAll(logic.index);
         if (type == RaidType.TOA) {
-            if (def.kind() == RoomDef.Kind.COMBAT) {
-                pathsCompleted++;
-                int path = pathIndex(def.id());
-                if (path >= 0) {
-                    pathDone[path] = true;
-                }
-                if (invocations.contains(Invocation.WALK_THE_PATH)) {
-                    // OSRS Walk the Path: the first path levels two random other paths, the next ones one each.
-                    List<Integer> remaining = new ArrayList<>();
-                    for (int i = 0; i < pathDone.length; i++) {
-                        if (!pathDone[i]) {
-                            remaining.add(i);
-                        }
-                    }
-                    for (int i : RaidScaling.walkThePathLevelUps(remaining, pathsCompleted, random)) {
-                        pathLevelUps[i]++;
-                        say("You hear a mysterious rumbling coming from the Path of " + PATH_GODS[i] + ".", ChatFormatting.LIGHT_PURPLE);
-                    }
-                }
-                if (com.runecraft.osrs.content.raids.ToaSupplies.offeredAfter(pathsCompleted)) {
-                    // OSRS: the Helpful Spirit offers supplies after the second and the fourth path.
-                    ToaSupplyService.offer(this);
-                }
+            toaRoomCleared(logic, def);
+        }
+    }
+
+    /**
+     * ToA room points (OSRS): everyone's room points join their total, and the player with the most room points (the
+     * room's MVP) adds 300 x team size.
+     */
+    private void toaRoomPoints(RoomDef def, boolean scored) {
+        UUID mvp = null;
+        for (UUID u : party) {
+            int rp = roomPoints.getOrDefault(u, 0);
+            if (rp > 0 && (mvp == null || rp > roomPoints.getOrDefault(mvp, 0))) {
+                mvp = u;
+            }
+            points.put(u, ToaLoot.addRoom(toaTotal(u), rp));
+        }
+        roomPoints.clear();
+        if (scored && mvp != null) {
+            points.put(mvp, Math.min(ToaLoot.TOTAL_POINTS_CAP, toaTotal(mvp) + ToaLoot.mvpBonus(partySize)));
+            if (partySize > 1) {
+                say(name(mvp) + " was the MVP of " + def.name() + ".", ChatFormatting.YELLOW);
             }
         }
+    }
+
+    /** ToA after a room: poison cured; a path boss ends its path (restore, teleport crystal, Walk the Path, supplies). */
+    private void toaRoomCleared(RoomLogic logic, RoomDef def) {
+        for (ServerPlayer p : players()) {
+            // OSRS: clearing any challenge cures poison and venom; a boss fully restores the party.
+            PoisonService.cure(p, true, 0, ActionManager.gameTick());
+            if (def.combat()) {
+                restoreAfterBoss(p);
+            }
+        }
+        if (def.kind() == RoomDef.Kind.FINAL) {
+            wardensDownTick = now();
+        }
+        if (def.kind() != RoomDef.Kind.COMBAT) {
+            return;
+        }
+        pathsCompleted++;
+        int path = pathIndex(def.id());
+        if (path >= 0) {
+            pathDone[path] = true;
+            pathLevelAtKill.put(def.bosses().isEmpty() ? def.id() : def.bosses().get(0), RaidScaling.toaPathLevel(invocations,
+                    pathLevelUps[path]));
+        }
+        pathInProgress = -1;
+        logic.placeExitCrystal();
+        ToaNexus n = nexus();
+        if (n != null) {
+            n.refresh();
+        }
+        if (invocations.contains(Invocation.WALK_THE_PATH)) {
+            // OSRS Walk the Path: the first path levels two random other paths, the next ones one each.
+            List<Integer> remaining = new ArrayList<>();
+            for (int i = 0; i < pathDone.length; i++) {
+                if (!pathDone[i]) {
+                    remaining.add(i);
+                }
+            }
+            for (int i : RaidScaling.walkThePathLevelUps(remaining, pathsCompleted, random)) {
+                pathLevelUps[i]++;
+                say("You hear a mysterious rumbling coming from the Path of " + PATH_GODS[i] + ".", ChatFormatting.LIGHT_PURPLE);
+            }
+        }
+        say("A teleport crystal appears. It leads back to the Nexus.", ChatFormatting.AQUA);
+        if (com.runecraft.osrs.content.raids.ToaSupplies.offeredAfter(pathsCompleted)) {
+            // OSRS: the Helpful Spirit offers supplies after the second and the fourth path.
+            ToaSupplyService.offer(this);
+        }
+    }
+
+    /** OSRS: clearing a ToA boss restores hitpoints, prayer, run energy and special attack, and undoes stat drains. */
+    private static void restoreAfterBoss(ServerPlayer p) {
+        var data = com.runecraft.player.Players.data(p);
+        for (Skill s : new Skill[]{Skill.ATTACK, Skill.STRENGTH, Skill.DEFENCE, Skill.RANGED, Skill.MAGIC}) {
+            if (data.skills().boost(s) < 0) {
+                data.skills().setBoost(s, 0);
+            }
+        }
+        if (data.prayerPoints() < data.skills().level(Skill.PRAYER)) {
+            data.setPrayerPoints(data.skills().level(Skill.PRAYER));
+        }
+        p.setHealth(Math.max(p.getHealth(), p.getMaxHealth()));
+        com.runecraft.content.systems.RunEnergyService.restore(p, 10_000);
+        com.runecraft.content.systems.SpecialAttackService.restoreEnergy(p, com.runecraft.osrs.content.systems.SpecialAttacks.MAX_ENERGY);
+        com.runecraft.network.ServerNetworking.sync(p);
     }
 
     /** Brings downed players back into a room (after it is cleared or retried). */
@@ -767,19 +1094,28 @@ public final class RaidInstance {
             return;
         }
         finished = true;
-        endTick = ActionManager.gameTick();
-        Map<String, Integer> pts = new LinkedHashMap<>();
-        for (UUID u : party) {
-            pts.put(u.toString(), points(u));
-        }
+        endTick = now();
         boolean withinTarget = elapsedTicks() <= RaidScaling.targetTicks(type, mode, partySize);
         int limit = type == RaidType.TOA ? Invocation.timeLimitMinutes(invocations) : 0;
-        if (limit > 0 && beginTick >= 0 && endTick - beginTick > limit * 100L) {
+        long stop = wardensDownTick >= 0 ? wardensDownTick : endTick;
+        if (limit > 0 && beginTick >= 0 && stop - beginTick > limit * 100L) {
             // OSRS: missing a time-limit invocation's limit lowers the raid level (and with it the loot).
             raidLevel = Math.max(0, raidLevel - Invocation.timeLimitPenalty(invocations));
             say("You missed the " + limit + "-minute time limit: the raid level drops to " + raidLevel + ".", ChatFormatting.RED);
         }
-        result = RaidRewards.roll(type, mode, pts, raidLevel, withinTarget, random);
+        Map<String, Integer> pts = new LinkedHashMap<>();
+        for (UUID u : party) {
+            pts.put(u.toString(), type == RaidType.TOA ? ToaLoot.rewardPoints(toaTotal(u)) : points(u));
+        }
+        if (type == RaidType.TOA) {
+            Map<String, ToaLoot.Raider> raiders = new HashMap<>();
+            for (ServerPlayer p : players()) {
+                raiders.put(p.getUUID().toString(), raider(p));
+            }
+            result = ToaLoot.roll(pts, raidLevel, raiders, totalDeaths() == 0, invocations, pathLevelAtKill, random);
+        } else {
+            result = RaidRewards.roll(type, mode, pts, raidLevel, withinTarget, random);
+        }
         long secs = elapsedTicks() * 6 / 10;
         say("Congratulations - your raid is complete! Duration: " + secs / 60 + ":" + String.format("%02d", secs % 60),
                 ChatFormatting.GOLD);
@@ -809,8 +1145,42 @@ public final class RaidInstance {
             world.playSound(null, center(current), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 1f, 1f);
         }
         if (result.purpleRecipients().isEmpty()) {
-            say("The chest contains standard loot.", ChatFormatting.GRAY);
+            say(type == RaidType.TOA ? "Osmumten's sarcophagus glows white: the chests hold standard loot."
+                    : "The chest contains standard loot.", ChatFormatting.GRAY);
+        } else if (type == RaidType.TOA) {
+            say("Osmumten's sarcophagus glows purple!", ChatFormatting.LIGHT_PURPLE);
         }
+    }
+
+    /** What the ToA chest needs to know about a raider: completions, a thread before, jewels and rewards owned. */
+    private ToaLoot.Raider raider(ServerPlayer p) {
+        var data = com.runecraft.player.Players.data(p);
+        int kc = RaidsState.get(world.getServer()).completions(p.getUUID(), type.id());
+        Set<String> owned = new HashSet<>();
+        for (String id : List.of("masori_crafting_kit", "menaphite_ornament_kit", "cursed_phalanx", "remnant_of_akkha",
+                "remnant_of_baba", "remnant_of_kephri", "remnant_of_zebak", "ancient_remnant")) {
+            if (owns(p, id)) {
+                owned.add(id);
+            }
+        }
+        Set<String> jewels = new HashSet<>();
+        String[] partisans = {"keris_partisan_of_corruption", "keris_partisan_of_the_sun", "keris_partisan_of_breaching",
+                "keris_partisan_of_amascut"};
+        for (int i = 0; i < ToaLoot.JEWELS.size(); i++) {
+            if (owns(p, ToaLoot.JEWELS.get(i)) || owns(p, partisans[i])) {
+                jewels.add(ToaLoot.JEWELS.get(i));
+            }
+        }
+        return new ToaLoot.Raider(kc, data.collectionLog().contains(ToaLoot.THREAD), jewels, owned);
+    }
+
+    /** Whether a player carries or banks an item (OSRS challenge rewards and jewels check both). */
+    private static boolean owns(ServerPlayer p, String item) {
+        if (Inv.has(p, item, 1)) {
+            return true;
+        }
+        var bank = com.runecraft.player.Players.data(p).bank();
+        return bank != null && bank.count(item, null) > 0;
     }
 
     /** The reward chest: hands over this player's loot once. */
@@ -844,6 +1214,11 @@ public final class RaidInstance {
         return claimed.contains(p.getUUID());
     }
 
+    /** The loot rolled at the end of the raid (null before). */
+    RaidRewards.Result result() {
+        return result;
+    }
+
     /** Records that a player used Helpful Spirit supplies or honey locusts ("Helpful spirit who?"). */
     public void markSuppliesTaken(UUID u) {
         suppliesTaken.add(u);
@@ -865,16 +1240,8 @@ public final class RaidInstance {
             Msg.game(p, "You have already taken your share of the supplies.");
             return;
         }
-        switch (type) {
-            case COX -> {
-            }
-            case TOB -> {
-                Inv.give(p, "saradomin_brew", 2);
-                Inv.give(p, "super_restore", 2);
-            }
-            case TOA -> {
-            }
-        }
+        Inv.give(p, "saradomin_brew", 2);
+        Inv.give(p, "super_restore", 2);
         Msg.game(p, "You take some supplies from the storage unit.");
     }
 
@@ -886,7 +1253,8 @@ public final class RaidInstance {
         deaths.merge(u, 1, Integer::sum);
         restore(p);
         RoomDef room = rooms.get(current);
-        boolean fighting = logics[current].started && !logics[current].done;
+        int at = roomAt(p.position());
+        boolean fighting = logics[current].started && !logics[current].done && (type != RaidType.TOA || at == current || at < 0);
         switch (type) {
             case COX -> {
                 int before = points(u);
@@ -903,13 +1271,14 @@ public final class RaidInstance {
                 }
             }
             case TOA -> {
-                int before = points(u);
-                points.put(u, RaidScaling.toaDeathPenalty(before));
-                say(p.getName().getString() + " has died and lost " + (before - points(u)) + " points.", ChatFormatting.RED);
+                // OSRS: a death costs 20% of your total reward points, at least 1,000.
+                int before = toaTotal(u);
+                points.put(u, ToaLoot.afterDeath(before));
+                say(p.getName().getString() + " has died and lost " + (before - toaTotal(u)) + " points.", ChatFormatting.RED);
                 if (fighting) {
                     down(p, room.name());
                 } else {
-                    teleport(p, spawn(current));
+                    teleport(p, spawn(at >= 0 ? at : current));
                 }
             }
         }
@@ -940,7 +1309,8 @@ public final class RaidInstance {
                 restore(p);
                 teleport(p, spawn(current));
             }
-            roomStartTick = ActionManager.gameTick();
+            roomStartTick = now();
+            roomPoints.clear();
             logic.started = true;
             logic.start();
             return;
@@ -960,6 +1330,55 @@ public final class RaidInstance {
         p.fallDistance = 0;
     }
 
+    // ------------------------------------------------------------------ logging out and back in (ToA)
+
+    /** Whether a member logging out stays in the party (ToA, OSRS: you may log back in and rejoin). */
+    boolean keepsOfflineMembers() {
+        return type == RaidType.TOA;
+    }
+
+    /**
+     * A member logged out. OSRS: logging out outside a safe area (the lobby, the Nexus, a cleared room) counts as a death
+     * in the room being fought; the player rejoins downed when they log back in.
+     */
+    void disconnected(ServerPlayer p) {
+        UUID u = p.getUUID();
+        int at = roomAt(p.position());
+        boolean unsafe = at == current && logics[current].started && !logics[current].done
+                && rooms.get(current).kind() != RoomDef.Kind.NEXUS && !downed.contains(u);
+        offline.put(u, now());
+        if (unsafe) {
+            deaths.merge(u, 1, Integer::sum);
+            int before = toaTotal(u);
+            points.put(u, ToaLoot.afterDeath(before));
+            downed.add(u);
+            say(p.getName().getString() + " has logged out mid-fight and lost " + (before - toaTotal(u)) + " points.", ChatFormatting.RED);
+            if (activePlayers().isEmpty() && !players().isEmpty()) {
+                wipe();
+            }
+        } else {
+            say(p.getName().getString() + " has logged out. They may log back in to rejoin.", ChatFormatting.GRAY);
+        }
+    }
+
+    /** A member who logged out mid-raid is back. */
+    void reconnected(ServerPlayer p) {
+        UUID u = p.getUUID();
+        if (offline.remove(u) == null) {
+            return;
+        }
+        if (downed.contains(u)) {
+            teleport(p, gallery(current));
+            Msg.red(p, "You rejoin the raid. You will rejoin your party when " + rooms.get(current).name() + " is defeated.");
+        } else if (roomAt(p.position()) < 0) {
+            teleport(p, spawn(current));
+        }
+        say(p.getName().getString() + " has rejoined the raid.", ChatFormatting.GRAY);
+        if (logics[current].started && !logics[current].done && activePlayers().isEmpty()) {
+            wipe();
+        }
+    }
+
     // ------------------------------------------------------------------ leaving
 
     /** Removes a player from the party (optionally sending them back to the entrance). */
@@ -968,6 +1387,7 @@ public final class RaidInstance {
             return;
         }
         downed.remove(u);
+        offline.remove(u);
         RaidManager.unbind(u);
         ToaSupplyService.forget(u);
         CoxSupplyService.forget(u);
@@ -986,6 +1406,9 @@ public final class RaidInstance {
         }
         if (u.equals(leader) && !party.isEmpty()) {
             leader = party.get(0);
+            if (type == RaidType.TOA) {
+                say(name(leader) + " now leads the party.", ChatFormatting.GRAY);
+            }
         }
     }
 
@@ -1008,7 +1431,35 @@ public final class RaidInstance {
         RaidBuilder.unloadSlot(world, slot);
     }
 
+    boolean closed() {
+        return closed;
+    }
+
     public String name(UUID u) {
         return names.getOrDefault(u, "?");
+    }
+
+    // ------------------------------------------------------------------ HUD
+
+    /** A short status line for the HUD: ToA path level, attempts left and time-limit countdown; the CoX/ToB mode. */
+    String hudStatus() {
+        if (type != RaidType.TOA) {
+            return mode == RaidMode.NORMAL ? "" : mode.displayName();
+        }
+        StringBuilder sb = new StringBuilder();
+        if (inPath()) {
+            sb.append("Path level ").append(pathLevel());
+        } else if (begun) {
+            sb.append("Paths ").append(pathsCompleted).append("/4");
+        }
+        if (retriesLeft >= 0 && begun) {
+            sb.append(sb.length() == 0 ? "" : "  ").append("Attempts ").append(retriesLeft + 1);
+        }
+        int limit = Invocation.timeLimitMinutes(invocations);
+        if (limit > 0 && beginTick >= 0 && !finished) {
+            long left = Math.max(0, limit * 100L - (now() - beginTick)) * 6 / 10;
+            sb.append(sb.length() == 0 ? "" : "  ").append(String.format("Limit %d:%02d", left / 60, left % 60));
+        }
+        return sb.toString();
     }
 }

@@ -73,24 +73,49 @@ public final class ToaSupplyService {
     /** Whether this player's liquid adrenaline is active. */
     static boolean adrenaline(ServerPlayer p) {
         Long until = ADRENALINE.get(p.getUUID());
-        return until != null && until > ActionManager.gameTick();
+        return until != null && until > RaidEffects.now();
     }
 
     // ------------------------------------------------------------------ the Helpful Spirit
 
-    /** The Helpful Spirit appears with three bundles; each player may claim one (OSRS). */
+    /** The Helpful Spirit appears in the Nexus with three bundles; each player may claim one (OSRS). */
     static void offer(RaidInstance raid) {
         for (ServerPlayer p : raid.players()) {
             PENDING.add(p.getUUID());
-            p.displayClientMessage(Component.literal("The Helpful Spirit offers you supplies. Choose one bundle:").withStyle(ChatFormatting.AQUA), false);
-            MutableComponent line = Component.literal("");
-            for (ToaSupplies.Bundle b : ToaSupplies.Bundle.values()) {
-                line.append(Component.literal("[" + b.displayName() + "] ").withStyle(s -> s.withColor(ChatFormatting.GREEN)
-                        .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/raids supplies " + b.name().toLowerCase(java.util.Locale.ROOT)))
-                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(b.contents())))));
-            }
-            p.displayClientMessage(line, false);
+            showOffer(p);
         }
+    }
+
+    private static void showOffer(ServerPlayer p) {
+        p.displayClientMessage(Component.literal("The Helpful Spirit in the Nexus offers you supplies. Choose one bundle:")
+                .withStyle(ChatFormatting.AQUA), false);
+        MutableComponent line = Component.literal("");
+        for (ToaSupplies.Bundle b : ToaSupplies.Bundle.values()) {
+            line.append(Component.literal("[" + b.displayName() + "] ").withStyle(s -> s.withColor(ChatFormatting.GREEN)
+                    .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/raids supplies " + b.name().toLowerCase(java.util.Locale.ROOT)))
+                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(b.contents())))));
+        }
+        p.displayClientMessage(line, false);
+    }
+
+    /** Talking to the Helpful Spirit in the Nexus: its offer again, if the player has one waiting. */
+    static void talk(ServerPlayer p, RaidInstance raid) {
+        if (raid.type != RaidType.TOA) {
+            return;
+        }
+        if (PENDING.contains(p.getUUID())) {
+            showOffer(p);
+        } else if (raid.pathsCompleted() < 2) {
+            Msg.game(p, "The Helpful Spirit drifts quietly. It will have supplies for you once two paths have been walked.");
+        } else {
+            Msg.game(p, raid.pathsCompleted() < 4 ? "The Helpful Spirit has nothing more for you until the last two paths are walked."
+                    : "The Helpful Spirit has nothing more to give. Good luck against the Wardens.");
+        }
+    }
+
+    /** Whether a player has a Helpful Spirit offer waiting (self-test). */
+    static boolean hasOffer(ServerPlayer p) {
+        return PENDING.contains(p.getUUID());
     }
 
     /** Claims a Helpful Spirit bundle ({@code /raids supplies <life|chaos|power>}). */
@@ -162,7 +187,7 @@ public final class ToaSupplyService {
         SkillSet skills = data.skills();
         int hpLevel = skills.level(Skill.HITPOINTS);
         int prayerLevel = skills.level(Skill.PRAYER);
-        long now = ActionManager.gameTick();
+        long now = RaidEffects.now();
         switch (id) {
             case ToaSupplies.NECTAR -> {
                 setHitpoints(p, ToaSupplies.afterNectar(hitpoints(p), hpLevel));
@@ -177,7 +202,7 @@ public final class ToaSupplyService {
                 skills.applyBoost(Skill.PRAYER, boost, 0.0);
                 data.setPrayerPoints(prayerLevel + boost);
                 com.runecraft.content.systems.RunEnergyService.restore(p, 10000);
-                com.runecraft.combat.PoisonService.cure(p, true, com.runecraft.osrs.Toxins.ANTIDOTE_PLUS_PLUS[0], now);
+                com.runecraft.combat.PoisonService.cure(p, true, com.runecraft.osrs.Toxins.ANTIDOTE_PLUS_PLUS[0], ActionManager.gameTick());
                 Msg.action(p, "You drink the ambrosia. You feel invincible!");
             }
             case ToaSupplies.TEARS -> {

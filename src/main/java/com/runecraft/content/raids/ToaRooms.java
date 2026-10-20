@@ -51,6 +51,11 @@ final class ToaRooms {
         }
 
         @Override
+        public boolean entersFromWest() {
+            return false;
+        }
+
+        @Override
         public void decorate() {
             tiles.clear();
             for (int dz = -4; dz <= 4; dz += 4) {
@@ -158,6 +163,11 @@ final class ToaRooms {
         }
 
         @Override
+        public boolean entersFromWest() {
+            return false;
+        }
+
+        @Override
         public void decorate() {
             RaidBuilder.set(world(), at(16, 0), RaidBuilder.module(RaidsContent.HET_SEAL));
             RaidBuilder.set(world(), at(16, 0).above(), Blocks.GOLD_BLOCK.defaultBlockState());
@@ -227,6 +237,11 @@ final class ToaRooms {
         }
 
         @Override
+        public boolean entersFromWest() {
+            return false;
+        }
+
+        @Override
         public void decorate() {
             for (int x = -8; x <= 8; x += 8) {
                 fixture(at(x, -14), RaidsContent.APMEKEN_PILLAR, "a pillar is cracking");
@@ -252,7 +267,7 @@ final class ToaRooms {
 
         @Override
         public void gameTick(long tick) {
-            long now = ActionManager.gameTick();
+            long now = RaidEffects.now();
             if (problem == null) {
                 if (--cooldown <= 0) {
                     List<BlockPos> list = new ArrayList<>(fixtures.keySet());
@@ -317,6 +332,11 @@ final class ToaRooms {
 
         Crondis(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
+        }
+
+        @Override
+        public boolean entersFromWest() {
+            return false;
         }
 
         @Override
@@ -412,6 +432,11 @@ final class ToaRooms {
 
         Kephri(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
+        }
+
+        @Override
+        public boolean exitsEast() {
+            return false;
         }
 
         @Override
@@ -786,6 +811,11 @@ final class ToaRooms {
         }
 
         @Override
+        public boolean exitsEast() {
+            return false;
+        }
+
+        @Override
         public void decorate() {
             for (int sx = -1; sx <= 1; sx += 2) {
                 for (int sz = -1; sz <= 1; sz += 2) {
@@ -1007,6 +1037,11 @@ final class ToaRooms {
         }
 
         @Override
+        public boolean exitsEast() {
+            return false;
+        }
+
+        @Override
         public void decorate() {
             for (int i = 0; i < 6; i++) {
                 RaidBuilder.set(world(), at(rnd().nextInt(30) - 15, rnd().nextBoolean() ? -19 : 19), Blocks.JUNGLE_LEAVES.defaultBlockState()
@@ -1217,6 +1252,11 @@ final class ToaRooms {
         }
 
         @Override
+        public boolean exitsEast() {
+            return false;
+        }
+
+        @Override
         public void decorate() {
             for (int x : new int[]{-6, 2}) {
                 for (int z = -14; z <= 14; z += 7) {
@@ -1391,6 +1431,11 @@ final class ToaRooms {
 
         Wardens(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
+        }
+
+        @Override
+        public boolean entersFromWest() {
+            return false;
         }
 
         /** Whether this creature is a phase 2 Warden's ejected core. */

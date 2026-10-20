@@ -15,7 +15,8 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * {@code /raids}: completion counts (chat + screen), {@code /raids leave}, {@code /raids level <n>}
  * (ToA party leader, before the raid begins), {@code /raids mode <mode>} (CoX Challenge Mode, ToB
- * Entry/Hard mode; party leader, before the raid begins) and {@code /raids invocations}.
+ * Entry/Hard mode; party leader, before the raid begins), {@code /raids invocations} (the ToA invocation interface),
+ * {@code /raids invocation <name>} and {@code /raids preset <n>} (its links), and {@code /raids supplies <bundle>}.
  */
 final class RaidCommands {
     private RaidCommands() {
@@ -27,6 +28,14 @@ final class RaidCommands {
                         .executes(ctx -> stats(ctx.getSource().getPlayerOrException()))
                         .then(Commands.literal("leave").executes(ctx -> leave(ctx.getSource().getPlayerOrException())))
                         .then(Commands.literal("invocations").executes(ctx -> invocations(ctx.getSource().getPlayerOrException())))
+                        .then(Commands.literal("invocation")
+                                .then(Commands.argument("name", StringArgumentType.greedyString())
+                                        .executes(ctx -> ToaInvocationMenu.toggle(ctx.getSource().getPlayerOrException(),
+                                                StringArgumentType.getString(ctx, "name")))))
+                        .then(Commands.literal("preset")
+                                .then(Commands.argument("index", IntegerArgumentType.integer(0, 20))
+                                        .executes(ctx -> ToaInvocationMenu.preset(ctx.getSource().getPlayerOrException(),
+                                                IntegerArgumentType.getInteger(ctx, "index")))))
                         .then(Commands.literal("supplies")
                                 .then(Commands.argument("bundle", StringArgumentType.word())
                                         .executes(ctx -> ToaSupplyService.claim(ctx.getSource().getPlayerOrException(),
@@ -75,11 +84,7 @@ final class RaidCommands {
             Msg.game(p, "You are not in the Tombs of Amascut.");
             return 0;
         }
-        StringBuilder sb = new StringBuilder();
-        for (Invocation i : raid.invocations()) {
-            sb.append(sb.length() == 0 ? "" : ", ").append(i.displayName()).append(" (").append(i.level()).append(")");
-        }
-        Msg.game(p, "Raid level " + raid.raidLevel() + ". " + (sb.length() == 0 ? "No invocations." : sb.toString()));
+        ToaInvocationMenu.show(p, raid);
         return 1;
     }
 
