@@ -637,6 +637,8 @@ public final class MonsterStatsTable {
         maxHit("ket_zek", "magic", 52); // was 49
         // Yt-HurKot (Level 108)
         row("yt_hurkot", 108, 60, 140, 100, 60, 120, 120, 4, 0, 0, 0, 100, 100, 0, 0, 0);
+        // Yt-HurKot (Level 141): JalTok-Jad's healers in the Inferno and TzHaar-Ket-Rak's challenges
+        row("yt_hurkot_inferno", 141, 90, 165, 125, 100, 150, 150, 4, 0, 0, 0, 130, 130, 0, 100, 80);
         // Jal-Nib
         row("jal_nib", 32, 10, 1, 1, 15, 15, 1, 4, -20, -20, -20, -20, -20, 0, 0, 0);
         // Jal-MejRah

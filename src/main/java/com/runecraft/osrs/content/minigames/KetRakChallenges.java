@@ -26,8 +26,9 @@ public final class KetRakChallenges {
     /** Tokkul paid for completing challenges 1-6 (OSRS Wiki "Rewards"). */
     private static final int[] TOKKUL = {80, 190, 480, 1190, 2970, 7430};
     /**
-     * Yt-HurKot each JalTok-Jad summons at half hitpoints. // approx: the wiki gives no count for the challenges; the
-     * Inferno's multi-Jad wave (68) and Zuk's Jad summon three.
+     * Yt-HurKot each JalTok-Jad summons at half hitpoints, healing like the Inferno's (untagged and adjacent only, OSRS Wiki
+     * "TzTok-Jad"). // approx: the wiki gives no count for the challenges; the Inferno's multi-Jad wave (68) and Zuk's Jad
+     * summon three.
      */
     public static final int HEALERS_PER_JAD = 3;
     /** Game ticks between the challenge starting and the Jads emerging. // approx */

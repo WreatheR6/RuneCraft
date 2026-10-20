@@ -684,6 +684,7 @@ yama_void_flare	Void Flare	Fire	130	140	2	demon	no	no
 yellow_portal	Portal (Pest Control)	Blue, Intermediate/veteran	0	250	3		yes	yes	
 young_impling	Young impling		0	10	0				
 yt_hurkot	Yt-HurKot	Level 108	108	60	1		no	no	60
+yt_hurkot_inferno	Yt-HurKot	Level 141	141	90	1		no	no	90
 yt_mejkot	Yt-MejKot	Standard	180	80	4		no	no	80
 zakln_gritch	Zakl'n Gritch		142	150	2	demon	no	no	150
 zamorak_crafter	Zamorak crafter		19	25	1		no	no	

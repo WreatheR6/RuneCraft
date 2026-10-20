@@ -85,7 +85,7 @@ public class FightCaveSession extends TzHaarSession {
     @Override
     protected boolean onBlock(ServerPlayer player, String blockId, BlockPos pos) {
         if (blockId.equals("minigame_exit")) {
-            int tokkul = TzHaarWaves.fightCaveForfeitTokkul(Math.max(0, wave - 1));
+            int tokkul = TzHaarWaves.fightCaveTokkul(Math.max(0, wave - 1), false);
             if (tokkul > 0) {
                 reward(player, "tokkul", tokkul);
                 Msg.game(player, "TzHaar-Mej-Jal: Well done in the cave, here, take TokKul as reward. (" + tokkul + ")");

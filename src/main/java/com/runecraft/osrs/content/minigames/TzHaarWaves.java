@@ -118,37 +118,116 @@ public final class TzHaarWaves {
         return INFERNO;
     }
 
-    /** Tokkul for leaving the Fight Cave early: roughly the tokkul value of the waves completed (approx.). */
-    public static int fightCaveForfeitTokkul(int wavesCompleted) {
-        if (wavesCompleted <= 0) {
-            return 0;
-        }
-        // Completing every wave pays 8,032 tokkul; partial runs scale quadratically (approx. of the wiki table).
-        return (int) Math.round(8032.0 * Math.pow(wavesCompleted / 62.0, 2));
+    // ------------------------------------------------------------------ Fight Cave spawn rotations
+
+    /** The Fight Cave's five spawn points (OSRS Wiki "TzHaar Fight Cave/Rotations"). */
+    public enum CaveSpawn {
+        SE, SW, C, NW, S
     }
 
-    /** Tokkul for completing the Fight Cave (8,032 plus the fire cape). */
+    /**
+     * The spawn cycle every rotation follows (OSRS Wiki "TzHaar Fight Cave", Map breakdown): each wave the highest-level
+     * monster spawns at the next point of the cycle, lower-levelled ones at the points after it.
+     */
+    private static final CaveSpawn[] CYCLE = {CaveSpawn.SE, CaveSpawn.SW, CaveSpawn.C, CaveSpawn.NW, CaveSpawn.SW, CaveSpawn.SE,
+            CaveSpawn.S, CaveSpawn.NW, CaveSpawn.C, CaveSpawn.SE, CaveSpawn.SW, CaveSpawn.S, CaveSpawn.NW, CaveSpawn.C, CaveSpawn.S};
+    /** Where in {@link #CYCLE} each of the 15 rotations starts (rotation 1 first), from the wiki's rotation table. */
+    private static final int[] ROTATION_START = {2, 13, 8, 12, 7, 3, 11, 6, 14, 5, 0, 9, 1, 10, 4};
+    public static final int FIGHT_CAVE_ROTATIONS = ROTATION_START.length;
+    /** TzTok-Jad's four Yt-HurKot always appear at these spawn points, whatever the rotation. */
+    public static final List<CaveSpawn> HEALER_SPAWNS = List.of(CaveSpawn.SE, CaveSpawn.S, CaveSpawn.NW, CaveSpawn.SW);
+
+    /**
+     * Spawn points of a Fight Cave wave's monsters in rotation {@code rotation} (1-15), one per monster of
+     * {@link #fightCave(int)} in the same order (highest level first). TzTok-Jad (wave 63) lands where wave 3's Tz-Kek did.
+     */
+    public static List<CaveSpawn> fightCaveSpawns(int rotation, int wave) {
+        int start = ROTATION_START[Math.floorMod(rotation - 1, FIGHT_CAVE_ROTATIONS)];
+        List<CaveSpawn> out = new ArrayList<>();
+        int n = fightCave(wave).size();
+        for (int i = 0; i < n; i++) {
+            out.add(CYCLE[(start + wave - 1 + i) % CYCLE.length]);
+        }
+        return out;
+    }
+
+    /** Monster level shown on the wiki's rotation pages for a Fight Cave creature id (0 if not one). */
+    public static int caveLevel(String id) {
+        return switch (id) {
+            case TZ_KIH -> 22;
+            case TZ_KEK -> 45;
+            case TOK_XIL -> 90;
+            case YT_MEJKOT -> 180;
+            case KET_ZEK -> 360;
+            case JAD -> 702;
+            case "yt_hurkot" -> 108;
+            default -> 0;
+        };
+    }
+
+    // ------------------------------------------------------------------ rewards
+
+    /** Tokkul for completing the Fight Cave (8,032 plus the fire cape): 63 waves of {@link #fightCaveTokkul} plus 4,000 for Jad. */
     public static final int FIGHT_CAVE_TOKKUL = 8032;
+    /** Extra tokkul for killing TzTok-Jad (Mod Kieren, quoted on the wiki's Fight Cave page). */
+    public static final int JAD_BONUS_TOKKUL = 4000;
+
+    /**
+     * Tokkul for a Fight Cave run that ended (death or leaving) after {@code wavesCompleted} waves: each wave pays two more
+     * than the last, N(N+1) (OSRS Wiki "TzHaar Fight Cave", Rewards); killing Jad completes wave 63 and adds 4,000.
+     */
+    public static int fightCaveTokkul(int wavesCompleted, boolean jadKilled) {
+        int n = Math.max(0, Math.min(FIGHT_CAVE_WAVES, wavesCompleted));
+        return n * (n + 1) + (jadKilled ? JAD_BONUS_TOKKUL : 0);
+    }
+
     /** Tokkul for completing the Inferno (16,440 plus the infernal cape). */
     public static final int INFERNO_TOKKUL = 16440;
-    /** Pet chances on completion (1 in N; halved when on a TzHaar slayer task in OSRS). */
+
+    /**
+     * Tokkul for an Inferno run that ended after {@code wavesCompleted} waves. The wiki only says it grows with the wave
+     * reached, up to 16,440; this scales it like the Fight Cave's N(N+1). // approx
+     */
+    public static int infernoTokkul(int wavesCompleted) {
+        int n = Math.max(0, Math.min(INFERNO_WAVES, wavesCompleted));
+        return n >= INFERNO_WAVES ? INFERNO_TOKKUL
+                : (int) Math.round(INFERNO_TOKKUL * n * (n + 1) / (double) (INFERNO_WAVES * (INFERNO_WAVES + 1)));
+    }
+
+    /** The elite Karamja Diary doubles the Fight Cave's and the Inferno's tokkul. */
+    public static int diaryTokkul(int tokkul, boolean eliteKaramja) {
+        return eliteKaramja ? tokkul * 2 : tokkul;
+    }
+
+    /** Pet chances on completion (1 in N), and on a TzHaar Slayer task (OSRS Wiki TzTok-Jad / TzKal-Zuk drops). */
     public static final int JAD_PET_CHANCE = 200;
+    public static final int JAD_PET_CHANCE_TASK = 100;
     public static final int ZUK_PET_CHANCE = 100;
+    public static final int ZUK_PET_CHANCE_TASK = 75;
+    /** Slayer experience for TzTok-Jad and TzKal-Zuk on a TzHaar task (wiki infoboxes). */
+    public static final int JAD_SLAYER_XP = 25250;
+    public static final int ZUK_SLAYER_XP = 101890;
 
-    /** Yt-HurKot that tend the Fight Cave's TzTok-Jad once it drops below half hitpoints. */
+    // ------------------------------------------------------------------ Jad healers
+
+    /** TzTok-Jad's level-108 healers and JalTok-Jad's level-141 ones (OSRS Wiki "Yt-HurKot"). */
+    public static final String HURKOT = "yt_hurkot";
+    public static final String HURKOT_INFERNO = "yt_hurkot_inferno";
+
+    /** The healer a Jad summons. */
+    public static String healerOf(String jadId) {
+        return JAD.equals(jadId) ? HURKOT : HURKOT_INFERNO;
+    }
+
+    /** Yt-HurKot that tend the Fight Cave's TzTok-Jad once it drops to half hitpoints. */
     public static final int FIGHT_CAVE_JAD_HEALERS = 4;
-    /** TzKal-Zuk's hitpoints. */
-    public static final int ZUK_HP = 1200;
-    /** Zuk summons a JalTok-Jad (with three healers) at this many hitpoints. */
-    public static final int ZUK_JAD_HP = 480;
-    /** Four Jal-MejJak arrive to heal Zuk at this many hitpoints. */
-    public static final int ZUK_HEALER_HP = 240;
-    /** The Jal-Xil + Jal-Zek reinforcement timer pauses below this many hitpoints until the Jad dies. */
-    public static final int ZUK_SET_PAUSE_HP = 600;
-    /** Game ticks between Zuk's Jal-Xil + Jal-Zek reinforcements (3:30). */
-    public static final int ZUK_SET_TICKS = 350;
 
-    /** Yt-HurKot each Inferno JalTok-Jad summons below half hitpoints: five on wave 67, three otherwise. */
+    /** Healers spawn when their Jad falls to or below half of its hitpoints (OSRS Wiki "Yt-HurKot"). */
+    public static boolean healersDue(float health, float maxHealth) {
+        return health > 0 && health <= maxHealth / 2f;
+    }
+
+    /** Yt-HurKot each Inferno JalTok-Jad summons at half hitpoints: five on wave 67, three otherwise (wave 68 and Zuk's Jad). */
     public static int infernoJadHealers(int wave) {
         return wave == 67 ? 5 : 3;
     }
@@ -162,5 +241,131 @@ public final class TzHaarWaves {
      */
     public static int hurKotHeal(String jadId, java.util.Random random) {
         return JAD.equals(jadId) ? 5 : 15 + random.nextInt(10);
+    }
+
+    /**
+     * Whether a Yt-HurKot heals its Jad (OSRS Wiki "Yt-HurKot" / "TzHaar Fight Cave"): Fight Cave healers heal within melee
+     * range of Jad, or while in combat with the player within 4 tiles of him; JalTok-Jad healers (the Inferno, TzHaar-Ket-Rak)
+     * only when untagged and right next to their Jad. {@code tilesFromJad} counts from the edge of Jad's body (1 = adjacent).
+     */
+    public static boolean hurKotHeals(String jadId, double tilesFromJad, boolean tagged) {
+        if (JAD.equals(jadId)) {
+            return tilesFromJad <= 1 || (tagged && tilesFromJad <= 4);
+        }
+        return !tagged && tilesFromJad <= 1;
+    }
+
+    /** Fight Cave healers that restored Jad to full health come back the next time he drops to half; JalTok-Jad's never do. */
+    public static boolean healersRespawn(String jadId) {
+        return JAD.equals(jadId);
+    }
+
+    // ------------------------------------------------------------------ the Inferno's waves
+
+    /** Hitpoints of each of the Inferno's three rocky supports (OSRS Wiki "Rocky support"). */
+    public static final int PILLAR_HP = 255;
+    /** Jal-Nib hit a pillar for 2-4 every 4 ticks (2.4 seconds) and always hit (OSRS Wiki "Inferno/Strategies"). */
+    public static final int NIBBLER_ATTACK_TICKS = 4;
+    public static final int NIBBLER_PILLAR_MIN = 2;
+    public static final int NIBBLER_PILLAR_MAX = 4;
+    /** The last regular wave: clearing it collapses the remaining pillars. */
+    public static final int PILLARS_COLLAPSE_AFTER = 66;
+
+    /** A pillar collapsing deals half the current hitpoints of anyone within one tile (OSRS Wiki "Inferno", wave 66). */
+    public static int pillarCollapseDamage(int currentHitpoints) {
+        return currentHitpoints / 2;
+    }
+
+    /** Jal-Zek: 1 in 10 of its attacks revives a monster slain this wave instead; it attacks again 8 ticks later (Mod Ash). */
+    public static final int ZEK_REVIVE_CHANCE = 10;
+    public static final int ZEK_REVIVE_PAUSE = 8;
+
+    /** Jal-Nib and the Jal-AkRek splits can't be revived (nor Jads, healers or Zuk); anything else slain this wave can, once. */
+    public static boolean revivable(String id) {
+        return !id.equals(JAL_NIB) && !id.startsWith("jal_akrek") && !id.startsWith("yt_hurkot") && !id.equals(JALTOK_JAD)
+                && !id.equals(ZUK) && !id.equals("jal_mejjak");
+    }
+
+    /**
+     * Jal-ImKot dig 50 ticks after the wave starts and every 40-60 ticks after that, unless they attacked in the last 15
+     * ticks; after resurfacing beside the player they wait 6 ticks before attacking (OSRS Wiki "Jal-ImKot").
+     */
+    public static final int IMKOT_FIRST_DIG = 50;
+    public static final int IMKOT_DIG_MIN = 40;
+    public static final int IMKOT_DIG_MAX = 60;
+    public static final int IMKOT_ATTACK_LOCK = 15;
+    public static final int IMKOT_SURFACE_DELAY = 6;
+
+    /** Jal-Ak read the player's protection prayer 3 ticks before each attack (every 6 ticks) (OSRS Wiki "Jal-Ak"). */
+    public static final int BLOB_READ_TICKS = 3;
+
+    /**
+     * The style a Jal-Ak attacks with (OSRS Wiki "Jal-Ak"): the one the read prayer doesn't block (magic against Protect from
+     * Missiles, ranged against Protect from Magic), random between the two otherwise; next to a player not praying melee it
+     * sometimes bites instead. {@code roll} is uniform in [0, 1). // approx: the wiki gives no melee chance (1 in 3 used)
+     */
+    public static String blobStyle(boolean protectMagic, boolean protectMissiles, boolean protectMelee, boolean adjacent, double roll) {
+        if (adjacent && !protectMelee && roll < 1 / 3.0) {
+            return "melee";
+        }
+        if (protectMagic && !protectMissiles) {
+            return "ranged";
+        }
+        if (protectMissiles && !protectMagic) {
+            return "magic";
+        }
+        return roll < 0.5 ? "magic" : "ranged";
+    }
+
+    /** Jal-MejRah drain 3 run energy per hit (OSRS Wiki "Jal-MejRah"), in hundredths of a percent. */
+    public static final int BAT_RUN_DRAIN = 300;
+
+    /** Wave 68's three JalTok-Jads attack every 9 ticks, each 3 ticks after the previous one (OSRS Wiki "Inferno/Strategies"). */
+    public static final int TRIPLE_JAD_SPEED = 9;
+    public static final int TRIPLE_JAD_STAGGER = 3;
+
+    // ------------------------------------------------------------------ TzKal-Zuk
+
+    /** TzKal-Zuk's hitpoints. */
+    public static final int ZUK_HP = 1200;
+    /** Zuk summons a JalTok-Jad (with three healers) at this many hitpoints. */
+    public static final int ZUK_JAD_HP = 480;
+    /** Four Jal-MejJak arrive to heal Zuk at this many hitpoints, and Zuk enrages. */
+    public static final int ZUK_HEALER_HP = 240;
+    /** The Jal-Xil + Jal-Zek set timer pauses at this many hitpoints (gaining {@link #ZUK_SET_DELAY}) until the Jad spawns. */
+    public static final int ZUK_SET_PAUSE_HP = 600;
+    /** Game ticks between Zuk's Jal-Xil + Jal-Zek sets (3:30). */
+    public static final int ZUK_SET_TICKS = 350;
+    /** One-time addition to the set timer when Zuk reaches 600 hitpoints (1:45). */
+    public static final int ZUK_SET_DELAY = 175;
+    /** Zuk attacks every 10 ticks, every 7 once enraged at 240 hitpoints (OSRS Wiki "Inferno/Strategies"). */
+    public static final int ZUK_SPEED = 10;
+    public static final int ZUK_ENRAGED_SPEED = 7;
+    /** The Ancestral Glyph holds 600 damage from the monsters that attack it (Zuk's own blasts never break it). */
+    public static final int GLYPH_HP = 600;
+    /** Each Jal-MejJak heals Zuk for 15-24 every 3 ticks until attacked (OSRS Wiki "Jal-MejJak"). */
+    public static final int MEJJAK_HEAL_TICKS = 3;
+
+    public static int mejJakHeal(java.util.Random random) {
+        return 15 + random.nextInt(10);
+    }
+
+    /** A Jal-MejJak lava ball, once the healer has been attacked: 5-10 damage in a 3x3 area (OSRS Wiki "Jal-MejJak"). */
+    public static int mejJakBlast(java.util.Random random) {
+        return 5 + random.nextInt(6);
+    }
+
+    /**
+     * One tick of Zuk's set timer (OSRS Wiki "Inferno/Strategies"): it counts down unless Zuk is at or below 600 hitpoints
+     * with his Jad not yet summoned. Returns the new countdown; 0 or less means a Jal-Xil + Jal-Zek set spawns now.
+     */
+    public static int zukSetTick(int untilSet, int zukHp, boolean jadSpawned) {
+        boolean paused = zukHp <= ZUK_SET_PAUSE_HP && !jadSpawned;
+        return paused ? untilSet : untilSet - 1;
+    }
+
+    /** TzKal-Zuk's real hitpoints from his Minecraft health (capped at {@code maxHealth}, e.g. 1,024 for his 1,200). */
+    public static int zukHitpoints(float health, float maxHealth) {
+        return maxHealth <= 0 ? 0 : (int) Math.ceil(health * ZUK_HP / maxHealth - 1e-6);
     }
 }
