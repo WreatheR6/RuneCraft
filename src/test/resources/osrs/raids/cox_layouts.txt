@@ -1,0 +1,29 @@
+# Chambers of Xeric layout templates, from runelite/runelite runelite-client/src/main/java/net/runelite/client/plugins/raids/solver/LayoutSolver.java (master, Oct 2026).
+# Rooms of floor 1 '.' rooms of floor 2 (the start and end rooms of each floor are implied): F = resource room, S = scavengers, C = combat, P = puzzle.
+# After ' - ' come the room-to-room directions RuneLite matches against the map (not used by the mod).
+FSCCP.PCSCF - #WNWSWN#ESEENW
+FSCCS.PCPSF - #WSEEEN#WSWNWS
+FSCPC.CSCPF - #WNWWSE#EENWWW
+SCCFC.PSCSF - #EEENWW#WSEEEN
+SCCFP.CCSPF - #NESEEN#WSWNWS
+SCFCP.CCSPF - #ESEENW#ESWWNW
+SCFCP.CSCFS - #ENEESW#ENWWSW
+SCFCPC.CSPCSF - #ESWWNWS#NESENES
+SCFPC.CSPCF - #WSWWNE#WSEENE
+SCFPC.PCCSF - #WSEENE#WWWSEE
+SCFPC.SCPCF - #NESENE#WSWWNE
+SCPFC.CCPSF - #NWWWSE#WNEESE
+SCPFC.CSPCF - #NEEESW#WWNEEE
+SCPFC.CSPSF - #WWSEEE#NWSWWN
+SCSPF.CCSPF - #ESWWNW#ESENES
+SFCCP.CSCPF - #WNEESE#NWSWWN
+SFCCS.PCPSF - #ENWWSW#ENESEN
+SPCFC.CSPCF - #WWNEEE#WSWNWS
+SPCFC.SCCPF - #ESENES#WWWNEE
+SPSFP.CCCSF - #NWSWWN#ESEENW
+SCFCP.CSCPF - #ENESEN#WWWSEE
+SCPFC.PCSCF - #WNEEES#NWSWNW
+SFCCPC.PCSCPF - #WSEENES#WWWNEEE
+FSPCC.PSCCF - #WWWSEE#ENWWSW
+FSCCP.PCSCF - #ENWWWS#NEESEN
+SCPFC.CCSSF - #NEESEN#WSWWNE

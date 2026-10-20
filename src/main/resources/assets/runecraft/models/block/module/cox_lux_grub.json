@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/cox_lux_grub_side",
+    "top": "runecraft:block/module/cox_lux_grub_top",
+    "bottom": "runecraft:block/module/cox_lux_grub_bottom"
+  }
+}

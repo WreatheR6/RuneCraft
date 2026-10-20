@@ -36,6 +36,9 @@ public final class CoxSupplyService {
     private static final Map<UUID, CoxSupplies.Strength> OVERLOAD_STRENGTH = new HashMap<>();
 
     static void init() {
+        // Round 33: the CoX and ToB rooms' combat hooks (crystal crabs, Vasa's crystals, ToB supplies) live with their rooms.
+        CoxRooms.init();
+        TobRooms.init();
         UseItemCallback.EVENT.register((player, world, hand) -> {
             ItemStack stack = player.getItemInHand(hand);
             if (stack.isEmpty() || !(player instanceof ServerPlayer sp)) {

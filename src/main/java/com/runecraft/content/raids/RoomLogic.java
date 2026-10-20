@@ -63,7 +63,7 @@ public class RoomLogic {
             case "crystal_crabs" -> new CoxRooms.CrystalCrabs(raid, def, index);
             case "olm" -> new CoxRooms.Olm(raid, def, index);
             case "cox_scavengers" -> new CoxRooms.Scavengers(raid, def, index);
-            case "cox_farming" -> new CoxRooms.Farming(raid, def, index);
+            case "cox_farming", "cox_hunting" -> new CoxRooms.Farming(raid, def, index);
             case "maiden" -> new TobRooms.Maiden(raid, def, index);
             case "bloat" -> new TobRooms.Bloat(raid, def, index);
             case "nylocas" -> new TobRooms.Nylocas(raid, def, index);
@@ -354,7 +354,7 @@ public class RoomLogic {
     private final java.util.Map<java.util.UUID, Long> clickCooldown = new java.util.HashMap<>();
 
     public boolean cooldown(ServerPlayer p, int ticks) {
-        long now = com.runecraft.action.ActionManager.gameTick();
+        long now = RaidEffects.now();
         Long last = clickCooldown.get(p.getUUID());
         if (last != null && now - last < ticks) {
             return true;

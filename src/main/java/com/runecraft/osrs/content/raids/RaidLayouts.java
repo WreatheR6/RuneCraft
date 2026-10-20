@@ -21,8 +21,24 @@ public final class RaidLayouts {
     public static final List<List<String>> COX_ROTATIONS = List.of(
             List.of("tekton", "vasa", "guardians", "mystics", "shamans", "muttadiles", "vanguards", "vespula"),
             List.of("tekton", "muttadiles", "guardians", "vespula", "shamans", "vasa", "vanguards", "mystics"));
-    /** CoX puzzle rooms. Their points are awarded per action (see the room logic), not on completion. */
-    public static final List<String> COX_PUZZLES = List.of("ice_demon", "thieving", "tightrope", "crystal_crabs");
+    /**
+     * CoX puzzle rooms, in their rotation (OSRS wiki: puzzles follow a rotation like the bosses, so ice demon tends to come
+     * with tightrope and crabs with thieving). Their points are awarded per action (see the room logic), not on completion.
+     */
+    public static final List<String> COX_PUZZLES = List.of("ice_demon", "tightrope", "crystal_crabs", "thieving");
+    /**
+     * The OSRS Chambers of Xeric layouts (RuneLite's raid layout solver; snapshot in
+     * {@code src/test/resources/osrs/raids/cox_layouts.txt}): the rooms of floor 1, a dot, the rooms of floor 2. F is a
+     * resource room, S scavengers, C a combat room and P a puzzle; each floor's start and end rooms are implied. Every
+     * floor has one resource room, one or two scavenger rooms and two or three combat or puzzle rooms.
+     */
+    public static final List<String> COX_LAYOUTS = List.of("FSCCP.PCSCF", "FSCCS.PCPSF", "FSCPC.CSCPF", "SCCFC.PSCSF",
+            "SCCFP.CCSPF", "SCFCP.CCSPF", "SCFCP.CSCFS", "SCFCPC.CSPCSF", "SCFPC.CSPCF", "SCFPC.PCCSF", "SCFPC.SCPCF",
+            "SCPFC.CCPSF", "SCPFC.CSPCF", "SCPFC.CSPSF", "SCSPF.CCSPF", "SFCCP.CSCPF", "SFCCS.PCPSF", "SPCFC.CSPCF",
+            "SPCFC.SCCPF", "SPSFP.CCCSF", "SCFCP.CSCPF", "SCPFC.PCSCF", "SFCCPC.PCSCPF", "FSPCC.PSCCF", "FSCCP.PCSCF",
+            "SCPFC.CCSSF");
+    /** CoX resource rooms: half have fishing spots, half have bats (OSRS wiki, "Chambers of Xeric/Food"). */
+    public static final List<String> COX_RESOURCE_ROOMS = List.of("cox_farming", "cox_hunting");
     /** ToA paths: puzzle room followed by the path's boss. */
     public static final List<List<String>> TOA_PATHS = List.of(
             List.of("scabaras_puzzle", "kephri"),
@@ -64,8 +80,13 @@ public final class RaidLayouts {
         room("cox_scavengers", "Scavengers", RaidType.COX, Kind.RESOURCE, "crypt", List.of(), 0,
                 "Scavenger beasts drop tools, cave worms and potion secondaries. The way on is open; come back at any time.");
         room("cox_farming", "Resources", RaidType.COX, Kind.RESOURCE, "jungle", List.of(), 0,
-                "Rake the weeds for seeds and grow herbs, fish the pool, net bats and cook on the fire. Mix herbs into "
-                        + "water-filled gourd vials (right-click a secondary) to brew raid potions.");
+                "Take a rake, spade and seed dibber from the old tools, rake the weeds for seeds and grow herbs, fish the pools "
+                        + "with cave worms (mind the cave snake) and cook on the fire. Mix herbs into water-filled gourd vials "
+                        + "(right-click a secondary) to brew raid potions.");
+        room("cox_hunting", "Resources", RaidType.COX, Kind.RESOURCE, "jungle", List.of(), 0,
+                "Take a rake, spade and seed dibber from the old tools, rake the weeds for seeds and grow herbs, net the bats "
+                        + "and cook them on the fire. Mix herbs into water-filled gourd vials (right-click a secondary) to brew "
+                        + "raid potions.");
         room("olm", "The Great Olm", RaidType.COX, Kind.FINAL, "lava", List.of("great_olm"), 0,
                 "Kill both claws to expose the head. Watch for falling crystals, acid, lightning and portals.");
         room("cox_reward", "Ancient chest", RaidType.COX, Kind.REWARD, "crypt", List.of(), 0,
@@ -130,22 +151,55 @@ public final class RaidLayouts {
         return Collections.unmodifiableMap(ROOMS);
     }
 
-    /** A Chambers of Xeric raid: lobby, two floors of combat + puzzle rooms, the Great Olm, reward. */
+    /**
+     * A Chambers of Xeric raid (OSRS): one of the {@link #COX_LAYOUTS}' two floors, then the Great Olm and the chest. The
+     * combat rooms are a consecutive window of one boss rotation (either direction, wrapping around) and the puzzles one of
+     * the puzzle rotation, the way scouted raids follow these cycles; each floor's resource room is a fishing or a hunting
+     * one at random.
+     */
     public static List<RoomDef> cox(Random random) {
-        List<String> rotation = COX_ROTATIONS.get(random.nextInt(COX_ROTATIONS.size()));
+        return resolve(coxRooms(COX_LAYOUTS.get(random.nextInt(COX_LAYOUTS.size())), random));
+    }
+
+    /** The room ids of a CoX raid built from one layout code (the lobby first, the Olm and the chest last). */
+    public static List<String> coxRooms(String layout, Random random) {
+        int combatCount = 0;
+        int puzzleCount = 0;
+        for (char c : layout.toCharArray()) {
+            combatCount += c == 'C' ? 1 : 0;
+            puzzleCount += c == 'P' ? 1 : 0;
+        }
+        List<String> combats = window(COX_ROTATIONS.get(random.nextInt(COX_ROTATIONS.size())), combatCount, random);
+        List<String> puzzles = window(COX_PUZZLES, puzzleCount, random);
+        List<String> ids = new ArrayList<>();
+        ids.add("cox_lobby");
+        int c = 0;
+        int p = 0;
+        for (char ch : layout.toCharArray()) {
+            switch (ch) {
+                case 'C' -> ids.add(combats.get(c++));
+                case 'P' -> ids.add(puzzles.get(p++));
+                case 'S' -> ids.add("cox_scavengers");
+                case 'F' -> ids.add(COX_RESOURCE_ROOMS.get(random.nextInt(COX_RESOURCE_ROOMS.size())));
+                case '.' -> {
+                }
+                default -> throw new IllegalArgumentException("CoX layout " + layout);
+            }
+        }
+        ids.add("olm");
+        ids.add("cox_reward");
+        return ids;
+    }
+
+    /** {@code n} consecutive entries of a rotation from a random start, either direction, wrapping around. */
+    private static List<String> window(List<String> rotation, int n, Random random) {
         int start = random.nextInt(rotation.size());
         int dir = random.nextBoolean() ? 1 : -1;
-        List<String> combats = new ArrayList<>();
-        for (int i = 0; i < 4; i++) {
-            combats.add(rotation.get(Math.floorMod(start + dir * i, rotation.size())));
+        List<String> out = new ArrayList<>();
+        for (int i = 0; i < Math.min(n, rotation.size()); i++) {
+            out.add(rotation.get(Math.floorMod(start + dir * i, rotation.size())));
         }
-        List<String> puzzles = new ArrayList<>(COX_PUZZLES);
-        Collections.shuffle(puzzles, random);
-        // OSRS: every floor has resource rooms; here the scavengers come after the first combat room and the farming
-        // room in the middle of the raid, so supplies can be gathered and brewed before the second floor.
-        List<String> ids = List.of("cox_lobby", combats.get(0), "cox_scavengers", puzzles.get(0), combats.get(1),
-                "cox_farming", combats.get(2), puzzles.get(1), combats.get(3), "olm", "cox_reward");
-        return resolve(ids);
+        return out;
     }
 
     /** The Theatre of Blood always runs in the same order. */

@@ -27,6 +27,17 @@ public final class RaidsContent implements ContentModule {
     public static final String BRAZIER = "cox_brazier";
     public static final String TIGHTROPE = "cox_tightrope";
     public static final String MEAT_TREE = "cox_meat_tree";
+    /** CoX (round 33): a room's permanent tool spawn (iron pickaxe, bronze axe and tinderbox, hammer), told by the room. */
+    public static final String COX_TOOLS = "cox_tools";
+    /** CoX resource rooms: the old tools (rake, spade, seed dibber) and the weeds that give seeds. */
+    public static final String COX_OLD_TOOLS = "cox_old_tools";
+    public static final String COX_WEEDS = "cox_weeds";
+    /** CoX Vespula: the lux grubs and the medivaemia roots whose blossoms heal them. */
+    public static final String COX_LUX_GRUB = "cox_lux_grub";
+    public static final String COX_MEDIVAEMIA_ROOT = "cox_medivaemia_root";
+    /** CoX tightrope: the keystone crystal across the chasm and the shimmering barrier it dispels. */
+    public static final String COX_KEYSTONE = "cox_keystone";
+    public static final String COX_SHIMMERING_BARRIER = "cox_shimmering_barrier";
     public static final String SCABARAS_TILE = "scabaras_tile";
     public static final String HET_SEAL = "het_seal";
     public static final String APMEKEN_PILLAR = "apmeken_pillar";
@@ -86,6 +97,13 @@ public final class RaidsContent implements ContentModule {
                 BlockDef.scripted(BRAZIER, "Brazier", 0x5A4A3A, "brazier"),
                 BlockDef.scripted(TIGHTROPE, "Tightrope", 0xA08A5A, "rope"),
                 BlockDef.scripted(MEAT_TREE, "Meat tree", 0x8A3A3A, "meat_tree"),
+                BlockDef.scripted(COX_TOOLS, "Tools", 0x7A6A4A, "crate"),
+                BlockDef.scripted(COX_OLD_TOOLS, "Old tools", 0x6A5A3A, "crate"),
+                BlockDef.scripted(COX_WEEDS, "Weeds", 0x5A7A2A, "roots"),
+                BlockDef.scripted(COX_LUX_GRUB, "Lux grub", 0xE0D0A0, "mushroom"),
+                BlockDef.scripted(COX_MEDIVAEMIA_ROOT, "Medivaemia root", 0x8A4A6A, "roots"),
+                BlockDef.scripted(COX_KEYSTONE, "Keystone crystal", 0x9AE0F0, "obelisk"),
+                BlockDef.scripted(COX_SHIMMERING_BARRIER, "Shimmering barrier", 0x8AB0F0, "portal_glow"),
                 BlockDef.scripted(SCABARAS_TILE, "Scabaras tile", 0xC8A050, "pressure_plate"),
                 BlockDef.scripted(HET_SEAL, "Het's seal", 0xC0A060, "statue"),
                 BlockDef.scripted(APMEKEN_PILLAR, "Pillar", 0xA08A60, "pillar"),

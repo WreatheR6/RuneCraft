@@ -31,6 +31,10 @@ final class TobRooms {
     private TobRooms() {
     }
 
+    /** Registers the hooks the ToB rooms need (called once from {@link CoxSupplyService#init}). */
+    static void init() {
+    }
+
     /** Moves passive crabs/spawn toward a point. */
     static void walk(LivingEntity e, Vec3 to) {
         if (e instanceof Mob mob) {
