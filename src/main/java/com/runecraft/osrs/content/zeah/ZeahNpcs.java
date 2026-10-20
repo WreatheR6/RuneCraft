@@ -9,10 +9,9 @@ import java.util.Map;
 
 /**
  * Kourend and Varlamore NPCs with their dialogue. The five house leaders Lord Kandur Hosidius,
- * Lady Shauna Piscarilius, Lord Shiro Shayzien and Lord Trobin Arceuus already stand in the
- * quests module's house squares (their talk handlers belong to the quest scripts); this module
- * adds Lady Vulcana Lovakengj, the real leader of House Lovakengj, plus each town's notable
- * residents, the travel NPCs and the guild masters.
+ * Lady Shauna Piscarilius, Lord Shiro Shayzien, Lord Trobin Arceuus and Lady Vulcana Lovakengj
+ * already stand in the quests module's house squares (their talk handlers belong to the quest
+ * scripts); this module adds each town's notable residents, the travel NPCs and the guild masters.
  */
 public final class ZeahNpcs {
     private ZeahNpcs() {
@@ -23,7 +22,6 @@ public final class ZeahNpcs {
     public static final String CAPTAIN_MAGORO = "zeah_captain_magoro";
     public static final String PRIMIO = "zeah_primio";
     public static final String PRIMIO_CIVITAS = "zeah_primio_civitas";
-    public static final String LADY_VULCANA = "zeah_lady_vulcana_lovakengj";
     public static final String THIRUS = "zeah_thirus";
     public static final String HUNTMASTER_GILMAN = "zeah_huntmaster_gilman";
 
@@ -111,10 +109,7 @@ public final class ZeahNpcs {
                 "Every soldier needs proper armour. The Shayzien sets come in five grades; the fifth is the best.",
                 "Wear full Shayzien (5) and the shamans' acid won't poison you.");
         // ---- Lovakengj ----
-        npc(out, LADY_VULCANA, "Lady Vulcana Lovakengj", ZeahPlaces.LOVAKENGJ, -3, 3, 0xD8A88D, 0x6A6A6C, 0x3A3A3F, 0xC07A30,
-                "House Lovakengj mines and smiths for all of Kourend. Our forges never cool.",
-                "The Lovakite mine and the Blast Mine feed our furnaces. Dynamite is cheap - mistakes are not.",
-                "The minecart network was built by my house. It will carry you anywhere in the kingdom for a few coins.");
+        // Lady Vulcana Lovakengj stands in the Lovakengj Assembly as the quests module's Forsaken Tower NPC.
         npc(out, THIRUS, "Thirus", ZeahPlaces.BLAST_MINE, 3, 3, 0xC89870, 0x5A5A5A, 0x3A3A3A, 0xE0A020,
                 "The hard rock here needs dynamite. Bring a tinderbox and Mining level 43.",
                 "I sell dynamite for 40 coins a stick. Talk to me again with coins to buy a stick.");

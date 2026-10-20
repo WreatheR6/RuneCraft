@@ -376,6 +376,12 @@ public final class QuestInterpreter {
 
     /** Executes a trigger whose conditions are met. */
     static void fire(ServerPlayer p, QuestSpec q, Trigger t, String speaker) {
+        // a repeatable "raise the boss here" objective (nothing else to do) waits while its boss is still around, instead of
+        // repeating its lines every second
+        if (t.kind == Trigger.Kind.REACH && t.next == t.stage && t.spawn != null && t.setFlags.isEmpty() && t.flagOneOf.isEmpty()
+                && t.give.isEmpty() && t.take.isEmpty() && bossNearby(p, t.spawn)) {
+            return;
+        }
         if (!t.take.isEmpty() && !QuestApi.takeAll(p, t.take)) {
             return;
         }

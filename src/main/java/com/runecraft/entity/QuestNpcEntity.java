@@ -88,6 +88,8 @@ public class QuestNpcEntity extends PathfinderMob {
         com.runecraft.osrs.content.NpcDef def = com.runecraft.osrs.content.ContentRegistry.npc(id);
         if (def != null) {
             setNpc(def);
+            // Left at the place it stood before it moved: the new place spawns its own copy.
+            misplaced = com.runecraft.osrs.content.quests.QuestNpcMoves.stale(def, getBlockX(), getBlockZ());
         } else {
             try {
                 QuestNpc q = QuestNpc.valueOf(id);
@@ -95,7 +97,8 @@ public class QuestNpcEntity extends PathfinderMob {
                 // Saved by an older version near the town centre: the character now spawns on its own OSRS tile.
                 misplaced = q.remote() && Math.max(Math.abs(getBlockX() - q.blockX()), Math.abs(getBlockZ() - q.blockZ())) > QuestNpc.REMOTE;
             } catch (IllegalArgumentException ignored) {
-                // keep default
+                // An NPC that no longer exists (removed or merged into another module's): it would otherwise act as the Cook.
+                misplaced = true;
             }
         }
     }

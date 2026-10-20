@@ -193,7 +193,10 @@ final class LateQuestsB {
                 .reach("bcs_ruins_of_ullek", 8).needFlag("bcs_urns").spawn("champion_of_scabaras")
                 .say("* The spirit of Mehhar, son of Osmumten, teaches you an incantation to free the High Priest of Scabaras. You take a rusty",
                         "* key from the urn at the back and unlock the door upstairs: the Champion of Scabaras!")
-                .stage("I must defeat the Champion of Scabaras.")
+                .stage("I must defeat the Champion of Scabaras in the tomb beneath the Ruins of Ullek.")
+                // wiki: the door to the champion stays unlocked after a death or teleport, so he waits at Ullek to be fought again
+                .reach("bcs_ruins_of_ullek", 8).stay().spawn("champion_of_scabaras")
+                .say("* You unlock the door upstairs in the tomb again: the Champion of Scabaras is waiting.")
                 .kill("champion_of_scabaras")
                 .say("* The Champion of Scabaras falls. You free the High Priest of Scabaras: Amascut has captured the lesser gods in Osmumten's",
                         "* tomb and controls the Pharaoh. He confesses to the locusts, the frogs and the poisoned cows, but not to the pox.")
@@ -406,7 +409,8 @@ final class LateQuestsB {
         b.npc("lord_kandur_hosidius", "Lord Kandur Hosidius", "hosidius", 0, 3, 0xE8C0C4, 0x3A8A3A, 0x2A5A2A, 0xE0C053);
         b.npc("lady_shauna_piscarilius", "Lady Shauna Piscarilius", "great_kourend", 3, -2, 0xF0D0C3, 0x3A5A9B, 0x2A3A6B, 0xC08A3F);
         b.npc("lord_shiro_shayzien", "Lord Shiro Shayzien", "shayzien", 0, 3, 0xC8986D, 0xA02A2C, 0x5A1A1C, 0x2A2A30);
-        // Lovakengj's leader, Lady Vulcana (the id predates the rename), at the Lovakengj Assembly (wiki start tile 1483, 3748).
+        // Lovakengj's leader, Lady Vulcana (the id predates the rename), at the Lovakengj Assembly (wiki start tile 1483, 3748). The
+        // only Lady Vulcana: the zeah module's town copy was dropped, and her lines there are her post-quest lines here.
         b.spot("fsk_lovakengj_assembly", "Lovakengj Assembly", 1483, 3748);
         b.npc("lord_kandur_lovakengj", "Lady Vulcana Lovakengj", "fsk_lovakengj_assembly", 0, 0, 0xD8A88D, 0x6A6A6C, 0x3A3A3F, 0xC07A30);
         // Undor on the west side of the Wintertodt camp. // approx tile
@@ -480,7 +484,8 @@ final class LateQuestsB {
         b.quest("the_forsaken_tower", "The Forsaken Tower", Difficulty.INTERMEDIATE, 1)
                 .reqQuest("client_of_kourend").xp(Skill.MINING, 500).xp(Skill.SMITHING, 500).reward("coins:6000")
                 .unlock("Free use of the Lovakengj Minecart Network")
-                .stage("I can start this quest by speaking to Lady Vulcana Lovakengj in the Lovakengj Assembly. (Requires Client of Kourend.)")
+                .stage("I can start this quest by speaking to Lady Vulcana Lovakengj in the Lovakengj Assembly, in the south of Lovakengj. "
+                        + "(Requires Client of Kourend.)")
                 .talk("lord_kandur_lovakengj").say("The Doors of Dinh are failing, and only Dinh knew their secrets.",
                         "@Councillor Unkar: The blacksmith Undor has found the cause. He's at the Wintertodt camp; go and help him.")
                 .stage("I should help Undor at the Wintertodt camp, then recover Dinh's hammer from the Forsaken Tower west of Lovakengj.")
@@ -506,7 +511,10 @@ final class LateQuestsB {
                 .missing("You have Dinh's hammer? Then take it to Undor at the Wintertodt camp at once!")
                 // saves from before round 33 reached this stage without meeting Undor (and without the hammer): the old ending
                 .talk("lord_kandur_lovakengj").unlessFlag("fsk_undor")
-                .say("The tower's power flows to our forges again? Then Kourend owes you. Take this, and ride our minecarts freely.");
+                .say("The tower's power flows to our forges again? Then Kourend owes you. Take this, and ride our minecarts freely.")
+                .done("lord_kandur_lovakengj", "House Lovakengj mines and smiths for all of Kourend. Our forges never cool.",
+                        "The Lovakite mine and the Blast Mine feed our furnaces. Dynamite is cheap - mistakes are not.",
+                        "The minecart network was built by my house. It will carry you anywhere in the kingdom for a few coins.");
         b.quest("the_ascent_of_arceuus", "The Ascent of Arceuus", Difficulty.INTERMEDIATE, 1)
                 .xp(Skill.HUNTER, 1500).xp(Skill.RUNECRAFT, 500) // OSRS (current quest XP rewards)
                 .reward("coins:2000") // wiki: 2,000 coins

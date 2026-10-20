@@ -254,15 +254,16 @@ final class GrandmasterQuests {
                 .attack(AttackDef.of("explosive_orb", AttackType.MAGIC, 45, 12, 1).special(Special.SKY_STRIKE, 0)
                         .telegraph(3, "Surok throws an explosive orb at your feet!"))
                 .drops(Drop.always("bones")).skin(0xD8C0C0, 0x1A1A2A, 0x101018, 0x6A1A1D));
-        // Wiki: level 524, 750 HP (275 in every stat but 286 Strength), 40 in each form every 6 ticks; it prays against the
-        // player's style from 50% and attacks harder from 25%.
+        // Wiki: level 524, 750 HP (275 in every stat but 286 Strength), 40 in each form every 6 ticks, four attacks per form.
+        // From 550 HP (73%) it attacks every 5 ticks and prays against one style, from 200 HP (27%) every 2 ticks and against
+        // two: QuestBossScripts.BalanceForms runs the forms, prayers and speeds (BalanceElemental); the phases only announce them.
         b.boss(BossDef.of("balance_elemental", "Balance Elemental").level(524).stats(750, 275, 286, 275, 275, 275).speed(6)
                 .defenceBonus(5, 0, -40, -40, 0)
                 .attack(AttackDef.of("melee_form", AttackType.CRUSH, 40, 3, 4))
                 .attack(AttackDef.of("ranged_form", AttackType.RANGED, 40, 10, 4))
                 .attack(AttackDef.of("magic_form", AttackType.MAGIC, 40, 10, 4).particle("minecraft:enchant"))
-                .phase(50, "The Balance Elemental begins praying against your attacks!", 1.0, false)
-                .phase(25, "The Balance Elemental shifts faster and hits harder!", 1.25, false)
+                .phase(73, "The Balance Elemental quickens and begins praying against your attacks!", 1.0, false)
+                .phase(27, "The Balance Elemental quickens again and prays against two of your styles!", 1.0, false)
                 .drops(Drop.always("coins")).size(1.2f, 2.6f, 1.0f).at("guthix_sanctum").arena(12, "void"));
         b.quest("while_guthix_sleeps", "While Guthix Sleeps", Difficulty.GRANDMASTER, 5)
                 .reqQuest("defender_of_varrock", "the_path_of_glouphrie", "fight_arena", "dream_mentor", "the_hand_in_the_sand", "wanted", "temple_of_the_eye", "a_tail_of_two_cats", "tears_of_guthix", "nature_spirit")

@@ -4,6 +4,8 @@ import com.runecraft.boss.BossScript;
 import com.runecraft.boss.BossScripts;
 import com.runecraft.boss.DataBossEntity;
 import com.runecraft.osrs.AttackType;
+import com.runecraft.osrs.content.AttackDef;
+import com.runecraft.osrs.content.quests.BalanceElemental;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import net.minecraft.ChatFormatting;
@@ -22,6 +24,86 @@ final class QuestBossScripts {
         BossScripts.register("fareed", Fareed::new);
         BossScripts.register("head_menaphite_guard", FalseGods::new);
         BossScripts.register("dark_squall", MagicOnly::new);
+        BossScripts.register("balance_elemental", BalanceForms::new);
+    }
+
+    /**
+     * While Guthix Sleeps: the Balance Elemental fights four attacks at a time in each form, and below 550 / 200 HP it
+     * quickens and protects against one / two styles ({@link BalanceElemental}, wiki).
+     */
+    static final class BalanceForms implements BossScript {
+        private int form = -1;
+        private int attacks;
+        private long lastMessage;
+
+        private static int hp(DataBossEntity boss) {
+            return (int) Math.ceil(boss.getHealth() * boss.trueHitpoints() / boss.getMaxHealth());
+        }
+
+        private void changeForm(DataBossEntity boss) {
+            int next = boss.getRandom().nextInt(form < 0 ? 3 : 2);
+            form = form >= 0 && next >= form ? next + 1 : next;
+            attacks = 0;
+            announce(boss, "The Balance Elemental turns " + BalanceElemental.FORM_NAMES[form] + "! (" + BalanceElemental.styleName(form)
+                    + " attacks)", ChatFormatting.AQUA);
+        }
+
+        @Override
+        public void onSpawn(DataBossEntity boss) {
+            changeForm(boss);
+        }
+
+        @Override
+        public void gameTick(DataBossEntity boss, long gameTick) {
+            if (form < 0) {
+                changeForm(boss); // reloaded: scripts are not saved
+            }
+            int speed = BalanceElemental.attackSpeed(hp(boss));
+            if (boss.stats() != null && boss.stats().attackSpeed() != speed) {
+                boss.overrideStats(s -> new com.runecraft.combat.MonsterStats(s.name(), s.combatLevel(), s.hitpoints(), s.attack(),
+                        s.strength(), s.defence(), s.magic(), s.ranged(), s.defenceBonus(), speed, s.style(), s.maxHit(), s.monster(),
+                        s.profile(), s.boss()));
+            }
+        }
+
+        @Override
+        public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
+            if (form < 0 || boss.def() == null) {
+                return null;
+            }
+            for (AttackDef a : boss.def().attacks) {
+                if (a.name().equals(BalanceElemental.FORM_ATTACKS[form])) {
+                    return a;
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public AttackDef beforeAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
+            if (form >= 0 && ++attacks >= BalanceElemental.ATTACKS_PER_FORM) {
+                changeForm(boss); // the next attack comes in the new form
+            }
+            return attack;
+        }
+
+        @Override
+        public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            int hp = hp(boss);
+            if (form < 0 || !BalanceElemental.protects(form, BalanceElemental.family(type), hp)) {
+                return damage;
+            }
+            long now = boss.level().getGameTime();
+            if (now - lastMessage > 40) {
+                lastMessage = now;
+                Msg.action(attacker, hp < BalanceElemental.TWO_PRAYERS_BELOW
+                        ? "The " + BalanceElemental.FORM_NAMES[form] + " Balance Elemental is protected from that. Only "
+                                + BalanceElemental.styleName(BalanceElemental.vulnerableStyle(form)) + " will hurt it now."
+                        : "The " + BalanceElemental.FORM_NAMES[form] + " Balance Elemental is praying against "
+                                + BalanceElemental.styleName(BalanceElemental.prayedStyle(form)) + ".");
+            }
+            return 0;
+        }
     }
 
     /** While Guthix Sleeps: Surok Magis, the Dark Squall, can only be hurt with magic (wiki). */
