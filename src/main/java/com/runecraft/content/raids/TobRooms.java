@@ -144,7 +144,10 @@ final class TobRooms {
         ItemEntity drop = new ItemEntity(raid.world, p.getX(), p.getY() + 0.2, p.getZ(), Inv.stack(TobBosses.DAWNBRINGER, 1));
         drop.setDefaultPickUpDelay();
         drop.setUnlimitedLifetime();
-        raid.world.addFreshEntity(drop);
+        Verzik room = Verzik.of(raid, p.position());
+        if (raid.world.addFreshEntity(drop) && room != null) {
+            room.dropped.add(drop);
+        }
         raid.say("The Dawnbringer falls to the floor.");
     }
 
@@ -2458,18 +2461,33 @@ final class TobRooms {
                     n += Inv.count(p, TobBosses.DAWNBRINGER);
                 }
             }
+            return n + floorDawnbringers();
+        }
+
+        /**
+         * Dawnbringers dropped in this room by a holder who died or left, until someone picks them up. Kept by reference as
+         * well as searched for: an item entity in a chunk the server has not yet confirmed as loaded (a room built moments
+         * before) is left out of area searches, and must still count as lying on the floor.
+         */
+        private final List<ItemEntity> dropped = new ArrayList<>();
+
+        /** The Dawnbringer item entities lying in this room. */
+        List<ItemEntity> floorItems() {
+            dropped.removeIf(e -> e.isRemoved() || !TobBosses.DAWNBRINGER.equals(Inv.idOf(e.getItem())));
+            List<ItemEntity> found = new ArrayList<>(dropped);
             for (ItemEntity e : world().getEntitiesOfClass(ItemEntity.class, RaidBuilder.roomBox(raid.slot, index),
                     e -> TobBosses.DAWNBRINGER.equals(Inv.idOf(e.getItem())))) {
-                n += e.getItem().getCount();
+                if (!found.contains(e)) {
+                    found.add(e);
+                }
             }
-            return n;
+            return found;
         }
 
         /** Dawnbringers lying on the floor of this room. */
         int floorDawnbringers() {
             int n = 0;
-            for (ItemEntity e : world().getEntitiesOfClass(ItemEntity.class, RaidBuilder.roomBox(raid.slot, index),
-                    e -> TobBosses.DAWNBRINGER.equals(Inv.idOf(e.getItem())))) {
+            for (ItemEntity e : floorItems()) {
                 n += e.getItem().getCount();
             }
             return n;
@@ -2502,10 +2520,8 @@ final class TobRooms {
                     Msg.game(p, "The weapon falls apart in your hand as Verzik's shield is destroyed.");
                 }
             }
-            for (ItemEntity e : world().getEntitiesOfClass(ItemEntity.class, RaidBuilder.roomBox(raid.slot, index),
-                    e -> TobBosses.DAWNBRINGER.equals(Inv.idOf(e.getItem())))) {
-                e.discard();
-            }
+            floorItems().forEach(ItemEntity::discard);
+            dropped.clear();
         }
 
         /**
@@ -3457,6 +3473,9 @@ final class TobRooms {
             if (alive(athanatos)) {
                 athanatos.discard();
             }
+            // A Dawnbringer left on the floor goes with the room (the shutdown sweep only finds entities it can see).
+            dropped.forEach(ItemEntity::discard);
+            dropped.clear();
             for (Crab c : crabs) {
                 if (c.mob.isAlive()) {
                     c.mob.discard();
@@ -3528,13 +3547,11 @@ final class TobRooms {
             w.expect(w.count(TobBosses.DAWNBRINGER) == 1, "a lost Dawnbringer could not be found again");
             // OSRS: the Dawnbringer drops to the floor when its holder dies or leaves, and the skeleton stays empty meanwhile.
             TobRooms.dropDawnbringer(raid, w.player());
-            w.expect(w.count(TobBosses.DAWNBRINGER) == 0 && floorDawnbringers() == 1, "the Dawnbringer did not drop to the floor");
+            w.expect(w.count(TobBosses.DAWNBRINGER) == 0 && floorDawnbringers() == 1, "the Dawnbringer did not drop to the floor (carried "
+                    + w.count(TobBosses.DAWNBRINGER) + ", on the floor " + floorDawnbringers() + ")");
             w.use(bones);
             w.expect(w.count(TobBosses.DAWNBRINGER) == 0, "the skeleton gave a second Dawnbringer while one lay on the floor");
-            for (ItemEntity e : world().getEntitiesOfClass(ItemEntity.class, RaidBuilder.roomBox(raid.slot, index),
-                    e -> TobBosses.DAWNBRINGER.equals(Inv.idOf(e.getItem())))) {
-                e.discard(); // picked up again
-            }
+            floorItems().forEach(ItemEntity::discard); // picked up again
             w.hold(TobBosses.DAWNBRINGER);
             // Its range is 7 tiles: from the far end of the hall it can't reach her.
             w.moveTo(at(-RaidBuilder.HALF + 2, 0));

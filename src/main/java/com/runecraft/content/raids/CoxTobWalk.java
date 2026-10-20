@@ -239,6 +239,7 @@ public final class CoxTobWalk {
             RoomDef def = raid.rooms.get(i);
             room = def.id() + " (room " + i + ")";
             int pointsBefore = raid.points(player.getUUID());
+            settle(i);
             // The previous room's exit is open: walk down the corridor into this room.
             moveTo(raid.spawn(i));
             tick(1);
@@ -303,6 +304,45 @@ public final class CoxTobWalk {
         expect(RaidManager.of(player) == raid, "a CoX death removed the player from the raid");
         moveTo(raid.spawn(room));
         return "death: " + before + " -> " + after + " points, respawned in room " + floor;
+    }
+
+    /** How long {@link #settle} waits for a room's chunks at most. */
+    private static final long SETTLE_NANOS = 5_000_000_000L;
+
+    /**
+     * Gives the server the moment a party walking in real time always gives it before entering room {@code room}. The walk
+     * plays a whole raid inside one server tick, but a chunk the raid force-loads only becomes visible to entity searches
+     * (and its creatures and items only tick) once the server confirms the chunk on its main thread, normally between
+     * ticks. A room is built as the party enters the one before it (a re-used instance slot re-loads chunks it released a
+     * tick ago), so it can still be hidden when the walk arrives: an item dropped there (the Dawnbringer) or a creature
+     * spawned there is then left out of every area search. This runs the server's queued chunk work until every chunk of
+     * the room is entity-ticking, at most {@link #SETTLE_NANOS}; a room still loading after that is noted.
+     */
+    private void settle(int room) {
+        net.minecraft.server.level.ServerChunkCache chunks = raid.world.getChunkSource();
+        BlockPos c = raid.center(room);
+        long deadline = System.nanoTime() + SETTLE_NANOS;
+        while (!entityTicking(c, RaidBuilder.HALF + 1)) {
+            if (System.nanoTime() > deadline) {
+                notes.add("room " + room + "'s chunks were still loading after " + SETTLE_NANOS / 1_000_000_000L + " s");
+                return;
+            }
+            if (!chunks.pollTask()) {
+                java.util.concurrent.locks.LockSupport.parkNanos(100_000L); // wait for the chunk workers
+            }
+        }
+    }
+
+    /** Whether every chunk within {@code r} blocks of {@code c} is loaded, visible and ticking for entities. */
+    private boolean entityTicking(BlockPos c, int r) {
+        for (int x = (c.getX() - r) >> 4; x <= (c.getX() + r) >> 4; x++) {
+            for (int z = (c.getZ() - r) >> 4; z <= (c.getZ() + r) >> 4; z++) {
+                if (!raid.world.isPositionEntityTicking(new BlockPos(x << 4, c.getY(), z << 4))) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     /** The default solve: kill every creature the room tracks. */
