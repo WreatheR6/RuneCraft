@@ -428,9 +428,9 @@ public enum Invocation {
         return set.contains(ANCIENT_HASTE) ? 9 : 12;
     }
 
-    /** A phase 2 Warden's attack interval in game ticks (OSRS: faster with Acceleration). // approx: 5 / 4 */
+    /** A phase 2 Warden's attack interval in game ticks (OSRS infobox: 7; faster with Acceleration). // approx: 5 */
     public static int wardensAttackEvery(Set<Invocation> set) {
-        return set.contains(ACCELERATION) ? 4 : 5;
+        return set.contains(ACCELERATION) ? 5 : 7;
     }
 
     /** Game ticks between the obelisk's phase 2 strikes (OSRS: Acceleration charges it faster). // approx: 15 / 11 */

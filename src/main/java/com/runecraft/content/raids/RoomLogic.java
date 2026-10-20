@@ -79,7 +79,7 @@ public class RoomLogic {
             case "akkha" -> new ToaBossRooms.Akkha(raid, def, index);
             case "baba" -> new ToaBossRooms.Baba(raid, def, index);
             case "zebak" -> new ToaBossRooms.Zebak(raid, def, index);
-            case "wardens" -> new ToaRooms.Wardens(raid, def, index);
+            case "wardens" -> new ToaWardens(raid, def, index);
             default -> new RoomLogic(raid, def, index);
         };
     }
@@ -197,6 +197,11 @@ public class RoomLogic {
             }
         }
         spawned.clear();
+    }
+
+    /** A short note for the raid HUD's status line (a charge, a countdown...), or null. */
+    String hudNote() {
+        return null;
     }
 
     /** The boss shown on the raid HUD (first living tracked boss). */

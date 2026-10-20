@@ -74,7 +74,7 @@ final class ToaBossRooms {
                 if (done) {
                     break;
                 }
-                if (alive(boss) && bossVulnerable(boss)) {
+                if (alive(boss) && bossVulnerable(boss) && !selfTestHolds()) {
                     t.hit(boss, damage, styleFor(boss, style));
                 }
                 t.tick(1);
@@ -83,6 +83,11 @@ final class ToaBossRooms {
                     + ")");
             RaidSelfTest.expect(raid.attacksOnParty() > attacksBefore, def.name() + ": the boss never attacked");
             return def.name() + " killed in " + guard + " ticks";
+        }
+
+        /** Self-test: whether a player would be busy with something else than the boss right now (Ba-Ba's boulders). */
+        boolean selfTestHolds() {
+            return false;
         }
 
         /** The style the self-test hits a boss with (rooms override to dodge protection prayers). */
@@ -1469,6 +1474,12 @@ final class ToaBossRooms {
                 living(k).forEach(LivingEntity::discard);
             }
             clearDebris();
+        }
+
+        /** While the boulders roll, players deal with them (and can't reach her throne). */
+        @Override
+        boolean selfTestHolds() {
+            return rolling;
         }
 
         /** Whether this boulder is the cracked one (ranged always hits it for its maximum). */

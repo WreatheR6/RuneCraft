@@ -128,9 +128,16 @@ public final class RaidManager {
         });
         CombatHooks.addModifier(new CombatHooks.PlayerAttackModifier() {
             /** OSRS: melee always hits a Warden's ejected core for its maximum; baboons and siphons see ToaPuzzles. */
+            /** OSRS: attacks on the phase 2 Warden always hit (its shield takes whatever the attack's accuracy allows). */
+            @Override
+            public double accuracy(ServerPlayer player, LivingEntity target, AttackType type) {
+                RaidInstance raid = at(target);
+                return raid != null && raid.logic() instanceof ToaWardens w && w.alwaysAccurate(target) ? 1000.0 : 1.0;
+            }
+
             @Override
             public boolean alwaysMaxHit(ServerPlayer player, LivingEntity target, AttackType type) {
-                if (ToaRooms.Wardens.isCore(target) && (type == AttackType.STAB || type == AttackType.SLASH || type == AttackType.CRUSH)) {
+                if (ToaWardens.isCore(target) && (type == AttackType.STAB || type == AttackType.SLASH || type == AttackType.CRUSH)) {
                     return true;
                 }
                 RaidInstance raid = at(target);

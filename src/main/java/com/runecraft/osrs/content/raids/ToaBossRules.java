@@ -118,6 +118,52 @@ public final class ToaBossRules {
 
     // ------------------------------------------------------------------ the Wardens
 
+    /**
+     * Phase 1 (OSRS): the Warden whose energy was disrupted most (more orbs absorbed on its trough) is destroyed, so the
+     * other one is fought in phase 2; a tie goes either way ({@code coin}).
+     */
+    public static boolean fightElidinisFirst(int absorbedElidinis, int absorbedTumeken, boolean coin) {
+        return absorbedTumeken > absorbedElidinis || (absorbedTumeken == absorbedElidinis && coin);
+    }
+
+    /** Phase 1 Charged Shot caps (OSRS): Elidinis' 45 solo / 30 in a group, Tumeken's 30 solo. */
+    public static int chargedShotCap(boolean elidinis, boolean solo) {
+        return elidinis ? (solo ? 45 : 30) : (solo ? 30 : Integer.MAX_VALUE);
+    }
+
+    /**
+     * Phase 2 Lightning Skull (OSRS): lightning bursts 7x7 around each skull, but the two tiles straight north, south,
+     * east and west of it are safe. {@code dx, dz} are tiles from the skull.
+     */
+    public static boolean lightningSkullHits(int dx, int dz) {
+        if (Math.abs(dx) > 3 || Math.abs(dz) > 3) {
+            return false;
+        }
+        boolean safe = (dx == 0 && Math.abs(dz) >= 1 && Math.abs(dz) <= 2) || (dz == 0 && Math.abs(dx) >= 1 && Math.abs(dx) <= 2);
+        return !safe;
+    }
+
+    /** The phase 3 slam order (OSRS): right, then left, then both sides. */
+    public static final String[] SLAMS = {"right", "left", "both"};
+
+    /**
+     * Whether a phase 3 slam reaches a tile {@code side} tiles to the Warden's left (negative: its right) of its centre
+     * line (OSRS): against a side slam stand at least a tile to the other side; against both, stay in the three centre
+     * tiles.
+     */
+    public static boolean slamHits(int kind, int side) {
+        return switch (kind % 3) {
+            case 0 -> side <= 0;
+            case 1 -> side >= 0;
+            default -> Math.abs(side) >= 2;
+        };
+    }
+
+    /** Phase 2 Warden prayers (OSRS): Tumeken's prays against magic first, Elidinis' against ranged; both always melee. */
+    public static String firstPrayedStyle(boolean elidinis) {
+        return elidinis ? "ranged" : "magic";
+    }
+
     /** Phase 3 slam interval: 7 ticks, 6/4/3 with Overclocked, Overclocked 2 and Insanity (OSRS). */
     public static int wardenSlamEvery(java.util.Set<Invocation> invocations) {
         if (invocations.contains(Invocation.INSANITY)) {

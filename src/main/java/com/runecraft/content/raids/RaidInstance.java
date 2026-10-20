@@ -387,7 +387,7 @@ public final class RaidInstance {
                 addPoints(player.getUUID(), earned);
             }
             case TOA -> {
-                boolean p3 = logics[current] instanceof ToaRooms.Wardens w && w.phaseThree();
+                boolean p3 = logics[current] instanceof ToaWardens w && w.phaseThree();
                 addPoints(player.getUUID(), (int) Math.floor(dealt * RaidScaling.toaPointsPerDamage(creatureId(target), p3)));
             }
             case TOB -> roomDamage.merge(player.getUUID(), dealt, Integer::sum);
@@ -1459,6 +1459,10 @@ public final class RaidInstance {
         if (limit > 0 && beginTick >= 0 && !finished) {
             long left = Math.max(0, limit * 100L - (now() - beginTick)) * 6 / 10;
             sb.append(sb.length() == 0 ? "" : "  ").append(String.format("Limit %d:%02d", left / 60, left % 60));
+        }
+        String note = logics[current].started && !logics[current].done ? logics[current].hudNote() : null;
+        if (note != null && !note.isEmpty()) {
+            sb.append(sb.length() == 0 ? "" : "  ").append(note);
         }
         return sb.toString();
     }

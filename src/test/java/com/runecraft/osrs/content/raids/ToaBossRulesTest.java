@@ -67,6 +67,41 @@ class ToaBossRulesTest {
         assertEquals(5, ToaBossRules.WARDEN_ENRAGE_AT);
         assertEquals(20, ToaBossRules.WARDEN_ENRAGE_HEAL);
         assertNotNull(Invocation.byName("Insanity"));
+        // Phase 1: blocking Tumeken's trough destroys Tumeken's Warden, so Elidinis' is fought in phase 2.
+        assertTrue(ToaBossRules.fightElidinisFirst(0, 5, false));
+        assertTrue(!ToaBossRules.fightElidinisFirst(5, 0, true));
+        assertTrue(ToaBossRules.fightElidinisFirst(2, 2, true));
+        assertEquals(45, ToaBossRules.chargedShotCap(true, true));
+        assertEquals(30, ToaBossRules.chargedShotCap(true, false));
+        assertEquals(30, ToaBossRules.chargedShotCap(false, true));
+        assertEquals("ranged", ToaBossRules.firstPrayedStyle(true));
+        assertEquals("magic", ToaBossRules.firstPrayedStyle(false));
+        // Lightning Skull: 7x7, the two tiles straight out from the skull safe (the skull's own tile is not).
+        int struck = 0;
+        for (int dx = -4; dx <= 4; dx++) {
+            for (int dz = -4; dz <= 4; dz++) {
+                struck += ToaBossRules.lightningSkullHits(dx, dz) ? 1 : 0;
+            }
+        }
+        assertEquals(49 - 8, struck);
+        assertTrue(ToaBossRules.lightningSkullHits(0, 0));
+        assertTrue(!ToaBossRules.lightningSkullHits(0, 2));
+        assertTrue(!ToaBossRules.lightningSkullHits(-1, 0));
+        assertTrue(ToaBossRules.lightningSkullHits(1, 1));
+        assertTrue(ToaBossRules.lightningSkullHits(0, 3));
+        // Slams: right, left, both; one tile to the other side dodges a side slam, the centre three dodge both.
+        assertTrue(ToaBossRules.slamHits(0, 0) && ToaBossRules.slamHits(0, -5) && !ToaBossRules.slamHits(0, 1));
+        assertTrue(ToaBossRules.slamHits(1, 0) && ToaBossRules.slamHits(1, 5) && !ToaBossRules.slamHits(1, -1));
+        assertTrue(!ToaBossRules.slamHits(2, 0) && !ToaBossRules.slamHits(2, 1) && !ToaBossRules.slamHits(2, -1)
+                && ToaBossRules.slamHits(2, 2) && ToaBossRules.slamHits(2, -2));
+        for (int side = -3; side <= 3; side++) {
+            boolean dodgesSome = false;
+            for (int k = 0; k < 3; k++) {
+                dodgesSome |= !ToaBossRules.slamHits(k, side);
+            }
+            assertTrue(dodgesSome, "every tile dodges at least one slam");
+        }
+        assertEquals("right", ToaBossRules.SLAMS[0]);
         assertNotEquals(ToaBossRules.wardenSlamEvery(Set.of()), ToaBossRules.wardenSlamEvery(EnumSet.of(Invocation.INSANITY)));
     }
 }
