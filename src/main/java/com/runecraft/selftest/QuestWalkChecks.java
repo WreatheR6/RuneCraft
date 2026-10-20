@@ -326,6 +326,7 @@ final class QuestWalkChecks {
         for (int hit = 0; hit < MAX_HITS && foe.isAlive(); hit++) {
             if (!heavyHit(foe)) {
                 if (foe instanceof DataBossEntity d && !d.script().isVulnerable(d)) {
+                    clearShield(d);
                     continue;
                 }
                 throw new AssertionError(where + ": nothing the player does hurts " + name);
@@ -336,6 +337,18 @@ final class QuestWalkChecks {
         }
         // the creature's own loot is left behind; quest drops are picked up by farm()
         sweep(Set.of());
+    }
+
+    /** Cuts down whatever shields an invulnerable boss (Hespori's flowers): the other creatures close to it. */
+    private void clearShield(DataBossEntity boss) {
+        for (LivingEntity m : c.world.getEntitiesOfClass(LivingEntity.class, boss.getBoundingBox().inflate(16),
+                e -> e != boss && e.isAlive() && e instanceof OsrsMonsterEntity)) {
+            for (int hit = 0; hit < 20 && m.isAlive(); hit++) {
+                if (!heavyHit(m)) {
+                    break;
+                }
+            }
+        }
     }
 
     private boolean heavyHit(LivingEntity foe) {

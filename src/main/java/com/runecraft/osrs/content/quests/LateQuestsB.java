@@ -120,12 +120,23 @@ final class LateQuestsB {
     private static void beneathCursedSands(QuestBook b) {
         b.npc("tumeken_priest", "Priest of Tumeken", "necropolis", 3, 3, 0xA86A45, 0xE0C051, 0xF0F0F4, 0xE0C052);
         // Wiki monster stats: level 379, 600 HP, 160 in every combat stat but Ranged, melee and magic up to 24, every 4 ticks.
+        // Wiki (the quest guide): shadow magic, melee up close, and after several attacks one of three specials: a shadow burst
+        // around itself, a Shadow Rift that explodes unless destroyed, a scarab swarm (QuestBossScripts.ChampionOfScabaras).
         b.boss(BossDef.of("champion_of_scabaras", "Champion of Scabaras").level(379).stats(600, 160, 160, 160, 160, 1).speed(4)
                 .defenceBonus(120, 160, 160, 340, 5)
                 .attack(AttackDef.of("crush", AttackType.CRUSH, 24, 3, 6))
-                .attack(AttackDef.of("locust_swarm", AttackType.MAGIC, 24, 9, 3).special(Special.AOE, 5).telegraph(2, "Locusts swarm from the champion's shell!"))
-                .attack(AttackDef.of("sand_spike", AttackType.MAGIC, 24, 10, 3).special(Special.SKY_STRIKE, 0).telegraph(2, "The sand ripples beneath you!"))
+                .attack(AttackDef.of("shadow", AttackType.MAGIC, 24, 10, 6).particle("minecraft:smoke"))
+                .attack(AttackDef.of("shadow_burst", AttackType.MAGIC, 40, 4, 0).special(Special.AOE, 4)
+                        .telegraph(2, "A shadow spreads beneath the Champion of Scabaras!"))
+                .attack(AttackDef.of("shadow_flames", AttackType.MAGIC, 8, 10, 0).special(Special.HAZARD, 4).particle("minecraft:soul_fire_flame"))
+                .minion("scabaras_scarab_swarm", 1)
                 .drops(Drop.always("bones")).size(1.6f, 1.4f, 1.2f).at("necropolis").arena(12, "sand"));
+        b.monster(MonsterDef.of("shadow_rift", "Shadow Rift").level(1).stats(20, 1, 1, 1, 1, 1)
+                .attack(AttackDef.of("inert", AttackType.MAGIC, 0, 0.5, 1)).passive().moveSpeed(0.0)
+                .skin(0x1A0A2A, 0x2A1A3A, 0x0A0A1A, 0x6A3A9A).size(1.0f, 1.0f, 1.0f));
+        b.monster(MonsterDef.of("scabaras_scarab_swarm", "Scarab swarm").level(5).stats(5, 1, 1, 1, 1, 1).speed(4)
+                .attack(AttackDef.of("bite", AttackType.STAB, 3, 1.5, 1).special(Special.POISON, 4))
+                .skin(0x3A2A1A, 0x2A1A0A, 0x1A0A0A, 0x8A6A2A).size(0.8f, 0.5f, 0.8f));
         // Wiki: level 174, 180 HP, stabs up to 16; an overhead protection prayer costs a third of the player's Hitpoints
         // (QuestBossScripts.FalseGods).
         b.boss(BossDef.of("head_menaphite_guard", "Head Menaphite Guard").level(174).stats(180, 180, 150, 150, 150, 1).speed(4)

@@ -217,24 +217,139 @@ final class LateQuestsA {
                 .missing("I'm far too busy for gardens. *Perhaps the activated ring of charos would make him more agreeable.*");
     }
 
+    /**
+     * The Path of Glouphrie (wiki, quest-helper): the monoliths in Bolrie's storeroom, pushed in the order that opens the way
+     * to the wood, silver and gold chests and then the strongroom gate.
+     */
+    static final QuestPuzzle POG_MONOLITHS = QuestPuzzle.builder("pog_monoliths").room("storeroom").variant(null)
+            .prompt("* Monoliths fill Bolrie's storeroom: one by the entrance, then a south-west, a north-west, a small and a south-east one.",
+                    "* Each push should open the way to the next chest (wood, silver, gold), and last of all to the strongroom gate.")
+            .options("Push the entrance monolith north", "Push the entrance monolith south", "Push the south-west monolith north",
+                    "Push the south-west monolith east", "Push the north-west monolith east", "Push the north-west monolith west",
+                    "Push the north-west monolith south", "Push the small monolith south", "Push the small monolith north",
+                    "Push the south-east monolith west", "Push the south-east monolith north")
+            .solution(0, 2, 4, 7, 5, 9)
+            .failLines("* The monoliths jam. You heave them back where they started.").build();
+
+    /** The discs' colours and shapes (Colour-shape value): a disc is worth its colour's number times its shape's. */
+    static final String[] POG_COLOURS = {"red", "orange", "yellow", "green", "blue", "indigo", "violet"};
+    static final String[] POG_SHAPES = {"circle", "triangle", "square", "pentagon"};
+    static final int[] POG_SHAPE_VALUES = {1, 3, 4, 5};
+
+    /** A disc's value: colour 1 (red) to 7 (violet) times the shape's (circle 1, triangle 3, square 4, pentagon 5). */
+    static int discValue(int colour, int shape) {
+        return (colour + 1) * POG_SHAPE_VALUES[shape];
+    }
+
+    /** The discs to hand at Yewnock's machine (after the exchanger), as colour and shape indices. */
+    static final int[][] POG_DISCS = {{0, 0}, {1, 0}, {2, 0}, {0, 1}, {3, 0}, {0, 2}, {4, 0}, {5, 0}, {1, 1}, {6, 0}, {1, 2}, {2, 1},
+            {1, 3}, {2, 2}, {4, 1}, {3, 2}};
+
+    /**
+     * The Path of Glouphrie (wiki): Yewnock's machine wants one disc worth the two shown at the top, then two discs worth the
+     * one shown at the bottom.
+     */
+    static final QuestPuzzle POG_MACHINE = machine();
+
+    private static String disc(int[] d) {
+        return POG_COLOURS[d[0]] + " " + POG_SHAPES[d[1]];
+    }
+
+    private static QuestPuzzle machine() {
+        String[] options = new String[POG_DISCS.length];
+        for (int i = 0; i < POG_DISCS.length; i++) {
+            options[i] = "Insert the " + disc(POG_DISCS[i]) + " disc";
+        }
+        QuestPuzzle.Builder b = QuestPuzzle.builder("pog_machine").room("machine");
+        // top pair, bottom single: (red triangle + yellow circle, orange pentagon), (orange circle + violet circle, yellow square),
+        // (red square + orange square, blue triangle)
+        int[][][] variants = {{{0, 1}, {2, 0}, {1, 3}}, {{1, 0}, {6, 0}, {2, 2}}, {{0, 2}, {1, 2}, {4, 1}}};
+        for (int[][] v : variants) {
+            int top = discValue(v[0][0], v[0][1]) + discValue(v[1][0], v[1][1]);
+            int bottom = discValue(v[2][0], v[2][1]);
+            b.variant(null).prompt("* Yewnock's machine shows a " + disc(v[0]) + " and a " + disc(v[1]) + " at the top, and a " + disc(v[2])
+                    + " at the bottom.", "* Insert one disc worth the two at the top, then two discs worth the one at the bottom.").options(options);
+            for (int a = 0; a < POG_DISCS.length; a++) {
+                if (discValue(POG_DISCS[a][0], POG_DISCS[a][1]) != top) {
+                    continue;
+                }
+                for (int c = 0; c < POG_DISCS.length; c++) {
+                    for (int d = 0; d < POG_DISCS.length; d++) {
+                        if (c != d && discValue(POG_DISCS[c][0], POG_DISCS[c][1]) + discValue(POG_DISCS[d][0], POG_DISCS[d][1]) == bottom) {
+                            b.solution(a, c, d);
+                        }
+                    }
+                }
+            }
+        }
+        return b.failLines("* The machine rejects the discs. They clatter back out.").build();
+    }
+
     private static void pathOfGlouphrie(QuestBook b) {
         b.npc("longramble", "Longramble", "glouphrie_tunnels", 2, 2, 0xD0A073, 0x3A6A3D, 0x2A4A2E, 0x8A6A3E);
-        b.boss(BossDef.of("warped_terrorbird", "Warped terrorbird").level(138).stats(150, 110, 110, 100, 100, 1).speed(4)
-                .attack(AttackDef.of("peck", AttackType.STAB, 18, 2.5, 6))
-                .attack(AttackDef.of("warp_bolt", AttackType.MAGIC, 16, 8, 4).particle("minecraft:portal"))
+        b.npcAt("aluft_gianne_jnr", "Aluft Gianne jnr.", 2449, 3501, 0xD0A070, 0xE0E0E0, 0x6A4A2A, 0xF0F0F0); // approx: the Grand Tree, first floor
+        b.spot("pog_storeroom", "Bolrie's storeroom", 2545, 3158); // approx: the Tree Gnome Village dungeon's eastern storeroom
+        b.spot("pog_strongroom", "Yewnock's strongroom", 2537, 3158); // approx
+        b.spot("pog_incomitatus", "Spirit tree (Poison Waste)", 2339, 3109);
+        b.spot("pog_warped_depths", "The Warped Depths", 2330, 3090); // approx: the sewer entrance south-west of the spirit tree
+        b.item("crystal_chime", "Crystal chime", "orb", 0xC0E0F0, "A chime sung from a crystal seed. Glouphrie's warped creatures hate it.");
+        // DPS calculator (level 138): ranged and crush up to 16; only hurt by a player carrying the crystal chime, and earmuffs
+        // soften its screech (QuestBossScripts.WarpedTerrorbird).
+        b.boss(BossDef.of("warped_terrorbird", "Warped terrorbird").level(138).stats(200, 80, 150, 60, 160, 70).speed(4)
+                .attack(AttackDef.of("peck", AttackType.CRUSH, 16, 2.5, 4))
+                .attack(AttackDef.of("screech", AttackType.RANGED, 16, 8, 6))
                 .drops(Drop.always("bones")).size(1.0f, 2.0f, 1.0f).at("glouphrie_tunnels").arena(10, "void"));
         b.quest("the_path_of_glouphrie", "The Path of Glouphrie", Difficulty.EXPERIENCED, 2)
                 .xp(Skill.STRENGTH, 30000).xp(Skill.SLAYER, 20000).xp(Skill.THIEVING, 5000).xp(Skill.MAGIC, 5000) // OSRS (current quest XP rewards)
                 .reqQuest("the_eyes_of_glouphrie", "waterfall_quest", "tree_gnome_village")
                 .req(Skill.STRENGTH, 60).req(Skill.SLAYER, 56).req(Skill.THIEVING, 56).req(Skill.RANGED, 47).req(Skill.AGILITY, 45)
-                .stage("I can start this quest by speaking to Longramble west of the Tree Gnome Stronghold. (Requires The Eyes of Glouphrie and more.)")
-                .talk("longramble").say("Glouphrie's warped creatures are spilling out of his old tunnels! Gnomes are going missing. Will you go in?")
-                .stage("I should search Glouphrie's tunnels for the source of the warping.")
-                .reach("glouphrie_tunnels", 8).say("* Deep in the tunnels, a twisted terrorbird shrieks and charges!")
-                .stage("I must defeat the warped terrorbird.")
-                .kill("warped_terrorbird").say("* The warped terrorbird falls. You find Glouphrie's warping device and destroy it.")
-                .stage("I should report to King Narnode.")
-                .talk("king_narnode").say("The warping is stopped! Glouphrie's legacy haunts us still... thank you.");
+                .stage("I can start this quest by speaking to King Bolren in the Tree Gnome Village. (Requires The Eyes of Glouphrie and more.)")
+                .talk("king_bolren").say("Meet Dumpling, my new pet! Isn't he adorable?", "* Dumpling is one of Glouphrie's evil creatures in disguise!",
+                        "Nonsense. Prove it! ...Yewnock, Oaknock's son, used to bring odd machines here. Ask down below about an anti-illusion machine.")
+                // Wiki: Golrie, Bolrie's storeroom (the monoliths, the chests, the crystal chime), Bolrie's diary, Yewnock's machine;
+                // Dumpling unmasked; Gianne jnr.'s coordinates; Longramble; the spirit tree Incomitatus healed; the Warped Depths.
+                .stage("I should prove Dumpling is one of Glouphrie's creatures, then find the gnome explorer Longramble.")
+                .talk("golrie").stay().unlessFlag("pog_golrie").flag("pog_golrie")
+                .say("A device? My grandfather Bolrie stored elven things in his storeroom, east past the tunnel. The strongroom needs a key.")
+                .puzzle("pog_storeroom", POG_MONOLITHS).stay().needFlag("pog_golrie").unless("crystal_chime").unlessFlag("pog_strongroom")
+                .reqSkill(Skill.THIEVING, 56).give("crystal_chime").flag("pog_strongroom")
+                .say("* In the chests: discs, Yewnock's notes, the strongroom key and a crystal chime seed. You sing the seed into a crystal "
+                        + "chime at the singing bowl.")
+                .reach("pog_strongroom", 6).stay().needFlag("pog_strongroom").unlessFlag("pog_diary").flag("pog_diary")
+                .say("* Bolrie's diary: his advisor turned him against King Healthorg... until Yewnock's anti-illusion machine showed the "
+                        + "advisor was Glouphrie the Untrusted.")
+                .puzzle("pog_strongroom", POG_MACHINE).stay().needFlag("pog_diary").unlessFlag("pog_machine").flag("pog_machine")
+                .say("* The machine hums. Up in the village, Dumpling's disguise melts away: an evil creature!")
+                .reach("tree_gnome_village", 10).stay().needFlag("pog_machine").unlessFlag("pog_dumpling").spawn("evil_creature")
+                .kill("evil_creature").stay().needFlag("pog_machine").unlessFlag("pog_dumpling").flag("pog_dumpling")
+                .say("* Dumpling is no more.")
+                .talk("king_bolren").stay().needFlag("pog_dumpling").unlessFlag("pog_bolren").flag("pog_bolren")
+                .say("You were right... Longramble went looking for the lost city of Arposandra. Aluft Gianne jnr. at the Grand Tree may know where.")
+                .talk("aluft_gianne_jnr").stay().needFlag("pog_bolren").unlessFlag("pog_coords").flag("pog_coords")
+                .say("We can never deliver his tangled toads' legs! He's at 2 degrees 7 minutes south, 3 degrees 7 minutes west: the "
+                        + "Galarpos Mountains, east of the Poison Waste.")
+                .talk("longramble").stay().needFlag("pog_coords").unlessFlag("pog_longramble").need("mith_grapple")
+                .reqSkill(Skill.RANGED, 47).reqSkill(Skill.AGILITY, 45).flag("pog_longramble")
+                .say("* You grapple across the river by the tree in the middle.", "Arposandra must be near the Poison Waste. Can you feel it calling?")
+                .missing("* Longramble is across the river. A crossbow and a mith grapple would get you over by the tree in the middle.")
+                .reach("pog_incomitatus", 8).stay().needFlag("pog_longramble").unlessFlag("pog_tree").need("crystal_chime").flag("pog_tree")
+                .say("@Incomitatus: The poison in my roots... I am cut off from the Anima Mundi.",
+                        "@Hazelmere: Elven magic can cleanse it. Use the chime.", "* The chime rings out. Incomitatus is healed and joins the spirit trees.")
+                .missing("* The sick spirit tree needs cleansing. The crystal chime might do it.")
+                .reach("pog_warped_depths", 8).needFlag("pog_tree")
+                .say("* You enter the sewer into the Warped Depths. Warped tortoises lumber past; warped terrorbirds shriek.")
+                .missing("* Warped roots block the way. Perhaps the sick spirit tree nearby has something to do with it.")
+                // Wiki: three warped terrorbirds at the end of the Warped Depths, hurt only by a player carrying the crystal chime;
+                // the guards' tar trap and Hazelmere's rescue.
+                .stage("I must defeat the warped terrorbirds at the end of the Warped Depths.")
+                .reach("pog_warped_depths", 8).stay().spawn("warped_terrorbird")
+                .kill("warped_terrorbird").times(3).need("crystal_chime").travel("hazelmeres_island")
+                .say("* The third terrorbird falls. Behind the heavy door two terrorbird guards panic and flood the room with tar and gas...",
+                        "* As you black out, Hazelmere appears and his seed pod carries you both away.")
+                .talk("golrie").stay().unless("crystal_chime").give("crystal_chime") // a lost chime
+                .say("Lost your chime? Grandfather's singing bowl makes another from a seed.")
+                .stage("I should speak to Hazelmere.")
+                .talk("hazelmere").say("Argento's seed pod saved us both. I have seen the future, and you are in it. Much is to come.");
     }
 
     private static void elementalWorkshopII(QuestBook b) {

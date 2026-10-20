@@ -1171,6 +1171,11 @@ public final class RaidInstance {
         for (ServerPlayer p : players()) {
             boolean purple = result.purple(p.getUUID().toString());
             int kc = state.addCompletion(p.getUUID(), type.id(), points(p.getUUID()), purple);
+            if (type == RaidType.TOB) {
+                // A Night at the Theatre: the Mysterious Stranger waits for a Theatre run in any mode
+                com.runecraft.content.quests.QuestsState.get(p).setFlag(p.getUUID(),
+                        com.runecraft.osrs.content.quests.QuestBossRules.TOB_COMPLETED_FLAG);
+            }
             if (type == RaidType.TOA) {
                 // OSRS keeps Entry, Normal and Expert mode completion counts apart.
                 int modeKc = state.addCount(p.getUUID(), ToaLoot.modeKey(modeLevel));

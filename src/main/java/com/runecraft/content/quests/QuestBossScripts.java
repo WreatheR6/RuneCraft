@@ -42,6 +42,8 @@ final class QuestBossScripts {
         BossScripts.register("the_illusive", Illusive::new);
         BossScripts.register("judge_of_yama", JudgeOfYama::new);
         BossScripts.register("xamphur", Xamphur::new);
+        BossScripts.register("warped_terrorbird", WarpedTerrorbird::new);
+        BossScripts.register("champion_of_scabaras", ChampionOfScabaras::new);
         BossScripts.register("head_menaphite_guard", FalseGods::new);
         BossScripts.register("dark_squall", MagicOnly::new);
         BossScripts.register("balance_elemental", BalanceForms::new);
@@ -680,6 +682,124 @@ final class QuestBossScripts {
             String special = QuestBossRules.xamphurSpecial(++attacks);
             AttackDef a = special == null ? null : Culinary.attack(boss, special);
             return a != null ? a : attack;
+        }
+    }
+
+    /**
+     * The Path of Glouphrie (wiki): warped terrorbirds can only be hurt by a player carrying the crystal chime, and earmuffs
+     * or a slayer helmet soften their ranged screech.
+     */
+    static final class WarpedTerrorbird implements BossScript {
+        private final long[] lastMessage = {-100};
+
+        @Override
+        public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
+            if (Inv.has(attacker, QuestBossRules.TERRORBIRD_CHIME, 1)) {
+                return damage;
+            }
+            if (!quiet(boss, lastMessage)) {
+                Msg.action(attacker, "The warped terrorbird shrugs off your attack. Without the crystal chime you can't hurt it.");
+            }
+            return 0;
+        }
+
+        @Override
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
+            java.util.Collection<String> worn = QuestsState.get(player).wornAll(player.getUUID()).values();
+            boolean ears = QuestBossRules.TERRORBIRD_EAR_PROTECTION.stream().anyMatch(worn::contains);
+            return type == AttackType.RANGED && ears ? Math.min(damage, QuestBossRules.TERRORBIRD_SCREECH_MAX_WITH_EARS) : damage;
+        }
+    }
+
+    /**
+     * Beneath Cursed Sands (wiki): the Champion of Scabaras melees up close and casts shadow magic from afar; after several
+     * attacks it bursts shadow around itself, opens a Shadow Rift that explodes on everyone unless destroyed in time, or calls a
+     * scarab swarm and dark flames.
+     */
+    static final class ChampionOfScabaras implements BossScript {
+        private int attacks;
+        private java.util.UUID rift;
+        private long riftAt;
+
+        @Override
+        public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
+            return Culinary.attack(boss, distance <= 2.5 ? "crush" : "shadow");
+        }
+
+        @Override
+        public AttackDef beforeAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
+            String special = QuestBossRules.scabarasSpecial(++attacks, boss.getRandom().nextInt(3));
+            if (special == null || !(boss.level() instanceof ServerLevel world)) {
+                return attack;
+            }
+            switch (special) {
+                case "shadow_rift" -> {
+                    announce(boss, "Champion of Scabaras: We are born in the shadows!", ChatFormatting.RED);
+                    net.minecraft.world.entity.Entity e = spawn(world, "shadow_rift", boss.getX() + 4, boss.getY(), boss.getZ());
+                    if (e != null) {
+                        boss.claimMinion(e);
+                        rift = e.getUUID();
+                        riftAt = com.runecraft.action.ActionManager.gameTick();
+                    }
+                    return attack;
+                }
+                case "shadow_flames" -> {
+                    announce(boss, "Champion of Scabaras: The children of Scabaras are eternal!", ChatFormatting.RED);
+                    boss.summonMinions(1); // the scarab swarm (BossDef minion)
+                    AttackDef flames = Culinary.attack(boss, "shadow_flames");
+                    return flames != null ? flames : attack;
+                }
+                default -> {
+                    AttackDef burst = Culinary.attack(boss, "shadow_burst");
+                    return burst != null ? burst : attack;
+                }
+            }
+        }
+
+        private static net.minecraft.world.entity.Entity spawn(ServerLevel world, String id, double x, double y, double z) {
+            net.minecraft.world.entity.EntityType<?> type = com.runecraft.registry.ModEntities.typeById(id);
+            net.minecraft.world.entity.Entity e = type == null ? null : type.create(world);
+            if (e == null) {
+                return null;
+            }
+            e.moveTo(x, y, z, 0, 0);
+            if (e instanceof net.minecraft.world.entity.Mob mob) {
+                mob.finalizeSpawn(world, world.getCurrentDifficultyAt(mob.blockPosition()),
+                        net.minecraft.world.entity.MobSpawnType.MOB_SUMMONED, null);
+            }
+            world.addFreshEntity(e);
+            return e;
+        }
+
+        @Override
+        public void gameTick(DataBossEntity boss, long gameTick) {
+            if (rift == null || !(boss.level() instanceof ServerLevel world)) {
+                return;
+            }
+            net.minecraft.world.entity.Entity e = world.getEntity(rift);
+            if (e == null || !e.isAlive()) {
+                rift = null; // destroyed in time
+            } else if (gameTick - riftAt >= QuestBossRules.SCABARAS_RIFT_FUSE_TICKS) {
+                for (ServerPlayer p : world.getPlayers(x -> x.distanceToSqr(boss) < 24 * 24)) {
+                    com.runecraft.combat.CombatHandler.applyDamage(null, p, QuestBossRules.SCABARAS_RIFT_DAMAGE);
+                    Msg.red(p, "The Shadow Rift explodes!");
+                }
+                e.discard();
+                rift = null;
+            }
+        }
+
+        @Override
+        public void onDeath(DataBossEntity boss, ServerPlayer killer) {
+            onRemoved(boss);
+        }
+
+        @Override
+        public void onRemoved(DataBossEntity boss) {
+            if (rift != null && boss.level() instanceof ServerLevel world && world.getEntity(rift) != null) {
+                world.getEntity(rift).discard();
+            }
+            rift = null;
         }
     }
 

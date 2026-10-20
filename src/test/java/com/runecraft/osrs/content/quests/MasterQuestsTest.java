@@ -361,4 +361,62 @@ class MasterQuestsTest {
         assertEquals("phantom_hands", QuestBossRules.xamphurSpecial(20));
         assertEquals("phantom_hand", ContentRegistry.boss("xamphur").minion);
     }
+
+    // ------------------------------------------------------------------ The Path of Glouphrie
+
+    @Test
+    void pathOfGlouphrieUnmasksDumplingAndClearsTheWarpedDepths() {
+        inOrder("the_path_of_glouphrie", "talk king_bolren", "talk golrie", "puzzle pog_storeroom", "reach pog_strongroom",
+                "puzzle pog_strongroom", "kill evil_creature", "talk king_bolren", "talk aluft_gianne_jnr", "talk longramble",
+                "reach pog_incomitatus", "reach pog_warped_depths", "kill warped_terrorbird", "talk hazelmere");
+        assertTrue(spec("the_path_of_glouphrie").triggers().stream().anyMatch(t -> t.kind == Trigger.Kind.KILL
+                && t.target.equals("warped_terrorbird") && t.count == 3 && t.need.containsKey(QuestBossRules.TERRORBIRD_CHIME)));
+        // Colour-shape value (quest-helper's disc table): orange square 8, yellow triangle 9, blue triangle 15, indigo triangle 18
+        assertEquals(8, LateQuestsA.discValue(1, 2));
+        assertEquals(9, LateQuestsA.discValue(2, 1));
+        assertEquals(15, LateQuestsA.discValue(4, 1));
+        assertEquals(18, LateQuestsA.discValue(5, 1));
+        assertEquals(10, LateQuestsA.discValue(1, 3));
+        // every machine answer: one disc worth the top pair, then two different discs worth the bottom one
+        for (QuestPuzzle.Variant v : LateQuestsA.POG_MACHINE.rooms.get(0).variants()) {
+            assertFalse(v.solutions().isEmpty(), v.prompt().get(0));
+            for (List<Integer> s : v.solutions()) {
+                assertEquals(3, s.size());
+                assertTrue(!s.get(1).equals(s.get(2)));
+            }
+        }
+        assertEquals(1, LateQuestsA.POG_MONOLITHS.rooms.get(0).variants().get(0).solutions().size());
+    }
+
+    // ------------------------------------------------------------------ Beneath Cursed Sands
+
+    @Test
+    void beneathCursedSandsChampionUsesItsThreeSpecials() {
+        inOrder("beneath_cursed_sands", "talk jamila", "talk maisa_bcs", "kill head_menaphite_guard",
+                "talk maisa_bcs", "puzzle bcs_ruins_of_ullek", "puzzle bcs_ruins_of_ullek", "reach bcs_ruins_of_ullek",
+                "kill champion_of_scabaras", "talk zahur", "reach bcs_elid_lily", "talk zahur", "talk high_priest_sophanem",
+                "kill menaphite_akh", "talk high_priest_sophanem");
+        assertNull(QuestBossRules.scabarasSpecial(4, 0));
+        assertEquals("shadow_burst", QuestBossRules.scabarasSpecial(5, 0));
+        assertEquals("shadow_rift", QuestBossRules.scabarasSpecial(10, 1));
+        assertEquals("shadow_flames", QuestBossRules.scabarasSpecial(15, 2));
+        BossDef champion = ContentRegistry.boss("champion_of_scabaras");
+        assertTrue(champion.attacks.stream().anyMatch(a -> a.name().equals("shadow_burst") && a.maxHit() == 40));
+        assertEquals(35, QuestBossRules.SCABARAS_RIFT_DAMAGE);
+    }
+
+    // ------------------------------------------------------------------ A Night at the Theatre
+
+    @Test
+    void aNightAtTheTheatreNeedsARealTheatreOfBloodRun() {
+        inOrder("a_night_at_the_theatre", "talk quest_mysterious_stranger_tob", "kill vyrewatch_sentinel", "reach ant_ranis_crypt",
+                "talk quest_mysterious_stranger_tob", "reach ant_araxyte_nest", "talk daer_krand", "reach ant_araxyte_nest",
+                "talk quest_mysterious_stranger_tob", "talk nature_spirit", "kill hespori", "reach ant_hespori_island",
+                "talk quest_mysterious_stranger_tob", "talk quest_mysterious_stranger_tob", "talk quest_mysterious_stranger_tob");
+        // the Theatre stage advances only on the flag a completed raid sets (RaidInstance), never on a trigger of the quest
+        QuestSpec q = spec("a_night_at_the_theatre");
+        assertTrue(q.triggers().stream().anyMatch(t -> t.stage == 3 && t.needFlags.contains(QuestBossRules.TOB_COMPLETED_FLAG)));
+        assertTrue(q.triggers().stream().noneMatch(t -> t.setFlags.contains(QuestBossRules.TOB_COMPLETED_FLAG)));
+        assertTrue(q.stages.get(3).triggers.stream().allMatch(t -> t.kind == Trigger.Kind.TALK));
+    }
 }

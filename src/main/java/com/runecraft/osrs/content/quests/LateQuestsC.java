@@ -372,31 +372,78 @@ final class LateQuestsC {
 
     private static void nightAtTheTheatre(QuestBook b) {
         Cast.npc(b, "quest_mysterious_stranger_tob", "Mysterious Stranger", "quest_ver_sinhaza", 3, -3, Cast.VAMPYRE, 0x2A2A2A);
+        b.npcAt("daer_krand", "Daer Krand", 3728, 3302, 0xE0C8B0, 0x5A3A6A, 0x3A2A4A, 0xC0C0C0); // approx: the Sisterhood Sanctuary, Slepe
+        b.spot("ant_ranis_crypt", "Ranis Drakan's crypt", 3673, 3232); // approx: just north of the Stranger
+        b.spot("ant_araxyte_nest", "Araxyte nest", 3658, 3405); // approx: north-west of Slepe
+        b.spot("ant_hespori_island", "Hespori island, Mort Myre", 3535, 3365); // approx: west of Castle Drakan
         b.item("quest_spider_venom_sample", "Spider venom sample", "vial", 0x5A8A3A, "A sample of venom from the spiders beneath Ver Sinhaza.");
         b.item("quest_ranis_head", "Ranis' head", "creature", 0x8A7A8A, "The severed head of Ranis Drakan. Grim.");
+        b.item("ant_sulphuric_acid", "Sulphuric acid", "vial", 0xD0E040, "Daer Krand's acid. It would burn through an egg sac.");
+        b.item("ant_spider_eggs", "Strange spider eggs", "orb", 0x6A3A8A, "Araxyte eggs from the nest north of Darkmeyer.");
+        b.item("ant_hespori_bark", "Hespori bark", "log", 0x5A6A2A, "Bark from a wild hespori in Mort Myre.");
         b.quest("a_night_at_the_theatre", "A Night at the Theatre", Difficulty.MASTER, 2)
                 .reqQuest("a_taste_of_hope")
                 .xp(Skill.SLAYER, 20000).xp(Skill.HITPOINTS, 20000) // two 20,000 XP combat lamps (approximate)
                 .unlock("The Theatre of Blood entry mode; Ver Sinhaza's spider caves")
                 .stage("I can start this quest by speaking to the Mysterious Stranger in Ver Sinhaza. (Requires A Taste of Hope.)")
-                .talk("quest_mysterious_stranger_tob").say("Lady Verzik Vitur runs a theatre where the condemned fight for her amusement.",
-                        "I can get you in, and help you bring her down. But first, show me you can be trusted.")
-                .stage("I should do what the Mysterious Stranger in Ver Sinhaza asks.")
-                // OSRS: beneath Ver Sinhaza, kill a vyrewatch for the key, unlock the gate and open the coffin for Ranis' head.
-                .kill("vyrewatch_sentinel").stay().unless("quest_ranis_head")
-                .give("quest_ranis_head").say("* The vyrewatch drops a key. Behind the gate below Ver Sinhaza you open a coffin: Ranis Drakan's head.")
+                .talk("quest_mysterious_stranger_tob").say("Verzik Vitur has powers no vampyre should have. A mercenary saw purple spider eggs fall "
+                        + "from her: a nylocas no one has recorded.", "Ranis Drakan knew her well. Bring me his corpse, and I will relive his memories.")
+                // Wiki (Behind The Scenes): a vyrewatch's crypt key, Ranis's head cut off with a saw.
+                .stage("I should bring the Mysterious Stranger Ranis Drakan's remains from the crypt beneath Ver Sinhaza (a vyrewatch "
+                        + "carries the key: bring an Ivandis or blisterwood flail, and a knife).")
+                .kill("vyrewatch_sentinel").stay().unless("quest_ranis_head").unlessFlag("ant_crypt_key").flag("ant_crypt_key")
+                .say("* The vyrewatch drops a crypt key.")
+                // OSRS cuts the head off with a saw; the mod has no saw yet, so a knife does it (approx)
+                .reach("ant_ranis_crypt", 6).stay().needFlag("ant_crypt_key").unless("quest_ranis_head").need("knife").give("quest_ranis_head")
+                .say("* The crypt key opens the gate to Ranis Drakan's coffin. You cut off his head. Grim work.")
+                .missing("* The coffin is behind a locked gate, and you'd need a blade for what comes next.")
                 .talk("quest_mysterious_stranger_tob").take("quest_ranis_head")
-                .say("Ranis' head... Verzik will not mourn him. You want to stop her? First, there's a poison that could weaken her vampyres. It comes from the spiders below.")
-                .missing("Prove yourself first. A vyrewatch below Ver Sinhaza holds the key to a coffin. Bring me what's inside.")
-                .stage("I should collect a venom sample from the giant spiders in the caves beneath Ver Sinhaza.")
-                .drop("giant_spider", "quest_spider_venom_sample", 2)
+                .say("* You share Ranis's memory: he gives Verzik spider eggs from an araxyte nest north of Darkmeyer, for her nylocas breeding.",
+                        "Araxyte eggs... Bring me some from that nest.")
+                .missing("Ranis lies in the crypt just north of here. A vyrewatch carries the key.")
+                // Wiki: the nest's sticky note, Daer Krand's acid for the egg sac (the araxytes need not be fought), then the Get
+                // Into The Grove part: the Nature Spirit, the wild hespori and its bark.
+                .stage("I should bring the Stranger araxyte eggs from the nest north-west of Slepe, then bark from a wild hespori.")
+                .reach("ant_araxyte_nest", 8).stay().unlessFlag("ant_note").flag("ant_note")
+                .say("* Behind a great egg sac lies a corpse with a sticky note: Daer Krand will have sulphuric acid to burn through the sac.")
+                .talk("daer_krand").stay().needFlag("ant_note").unless("ant_sulphuric_acid", "ant_spider_eggs").unlessFlag("ant_eggs")
+                .give("ant_sulphuric_acid")
+                .say("My assistant... dead in that nest? Poor fool. Here, the acid he wanted. Use it well.")
+                .reach("ant_araxyte_nest", 8).stay().needFlag("ant_note").unless("ant_spider_eggs").unlessFlag("ant_eggs")
+                .take("ant_sulphuric_acid").give("ant_spider_eggs")
+                .say("* The acid eats through the egg sac. You grab some strange spider eggs as araxytes pour out, and flee.")
+                .missing("* A great egg sac. Something strong would burn through it: the note mentioned Daer Krand.")
+                .talk("quest_mysterious_stranger_tob").stay().unlessFlag("ant_eggs").take("ant_spider_eggs").flag("ant_eggs")
+                .say("* Ranis's memories: Verzik breeds new nylocas from the eggs, and Ranis suggests hespori bark to make them regenerate.",
+                        "Hespori: Queen Efaritay's living weapons. Filliman Tarlock, the Nature Spirit, may know where one grows.")
+                .missing("The araxyte nest is north-west of Slepe. Bring me eggs.")
+                .talk("nature_spirit").stay().needFlag("ant_eggs").unlessFlag("ant_grove").need("ghostspeak_amulet").flag("ant_grove")
+                .say("A hespori? They are rare now. Look to the north-east, on a small island in the swamp.")
+                .missing("* You'd need a ghostspeak amulet to understand the Nature Spirit.")
+                .reach("ant_hespori_island", 8).stay().needFlag("ant_grove").unlessFlag("ant_hespori").spawn("hespori")
+                .kill("hespori").stay().needFlag("ant_grove").unlessFlag("ant_hespori").flag("ant_hespori")
+                .say("* The wild hespori wilts.")
+                .reach("ant_hespori_island", 8).stay().needFlag("ant_hespori").unless("ant_hespori_bark").unlessFlag("ant_bark").needTool("axe")
+                .give("ant_hespori_bark").say("* You chop some bark from the dead hespori.")
+                .missing("* You'd need an axe to take its bark.")
+                .talk("quest_mysterious_stranger_tob").needFlag("ant_eggs").take("ant_hespori_bark").flag("ant_bark")
+                .say("* Ranis's last memory: Verzik's 'nylocas to end all nylocas', the tiny Nylocas Queen. It bites her and dies.",
+                        "Its bite gave her these powers, but something is missing. I must touch Verzik herself. Get me through her Theatre.")
+                .missing("A wild hespori grows somewhere in Mort Myre. The Nature Spirit would know.")
+                // saves from before carry the old venom sample instead of the eggs and bark
                 .talk("quest_mysterious_stranger_tob").take("quest_spider_venom_sample")
-                .say("This will do. Now: the Theatre of Blood. You'll go in as a challenger, and survive. I'll handle the rest.")
-                .missing("Spider venom. Giant spiders. Below. Go.")
-                .stage("I must survive a run through the Theatre of Blood's entry mode.")
-                .reach("quest_ver_sinhaza", 10).flag("ant_theatre").say("* You fight through the Maiden, the Bloat, the Nylocas, Sotetseg and Xarpus... and Verzik herself watches, amused.")
-                .stage("I should report to Veliaf.")
-                .talk("veliaf_hurtz").needFlag("ant_theatre").say("You survived the Theatre! And the venom may be our weapon against Verzik. Hope lives in Morytania yet.");
+                .say("This venom will do. Now get me through Verzik's Theatre.")
+                // Wiki (The Curtain Opens): a whole Theatre of Blood run (Entry mode will do; any earlier completion counts);
+                // the raid sets the flag (RaidInstance).
+                .stage("I must get the Mysterious Stranger to Verzik: complete the Theatre of Blood (Entry mode will do) in Ver Sinhaza.")
+                .talk("quest_mysterious_stranger_tob").needFlag(QuestBossRules.TOB_COMPLETED_FLAG)
+                .say("* As Verzik turned into a bat and fled, the Stranger touched her. Now he wants to share what he saw.")
+                .missing("The Theatre waits. Entry mode is kinder, and you may retry its bosses as often as you need. Clear all six rooms.")
+                .stage("I should talk to the Mysterious Stranger about what he saw.")
+                .talk("quest_mysterious_stranger_tob")
+                .say("* A memory, not Verzik's but her doctor Vulcan Orvoros's: a Nylocas Queen grew inside her and burst out, killing her.",
+                        "The Verzik you fought is the Nylocas Queen. My associates were never real: I serve a master. He would speak with you.",
+                        "@Sugadinti: You have given us what we need against the nylocas. Reward my servant's friend.");
     }
 
     private static void porcineOfInterest(QuestBook b) {

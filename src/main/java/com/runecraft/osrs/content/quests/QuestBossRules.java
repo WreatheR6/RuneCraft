@@ -78,6 +78,39 @@ public final class QuestBossRules {
         return (n / XAMPHUR_SPECIAL_EVERY) % 2 == 1 ? "falling_hands" : "phantom_hands";
     }
 
+    /** The Path of Glouphrie (wiki): warped terrorbirds are only hurt by a player carrying this. */
+    public static final String TERRORBIRD_CHIME = "crystal_chime";
+    /** Their ranged screech with earmuffs or a slayer helmet on (wiki: it lowers the max hit; the number is approx). */
+    public static final int TERRORBIRD_SCREECH_MAX_WITH_EARS = 8;
+    public static final java.util.List<String> TERRORBIRD_EAR_PROTECTION = java.util.List.of("earmuffs", "slayer_helmet", "slayer_helmet_i");
+
+    /** Beneath Cursed Sands (wiki: "after several normal attacks"): one attack in this many is a special (approx). */
+    public static final int SCABARAS_SPECIAL_EVERY = 5;
+    /** The Shadow Rift: 20 hitpoints, and it explodes for 35 on everyone after a few seconds (wiki; the fuse is approx). */
+    public static final int SCABARAS_RIFT_FUSE_TICKS = 8;
+    public static final int SCABARAS_RIFT_DAMAGE = 35;
+
+    /** The Champion's special on its {@code n}th attack (1-based) from a roll of 0-2, or null for a normal attack. */
+    public static String scabarasSpecial(int n, int roll0to2) {
+        if (n % SCABARAS_SPECIAL_EVERY != 0) {
+            return null;
+        }
+        return switch (roll0to2) {
+            case 0 -> "shadow_burst";
+            case 1 -> "shadow_rift";
+            default -> "shadow_flames";
+        };
+    }
+
+    /**
+     * A Night at the Theatre (wiki): the quest flag a completed Theatre of Blood run (any mode) sets, which the Mysterious
+     * Stranger waits for.
+     */
+    public static final String TOB_COMPLETED_FLAG = "tob_completed";
+
+    /** Quest flags that game systems set rather than quest triggers (the Theatre of Blood's completion). */
+    public static final java.util.Set<String> EXTERNAL_FLAGS = java.util.Set.of(TOB_COMPLETED_FLAG);
+
     /** Haunted Mine: Treus Dayth's carts and cranes hit up to this every few game ticks (approx; the wiki gives no numbers). */
     public static final int TREUS_MACHINERY_TICKS = 6;
     public static final int TREUS_MACHINERY_MAX = 4;

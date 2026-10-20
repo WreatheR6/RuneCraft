@@ -49,6 +49,10 @@ class QuestStrictWalkTest {
             "roving_elves 2 kill moss_guardian",
             // saves from before carry the Weiss salt: My Arm finishes the quest with it
             "making_friends_with_my_arm 5 talk my_arm",
+            // Golrie sings a lost crystal chime again (and one for saves from before the chime)
+            "the_path_of_glouphrie 2 talk golrie",
+            // saves from before carry the old spider venom sample instead of the eggs and bark
+            "a_night_at_the_theatre 2 talk quest_mysterious_stranger_tob",
             // the priest's lines when the player arrives without the urn (the walk brings it)
             "beneath_cursed_sands 3 talk tumeken_priest");
 

@@ -39,7 +39,7 @@ class QuestWalkTest {
 
     @Test
     void realPlayersCanFireEveryAdvancingTrigger() {
-        Set<String> settable = new HashSet<>();
+        Set<String> settable = new HashSet<>(QuestBossRules.EXTERNAL_FLAGS); // set by game systems (a Theatre of Blood run)
         for (QuestSpec q : BOOK.quests) {
             q.triggers().forEach(t -> {
                 settable.addAll(t.setFlags);
