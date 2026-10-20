@@ -594,7 +594,7 @@ final class MuspahScript extends ScriptedBoss {
         Random r = new Random(boss.getRandom().nextLong());
         int cx = boss.getBlockX();
         int cz = boss.getBlockZ();
-        int half = (int) Math.ceil(boss.getBbWidth() / 2);
+        int half = footprintHalf(boss);
         for (ServerPlayer p : fighters(boss, target)) {
             if (MuspahRules.sheltered(spikes, cx, cz, p.getBlockX(), p.getBlockZ(), half)) {
                 Msg.action(p, "The spike shelters you from the shockwave.");
@@ -617,6 +617,23 @@ final class MuspahScript extends ScriptedBoss {
         attacksShielded = 0;
         setForm(boss, Form.RANGED);
         BossFx.say(boss, "The Phantom Muspah surrounds itself with a frozen prayer shield!");
+    }
+
+    /**
+     * Half-size, in blocks, of the footprint it stands on: how far from its own block the blocks under its body reach. A
+     * spike on one of those is under it, not between it and a player; the first block past them is already outside it (its
+     * 2.52-block body on the centre of its block covers that block and one on each side, so the half-size is 1, where
+     * rounding its half-width up made it 2 and a spike right beside it sheltered nobody).
+     */
+    static int footprintHalf(DataBossEntity boss) {
+        net.minecraft.world.phys.AABB box = boss.getBoundingBox();
+        int bx = boss.getBlockX();
+        int bz = boss.getBlockZ();
+        int west = bx - net.minecraft.util.Mth.floor(box.minX);
+        int east = net.minecraft.util.Mth.floor(box.maxX - 1.0E-6) - bx;
+        int north = bz - net.minecraft.util.Mth.floor(box.minZ);
+        int south = net.minecraft.util.Mth.floor(box.maxZ - 1.0E-6) - bz;
+        return Math.max(0, Math.max(Math.max(west, east), Math.max(north, south)));
     }
 
     void breakShield(DataBossEntity boss, ServerPlayer attacker) {

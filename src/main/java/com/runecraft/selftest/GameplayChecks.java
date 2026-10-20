@@ -840,8 +840,13 @@ final class GameplayChecks {
         }
         int kcBefore = totalKills();
         int logBefore = data().collectionLog().size();
-        boss.setHealth(0f);
-        boss.die(CombatHandler.source(p()));
+        // A boss whose death only counts at the end of its scripted mechanic (OSRS: The Nightmare's totems, the Phantom
+        // Muspah's prayer shield) is played there first, as a player would; its script may end it itself (the totems' blast).
+        String played = boss instanceof DataBossEntity d ? com.runecraft.content.bosses.BossSelfTests.playToKill(d, p()) : null;
+        if (boss.isAlive()) {
+            boss.setHealth(0f);
+            boss.die(CombatHandler.source(p()));
+        }
         int kc = totalKills() - kcBefore;
         // A companion (Dawn beside Dusk, Eldric beside Branda) is part of its main boss's kill: OSRS counts one "Grotesque
         // Guardians" / "Royal Titans" kill when the main boss dies (boss:fight:dusk and boss:fight:branda_the_fire_queen
@@ -851,11 +856,13 @@ final class GameplayChecks {
             throw failure("a companion boss added a kill count of its own (+" + kc + "): its death is part of the main boss's kill");
         }
         if (!companion && kc <= 0) {
-            throw failure("killing it did not add a kill count (" + ticks + " ticks alive)");
+            throw failure("killing it did not add a kill count (" + ticks + " ticks alive"
+                    + (played == null ? "" : "; played to the kill: " + played) + ")");
         }
         int drops = c.world.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, new AABB(boss.blockPosition()).inflate(6),
                 e -> true).size();
         return ticks + " ticks" + (forms.isEmpty() ? "" : ", forms " + String.join(" ", forms))
+                + (played == null ? "" : ", played to the kill (" + played + ")")
                 + (companion ? ", companion: no kill count of its own (shared with its main boss)" : ", kc +" + kc) + ", " + drops
                 + " drops, log +" + (data().collectionLog().size() - logBefore);
     }

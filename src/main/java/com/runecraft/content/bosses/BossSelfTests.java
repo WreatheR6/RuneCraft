@@ -27,6 +27,17 @@ public final class BossSelfTests {
         return NightmareMuspahWalks.muspah(boss, p);
     }
 
+    /**
+     * The {@code boss:<id>} check (GameplayChecks) kills a boss outright after letting it act. A boss whose death only counts
+     * at the end of its scripted mechanic is first played there as a player would (OSRS: The Nightmare dies only to the third
+     * blast of her totems and Phosani at the end of her desperation phase, so she is woken, her shields broken and her totems
+     * charged, and her script ends her; the Phantom Muspah only dies after its shockwave and prayer shield). Returns what was
+     * played, or null for a boss without such a mechanic.
+     */
+    public static String playToKill(DataBossEntity boss, ServerPlayer p) {
+        return NightmareMuspahWalks.playToKill(boss, p);
+    }
+
     /** Araxxor's nine eggs: hatching order and destroyed eggs. */
     public static String araxxorEggs(DataBossEntity boss, ServerPlayer p) {
         return SlayerScripts.selfTestAraxxor(boss, p);

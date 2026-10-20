@@ -96,6 +96,13 @@ abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScaled {
         return damage;
     }
 
+    /**
+     * The hit {@link #incoming} let through, as it goes on to the boss's health (after the HP scaling, which can round a
+     * small hit down to 0: then nothing lands).
+     */
+    protected void incomingScaled(DataBossEntity boss, ServerPlayer attacker, int damage) {
+    }
+
     // ------------------------------------------------------------------
 
     @Override
@@ -174,6 +181,7 @@ abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScaled {
             pendingDeath = true;
             pendingDeathBy = attacker;
         }
+        incomingScaled(boss, attacker, d);
         return d;
     }
 

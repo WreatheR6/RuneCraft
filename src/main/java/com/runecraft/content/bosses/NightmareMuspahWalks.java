@@ -17,6 +17,9 @@ import java.util.List;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -25,6 +28,10 @@ import net.minecraft.world.phys.Vec3;
  * code doing each mechanic, and every step is checked. Any broken step throws with what went wrong.
  */
 final class NightmareMuspahWalks {
+    /** A reflected hit (a ring of recoil's or Vengeance's) in the walks. */
+    private static final int REFLECTED = 12;
+    /** The player's health buffer while {@link #playToKill} plays a fight on. */
+    private static final net.minecraft.resources.ResourceLocation KILL_HP_BUFFER = com.runecraft.RuneCraft.id("selftest_kill_hp");
     private static long tick;
 
     private NightmareMuspahWalks() {
@@ -62,6 +69,124 @@ final class NightmareMuspahWalks {
         if (m.isAlive()) {
             m.kill();
         }
+    }
+
+    // ------------------------------------------------------------------ the boss:<id> kill
+
+    /**
+     * Plays a fight on to where its death counts, as a player would, for the {@code boss:<id>} check (which otherwise kills
+     * a boss outright, a death these scripts refuse until then). The Nightmare only dies to the third blast of her totems and
+     * Phosani at the end of her desperation phase: she is woken, her shields broken, her totems charged and her sleepwalkers
+     * killed, and the blast or Phosani's last hit ends her. The Phantom Muspah only dies in its post-shield form: it is hurt
+     * down to its shockwave and its prayer shield drained. Returns what was played, or null for other bosses.
+     */
+    static String playToKill(DataBossEntity boss, ServerPlayer p) {
+        if (!(boss.script() instanceof NightmareScript) && !(boss.script() instanceof MuspahScript)) {
+            return null;
+        }
+        // The check ticked the boss on a clock that stood still: the attacks it wound up meanwhile (standard attacks, claws,
+        // orbs) all land on the first game ticks played here. The player keeps a big health buffer, as in a fight check.
+        AttributeInstance health = p.getAttribute(Attributes.MAX_HEALTH);
+        if (health != null) {
+            health.removeModifier(KILL_HP_BUFFER);
+            health.addTransientModifier(new AttributeModifier(KILL_HP_BUFFER, 2000, AttributeModifier.Operation.ADD_VALUE));
+        }
+        p.setHealth(p.getMaxHealth());
+        try {
+            return boss.script() instanceof NightmareScript n ? nightmareToKill(boss, p, n)
+                    : muspahToKill(boss, p, (MuspahScript) boss.script());
+        } finally {
+            if (health != null) {
+                health.removeModifier(KILL_HP_BUFFER);
+            }
+            com.runecraft.skill.XpService.updateMaxHealth(p);
+            p.setHealth(p.getMaxHealth());
+        }
+    }
+
+    private static String nightmareToKill(DataBossEntity boss, ServerPlayer p, NightmareScript n) {
+        tick = Math.max(ActionManager.gameTick(), n.now);
+        boolean quiet = n.selfTestQuiet;
+        n.selfTestQuiet = true; // her standard attacks only from here: her specials don't change what ends the fight
+        int hits = 0;
+        int totems = 0;
+        int walkers = 0;
+        int ticks = 0;
+        boolean woke = n.stage == NightmareScript.Stage.ASLEEP;
+        try {
+            while (boss.isAlive() && ticks < 2000) {
+                switch (n.stage) {
+                    case ASLEEP -> n.wake(boss); // disturbed: no need to wait out her sleep
+                    case SHIELD, DESPERATION -> {
+                        if (n.flowersBloomed()) {
+                            step(boss, p, 1); // an attack from a berry quadrant would heal her: the flowers wither first
+                            ticks++;
+                        } else {
+                            hurt(boss, p, 97, AttackType.CRUSH);
+                            hits++;
+                        }
+                    }
+                    case TOTEMS -> {
+                        for (Mob t : new ArrayList<>(n.totems)) {
+                            for (int guard = 0; t.isAlive() && guard < 200; guard++) {
+                                CombatHandler.applyDamage(p, t, n.totemDamage(p, t, AttackType.MAGIC, 40));
+                            }
+                            totems++;
+                        }
+                        NightmareScript.CHARGING.remove(p.getUUID());
+                        step(boss, p, 1); // charged: they blast her
+                        ticks++;
+                    }
+                    case WALKERS -> {
+                        for (Mob w : new ArrayList<>(n.walkers)) {
+                            kill(p, w);
+                            walkers++;
+                        }
+                        step(boss, p, 1);
+                        ticks++;
+                    }
+                    default -> { // DEAD: the killing blow lands on her next game tick
+                        step(boss, p, 1);
+                        ticks++;
+                    }
+                }
+                if (hits > 1000) {
+                    break;
+                }
+            }
+        } finally {
+            n.selfTestQuiet = quiet;
+            NightmareScript.CHARGING.remove(p.getUUID());
+        }
+        return (woke ? "woke her, " : "") + hits + " hits on her shields" + (n.phosani() ? " and desperation" : "") + ", " + totems
+                + " totems charged, " + walkers + " sleepwalkers killed" + (boss.isAlive() ? ", still " + n.stage : ", killed by the "
+                + (n.phosani() ? "last hit" : "totems' blast"));
+    }
+
+    private static String muspahToKill(DataBossEntity boss, ServerPlayer p, MuspahScript m) {
+        tick = Math.max(ActionManager.gameTick(), m.now);
+        int hits = 0;
+        int drains = 0;
+        int ticks = 0;
+        while (boss.isAlive() && m.stage != MuspahScript.Stage.POST && ticks < 600 && drains < 200) {
+            switch (m.stage) {
+                case FORMS, CLOUDS -> {
+                    hurt(boss, p, 60, AttackType.RANGED);
+                    hits++;
+                }
+                case SHIELDED -> {
+                    boss.modifyIncoming(p, 10, AttackType.RANGED); // each attack takes 2 off its prayer shield
+                    drains++;
+                    continue;
+                }
+                default -> {
+                }
+            }
+            step(boss, p, 1); // SHOCKWAVE: it sends out its shockwave, then raises its shield (or skips it)
+            ticks++;
+        }
+        return hits + " hits to its shockwave, " + drains + " attacks on its prayer shield"
+                + (m.stage == MuspahScript.Stage.POST ? ", post-shield form" : ", still " + m.stage);
     }
 
     // ------------------------------------------------------------------ The Nightmare / Phosani's Nightmare
@@ -102,6 +227,22 @@ final class NightmareMuspahWalks {
                 for (Special s : specials) {
                     did.add(special(boss, p, n, s));
                 }
+                // A ring of recoil or Vengeance off her hits counts toward her shield like any hit (OSRS), though not toward
+                // the player's share of the loot.
+                step(boss, p, 1);
+                // So it does right after a hit of theirs too small to move her bar: her rules count a 1, but scaled to her
+                // health cap it comes to 0 more often than not and never lands (a 1 that comes to 1 here isn't applied).
+                int small;
+                int tries = 0;
+                do {
+                    small = boss.modifyIncoming(p, 1, AttackType.CRUSH);
+                } while (small > 0 && ++tries < 30);
+                int shieldBefore = n.shieldLeft;
+                int[] share = n.contribution(p).clone();
+                CombatHandler.applyDamage(p, boss, REFLECTED);
+                check(n.stage == NightmareScript.Stage.SHIELD && n.shieldLeft == Math.max(0, shieldBefore - REFLECTED),
+                        "a reflected hit didn't count toward her shield (" + shieldBefore + " -> " + n.shieldLeft + ", " + n.stage + ")");
+                check(java.util.Arrays.equals(share, n.contribution(p)), "a reflected hit counted toward the player's share of the loot");
                 // The shield, broken by the player's hits; her bar falls with it.
                 float before = boss.getHealth();
                 int hits = 0;
@@ -113,15 +254,19 @@ final class NightmareMuspahWalks {
                 check(boss.getHealth() < before, "her health didn't fall with her shield (" + before + " -> " + boss.getHealth() + ")");
                 check(!n.isVulnerable(boss) && boss.modifyIncoming(p, 50, AttackType.SLASH) == 0, "hurt while the totems are up");
                 check(n.totems.size() == NightmareRules.TOTEMS, n.totems.size() + " totems");
-                // A ring of recoil or Vengeance off her hits while she is immune can't end her (her health is what is
-                // left to deal to her, 1 once the last shield is down): only the totems' blast does.
+                // A ring of recoil or Vengeance off her hits while she is immune does nothing, let alone end her: only the
+                // totems' blast does. Her health is what is left to deal to her (1 once the last shield is down) from her
+                // next game tick on; the shield hits took it down on their own scale until then.
+                step(boss, p, 1);
                 float immune = boss.getHealth();
                 CombatHandler.applyDamage(p, boss, (int) Math.ceil(immune) + 5);
                 check(boss.isAlive() && n.stage == NightmareScript.Stage.TOTEMS, "a reflected hit killed her while the totems were up ("
                         + n.stage + ")");
-                step(boss, p, 1);
-                check(Math.abs(boss.getHealth() - immune) <= 1f, "her health didn't come back after a reflected hit (" + immune + " -> "
+                check(Math.abs(boss.getHealth() - immune) <= 1f, "a reflected hit hurt her while the totems were up (" + immune + " -> "
                         + boss.getHealth() + ")");
+                step(boss, p, 1);
+                check(Math.abs(boss.getHealth() - immune) <= 1f, "her health moved after a reflected hit while the totems were up ("
+                        + immune + " -> " + boss.getHealth() + ")");
                 Mob first = n.totems.get(0);
                 boolean xpBefore = com.runecraft.skill.XpService.allowed(p, com.runecraft.osrs.Skill.MAGIC);
                 int magic = n.totemDamage(p, first, AttackType.MAGIC, 10);
@@ -170,6 +315,11 @@ final class NightmareMuspahWalks {
                 for (Mob w : new ArrayList<>(n.walkers)) {
                     kill(p, w);
                 }
+                // Vengeance or a ring of recoil counts toward her desperation health too.
+                int left = n.desperationLeft;
+                CombatHandler.applyDamage(p, boss, REFLECTED);
+                check(boss.isAlive() && n.desperationLeft == left - REFLECTED, "a reflected hit didn't count toward her desperation health ("
+                        + left + " -> " + n.desperationLeft + ")");
                 int hits = 0;
                 while (boss.isAlive() && hits < 20) {
                     hurt(boss, p, 60, AttackType.CRUSH);
@@ -396,21 +546,43 @@ final class NightmareMuspahWalks {
             check(m.stage == MuspahScript.Stage.SHOCKWAVE, "no shockwave below " + MuspahRules.SHIELD_BELOW + " (" + m.stage + ")");
             int cx = boss.getBlockX();
             int cz = boss.getBlockZ();
-            int half = (int) Math.ceil(boss.getBbWidth() / 2);
-            m.spikes.removeIf(t -> t == BossMechanics.tile(p.getBlockX(), p.getBlockZ()));
-            for (long t : MuspahRules.line(cx, cz, p.getBlockX(), p.getBlockZ())) {
-                int x = (int) (t >> 32);
-                int z = (int) t;
-                if (Math.max(Math.abs(x - cx), Math.abs(z - cz)) > half && (x != p.getBlockX() || z != p.getBlockZ())) {
-                    m.spikes.add(t);
-                    break;
+            int half = MuspahScript.footprintHalf(boss);
+            // The player hides behind a spike: a spike on the line to it, past its body. Right beside its body there is no
+            // room for one, so a player standing there steps back first (as in OSRS).
+            Vec3 stood = p.position();
+            boolean stepped = Math.max(Math.abs(p.getBlockX() - cx), Math.abs(p.getBlockZ() - cz)) < half + 2;
+            if (stepped) {
+                p.setPos(cx + half + 2 + 0.5, stood.y, cz + 0.5);
+            }
+            try {
+                int px = p.getBlockX();
+                int pz = p.getBlockZ();
+                m.spikes.removeIf(t -> t == BossMechanics.tile(px, pz));
+                long shelter = 0;
+                boolean placed = false;
+                for (long t : MuspahRules.line(cx, cz, px, pz)) {
+                    int x = (int) (t >> 32);
+                    int z = (int) t;
+                    if (Math.max(Math.abs(x - cx), Math.abs(z - cz)) > half && (x != px || z != pz)) {
+                        m.spikes.add(t);
+                        shelter = t;
+                        placed = true;
+                        break;
+                    }
+                }
+                check(placed, "no tile between the Muspah (footprint half-size " + half + " at " + cx + "," + cz + ") and the player at "
+                        + px + "," + pz + " for a spike");
+                check(MuspahRules.sheltered(m.spikes, cx, cz, px, pz, half), "the spike doesn't shelter the player");
+                step(boss, p, MuspahRules.SHOCKWAVE_WIND_UP);
+                check(m.stage == MuspahScript.Stage.SHIELDED && m.shield() == BossMechanics.MUSPAH_SHIELD, "no prayer shield after the shockwave ("
+                        + m.stage + ")");
+                log.add("shockwave behind a spike" + (stepped ? " (stepped back to " + px + "," + pz + ")" : "") + ", spike at "
+                        + (int) (shelter >> 32) + "," + (int) shelter);
+            } finally {
+                if (stepped) {
+                    p.setPos(stood.x, stood.y, stood.z);
                 }
             }
-            check(MuspahRules.sheltered(m.spikes, cx, cz, p.getBlockX(), p.getBlockZ(), half), "the spike doesn't shelter the player");
-            step(boss, p, MuspahRules.SHOCKWAVE_WIND_UP);
-            check(m.stage == MuspahScript.Stage.SHIELDED && m.shield() == BossMechanics.MUSPAH_SHIELD, "no prayer shield after the shockwave ("
-                    + m.stage + ")");
-            log.add("shockwave behind a spike");
             // Immune while shielded: Vengeance or a ring of recoil off its hits can't hurt it, let alone kill it.
             float shielded = boss.getHealth();
             CombatHandler.applyDamage(p, boss, (int) Math.ceil(shielded) + 10);
