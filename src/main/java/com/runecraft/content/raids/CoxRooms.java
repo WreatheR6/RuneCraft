@@ -2118,6 +2118,10 @@ final class CoxRooms {
         private int siphonTicks;
         private final Map<UUID, Integer> drip = new HashMap<>();
         private int phasesSeen;
+        /** "Perfect Olm": failed by the listed specials, a claw regrowing or the same acid pool two ticks running. */
+        private boolean imperfect;
+        private boolean penultimateSpecial;
+        private final Map<UUID, Pool> lastPool = new HashMap<>();
 
         Olm(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -2279,6 +2283,7 @@ final class CoxRooms {
             }
             List<ServerPlayer> players = players();
             tickPools(this, pools, t, head, ParticleTypes.ITEM_SLIME);
+            perfectTick(players);
             tickBurns(players);
             tickDrips(players);
             tickSiphon(players);
@@ -2321,6 +2326,38 @@ final class CoxRooms {
             }
         }
 
+        /** "Perfect Olm" (OSRS): notes back-to-back hits from one acid pool and keeps a failed run flagged. */
+        private void perfectTick(List<ServerPlayer> players) {
+            for (ServerPlayer p : players) {
+                Pool on = null;
+                for (Pool pool : pools) {
+                    if (RaidEffects.horizontalDistSq(p.position(), pool.pos()) < 0.8 * 0.8) {
+                        on = pool;
+                        break;
+                    }
+                }
+                Pool before = on == null ? lastPool.remove(p.getUUID()) : lastPool.put(p.getUUID(), on);
+                if (on != null && on == before) {
+                    imperfect = true;
+                }
+            }
+            if (imperfect && alive(head)) {
+                CombatAchievementService.flagNear(head, CombatAchievements.FLAG_OLM_IMPERFECT);
+            }
+            if (penultimateSpecial && alive(head)) {
+                CombatAchievementService.flagNear(head, CombatAchievements.FLAG_OLM_PENULTIMATE_SPECIAL);
+            }
+        }
+
+        /** A hit from a special that fails "Perfect Olm" if it lands. */
+        private int special(LivingEntity source, ServerPlayer p, int dmg) {
+            int dealt = RaidEffects.hit(source, p, dmg, null, true);
+            if (dealt > 0) {
+                imperfect = true;
+            }
+            return dealt;
+        }
+
         private void checkHands() {
             if (clench > 0) {
                 clench--;
@@ -2347,6 +2384,7 @@ final class CoxRooms {
                 } else {
                     right = spawnClaw("olm_right_claw", -leftX());
                 }
+                imperfect = true; // "Perfect Olm": a claw regrew
                 handDownAt = -1;
                 warn("The Great Olm recovers its " + (l ? "right" : "left") + " hand!");
             }
@@ -2357,9 +2395,14 @@ final class CoxRooms {
             step++;
             if (healingHandIn >= 0 && --healingHandIn == 0 && alive(left) && penultimate()) {
                 healingHand = 2 * CoxRules.OLM_STEP_TICKS;
+                penultimateSpecial = true;
                 say("The Great Olm's left claw glows - attacking it will heal it!");
             }
             boolean handSpecials = stage == Stage.FIGHT && alive(left) && clench == 0;
+            if (handSpecials && penultimate() && (s == CoxRules.OlmStep.CRYSTAL_BURST || s == CoxRules.OlmStep.LIGHTNING
+                    || s == CoxRules.OlmStep.TELEPORT)) {
+                penultimateSpecial = true;
+            }
             switch (s) {
                 case STANDARD -> standard(players);
                 case CRYSTAL_BURST -> {
@@ -2466,7 +2509,7 @@ final class CoxRooms {
                     return;
                 }
                 if (!RaidEffects.protectedFrom(p, styles[s])) {
-                    RaidEffects.hit(source, p, CoxRules.olmSphereDamage(Math.round(p.getHealth())), null, true);
+                    special(source, p, CoxRules.olmSphereDamage(Math.round(p.getHealth())));
                 }
             });
         }
@@ -2570,8 +2613,7 @@ final class CoxRooms {
             for (ServerPlayer p : players()) {
                 for (int side = -1; side <= 1; side += 2) {
                     if (Math.abs(p.getX() - (c.x + side * 2)) < 0.7 && Math.abs(p.getZ() - c.z) <= 3.5) {
-                        RaidEffects.hit(head, p, CoxRules.OLM_WALL_LEAP_MIN + rnd().nextInt(CoxRules.OLM_WALL_LEAP_MAX - CoxRules.OLM_WALL_LEAP_MIN + 1),
-                                null, true);
+                        special(head, p, CoxRules.OLM_WALL_LEAP_MIN + rnd().nextInt(CoxRules.OLM_WALL_LEAP_MAX - CoxRules.OLM_WALL_LEAP_MIN + 1));
                         p.push(side * 0.6, 0.2, 0);
                         p.hurtMarked = true;
                     }
@@ -2589,7 +2631,7 @@ final class CoxRooms {
             RaidEffects.later(CoxRules.OLM_WALL_TICKS, () -> {
                 for (ServerPlayer p : players()) {
                     if (Math.abs(p.getX() - c.x) < 2 && Math.abs(p.getZ() - c.z) <= 3.5) {
-                        RaidEffects.hit(head, p, CoxRules.OLM_WALL_MIN + rnd().nextInt(CoxRules.OLM_WALL_MAX - CoxRules.OLM_WALL_MIN + 1), null, true);
+                        special(head, p, CoxRules.OLM_WALL_MIN + rnd().nextInt(CoxRules.OLM_WALL_MAX - CoxRules.OLM_WALL_MIN + 1));
                         Msg.red(p, "You are caught between the walls of fire!");
                     }
                 }
@@ -2610,7 +2652,7 @@ final class CoxRooms {
                     for (ServerPlayer q : players()) {
                         int dmg = CoxRules.olmCrystalBombDamage(Math.sqrt(RaidEffects.horizontalDistSq(q.position(), at)));
                         if (dmg > 0) {
-                            RaidEffects.hit(head, q, dmg, null, true);
+                            special(head, q, dmg);
                         }
                     }
                 });
@@ -2640,7 +2682,15 @@ final class CoxRooms {
         private void crystalBurst(List<ServerPlayer> players) {
             say("Crystals burst from the ground!");
             for (ServerPlayer p : players) {
-                zone(world(), p.position(), 1.0, 20, 40, 4, left, ParticleTypes.END_ROD);
+                Vec3 at = p.position();
+                zone(world(), at, 1.0, 20, 40, 4, left, ParticleTypes.END_ROD);
+                RaidEffects.later(4, () -> {
+                    for (ServerPlayer q : players()) {
+                        if (RaidEffects.horizontalDistSq(q.position(), at) <= 1.0) {
+                            imperfect = true; // "Perfect Olm": caught by a Crystal Burst
+                        }
+                    }
+                });
             }
         }
 
@@ -2684,8 +2734,8 @@ final class CoxRooms {
                         int dmg = CoxRules.olmTeleportDamage(pa.distanceTo(pb));
                         a.teleportTo(pb.x, pb.y, pb.z);
                         b.teleportTo(pa.x, pa.y, pa.z);
-                        RaidEffects.hit(head, a, dmg, null, true);
-                        RaidEffects.hit(head, b, dmg, null, true);
+                        special(head, a, dmg);
+                        special(head, b, dmg);
                     }
                 });
             }
@@ -2696,7 +2746,7 @@ final class CoxRooms {
                     if (p.isAlive() && inside(p.position())) {
                         int dmg = CoxRules.olmTeleportDamage(p.position().distanceTo(to));
                         p.teleportTo(to.x, to.y, to.z);
-                        RaidEffects.hit(head, p, dmg, null, true);
+                        special(head, p, dmg);
                     }
                 });
             }
@@ -2729,7 +2779,7 @@ final class CoxRooms {
                     safe |= RaidEffects.horizontalDistSq(p.position(), v) < 1.0;
                 }
                 if (!safe) {
-                    total += RaidEffects.hit(head, p, Math.min(CoxRules.OLM_SIPHON_MAX, 1 + rnd().nextInt(CoxRules.OLM_SIPHON_MAX)), null, true);
+                    total += special(head, p, Math.min(CoxRules.OLM_SIPHON_MAX, 1 + rnd().nextInt(CoxRules.OLM_SIPHON_MAX)));
                 }
             }
             if (total > 0 && alive(head)) {
@@ -2746,6 +2796,7 @@ final class CoxRooms {
             burning.clear();
             drip.clear();
             siphon.clear();
+            lastPool.clear();
         }
 
         @Override
