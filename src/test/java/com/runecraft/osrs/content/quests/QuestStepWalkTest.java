@@ -132,6 +132,16 @@ class QuestStepWalkTest {
                 .stage("B").talk("bob");
         left.seal();
         assertTrue(QuestStepWalk.stepPlan(left, "p", id -> true, id -> true).problems().get(0).contains("never fired"));
+        // stuck because a quest item earned earlier is gone (Monkey Madness II's greegree, lost to a fight's weapon swap)
+        QuestSpec lost = new QuestSpec("step_lost", "Step lost", com.runecraft.osrs.Quest.Difficulty.NOVICE, 1)
+                .stage("A").talk("ann").stay().unlessFlag("given").give("step_charm").flag("given")
+                .talk("carl").stay().need("step_charm").flag("c")
+                .talk("bob").needFlag("c");
+        lost.seal();
+        QuestStepWalk.Player robbed = new Route(lost, 0, "given");
+        String why = QuestStepWalk.whyStuck(lost.stages.get(0), robbed, QuestStepWalk.questItems(lost));
+        assertTrue(why.contains("talk bob: needs flag c") && !why.contains("talk ann"), why);
+        assertTrue(why.contains("side steps lacking a quest item: talk carl (trigger 1): needs quest item step_charm"), why);
     }
 
     @Test

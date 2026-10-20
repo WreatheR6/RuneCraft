@@ -128,15 +128,23 @@ public final class QuestStepWalk {
         return null;
     }
 
-    /** Why no step can fire at a stage: each trigger that leaves it and what blocks it. */
+    /**
+     * Why no step can fire at a stage: each trigger that leaves it and what blocks it, then the side objectives held up only
+     * by a quest item the player should have earned by now (one lost on the way).
+     */
     public static String whyStuck(QuestSpec.Stage stage, Player p, Set<String> questItems) {
         List<String> why = new ArrayList<>();
+        List<String> lacking = new ArrayList<>();
         for (Trigger t : stage.triggers) {
+            String b = blocked(t, p, questItems);
             if (t.next != t.stage) {
-                why.add(QuestWalk.describe(t) + ": " + blocked(t, p, questItems));
+                why.add(QuestWalk.describe(t) + ": " + b);
+            } else if (b != null && b.startsWith("needs quest item") && progresses(t, p)) {
+                lacking.add(QuestWalk.describe(t) + " (trigger " + stage.triggers.indexOf(t) + "): " + b);
             }
         }
-        return why.isEmpty() ? "no trigger leaves it" : String.join("; ", why);
+        return (why.isEmpty() ? "no trigger leaves it" : String.join("; ", why))
+                + (lacking.isEmpty() ? "" : "; side steps lacking a quest item: " + String.join("; ", lacking));
     }
 
     /**
