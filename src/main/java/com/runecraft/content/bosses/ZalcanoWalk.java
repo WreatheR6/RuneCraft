@@ -51,6 +51,11 @@ public final class ZalcanoWalk {
             throw fail("Zalcano has no Zalcano script");
         }
         ServerPlayer p = d.player();
+        if (BossFx.players(boss, 64).stream().noneMatch(q -> q == p)) {
+            // Her prison's stations only serve players in the world's player list (the fake player isn't).
+            throw new com.runecraft.selftest.SelfTest.Skip("Zalcano's stations only see players in the world; runs in "
+                    + "'/rc selftest real boss:walk:zalcano'");
+        }
         List<String> notes = new ArrayList<>();
         p.setItemInHand(InteractionHand.MAIN_HAND, Inv.stack("rune_pickaxe", 1));
         for (String id : BossMechanics.TEPHRA_ITEMS) {
