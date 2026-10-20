@@ -127,6 +127,9 @@ final class GameplayChecks {
         // Barbarian Assault as a real player (round 37): wave 1 alone as an attacker, the queen wave, honour, a level, a torso.
         checks.add(new SelfTest.Check("minigame:barbarian_assault_run", () -> g.tzhaarRun(
                 com.runecraft.content.minigames.games.BarbarianAssaultSelfTest::run)));
+        // Round 40: one round of each skilling minigame as the real player, then its points spent (SkillingMinigameWalk).
+        checks.add(new SelfTest.Check("minigame:foundry_round",
+                () -> g.skillingWalk(com.runecraft.content.minigames.games.SkillingMinigameWalk::giantsFoundry)));
         for (RaidType r : RaidType.values()) {
             checks.add(new SelfTest.Check("raid:" + r.id(), () -> g.raid(r)));
         }

@@ -258,15 +258,23 @@ public final class RewardShops {
                 .item("seed_box", TITHE, 250)
                 .item("herb_sack", TITHE, 250);
 
-        // Giants' Foundry: Kovac (reputation, per the wiki reward shop).
-        shop("giants_foundry", "Kovac's Rewards")
+        // Giants' Foundry: Kovac (reputation; OSRS Wiki "Giants' Foundry Reward Shop"). The 15 moulds beyond the defaults are
+        // unlocks (bought at any level, used only with their Smithing level). Not stocked: the smithing catalyst (its smelting
+        // effect isn't modelled).
+        RewardShop gf = shop("giants_foundry", "Kovac's Rewards")
+                .item("double_ammo_mould", FOUNDRY, 2000)
+                .item("kovacs_grog", FOUNDRY, 300)
+                .labelled(GiantsFoundry.ORE_PACK_ITEM, "Ore pack", List.of(new Cost(FOUNDRY, 200)))
                 .item("smiths_tunic", FOUNDRY, 4000)
                 .item("smiths_trousers", FOUNDRY, 4000)
                 .item("smiths_boots", FOUNDRY, 3500)
                 .item("smiths_gloves", FOUNDRY, 3500)
-                .item("colossal_blade", FOUNDRY, 5000)
-                .item("double_ammo_mould", FOUNDRY, 2000)
-                .item("kovacs_grog", FOUNDRY, 300); // approx
+                .item("colossal_blade", FOUNDRY, 5000);
+        for (GiantsFoundry.Mould m : GiantsFoundry.MOULDS) {
+            if (m.purchasable()) {
+                gf.unlock(m.flag(), m.name() + " (Smithing " + m.level() + ")", List.of(new Cost(FOUNDRY, m.cost())));
+            }
+        }
 
         // Mahogany Homes: Amy's carpenter points shop.
         shop("mahogany_homes", "Amy's Rewards")

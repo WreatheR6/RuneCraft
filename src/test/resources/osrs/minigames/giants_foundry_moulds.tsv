@@ -1,0 +1,35 @@
+# Giants' Foundry moulds, from the OSRS Wiki page "Giants' Foundry/Mould List" (osrs-wiki-data dump, July 2026).
+# part	name	level	cost	narrow	broad	light	heavy	flat	spiked
+TIP	Saw Tip	15	0	0	6	0	8	0	8
+TIP	Gladius Point	15	0	8	0	0	8	6	0
+TIP	Serpent's Fang	15	0	8	0	6	0	0	8
+TIP	Medusa's Head	15	0	0	4	0	4	0	4
+TIP	Chopper Tip	15	0	0	4	4	0	0	4
+TIP	People Poker Point	15	0	4	0	0	4	4	0
+TIP	Corrupted Point	49	300	8	0	10	0	0	8
+TIP	Defenders Tip	52	300	0	10	0	8	0	8
+TIP	Serrated Tip	60	350	4	0	16	0	0	4
+TIP	Needle Point	69	400	18	0	3	0	4	0
+TIP	The Point!	81	450	0	2	1	0	22	0
+BLADE	Gladius Edge	15	0	6	0	0	8	8	0
+BLADE	Stiletto Blade	15	0	8	0	6	0	8	0
+BLADE	Medusa Blade	15	0	0	8	0	8	6	0
+BLADE	Fish Blade	15	0	4	0	4	0	4	0
+BLADE	Defenders Edge	15	0	0	4	0	4	0	4
+BLADE	Saw Blade	15	0	0	4	4	0	0	4
+BLADE	Flamberge Blade	48	300	8	0	8	0	0	10
+BLADE	Serpent Blade	50	300	10	0	8	0	8	0
+BLADE	Claymore Blade	59	350	0	16	0	4	4	0
+BLADE	Fleur de Blade	71	400	0	4	0	18	0	1
+BLADE	Choppa!	80	450	0	1	22	0	2	0
+FORTE	Serrated Forte	15	0	8	0	0	8	0	6
+FORTE	Serpent Ricasso	15	0	6	0	8	0	8	0
+FORTE	Medusa Ricasso	15	0	0	8	0	6	8	0
+FORTE	Disarming Forte	15	0	4	0	4	0	0	4
+FORTE	Gladius Ricasso	15	0	0	4	0	4	4	0
+FORTE	Chopper Forte	15	0	0	4	4	0	4	0
+FORTE	Stiletto Forte	50	300	8	0	10	0	8	0
+FORTE	Defender Base	51	300	0	8	0	10	8	0
+FORTE	Juggernaut Forte	61	350	0	4	0	4	0	16
+FORTE	Chopper Forte +1	70	400	0	3	4	0	18	0
+FORTE	Spiker!	79	450	1	0	0	2	0	22

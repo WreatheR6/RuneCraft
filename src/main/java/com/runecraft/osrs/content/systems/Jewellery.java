@@ -292,6 +292,7 @@ public final class Jewellery {
         WORN.put("camulet", new Worn("camulet", "Camulet", Slot.NECK, ref("camulet", NONE), Perk.TELEPORT_ONLY, null, -1,
                 Teleports.CAMULET, false));
         wornExternal("pirates_hook", Slot.HANDS, s(0, 0, 0, 0, 0, 1, 5, 3, 0, 0, 0, 0, 0, 0)); // item defined by the minigames module
+        wornExternal("smiths_gloves", Slot.HANDS, NONE); // item defined by the minigames module (Smiths' Uniform)
         wornExternal("salve_amulet", Slot.NECK, s(0, 0, 0, 0, 0, 3, 3, 3, 0, 0, 0, 0, 0, 3));
         wornExternal("salve_amulet_e", Slot.NECK, s(0, 0, 0, 0, 0, 3, 3, 3, 0, 0, 0, 0, 0, 3));
         wornExternal("berserker_ring", Slot.RING, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0));

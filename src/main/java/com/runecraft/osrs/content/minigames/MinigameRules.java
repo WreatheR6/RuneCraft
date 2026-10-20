@@ -764,28 +764,6 @@ public final class MinigameRules {
         }
     }
 
-    // ---------------------------------------------------------------- Giants' Foundry
-    public static final class GiantsFoundry {
-        public static final String[] BARS = {"bronze_bar", "iron_bar", "steel_bar", "mithril_bar", "adamantite_bar", "runite_bar"};
-        public static final int[] BAR_VALUE = {1, 2, 3, 5, 7, 10};
-        public static final int BARS_NEEDED = 14;
-        public static final int STAGES = 6;
-        public static final int GAME_TICKS = 600;
-
-        private GiantsFoundry() {
-        }
-
-        /** Reputation for a finished sword: quality (0-100) times metal value / 2 (approx.). */
-        public static int reputation(int quality, int metalScore) {
-            return Math.max(1, quality * metalScore / 20);
-        }
-
-        /** Smithing XP for a sword: proportional to quality and metal value (approx.). */
-        public static double xp(int quality, int metalScore) {
-            return quality * metalScore * 1.5;
-        }
-    }
-
     // ---------------------------------------------------------------- Fishing Trawler
     public static final class Trawler {
         public static final int GAME_TICKS = 500;
