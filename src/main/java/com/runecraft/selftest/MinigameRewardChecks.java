@@ -58,6 +58,7 @@ final class MinigameRewardChecks {
         checks.add(new SelfTest.Check("minigame:colosseum_cash_out", g::colosseumCashOut));
         checks.add(new SelfTest.Check("minigame:colosseum_waves", g::colosseumWaves));
         checks.add(new SelfTest.Check("minigame:colosseum_glory", g::colosseumGlory));
+        checks.add(new SelfTest.Check("minigame:colosseum_walk", g::colosseumWalk));
         checks.add(new SelfTest.Check("minigame:nmz_modes", g::nmzModes));
         checks.add(new SelfTest.Check("minigame:nmz_barrels", g::nmzBarrels));
         checks.add(new SelfTest.Check("minigame:trek_tomes", g::trekTomes));
@@ -636,6 +637,23 @@ final class MinigameRewardChecks {
         }
         return "11 waves cleared, Sol Heredit spawned on wave 12 behind the gladiator wall, four salutes counted; modifiers "
                 + String.join(", ", seen);
+    }
+
+    /**
+     * A whole Fortis Colosseum run walked as the real player (round 34, {@code ColosseumWalk}): the lobby, twelve waves and
+     * Sol Heredit, the Rewards Chest, a death and a cash-out. Sessions only see players in the server's player list, so the
+     * fake player can't do it.
+     */
+    private String colosseumWalk() {
+        if (!c.realPlayer()) {
+            throw new SelfTest.Skip("minigame sessions only see players in the player list; runs in '/rc selftest real minigame:'");
+        }
+        c.completeQuests(null);
+        try {
+            return com.runecraft.content.minigames.games.ColosseumWalk.run(p());
+        } catch (AssertionError e) {
+            throw failure(e.getMessage());
+        }
     }
 
     /** Glory unlocks (bank chest, respawn point, ring of dueling) and the daily Varlamore token from wave 3. */

@@ -554,12 +554,14 @@ public class ColosseumSession extends MinigameSession {
             broadcastRed("Reinforcements arrive from the " + (north ? "north" : "south") + " gate!");
             monsters = waveMonsters();
         }
-        orbTick();
-        javelinTick();
-        minotaurTick(monsters);
-        totemTick(monsters);
-        beeTick();
-        solarflareTick();
+        // Each step can end the run (a Doom death), after which the rest has nothing left to act on.
+        for (Runnable step : new Runnable[]{this::orbTick, this::javelinTick, () -> minotaurTick(waveMonsters()),
+                () -> totemTick(waveMonsters()), this::beeTick, this::solarflareTick}) {
+            if (isEnded() || state != State.FIGHTING) {
+                return;
+            }
+            step.run();
+        }
     }
 
     private void completeWave() {
@@ -748,12 +750,22 @@ public class ColosseumSession extends MinigameSession {
     }
 
     private void javelinTick() {
+        // Landed javelins are taken off the list first: their damage can end the run (Doom), which clears it.
+        List<Javelin> landed = new ArrayList<>();
         javelins.removeIf(j -> {
             BlockPos t = j.target();
             world.sendParticles(ParticleTypes.CRIT, t.getX() + 0.5, t.getY() + 0.2, t.getZ() + 0.5, 3, 0.25, 0.05, 0.25, 0);
             if (ticks < j.lands()) {
                 return false;
             }
+            landed.add(j);
+            return true;
+        });
+        for (Javelin j : landed) {
+            if (isEnded()) {
+                return;
+            }
+            BlockPos t = j.target();
             world.sendParticles(ParticleTypes.EXPLOSION, t.getX() + 0.5, t.getY() + 0.5, t.getZ() + 0.5, 1, 0, 0, 0, 0);
             LivingEntity source = j.colossus().isAlive() ? j.colossus() : null;
             for (ServerPlayer p : online()) {
@@ -772,8 +784,7 @@ public class ColosseumSession extends MinigameSession {
             for (int[] off : FortisColosseum.reentryTiles(reentry)) {
                 addSand(d.offset(off[0], 0, off[1]), reentry >= 2);
             }
-            return true;
-        });
+        }
     }
 
     /** A manticore's charged volley: its three orbs, in its own pattern, a tick apart (staggered behind another's). */
@@ -809,6 +820,22 @@ public class ColosseumSession extends MinigameSession {
         return true;
     }
 
+    /** The tick a manticore's last volley was (or will be) launched (self-test). */
+    public long manticoreVolleyAt(LivingEntity manticore) {
+        return manticoreVolleys.getOrDefault(manticore.getId(), Long.MIN_VALUE / 2);
+    }
+
+    /** Self-test: sets a modifier now, so its mechanics can be walked whatever Minimus offered. */
+    public void selfTestForce(Modifier modifier, int tier) {
+        active.put(modifier, Math.max(1, Math.min(tier, modifier.maxTier())));
+    }
+
+    /** Self-test: the player dies in the arena (the minigame death path: the chest is lost, back to the lobby). */
+    public void selfTestDie(ServerPlayer p) {
+        p.setHealth(p.getMaxHealth());
+        onDeath(p);
+    }
+
     /** The orb pattern a manticore was given (self-test), or null before it first charged. */
     public List<AttackType> manticorePattern(LivingEntity manticore) {
         return manticorePatterns.get(manticore.getId());
@@ -831,13 +858,17 @@ public class ColosseumSession extends MinigameSession {
 
     private void orbTick() {
         int tier = active.getOrDefault(Modifier.MANTIMAYHEM, 0);
-        for (java.util.Iterator<Orb> it = orbs.iterator(); it.hasNext(); ) {
-            Orb o = it.next();
+        // Due orbs are taken off the list first: a hit can end the run (Doom), which clears it.
+        List<Orb> due = new ArrayList<>();
+        orbs.removeIf(o -> {
             if (ticks < o.due()) {
-                continue;
+                return false;
             }
-            it.remove();
-            if (!o.mob().isAlive() || !o.player().isAlive() || MinigameManager.session(o.player()) != this) {
+            due.add(o);
+            return true;
+        });
+        for (Orb o : due) {
+            if (isEnded() || !o.mob().isAlive() || !o.player().isAlive() || MinigameManager.session(o.player()) != this) {
                 continue;
             }
             world.sendParticles(o.type() == AttackType.MAGIC ? ParticleTypes.WITCH : o.type() == AttackType.RANGED ? ParticleTypes.CRIT
@@ -1173,6 +1204,10 @@ public class ColosseumSession extends MinigameSession {
         com.runecraft.content.BlockHooks.register(Minigame.FORTIS_COLOSSEUM.entranceBlock(), (player, pos, state) -> toLobby(player));
         com.runecraft.content.BlockHooks.register(FortisColosseum.LOBBY_EXIT, (player, pos, state) -> toSurface(player));
         com.runecraft.content.BlockHooks.register(FortisColosseum.ARENA_ENTRANCE, (player, pos, state) -> enterArena(player));
+        // Minimus is the zeah module's NPC, whose hooks start after this module's and give every zeah NPC its generic
+        // dialogue: his Colosseum handler (briefing, quiver trade, Glory unlocks) is put back once the server has started.
+        com.runecraft.platform.ServerLifecycleEvents.SERVER_STARTED.register(server ->
+                com.runecraft.quest.QuestScripts.onTalk(FortisColosseum.MINIMUS, (player, npc) -> minimus(player)));
         com.runecraft.quest.QuestScripts.onTalk(com.runecraft.osrs.content.minigames.ColosseumLobby.GLORIA, (player, npc) -> gloria(player));
         com.runecraft.quest.QuestScripts.onTalk(com.runecraft.osrs.content.minigames.ColosseumLobby.UEMAN, (player, npc) ->
                 QuestApi.say(player, "Ueman", "You stand in one of the holiest sites in all of Varlamore. Each drop of blood spilt "

@@ -323,7 +323,22 @@ public final class SolHereditScript extends ScriptedBoss {
     }
 
     private void startGrapple(DataBossEntity boss, ServerPlayer target) {
-        grapple = Grapple.values()[random.nextInt(Grapple.values().length)];
+        startGrapple(boss, target, Grapple.values()[random.nextInt(Grapple.values().length)]);
+    }
+
+    /** Self-test: Sol Heredit calls a grapple on {@code slot} now. */
+    public void selfTestGrapple(DataBossEntity boss, ServerPlayer target, Grapple slot) {
+        startGrapple(boss, target, slot);
+    }
+
+    /** Whether the player's next attack on Sol Heredit is a perfect parry's max hit (self-test). */
+    public static boolean perfectReady(ServerPlayer p) {
+        Long until = PERFECT.get(p.getUUID());
+        return until != null && com.runecraft.action.ActionManager.gameTick() <= until;
+    }
+
+    private void startGrapple(DataBossEntity boss, ServerPlayer target, Grapple slot) {
+        grapple = slot;
         grappleStart = now;
         grappled = target.getUUID();
         defended = false;
