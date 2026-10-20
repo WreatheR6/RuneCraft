@@ -30,7 +30,10 @@ final class BossWalkChecks {
     private static final int MC = ActionManager.MC_TICKS_PER_GAME_TICK;
     private static final ResourceLocation HP_BUFFER = RuneCraft.id("selftest_walk_hp");
 
-    /** Boss id -> its walk. */
+    /** A walk key ending in this fights the awakened variant. */
+    private static final String AWAKENED = ":awakened";
+
+    /** Boss id (":awakened" for the variant) -> its walk. */
     private static final Map<String, BiFunction<DataBossEntity, BossWalks.Driver, String>> WALKS = new LinkedHashMap<>();
 
     static {
@@ -43,6 +46,12 @@ final class BossWalkChecks {
         WALKS.put("the_hueycoatl", BossWalks::hueycoatl);
         WALKS.put("branda_the_fire_queen", BossWalks::royalTitans);
         WALKS.put("duke_sucellus", BossWalks::duke);
+        WALKS.put("vardorvis", BossWalks::vardorvis);
+        // The awakened Desert Treasure II fights walk the same way (their own numbers and rules apply).
+        WALKS.put("the_whisperer" + AWAKENED, BossWalks::whisperer);
+        WALKS.put("the_leviathan" + AWAKENED, BossWalks::leviathan);
+        WALKS.put("duke_sucellus" + AWAKENED, BossWalks::duke);
+        WALKS.put("vardorvis" + AWAKENED, BossWalks::vardorvis);
     }
 
     /** Damage the walking player took, by attack name (attack-less hits under their style, or "typeless"). */
@@ -66,7 +75,9 @@ final class BossWalkChecks {
         return checks;
     }
 
-    private String walk(String id, BiFunction<DataBossEntity, BossWalks.Driver, String> walk) {
+    private String walk(String key, BiFunction<DataBossEntity, BossWalks.Driver, String> walk) {
+        boolean awakened = key.endsWith(AWAKENED);
+        String id = awakened ? key.substring(0, key.length() - AWAKENED.length()) : key;
         BossDef def = ContentRegistry.boss(id);
         if (def == null) {
             throw new AssertionError("no BossDef " + id);
@@ -76,9 +87,9 @@ final class BossWalkChecks {
             hooked = true;
             com.runecraft.combat.CombatHooks.addDamageListener((player, attacker, attack, style, damage) -> {
                 if (player == walking && damage > 0) {
-                    String key = attack != null ? attack : style != null ? style.name().toLowerCase(java.util.Locale.ROOT) : "typeless";
-                    DAMAGE.merge(key, damage, Integer::sum);
-                    BIGGEST.merge(key, damage, Math::max);
+                    String name = attack != null ? attack : style != null ? style.name().toLowerCase(java.util.Locale.ROOT) : "typeless";
+                    DAMAGE.merge(name, damage, Integer::sum);
+                    BIGGEST.merge(name, damage, Math::max);
                 }
             });
         }
@@ -88,6 +99,9 @@ final class BossWalkChecks {
         DataBossEntity boss = DataBossService.spawn(c.world, c.near(0, 0), def, p);
         if (boss == null) {
             throw new AssertionError("DataBossService.spawn returned null for " + id);
+        }
+        if (awakened) {
+            boss.applyVariant(com.runecraft.osrs.content.bosses.AwakenedBosses.variant(def));
         }
         AttributeInstance health = p.getAttribute(Attributes.MAX_HEALTH);
         if (health != null) {

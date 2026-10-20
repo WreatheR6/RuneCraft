@@ -1296,6 +1296,38 @@ final class EncounterScripts {
             gazes.clear(); // a gaze still in the air when he dies does nothing
         }
 
+        // self-test walk
+        void walkStrangle(DataBossEntity boss, ServerPlayer p) {
+            strangle(boss, p);
+        }
+
+        List<Mob> walkSpores() {
+            return spores;
+        }
+
+        boolean walkStrangling() {
+            return strangleDue >= 0;
+        }
+
+        void walkGaze(DataBossEntity boss, ServerPlayer p) {
+            gaze(boss, p);
+        }
+
+        boolean walkGazing() {
+            return !gazes.isEmpty();
+        }
+
+        /** Whether the next gaze to land is the blue (magic) one (awakened); else the green (ranged). */
+        boolean walkGazeMagic() {
+            long[] next = null;
+            for (long[] g : gazes) {
+                if (next == null || g[0] < next[0]) {
+                    next = g;
+                }
+            }
+            return next != null && next[1] == 1;
+        }
+
         /**
          * Head gaze (OSRS Wiki "Vardorvis' Head"): a projectile that deals no damage; unblocked it drains 10 Prayer and keeps
          * overhead prayers off for 3 ticks. Post-quest it's the green (ranged) gaze; awakened also the blue (magic) one, in

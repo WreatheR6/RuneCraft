@@ -846,4 +846,44 @@ public final class BossWalks {
         finish(boss, d, AttackType.SLASH, 120, 80);
         return "gaze dodged behind a pillar, killed";
     }
+
+    /** Vardorvis: Strangle answered by destroying every spore in time; his head's gaze blocked by the matching protection. */
+    public static String vardorvis(DataBossEntity boss, Driver d) {
+        if (!(boss.script() instanceof EncounterScripts.Vardorvis v)) {
+            throw fail("Vardorvis has no Vardorvis script");
+        }
+        ServerPlayer p = d.player();
+        p.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, Inv.stack("abyssal_whip", 1));
+        d.moveTo(v.homeVec().add(0, 0, 5), boss);
+        d.ticks(boss, 2);
+        v.walkStrangle(boss, p);
+        List<Mob> spores = new ArrayList<>(v.walkSpores());
+        if (spores.isEmpty()) {
+            throw fail("Strangle brought no spores");
+        }
+        for (Mob spore : spores) {
+            attack(p, spore);
+        }
+        d.clearDamage();
+        if (until(boss, d, 12, () -> !v.walkStrangling()) < 0) {
+            throw fail("the Strangle never resolved");
+        }
+        if (d.damage("strangle") > 0) {
+            throw fail("the tendrils tightened although every spore was destroyed");
+        }
+        pray(p, com.runecraft.osrs.Prayer.PROTECT_FROM_MISSILES);
+        int points = com.runecraft.player.Players.data(p).prayerPoints();
+        v.walkGaze(boss, p);
+        if (until(boss, d, 10, () -> {
+            pray(p, v.walkGazeMagic() ? com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC : com.runecraft.osrs.Prayer.PROTECT_FROM_MISSILES);
+            return !v.walkGazing();
+        }) < 0) {
+            throw fail("the head's gaze never landed");
+        }
+        if (com.runecraft.player.Players.data(p).prayerPoints() < points) {
+            throw fail("a gaze blocked by the matching protection prayer still drained prayer");
+        }
+        finish(boss, d, AttackType.SLASH, 150, 80);
+        return spores.size() + " spores destroyed before the Strangle, the head's gaze blocked, killed";
+    }
 }
