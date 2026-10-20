@@ -1,6 +1,7 @@
 package com.runecraft.boss;
 
 import com.runecraft.osrs.content.BossDef;
+import com.runecraft.osrs.content.bosses.BossLair;
 import com.runecraft.osrs.content.bosses.BossVariant;
 import com.runecraft.registry.ModEntities;
 import com.runecraft.util.Inv;
@@ -125,11 +126,17 @@ public final class DataBossService {
     }
 
     /**
-     * Where a kill of {@code bossId} leaves its loot: under the killer for a {@link #lootUnderKiller} boss, else where the
-     * entity that died ({@code died}) stands.
+     * Where a kill of {@code bossId} leaves its loot: under the killer for a {@link #lootUnderKiller} boss while they are in
+     * its fight (within its lair's reach and {@link BossLair#PRESENCE_RANGE} blocks of it, the range in which a player keeps a
+     * boss's fight going), else where the entity that died ({@code died}) stands. OSRS hands Zulrah's drops out under a player
+     * standing in its shrine; a kill credited once the killer has left (a later form's pending death, a delayed hit) drops
+     * where the boss died, like any other boss's.
      */
     public static net.minecraft.world.entity.Entity lootSpot(String bossId, DataBossEntity died, ServerPlayer killer) {
-        return killer != null && killer.level() == died.level() && LOOT_UNDER_KILLER.contains(bossId) ? killer : died;
+        double range = BossLair.PRESENCE_RANGE;
+        boolean inFight = killer != null && killer.level() == died.level() && died.inLairReach(killer)
+                && killer.distanceToSqr(died) <= range * range;
+        return inFight && LOOT_UNDER_KILLER.contains(bossId) ? killer : died;
     }
 
     public static void requirement(String bossId, BiPredicate<ServerPlayer, BossDef> check) {
