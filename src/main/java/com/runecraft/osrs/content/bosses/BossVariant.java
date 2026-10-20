@@ -8,10 +8,10 @@ import java.util.Map;
 
 /**
  * A harder (or level-scaled) version of a data-driven boss fought with the same entity: an awakened Desert Treasure II
- * boss or one delve level of the Doom of Mokhaiotl. The variant replaces the boss's combat levels, hitpoints, attack
+ * boss, one delve level of the Doom of Mokhaiotl or Scurrius's group version ({@link ScurriusGroup}). The variant replaces the boss's combat levels, hitpoints, attack
  * speed, max hits and drop table, and counts its kills under its own kill-count key.
  *
- * @param kind        "awakened" or "delve"
+ * @param kind        "awakened", "delve" or "group"
  * @param level       the delve level (1 for awakened bosses)
  * @param kcKey       kill-count key the kill is credited to (the boss id for delves, "{@code <id>_awakened}" for awakened)
  * @param attackSpeed attack speed in ticks (0 keeps the boss's own)

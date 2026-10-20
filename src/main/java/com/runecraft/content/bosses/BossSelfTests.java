@@ -58,6 +58,48 @@ public final class BossSelfTests {
         return MoonScripts.selfTestEclipse(boss, p);
     }
 
+    /**
+     * Scurrius's group version: 1,500 hitpoints and level 250; the player who dealt most (the MVP) rolls his table where he
+     * dies, a partner who dealt less gets the non-MVP table (big bones always) and a kill count of their own.
+     */
+    public static String scurriusGroup(DataBossEntity boss, ServerPlayer p) {
+        com.runecraft.osrs.content.BossDef def = boss.def();
+        boss.applyVariant(com.runecraft.osrs.content.bosses.ScurriusGroup.variant(def));
+        if (boss.trueHitpoints() != com.runecraft.osrs.content.bosses.ScurriusGroup.HITPOINTS || !ScurriusGroupService.isGroup(boss)) {
+            throw new IllegalStateException("the group Scurrius has " + boss.trueHitpoints() + " hitpoints");
+        }
+        ServerPlayer partner = com.runecraft.platform.FakePlayer.get((net.minecraft.server.level.ServerLevel) boss.level());
+        boolean duo = partner != p;
+        try {
+            int partnerKc = com.runecraft.player.Players.data(partner).killCount("scurrius");
+            int bones = com.runecraft.util.Inv.count(partner, "big_bones");
+            if (duo) {
+                partner.teleportTo((net.minecraft.server.level.ServerLevel) boss.level(), boss.getX() + 2, boss.getY(), boss.getZ(), 0, 0);
+                ScurriusGroupService.credit(boss, partner, 300);
+            }
+            ScurriusGroupService.credit(boss, p, 900);
+            com.runecraft.boss.DataBossService.LootRoll before = com.runecraft.boss.DataBossService.lastRoll();
+            boss.setHealth(1f);
+            BossWalks.hit(boss, p, 50, com.runecraft.osrs.AttackType.SLASH);
+            if (boss.isAlive()) {
+                throw new IllegalStateException("the group Scurrius survived a lethal hit");
+            }
+            com.runecraft.boss.DataBossService.LootRoll roll = com.runecraft.boss.DataBossService.lastRoll();
+            if (roll == null || roll == before || roll.items() == 0) {
+                throw new IllegalStateException("the MVP's kill dropped nothing");
+            }
+            if (duo && (com.runecraft.player.Players.data(partner).killCount("scurrius") != partnerKc + 1
+                    || com.runecraft.util.Inv.count(partner, "big_bones") <= bones)) {
+                throw new IllegalStateException("the non-MVP partner got no kill count or big bones");
+            }
+            return "group Scurrius (1,500 hitpoints): MVP drop of " + roll.items() + (duo ? ", partner's non-MVP roll" : "");
+        } finally {
+            if (duo) {
+                partner.getInventory().clearContent();
+            }
+        }
+    }
+
     /** A dossier (Yama) opens into a contract or chasm teleport scrolls. */
     public static String yamaDossier(DataBossEntity boss, ServerPlayer p) {
         com.runecraft.util.Inv.give(p, "dossier", 1);

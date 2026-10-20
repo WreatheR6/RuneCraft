@@ -303,6 +303,9 @@ public class DataBossEntity extends OsrsMonsterEntity {
                 applyVariant(AwakenedBosses.variant(def), false);
             } else if (BossVariant.DELVE.equals(kind) && DoomDelves.BOSS.equals(def.id)) {
                 applyVariant(DoomDelves.variant(def, nbt.getInt("RcVariantLevel")), false);
+            } else if (com.runecraft.osrs.content.bosses.ScurriusGroup.GROUP.equals(kind)
+                    && com.runecraft.osrs.content.bosses.ScurriusGroup.BOSS.equals(def.id)) {
+                applyVariant(com.runecraft.osrs.content.bosses.ScurriusGroup.variant(def), false);
             }
         }
         if (nbt.contains("RcHome")) {
