@@ -841,8 +841,10 @@ final class ToaPuzzleRooms {
         int sealMax;
         long weakenedUntil = -1;
         private long nextBeam;
-        /** Mirrors each player carries (OSRS: picked up as an item, then placed). */
-        final Map<UUID, Integer> carried = new HashMap<>();
+        /** The movable mirrors each player carries (OSRS: picked up as an item, then placed). */
+        final Map<UUID, List<int[]>> carried = new HashMap<>();
+        /** Each movable mirror's starting cell: a mirror whose carrier is downed or leaves goes back there. */
+        private final List<int[]> homes = new ArrayList<>();
         /** Orbs of darkness: x, z (block, relative to the centre), dx, dz. */
         private final List<double[]> orbs = new ArrayList<>();
         /** Perfect Het: anyone hit by the beam or an orb, and how many times the seal was weakened. */
@@ -917,6 +919,10 @@ final class ToaPuzzleRooms {
             clearGrid();
             puzzle = ToaPuzzles.hetPuzzle(HALF, raid.partySize(), rnd());
             placePuzzle();
+            homes.clear();
+            for (int[] m : puzzle.movable()) {
+                homes.add(new int[]{m[0], m[1]});
+            }
             broken.clear();
             orbs.clear();
             carried.clear();
@@ -938,6 +944,7 @@ final class ToaPuzzleRooms {
 
         @Override
         public void gameTick(long tick) {
+            returnStrandedMirrors();
             if (now() >= nextBeam) {
                 fireBeam();
                 nextBeam = now() + ToaPuzzles.BEAM_CYCLE_TICKS;
@@ -961,11 +968,79 @@ final class ToaPuzzleRooms {
             }
             moveOrbs();
             for (ServerPlayer p : players()) {
-                int n = carried.getOrDefault(p.getUUID(), 0);
+                int n = carried(p);
                 if (n > 0 && tick % 10 == 0) {
                     Msg.action(p, "Carrying " + n + " mirror" + (n == 1 ? "" : "s") + ": use a floor tile to place one.");
                 }
             }
+        }
+
+        /**
+         * Mirrors carried by someone who is no longer in the room - downed, dead, logged out or gone - go back to the grid,
+         * or the rest of the party could never finish the beam's path.
+         */
+        private void returnStrandedMirrors() {
+            if (carried.isEmpty()) {
+                return;
+            }
+            Set<UUID> here = new HashSet<>();
+            for (ServerPlayer p : players()) {
+                here.add(p.getUUID());
+            }
+            java.util.Iterator<Map.Entry<UUID, List<int[]>>> it = carried.entrySet().iterator();
+            boolean returned = false;
+            while (it.hasNext()) {
+                Map.Entry<UUID, List<int[]>> e = it.next();
+                if (here.contains(e.getKey())) {
+                    continue;
+                }
+                e.getValue().removeIf(this::returnMirror);
+                returned = true;
+                if (e.getValue().isEmpty()) {
+                    it.remove();
+                }
+            }
+            if (returned) {
+                say("A dropped mirror returns to the grid.");
+                showMirrors();
+            }
+        }
+
+        /** Stands a carried mirror back on its starting cell, or on the first free cell when that one is taken. */
+        private boolean returnMirror(int[] m) {
+            int i = puzzle.movable().indexOf(m);
+            int[] spot = null;
+            if (i >= 0 && i < homes.size() && freeForMirror(homes.get(i)[0], homes.get(i)[1])) {
+                spot = homes.get(i);
+            }
+            for (int z = -HALF; spot == null && z <= HALF; z++) {
+                for (int x = -HALF; spot == null && x <= HALF; x++) {
+                    if (freeForMirror(x, z)) {
+                        spot = new int[]{x, z};
+                    }
+                }
+            }
+            if (spot == null) {
+                return false;
+            }
+            m[0] = spot[0];
+            m[1] = spot[1];
+            RaidBuilder.set(world(), cell(m[0], m[1]), RaidBuilder.module(RaidsContent.TOA_MIRROR));
+            return true;
+        }
+
+        /** A grid cell a mirror may stand on: placeable, empty and with nobody standing in it. */
+        private boolean freeForMirror(int x, int z) {
+            BlockPos pos = cell(x, z);
+            if (!puzzle.canPlace(x, z, broken) || !world().getBlockState(pos).isAir()) {
+                return false;
+            }
+            for (ServerPlayer p : raid.players()) {
+                if (p.blockPosition().equals(pos)) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         /** Mirror orientations as a short diagonal of particles ('/' or '\' seen from above); dirty ones smoke. */
@@ -1113,7 +1188,8 @@ final class ToaPuzzleRooms {
         }
 
         int carried(ServerPlayer p) {
-            return carried.getOrDefault(p.getUUID(), 0);
+            List<int[]> mine = carried.get(p.getUUID());
+            return mine == null ? 0 : mine.size();
         }
 
         @Override
@@ -1180,7 +1256,7 @@ final class ToaPuzzleRooms {
             if (player.isShiftKeyDown()) {
                 movable[0] = ToaPuzzles.CARRIED;
                 movable[1] = ToaPuzzles.CARRIED;
-                carried.merge(player.getUUID(), 1, Integer::sum);
+                carried.computeIfAbsent(player.getUUID(), k -> new ArrayList<>()).add(movable);
                 RaidBuilder.set(world(), pos, Blocks.AIR.defaultBlockState());
                 Msg.action(player, "You pick up the mirror.");
                 return;
@@ -1201,20 +1277,18 @@ final class ToaPuzzleRooms {
                 Msg.game(player, "You can't place a mirror there.");
                 return;
             }
-            for (int[] m : puzzle.movable()) {
-                if (m[0] == ToaPuzzles.CARRIED) {
-                    m[0] = x;
-                    m[1] = z;
-                    m[2] = ToaPuzzles.SLASH;
-                    carried.merge(player.getUUID(), -1, Integer::sum);
-                    RaidBuilder.set(world(), cell(x, z), RaidBuilder.module(RaidsContent.TOA_MIRROR));
-                    player.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
-                    showMirrors();
-                    Msg.action(player, "You place the mirror, facing '/'.");
-                    return;
-                }
+            List<int[]> mine = carried.get(player.getUUID());
+            int[] m = mine.remove(mine.size() - 1);
+            if (mine.isEmpty()) {
+                carried.remove(player.getUUID());
             }
-            carried.remove(player.getUUID());
+            m[0] = x;
+            m[1] = z;
+            m[2] = ToaPuzzles.SLASH;
+            RaidBuilder.set(world(), cell(x, z), RaidBuilder.module(RaidsContent.TOA_MIRROR));
+            player.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+            showMirrors();
+            Msg.action(player, "You place the mirror, facing '/'.");
         }
 
         private void mine(ServerPlayer player, BlockPos pos) {
@@ -1262,6 +1336,11 @@ final class ToaPuzzleRooms {
             ServerPlayer p = t.player();
             RaidsState state = RaidsState.get(world().getServer());
             net.minecraft.world.item.ItemStack storedBefore = state.storedPickaxe(p.getUUID());
+            // The test takes the player's own bronze and rune pickaxes away for a while: they get them all back after.
+            Map<String, Integer> picksBefore = new HashMap<>();
+            for (String pick : List.of("bronze_pickaxe", "rune_pickaxe")) {
+                picksBefore.put(pick, Inv.count(p, pick));
+            }
             String note;
             try {
                 state.setStoredPickaxe(p.getUUID(), net.minecraft.world.item.ItemStack.EMPTY);
@@ -1287,6 +1366,20 @@ final class ToaPuzzleRooms {
                 RaidSelfTest.expect(pickaxe(p) != null, "Het: the statue gave no pickaxe");
                 // The beam can't reach the statue before the mirrors are placed.
                 RaidSelfTest.expect(!ToaPuzzles.trace(puzzle, broken).hit(), "Het: the beam reached the shielded statue before any work");
+                // A mirror carried by a party member who falls (here: one no longer in the room) goes back to its cell.
+                int[] first = puzzle.movable().get(0);
+                int homeX = first[0];
+                int homeZ = first[1];
+                t.tick(1);
+                p.setShiftKeyDown(true);
+                t.use(cell(homeX, homeZ));
+                p.setShiftKeyDown(false);
+                RaidSelfTest.expect(first[0] == ToaPuzzles.CARRIED && carried(p) == 1, "Het: sneaking and using a mirror did not pick it up");
+                carried.put(UUID.randomUUID(), carried.remove(p.getUUID()));
+                t.tick(1);
+                RaidSelfTest.expect(first[0] == homeX && first[1] == homeZ && carried.isEmpty()
+                                && world().getBlockState(cell(homeX, homeZ)).is(RaidBuilder.module(RaidsContent.TOA_MIRROR).getBlock()),
+                        "Het: a mirror carried by a fallen player did not return to the grid");
                 List<int[]> plan = ToaPuzzles.hetSolution(puzzle);
                 for (int[] step : plan) {
                     int[] m = puzzle.movable().get(step[0]);
@@ -1331,7 +1424,20 @@ final class ToaPuzzleRooms {
                 note = "Het: " + plan.size() + " mirror(s) placed, seal broken in " + exposures + " exposure(s), the statue keeps a pickaxe";
             } finally {
                 p.setShiftKeyDown(false);
+                // A pickaxe left in the statue by a failed step goes back to the player before the statue is restored.
+                net.minecraft.world.item.ItemStack left = state.storedPickaxe(p.getUUID());
+                if (!left.isEmpty()) {
+                    Inv.give(p, left.copy());
+                }
                 state.setStoredPickaxe(p.getUUID(), storedBefore);
+                for (Map.Entry<String, Integer> e : picksBefore.entrySet()) {
+                    int now = Inv.count(p, e.getKey());
+                    if (now > e.getValue()) {
+                        Inv.remove(p, e.getKey(), now - e.getValue());
+                    } else if (now < e.getValue()) {
+                        Inv.give(p, e.getKey(), e.getValue() - now);
+                    }
+                }
             }
             return note;
         }
