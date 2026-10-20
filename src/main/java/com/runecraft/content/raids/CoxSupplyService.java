@@ -48,6 +48,10 @@ public final class CoxSupplyService {
             if (id == null || !CoxSupplies.ITEMS.contains(id)) {
                 return InteractionResultHolder.pass(stack);
             }
+            if (id.equals(CoxSupplies.WATER_GOURD)) {
+                // OSRS: water from a gourd vial douses the Great Olm's fire wall.
+                return useWaterGourd(sp) ? InteractionResultHolder.success(stack) : InteractionResultHolder.pass(stack);
+            }
             CoxSupplies.Herb grimy = CoxSupplies.Herb.byGrimy(id);
             CoxSupplies.Brew brew = CoxSupplies.brew(id);
             boolean secondary = id.equals(CoxSupplies.STINKHORN) || id.equals(CoxSupplies.ENDARKENED) || id.equals(CoxSupplies.CICELY)
@@ -72,6 +76,25 @@ public final class CoxSupplyService {
             }
             return InteractionResultHolder.success(stack);
         });
+    }
+
+    /**
+     * Pours a water-filled gourd vial on the Great Olm's fire wall next to the player (OSRS wiki: "Water-filled gourd
+     * vial(s) can be used to douse the Fire Wall"). Returns whether a wall was doused (the vial is used up).
+     */
+    static boolean useWaterGourd(ServerPlayer p) {
+        RaidInstance raid = RaidManager.of(p);
+        if (raid == null || raid.type != RaidType.COX || !Inv.has(p, CoxSupplies.WATER_GOURD, 1)) {
+            return false;
+        }
+        int room = raid.roomAt(p.position());
+        if (room < 0 || !(raid.logic(room) instanceof CoxRooms.Olm olm) || !olm.douse(p)) {
+            return false;
+        }
+        Inv.remove(p, CoxSupplies.WATER_GOURD, 1);
+        Inv.give(p, CoxSupplies.EMPTY_GOURD, 1);
+        ServerNetworking.sync(p);
+        return true;
     }
 
     /** A player left a raid (called from {@link RaidInstance#removePlayer}): their overload ends and the room tools go back. */

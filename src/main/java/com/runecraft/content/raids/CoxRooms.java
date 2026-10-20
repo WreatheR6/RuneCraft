@@ -425,6 +425,7 @@ final class CoxRooms {
         private boolean justTeleported;
         private int timer = -1;
         private int pendingHeal;
+        private int healTicks;
         private int disabled;
         private int drained;
         private int healed;
@@ -542,6 +543,7 @@ final class CoxRooms {
                         relocate(c.position().add(dir.x, 0, dir.z));
                         state = State.DRAINING;
                         pendingHeal = 0;
+                        healTicks = 0;
                         if (timer < 0) {
                             timer = CoxRules.vasaTeleportTimer(rnd());
                         }
@@ -556,6 +558,7 @@ final class CoxRooms {
                     }
                     if (t % CoxRules.VASA_HEAL_INTERVAL == 0) {
                         pendingHeal += Math.max(1, raid.maxHitpoints(vasa) / 100);
+                        healTicks++;
                     }
                     Vec3 a = c.position().add(0, 1.5, 0);
                     Vec3 b = vasa.position().add(0, 2, 0);
@@ -565,6 +568,7 @@ final class CoxRooms {
                     }
                     if (timer == 0) {
                         raid.heal(vasa, pendingHeal);
+                        restoreDefence(healTicks);
                         healed += pendingHeal;
                         drained++;
                         say("Vasa drains the crystal and heals " + pendingHeal + " hitpoints!");
@@ -584,6 +588,24 @@ final class CoxRooms {
                         }
                     }
                 }
+            }
+        }
+
+        /** Vasa's scaled base Defence level. */
+        private int baseDefence() {
+            return RaidScaling.coxScaledDefence("vasa_nistirio", vasa.def().defence, raid.partySize(),
+                    raid.mode() == com.runecraft.osrs.content.raids.RaidMode.CHALLENGE);
+        }
+
+        /** Each heal off a crystal also restores (10% + 1) of his Defence, up to his base level (Mod Ash). */
+        private void restoreDefence(int heals) {
+            if (vasa.def() == null) {
+                return;
+            }
+            int base = baseDefence();
+            int restore = Math.min(base - vasa.stats().defence(), heals * CoxRules.vasaDefenceHeal(base));
+            if (restore > 0) {
+                raid.raiseDefence(vasa, restore);
             }
         }
 
@@ -713,10 +735,13 @@ final class CoxRooms {
             // Leave this crystal alone: the shared timer runs out, he takes the healing and teleports the team.
             w.until(() -> state == State.WALKING, 10, "Vasa never walked to the next crystal");
             w.hit(vasa, Math.max(10, raid.maxHitpoints(vasa) / 5), AttackType.CRUSH);
+            raid.raiseDefence(vasa, -Math.min(60, vasa.stats().defence() - 1)); // as if drained by special attacks
             int hurt = raid.hitpoints(vasa);
             int before = teleports;
             w.until(() -> teleports > before, 90, "Vasa's teleport timer never ran out (" + timer + " left)");
             w.expect(drained == 1 && healed > 0 && raid.hitpoints(vasa) > hurt, "Vasa did not heal off the crystal he drained");
+            w.expect(vasa.stats().defence() == baseDefence(), "draining a crystal did not restore Vasa's Defence ("
+                    + vasa.stats().defence() + "/" + baseDefence() + ")");
             w.until(() -> state == State.WALKING || state == State.DRAINING, 30, "Vasa did not light a crystal after teleporting");
             w.expect(alive(crystals[target]), "the crystal Vasa picked was not lit");
             int guard = 0;
@@ -3558,9 +3583,39 @@ final class CoxRooms {
             drip.keySet().removeIf(u -> world().getServer().getPlayerList().getPlayer(u) == null);
         }
 
+        /** Fire walls in place (their centres); a doused wall no longer burns anyone (OSRS wiki). */
+        private final Set<Vec3> walls = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+        /** Players each fire wall trapped (by wall, for the self-test). */
+        private final Map<Vec3, Integer> wallTraps = new java.util.IdentityHashMap<>();
+        private int doused;
+
+        /**
+         * A player douses the fire wall with water (OSRS wiki: water and ice spells, Humidify, a filled watering can or a
+         * water-filled gourd vial put out a segment, freeing whoever it trapped). Returns whether there was a wall to douse
+         * near the player.
+         */
+        boolean douse(ServerPlayer p) {
+            Vec3 c = null;
+            for (Vec3 w : walls) {
+                if (RaidEffects.horizontalDistSq(p.position(), w) <= 4.5 * 4.5) {
+                    c = w;
+                }
+            }
+            if (c == null) {
+                return false;
+            }
+            walls.remove(c);
+            doused++;
+            world().sendParticles(ParticleTypes.SPLASH, c.x, c.y + 0.5, c.z, 40, 2, 0.5, 3, 0.1);
+            world().sendParticles(ParticleTypes.CLOUD, c.x, c.y + 0.5, c.z, 20, 2, 0.5, 3, 0.02);
+            say(p.getName().getString() + " douses the wall of fire.");
+            return true;
+        }
+
         /** Fire Wall: two walls of fire either side of the target; leap out of a wall (8-10) or burn inside (50-65). */
-        private void fireWall(ServerPlayer target) {
+        Vec3 fireWall(ServerPlayer target) {
             Vec3 c = target.position();
+            walls.add(c);
             say("The Great Olm breathes walls of fire around " + target.getName().getString() + "!");
             for (ServerPlayer p : players()) {
                 for (int side = -1; side <= 1; side += 2) {
@@ -3573,6 +3628,9 @@ final class CoxRooms {
             }
             for (int i = 0; i < CoxRules.OLM_WALL_TICKS; i++) {
                 RaidEffects.later(i, () -> {
+                    if (!walls.contains(c)) {
+                        return;
+                    }
                     for (int dz = -3; dz <= 3; dz++) {
                         for (int side = -1; side <= 1; side += 2) {
                             world().sendParticles(ParticleTypes.FLAME, c.x + side * 2, c.y + 0.3, c.z + dz, 2, 0.1, 0.4, 0.1, 0);
@@ -3581,13 +3639,18 @@ final class CoxRooms {
                 });
             }
             RaidEffects.later(CoxRules.OLM_WALL_TICKS, () -> {
+                if (!walls.remove(c)) {
+                    return; // doused
+                }
                 for (ServerPlayer p : players()) {
                     if (Math.abs(p.getX() - c.x) < 2 && Math.abs(p.getZ() - c.z) <= 3.5) {
+                        wallTraps.merge(c, 1, Integer::sum);
                         special(head, p, CoxRules.OLM_WALL_MIN + rnd().nextInt(CoxRules.OLM_WALL_MAX - CoxRules.OLM_WALL_MIN + 1));
                         Msg.red(p, "You are caught between the walls of fire!");
                     }
                 }
             });
+            return c;
         }
 
         /** Crystal bombs: 2-3 bombs near the players explode over 4 tiles (15, +15 for every tile closer). */
@@ -3783,6 +3846,7 @@ final class CoxRooms {
             drip.clear();
             siphon.clear();
             lastPool.clear();
+            walls.clear();
         }
 
         @Override
@@ -3809,6 +3873,24 @@ final class CoxRooms {
             w.expect(clench == CoxRules.OLM_CLENCH_TICKS, "a heavy hit did not clench the left hand for " + CoxRules.OLM_CLENCH_TICKS
                     + " ticks (" + clench + ")");
             w.expect(w.hit(left, 10, AttackType.SLASH) == 0, "the clenched left hand took damage");
+            // A fire wall traps the player; a water-filled gourd vial puts it out before it burns.
+            Vec3 trap = w.player().position();
+            Vec3 first = fireWall(w.player());
+            w.give(CoxSupplies.WATER_GOURD, 1);
+            w.expect(CoxSupplyService.useWaterGourd(w.player()), "a water-filled gourd vial did not douse the fire wall");
+            for (int i = 0; i <= CoxRules.OLM_WALL_TICKS; i++) {
+                w.moveTo(trap); // stay inside (the Olm's own swaps and bursts would move the player)
+                w.tick(1);
+            }
+            w.expect(doused == 1 && wallTraps.getOrDefault(first, 0) == 0 && w.count(CoxSupplies.WATER_GOURD) == 0,
+                    "the doused fire wall still burned the player (or the vial was not used)");
+            w.moveTo(trap);
+            Vec3 second = fireWall(w.player());
+            for (int i = 0; i <= CoxRules.OLM_WALL_TICKS; i++) {
+                w.moveTo(trap);
+                w.tick(1);
+            }
+            w.expect(wallTraps.getOrDefault(second, 0) == 1, "a fire wall left alone did not burn the trapped player");
             int guard = 0;
             int lastPhase = phase;
             while (stage != Stage.HEAD && guard++ < 3000) {
