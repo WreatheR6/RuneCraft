@@ -1434,15 +1434,29 @@ public final class RaidInstance {
 
     /** Removes a player from the party (optionally sending them back to the entrance). */
     public void removePlayer(UUID u, boolean teleportOut) {
-        if (!party.remove(u)) {
+        if (!party.contains(u)) {
             return;
         }
+        ServerPlayer p = world.getServer().getPlayerList().getPlayer(u);
+        if (type == RaidType.TOA && finished && result != null && !claimed.contains(u)) {
+            // OSRS: loot left in the chest waits in the lobby's Rewards Niche (here: the grouping obelisk outside).
+            if (p != null && !offline.containsKey(u)) {
+                claim(p);
+            } else {
+                claimed.add(u);
+                List<String> loot = new ArrayList<>();
+                for (RaidRewards.Loot l : result.lootFor(u.toString())) {
+                    loot.add(l.item() + ":" + l.count());
+                }
+                RaidsState.get(world.getServer()).addUnclaimed(u, loot);
+            }
+        }
+        party.remove(u);
         downed.remove(u);
         offline.remove(u);
         RaidManager.unbind(u);
         ToaSupplyService.forget(u);
         CoxSupplyService.forget(u);
-        ServerPlayer p = world.getServer().getPlayerList().getPlayer(u);
         if (p != null) {
             for (String item : RaidItems.RAID_ONLY_ITEMS) {
                 Inv.remove(p, item, Inv.count(p, item));

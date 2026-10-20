@@ -28,6 +28,28 @@ public final class RaidsState extends SavedData {
         public final Map<String, Integer> bestPoints = new HashMap<>();
         public final Map<String, Integer> purples = new HashMap<>();
         public BlockPos lastEntrance;
+        /** ToA loot left in the chest (OSRS Rewards Niche): "item:count" entries. */
+        public final java.util.List<String> unclaimed = new java.util.ArrayList<>();
+    }
+
+    /** Puts a raider's unclaimed loot in the Rewards Niche. */
+    public void addUnclaimed(UUID player, java.util.List<String> itemCounts) {
+        if (!itemCounts.isEmpty()) {
+            stats(player).unclaimed.addAll(itemCounts);
+            setDirty();
+        }
+    }
+
+    /** Takes everything waiting in a raider's Rewards Niche ("item:count" entries). */
+    public java.util.List<String> takeUnclaimed(UUID player) {
+        Stats s = players.get(player);
+        if (s == null || s.unclaimed.isEmpty()) {
+            return java.util.List.of();
+        }
+        java.util.List<String> out = new java.util.ArrayList<>(s.unclaimed);
+        s.unclaimed.clear();
+        setDirty();
+        return out;
     }
 
     private final Map<UUID, Stats> players = new HashMap<>();
@@ -96,6 +118,13 @@ public final class RaidsState extends SavedData {
             if (s.lastEntrance != null) {
                 p.putLong("Entrance", s.lastEntrance.asLong());
             }
+            if (!s.unclaimed.isEmpty()) {
+                ListTag loot = new ListTag();
+                for (String e : s.unclaimed) {
+                    loot.add(net.minecraft.nbt.StringTag.valueOf(e));
+                }
+                p.put("Unclaimed", loot);
+            }
             all.put(uuid.toString(), p);
         });
         nbt.put("Players", all);
@@ -132,6 +161,10 @@ public final class RaidsState extends SavedData {
                 read(p.getCompound("Purples"), s.purples);
                 if (p.contains("Entrance")) {
                     s.lastEntrance = BlockPos.of(p.getLong("Entrance"));
+                }
+                ListTag loot = p.getList("Unclaimed", Tag.TAG_STRING);
+                for (int i = 0; i < loot.size(); i++) {
+                    s.unclaimed.add(loot.getString(i));
                 }
             } catch (IllegalArgumentException ignored) {
                 // skip malformed entries

@@ -232,6 +232,9 @@ public final class RaidManager {
             if (raid != null) {
                 unbind(p.getUUID());
             }
+            if (!RaidsState.get(server).stats(p.getUUID()).unclaimed.isEmpty()) {
+                RaidEffects.later(2, () -> Msg.game(p, "You have unclaimed Tombs of Amascut loot: collect it at the obelisk by the tomb's entrance."));
+            }
             if (RaidBuilder.inInstanceArea(p.getX(), p.getZ()) && Gielinor.is(p)) {
                 RaidEffects.later(1, () -> sendHome(p));
             }
@@ -438,7 +441,27 @@ public final class RaidManager {
         Msg.game(player, "To raid the Tombs of Amascut, gather your party (up to " + RaidType.TOA.maxParty() + ") within 8 blocks of the "
                 + "entrance; whoever enters leads the party and picks the invocations inside.");
         Msg.game(player, "Your Tombs of Amascut completions: " + entry + " Entry, " + normal + " Normal, " + expert + " Expert mode.");
+        rewardsNiche(player);
         shroudChest(player, normal + expert);
+    }
+
+    /** OSRS Rewards Niche: loot a raider left in the chest (they left or logged out before opening it). */
+    static void rewardsNiche(ServerPlayer player) {
+        List<String> loot = RaidsState.get(player.getServer()).takeUnclaimed(player.getUUID());
+        for (String entry : loot) {
+            int colon = entry.lastIndexOf(':');
+            String item = colon < 0 ? entry : entry.substring(0, colon);
+            int count = 1;
+            try {
+                count = colon < 0 ? 1 : Integer.parseInt(entry.substring(colon + 1));
+            } catch (NumberFormatException ignored) {
+                // keep 1
+            }
+            com.runecraft.util.Inv.give(player, item, count);
+            com.runecraft.collection.CollectionLog.obtain(player, item);
+            var def = com.runecraft.osrs.ItemCatalog.get(item);
+            Msg.game(player, "From the Rewards Niche: " + count + " x " + (def == null ? item : def.name()) + ".");
+        }
     }
 
     /**
