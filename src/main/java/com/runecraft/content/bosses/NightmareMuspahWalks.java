@@ -113,9 +113,27 @@ final class NightmareMuspahWalks {
                 check(boss.getHealth() < before, "her health didn't fall with her shield (" + before + " -> " + boss.getHealth() + ")");
                 check(!n.isVulnerable(boss) && boss.modifyIncoming(p, 50, AttackType.SLASH) == 0, "hurt while the totems are up");
                 check(n.totems.size() == NightmareRules.TOTEMS, n.totems.size() + " totems");
+                // A ring of recoil or Vengeance off her hits while she is immune can't end her (her health is what is
+                // left to deal to her, 1 once the last shield is down): only the totems' blast does.
+                float immune = boss.getHealth();
+                CombatHandler.applyDamage(p, boss, (int) Math.ceil(immune) + 5);
+                check(boss.isAlive() && n.stage == NightmareScript.Stage.TOTEMS, "a reflected hit killed her while the totems were up ("
+                        + n.stage + ")");
+                step(boss, p, 1);
+                check(Math.abs(boss.getHealth() - immune) <= 1f, "her health didn't come back after a reflected hit (" + immune + " -> "
+                        + boss.getHealth() + ")");
                 Mob first = n.totems.get(0);
+                boolean xpBefore = com.runecraft.skill.XpService.allowed(p, com.runecraft.osrs.Skill.MAGIC);
                 int magic = n.totemDamage(p, first, AttackType.MAGIC, 10);
+                // Charging a totem gives no real combat experience (OSRS: fake XP drops).
+                check(!com.runecraft.skill.XpService.allowed(p, com.runecraft.osrs.Skill.MAGIC)
+                        && !com.runecraft.skill.XpService.allowed(p, com.runecraft.osrs.Skill.HITPOINTS)
+                        && com.runecraft.skill.XpService.allowed(p, com.runecraft.osrs.Skill.PRAYER) == xpBefore,
+                        "charging a totem gives combat experience");
                 int melee = n.totemDamage(p, first, AttackType.CRUSH, 10);
+                NightmareScript.CHARGING.remove(p.getUUID());
+                check(com.runecraft.skill.XpService.allowed(p, com.runecraft.osrs.Skill.MAGIC) == xpBefore,
+                        "combat experience still withheld after the totem hit");
                 check(magic == 2 * melee && melee > 0, "magic doesn't charge twice as fast (" + magic + " vs " + melee + ")");
                 for (Mob t : new ArrayList<>(n.totems)) {
                     int guard = 0;
@@ -123,6 +141,7 @@ final class NightmareMuspahWalks {
                         CombatHandler.applyDamage(p, t, n.totemDamage(p, t, AttackType.MAGIC, 40));
                     }
                 }
+                NightmareScript.CHARGING.remove(p.getUUID());
                 step(boss, p, 1);
                 if (!phosani && phase == NightmareRules.SHIELD_PHASES - 1) {
                     check(!boss.isAlive(), "the third blast didn't kill her (" + n.stage + ")");
@@ -165,6 +184,7 @@ final class NightmareMuspahWalks {
         } finally {
             n.selfTestQuiet = false;
             NightmareScript.CURSED.remove(p.getUUID());
+            NightmareScript.CHARGING.remove(p.getUUID());
             NightmareScript.CURED.remove(p.getUUID());
             NightmareScript.SLOWED.remove(p.getUUID());
             BossFx.unstun(p);
@@ -226,7 +246,26 @@ final class NightmareMuspahWalks {
                     n.perform(boss, p, ranged);
                 }
                 check(!NightmareScript.CURSED.containsKey(p.getUUID()), "the curse outlasted five attacks");
+                // Out of her dream (walked or teleported off, dead, logged out) the curse lets go, and so does her loot.
+                n.curse(boss, p);
+                Vec3 at = p.position();
+                p.setPos(at.x + NightmareScript.FIGHT_RADIUS + 16, at.y, at.z);
+                boolean away = !NightmareScript.inFight(boss, p);
+                PrayerService.toggle(p, Prayer.PROTECT_FROM_MELEE);
+                boolean freed = data.isActive(Prayer.PROTECT_FROM_MELEE) && !NightmareScript.CURSED.containsKey(p.getUUID());
+                String prayers = data.activePrayers().toString();
+                p.setPos(at.x, at.y, at.z);
                 data.activePrayers().clear();
+                check(away, "a player " + (int) (NightmareScript.FIGHT_RADIUS + 16) + " blocks away still counts as in her dream");
+                check(freed, "the curse still shuffled the prayers of a player who left her dream (" + prayers + ")");
+                // Nor does it outlast its time limit.
+                n.curse(boss, p);
+                NightmareScript.CURSED.computeIfPresent(p.getUUID(), (k, c) -> new NightmareScript.Curse(c.boss(), c.attacksLeft(),
+                        ActionManager.gameTick() - 1));
+                PrayerService.toggle(p, Prayer.PROTECT_FROM_MELEE);
+                boolean expired = data.isActive(Prayer.PROTECT_FROM_MELEE) && !NightmareScript.CURSED.containsKey(p.getUUID());
+                data.activePrayers().clear();
+                check(expired, "the curse outlasted its time limit");
                 step(boss, p, NightmareRules.RANGED_WIND_UP);
                 return "curse";
             }
@@ -372,6 +411,12 @@ final class NightmareMuspahWalks {
             check(m.stage == MuspahScript.Stage.SHIELDED && m.shield() == BossMechanics.MUSPAH_SHIELD, "no prayer shield after the shockwave ("
                     + m.stage + ")");
             log.add("shockwave behind a spike");
+            // Immune while shielded: Vengeance or a ring of recoil off its hits can't hurt it, let alone kill it.
+            float shielded = boss.getHealth();
+            CombatHandler.applyDamage(p, boss, (int) Math.ceil(shielded) + 10);
+            check(boss.isAlive() && m.stage == MuspahScript.Stage.SHIELDED, "a reflected hit killed it through its shield (" + m.stage + ")");
+            step(boss, p, 1);
+            check(boss.getHealth() >= shielded - 0.5f, "a reflected hit hurt it through its shield (" + shielded + " -> " + boss.getHealth() + ")");
             // The shield: Smite and a corruption spell drain it beyond its 2 an attack.
             data.activePrayers().add(Prayer.SMITE);
             int absorbed = boss.modifyIncoming(p, 20, AttackType.RANGED);

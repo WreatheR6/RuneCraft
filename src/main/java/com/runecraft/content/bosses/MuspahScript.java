@@ -61,6 +61,8 @@ final class MuspahScript extends ScriptedBoss {
     boolean shieldSkip;
     int shockwaveIn;
     int shield;
+    /** Its health while shielded: immune, it only changes with Soul Split and spike heals (see {@link #guardShield}). */
+    float shieldedHealth;
     final Set<String> drains = new HashSet<>();
     /** Standing spikes (block tiles). */
     final Set<Long> spikes = new HashSet<>();
@@ -90,8 +92,13 @@ final class MuspahScript extends ScriptedBoss {
     private record Orb(ServerPlayer target, long due, boolean prayedAtLaunch, int max) {
     }
 
-    /** The frozen cache opens (used) into one roll of its table (OSRS Wiki "Frozen cache"). */
+    /** The frozen cache opens (used) into one roll of its table (OSRS Wiki "Frozen cache"); hits from outside its rules. */
     static void register() {
+        // Damage that never passes its own rules (a ring of recoil, Vengeance, poison) can't kill it before its post-shield
+        // form: while shielded it is immune; before that, reaching 0 health skips its shield and leaves it 1 (OSRS Wiki).
+        com.runecraft.platform.ServerLivingEntityEvents.ALLOW_DEATH.register((entity, source, amount) ->
+                !(entity instanceof DataBossEntity boss && boss.script() instanceof MuspahScript m)
+                        || source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY) || m.allowDeath(boss));
         com.runecraft.platform.UseItemCallback.EVENT.register((player, world, hand) -> {
             net.minecraft.world.item.ItemStack stack = player.getItemInHand(hand);
             if (world.isClientSide() || stack.isEmpty() || !(player instanceof ServerPlayer p)
@@ -257,9 +264,47 @@ final class MuspahScript extends ScriptedBoss {
     private int hit(DataBossEntity boss, ServerPlayer p, String name, AttackType style, int damage) {
         int dealt = BossHits.deal(boss, p, name, style, damage);
         if (stage == Stage.SHIELDED && dealt > 1) {
-            boss.heal(mcHp(boss, dealt / 2));
+            heal(boss, mcHp(boss, dealt / 2));
         }
         return dealt;
+    }
+
+    /** Heals it; while shielded, its guarded health goes up with it. */
+    private void heal(DataBossEntity boss, float amount) {
+        boss.heal(amount);
+        if (stage == Stage.SHIELDED && amount > 0) {
+            shieldedHealth = Math.min(boss.getMaxHealth(), shieldedHealth + amount);
+        }
+    }
+
+    /**
+     * Its death, asked whatever brought its health to 0. Only its post-shield form can die: while shielded it is immune
+     * (its health is put back), and before the shield, reaching 0 skips the shield and leaves it 1 health.
+     */
+    boolean allowDeath(DataBossEntity boss) {
+        switch (stage) {
+            case POST -> {
+                return true;
+            }
+            case SHIELDED -> boss.setHealth(Math.max(1f, shieldedHealth));
+            default -> {
+                boss.setHealth(1f);
+                shieldSkip = true;
+                if (stage == Stage.FORMS || stage == Stage.CLOUDS) {
+                    shockwaveQueued = true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** While shielded, health lost outside its rules (recoil, Vengeance, poison) comes back; heals are kept. */
+    private void guardShield(DataBossEntity boss) {
+        if (boss.getHealth() < shieldedHealth - 0.01f) {
+            boss.setHealth(shieldedHealth);
+        } else {
+            shieldedHealth = boss.getHealth();
+        }
     }
 
     private void tickOrbs(DataBossEntity boss) {
@@ -566,6 +611,7 @@ final class MuspahScript extends ScriptedBoss {
             return;
         }
         stage = Stage.SHIELDED;
+        shieldedHealth = boss.getHealth();
         shield = BossMechanics.MUSPAH_SHIELD;
         drains.clear();
         attacksShielded = 0;
@@ -652,7 +698,7 @@ final class MuspahScript extends ScriptedBoss {
     void spikeHit(DataBossEntity boss, ServerPlayer p) {
         int dmg = 1 + boss.getRandom().nextInt(BossMechanics.MUSPAH_SPIKE_MAX);
         int dealt = hit(boss, p, "spike", null, dmg);
-        boss.heal(mcHp(boss, BossMechanics.muspahSpikeHeal(dealt)));
+        heal(boss, mcHp(boss, BossMechanics.muspahSpikeHeal(dealt)));
         Vec3 away = p.position().subtract(boss.position()).multiply(1, 0, 1);
         away = away.lengthSqr() < 1e-6 ? new Vec3(1, 0, 0) : away.normalize();
         p.knockback(0.8, -away.x, -away.z);
@@ -688,6 +734,7 @@ final class MuspahScript extends ScriptedBoss {
         tickHoming(boss, target);
         tickSpikes(boss, target);
         if (stage == Stage.SHIELDED) {
+            guardShield(boss);
             BossFx.ring(BossFx.world(boss), boss.position(), 2.2, ParticleTypes.SNOWFLAKE);
         }
         if (stage == Stage.POST) {

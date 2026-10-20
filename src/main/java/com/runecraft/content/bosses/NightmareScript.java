@@ -66,9 +66,9 @@ import net.minecraft.world.phys.Vec3;
  * Claws, Spores and Surge. Phosani uses a set per phase (A1/A2/B1/B2), spores and flowers with six Grasping Claws in a row, and
  * switches off a protection prayer already up when her phase-three attacks start.
  *
- * <p>Loot is shared (The Nightmare): every player who hurt both her shield and the totems rolls the common table and gets
- * regular bones; the most damaging player (MVP) gets the kill, big bones and the better tertiary rates; each unique goes to
- * one player, weighted by damage.
+ * <p>Loot is shared (The Nightmare): every player who hurt both her shield and the totems and is still in her dream when
+ * she dies rolls the common table and gets regular bones; the most damaging player (MVP) gets the kill, big bones and the
+ * better tertiary rates; each unique goes to one player, weighted by damage.
  */
 final class NightmareScript extends ScriptedBoss {
     enum Stage { ASLEEP, SHIELD, TOTEMS, WALKERS, DESPERATION, DEAD }
@@ -80,8 +80,17 @@ final class NightmareScript extends ScriptedBoss {
      * player starts pushes their next one back (approx: melee and magic only; bows have no attack timer here).
      */
     static final Map<UUID, long[]> SLOWED = new ConcurrentHashMap<>();
-    /** Cursed players: her attacks left before their protection prayers stop being shuffled. */
-    static final Map<UUID, Integer> CURSED = new ConcurrentHashMap<>();
+    /** Cursed players: who cursed them, her attacks left and the game tick it lifts by anyway (see {@link #cursed}). */
+    static final Map<UUID, Curse> CURSED = new ConcurrentHashMap<>();
+    /**
+     * Players whose attack this server tick charged a totem: {uuid, Minecraft tick}. The charge gives no real combat
+     * experience (OSRS gives fake XP drops for it since 20 February 2020).
+     */
+    static final Map<UUID, Long> CHARGING = new ConcurrentHashMap<>();
+    /** How near her a player must be to count as in her dream: cursed, sharing her loot, the MVP. */
+    static final double FIGHT_RADIUS = 24;
+    /** Game ticks a curse lasts at most, whatever her attacks (approx: a backstop for five of her attacks). */
+    static final int CURSE_MAX_TICKS = 60;
     /** Tag of everything the script places in the world (cleared when a reloaded boss finds what it no longer tracks). */
     static final String MINION_TAG = "rc_nightmare_minion";
     private static boolean registered;
@@ -108,7 +117,13 @@ final class NightmareScript extends ScriptedBoss {
                 data.lastAttackTick = now + slow[0] * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK;
             }
         });
-        com.runecraft.combat.PrayerService.REDIRECTS.add((p, prayer) -> CURSED.containsKey(p.getUUID()) ? NightmareRules.cursed(prayer) : prayer);
+        com.runecraft.combat.PrayerService.REDIRECTS.add((p, prayer) -> cursed(p) ? NightmareRules.cursed(prayer) : prayer);
+        com.runecraft.skill.XpService.addGate((p, skill) -> !chargedTotemNow(p) || !COMBAT_SKILLS.contains(skill));
+        // Only the script's own blast or killing blow ends her: a hit from outside her damage rules (a ring of recoil,
+        // Vengeance, poison) can bring her health to 0 while she is immune; she keeps what is left to deal to her.
+        com.runecraft.platform.ServerLivingEntityEvents.ALLOW_DEATH.register((entity, source, amount) ->
+                !(entity instanceof DataBossEntity boss && boss.script() instanceof NightmareScript n)
+                        || source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY) || n.allowDeath(boss));
         DataBossService.loot("the_nightmare", NightmareScript::rollLoot);
         DataBossService.loot("phosanis_nightmare", NightmareScript::rollLoot);
     }
@@ -172,6 +187,47 @@ final class NightmareScript extends ScriptedBoss {
 
     /** A parasite out of its host. */
     record Parasite(Mob mob, boolean weakened, UUID host, boolean[] magicNext) {
+    }
+
+    /** A cursed player's curse: the Nightmare that cast it, her attacks left before it lifts, the game tick it lifts by. */
+    record Curse(DataBossEntity boss, int attacksLeft, long until) {
+    }
+
+    private static final Set<com.runecraft.osrs.Skill> COMBAT_SKILLS = java.util.EnumSet.of(com.runecraft.osrs.Skill.ATTACK,
+            com.runecraft.osrs.Skill.STRENGTH, com.runecraft.osrs.Skill.DEFENCE, com.runecraft.osrs.Skill.RANGED,
+            com.runecraft.osrs.Skill.MAGIC, com.runecraft.osrs.Skill.HITPOINTS);
+
+    /** Whether the player's protection prayers are shuffled now: cursed, still in that Nightmare's dream, not worn off. */
+    static boolean cursed(ServerPlayer p) {
+        Curse c = CURSED.get(p.getUUID());
+        if (c == null) {
+            return false;
+        }
+        if (com.runecraft.action.ActionManager.gameTick() > c.until() || !c.boss().isAlive() || c.boss().isRemoved()
+                || !inFight(c.boss(), p)) {
+            CURSED.remove(p.getUUID(), c); // left her dream, died or logged out, or it wore off: prayers are theirs again
+            return false;
+        }
+        return true;
+    }
+
+    /** Whether a player is in her dream: alive, in her world and within {@link #FIGHT_RADIUS} of her. */
+    static boolean inFight(LivingEntity boss, ServerPlayer p) {
+        return p != null && p.isAlive() && !p.isSpectator() && p.level() == boss.level()
+                && p.distanceToSqr(boss) <= FIGHT_RADIUS * FIGHT_RADIUS;
+    }
+
+    /** Whether the player's attack this server tick charged a totem (its combat experience is withheld). */
+    static boolean chargedTotemNow(ServerPlayer p) {
+        Long at = CHARGING.get(p.getUUID());
+        if (at == null) {
+            return false;
+        }
+        if (at != com.runecraft.action.ActionManager.mcTick()) {
+            CHARGING.remove(p.getUUID(), at);
+            return false;
+        }
+        return true;
     }
 
     NightmareScript() {
@@ -262,12 +318,16 @@ final class NightmareScript extends ScriptedBoss {
         BossFx.sound(boss, SoundEvents.GLASS_BREAK, 0.7f);
     }
 
-    /** A hit on a totem: magic charges it twice as fast; the charge is the player's contribution. Returns the damage it takes. */
+    /**
+     * A hit on a totem: magic charges it twice as fast; the charge is the player's contribution and gives no real combat
+     * experience. Returns the damage it takes.
+     */
     int totemDamage(ServerPlayer p, LivingEntity totem, AttackType type, int d) {
         double scale = totemCharge > DataBossEntity.MAX_MC_HEALTH ? DataBossEntity.MAX_MC_HEALTH / (double) totemCharge : 1.0;
         int charge = NightmareRules.totemCharge(d, type == AttackType.MAGIC);
         if (p != null) {
             contribution(p)[1] += Math.min(charge, (int) Math.ceil(totem.getHealth() / scale));
+            CHARGING.put(p.getUUID(), com.runecraft.action.ActionManager.mcTick()); // the hit's combat XP is withheld
         }
         return (int) Math.round(charge * scale);
     }
@@ -316,14 +376,14 @@ final class NightmareScript extends ScriptedBoss {
         CombatHandler.applyDamage(mvp, boss, (int) Math.ceil(boss.getHealth()) + 1);
     }
 
-    /** The online player with the most damage on her shield and totems, else her target. */
+    /** The player still in her dream with the most damage on her shield and totems, else her target. */
     ServerPlayer mvp(DataBossEntity boss) {
         ServerPlayer best = null;
         int bestDmg = -1;
         for (Map.Entry<UUID, int[]> e : contribution.entrySet()) {
             ServerPlayer p = BossFx.world(boss).getServer().getPlayerList().getPlayer(e.getKey());
             int d = e.getValue()[0] + e.getValue()[1];
-            if (p != null && p.isAlive() && d > bestDmg) {
+            if (inFight(boss, p) && d > bestDmg) {
                 best = p;
                 bestDmg = d;
             }
@@ -371,6 +431,19 @@ final class NightmareScript extends ScriptedBoss {
         int total = NightmareRules.totalWork(phosani, players);
         int left = NightmareRules.workLeft(phosani, players, phase, shieldLeft, desperate, desperationLeft);
         return 1f + (boss.getMaxHealth() - 1f) * left / Math.max(1, total);
+    }
+
+    /**
+     * Her death, asked whatever brought her health to 0: only the script's kill (the third blast, Phosani's last hit) may
+     * end her. Anything else (recoil or Vengeance off her own hits while the totems are up, poison) leaves her what is left
+     * to deal to her.
+     */
+    boolean allowDeath(DataBossEntity boss) {
+        if (stage == Stage.DEAD) {
+            return true;
+        }
+        boss.setHealth(Math.max(1f, mappedHealth(boss)));
+        return false;
     }
 
     @Override
@@ -795,29 +868,41 @@ final class NightmareScript extends ScriptedBoss {
 
     // ---------------- Curse
 
-    /** Her curse: the players' protection prayers are shuffled for her next five attacks. */
+    /**
+     * Her curse: the protection prayers of the players in her dream are shuffled for her next five attacks. It only holds
+     * while they stay in her dream (leaving, dying or logging out lifts it), and never past {@link #CURSE_MAX_TICKS}.
+     */
     void curse(DataBossEntity boss, ServerPlayer target) {
+        long until = com.runecraft.action.ActionManager.gameTick() + CURSE_MAX_TICKS;
         for (ServerPlayer p : fighters(boss, target)) {
-            CURSED.put(p.getUUID(), NightmareRules.CURSE_ATTACKS); // counted from her next attack (perform counts before it acts)
+            if (!inFight(boss, p)) {
+                continue;
+            }
+            // counted from her next attack (perform counts before it acts)
+            CURSED.put(p.getUUID(), new Curse(boss, NightmareRules.CURSE_ATTACKS, until));
             Msg.red(p, "The Nightmare curses you, shuffling your prayers!");
             BossFx.world(boss).sendParticles(ParticleTypes.ENCHANT, p.getX(), p.getY() + 1, p.getZ(), 30, 0.5, 0.8, 0.5, 0.5);
         }
     }
 
+    /** One of her attacks: each of her curses has one fewer to go; a cursed player no longer in her dream is freed. */
     private void curseCountdown(DataBossEntity boss) {
         if (CURSED.isEmpty()) {
             return;
         }
-        for (ServerPlayer p : fighters(boss, target(boss))) {
-            Integer left = CURSED.get(p.getUUID());
-            if (left == null) {
+        for (Map.Entry<UUID, Curse> e : CURSED.entrySet()) {
+            Curse c = e.getValue();
+            if (c.boss() != boss) {
                 continue;
             }
-            if (left <= 1) {
-                CURSED.remove(p.getUUID());
+            ServerPlayer p = BossFx.world(boss).getServer().getPlayerList().getPlayer(e.getKey());
+            if (!inFight(boss, p) || com.runecraft.action.ActionManager.gameTick() > c.until()) {
+                CURSED.remove(e.getKey(), c);
+            } else if (c.attacksLeft() <= 1) {
+                CURSED.remove(e.getKey(), c);
                 Msg.action(p, "You feel the effects of the Nightmare's curse wear off.");
             } else {
-                CURSED.put(p.getUUID(), left - 1);
+                CURSED.replace(e.getKey(), c, new Curse(boss, c.attacksLeft() - 1, c.until()));
             }
         }
     }
@@ -1301,15 +1386,8 @@ final class NightmareScript extends ScriptedBoss {
             BossFx.unstun(bound);
             bound = null;
         }
-        for (UUID id : contribution.keySet()) {
-            CURSED.remove(id);
-        }
-        if (boss.getTarget() instanceof ServerPlayer t) {
-            CURSED.remove(t.getUUID());
-        }
-        for (ServerPlayer p : BossFx.players(boss, 24)) {
-            CURSED.remove(p.getUUID());
-        }
+        // her curses go with her, wherever the players she cursed are now (and any left by a Nightmare already gone)
+        CURSED.values().removeIf(c -> c.boss() == boss || !c.boss().isAlive() || c.boss().isRemoved());
     }
 
     /** Discards totems, husks, parasites and sleepwalkers near her that this script doesn't track (left by a reload). */
@@ -1364,7 +1442,7 @@ final class NightmareScript extends ScriptedBoss {
      * A kill's loot. The killer (the MVP for The Nightmare) rolls the common table with the boss's tertiaries; the two
      * unique tables are rolled once a kill (a second time with a chance of party size - 5 %) and each unique goes to one
      * eligible player weighted by damage. Every other eligible player gets their own common roll, regular bones, a kill count,
-     * the 1/200 clue and 1/2,000 jar and their pet roll.
+     * the 1/200 clue and 1/2,000 jar and their pet roll. Only players still in her dream as she dies share it.
      */
     static List<Drops.Rolled> rollLoot(ServerPlayer killer, DataBossEntity boss, List<Drop> table) {
         String id = boss.def() == null ? "the_nightmare" : boss.def().id;
@@ -1393,14 +1471,15 @@ final class NightmareScript extends ScriptedBoss {
             uniques.addAll(BossLoot.pick(inquisitor, 1, random::nextInt));
             uniques.addAll(BossLoot.pick(orbs, 1, random::nextInt));
         }
-        // who shares it: the killer and every other eligible player still around
+        // who shares it: the killer and every other eligible player still in her dream as she dies (the wiki: drops
+        // count the total contribution that is present when the boss dies)
         List<ServerPlayer> others = new ArrayList<>();
         Map<ServerPlayer, Integer> weight = new LinkedHashMap<>();
         weight.put(killer, n == null ? 1 : Math.max(1, sum(n.contribution.get(killer.getUUID()))));
         if (n != null && !phosani) {
             for (Map.Entry<UUID, int[]> e : n.contribution.entrySet()) {
                 ServerPlayer p = BossFx.world(boss).getServer().getPlayerList().getPlayer(e.getKey());
-                if (p != null && p != killer && p.isAlive() && NightmareRules.eligible(e.getValue()[0], e.getValue()[1])) {
+                if (p != killer && inFight(boss, p) && NightmareRules.eligible(e.getValue()[0], e.getValue()[1])) {
                     others.add(p);
                     weight.put(p, Math.max(1, sum(e.getValue())));
                 }
