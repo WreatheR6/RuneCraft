@@ -701,21 +701,7 @@ public final class MinigameRules {
         }
     }
 
-    // ---------------------------------------------------------------- Hallowed Sepulchre
-    public static final class Sepulchre {
-        public static final int[] FLOOR_LEVELS = {52, 62, 72, 82, 92};
-        public static final double[] FLOOR_XP = {575, 925, 1500, 2700, 6000};
-        public static final int RING_CHANCE = 1000;
-        public static final int GAME_TICKS = 300;
-
-        private Sepulchre() {
-        }
-
-        /** Hallowed marks from a coffin on a floor (1-based), given a random value in [0,1). */
-        public static int coffinMarks(int floor, double random) {
-            return floor + (int) Math.floor(random * (floor + 1));
-        }
-    }
+    // Hallowed Sepulchre: see HallowedSepulchre.
 
     // ---------------------------------------------------------------- Tithe Farm
     public static final class TitheFarm {

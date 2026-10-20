@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/sep_knight_statue_side",
+    "top": "runecraft:block/module/sep_knight_statue_top",
+    "bottom": "runecraft:block/module/sep_knight_statue_bottom"
+  }
+}

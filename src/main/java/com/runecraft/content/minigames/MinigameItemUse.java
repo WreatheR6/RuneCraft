@@ -82,6 +82,11 @@ public final class MinigameItemUse {
                     openAluftBox(sp);
                     yield true;
                 }
+                case "hallowed_sack" -> {
+                    com.runecraft.content.minigames.games.SepulchreSession.openSack(sp);
+                    yield true;
+                }
+                case "hallowed_token" -> com.runecraft.content.minigames.games.SepulchreSession.useToken(sp);
                 case "reward_token_blue", "reward_token_yellow", "reward_token_red" -> {
                     com.runecraft.content.minigames.games.TempleTrekkingSession.openToken(sp, stack);
                     yield false;

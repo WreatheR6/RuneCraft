@@ -220,6 +220,9 @@ public final class MinigameManager {
         if (game == Minigame.CHAMPIONS_CHALLENGE) {
             return com.runecraft.content.minigames.games.ChampionsSession.requirement(player);
         }
+        if (game == Minigame.HALLOWED_SEPULCHRE) {
+            return SepulchreSession.requirement(player);
+        }
         if (game == Minigame.ROGUES_DEN && skills.level(Skill.AGILITY) < MinigameRules.RoguesDen.LEVEL) {
             return "You need an Agility level of " + MinigameRules.RoguesDen.LEVEL + " to enter the Rogues' Den maze.";
         }

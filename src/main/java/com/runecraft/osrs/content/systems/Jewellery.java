@@ -280,6 +280,10 @@ public final class Jewellery {
         WORN.put("camulet", new Worn("camulet", "Camulet", Slot.NECK, ref("camulet", NONE), Perk.TELEPORT_ONLY, null, -1,
                 Teleports.CAMULET, false));
         wornExternal("pirates_hook", Slot.HANDS, s(0, 0, 0, 0, 0, 1, 5, 3, 0, 0, 0, 0, 0, 0)); // item defined by the minigames module
+        // Hallowed Sepulchre (minigames module): the hallowed ring and symbol, the ring of endurance (no bonuses).
+        wornExternal("hallowed_ring", Slot.RING, NONE);
+        wornExternal("hallowed_symbol", Slot.NECK, NONE);
+        wornExternal("ring_of_endurance", Slot.RING, NONE);
         wornExternal("salve_amulet", Slot.NECK, s(0, 0, 0, 0, 0, 3, 3, 3, 0, 0, 0, 0, 0, 3));
         wornExternal("salve_amulet_e", Slot.NECK, s(0, 0, 0, 0, 0, 3, 3, 3, 0, 0, 0, 0, 0, 3));
         wornExternal("berserker_ring", Slot.RING, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0));
