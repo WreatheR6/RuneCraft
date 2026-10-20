@@ -196,7 +196,17 @@ public final class Inv {
 
     /** {@link Entity#spawnAtLocation(ItemStack)}, one item entity per full stack. */
     public static void spawnAtLocation(Entity entity, ItemStack stack) {
-        splitStacks(stack, entity::spawnAtLocation);
+        spawnAtLocation(entity, stack, null);
+    }
+
+    /** {@link #spawnAtLocation(Entity, ItemStack)}; {@code spawned} (nullable) is handed each item entity. */
+    public static void spawnAtLocation(Entity entity, ItemStack stack, Consumer<ItemEntity> spawned) {
+        splitStacks(stack, s -> {
+            ItemEntity e = entity.spawnAtLocation(s);
+            if (e != null && spawned != null) {
+                spawned.accept(e);
+            }
+        });
     }
 
     /** {@link Player#drop(ItemStack, boolean)} at the player's feet, one item entity per full stack. */
