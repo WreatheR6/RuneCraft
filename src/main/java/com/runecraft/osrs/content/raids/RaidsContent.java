@@ -51,6 +51,8 @@ public final class RaidsContent implements ContentModule {
     public static final String COOKING_FIRE = "cox_cooking_fire";
     public static final String GOURD_TREE = "cox_gourd_tree";
     public static final String GEYSER = "cox_geyser";
+    /** ToB: the skeleton by the entrance to Verzik's throne room that holds the Dawnbringer. */
+    public static final String TOB_DAWNBRINGER_SKELETON = "tob_dawnbringer_skeleton";
 
     @Override
     public String id() {
@@ -116,7 +118,8 @@ public final class RaidsContent implements ContentModule {
                 BlockDef.scripted(BAT_ROOST, "Bat roost", 0x3A3A3A, "rock"),
                 BlockDef.scripted(COOKING_FIRE, "Fire", 0x8A4A1A, "fire"),
                 BlockDef.scripted(GOURD_TREE, "Gourd tree", 0x6A8A3A, "tree"),
-                BlockDef.scripted(GEYSER, "Geyser", 0x4A7AA0, "water"));
+                BlockDef.scripted(GEYSER, "Geyser", 0x4A7AA0, "water"),
+                BlockDef.scripted(TOB_DAWNBRINGER_SKELETON, "Skeleton", 0xD8D0B8, "grave"));
     }
 
     @Override

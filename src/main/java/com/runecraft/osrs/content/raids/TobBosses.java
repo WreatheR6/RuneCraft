@@ -13,7 +13,10 @@ import java.util.List;
  * parties as OSRS does). Stats are OSRS values where known, approximations otherwise.
  */
 public final class TobBosses {
-    /** The Dawnbringer (OSRS): dropped in Xarpus's room, its special breaks Verzik's phase 1 shield; Theatre only. */
+    /**
+     * The Dawnbringer (OSRS): from the skeleton at the entrance to Verzik's throne room; its special breaks her phase 1
+     * shield, then it crumbles. Theatre only.
+     */
     public static final String DAWNBRINGER = "dawnbringer";
 
     private TobBosses() {

@@ -18,6 +18,7 @@ import com.runecraft.player.Players;
 import com.runecraft.skill.XpService;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
+import com.runecraft.util.StackData;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,6 +35,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -77,16 +79,41 @@ final class CoxRooms {
 
     // ================================================================== shared helpers
 
-    /** Hands out a room's tool spawn (OSRS: permanent item spawns), one of each the player lacks. */
+    /** Marks a tool handed out by a room's tool spawn: it belongs to the Chambers and is taken back when its holder leaves. */
+    static final String RAID_TOOL_TAG = "RunecraftCoxTool";
+
+    /**
+     * Hands out a room's tool spawn (OSRS: permanent item spawns), one of each the player lacks. The tools are marked
+     * ({@link #RAID_TOOL_TAG}) so whoever carries them out of the raid loses them again ({@link #stripTools}).
+     */
     static void toolSpawn(ServerPlayer p, String... items) {
         List<String> got = new ArrayList<>();
         for (String item : items) {
             if (!Inv.has(p, item, 1)) {
-                Inv.give(p, item, 1);
+                ItemStack stack = Inv.stack(item, 1);
+                StackData.update(stack, t -> t.putBoolean(RAID_TOOL_TAG, true));
+                Inv.give(p, stack);
                 got.add(item.replace('_', ' '));
             }
         }
         Msg.game(p, got.isEmpty() ? "You already have what you need from here." : "You take: " + String.join(", ", got) + ".");
+    }
+
+    /** Takes back every tool from a room's tool spawn that a leaving player carries; returns how many stacks went. */
+    static int stripTools(ServerPlayer p) {
+        int n = 0;
+        var inv = p.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            if (StackData.contains(inv.getItem(i), RAID_TOOL_TAG)) {
+                inv.setItem(i, ItemStack.EMPTY);
+                n++;
+            }
+        }
+        if (StackData.contains(p.containerMenu.getCarried(), RAID_TOOL_TAG)) {
+            p.containerMenu.setCarried(ItemStack.EMPTY);
+            n++;
+        }
+        return n;
     }
 
     /** The team's average current level in a skill. */
@@ -1172,9 +1199,11 @@ final class CoxRooms {
                     for (ServerPlayer p : players()) {
                         double d = p.distanceToSqr(vespula);
                         if (d < 1.2 * 1.2) {
-                            RaidEffects.hit(vespula, p, 2 + rnd().nextInt(7), null, true);
-                        } else if (d < 3 * 3 && t % 2 == 0) {
-                            RaidEffects.hit(vespula, p, 10 + rnd().nextInt(21), null, true); // approx: "heavy melee damage"
+                            RaidEffects.hit(vespula, p, CoxRules.VESPULA_STOMP_MIN
+                                    + rnd().nextInt(CoxRules.VESPULA_STOMP_MAX - CoxRules.VESPULA_STOMP_MIN + 1), null, true);
+                        } else if (d < 3 * 3 && t % 2 == 0) { // approx: a sting every other tick as she darts back and forth
+                            RaidEffects.hit(vespula, p, CoxRules.VESPULA_ENRAGED_STING_MIN
+                                    + rnd().nextInt(CoxRules.VESPULA_ENRAGED_STING_MAX - CoxRules.VESPULA_ENRAGED_STING_MIN + 1), null, true);
                         }
                     }
                 }
@@ -1309,6 +1338,8 @@ final class CoxRooms {
         private int heat;
         private int needed;
         private boolean thawed;
+        /** Braziers already lit (OSRS: lighting one is a Firemaking roll; fuelling a lit one always works). */
+        private final Set<BlockPos> lit = new HashSet<>();
         /** OSRS: the braziers are worth up to max(6,000, 10 x the party's total Firemaking levels) points. */
         private int pointsCap;
 
@@ -1359,6 +1390,7 @@ final class CoxRooms {
             super.reset();
             heat = 0;
             thawed = false;
+            lit.clear();
         }
 
         @Override
@@ -1401,7 +1433,7 @@ final class CoxRooms {
                 if (rnd().nextDouble() < 0.4 + wc / 150.0) { // approx
                     int n = CoxRules.kindlingPerChop(wc, rnd());
                     Inv.give(player, "cox_kindling", n);
-                    XpService.add(player, Skill.WOODCUTTING, 15.0 * n); // approx
+                    XpService.add(player, Skill.WOODCUTTING, CoxRules.kindlingXp(n));
                     Msg.action(player, "You cut some kindling.");
                 }
                 return true;
@@ -1416,9 +1448,20 @@ final class CoxRooms {
                     Msg.game(player, "You need some kindling to fuel the brazier.");
                     return true;
                 }
-                if (!Inv.has(player, "tinderbox", 1)) {
-                    Msg.game(player, "You need a tinderbox to light the brazier. There's one by the entrance.");
-                    return true;
+                if (!lit.contains(pos)) {
+                    if (!Inv.has(player, "tinderbox", 1)) {
+                        Msg.game(player, "You need a tinderbox to light the brazier. There's one by the entrance.");
+                        return true;
+                    }
+                    if (cooldown(player, 2)) {
+                        return true;
+                    }
+                    if (rnd().nextDouble() >= CoxRules.brazierLightChance(level(player, Skill.FIREMAKING))) {
+                        Msg.action(player, "You attempt to light the brazier...");
+                        return true;
+                    }
+                    lit.add(pos);
+                    Msg.action(player, "The brazier catches light.");
                 }
                 Inv.remove(player, "cox_kindling", n);
                 XpService.add(player, Skill.FIREMAKING, n * 25.0);
@@ -1454,12 +1497,13 @@ final class CoxRooms {
                 w.use(sapling);
                 w.tick(2);
                 if (w.count("cox_kindling") >= 20 || heat + w.count("cox_kindling") >= needed) {
-                    BlockPos b = braziers.get(chops % braziers.size());
+                    // Keep fuelling a lit brazier; lighting one is a Firemaking roll that can take a few tries.
+                    BlockPos b = lit.isEmpty() ? braziers.get(chops % braziers.size()) : lit.iterator().next();
                     w.moveTo(b.offset(1, 0, 0));
                     w.use(b);
                 }
             }
-            w.expect(thawed, "the Ice demon never thawed (" + heat + "/" + needed + " kindling)");
+            w.expect(thawed, "the Ice demon never thawed (" + heat + "/" + needed + " kindling, " + lit.size() + " brazier(s) lit)");
             w.kill(demon, AttackType.MAGIC, "the Ice demon");
             return needed + " kindling, " + chops + " chops";
         }
@@ -1695,14 +1739,17 @@ final class CoxRooms {
                 return true;
             }
             if (blockId.equals(RaidsContent.COX_KEYSTONE)) {
-                if (keystoneTaken) {
+                // The crystal stays: a keystone lost to a leaver, the chasm or despawning can be taken again, so the barrier
+                // can always be dispelled. Only the first one is worth points (OSRS: 2,000).
+                if (Inv.has(player, CoxSupplies.KEYSTONE, 1)) {
+                    Msg.game(player, "You already have a keystone crystal. Use it on the shimmering barrier.");
                     return true;
                 }
-                keystoneTaken = true;
-                RaidBuilder.set(world(), pos, Blocks.AIR.defaultBlockState());
                 Inv.give(player, CoxSupplies.KEYSTONE, 1);
-                // OSRS: the keystone crystal is worth 2,000 points.
-                raid.awardActionPoints(player, RaidScaling.COX_TIGHTROPE_POINTS);
+                if (!keystoneTaken) {
+                    keystoneTaken = true;
+                    raid.awardActionPoints(player, RaidScaling.COX_TIGHTROPE_POINTS);
+                }
                 Msg.game(player, "You take the keystone crystal. Use it on the shimmering barrier.");
                 return true;
             }
@@ -1744,8 +1791,17 @@ final class CoxRooms {
             w.expect(crossed && w.player().getX() > center().getX() + 3, "the player did not cross the tightrope (needs Agility " + agility + ")");
             BlockPos keystone = w.block(this, RaidsContent.COX_KEYSTONE);
             w.moveTo(keystone.offset(1, 0, 0));
+            int before = raid.points(w.player().getUUID());
             w.use(keystone);
             w.expect(w.count(CoxSupplies.KEYSTONE) == 1, "the keystone crystal was not taken");
+            w.expect(raid.points(w.player().getUUID()) > before || before >= RaidScaling.COX_POINTS_CAP, "the keystone crystal gave no points");
+            // A lost crystal (left in the chasm, stripped from a leaver) can be taken again, for no more points.
+            w.take(CoxSupplies.KEYSTONE);
+            int after = raid.points(w.player().getUUID());
+            w.use(keystone);
+            w.use(keystone);
+            w.expect(w.count(CoxSupplies.KEYSTONE) == 1, "a lost keystone crystal could not be taken again (or two were given)");
+            w.expect(raid.points(w.player().getUUID()) == after, "a second keystone crystal gave points again");
             BlockPos barrier = w.block(this, RaidsContent.COX_SHIMMERING_BARRIER);
             w.moveTo(barrier.offset(-1, 0, 0));
             w.use(barrier);

@@ -202,7 +202,11 @@ public final class TobRules {
     /** Every fifth attack is a lightning ball: up to 48 to a player, 15-20 to Verzik when it passes through her. */
     public static final int VERZIK_LIGHTNING_EVERY = 5;
     public static final int VERZIK_LIGHTNING_MAX = 48;
-    /** The phase 2 nylocas explode for up to 46 next to a player, up to 8 three tiles away, and die after ~15 s. */
+    /**
+     * The phase 2 nylocas explode for up to 46 next to a player, up to 8 three tiles away, and die after ~15 s (OSRS wiki
+     * "Theatre of Blood/Strategies"). The "Verzik Vitur" page's one-line "up to 63" matches her phase 3 melee max instead
+     * and gives no range split, so the detailed figures are kept.
+     */
     public static final int VERZIK_NYLO_MAX = 46;
     public static final int VERZIK_NYLO_FAR = 8;
     public static final int VERZIK_NYLO_TICKS = 25;
@@ -230,7 +234,10 @@ public final class TobRules {
     public static final int VERZIK_P3_ATTACKS_PER_SPECIAL = 4;
     /** Yellows: up to 80 off a pool; a pool shelters one player (OSRS wiki). */
     public static final int VERZIK_YELLOW_MAX = 80;
-    /** The green ball hits for 75% of the Hitpoints level (OSRS wiki). */
+    /**
+     * The green ball hits for 75% of the Hitpoints level, 74 at level 99 (OSRS wiki "Theatre of Blood/Strategies"; the
+     * "Verzik Vitur" page's "up to 74%" is that 74 at 99: 74% would be 73).
+     */
     public static int greenBall(int hitpointsLevel) {
         return hitpointsLevel * 75 / 100;
     }

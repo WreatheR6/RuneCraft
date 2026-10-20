@@ -74,7 +74,17 @@ public final class CoxSupplyService {
         });
     }
 
+    /** A player left a raid (called from {@link RaidInstance#removePlayer}): their overload ends and the room tools go back. */
     static void forget(UUID u) {
+        clearOverload(u);
+        net.minecraft.server.MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        ServerPlayer p = server == null ? null : server.getPlayerList().getPlayer(u);
+        if (p != null && CoxRooms.stripTools(p) > 0) {
+            Msg.game(p, "The tools from the Chambers stay behind.");
+        }
+    }
+
+    private static void clearOverload(UUID u) {
         OVERLOAD_UNTIL.remove(u);
         OVERLOAD_STRENGTH.remove(u);
     }
@@ -348,7 +358,7 @@ public final class CoxSupplyService {
             if (OVERLOAD_UNTIL.getOrDefault(u, 0L) != until) {
                 return;
             }
-            forget(u);
+            clearOverload(u);
             if (p.isAlive() && inCox(p)) {
                 int max = Players.data(p).skills().level(Skill.HITPOINTS);
                 setHitpoints(p, Math.min(max, hitpoints(p) + CoxSupplies.OVERLOAD_DAMAGE));

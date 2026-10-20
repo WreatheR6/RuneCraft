@@ -1045,6 +1045,9 @@ public final class PlayerHitCalc {
         if (mask) {
             max = factor(max, 23, 20);
         }
+        if (in.weapon.equals("dawnbringer")) {
+            max = Math.max(2, max / 2); // wiki / DPS calculator: (Magic / 3 - 2) / 2, at least 2
+        }
         if (in.attr("dragon")) {
             if (in.weapon.equals("dragon_hunter_lance")) {
                 max = factor(max, 6, 5);

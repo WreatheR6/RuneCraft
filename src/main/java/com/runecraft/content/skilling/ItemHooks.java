@@ -51,7 +51,7 @@ import java.util.UUID;
 public final class ItemHooks {
     private static final int EAT_DELAY = 3 * ActionManager.MC_TICKS_PER_GAME_TICK;
     /** NBT key on a weapon stack holding its poison damage (weapon poison). */
-    static final String POISON_NBT = "RunecraftPoison";
+    public static final String POISON_NBT = "RunecraftPoison";
     private static final String ESSENCE_NBT = "Essence";
 
     /** Items whose right-click this module always handles (the client swings and forwards them). */

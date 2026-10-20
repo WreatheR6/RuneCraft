@@ -134,12 +134,11 @@ public final class RaidItems {
         items.add("lil_zik", "Lil' Zik", Kind.SIMPLE, "pet", 0x6A2A4A).value(1).stack(1).examine("Something tiny and nasty.");
         // vial_of_blood is defined by another module (skilling / systems).
 
-        // The Dawnbringer (OSRS): found after Xarpus, its special breaks Verzik's phase 1 shield; it never leaves the Theatre.
-        // Its bonuses come from the equipment reference (EquipmentBonuses).
-        items.add(TobBosses.DAWNBRINGER, "Dawnbringer", Kind.MELEE_WEAPON, "staff", 0xE8D8A0).value(1).stack(1)
-                .equipment(new EquipmentDef(Slot.WEAPON, s(0, 0, 0, 25, 0, 2, 3, 1, 15, 0, 0, 0, 0, 0), Map.of(), 4, AttackType.CRUSH,
-                        WeaponClass.MELEE))
-                .examine("A shining staff. It can break Verzik Vitur's shield.");
+        // The Dawnbringer (OSRS wiki): a powered staff (speed 4, range 7) from the skeleton at the entrance to Verzik's throne
+        // room; its special breaks her phase 1 shield, after which it crumbles. It never leaves the Theatre.
+        items.add(TobBosses.DAWNBRINGER, "Dawnbringer", Kind.STAFF, "staff", 0xE8D8A0).value(1).stack(1)
+                .equipment(weapon(s(0, 0, 0, 25, 0, 2, 3, 1, 15, 0, 0, 0, 0, 0), Map.of(), 4, AttackType.MAGIC, WeaponClass.STAFF))
+                .examine("A weapon of light to hold back the darkness.");
 
         // ---------------- Tombs of Amascut ----------------
         items.add("osmumtens_fang", "Osmumten's fang", Kind.MELEE_WEAPON, "fang", 0xE0D8B0).value(20_000_000).stack(1).tier("dragon")

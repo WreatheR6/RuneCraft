@@ -40,6 +40,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
@@ -58,6 +59,13 @@ final class TobRooms {
     static void init() {
         CombatHooks.addModifier(new CombatHooks.PlayerAttackModifier() {
             @Override
+            public double accuracy(ServerPlayer player, LivingEntity target, AttackType type) {
+                // OSRS wiki / DPS calculator: the Dawnbringer ignores accuracy against Verzik's phase 1 (always a successful hit).
+                return target != null && "verzik_vitur".equals(RaidInstance.creatureId(target))
+                        && TobBosses.DAWNBRINGER.equals(Inv.idOf(player.getMainHandItem())) ? 1e6 : 1.0;
+            }
+
+            @Override
             public int afterRoll(ServerPlayer player, LivingEntity target, AttackType type, int damage) {
                 // OSRS: only poison and venom harm the Nylocas Athanatos (Verzik phase 2).
                 if (target == null || !"nylocas_athanatos".equals(RaidInstance.creatureId(target))) {
@@ -65,7 +73,7 @@ final class TobRooms {
                 }
                 RaidInstance raid = RaidManager.at(target);
                 int room = raid == null ? -1 : raid.roomAt(target.position());
-                return room >= 0 && raid.logic(room) instanceof Verzik verzik ? verzik.athanatosHit(player, damage) : damage;
+                return room >= 0 && raid.logic(room) instanceof Verzik verzik ? verzik.athanatosHit(player, type, damage) : damage;
             }
         });
     }
@@ -92,7 +100,12 @@ final class TobRooms {
         final Map<UUID, Integer> roomDeaths = new HashMap<>();
         final Set<UUID> mvp = new HashSet<>();
         final List<Map<UUID, Integer>> lastFights = new ArrayList<>();
+        /** Where the opened supply chests stand: supplies are only bought standing at one. */
+        final List<BlockPos> chests = new ArrayList<>();
     }
+
+    /** How close (blocks) a player must stand to a supply chest to buy from it. */
+    private static final double CHEST_REACH = 4.5;
 
     private static final Map<RaidInstance, Supplies> SUPPLIES = new WeakHashMap<>();
 
@@ -145,6 +158,7 @@ final class TobRooms {
         s.unlocked++;
         BlockPos at = room.at(RaidBuilder.HALF - 3, 4);
         RaidBuilder.set(room.world(), at, RaidBuilder.module(RaidsContent.SUPPLIES));
+        s.chests.add(at);
         room.say("A chest of supplies from the entertained vampyres appears. Spend your points on it before you go on.");
     }
 
@@ -210,6 +224,20 @@ final class TobRooms {
         }
         Supplies s = supplies(raid);
         TobRules.Supply supply = TobRules.supply(item);
+        if (raid.isDowned(p)) {
+            Msg.game(p, "You can't reach the supply chest while you're dead.");
+            return 0;
+        }
+        // OSRS: supplies come only from the chests themselves, after the Bloat and Sotetseg.
+        boolean atChest = false;
+        for (BlockPos c : s.chests) {
+            atChest |= raid.roomAt(p.position()) == raid.roomAt(Vec3.atCenterOf(c))
+                    && p.position().distanceToSqr(Vec3.atBottomCenterOf(c)) <= CHEST_REACH * CHEST_REACH;
+        }
+        if (!atChest) {
+            Msg.game(p, "You need to be at a supply chest to take supplies.");
+            return 0;
+        }
         if (s.unlocked == 0 || s.awardedFor.getOrDefault(p.getUUID(), 0) < s.unlocked) {
             Msg.game(p, "Open the supply chest first.");
             return 0;
@@ -727,6 +755,10 @@ final class TobRooms {
             w.expect(points >= 6 && points <= 13, "the first supply chest gave " + points + " points (expected 6-13)");
             w.expect(buy(w.player(), "stamina_potion") == 1 && buy(w.player(), "stamina_potion") == 0, "the chest sold more than one stamina potion");
             w.expect(buy(w.player(), "shark") == 1 && w.count("shark") > 0, "buying a shark from the chest failed");
+            // Supplies come only from the chest itself.
+            w.moveTo(center().offset(-RaidBuilder.HALF + 3, 1, 0));
+            w.expect(buy(w.player(), "shark") == 0, "supplies could be bought away from the chest");
+            w.moveTo(chest.offset(-1, 0, 0));
             return shutdowns + " shutdown(s); chest gave " + points + " points";
         }
     }
@@ -1699,9 +1731,8 @@ final class TobRooms {
         protected void onComplete() {
             super.onComplete();
             pools.clear();
-            // OSRS: the Dawnbringer lies in the room for whoever will use it on Verzik's shield.
-            CoxRooms.dropItem(world(), vec(RaidBuilder.HALF - 4, 0), TobBosses.DAWNBRINGER, 1);
-            say("The Dawnbringer appears where Xarpus fell. Take it to break Verzik's shield.");
+            // OSRS: the Dawnbringer waits with a skeleton by the entrance to Verzik's throne room.
+            say("Xarpus falls. A skeleton by the entrance to Verzik's throne room still clutches the Dawnbringer.");
         }
 
         @Override
@@ -1726,14 +1757,7 @@ final class TobRooms {
                 w.tick(1);
             }
             w.expect(!alive(xarpus), "Xarpus did not die (phase " + phase + ")");
-            w.until(() -> !world().getEntitiesOfClass(ItemEntity.class, net.minecraft.world.phys.AABB.ofSize(vec(RaidBuilder.HALF - 4, 0), 4, 4, 4),
-                    e -> TobBosses.DAWNBRINGER.equals(Inv.idOf(e.getItem()))).isEmpty(), 2, "the Dawnbringer was not left behind");
-            for (ItemEntity e : world().getEntitiesOfClass(ItemEntity.class, net.minecraft.world.phys.AABB.ofSize(vec(RaidBuilder.HALF - 4, 0), 4, 4, 4),
-                    e -> TobBosses.DAWNBRINGER.equals(Inv.idOf(e.getItem())))) {
-                e.discard();
-                w.give(TobBosses.DAWNBRINGER, 1); // picked up
-            }
-            return intercepted + " exhumed(s) stopped, " + absorbed + " absorbed; Dawnbringer taken";
+            return intercepted + " exhumed(s) stopped, " + absorbed + " absorbed";
         }
     }
 
@@ -1784,6 +1808,60 @@ final class TobRooms {
             RaidBuilder.fill(world(), c.getX() + 12, c.getY() + 1, c.getZ() - 1, c.getX() + 13, c.getY() + 1, c.getZ() + 1,
                     Blocks.RED_CARPET.defaultBlockState());
             pillars(Blocks.STONE_BRICKS.defaultBlockState());
+            RaidBuilder.set(world(), skeleton(), RaidBuilder.module(RaidsContent.TOB_DAWNBRINGER_SKELETON));
+        }
+
+        /** The skeleton holding the Dawnbringer, next to the entrance of the throne room (OSRS wiki). */
+        private BlockPos skeleton() {
+            return at(-RaidBuilder.HALF + 2, 3);
+        }
+
+        /** Dawnbringers still in play: carried by a living member of the party or lying in this room. */
+        private int dawnbringers() {
+            int n = 0;
+            for (ServerPlayer p : raid.players()) {
+                if (!raid.isDowned(p)) {
+                    n += Inv.count(p, TobBosses.DAWNBRINGER);
+                }
+            }
+            for (ItemEntity e : world().getEntitiesOfClass(ItemEntity.class, RaidBuilder.roomBox(raid.slot, index),
+                    e -> TobBosses.DAWNBRINGER.equals(Inv.idOf(e.getItem())))) {
+                n += e.getItem().getCount();
+            }
+            return n;
+        }
+
+        @Override
+        public boolean useBlock(ServerPlayer player, String blockId, BlockPos pos) {
+            if (!blockId.equals(RaidsContent.TOB_DAWNBRINGER_SKELETON)) {
+                return false;
+            }
+            if (form != 1) {
+                Msg.game(player, "They battled through challenge after challenge, but didn't quite make it...");
+                return true;
+            }
+            // OSRS: searchable once per raid; one lost to a leaver can be found again, so the shield can always be broken.
+            if (dawnbringers() > 0) {
+                Msg.game(player, Inv.has(player, TobBosses.DAWNBRINGER, 1) ? "You already have the Dawnbringer."
+                        : "The skeleton's hands are empty: someone has already taken the Dawnbringer.");
+                return true;
+            }
+            Inv.give(player, TobBosses.DAWNBRINGER, 1);
+            Msg.game(player, "You find the Dawnbringer; you feel a pulse of energy burst through it.");
+            return true;
+        }
+
+        /** OSRS: once Verzik's shield is destroyed the Dawnbringer crumbles to dust. */
+        private void crumbleDawnbringers() {
+            for (ServerPlayer p : raid.players()) {
+                if (Inv.remove(p, TobBosses.DAWNBRINGER, Inv.count(p, TobBosses.DAWNBRINGER)) > 0) {
+                    Msg.game(p, "The weapon falls apart in your hand as Verzik's shield is destroyed.");
+                }
+            }
+            for (ItemEntity e : world().getEntitiesOfClass(ItemEntity.class, RaidBuilder.roomBox(raid.slot, index),
+                    e -> TobBosses.DAWNBRINGER.equals(Inv.idOf(e.getItem())))) {
+                e.discard();
+            }
         }
 
         private void pillars(BlockState state) {
@@ -1875,6 +1953,7 @@ final class TobRooms {
             if (!alive(verzik)) {
                 if (form == 1) {
                     form = 2;
+                    crumbleDawnbringers();
                     for (int i = 0; i < PILLARS.length; i++) {
                         if (pillarBlasts[i] >= 0) {
                             collapse(i);
@@ -2127,18 +2206,59 @@ final class TobRooms {
             }
         }
 
-        /** Only poison and venom harm the Athanatos; it absorbs the poison and deals up to 70 to Verzik as it dies. */
-        boolean poisonous(ServerPlayer p) {
-            String w = Inv.idOf(p.getMainHandItem());
-            return w.contains("blowpipe") || w.contains("toxic") || w.contains("serpentine") || w.contains("venom") || w.endsWith("_p")
-                    || w.contains("_p_") || w.endsWith("_kp") || w.contains("(p");
+        /**
+         * Whether this attack can poison or venom (OSRS wiki "Nylocas Athanatos"): a poisoned or venomous weapon (blowpipe,
+         * toxic staff, trident of the swamp, weapons ending (p) / (p+) / (p++) or coated with weapon poison), poisoned arrows,
+         * bolts or ammunition for a ranged attack, a Smoke spell, or any attack while wearing a serpentine helm.
+         */
+        static boolean poisonous(ServerPlayer p, AttackType type) {
+            String head = Inv.idOf(p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD));
+            if (head.endsWith("serpentine_helm") || head.endsWith("tanzanite_helm") || head.endsWith("magma_helm")) {
+                return true;
+            }
+            if (type == AttackType.MAGIC) {
+                // The hook doesn't see which spell was cast: an Ancient Smoke spell set to autocast stands in for it.
+                String w = Inv.idOf(p.getMainHandItem());
+                return w.startsWith("trident_of_the_swamp") || w.contains("toxic")
+                        || com.runecraft.content.systems.SysState.of(p).autocast.startsWith("smoke_");
+            }
+            ItemStack weapon = p.getMainHandItem();
+            if (poisonedItem(weapon)) {
+                return true;
+            }
+            if (type == AttackType.RANGED) {
+                // The ammunition the shot uses: the worn ammo slot, or the first arrow / bolt a bow would fire.
+                if (poisonedItem(com.runecraft.content.systems.SysState.of(p).worn(com.runecraft.osrs.content.systems.Jewellery.Slot.AMMO))) {
+                    return true;
+                }
+                for (int i = 0; i < p.getInventory().getContainerSize(); i++) {
+                    ItemStack st = p.getInventory().getItem(i);
+                    com.runecraft.osrs.ItemDef def = com.runecraft.registry.ModItems.def(st);
+                    if (def != null && def.kind() == com.runecraft.osrs.ItemDef.Kind.ARROW) {
+                        return poisonedItem(st);
+                    }
+                }
+            }
+            return false;
+        }
+
+        private static boolean poisonedItem(ItemStack stack) {
+            return poisonedId(Inv.idOf(stack)) || com.runecraft.util.StackData.contains(stack, com.runecraft.content.skilling.ItemHooks.POISON_NBT);
+        }
+
+        private static boolean poisonedId(String w) {
+            return w != null && (w.contains("blowpipe") || w.contains("toxic") || w.contains("serpentine") || w.contains("venom")
+                    || w.endsWith("_p") || w.endsWith("_pp") || w.endsWith("_kp") || w.contains("_p_") || w.contains("(p"));
         }
 
         /** The Athanatos rule, called from the hit filter registered in {@link TobRooms#init}. */
-        int athanatosHit(ServerPlayer attacker, int damage) {
-            if (!poisonous(attacker)) {
+        int athanatosHit(ServerPlayer attacker, AttackType type, int damage) {
+            if (!poisonous(attacker, type)) {
                 Msg.action(attacker, "The Nylocas Athanatos shrugs it off. Only poison will harm it.");
                 return 0;
+            }
+            if (damage <= 0) {
+                return 0; // a miss can't poison it
             }
             if (alive(verzik)) {
                 com.runecraft.combat.CombatHandler.applyDamage(attacker, verzik, rnd().nextInt(TobRules.ATHANATOS_POISON_MAX + 1));
@@ -2368,7 +2488,16 @@ final class TobRooms {
             w.expect(capped <= 10, "Verzik's phase 1 shield let a melee hit of " + capped + " through (cap 10)");
             int rangedCapped = w.hit(verzik, 50, AttackType.RANGED);
             w.expect(rangedCapped <= 3, "Verzik's phase 1 shield let a ranged hit of " + rangedCapped + " through (cap 3)");
-            w.expect(w.count(TobBosses.DAWNBRINGER) > 0, "the player has no Dawnbringer from Xarpus's room");
+            // The skeleton at the entrance holds the Dawnbringer: one at a time.
+            BlockPos bones = w.block(this, RaidsContent.TOB_DAWNBRINGER_SKELETON);
+            w.moveTo(bones.offset(1, 0, 0));
+            w.use(bones);
+            w.use(bones);
+            w.expect(w.count(TobBosses.DAWNBRINGER) == 1, "the skeleton gave " + w.count(TobBosses.DAWNBRINGER) + " Dawnbringers (expected one)");
+            w.take(TobBosses.DAWNBRINGER);
+            w.use(bones);
+            w.expect(w.count(TobBosses.DAWNBRINGER) == 1, "a lost Dawnbringer could not be found again");
+            w.take(TobBosses.DAWNBRINGER);
             w.hold(TobBosses.DAWNBRINGER);
             int guard = 0;
             while (form == 1 && guard++ < 300) {
@@ -2376,10 +2505,12 @@ final class TobRooms {
                 w.tick(1);
             }
             w.expect(form == 2, "the Dawnbringer did not break Verzik's phase 1 shield");
+            w.expect(w.count(TobBosses.DAWNBRINGER) == 0, "the Dawnbringer did not crumble when the shield broke");
             w.hold(null);
             w.until(() -> alive(athanatos), 3, "no Nylocas Athanatos came in phase 2");
             w.expect(w.hit(athanatos, 50, AttackType.SLASH) == 0, "the Athanatos took damage from a non-poison weapon");
             w.hold("toxic_blowpipe");
+            w.expect(w.hit(athanatos, 0, AttackType.RANGED) == 0 && alive(athanatos), "a missed poisoned attack burst the Athanatos");
             w.kill(athanatos, AttackType.RANGED, "the Nylocas Athanatos (with poison)");
             w.hold(null);
             guard = 0;

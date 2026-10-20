@@ -96,6 +96,35 @@ class CoxRulesTest {
             assertTrue(grubs >= 1 && grubs <= 3, "grubs " + grubs);
         }
         assertEquals(54, CoxRules.iceDemonKindling(1));
+        // Kindling per chop (wiki "Ice demon"): max = Woodcutting / 12, a roll of 0 counts as 1; averages from the wiki table.
+        Map<Integer, Double> avg = Map.of(1, 1.0, 24, 1.3333, 36, 1.75, 48, 2.2, 72, 3.1429, 84, 3.625, 96, 4.1111);
+        for (Map.Entry<Integer, Double> e : avg.entrySet()) {
+            int max = Math.max(1, e.getKey() / 12);
+            double exact = 0;
+            for (int roll = 0; roll <= e.getKey() / 12; roll++) {
+                exact += Math.max(1, roll);
+            }
+            exact /= e.getKey() / 12 + 1;
+            assertEquals(e.getValue(), exact, 1e-3, "wiki average at Woodcutting " + e.getKey());
+            Random kr = new Random(e.getKey());
+            for (int i = 0; i < 200; i++) {
+                int n = CoxRules.kindlingPerChop(e.getKey(), kr);
+                assertTrue(n >= 1 && n <= max, "Woodcutting " + e.getKey() + " chopped " + n);
+            }
+        }
+        Random kr = new Random(9);
+        Set<Integer> seen = new TreeSet<>();
+        for (int i = 0; i < 2000; i++) {
+            seen.add(CoxRules.kindlingPerChop(96, kr));
+        }
+        assertEquals(Set.of(1, 2, 3, 4, 5, 6, 7, 8), seen);
+        assertEquals(30, CoxRules.kindlingXp(1), 1e-9);
+        assertEquals(81.5, CoxRules.kindlingXp(8), 1e-9);
+        assertEquals(0.08, CoxRules.brazierLightChance(1), 1e-9);
+        assertEquals(0.78, CoxRules.brazierLightChance(99), 1e-9);
+        assertEquals(0.43, CoxRules.brazierLightChance(50), 1e-9);
+        assertEquals(5, CoxRules.VESPULA_ENRAGED_STING_MIN);
+        assertEquals(20, CoxRules.VESPULA_ENRAGED_STING_MAX);
         assertEquals(33, CoxRules.iceDemonDamage(100, false, false));
         assertEquals(115, CoxRules.iceDemonDamage(100, true, false));
         assertEquals(250, CoxRules.iceDemonDamage(100, false, true));

@@ -90,6 +90,11 @@ public final class CoxRules {
     /** A lux grub's hitpoints, and what a medivaemia blossom heals (OSRS wiki). */
     public static final int LUX_GRUB_HP = 125;
     public static final int BLOSSOM_HEAL = 30;
+    /** Enraged Vespula stings anyone in melee range for 5-20 typeless damage and stomps anyone under her for 2-8 (OSRS wiki). */
+    public static final int VESPULA_ENRAGED_STING_MIN = 5;
+    public static final int VESPULA_ENRAGED_STING_MAX = 20;
+    public static final int VESPULA_STOMP_MIN = 2;
+    public static final int VESPULA_STOMP_MAX = 8;
     /** Damage one of Vespula's stings does to a grub. // approx: five stings hatch a fresh grub */
     public static final int VESPULA_STING_DAMAGE = 25;
     /** Game ticks between Vespula's stings at the grubs. // approx */
@@ -139,10 +144,35 @@ public final class CoxRules {
         return 54 + 18 * (clampParty(partySize) - 1);
     }
 
-    /** Kindling one successful chop of a sapling gives (OSRS: more on average at higher Woodcutting). // approx */
+    /**
+     * Kindling one successful chop of a sapling gives (OSRS wiki "Ice demon", Mod Ash): the max is the visible Woodcutting
+     * level / 12 (boosts count), the roll is 0-max with equal chances and a 0 counts as 1 (1-8 at level 96).
+     */
     public static int kindlingPerChop(int woodcutting, Random random) {
-        int extra = (woodcutting >= 50 ? 1 : 0) + (woodcutting >= 85 ? 1 : 0);
-        return 1 + random.nextInt(1 + extra);
+        int max = Math.max(0, woodcutting) / 12;
+        return Math.max(1, random.nextInt(max + 1));
+    }
+
+    /** Woodcutting XP for a chop that gave {@code kindling} kindling (OSRS wiki "Ice demon", Mod Bruno's table). */
+    private static final double[] KINDLING_XP = {30, 45, 55, 62.5, 68.5, 73.5, 77.7, 81.5};
+
+    public static double kindlingXp(int kindling) {
+        if (kindling <= 0) {
+            return 0;
+        }
+        if (kindling <= KINDLING_XP.length) {
+            return KINDLING_XP[kindling - 1];
+        }
+        return KINDLING_XP[KINDLING_XP.length - 1] + 3.5 * (kindling - KINDLING_XP.length); // approx: boosted past 107
+    }
+
+    /**
+     * Chance one attempt lights an unlit brazier (OSRS wiki "Ice demon", Mod Ash): a normal Firemaking skill roll, 8% at
+     * level 1 rising linearly to 78% at 99.
+     */
+    public static double brazierLightChance(int firemaking) {
+        int fm = Math.max(1, Math.min(99, firemaking));
+        return 0.08 + (fm - 1) * 0.70 / 98;
     }
 
     /**
