@@ -30,6 +30,14 @@ final class Cast {
         b.npc(id, name, place, dx, dz, skin, top, bottom, accent);
     }
 
+    /** {@link #npc} on an exact OSRS tile (its own spot, {@link QuestBook#npcAt}); same colours and serial as {@link #npc}. */
+    static void npcAt(QuestBook b, String id, String name, int osrsX, int osrsY, int skin, int top) {
+        serial++;
+        int bottom = darken(top);
+        int accent = (((serial * 53) & 0x7F) + 0x40) << 16 | (((serial * 29) & 0x7F) + 0x30) << 8 | (serial & 0xFF);
+        b.npcAt(id, name, osrsX, osrsY, skin, top, bottom, accent);
+    }
+
     private static int darken(int rgb) {
         int r = ((rgb >> 16) & 0xFF) * 2 / 3;
         int g = ((rgb >> 8) & 0xFF) * 2 / 3;

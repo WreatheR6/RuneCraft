@@ -937,6 +937,8 @@ public final class MonsterStatsTable {
         row("skotizo", 321, 450, 240, 250, 200, 280, 1, 5, 80, 80, 80, 80, 130, 160, 0, 0, "demon");
         // Hespori
         row("hespori", 284, 300, 1, 1, 120, 126, 150, 6, 60, 20, 60, 80, 80, 0, 150, 150);
+        // Hespori (A Night at the Theatre)
+        row("ant_hespori", 302, 360, 1, 1, 120, 126, 150, 6, 60, 20, 60, 80, 80, 0, 150, 150);
         // Scurrius (Group)
         row("scurrius", 250, 1500, 300, 100, 100, 100, 100, 4, 20, 20, 20, 10, 20, 150, 150, 150, "rat");
         // The Mimic

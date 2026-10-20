@@ -21,7 +21,9 @@ public final class QuestNpcMoves {
 
     /** Round 33: start NPCs moved to their cache tiles (QuestStartNpcsTest), and Lady Vulcana to the Lovakengj Assembly. */
     public static final Set<String> RELOCATED = Set.of("dimintheis", "edmond", "king_lathas", "lokar_searunner", "mord_gunnars",
-            "vestri", "gossip_kr", "ali_morrisane", "wanderer_sophanem", "akrisae", "ivy_sophista", "lord_kandur_lovakengj", "lazim");
+            "vestri", "gossip_kr", "ali_morrisane", "wanderer_sophanem", "akrisae", "ivy_sophista", "lord_kandur_lovakengj", "lazim",
+            // Round 37: Archeio from the Arceuus town square into the Arceuus Library
+            "quest_archeio");
 
     /** Block x/z where the NPC is spawned (its place's centre plus its offset), or null if its place is unknown. */
     public static int[] homeBlock(NpcDef def) {

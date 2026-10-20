@@ -69,8 +69,35 @@ class MasterQuestsTest {
         assertEquals(10, sols.get(0).size());
         for (QuestPuzzle.Variant v : KandarinGnomeQuests.MM_PANEL.rooms.get(0).variants()) {
             assertEquals(4, v.options().size());
+            assertTrue(v.sliding());
             assertEquals(1, v.check(v.solutions().get(0)));
         }
+    }
+
+    @Test
+    void slidingBoardsAcceptAnySortingSequence() {
+        QuestPuzzle.Variant v = KandarinGnomeQuests.MM_PANEL.rooms.get(0).variants().get(0);
+        assertEquals("_ 1 3 / 5 2 7 / 4 8 6", QuestPuzzle.board(v.slideBoard(List.of())));
+        // a detour (slide the 1 left, then back right) before the shortest solve: 12 slides, still solved
+        List<Integer> longer = new java.util.ArrayList<>(List.of(3, 2));
+        longer.addAll(v.solutions().get(0));
+        for (int i = 1; i < longer.size(); i++) {
+            assertEquals(0, v.check(longer.subList(0, i)), "still playing after " + i + " slides");
+        }
+        assertEquals(1, v.check(longer));
+        assertEquals(12, longer.size());
+        assertEquals("1 2 3 / 4 5 6 / 7 8 _", QuestPuzzle.board(v.slideBoard(longer)));
+        // a slide with no tile on that side of the gap changes nothing
+        assertArrayEquals(v.slideBoard(List.of()), v.slideBoard(List.of(0, 2)));
+        // the panel resets only after the move limit
+        List<Integer> wander = new java.util.ArrayList<>();
+        for (int i = 0; i < QuestPuzzle.SLIDE_MOVE_LIMIT; i++) {
+            wander.add(i % 2 == 0 ? 3 : 2);
+        }
+        assertEquals(0, v.check(wander.subList(0, QuestPuzzle.SLIDE_MOVE_LIMIT - 1)));
+        assertEquals(-1, v.check(wander));
+        // other puzzles still follow their solution lists
+        assertFalse(KaramjaQuests.LQ_MARKED_WALL.rooms.get(0).variants().get(0).sliding());
     }
 
     // ------------------------------------------------------------------ Desert Treasure I
@@ -123,7 +150,7 @@ class MasterQuestsTest {
                 "kill elvarg", "talk oziach");
         BossDef elvarg = ContentRegistry.boss("elvarg");
         assertTrue(elvarg.attacks.stream().anyMatch(a -> a.name().equals("dragonfire") && a.maxHit() == QuestBossRules.ELVARG_DRAGONFIRE_MAX
-                && a.style() == com.runecraft.osrs.AttackType.RANGED));
+                && a.style() == com.runecraft.osrs.AttackType.MAGIC)); // Protect from Magic is the prayer that softens it
         assertTrue(elvarg.phases.isEmpty());
         // the maze's key-holders (DPS calculator levels), each called up by the kill before it
         assertEquals(List.of(19, 22, 24, 82), List.of("maze_ghost", "maze_skeleton", "maze_zombie", "maze_lesser_demon").stream()
@@ -188,6 +215,17 @@ class MasterQuestsTest {
         assertEquals(List.of(106, 100, 92), List.of("san_tojalon", "irvig_senay", "ranalph_devere").stream()
                 .map(id -> ContentRegistry.boss(id).combatLevel).toList());
         assertEquals(9, QuestBossRules.nezikchenedPrayerCap(99));
+        // the guardians have no summoning stone: the one still to beat rises again on coming back down to the furnace
+        QuestSpec lq = spec("legends_quest");
+        for (String[] g : new String[][]{{"san_tojalon", "lq_winch", "lq_irvig"}, {"irvig_senay", "lq_irvig", "lq_ranalph"},
+                {"ranalph_devere", "lq_ranalph", "lq_crystals"}}) {
+            assertTrue(lq.triggers().stream().anyMatch(t -> t.kind == Trigger.Kind.REACH && t.target.equals("kharazi_cave")
+                    && g[0].equals(t.spawn) && t.setFlags.isEmpty() && t.give.isEmpty() && t.next == t.stage
+                    && t.needFlags.contains(g[1]) && t.unlessFlags.contains(g[2]) && t.unlessFlags.contains("lq_heart")), g[0]);
+        }
+        // crystal pieces lost after the kills are found again
+        assertTrue(lq.triggers().stream().anyMatch(t -> t.kind == Trigger.Kind.REACH && t.needFlags.contains("lq_crystals")
+                && t.unlessItems.contains("lq_crystal_piece") && t.give.getOrDefault("lq_crystal_piece", 0) == 3));
     }
 
     // ------------------------------------------------------------------ the elves, Haunted Mine, Lunar Diplomacy
@@ -328,7 +366,7 @@ class MasterQuestsTest {
     void aKingdomDividedFollowsHughesRoseXamphurAndTheFiveHouses() {
         inOrder("a_kingdom_divided", "talk martin_holt", "talk commander_fullore", "reach akd_hughes_house", "talk tomas_lawry",
                 "talk commander_fullore", "talk fuggy", "talk cabin_boy_herbert", "kill judge_of_yama", "talk councillor_andrews",
-                "talk commander_fullore", "talk martin_holt", "talk archeio", "talk martin_holt", "reach isk_forthos", "puzzle isk_forthos",
+                "talk commander_fullore", "talk martin_holt", "talk quest_archeio", "talk martin_holt", "reach isk_forthos", "puzzle isk_forthos",
                 "kill akd_assassin", "reach akd_settlement_ruins", "reach akd_legless_faun", "puzzle akd_legless_faun", "reach akd_rose_shack",
                 "talk kaht_bbalam", "reach akd_lizard_eggs", "talk kaht_bbalam", "kill xamphur", "reach akd_rose_shack",
                 "reach akd_xerics_lookout", "kill akd_assassin", "talk jorra", "kill barbarian_warlord", "reach akd_vinery_office",
@@ -396,13 +434,25 @@ class MasterQuestsTest {
                 "talk maisa_bcs", "puzzle bcs_ruins_of_ullek", "puzzle bcs_ruins_of_ullek", "reach bcs_ruins_of_ullek",
                 "kill champion_of_scabaras", "talk zahur", "reach bcs_elid_lily", "talk zahur", "talk high_priest_sophanem",
                 "kill menaphite_akh", "talk high_priest_sophanem");
-        assertNull(QuestBossRules.scabarasSpecial(4, 0));
-        assertEquals("shadow_burst", QuestBossRules.scabarasSpecial(5, 0));
-        assertEquals("shadow_rift", QuestBossRules.scabarasSpecial(10, 1));
-        assertEquals("shadow_flames", QuestBossRules.scabarasSpecial(15, 2));
+        // Wiki: Shadow Burst -> Shadow Rift -> Shadow Burst -> Shadow Flames -> repeat
+        assertNull(QuestBossRules.scabarasSpecial(4));
+        List<String> cycle = new java.util.ArrayList<>();
+        for (int n = 1; n <= 8 * QuestBossRules.SCABARAS_SPECIAL_EVERY; n++) {
+            String s = QuestBossRules.scabarasSpecial(n);
+            assertEquals(n % QuestBossRules.SCABARAS_SPECIAL_EVERY == 0, s != null, "attack " + n);
+            if (s != null) {
+                cycle.add(s);
+            }
+        }
+        assertEquals(List.of("shadow_burst", "shadow_rift", "shadow_burst", "shadow_flames",
+                "shadow_burst", "shadow_rift", "shadow_burst", "shadow_flames"), cycle);
         BossDef champion = ContentRegistry.boss("champion_of_scabaras");
         assertTrue(champion.attacks.stream().anyMatch(a -> a.name().equals("shadow_burst") && a.maxHit() == 40));
-        assertEquals(35, QuestBossRules.SCABARAS_RIFT_DAMAGE);
+        // the rift's explosion: "35+" (strategy), up to 48 (Shadow Rift infobox)
+        for (int roll = 0; roll < 100; roll++) {
+            int hit = QuestBossRules.scabarasRiftDamage(new java.util.Random(roll));
+            assertTrue(hit >= 35 && hit <= 48, "rift hit " + hit);
+        }
     }
 
     // ------------------------------------------------------------------ A Night at the Theatre
@@ -411,12 +461,41 @@ class MasterQuestsTest {
     void aNightAtTheTheatreNeedsARealTheatreOfBloodRun() {
         inOrder("a_night_at_the_theatre", "talk quest_mysterious_stranger_tob", "kill vyrewatch_sentinel", "reach ant_ranis_crypt",
                 "talk quest_mysterious_stranger_tob", "reach ant_araxyte_nest", "talk daer_krand", "reach ant_araxyte_nest",
-                "talk quest_mysterious_stranger_tob", "talk nature_spirit", "kill hespori", "reach ant_hespori_island",
+                "talk quest_mysterious_stranger_tob", "talk nature_spirit", "kill ant_hespori", "reach ant_hespori_island",
                 "talk quest_mysterious_stranger_tob", "talk quest_mysterious_stranger_tob", "talk quest_mysterious_stranger_tob");
         // the Theatre stage advances only on the flag a completed raid sets (RaidInstance), never on a trigger of the quest
         QuestSpec q = spec("a_night_at_the_theatre");
         assertTrue(q.triggers().stream().anyMatch(t -> t.stage == 3 && t.needFlags.contains(QuestBossRules.TOB_COMPLETED_FLAG)));
         assertTrue(q.triggers().stream().noneMatch(t -> t.setFlags.contains(QuestBossRules.TOB_COMPLETED_FLAG)));
         assertTrue(q.stages.get(3).triggers.stream().allMatch(t -> t.kind == Trigger.Kind.TALK));
+        // its own wild Hespori (wiki infobox), not the Farming Guild's: no loot, and a Farming Guild kill doesn't count
+        BossDef wild = ContentRegistry.boss("ant_hespori");
+        assertEquals("Hespori", wild.name);
+        assertEquals(302, wild.combatLevel);
+        assertEquals(360, wild.hitpoints);
+        assertEquals(6, wild.attackSpeed);
+        assertTrue(wild.drops.isEmpty());
+        assertEquals(2, wild.phases.size(), "the flowers bloom again at 66% and 33%");
+        assertTrue(q.triggers().stream().noneMatch(t -> "hespori".equals(t.target) || "hespori".equals(t.spawn)));
+        assertEquals(284, ContentRegistry.boss("hespori").combatLevel);
+        // Wiki rewards: four 20,000 XP combat lamps
+        assertEquals(80000.0, q.def.xpRewards().values().stream().mapToDouble(Double::doubleValue).sum());
+    }
+
+    @Test
+    void lampRewardsMatchTheWiki() {
+        // Monkey Madness I: 35,000 in the two skills chosen with Daero and 20,000 in the other two (110,000)
+        QuestSpec mm = spec("monkey_madness_i");
+        assertEquals(110000.0, mm.def.xpRewards().values().stream().mapToDouble(Double::doubleValue).sum());
+        assertEquals(35000.0, mm.def.xpRewards().get(com.runecraft.osrs.Skill.ATTACK));
+        assertEquals(20000.0, mm.def.xpRewards().get(com.runecraft.osrs.Skill.HITPOINTS));
+        // A Kingdom Divided: two 10,000 XP lamps and the book of the dead
+        QuestSpec akd = spec("a_kingdom_divided");
+        assertEquals(20000.0, akd.def.xpRewards().values().stream().mapToDouble(Double::doubleValue).sum());
+        assertTrue(akd.def.itemRewards().contains("book_of_the_dead"));
+        // A Kingdom Divided talks to the one Archeio, in the Arceuus Library
+        assertNull(ContentRegistry.npc("archeio"));
+        assertTrue(akd.triggers().stream().anyMatch(t -> t.kind == Trigger.Kind.TALK && t.target.equals("quest_archeio")));
+        assertTrue(QuestNpcMoves.RELOCATED.contains("quest_archeio"));
     }
 }

@@ -45,6 +45,9 @@ class QuestStrictWalkTest {
             "dragon_slayer_i 3 talk guildmaster",
             // Radimus hands out more papyrus (and to saves from before the papyrus)
             "legends_quest 1 talk radimus_erkle",
+            // crystal pieces lost after the guardians' kills are found again by the furnace (the walk keeps its pieces; the
+            // stage's other cave steps are needed to get on, so a dead one would leave the walk stuck instead)
+            "legends_quest 5 reach kharazi_cave",
             // saves from before carry Eluned's seed already: the moss guardian's kill just moves on
             "roving_elves 2 kill moss_guardian",
             // saves from before carry the Weiss salt: My Arm finishes the quest with it

@@ -86,20 +86,28 @@ public final class QuestBossRules {
 
     /** Beneath Cursed Sands (wiki: "after several normal attacks"): one attack in this many is a special (approx). */
     public static final int SCABARAS_SPECIAL_EVERY = 5;
-    /** The Shadow Rift: 20 hitpoints, and it explodes for 35 on everyone after a few seconds (wiki; the fuse is approx). */
+    /**
+     * The Shadow Rift: 20 hitpoints, and unless destroyed it explodes after a few seconds for "35+" (strategy) and up to 48
+     * (its infobox) on the players fighting the Champion (wiki; the fuse is approx).
+     */
     public static final int SCABARAS_RIFT_FUSE_TICKS = 8;
-    public static final int SCABARAS_RIFT_DAMAGE = 35;
+    public static final int SCABARAS_RIFT_MIN = 35;
+    public static final int SCABARAS_RIFT_MAX = 48;
+    /** The Champion's specials in order, then again (wiki: Shadow Burst -> Shadow Rift -> Shadow Burst -> Shadow Flames -> Repeat). */
+    public static final java.util.List<String> SCABARAS_SPECIALS = java.util.List.of("shadow_burst", "shadow_rift", "shadow_burst",
+            "shadow_flames");
 
-    /** The Champion's special on its {@code n}th attack (1-based) from a roll of 0-2, or null for a normal attack. */
-    public static String scabarasSpecial(int n, int roll0to2) {
-        if (n % SCABARAS_SPECIAL_EVERY != 0) {
+    /** The Champion's special on its {@code n}th attack (1-based), or null for a normal attack. */
+    public static String scabarasSpecial(int n) {
+        if (n <= 0 || n % SCABARAS_SPECIAL_EVERY != 0) {
             return null;
         }
-        return switch (roll0to2) {
-            case 0 -> "shadow_burst";
-            case 1 -> "shadow_rift";
-            default -> "shadow_flames";
-        };
+        return SCABARAS_SPECIALS.get((n / SCABARAS_SPECIAL_EVERY - 1) % SCABARAS_SPECIALS.size());
+    }
+
+    /** One Shadow Rift explosion: 35 to 48. // approx: the spread between the wiki's "35+" and its 48 max */
+    public static int scabarasRiftDamage(java.util.Random random) {
+        return SCABARAS_RIFT_MIN + random.nextInt(SCABARAS_RIFT_MAX - SCABARAS_RIFT_MIN + 1);
     }
 
     /**

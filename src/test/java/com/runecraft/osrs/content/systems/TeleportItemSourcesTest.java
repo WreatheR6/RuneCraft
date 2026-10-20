@@ -35,8 +35,7 @@ class TeleportItemSourcesTest {
     /** Teleport items that still have no source in RuneCraft (backlog). Remove an entry when its source is added. */
     private static final Set<String> KNOWN_MISSING = Set.of(
             "amulet_of_eternal_glory", // OSRS: a rare roll when recharging glories at the Fountain of Heroes; not modelled
-            "drakans_medallion",       // OSRS: Sins of the Father reward; the quest doesn't give it yet
-            "book_of_the_dead");       // OSRS: A Kingdom Divided reward; no quest step gives it yet
+            "drakans_medallion");      // OSRS: Sins of the Father reward; the quest doesn't give it yet
 
     @Test
     void everyTeleportItemIsObtainable() {

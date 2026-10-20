@@ -612,7 +612,6 @@ final class LateQuestsB {
         b.npcAt("commander_fullore", "Commander Fullore", 1612, 3669, 0xE0B8A0, 0x8A2A2A, 0x3A2A2A, 0xA0A0A8); // Kourend Castle
         b.npcAt("fuggy", "Fuggy", 1570, 3760, 0xC8A080, 0x6A5A3A, 0x3A3A2A, 0x8A6A3A); // The Deeper Lode, Lovakengj
         b.npcAt("cabin_boy_herbert", "Cabin Boy Herbert", 1826, 3691, 0xE0C0A0, 0x3A5A8A, 0x2A2A3A, 0x6A4A2A); // Veos's ship
-        b.npcAt("archeio", "Archeio", 1624, 3808, 0xE0C8B0, 0x5A2A8D, 0x3A1A5D, 0xD0D0D0); // the Arceuus Library
         b.npcAt("jorra", "Jorra", 1496, 3557, 0xC8987A, 0x6A6A6C, 0x3A3A3F, 0xC07A30); // the Graveyard of Heroes
         b.spot("akd_hughes_house", "Councillor Hughes's house", 1680, 3684); // approx: north of the square
         b.spot("akd_settlement_ruins", "Settlement Ruins", 1550, 3880); // approx: south-west of the Wintertodt camp
@@ -662,7 +661,10 @@ final class LateQuestsB {
                 .reqQuest("the_depths_of_despair", "the_queen_of_thieves", "tale_of_the_righteous", "the_forsaken_tower", "the_ascent_of_arceuus")
                 .req(Skill.AGILITY, 54).req(Skill.THIEVING, 52).req(Skill.WOODCUTTING, 52).req(Skill.HERBLORE, 50)
                 .req(Skill.MINING, 42).req(Skill.CRAFTING, 38).req(Skill.MAGIC, 35)
-                .xp(Skill.AGILITY, 10000).xp(Skill.THIEVING, 10000).xp(Skill.WOODCUTTING, 10000).xp(Skill.HERBLORE, 10000)
+                // Wiki and quest-helper: the book of the dead and two antique lamps of 10,000 XP in any skill of level 40 or above.
+                // approx: the player picks the lamps' skills in OSRS
+                .xp(Skill.AGILITY, 10000).xp(Skill.HERBLORE, 10000)
+                .reward("book_of_the_dead")
                 .unlock("The Kourend Council's favour and the Kebos Lowlands")
                 .stage("I can start this quest by speaking to Martin Holt at the entrance to Kourend Castle. (Requires the five Kourend house quests and more.)")
                 .talk("martin_holt").say("The Council took the throne that should have gone to the old king's daughter, and now Councillor Sophia Hughes "
@@ -706,7 +708,7 @@ final class LateQuestsB {
                 .say("Hughes said the Council plotted against the old king. He had a daughter, Rose. Martin Holt knows the royal family best.")
                 .talk("martin_holt").stay().needFlag("akd_rose_task").unlessFlag("akd_archive").flag("akd_archive")
                 .say("Rose wrote Kharedst's memoirs. Her own diary is in the Library Historical Archive: ask Archeio in the Arceuus Library.")
-                .talk("archeio").stay().needFlag("akd_archive").unless("roses_diary").unlessFlag("akd_note_1").give("roses_diary")
+                .talk("quest_archeio").stay().needFlag("akd_archive").unless("roses_diary").unlessFlag("akd_note_1").give("roses_diary")
                 .say("* Archeio teleports you to the Archive. You pick Istoria's pocket for a bluish key, open the purple display case and "
                         + "take Rose's diary.")
                 .talk("martin_holt").stay().needFlag("akd_archive").unlessFlag("akd_note_1").take("roses_diary").flag("akd_note_1")

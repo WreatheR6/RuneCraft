@@ -50,6 +50,17 @@ final class QuestBossScripts {
     }
 
     /**
+     * Whether a player is in this boss's fight: close by and its target, or hit by it or hitting it in the last five seconds
+     * (the vanilla last-hurt-by memory, which CombatHandler sets both ways). Fight-wide effects touch only these players.
+     */
+    static boolean engaged(DataBossEntity boss, ServerPlayer p) {
+        if (!p.isAlive() || p.isSpectator() || p.distanceToSqr(boss) > 24 * 24) {
+            return false;
+        }
+        return boss.getTarget() == p || boss.getLastHurtByMob() == p || p.getLastHurtByMob() == boss;
+    }
+
+    /**
      * While Guthix Sleeps: the Balance Elemental fights four attacks at a time in each form, and below 550 / 200 HP it
      * quickens and protects against one / two styles ({@link BalanceElemental}, wiki).
      */
@@ -401,7 +412,8 @@ final class QuestBossScripts {
 
     /**
      * Recipe for Disaster's final fights (wiki): Prayer can't be used in the Culinaromancer's dimension, so the protection and
-     * boosting prayers of the player fighting there switch off.
+     * boosting prayers of the player fighting there switch off. Only the players in the fight ({@link #engaged}): the lair
+     * lies under Lumbridge Castle, and bystanders above keep their prayers.
      */
     static class Culinary implements BossScript {
         private final java.util.Set<java.util.UUID> told = new java.util.HashSet<>();
@@ -411,7 +423,7 @@ final class QuestBossScripts {
             if (!(boss.level() instanceof ServerLevel world)) {
                 return;
             }
-            for (ServerPlayer p : world.getPlayers(x -> x.distanceToSqr(boss) < 24 * 24)) {
+            for (ServerPlayer p : world.getPlayers(x -> engaged(boss, x))) {
                 com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(p);
                 if (!data.activePrayers().isEmpty()) {
                     data.activePrayers().clear();
@@ -644,12 +656,45 @@ final class QuestBossScripts {
                 double dx = target.getX() - boss.getX();
                 double dz = target.getZ() - boss.getZ();
                 double len = Math.max(0.1, Math.sqrt(dx * dx + dz * dz));
-                target.teleportTo(target.getX() + dx / len * QuestBossRules.JUDGE_BANISH_BLOCKS, target.getY(),
-                        target.getZ() + dz / len * QuestBossRules.JUDGE_BANISH_BLOCKS);
-                Msg.red(target, "The Judge of Yama banishes you down the docks!");
-                return Culinary.attack(boss, "fire_wave");
+                net.minecraft.core.BlockPos land = banishSpot(target, dx / len, dz / len);
+                if (land != null) {
+                    target.teleportTo(land.getX() + 0.5, land.getY(), land.getZ() + 0.5);
+                    Msg.red(target, "The Judge of Yama banishes you down the docks!");
+                    return Culinary.attack(boss, "fire_wave");
+                }
             }
             return attack;
+        }
+
+        /**
+         * Where a banish lands: the farthest floor up to {@link QuestBossRules#JUDGE_BANISH_BLOCKS} away along the push,
+         * walked a block at a time from the player (one step up or down at most, never through a wall or into the sea), or
+         * null when there's no room for at least two blocks (the banish is skipped).
+         */
+        static net.minecraft.core.BlockPos banishSpot(ServerPlayer p, double ux, double uz) {
+            ServerLevel world = p.serverLevel();
+            net.minecraft.core.BlockPos last = null;
+            int y = p.getBlockY();
+            int moved = 0;
+            for (int d = 1; d <= QuestBossRules.JUDGE_BANISH_BLOCKS; d++) {
+                int x = net.minecraft.util.Mth.floor(p.getX() + ux * d);
+                int z = net.minecraft.util.Mth.floor(p.getZ() + uz * d);
+                net.minecraft.core.BlockPos found = null;
+                for (int dy : new int[]{0, 1, -1}) {
+                    net.minecraft.core.BlockPos feet = new net.minecraft.core.BlockPos(x, y + dy, z);
+                    if (com.runecraft.world.NpcFloor.standable(world, feet)) {
+                        found = feet;
+                        break;
+                    }
+                }
+                if (found == null) {
+                    break;
+                }
+                last = found;
+                y = found.getY();
+                moved = d;
+            }
+            return moved >= 2 ? last : null;
         }
     }
 
@@ -728,7 +773,7 @@ final class QuestBossScripts {
 
         @Override
         public AttackDef beforeAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
-            String special = QuestBossRules.scabarasSpecial(++attacks, boss.getRandom().nextInt(3));
+            String special = QuestBossRules.scabarasSpecial(++attacks);
             if (special == null || !(boss.level() instanceof ServerLevel world)) {
                 return attack;
             }
@@ -780,8 +825,9 @@ final class QuestBossScripts {
             if (e == null || !e.isAlive()) {
                 rift = null; // destroyed in time
             } else if (gameTick - riftAt >= QuestBossRules.SCABARAS_RIFT_FUSE_TICKS) {
-                for (ServerPlayer p : world.getPlayers(x -> x.distanceToSqr(boss) < 24 * 24)) {
-                    com.runecraft.combat.CombatHandler.applyDamage(null, p, QuestBossRules.SCABARAS_RIFT_DAMAGE);
+                for (ServerPlayer p : world.getPlayers(x -> engaged(boss, x))) {
+                    com.runecraft.combat.CombatHandler.applyDamage(null, p,
+                            QuestBossRules.scabarasRiftDamage(new java.util.Random(boss.getRandom().nextLong())));
                     Msg.red(p, "The Shadow Rift explodes!");
                 }
                 e.discard();

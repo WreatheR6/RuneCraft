@@ -211,8 +211,17 @@ final class KaramjaQuests {
                 .spawn("ranalph_devere").say("* Irvig Senay falls and drops a crystal piece. Ranalph Devere attacks!")
                 .kill("ranalph_devere").stay().needFlag("lq_ranalph").unless("heart_crystal").unlessFlag("lq_heart", "lq_crystals").give("lq_crystal_piece").flag("lq_crystals")
                 .say("* Ranalph Devere falls and drops the last crystal piece.")
+                // The guardians have no summoning stone: the one still to beat rises again whenever the player comes back down
+                // (another player's kill, or one lost in the cave, would otherwise end the quest here).
+                .reach("kharazi_cave", 10).stay().needFlag("lq_winch").unlessFlag("lq_irvig", "lq_heart").spawn("san_tojalon")
+                .reach("kharazi_cave", 10).stay().needFlag("lq_irvig").unlessFlag("lq_ranalph", "lq_heart").spawn("irvig_senay")
+                .reach("kharazi_cave", 10).stay().needFlag("lq_ranalph").unlessFlag("lq_crystals", "lq_heart").spawn("ranalph_devere")
                 .reach("kharazi_cave", 10).stay().needFlag("lq_crystals").unlessFlag("lq_heart").take("lq_crystal_piece:3").give("heart_crystal").flag("lq_heart")
                 .say("* You melt the three crystal pieces together in the furnace: a heart crystal. It opens the recess by the barrier.")
+                .missing("* The furnace needs all three crystal pieces.")
+                // approx: pieces lost after the three kills (a death) are found again where the guardians fell
+                .reach("kharazi_cave", 10).stay().needFlag("lq_crystals").unless("lq_crystal_piece", "heart_crystal").unlessFlag("lq_heart")
+                .give("lq_crystal_piece:3").say("* You find the crystal pieces where the guardians fell.")
                 .talk("echned_zekin").stay().needFlag("lq_heart").unless("dark_dagger").unlessFlag("lq_holy_force", "lq_zekin").give("dark_dagger").flag("lq_zekin")
                 .say("I am Echned Zekin. The water is mine to give, if you kill Viyeldi for me with this dark dagger.")
                 .talk("ungadulu").stay().needFlag("lq_zekin").unlessFlag("lq_holy_force").take("dark_dagger").flag("lq_holy_force")

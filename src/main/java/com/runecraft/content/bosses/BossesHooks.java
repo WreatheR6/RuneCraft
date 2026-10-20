@@ -28,6 +28,7 @@ public final class BossesHooks implements ModuleHooks {
         BossScripts.register("skotizo", ClassicScripts.Skotizo::new);
         ClassicScripts.Skotizo.registerAltarBreaker();
         BossScripts.register("hespori", ClassicScripts.Hespori::new);
+        BossScripts.register("ant_hespori", ClassicScripts.Hespori::new); // A Night at the Theatre's wild Hespori (quests module)
         BossScripts.register("scurrius", ClassicScripts.Scurrius::new);
         BossScripts.register("zalcano", ClassicScripts.Zalcano::new);
         BossScripts.register("sol_heredit", SolHereditScript::new);

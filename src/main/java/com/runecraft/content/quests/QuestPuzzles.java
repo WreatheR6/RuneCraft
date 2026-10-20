@@ -154,7 +154,10 @@ public final class QuestPuzzles {
                     .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, cmd))));
         }
         p.displayClientMessage(line, false);
-        if (v.length() > 1) {
+        if (v.sliding()) {
+            p.displayClientMessage(Component.literal("(Slide the tiles one at a time until they read 1 to 8 with the gap last.)")
+                    .withStyle(ChatFormatting.GRAY), false);
+        } else if (v.length() > 1) {
             p.displayClientMessage(Component.literal("(" + v.length() + " choices in order; click the options one at a time.)").withStyle(ChatFormatting.GRAY), false);
         }
     }
@@ -219,11 +222,25 @@ public final class QuestPuzzles {
         if (option < 0 || option >= v.options().size()) {
             return;
         }
+        if (v.sliding() && QuestPuzzle.slideOnce(v.slideBoard(e.input), option) == null) {
+            Msg.game(p, "There's no tile on that side of the gap.");
+            return;
+        }
         e.input.add(option);
         int result = v.check(e.input);
         String speaker = QuestInterpreter.npcName(presenter(p, t));
+        if (v.sliding() && result >= 0) {
+            // the board as it stands after each slide (any order of slides that sorts it solves the panel)
+            p.displayClientMessage(Component.literal("* The tiles: " + QuestPuzzle.board(v.slideBoard(e.input)) + " (" + e.input.size()
+                    + (e.input.size() == 1 ? " slide)" : " slides)")).withStyle(ChatFormatting.GRAY), false);
+        }
         if (result < 0) {
+            if (v.sliding()) {
+                Msg.game(p, "After " + QuestPuzzle.SLIDE_MOVE_LIMIT + " slides the panel resets its tiles.");
+            }
             fail(p, q, t, speaker);
+        } else if (result == 0 && v.sliding()) {
+            return;
         } else if (result == 0) {
             List<String> picked = new ArrayList<>();
             e.input.forEach(i -> picked.add(v.options().get(i)));

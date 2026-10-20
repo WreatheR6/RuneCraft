@@ -381,9 +381,22 @@ final class LateQuestsC {
         b.item("ant_sulphuric_acid", "Sulphuric acid", "vial", 0xD0E040, "Daer Krand's acid. It would burn through an egg sac.");
         b.item("ant_spider_eggs", "Strange spider eggs", "orb", 0x6A3A8A, "Araxyte eggs from the nest north of Darkmeyer.");
         b.item("ant_hespori_bark", "Hespori bark", "log", 0x5A6A2A, "Bark from a wild hespori in Mort Myre.");
+        // Hespori (A Night at the Theatre), wiki infobox (MonsterStatsTable): a harder Hespori than the Farming Guild's (level
+        // 302, 360 hitpoints), with its spores (8 x2), green wave (14) and entangle (40+), the flowers that shield it at the
+        // start and at 66% and 33% (the Farming Guild Hespori's script, BossesHooks), and no drop table.
+        // approx: its flowers don't always die in one hit in OSRS
+        b.boss(BossDef.of("ant_hespori", "Hespori").level(302).stats(360, 1, 1, 120, 126, 150).speed(6)
+                .defenceBonus(60, 20, 60, 80, 80).attackBonus(0, 150, 150)
+                .attack(com.runecraft.osrs.content.bosses.ClassicBosses.HESPORI_SPORES)
+                .attack(com.runecraft.osrs.content.bosses.ClassicBosses.HESPORI_WAVE)
+                .attack(com.runecraft.osrs.content.bosses.ClassicBosses.HESPORI_ENTANGLE)
+                .phase(66, null, 1.0, false).phase(33, null, 1.0, false)
+                .model("hespori").size(1.6f, 1.8f, 1.8f).moveSpeed(0.0));
         b.quest("a_night_at_the_theatre", "A Night at the Theatre", Difficulty.MASTER, 2)
                 .reqQuest("a_taste_of_hope")
-                .xp(Skill.SLAYER, 20000).xp(Skill.HITPOINTS, 20000) // two 20,000 XP combat lamps (approximate)
+                // Wiki: four antique lamps, each 20,000 XP in Attack, Strength, Defence, Ranged, Magic or Hitpoints (50+).
+                // approx: the player picks the lamps' skills in OSRS
+                .xp(Skill.ATTACK, 20000).xp(Skill.STRENGTH, 20000).xp(Skill.DEFENCE, 20000).xp(Skill.HITPOINTS, 20000)
                 .unlock("The Theatre of Blood entry mode; Ver Sinhaza's spider caves")
                 .stage("I can start this quest by speaking to the Mysterious Stranger in Ver Sinhaza. (Requires A Taste of Hope.)")
                 .talk("quest_mysterious_stranger_tob").say("Verzik Vitur has powers no vampyre should have. A mercenary saw purple spider eggs fall "
@@ -420,8 +433,8 @@ final class LateQuestsC {
                 .talk("nature_spirit").stay().needFlag("ant_eggs").unlessFlag("ant_grove").need("ghostspeak_amulet").flag("ant_grove")
                 .say("A hespori? They are rare now. Look to the north-east, on a small island in the swamp.")
                 .missing("* You'd need a ghostspeak amulet to understand the Nature Spirit.")
-                .reach("ant_hespori_island", 8).stay().needFlag("ant_grove").unlessFlag("ant_hespori").spawn("hespori")
-                .kill("hespori").stay().needFlag("ant_grove").unlessFlag("ant_hespori").flag("ant_hespori")
+                .reach("ant_hespori_island", 8).stay().needFlag("ant_grove").unlessFlag("ant_hespori").spawn("ant_hespori")
+                .kill("ant_hespori").stay().needFlag("ant_grove").unlessFlag("ant_hespori").flag("ant_hespori")
                 .say("* The wild hespori wilts.")
                 .reach("ant_hespori_island", 8).stay().needFlag("ant_hespori").unless("ant_hespori_bark").unlessFlag("ant_bark").needTool("axe")
                 .give("ant_hespori_bark").say("* You chop some bark from the dead hespori.")

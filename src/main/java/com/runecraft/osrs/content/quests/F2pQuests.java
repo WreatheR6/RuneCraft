@@ -90,12 +90,12 @@ final class F2pQuests {
                 .attack(AttackDef.of("slash", AttackType.SLASH, 3, 2, 1)).drops(Drop.always("bones")).model("zombie").size(0.7f, 2.0f, 1.0f));
         b.boss(BossDef.of("maze_lesser_demon", "Lesser demon").level(82).stats(79, 68, 70, 71, 1, 1).speed(4).defenceBonus(0, 0, 0, -10, 0)
                 .attack(AttackDef.of("claws", AttackType.SLASH, 8, 2.5, 1)).drops(Drop.always("ashes")).model("lesser_demon").size(1.0f, 2.4f, 1.0f));
-        // Wiki: slash up to 8 and a ranged dragonfire up to 70 (10 behind an anti-dragon shield) that also drains a tenth of
-        // the player's Prayer (QuestBossScripts.Elvarg).
+        // Wiki: slash up to 8 and a long-ranged dragonfire up to 70 (10 behind an anti-dragon shield; the infobox's style is
+        // Magic, and Protect from Magic softens it) that also drains a tenth of the player's Prayer (QuestBossScripts.Elvarg).
         b.boss(BossDef.of("elvarg", "Elvarg").level(83).stats(80, 70, 70, 70, 70, 1).speed(4)
                 .defenceBonus(20, 40, 40, 30, 20)
                 .attack(AttackDef.of("claw", AttackType.SLASH, 8, 3, 6))
-                .attack(AttackDef.of("dragonfire", AttackType.RANGED, 70, 10, 5).special(Special.DRAGONFIRE, 0)
+                .attack(AttackDef.of("dragonfire", AttackType.MAGIC, 70, 10, 5).special(Special.DRAGONFIRE, 0)
                         .telegraph(2, "Elvarg rears back and breathes fire!").particle("minecraft:flame"))
                 .drops(Drop.always("dragon_bones"))
                 .size(2.2f, 2.0f, 1.0f).at("crandor").arena(14, "lava"));
