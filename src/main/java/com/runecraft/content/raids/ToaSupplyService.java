@@ -113,6 +113,39 @@ public final class ToaSupplyService {
         return def == null ? item : def.name();
     }
 
+    /**
+     * The lobby's pickaxe cavity (OSRS): takes back the pickaxe left in a Path of Het statue, or deposits the best pickaxe
+     * carried there for the next raid. Returns 1 when something moved.
+     */
+    static int pickaxeCavity(ServerPlayer p) {
+        RaidsState state = RaidsState.get(p.getServer());
+        ItemStack stored = state.storedPickaxe(p.getUUID());
+        if (!stored.isEmpty()) {
+            if (!p.getInventory().add(stored.copy())) {
+                Msg.game(p, "You need a free inventory slot to take your pickaxe.");
+                return 0;
+            }
+            state.setStoredPickaxe(p.getUUID(), ItemStack.EMPTY);
+            Msg.game(p, "You take your pickaxe from the cavity.");
+            return 1;
+        }
+        String best = ToaPuzzleRooms.Het.pickaxe(p);
+        if (best == null) {
+            Msg.game(p, "The cavity is empty. Leave a pickaxe here for the statues of the Path of Het.");
+            return 0;
+        }
+        var inv = p.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack s = inv.getItem(i);
+            if (!s.isEmpty() && best.equals(Inv.idOf(s))) {
+                state.setStoredPickaxe(p.getUUID(), inv.removeItem(i, 1));
+                Msg.game(p, "You leave your pickaxe in the cavity: the statues of the Path of Het will hold it for you.");
+                return 1;
+            }
+        }
+        return 0;
+    }
+
     /** Whether this player's liquid adrenaline is active. */
     static boolean adrenaline(ServerPlayer p) {
         Long until = ADRENALINE.get(p.getUUID());

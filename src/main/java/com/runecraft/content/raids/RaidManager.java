@@ -375,6 +375,11 @@ public final class RaidManager {
         RaidInstance raid = of(player);
         if (raid == null || RaidBuilder.slotAt(pos.getX(), pos.getZ()) != raid.slot) {
             if (raid == null && blockId.equals(RaidsContent.INVOCATION_OBELISK)) {
+                if (player.isShiftKeyDown()) {
+                    // OSRS: a cavity in the lobby deposits or retrieves the pickaxe kept for the Path of Het's statues.
+                    ToaSupplyService.pickaxeCavity(player);
+                    return;
+                }
                 groupingObelisk(player);
                 return;
             }

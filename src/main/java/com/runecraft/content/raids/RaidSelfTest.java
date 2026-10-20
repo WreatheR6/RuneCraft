@@ -347,6 +347,32 @@ public final class RaidSelfTest {
         }
     }
 
+    /**
+     * The lobby's pickaxe cavity (OSRS): deposits the pickaxe the Path of Het's statues will hold, and gives it back. Leaves
+     * the player's stored pickaxe and inventory as they were.
+     */
+    private static String pickaxeCavity(ServerPlayer p) {
+        RaidsState state = RaidsState.get(p.getServer());
+        net.minecraft.world.item.ItemStack before = state.storedPickaxe(p.getUUID());
+        int had = Inv.count(p, "rune_pickaxe");
+        try {
+            state.setStoredPickaxe(p.getUUID(), net.minecraft.world.item.ItemStack.EMPTY);
+            Inv.give(p, "rune_pickaxe", 1);
+            // The cavity takes the best pickaxe carried (the player may have a better one than the rune pickaxe).
+            String best = ToaPuzzleRooms.Het.pickaxe(p);
+            int bestBefore = Inv.count(p, best);
+            expect(ToaSupplyService.pickaxeCavity(p) == 1 && best.equals(Inv.idOf(state.storedPickaxe(p.getUUID()))),
+                    "the lobby cavity did not take the " + best);
+            expect(Inv.count(p, best) == bestBefore - 1, "the cavity left the pickaxe in the inventory");
+            expect(ToaSupplyService.pickaxeCavity(p) == 1 && state.storedPickaxe(p.getUUID()).isEmpty() && Inv.count(p, best) == bestBefore,
+                    "the lobby cavity did not give the pickaxe back");
+            return "the lobby cavity keeps a pickaxe for the statues";
+        } finally {
+            Inv.remove(p, "rune_pickaxe", Math.max(0, Inv.count(p, "rune_pickaxe") - had));
+            state.setStoredPickaxe(p.getUUID(), before);
+        }
+    }
+
     private void walkPath(ToaNexus nexus, int nexusIndex, int path) {
         List<String> ids = RaidLayouts.TOA_PATHS.get(path);
         int puzzle = raid.roomIndex(ids.get(0));
@@ -474,7 +500,8 @@ public final class RaidSelfTest {
             expect(RaidManager.of(p) == null, "the lobby exit did not take the player out of the raid");
             expect(!raid.contains(p), "the lobby exit left the player in the instance");
             expect(Inv.count(p, ToaSupplies.HONEY_LOCUST) == 0, "the raid's supplies left the tomb with the player");
-            return "logout mid-fight is a death, rejoin wipes and retries, the exit takes you home; " + shroudChest(p);
+            return "logout mid-fight is a death, rejoin wipes and retries, the exit takes you home; " + shroudChest(p) + "; "
+                    + pickaxeCavity(p);
         } finally {
             if (RaidManager.of(p) == raid) {
                 RaidManager.selfTestClose(raid);

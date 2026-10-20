@@ -1271,13 +1271,16 @@ final class ToaPuzzleRooms {
                 BlockPos statue = at(STATUES[0][0], STATUES[0][1]);
                 // Deposit a rune pickaxe (sneaking), take it back: the statue keeps it between visits.
                 Inv.give(p, "rune_pickaxe", 1);
+                // The statue takes the best pickaxe carried (a real player may carry a better one than the rune pickaxe).
+                String best = pickaxe(p);
+                int bestBefore = Inv.count(p, best);
                 p.setShiftKeyDown(true);
                 t.use(statue);
                 p.setShiftKeyDown(false);
-                RaidSelfTest.expect(Inv.count(p, "rune_pickaxe") == 0 && "rune_pickaxe".equals(Inv.idOf(state.storedPickaxe(p.getUUID()))),
-                        "Het: the statue did not take the deposited pickaxe");
+                RaidSelfTest.expect(Inv.count(p, best) == bestBefore - 1 && best.equals(Inv.idOf(state.storedPickaxe(p.getUUID()))),
+                        "Het: the statue did not take the deposited " + best);
                 t.use(statue);
-                RaidSelfTest.expect(Inv.count(p, "rune_pickaxe") == 1 && state.storedPickaxe(p.getUUID()).isEmpty(),
+                RaidSelfTest.expect(Inv.count(p, best) == bestBefore && state.storedPickaxe(p.getUUID()).isEmpty(),
                         "Het: the statue did not hand back the deposited pickaxe");
                 Inv.remove(p, "rune_pickaxe", 1);
                 t.use(statue);
