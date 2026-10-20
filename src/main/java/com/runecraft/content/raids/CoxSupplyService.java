@@ -1,9 +1,11 @@
 package com.runecraft.content.raids;
 
 import com.runecraft.action.ActionManager;
+import com.runecraft.combat.PoisonService;
 import com.runecraft.network.ServerNetworking;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.SkillSet;
+import com.runecraft.osrs.Toxins;
 import com.runecraft.osrs.content.raids.CoxSupplies;
 import com.runecraft.osrs.content.raids.RaidType;
 import com.runecraft.player.PlayerData;
@@ -114,7 +116,8 @@ public final class CoxSupplyService {
 
     /**
      * In-game self-test (the player must be in a CoX raid): cleans golpar, brews elder/twisted/kodai (+), mixes an
-     * overload (+) and drinks an elder (+), checking each result; restores the player's Herblore XP, boosts and hand.
+     * overload (+), brews an antipoison (+) and drinks it while poisoned (from a clean toxin state), and drinks an elder
+     * (+), checking each result; restores the player's Herblore XP, boosts, hand and poison/venom state.
      * Returns a summary, or throws an {@link AssertionError}.
      */
     public static String selfTest(ServerPlayer p) {
@@ -124,6 +127,7 @@ public final class CoxSupplyService {
         SkillSet skills = Players.data(p).skills();
         int herbloreTenths = skills.xpTenths(Skill.HERBLORE);
         ItemStack hand = p.getMainHandItem().copy();
+        Toxins.State toxins = PoisonService.snapshot(p);
         try {
             skills.setXpTenths(Skill.HERBLORE, com.runecraft.osrs.Experience.xpForLevel(99) * 10);
             Inv.give(p, CoxSupplies.Herb.GOLPAR.grimy(), 3);
@@ -149,14 +153,31 @@ public final class CoxSupplyService {
             mix(p, CoxSupplies.CICELY);
             String anti = CoxSupplies.Potion.ANTIPOISON.id(strong);
             expect(p, anti, 1, "brewing an antipoison (+) from noxifer and cicely");
-            com.runecraft.combat.PoisonService.poison(p, 6, ActionManager.gameTick());
+            // Start from a clean toxin state (the saved one goes back in the finally block). Earlier checks can leave the
+            // player envenomed (a quest walk's Vorkath or Kasonde) or poison-immune, and the fake player is never ticked:
+            // the test poison would not take, and an antipoison drunk while envenomed only turns the venom into poison
+            // (OSRS wiki, Antidote+: "The first dose will reduce the venom to poison and the second will remove the poison").
+            long now = ActionManager.gameTick();
+            PoisonService.clear(p);
+            PoisonService.poison(p, 6, now);
+            if (!PoisonService.isPoisoned(p)) {
+                throw new AssertionError("the test poison (6) did not take on a player with no poison, venom or immunity");
+            }
             ItemStack antiDose = Inv.stack(anti, 1);
             p.setItemInHand(InteractionHand.MAIN_HAND, antiDose);
             p.getCooldowns().removeCooldown(antiDose.getItem());
             drink(p, antiDose, InteractionHand.MAIN_HAND, CoxSupplies.brew(anti));
-            if (com.runecraft.combat.PoisonService.isPoisoned(p)
-                    || !com.runecraft.combat.PoisonService.isPoisonImmune(p, ActionManager.gameTick())) {
+            if (PoisonService.isPoisoned(p) || !PoisonService.isPoisonImmune(p, now)) {
                 throw new AssertionError("the antipoison (+) did not cure poison and protect against it");
+            }
+            // OSRS wiki, Antipoison (+): the equivalent of an antidote+, immunity to poison for 9 minutes.
+            int immunity = Toxins.ANTIDOTE_PLUS[0];
+            if (!PoisonService.isPoisonImmune(p, now + immunity - 1) || PoisonService.isPoisonImmune(p, now + immunity)) {
+                throw new AssertionError("the antipoison (+) poison immunity does not last 9 minutes (" + immunity + " ticks)");
+            }
+            PoisonService.poison(p, 6, now);
+            if (PoisonService.isPoisoned(p)) {
+                throw new AssertionError("a poison took during the antipoison (+) immunity");
             }
             String elder = CoxSupplies.Potion.ELDER.id(strong);
             ItemStack dose = Inv.stack(elder, 1);
@@ -171,8 +192,8 @@ public final class CoxSupplyService {
             if (p.getMainHandItem().getDamageValue() != 1) {
                 throw new AssertionError("drinking did not use a dose (damage " + p.getMainHandItem().getDamageValue() + ")");
             }
-            return "cleaned, brewed elder/twisted/kodai (+), mixed an overload (+), brewed and drank an antipoison (+), elder (+) Attack +"
-                    + want;
+            return "cleaned, brewed elder/twisted/kodai (+), mixed an overload (+), brewed and drank an antipoison (+) (poison cured, "
+                    + immunity + " ticks of immunity), elder (+) Attack +" + want;
         } finally {
             for (String id : CoxSupplies.ITEMS) {
                 Inv.remove(p, id, Inv.count(p, id));
@@ -182,6 +203,7 @@ public final class CoxSupplyService {
                 skills.setBoost(s, 0);
             }
             p.setItemInHand(InteractionHand.MAIN_HAND, hand);
+            PoisonService.restore(p, toxins);
             ServerNetworking.sync(p);
         }
     }
@@ -362,7 +384,7 @@ public final class CoxSupplyService {
             }
             case ANTIPOISON -> {
                 // OSRS: like an antipoison, a superantipoison and an antidote+ (90 seconds, 6 and 9 minutes of immunity).
-                com.runecraft.combat.PoisonService.cure(p, false, CoxSupplies.antipoisonImmunityTicks(s), ActionManager.gameTick());
+                PoisonService.cure(p, false, CoxSupplies.antipoisonImmunityTicks(s), ActionManager.gameTick());
                 Msg.action(p, "You drink some of your " + brew.potion().displayName(s).toLowerCase(java.util.Locale.ROOT) + ".");
             }
             case PRAYER_ENHANCE -> {

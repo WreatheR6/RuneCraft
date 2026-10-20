@@ -150,6 +150,32 @@ class CombatRulesTest {
     }
 
     @Test
+    void stateCopyIsIndependent() {
+        // The self-test saves a player's toxin state, starts the CoX antipoison check from a clean one and puts it back:
+        // left-over venom would block the test poison and only turn into poison under an antidote+-strength cure.
+        Toxins.State s = new Toxins.State();
+        Toxins.venom(s, 0);
+        Toxins.cure(s, true, 0, 60, 5);
+        Toxins.venom(s, 100);
+        Toxins.tick(s, 130);
+        Toxins.State saved = s.copy();
+        assertFalse(Toxins.poison(s, 6, 131), "venom blocks a new poison");
+        assertEquals(Toxins.Cure.VENOM_TO_POISON, Toxins.cure(s, false, Toxins.ANTIDOTE_PLUS[0], 0, 131));
+        assertTrue(s.poisoned(), "an antidote+ on venom leaves poison");
+        assertTrue(saved.envenomed(), "the copy kept the venom");
+        assertEquals(Toxins.VENOM_START + Toxins.VENOM_STEP, saved.damage());
+        assertTrue(saved.venomImmune(64) && !saved.venomImmune(65), "the copy kept the venom immunity timer");
+        assertEquals(0, Toxins.tick(saved, 159));
+        assertEquals(Toxins.VENOM_START + Toxins.VENOM_STEP, Toxins.tick(saved, 160), "the copy kept the hit timer");
+        Toxins.State clean = new Toxins.State();
+        assertTrue(Toxins.poison(clean, 6, 131));
+        assertEquals(Toxins.Cure.CURED, Toxins.cure(clean, false, Toxins.ANTIDOTE_PLUS[0], 0, 131));
+        assertTrue(clean.poisonImmune(131 + 899));
+        assertFalse(clean.poisonImmune(131 + 900), "antidote+ (and CoX antipoison (+)): 9 minutes");
+        assertFalse(Toxins.poison(clean, 6, 131 + 899));
+    }
+
+    @Test
     void antiVenomHasSeparateTimers() {
         Toxins.State s = new Toxins.State();
         Toxins.venom(s, 0);
