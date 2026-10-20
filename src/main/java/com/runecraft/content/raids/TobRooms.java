@@ -84,7 +84,7 @@ final class TobRooms {
                 }
                 // OSRS: only poison and venom truly harm the Nylocas Athanatos (Verzik phase 2).
                 Verzik verzik = "nylocas_athanatos".equals(id) ? Verzik.of(raid, target.position()) : null;
-                return verzik != null ? verzik.athanatosHit(player, type, damage) : damage;
+                return verzik != null ? verzik.athanatosHit(player, target, type, damage) : damage;
             }
         });
         // The Dawnbringer reaches Verzik from at most 7 tiles away (OSRS wiki: its attack range), special attack included.
@@ -2387,6 +2387,7 @@ final class TobRooms {
         private boolean bounced;
         private boolean greenPassed;
         private boolean teamwork;
+        private boolean yellowHit;
         private int crabsPopped;
         private int crabsCycled;
         private int athanatosLandings;
@@ -3016,7 +3017,7 @@ final class TobRooms {
                 return;
             }
             if (com.runecraft.combat.PoisonService.isPoisoned(athanatos) || com.runecraft.combat.PoisonService.isEnvenomed(athanatos)) {
-                burstAthanatos(null);
+                burstAthanatos(null, true);
                 return;
             }
             if (t % 4 == 0) {
@@ -3027,8 +3028,11 @@ final class TobRooms {
             TobRooms.walk(athanatos, verzik.position());
         }
 
-        /** The Athanatos absorbs poison and bursts against Verzik for up to 70. */
-        private void burstAthanatos(ServerPlayer attacker) {
+        /**
+         * The Athanatos absorbs poison and bursts against Verzik for up to 70. {@code discard}: remove it now (otherwise the
+         * hit that burst it kills it); either way it doesn't come back.
+         */
+        private void burstAthanatos(ServerPlayer attacker, boolean discard) {
             athanatosBursts++;
             if (alive(verzik)) {
                 com.runecraft.combat.CombatHandler.applyDamage(attacker, verzik, rnd().nextInt(TobRules.ATHANATOS_POISON_MAX + 1));
@@ -3036,7 +3040,9 @@ final class TobRooms {
             say("The Nylocas Athanatos absorbs the poison and bursts against Verzik!");
             if (athanatos != null) {
                 world().sendParticles(ParticleTypes.ITEM_SLIME, athanatos.getX(), athanatos.getY() + 0.5, athanatos.getZ(), 20, 0.5, 0.5, 0.5, 0);
-                athanatos.discard();
+                if (discard) {
+                    athanatos.discard();
+                }
             }
             athanatos = null;
             athanatosRespawn = -1;
@@ -3158,7 +3164,7 @@ final class TobRooms {
          * The Athanatos rule, called from the hit filter registered in {@link TobRooms#init}: a poison or venom hit bursts
          * it; anything else barely hurts it (a quarter of the damage).
          */
-        int athanatosHit(ServerPlayer attacker, AttackType type, int damage) {
+        int athanatosHit(ServerPlayer attacker, LivingEntity target, AttackType type, int damage) {
             boolean poison = poisonous(attacker, type);
             if (!poison && type == AttackType.MAGIC && damage > 0
                     && TobRules.smokeSpell(com.runecraft.content.systems.SpellService.castingSpellId())) {
@@ -3175,8 +3181,10 @@ final class TobRooms {
             if (damage <= 0) {
                 return 0; // a miss can't poison it
             }
-            int hp = raid.hitpoints(athanatos);
-            burstAthanatos(attacker);
+            int hp = raid.hitpoints(target);
+            if (target == athanatos) {
+                burstAthanatos(attacker, false);
+            }
             return Math.max(damage, hp);
         }
 
@@ -3329,19 +3337,21 @@ final class TobRooms {
                         }
                     }
                 }
-                boolean anyHit = false;
+                if (k == 0) {
+                    yellowHit = false;
+                }
                 for (ServerPlayer p : here) {
                     Vec3 v = on.get(p);
                     if (v == null || occupancy.get(v) > 1) {
-                        anyHit |= hurt(verzik, p, rnd().nextInt(TobRules.VERZIK_YELLOW_MAX + 1), null, true) > 0;
+                        yellowHit |= hurt(verzik, p, rnd().nextInt(TobRules.VERZIK_YELLOW_MAX + 1), null, true) > 0;
                     }
                 }
+                yellows.clear();
                 if (k + 1 < volleys) {
                     yellowVolley(volleys, k + 1);
-                } else if (enraged && hard() && here.size() >= 2 && !anyHit) {
-                    teamwork = true; // "Team Work Makes the Dream Work" (one volley set without damage during the tornadoes)
+                } else if (enraged && hard() && here.size() >= 2 && !yellowHit) {
+                    teamwork = true; // "Team Work Makes the Dream Work": a whole power blast without damage during the tornadoes
                 }
-                yellows.clear();
             });
         }
 
@@ -3596,9 +3606,10 @@ final class TobRooms {
             w.expect(urnsLanded > 0, "no urnbomb landed in phase 2");
             w.expect(!hard() || urnPoolsMade > 0, "Hard mode urnbombs left no poison pools");
             guard = 0;
-            while (alive(verzik) && form == 3 && guard++ < 1500) {
+            while (alive(verzik) && form == 3 && guard++ < 2000) {
                 dealWithCrabs(w);
-                w.hit(verzik, Math.max(10, raid.maxHitpoints(verzik) / 20), AttackType.RANGED);
+                // Slowly enough for her special rotation to come round (a special every fifth attack, 7 ticks apart).
+                w.hit(verzik, Math.max(10, raid.maxHitpoints(verzik) / 80), AttackType.RANGED);
                 w.tick(1);
             }
             w.until(() -> done, 3, "Verzik's death did not end the fight");
