@@ -216,7 +216,10 @@ class QuestPuzzlesRound33Test {
         assertEquals(167, com.runecraft.osrs.content.ContentRegistry.boss("wgs_assassin").combatLevel);
         // the launderer's 500 coins, the broav from the pit trap and its nose at the broken table
         assertEquals(500, find(track, t -> t.target.equals("khazard_launderer"), "the launderer").take.get("coins"));
-        assertTrue(find(track, t -> t.target.equals("wgs_pit_trap"), "the pit trap").give.containsKey("broav"));
+        // round 37: the pit trap catches an unconscious broav, which the Hunting expert trains
+        assertTrue(find(track, t -> t.target.equals("wgs_pit_trap"), "the pit trap").give.containsKey("unconscious_broav"));
+        assertTrue(find(track, t -> t.target.equals("hunting_expert") && t.take.containsKey("unconscious_broav"), "the training")
+                .give.containsKey("broav"));
         Trigger table = find(track, t -> t.kind == Trigger.Kind.REACH && t.setFlags.contains("wgs_trapdoor"), "the broken table");
         assertTrue(table.need.containsKey("broav") && table.need.containsKey("dirty_shirt"));
         assertTrue(puzzle(wgs, GrandmasterQuests.WGS_DOOR).needFlags.contains("wgs_trapdoor"), "the rune door lies under the table");
@@ -225,20 +228,22 @@ class QuestPuzzlesRound33Test {
         // the snapdragon: Thaerisk's seed, Betty's counter, the castle's special patch
         QuestSpec.Stage spies = wgs.stages.get(3);
         assertTrue(find(spies, t -> t.give.containsKey("snapdragon_seed"), "the seed").setFlags.contains("wgs_seed"), "one free seed");
-        Trigger betty = find(spies, t -> t.target.equals("wgs_bettys_counter"), "Betty's counter");
-        assertTrue(betty.take.containsKey("snapdragon_seed") && betty.give.containsKey("enriched_snapdragon_seed"));
+        Trigger betty = find(spies, t -> t.target.equals("wgs_bettys_counter") && t.take.containsKey("snapdragon_seed"), "Betty's counter");
+        assertTrue(betty.give.containsKey("enriched_snapdragon_seed") && betty.need.containsKey("rose_tinted_lens"));
+        assertEquals(20, find(spies, t -> t.give.containsKey("pink_dye"), "Betty's pink dye").take.get("coins"));
         Trigger patch = find(spies, t -> t.target.equals("wgs_snapdragon_patch"), "the patch");
         assertTrue(patch.take.containsKey("enriched_snapdragon_seed") && patch.need.containsKey("seed_dibber"));
-        // the Dark Squall's base: the disguise, an elite black knight, Silif, then Surok (magic only, wiki stats)
-        Trigger silif = find(spies, t -> t.target.equals("silif") && "elite_black_knight".equals(t.spawn), "Silif");
-        assertTrue(silif.need.containsKey("bronze_med_helm") && silif.need.containsKey("iron_chainbody"));
+        // the Dark Squall's base: the disguise at the fortress, three elite black knights, Silif, then Surok (magic only, wiki stats)
+        Trigger fortress = find(spies, t -> t.target.equals("black_knights_fortress") && "elite_black_knight".equals(t.spawn)
+                && t.setFlags.contains("wgs_catacombs"), "the fortress");
+        assertTrue(fortress.need.containsKey("bronze_med_helm") && fortress.need.containsKey("iron_chainbody"));
         assertTrue(spies.triggers.stream().anyMatch(t -> t.target.equals("silif") && "dark_squall".equals(t.spawn)));
         com.runecraft.osrs.content.BossDef surok = com.runecraft.osrs.content.ContentRegistry.boss("dark_squall");
         assertEquals(265, surok.combatLevel);
         assertEquals(450, surok.hitpoints);
         Trigger onward = QuestWalk.advancing(spies);
         assertEquals("akrisae", onward.target);
-        assertTrue(onward.needFlags.contains("wgs_surok"));
+        assertTrue(onward.needFlags.contains("wgs_camp"), "after Surok, the strange teleorb to Lucien's camp");
         assertTrue(spies.triggers.stream().anyMatch(t -> t.target.equals("ivy_sophista") && t.unlessFlags.contains("wgs_assassins")),
                 "saves from before round 33 keep the old briefing");
 

@@ -12,6 +12,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import java.util.List;
 
 /** Mechanics for quest bosses that AttackDefs alone can't express. */
 final class QuestBossScripts {
@@ -109,6 +110,22 @@ final class QuestBossScripts {
     /** While Guthix Sleeps: Surok Magis, the Dark Squall, can only be hurt with magic (wiki). */
     static final class MagicOnly implements BossScript {
         private long lastMessage;
+        private int attacks;
+
+        /** Wiki: Surok fights like Vorkath, six regular attacks and then one of his specials as the seventh. */
+        @Override
+        public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
+            if (boss.def() == null || boss.def().attacks.isEmpty()) {
+                return null;
+            }
+            List<AttackDef> all = boss.def().attacks;
+            attacks++;
+            if (attacks % 7 != 0) {
+                return all.get(0);
+            }
+            List<AttackDef> specials = all.subList(1, all.size());
+            return specials.isEmpty() ? all.get(0) : specials.get(boss.getRandom().nextInt(specials.size()));
+        }
 
         @Override
         public int modifyIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
