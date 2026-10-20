@@ -47,6 +47,18 @@ public class DataBossEntity extends OsrsMonsterEntity {
     public static final int MAX_MC_HEALTH = 1024;
     /** Awakened DT2 boss or Doom delve level (null: the ordinary fight). Saved with the entity. */
     private BossVariant variant;
+    /**
+     * Where a boss summoned at a stone first stood, and how far it may stray from there (null for bosses spawned by other
+     * code: raid rooms, quests, the Dagannoth Kings' lair). Saved with the entity.
+     */
+    private net.minecraft.core.BlockPos home;
+    private int leash;
+    /** Game ticks in a row with no player around (a summoned boss resets after {@link #RESET_TICKS}). */
+    private int lonelyTicks;
+    /** A summoned boss with nobody near it for this long (game ticks: one minute) resets, like an OSRS instance left. */
+    public static final int RESET_TICKS = 100;
+    /** Range within which a player keeps a summoned boss's fight going. */
+    private static final double PRESENCE_RANGE = 32;
 
     public DataBossEntity(EntityType<? extends Monster> type, Level world) {
         super(type, world);
@@ -79,6 +91,54 @@ public class DataBossEntity extends OsrsMonsterEntity {
     /** The Doom of Mokhaiotl's delve level, or 0. */
     public int delve() {
         return variant == null ? 0 : variant.delve();
+    }
+
+    /**
+     * Marks a boss summoned at a stone: it stays within {@code leash} blocks of {@code at} (OSRS bosses never leave their
+     * rooms; one lured further walks back) and resets (despawns) when nobody has been near it for a minute.
+     */
+    public void markSummoned(net.minecraft.core.BlockPos at, int leash) {
+        this.home = at.immutable();
+        this.leash = Math.max(8, leash);
+    }
+
+    /** A boss's next form or companion (Zulrah's forms, Dawn, Eldric) shares its lair: the same leash and reset. */
+    public void copyHomeFrom(DataBossEntity other) {
+        if (other != null && other.home != null) {
+            markSummoned(other.home, other.leash);
+        }
+    }
+
+    /** One game tick of a summoned boss's leash and reset; false when it reset (it is gone). */
+    private boolean tickHome() {
+        if (home == null) {
+            return true;
+        }
+        LivingEntity target = getTarget();
+        boolean someone = target instanceof ServerPlayer t && t.isAlive() && t.distanceToSqr(this) < PRESENCE_RANGE * PRESENCE_RANGE;
+        if (!someone) {
+            for (ServerPlayer p : ((ServerLevel) level()).players()) {
+                if (p.isAlive() && !p.isSpectator() && !p.isCreative() && p.distanceToSqr(this) < PRESENCE_RANGE * PRESENCE_RANGE) {
+                    someone = true;
+                    break;
+                }
+            }
+        }
+        lonelyTicks = someone ? 0 : lonelyTicks + 1;
+        if (lonelyTicks >= RESET_TICKS) {
+            discard(); // the script's onRemoved clears what it placed
+            return false;
+        }
+        double dx = getX() - (home.getX() + 0.5);
+        double dz = getZ() - (home.getZ() + 0.5);
+        if (dx * dx + dz * dz > (double) leash * leash) {
+            getNavigation().stop();
+            teleportTo(home.getX() + 0.5, home.getY(), home.getZ() + 0.5);
+            if (target != null && target.distanceToSqr(home.getX() + 0.5, home.getY(), home.getZ() + 0.5) > (double) leash * leash) {
+                setTarget(null); // its target ran off: it waits in its lair
+            }
+        }
+        return true;
     }
 
     /** OSRS hitpoints of this boss (its variant's when it has one). */
@@ -124,6 +184,10 @@ public class DataBossEntity extends OsrsMonsterEntity {
             nbt.putString("RcVariant", variant.kind());
             nbt.putInt("RcVariantLevel", variant.level());
         }
+        if (home != null) {
+            nbt.putLong("RcHome", home.asLong());
+            nbt.putInt("RcLeash", leash);
+        }
         CompoundTag scriptData = new CompoundTag();
         script.writeNbt(this, scriptData);
         if (!scriptData.isEmpty()) {
@@ -142,6 +206,9 @@ public class DataBossEntity extends OsrsMonsterEntity {
             } else if (BossVariant.DELVE.equals(kind) && DoomDelves.BOSS.equals(def.id)) {
                 applyVariant(DoomDelves.variant(def, nbt.getInt("RcVariantLevel")), false);
             }
+        }
+        if (nbt.contains("RcHome")) {
+            markSummoned(net.minecraft.core.BlockPos.of(nbt.getLong("RcHome")), nbt.getInt("RcLeash"));
         }
         if (nbt.contains("RcScript")) {
             script.readNbt(this, nbt.getCompound("RcScript"));
@@ -171,6 +238,9 @@ public class DataBossEntity extends OsrsMonsterEntity {
         bossBar.setProgress(getHealth() / getMaxHealth());
         script.tick(this);
         if (tickCount % ActionManager.MC_TICKS_PER_GAME_TICK == 0) {
+            if (!tickHome()) {
+                return;
+            }
             script.gameTick(this, ActionManager.gameTick());
         }
         BossDef def = def();

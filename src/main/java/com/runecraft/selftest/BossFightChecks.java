@@ -85,7 +85,7 @@ final class BossFightChecks {
 
     /** Data bosses fought here: every non-raid boss of these categories, plus the Dagannoth Kings fought in their lair. */
     private static final Set<String> CATEGORIES = Set.of("Bosses", "Wilderness", "God Wars Dungeon");
-    private static final Set<String> EXTRA = Set.of("dagannoth_prime", "dagannoth_supreme");
+    private static final Set<String> EXTRA = Set.of("dagannoth_rex", "dagannoth_prime", "dagannoth_supreme");
 
     private static Recording recording;
     private static boolean hooked;

@@ -68,7 +68,7 @@ final class VetionScript extends GwdScript {
             double z = boss.getZ() + Math.sin(a) * r;
             int top = world.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, (int) Math.floor(x), (int) Math.floor(z));
             double y = Math.abs(top - boss.getY()) > 4 ? boss.getY() : top;
-            strike(boss, new Vec3(x, y, z), 3, lightning.maxHit() / 2, 1.5, ParticleTypes.ELECTRIC_SPARK, ParticleTypes.FLASH, null);
+            strike("lightning", boss, new Vec3(x, y, z), 3, lightning.maxHit() / 2, 1.5, ParticleTypes.ELECTRIC_SPARK, ParticleTypes.FLASH, null);
             LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(world);
             if (bolt != null) {
                 bolt.setVisualOnly(true);

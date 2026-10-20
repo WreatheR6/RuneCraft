@@ -411,7 +411,7 @@ final class WildernessScripts {
                 // OSRS Wiki: six slow green projectiles in an arc towards the player, up to 31 each where they land (step away).
                 for (int i = 0; i < 6; i++) {
                     Vec3 pos = target.position().add(boss.getRandom().nextInt(5) - 2, 0, boss.getRandom().nextInt(5) - 2);
-                    strike(boss, pos, 4, FANATIC_EXPLOSION_MAX, 1.3, ParticleTypes.HAPPY_VILLAGER, ParticleTypes.EXPLOSION, null);
+                    strike("green explosion", boss, pos, 4, FANATIC_EXPLOSION_MAX, 1.3, ParticleTypes.HAPPY_VILLAGER, ParticleTypes.EXPLOSION, null);
                 }
             }
             if (gameTick % 25 == 0 && boss.getRandom().nextInt(3) == 0 && unequip(target, true)) {
@@ -440,14 +440,14 @@ final class WildernessScripts {
                 Vec3 split = null;
                 for (int i = 0; i < 3; i++) {
                     Vec3 pos = target.position().add(boss.getRandom().nextInt(5) - 2, 0, boss.getRandom().nextInt(5) - 2);
-                    strike(boss, pos, 4, ARCHAEOLOGIST_BOOK_MAX, 1.5, ParticleTypes.ENCHANT, ParticleTypes.EXPLOSION, null);
+                    strike("explosive book", boss, pos, 4, ARCHAEOLOGIST_BOOK_MAX, 1.5, ParticleTypes.ENCHANT, ParticleTypes.EXPLOSION, null);
                     if (i == 0) {
                         split = pos;
                     }
                 }
                 for (int i = 0; i < 2; i++) {
                     Vec3 pos = split.add(boss.getRandom().nextInt(5) - 2, 0, boss.getRandom().nextInt(5) - 2);
-                    strike(boss, pos, 7, ARCHAEOLOGIST_BOOK_MAX, 1.5, ParticleTypes.ENCHANT, ParticleTypes.EXPLOSION, null);
+                    strike("explosive book", boss, pos, 7, ARCHAEOLOGIST_BOOK_MAX, 1.5, ParticleTypes.ENCHANT, ParticleTypes.EXPLOSION, null);
                 }
             }
         }

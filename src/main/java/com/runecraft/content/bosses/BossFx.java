@@ -118,7 +118,11 @@ final class BossFx {
         if (def == null) {
             return null;
         }
-        return DataBossService.spawn(world(near), pos, def, target);
+        DataBossEntity spawned = DataBossService.spawn(world(near), pos, def, target);
+        if (spawned != null && near instanceof DataBossEntity from) {
+            spawned.copyHomeFrom(from); // same lair: the same leash and reset as the boss that brought it
+        }
+        return spawned;
     }
 
     /**

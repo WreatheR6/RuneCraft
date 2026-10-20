@@ -57,7 +57,7 @@ public enum Boss {
             List.of(Drop.always("big_bones"), Drop.of("coins", 5000, 20000, 1), Drop.of("rune_platebody", 1, 1, 8),
                     Drop.of("bandos_chestplate", 1, 1, 381), Drop.of("bandos_tassets", 1, 1, 381), Drop.of("bandos_boots", 1, 1, 381),
                     Drop.of("snapdragon_seed", 1, 2, 16))),
-    KRIL_TSUTSAROTH("kril_tsutsaroth", "K'ril Tsutsaroth", 650, 255, 340, 300, 270, 200, 1, 6, AttackType.SLASH, 47, 80,
+    KRIL_TSUTSAROTH("kril_tsutsaroth", "K'ril Tsutsaroth", 650, 255, 340, 300, 270, 200, 1, 6, AttackType.SLASH, 46, 80,
             Mechanic.KRIL, 2.0f, 0x801818, Landmark.GOD_WARS_DUNGEON, null,
             List.of(Drop.always("infernal_ashes"), Drop.of("coins", 5000, 20000, 1), Drop.of("death_rune", 100, 150, 4),
                     Drop.of("zamorakian_spear", 1, 1, 127), Drop.of("steam_battlestaff", 1, 1, 127),

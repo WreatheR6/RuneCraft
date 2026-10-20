@@ -120,9 +120,14 @@ public final class DataBossService {
         }
         BiFunction<ServerPlayer, BossDef, BossVariant> chooser = VARIANTS.get(boss.id);
         BossVariant variant = chooser == null ? null : chooser.apply(player, boss);
-        DataBossEntity entity = spawn(world, spawnPoint(world, pos, boss, player), boss, player);
+        BlockPos at = spawnPoint(world, pos, boss, player);
+        DataBossEntity entity = spawn(world, at, boss, player);
         if (entity != null && variant != null) {
             entity.applyVariant(variant);
+        }
+        if (entity != null) {
+            com.runecraft.osrs.world.ArenaLayout.Arena arena = com.runecraft.osrs.world.ArenaLayout.of(boss.id);
+            entity.markSummoned(at, arena != null && at.getX() == arena.x() && at.getZ() == arena.z() ? arena.radius() + 8 : 24);
         }
         world.playSound(null, pos, SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 0.6f, 1.0f);
         Msg.red(player, (variant != null ? variant.name() : boss.name) + " (level-" + (variant != null ? variant.combatLevel()

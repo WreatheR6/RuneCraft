@@ -53,6 +53,7 @@ public final class BossService {
         entity.moveTo(spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5, world.getRandom().nextFloat() * 360f, 0);
         entity.finalizeSpawn(world, world.getCurrentDifficultyAt(spawn), MobSpawnType.EVENT, null);
         entity.setTarget(player);
+        entity.markSummoned(spawn);
         world.addFreshEntity(entity);
         spawnBodyguards(world, boss, spawn, player);
         world.playSound(null, pos, SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 0.6f, 1.2f);
