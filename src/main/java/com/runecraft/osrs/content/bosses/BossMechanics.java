@@ -1008,4 +1008,83 @@ public final class BossMechanics {
         }
         return tiles <= 0 ? 80 : Math.max(33, 80 - 16 * tiles);
     }
+
+    // ---------------- The Whisperer (OSRS Wiki "The Whisperer/Strategies", "Lost Soul (The Whisperer)") ----------------
+    /** The lost souls of her Soul Siphon. */
+    public static final String WHISPERER_LOST_SOUL = "whisperer_lost_soul";
+    /** Her three special attacks come at these shares of her 900 hitpoints (720, 495 and 270). */
+    public static final int[] WHISPERER_SPECIAL_PERCENT = {80, 55, 30};
+    /** Awakened, she uses one at roughly every tenth of her 2,700 hitpoints instead. */
+    public static final int[] WHISPERER_AWAKENED_SPECIAL_HP = {2400, 2120, 1820, 1600, 1310, 1050, 800, 500};
+    public static final int WHISPERER_AWAKENED_HP = 2700;
+    /** The specials in order: Corrupted Seeds, Screech, Soul Siphon (or the same cycle started at the Screech). */
+    public static final String[] WHISPERER_SPECIALS = {"seeds", "screech", "siphon"};
+    /** The tentacles after each volley (20, awakened 30, whatever how many hit; dodged by moving off the tile). */
+    public static final int WHISPERER_TENTACLE = 20;
+    public static final int WHISPERER_TENTACLE_AWAKENED = 30;
+    /** Screech: three blasts (awakened five) of 45 (70) for anyone she can see; hide behind the floating columns. */
+    public static final int WHISPERER_SCREECHES = 3;
+    public static final int WHISPERER_SCREECHES_AWAKENED = 5;
+    /** Soul Siphon: 20 ticks (awakened 35) to kill a full set of lost souls, else 50 to the player and she heals 100. */
+    public static final int WHISPERER_SIPHON_TICKS = 20;
+    public static final int WHISPERER_SIPHON_TICKS_AWAKENED = 35;
+    public static final int WHISPERER_SIPHON_HEAL = 100;
+    /** Lost soul sets: Vita (heal 20% hitpoints), Oratio (20% prayer), Sanitas (sanity), Mors (50 to her, 75 if all die). */
+    public static final String[] WHISPERER_SOUL_SETS = {"vita", "oratio", "sanitas", "mors"};
+    public static final int[] WHISPERER_SOUL_SET_SIZES = {2, 3, 3, 4};
+    public static final int WHISPERER_MORS_DAMAGE = 50;
+    public static final int WHISPERER_MORS_DAMAGE_ALL = 75;
+    /** Corrupted Seeds: step on every light seed in time (awakened 26 ticks; approx 33 normally) or take 75. */
+    public static final int WHISPERER_SEED_TICKS = 33; // approx
+    public static final int WHISPERER_SEED_TICKS_AWAKENED = 26;
+    public static final int WHISPERER_SEED_FAIL = 75;
+    /** A dark seed stepped on: 15-25 (awakened 60-75). */
+    public static final int[] WHISPERER_DARK_SEED = {15, 25};
+    public static final int[] WHISPERER_DARK_SEED_AWAKENED = {60, 75};
+    /** During a special's animation she takes 70% less damage. */
+    public static final double WHISPERER_SPECIAL_DAMAGE = 0.3;
+    /** The binding projectile after a special: ~8 seconds. */
+    public static final int WHISPERER_BIND_TICKS = 13;
+    /** At 0 hitpoints she heals 140 (awakened 250), pulls the player into the Shadow Realm and attacks every 2 ticks. */
+    public static final int WHISPERER_ENRAGE_HEAL = 140;
+    public static final int WHISPERER_ENRAGE_HEAL_AWAKENED = 250;
+    /** Her melee (next to her): two hits, the second the same as the first; Protect from Melee only trims it (approx 3/4). */
+    public static final double WHISPERER_MELEE_THROUGH_PRAYER = 0.75; // approx: "slightly reduces damage"
+
+    /** The special attack used as her {@code n}th (from 0) when the rotation starts at {@code start} (0 seeds, 1 screech). */
+    public static String whispererSpecial(int start, int n) {
+        return WHISPERER_SPECIALS[(start + n) % WHISPERER_SPECIALS.length];
+    }
+
+    /**
+     * Styles of one of her volleys (true = magic), {@code first} being its first projectile's: three projectiles, all one style
+     * before her first special, then two and one (M-M-R), after the third special alternating (M-R-M); awakened five: three and
+     * two (R-R-R-M-M), from the second special one, two, two (R-M-M-R-R), from the seventh alternating.
+     */
+    public static boolean[] whispererVolley(int specialsDone, boolean awakened, boolean first) {
+        boolean[] v = new boolean[awakened ? 5 : 3];
+        for (int i = 0; i < v.length; i++) {
+            boolean same;
+            if (!awakened) {
+                same = specialsDone == 0 || (specialsDone < 3 ? i < 2 : i % 2 == 0);
+            } else if (specialsDone < 2) {
+                same = i < 3;
+            } else if (specialsDone < 7) {
+                same = i == 0 || i >= 3;
+            } else {
+                same = i % 2 == 0;
+            }
+            v[i] = same == first;
+        }
+        return v;
+    }
+
+    /** Whether her special number {@code done} (from 0) is due at {@code hp} of {@code maxHp} (her variant's hitpoints). */
+    public static boolean whispererSpecialDue(int done, double hp, int maxHp, boolean awakened) {
+        if (awakened) {
+            return done < WHISPERER_AWAKENED_SPECIAL_HP.length
+                    && hp * WHISPERER_AWAKENED_HP / maxHp <= WHISPERER_AWAKENED_SPECIAL_HP[done];
+        }
+        return done < WHISPERER_SPECIAL_PERCENT.length && hp * 100.0 / maxHp <= WHISPERER_SPECIAL_PERCENT[done];
+    }
 }

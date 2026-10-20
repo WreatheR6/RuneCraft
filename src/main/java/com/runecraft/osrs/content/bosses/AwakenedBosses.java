@@ -104,6 +104,7 @@ public final class AwakenedBosses {
                 m.put("tentacle_lash", 53);
                 m.put("screech", 70);
                 m.put("soul_siphon", 75);
+                m.put("tentacle_whack", 72); // 50-72 off prayer (OSRS Wiki "The Whisperer/Strategies", awakened mode)
             }
             case "vardorvis" -> {
                 m.put("axe_swing", 61);

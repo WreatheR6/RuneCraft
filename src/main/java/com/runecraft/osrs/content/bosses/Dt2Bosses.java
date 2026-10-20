@@ -45,6 +45,12 @@ public final class Dt2Bosses {
             .telegraph(5, "The Whisperer lets out a piercing screech... get away!").particle("minecraft:sonic_boom");
     public static final AttackDef WHISPER_SIPHON = AttackDef.of("soul_siphon", AttackType.MAGIC, 50, 16, 1).special(Special.LIFESTEAL, 100)
             .particle("minecraft:sculk_soul").message("The Whisperer siphons your soul!");
+    /**
+     * Her tentacle whack next to her: two hits, the second the same as the first, through prayer (which only trims it). 42 is
+     * the normal max the awakened 70 scales from (approx: the wiki only gives the awakened 50-72).
+     */
+    public static final AttackDef WHISPER_MELEE = AttackDef.of("tentacle_whack", AttackType.CRUSH, 42, 2.5, 1)
+            .special(Special.PRAYER_PIERCING, 0);
 
     // ---- Vardorvis ----
     public static final AttackDef VARD_SLASH = AttackDef.of("axe_swing", AttackType.SLASH, 35, 4, 6);
@@ -126,7 +132,7 @@ public final class Dt2Bosses {
     public static final Map<String, String> PERFECT_RULE = Map.of(
             "duke_sucellus", "nodmg=mechanic,hazard,gas_vent,freezing_gaze,fist_slam,magic_blast,offprayer",
             "the_leviathan", "nodmg=mechanic,hazard,falling_debris,lightning,offprayer",
-            "the_whisperer", "nodmg=mechanic,hazard,soul_bolt,tentacle_lash,screech,soul_siphon,offprayer",
+            "the_whisperer", "nodmg=mechanic,hazard,soul_bolt,tentacle_lash,tentacle_whack,screech,soul_siphon,offprayer",
             "vardorvis", "nodmg=mechanic,hazard,swinging_axe,darting_spikes,strangle,offprayer");
 
     static {
@@ -306,8 +312,8 @@ public final class Dt2Bosses {
     static BossDef whisperer() {
         BossDef b = BossDef.of("the_whisperer", "The Whisperer").level(791).stats(900, 280, 280, 250, 180, 180).speed(5)
                 .defenceBonus(180, 300, 220, 10, 300)
-                .attack(WHISPER_MAGIC).attack(WHISPER_RANGED).attack(WHISPER_SCREECH).attack(WHISPER_SIPHON)
-                .phase(50, "The Whisperer drags you into the Shadow Realm!", 1.1, false)
+                // Her specials (at 80/55/30%) and the enrage at 0 hitpoints are scripted (WhispererScript): no health phases.
+                .attack(WHISPER_MAGIC).attack(WHISPER_RANGED).attack(WHISPER_SCREECH).attack(WHISPER_SIPHON).attack(WHISPER_MELEE)
                 .pet("pet_wisp").at("lassar_undercity").arena(13, "void").flying().size(1.8f, 2.6f, 2.0f).moveSpeed(0.18);
         b.drops.addAll(dt2Drops(b.id, "bellator_vestige", "sirens_staff", "sirenic_tablet", "shadow_quartz"));
         return b;

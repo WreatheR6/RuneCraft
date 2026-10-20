@@ -463,4 +463,38 @@ class BossMechanicsTest {
         assertEquals(33, BossMechanics.rupturaEnemyDamage(3));
         assertEquals(0, BossMechanics.rupturaEnemyDamage(5));
     }
+
+    /**
+     * The Whisperer (OSRS Wiki "The Whisperer/Strategies"): volley patterns by specials used, specials at 80/55/30% (awakened at
+     * her listed hitpoints), the two rotations, the soul sets, and no invented health phase.
+     */
+    @Test
+    void whisperer() {
+        // M = true. Normal: all one style, then M-M-R, after the third special M-R-M.
+        assertArrayEquals(new boolean[]{true, true, true}, BossMechanics.whispererVolley(0, false, true));
+        assertArrayEquals(new boolean[]{true, true, false}, BossMechanics.whispererVolley(1, false, true));
+        assertArrayEquals(new boolean[]{false, false, true}, BossMechanics.whispererVolley(2, false, false));
+        assertArrayEquals(new boolean[]{true, false, true}, BossMechanics.whispererVolley(3, false, true));
+        // Awakened: R-R-R-M-M, from the second special R-M-M-R-R, from the seventh alternating.
+        assertArrayEquals(new boolean[]{false, false, false, true, true}, BossMechanics.whispererVolley(0, true, false));
+        assertArrayEquals(new boolean[]{false, true, true, false, false}, BossMechanics.whispererVolley(2, true, false));
+        assertArrayEquals(new boolean[]{false, true, false, true, false}, BossMechanics.whispererVolley(7, true, false));
+        // Specials: 720 / 495 / 270 of 900; awakened 2400 ... 500 of 2700.
+        assertFalse(BossMechanics.whispererSpecialDue(0, 721, 900, false));
+        assertTrue(BossMechanics.whispererSpecialDue(0, 720, 900, false));
+        assertTrue(BossMechanics.whispererSpecialDue(2, 270, 900, false));
+        assertFalse(BossMechanics.whispererSpecialDue(3, 1, 900, false));
+        assertTrue(BossMechanics.whispererSpecialDue(0, 2400, 2700, true));
+        assertTrue(BossMechanics.whispererSpecialDue(7, 500, 2700, true));
+        assertFalse(BossMechanics.whispererSpecialDue(8, 1, 2700, true));
+        // Rotations: Seeds -> Screech -> Siphon, or Screech -> Siphon -> Seeds (awakened repeating).
+        assertEquals("seeds", BossMechanics.whispererSpecial(0, 0));
+        assertEquals("siphon", BossMechanics.whispererSpecial(0, 2));
+        assertEquals("screech", BossMechanics.whispererSpecial(1, 0));
+        assertEquals("seeds", BossMechanics.whispererSpecial(1, 2));
+        assertEquals("screech", BossMechanics.whispererSpecial(1, 3));
+        assertEquals(12, java.util.Arrays.stream(BossMechanics.WHISPERER_SOUL_SET_SIZES).sum());
+        assertTrue(ContentRegistry.boss("the_whisperer").phases.isEmpty(), "her specials and enrage are scripted");
+        assertTrue(ContentRegistry.monsters().stream().anyMatch(m -> m.id.equals(BossMechanics.WHISPERER_LOST_SOUL)));
+    }
 }

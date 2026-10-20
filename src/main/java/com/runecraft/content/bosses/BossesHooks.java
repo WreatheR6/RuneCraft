@@ -57,12 +57,12 @@ public final class BossesHooks implements ModuleHooks {
         BossScripts.register("phantom_muspah", EncounterScripts.Muspah::new);
         BossScripts.register("duke_sucellus", EncounterScripts.Duke::new);
         BossScripts.register("the_leviathan", EncounterScripts.Leviathan::new);
-        BossScripts.register("the_whisperer", EncounterScripts.Whisperer::new);
+        BossScripts.register("the_whisperer", WhispererScript::new);
         BossScripts.register("vardorvis", EncounterScripts.Vardorvis::new);
         // Desert Treasure II's quest versions (quests module ids): the same fights with lower max hits.
         BossScripts.register("dt2_quest_duke_sucellus", () -> new EncounterScripts.Duke(Dt2Bosses.QUEST_DUKE_SCALE));
         BossScripts.register("dt2_quest_leviathan", () -> new EncounterScripts.Leviathan(Dt2Bosses.QUEST_LEVIATHAN_SCALE));
-        BossScripts.register("dt2_quest_whisperer", () -> new EncounterScripts.Whisperer(Dt2Bosses.QUEST_WHISPERER_SCALE));
+        BossScripts.register("dt2_quest_whisperer", () -> new WhispererScript(Dt2Bosses.QUEST_WHISPERER_SCALE));
         BossScripts.register("dt2_quest_vardorvis", () -> new EncounterScripts.Vardorvis(Dt2Bosses.QUEST_VARDORVIS_SCALE));
         AwakenedService.init();
         DoomDelveService.init();
