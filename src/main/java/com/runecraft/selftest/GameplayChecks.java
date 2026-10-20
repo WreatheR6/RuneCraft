@@ -70,6 +70,10 @@ final class GameplayChecks {
     private static final int BOSS_TICKS = 200;
     /** Recipes tried per menu before the "make" check gives up. */
     private static final int RECIPE_CANDIDATES = 8;
+    /** Creatures the quest kill hooks heard the player of the running {@code boss:} check kill ({@link #hearQuestKills}). */
+    private static final java.util.Set<java.util.UUID> QUEST_KILLS_HEARD = new java.util.HashSet<>();
+    private static java.util.UUID questKillsOf;
+    private static boolean questKillHook;
 
     private final TestContext c;
 
@@ -836,8 +840,9 @@ final class GameplayChecks {
     }
 
     /**
-     * Ticks a boss next to the player, kills it as the player and checks the kill was counted. A boss that swaps
-     * itself for another entity (Zulrah's forms, Hydra's phases) is followed to the new form.
+     * Ticks a boss next to the player, kills it as the player and checks the kill was counted: a kill count, or for a quest
+     * boss (no kill count in OSRS) the quest kill hooks hearing the player's kill. A boss that swaps itself for another
+     * entity (Zulrah's forms, Hydra's phases) is followed to the new form.
      */
     private String fight(LivingEntity first, String id) {
         java.util.Set<java.util.UUID> seen = new java.util.HashSet<>();
@@ -878,21 +883,31 @@ final class GameplayChecks {
         }
         int kcBefore = totalKills();
         int logBefore = data().collectionLog().size();
-        // A boss whose death only counts at the end of its scripted mechanic (OSRS: The Nightmare's totems, the Phantom
-        // Muspah's prayer shield, Vanstrom Klause's rise at 0 hitpoints into his second phase) is played there first, as a
-        // player would; its script may end it itself (the totems' blast).
+        boolean quest = questBoss(boss);
         String played = null;
-        if (boss instanceof DataBossEntity d) {
-            played = com.runecraft.content.bosses.BossSelfTests.playToKill(d, p());
-            if (played == null) {
-                played = com.runecraft.content.quests.QuestBossSelfTests.playToKill(d, p());
+        int kc;
+        boolean questHeard;
+        hearQuestKills(p());
+        try {
+            // A boss whose death only counts at the end of its scripted mechanic (OSRS: The Nightmare's totems, the Phantom
+            // Muspah's prayer shield, Vanstrom Klause's rise at 0 hitpoints into his second phase) is played there first, as a
+            // player would; its script may end it itself (the totems' blast).
+            if (boss instanceof DataBossEntity d) {
+                played = com.runecraft.content.bosses.BossSelfTests.playToKill(d, p());
+                if (played == null) {
+                    played = com.runecraft.content.quests.QuestBossSelfTests.playToKill(d, p());
+                }
             }
+            if (boss.isAlive()) {
+                boss.setHealth(0f);
+                boss.die(CombatHandler.source(p()));
+            }
+            kc = totalKills() - kcBefore;
+            questHeard = QUEST_KILLS_HEARD.contains(boss.getUUID());
+        } finally {
+            questKillsOf = null;
+            QUEST_KILLS_HEARD.clear();
         }
-        if (boss.isAlive()) {
-            boss.setHealth(0f);
-            boss.die(CombatHandler.source(p()));
-        }
-        int kc = totalKills() - kcBefore;
         // A companion (Dawn beside Dusk, Eldric beside Branda) is part of its main boss's kill: OSRS counts one "Grotesque
         // Guardians" / "Royal Titans" kill when the main boss dies (boss:fight:dusk and boss:fight:branda_the_fire_queen
         // check that one), so its own death must add none.
@@ -900,7 +915,17 @@ final class GameplayChecks {
         if (companion && kc != 0) {
             throw failure("a companion boss added a kill count of its own (+" + kc + "): its death is part of the main boss's kill");
         }
-        if (!companion && kc <= 0) {
+        if (quest) {
+            // OSRS keeps no kill count for quest bosses (wiki, Boss: "Excluding minigame and quest bosses, each boss has its
+            // own hiscore table"): the kill is the quest's, so it must reach the quest kill hooks as the player's kill instead.
+            if (kc != 0) {
+                throw failure("a quest boss added a kill count (+" + kc + "): OSRS keeps none for quest bosses");
+            }
+            if (!questHeard) {
+                throw failure("killing it never reached the quest kill hooks as the player's kill, so no quest step could hear it ("
+                        + ticks + " ticks alive" + (played == null ? "" : "; played to the kill: " + played) + ")");
+            }
+        } else if (!companion && kc <= 0) {
             throw failure("killing it did not add a kill count (" + ticks + " ticks alive"
                     + (played == null ? "" : "; played to the kill: " + played) + ")");
         }
@@ -912,8 +937,34 @@ final class GameplayChecks {
         int drops = c.world.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, lootArea, e -> true).size();
         return ticks + " ticks" + (forms.isEmpty() ? "" : ", forms " + String.join(" ", forms))
                 + (played == null ? "" : ", played to the kill (" + played + ")")
-                + (companion ? ", companion: no kill count of its own (shared with its main boss)" : ", kc +" + kc) + ", " + drops
-                + " drops, log +" + (data().collectionLog().size() - logBefore);
+                + (companion ? ", companion: no kill count of its own (shared with its main boss)"
+                        : quest ? ", quest boss: no kill count (OSRS), the kill reached the quest kill hooks" : ", kc +" + kc)
+                + ", " + drops + " drops, log +" + (data().collectionLog().size() - logBefore);
+    }
+
+    /** A boss fought as part of a quest (data quest bosses, Count Draynor, Delrith): OSRS keeps no kill count for these. */
+    private static boolean questBoss(LivingEntity e) {
+        if (e instanceof DataBossEntity d) {
+            return d.def() != null && d.def().questBoss();
+        }
+        return e instanceof BossEntity b && b.boss() != null && b.boss().questBoss();
+    }
+
+    /**
+     * Starts recording what the quest kill hooks (what a quest's kill step hears, {@code QuestScripts.onKill}) report as
+     * killed by {@code p}, into {@link #QUEST_KILLS_HEARD}; the hook is added once.
+     */
+    private static void hearQuestKills(ServerPlayer p) {
+        if (!questKillHook) {
+            questKillHook = true;
+            com.runecraft.quest.QuestScripts.onKill((player, entity, stats) -> {
+                if (player != null && player.getUUID().equals(questKillsOf)) {
+                    QUEST_KILLS_HEARD.add(entity.getUUID());
+                }
+            });
+        }
+        QUEST_KILLS_HEARD.clear();
+        questKillsOf = p.getUUID();
     }
 
     private int totalKills() {

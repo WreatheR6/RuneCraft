@@ -201,7 +201,14 @@ class QuestsContentTest {
         BOOK.models.forEach(m -> models.put(m.id(), m));
         for (BossDef b : BOOK.bosses) {
             assertEquals("Quest bosses", b.category, b.id);
+            assertTrue(b.questBoss(), b.id + " keeps a kill count (OSRS keeps none for quest bosses)");
             assertTrue(killable.contains(b.id), b.id + " is never a quest objective");
+        }
+        // the no-kill-count rule for quest bosses covers exactly the quests' bosses, no other module's boss
+        Set<String> questBosses = new HashSet<>();
+        BOOK.bosses.forEach(b -> questBosses.add(b.id));
+        for (BossDef b : ContentRegistry.bosses()) {
+            assertEquals(questBosses.contains(b.id), b.questBoss(), b.id + " quest boss");
         }
         for (ModelSpec m : BOOK.models) {
             assertNotNull(ContentRegistry.boss(m.id()), "model " + m.id() + " has no boss");

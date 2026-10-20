@@ -237,7 +237,7 @@ final class QuestWalkChecks {
     private void leave() {
         AABB box = p().getBoundingBox().inflate(40);
         for (DataBossEntity boss : c.world.getEntitiesOfClass(DataBossEntity.class, box,
-                e -> e.isAlive() && e.def() != null && "Quest bosses".equals(e.def().category))) {
+                e -> e.isAlive() && e.def() != null && e.def().questBoss())) {
             boss.discard();
         }
         sweep(Set.of());
