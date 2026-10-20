@@ -103,6 +103,9 @@ final class GameplayChecks {
                 com.runecraft.content.minigames.games.TzHaarSelfTest::fightCaveRun)));
         checks.add(new SelfTest.Check("minigame:inferno_run", () -> g.tzhaarRun(
                 com.runecraft.content.minigames.games.TzHaarSelfTest::infernoRun)));
+        // Barbarian Assault as a real player (round 37): wave 1 alone as an attacker, the queen wave, honour, a level, a torso.
+        checks.add(new SelfTest.Check("minigame:barbarian_assault_run", () -> g.tzhaarRun(
+                com.runecraft.content.minigames.games.BarbarianAssaultSelfTest::run)));
         for (RaidType r : RaidType.values()) {
             checks.add(new SelfTest.Check("raid:" + r.id(), () -> g.raid(r)));
         }
