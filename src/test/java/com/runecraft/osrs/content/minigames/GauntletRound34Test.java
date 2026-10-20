@@ -178,6 +178,47 @@ class GauntletRound34Test {
     }
 
     @Test
+    void hunllefCyclesFollowTheWiki() {
+        HunllefCycle c = new HunllefCycle(HunllefCycle.Style.MELEE);
+        List<HunllefCycle.Attack> seen = new ArrayList<>();
+        for (int i = 0; i < 12; i++) {
+            // a stomp now and then never counts towards the four
+            if (i == 2) {
+                assertEquals(HunllefCycle.Attack.STOMP, c.next(true, false));
+            }
+            seen.add(c.next(false, false));
+        }
+        // Ranged first; the tornado summon (every 6th attack) is one of the four; magic after four, ranged again after eight.
+        assertEquals(List.of(HunllefCycle.Attack.RANGED, HunllefCycle.Attack.RANGED, HunllefCycle.Attack.RANGED, HunllefCycle.Attack.RANGED,
+                HunllefCycle.Attack.MAGIC, HunllefCycle.Attack.TORNADO, HunllefCycle.Attack.MAGIC, HunllefCycle.Attack.MAGIC,
+                HunllefCycle.Attack.RANGED, HunllefCycle.Attack.RANGED, HunllefCycle.Attack.RANGED, HunllefCycle.Attack.TORNADO), seen);
+        assertEquals(MinigameBosses.HUNLLEF_ATTACKS_PER_STYLE, 4);
+        // A prayer-disabling attack only comes in the magic cycle.
+        HunllefCycle d = new HunllefCycle(HunllefCycle.Style.MAGIC);
+        assertEquals(HunllefCycle.Attack.RANGED, d.next(false, true));
+        // Prayer: blocks its style; the sixth off-prayer attack (any mix) makes it pray against that one's style.
+        assertTrue(c.playerAttack(HunllefCycle.Style.MELEE));
+        for (int i = 0; i < 5; i++) {
+            assertFalse(c.playerAttack(i % 2 == 0 ? HunllefCycle.Style.RANGED : HunllefCycle.Style.MAGIC));
+            assertEquals(HunllefCycle.Style.MELEE, c.prays());
+        }
+        assertFalse(c.playerAttack(HunllefCycle.Style.MAGIC));
+        assertTrue(c.prayerSwitched());
+        assertEquals(HunllefCycle.Style.MAGIC, c.prays());
+        assertTrue(c.playerAttack(HunllefCycle.Style.MAGIC));
+        assertEquals(0, c.offPrayerHits());
+        // The 5:1 method: five bow attacks then one melee keeps it off ranged.
+        for (int round = 0; round < 3; round++) {
+            for (int i = 0; i < 5; i++) {
+                assertFalse(c.playerAttack(HunllefCycle.Style.RANGED));
+            }
+            HunllefCycle.Style other = c.prays() == HunllefCycle.Style.MELEE ? HunllefCycle.Style.MAGIC : HunllefCycle.Style.MELEE;
+            assertFalse(c.playerAttack(other));
+            assertEquals(other, c.prays());
+        }
+    }
+
+    @Test
     void hunllefsAreOnlyFoughtInTheGauntlet() {
         for (Mode m : Mode.values()) {
             BossDef b = ContentRegistry.boss(m.boss);

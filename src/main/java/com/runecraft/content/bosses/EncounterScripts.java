@@ -59,11 +59,9 @@ final class EncounterScripts {
         private static final String[] STYLE_NAMES = {"melee", "ranged", "magic"};
         private final boolean corrupted;
         private final com.runecraft.osrs.content.minigames.Gauntlet.Mode mode;
-        private boolean magic;
-        private int styleAttacks;
-        private int sinceTornado;
-        private Category protectedStyle;
-        private int offPrayerHits;
+        /** Its attack and protection-prayer cycles (pure rules, unit-tested). */
+        private com.runecraft.osrs.content.minigames.HunllefCycle cycle =
+                new com.runecraft.osrs.content.minigames.HunllefCycle(com.runecraft.osrs.content.minigames.HunllefCycle.Style.MELEE);
         private final List<Mob> tornadoes = new ArrayList<>();
         private int tornadoLife;
         /** The current floor pattern: 2x2-block tiles (north-west block), blue until {@link #floorOrangeAt}, then orange. */
@@ -80,19 +78,21 @@ final class EncounterScripts {
 
         /** Self-test view: the attack style in use, the protected style, the cycle counters, tornadoes and floor. */
         BossSelfTests.HunllefView view() {
-            AttackType prays = switch (protectedStyle) {
+            AttackType prays = switch (cycle.prays()) {
                 case MELEE -> AttackType.SLASH;
                 case RANGED -> AttackType.RANGED;
                 case MAGIC -> AttackType.MAGIC;
             };
-            return new BossSelfTests.HunllefView(magic, prays, styleAttacks, offPrayerHits, tornadoes.size(), floor.size(),
+            return new BossSelfTests.HunllefView(cycle.magic(), prays, cycle.styleAttacks(), cycle.offPrayerHits(), tornadoes.size(),
+                    floor.size(),
                     !floor.isEmpty() && now >= floorOrangeAt, attackCount);
         }
 
         @Override
         public void onSpawn(DataBossEntity boss) {
-            protectedStyle = Category.values()[boss.getRandom().nextInt(Category.values().length)];
-            BossFx.say(boss, "The Hunllef protects itself from " + STYLE_NAMES[protectedStyle.ordinal()]
+            com.runecraft.osrs.content.minigames.HunllefCycle.Style[] styles = com.runecraft.osrs.content.minigames.HunllefCycle.Style.values();
+            cycle = new com.runecraft.osrs.content.minigames.HunllefCycle(styles[boss.getRandom().nextInt(styles.length)]);
+            BossFx.say(boss, "The Hunllef protects itself from " + STYLE_NAMES[cycle.prays().ordinal()]
                     + ". Land 6 hits with another style to make it switch.");
         }
 
@@ -105,27 +105,19 @@ final class EncounterScripts {
         protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             double dx = target.getX() - boss.getX();
             double dz = target.getZ() - boss.getZ();
-            if (dx * dx + dz * dz < boss.getBbWidth() * boss.getBbWidth() / 4) {
-                return MinigameBosses.HUNLLEF_STOMP;
+            boolean underneath = dx * dx + dz * dz < boss.getBbWidth() * boss.getBbWidth() / 4;
+            var attack = cycle.next(underneath, boss.getRandom().nextInt(MinigameBosses.HUNLLEF_PRAYER_DISABLE_CHANCE) == 0);
+            if (cycle.switchedStyle()) {
+                BossFx.warn(boss, "The Hunllef switches to " + (cycle.magic() ? "magic" : "ranged") + " attacks!");
+                BossFx.burst(boss, cycle.magic() ? ParticleTypes.WITCH : ParticleTypes.CRIT, 20, 1.0);
             }
-            if (styleAttacks >= MinigameBosses.HUNLLEF_ATTACKS_PER_STYLE) {
-                styleAttacks = 0;
-                magic = !magic;
-                BossFx.warn(boss, "The Hunllef switches to " + (magic ? "magic" : "ranged") + " attacks!");
-                BossFx.burst(boss, magic ? ParticleTypes.WITCH : ParticleTypes.CRIT, 20, 1.0);
-            }
-            styleAttacks++;
-            if (++sinceTornado >= MinigameBosses.HUNLLEF_TORNADO_EVERY) {
-                sinceTornado = 0;
-                return MinigameBosses.HUNLLEF_TORNADO;
-            }
-            if (magic) {
-                if (boss.getRandom().nextInt(MinigameBosses.HUNLLEF_PRAYER_DISABLE_CHANCE) == 0) {
-                    return corrupted ? MinigameBosses.CORRUPTED_PRAYER_DISABLE : MinigameBosses.HUNLLEF_PRAYER_DISABLE;
-                }
-                return corrupted ? MinigameBosses.CORRUPTED_MAGIC : MinigameBosses.HUNLLEF_MAGIC;
-            }
-            return corrupted ? MinigameBosses.CORRUPTED_RANGED : MinigameBosses.HUNLLEF_RANGED;
+            return switch (attack) {
+                case STOMP -> MinigameBosses.HUNLLEF_STOMP;
+                case TORNADO -> MinigameBosses.HUNLLEF_TORNADO;
+                case PRAYER_DISABLE -> corrupted ? MinigameBosses.CORRUPTED_PRAYER_DISABLE : MinigameBosses.HUNLLEF_PRAYER_DISABLE;
+                case MAGIC -> corrupted ? MinigameBosses.CORRUPTED_MAGIC : MinigameBosses.HUNLLEF_MAGIC;
+                case RANGED -> corrupted ? MinigameBosses.CORRUPTED_RANGED : MinigameBosses.HUNLLEF_RANGED;
+            };
         }
 
         @Override
@@ -186,15 +178,13 @@ final class EncounterScripts {
         @Override
         protected int incoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             Category c = category(type);
-            if (c == protectedStyle) {
+            if (cycle.playerAttack(com.runecraft.osrs.content.minigames.HunllefCycle.Style.values()[c.ordinal()])) {
                 CombatAchievementService.flag(attacker, CombatAchievements.FLAG_HUNLLEF_WRONG_WEAPON);
                 Msg.action(attacker, "The Hunllef's prayer protects it from " + STYLE_NAMES[c.ordinal()] + "!");
                 return 0;
             }
             // Every sixth off-prayer attack (zero hits too) makes it pray against that attack's style.
-            if (++offPrayerHits >= MinigameBosses.HUNLLEF_HITS_PER_PRAYER) {
-                offPrayerHits = 0;
-                protectedStyle = c;
+            if (cycle.prayerSwitched()) {
                 BossFx.say(boss, "The Hunllef switches its prayer to protect from " + STYLE_NAMES[c.ordinal()] + "!");
             }
             return damage;
@@ -205,7 +195,7 @@ final class EncounterScripts {
             if (target == null) {
                 return;
             }
-            BossFx.world(boss).sendParticles(switch (protectedStyle) {
+            BossFx.world(boss).sendParticles(switch (cycle.prays()) {
                 case MELEE -> ParticleTypes.CRIT;
                 case RANGED -> ParticleTypes.HAPPY_VILLAGER;
                 case MAGIC -> ParticleTypes.WITCH;

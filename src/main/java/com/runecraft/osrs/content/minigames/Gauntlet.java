@@ -73,10 +73,12 @@ public final class Gauntlet {
     /** Extra entrance block for the Corrupted Gauntlet (the normal one is the minigame's own entrance). */
     public static final String CORRUPTED_ENTRANCE = "corrupted_gauntlet_entrance";
     /**
-     * The Gauntlet Portal's place in north-west Prifddinas (wiki map 3228, 6116; until round 34 at 3234 with the entrances and
-     * chest beside it). The portal leads into the lobby ({@link GauntletLobby}), where the entrances and the reward chest are.
+     * The Gauntlet Portal's place in north-west Prifddinas (wiki map 3228, 6116). The portal leads into the lobby
+     * ({@link GauntletLobby}), where the entrances and the reward chest are. Until round 34 the place was "mg_gauntlet" at
+     * 3234 with the entrances and chest in a row; a new id so worlds that built that row get the portal too (the old row
+     * keeps working).
      */
-    public static final String PLACE = "mg_gauntlet";
+    public static final String PLACE = "mg_gauntlet_portal";
     public static final int ENTRANCE_X = GauntletLobby.PORTAL_X;
     public static final int ENTRANCE_Y = GauntletLobby.PORTAL_Y;
     /** The instanced maze (starting room around 1908, 5666). */
