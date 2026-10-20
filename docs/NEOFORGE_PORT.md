@@ -164,6 +164,12 @@ Keep behaviour identical; only adapt to the new API. Shared helpers: `com.runecr
   bridge); Fabric's `ALLOW_DEATH` ran before the totem check, so the bridge asks it from `LivingDamageEvent.Post`.
 - **Knockback.** 1.21 knocks targets back for damage without an attacker unless the type is in
   `#minecraft:no_knockback`; attacker-less OSRS hits use `runecraft:osrs_typeless`.
+- **Chunk unloading livelock.** In 1.21.1 a stale unload callback for a chunk taken back after a teleport under
+  lag can re-queue itself forever inside `ChunkMap.processUnloads` during `stopServer`, hanging Save and Quit;
+  `mixin/ChunkMapMixin` drops such callbacks. The client smoke test's quit watchdog dumps threads and chunk state
+  if quitting hangs again.
+- **Log patterns.** NeoForge stack frames read `at TRANSFORMER/runecraft@<ver>/com.runecraft...`; the smoke
+  scripts match both forms.
 - **Enchanting** in 1.21 is driven by item tags (`#minecraft:swords`, `enchantable/*`); gen_worldgen writes them.
 
 ## Status
