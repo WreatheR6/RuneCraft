@@ -518,7 +518,9 @@ public final class BossWalks {
 
     static void pray(ServerPlayer p, com.runecraft.osrs.Prayer pr) {
         com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(p);
-        data.setPrayerPoints(99);
+        if (data.prayerPoints() <= 0) {
+            data.setPrayerPoints(99); // the walk tests mechanics, not prayer upkeep
+        }
         if (!data.isActive(pr)) {
             data.activePrayers().removeIf(x -> x == com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC
                     || x == com.runecraft.osrs.Prayer.PROTECT_FROM_MISSILES || x == com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE);
