@@ -125,15 +125,32 @@ final class LateQuestsB {
                 .attack(AttackDef.of("locust_swarm", AttackType.MAGIC, 24, 9, 3).special(Special.AOE, 5).telegraph(2, "Locusts swarm from the champion's shell!"))
                 .attack(AttackDef.of("sand_spike", AttackType.MAGIC, 24, 10, 3).special(Special.SKY_STRIKE, 0).telegraph(2, "The sand ripples beneath you!"))
                 .drops(Drop.always("bones")).size(1.6f, 1.4f, 1.2f).at("necropolis").arena(12, "sand"));
-        // Wiki: level 174, 180 HP, stabs up to 16; punishes protection prayers (not modelled).
+        // Wiki: level 174, 180 HP, stabs up to 16; an overhead protection prayer costs a third of the player's Hitpoints
+        // (QuestBossScripts.FalseGods).
         b.boss(BossDef.of("head_menaphite_guard", "Head Menaphite Guard").level(174).stats(180, 180, 150, 150, 150, 1).speed(4)
                 .defenceBonus(10, 30, 30, 0, 50)
                 .attack(AttackDef.of("stab", AttackType.STAB, 16, 2.5, 10))
                 .drops(Drop.always("bones")).skin(0xA86A45, 0xE0C050, 0x6A4A2A, 0xC0A030));
+        // Wiki: level 351, 480 HP, slashes with a dragon scimitar (max hit unknown: 22 from her stats, approx) and every seventh
+        // action a lightning bolt in front of her for up to 80 that can be walked out of. Her Menaphite Shadow is not modelled.
+        b.boss(BossDef.of("menaphite_akh", "Menaphite Akh").level(351).stats(480, 150, 150, 140, 150, 150).speed(4)
+                .defenceBonus(5, 30, 30, 280, 180)
+                .attack(AttackDef.of("scimitar", AttackType.SLASH, 22, 2.5, 6))
+                .attack(AttackDef.of("lightning", AttackType.MAGIC, 80, 6, 1).special(Special.SKY_STRIKE, 0)
+                        .telegraph(2, "The Menaphite Akh twitches, and lightning gathers in front of her!"))
+                .drops(Drop.always("bones")).skin(0xA86A45, 0x8A1A2A, 0x3A1A1A, 0xE0C050));
         b.spot("bcs_jamila", "Jamila's stall", 3311, 2780);
         b.npc("jamila", "Jamila", "bcs_jamila", 0, 0, 0xA86A47, 0xC05A3A, 0x6A3A2A, 0x2A1A13);
-        b.spot("bcs_ruins_of_ullek", "Ruins of Ullek", 3412, 2811); // approx: the ruins' map centre
+        b.spot("bcs_ruins_of_ullek", "Ruins of Ullek", 3402, 2812); // the furnace and well (quest-helper zone 3388-3416, 2803-2821)
+        // Maisa at her campsite by the cliffs east of Sophanem, and in the north of the necropolis for the end (quest-helper tiles).
+        b.npcAt("maisa_bcs", "Maisa", 3378, 2792, 0xA86A46, 0x6A3A5B, 0x3A1A2A, 0x2A1A12);
+        b.npcAt("maisa_necropolis", "Maisa", 3327, 2740, 0xA86A46, 0x6A3A5C, 0x3A1A2A, 0x2A1A12);
+        b.npcAt("bcs_menaphite_citizen", "Entranced citizen", 3347, 2718, 0xA86A48, 0xC0B090, 0x6A5A3A, 0x2A1A14);
+        b.npcAt("zahur", "Zahur", 3425, 2909, 0xA86A49, 0x3A6A5A, 0x2A3A2A, 0x2A1A15); // her shop south of Nardah's fountain
+        b.spot("bcs_elid_lily", "Lily of the Elid island", 3353, 2927); // the stepping stones west of Nardah
         b.item("bcs_message", "Message", "note", 0xE0D0B0, "A message slipped to you by Jamila.");
+        b.item("lily_of_the_elid", "Lily of the Elid", "herb", 0xF0F0E0, "A rare lily that grows on an island in the River Elid.");
+        b.item("cure_crate", "Cure crate", "package", 0xA08050, "A crate of Zahur's cure for the pox.");
         b.items(s -> s.add("keris_partisan", "Keris partisan", Kind.MELEE_WEAPON, "spear", 0xC0A060).value(60000).stack(1)
                 .equipment(new EquipmentDef(EquipmentDef.Slot.WEAPON, new EquipmentStats(58, -2, 57, 2, 0, 0, 0, 0, 0, 0, 45, 0, 0, 3),
                         Map.of(Skill.ATTACK, 65), 4, AttackType.STAB, EquipmentDef.WeaponClass.MELEE))
@@ -151,30 +168,67 @@ final class LateQuestsB {
                 .say("For helping Sophanem, an exclusive piece from my stall! *As she fits a gold ring on your finger, she slips you a message.*",
                         "Oh dear, it's too small. Never mind.", "* The message asks you to meet its sender at a campsite by the cliffs east of the city.")
                 // Wiki: Maisa and the necropolis, the entranced Head Menaphite Guard, the Ruins of Ullek (the furnace, the AKHEM chest,
-                // the iron scarab emblem, the scarab mages) and the riddle of the tomb's urns, then the High Priest of Scabaras.
-                .stage("I should meet Maisa at her campsite, find out what the Menaphites are digging up in the necropolis and follow the "
-                        + "scabarites to the Ruins of Ullek.")
-                .talk("maisa").stay().unlessFlag("bcs_maisa").flag("bcs_maisa").travel("necropolis")
+                // the iron scarab emblem, the scarab mages), the lever maze, the riddle of the tomb's urns and Mehhar's spirit.
+                .stage("I should meet Maisa at her campsite east of Sophanem, find out what the Menaphites are digging up in the necropolis and "
+                        + "follow the scabarites to the Ruins of Ullek.")
+                .talk("maisa_bcs").stay().unlessFlag("bcs_maisa").flag("bcs_maisa").travel("necropolis")
                 .say("You came! Citizens of Menaphos have slipped the quarantine to dig in the old necropolis, and they act... strangely. Come with me.",
-                        "* You and Maisa arrive at the necropolis, where entranced citizens and guards dig at the Jaltevas Pyramid.")
-                .talk("maisa").stay().needFlag("bcs_maisa").unlessFlag("bcs_guard").spawn("head_menaphite_guard")
-                .say("Look out! The Head Menaphite Guard! Don't pray against him: his false-gods trick hurts more than his spear.")
+                        "* You and Maisa arrive at the necropolis, where entranced citizens and guards dig at the Jaltevas Pyramid.",
+                        "* Its entry is blocked. Perhaps one of the diggers will talk.")
+                .talk("bcs_menaphite_citizen").stay().needFlag("bcs_maisa").unlessFlag("bcs_guard").spawn("head_menaphite_guard")
+                .say("...dig... the goddess wills it... dig...", "@Maisa: Look out! The Head Menaphite Guard! Don't pray against him: his "
+                        + "false-gods trick hurts more than his spear.")
                 .kill("head_menaphite_guard").stay().needFlag("bcs_maisa").unlessFlag("bcs_guard").flag("bcs_guard")
                 .say("* The guard snaps out of his trance: Amascut hypnotised them and unsealed her tomb in the pyramid. Scabarites helped her,",
-                        "* coming from ruins to the north-east.")
-                .puzzle("bcs_ruins_of_ullek", BCS_CHEST).stay().needFlag("bcs_guard").unlessFlag("bcs_chest").take("coal", "iron_bar").flag("bcs_chest")
+                        "* coming from ruins to the north-east. Maisa asks you to meet her back at her camp.")
+                .talk("maisa_bcs").stay().needFlag("bcs_guard").unlessFlag("bcs_explore").flag("bcs_explore")
+                .say("Explore the cliffs and find those scabarites. I'll work out how to get back into Menaphos.",
+                        "There's a tinderbox in the camping equipment and a spade north of the camp if you need them.")
+                .puzzle("bcs_ruins_of_ullek", BCS_CHEST).stay().needFlag("bcs_explore").unlessFlag("bcs_chest")
+                .need("tinderbox", "spade").take("coal", "iron_bar").flag("bcs_chest")
                 .say("* The chest holds a scarab mould. You cast an iron scarab emblem at the furnace, set it in the pillar facing down and the",
-                        "* stairs open. Two scarab mages fall on you, but you beat them off and climb down into the tomb.")
-                .missing("* The furnace by the well needs coal, and you'll want an iron bar for whatever the scabarites hid.")
+                        "* stairs open. Two scarab mages fall on you, but you beat them off, climb down and pull the maze's two levers in time.")
                 .puzzle("bcs_ruins_of_ullek", BCS_URNS).stay().needFlag("bcs_chest").unlessFlag("bcs_urns").flag("bcs_urns")
                 .say("* You pull the lever, and the door to the inner tomb grinds open.")
-                .reach("bcs_ruins_of_ullek", 8).needFlag("bcs_urns")
-                .say("* The High Priest of Scabaras sits under Amascut's spell. You speak the incantation and free him, and take a rusty key from",
-                        "* the urn behind him. Above, something stirs: the Champion of Scabaras!")
+                .reach("bcs_ruins_of_ullek", 8).needFlag("bcs_urns").spawn("champion_of_scabaras")
+                .say("* The spirit of Mehhar, son of Osmumten, teaches you an incantation to free the High Priest of Scabaras. You take a rusty",
+                        "* key from the urn at the back and unlock the door upstairs: the Champion of Scabaras!")
                 .stage("I must defeat the Champion of Scabaras.")
-                .kill("champion_of_scabaras").say("* The Champion of Scabaras falls, and with it Amascut's hold on the scabarites.")
-                .stage("I should report to the High Priest.")
-                .talk("tumeken_priest").say("Amascut's curse on the Menaphites is broken, and the way into her tombs is open. Take these, with Sophanem's thanks.");
+                .kill("champion_of_scabaras")
+                .say("* The Champion of Scabaras falls. You free the High Priest of Scabaras: Amascut has captured the lesser gods in Osmumten's",
+                        "* tomb and controls the Pharaoh. He confesses to the locusts, the frogs and the poisoned cows, but not to the pox.")
+                // Wiki: Zahur and Maisa in Nardah, the Lily of the Elid past the crocodile, Zahur's chemistry equipment, the cure crate to
+                // the High Priest in Sophanem, then the Menaphite Akh after freeing the necropolis with Maisa.
+                .stage("I should help Zahur in Nardah make a cure for the pox, take it to the High Priest in Sophanem and free the necropolis "
+                        + "with Maisa.")
+                .talk("zahur").stay().unlessFlag("bcs_zahur").flag("bcs_zahur")
+                .say("@Maisa: The pox comes from the bark of the cadavaberry bush. Zahur can treat it.",
+                        "I can, with a Lily of the Elid. They grow on the island west of here. Take some raw beef for the crocodile.")
+                .reach("bcs_elid_lily", 6).stay().needFlag("bcs_zahur").unlessFlag("bcs_cure").unless("lily_of_the_elid", "cure_crate")
+                .take("minecraft:beef").give("lily_of_the_elid")
+                .say("* A hungry crocodile blocks the stepping stones. You throw it the meat (you name it Roger) and pick a Lily of the Elid.")
+                .missing("* A hungry crocodile guards the stepping stones. Some raw beef might distract it.")
+                .talk("zahur").stay().needFlag("bcs_zahur").unlessFlag("bcs_cure").take("lily_of_the_elid").give("cure_crate")
+                .say("* You warm up her chemistry equipment until every heat sits at the mark.",
+                        "There: the cure. Take this crate to the High Priest in Sophanem.")
+                .missing("I need a Lily of the Elid from the island west of Nardah.")
+                .talk("high_priest_sophanem").stay().needFlag("bcs_zahur").unlessFlag("bcs_cure").take("cure_crate").flag("bcs_cure")
+                .say("A cure for the pox! Sophanem will recover. Maisa waits for you at the necropolis.")
+                .talk("maisa_necropolis").stay().needFlag("bcs_cure").unlessFlag("bcs_akh").spawn("menaphite_akh")
+                .say("* You chant the incantation, and everyone in the necropolis is freed from Amascut's influence.",
+                        "@Maisa: Osman! Spying on me, invisible? I'm leaving.",
+                        "* As you argue with Osman, lightning strikes the sand and scarlet flames burn: a Menaphite Akh appears!")
+                .kill("menaphite_akh").stay().needFlag("bcs_cure").unlessFlag("bcs_akh").flag("bcs_akh")
+                .say("@Osman: Amascut? I still don't believe it... but there's more to this than I thought. Maisa will have gone to Sophanem.")
+                .talk("high_priest_sophanem").needFlag("bcs_akh")
+                .say("The plagues are ended for good! Come, meet the Menaphites at the bridge.",
+                        "* Pharaoh Kemesis himself appears: Menaphos will prepare to end the quarantine.")
+                .missing("?!bcs_zahur|The pox spreads. Zahur in Nardah knows herbs; perhaps she can make a cure.",
+                        "?bcs_zahur|?!bcs_cure|Zahur is making a cure for the pox? Bring it to me when it's ready.",
+                        "?bcs_cure|Maisa needs you at the necropolis. Amascut's servants are still about.")
+                // saves from before round 33 reached this stage without Maisa's flags: the old ending (report to the Priest of Tumeken)
+                .talk("tumeken_priest").unlessFlag("bcs_maisa")
+                .say("Amascut's curse on the Menaphites is broken, and the way into her tombs is open. Take these, with Sophanem's thanks.");
     }
 
     /** The scabarites' chest (wiki): its passcode is AKHEM as alphabet positions, 1 11 8 5 13. */
@@ -185,8 +239,9 @@ final class LateQuestsB {
             .solution(1, 1, 1, 8, 5, 1, 3).failLines("* The lock doesn't open.").build();
 
     /**
-     * The riddle of the tomb (wiki): which emblem goes in which urn, north to south, drawn per player. The wiki riddle's wording is
-     * not in the dump: this one is reworded so the order can be deduced from it (approx).
+     * The riddle of the tomb (wiki): which emblem goes in which urn, north to south, drawn per player. As in OSRS the two northern
+     * urns are named by their gods ("the god 1 arrived just before the god 2") and the two southern ones by the offerings; the
+     * exact wording is not in the dump (approx).
      */
     static final QuestPuzzle BCS_URNS = urnPuzzle();
 
@@ -202,8 +257,9 @@ final class LateQuestsB {
             b.variant(null).prompt("* Four urns stand in a row from north to south. The south-western plaque gives you four emblems; faded carvings",
                             "* show Apmeken, goddess of companionship, with linen (baboon); Het, god of health, with wine (human); Crondis, goddess",
                             "* of resourcefulness, with a necklace (crocodile); and Scabaras, god of isolation, with a carving (scarab). The riddle:",
-                            "* 'The " + gods[o[0]] + " came first, and the " + gods[o[1]] + " just after. To the one that came last he offered "
-                                    + gifts[o[3]] + ".' The first to come rests furthest north.",
+                            "* 'The " + gods[o[0]] + " arrived just before the " + gods[o[1]] + ". To the one that arrived next, he offered "
+                                    + gifts[o[2]] + ". The one that was offered " + gifts[o[3]] + " came last of all.' The first to arrive rests "
+                                    + "furthest north.",
                             "* Place the emblems from the northern urn to the southern one.")
                     .options(emblems).solution(o);
         }
@@ -439,10 +495,12 @@ final class LateQuestsB {
                 .say("Dinh's hammer! With this I can mend the Doors, though the pyromancers will have to keep subduing the Wintertodt.",
                         "Tell Lady Vulcana the Doors will hold.")
                 .missing("Dinh's hammer should be in the Forsaken Tower, west of Lovakengj.")
-                // carrying the hammer, the player still owes Undor a visit (saves from the old version reach this stage without it)
-                .talk("lord_kandur_lovakengj").unless("dinhs_hammer")
+                .talk("lord_kandur_lovakengj").needFlag("fsk_doors")
                 .say("The Doors will hold? Then Kourend owes you. Take this, and ride our minecarts freely.")
-                .hint("lord_kandur_lovakengj", "You have Dinh's hammer? Then take it to Undor at the Wintertodt camp at once!");
+                .missing("You have Dinh's hammer? Then take it to Undor at the Wintertodt camp at once!")
+                // saves from before round 33 reached this stage without meeting Undor (and without the hammer): the old ending
+                .talk("lord_kandur_lovakengj").unlessFlag("fsk_undor")
+                .say("The tower's power flows to our forges again? Then Kourend owes you. Take this, and ride our minecarts freely.");
         b.quest("the_ascent_of_arceuus", "The Ascent of Arceuus", Difficulty.INTERMEDIATE, 1)
                 .xp(Skill.HUNTER, 1500).xp(Skill.RUNECRAFT, 500) // OSRS (current quest XP rewards)
                 .reqQuest("client_of_kourend").req(Skill.HUNTER, 12)

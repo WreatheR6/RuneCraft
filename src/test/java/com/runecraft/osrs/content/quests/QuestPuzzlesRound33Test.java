@@ -184,6 +184,13 @@ class QuestPuzzlesRound33Test {
         assertTrue(puzzle(fsk, LateQuestsB.FSK_POTION).needFlags.contains("fsk_furnace"));
         assertTrue(puzzle(fsk, LateQuestsB.FSK_PYLONS).needFlags.contains("fsk_potion"));
         assertTrue(fsk.stages.get(2).triggers.stream().anyMatch(t -> t.target.equals("undor") && t.take.containsKey("dinhs_hammer")));
+        // Lady Vulcana only ends the quest once Undor has the hammer (or for a save from before Undor existed)
+        for (Trigger t : fsk.stages.get(2).triggers) {
+            if (t.target.equals("lord_kandur_lovakengj")) {
+                assertTrue(t.needFlags.contains("fsk_doors") || t.unlessFlags.contains("fsk_undor"), "Undor skipped");
+            }
+        }
+        assertTrue(fsk.stages.get(1).triggers.get(0).setFlags.contains("fsk_undor"), "every new save meets Undor first");
     }
 
     @Test
@@ -198,5 +205,32 @@ class QuestPuzzlesRound33Test {
         assertTrue(bcs.def.itemRewards().containsAll(List.of("keris_partisan", "circlet_of_water")));
         assertEquals(379, com.runecraft.osrs.content.ContentRegistry.boss("champion_of_scabaras").combatLevel);
         assertTrue(bcs.triggers().stream().anyMatch(t -> t.kind == Trigger.Kind.KILL && t.target.equals("head_menaphite_guard")));
+        // the guard is raised by talking to an entranced digger in the necropolis, where Maisa's cutscene leaves the player
+        Trigger guard = bcs.stages.get(1).triggers.stream().filter(t -> "head_menaphite_guard".equals(t.spawn)).findFirst().orElseThrow();
+        assertEquals("bcs_menaphite_citizen", guard.target);
+        assertEquals("necropolis", bcs.stages.get(1).triggers.get(0).travel);
+        assertEquals("maisa_bcs", bcs.stages.get(1).triggers.get(0).target, "Maisa's campsite east of Sophanem");
+        // every urn order is answered by the riddle: the gods name the two northern urns, the offerings the two southern ones
+        List<String> emblems = List.of("Baboon emblem", "Human emblem", "Crocodile emblem", "Scarab emblem");
+        String[] gods = {"companionship", "health", "resourcefulness", "isolation"};
+        String[] gifts = {"linen", "wine", "necklace", "carving"};
+        for (QuestPuzzle.Variant v : LateQuestsB.BCS_URNS.rooms.get(0).variants()) {
+            String riddle = String.join(" ", v.prompt());
+            String clue = riddle.substring(riddle.indexOf("The riddle:"));
+            List<String> order = answer(v);
+            assertTrue(clue.indexOf(gods[emblems.indexOf(order.get(0))]) < clue.indexOf(gods[emblems.indexOf(order.get(1))]), riddle);
+            assertTrue(clue.matches(".*next, he offered (some|a) " + gifts[emblems.indexOf(order.get(2))] + "\\..*"), riddle);
+            assertTrue(clue.contains(gifts[emblems.indexOf(order.get(3))] + " came last"), riddle);
+        }
+        // the cure, the Menaphite Akh (wiki stats) and the High Priest in Sophanem at the end
+        QuestSpec.Stage last = bcs.stages.get(3);
+        assertTrue(last.triggers.stream().anyMatch(t -> t.target.equals("bcs_elid_lily") && t.give.containsKey("lily_of_the_elid")));
+        assertTrue(last.triggers.stream().anyMatch(t -> t.target.equals("high_priest_sophanem") && t.take.containsKey("cure_crate")));
+        assertTrue(last.triggers.stream().anyMatch(t -> "menaphite_akh".equals(t.spawn)));
+        assertEquals(351, com.runecraft.osrs.content.ContentRegistry.boss("menaphite_akh").combatLevel);
+        assertEquals("high_priest_sophanem", QuestWalk.advancing(last).target);
+        assertTrue(QuestWalk.advancing(last).needFlags.contains("bcs_akh"));
+        // saves from before round 33 (no Maisa flag) keep the old ending
+        assertTrue(last.triggers.stream().anyMatch(t -> t.target.equals("tumeken_priest") && t.unlessFlags.contains("bcs_maisa") && t.completes()));
     }
 }

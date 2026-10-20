@@ -1047,6 +1047,9 @@
     "bug10_tail",
     "bug11_tail"
   ],
+  "head_menaphite_guard": [
+    "head"
+  ],
   "hellhound": [
     "eyes"
   ],
@@ -1447,6 +1450,9 @@
   "melzar_the_mad": [
     "staff_orb",
     "hand_glow"
+  ],
+  "menaphite_akh": [
+    "head"
   ],
   "mg_tzhaar_hur_tel": [
     "torso",
