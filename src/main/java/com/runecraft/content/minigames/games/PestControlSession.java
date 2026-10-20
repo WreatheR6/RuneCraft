@@ -76,6 +76,8 @@ public class PestControlSession extends MinigameSession {
     private static final String[] PORTAL_DIR = {"western", "eastern", "south-eastern", "south-western"};
     /** The landing jetty north of the fort, where the lander drops the players (and a dead player respawns). */
     private static final int DOCK_Z = -18;
+    /** The island's normal trees (logs for repairs), arena x, z (approx spots). */
+    private static final int[][] TREE_POS = {{-9, -11}, {9, -11}, {-22, -8}, {22, -8}, {-5, 12}, {6, 12}};
 
     final int tier;
     private final Mob[] portals = new Mob[4];
@@ -87,6 +89,8 @@ public class PestControlSession extends MinigameSession {
     private final Map<UUID, Integer> activity = new HashMap<>();
     final List<Pest> pests = new ArrayList<>();
     final List<Barrier> barriers = new ArrayList<>();
+    /** Trunks of the island's trees still standing: once chopped down they never grow back (wiki "Tree (Pest Control)"). */
+    final List<BlockPos> trees = new ArrayList<>();
     private boolean won;
     private boolean timedOut;
 
@@ -249,6 +253,19 @@ public class PestControlSession extends MinigameSession {
                 }
             }
         }
+        // Normal trees: a woodcutting trunk under a log and leaves.
+        BlockState leaves = Blocks.OAK_LEAVES.defaultBlockState().setValue(net.minecraft.world.level.block.LeavesBlock.PERSISTENT, true);
+        for (int[] t : TREE_POS) {
+            set(t[0], 1, t[1], com.runecraft.registry.ModBlocks.TREES.get(com.runecraft.osrs.data.Tree.TREE).defaultBlockState());
+            set(t[0], 2, t[1], Blocks.OAK_LOG.defaultBlockState());
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    set(t[0] + dx, 3, t[1] + dz, leaves);
+                }
+            }
+            set(t[0], 4, t[1], leaves);
+            trees.add(rel(t[0], 1, t[1]));
+        }
         // The landing jetty north of the fort, with the squire's way back to the outpost.
         for (int x = -3; x <= 3; x++) {
             for (int z = DOCK_Z - 3; z <= DOCK_Z + 1; z++) {
@@ -317,11 +334,34 @@ public class PestControlSession extends MinigameSession {
         for (UUID u : players) {
             activity.computeIfPresent(u, (k, v) -> PestControlRules.activityDecay(v));
         }
+        fellChoppedTrees();
         tickPests();
         if (ticks % PestControlRules.SPAWN_TICKS == 0 && pests.size() < PestControlRules.pestCap(playerCount())) {
             for (int i = 0; i < 4; i++) {
                 if (!destroyed[i]) {
                     spawnPest(i, PestControlRules.rollPest(random.nextDouble()), null);
+                }
+            }
+        }
+    }
+
+    /** A tree chopped down (its trunk depleted) is gone for the rest of the game. */
+    private void fellChoppedTrees() {
+        for (java.util.Iterator<BlockPos> it = trees.iterator(); it.hasNext(); ) {
+            BlockPos trunk = it.next();
+            BlockState st = world.getBlockState(trunk);
+            if (st.getBlock() instanceof com.runecraft.block.ResourceBlock r && !r.isDepleted(st)) {
+                continue;
+            }
+            it.remove();
+            for (int dy = 0; dy <= 3; dy++) {
+                for (int dx = -1; dx <= 1; dx++) {
+                    for (int dz = -1; dz <= 1; dz++) {
+                        if (dy <= 1 && (dx != 0 || dz != 0)) {
+                            continue;
+                        }
+                        put(trunk.offset(dx, dy, dz), Blocks.AIR.defaultBlockState());
+                    }
                 }
             }
         }

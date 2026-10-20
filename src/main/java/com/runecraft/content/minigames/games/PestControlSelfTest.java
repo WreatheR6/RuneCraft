@@ -185,12 +185,19 @@ public final class PestControlSelfTest {
             expect(pc.shielded(i) && portal.getTags().contains(MinigameCombat.INVULNERABLE), "portal " + i + " starts unshielded");
         }
         expect(CombatHandler.hookAfterRoll(player, pc.portal(0), AttackType.RANGED, 30) == 0, "a shielded portal took damage");
+        // The island's trees give logs and never grow back once chopped down.
+        expect(pc.trees.size() == 6, pc.trees.size() + " trees on the island");
+        BlockPos trunk = pc.trees.get(0);
+        net.minecraft.world.level.block.state.BlockState trunkState = pc.world.getBlockState(trunk);
+        expect(trunkState.getBlock() instanceof com.runecraft.block.TreeLogBlock, "the first tree has no woodcutting trunk");
+        pc.world.setBlock(trunk, trunkState.setValue(com.runecraft.block.ResourceBlock.DEPLETED, true), 3);
 
         // ---- Shields: the first drops 15 seconds in, the rest every 30 seconds, in the game's rotation.
         tickClearing(pc, 24, null);
         for (int i = 0; i < 4; i++) {
             expect(pc.shielded(i), "a shield dropped before 15 seconds (tick " + pc.elapsed() + ")");
         }
+        expect(pc.trees.size() == 5 && pc.world.getBlockState(trunk).isAir(), "a chopped-down tree is still standing");
         tick(pc, 1);
         int first = pc.rotation()[0];
         for (int i = 0; i < 4; i++) {
