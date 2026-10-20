@@ -22,13 +22,16 @@ import net.minecraft.world.entity.LivingEntity;
  * TzHaar Slayer tasks fought as TzTok-Jad or TzKal-Zuk tasks (OSRS Wiki "Slayer task/TzHaar", "TzTok-Jad"): a player assigned
  * TzHaar (the "Hot stuff" unlock) may take TzTok-Jad instead, or TzKal-Zuk once they have killed him. The choice is offered by
  * the Slayer master on assignment, by TzHaar-Mej-Jal and TzHaar-Ket-Keh, and on entering the cave with the task, and must be
- * made before the first wave. Taking it makes the task one kill of that boss: every creature killed in the run gives its Slayer
- * experience, the boss gives its own (25,250 / 101,890) and the pet is likelier. Dying, dropping out in combat or leaving
- * cancels the task without costing points or the streak. A TzHaar task the player did not take that way is never touched.
- * // approx: Master / Grandmaster Combat Achievements let OSRS players take 2 or 3 Jads per task; here it is always one.
+ * made before the first wave. Taking it makes the task 1 to {@link SlayerService#tzhaarBossTaskKills} kills of that boss (one;
+ * two from the master Combat Achievement tier, three from grandmaster: the player is offered 1 up to that many). Each kill is
+ * a run of its own (the run ends at the kill) and takes one off the task, which completes with the last; every creature killed
+ * in such a run gives its Slayer experience, the boss gives its own (25,250 / 101,890) and the pet is likelier. Dying,
+ * dropping out in combat or leaving a run before its kill cancels the whole task (kills already made included) without
+ * costing points or the streak. A TzHaar task the player did not take that way is never touched.
  */
 public final class TzHaarSlayer {
     private static final String TASK = "tzhaar";
+    /** Per game: the size (1-3) of the boss task taken for it, 0 when none (older saves hold 1 for their one-kill task). */
     private static final String KEY = "tzhaar_boss_task:";
 
     private TzHaarSlayer() {
@@ -36,6 +39,15 @@ public final class TzHaarSlayer {
 
     private static String bossName(Minigame game) {
         return game == Minigame.INFERNO ? "TzKal-Zuk" : "TzTok-Jad";
+    }
+
+    private static String place(Minigame game) {
+        return game == Minigame.INFERNO ? "Inferno" : "Fight Cave";
+    }
+
+    /** "TzTok-Jad" for one kill, "2 TzTok-Jad" for more. */
+    private static String kills(int n, Minigame game) {
+        return n == 1 ? bossName(game) : n + " " + bossName(game);
     }
 
     private static boolean tzhaarTask(SlayerState.Profile p) {
@@ -53,28 +65,73 @@ public final class TzHaarSlayer {
                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(hover))));
     }
 
+    /** One option per size the player may take: "[Kill TzTok-Jad]" with one allowed, "[Kill 1 TzTok-Jad] [Kill 2 TzTok-Jad]" with two. */
+    private static void options(MutableComponent line, Minigame game, int allowed, String choice) {
+        String risk = " Each kill is a " + place(game) + " run of its own; dying or leaving a run before its kill cancels the"
+                + " whole task (no points lost).";
+        String xp = " Every creature in the " + place(game) + " gives Slayer experience.";
+        if (allowed <= 1) {
+            line.append(option("Kill " + bossName(game), choice, "Your task becomes one " + bossName(game) + " kill." + xp + risk));
+            return;
+        }
+        for (int n = 1; n <= allowed; n++) {
+            if (n > 1) {
+                line.append(Component.literal(" "));
+            }
+            line.append(option("Kill " + n + " " + bossName(game), choice + "_" + n, "Your task becomes " + n + " " + bossName(game)
+                    + (n == 1 ? " kill." : " kills.") + xp + risk));
+        }
+    }
+
     /**
      * Offers to fight a TzHaar task as a TzTok-Jad (or TzKal-Zuk) task: clickable options running {@code /minigame tzhaar
-     * task_jad|task_zuk}. Nothing for a player without a TzHaar task, or who already took one.
+     * task_jad|task_zuk} (with Combat Achievements, {@code task_jad_<n>} for each size up to the allowance). Nothing for a
+     * player without a TzHaar task, or who already took one.
      */
     public static void offer(ServerPlayer player) {
         SlayerState.Profile p = SlayerService.profile(player);
         if (!tzhaarTask(p) || onTask(player, Minigame.FIGHT_CAVES) || onTask(player, Minigame.INFERNO)) {
             return;
         }
-        String risk = " Dying or leaving before the kill cancels the task (no points lost).";
-        MutableComponent line = Component.literal("Your TzHaar task may be fought as a boss task instead: ").withStyle(ChatFormatting.GRAY)
-                .append(option("Kill TzTok-Jad", "task_jad", "Your task becomes one TzTok-Jad kill; the whole Fight Cave run gives Slayer"
-                        + " experience." + risk));
+        int allowed = SlayerService.tzhaarBossTaskKills(player);
+        MutableComponent line = Component.literal("Your TzHaar task may be fought as a boss task instead: ").withStyle(ChatFormatting.GRAY);
+        options(line, Minigame.FIGHT_CAVES, allowed, "task_jad");
         if (zukOffered(player)) {
-            line.append(Component.literal(" ")).append(option("Kill TzKal-Zuk", "task_zuk", "Your task becomes one TzKal-Zuk kill; the"
-                    + " whole Inferno run gives Slayer experience." + risk));
+            line.append(Component.literal(" "));
+            options(line, Minigame.INFERNO, allowed, "task_zuk");
         }
         player.displayClientMessage(line, false);
     }
 
-    /** "/minigame tzhaar task_jad|task_zuk": takes the TzHaar task as this minigame's boss task (outside a run or before wave 1). */
+    /**
+     * "/minigame tzhaar task_jad_&lt;n&gt;|task_zuk_&lt;n&gt;": takes the TzHaar task as {@code n} kills of that boss; an
+     * {@code n} that is not a number is refused like one out of range, with {@link #take(ServerPlayer, Minigame, int)}'s
+     * message. False for anything else (or a refused take).
+     */
+    public static boolean choose(ServerPlayer player, String choice) {
+        Minigame game = choice.startsWith("task_jad_") ? Minigame.FIGHT_CAVES : choice.startsWith("task_zuk_") ? Minigame.INFERNO : null;
+        if (game == null) {
+            return false;
+        }
+        int n;
+        try {
+            n = Integer.parseInt(choice.substring("task_jad_".length()));
+        } catch (NumberFormatException e) {
+            n = 0; // never a valid size: take() says what the player may pick instead of failing silently
+        }
+        return take(player, game, n);
+    }
+
+    /**
+     * "/minigame tzhaar task_jad|task_zuk": takes the TzHaar task as this minigame's boss task, as many kills as the player's
+     * Combat Achievements allow (outside a run or before wave 1).
+     */
     public static boolean take(ServerPlayer player, Minigame game) {
+        return take(player, game, SlayerService.tzhaarBossTaskKills(player));
+    }
+
+    /** As {@link #take(ServerPlayer, Minigame)}, for {@code kills} kills: 1 up to what the player's Combat Achievements allow. */
+    public static boolean take(ServerPlayer player, Minigame game, int kills) {
         SlayerState.Profile p = SlayerService.profile(player);
         if (!tzhaarTask(p)) {
             Msg.game(player, "You need a TzHaar Slayer task to do that.");
@@ -92,6 +149,12 @@ public final class TzHaarSlayer {
             Msg.game(player, "Your Slayer master only offers TzKal-Zuk as a task once you have defeated him.");
             return false;
         }
+        int allowed = SlayerService.tzhaarBossTaskKills(player);
+        if (!TzHaarWaves.slayerBossTaskSize(kills, allowed)) {
+            Msg.game(player, allowed == 1 ? "Your Slayer master only offers one " + bossName(game) + " per task."
+                    : "Your Slayer master offers 1 to " + allowed + " " + bossName(game) + " per task.");
+            return false;
+        }
         if (com.runecraft.content.minigames.MinigameManager.session(player) instanceof TzHaarSession run && run.wave() >= 1) {
             Msg.game(player, "You can only take it before the fight starts.");
             return false;
@@ -99,11 +162,12 @@ public final class TzHaarSlayer {
         MinigameData data = MinigameData.of(player);
         data.setStat(player.getUUID(), KEY + Minigame.FIGHT_CAVES.id(), 0);
         data.setStat(player.getUUID(), KEY + Minigame.INFERNO.id(), 0);
-        data.setStat(player.getUUID(), KEY + game.id(), 1);
-        p.amount = 1;
-        p.remaining = 1;
-        Msg.game(player, "Your TzHaar Slayer task is now to kill " + bossName(game) + ". Dying or leaving the "
-                + (game == Minigame.INFERNO ? "Inferno" : "Fight Cave") + " before the kill cancels it.");
+        data.setStat(player.getUUID(), KEY + game.id(), kills);
+        p.amount = kills;
+        p.remaining = kills;
+        Msg.game(player, "Your TzHaar Slayer task is now to kill " + kills(kills, game) + "." + (kills > 1 ? " Each kill is a "
+                + place(game) + " run of its own." : "") + " Dying or leaving the " + place(game) + " before a kill cancels the"
+                + " whole task.");
         SlayerNet.sync(player);
         return true;
     }
@@ -114,19 +178,31 @@ public final class TzHaarSlayer {
      */
     public static void enter(ServerPlayer player, Minigame game, boolean canTake) {
         if (onTask(player, game)) {
-            Msg.game(player, "Your Slayer task is to kill " + bossName(game) + ": every creature in here gives Slayer experience.");
+            int left = SlayerService.profile(player).remaining;
+            Msg.game(player, "Your Slayer task is to kill " + bossName(game) + (left > 1 ? " (" + left + " more)" : "")
+                    + ": every creature in here gives Slayer experience.");
         } else if (canTake) {
             offer(player);
         }
     }
 
     /**
-     * Whether this run counts as the player's TzTok-Jad / TzKal-Zuk task: a TzHaar task the player took as this boss's task
-     * (the flag, and the one-kill task it made; a later TzHaar task of 90+ kills is not one).
+     * Whether this run counts as the player's TzTok-Jad / TzKal-Zuk task: the flag of a TzHaar task the player took as this
+     * boss's task, set to that task's size. The task it made must still be the current one (the same size: a later ordinary
+     * TzHaar task, 90 kills or more, never is), so a flag left behind by a task skipped or blocked at a master is ignored.
      */
     public static boolean onTask(ServerPlayer player, Minigame game) {
         SlayerState.Profile p = SlayerService.profile(player);
-        return tzhaarTask(p) && p.amount == 1 && MinigameData.of(player).stat(player.getUUID(), KEY + game.id()) > 0;
+        if (!tzhaarTask(p)) {
+            return false;
+        }
+        int size = MinigameData.of(player).stat(player.getUUID(), KEY + game.id());
+        return size > 0 && size == p.amount;
+    }
+
+    /** Whether the player's TzHaar task is taken as a TzTok-Jad or TzKal-Zuk task (then the city's TzHaar don't count). */
+    public static boolean bossTaskTaken(ServerPlayer player) {
+        return onTask(player, Minigame.FIGHT_CAVES) || onTask(player, Minigame.INFERNO);
     }
 
     /** Slayer experience for a creature killed in the run. */
@@ -140,16 +216,30 @@ public final class TzHaarSlayer {
         XpService.add(player, Skill.SLAYER, xp);
     }
 
-    /** The boss died: the task is done. */
+    /**
+     * The boss died (the run ends at the kill): one kill off the task, which completes with its streak and points on the last.
+     * The flag stays for the next run until then.
+     */
     public static void complete(ServerPlayer player, Minigame game) {
         if (!onTask(player, game)) {
+            return;
+        }
+        SlayerState.Profile p = SlayerService.profile(player);
+        p.remaining = TzHaarWaves.slayerBossTaskLeft(p.remaining);
+        if (p.remaining > 0) {
+            Msg.game(player, "You're assigned to kill " + bossName(game) + "; only " + p.remaining + " more to go. Each is a "
+                    + place(game) + " run of its own.");
+            SlayerNet.sync(player);
             return;
         }
         MinigameData.of(player).setStat(player.getUUID(), KEY + game.id(), 0);
         SlayerService.completeTask(player);
     }
 
-    /** Dying or leaving the run cancels the task (no points spent, the streak kept). */
+    /**
+     * Dying or leaving a run before its kill cancels the whole task, kills made in earlier runs included (no points spent,
+     * the streak kept; OSRS Wiki "Slayer task/TzHaar": "If the player dies or leaves, the task is cancelled").
+     */
     public static void leave(ServerPlayer player, Minigame game) {
         if (!onTask(player, game)) {
             return;

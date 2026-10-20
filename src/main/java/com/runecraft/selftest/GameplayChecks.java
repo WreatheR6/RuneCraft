@@ -104,6 +104,8 @@ final class GameplayChecks {
                 com.runecraft.content.minigames.games.TzHaarSelfTest::fightCaveRun)));
         checks.add(new SelfTest.Check("minigame:inferno_run", () -> g.tzhaarRun(
                 com.runecraft.content.minigames.games.TzHaarSelfTest::infernoRun)));
+        checks.add(new SelfTest.Check("minigame:tzhaar_task", () -> g.tzhaarRun(
+                com.runecraft.content.minigames.games.TzHaarSelfTest::tzhaarTaskRun)));
         for (RaidType r : RaidType.values()) {
             checks.add(new SelfTest.Check("raid:" + r.id(), () -> g.raid(r)));
         }

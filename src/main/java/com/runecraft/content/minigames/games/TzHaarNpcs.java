@@ -88,8 +88,7 @@ public final class TzHaarNpcs {
             case "metamorphosis" -> metamorphosis(p);
             case "task_jad" -> TzHaarSlayer.take(p, Minigame.FIGHT_CAVES);
             case "task_zuk" -> TzHaarSlayer.take(p, Minigame.INFERNO);
-            default -> {
-            }
+            default -> TzHaarSlayer.choose(p, choice); // task_jad_<n> / task_zuk_<n>: a size within the CA allowance
         }
     }
 

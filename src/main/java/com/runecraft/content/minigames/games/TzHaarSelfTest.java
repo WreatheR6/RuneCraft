@@ -5,20 +5,30 @@ import com.runecraft.combat.CombatHandler;
 import com.runecraft.content.minigames.MinigameData;
 import com.runecraft.content.minigames.MinigameManager;
 import com.runecraft.content.minigames.MinigameSession;
+import com.runecraft.content.slayer.SlayerService;
+import com.runecraft.content.slayer.SlayerState;
+import com.runecraft.content.systems.CombatAchievementService;
+import com.runecraft.content.systems.SysState;
 import com.runecraft.entity.BossEntity;
 import com.runecraft.entity.OsrsMonsterEntity;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.Prayer;
+import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.minigames.Minigame;
 import com.runecraft.osrs.content.minigames.TzHaarWaves;
+import com.runecraft.osrs.content.slayer.SlayerMasters;
+import com.runecraft.osrs.content.systems.CombatAchievements;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.UUID;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -30,7 +40,8 @@ import net.minecraft.world.item.ItemStack;
  * Fight Cave and the Inferno wave by wave through the real session, spawn and kill paths (kills are the player's, so splits,
  * revivals and rewards run), checking each wave's monsters, the healers, the pillars, the Inferno's special monsters, TzKal-Zuk's
  * phases, the rewards, a death's tokkul, pausing by logging out (between waves or out of combat) and dropping out in combat (a
- * death), and the TzHaar Slayer task taken as a TzTok-Jad task. Every broken step throws an {@link AssertionError}.
+ * death), and the TzHaar Slayer task taken as a TzTok-Jad / TzKal-Zuk task, sized by the Combat Achievement tier
+ * ("minigame:tzhaar_task"). Every broken step throws an {@link AssertionError}.
  */
 public final class TzHaarSelfTest {
     private final ServerPlayer player;
@@ -402,8 +413,10 @@ public final class TzHaarSelfTest {
         FightCaveSession s = start(Minigame.FIGHT_CAVES, FightCaveSession.class);
         try {
             expect(TzHaarSlayer.take(player, Minigame.FIGHT_CAVES), "the TzHaar task could not be taken as a TzTok-Jad task");
-            expect(TzHaarSlayer.onTask(player, Minigame.FIGHT_CAVES) && task.amount == 1 && task.remaining == 1,
-                    "taking TzTok-Jad did not make the task one Jad (" + task.remaining + "/" + task.amount + ")");
+            // As many Jads as the player's Combat Achievement tier allows (one without; minigame:tzhaar_task checks 2 and 3).
+            int size = SlayerService.tzhaarBossTaskKills(player);
+            expect(TzHaarSlayer.onTask(player, Minigame.FIGHT_CAVES) && task.amount == size && task.remaining == size,
+                    "taking TzTok-Jad did not make the task " + size + " Jad (" + task.remaining + "/" + task.amount + ")");
             s.selfTestJumpTo(5);
             reach(s, 5);
             expect(!TzHaarSlayer.take(player, Minigame.FIGHT_CAVES), "a boss task could be taken again mid-run");
@@ -683,5 +696,234 @@ public final class TzHaarSelfTest {
         expect(tokkul >= TzHaarWaves.INFERNO_TOKKUL, "the Inferno paid " + tokkul + " tokkul (expected 16,440)");
         expect(MinigameData.of(player).stat(player.getUUID(), "kc:" + Minigame.INFERNO.id()) >= 1, "no Inferno completion counted");
         log.append("; infernal cape (on the ground: full pack) and ").append(tokkul).append(" tokkul");
+    }
+
+    // ------------------------------------------------------------------ the TzHaar Slayer task with Combat Achievements
+
+    /**
+     * "minigame:tzhaar_task": a TzHaar Slayer task taken as a TzTok-Jad / TzKal-Zuk task, sized by the Combat Achievement tier
+     * (OSRS Wiki "TzTok-Jad", Slayer, and the master / grandmaster rewards on "Combat Achievements"): one kill up to the elite
+     * tier, two from master, three from grandmaster, the player picking 1 up to that and never more. A master-tier player's
+     * two Jads are two Fight Cave runs: the first kill ends its run with one to go and the task still on, only the second
+     * completes it (completion, streak, points), each kill giving Jad's 25,250 Slayer experience. Dying in the second run,
+     * one Jad already killed, cancels the whole task without costing points or the streak ("Slayer task/TzHaar": "If the
+     * player dies or leaves, the task is cancelled and no points are used"). Picking one Jad completes on its kill; a
+     * grandmaster-tier TzKal-Zuk task is three, and an Inferno kill leaves two. The player's Combat Achievements, Slayer
+     * profile, minigame data and pack are put back afterwards; the Slayer, Ranged and Hitpoints experience the kills give needs
+     * no putting back (every check starts from {@code TestContext.reset}'s level 99 in every skill, and the self-test's
+     * teardown restores the real player's own PlayerData, skills included).
+     */
+    public static String tzhaarTaskRun(ServerPlayer player) {
+        return new TzHaarSelfTest(player).tzhaarTask();
+    }
+
+    private String tzhaarTask() {
+        MinecraftServer server = player.getServer();
+        UUID id = player.getUUID();
+        Object savedSys = SysState.get(server).selfTestSave(id);
+        Object savedSlayer = SlayerState.of(server).selfTestSave(id);
+        Object savedMinigames = MinigameData.get(server).selfTestSave(id);
+        List<ItemStack> pack = packCopy();
+        try {
+            caTier(null);
+            caTier(CombatAchievements.Tier.ELITE);
+            caTier(CombatAchievements.Tier.GRANDMASTER);
+            caTier(CombatAchievements.Tier.MASTER);
+            log.append("Jad/Zuk task size 1 (no tier, elite), 2 (master), 3 (grandmaster)");
+            masterJads();
+            cancelledAfterOneKill();
+            oneJadPicked();
+            grandmasterZuk();
+        } finally {
+            SysState.get(server).selfTestRestore(id, savedSys);
+            SlayerState.of(server).selfTestRestore(id, savedSlayer);
+            MinigameData.get(server).selfTestRestore(id, savedMinigames);
+            restorePack(pack);
+        }
+        return log.toString();
+    }
+
+    private List<ItemStack> packCopy() {
+        List<ItemStack> kept = new ArrayList<>();
+        for (ItemStack s : player.getInventory().items) {
+            kept.add(s.copy());
+        }
+        return kept;
+    }
+
+    /**
+     * Gives the player every Combat Achievement up to {@code tier} (none for null) and checks the TzTok-Jad / TzKal-Zuk task
+     * size it allows against the wiki: 1, 2 from the master tier, 3 from the grandmaster tier.
+     */
+    private void caTier(CombatAchievements.Tier tier) {
+        Set<String> done = SysState.of(player).caDone;
+        done.clear();
+        if (tier != null) {
+            for (CombatAchievements.Task t : CombatAchievements.tasks()) {
+                if (t.tier().ordinal() <= tier.ordinal()) {
+                    done.add(t.id());
+                }
+            }
+        }
+        expect(CombatAchievementService.tier(player) == tier, "every Combat Achievement up to " + tier + " unlocks the "
+                + CombatAchievementService.tier(player) + " tier");
+        int want = tier == CombatAchievements.Tier.GRANDMASTER ? 3 : tier == CombatAchievements.Tier.MASTER ? 2 : 1;
+        int got = SlayerService.tzhaarBossTaskKills(player);
+        expect(got == want, "a player with the " + tier + " Combat Achievement tier may take " + got + " TzTok-Jad per task"
+                + " (the wiki: " + want + ")");
+    }
+
+    /** A fresh TzHaar task from Duradel (130-199 TzHaar), whose completion is the fifth in a row (Duradel's 15 points). */
+    private SlayerState.Profile tzhaarAssignment() {
+        SlayerState.Profile p = SlayerService.profile(player);
+        p.task = "tzhaar";
+        p.amount = 150;
+        p.remaining = 150;
+        p.master = "duradel";
+        p.region = null;
+        p.chooseAmount = false;
+        p.streak = 4;
+        return p;
+    }
+
+    private int bossTaskFlag(Minigame game) {
+        return MinigameData.of(player).stat(player.getUUID(), "tzhaar_boss_task:" + game.id());
+    }
+
+    private int slayerXp() {
+        return Players.data(player).skills().xp(Skill.SLAYER);
+    }
+
+    /** One Fight Cave run on the TzTok-Jad task, straight to wave 63 and Jad's kill; returns the Slayer XP it gave. */
+    private int jadRun() {
+        int xp = slayerXp();
+        FightCaveSession s = start(Minigame.FIGHT_CAVES, FightCaveSession.class);
+        try {
+            expect(TzHaarSlayer.onTask(player, Minigame.FIGHT_CAVES), "the Fight Cave run does not count as the TzTok-Jad task");
+            s.selfTestJumpTo(TzHaarWaves.FIGHT_CAVE_WAVES);
+            reach(s, TzHaarWaves.FIGHT_CAVE_WAVES);
+            List<LivingEntity> jads = s.selfTestCreatures(TzHaarWaves.JAD);
+            expect(jads.size() == 1, "wave 63 has " + jads.size() + " TzTok-Jads");
+            kill(jads.get(0));
+            expect(s.isEnded(), "killing TzTok-Jad did not end the run");
+        } finally {
+            end(s);
+        }
+        expect(MinigameManager.session(player) == null, "the player is still in the Fight Cave after Jad's kill");
+        return slayerXp() - xp;
+    }
+
+    /** One Inferno run on the TzKal-Zuk task, straight to wave 69 and Zuk's kill; returns the Slayer XP it gave. */
+    private int zukRun() {
+        int xp = slayerXp();
+        InfernoSession s = start(Minigame.INFERNO, InfernoSession.class);
+        try {
+            expect(TzHaarSlayer.onTask(player, Minigame.INFERNO), "the Inferno run does not count as the TzKal-Zuk task");
+            s.selfTestJumpTo(TzHaarWaves.INFERNO_WAVES);
+            reach(s, TzHaarWaves.INFERNO_WAVES);
+            List<LivingEntity> zuks = s.selfTestCreatures(TzHaarWaves.ZUK);
+            expect(zuks.size() == 1, "wave 69 has " + zuks.size() + " TzKal-Zuks");
+            kill(zuks.get(0));
+            expect(s.isEnded(), "killing TzKal-Zuk did not end the run");
+        } finally {
+            end(s);
+        }
+        expect(MinigameManager.session(player) == null, "the player is still in the Inferno after Zuk's kill");
+        return slayerXp() - xp;
+    }
+
+    /** Master tier: more than two refused, two by default; the first kill leaves one to go, the second completes the task. */
+    private void masterJads() {
+        SlayerState.Profile task = tzhaarAssignment();
+        expect(!TzHaarSlayer.take(player, Minigame.FIGHT_CAVES, 3), "a master-tier player could take three TzTok-Jad");
+        expect(!TzHaarSlayer.onTask(player, Minigame.FIGHT_CAVES) && task.amount == 150, "a refused take changed the TzHaar task to "
+                + task.remaining + "/" + task.amount);
+        expect(TzHaarSlayer.take(player, Minigame.FIGHT_CAVES), "the TzHaar task could not be taken as a TzTok-Jad task");
+        expect(TzHaarSlayer.onTask(player, Minigame.FIGHT_CAVES) && task.amount == 2 && task.remaining == 2,
+                "a master-tier player's TzTok-Jad task is " + task.remaining + "/" + task.amount + " (expected two kills)");
+        int streak = task.streak;
+        int points = task.points;
+        int completed = task.completed;
+        int xp = jadRun();
+        expect(xp >= TzHaarWaves.JAD_SLAYER_XP, "the first Jad gave " + xp + " Slayer XP (expected 25,250)");
+        expect("tzhaar".equals(task.task) && task.amount == 2 && task.remaining == 1 && TzHaarSlayer.onTask(player, Minigame.FIGHT_CAVES),
+                "after the first of two Jads the task is " + task.task + " " + task.remaining + "/" + task.amount
+                        + (TzHaarSlayer.onTask(player, Minigame.FIGHT_CAVES) ? "" : ", no longer a TzTok-Jad task") + " (expected one to go)");
+        expect(task.completed == completed && task.streak == streak && task.points == points, "the first of two Jads completed the"
+                + " task (completed " + completed + " -> " + task.completed + ", streak " + streak + " -> " + task.streak + ")");
+        expect(!TzHaarSlayer.take(player, Minigame.FIGHT_CAVES, 2), "the TzTok-Jad task could be taken again between its kills");
+        expect(bossTaskFlag(Minigame.FIGHT_CAVES) == 2, "the TzTok-Jad flag holds " + bossTaskFlag(Minigame.FIGHT_CAVES)
+                + " between the kills (expected the task's size, 2)");
+        xp = jadRun();
+        expect(xp >= TzHaarWaves.JAD_SLAYER_XP, "the second Jad gave " + xp + " Slayer XP (expected 25,250)");
+        expect(task.remaining == 0 && !task.hasTask() && !TzHaarSlayer.onTask(player, Minigame.FIGHT_CAVES),
+                "the second of two Jads left the task at " + task.remaining + "/" + task.amount);
+        int due = SlayerMasters.get("duradel").pointsFor(streak + 1);
+        expect(task.completed == completed + 1 && task.streak == streak + 1 && task.points - points >= due,
+                "the second Jad did not complete the task: completed " + completed + " -> " + task.completed + ", streak " + streak
+                        + " -> " + task.streak + ", points +" + (task.points - points) + " (expected +" + due + ")");
+        expect(bossTaskFlag(Minigame.FIGHT_CAVES) == 0, "the completed task left its TzTok-Jad flag set");
+        log.append("; a master-tier TzTok-Jad task is two runs, one to go after the first kill, completed after the second (+")
+                .append(task.points - points).append(" points), 25,250 Slayer XP each");
+    }
+
+    /** Dying in the second run, one Jad already killed, cancels the whole task: no points spent, the streak kept. */
+    private void cancelledAfterOneKill() {
+        SlayerState.Profile task = tzhaarAssignment();
+        expect(TzHaarSlayer.take(player, Minigame.FIGHT_CAVES) && task.remaining == 2, "the TzTok-Jad task was not taken as two kills");
+        jadRun();
+        expect(task.remaining == 1 && TzHaarSlayer.onTask(player, Minigame.FIGHT_CAVES), "one of two Jads left the task at "
+                + task.remaining + "/" + task.amount);
+        int points = task.points;
+        int streak = task.streak;
+        FightCaveSession s = start(Minigame.FIGHT_CAVES, FightCaveSession.class);
+        try {
+            s.selfTestJumpTo(5);
+            reach(s, 5);
+            expect(!MinigameManager.selfTestDeath(player), "a Fight Cave death was a real death");
+        } finally {
+            end(s);
+        }
+        expect(task.task == null && !task.hasTask() && bossTaskFlag(Minigame.FIGHT_CAVES) == 0,
+                "dying in the second run (one Jad killed) kept the task: " + task.task + " " + task.remaining + "/" + task.amount);
+        expect(task.points == points && task.streak == streak, "cancelling the TzTok-Jad task cost points (" + points + " -> "
+                + task.points + ") or the streak (" + streak + " -> " + task.streak + ")");
+        log.append("; dying in the second run after one Jad cancelled the whole task (no points or streak lost)");
+    }
+
+    /** The player may pick fewer than allowed (a pick that is not a number is refused): one Jad, completed on its one kill. */
+    private void oneJadPicked() {
+        SlayerState.Profile task = tzhaarAssignment();
+        expect(!TzHaarSlayer.choose(player, "task_jad_x") && !TzHaarSlayer.onTask(player, Minigame.FIGHT_CAVES) && task.amount == 150,
+                "a TzTok-Jad pick that is not a number changed the TzHaar task to " + task.remaining + "/" + task.amount);
+        expect(TzHaarSlayer.choose(player, "task_jad_1"), "a master-tier player could not pick one TzTok-Jad");
+        expect(TzHaarSlayer.onTask(player, Minigame.FIGHT_CAVES) && task.amount == 1 && task.remaining == 1,
+                "picking one TzTok-Jad made the task " + task.remaining + "/" + task.amount);
+        int completed = task.completed;
+        jadRun();
+        expect(!task.hasTask() && task.completed == completed + 1 && bossTaskFlag(Minigame.FIGHT_CAVES) == 0,
+                "a one-Jad task did not complete on its kill (" + task.remaining + "/" + task.amount + ")");
+        log.append("; picking one Jad completed on its kill");
+    }
+
+    /** Grandmaster tier: TzKal-Zuk (only once killed) as three kills; one Inferno kill leaves two. */
+    private void grandmasterZuk() {
+        caTier(CombatAchievements.Tier.GRANDMASTER);
+        SlayerState.Profile task = tzhaarAssignment();
+        String kc = "kc:" + Minigame.INFERNO.id();
+        MinigameData.of(player).setStat(player.getUUID(), kc, 0);
+        expect(!TzHaarSlayer.take(player, Minigame.INFERNO), "TzKal-Zuk was offered as a task before the player killed him");
+        MinigameData.of(player).setStat(player.getUUID(), kc, 1);
+        expect(TzHaarSlayer.take(player, Minigame.INFERNO), "the TzHaar task could not be taken as a TzKal-Zuk task");
+        expect(TzHaarSlayer.onTask(player, Minigame.INFERNO) && !TzHaarSlayer.onTask(player, Minigame.FIGHT_CAVES)
+                        && task.amount == 3 && task.remaining == 3,
+                "a grandmaster-tier player's TzKal-Zuk task is " + task.remaining + "/" + task.amount + " (expected three kills)");
+        int completed = task.completed;
+        int xp = zukRun();
+        expect(xp >= TzHaarWaves.ZUK_SLAYER_XP, "the Zuk kill gave " + xp + " Slayer XP (expected 101,890)");
+        expect("tzhaar".equals(task.task) && task.remaining == 2 && task.completed == completed
+                        && TzHaarSlayer.onTask(player, Minigame.INFERNO),
+                "after one of three Zuks the task is " + task.task + " " + task.remaining + "/" + task.amount + " (expected two to go)");
+        log.append("; a grandmaster-tier TzKal-Zuk task is three, two to go after an Inferno kill");
     }
 }
