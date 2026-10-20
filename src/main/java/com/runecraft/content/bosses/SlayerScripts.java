@@ -1440,16 +1440,29 @@ final class SlayerScripts {
             }
             String special = SlayerBosses.araxxorSpecial(a.eggKinds.get(0));
             String mirror = "";
-            Mob m = BossFx.spawnMinion(boss, "mirrorback_araxyte", ScriptedBoss.around(boss, boss.position(), 3), null);
+            // The egg pattern is random: when it starts with a white egg the first hatchling already is a mirrorback, and the
+            // 20% goes to that one (OSRS: the living mirrorback takes the redirected damage), so it is the one checked; a
+            // second mirrorback beside it would leave the check guessing which one absorbed the hit.
+            Mob m = a.kinds.entrySet().stream()
+                    .filter(e -> "mirrorback_araxyte".equals(e.getValue()) && e.getKey().isAlive())
+                    .map(java.util.Map.Entry::getKey).findFirst().orElse(null);
+            String which = "hatched";
+            if (m == null) {
+                which = "spawned";
+                m = BossFx.spawnMinion(boss, "mirrorback_araxyte", ScriptedBoss.around(boss, boss.position(), 3), null);
+                if (m != null) {
+                    a.araxytes.add(m);
+                    a.kinds.put(m, "mirrorback_araxyte");
+                }
+            }
             if (m != null) {
-                a.araxytes.add(m);
-                a.kinds.put(m, "mirrorback_araxyte");
                 float before = m.getHealth();
                 int dealt = a.incoming(boss, null, 50, AttackType.SLASH);
-                if (dealt != 40 || m.getHealth() >= before) {
-                    throw new IllegalStateException("a mirrorback took " + (before - m.getHealth()) + " and Araxxor " + dealt + " of 50");
+                float taken = before - m.getHealth();
+                if (dealt != 40 || taken <= 0) {
+                    throw new IllegalStateException("a " + which + " mirrorback took " + taken + " and Araxxor " + dealt + " of 50");
                 }
-                mirror = ", mirrorback took 10 of 50";
+                mirror = ", " + which + " mirrorback took " + Math.round(taken) + " of 50";
             }
             return "9 eggs, first hatched into " + a.eggKinds.get(0) + ", destroyed egg skipped, special " + special + mirror;
         } finally {
