@@ -189,7 +189,7 @@ public final class PestControlSelfTest {
         // ---- Shields: the first drops 15 seconds in, the rest every 30 seconds, in the game's rotation.
         tickClearing(pc, 24, null);
         for (int i = 0; i < 4; i++) {
-            expect(pc.shielded(i), "a shield dropped before 15 seconds (tick " + pc.tick() + ")");
+            expect(pc.shielded(i), "a shield dropped before 15 seconds (tick " + pc.elapsed() + ")");
         }
         tick(pc, 1);
         int first = pc.rotation()[0];
@@ -202,7 +202,7 @@ public final class PestControlSelfTest {
             expect(!pc.shielded(i) && !pc.portal(i).getTags().contains(MinigameCombat.INVULNERABLE),
                     "portal " + i + " still shielded at 1:45");
         }
-        log.add("shields down by tick " + pc.tick() + " in rotation " + java.util.Arrays.toString(pc.rotation()));
+        log.add("shields down by tick " + pc.elapsed() + " in rotation " + java.util.Arrays.toString(pc.rotation()));
 
         // ---- The pests are of the novice lander's levels and hit as hard as those levels.
         tick(pc, 8);
@@ -228,7 +228,7 @@ public final class PestControlSelfTest {
             expect(p != null, "no shifter spawned");
             shifters.add(p);
         }
-        long spawnedAt = pc.tick();
+        long spawnedAt = pc.elapsed();
         knight.setHealth(knight.getMaxHealth());
         float knightBefore = knight.getHealth();
         List<Mob> keep = new ArrayList<>();

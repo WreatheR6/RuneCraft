@@ -858,7 +858,7 @@ public class PestControlSession extends MinigameSession {
         activity.put(p.getUUID(), value);
     }
 
-    long tick() {
+    long elapsed() {
         return ticks;
     }
 
