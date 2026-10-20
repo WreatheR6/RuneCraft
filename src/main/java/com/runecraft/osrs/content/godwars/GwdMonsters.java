@@ -44,9 +44,13 @@ public final class GwdMonsters {
     private static void spirituals(List<MonsterDef> list, God god, int colour) {
         String g = god.id();
         String n = god.displayName();
+        // OSRS Wiki: the Armadylean spiritual warrior is an aviansie that throws (Ranged, max 15); the others fight in melee.
+        AttackDef warriorAttack = god == God.ARMADYL
+                ? AttackDef.of("feather throw", AttackType.RANGED, 15, 10, 10).particle("minecraft:cloud")
+                : AttackDef.of("melee", god == God.SARADOMIN || god == God.BANDOS ? AttackType.CRUSH : AttackType.SLASH, 16, 2.5, 10);
         list.add(MonsterDef.of("gwd_spiritual_warrior_" + g, "Spiritual warrior (" + n + ")").level(123)
                 .stats(100, 98, 102, 98, 1, 1).speed(4).defenceBonus(80, 80, 80, 10, 60)
-                .attack(AttackDef.of("melee", god == God.SARADOMIN ? AttackType.CRUSH : AttackType.SLASH, 16, 2.5, 10))
+                .attack(warriorAttack)
                 .drops(followerDrops(Drop.always("bones"), Drop.of("rune_full_helm", 1, 1, 64), Drop.of("adamant_platebody", 1, 1, 48)))
                 .slayer(68, "spiritual_creatures").skin(0xB0B0C8, colour, 0x4A4A5A, colour).size(0.6f, 1.95f, 1.1f));
         list.add(MonsterDef.of("gwd_spiritual_ranger_" + g, "Spiritual ranger (" + n + ")").level(115)
@@ -150,11 +154,64 @@ public final class GwdMonsters {
                 .attack(AttackDef.of("fire", AttackType.MAGIC, 8, 3.0, 10).particle("minecraft:flame"))
                 .drops(followerDrops(Drop.of("fire_rune", 10, 30, 4)))
                 .slayer(30, "pyrefiends").skin(0xE07818, 0xC05010, 0xA03010, 0xF0D040).size(0.6f, 1.6f, 1.0f));
+        // OSRS Wiki (Icefiend, level 18 God Wars Dungeon version): 20 hitpoints, magical melee up to 3, respawn 25.
+        list.add(MonsterDef.of("gwd_icefiend", "Icefiend").level(18).stats(20, 12, 16, 19, 1, 1).speed(4)
+                .attack(AttackDef.of("frost", AttackType.MAGIC, 3, 3.0, 10).particle("minecraft:snowflake"))
+                .drops(followerDrops(Drop.of("water_rune", 5, 10, 4)))
+                .slayer(1, "icefiends").skin(0xA0D8F0, 0x80B8E0, 0x6090C0, 0xFFFFFF).size(0.6f, 1.6f, 1.0f));
         spirituals(list, God.ZAMORAK, 0xB02020);
+        zarosians(list);
     }
 
+    /**
+     * The Ancient Prison's Zarosian followers (OSRS Wiki infoboxes): spiritual warriors (158, crush 20), rangers (158,
+     * ranged 20), mages (182, magic 38) and the prison's blood reavers (174, magic 20; Nex's chamber has her own,
+     * {@code blood_reaver}). They leave alone a player wearing a Zarosian item and give Zarosian essence.
+     */
+    private static void zarosians(List<MonsterDef> list) {
+        int purple = 0x5A2A6A;
+        list.add(MonsterDef.of("gwd_spiritual_warrior_zaros", "Spiritual warrior (Zaros)").level(158).stats(100, 190, 190, 100, 50, 1)
+                .speed(5).defenceBonus(100, 100, 80, 0, 250)
+                .attack(AttackDef.of("melee", AttackType.CRUSH, 20, 2.5, 10))
+                .drops(prisonDrops(Drop.always("bones"), Drop.herbs(16)))
+                .slayer(68, "spiritual_creatures").skin(0xB0B0C8, purple, 0x3A2A4A, purple).size(0.6f, 1.95f, 1.1f));
+        list.add(MonsterDef.of("gwd_spiritual_ranger_zaros", "Spiritual ranger (Zaros)").level(158).stats(110, 1, 1, 100, 100, 190)
+                .speed(5).defenceBonus(20, 0, 20, 300, 50)
+                .attack(AttackDef.of("arrow", AttackType.RANGED, 20, 10, 10).particle("minecraft:crit"))
+                .drops(prisonDrops(Drop.always("bones"), Drop.of("rune_arrow", 15, 30, 8)))
+                .slayer(63, "spiritual_creatures").skin(0xB0B0C8, purple, 0x2A3A2A, purple).size(0.6f, 1.95f, 1.1f));
+        list.add(MonsterDef.of("gwd_spiritual_mage_zaros", "Spiritual mage (Zaros)").level(182).stats(125, 1, 1, 100, 200, 1)
+                .speed(5).defenceBonus(420, 400, 420, 200, 0).attackBonus(0, 52, 0)
+                .attack(AttackDef.of("god spell", AttackType.MAGIC, 38, 10, 10).particle("minecraft:witch"))
+                .drops(prisonDrops(Drop.always("bones"), Drop.of("blood_rune", 20, 40, 8)))
+                .slayer(83, "spiritual_creatures").skin(0xB0B0C8, purple, purple, 0xE0E0E0).size(0.6f, 1.95f, 1.1f));
+        list.add(MonsterDef.of("gwd_blood_reaver", "Blood Reaver").level(174).stats(125, 1, 1, 100, 190, 1).speed(5)
+                .defenceBonus(20, 80, 120, 300, 55)
+                .attack(AttackDef.of("blood spell", AttackType.MAGIC, 20, 10, 10).particle("minecraft:damage_indicator"))
+                .drops(prisonDrops(Drop.of("blood_rune", 10, 30, 8)))
+                .model("blood_reaver").size(0.8f, 1.6f, 1.1f));
+    }
+
+    /**
+     * Drops of the Ancient Prison's followers: a piece of ancient ceremonial robes 1/200 (1/1000 each, as Nex's mages; OSRS
+     * Wiki: every NPC of the prison but Nex drops them), coins and a hard clue (approx).
+     */
+    private static Drop[] prisonDrops(Drop... extra) {
+        List<Drop> d = new ArrayList<>(List.of(extra));
+        d.add(Drop.of("coins", 500, 2500, 4)); // approx
+        for (String piece : new String[]{"mask", "top", "legs", "gloves", "boots"}) {
+            d.add(Drop.of("ancient_ceremonial_" + piece, 1, 1, 1000));
+        }
+        d.add(Drop.of("clue_scroll_hard", 1, 1, 128));
+        return d.toArray(new Drop[0]);
+    }
+
+    /**
+     * A bodyguard's table (corrected from the wiki by {@code MonsterDropsTable}). Its frozen key piece (1/20, OSRS Wiki) only
+     * drops during The Frozen Door, so the module's kill hook rolls it, not this table.
+     */
     private static Drop[] guardDrops(God god) {
-        return new Drop[]{Drop.always("bones"), Drop.of("coins", 1000, 3000, 2), Drop.of(god.keyPiece(), 1, 1, 20), // approx. rate
+        return new Drop[]{Drop.always("bones"), Drop.of("coins", 1000, 3000, 2),
                 Drop.of("super_restore", 1, 1, 12), Drop.of("rune_arrow", 10, 20, 8), Drop.of("clue_scroll_hard", 1, 1, 64)};
     }
 

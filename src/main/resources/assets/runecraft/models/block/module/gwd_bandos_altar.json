@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/gwd_bandos_altar_side",
+    "top": "runecraft:block/module/gwd_bandos_altar_top",
+    "bottom": "runecraft:block/module/gwd_bandos_altar_bottom"
+  }
+}

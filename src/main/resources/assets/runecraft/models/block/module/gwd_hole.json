@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/gwd_hole_side",
+    "top": "runecraft:block/module/gwd_hole_top",
+    "bottom": "runecraft:block/module/gwd_hole_bottom"
+  }
+}

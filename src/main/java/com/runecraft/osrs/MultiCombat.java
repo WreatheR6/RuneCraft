@@ -138,8 +138,8 @@ public final class MultiCombat {
             new Box("Barbarian Village", 3056, 3408, 3135, 3439),
             new Box("Barbarian Village", 3064, 3440, 3135, 3447),
             new Box("Barbarian Village", 3072, 3448, 3135, 3455),
-            // ---- stand-ins for areas built away from their real map squares
-            new Box("God Wars Dungeon", 2830, 3695, 2960, 3795)); // the chambers around the GWD landmark (2917, 3745)
+            // The God Wars Dungeon, all of it multi-way, carved at its real tiles (godwars GwdDungeon).
+            new Box("God Wars Dungeon", 2816, 5184, 2944, 5376));
 
     /**
      * Great Kourend's, Kebos' and Fossil Island's surface multicombat polygons, exactly as RuneLite's multi-lines map
@@ -268,7 +268,7 @@ public final class MultiCombat {
             new Around("Bandit Camp (desert)", "bandit_camp", 15)); // approx
 
     /** Bosses fought in multicombat lairs: their arenas ({@link ArenaLayout}) are multi-way. */
-    public static final List<String> MULTI_BOSS_ARENAS = List.of("kreearra", "commander_zilyana", "nex", "callisto",
+    public static final List<String> MULTI_BOSS_ARENAS = List.of("callisto", // the God Wars generals: the dungeon's box
             "venenatis", "vetion", "scorpia", "chaos_elemental", "corporeal_beast", "kalphite_queen", "giant_mole",
             "sarachnis", "thermonuclear_smoke_devil", "abyssal_sire", "dusk", "zalcano", "the_hueycoatl",
             "branda_the_fire_queen", "scurrius"); // the Royal Titans share Branda's arena

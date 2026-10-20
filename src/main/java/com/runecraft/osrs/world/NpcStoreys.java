@@ -20,7 +20,8 @@ public final class NpcStoreys {
      */
     private static final Map<String, Integer> UNDERGROUND_FEET = Map.of(
             "zooknock", 7, "bunkwicket", 7, "waymottin", 7, "bardur", 7,
-            "quest_viggora_3", 27); // Curse of the Empty Lord, the Edgeville Dungeon's earth warrior room
+            "quest_viggora_3", 27, // Curse of the Empty Lord, the Edgeville Dungeon's earth warrior room
+            "quest_ashuelot_reis", -5); // the Ancient Prison's refuge before Nex (godwars GwdDungeon, level 0 floor -6)
 
     private NpcStoreys() {
     }

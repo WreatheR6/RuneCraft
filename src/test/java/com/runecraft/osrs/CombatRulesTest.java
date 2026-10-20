@@ -45,17 +45,17 @@ class CombatRulesTest {
 
     @Test
     void multiAreas() {
-        assertTrue(MultiCombat.isMulti(2917, 3745), "God Wars Dungeon");
-        assertTrue(MultiCombat.isMulti(2865, 3765), "Armadyl's Eyrie");
-        assertTrue(MultiCombat.isMulti(2915, 3705), "Nex's Ancient Prison");
+        assertTrue(MultiCombat.isMulti(2882, 5311), "God Wars Dungeon"); // at its real tiles (GwdDungeon)
+        assertTrue(MultiCombat.isMulti(2832, 5302), "Kree'arra's chamber");
+        assertTrue(MultiCombat.isMulti(2925, 5203), "Nex's chamber");
         assertTrue(MultiCombat.isMulti(3127, 3833), "Revenant Caves");
         assertTrue(MultiCombat.isMulti(1636, 3673), "Catacombs of Kourend");
         assertTrue(MultiCombat.isMulti(3292, 3848), "Callisto's den");
         assertTrue(MultiCombat.isMulti(3266, 3912), "Rogues' Castle (Chaos Elemental)");
         assertTrue(MultiCombat.isMulti(3226, 3108), "Kalphite Lair");
         assertTrue(MultiCombat.isMulti(3020, 3620), "Dark Warriors' Fortress");
-        int[] gwd = MultiCombat.placeCentre("GOD_WARS_DUNGEON");
-        assertTrue(MultiCombat.isMultiAtBlock(GielinorMap.toBlockX(gwd[0]), GielinorMap.toBlockZ(gwd[1])));
+        com.runecraft.osrs.content.godwars.GwdDungeon.Spot gwd = com.runecraft.osrs.content.godwars.GwdDungeon.LANDING;
+        assertTrue(MultiCombat.isMultiAtBlock(GielinorMap.toBlockX(gwd.x()), GielinorMap.toBlockZ(gwd.y())));
     }
 
     // ---------------------------------------------------------------- single-way rules

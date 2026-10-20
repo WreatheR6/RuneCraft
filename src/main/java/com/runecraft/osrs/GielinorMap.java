@@ -85,6 +85,10 @@ public final class GielinorMap {
         if (in(x, y, 3160, 3360, 5990, 6220)) {
             return Region.TIRANNWN;
         }
+        // The God Wars Dungeon is carved at its OSRS tiles too, deep below the sea; it lies under Trollheim in Troll Country.
+        if (in(x, y, 2800, 2960, 5170, 5390)) {
+            return Region.TROLL_COUNTRY;
+        }
         if (in(x, y, 2944, 3392, WILDERNESS_DITCH, 3968)) {
             return Region.WILDERNESS;
         }

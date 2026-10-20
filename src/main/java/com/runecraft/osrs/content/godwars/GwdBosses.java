@@ -94,7 +94,7 @@ public final class GwdBosses {
                         Drop.of("godsword_shard_1", 1, 1, 762), Drop.of("godsword_shard_2", 1, 1, 762),
                         Drop.of("godsword_shard_3", 1, 1, 762), Drop.of("clue_scroll_elite", 1, 1, 250))
                 .pet("pet_kreearra").minion("flight_kilisa", 1).flying()
-                .at("gwd_armadyl_eyrie").arena(14, "stone").category("God Wars Dungeon")
+                .arena(14, "stone").category("God Wars Dungeon")
                 .size(1.4f, 2.4f, 1.8f));
 
         list.add(BossDef.of("commander_zilyana", "Commander Zilyana").level(596).stats(255, 280, 196, 300, 300, 250).speed(2)
@@ -110,7 +110,7 @@ public final class GwdBosses {
                         Drop.of("godsword_shard_1", 1, 1, 762), Drop.of("godsword_shard_2", 1, 1, 762),
                         Drop.of("godsword_shard_3", 1, 1, 762), Drop.of("clue_scroll_elite", 1, 1, 250))
                 .pet("pet_zilyana").minion("starlight", 1)
-                .at("gwd_saradomin_encampment").arena(12, "stone").category("God Wars Dungeon")
+                .arena(12, "stone").category("God Wars Dungeon")
                 .moveSpeed(0.32).size(0.7f, 2.0f, 1.5f));
 
         // Nex: 3400 hitpoints (the script scales damage because Minecraft caps max health at 1024).
@@ -131,7 +131,7 @@ public final class GwdBosses {
                         Drop.of("zaryte_vambraces", 1, 1, 172), Drop.of("ancient_hilt", 1, 1, 516),
                         Drop.of("clue_scroll_elite", 1, 1, 48))
                 .pet("nexling").minion("blood_reaver", 2)
-                .at("gwd_ancient_prison").arena(16, "ice").category("God Wars Dungeon")
+                .arena(16, "ice").category("God Wars Dungeon")
                 .flying().size(0.9f, 2.2f, 1.7f));
 
         String[] names = {"Fumus", "Umbra", "Cruor", "Glacies"};
@@ -143,7 +143,7 @@ public final class GwdBosses {
         for (int i = 0; i < 4; i++) {
             list.add(BossDef.of(NEX_MINIONS[i], names[i]).level(285).stats(200, 1, 1, 150, 200, 200).speed(5)
                     .defenceBonus(100, 100, 100, 100, 100)
-                    .attack(attacks[i]).drops(Drop.always("bones"))
+                    .attack(attacks[i]) // OSRS: no bones; only the 1/200 ancient ceremonial robes (BossDropsTable)
                     .raidOnly().category("God Wars Dungeon").moveSpeed(0.0).flying().size(0.7f, 1.9f, 1.25f));
         }
         return list;

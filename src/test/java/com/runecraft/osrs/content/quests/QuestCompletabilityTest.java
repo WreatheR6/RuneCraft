@@ -166,6 +166,9 @@ class QuestCompletabilityTest {
         if (killable.contains(target) || spawned.contains(target)) {
             return true;
         }
+        if (com.runecraft.osrs.content.godwars.GwdDungeon.lair(target) != null) {
+            return true; // the God Wars generals stand in their chambers of the dungeon
+        }
         BossDef boss = ContentRegistry.boss(target);
         if (boss != null) {
             // A boss with a place gets an arena and a summoning stone there; a raid boss is fought in its raid.

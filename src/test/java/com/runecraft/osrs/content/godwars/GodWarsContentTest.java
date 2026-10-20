@@ -70,7 +70,8 @@ class GodWarsContentTest {
         }
         for (MonsterDef m : module.monsters()) {
             if (m.id.startsWith("gwd_")) {
-                assertNotNull(GodWarsFactions.followerGod(m.id), m.id + " gives no kill count");
+                assertTrue(GodWarsFactions.followerGod(m.id) != null || GodWarsFactions.zarosEssence(m.id) > 0,
+                        m.id + " gives no kill count");
             }
         }
         for (God god : God.values()) {
@@ -200,14 +201,19 @@ class GodWarsContentTest {
         assertEquals(300, WildernessBosses.realPetRate("chaos_elemental"));
     }
 
+    /** The dungeon lies at its OSRS tiles; its entrance is the hole on the God Wars Dungeon landmark north of Trollheim. */
     @Test
-    void godWarsChambersAreNearTrollheim() {
+    void godWarsDungeonIsAtItsRealTiles() {
         Landmark gwd = Landmark.GOD_WARS_DUNGEON;
-        for (String id : new String[]{"gwd_armadyl_eyrie", "gwd_saradomin_encampment", "gwd_ancient_prison"}) {
-            PlaceDef p = ContentRegistry.place(id);
-            assertNotNull(p, id);
-            assertTrue(Math.abs(p.osrsX() - gwd.osrsX()) < 80 && Math.abs(p.osrsY() - gwd.osrsY()) < 80, id);
-            assertEquals(0, GielinorMap.wildernessLevel(p.blockX(), p.blockZ()), id + " is not in the Wilderness");
+        assertEquals(gwd.osrsX(), GwdDungeon.HOLE_TILE[0]);
+        assertEquals(gwd.osrsY(), GwdDungeon.HOLE_TILE[1]);
+        PlaceDef p = ContentRegistry.place("gwd_ancient_prison");
+        assertNotNull(p);
+        assertEquals(PlaceDef.Style.NONE, p.style());
+        assertTrue(p.osrsX() > 2848 && p.osrsX() < 2944 && p.osrsY() > 5188 && p.osrsY() < 5230, "the prison at its OSRS tiles");
+        assertNull(ContentRegistry.place("gwd_armadyl_eyrie"));
+        for (String id : new String[]{"kreearra", "commander_zilyana", "nex"}) {
+            assertNull(boss(id).place, id + " has no surface arena: it waits in its chamber");
         }
     }
 
@@ -233,11 +239,11 @@ class GodWarsContentTest {
                 assertNotNull(ContentRegistry.monster(id), id);
             }
         }
-        // Every follower can actually be found somewhere.
+        // Every follower can actually be found somewhere (the dungeon's spawn tiles).
         Set<String> camped = new HashSet<>();
-        GwdPlaces.camps().forEach(c -> camped.addAll(c.creatures()));
+        GwdSpawns.all().forEach(s -> camped.add(s.creature()));
         for (String follower : GodWarsFactions.followers().keySet()) {
-            assertTrue(camped.contains(follower), follower + " has no camp");
+            assertTrue(camped.contains(follower), follower + " has no spawn");
         }
     }
 
