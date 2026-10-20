@@ -31,7 +31,7 @@ public final class ClueNpcs {
             new ClueNpc("clue_ali_the_leaflet_dropper", "Ali the Leaflet Dropper", 3283, 3329, 0xC8A080, 0x2A2A3A, 0x5A3A2A, 0x2A2A3A, "CRYPTIC/EASY"),
             new ClueNpc("clue_ambassador_spanfipple", "Ambassador Spanfipple", 2979, 3340, 0xA07850, 0x8A2A2A, 0x3A3A4A, 0x5A3A6A, "CRYPTIC/EASY"),
             new ClueNpc("clue_aris", "Aris", 3203, 3424, 0xA07850, 0x8A2A2A, 0x3A2A1A, 0x8A6A3A, "CRYPTIC/ELITE"),
-            new ClueNpc("clue_awowogei", "Awowogei", 2802, 2765, 0xC8A080, 0x6A4A2A, 0x5A3A2A, 0x3A6A9A, "ANAGRAM/HARD"),
+            // Awowogei: Monkey Madness II's king on his throne (2803,2765, quests module) answers this anagram.
             new ClueNpc("clue_bolkoy", "Bolkoy", 2526, 3162, 0xA07850, 0x8A2A2A, 0x3A3A4A, 0xA08040, "ANAGRAM/HARD"),
             new ClueNpc("clue_brambickle", "Brambickle", 2783, 3861, 0xC8A080, 0x6A4A2A, 0x3A3A4A, 0x8A6A3A, "ANAGRAM/HARD"),
             new ClueNpc("clue_brother_tranquility", "Brother Tranquility", 3681, 2963, 0xC8A080, 0x8A6A3A, 0x5A3A2A, 0xA08040, "ANAGRAM/HARD"),
