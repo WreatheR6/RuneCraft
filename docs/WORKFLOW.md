@@ -47,6 +47,7 @@ This file and docs/ROUND_LOG.md are the shared memory of that loop. Update the r
 4. Wait for CI on the last commit. If it fails, read the log, fix the problem, verify and push again.
 5. Update docs/ROUND_LOG.md and the backlog here, then commit and push (docs-only pushes don't start CI).
 6. Every round ends committed and pushed with a fresh jar: confirm the `dev-latest` release body names the round's last code commit (`curl -s https://api.github.com/repos/WreatheR6/RuneCraft/releases/tags/dev-latest`). Docs-only commits don't trigger CI, and a newer push cancels an older run on the branch, so check the run of the last code commit finished green.
+7. Free the disk: the session's writable allowance is about 40 GB and each worktree holds about 340 MB. After a round's branches are merged, remove their worktrees and branches (`git worktree remove --force .claude/worktrees/<wf>-N`, `git branch -D worktree-<wf>-N` once `git merge-base --is-ancestor` confirms the merge) and delete the round's scratch directories (`<scratchpad>/r<round>-*`). A full disk makes new worktrees fail and breaks agents mid-write.
 
 Recurring conflict spots:
 - `MenuType` (append new values last; the client uses ordinals);
