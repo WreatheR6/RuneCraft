@@ -766,7 +766,7 @@ class DungeonsContentTest {
     @Test
     void underGroundNpcsStandInCarvedAir() {
         Map<String, String> dungeonOf = Map.of("zooknock", "dng_ape_atoll_dungeon", "bunkwicket", "dng_ape_atoll_dungeon",
-                "waymottin", "dng_ape_atoll_dungeon", "bardur", "dng_waterbirth_dungeon");
+                "waymottin", "dng_ape_atoll_dungeon", "bardur", "dng_waterbirth_dungeon", "quest_viggora_3", "dng_edgeville_dungeon");
         for (Map.Entry<String, String> e : dungeonOf.entrySet()) {
             com.runecraft.osrs.content.NpcDef npc = com.runecraft.osrs.content.ContentRegistry.npc(e.getKey());
             assertNotNull(npc, e.getKey());

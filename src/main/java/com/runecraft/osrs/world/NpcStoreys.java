@@ -19,7 +19,8 @@ public final class NpcStoreys {
      * at the end of the Ape Atoll Dungeon, Bardur on Waterbirth sublevel 2.
      */
     private static final Map<String, Integer> UNDERGROUND_FEET = Map.of(
-            "zooknock", 7, "bunkwicket", 7, "waymottin", 7, "bardur", 7);
+            "zooknock", 7, "bunkwicket", 7, "waymottin", 7, "bardur", 7,
+            "quest_viggora_3", 27); // Curse of the Empty Lord, the Edgeville Dungeon's earth warrior room
 
     private NpcStoreys() {
     }
