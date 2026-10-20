@@ -14,7 +14,7 @@ import subprocess
 import sys
 import tempfile
 
-EXTERNAL = ("net.minecraft", "net.neoforged", "net.fabricmc", "com.mojang", "io.netty", "org.joml", "org.lwjgl", "org.slf4j")
+EXTERNAL = ("net.minecraft", "net.neoforged", "net.fabricmc", "com.mojang", "io.netty", "org.spongepowered", "it.unimi", "org.joml", "org.lwjgl", "org.slf4j")
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 srcs = []
 for d, _, files in os.walk(os.path.join(root, "src/main/java")):

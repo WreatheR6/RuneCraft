@@ -147,7 +147,8 @@ grep -q 'Done (' "$LOG" || { echo "FAIL: server never finished starting"; fail=1
 grep -q 'Crash report saved\|crash report has been saved\|Considering it to be crashed\|Exception in server tick loop' "$LOG" && { echo "FAIL: server crashed"; fail=1; }
 grep -q 'Failed to place structure\|Failed to build\|Custom builder for .* failed\|could not be parsed' strict.log && { echo "FAIL: RuneCraft reported build errors"; fail=1; }
 grep -E '\[(Server thread|main)/ERROR\]' strict.log | grep -qi 'runecraft' && { echo "FAIL: RuneCraft logged errors"; fail=1; }
-grep -q '^\s*at com\.runecraft\.' strict.log && { echo "FAIL: exception thrown through RuneCraft code:"; grep -n -B3 -m5 '^\s*at com\.runecraft\.' strict.log; fail=1; }
+# NeoForge prints frames as "at TRANSFORMER/runecraft@<version>/com.runecraft....", Fabric as "at com.runecraft....".
+grep -qE '^\s*at ([^ ]*/)?com\.runecraft\.' strict.log && { echo "FAIL: exception thrown through RuneCraft code:"; grep -nE -B3 -m5 '^\s*at ([^ ]*/)?com\.runecraft\.' strict.log; fail=1; }
 stations_run=$(grep -c '^station ' checks.txt)
 # A station passes if it is there on the first look or on the later recheck.
 stations_bad=0

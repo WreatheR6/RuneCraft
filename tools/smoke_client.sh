@@ -106,7 +106,7 @@ n_assets=$(grep -c . "$R/asset_problems_runecraft.txt")
 grep -E '/ERROR\]' "$LOG" | grep -i 'runecraft' > "$R/runecraft_errors.txt"
 n_err=$(grep -c . "$R/runecraft_errors.txt")
 [ "$n_err" -gt 0 ] && problems+=("$n_err RuneCraft ERROR line(s)")
-n_trace=$(grep -c '^\s*at com\.runecraft\.' "$LOG")
+n_trace=$(grep -cE '^\s*at ([^ ]*/)?com\.runecraft\.' "$LOG")
 [ "$n_trace" -gt 0 ] && problems+=("exceptions through RuneCraft code ($n_trace stack frames)")
 
 shots=$(ls "$R"/screenshots/*.png 2>/dev/null | wc -l)
