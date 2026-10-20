@@ -401,14 +401,14 @@ final class ModernScripts {
                 switch (s) {
                     case GLYPH_FIRE -> {
                         hurt(boss, p, "glyph_flames", boss.getRandom().nextInt(BossMechanics.YAMA_GLYPH_SPECIAL_MAX + 1));
-                        BossDots.burn(p, BossMechanics.YAMA_GLYPH_BURN); // unprotected fire specials burn
+                        BossDots.burn(boss, p, BossMechanics.YAMA_GLYPH_BURN); // unprotected fire specials burn
                     }
                     case GLYPH_SHADOW -> hurt(boss, p, "shadow_engulf", boss.getRandom().nextInt(BossMechanics.YAMA_GLYPH_SPECIAL_MAX + 1));
                     case METEOR -> {
                         int dmg = BossMechanics.meteorDamage(tiles(flat(p.position(), pendingAt)));
                         if (dmg > 0) {
                             hurt(boss, p, "meteor_strike", dmg >= 121 ? dmg : dmg - boss.getRandom().nextInt(6));
-                            BossDots.burn(p, BossMechanics.YAMA_METEOR_BURN);
+                            BossDots.burn(boss, p, BossMechanics.YAMA_METEOR_BURN);
                         }
                     }
                     case STOMP -> {
@@ -650,7 +650,6 @@ final class ModernScripts {
             }
             ServerLevel w = BossFx.world(boss);
             List<ServerPlayer> players = BossFx.players(boss, 24);
-            BossDots.tick(boss, players);
             if (contract != null && target != null) {
                 if (contract == YamaContract.FORFEIT_BREATH) {
                     for (ServerPlayer p : players) {

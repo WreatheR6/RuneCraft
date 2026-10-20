@@ -1881,30 +1881,30 @@ duke_sucellus|Duke Sucellus|758|Ice quartz|1|1/206.6|-expanded shared table
 duke_sucellus|Duke Sucellus|758|Pineapple pizza|3-4|1/5.4|-expanded shared table
 duke_sucellus|Duke Sucellus|758|Prayer potion(3)|1|1/5.4|-expanded shared table
 duke_sucellus|Duke Sucellus|758|Super combat potion(2)|1|1/5.4|-expanded shared table
-duke_sucellus|Duke Sucellus|758|Bronze chainbody|11,17 (noted)|1/100|bronze_chainbody:1117-1117/100
-duke_sucellus|Duke Sucellus|758|Mithril chainbody|5,7 (noted)|1/100|mithril_chainbody:57-57/100
-duke_sucellus|Duke Sucellus|758|Adamant chainbody|6,10 (noted)|1/100|adamant_chainbody:610-610/100
-duke_sucellus|Duke Sucellus|758|Dragon platelegs|5,7|1/100|dragon_platelegs:57-57/100
-duke_sucellus|Duke Sucellus|758|Pure essence|200,300 (noted)|1/100|pure_essence:200300-200300/100
-duke_sucellus|Duke Sucellus|758|Iron ore|63,95 (noted)|1/100|iron_ore:6395-6395/100
-duke_sucellus|Duke Sucellus|758|Coal|216,325 (noted)|8/100|coal:216325-216325/12
-duke_sucellus|Duke Sucellus|758|Mithril ore|33,50 (noted)|1/100|mithril_ore:3350-3350/100
-duke_sucellus|Duke Sucellus|758|Adamantite ore|75,112 (noted)|8/100|adamantite_ore:75112-75112/12
-duke_sucellus|Duke Sucellus|758|Runite ore|30,45 (noted)|2/100|runite_ore:3045-3045/50
-duke_sucellus|Duke Sucellus|758|Sapphire|28,42 (noted)|1/100|sapphire:2842-2842/100
-duke_sucellus|Duke Sucellus|758|Emerald|28,42 (noted)|1/100|emerald:2842-2842/100
-duke_sucellus|Duke Sucellus|758|Ruby|28,42 (noted)|1/100|ruby:2842-2842/100
-duke_sucellus|Duke Sucellus|758|Uncut ruby|41,62 (noted)|5/100|uncut_ruby:4162-4162/20
-duke_sucellus|Duke Sucellus|758|Uncut diamond|41,62 (noted)|5/100|uncut_diamond:4162-4162/20
-duke_sucellus|Duke Sucellus|758|Bronze bar|63,95 (noted)|1/100|bronze_bar:6395-6395/100
-duke_sucellus|Duke Sucellus|758|Dragon arrowtips|166,250|2/100|dragon_arrowtips:166250-166250/50
-duke_sucellus|Duke Sucellus|758|Rune javelin tips|60,90|8/100|rune_javelin_heads:6090-6090/12
-duke_sucellus|Duke Sucellus|758|Dragon javelin tips|60,90|8/100|dragon_javelin_heads:6090-6090/12
-duke_sucellus|Duke Sucellus|758|Raw sea turtle|200,300 (noted)|1/100|raw_sea_turtle:200300-200300/100
-duke_sucellus|Duke Sucellus|758|Air rune|200,300|1/100|air_rune:200300-200300/100
-duke_sucellus|Duke Sucellus|758|Mist rune|100,150|8/100|mist_rune:100150-100150/12
-duke_sucellus|Duke Sucellus|758|Chaos rune|100,150|9/100|chaos_rune:100150-100150/11
-duke_sucellus|Duke Sucellus|758|Soul rune|666,1000|2/100|soul_rune:6661000-6661000/50
+duke_sucellus|Duke Sucellus|758|Bronze chainbody|11,17 (noted)|1/100|bronze_chainbody:11-11/100
+duke_sucellus|Duke Sucellus|758|Mithril chainbody|5,7 (noted)|1/100|mithril_chainbody:5-5/100
+duke_sucellus|Duke Sucellus|758|Adamant chainbody|6,10 (noted)|1/100|adamant_chainbody:6-6/100
+duke_sucellus|Duke Sucellus|758|Dragon platelegs|5,7|1/100|dragon_platelegs:5-5/100
+duke_sucellus|Duke Sucellus|758|Pure essence|200,300 (noted)|1/100|pure_essence:200-200/100
+duke_sucellus|Duke Sucellus|758|Iron ore|63,95 (noted)|1/100|iron_ore:63-63/100
+duke_sucellus|Duke Sucellus|758|Coal|216,325 (noted)|8/100|coal:216-216/12
+duke_sucellus|Duke Sucellus|758|Mithril ore|33,50 (noted)|1/100|mithril_ore:33-33/100
+duke_sucellus|Duke Sucellus|758|Adamantite ore|75,112 (noted)|8/100|adamantite_ore:75-75/12
+duke_sucellus|Duke Sucellus|758|Runite ore|30,45 (noted)|2/100|runite_ore:30-30/50
+duke_sucellus|Duke Sucellus|758|Sapphire|28,42 (noted)|1/100|sapphire:28-28/100
+duke_sucellus|Duke Sucellus|758|Emerald|28,42 (noted)|1/100|emerald:28-28/100
+duke_sucellus|Duke Sucellus|758|Ruby|28,42 (noted)|1/100|ruby:28-28/100
+duke_sucellus|Duke Sucellus|758|Uncut ruby|41,62 (noted)|5/100|uncut_ruby:41-41/20
+duke_sucellus|Duke Sucellus|758|Uncut diamond|41,62 (noted)|5/100|uncut_diamond:41-41/20
+duke_sucellus|Duke Sucellus|758|Bronze bar|63,95 (noted)|1/100|bronze_bar:63-63/100
+duke_sucellus|Duke Sucellus|758|Dragon arrowtips|166,250|2/100|dragon_arrowtips:166-166/50
+duke_sucellus|Duke Sucellus|758|Rune javelin tips|60,90|8/100|rune_javelin_heads:60-60/12
+duke_sucellus|Duke Sucellus|758|Dragon javelin tips|60,90|8/100|dragon_javelin_heads:60-60/12
+duke_sucellus|Duke Sucellus|758|Raw sea turtle|200,300 (noted)|1/100|raw_sea_turtle:200-200/100
+duke_sucellus|Duke Sucellus|758|Air rune|200,300|1/100|air_rune:200-200/100
+duke_sucellus|Duke Sucellus|758|Mist rune|100,150|8/100|mist_rune:100-100/12
+duke_sucellus|Duke Sucellus|758|Chaos rune|100,150|9/100|chaos_rune:100-100/11
+duke_sucellus|Duke Sucellus|758|Soul rune|666,1000|2/100|soul_rune:666-666/50
 duke_sucellus|Duke Sucellus|758|Odd key|1|Always|-not in game
 duke_sucellus|Duke Sucellus|758|Brimstone key|1|-|-handled elsewhere:brimstone_key
 duke_sucellus|Duke Sucellus|758|Baron|1|1/2500|-handled elsewhere:pet_baron
@@ -1922,30 +1922,30 @@ the_leviathan|The Leviathan|798|Prayer potion(3)|1|1/5.4|-expanded shared table
 the_leviathan|The Leviathan|798|Ranging potion(2)|1|1/5.4|-expanded shared table
 the_leviathan|The Leviathan|798|Sea turtle|3-4|1/5.4|-expanded shared table
 the_leviathan|The Leviathan|798|Aether catalyst|1500,2250|1/100|-not in game
-the_leviathan|The Leviathan|798|Iron ore|57,85 (noted)|1/100|iron_ore:5785-5785/100
-the_leviathan|The Leviathan|798|Silver ore|57,85 (noted)|1/100|silver_ore:5785-5785/100
-the_leviathan|The Leviathan|798|Coal|195,292 (noted)|8/100|coal:195292-195292/12
-the_leviathan|The Leviathan|798|Gold ore|67,101 (noted)|8/100|gold_ore:67101-67101/12
-the_leviathan|The Leviathan|798|Adamantite ore|57,85 (noted)|1/100|adamantite_ore:5785-5785/100
-the_leviathan|The Leviathan|798|Runite ore|27,40 (noted)|2/100|runite_ore:2740-2740/50
-the_leviathan|The Leviathan|798|Sapphire|25,38 (noted)|1/100|sapphire:2538-2538/100
-the_leviathan|The Leviathan|798|Emerald|25,38 (noted)|1/100|emerald:2538-2538/100
-the_leviathan|The Leviathan|798|Ruby|25,38 (noted)|1/100|ruby:2538-2538/100
-the_leviathan|The Leviathan|798|Uncut ruby|37,56 (noted)|5/100|uncut_ruby:3756-3756/20
-the_leviathan|The Leviathan|798|Uncut diamond|37,56 (noted)|5/100|uncut_diamond:3756-3756/20
-the_leviathan|The Leviathan|798|Dragon javelin tips|54,81|8/100|dragon_javelin_heads:5481-5481/12
-the_leviathan|The Leviathan|798|Dragon bolts (unf)|150,225|2/100|dragon_bolts_unf:150225-150225/50
-the_leviathan|The Leviathan|798|Onyx bolt tips|90,135|1/100|onyx_bolt_tips:90135-90135/100
-the_leviathan|The Leviathan|798|Raw manta ray|180,270 (noted)|1/100|raw_manta_ray:180270-180270/100
-the_leviathan|The Leviathan|798|Anglerfish|4,6|8/100|anglerfish:46-46/12
-the_leviathan|The Leviathan|798|Bronze arrow|63,94|1/100|bronze_arrow:6394-6394/100
-the_leviathan|The Leviathan|798|Mithril arrow|63,94|1/100|mithril_arrow:6394-6394/100
-the_leviathan|The Leviathan|798|Adamant arrow|63,94|1/100|adamant_arrow:6394-6394/100
-the_leviathan|The Leviathan|798|Rune arrow|54,81|8/100|rune_arrow:5481-5481/12
-the_leviathan|The Leviathan|798|Body rune|180,270|1/100|body_rune:180270-180270/100
-the_leviathan|The Leviathan|798|Earth rune|180,270|1/100|earth_rune:180270-180270/100
-the_leviathan|The Leviathan|798|Smoke rune|300,450|8/100|smoke_rune:300450-300450/12
-the_leviathan|The Leviathan|798|Soul rune|600,900|2/100|soul_rune:600900-600900/50
+the_leviathan|The Leviathan|798|Iron ore|57,85 (noted)|1/100|iron_ore:57-57/100
+the_leviathan|The Leviathan|798|Silver ore|57,85 (noted)|1/100|silver_ore:57-57/100
+the_leviathan|The Leviathan|798|Coal|195,292 (noted)|8/100|coal:195-195/12
+the_leviathan|The Leviathan|798|Gold ore|67,101 (noted)|8/100|gold_ore:67-67/12
+the_leviathan|The Leviathan|798|Adamantite ore|57,85 (noted)|1/100|adamantite_ore:57-57/100
+the_leviathan|The Leviathan|798|Runite ore|27,40 (noted)|2/100|runite_ore:27-27/50
+the_leviathan|The Leviathan|798|Sapphire|25,38 (noted)|1/100|sapphire:25-25/100
+the_leviathan|The Leviathan|798|Emerald|25,38 (noted)|1/100|emerald:25-25/100
+the_leviathan|The Leviathan|798|Ruby|25,38 (noted)|1/100|ruby:25-25/100
+the_leviathan|The Leviathan|798|Uncut ruby|37,56 (noted)|5/100|uncut_ruby:37-37/20
+the_leviathan|The Leviathan|798|Uncut diamond|37,56 (noted)|5/100|uncut_diamond:37-37/20
+the_leviathan|The Leviathan|798|Dragon javelin tips|54,81|8/100|dragon_javelin_heads:54-54/12
+the_leviathan|The Leviathan|798|Dragon bolts (unf)|150,225|2/100|dragon_bolts_unf:150-150/50
+the_leviathan|The Leviathan|798|Onyx bolt tips|90,135|1/100|onyx_bolt_tips:90-90/100
+the_leviathan|The Leviathan|798|Raw manta ray|180,270 (noted)|1/100|raw_manta_ray:180-180/100
+the_leviathan|The Leviathan|798|Anglerfish|4,6|8/100|anglerfish:4-4/12
+the_leviathan|The Leviathan|798|Bronze arrow|63,94|1/100|bronze_arrow:63-63/100
+the_leviathan|The Leviathan|798|Mithril arrow|63,94|1/100|mithril_arrow:63-63/100
+the_leviathan|The Leviathan|798|Adamant arrow|63,94|1/100|adamant_arrow:63-63/100
+the_leviathan|The Leviathan|798|Rune arrow|54,81|8/100|rune_arrow:54-54/12
+the_leviathan|The Leviathan|798|Body rune|180,270|1/100|body_rune:180-180/100
+the_leviathan|The Leviathan|798|Earth rune|180,270|1/100|earth_rune:180-180/100
+the_leviathan|The Leviathan|798|Smoke rune|300,450|8/100|smoke_rune:300-300/12
+the_leviathan|The Leviathan|798|Soul rune|600,900|2/100|soul_rune:600-600/50
 the_leviathan|The Leviathan|798|Brimstone key|1|-|-handled elsewhere:brimstone_key
 the_leviathan|The Leviathan|798|Lil'viathan|1|1/2500|-handled elsewhere:pet_lilviathan
 the_leviathan|The Leviathan|798|Ancient blood ornament kit|1|Always|-handled elsewhere:ancient_blood_ornament_kit
@@ -1961,31 +1961,31 @@ the_whisperer|The Whisperer|791|Shadow quartz|1|1/209.3|-expanded shared table
 the_whisperer|The Whisperer|791|Ancient brew(2)|1|1/5.5|-expanded shared table
 the_whisperer|The Whisperer|791|Prayer potion(3)|1|1/5.5|-expanded shared table
 the_whisperer|The Whisperer|791|Manta ray|3-4|1/5.5|-expanded shared table
-the_whisperer|The Whisperer|791|Bronze longsword|16,24 (noted)|1/100|bronze_longsword:1624-1624/100
-the_whisperer|The Whisperer|791|Mithril longsword|7,10 (noted)|1/100|mithril_longsword:710-710/100
-the_whisperer|The Whisperer|791|Adamant longsword|9,14 (noted)|1/100|adamant_longsword:914-914/100
-the_whisperer|The Whisperer|791|Battlestaff|70,105 (noted)|2/100|battlestaff:70105-70105/50
-the_whisperer|The Whisperer|791|Dragon plateskirt|7,10|1/100|dragon_plateskirt:710-710/100
+the_whisperer|The Whisperer|791|Bronze longsword|16,24 (noted)|1/100|bronze_longsword:16-16/100
+the_whisperer|The Whisperer|791|Mithril longsword|7,10 (noted)|1/100|mithril_longsword:7-7/100
+the_whisperer|The Whisperer|791|Adamant longsword|9,14 (noted)|1/100|adamant_longsword:9-9/100
+the_whisperer|The Whisperer|791|Battlestaff|70,105 (noted)|2/100|battlestaff:70-70/50
+the_whisperer|The Whisperer|791|Dragon plateskirt|7,10|1/100|dragon_plateskirt:7-7/100
 the_whisperer|The Whisperer|791|Pure essence|280; 420 (noted)|1/100|pure_essence:280-420/100
-the_whisperer|The Whisperer|791|Iron ore|88,133 (noted)|1/100|iron_ore:88133-88133/100
-the_whisperer|The Whisperer|791|Coal|303,455 (noted)|8/100|coal:303455-303455/12
-the_whisperer|The Whisperer|791|Gold ore|88,133 (noted)|1/100|gold_ore:88133-88133/100
-the_whisperer|The Whisperer|791|Mithril ore|88,133 (noted)|1/100|mithril_ore:88133-88133/100
-the_whisperer|The Whisperer|791|Adamantite ore|105,157 (noted)|8/100|adamantite_ore:105157-105157/12
-the_whisperer|The Whisperer|791|Runite ore|42,63 (noted)|2/100|runite_ore:4263-4263/50
-the_whisperer|The Whisperer|791|Sapphire|39,59 (noted)|1/100|sapphire:3959-3959/100
-the_whisperer|The Whisperer|791|Emerald|39,59 (noted)|1/100|emerald:3959-3959/100
-the_whisperer|The Whisperer|791|Ruby|39,59 (noted)|1/100|ruby:3959-3959/100
-the_whisperer|The Whisperer|791|Uncut ruby|58,87 (noted)|5/100|uncut_ruby:5887-5887/20
-the_whisperer|The Whisperer|791|Uncut diamond|58,87 (noted)|5/100|uncut_diamond:5887-5887/20
-the_whisperer|The Whisperer|791|Dragon javelin tips|84,126|8/100|dragon_javelin_heads:84126-84126/12
-the_whisperer|The Whisperer|791|Runite bolts (unf)|84,126|8/100|rune_bolts_unf:84126-84126/12
-the_whisperer|The Whisperer|791|Raw monkfish|700,1050 (noted)|1/100|raw_monkfish:7001050-7001050/100
-the_whisperer|The Whisperer|791|Water rune|280,420|1/100|water_rune:280420-280420/100
-the_whisperer|The Whisperer|791|Steam rune|466,700|8/100|steam_rune:466700-466700/12
-the_whisperer|The Whisperer|791|Chaos rune|140,210|1/100|chaos_rune:140210-140210/100
-the_whisperer|The Whisperer|791|Death rune|466,700|8/100|death_rune:466700-466700/12
-the_whisperer|The Whisperer|791|Soul rune|933,1400|2/100|soul_rune:9331400-9331400/50
+the_whisperer|The Whisperer|791|Iron ore|88,133 (noted)|1/100|iron_ore:88-88/100
+the_whisperer|The Whisperer|791|Coal|303,455 (noted)|8/100|coal:303-303/12
+the_whisperer|The Whisperer|791|Gold ore|88,133 (noted)|1/100|gold_ore:88-88/100
+the_whisperer|The Whisperer|791|Mithril ore|88,133 (noted)|1/100|mithril_ore:88-88/100
+the_whisperer|The Whisperer|791|Adamantite ore|105,157 (noted)|8/100|adamantite_ore:105-105/12
+the_whisperer|The Whisperer|791|Runite ore|42,63 (noted)|2/100|runite_ore:42-42/50
+the_whisperer|The Whisperer|791|Sapphire|39,59 (noted)|1/100|sapphire:39-39/100
+the_whisperer|The Whisperer|791|Emerald|39,59 (noted)|1/100|emerald:39-39/100
+the_whisperer|The Whisperer|791|Ruby|39,59 (noted)|1/100|ruby:39-39/100
+the_whisperer|The Whisperer|791|Uncut ruby|58,87 (noted)|5/100|uncut_ruby:58-58/20
+the_whisperer|The Whisperer|791|Uncut diamond|58,87 (noted)|5/100|uncut_diamond:58-58/20
+the_whisperer|The Whisperer|791|Dragon javelin tips|84,126|8/100|dragon_javelin_heads:84-84/12
+the_whisperer|The Whisperer|791|Runite bolts (unf)|84,126|8/100|rune_bolts_unf:84-84/12
+the_whisperer|The Whisperer|791|Raw monkfish|700,1050 (noted)|1/100|raw_monkfish:700-700/100
+the_whisperer|The Whisperer|791|Water rune|280,420|1/100|water_rune:280-280/100
+the_whisperer|The Whisperer|791|Steam rune|466,700|8/100|steam_rune:466-466/12
+the_whisperer|The Whisperer|791|Chaos rune|140,210|1/100|chaos_rune:140-140/100
+the_whisperer|The Whisperer|791|Death rune|466,700|8/100|death_rune:466-466/12
+the_whisperer|The Whisperer|791|Soul rune|933,1400|2/100|soul_rune:933-933/50
 the_whisperer|The Whisperer|791|Brimstone key|1|-|-handled elsewhere:brimstone_key
 the_whisperer|The Whisperer|791|Ancient blood ornament kit|1|Always|-handled elsewhere:ancient_blood_ornament_kit
 the_whisperer|The Whisperer|791|Wisp|1|1/2000|-handled elsewhere:pet_wisp
@@ -2001,31 +2001,31 @@ vardorvis|Vardorvis|784|Blood quartz|1|1/204.0|-expanded shared table
 vardorvis|Vardorvis|784|Tuna potato|3-4|1/5.3|-expanded shared table
 vardorvis|Vardorvis|784|Prayer potion(3)|1|1/5.3|-expanded shared table
 vardorvis|Vardorvis|784|Super combat potion(2)|1|1/5.3|-expanded shared table
-vardorvis|Vardorvis|784|Pure essence|120,180 (noted)|1/100|pure_essence:120180-120180/100
-vardorvis|Vardorvis|784|Iron ore|38,57 (noted)|1/100|iron_ore:3857-3857/100
-vardorvis|Vardorvis|784|Silver ore|38,57 (noted)|1/100|silver_ore:3857-3857/100
-vardorvis|Vardorvis|784|Coal|130,195 (noted)|8/100|coal:130195-130195/12
-vardorvis|Vardorvis|784|Mithril ore|38,57 (noted)|1/100|mithril_ore:3857-3857/100
-vardorvis|Vardorvis|784|Adamantite ore|45,67 (noted)|8/100|adamantite_ore:4567-4567/12
-vardorvis|Vardorvis|784|Runite ore|18,27 (noted)|2/100|runite_ore:1827-1827/50
-vardorvis|Vardorvis|784|Sapphire|17,25 (noted)|1/100|sapphire:1725-1725/100
-vardorvis|Vardorvis|784|Emerald|17,25 (noted)|1/100|emerald:1725-1725/100
-vardorvis|Vardorvis|784|Ruby|17,25 (noted)|1/100|ruby:1725-1725/100
-vardorvis|Vardorvis|784|Uncut ruby|25,37 (noted)|5/100|uncut_ruby:2537-2537/20
-vardorvis|Vardorvis|784|Uncut diamond|25,37 (noted)|5/100|uncut_diamond:2537-2537/20
-vardorvis|Vardorvis|784|Rune javelin tips|36,54|8/100|rune_javelin_heads:3654-3654/12
-vardorvis|Vardorvis|784|Dragon javelin tips|36,54|8/100|dragon_javelin_heads:3654-3654/12
-vardorvis|Vardorvis|784|Dragon dart tip|100,150|2/100|dragon_dart_tip:100150-100150/50
-vardorvis|Vardorvis|784|Raw shark|200,300 (noted)|1/100|raw_shark:200300-200300/100
-vardorvis|Vardorvis|784|Bronze javelin|42,63|1/100|bronze_javelin:4263-4263/100
-vardorvis|Vardorvis|784|Mithril javelin|42,63|1/100|mithril_javelin:4263-4263/100
-vardorvis|Vardorvis|784|Adamant javelin|42,63|1/100|adamant_javelin:4263-4263/100
-vardorvis|Vardorvis|784|Onyx bolts (e)|60,90|1/100|onyx_bolts_e:6090-6090/100
-vardorvis|Vardorvis|784|Mind rune|120,180|1/100|mind_rune:120180-120180/100
-vardorvis|Vardorvis|784|Fire rune|120,180|1/100|fire_rune:120180-120180/100
-vardorvis|Vardorvis|784|Lava rune|200,300|8/100|lava_rune:200300-200300/12
-vardorvis|Vardorvis|784|Blood rune|200,300|8/100|blood_rune:200300-200300/12
-vardorvis|Vardorvis|784|Soul rune|400,600|2/100|soul_rune:400600-400600/50
+vardorvis|Vardorvis|784|Pure essence|120,180 (noted)|1/100|pure_essence:120-120/100
+vardorvis|Vardorvis|784|Iron ore|38,57 (noted)|1/100|iron_ore:38-38/100
+vardorvis|Vardorvis|784|Silver ore|38,57 (noted)|1/100|silver_ore:38-38/100
+vardorvis|Vardorvis|784|Coal|130,195 (noted)|8/100|coal:130-130/12
+vardorvis|Vardorvis|784|Mithril ore|38,57 (noted)|1/100|mithril_ore:38-38/100
+vardorvis|Vardorvis|784|Adamantite ore|45,67 (noted)|8/100|adamantite_ore:45-45/12
+vardorvis|Vardorvis|784|Runite ore|18,27 (noted)|2/100|runite_ore:18-18/50
+vardorvis|Vardorvis|784|Sapphire|17,25 (noted)|1/100|sapphire:17-17/100
+vardorvis|Vardorvis|784|Emerald|17,25 (noted)|1/100|emerald:17-17/100
+vardorvis|Vardorvis|784|Ruby|17,25 (noted)|1/100|ruby:17-17/100
+vardorvis|Vardorvis|784|Uncut ruby|25,37 (noted)|5/100|uncut_ruby:25-25/20
+vardorvis|Vardorvis|784|Uncut diamond|25,37 (noted)|5/100|uncut_diamond:25-25/20
+vardorvis|Vardorvis|784|Rune javelin tips|36,54|8/100|rune_javelin_heads:36-36/12
+vardorvis|Vardorvis|784|Dragon javelin tips|36,54|8/100|dragon_javelin_heads:36-36/12
+vardorvis|Vardorvis|784|Dragon dart tip|100,150|2/100|dragon_dart_tip:100-100/50
+vardorvis|Vardorvis|784|Raw shark|200,300 (noted)|1/100|raw_shark:200-200/100
+vardorvis|Vardorvis|784|Bronze javelin|42,63|1/100|bronze_javelin:42-42/100
+vardorvis|Vardorvis|784|Mithril javelin|42,63|1/100|mithril_javelin:42-42/100
+vardorvis|Vardorvis|784|Adamant javelin|42,63|1/100|adamant_javelin:42-42/100
+vardorvis|Vardorvis|784|Onyx bolts (e)|60,90|1/100|onyx_bolts_e:60-60/100
+vardorvis|Vardorvis|784|Mind rune|120,180|1/100|mind_rune:120-120/100
+vardorvis|Vardorvis|784|Fire rune|120,180|1/100|fire_rune:120-120/100
+vardorvis|Vardorvis|784|Lava rune|200,300|8/100|lava_rune:200-200/12
+vardorvis|Vardorvis|784|Blood rune|200,300|8/100|blood_rune:200-200/12
+vardorvis|Vardorvis|784|Soul rune|400,600|2/100|soul_rune:400-400/50
 vardorvis|Vardorvis|784|Temple key (Desert Treasure II)|1|Always|-not in game
 vardorvis|Vardorvis|784|Brimstone key|1|-|-handled elsewhere:brimstone_key
 vardorvis|Vardorvis|784|Ancient blood ornament kit|1|Always|-handled elsewhere:ancient_blood_ornament_kit
