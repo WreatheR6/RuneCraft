@@ -43,6 +43,31 @@ public final class ToaLoot {
     /** Room points per damage to Het's seal (OSRS: x2.5). */
     public static final double HET_SEAL_POINTS = 2.5;
 
+    /**
+     * Combat Achievement flags the challenge rooms report on a perfect clear (checked when the raid completes, see
+     * CombatAchievementRules): Perfect Scabaras (under a minute, no puzzle damage), Perfect Het (no beam or orb damage, the
+     * seal broken in one exposure), Perfect Crondis (no crocodile at the tree, no water spilled, under a minute) and
+     * Perfect Apmeken (a group, no danger triggered, no venom, no volatile baboon hit, under three minutes).
+     */
+    public static final String FLAG_PERFECT_SCABARAS = "toa_perfect_scabaras";
+    public static final String FLAG_PERFECT_HET = "toa_perfect_het";
+    public static final String FLAG_PERFECT_CRONDIS = "toa_perfect_crondis";
+    public static final String FLAG_PERFECT_APMEKEN = "toa_perfect_apmeken";
+    /** Perfect boss kills (the fight's damage conditions plus the room's), for the "Perfection of ..." tasks. */
+    public static final String FLAG_PERFECT_AKKHA = "toa_perfect_akkha";
+    public static final String FLAG_PERFECT_BABA = "toa_perfect_baba";
+    public static final String FLAG_PERFECT_ZEBAK = "toa_perfect_zebak";
+    public static final String FLAG_PERFECT_KEPHRI = "toa_perfect_kephri";
+    /** Fight flags that fail a task: a trailing orb dropped (Dropped the ball), a cracked boulder hit (No skipping allowed),
+     * Kephri healed above 25% after the first down (All out of medics). */
+    public static final String FLAG_AKKHA_ORB_DROPPED = "akkha_orb_dropped";
+    public static final String FLAG_BABA_CRACKED_HIT = "baba_cracked_hit";
+    public static final String FLAG_KEPHRI_OVER_25 = "kephri_over_25";
+    /** Game ticks the timed perfect rooms allow: a minute (Scabaras, Crondis), three minutes (Apmeken). */
+    public static final int PERFECT_SCABARAS_TICKS = 100;
+    public static final int PERFECT_CRONDIS_TICKS = 100;
+    public static final int PERFECT_APMEKEN_TICKS = 300;
+
     /** The keris partisan jewels. */
     public static final List<String> JEWELS = List.of("eye_of_the_corruptor", "jewel_of_the_sun", "breach_of_the_scarab",
             "jewel_of_amascut");
@@ -194,6 +219,21 @@ public final class ToaLoot {
             }
         }
         return SHROUDS.get(tier - 1);
+    }
+
+    /**
+     * The shroud's "Change" option (OSRS wiki: "alter the cape's appearance to other tiers, providing that they have met the
+     * completion count required for them"): the next unlocked tier after {@code current}, wrapping round to tier 1, or
+     * null when {@code current} isn't a shroud or no other tier is unlocked.
+     */
+    public static String shroudChange(String current, int normalOrExpertCompletions) {
+        int at = SHROUDS.indexOf(current);
+        int unlocked = shroudTier(normalOrExpertCompletions);
+        if (at < 0 || unlocked <= 1) {
+            return null;
+        }
+        int next = (at + 1) % unlocked;
+        return next == at ? null : SHROUDS.get(next);
     }
 
     /** The completion-count key of a raid's mode (OSRS keeps Entry, Normal and Expert mode counts apart). */

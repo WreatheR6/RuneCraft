@@ -322,11 +322,18 @@ public final class RaidSelfTest {
                     "the lobby chest gave " + given + " for 100 completions");
             expect(RaidManager.giveShroud(p, 100) == null && Inv.count(p, given) == 1,
                     "a second search gave another shroud while one was carried");
+            // OSRS: the shroud's Change option cycles through the unlocked tiers.
+            expect(ToaSupplyService.changeShroud(p, 100) == 0 && Inv.count(p, given) == 1, "the shroud changed with only tier 1 unlocked");
+            expect(ToaSupplyService.changeShroud(p, 500) == 1 && Inv.count(p, ToaLoot.SHROUDS.get(1)) == 1 && Inv.count(p, given) == 0,
+                    "changing the shroud with 500 completions did not give tier 2");
+            expect(ToaSupplyService.changeShroud(p, 500) == 1 && Inv.count(p, given) == 1, "changing it again did not wrap back to tier 1");
             Inv.remove(p, given, 1);
             sys.worn.put(capeSlot, Inv.stack(given, 1));
             String again = RaidManager.giveShroud(p, 2_000);
             expect(again == null, "searching the chest with a shroud worn gave " + again);
-            return "the lobby chest gives one shroud, none while one is worn";
+            expect(ToaSupplyService.changeShroud(p, 2_000) == 1 && ToaLoot.SHROUDS.get(1).equals(Inv.idOf(sys.worn.get(capeSlot))),
+                    "the worn shroud did not change");
+            return "the lobby chest gives one shroud, none while one is worn; the shroud changes between unlocked tiers";
         } finally {
             for (String s : ToaLoot.SHROUDS) {
                 Inv.remove(p, s, Inv.count(p, s));
@@ -337,6 +344,32 @@ public final class RaidSelfTest {
                 sys.worn.put(capeSlot, cape);
             }
             com.runecraft.content.systems.SysNet.sendState(p);
+        }
+    }
+
+    /**
+     * The lobby's pickaxe cavity (OSRS): deposits the pickaxe the Path of Het's statues will hold, and gives it back. Leaves
+     * the player's stored pickaxe and inventory as they were.
+     */
+    private static String pickaxeCavity(ServerPlayer p) {
+        RaidsState state = RaidsState.get(p.getServer());
+        net.minecraft.world.item.ItemStack before = state.storedPickaxe(p.getUUID());
+        int had = Inv.count(p, "rune_pickaxe");
+        try {
+            state.setStoredPickaxe(p.getUUID(), net.minecraft.world.item.ItemStack.EMPTY);
+            Inv.give(p, "rune_pickaxe", 1);
+            // The cavity takes the best pickaxe carried (the player may have a better one than the rune pickaxe).
+            String best = ToaPuzzleRooms.Het.pickaxe(p);
+            int bestBefore = Inv.count(p, best);
+            expect(ToaSupplyService.pickaxeCavity(p) == 1 && best.equals(Inv.idOf(state.storedPickaxe(p.getUUID()))),
+                    "the lobby cavity did not take the " + best);
+            expect(Inv.count(p, best) == bestBefore - 1, "the cavity left the pickaxe in the inventory");
+            expect(ToaSupplyService.pickaxeCavity(p) == 1 && state.storedPickaxe(p.getUUID()).isEmpty() && Inv.count(p, best) == bestBefore,
+                    "the lobby cavity did not give the pickaxe back");
+            return "the lobby cavity keeps a pickaxe for the statues";
+        } finally {
+            Inv.remove(p, "rune_pickaxe", Math.max(0, Inv.count(p, "rune_pickaxe") - had));
+            state.setStoredPickaxe(p.getUUID(), before);
         }
     }
 
@@ -467,7 +500,8 @@ public final class RaidSelfTest {
             expect(RaidManager.of(p) == null, "the lobby exit did not take the player out of the raid");
             expect(!raid.contains(p), "the lobby exit left the player in the instance");
             expect(Inv.count(p, ToaSupplies.HONEY_LOCUST) == 0, "the raid's supplies left the tomb with the player");
-            return "logout mid-fight is a death, rejoin wipes and retries, the exit takes you home; " + shroudChest(p);
+            return "logout mid-fight is a death, rejoin wipes and retries, the exit takes you home; " + shroudChest(p) + "; "
+                    + pickaxeCavity(p);
         } finally {
             if (RaidManager.of(p) == raid) {
                 RaidManager.selfTestClose(raid);

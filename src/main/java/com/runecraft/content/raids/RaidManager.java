@@ -375,6 +375,11 @@ public final class RaidManager {
         RaidInstance raid = of(player);
         if (raid == null || RaidBuilder.slotAt(pos.getX(), pos.getZ()) != raid.slot) {
             if (raid == null && blockId.equals(RaidsContent.INVOCATION_OBELISK)) {
+                if (player.isShiftKeyDown()) {
+                    // OSRS: a cavity in the lobby deposits or retrieves the pickaxe kept for the Path of Het's statues.
+                    ToaSupplyService.pickaxeCavity(player);
+                    return;
+                }
                 groupingObelisk(player);
                 return;
             }
@@ -480,6 +485,10 @@ public final class RaidManager {
         if (shroud != null) {
             Msg.game(player, "You search the chest beside the obelisk and find Icthlarin's shroud (tier "
                     + (com.runecraft.osrs.content.raids.ToaLoot.SHROUDS.indexOf(shroud) + 1) + ").");
+        }
+        if (tier >= 2) {
+            // OSRS: the shroud's Change option switches between the unlocked tiers.
+            Msg.game(player, "You have unlocked " + tier + " tiers of Icthlarin's shroud: use /raids shroud to change its appearance.");
         }
     }
 

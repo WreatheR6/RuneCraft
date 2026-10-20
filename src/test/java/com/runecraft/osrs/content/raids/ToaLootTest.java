@@ -177,6 +177,41 @@ class ToaLootTest {
      * The lobby chest gives one shroud only while the player owns none (worn included), and the shroud is worth nothing
      * (OSRS: untradeable and can't be alchemised), so taking another after losing one is no source of coins.
      */
+    /** The room perfection tasks and the mechanical tasks the round 36 rooms report (CombatAchievementRules). */
+    @Test
+    void roomPerfectionTasksAreTracked() {
+        for (int id : new int[]{432, 434, 435, 437, 438, 440, 441, 443, 449, 451, 457}) {
+            assertTrue(com.runecraft.osrs.content.systems.CombatAchievements.task("ca_" + id).track()
+                    != com.runecraft.osrs.content.systems.CombatAchievements.Track.UNTRACKED, "ca_" + id);
+        }
+        var m = new com.runecraft.osrs.content.systems.CombatAchievementRules.Metrics();
+        m.raid = new com.runecraft.osrs.content.systems.CombatAchievementRules.Raid("TOA", "NORMAL", 2, 300, Set.of(), 0, 0, 0, true,
+                30_000, true);
+        String perfectionOfHet = com.runecraft.osrs.content.systems.CombatAchievements.task("ca_434").rule();
+        String perfectApmeken = com.runecraft.osrs.content.systems.CombatAchievements.task("ca_435").rule();
+        assertFalse(com.runecraft.osrs.content.systems.CombatAchievementRules.meets(perfectionOfHet, m));
+        m.flags.add(ToaLoot.FLAG_PERFECT_HET);
+        assertFalse(com.runecraft.osrs.content.systems.CombatAchievementRules.meets(perfectionOfHet, m), "needs Perfect Akkha too");
+        m.flags.add(ToaLoot.FLAG_PERFECT_AKKHA);
+        assertTrue(com.runecraft.osrs.content.systems.CombatAchievementRules.meets(perfectionOfHet, m));
+        m.flags.add(ToaLoot.FLAG_PERFECT_APMEKEN);
+        assertTrue(com.runecraft.osrs.content.systems.CombatAchievementRules.meets(perfectApmeken, m));
+        m.raid = new com.runecraft.osrs.content.systems.CombatAchievementRules.Raid("TOA", "NORMAL", 1, 300, Set.of(), 0, 0, 0, true,
+                30_000, true);
+        assertFalse(com.runecraft.osrs.content.systems.CombatAchievementRules.meets(perfectApmeken, m), "Perfect Apmeken needs a group");
+    }
+
+    /** The shroud's Change option cycles through the unlocked tiers (OSRS wiki). */
+    @Test
+    void shroudChangesBetweenUnlockedTiers() {
+        assertNull(ToaLoot.shroudChange("icthlarins_shroud_tier_1", 499), "only tier 1 unlocked");
+        assertEquals("icthlarins_shroud_tier_2", ToaLoot.shroudChange("icthlarins_shroud_tier_1", 500));
+        assertEquals("icthlarins_shroud_tier_1", ToaLoot.shroudChange("icthlarins_shroud_tier_2", 500), "wraps round");
+        assertEquals("icthlarins_shroud_tier_4", ToaLoot.shroudChange("icthlarins_shroud_tier_3", 2_000));
+        assertEquals("icthlarins_shroud_tier_1", ToaLoot.shroudChange("icthlarins_shroud_tier_5", 2_000));
+        assertNull(ToaLoot.shroudChange("cape_of_legends", 2_000));
+    }
+
     @Test
     void shroudChestGivesOneAndShroudsAreWorthless() {
         assertNull(ToaLoot.shroudFromChest(99, s -> false));

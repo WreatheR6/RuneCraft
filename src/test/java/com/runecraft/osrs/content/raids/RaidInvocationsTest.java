@@ -98,8 +98,9 @@ class RaidInvocationsTest {
         assertEquals(2, Invocation.babaSlamRadius(none));
         assertEquals(3, Invocation.babaSlamRadius(all));
         assertTrue(Invocation.babaMindTheGap(all));
-        assertEquals(0, Invocation.babaFaithDamage(none, 99));
-        assertTrue(Invocation.babaFaithDamage(all, 99) > Invocation.babaFaithDamage(all, 10));
+        assertEquals(0, Invocation.babaFaithDamage(none, 10, 99));
+        assertTrue(Invocation.babaFaithDamage(all, 10, 99) > Invocation.babaFaithDamage(all, 99, 99), "lower prayer, more damage");
+        assertEquals(0, Invocation.babaFaithDamage(all, 99, 99));
         // Kephri
         assertEquals(1, Invocation.kephriDungTargets(all, 1), "Blowing Mud has no effect solo");
         assertEquals(2, Invocation.kephriDungTargets(all, 4));
@@ -110,6 +111,11 @@ class RaidInvocationsTest {
         assertEquals(2, Invocation.kephriEggs(none));
         assertEquals(4, Invocation.kephriEggs(all));
         assertEquals(1, Invocation.kephriFireballRadius(all));
+        // Trios of swarms from path level 2, more often from 4.
+        assertEquals(0, Invocation.kephriTrioEvery(1));
+        assertTrue(Invocation.kephriTrioEvery(4) < Invocation.kephriTrioEvery(2) && Invocation.kephriTrioEvery(4) > 0);
+        // Zebak: Arterial Spray widens the blood blitz's splash.
+        assertTrue(Invocation.zebakBloodSplashRadius(all) > Invocation.zebakBloodSplashRadius(none));
         // Wardens
         assertEquals(0, Invocation.wardensSlamFaster(none));
         assertEquals(1, Invocation.wardensSlamFaster(EnumSet.of(Invocation.OVERCLOCKED)));
@@ -117,6 +123,10 @@ class RaidInvocationsTest {
         assertEquals(3, Invocation.wardensSlamFaster(all));
         assertTrue(Invocation.wardensChargeEvery(all) < Invocation.wardensChargeEvery(none));
         assertTrue(Invocation.wardensAttackEvery(all) < Invocation.wardensAttackEvery(none));
+        // DPS calculator: Elidinis' Warden attacks every 7 ticks, Tumeken's every 8.
+        assertEquals(7, Invocation.wardensAttackEvery(none, true));
+        assertEquals(8, Invocation.wardensAttackEvery(none, false));
+        assertTrue(Invocation.wardensAttackEvery(all, false) < 8);
         assertTrue(Invocation.wardensObeliskDamage(all) > 1.0);
         // Overly Draining
         assertEquals(100, Invocation.specialCost(all));

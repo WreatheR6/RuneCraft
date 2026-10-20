@@ -191,6 +191,7 @@ class CombatAchievementRulesTest {
         List<java.lang.reflect.Field> fields = new ArrayList<>(List.of(CombatAchievements.class.getFields()));
         fields.addAll(List.of(com.runecraft.osrs.content.minigames.FortisColosseum.class.getFields()));
         fields.addAll(List.of(com.runecraft.osrs.content.bosses.BossMechanics.class.getFields()));
+        fields.addAll(List.of(com.runecraft.osrs.content.raids.ToaLoot.class.getFields()));
         for (java.lang.reflect.Field f : fields) {
             if ((f.getName().startsWith("FLAG_") || f.getName().startsWith("COUNT_")) && f.getType() == String.class) {
                 try {

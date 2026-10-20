@@ -92,9 +92,21 @@ public final class ToaSupplies {
         return invocations.contains(Invocation.NEED_SOME_HELP) ? 0.66 : 1.0;
     }
 
-    /** A reduced quantity: never below one of a supply that was offered (OSRS). // approx: rounded down */
-    public static int reduce(int count, double factor) {
-        return count <= 0 ? 0 : Math.max(1, (int) Math.floor(count * factor));
+    /**
+     * A reduced quantity: never below one of a supply that was offered (OSRS). The wiki notes that "the reduction may or
+     * may not occur" (a Power bundle's two salts at 66% are sometimes still two), so the fraction is rounded up with its
+     * own probability: 2 x 0.66 = 1.32 gives 2 a third of the time. // approx: the rounding odds
+     */
+    public static int reduce(int count, double factor, Random random) {
+        if (count <= 0) {
+            return 0;
+        }
+        double exact = count * factor;
+        int whole = (int) Math.floor(exact + 1e-9);
+        if (random.nextDouble() < exact - whole) {
+            whole++;
+        }
+        return Math.max(1, Math.min(count, whole));
     }
 
     /** Paths completed when the Helpful Spirit appears: after two paths and after all four (OSRS). */
@@ -136,7 +148,7 @@ public final class ToaSupplies {
         double factor = supplyFactor(invocations);
         Map<String, Integer> out = new LinkedHashMap<>();
         raw.forEach((id, n) -> {
-            int r = reduce(n, factor);
+            int r = reduce(n, factor, random);
             if (r > 0) {
                 out.put(id, r);
             }

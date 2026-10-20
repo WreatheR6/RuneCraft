@@ -70,6 +70,82 @@ public final class ToaSupplyService {
         });
     }
 
+    /**
+     * Icthlarin's shroud's "Change" option ({@code /raids shroud}, OSRS): turns the shroud held, carried or worn in the
+     * cape slot into the next tier the player's Normal/Expert completions unlock. Returns 1 when it changed.
+     */
+    static int changeShroud(ServerPlayer p) {
+        RaidsState state = RaidsState.get(p.getServer());
+        int completions = state.completions(p.getUUID(), com.runecraft.osrs.content.raids.ToaLoot.modeKey(150))
+                + state.completions(p.getUUID(), com.runecraft.osrs.content.raids.ToaLoot.modeKey(300));
+        return changeShroud(p, completions);
+    }
+
+    /** {@link #changeShroud(ServerPlayer)} for this many Normal/Expert completions (self-test). */
+    static int changeShroud(ServerPlayer p, int completions) {
+        var inv = p.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack s = inv.getItem(i);
+            String next = s.isEmpty() ? null : com.runecraft.osrs.content.raids.ToaLoot.shroudChange(Inv.idOf(s), completions);
+            if (next != null) {
+                inv.setItem(i, Inv.stack(next, 1));
+                Msg.game(p, "You change your shroud's appearance: " + nameOf(next) + ".");
+                return 1;
+            }
+        }
+        var sys = com.runecraft.content.systems.SysState.of(p);
+        ItemStack cape = sys.worn.get(com.runecraft.osrs.content.systems.Jewellery.Slot.CAPE);
+        String next = cape == null || cape.isEmpty() ? null : com.runecraft.osrs.content.raids.ToaLoot.shroudChange(Inv.idOf(cape), completions);
+        if (next != null) {
+            sys.worn.put(com.runecraft.osrs.content.systems.Jewellery.Slot.CAPE, Inv.stack(next, 1));
+            com.runecraft.content.systems.SysNet.sendState(p);
+            Msg.game(p, "You change your shroud's appearance: " + nameOf(next) + ".");
+            return 1;
+        }
+        Msg.game(p, com.runecraft.osrs.content.raids.ToaLoot.shroudTier(completions) <= 1
+                ? "You haven't unlocked another tier of Icthlarin's shroud yet."
+                : "You need to carry or wear Icthlarin's shroud to change it.");
+        return 0;
+    }
+
+    private static String nameOf(String item) {
+        var def = com.runecraft.osrs.ItemCatalog.get(item);
+        return def == null ? item : def.name();
+    }
+
+    /**
+     * The lobby's pickaxe cavity (OSRS): takes back the pickaxe left in a Path of Het statue, or deposits the best pickaxe
+     * carried there for the next raid. Returns 1 when something moved.
+     */
+    static int pickaxeCavity(ServerPlayer p) {
+        RaidsState state = RaidsState.get(p.getServer());
+        ItemStack stored = state.storedPickaxe(p.getUUID());
+        if (!stored.isEmpty()) {
+            if (!p.getInventory().add(stored.copy())) {
+                Msg.game(p, "You need a free inventory slot to take your pickaxe.");
+                return 0;
+            }
+            state.setStoredPickaxe(p.getUUID(), ItemStack.EMPTY);
+            Msg.game(p, "You take your pickaxe from the cavity.");
+            return 1;
+        }
+        String best = ToaPuzzleRooms.Het.pickaxe(p);
+        if (best == null) {
+            Msg.game(p, "The cavity is empty. Leave a pickaxe here for the statues of the Path of Het.");
+            return 0;
+        }
+        var inv = p.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack s = inv.getItem(i);
+            if (!s.isEmpty() && best.equals(Inv.idOf(s))) {
+                state.setStoredPickaxe(p.getUUID(), inv.removeItem(i, 1));
+                Msg.game(p, "You leave your pickaxe in the cavity: the statues of the Path of Het will hold it for you.");
+                return 1;
+            }
+        }
+        return 0;
+    }
+
     /** Whether this player's liquid adrenaline is active. */
     static boolean adrenaline(ServerPlayer p) {
         Long until = ADRENALINE.get(p.getUUID());

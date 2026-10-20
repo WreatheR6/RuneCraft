@@ -11,6 +11,7 @@ import com.runecraft.osrs.content.raids.RaidScaling;
 import com.runecraft.osrs.content.raids.RaidsContent;
 import com.runecraft.osrs.content.raids.RoomDef;
 import com.runecraft.osrs.content.raids.ToaBossRules;
+import com.runecraft.osrs.content.raids.ToaLoot;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
 import com.runecraft.util.Msg;
@@ -103,6 +104,47 @@ final class ToaBossRooms {
             }
         }
 
+        /**
+         * OSRS Combat Achievements "Perfect <boss>": the fight's damage conditions ({@link #perfectDamageRule}, checked on
+         * each player's tracked fight) and the room's own ({@link #perfectRoom}); a perfect kill flags the raid run for the
+         * "Perfection of ..." tasks.
+         */
+        @Override
+        public void bossDeath(DataBossEntity boss, ServerPlayer killer) {
+            String flag = perfectFlag();
+            if (flag == null || boss != mainBoss() || !perfectRoom()) {
+                return;
+            }
+            for (ServerPlayer p : players()) {
+                if (com.runecraft.content.systems.CombatAchievementService.fightMeets(p, boss, perfectDamageRule())) {
+                    com.runecraft.content.systems.CombatAchievementService.flag(p, flag);
+                }
+            }
+        }
+
+        /** The raid-run flag of a perfect kill of this room's boss, or null. */
+        String perfectFlag() {
+            return null;
+        }
+
+        /** The room's boss. */
+        abstract DataBossEntity mainBoss();
+
+        /** The damage the party must not take for a perfect kill (CombatAchievementRules language). */
+        String perfectDamageRule() {
+            return "nodmg";
+        }
+
+        /** The room's own conditions for a perfect kill (invocations, party size, nothing hatched or opened...). */
+        boolean perfectRoom() {
+            return true;
+        }
+
+        /** Whether every one of these invocations is active. */
+        boolean all(java.util.Set<Invocation> needed) {
+            return raid.invocations().containsAll(needed);
+        }
+
         /** Self-test: whether a player would be busy with something else than the boss right now (Ba-Ba's boulders). */
         boolean selfTestHolds() {
             return false;
@@ -138,7 +180,15 @@ final class ToaBossRooms {
         int broken;
         boolean dazed;
         private int leaked;
+        /** Shield the swarms that reached her during an intermission restore (they can overcharge it). */
+        private int shieldPool;
         private int overcharge;
+        /** CA "All out of medics": she healed above 25% after the first down. */
+        boolean healedOver25;
+        /** CA "Perfect Kephri": an egg hatched. */
+        boolean eggHatched;
+        /** The shield (percent of its capacity) she woke with after each intermission (self-test). */
+        final List<Integer> wakeShields = new ArrayList<>();
         private LivingEntity arcane;
         private int arcaneSpot;
         private int arcaneCharge;
@@ -160,7 +210,11 @@ final class ToaBossRooms {
             broken = 0;
             dazed = false;
             leaked = 0;
+            shieldPool = 0;
             overcharge = 0;
+            healedOver25 = false;
+            eggHatched = false;
+            wakeShields.clear();
             guards.clear();
             eggs.clear();
             arcane = null;
@@ -233,6 +287,8 @@ final class ToaBossRooms {
                 return;
             }
             dazed = true;
+            shieldPool = 0;
+            leaked = 0;
             warn("Kephri's shield shatters! Her children rush to her aid!");
             guards.clear();
             for (String id : Invocation.kephriOverlords(inv, broken)) {
@@ -241,6 +297,10 @@ final class ToaBossRooms {
                 if (g != null) {
                     guards.add(g);
                     if (id.equals("toa_arcane_scarab")) {
+                        // OSRS: the Arcane Scarab doesn't attack; it only charges its explosive swarm.
+                        if (g instanceof Mob m) {
+                            m.setNoAi(true);
+                        }
                         arcane = g;
                         arcaneSpot = 0;
                         arcaneCharge = 0;
@@ -253,11 +313,11 @@ final class ToaBossRooms {
             int swarms = Invocation.kephriSwarms(broken);
             int delay = 0;
             int start = rnd().nextInt(6);
-            boolean trios = raid.pathLevel() >= 2;
+            int trioEvery = Invocation.kephriTrioEvery(raid.pathLevel());
             for (int i = 0; i < swarms; i++) {
                 delay += Invocation.kephriSwarmDelay(i);
                 int point = (start + i) % 6;
-                int n = trios && i % 4 == 3 ? 3 : 1; // approx: every fourth spawn a trio
+                int n = trioEvery > 0 && i % trioEvery == trioEvery - 1 ? 3 : 1;
                 later(delay, () -> {
                     if (alive(kephri) && dazed) {
                         double a = Math.PI / 3 * point + Math.PI / 6;
@@ -281,11 +341,46 @@ final class ToaBossRooms {
             }
             dazed = false;
             int max = raid.maxHitpoints(kephri);
-            raid.setCurrentHitpoints(kephri, max);
-            // OSRS: swarms that reached her overcharge the shield, up to about 15% over its capacity (~10% each).
-            overcharge = Math.min(max * 15 / 100, leaked * max / 10);
+            // OSRS wiki: the shield comes back only as far as the swarms that reached her restored it (about 10% each,
+            // less in big groups), overcharging it up to about 15% over its capacity; a party that leaks no swarm faces
+            // an all but empty shield.
+            raid.setCurrentHitpoints(kephri, Math.max(1, Math.min(max, shieldPool)));
+            wakeShields.add(shieldPool * 100 / Math.max(1, max));
+            overcharge = Math.min(max * 15 / 100, Math.max(0, shieldPool - max));
+            warn("Kephri wakes: her swarms restored " + Math.min(115, shieldPool * 100 / Math.max(1, max)) + "% of her shield"
+                    + (overcharge > 0 ? " and overcharged it!" : "."));
+            checkMedics();
+            shieldPool = 0;
             leaked = 0;
-            warn("Kephri's shield regenerates!" + (overcharge > 0 ? " Her swarms overcharge it!" : ""));
+        }
+
+        /** CA "All out of medics": after the first down she must never heal above 25%. */
+        private void checkMedics() {
+            if (broken >= 1 && broken < 3 && alive(kephri) && raid.healthFraction(kephri) > 0.25 && !healedOver25) {
+                healedOver25 = true;
+                com.runecraft.content.systems.CombatAchievementService.flagNear(kephri, ToaLoot.FLAG_KEPHRI_OVER_25);
+            }
+        }
+
+        @Override
+        DataBossEntity mainBoss() {
+            return kephri;
+        }
+
+        @Override
+        String perfectFlag() {
+            return ToaLoot.FLAG_PERFECT_KEPHRI;
+        }
+
+        /** OSRS "Perfect Kephri": no damage from eggs, her attacks, exploding scarabs, bodyguards or dung; no egg hatches. */
+        @Override
+        String perfectDamageRule() {
+            return "nodmg=boss,other,mechanic,hazard";
+        }
+
+        @Override
+        boolean perfectRoom() {
+            return raid.partySize() >= 2 && !eggHatched;
         }
 
         @Override
@@ -370,11 +465,17 @@ final class ToaBossRooms {
             if (tick % 2 == 0 && (dazed || guarded())) {
                 world().sendParticles(ParticleTypes.ENCHANT, kephri.getX(), kephri.getY() + 1, kephri.getZ(), 10, 1.2, 0.8, 1.2, 0.2);
             }
-            // OSRS: a swarm that reaches her recharges about 10% of a shield (heals her body in the last phase).
+            // OSRS: a swarm that reaches her recharges about 10% of a shield (heals her body in the last phase). While she
+            // is dazed it builds up the shield she wakes with.
+            int hpBefore = raid.hitpoints(kephri);
             int reached = healers("toa_scarab_swarm", kephri, raid.maxHitpoints(kephri) * 0.01,
                     "A scarab swarm reaches Kephri and recharges her shield!");
-            if (dazed) {
+            if (dazed && reached > 0) {
                 leaked += reached;
+                shieldPool += Math.max(0, raid.hitpoints(kephri) - hpBefore);
+                raid.setCurrentHitpoints(kephri, 1);
+            } else if (reached > 0) {
+                checkMedics();
             }
             agileScarabs();
             tickEggs();
@@ -420,10 +521,14 @@ final class ToaBossRooms {
                 arcaneCharge++;
                 world().sendParticles(ParticleTypes.WITCH, arcane.getX(), arcane.getY() + 0.5, arcane.getZ(), 4 + arcaneCharge / 2, 1.0, 0.4, 1.0, 0.02);
                 if (arcaneCharge >= Invocation.ARCANE_SCARAB_CHARGE_TICKS) {
-                    // OSRS: well over 65 damage unless Protect from Magic is up (which cuts about two thirds).
+                    // OSRS: "well over 65 damage" unless Protect from Magic is up (which cuts about two thirds); its infobox
+                    // max hit is 22. // approx: three hits of up to 22
                     warn("The Arcane Scarab unleashes its explosive swarm!");
                     for (ServerPlayer p : players) {
-                        int roll = 45 + rnd().nextInt(26);
+                        int roll = 0;
+                        for (int k = 0; k < 3; k++) {
+                            roll += rnd().nextInt(ToaBossRules.ARCANE_SCARAB_MAX_HIT + 1);
+                        }
                         hurt(arcane, p, RaidEffects.protectedFrom(p, AttackType.MAGIC) ? roll / 3 : roll);
                     }
                     relocateArcane();
@@ -500,6 +605,7 @@ final class ToaBossRooms {
                 it.remove();
                 Vec3 at = egg.position();
                 if (com.runecraft.osrs.content.raids.ToaBosses.KEPHRI_DARK_EGG.equals(RaidInstance.creatureId(egg))) {
+                    eggHatched = true;
                     spawnMob("toa_agile_scarab", egg.blockPosition(), false);
                 } else {
                     world().sendParticles(ParticleTypes.ITEM_SLIME, at.x, at.y + 0.3, at.z, 20, 1.0, 0.2, 1.0, 0.05);
@@ -564,7 +670,10 @@ final class ToaBossRooms {
                 }
             });
             RaidSelfTest.expect(broken >= 3, "Kephri died before all three shields broke (" + broken + ")");
-            return r + ", " + eggsBroken[0] + " eggs broken";
+            // OSRS: her shield only comes back as far as the swarms that reached her restored it (none leaked here).
+            RaidSelfTest.expect(wakeShields.size() == 2 && wakeShields.get(0) < 100,
+                    "Kephri woke with a full shield although no swarm reached her: " + wakeShields);
+            return r + ", " + eggsBroken[0] + " eggs broken, woke with " + wakeShields + "% shields";
         }
     }
 
@@ -582,8 +691,9 @@ final class ToaBossRooms {
         private static final String[] STYLES = {"melee", "ranged", "magic"};
         DataBossEntity akkha;
         int style;
+        /** Attacks made (autos and specials), and auto-attacks since the last special. */
+        int attacks;
         private int autos;
-        private int styleAttacks;
         private long lastAttack;
         final LivingEntity[] shadows = new LivingEntity[4];
         private final int[] shadowCharge = new int[4];
@@ -598,6 +708,8 @@ final class ToaBossRooms {
         private int cornerHits;
         /** Unstable orbs: x, z (relative to the centre), dx, dz. */
         private final List<double[]> unstable = new ArrayList<>();
+        /** Trailing orbs players dropped by moving (self-test, CA "Dropped the ball"). */
+        int orbsDropped;
 
         Akkha(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -627,8 +739,8 @@ final class ToaBossRooms {
             thresholds = 0;
             hidden = false;
             autos = 0;
+            attacks = 0;
             style = 0;
-            styleAttacks = 0;
             lastAttack = now();
             trailTicks = 0;
             trailLast.clear();
@@ -735,13 +847,29 @@ final class ToaBossRooms {
             return list.size() >= 3 ? list.get(style) : null;
         }
 
-        /** Each of Akkha's auto-attacks: partial protection, ranged/magic on everyone, Keep Back, specials. */
+        /**
+         * Each of Akkha's attacks: every seventh (sixth with Stay Vigilant) is a special instead of an auto-attack, after
+         * which he changes style; the autos get partial protection, ranged/magic hit everyone, Keep Back.
+         */
         @Override
         public int bossOutgoing(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
             if (boss != akkha || hidden || finalStand) {
                 return 0;
             }
             Set<Invocation> inv = raid.invocations();
+            lastAttack = now();
+            attacks++;
+            if (Invocation.akkhaSpecialTurn(inv, attacks)) {
+                // OSRS: six auto-attacks, then the special takes the seventh attack's place.
+                boolean switches = Invocation.akkhaSwitchesAfter(inv, true, autos);
+                autos = 0;
+                later(1, () -> specials(inv));
+                if (switches) {
+                    switchStyle();
+                }
+                return 0;
+            }
+            autos++;
             int max = attacks(akkha).get(style).maxHit();
             if (damage == 0 && RaidEffects.protectedFrom(player, type)) {
                 damage = (int) Math.round(rnd().nextInt(max + 1)
@@ -763,18 +891,6 @@ final class ToaBossRooms {
                     }
                 }
             }
-            lastAttack = now();
-            autos++;
-            styleAttacks++;
-            boolean special = autos % Invocation.akkhaSpecialEvery(inv) == 0;
-            if (special) {
-                later(1, () -> specials(inv));
-            }
-            int oneIn = Invocation.akkhaSwitchOneIn(inv, special);
-            boolean early = inv.contains(Invocation.STAY_VIGILANT) && styleAttacks < Invocation.AKKHA_MIN_STYLE_ATTACKS;
-            if (oneIn > 0 && !early && rnd().nextInt(oneIn) == 0) {
-                switchStyle();
-            }
             return damage;
         }
 
@@ -786,9 +902,32 @@ final class ToaBossRooms {
             hurt(akkha, p, roll);
         }
 
+        @Override
+        DataBossEntity mainBoss() {
+            return akkha;
+        }
+
+        @Override
+        String perfectFlag() {
+            return ToaLoot.FLAG_PERFECT_AKKHA;
+        }
+
+        /**
+         * OSRS "Perfect Akkha": no damage from his attacks off-prayer, his specials (orbs, memory, detonate), the shadows'
+         * timers or the enrage orbs (all mechanic hits here); a group with every Akkha invocation.
+         */
+        @Override
+        String perfectDamageRule() {
+            return "nodmg=mechanic,hazard,offprayer";
+        }
+
+        @Override
+        boolean perfectRoom() {
+            return raid.partySize() >= 2 && all(ToaLoot.AKKHA_INVOCATIONS);
+        }
+
         private void switchStyle() {
             style = Invocation.akkhaNextStyle(style);
-            styleAttacks = 0;
             warn("Akkha switches to " + STYLES[style] + " - and prays against it!");
         }
 
@@ -861,7 +1000,8 @@ final class ToaBossRooms {
                     warn("The shadow in the " + ToaBossRules.QUADRANTS[q] + " quadrant slams its spear down!");
                     for (ServerPlayer p : players()) {
                         if (quadrant(p.position()) == q) {
-                            hurt(akkha, p, 20 + rnd().nextInt(16)); // approx: heavy
+                            // OSRS: a heavy hit, Akkha's Shadow's infobox max hit of 22, plus the quadrant's element.
+                            hurt(akkha, p, ToaBossRules.AKKHA_SHADOW_MAX_HIT / 2 + rnd().nextInt(ToaBossRules.AKKHA_SHADOW_MAX_HIT / 2 + 1));
                             element(p, q);
                         }
                     }
@@ -920,11 +1060,15 @@ final class ToaBossRooms {
             });
         }
 
+        /** Special attacks used (self-test). */
+        int specialsUsed;
+
         /** Memory Blast, Trailing Orbs and (groups) Detonate; two at once with Double Trouble. */
         private void specials(Set<Invocation> inv) {
             if (!alive(akkha) || finalStand) {
                 return;
             }
+            specialsUsed++;
             List<Integer> pool = new ArrayList<>(List.of(0, 1));
             if (raid.partySize() > 1) {
                 pool.add(2);
@@ -1005,6 +1149,9 @@ final class ToaBossRooms {
                 Vec3 now = p.position();
                 Vec3 last = trailLast.put(p.getUUID(), now);
                 if (last != null && RaidEffects.horizontalDistSq(last, now) > 0.25) {
+                    // CA "Dropped the ball": moving while the orbs materialise drops one behind you.
+                    com.runecraft.content.systems.CombatAchievementService.flag(p, ToaLoot.FLAG_AKKHA_ORB_DROPPED);
+                    orbsDropped++;
                     trail.add(new double[]{last.x, last.z, now() + 12});
                     if (Invocation.akkhaTrailingOrbs(inv) > 1) {
                         Vec3 ahead = now.add(now.subtract(last).normalize().scale(1.5));
@@ -1109,6 +1256,10 @@ final class ToaBossRooms {
                 }
             });
             RaidSelfTest.expect(thresholds == 4, "Akkha: the shadows did not appear at every threshold (" + thresholds + ")");
+            // OSRS (June 2025): every seventh attack (sixth with Stay Vigilant) is a special instead of an auto-attack.
+            int every = Invocation.akkhaSpecialEvery(raid.invocations());
+            RaidSelfTest.expect(specialsUsed <= attacks / every && (attacks < 2 * every || specialsUsed >= 1),
+                    "Akkha: " + specialsUsed + " specials in " + attacks + " attacks (one every " + every + ")");
             RaidSelfTest.expect(finalStand, "Akkha: he died without his final stand");
             return r + ", " + (kills[0] + shadowsKilled) + " shadows dispelled";
         }
@@ -1323,8 +1474,24 @@ final class ToaBossRooms {
                         shield.hurt(world().damageSources().generic(), ToaBossRules.THROW_ON_BABOON);
                         continue;
                     }
+                    int dmg = (raid.partySize() > 1 ? 35 : 45) + rnd().nextInt(16); // approx: massive, less in groups
+                    ServerPlayer buddy = null;
+                    for (ServerPlayer o : players()) {
+                        if (o != p && Math.abs(o.getBlockX() - stand.getX()) <= 1 && Math.abs(o.getBlockZ() - stand.getZ()) <= 1) {
+                            buddy = o;
+                            break;
+                        }
+                    }
+                    if (buddy != null) {
+                        // OSRS (Ba-Ba page): standing next to another player also shields you; the boulder's damage is
+                        // shared with them. // approx: halved for each
+                        Msg.red(p, "You and " + buddy.getName().getString() + " share the boulder's impact.");
+                        hurt(baba, p, dmg / 2);
+                        hurt(baba, buddy, dmg / 2);
+                        continue;
+                    }
                     Msg.red(p, "The boulder crushes you!");
-                    hurt(baba, p, (raid.partySize() > 1 ? 35 : 45) + rnd().nextInt(16)); // approx: massive, less in groups
+                    hurt(baba, p, dmg);
                 }
                 if (debrisLost) {
                     // OSRS: if debris was destroyed, Ba-Ba follows up with another Rockfall.
@@ -1333,7 +1500,10 @@ final class ToaBossRooms {
             });
         }
 
-        /** Shockwave: Ba-Ba slams the ground in front of her target, 5x5 (7x7 with Shaking Things Up). */
+        /**
+         * Shockwave (OSRS): Ba-Ba faces her nearest target and shadows spread over the ground there - a 3x3 plus one tile out
+         * on each side (5x5 plus one out with Shaking Things Up); a few ticks later the swipe hits every tile marked.
+         */
         private void shockwave(Set<Invocation> inv) {
             ServerPlayer target = null;
             double best = 7 * 7;
@@ -1344,10 +1514,30 @@ final class ToaBossRooms {
                     target = p;
                 }
             }
-            if (target != null) {
-                RaidEffects.strike(world(), target.position(), Invocation.babaSlamRadius(inv) + 0.5, 20, 3, baba, ParticleTypes.CLOUD,
-                        AttackType.CRUSH, true);
+            if (target == null) {
+                return;
             }
+            boolean shaking = inv.contains(Invocation.SHAKING_THINGS_UP);
+            BlockPos centre = target.blockPosition();
+            for (int dx = -3; dx <= 3; dx++) {
+                for (int dz = -3; dz <= 3; dz++) {
+                    if (ToaBossRules.babaShockwaveHits(dx, dz, shaking)) {
+                        world().sendParticles(ParticleTypes.CLOUD, centre.getX() + dx + 0.5, centre.getY() + 0.1, centre.getZ() + dz + 0.5, 2, 0.3, 0,
+                                0.3, 0);
+                    }
+                }
+            }
+            later(3, () -> {
+                if (!alive(baba) || rolling) {
+                    return;
+                }
+                for (ServerPlayer p : players()) {
+                    if (ToaBossRules.babaShockwaveHits(p.getBlockX() - centre.getX(), p.getBlockZ() - centre.getZ(), shaking)) {
+                        Msg.red(p, "Ba-Ba's shockwave knocks the wind out of you!");
+                        hurt(baba, p, rnd().nextInt(21)); // approx: up to 20, "dependent on the player's position"
+                    }
+                }
+            });
         }
 
         /**
@@ -1366,7 +1556,9 @@ final class ToaBossRooms {
             boolean gap = Invocation.babaMindTheGap(raid.invocations());
             for (ServerPlayer p : players()) {
                 double dz = p.getZ() - (center().getZ() + 0.5);
-                if (gap && Math.abs(dz) < 14) { // approx: the room's north and south edges are safe
+                double dx = p.getX() - (center().getX() + 0.5);
+                // OSRS: with Mind the Gap! only the north and south sides, or the very top row by her throne, are safe.
+                if (gap && Math.abs(dz) < PIT_HALF_WIDTH && dx < TOP_ROW_X) {
                     Msg.red(p, "You are flung into the gap!");
                     RaidEffects.hitRaw(baba, p, 999);
                     continue;
@@ -1383,7 +1575,8 @@ final class ToaBossRooms {
                 // OSRS: one cracked boulder a column (ranged always max-hits it), near the last column's.
                 int crackedAt = ToaBossRules.crackedBoulder(lastCracked, rnd());
                 lastCracked = crackedAt;
-                int hp = RaidScaling.toaScaledHp(ToaBossRules.babaBoulderHp(raid.pathLevel()), 0, 0, raid.partySize(), false);
+                // OSRS: team size counts half for boulders, path level +10% / +25%, raid level not at all.
+                int hp = ToaBossRules.babaBoulderHp(raid.partySize(), raid.pathLevel());
                 for (int i = 0; i < ToaBossRules.BOULDERS_PER_SET; i++) {
                     LivingEntity b = spawnMob("baba_boulder", at(12, -8 + i * 4), false);
                     if (b != null) {
@@ -1412,8 +1605,7 @@ final class ToaBossRooms {
                     if (p.distanceToSqr(b) < 1.4 * 1.4 && !cooldown(p, 2)) {
                         Msg.red(p, "A rolling boulder crushes you!");
                         hurt(null, p, 15 + rnd().nextInt(10)); // approx: heavy
-                        p.push(-1.2, 0.3, 0);
-                        p.hurtMarked = true;
+                        boulderKnockback(p);
                     }
                 }
                 for (LivingEntity bab : living("toa_baba_baboon")) {
@@ -1431,6 +1623,32 @@ final class ToaBossRooms {
             }
         }
 
+        /** The pit at the bottom (west) of the room: the middle columns, west of this line. */
+        static final int PIT_X = -18;
+        static final int PIT_HALF_WIDTH = 14;
+        /** The very top row, beside her throne, where her scream doesn't reach the pit (OSRS Mind the Gap!). */
+        static final int TOP_ROW_X = 15;
+
+        /**
+         * A rolling boulder knocks its victim four tiles back down the slope (OSRS); with Mind the Gap! a knock into the pit
+         * at the bottom kills.
+         */
+        void boulderKnockback(ServerPlayer p) {
+            double x = p.getX() - 4;
+            double dz = p.getZ() - (center().getZ() + 0.5);
+            double pit = center().getX() + 0.5 + PIT_X;
+            if (x < pit && Math.abs(dz) < PIT_HALF_WIDTH) {
+                if (Invocation.babaMindTheGap(raid.invocations())) {
+                    Msg.red(p, "The boulder knocks you into the gap!");
+                    RaidEffects.hitRaw(baba, p, 999);
+                    return;
+                }
+                x = pit + 1;
+            }
+            p.teleportTo(Math.max(x, center().getX() + 0.5 - RaidBuilder.HALF + 1), p.getY(), p.getZ());
+            p.hurtMarked = true;
+        }
+
         private void endRolling() {
             rolling = false;
             unanchor(baba);
@@ -1440,7 +1658,41 @@ final class ToaBossRooms {
         }
 
         @Override
+        DataBossEntity mainBoss() {
+            return baba;
+        }
+
+        @Override
+        String perfectFlag() {
+            return ToaLoot.FLAG_PERFECT_BABA;
+        }
+
+        /** OSRS "Perfect Ba-Ba": no damage off-prayer, from her slam, the rolling boulders, the rubble or falling rocks. */
+        @Override
+        String perfectDamageRule() {
+            return "nodmg=slam,falling_rocks,mechanic,hazard,offprayer";
+        }
+
+        /** ... in a group with every Ba-Ba invocation, and no sarcophagus opened. */
+        @Override
+        boolean perfectRoom() {
+            if (raid.partySize() < 2 || !all(ToaLoot.BABA_INVOCATIONS)) {
+                return false;
+            }
+            for (int hp : sarcophagi.values()) {
+                if (hp <= 0) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @Override
         public void onCreatureHit(ServerPlayer player, LivingEntity target, int damage) {
+            if (cracked.contains(target)) {
+                // CA "No skipping allowed": only the uncracked boulders may be attacked.
+                com.runecraft.content.systems.CombatAchievementService.flag(player, ToaLoot.FLAG_BABA_CRACKED_HIT);
+            }
             // OSRS: attacking her with melee from past the boulders' starting line ends the boulders early.
             if (target == baba && rolling && player.getX() > center().getX() + 11 && player.distanceToSqr(baba) < 4 * 4) {
                 setsLeft = 0;
@@ -1490,15 +1742,25 @@ final class ToaBossRooms {
             }
         }
 
+        /**
+         * An opened sarcophagus launches unstable energy in a cone in front of it (OSRS): each blast lands on one tile (a
+         * wider area every two path levels), with Gotta Have Faith hurting more the more prayer points you have left.
+         */
         private void sarcophagusBlast(BlockPos s, Set<Invocation> inv) {
             int dz = s.getZ() < center().getZ() ? 1 : -1;
-            Vec3 at = Vec3.atBottomCenterOf(s.offset(0, 0, dz * (2 + Math.min(4, raid.pathLevel()) / 2)));
-            double radius = 1.2 + 0.6 * (Math.min(4, raid.pathLevel()) / 2);
-            world().sendParticles(ParticleTypes.SOUL, at.x, at.y + 0.2, at.z, 20, radius / 2, 0.1, radius / 2, 0.01);
+            int reach = 2 + rnd().nextInt(6);
+            BlockPos at = s.offset(rnd().nextInt(reach + 1) - reach / 2, 0, dz * reach);
+            int r = ToaBossRules.babaSarcophagusBlastRadius(raid.pathLevel());
+            for (int x = -r; x <= r; x++) {
+                for (int z = -r; z <= r; z++) {
+                    world().sendParticles(ParticleTypes.SOUL, at.getX() + x + 0.5, at.getY() + 0.2, at.getZ() + z + 0.5, 4, 0.3, 0.1, 0.3, 0.01);
+                }
+            }
             later(3, () -> {
                 for (ServerPlayer pl : players()) {
-                    if (RaidEffects.horizontalDistSq(pl.position(), at) <= radius * radius) {
-                        int dmg = rnd().nextInt(13) + Invocation.babaFaithDamage(inv, RoomLogic.prayerPoints(pl)); // approx: 0-12
+                    if (Math.abs(pl.getBlockX() - at.getX()) <= r && Math.abs(pl.getBlockZ() - at.getZ()) <= r) {
+                        int dmg = rnd().nextInt(13) + Invocation.babaFaithDamage(inv, RoomLogic.prayerPoints(pl),
+                                RoomLogic.level(pl, Skill.PRAYER)); // approx: 0-12
                         hurt(baba, pl, dmg);
                     }
                 }
@@ -1567,8 +1829,22 @@ final class ToaBossRooms {
         @Override
         String selfTestSolve(RaidSelfTest t) {
             int[] boulders = {0};
+            // A rolling boulder knocks you four tiles down the slope; without Mind the Gap! the pit's edge stops you.
+            ServerPlayer p = t.player();
+            t.moveTo(at(-6, 0));
+            double x0 = p.getX();
+            boulderKnockback(p);
+            RaidSelfTest.expect(Math.abs(p.getX() - (x0 - 4)) < 0.01 && p.isAlive(), "Ba-Ba: a boulder did not knock the player four tiles back");
+            t.moveTo(at(-16, 0));
+            boulderKnockback(p);
+            RaidSelfTest.expect(p.isAlive() && p.getX() >= center().getX() + 0.5 + PIT_X, "Ba-Ba: a boulder knocked the player into the pit "
+                    + "without Mind the Gap!");
+            t.moveTo(at(0, 0));
+            int expectHp = ToaBossRules.babaBoulderHp(raid.partySize(), raid.pathLevel());
             String r = grind(t, baba, AttackType.CRUSH, 30, () -> {
                 for (LivingEntity b : living("baba_boulder")) {
+                    RaidSelfTest.expect(raid.maxHitpoints(b) == expectHp, "Ba-Ba: a boulder had " + raid.maxHitpoints(b)
+                            + " hitpoints, the wiki's table says " + expectHp);
                     t.hit(b, 40, AttackType.RANGED);
                     boulders[0]++;
                 }
@@ -1599,6 +1875,8 @@ final class ToaBossRooms {
         final Set<BlockPos> jugs = new HashSet<>();
         private int roarIn = -1;
         private int roarHits;
+        /** Jugs pushed while a Great Roar was coming (CA "Perfect Zebak": at most two). */
+        int jugsPushedOnRoar;
         /** Live blood clouds: x, z and hitpoints. */
         private final List<double[]> clouds = new ArrayList<>();
         private final Map<UUID, Integer> acidTicks = new HashMap<>();
@@ -1619,6 +1897,7 @@ final class ToaBossRooms {
             enraged = false;
             specials = 0;
             roarIn = -1;
+            jugsPushedOnRoar = 0;
             clouds.clear();
             clearArena();
             zebak = spawnBoss("zebak", at(13, 0));
@@ -1866,9 +2145,19 @@ final class ToaBossRooms {
             if (rnd().nextBoolean()) {
                 say("Zebak casts blood magic!");
                 int total = 0;
-                for (ServerPlayer p : players()) {
+                // OSRS: 8-11 on everyone, more for players clumped together (the blitz splashes onto them); Arterial Spray
+                // widens the splash and heals Zebak more.
+                int splash = Invocation.zebakBloodSplashRadius(inv);
+                List<ServerPlayer> here = players();
+                for (ServerPlayer p : here) {
                     world().sendParticles(ParticleTypes.DAMAGE_INDICATOR, p.getX(), p.getY() + 1, p.getZ(), 6, 0.3, 0.4, 0.3, 0.1);
-                    total += RaidEffects.hit(zebak, p, 8 + rnd().nextInt(4), AttackType.MAGIC, false);
+                    int clumped = 0;
+                    for (ServerPlayer o : here) {
+                        if (o != p && Math.abs(o.getBlockX() - p.getBlockX()) <= splash && Math.abs(o.getBlockZ() - p.getBlockZ()) <= splash) {
+                            clumped++;
+                        }
+                    }
+                    total += RaidEffects.hit(zebak, p, 8 + rnd().nextInt(4) + Invocation.ZEBAK_SPLASH_DAMAGE * clumped, AttackType.MAGIC, false);
                 }
                 double share = inv.contains(Invocation.ARTERIAL_SPRAY) ? 1.0 : 2 / 3.0;
                 if (total > 0) {
@@ -1933,6 +2222,9 @@ final class ToaBossRooms {
                 dx = 1;
             }
             BlockPos at = pos;
+            if (roarIn > 0) {
+                jugsPushedOnRoar++;
+            }
             jugs.remove(pos);
             RaidBuilder.set(world(), pos, Blocks.AIR.defaultBlockState());
             for (int i = 0; i < 6; i++) {
@@ -1973,6 +2265,28 @@ final class ToaBossRooms {
         @Override
         AttackType styleFor(DataBossEntity boss, AttackType wanted) {
             return AttackType.RANGED;
+        }
+
+        @Override
+        DataBossEntity mainBoss() {
+            return zebak;
+        }
+
+        @Override
+        String perfectFlag() {
+            return ToaLoot.FLAG_PERFECT_ZEBAK;
+        }
+
+        /** OSRS "Perfect Zebak": no damage from poison, his basic attacks off-prayer, blood spawns or waves. */
+        @Override
+        String perfectDamageRule() {
+            return "nodmg=poison,mechanic,hazard,other,offprayer";
+        }
+
+        /** ... with every Zebak invocation, and no more than two jugs pushed on the roar. */
+        @Override
+        boolean perfectRoom() {
+            return all(ToaLoot.ZEBAK_INVOCATIONS) && jugsPushedOnRoar <= 2;
         }
 
         @Override

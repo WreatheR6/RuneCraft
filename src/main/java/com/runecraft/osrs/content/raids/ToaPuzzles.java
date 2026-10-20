@@ -143,6 +143,73 @@ public final class ToaPuzzles {
         return partySize <= 1 ? 4 : 0;
     }
 
+    // ------------------------------------------------------------------ Path of Scabaras: the two branches
+
+    /** The four puzzle rooms' puzzles (the addition tablet always comes last, where the branches meet). */
+    public enum ScabarasPuzzle { SEQUENCE, OBELISKS, LIGHTS, MATCHING }
+
+    /** Puzzle rooms: the north branch's first and second room, then the south branch's. */
+    public static final int NORTH_FIRST = 0;
+    public static final int NORTH_SECOND = 1;
+    public static final int SOUTH_FIRST = 2;
+    public static final int SOUTH_SECOND = 3;
+
+    /**
+     * Which puzzle each of the four rooms holds (OSRS wiki: five puzzles "between two branched paths": the sequence, the
+     * obelisks, the lights and the matching symbols in the branches' rooms, then the addition tablet). // approx: shuffled
+     * at random
+     */
+    public static List<ScabarasPuzzle> scabarasLayout(Random random) {
+        List<ScabarasPuzzle> out = new ArrayList<>(List.of(ScabarasPuzzle.values()));
+        Collections.shuffle(out, random);
+        return out;
+    }
+
+    /**
+     * Whether a puzzle room's door is open (OSRS wiki): the first rooms of both branches always are; in a group each
+     * branch's second room opens once its first is solved, and the party must clear both branches. Solo, clearing a first
+     * room opens the other branch's second room ("head to the other side via the shortcuts, pass the opened door"), so a
+     * solo raider solves two of the four puzzles.
+     */
+    public static boolean scabarasRoomOpen(int room, boolean[] solved, boolean solo) {
+        return switch (room) {
+            case NORTH_FIRST, SOUTH_FIRST -> true;
+            case NORTH_SECOND -> solo ? solved[SOUTH_FIRST] : solved[NORTH_FIRST];
+            default -> solo ? solved[NORTH_FIRST] : solved[SOUTH_FIRST];
+        };
+    }
+
+    /** Whether the addition tablet can be read: every room solved in a group, a first room and its partner solo. */
+    public static boolean scabarasAdditionOpen(boolean[] solved, boolean solo) {
+        if (!solo) {
+            return solved[0] && solved[1] && solved[2] && solved[3];
+        }
+        return (solved[NORTH_FIRST] && solved[SOUTH_SECOND]) || (solved[SOUTH_FIRST] && solved[NORTH_SECOND]);
+    }
+
+    /** The obelisks puzzle: five obelisks to strike in one order (OSRS: 5! = 120 orders). */
+    public static final int OBELISKS = 5;
+
+    public static List<Integer> obeliskOrder(Random random) {
+        List<Integer> out = new ArrayList<>(List.of(0, 1, 2, 3, 4));
+        Collections.shuffle(out, random);
+        return out;
+    }
+
+    /**
+     * Obelisks lit after striking {@code struck} with {@code lit} already lit (OSRS): the next one in the order lights up;
+     * a wrong one stays dark, rocks fall and the lit ones go out again (-1 means a wrong strike). An obelisk already lit
+     * does nothing.
+     */
+    public static int obeliskStrike(List<Integer> order, int lit, int struck) {
+        for (int i = 0; i < lit; i++) {
+            if (order.get(i) == struck) {
+                return lit;
+            }
+        }
+        return lit < order.size() && order.get(lit) == struck ? lit + 1 : -1;
+    }
+
     // ------------------------------------------------------------------ Path of Het
 
     /** Mirror orientations: '/' and '\' as seen from above with north up. */
@@ -163,33 +230,71 @@ public final class ToaPuzzles {
         return s[0] == b[0] && s[1] == b[1] ? SLASH : BACKSLASH;
     }
 
+    /** Mirrors the party can pick up, place and rotate (OSRS: three). */
+    public static final int MOVABLE_MIRRORS = 3;
+    /** A movable mirror's position while a player carries it. */
+    public static final int CARRIED = Integer.MIN_VALUE;
+
     /**
-     * A Path of Het puzzle on a (2 x half + 1)-square grid: the beam enters at (-half, startZ) heading east; mirrors at
-     * the path's turns ({x, z, correct orientation, starting orientation}), decoy mirrors ({x, z, 0, starting
-     * orientation}), worn barriers on the path to break ({x, z}), solid obstacles ({x, z}) and the shielded statue.
+     * A Path of Het puzzle on a (2 x half + 1)-square grid (OSRS wiki): the caster statue's beam enters at (-half-1,
+     * startZ) heading east and must reach the shielded statue ({@code target}). The path turns at {@code turns}
+     * ({x, z, orientation needed}); some turns hold fixed mirrors already facing the right way, the others (one to three)
+     * need the party's three movable mirrors. {@code fixed}: fixed mirrors ({x, z, orientation, dirty}), on turns or
+     * decoys elsewhere; {@code movable}: the movable mirrors ({x, z, orientation, dirty}, x = {@link #CARRIED} while
+     * carried); a dirty mirror (groups) must be cleaned before it reflects. Worn barriers on the path ({x, z}) must be
+     * broken with a pickaxe; obstacles ({x, z}) always block.
      */
-    public record HetPuzzle(int half, int startZ, List<int[]> mirrors, List<int[]> decoys, List<int[]> barriers,
-                            List<int[]> obstacles, int[] target) {
-        /** The mirror (path or decoy) at a cell, or null. */
-        public int[] mirrorAt(int x, int z) {
-            for (int[] m : mirrors) {
-                if (m[0] == x && m[1] == z) {
-                    return m;
-                }
-            }
-            for (int[] m : decoys) {
+    public record HetPuzzle(int half, int startZ, List<int[]> turns, List<int[]> fixed, List<int[]> movable,
+                            List<int[]> barriers, List<int[]> obstacles, int[] target) {
+        /** The fixed mirror at a cell, or null. */
+        public int[] fixedAt(int x, int z) {
+            for (int[] m : fixed) {
                 if (m[0] == x && m[1] == z) {
                     return m;
                 }
             }
             return null;
         }
+
+        /** The movable mirror standing at a cell, or null. */
+        public int[] movableAt(int x, int z) {
+            for (int[] m : movable) {
+                if (m[0] == x && m[1] == z) {
+                    return m;
+                }
+            }
+            return null;
+        }
+
+        /** The mirror (fixed or movable) at a cell, or null. */
+        public int[] mirrorAt(int x, int z) {
+            int[] m = fixedAt(x, z);
+            return m != null ? m : movableAt(x, z);
+        }
+
+        /** Whether a cell is free for placing a mirror: in the grid, no mirror, obstacle, barrier, statue or path start. */
+        public boolean canPlace(int x, int z, java.util.Set<Long> broken) {
+            if (Math.abs(x) > half || Math.abs(z) > half || mirrorAt(x, z) != null || (x == target[0] && z == target[1])) {
+                return false;
+            }
+            for (int[] o : obstacles) {
+                if (o[0] == x && o[1] == z) {
+                    return false;
+                }
+            }
+            for (int[] b : barriers) {
+                if (b[0] == x && b[1] == z && !broken.contains(key(x, z))) {
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 
-    /** Generates a solvable puzzle: one to three turns, a worn barrier or two on the path, decoys and obstacles. */
-    public static HetPuzzle hetPuzzle(int half, Random random) {
-        for (int attempt = 0; attempt < 500; attempt++) {
-            HetPuzzle p = tryHet(half, random);
+    /** Generates a solvable puzzle for a party (groups get dirty fixed mirrors): one to three mirrors to place. */
+    public static HetPuzzle hetPuzzle(int half, int partySize, Random random) {
+        for (int attempt = 0; attempt < 1000; attempt++) {
+            HetPuzzle p = tryHet(half, partySize, random);
             if (p != null) {
                 return p;
             }
@@ -197,20 +302,26 @@ public final class ToaPuzzles {
         throw new IllegalStateException("no Het puzzle");
     }
 
+    public static HetPuzzle hetPuzzle(int half, Random random) {
+        return hetPuzzle(half, 1, random);
+    }
+
     private static boolean inGrid(int half, int x, int z) {
         return Math.abs(x) <= half && Math.abs(z) <= half;
     }
 
-    private static HetPuzzle tryHet(int half, Random random) {
+    private static HetPuzzle tryHet(int half, int partySize, Random random) {
         int startZ = random.nextInt(2 * half - 1) - half + 1;
         int x = -half - 1;
         int z = startZ;
         int[] dir = DIRS[0];
         Set<Long> visited = new HashSet<>();
         List<int[]> pathCells = new ArrayList<>();
-        List<int[]> mirrors = new ArrayList<>();
-        int turns = 1 + random.nextInt(3);
-        for (int t = 0; t <= turns; t++) {
+        List<int[]> turns = new ArrayList<>();
+        int toPlace = 1 + random.nextInt(MOVABLE_MIRRORS);
+        int fixedTurns = random.nextInt(2);
+        int turnCount = toPlace + fixedTurns;
+        for (int t = 0; t <= turnCount; t++) {
             int len = 2 + random.nextInt(half);
             for (int i = 0; i < len; i++) {
                 x += dir[0];
@@ -220,25 +331,23 @@ public final class ToaPuzzles {
                 }
                 pathCells.add(new int[]{x, z});
             }
-            if (t == turns) {
+            if (t == turnCount) {
                 break;
             }
             int[] left = {dir[1], -dir[0]};
             int[] right = {-dir[1], dir[0]};
             int[] next = random.nextBoolean() ? left : right;
-            int o = orientationFor(dir, next);
-            mirrors.add(new int[]{x, z, o, o});
+            turns.add(new int[]{x, z, orientationFor(dir, next)});
             dir = next;
         }
         int[] target = pathCells.remove(pathCells.size() - 1);
-        // Mirror cells are turns, not free path cells.
         List<int[]> free = new ArrayList<>();
         for (int[] c : pathCells) {
-            boolean mirror = false;
-            for (int[] m : mirrors) {
-                mirror |= m[0] == c[0] && m[1] == c[1];
+            boolean turn = false;
+            for (int[] m : turns) {
+                turn |= m[0] == c[0] && m[1] == c[1];
             }
-            if (!mirror) {
+            if (!turn) {
                 free.add(c);
             }
         }
@@ -251,31 +360,47 @@ public final class ToaPuzzles {
         for (int i = 0; i < nb && i < free.size() - 1; i++) {
             barriers.add(free.get(i));
         }
+        // Fixed mirrors on some turns, already facing the right way (dirty in groups now and then).
+        List<int[]> fixed = new ArrayList<>();
+        List<int[]> shuffledTurns = new ArrayList<>(turns);
+        Collections.shuffle(shuffledTurns, random);
+        for (int i = 0; i < fixedTurns; i++) {
+            int[] t = shuffledTurns.get(i);
+            fixed.add(new int[]{t[0], t[1], t[2], partySize > 1 && random.nextBoolean() ? 1 : 0});
+        }
         Set<Long> used = new HashSet<>(visited);
         used.add(key(-half - 1, startZ));
-        List<int[]> decoys = new ArrayList<>();
         List<int[]> obstacles = new ArrayList<>();
+        List<int[]> movable = new ArrayList<>();
+        int decoys = 0;
         int guard = 0;
-        while ((decoys.size() < 3 || obstacles.size() < 4) && guard++ < 200) {
+        while ((decoys < 2 || obstacles.size() < 4 || movable.size() < MOVABLE_MIRRORS) && guard++ < 400) {
             int dx = random.nextInt(2 * half + 1) - half;
             int dz = random.nextInt(2 * half + 1) - half;
-            if (!used.add(key(dx, dz))) {
+            // Keep the beam's own row clear so the caster's beam isn't trivially blocked or deflected.
+            if (dz == startZ || !used.add(key(dx, dz))) {
                 continue;
             }
-            if (decoys.size() < 3) {
-                decoys.add(new int[]{dx, dz, 0, 1 + random.nextInt(2)});
+            if (movable.size() < MOVABLE_MIRRORS) {
+                movable.add(new int[]{dx, dz, 1 + random.nextInt(2), 0});
+            } else if (decoys < 2) {
+                fixed.add(new int[]{dx, dz, 1 + random.nextInt(2), 0});
+                decoys++;
             } else {
                 obstacles.add(new int[]{dx, dz});
             }
         }
-        for (int[] m : mirrors) {
-            m[3] = 1 + random.nextInt(2);
+        if (movable.size() < MOVABLE_MIRRORS) {
+            return null;
         }
-        HetPuzzle p = new HetPuzzle(half, startZ, mirrors, decoys, barriers, obstacles, target);
-        // The puzzle must not start solved: turn the first path mirror the wrong way if it does.
-        Set<Long> none = new HashSet<>();
-        if (trace(p, none).hit()) {
-            mirrors.get(0)[3] = mirrors.get(0)[2] == SLASH ? BACKSLASH : SLASH;
+        HetPuzzle p = new HetPuzzle(half, startZ, turns, fixed, movable, barriers, obstacles, target);
+        // The puzzle must not start solved, whatever barriers are broken.
+        Set<Long> all = new HashSet<>();
+        for (int[] b : barriers) {
+            all.add(key(b[0], b[1]));
+        }
+        if (trace(p, all).hit()) {
+            return null;
         }
         return p;
     }
@@ -284,12 +409,32 @@ public final class ToaPuzzles {
         return ((long) x << 32) ^ (z & 0xffffffffL);
     }
 
+    /** Public cell key (x, z) for sets of broken barriers. */
+    public static long cellKey(int x, int z) {
+        return key(x, z);
+    }
+
+    /**
+     * How to solve a puzzle: for each turn without a fixed mirror, which movable mirror to place there and the orientation
+     * it needs ({movable index, x, z, orientation}).
+     */
+    public static List<int[]> hetSolution(HetPuzzle p) {
+        List<int[]> out = new ArrayList<>();
+        int next = 0;
+        for (int[] t : p.turns()) {
+            if (p.fixedAt(t[0], t[1]) == null) {
+                out.add(new int[]{next++, t[0], t[1], t[2]});
+            }
+        }
+        return out;
+    }
+
     /** Where a fired beam goes: its cells (in order) and whether it reached the shielded statue. */
     public record Beam(List<int[]> cells, boolean hit) {
     }
 
     /**
-     * Traces the caster statue's beam through the mirrors' current orientations ({@code m[3]}); worn barriers block it
+     * Traces the caster statue's beam through the mirrors as they stand; a dirty mirror stops it, worn barriers block it
      * unless their cell is in {@code broken}; obstacles always do.
      */
     public static Beam trace(HetPuzzle p, Set<Long> broken) {
@@ -320,13 +465,19 @@ public final class ToaPuzzles {
             }
             int[] m = p.mirrorAt(x, z);
             if (m != null) {
-                int[] d = reflect(m[3], dx, dz);
+                if (m[3] != 0) {
+                    return new Beam(cells, false);
+                }
+                int[] d = reflect(m[2], dx, dz);
                 dx = d[0];
                 dz = d[1];
             }
         }
         return new Beam(cells, false);
     }
+
+    /** Chance (one in n) that an orb of darkness crossing a mirror dirties it, in groups only (OSRS). // approx */
+    public static final int ORB_DIRTIES_ONE_IN = 2;
 
     /** Het's seal hitpoints (OSRS: 119 solo, more for larger groups but not with raid level). // approx: +88 a player */
     public static int sealHitpoints(int partySize) {

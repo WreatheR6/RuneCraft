@@ -38,10 +38,12 @@ import org.joml.Vector3f;
  * The Tombs of Amascut's four challenge rooms (OSRS wiki, "Tombs of Amascut/Strategies"), each entered by teleport from
  * the Nexus and opening onto its path's boss:
  * <ul>
- *   <li>Path of Scabaras: three of the five puzzles - the tile sequence or the lights, the matching symbols, then the
- *   addition tablet - while scarabs pester the party;</li>
- *   <li>Path of Het: turn the mirrors (and break the worn barriers) so the caster statue's beam strikes the shielded
- *   statue, then mine Het's seal while it is weakened, dodging the orbs of darkness;</li>
+ *   <li>Path of Scabaras: two branches of two puzzle rooms each (the tile sequence, the obelisks, the lights and the
+ *   matching symbols), then the addition tablet where they meet - a group clears both branches, a solo raider two rooms -
+ *   while scarabs pester the party;</li>
+ *   <li>Path of Het: place and turn the movable mirrors, clean the dirty ones and break the worn barriers so the caster
+ *   statue's beam strikes the shielded statue, then mine Het's seal while it is weakened, dodging the orbs of darkness;
+ *   the statues keep a deposited pickaxe between raids;</li>
  *   <li>Path of Apmeken: eight baboon waves, and the problems Apmeken's sight warns of (roof supports, vents);</li>
  *   <li>Path of Crondis: carry water from the waterfalls past their traps to grow the Palm of Resourcefulness, while
  *   crocodiles go for the water and the palm.</li>
@@ -104,9 +106,15 @@ final class ToaPuzzleRooms {
 
     // ================================================================== Path of Scabaras
 
-    /** Path of Scabaras: three puzzles in turn; the room's exit opens once all are solved. */
+    /**
+     * Path of Scabaras (OSRS wiki): five puzzles between two branched paths. The north and south branches each hold two
+     * puzzle rooms (the tile sequence, the obelisks, the lights and the matching symbols, shuffled between the four); the
+     * branches meet at the addition tablet by the exit. A group clears both branches; solo, clearing a branch's first room
+     * opens the other branch's second room, so a solo raider solves two of the four (and should avoid the obelisks). Scarabs
+     * pester the party from the start of the first rooms.
+     */
     static final class Scabaras extends Challenge {
-        enum Puzzle { SEQUENCE, LIGHTS, MATCHING, ADDITION }
+        enum Puzzle { SEQUENCE, OBELISKS, LIGHTS, MATCHING, ADDITION }
 
         private static final BlockState[] SYMBOLS = {Blocks.WHITE_CONCRETE.defaultBlockState(), Blocks.ORANGE_CONCRETE.defaultBlockState(),
                 Blocks.MAGENTA_CONCRETE.defaultBlockState(), Blocks.LIGHT_BLUE_CONCRETE.defaultBlockState(),
@@ -120,20 +128,33 @@ final class ToaPuzzleRooms {
                 Blocks.CYAN_TERRACOTTA.defaultBlockState(), Blocks.LIGHT_BLUE_TERRACOTTA.defaultBlockState(),
                 Blocks.BLUE_TERRACOTTA.defaultBlockState(), Blocks.PURPLE_TERRACOTTA.defaultBlockState()};
         private static final String[] VALUE_NAMES = {"red", "orange", "yellow", "lime", "green", "cyan", "light blue", "blue", "purple"};
-        static final int[] SEQUENCE_AT = {-11, -9};
-        static final int[] LIGHTS_AT = {-11, 9};
-        static final int[] MATCH_A = {4, -9};
-        static final int[] MATCH_B = {12, -9};
-        static final int[] ADDITION_AT = {8, 9};
+        private static final String[] ROOM_NAMES = {"north branch's first room", "north branch's second room", "south branch's first room",
+                "south branch's second room"};
+        /** The four puzzle rooms' centres (north first, north second, south first, south second). */
+        static final int[][] ROOMS = {{-10, -10}, {3, -10}, {-10, 10}, {3, 10}};
+        /** The walls: the branches split at x = -15 and meet at x = 9; each branch's rooms part at x = -3. */
+        static final int SPLIT_X = -15;
+        static final int MIDDLE_X = -3;
+        static final int MEET_X = 9;
+        static final int[] ADDITION_AT = {14, 0};
+        static final int[] TABLET_AT = {14, 5};
+        /** The obelisks around their room's centre (z mirrored for the south branch): an arc away from the divider. */
+        static final int[][] OBELISK_SPOTS = {{-4, -3}, {-2, -5}, {0, -6}, {2, -5}, {4, -3}};
+        /** Damage a wrong tile, an overshoot or a falling rock does. // approx: the wiki only says they hurt */
+        static final int PUZZLE_DAMAGE_MIN = 5;
+        static final int PUZZLE_DAMAGE_SPREAD = 8;
 
-        final List<Puzzle> puzzles = new ArrayList<>();
-        int stage;
+        List<ToaPuzzles.ScabarasPuzzle> layout = new ArrayList<>();
+        final boolean[] solved = new boolean[4];
+        boolean additionSolved;
+        /** Whether anyone took damage from a puzzle (Perfect Scabaras). */
+        boolean puzzleDamage;
+        private long startedAt;
         private final Map<UUID, Long> standing = new HashMap<>();
         // Sequence
         List<Integer> sequence = new ArrayList<>();
         int input = -1;
         private int showIndex = -1;
-        BlockPos button;
         // Lights
         int lights;
         // Matching
@@ -141,20 +162,96 @@ final class ToaPuzzleRooms {
         final boolean[] matched = new boolean[9];
         private int pendingBoard = -1;
         private int pendingTile = -1;
+        // Obelisks
+        List<Integer> obeliskOrder = new ArrayList<>();
+        int obelisksLit;
         // Addition
         int[] values;
         int target = -1;
         private int sum;
         private int used;
-        BlockPos tablet;
 
         Scabaras(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
         }
 
+        boolean solo() {
+            return raid.partySize() <= 1;
+        }
+
+        /** The room (0-3) holding a puzzle. */
+        int roomOf(ToaPuzzles.ScabarasPuzzle p) {
+            return layout.indexOf(p);
+        }
+
+        int roomOf(Puzzle p) {
+            return p == Puzzle.ADDITION ? -1 : roomOf(ToaPuzzles.ScabarasPuzzle.valueOf(p.name()));
+        }
+
+        boolean open(int room) {
+            return ToaPuzzles.scabarasRoomOpen(room, solved, solo());
+        }
+
+        boolean additionOpen() {
+            return ToaPuzzles.scabarasAdditionOpen(solved, solo());
+        }
+
+        /** Whether a puzzle can be worked on now: its room's door is open and it isn't solved yet. */
+        boolean active(Puzzle p) {
+            if (p == Puzzle.ADDITION) {
+                return additionOpen() && !additionSolved;
+            }
+            int room = roomOf(p);
+            return room >= 0 && open(room) && !solved[room];
+        }
+
+        /** The centre of a puzzle's board (the matching puzzle has two, {@code board} 0 or 1). */
+        int[] boardAt(Puzzle p, int board) {
+            if (p == Puzzle.ADDITION) {
+                return ADDITION_AT;
+            }
+            int[] c = ROOMS[roomOf(p)];
+            if (p == Puzzle.MATCHING) {
+                return new int[]{c[0], c[1] + (board == 0 ? -4 : 4)};
+            }
+            return c;
+        }
+
         /** Floor position of tile {@code i} (row by row) of the 3x3 board centred on {@code area}. */
         BlockPos tile(int[] area, int i) {
             return floor(area[0] + (i % 3 - 1) * 2, area[1] + (i / 3 - 1) * 2);
+        }
+
+        BlockPos tile(Puzzle p, int board, int i) {
+            return tile(boardAt(p, board), i);
+        }
+
+        /** The sequence puzzle's button: between its board and the divider. */
+        BlockPos button() {
+            int[] c = ROOMS[roomOf(Puzzle.SEQUENCE)];
+            return at(c[0], c[1] + (c[1] < 0 ? 5 : -5));
+        }
+
+        BlockPos tablet() {
+            return at(TABLET_AT[0], TABLET_AT[1]);
+        }
+
+        /** Standing position of obelisk {@code i}. */
+        BlockPos obelisk(int i) {
+            int[] c = ROOMS[roomOf(Puzzle.OBELISKS)];
+            int sign = c[1] < 0 ? 1 : -1;
+            return at(c[0] + OBELISK_SPOTS[i][0], c[1] + sign * OBELISK_SPOTS[i][1]);
+        }
+
+        /** The door cell into a second room or the tablet's chamber ({@code which}: 1 north second, 3 south second, 4/5 the
+         * tablet's north and south doors). */
+        BlockPos door(int which) {
+            return switch (which) {
+                case 1 -> at(MIDDLE_X, ROOMS[1][1]);
+                case 3 -> at(MIDDLE_X, ROOMS[3][1]);
+                case 4 -> at(MEET_X, ROOMS[1][1]);
+                default -> at(MEET_X, ROOMS[3][1]);
+            };
         }
 
         private void board(int[] area, BlockState tile) {
@@ -167,32 +264,69 @@ final class ToaPuzzleRooms {
             }
         }
 
+        private void wall(int x1, int z1, int x2, int z2) {
+            BlockPos c = center();
+            RaidBuilder.fill(world(), c.getX() + x1, c.getY() + 1, c.getZ() + z1, c.getX() + x2, c.getY() + 3, c.getZ() + z2,
+                    Blocks.SANDSTONE.defaultBlockState());
+        }
+
+        private void setDoor(int which, boolean open) {
+            BlockPos d = door(which);
+            BlockState s = open ? Blocks.AIR.defaultBlockState() : Blocks.CHISELED_SANDSTONE.defaultBlockState();
+            RaidBuilder.set(world(), d, s);
+            RaidBuilder.set(world(), d.above(), s);
+        }
+
+        private void refreshDoors() {
+            setDoor(1, open(ToaPuzzles.NORTH_SECOND));
+            setDoor(3, open(ToaPuzzles.SOUTH_SECOND));
+            setDoor(4, additionOpen());
+            setDoor(5, additionOpen());
+        }
+
         @Override
         public void decorate() {
-            puzzles.clear();
-            puzzles.add(rnd().nextBoolean() ? Puzzle.SEQUENCE : Puzzle.LIGHTS);
-            puzzles.add(Puzzle.MATCHING);
-            puzzles.add(Puzzle.ADDITION);
+            layout = ToaPuzzles.scabarasLayout(rnd());
             BlockState plate = RaidBuilder.module(RaidsContent.SCABARAS_TILE);
-            if (puzzles.contains(Puzzle.SEQUENCE)) {
-                board(SEQUENCE_AT, plate);
-                button = at(SEQUENCE_AT[0], SEQUENCE_AT[1] - 5);
-                RaidBuilder.set(world(), button, RaidBuilder.module(RaidsContent.TOA_SCABARAS_PANEL));
-            } else {
-                board(LIGHTS_AT, plate);
+            // The branches: a divider down the middle, each branch split into two rooms, and the tablet's chamber.
+            wall(SPLIT_X, 0, MEET_X, 0);
+            wall(MIDDLE_X, -RaidBuilder.HALF, MIDDLE_X, -1);
+            wall(MIDDLE_X, 1, MIDDLE_X, RaidBuilder.HALF);
+            wall(MEET_X, -RaidBuilder.HALF, MEET_X, RaidBuilder.HALF);
+            for (ToaPuzzles.ScabarasPuzzle p : layout) {
+                Puzzle q = Puzzle.valueOf(p.name());
+                switch (q) {
+                    case MATCHING -> {
+                        board(boardAt(q, 0), plate);
+                        board(boardAt(q, 1), plate);
+                    }
+                    case OBELISKS -> {
+                        for (int i = 0; i < ToaPuzzles.OBELISKS; i++) {
+                            BlockPos o = obelisk(i);
+                            RaidBuilder.set(world(), o, RaidBuilder.module(RaidsContent.TOA_SCABARAS_OBELISK));
+                            RaidBuilder.set(world(), o.above(), Blocks.CHISELED_SANDSTONE.defaultBlockState());
+                            RaidBuilder.set(world(), o.above(2), Blocks.SMOOTH_SANDSTONE.defaultBlockState());
+                        }
+                    }
+                    case SEQUENCE -> {
+                        board(boardAt(q, 0), plate);
+                        RaidBuilder.set(world(), button(), RaidBuilder.module(RaidsContent.TOA_SCABARAS_PANEL));
+                    }
+                    default -> board(boardAt(q, 0), plate);
+                }
             }
-            board(MATCH_A, plate);
-            board(MATCH_B, plate);
             board(ADDITION_AT, plate);
-            tablet = at(ADDITION_AT[0], ADDITION_AT[1] + 5);
-            RaidBuilder.set(world(), tablet, RaidBuilder.module(RaidsContent.TOA_SCABARAS_PANEL));
+            RaidBuilder.set(world(), tablet(), RaidBuilder.module(RaidsContent.TOA_SCABARAS_PANEL));
             RaidBuilder.pillar(world(), center().offset(16, 0, -14), 1, 5, Blocks.CHISELED_SANDSTONE.defaultBlockState());
             RaidBuilder.pillar(world(), center().offset(16, 0, 14), 1, 5, Blocks.CHISELED_SANDSTONE.defaultBlockState());
         }
 
         @Override
         public void start() {
-            stage = 0;
+            java.util.Arrays.fill(solved, false);
+            additionSolved = false;
+            puzzleDamage = false;
+            startedAt = now();
             standing.clear();
             input = -1;
             showIndex = -1;
@@ -201,14 +335,15 @@ final class ToaPuzzleRooms {
             target = -1;
             sum = 0;
             used = 0;
+            obelisksLit = 0;
+            obeliskOrder = ToaPuzzles.obeliskOrder(rnd());
             lights = ToaPuzzles.lightsStart(rnd());
             symbols = ToaPuzzles.matchingBoards(rnd());
             values = ToaPuzzles.additionValues(rnd());
             BlockState plate = RaidBuilder.module(RaidsContent.SCABARAS_TILE);
             for (int i = 0; i < 9; i++) {
-                RaidBuilder.set(world(), tile(MATCH_A, i), plate);
-                RaidBuilder.set(world(), tile(MATCH_B, i), plate);
-                RaidBuilder.set(world(), tile(ADDITION_AT, i), VALUE_COLOURS[values[i] - 1]);
+                RaidBuilder.set(world(), tile(Puzzle.SEQUENCE, 0, i), plate);
+                RaidBuilder.set(world(), tile(Puzzle.ADDITION, 0, i), VALUE_COLOURS[values[i] - 1]);
             }
             // OSRS: in solo raids four of the nine symbol sets start matched.
             List<Integer> syms = new ArrayList<>(List.of(0, 1, 2, 3, 4, 5, 6, 7, 8));
@@ -218,50 +353,54 @@ final class ToaPuzzleRooms {
             }
             renderMatching();
             renderLights();
-            announce();
+            renderObelisks();
+            refreshDoors();
+            say("The Path of Scabaras splits in two. " + (solo()
+                    ? "Solve a puzzle in either branch's first room: it opens the other branch's second room."
+                    : "Clear both branches, then read the tablet where they meet."));
+            for (int r = 0; r < 4; r++) {
+                if (open(r)) {
+                    announce(r);
+                }
+            }
         }
 
-        private void announce() {
-            if (stage >= puzzles.size()) {
-                return;
-            }
-            say(switch (puzzles.get(stage)) {
-                case SEQUENCE -> "Scabaras' first puzzle: press the button, watch the tiles light up, then step on them in that order.";
-                case LIGHTS -> "Scabaras' first puzzle: light every plate. Stepping on one flips it and its neighbours.";
-                case MATCHING -> "Scabaras' next puzzle: step on matching symbols, one on each board.";
-                case ADDITION -> "Scabaras' last puzzle: read the tablet, then step on tiles adding up to its number.";
+        private void announce(int room) {
+            say("The " + ROOM_NAMES[room] + ": " + switch (layout.get(room)) {
+                case SEQUENCE -> "press the button, watch the tiles light up, then step on them in that order.";
+                case LIGHTS -> "light every plate. Stepping on one flips it and its neighbours.";
+                case MATCHING -> "step on matching symbols, one on each board.";
+                case OBELISKS -> "strike the obelisks in the right order. A wrong one brings the ceiling down.";
             });
         }
 
         private void renderLights() {
-            if (!puzzles.contains(Puzzle.LIGHTS)) {
-                return;
-            }
             for (int i = 0; i < 9; i++) {
                 boolean lit = (lights & (1 << i)) != 0;
-                RaidBuilder.set(world(), tile(LIGHTS_AT, i), lit ? Blocks.OCHRE_FROGLIGHT.defaultBlockState()
+                RaidBuilder.set(world(), tile(Puzzle.LIGHTS, 0, i), lit ? Blocks.OCHRE_FROGLIGHT.defaultBlockState()
                         : RaidBuilder.module(RaidsContent.SCABARAS_TILE));
             }
         }
 
         private void renderMatching() {
             for (int b = 0; b < 2; b++) {
-                int[] area = b == 0 ? MATCH_A : MATCH_B;
                 for (int i = 0; i < 9; i++) {
                     boolean shown = matched[symbols[b][i]] || (pendingBoard == b && pendingTile == i);
-                    RaidBuilder.set(world(), tile(area, i), shown ? SYMBOLS[symbols[b][i]] : RaidBuilder.module(RaidsContent.SCABARAS_TILE));
+                    RaidBuilder.set(world(), tile(Puzzle.MATCHING, b, i), shown ? SYMBOLS[symbols[b][i]] : RaidBuilder.module(RaidsContent.SCABARAS_TILE));
                 }
             }
         }
 
-        private Puzzle current() {
-            return stage < puzzles.size() ? puzzles.get(stage) : null;
+        private void renderObelisks() {
+            for (int i = 0; i < ToaPuzzles.OBELISKS; i++) {
+                boolean lit = obeliskOrder.subList(0, obelisksLit).contains(i);
+                RaidBuilder.set(world(), obelisk(i).above(2), lit ? Blocks.SEA_LANTERN.defaultBlockState() : Blocks.SMOOTH_SANDSTONE.defaultBlockState());
+            }
         }
 
         @Override
         public void gameTick(long tick) {
-            Puzzle p = current();
-            if (p == Puzzle.SEQUENCE && showIndex >= 0) {
+            if (showIndex >= 0) {
                 showSequence();
             }
             for (ServerPlayer pl : players()) {
@@ -272,29 +411,25 @@ final class ToaPuzzleRooms {
                     step(pl, key);
                 }
             }
-            // OSRS: scarabs pester the party from the first rooms. // approx: one, plus one a player, at a time
+            // OSRS: scarabs pester the party from the start of the first rooms. // approx: one, plus one a player, at a time
             if (tick % 20 == 0 && living("toa_path_scarab").size() < 1 + raid.partySize()) {
                 spawnMob("toa_path_scarab", at(-17, rnd().nextBoolean() ? -6 : 6), false);
             }
             keepAggressive("toa_path_scarab");
         }
 
-        /** Which puzzle tile a floor block is (board * 9 + tile), or -1. */
+        /** Which active puzzle tile a floor block is (puzzle ordinal * 100 + board * 9 + tile), or -1. */
         private long stepKey(BlockPos floor) {
-            Puzzle p = current();
-            if (p == null) {
-                return -1;
-            }
-            int[][] boards = switch (p) {
-                case SEQUENCE -> new int[][]{SEQUENCE_AT};
-                case LIGHTS -> new int[][]{LIGHTS_AT};
-                case MATCHING -> new int[][]{MATCH_A, MATCH_B};
-                case ADDITION -> new int[][]{ADDITION_AT};
-            };
-            for (int b = 0; b < boards.length; b++) {
-                for (int i = 0; i < 9; i++) {
-                    if (tile(boards[b], i).equals(floor)) {
-                        return b * 9L + i;
+            for (Puzzle p : Puzzle.values()) {
+                if (p == Puzzle.OBELISKS || !active(p)) {
+                    continue;
+                }
+                int boards = p == Puzzle.MATCHING ? 2 : 1;
+                for (int b = 0; b < boards; b++) {
+                    for (int i = 0; i < 9; i++) {
+                        if (tile(p, b, i).equals(floor)) {
+                            return p.ordinal() * 100L + b * 9L + i;
+                        }
                     }
                 }
             }
@@ -302,8 +437,8 @@ final class ToaPuzzleRooms {
         }
 
         private void step(ServerPlayer p, long key) {
-            Puzzle puzzle = current();
-            int board = (int) (key / 9);
+            Puzzle puzzle = Puzzle.values()[(int) (key / 100)];
+            int board = (int) (key % 100 / 9);
             int i = (int) (key % 9);
             switch (puzzle) {
                 case SEQUENCE -> stepSequence(p, i);
@@ -312,12 +447,20 @@ final class ToaPuzzleRooms {
                     renderLights();
                     world().playSound(null, p.blockPosition(), SoundEvents.NOTE_BLOCK_BELL.value(), SoundSource.BLOCKS, 0.6f, 1.2f);
                     if (lights == ToaPuzzles.LIGHTS_SOLVED) {
-                        solved("Every plate is lit!");
+                        solved(Puzzle.LIGHTS, "Every plate is lit!");
                     }
                 }
                 case MATCHING -> stepMatching(board, i);
                 case ADDITION -> stepAddition(p, i);
+                default -> {
+                }
             }
+        }
+
+        /** Damage from a puzzle mistake (Perfect Scabaras fails). */
+        private void puzzleHurt(ServerPlayer p, int damage) {
+            puzzleDamage = true;
+            hurt(p, damage);
         }
 
         private void stepSequence(ServerPlayer p, int i) {
@@ -328,16 +471,16 @@ final class ToaPuzzleRooms {
                 Msg.game(p, "Press the button to see the sequence first.");
                 return;
             }
-            BlockPos t = tile(SEQUENCE_AT, i);
+            BlockPos t = tile(Puzzle.SEQUENCE, 0, i);
             if (sequence.get(input) == i) {
                 input++;
                 world().sendParticles(ParticleTypes.HAPPY_VILLAGER, t.getX() + 0.5, t.getY() + 1.2, t.getZ() + 0.5, 10, 0.3, 0.3, 0.3, 0);
                 if (input >= sequence.size()) {
-                    solved("The tiles of Scabaras glow in unison!");
+                    solved(Puzzle.SEQUENCE, "The tiles of Scabaras glow in unison!");
                 }
             } else {
                 warn("Wrong tile! Scarabs swarm out of the floor.");
-                hurt(p, 5 + rnd().nextInt(8)); // approx
+                puzzleHurt(p, PUZZLE_DAMAGE_MIN + rnd().nextInt(PUZZLE_DAMAGE_SPREAD));
                 input = -1;
             }
         }
@@ -345,13 +488,13 @@ final class ToaPuzzleRooms {
         private void showSequence() {
             int step = showIndex / 2;
             if (showIndex % 2 == 0 && step < sequence.size()) {
-                BlockPos t = tile(SEQUENCE_AT, sequence.get(step));
+                BlockPos t = tile(Puzzle.SEQUENCE, 0, sequence.get(step));
                 RaidBuilder.set(world(), t, Blocks.GLOWSTONE.defaultBlockState());
                 world().sendParticles(ParticleTypes.END_ROD, t.getX() + 0.5, t.getY() + 1.2, t.getZ() + 0.5, 20, 0.3, 0.5, 0.3, 0.02);
                 world().playSound(null, t, SoundEvents.NOTE_BLOCK_CHIME.value(), SoundSource.BLOCKS, 1f, 0.6f + sequence.get(step) * 0.1f);
             } else if (step < sequence.size() + 1) {
                 for (int i = 0; i < 9; i++) {
-                    RaidBuilder.set(world(), tile(SEQUENCE_AT, i), RaidBuilder.module(RaidsContent.SCABARAS_TILE));
+                    RaidBuilder.set(world(), tile(Puzzle.SEQUENCE, 0, i), RaidBuilder.module(RaidsContent.SCABARAS_TILE));
                 }
             }
             showIndex++;
@@ -383,18 +526,64 @@ final class ToaPuzzleRooms {
                     all &= m;
                 }
                 if (all) {
-                    solved("Every symbol is matched!");
+                    solved(Puzzle.MATCHING, "Every symbol is matched!");
                 }
             } else {
                 // Show both for a moment, then hide them again.
                 pendingBoard = -1;
-                RaidBuilder.set(world(), tile(board == 0 ? MATCH_A : MATCH_B, i), SYMBOLS[sym]);
+                RaidBuilder.set(world(), tile(Puzzle.MATCHING, board, i), SYMBOLS[sym]);
                 later(2, () -> {
-                    if (!done && current() == Puzzle.MATCHING) {
+                    if (!done && active(Puzzle.MATCHING)) {
                         renderMatching();
                     }
                 });
                 say("The symbols don't match.");
+            }
+        }
+
+        /**
+         * Striking an obelisk (OSRS): the next in the order lights up; a wrong one stays dark, puts the lit ones out and rocks
+         * fall from the ceiling around the striker (they can be dodged).
+         */
+        private void strikeObelisk(ServerPlayer p, int i) {
+            int lit = ToaPuzzles.obeliskStrike(obeliskOrder, obelisksLit, i);
+            if (lit < 0) {
+                obelisksLit = 0;
+                renderObelisks();
+                warn("The obelisk stays dark - rocks fall from the ceiling!");
+                List<Vec3> rocks = new ArrayList<>();
+                for (ServerPlayer q : players()) {
+                    if (q.distanceToSqr(Vec3.atCenterOf(obelisk(i))) < 12 * 12) {
+                        for (int k = 0; k < 3; k++) {
+                            rocks.add(k == 0 ? q.position() : q.position().add(rnd().nextInt(5) - 2, 0, rnd().nextInt(5) - 2));
+                        }
+                    }
+                }
+                for (Vec3 r : rocks) {
+                    world().sendParticles(ParticleTypes.CLOUD, r.x, r.y + 0.15, r.z, 8, 0.4, 0.02, 0.4, 0);
+                }
+                // The rocks land a few ticks later: step out from under the shadows.
+                later(3, () -> {
+                    for (ServerPlayer q : players()) {
+                        for (Vec3 r : rocks) {
+                            if (RaidEffects.horizontalDistSq(q.position(), r) < 0.9 * 0.9) {
+                                world().sendParticles(ParticleTypes.EXPLOSION, r.x, r.y + 0.5, r.z, 1, 0, 0, 0, 0);
+                                Msg.red(q, "A falling rock hits you!");
+                                puzzleHurt(q, PUZZLE_DAMAGE_MIN + rnd().nextInt(PUZZLE_DAMAGE_SPREAD));
+                                break;
+                            }
+                        }
+                    }
+                });
+                return;
+            }
+            if (lit > obelisksLit) {
+                obelisksLit = lit;
+                renderObelisks();
+                world().playSound(null, obelisk(i), SoundEvents.BEACON_POWER_SELECT, SoundSource.BLOCKS, 0.8f, 0.8f + 0.2f * lit);
+                if (obelisksLit >= ToaPuzzles.OBELISKS) {
+                    solved(Puzzle.OBELISKS, "Every obelisk is lit!");
+                }
             }
         }
 
@@ -408,13 +597,13 @@ final class ToaPuzzleRooms {
             }
             used |= 1 << i;
             sum += values[i];
-            BlockPos t = tile(ADDITION_AT, i);
+            BlockPos t = tile(Puzzle.ADDITION, 0, i);
             RaidBuilder.set(world(), t, Blocks.GLOWSTONE.defaultBlockState());
             if (sum == target) {
-                solved("The tiles add up to " + target + "!");
+                solved(Puzzle.ADDITION, "The tiles add up to " + target + "!");
             } else if (sum > target) {
                 warn("You went over " + target + "! The floor lashes out.");
-                hurt(p, 8 + rnd().nextInt(8)); // approx
+                puzzleHurt(p, PUZZLE_DAMAGE_MIN + 3 + rnd().nextInt(PUZZLE_DAMAGE_SPREAD));
                 resetAddition();
             } else {
                 Msg.action(p, "Total: " + sum + " / " + target);
@@ -425,26 +614,58 @@ final class ToaPuzzleRooms {
             sum = 0;
             used = 0;
             for (int i = 0; i < 9; i++) {
-                RaidBuilder.set(world(), tile(ADDITION_AT, i), VALUE_COLOURS[values[i] - 1]);
+                RaidBuilder.set(world(), tile(Puzzle.ADDITION, 0, i), VALUE_COLOURS[values[i] - 1]);
             }
         }
 
-        private void solved(String message) {
+        private void solved(Puzzle p, String message) {
             say(message);
             pointsToAll(ToaLoot.SCABARAS_PUZZLE_POINTS);
-            stage++;
-            if (stage >= puzzles.size()) {
+            if (p == Puzzle.ADDITION) {
+                additionSolved = true;
                 say("The Path of Scabaras is open!");
+                // OSRS CA "Perfect Scabaras": under a minute without anyone taking damage from the puzzles.
+                if (!puzzleDamage && now() - startedAt < ToaLoot.PERFECT_SCABARAS_TICKS) {
+                    for (ServerPlayer pl : players()) {
+                        com.runecraft.content.systems.CombatAchievementService.flag(pl, ToaLoot.FLAG_PERFECT_SCABARAS);
+                    }
+                }
                 complete();
-            } else {
-                announce();
+                return;
+            }
+            int room = roomOf(p);
+            boolean[] before = solved.clone();
+            solved[room] = true;
+            refreshDoors();
+            for (int r = 0; r < 4; r++) {
+                if (!ToaPuzzles.scabarasRoomOpen(r, before, solo()) && open(r)) {
+                    say("A door grinds open: the " + ROOM_NAMES[r] + ".");
+                    announce(r);
+                }
+            }
+            if (!ToaPuzzles.scabarasAdditionOpen(before, solo()) && additionOpen()) {
+                say("The way to the tablet opens: read it, then step on tiles adding up to its number.");
             }
         }
 
         @Override
         public boolean useBlock(ServerPlayer player, String blockId, BlockPos pos) {
+            if (blockId.equals(RaidsContent.TOA_SCABARAS_OBELISK)) {
+                for (int i = 0; i < ToaPuzzles.OBELISKS; i++) {
+                    if (obelisk(i).equals(pos)) {
+                        if (!active(Puzzle.OBELISKS)) {
+                            Msg.game(player, solved[roomOf(Puzzle.OBELISKS)] ? "The obelisks are already lit." : "The door to the obelisks is shut.");
+                        } else if (!cooldown(player, 2)) {
+                            player.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+                            strikeObelisk(player, i);
+                        }
+                        return true;
+                    }
+                }
+                return true;
+            }
             if (blockId.equals(RaidsContent.TOA_SCABARAS_PANEL)) {
-                if (pos.equals(button) && current() == Puzzle.SEQUENCE) {
+                if (layout.contains(ToaPuzzles.ScabarasPuzzle.SEQUENCE) && pos.equals(button()) && active(Puzzle.SEQUENCE)) {
                     if (showIndex < 0) {
                         // OSRS: pressing the button again shows a new order.
                         sequence = ToaPuzzles.sequence(ToaPuzzles.SEQUENCE_LENGTH, rnd());
@@ -454,8 +675,8 @@ final class ToaPuzzleRooms {
                     }
                     return true;
                 }
-                if (pos.equals(tablet)) {
-                    if (current() != Puzzle.ADDITION) {
+                if (pos.equals(tablet())) {
+                    if (!additionOpen()) {
                         Msg.game(player, "The tablet's symbols are dark. Solve the other puzzles first.");
                         return true;
                     }
@@ -472,15 +693,15 @@ final class ToaPuzzleRooms {
                 }
                 return true;
             }
-            if (blockId.equals(RaidsContent.SCABARAS_TILE) && current() == Puzzle.LIGHTS) {
+            if (blockId.equals(RaidsContent.SCABARAS_TILE) && active(Puzzle.LIGHTS)) {
                 // OSRS: a single plate can be flipped by hand, for 20 unavoidable damage.
                 for (int i = 0; i < 9; i++) {
-                    if (tile(LIGHTS_AT, i).equals(pos)) {
-                        hurt(player, 20);
+                    if (tile(Puzzle.LIGHTS, 0, i).equals(pos)) {
+                        puzzleHurt(player, 20);
                         lights ^= 1 << i;
                         renderLights();
                         if (lights == ToaPuzzles.LIGHTS_SOLVED) {
-                            solved("Every plate is lit!");
+                            solved(Puzzle.LIGHTS, "Every plate is lit!");
                         }
                         return true;
                     }
@@ -495,87 +716,140 @@ final class ToaPuzzleRooms {
             living("toa_path_scarab").forEach(LivingEntity::discard);
         }
 
-        @Override
-        String selfTestSolve(RaidSelfTest t) {
-            BlockPos neutral = at(0, 0);
-            List<String> solvedPuzzles = new ArrayList<>();
-            int guard = 0;
-            while (!done && guard++ < 8) {
-                Puzzle p = current();
-                switch (p) {
-                    case SEQUENCE -> {
-                        t.use(button);
-                        t.tick(sequence.size() * 2 + 2);
-                        RaidSelfTest.expect(input == 0, "Scabaras: the sequence was not shown");
-                        for (int i : new ArrayList<>(sequence)) {
-                            t.stepOn(tile(SEQUENCE_AT, i));
-                            t.moveTo(neutral);
-                            t.tick(1);
-                        }
-                    }
-                    case LIGHTS -> {
-                        List<Integer> presses = ToaPuzzles.lightsSolution(lights);
-                        RaidSelfTest.expect(presses != null, "Scabaras: the lights board can't be solved");
-                        for (int i : presses) {
-                            t.stepOn(tile(LIGHTS_AT, i));
-                            t.moveTo(neutral);
-                            t.tick(1);
-                        }
-                    }
-                    case MATCHING -> {
-                        for (int sym = 0; sym < 9; sym++) {
-                            if (matched[sym]) {
-                                continue;
-                            }
-                            for (int b = 0; b < 2; b++) {
-                                for (int i = 0; i < 9; i++) {
-                                    if (symbols[b][i] == sym) {
-                                        t.stepOn(tile(b == 0 ? MATCH_A : MATCH_B, i));
-                                        t.moveTo(neutral);
-                                        t.tick(1);
-                                    }
-                                }
-                            }
-                            RaidSelfTest.expect(matched[sym], "Scabaras: stepping on both " + SYMBOL_NAMES[sym] + " symbols did not match them");
-                        }
-                    }
-                    case ADDITION -> {
-                        t.use(tablet);
-                        RaidSelfTest.expect(target >= 20 && target <= 45, "Scabaras: the tablet gave no number");
-                        List<Integer> tiles = ToaPuzzles.additionSolution(values, target);
-                        RaidSelfTest.expect(tiles != null, "Scabaras: no tiles add up to " + target);
-                        for (int i : tiles) {
-                            t.stepOn(tile(ADDITION_AT, i));
-                            t.moveTo(neutral);
-                            t.tick(1);
-                        }
+        /** Self-test: solves one puzzle as a player would, through the real tiles, button and obelisks. */
+        private void selfTestSolve(RaidSelfTest t, Puzzle p) {
+            BlockPos neutral = at(-17, 0);
+            switch (p) {
+                case SEQUENCE -> {
+                    t.use(button());
+                    t.tick(ToaPuzzles.SEQUENCE_LENGTH * 2 + 2);
+                    RaidSelfTest.expect(input == 0, "Scabaras: the sequence was not shown");
+                    for (int i : new ArrayList<>(sequence)) {
+                        t.stepOn(tile(Puzzle.SEQUENCE, 0, i));
+                        t.moveTo(neutral);
+                        t.tick(1);
                     }
                 }
-                RaidSelfTest.expect(current() != p, "Scabaras: the " + p + " puzzle was not solved");
-                solvedPuzzles.add(p.name().toLowerCase(java.util.Locale.ROOT));
+                case LIGHTS -> {
+                    List<Integer> presses = ToaPuzzles.lightsSolution(lights);
+                    RaidSelfTest.expect(presses != null, "Scabaras: the lights board can't be solved");
+                    for (int i : presses) {
+                        t.stepOn(tile(Puzzle.LIGHTS, 0, i));
+                        t.moveTo(neutral);
+                        t.tick(1);
+                    }
+                }
+                case MATCHING -> {
+                    for (int sym = 0; sym < 9; sym++) {
+                        if (matched[sym]) {
+                            continue;
+                        }
+                        for (int b = 0; b < 2; b++) {
+                            for (int i = 0; i < 9; i++) {
+                                if (symbols[b][i] == sym) {
+                                    t.stepOn(tile(Puzzle.MATCHING, b, i));
+                                    t.moveTo(neutral);
+                                    t.tick(1);
+                                }
+                            }
+                        }
+                        RaidSelfTest.expect(matched[sym], "Scabaras: stepping on both " + SYMBOL_NAMES[sym] + " symbols did not match them");
+                    }
+                }
+                case OBELISKS -> {
+                    // A wrong first strike stays dark and brings rocks down; then the right order lights them all.
+                    int wrong = obeliskOrder.get(1);
+                    t.use(obelisk(wrong));
+                    RaidSelfTest.expect(obelisksLit == 0, "Scabaras: a wrong obelisk lit up");
+                    t.tick(4);
+                    for (int i : new ArrayList<>(obeliskOrder)) {
+                        t.use(obelisk(i));
+                        t.tick(2);
+                    }
+                }
+                case ADDITION -> {
+                    t.use(tablet());
+                    RaidSelfTest.expect(target >= 20 && target <= 45, "Scabaras: the tablet gave no number");
+                    List<Integer> tiles = ToaPuzzles.additionSolution(values, target);
+                    RaidSelfTest.expect(tiles != null, "Scabaras: no tiles add up to " + target);
+                    for (int i : tiles) {
+                        t.stepOn(tile(Puzzle.ADDITION, 0, i));
+                        t.moveTo(neutral);
+                        t.tick(1);
+                    }
+                }
             }
-            return "Scabaras: " + String.join(", ", solvedPuzzles);
+        }
+
+        /**
+         * Self-test (solo): a first room opens only the other branch's second room, and those two open the tablet; then the
+         * other two rooms are solved as well, so every puzzle is exercised, and the tablet last.
+         */
+        @Override
+        String selfTestSolve(RaidSelfTest t) {
+            RaidSelfTest.expect(solo(), "Scabaras: the self-test expects a solo raid");
+            RaidSelfTest.expect(!open(ToaPuzzles.NORTH_SECOND) && !open(ToaPuzzles.SOUTH_SECOND) && !additionOpen(),
+                    "Scabaras: a second room or the tablet was open from the start");
+            RaidSelfTest.expect(!world().getBlockState(door(1)).isAir() && !world().getBlockState(door(4)).isAir(),
+                    "Scabaras: the second rooms' doors were not shut");
+            // OSRS advice: start in the first room whose partner isn't the obelisks.
+            int first = layout.get(ToaPuzzles.SOUTH_SECOND) == ToaPuzzles.ScabarasPuzzle.OBELISKS ? ToaPuzzles.SOUTH_FIRST : ToaPuzzles.NORTH_FIRST;
+            int partner = first == ToaPuzzles.NORTH_FIRST ? ToaPuzzles.SOUTH_SECOND : ToaPuzzles.NORTH_SECOND;
+            int otherFirst = first == ToaPuzzles.NORTH_FIRST ? ToaPuzzles.SOUTH_FIRST : ToaPuzzles.NORTH_FIRST;
+            int otherSecond = partner == ToaPuzzles.SOUTH_SECOND ? ToaPuzzles.NORTH_SECOND : ToaPuzzles.SOUTH_SECOND;
+            List<String> order = new ArrayList<>();
+            for (int room : new int[]{first, partner, otherFirst, otherSecond}) {
+                Puzzle p = Puzzle.valueOf(layout.get(room).name());
+                RaidSelfTest.expect(active(p), "Scabaras: the " + ROOM_NAMES[room] + " (" + p + ") could not be worked on");
+                selfTestSolve(t, p);
+                RaidSelfTest.expect(solved[room], "Scabaras: the " + p + " puzzle in the " + ROOM_NAMES[room] + " was not solved");
+                order.add(p.name().toLowerCase(java.util.Locale.ROOT));
+                if (room == first) {
+                    RaidSelfTest.expect(open(partner) && world().getBlockState(door(partner)).isAir(),
+                            "Scabaras: solving the " + ROOM_NAMES[first] + " did not open the " + ROOM_NAMES[partner]);
+                    RaidSelfTest.expect(!open(otherSecond), "Scabaras: solving one first room opened its own branch's second room solo");
+                    RaidSelfTest.expect(!additionOpen(), "Scabaras: the tablet opened after one puzzle");
+                }
+                if (room == partner) {
+                    RaidSelfTest.expect(additionOpen() && world().getBlockState(door(4)).isAir(),
+                            "Scabaras: two puzzles did not open the tablet solo");
+                }
+            }
+            selfTestSolve(t, Puzzle.ADDITION);
+            RaidSelfTest.expect(done, "Scabaras: the room did not open after the tablet");
+            return "Scabaras: " + String.join(", ", order) + ", addition";
         }
     }
 
     // ================================================================== Path of Het
 
     /**
-     * Path of Het: the caster statue fires a beam every few seconds; the mirrors (turned by hand) and the worn barriers
-     * (broken with a pickaxe) must lead it to the shielded statue, which weakens Het's seal for 15 ticks. Orbs of darkness
-     * cross the room.
+     * Path of Het (OSRS wiki): the caster statue fires a beam every few seconds; the party leads it to the shielded statue
+     * with mirrors - three movable mirrors they pick up, place and rotate, plus fixed ones (dirty in groups until cleaned) -
+     * and by breaking the worn barriers with a pickaxe. A beam on the shielded statue weakens Het's seal for 15 ticks, when
+     * it can be mined. Orbs of darkness cross the room (and dirty the mirrors they hit in groups). The statues lend a bronze
+     * pickaxe, or hold the one a player deposited, from one raid to the next.
      */
     static final class Het extends Challenge {
         static final int HALF = 7;
         static final int[] SEAL_AT = {15, 0};
+        /** The statues holding pickaxes: at the entrance, in the room and by the exit (OSRS). */
+        static final int[][] STATUES = {{-18, 4}, {-10, -10}, {13, 5}};
         ToaPuzzles.HetPuzzle puzzle;
         final Set<Long> broken = new HashSet<>();
         int sealHp;
         int sealMax;
         long weakenedUntil = -1;
         private long nextBeam;
+        /** The movable mirrors each player carries (OSRS: picked up as an item, then placed). */
+        final Map<UUID, List<int[]>> carried = new HashMap<>();
+        /** Each movable mirror's starting cell: a mirror whose carrier is downed or leaves goes back there. */
+        private final List<int[]> homes = new ArrayList<>();
         /** Orbs of darkness: x, z (block, relative to the centre), dx, dz. */
         private final List<double[]> orbs = new ArrayList<>();
+        /** Perfect Het: anyone hit by the beam or an orb, and how many times the seal was weakened. */
+        boolean hurtByRoom;
+        int exposures;
 
         Het(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -587,19 +861,32 @@ final class ToaPuzzleRooms {
 
         @Override
         public void decorate() {
-            puzzle = ToaPuzzles.hetPuzzle(HALF, rnd());
             BlockPos c = center();
             RaidBuilder.fill(world(), c.getX() - HALF - 1, c.getY(), c.getZ() - HALF - 1, c.getX() + HALF + 1, c.getY(),
                     c.getZ() + HALF + 1, Blocks.CHISELED_SANDSTONE.defaultBlockState());
+            // The grid's floor: a carried mirror is placed by using one of its tiles.
             RaidBuilder.fill(world(), c.getX() - HALF, c.getY(), c.getZ() - HALF, c.getX() + HALF, c.getY(), c.getZ() + HALF,
-                    Blocks.CUT_SANDSTONE.defaultBlockState());
-            placePuzzle();
+                    RaidBuilder.module(RaidsContent.TOA_HET_FLOOR));
             RaidBuilder.set(world(), at(SEAL_AT[0], SEAL_AT[1]), RaidBuilder.module(RaidsContent.HET_SEAL));
             RaidBuilder.set(world(), at(SEAL_AT[0], SEAL_AT[1]).above(), Blocks.GOLD_BLOCK.defaultBlockState());
             RaidBuilder.pillar(world(), center().offset(SEAL_AT[0], 0, -3), 0, 4, Blocks.CHISELED_SANDSTONE.defaultBlockState());
             RaidBuilder.pillar(world(), center().offset(SEAL_AT[0], 0, 3), 0, 4, Blocks.CHISELED_SANDSTONE.defaultBlockState());
-            RaidBuilder.set(world(), at(-18, 4), RaidBuilder.module(RaidsContent.TOA_PICKAXE_STATUE));
-            RaidBuilder.set(world(), at(13, 5), RaidBuilder.module(RaidsContent.TOA_PICKAXE_STATUE));
+            for (int[] s : STATUES) {
+                RaidBuilder.set(world(), at(s[0], s[1]), RaidBuilder.module(RaidsContent.TOA_PICKAXE_STATUE));
+            }
+        }
+
+        /** Clears the grid's mirrors, barriers and obstacles (before a new puzzle is drafted). */
+        private void clearGrid() {
+            BlockPos c = center();
+            RaidBuilder.fill(world(), c.getX() - HALF, c.getY() + 1, c.getZ() - HALF, c.getX() + HALF, c.getY() + 2, c.getZ() + HALF,
+                    Blocks.AIR.defaultBlockState());
+            RaidBuilder.fill(world(), c.getX() - HALF, c.getY(), c.getZ() - HALF, c.getX() + HALF, c.getY(), c.getZ() + HALF,
+                    RaidBuilder.module(RaidsContent.TOA_HET_FLOOR));
+            for (int z = -HALF; z <= HALF; z++) {
+                RaidBuilder.set(world(), cell(-HALF - 2, z), Blocks.AIR.defaultBlockState());
+                RaidBuilder.set(world(), cell(-HALF - 2, z).above(), Blocks.AIR.defaultBlockState());
+            }
         }
 
         private void placePuzzle() {
@@ -610,10 +897,12 @@ final class ToaPuzzleRooms {
             BlockPos target = cell(puzzle.target()[0], puzzle.target()[1]);
             RaidBuilder.set(world(), target, Blocks.LAPIS_BLOCK.defaultBlockState());
             RaidBuilder.set(world(), target.above(), Blocks.SEA_LANTERN.defaultBlockState());
-            for (int[] m : puzzle.mirrors()) {
+            for (int[] m : puzzle.fixed()) {
+                // Fixed mirrors stand on carved stone; movable ones on the grid's tiles.
+                RaidBuilder.set(world(), cell(m[0], m[1]).below(), Blocks.CHISELED_SANDSTONE.defaultBlockState());
                 RaidBuilder.set(world(), cell(m[0], m[1]), RaidBuilder.module(RaidsContent.TOA_MIRROR));
             }
-            for (int[] m : puzzle.decoys()) {
+            for (int[] m : puzzle.movable()) {
                 RaidBuilder.set(world(), cell(m[0], m[1]), RaidBuilder.module(RaidsContent.TOA_MIRROR));
             }
             for (int[] b : puzzle.barriers()) {
@@ -624,18 +913,29 @@ final class ToaPuzzleRooms {
             }
         }
 
+        /** OSRS: a wipe resets the statue's progress and drafts a new puzzle, so each attempt gets a fresh grid. */
         @Override
         public void start() {
+            clearGrid();
+            puzzle = ToaPuzzles.hetPuzzle(HALF, raid.partySize(), rnd());
+            placePuzzle();
+            homes.clear();
+            for (int[] m : puzzle.movable()) {
+                homes.add(new int[]{m[0], m[1]});
+            }
             broken.clear();
             orbs.clear();
+            carried.clear();
+            hurtByRoom = false;
+            exposures = 0;
             sealMax = ToaPuzzles.sealHitpoints(raid.partySize());
             sealHp = sealMax;
             weakenedUntil = -1;
             nextBeam = now() + 6;
-            for (int[] b : puzzle.barriers()) {
-                RaidBuilder.set(world(), cell(b[0], b[1]), RaidBuilder.module(RaidsContent.TOA_WORN_BARRIER));
-            }
             RaidBuilder.set(world(), at(SEAL_AT[0], SEAL_AT[1]), RaidBuilder.module(RaidsContent.HET_SEAL));
+            RaidBuilder.set(world(), at(SEAL_AT[0], SEAL_AT[1]).above(), Blocks.GOLD_BLOCK.defaultBlockState());
+            say("Het's seal is shielded. Lead the caster statue's beam to the shielded statue: use a movable mirror to rotate it, "
+                    + "sneak and use it to pick it up, use a floor tile to place it; break the worn barriers with a pickaxe.");
         }
 
         boolean weakened() {
@@ -644,6 +944,7 @@ final class ToaPuzzleRooms {
 
         @Override
         public void gameTick(long tick) {
+            returnStrandedMirrors();
             if (now() >= nextBeam) {
                 fireBeam();
                 nextBeam = now() + ToaPuzzles.BEAM_CYCLE_TICKS;
@@ -655,23 +956,107 @@ final class ToaPuzzleRooms {
                 BlockPos s = at(SEAL_AT[0], SEAL_AT[1]);
                 world().sendParticles(ParticleTypes.ENCHANTED_HIT, s.getX() + 0.5, s.getY() + 1, s.getZ() + 0.5, 6, 0.4, 0.6, 0.4, 0.05);
             }
-            // OSRS: orbs of darkness cross the room in straight lines. // approx: one every 7 ticks
+            // OSRS: orbs of darkness cross the room in straight lines, now and then two on one tile. // approx: one every 7 ticks
             if (tick % 7 == 0) {
                 boolean alongX = rnd().nextBoolean();
                 int lane = rnd().nextInt(2 * RaidBuilder.HALF - 3) - RaidBuilder.HALF + 2;
                 int side = rnd().nextBoolean() ? 1 : -1;
-                orbs.add(alongX ? new double[]{-side * RaidBuilder.HALF, lane, side, 0} : new double[]{lane, -side * RaidBuilder.HALF, 0, side});
+                int n = rnd().nextInt(6) == 0 ? 2 : 1;
+                for (int k = 0; k < n; k++) {
+                    orbs.add(alongX ? new double[]{-side * RaidBuilder.HALF, lane, side, 0} : new double[]{lane, -side * RaidBuilder.HALF, 0, side});
+                }
             }
             moveOrbs();
+            for (ServerPlayer p : players()) {
+                int n = carried(p);
+                if (n > 0 && tick % 10 == 0) {
+                    Msg.action(p, "Carrying " + n + " mirror" + (n == 1 ? "" : "s") + ": use a floor tile to place one.");
+                }
+            }
         }
 
-        /** Mirror orientations as a short diagonal of particles ('/' or '\' seen from above). */
+        /**
+         * Mirrors carried by someone who is no longer in the room - downed, dead, logged out or gone - go back to the grid,
+         * or the rest of the party could never finish the beam's path.
+         */
+        private void returnStrandedMirrors() {
+            if (carried.isEmpty()) {
+                return;
+            }
+            Set<UUID> here = new HashSet<>();
+            for (ServerPlayer p : players()) {
+                here.add(p.getUUID());
+            }
+            java.util.Iterator<Map.Entry<UUID, List<int[]>>> it = carried.entrySet().iterator();
+            boolean returned = false;
+            while (it.hasNext()) {
+                Map.Entry<UUID, List<int[]>> e = it.next();
+                if (here.contains(e.getKey())) {
+                    continue;
+                }
+                e.getValue().removeIf(this::returnMirror);
+                returned = true;
+                if (e.getValue().isEmpty()) {
+                    it.remove();
+                }
+            }
+            if (returned) {
+                say("A dropped mirror returns to the grid.");
+                showMirrors();
+            }
+        }
+
+        /** Stands a carried mirror back on its starting cell, or on the first free cell when that one is taken. */
+        private boolean returnMirror(int[] m) {
+            int i = puzzle.movable().indexOf(m);
+            int[] spot = null;
+            if (i >= 0 && i < homes.size() && freeForMirror(homes.get(i)[0], homes.get(i)[1])) {
+                spot = homes.get(i);
+            }
+            for (int z = -HALF; spot == null && z <= HALF; z++) {
+                for (int x = -HALF; spot == null && x <= HALF; x++) {
+                    if (freeForMirror(x, z)) {
+                        spot = new int[]{x, z};
+                    }
+                }
+            }
+            if (spot == null) {
+                return false;
+            }
+            m[0] = spot[0];
+            m[1] = spot[1];
+            RaidBuilder.set(world(), cell(m[0], m[1]), RaidBuilder.module(RaidsContent.TOA_MIRROR));
+            return true;
+        }
+
+        /** A grid cell a mirror may stand on: placeable, empty and with nobody standing in it. */
+        private boolean freeForMirror(int x, int z) {
+            BlockPos pos = cell(x, z);
+            if (!puzzle.canPlace(x, z, broken) || !world().getBlockState(pos).isAir()) {
+                return false;
+            }
+            for (ServerPlayer p : raid.players()) {
+                if (p.blockPosition().equals(pos)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /** Mirror orientations as a short diagonal of particles ('/' or '\' seen from above); dirty ones smoke. */
         private void showMirrors() {
-            for (List<int[]> list : List.of(puzzle.mirrors(), puzzle.decoys())) {
+            for (List<int[]> list : List.of(puzzle.fixed(), puzzle.movable())) {
                 for (int[] m : list) {
+                    if (m[0] == ToaPuzzles.CARRIED) {
+                        continue;
+                    }
                     BlockPos p = cell(m[0], m[1]);
+                    if (m[3] != 0) {
+                        world().sendParticles(ParticleTypes.SMOKE, p.getX() + 0.5, p.getY() + 1.1, p.getZ() + 0.5, 6, 0.2, 0.2, 0.2, 0.01);
+                        continue;
+                    }
                     for (double s = -0.4; s <= 0.41; s += 0.2) {
-                        double z = m[3] == ToaPuzzles.SLASH ? -s : s;
+                        double z = m[2] == ToaPuzzles.SLASH ? -s : s;
                         world().sendParticles(ParticleTypes.END_ROD, p.getX() + 0.5 + s, p.getY() + 1.1, p.getZ() + 0.5 + z, 1, 0, 0, 0, 0);
                     }
                 }
@@ -692,18 +1077,21 @@ final class ToaPuzzleRooms {
                 for (ServerPlayer p : players()) {
                     if (p.blockPosition().getX() == center().getX() + c[0] && p.blockPosition().getZ() == center().getZ() + c[1]) {
                         Msg.red(p, "The beam of light burns you!");
+                        hurtByRoom = true;
                         hurt(p, 4 + rnd().nextInt(5)); // approx: "lower than the orbs"
                     }
                 }
             }
             if (beam.hit()) {
                 weakenedUntil = now() + ToaPuzzles.SEAL_WEAKENED_TICKS;
+                exposures++;
                 say("The shielded statue absorbs the beam - Het's seal is weakened! Mine it now.");
             }
         }
 
         private void moveOrbs() {
             java.util.Iterator<double[]> it = orbs.iterator();
+            boolean group = raid.partySize() > 1;
             while (it.hasNext()) {
                 double[] o = it.next();
                 o[0] += o[2];
@@ -714,9 +1102,18 @@ final class ToaPuzzleRooms {
                 }
                 Vec3 at = vec(o[0], o[1]);
                 world().sendParticles(ParticleTypes.SQUID_INK, at.x, at.y + 0.8, at.z, 4, 0.15, 0.15, 0.15, 0);
+                if (group) {
+                    // OSRS: in groups an orb that runs into a mirror can leave it dirty.
+                    int[] m = puzzle.mirrorAt((int) Math.floor(o[0]), (int) Math.floor(o[1]));
+                    if (m != null && m[3] == 0 && rnd().nextInt(ToaPuzzles.ORB_DIRTIES_ONE_IN) == 0) {
+                        m[3] = 1;
+                        say("An orb of darkness smears a mirror - it must be cleaned before it reflects.");
+                    }
+                }
                 for (ServerPlayer p : players()) {
                     if (RaidEffects.horizontalDistSq(p.position(), at) < 0.8 * 0.8) {
                         Msg.red(p, "An orb of darkness slams into you!");
+                        hurtByRoom = true;
                         hurt(p, 8 + rnd().nextInt(8)); // approx: "moderate damage"
                         it.remove();
                         break;
@@ -743,27 +1140,73 @@ final class ToaPuzzleRooms {
             return best;
         }
 
+        /**
+         * A statue (OSRS "Take-pickaxe" / "Deposit-pickaxe"): it holds the pickaxe the player deposited in an earlier visit -
+         * kept between raids - or a bronze one. Sneak and use it to deposit your best pickaxe.
+         */
+        private void statue(ServerPlayer player) {
+            RaidsState state = RaidsState.get(world().getServer());
+            net.minecraft.world.item.ItemStack stored = state.storedPickaxe(player.getUUID());
+            if (player.isShiftKeyDown()) {
+                String best = pickaxe(player);
+                if (best == null) {
+                    Msg.game(player, "You have no pickaxe to deposit.");
+                } else if (!stored.isEmpty()) {
+                    Msg.game(player, "The statue already holds your " + stored.getHoverName().getString() + ".");
+                } else {
+                    net.minecraft.world.item.ItemStack taken = takeStack(player, best);
+                    state.setStoredPickaxe(player.getUUID(), taken);
+                    Msg.game(player, "You deposit your pickaxe in the statue. It will keep it for your next raid.");
+                }
+                return;
+            }
+            if (!stored.isEmpty()) {
+                if (!player.getInventory().add(stored.copy())) {
+                    Msg.game(player, "You need a free inventory slot to take your pickaxe.");
+                    return;
+                }
+                state.setStoredPickaxe(player.getUUID(), net.minecraft.world.item.ItemStack.EMPTY);
+                Msg.game(player, "You take your pickaxe back from the statue.");
+            } else if (pickaxe(player) != null) {
+                Msg.game(player, "You already have a pickaxe.");
+            } else {
+                Inv.give(player, "bronze_pickaxe", 1);
+                Msg.game(player, "You take a bronze pickaxe from the statue.");
+            }
+        }
+
+        /** Removes one of an item from the main hand or inventory, keeping its data (charges), and returns it. */
+        private static net.minecraft.world.item.ItemStack takeStack(ServerPlayer p, String id) {
+            var inv = p.getInventory();
+            for (int i = 0; i < inv.getContainerSize(); i++) {
+                net.minecraft.world.item.ItemStack s = inv.getItem(i);
+                if (!s.isEmpty() && id.equals(Inv.idOf(s))) {
+                    return inv.removeItem(i, 1);
+                }
+            }
+            return net.minecraft.world.item.ItemStack.EMPTY;
+        }
+
+        int carried(ServerPlayer p) {
+            List<int[]> mine = carried.get(p.getUUID());
+            return mine == null ? 0 : mine.size();
+        }
+
         @Override
         public boolean useBlock(ServerPlayer player, String blockId, BlockPos pos) {
+            int x = pos.getX() - center().getX();
+            int z = pos.getZ() - center().getZ();
             switch (blockId) {
                 case RaidsContent.TOA_PICKAXE_STATUE -> {
-                    if (pickaxe(player) != null) {
-                        Msg.game(player, "You already have a pickaxe.");
-                    } else {
-                        Inv.give(player, "bronze_pickaxe", 1);
-                        Msg.game(player, "You take a bronze pickaxe from the statue.");
-                    }
+                    statue(player);
                     return true;
                 }
                 case RaidsContent.TOA_MIRROR -> {
-                    int[] m = puzzle.mirrorAt(pos.getX() - center().getX(), pos.getZ() - center().getZ());
-                    if (m != null && !cooldown(player, 1)) {
-                        m[3] = m[3] == ToaPuzzles.SLASH ? ToaPuzzles.BACKSLASH : ToaPuzzles.SLASH;
-                        player.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
-                        world().playSound(null, pos, SoundEvents.GRINDSTONE_USE, SoundSource.BLOCKS, 0.5f, 1.4f);
-                        showMirrors();
-                        Msg.action(player, "You turn the mirror: it now faces " + (m[3] == ToaPuzzles.SLASH ? "'/'" : "'\\'") + ".");
-                    }
+                    useMirror(player, pos, x, z);
+                    return true;
+                }
+                case RaidsContent.TOA_HET_FLOOR -> {
+                    placeMirror(player, x, z);
                     return true;
                 }
                 case RaidsContent.TOA_WORN_BARRIER -> {
@@ -773,7 +1216,7 @@ final class ToaPuzzleRooms {
                     }
                     if (!cooldown(player, 2)) {
                         player.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
-                        broken.add(key(pos));
+                        broken.add(ToaPuzzles.cellKey(x, z));
                         RaidBuilder.set(world(), pos, Blocks.AIR.defaultBlockState());
                         world().sendParticles(ParticleTypes.CLOUD, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 10, 0.3, 0.3, 0.3, 0.02);
                         Msg.action(player, "You break the worn barrier.");
@@ -790,8 +1233,62 @@ final class ToaPuzzleRooms {
             }
         }
 
-        private long key(BlockPos pos) {
-            return ((long) (pos.getX() - center().getX()) << 32) ^ ((pos.getZ() - center().getZ()) & 0xffffffffL);
+        /** Using a mirror: clean it if dirty; else rotate a movable one, or pick it up when sneaking. */
+        private void useMirror(ServerPlayer player, BlockPos pos, int x, int z) {
+            int[] fixed = puzzle.fixedAt(x, z);
+            int[] movable = puzzle.movableAt(x, z);
+            int[] m = fixed != null ? fixed : movable;
+            if (m == null || cooldown(player, 1)) {
+                return;
+            }
+            player.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+            if (m[3] != 0) {
+                m[3] = 0;
+                world().sendParticles(ParticleTypes.SPLASH, pos.getX() + 0.5, pos.getY() + 0.8, pos.getZ() + 0.5, 10, 0.3, 0.3, 0.3, 0);
+                Msg.action(player, "You wipe the mirror clean.");
+                showMirrors();
+                return;
+            }
+            if (fixed != null) {
+                Msg.game(player, "This mirror is fixed in place.");
+                return;
+            }
+            if (player.isShiftKeyDown()) {
+                movable[0] = ToaPuzzles.CARRIED;
+                movable[1] = ToaPuzzles.CARRIED;
+                carried.computeIfAbsent(player.getUUID(), k -> new ArrayList<>()).add(movable);
+                RaidBuilder.set(world(), pos, Blocks.AIR.defaultBlockState());
+                Msg.action(player, "You pick up the mirror.");
+                return;
+            }
+            movable[2] = movable[2] == ToaPuzzles.SLASH ? ToaPuzzles.BACKSLASH : ToaPuzzles.SLASH;
+            world().playSound(null, pos, SoundEvents.GRINDSTONE_USE, SoundSource.BLOCKS, 0.5f, 1.4f);
+            showMirrors();
+            Msg.action(player, "You turn the mirror: it now faces " + (movable[2] == ToaPuzzles.SLASH ? "'/'" : "'\\'") + ".");
+        }
+
+        /** Places a carried mirror on the grid tile used (facing '/'). */
+        private void placeMirror(ServerPlayer player, int x, int z) {
+            if (carried(player) <= 0) {
+                Msg.game(player, "Pick up one of the movable mirrors (sneak and use it) to place it here.");
+                return;
+            }
+            if (!puzzle.canPlace(x, z, broken) || !world().getBlockState(cell(x, z)).isAir()) {
+                Msg.game(player, "You can't place a mirror there.");
+                return;
+            }
+            List<int[]> mine = carried.get(player.getUUID());
+            int[] m = mine.remove(mine.size() - 1);
+            if (mine.isEmpty()) {
+                carried.remove(player.getUUID());
+            }
+            m[0] = x;
+            m[1] = z;
+            m[2] = ToaPuzzles.SLASH;
+            RaidBuilder.set(world(), cell(x, z), RaidBuilder.module(RaidsContent.TOA_MIRROR));
+            player.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+            showMirrors();
+            Msg.action(player, "You place the mirror, facing '/'.");
         }
 
         private void mine(ServerPlayer player, BlockPos pos) {
@@ -818,46 +1315,131 @@ final class ToaPuzzleRooms {
                 RaidBuilder.set(world(), pos, Blocks.AIR.defaultBlockState());
                 RaidBuilder.set(world(), pos.above(), Blocks.AIR.defaultBlockState());
                 say("Het's seal shatters! The Path of Het is open.");
+                // OSRS CA "Perfect Het": no damage from the beam or the orbs, and the seal broken in one exposure.
+                if (!hurtByRoom && exposures <= 1) {
+                    for (ServerPlayer pl : players()) {
+                        com.runecraft.content.systems.CombatAchievementService.flag(pl, ToaLoot.FLAG_PERFECT_HET);
+                    }
+                }
                 complete();
             }
         }
 
         @Override
+        public void cleanup() {
+            super.cleanup();
+            carried.clear();
+        }
+
+        @Override
         String selfTestSolve(RaidSelfTest t) {
             ServerPlayer p = t.player();
-            Inv.remove(p, "bronze_pickaxe", Inv.count(p, "bronze_pickaxe"));
-            BlockPos statue = at(-18, 4);
-            t.use(statue);
-            RaidSelfTest.expect(pickaxe(p) != null, "Het: the statue gave no pickaxe");
-            for (int[] m : puzzle.mirrors()) {
-                int turns = 0;
-                while (m[3] != m[2] && turns++ < 3) {
-                    t.tick(1);
-                    t.use(cell(m[0], m[1]));
+            RaidsState state = RaidsState.get(world().getServer());
+            net.minecraft.world.item.ItemStack storedBefore = state.storedPickaxe(p.getUUID());
+            // The test takes the player's own bronze and rune pickaxes away for a while: they get them all back after.
+            Map<String, Integer> picksBefore = new HashMap<>();
+            for (String pick : List.of("bronze_pickaxe", "rune_pickaxe")) {
+                picksBefore.put(pick, Inv.count(p, pick));
+            }
+            String note;
+            try {
+                state.setStoredPickaxe(p.getUUID(), net.minecraft.world.item.ItemStack.EMPTY);
+                for (String pick : List.of("bronze_pickaxe", "rune_pickaxe")) {
+                    Inv.remove(p, pick, Inv.count(p, pick));
                 }
-                RaidSelfTest.expect(m[3] == m[2], "Het: a mirror would not turn");
-            }
-            for (int[] b : puzzle.barriers()) {
-                t.tick(2);
-                t.use(cell(b[0], b[1]));
-            }
-            RaidSelfTest.expect(ToaPuzzles.trace(puzzle, broken).hit(), "Het: the beam does not reach the shielded statue after the fix");
-            BlockPos seal = at(SEAL_AT[0], SEAL_AT[1]);
-            int guard = 0;
-            int cycles = 0;
-            while (!done && guard++ < 600) {
-                if (weakened()) {
-                    t.use(seal);
-                    t.tick(2);
-                } else {
+                BlockPos statue = at(STATUES[0][0], STATUES[0][1]);
+                // Deposit a rune pickaxe (sneaking), take it back: the statue keeps it between visits.
+                Inv.give(p, "rune_pickaxe", 1);
+                // The statue takes the best pickaxe carried (a real player may carry a better one than the rune pickaxe).
+                String best = pickaxe(p);
+                int bestBefore = Inv.count(p, best);
+                p.setShiftKeyDown(true);
+                t.use(statue);
+                p.setShiftKeyDown(false);
+                RaidSelfTest.expect(Inv.count(p, best) == bestBefore - 1 && best.equals(Inv.idOf(state.storedPickaxe(p.getUUID()))),
+                        "Het: the statue did not take the deposited " + best);
+                t.use(statue);
+                RaidSelfTest.expect(Inv.count(p, best) == bestBefore && state.storedPickaxe(p.getUUID()).isEmpty(),
+                        "Het: the statue did not hand back the deposited pickaxe");
+                Inv.remove(p, "rune_pickaxe", 1);
+                t.use(statue);
+                RaidSelfTest.expect(pickaxe(p) != null, "Het: the statue gave no pickaxe");
+                // The beam can't reach the statue before the mirrors are placed.
+                RaidSelfTest.expect(!ToaPuzzles.trace(puzzle, broken).hit(), "Het: the beam reached the shielded statue before any work");
+                // A mirror carried by a party member who falls (here: one no longer in the room) goes back to its cell.
+                int[] first = puzzle.movable().get(0);
+                int homeX = first[0];
+                int homeZ = first[1];
+                t.tick(1);
+                p.setShiftKeyDown(true);
+                t.use(cell(homeX, homeZ));
+                p.setShiftKeyDown(false);
+                RaidSelfTest.expect(first[0] == ToaPuzzles.CARRIED && carried(p) == 1, "Het: sneaking and using a mirror did not pick it up");
+                carried.put(UUID.randomUUID(), carried.remove(p.getUUID()));
+                t.tick(1);
+                RaidSelfTest.expect(first[0] == homeX && first[1] == homeZ && carried.isEmpty()
+                                && world().getBlockState(cell(homeX, homeZ)).is(RaidBuilder.module(RaidsContent.TOA_MIRROR).getBlock()),
+                        "Het: a mirror carried by a fallen player did not return to the grid");
+                List<int[]> plan = ToaPuzzles.hetSolution(puzzle);
+                for (int[] step : plan) {
+                    int[] m = puzzle.movable().get(step[0]);
                     t.tick(1);
+                    p.setShiftKeyDown(true);
+                    t.use(cell(m[0], m[1]));
+                    p.setShiftKeyDown(false);
+                    RaidSelfTest.expect(m[0] == ToaPuzzles.CARRIED && carried(p) == 1, "Het: sneaking and using a mirror did not pick it up");
+                    t.tick(1);
+                    t.use(cell(step[1], step[2]).below());
+                    RaidSelfTest.expect(m[0] == step[1] && m[1] == step[2] && carried(p) == 0, "Het: using a floor tile did not place the mirror");
+                    int turns = 0;
+                    while (m[2] != step[3] && turns++ < 3) {
+                        t.tick(1);
+                        t.use(cell(m[0], m[1]));
+                    }
+                    RaidSelfTest.expect(m[2] == step[3], "Het: a placed mirror would not turn");
+                }
+                for (int[] f : puzzle.fixed()) {
+                    if (f[3] != 0) {
+                        t.tick(1);
+                        t.use(cell(f[0], f[1]));
+                        RaidSelfTest.expect(f[3] == 0, "Het: a dirty mirror was not cleaned");
+                    }
+                }
+                for (int[] b : puzzle.barriers()) {
+                    t.tick(2);
+                    t.use(cell(b[0], b[1]));
+                }
+                RaidSelfTest.expect(ToaPuzzles.trace(puzzle, broken).hit(), "Het: the beam does not reach the shielded statue after the fix");
+                BlockPos seal = at(SEAL_AT[0], SEAL_AT[1]);
+                int guard = 0;
+                while (!done && guard++ < 600) {
                     if (weakened()) {
-                        cycles++;
+                        t.use(seal);
+                        t.tick(2);
+                    } else {
+                        t.tick(1);
+                    }
+                }
+                RaidSelfTest.expect(done, "Het: the seal did not break (" + sealHp + "/" + sealMax + " left)");
+                note = "Het: " + plan.size() + " mirror(s) placed, seal broken in " + exposures + " exposure(s), the statue keeps a pickaxe";
+            } finally {
+                p.setShiftKeyDown(false);
+                // A pickaxe left in the statue by a failed step goes back to the player before the statue is restored.
+                net.minecraft.world.item.ItemStack left = state.storedPickaxe(p.getUUID());
+                if (!left.isEmpty()) {
+                    Inv.give(p, left.copy());
+                }
+                state.setStoredPickaxe(p.getUUID(), storedBefore);
+                for (Map.Entry<String, Integer> e : picksBefore.entrySet()) {
+                    int now = Inv.count(p, e.getKey());
+                    if (now > e.getValue()) {
+                        Inv.remove(p, e.getKey(), now - e.getValue());
+                    } else if (now < e.getValue()) {
+                        Inv.give(p, e.getKey(), e.getValue() - now);
                     }
                 }
             }
-            RaidSelfTest.expect(done, "Het: the seal did not break (" + sealHp + "/" + sealMax + " left)");
-            return "Het: beam via " + puzzle.mirrors().size() + " mirrors, seal broken in " + cycles + " cycles";
+            return note;
         }
     }
 
@@ -889,6 +1471,9 @@ final class ToaPuzzleRooms {
         private final Map<LivingEntity, Integer> fuse = new HashMap<>();
         /** Venom pools: x, z, expiry tick. */
         private final List<double[]> pools = new ArrayList<>();
+        /** Perfect Apmeken: a danger triggered (missed or wrong fix), someone stood in venom or a volatile baboon hit. */
+        boolean imperfect;
+        private long startedAt;
 
         Apmeken(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -924,6 +1509,8 @@ final class ToaPuzzleRooms {
             pools.clear();
             corrupted.clear();
             problem = Problem.NONE;
+            imperfect = false;
+            startedAt = now();
             ServerPlayer first = randomPlayer();
             sight = first == null ? null : first.getUUID();
             if (first != null) {
@@ -980,6 +1567,12 @@ final class ToaPuzzleRooms {
                 nextWave();
             } else if (wave >= waves.size() - 1 && alive == 0 && baboons.isEmpty()) {
                 say("The last of Ba-Ba's troupe falls. The Path of Apmeken is open!");
+                // OSRS CA "Perfect Apmeken": a group, no danger triggered, no venom, no volatile hit, under three minutes.
+                if (!imperfect && raid.partySize() >= 2 && now() - startedAt < ToaLoot.PERFECT_APMEKEN_TICKS) {
+                    for (ServerPlayer p : players()) {
+                        com.runecraft.content.systems.CombatAchievementService.flag(p, ToaLoot.FLAG_PERFECT_APMEKEN);
+                    }
+                }
                 complete();
                 return;
             }
@@ -1021,6 +1614,7 @@ final class ToaPuzzleRooms {
             int dmg = 20 + 3 * raid.hitpoints(b); // approx: "based on its health", heavy
             for (ServerPlayer p : players()) {
                 if (RaidEffects.horizontalDistSq(p.position(), at) <= 1.6 * 1.6) {
+                    imperfect = true;
                     RaidEffects.hit(b, p, dmg, null, true);
                 }
             }
@@ -1058,6 +1652,7 @@ final class ToaPuzzleRooms {
             for (ServerPlayer p : players()) {
                 for (double[] pool : pools) {
                     if ((p.getX() - pool[0]) * (p.getX() - pool[0]) + (p.getZ() - pool[1]) * (p.getZ() - pool[1]) < 0.7 * 0.7) {
+                        imperfect = true;
                         hurt(p, 6 + rnd().nextInt(3));
                         if (!PoisonService.isVenomImmune(p, com.runecraft.action.ActionManager.gameTick())) {
                             PoisonService.venom(p, com.runecraft.action.ActionManager.gameTick());
@@ -1111,6 +1706,7 @@ final class ToaPuzzleRooms {
                     missed = corrupted.size();
                 }
                 if (missed > 0) {
+                    imperfect = true;
                     warn("The problem was not fixed in time - the room lashes out!");
                     for (ServerPlayer p : players()) {
                         hurt(p, (8 + rnd().nextInt(8)) * missed); // approx: scaled by the actions missed
@@ -1212,6 +1808,7 @@ final class ToaPuzzleRooms {
 
         private void useVent(ServerPlayer player, BlockPos v) {
             if (problem != Problem.VENT || fixedThisTime.contains(v)) {
+                imperfect = true;
                 Msg.red(player, "The vent was fine - the poison you stir up burns you.");
                 hurt(player, 5 + rnd().nextInt(6)); // approx
                 return;
@@ -1243,6 +1840,7 @@ final class ToaPuzzleRooms {
                 }
                 case RaidsContent.APMEKEN_PILLAR -> {
                     if (problem != Problem.ROOF || fixedThisTime.contains(pos)) {
+                        imperfect = true;
                         Msg.red(player, "The support was sound - knocking at it brings dust down on you.");
                         hurt(player, 5 + rnd().nextInt(6)); // approx
                         return true;
@@ -1338,6 +1936,9 @@ final class ToaPuzzleRooms {
         int growth;
         int needed;
         BlockPos palm;
+        /** Perfect Crondis: a crocodile reached the tree, or someone lost water. */
+        boolean imperfect;
+        private long startedAt;
 
         Crondis(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -1368,6 +1969,8 @@ final class ToaPuzzleRooms {
         public void start() {
             needed = ToaPuzzles.palmWaterNeeded(raid.partySize());
             growth = 0;
+            imperfect = false;
+            startedAt = now();
             water.clear();
             trapHits.clear();
             crocBite.clear();
@@ -1455,6 +2058,7 @@ final class ToaPuzzleRooms {
             hurt(p, 3 + rnd().nextInt(4)); // approx
             int w = water(p);
             if (w > 0) {
+                imperfect = true;
                 water.put(p.getUUID(), ToaPuzzles.spillFromTrap(w, rnd()));
                 Msg.action(p, "Water spills from your container. (" + water(p) + "%)");
             }
@@ -1528,6 +2132,7 @@ final class ToaPuzzleRooms {
                     bite(croc, target);
                 } else if (target == null && croc.distanceToSqr(Vec3.atCenterOf(palm)) < 2.6 * 2.6) {
                     crocBite.put(croc, now());
+                    imperfect = true;
                     growth = Math.max(0, growth - 10); // approx: a bite's worth of growth
                     world().sendParticles(ParticleTypes.DAMAGE_INDICATOR, palm.getX() + 0.5, palm.getY() + 1.5, palm.getZ() + 0.5, 6, 0.4, 0.4,
                             0.4, 0.1);
@@ -1548,6 +2153,7 @@ final class ToaPuzzleRooms {
             RaidEffects.hitRaw(croc, p, dmg);
             int w = water(p);
             if (w > 0) {
+                imperfect = true;
                 water.put(p.getUUID(), ToaPuzzles.spillFromBite(w));
                 Msg.red(p, "The crocodile's bite spills your water! (" + water(p) + "%)");
             }
@@ -1590,6 +2196,12 @@ final class ToaPuzzleRooms {
                 grow();
                 if (growth >= needed) {
                     say("The Palm of Resourcefulness flourishes! The Path of Crondis is open.");
+                    // OSRS CA "Perfect Crondis": no crocodile at the tree, no water lost, under a minute.
+                    if (!imperfect && now() - startedAt < ToaLoot.PERFECT_CRONDIS_TICKS) {
+                        for (ServerPlayer pl : players()) {
+                            com.runecraft.content.systems.CombatAchievementService.flag(pl, ToaLoot.FLAG_PERFECT_CRONDIS);
+                        }
+                    }
                     complete();
                 }
                 return true;
