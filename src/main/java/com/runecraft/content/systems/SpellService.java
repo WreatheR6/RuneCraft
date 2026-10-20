@@ -206,6 +206,23 @@ public final class SpellService {
         return s.book() == current;
     }
 
+    /**
+     * Extra casting rules from other content modules (the quests module's Mage Arena: the god spells need Mage Arena I and,
+     * outside the arena, 100 casts in it): a refusal message, or null to allow.
+     */
+    public static java.util.function.BiFunction<ServerPlayer, String, String> castRule = (p, spellId) -> null;
+
+    /** A combat spell cast at a target, after its runes were paid (the Mage Arena counts god spells cast on its battle mages). */
+    public interface CombatCast {
+        void cast(ServerPlayer player, String spellId, LivingEntity target);
+    }
+
+    private static final List<CombatCast> COMBAT_CASTS = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+    public static void onCombatCast(CombatCast listener) {
+        COMBAT_CASTS.add(listener);
+    }
+
     static boolean canCast(ServerPlayer p, Spell s, boolean quiet) {
         SysState.SysPlayer sp = SysState.of(p);
         if (!inBook(sp, s)) {
@@ -220,6 +237,13 @@ public final class SpellService {
         if (Players.data(p).skills().currentLevel(Skill.MAGIC) < s.level()) {
             if (!quiet) {
                 Msg.game(p, "You need a Magic level of " + s.level() + " to cast " + s.name() + ".");
+            }
+            return false;
+        }
+        String denied = castRule.apply(p, s.id());
+        if (denied != null) {
+            if (!quiet) {
+                Msg.game(p, denied);
             }
             return false;
         }
@@ -376,6 +400,9 @@ public final class SpellService {
         }
         data.lastAttackTick = now;
         pay(p, s);
+        for (CombatCast l : COMBAT_CASTS) {
+            l.cast(p, s.id(), target);
+        }
         if (target instanceof net.minecraft.world.entity.player.Player) {
             // Combat spells cast on another player (the God spells task of the hard Wilderness diary).
             com.runecraft.content.GameEvents.fireActivity(p, "cast_on_player:" + s.id());
@@ -430,12 +457,14 @@ public final class SpellService {
             }
             int damage = max > 0 ? p.getRandom().nextInt(max + 1) : 0;
             casting = s;
+            int dealt;
             try {
                 damage = CombatHandler.hookAfterRoll(p, t, AttackType.MAGIC, damage, max);
+                // the target's own damage rules see the spell too (Mage Arena II's followers: only their god spell harms them)
+                dealt = max > 0 ? SysCombat.hit(p, t, AttackType.MAGIC, damage) : 0;
             } finally {
                 casting = null;
             }
-            int dealt = max > 0 ? SysCombat.hit(p, t, AttackType.MAGIC, damage) : 0;
             if (max == 0) {
                 t.setLastHurtByMob(p);
             }

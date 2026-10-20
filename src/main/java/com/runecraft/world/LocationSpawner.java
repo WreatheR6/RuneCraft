@@ -152,6 +152,19 @@ public final class LocationSpawner {
         }
     }
 
+    /**
+     * Self-test hook: runs the points matching {@code which} at once, stocking each fully as for a player who just arrived
+     * (the points still need a player near and their chunk loaded, as on a normal pass).
+     */
+    public static void stockForSelfTest(ServerLevel world, java.util.function.Predicate<SpawnPoint> which) {
+        for (State state : STATES) {
+            if (which.test(state.point)) {
+                state.active = false;
+                tickPoint(world, state);
+            }
+        }
+    }
+
     private static boolean playerNear(ServerLevel world, SpawnPoint p) {
         double cx = p.blockX() + 0.5;
         double cz = p.blockZ() + 0.5;

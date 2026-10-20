@@ -13,6 +13,7 @@ public final class QuestsHooks implements ModuleHooks {
         QuestInterpreter.init();
         QuestGear.init();
         QuestBossScripts.init();
+        MageArenaService.init();
         QuestCommands.init();
     }
 }

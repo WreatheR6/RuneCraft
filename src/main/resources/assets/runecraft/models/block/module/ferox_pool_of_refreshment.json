@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/ferox_pool_of_refreshment_side",
+    "top": "runecraft:block/module/ferox_pool_of_refreshment_top",
+    "bottom": "runecraft:block/module/ferox_pool_of_refreshment_bottom"
+  }
+}

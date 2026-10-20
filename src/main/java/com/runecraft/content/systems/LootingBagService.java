@@ -117,7 +117,7 @@ public final class LootingBagService {
             s.line(String.format("%,d", st.count()) + " x " + name + (st.noted ? " (noted)" : ""), 0xFFFFFF);
         }
         s.line("Value: " + String.format("%,d", value) + " coins. Hold the bag when you open a bank to deposit everything.", 0xC0C0C0);
-        boolean wild = Gielinor.wildernessLevel(p) > 0;
+        boolean wild = fillable(p);
         s.button("toggle", sp.lootingBagOpen ? "Close bag" : "Open bag",
                 sp.lootingBagOpen ? "Picked-up items go to your inventory." : "Tradeable items you pick up in the Wilderness go into the bag.", true);
         s.button("store_all", "Deposit all tradeables", wild ? "" : "You can only fill the bag in the Wilderness.", wild);
@@ -142,12 +142,17 @@ public final class LootingBagService {
     }
 
     /** Puts one inventory stack in the bag; {@code anywhere} skips the Wilderness check (self-test). Returns items stored. */
+    /** The bag fills only in the Wilderness, and not in the Ferox Enclave's safe zone (wiki: the enclave isn't Wilderness for it). */
+    static boolean fillable(ServerPlayer p) {
+        return Gielinor.wildernessLevel(p) > 0 && !Gielinor.inSafeZone(p);
+    }
+
     public static int store(ServerPlayer p, int slot, boolean anywhere) {
         Inventory inv = p.getInventory();
         if (slot < 0 || slot >= inv.items.size()) {
             return 0;
         }
-        if (!anywhere && Gielinor.wildernessLevel(p) <= 0) {
+        if (!anywhere && !fillable(p)) {
             Msg.game(p, "You can't put items in the looting bag unless you're in the Wilderness.");
             return 0;
         }
@@ -167,7 +172,7 @@ public final class LootingBagService {
 
     /** Puts every tradeable inventory stack in the bag (as far as it fits). Returns items stored. */
     public static int storeAll(ServerPlayer p, boolean anywhere) {
-        if (!anywhere && Gielinor.wildernessLevel(p) <= 0) {
+        if (!anywhere && !fillable(p)) {
             Msg.game(p, "You can't put items in the looting bag unless you're in the Wilderness.");
             return 0;
         }
@@ -239,7 +244,7 @@ public final class LootingBagService {
     /** While the bag is open, tradeable items a player in the Wilderness walks over go into it (before vanilla pickup). */
     private static void collect(ServerLevel world) {
         for (ServerPlayer p : world.players()) {
-            if (p.isSpectator() || !p.isAlive() || Gielinor.wildernessLevel(p) <= 0) {
+            if (p.isSpectator() || !p.isAlive() || !fillable(p)) {
                 continue;
             }
             SysState.SysPlayer sp = SysState.of(p);

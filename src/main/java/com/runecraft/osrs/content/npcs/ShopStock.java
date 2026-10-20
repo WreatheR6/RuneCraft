@@ -80,7 +80,8 @@ public final class ShopStock {
         if (item.equals(shop.currency()) || shop.buyPm() <= 0) {
             return false; // a buy rate of 0 means the shop never buys (OSRS: e.g. Mage Arena staffs)
         }
-        return shop.stocks(item) || (shop.general() && itemValue > 0);
+        // general stores "accept all tradeable items" (wiki): never an untradeable such as an imbued god cape
+        return shop.stocks(item) || (shop.general() && itemValue > 0 && !com.runecraft.osrs.data.Untradeables.untradeable(item));
     }
 
     /**

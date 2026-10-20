@@ -187,6 +187,15 @@
   "basilisk_knight": [
     "head"
   ],
+  "battle_mage_guthix": [
+    "w_orb"
+  ],
+  "battle_mage_saradomin": [
+    "w_orb"
+  ],
+  "battle_mage_zamorak": [
+    "w_orb"
+  ],
   "black_demon": [
     "head"
   ],
@@ -1866,6 +1875,9 @@
   "quest_derwen": [
     "head",
     "staff_orb"
+  ],
+  "quest_derwen_energy_ball": [
+    "w_orb"
   ],
   "quest_eclipse_moon": [
     "moon_face",

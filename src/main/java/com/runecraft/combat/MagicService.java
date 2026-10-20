@@ -386,6 +386,10 @@ public final class MagicService {
             Msg.game(player, "Hold the item you want to alchemise in your main hand.");
             return;
         }
+        if (!def.alchable()) {
+            Msg.game(player, "You can't alchemise " + def.name().toLowerCase(java.util.Locale.ROOT) + ".");
+            return;
+        }
         if (!canCast(player, spell)) {
             return;
         }

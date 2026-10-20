@@ -60,4 +60,26 @@ public final class ItemCharges {
         Charges.Spec s = spec(stack);
         return s != null && Charges.depleted(s, get(stack));
     }
+
+    /** Stack flag of a Wilderness weapon that holds its activation ether ({@link Charges#needsActivation}). */
+    public static final String ACTIVATED = "RcActivated";
+
+    /**
+     * Whether a Wilderness weapon has been activated (items that need no activation always count as activated, and so does
+     * a weapon still holding ether from before activation existed: older saves).
+     */
+    public static boolean activated(ItemStack stack) {
+        return stack == null || stack.isEmpty() || !Charges.needsActivation(Inv.idOf(stack)) || StackData.get(stack).getBoolean(ACTIVATED)
+                || get(stack) > 0;
+    }
+
+    public static void setActivated(ItemStack stack, boolean on) {
+        StackData.update(stack, t -> {
+            if (on) {
+                t.putBoolean(ACTIVATED, true);
+            } else {
+                t.remove(ACTIVATED);
+            }
+        });
+    }
 }

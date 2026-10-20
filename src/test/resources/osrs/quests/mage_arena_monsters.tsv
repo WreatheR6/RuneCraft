@@ -1,0 +1,15 @@
+# Mage Arena I and II creatures: the OSRS Wiki infoboxes / DPS calculator data (weirdgloop/osrs-dps-calc monsters.json:
+# "Kolodion" Human/Ogre/Spider/Ghost/Demon, "Battle mage" Saradomin/Guthix/Zamorak, Justiciar Zachariah, Derwen, Porazdir).
+# Only Kolodion's demon form has a combat level. max = magic max hit / melee max hit (0 = no melee).
+id	level	hitpoints	att	str	def	mage	speed	dstab	dslash	dcrush	dmagic	drange	amelee	amagic	magic_max	melee_max	remains
+quest_kolodion_human	0	3	15	10	20	15	7	0	0	0	0	0	0	0	20	0	-
+quest_kolodion_ogre	0	65	55	70	72	50	7	0	0	0	0	0	0	0	20	0	-
+quest_kolodion_spider	0	78	69	78	47	70	7	0	0	0	0	0	0	0	20	0	-
+quest_kolodion_ghost	0	78	28	23	58	30	7	0	0	0	0	0	0	0	20	0	-
+quest_kolodion	112	107	85	98	105	400	4	0	0	0	0	0	0	0	20	0	-
+battle_mage_saradomin	54	120	1	1	1	50	4	0	0	0	0	0	0	0	20	0	-
+battle_mage_guthix	54	120	1	1	1	50	4	0	0	0	0	0	0	0	20	0	-
+battle_mage_zamorak	54	120	1	1	1	50	4	0	0	0	0	0	0	0	20	0	-
+quest_justiciar_zachariah	348	320	500	250	100	180	6	200	200	200	-60	200	200	80	26	43	justiciars_hand
+quest_derwen	235	320	250	150	100	80	6	200	200	200	-60	200	0	180	43	16	ents_roots
+quest_porazdir	235	320	250	150	100	180	6	200	200	200	-60	200	0	80	43	16	demons_heart

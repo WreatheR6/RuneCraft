@@ -140,6 +140,19 @@ public final class Charges {
      */
     /** Revenant ether a revenant weapon holds (wiki). */
     public static final int REVENANT_ETHER_MAX = 16_000;
+    /**
+     * Revenant ether that activates a Wilderness weapon before it can be charged (wiki, Craw's bow: "it must first be
+     * activated with 1,000 revenant ether"; that ether is never fired and is lost on a Wilderness death).
+     */
+    public static final int WILDERNESS_WEAPON_ACTIVATION = 1_000;
+    /** The Wilderness weapons (revenant drops and their boss upgrades), which need activating. */
+    public static final java.util.Set<String> WILDERNESS_WEAPONS = java.util.Set.of("craws_bow", "viggoras_chainmace",
+            "thammarons_sceptre", "webweaver_bow", "ursine_chainmace", "accursed_sceptre");
+
+    /** True for an item that needs {@link #WILDERNESS_WEAPON_ACTIVATION} ether before it takes charges. */
+    public static boolean needsActivation(String id) {
+        return WILDERNESS_WEAPONS.contains(id);
+    }
     public static final String PHARAOHS_SCEPTRE = "pharaohs_sceptre";
     /** Rod of Ivandis (wiki): 10 charges, one per Retainer special attack; it crumbles to dust when the last is used. */
     public static final String ROD_OF_IVANDIS = "rod_of_ivandis";

@@ -1245,16 +1245,24 @@ public final class MonsterStatsTable {
         row("quest_tarn_razorlor", 69, 80, 40, 80, 40, 1, 1, 4, 50, 50, 50, 50, 50, 0, 0, 0, "undead");
         maxHit("quest_tarn_razorlor", "claw", 9); // was 12
         maxHit("quest_tarn_razorlor", "drain", 9); // was 10
-        // Kolodion (Demon)
+        // Kolodion (Human, Ogre, Spider, Ghost: no combat level), then the Demon
+        row("quest_kolodion_human", 0, 3, 15, 10, 20, 15, 1, 7, 0, 0, 0, 0, 0, 0, 0, 0);
+        row("quest_kolodion_ogre", 0, 65, 55, 70, 72, 50, 1, 7, 0, 0, 0, 0, 0, 0, 0, 0);
+        row("quest_kolodion_spider", 0, 78, 69, 78, 47, 70, 1, 7, 0, 0, 0, 0, 0, 0, 0, 0);
+        row("quest_kolodion_ghost", 0, 78, 28, 23, 58, 30, 1, 7, 0, 0, 0, 0, 0, 0, 0, 0);
         row("quest_kolodion", 112, 107, 85, 98, 105, 400, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0);
+        // Battle mage (Saradomin, Guthix, Zamorak)
+        row("battle_mage_saradomin", 54, 120, 1, 1, 1, 50, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0);
+        row("battle_mage_guthix", 54, 120, 1, 1, 1, 50, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0);
+        row("battle_mage_zamorak", 54, 120, 1, 1, 1, 50, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0);
         // Justiciar Zachariah
         row("quest_justiciar_zachariah", 348, 320, 500, 250, 100, 180, 1, 6, 200, 200, 200, -60, 200, 200, 80, 0);
         // Derwen
         row("quest_derwen", 235, 320, 250, 150, 100, 80, 1, 6, 200, 200, 200, -60, 200, 0, 180, 0);
-        maxHit("quest_derwen", "smite", 43); // was 22
+        maxHit("quest_derwen", "claws_of_guthix", 43);
         // Porazdir
         row("quest_porazdir", 235, 320, 250, 150, 100, 180, 1, 6, 200, 200, 200, -60, 200, 0, 80, 0, "demon");
-        maxHit("quest_porazdir", "smite", 43); // was 22
+        maxHit("quest_porazdir", "flames_of_zamorak", 43);
         // TzKal-Zuk (Normal)
         row("tzkal_zuk", 1400, 1200, 350, 600, 260, 150, 400, 10, 0, 0, 0, 350, 100, 0, 550, 550);
     }

@@ -370,6 +370,9 @@ final class CacheDungeons {
         int[][] rooms = {stairs, iceGiants, ankou, lesser, black, blackDragons, greensNorth, greensSouth, greater, hellhounds, bandit};
         for (int[] r : rooms) {
             s.room(r, f, 7);
+            // the whole cave is multicombat (wiki: Ice Barrage and the cannon in multi); the halls between rooms are
+            // left single-way (approx)
+            s.multi(r, f, 7);
         }
         s.hallZ(3385, 10058, 3385, 10121, f);
         s.hall(3385, 10121, 3390, 10121, f);

@@ -438,6 +438,9 @@ public final class QuestInterpreter {
     }
 
     static void onKill(ServerPlayer p, LivingEntity entity, MonsterStats stats) {
+        if (!MageArenaService.killCounts(p, entity)) {
+            return; // a Kolodion form another player raised
+        }
         List<String> ids = ids(entity, stats);
         if (QuestPuzzles.onKill(p, ids)) {
             return;

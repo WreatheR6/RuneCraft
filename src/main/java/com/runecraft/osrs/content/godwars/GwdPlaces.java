@@ -39,14 +39,18 @@ public final class GwdPlaces {
                 PlaceDef.of("chaos_fanatic_altar", "Chaos Fanatic's Altar", 2980, 3848, Style.RUINS, List.of()),
                 PlaceDef.of("crazy_archaeologist_ruins", "Crazy Archaeologist's Dig", 2975, 3700, Style.RUINS, List.of()),
                 PlaceDef.of("kbd_lair", "King Black Dragon Lair", 3065, 3860, Style.CAVE, List.of()), // Lava Maze entrance
-                PlaceDef.of("revenant_caves", "Revenant Caves", 3127, 3833, Style.CAVE, List.of()));
+                // The level 40 cavern into the Revenant Caves (the caves and their entrances are RevenantCaves' structures).
+                PlaceDef.of("revenant_caves", "Revenant Caves", 3127, 3833, Style.NONE, List.of()),
+                // Above the Emblem Trader's spot in the caves (he stands on the cave floor below, NpcStoreys).
+                PlaceDef.of(RevenantCaves.EMBLEM_TRADER_PLACE, "Revenant Caves (Emblem Trader)", RevenantCaves.EMBLEM_TRADER[0],
+                        RevenantCaves.EMBLEM_TRADER[1] + RevenantCaves.DY, Style.NONE, List.of()));
     }
 
-    /** Place camps: the revenants (the God Wars followers stand at their OSRS tiles, {@link GwdSpawns}). */
+    /**
+     * Place camps (none any more: the God Wars followers stand at their OSRS tiles, {@link GwdSpawns}, and the revenants on
+     * theirs in the carved Revenant Caves, {@link RevenantCaves#SPAWNS}).
+     */
     public static List<Camp> camps() {
-        return List.of(
-                new Camp("revenant_caves", 0, 0, 16, 8, List.of("revenant_imp", "revenant_goblin", "revenant_pyrefiend",
-                        "revenant_hobgoblin", "revenant_cyclops", "revenant_hellhound", "revenant_demon", "revenant_ork",
-                        "revenant_dark_beast", "revenant_knight", "revenant_dragon")));
+        return List.of();
     }
 }

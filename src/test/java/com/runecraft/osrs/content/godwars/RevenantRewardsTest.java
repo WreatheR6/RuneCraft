@@ -33,16 +33,43 @@ class RevenantRewardsTest {
         assertEquals(11000, RevenantRewards.artefactDenominator("ancient_totem", 7, false, false), 1);
         assertEquals(22000, RevenantRewards.artefactDenominator("ancient_statuette", 7, false, false), 1);
         assertEquals(44000, RevenantRewards.artefactDenominator("ancient_relic", 7, false, false), 1);
-        // A unique roll: amulet of avarice on 0-1 out of 5, then each weapon.
+        // A unique roll: amulet of avarice on 0-1 out of 5, then each weapon; it ends the rare chain (no artefact too). The
+        // unskulled dragon med helm is a roll of its own.
         List<String> hit = RevenantRewards.roll(135, false, false, bound -> bound == 5 ? 0 : 0);
-        assertEquals("amulet_of_avarice", hit.get(0));
-        assertEquals("ancient_emblem", hit.get(1));
+        assertEquals(List.of("amulet_of_avarice", "dragon_med_helm"), hit);
         assertEquals("viggoras_chainmace", RevenantRewards.roll(135, false, false, bound -> bound == 5 ? 4 : 0).get(0));
         assertTrue(RevenantRewards.roll(135, true, true, bound -> bound - 1).isEmpty());
+        // Missing the unique table, the first rare that hits: yew seeds come first in the chain.
+        int[] calls = {0};
+        List<String> rare = RevenantRewards.roll(135, false, false, bound -> bound == 1_000_000 && calls[0]++ == 0 ? 999_999 : 0);
+        assertEquals("yew_seed", rare.get(0));
         for (String w : RevenantRewards.WEAPONS) {
             assertNotNull(ItemCatalog.get(w), w);
         }
         assertNotNull(ItemCatalog.get("amulet_of_avarice"));
+    }
+
+    @Test
+    void amuletOfAvariceNotesExceptSuppliesAndUniques() {
+        // wiki "Amulet of avarice": noted drops "except for secondary supply rolls and uniques"
+        List<RevenantRewards.Rolled> kill = RevenantRewards.rollCommon(RevenantRewards.revenant("revenant_dragon"), bound -> 0);
+        assertTrue(kill.get(1).notable(), "the main table is noted");
+        assertFalse(kill.get(2).notable(), "the blighted supplies roll isn't");
+        for (RevenantRewards.Rolled r : RevenantRewards.rollRares(135, false, false, bound -> 0)) {
+            assertFalse(r.notable(), r.item() + " is a unique");
+        }
+        // in the Revenant Caves, the Wilderness Slayer Cave and the Chaos Temple, nowhere else
+        assertTrue(RevenantRewards.avariceNotesAt(com.runecraft.osrs.world.StructureDef.bx(3230), RevenantCaves.feetY(),
+                com.runecraft.osrs.world.StructureDef.bz(10201 + RevenantCaves.DY)), "Revenant Caves");
+        // the slayer cave's greater demons (cache 3428, 10150 shifted by the cave's -125, -6389) on its floor 20
+        assertTrue(RevenantRewards.avariceNotesAt(com.runecraft.osrs.world.StructureDef.bx(3428 - 125), 21,
+                com.runecraft.osrs.world.StructureDef.bz(10150 - 6389)), "Wilderness Slayer Cave");
+        assertTrue(RevenantRewards.avariceNotesAt(com.runecraft.osrs.GielinorMap.toBlockX(2952), 70,
+                com.runecraft.osrs.GielinorMap.toBlockZ(3820)), "Chaos Temple");
+        assertFalse(RevenantRewards.avariceNotesAt(com.runecraft.osrs.GielinorMap.toBlockX(3205), 70,
+                com.runecraft.osrs.GielinorMap.toBlockZ(3826)), "Lava Dragon Isle");
+        assertFalse(RevenantRewards.avariceNotesAt(com.runecraft.osrs.GielinorMap.toBlockX(3093), 70,
+                com.runecraft.osrs.GielinorMap.toBlockZ(3493)), "Edgeville");
     }
 
     @Test
@@ -70,6 +97,13 @@ class RevenantRewardsTest {
             assertEquals(Charges.Drain.ATTACK, s.drain());
             assertEquals(1, s.materials().get("revenant_ether"));
             assertTrue(Charges.depleted(s, 0));
+            // Wiki: first activated with 1,000 ether (never fired, lost on a Wilderness death), then up to 16,000 more.
+            assertTrue(Charges.needsActivation(w), w);
+        }
+        assertEquals(1000, Charges.WILDERNESS_WEAPON_ACTIVATION);
+        assertFalse(Charges.needsActivation("bracelet_of_ethereum"));
+        for (String w : RevenantRewards.WEAPONS) {
+            assertTrue(Charges.needsActivation(w), w);
         }
     }
 

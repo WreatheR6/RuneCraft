@@ -180,6 +180,13 @@ final class GameplayChecks {
         checks.addAll(BossFightChecks.all(context));
         // The God Wars Dungeon walked end to end: the hole, kill count, each general's chamber, the prison and Nex.
         checks.add(new SelfTest.Check("boss:gwd_walk", () -> g.walk(com.runecraft.content.godwars.GwdWalk::run)));
+        // The Wilderness (round 39): the Revenant Caves, the agility course, an obelisk and the Ferox Enclave, the Mage Arenas.
+        checks.add(new SelfTest.Check("boss:revenant_caves", () -> g.walk(com.runecraft.content.godwars.WildernessWalk::revenants)));
+        checks.add(new SelfTest.Check("minigame:wilderness_agility", () -> g.walk(com.runecraft.content.godwars.WildernessWalk::agility)));
+        checks.add(new SelfTest.Check("minigame:wilderness_obelisk_ferox",
+                () -> g.walk(com.runecraft.content.godwars.WildernessWalk::obeliskFerox)));
+        checks.add(new SelfTest.Check("minigame:mage_arena_i", () -> g.walk(com.runecraft.content.quests.MageArenaWalk::ma1)));
+        checks.add(new SelfTest.Check("minigame:mage_arena_ii", () -> g.walk(com.runecraft.content.quests.MageArenaWalk::ma2)));
         checks.addAll(BossWalkChecks.all(context));
         // Treasure Trails as the real player: a trail of each tier through every step type, its casket, the Mimic and Watson
         // (named minigame:* so the client walkthrough's real-player run includes them).

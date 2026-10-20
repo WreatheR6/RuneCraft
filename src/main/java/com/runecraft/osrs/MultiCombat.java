@@ -10,8 +10,10 @@ import java.util.List;
 /**
  * Multi-way combat areas. Everywhere in Gielinor is single-way combat (one attacker per target) except the
  * areas listed here, which follow the OSRS multicombat map: the God Wars Dungeon, the Wilderness multi zones,
- * the Revenant Caves, the Catacombs of Kourend, the busy slayer dungeons and group boss lairs. Raids and
- * minigame instances are always multi; the Minecraft side checks those dynamically.
+ * the Catacombs of Kourend, the busy slayer dungeons and group boss lairs. Raids and minigame instances are always
+ * multi; the Minecraft side checks those dynamically. The Revenant Caves (whatever multi zone lies on the surface above
+ * them) and the Wilderness Agility Course are singles-plus ({@link #isSinglesPlusAtBlock}): single-way, except that another
+ * player may attack a player who is fighting a monster.
  *
  * <p>Areas are either OSRS tile boxes (real world-map coordinates) or a radius around a place (a module
  * {@link PlaceDef} id or a {@link Landmark} name), because many of this world's dungeons are laid out on the
@@ -251,7 +253,6 @@ public final class MultiCombat {
 
     /** Multicombat dungeons and lairs, by the place they are built around. */
     public static final List<Around> AROUND = List.of(
-            new Around("Revenant Caves", "revenant_caves", 25),
             new Around("Scorpia's cave", "scorpias_cave", 15),
             new Around("Catacombs of Kourend", "catacombs_of_kourend", 20),
             new Around("Smoke Devil Dungeon", "smoke_devil_dungeon", 20),
@@ -358,8 +359,26 @@ public final class MultiCombat {
         return isMulti(GielinorMap.toOsrsX(blockX), GielinorMap.toOsrsY(blockZ));
     }
 
+    /** The Wilderness Agility Course inside its walls, north of the entrance yard (wiki: "the entire course"; approx bounds). */
+    public static final Box AGILITY_COURSE = new Box("Wilderness Agility Course", 2990, 3930, 3008, 3965);
+
+    /**
+     * Singles-plus combat (wiki "Singles-plus combat"): single-way, except that when a player is fighting a monster another
+     * player's attack takes priority. The whole Revenant Caves (since 2020) and the Wilderness Agility Course (since its 2024
+     * rework); the weaker Wilderness bosses' lairs are boss arenas, where single-way never applies.
+     */
+    public static boolean isSinglesPlusAtBlock(int blockX, int blockY, int blockZ) {
+        if (com.runecraft.osrs.content.godwars.RevenantCaves.contains(blockX, blockY, blockZ)) {
+            return true;
+        }
+        return blockY > UNDERGROUND_TOP && AGILITY_COURSE.contains(GielinorMap.toOsrsX(blockX), GielinorMap.toOsrsY(blockZ));
+    }
+
     /** Multicombat check at a Minecraft block position, including the {@link #UNDERGROUND} dungeons. */
     public static boolean isMultiAtBlock(int blockX, int blockY, int blockZ) {
+        if (isSinglesPlusAtBlock(blockX, blockY, blockZ)) {
+            return false; // singles-plus, whatever multi zone lies on the surface above
+        }
         return isMultiAtBlock(blockX, blockZ) || inUndergroundMulti(blockX, blockY, blockZ);
     }
 

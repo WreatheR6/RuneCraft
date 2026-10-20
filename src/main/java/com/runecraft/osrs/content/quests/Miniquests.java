@@ -9,6 +9,7 @@ import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.AttackDef.Special;
 import com.runecraft.osrs.content.BossDef;
+import com.runecraft.osrs.content.MonsterDef;
 import com.runecraft.osrs.content.NpcDef;
 import com.runecraft.osrs.content.PlaceDef;
 import com.runecraft.osrs.data.Drop;
@@ -527,13 +528,44 @@ final class Miniquests {
                 .kill("quest_tarn_razorlor").say("* Tarn is slain. Among his belongings is his diary.");
     }
 
-    private static BossDef godAvatar(String id, String name, AttackType style, int skin, int top, String particle) {
-        return BossDef.of(id, name).level(id.equals("quest_justiciar_zachariah") ? 348 : 235).stats(320, 200, 200, 200, 200, 200).speed(4)
-                .defenceBonus(100, 100, 100, 100, 100)
-                .attack(AttackDef.of("strike", style, 28, style == AttackType.MAGIC ? 9 : 3, 6).particle(particle))
-                .attack(AttackDef.of("smite", AttackType.MAGIC, 22, 9, 3).special(Special.SKY_STRIKE, 0).telegraph(2, name + " calls down divine wrath!"))
-                .drops(Drop.always("big_bones")).skin(skin, top, top, 0xE0E0E0).size(1.0f, 2.4f, 1.1f).wilderness()
-                .at("quest_mage_arena").arena(10, "void");
+    /**
+     * A Mage Arena II god follower (wiki infobox stats are in MonsterStatsTable): its god spell (with the stat drain the
+     * battle mages' version lacks), a melee swing, Ice Barrage and the remains it always drops. Only its own god spell
+     * harms it (the quests module's MageArenaService); it is found with the enchanted symbol, so it has no arena.
+     */
+    private static BossDef godFollower(MageArena.Follower f, AttackType melee, int skin, int top, String particle) {
+        AttackDef spell = AttackDef.of(f.spell(), AttackType.MAGIC, f.magicMax(), 9, 6).particle(particle);
+        if (f.god().equals("guthix")) {
+            spell = spell.special(Special.DRAIN_STAT, Skill.DEFENCE.ordinal()); // Claws of Guthix: Defence 1 + 5%
+        } else if (f.god().equals("zamorak")) {
+            spell = spell.special(Special.DRAIN_STAT, Skill.MAGIC.ordinal()); // Flames of Zamorak: Magic 1 + 5%
+        }
+        return BossDef.of(f.id(), f.name()).level(f.id().equals("quest_justiciar_zachariah") ? 348 : 235)
+                .stats(320, 250, 150, 100, 180, 1).speed(6)
+                .defenceBonus(200, 200, 200, -60, 200)
+                .attack(spell)
+                .attack(AttackDef.of(melee == AttackType.CRUSH ? "crush" : "slash", melee, f.meleeMax(), 2.5, 3))
+                // "They can also cast Ice Barrage" (dodged by stepping off the tile: here a freeze)
+                .attack(AttackDef.of("ice_barrage", AttackType.MAGIC, 30, 9, 1).special(Special.FREEZE, 8)) // approx max and freeze
+                .immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH, AttackType.RANGED)
+                .drops(Drop.always(f.remains()), Drop.of("looting_bag", 1, 1, 3))
+                .skin(skin, top, top, 0xE0E0E0).size(1.0f, 2.4f, 1.1f).wilderness().raidOnly();
+    }
+
+    /** One of Kolodion's forms (only the demon has a combat level: the others show none). */
+    private static BossDef kolodionForm(MageArena.Form f, AttackDef... attacks) {
+        BossDef b = BossDef.of(f.id(), f.name()).level(f.level()).stats(f.hitpoints(), f.attack(), f.strength(), f.defence(), f.magic(), 1)
+                .speed(f.speed()).model(f.model())
+                // "He can only be damaged using Magic."
+                .immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH, AttackType.RANGED)
+                .skin(0xE8C8B0, 0x8A2A8A, 0x5A1A5A, 0xE0E0E0).wilderness();
+        for (AttackDef a : attacks) {
+            b.attack(a);
+        }
+        if (f.size() >= 3) {
+            b.size(1.6f, 1.8f, 1.5f);
+        }
+        return b;
     }
 
     private static void mageArena(QuestBook b) {
@@ -541,62 +573,110 @@ final class Miniquests {
         Cast.npc(b, "quest_statue_saradomin", "Statue of Saradomin", "quest_mage_arena", -4, -4, 0xE0E0F0, 0x2A4AC0);
         Cast.npc(b, "quest_statue_guthix", "Statue of Guthix", "quest_mage_arena", 0, -5, 0xE0E0F1, 0x2A8A2A);
         Cast.npc(b, "quest_statue_zamorak", "Statue of Zamorak", "quest_mage_arena", 4, -4, 0xE0E0F2, 0xA02A2A);
-        b.boss(BossDef.of("quest_kolodion", "Kolodion").level(112).stats(120, 1, 1, 60, 120, 1).speed(4)
-                .attack(AttackDef.of("god_spell", AttackType.MAGIC, 20, 9, 6).particle("minecraft:enchant"))
-                .attack(AttackDef.of("shapeshift", AttackType.MAGIC, 16, 9, 2).special(Special.BLINK, 0))
-                .drops(Drop.always("bones")).skin(0xE8C8B0, 0x8A2A8A, 0x5A1A5A, 0xE0E0E0).wilderness()
-                .at("quest_mage_arena").arena(10, "void"));
-        b.boss(godAvatar("quest_justiciar_zachariah", "Justiciar Zachariah", AttackType.MAGIC, 0xE8C8B0, 0xE0E0F0, "minecraft:end_rod"));
-        b.boss(godAvatar("quest_derwen", "Derwen", AttackType.CRUSH, 0x6A8A4A, 0x3A6A2A, "minecraft:happy_villager"));
-        b.boss(godAvatar("quest_porazdir", "Porazdir", AttackType.SLASH, 0x8A2A2A, 0x3A0A0A, "minecraft:flame"));
-        b.items(s -> s.add("imbued_saradomin_cape", "Imbued saradomin cape", Kind.SIMPLE, "cape", 0x2A4AC0).value(1).stack(1)
-                .examine("A saradomin cape, imbued with the power of the Mage Arena."));
-        b.items(s -> s.add("imbued_guthix_cape", "Imbued guthix cape", Kind.SIMPLE, "cape", 0x2A8A2A).value(1).stack(1)
-                .examine("A guthix cape, imbued with the power of the Mage Arena."));
-        b.items(s -> s.add("imbued_zamorak_cape", "Imbued zamorak cape", Kind.SIMPLE, "cape", 0xA02A2A).value(1).stack(1)
-                .examine("A zamorak cape, imbued with the power of the Mage Arena."));
-        EquipmentStats imbued = new EquipmentStats(0, 0, 0, 15, 0, 3, 3, 3, 15, 3, 0, 0, 2, 0);
+        // Kolodion casts the three god spells in every form, up to 20 (Protect from Magic stops them all).
+        AttackDef[] godSpells = {
+                AttackDef.of("saradomin_strike", AttackType.MAGIC, MageArena.KOLODION_MAX_HIT, 9, 1).particle("minecraft:end_rod"),
+                AttackDef.of("claws_of_guthix", AttackType.MAGIC, MageArena.KOLODION_MAX_HIT, 9, 1).particle("minecraft:happy_villager"),
+                AttackDef.of("flames_of_zamorak", AttackType.MAGIC, MageArena.KOLODION_MAX_HIT, 9, 1).particle("minecraft:flame")};
+        // The demon (the miniquest's kill, summoned at the arena stone, which raises the form the player left off at) and
+        // the four earlier forms, which the quests module's MageArenaService chains on each death.
+        for (MageArena.Form f : MageArena.KOLODION_FORMS) {
+            BossDef form = kolodionForm(f, godSpells);
+            if (f.id().equals(MageArena.KOLODION)) {
+                form.drops(Drop.always("bones")).at("quest_mage_arena").arena(10, "void");
+            } else {
+                form.raidOnly();
+            }
+            b.boss(form);
+        }
+        // The battle mages of the arena's inner ring (wiki: level 54, 120 hitpoints, max hit 20, aggressive unless the
+        // player wears their god's cape; nine tiles in the arena).
+        for (String god : MageArena.GODS) {
+            int robe = god.equals("saradomin") ? 0x2A4AC0 : god.equals("guthix") ? 0x2A8A2A : 0xA02A2A;
+            b.monster(MonsterDef.of(MageArena.battleMage(god), "Battle mage").level(54).stats(120, 1, 1, 1, 50, 1).speed(4)
+                    .attack(AttackDef.of(MageArena.godSpell(god), AttackType.MAGIC, 20, 9, 1))
+                    .drops(Drop.always("bones"), Drop.of("looting_bag", 1, 1, 3))
+                    .skin(Cast.PALE, robe, robe, 0xE0E0E0));
+        }
+        // Derwen's healing orbs: 20 hitpoints, any attack destroys them (Claws of Guthix isn't needed: wiki).
+        b.monster(MonsterDef.of(MageArena.ORB, "Energy ball").level(1).stats(MageArena.ORB_HITPOINTS, 1, 1, 1, 1, 1).speed(4)
+                .attack(AttackDef.melee(0)).passive().skin(0x8AE06A, 0x8AE06A, 0x8AE06A, 0xE0FFE0).size(0.6f, 0.6f, 0.6f));
+        b.boss(godFollower(MageArena.FOLLOWERS.get(0), AttackType.SLASH, 0xE8C8B0, 0xE0E0F0, "minecraft:end_rod"));
+        b.boss(godFollower(MageArena.FOLLOWERS.get(1), AttackType.CRUSH, 0x6A8A4A, 0x3A6A2A, "minecraft:happy_villager")
+                .minion(MageArena.ORB, 3)); // his healing orbs (MageArenaService places them)
+        b.boss(godFollower(MageArena.FOLLOWERS.get(2), AttackType.SLASH, 0x8A2A2A, 0x3A0A0A, "minecraft:flame"));
+        String[][] capes = {{"saradomin", "Saradomin", "2A4AC0"}, {"guthix", "Guthix", "2A8A2A"}, {"zamorak", "Zamorak", "A02A2A"}};
+        for (String[] c : capes) {
+            b.items(s -> s.add("imbued_" + c[0] + "_cape", "Imbued " + c[0] + " cape", Kind.SIMPLE, "cape", Integer.parseInt(c[2], 16))
+                    .value(80_000).unalchable().stack(1) // wiki: worth 80,000 on death, "can no longer be alchemised"
+                    .examine("A cape from the almighty god " + c[1] + ", imbued with great power."));
+        }
+        // wiki "Imbued saradomin cape": +15 magic attack, 3/3/3 melee and 15 magic defence, no ranged defence, 2% magic damage
+        EquipmentStats imbued = new EquipmentStats(0, 0, 0, 15, 0, 3, 3, 3, 15, 0, 0, 0, 2, 0);
         b.gear("imbued_saradomin_cape", QuestBook.GearSlot.CAPE, imbued, "mage_arena_ii");
         b.gear("imbued_guthix_cape", QuestBook.GearSlot.CAPE, imbued, "mage_arena_ii");
         b.gear("imbued_zamorak_cape", QuestBook.GearSlot.CAPE, imbued, "mage_arena_ii");
+        // Old saves' symbol pieces (the followers now drop their remains instead).
         b.item("quest_symbol_piece_saradomin", "Saradomin's symbol piece", "talisman", 0x2A4AC1, "A piece of a symbol, taken from Justiciar Zachariah.");
         b.item("quest_symbol_piece_guthix", "Guthix's symbol piece", "talisman", 0x2A8A2B, "A piece of a symbol, taken from Derwen.");
         b.item("quest_symbol_piece_zamorak", "Zamorak's symbol piece", "talisman", 0xA02A2B, "A piece of a symbol, taken from Porazdir.");
+        b.item(MageArena.SYMBOL, "Enchanted symbol", "talisman", 0xC8A8E8, "An enchanted symbol used to locate magical beings in the Wilderness.");
+        b.item("justiciars_hand", "Justiciar's hand", "bone", 0xE8D8A0, "The magical hand of Justiciar Zachariah.");
+        b.item("ents_roots", "Ent's roots", "log", 0x6A5A2A, "The roots of the ancient ent Derwen.");
+        b.item("demons_heart", "Demon's heart", "orb", 0x8A1A1A, "The heart of the demon Porazdir.");
 
         b.quest("mage_arena_i", "Mage Arena I (miniquest)", Difficulty.INTERMEDIATE, 0)
                 .req(Skill.MAGIC, 60)
-                .unlock("God spells: Saradomin Strike, Claws of Guthix or Flames of Zamorak")
+                .unlock("God spells: Saradomin Strike, Claws of Guthix and Flames of Zamorak (cast each 100 times in the arena to use it outside)")
                 .stage("I can start this miniquest by speaking to Kolodion in the Mage Arena, deep in the Wilderness. (Requires 60 Magic.)")
-                .talk("kolodion").say("You wish to learn the god spells? First you must defeat me. And I don't fight fair: I change shape as I please.")
+                .talk("kolodion").say("You wish to learn the god spells? First you must defeat me. And I don't fight fair: I change shape as I please.",
+                        "* Use the summoning stone by the arena to face Kolodion. Only magic will harm him.")
                 .stage("I must defeat Kolodion in all of his forms, using only magic.")
+                .kill("quest_kolodion_human").stay().say("* Kolodion laughs and swells into a hulking ogre!")
+                .kill("quest_kolodion_ogre").stay().say("* The ogre shrinks into a giant frost spider!")
+                .kill("quest_kolodion_spider").stay().say("* The spider fades into a wailing ghost!")
+                .kill("quest_kolodion_ghost").stay().say("* The ghost darkens into a towering black demon!")
                 .kill("quest_kolodion").flag("ma1_kolodion").say("* Kolodion reverts to his human form, laughing. 'Well fought! Now choose your god.'")
-                .stage("I should pray at the statue of the god whose power I want: Saradomin, Guthix or Zamorak.")
-                .talk("quest_statue_saradomin").needFlag("ma1_kolodion").give("saradomin_staff", "saradomin_cape").say("* A voice like a bell rings out. You receive a Saradomin staff and cape.")
-                .talk("quest_statue_guthix").needFlag("ma1_kolodion").give("guthix_staff", "guthix_cape").say("* The ground hums with balance. You receive a Guthix staff and cape.")
-                .talk("quest_statue_zamorak").needFlag("ma1_kolodion").give("zamorak_staff", "zamorak_cape").say("* Fire crackles around you. You receive a Zamorak staff and cape.");
+                .stage("I should pray at the statue of the god whose power I want: Saradomin, Guthix or Zamorak. The chamber guardian then hands over that god's staff.")
+                .talk("quest_statue_saradomin").needFlag("ma1_kolodion").give("saradomin_cape").flag(MageArena.staffOwedFlag("saradomin"))
+                .say("* A voice like a bell rings out. You receive a Saradomin cape. (The chamber guardian has its staff for you.)")
+                .talk("quest_statue_guthix").needFlag("ma1_kolodion").give("guthix_cape").flag(MageArena.staffOwedFlag("guthix"))
+                .say("* The ground hums with balance. You receive a Guthix cape. (The chamber guardian has its staff for you.)")
+                .talk("quest_statue_zamorak").needFlag("ma1_kolodion").give("zamorak_cape").flag(MageArena.staffOwedFlag("zamorak"))
+                .say("* Fire crackles around you. You receive a Zamorak cape. (The chamber guardian has its staff for you.)");
 
+        MageArena.Follower zachariah = MageArena.FOLLOWERS.get(0);
+        MageArena.Follower derwen = MageArena.FOLLOWERS.get(1);
+        MageArena.Follower porazdir = MageArena.FOLLOWERS.get(2);
         b.quest("mage_arena_ii", "Mage Arena II (miniquest)", Difficulty.MASTER, 0)
                 .reqQuest("mage_arena_i").req(Skill.MAGIC, 75)
                 .unlock("Imbued god capes")
-                .stage("I can start this miniquest by speaking to Kolodion in the Mage Arena. (Requires Mage Arena I, 75 Magic.)")
-                .talk("kolodion").say("The gods' followers in the Wilderness hold the pieces of an old symbol. Bring me all three, and I'll imbue your cape.")
-                .stage("I must defeat Justiciar Zachariah, Derwen and Porazdir in the Wilderness and recover their symbol pieces.")
-                .kill("quest_justiciar_zachariah").stay().unless("quest_symbol_piece_saradomin").give("quest_symbol_piece_saradomin")
-                .say("* Justiciar Zachariah falls, dropping a piece of a symbol.")
-                .kill("quest_derwen").stay().unless("quest_symbol_piece_guthix").give("quest_symbol_piece_guthix")
-                .say("* Derwen falls, dropping a piece of a symbol.")
-                .kill("quest_porazdir").stay().unless("quest_symbol_piece_zamorak").give("quest_symbol_piece_zamorak")
-                .say("* Porazdir falls, dropping a piece of a symbol.")
-                .talk("kolodion").need("quest_symbol_piece_saradomin", "quest_symbol_piece_guthix", "quest_symbol_piece_zamorak")
-                .say("All three pieces! Now bring me your god cape and I'll imbue it.")
-                .missing("I need all three symbol pieces: from Justiciar Zachariah, Derwen and Porazdir.")
+                .stage("I can start this miniquest by speaking to Kolodion in the Mage Arena. (Requires Mage Arena I, 75 Magic, and "
+                        + "Saradomin Strike, Claws of Guthix and Flames of Zamorak each cast 100 times in the arena.)")
+                // (the quests module's MageArenaService keeps Kolodion from starting it before the three spells are mastered)
+                .talk("kolodion").give(MageArena.SYMBOL)
+                .say("I've been working on a spell to strengthen your god cape. It needs the remains of three of the gods' followers: "
+                        + "Justiciar Zachariah, Derwen and Porazdir. They roam the deep Wilderness.",
+                        "Take this enchanted symbol. Activate it in the Wilderness: the hotter it burns, the closer you are.")
+                .stage("I must defeat Justiciar Zachariah, Derwen and Porazdir in the Wilderness (found with the enchanted symbol; only "
+                        + "their own god spell hurts them) and bring Kolodion their remains.")
+                .kill(zachariah.id()).stay().say("* Justiciar Zachariah falls, leaving his hand behind. Kolodion will want it.")
+                .kill(derwen.id()).stay().say("* Derwen crumbles, leaving his roots behind. Kolodion will want them.")
+                .kill(porazdir.id()).stay().say("* Porazdir falls, leaving his heart behind. Kolodion will want it.")
+                .talk("kolodion").unlessFlag(MageArena.handedFlag(zachariah)).take(zachariah.remains())
+                .flag(MageArena.handedFlag(zachariah)).stay().say("The justiciar's hand! I'll keep it safe.")
+                .talk("kolodion").unlessFlag(MageArena.handedFlag(derwen)).take(derwen.remains())
+                .flag(MageArena.handedFlag(derwen)).stay().say("Derwen's roots! I'll keep them safe.")
+                .talk("kolodion").unlessFlag(MageArena.handedFlag(porazdir)).take(porazdir.remains())
+                .flag(MageArena.handedFlag(porazdir)).stay().say("Porazdir's heart! I'll keep it safe.")
+                .talk("kolodion").needFlag(MageArena.handedFlag(zachariah), MageArena.handedFlag(derwen), MageArena.handedFlag(porazdir))
+                .say("All three! Now bring me your god cape and I'll imbue it.")
+                .missing("I need the justiciar's hand, the ent's roots and the demon's heart. Use the enchanted symbol to find their owners.")
+                .talk("kolodion").unless(MageArena.SYMBOL).give(MageArena.SYMBOL).stay().say("Lost your symbol? Here's another.")
                 .stage("I should give Kolodion my god cape to imbue.")
-                .talk("kolodion").take("saradomin_cape", "quest_symbol_piece_saradomin", "quest_symbol_piece_guthix", "quest_symbol_piece_zamorak")
-                .give("imbued_saradomin_cape").say("*Kolodion chants.* Your cape is imbued with Saradomin's power.")
-                .talk("kolodion").take("guthix_cape", "quest_symbol_piece_saradomin", "quest_symbol_piece_guthix", "quest_symbol_piece_zamorak")
-                .give("imbued_guthix_cape").say("*Kolodion chants.* Your cape is imbued with Guthix's power.")
-                .talk("kolodion").take("zamorak_cape", "quest_symbol_piece_saradomin", "quest_symbol_piece_guthix", "quest_symbol_piece_zamorak")
-                .give("imbued_zamorak_cape").say("*Kolodion chants.* Your cape is imbued with Zamorak's power.")
+                .talk("kolodion").take("saradomin_cape").give("imbued_saradomin_cape").say("*Kolodion chants.* Your cape is imbued with Saradomin's power.")
+                .talk("kolodion").take("guthix_cape").give("imbued_guthix_cape").say("*Kolodion chants.* Your cape is imbued with Guthix's power.")
+                .talk("kolodion").take("zamorak_cape").give("imbued_zamorak_cape").say("*Kolodion chants.* Your cape is imbued with Zamorak's power.")
                 .missing("Bring me your god cape: Saradomin, Guthix or Zamorak.");
     }
 

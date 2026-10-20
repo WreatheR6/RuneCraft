@@ -428,6 +428,10 @@ public final class JewelleryService {
             Msg.game(p, "Hold the item you want to alchemise in your off-hand.");
             return;
         }
+        if (!def.alchable()) {
+            Msg.game(p, "You can't alchemise " + def.name().toLowerCase(java.util.Locale.ROOT) + ".");
+            return;
+        }
         if (!DiaryService.useDaily(p, "explorer_alch", com.runecraft.osrs.content.systems.DiaryRewards.EXPLORER_ALCHS_PER_DAY)) {
             Msg.game(p, "Your ring has no alchemy charges left today.");
             return;

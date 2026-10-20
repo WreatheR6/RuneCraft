@@ -51,6 +51,13 @@ public final class GodWarsWildernessContent implements ContentModule {
         return GwdPlaces.all();
     }
 
+    /** The Emblem Trader wandering the Revenant Caves (wiki: he buys ancient artefacts there). */
+    @Override
+    public List<com.runecraft.osrs.content.NpcDef> npcs() {
+        return List.of(com.runecraft.osrs.content.NpcDef.of(RevenantCaves.EMBLEM_TRADER_NPC, "Emblem Trader",
+                RevenantCaves.EMBLEM_TRADER_PLACE, 1, 1, 0xD8B08C, 0x2A2A2A, 0x1A1A1A, 0x3A2A4A));
+    }
+
     /** The God Wars Dungeon's obstacles, doors and altars (scripted by the module hooks). */
     @Override
     public List<BlockDef> blocks() {
@@ -67,13 +74,24 @@ public final class GodWarsWildernessContent implements ContentModule {
                 BlockDef.scripted("gwd_bandos_altar", "Bandos altar", 0x6A7A3A, "altar"),
                 BlockDef.scripted("gwd_saradomin_altar", "Saradomin altar", 0x3A5AD0, "altar"),
                 BlockDef.scripted("gwd_zamorak_altar", "Zamorak altar", 0xB02020, "altar"),
-                BlockDef.scripted("gwd_ancient_altar", "Ancient altar", 0x5A2A6A, "altar"));
+                BlockDef.scripted("gwd_ancient_altar", "Ancient altar", 0x5A2A6A, "altar"),
+                // The Revenant Caves' ways in and out and their Agility pillars.
+                BlockDef.scripted(RevenantCaves.BLOCK_CAVERN, "Cavern (Revenant Caves)", 0x1A1A22, "pit"),
+                BlockDef.scripted(RevenantCaves.BLOCK_CREVICE, "Crevice (Revenant Caves)", 0x22222A, "pit"),
+                BlockDef.scripted(RevenantCaves.BLOCK_STAIRS, "Stairs (Revenant Caves)", 0x5A5A66, "stairs"),
+                BlockDef.scripted(RevenantCaves.BLOCK_PILLAR, "Pillar (Revenant Caves)", 0x6A6A78, "pillar"),
+                BlockDef.scripted(RevenantCaves.BLOCK_TRAPDOOR, "Trapdoor (Revenant Caves)", 0x4A3A2A, "hatch"),
+                BlockDef.scripted(FeroxEnclave.BLOCK_POOL, "Pool of Refreshment", 0x40B8D8, "pool"));
     }
 
-    /** The God Wars Dungeon, carved at its real tiles. */
+    /** The God Wars Dungeon and the Revenant Caves, carved at their real tiles, and the caves' surface entrances. */
     @Override
     public List<com.runecraft.osrs.world.StructureDef> structures() {
-        return List.of(GwdDungeon.structure());
+        List<com.runecraft.osrs.world.StructureDef> list = new ArrayList<>();
+        list.add(GwdDungeon.structure());
+        list.add(RevenantCaves.structure());
+        list.addAll(RevenantCaves.surface());
+        return list;
     }
 
     @Override

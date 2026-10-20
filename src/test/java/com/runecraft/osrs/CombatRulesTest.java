@@ -48,7 +48,8 @@ class CombatRulesTest {
         assertTrue(MultiCombat.isMulti(2882, 5311), "God Wars Dungeon"); // at its real tiles (GwdDungeon)
         assertTrue(MultiCombat.isMulti(2832, 5302), "Kree'arra's chamber");
         assertTrue(MultiCombat.isMulti(2925, 5203), "Nex's chamber");
-        assertTrue(MultiCombat.isMulti(3127, 3833), "Revenant Caves");
+        assertFalse(MultiCombat.isMultiAtBlock(com.runecraft.osrs.world.StructureDef.bx(3230), com.runecraft.osrs.content.godwars.RevenantCaves.feetY(),
+                com.runecraft.osrs.world.StructureDef.bz(10201 + com.runecraft.osrs.content.godwars.RevenantCaves.DY)), "Revenant Caves: singles-plus");
         assertTrue(MultiCombat.isMulti(1636, 3673), "Catacombs of Kourend");
         assertTrue(MultiCombat.isMulti(3292, 3848), "Callisto's den");
         assertTrue(MultiCombat.isMulti(3266, 3912), "Rogues' Castle (Chaos Elemental)");
@@ -100,6 +101,38 @@ class CombatRulesTest {
         assertEquals(SingleCombat.Verdict.OK, sc.check(99, bob, 210, false, true, null));
         sc.prune(1000);
         assertNull(sc.state(bob));
+    }
+
+    @Test
+    void singlesPlusLetsAPlayerAttackSomeoneFightingAMonster() {
+        // wiki "Singles-plus combat": the Revenant Caves and the Wilderness Agility Course
+        int caveX = com.runecraft.osrs.world.StructureDef.bx(3230);
+        int caveZ = com.runecraft.osrs.world.StructureDef.bz(10201 + com.runecraft.osrs.content.godwars.RevenantCaves.DY);
+        int caveY = com.runecraft.osrs.content.godwars.RevenantCaves.feetY();
+        assertTrue(MultiCombat.isSinglesPlusAtBlock(caveX, caveY, caveZ), "Revenant Caves");
+        assertFalse(MultiCombat.isMultiAtBlock(caveX, caveY, caveZ), "Revenant Caves aren't multi");
+        assertTrue(MultiCombat.isSinglesPlusAtBlock(GielinorMap.toBlockX(3004), 70, GielinorMap.toBlockZ(3945)), "agility course");
+        assertFalse(MultiCombat.isSinglesPlusAtBlock(GielinorMap.toBlockX(3004), 70, GielinorMap.toBlockZ(3900)), "south of the course");
+        assertFalse(MultiCombat.isSinglesPlusAtBlock(GielinorMap.toBlockX(3093), 70, GielinorMap.toBlockZ(3493)), "Edgeville");
+
+        SingleCombat sc = new SingleCombat();
+        int victim = 1;
+        int revenant = 2;
+        int pker = 3;
+        int otherRevenant = 4;
+        java.util.function.IntPredicate players = id -> id == victim || id == pker;
+        sc.onHit(victim, revenant, 100);
+        sc.onHit(revenant, victim, 101);
+        // plain single-way: the player fighting a revenant can't be attacked by another player
+        assertEquals(SingleCombat.Verdict.TARGET_BUSY, sc.check(pker, victim, 102, false, true, null));
+        // singles-plus: the PKer's attack takes priority, and the victim can hit back
+        assertEquals(SingleCombat.Verdict.OK, sc.checkSinglesPlus(pker, victim, 102, true, null, players));
+        sc.onHit(pker, victim, 102);
+        assertEquals(SingleCombat.Verdict.OK, sc.checkSinglesPlus(victim, pker, 103, true, null, players), "fighting back");
+        // monsters keep single-way: another revenant can't join while the player is in combat
+        assertEquals(SingleCombat.Verdict.TARGET_BUSY, sc.checkSinglesPlus(otherRevenant, victim, 103, false, null, players));
+        // and a second PKer can't pile on the first one's target
+        assertEquals(SingleCombat.Verdict.TARGET_BUSY, sc.checkSinglesPlus(5, victim, 104, true, null, id -> players.test(id) || id == 5));
     }
 
     // ---------------------------------------------------------------- poison / venom

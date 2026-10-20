@@ -69,10 +69,9 @@ public final class HitCalcBridge {
         in.rangedStrength = eq.rangedStrength() + ammoStrength;
         in.magicDamageTenths = eq.magicDamagePercent() * 10;
         // Revenant weapons (+50% in the Wilderness; they hold revenant ether (Charges) and can't attack empty, so an attacking one
-        // is charged) and
-        // the amulet of avarice's Forinthry surge while skulled.
+        // is charged) and the amulet of avarice's Forinthry Surge (30 minutes after topping the revenant maledictus).
         in.inWilderness = com.runecraft.world.Gielinor.wildernessLevel(p) > 0;
-        in.forinthrySurge = SkullService.isSkulled(p);
+        in.forinthrySurge = forinthrySurge.test(p);
         // A special attack (armed, matching the style, enough energy): PlayerHitCalc applies its accuracy / damage changes
         // and the defence style it rolls against. Soul stacks and missing prayer points feed the soulreaper axe and bludgeon.
         in.special = specialAttack.test(p, type);
@@ -86,6 +85,8 @@ public final class HitCalcBridge {
     public static java.util.function.BiPredicate<ServerPlayer, AttackType> specialAttack = (p, type) -> false;
     /** The player's soulreaper axe soul stacks; set by the systems module. */
     public static java.util.function.ToIntFunction<ServerPlayer> soulStacks = p -> 0;
+    /** Whether the player has the Forinthry Surge (the godwars module's revenant maledictus reward). */
+    public static java.util.function.Predicate<ServerPlayer> forinthrySurge = p -> false;
 
     /** Vampyre tier immunity and damage multipliers applied to a rolled hit (PlayerHitCalc). */
     public static int afterRoll(PlayerHitCalc.Input in, int damage) {

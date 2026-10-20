@@ -44,6 +44,18 @@ public final class GielinorMap {
         return (y - WILDERNESS_DITCH) / 8 + 1;
     }
 
+    /**
+     * The Ferox Enclave's walls (tiles 3123-3155 x 3617-3647, as this world builds it: approx): a safe zone inside level 13-16
+     * Wilderness, with no player fights and no looting bag (wiki "Ferox Enclave").
+     */
+    public static boolean inFeroxEnclaveTile(int x, int y) {
+        return x >= 3123 && x <= 3155 && y >= 3617 && y <= 3647;
+    }
+
+    public static boolean inFeroxEnclave(int blockX, int blockZ) {
+        return inFeroxEnclaveTile(toOsrsX(blockX), toOsrsY(blockZ));
+    }
+
     public static Region regionAtBlock(int blockX, int blockZ) {
         // Small wobble (up to ~12 tiles) so borders look natural.
         double wx = Noise.value(blockX * 0.01, blockZ * 0.01, 17) * 12.0;
