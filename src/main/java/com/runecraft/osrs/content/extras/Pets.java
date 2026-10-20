@@ -95,7 +95,8 @@ public final class Pets {
         boss("pet_nid", "Nid", "araxxor", 1.4f, "araxxor", 3000);
         boss("pet_youngllef", "Youngllef", "crystalline_hunllef", 2.0f, "crystalline_hunllef", 2000, "corrupted_hunllef", 800);
         boss("pet_smolcano", "Smolcano", "zalcano", 2.4f, "zalcano", 2250);
-        boss("pet_little_nightmare", "Little nightmare", "the_nightmare", 2.4f, "the_nightmare", 3200, "phosanis_nightmare", 1400);
+        // The Nightmare: 1/800 a player, 1/4,000 from five players (the engine rolls 1/4,000, its script tops it up); Phosani 1/1,400.
+        boss("pet_little_nightmare", "Little nightmare", "the_nightmare", 2.4f, "the_nightmare", 4000, "phosanis_nightmare", 1400);
         boss("pet_muphin", "Muphin", "phantom_muspah", 2.4f, "phantom_muspah", 2500);
         boss("pet_smol_heredit", "Smol heredit", "sol_heredit", 2.2f, "sol_heredit", 200); // approx: per wave-12 completion
         boss("pet_baron", "Baron", "duke_sucellus", 2.4f, "duke_sucellus", 2500);

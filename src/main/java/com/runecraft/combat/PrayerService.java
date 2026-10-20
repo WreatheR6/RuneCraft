@@ -69,7 +69,18 @@ public final class PrayerService {
         return best(d, Prayer::magicMultiplier);
     }
 
+    /**
+     * Turn the prayer a player clicks into another (The Nightmare's curse shuffles the protection prayers); each returns the
+     * prayer to toggle, or the one clicked.
+     */
+    public static final java.util.List<java.util.function.BiFunction<ServerPlayer, Prayer, Prayer>> REDIRECTS =
+            new java.util.concurrent.CopyOnWriteArrayList<>();
+
     public static void toggle(ServerPlayer player, Prayer prayer) {
+        for (java.util.function.BiFunction<ServerPlayer, Prayer, Prayer> r : REDIRECTS) {
+            Prayer to = r.apply(player, prayer);
+            prayer = to == null ? prayer : to;
+        }
         PlayerData data = Players.data(player);
         if (data.isActive(prayer)) {
             data.activePrayers().remove(prayer);

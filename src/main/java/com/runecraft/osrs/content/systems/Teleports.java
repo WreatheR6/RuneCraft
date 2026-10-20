@@ -83,6 +83,9 @@ public final class Teleports {
         if (XERICS_HONOUR.equals(d)) {
             return ANCIENT_TABLET;
         }
+        if (DRAKAN.get(2).equals(d)) {
+            return "slepey_tablet"; // Phosani's Nightmare's tablet unlocks Drakan's medallion's Slepe teleport (OSRS Wiki)
+        }
         // The Forgotten Four's tablets (bosses module drops, 1/25) unlock the ring of shadows' lair teleports.
         return SHADOWS_GHORROCK.equals(d) ? "frozen_tablet" : SHADOWS_SCAR.equals(d) ? "scarred_tablet"
                 : SHADOWS_LASSAR.equals(d) ? "sirenic_tablet" : SHADOWS_STRANGLEWOOD.equals(d) ? "strangled_tablet" : null;

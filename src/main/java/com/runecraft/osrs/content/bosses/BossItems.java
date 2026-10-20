@@ -347,6 +347,9 @@ public final class BossItems {
                 .examine("Crush bonus is boosted by each piece of inquisitor's armour worn.");
         jar(items, "jar_of_dreams", "Jar of dreams", 0x4A2A6A);
         simple(items, "parasitic_egg", "Parasitic egg", "egg", 0x6A8A4A, 1, "A fleshy egg from Phosani's Nightmare.");
+        // Phosani's Nightmare (1/25, always by the 25th kill): used on Drakan's medallion it unlocks its Slepe teleport
+        // (systems Teleports.unlockItem). Untradeable, 75,000 value (wiki).
+        simple(items, "slepey_tablet", "Slepey tablet", "tablet", 0x7A4A9A, 75000, "Strange glowing symbols are inscribed in this tablet.");
         pet(items, "pet_little_nightmare", "Little nightmare", "The Nightmare", 0x2A2A3A);
 
         // ---------------- Phantom Muspah ----------------

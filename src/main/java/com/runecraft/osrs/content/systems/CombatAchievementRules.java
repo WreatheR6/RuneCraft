@@ -904,14 +904,15 @@ public final class CombatAchievementRules {
             406;RULE;phosanis_nightmare;1;noflag=phosani_minion_survived
             481;RULE;phantom_muspah;1;flag=muspah_surrounded
             482;RULE;phantom_muspah;1;flag=muspah_three_drains
+            484;RULE;phantom_muspah;1;nodmg flag=muspah_surrounded norun
             564;RULE;araxxor;1;count>=6:araxxor_eggs_destroyed
             566;RULE;araxxor;1;flag=araxyte_betrayal
             526;RULE;eclipse_moon;1;noflag=eclipse_direct_hit
             531;WINDOW;MOONS;3;t<=30:00 fromstart distinct onlydmg=spear_thrust,shield_bash,atlatl_dart,macuahuitl_flurry
             572;RULE;the_hueycoatl;1;flag=huey_vulnerable_kill
             575;RULE;the_hueycoatl;1;wear=hueycoatl_hide_coif,hueycoatl_hide_body || wear=hueycoatl_hide_coif,hueycoatl_hide_chaps || wear=hueycoatl_hide_coif,hueycoatl_hide_vambraces || wear=hueycoatl_hide_body,hueycoatl_hide_chaps || wear=hueycoatl_hide_body,hueycoatl_hide_vambraces || wear=hueycoatl_hide_chaps,hueycoatl_hide_vambraces
-            188;RULE;the_nightmare;1;nodmg=grasping_claws,surge,parasite_burst,offprayer noflag=nightmare_spored
-            403;RULE;phosanis_nightmare;1;onlydmg=husk,power_blast,weakened_parasite_burst noflag=nightmare_spored noflag=phosani_sleepwalker_reached
+            188;RULE;the_nightmare;1;nodmg=grasping_claws,surge,parasite_burst,corpse_flowers,offprayer noflag=nightmare_spored
+            403;RULE;phosanis_nightmare;1;onlydmg=husk,power_blast,weakened_parasite_burst noflag=nightmare_spored noflag=phosani_sleepwalker_any
             407;RULE;phosanis_nightmare;1;noflag=phosani_prayer_disabled
             """;
 

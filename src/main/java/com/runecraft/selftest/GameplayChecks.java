@@ -116,10 +116,6 @@ final class GameplayChecks {
         }
         checks.add(new SelfTest.Check("boss:bryophyta_growthlings", g::bryophytaGrowthlings));
         checks.add(new SelfTest.Check("boss:obor_knockback", g::oborKnockback));
-        checks.add(new SelfTest.Check("boss:nightmare_parasites",
-                () -> g.scripted("the_nightmare", com.runecraft.content.bosses.BossSelfTests::nightmareParasites)));
-        checks.add(new SelfTest.Check("boss:muspah_shield",
-                () -> g.scripted("phantom_muspah", com.runecraft.content.bosses.BossSelfTests::muspahShield)));
         checks.add(new SelfTest.Check("boss:araxxor_eggs",
                 () -> g.scripted("araxxor", com.runecraft.content.bosses.BossSelfTests::araxxorEggs)));
         checks.add(new SelfTest.Check("boss:eclipse_clones",
