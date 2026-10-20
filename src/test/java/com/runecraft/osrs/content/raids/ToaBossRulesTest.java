@@ -146,6 +146,16 @@ class ToaBossRulesTest {
             assertTrue(dodgesSome, "every tile dodges at least one slam");
         }
         assertEquals("right", ToaBossRules.SLAMS[0]);
+        // Phantoms: their originals' speeds (Kephri and Zebak faster with path levels), faster with Insanity once enraged.
+        assertEquals(6, ToaBossRules.phantomAttackSpeed("Akkha", 4, false));
+        assertEquals(6, ToaBossRules.phantomAttackSpeed("Kephri", 0, false));
+        assertEquals(4, ToaBossRules.phantomAttackSpeed("Kephri", 4, false));
+        assertEquals(7, ToaBossRules.phantomAttackSpeed("Zebak", 0, false));
+        assertEquals(5, ToaBossRules.phantomAttackSpeed("Zebak", 4, false));
+        assertTrue(ToaBossRules.phantomAttackSpeed("Ba-Ba", 0, true) < ToaBossRules.phantomAttackSpeed("Ba-Ba", 0, false));
+        // Insanity: the enraged Warden's lightning and floor ripping come faster.
+        assertTrue(ToaBossRules.wardenLightningEvery(true) < ToaBossRules.wardenLightningEvery(false));
+        assertTrue(ToaBossRules.wardenRipEvery(true) < ToaBossRules.wardenRipEvery(false));
         assertNotEquals(ToaBossRules.wardenSlamEvery(Set.of()), ToaBossRules.wardenSlamEvery(EnumSet.of(Invocation.INSANITY)));
     }
 

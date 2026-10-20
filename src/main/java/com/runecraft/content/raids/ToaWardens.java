@@ -109,7 +109,12 @@ final class ToaWardens extends RoomLogic {
     boolean siphonsUp;
     int siphonsFailed;
     final List<String> phantoms = new ArrayList<>();
+    /** The phantoms themselves (unattackable apparitions behind the Warden), in {@link #phantoms} order. */
+    final List<LivingEntity> phantomMobs = new ArrayList<>();
     private final int[] phantomAttacks = new int[2];
+    private final long[] phantomNext = new long[2];
+    /** Attacks the phantoms made (self-test). */
+    int phantomAttackCount;
     boolean enraged;
     private int rippedColumns;
     private long nextRip;
@@ -192,8 +197,9 @@ final class ToaWardens extends RoomLogic {
         siphons.clear();
         siphonsUp = false;
         siphonsFailed = 0;
-        phantoms.clear();
+        clearPhantoms();
         phantomAttacks[0] = phantomAttacks[1] = 0;
+        phantomAttackCount = 0;
         enraged = false;
         rippedColumns = 0;
         obelisk = spawnBoss("wardens_obelisk", at(OBELISK_X, 0));
@@ -215,10 +221,19 @@ final class ToaWardens extends RoomLogic {
         return alive(b) ? b : super.hudBoss();
     }
 
+    private void clearPhantoms() {
+        for (LivingEntity m : phantomMobs) {
+            m.discard();
+        }
+        phantomMobs.clear();
+        phantoms.clear();
+    }
+
     @Override
     public void reset() {
         dropCore();
         clearSiphons();
+        clearPhantoms();
         restoreFloor();
         super.reset();
         obelisk = elidinis = tumeken = warden = null;
@@ -228,6 +243,7 @@ final class ToaWardens extends RoomLogic {
     public void cleanup() {
         dropCore();
         clearSiphons();
+        clearPhantoms();
         if (raid.world.getServer() != null) {
             restoreFloor();
         }
@@ -960,9 +976,37 @@ final class ToaWardens extends RoomLogic {
         if (siphonSets == 2 || siphonSets == 3) {
             boolean elid = isElidinis(warden);
             String phantom = elid ? (siphonSets == 2 ? "Akkha" : "Kephri") : (siphonSets == 2 ? "Zebak" : "Ba-Ba");
+            int i = phantoms.size();
             phantoms.add(phantom);
+            LivingEntity mob = spawnMob(PHANTOM_IDS.get(phantom), at(OBELISK_X + 3, i == 0 ? -7 : 7), false);
+            if (mob instanceof net.minecraft.world.entity.Mob m) {
+                m.setNoAi(true);
+                m.setYRot(90);
+                m.setYHeadRot(90);
+                m.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.GLOWING, 20 * 3600, 0,
+                        false, false));
+                anchor(m);
+            }
+            if (mob != null) {
+                phantomMobs.add(mob);
+            }
+            phantomNext[i] = RaidEffects.now() + 4;
             warn(phantom + "'s phantom rises to assist " + name(warden) + "!");
         }
+    }
+
+    /** The phantoms' creature ids by boss (OSRS: Akkha and Kephri with Elidinis' Warden, Zebak and Ba-Ba with Tumeken's). */
+    static final Map<String, String> PHANTOM_IDS = Map.of("Akkha", "toa_akkhas_phantom", "Kephri", "toa_kephris_phantom", "Zebak",
+            "toa_zebaks_phantom", "Ba-Ba", "toa_babas_phantom");
+
+    /** The path index ({@link com.runecraft.osrs.content.raids.RaidLayouts#TOA_PATHS}) of each phantom's original. */
+    private static int pathOf(String phantom) {
+        return switch (phantom) {
+            case "Kephri" -> 0;
+            case "Akkha" -> 1;
+            case "Ba-Ba" -> 2;
+            default -> 3;
+        };
     }
 
     private void siphonTick(long now) {
@@ -1068,62 +1112,66 @@ final class ToaWardens extends RoomLogic {
     }
 
     /**
-     * The path bosses' phantoms use their originals' attacks with the same invocations (OSRS wiki): Akkha's ranged and
-     * magic switching every three attacks (randomly with Stay Vigilant), starting with ranged; Kephri's fireball (3x3 and
-     * harder with Aerial Assault); Zebak's rocks and jugs; Ba-Ba's boulders, a tile away being safe. Insanity speeds them
-     * up while the Warden is enraged.
+     * The path bosses' phantoms attack with their originals' standard attacks and invocations (OSRS wiki): Akkha's ranged
+     * and magic, switching every three attacks starting with ranged (at random with Stay Vigilant) and hitting everyone, only
+     * partly blocked by prayer; Kephri's fireball (3x3 and harder with Aerial Assault); Zebak's rock and jug projectiles,
+     * prayable until they land; Ba-Ba's boulder on a player's tile, dodged by stepping a tile away. Their original path's
+     * level speeds Kephri and Zebak up as in their own fights; with Insanity they attack much faster once the Warden
+     * enrages.
      */
     private void phantomTick(int i, String phantom, long tick, List<ServerPlayer> players, Set<Invocation> inv) {
-        Vec3 at = vec(OBELISK_X + 2, i == 0 ? -9 : 9);
-        if (tick % 5 == 0) {
-            world().sendParticles(ParticleTypes.SCULK_SOUL, at.x, at.y + 1.5, at.z, 8, 0.6, 1.2, 0.6, 0.01);
-        }
-        if (players.isEmpty()) {
+        LivingEntity mob = i < phantomMobs.size() ? phantomMobs.get(i) : null;
+        if (mob == null || !mob.isAlive() || players.isEmpty()) {
             return;
         }
-        int faster = enraged && inv.contains(Invocation.INSANITY) ? 1 : 0;
+        if (tick % 5 == 0) {
+            world().sendParticles(ParticleTypes.SCULK_SOUL, mob.getX(), mob.getY() + 1.5, mob.getZ(), 6, 0.6, 1.0, 0.6, 0.01);
+        }
+        long now = RaidEffects.now();
+        if (now < phantomNext[i]) {
+            return;
+        }
+        int speed = ToaBossRules.phantomAttackSpeed(phantom, raid.pathLevelOf(pathOf(phantom)), enraged && inv.contains(Invocation.INSANITY));
+        phantomNext[i] = now + speed;
+        wardenAttacks++;
+        phantomAttackCount++;
         ServerPlayer p = players.get(rnd().nextInt(players.size()));
         switch (phantom) {
             case "Kephri" -> {
-                if (tick % (6 - faster) == 3) {
-                    int radius = Invocation.kephriFireballRadius(inv);
-                    int max = (int) Math.round(ToaBossRooms.Kephri.KEPHRI_MAX_HIT * Invocation.kephriFireballDamage(inv));
-                    RaidEffects.strike(world(), p.position(), 0.8 + 1.5 * radius, max, 3, warden, ParticleTypes.FLAME, AttackType.MAGIC,
-                            ToaBossRooms.Kephri.KEPHRI_PROTECTED_SHARE);
-                    wardenAttacks++;
-                }
+                int radius = Invocation.kephriFireballRadius(inv);
+                int max = (int) Math.round(ToaBossRooms.Kephri.KEPHRI_MAX_HIT * Invocation.kephriFireballDamage(inv));
+                RaidEffects.strike(world(), p.position(), 0.8 + 1.5 * radius, max, 3, mob, ParticleTypes.FLAME, AttackType.MAGIC,
+                        ToaBossRooms.Kephri.KEPHRI_PROTECTED_SHARE);
             }
             case "Akkha" -> {
-                if (tick % (6 - faster) == 1) { // approx: Akkha's attack speed
-                    boolean magic = inv.contains(Invocation.STAY_VIGILANT) ? rnd().nextBoolean() : (phantomAttacks[i] / 3) % 2 == 1;
-                    phantomAttacks[i]++;
-                    AttackType style = magic ? AttackType.MAGIC : AttackType.RANGED;
-                    world().sendParticles(magic ? ParticleTypes.WITCH : ParticleTypes.CRIT, at.x, at.y + 2, at.z, 10, 0.3, 0.3, 0.3, 0.05);
-                    later(2, () -> {
-                        if (alive(warden) && phase == 3) {
-                            RaidEffects.hit(warden, p, rnd().nextInt(21), style, false); // approx: max 20
-                        }
-                    });
-                }
+                boolean magic = inv.contains(Invocation.STAY_VIGILANT) ? rnd().nextBoolean() : (phantomAttacks[i] / 3) % 2 == 1;
+                phantomAttacks[i]++;
+                AttackType style = magic ? AttackType.MAGIC : AttackType.RANGED;
+                world().sendParticles(magic ? ParticleTypes.WITCH : ParticleTypes.CRIT, mob.getX(), mob.getY() + 2, mob.getZ(), 12, 0.3, 0.3, 0.3,
+                        0.05);
+                later(2, () -> {
+                    if (!alive(warden) || phase != 3 || !mob.isAlive()) {
+                        return;
+                    }
+                    // OSRS: Akkha's ranged and magic hit everyone; a protection prayer only takes 80-90% off.
+                    for (ServerPlayer q : players()) {
+                        RaidEffects.hit(mob, q, rnd().nextInt(ToaBossRules.AKKHA_PHANTOM_MAX_HIT + 1), style,
+                                ToaBossRules.AKKHA_PROTECTED_RANGED_MAGIC);
+                    }
+                });
             }
             case "Zebak" -> {
-                if (tick % (7 - faster) == 2) {
-                    AttackType style = rnd().nextBoolean() ? AttackType.MAGIC : AttackType.RANGED;
-                    world().sendParticles(style == AttackType.MAGIC ? ParticleTypes.DAMAGE_INDICATOR : ParticleTypes.CRIT, at.x, at.y + 2, at.z, 10,
-                            0.3, 0.3, 0.3, 0.05);
-                    later(2, () -> {
-                        if (alive(warden) && phase == 3) {
-                            RaidEffects.hit(warden, p, rnd().nextInt(ToaBossRules.ZEBAK_RANGED_MAX + 1), style, false);
-                        }
-                    });
-                }
+                AttackType style = rnd().nextBoolean() ? AttackType.MAGIC : AttackType.RANGED;
+                world().sendParticles(style == AttackType.MAGIC ? ParticleTypes.DAMAGE_INDICATOR : ParticleTypes.CRIT, mob.getX(), mob.getY() + 2,
+                        mob.getZ(), 10, 0.3, 0.3, 0.3, 0.05);
+                later(2, () -> {
+                    if (alive(warden) && phase == 3 && mob.isAlive() && p.isAlive()) {
+                        RaidEffects.hit(mob, p, rnd().nextInt(ToaBossRules.ZEBAK_RANGED_MAX + 1), style, false);
+                    }
+                });
             }
-            default -> {
-                if (tick % (6 - faster) == 0) {
-                    RaidEffects.strike(world(), p.position(), 1.0, 25, 3, warden, ParticleTypes.CAMPFIRE_COSY_SMOKE, null, true); // approx
-                    wardenAttacks++;
-                }
-            }
+            default -> RaidEffects.strike(world(), p.position(), 0.9, ToaBossRules.BABA_PHANTOM_BOULDER_MAX, 3, mob,
+                    ParticleTypes.CAMPFIRE_COSY_SMOKE, null, true);
         }
     }
 
@@ -1186,7 +1234,19 @@ final class ToaWardens extends RoomLogic {
         note.append(", ").append(coresEjected).append(" cores");
         int p3Ticks = 0;
         int siphonHits = 0;
+        List<String> phantomsSeen = new ArrayList<>();
+        int phantomAttacksSeen = 0;
         while (!done && p3Ticks++ < 4000) {
+            for (LivingEntity m : phantomMobs) {
+                String id = RaidInstance.creatureId(m);
+                if (!phantomsSeen.contains(id)) {
+                    phantomsSeen.add(id);
+                    // OSRS: the phantoms can't be attacked.
+                    RaidSelfTest.expect(alive(m) && t.hit(m, 50, AttackType.SLASH) == 0 && t.hit(m, 50, AttackType.MAGIC) == 0,
+                            "Wardens: " + id + " could be damaged");
+                }
+            }
+
             if (siphonsUp) {
                 for (LivingEntity s : new ArrayList<>(siphons)) {
                     if (alive(s)) {
@@ -1200,9 +1260,12 @@ final class ToaWardens extends RoomLogic {
             }
             t.tick(1);
         }
+        phantomAttacksSeen = phantomAttackCount;
         RaidSelfTest.expect(done, "Wardens: the phase 3 Warden did not die (" + (alive(warden) ? raid.hitpoints(warden) + " hitpoints left" : "gone") + ")");
         RaidSelfTest.expect(siphonSets == 4 && siphonsFailed == 0, "Wardens: " + siphonSets + " siphon sets, " + siphonsFailed + " failed");
-        RaidSelfTest.expect(phantoms.equals(List.of("Zebak", "Ba-Ba")), "Wardens: Tumeken's phantoms were " + phantoms);
+        RaidSelfTest.expect(phantomsSeen.equals(List.of("toa_zebaks_phantom", "toa_babas_phantom")),
+                "Wardens: Tumeken's phantoms were " + phantomsSeen);
+        RaidSelfTest.expect(phantomAttacksSeen > 0, "Wardens: the phantoms never attacked");
         RaidSelfTest.expect(enraged, "Wardens: the Warden died without enraging");
         RaidSelfTest.expect(raid.attacksOnParty() > attacksBefore, "Wardens: nothing attacked the player");
         return note.append(", ").append(siphonHits).append(" siphon hits, phase 3 in ").append(p3Ticks).append(" ticks").toString();

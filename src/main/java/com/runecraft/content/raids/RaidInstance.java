@@ -295,6 +295,11 @@ public final class RaidInstance {
         return path < 0 ? 0 : RaidScaling.toaPathLevel(invocations, pathLevelUps[path]);
     }
 
+    /** The level of ToA path {@code path} (index in {@link RaidLayouts#TOA_PATHS}), e.g. for the Wardens' phantoms. */
+    public int pathLevelOf(int path) {
+        return path < 0 || path >= pathLevelUps.length ? 0 : RaidScaling.toaPathLevel(invocations, pathLevelUps[path]);
+    }
+
     /** Index in {@link RaidLayouts#TOA_PATHS} of the path a room belongs to, or -1. */
     static int pathIndex(String roomId) {
         for (int i = 0; i < RaidLayouts.TOA_PATHS.size(); i++) {

@@ -279,4 +279,24 @@ public final class ToaBossRules {
     public static final int TUMEKEN_P2_MAX_HIT = 22;
     /** Phase 3 ("Damaged") Warden max hit (OSRS infobox: 26). */
     public static final int WARDEN_P3_MAX_HIT = 26;
+
+    /** Akkha's phantom's ranged and magic max hit: Akkha's own (the boss's attack definitions). // approx */
+    public static final int AKKHA_PHANTOM_MAX_HIT = 24;
+    /** Ba-Ba's phantom's boulder max hit. // approx: her rolling boulders' heavy damage */
+    public static final int BABA_PHANTOM_BOULDER_MAX = 25;
+
+    /**
+     * Game ticks between a phantom's attacks (OSRS wiki): its original's attack speed (Akkha and Kephri 6, Zebak 7, Ba-Ba 6),
+     * Kephri and Zebak one tick faster every two levels of their path as in their own fights; with Insanity "significantly
+     * faster" once the Warden enrages. // approx: two ticks faster with Insanity
+     */
+    public static int phantomAttackSpeed(String boss, int pathLevel, boolean insanityEnraged) {
+        int faster = Math.min(4, Math.max(0, pathLevel)) / 2;
+        int speed = switch (boss) {
+            case "Kephri" -> 6 - faster;
+            case "Zebak" -> zebakAttackSpeed(false, pathLevel);
+            default -> 6;
+        };
+        return Math.max(2, speed - (insanityEnraged ? 2 : 0));
+    }
 }

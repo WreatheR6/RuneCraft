@@ -551,16 +551,30 @@ final class ToaPuzzleRooms {
                 obelisksLit = 0;
                 renderObelisks();
                 warn("The obelisk stays dark - rocks fall from the ceiling!");
+                List<Vec3> rocks = new ArrayList<>();
                 for (ServerPlayer q : players()) {
                     if (q.distanceToSqr(Vec3.atCenterOf(obelisk(i))) < 12 * 12) {
                         for (int k = 0; k < 3; k++) {
-                            Vec3 at = k == 0 ? q.position() : q.position().add(rnd().nextInt(5) - 2, 0, rnd().nextInt(5) - 2);
-                            RaidEffects.strike(world(), at, 0.9, PUZZLE_DAMAGE_MIN + PUZZLE_DAMAGE_SPREAD, 3, null, ParticleTypes.CLOUD, null, true);
+                            rocks.add(k == 0 ? q.position() : q.position().add(rnd().nextInt(5) - 2, 0, rnd().nextInt(5) - 2));
                         }
                     }
                 }
-                // Perfect Scabaras: a rock that lands counts as puzzle damage.
-                later(3, () -> puzzleDamage |= !players().isEmpty() && rnd().nextBoolean());
+                for (Vec3 r : rocks) {
+                    world().sendParticles(ParticleTypes.CLOUD, r.x, r.y + 0.15, r.z, 8, 0.4, 0.02, 0.4, 0);
+                }
+                // The rocks land a few ticks later: step out from under the shadows.
+                later(3, () -> {
+                    for (ServerPlayer q : players()) {
+                        for (Vec3 r : rocks) {
+                            if (RaidEffects.horizontalDistSq(q.position(), r) < 0.9 * 0.9) {
+                                world().sendParticles(ParticleTypes.EXPLOSION, r.x, r.y + 0.5, r.z, 1, 0, 0, 0, 0);
+                                Msg.red(q, "A falling rock hits you!");
+                                puzzleHurt(q, PUZZLE_DAMAGE_MIN + rnd().nextInt(PUZZLE_DAMAGE_SPREAD));
+                                break;
+                            }
+                        }
+                    }
+                });
                 return;
             }
             if (lit > obelisksLit) {

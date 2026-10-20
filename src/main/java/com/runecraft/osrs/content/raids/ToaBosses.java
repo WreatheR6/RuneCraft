@@ -83,6 +83,14 @@ public final class ToaBosses {
                         .size(1.4f, 3.0f, 1.6f).moveSpeed(0.0));
     }
 
+    /** A Wardens' phantom: an apparition of a path boss that can't be attacked. */
+    private static MonsterDef phantom(String id, String name, int level, String model, float w, float h, float scale) {
+        return MonsterDef.of(id, name).level(level).stats(1000, 1, 1, 1, 1, 1).speed(6).passive().defenceBonus(0, 0, 0, 0, 0)
+                .immune(AttackType.STAB, AttackType.SLASH, AttackType.CRUSH, AttackType.MAGIC, AttackType.RANGED)
+                .attack(AttackDef.of("phantom", AttackType.MAGIC, 0, 1, 10)).model(model)
+                .size(w, h, scale).moveSpeed(0.0);
+    }
+
     public static List<MonsterDef> monsters() {
         return List.of(
                 MonsterDef.of("toa_scarab_swarm", "Scarab swarm").level(8).stats(10, 1, 1, 0, 1, 1).speed(4).passive().defenceBonus(-100, -100, -100, -100, -100)
@@ -163,6 +171,13 @@ public final class ToaBosses {
                         .defenceBonus(0, 0, 0, 0, 0)
                         .attack(AttackDef.of("spit", AttackType.RANGED, 6, 8, 10).particle("minecraft:item_slime")).model("toa_scarab")
                         .size(0.5f, 0.4f, 0.6f).moveSpeed(0.26),
+                // The phase 3 Warden's phantoms of the path bosses (OSRS wiki: "Akkha's Phantom" and "Kephri's Phantom" with
+                // Elidinis' Warden, "Zebak's Phantom" and "Ba-Ba's Phantom" with Tumeken's). They can't be attacked; the
+                // Wardens' room drives their attacks with their originals' numbers and invocations.
+                phantom("toa_akkhas_phantom", "Akkha's Phantom", 337, "akkha", 0.9f, 2.4f, 1.4f),
+                phantom("toa_kephris_phantom", "Kephri's Phantom", 341, "kephri", 1.6f, 1.4f, 2.0f),
+                phantom("toa_zebaks_phantom", "Zebak's Phantom", 371, "zebak", 1.4f, 1.5f, 2.0f),
+                phantom("toa_babas_phantom", "Ba-Ba's Phantom", 359, "baba", 1.2f, 1.9f, 1.6f),
                 // The Wardens' phase 3 energy siphons: melee only, 1 hitpoint (more in big groups, set by the room).
                 MonsterDef.of("toa_energy_siphon", "Energy Siphon").level(1).stats(1, 1, 1, 1, 1, 1).speed(4).passive()
                         .defenceBonus(-100, -100, -100, 0, 0).immune(AttackType.RANGED, AttackType.MAGIC)
