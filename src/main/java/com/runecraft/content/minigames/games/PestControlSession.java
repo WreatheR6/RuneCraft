@@ -505,6 +505,7 @@ public class PestControlSession extends MinigameSession {
             return;
         }
         Mob m = p.mob;
+        m.setTarget(null); // no player close by: the Void Knight comes first
         double reach = PestControlRules.knightReach(p.id);
         double d = m.distanceToSqr(knight);
         if (d > reach * reach) {
@@ -524,22 +525,31 @@ public class PestControlSession extends MinigameSession {
         }
     }
 
-    /** A shifter teleports beside the Void Knight, or six blocks towards him from far away (over walls). */
+    /**
+     * A shifter teleports beside the Void Knight, or about six blocks towards him from further away, over walls and gates
+     * (the first free spot of 6, 7, 5, 8 and 4 blocks; approx: the wiki says "short distances").
+     */
     private void blinkTowardsKnight(Mob m) {
-        Vec3 to;
+        List<Vec3> spots = new ArrayList<>();
         if (m.distanceToSqr(knight) < 144) {
             double a = random.nextDouble() * Math.PI * 2;
-            to = knight.position().add(Math.cos(a) * 1.5, 0, Math.sin(a) * 1.5);
+            for (int i = 0; i < 4; i++) {
+                spots.add(knight.position().add(Math.cos(a + i * Math.PI / 2) * 1.5, 0, Math.sin(a + i * Math.PI / 2) * 1.5));
+            }
         } else {
             Vec3 dir = knight.position().subtract(m.position()).normalize();
-            to = m.position().add(dir.scale(6));
+            for (int d : new int[]{6, 7, 5, 8, 4}) {
+                spots.add(m.position().add(dir.scale(d)));
+            }
         }
-        BlockPos at = BlockPos.containing(to.x, origin.getY() + 1, to.z);
-        if (!world.getBlockState(at).isAir() || !world.getBlockState(at.above()).isAir()) {
-            return;
+        for (Vec3 to : spots) {
+            BlockPos at = BlockPos.containing(to.x, origin.getY() + 1, to.z);
+            if (world.getBlockState(at).isAir() && world.getBlockState(at.above()).isAir()) {
+                world.sendParticles(ParticleTypes.PORTAL, m.getX(), m.getY() + 0.5, m.getZ(), 20, 0.3, 0.5, 0.3, 0.2);
+                m.teleportTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5);
+                return;
+            }
         }
-        world.sendParticles(ParticleTypes.PORTAL, m.getX(), m.getY() + 0.5, m.getZ(), 20, 0.3, 0.5, 0.3, 0.2);
-        m.teleportTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5);
     }
 
     /** One accuracy-rolled pest attack on the Void Knight (torchers roll magic accuracy against ranged defence). */
@@ -710,6 +720,11 @@ public class PestControlSession extends MinigameSession {
     @Override
     protected void onEnd(boolean success) {
         for (ServerPlayer p : online()) {
+            if (success && won) {
+                // The Western Provinces diary's "Complete a novice / intermediate / veteran game of Pest Control".
+                com.runecraft.content.GameEvents.fireActivity(p, "minigame_win:pest_control_"
+                        + PestControl.TIERS[tier].toLowerCase(java.util.Locale.ROOT));
+            }
             int act = activity.getOrDefault(p.getUUID(), 0);
             if (success && won && act > 0) {
                 int balance = MinigameData.of(p).points(p.getUUID(), "pest_control");

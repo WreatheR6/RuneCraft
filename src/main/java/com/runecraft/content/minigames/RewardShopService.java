@@ -116,6 +116,17 @@ public final class RewardShopService {
         if (e.requiredSkill() != null && Players.data(player).skills().level(e.requiredSkill()) < e.requiredLevel()) {
             return "Requires level " + e.requiredLevel() + " " + e.requiredSkill().displayName();
         }
+        // Void Knight equipment can only be bought by those who can wear it (OSRS Wiki: 42 combat skills and 22 Prayer).
+        if (e.reward() == RewardShop.Reward.ITEM && e.costs().stream().anyMatch(c -> c.currency().equals(MinigameCurrencies.PEST_CONTROL))) {
+            ItemDef def = ItemCatalog.get(e.item());
+            if (def != null && def.equipment() != null) {
+                for (Map.Entry<Skill, Integer> req : def.equipment().requirements().entrySet()) {
+                    if (Players.data(player).skills().level(req.getKey()) < req.getValue()) {
+                        return "Requires level " + req.getValue() + " " + req.getKey().displayName();
+                    }
+                }
+            }
+        }
         if (e.requiresItem() != null && !Inv.has(player, e.requiresItem(), 1)) {
             ItemDef def = ItemCatalog.get(e.requiresItem());
             return "Requires " + (def == null ? e.requiresItem() : def.name());

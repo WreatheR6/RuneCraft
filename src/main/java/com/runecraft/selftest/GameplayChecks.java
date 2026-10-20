@@ -103,6 +103,9 @@ final class GameplayChecks {
                 com.runecraft.content.minigames.games.TzHaarSelfTest::fightCaveRun)));
         checks.add(new SelfTest.Check("minigame:inferno_run", () -> g.tzhaarRun(
                 com.runecraft.content.minigames.games.TzHaarSelfTest::infernoRun)));
+        // A whole Pest Control game as the real player: the lander, shields, pests, gates, portals, points and the Void shop.
+        checks.add(new SelfTest.Check("minigame:pest_control_walk", () -> g.tzhaarRun(
+                com.runecraft.content.minigames.games.PestControlSelfTest::run)));
         for (RaidType r : RaidType.values()) {
             checks.add(new SelfTest.Check("raid:" + r.id(), () -> g.raid(r)));
         }

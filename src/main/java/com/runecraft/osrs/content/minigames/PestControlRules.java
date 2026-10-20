@@ -150,9 +150,12 @@ public final class PestControlRules {
         };
     }
 
-    /** Distance (blocks) a knight-attacking pest strikes the Void Knight from: defilers and torchers fire over the walls. */
+    /**
+     * Distance (blocks) a knight-attacking pest strikes the Void Knight from: defilers and torchers fire over the walls from
+     * the south wall's line (approx: the wiki only says "long distance"); shifters strike from beside him, also diagonally.
+     */
     public static double knightReach(String pest) {
-        return pest.equals("shifter") ? 2.0 : 8.0; // approx: the wiki only says "long distance"
+        return pest.equals("shifter") ? 2.5 : 10.0;
     }
 
     /** Game ticks between a pest's attacks (every pest attacks every 4 ticks, osrs-dps-calc). */
@@ -162,9 +165,9 @@ public final class PestControlRules {
     /** Game ticks between a portal's spawns while it stands (approx). */
     public static final int SPAWN_TICKS = 8;
 
-    /** Most pests alive at once: more players, more pests (wiki 2006 update; numbers approx). */
+    /** Most pests alive at once: more players, more pests (wiki 2006 update; numbers approx, 10 for a lone player). */
     public static int pestCap(int players) {
-        return 10 + 6 * Math.max(1, players);
+        return 6 + 4 * Math.max(1, players);
     }
 
     // ------------------------------------------------------------------ portals and shields

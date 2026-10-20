@@ -227,6 +227,20 @@ class PestControlTest {
     }
 
     @Test
+    void westernDiaryNeedsAGameWonOnEachLander() {
+        // The Western Provinces diary's Pest Control tasks are games won on the novice / intermediate / veteran lander (the
+        // hard one unlocks the elite void upgrade), not combat levels.
+        String[][] tasks = {{"EASY", "minigame_win:pest_control_novice"}, {"MEDIUM", "minigame_win:pest_control_intermediate"},
+                {"HARD", "minigame_win:pest_control_veteran"}};
+        for (String[] t : tasks) {
+            assertTrue(com.runecraft.osrs.content.systems.Diaries.tasks("western",
+                    com.runecraft.osrs.content.systems.Diaries.Tier.valueOf(t[0])).stream()
+                    .anyMatch(x -> x.type() == com.runecraft.osrs.content.systems.Diaries.Type.EVENT && x.target().equals(t[1])), t[1]);
+        }
+        assertEquals("minigame_win:pest_control_" + PestControl.TIERS[2].toLowerCase(java.util.Locale.ROOT), tasks[2][1]);
+    }
+
+    @Test
     void packsMatchTheWiki() {
         assertEquals(List.of("grimy_harralander", "grimy_ranarr_weed", "grimy_toadflax", "grimy_irit_leaf", "grimy_avantoe", "grimy_kwuarm"),
                 PestControlRules.HERB_PACK.stream().map(Loot::item).toList());
