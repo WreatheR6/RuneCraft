@@ -227,8 +227,9 @@ public final class GwdMonsters {
                 .speed(4).defenceBonus(130, 130, 130, 130, 130)
                 .attack(AttackDef.of("bite", AttackType.STAB, 20, 2.5, 10)).size(0.9f, 1.2f, 1.5f));
         // Venenatis' and Spindel's spiderlings.
-        list.add(MonsterDef.of("venenatis_spiderling", "Spiderling").level(57).stats(40, 60, 60, 40, 1, 1).speed(4) // approx.
-                .attack(AttackDef.of("bite", AttackType.STAB, 6, 2.5, 10).special(Special.POISON, 4))
+        // OSRS Wiki: not poisonous; every hit drains 1 Prayer point, damaging or not (stats from MonsterStatsTable).
+        list.add(MonsterDef.of("venenatis_spiderling", "Spiderling").level(57).stats(40, 60, 60, 40, 1, 1).speed(4)
+                .attack(AttackDef.of("bite", AttackType.STAB, 3, 2.5, 10).special(Special.DRAIN_PRAYER, 1))
                 .size(0.8f, 0.6f, 1.0f));
         // Scorpia's family.
         list.add(MonsterDef.of("scorpias_offspring", "Scorpia's offspring").level(15).stats(5, 1, 1, 1, 30, 1).speed(4)

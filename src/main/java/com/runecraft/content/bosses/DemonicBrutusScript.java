@@ -25,6 +25,11 @@ final class DemonicBrutusScript implements BossScript {
     private ServerPlayer volleyTarget;
     private final List<AttackDef> volley = new ArrayList<>();
 
+    /**
+     * The next attack. The attack goal asks for one every tick (to know whether to chase), so nothing is counted here: the
+     * attack actually made is counted in {@link #beforeAttack}. (Counting here made a special every few ticks and, in phase 2,
+     * a fresh ghost volley every few ticks: a ghost hit every game tick.)
+     */
     @Override
     public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
         if (!started) {
@@ -32,23 +37,30 @@ final class DemonicBrutusScript implements BossScript {
             stompNext = boss.getRandom().nextBoolean();
         }
         if (basics >= ModernBosses.DEMONIC_BASICS_PER_SPECIAL) {
-            basics = 0;
-            AttackDef special = stompNext ? ModernBosses.DEMONIC_STOMP : ModernBosses.DEMONIC_CHARGE;
-            stompNext = !stompNext;
-            if (secondPhase) {
-                volley.clear();
-                volley.add(ModernBosses.DEMONIC_GHOST_MAGIC);
-                volley.add(ModernBosses.DEMONIC_GHOST_MELEE);
-                volley.add(ModernBosses.DEMONIC_GHOST_RANGED);
-                int r = boss.getRandom().nextInt(3);
-                volley.add(r == 0 ? ModernBosses.DEMONIC_GHOST_MAGIC : r == 1 ? ModernBosses.DEMONIC_GHOST_MELEE : ModernBosses.DEMONIC_GHOST_RANGED);
-                volleyTarget = target;
-                BossFx.warn(boss, "Brutus' ghosts gather around you: magic, melee, ranged...");
-            }
-            return special;
+            return stompNext ? ModernBosses.DEMONIC_STOMP : ModernBosses.DEMONIC_CHARGE;
         }
-        basics++;
         return distance <= ModernBosses.DEMONIC_HORNS.range() ? ModernBosses.DEMONIC_HORNS : ModernBosses.DEMONIC_FIRE;
+    }
+
+    @Override
+    public AttackDef beforeAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
+        if (attack != ModernBosses.DEMONIC_STOMP && attack != ModernBosses.DEMONIC_CHARGE) {
+            basics++;
+            return attack;
+        }
+        basics = 0;
+        stompNext = attack != ModernBosses.DEMONIC_STOMP;
+        if (secondPhase) {
+            volley.clear();
+            volley.add(ModernBosses.DEMONIC_GHOST_MAGIC);
+            volley.add(ModernBosses.DEMONIC_GHOST_MELEE);
+            volley.add(ModernBosses.DEMONIC_GHOST_RANGED);
+            int r = boss.getRandom().nextInt(3);
+            volley.add(r == 0 ? ModernBosses.DEMONIC_GHOST_MAGIC : r == 1 ? ModernBosses.DEMONIC_GHOST_MELEE : ModernBosses.DEMONIC_GHOST_RANGED);
+            volleyTarget = target;
+            BossFx.warn(boss, "Brutus' ghosts gather around you: magic, melee, ranged...");
+        }
+        return attack;
     }
 
     @Override

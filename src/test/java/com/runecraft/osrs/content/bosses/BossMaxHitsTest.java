@@ -43,6 +43,29 @@ class BossMaxHitsTest {
         assertEquals(List.of(), wrong);
     }
 
+    /**
+     * Callisto's and Artio's knockback orb (OSRS Wiki): 5 when the player is thrown the full 3 tiles, +15 for each tile a wall
+     * cuts short (50 against a wall). The reworked trio lost their invented attacks (roar, bear trap and halberd hits).
+     */
+    @Test
+    void wildernessTrioRework() {
+        assertEquals(5, com.runecraft.osrs.content.godwars.WildernessBosses.orbDamage(3));
+        assertEquals(20, com.runecraft.osrs.content.godwars.WildernessBosses.orbDamage(2));
+        assertEquals(35, com.runecraft.osrs.content.godwars.WildernessBosses.orbDamage(1));
+        assertEquals(50, com.runecraft.osrs.content.godwars.WildernessBosses.orbDamage(0));
+        for (String id : List.of("callisto", "artio")) {
+            assertTrue(ContentRegistry.boss(id).attacks.stream().noneMatch(a -> a.name().equals("roar") || a.name().equals("bear trap")), id);
+        }
+        for (String id : List.of("vetion", "calvarion")) {
+            assertTrue(ContentRegistry.boss(id).attacks.stream().noneMatch(AttackDef::melee) || ContentRegistry.boss(id).attacks.stream()
+                    .filter(AttackDef::melee).allMatch(a -> a.name().equals("shield bash")), id + ": his sword swings are cosmetic");
+        }
+        for (String id : List.of("venenatis", "spindel")) {
+            assertTrue(ContentRegistry.boss(id).attacks.stream().allMatch(a -> a.special() == AttackDef.Special.PRAYER_PIERCING),
+                    id + ": prayer is applied by the script (spiderlings let part of a protected hit through)");
+        }
+    }
+
     /** Attacks that aren't in OSRS stay gone: the Royal Titans only stomp (their walls and blasts are scripted). */
     @Test
     void noInventedTitanAttacks() {

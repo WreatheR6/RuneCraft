@@ -41,6 +41,62 @@ public final class WildernessBosses {
     public static final AttackDef CHAOS_MADNESS = AttackDef.of("madness", AttackType.MAGIC, 0, 16, 2)
             .particle("minecraft:enchant").message("The Chaos Elemental's madness grips you!");
 
+    // --- Callisto & Artio (OSRS Wiki, Callisto/Artio strategies, post-2023 rework). Their scripts pick the attack: the swipe
+    // in reach (prayer only halves it, with a minimum hit), the crescents at everyone otherwise, now and then the knockback
+    // orb (Protect from Magic blocks it; off prayer it throws the target back 3 tiles and hits 5, +15 per tile a wall cut
+    // short). Bear traps are scripted.
+    public static final AttackDef CALLISTO_SWIPE = AttackDef.of("claw swipe", AttackType.CRUSH, 55, 3.5, 1)
+            .special(Special.PRAYER_PIERCING, 0);
+    public static final AttackDef CALLISTO_CRESCENT = AttackDef.of("crescent", AttackType.RANGED, 31, 16, 1).particle("minecraft:sweep_attack");
+    public static final AttackDef CALLISTO_ORB = AttackDef.of("knockback orb", AttackType.MAGIC, 50, 16, 1)
+            .special(Special.PRAYER_PIERCING, 0).telegraph(2, "A white orb flies at you! (Protect from Magic)").particle("minecraft:end_rod");
+    public static final AttackDef ARTIO_SWIPE = AttackDef.of("claw swipe", AttackType.CRUSH, 35, 3.5, 1)
+            .special(Special.PRAYER_PIERCING, 0);
+    public static final AttackDef ARTIO_CRESCENT = AttackDef.of("crescent", AttackType.RANGED, 17, 16, 1).particle("minecraft:sweep_attack");
+    public static final AttackDef ARTIO_ORB = AttackDef.of("knockback orb", AttackType.MAGIC, 50, 16, 1)
+            .special(Special.PRAYER_PIERCING, 0).telegraph(2, "A white orb flies at you! (Protect from Magic)").particle("minecraft:end_rod");
+    /** Minimum hits of the bears' claw swipes when they land (wiki: 35 for Callisto, 15 for Artio). */
+    public static final int CALLISTO_SWIPE_MIN = 35;
+    public static final int ARTIO_SWIPE_MIN = 15;
+    /** The knockback orb: tiles it throws a player back, damage when thrown the full way, and the extra per tile cut short. */
+    public static final int ORB_KNOCKBACK_TILES = 3;
+    public static final int ORB_BASE_DAMAGE = 5;
+    public static final int ORB_DAMAGE_PER_BLOCKED_TILE = 15;
+    /** Bear traps: up to 15 damage and a short bind; laid at 66% and 33% health, then after every attack. */
+    public static final int BEAR_TRAP_MAX = 15;
+
+    /** The knockback orb's damage off prayer when a wall stops the throw after {@code movedTiles} of the 3 tiles. */
+    public static int orbDamage(int movedTiles) {
+        int blocked = Math.max(0, ORB_KNOCKBACK_TILES - Math.max(0, movedTiles));
+        return ORB_BASE_DAMAGE + ORB_DAMAGE_PER_BLOCKED_TILE * blocked;
+    }
+
+    // --- Venenatis & Spindel: melee in reach, otherwise ranged or magic (8 of one, then 8 of the other), shuffling every 4
+    // attacks; spiderlings and a sticky web are scripted. Prayer blocks their hits less for every spiderling alive.
+    public static final AttackDef VENENATIS_BITE = AttackDef.of("lunge", AttackType.STAB, 21, 3.5, 1).special(Special.PRAYER_PIERCING, 0);
+    public static final AttackDef VENENATIS_SPIT = AttackDef.of("spit", AttackType.RANGED, 35, 16, 1).special(Special.PRAYER_PIERCING, 0).particle("minecraft:item_slime");
+    public static final AttackDef VENENATIS_WEB_BOLT = AttackDef.of("web bolt", AttackType.MAGIC, 30, 16, 1).special(Special.PRAYER_PIERCING, 0).particle("minecraft:white_ash");
+    public static final AttackDef SPINDEL_BITE = AttackDef.of("lunge", AttackType.STAB, 14, 3.5, 1).special(Special.PRAYER_PIERCING, 0);
+    public static final AttackDef SPINDEL_SPIT = AttackDef.of("spit", AttackType.RANGED, 31, 16, 1).special(Special.PRAYER_PIERCING, 0).particle("minecraft:item_slime");
+    public static final AttackDef SPINDEL_WEB_BOLT = AttackDef.of("web bolt", AttackType.MAGIC, 24, 16, 1).special(Special.PRAYER_PIERCING, 0).particle("minecraft:white_ash");
+    /** Share of a protected hit that still lands per living spiderling, and the max hit bonus each gives. // approx (unpublished) */
+    public static final double SPIDERLING_PRAYER_LEAK = 0.15;
+    public static final double SPIDERLING_DAMAGE_BONUS = 0.05;
+    /** The sticky web: 3 damage, 3 prayer and 10% run energy every other tick while standing in it (7x5 tiles). */
+    public static final int WEB_DAMAGE = 3;
+    public static final int WEB_PRAYER = 3;
+
+    // --- Vet'ion & Calvar'ion: no melee damage (his swings are cosmetic); lightning in a 3x3 at each player's tile plus bolts
+    // around the arena, and a shield bash in melee distance. Enraged he attacks every 5 ticks instead of 6.
+    public static final AttackDef VETION_LIGHTNING = AttackDef.of("lightning", AttackType.MAGIC, 44, 16, 1)
+            .special(Special.SKY_STRIKE, 0).particle("minecraft:electric_spark");
+    public static final AttackDef VETION_BASH = AttackDef.of("shield bash", AttackType.CRUSH, 35, 4, 1).special(Special.AOE, 3)
+            .telegraph(3, "Vet'ion raises his shield... get away!");
+    public static final AttackDef CALVARION_LIGHTNING = AttackDef.of("lightning", AttackType.MAGIC, 26, 16, 1)
+            .special(Special.SKY_STRIKE, 0).particle("minecraft:electric_spark");
+    public static final AttackDef CALVARION_BASH = AttackDef.of("shield bash", AttackType.CRUSH, 26, 4, 1).special(Special.AOE, 3)
+            .telegraph(3, "Calvar'ion raises his shield... get away!");
+
     public static List<BossDef> all() {
         List<BossDef> list = new ArrayList<>();
         Drop[] trioCommons = {Drop.of("coins", 15000, 30000, 4), Drop.of("rune_pickaxe", 1, 1, 12), Drop.of("runite_ore", 15, 20, 12),
@@ -51,12 +107,7 @@ public final class WildernessBosses {
         // --- Callisto & Artio ---
         list.add(trio(BossDef.of("callisto", "Callisto").level(470).stats(1000, 350, 340, 440, 1, 1).speed(5)
                 .defenceBonus(150, 150, 130, 160, 230)
-                .attack(AttackDef.of("claw swipe", AttackType.CRUSH, 55, 3.5, 6))
-                .attack(AttackDef.of("shockwave", AttackType.RANGED, 43, 16, 4).particle("minecraft:sweep_attack"))
-                .attack(AttackDef.of("roar", AttackType.MAGIC, 3, 6, 2).special(Special.KNOCKBACK, 6)
-                        .message("Callisto's roar throws you backwards!"))
-                .attack(AttackDef.of("bear trap", AttackType.MAGIC, 0, 16, 2).special(Special.HAZARD, 10)
-                        .message("Callisto scatters bear traps!"))
+                .attack(CALLISTO_SWIPE).attack(CALLISTO_CRESCENT).attack(CALLISTO_ORB)
                 .drops(trioCommons)
                 .drops(Drop.always("big_bones"), Drop.of("tyrannical_ring", 1, 1, 512), Drop.of("dragon_pickaxe", 1, 1, 256),
                         Drop.of("dragon_2h_sword", 1, 1, 256), Drop.of("voidwaker_hilt", 1, 1, 360),
@@ -64,9 +115,7 @@ public final class WildernessBosses {
                 .pet("callisto_cub").at("callisto_den").arena(13, "stone"), 1.6f, 1.4f, 2.0f));
         list.add(trio(BossDef.of("artio", "Artio").level(320).stats(450, 250, 240, 200, 1, 1).speed(5)
                 .defenceBonus(100, 100, 90, 110, 150)
-                .attack(AttackDef.of("claw swipe", AttackType.CRUSH, 41, 3.5, 6))
-                .attack(AttackDef.of("shockwave", AttackType.RANGED, 30, 16, 4).particle("minecraft:sweep_attack"))
-                .attack(AttackDef.of("bear trap", AttackType.MAGIC, 0, 16, 2).special(Special.HAZARD, 8))
+                .attack(ARTIO_SWIPE).attack(ARTIO_CRESCENT).attack(ARTIO_ORB)
                 .drops(Drop.always("big_bones"), Drop.of("coins", 5000, 12000, 4), Drop.of("runite_ore", 5, 8, 16),
                         Drop.of("tyrannical_ring", 1, 1, 716), Drop.of("dragon_pickaxe", 1, 1, 358),
                         Drop.of("dragon_2h_sword", 1, 1, 358), Drop.of("voidwaker_hilt", 1, 1, 912),
@@ -76,12 +125,7 @@ public final class WildernessBosses {
         // --- Venenatis & Spindel ---
         list.add(trio(BossDef.of("venenatis", "Venenatis").level(464).stats(850, 300, 280, 321, 150, 150).speed(4)
                 .defenceBonus(170, 170, 150, 220, 170)
-                .attack(AttackDef.of("venomous bite", AttackType.STAB, 50, 3.5, 4).special(Special.POISON, 8))
-                .attack(AttackDef.of("dark magic", AttackType.MAGIC, 30, 16, 4).special(Special.DRAIN_PRAYER, 8)
-                        .particle("minecraft:witch"))
-                .attack(AttackDef.of("web", AttackType.RANGED, 20, 16, 2).special(Special.FREEZE, 5)
-                        .message("Venenatis hurls her web at you, sticking you to the ground!").particle("minecraft:white_ash"))
-                .phase(50, "Venenatis' spiderlings hatch!", 1.0, true)
+                .attack(VENENATIS_BITE).attack(VENENATIS_SPIT).attack(VENENATIS_WEB_BOLT)
                 .drops(trioCommons)
                 .drops(Drop.always("big_bones"), Drop.of("treasonous_ring", 1, 1, 512), Drop.of("dragon_pickaxe", 1, 1, 256),
                         Drop.of("dragon_2h_sword", 1, 1, 256), Drop.of("voidwaker_gem", 1, 1, 360),
@@ -90,11 +134,7 @@ public final class WildernessBosses {
                 .at("venenatis_nest").arena(13, "crypt"), 2.2f, 1.1f, 2.0f));
         list.add(trio(BossDef.of("spindel", "Spindel").level(302).stats(515, 200, 190, 220, 110, 110).speed(4)
                 .defenceBonus(120, 120, 110, 160, 120)
-                .attack(AttackDef.of("venomous bite", AttackType.STAB, 35, 3.5, 4).special(Special.POISON, 6))
-                .attack(AttackDef.of("dark magic", AttackType.MAGIC, 22, 16, 4).special(Special.DRAIN_PRAYER, 5)
-                        .particle("minecraft:witch"))
-                .attack(AttackDef.of("web", AttackType.RANGED, 15, 16, 2).special(Special.FREEZE, 4).particle("minecraft:white_ash"))
-                .phase(50, "Spindel's spiderlings hatch!", 1.0, true)
+                .attack(SPINDEL_BITE).attack(SPINDEL_SPIT).attack(SPINDEL_WEB_BOLT)
                 .drops(Drop.always("big_bones"), Drop.of("coins", 5000, 12000, 4), Drop.of("runite_ore", 5, 8, 16),
                         Drop.of("treasonous_ring", 1, 1, 716), Drop.of("dragon_pickaxe", 1, 1, 358),
                         Drop.of("dragon_2h_sword", 1, 1, 358), Drop.of("voidwaker_gem", 1, 1, 912),
@@ -105,11 +145,7 @@ public final class WildernessBosses {
         // --- Vet'ion & Calvar'ion (two forms and hellhounds are handled by the script) ---
         list.add(trio(BossDef.of("vetion", "Vet'ion").level(454).stats(255, 234, 270, 395, 300, 1).speed(4)
                 .defenceBonus(201, 200, 200, 250, 270)
-                .attack(AttackDef.of("halberd", AttackType.SLASH, 30, 3.5, 5))
-                .attack(AttackDef.of("lightning", AttackType.MAGIC, 30, 16, 4).special(Special.SKY_STRIKE, 0)
-                        .particle("minecraft:electric_spark").message("Vet'ion calls down lightning!"))
-                .attack(AttackDef.of("shield bash", AttackType.CRUSH, 45, 4, 2).special(Special.AOE, 3)
-                        .telegraph(3, "Vet'ion raises his shield... get away!"))
+                .attack(VETION_LIGHTNING).attack(VETION_BASH)
                 .drops(trioCommons)
                 .drops(Drop.always("big_bones"), Drop.of("ring_of_the_gods", 1, 1, 512), Drop.of("dragon_pickaxe", 1, 1, 256),
                         Drop.of("dragon_2h_sword", 1, 1, 256), Drop.of("voidwaker_blade", 1, 1, 360),
@@ -118,11 +154,7 @@ public final class WildernessBosses {
                 .at("vetion_ruins").arena(13, "crypt"), 0.8f, 2.2f, 1.7f));
         list.add(trio(BossDef.of("calvarion", "Calvar'ion").level(264).stats(255, 160, 180, 250, 200, 1).speed(4)
                 .defenceBonus(140, 140, 140, 170, 190)
-                .attack(AttackDef.of("halberd", AttackType.SLASH, 22, 3.5, 5))
-                .attack(AttackDef.of("lightning", AttackType.MAGIC, 22, 16, 4).special(Special.SKY_STRIKE, 0)
-                        .particle("minecraft:electric_spark"))
-                .attack(AttackDef.of("shield bash", AttackType.CRUSH, 32, 4, 2).special(Special.AOE, 3)
-                        .telegraph(3, "Calvar'ion raises his shield... get away!"))
+                .attack(CALVARION_LIGHTNING).attack(CALVARION_BASH)
                 .drops(Drop.always("big_bones"), Drop.of("coins", 5000, 12000, 4), Drop.of("runite_ore", 5, 8, 16),
                         Drop.of("ring_of_the_gods", 1, 1, 716), Drop.of("dragon_pickaxe", 1, 1, 358),
                         Drop.of("dragon_2h_sword", 1, 1, 358), Drop.of("voidwaker_blade", 1, 1, 912),
@@ -157,9 +189,8 @@ public final class WildernessBosses {
         // --- Chaos Fanatic & Crazy Archaeologist ---
         list.add(BossDef.of("chaos_fanatic", "Chaos Fanatic").level(202).stats(225, 1, 1, 220, 230, 1).speed(4)
                 .defenceBonus(80, 80, 80, 150, 80) // approx.
-                .attack(AttackDef.of("chaos blast", AttackType.MAGIC, 31, 16, 8).particle("minecraft:dragon_breath"))
-                .attack(AttackDef.of("green explosion", AttackType.MAGIC, 15, 16, 3).special(Special.SKY_STRIKE, 0)
-                        .particle("minecraft:happy_villager").message("Chaos Fanatic: Burn!"))
+                // OSRS Wiki: red magic bolts up to 21; the green explosions (scripted) up to 31.
+                .attack(AttackDef.of("chaos blast", AttackType.MAGIC, 21, 16, 1).particle("minecraft:dragon_breath"))
                 .drops(Drop.always("bones"), Drop.of("coins", 3000, 8000, 4), Drop.of("chaos_rune", 100, 200, 8),
                         Drop.of("odium_shard_1", 1, 1, 256), Drop.of("malediction_shard_1", 1, 1, 256),
                         Drop.of("clue_scroll_elite", 1, 1, 750))
@@ -167,10 +198,9 @@ public final class WildernessBosses {
                 .size(0.6f, 1.95f, 1.15f));
         list.add(BossDef.of("crazy_archaeologist", "Crazy archaeologist").level(204).stats(225, 1, 1, 220, 1, 275).speed(4)
                 .defenceBonus(80, 80, 80, 80, 150) // approx.
-                .attack(AttackDef.of("crossbow", AttackType.RANGED, 23, 16, 8).particle("minecraft:crit"))
-                .attack(AttackDef.of("melee", AttackType.CRUSH, 23, 2.5, 4))
-                .attack(AttackDef.of("explosive book", AttackType.RANGED, 23, 16, 3).special(Special.SKY_STRIKE, 0)
-                        .particle("minecraft:explosion").message("Crazy archaeologist: Taste my knowledge!"))
+                // OSRS Wiki: ranged, melee only next to him, both up to 14; "Rain of knowledge!" books (scripted) up to 24.
+                .attack(AttackDef.of("crossbow", AttackType.RANGED, 14, 16, 8).particle("minecraft:crit"))
+                .attack(AttackDef.of("melee", AttackType.CRUSH, 14, 2.5, 4))
                 .drops(Drop.always("bones"), Drop.of("coins", 3000, 8000, 4), Drop.of("law_rune", 50, 100, 8),
                         Drop.of("odium_shard_2", 1, 1, 256), Drop.of("malediction_shard_2", 1, 1, 256),
                         Drop.of("clue_scroll_elite", 1, 1, 200))
