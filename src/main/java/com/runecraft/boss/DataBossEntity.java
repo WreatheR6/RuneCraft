@@ -403,8 +403,9 @@ public class DataBossEntity extends OsrsMonsterEntity {
         if (def == null) {
             return;
         }
+        net.minecraft.world.entity.Entity lootAt = DataBossService.lootSpot(def.id, this, player);
         for (Drops.Rolled r : DataBossService.rollLoot(player, this, variant != null ? variant.drops() : def.drops)) {
-            Inv.spawnAtLocation(this, Drops.withDoses(com.runecraft.combat.CombatHooks.dropStack(player, this, r.item(), r.count()), r.doses()));
+            Inv.spawnAtLocation(lootAt, Drops.withDoses(com.runecraft.combat.CombatHooks.dropStack(player, this, r.item(), r.count()), r.doses()));
             CollectionLog.obtain(player, r.item());
         }
         if (variant == null && DataBossService.isCompanion(def.id)) {

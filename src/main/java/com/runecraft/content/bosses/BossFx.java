@@ -159,9 +159,11 @@ final class BossFx {
             form.discard();
             return;
         }
+        // where the main boss's kill drops: where the form died, or under the killer (Zulrah)
+        net.minecraft.world.entity.Entity lootAt = com.runecraft.boss.DataBossService.lootSpot(def.id, form, killer);
         for (Drops.Rolled r : com.runecraft.boss.DataBossService.rollLoot(killer, form, def.id, def.drops)) {
             // through the drop transformers like any kill (ring of wealth coins, noted drops from diaries...)
-            Inv.spawnAtLocation(form, Drops.withDoses(com.runecraft.combat.CombatHooks.dropStack(killer, form, r.item(), r.count()),
+            Inv.spawnAtLocation(lootAt, Drops.withDoses(com.runecraft.combat.CombatHooks.dropStack(killer, form, r.item(), r.count()),
                     r.doses()));
             CollectionLog.obtain(killer, r.item());
         }

@@ -67,7 +67,8 @@ import net.minecraft.world.phys.Vec3;
  *   ({@code BossSelfTests.assist}): its script says so, or the player's attacks roll damage that its rules take to nothing
  *   (Bryophyta behind her growthlings, the Abyssal Sire until its respiratory systems are gone); the player's own attack
  *   also goes in right after the first heavy hit that gets through, so a boss hurtable only late isn't finished first;</li>
- *   <li>the kill adds a kill count and leaves loot (on the ground or in the inventory).</li>
+ *   <li>the kill adds a kill count and leaves loot (on the ground where it died, or under the player for a boss whose drops
+ *   OSRS gives there ({@code DataBossService.lootUnderKiller}: Zulrah), or in the inventory).</li>
  * </ol>
  * The player keeps a big health buffer and is healed every tick, so it never dies. A boss that swaps itself for another
  * entity (Zulrah's and the Hydra's forms) is followed. Nothing else in the world ticks during the fight (minions only
@@ -475,12 +476,23 @@ final class BossFightChecks {
             p.setHealth(p.getMaxHealth());
         }
         int kc = totalKills(data) - kcBefore;
-        int ground = 0;
-        for (ItemEntity e : c.world.getEntitiesOfClass(ItemEntity.class, new AABB(BlockPos.containing(deathAt)).inflate(12), e -> true)) {
-            if (!items.contains(e.getUUID())) {
-                ground++;
+        // The loot lies where the boss died (its last game tick's start, and where the entity ended: a form removed by its kill
+        // keeps its last position), or under the killer for a boss whose drops OSRS hands out there (Zulrah, which dies in its
+        // swamp: "the drops will be received under the player").
+        Set<UUID> dropped = new HashSet<>();
+        List<AABB> lootAreas = new ArrayList<>(List.of(new AABB(BlockPos.containing(deathAt)).inflate(12)));
+        if (killedAt >= 0 && boss.position().distanceToSqr(deathAt) > 1.0) {
+            lootAreas.add(new AABB(BlockPos.containing(boss.position())).inflate(12));
+        }
+        if (DataBossService.lootsUnderKiller(id)) {
+            lootAreas.add(p.getBoundingBox().inflate(2));
+        }
+        for (AABB area : lootAreas) {
+            for (ItemEntity e : c.world.getEntitiesOfClass(ItemEntity.class, area, e -> !items.contains(e.getUUID()))) {
+                dropped.add(e.getUUID());
             }
         }
+        int ground = dropped.size();
         int pocketed = Math.max(0, inventoryCount(p) - invBefore);
         // loot kept for the player elsewhere (the Doom's delve loot waits in the burrow hole until claimed)
         pocketed += Math.max(0, com.runecraft.content.bosses.BossSelfTests.heldLoot(id, p) - heldBefore);

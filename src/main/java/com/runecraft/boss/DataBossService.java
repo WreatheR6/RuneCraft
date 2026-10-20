@@ -108,6 +108,30 @@ public final class DataBossService {
         return lastRoll;
     }
 
+    /** Bosses whose kill loot is received under the killer instead of where the boss died ({@link #lootUnderKiller}). */
+    private static final java.util.Set<String> LOOT_UNDER_KILLER = new java.util.HashSet<>();
+
+    /**
+     * Marks a boss whose kill loot appears under the player who killed it, not where it died (OSRS Wiki, Zulrah: "the drops
+     * will be received under the player, much like cave krakens"; Zulrah dies out in its swamp). Every form crediting the
+     * boss's kill drops there too.
+     */
+    public static void lootUnderKiller(String bossId) {
+        LOOT_UNDER_KILLER.add(bossId);
+    }
+
+    public static boolean lootsUnderKiller(String bossId) {
+        return LOOT_UNDER_KILLER.contains(bossId);
+    }
+
+    /**
+     * Where a kill of {@code bossId} leaves its loot: under the killer for a {@link #lootUnderKiller} boss, else where the
+     * entity that died ({@code died}) stands.
+     */
+    public static net.minecraft.world.entity.Entity lootSpot(String bossId, DataBossEntity died, ServerPlayer killer) {
+        return killer != null && killer.level() == died.level() && LOOT_UNDER_KILLER.contains(bossId) ? killer : died;
+    }
+
     public static void requirement(String bossId, BiPredicate<ServerPlayer, BossDef> check) {
         REQUIREMENTS.put(bossId, check);
     }

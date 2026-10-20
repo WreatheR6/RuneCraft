@@ -38,6 +38,9 @@ public final class BossesHooks implements ModuleHooks {
         for (String form : new String[]{"zulrah", "zulrah_magma", "zulrah_tanzanite"}) {
             BossScripts.register(form, () -> new ZulrahScript(form));
         }
+        // OSRS Wiki (Zulrah): "When a player defeats Zulrah, the drops will be received under the player" (it dies in the
+        // swamp, out of reach), whichever form it dies in (the later forms credit the kill as "zulrah").
+        com.runecraft.boss.DataBossService.lootUnderKiller("zulrah");
         BossScripts.register("vorkath", VorkathScript::new);
         // Dragon Slayer II's Vorkath (quests module boss): the same fight with the quest version's max hits.
         BossScripts.register("ds2_vorkath", () -> new VorkathScript(true));
