@@ -195,17 +195,19 @@ public final class RewardShops {
             mta.itemMulti(r[0], costs);
         }
 
-        // Hallowed Sepulchre: Mysterious Hallowed Goods (hallowed marks; crystal shard 1, ring 250 per wiki; others approx.).
+        // Hallowed Sepulchre: the Mysterious Stranger's Mysterious Hallowed Goods (wiki stock and prices, in hallowed marks). The
+        // strange old lockpick is a coffin drop, not stock.
         shop("hallowed_sepulchre", "Mysterious Hallowed Goods")
                 .item("hallowed_crystal_shard", MARKS, 1)
+                .item("hallowed_token", MARKS, 10)
+                .item("hallowed_grapple", MARKS, 100)
                 .item("hallowed_focus", MARKS, 100)
                 .item("hallowed_symbol", MARKS, 100)
                 .item("hallowed_hammer", MARKS, 100)
-                .item("hallowed_grapple", MARKS, 100)
                 .item("hallowed_ring", MARKS, 250)
                 .item("dark_dye", MARKS, 300)
                 .item("dark_acorn", MARKS, 3000)
-                .item("strange_old_lockpick", MARKS, 1000);
+                .item("hallowed_sack", MARKS, 100);
 
         // Brimhaven Agility Arena: Pirate Jackie the Fruit. Since the May 2024 rebalance tickets only buy Agility XP,
         // at a flat 345 each, and the items cost Brimhaven vouchers (pirate's hook 800, the Agility Arena Graceful
@@ -217,7 +219,9 @@ public final class RewardShops {
                 .item("pirates_hook", BRIMHAVEN_VOUCHERS, 800)
                 .item(GRACEFUL_RECOLOUR + "_agility_arena", BRIMHAVEN_VOUCHERS, 250)
                 .item("toadflax", BRIMHAVEN_VOUCHERS, 3)
-                .item("snapdragon", BRIMHAVEN_VOUCHERS, 10);
+                .item("snapdragon", BRIMHAVEN_VOUCHERS, 10)
+                // The amylase pack (60 vouchers) holds 100 amylase crystals.
+                .item("amylase_crystal", 100, BRIMHAVEN_VOUCHERS, 60);
 
         // Trouble Brewing: Honest Jimmy's House of Stuff (pieces of eight; OSRS Wiki: ten times each item's value,
         // rum 20).

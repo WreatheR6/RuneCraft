@@ -600,17 +600,35 @@ public final class MinigameRules {
     }
 
     // ---------------------------------------------------------------- Pyramid Plunder
+    /**
+     * Pyramid Plunder in Jalsavrah (OSRS Wiki "Pyramid Plunder", "Urn (Pyramid Plunder)", "Grand Gold Chest", "Sarcophagus
+     * (Pyramid Plunder)", "Tomb Door", "Speartrap"): five minutes for up to eight rooms (Thieving 21-91, unboostable). Each
+     * room has a speartrap at its entrance, 13 urns (12 in room 3), a Grand Gold Chest, a sarcophagus and four tomb doors, one
+     * of which leads on (the fourth always does after three wrong ones); the final room's doors lead out.
+     */
     public static final class PyramidPlunder {
+        public static final int ROOMS = 8;
         public static final int[] ROOM_LEVELS = {21, 31, 41, 51, 61, 71, 81, 91};
-        /** Thieving XP for looting an urn (3x the snake-check XP), per room. */
-        public static final double[] URN_XP = {60, 90, 150, 210, 300, 450, 675, 825};
-        /** Thieving XP for opening the Grand Gold Chest, per room. */
+        /** Thieving XP for looting an urn, per room (searching = checking for snakes and searching). */
+        public static final double[] URN_XP = {60, 90, 150, 215, 300, 450, 675, 825};
+        /** Thieving XP for opening the Grand Gold Chest (none when a scarab swarm comes out). */
         public static final double[] CHEST_XP = {40, 60, 100, 140, 200, 300, 450, 550};
-        /** Strength XP for opening the sarcophagus, per room. */
+        /** Strength XP for opening the sarcophagus. */
         public static final double[] SARCOPHAGUS_XP = {20, 30, 50, 70, 100, 150, 225, 275};
-        /** Sceptre chance (1 in N) from the Grand Gold Chest per room (approx.). */
-        public static final int[] SCEPTRE_CHANCE = {3500, 2250, 1250, 750, 650, 650, 650, 650};
+        /** Thieving XP for picking the right tomb door (halved with a lockpick); the final room's doors lead out. */
+        public static final double[] DOOR_XP = {40, 60, 100, 140, 200, 300, 450, 0};
+        /** Thieving XP for passing a room's speartrap. */
+        public static final double SPEAR_XP = 10;
+        /** Urns per room (room 3 has one fewer). */
+        public static final int[] URNS = {13, 13, 12, 13, 13, 13, 13, 13};
+        public static final int DOORS = 4;
+        /** Pharaoh's sceptre from the chest and the sarcophagus, 1 in N by room (Poll 80, August 2023; rolled even on a failure). */
+        public static final int[] SCEPTRE_CHANCE = {4200, 2800, 1600, 950, 800, 750, 650, 650};
+        /** Five minutes in the pyramid. */
         public static final int GAME_TICKS = 500;
+        /** A scarab swarm out of the chest hits for 3 at once; snakes, the speartrap and the door guardians 1-4. */
+        public static final int SCARAB_DAMAGE = 3;
+        public static final int TRAP_MAX_DAMAGE = 4;
         /**
          * Recharging the pharaoh's sceptre at the guardian mummy (wiki): a full recharge costs 24 ivory/pottery, 12 stone
          * or 6 gold artefacts; shapes may be mixed within one material. The jewelled golden statuette isn't accepted.
@@ -619,7 +637,106 @@ public final class MinigameRules {
                 {"stone_seal", "stone_scarab", "stone_statuette"}, {"gold_seal", "golden_scarab", "golden_statuette"}};
         public static final int[] SCEPTRE_ARTEFACT_COUNT = {24, 12, 6};
 
+        /** One artefact line of a container's table in a room: item and weight out of 4 (1/4 = 1, 1/2 = 2). */
+        public record Artefact(String item, int weight) {
+        }
+
+        private static List<Artefact> t(Object... pairs) {
+            List<Artefact> out = new java.util.ArrayList<>();
+            for (int i = 0; i < pairs.length; i += 2) {
+                out.add(new Artefact((String) pairs[i], (Integer) pairs[i + 1]));
+            }
+            return List.copyOf(out);
+        }
+
+        /** The Grand Gold Chest's artefacts per room (wiki). */
+        public static final List<List<Artefact>> CHEST = List.of(
+                t("stone_seal", 1, "stone_scarab", 2, "stone_statuette", 1),
+                t("stone_scarab", 2, "stone_statuette", 2),
+                t("stone_scarab", 1, "stone_statuette", 2, "gold_seal", 1),
+                t("stone_statuette", 2, "gold_seal", 2),
+                t("stone_statuette", 1, "gold_seal", 2, "golden_scarab", 1),
+                t("gold_seal", 2, "golden_scarab", 2),
+                t("gold_seal", 1, "golden_scarab", 2, "golden_statuette", 1),
+                t("golden_scarab", 2, "golden_statuette", 2));
+        /** The sarcophagus's artefacts per room (wiki). */
+        public static final List<List<Artefact>> SARCOPHAGUS = List.of(
+                t("pottery_scarab", 1, "pottery_statuette", 2, "stone_seal", 1),
+                t("pottery_statuette", 2, "stone_seal", 2),
+                t("pottery_statuette", 1, "stone_seal", 2, "stone_scarab", 1),
+                t("stone_seal", 2, "stone_scarab", 2),
+                t("stone_seal", 1, "stone_scarab", 2, "stone_statuette", 1),
+                t("stone_scarab", 2, "stone_statuette", 2),
+                t("stone_scarab", 1, "stone_statuette", 2, "gold_seal", 1),
+                t("stone_statuette", 2, "gold_seal", 2));
+        /**
+         * Urns per room (approx: the wiki's urn table is incomplete; it lists ivory combs, the stone and the gold artefacts,
+         * and the artefacts' room ranges put ivory combs in rooms 1-2 only). Urns follow the chest's ladder from room 3.
+         */
+        public static final List<List<Artefact>> URN = List.of(
+                t("ivory_comb", 2, "stone_seal", 1, "stone_scarab", 1),
+                t("ivory_comb", 1, "stone_seal", 1, "stone_scarab", 2),
+                t("stone_scarab", 1, "stone_statuette", 2, "gold_seal", 1),
+                t("stone_statuette", 2, "gold_seal", 2),
+                t("stone_statuette", 1, "gold_seal", 2, "golden_scarab", 1),
+                t("gold_seal", 2, "golden_scarab", 2),
+                t("gold_seal", 1, "golden_scarab", 2, "golden_statuette", 1),
+                t("golden_scarab", 2, "golden_statuette", 2));
+
         private PyramidPlunder() {
+        }
+
+        /** The artefact a table of a room gives, given a random value in [0,1). */
+        public static String artefact(List<List<Artefact>> table, int room, double random) {
+            List<Artefact> t = table.get(room - 1);
+            int total = 0;
+            for (Artefact a : t) {
+                total += a.weight();
+            }
+            int r = (int) Math.floor(random * total);
+            for (Artefact a : t) {
+                r -= a.weight();
+                if (r < 0) {
+                    return a.item();
+                }
+            }
+            return t.get(t.size() - 1).item();
+        }
+
+        /** The OSRS skilling chart (out of 256) less 1/256 for every room past the first (wiki: urns and tomb doors). */
+        private static double chart(int level, int low, int high, int room) {
+            return Math.max(0, com.runecraft.osrs.Chance.lerp(level, low, high) - (room - 1) / 256.0);
+        }
+
+        /** Searching an urn (wiki chart 100-180 in room 1). */
+        public static double urnChance(int thieving, int room) {
+            return chart(thieving, 100, 180, room);
+        }
+
+        /** Picking a tomb door (130-220, with a lockpick 160-250, in room 1). */
+        public static double doorChance(int thieving, int room, boolean lockpick) {
+            return lockpick ? chart(thieving, 160, 250, room) : chart(thieving, 130, 220, room);
+        }
+
+        /** Passing the speartrap (160-250; the room penalty is approx). */
+        public static double spearChance(int thieving, int room) {
+            return chart(thieving, 160, 250, room);
+        }
+
+        /** Opening the Grand Gold Chest without setting off the scarabs (130-220). */
+        public static double chestChance(int thieving) {
+            return com.runecraft.osrs.Chance.lerp(thieving, 130, 220);
+        }
+
+        /** Opening the sarcophagus by current Strength: low 80 - room level, high 270 - room level (wiki chart). */
+        public static double sarcophagusChance(int strength, int room) {
+            int lvl = ROOM_LEVELS[room - 1];
+            return com.runecraft.osrs.Chance.lerp(strength, 80 - lvl, 270 - lvl);
+        }
+
+        /** A mummy rises from the sarcophagus with chance room/9; the sceptre is rolled either way. */
+        public static double mummyChance(int room) {
+            return room / 9.0;
         }
 
         /**
@@ -659,30 +776,34 @@ public final class MinigameRules {
             }
             return room;
         }
+    }
 
-        /** Index into {@link MinigameItems#ARTEFACTS} for an urn in a room, given a random value in [0,1). */
-        public static int artefact(int room, double random) {
-            int max = Math.min(MinigameItems.ARTEFACTS.length - 1, room + 1);
-            int min = Math.max(0, room - 3);
-            return min + (int) Math.floor(random * (max - min + 1));
+    // ---------------------------------------------------------------- Agility Pyramid
+    /**
+     * The Agility Pyramid's top (OSRS Wiki "Agility Pyramid", "Pyramid top"): 30 Agility; the pyramid top at the summit gives
+     * the course's completion bonus of 300 + 8 per Agility level (1,000 from level 88; boosts don't count) and is worth 10,000
+     * coins to Simon Templeton. A new top only appears after the player has gone through the doorway at the top, which
+     * returns them to the base. The pyramid's obstacles aren't modelled (the stepped pyramid is climbed by its stairs), so a
+     * top needs a lap's time since the last one: at most 26 laps an hour (approx).
+     */
+    public static final class AgilityPyramid {
+        public static final int LEVEL = 30;
+        public static final String TOP = "pyramid_top";
+        public static final int TOP_PRICE = 10_000;
+        public static final int MIN_LAP_SECONDS = 3600 / 26; // approx
+        /** Where the doorway returns the player: in front of the pyramid's north stairs (OSRS tile, approx). */
+        public static final int BASE_X = 3355;
+        public static final int BASE_Y = 2869;
+
+        private AgilityPyramid() {
+        }
+
+        public static int bonusXp(int baseAgility) {
+            return Math.min(1000, 300 + 8 * baseAgility);
         }
     }
 
-    // ---------------------------------------------------------------- Hallowed Sepulchre
-    public static final class Sepulchre {
-        public static final int[] FLOOR_LEVELS = {52, 62, 72, 82, 92};
-        public static final double[] FLOOR_XP = {575, 925, 1500, 2700, 6000};
-        public static final int RING_CHANCE = 1000;
-        public static final int GAME_TICKS = 300;
-
-        private Sepulchre() {
-        }
-
-        /** Hallowed marks from a coffin on a floor (1-based), given a random value in [0,1). */
-        public static int coffinMarks(int floor, double random) {
-            return floor + (int) Math.floor(random * (floor + 1));
-        }
-    }
+    // Hallowed Sepulchre: see HallowedSepulchre.
 
     // ---------------------------------------------------------------- Tithe Farm
     public static final class TitheFarm {
@@ -815,17 +936,66 @@ public final class MinigameRules {
     }
 
     // ---------------------------------------------------------------- Rogues' Den
+    /**
+     * The Rogues' Den maze below Burthorpe (OSRS Wiki "Rogues' Den"): 50 Agility and 50 Thieving (unboostable). Agility
+     * obstacles drain Agility (contortion bars 5, pendulums 3, floor blades 3, ledges 4 and 7 for the longest) and can't fail
+     * while points remain; floor and wall traps are searched, draining Thieving by 1; the mosaic door takes the right tile,
+     * the grills the right path, the rogue guard a handful of flash powder. 80 Thieving picks the locked doors past the long
+     * route. Nothing in the maze deals damage: running out of levels, a wrong move at the guard or the safe throws the player
+     * out. The wall safes at the end give a rogue kit or a rogue's equipment crate.
+     */
     public static final class RoguesDen {
-        public static final String[] OBSTACLES = {"Contortion bars", "Pendulum", "Floor spikes", "Wall safe trap",
-                "Grill", "Ledge", "Blade trap", "Tile maze"};
+        public enum Kind {
+            /** Drains Agility; can't fail while the points remain. */
+            AGILITY,
+            /** A floor or wall trap, searched to disarm: drains Thieving by 1. */
+            TRAP,
+            /** The mosaic door: four tiles, only the right one opens it. */
+            TILES,
+            /** The grill room: three grills, only the right one leads on (a wrong one sends you back). */
+            GRILLS,
+            /** A rogue guard: blind him with flash powder or be thrown out. */
+            GUARD,
+            /** The locked doors: 80 Thieving picks them and skips the long route. */
+            SHORTCUT
+        }
+
+        public record Obstacle(String name, Kind kind, int drain) {
+        }
+
+        /** The maze's route in order (the wiki's walkthrough: start, long route, then past the guard to the safes). */
+        public static final List<Obstacle> ROUTE = List.of(
+                new Obstacle("Floor traps", Kind.TRAP, 1),
+                new Obstacle("Contortion bars", Kind.AGILITY, 5),
+                new Obstacle("Pendulum", Kind.AGILITY, 3),
+                new Obstacle("Floor traps", Kind.TRAP, 1),
+                new Obstacle("Ledge", Kind.AGILITY, 4),
+                new Obstacle("Floor blades", Kind.AGILITY, 3),
+                new Obstacle("Pendulum", Kind.AGILITY, 3),
+                new Obstacle("Ledge", Kind.AGILITY, 4),
+                new Obstacle("Wall traps", Kind.TRAP, 1),
+                new Obstacle("Locked doors", Kind.SHORTCUT, 0),
+                new Obstacle("Floor blades", Kind.AGILITY, 3),
+                new Obstacle("Floor traps", Kind.TRAP, 1),
+                new Obstacle("Long ledge", Kind.AGILITY, 7),
+                new Obstacle("Wall traps", Kind.TRAP, 1),
+                new Obstacle("Mosaic door", Kind.TILES, 0),
+                new Obstacle("Grills", Kind.GRILLS, 0),
+                new Obstacle("Wall traps", Kind.TRAP, 1),
+                new Obstacle("Pendulum", Kind.AGILITY, 3),
+                new Obstacle("Floor traps", Kind.TRAP, 1),
+                new Obstacle("Rogue guard", Kind.GUARD, 0),
+                new Obstacle("Pendulum", Kind.AGILITY, 3),
+                new Obstacle("Pendulum", Kind.AGILITY, 3));
+        /** The locked doors' shortcut leads past the long route to this obstacle (the floor traps before the guard). */
+        public static final int SHORTCUT_TO = 18;
+        public static final int SHORTCUT_THIEVING = 80;
+        /** The mosaic door's right tile (of four; the wiki: the bottom right one) and the grills' right path (approx). */
+        public static final int RIGHT_TILE = 3;
+        public static final int RIGHT_GRILL = 1;
         public static final String[] OUTFIT = {"rogue_mask", "rogue_top", "rogue_trousers", "rogue_gloves", "rogue_boots"};
-        /** Whether each obstacle is an Agility obstacle (else a Thieving trap). */
-        public static final boolean[] AGILITY = {true, true, false, false, false, true, true, false};
-        /**
-         * Levels drained by each obstacle (OSRS Wiki: contortion bars 5, pendulum 3, ledge 4, floor
-         * blades 3; the Thieving traps' drains are approx.).
-         */
-        public static final int[] DRAIN = {5, 3, 2, 2, 2, 4, 3, 2};
+        /** What a rogue kit turns into, once. */
+        public static final String[] KIT_TOOLS = {"rope", "chisel", "tinderbox", "spade"};
         /** Both 50 Agility and 50 Thieving (unboostable) are needed to enter the maze. */
         public static final int LEVEL = 50;
         /** On cracking the safe: 12 XP in Agility and Thieving for every level drained from that skill. */
@@ -834,19 +1004,166 @@ public final class MinigameRules {
         private RoguesDen() {
         }
 
-        /** Chance to disarm a Thieving trap (Agility obstacles never fail while levels remain): 60% at 50 to 98% at 99 (approx.). */
-        public static double passChance(int level) {
-            return Math.min(0.98, 0.60 + Math.max(0, level - 50) * 0.0078);
+        public static int obstacles() {
+            return ROUTE.size();
+        }
+
+        /** What cracking a wall safe does. */
+        public enum Safe {
+            EJECTED, KIT, CRATE
+        }
+
+        /** A safe attempt's outcome and whether it drained a Thieving level first. */
+        public record Crack(Safe result, boolean drained) {
         }
 
         /**
-         * Experience on leaving the maze for the levels drained from a skill: the full 12 per level
-         * after cracking the safe, otherwise a share proportional to how far into the maze the
-         * player got (approx. of the wiki's "fraction depending on distance").
+         * Cracking a wall safe (Mod Ash, November 2020): a number 0-199 above the visible Thieving level gives a 50% chance
+         * of being ejected with no roll, else Thieving drains by 1 and the roll goes ahead; the roll is 3/8 a rogue kit,
+         * 5/8 a rogue's equipment crate. {@code r1}-{@code r3} are random values in [0,1).
+         */
+        public static Crack crack(int thieving, double r1, double r2, double r3) {
+            boolean drained = false;
+            if ((int) Math.floor(r1 * 200) > thieving) {
+                if (r2 < 0.5) {
+                    return new Crack(Safe.EJECTED, false);
+                }
+                drained = true;
+            }
+            return new Crack(r3 < 3 / 8.0 ? Safe.KIT : Safe.CRATE, drained);
+        }
+
+        /** Chance per safe attempt of a rogue's equipment crate (the wiki's table: 39.2% at 50 Thieving, 46.9% at 99). */
+        public static double crateChance(int thieving) {
+            double over = Math.max(0, Math.min(200, 199 - thieving)) / 200.0;
+            return (1 - 0.5 * over) * 5 / 8.0;
+        }
+
+        /**
+         * Experience on leaving the maze for the levels drained from a skill: the full 12 per level after cracking the
+         * safe, otherwise a share by how far into the maze the player got (approx. of the wiki's "fraction depending on
+         * distance").
          */
         public static double xp(int drained, int obstaclesPassed, boolean cracked) {
             double full = drained * (double) XP_PER_DRAINED_LEVEL;
-            return cracked ? full : full * obstaclesPassed / (double) (OBSTACLES.length + 1);
+            return cracked ? full : full * Math.min(obstaclesPassed, obstacles()) / (double) (obstacles() + 1);
+        }
+    }
+
+    // ---------------------------------------------------------------- Brimhaven Agility Arena
+    /**
+     * The Brimhaven Agility Arena since the May 2024 rework (OSRS Wiki "Brimhaven Agility Arena"): 25 pillars joined by
+     * obstacles, 24 with a ticket dispenser; one dispenser is active at a time and moves every minute. Tagging it gives an
+     * agility arena ticket, a Brimhaven voucher (two of each 10% of the time after the elite Karamja diary) and 30 Agility XP
+     * per 10 Agility levels, boosts and drains included (300 at 100). Karamja gloves 2-4 add 10% to the obstacles' XP.
+     */
+    public static final class BrimhavenArena {
+        public static final int GRID = 5;
+        public static final int DISPENSERS = 24;
+        /** The active dispenser moves every minute. */
+        public static final int MOVE_TICKS = 100;
+        public static final double DOUBLE_TICKET_CHANCE = 0.10;
+        public static final double GLOVES_BONUS = 1.10;
+        public static final List<String> BONUS_GLOVES = List.of("karamja_gloves_2", "karamja_gloves_3", "karamja_gloves_4");
+
+        /**
+         * The obstacles between pillars: Agility needed, XP (before the gloves' 10%) and how many game ticks crossing takes
+         * (the wiki table's "Speed" column); the player can't start another crossing until one is over.
+         */
+        public enum Obstacle {
+            ROPE_SWING("Rope swing", 1, 20, 4), LOW_WALL("Low wall", 1, 8, 5), PLANK("Plank", 1, 6, 9),
+            BALANCING_ROPE("Balancing rope", 1, 10, 9), LOG_BALANCE("Log balance", 1, 12, 9),
+            BALANCING_LEDGE("Balancing ledge", 1, 16, 9), MONKEY_BARS("Monkey bars", 1, 14, 13), PILLAR("Pillar", 1, 18, 9),
+            PRESSURE_PAD("Pressure pad", 20, 26, 4), FLOOR_SPIKES("Floor spikes", 20, 24, 4), HAND_HOLDS("Hand holds", 20, 22, 10),
+            SPINNING_BLADES("Spinning blades", 40, 28, 5), DARTS("Darts", 40, 30, 10);
+
+            public final String title;
+            public final int level;
+            public final double xp;
+            /** Game ticks a crossing takes. */
+            public final int ticks;
+
+            Obstacle(String title, int level, double xp, int ticks) {
+                this.title = title;
+                this.level = level;
+                this.xp = xp;
+                this.ticks = ticks;
+            }
+
+            /** The obstacle tier (1 easy, 2 medium from 20 Agility, 3 hard from 40): failure rates are standardised per tier. */
+            public int tier() {
+                return level >= 40 ? 3 : level >= 20 ? 2 : 1;
+            }
+        }
+
+        /** Darts drain 2 Agility levels on a failure. */
+        public static final int DART_DRAIN = 2;
+        /**
+         * Pressure pads give XP for two crossings, then an 8-tick (4.8 s) timer starts during which crossing them gives none
+         * (the wiki: "they only give experience twice, before a timer of 8-ticks starts").
+         */
+        public static final int PAD_XP_CROSSINGS = 2;
+        public static final int PAD_COOLDOWN_TICKS = 8;
+
+        /** One player's pressure-pad XP timer ({@link #PAD_XP_CROSSINGS}, {@link #PAD_COOLDOWN_TICKS}). */
+        public static final class PadTimer {
+            private int paid;
+            private long noXpUntil = Long.MIN_VALUE;
+
+            /** Whether a pressure-pad crossing finished at game tick {@code now} pays XP; counts it if so. */
+            public boolean award(long now) {
+                if (now < noXpUntil) {
+                    return false;
+                }
+                if (++paid >= PAD_XP_CROSSINGS) {
+                    paid = 0;
+                    noXpUntil = now + PAD_COOLDOWN_TICKS;
+                }
+                return true;
+            }
+        }
+
+        /** A piece the Agility Arena graceful recolour (Pirate Jackie, 250 vouchers for a full set) turns a graceful piece into. */
+        public record RecolourPiece(String item) {
+        }
+
+        public static final List<RecolourPiece> GRACEFUL_RECOLOUR = List.of(new RecolourPiece("graceful_hood_agility_arena"),
+                new RecolourPiece("graceful_top_agility_arena"), new RecolourPiece("graceful_legs_agility_arena"),
+                new RecolourPiece("graceful_gloves_agility_arena"), new RecolourPiece("graceful_boots_agility_arena"),
+                new RecolourPiece("graceful_cape_agility_arena"));
+
+        private BrimhavenArena() {
+        }
+
+        /** Agility XP for tagging the active dispenser: 30 per 10 levels of current Agility (boosts and drains count). */
+        public static int tagXp(int currentAgility) {
+            return 30 * Math.max(0, Math.min(10, currentAgility / 10));
+        }
+
+        /** Chance to fail an obstacle (approx: the wiki gives no rates, only that nothing fails at 99). */
+        public static double failChance(Obstacle o, int agility) {
+            if (agility >= 99) {
+                return 0;
+            }
+            double base = 0.05 * o.tier() + 0.05;
+            return Math.max(0, base * (99 - agility) / (99.0 - o.level + 1)); // approx
+        }
+
+        /** The obstacle on the link between two neighbouring pillars (fixed per link; approx of the wiki's map). */
+        public static Obstacle link(int a, int b) {
+            int lo = Math.min(a, b);
+            int hi = Math.max(a, b);
+            Obstacle[] all = Obstacle.values();
+            return all[Math.floorMod(lo * 7 + hi * 13 + (hi - lo == 1 ? 3 : 0), all.length)];
+        }
+
+        /** Whether two pillar indices (row-major on the 5x5 grid) are neighbours. */
+        public static boolean neighbours(int a, int b) {
+            int ax = a % GRID;
+            int az = a / GRID;
+            int bx = b % GRID;
+            int bz = b / GRID;
+            return Math.abs(ax - bx) + Math.abs(az - bz) == 1;
         }
     }
 

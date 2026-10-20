@@ -129,13 +129,25 @@ public final class MinigameWorld {
             {"pp_chest", "Grand gold chest", "E0B030", "chest"},
             {"pp_sarcophagus", "Sarcophagus", "C0A060", "statue"},
             {"pp_door", "Tomb door", "8A7A5A", "portal_door"},
-            // Hallowed Sepulchre
+            {"pp_speartrap", "Speartrap", "9A8A6A", "machine"},
+            // Hallowed Sepulchre (see HallowedSepulchre): coffins, stairs, the trap statues, the coffins' skill challenges, the
+            // platforms and the magical obelisks.
             {"sep_coffin", "Coffin", "6A6A7A", "chest"},
             {"sep_grand_coffin", "Grand Hallowed Coffin", "C0D0E0", "chest"},
             {"sep_stairs", "Stairs", "8A8AA0", "portal_door"},
-            {"sep_statue", "Crossbow statue", "9A9AB0", "statue"},
+            {"sep_statue", "Crossbowman statue", "9A9AB0", "statue"},
+            {"sep_wizard_statue", "Wizard statue", "8A7AA0", "statue"},
+            {"sep_knight_statue", "Knight statue", "A0A0B0", "statue"},
+            {"sep_priest_statue", "Priest statue", "B0A890", "statue"},
+            {"sep_obelisk", "Magical obelisk", "D0D8F0", "obelisk"},
+            {"sep_bridge", "Broken bridge", "6A4A2A", "crate"},
+            {"sep_brazier", "Saradomin brazier", "E0C060", "fire_brazier"},
+            {"sep_portal", "Portal frame", "6080E0", "portal_glow"},
+            {"sep_pillar", "Pillar", "8A8A90", "rock"},
+            {"sep_platform", "Platform", "B0B0C0", "pressure_plate"},
             // Brimhaven Agility Arena
             {"agility_ticket_dispenser", "Ticket dispenser", "E0A040", "machine"},
+            {"brimhaven_obstacle", "Agility obstacle", "7A5A3A", "crate"},
             // Gnome Restaurant
             {"gnome_oven", "Gnome oven", "8A5A3A", "range"},
             {"gnome_customer", "Customer's door", "6A9A4A", "portal_door"},
@@ -212,6 +224,10 @@ public final class MinigameWorld {
             // Shared
             {"minigame_exit", "Exit portal", "C0C0FF", "portal_glow"}};
 
+    /** The Agility Pyramid's top at the summit and the doorway back to the base (see MinigameRules.AgilityPyramid). */
+    public static final String AGILITY_PYRAMID_TOP = "agility_pyramid_top";
+    public static final String AGILITY_PYRAMID_DOORWAY = "agility_pyramid_doorway";
+
     /** The scoreboard beside TzHaar-Ket-Rak: personal best times, completions and deaths for each challenge. */
     public static final String KET_RAK_SCOREBOARD = "ket_rak_scoreboard";
 
@@ -245,6 +261,9 @@ public final class MinigameWorld {
             list.add(BlockDef.scripted(e.getKey(), RewardShops.get(e.getValue()).title(), 0xC09040, "chest"));
         }
         list.add(BlockDef.scripted("pyramid_plunder_artefact_trader", "Simon Templeton's artefact crate", 0xC0A060, "chest"));
+        // The Agility Pyramid's summit (the world module's structure places them): the pyramid top and the doorway down.
+        list.add(BlockDef.scripted(AGILITY_PYRAMID_TOP, "Pyramid top", 0xE8C040, "statue"));
+        list.add(BlockDef.scripted(AGILITY_PYRAMID_DOORWAY, "Doorway (Agility Pyramid)", 0x8A7A5A, "portal_door"));
         list.add(BlockDef.scripted("rogues_den_jewel_trader", "Brian O'Richard's crate", 0x5A5A60, "chest"));
         list.add(BlockDef.scripted(SORCERESS_SHELVES, "Shelves", 0x8A6A3A, "crate"));
         list.add(BlockDef.scripted(KET_RAK_SCOREBOARD, "Scoreboard (TzHaar-Ket-Rak)", 0x6A2A10, "statue"));
@@ -398,7 +417,9 @@ public final class MinigameWorld {
                 0x8A6A3A, 0xE0D0A0));
         list.add(NpcDef.of("mg_guardian_mummy", "Guardian mummy", Minigame.PYRAMID_PLUNDER.place(), -2, 2, 0xD0C8A0, 0xD0C8A0,
                 0xB0A880, 0xD0C8A0));
-        list.add(NpcDef.of("mg_valindor", "Valindor", Minigame.HALLOWED_SEPULCHRE.place(), 2, 2, 0xC0C0D0, 0x3A3A4A, 0x2A2A3A, 0x9A9AB0));
+        // The Mysterious Stranger runs Mysterious Hallowed Goods in the lobby (id kept from when the NPC was Valindor).
+        list.add(NpcDef.of("mg_valindor", "Mysterious Stranger", Minigame.HALLOWED_SEPULCHRE.place(), 2, 2, 0xC0C0D0, 0x3A3A4A, 0x2A2A3A,
+                0x9A9AB0));
         list.add(NpcDef.of("mg_pirate_jackie", "Pirate Jackie the Fruit", Minigame.BRIMHAVEN_AGILITY_ARENA.place(), 2, 2, 0x8A6A4A,
                 0xE0A040, 0x3A3A6A, 0xC02020));
         list.add(NpcDef.of("mg_aluft_gianne", "Aluft Gianne snr.", Minigame.GNOME_RESTAURANT.place(), 2, 2, 0xC8A080, 0xF0F0F0,
@@ -442,7 +463,6 @@ public final class MinigameWorld {
             Map.entry("mg_commander_connad", "barbarian_assault"),
             Map.entry("mg_lanthus", "castle_wars"),
             Map.entry("mg_mta_rewards_guardian", "mage_training_arena"),
-            Map.entry("mg_valindor", "hallowed_sepulchre"),
             Map.entry("mg_pirate_jackie", "brimhaven_agility_arena"),
             Map.entry("mg_aluft_gianne", "gnome_restaurant"),
             Map.entry("mg_honest_jimmy", "trouble_brewing"),
@@ -484,10 +504,15 @@ public final class MinigameWorld {
                 "infinity_boots", "infinity_gloves", "beginner_wand", "apprentice_wand", "teacher_wand", "master_wand", "mages_book",
                 "bones_to_peaches_tablet")));
         pages.add(new CollectionLogData.Page(c, "Pyramid Plunder", List.of("pharaohs_sceptre", "jewelled_golden_statuette")));
-        pages.add(new CollectionLogData.Page(c, "Hallowed Sepulchre", List.of("ring_of_endurance", "mysterious_page", "dark_dye",
-                "dark_acorn", "hallowed_crystal_shard", "hallowed_focus", "hallowed_symbol", "hallowed_hammer", "hallowed_grapple",
-                "hallowed_ring", "strange_old_lockpick")));
-        pages.add(new CollectionLogData.Page(c, "Brimhaven Agility Arena", List.of("pirates_hook")));
+        // The wiki's 16 items, in its order (one page per floor).
+        pages.add(new CollectionLogData.Page(c, "Hallowed Sepulchre", List.of("hallowed_mark", "hallowed_token", "hallowed_grapple",
+                "hallowed_focus", "hallowed_symbol", "hallowed_hammer", "hallowed_ring", "dark_dye", "dark_acorn",
+                "strange_old_lockpick", "ring_of_endurance", "mysterious_page", "mysterious_page_2", "mysterious_page_3",
+                "mysterious_page_4", "mysterious_page_5")));
+        // The wiki's page: tickets, vouchers, the pirate's hook and the Agility Arena graceful recolour (skilling module items).
+        pages.add(new CollectionLogData.Page(c, "Brimhaven Agility Arena", List.of("agility_arena_ticket", "brimhaven_voucher",
+                "pirates_hook", "graceful_hood_agility_arena", "graceful_top_agility_arena", "graceful_legs_agility_arena",
+                "graceful_gloves_agility_arena", "graceful_boots_agility_arena", "graceful_cape_agility_arena")));
         pages.add(new CollectionLogData.Page(c, "Gnome Restaurant", List.of("gnome_scarf", "gnome_goggles", "mint_cake")));
         List<String> naval = new ArrayList<>();
         for (String colour : MinigameItems.NAVAL_COLOURS) {

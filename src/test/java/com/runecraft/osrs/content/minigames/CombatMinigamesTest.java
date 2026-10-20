@@ -203,12 +203,44 @@ class CombatMinigamesTest {
 
     @Test
     void roguesDen() {
-        assertEquals(RoguesDen.OBSTACLES.length, RoguesDen.DRAIN.length);
-        assertEquals(RoguesDen.OBSTACLES.length, RoguesDen.AGILITY.length);
-        assertEquals(5, RoguesDen.DRAIN[0]); // contortion bars
+        // Wiki drains: contortion bars 5, pendulums 3, floor blades 3, ledges 4 (7 the longest), traps 1 Thieving.
+        int agility = 0;
+        int shortcut = 0;
+        for (int i = 0; i < RoguesDen.obstacles(); i++) {
+            RoguesDen.Obstacle o = RoguesDen.ROUTE.get(i);
+            switch (o.name()) {
+                case "Contortion bars" -> assertEquals(5, o.drain());
+                case "Pendulum", "Floor blades" -> assertEquals(3, o.drain());
+                case "Ledge" -> assertEquals(4, o.drain());
+                case "Long ledge" -> assertEquals(7, o.drain());
+                case "Floor traps", "Wall traps" -> assertEquals(1, o.drain());
+                default -> assertEquals(0, o.drain(), o.name());
+            }
+            if (o.kind() == RoguesDen.Kind.AGILITY) {
+                agility += o.drain();
+                if (i < 9 || i >= RoguesDen.SHORTCUT_TO) {
+                    shortcut += o.drain();
+                }
+            }
+        }
+        assertTrue(agility <= RoguesDen.LEVEL - 6, "50 Agility gets through the long route with 6 to spare: " + agility);
+        assertTrue(shortcut < agility);
+        RoguesDen.Obstacle last = RoguesDen.ROUTE.get(RoguesDen.obstacles() - 1);
+        assertEquals("Pendulum", last.name(), "the last two obstacles are pendulums");
+        assertEquals(RoguesDen.Kind.SHORTCUT, RoguesDen.ROUTE.get(9).kind());
         assertEquals(240.0, RoguesDen.xp(20, 8, true));
         assertTrue(RoguesDen.xp(20, 4, false) < 240.0);
         assertEquals(50, Minigame.ROGUES_DEN.level());
+        // Mod Ash's safe rule: a crate 39.2% of attempts at 50 Thieving, 46.9% at 99 (the wiki's table).
+        assertEquals(0.392, RoguesDen.crateChance(50), 0.001);
+        assertEquals(0.469, RoguesDen.crateChance(99), 0.001);
+        assertEquals(RoguesDen.Safe.EJECTED, RoguesDen.crack(50, 0.99, 0.1, 0.9).result());
+        RoguesDen.Crack drained = RoguesDen.crack(50, 0.99, 0.9, 0.9);
+        assertEquals(RoguesDen.Safe.CRATE, drained.result());
+        assertTrue(drained.drained());
+        assertEquals(RoguesDen.Safe.KIT, RoguesDen.crack(99, 0.1, 0.1, 0.2).result());
+        assertTrue(!RoguesDen.crack(99, 0.1, 0.1, 0.2).drained());
+        assertTrue(ItemCatalog.get("rogue_kit").maxStack() > 1, "rogue kits stack (the wiki: many carried in one slot)");
     }
 
     @Test

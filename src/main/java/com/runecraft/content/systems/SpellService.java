@@ -109,6 +109,14 @@ public final class SpellService {
         return false;
     }
 
+    /**
+     * The items (and counts) a rune cost takes from the player, staves and combination runes counted, or null if they lack
+     * the runes (other modules casting a spell on an object: the Hallowed Sepulchre's portal frames).
+     */
+    public static Map<String, Integer> runeCost(ServerPlayer p, Map<String, Integer> runes) {
+        return runePlan(p, runes);
+    }
+
     /** Items (and counts) to remove for a spell, or null if the player lacks runes. */
     static Map<String, Integer> runePlan(ServerPlayer p, Map<String, Integer> runes) {
         Map<String, Integer> remove = new LinkedHashMap<>();

@@ -115,6 +115,17 @@ final class GameplayChecks {
                 () -> g.skillingWalk(com.runecraft.content.minigames.games.SkillingBossWalk::guardians)));
         checks.add(new SelfTest.Check("minigame:volcanic_mine_exit",
                 () -> g.skillingWalk(com.runecraft.content.minigames.games.SkillingBossWalk::volcanicMineExit)));
+        // Round 39: the agility minigames played as the real player (AgilityMinigameWalk).
+        checks.add(new SelfTest.Check("minigame:sepulchre_run",
+                () -> g.skillingWalk(com.runecraft.content.minigames.games.AgilityMinigameWalk::sepulchre)));
+        checks.add(new SelfTest.Check("minigame:sepulchre_timeout",
+                () -> g.skillingWalk(com.runecraft.content.minigames.games.AgilityMinigameWalk::sepulchreTimeout)));
+        checks.add(new SelfTest.Check("minigame:pyramid_plunder_run",
+                () -> g.skillingWalk(com.runecraft.content.minigames.games.AgilityMinigameWalk::pyramidPlunder)));
+        checks.add(new SelfTest.Check("minigame:rogues_den_run",
+                () -> g.skillingWalk(com.runecraft.content.minigames.games.AgilityMinigameWalk::roguesDen)));
+        checks.add(new SelfTest.Check("minigame:brimhaven_run",
+                () -> g.skillingWalk(com.runecraft.content.minigames.games.AgilityMinigameWalk::brimhaven)));
         checks.add(new SelfTest.Check("minigame:fight_caves_run", () -> g.tzhaarRun(
                 com.runecraft.content.minigames.games.TzHaarSelfTest::fightCaveRun)));
         checks.add(new SelfTest.Check("minigame:inferno_run", () -> g.tzhaarRun(

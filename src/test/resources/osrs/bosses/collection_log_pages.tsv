@@ -188,12 +188,12 @@ Boat Paints|Merchant's paint|32110|-
 Boat Paints|Sandy paint|32113|-
 Brimhaven Agility Arena|Agility arena ticket|2996|agility_arena_ticket
 Brimhaven Agility Arena|Pirate's hook|2997|pirates_hook
-Brimhaven Agility Arena|Graceful hood|21061|graceful_hood
-Brimhaven Agility Arena|Graceful cape|21064|graceful_cape
-Brimhaven Agility Arena|Graceful top|21067|graceful_top
-Brimhaven Agility Arena|Graceful legs|21070|graceful_legs
-Brimhaven Agility Arena|Graceful gloves|21073|graceful_gloves
-Brimhaven Agility Arena|Graceful boots|21076|graceful_boots
+Brimhaven Agility Arena|Graceful hood|21061|graceful_hood_agility_arena
+Brimhaven Agility Arena|Graceful cape|21064|graceful_cape_agility_arena
+Brimhaven Agility Arena|Graceful top|21067|graceful_top_agility_arena
+Brimhaven Agility Arena|Graceful legs|21070|graceful_legs_agility_arena
+Brimhaven Agility Arena|Graceful gloves|21073|graceful_gloves_agility_arena
+Brimhaven Agility Arena|Graceful boots|21076|graceful_boots_agility_arena
 Brimhaven Agility Arena|Brimhaven voucher|29482|brimhaven_voucher
 Brutus|Bottomless milk bucket (empty)|33091|bottomless_milk_bucket
 Brutus|Cow slippers|33093|cow_slippers
@@ -723,7 +723,7 @@ Guardians of the Rift|Intricate pouch|26908|intricate_pouch
 Guardians of the Rift|Tarnished locket|26910|-
 Guardians of the Rift|Lost bag|26912|-
 Hallowed Sepulchre|Hallowed mark|24711|hallowed_mark
-Hallowed Sepulchre|Hallowed token|24719|-
+Hallowed Sepulchre|Hallowed token|24719|hallowed_token
 Hallowed Sepulchre|Hallowed grapple|24721|hallowed_grapple
 Hallowed Sepulchre|Hallowed focus|24723|hallowed_focus
 Hallowed Sepulchre|Hallowed symbol|24725|hallowed_symbol
@@ -733,10 +733,10 @@ Hallowed Sepulchre|Hallowed ring|24731|hallowed_ring
 Hallowed Sepulchre|Dark acorn|24733|dark_acorn
 Hallowed Sepulchre|Strange old lockpick (full)|24740|strange_old_lockpick
 Hallowed Sepulchre|Mysterious page|24763|mysterious_page
-Hallowed Sepulchre|Mysterious page|24765|mysterious_page
-Hallowed Sepulchre|Mysterious page|24767|mysterious_page
-Hallowed Sepulchre|Mysterious page|24769|mysterious_page
-Hallowed Sepulchre|Mysterious page|24771|mysterious_page
+Hallowed Sepulchre|Mysterious page|24765|mysterious_page_2
+Hallowed Sepulchre|Mysterious page|24767|mysterious_page_3
+Hallowed Sepulchre|Mysterious page|24769|mysterious_page_4
+Hallowed Sepulchre|Mysterious page|24771|mysterious_page_5
 Hallowed Sepulchre|Ring of endurance (uncharged)|24844|ring_of_endurance
 Hard Treasure Trails|Robin hood hat|2581|robin_hood_hat
 Hard Treasure Trails|Rune platebody (g)|2615|rune_platebody_g

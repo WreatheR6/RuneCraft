@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/agility_pyramid_top_side",
+    "top": "runecraft:block/module/agility_pyramid_top_top",
+    "bottom": "runecraft:block/module/agility_pyramid_top_bottom"
+  }
+}

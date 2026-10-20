@@ -489,22 +489,47 @@ public final class MinigameItems {
         weapon(items, "pharaohs_sceptre", "Pharaoh's sceptre", Kind.MELEE_WEAPON, "staff_orb", 0xE0B030, 1,
                 s(-2, -2, 16, 0, 0, 0, 0, 0, 0, 0, 12, 0, 0, 0), 5, AttackType.CRUSH, WeaponClass.MELEE)
                 .examine("Teleports to the pyramids. Fabulously rare.");
+        single(items, MinigameRules.AgilityPyramid.TOP, "Pyramid top", "gem", 0xE8C040, 1, "It's a solid gold pyramid!");
     }
 
     // ------------------------------------------------------------------ Hallowed Sepulchre
     private static void sepulchre(ItemSink items) {
-        simple(items, "hallowed_mark", "Hallowed mark", "mark", 0xC0D0E0, 1, "Trade these with Valindor Lisetta in Darkmeyer.");
-        single(items, "hallowed_crystal_shard", "Hallowed crystal shard", "shard", 0xC0E0F0, 1, "Teleports to the Sepulchre.");
-        single(items, "hallowed_focus", "Hallowed focus", "orb", 0xC0D0E0, 1, "A cosmetic offhand from the Sepulchre.");
-        single(items, "hallowed_symbol", "Hallowed symbol", "amulet", 0xC0D0E0, 1, "A cosmetic amulet from the Sepulchre.");
-        single(items, "hallowed_hammer", "Hallowed hammer", "hammer", 0xC0D0E0, 1, "Works as a hammer.");
-        single(items, "hallowed_grapple", "Hallowed grapple", "crossbow", 0xC0D0E0, 1, "A cosmetic grapple.");
-        single(items, "hallowed_ring", "Hallowed ring", "ring", 0xC0D0E0, 1, "A cosmetic ring.");
+        simple(items, "hallowed_mark", "Hallowed mark", "mark", 0xC0D0E0, 1,
+                "Spend these with the Mysterious Stranger in the Hallowed Sepulchre lobby.");
+        single(items, "hallowed_crystal_shard", "Hallowed crystal shard", "shard", 0xC0E0F0, 1,
+                "Teleports to the Hallowed Sepulchre lobby. Single use.");
+        // The Sepulchre's tools (wiki): the focus is an off-hand, the hammer a weapon, the grapple ammunition; the ring and the
+        // symbol are worn in the systems module's ring and neck slots (Jewellery). All count as Saradomin items (GodItems).
+        wear(items, "hallowed_focus", "Hallowed focus", "orb", 0xC0D0E0, Slot.SHIELD, 1, EquipmentStats.NONE)
+                .examine("Portal frames in the Hallowed Sepulchre never fail to conjure while it is held.");
+        single(items, "hallowed_symbol", "Hallowed symbol", "amulet", 0xC0D0E0, 1,
+                "Saradomin braziers in the Hallowed Sepulchre take one vampyre dust instead of two while it is worn.");
+        weapon(items, "hallowed_hammer", "Hallowed hammer", Kind.MELEE_WEAPON, "hammer", 0xC0D0E0, 1, EquipmentStats.NONE, 4,
+                AttackType.CRUSH, WeaponClass.MELEE).examine("Removes the chance of bending nails within the Hallowed Sepulchre.");
+        single(items, "hallowed_grapple", "Hallowed grapple", "crossbow", 0xC0D0E0, 1,
+                "Never fails to grapple a pillar in the Hallowed Sepulchre. Only works there.");
+        single(items, "hallowed_ring", "Hallowed ring", "ring", 0xC0D0E0, 1,
+                "Prevents damage from the Hallowed Sepulchre's traps and sends you back to the start of the obstacle quickly.");
+        simple(items, "hallowed_token", "Hallowed token", "coins", 0xD0D8E8, 1,
+                "Adds an extra minute to the Hallowed Sepulchre's timer. Consumed on use.");
+        single(items, "hallowed_sack", "Hallowed sack", "package", 0x6A6A7A, 1,
+                "Coffin loot from the Hallowed Sepulchre: five low, one mid and two high-tier rolls.");
         single(items, "dark_dye", "Dark dye", "potion", 0x202030, 1, "Dyes graceful clothing dark.");
         single(items, "dark_acorn", "Dark acorn", "seed", 0x3A3A2A, 1, "Turns a squirrel pet dark.");
-        single(items, "strange_old_lockpick", "Strange old lockpick", "key", 0x8A8A70, 1, "Opens Grand Hallowed Coffins for a bonus.");
+        single(items, "strange_old_lockpick", "Strange old lockpick", "key", 0x8A8A70, 1,
+                "Bypasses the Barrows doors and improves the odds of looting the Hallowed Sepulchre's coffins.");
         single(items, "ring_of_endurance", "Ring of endurance", "ring", 0x60C060, 1, "Stamina potions last twice as long.");
-        single(items, "mysterious_page", "Mysterious page", "note", 0xD0C0A0, 1, "Part of the Hallowed Sepulchre's history.");
+        // One page per floor (the collection log tracks the five); they belong in the strange hallowed tome.
+        single(items, "mysterious_page", "Mysterious page", "note", 0xD0C0A0, 1, "A page from floor 1 of the Hallowed Sepulchre.");
+        for (int n = 2; n <= 5; n++) {
+            single(items, "mysterious_page_" + n, "Mysterious page", "note", 0xD0C0A0, 1,
+                    "A page from floor " + n + " of the Hallowed Sepulchre.");
+        }
+        // Coffin loot (low-tier table) the core catalogue lacks: monk's robes (+6 and +5 Prayer).
+        wear(items, "monks_robe_top", "Monk's robe top", "leather_body", 0x6A4A2A, Slot.CHEST, 30,
+                s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6)).examine("A thick heavy robe top.");
+        wear(items, "monks_robe", "Monk's robe", "chaps", 0x6A4A2A, Slot.LEGS, 40, s(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5))
+                .examine("A thick heavy robe.");
     }
 
     // ------------------------------------------------------------------ Brimhaven Agility Arena
@@ -643,6 +668,9 @@ public final class MinigameItems {
         wear(items, "rogue_trousers", "Rogue trousers", "chaps", rogue, Slot.LEGS, 1, EquipmentStats.NONE);
         wear(items, "rogue_boots", "Rogue boots", "boots", rogue, Slot.FEET, 1, EquipmentStats.NONE);
         single(items, "rogue_gloves", "Rogue gloves", "boots", rogue, 1, "Part of the rogue equipment.");
-        single(items, "mystic_jewel", "Mystic jewel", "gem", 0xA040E0, 1, "Hand this to Brian O'Richard for a rogue reward.");
+        single(items, "mystic_jewel", "Mystic jewel", "gem", 0xA040E0, 1, "Takes you out of the Rogues' Den maze.");
+        single(items, "rogues_equipment_crate", "Rogue's equipment crate", "package", 0x5A4A3A, 1,
+                "It has a piece of Rogue equipment inside!");
+        simple(items, "rogue_kit", "Rogue kit", "package", 0x3A3A40, 1, "Turns once into a rope, a chisel, a tinderbox or a spade.");
     }
 }
