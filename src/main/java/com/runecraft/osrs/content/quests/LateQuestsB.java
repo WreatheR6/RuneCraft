@@ -12,6 +12,7 @@ import com.runecraft.osrs.content.BossDef;
 import com.runecraft.osrs.content.PlaceDef;
 import com.runecraft.osrs.data.Drop;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -117,24 +118,111 @@ final class LateQuestsB {
 
     private static void beneathCursedSands(QuestBook b) {
         b.npc("tumeken_priest", "Priest of Tumeken", "necropolis", 3, 3, 0xA86A45, 0xE0C051, 0xF0F0F4, 0xE0C052);
-        b.boss(BossDef.of("champion_of_scabaras", "Champion of Scabaras").level(225).stats(300, 200, 200, 180, 150, 1).speed(4)
-                .defenceBonus(100, 100, 100, 80, 100)
-                .attack(AttackDef.of("crush", AttackType.CRUSH, 28, 3, 6))
-                .attack(AttackDef.of("locust_swarm", AttackType.MAGIC, 18, 9, 3).special(Special.AOE, 5).telegraph(2, "Locusts swarm from the champion's shell!"))
-                .attack(AttackDef.of("sand_spike", AttackType.RANGED, 22, 10, 3).special(Special.SKY_STRIKE, 0).telegraph(2, "The sand ripples beneath you!"))
+        // Wiki monster stats: level 379, 600 HP, 160 in every combat stat but Ranged, melee and magic up to 24, every 4 ticks.
+        b.boss(BossDef.of("champion_of_scabaras", "Champion of Scabaras").level(379).stats(600, 160, 160, 160, 160, 1).speed(4)
+                .defenceBonus(120, 160, 160, 340, 5)
+                .attack(AttackDef.of("crush", AttackType.CRUSH, 24, 3, 6))
+                .attack(AttackDef.of("locust_swarm", AttackType.MAGIC, 24, 9, 3).special(Special.AOE, 5).telegraph(2, "Locusts swarm from the champion's shell!"))
+                .attack(AttackDef.of("sand_spike", AttackType.MAGIC, 24, 10, 3).special(Special.SKY_STRIKE, 0).telegraph(2, "The sand ripples beneath you!"))
                 .drops(Drop.always("bones")).size(1.6f, 1.4f, 1.2f).at("necropolis").arena(12, "sand"));
+        // Wiki: level 174, 180 HP, stabs up to 16; punishes protection prayers (not modelled).
+        b.boss(BossDef.of("head_menaphite_guard", "Head Menaphite Guard").level(174).stats(180, 180, 150, 150, 150, 1).speed(4)
+                .defenceBonus(10, 30, 30, 0, 50)
+                .attack(AttackDef.of("stab", AttackType.STAB, 16, 2.5, 10))
+                .drops(Drop.always("bones")).skin(0xA86A45, 0xE0C050, 0x6A4A2A, 0xC0A030));
+        b.spot("bcs_jamila", "Jamila's stall", 3311, 2780);
+        b.npc("jamila", "Jamila", "bcs_jamila", 0, 0, 0xA86A47, 0xC05A3A, 0x6A3A2A, 0x2A1A13);
+        b.spot("bcs_ruins_of_ullek", "Ruins of Ullek", 3412, 2811); // approx: the ruins' map centre
+        b.item("bcs_message", "Message", "note", 0xE0D0B0, "A message slipped to you by Jamila.");
+        b.items(s -> s.add("keris_partisan", "Keris partisan", Kind.MELEE_WEAPON, "spear", 0xC0A060).value(60000).stack(1)
+                .equipment(new EquipmentDef(EquipmentDef.Slot.WEAPON, new EquipmentStats(58, -2, 57, 2, 0, 0, 0, 0, 0, 0, 45, 0, 0, 3),
+                        Map.of(Skill.ATTACK, 65), 4, AttackType.STAB, EquipmentDef.WeaponClass.MELEE))
+                .examine("A partisan with a keris blade, deadly to kalphites and scarabs."));
+        b.items(s -> s.add("circlet_of_water", "Circlet of water", Kind.ARMOUR, "full_helm", 0x5A9AD0).value(1).stack(1)
+                .equipment(EquipmentDef.armour(EquipmentDef.Slot.HEAD, new EquipmentStats(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 1))
+                .examine("A circlet that keeps its wearer cool in the desert heat."));
         b.quest("beneath_cursed_sands", "Beneath Cursed Sands", Difficulty.MASTER, 2)
                 .xp(Skill.AGILITY, 50000) // OSRS (current quest XP rewards)
                 .reqQuest("contact").req(Skill.AGILITY, 62).req(Skill.CRAFTING, 55).req(Skill.FIREMAKING, 55)
+                .reward("keris_partisan", "circlet_of_water")
                 .unlock("Access to the Necropolis and the Tombs of Amascut")
-                .stage("I can start this quest by speaking to the Priest of Tumeken near the Necropolis, south of Sophanem. (Requires Contact! and more.)")
-                .talk("tumeken_priest").say("The Ruins of Unkah are cursed with sand, and the cult of Amascut stirs. Will you investigate the Necropolis?")
-                .stage("I should investigate the ruins beneath the sands.")
-                .reach("necropolis", 10).say("* Beneath the sand you find a temple to Scabaras... and a monstrous champion awakens!")
+                .stage("I can start this quest by speaking to Jamila at her stall in Sophanem. (Requires Contact!, 62 Agility, 55 Crafting, 55 Firemaking.)")
+                .talk("jamila").give("bcs_message")
+                .say("For helping Sophanem, an exclusive piece from my stall! *As she fits a gold ring on your finger, she slips you a message.*",
+                        "Oh dear, it's too small. Never mind.", "* The message asks you to meet its sender at a campsite by the cliffs east of the city.")
+                // Wiki: Maisa and the necropolis, the entranced Head Menaphite Guard, the Ruins of Ullek (the furnace, the AKHEM chest,
+                // the iron scarab emblem, the scarab mages) and the riddle of the tomb's urns, then the High Priest of Scabaras.
+                .stage("I should meet Maisa at her campsite, find out what the Menaphites are digging up in the necropolis and follow the "
+                        + "scabarites to the Ruins of Ullek.")
+                .talk("maisa").stay().unlessFlag("bcs_maisa").flag("bcs_maisa").travel("necropolis")
+                .say("You came! Citizens of Menaphos have slipped the quarantine to dig in the old necropolis, and they act... strangely. Come with me.",
+                        "* You and Maisa arrive at the necropolis, where entranced citizens and guards dig at the Jaltevas Pyramid.")
+                .talk("maisa").stay().needFlag("bcs_maisa").unlessFlag("bcs_guard").spawn("head_menaphite_guard")
+                .say("Look out! The Head Menaphite Guard! Don't pray against him: his false-gods trick hurts more than his spear.")
+                .kill("head_menaphite_guard").stay().needFlag("bcs_maisa").unlessFlag("bcs_guard").flag("bcs_guard")
+                .say("* The guard snaps out of his trance: Amascut hypnotised them and unsealed her tomb in the pyramid. Scabarites helped her,",
+                        "* coming from ruins to the north-east.")
+                .puzzle("bcs_ruins_of_ullek", BCS_CHEST).stay().needFlag("bcs_guard").unlessFlag("bcs_chest").take("coal", "iron_bar").flag("bcs_chest")
+                .say("* The chest holds a scarab mould. You cast an iron scarab emblem at the furnace, set it in the pillar facing down and the",
+                        "* stairs open. Two scarab mages fall on you, but you beat them off and climb down into the tomb.")
+                .missing("* The furnace by the well needs coal, and you'll want an iron bar for whatever the scabarites hid.")
+                .puzzle("bcs_ruins_of_ullek", BCS_URNS).stay().needFlag("bcs_chest").unlessFlag("bcs_urns").flag("bcs_urns")
+                .say("* You pull the lever, and the door to the inner tomb grinds open.")
+                .reach("bcs_ruins_of_ullek", 8).needFlag("bcs_urns")
+                .say("* The High Priest of Scabaras sits under Amascut's spell. You speak the incantation and free him, and take a rusty key from",
+                        "* the urn behind him. Above, something stirs: the Champion of Scabaras!")
                 .stage("I must defeat the Champion of Scabaras.")
-                .kill("champion_of_scabaras").say("* The Champion of Scabaras falls. The curse on Unkah lifts.")
-                .stage("I should report to the Priest of Tumeken.")
-                .talk("tumeken_priest").say("The curse is broken! The Necropolis is open, and Amascut's tombs await the brave.");
+                .kill("champion_of_scabaras").say("* The Champion of Scabaras falls, and with it Amascut's hold on the scabarites.")
+                .stage("I should report to the High Priest.")
+                .talk("tumeken_priest").say("Amascut's curse on the Menaphites is broken, and the way into her tombs is open. Take these, with Sophanem's thanks.");
+    }
+
+    /** The scabarites' chest (wiki): its passcode is AKHEM as alphabet positions, 1 11 8 5 13. */
+    static final QuestPuzzle BCS_CHEST = QuestPuzzle.builder("bcs_chest").variant(null)
+            .prompt("* The stone tablet from the well: a chest lies buried in the southernmost ritual pillar, and 'Akhem keeps the count'.",
+                    "* You dig it up. Its lock takes a passcode of digits.")
+            .options("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
+            .solution(1, 1, 1, 8, 5, 1, 3).failLines("* The lock doesn't open.").build();
+
+    /**
+     * The riddle of the tomb (wiki): which emblem goes in which urn, north to south, drawn per player. The wiki riddle's wording is
+     * not in the dump: this one is reworded so the order can be deduced from it (approx).
+     */
+    static final QuestPuzzle BCS_URNS = urnPuzzle();
+
+    private static QuestPuzzle urnPuzzle() {
+        String[] emblems = {"Baboon emblem", "Human emblem", "Crocodile emblem", "Scarab emblem"};
+        String[] gods = {"goddess of companionship", "god of health", "goddess of resourcefulness", "god of isolation"};
+        String[] gifts = {"some linen", "some wine", "a necklace", "a carving"};
+        QuestPuzzle.Builder b = QuestPuzzle.builder("bcs_urns").room("urns");
+        List<int[]> orders = new java.util.ArrayList<>();
+        permute(new int[]{0, 1, 2, 3}, 0, orders);
+        for (int[] o : orders) {
+            // o = emblem in the northern, centre-north, centre-south and southern urn
+            b.variant(null).prompt("* Four urns stand in a row from north to south. The south-western plaque gives you four emblems; faded carvings",
+                            "* show Apmeken, goddess of companionship, with linen (baboon); Het, god of health, with wine (human); Crondis, goddess",
+                            "* of resourcefulness, with a necklace (crocodile); and Scabaras, god of isolation, with a carving (scarab). The riddle:",
+                            "* 'The " + gods[o[0]] + " came first, and the " + gods[o[1]] + " just after. To the one that came last he offered "
+                                    + gifts[o[3]] + ".' The first to come rests furthest north.",
+                            "* Place the emblems from the northern urn to the southern one.")
+                    .options(emblems).solution(o);
+        }
+        return b.failLines("* As you pull the lever the urns spit poison at you. The emblems must be in the wrong urns.").build();
+    }
+
+    private static void permute(int[] a, int k, List<int[]> out) {
+        if (k == a.length) {
+            out.add(a.clone());
+            return;
+        }
+        for (int i = k; i < a.length; i++) {
+            int t = a[k];
+            a[k] = a[i];
+            a[i] = t;
+            permute(a, k + 1, out);
+            a[i] = a[k];
+            a[k] = t;
+        }
     }
 
     private static void swanSong(QuestBook b) {
@@ -214,11 +302,60 @@ final class LateQuestsB {
                 .talk("odd_old_man").take("bone_in_vinegar").say("My collection grows! Splendid. Come back if you find more interesting bones.");
     }
 
+    /** The Forsaken Furnace (wiki): four gallons of coolant in the 5-gallon jug, with an 8-gallon jug (the unique 11-action way). */
+    static final QuestPuzzle FSK_FURNACE = QuestPuzzle.builder("fsk_furnace").variant(null)
+            .prompt("* The furnace's coolant mechanism must hold exactly four gallons, poured from the 5-gallon jug. In the back room's cupboards",
+                    "* you find a 5-gallon jug and an 8-gallon jug; a coolant dispenser stands in the north-west corner.")
+            .options("Fill the 5-gallon jug", "Fill the 8-gallon jug", "Pour the 5-gallon jug into the 8-gallon jug",
+                    "Pour the 8-gallon jug into the 5-gallon jug", "Empty the 5-gallon jug", "Empty the 8-gallon jug",
+                    "Pour the 5-gallon jug into the coolant mechanism", "Pour the 8-gallon jug into the coolant mechanism")
+            .solution(0, 2, 0, 2, 5, 2, 0, 2, 0, 2, 6)
+            .failLines("* That won't leave four gallons where you need them. You empty both jugs and start again.").build();
+
+    /** The Pernicious Potions (wiki): the old notes' layout puts fluids A to E at positions 1, 2, 3, 5 and 4; which is the cleansing fluid varies. */
+    static final QuestPuzzle FSK_POTION = potionPuzzle();
+    /** The Pylons (wiki): four energy disks from the western pylon onto the middle one, the 15-move Tower of Hanoi solution. */
+    static final QuestPuzzle FSK_PYLONS = QuestPuzzle.builder("fsk_pylons").variant(null)
+            .prompt("* Four weighted energy disks of different sizes are stacked on the western of three pylons. Stack them, in order, on the",
+                    "* middle pylon: one disk at a time, never a larger disk on a smaller one, in as few moves as possible (15).")
+            .options("West to centre", "West to east", "Centre to west", "Centre to east", "East to west", "East to centre")
+            .solution(1, 0, 5, 1, 2, 3, 1, 0, 5, 4, 2, 5, 1, 0, 5)
+            .failLines("* The disks topple back onto the western pylon.").build();
+
+    private static QuestPuzzle potionPuzzle() {
+        String[] roles = {"A", "B", "C", "D", "E"};
+        int[] position = {1, 2, 3, 5, 4};
+        QuestPuzzle.Builder b = QuestPuzzle.builder("fsk_potion").room("refinery");
+        for (int cleansing = 0; cleansing < roles.length; cleansing++) {
+            String[] name = new String[roles.length];
+            for (int i = 0; i < roles.length; i++) {
+                name[i] = i == cleansing ? "the cleansing fluid" : "fluid " + roles[i];
+            }
+            b.variant(null).prompt("* Five unknown fluids stand in a row on the table, numbered 1 to 5 from the left. Only the cleansing fluid will",
+                            "* cleanse the refinery. The old notes from the cupboard read:",
+                            "* " + cap(name[0]) + " is directly left of " + name[1] + ". " + cap(name[1]) + " is next to " + name[2] + ".",
+                            "* " + cap(name[3]) + " is directly right of " + name[4] + ". " + cap(name[0]) + " is opposite " + name[3] + ".")
+                    .options("Unknown fluid 1", "Unknown fluid 2", "Unknown fluid 3", "Unknown fluid 4", "Unknown fluid 5")
+                    .solution(position[cleansing] - 1);
+        }
+        return b.failLines("* The refinery spits the fluid back at you, burning and poisoning you. That was the wrong one.").build();
+    }
+
+    private static String cap(String s) {
+        return Character.toUpperCase(s.charAt(0)) + s.substring(1);
+    }
+
     private static void kourend(QuestBook b) {
         b.npc("lord_kandur_hosidius", "Lord Kandur Hosidius", "hosidius", 0, 3, 0xE8C0C4, 0x3A8A3A, 0x2A5A2A, 0xE0C053);
         b.npc("lady_shauna_piscarilius", "Lady Shauna Piscarilius", "great_kourend", 3, -2, 0xF0D0C3, 0x3A5A9B, 0x2A3A6B, 0xC08A3F);
         b.npc("lord_shiro_shayzien", "Lord Shiro Shayzien", "shayzien", 0, 3, 0xC8986D, 0xA02A2C, 0x5A1A1C, 0x2A2A30);
-        b.npc("lord_kandur_lovakengj", "Lord Kandur Lovakengj", "lovakengj", 0, 3, 0xD8A88D, 0x6A6A6C, 0x3A3A3F, 0xC07A30);
+        // Lovakengj's leader, Lady Vulcana (the id predates the rename), at the Lovakengj Assembly (wiki start tile 1483, 3748).
+        b.spot("fsk_lovakengj_assembly", "Lovakengj Assembly", 1483, 3748);
+        b.npc("lord_kandur_lovakengj", "Lady Vulcana Lovakengj", "fsk_lovakengj_assembly", 0, 0, 0xD8A88D, 0x6A6A6C, 0x3A3A3F, 0xC07A30);
+        // Undor on the west side of the Wintertodt camp. // approx tile
+        b.spot("fsk_wintertodt_camp", "Wintertodt camp (Undor)", 1622, 3944);
+        b.npc("undor", "Undor", "fsk_wintertodt_camp", 0, 0, 0xD8A880, 0x5A4A3A, 0x3A2A1A, 0x8A5A2A);
+        b.item("dinhs_hammer", "Dinh's hammer", "hammer", 0x8A8AA0, "The hammer of Dinh, maker of the Doors of Dinh.");
         b.npc("lord_trobin_arceuus", "Lord Trobin Arceuus", "arceuus", 0, 3, 0xE8D0C3, 0x5A2A8D, 0x3A1A5D, 0xE0E0EF);
         b.npc("kaht_bbalam", "Kaht B'alam", "kebos_lowlands", 2, 2, 0x8A9A6B, 0x3A6A3E, 0x2A4A2F, 0x6A8A4B);
         b.npc("councillor_andrews", "Councillor Andrews", "great_kourend", -3, -2, 0xE0B8B7, 0x2A2A2E, 0x1A1A1F, 0xA0A0A6);
@@ -275,17 +412,37 @@ final class LateQuestsB {
                 .kill("corrupt_lizardman").flag("totr_lizard").say("* The corrupt lizardman falls. The shrine's dark influence fades.")
                 .stage("I should report to Lord Shiro Shayzien.")
                 .talk("lord_shiro_shayzien").needFlag("totr_lizard").say("Shayzien is safer for your bravery. Thank you.");
+        // Wiki: Lady Vulcana Lovakengj at the Assembly; Undor at the Wintertodt camp needs Dinh's hammer from the Forsaken Tower, whose
+        // display case opens when its four puzzles are solved (the furnace's coolant, the power grid, the refinery's cleansing fluid
+        // and the pylons' energy disks).
         b.quest("the_forsaken_tower", "The Forsaken Tower", Difficulty.INTERMEDIATE, 1)
-                .reqQuest("client_of_kourend").xp(Skill.MINING, 500).xp(Skill.SMITHING, 500)
-                .stage("I can start this quest by speaking to Lord Kandur Lovakengj in Lovakengj. (Requires Client of Kourend.)")
-                .talk("lord_kandur_lovakengj").give("lovakengj_plans").say("The old Forsaken Tower could power our forges again. Get its machinery working: here are the plans.")
-                .stage("I should restore the Forsaken Tower's power: 4 coal and 2 steel bars for the furnace and generator.")
-                .reach("forsaken_tower", 8).take("lovakengj_plans", "coal:4", "steel_bar:2").flag("ft_power")
-                .say("* You inspect the display case, find the generator crank, solve the power grid and measure the jugs (5 and 8 gallons).",
-                        "* With Undor's advice you fix the furnace, and the tower hums to life.")
-                .missing("* The furnace needs 4 coal and the generator 2 steel bars, and I'll need Lord Kandur's plans.")
-                .stage("I should report to Lord Kandur Lovakengj.")
-                .talk("lord_kandur_lovakengj").needFlag("ft_power").say("The tower's power flows to our forges! Lovakengj thanks you.");
+                .reqQuest("client_of_kourend").xp(Skill.MINING, 500).xp(Skill.SMITHING, 500).reward("coins:6000")
+                .unlock("Free use of the Lovakengj Minecart Network")
+                .stage("I can start this quest by speaking to Lady Vulcana Lovakengj in the Lovakengj Assembly. (Requires Client of Kourend.)")
+                .talk("lord_kandur_lovakengj").say("The Doors of Dinh are failing, and only Dinh knew their secrets.",
+                        "@Councillor Unkar: The blacksmith Undor has found the cause. He's at the Wintertodt camp; go and help him.")
+                .stage("I should help Undor at the Wintertodt camp, then recover Dinh's hammer from the Forsaken Tower west of Lovakengj.")
+                .talk("undor").stay().unlessFlag("fsk_undor").flag("fsk_undor")
+                .say("Someone damaged the Doors on purpose. The hole is small, but enough for the Wintertodt to draw power through.",
+                        "I can fix it, but only with Dinh's hammer. It should be in the Forsaken Tower, on the peninsula west of Lovakengj.")
+                .puzzle("forsaken_tower", FSK_FURNACE).stay().needFlag("fsk_undor").unlessFlag("fsk_furnace").flag("fsk_furnace")
+                .say("* The coolant mechanism fills, and you light the furnace with the tinderbox from the cupboard. The first lock turns green.")
+                .puzzle("forsaken_tower", FSK_POTION).stay().needFlag("fsk_furnace").unlessFlag("fsk_potion").flag("fsk_potion")
+                .say("* The cleansing fluid scours the refinery, and it starts up. In the basement you crank the steam generator and align",
+                        "* the power grid. Two more locks turn green.")
+                .puzzle("forsaken_tower", FSK_PYLONS).stay().needFlag("fsk_potion").unlessFlag("fsk_pylons").flag("fsk_pylons")
+                .say("* The last disk settles on the middle pylon, and the runic altar glows.")
+                .reach("forsaken_tower", 8).needFlag("fsk_pylons").give("dinhs_hammer")
+                .say("* Every lock on the display case is green. Inside lies Dinh's hammer.")
+                .stage("I should take Dinh's hammer to Undor at the Wintertodt camp, then tell Lady Vulcana Lovakengj the Doors of Dinh will hold.")
+                .talk("undor").stay().unlessFlag("fsk_doors").take("dinhs_hammer").flag("fsk_doors")
+                .say("Dinh's hammer! With this I can mend the Doors, though the pyromancers will have to keep subduing the Wintertodt.",
+                        "Tell Lady Vulcana the Doors will hold.")
+                .missing("Dinh's hammer should be in the Forsaken Tower, west of Lovakengj.")
+                // carrying the hammer, the player still owes Undor a visit (saves from the old version reach this stage without it)
+                .talk("lord_kandur_lovakengj").unless("dinhs_hammer")
+                .say("The Doors will hold? Then Kourend owes you. Take this, and ride our minecarts freely.")
+                .hint("lord_kandur_lovakengj", "You have Dinh's hammer? Then take it to Undor at the Wintertodt camp at once!");
         b.quest("the_ascent_of_arceuus", "The Ascent of Arceuus", Difficulty.INTERMEDIATE, 1)
                 .xp(Skill.HUNTER, 1500).xp(Skill.RUNECRAFT, 500) // OSRS (current quest XP rewards)
                 .reqQuest("client_of_kourend").req(Skill.HUNTER, 12)

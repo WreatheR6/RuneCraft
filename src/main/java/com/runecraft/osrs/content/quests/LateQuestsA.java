@@ -442,6 +442,30 @@ final class LateQuestsA {
                 .talk("effigy").say("You freed the homunculus? It's for the best. Use our altars wisely; they create creatures from mixed ingredients.");
     }
 
+    /**
+     * Anna's trial (wiki): rebut the dagger, the poison and her being at the scene by calling the butler about the dagger, the dog
+     * handler about the poison and the maid about the night of the murder (in any order), then the thread. The other questions
+     * bring out testimony that incriminates her.
+     */
+    static final QuestPuzzle KR_TRIAL = krTrial();
+
+    private static QuestPuzzle krTrial() {
+        QuestPuzzle.Builder b = QuestPuzzle.builder("kr_trial").shuffle().variant(null)
+                .prompt("* Court is in session. The prosecution says Anna's fingerprints were on the dagger, that she bought poison and never used it,",
+                        "* that a thread from her clothes was found at the scene and that she was there that night. Call your witnesses.")
+                .options("Call the butler: ask about the dagger", "Call the butler: ask about where he last saw Anna",
+                        "Call the dog handler: ask about the poison", "Call the dog handler: ask about the night of the murder",
+                        "Call the maid: ask about the night of the murder", "Call the maid: ask about the dagger",
+                        "Call the cook: ask about where she last saw Anna", "Call the gardener: ask about the poison",
+                        "Ask your witness about the thread");
+        int[][] orders = {{0, 2, 4}, {0, 4, 2}, {2, 0, 4}, {2, 4, 0}, {4, 0, 2}, {4, 2, 0}};
+        for (int[] o : orders) {
+            b.solution(o[0], o[1], o[2], 8);
+        }
+        return b.failLines("@Judge: That testimony hardly helps the defence. The prosecution rests... and so, it seems, must you. Order! We start again.")
+                .build();
+    }
+
     private static void kingsRansom(QuestBook b) {
         b.npc("gossip_kr", "Gossip", "SEERS_VILLAGE", 6, 6, 0xE8C0C3, 0x6A3A6F, 0x4A2A4F, 0xC08A3E);
         b.npc("sir_lancelot_prisoner", "Sir Lancelot (prisoner)", "castle_wars_knights", 2, 2, 0xF0C8A9, 0x8A8A8E, 0x2A2A8B, 0xE0C061);
@@ -467,10 +491,10 @@ final class LateQuestsA {
                 .talk("kr_mansion_guard").stay().unlessFlag("kr_guard").take("kr_scrap_paper", "kr_address_form", "kr_black_knight_helm").flag("kr_guard")
                 .say("A Black Knight helm in the Sinclair house? And a forwarding address... Anna is being framed. Speak up for her at the trial.")
                 .missing("I can't help Anna without evidence. Search the mansion.")
-                .talk("kr_anna").needFlag("kr_guard")
-                .say("* You call the dog handler (the poison), the butler (the dagger) and the maid (the night of the murder and the thread).",
+                .puzzle("kr_anna", KR_TRIAL).needFlag("kr_guard")
+                .say("@Judge: The jury finds the defendant... not guilty!",
                         "Not guilty! Thank you. But the Black Knights did this... and the Knights of the Round Table have vanished. Search the statue east of Camelot.")
-                .missing("My trial is about to start, and I've nobody to speak for me.")
+                .hint("kr_anna", "My trial is about to start, and I've nobody to speak for me. The guard at the mansion needs evidence first.")
                 // OSRS: the cell under the statue with Merlin, the lock puzzle, Cromperty's animate rock scroll and Arthur's statue.
                 .stage("I should escape the cell with Merlin, get an animate rock scroll from Wizard Cromperty and free King Arthur in the Black Knights' Fortress.")
                 .talk("black_knight_jailer").stay().unless("lockpick_kr").unlessFlag("kr_escaped").reqSkill(Skill.MAGIC, 33).give("lockpick_kr")
