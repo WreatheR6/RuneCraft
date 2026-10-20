@@ -1238,7 +1238,12 @@ public final class RaidInstance {
             }
             result = ToaLoot.roll(pts, raidLevel, raiders, totalDeaths() == 0, invocations, pathLevelAtKill, random);
         } else {
-            result = RaidRewards.roll(type, mode, pts, raidLevel, withinTarget, random);
+            // Only the raiders still here can receive the extras (tablet, colour kit, dust).
+            Set<String> present = new HashSet<>();
+            for (UUID u : party) {
+                present.add(u.toString());
+            }
+            result = RaidRewards.roll(type, mode, pts, raidLevel, withinTarget, present, random);
         }
         long secs = elapsedTicks() * 6 / 10;
         say("Congratulations - your raid is complete! Duration: " + secs / 60 + ":" + String.format("%02d", secs % 60),

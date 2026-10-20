@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 /**
  * Raid reward tables and the end-of-raid loot roll (pure Java, keyed by player id strings).
@@ -37,8 +38,14 @@ public final class RaidRewards {
         }
     }
 
-    /** A mode reward rolled once per completion at 1/{@code rate}; some need the target time. */
-    public record ExtraReward(String item, int rate, boolean needsTargetTime) {
+    /**
+     * An extra reward at 1/{@code rate}: rolled once per completion for one raider, or ({@code perPlayer}) once for
+     * each raider still in the raid; some need the target time.
+     */
+    public record ExtraReward(String item, int rate, boolean needsTargetTime, boolean perPlayer) {
+        public ExtraReward(String item, int rate, boolean needsTargetTime) {
+            this(item, rate, needsTargetTime, false);
+        }
     }
 
     public record Loot(String item, int count) {
@@ -164,15 +171,18 @@ public final class RaidRewards {
             new PointsCommon("magic_seed", 6500), new PointsCommon("blood_essence", 7500), new PointsCommon("cache_of_runes", 999_999));
 
     /**
-     * CoX extras (OSRS): the ancient tablet, 1/10 (it unlocks Xeric's Honour on Xeric's talisman; OSRS only gives it to
-     * players who haven't got or used one, and in place of a loot roll - approx: always rolled, on top).
+     * CoX extras (OSRS): the ancient tablet, 1/10 for each raider (it unlocks Xeric's Honour on Xeric's talisman; OSRS
+     * only gives it to players who haven't got or used one, and in place of a loot roll - approx: always rolled, on top).
      */
-    public static final List<ExtraReward> COX_EXTRAS = List.of(new ExtraReward("ancient_tablet", 10, false));
-    /** CoX Challenge Mode extras (OSRS): metamorphic dust 1/400; the twisted ancestral colour kit 1/75 within the target time. */
+    public static final List<ExtraReward> COX_EXTRAS = List.of(new ExtraReward("ancient_tablet", 10, false, true));
+    /**
+     * CoX Challenge Mode extras (OSRS, "Metamorphic dust" / "Chambers of Xeric/Challenge Mode"): within the target time
+     * each raider has a 1/400 chance of metamorphic dust and a 1/75 chance of the twisted ancestral colour kit.
+     */
     public static final List<ExtraReward> COX_CM_EXTRAS = List.of(
-            new ExtraReward("ancient_tablet", 10, false),
-            new ExtraReward("metamorphic_dust", 400, false),
-            new ExtraReward("twisted_ancestral_colour_kit", 75, true));
+            new ExtraReward("ancient_tablet", 10, false, true),
+            new ExtraReward("metamorphic_dust", 400, true, true),
+            new ExtraReward("twisted_ancestral_colour_kit", 75, true, true));
     /** ToB Hard mode extras within the challenge time (OSRS): holy kit 1/100, sanguine kit 1/150, sanguine dust 1/275. */
     public static final List<ExtraReward> TOB_HARD_EXTRAS = List.of(
             new ExtraReward("holy_ornament_kit", 100, true),
@@ -351,6 +361,16 @@ public final class RaidRewards {
      */
     public static Result roll(RaidType type, RaidMode mode, Map<String, Integer> points, int raidLevel, boolean withinTarget,
                               Random random) {
+        return roll(type, mode, points, raidLevel, withinTarget, points.keySet(), random);
+    }
+
+    /**
+     * As above, where {@code points} also holds raiders who left before the end (they still count towards the unique
+     * chance, and a unique they draw goes to no one) and {@code present} the raiders still in the raid: only they can
+     * receive the extra rewards (OSRS discards only a leaver's unique; the tertiaries go to the players who finish).
+     */
+    public static Result roll(RaidType type, RaidMode mode, Map<String, Integer> points, int raidLevel, boolean withinTarget,
+                              Set<String> present, Random random) {
         if (type == RaidType.TOA) {
             // The Tombs' chest has its own rules (reward points, 1/50 below a unique's raid level, dung, tertiaries).
             return ToaLoot.roll(points, raidLevel, Map.of(), false, java.util.Set.of(), Map.of(), random);
@@ -396,9 +416,26 @@ public final class RaidRewards {
             loot.get(who).add(new Loot("lil_zik", 1));
             pets.add(who);
         }
+        Map<String, Integer> here = new LinkedHashMap<>();
+        for (Map.Entry<String, Integer> e : points.entrySet()) {
+            if (present.contains(e.getKey())) {
+                here.put(e.getKey(), e.getValue());
+            }
+        }
+        List<String> hereSorted = new ArrayList<>(here.keySet());
+        Collections.sort(hereSorted);
         for (ExtraReward extra : extras(type, mode)) {
-            if ((!extra.needsTargetTime() || withinTarget) && random.nextInt(extra.rate()) == 0) {
-                loot.get(weightedPlayer(points, random)).add(new Loot(extra.item(), 1));
+            if (extra.needsTargetTime() && !withinTarget) {
+                continue;
+            }
+            if (extra.perPlayer()) {
+                for (String p : hereSorted) {
+                    if (random.nextInt(extra.rate()) == 0) {
+                        loot.get(p).add(new Loot(extra.item(), 1));
+                    }
+                }
+            } else if (!here.isEmpty() && random.nextInt(extra.rate()) == 0) {
+                loot.get(weightedPlayer(here, random)).add(new Loot(extra.item(), 1));
             }
         }
         double tobRatio = RaidScaling.tobPointsRatio(total, points.size());
