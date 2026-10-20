@@ -495,7 +495,8 @@ public class VolcanicMineSession extends MinigameSession {
             Msg.game(p, "You didn't mine anything from the boulder.");
             return;
         }
-        int held = MinigameData.of(p).points(p.getUUID(), MinigameCurrencies.VOLCANIC_MINE);
+        // Points are stored under the currency's key ("volcanic_mine"), as addPoints and the Ore Shop use it.
+        int held = MinigameData.of(p).points(p.getUUID(), MinigameCurrencies.key(MinigameCurrencies.VOLCANIC_MINE));
         int paid = Math.max(0, Math.min(pts, VolcanicMine.MAX_POINTS - held));
         addPoints(p, MinigameCurrencies.VOLCANIC_MINE, paid);
         xp(p, Skill.MINING, VolcanicMine.endXp(paid));

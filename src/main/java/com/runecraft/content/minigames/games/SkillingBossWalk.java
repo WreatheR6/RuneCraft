@@ -571,7 +571,9 @@ public final class SkillingBossWalk {
      * points or XP), then the second through the rope exit (Petrified Pete pays the points and 3.8 Mining XP a point).
      */
     private void volcanicMineExit() {
-        String vm = com.runecraft.osrs.content.minigames.MinigameCurrencies.VOLCANIC_MINE;
+        // The balance Petrified Pete's Ore Shop spends: stored under the currency's key (MinigameSession.addPoints).
+        String vm = com.runecraft.osrs.content.minigames.MinigameCurrencies.key(
+                com.runecraft.osrs.content.minigames.MinigameCurrencies.VOLCANIC_MINE);
         int earned = 200;
         for (boolean rope : new boolean[]{false, true}) {
             step = rope ? "rope exit" : "leave command";
