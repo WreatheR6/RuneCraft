@@ -171,11 +171,9 @@ public final class MinigameRules {
         /** Points per harpoon strike on the spirit pool. */
         public static final int POINTS_SPIRIT = 55;
         public static final int MIN_POINTS = 2000;
-        /** Energy damage per raw / cooked harpoonfish loaded into a cannon (approx.). */
-        public static final int RAW_DAMAGE = 3;
-        public static final int COOKED_DAMAGE = 5;
-        /** Essence removed per harpoon strike on the spirit pool (approx.). */
-        public static final int SPIRIT_DAMAGE = 4;
+        /** Energy drained per raw / cooked harpoonfish loaded into a cannon (OSRS Wiki; the pools are {@link TemporossStorm}). */
+        public static final int RAW_DAMAGE = TemporossStorm.RAW_ENERGY;
+        public static final int COOKED_DAMAGE = TemporossStorm.COOKED_ENERGY;
         public static final int VULNERABLE_TICKS = 25;
         public static final int WAVE_INTERVAL = 40;
         public static final int WAVE_WARNING = 6;
@@ -226,7 +224,7 @@ public final class MinigameRules {
         }
 
         public static double cookXp(int cooking) {
-            return cooking * 0.7; // approx
+            return TemporossStorm.COOK_XP; // a flat 10 at any level (OSRS Wiki "Harpoonfish")
         }
     }
 

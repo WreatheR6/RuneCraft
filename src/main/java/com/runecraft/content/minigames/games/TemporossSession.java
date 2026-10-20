@@ -10,6 +10,7 @@ import com.runecraft.osrs.content.minigames.Minigame;
 import com.runecraft.osrs.content.minigames.MinigameReward;
 import com.runecraft.osrs.content.minigames.MinigameRules.Tempoross;
 import com.runecraft.osrs.content.minigames.TemporossRewards;
+import com.runecraft.osrs.content.minigames.TemporossStorm;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import java.util.HashMap;
@@ -31,7 +32,9 @@ import net.minecraft.world.level.block.Blocks;
  * Tempoross's energy. At 0% energy the spirit pool opens; harpoon it to drain his essence before
  * he recovers. His attacks deal no damage (OSRS Wiki): tether to a totem pole with a rope when a colossal
  * wave comes or lose fish and tools, repair totems the wave breaks with a hammer, and douse the fires his
- * lightning lights with buckets of water (filled at the pump) before they spread and burn your supplies.
+ * lightning lights with buckets of water (filled at the pump) before they spread and burn your supplies, and step away
+ * from a cannon a torrent surges towards (it knocks the cannon out and stuns whoever is loading it). Repairing a totem
+ * gives 4 x Construction level XP; energy and essence are sized by the crew ({@link TemporossStorm}).
  * Subduing him with 2,000+ points earns reward permits for the reward pool in the Ruins of Unkah.
  */
 public class TemporossSession extends MinigameSession {
@@ -50,10 +53,22 @@ public class TemporossSession extends MinigameSession {
     private final java.util.Set<Integer> brokenTotems = new java.util.HashSet<>();
     private static final int[] TOTEM_X = {-12, 12};
     private static final int TOTEM_Z = 14;
-    private int energy = 100;
-    private int essence = 100;
+    /** Energy and essence in hitsplat units, sized by the crew at the start (OSRS Wiki; {@link TemporossStorm}). */
+    private int maxEnergy = 1;
+    private int energy = 1;
+    private int maxEssence = 1;
+    private int essence = 1;
     private long vulnerableUntil = -1;
     private long waveAt = -1;
+    /** Torrent attack: when the next one surges, at which cannon (x offset), and cannons disabled until a tick. */
+    private long torrentAt = -1;
+    private long torrentLands = -1;
+    private int torrentCannon;
+    private final Map<Integer, Long> cannonDownUntil = new HashMap<>();
+    private static final int[] CANNON_X = {-6, 6};
+    private static final int CANNON_Z = -10;
+    /** How often each fire has spread (at most twice). */
+    private final Map<BlockPos, Integer> fireSpreads = new HashMap<>();
 
     public TemporossSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.TEMPOROSS, id, slot, world, variant);
@@ -76,8 +91,9 @@ public class TemporossSession extends MinigameSession {
         for (int[] spot : new int[][]{{-12, 6}, {12, 6}, {-18, -4}, {18, -4}}) {
             place(spot[0], spot[1], "tempoross_fishing_spot");
         }
-        place(-6, -10, "tempoross_cannon");
-        place(6, -10, "tempoross_cannon");
+        for (int x : CANNON_X) {
+            place(x, CANNON_Z, "tempoross_cannon");
+        }
         place(0, 4, "tempoross_shrine");
         for (int x : TOTEM_X) {
             place(x, TOTEM_Z, "tempoross_totem");
@@ -104,7 +120,11 @@ public class TemporossSession extends MinigameSession {
                 Msg.game(p, "First Mate Deri hands you a harpoon.");
             }
         }
+        int crew = Math.max(1, online().size());
+        maxEnergy = energy = TemporossStorm.energy(crew);
+        maxEssence = essence = TemporossStorm.essence(crew);
         waveAt = ticks + Tempoross.WAVE_INTERVAL;
+        torrentAt = ticks + TemporossStorm.TORRENT_INTERVAL;
         broadcastRed("Tempoross rises from the sea!");
         broadcast("Ropes, hammers and buckets are in the supply crate; fill buckets at the water pump.");
     }
@@ -126,14 +146,21 @@ public class TemporossSession extends MinigameSession {
                     return true;
                 }
                 Msg.action(player, "You start harpooning.");
+                int[] wait = {TemporossStorm.CATCH_TICKS};
                 repeat(player, p -> {
                     if (!Inv.hasRoomFor(p, "raw_harpoonfish")) {
                         Msg.game(p, "You can't carry any more fish.");
                         return false;
                     }
+                    if (--wait[0] > 0) {
+                        return true;
+                    }
+                    wait[0] = TemporossStorm.CATCH_TICKS;
                     int fishing = level(p, Skill.FISHING);
-                    int chance = 30 + fishing / 2 + (Inv.has(p, "dragon_harpoon", 1) ? 10 : 0);
-                    if (random.nextInt(100) < chance) {
+                    // 170/256 at level 1 to 255/256 at 99 (OSRS Wiki); approx: the dragon harpoon's 20% better roll.
+                    double chance = com.runecraft.osrs.data.Fish.catchChance(fishing, TemporossStorm.CATCH_LOW,
+                            TemporossStorm.CATCH_HIGH, Inv.has(p, "dragon_harpoon", 1) ? 1.2 : 1.0);
+                    if (random.nextDouble() < chance) {
                         int n = Inv.remove(p, "spirit_flakes", 1) > 0 && random.nextBoolean() ? 2 : 1;
                         Inv.give(p, "raw_harpoonfish", n);
                         addPoints(p, Tempoross.POINTS_CATCH * n);
@@ -144,7 +171,15 @@ public class TemporossSession extends MinigameSession {
                 return true;
             }
             case "tempoross_shrine" -> {
+                int[] wait = {TemporossStorm.COOK_TICKS};
                 repeat(player, p -> {
+                    if (!Inv.has(p, "raw_harpoonfish", 1)) {
+                        return false;
+                    }
+                    if (--wait[0] > 0) {
+                        return true; // 3 ticks a fish; harpoonfish never burn
+                    }
+                    wait[0] = TemporossStorm.COOK_TICKS;
                     if (Inv.remove(p, "raw_harpoonfish", 1) == 0) {
                         return false;
                     }
@@ -156,6 +191,14 @@ public class TemporossSession extends MinigameSession {
                 return true;
             }
             case "tempoross_cannon" -> {
+                if (essence <= 0 || isEnded()) {
+                    Msg.game(player, "The cannons aren't needed anymore.");
+                    return true;
+                }
+                if (cannonDownUntil.getOrDefault(pos.getX() - origin.getX(), -1L) >= ticks) {
+                    Msg.game(player, "The torrent has knocked this cannon out for the moment.");
+                    return true;
+                }
                 int raw = Inv.remove(player, "raw_harpoonfish", 1000);
                 int cooked = Inv.remove(player, "harpoonfish", 1000);
                 if (raw + cooked == 0) {
@@ -169,7 +212,7 @@ public class TemporossSession extends MinigameSession {
                 }
                 xp(player, Skill.FISHING, TemporossRewards.cannonXp(level(player, Skill.FISHING)) * (raw + cooked));
                 if (!vulnerable()) {
-                    energy = Math.max(0, energy - raw * Tempoross.RAW_DAMAGE - cooked * Tempoross.COOKED_DAMAGE);
+                    energy = Math.max(0, energy - raw * TemporossStorm.RAW_ENERGY - cooked * TemporossStorm.COOKED_ENERGY);
                 }
                 world.sendParticles(ParticleTypes.EXPLOSION, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, 3, 0.3, 0.3, 0.3, 0);
                 Msg.game(player, "You fire " + (raw + cooked) + " harpoonfish at Tempoross!");
@@ -229,6 +272,8 @@ public class TemporossSession extends MinigameSession {
                 brokenTotems.remove(dx);
                 place(dx, pos.getZ() - origin.getZ(), "tempoross_totem");
                 addPoints(player, Tempoross.POINTS_REPAIR);
+                // approx: OSRS gives no Construction XP to players without a house.
+                xp(player, Skill.CONSTRUCTION, TemporossStorm.repairXp(level(player, Skill.CONSTRUCTION)));
                 caFlag(player, com.runecraft.osrs.content.systems.CombatAchievements.FLAG_TETHER_REPAIRED);
                 Msg.game(player, "You repair the totem pole.");
                 return true;
@@ -251,11 +296,18 @@ public class TemporossSession extends MinigameSession {
                 if (!vulnerable()) {
                     return true;
                 }
+                int[] wait = {TemporossStorm.SCATTER_TICKS};
                 repeat(player, p -> {
                     if (!vulnerable() || isEnded()) {
                         return false;
                     }
-                    essence = Math.max(0, essence - Tempoross.SPIRIT_DAMAGE);
+                    if (--wait[0] > 0) {
+                        return true;
+                    }
+                    wait[0] = TemporossStorm.SCATTER_TICKS;
+                    int max = TemporossStorm.scatterMax(level(p, Skill.FISHING));
+                    essence = Math.max(0, essence - (max / 2 + random.nextInt(max - max / 2 + 1)));
+                    Msg.game(p, "The glowing fish scatter, shedding their magical scales.");
                     addPoints(p, Tempoross.POINTS_SPIRIT);
                     xp(p, Skill.FISHING, TemporossRewards.spiritPoolXp(level(p, Skill.FISHING)));
                     if (essence <= 0) {
@@ -276,14 +328,15 @@ public class TemporossSession extends MinigameSession {
     protected void gameTick() {
         if (vulnerableUntil >= 0 && ticks > vulnerableUntil) {
             vulnerableUntil = -1;
-            energy = 100;
+            energy = maxEnergy;
             set(0, 1, -12, Blocks.AIR.defaultBlockState());
             broadcastRed("Tempoross recovers and dives beneath the waves!");
         }
         if (ticks == waveAt - Tempoross.WAVE_WARNING) {
             broadcastRed("A colossal wave closes in... Tether yourself to a totem pole!");
         }
-        boolean attacking = energy > Tempoross.ATTACKS_STOP_ENERGY && !vulnerable();
+        boolean attacking = percent(energy, maxEnergy) > Tempoross.ATTACKS_STOP_ENERGY && !vulnerable();
+        tickTorrent(attacking);
         if (ticks >= waveAt && !attacking) {
             waveAt = ticks + Tempoross.WAVE_INTERVAL; // no attacks at 10% energy or below
         } else if (ticks >= waveAt) {
@@ -331,6 +384,41 @@ public class TemporossSession extends MinigameSession {
         }
     }
 
+    private static int percent(int value, int max) {
+        return (int) Math.ceil(value * 100.0 / Math.max(1, max));
+    }
+
+    /**
+     * Torrent attack (OSRS Wiki): a charged torrent of water surges towards a cannon; when it lands the cannon is out of
+     * action for a while and anyone loading it is stunned. Step away or use the other cannon.
+     */
+    private void tickTorrent(boolean attacking) {
+        if (torrentLands >= 0 && ticks >= torrentLands) {
+            torrentLands = -1;
+            cannonDownUntil.put(torrentCannon, ticks + TemporossStorm.TORRENT_DISABLE_TICKS);
+            BlockPos c = rel(torrentCannon, 1, CANNON_Z);
+            world.sendParticles(ParticleTypes.SPLASH, c.getX() + 0.5, c.getY() + 1, c.getZ() + 0.5, 60, 0.6, 1.2, 0.6, 0.2);
+            for (ServerPlayer p : online()) {
+                if (p.distanceToSqr(c.getX() + 0.5, c.getY(), c.getZ() + 0.5) <= 2.5 * 2.5) {
+                    ActionManager.cancel(p);
+                    p.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.MOVEMENT_SLOWDOWN,
+                            TemporossStorm.TORRENT_STUN_TICKS * 12, 10, false, true));
+                    Msg.red(p, "The torrent slams into the cannon and stuns you!");
+                }
+            }
+        }
+        if (torrentLands < 0 && ticks >= torrentAt) {
+            torrentAt = ticks + TemporossStorm.TORRENT_INTERVAL;
+            if (attacking) {
+                torrentCannon = CANNON_X[random.nextInt(CANNON_X.length)];
+                torrentLands = ticks + TemporossStorm.TORRENT_WARNING;
+                broadcastRed("A charged torrent of water surges towards a nearby cannon...");
+                BlockPos c = rel(torrentCannon, 1, CANNON_Z);
+                world.sendParticles(ParticleTypes.BUBBLE_COLUMN_UP, c.getX() + 0.5, c.getY() + 0.5, c.getZ() + 0.5, 30, 0.5, 0.5, 0.5, 0.1);
+            }
+        }
+    }
+
     /** Lightning strikes near the players and lights fires; anyone standing where one lands is caught in it. */
     private void lightning() {
         List<ServerPlayer> on = online();
@@ -355,6 +443,7 @@ public class TemporossSession extends MinigameSession {
     }
 
     private void douse(BlockPos at) {
+        fireSpreads.remove(at);
         if (fires.remove(at) != null) {
             Arena.set(world, at, Blocks.AIR.defaultBlockState());
             world.sendParticles(ParticleTypes.CLOUD, at.getX() + 0.5, at.getY() + 0.8, at.getZ() + 0.5, 8, 0.3, 0.3, 0.3, 0.02);
@@ -369,7 +458,10 @@ public class TemporossSession extends MinigameSession {
         for (Map.Entry<BlockPos, Long> f : new java.util.ArrayList<>(fires.entrySet())) {
             BlockPos at = f.getKey();
             world.sendParticles(ParticleTypes.FLAME, at.getX() + 0.5, at.getY() + 1.1, at.getZ() + 0.5, 3, 0.3, 0.3, 0.3, 0.01);
-            if ((ticks - f.getValue()) > 0 && (ticks - f.getValue()) % Tempoross.FIRE_SPREAD_TICKS == 0 && fires.size() < Tempoross.MAX_FIRES) {
+            // Each fire spreads at most twice, then stabilises (OSRS Wiki "Fire (Tempoross Cove)").
+            if ((ticks - f.getValue()) > 0 && (ticks - f.getValue()) % Tempoross.FIRE_SPREAD_TICKS == 0 && fires.size() < Tempoross.MAX_FIRES
+                    && fireSpreads.getOrDefault(at, 0) < TemporossStorm.FIRE_SPREADS) {
+                fireSpreads.merge(at, 1, Integer::sum);
                 BlockPos rel = at.subtract(origin);
                 light(randomFloor(rel.getX(), rel.getZ(), 2));
             }
@@ -429,8 +521,10 @@ public class TemporossSession extends MinigameSession {
 
     @Override
     protected List<String> hud(ServerPlayer player) {
-        return List.of("Tempoross", vulnerable() ? "Essence: " + essence + "%  (VULNERABLE)" : "Energy: " + energy + "%",
-                "Essence: " + essence + "%", "Points: " + points.getOrDefault(player.getUUID(), 0),
+        int en = percent(energy, maxEnergy);
+        int es = percent(essence, maxEssence);
+        return List.of("Tempoross", vulnerable() ? "Essence: " + es + "%  (VULNERABLE)" : "Energy: " + en + "%",
+                "Essence: " + es + "%", "Points: " + points.getOrDefault(player.getUUID(), 0),
                 waveAt - ticks <= Tempoross.WAVE_WARNING ? "WAVE INCOMING!" : "Next wave: " + time(waveAt - ticks));
     }
 
