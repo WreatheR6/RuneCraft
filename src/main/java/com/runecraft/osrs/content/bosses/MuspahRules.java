@@ -208,4 +208,51 @@ public final class MuspahRules {
     /** A kill in under 3:00 (300 ticks) gives charged ice (not in RuneCraft yet); a Venator shard comes with no other loot. */
     public static final int CHARGED_ICE_TICKS = 300;
     public static final String VENATOR_SHARD = "venator_shard";
+    public static final String FROZEN_CACHE = "frozen_cache";
+
+    /** One reward line of the frozen cache: item, quantity range and weight (out of {@link #FROZEN_CACHE_TOTAL}). */
+    public record CacheLine(String item, int min, int max, int weight) {
+    }
+
+    /** The frozen cache's pre-roll (1/50): another cache, an ancient icon or a Venator shard (7 : 2 : 1). */
+    public static final int CACHE_PREROLL = 50;
+    public static final List<CacheLine> CACHE_PREROLL_LINES = List.of(new CacheLine(FROZEN_CACHE, 1, 1, 7),
+            new CacheLine("ancient_icon", 1, 1, 2), new CacheLine(VENATOR_SHARD, 1, 1, 1));
+    /**
+     * Its main table (OSRS Wiki "Frozen cache", weights out of 80): ancient essence 15/80 (split 60 : 23 : 10 as the
+     * Muspah's own unique table), weapons and armour, runes, herbs and seeds, resources.
+     */
+    public static final int FROZEN_CACHE_TOTAL = 80 * 93;
+    public static final List<CacheLine> CACHE_LINES = List.of(
+            new CacheLine("ancient_essence", 540, 599, 15 * 60), new CacheLine("ancient_essence", 885, 995, 15 * 23),
+            new CacheLine("ancient_essence", 1970, 2060, 15 * 10),
+            new CacheLine("dragon_plateskirt", 1, 1, 5 * 93), new CacheLine("rune_platelegs", 3, 3, 5 * 93),
+            new CacheLine("black_dhide_body", 1, 1, 5 * 93), new CacheLine("dragon_platelegs", 2, 2, 4 * 93),
+            new CacheLine("rune_sword", 1, 1, 93),
+            new CacheLine("chaos_rune", 480, 480, 5 * 93), new CacheLine("fire_rune", 1964, 1964, 5 * 93),
+            new CacheLine("cannonball", 670, 670, 5 * 93),
+            new CacheLine("torstol_seed", 2, 2, 5 * 93), new CacheLine("grimy_toadflax", 40, 40, 3 * 93),
+            new CacheLine("ranarr_seed", 5, 5, 3 * 93), new CacheLine("snapdragon_seed", 5, 5, 4 * 93),
+            new CacheLine("spirit_seed", 1, 1, 2 * 93),
+            new CacheLine("coal", 163, 163, 5 * 93), new CacheLine("runite_ore", 18, 18, 3 * 93),
+            new CacheLine("limpwurt_root", 21, 21, 3 * 93), new CacheLine("silver_ore", 101, 101, 2 * 93));
+
+    /** One opening of a frozen cache: the line it gives (quantities are rolled by the caller). */
+    public static CacheLine openCache(java.util.Random r) {
+        if (r.nextInt(CACHE_PREROLL) == 0) {
+            return weighted(CACHE_PREROLL_LINES, 10, r);
+        }
+        return weighted(CACHE_LINES, FROZEN_CACHE_TOTAL, r);
+    }
+
+    private static CacheLine weighted(List<CacheLine> lines, int total, java.util.Random r) {
+        int roll = r.nextInt(total);
+        for (CacheLine l : lines) {
+            roll -= l.weight();
+            if (roll < 0) {
+                return l;
+            }
+        }
+        return lines.get(lines.size() - 1);
+    }
 }

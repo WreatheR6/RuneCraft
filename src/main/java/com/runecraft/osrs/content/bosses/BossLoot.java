@@ -79,7 +79,7 @@ public final class BossLoot {
             "shellbane_gryphon", new Once(Set.of("belles_folly_tarnished"), 1),
             // Wiki: "In addition to the unique drops, the player will also have two rolls on the secondary drop table. If the
             // player gets a Venator shard, they will not get any other drop."
-            "phantom_muspah", new Once(Set.of("ancient_essence", "ancient_icon", "venator_shard"), 0, Set.of("venator_shard")));
+            "phantom_muspah", new Once(Set.of("ancient_essence", "frozen_cache", "ancient_icon", "venator_shard"), 0, Set.of("venator_shard")));
 
     private BossLoot() {
     }

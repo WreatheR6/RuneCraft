@@ -109,5 +109,33 @@ class MuspahRulesTest {
         assertEquals(50, m.drops.stream().filter(d -> d.item().equals("ancient_icon")).findFirst().orElseThrow().rarity());
         assertEquals(2500, com.runecraft.osrs.content.extras.Pets.engineRate("phantom_muspah"));
         assertTrue(m.drops.stream().noneMatch(d -> d.item().equals("coins")), "no coins on its table");
+        assertEquals(25, m.drops.stream().filter(d -> d.item().equals("frozen_cache")).findFirst().orElseThrow().rarity());
+        assertTrue(BossLoot.once("phantom_muspah", m.drops.stream().filter(d -> d.item().equals("frozen_cache")).findFirst().orElseThrow()));
+    }
+
+    @Test
+    void frozenCacheTable() {
+        int total = 0;
+        for (MuspahRules.CacheLine l : MuspahRules.CACHE_LINES) {
+            total += l.weight();
+            assertTrue(com.runecraft.osrs.ItemCatalog.get(l.item()) != null, "no item " + l.item());
+        }
+        assertEquals(MuspahRules.FROZEN_CACHE_TOTAL, total);
+        assertTrue(com.runecraft.osrs.ItemCatalog.get(MuspahRules.FROZEN_CACHE) != null);
+        java.util.Random r = new java.util.Random(7);
+        int essence = 0;
+        int preroll = 0;
+        int n = 100_000;
+        for (int i = 0; i < n; i++) {
+            MuspahRules.CacheLine l = MuspahRules.openCache(r);
+            if (l.item().equals("ancient_essence")) {
+                essence++;
+            } else if (l.item().equals("frozen_cache") || l.item().equals("venator_shard") || l.item().equals("ancient_icon")) {
+                preroll++;
+            }
+        }
+        // Wiki: essence 15/80 of the main table (after the 1/50 pre-roll), the pre-roll 1/50.
+        assertEquals(49.0 / 50 * 15 / 80, essence / (double) n, 0.005);
+        assertEquals(1.0 / 50, preroll / (double) n, 0.002);
     }
 }

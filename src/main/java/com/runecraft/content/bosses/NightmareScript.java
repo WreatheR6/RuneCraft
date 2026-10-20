@@ -391,7 +391,7 @@ final class NightmareScript extends ScriptedBoss {
             if (attacker != null) {
                 contribution(attacker)[0] += take;
             }
-            int mc = mcDamage(boss);
+            int mc = safeDamage(boss, take);
             if (shieldLeft <= 0) {
                 breakShield(boss);
             }
@@ -407,16 +407,18 @@ final class NightmareScript extends ScriptedBoss {
             // the killing blow: enough that the health scaling still leaves nothing
             return (int) Math.ceil((boss.getHealth() + 1) * boss.trueHitpoints() / (double) DataBossEntity.MAX_MC_HEALTH) + 1;
         }
-        return mcDamage(boss);
+        return safeDamage(boss, take);
     }
 
-    /** The damage (before the health scaling) that takes her health bar to what is left to deal. */
-    private int mcDamage(DataBossEntity boss) {
-        double loss = boss.getHealth() - mappedHealth(boss);
-        if (loss <= 0) {
-            return 0;
-        }
-        return (int) Math.floor(loss * Math.max(DataBossEntity.MAX_MC_HEALTH, boss.trueHitpoints()) / DataBossEntity.MAX_MC_HEALTH);
+    /**
+     * The hit as it goes on (its hitsplat and combat XP, scaled to her health cap like any boss's), never enough to kill
+     * her: her health follows what is left to deal to her (set every game tick), and only the script's blast or killing
+     * blow ends her.
+     */
+    private int safeDamage(DataBossEntity boss, int damage) {
+        double scale = Math.max(DataBossEntity.MAX_MC_HEALTH, boss.trueHitpoints()) / (double) DataBossEntity.MAX_MC_HEALTH;
+        int safe = (int) Math.floor((boss.getHealth() - 1.5) * scale) - 1;
+        return Math.max(0, Math.min(damage, safe));
     }
 
     /** Healing (parasites, corpse flowers): her shield, or her desperation health. */

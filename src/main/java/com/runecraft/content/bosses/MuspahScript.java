@@ -90,6 +90,42 @@ final class MuspahScript extends ScriptedBoss {
     private record Orb(ServerPlayer target, long due, boolean prayedAtLaunch, int max) {
     }
 
+    /** The frozen cache opens (used) into one roll of its table (OSRS Wiki "Frozen cache"). */
+    static void register() {
+        com.runecraft.platform.UseItemCallback.EVENT.register((player, world, hand) -> {
+            net.minecraft.world.item.ItemStack stack = player.getItemInHand(hand);
+            if (world.isClientSide() || stack.isEmpty() || !(player instanceof ServerPlayer p)
+                    || !MuspahRules.FROZEN_CACHE.equals(com.runecraft.util.Inv.idOf(stack))) {
+                return net.minecraft.world.InteractionResultHolder.pass(stack);
+            }
+            openCache(p);
+            return net.minecraft.world.InteractionResultHolder.sidedSuccess(stack, false);
+        });
+    }
+
+    /** Opens one frozen cache; returns what it gave (null when the player has none). Public for the self-test. */
+    static String openCache(ServerPlayer p) {
+        if (!com.runecraft.util.Inv.has(p, MuspahRules.FROZEN_CACHE, 1)) {
+            return null;
+        }
+        com.runecraft.util.Inv.remove(p, MuspahRules.FROZEN_CACHE, 1);
+        Random r = new Random(p.getRandom().nextLong());
+        MuspahRules.CacheLine line = MuspahRules.openCache(r);
+        int n = line.min() + r.nextInt(line.max() - line.min() + 1);
+        if (line.item().equals("ancient_essence") && n > 600) {
+            n -= n % (n > 1000 ? 10 : 5); // multiples of 5 (885-995) or 10 (1970-2060)
+        }
+        com.runecraft.util.Inv.give(p, line.item(), n);
+        com.runecraft.collection.CollectionLog.obtain(p, line.item());
+        com.runecraft.osrs.ItemDef def = com.runecraft.osrs.ItemCatalog.get(line.item());
+        if (line.item().equals(MuspahRules.FROZEN_CACHE)) {
+            Msg.game(p, "You open the frozen cache and find... another frozen cache inside! How peculiar.");
+        } else {
+            Msg.game(p, "You open the frozen cache and find " + n + " x " + (def == null ? line.item() : def.name()) + ".");
+        }
+        return line.item();
+    }
+
     @Override
     public void onSpawn(DataBossEntity boss) {
         home = boss.blockPosition();

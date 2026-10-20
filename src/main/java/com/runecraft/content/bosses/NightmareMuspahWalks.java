@@ -400,6 +400,13 @@ final class NightmareMuspahWalks {
             check(!boss.isAlive(), "not killed after its shield (" + boss.getHealth() + " health)");
             int kc = data.killCount("phantom_muspah") - kcBefore;
             check(kc == 1, "kill count +" + kc);
+            // A frozen cache from its unique table opens into one roll of its own table.
+            int caches = com.runecraft.util.Inv.count(p, MuspahRules.FROZEN_CACHE);
+            com.runecraft.util.Inv.give(p, MuspahRules.FROZEN_CACHE, 1);
+            String got = MuspahScript.openCache(p);
+            check(got != null && (got.equals(MuspahRules.FROZEN_CACHE) || com.runecraft.util.Inv.count(p, MuspahRules.FROZEN_CACHE) == caches),
+                    "the frozen cache didn't open (" + got + ")");
+            log.add("frozen cache gave " + got);
             return String.join("; ", log) + ", kc +1";
         } finally {
             if (!hadSmite) {

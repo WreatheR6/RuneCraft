@@ -215,10 +215,11 @@ public final class MinigameBosses {
         return BossDef.of("phantom_muspah", "Phantom Muspah").level(741).stats(850, 280, 280, 200, 150, 280).speed(MuspahRules.RANGED_SPEED)
                 .defenceBonus(185, 134, 120, 437, 56)
                 .attack(MUSPAH_RANGED).attack(MUSPAH_SMITE).attack(MUSPAH_MELEE).attack(MUSPAH_CLOUDS).attack(MUSPAH_SHOCKWAVE)
-                // Wiki: one roll on its unique table (essence, icon, shard; the frozen cache isn't in RuneCraft) beside two on its
-                // secondary table (BossDropsTable; a Venator shard comes alone, the script's loot roll); tertiaries hard clue
-                // 1/30, elite clue 1/45; Muphin 1/2,500 (Pets).
+                // Wiki: one roll on its unique table (essence, frozen cache 4/100, icon, shard) beside two on its secondary table
+                // (BossDropsTable; a Venator shard comes alone: BossLoot); tertiaries hard clue 1/30, elite clue 1/45; Muphin
+                // 1/2,500 (Pets).
                 .drops(Drop.of("ancient_essence", 540, 2060, 1), Drop.of("venator_shard", 1, 1, 100), Drop.of("ancient_icon", 1, 1, 50),
+                        Drop.of(MuspahRules.FROZEN_CACHE, 1, 1, 25),
                         Drop.of("runite_ore", 5, 5, 10), Drop.of("death_rune", 200, 200, 10),
                         Drop.of("super_restore", 3, 3, 12), Drop.of("clue_scroll_hard", 1, 1, 30), Drop.of("clue_scroll_elite", 1, 1, 45))
                 .pet("pet_muphin").at("ghorrock_dungeon").arena(14, "ice")
