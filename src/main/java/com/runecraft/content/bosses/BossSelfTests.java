@@ -63,6 +63,12 @@ public final class BossSelfTests {
         if (boss.script() instanceof ClassicScripts.Zalcano) {
             return ClassicScripts.selfTestAssistZalcano(boss, p);
         }
+        if (boss.script() instanceof EncounterScripts.Duke duke && duke.asleep()) {
+            for (int i = 0; i < com.runecraft.osrs.content.bosses.DukeRules.poisonsToWake(boss.awakened()); i++) {
+                duke.feed(boss, p, com.runecraft.osrs.content.bosses.DukeRules.POISON_VALUE);
+            }
+            return "woke the Duke with arder-musca poison";
+        }
         return null;
     }
 

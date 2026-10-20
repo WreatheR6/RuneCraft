@@ -906,6 +906,13 @@ final class EncounterScripts {
         private static final String NBT_PILLARS = "DukePillars";
         private boolean pillars;
         /**
+         * Asleep until arder-musca poison fills his tolerance meter (DukeRules; the quest version is fought awake here).
+         * Saved with him: a reloaded Duke doesn't fall asleep again mid-fight.
+         */
+        private boolean asleep;
+        private int tolerance;
+        private static final String NBT_AWAKE = "DukeAwake";
+        /**
          * The pillar blocks raised around a Duke standing away from his arena (the Desert Treasure II quest version, a boss
          * spawned elsewhere): there they are his, not the arena's scenery, and go when he does instead of staying in the world.
          */
@@ -927,6 +934,34 @@ final class EncounterScripts {
 
         Duke(double scale) {
             this.scale = scale;
+            this.asleep = scale >= 1.0;
+        }
+
+        boolean asleep() {
+            return asleep;
+        }
+
+        @Override
+        public boolean isVulnerable(DataBossEntity boss) {
+            return !asleep;
+        }
+
+        /** Poison (or powder) used on the sleeping Duke: his tolerance fills, and full, he wakes. */
+        void feed(DataBossEntity boss, ServerPlayer p, int value) {
+            if (!asleep) {
+                return;
+            }
+            tolerance += value;
+            int need = com.runecraft.osrs.content.bosses.DukeRules.tolerance(boss.awakened());
+            BossFx.burst(boss, ParticleTypes.SNEEZE, 12, 1.0);
+            if (tolerance < need) {
+                Msg.game(p, "You feed Duke Sucellus the poison. (" + tolerance + "/" + need + ")");
+                return;
+            }
+            asleep = false;
+            boss.setTarget(p);
+            cooldown = 3;
+            BossFx.say(boss, "Duke Sucellus awakens!");
         }
 
         @Override
@@ -941,7 +976,7 @@ final class EncounterScripts {
 
         @Override
         protected boolean canAttack(DataBossEntity boss) {
-            return gazeAt < 0;
+            return gazeAt < 0 && !asleep;
         }
 
         @Override
@@ -1003,6 +1038,12 @@ final class EncounterScripts {
                     }
                 }
                 BossFx.say(boss, "Duke Sucellus stirs from his slumber...");
+            }
+            if (asleep) {
+                if (now % 10 == 0) {
+                    BossFx.burst(boss, ParticleTypes.NOTE, 1, 0.6); // fast asleep
+                }
+                return;
             }
             if (gazeAt >= 0) {
                 BossFx.burst(boss, ParticleTypes.SNOWFLAKE, 10, 1.5);
@@ -1075,6 +1116,9 @@ final class EncounterScripts {
         /** The pillars outlive a chunk unload: a reloaded Duke neither raises a second set nor forgets to clear his own. */
         @Override
         public void writeNbt(DataBossEntity boss, CompoundTag nbt) {
+            if (!asleep) {
+                nbt.putBoolean(NBT_AWAKE, true);
+            }
             if (pillars) {
                 nbt.putBoolean(NBT_PILLARS_UP, true);
             }
@@ -1085,6 +1129,9 @@ final class EncounterScripts {
 
         @Override
         public void readNbt(DataBossEntity boss, CompoundTag nbt) {
+            if (nbt.getBoolean(NBT_AWAKE)) {
+                asleep = false;
+            }
             pillars = nbt.getBoolean(NBT_PILLARS_UP);
             pillarBlocks.clear();
             for (long at : nbt.getLongArray(NBT_PILLARS)) {
@@ -1589,9 +1636,8 @@ final class EncounterScripts {
                 cooldown = 3;
                 return null;
             }
-            if (distance < 6 && boss.getRandom().nextInt(5) == 0) {
-                return VarlamoreBosses.HUEY_TAIL;
-            }
+            // OSRS Wiki: her only attacks are the glowing symbols and rain fire (the tail's slam is the tail phases' shockwave);
+            // the knockback tail sweep she used up close isn't hers.
             AttackDef[] styles = {VarlamoreBosses.HUEY_MELEE, VarlamoreBosses.HUEY_RANGED, VarlamoreBosses.HUEY_MAGIC};
             return styles[boss.getRandom().nextInt(3)];
         }

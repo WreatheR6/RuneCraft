@@ -56,6 +56,7 @@ public final class BossesHooks implements ModuleHooks {
         BossScripts.register("phosanis_nightmare", () -> new EncounterScripts.Nightmare(true));
         BossScripts.register("phantom_muspah", EncounterScripts.Muspah::new);
         BossScripts.register("duke_sucellus", EncounterScripts.Duke::new);
+        DukePrep.register(); // waking him: the asylum's mushrooms, salt and vats, and arder-musca poison
         BossScripts.register("the_leviathan", LeviathanScript::new);
         BossScripts.register("the_whisperer", WhispererScript::new);
         WhispererScript.register(); // the blackstone fragment, Ketla's workbench and her entry requirement

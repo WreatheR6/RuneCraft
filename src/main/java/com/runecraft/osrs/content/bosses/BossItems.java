@@ -363,6 +363,16 @@ public final class BossItems {
         simple(items, "chromium_ingot", "Chromium ingot", "bar", 0x9AB0C0, 1, "Three are needed to forge a DT2 ring.");
         simple(items, "awakeners_orb", "Awakener's orb", "orb", 0xC03A3A, 1,
                 "A mysterious orb of unknown power. Use it on a Desert Treasure II boss's summoning stone to awaken the boss.");
+        // Waking Duke Sucellus (OSRS Wiki "Arder-musca poison"): the asylum's mushrooms and salt, ground and fermented.
+        simple(items, DukeRules.ARDER_MUSHROOM, "Arder mushroom", "mushroom", 0x8A6A3A, 1, "A mushroom from the Ghorrock Prison.");
+        simple(items, DukeRules.MUSCA_MUSHROOM, "Musca mushroom", "mushroom", 0x6A8A4A, 1, "A mushroom from the Ghorrock Prison.");
+        items.add(DukeRules.ARDER_POWDER, "Arder powder", Kind.SIMPLE, "secondary", 0xA08050).value(1).stack(64000)
+                .examine("Ground arder mushroom.");
+        items.add(DukeRules.MUSCA_POWDER, "Musca powder", Kind.SIMPLE, "secondary", 0x80A060).value(1).stack(64000)
+                .examine("Ground musca mushroom.");
+        items.add(DukeRules.SALAX_SALT, "Salax salt", Kind.SIMPLE, "ore", 0xE0E0E8).value(1).stack(64000)
+                .examine("Salt from the Ghorrock Prison's salt piles.");
+        simple(items, DukeRules.POISON, "Arder-musca poison", "vial", 0x6A9A4A, 1, "Use it on Duke Sucellus to weaken him.");
         // Needed to fight the Whisperer: activated to step into and out of the Shadow Realm (OSRS Wiki, untradeable).
         simple(items, WhispererRules.FRAGMENT, "Blackstone fragment", "shard", 0x2A2A3A, 100,
                 "A strange shard of dark stone with various modifications.");

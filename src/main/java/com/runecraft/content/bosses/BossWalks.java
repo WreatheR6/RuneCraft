@@ -817,14 +817,47 @@ public final class BossWalks {
         return "fire wall doused, ranged boost, blast dodged on the safe spot, subdued and fell together";
     }
 
-    /** Duke Sucellus: his Freezing Gaze dodged behind a pillar, then the kill. */
+    /**
+     * Duke Sucellus: asleep until poisoned (mushrooms ground into powder, salt mined, both fermented into arder-musca poison
+     * and used on him), then his Freezing Gaze dodged behind a pillar, and the kill.
+     */
     public static String duke(DataBossEntity boss, Driver d) {
         if (!(boss.script() instanceof EncounterScripts.Duke duke)) {
             throw fail("Duke Sucellus has no Duke script");
         }
         ServerPlayer p = d.player();
         d.moveTo(duke.homeVec().add(0, 0, 6), boss);
-        d.ticks(boss, 2); // his pillars rise
+        d.clearDamage();
+        d.ticks(boss, 10); // his pillars rise; he sleeps
+        if (!duke.asleep() || duke.isVulnerable(boss) || d.damage("fist_slam") + d.damage("magic_blast") > 0) {
+            throw fail("the Duke didn't sleep until poisoned");
+        }
+        int poisons = com.runecraft.osrs.content.bosses.DukeRules.poisonsToWake(boss.awakened());
+        int per = com.runecraft.osrs.content.bosses.DukeRules.PER_POISON * poisons;
+        int powderEach = com.runecraft.osrs.content.bosses.DukeRules.powderPerMushroom(
+                com.runecraft.player.Players.data(p).skills().level(com.runecraft.osrs.Skill.HERBLORE));
+        int mushrooms = (per + powderEach - 1) / powderEach;
+        Inv.give(p, "pestle_and_mortar", 1);
+        Inv.give(p, "rune_pickaxe", 1);
+        Inv.give(p, com.runecraft.osrs.content.bosses.DukeRules.ARDER_MUSHROOM, mushrooms);
+        Inv.give(p, com.runecraft.osrs.content.bosses.DukeRules.MUSCA_MUSHROOM, mushrooms);
+        DukePrep.grind(p, com.runecraft.osrs.content.bosses.DukeRules.ARDER_MUSHROOM);
+        DukePrep.grind(p, com.runecraft.osrs.content.bosses.DukeRules.MUSCA_MUSHROOM);
+        for (int i = 0; i < 10 && Inv.count(p, com.runecraft.osrs.content.bosses.DukeRules.SALAX_SALT) < per; i++) {
+            DukePrep.mineSalt(p);
+        }
+        int made = DukePrep.ferment(p);
+        if (made < poisons) {
+            throw fail("the vat made " + made + " poisons, " + poisons + " needed");
+        }
+        for (int i = 0; i < poisons; i++) {
+            Inv.remove(p, com.runecraft.osrs.content.bosses.DukeRules.POISON, 1);
+            duke.feed(boss, p, com.runecraft.osrs.content.bosses.DukeRules.POISON_VALUE);
+        }
+        if (duke.asleep()) {
+            throw fail(poisons + " arder-musca poisons didn't wake him");
+        }
+        d.ticks(boss, 2);
         duke.walkGazeNext();
         if (until(boss, d, 12, duke::walkGazing) < 0) {
             throw fail("no Freezing Gaze");
@@ -844,7 +877,7 @@ public final class BossWalks {
             throw fail("the gaze found the player behind a pillar (" + d.damage("freezing_gaze") + ")");
         }
         finish(boss, d, AttackType.SLASH, 120, 80);
-        return "gaze dodged behind a pillar, killed";
+        return "asleep until " + poisons + " poisons (mushrooms ground, salt mined, fermented), gaze dodged behind a pillar, killed";
     }
 
     /** Vardorvis: Strangle answered by destroying every spore in time; his head's gaze blocked by the matching protection. */
