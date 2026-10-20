@@ -100,7 +100,7 @@ public final class SlayerItems {
                 .examine("Light it with a tinderbox (33 Firemaking).");
         // The lit bug lantern is in CommonItems (skilling: it lights lantern harpooning).
         items.add("slayer_bell", "Slayer bell", Kind.SIMPLE, "bell", 0xC8A030).value(150).stack(1)
-                .examine("Used to lure out wall beasts... or so they say.");
+                .examine("Don't make anyone jump when you ring this! (Rung to lure molanisks off the walls.)");
         items.add("slayer_ring_8", "Slayer ring (8)", Kind.SLAYER_GEM, "ring", 0x8A30C0).value(87).stack(1)
                 .examine("A ring that tells me my slayer task.");
         // Used charges (rubbed to teleport: Jewellery and Teleports.SLAYER in the systems module); the last one crumbles.
@@ -228,7 +228,7 @@ public final class SlayerItems {
                 .examine("The tooth end of a key that has been broken in half.");
         items.add("imbued_heart","Imbued heart", Kind.SIMPLE, "gem", 0xD02060).value(1).stack(1)
                 .examine("Temporarily boosts your Magic level (from superior slayer creatures).");
-        items.add("eternal_gem", "Eternal gem", Kind.SIMPLE, "gem", 0x8A30C0).value(1).stack(1)
+        items.add("eternal_gem", "Eternal gem", Kind.SLAYER_GEM, "gem", 0x8A30C0).value(1).stack(1)
                 .examine("An enchanted gem that never runs out of charges.");
         // Slayer chest uniques (OSRS Wiki): the brimstone chest's broken dragon hasta, Larran's big chest's Dagon'hai robes.
         items.add("broken_dragon_hasta", "Broken dragon hasta", Kind.SIMPLE, "spear", 0x8A3A2A).value(62400).stack(1)

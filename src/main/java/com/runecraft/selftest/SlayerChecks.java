@@ -367,7 +367,19 @@ final class SlayerChecks {
             if (SlayerCombat.afterRoll(p(), gargoyle, AttackType.CRUSH, 20) != 20) {
                 throw failure("Gargoyle smasher with a rock hammer didn't finish the gargoyle");
             }
-            return "whip 0 / leaf-bladed 10 on a kurask; gargoyle left at " + (5 - left) + " hp until smashed";
+            // A molanisk clings to the wall until a slayer bell is rung.
+            LivingEntity molanisk = spawn("molanisk");
+            try {
+                if (SlayerCombat.afterRoll(p(), molanisk, AttackType.CRUSH, 6) != 0) {
+                    throw failure("a molanisk was hurt before a slayer bell lured it down");
+                }
+                if (SlayerCombat.ringBell(p()) < 1 || SlayerCombat.afterRoll(p(), molanisk, AttackType.CRUSH, 6) != 6) {
+                    throw failure("ringing a slayer bell didn't lure the molanisk down");
+                }
+            } finally {
+                molanisk.discard();
+            }
+            return "whip 0 / leaf-bladed 10 on a kurask; gargoyle left at " + (5 - left) + " hp until smashed; molanisk belled";
         } finally {
             kurask.discard();
             gargoyle.discard();

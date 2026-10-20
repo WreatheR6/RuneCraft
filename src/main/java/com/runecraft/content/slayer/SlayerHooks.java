@@ -29,6 +29,11 @@ public final class SlayerHooks implements ModuleHooks {
         // once the server starts, she runs the quest until it is complete and gives Slayer tasks after.
         ServerLifecycleEvents.SERVER_STARTED.register(server -> wrapQuestMasters());
         SlayerCombat.register();
+        // Broad arrows and bolts can only be fletched after learning "Broader fletching" (300 points).
+        com.runecraft.menu.MenuService.REQUIREMENTS.add((player, recipe) ->
+                com.runecraft.osrs.content.slayer.SlayerRewards.BROADER_FLETCHING_RECIPES.contains(recipe.id())
+                        && !SlayerService.profile(player).unlocks.contains("broader_fletching")
+                        ? "You need to learn Broader Fletching from a Slayer master first." : null);
         TormentedDemonCombat.register();
         SlayerCommands.register();
         BlockHooks.register("brimstone_chest", (player, pos, state) -> openChest(player, "brimstone_key",

@@ -202,6 +202,10 @@ public final class SlayerRewards {
             new ShopItem("antifire_potion", 1500, 1),
             new ShopItem("anti_dragon_shield", 1000, 1));
 
+    /** Fletching recipes (skilling module) that need the "Broader fletching" unlock first (OSRS). */
+    public static final List<String> BROADER_FLETCHING_RECIPES = List.of("fletch_broad_arrows", "fletch_broad_bolts",
+            "fletch_amethyst_broad_bolts");
+
     /** Items combined into a slayer helmet (55 Crafting, "Malevolent masquerade"). */
     public static final List<String> HELMET_PARTS = List.of("black_mask", "earmuffs", "facemask", "nose_peg",
             "spiny_helmet", "enchanted_gem");

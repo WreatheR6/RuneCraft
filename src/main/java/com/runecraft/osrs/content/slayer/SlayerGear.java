@@ -96,6 +96,16 @@ public final class SlayerGear {
     public static final List<String> BROAD_AMMO = List.of("broad_arrows", "broad_bolts", "amethyst_broad_bolts");
     public static final List<String> MAGIC_DART_STAVES = List.of("slayer_staff", "staff_of_the_dead");
 
+    /**
+     * Molanisks cling to the walls until a slayer bell (39 Slayer) is rung nearby (OSRS Wiki); until then they can't be
+     * hurt. A ring lures those within {@link #BELL_RADIUS} blocks for {@link #BELL_LURE_TICKS} game ticks (approx).
+     */
+    public static final String BELL_CATEGORY = "molanisks";
+    public static final String SLAYER_BELL = "slayer_bell";
+    public static final int BELL_SLAYER_LEVEL = 39;
+    public static final int BELL_RADIUS = 8;
+    public static final int BELL_LURE_TICKS = 100;
+
     /** Harpie bug swarms can only be damaged while carrying a lit bug lantern. */
     public static final Map<String, String> LIGHT_SOURCE = Map.of("harpie_bug_swarms", "bug_lantern");
 

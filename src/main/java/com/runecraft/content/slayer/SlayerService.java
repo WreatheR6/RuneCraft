@@ -85,6 +85,13 @@ public final class SlayerService {
         SlayerState.Profile p = profile(player);
         int combat = data.skills().combatLevel();
         int slayer = data.skills().level(Skill.SLAYER);
+        // OSRS: showing a master the Slayer cape (99 Slayer) waives their combat level requirement.
+        String cape = com.runecraft.content.systems.SysState.of(player).wornId(com.runecraft.osrs.content.systems.Jewellery.Slot.CAPE);
+        boolean capeShown = slayer >= 99 && (cape.startsWith("slayer_cape") || Inv.has(player, "slayer_cape", 1)
+                || Inv.has(player, "slayer_cape_t", 1));
+        if (capeShown) {
+            combat = Math.max(combat, master.combatLevel());
+        }
         if (combat < master.combatLevel() || slayer < master.slayerLevel()) {
             say(player, master, "You're too weak to be one of my students. Come back with a combat level of "
                     + master.combatLevel() + (master.slayerLevel() > 1 ? " and a Slayer level of " + master.slayerLevel() : "") + ".");
@@ -117,6 +124,7 @@ public final class SlayerService {
             if (p.chooseAmount) {
                 // A boss task whose amount hasn't been chosen yet: the master asks again (OSRS).
                 askBossAmount(player, master, p);
+                menu(player, p);
                 return;
             }
             say(player, master, "You're still hunting " + describe(p) + "; you have " + p.remaining + " to go.");
@@ -377,6 +385,15 @@ public final class SlayerService {
     public static boolean taskCountsFor(ServerPlayer player, LivingEntity entity) {
         SlayerState.Profile p = profile(player);
         return p.hasTask() && counts(p.task, MonsterStats.of(entity), p.master);
+    }
+
+    /**
+     * Public API for the TzHaar minigames: how many TzTok-Jad / TzKal-Zuk kills a TzHaar task taken as a boss task asks
+     * for (OSRS Combat Achievement rewards: 1, 2 from the master tier, 3 from the grandmaster tier).
+     */
+    public static int tzhaarBossTaskKills(ServerPlayer player) {
+        return com.runecraft.osrs.content.systems.CombatAchievements.tzhaarTaskKills(
+                com.runecraft.content.systems.CombatAchievementService.tier(player));
     }
 
     /** The slayer category a module monster or boss declares, or null. */

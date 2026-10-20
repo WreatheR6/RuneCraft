@@ -45,6 +45,36 @@ class SlayerSystemTest {
         assertEquals("mazchna", SlayerMasters.bestFor(30, 1, m -> true).id());
     }
 
+    /** The masters stand where the OSRS Wiki's maps put them (within 2 tiles); Vannaka and Konar are known exceptions. */
+    @Test
+    void mastersStandWhereTheWikiPutsThem() {
+        java.util.Map<String, int[]> wiki = java.util.Map.of("turael", new int[]{2931, 3536}, "mazchna", new int[]{3511, 3509},
+                "chaeldar", new int[]{2444, 4431}, "nieve", new int[]{2432, 3423}, "steve", new int[]{2432, 3423},
+                "duradel", new int[]{2869, 2982}, "krystilia", new int[]{3109, 3516});
+        for (com.runecraft.osrs.content.NpcDef npc : ContentRegistry.npcs()) {
+            int[] want = wiki.get(npc.id());
+            if (want == null) {
+                continue;
+            }
+            int px;
+            int py;
+            com.runecraft.osrs.content.PlaceDef place = ContentRegistry.places().stream().filter(x -> x.id().equals(npc.place()))
+                    .findFirst().orElse(null);
+            if (place != null) {
+                px = place.osrsX();
+                py = place.osrsY();
+            } else {
+                com.runecraft.osrs.Landmark l = com.runecraft.osrs.Landmark.valueOf(npc.place());
+                px = l.osrsX();
+                py = l.osrsY();
+            }
+            double x = px + npc.dx() / 2.0;
+            double y = py - npc.dz() / 2.0;
+            assertTrue(Math.abs(x - want[0]) <= 2 && Math.abs(y - want[1]) <= 2,
+                    npc.id() + " stands at " + x + ", " + y + "; wiki " + want[0] + ", " + want[1]);
+        }
+    }
+
     @Test
     void bossTasksFollowTheWikiTable() {
         SlayerBossTasks.BossTask barrows = SlayerBossTasks.get("boss_barrows");

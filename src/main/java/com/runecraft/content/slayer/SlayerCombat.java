@@ -20,6 +20,8 @@ import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import com.runecraft.platform.ServerTickEvents;
 import com.runecraft.platform.UseEntityCallback;
+import com.runecraft.platform.UseItemCallback;
+import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -61,6 +63,39 @@ public final class SlayerCombat {
             return useFinisher(sp, living) ? InteractionResult.SUCCESS : InteractionResult.PASS;
         });
         ServerTickEvents.END_SERVER_TICK.register(SlayerCombat::tick);
+        UseItemCallback.EVENT.register((player, world, hand) -> {
+            ItemStack stack = player.getItemInHand(hand);
+            if (world.isClientSide() || !(player instanceof ServerPlayer sp) || !SlayerGear.SLAYER_BELL.equals(Inv.idOf(stack))) {
+                return InteractionResultHolder.pass(stack);
+            }
+            ringBell(sp);
+            return InteractionResultHolder.sidedSuccess(stack, false);
+        });
+    }
+
+    /** Game tick until which a molanisk has been lured off its wall by a slayer bell. */
+    private static final Map<LivingEntity, Long> LURED = new WeakHashMap<>();
+
+    /** Rings a slayer bell: molanisks nearby drop off the walls and can be fought for a while. Returns how many. */
+    public static int ringBell(ServerPlayer player) {
+        if (Players.data(player).skills().level(Skill.SLAYER) < SlayerGear.BELL_SLAYER_LEVEL) {
+            Msg.game(player, "You need a Slayer level of " + SlayerGear.BELL_SLAYER_LEVEL + " to use the slayer bell.");
+            return 0;
+        }
+        long until = ActionManager.gameTick() + SlayerGear.BELL_LURE_TICKS;
+        List<OsrsMonsterEntity> near = player.level().getEntitiesOfClass(OsrsMonsterEntity.class,
+                player.getBoundingBox().inflate(SlayerGear.BELL_RADIUS),
+                m -> m.isAlive() && SlayerGear.BELL_CATEGORY.equals(category(m)));
+        for (OsrsMonsterEntity m : near) {
+            LURED.put(m, until);
+        }
+        Msg.game(player, near.isEmpty() ? "You ring the bell. Nothing happens." : "You ring the bell. A molanisk drops off the wall!");
+        return near.size();
+    }
+
+    private static boolean lured(LivingEntity target) {
+        Long until = LURED.get(target);
+        return until != null && ActionManager.gameTick() <= until;
     }
 
     private static String category(LivingEntity target) {
@@ -85,6 +120,10 @@ public final class SlayerCombat {
         }
         if (SlayerGear.LEAF_BLADED_CATEGORIES.contains(category) && !canHurtLeafBladed(player, type)) {
             Msg.action(player, "You need a leaf-bladed weapon, broad ammunition or Magic Dart to harm this creature.");
+            return 0;
+        }
+        if (SlayerGear.BELL_CATEGORY.equals(category) && !lured(target)) {
+            Msg.action(player, "The molanisk clings to the wall out of reach; ring a slayer bell to lure it down.");
             return 0;
         }
         String light = SlayerGear.LIGHT_SOURCE.get(category);
