@@ -1056,16 +1056,23 @@ public class ColosseumSession extends MinigameSession {
     }
 
     /**
-     * Where a healing totem rises: past the enemy's south-west corner "if space permits, spawning elsewhere if this is not
-     * possible" (wiki strategy guide; on Sol Heredit "near Sol's SW tile"). Elsewhere is the nearest open tile to that spot
-     * outside the enemy's own tiles, inside the fight's bounds: the gladiators' ring on wave 12, the arena walls otherwise.
-     * A 1-hitpoint totem put inside a pillar or the ring would suffocate at once, or stand out of the player's reach.
+     * Where a healing totem rises: on the tile diagonally past the enemy's south-west tile "if space permits, spawning
+     * elsewhere if this is not possible" (wiki strategy guide; on Sol Heredit "near Sol's SW tile"). Elsewhere is the nearest
+     * open tile to that spot outside the enemy's own tiles, inside the fight's bounds: the gladiators' ring on wave 12, the
+     * arena walls otherwise. A 1-hitpoint totem put inside a pillar or the ring would suffocate at once, or stand out of the
+     * player's reach.
+     *
+     * <p>The enemy's tiles are its size x size OSRS tiles centred on where it stands, snapped to the tile grid: centre ± size/2
+     * for an odd size (a 1x1 shaman's totem rises one tile south-west of it, Sol Heredit's three tiles out from his centre),
+     * and for a 2x2 jaguar the four tiles nearest its true position.
      */
     private BlockPos totemSpot(LivingEntity enemy) {
         int size = FortisColosseum.size(MinigameManager.creatureId(enemy));
-        int off = (size + 1) / 2 + 1;
+        // The enemy's tiles: x in [west, west + size), z in [north, north + size) (north is -z, south +z, west -x).
+        int west = (int) Math.floor(enemy.getX() - size / 2.0 + 0.5);
+        int north = (int) Math.floor(enemy.getZ() - size / 2.0 + 0.5);
         BlockPos centre = enemy.blockPosition();
-        BlockPos sw = centre.offset(-off, 0, off);
+        BlockPos sw = new BlockPos(west - 1, centre.getY(), north + size);
         for (int r = 0; r <= 3; r++) {
             for (int dx = -r; dx <= r; dx++) {
                 for (int dz = -r; dz <= r; dz++) {
@@ -1073,7 +1080,7 @@ public class ColosseumSession extends MinigameSession {
                         continue;
                     }
                     BlockPos p = sw.offset(dx, 0, dz);
-                    boolean underEnemy = Math.max(Math.abs(p.getX() - centre.getX()), Math.abs(p.getZ() - centre.getZ())) <= size / 2;
+                    boolean underEnemy = p.getX() >= west && p.getX() < west + size && p.getZ() >= north && p.getZ() < north + size;
                     if (!underEnemy && totemFits(p)) {
                         return p;
                     }
