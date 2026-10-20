@@ -1142,7 +1142,9 @@ public final class RaidInstance {
             say("You missed the " + limit + "-minute time limit: the raid level drops to " + raidLevel + ".", ChatFormatting.RED);
         }
         Map<String, Integer> pts = new LinkedHashMap<>();
-        for (UUID u : party) {
+        // ToA (OSRS): raiders who left before the end still count towards the team's unique chance (and can draw the
+        // unique, which then goes to no one); the others only roll for whoever is still here.
+        for (UUID u : type == RaidType.TOA ? points.keySet() : party) {
             pts.put(u.toString(), type == RaidType.TOA ? ToaLoot.rewardPoints(toaTotal(u)) : points(u));
         }
         if (type == RaidType.TOA) {
@@ -1181,6 +1183,9 @@ public final class RaidInstance {
             }
         }
         for (String who : result.purpleRecipients()) {
+            if (!party.contains(UUID.fromString(who))) {
+                continue; // drawn by a raider who left: nobody gets it
+            }
             String name = names.getOrDefault(UUID.fromString(who), "Someone");
             String item = result.lootFor(who).isEmpty() ? "" : result.lootFor(who).get(0).item();
             ItemDef def = ItemCatalog.get(item);
@@ -1188,7 +1193,7 @@ public final class RaidInstance {
                     + (def == null ? item : def.name()) + "!").withStyle(ChatFormatting.LIGHT_PURPLE), false);
             world.playSound(null, center(current), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 1f, 1f);
         }
-        if (result.purpleRecipients().isEmpty()) {
+        if (result.purpleRecipients().stream().noneMatch(w -> party.contains(UUID.fromString(w)))) {
             say(type == RaidType.TOA ? "Osmumten's sarcophagus glows white: the chests hold standard loot."
                     : "The chest contains standard loot.", ChatFormatting.GRAY);
         } else if (type == RaidType.TOA) {
