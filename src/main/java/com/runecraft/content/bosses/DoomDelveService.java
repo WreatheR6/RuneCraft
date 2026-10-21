@@ -569,6 +569,22 @@ final class DoomDelveService {
             CombatHandler.applyDamage(boss, target, dmg);
         }
 
+        /**
+         * The players its mechanics reach: those around it plus its target. The Doom is fought alone in an instance (OSRS Wiki
+         * "Doom of Mokhaiotl"), so every mechanic aimed at "the player" (the Rock Throw exploding over them and switching
+         * their protection prayers off, at every delve level; the debris, larvae, shockwaves, the burrow) lands on the one
+         * it fights, even when that player isn't in the level's player list (the self-test's fake player); others standing
+         * by are hit too, as the lair is shared.
+         */
+        private static List<ServerPlayer> fighters(DataBossEntity boss, ServerPlayer target) {
+            List<ServerPlayer> list = new ArrayList<>(BossFx.players(boss, 24));
+            if (target != null && target.isAlive() && target.level() == boss.level() && target.distanceToSqr(boss) <= 24 * 24
+                    && !list.contains(target)) {
+                list.add(target);
+            }
+            return list;
+        }
+
         @Override
         protected void onGameTick(DataBossEntity boss, ServerPlayer target) {
             if (!boss.isAlive()) {
@@ -589,7 +605,7 @@ final class DoomDelveService {
             if (!started) {
                 return;
             }
-            List<ServerPlayer> near = BossFx.players(boss, 24);
+            List<ServerPlayer> near = fighters(boss, target);
             for (ServerPlayer p : near) {
                 if (!wearsShield(p)) {
                     CombatAchievementService.flag(p, DoomDelves.FLAG_NO_SHIELD);

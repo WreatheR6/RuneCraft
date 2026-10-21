@@ -33,7 +33,9 @@ public final class TitansWalk {
         }
         ServerPlayer p = d.player();
         ServerLevel world = (ServerLevel) branda.level();
-        ServerPlayer partner = com.runecraft.platform.FakePlayer.get(world);
+        // A second fake player: FakePlayer.get is the walking player itself when no real player runs the self-test, and one
+        // player in both roles would hold both shares in one choice.
+        ServerPlayer partner = com.runecraft.platform.FakePlayer.partner(world);
         partner.getInventory().clearContent(); // room for the partner's own loot
         try {
             d.moveTo(t.homeVec().add(0, 0, 3), branda);
@@ -42,8 +44,10 @@ public final class TitansWalk {
             if (eldric == null || !eldric.isAlive()) {
                 throw fail("Eldric didn't rise beside Branda");
             }
-            // the player's own hits count, through the combat path
-            p.setItemInHand(InteractionHand.MAIN_HAND, Inv.stack("dragon_scimitar", 1));
+            // the player's own hits count, through the combat path. An abyssal whip: a dragon scimitar can't be wielded before
+            // Monkey Madness I (OSRS; QuestGear zeroes a quest-locked weapon's accuracy and max hit), and the walking
+            // player's quests are reset, so all 40 of its hits missed.
+            p.setItemInHand(InteractionHand.MAIN_HAND, Inv.stack("abyssal_whip", 1));
             for (int i = 0; i < 40 && t.damageBy(p) <= 0; i++) {
                 BossWalks.attack(p, i % 2 == 0 ? branda : eldric);
                 d.ticks(branda, 1);
@@ -118,6 +122,8 @@ public final class TitansWalk {
             return "player " + pct + "% looted Eldric (" + loot.size() + " stacks), partner 50% took " + pages + " pages";
         } finally {
             partner.getInventory().clearContent();
+            Players.state(world.getServer()).remove(partner.getUUID()); // no fake partner's kill count left in the save
+            TitansLoot.forget(world.getServer(), partner.getUUID()); // nor its open choice, if the walk failed before it chose
             p.setItemInHand(InteractionHand.MAIN_HAND, net.minecraft.world.item.ItemStack.EMPTY);
         }
     }

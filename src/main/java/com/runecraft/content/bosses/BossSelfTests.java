@@ -205,6 +205,15 @@ public final class BossSelfTests {
         LunarChest.selfTestRestore(server, player, saved);
     }
 
+    /** A player's open Royal Titans loot choice, saved and restored around the self-test (null: none). */
+    public static Object titansChoiceSave(net.minecraft.server.MinecraftServer server, java.util.UUID player) {
+        return TitansLoot.selfTestSave(server, player);
+    }
+
+    public static void titansChoiceRestore(net.minecraft.server.MinecraftServer server, java.util.UUID player, Object saved) {
+        TitansLoot.selfTestRestore(server, player, saved);
+    }
+
     /**
      * What a Hunllef's script is doing (the Gauntlet walk in {@code content/minigames/GauntletSelfTest}): whether it is in its
      * magic cycle, the style it protects from, attacks into the current cycle, off-prayer hits taken since its last prayer
