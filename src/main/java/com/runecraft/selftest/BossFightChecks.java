@@ -273,8 +273,15 @@ final class BossFightChecks {
         try {
             BlockPos at = c.near(0, 0);
             EntityType<DataBossEntity> type = ModEntities.DATA_BOSS_TYPES.get(id);
+            Set<UUID> before = new HashSet<>();
+            for (DataBossEntity d : c.world.getEntitiesOfClass(DataBossEntity.class, new AABB(at).inflate(48), e -> e.isAlive())) {
+                before.add(d.getUUID());
+            }
             DataBossService.summon(c.player, c.world, at, def);
             List<DataBossEntity> found = c.world.getEntities(type, new AABB(at).inflate(48), e -> e.isAlive());
+            if (!found.isEmpty()) {
+                lairMates(found.get(0), at, before);
+            }
             String how = "";
             if (found.isEmpty()) {
                 if (gate != null) {
@@ -299,6 +306,21 @@ final class BossFightChecks {
         } finally {
             if (gate != null) {
                 gate.close();
+            }
+        }
+    }
+
+    /**
+     * The companions a summoned boss raised as it rose (Eldric beside Branda, Dawn beside Dusk, Rex's brothers) share its lair
+     * rules, the terrain safespot rule included: only the boss being fought is ticked here, so a companion that kept every
+     * safespot (Eldric frozen behind the Titans' own walls, round 41 review) would never show in the fight.
+     */
+    private void lairMates(DataBossEntity summoned, BlockPos at, Set<UUID> before) {
+        for (DataBossEntity d : c.world.getEntitiesOfClass(DataBossEntity.class, new AABB(at).inflate(48),
+                e -> e.isAlive() && e != summoned && !before.contains(e.getUUID()) && summoned.sharesLair(e))) {
+            if (summoned.breaksSafespots() && !d.breaksSafespots()) {
+                throw new AssertionError(name(d) + " rose in " + name(summoned) + "'s lair but keeps the terrain safespots "
+                        + name(summoned) + " breaks");
             }
         }
     }

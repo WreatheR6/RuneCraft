@@ -181,6 +181,16 @@ public class DataBossEntity extends OsrsMonsterEntity {
         this.breakSafespots = on;
     }
 
+    /** Whether this boss breaks terrain safespots (self-test: the companions of a summoned boss share its lair rules). */
+    public boolean breaksSafespots() {
+        return breakSafespots;
+    }
+
+    /** Whether {@code other} was put in this boss's lair (the same home): a companion or next form it brought. */
+    public boolean sharesLair(DataBossEntity other) {
+        return home != null && other != null && home.equals(other.home);
+    }
+
     /**
      * A melee-only boss whose target stands in its lair out of its melee reach where it can't walk into reach (on a pillar, past
      * a hole, behind a ledge or a wall) steps up beside the target after {@link BossLair#SAFESPOT_TICKS} game ticks: OSRS's flat
