@@ -103,14 +103,14 @@ public final class Diaries {
      * "altar_restore_85" (85+ points restored),
      * "tears_of_guthix:100" (100+ tears in one visit), "fill:" + filled item ("fill:water_bucket") at a pump or well,
      * "dog_bone", "kitten_colour", "chompy_hat:" + kills registered, "phoenix_feather", "emote:" + emote slug, "stairs:" + id and
-     * "machete_trade" (Safta Doc's gem machetes).
+     * "machete_trade" (Safta Doc's gem machetes) and "crystal_saw" (a crystal saw seed sung into a saw).
      */
     public static final List<String> ACTIVITIES = List.of("talk", "minigame_start", "minigame_win", "spellbook", "teleport", "eat",
             "trek_complete", "fight_pit_champion", "monkey_cage", "shop_open", "shop_buy", "shop_sell", "bert_sand", "tindel_identify",
             "genie_visit", "chest_open", "join", "cast_on_player", "strut_repair", "essence_mine", "steal", "kingdom_approval",
             "ba_blackboard", "tbw_favour", "kudos", "ba_wave", "poh_portal", "monster_examine", "totem_recharge", "dig", "ent_chop",
             "shortcut", "travel", "fairy_ring", "altar_pray", "altar_restore_85", "tears_of_guthix", "fill", "dog_bone", "kitten_colour",
-            "chompy_hat", "phoenix_feather", "emote", "stairs", "altar_restore", "machete_trade");
+            "chompy_hat", "phoenix_feather", "emote", "stairs", "altar_restore", "machete_trade", "crystal_saw");
 
     /** The Fishing Platform's deck (an "x,y,r" restriction out at sea, so the land check skips it). */
     public static final String FISHING_PLATFORM = "2788,3285,10";
@@ -423,7 +423,7 @@ public final class Diaries {
         visit("Enter the Combat Training Camp north of West Ardougne", 2518, 3356, 12);
         event("Have Tindel Marchant identify a rusty sword for you", "tindel_identify", null); // 100 coins, Port Khazard
         visit("Use the Ardougne lever to teleport to the Wilderness", 3153, 3923, 12);
-        visit("View Aleck's Hunter Emporium in Yanille", 2566, 3083, 8);
+        event("View Aleck's Hunter Emporium in Yanille", "shop_open:alecks_hunter_emporium", null);
         visit("Check what pets you have insured with Probita in East Ardougne", 2621, 3294, 8);
         in("ardougne", Tier.MEDIUM);
         event("Enter the unicorn pen in Ardougne Zoo using Fairy rings", "fairy_ring:bis", null);
@@ -528,7 +528,7 @@ public final class Diaries {
         killAt("Kill a duck in Falador Park", "duck", 1, at(2986, 3370, 20));
         // Tiaras are bound at the altar (an obtain event), not made through a make menu.
         getAt("Make a Mind Tiara", "mind_tiara", 1, null);
-        visit("Take the boat to Entrana", 2834, 3335, 15);
+        event("Take the boat to Entrana", "travel:boat_port_sarim_entrana:entrana", null);
         event("Repair a broken strut in the Motherlode Mine", "strut_repair", null);
         visit("Claim a security book from the Security Guard upstairs at Port Sarim jail", 3013, 3192, 8);
         makeHere("Smith some Blurite Limbs on Doric's Anvil", "blurite_limbs", 1, MINING, 10, SMITHING, 13);
@@ -627,15 +627,15 @@ public final class Diaries {
         // ======================= Kandarin (11 / 14 / 11 / 7) =======================
         in("kandarin", Tier.EASY);
         get("Catch a mackerel at Catherby", "raw_mackerel", 1, FISHING, 16);
-        visit("Buy a candle from the candle maker in Catherby", 2799, 3439, 8);
+        event("Buy a candle from the candle maker in Catherby", "shop_buy:candle_shop:candle", null);
         get("Collect 5 flax from the Seers' Village flax field", "flax", 5);
         visit("Play the church organ in the Seers' Village church", 2692, 3463, 8);
         xp("Plant jute seeds in the farming patch north of McGrubor's Wood", FARMING, 13);
         visit("Have Galahad make you a cup of tea", 2612, 3474, 8);
         quest("Defeat one of each elemental in the Elemental Workshop", "elemental_workshop_i"); approx(); // approx
         visit("Get a pet fish from Harry in Catherby", 2833, 3443, 8);
-        visit("Buy a stew from the Seers' Village pub", 2691, 3493, 8);
-        visit("Speak to Sherlock between Seers' Village and McGrubor's Wood", 2733, 3415, 8);
+        event("Buy a stew from the Seers' Village pub", "shop_buy:foresters_arms:stew", null);
+        event("Speak to Sherlock between Seers' Village and McGrubor's Wood", "talk:clue_sherlock", null);
         shortcut("Cross the Coal truck log shortcut", "coal_truck_log_balance", AGILITY, 20);
         in("kandarin", Tier.MEDIUM);
         xpAt("Complete a lap of the Barbarian agility course", AGILITY, 35, at(2551, 3554, 25));
@@ -759,7 +759,8 @@ public final class Diaries {
         needs(lastId, "client_of_kourend");
         get("Mine some volcanic sulphur", "volcanic_sulphur", 1, MINING, 42); // Lovakengj
         visit("Enter the Farming Guild", 1249, 3718, 10, FARMING, 45);
-        visit("Switch to the Necromancy spellbook at Tyss", 1712, 3883, 10);
+        // Tyss's Dark Altar switches to the Arceuus (Necromancy) spellbook.
+        event("Switch to the Necromancy spellbook at Tyss", "spellbook:arceuus", at(1712, 3883, 10));
         visit("Repair a Piscarilius crane", 1820, 3740, 15, CRAFTING, 30, CONSTRUCTION, 30);
         visit("Deliver some intelligence to Captain Ginea", 1504, 3632, 12);
         xp("Catch a Bluegill on Molch Island", FISHING, 43, HUNTER, 35);
@@ -796,7 +797,7 @@ public final class Diaries {
         event("Have Sedridor teleport you to the Essence mine", "essence_mine:sedridor", null);
         needs(lastId, "RUNE_MYSTERIES");
         getAt("Craft some water runes", "water_rune", 1, null, RUNECRAFT, 5);
-        visit("Learn your age from Hans in Lumbridge", 3222, 3218, 12);
+        event("Learn your age from Hans in Lumbridge", "talk:hans", null);
         xp("Pickpocket a man or woman in Lumbridge", THIEVING, 1);
         get("Chop and burn some oak logs in Lumbridge", "oak_logs", 1, WOODCUTTING, 15, FIREMAKING, 15);
         kill("Kill a zombie in the Draynor Sewers", "zombie", 1);
@@ -853,7 +854,8 @@ public final class Diaries {
         makeAt("Cook a thin Snail on the Port Phasmatys range", "thin_snail_meat", 1, at(3687, 3502, 8), COOKING, 12);
         combat("Get a slayer task from Mazchna", 20);
         killAny("Kill a Banshee in the Slayer Tower", "banshee", 1, SLAYER, 15);
-        visit("Have Sbott in Canifis tan something for you", 3490, 3502, 8);
+        // Sbott's tanning menu (any hide he tans), at his tile in Canifis.
+        makeAt("Have Sbott in Canifis tan something for you", "*leather|snakeskin", 1, at(3490, 3500, 6));
         visit("Enter Mort Myre Swamp", 3437, 3437, 15);
         kill("Kill a Ghoul", "ghoul", 1);
         xp("Place a Scarecrow in the Morytania flower patch", FARMING, 23);
@@ -903,11 +905,11 @@ public final class Diaries {
 
         // ======================= Varrock (14 / 13 / 10 / 5) =======================
         in("varrock", Tier.EASY);
-        visit("Browse Thessalia's store", 3204, 3417, 8);
+        event("Browse Thessalia's store", "shop_open:thessalias_fine_clothes", null);
         event("Have Aubury teleport you to the Essence mine", "essence_mine:aubury", null);
         needs(lastId, "RUNE_MYSTERIES");
         get("Mine some Iron in the south east Varrock mine", "iron_ore", 1, MINING, 15);
-        visit("Make a normal plank at the Sawmill", 3302, 3491, 10);
+        getAt("Make a normal plank at the Sawmill", "plank", 1, at(DiaryExtras.SAWMILL_X, DiaryExtras.SAWMILL_Y, 10));
         // The Catacomb of Famine: the dungeons module's floor 2 (feet at block y 21) is centred 15 tiles west and 14 south of the entrance.
         visitBelow("Enter the second level of the Stronghold of Security", 3066, 3407, 25, 30);
         shortcut("Jump over the fence south of Varrock", "varrock_south_fence", AGILITY, 13);
@@ -971,7 +973,9 @@ public final class Diaries {
         event("Claim any Chompy bird hat from Rantz", "chompy_hat", null);
         needs(lastId, "big_chompy_bird_hunting");
         visit("Teleport to Pest Control using the Minigame teleports", 2662, 2653, 15);
-        visit("Collect a swamp toad at the Gnome Stronghold", 2420, 3510, 15);
+        // The swamp toads picked up in the Stronghold's swamp enclosure and south-western area (DiaryExtras.SWAMP_TOAD).
+        getAt("Collect a swamp toad at the Gnome Stronghold", DiaryActivities.SWAMP_TOAD, 1,
+                at(DiaryExtras.GNOME_TOADS[0], DiaryExtras.GNOME_TOADS[1], DiaryExtras.GNOME_TOADS[2]));
         event("Have Brimstail teleport you to the Essence mine", "essence_mine:brimstail", null);
         makeHere("Fletch an Oak shortbow in the Gnome Stronghold", "oak_shortbow", 1, FLETCHING, 20);
         killAt("Kill a Terrorbird in the Terrorbird enclosure", "terrorbird", 1, at(2378, 3434, 12));
@@ -991,7 +995,9 @@ public final class Diaries {
         needs(lastId, "eagles_peak");
         makeAt("Make a Chocolate Bomb at the Grand Tree", "chocolate_bomb", 1, at(2465, 3495, 20), COOKING, 42);
         visit("Complete a delivery for the Gnome Restaurant", 2449, 3500, 12, COOKING, 29);
-        quest("Turn your small crystal seed into a Crystal saw", "the_eyes_of_glouphrie"); approx(); // approx: no crystal saw
+        // Brimstail's singing bowl (sneak + talk to him; DiaryActivities): the crystal saw seed becomes a crystal saw.
+        event("Turn your small crystal seed into a Crystal saw", "crystal_saw", null);
+        needs(lastId, DiaryActivities.GLOUPHRIE_QUEST);
         get("Mine some Gold ore underneath the Grand Tree", "gold_ore", 1, MINING, 40);
         in("western", Tier.HARD);
         kill("Kill an Elf with a Crystal bow", "elf", 1, RANGED, 70);
@@ -1029,7 +1035,8 @@ public final class Diaries {
         visit("Enter the Chaos Runecrafting temple", 3060, 3591, 10);
         kill("Kill a Mammoth in the Wilderness", "mammoth", 1);
         kill("Kill an Earth Warrior in the Wilderness beneath Edgeville", "earth warrior", 1, AGILITY, 15);
-        visit("Restore some Prayer points at the demonic ruins", 3287, 3884, 10);
+        event("Restore some Prayer points at the demonic ruins", "altar_restore",
+                at(DiaryActivities.DEMONIC_RUINS_X, DiaryActivities.DEMONIC_RUINS_Y, 4));
         visit("Enter the King Black Dragon Lair", 3016, 3849, 12);
         get("Collect 5 Red spider's eggs from the Wilderness", "red_spiders_eggs", 5);
         get("Mine some Iron ore in the Wilderness", "iron_ore", 1, MINING, 15);
@@ -1048,7 +1055,7 @@ public final class Diaries {
         kill("Kill a Bloodveld in the Wilderness God Wars Dungeon", "bloodveld", 1, SLAYER, 50, AGILITY, 60);
         // Smithed from 3 gold bars at the Resource Area anvil (pures need not have done Between a Rock..., as in OSRS).
         makeAt("Smith a Golden helmet in the Resource Area", "gold_helmet", 1, at(3186, 3934, 14), SMITHING, 50);
-        visit("Talk to the Emblem Trader in Edgeville about emblems", 3097, 3504, 10);
+        event("Talk to the Emblem Trader in Edgeville about emblems", "talk:npc_emblem_trader", null);
         event("Open the Muddy Chest in the lava maze", "chest_open:muddy_chest", null);
         in("wilderness", Tier.HARD);
         event("Cast one of the 3 God spells against another player in the Wilderness",

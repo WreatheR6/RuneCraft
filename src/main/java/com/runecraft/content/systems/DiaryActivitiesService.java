@@ -100,6 +100,8 @@ final class DiaryActivitiesService {
             perform(p, a);
             emotes(p);
         });
+        wrap("brimstail", DiaryActivities.GLOUPHRIE_QUEST, (p, npc) -> crystalSaw(p),
+                "Sneak and talk to Brimstail to have your crystal saw seed sung into a saw.");
         QuestScripts.onTalk(DiaryActivities.SAFTA_DOC, (p, npc) -> saftaDoc(p));
         SysNet.onAction("diary_machete", (p, a, f) -> {
             try {
@@ -130,6 +132,9 @@ final class DiaryActivitiesService {
                 (world, centre) -> DiaryObjectsService.place(world, centre, DiaryActivities.WHITE_TREE, false));
         LandmarkBuilder.registerCustom(DiaryActivities.NATURE_ALTAR,
                 (world, centre) -> DiaryObjectsService.place(world, centre, DiaryActivities.NATURE_ALTAR, false));
+        BlockHooks.register(DiaryActivities.DEMONIC_RUINS, (p, pos, state) -> PrayerService.useAltar(p, pos));
+        LandmarkBuilder.registerCustom(DiaryActivities.DEMONIC_RUINS,
+                (world, centre) -> DiaryObjectsService.place(world, centre, DiaryActivities.DEMONIC_RUINS, false));
         ServerTickEvents.END_SERVER_TICK.register(server -> tick());
     }
 
@@ -420,6 +425,29 @@ final class DiaryActivitiesService {
         return true;
     }
 
+    // ------------------------------------------------------------------ the crystal saw
+
+    /**
+     * After The Eyes of Glouphrie: the crystal saw seed sung into a crystal saw at the singing bowl in Brimstail's cave (the bowl
+     * isn't an object of its own, so Brimstail's sneak + talk uses it); with neither seed nor saw, Brimstail gives a new seed.
+     */
+    static boolean crystalSaw(ServerPlayer p) {
+        if (Inv.has(p, DiaryActivities.CRYSTAL_SAW_SEED, 1)) {
+            Inv.remove(p, DiaryActivities.CRYSTAL_SAW_SEED, 1);
+            Inv.give(p, DiaryActivities.CRYSTAL_SAW, 1);
+            QuestApi.say(p, "Brimstail", "Place the seed in my singing bowl... There! The crystal has grown into a fine saw.");
+            GameEvents.fireActivity(p, "crystal_saw");
+            return true;
+        }
+        if (!Inv.has(p, DiaryActivities.CRYSTAL_SAW, 1)) {
+            Inv.give(p, DiaryActivities.CRYSTAL_SAW_SEED, 1);
+            QuestApi.say(p, "Brimstail", "Lost your crystal seed? Here, King Narnode left me another. My singing bowl can turn it into a saw.");
+            return false;
+        }
+        QuestApi.say(p, "Brimstail", "That crystal saw of yours looks in fine shape.");
+        return false;
+    }
+
     // ------------------------------------------------------------------ Safta Doc's gem machetes
 
     private static int gems(ServerPlayer p, String gem) {
@@ -601,12 +629,16 @@ final class DiaryActivitiesService {
 
     /** Held items this service uses on right-click (the client predicts the result). */
     static boolean handles(String id) {
-        return id.equals(DiaryActivities.BELLOWS) || id.equals(DiaryActivities.BLOATED_TOAD);
+        return id.equals(DiaryActivities.BELLOWS) || id.equals(DiaryActivities.BLOATED_TOAD) || id.equals(DiaryActivities.SWAMP_TOAD);
     }
 
     static boolean use(ServerPlayer p, ItemStack stack, String id) {
         if (id.equals(DiaryActivities.BELLOWS)) {
             useBellows(p, stack);
+        } else if (id.equals(DiaryActivities.SWAMP_TOAD)) {
+            stack.shrink(1);
+            Inv.give(p, DiaryActivities.TOADS_LEGS, 1);
+            Msg.action(p, "You pull the legs off the toad. Poor toad. At least they'll grow back.");
         } else {
             putDownToad(p, stack);
         }

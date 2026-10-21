@@ -498,5 +498,14 @@ public final class Travel {
                 "A swamp boat. It can carry you through the Mort Myre Swamp to Mort'ton."));
         AGENTS.add(new Agent("npc_swamp_boat_mortton", "Swamp boat", "Mort'ton", 3523, 3283, "boat_swamp_mortton", "canoe",
                 "A swamp boat back to the Hollows. 10 coins."));
+        // The monks' free boat between Port Sarim and Entrana (shortest-path ship tiles); the systems module's Entrana gate turns
+        // away anyone carrying weapons or armour.
+        route("boat_port_sarim_entrana", "sail", Dest.of("Entrana", 2834, 3331, 0));
+        route("boat_entrana_port_sarim", "sail", Dest.of("Port Sarim", 3048, 3231, 0));
+        // (this world's Port Sarim docks end a few tiles short of OSRS's, so the monk there stands at the nearest dry tile)
+        AGENTS.add(new Agent("npc_monk_of_entrana_port_sarim", "Monk of Entrana", "Port Sarim", 3043, 3237, "boat_port_sarim_entrana",
+                "canoe", "Do you seek passage to holy Entrana? No weapons or armour may be brought there."));
+        AGENTS.add(new Agent("npc_monk_of_entrana_entrana", "Monk of Entrana", "Entrana", 2835, 3336, "boat_entrana_port_sarim",
+                "canoe", "Do you wish to return to Port Sarim?"));
     }
 }

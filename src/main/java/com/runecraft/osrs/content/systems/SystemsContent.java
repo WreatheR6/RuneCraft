@@ -125,8 +125,10 @@ public final class SystemsContent implements ContentModule {
                 BlockDef.scripted(DiaryTransport.TRAIN, "Train cart", 0x5A4A3A, "machine"),
                 BlockDef.scripted(DiaryExtras.SEAWEED.block(), DiaryExtras.SEAWEED.name(), 0x3A6A2A, "plant"),
                 BlockDef.scripted(DiaryExtras.POTATO_CACTUS.block(), DiaryExtras.POTATO_CACTUS.name(), 0x6A8A3A, "plant"),
+                BlockDef.scripted(DiaryExtras.SWAMP_TOAD.block(), DiaryExtras.SWAMP_TOAD.name(), 0x6A7A3A, "plant"),
                 BlockDef.scripted(DiaryActivities.WHITE_TREE, "White tree", 0xE8E8E0, "young_tree"),
                 BlockDef.scripted(DiaryActivities.NATURE_ALTAR, "Altar of Nature", 0x4A7A3A, "altar"),
+                BlockDef.scripted(DiaryActivities.DEMONIC_RUINS, "Demonic ruins", 0x5A2A2A, "altar"),
                 BlockDef.scripted(ItemSources.SALT_ROCKS.get(0).block(), ItemSources.SALT_ROCKS.get(0).name(), 0x3A3A40, "rock"),
                 BlockDef.scripted(ItemSources.SALT_ROCKS.get(1).block(), ItemSources.SALT_ROCKS.get(1).name(), 0xE0E0D0, "rock"),
                 BlockDef.scripted(ItemSources.SALT_ROCKS.get(2).block(), ItemSources.SALT_ROCKS.get(2).name(), 0xB0D8F0, "rock"),
@@ -176,6 +178,8 @@ public final class SystemsContent implements ContentModule {
                 PlaceDef.Style.NONE, List.of()));
         places.add(PlaceDef.of(DiaryActivities.NATURE_ALTAR, "Altar of Nature", DiaryActivities.NATURE_ALTAR_X,
                 DiaryActivities.NATURE_ALTAR_Y, PlaceDef.Style.NONE, List.of()));
+        places.add(PlaceDef.of(DiaryActivities.DEMONIC_RUINS, "Demonic ruins", DiaryActivities.DEMONIC_RUINS_X,
+                DiaryActivities.DEMONIC_RUINS_Y, PlaceDef.Style.NONE, List.of()));
         places.add(PlaceDef.of(DiaryActivities.SAFTA_DOC, "Safta Doc", DiaryActivities.SAFTA_DOC_X, DiaryActivities.SAFTA_DOC_Y,
                 PlaceDef.Style.NONE, List.of()));
         for (DiaryTransport.Stop s : DiaryTransport.STOPS) {

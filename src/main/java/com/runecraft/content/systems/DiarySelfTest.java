@@ -225,7 +225,10 @@ public final class DiarySelfTest {
                 {"travel:glider_0:gandius_karamja", "Use the gnome glider to travel to Karamja"},
                 {"travel:canoe_lumbridge:edgeville", "Travel from Lumbridge to Edgeville on a Waka Canoe"},
                 {"fairy_ring:bis", "Enter the unicorn pen in Ardougne Zoo using Fairy rings"},
-                {"fairy_ring:cip", "Travel to Miscellania by Fairy ring"}};
+                {"fairy_ring:cip", "Travel to Miscellania by Fairy ring"},
+                {"travel:boat_port_sarim_entrana:entrana", "Take the boat to Entrana"},
+                {"talk:hans", "Learn your age from Hans in Lumbridge"},
+                {"talk:npc_emblem_trader", "Talk to the Emblem Trader in Edgeville about emblems"}};
         Diaries.Task uzer = task("Travel to Uzer via magic carpet");
         for (String[] trip : trips) {
             GameEvents.fireActivity(c.player, trip[0]);
@@ -271,8 +274,20 @@ public final class DiarySelfTest {
         d.setPrayerPoints(1);
         PrayerService.useAltar(c.player, null);
         expect(c, sophanem, true, "restoring 98 points");
+        // The demonic ruins (a scripted block): praying there with points missing.
+        Diaries.Task ruins = task("Restore some Prayer points at the demonic ruins");
+        at(c, com.runecraft.osrs.content.systems.DiaryActivities.DEMONIC_RUINS_X,
+                com.runecraft.osrs.content.systems.DiaryActivities.DEMONIC_RUINS_Y);
+        d.setPrayerPoints(d.skills().level(Skill.PRAYER));
+        com.runecraft.content.BlockHooks.use(c.player, com.runecraft.osrs.content.systems.DiaryActivities.DEMONIC_RUINS,
+                c.player.blockPosition(), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+        expect(c, ruins, false, "praying at the ruins with full points");
+        d.setPrayerPoints(1);
+        com.runecraft.content.BlockHooks.use(c.player, com.runecraft.osrs.content.systems.DiaryActivities.DEMONIC_RUINS,
+                c.player.blockPosition(), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+        expect(c, ruins, true, "restoring points at the ruins");
         c.home();
-        return "3 altars";
+        return "4 altars";
     }
 
     /** Conditions: the Wolfbane dagger, full Prospector, a complete Barrows set, each first missed and then met. */
@@ -587,6 +602,37 @@ public final class DiarySelfTest {
             throw new AssertionError("Safta Doc's opal machete trade went wrong");
         }
         expect(c, machete, true, "trading gems for a machete");
+        // Brimstail: a new crystal saw seed for a player with neither, then the seed sung into a saw.
+        Diaries.Task saw = task("Turn your small crystal seed into a Crystal saw");
+        String seed = com.runecraft.osrs.content.systems.DiaryActivities.CRYSTAL_SAW_SEED;
+        String sawItem = com.runecraft.osrs.content.systems.DiaryActivities.CRYSTAL_SAW;
+        Inv.remove(c.player, seed, Inv.count(c.player, seed));
+        Inv.remove(c.player, sawItem, Inv.count(c.player, sawItem));
+        DiaryActivitiesService.crystalSaw(c.player);
+        if (!Inv.has(c.player, seed, 1)) {
+            throw new AssertionError("Brimstail gave no crystal saw seed");
+        }
+        expect(c, saw, false, "getting the seed");
+        DiaryActivitiesService.crystalSaw(c.player);
+        if (!Inv.has(c.player, sawItem, 1) || Inv.has(c.player, seed, 1)) {
+            throw new AssertionError("the seed did not become a crystal saw");
+        }
+        expect(c, saw, true, "singing the seed into a saw");
+        // A swamp toad picked up in the Gnome Stronghold's swamp (its ground spawn), then its legs pulled off.
+        Diaries.Task toad = task("Collect a swamp toad at the Gnome Stronghold");
+        String toadItem = com.runecraft.osrs.content.systems.DiaryActivities.SWAMP_TOAD;
+        Inv.remove(c.player, toadItem, Inv.count(c.player, toadItem));
+        at(c, 3222, 3218);
+        DiarySpawnsService.take(c.player, c.near(3, 0), DiaryExtras.SWAMP_TOAD);
+        expect(c, toad, false, "a toad taken in Lumbridge");
+        at(c, 2417, 3512);
+        DiarySpawnsService.take(c.player, c.near(3, 0), DiaryExtras.SWAMP_TOAD);
+        expect(c, toad, true, "a toad taken in the Stronghold's swamp");
+        int legs = Inv.count(c.player, "toads_legs");
+        DiaryActivitiesService.use(c.player, carried(c, toadItem), toadItem);
+        if (Inv.count(c.player, "toads_legs") != legs + 1) {
+            throw new AssertionError("pulling the toad's legs off gave no toad's legs");
+        }
         // A stray dog: refused bones, then a bone.
         Diaries.Task dog = task("Give a dog a bone!");
         net.minecraft.world.entity.LivingEntity stray = com.runecraft.registry.ModEntities.MODULE_MONSTERS
@@ -684,6 +730,24 @@ public final class DiarySelfTest {
             com.runecraft.content.dungeons.DungeonsHooks.setSecurityChests(c.player, chests);
         }
         c.home();
-        return "kitten, machete, dog, phoenix, white tree, nature altar, 4 emotes";
+        // Shops and services: a stew bought at the Forester's Arms, Thessalia's store opened, a plank from the sawmill operator.
+        Inv.give(c.player, Inv.COINS, 500);
+        at(c, 2691, 3493);
+        com.runecraft.content.npcs.ShopService.open(c.player, "foresters_arms", c.player.position());
+        com.runecraft.content.npcs.ShopService.selfTestBuy(c.player, "foresters_arms", "stew", 1);
+        expect(c, task("Buy a stew from the Seers' Village pub"), true, "buying a stew at the Forester's Arms");
+        at(c, 3206, 3417);
+        com.runecraft.content.npcs.ShopService.open(c.player, "thessalias_fine_clothes", c.player.position());
+        expect(c, task("Browse Thessalia's store"), true, "opening Thessalia's store");
+        Diaries.Task plank = task("Make a normal plank at the Sawmill");
+        at(c, DiaryExtras.SAWMILL_X, DiaryExtras.SAWMILL_Y);
+        Inv.give(c.player, "logs", 1);
+        GameEvents.fireActivity(c.player, "talk:" + DiaryExtras.SAWMILL_OPERATOR);
+        if (!Inv.has(c.player, "plank", 1)) {
+            throw new AssertionError("the sawmill operator made no plank");
+        }
+        expect(c, plank, true, "a plank from the sawmill");
+        c.home();
+        return "kitten, machete, crystal saw, swamp toad, dog, phoenix, white tree, nature altar, 4 emotes, shops, sawmill";
     }
 }

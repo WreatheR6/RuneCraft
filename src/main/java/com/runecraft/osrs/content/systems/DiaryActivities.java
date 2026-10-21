@@ -46,6 +46,9 @@ public final class DiaryActivities {
     public static final int BELLOWS_LOADS = 3;
     public static final String BELLOWS = "ogre_bellows";
     public static final String BLOATED_TOAD = "bloated_toad";
+    /** The Gnome Stronghold's swamp toad (an item picked up; not the Feldip Swamp Toad bellows inflate). */
+    public static final String SWAMP_TOAD = "swamp_toad";
+    public static final String TOADS_LEGS = "toads_legs";
     /** Bows whose kills count (OSRS: the ogre bow or the comp ogre bow; the latter doesn't exist here). */
     public static final List<String> CHOMPY_BOWS = List.of("ogre_bow", "comp_ogre_bow");
     /** Bloated toads carried at once (wiki: at most 3). */
@@ -191,6 +194,11 @@ public final class DiaryActivities {
     public static final int NATURE_ALTAR_X = 3441;
     public static final int NATURE_ALTAR_Y = 3340;
 
+    /** The demonic ruins in the north-east Wilderness, which restore Prayer points like an altar (wiki 3287, 3884). */
+    public static final String DEMONIC_RUINS = "demonic_ruins";
+    public static final int DEMONIC_RUINS_X = 3287;
+    public static final int DEMONIC_RUINS_Y = 3884;
+
     // ---------------- Safta Doc's gem machetes ----------------
 
     /** Safta Doc, by Tai Bwo Wannai's calquat patch (mejrs' NPC list 2790, 3100). */
@@ -208,6 +216,16 @@ public final class DiaryActivities {
 
     public static final List<Machete> MACHETES = List.of(new Machete("opal_machete", "opal", 300),
             new Machete("jade_machete", "jade", 600), new Machete("red_topaz_machete", "red_topaz", 1200));
+
+    // ---------------- The crystal saw ----------------
+
+    /**
+     * The crystal saw seed (King Narnode's reward for The Eyes of Glouphrie; Brimstail hands out another if both seed and saw are
+     * lost) and the saw it becomes at the singing bowl in Brimstail's cave (wiki "Crystal saw seed").
+     */
+    public static final String CRYSTAL_SAW_SEED = "crystal_saw_seed";
+    public static final String CRYSTAL_SAW = "crystal_saw";
+    public static final String GLOUPHRIE_QUEST = "the_eyes_of_glouphrie";
 
     // ---------------- The Stronghold of Security's emotes ----------------
 
@@ -247,6 +265,12 @@ public final class DiaryActivities {
                 .examine("A long feather patterned like a flame.");
         items.add(WHITE_TREE_FRUIT, "White tree fruit", ItemDef.Kind.FOOD, "produce", 0xF0F0E8).value(1).heal(3)
                 .examine("Looks delicious.");
+        Defs.simple(items, CRYSTAL_SAW_SEED, "Crystal saw seed", "seed", 0xB0E0F0, 1).stack(1)
+                .examine("A small crystal seed. It could be enchanted into something useful.");
+        items.add(CRYSTAL_SAW, "Crystal saw", ItemDef.Kind.TOOL, "saw", 0xB0E0F0).value(1).stack(1)
+                .examine("A small crystal saw.");
+        // The Gnome Stronghold's swamp toads (DiaryExtras.SWAMP_TOAD spawns); right-click pulls its legs off (toad's legs).
+        items.add(SWAMP_TOAD, "Swamp toad", ItemDef.Kind.SIMPLE, "creature", 0x6A7A3A).value(2).examine("A slippery little blighter.");
     }
 
     /** The stray dogs (unattackable in OSRS: passive here) and the Desert Phoenix, with existing models. */

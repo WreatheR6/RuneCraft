@@ -116,6 +116,7 @@ class DiaryRound40Test {
         }
         // The Altar of Nature is a scripted block placed at its tile (DiaryActivities).
         altars.add(new int[]{DiaryActivities.NATURE_ALTAR_X, DiaryActivities.NATURE_ALTAR_Y});
+        altars.add(new int[]{DiaryActivities.DEMONIC_RUINS_X, DiaryActivities.DEMONIC_RUINS_Y});
         int n = 0;
         for (Diaries.Task t : Diaries.tasks()) {
             if (t.type() == Diaries.Type.EVENT && (t.target().equals("altar_pray") || t.target().startsWith("altar_restore"))) {
@@ -180,7 +181,7 @@ class DiaryRound40Test {
     @Test
     void approxStandInsShrank() {
         long approx = Diaries.tasks().stream().filter(Diaries::isApprox).count();
-        assertTrue(approx <= 16, "approx tasks: " + approx);
+        assertTrue(approx <= 15, "approx tasks: " + approx);
         assertFalse(Diaries.isApprox(byDesc("Collect at least 100 Tears of Guthix")));
         assertEquals("tears_of_guthix:100", byDesc("Collect at least 100 Tears of Guthix").target());
         assertFalse(Diaries.isApprox(byDesc("Have the Mage of Zamorak teleport you to the Abyss")));
@@ -435,13 +436,54 @@ class DiaryRound40Test {
     }
 
     @Test
+    void shopAndServiceTasksTrackTheAction() {
+        // Former "stand near it" tasks now need the shop opened / the item bought / the service used.
+        String[][] events = {{"View Aleck's Hunter Emporium in Yanille", "shop_open:alecks_hunter_emporium"},
+                {"Browse Thessalia's store", "shop_open:thessalias_fine_clothes"},
+                {"Buy a candle from the candle maker in Catherby", "shop_buy:candle_shop:candle"},
+                {"Buy a stew from the Seers' Village pub", "shop_buy:foresters_arms:stew"}};
+        for (String[] e : events) {
+            Diaries.Task t = byDesc(e[0]);
+            assertEquals(Diaries.Type.EVENT, t.type(), t.id());
+            assertEquals(e[1], t.target(), t.id());
+            String[] parts = e[1].split(":");
+            com.runecraft.osrs.content.npcs.ShopDef shop = com.runecraft.osrs.content.npcs.Shops.get(parts[1]);
+            assertNotNull(shop, parts[1]);
+            if (parts.length > 2) {
+                assertTrue(shop.stock().stream().anyMatch(s -> s.item().equals(parts[2])), parts[1] + " sells no " + parts[2]);
+            }
+        }
+        // Talking to the NPC (it exists) and switching spellbooks at Tyss's altar.
+        String[][] talks = {{"Learn your age from Hans in Lumbridge", "hans"},
+                {"Speak to Sherlock between Seers' Village and McGrubor's Wood", "clue_sherlock"},
+                {"Talk to the Emblem Trader in Edgeville about emblems", "npc_emblem_trader"}};
+        for (String[] t : talks) {
+            assertEquals("talk:" + t[1], byDesc(t[0]).target());
+            assertNotNull(ContentRegistry.npc(t[1]), t[1]);
+        }
+        assertEquals("spellbook:arceuus", byDesc("Switch to the Necromancy spellbook at Tyss").target());
+        assertEquals("travel:boat_port_sarim_entrana:entrana", byDesc("Take the boat to Entrana").target());
+        Diaries.Task ruins = byDesc("Restore some Prayer points at the demonic ruins");
+        assertEquals("altar_restore", ruins.target());
+        assertTrue(ContentRegistry.places().stream().anyMatch(p -> p.id().equals(DiaryActivities.DEMONIC_RUINS)));
+        Diaries.Task tan = byDesc("Have Sbott in Canifis tan something for you");
+        assertEquals(Diaries.Type.MAKE, tan.type());
+        assertTrue(Diaries.itemMatches(tan.target(), "hard_leather") && Diaries.itemMatches(tan.target(), "green_dragon_leather")
+                && Diaries.itemMatches(tan.target(), "snakeskin"));
+        Diaries.Task plank = byDesc("Make a normal plank at the Sawmill");
+        assertEquals(Diaries.Type.OBTAIN, plank.type());
+        assertEquals("plank", plank.target());
+        assertTrue(Diaries.restrictContains(plank.restrict(), null, DiaryExtras.SAWMILL_X, DiaryExtras.SAWMILL_Y));
+    }
+
+    @Test
     void smallActivitiesFeedTheirTasks() {
         // Each former stand-in now fires the real action.
         Object[][] wired = {{"Steal a feather from the Desert Phoenix", "phoenix_feather"}, {"Give a dog a bone!", "dog_bone"},
                 {"Select a colour for your kitten", "kitten_colour"}, {"Restore your prayer points at the nature altar", "altar_restore"},
                 {"Pray at the Altar of Nature with Piety activated", "altar_pray"},
                 {"Perform the 4 emotes from the Stronghold of Security", "emote:flap&emote:slap_head&emote:idea&emote:stamp"},
-                {"Exchange gems for a machete", "machete_trade"}};
+                {"Exchange gems for a machete", "machete_trade"}, {"Turn your small crystal seed into a Crystal saw", "crystal_saw"}};
         for (Object[] w : wired) {
             Diaries.Task t = byDesc((String) w[0]);
             assertEquals(Diaries.Type.EVENT, t.type(), t.id());
@@ -496,6 +538,20 @@ class DiaryRound40Test {
             assertNotNull(ItemCatalog.get(item), item);
         }
         assertTrue(Diaries.questReqs(byDesc("Exchange gems for a machete")).contains("jungle_potion"));
+        assertTrue(Diaries.questReqs(byDesc("Turn your small crystal seed into a Crystal saw")).contains("the_eyes_of_glouphrie"));
+        for (String item : new String[]{DiaryActivities.CRYSTAL_SAW_SEED, DiaryActivities.CRYSTAL_SAW, DiaryActivities.SWAMP_TOAD,
+                DiaryActivities.TOADS_LEGS}) {
+            assertNotNull(ItemCatalog.get(item), item);
+        }
+        // Swamp toads: picked up at the Gnome Stronghold, every spot inside the task's circle and on land.
+        Diaries.Task toad = byDesc("Collect a swamp toad at the Gnome Stronghold");
+        assertEquals(Diaries.Type.OBTAIN, toad.type());
+        assertEquals(DiaryActivities.SWAMP_TOAD, toad.target());
+        assertEquals(DiaryActivities.SWAMP_TOAD, DiaryExtras.SWAMP_TOAD.item());
+        assertEquals(25, DiaryExtras.SWAMP_TOAD.tiles().size());
+        for (int[] t : DiaryExtras.SWAMP_TOAD.tiles()) {
+            assertTrue(Diaries.restrictContains(toad.restrict(), null, t[0], t[1]), java.util.Arrays.toString(t));
+        }
         assertEquals(List.of("Flap", "Slap Head", "Idea", "Stamp"), DiaryActivities.STRONGHOLD_EMOTES);
         for (String e : DiaryActivities.STRONGHOLD_EMOTES) {
             assertFalse(DiaryActivities.BASIC_EMOTES.contains(e), e + " must be unlocked");

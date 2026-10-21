@@ -244,8 +244,9 @@ public final class Shops {
                 .greeting("Yes? What would you like?"));
         add(specialist("dragon_inn", "Dragon Inn", "npc_dragon_inn_bartender")
                 .sell("beer", 10).sell("dwarven_stout", 10).greeting("What can I get you?"));
+        // OSRS Wiki: Forester's Arms also sells meat pies and bowls of stew (a Kandarin Diary task buys a stew).
         add(specialist("foresters_arms", "Forester's Arms", "npc_foresters_arms_bartender")
-                .sell("beer", 10).sell("cider", 10).greeting("Good day to you! What can I get you?"));
+                .sell("beer", 10).sell("cider", 10).sell("meat_pie", 10).sell("stew", 10).greeting("Good day to you! What can I get you?"));
         add(specialist("flying_horse_inn", "Flying Horse Inn", "npc_flying_horse_bartender")
                 .sell("beer", 10).greeting("Would you like to buy a drink?"));
         // OSRS Wiki: Karamja Wines, Spirits, and Beers

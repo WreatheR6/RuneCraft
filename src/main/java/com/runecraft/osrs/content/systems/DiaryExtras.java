@@ -309,7 +309,21 @@ public final class DiaryExtras {
             List.of(), List.of(new int[]{29, 19, 263}, new int[]{31, 19, 264}, new int[]{33, 19, 262}, new int[]{73, 19, 196},
             new int[]{73, 19, 200}, new int[]{73, 19, 204}, new int[]{73, 19, 208}, new int[]{73, 19, 211}));
 
-    public static final List<GroundSpawn> GROUND_SPAWNS = List.of(SEAWEED, POTATO_CACTUS);
+    /**
+     * Swamp toads at the Tree Gnome Stronghold (wiki "Swamp toad (item)" spawn table: the swamp enclosure and the south-western
+     * area; the respawn isn't listed, so the other spawns' 100 ticks). // approx respawn
+     */
+    public static final GroundSpawn SWAMP_TOAD = new GroundSpawn("swamp_toad_spawn", "swamp_toad", "Swamp toad", 100, List.of(
+            new int[]{2407, 3516}, new int[]{2424, 3514}, new int[]{2409, 3514}, new int[]{2411, 3512}, new int[]{2412, 3519},
+            new int[]{2413, 3511}, new int[]{2415, 3518}, new int[]{2417, 3508}, new int[]{2421, 3509}, new int[]{2428, 3510},
+            new int[]{2416, 3512}, new int[]{2417, 3512}, new int[]{2417, 3515}, new int[]{2417, 3516}, new int[]{2418, 3511},
+            new int[]{2418, 3517}, new int[]{2421, 3519}, new int[]{2424, 3517}, new int[]{2406, 3405}, new int[]{2408, 3408},
+            new int[]{2381, 3414}, new int[]{2382, 3412}, new int[]{2388, 3410}, new int[]{2399, 3406}, new int[]{2401, 3404}),
+            List.of());
+    /** The Gnome Stronghold around both toad areas (the Western Provinces task's circle). */
+    public static final int[] GNOME_TOADS = {2405, 3460, 65};
+
+    public static final List<GroundSpawn> GROUND_SPAWNS = List.of(SEAWEED, POTATO_CACTUS, SWAMP_TOAD);
 
     /** The ground spawn a block id stands for, or null. */
     public static GroundSpawn groundSpawn(String block) {
