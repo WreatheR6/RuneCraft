@@ -46,6 +46,23 @@ class CastBarTest {
     }
 
     @Test
+    void specialsMapToFlags() {
+        // Protect from Magic lowers dragonfire (Mechanics caps it at 2/3 without a shield or antifire; OSRS Wiki, Dragonfire)
+        // and the prayer-piercing hits' scripts take part off under the right prayer: the row names the key, never "no prayer"
+        assertEquals(CastBar.FLAG_REDUCED, CastBar.flagsOf(com.runecraft.osrs.content.AttackDef.Special.DRAGONFIRE));
+        assertEquals(CastBar.FLAG_REDUCED, CastBar.flagsOf(com.runecraft.osrs.content.AttackDef.Special.PRAYER_PIERCING));
+        assertEquals(CastBar.FLAG_DODGE, CastBar.flagsOf(com.runecraft.osrs.content.AttackDef.Special.SKY_STRIKE));
+        assertEquals(0, CastBar.flagsOf(com.runecraft.osrs.content.AttackDef.Special.NONE));
+        assertEquals(0, CastBar.flagsOf(null));
+        for (com.runecraft.osrs.content.AttackDef.Special s : com.runecraft.osrs.content.AttackDef.Special.values()) {
+            assertEquals(0, CastBar.flagsOf(s) & CastBar.FLAG_UNPRAYABLE, s + ": no attack special is shown as unprayable");
+        }
+        CastBar.Cast dragonfire = new CastBar.Cast(1, CastBar.styleOf(AttackType.MAGIC),
+                CastBar.flagsOf(com.runecraft.osrs.content.AttackDef.Special.DRAGONFIRE), 0, 36, "");
+        assertEquals(PrayerGrace.index(AttackType.MAGIC), dragonfire.protection());
+    }
+
+    @Test
     void countdownAndProgress() {
         assertEquals("1.8s", CastBar.seconds(36));
         assertEquals("0.0s", CastBar.seconds(-5));
@@ -64,6 +81,13 @@ class CastBarTest {
         assertFalse(CastBar.rightOverhead(magic, -1));
         assertNull(CastBar.rightOverhead(new CastBar.Cast(1, CastBar.TYPELESS, CastBar.FLAG_DODGE, 0, 36, ""), 0));
         assertNull(CastBar.rightOverhead(new CastBar.Cast(1, CastBar.MAGIC, CastBar.FLAG_UNPRAYABLE, 0, 36, ""), 0));
+        // a hit the prayer only lowers still wants it up: right/wrong frame and the protection's key
+        CastBar.Cast reduced = new CastBar.Cast(1, CastBar.MAGIC, CastBar.FLAG_REDUCED, 0, 36, "");
+        assertTrue(reduced.prayable() && reduced.reduced());
+        assertEquals(0, reduced.protection());
+        assertTrue(CastBar.rightOverhead(reduced, 0));
+        assertFalse(CastBar.rightOverhead(reduced, -1));
+        assertFalse(magic.reduced());
         // uncursed: the protection's own key; cursed (magic key -> missiles, missiles -> melee, melee -> magic):
         // magic is reached with the melee key
         assertEquals(0, CastBar.keyFor(0, new int[]{0, 1, 2}));

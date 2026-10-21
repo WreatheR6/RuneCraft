@@ -24,8 +24,17 @@ public final class CastBar {
 
     /** The hit lands on a marked spot: step out of it (sky strikes). */
     public static final int FLAG_DODGE = 1;
-    /** The style's protection prayer doesn't block it (prayer-piercing hits, dragonfire). */
+    /** No protection prayer helps at all (for a script's cast; no AttackDef special maps to it, see {@link #flagsOf}). */
     public static final int FLAG_UNPRAYABLE = 2;
+    /**
+     * The style's protection prayer lowers it without blocking it, so it is still the prayer to have up: dragonfire (Protect
+     * from Magic caps it at two thirds without a shield or antifire, {@code Mechanics.hit}; OSRS Wiki, Dragonfire) and the
+     * prayer-piercing hits, whose boss scripts take part off under the right prayer (the Hunllef's 12 / 16, Callisto's halved
+     * swipe; the bears' knockback orb is blocked whole). The row shows the key with "part" and the usual right/wrong frame.
+     */
+    public static final int FLAG_REDUCED = 4;
+    /** What the row shows after the key of a hit the prayer only lowers ({@link #FLAG_REDUCED}). */
+    public static final String REDUCED_SUFFIX = " part";
 
     /** Colours (RGB) of the styles: melee red, ranged green, magic blue, typeless orange. */
     public static final int MELEE_RGB = 0xE03030;
@@ -49,9 +58,14 @@ public final class CastBar {
             label = label == null ? "" : label;
         }
 
-        /** Whether the style's protection prayer blocks it. */
+        /** Whether the style's protection prayer blocks it, or lowers it ({@link #reduced}). */
         public boolean prayable() {
             return style != TYPELESS && (flags & (FLAG_DODGE | FLAG_UNPRAYABLE)) == 0;
+        }
+
+        /** Whether the protection prayer only lowers it ({@link CastBar#FLAG_REDUCED}). */
+        public boolean reduced() {
+            return prayable() && (flags & FLAG_REDUCED) != 0;
         }
 
         /** Index of the protection prayer that blocks it (0 magic, 1 missiles, 2 melee, as {@link PrayerGrace#PROTECTIONS}), or -1. */
@@ -73,6 +87,21 @@ public final class CastBar {
         public int rgb() {
             return CastBar.rgb(style);
         }
+    }
+
+    /**
+     * The cast-bar flags of an attack special: a sky strike lands on a marked spot (step out: {@link #FLAG_DODGE}); dragonfire
+     * and prayer-piercing hits are lowered, not blocked, by the style's protection prayer ({@link #FLAG_REDUCED}).
+     */
+    public static int flagsOf(com.runecraft.osrs.content.AttackDef.Special special) {
+        if (special == null) {
+            return 0;
+        }
+        return switch (special) {
+            case SKY_STRIKE -> FLAG_DODGE;
+            case DRAGONFIRE, PRAYER_PIERCING -> FLAG_REDUCED;
+            default -> 0;
+        };
     }
 
     /** The cast-bar style of an attack style (null: typeless). */
@@ -148,7 +177,7 @@ public final class CastBar {
     /**
      * Whether the player's overhead is the right one for a cast: true when the protection it needs ({@link Cast#protection})
      * is active ({@code activeProtection} = its index, -1 for none); null when no overhead matters (typeless, a dodge, a
-     * prayer-piercing hit).
+     * script's unprayable cast). A hit the prayer only lowers ({@link #FLAG_REDUCED}) still wants it up.
      */
     public static Boolean rightOverhead(Cast cast, int activeProtection) {
         int need = cast.protection();

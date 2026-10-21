@@ -93,15 +93,13 @@ public final class HudNet {
 
     // ------------------------------------------------------------------ cast bar
 
-    /** The cast-bar flags of an attack: a sky strike is dodged, prayer-piercing hits and dragonfire aren't prayed. */
+    /**
+     * The cast-bar flags of an attack ({@link CastBar#flagsOf}): a sky strike is dodged; dragonfire and prayer-piercing hits are
+     * lowered by the protection prayer, so the row still names its key (Elvarg's telegraphed dragonfire under Protect from
+     * Magic, the bears' knockback orb that Protect from Magic blocks).
+     */
     public static int flagsOf(AttackType style, AttackDef.Special special) {
-        if (special == AttackDef.Special.SKY_STRIKE) {
-            return CastBar.FLAG_DODGE;
-        }
-        if (special == AttackDef.Special.PRAYER_PIERCING || special == AttackDef.Special.DRAGONFIRE) {
-            return CastBar.FLAG_UNPRAYABLE;
-        }
-        return 0;
+        return CastBar.flagsOf(special);
     }
 
     /** The cast-bar style of an attack (a sky strike is typeless: it hits a spot, whatever its style). */

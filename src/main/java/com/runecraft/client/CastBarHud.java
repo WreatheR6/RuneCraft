@@ -19,7 +19,9 @@ import net.minecraft.world.entity.LivingEntity;
  * (melee red, ranged green, magic blue, area orange), the attacker, the key of the protection prayer that blocks it (under
  * the Nightmare's curse the key that really switches that prayer, in purple), a seconds countdown and a bar emptying until
  * the hit lands. The frame is green while the right overhead is up, red while it isn't, orange when no prayer helps (a spot
- * to step out of: "MOVE"; a prayer-piercing hit: "no prayer"). OSRS shows these telegraphs only as the monster's animation.
+ * to step out of: "MOVE"; a script's unprayable cast: "no prayer"). A hit the prayer only lowers (dragonfire, a
+ * prayer-piercing hit: {@link CastBar#FLAG_REDUCED}) shows its key with "part". OSRS shows these telegraphs only as the
+ * monster's animation.
  */
 public final class CastBarHud {
     private static final int WIDTH = 140;
@@ -83,7 +85,10 @@ public final class CastBarHud {
         return e == null ? "Attack" : e.getName().getString();
     }
 
-    /** The key text of a row: the protection key (cursed: the key that reaches it), MOVE, or "no prayer". */
+    /**
+     * The key text of a row: the protection key (cursed: the key that reaches it; "part" after it when the prayer only lowers
+     * the hit), MOVE, or "no prayer".
+     */
     private static String key(CastBar.Cast c) {
         if ((c.flags() & CastBar.FLAG_DODGE) != 0 || c.style() == CastBar.TYPELESS) {
             return "MOVE";
@@ -91,7 +96,8 @@ public final class CastBarHud {
         if (!c.prayable()) {
             return "no prayer";
         }
-        return CombatKeys.keyName(CastBar.keyFor(c.protection(), ClientState.CURSE));
+        String key = CombatKeys.keyName(CastBar.keyFor(c.protection(), ClientState.CURSE));
+        return c.reduced() ? key + CastBar.REDUCED_SUFFIX : key;
     }
 
     /** Every row held, soonest first, as the probe reports them (self-tests; only the first {@link CastBar#MAX_SHOWN} draw). */

@@ -154,8 +154,51 @@ public final class SpecialAttackService {
     }
 
     private static String heldId(ServerPlayer p) {
-        String id = Inv.idOf(p.getMainHandItem());
+        return idOf(p.getMainHandItem());
+    }
+
+    private static String idOf(net.minecraft.world.item.ItemStack stack) {
+        String id = stack == null || stack.isEmpty() ? "" : Inv.idOf(stack);
         return id == null ? "" : id;
+    }
+
+    /**
+     * Hooks the weapon switch (round 42, {@code // playability}): the main-hand item changing ({@code LivingEquipmentChangeEvent},
+     * checked every MC tick) goes to {@link #heldChanged}, and logging out deselects the special.
+     */
+    public static void register() {
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(
+                net.neoforged.neoforge.event.entity.living.LivingEquipmentChangeEvent.class, e -> {
+                    if (e.getSlot() == EquipmentSlot.MAINHAND && e.getEntity() instanceof ServerPlayer p
+                            && !(p instanceof net.neoforged.neoforge.common.util.FakePlayer)) {
+                        heldChanged(p, e.getFrom(), e.getTo());
+                    }
+                });
+        com.runecraft.platform.ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> loggedOut(handler.player));
+    }
+
+    /**
+     * The main hand switched from {@code from} to {@code to} (another item id; a change of the same weapon's data, such as its
+     * charges, is ignored): another weapon deselects the armed special at once, not on the next game tick, so a flick to food
+     * and back inside one game tick can't keep a special armed that the HUD shows off; and the client gets the new weapon's
+     * effective cost ({@link #cost}, with the {@link CostRule}s such as ToA's) for its special bar and "Special ready" cue.
+     */
+    public static void heldChanged(ServerPlayer p, net.minecraft.world.item.ItemStack from, net.minecraft.world.item.ItemStack to) {
+        if (idOf(from).equals(idOf(to))) {
+            return;
+        }
+        SysState.SysPlayer sp = SysState.of(p);
+        boolean armed = sp.specArmed;
+        disarmedBySwitch(p);
+        if (armed == sp.specArmed) {
+            SysNet.sendState(p); // a deselect already sent it
+        }
+    }
+
+    /** Logging out deselects the special attack (and forgets the weapon it was armed with). */
+    public static void loggedOut(ServerPlayer p) {
+        ARMED_WITH.remove(p.getUUID());
+        SysState.of(p).specArmed = false;
     }
 
     /**

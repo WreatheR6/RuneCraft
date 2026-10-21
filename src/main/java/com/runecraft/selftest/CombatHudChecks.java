@@ -147,6 +147,16 @@ final class CombatHudChecks {
         return null;
     }
 
+    /** The cast-bar row from {@code source} whose key says the prayer only lowers the hit, or null. */
+    private static HudProbe.Cast reducedFrom(HudProbe.Snapshot s, int source) {
+        for (HudProbe.Cast cast : s.casts()) {
+            if (cast.source() == source && cast.key().endsWith(CastBar.REDUCED_SUFFIX)) {
+                return cast;
+            }
+        }
+        return null;
+    }
+
     private static HudProbe.Cast castFrom(HudProbe.Snapshot s, int source) {
         for (HudProbe.Cast cast : s.casts()) {
             if (cast.source() == source) {
@@ -207,6 +217,27 @@ final class CombatHudChecks {
                 note += "; client: '" + row.name() + "' MAG [" + row.key() + "] " + row.secondsLeft() + "s, red then green";
             } else {
                 note += " (no client: server packet only)";
+            }
+            // Dragonfire (Elvarg's is telegraphed): Protect from Magic lowers it (Mechanics.hit; OSRS Wiki, Dragonfire), so the row
+            // names the Protect from Magic key with "part" and the right/wrong frame, never "no prayer".
+            sent.clear();
+            AttackDef fire = AttackDef.of("hud_test_dragonfire", AttackType.MAGIC, 20, 20, 1)
+                    .special(AttackDef.Special.DRAGONFIRE, 0).telegraph(2, "The demon breathes fire!");
+            Mechanics.perform(mob, p(), fire, 1.0);
+            expect(sent.size() == 1 && sent.get(0).style() == CastBar.MAGIC && (sent.get(0).flags() & CastBar.FLAG_UNPRAYABLE) == 0
+                    && (sent.get(0).flags() & CastBar.FLAG_REDUCED) != 0, "a telegraphed dragonfire sent " + sent
+                    + ", expected magic, lowered by Protect from Magic");
+            note += "; dragonfire: Protect from Magic lowers it";
+            if (client()) {
+                HudProbe.Snapshot fireShown = awaitClient(s -> reducedFrom(s, mob.getId()) != null);
+                expect(fireShown != null, "the client's cast bar never showed the dragonfire with a 'part' key");
+                HudProbe.Cast row = reducedFrom(fireShown, mob.getId());
+                expect(row.protection() == 0 && row.key().equals(fireShown.protectionKeys()[0] + CastBar.REDUCED_SUFFIX),
+                        "the dragonfire row shows key '" + row.key() + "' for protection " + row.protection()
+                                + ", expected the Protect from Magic key '" + fireShown.protectionKeys()[0] + "' with 'part'");
+                expect(Boolean.TRUE.equals(row.rightOverhead()), "Protect from Magic is up and the dragonfire frame is "
+                        + row.rightOverhead() + ", not green");
+                note += " [" + row.key() + "] green";
             }
             // Jad's telegraph goes through the same bar (ThreatCues.announce with its 3-tick lead).
             sent.clear();
@@ -393,12 +424,22 @@ final class CombatHudChecks {
 
     // ------------------------------------------------------------------ special attack on a weapon switch
 
-    /** A special armed on the dragon dagger is cleared by switching to the whip; switching back shows "Special ready". */
+    /** A cost the self-test's cost rule gives the special attacks of {@link #testCostPlayer} (-1: none). */
+    private static volatile int testCost = -1;
+    private static volatile java.util.UUID testCostPlayer;
+    private static boolean costRuleAdded;
+
+    /**
+     * A special armed on the dragon dagger is deselected by the switch itself (on the server, not on the next game tick): a
+     * flick to food and back leaves it off, as does the whip, and logging out. On the client, "Special ready" shows for the
+     * dagger and not for a weapon without a special, judged by the cost the server sends (a cost rule over the energy: no cue).
+     */
     private String specialSwitch() {
         ServerPlayer p = p();
         p.getInventory().clearContent();
         int sel = p.getInventory().selected;
-        p.getInventory().setItem(sel, Inv.stack("dragon_dagger", 1));
+        ItemStack dagger = Inv.stack("dragon_dagger", 1);
+        p.getInventory().setItem(sel, dagger);
         expect(!p.getMainHandItem().isEmpty(), "no dragon dagger item");
         SysState.SysPlayer sp = SysState.of(p);
         sp.specEnergy = 100;
@@ -406,26 +447,84 @@ final class CombatHudChecks {
         SpecialAttackService.toggle(p);
         expect(sp.specArmed, "the dragon dagger's special didn't arm");
         expect(!SpecialAttackService.disarmedBySwitch(p) && sp.specArmed, "the special disarmed with the dagger still in hand");
-        p.getInventory().setItem(sel, Inv.stack("abyssal_whip", 1));
-        expect(SpecialAttackService.disarmedBySwitch(p) && !sp.specArmed, "switching to the whip left the special armed");
+        // a flick to a shark and back inside one game tick: the switch itself deselects it, so the next stab is no special
+        ItemStack shark = Inv.stack("shark", 1);
+        p.getInventory().setItem(sel, shark);
+        SpecialAttackService.heldChanged(p, dagger, shark);
+        expect(!sp.specArmed, "switching to a shark left the special armed until the next game tick");
+        ItemStack back = Inv.stack("dragon_dagger", 1);
+        p.getInventory().setItem(sel, back);
+        SpecialAttackService.heldChanged(p, shark, back);
+        expect(!sp.specArmed && !SpecialAttackService.isSpecial(p, AttackType.STAB),
+                "flicking back to the dagger kept the special armed");
+        // the same weapon's data changing (charges) is no switch
+        SpecialAttackService.toggle(p);
+        expect(sp.specArmed, "the dragon dagger's special didn't arm again");
+        SpecialAttackService.heldChanged(p, back, back.copy());
+        expect(sp.specArmed, "a change of the held dagger's data deselected the special");
+        ItemStack whip = Inv.stack("abyssal_whip", 1);
+        p.getInventory().setItem(sel, whip);
+        SpecialAttackService.heldChanged(p, back, whip);
+        expect(!sp.specArmed, "switching to the whip left the special armed");
         expect(!SpecialAttackService.isSpecial(p, AttackType.SLASH), "the whip's attack still counts as the armed special");
-        String note = "armed on the dagger, cleared by the whip";
+        // logging out deselects it too
+        p.getInventory().setItem(sel, back);
+        SpecialAttackService.heldChanged(p, whip, back);
+        SpecialAttackService.toggle(p);
+        expect(sp.specArmed, "the dragon dagger's special didn't arm a third time");
+        SpecialAttackService.loggedOut(p);
+        expect(!sp.specArmed, "logging out left the special armed");
+        String note = "deselected by the switch to a shark (and back), the whip and logging out; kept on a data change";
         if (client()) {
-            // a weapon without a special first (no cue), then the dagger: the cue shows for the switch to it
-            p.getInventory().setItem(sel, Inv.stack("rune_scimitar", 1));
-            p.inventoryMenu.broadcastChanges();
+            if (!costRuleAdded) {
+                costRuleAdded = true;
+                SpecialAttackService.addCostRule((pl, spec) -> pl.getUUID().equals(testCostPlayer) ? testCost : -1);
+            }
+            // The server thread waits below, so the equipment event can't fire: each switch calls the server's handler (what
+            // the event does on the next MC tick) after the slot update, which sends the state the client's cue reads.
+            ItemStack scimitar = Inv.stack("rune_scimitar", 1);
+            switchTo(p, sel, back, scimitar);
             HudProbe.Snapshot plain = awaitClient(x -> x.held().equals("rune_scimitar"));
             expect(plain != null, "the client never held the rune scimitar (held " + (HudProbe.latest == null ? "?" : HudProbe.latest.held()) + ")");
             expect(!plain.specialReady(), "'Special ready' showed for a rune scimitar, which has no special attack");
-            p.getInventory().setItem(sel, Inv.stack("dragon_dagger", 1));
-            p.inventoryMenu.broadcastChanges();
+            // the cost the server sends decides: a cost rule at 60 over 50 energy shows no cue, though the base cost is 25
+            try {
+                testCostPlayer = p.getUUID();
+                testCost = 60;
+                sp.specEnergy = 50;
+                ItemStack costly = Inv.stack("dragon_dagger", 1);
+                switchTo(p, sel, scimitar, costly);
+                HudProbe.Snapshot held = awaitClient(x -> x.held().equals("dragon_dagger"));
+                expect(held != null, "the client never held the dragon dagger");
+                long settled = held.clientTick() + SETTLE_TICKS;
+                HudProbe.Snapshot later = awaitClient(x -> x.clientTick() >= settled);
+                expect(later != null && !later.specialReady(), "'Special ready' showed at 50% energy for a special the server costs at 60%");
+                switchTo(p, sel, costly, scimitar);
+                expect(awaitClient(x -> x.held().equals("rune_scimitar")) != null, "the client never held the rune scimitar again");
+            } finally {
+                testCost = -1;
+                testCostPlayer = null;
+                sp.specEnergy = 100;
+            }
+            switchTo(p, sel, scimitar, Inv.stack("dragon_dagger", 1));
             HudProbe.Snapshot s = awaitClient(x -> x.held().equals("dragon_dagger") && x.specialReady());
             expect(s != null, "the client never showed 'Special ready' after switching to the dragon dagger");
-            note += "; client: no cue for the scimitar, Special ready for the dagger";
+            note += "; client: no cue for the scimitar or over the server's cost, Special ready for the dagger";
         }
+        sp.specArmed = false;
         p.getInventory().clearContent();
         p.inventoryMenu.broadcastChanges();
         return note;
+    }
+
+    /** Client ticks a "no cue" check waits for the state that follows a switch. */
+    private static final int SETTLE_TICKS = 8;
+
+    /** Puts {@code to} in the selected slot, syncs it, then runs the server's switch handler (it sends the state after the slot). */
+    private static void switchTo(ServerPlayer p, int sel, ItemStack from, ItemStack to) {
+        p.getInventory().setItem(sel, to);
+        p.inventoryMenu.broadcastChanges();
+        SpecialAttackService.heldChanged(p, from, to);
     }
 
     // ------------------------------------------------------------------ boss bar status

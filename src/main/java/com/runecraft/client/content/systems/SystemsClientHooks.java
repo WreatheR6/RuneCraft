@@ -98,6 +98,7 @@ public final class SystemsClientHooks implements ClientModuleHooks {
                 SysClientState.thrall = thrall;
                 SysClientState.specCost = specCost;
                 SysClientState.received = true;
+                SysClientState.states++;
             });
         });
         ClientPlayNetworking.registerGlobalReceiver(SysNet.SCREEN, (client, handler, buf, sender) -> {
