@@ -70,9 +70,16 @@ public final class MageArenaWalk {
             "imbued_saradomin_cape", "imbued_guthix_cape", "imbued_zamorak_cape", MageArena.SYMBOL, "justiciars_hand", "ents_roots",
             "demons_heart", "blood_rune", "fire_rune", "air_rune", "bones", "looting_bag"};
 
+    /** The runes the casts take, and how many of each the player carried before the walk ({@link #topUp} keeps above them). */
+    private static final String[] RUNES = {"blood_rune", "fire_rune", "air_rune"};
+    private final int[] ownRunes = new int[RUNES.length];
+
     private MageArenaWalk(ServerPlayer player) {
         this.player = player;
         this.world = Gielinor.world(player.getServer());
+        for (int i = 0; i < RUNES.length; i++) {
+            ownRunes[i] = Inv.count(player, RUNES[i]);
+        }
     }
 
     public static String ma1(ServerPlayer player, BlockPos back) {
@@ -234,17 +241,24 @@ public final class MageArenaWalk {
         // Enough runes for any god spell (at most 2 blood, 4 fire and 4 air), topped up rather than added on every cast: the
         // 300 casts of Mage Arena II would otherwise pile up some 60 stacks of runes, and a full pack drops what Kolodion then
         // hands over (the enchanted symbol) at the player's feet.
-        topUp("blood_rune", 4);
-        topUp("fire_rune", 8);
-        topUp("air_rune", 8);
+        topUp(0, 4);
+        topUp(1, 8);
+        topUp(2, 8);
         expect(SpellService.retaliate(player, target), "no autocast spell to cast");
     }
 
-    private void topUp(String item, int want) {
-        int have = Inv.count(player, item);
-        if (have < want) {
-            Inv.give(player, item, want - have);
+    /**
+     * Tops rune {@code r} up to {@code want} above what the player carried before the walk: every cast is paid from the walk's
+     * own runes and never from the player's (a real player running {@code /rc selftest real}), and the walk's leftovers are
+     * taken back when it ends.
+     */
+    private void topUp(int r, int want) {
+        int target = ownRunes[r] + want;
+        int have = Inv.count(player, RUNES[r]);
+        if (have < target) {
+            Inv.give(player, RUNES[r], target - have);
         }
+        expect(Inv.count(player, RUNES[r]) >= target, "no room in the pack for the casts' " + RUNES[r].replace('_', ' ') + "s");
     }
 
     /**
