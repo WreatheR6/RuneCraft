@@ -319,4 +319,24 @@ class SkillingMinigamesRound40Test {
             }
         }
     }
+
+    @Test
+    void outfitBonusIsWholeTenthsRoundedDownOnce() {
+        // The general hook's bonus (every XP drop in the skill) and the minigames' own per-action boost agree, in whole
+        // tenths rounded down: 6 -> 6.1 and 60 -> 61.5 (wiki "Golovanova seed"), 230 -> 235.7 (wiki "Logavano seed" 235.75).
+        assertEquals(25, SkillingOutfits.permille(SkillingOutfits.FARMER, SkillingOutfits.FARMER));
+        assertEquals(10, SkillingOutfits.permille(SkillingOutfits.FARMER, List.of("farmers_strawhat", "farmers_boro_trousers")));
+        assertEquals(0, SkillingOutfits.permille(SkillingOutfits.FARMER, List.of("angler_hat")));
+        assertEquals(1, SkillingOutfits.bonusTenths(60, 25));
+        assertEquals(15, SkillingOutfits.bonusTenths(600, 25));
+        assertEquals(57, SkillingOutfits.bonusTenths(2300, 25));
+        for (int tenths = 1; tenths <= 50_000; tenths += 7) {
+            for (int permille : new int[]{2, 4, 10, 18, 25}) {
+                assertEquals(tenths + SkillingOutfits.bonusTenths(tenths, permille),
+                        Math.round(SkillingOutfits.boosted(tenths / 10.0, 1 + permille / 1000.0) * 10), tenths + " tenths at " + permille);
+            }
+        }
+        // A Tithe Farm deposit of 3 logavano in the full outfit: 3 x 235.7 = 707.1, the bonus applied once per fruit.
+        assertEquals(707.1, 3 * SkillingOutfits.boosted(MinigameRules.TitheFarm.depositXp(2, 1), 1.025), 1e-9);
+    }
 }

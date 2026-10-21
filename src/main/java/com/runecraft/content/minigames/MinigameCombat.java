@@ -14,6 +14,7 @@ import com.runecraft.osrs.Prayer;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.SkillSet;
 import com.runecraft.osrs.content.minigames.MinigameRules;
+import com.runecraft.osrs.content.minigames.SkillingOutfits;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
 import com.runecraft.skill.XpService;
@@ -24,6 +25,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -37,15 +39,15 @@ public final class MinigameCombat {
     public static final String INVULNERABLE = "rcmg_invulnerable";
 
     private static final Set<String> TZHAAR_MELEE = Set.of("tzhaar_ket_om", "tzhaar_ket_em", "toktz_xil_ak", "toktz_xil_ek");
-    private static final Map<Skill, String[]> OUTFITS = Map.of(
-            Skill.FIREMAKING, new String[]{"pyromancer_hood", "pyromancer_garb", "pyromancer_robe", "pyromancer_boots"},
-            Skill.FISHING, new String[]{"angler_hat", "angler_top", "angler_waders", "angler_boots"},
-            Skill.FARMING, new String[]{"farmers_strawhat", "farmers_jacket", "farmers_boro_trousers", "farmers_boots"},
-            Skill.CONSTRUCTION, new String[]{"carpenters_helmet", "carpenters_shirt", "carpenters_trousers", "carpenters_boots"},
-            Skill.WOODCUTTING, new String[]{"lumberjack_hat", "lumberjack_top", "lumberjack_legs", "lumberjack_boots"});
-    /** OSRS outfit bonus per piece (hat, top, legs, boots); the full set gives 2.5%. */
-    private static final double[] PIECE_BONUS = {0.004, 0.008, 0.006, 0.002};
+    /** The experience-boosting outfits by skill, pieces in slot order (hat, top, legs, boots); bonuses in {@link SkillingOutfits}. */
+    private static final Map<Skill, List<String>> OUTFITS = Map.of(
+            Skill.FIREMAKING, List.of("pyromancer_hood", "pyromancer_garb", "pyromancer_robe", "pyromancer_boots"),
+            Skill.FISHING, SkillingOutfits.ANGLER,
+            Skill.FARMING, SkillingOutfits.FARMER,
+            Skill.CONSTRUCTION, SkillingOutfits.CARPENTER,
+            Skill.WOODCUTTING, List.of("lumberjack_hat", "lumberjack_top", "lumberjack_legs", "lumberjack_boots"));
     private static final EquipmentSlot[] SLOTS = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
+    /** Set while experience that already carries the outfit bonus is given, so the general outfit hook skips it. */
     private static boolean addingBonus;
 
     private MinigameCombat() {
@@ -125,23 +127,20 @@ public final class MinigameCombat {
             MinigameSession s = MinigameManager.session(player);
             return s == null || s.isEnded() || s.awardsXp();
         });
+        // The outfits boost every XP drop in their skill (OSRS Wiki, "Farmer's outfit": an experience-boosting set), per drop
+        // and rounded down in tenths (wiki "Golovanova seed": 6 XP is 6.1 in the full outfit). Experience a minigame has
+        // already boosted itself comes through addOutfitBoosted and is skipped here (it was counted twice: round 40's Tithe
+        // Farm deposit of 3 logavano in the full outfit gave 724.8 XP, not 3 x 235.7).
         GameEvents.onXp((player, skill, tenths) -> {
-            String[] outfit = OUTFITS.get(skill);
+            List<String> outfit = OUTFITS.get(skill);
             if (outfit == null || addingBonus || tenths <= 0) {
                 return;
             }
-            double bonus = 0;
-            int pieces = 0;
-            for (int i = 0; i < 4; i++) {
-                if (worn(player, SLOTS[i]).equals(outfit[i])) {
-                    bonus += PIECE_BONUS[i];
-                    pieces++;
-                }
+            List<String> wearing = new java.util.ArrayList<>(SLOTS.length);
+            for (EquipmentSlot slot : SLOTS) {
+                wearing.add(worn(player, slot));
             }
-            if (pieces == 4) {
-                bonus = 0.025;
-            }
-            int extra = (int) Math.round(tenths * bonus);
+            int extra = SkillingOutfits.bonusTenths(tenths, SkillingOutfits.permille(outfit, wearing));
             if (extra > 0) {
                 addingBonus = true;
                 try {
@@ -165,6 +164,21 @@ public final class MinigameCombat {
             pvpMelee(attacker, target, s);
             return InteractionResult.SUCCESS;
         });
+    }
+
+    /**
+     * Gives experience the caller has already boosted by the player's skilling outfit, per action and in tenths
+     * ({@link SkillingOutfits#boosted}: Tithe Farm's fruit, whose 75th-fruit bonus the farmer's outfit doesn't boost, Mahogany
+     * Homes' furniture and contracts, the trawler's catch), so the general outfit hook above doesn't add the bonus again.
+     */
+    static void addOutfitBoosted(ServerPlayer player, Skill skill, double xp) {
+        boolean was = addingBonus;
+        addingBonus = true;
+        try {
+            XpService.add(player, skill, xp);
+        } finally {
+            addingBonus = was;
+        }
     }
 
     /** One OSRS melee attack between players inside a PvP minigame (Castle Wars). */

@@ -188,7 +188,7 @@ public class TitheFarmSession extends MinigameSession {
         if (stage[i] >= TitheFarm.WATERINGS) {
             int t = type[i];
             Inv.give(player, MinigameItems.TITHE_PLANTS[t] + "_fruit", TitheFarm.YIELD);
-            xp(player, Skill.FARMING, TitheFarm.YIELD * SkillingOutfits.boosted(TitheFarm.HARVEST_XP[t],
+            outfitXp(player, Skill.FARMING, TitheFarm.YIELD * SkillingOutfits.boosted(TitheFarm.HARVEST_XP[t],
                     SkillingOutfits.multiplier(SkillingOutfits.FARMER, worn(player))));
             type[i] = -1;
             show(i);
@@ -272,7 +272,7 @@ public class TitheFarmSession extends MinigameSession {
         if (pts > 0) {
             addPoints(player, MinigameCurrencies.TITHE, pts);
         }
-        xp(player, Skill.FARMING, xp);
+        outfitXp(player, Skill.FARMING, xp);
         delivered.merge(id, fruit, Integer::sum);
         int now = inBatch + fruit;
         Msg.game(player, "You deposit " + fruit + " fruit and earn " + pts + " points (" + now + " / " + TitheFarm.SACK_SIZE + ").");
