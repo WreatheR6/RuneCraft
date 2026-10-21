@@ -520,6 +520,11 @@ public final class MinigameRules {
         public static final String KEG_ENTRANCE = "warriors_guild_keg_entrance";
         /** Flag set once a rune defender has been shown to Lorelai: the basement then stays open (OSRS Wiki). */
         public static final String BASEMENT_FLAG = "wg_basement_unlocked";
+        /**
+         * Minigame stat: 1 + the best defender tier the guild remembers (0 none). A defender that dropped, or was shown on entry,
+         * can be banked and the next tier still drops (OSRS Wiki "Defender").
+         */
+        public static final String DEFENDER_STAT = "wg_defender";
         /** Defender tier indices (into {@link MinigameItems#DEFENDER_TIERS}). */
         public static final int RUNE = 6;
         public static final int DRAGON = 7;
@@ -671,9 +676,24 @@ public final class MinigameRules {
         /** Falling kegs deal up to 4 damage (OSRS Wiki "Keg (Warriors' Guild)"). */
         public static final int KEG_MAX_DAMAGE = 4;
 
-        /** Chance per keg tick that the kegs fall: higher as run energy drops (0 at full energy). // approx */
+        /**
+         * Balancing trades run energy for the XP and tokens (OSRS Wiki "Keg (Warriors' Guild)"): energy doesn't come back
+         * while kegs are held and drains by this much per keg every tick (hundredths of a percent; five kegs empty a full bar
+         * in about 3.3 minutes). // approx: the wiki gives no rate
+         */
+        public static final int KEG_DRAIN_PER_KEG = 6;
+        /** Even at full energy the kegs can fall, at this fraction of the empty-energy chance. // approx */
+        public static final double KEG_MIN_FALL_FRACTION = 0.05;
+
+        /** Run energy (hundredths of a percent) balancing {@code kegs} kegs uses each tick. */
+        public static int kegDrain(int kegs) {
+            return KEG_DRAIN_PER_KEG * Math.max(0, kegs);
+        }
+
+        /** Chance per keg tick that the kegs fall: higher as run energy drops, never 0. // approx */
         public static double kegFallChance(int energyPercent, int kegs) {
-            return Math.max(0, 100 - energyPercent) / 100.0 * (0.05 + 0.02 * kegs);
+            double low = Math.max(KEG_MIN_FALL_FRACTION, Math.max(0, 100 - energyPercent) / 100.0);
+            return Math.min(1, low * (0.05 + 0.02 * kegs));
         }
 
         public static int tokens(String tier) {

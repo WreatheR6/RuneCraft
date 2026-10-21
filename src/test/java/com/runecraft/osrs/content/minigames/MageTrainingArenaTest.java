@@ -87,6 +87,26 @@ class MageTrainingArenaTest {
         assertEquals(7, MageTrainingArena.enchantLevel(93));
         assertEquals(6, MageTrainingArena.enchantLevel(92));
         assertEquals(0, MageTrainingArena.enchantLevel(6));
+        // Players pick their spell: at 93+ Magic without blood and soul runes Lvl-6 Enchant is cast (and pays 6 points a shape),
+        // without Lvl-6's runes too Lvl-5, and so on; the spell's level counts, not the Magic level.
+        java.util.function.Predicate<MageTrainingArena.Spell> noBloodOrSoul = s -> !s.runes().containsKey("blood_rune");
+        MageTrainingArena.Spell lvl6 = MageTrainingArena.bestCastable(99, MageTrainingArena.enchantsBestFirst(), noBloodOrSoul);
+        assertEquals("lvl_6_enchant", lvl6.id());
+        assertEquals(6, MageTrainingArena.enchantLevel(lvl6));
+        assertEquals("lvl_7_enchant", MageTrainingArena.bestCastable(99, MageTrainingArena.enchantsBestFirst(), s -> true).id());
+        assertEquals("lvl_5_enchant", MageTrainingArena.bestCastable(99, MageTrainingArena.enchantsBestFirst(),
+                s -> MageTrainingArena.enchantLevel(s) <= 5).id());
+        assertEquals("lvl_3_enchant", MageTrainingArena.bestCastable(50, MageTrainingArena.enchantsBestFirst(), s -> true).id());
+        assertNull(MageTrainingArena.bestCastable(99, MageTrainingArena.enchantsBestFirst(), s -> false));
+        assertNull(MageTrainingArena.bestCastable(6, MageTrainingArena.enchantsBestFirst(), s -> true));
+        // Bones to Peaches falls back to Bananas without its runes or below 60 Magic; High Alchemy to Low.
+        List<MageTrainingArena.Spell> bones = List.of(MageTrainingArena.BONES_TO_PEACHES, MageTrainingArena.BONES_TO_BANANAS);
+        assertEquals(MageTrainingArena.BONES_TO_BANANAS, MageTrainingArena.bestCastable(99, bones,
+                s -> s.runes().getOrDefault("nature_rune", 0) < 2));
+        assertEquals(MageTrainingArena.BONES_TO_BANANAS, MageTrainingArena.bestCastable(59, bones, s -> true));
+        assertEquals(MageTrainingArena.BONES_TO_PEACHES, MageTrainingArena.bestCastable(60, bones, s -> true));
+        assertEquals(MageTrainingArena.LOW_ALCHEMY, MageTrainingArena.bestCastable(99,
+                List.of(MageTrainingArena.HIGH_ALCHEMY, MageTrainingArena.LOW_ALCHEMY), s -> s.runes().get("fire_rune") <= 3));
         assertEquals(110, MageTrainingArena.ENCHANTS.get(6).xp(), 1e-9);
         assertEquals(10, MageTrainingArena.ENCHANTS.get(3).runes().get("earth_rune"));
         // Points: Lvl-4 gives 4, 8 on the tenth shape, +2 for the bonus shape after doubling, 8 on a dragonstone.

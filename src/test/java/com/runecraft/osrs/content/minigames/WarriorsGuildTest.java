@@ -13,6 +13,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Warriors' Guild rules against the OSRS Wiki (round 40). */
 class WarriorsGuildTest {
+    private static int rarity(MonsterDef m, String item) {
+        for (com.runecraft.osrs.data.Drop d : m.drops) {
+            if (d.item().equals(item)) {
+                return d.rarity();
+            }
+        }
+        return -1;
+    }
+
     @Test
     void animatedArmourMatchesTheInfoboxes() {
         // Rune: level 138, 120 hitpoints, max hit 14, 40 tokens; adamant max hit 12; mithril 10.
@@ -55,6 +64,15 @@ class WarriorsGuildTest {
         }
         assertEquals(76, ContentRegistry.monster(WarriorsGuild.CYCLOPS_76).combatLevel);
         assertEquals(100, ContentRegistry.monster(WarriorsGuild.CYCLOPS_76).hitpoints);
+        // The wiki's one "Warriors' Guild Rooftop" table serves both top-floor versions: long bone 1/400, curved bone 1/5,012;
+        // the level 76's Slayer XP is 100.
+        for (String id : new String[]{"warriors_guild_cyclops", WarriorsGuild.CYCLOPS_76}) {
+            MonsterDef c = ContentRegistry.monster(id);
+            assertEquals(400, rarity(c, "long_bone"), id);
+            assertEquals(5012, rarity(c, "curved_bone"), id);
+            assertEquals(2, com.runecraft.osrs.data.MonsterTraits.get(id).size(), id);
+        }
+        assertEquals(100.0, com.runecraft.osrs.data.MonsterTraits.slayerXp(WarriorsGuild.CYCLOPS_76, 100), 1e-9);
         assertEquals(100, WarriorsGuild.CYCLOPS_GRACE_TICKS);
         for (String entrance : new String[]{WarriorsGuild.BASEMENT_ENTRANCE, WarriorsGuild.DUMMY_ENTRANCE, WarriorsGuild.CATAPULT_ENTRANCE,
                 WarriorsGuild.SHOT_PUT_ENTRANCE, WarriorsGuild.KEG_ENTRANCE}) {
@@ -82,8 +100,16 @@ class WarriorsGuildTest {
         assertEquals(15, WarriorsGuild.shotTokens(14, 18));
         assertEquals(17, WarriorsGuild.shotTokens(14, 22));
         assertTrue(WarriorsGuild.shotYards(WarriorsGuild.shotX(50, 10, "spin", false, 22)) >= 1);
-        assertEquals(0.0, WarriorsGuild.kegFallChance(100, 5), 1e-9);
+        // Kegs can fall even at full energy, more often as it drops; balancing drains energy per keg (wiki: XP and tokens "in
+        // exchange for run energy"), so a full bar can't hold five kegs for long.
+        assertTrue(WarriorsGuild.kegFallChance(100, 5) > 0);
+        assertTrue(WarriorsGuild.kegFallChance(100, 5) < 0.01);
         assertTrue(WarriorsGuild.kegFallChance(20, 5) > WarriorsGuild.kegFallChance(60, 5));
+        assertTrue(WarriorsGuild.kegFallChance(0, 5) <= 1);
+        assertEquals(5 * WarriorsGuild.kegDrain(1), WarriorsGuild.kegDrain(5));
+        assertEquals(0, WarriorsGuild.kegDrain(0));
+        int ticksToEmpty = com.runecraft.osrs.content.systems.RunEnergy.MAX / WarriorsGuild.kegDrain(5);
+        assertTrue(ticksToEmpty > 100 && ticksToEmpty < 1000, ticksToEmpty + " ticks of five kegs on a full bar");
         assertEquals(5, WarriorsGuild.MAX_KEGS);
     }
 }

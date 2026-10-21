@@ -187,6 +187,11 @@ public final class SpellService {
         return true;
     }
 
+    /** Whether the player could pay a spell's runes the way {@link #payRunes} does, without taking any. */
+    public static boolean canPayRunes(ServerPlayer p, Map<String, Integer> runes) {
+        return runePlan(p, runes) != null;
+    }
+
     // ---------------- Requirements ----------------
 
     /** Whether the player may use a spellbook (quest requirement looked up at runtime). */

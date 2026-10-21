@@ -42,15 +42,16 @@ import net.minecraft.world.level.block.Blocks;
  * carried item into coins at its value of the moment; deposited coins give 1 point and 10 coins per 100 (the rest as a chance
  * of one more) and 2 Magic XP per coin. Leaving deposits what the player holds.</li>
  * <li>Enchanting Chamber (7 Magic): each corner pile gives its shape (1/32 a dragonstone; more appear in the middle); the best
- * enchantment spell turns one into an orb for points equal to the spell's level, doubled every tenth shape or on a
- * dragonstone, +2 on the shape of the moment (changing every 24 seconds). Orbs deposited in the hole give 20 XP each and 3
+ * enchantment spell the player has the runes for turns one into an orb for points equal to its level, doubled every tenth
+ * shape or on a dragonstone, +2 on the shape of the moment (changing every 24 seconds). Orbs deposited in the hole give 20 XP each and 3
  * blood, death or cosmic runes per 20 on leaving.</li>
  * <li>Creature Graveyard (15 Magic): each pile hands out four bones of one kind (1 to 4 fruit each) before the next kind;
  * Bones to Bananas (or Bones to Peaches, once bought) turns them into fruit; 16 bananas or 8 peaches deposited in the chute are a
  * point (fractions a chance, at most 3 a deposit), 5 / 10 XP per fruit, and one water, earth, nature, death or blood rune per
  * point on leaving. Falling bones hit for 2; dying costs 10 points.</li>
  * </ul>
- * Spells are cast by using the room's items (or clicking the statue) with the runes in the inventory (staves count).
+ * Spells are cast by using the room's items (or clicking the statue) with the runes in the inventory (staves count); without the
+ * best spell's runes the next spell down is cast (Lvl-6 Enchant, Bones to Bananas, Low Level Alchemy).
  */
 public class MageArenaSession extends MinigameSession {
     private static final String[] NAMES = {"Telekinetic Theatre", "Alchemists' Playground", "Enchanting Chamber", "Creature Graveyard"};
@@ -207,6 +208,24 @@ public class MageArenaSession extends MinigameSession {
         }
         xp(p, Skill.MAGIC, spell.xp());
         return true;
+    }
+
+    /**
+     * Casts the best spell of {@code bestFirst} the player has the Magic level and runes for (a free cast needs only the level),
+     * the way a player picks a cheaper spell when the best one's runes are missing; null, with a message, if none can be cast.
+     */
+    private Spell castBest(ServerPlayer p, List<Spell> bestFirst, boolean free) {
+        int magic = level(p, Skill.MAGIC);
+        Spell spell = MageTrainingArena.bestCastable(magic, bestFirst,
+                s -> free || com.runecraft.content.systems.SpellService.canPayRunes(p, s.runes()));
+        if (spell == null) {
+            Spell allowed = MageTrainingArena.bestCastable(magic, bestFirst, s -> true);
+            Spell easiest = bestFirst.get(bestFirst.size() - 1);
+            Msg.game(p, allowed == null ? "You need a Magic level of " + easiest.level() + " to cast " + easiest.name() + "."
+                    : "You do not have enough runes to cast " + allowed.name() + (allowed == easiest ? "." : " or a lower spell."));
+            return null;
+        }
+        return cast(p, spell, free) ? spell : null;
     }
 
     private static MutableComponent link(String label, String command, String hover) {
@@ -378,8 +397,8 @@ public class MageArenaSession extends MinigameSession {
         if (room != 1 || !MageTrainingArena.ALCHEMY_ITEMS.contains(item) || !Inv.has(p, item, 1)) {
             return false;
         }
-        boolean high = level(p, Skill.MAGIC) >= MageTrainingArena.HIGH_ALCHEMY.level();
-        if (!cast(p, high ? MageTrainingArena.HIGH_ALCHEMY : MageTrainingArena.LOW_ALCHEMY, cupboards.free(item))) {
+        // High Level Alchemy, or Low Level Alchemy below 55 Magic or without High's runes: the coins are the same.
+        if (castBest(p, List.of(MageTrainingArena.HIGH_ALCHEMY, MageTrainingArena.LOW_ALCHEMY), cupboards.free(item)) == null) {
             return false;
         }
         Inv.remove(p, item, 1);
@@ -423,16 +442,20 @@ public class MageArenaSession extends MinigameSession {
         return pileAt.get(i);
     }
 
-    /** Enchants one carried shape or dragonstone into an orb with the best spell (public for the self-test); the points earned. */
+    /**
+     * Enchants one carried shape or dragonstone into an orb with the best spell the player has the level and runes for (public
+     * for the self-test); the points earned, which go by the spell actually cast.
+     */
     public int enchant(ServerPlayer p, String item) {
         boolean dragonstone = item.equals(MageTrainingArena.DRAGONSTONE);
         if (room != 2 || !dragonstone && !MageTrainingArena.SHAPES.contains(item) || !Inv.has(p, item, 1)) {
             return 0;
         }
-        int level = MageTrainingArena.enchantLevel(level(p, Skill.MAGIC));
-        if (level == 0 || !cast(p, MageTrainingArena.ENCHANTS.get(level - 1), false)) {
+        Spell spell = castBest(p, MageTrainingArena.enchantsBestFirst(), false);
+        if (spell == null) {
             return 0;
         }
+        int level = MageTrainingArena.enchantLevel(spell);
         Inv.remove(p, item, 1);
         Inv.give(p, MageTrainingArena.ORB, 1);
         int nth = 0;
@@ -474,7 +497,10 @@ public class MageArenaSession extends MinigameSession {
         return bone;
     }
 
-    /** Bones to Bananas, or Bones to Peaches once bought and at 60 Magic, on every carried bone (public for the self-test). */
+    /**
+     * Bones to Peaches once bought (at 60 Magic, with its runes), otherwise Bones to Bananas, on every carried bone (public for the
+     * self-test).
+     */
     public boolean castBones(ServerPlayer p) {
         if (room != 3) {
             return false;
@@ -487,11 +513,13 @@ public class MageArenaSession extends MinigameSession {
             Msg.game(p, "You have no bones to convert.");
             return false;
         }
-        boolean peaches = MinigameData.of(p).flag(p.getUUID(), "bones_to_peaches")
-                && level(p, Skill.MAGIC) >= MageTrainingArena.BONES_TO_PEACHES.level();
-        if (!cast(p, peaches ? MageTrainingArena.BONES_TO_PEACHES : MageTrainingArena.BONES_TO_BANANAS, false)) {
+        List<Spell> spells = MinigameData.of(p).flag(p.getUUID(), "bones_to_peaches")
+                ? List.of(MageTrainingArena.BONES_TO_PEACHES, MageTrainingArena.BONES_TO_BANANAS) : List.of(MageTrainingArena.BONES_TO_BANANAS);
+        Spell spell = castBest(p, spells, false);
+        if (spell == null) {
             return false;
         }
+        boolean peaches = spell == MageTrainingArena.BONES_TO_PEACHES;
         int made = 0;
         for (String b : MageTrainingArena.BONES) {
             made += Inv.remove(p, b, 10_000) * MageTrainingArena.fruit(b);

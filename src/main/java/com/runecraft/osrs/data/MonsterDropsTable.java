@@ -1645,6 +1645,8 @@ public final class MonsterDropsTable {
                 d("ancient_ceremonial_boots", 1, 1, 640));
         // Cyclops <- parsed:Cyclops(56)
         add("warriors_guild_cyclops", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
+        // Cyclops <- parsed:Cyclops(76) (the wiki's one "Warriors' Guild Rooftop" table for the level 56 and 76 versions)
+        add("warriors_guild_cyclops_76", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
         // Cyclops <- parsed:Cyclops(106)
         add("cyclops_elite", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
         // Dad <- parsed:Dad(101)

@@ -50,6 +50,33 @@ public final class MageTrainingArena {
             new Spell("lvl_6_enchant", "Lvl-6 Enchant", 87, 97, runes("cosmic_rune", 1, "earth_rune", 20, "fire_rune", 20)),
             new Spell("lvl_7_enchant", "Lvl-7 Enchant", 93, 110, runes("cosmic_rune", 1, "blood_rune", 20, "soul_rune", 20)));
 
+    /**
+     * The first spell of {@code bestFirst} the Magic level allows and the player can pay for, or null. Players choose their spell
+     * in the arena (OSRS Wiki "Enchanting Chamber": Lvl-7 Enchant "is not recommended due to its extremely high rune cost"), so a
+     * player without the best spell's runes casts the next one down: Lvl-6 Enchant without blood and soul runes, Bones to
+     * Bananas without the peach runes, Low Level Alchemy without High's fire runes.
+     */
+    public static Spell bestCastable(int magic, List<Spell> bestFirst, java.util.function.Predicate<Spell> canPay) {
+        for (Spell s : bestFirst) {
+            if (magic >= s.level() && canPay.test(s)) {
+                return s;
+            }
+        }
+        return null;
+    }
+
+    /** The enchantment spells best first (Lvl-7 down to Lvl-1). */
+    public static List<Spell> enchantsBestFirst() {
+        List<Spell> out = new ArrayList<>(ENCHANTS);
+        java.util.Collections.reverse(out);
+        return out;
+    }
+
+    /** The enchantment level (1-7) of an enchantment spell, or 0. */
+    public static int enchantLevel(Spell spell) {
+        return ENCHANTS.indexOf(spell) + 1;
+    }
+
     /** The best enchantment spell (1-7) a Magic level allows, or 0. */
     public static int enchantLevel(int magic) {
         int best = 0;

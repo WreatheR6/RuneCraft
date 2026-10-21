@@ -3,6 +3,7 @@ package com.runecraft.content.minigames.games;
 import com.runecraft.content.minigames.MinigameData;
 import com.runecraft.content.minigames.MinigameManager;
 import com.runecraft.content.minigames.MinigameSession;
+import com.runecraft.content.systems.RunEnergyService;
 import com.runecraft.content.systems.SysState;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.minigames.Minigame;
@@ -46,8 +47,9 @@ import net.minecraft.world.level.block.Blocks;
  * <li>Jimmy's challenge: balance up to five kegs on an empty head and hands for Strength XP and tokens until they fall.</li>
  * <li>Cyclops room (top floor, Kamfreena) and basement (Lorelai): 100 tokens to enter, 10 taken on entry and every minute (none
  * with an Attack cape), a minute's grace once they run out. The defender the cyclopes drop is fixed on entry from the best one
- * the player shows: the next one up to rune at 2/100 on the top floor (a new one has to be shown by re-entering), the dragon
- * defender at 1/100 in the basement, which opens once a rune defender has been shown.</li>
+ * the player shows or has earned before (the guild remembers it, so it can be banked): the next one up to rune at 2/100 on the
+ * top floor (a new one only counts after re-entering), the dragon defender at 1/100 in the basement, which opens once a rune
+ * defender has been shown.</li>
  * </ul>
  * Combat Achievement rewards double (easy) or triple (medium) every token payout ({@link #tokenMultiplier}).
  */
@@ -132,6 +134,25 @@ public class WarriorsGuildSession extends MinigameSession {
             best = check(p, alias, best);
         }
         return best;
+    }
+
+    /**
+     * The best defender tier the guild remembers for a player, or -1: once a defender has dropped (or been shown on entry) it
+     * can be banked and the next one still drops (OSRS Wiki "Defender").
+     */
+    public static int earnedDefender(ServerPlayer p) {
+        return MinigameData.of(p).stat(p.getUUID(), WarriorsGuild.DEFENDER_STAT) - 1;
+    }
+
+    private static void rememberDefender(ServerPlayer p, int tier) {
+        if (tier > earnedDefender(p)) {
+            MinigameData.of(p).setStat(p.getUUID(), WarriorsGuild.DEFENDER_STAT, tier + 1);
+        }
+    }
+
+    /** The defender a player counts as having for the cyclopes' drop: the best one shown or remembered, or -1. */
+    public static int progressDefender(ServerPlayer p) {
+        return Math.max(bestDefender(p), earnedDefender(p));
     }
 
     private static int check(ServerPlayer p, String item, int best) {
@@ -268,12 +289,13 @@ public class WarriorsGuildSession extends MinigameSession {
     }
 
     private void enterCyclopes(ServerPlayer p) {
-        int best = bestDefender(p);
+        int shown = bestDefender(p);
+        rememberDefender(p, shown);
         boolean basement = room == Room.BASEMENT;
-        if (basement && best >= WarriorsGuild.RUNE) {
+        if (basement && shown >= WarriorsGuild.RUNE) {
             MinigameData.of(p).setFlag(p.getUUID(), WarriorsGuild.BASEMENT_FLAG);
         }
-        int t = WarriorsGuild.targetDefender(best, basement);
+        int t = WarriorsGuild.targetDefender(progressDefender(p), basement);
         target.put(p.getUUID(), t);
         String keeper = basement ? "Lorelai" : "Kamfreena";
         if (!attackCape(p)) {
@@ -499,29 +521,68 @@ public class WarriorsGuildSession extends MinigameSession {
 
     // ------------------------------------------------------------------ Jimmy's kegs
 
+    /**
+     * Kegs need an empty head, weapon, shield and gloves slot (OSRS Wiki "Keg (Warriors' Guild)"): no helmet, nothing in the
+     * off-hand, no gloves and no weapon or shield in the main hand (other items there, such as the tokens just paid, are only
+     * carried).
+     */
     private static boolean kegReady(ServerPlayer p) {
-        return p.getItemBySlot(EquipmentSlot.HEAD).isEmpty() && p.getMainHandItem().isEmpty() && p.getOffhandItem().isEmpty();
+        return p.getItemBySlot(EquipmentSlot.HEAD).isEmpty() && !wielded(p.getMainHandItem()) && p.getOffhandItem().isEmpty()
+                && SysState.of(p).wornId(com.runecraft.osrs.content.systems.Jewellery.Slot.HANDS).isEmpty();
     }
 
-    private void kegTick() {
-        if (ticks % WarriorsGuild.KEG_INTERVAL != 0) {
-            return;
+    private static boolean wielded(ItemStack s) {
+        if (s.isEmpty()) {
+            return false;
         }
+        com.runecraft.osrs.ItemDef def = com.runecraft.registry.ModItems.def(s);
+        if (def != null && def.equipment() != null) {
+            return def.equipment().slot() == com.runecraft.osrs.EquipmentDef.Slot.WEAPON
+                    || def.equipment().slot() == com.runecraft.osrs.EquipmentDef.Slot.SHIELD;
+        }
+        return s.getItem() instanceof net.minecraft.world.item.TieredItem || s.getItem() instanceof net.minecraft.world.item.ProjectileWeaponItem
+                || s.getItem() instanceof net.minecraft.world.item.ShieldItem || s.getItem() instanceof net.minecraft.world.item.TridentItem
+                || s.getItem() instanceof net.minecraft.world.item.MaceItem;
+    }
+
+    /**
+     * Every tick: balancing kegs uses run energy (the natural restore is cancelled and each keg drains a little more), and the
+     * kegs fall when the player puts on a helmet or takes something in hand. Every {@link WarriorsGuild#KEG_INTERVAL} ticks they
+     * may fall (more likely as energy drops) or pay Strength XP and tokens per keg.
+     */
+    private void kegTick() {
         for (ServerPlayer p : online()) {
             int n = kegs.getOrDefault(p.getUUID(), 0);
             if (n <= 0) {
                 continue;
             }
-            int energy = SysState.of(p).runEnergy / 100;
-            if (random.nextDouble() < WarriorsGuild.kegFallChance(energy, n)) {
-                kegs.remove(p.getUUID());
-                hurt(p, 1 + random.nextInt(WarriorsGuild.KEG_MAX_DAMAGE));
-                Msg.red(p, "The kegs tumble off your head!");
+            if (!kegReady(p)) {
+                dropKegs(p, "The kegs tumble off your head as you reach for your gear!");
+                continue;
+            }
+            SysState.SysPlayer sp = SysState.of(p);
+            int before = sp.runEnergy;
+            int restored = p.isSprinting() ? 0 : RunEnergyService.restorePerTick(p);
+            sp.runEnergy = Math.max(0, sp.runEnergy - restored - WarriorsGuild.kegDrain(n));
+            if (sp.runEnergy / 100 != before / 100) {
+                com.runecraft.content.systems.SysNet.sendState(p);
+            }
+            if (ticks % WarriorsGuild.KEG_INTERVAL != 0) {
+                continue;
+            }
+            if (random.nextDouble() < WarriorsGuild.kegFallChance(sp.runEnergy / 100, n)) {
+                dropKegs(p, "The kegs tumble off your head!");
                 continue;
             }
             xp(p, Skill.STRENGTH, WarriorsGuild.KEG_XP * n);
             tokens(p, WarriorsGuild.KEG_TOKENS * n);
         }
+    }
+
+    private void dropKegs(ServerPlayer p, String message) {
+        kegs.remove(p.getUUID());
+        hurt(p, 1 + random.nextInt(WarriorsGuild.KEG_MAX_DAMAGE));
+        Msg.red(p, message);
     }
 
     /** Kegs on a player's head (public for the self-test). */
@@ -562,7 +623,7 @@ public class WarriorsGuildSession extends MinigameSession {
             }
             case "wg_keg" -> {
                 if (!kegReady(player)) {
-                    Msg.game(player, "Jimmy: You need your head and both hands free to balance kegs!");
+                    Msg.game(player, "Jimmy: You need your head and hands free to balance kegs: no helmet, gloves, weapon or shield!");
                     return true;
                 }
                 int n = kegs.getOrDefault(player.getUUID(), 0);
@@ -651,6 +712,7 @@ public class WarriorsGuildSession extends MinigameSession {
     public void dropDefender(ServerPlayer player, int tier) {
         String item = MinigameItems.DEFENDER_TIERS[tier] + "_defender";
         reward(player, item, 1);
+        rememberDefender(player, tier);
         Msg.red(player, "The cyclops dropped a " + item.replace('_', ' ') + "!");
         if (room == Room.CYCLOPS) {
             target.put(player.getUUID(), -1);
@@ -679,7 +741,7 @@ public class WarriorsGuildSession extends MinigameSession {
         String tokens = "Tokens: " + Inv.count(player, "warrior_guild_token");
         return switch (room) {
             case CYCLOPS, BASEMENT -> {
-                int best = bestDefender(player);
+                int best = progressDefender(player);
                 int t = target(player);
                 yield List.of(room == Room.BASEMENT ? "Warriors' Guild - Basement" : "Warriors' Guild - Cyclops room", tokens,
                         attackCape(player) ? "Attack cape: no tokens needed" : "Next charge: " + time(nextCharge - ticks),

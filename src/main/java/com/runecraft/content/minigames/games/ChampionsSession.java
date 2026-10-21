@@ -192,8 +192,14 @@ public class ChampionsSession extends MinigameSession {
             return;
         }
         for (ServerPlayer p : online()) {
-            // The scroll stays in the pack until the champion falls, so the empty-inventory rules allow it.
-            String broken = broken(p, champion.rule(), Inv.has(p, champion.scroll(), 1));
+            // The scroll stays in the pack until the champion falls, so the empty-inventory rules allow it; dropping it
+            // forfeits the fight (otherwise one scroll could be dropped, the champion beaten and the scroll picked up again).
+            if (!Inv.has(p, champion.scroll(), 1)) {
+                Msg.red(p, "Without the " + champion.name() + "'s scroll the challenge is void: you forfeit the fight.");
+                end(false);
+                return;
+            }
+            String broken = broken(p, champion.rule(), true);
             if (broken != null) {
                 if (champion.rule() == Rule.NO_PRAYER) {
                     PlayerData d = Players.data(p);
@@ -212,11 +218,16 @@ public class ChampionsSession extends MinigameSession {
         if (champion == null || !creatureId.equals(champion.id()) || endAt >= 0) {
             return;
         }
+        // The scroll is used up only now; without it the defeat counts for nothing (it was dropped since the last check).
+        if (Inv.remove(player, champion.scroll(), 1) < 1) {
+            Msg.red(player, "Without the " + champion.name() + "'s scroll the challenge is void: you forfeit the fight.");
+            end(false);
+            return;
+        }
         MinigameData data = MinigameData.of(player);
         data.setFlag(player.getUUID(), ChampionsChallenge.defeatedFlag(champion.id()));
         data.incrementStat(player.getUUID(), "kc:" + game.id());
-        // The scroll is used up only now; the defeat gives Hitpoints and Slayer experience (OSRS Wiki).
-        Inv.remove(player, champion.scroll(), 1);
+        // The defeat gives Hitpoints and Slayer experience (OSRS Wiki).
         int xp = ChampionsChallenge.xp(champion.id());
         xp(player, com.runecraft.osrs.Skill.HITPOINTS, xp);
         xp(player, com.runecraft.osrs.Skill.SLAYER, xp);

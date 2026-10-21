@@ -216,9 +216,47 @@ public final class CombatMinigameSelfTest {
         level(Skill.DEFENCE, 99);
         level(Skill.HITPOINTS, 99);
         player.getInventory().clearContent();
+        MinigameData.of(player).setStat(uuid, WarriorsGuild.DEFENDER_STAT, 0);
+        int mult = Math.max(1, WarriorsGuildSession.tokenMultiplier.applyAsInt(player));
+        // ---- Jimmy's challenge: five kegs on an empty head and hands; balancing drains run energy instead of restoring it, and
+        // putting on a helmet knocks them off.
+        SysState.SysPlayer sp = SysState.of(player);
+        sp.worn.remove(com.runecraft.osrs.content.systems.Jewellery.Slot.HANDS);
+        WarriorsGuildSession kegRoom = wgRoom(WarriorsGuild.KEG_ENTRANCE);
+        try {
+            sp.runEnergy = com.runecraft.osrs.content.systems.RunEnergy.MAX;
+            for (int i = 0; i < WarriorsGuild.MAX_KEGS + 1; i++) {
+                MinigameManager.onBlock(player, "wg_keg", kegRoom.origin.offset(-6 + i % WarriorsGuild.MAX_KEGS * 3, 1, -6));
+            }
+            expect(kegRoom.kegs(player) == WarriorsGuild.MAX_KEGS, kegRoom.kegs(player) + " kegs balanced, not five");
+            int energy = sp.runEnergy;
+            expect(energy <= com.runecraft.osrs.content.systems.RunEnergy.MAX - (WarriorsGuild.MAX_KEGS - 1) * WarriorsGuild.KEG_ENERGY,
+                    "picking up five kegs left " + energy / 100 + "% run energy");
+            tick(kegRoom, WarriorsGuild.KEG_INTERVAL);
+            // Unless the kegs fell on the interval's roll (which ends the drain), eight ticks of five kegs used 8 * 30 energy
+            // or more, and paid five tokens.
+            boolean held = kegRoom.kegs(player) == WarriorsGuild.MAX_KEGS;
+            expect(held ? sp.runEnergy <= energy - WarriorsGuild.KEG_INTERVAL * WarriorsGuild.kegDrain(WarriorsGuild.MAX_KEGS)
+                    : sp.runEnergy < energy, "balancing five kegs for " + WarriorsGuild.KEG_INTERVAL + " ticks used only "
+                    + (energy - sp.runEnergy) + " energy");
+            int kegTokens = Inv.count(player, "warrior_guild_token");
+            expect(!held || kegTokens == WarriorsGuild.MAX_KEGS * WarriorsGuild.KEG_TOKENS * mult, "five kegs paid " + kegTokens + " tokens");
+            if (kegRoom.kegs(player) == 0) {
+                MinigameManager.onBlock(player, "wg_keg", kegRoom.origin.offset(-6, 1, -6));
+            }
+            expect(kegRoom.kegs(player) > 0, "no keg could be picked up again after the kegs fell");
+            player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, new net.minecraft.world.item.ItemStack(
+                    net.minecraft.world.item.Items.IRON_HELMET));
+            tick(kegRoom, 1);
+            expect(kegRoom.kegs(player) == 0, "the kegs stayed on through a helmet");
+        } finally {
+            player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, net.minecraft.world.item.ItemStack.EMPTY);
+            leave(kegRoom);
+        }
+        player.getInventory().clearContent();
+        log.add("kegs: energy drains while balancing, a helmet knocks them off");
         // ---- Animation room: rune armour comes to life and pays 40 tokens (times the Combat Achievement multiplier).
         WarriorsGuildSession anim = wgRoom(Minigame.WARRIORS_GUILD.entranceBlock());
-        int mult = Math.max(1, WarriorsGuildSession.tokenMultiplier.applyAsInt(player));
         try {
             for (String piece : new String[]{"rune_full_helm", "rune_platebody", "rune_platelegs"}) {
                 Inv.give(player, piece, 1);
@@ -286,6 +324,14 @@ public final class CombatMinigameSelfTest {
             leave(top);
         }
         log.add("bronze defender after " + cyclopes + " cyclopes");
+        // The guild remembers the bronze defender: banked, the iron one still drops on the next visit (OSRS Wiki "Defender").
+        Inv.remove(player, "bronze_defender", 1);
+        WarriorsGuildSession banked = wgRoom(WarriorsGuild.CYCLOPS_ENTRANCE);
+        try {
+            expect(banked.target(player) == 1, "with the bronze defender banked the cyclopes drop tier " + banked.target(player));
+        } finally {
+            leave(banked);
+        }
         // Showing a better defender moves the drop up; with a rune defender shown the basement opens.
         Inv.give(player, "rune_defender", 1);
         WarriorsGuildSession again = wgRoom(WarriorsGuild.CYCLOPS_ENTRANCE);
@@ -389,10 +435,11 @@ public final class CombatMinigameSelfTest {
             leave(alch);
         }
         log.add("alchemy: " + points(MinigameCurrencies.MTA_ALCHEMIST) + " Alchemist points");
-        // ---- Enchanting Chamber: shapes from a pile, Lvl-7 Enchant, orbs down the hole.
+        // ---- Enchanting Chamber: shapes from a pile; at 99 Magic without blood and soul runes Lvl-6 Enchant is cast (6 points a
+        // shape), with them Lvl-7 (7); orbs down the hole.
         Inv.give(player, "cosmic_rune", 10);
-        Inv.give(player, "blood_rune", 200);
-        Inv.give(player, "soul_rune", 200);
+        Inv.give(player, "earth_rune", 40);
+        Inv.give(player, "fire_rune", 40);
         MageArenaSession ench = mtaRoom("enchantment");
         try {
             for (int i = 0; i < 3; i++) {
@@ -402,12 +449,21 @@ public final class CombatMinigameSelfTest {
             expect(shapes == 3, "the pile gave " + shapes + " shapes");
             // Each use enchants one shape (bounded: a failed cast leaves the shape, and the use is still the arena's).
             for (int i = 0; i < 3; i++) {
+                if (i == 2) {
+                    Inv.give(player, "blood_rune", 20);
+                    Inv.give(player, "soul_rune", 20);
+                }
+                int spell = i == 2 ? 7 : 6;
                 String shape = Inv.has(player, "mta_cube", 1) ? "mta_cube" : MageTrainingArena.DRAGONSTONE;
+                int before = points(MinigameCurrencies.MTA_ENCHANTMENT);
                 expect(MageArenaSession.useItem(player, shape), "using a " + shape + " wasn't the arena's");
+                int paid = points(MinigameCurrencies.MTA_ENCHANTMENT) - before;
+                // The spell's level, doubled for a dragonstone, +2 on the bonus shape.
+                expect(paid == spell || paid == spell + 2 || paid == 2 * spell, "cast " + (i + 1) + " (Lvl-" + spell + " Enchant on a "
+                        + shape + ") paid " + paid + " points");
             }
+            expect(!Inv.has(player, "blood_rune", 1) && !Inv.has(player, "soul_rune", 1), "Lvl-7 Enchant didn't use the blood and soul runes");
             expect(Inv.count(player, MageTrainingArena.ORB) == 3, Inv.count(player, MageTrainingArena.ORB) + " orbs from three shapes");
-            expect(points(MinigameCurrencies.MTA_ENCHANTMENT) >= 21, "three Lvl-7 enchants paid only "
-                    + points(MinigameCurrencies.MTA_ENCHANTMENT) + " points");
             MinigameManager.onBlock(player, "mta_enchant_hole", ench.origin.offset(0, 1, -2));
             expect(!Inv.has(player, MageTrainingArena.ORB, 1), "the orbs weren't deposited");
         } finally {
