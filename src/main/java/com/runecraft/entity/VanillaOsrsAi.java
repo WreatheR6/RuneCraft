@@ -7,7 +7,6 @@ import com.runecraft.osrs.MonsterAi;
 import com.runecraft.osrs.ThreatTiming;
 import com.runecraft.osrs.data.Monster;
 import com.runecraft.world.Gielinor;
-import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -45,8 +44,6 @@ public final class VanillaOsrsAi implements OsrsCombatant {
     private static final Set<Class<?>> KEEP = Set.of(FloatGoal.class, WaterAvoidingRandomStrollGoal.class, RandomStrollGoal.class,
             LookAtPlayerGoal.class, RandomLookAroundGoal.class);
     private static final Map<Mob, VanillaOsrsAi> INSTALLED = new WeakHashMap<>();
-    private static Field goalField;
-    private static Field targetField;
 
     private final Mob mob;
     private final Monster def;
@@ -160,19 +157,9 @@ public final class VanillaOsrsAi implements OsrsCombatant {
         return out;
     }
 
+    /** A mob's goal or target selector (public through NeoForge's access transformer). */
     private static GoalSelector selector(Mob mob, boolean goals) {
-        try {
-            if (goalField == null) {
-                goalField = Mob.class.getDeclaredField("goalSelector");
-                goalField.setAccessible(true);
-                targetField = Mob.class.getDeclaredField("targetSelector");
-                targetField.setAccessible(true);
-            }
-            return (GoalSelector) (goals ? goalField : targetField).get(mob);
-        } catch (ReflectiveOperationException | RuntimeException e) {
-            com.runecraft.RuneCraft.LOGGER.error("Can't reach the goal selectors of {}", mob, e);
-            return null;
-        }
+        return goals ? mob.goalSelector : mob.targetSelector;
     }
 
     // ------------------------------------------------------------------ OsrsCombatant

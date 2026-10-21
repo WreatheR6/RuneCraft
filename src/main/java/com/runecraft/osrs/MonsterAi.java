@@ -64,7 +64,8 @@ public final class MonsterAi {
 
     /**
      * Monsters that never become tolerant (wiki, Tolerance: Exceptions). Bosses ignore tolerance too, and the God Wars Dungeon's
-     * followers are never tolerant of a player without their god's items (a module rule calms them otherwise).
+     * followers are never tolerant of a player without their god's items (a module rule calms them otherwise). // approx:
+     * Vyrewatch Sentinels tolerate a player in vyre noble clothing, which isn't checked.
      */
     public static final Set<String> NEVER_TOLERANT = Set.of("dark_beast", "lizardman_shaman", "vyrewatch_sentinel",
             "warped_terrorbird", "gorak");
