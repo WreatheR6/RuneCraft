@@ -155,6 +155,14 @@ public final class PrayerService {
         }
     }
 
+    /** Self-test hook: the last message a refused prayer switch gave. */
+    public static volatile String lastRefusal;
+
+    private static void refuse(ServerPlayer player, String message) {
+        lastRefusal = message;
+        Msg.game(player, message);
+    }
+
     private static void toggleRedirected(ServerPlayer player, Prayer prayer) {
         PlayerData data = Players.data(player);
         if (data.isActive(prayer)) {
@@ -163,12 +171,12 @@ public final class PrayerService {
             player.level().playSound(null, player.blockPosition(), SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 0.3f, 1.6f);
         } else {
             if (data.skills().level(Skill.PRAYER) < prayer.level()) {
-                Msg.game(player, "You need a Prayer level of " + prayer.level() + " to use " + prayer.displayName() + ".");
+                refuse(player, "You need a Prayer level of " + prayer.level() + " to use " + prayer.displayName() + ".");
                 return;
             }
             String rule = minigameRule.apply(player, prayer);
             if (rule != null && !rule.isEmpty()) {
-                Msg.game(player, rule);
+                refuse(player, rule);
                 return;
             }
             String locked = rule != null ? null : com.runecraft.osrs.content.quests.QuestUnlocks.prayer(prayer, data.skills(), id -> {
@@ -176,17 +184,17 @@ public final class PrayerService {
                 return q == null || data.questComplete(q);
             });
             if (locked != null) {
-                Msg.game(player, locked);
+                refuse(player, locked);
                 return;
             }
             if (rule == null && prayer.unlockScroll() != null && !scrollRead.test(player, prayer)) {
                 com.runecraft.osrs.ItemDef scroll = com.runecraft.osrs.ItemCatalog.get(prayer.unlockScroll());
-                Msg.game(player, "You need to learn " + prayer.displayName() + " from "
+                refuse(player, "You need to learn " + prayer.displayName() + " from "
                         + (scroll == null ? "a prayer scroll" : Msg.article(scroll.name().toLowerCase(java.util.Locale.ROOT))) + " first.");
                 return;
             }
             if (data.prayerPoints() <= 0) {
-                Msg.game(player, "You have run out of Prayer points, you can recharge at an altar.");
+                refuse(player, "You have run out of Prayer points, you can recharge at an altar.");
                 return;
             }
             // Switching overheads is voluntary too: the one replaced gets the switch grace.
