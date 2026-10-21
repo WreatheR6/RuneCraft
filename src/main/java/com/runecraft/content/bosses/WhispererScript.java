@@ -185,13 +185,39 @@ final class WhispererScript extends ScriptedBoss {
         return rest;
     }
 
-    /** Self-test: her next volley, as magic ({@code true}) and ranged projectiles in order. */
-    void selfTestVolley(boolean[] magic) {
+    /** Drops the running volley and the switch ticks it added, so a volley cut short never shortens the next cycle. */
+    private void cancelVolley() {
         volley.clear();
         volleyExtra = 0;
+    }
+
+    /** Self-test: her next volley, as magic ({@code true}) and ranged projectiles in order. */
+    void selfTestVolley(boolean[] magic) {
+        cancelVolley();
         for (boolean m : magic) {
             volley.add(m ? Dt2Bosses.WHISPER_MAGIC : Dt2Bosses.WHISPER_RANGED);
         }
+    }
+
+    /**
+     * Self-test: a volley of {@code cut} cut short after its first projectile (its switch ticks counted, the list dropped without
+     * a reset, as a special or her enrage could), then her next volley built as in a fight and run through: its game ticks from
+     * first projectile to her next attack, and that volley's OSRS cycle ({@code [actual, osrs]}).
+     */
+    int[] selfTestCycleAfterCutShort(DataBossEntity boss, boolean[] cut) {
+        selfTestVolley(cut);
+        attackDelay(boss, volley.remove(0));
+        volley.clear();
+        newVolley(boss);
+        int n = volley.size();
+        int ticks = 0;
+        int speed = 0;
+        while (!volley.isEmpty()) {
+            AttackDef a = volley.remove(0);
+            speed = super.attackDelay(boss, a);
+            ticks += attackDelay(boss, a);
+        }
+        return new int[] {ticks, (n - 1) * BossRealtime.WHISPERER_VOLLEY_GAP_TICKS + speed};
     }
 
     /** Self-test: projectiles left in her running volley. */
@@ -361,7 +387,7 @@ final class WhispererScript extends ScriptedBoss {
     @Override
     protected AttackDef nextAttack(DataBossEntity boss, ServerPlayer target, double distance) {
         if (distance < 1.6 && echo < 0) {
-            volley.clear(); // she cancels a volley for an immediate melee attack
+            cancelVolley(); // she cancels a volley for an immediate melee attack
             return Dt2Bosses.WHISPER_MELEE;
         }
         if (enraged) {
@@ -371,16 +397,22 @@ final class WhispererScript extends ScriptedBoss {
             return magic ? Dt2Bosses.WHISPER_MAGIC : Dt2Bosses.WHISPER_RANGED;
         }
         if (volley.isEmpty()) {
-            for (boolean magic : BossMechanics.whispererVolley(specialsDone, boss.awakened(), nextMagic)) {
-                volley.add(magic ? Dt2Bosses.WHISPER_MAGIC : Dt2Bosses.WHISPER_RANGED);
-            }
-            nextMagic = boss.getRandom().nextBoolean(); // approx: which style leads each volley
+            newVolley(boss);
         }
         AttackDef a = volley.remove(0);
         if (volley.isEmpty()) {
             tentacles(boss, target);
         }
         return a;
+    }
+
+    /** Builds her next volley; the switch ticks counted from any volley cut short (by a special, her enrage, a whack) start at 0. */
+    private void newVolley(DataBossEntity boss) {
+        volleyExtra = 0;
+        for (boolean magic : BossMechanics.whispererVolley(specialsDone, boss.awakened(), nextMagic)) {
+            volley.add(magic ? Dt2Bosses.WHISPER_MAGIC : Dt2Bosses.WHISPER_RANGED);
+        }
+        nextMagic = boss.getRandom().nextBoolean(); // approx: which style leads each volley
     }
 
     /** Her tentacles surface around the player and converge on the tile they stood on: damage and as much sanity, once. */
@@ -458,7 +490,7 @@ final class WhispererScript extends ScriptedBoss {
         enragePending = false;
         endSpecial(boss, null, false);
         enraged = true;
-        volley.clear();
+        cancelVolley();
         boss.setHealth(Math.max(1f, mcHp(boss, boss.awakened() ? BossMechanics.WHISPERER_ENRAGE_HEAL_AWAKENED
                 : BossMechanics.WHISPERER_ENRAGE_HEAL)));
         BossFx.say(boss, "The Whisperer drags you into the Shadow Realm and attacks in a frenzy!");
@@ -474,7 +506,7 @@ final class WhispererScript extends ScriptedBoss {
         String which = BossMechanics.whispererSpecial(rotation, specialsDone);
         specialsDone++;
         specialTick = 0;
-        volley.clear();
+        cancelVolley();
         Vec3 c = homeVec();
         ServerLevel w = BossFx.world(boss);
         switch (which) {

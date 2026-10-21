@@ -35,6 +35,14 @@ public final class BossRealtimeHooks {
         script(boss, WhispererScript.class).selfTestVolley(magic);
     }
 
+    /**
+     * A volley of {@code cut} cut short after its first projectile, then her next volley built and run through:
+     * {@code [its cycle in game ticks, its OSRS cycle]}.
+     */
+    public static int[] whispererCycleAfterCutShort(DataBossEntity boss, boolean[] cut) {
+        return script(boss, WhispererScript.class).selfTestCycleAfterCutShort(boss, cut);
+    }
+
     // ---------------- Cerberus
 
     /** The triple attack's styles shown over her now, the next first. */

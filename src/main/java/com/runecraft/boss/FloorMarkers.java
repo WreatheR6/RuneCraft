@@ -65,6 +65,8 @@ public final class FloorMarkers {
         private final Entry entry;
         /** The boss or monster it belongs to: released when that leaves the world (unloaded with its chunk too). */
         private final Entity owner;
+        /** The server session it was placed in: a mark from before the server last stopped is released already. */
+        private final int session = FloorMarkers.session;
         private boolean released;
 
         private Mark(Entry entry, Entity owner) {
@@ -77,7 +79,7 @@ public final class FloorMarkers {
         }
 
         public boolean released() {
-            return released;
+            return released || session != FloorMarkers.session;
         }
     }
 
@@ -86,6 +88,12 @@ public final class FloorMarkers {
     private static final Map<Key, Entry> WAITING = new HashMap<>();
     /** Marks with an owner, checked every second for an owner that left the world. */
     private static final List<Mark> OWNED = new ArrayList<>();
+    /**
+     * Bumped when the server stops. Every block went back then, so a mark from an earlier session (a hazard or script still
+     * holding it in the same JVM: single player quit and reopened) is released already and releasing it does nothing: it can't
+     * drop a newer mark's block or park the old, closed world's block as waiting.
+     */
+    private static int session;
     private static boolean registered;
 
     private FloorMarkers() {
@@ -178,7 +186,8 @@ public final class FloorMarkers {
         if (m.owner != null) {
             OWNED.remove(m);
         }
-        if (m.released) {
+        if (m.released()) {
+            m.released = true;
             return;
         }
         m.released = true;
@@ -220,11 +229,20 @@ public final class FloorMarkers {
 
     /** Server stopping: every mark goes back (one in an unloaded chunk stays in the save for the next start). */
     private static void restoreAll(MinecraftServer server) {
+        endSession();
+    }
+
+    /** Self-test: what the server stopping does to the marks (every block put back, every mark held anywhere released). */
+    public static void stopForSelfTest() {
+        endSession();
+    }
+
+    private static void endSession() {
         List<Map.Entry<Key, Entry>> all = new ArrayList<>(LIVE.entrySet());
         all.addAll(WAITING.entrySet());
         LIVE.clear();
         WAITING.clear();
-        OWNED.forEach(m -> m.released = true);
+        session++; // every mark placed so far, owned or not, counts as released from now on
         OWNED.clear();
         for (Map.Entry<Key, Entry> e : all) {
             Entry entry = e.getValue();

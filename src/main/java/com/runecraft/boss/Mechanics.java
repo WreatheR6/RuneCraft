@@ -234,6 +234,8 @@ public final class Mechanics {
     public static void register() {
         ServerTickEvents.END_SERVER_TICK.register(server -> tick());
         OsrsKnockback.register();
+        // hazards don't outlive the server (single player quit and reopened in the same JVM: no old world's hazards ticking on)
+        com.runecraft.platform.ServerLifecycleEvents.SERVER_STOPPING.register(server -> HAZARDS.clear());
         FloorMarkers.register(); // hazards' floor blocks: put back on stop, after a crash and when a chunk loads
     }
 

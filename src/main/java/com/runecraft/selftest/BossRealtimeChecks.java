@@ -286,8 +286,12 @@ final class BossRealtimeChecks {
             int[] magic = damage(com.runecraft.osrs.content.bosses.Dt2Bosses.WHISPER_MAGIC.name());
             int[] ranged = damage(com.runecraft.osrs.content.bosses.Dt2Bosses.WHISPER_RANGED.name());
             expect(magic[2] + ranged[2] == 0, "prayed-against projectiles hurt (" + magic[0] + " magic, " + ranged[0] + " ranged)");
+            // a volley cut short after a switch (by a special or her enrage) leaves nothing behind: the next cycle is OSRS long
+            int[] after = BossRealtimeHooks.whispererCycleAfterCutShort(boss, new boolean[] {true, false, true});
+            expect(after[0] == after[1], "the volley after one cut short lasted " + after[0] + " game ticks (OSRS " + after[1] + ")");
             return "5 alternating projectiles " + (bolts.get(1).threat.dueMc() - bolts.get(0).threat.dueMc()) + "+ MC apart, all blocked by"
-                    + " prayers switched " + REACTION_MC + " MC after each cue; cycle " + cycle / 12 + " ticks as in OSRS";
+                    + " prayers switched " + REACTION_MC + " MC after each cue; cycle " + cycle / 12 + " ticks as in OSRS, also after a"
+                    + " volley cut short";
         } finally {
             finish(boss);
         }
@@ -718,6 +722,29 @@ final class BossRealtimeChecks {
             finish(null);
         }
         expect(FloorMarkers.live() == before, "marks left behind after the bosses: " + (FloorMarkers.live() - before));
+        // the server stops with an acid pool down (single player quit and reopened in the same JVM): its block goes back, and the
+        // pool expiring afterwards neither drops a newer mark on that block nor keeps the block from being marked again
+        Mechanics.addHazard(c.world, at, 3, 2, null, HazardKind.ACID);
+        expect(c.world.getBlockState(floor).is(Blocks.LIME_CONCRETE), "the acid hazard's floor isn't lime before the stop");
+        FloorMarkers.stopForSelfTest();
+        expect(c.world.getBlockState(floor) == original, "the floor wasn't put back when the server stopped");
+        expect(FloorMarkers.live() == 0, "marks left after the server stopped: " + FloorMarkers.live());
+        FloorMarkers.Mark fresh = FloorMarkers.place(c.world, at, HazardKind.POISON);
+        try {
+            expect(fresh != null && c.world.getBlockState(floor).is(Blocks.GREEN_CONCRETE), "the block couldn't be marked again after the"
+                    + " stop (" + c.world.getBlockState(floor) + ")");
+            for (int i = 0; i < 4 * ActionManager.MC_TICKS_PER_GAME_TICK; i++) {
+                ActionManager.advanceForSelfTest();
+                Mechanics.tickForSelfTest();
+            }
+            expect(FloorMarkers.marked(c.world, floor) && c.world.getBlockState(floor).is(Blocks.GREEN_CONCRETE),
+                    "the old acid pool expiring after the stop took the new mark's block (" + c.world.getBlockState(floor) + ")");
+        } finally {
+            FloorMarkers.release(fresh);
+        }
+        expect(c.world.getBlockState(floor) == original, "the floor wasn't put back after the new mark");
+        expect(FloorMarkers.live() == 0, "marks left behind after the stop: " + FloorMarkers.live());
+        out.append("; a server stop puts the floor back and the old pool expiring later leaves newer marks alone");
         return out.toString();
     }
 }
