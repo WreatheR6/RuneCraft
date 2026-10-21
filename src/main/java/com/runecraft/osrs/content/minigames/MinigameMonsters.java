@@ -48,13 +48,17 @@ public final class MinigameMonsters {
                 .attack(melee(AttackType.CRUSH, 7)).size(1.0f, 1.0f, 1.2f).skin(0xA03010, 0x702010, 0x501008, 0xFF8030));
         list.add(m("tz_kek_small", "Tz-Kek", 22).model("tz_kek").stats(10, 20, 20, 20, 1, 1).speed(4)
                 .attack(melee(AttackType.CRUSH, 4)).size(0.7f, 0.7f, 0.8f).skin(0xA03010, 0x702010, 0x501008, 0xFF8030));
+        // Tok-Xil's ranged and Ket-Zek's magic glow in their style for 3 ticks before landing, as the Inferno's
+        // (TzHaarWaves.STYLE_CUE_TICKS). // playability: OSRS players flick between them from the animations
         list.add(m("tok_xil", "Tok-Xil", 90).stats(40, 80, 80, 80, 1, 80).speed(4).defenceBonus(0, 0, 0, 0, 0)
-                .attack(ranged(14, 9)).attack(melee(AttackType.CRUSH, 13).special(Special.NONE, 0))
+                .attack(ranged(14, 9).telegraph(TzHaarWaves.STYLE_CUE_TICKS, null))
+                .attack(melee(AttackType.CRUSH, 13).special(Special.NONE, 0))
                 .size(0.9f, 1.8f, 1.2f).skin(0x903818, 0x602010, 0x401008, 0xFFA040));
         list.add(m("yt_mejkot", "Yt-MejKot", 180).stats(80, 160, 160, 160, 1, 1).speed(4)
                 .attack(melee(AttackType.CRUSH, 25)).size(1.0f, 2.2f, 1.3f).skin(0x8A3010, 0x5A2010, 0x3A1008, 0xFFC050));
         list.add(m("ket_zek", "Ket-Zek", 360).stats(160, 320, 320, 320, 240, 1).speed(4).defenceBonus(0, 0, 0, 0, 0)
-                .attack(magic(52, 12, "minecraft:flame")).attack(melee(AttackType.STAB, 55))
+                .attack(magic(52, 12, "minecraft:flame").telegraph(TzHaarWaves.STYLE_CUE_TICKS, null))
+                .attack(melee(AttackType.STAB, 55))
                 .size(1.1f, 2.6f, 1.4f).skin(0x7A2810, 0x4A1808, 0x2A1008, 0xFFD060));
         list.add(m("yt_hurkot", "Yt-HurKot", 108).stats(60, 140, 100, 60, 1, 1).speed(4).passive()
                 .attack(melee(AttackType.CRUSH, 14)).size(0.8f, 1.8f, 1.0f).skin(0xA04818, 0x703010, 0x502008, 0xFFE070));
@@ -64,8 +68,10 @@ public final class MinigameMonsters {
         // ---------------- The Inferno ----------------
         list.add(m("jal_nib", "Jal-Nib", 32).stats(10, 1, 1, 15, 15, 1).speed(4).passive()
                 .attack(melee(AttackType.CRUSH, 4)).size(0.6f, 0.6f, 0.9f).skin(0x902810, 0x601808, 0x401008, 0xFF6020));
+        // Jal-MejRah, Jal-Xil and Jal-Zek: their ranged and magic attacks glow in their style for 3 ticks before landing
+        // (TzHaarWaves.STYLE_CUE_TICKS). // playability: OSRS players flick between them from the animations, tick by tick
         list.add(m("jal_mejrah", "Jal-MejRah", 85).stats(25, 0, 0, 55, 120, 120).speed(3).flying()
-                .attack(ranged(19, 10)).size(1.0f, 0.9f, 1.1f).skin(0x6A2010, 0x4A1008, 0x2A0808, 0xFF4020));
+                .attack(ranged(19, 10).telegraph(TzHaarWaves.STYLE_CUE_TICKS, null)).size(1.0f, 0.9f, 1.1f).skin(0x6A2010, 0x4A1008, 0x2A0808, 0xFF4020));
         list.add(m("jal_ak", "Jal-Ak", 165).stats(40, 160, 160, 95, 160, 160).speed(6)
                 .attack(melee(AttackType.CRUSH, 29)).attack(ranged(29, 9)).attack(magic(29, 9, "minecraft:flame"))
                 .size(1.2f, 1.2f, 1.4f).skin(0x8A3818, 0x5A2010, 0x3A1008, 0xFF8040));
@@ -78,10 +84,12 @@ public final class MinigameMonsters {
         list.add(m("jal_imkot", "Jal-ImKot", 240).stats(75, 210, 290, 120, 120, 220).speed(4)
                 .attack(melee(AttackType.SLASH, 49)).size(1.3f, 1.6f, 1.4f).skin(0x7A3010, 0x4A2008, 0x2A1008, 0xFF9030));
         list.add(m("jal_xil", "Jal-Xil", 370).stats(125, 140, 180, 60, 90, 250).speed(4)
-                .attack(ranged(46, 12)).attack(melee(AttackType.CRUSH, 19)).size(1.1f, 2.6f, 1.4f)
+                .attack(ranged(46, 12).telegraph(TzHaarWaves.STYLE_CUE_TICKS, null)).attack(melee(AttackType.CRUSH, 19))
+                .size(1.1f, 2.6f, 1.4f)
                 .skin(0x6A2810, 0x4A1808, 0x2A1008, 0xFFB050));
         list.add(m("jal_zek", "Jal-Zek", 490).stats(220, 370, 510, 260, 300, 1).speed(4)
-                .attack(magic(70, 12, "minecraft:flame")).attack(melee(AttackType.STAB, 52)).size(1.3f, 3.0f, 1.5f)
+                .attack(magic(70, 12, "minecraft:flame").telegraph(TzHaarWaves.STYLE_CUE_TICKS, null))
+                .attack(melee(AttackType.STAB, 52)).size(1.3f, 3.0f, 1.5f)
                 .skin(0x5A2010, 0x3A1008, 0x200808, 0xFFC060));
         list.add(m("jaltok_jad", "JalTok-Jad", 900).stats(350, 750, 1020, 480, 510, 1020).speed(8)
                 .attack(magic(113, 14, "minecraft:flame").telegraph(3, "JalTok-Jad rears up!"))

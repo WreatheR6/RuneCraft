@@ -571,6 +571,25 @@ public final class FortisColosseum {
 
     public static final int VOLATILITY_DAMAGE = 15; // approx: "the explosions don't do heavy damage" (no wiki number)
 
+    /**
+     * Game ticks from an enemy's death to its Volatility explosion, its blast square drawn on the floor meanwhile. The wiki's
+     * strategy guide says the explosions "can be dodged" but gives no delay. // approx: the strike floor's 3 ticks
+     * // playability: it went off on the death tick, undodgeable for a melee player
+     */
+    public static final int VOLATILITY_DELAY_TICKS = 3;
+
+    /**
+     * Radius (blocks, horizontal, round the tile's centre) of a strike on one tile: a sky javelin's landing and a Solarflare
+     * orb's burn, as Sol Heredit's lasers ({@link SolHeredit#LASER_RADIUS}). Under 1, so the middle of the next tile is safe.
+     * // playability: OSRS tests the one tile stood on; a Minecraft player straddles blocks
+     */
+    public static final double TILE_STRIKE_RADIUS = SolHeredit.LASER_RADIUS;
+
+    /** Whether a player ({@code dx}, {@code dy}, {@code dz}) from a struck tile's centre is hit. */
+    public static boolean inTileStrike(double dx, double dy, double dz) {
+        return dx * dx + dz * dz <= TILE_STRIKE_RADIUS * TILE_STRIKE_RADIUS && Math.abs(dy) < 2.0;
+    }
+
     /** Molten sand (Reentry, Volatility III): up to 15 damage every two ticks while standing on it. */
     public static final int MOLTEN_SAND_DAMAGE = 15;
 
@@ -658,6 +677,31 @@ public final class FortisColosseum {
     /** The tick orb {@code index} (0-2) of a volley launched on {@code volley} lands. */
     public static long manticoreOrbTick(long volley, int index) {
         return volley + MANTICORE_ORB_LEAD_TICKS + (long) MANTICORE_ORB_GAP_TICKS * index;
+    }
+
+    /**
+     * The ticks a volley launched on {@code volley} lands its three orbs, kept {@link #MANTICORE_ORB_GAP_TICKS} after the last
+     * orb another manticore still has on its way ({@code otherLastOrb}; a large negative number when there is none).
+     *
+     * <p>The two-manticore gap (waves 9-11): two manticores with sight of the player launch 5 ticks apart
+     * ({@link #MANTICORE_STAGGER_TICKS}). In OSRS each volley's orbs land on three consecutive ticks, so the second volley
+     * starts 3 ticks after the first one's melee orb. With the real-time orbs 3, 5 and 7 ticks after the launch, the second
+     * volley's first orb would land a single tick (12 Minecraft ticks) after the first volley's melee orb: a prayer switch
+     * under the 20-tick style spacing. It is pushed to 2 ticks instead, and its other orbs keep their 2-tick gaps
+     * (9, 11 and 13 ticks after the first launch instead of 8, 10 and 12). // playability: the launch stagger, the cadence, the
+     * patterns and 31/36/31 are unchanged; only these landings move, by one tick
+     *
+     * <p>Not modelled: the wiki's warning that two manticores can attack in rapid succession when one was not yet charged as the
+     * other fired (the player popping out of one's line of sight). Here a manticore always waits out the 5-tick stagger behind
+     * another's last volley, the lenient case.
+     */
+    public static long[] manticoreOrbTicks(long volley, long otherLastOrb) {
+        long first = Math.max(manticoreOrbTick(volley, 0), otherLastOrb + MANTICORE_ORB_GAP_TICKS);
+        long[] out = new long[3];
+        for (int i = 0; i < out.length; i++) {
+            out[i] = first + (long) MANTICORE_ORB_GAP_TICKS * i;
+        }
+        return out;
     }
 
     /** Mantimayhem I: each orb hits twice. */

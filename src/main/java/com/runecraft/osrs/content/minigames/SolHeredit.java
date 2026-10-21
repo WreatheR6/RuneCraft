@@ -14,7 +14,8 @@ import java.util.Random;
  * after the second from 50%, each blocked only by Protect from Melee switched on just before it lands; here: on as it lands,
  * see {@link #parried}) and the grapple
  * (below 75%: he calls out one of five gear slots, which must be defended within 4 ticks; defending on the last tick is a
- * perfect parry that makes the player's next attack within 5 ticks a max hit). Phase transitions at 90/75/50/25/10% drop
+ * perfect parry that makes the player's next attack within 5 ticks a max hit; here 6 ticks on the hotbar keys, see
+ * {@link #GRAPPLE_WINDOW_TICKS}). Phase transitions at 90/75/50/25/10% drop
  * six beams of light around the player that leave molten sand, and add a light-beam crystal (up to four) that circles the
  * arena and fires a laser at the player's tile; at 10% he enrages: more sand every 3 ticks, faster lasers.
  *
@@ -84,15 +85,45 @@ public final class SolHeredit {
 
     /** Light beams: one more crystal each phase up to four; 3 ticks to step off the targeted tile (2 when enraged). */
     public static final int MAX_BEAMS = 4;
+    /**
+     * Radius (blocks, horizontal) of a laser's strike outline around the targeted tile's centre: the player is hit when their
+     * position is inside it as it lands. Under 1, so a player standing in the middle of a neighbouring tile is never hit; over a
+     * tile's half width, so standing on the tile's edge is not a dodge. // playability: OSRS hits the one tile; round 41 kept that
+     * tile-exact test under a thin ring (a player half on the tile could be hit or not by a hair)
+     */
+    public static final double LASER_RADIUS = 0.75;
     public static final int LASER_WARNING_TICKS = 3;
     public static final int ENRAGE_LASER_WARNING_TICKS = 2;
     /** Ticks between a crystal's shots: about 7 seconds when enraged; slower before. // approx */
     public static final int LASER_INTERVAL_TICKS = 20;
     public static final int ENRAGE_LASER_INTERVAL_TICKS = 12;
 
-    /** Grapple: 4 ticks to defend the called slot; on the last tick it is a perfect parry (next attack within 5 ticks maxes). */
-    public static final int GRAPPLE_WINDOW_TICKS = 4;
+    /** Grapple (OSRS): 4 ticks to defend the called slot; on the last tick it is a perfect parry. */
+    public static final int OSRS_GRAPPLE_WINDOW_TICKS = 4;
+    /**
+     * Game ticks to defend the called slot here: 6 (3.6 s, about 3.5 s), answered with the hotbar keys 1-5
+     * ({@link #grappleByHotbar}) or the chat links; the last tick (0.6 s) is the perfect parry. // playability: OSRS gives 4 ticks
+     * (2.4 s) to click the slot in the worn-equipment tab, already open in the side panel; here the slot is a key press after
+     * reading his shout, so the window is longer. His 44 max hit, the unequip and the perfect parry's max hit are unchanged, and
+     * his attack cadence still counts the OSRS window ({@link #attackDelay})
+     */
+    public static final int GRAPPLE_WINDOW_TICKS = 6;
+    /** The perfect parry's next attack within 5 ticks is a max hit. */
     public static final int PERFECT_PARRY_TICKS = 5;
+
+    /**
+     * The grapple target answered by hotbar key {@code index} (0 = key 1): 1 body, 2 back, 3 hands, 4 legs, 5 feet (the order of
+     * {@link Grapple}); null for the other keys. // playability: OSRS clicks the slot on the worn-equipment interface
+     */
+    public static Grapple grappleByHotbar(int index) {
+        Grapple[] all = Grapple.values();
+        return index >= 0 && index < all.length ? all[index] : null;
+    }
+
+    /** The hotbar key (1-5) that answers grapple target {@code g}. */
+    public static int hotbarKey(Grapple g) {
+        return g.ordinal() + 1;
+    }
     /** Totemic on wave 12: totems from 50%, healing him 75 every 4.2 seconds (7 ticks), one more every two minutes. */
     public static final int TOTEM_HEAL = 75;
     public static final int TOTEM_HEAL_TICKS = 7;
@@ -200,7 +231,7 @@ public final class SolHeredit {
             case SPEAR_1, SPEAR_2 -> 7 - faster;
             case SHIELD_1, SHIELD_2 -> 6 - faster;
             case TRIPLE -> 3 + tripleGap(1, phase) + tripleGap(2, phase) + 3;
-            case GRAPPLE -> GRAPPLE_WINDOW_TICKS + 3;
+            case GRAPPLE -> OSRS_GRAPPLE_WINDOW_TICKS + 3;
         };
     }
 

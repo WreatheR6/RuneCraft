@@ -396,7 +396,11 @@ public final class ColosseumWalk {
             BlockPos tile = sandFree(shaman);
             moveTo(tile.east());
             kill(shaman, AttackType.SLASH, "the shaman");
-            expect(session.sandAt(tile), "Volatility III left no molten sand on the shaman's tile");
+            // Round 42 playability: it goes off FortisColosseum.VOLATILITY_DELAY_TICKS after the death (dodgeable), not on it.
+            expect(!session.sandAt(tile) && session.explosionsPendingForTest() >= 1,
+                    "the shaman exploded on its death tick (" + session.explosionsPendingForTest() + " pending)");
+            until(() -> session.sandAt(tile), FortisColosseum.VOLATILITY_DELAY_TICKS + 1, "the shaman's explosion never went off");
+            expect(session.explosionsPendingForTest() == 0, "the shaman's explosion is still pending");
             expect("magma_block".equals(blockId(tile.below())), "Volatility III's molten sand is not on the floor under the shaman "
                     + "(found " + blockId(tile.below()) + ")");
             volatilitySand = tile;
@@ -427,9 +431,18 @@ public final class ColosseumWalk {
             List<AttackType> b = session.manticorePattern(manticores.get(1));
             expect(a != null && a.equals(b), "the second manticore did not copy the first's pattern (" + a + " / " + b + ")");
             long gap = session.manticoreVolleyAt(manticores.get(1)) - session.manticoreVolleyAt(manticores.get(0));
+            // Round 42 playability: the second volley's orbs land at least 2 ticks after the first's melee orb (the
+            // two-manticore gap was a single tick), every orb of the six 2 ticks apart.
+            List<Long> lands = session.orbLandingsForTest();
+            expect(lands.size() >= 6, lands.size() + " orbs queued by two manticores (expected 6)");
+            for (int i = 1; i < lands.size(); i++) {
+                expect(lands.get(i) - lands.get(i - 1) >= FortisColosseum.MANTICORE_ORB_GAP_TICKS,
+                        "two manticores' orbs land " + (lands.get(i) - lands.get(i - 1)) + " tick(s) apart: " + lands);
+            }
             expect(gap >= FortisColosseum.MANTICORE_STAGGER_TICKS, "volleys only " + gap + " ticks apart");
-            // both volleys land (the later one's last orb 7 ticks after its staggered launch)
-            until(() -> session.orbsPending() == 0, (int) gap + (int) FortisColosseum.manticoreOrbTick(0, 2) + 2,
+            // both volleys land (the later one's last orb 7 ticks after its staggered launch, pushed by up to the orb gap)
+            until(() -> session.orbsPending() == 0, (int) gap + (int) FortisColosseum.manticoreOrbTick(0, 2)
+                    + FortisColosseum.MANTICORE_ORB_GAP_TICKS + 2,
                     "the two manticores' orbs never all landed");
             done.add("manticores share " + a + ", volleys " + gap + " ticks apart");
         }
@@ -491,10 +504,21 @@ public final class ColosseumWalk {
         notes.add("Sol opened with " + script.previous());
         // A grapple defended on its last tick is a perfect parry; an undefended one tears the body armour off.
         moveTo(sol.blockPosition().east(2));
+        // Round 42 playability: answered on the hotbar keys (4 = legs) on the window's last tick, as a player presses it.
+        int heldBefore = player.getInventory().selected;
         script.selfTestGrapple(boss, player, SolHeredit.Grapple.LEGS);
+        session.grappleKeys();
+        expect(session.grappleKeysArmed(player) && SolHeredit.grappleByHotbar(player.getInventory().selected) == null,
+                "the grapple did not move the held slot off keys 1-5 (slot " + player.getInventory().selected + ")");
         tick(SolHeredit.GRAPPLE_WINDOW_TICKS - 1);
-        expect(SolHereditScript.parry(player, "legs"), "defending the called slot failed");
+        expect(SolHereditScript.calledFor(player) == SolHeredit.Grapple.LEGS, "the grapple landed before its last tick");
+        player.getInventory().selected = SolHeredit.hotbarKey(SolHeredit.Grapple.LEGS) - 1; // what the client's key 4 sends
+        session.grappleKeys();
+        expect(SolHereditScript.calledFor(player) == null, "hotbar key 4 did not answer the legs grapple");
         expect(SolHereditScript.perfectReady(player), "a parry on the last tick was not perfect");
+        session.grappleKeys();
+        expect(!session.grappleKeysArmed(player) && player.getInventory().selected == heldBefore,
+                "the held slot did not come back after the grapple (slot " + player.getInventory().selected + ")");
         int rolled = CombatHandler.hookAfterRoll(player, sol, AttackType.SLASH, 1, 47);
         expect(rolled >= 47, "the perfect parry's next attack rolled " + rolled + " (expected its max hit, 47)");
         CombatHandler.hookAfterHit(player, sol, AttackType.SLASH, 0);
@@ -517,7 +541,8 @@ public final class ColosseumWalk {
                 "an undefended grapple with a full inventory put the armour on the floor");
         player.setItemSlot(EquipmentSlot.CHEST, ItemStack.EMPTY);
         restoreInventory(kept);
-        notes.add("grapple: perfect parry, armour torn off, kept on with a full inventory");
+        notes.add("grapple: perfect parry on hotbar key 4 in its last tick of " + SolHeredit.GRAPPLE_WINDOW_TICKS
+                + ", armour torn off, kept on with a full inventory");
         moveTo(sol.blockPosition().east(2));
         notes.add(walkTriple(script));
         // The phases down to the enrage. Totemic (forced on wave 4, kept for the run) raises a healing totem near his south-west
@@ -539,6 +564,7 @@ public final class ColosseumWalk {
             totems += broken;
         }
         expect(script.phase() == 6, "Sol Heredit is in phase " + script.phase() + " below 10% (expected the enrage, 6)");
+        notes.add(walkLasers());
         expect(totems > 0 || !totemic, "Totemic raised no healing totem beside Sol Heredit at half health");
         expect(sol.getHealth() < sol.getMaxHealth() * FortisColosseum.SHOWBOATING_BELOW_PERCENT / 100f, "Sol Heredit is back at "
                 + Math.round(sol.getHealth() * 100f / sol.getMaxHealth()) + "% before the salutes (" + totems + " totems broken)");
@@ -693,6 +719,34 @@ public final class ColosseumWalk {
             player.getInventory().items.set(i, i < size - free ? junk.copy() : ItemStack.EMPTY);
         }
         return kept;
+    }
+
+    /**
+     * Round 42 playability: Sol Heredit's enraged light-beam lasers are strikes: each outline (radius {@link
+     * SolHeredit#LASER_RADIUS} round the targeted tile) is drawn the tick it is made and redrawn, and lands at least the strike
+     * floor's 3 game ticks later (OSRS 2 when enraged), through the scripted-boss strike recorder. Returns a note.
+     */
+    private String walkLasers() {
+        List<com.runecraft.osrs.ArenaTiming.StrikeTrace> lasers = new ArrayList<>();
+        java.util.function.Consumer<com.runecraft.osrs.ArenaTiming.StrikeTrace> before =
+                com.runecraft.content.bosses.ScriptedBoss.strikeListener;
+        com.runecraft.content.bosses.ScriptedBoss.strikeListener = t -> {
+            before.accept(t);
+            if (t.maxDamage() == SolHeredit.LASER_MAX_HIT && Math.abs(t.radius() - SolHeredit.LASER_RADIUS) < 1e-9) {
+                lasers.add(t);
+            }
+        };
+        try {
+            until(() -> !lasers.isEmpty(), SolHeredit.ENRAGE_LASER_INTERVAL_TICKS + 2 * com.runecraft.osrs.ArenaTiming.STRIKE_FLOOR_TICKS + 6,
+                    "no light-beam laser landed while Sol Heredit was enraged");
+        } finally {
+            com.runecraft.content.bosses.ScriptedBoss.strikeListener = before;
+        }
+        com.runecraft.osrs.ArenaTiming.StrikeTrace t = lasers.get(0);
+        expect(t.firstDrawnMc() == t.createdMc(), "a laser's outline was not drawn as it was made");
+        expect(t.leadMc() >= com.runecraft.osrs.ArenaTiming.MIN_LEAD_MC, "a laser landed " + t.leadMc() + " MC after its outline");
+        expect(t.draws() >= 2, "a laser's outline was drawn " + t.draws() + " time(s)");
+        return "lasers on the strike outline (lead " + t.leadMc() + " MC, " + t.draws() + " draws)";
     }
 
     /** Damage of each triple-attack thrust that reached the walking player (through the damage hooks), in order. */

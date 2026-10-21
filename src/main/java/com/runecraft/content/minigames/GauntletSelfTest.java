@@ -375,6 +375,8 @@ public final class GauntletSelfTest {
         int maxTornadoes = 0;
         boolean floor = false;
         boolean orange = false;
+        int litAt = -1;
+        int burntAt = -1;
         try {
             for (int t = 0; t < 120; t++) {
                 tick();
@@ -384,6 +386,12 @@ public final class GauntletSelfTest {
                 maxTornadoes = Math.max(maxTornadoes, v.tornadoes());
                 floor |= v.floorTiles() > 0;
                 orange |= v.floorOrange();
+                if (v.floorTiles() > 0 && litAt < 0) {
+                    litAt = t;
+                }
+                if (v.floorOrange() && burntAt < 0) {
+                    burntAt = t;
+                }
                 if (backToRanged && maxTornadoes > 0 && orange && t > 40) {
                     break;
                 }
@@ -397,6 +405,8 @@ public final class GauntletSelfTest {
         expect(sawMagic && backToRanged, "the Hunllef did not switch styles every four attacks (" + attacks + ")");
         expect(maxTornadoes == Gauntlet.tornadoes(mode, 100), "the Hunllef summoned " + maxTornadoes + " tornadoes at full health");
         expect(floor && orange, "the floor never lit up (tiles " + floor + ", orange " + orange + ")");
+        // Round 42 playability: the tiles warn for at least the strike floor's 3 ticks before they burn.
+        expect(burntAt - litAt >= Gauntlet.FLOOR_MIN_WARN_TICKS, "the floor burnt " + (burntAt - litAt) + " tick(s) after it lit");
         prayerDisable(mode, boss);
         // Its prayer: six off-prayer hits of one style make it protect from that style, which then does nothing.
         AttackType prays = BossSelfTests.hunllef(boss).prays();

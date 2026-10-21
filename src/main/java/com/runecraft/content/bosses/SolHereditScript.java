@@ -29,9 +29,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
@@ -39,9 +37,10 @@ import java.util.UUID;
 /**
  * Sol Heredit ({@link SolHeredit}): spear and shield AoEs dodged by position (the safe tiles are drawn from the wind-up; the
  * dust covers the pattern's tiles, prayer doesn't help), the triple parry (Protect from Melee on as each called-out hit
- * lands), the grapple (a gear slot to defend
- * within 4 ticks: chat links run {@code /solheredit parry <slot>}; the last tick is a perfect parry and the next attack within
- * 5 ticks is a max hit), phase transitions with molten sand and light-beam crystals, and the enrage at 10%.
+ * lands), the grapple (a gear slot to defend within {@link SolHeredit#GRAPPLE_WINDOW_TICKS} ticks: the hotbar keys 1-5 in the
+ * Colosseum ({@code ColosseumSession.grappleKeys}) or the chat links running {@code /solheredit parry <slot>}; the last tick
+ * is a perfect parry and the next attack within 5 ticks is a max hit), phase transitions with molten sand and light-beam
+ * crystals (their lasers are strikes: the outline drawn at once, the hit test horizontal), and the enrage at 10%.
  */
 public final class SolHereditScript extends ScriptedBoss {
     /** Players with a grapple to defend, and the script that called it. */
@@ -77,8 +76,7 @@ public final class SolHereditScript extends ScriptedBoss {
     private long protectSince = -1;
     /** The real Minecraft tick the pending regular attack's tiles were last drawn on. */
     private long aoeDrawnMc;
-    // Light beams.
-    private final List<long[]> lasers = new ArrayList<>();
+    // Light beams (their lasers are strikes).
     private long nextLaser;
     private int beamIndex;
     private long nextSand;
@@ -141,6 +139,12 @@ public final class SolHereditScript extends ScriptedBoss {
             Msg.game(p, "You successfully defend from Sol Heredit's grapple!");
         }
         return true;
+    }
+
+    /** The slot an unanswered grapple on {@code p} calls, or null (the Colosseum answers it from the hotbar keys). */
+    public static Grapple calledFor(ServerPlayer p) {
+        SolHereditScript s = GRAPPLED.get(p.getUUID());
+        return s == null || s.answered || s.grapple == null ? null : s.grapple;
     }
 
     /** A wrong slot leaves the grapple undefended: it lands on the next game tick (and {@link #answered} refuses a retry). */
@@ -448,7 +452,7 @@ public final class SolHereditScript extends ScriptedBoss {
         BossFx.say(boss, "Sol Heredit: " + grapple.shout);
         MutableComponent line = Component.literal("Defend: ").withStyle(ChatFormatting.GRAY);
         for (Grapple g : Grapple.values()) {
-            String label = g.slot.substring(0, 1).toUpperCase() + g.slot.substring(1);
+            String label = SolHeredit.hotbarKey(g) + " " + g.slot.substring(0, 1).toUpperCase() + g.slot.substring(1);
             line.append(Component.literal("[" + label + "]").withStyle(st -> st.withColor(ChatFormatting.GOLD)
                     .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/solheredit parry " + g.slot))
                     .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Defend your " + g.slot)))))
@@ -503,25 +507,13 @@ public final class SolHereditScript extends ScriptedBoss {
         return true;
     }
 
-    /** Light-beam crystals: each shot targets the player's tile and lands a few ticks later. */
+    /**
+     * Light-beam crystals: each shot targets the player's tile and lands a few ticks later, as a strike (round 42): its outline
+     * ({@link SolHeredit#LASER_RADIUS} round the tile's centre) drawn at once and redrawn, a bell as it lands, and the hit test
+     * horizontal within that outline. // playability: OSRS hits the one tile; round 41 kept it tile-exact under a thin ring
+     */
     private void tickLasers(DataBossEntity boss, ServerPlayer target) {
         ServerLevel world = BossFx.world(boss);
-        for (int i = lasers.size() - 1; i >= 0; i--) {
-            long[] l = lasers.get(i);
-            Vec3 at = new Vec3(l[1] + 0.5, l[2], l[3] + 0.5);
-            if (now < l[0]) {
-                BossFx.ring(world, at, 0.6, ParticleTypes.END_ROD);
-                continue;
-            }
-            lasers.remove(i);
-            world.sendParticles(ParticleTypes.FLASH, at.x, at.y + 0.5, at.z, 1, 0, 0, 0, 0);
-            for (ServerPlayer p : BossFx.players(boss, 24)) {
-                if (p.getBlockX() == l[1] && p.getBlockZ() == l[3]) {
-                    CombatHooks.nameAttack("laser", null);
-                    CombatHandler.applyDamage(boss, p, random.nextInt(SolHeredit.LASER_MAX_HIT + 1));
-                }
-            }
-        }
         int beams = SolHeredit.beams(phase);
         if (target == null || beams == 0 || now < nextLaser) {
             return;
@@ -533,11 +525,17 @@ public final class SolHereditScript extends ScriptedBoss {
         double angle = (beamIndex++ % 8) * Math.PI / 4;
         Vec3 crystal = new Vec3(t.getX() + 0.5 + Math.cos(angle) * 8, target.getY() + 1, t.getZ() + 0.5 + Math.sin(angle) * 8);
         world.sendParticles(ParticleTypes.END_ROD, crystal.x, crystal.y, crystal.z, 6, 0.2, 0.2, 0.2, 0.0);
-        // the enraged 2-tick warning gets the strike floor // playability: OSRS 3 ticks to step off, 2 when enraged
-        int warning = Math.max(ArenaTiming.STRIKE_FLOOR_TICKS,
-                enraged ? SolHeredit.ENRAGE_LASER_WARNING_TICKS : SolHeredit.LASER_WARNING_TICKS);
-        lasers.add(new long[]{now + warning,
-                t.getX(), (long) Math.floor(target.getY()), t.getZ()});
-        Msg.action(target, "A beam of light locks onto you!");
+        Vec3 at = new Vec3(t.getX() + 0.5, Math.floor(target.getY()), t.getZ() + 0.5);
+        // the beam of light from the crystal to the tile, then the strike on it
+        Vec3 d = at.subtract(crystal);
+        for (int i = 0; i <= 10; i++) {
+            Vec3 p = crystal.add(d.scale(i / 10.0));
+            world.sendParticles(ParticleTypes.END_ROD, p.x, p.y, p.z, 1, 0, 0, 0, 0);
+        }
+        // the enraged 2-tick warning gets the strike floor (ScriptedBoss.strike) // playability: OSRS 3 ticks to step off, 2
+        // when enraged
+        namedStrike("laser", boss, at, enraged ? SolHeredit.ENRAGE_LASER_WARNING_TICKS : SolHeredit.LASER_WARNING_TICKS,
+                SolHeredit.LASER_MAX_HIT, SolHeredit.LASER_RADIUS, ParticleTypes.END_ROD);
+        Msg.telegraph(target, "A beam of light locks onto you!", ChatFormatting.GOLD);
     }
 }

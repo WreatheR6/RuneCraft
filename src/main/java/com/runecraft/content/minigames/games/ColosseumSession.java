@@ -138,6 +138,12 @@ public class ColosseumSession extends MinigameSession {
     private record Javelin(LivingEntity colossus, BlockPos target, long lands) {
     }
 
+    /** A Volatility explosion on its way: the enemy's centre tile, its size, the tier, the game tick it goes off, its wave. */
+    private record Explosion(BlockPos at, int size, int tier, long landsAt, int wave) {
+    }
+
+    private final List<Explosion> explosions = new ArrayList<>();
+
     private record Totem(LivingEntity totem, LivingEntity enemy, long born) {
     }
 
@@ -146,7 +152,13 @@ public class ColosseumSession extends MinigameSession {
 
     public ColosseumSession(int id, int slot, ServerLevel world, String variant) {
         super(Minigame.FORTIS_COLOSSEUM, id, slot, world, variant);
+        LIVE.add(this);
     }
+
+    /** Runs whose players may be answering Sol Heredit's grapple with the hotbar keys (checked every Minecraft tick). */
+    private static final Set<ColosseumSession> LIVE = java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
+    /** Players answering a grapple: the hotbar slot they held when it was called (given back once it is answered or lands). */
+    private final Map<java.util.UUID, Integer> grappleHotbar = new HashMap<>();
 
     /** Children of the Sun opens Varlamore and the Colosseum; Minimus must have briefed the player once. */
     public static String requirement(ServerPlayer player) {
@@ -473,6 +485,7 @@ public class ColosseumSession extends MinigameSession {
         if (state == State.FIGHTING) {
             sandTick(); // molten sand only burns during a wave
         }
+        volatilityTick();
         if (state != State.DONE) {
             frailtyTick();
         }
@@ -791,18 +804,110 @@ public class ColosseumSession extends MinigameSession {
         if (tier <= 0) {
             return;
         }
-        int size = FortisColosseum.size(creatureId);
-        BlockPos at = entity.blockPosition();
+        // it goes off FortisColosseum.VOLATILITY_DELAY_TICKS later, its blast square drawn meanwhile (mcTick) // playability:
+        // it went off on the death tick ("can be dodged", wiki strategy guide)
+        explosions.add(new Explosion(entity.blockPosition(), FortisColosseum.size(creatureId), tier,
+                ticks + FortisColosseum.VOLATILITY_DELAY_TICKS, wave));
+        drawExplosions();
+        world.playSound(null, entity.blockPosition(), net.minecraft.sounds.SoundEvents.TNT_PRIMED, net.minecraft.sounds.SoundSource.HOSTILE,
+                0.8f, 1.2f);
+    }
+
+    /** Volatility explosions whose delay is over go off (in any state: an enemy killed as its wave ends still explodes). */
+    private void volatilityTick() {
+        if (explosions.isEmpty()) {
+            return;
+        }
+        List<Explosion> due = new ArrayList<>();
+        explosions.removeIf(e -> {
+            if (ticks < e.landsAt()) {
+                return false;
+            }
+            due.add(e);
+            return true;
+        });
+        for (Explosion e : due) {
+            if (!isEnded()) {
+                detonate(e);
+            }
+        }
+    }
+
+    private void detonate(Explosion e) {
+        int tier = e.tier();
+        int size = e.size();
+        BlockPos at = e.at();
         int r = FortisColosseum.volatilityRadius(size, tier);
-        world.sendParticles(ParticleTypes.EXPLOSION, entity.getX(), entity.getY() + 1, entity.getZ(), 4 + r, r / 2.0, 0.5, r / 2.0, 0);
+        world.sendParticles(ParticleTypes.EXPLOSION, at.getX() + 0.5, at.getY() + 1, at.getZ() + 0.5, 4 + r, r / 2.0, 0.5, r / 2.0, 0);
         for (ServerPlayer p : online()) {
             if (FortisColosseum.volatilityHits(size, tier, p.getBlockX() - at.getX(), p.getBlockZ() - at.getZ())) {
                 CombatHooks.nameAttack("volatility", null);
                 hurt(p, 1 + random.nextInt(FortisColosseum.VOLATILITY_DAMAGE));
             }
         }
-        if (tier >= 3) {
-            addSand(at.subtract(origin), active.getOrDefault(Modifier.REENTRY, 0) >= 2);
+        boolean permanent = active.getOrDefault(Modifier.REENTRY, 0) >= 2;
+        // its temporary sand lasts the wave: one that goes off after its wave ended leaves none
+        if (tier >= 3 && (permanent || state == State.FIGHTING && wave == e.wave())) {
+            addSand(at.subtract(origin), permanent);
+        }
+    }
+
+    /** Pending Volatility explosions' blast squares (the tiles their test hits), brighter in the last half second. */
+    private void drawExplosions() {
+        for (Explosion e : explosions) {
+            int r = FortisColosseum.volatilityRadius(e.size(), e.tier());
+            boolean landing = (e.landsAt() - ticks) * 12 <= com.runecraft.osrs.ArenaTiming.FINAL_CUE_MC;
+            drawSquare(e.at().getX() - r, e.at().getZ() - r, e.at().getX() + r + 1, e.at().getZ() + r + 1, e.at().getY(), landing);
+        }
+    }
+
+    /** A dust outline round the floor area from block ({@code x0}, {@code z0}) to ({@code x1}, {@code z1}). */
+    private void drawSquare(double x0, double z0, double x1, double z1, int floorY, boolean landing) {
+        var dust = landing ? com.runecraft.boss.StrikeMarkers.OUTLINE_LANDING : com.runecraft.boss.StrikeMarkers.OUTLINE;
+        double y = floorY + 0.1;
+        double step = Math.max(0.5, (x1 - x0) / 16);
+        for (double d = 0; d <= x1 - x0 + 1e-6; d += step) {
+            world.sendParticles(dust, x0 + d, y, z0, 1, 0, 0, 0, 0);
+            world.sendParticles(dust, x0 + d, y, z1, 1, 0, 0, 0, 0);
+        }
+        for (double d = 0; d <= z1 - z0 + 1e-6; d += step) {
+            world.sendParticles(dust, x0, y, z0 + d, 1, 0, 0, 0, 0);
+            world.sendParticles(dust, x1, y, z0 + d, 1, 0, 0, 0, 0);
+        }
+    }
+
+    /**
+     * Every Minecraft tick: the grapple keys; every {@link com.runecraft.osrs.ArenaTiming#REDRAW_MC}: the floor markers of what
+     * is about to land (Volatility squares, sky javelin targets, Solarflare orbs and their next tile). // playability: OSRS
+     * shows the javelin's shadow and the orb itself
+     */
+    private void mcTick(long mc) {
+        grappleKeys();
+        if (mc % com.runecraft.osrs.ArenaTiming.REDRAW_MC != 0) {
+            return;
+        }
+        drawExplosions();
+        for (Javelin j : javelins) {
+            BlockPos t = j.target();
+            boolean landing = (j.lands() - ticks) * 12 <= com.runecraft.osrs.ArenaTiming.FINAL_CUE_MC;
+            com.runecraft.boss.StrikeMarkers.ring(world, new net.minecraft.world.phys.Vec3(t.getX() + 0.5, t.getY(), t.getZ() + 0.5),
+                    FortisColosseum.TILE_STRIKE_RADIUS, ParticleTypes.CRIT, landing,
+                    com.runecraft.osrs.ArenaTiming.ringPoints(FortisColosseum.TILE_STRIKE_RADIUS, 1));
+        }
+        int tier = active.getOrDefault(Modifier.SOLARFLARE, 0);
+        if (tier > 0 && state == State.FIGHTING) {
+            boolean solWave = wave >= FortisColosseum.WAVES;
+            for (int o = 0; o < FortisColosseum.solarflareOrbs(solWave); o++) {
+                List<int[]> path = FortisColosseum.solarflarePath(solWave, o);
+                int[] now = path.get(flareIndex[o] % path.size());
+                int[] next = path.get((flareIndex[o] + 1) % path.size());
+                BlockPos at = rel(now[0], 1, now[1]);
+                com.runecraft.boss.StrikeMarkers.ring(world, new net.minecraft.world.phys.Vec3(at.getX() + 0.5, at.getY(), at.getZ() + 0.5),
+                        FortisColosseum.TILE_STRIKE_RADIUS, null, true, 8);
+                BlockPos to = rel(next[0], 1, next[1]);
+                com.runecraft.boss.StrikeMarkers.ring(world, new net.minecraft.world.phys.Vec3(to.getX() + 0.5, to.getY(), to.getZ() + 0.5),
+                        FortisColosseum.TILE_STRIKE_RADIUS, null, false, 6);
+            }
         }
     }
 
@@ -822,7 +927,7 @@ public class ColosseumSession extends MinigameSession {
         }
         mob.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
         javelins.add(new Javelin(mob, target.blockPosition(), ticks + FortisColosseum.JAVELIN_FLIGHT_TICKS));
-        Msg.action(target, "The Javelin Colossus launches a javelin high into the air!");
+        Msg.telegraph(target, "The Javelin Colossus launches a javelin high into the air!", ChatFormatting.GOLD);
         return true;
     }
 
@@ -846,7 +951,8 @@ public class ColosseumSession extends MinigameSession {
             world.sendParticles(ParticleTypes.EXPLOSION, t.getX() + 0.5, t.getY() + 0.5, t.getZ() + 0.5, 1, 0, 0, 0, 0);
             LivingEntity source = j.colossus().isAlive() ? j.colossus() : null;
             for (ServerPlayer p : online()) {
-                if (p.getBlockX() == t.getX() && p.getBlockZ() == t.getZ()) {
+                // within the tile's strike outline (mcTick draws it) // playability: OSRS hits the one tile
+                if (FortisColosseum.inTileStrike(p.getX() - (t.getX() + 0.5), p.getY() - t.getY(), p.getZ() - (t.getZ() + 0.5))) {
                     CombatHooks.nameAttack("sky_javelin", null);
                     int dmg = random.nextInt(FortisColosseum.JAVELIN_MAX_HIT + 1);
                     if (source != null) {
@@ -890,9 +996,18 @@ public class ColosseumSession extends MinigameSession {
         long at = FortisColosseum.manticoreVolleyTick(ticks, other);
         manticoreVolleys.put(id, at);
         int hits = FortisColosseum.manticoreHitsPerOrb(tier);
+        // Another manticore's orbs still on their way to this player: this volley's land at least 2 ticks after its last
+        // (FortisColosseum.manticoreOrbTicks: the two-manticore gap would otherwise be a single tick).
+        long otherLastOrb = Long.MIN_VALUE / 2;
+        for (Orb o : orbs) {
+            if (o.mob() != mob && o.player() == target) {
+                otherLastOrb = Math.max(otherLastOrb, o.due());
+            }
+        }
+        long[] lands = FortisColosseum.manticoreOrbTicks(at, otherLastOrb);
         for (int i = 0; i < pattern.size(); i++) {
             // the first orb no longer lands at once: 3, 5 and 7 ticks after the launch // playability: OSRS a tick apart
-            orbs.add(new Orb(mob, target, pattern.get(i), FortisColosseum.manticoreOrbTick(at, i), hits));
+            orbs.add(new Orb(mob, target, pattern.get(i), lands[Math.min(i, lands.length - 1)], hits));
         }
         world.sendParticles(ParticleTypes.ENCHANT, mob.getX(), mob.getY() + mob.getBbHeight(), mob.getZ(), 20, 0.5, 0.4, 0.5, 0.2);
         announceVolley(target, pattern);
@@ -934,6 +1049,7 @@ public class ColosseumSession extends MinigameSession {
         Map<LivingEntity, Integer> stacked = new HashMap<>();
         List<Orb> sorted = new ArrayList<>(orbs);
         sorted.sort(java.util.Comparator.comparingLong(Orb::due));
+        boolean first = true;
         for (Orb o : sorted) {
             LivingEntity m = o.mob();
             if (!m.isAlive()) {
@@ -941,7 +1057,16 @@ public class ColosseumSession extends MinigameSession {
             }
             int level = stacked.merge(m, 1, Integer::sum) - 1;
             var dust = o.type() == AttackType.MAGIC ? ORB_MAGIC : o.type() == AttackType.RANGED ? ORB_RANGED : ORB_MELEE;
-            world.sendParticles(dust, m.getX(), m.getY() + m.getBbHeight() + 0.4 + level * 0.6, m.getZ(), 4, 0.12, 0.12, 0.12, 0.0);
+            double y = m.getY() + m.getBbHeight() + 0.4 + level * 0.6;
+            // the bottom orb of each stack lands next: drawn bigger // playability (round 42)
+            world.sendParticles(dust, m.getX(), y, m.getZ(), level == 0 ? 9 : 4, level == 0 ? 0.2 : 0.12, level == 0 ? 0.2 : 0.12,
+                    level == 0 ? 0.2 : 0.12, 0.0);
+            if (first && o.due() - ticks <= 1 && o.player().isAlive()) {
+                // the orb landing within a game tick: a ring of its colour round the player it is aimed at
+                int rgb = o.type() == AttackType.MAGIC ? Msg.MAGIC_RGB : o.type() == AttackType.RANGED ? Msg.RANGED_RGB : Msg.MELEE_RGB;
+                com.runecraft.boss.ThreatCues.ring(world, o.player().position(), 0.7, rgb, null, true);
+            }
+            first = false;
         }
     }
 
@@ -988,6 +1113,21 @@ public class ColosseumSession extends MinigameSession {
     /** How many manticore orbs and sky javelins are on their way (self-test). */
     public int orbsPending() {
         return orbs.size();
+    }
+
+    /** Volatility explosions waiting to go off (self-test). */
+    public int explosionsPendingForTest() {
+        return explosions.size();
+    }
+
+    /** The game ticks the manticore orbs on their way land on, earliest first (self-test). */
+    public List<Long> orbLandingsForTest() {
+        List<Long> out = new ArrayList<>();
+        for (Orb o : orbs) {
+            out.add(o.due());
+        }
+        out.sort(null);
+        return out;
     }
 
     public int javelinsPending() {
@@ -1272,7 +1412,8 @@ public class ColosseumSession extends MinigameSession {
                 continue;
             }
             for (ServerPlayer p : online()) {
-                if (p.getBlockX() == orb.getX() && p.getBlockZ() == orb.getZ()) {
+                // within the orb tile's outline (mcTick draws it and the next tile) // playability: OSRS burns the one tile
+                if (FortisColosseum.inTileStrike(p.getX() - (orb.getX() + 0.5), p.getY() - orb.getY(), p.getZ() - (orb.getZ() + 0.5))) {
                     CombatHooks.nameAttack("solarflare", null);
                     hurt(p, 1 + random.nextInt(FortisColosseum.solarflareDamage(tier)));
                     if (tier >= 3) {
@@ -1369,6 +1510,13 @@ public class ColosseumSession extends MinigameSession {
         com.runecraft.platform.ServerTickEvents.END_SERVER_TICK.register(server -> {
             if (com.runecraft.action.ActionManager.mcTick() % com.runecraft.osrs.ArenaTiming.REDRAW_MC == 0) {
                 redrawOrbStacks();
+            }
+            for (ColosseumSession s : LIVE.toArray(new ColosseumSession[0])) {
+                if (s.isEnded()) {
+                    LIVE.remove(s);
+                } else {
+                    s.mcTick(com.runecraft.action.ActionManager.mcTick());
+                }
             }
         });
         // Sol Heredit drops nothing: the Rewards Chest holds the loot (his pet roll and kill count still come with the kill).
@@ -1742,6 +1890,10 @@ public class ColosseumSession extends MinigameSession {
         }
         PoisonService.cure(player, true, 0, com.runecraft.action.ActionManager.gameTick());
         clearSand(true);
+        Integer held = grappleHotbar.remove(player.getUUID());
+        if (held != null) {
+            selectHotbar(player, held); // the slot held before a grapple, back
+        }
     }
 
     @Override
@@ -1871,6 +2023,63 @@ public class ColosseumSession extends MinigameSession {
             }
         }
         return null;
+    }
+
+    /**
+     * Sol Heredit's grapple on the hotbar keys (every Minecraft tick): when he calls one, the player's held slot moves off keys
+     * 1-5 (to slot 9) and the legend is shown in the middle of the screen; pressing 1 body, 2 back, 3 hands, 4 legs or 5 feet
+     * within {@link SolHeredit#GRAPPLE_WINDOW_TICKS} defends that slot ({@link
+     * com.runecraft.content.bosses.SolHereditScript#parry}, the chat links' path), and the held slot comes back once the
+     * grapple is answered or lands. // playability: OSRS clicks the slot in the worn-equipment tab within 4 ticks
+     */
+    public void grappleKeys() {
+        for (ServerPlayer p : online()) {
+            UUID u = p.getUUID();
+            SolHeredit.Grapple called = com.runecraft.content.bosses.SolHereditScript.calledFor(p);
+            Integer held = grappleHotbar.get(u);
+            if (called == null) {
+                if (held != null) {
+                    grappleHotbar.remove(u);
+                    selectHotbar(p, held);
+                }
+                continue;
+            }
+            if (held == null) {
+                int was = p.getInventory().selected;
+                grappleHotbar.put(u, was);
+                if (SolHeredit.grappleByHotbar(was) != null) {
+                    selectHotbar(p, 8); // off the five keys, so each of them is a change the server sees
+                }
+                MutableComponent legend = Component.literal("Defend: ").withStyle(ChatFormatting.GRAY);
+                for (SolHeredit.Grapple g : SolHeredit.Grapple.values()) {
+                    String label = SolHeredit.hotbarKey(g) + " " + g.slot.substring(0, 1).toUpperCase(java.util.Locale.ROOT)
+                            + g.slot.substring(1) + "  ";
+                    legend.append(Component.literal(label).withStyle(g == called ? ChatFormatting.GOLD : ChatFormatting.GRAY));
+                }
+                Msg.telegraph(p, legend);
+                continue;
+            }
+            SolHeredit.Grapple pressed = SolHeredit.grappleByHotbar(p.getInventory().selected);
+            if (pressed != null) {
+                com.runecraft.content.bosses.SolHereditScript.parry(p, pressed.slot);
+            }
+        }
+    }
+
+    /** Moves a player's held hotbar slot (server and client). */
+    private static void selectHotbar(ServerPlayer p, int slot) {
+        if (slot < 0 || slot > 8 || p.getInventory().selected == slot) {
+            return;
+        }
+        p.getInventory().selected = slot;
+        if (!(p instanceof net.neoforged.neoforge.common.util.FakePlayer) && p.connection != null) {
+            p.connection.send(new net.minecraft.network.protocol.game.ClientboundSetCarriedItemPacket(slot));
+        }
+    }
+
+    /** Self-test: whether a player is answering a grapple on the hotbar keys (their held slot was moved). */
+    public boolean grappleKeysArmed(ServerPlayer p) {
+        return grappleHotbar.containsKey(p.getUUID());
     }
 
     /**

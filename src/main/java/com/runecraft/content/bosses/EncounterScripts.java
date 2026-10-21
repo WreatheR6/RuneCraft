@@ -172,7 +172,7 @@ final class EncounterScripts {
         public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
             // The right protection prayer lowers the hit (top roll 50 -> 12, 68 -> 16) instead of blocking it. Decided before
             // the prayer-disabling orb switches prayers off: that orb is a magic attack like the others (wiki), so Protect from
-            // Magic still lowers it.
+            // Magic still lowers it. Read through the shared check (round 42), so the prayer switch grace applies.
             boolean prayed = type != null && !type.isMelee()
                     && CombatHandler.isProtected(com.runecraft.player.Players.data(player), type);
             if (last == MinigameBosses.HUNLLEF_PRAYER_DISABLE || last == MinigameBosses.CORRUPTED_PRAYER_DISABLE) {
@@ -234,7 +234,16 @@ final class EncounterScripts {
             tickFloor(boss, target);
         }
 
+        /** The player the tornadoes chase between game ticks (the script's target on its last game tick). */
+        private ServerPlayer chased;
+        private long lastCueMc = -1_000_000L;
+
+        /**
+         * Once a game tick: a tornado within {@link com.runecraft.osrs.content.minigames.Gauntlet#TORNADO_HIT_RADIUS} of the
+         * player (horizontally) hits it; they move every Minecraft tick ({@link #tick}).
+         */
         private void tickTornadoes(DataBossEntity boss, ServerPlayer target) {
+            chased = target;
             if (tornadoLife <= 0) {
                 return;
             }
@@ -243,13 +252,9 @@ final class EncounterScripts {
             tornadoes.removeIf(t -> !t.isAlive() || t.isRemoved());
             for (Mob t : tornadoes) {
                 Vec3 d = target.position().subtract(t.position());
-                double len = d.horizontalDistance();
-                if (len < 1.2) {
+                if (d.horizontalDistance() < com.runecraft.osrs.content.minigames.Gauntlet.TORNADO_HIT_RADIUS && Math.abs(d.y) < 2) {
                     CombatHooks.nameAttack("tornado", null);
                     CombatHandler.applyDamage(boss, target, dmg[0] + boss.getRandom().nextInt(dmg[1] - dmg[0] + 1));
-                } else {
-                    Vec3 step = new Vec3(d.x / len, 0, d.z / len);
-                    t.teleportTo(t.getX() + step.x, t.getY(), t.getZ() + step.z);
                 }
             }
             if (tornadoLife == 0) {
@@ -258,10 +263,71 @@ final class EncounterScripts {
             }
         }
 
-        /** The damaging floor: a pattern of tiles around the player turns blue (crimson), then orange (approx patterns). */
+        /**
+         * Every Minecraft tick (round 42, // playability): the tornadoes glide towards the player, a twelfth of a tile at a time
+         * (OSRS: a tile a game tick, which here jumped over a dodge); every few Minecraft ticks each tornado's hit ring and the
+         * floor tiles' outlines are redrawn, blue (crimson) while they warn and orange while they burn (OSRS colours the tiles
+         * themselves; particles here, see the round 42 backlog for marker blocks).
+         */
+        @Override
+        public void tick(DataBossEntity boss) {
+            super.tick(boss);
+            if (!boss.isAlive()) {
+                return;
+            }
+            ServerPlayer t = chased;
+            if (tornadoLife > 0 && t != null && t.isAlive() && t.level() == boss.level()) {
+                for (Mob m : tornadoes) {
+                    if (!m.isAlive()) {
+                        continue;
+                    }
+                    double[] step = com.runecraft.osrs.content.minigames.Gauntlet.tornadoStep(t.getX() - m.getX(), t.getZ() - m.getZ());
+                    if (step[0] != 0 || step[1] != 0) {
+                        m.teleportTo(m.getX() + step[0], m.getY(), m.getZ() + step[1]);
+                    }
+                }
+            }
+            long mc = com.runecraft.action.ActionManager.mcTick();
+            if (mc - lastCueMc < com.runecraft.osrs.ArenaTiming.REDRAW_MC) {
+                return;
+            }
+            lastCueMc = mc;
+            ServerLevel w = BossFx.world(boss);
+            if (tornadoLife > 0) {
+                for (Mob m : tornadoes) {
+                    if (m.isAlive()) {
+                        com.runecraft.boss.ThreatCues.ring(w, m.position(), com.runecraft.osrs.content.minigames.Gauntlet.TORNADO_HIT_RADIUS,
+                                com.runecraft.boss.ThreatCues.AREA_RGB, null, false);
+                    }
+                }
+            }
+            if (!floor.isEmpty()) {
+                boolean burning = now >= floorOrangeAt;
+                int rgb = burning ? 0xFF7A18 : corrupted ? 0xC0203A : 0x3FA8FF;
+                net.minecraft.core.particles.DustParticleOptions dust = com.runecraft.boss.ThreatCues.dust(rgb, burning ? 1.6f : 1.2f);
+                int size = com.runecraft.osrs.content.minigames.Gauntlet.FLOOR_TILE_BLOCKS;
+                for (BlockPos tile : floor) {
+                    double y = tile.getY() + 0.12;
+                    for (double d = 0; d < size; d += 0.5) {
+                        w.sendParticles(dust, tile.getX() + d, y, tile.getZ(), 1, 0, 0, 0, 0);
+                        w.sendParticles(dust, tile.getX() + size, y, tile.getZ() + d, 1, 0, 0, 0, 0);
+                        w.sendParticles(dust, tile.getX() + size - d, y, tile.getZ() + size, 1, 0, 0, 0, 0);
+                        w.sendParticles(dust, tile.getX(), y, tile.getZ() + size - d, 1, 0, 0, 0, 0);
+                    }
+                    if (burning) {
+                        w.sendParticles(ParticleTypes.FLAME, tile.getX() + size / 2.0, y, tile.getZ() + size / 2.0, 1, 0.5, 0.02, 0.5, 0);
+                    }
+                }
+            }
+        }
+
+        /**
+         * The damaging floor: a pattern of tiles around the player turns blue (crimson), then orange (approx patterns), warning
+         * for at least the strike floor's 3 ticks ({@link com.runecraft.osrs.content.minigames.Gauntlet#floorWarnTicks}); a
+         * player is burnt while every point within a quarter block of them is on a lit tile (what the outline shows).
+         */
         private void tickFloor(DataBossEntity boss, ServerPlayer target) {
             int phase = com.runecraft.osrs.content.minigames.Gauntlet.floorPhase(percent(boss));
-            ServerLevel w = BossFx.world(boss);
             if (nextFloorAt < 0) {
                 nextFloorAt = now + com.runecraft.osrs.content.minigames.Gauntlet.FLOOR_INTERVAL_TICKS[0];
             }
@@ -271,30 +337,28 @@ final class EncounterScripts {
                 for (int i = 0; i < tiles; i++) {
                     int ox = (boss.getRandom().nextInt(7) - 3) * 2;
                     int oz = (boss.getRandom().nextInt(7) - 3) * 2;
-                    floor.add(new BlockPos(at.getX() + ox, at.getY(), at.getZ() + oz));
+                    BlockPos tile = new BlockPos(at.getX() + ox, at.getY(), at.getZ() + oz);
+                    if (!floor.contains(tile)) {
+                        floor.add(tile);
+                    }
                 }
-                floorOrangeAt = now + com.runecraft.osrs.content.minigames.Gauntlet.FLOOR_WARN_TICKS[phase];
+                floorOrangeAt = now + com.runecraft.osrs.content.minigames.Gauntlet.floorWarnTicks(phase);
                 floorEndAt = floorOrangeAt + com.runecraft.osrs.content.minigames.Gauntlet.FLOOR_ACTIVE_TICKS;
                 nextFloorAt = floorEndAt + com.runecraft.osrs.content.minigames.Gauntlet.FLOOR_INTERVAL_TICKS[phase];
+                lastCueMc = -1_000_000L; // drawn at once (tick)
             }
             if (floor.isEmpty()) {
                 return;
             }
-            boolean orange = now >= floorOrangeAt;
-            for (BlockPos t : floor) {
-                w.sendParticles(orange ? ParticleTypes.FLAME : corrupted ? ParticleTypes.CRIMSON_SPORE : ParticleTypes.SOUL_FIRE_FLAME,
-                        t.getX() + 1.0, t.getY() + 0.1, t.getZ() + 1.0, 4, 0.5, 0.02, 0.5, 0);
-            }
-            if (orange) {
-                BlockPos p = target.blockPosition();
+            if (now >= floorOrangeAt && Math.abs(target.getY() - floor.get(0).getY()) <= 1) {
+                List<int[]> tiles = new ArrayList<>();
                 for (BlockPos t : floor) {
-                    if (p.getX() >= t.getX() && p.getX() <= t.getX() + 1 && p.getZ() >= t.getZ() && p.getZ() <= t.getZ() + 1
-                            && Math.abs(p.getY() - t.getY()) <= 1) {
-                        CombatHooks.nameAttack("damaging_floor", null);
-                        CombatHandler.applyDamage(boss, target, com.runecraft.osrs.content.minigames.Gauntlet.FLOOR_MIN + boss.getRandom()
-                                .nextInt(com.runecraft.osrs.content.minigames.Gauntlet.FLOOR_MAX - com.runecraft.osrs.content.minigames.Gauntlet.FLOOR_MIN + 1));
-                        break;
-                    }
+                    tiles.add(new int[]{t.getX(), t.getZ()});
+                }
+                if (com.runecraft.osrs.content.minigames.Gauntlet.onBurningFloor(tiles, target.getX(), target.getZ())) {
+                    CombatHooks.nameAttack("damaging_floor", null);
+                    CombatHandler.applyDamage(boss, target, com.runecraft.osrs.content.minigames.Gauntlet.FLOOR_MIN + boss.getRandom()
+                            .nextInt(com.runecraft.osrs.content.minigames.Gauntlet.FLOOR_MAX - com.runecraft.osrs.content.minigames.Gauntlet.FLOOR_MIN + 1));
                 }
             }
             if (now >= floorEndAt) {

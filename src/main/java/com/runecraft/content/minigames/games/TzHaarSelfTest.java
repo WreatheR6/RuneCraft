@@ -294,11 +294,15 @@ public final class TzHaarSelfTest {
             for (int i = 0; i < 30; i++) {
                 expect(jad.chooseStyle(player, 1.0) != AttackType.CRUSH, "Jad chose a crush attack");
             }
+            jadGlow(jad);
             // Healers at half hitpoints, from their four spawn points.
             jad.setHealth(jad.getMaxHealth() / 2);
             tick(s, 1);
             List<LivingEntity> healers = s.selfTestCreatures(TzHaarWaves.HURKOT);
             expect(healers.size() == TzHaarWaves.FIGHT_CAVE_JAD_HEALERS, "Jad at half health brought " + healers.size() + " healers");
+            // Round 42 playability: untagged healers glow until the player hits them.
+            expect(healers.stream().allMatch(h -> h.hasEffect(net.minecraft.world.effect.MobEffects.GLOWING)),
+                    "Jad's healers do not glow");
             for (TzHaarWaves.CaveSpawn p : TzHaarWaves.HEALER_SPAWNS) {
                 BlockPos at = s.spawnAt(p);
                 expect(healers.stream().anyMatch(h -> h.blockPosition().distSqr(at) <= 4), "no healer spawned at " + p);
@@ -322,7 +326,8 @@ public final class TzHaarSelfTest {
             LivingEntity tagged = s.selfTestCreatures(TzHaarWaves.HURKOT).get(0);
             hit(tagged, 1, AttackType.RANGED);
             expect(tagged instanceof Mob m && m.getTarget() == player, "a healer the player hit did not turn on them");
-            log.append("; Jad at wave 3's point with healers that heal and return");
+            expect(!tagged.hasEffect(net.minecraft.world.effect.MobEffects.GLOWING), "a healer the player hit still glows");
+            log.append("; Jad at wave 3's point with healers that heal, glow until tagged and return");
             // Jad dies with one free slot (a run ends with the pack full of supplies): the fire cape takes it, and the 8,032
             // tokkul are one stack, in the tokkul pouch, not 126 64-item stacks spilling onto the floor and lost with it.
             int kc = MinigameData.of(player).stat(player.getUUID(), "kc:" + Minigame.FIGHT_CAVES.id());
@@ -351,6 +356,42 @@ public final class TzHaarSelfTest {
         expect(MinigameManager.session(player) == null, "the player is still in the Fight Cave after it ended");
         deathAndPause();
         return log.toString();
+    }
+
+    /**
+     * Round 42 playability: TzTok-Jad's magic telegraph glows blue from the moment he rears up, redrawn every 4 Minecraft ticks,
+     * for the 36 Minecraft ticks until the hit lands, and no longer (through the real attack path and the cue recorder).
+     */
+    private void jadGlow(BossEntity jad) {
+        List<long[]> draws = new ArrayList<>();
+        TzTokJadScript.CueListener before = TzTokJadScript.cueListener;
+        TzTokJadScript.cueListener = (j, style, start, due, drawn) -> {
+            before.drawn(j, style, start, due, drawn);
+            if (j == jad) {
+                draws.add(new long[]{start, due, drawn, style.ordinal()});
+            }
+        };
+        try {
+            jad.performAttack(player, AttackType.MAGIC);
+            expect(TzTokJadScript.cueStyle(jad) == AttackType.MAGIC, "Jad's magic telegraph does not glow");
+            expect(!draws.isEmpty() && draws.get(0)[2] == draws.get(0)[0], "Jad's glow was not drawn as he reared up");
+            long start = draws.get(0)[0];
+            long due = draws.get(0)[1];
+            expect(due - start >= TzHaarWaves.TELEGRAPH_FLOOR_MC, "Jad's glow lasts " + (due - start) + " MC");
+            for (int guard = 0; guard < 80 && com.runecraft.action.ActionManager.mcTick() < due; guard++) {
+                com.runecraft.action.ActionManager.advanceForSelfTest();
+                TzTokJadScript.tickCues();
+            }
+            jad.tickTelegraphForSelfTest(); // his hit lands now, as it is due
+            TzTokJadScript.tickCues();
+            heal();
+            expect(draws.size() >= (due - start) / 4, "Jad's glow was drawn " + draws.size() + " times in " + (due - start) + " MC");
+            expect(draws.stream().allMatch(d -> d[3] == AttackType.MAGIC.ordinal()), "Jad's glow changed colour");
+            expect(TzTokJadScript.cueStyle(jad) == null, "Jad's glow outlived his hit");
+            log.append("; Jad's magic glows blue for ").append(due - start).append(" MC (").append(draws.size()).append(" draws)");
+        } finally {
+            TzTokJadScript.cueListener = before;
+        }
     }
 
     /**
@@ -526,11 +567,19 @@ public final class TzHaarSelfTest {
                 }
                 clear(s, null);
             }
+            // Round 42 playability: the last pillars fall 3 ticks after wave 66 ends, their collapse rings drawn meanwhile.
             tick(s, 1);
+            int[] standing = s.pillars();
+            if (standing[0] + standing[1] + standing[2] > 0) {
+                expect(s.selfTestCollapseAt() >= 0, "wave 66 ended without warning of the pillars' collapse");
+            }
+            tick(s, TzHaarWaves.PILLAR_COLLAPSE_WARNING_TICKS);
             int[] pillars = s.pillars();
-            expect(pillars[0] == 0 && pillars[1] == 0 && pillars[2] == 0, "pillars still standing after wave 66: "
-                    + java.util.Arrays.toString(pillars));
-            log.append("waves 1-66 spawned and cleared, pillars down after 66");
+            expect(pillars[0] == 0 && pillars[1] == 0 && pillars[2] == 0, "pillars still standing "
+                    + TzHaarWaves.PILLAR_COLLAPSE_WARNING_TICKS + " ticks after wave 66: " + java.util.Arrays.toString(pillars));
+            expect(s.wave() == 66, "wave 67 started before the pillars fell");
+            log.append("waves 1-66 spawned and cleared, pillars down ").append(TzHaarWaves.PILLAR_COLLAPSE_WARNING_TICKS)
+                    .append(" ticks after 66");
             jads(s);
             zuk(s);
         } finally {
@@ -608,6 +657,15 @@ public final class TzHaarSelfTest {
         LivingEntity blob = s.selfTestCreatures(TzHaarWaves.JAL_AK).get(0);
         player.teleportTo(towardCentre(s, blob.getX(), 5), blob.getY(), blob.getZ());
         ((Mob) blob).setTarget(player);
+        // Round 42 playability: the scan is told to the player in the middle of the screen, with the style it read.
+        List<String> scans = new ArrayList<>();
+        com.runecraft.util.Msg.TelegraphListener heard = com.runecraft.util.Msg.telegraphListener;
+        com.runecraft.util.Msg.telegraphListener = (p, line, merged) -> {
+            heard.shown(p, line, merged);
+            if (p == player && line.contains("scans your prayer")) {
+                scans.add(line);
+            }
+        };
         try {
             pray(Prayer.PROTECT_FROM_MAGIC);
             String read = null;
@@ -616,6 +674,8 @@ public final class TzHaarSelfTest {
                 read = s.selfTestBlobRead(blob);
             }
             expect("ranged".equals(read), "Jal-Ak read Protect from Magic as " + read);
+            expect(!scans.isEmpty() && scans.get(scans.size() - 1).contains("ranged next"),
+                    "Jal-Ak's scan was not shown to the player: " + scans);
             tick(s, TzHaarWaves.BLOB_READ_TICKS);
             pray(Prayer.PROTECT_FROM_MISSILES);
             read = null;
@@ -624,7 +684,9 @@ public final class TzHaarSelfTest {
                 read = s.selfTestBlobRead(blob);
             }
             expect("magic".equals(read), "Jal-Ak read Protect from Missiles as " + read);
+            expect(scans.get(scans.size() - 1).contains("magic next"), "Jal-Ak's second scan was not shown: " + scans);
         } finally {
+            com.runecraft.util.Msg.telegraphListener = heard;
             pray(null);
             home(s);
         }
@@ -682,6 +744,7 @@ public final class TzHaarSelfTest {
         reach(s, 68);
         jads = s.selfTestCreatures(TzHaarWaves.JALTOK_JAD);
         expect(jads.size() == 3, "wave 68 has " + jads.size() + " JalTok-Jads");
+        tripleJadCues(s, jads);
         for (LivingEntity j : jads) {
             j.setHealth(j.getMaxHealth() / 2);
         }
@@ -690,6 +753,131 @@ public final class TzHaarSelfTest {
                 + " healers (expected three each)");
         clear(s, null);
         log.append("; Jads with five and three healers");
+    }
+
+    /**
+     * Round 42 playability: wave 68's Jads wear their names (West, East, South); driven through the session's real attack path,
+     * the one telegraphing names itself in its warning and shows the style in its tag, and their 3-tick stagger means no two
+     * tags show a style at once. Time passes in Minecraft ticks between the game ticks, as on a server.
+     */
+    private void tripleJadCues(InfernoSession s, List<LivingEntity> jads) {
+        Set<String> names = new java.util.TreeSet<>();
+        for (LivingEntity j : jads) {
+            String name = s.selfTestJadName(j);
+            expect(name != null && j.isCustomNameVisible() && j.getCustomName() != null
+                    && j.getCustomName().getString().startsWith("JalTok-Jad (" + name + ")"), "a wave-68 Jad wears no name tag");
+            names.add(name);
+        }
+        expect(names.equals(new java.util.TreeSet<>(List.of(TzHaarWaves.TRIPLE_JAD_NAMES))), "wave 68's Jads are named " + names);
+        // Stand south of the first Jad, in reach of all three, and let them take their turns.
+        LivingEntity first = jads.get(0);
+        player.teleportTo(first.getX(), first.getY(), first.getZ() + 6);
+        for (LivingEntity j : jads) {
+            ((Mob) j).setTarget(player);
+        }
+        List<String> warnings = new ArrayList<>();
+        com.runecraft.boss.ThreatCues.WarningListener heard = com.runecraft.boss.ThreatCues.warningListener;
+        com.runecraft.boss.ThreatCues.warningListener = (p, text, subtitle) -> {
+            heard.onWarning(p, text, subtitle);
+            if (p == player && text.contains("JalTok-Jad")) {
+                warnings.add(text);
+            }
+        };
+        int maxTagged = 0;
+        try {
+            for (int t = 0; t < 12; t++) {
+                for (int m = 0; m < com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK; m++) {
+                    com.runecraft.action.ActionManager.advanceForSelfTest();
+                    s.mcTick(com.runecraft.action.ActionManager.mcTick());
+                    maxTagged = Math.max(maxTagged, styledTags(jads));
+                }
+                s.selfTestTick();
+                heal();
+                maxTagged = Math.max(maxTagged, styledTags(jads));
+            }
+        } finally {
+            com.runecraft.boss.ThreatCues.warningListener = heard;
+            home(s);
+        }
+        expect(!warnings.isEmpty(), "no wave-68 Jad telegraphed in 12 ticks");
+        expect(warnings.stream().allMatch(w -> names.stream().anyMatch(n -> w.startsWith(n + " JalTok-Jad"))),
+                "a wave-68 Jad's warning does not name it: " + warnings);
+        expect(maxTagged == 1, maxTagged + " wave-68 Jads showed a style in their tags at once");
+        log.append("; wave 68's Jads named ").append(names).append(", telegraphing one at a time (").append(warnings.size())
+                .append(" warnings)");
+    }
+
+    /**
+     * Round 42 playability: TzKal-Zuk's attack turn starts a blast charge (through his attack goal's hook) with a warning to a
+     * player outside the glyph's shadow; the player steps behind the glyph 12 Minecraft ticks after the warning and the blast,
+     * landing at least 36 Minecraft ticks after the charge began, is blocked (the charge recorder and the script's own hit rule).
+     */
+    private void zukCharge(DataBossEntity zuk, LivingEntity glyph) {
+        ZukScript script = (ZukScript) zuk.script();
+        script.tick(zuk); // its attack hook (set as it spawned)
+        expect(zuk.attackInterceptor != null, "TzKal-Zuk's attacks are not charged");
+        List<String> warnings = new ArrayList<>();
+        com.runecraft.util.Msg.TelegraphListener heard = com.runecraft.util.Msg.telegraphListener;
+        com.runecraft.util.Msg.telegraphListener = (p, line, merged) -> {
+            heard.shown(p, line, merged);
+            if (p == player && line.contains("charges a blast")) {
+                warnings.add(line);
+            }
+        };
+        long[] charge = {-1, -1, -1};
+        boolean[] covered = {false};
+        ZukScript.ChargeListener before = ZukScript.chargeListener;
+        ZukScript.chargeListener = new ZukScript.ChargeListener() {
+            @Override
+            public void charged(DataBossEntity z, ServerPlayer t, long startMc, long dueMc) {
+                before.charged(z, t, startMc, dueMc);
+                charge[0] = startMc;
+                charge[1] = dueMc;
+            }
+
+            @Override
+            public void landed(DataBossEntity z, ServerPlayer t, long mc, boolean shielded) {
+                before.landed(z, t, mc, shielded);
+                charge[2] = mc;
+                covered[0] = shielded;
+            }
+        };
+        try {
+            player.teleportTo(glyph.getX() + 6, glyph.getY(), glyph.getZ() + 3); // beside the glyph's shadow
+            expect(zuk.attackInterceptor.intercept(zuk, player, zuk.def().attacks.get(0)), "Zuk's attack turn was not taken");
+            expect(charge[0] >= 0 && charge[1] - charge[0] >= TzHaarWaves.TELEGRAPH_FLOOR_MC,
+                    "Zuk's blast charges for " + (charge[1] - charge[0]) + " MC");
+            expect(!warnings.isEmpty() && warnings.get(0).contains("Get behind the glyph"),
+                    "a player outside the glyph's shadow was not warned: " + warnings);
+            for (int guard = 0; guard < 80 && charge[2] < 0; guard++) {
+                com.runecraft.action.ActionManager.advanceForSelfTest();
+                if (com.runecraft.action.ActionManager.mcTick() == charge[0] + 12) {
+                    player.teleportTo(glyph.getX(), glyph.getY(), glyph.getZ() + 3); // the player reacts
+                }
+                script.tick(zuk);
+                heal();
+            }
+            expect(charge[2] >= charge[1], "Zuk's blast landed " + (charge[1] - charge[2]) + " MC early");
+            expect(covered[0], "the glyph did not block a blast the player stepped behind it for");
+            expect(script.chargeDueMc() < 0, "Zuk is still charging after the blast landed");
+        } finally {
+            ZukScript.chargeListener = before;
+            com.runecraft.util.Msg.telegraphListener = heard;
+            heal();
+        }
+        log.append("; Zuk's blast charged ").append(charge[1] - charge[0]).append(" MC, blocked after stepping behind the glyph");
+    }
+
+    /** How many Jads show a style in their name tags. */
+    private static int styledTags(List<LivingEntity> jads) {
+        int n = 0;
+        for (LivingEntity j : jads) {
+            String tag = j.getCustomName() == null ? "" : j.getCustomName().getString();
+            if (j.isAlive() && (tag.endsWith("MAGIC") || tag.endsWith("RANGED") || tag.endsWith("MELEE"))) {
+                n++;
+            }
+        }
+        return n;
     }
 
     /** Wave 69: TzKal-Zuk, the glyph, the first set, the Jad at 480, the enrage and healers at 240, the kill and rewards. */
@@ -706,6 +894,7 @@ public final class TzHaarSelfTest {
         expect(zuk.script().onHitPlayer(zuk, player, 100, AttackType.MAGIC) == 0, "the glyph did not block Zuk's blast");
         player.teleportTo(glyph.getX() + 6, glyph.getY(), glyph.getZ() + 3);
         expect(zuk.script().onHitPlayer(zuk, player, 100, AttackType.MAGIC) == 100, "Zuk's blast was blocked without the glyph");
+        zukCharge(zuk, glyph);
         // The first set after the glyph's full sweep, attacking the glyph.
         for (int i = 0; i < 300 && s.sets() == 0; i++) {
             tick(s, 1);
