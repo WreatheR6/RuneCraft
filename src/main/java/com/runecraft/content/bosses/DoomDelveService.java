@@ -446,6 +446,8 @@ final class DoomDelveService {
         private boolean started;
         private long lastSplat;
         private final List<Vec3> acid = new ArrayList<>();
+        /** The acid blood, the shockwave's ring and the earthen shield as floor blocks (round 43). */
+        private com.runecraft.boss.FloorMarkers.Layer doomFloor;
         private final List<Larva> larvae = new ArrayList<>();
         private long nextLarva;
         // Beam / melee punish / rock throws
@@ -635,6 +637,7 @@ final class DoomDelveService {
                 tickBurrow(boss, target, near);
             }
             tickShockwave(boss, near);
+            showFloor(boss);
             if (!shield && !burrowed && now >= nextLarva && target != null) {
                 nextLarva = now + DoomDelves.larvaInterval(level);
                 boolean giant = DoomDelves.giantLarvae(level);
@@ -1183,6 +1186,38 @@ final class DoomDelveService {
             }
         }
 
+        /**
+         * Round 43 floor markers, every game tick: each acid blood splat lime (the 0.8-block test in {@link #tickAcid}); from the
+         * countdown to the last shockwave, a red ring closing on the Doom like the dust one; the earthen shield's circle cyan
+         * where it stands (added last, so it shows through the rest). Put back as they go, when the Doom dies or leaves, and when
+         * the server stops. // playability: OSRS shows the splats, the volatile earth and the shield only
+         */
+        private void showFloor(DataBossEntity boss) {
+            if (doomFloor == null) {
+                doomFloor = new com.runecraft.boss.FloorMarkers.Layer(boss);
+            }
+            com.runecraft.boss.FloorMarkers.Shape shape = new com.runecraft.boss.FloorMarkers.Shape(BossFx.world(boss));
+            for (Vec3 a : acid) {
+                shape.disc(a, 0.8, com.runecraft.boss.HazardKind.ACID);
+            }
+            if (shockwaveDue >= 0) {
+                boolean countdown = com.runecraft.osrs.content.bosses.BossRealtime.shockwaveCountdown(now, shockwaveDue);
+                if (countdown || (now >= shockwaveDue && shockwavesLeft > 0)) {
+                    double r = Math.min(10, countdown ? 4 + 2.0 * Math.max(0, shockwaveDue - now) : 10);
+                    shape.ring(boss.position(), r - 1, r, com.runecraft.boss.HazardKind.STRIKE);
+                }
+                if (earthenShield != null) {
+                    shape.disc(earthenShield, DoomDelves.EARTHEN_SHIELD_BLOCKS, com.runecraft.boss.HazardKind.SAFE);
+                }
+            }
+            doomFloor.show(shape);
+        }
+
+        /** Self-test: the floor blocks the Doom's acid, shockwave ring and earthen shield mark now. */
+        int walkFloorMarked() {
+            return doomFloor == null ? 0 : doomFloor.size();
+        }
+
         // ---------------- Acid blood ----------------
 
         private void tickAcid(DataBossEntity boss, List<ServerPlayer> near) {
@@ -1273,6 +1308,9 @@ final class DoomDelveService {
 
         @Override
         public void onDeath(DataBossEntity boss, ServerPlayer killer) {
+            if (doomFloor != null) {
+                doomFloor.clear();
+            }
             for (Larva l : larvae) {
                 l.mob().discard();
             }

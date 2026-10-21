@@ -633,6 +633,8 @@ final class MoonScripts {
         /** Searing Rays: the moon shield's angle round her (radians) and the player it shelters. */
         private double shield;
         private ServerPlayer sheltered;
+        /** The shelter behind the moon shield as a cyan floor spot while the Searing Rays fire (round 43). */
+        private com.runecraft.boss.FloorMarkers.Layer shelterFloor;
 
         EclipseMoon() {
             super(MoonsRules.ECLIPSE);
@@ -715,6 +717,12 @@ final class MoonScripts {
             w.sendParticles(ParticleTypes.END_ROD, sh.x, sh.y + 1, sh.z, 6, 0.5, 0.6, 0.5, 0);
             Vec3 safe = shelter(boss);
             w.sendParticles(GLYPH_LIT, safe.x, safe.y + 0.1, safe.z, 3, 0.3, 0.02, 0.3, 0);
+            // round 43: the shelter (where the rays miss: within 1.6 blocks of it) as a cyan floor spot that moves on with the
+            // shield. // playability: OSRS players read the shield's shadow
+            if (shelterFloor == null) {
+                shelterFloor = new com.runecraft.boss.FloorMarkers.Layer(boss);
+            }
+            shelterFloor.show(new com.runecraft.boss.FloorMarkers.Shape(w).disc(safe, 1.6, com.runecraft.boss.HazardKind.SAFE));
             return specialTick >= 16;
         }
 
@@ -801,6 +809,9 @@ final class MoonScripts {
         void cleanUp(DataBossEntity boss) {
             endClones();
             sheltered = null;
+            if (shelterFloor != null) {
+                shelterFloor.clear();
+            }
         }
 
         int selfTestCloneStep() {
@@ -822,6 +833,8 @@ final class MoonScripts {
         }
 
         private final List<Pool> pools = new ArrayList<>();
+        /** The pools as floor blocks (round 43): bright red while a drop falls, blood red once it hurts. */
+        private com.runecraft.boss.FloorMarkers.Layer poolFloor;
         private final List<Mob> jaguars = new ArrayList<>();
         private int restored;
         private boolean vanished;
@@ -947,6 +960,16 @@ final class MoonScripts {
         private boolean tickPools(DataBossEntity boss, List<ServerPlayer> here, String name, int mult) {
             ServerLevel w = BossFx.world(boss);
             pools.removeIf(pool -> now >= pool.goneAt());
+            // round 43: each pool's tile on the floor, red as its drop falls, blood red while it hurts (the 0.9-block test
+            // below); put back as it dries. // playability: OSRS shows the falling blood and the pool on the tile
+            if (poolFloor == null) {
+                poolFloor = new com.runecraft.boss.FloorMarkers.Layer(boss);
+            }
+            com.runecraft.boss.FloorMarkers.Shape shape = new com.runecraft.boss.FloorMarkers.Shape(w);
+            for (Pool pool : pools) {
+                shape.disc(pool.pos(), 0.9, now >= pool.armedAt() ? com.runecraft.boss.HazardKind.BLOOD : com.runecraft.boss.HazardKind.STRIKE);
+            }
+            poolFloor.show(shape);
             boolean anyHit = false;
             for (Pool pool : pools) {
                 boolean armed = now >= pool.armedAt();
@@ -970,6 +993,9 @@ final class MoonScripts {
             jaguars.forEach(Mob::discard);
             jaguars.clear();
             pools.clear();
+            if (poolFloor != null) {
+                poolFloor.clear();
+            }
             if (vanished) {
                 vanished = false;
                 boss.setInvisible(false);
@@ -983,6 +1009,11 @@ final class MoonScripts {
         /** Hitpoints the player has won back off her jaguars this special. */
         int selfTestRestored() {
             return restored;
+        }
+
+        /** Self-test: the floor blocks the pools mark now. */
+        int selfTestPoolFloor() {
+            return poolFloor == null ? 0 : poolFloor.size();
         }
 
         /** Armed pools and pools still warning, by position (self-test: a safe spot away from them). */

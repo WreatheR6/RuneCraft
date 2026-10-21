@@ -910,6 +910,8 @@ final class SlayerScripts {
         private int specials;
         private boolean restored;
         private final List<Chaser> chasers = new ArrayList<>();
+        /** The chasers' tiles and the vents' spray areas about to erupt, as floor blocks (round 43). */
+        private com.runecraft.boss.FloorMarkers.Layer hydraFloor;
 
         Hydra(HydraPhase phase) {
             this.phase = phase;
@@ -1056,6 +1058,38 @@ final class SlayerScripts {
             cooldown += SlayerBosses.HYDRA_FIRE_PAUSE;
         }
 
+        /**
+         * Round 43 floor markers, each game tick: the tile under each lightning current (red) and the tracking flame (orange) at
+         * its hit radius as it chases; for the last 2 ticks before the vents spray, each vent's area (where the Hydra must
+         * stand to be sprayed) in its chemical's colour. Its poison pools' splats are green, not acid lime.
+         * // playability: OSRS shows the currents and the flame on the tiles, and the vents' puddles
+         */
+        private void showHydraFloor(DataBossEntity boss) {
+            if (hydraFloor == null) {
+                hydraFloor = new com.runecraft.boss.FloorMarkers.Layer(boss);
+            }
+            com.runecraft.boss.FloorMarkers.Shape shape = new com.runecraft.boss.FloorMarkers.Shape(BossFx.world(boss));
+            if (home != null && ventTimer <= 2) {
+                for (String c : new String[]{"red", "green", "blue"}) {
+                    Vec3 v = vent(c);
+                    shape.ring(new Vec3(v.x, home.getY(), v.z), 0.5, 2.5, switch (c) {
+                        case "red" -> com.runecraft.boss.HazardKind.FIRE;
+                        case "green" -> com.runecraft.boss.HazardKind.POISON;
+                        default -> com.runecraft.boss.HazardKind.ICE;
+                    });
+                }
+            }
+            for (Chaser ch : chasers) {
+                shape.disc(ch.pos, 0.9, ch.fire ? com.runecraft.boss.HazardKind.FIRE : com.runecraft.boss.HazardKind.STRIKE);
+            }
+            hydraFloor.show(shape);
+        }
+
+        @Override
+        protected com.runecraft.boss.HazardKind strikeFloor(String name, ParticleOptions particle) {
+            return "poison_pool".equals(name) ? com.runecraft.boss.HazardKind.POISON : super.strikeFloor(name, particle);
+        }
+
         /** "A subsequent burn of 5 damage for 5 hits": five stacks of a five-hit burn. */
         private static void burn(DataBossEntity boss, ServerPlayer p) {
             for (int i = 0; i < 5; i++) {
@@ -1150,6 +1184,7 @@ final class SlayerScripts {
                     }
                 }
             }
+            showHydraFloor(boss);
             if (phase != HydraPhase.ENRAGED && percent(boss) <= phase.endsAtPercent) {
                 HydraPhase next = phase.next();
                 chasers.clear(); // currents dissipate at a phase change

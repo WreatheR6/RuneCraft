@@ -190,6 +190,59 @@ public final class SolHereditScript extends ScriptedBoss {
     private void cleanUp(DataBossEntity boss) {
         GRAPPLED.values().removeIf(s -> s == this);
         Mechanics.clearHazards(BossFx.world(boss), boss.getBoundingBox().inflate(24, 6, 24));
+        if (aoeFloor != null) {
+            aoeFloor.clear();
+        }
+    }
+
+    /** The pending spear or shield attack's safe tiles (cyan) and the danger tiles next to them (red) on the floor (round 43). */
+    private com.runecraft.boss.FloorMarkers.Layer aoeFloor;
+
+    /**
+     * Shows the pending regular attack on the floor as it winds up (round 43): every safe tile next to the pattern cyan and every
+     * tile it hits next to a safe one red, so the safe ring (shields) or gaps (spears) stand out against the danger around
+     * them; put back as the dust lands. The hit test keeps its edge leniency. // playability: OSRS shows only the animation
+     */
+    private void showAoe(DataBossEntity boss) {
+        if (aoeFloor == null) {
+            aoeFloor = new com.runecraft.boss.FloorMarkers.Layer(boss);
+        }
+        com.runecraft.boss.FloorMarkers.Shape shape = new com.runecraft.boss.FloorMarkers.Shape(BossFx.world(boss));
+        Attack a = pending;
+        if (a != null && pendingCentre != null) {
+            int fx = pendingFacing[0];
+            int fz = pendingFacing[1];
+            java.util.List<int[]> safe = new java.util.ArrayList<>();
+            java.util.List<int[]> danger = new java.util.ArrayList<>();
+            for (int dx = -7; dx <= 7; dx++) {
+                for (int dz = -7; dz <= 7; dz++) {
+                    boolean hit = SolHeredit.hits(a, dx, dz, fx, fz);
+                    int[] col = {pendingCentre.getX() + dx, pendingCentre.getZ() + dz};
+                    if (!hit && bordersHit(a, dx, dz, fx, fz)) {
+                        safe.add(col);
+                    } else if (hit && bordersSafe(a, dx, dz, fx, fz)) {
+                        danger.add(col);
+                    }
+                }
+            }
+            shape.columns(danger, pendingCentre.getY(), com.runecraft.boss.HazardKind.STRIKE);
+            shape.columns(safe, pendingCentre.getY(), com.runecraft.boss.HazardKind.SAFE);
+        }
+        aoeFloor.show(shape);
+    }
+
+    /** Whether a tile the attack hits has a tile it misses next to it (inside the drawn 15x15 area). */
+    private static boolean bordersSafe(Attack a, int dx, int dz, int fx, int fz) {
+        for (int ox = -1; ox <= 1; ox++) {
+            for (int oz = -1; oz <= 1; oz++) {
+                int x = dx + ox;
+                int z = dz + oz;
+                if ((ox != 0 || oz != 0) && Math.abs(x) <= 7 && Math.abs(z) <= 7 && !SolHeredit.hits(a, x, z, fx, fz)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override
@@ -260,6 +313,7 @@ public final class SolHereditScript extends ScriptedBoss {
                 boss.getNavigation().stop();
                 BossFx.warn(boss, a.spear() ? "Sol Heredit draws back his spear!" : "Sol Heredit raises his shield!");
                 drawAoe(BossFx.world(boss), true);
+                showAoe(boss);
             }
         }
     }
@@ -284,7 +338,7 @@ public final class SolHereditScript extends ScriptedBoss {
             BossFx.column(world, at, ParticleTypes.END_ROD, 4);
             // Exact: the beam only leaves the molten sand (a hazard, which arms on its own delay); it deals no damage itself.
             strikeExact(boss, at, SolHeredit.SAND_DELAY_TICKS, 0, 0.5, ParticleTypes.END_ROD, (hit, pos) ->
-                    Mechanics.addHazard(world, pos, SolHeredit.SAND_MAX_DAMAGE, 6000, boss));
+                    Mechanics.addHazard(world, pos, SolHeredit.SAND_MAX_DAMAGE, 6000, boss, com.runecraft.boss.HazardKind.FIRE));
         }
     }
 
@@ -345,6 +399,9 @@ public final class SolHereditScript extends ScriptedBoss {
         }
         Attack a = pending;
         pending = null;
+        if (aoeFloor != null) {
+            aoeFloor.clear(); // the tiles go back as the dust lands
+        }
         ServerLevel world = BossFx.world(boss);
         for (int dx = -7; dx <= 7; dx++) {
             for (int dz = -7; dz <= 7; dz++) {

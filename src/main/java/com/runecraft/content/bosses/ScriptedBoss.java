@@ -62,6 +62,8 @@ public abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScale
         /** The real Minecraft tick it was last drawn on (redraws every {@link ArenaTiming#REDRAW_MC}). */
         long lastDrawMc;
         int draws;
+        /** The floor blocks marking its tiles until it lands (round 43), or null. */
+        com.runecraft.boss.FloorMarkers.Layer floor;
 
         Strike(ServerLevel world, Vec3 pos, long due, int maxDamage, double radius, ParticleOptions particle,
                BiConsumer<List<ServerPlayer>, Vec3> onLand, String name, boolean damaging, boolean exact, long createdMc) {
@@ -331,6 +333,22 @@ public abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScale
         owner = boss;
         s.firstDrawnMc = s.createdMc; // drawn right here, as it is made
         drawStrike(s, false);
+        com.runecraft.boss.HazardKind kind = damaging ? strikeFloor(name, particle) : null;
+        if (kind != null) {
+            s.floor = com.runecraft.boss.FloorMarkers.show(
+                    new com.runecraft.boss.FloorMarkers.Shape(s.world).disc(pos, radius, kind), boss);
+        }
+    }
+
+    /**
+     * The floor marker a strike puts on its tiles from the moment it is made until it lands (round 43): coloured blocks under
+     * its disc ({@link com.runecraft.boss.FloorMarkers}), put back as it lands, when the boss dies or leaves, and when the server
+     * stops. By default the kind its particle suggests ({@link com.runecraft.boss.HazardKind#forParticle}: fire orange, ice light
+     * blue, acid lime, shadow purple, anything else red); a script names its own for a strike ({@code name}: its attack name, or
+     * null) or returns null for none. // playability: OSRS tints the tiles a strike will hit; the dust ring alone was easy to miss
+     */
+    protected com.runecraft.boss.HazardKind strikeFloor(String name, ParticleOptions particle) {
+        return com.runecraft.boss.HazardKind.forParticle(particle);
     }
 
     /** Minecraft ticks since this script's game tick began (0 for strikes made in it). */
@@ -396,6 +414,9 @@ public abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScale
         }
         redrawStrikes(); // for drivers that only run game ticks
         for (Strike s : landed) {
+            if (s.floor != null) {
+                s.floor.clear(); // its tiles' marker goes as it lands
+            }
             s.world.sendParticles(ParticleTypes.EXPLOSION, s.pos.x, s.pos.y + 0.3, s.pos.z, 2, 0.3, 0.2, 0.3, 0);
             s.world.sendParticles(s.particle, s.pos.x, s.pos.y + 0.5, s.pos.z, 15, s.radius / 2, 0.4, s.radius / 2, 0.02);
             // What is drawn is what hits: horizontally inside the outline, within its height tolerance. // playability: OSRS

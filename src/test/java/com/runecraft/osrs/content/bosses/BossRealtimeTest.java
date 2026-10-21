@@ -199,6 +199,19 @@ class BossRealtimeTest {
         assertEquals(3, BossRealtime.muspahSpikeEruptTicks(), "OSRS 2: floored to 3");
     }
 
+    /** Vardorvis's axes sweep their path (round 43): the first step on the strike floor, then two steps a tick, in order. */
+    @Test
+    void axesSweepTileByTile() {
+        assertEquals(3, BossRealtime.axeStepDelay(0), "where it appears: the strike floor");
+        assertEquals(5, BossRealtime.axeStepDelay(4), "the player's spot, mid-path");
+        assertEquals(7, BossRealtime.axeStepDelay(BossRealtime.AXE_PATH_STEPS - 1), "the far end");
+        for (int s = 1; s < BossRealtime.AXE_PATH_STEPS; s++) {
+            int d = BossRealtime.axeStepDelay(s) - BossRealtime.axeStepDelay(s - 1);
+            assertTrue(d == 0 || d == 1, "step " + s + " lands with or a tick after the one before");
+        }
+        assertTrue(BossRealtime.axeStepDelay(4) > BossRealtime.axeStepDelay(0), "no longer all on one tick");
+    }
+
     /** The Fragment of Seren's special comes every fourth attack she makes (counted per attack, not per goal tick). */
     @Test
     void fragmentOfSerenSpecialEveryFourthAttack() {

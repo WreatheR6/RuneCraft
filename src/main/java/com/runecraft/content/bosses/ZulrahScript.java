@@ -56,6 +56,8 @@ final class ZulrahScript extends ScriptedBoss {
     private int diving = -1;
     private boolean jadMagic;
     private final List<Cloud> clouds = new ArrayList<>();
+    /** The venom clouds' 3x3-tile areas as green floor blocks while they last (round 43). */
+    private com.runecraft.boss.FloorMarkers.Layer cloudFloor;
     private final List<Snakeling> snakelings = new ArrayList<>();
 
     ZulrahScript(String formId) {
@@ -274,6 +276,28 @@ final class ZulrahScript extends ScriptedBoss {
         }
         trace("cloud");
         BossFx.warn(boss, "Zulrah spits clouds of toxic fumes!");
+        showClouds(boss);
+    }
+
+    /**
+     * The clouds' areas on the floor (round 43): exactly the square {@link ZulrahVorkath#inCloud} hurts in, green from the moment
+     * a cloud lands until it fades (put back then, when this form dives away or dies, or when the server stops); only where
+     * the shrine has a plain floor block (not over the swamp's water). // playability: OSRS shows the cloud over its tiles
+     */
+    private void showClouds(DataBossEntity boss) {
+        if (cloudFloor == null) {
+            cloudFloor = new com.runecraft.boss.FloorMarkers.Layer(boss);
+        }
+        com.runecraft.boss.FloorMarkers.Shape shape = new com.runecraft.boss.FloorMarkers.Shape(BossFx.world(boss));
+        for (Cloud c : clouds) {
+            shape.box(c.pos(), ZulrahVorkath.CLOUD_HALF_WIDTH, com.runecraft.boss.HazardKind.POISON);
+        }
+        cloudFloor.show(shape);
+    }
+
+    /** Self-test: the floor blocks the venom clouds mark now. */
+    int cloudFloorMarked() {
+        return cloudFloor == null ? 0 : cloudFloor.size();
     }
 
     @Override
@@ -335,6 +359,10 @@ final class ZulrahScript extends ScriptedBoss {
     }
 
     private void tickClouds(DataBossEntity boss) {
+        if (cloudFloor != null || !clouds.isEmpty()) {
+            clouds.removeIf(c -> now > c.until());
+            showClouds(boss);
+        }
         Iterator<Cloud> it = clouds.iterator();
         while (it.hasNext()) {
             Cloud c = it.next();
@@ -356,5 +384,8 @@ final class ZulrahScript extends ScriptedBoss {
     @Override
     public void onDeath(DataBossEntity boss, ServerPlayer killer) {
         snakelings.forEach(sn -> sn.mob().discard());
+        if (cloudFloor != null) {
+            cloudFloor.clear();
+        }
     }
 }
