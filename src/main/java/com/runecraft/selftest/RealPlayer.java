@@ -274,7 +274,7 @@ public final class RealPlayer implements AutoCloseable {
         add(cue);
         if (RealReaction.exitDistance(dx, dz, g.radius()) > 0) {
             // what a player reacting at once has to walk: to the nearest spot clear of everything landing with it
-            double[] spot = safeSpot(p.position(), cue.landMc - 6, cue.landMc + 6);
+            double[] spot = safeSpot(p.position(), cue.landMc - 6, cue.landMc + 6, false);
             cue.need = spot == null ? Double.POSITIVE_INFINITY : Math.max(spot[2], 1e-3);
         }
     }
@@ -515,11 +515,15 @@ public final class RealPlayer implements AutoCloseable {
         return out;
     }
 
-    /** The nearest standable spot clear of every round strike landing between {@code from} and {@code to}: {x, z, distance}. */
-    private double[] safeSpot(Vec3 at, long from, long to) {
+    /**
+     * The nearest standable spot clear of every round strike landing between {@code from} and {@code to}: {x, z, distance}.
+     * With {@code avoidDanger} it also keeps off danger marks and hazards (where a dodge ends); without, it measures the walk
+     * out of the strikes themselves (the budget: their own floor marks, drawn at block size, would make the way out look longer).
+     */
+    private double[] safeSpot(Vec3 at, long from, long to, boolean avoidDanger) {
         List<RealReaction.Disc> d = discs(from, to);
         int feet = feetY(at.y);
-        return RealReaction.safeSpot(at.x, at.z, d, to, DODGE_REACH, (x, z) -> standable(x, z, feet, true));
+        return RealReaction.safeSpot(at.x, at.z, d, to, DODGE_REACH, (x, z) -> standable(x, z, feet, avoidDanger));
     }
 
     private void dodge(long now) {
@@ -549,7 +553,7 @@ public final class RealPlayer implements AutoCloseable {
             return; // already walking to a safe spot
         }
         long until = soonest == Long.MAX_VALUE ? now + 24 : soonest + 24;
-        double[] spot = safeSpot(p.position(), now, until);
+        double[] spot = safeSpot(p.position(), now, until, true);
         if (spot == null || spot[2] < 1e-3) {
             return;
         }
