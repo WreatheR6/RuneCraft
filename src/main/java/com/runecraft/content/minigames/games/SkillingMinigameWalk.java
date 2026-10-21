@@ -603,11 +603,35 @@ public final class SkillingMinigameWalk {
             use(l, "trawler_leak");
         }
         int before = ft.selfTestView(player).contribution();
-        use(ft.selfTestBlock("trawler_bucket"), "trawler_bucket");
-        expect(until(200, () -> ft.selfTestView(player).water() == 0 || !ActionManager.isBusy(player)) && ft.selfTestView(player).water() < water,
-                "bailing left " + ft.selfTestView(player).water() + "% water");
-        expect(ft.selfTestView(player).contribution() > before, "bailing earned no contribution");
-        notes.add("leaks patched (5 each), water " + water + "% bailed out");
+        BlockPos bucket = ft.selfTestBlock("trawler_bucket");
+        use(bucket, "trawler_bucket");
+        expect(ActionManager.isBusy(player), "clicking the bailing bucket at " + water + "% water didn't start bailing");
+        // Leaks keep springing while the player bails (one every 18 ticks alone), and an open leak lets its water in on the
+        // very tick the bucket empties the hold, so the hold only runs dry with the leaks patched: patch each as it springs and
+        // go back to the bucket (walking to a leak stops the bailing), as a player does. (Round 40's walk stood at the bucket
+        // and let the new leaks sink the trawler, then read the 100% of the wreck as "bailing left 100% water".)
+        int[] patched = {0};
+        until(200, () -> {
+            FishingTrawlerSession.View v = ft.selfTestView(player);
+            if (v.water() == 0 || ft.isEnded()) {
+                return true;
+            }
+            if (!v.leaks().isEmpty() || !ActionManager.isBusy(player)) {
+                for (BlockPos l : v.leaks()) {
+                    use(l, "trawler_leak");
+                    patched[0]++;
+                }
+                use(bucket, "trawler_bucket");
+            }
+            return false;
+        });
+        FishingTrawlerSession.View bailed = ft.selfTestView(player);
+        expect(!ft.isEnded() && bailed.water() == 0, "bailing left " + bailed.water() + "% water (from " + water + "%, "
+                + patched[0] + " new leaks patched" + (ft.isEnded() ? ", the trawler sank" : "") + ")");
+        int bails = (bailed.contribution() - before - patched[0] * MinigameRules.Trawler.LEAK_POINTS) / MinigameRules.Trawler.BAIL_POINTS;
+        expect(bails >= 1, "bailing " + water + "% of water earned no contribution (" + (bailed.contribution() - before)
+                + " points with " + patched[0] + " leaks patched)");
+        notes.add("leaks patched (5 each), water " + water + "% bailed out (" + bails + " bails, " + patched[0] + " new leaks patched)");
 
         step = "net";
         ft.selfTestTearNet();
