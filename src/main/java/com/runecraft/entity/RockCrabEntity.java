@@ -10,7 +10,6 @@ import net.minecraft.world.entity.ai.goal.FloatGoal;
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
-import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -77,7 +76,8 @@ public class RockCrabEntity extends OsrsMonsterEntity implements Disguisable {
                 return !isDisguised() && super.canUse();
             }
         });
-        this.targetSelector.addGoal(1, new HurtByTargetGoal(this));
+        // round 42: the OSRS target goal without hunting (sticky retaliation, the leash to its spawn point)
+        this.targetSelector.addGoal(1, new OsrsTargetGoal(this, false));
     }
 
     @Override

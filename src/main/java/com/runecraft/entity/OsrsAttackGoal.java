@@ -6,11 +6,13 @@ import com.runecraft.osrs.ThreatTiming;
 import java.util.EnumSet;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.Goal;
 
 /**
  * Chases (melee) or keeps range (ranged/magic) and attacks at the OSRS attack speed, stamped when each attack starts (the hit
- * itself is delivered later: a wind-up, a projectile or a telegraph, see {@code Mechanics}).
+ * itself is delivered later: a wind-up, a projectile or a telegraph, see {@code Mechanics}). Drives any monster on OSRS AI
+ * ({@link OsrsCombatant}: the built-in and module creatures, and since round 42 the vanilla stand-ins, see {@link VanillaOsrsAi}).
  *
  * <p>Real-time adaptations (// playability, round 41): melee reach is the horizontal gap between the two bounding boxes (at most
  * 1.5 blocks, 1.5 in height; OSRS: an adjacent tile) instead of a 3D centre distance that grew with the monster's width, and a
@@ -18,7 +20,8 @@ import net.minecraft.world.entity.ai.goal.Goal;
  * sooner than 10 MC later (OSRS can hit on the tick a monster arrives).
  */
 public class OsrsAttackGoal extends Goal {
-    private final OsrsMonsterEntity mob;
+    private final OsrsCombatant c;
+    private final Mob mob;
     private long lastAttack = -1000;
     /** The target the cadence was last set up for. */
     private LivingEntity engaged;
@@ -26,7 +29,12 @@ public class OsrsAttackGoal extends Goal {
     private long arrivedAt = Long.MIN_VALUE / 4;
 
     public OsrsAttackGoal(OsrsMonsterEntity mob) {
-        this.mob = mob;
+        this((OsrsCombatant) mob);
+    }
+
+    public OsrsAttackGoal(OsrsCombatant c) {
+        this.c = c;
+        this.mob = c.self();
         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
     }
 
@@ -59,7 +67,7 @@ public class OsrsAttackGoal extends Goal {
             return;
         }
         long now = ActionManager.mcTick();
-        int speedTicks = mob.stats().attackSpeed();
+        int speedTicks = c.stats().attackSpeed();
         int windup = ThreatTiming.meleeWindupMc(mob.getBbWidth());
         if (target != engaged) {
             engaged = target;
@@ -67,10 +75,10 @@ public class OsrsAttackGoal extends Goal {
             wasInReach = false;
         }
         double distSq = mob.distanceToSqr(target);
-        AttackType style = mob.chooseStyle(target, distSq);
-        boolean melee = style.isMelee() || mob.meleeRangeOnly;
+        AttackType style = c.chooseStyle(target, distSq);
+        boolean melee = style.isMelee() || c.meleeRangeOnly();
         double gap = ThreatTiming.gap(target.getX() - mob.getX(), target.getZ() - mob.getZ(), mob.getBbWidth(), target.getBbWidth());
-        double ranged = mob.rangedReach > 0 ? mob.rangedReach : 10.0;
+        double ranged = c.rangedReach() > 0 ? c.rangedReach() : 10.0;
         boolean inRange = melee ? ThreatTiming.inMeleeReach(gap, target.getY() - mob.getY()) : distSq <= ranged * ranged;
         mob.getLookControl().setLookAt(target, 30.0f, 30.0f);
         boolean canSee = mob.getSensing().hasLineOfSight(target);
@@ -92,7 +100,7 @@ public class OsrsAttackGoal extends Goal {
 
     /** Path-finds to the target, or walks straight at it for a creature with OSRS direct ("dumb") pathing. */
     private void chase(ServerPlayer target) {
-        if (mob.directPathing) {
+        if (c.directPathing()) {
             mob.getNavigation().stop();
             mob.getMoveControl().setWantedPosition(target.getX(), target.getY(), target.getZ(), 1.0);
         } else {
@@ -104,7 +112,7 @@ public class OsrsAttackGoal extends Goal {
         if (ready && ThreatTiming.cadenceReady(now, lastAttack, speedTicks) && now >= earliest
                 && com.runecraft.combat.CombatZones.npcMayAttack(mob, target)) {
             lastAttack = now; // cadence stamped at launch: a later landing never adds or removes an attack
-            mob.performAttack(target, style);
+            c.performAttack(target, style);
         }
     }
 }

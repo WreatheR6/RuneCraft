@@ -192,6 +192,7 @@ final class GameplayChecks {
         checks.add(new SelfTest.Check("boss:barrows_run", () -> g.walk(com.runecraft.content.dungeons.BarrowsWalk::run)));
         checks.addAll(BossFightChecks.all(context));
         checks.addAll(NpcDeliveryChecks.all(context));
+        checks.addAll(MonsterAiChecks.all(context)); // round 42 open-world monster AI (boss:playability_monster_*)
         // The God Wars Dungeon walked end to end: the hole, kill count, each general's chamber, the prison and Nex.
         checks.add(new SelfTest.Check("boss:gwd_walk", () -> g.walk(com.runecraft.content.godwars.GwdWalk::run)));
         // The Wilderness (round 39): the Revenant Caves, the agility course, an obelisk and the Ferox Enclave, the Mage Arenas.

@@ -88,6 +88,9 @@ public final class LocationSpawner {
             }
         });
         ServerTickEvents.END_SERVER_TICK.register(LocationSpawner::tick);
+        // round 42: the vanilla stand-ins on OSRS AI, and monster drops laid as OSRS does
+        com.runecraft.entity.VanillaOsrsAi.register();
+        com.runecraft.combat.LootDrops.register();
     }
 
     // ------------------------------------------------------------------ blocking natural spawns
@@ -322,6 +325,8 @@ public final class LocationSpawner {
         if (mob instanceof Zombie zombie) {
             zombie.setBaby(false); // OSRS zombies are all grown up
         }
+        mob.ejectPassengers(); // a spider jockey's skeleton: OSRS spiders ride alone
+        com.runecraft.entity.MonsterHome.setIfAbsent(mob, pos); // where it hunts and returns to (round 42)
         mob.setPersistenceRequired();
         mob.addTag(TAG);
         mob.addTag(state.tag);

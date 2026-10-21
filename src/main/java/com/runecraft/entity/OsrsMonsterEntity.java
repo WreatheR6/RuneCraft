@@ -11,18 +11,18 @@ import net.minecraft.world.entity.ai.goal.FloatGoal;
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
-import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
-import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 
 /**
  * A Gielinor creature with OSRS combat stats. Attacks are performed by {@link OsrsAttackGoal}
- * at the monster's real attack speed; damage is rolled with OSRS formulas.
+ * at the monster's real attack speed; damage is rolled with OSRS formulas. Who it fights is decided by {@link OsrsTargetGoal}
+ * (round 42: OSRS aggression, hunt range, leash to its spawn point, sticky retaliation, single-way readability).
  */
-public class OsrsMonsterEntity extends Monster {
+public class OsrsMonsterEntity extends Monster implements OsrsCombatant {
     private MonsterStats cachedStats;
+    private OsrsTargetGoal targetGoal;
 
     public OsrsMonsterEntity(EntityType<? extends Monster> type, Level world) {
         super(type, world);
@@ -82,33 +82,92 @@ public class OsrsMonsterEntity extends Monster {
         this.goalSelector.addGoal(6, new WaterAvoidingRandomStrollGoal(this, 0.8));
         this.goalSelector.addGoal(7, new LookAtPlayerGoal(this, Player.class, 8.0f));
         this.goalSelector.addGoal(8, new RandomLookAroundGoal(this));
-        this.targetSelector.addGoal(1, new HurtByTargetGoal(this));
-        this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, 10, true, false, this::shouldAggro));
+        targetGoal = new OsrsTargetGoal(this, true);
+        this.targetSelector.addGoal(1, targetGoal);
+    }
+
+    /** The goal that picks this monster's target (aggression, retaliation, leash). */
+    public OsrsTargetGoal targetGoal() {
+        return targetGoal;
     }
 
     /**
      * OSRS aggression: only attacks players whose combat level is at most double its own (any level in the
-     * Wilderness), and stops once the player has been in the area for 10 minutes (tolerance).
+     * Wilderness), and stops once the player has been in the area for 10 minutes (tolerance; some monsters never tolerate).
+     * An open-world creature takes its aggressiveness from the wiki ({@link com.runecraft.osrs.data.MonsterAggression}, round 42:
+     * most Slayer creatures are passive); encounter creatures (bosses, raids, minigames, quest spawns) keep their own flag.
      */
     protected boolean shouldAggro(net.minecraft.world.entity.LivingEntity entity) {
         MonsterStats s = stats();
-        if (s == null || (s.monster() == null && s.profile() == null) || !(entity instanceof ServerPlayer player) || player.isCreative()) {
+        if (s == null || (s.monster() == null && s.profile() == null) || !(entity instanceof ServerPlayer player)) {
             return false;
         }
-        boolean aggressive = s.monster() != null ? s.monster().aggressive() : s.profile().aggressive;
-        if (!aggressive || com.runecraft.combat.Aggression.tolerant(player, com.runecraft.action.ActionManager.gameTick())
-                || com.runecraft.combat.Aggression.peaceful(this, player)) {
-            return false;
+        boolean own = s.monster() != null ? s.monster().aggressive() : s.profile().aggressive;
+        String key = s.traitsKey();
+        boolean aggressive = isOpenWorld() ? com.runecraft.osrs.data.MonsterAggression.aggressive(key, own) : own;
+        return OsrsTargetGoal.osrsAggression(this, player, aggressive, s.combatLevel(), key);
+    }
+
+    /** True for a monster a world spawner placed (it has a spawn point to stay near), false for encounter monsters. */
+    public boolean isOpenWorld() {
+        return MonsterHome.get(this) != null;
+    }
+
+    /**
+     * Remembers where a world spawner (spawn points, camps: SPAWNER; structures: STRUCTURE) placed an ordinary monster, so it hunts,
+     * chases and returns around its spawn point (round 42). Bosses and encounter creatures never get one.
+     */
+    @Override
+    public net.minecraft.world.entity.SpawnGroupData finalizeSpawn(net.minecraft.world.level.ServerLevelAccessor level,
+            net.minecraft.world.DifficultyInstance difficulty, net.minecraft.world.entity.MobSpawnType type,
+            net.minecraft.world.entity.SpawnGroupData data) {
+        net.minecraft.world.entity.SpawnGroupData out = super.finalizeSpawn(level, difficulty, type, data);
+        if ((type == net.minecraft.world.entity.MobSpawnType.SPAWNER || type == net.minecraft.world.entity.MobSpawnType.STRUCTURE)
+                && !(this instanceof BossEntity) && !(this instanceof com.runecraft.boss.DataBossEntity) && !encounterOnly()) {
+            MonsterHome.setIfAbsent(this, blockPosition());
         }
-        // Single-way combat: don't pick a fight with someone already fighting something else.
-        if (!com.runecraft.combat.CombatZones.npcMayAttack(this, player)) {
-            return false;
+        return out;
+    }
+
+    private boolean encounterOnly() {
+        MonsterStats s = stats();
+        return s != null && s.profile() != null && com.runecraft.osrs.world.SpawnTable.encounterOnly().containsKey(s.profile().id);
+    }
+
+    // ------------------------------------------------------------------ OsrsCombatant
+
+    @Override
+    public net.minecraft.world.entity.Mob self() {
+        return this;
+    }
+
+    @Override
+    public boolean wantsToAttack(ServerPlayer player) {
+        return shouldAggro(player);
+    }
+
+    @Override
+    public double huntRange() {
+        if (!isOpenWorld()) {
+            return com.runecraft.osrs.MonsterAi.ENCOUNTER_HUNT_BLOCKS;
         }
-        if (com.runecraft.world.Gielinor.wildernessLevel(player) > 0) {
-            return true;
-        }
-        int combat = Players.data(player).skills().combatLevel();
-        return s.monster() != null ? s.monster().isAggressiveTo(combat) : s.profile().isAggressiveTo(combat);
+        MonsterStats s = stats();
+        return com.runecraft.osrs.MonsterAi.huntBlocks(s != null && s.profile() != null ? s.profile().id : null);
+    }
+
+    @Override
+    public boolean meleeRangeOnly() {
+        return meleeRangeOnly;
+    }
+
+    @Override
+    public double rangedReach() {
+        return rangedReach;
+    }
+
+    @Override
+    public boolean directPathing() {
+        return directPathing;
     }
 
     /** Attack chosen by {@link #chooseStyle} for module creatures with an attack list. */

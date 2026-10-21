@@ -316,15 +316,10 @@ public final class CombatHandler {
 
     /**
      * Single-way combat check for a player starting an attack; tells the player why not ("Someone else is fighting
-     * that." / "I'm already under attack.").
+     * that." / "I'm already under attack.") and names who is in the way ({@link CombatZones#allows}).
      */
     public static boolean singleWayAllows(ServerPlayer player, LivingEntity target) {
-        com.runecraft.osrs.SingleCombat.Verdict v = CombatZones.check(player, target);
-        if (v != com.runecraft.osrs.SingleCombat.Verdict.OK) {
-            Msg.game(player, v.message);
-            return false;
-        }
-        return true;
+        return CombatZones.allows(player, target);
     }
 
     /**
@@ -507,6 +502,8 @@ public final class CombatHandler {
             return 0;
         }
         int dealt = Math.min(damage, (int) Math.ceil(target.getHealth()));
+        // round 42: the top damager gets the kill; recorded before the hurt, whose death hands out the kill
+        KillCredit.record(attacker != null ? attacker : typelessKillCredit, target, dealt);
         applying = true;
         try {
             target.invulnerableTime = 0;
@@ -560,13 +557,23 @@ public final class CombatHandler {
     /** Set by {@link PoisonService} around a poison or venom tick: who a monster killed by it is credited to. */
     static ServerPlayer typelessKillCredit;
 
+    /**
+     * A monster's death in Gielinor: the kill goes to its top damager ({@link KillCredit}, round 42; OSRS gives the drop and the kill
+     * to whoever dealt the most damage), or the killing blow's player when nobody is recorded. Bosses keep the killing blow here
+     * (their loot follows their own contribution rules). Drops land on the monster's tile, private to the winner for 60 s
+     * ({@link LootDrops}).
+     */
     private static void afterDeath(LivingEntity entity, DamageSource source) {
         Entity attacker = source.getEntity() != null ? source.getEntity() : typelessKillCredit;
         if (entity instanceof ServerPlayer) {
             return;
         }
         boolean osrsWorld = Gielinor.is(entity) || entity instanceof OsrsMonsterEntity;
-        if (!osrsWorld || !(attacker instanceof ServerPlayer player)) {
+        ServerPlayer killer = attacker instanceof ServerPlayer p ? p : KillCredit.owner(attacker);
+        boolean boss = entity instanceof com.runecraft.entity.BossEntity || entity instanceof com.runecraft.boss.DataBossEntity;
+        ServerPlayer player = !osrsWorld ? null : boss ? killer : KillCredit.winner(entity, killer);
+        KillCredit.forget(entity);
+        if (player == null) {
             return;
         }
         MonsterStats stats = MonsterStats.of(entity);
@@ -577,7 +584,7 @@ public final class CombatHandler {
                 : stats.profile() instanceof com.runecraft.osrs.content.MonsterDef md ? md.drops : null;
         if (table != null) {
             for (Drops.Rolled r : Drops.roll(table, entity.getRandom(), false)) {
-                Inv.spawnAtLocation(entity, Drops.withDoses(CombatHooks.dropStack(player, entity, r.item(), r.count()), r.doses()));
+                LootDrops.spawn(entity, Drops.withDoses(CombatHooks.dropStack(player, entity, r.item(), r.count()), r.doses()), player);
                 CollectionLog.obtain(player, r.item());
             }
         }

@@ -252,7 +252,8 @@ public final class LootingBagService {
                 continue;
             }
             List<ItemEntity> items = world.getEntitiesOfClass(ItemEntity.class, p.getBoundingBox().inflate(1.0, 0.5, 1.0),
-                    e -> e.isAlive() && !e.hasPickUpDelay() && storable(e.getItem()));
+                    e -> e.isAlive() && !e.hasPickUpDelay() && storable(e.getItem())
+                            && (e.getTarget() == null || e.getTarget().equals(p.getUUID()))); // not someone else's private drop
             for (ItemEntity e : items) {
                 ItemStack st = e.getItem();
                 int before = st.getCount();
