@@ -71,27 +71,44 @@ public final class SingleCombat {
         states.values().removeIf(s -> tick - Math.max(s.attackedAt, s.attackingAt) > 100);
     }
 
+    /** Why an attack is refused and by whom: {@code blocker} is the fighter the target or the attacker is busy with (-1 if none). */
+    public record Refusal(Verdict verdict, int blocker) {
+        public static final Refusal NONE = new Refusal(Verdict.OK, -1);
+    }
+
     /**
      * Whether {@code attacker} may attack {@code target} now. {@code active} tells whether a recorded fighter is
      * still around (alive and loaded); fighters that are gone never block anyone.
      */
     public synchronized Verdict check(int attacker, int target, long tick, boolean multi, boolean pvp, IntPredicate active) {
+        return refusal(attacker, target, tick, multi, pvp, active, active).verdict();
+    }
+
+    /**
+     * {@link #check} with a separate test per side: {@code engagedWithTarget} tells whether a recorded fighter still holds the
+     * target (the target is busy with it), {@code engagedWithAttacker} whether one still holds the attacker (round 42: a monster
+     * that wandered off or went home releases its lock early, see {@code MonsterAi.stillEngaged}).
+     */
+    public synchronized Refusal refusal(int attacker, int target, long tick, boolean multi, boolean pvp,
+                                        IntPredicate engagedWithTarget, IntPredicate engagedWithAttacker) {
         if (multi) {
-            return Verdict.OK;
+            return Refusal.NONE;
         }
         int window = pvp ? PVP_COMBAT_TICKS : COMBAT_TICKS;
         State t = states.get(target);
         if (t != null) {
-            if (busyWithOther(t.lastAttacker, t.attackedAt, attacker, tick, window, active)
-                    || busyWithOther(t.lastTarget, t.attackingAt, attacker, tick, window, active)) {
-                return Verdict.TARGET_BUSY;
+            if (busyWithOther(t.lastAttacker, t.attackedAt, attacker, tick, window, engagedWithTarget)) {
+                return new Refusal(Verdict.TARGET_BUSY, t.lastAttacker);
+            }
+            if (busyWithOther(t.lastTarget, t.attackingAt, attacker, tick, window, engagedWithTarget)) {
+                return new Refusal(Verdict.TARGET_BUSY, t.lastTarget);
             }
         }
         State a = states.get(attacker);
-        if (a != null && busyWithOther(a.lastAttacker, a.attackedAt, target, tick, window, active)) {
-            return Verdict.ATTACKER_BUSY;
+        if (a != null && busyWithOther(a.lastAttacker, a.attackedAt, target, tick, window, engagedWithAttacker)) {
+            return new Refusal(Verdict.ATTACKER_BUSY, a.lastAttacker);
         }
-        return Verdict.OK;
+        return Refusal.NONE;
     }
 
     /**
@@ -100,10 +117,18 @@ public final class SingleCombat {
      * takes priority) and can hit back. Monsters keep the single-way rules. {@code player} tells which fighters are players.
      */
     public Verdict checkSinglesPlus(int attacker, int target, long tick, boolean pvp, IntPredicate active, IntPredicate player) {
+        return refusalSinglesPlus(attacker, target, tick, pvp, active, active, player).verdict();
+    }
+
+    /** {@link #checkSinglesPlus} with a separate test per side, as {@link #refusal}. */
+    public Refusal refusalSinglesPlus(int attacker, int target, long tick, boolean pvp, IntPredicate engagedWithTarget,
+                                      IntPredicate engagedWithAttacker, IntPredicate player) {
         if (!pvp) {
-            return check(attacker, target, tick, false, false, active);
+            return refusal(attacker, target, tick, false, false, engagedWithTarget, engagedWithAttacker);
         }
-        return check(attacker, target, tick, false, true, id -> player.test(id) && (active == null || active.test(id)));
+        return refusal(attacker, target, tick, false, true,
+                id -> player.test(id) && (engagedWithTarget == null || engagedWithTarget.test(id)),
+                id -> player.test(id) && (engagedWithAttacker == null || engagedWithAttacker.test(id)));
     }
 
     private static boolean busyWithOther(int other, long at, int self, long tick, int window, IntPredicate active) {

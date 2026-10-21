@@ -14,7 +14,7 @@ public enum Monster {
     // RuneCraft creatures (biped models with their own textures)
     MAN("man", "Man", 2, 7, 1, 1, 1, 1, 1, 4, AttackType.CRUSH, 0, false, 0, 0xC8A080,
             List.of(Drop.always("bones"), Drop.of("coins", 1, 15, 3), Drop.seeds(40), Drop.herbs(60))),
-    GOBLIN("goblin", "Goblin", 2, 5, 1, 1, 1, 1, 1, 4, AttackType.CRUSH, -15, true, 0, 0x6A9A3A,
+    GOBLIN("goblin", "Goblin", 2, 5, 1, 1, 1, 1, 1, 4, AttackType.CRUSH, -15, false, 0, 0x6A9A3A,
             List.of(Drop.of("goblin_champion_scroll", 1, 1, 5000), Drop.always("bones"), Drop.of("coins", 1, 9, 4), Drop.of("bronze_scimitar", 1, 1, 64),
                     Drop.of("air_rune", 4, 8, 16), Drop.of("water_rune", 4, 8, 16), Drop.herbs(90))),
     AL_KHARID_WARRIOR("al_kharid_warrior", "Al-Kharid warrior", 9, 19, 7, 5, 4, 1, 1, 4, AttackType.SLASH, 0, false, 0, 0xD0C080,
@@ -36,7 +36,7 @@ public enum Monster {
                     Drop.of("cosmic_rune", 2, 4, 16), Drop.of("mithril_scimitar", 1, 1, 128), Drop.of("mossy_key", 1, 1, 150), Drop.herbs(16), Drop.gems(64), Drop.seeds(25))),
     GHOUL("ghoul", "Ghoul", 42, 50, 30, 40, 30, 1, 1, 4, AttackType.CRUSH, 0, true, 0, 0x7A8A7A,
             List.of(Drop.of("ghoul_champion_scroll", 1, 1, 5000), Drop.always("bones"), Drop.of("coins", 10, 100, 3), Drop.herbs(20))),
-    ICE_GIANT("ice_giant", "Ice giant", 53, 70, 40, 40, 40, 1, 1, 5, AttackType.CRUSH, 0, true, 0, 0x90B8D8,
+    ICE_GIANT("ice_giant", "Ice giant", 53, 70, 40, 40, 40, 1, 1, 5, AttackType.SLASH, 0, true, 0, 0x90B8D8,
             List.of(Drop.of("giant_champion_scroll", 1, 1, 5000), Drop.always("big_bones"), Drop.of("coins", 10, 300, 3), Drop.of("adamant_arrow", 5, 10, 25),
                     Drop.of("mithril_ore", 1, 1, 20), Drop.herbs(16), Drop.gems(64))),
     LESSER_DEMON("lesser_demon", "Lesser demon", 82, 79, 68, 70, 71, 1, 1, 4, AttackType.SLASH, 0, true, 0, 0xA02020,
@@ -69,7 +69,7 @@ public enum Monster {
             List.of(Drop.of("zombie_champion_scroll", 1, 1, 5000), Drop.always("bones"), Drop.of("coins", 1, 20, 4), Drop.herbs(40), Drop.of("eye_of_newt", 1, 1, 16))),
     SKELETON("minecraft:skeleton", "Skeleton", 22, 29, 15, 18, 17, 1, 17, 4, AttackType.RANGED, 0, true, 0, 0,
             List.of(Drop.of("skeleton_champion_scroll", 1, 1, 5000), Drop.always("bones"), Drop.of("coins", 2, 30, 4), Drop.of("iron_arrow", 2, 10, 6), Drop.herbs(40))),
-    WOLF("minecraft:wolf", "Wolf", 25, 34, 20, 20, 22, 1, 1, 4, AttackType.STAB, 0, false, 0, 0,
+    WOLF("minecraft:wolf", "Wolf", 25, 34, 20, 16, 22, 1, 1, 4, AttackType.STAB, 0, true, 0, 0,
             List.of(Drop.always("bones"), Drop.of("grey_wolf_fur", 1, 1, 4))),
     VILLAGER("minecraft:villager", "Man", 2, 7, 1, 1, 1, 1, 1, 4, AttackType.CRUSH, 0, false, 0, 0,
             List.of(Drop.always("bones"), Drop.of("coins", 1, 15, 3))),
@@ -192,14 +192,37 @@ public enum Monster {
         return d;
     }
 
-    /** NPC max hit from strength level (NPCs have no equipment strength bonus by default). */
+    /**
+     * NPC max hit: the wiki infobox's where the strength-only formula below misses the monster's strength bonus or spell (round
+     * 42, locked by {@code MonsterAggressionTest} against {@code monster_aggression.tsv}), else from the strength level (NPCs have
+     * no equipment strength bonus by default).
+     */
     public int maxHit() {
+        int wiki = wikiMaxHit(this);
+        if (wiki >= 0) {
+            return wiki;
+        }
         if (style == AttackType.MAGIC) {
             return Math.max(1, magic / 5);
         }
         int level = style == AttackType.RANGED ? ranged : strength;
         int effective = level + 9;
         return Math.max(1, (effective * 64 + 320) / 640);
+    }
+
+    /**
+     * The wiki's max hit for the constants whose strength bonus or spell the level formula misses (hill giant +16 strength, the
+     * dark wizards' strike spells, the level 1 chicken and spider that hit 0), or -1.
+     */
+    private static int wikiMaxHit(Monster m) {
+        return switch (m) {
+            case AL_KHARID_WARRIOR, DARK_WIZARD -> 2;
+            case HILL_GIANT -> 4;
+            case MOSS_GIANT, WITCH -> 6; // WITCH is the level 20 dark wizard
+            case ICE_GIANT -> 7;
+            case CHICKEN, SPIDER -> 0;
+            default -> -1;
+        };
     }
 
     /** Monsters are aggressive to players whose combat level is at most double theirs. */
