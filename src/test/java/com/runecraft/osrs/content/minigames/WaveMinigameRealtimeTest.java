@@ -46,6 +46,8 @@ class WaveMinigameRealtimeTest {
                 {"jaltok_jad", "8", "MAGIC 113", "RANGED 113", "STAB 113"},
                 {"jal_ak", "6", "CRUSH 29", "RANGED 29", "MAGIC 29"},
                 {"jal_imkot", "4", "SLASH 49"},
+                {"tok_xil", "4", "RANGED 14", "CRUSH 13"},
+                {"ket_zek", "4", "MAGIC 52", "STAB 55"},
         };
         for (String[] e : expected) {
             MonsterDef m = ContentRegistry.monster(e[0]);
@@ -76,7 +78,8 @@ class WaveMinigameRealtimeTest {
      */
     @Test
     void infernoStyleCues() {
-        for (String id : new String[]{TzHaarWaves.JAL_XIL, TzHaarWaves.JAL_ZEK, TzHaarWaves.JAL_MEJRAH}) {
+        for (String id : new String[]{TzHaarWaves.JAL_XIL, TzHaarWaves.JAL_ZEK, TzHaarWaves.JAL_MEJRAH, TzHaarWaves.TOK_XIL,
+                TzHaarWaves.KET_ZEK}) {
             for (AttackDef a : ContentRegistry.monster(id).attacks) {
                 if (a.melee()) {
                     assertEquals(0, a.telegraphTicks(), id + " melee is a wind-up, not a telegraph");
@@ -211,6 +214,27 @@ class WaveMinigameRealtimeTest {
         assertEquals(31, FortisColosseum.manticoreOrbMaxHit(AttackType.MAGIC));
         assertEquals(31, FortisColosseum.manticoreOrbMaxHit(AttackType.CRUSH));
         assertEquals(10, FortisColosseum.MANTICORE_CYCLE_TICKS);
+    }
+
+    /**
+     * Volatility goes off the strike floor's 3 ticks after the death (the wiki: it "can be dodged"), its blast the wiki's size;
+     * sky javelins and Solarflare orbs strike a tile's outline, the next tile's middle safe; their damage is unchanged.
+     */
+    @Test
+    void colosseumFloorStrikes() {
+        assertTrue(FortisColosseum.VOLATILITY_DELAY_TICKS >= ArenaTiming.STRIKE_FLOOR_TICKS);
+        assertEquals(2, FortisColosseum.volatilityRadius(3, 1), "a manticore's tier I blast is 5x5");
+        assertEquals(3, FortisColosseum.volatilityRadius(3, 2), "and 7x7 at tier II");
+        assertEquals(3, FortisColosseum.volatilityRadius(3, 3));
+        assertTrue(FortisColosseum.volatilityHits(3, 1, 2, -2));
+        assertFalse(FortisColosseum.volatilityHits(3, 1, 3, 0));
+        assertTrue(FortisColosseum.JAVELIN_FLIGHT_TICKS >= ArenaTiming.STRIKE_FLOOR_TICKS);
+        assertEquals(40, FortisColosseum.JAVELIN_MAX_HIT);
+        assertEquals(6, FortisColosseum.JAVELIN_FLIGHT_TICKS);
+        assertTrue(FortisColosseum.inTileStrike(0.5, 0.3, 0.0));
+        assertTrue(FortisColosseum.inTileStrike(-0.4, 0, 0.4));
+        assertFalse(FortisColosseum.inTileStrike(1.0, 0, 0), "the middle of the next tile");
+        assertFalse(FortisColosseum.inTileStrike(0, 2.5, 0), "a floor above");
     }
 
     /** Sol Heredit's grapple: about 3.5 s on the hotbar keys, the cadence and the perfect parry kept. */

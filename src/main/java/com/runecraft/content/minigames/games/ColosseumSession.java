@@ -138,6 +138,12 @@ public class ColosseumSession extends MinigameSession {
     private record Javelin(LivingEntity colossus, BlockPos target, long lands) {
     }
 
+    /** A Volatility explosion on its way: the enemy's centre tile, its size, the tier, the game tick it goes off, its wave. */
+    private record Explosion(BlockPos at, int size, int tier, long landsAt, int wave) {
+    }
+
+    private final List<Explosion> explosions = new ArrayList<>();
+
     private record Totem(LivingEntity totem, LivingEntity enemy, long born) {
     }
 
@@ -479,6 +485,7 @@ public class ColosseumSession extends MinigameSession {
         if (state == State.FIGHTING) {
             sandTick(); // molten sand only burns during a wave
         }
+        volatilityTick();
         if (state != State.DONE) {
             frailtyTick();
         }
@@ -797,18 +804,110 @@ public class ColosseumSession extends MinigameSession {
         if (tier <= 0) {
             return;
         }
-        int size = FortisColosseum.size(creatureId);
-        BlockPos at = entity.blockPosition();
+        // it goes off FortisColosseum.VOLATILITY_DELAY_TICKS later, its blast square drawn meanwhile (mcTick) // playability:
+        // it went off on the death tick ("can be dodged", wiki strategy guide)
+        explosions.add(new Explosion(entity.blockPosition(), FortisColosseum.size(creatureId), tier,
+                ticks + FortisColosseum.VOLATILITY_DELAY_TICKS, wave));
+        drawExplosions();
+        world.playSound(null, entity.blockPosition(), net.minecraft.sounds.SoundEvents.TNT_PRIMED, net.minecraft.sounds.SoundSource.HOSTILE,
+                0.8f, 1.2f);
+    }
+
+    /** Volatility explosions whose delay is over go off (in any state: an enemy killed as its wave ends still explodes). */
+    private void volatilityTick() {
+        if (explosions.isEmpty()) {
+            return;
+        }
+        List<Explosion> due = new ArrayList<>();
+        explosions.removeIf(e -> {
+            if (ticks < e.landsAt()) {
+                return false;
+            }
+            due.add(e);
+            return true;
+        });
+        for (Explosion e : due) {
+            if (!isEnded()) {
+                detonate(e);
+            }
+        }
+    }
+
+    private void detonate(Explosion e) {
+        int tier = e.tier();
+        int size = e.size();
+        BlockPos at = e.at();
         int r = FortisColosseum.volatilityRadius(size, tier);
-        world.sendParticles(ParticleTypes.EXPLOSION, entity.getX(), entity.getY() + 1, entity.getZ(), 4 + r, r / 2.0, 0.5, r / 2.0, 0);
+        world.sendParticles(ParticleTypes.EXPLOSION, at.getX() + 0.5, at.getY() + 1, at.getZ() + 0.5, 4 + r, r / 2.0, 0.5, r / 2.0, 0);
         for (ServerPlayer p : online()) {
             if (FortisColosseum.volatilityHits(size, tier, p.getBlockX() - at.getX(), p.getBlockZ() - at.getZ())) {
                 CombatHooks.nameAttack("volatility", null);
                 hurt(p, 1 + random.nextInt(FortisColosseum.VOLATILITY_DAMAGE));
             }
         }
-        if (tier >= 3) {
-            addSand(at.subtract(origin), active.getOrDefault(Modifier.REENTRY, 0) >= 2);
+        boolean permanent = active.getOrDefault(Modifier.REENTRY, 0) >= 2;
+        // its temporary sand lasts the wave: one that goes off after its wave ended leaves none
+        if (tier >= 3 && (permanent || state == State.FIGHTING && wave == e.wave())) {
+            addSand(at.subtract(origin), permanent);
+        }
+    }
+
+    /** Pending Volatility explosions' blast squares (the tiles their test hits), brighter in the last half second. */
+    private void drawExplosions() {
+        for (Explosion e : explosions) {
+            int r = FortisColosseum.volatilityRadius(e.size(), e.tier());
+            boolean landing = (e.landsAt() - ticks) * 12 <= com.runecraft.osrs.ArenaTiming.FINAL_CUE_MC;
+            drawSquare(e.at().getX() - r, e.at().getZ() - r, e.at().getX() + r + 1, e.at().getZ() + r + 1, e.at().getY(), landing);
+        }
+    }
+
+    /** A dust outline round the floor area from block ({@code x0}, {@code z0}) to ({@code x1}, {@code z1}). */
+    private void drawSquare(double x0, double z0, double x1, double z1, int floorY, boolean landing) {
+        var dust = landing ? com.runecraft.boss.StrikeMarkers.OUTLINE_LANDING : com.runecraft.boss.StrikeMarkers.OUTLINE;
+        double y = floorY + 0.1;
+        double step = Math.max(0.5, (x1 - x0) / 16);
+        for (double d = 0; d <= x1 - x0 + 1e-6; d += step) {
+            world.sendParticles(dust, x0 + d, y, z0, 1, 0, 0, 0, 0);
+            world.sendParticles(dust, x0 + d, y, z1, 1, 0, 0, 0, 0);
+        }
+        for (double d = 0; d <= z1 - z0 + 1e-6; d += step) {
+            world.sendParticles(dust, x0, y, z0 + d, 1, 0, 0, 0, 0);
+            world.sendParticles(dust, x1, y, z0 + d, 1, 0, 0, 0, 0);
+        }
+    }
+
+    /**
+     * Every Minecraft tick: the grapple keys; every {@link com.runecraft.osrs.ArenaTiming#REDRAW_MC}: the floor markers of what
+     * is about to land (Volatility squares, sky javelin targets, Solarflare orbs and their next tile). // playability: OSRS
+     * shows the javelin's shadow and the orb itself
+     */
+    private void mcTick(long mc) {
+        grappleKeys();
+        if (mc % com.runecraft.osrs.ArenaTiming.REDRAW_MC != 0) {
+            return;
+        }
+        drawExplosions();
+        for (Javelin j : javelins) {
+            BlockPos t = j.target();
+            boolean landing = (j.lands() - ticks) * 12 <= com.runecraft.osrs.ArenaTiming.FINAL_CUE_MC;
+            com.runecraft.boss.StrikeMarkers.ring(world, new net.minecraft.world.phys.Vec3(t.getX() + 0.5, t.getY(), t.getZ() + 0.5),
+                    FortisColosseum.TILE_STRIKE_RADIUS, ParticleTypes.CRIT, landing,
+                    com.runecraft.osrs.ArenaTiming.ringPoints(FortisColosseum.TILE_STRIKE_RADIUS, 1));
+        }
+        int tier = active.getOrDefault(Modifier.SOLARFLARE, 0);
+        if (tier > 0 && state == State.FIGHTING) {
+            boolean solWave = wave >= FortisColosseum.WAVES;
+            for (int o = 0; o < FortisColosseum.solarflareOrbs(solWave); o++) {
+                List<int[]> path = FortisColosseum.solarflarePath(solWave, o);
+                int[] now = path.get(flareIndex[o] % path.size());
+                int[] next = path.get((flareIndex[o] + 1) % path.size());
+                BlockPos at = rel(now[0], 1, now[1]);
+                com.runecraft.boss.StrikeMarkers.ring(world, new net.minecraft.world.phys.Vec3(at.getX() + 0.5, at.getY(), at.getZ() + 0.5),
+                        FortisColosseum.TILE_STRIKE_RADIUS, null, true, 8);
+                BlockPos to = rel(next[0], 1, next[1]);
+                com.runecraft.boss.StrikeMarkers.ring(world, new net.minecraft.world.phys.Vec3(to.getX() + 0.5, to.getY(), to.getZ() + 0.5),
+                        FortisColosseum.TILE_STRIKE_RADIUS, null, false, 6);
+            }
         }
     }
 
@@ -828,7 +927,7 @@ public class ColosseumSession extends MinigameSession {
         }
         mob.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
         javelins.add(new Javelin(mob, target.blockPosition(), ticks + FortisColosseum.JAVELIN_FLIGHT_TICKS));
-        Msg.action(target, "The Javelin Colossus launches a javelin high into the air!");
+        Msg.telegraph(target, "The Javelin Colossus launches a javelin high into the air!", ChatFormatting.GOLD);
         return true;
     }
 
@@ -852,7 +951,8 @@ public class ColosseumSession extends MinigameSession {
             world.sendParticles(ParticleTypes.EXPLOSION, t.getX() + 0.5, t.getY() + 0.5, t.getZ() + 0.5, 1, 0, 0, 0, 0);
             LivingEntity source = j.colossus().isAlive() ? j.colossus() : null;
             for (ServerPlayer p : online()) {
-                if (p.getBlockX() == t.getX() && p.getBlockZ() == t.getZ()) {
+                // within the tile's strike outline (mcTick draws it) // playability: OSRS hits the one tile
+                if (FortisColosseum.inTileStrike(p.getX() - (t.getX() + 0.5), p.getY() - t.getY(), p.getZ() - (t.getZ() + 0.5))) {
                     CombatHooks.nameAttack("sky_javelin", null);
                     int dmg = random.nextInt(FortisColosseum.JAVELIN_MAX_HIT + 1);
                     if (source != null) {
@@ -1013,6 +1113,11 @@ public class ColosseumSession extends MinigameSession {
     /** How many manticore orbs and sky javelins are on their way (self-test). */
     public int orbsPending() {
         return orbs.size();
+    }
+
+    /** Volatility explosions waiting to go off (self-test). */
+    public int explosionsPendingForTest() {
+        return explosions.size();
     }
 
     /** The game ticks the manticore orbs on their way land on, earliest first (self-test). */
@@ -1307,7 +1412,8 @@ public class ColosseumSession extends MinigameSession {
                 continue;
             }
             for (ServerPlayer p : online()) {
-                if (p.getBlockX() == orb.getX() && p.getBlockZ() == orb.getZ()) {
+                // within the orb tile's outline (mcTick draws it and the next tile) // playability: OSRS burns the one tile
+                if (FortisColosseum.inTileStrike(p.getX() - (orb.getX() + 0.5), p.getY() - orb.getY(), p.getZ() - (orb.getZ() + 0.5))) {
                     CombatHooks.nameAttack("solarflare", null);
                     hurt(p, 1 + random.nextInt(FortisColosseum.solarflareDamage(tier)));
                     if (tier >= 3) {
@@ -1409,7 +1515,7 @@ public class ColosseumSession extends MinigameSession {
                 if (s.isEnded()) {
                     LIVE.remove(s);
                 } else {
-                    s.grappleKeys();
+                    s.mcTick(com.runecraft.action.ActionManager.mcTick());
                 }
             }
         });

@@ -571,6 +571,25 @@ public final class FortisColosseum {
 
     public static final int VOLATILITY_DAMAGE = 15; // approx: "the explosions don't do heavy damage" (no wiki number)
 
+    /**
+     * Game ticks from an enemy's death to its Volatility explosion, its blast square drawn on the floor meanwhile. The wiki's
+     * strategy guide says the explosions "can be dodged" but gives no delay. // approx: the strike floor's 3 ticks
+     * // playability: it went off on the death tick, undodgeable for a melee player
+     */
+    public static final int VOLATILITY_DELAY_TICKS = 3;
+
+    /**
+     * Radius (blocks, horizontal, round the tile's centre) of a strike on one tile: a sky javelin's landing and a Solarflare
+     * orb's burn, as Sol Heredit's lasers ({@link SolHeredit#LASER_RADIUS}). Under 1, so the middle of the next tile is safe.
+     * // playability: OSRS tests the one tile stood on; a Minecraft player straddles blocks
+     */
+    public static final double TILE_STRIKE_RADIUS = SolHeredit.LASER_RADIUS;
+
+    /** Whether a player ({@code dx}, {@code dy}, {@code dz}) from a struck tile's centre is hit. */
+    public static boolean inTileStrike(double dx, double dy, double dz) {
+        return dx * dx + dz * dz <= TILE_STRIKE_RADIUS * TILE_STRIKE_RADIUS && Math.abs(dy) < 2.0;
+    }
+
     /** Molten sand (Reentry, Volatility III): up to 15 damage every two ticks while standing on it. */
     public static final int MOLTEN_SAND_DAMAGE = 15;
 

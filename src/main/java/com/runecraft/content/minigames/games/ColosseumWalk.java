@@ -396,7 +396,11 @@ public final class ColosseumWalk {
             BlockPos tile = sandFree(shaman);
             moveTo(tile.east());
             kill(shaman, AttackType.SLASH, "the shaman");
-            expect(session.sandAt(tile), "Volatility III left no molten sand on the shaman's tile");
+            // Round 42 playability: it goes off FortisColosseum.VOLATILITY_DELAY_TICKS after the death (dodgeable), not on it.
+            expect(!session.sandAt(tile) && session.explosionsPendingForTest() >= 1,
+                    "the shaman exploded on its death tick (" + session.explosionsPendingForTest() + " pending)");
+            until(() -> session.sandAt(tile), FortisColosseum.VOLATILITY_DELAY_TICKS + 1, "the shaman's explosion never went off");
+            expect(session.explosionsPendingForTest() == 0, "the shaman's explosion is still pending");
             expect("magma_block".equals(blockId(tile.below())), "Volatility III's molten sand is not on the floor under the shaman "
                     + "(found " + blockId(tile.below()) + ")");
             volatilitySand = tile;

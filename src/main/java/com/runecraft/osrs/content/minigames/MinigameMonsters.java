@@ -48,13 +48,17 @@ public final class MinigameMonsters {
                 .attack(melee(AttackType.CRUSH, 7)).size(1.0f, 1.0f, 1.2f).skin(0xA03010, 0x702010, 0x501008, 0xFF8030));
         list.add(m("tz_kek_small", "Tz-Kek", 22).model("tz_kek").stats(10, 20, 20, 20, 1, 1).speed(4)
                 .attack(melee(AttackType.CRUSH, 4)).size(0.7f, 0.7f, 0.8f).skin(0xA03010, 0x702010, 0x501008, 0xFF8030));
+        // Tok-Xil's ranged and Ket-Zek's magic glow in their style for 3 ticks before landing, as the Inferno's
+        // (TzHaarWaves.STYLE_CUE_TICKS). // playability: OSRS players flick between them from the animations
         list.add(m("tok_xil", "Tok-Xil", 90).stats(40, 80, 80, 80, 1, 80).speed(4).defenceBonus(0, 0, 0, 0, 0)
-                .attack(ranged(14, 9)).attack(melee(AttackType.CRUSH, 13).special(Special.NONE, 0))
+                .attack(ranged(14, 9).telegraph(TzHaarWaves.STYLE_CUE_TICKS, null))
+                .attack(melee(AttackType.CRUSH, 13).special(Special.NONE, 0))
                 .size(0.9f, 1.8f, 1.2f).skin(0x903818, 0x602010, 0x401008, 0xFFA040));
         list.add(m("yt_mejkot", "Yt-MejKot", 180).stats(80, 160, 160, 160, 1, 1).speed(4)
                 .attack(melee(AttackType.CRUSH, 25)).size(1.0f, 2.2f, 1.3f).skin(0x8A3010, 0x5A2010, 0x3A1008, 0xFFC050));
         list.add(m("ket_zek", "Ket-Zek", 360).stats(160, 320, 320, 320, 240, 1).speed(4).defenceBonus(0, 0, 0, 0, 0)
-                .attack(magic(52, 12, "minecraft:flame")).attack(melee(AttackType.STAB, 55))
+                .attack(magic(52, 12, "minecraft:flame").telegraph(TzHaarWaves.STYLE_CUE_TICKS, null))
+                .attack(melee(AttackType.STAB, 55))
                 .size(1.1f, 2.6f, 1.4f).skin(0x7A2810, 0x4A1808, 0x2A1008, 0xFFD060));
         list.add(m("yt_hurkot", "Yt-HurKot", 108).stats(60, 140, 100, 60, 1, 1).speed(4).passive()
                 .attack(melee(AttackType.CRUSH, 14)).size(0.8f, 1.8f, 1.0f).skin(0xA04818, 0x703010, 0x502008, 0xFFE070));
