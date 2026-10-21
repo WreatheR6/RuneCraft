@@ -58,9 +58,28 @@ public final class SailingTraining {
             return y >= 6400;
         }
 
-        /** The completion group: bonus charts count towards "Miscellaneous". */
+        /** One of the 33 "Miscellaneous" bonus charts: a bonus drink, current, dive or weather task. */
+        public boolean misc() {
+            return ocean.equals("Bonus charts") && MISC_CLASS_BONUS.containsKey(type);
+        }
+
+        /**
+         * The completion group: the 33 Miscellaneous bonus charts count towards "Miscellaneous"; a bonus chart outside its
+         * four classes (the Wizards' Tower spyglass) counts towards its sea's ocean, as in the wiki's 69 Ardent Ocean tasks
+         * and 5 Bay of Sarim tasks.
+         */
         public String group() {
-            return ocean.equals("Bonus charts") ? "Miscellaneous" : ocean;
+            if (!ocean.equals("Bonus charts")) {
+                return ocean;
+            }
+            if (!misc()) {
+                for (Sea s : SEAS) {
+                    if (s.name().equals(sea)) {
+                        return s.ocean();
+                    }
+                }
+            }
+            return "Miscellaneous";
         }
     }
 
@@ -73,6 +92,9 @@ public final class SailingTraining {
     public static final Map<String, Double> OCEAN_BONUS;
     /** Bonus for charting all 358 tasks. */
     public static final double ALL_CHARTED_BONUS = 100_000;
+    /** Bonus XP for charting every bonus chart of a Miscellaneous class (wiki "Sea charting/By oceans"). */
+    public static final Map<ChartType, Double> MISC_CLASS_BONUS = Map.of(ChartType.CRATE, 270.0, ChartType.CURRENT, 510.0,
+            ChartType.DIVING, 1_710.0, ChartType.WEATHER, 6_710.0);
 
     static {
         List<ChartTask> charts = new ArrayList<>();
@@ -147,16 +169,27 @@ public final class SailingTraining {
     public static List<ChartReward> chartRewards(ChartTask t, Set<Integer> done) {
         List<ChartReward> out = new ArrayList<>();
         out.add(new ChartReward(t.type().name().toLowerCase(Locale.ROOT) + " charting", t.type().xp));
-        if (!t.ocean().equals("Bonus charts")) {
+        String group = t.group();
+        if (t.misc()) {
+            if (allDone(done, c -> c.misc() && c.type() == t.type())) {
+                String cls = switch (t.type()) {
+                    case CRATE -> "drinks";
+                    case CURRENT -> "currents";
+                    case DIVING -> "dives";
+                    default -> "weather";
+                };
+                out.add(new ChartReward("charting every bonus " + cls, MISC_CLASS_BONUS.get(t.type())));
+            }
+        } else {
             for (Sea s : SEAS) {
-                if (s.name().equals(t.sea()) && s.ocean().equals(t.ocean()) && allDone(done, c -> c.ocean().equals(s.ocean())
+                if (s.name().equals(t.sea()) && s.ocean().equals(group) && allDone(done, c -> !c.misc() && c.group().equals(s.ocean())
                         && c.sea().equals(s.name()))) {
                     out.add(new ChartReward("charting the " + s.name(), s.xp()));
                 }
             }
         }
-        if (allDone(done, c -> c.group().equals(t.group())) && OCEAN_BONUS.containsKey(t.group())) {
-            out.add(new ChartReward("charting the " + t.group(), OCEAN_BONUS.get(t.group())));
+        if (allDone(done, c -> c.group().equals(group)) && OCEAN_BONUS.containsKey(group)) {
+            out.add(new ChartReward("charting the " + group, OCEAN_BONUS.get(group)));
         }
         if (allDone(done, c -> true)) {
             out.add(new ChartReward("charting every ocean", ALL_CHARTED_BONUS));

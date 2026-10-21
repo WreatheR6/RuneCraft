@@ -465,6 +465,38 @@ class SailingRound40Test {
     }
 
     @Test
+    void chartingEverythingGivesTheWikiTotals() {
+        // Wiki "Sea charting/By oceans": per-ocean totals with sea, class and ocean bonuses. Miscellaneous is 33 tasks in
+        // four classes (270/510/1,710/6,710 class bonuses + 15,000) for 30,275; the Wizards' Tower spyglass is Ardent's 69th.
+        assertEquals(358, SailingTraining.CHARTS.size());
+        assertEquals(33, SailingTraining.CHARTS.stream().filter(SailingTraining.ChartTask::misc).count());
+        assertEquals(69, SailingTraining.CHARTS.stream().filter(c -> c.group().equals("Ardent Ocean")).count());
+        assertEquals("Ardent Ocean", SailingTraining.chart(2).group());
+        Set<Integer> done = new HashSet<>();
+        java.util.Map<String, Double> byGroup = new java.util.HashMap<>();
+        double total = 0;
+        for (SailingTraining.ChartTask t : SailingTraining.CHARTS) {
+            done.add(t.id());
+            for (SailingTraining.ChartReward r : SailingTraining.chartRewards(t, done)) {
+                total += r.xp();
+                if (!r.reason().equals("charting every ocean")) {
+                    byGroup.merge(t.group(), r.xp(), Double::sum);
+                }
+            }
+        }
+        assertEquals(30_275, byGroup.get("Miscellaneous"), 1e-6);
+        assertEquals(8_335, byGroup.get("Sunset Ocean"), 1e-6);
+        assertEquals(118_735, byGroup.get("Shrouded Ocean"), 1e-6);
+        assertEquals(83_115, byGroup.get("Western Ocean"), 1e-6);
+        assertEquals(304_030, byGroup.get("Northern Ocean"), 1e-6);
+        // The page's hand-summed Ardent (20,990) and Unquiet (25,790) totals are 415 and 125 above the sum of its own task
+        // rows and sea bonuses, which these follow; so the grand total is 690,730 rather than the stated 691,270.
+        assertEquals(20_575, byGroup.get("Ardent Ocean"), 1e-6);
+        assertEquals(25_665, byGroup.get("Unquiet Ocean"), 1e-6);
+        assertEquals(691_270 - 415 - 125, total, 1e-6);
+    }
+
+    @Test
     void anyLitLanternLightsLanternHarpooning() {
         // Wiki Lantern harpooning: any lit lantern; RuneCraft has these four of the wiki's seven.
         assertEquals(List.of("bug_lantern", "abyssal_lantern", "sapphire_lantern", "ld_emerald_lantern"), GatheringData.LIT_LANTERNS);
