@@ -140,6 +140,8 @@ final class GameplayChecks {
                 () -> g.skillingWalk(com.runecraft.content.minigames.games.SkillingMinigameWalk::troubleBrewing)));
         checks.add(new SelfTest.Check("minigame:gnome_round",
                 () -> g.skillingWalk(com.runecraft.content.minigames.games.SkillingMinigameWalk::gnomeRestaurant)));
+        checks.add(new SelfTest.Check("minigame:garden_round",
+                () -> g.skillingWalk(com.runecraft.content.minigames.games.SkillingMinigameWalk::sorceressGarden)));
         for (RaidType r : RaidType.values()) {
             checks.add(new SelfTest.Check("raid:" + r.id(), () -> g.raid(r)));
         }

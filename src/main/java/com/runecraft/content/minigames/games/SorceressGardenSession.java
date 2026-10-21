@@ -342,6 +342,39 @@ public class SorceressGardenSession extends MinigameSession {
         toCentre(player, null);
     }
 
+    // ------------------------------------------------------------------ self-test hooks
+
+    public long selfTestTicks() {
+        return ticks;
+    }
+
+    /** The arena position (feet) of garden square (u, v) of a season. */
+    public BlockPos selfTestSquare(Season s, int u, int v) {
+        return rel(ox(s, u, v), 1, oz(s, u, v));
+    }
+
+    public BlockPos selfTestGate(Season s) {
+        return selfTestSquare(s, 0, 0);
+    }
+
+    public BlockPos selfTestTree(Season s) {
+        return selfTestSquare(s, SorceressGarden.TREE, 0);
+    }
+
+    public BlockPos selfTestHerbs(Season s) {
+        return selfTestSquare(s, SorceressGarden.TREE, SorceressGarden.CLEARING_HALF_WIDTH);
+    }
+
+    public BlockPos selfTestFountain() {
+        return rel(0, 1, 0);
+    }
+
+    /** The garden the player stands in (null: the central garden) and the square, as {u, v}. */
+    public Season selfTestGarden(ServerPlayer p) {
+        BlockPos r = relPos(p);
+        return gardenAt(r.getX(), r.getZ());
+    }
+
     @Override
     protected List<String> hud(ServerPlayer player) {
         BlockPos r = relPos(player);

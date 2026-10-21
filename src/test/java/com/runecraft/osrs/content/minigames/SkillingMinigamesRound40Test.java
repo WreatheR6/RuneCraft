@@ -214,6 +214,33 @@ class SkillingMinigamesRound40Test {
         assertCost("gnome_restaurant", MinigameRules.GnomeRestaurant.RANDOM_DISH, MinigameCurrencies.GNOME_TOKENS, 1);
     }
 
+    // ------------------------------------------------------------------ Sorceress's Garden
+
+    @Test
+    void everyGardenHasAnUnseenRouteTheWalkCanTake() {
+        int goal = SorceressGarden.CORRIDOR + 2;
+        for (SorceressGarden.Season s : SorceressGarden.Season.values()) {
+            int found = 0;
+            for (long t0 = 0; t0 < 60; t0 += 7) {
+                List<int[]> route = SorceressGarden.route(s, t0, 2, goal, 400);
+                if (route == null) {
+                    continue;
+                }
+                found++;
+                int[] at = {1, 0};
+                for (int i = 0; i < route.size(); i++) {
+                    int[] sq = route.get(i);
+                    assertTrue(Math.abs(sq[0] - at[0]) + Math.abs(sq[1] - at[1]) <= 2, s + " route jumps at step " + i);
+                    assertTrue(SorceressGarden.walkable(s, sq[0], sq[1]), s + " route goes through a hedge");
+                    assertTrue(!SorceressGarden.seen(s, t0 + i + 1, sq[0], sq[1]), s + " route is seen at step " + i);
+                    at = sq;
+                }
+                assertTrue(at[0] >= goal, s + " route ends at " + at[0]);
+            }
+            assertTrue(found >= 5, s + ": routes from only " + found + " of 9 start ticks");
+        }
+    }
+
     @Test
     void outfitsAddUpTo2Point5Percent() {
         assertEquals(1.025, SkillingOutfits.multiplier(SkillingOutfits.FARMER, SkillingOutfits.FARMER), 1e-9);

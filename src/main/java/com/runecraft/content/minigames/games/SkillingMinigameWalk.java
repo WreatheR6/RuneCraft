@@ -89,6 +89,10 @@ public final class SkillingMinigameWalk {
         return run(p, SkillingMinigameWalk::gnomeRound);
     }
 
+    public static String sorceressGarden(ServerPlayer p) {
+        return run(p, SkillingMinigameWalk::gardenRound);
+    }
+
     // ------------------------------------------------------------------ helpers
 
     private static void expect(boolean ok, String message) {
@@ -858,6 +862,89 @@ public final class SkillingMinigameWalk {
         }
         expect(!Inv.has(player, "gnome_restaurant_token", 1) && now == dishes + 1, "the token bought " + (now - dishes) + " dishes");
         notes.add("a reward token at 12 points, cashed in for a random dish");
+    }
+
+    // ------------------------------------------------------------------ Sorceress's Garden
+
+    /** Through a garden's gate and along an unseen route to the clearing; fails if an elemental catches the player. */
+    private void sneakIn(SorceressGardenSession sg, com.runecraft.osrs.content.minigames.SorceressGarden.Season s) {
+        use(sg.selfTestGate(s), s.gate());
+        expect(sg.selfTestGarden(player) == s, "the " + s.displayName() + " gate didn't let the player in");
+        List<int[]> route = com.runecraft.osrs.content.minigames.SorceressGarden.route(s, sg.selfTestTicks(), 2,
+                com.runecraft.osrs.content.minigames.SorceressGarden.CORRIDOR + 2, 400);
+        expect(route != null, "no unseen route through the " + s.displayName() + " garden from tick " + sg.selfTestTicks());
+        for (int[] sq : route) {
+            moveTo(sg.selfTestSquare(s, sq[0], sq[1]));
+            tick();
+            expect(sg.selfTestGarden(player) == s, "an elemental caught the player at square " + sq[0] + "," + sq[1]
+                    + " of the planned route (tick " + sg.selfTestTicks() + ")");
+        }
+    }
+
+    private void gardenRound() {
+        com.runecraft.osrs.content.minigames.SorceressGarden.Season winter = com.runecraft.osrs.content.minigames.SorceressGarden.Season.WINTER;
+        step = "enter";
+        player.getInventory().clearContent();
+        SorceressGardenSession sg = (SorceressGardenSession) start(Minigame.SORCERESS_GARDEN);
+        expect(sg.selfTestGarden(player) == null, "the player didn't start in the central garden");
+
+        step = "sq'irks";
+        for (int trip = 1; trip <= winter.perGlass(); trip++) {
+            sneakIn(sg, winter);
+            double farming = xp(Skill.FARMING);
+            use(sg.selfTestTree(winter), winter.tree());
+            expect(Inv.count(player, winter.fruit()) == trip && xp(Skill.FARMING) - farming == winter.farmingXp(),
+                    "trip " + trip + ": " + Inv.count(player, winter.fruit()) + " sq'irks, Farming +" + (xp(Skill.FARMING) - farming));
+            expect(sg.selfTestGarden(player) == null, "picking a sq'irk didn't send the player back to the fountain");
+        }
+        notes.add(winter.perGlass() + " winter sq'irks picked unseen (" + winter.farmingXp() + " Farming XP each)");
+
+        step = "herbs";
+        sneakIn(sg, winter);
+        double farming = xp(Skill.FARMING);
+        use(sg.selfTestHerbs(winter), winter.herbs());
+        int herbs = 0;
+        for (com.runecraft.osrs.content.minigames.MinigameRules.Loot l : winter.herbTable()) {
+            herbs += Inv.count(player, l.item());
+        }
+        expect(herbs == 2 && xp(Skill.FARMING) - farming == 50, "the herb patch gave " + herbs + " herbs and "
+                + (xp(Skill.FARMING) - farming) + " Farming XP (wiki: 2 and 50)");
+
+        step = "caught";
+        use(sg.selfTestGate(winter), winter.gate());
+        long next = sg.selfTestTicks() + 1;
+        int[] watched = null;
+        for (int u = 1; u <= com.runecraft.osrs.content.minigames.SorceressGarden.CORRIDOR && watched == null; u++) {
+            for (int v = -6; v <= 6 && watched == null; v++) {
+                if (com.runecraft.osrs.content.minigames.SorceressGarden.walkable(winter, u, v)
+                        && com.runecraft.osrs.content.minigames.SorceressGarden.seen(winter, next, u, v)) {
+                    watched = new int[]{u, v};
+                }
+            }
+        }
+        expect(watched != null, "no square of the winter garden is watched at tick " + next);
+        moveTo(sg.selfTestSquare(winter, watched[0], watched[1]));
+        tick();
+        expect(sg.selfTestGarden(player) == null, "standing next to an elemental didn't get the player teleported out");
+        notes.add("2 herbs (50 Farming XP); an elemental caught the player in its sight");
+
+        step = "fountain";
+        use(sg.selfTestFountain(), "sg_fountain");
+        expect(MinigameManager.session(player) == null, "drinking from the fountain didn't leave the garden");
+
+        step = "juice";
+        Inv.give(player, "pestle_and_mortar", 1);
+        Inv.give(player, "beer_glass", 1);
+        double cooking = xp(Skill.COOKING);
+        com.runecraft.content.minigames.SorceressGardenService.selfTestJuice(player, winter);
+        ActionManager.cancel(player);
+        expect(Inv.count(player, winter.juice()) == 1 && !Inv.has(player, winter.fruit(), 1) && xp(Skill.COOKING) - cooking == 5,
+                "crushing 5 winter sq'irks: " + Inv.count(player, winter.juice()) + " juice, Cooking +" + (xp(Skill.COOKING) - cooking));
+        double thieving = xp(Skill.THIEVING);
+        expect(com.runecraft.content.minigames.SorceressGardenService.selfTestOsman(player)
+                && xp(Skill.THIEVING) - thieving == winter.osmanXp(), "Osman gave " + (xp(Skill.THIEVING) - thieving)
+                + " Thieving XP for a winter sq'irkjuice, not " + winter.osmanXp());
+        notes.add("a winter sq'irkjuice (5 Cooking XP) for " + winter.osmanXp() + " Thieving XP from Osman");
     }
 
     /** Heats or cools the preform into [lo, hi], restarting the lava or waterfall near the goal to keep the steps small. */
