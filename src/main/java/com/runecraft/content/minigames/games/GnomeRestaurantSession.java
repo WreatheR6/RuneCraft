@@ -8,6 +8,7 @@ import com.runecraft.osrs.content.minigames.Minigame;
 import com.runecraft.osrs.content.minigames.MinigameItems;
 import com.runecraft.osrs.content.minigames.MinigameRules;
 import com.runecraft.osrs.content.minigames.MinigameRules.GnomeRestaurant;
+import com.runecraft.player.Players;
 import com.runecraft.util.Inv;
 import com.runecraft.util.Msg;
 import java.util.List;
@@ -23,9 +24,13 @@ import net.minecraft.world.level.block.Blocks;
  * may be cooked in advance (gnome cooking) or baked at the gnome oven from the ingredients Gianne supplies, for the dish's
  * full Cooking XP; deliveries themselves give none. The customer's door takes the dish: an easy customer tips 2-500 coins,
  * a hard one an item (with their own specials). Easy jobs score 1 point, hard 3; every 12 points make a reward token, worth
- * a random gnome dish (at most 10 held). A job not delivered in time is lost.
+ * a random gnome dish (at most 10 unused at once: points earned while 10 are held make none). Baking at the oven needs the
+ * dish's Cooking level. A job not delivered in time is lost.
  */
 public class GnomeRestaurantSession extends MinigameSession {
+    /** The lifetime delivery points (MinigameData) and the reward token item. */
+    private static final String POINTS = "gnome_restaurant";
+    private static final String TOKEN = "gnome_restaurant_token";
     private String order;
     private String customer;
     private boolean hard;
@@ -105,8 +110,13 @@ public class GnomeRestaurantSession extends MinigameSession {
         switch (blockId) {
             case "gnome_gianne" -> newJob(player, player.isShiftKeyDown());
             case "gnome_oven" -> {
+                int need = GnomeRestaurant.dishLevel(order == null ? "" : order);
                 if (order == null) {
                     Msg.game(player, "You have no order to cook for.");
+                } else if (Players.data(player).skills().currentLevel(Skill.COOKING) < need) {
+                    // Gnome cooking checks the dish's Cooking level; Gianne's orders don't, so a low cook can still deliver.
+                    Msg.game(player, "You need a Cooking level of " + need + " to make " + Msg.article(dishName().toLowerCase(
+                            java.util.Locale.ROOT)) + ".");
                 } else if (Inv.remove(player, "gnome_ingredients", 1) == 0) {
                     Msg.game(player, "You need the ingredients Gianne gave you.");
                 } else {
@@ -133,11 +143,16 @@ public class GnomeRestaurantSession extends MinigameSession {
             return;
         }
         delivered++;
-        String key = "gnome_restaurant";
-        int before = MinigameData.of(player).points(player.getUUID(), key);
-        int after = Math.min(GnomeRestaurant.MAX_POINTS, before + (hard ? GnomeRestaurant.HARD_POINTS : GnomeRestaurant.EASY_POINTS));
-        MinigameData.of(player).addPoints(player.getUUID(), key, after - before);
-        reward(player, "gnome_restaurant_token", GnomeRestaurant.tokens(before, after));
+        // The points counter is lifetime; the token holds at most ten unused dishes (120 points) at once.
+        int before = MinigameData.of(player).points(player.getUUID(), POINTS);
+        int gain = hard ? GnomeRestaurant.HARD_POINTS : GnomeRestaurant.EASY_POINTS;
+        MinigameData.of(player).addPoints(player.getUUID(), POINTS, gain);
+        int held = Inv.count(player, TOKEN);
+        int tokens = GnomeRestaurant.tokensToGive(before, before + gain, held);
+        reward(player, TOKEN, tokens);
+        if (tokens == 0 && GnomeRestaurant.tokens(before, before + gain) > 0) {
+            Msg.game(player, "Gianne jnr.: Your reward token is full - ten dishes! Use some, or keep delivering for the tips.");
+        }
         if (hard) {
             MinigameRules.Loot tip = GnomeRestaurant.hardTip(customer, random::nextDouble);
             reward(player, tip.item(), tip.min() + random.nextInt(tip.max() - tip.min() + 1));
@@ -167,7 +182,9 @@ public class GnomeRestaurantSession extends MinigameSession {
 
     @Override
     protected List<String> hud(ServerPlayer player) {
-        return List.of("Gnome Restaurant - " + MinigameData.of(player).points(player.getUUID(), "gnome_restaurant") + " points",
+        int points = MinigameData.of(player).points(player.getUUID(), POINTS);
+        return List.of("Gnome Restaurant - " + points % GnomeRestaurant.POINTS_PER_TOKEN + " / " + GnomeRestaurant.POINTS_PER_TOKEN
+                        + " points to a dish, " + Inv.count(player, TOKEN) + " / " + GnomeRestaurant.MAX_TOKENS + " held",
                 order == null ? "Ask Gianne jnr. for a job" : (hard ? "Hard: " : "Easy: ") + dishName() + " for " + customer,
                 order == null ? "" : "Time left: " + time(deadline - ticks), "Deliveries this visit: " + delivered);
     }

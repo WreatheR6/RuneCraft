@@ -30,10 +30,14 @@ import net.minecraft.world.level.block.Blocks;
  * while torn; the kraken's enormous tentacle comes up every 45 seconds, slowing the boat until it is chopped off (an axe)
  * and slapping rails loose (fix them with a hammer; the deck box hands out hammers and bronze axes). Each job earns
  * contribution points; 50 earn a share of the catch (bigger with a fuller meter), rolled by Fishing level, with junk, a 1/12
- * chance of a missing angler piece and the heron. If the water fills the hold the trawler sinks and nobody gets anything.
+ * chance of a missing angler piece (two sets in all, the second after the first) and the heron. The deck box's hammer and
+ * bronze axe are ordinary items the player keeps (as from the Wintertodt's crates). If the water fills the hold the trawler
+ * sinks and nobody gets anything.
  */
 public class FishingTrawlerSession extends MinigameSession {
     private static final int[] LEAK_Z = {-12, -9, -6, -3, 0, 3, 6, 9};
+    /** MinigameData stat prefix: how many of each angler piece the net has given the player (0-2). */
+    private static final String ANGLER_KEY = "trawler_angler:";
     private static final int[] RAIL_Z = {-6, -2, 2, 6};
     private static final String[] AXES = {"dragon_axe", "rune_axe", "adamant_axe", "mithril_axe", "black_axe", "steel_axe", "iron_axe",
             "bronze_axe", "crystal_axe", "infernal_axe", "3rd_age_axe"};
@@ -355,16 +359,7 @@ public class FishingTrawlerSession extends MinigameSession {
             fish.forEach((item, n) -> reward(p, item, n));
             xp(p, Skill.FISHING, xp);
             if (random.nextInt(Trawler.ANGLER_ROLL) == 0) {
-                List<String> missing = new ArrayList<>();
-                for (String piece : Trawler.OUTFIT) {
-                    if (!Players.data(p).collectionLog().contains(piece)) {
-                        missing.add(piece);
-                    }
-                }
-                String piece = missing.isEmpty() ? Trawler.OUTFIT[random.nextInt(Trawler.OUTFIT.length)]
-                        : missing.get(random.nextInt(missing.size()));
-                reward(p, piece, 1);
-                Msg.game(p, "The luck of the sea is in today. You spot a piece of fishing gear caught up in the netting!");
+                anglerPiece(p);
             }
             if (random.nextDouble() < Trawler.heronChance(c)) {
                 reward(p, "pet_heron", 1);
@@ -374,6 +369,28 @@ public class FishingTrawlerSession extends MinigameSession {
             MinigameData.of(p).incrementStat(p.getUUID(), "kc:" + game.id());
             Msg.game(p, "The trawler returns to port. You search the net: " + count + " fish" + (junk > 0 ? " and some junk" : "") + ".");
         }
+    }
+
+    /**
+     * A successful angler roll: a piece of the set being collected (two sets in all, the second once the first is complete;
+     * OSRS Wiki "Fishing Trawler"), counted per piece in MinigameData; nothing once both sets are complete. Pieces received
+     * before the count was kept are read from the collection log.
+     */
+    private String anglerPiece(ServerPlayer p) {
+        MinigameData data = MinigameData.of(p);
+        int[] received = new int[Trawler.OUTFIT.length];
+        for (int i = 0; i < received.length; i++) {
+            received[i] = Math.max(data.stat(p.getUUID(), ANGLER_KEY + Trawler.OUTFIT[i]),
+                    Players.data(p).collectionLog().contains(Trawler.OUTFIT[i]) ? 1 : 0);
+        }
+        int i = Trawler.anglerPiece(received, random::nextInt);
+        if (i < 0) {
+            return null;
+        }
+        data.setStat(p.getUUID(), ANGLER_KEY + Trawler.OUTFIT[i], received[i] + 1);
+        reward(p, Trawler.OUTFIT[i], 1);
+        Msg.game(p, "The luck of the sea is in today. You spot a piece of fishing gear caught up in the netting!");
+        return Trawler.OUTFIT[i];
     }
 
     @Override
@@ -394,6 +411,11 @@ public class FishingTrawlerSession extends MinigameSession {
     public View selfTestView(ServerPlayer p) {
         return new View(water, List.copyOf(leaks), netTorn, tentacleSide, tentacleHp, List.copyOf(brokenRails),
                 contribution.getOrDefault(p.getUUID(), 0));
+    }
+
+    /** Self-test: a successful angler roll for the player; the piece given, or null once both sets are complete. */
+    public String selfTestAnglerRoll(ServerPlayer p) {
+        return anglerPiece(p);
     }
 
     public boolean selfTestLeak() {

@@ -242,6 +242,72 @@ class SkillingMinigamesRound40Test {
     }
 
     @Test
+    void gnomeTokenHoldsTenDishesAtOnceNotForLife() {
+        // The points counter is lifetime: past 120 points a delivery that crosses 12 still makes a dish if one was used.
+        assertEquals(10, MinigameRules.GnomeRestaurant.MAX_TOKENS);
+        assertEquals(1, MinigameRules.GnomeRestaurant.tokensToGive(119, 122, 9));
+        assertEquals(0, MinigameRules.GnomeRestaurant.tokensToGive(119, 122, 10), "ten unused dishes: the token is full");
+        assertEquals(1, MinigameRules.GnomeRestaurant.tokensToGive(359, 360, 0), "no lifetime cap");
+        assertEquals(0, MinigameRules.GnomeRestaurant.tokensToGive(360, 361, 0));
+        assertEquals(0, MinigameRules.GnomeRestaurant.tokensToGive(11, 14, 12), "more than ten held never goes negative");
+        // Gnome cooking levels (wiki "Gnome cooking"): every restaurant dish needs 25 Cooking or more.
+        for (Object[] d : MinigameItems.GNOME_DISHES) {
+            assertTrue(MinigameRules.GnomeRestaurant.dishLevel((String) d[0]) >= 25, (String) d[0]);
+        }
+        assertEquals(42, MinigameRules.GnomeRestaurant.dishLevel("chocolate_bomb"));
+    }
+
+    @Test
+    void anglerPiecesComeInTwoSetsInOrder() {
+        int[] received = new int[MinigameRules.Trawler.OUTFIT.length];
+        java.util.Random random = new java.util.Random(7);
+        for (int n = 0; n < received.length * MinigameRules.Trawler.ANGLER_SETS; n++) {
+            int i = MinigameRules.Trawler.anglerPiece(received, random::nextInt);
+            assertTrue(i >= 0, "roll " + n + " gave nothing");
+            // The first set completes before any piece of the second.
+            assertEquals(n / received.length, received[i], "roll " + n + " gave a piece of the wrong set");
+            received[i]++;
+        }
+        assertEquals(-1, MinigameRules.Trawler.anglerPiece(received, random::nextInt), "a third set");
+        assertEquals(2, MinigameRules.Trawler.anglerPiece(new int[]{1, 1, 0, 1}, random::nextInt), "the missing waders");
+        assertEquals(0, MinigameRules.Trawler.anglerPiece(new int[]{1, 2, 2, 2}, random::nextInt), "the second hat");
+    }
+
+    @Test
+    void foundryPreformStorageRoundTrips() {
+        GiantsFoundry.Commission c = GiantsFoundry.COMMISSIONS.get(5);
+        GiantsFoundry.Mould[] moulds = GiantsFoundry.bestMoulds(c, m -> true);
+        int[] metal = new int[GiantsFoundry.Metal.values().length];
+        metal[GiantsFoundry.Metal.ADAMANT.ordinal()] = 14;
+        metal[GiantsFoundry.Metal.RUNE.ordinal()] = 14;
+        GiantsFoundry.Tool[] plan = {GiantsFoundry.Tool.TRIP_HAMMER, GiantsFoundry.Tool.POLISHING_WHEEL, GiantsFoundry.Tool.GRINDSTONE,
+                GiantsFoundry.Tool.TRIP_HAMMER, GiantsFoundry.Tool.GRINDSTONE, GiantsFoundry.Tool.POLISHING_WHEEL, GiantsFoundry.Tool.TRIP_HAMMER};
+        GiantsFoundry.Stored s = new GiantsFoundry.Stored(c, moulds, metal, 28, true, 130, plan, 612, 455, 160, 170, 1, 2, 3);
+        java.util.Map<String, Integer> stats = new java.util.HashMap<>(s.encode());
+        GiantsFoundry.Stored back = GiantsFoundry.Stored.decode(k -> stats.getOrDefault(k, 0));
+        assertNotNull(back);
+        assertEquals(c, back.commission());
+        assertEquals(List.of(moulds), List.of(back.moulds()));
+        assertEquals(List.of(plan), List.of(back.plan()));
+        assertTrue(java.util.Arrays.equals(metal, back.metal()));
+        assertEquals(List.of(28, 130, 612, 455, 160, 170, 1, 2, 3), List.of(back.barsIn(), back.metalScore(), back.progress(), back.heat(),
+                back.quality(), back.startQuality(), back.mistakes(), back.bonusesLeft(), back.bonusesTotal()));
+        assertTrue(back.poured());
+        // A crucible of bars without a commission is kept too; nothing at all is not.
+        GiantsFoundry.Stored bars = new GiantsFoundry.Stored(null, null, metal, 9, false, 0, new GiantsFoundry.Tool[0], 0, 0, 0, 0, 0, 0, 0);
+        assertTrue(bars.worthKeeping());
+        java.util.Map<String, Integer> barStats = new java.util.HashMap<>(bars.encode());
+        GiantsFoundry.Stored barsBack = GiantsFoundry.Stored.decode(k -> barStats.getOrDefault(k, 0));
+        assertEquals(9, barsBack.barsIn());
+        assertEquals(null, barsBack.commission());
+        assertEquals(null, barsBack.moulds());
+        assertTrue(!barsBack.poured());
+        assertTrue(!new GiantsFoundry.Stored(null, null, new int[6], 0, false, 0, new GiantsFoundry.Tool[0], 0, 0, 0, 0, 0, 0, 0).worthKeeping());
+        stats.put(GiantsFoundry.STORE_KEPT, 0);
+        assertEquals(null, GiantsFoundry.Stored.decode(k -> stats.getOrDefault(k, 0)), "a collected commission isn't restored twice");
+    }
+
+    @Test
     void outfitsAddUpTo2Point5Percent() {
         assertEquals(1.025, SkillingOutfits.multiplier(SkillingOutfits.FARMER, SkillingOutfits.FARMER), 1e-9);
         assertEquals(1.004, SkillingOutfits.multiplier(SkillingOutfits.ANGLER, List.of("angler_hat")), 1e-9);

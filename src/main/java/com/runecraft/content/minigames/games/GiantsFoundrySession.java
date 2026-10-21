@@ -37,6 +37,8 @@ import net.minecraft.world.level.block.Blocks;
  * about 5% progress, doubles the next action's XP and restores some lost quality; clicking it otherwise overworks the
  * preform (the next action is lost). Kovac pays (floor(q^2/73) + floor(1.5q) + 1) x 30 Smithing XP, twice that in coins
  * and q reputation. Each piece of the Smiths' Uniform gives a 20% chance of extra progress per action (the set always).
+ * Leaving (the exit, a teleport, logging out) keeps the commission, the crucible's metal and the preform in the preform
+ * storage ({@link GiantsFoundry.Stored}, saved in MinigameData) until the player comes back.
  */
 public class GiantsFoundrySession extends MinigameSession {
     private Commission commission;
@@ -105,7 +107,63 @@ public class GiantsFoundrySession extends MinigameSession {
 
     @Override
     protected void start() {
-        broadcast("Kovac: Speak to me at my bench for a commission, then set the mould and fill the crucible with 28 bars.");
+        List<ServerPlayer> in = online();
+        if (in.isEmpty() || !restore(in.get(0))) {
+            broadcast("Kovac: Speak to me at my bench for a commission, then set the mould and fill the crucible with 28 bars.");
+        }
+    }
+
+    // ------------------------------------------------------------------ preform storage
+
+    /** What the player leaves behind: the commission, the moulds, the crucible's metal and the preform. */
+    private GiantsFoundry.Stored stored() {
+        return new GiantsFoundry.Stored(commission, moulds, metal.clone(), barsIn, poured, metalScore, plan, progress, heat, quality,
+                startQuality, mistakes, bonusesLeft, bonusesTotal);
+    }
+
+    /** Keeps the player's commission, crucible and preform in the preform storage while they are away. */
+    private void store(ServerPlayer p) {
+        MinigameData data = MinigameData.of(p);
+        GiantsFoundry.Stored s = stored();
+        if (s.worthKeeping()) {
+            s.encode().forEach((k, v) -> data.setStat(p.getUUID(), k, v));
+            Msg.game(p, "Kovac: I'll keep " + (poured ? "your preform warm in the preform storage" : commission != null
+                    ? "your commission and the crucible as they are" : "the metal in the crucible") + " until you're back.");
+        } else if (data.stat(p.getUUID(), GiantsFoundry.STORE_KEPT) != 0) {
+            data.setStat(p.getUUID(), GiantsFoundry.STORE_KEPT, 0);
+        }
+    }
+
+    /** Picks up a commission kept in the preform storage; false when none was kept. */
+    private boolean restore(ServerPlayer p) {
+        MinigameData data = MinigameData.of(p);
+        GiantsFoundry.Stored s = GiantsFoundry.Stored.decode(k -> data.stat(p.getUUID(), k));
+        if (s == null) {
+            return false;
+        }
+        data.setStat(p.getUUID(), GiantsFoundry.STORE_KEPT, 0);
+        commission = s.commission();
+        moulds = commission == null ? null : s.moulds();
+        mouldScore = moulds == null ? 0 : GiantsFoundry.mouldScore(commission, moulds);
+        System.arraycopy(s.metal(), 0, metal, 0, metal.length);
+        barsIn = s.barsIn();
+        poured = s.poured() && commission != null;
+        plan = poured ? s.plan() : new Tool[0];
+        metalScore = poured ? s.metalScore() : GiantsFoundry.metalScore(metal);
+        progress = poured ? Math.max(0, Math.min(GiantsFoundry.MAX, s.progress())) : 0;
+        heat = poured ? Math.max(0, Math.min(GiantsFoundry.MAX, s.heat())) : 0;
+        startQuality = s.startQuality();
+        quality = poured ? Math.max(0, Math.min(startQuality, s.quality())) : 0;
+        mistakes = s.mistakes();
+        bonusesLeft = s.bonusesLeft();
+        bonusesTotal = s.bonusesTotal();
+        bonusUntil = -1;
+        bonusCaught = false;
+        Msg.game(p, "Kovac: Welcome back! " + (poured ? "Your preform's been kept warm: " + progress / 10 + "% done, quality " + quality + "."
+                : commission != null ? "Your " + commission.display().toLowerCase(java.util.Locale.ROOT) + " commission is still waiting ("
+                + barsIn + " / " + GiantsFoundry.CRUCIBLE + " bars in the crucible)."
+                : "Your metal is still in the crucible (" + barsIn + " / " + GiantsFoundry.CRUCIBLE + " bars)."));
+        return true;
     }
 
     // ------------------------------------------------------------------ the sword
@@ -439,6 +497,7 @@ public class GiantsFoundrySession extends MinigameSession {
     @Override
     protected void onLeave(ServerPlayer player) {
         com.runecraft.action.ActionManager.cancel(player);
+        store(player);
     }
 
     @Override

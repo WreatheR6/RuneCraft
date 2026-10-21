@@ -836,6 +836,8 @@ public final class MinigameRules {
         public static final int REWARD_LEVEL = 15;
         /** 1/12 for an angler piece the player doesn't have yet (a second set only after a full first one). */
         public static final int ANGLER_ROLL = 12;
+        /** Full angler sets the net can give (wiki: "Players can receive two full sets"). */
+        public static final int ANGLER_SETS = 2;
         /** Game ticks between leaks for a lone player; more players spring more leaks (approx: busy worlds every 5 ticks). */
         public static final int LEAK_INTERVAL = 18;
         /** Game ticks between kraken tentacles ("about 45 seconds"), and successful chops that drive one off (approx). */
@@ -919,6 +921,28 @@ public final class MinigameRules {
             }
             double f = (Math.min(MAX_CONTRIBUTION, contribution) - MIN_CONTRIBUTION) / (double) (MAX_CONTRIBUTION - MIN_CONTRIBUTION);
             return 1.0 / (5000 - 2500 * f);
+        }
+
+        /**
+         * The angler piece (index into {@link #OUTFIT}) a successful {@link #ANGLER_ROLL} gives, from how many times the player
+         * has received each piece; -1 once both sets are complete. Only pieces of the set being collected qualify (those
+         * received the fewest times), so the second set starts once the first is complete (OSRS Wiki "Fishing Trawler").
+         */
+        public static int anglerPiece(int[] received, java.util.function.IntUnaryOperator random) {
+            int min = Integer.MAX_VALUE;
+            for (int r : received) {
+                min = Math.min(min, r);
+            }
+            if (min >= ANGLER_SETS) {
+                return -1;
+            }
+            List<Integer> due = new java.util.ArrayList<>();
+            for (int i = 0; i < received.length; i++) {
+                if (received[i] == min) {
+                    due.add(i);
+                }
+            }
+            return due.get(random.applyAsInt(due.size()));
         }
 
         /** Game ticks between leaks with this many players aboard (approx). */
@@ -1046,7 +1070,7 @@ public final class MinigameRules {
         public static final int EASY_POINTS = 1;
         public static final int HARD_POINTS = 3;
         public static final int POINTS_PER_TOKEN = 12;
-        /** A token stores up to 120 points: ten dishes. */
+        /** A token stores up to 120 points at once: ten unused dishes (not a lifetime cap). */
         public static final int MAX_POINTS = 120;
         /** Declining a hard job: no hard job for 5 minutes 30 seconds. */
         public static final int HARD_DECLINE_TICKS = 550;
@@ -1132,7 +1156,7 @@ public final class MinigameRules {
             };
         }
 
-        /** Cooking level for each restaurant dish (orders don't check it; making the food does). */
+        /** Cooking level for each restaurant dish (orders don't check it; making the food, at the gnome oven too, does). */
         public static int dishLevel(String dish) {
             return switch (dish) {
                 case "fruit_batta" -> 25;
@@ -1151,6 +1175,18 @@ public final class MinigameRules {
         /** Reward tokens earned when a delivery takes the point total from {@code before} to {@code after}. */
         public static int tokens(int before, int after) {
             return after / POINTS_PER_TOKEN - before / POINTS_PER_TOKEN;
+        }
+
+        /** Unused dishes a player can hold at once (the token stores up to 120 points). */
+        public static final int MAX_TOKENS = MAX_POINTS / POINTS_PER_TOKEN;
+
+        /**
+         * Reward tokens a delivery pays when it takes the lifetime point total from {@code before} to {@code after} and the
+         * player already holds {@code held} unused ones: the token holds at most 120 points (ten dishes) at once, so points
+         * earned while it is full make no dish, but a token spent makes room again (OSRS Wiki "Gnome Restaurant").
+         */
+        public static int tokensToGive(int before, int after, int held) {
+            return Math.max(0, Math.min(tokens(before, after), MAX_TOKENS - Math.max(0, held)));
         }
     }
 

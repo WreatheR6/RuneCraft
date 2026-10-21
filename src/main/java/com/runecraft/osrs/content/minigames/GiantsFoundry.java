@@ -470,4 +470,96 @@ public final class GiantsFoundry {
 
     /** Sleeping Giants unlocks the foundry. */
     public static final String QUEST = "sleeping_giants";
+
+    // ------------------------------------------------------------------ preform storage
+
+    /** Prefix of the per-player integer stats a {@link Stored} commission is saved under. */
+    public static final String STORE = "gf_store:";
+    /** The stat that says a commission is waiting in storage (1) or not (0). */
+    public static final String STORE_KEPT = STORE + "kept";
+
+    /**
+     * A commission kept while the player is away (OSRS Wiki "Giants' Foundry": "The player may leave the Foundry and come
+     * back anytime ... your current commission is being kept warm in the preform storage"): the commission, the moulds set,
+     * the crucible's metal (per {@link Metal}), and the poured preform's metal score, plan, progress, heat, quality,
+     * mistakes and sweet spots. {@link #encode} and {@link #decode} turn it into integer stats under {@link #STORE}.
+     */
+    public record Stored(Commission commission, Mould[] moulds, int[] metal, int barsIn, boolean poured, int metalScore, Tool[] plan,
+                         int progress, int heat, int quality, int startQuality, int mistakes, int bonusesLeft, int bonusesTotal) {
+        /** Whether there is anything to keep: a commission, or metal in the crucible. */
+        public boolean worthKeeping() {
+            return commission != null || barsIn > 0;
+        }
+
+        /** The stats to save (every key under {@link #STORE}, {@link #STORE_KEPT} = 1). */
+        public java.util.Map<String, Integer> encode() {
+            java.util.Map<String, Integer> out = new java.util.LinkedHashMap<>();
+            out.put(STORE_KEPT, 1);
+            out.put(STORE + "commission", commission == null ? 0 : COMMISSIONS.indexOf(commission) + 1);
+            int mouldBits = 0;
+            if (moulds != null) {
+                for (int i = 0; i < moulds.length && i < Part.values().length; i++) {
+                    mouldBits |= (moulds[i] == null ? 0 : MOULDS.indexOf(moulds[i]) + 1) << (8 * i);
+                }
+            }
+            out.put(STORE + "moulds", mouldBits);
+            for (Metal m : Metal.values()) {
+                out.put(STORE + "metal_" + m.prefix(), metal == null || m.ordinal() >= metal.length ? 0 : metal[m.ordinal()]);
+            }
+            out.put(STORE + "bars", barsIn);
+            out.put(STORE + "poured", poured ? 1 : 0);
+            out.put(STORE + "metal_score", metalScore);
+            int planDigits = 0;
+            for (int i = (plan == null ? 0 : plan.length) - 1; i >= 0; i--) {
+                planDigits = planDigits * 4 + plan[i].ordinal() + 1;
+            }
+            out.put(STORE + "plan", planDigits);
+            out.put(STORE + "progress", progress);
+            out.put(STORE + "heat", heat);
+            out.put(STORE + "quality", quality);
+            out.put(STORE + "start_quality", startQuality);
+            out.put(STORE + "mistakes", mistakes);
+            out.put(STORE + "bonuses_left", bonusesLeft);
+            out.put(STORE + "bonuses_total", bonusesTotal);
+            return out;
+        }
+
+        /** The commission kept in storage, read from the player's stats; null when none is kept. */
+        public static Stored decode(java.util.function.ToIntFunction<String> stat) {
+            if (stat.applyAsInt(STORE_KEPT) != 1) {
+                return null;
+            }
+            int c = stat.applyAsInt(STORE + "commission");
+            Commission commission = c >= 1 && c <= COMMISSIONS.size() ? COMMISSIONS.get(c - 1) : null;
+            int mouldBits = stat.applyAsInt(STORE + "moulds");
+            Mould[] moulds = null;
+            if (mouldBits != 0) {
+                moulds = new Mould[Part.values().length];
+                for (int i = 0; i < moulds.length; i++) {
+                    int idx = (mouldBits >> (8 * i)) & 0xFF;
+                    moulds[i] = idx >= 1 && idx <= MOULDS.size() ? MOULDS.get(idx - 1) : null;
+                }
+                if (java.util.Arrays.asList(moulds).contains(null)) {
+                    moulds = null; // set the jig again
+                }
+            }
+            int[] metal = new int[Metal.values().length];
+            for (Metal m : Metal.values()) {
+                metal[m.ordinal()] = Math.max(0, stat.applyAsInt(STORE + "metal_" + m.prefix()));
+            }
+            List<Tool> plan = new ArrayList<>();
+            for (int digits = stat.applyAsInt(STORE + "plan"); digits > 0; digits /= 4) {
+                int t = digits % 4 - 1;
+                if (t < 0) {
+                    break;
+                }
+                plan.add(Tool.values()[t]);
+            }
+            boolean poured = stat.applyAsInt(STORE + "poured") == 1 && !plan.isEmpty();
+            return new Stored(commission, moulds, metal, Math.max(0, Math.min(CRUCIBLE, stat.applyAsInt(STORE + "bars"))), poured,
+                    stat.applyAsInt(STORE + "metal_score"), plan.toArray(new Tool[0]), stat.applyAsInt(STORE + "progress"),
+                    stat.applyAsInt(STORE + "heat"), stat.applyAsInt(STORE + "quality"), stat.applyAsInt(STORE + "start_quality"),
+                    stat.applyAsInt(STORE + "mistakes"), stat.applyAsInt(STORE + "bonuses_left"), stat.applyAsInt(STORE + "bonuses_total"));
+        }
+    }
 }

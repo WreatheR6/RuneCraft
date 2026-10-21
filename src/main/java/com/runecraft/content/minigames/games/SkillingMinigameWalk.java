@@ -230,6 +230,16 @@ public final class SkillingMinigameWalk {
                 "a full crucible took a platebody");
         notes.add("crucible 28 bars (13 rune bars, a rune scimitar, 14 adamantite), metal score 130");
 
+        // Wiki: the player may leave and come back anytime; the commission and the crucible are kept.
+        step = "storage";
+        MinigameManager.leave(player);
+        expect(MinigameManager.session(player) == null, "the exit didn't take the player out of the foundry");
+        gf = (GiantsFoundrySession) start(Minigame.GIANTS_FOUNDRY);
+        v = gf.selfTestView();
+        expect(commission.equals(v.commission()) && v.mouldScore() == mould && v.barsIn() == GiantsFoundry.CRUCIBLE
+                && v.metalScore() == 130 && !v.poured(), "back in the foundry: " + v + " (the commission, moulds and 28 bars were kept)");
+        notes.add("left and came back: commission, moulds and crucible kept");
+
         step = "pour";
         use(gf.selfTestBlock("foundry_mould"), "foundry_mould");
         v = gf.selfTestView();
@@ -248,6 +258,16 @@ public final class SkillingMinigameWalk {
         until(wrong.cycle() + 1, () -> !ActionManager.isBusy(player));
         expect(gf.selfTestView().quality() == start - GiantsFoundry.MISTAKE, "working the " + wrong.display() + " on a "
                 + v.tool().display() + " section left quality " + gf.selfTestView().quality());
+
+        step = "preform storage";
+        GiantsFoundrySession.View kept = gf.selfTestView();
+        MinigameManager.leave(player);
+        gf = (GiantsFoundrySession) start(Minigame.GIANTS_FOUNDRY);
+        GiantsFoundrySession.View back = gf.selfTestView();
+        expect(back.poured() && commission.equals(back.commission()) && back.sections() == kept.sections() && back.progress() == kept.progress()
+                && back.heat() == kept.heat() && back.quality() == kept.quality() && back.startQuality() == kept.startQuality()
+                && back.tool() == kept.tool() && back.metalScore() == kept.metalScore(), "the preform after leaving: " + back + ", left as " + kept);
+        notes.add("left with the preform poured and came back to it (quality " + back.quality() + ")");
 
         step = "refine";
         double smithing = xp(Skill.SMITHING);
@@ -648,9 +668,36 @@ public final class SkillingMinigameWalk {
                 + fish + " fish (" + Inv.count(player, "raw_manta_ray") + " manta rays), Fishing +" + (xp(Skill.FISHING) - fishing));
         notes.add("trawl survived: " + fish + " fish, " + (xp(Skill.FISHING) - fishing) + " Fishing XP");
 
-        step = "sink";
+        step = "angler";
         session = null;
         FishingTrawlerSession sink = (FishingTrawlerSession) start(Minigame.FISHING_TRAWLER);
+        // Successful 1/12 rolls: the first set completes before the second starts, and nothing comes after two sets.
+        String[] outfit = MinigameRules.Trawler.OUTFIT;
+        int[] have = new int[outfit.length];
+        int owned = 0;
+        for (int i = 0; i < outfit.length; i++) {
+            have[i] = Math.max(MinigameData.of(player).stat(player.getUUID(), "trawler_angler:" + outfit[i]),
+                    Players.data(player).collectionLog().contains(outfit[i]) ? 1 : 0);
+            owned += have[i];
+        }
+        int given = 0;
+        String piece;
+        while ((piece = sink.selfTestAnglerRoll(player)) != null && given < 12) {
+            int i = java.util.Arrays.asList(outfit).indexOf(piece);
+            expect(i >= 0, "the angler roll gave " + piece);
+            have[i]++;
+            given++;
+            int lo = java.util.Arrays.stream(have).min().getAsInt();
+            int hi = java.util.Arrays.stream(have).max().getAsInt();
+            expect(hi - lo <= 1 && hi <= MinigameRules.Trawler.ANGLER_SETS, "angler pieces out of set order: "
+                    + java.util.Arrays.toString(have));
+        }
+        expect(piece == null && given == outfit.length * MinigameRules.Trawler.ANGLER_SETS - owned
+                && sink.selfTestAnglerRoll(player) == null, "angler rolls gave " + given + " pieces after " + owned + " owned: "
+                + java.util.Arrays.toString(have) + " (two full sets, then nothing)");
+        notes.add("angler rolls: " + given + " pieces, two full sets in order, then none");
+
+        step = "sink";
         for (int i = 0; i < 16; i++) {
             sink.selfTestLeak();
         }
@@ -662,8 +709,22 @@ public final class SkillingMinigameWalk {
     // ------------------------------------------------------------------ Trouble Brewing
 
     private void brewingRound() {
-        step = "workbench";
+        step = "entry";
+        // Wiki: no items in the inventory and nothing on the head; a wielded weapon (the player's own axe) may come along.
         player.getInventory().clearContent();
+        Inv.give(player, "rune_axe", 1);
+        hold("rune_axe");
+        Inv.give(player, "logs", 1);
+        expect(SkillingMinigameRules.requirement(player, Minigame.TROUBLE_BREWING) != null, "the brewery let in a player carrying logs");
+        Inv.remove(player, "logs", 1);
+        player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, Inv.stack("rune_full_helm", 1));
+        expect(SkillingMinigameRules.requirement(player, Minigame.TROUBLE_BREWING) != null, "the brewery let in a player in a helmet");
+        player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, net.minecraft.world.item.ItemStack.EMPTY);
+        String entry = SkillingMinigameRules.requirement(player, Minigame.TROUBLE_BREWING);
+        expect(entry == null, "an empty inventory with a wielded axe was refused: " + entry);
+        notes.add("entry: empty inventory and no hat, a wielded axe allowed");
+
+        step = "workbench";
         TroubleBrewingSession tb = (TroubleBrewingSession) start(Minigame.TROUBLE_BREWING);
         use(tb.selfTestBlock("tb_workbench"), "tb_workbench");
         for (String tool : new String[]{"knife", "tinderbox", "bronze_axe", "minecraft:bucket", "minecraft:bowl", "minecraft:beef"}) {
@@ -764,6 +825,10 @@ public final class SkillingMinigameWalk {
                 "rum rewards: Crafting +" + (xp(Skill.CRAFTING) - craft) + ", Cooking +" + (xp(Skill.COOKING) - cooking) + ", Firemaking +"
                         + (xp(Skill.FIREMAKING) - fm));
         expect(!Inv.has(player, "minecraft:bucket", 1) && !Inv.has(player, "logs", 1), "brewery supplies left the game");
+        expect(!Inv.has(player, "knife", 1) && !Inv.has(player, "tinderbox", 1) && !Inv.has(player, "bronze_axe", 1),
+                "workbench tools left the game: knife " + Inv.count(player, "knife") + ", tinderbox " + Inv.count(player, "tinderbox")
+                        + ", bronze axe " + Inv.count(player, "bronze_axe"));
+        expect(Inv.has(player, "rune_axe", 1), "the player's own wielded rune axe was taken on leaving");
         notes.add(got + " pieces of eight and 4 rum rewards");
 
         step = "shop";
@@ -787,6 +852,13 @@ public final class SkillingMinigameWalk {
         GnomeRestaurantSession.View v = gr.selfTestView();
         expect(v.order() != null && !v.hard() && MinigameRules.GnomeRestaurant.EASY_CUSTOMERS.contains(v.customer())
                 && v.ticksLeft() == MinigameRules.GnomeRestaurant.EASY_TICKS, "an easy job: " + v);
+        // The oven checks the dish's Cooking level (every restaurant dish needs 25 or more).
+        int cookingTenths = Players.data(player).skills().xpTenths(Skill.COOKING);
+        Players.data(player).skills().setXpTenths(Skill.COOKING, 0);
+        use(gr.selfTestBlock("gnome_oven"), "gnome_oven");
+        Players.data(player).skills().setXpTenths(Skill.COOKING, cookingTenths);
+        expect(!Inv.has(player, v.order(), 1) && Inv.has(player, "gnome_ingredients", 1), "a level-1 cook baked the "
+                + v.order() + " (needs " + MinigameRules.GnomeRestaurant.dishLevel(v.order()) + " Cooking)");
         double cooking = xp(Skill.COOKING);
         use(gr.selfTestBlock("gnome_oven"), "gnome_oven");
         expect(Inv.has(player, v.order(), 1) && xp(Skill.COOKING) - cooking == MinigameRules.GnomeRestaurant.dishXp(v.order()),
@@ -862,6 +934,33 @@ public final class SkillingMinigameWalk {
         }
         expect(!Inv.has(player, "gnome_restaurant_token", 1) && now == dishes + 1, "the token bought " + (now - dishes) + " dishes");
         notes.add("a reward token at 12 points, cashed in for a random dish");
+
+        // Ten unused tokens fill it (120 points at once): the next 12 points make no dish; once one is spent they do again.
+        step = "full token";
+        int cap = MinigameRules.GnomeRestaurant.MAX_TOKENS;
+        Inv.give(player, "gnome_restaurant_token", cap);
+        MinigameData.of(player).addPoints(player.getUUID(), "gnome_restaurant", 11);
+        easyDelivery(gr);
+        expect(Inv.count(player, "gnome_restaurant_token") == cap && points("gnome_restaurant") == 24,
+                "a delivery with a full token: " + Inv.count(player, "gnome_restaurant_token") + " tokens, points "
+                        + points("gnome_restaurant"));
+        Inv.remove(player, "gnome_restaurant_token", 1);
+        MinigameData.of(player).addPoints(player.getUUID(), "gnome_restaurant", 11);
+        easyDelivery(gr);
+        expect(Inv.count(player, "gnome_restaurant_token") == cap && points("gnome_restaurant") == 36,
+                "after using a token the next 12 points made " + (Inv.count(player, "gnome_restaurant_token") - cap + 1)
+                        + " tokens (points " + points("gnome_restaurant") + ")");
+        notes.add("ten unused tokens held: no 11th; one used, the next 12 points refilled it");
+    }
+
+    /** An easy job from Gianne, its dish made in advance, delivered to the customer. */
+    private void easyDelivery(GnomeRestaurantSession gr) {
+        use(gr.selfTestBlock("gnome_gianne"), "gnome_gianne");
+        expect(gr.selfTestView().order() != null, "Gianne gave no job");
+        Inv.remove(player, "gnome_ingredients", Inv.count(player, "gnome_ingredients"));
+        Inv.give(player, gr.selfTestView().order(), 1);
+        use(gr.selfTestBlock("gnome_customer"), "gnome_customer");
+        expect(gr.selfTestView().order() == null, "the delivery wasn't taken");
     }
 
     // ------------------------------------------------------------------ Sorceress's Garden

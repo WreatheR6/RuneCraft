@@ -20,7 +20,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Blocks;
 
 /**
- * Trouble Brewing on Mos Le'Harmless (OSRS Wiki; numbers in {@link TroubleBrewing}). The workbench hands out the tools
+ * Trouble Brewing on Mos Le'Harmless (OSRS Wiki; numbers in {@link TroubleBrewing}). Players come in with an empty inventory
+ * and no hat ({@link #requirement}) and leave everything the game gave them behind. The workbench hands out the tools
  * (buckets, bowls, raw meat, a knife, a tinderbox and an axe); buckets are filled at the water pump; the team's flowers grow
  * by the far end and go into the kettle, which fills bowls with coloured water; a bowl of it dyes a monkey that fetches a
  * bitternut from the bitternut tree; raw meat on a sweetgrub mound draws out sweetgrubs (or sweetflies, or collapses it);
@@ -40,6 +41,12 @@ public class TroubleBrewingSession extends MinigameSession {
     private static final String FLOWERS = "tb_red_flowers";
     private static final String[] SOLIDS = {"bitternut", "sweetgrubs", "scrapey_tree_bark"};
     private static final int[][] BOILERS = {{-4, 4}, {0, 4}, {4, 4}};
+    private static final String[] TOOLS = {"knife", "tinderbox", "bronze_axe"};
+    /** Game supplies, all taken back when a player leaves (they came in with an empty inventory). */
+    private static final String[] SUPPLIES = {"bitternut", "sweetgrubs", "scrapey_tree_bark", "scrapey_tree_logs", COLOURED, FLOWERS, WATER,
+            BUCKET, BOWL, MEAT, "logs"};
+    /** Tools each player took from the workbench (a wielded axe of their own stays theirs). */
+    private final Map<UUID, Map<String, Integer>> handedOut = new HashMap<>();
     /** Hopper contents: who deposited each unit, oldest first (bitternut, sweetgrubs, bark, water, coloured water). */
     private final Map<String, Deque<UUID>> hopper = new HashMap<>();
     private final Map<UUID, Integer> deposited = new HashMap<>();
@@ -119,9 +126,10 @@ public class TroubleBrewingSession extends MinigameSession {
     // ------------------------------------------------------------------ gathering
 
     private void workbench(ServerPlayer p) {
-        for (String tool : new String[]{"knife", "tinderbox", "bronze_axe"}) {
+        for (String tool : TOOLS) {
             if (!Inv.has(p, tool, 1)) {
                 Inv.give(p, tool, 1);
+                handedOut.computeIfAbsent(p.getUUID(), k -> new HashMap<>()).merge(tool, 1, Integer::sum);
             }
         }
         topUp(p, BUCKET, 5, WATER);
@@ -429,11 +437,40 @@ public class TroubleBrewingSession extends MinigameSession {
         }
     }
 
+    /**
+     * Entry check (OSRS Wiki "Trouble Brewing", Joining a game: "you cannot have any followers, items in your inventory, or
+     * anything equipped in the head slot"), so that everything taken back on leaving was the game's: a wielded weapon (an axe
+     * for the scrapey trees) may come along.
+     */
+    public static String requirement(ServerPlayer p) {
+        net.minecraft.world.entity.player.Inventory inv = p.getInventory();
+        for (int i = 0; i < inv.items.size(); i++) {
+            net.minecraft.world.item.ItemStack st = inv.items.get(i);
+            if (!st.isEmpty() && !(i == inv.selected && wielded(st))) {
+                return "Honest Jimmy: Ye can't take anything into the brewery, matey. Bank yer inventory first.";
+            }
+        }
+        if (!p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).isEmpty()) {
+            return "Honest Jimmy: Take off yer hat, matey. Brewers wear their team's bandana.";
+        }
+        return null;
+    }
+
+    private static boolean wielded(net.minecraft.world.item.ItemStack st) {
+        com.runecraft.osrs.ItemDef def = com.runecraft.registry.ModItems.def(st);
+        return def != null && def.equipment() != null && def.equipment().slot() == com.runecraft.osrs.EquipmentDef.Slot.WEAPON
+                || st.getItem() instanceof net.minecraft.world.item.TieredItem;
+    }
+
+    /** Workbench items can't leave the minigame (OSRS Wiki "Workbench (Trouble Brewing, tools)"). */
     @Override
     protected void onLeave(ServerPlayer player) {
-        for (String item : new String[]{"bitternut", "sweetgrubs", "scrapey_tree_bark", "scrapey_tree_logs", COLOURED, FLOWERS, WATER, BUCKET,
-                BOWL, MEAT, "logs"}) {
+        for (String item : SUPPLIES) {
             Inv.remove(player, item, Inv.count(player, item));
+        }
+        Map<String, Integer> tools = handedOut.remove(player.getUUID());
+        if (tools != null) {
+            tools.forEach((tool, n) -> Inv.remove(player, tool, Math.min(n, Inv.count(player, tool))));
         }
     }
 
