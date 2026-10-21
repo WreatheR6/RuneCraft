@@ -681,9 +681,10 @@ final class CoxRooms {
         private void boulders() {
             for (ServerPlayer p : players()) {
                 if (p.distanceToSqr(vasa) <= CoxRules.VASA_BOULDER_RANGE * CoxRules.VASA_BOULDER_RANGE) {
-                    // A raid strike (round 42): the 3x3 outlined as the boulder is thrown and until it lands, recorded.
-                    // // playability: it was a particle burst on the throw only
-                    RaidEffects.strike(world(), p.position(), 1.5, 18, 3, vasa, ParticleTypes.CRIT, AttackType.RANGED, false);
+                    // A raid strike (round 42): the 3x3 outlined as the boulder is thrown and until it lands, recorded; on the
+                    // floor too since round 43. // playability: it was a particle burst on the throw only
+                    RaidEffects.mark(world(), p.position(), 1.5).delay(3).source(vasa).warn(ParticleTypes.CRIT).damage(0, 18)
+                            .style(AttackType.RANGED, 0.0).floor(RaidFloor.DANGER).start();
                 }
             }
         }
@@ -720,8 +721,20 @@ final class CoxRooms {
             }
             charging = RaidScaling.VASA_TELEPORT_DELAY;
             world().sendParticles(ParticleTypes.END_ROD, vasa.getX(), vasa.getY() + 2, vasa.getZ(), 30, 1.5, 1, 1.5, 0.05);
+            // Round 43: the barrage's reach round Vasa is marked on the floor until it lands, so the players thrown to the
+            // edges see where to run in to share it, and the stunned see the count. // playability: OSRS shows Vasa charging
+            RaidFloor.disc(world(), vasa.position(), BARRAGE_REACH, RaidFloor.SAFE, RaidScaling.VASA_TELEPORT_DELAY, vasa);
+            for (int i = n; i < party.size(); i++) {
+                Msg.telegraph(party.get(i), "Vasa's barrage: run into the marked ring round him and pray Magic - share it!", null);
+            }
+            for (ServerPlayer p : stunned) {
+                Msg.telegraph(p, "Vasa's barrage: stunned - your team can share it by joining you", null);
+            }
             RaidEffects.later(RaidScaling.VASA_TELEPORT_DELAY, () -> barrage(stunned, hp));
         }
+
+        /** Blocks from Vasa within which the barrage hits (and shares its damage between) everyone. */
+        static final double BARRAGE_REACH = 3.5;
 
         private void barrage(List<ServerPlayer> stunned, int[] hp) {
             if (!alive(vasa)) {
@@ -729,7 +742,7 @@ final class CoxRooms {
             }
             List<ServerPlayer> receivers = new ArrayList<>();
             for (ServerPlayer p : players()) {
-                if (stunned.contains(p) || p.distanceToSqr(vasa) <= 3.5 * 3.5) {
+                if (stunned.contains(p) || p.distanceToSqr(vasa) <= BARRAGE_REACH * BARRAGE_REACH) {
                     receivers.add(p);
                 }
             }
@@ -842,6 +855,15 @@ final class CoxRooms {
                     guard = e;
                 }
             }
+            if (tick % 2 == 0) {
+                // Round 43: the line past which a Guardian shoves you back, drawn between them while one stands. // playability:
+                // OSRS players see the passage behind the statues
+                double x = center().getX() + 0.5 + PASSAGE_X;
+                for (int z = -6; z <= 6; z++) {
+                    world().sendParticles(PASSAGE_LINE, x, center().getY() + 1.1,
+                            center().getZ() + 0.5 + z, 1, 0, 0, 0, 0);
+                }
+            }
             for (ServerPlayer p : players()) {
                 if (p.getX() > center().getX() + 0.5 + PASSAGE_X) {
                     pushes++;
@@ -852,6 +874,9 @@ final class CoxRooms {
                 }
             }
         }
+
+        private static final net.minecraft.core.particles.DustParticleOptions PASSAGE_LINE =
+                new net.minecraft.core.particles.DustParticleOptions(new org.joml.Vector3f(1.0f, 0.4f, 0.1f), 1.2f);
 
         @Override
         public boolean useBlock(ServerPlayer player, String blockId, BlockPos pos) {
@@ -1142,6 +1167,10 @@ final class CoxRooms {
         private final Set<LivingEntity> gaveUp = new HashSet<>();
         private int waterBlasts;
         private int healed;
+        /** Muttadiles turned towards the tree, and the game ticks before they reach it. */
+        private final Map<LivingEntity, Integer> heading = new HashMap<>();
+        /** Game ticks between a Muttadile turning to the tree and reaching it (the bind window). */
+        static final int FEED_LEAD_TICKS = com.runecraft.osrs.ArenaTiming.STRIKE_FLOOR_TICKS;
 
         Muttadiles(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -1213,6 +1242,7 @@ final class CoxRooms {
                         && raid.healthFraction(m) < CoxRules.MUTTADILE_FEED_BELOW;
                 if (!hungry) {
                     bound.remove(m);
+                    heading.remove(m);
                     continue;
                 }
                 if (held(m)) {
@@ -1220,10 +1250,32 @@ final class CoxRooms {
                     int b = bound.merge(m, 1, Integer::sum);
                     if (b >= CoxRules.MUTTADILE_FEED_GIVE_UP_TICKS) {
                         gaveUp.add(m);
+                        heading.remove(m);
                         say("The Muttadile gives up on the meat tree.");
                     }
                     continue;
                 }
+                // Round 43: it turns towards the tree first (named mid-screen, the tree lit up), and only reaches it a strike
+                // floor later: the window to bind or freeze it. // playability: OSRS shows it walking to the tree
+                Integer head = heading.get(m);
+                if (head == null) {
+                    heading.put(m, FEED_LEAD_TICKS);
+                    RaidEffects.telegraph(players(), "A Muttadile heads for the meat tree - bind or freeze it!");
+                    BlockPos tr = tree();
+                    RaidEffects.cue(FEED_LEAD_TICKS, center().getCenter(), () -> {
+                        if (!alive(m) || !treeAlive) {
+                            return false;
+                        }
+                        com.runecraft.boss.ThreatCues.ring(world(), Vec3.atBottomCenterOf(tr), 2.0, com.runecraft.util.Msg.TYPELESS_RGB, null, false);
+                        return true;
+                    });
+                    continue;
+                }
+                if (head > 1) {
+                    heading.put(m, head - 1);
+                    continue;
+                }
+                heading.remove(m);
                 move(m, Vec3.atBottomCenterOf(tree().offset(2, 0, 0)));
                 anchor(m);
                 feeding.put(m, CoxRules.MUTTADILE_FEED_TICKS);
@@ -1698,6 +1750,20 @@ final class CoxRooms {
                     BlockPos pos = at(GRUBS[g][0], GRUBS[g][1]);
                     world().sendParticles(ParticleTypes.CRIT, pos.getX() + 0.5, pos.getY() + 1.2, pos.getZ() + 0.5, 8, 0.3, 0.3, 0.3, 0.05);
                     say("Vespula stings a lux grub, injecting her eggs!");
+                    // Round 43: the stung grub ringed (orange, filling as it drains) until it hatches or is healed, and named by
+                    // compass. // playability: OSRS shows the grub's health bar
+                    String where = com.runecraft.osrs.content.raids.RaidRealtime.compass(GRUBS[g][0], GRUBS[g][1]);
+                    RaidEffects.telegraph(players(), "Vespula stung the " + where + " lux grub - feed it blossoms!");
+                    int grub = g;
+                    RaidEffects.cue(CoxRules.LUX_GRUB_HP / Math.max(1, CoxRules.GRUB_DRAIN_PER_TICK) + 2, center().getCenter(), () -> {
+                        if (!stung[grub] || grubHp[grub] <= 0) {
+                            return false;
+                        }
+                        double share = grubHp[grub] / (double) CoxRules.LUX_GRUB_HP;
+                        com.runecraft.boss.ThreatCues.ring(world(), Vec3.atBottomCenterOf(pos), 0.6 + 0.6 * share,
+                                com.runecraft.util.Msg.TYPELESS_RGB, null, share < 0.3);
+                        return true;
+                    });
                 }
             }
             for (int i = 0; i < GRUBS.length; i++) {
@@ -1848,11 +1914,31 @@ final class CoxRooms {
                 }
             }
             if (boss == portal) {
+                if (!portalUnderAttack()) {
+                    // Round 43: the portal's prayer drain reach (7 tiles) ringed while it is under attack. // playability
+                    DataBossEntity pt = portal;
+                    RaidEffects.cue(CoxRules.PORTAL_UNDER_ATTACK_TICKS + 1, center().getCenter(), () -> {
+                        if (!alive(pt) || !portalUnderAttack()) {
+                            return false;
+                        }
+                        com.runecraft.boss.ThreatCues.ring(world(), pt.position(), CoxRules.PORTAL_RANGE, com.runecraft.util.Msg.MAGIC_RGB, null, false);
+                        return true;
+                    });
+                }
                 portalHitAt = t;
                 if (damage > 0) {
                     if (flying()) {
                         if (enragedTicks <= 0) {
                             warn("Vespula is enraged by the attack on her portal!");
+                            // her jab reach ringed in melee red while she is enraged (round 43). // playability
+                            DataBossEntity v = vespula;
+                            RaidEffects.cue(8, center().getCenter(), () -> {
+                                if (!alive(v) || enragedTicks <= 0) {
+                                    return false;
+                                }
+                                com.runecraft.boss.ThreatCues.ring(world(), v.position(), 3.0, com.runecraft.util.Msg.MELEE_RGB, null, false);
+                                return true;
+                            });
                         }
                         enragedTicks = 6;
                     } else if (landedOnce) {
@@ -2067,6 +2153,52 @@ final class CoxRooms {
         public boolean bossVulnerable(DataBossEntity boss) {
             return thawed;
         }
+
+        /** Ice demon attacks made, and the last one's style (self-test). */
+        int demonAttacks;
+        AttackType lastDemonStyle;
+
+        /**
+         * The thawed Ice demon's attacks (OSRS wiki, CoX strategies): it reads its target's overhead prayer, using Ice Burst
+         * against Protect from Magic and snowballs against Protect from Missiles (either otherwise), both landing in a 3x3 area
+         * that can be dodged; the burst flies faster and may freeze. Round 43: each lands as a raid strike on the target's spot,
+         * drawn and marked on the floor from the throw (they were single-target bolts). // playability: OSRS lands them a tick
+         * or two after they are thrown
+         */
+        @Override
+        public com.runecraft.osrs.content.AttackDef bossBeforeAttack(DataBossEntity boss, ServerPlayer target, com.runecraft.osrs.content.AttackDef attack) {
+            if (boss != demon || !thawed || target == null) {
+                return attack;
+            }
+            var data = Players.data(target);
+            boolean magic = data.isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC) ? true
+                    : data.isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MISSILES) ? false : rnd().nextBoolean();
+            AttackType style = magic ? AttackType.MAGIC : AttackType.RANGED;
+            int max = 0;
+            for (com.runecraft.osrs.content.AttackDef a : attacks(boss)) {
+                if (a.style() == style) {
+                    max = a.maxHit();
+                }
+            }
+            int roll = max;
+            demonAttacks++;
+            lastDemonStyle = style;
+            DataBossEntity source = demon;
+            RaidEffects.telegraph(List.of(target), magic ? "Ice demon: Ice Burst - step out of the 3x3!" : "Ice demon: snowball - step out of the 3x3!");
+            RaidEffects.mark(world(), target.position(), 1.5).delay(magic ? ICE_BURST_TICKS : SNOWBALL_TICKS).source(source)
+                    .warn(ParticleTypes.SNOWFLAKE).floor(RaidFloor.LIGHTNING).live(current())
+                    .onHit(q -> {
+                        int dealt = RaidEffects.hit(source, q, rnd().nextInt(roll + 1), style, 0.0);
+                        if (magic && dealt > 0 && rnd().nextInt(2) == 0) { // approx: "a chance to freeze"
+                            com.runecraft.content.systems.SysCombat.freeze(q, 8);
+                        }
+                    }).start();
+            return com.runecraft.osrs.content.AttackDef.idle(style);
+        }
+
+        /** Game ticks the Ice Burst and the slower snowball fly to their spot. // approx */
+        static final int ICE_BURST_TICKS = com.runecraft.osrs.ArenaTiming.STRIKE_FLOOR_TICKS;
+        static final int SNOWBALL_TICKS = ICE_BURST_TICKS + 1;
 
         @Override
         public int bossIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
@@ -2294,6 +2426,22 @@ final class CoxRooms {
                 w.tick(CoxRules.SAPLING_RESPAWN_TICKS + 1);
                 w.expect(stumps.isEmpty(), "a felled sapling never grew back");
             }
+            // Round 43 (OSRS wiki): it reads the target's overhead - snowballs against Protect from Missiles, Ice Burst against
+            // Protect from Magic - and either lands in a 3x3 that a step out of dodges.
+            w.moveTo(at(-8, 0));
+            w.pray(com.runecraft.osrs.Prayer.PROTECT_FROM_MISSILES, true);
+            int hitsBefore = raid.attacksOnParty();
+            bossBeforeAttack(demon, w.player(), attacks(demon).get(0));
+            w.expect(lastDemonStyle == AttackType.RANGED && RaidEffects.strikesOn(w.player()) >= 1,
+                    "against Protect from Missiles the Ice demon did not throw a snowball at the player's spot (" + lastDemonStyle + ")");
+            w.moveTo(at(-4, 0));
+            w.tick(SNOWBALL_TICKS + 1);
+            w.expect(raid.attacksOnParty() == hitsBefore, "a snowball hit a player who stepped out of its 3x3");
+            w.pray(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC, true);
+            bossBeforeAttack(demon, w.player(), attacks(demon).get(0));
+            w.expect(lastDemonStyle == AttackType.MAGIC, "against Protect from Magic the Ice demon did not cast Ice Burst");
+            w.tick(ICE_BURST_TICKS + 1);
+            w.pray(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC, false);
             w.kill(demon, AttackType.MAGIC, "the Ice demon");
             return needed + " kindling burnt, " + chops + " chops, " + felled + " sapling(s) felled, " + fiendTakes + "/"
                     + fiendTries + " icefiend tries took a charge";
@@ -3201,6 +3349,12 @@ final class CoxRooms {
         /** The room tick each hand was last damaged (the head turns to a hand hit within four ticks when it scans nobody). */
         private long leftHitAt = -100;
         private long rightHitAt = -100;
+        /** Self-test: prayer spheres that landed unblocked and blocked, and the last one's style. */
+        int sphereHits;
+        int sphereBlocks;
+        AttackType lastSphere;
+        /** Self-test: game ticks the rotation holds still (a check isolating one mechanic). */
+        int quietTicks;
         /** Self-test: steps skipped because the head faced an empty zone, standard attacks caught up, Crystal Burst shoves. */
         int zoneSkips;
         int catchUps;
@@ -3418,7 +3572,9 @@ final class CoxRooms {
                 stage = Stage.HEAD;
                 warn("The Great Olm makes its final stand - its head is now vulnerable!");
             }
-            if (t % CoxRules.OLM_STEP_TICKS == 0 && !players.isEmpty()) {
+            if (quietTicks > 0) {
+                quietTicks--;
+            } else if (t % CoxRules.OLM_STEP_TICKS == 0 && !players.isEmpty()) {
                 rotationStep(players);
             }
         }
@@ -3681,9 +3837,13 @@ final class CoxRooms {
             RaidEffects.projectile(world(), head.getEyePosition(), p, styles[s], SPHERE_TICKS,
                     () -> alive(source) && inside(p.position()), () -> {
                         if (!RaidEffects.protectedFrom(p, styles[s])) {
+                            sphereHits++;
                             special(source, p, CoxRules.olmSphereDamage(Math.round(p.getHealth())));
+                        } else {
+                            sphereBlocks++;
                         }
                     });
+            lastSphere = styles[s];
         }
 
         private void power(String attack, ServerPlayer target, List<ServerPlayer> players) {
@@ -4229,6 +4389,20 @@ final class CoxRooms {
                 w.moveTo(stay);
                 w.tick(1);
             }
+            // A prayer sphere is answered as a player would: its colour and prayer named mid-screen, the prayer switched through
+            // the prayer keys' path a game tick later; it is blocked (the rotation holds still meanwhile, so no other sphere
+            // knocks the prayer off).
+            quietTicks = 12;
+            int blocksBefore = sphereBlocks;
+            int sphereHitsBefore = sphereHits;
+            sphere(w.player());
+            com.runecraft.osrs.Prayer answer = com.runecraft.osrs.PrayerGrace.protectionFor(lastSphere);
+            w.pray(answer, true);
+            w.until(() -> sphereBlocks > blocksBefore || sphereHits > sphereHitsBefore, 10, "the Olm's prayer sphere never landed");
+            w.expect(sphereBlocks == blocksBefore + 1 && sphereHits == sphereHitsBefore, "a prayer sphere answered with " + answer
+                    + " a tick after its cue was not blocked");
+            w.pray(answer, false);
+            quietTicks = 0;
             w.expect(burstHits == hitsBefore + 1 && shoves == shovesBefore + 1
                     && RaidEffects.horizontalDistSq(stay, w.player().position()) >= 1.0, "a Crystal Burst did not hit and shove the player on it "
                     + "(hits " + (burstHits - hitsBefore) + ", shoves " + (shoves - shovesBefore) + ")");

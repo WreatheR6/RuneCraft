@@ -102,9 +102,13 @@ public final class CoxTobWalk {
             for (int attempt = 1; attempt <= 2; attempt++) {
                 // Each wipe adds ten bandages to those carried (OSRS wiki: dying on purpose stacks them).
                 int carried = w.count(com.runecraft.osrs.content.raids.TobRules.BANDAGES);
+                int seeded = RaidSelfTest.seedPending(raid, 1, p);
                 raid.onDeath(p);
                 expect(RaidManager.of(p) == raid && raid.contains(p), "an Entry mode wipe (attempt " + attempt + ") ended the raid");
                 expect(!raid.isDowned(p) && raid.logic(1).started && !raid.logic(1).done, "the Maiden's room did not reset after the wipe");
+                // round 43: nothing of the failed attempt is left to land on the retry
+                expect(seeded >= 3, "only " + seeded + " test strikes/projectiles/floor marks were pending before the wipe");
+                RaidSelfTest.expectCleared(raid, 1, "the ToB Entry wipe (attempt " + attempt + ")");
                 int now = w.count(com.runecraft.osrs.content.raids.TobRules.BANDAGES);
                 expect(now == carried + com.runecraft.osrs.content.raids.TobRules.ENTRY_BANDAGES,
                         "the wipe left " + now + " bandages (carried " + carried + ", expected ten more)");
