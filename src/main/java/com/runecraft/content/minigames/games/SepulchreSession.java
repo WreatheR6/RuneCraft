@@ -62,6 +62,8 @@ public class SepulchreSession extends MinigameSession {
     private static final int TRAP_BUFFER = 2;
     private static final int ALCOVE_X = 4;
     private static final int COFFIN_X = 6;
+    /** The attack name a trap's damage carries ({@code CombatHooks.nameAttack}): damage listeners (the self-test) read it. */
+    public static final String TRAP_ATTACK = "sepulchre_trap";
 
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
     private static final BlockState WALL = Blocks.DEEPSLATE_BRICKS.defaultBlockState();
@@ -470,6 +472,8 @@ public class SepulchreSession extends MinigameSession {
                 hits++;
                 boolean ring = wears(p, "hallowed_ring");
                 if (!ring) {
+                    // Wiki: "a small amount of damage unless the hallowed ring is equipped" (the amount is approx).
+                    com.runecraft.combat.CombatHooks.nameAttack(TRAP_ATTACK, null);
                     hurt(p, HallowedSepulchre.trapDamage(floor, random.nextDouble()));
                 }
                 Msg.red(p, ring ? "Your hallowed ring whisks you back to the start of the obstacle."
