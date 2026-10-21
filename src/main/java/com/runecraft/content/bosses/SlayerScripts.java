@@ -931,6 +931,23 @@ final class SlayerScripts {
             return phase == HydraPhase.GREEN ? null : "alchemical_hydra";
         }
 
+        /**
+         * The boss bar (round 43, {@code // playability}): its phase of four, the colour of its next basic attack's style,
+         * "switches in N" (attacks of this style still to come; the enraged phase switches every attack) and the attacks to its
+         * phase special. OSRS players count the three attacks a style themselves.
+         */
+        @Override
+        public com.runecraft.osrs.BossBarStatus.Status bossBarStatus(DataBossEntity boss) {
+            boolean enraged = phase == HydraPhase.ENRAGED;
+            boolean magic = com.runecraft.osrs.BossSwitches.hydraNextMagic(magicStyle, styleCount, enraged);
+            return boss.defaultBossBarStatus().colour(magic ? com.runecraft.osrs.BossBarStatus.Colour.BLUE
+                            : com.runecraft.osrs.BossBarStatus.Colour.GREEN)
+                    .with(com.runecraft.osrs.BossBarStatus.phaseText(phase.ordinal() - 1, HydraPhase.values().length - 1))
+                    .with(enraged ? "switches every attack"
+                            : com.runecraft.osrs.BossBarStatus.switchText(com.runecraft.osrs.BossSwitches.hydraLeft(styleCount)))
+                    .with(com.runecraft.osrs.BossSwitches.nextText("special", com.runecraft.osrs.BossSwitches.hydraSpecialIn(autos, specials)));
+        }
+
         private Vec3 vent(String colour) {
             Vec3 c = homeVec();
             return switch (colour) {

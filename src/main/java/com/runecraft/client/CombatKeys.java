@@ -31,6 +31,26 @@ public final class CombatKeys {
     /** Round 42: eat the best food / drink the best potion in the pack (server: skill.QuickConsume). */
     public static KeyMapping quickEat;
     public static KeyMapping quickDrink;
+    /**
+     * Round 43: Sol Heredit's grapple, one key per slot in {@code SolHeredit.Grapple} order (body, back, hands, legs, feet),
+     * 1-5 by default. They only act while the grapple prompt is up ({@link GrappleHud}), so they don't clash with the hotbar
+     * keys the rest of the time (their conflict context, {@link #GRAPPLE_CONTEXT}).
+     */
+    public static KeyMapping[] grapple;
+
+    /** Active only while a grapple prompt is on screen with no screen open; conflicts with no other context. */
+    static final net.neoforged.neoforge.client.settings.IKeyConflictContext GRAPPLE_CONTEXT =
+            new net.neoforged.neoforge.client.settings.IKeyConflictContext() {
+                @Override
+                public boolean isActive() {
+                    return GrappleHud.active() && Minecraft.getInstance().screen == null;
+                }
+
+                @Override
+                public boolean conflicts(net.neoforged.neoforge.client.settings.IKeyConflictContext other) {
+                    return other == this;
+                }
+            };
 
     private static final long[] LAST_SENT = {-100, -100, -100, -100, -100, -100};
     private static long ticks;
@@ -51,6 +71,16 @@ public final class CombatKeys {
                 GLFW.GLFW_MOUSE_BUTTON_4, "key.categories.runecraft"));
         quickDrink = KeyBindingHelper.registerKeyBinding(new KeyMapping("RuneCraft Quick-drink", InputConstants.Type.MOUSE,
                 GLFW.GLFW_MOUSE_BUTTON_5, "key.categories.runecraft"));
+        // Round 43 // playability: the grapple's five slots on keys (OSRS clicks them in the worn-equipment tab). No ':' in the
+        // names: options.txt splits each line on its first ':', so a rebinding would not be read back.
+        com.runecraft.osrs.content.minigames.SolHeredit.Grapple[] slots = com.runecraft.osrs.content.minigames.SolHeredit.Grapple.values();
+        grapple = new KeyMapping[slots.length];
+        for (int i = 0; i < slots.length; i++) {
+            String slot = slots[i].slot.substring(0, 1).toUpperCase(java.util.Locale.ROOT) + slots[i].slot.substring(1);
+            grapple[i] = KeyBindingHelper.registerKeyBinding(new KeyMapping("RuneCraft Defend " + slot + " (grapple)", GRAPPLE_CONTEXT,
+                    InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_1 + com.runecraft.osrs.content.minigames.SolHeredit.hotbarKey(slots[i]) - 1,
+                    "key.categories.runecraft"));
+        }
         ClientTickEvents.END_CLIENT_TICK.register(CombatKeys::tick);
     }
 
@@ -92,8 +122,18 @@ public final class CombatKeys {
         ClientPlayNetworking.send(com.runecraft.network.HudNet.QUICK_CONSUME, buf);
     }
 
-    /** Index of the combat key bound to this key code (0-2 protections, 3 quick-prayers, 4 quick-eat, 5 quick-drink), or -1. */
+    /**
+     * Index of the combat key bound to this key code (0-2 protections, 3 quick-prayers, 4 quick-eat, 5 quick-drink, 6-10 the
+     * grapple slots while a grapple prompt is up), or -1.
+     */
     public static int keyIndex(int keyCode, int scanCode) {
+        if (grapple != null && GrappleHud.active()) {
+            for (int i = 0; i < grapple.length; i++) {
+                if (grapple[i] != null && grapple[i].matches(keyCode, scanCode)) {
+                    return GRAPPLE_INDEX + i;
+                }
+            }
+        }
         KeyMapping[] keys = {protectMagic, protectMissiles, protectMelee, quickPrayers, quickEat, quickDrink};
         for (int i = 0; i < keys.length; i++) {
             if (keys[i] != null && keys[i].matches(keyCode, scanCode)) {
@@ -101,6 +141,15 @@ public final class CombatKeys {
             }
         }
         return -1;
+    }
+
+    /** {@link #keyIndex} of the first grapple key (body); the others follow in {@code SolHeredit.Grapple} order. */
+    public static final int GRAPPLE_INDEX = 6;
+
+    /** The bound key of grapple slot {@code index} (body 0 ... feet 4) as shown in Controls (e.g. "4"). */
+    public static String grappleKeyName(int index) {
+        return grapple == null || index < 0 || index >= grapple.length || grapple[index] == null ? "?"
+                : grapple[index].getTranslatedKeyMessage().getString();
     }
 
     /** The bound key of combat key {@code index} as shown in Controls (e.g. "R"). */
@@ -111,6 +160,10 @@ public final class CombatKeys {
 
     /** Presses combat key {@code index} (also used by the side panel's cursor screen, where key mappings don't fire). */
     public static void press(int index) {
+        if (index >= GRAPPLE_INDEX) {
+            GrappleHud.answer(index - GRAPPLE_INDEX);
+            return;
+        }
         if (index == 4 || index == 5) {
             consume(index);
             return;

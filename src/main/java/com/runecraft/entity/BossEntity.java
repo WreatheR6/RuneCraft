@@ -69,6 +69,14 @@ public class BossEntity extends OsrsMonsterEntity {
         /** When the boss dies or is removed. */
         default void onRemoved(BossEntity boss) {
         }
+
+        /**
+         * The boss bar's status line and colour (round 43, {@code // playability}): {@code status} is the default one
+         * ({@link BossEntity#defaultBossBarStatus}); a script that counts something down adds to it with {@code status.with(...)}.
+         */
+        default com.runecraft.osrs.BossBarStatus.Status bossBarStatus(BossEntity boss, com.runecraft.osrs.BossBarStatus.Status status) {
+            return status;
+        }
     }
 
     private static final java.util.Map<Boss, java.util.function.Supplier<Script>> SCRIPTS = new java.util.EnumMap<>(Boss.class);
@@ -216,11 +224,59 @@ public class BossEntity extends OsrsMonsterEntity {
         if (tickCount % ActionManager.MC_TICKS_PER_GAME_TICK == 0 && !tickHome()) {
             return;
         }
-        bossBar.setProgress(getHealth() / getMaxHealth());
+        refreshBossBar();
         if (script() != null && tickCount % ActionManager.MC_TICKS_PER_GAME_TICK == 0 && isAlive()) {
             script.gameTick(this);
         }
         landTelegraph();
+    }
+
+    /**
+     * The boss bar: health, then the status line and colour as a data boss's ({@code DataBossEntity.refreshBossBar}, round 43,
+     * {@code // playability}): the colour of the style the boss attacks with (Graardor and K'ril red, Jad white, Bryophyta blue,
+     * each Barrows brother his own), the curse on its target's protection prayers, and whatever its module script adds. The
+     * name and colour are only sent when they change.
+     */
+    public void refreshBossBar() {
+        bossBar.setProgress(Math.max(0f, Math.min(1f, getHealth() / getMaxHealth())));
+        Boss boss = boss();
+        if (boss == null) {
+            return;
+        }
+        com.runecraft.osrs.BossBarStatus.Status status = defaultBossBarStatus();
+        if (script() != null) {
+            status = script.bossBarStatus(this, status);
+        }
+        if (status == null) {
+            return;
+        }
+        bossBar.setName(Component.literal(com.runecraft.osrs.BossBarStatus.title(boss.displayName(), status)));
+        if (status.colour() != null) {
+            bossBar.setColor(BossEvent.BossBarColor.valueOf(status.colour().name()));
+        }
+    }
+
+    /**
+     * The default boss bar status of a built-in boss: no phases, the curse on its target's protection prayers, and the colour of
+     * its style roll ({@link com.runecraft.osrs.BossBarStatus#attacksOf}); while Jad's telegraph is on its way, that attack's
+     * colour (blue as he rears up, green as he stomps).
+     */
+    public com.runecraft.osrs.BossBarStatus.Status defaultBossBarStatus() {
+        Boss boss = boss();
+        int[] curse = getTarget() instanceof ServerPlayer target ? com.runecraft.network.HudNet.curseMap(target) : null;
+        java.util.List<com.runecraft.osrs.BossBarStatus.Attack> attacks = pendingStyle != null
+                ? java.util.List.of(new com.runecraft.osrs.BossBarStatus.Attack(pendingStyle, 1))
+                : com.runecraft.osrs.BossBarStatus.attacksOf(boss);
+        return com.runecraft.osrs.BossBarStatus.of(-1, 0, attacks, curse);
+    }
+
+    /** The boss bar's title and colour as players see them (self-tests). */
+    public String bossBarTitle() {
+        return bossBar.getName().getString();
+    }
+
+    public BossEvent.BossBarColor bossBarColor() {
+        return bossBar.getColor();
     }
 
     /**

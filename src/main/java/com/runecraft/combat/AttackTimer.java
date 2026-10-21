@@ -145,6 +145,7 @@ public final class AttackTimer {
             return 0;
         }
         Players.data(player).lastAttackTick += mc;
+        com.runecraft.network.HudNet.foodDelay(player, mc); // round 43: the timer draws it as a food delay (before the clock packet)
         State s = STATES.get(player.getUUID());
         int period = s == null ? fallbackPeriod(player) : s.buffer.periodMc(fallbackPeriod(player));
         long left = remaining(player);

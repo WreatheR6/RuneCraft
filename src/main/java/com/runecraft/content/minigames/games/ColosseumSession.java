@@ -155,10 +155,8 @@ public class ColosseumSession extends MinigameSession {
         LIVE.add(this);
     }
 
-    /** Runs whose players may be answering Sol Heredit's grapple with the hotbar keys (checked every Minecraft tick). */
+    /** Runs ticked every Minecraft tick (their floor markers). */
     private static final Set<ColosseumSession> LIVE = java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
-    /** Players answering a grapple: the hotbar slot they held when it was called (given back once it is answered or lands). */
-    private final Map<java.util.UUID, Integer> grappleHotbar = new HashMap<>();
 
     /** Children of the Sun opens Varlamore and the Colosseum; Minimus must have briefed the player once. */
     public static String requirement(ServerPlayer player) {
@@ -877,12 +875,12 @@ public class ColosseumSession extends MinigameSession {
     }
 
     /**
-     * Every Minecraft tick: the grapple keys; every {@link com.runecraft.osrs.ArenaTiming#REDRAW_MC}: the floor markers of what
-     * is about to land (Volatility squares, sky javelin targets, Solarflare orbs and their next tile). // playability: OSRS
-     * shows the javelin's shadow and the orb itself
+     * Every {@link com.runecraft.osrs.ArenaTiming#REDRAW_MC} Minecraft ticks: the floor markers of what is about to land
+     * (Volatility squares, sky javelin targets, Solarflare orbs and their next tile). Sol Heredit's grapple is answered with
+     * the client's grapple keys (round 43: {@code network.HudNet#GRAPPLE}), no longer through the held hotbar slot.
+     * // playability: OSRS shows the javelin's shadow and the orb itself
      */
     private void mcTick(long mc) {
-        grappleKeys();
         if (mc % com.runecraft.osrs.ArenaTiming.REDRAW_MC != 0) {
             return;
         }
@@ -1890,10 +1888,6 @@ public class ColosseumSession extends MinigameSession {
         }
         PoisonService.cure(player, true, 0, com.runecraft.action.ActionManager.gameTick());
         clearSand(true);
-        Integer held = grappleHotbar.remove(player.getUUID());
-        if (held != null) {
-            selectHotbar(player, held); // the slot held before a grapple, back
-        }
     }
 
     @Override
@@ -2023,63 +2017,6 @@ public class ColosseumSession extends MinigameSession {
             }
         }
         return null;
-    }
-
-    /**
-     * Sol Heredit's grapple on the hotbar keys (every Minecraft tick): when he calls one, the player's held slot moves off keys
-     * 1-5 (to slot 9) and the legend is shown in the middle of the screen; pressing 1 body, 2 back, 3 hands, 4 legs or 5 feet
-     * within {@link SolHeredit#GRAPPLE_WINDOW_TICKS} defends that slot ({@link
-     * com.runecraft.content.bosses.SolHereditScript#parry}, the chat links' path), and the held slot comes back once the
-     * grapple is answered or lands. // playability: OSRS clicks the slot in the worn-equipment tab within 4 ticks
-     */
-    public void grappleKeys() {
-        for (ServerPlayer p : online()) {
-            UUID u = p.getUUID();
-            SolHeredit.Grapple called = com.runecraft.content.bosses.SolHereditScript.calledFor(p);
-            Integer held = grappleHotbar.get(u);
-            if (called == null) {
-                if (held != null) {
-                    grappleHotbar.remove(u);
-                    selectHotbar(p, held);
-                }
-                continue;
-            }
-            if (held == null) {
-                int was = p.getInventory().selected;
-                grappleHotbar.put(u, was);
-                if (SolHeredit.grappleByHotbar(was) != null) {
-                    selectHotbar(p, 8); // off the five keys, so each of them is a change the server sees
-                }
-                MutableComponent legend = Component.literal("Defend: ").withStyle(ChatFormatting.GRAY);
-                for (SolHeredit.Grapple g : SolHeredit.Grapple.values()) {
-                    String label = SolHeredit.hotbarKey(g) + " " + g.slot.substring(0, 1).toUpperCase(java.util.Locale.ROOT)
-                            + g.slot.substring(1) + "  ";
-                    legend.append(Component.literal(label).withStyle(g == called ? ChatFormatting.GOLD : ChatFormatting.GRAY));
-                }
-                Msg.telegraph(p, legend);
-                continue;
-            }
-            SolHeredit.Grapple pressed = SolHeredit.grappleByHotbar(p.getInventory().selected);
-            if (pressed != null) {
-                com.runecraft.content.bosses.SolHereditScript.parry(p, pressed.slot);
-            }
-        }
-    }
-
-    /** Moves a player's held hotbar slot (server and client). */
-    private static void selectHotbar(ServerPlayer p, int slot) {
-        if (slot < 0 || slot > 8 || p.getInventory().selected == slot) {
-            return;
-        }
-        p.getInventory().selected = slot;
-        if (!(p instanceof net.neoforged.neoforge.common.util.FakePlayer) && p.connection != null) {
-            p.connection.send(new net.minecraft.network.protocol.game.ClientboundSetCarriedItemPacket(slot));
-        }
-    }
-
-    /** Self-test: whether a player is answering a grapple on the hotbar keys (their held slot was moved). */
-    public boolean grappleKeysArmed(ServerPlayer p) {
-        return grappleHotbar.containsKey(p.getUUID());
     }
 
     /**

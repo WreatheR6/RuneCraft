@@ -724,6 +724,9 @@ final class NightmareScript extends ScriptedBoss {
         long createdMc = com.runecraft.action.ActionManager.mcTick();
         long dueMc = createdMc + (long) windUp * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK;
         pending.add(new Pending(a, now + windUp, facing, victims, createdMc, dueMc));
+        for (ServerPlayer v : a.style().isMelee() ? List.of(target) : victims) { // round 43: on the cast bar of whoever it can hit
+            com.runecraft.network.HudNet.cast(v, boss, com.runecraft.osrs.CastBar.styleOf(a.style()), 0, (int) (dueMc - createdMc), null);
+        }
         if (windUpListener != null) {
             windUpListener.windUp(a, createdMc, dueMc);
         }
@@ -1195,6 +1198,7 @@ final class NightmareScript extends ScriptedBoss {
         boss.teleportTo(surgeFrom.x, surgeFrom.y, surgeFrom.z);
         surgeIn = NightmareRules.SURGE_WIND_UP;
         BossFx.warn(boss, (phosani ? "Phosani's Nightmare" : "The Nightmare") + " prepares to surge across the arena!");
+        BossFx.cast(boss, "Surge", null, NightmareRules.SURGE_WIND_UP * com.runecraft.osrs.ArenaTiming.MC_PER_GAME_TICK, 24); // round 43
         drawSurge(boss); // drawn as it is made, then every 4 MC (tick): 36 MC before she surges
     }
 

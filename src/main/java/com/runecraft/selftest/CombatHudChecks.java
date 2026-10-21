@@ -4,6 +4,7 @@ import com.runecraft.action.ActionManager;
 import com.runecraft.boss.DataBossEntity;
 import com.runecraft.boss.DataBossService;
 import com.runecraft.boss.Mechanics;
+import com.runecraft.content.bosses.ScriptedBoss;
 import com.runecraft.combat.CombatHandler;
 import com.runecraft.combat.PoisonService;
 import com.runecraft.combat.PrayerService;
@@ -77,6 +78,11 @@ final class CombatHudChecks {
         checks.add(new SelfTest.Check("hud:special_switch", g::specialSwitch));
         checks.add(new SelfTest.Check("hud:boss_bar_status", g::bossBarStatus));
         checks.add(new SelfTest.Check("hud:ammo_landing", g::ammoLanding));
+        checks.add(new SelfTest.Check("hud:ground_casts", g::groundCasts));
+        checks.add(new SelfTest.Check("hud:builtin_boss_bar", g::builtinBossBar));
+        checks.add(new SelfTest.Check("hud:switch_countdown", g::switchCountdown));
+        checks.add(new SelfTest.Check("hud:grapple_prompt", g::grapplePrompt));
+        checks.add(new SelfTest.Check("hud:food_delay", g::foodDelay));
         return checks;
     }
 
@@ -657,6 +663,385 @@ final class CombatHudChecks {
             clearArrows(target.position());
             target.discard();
             com.runecraft.combat.CombatZones.forget(p);
+        }
+    }
+
+    // ------------------------------------------------------------------ round 43: ground strikes, hazards and projectiles
+
+    /** A data boss entity owning probe strikes, created but never added to the world (it never ticks). */
+    private DataBossEntity probeHost(Vec3 at) {
+        List<String> ids = new ArrayList<>(ModEntities.DATA_BOSS_TYPES.keySet());
+        java.util.Collections.sort(ids);
+        for (String id : ids) {
+            EntityType<DataBossEntity> type = ModEntities.DATA_BOSS_TYPES.get(id);
+            if (ContentRegistry.boss(id) == null || type == null) {
+                continue;
+            }
+            DataBossEntity e = type.create(c.world);
+            if (e != null) {
+                e.moveTo(at.x, at.y, at.z, 0, 0);
+                e.setHealth(0); // its strikes land with no attacker
+                return e;
+            }
+        }
+        throw failure("no data boss type to host the probe");
+    }
+
+    /** One Minecraft tick of a probe script on the self-test clock (its tick, and its game tick on each boundary). */
+    private static void probeMc(com.runecraft.boss.BossScript probe, DataBossEntity host) {
+        ActionManager.advanceForSelfTest();
+        probe.tick(host);
+        if (ActionManager.mcTick() % ActionManager.MC_TICKS_PER_GAME_TICK == 0) {
+            probe.gameTick(host, ActionManager.gameTick());
+        }
+    }
+
+    /** Moves the self-test clock on to the next game-tick boundary and runs the probe's game tick there. */
+    private static void probeAlign(com.runecraft.boss.BossScript probe, DataBossEntity host) {
+        do {
+            ActionManager.advanceForSelfTest();
+            probe.tick(host);
+        } while (ActionManager.mcTick() % ActionManager.MC_TICKS_PER_GAME_TICK != 0);
+        probe.gameTick(host, ActionManager.gameTick());
+    }
+
+    /** The casts sent to the player while {@code body} runs. */
+    private List<HudNet.SentCast> castsDuring(Runnable body) {
+        List<HudNet.SentCast> sent = new ArrayList<>();
+        java.util.function.Consumer<HudNet.SentCast> before = HudNet.castListener;
+        HudNet.castListener = s -> {
+            before.accept(s);
+            if (s.player() == p()) {
+                sent.add(s);
+            }
+        };
+        try {
+            body.run();
+        } finally {
+            HudNet.castListener = before;
+        }
+        return sent;
+    }
+
+    private static HudProbe.Cast castNamed(HudProbe.Snapshot s, String name) {
+        for (HudProbe.Cast cast : s.casts()) {
+            if (cast.name().equals(name)) {
+                return cast;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Round 43: every telegraphed ground strike and hazard reaches the cast bar with its real landing. A scripted boss's strike
+     * 3 blocks off (radius 1) puts a MOVE row on the bar counting down exactly the Minecraft ticks it then takes to land (the
+     * 3-tick floor, unchanged), a volley of ten landing together is one row, a strike 10 blocks away none; a raid strike, a God
+     * Wars strike and a hazard arming do the same, and a raid projectile shows in its style with the key that blocks it. On the
+     * real client the rows show as MOVE (the projectile with the Protect from Magic key).
+     */
+    private String groundCasts() {
+        ServerPlayer p = p();
+        HudNet.selfTestPlayer = p; // the fake player isn't in the level's player list
+        Vec3 at = p.position();
+        DataBossEntity host = probeHost(at.add(0, 40, 0));
+        StringBuilder note = new StringBuilder();
+        try {
+            // a scripted boss's strike near the player: one row, its landing the strike's real one
+            ArenaCueChecks.Probe probe = new ArenaCueChecks.Probe();
+            List<com.runecraft.osrs.ArenaTiming.StrikeTrace> traces = new ArrayList<>();
+            java.util.function.Consumer<com.runecraft.osrs.ArenaTiming.StrikeTrace> was = ScriptedBoss.strikeListener;
+            ScriptedBoss.strikeListener = was.andThen(traces::add);
+            int[] took = new int[1];
+            List<HudNet.SentCast> strike;
+            try {
+                probeAlign(probe, host);
+                strike = castsDuring(() -> probe.fire(host, at.add(3, 0, 0), 1, 0, 1.0, (hit, pos) -> {
+                }));
+                if (client()) {
+                    HudProbe.Snapshot s = awaitClient(x -> castNamed(x, "Arena probe") != null);
+                    expect(s != null, "the client's cast bar never showed the scripted strike");
+                    HudProbe.Cast row = castNamed(s, "Arena probe");
+                    expect(row.key().equals("MOVE") && row.protection() < 0 && row.rightOverhead() == null,
+                            "the strike's row shows key '" + row.key() + "' protection " + row.protection());
+                    note.append("client: 'Arena probe' MOVE ").append(row.secondsLeft()).append("s; ");
+                }
+                while (probe.pending() && took[0] < 200) {
+                    probeMc(probe, host);
+                    took[0]++;
+                }
+            } finally {
+                ScriptedBoss.strikeListener = was;
+            }
+            expect(strike.size() == 1, "a scripted strike 3 blocks off sent " + strike.size() + " cast-bar rows");
+            HudNet.SentCast row = strike.get(0);
+            expect(row.style() == CastBar.TYPELESS && row.flags() == CastBar.FLAG_DODGE && row.label().equals("Arena probe")
+                    && row.source() == host.getId(), "the strike's row is " + row);
+            expect(traces.size() == 1, traces.size() + " probe strikes landed");
+            expect(row.landInMc() == took[0] && row.landInMc() >= com.runecraft.osrs.ArenaTiming.MIN_LEAD_MC,
+                    "the row counted down " + row.landInMc() + " MC, the strike landed after " + took[0]);
+            note.append("strike: row ").append(row.landInMc()).append(" MC, landed after ").append(took[0]);
+            // a volley landing together is one row; a strike far off is none
+            probeAlign(probe, host);
+            List<HudNet.SentCast> volley = castsDuring(() -> {
+                for (int i = 0; i < 10; i++) {
+                    probe.fire(host, at.add(3, 0, i * 0.2 - 1), 2, 0, 1.0, (hit, pos) -> {
+                    });
+                }
+                probe.fire(host, at.add(10, 0, 0), 2, 0, 1.0, (hit, pos) -> {
+                });
+            });
+            expect(volley.size() == 1, "a volley of ten strikes (and one 10 blocks away) sent " + volley.size() + " rows");
+            for (int i = 0; i < 200 && probe.pending(); i++) {
+                probeMc(probe, host);
+            }
+            note.append("; volley of 10: 1 row");
+            // the God Wars bosses' own strike list
+            ArenaCueChecks.GwdProbe gwd = new ArenaCueChecks.GwdProbe();
+            long[] due = new long[1];
+            List<HudNet.SentCast> gwdRows = castsDuring(() -> {
+                probeAlignGwd(gwd, host);
+                due[0] = gwd.fire(host, at.add(3, 0, 0), 2, 10, 1.0);
+            });
+            expect(gwdRows.size() == 1 && gwdRows.get(0).flags() == CastBar.FLAG_DODGE
+                    && gwdRows.get(0).landInMc() == (due[0] - ActionManager.gameTick()) * ActionManager.MC_TICKS_PER_GAME_TICK,
+                    "a God Wars strike due in " + (due[0] - ActionManager.gameTick()) + " game ticks sent " + gwdRows);
+            for (int i = 0; i < 200 && gwd.pending(); i++) {
+                probeMc(gwd, host);
+            }
+            note.append("; God Wars strike ").append(gwdRows.get(0).landInMc()).append(" MC");
+            // a raid strike and a raid projectile, both made to fizzle, landed here on the raid clock (nothing left pending for the
+            // raid checks)
+            double tag = 0.913;
+            List<com.runecraft.osrs.ArenaTiming.StrikeTrace> raidLanded = new ArrayList<>();
+            List<com.runecraft.content.raids.RaidEffects.ProjectileTrace> flights = new ArrayList<>();
+            java.util.function.Consumer<com.runecraft.osrs.ArenaTiming.StrikeTrace> strikesBefore = com.runecraft.content.raids.RaidEffects.strikeListener;
+            java.util.function.Consumer<com.runecraft.content.raids.RaidEffects.ProjectileTrace> flightsBefore =
+                    com.runecraft.content.raids.RaidEffects.projectileListener;
+            List<HudNet.SentCast> raid;
+            List<HudNet.SentCast> shot;
+            int ran = 0;
+            try {
+                com.runecraft.content.raids.RaidEffects.strikeListener = t -> {
+                    strikesBefore.accept(t);
+                    if (t.radius() == tag) {
+                        raidLanded.add(t);
+                    }
+                };
+                com.runecraft.content.raids.RaidEffects.projectileListener = t -> {
+                    flightsBefore.accept(t);
+                    flights.add(t);
+                };
+                raid = castsDuring(() -> com.runecraft.content.raids.RaidEffects.mark(c.world, at.add(3, 0, 0), tag)
+                        .delay(1).damage(0, 5).live(() -> false).start());
+                shot = castsDuring(() -> com.runecraft.content.raids.RaidEffects.projectile(c.world,
+                        at.add(6, 2, 0), p, AttackType.MAGIC, 2, () -> false, () -> {
+                        }));
+                while ((raidLanded.isEmpty() || flights.isEmpty()) && ran < 400) {
+                    ActionManager.advanceForSelfTest();
+                    ran++;
+                    if (ActionManager.mcTick() % ActionManager.MC_TICKS_PER_GAME_TICK == 0) {
+                        com.runecraft.content.raids.RaidEffects.gameTick();
+                    }
+                }
+                for (int i = 0; i < ActionManager.MC_TICKS_PER_GAME_TICK; i++) { // a game tick more: the spacing entry expires
+                    ActionManager.advanceForSelfTest();
+                    if (ActionManager.mcTick() % ActionManager.MC_TICKS_PER_GAME_TICK == 0) {
+                        com.runecraft.content.raids.RaidEffects.gameTick();
+                    }
+                }
+            } finally {
+                com.runecraft.content.raids.RaidEffects.strikeListener = strikesBefore;
+                com.runecraft.content.raids.RaidEffects.projectileListener = flightsBefore;
+                com.runecraft.content.raids.RaidEffects.clear(c.world, new AABB(at, at).inflate(6));
+            }
+            expect(raid.size() == 1 && raid.get(0).flags() == CastBar.FLAG_DODGE && raid.get(0).label().equals("Strike")
+                    && raid.get(0).landInMc() >= com.runecraft.osrs.ArenaTiming.MIN_LEAD_MC, "a raid strike sent " + raid);
+            expect(raidLanded.size() == 1 && raidLanded.get(0).landedMc() - raidLanded.get(0).createdMc() == raid.get(0).landInMc(),
+                    "the raid strike's row counted " + raid.get(0).landInMc() + " MC, it landed after "
+                            + (raidLanded.isEmpty() ? "never" : raidLanded.get(0).landedMc() - raidLanded.get(0).createdMc()));
+            expect(shot.size() == 1 && shot.get(0).style() == CastBar.MAGIC && shot.get(0).flags() == 0 && shot.get(0).landInMc() > 0,
+                    "a raid magic projectile sent " + shot);
+            expect(flights.size() == 1 && flights.get(0).flightMc() == shot.get(0).landInMc(), "the projectile's row counted "
+                    + shot.get(0).landInMc() + " MC, it flew " + (flights.isEmpty() ? "never" : flights.get(0).flightMc()));
+            note.append("; raid strike ").append(raid.get(0).landInMc()).append(" MC, projectile MAG ").append(shot.get(0).landInMc());
+            // a hazard arming 2 blocks off
+            List<HudNet.SentCast> pool = castsDuring(() -> Mechanics.addHazard(c.world, at.add(2, 0, 0), 1, 2, null));
+            Mechanics.clearHazards(c.world, new AABB(at, at).inflate(4));
+            expect(pool.size() == 1 && pool.get(0).flags() == CastBar.FLAG_DODGE && pool.get(0).label().equals("Hazard")
+                    && pool.get(0).landInMc() == com.runecraft.osrs.ThreatTiming.HAZARD_ARM_MC, "a hazard sent " + pool);
+            note.append("; hazard arms in ").append(pool.get(0).landInMc()).append(" MC");
+            if (client()) {
+                HudProbe.Snapshot s = awaitClient(x -> castNamed(x, "Strike") != null && castNamed(x, "Incoming") != null);
+                expect(s != null, "the client's cast bar never showed the raid strike and projectile");
+                expect(castNamed(s, "Strike").key().equals("MOVE"), "the raid strike's row shows " + castNamed(s, "Strike").key());
+                HudProbe.Cast in = castNamed(s, "Incoming");
+                expect(in.style() == CastBar.MAGIC && in.key().equals(s.protectionKeys()[0]),
+                        "the projectile's row shows style " + in.style() + " key '" + in.key() + "'");
+                note.append("; client: raid strike MOVE, projectile [").append(in.key()).append("]");
+            }
+            return note.toString();
+        } finally {
+            HudNet.selfTestPlayer = null;
+            Mechanics.clearHazards(c.world, new AABB(at, at).inflate(4));
+        }
+    }
+
+    private static void probeAlignGwd(ArenaCueChecks.GwdProbe probe, DataBossEntity host) {
+        probeAlign(probe, host);
+    }
+
+    // ------------------------------------------------------------------ round 43: built-in boss bars and switch countdowns
+
+    /** Built-in bosses (BossEntity) show the data bosses' status: Graardor's bar red, Karil's green, Ahrim's blue, Jad's white. */
+    private String builtinBossBar() {
+        StringBuilder note = new StringBuilder();
+        Object[][] cases = {{com.runecraft.osrs.data.Boss.GENERAL_GRAARDOR, "RED"}, {com.runecraft.osrs.data.Boss.KARIL, "GREEN"},
+                {com.runecraft.osrs.data.Boss.AHRIM, "BLUE"}, {com.runecraft.osrs.data.Boss.TZTOK_JAD, "WHITE"}};
+        for (Object[] row : cases) {
+            com.runecraft.osrs.data.Boss b = (com.runecraft.osrs.data.Boss) row[0];
+            EntityType<com.runecraft.entity.BossEntity> type = ModEntities.BOSS_TYPES.get(b);
+            expect(type != null, "no entity type for " + b);
+            com.runecraft.entity.BossEntity boss = type.create(c.world);
+            expect(boss != null, "couldn't create " + b);
+            BlockPos pos = c.near(4, 0);
+            boss.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0, 0);
+            boss.setNoAi(true);
+            c.world.addFreshEntity(boss);
+            try {
+                boss.setTarget(p());
+                boss.refreshBossBar();
+                expect(boss.bossBarColor() == BossEvent.BossBarColor.valueOf((String) row[1]),
+                        b.displayName() + "'s bar is " + boss.bossBarColor() + ", expected " + row[1]);
+                expect(boss.bossBarTitle().equals(b.displayName()), b.displayName() + "'s bar reads '" + boss.bossBarTitle() + "'");
+                note.append(b.displayName()).append(' ').append(boss.bossBarColor()).append("; ");
+            } finally {
+                boss.discard();
+            }
+        }
+        return note.toString();
+    }
+
+    /**
+     * The bosses whose switch the player must predict count it down on the boss bar: the Hunllef ("switches in 4", the style it
+     * protects from), the Alchemical Hydra (phase, "switches in 3", the special) and Zulrah once surfaced (the next form).
+     */
+    private String switchCountdown() {
+        StringBuilder note = new StringBuilder();
+        String[][] cases = {{"crystalline_hunllef", "switches in 4", "protects "}, {"alchemical_hydra", "switches in 3", "special in "}};
+        for (String[] row : cases) {
+            BossDef def = ContentRegistry.boss(row[0]);
+            if (def == null) {
+                throw new SelfTest.Skip("no boss " + row[0]);
+            }
+            DataBossEntity boss = DataBossService.spawn(c.world, c.near(4, 0), def, p());
+            expect(boss != null, "couldn't spawn " + row[0]);
+            try {
+                boss.refreshBossBar();
+                String title = boss.bossBarTitle();
+                expect(title.contains(row[1]) && title.contains(row[2]), row[0] + "'s bar reads '" + title + "', expected '" + row[1]
+                        + "' and '" + row[2] + "'");
+                expect(boss.bossBarColor() == BossEvent.BossBarColor.GREEN, row[0] + " opens with ranged: its bar is " + boss.bossBarColor());
+                note.append('\'').append(title).append("'; ");
+            } finally {
+                boss.discard();
+            }
+        }
+        BossDef zulrah = ContentRegistry.boss("zulrah");
+        if (zulrah != null) {
+            DataBossEntity boss = DataBossService.spawn(c.world, c.near(4, 0), zulrah, p());
+            expect(boss != null, "couldn't spawn zulrah");
+            try {
+                boss.script().gameTick(boss, ActionManager.gameTick()); // surfaces in its rotation's first phase
+                boss.refreshBossBar();
+                String title = boss.bossBarTitle();
+                expect(title.contains("next: crimson (melee)") || title.contains("next: green (ranged)") || title.contains("next: blue (magic)"),
+                        "Zulrah's bar reads '" + title + "', expected its next form");
+                note.append('\'').append(title).append('\'');
+            } finally {
+                boss.discard();
+            }
+        }
+        return note.toString();
+    }
+
+    // ------------------------------------------------------------------ round 43: Sol Heredit's grapple prompt
+
+    /**
+     * Sol Heredit's grapple prompt reaches the client: the called slot, the window, the bound grapple keys in its text; the
+     * answer from a grapple key goes through his parry rule; clearing it takes it off the screen.
+     */
+    private String grapplePrompt() {
+        ServerPlayer p = p();
+        List<HudNet.SentGrapple> sent = new ArrayList<>();
+        java.util.function.Consumer<HudNet.SentGrapple> before = HudNet.grappleListener;
+        HudNet.grappleListener = g -> {
+            before.accept(g);
+            if (g.player() == p) {
+                sent.add(g);
+            }
+        };
+        try {
+            int legs = com.runecraft.osrs.content.minigames.SolHeredit.Grapple.LEGS.ordinal();
+            int window = com.runecraft.osrs.content.minigames.SolHeredit.GRAPPLE_WINDOW_TICKS * ActionManager.MC_TICKS_PER_GAME_TICK;
+            expect(window == 72, "the grapple window is " + window + " MC, not 3.6 s");
+            HudNet.grapple(p, legs, window);
+            expect(sent.size() == 1 && HudNet.grappleOpen(p), "the prompt sent " + sent);
+            String note = "legs, " + window + " MC";
+            if (client()) {
+                HudProbe.Snapshot s = awaitClient(x -> x.grappleCalled() == legs);
+                expect(s != null, "the client never showed the grapple prompt");
+                expect(s.grapplePrompt().startsWith("GRAPPLE: press") && s.grapplePrompt().contains(" legs")
+                        && s.grapplePrompt().contains(" body"), "the prompt reads '" + s.grapplePrompt() + "'");
+                note += "; client: '" + s.grapplePrompt() + "'";
+            }
+            // no grapple of Sol's on this player: the answer is refused by his parry rule, and the prompt goes
+            expect(!HudNet.answerGrapple(p, legs), "a grapple key blocked a grapple nobody called");
+            expect(!HudNet.grappleOpen(p) && sent.get(sent.size() - 1).called() == -1, "the prompt stayed: " + sent);
+            if (client()) {
+                expect(awaitClient(x -> x.grappleCalled() < 0) != null, "the client kept the grapple prompt");
+            }
+            return note;
+        } finally {
+            HudNet.grappleListener = before;
+            HudNet.grapple(p, -1, 0);
+        }
+    }
+
+    // ------------------------------------------------------------------ round 43: the food delay on the attack timer
+
+    /**
+     * Food eaten during a running weapon delay adds to it (3 ticks, OSRS) and tells the client, whose attack timer then shows
+     * that wait as a food delay instead of restarting; eaten with the weapon ready it adds nothing.
+     */
+    private String foodDelay() {
+        ServerPlayer p = p();
+        List<Integer> told = new ArrayList<>();
+        java.util.function.BiConsumer<ServerPlayer, Integer> before = HudNet.foodDelayListener;
+        HudNet.foodDelayListener = (pl, mc) -> {
+            before.accept(pl, mc);
+            if (pl == p) {
+                told.add(mc);
+            }
+        };
+        try {
+            data().lastAttackTick = ActionManager.mcTick() - 10_000;
+            expect(com.runecraft.combat.AttackTimer.addDelay(p, 36) == 0 && told.isEmpty(), "food with the weapon ready added a delay");
+            com.runecraft.combat.AttackTimer.accept(p, com.runecraft.osrs.AttackClock.Kind.MELEE, 48);
+            int added = com.runecraft.combat.AttackTimer.addDelay(p, 36);
+            expect(added == 36 && told.equals(List.of(36)), "food during the weapon delay added " + added + ", told " + told);
+            long left = com.runecraft.combat.AttackTimer.remaining(p);
+            expect(left == 48 + 36, "the next attack is " + left + " MC away, expected 84 (48 + 36)");
+            String note = "added 36 MC to a 48 MC weapon delay";
+            if (client()) {
+                HudProbe.Snapshot s = awaitClient(x -> x.foodDelayMc() > 0);
+                expect(s != null, "the client's attack timer never showed the food delay");
+                expect(s.foodDelayMc() <= 36, "the client shows " + s.foodDelayMc() + " MC of food delay, more than the 36 added");
+                note += "; client timer shows " + s.foodDelayMc() + " MC of food delay";
+            }
+            return note;
+        } finally {
+            HudNet.foodDelayListener = before;
+            data().lastAttackTick = ActionManager.mcTick() - 10_000;
         }
     }
 

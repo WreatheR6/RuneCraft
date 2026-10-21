@@ -268,6 +268,8 @@ final class MuspahScript extends ScriptedBoss {
                 BossFx.warn(boss, n.name() + " launches a purple orb - Protect from Magic!");
                 int flight = Math.max(MuspahRules.MAGIC_FLIGHT_TICKS, com.runecraft.osrs.ArenaTiming.STRIKE_FLOOR_TICKS);
                 orbs.add(new Orb(target, now + flight, n.magicMax(shieldedOrAfter())));
+                com.runecraft.network.HudNet.cast(target, boss, com.runecraft.osrs.CastBar.MAGIC, 0, // round 43
+                        flight * com.runecraft.osrs.ArenaTiming.MC_PER_GAME_TICK, "Purple orb");
             }
             case "stomp" -> {
                 // It chased the player into reach: Protect from Melee blocks it; standing still, more gets through.

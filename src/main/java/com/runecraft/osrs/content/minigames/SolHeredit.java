@@ -14,7 +14,7 @@ import java.util.Random;
  * after the second from 50%, each blocked only by Protect from Melee switched on just before it lands; here: on as it lands,
  * see {@link #parried}) and the grapple
  * (below 75%: he calls out one of five gear slots, which must be defended within 4 ticks; defending on the last tick is a
- * perfect parry that makes the player's next attack within 5 ticks a max hit; here 6 ticks on the hotbar keys, see
+ * perfect parry that makes the player's next attack within 5 ticks a max hit; here 6 ticks on the grapple keys, see
  * {@link #GRAPPLE_WINDOW_TICKS}). Phase transitions at 90/75/50/25/10% drop
  * six beams of light around the player that leave molten sand, and add a light-beam crystal (up to four) that circles the
  * arena and fires a laser at the player's tile; at 10% he enrages: more sand every 3 ticks, faster lasers.
@@ -101,8 +101,9 @@ public final class SolHeredit {
     /** Grapple (OSRS): 4 ticks to defend the called slot; on the last tick it is a perfect parry. */
     public static final int OSRS_GRAPPLE_WINDOW_TICKS = 4;
     /**
-     * Game ticks to defend the called slot here: 6 (3.6 s, about 3.5 s), answered with the hotbar keys 1-5
-     * ({@link #grappleByHotbar}) or the chat links; the last tick (0.6 s) is the perfect parry. // playability: OSRS gives 4 ticks
+     * Game ticks to defend the called slot here: 6 (3.6 s, about 3.5 s), answered with the grapple keys (1-5 by default, in
+     * {@link #grappleByHotbar} order, rebindable; round 43 HUD prompt) or the chat links; the last tick (0.6 s) is the perfect
+     * parry. // playability: OSRS gives 4 ticks
      * (2.4 s) to click the slot in the worn-equipment tab, already open in the side panel; here the slot is a key press after
      * reading his shout, so the window is longer. His 44 max hit, the unequip and the perfect parry's max hit are unchanged, and
      * his attack cadence still counts the OSRS window ({@link #attackDelay})
@@ -112,15 +113,16 @@ public final class SolHeredit {
     public static final int PERFECT_PARRY_TICKS = 5;
 
     /**
-     * The grapple target answered by hotbar key {@code index} (0 = key 1): 1 body, 2 back, 3 hands, 4 legs, 5 feet (the order of
-     * {@link Grapple}); null for the other keys. // playability: OSRS clicks the slot on the worn-equipment interface
+     * The grapple target answered by grapple key {@code index} (0 = the first, key 1 by default): 1 body, 2 back, 3 hands, 4 legs,
+     * 5 feet (the order of {@link Grapple}); null for the other keys. // playability: OSRS clicks the slot on the worn-equipment
+     * interface
      */
     public static Grapple grappleByHotbar(int index) {
         Grapple[] all = Grapple.values();
         return index >= 0 && index < all.length ? all[index] : null;
     }
 
-    /** The hotbar key (1-5) that answers grapple target {@code g}. */
+    /** The default grapple key (1-5) that answers grapple target {@code g}. */
     public static int hotbarKey(Grapple g) {
         return g.ordinal() + 1;
     }

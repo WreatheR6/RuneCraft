@@ -89,6 +89,23 @@ final class EncounterScripts {
                     !floor.isEmpty() && now >= floorOrangeAt, attackCount);
         }
 
+        /**
+         * The boss bar (round 43, {@code // playability}): the colour of its next attack's style, "switches in N" (attacks of
+         * this style still to come; 0: "switching!") and the style it protects from with the off-prayer hits still needed to
+         * change it. OSRS players count the 4 attacks a style and the 6 hits themselves.
+         */
+        @Override
+        public com.runecraft.osrs.BossBarStatus.Status bossBarStatus(DataBossEntity boss) {
+            boolean magic = com.runecraft.osrs.BossSwitches.hunllefNextMagic(cycle);
+            return boss.defaultBossBarStatus().colour(magic ? com.runecraft.osrs.BossBarStatus.Colour.BLUE
+                            : com.runecraft.osrs.BossBarStatus.Colour.GREEN)
+                    .with(com.runecraft.osrs.BossBarStatus.switchText(com.runecraft.osrs.BossSwitches.hunllefLeft(cycle)))
+                    .with("protects " + STYLE_TAGS[cycle.prays().ordinal()] + " (" + com.runecraft.osrs.BossSwitches.hunllefPrayerLeft(cycle)
+                            + " hits)");
+        }
+
+        private static final String[] STYLE_TAGS = {"MEL", "RNG", "MAG"};
+
         @Override
         public void onSpawn(DataBossEntity boss) {
             com.runecraft.osrs.content.minigames.HunllefCycle.Style[] styles = com.runecraft.osrs.content.minigames.HunllefCycle.Style.values();
@@ -1831,6 +1848,8 @@ final class EncounterScripts {
                 chargeUntil = now + 8;
                 safe = around(boss, homeVec().add(2.5, 0, 0), 5);
                 BossFx.warn(boss, "The Royal Titans charge an Elemental Blast! Find the safe spot!");
+                // round 43: the first blast lands on chargeUntil (blasts armed on chargeUntil - 1, fired the game tick after)
+                BossFx.cast(boss, "Elemental Blast", null, (int) (chargeUntil - now) * com.runecraft.osrs.ArenaTiming.MC_PER_GAME_TICK, 24);
                 return;
             }
             if (blastCycle == 12) {

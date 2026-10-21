@@ -325,6 +325,13 @@ public final class RaidEffects {
         Strike s = new Strike(m, due, now * ArenaTiming.MC_PER_GAME_TICK + into);
         STRIKES.add(s);
         draw(s, false);
+        if (damaging) { // round 43: on the cast bar of the players near it (a lane: near its line), counting down to its landing
+            com.runecraft.network.HudNet.groundCast(s.world, p -> s.to == null
+                    ? com.runecraft.osrs.CastBar.nearStrike(p.getX() - s.pos.x, p.getY() - s.pos.y, p.getZ() - s.pos.z, s.radius)
+                    : Math.abs(p.getY() - s.pos.y) < com.runecraft.osrs.CastBar.NEAR_DY && com.runecraft.osrs.content.raids.RaidRealtime.inLane(
+                            p.getX(), p.getZ(), s.pos.x, s.pos.z, s.to.x, s.to.z, s.radius + com.runecraft.osrs.CastBar.NEAR_MARGIN),
+                    s.source, s.style, com.runecraft.osrs.CastBar.landInMc(due, now, into), s.source == null ? "Strike" : null);
+        }
         return due;
     }
 
@@ -413,6 +420,9 @@ public final class RaidEffects {
         net.minecraft.core.particles.DustParticleOptions dust = new net.minecraft.core.particles.DustParticleOptions(
                 new org.joml.Vector3f(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f), 1.6f);
         double flightMc = Math.max(1, due * ArenaTiming.MC_PER_GAME_TICK - createdMc);
+        // round 43: on the target's cast bar in its style, with the key that blocks it as it lands
+        com.runecraft.network.HudNet.cast(to, null, com.runecraft.osrs.CastBar.styleOf(style),
+                style == null ? com.runecraft.osrs.CastBar.FLAG_UNPRAYABLE : 0, (int) flightMc, "Incoming");
         cue((int) (due - now) + 1, () -> {
             if (!to.isAlive() || (live != null && !live.getAsBoolean())) {
                 return false;

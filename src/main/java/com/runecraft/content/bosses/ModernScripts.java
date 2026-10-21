@@ -598,6 +598,8 @@ final class ModernScripts {
             }
             pendingAt = target.position();
             pendingDue = now + (pending == Special.METEOR ? 5 : 4);
+            BossFx.cast(boss, pending == Special.METEOR ? "Meteor" : pending == Special.STOMP ? "Stomp" : "Glyph", null, // round 43
+                    (int) (pendingDue - now) * com.runecraft.osrs.ArenaTiming.MC_PER_GAME_TICK, 24);
             BossFx.warn(boss, switch (pending) {
                 case GLYPH_FIRE -> "Flames begin to envelop you... find a Glyph of Fire!";
                 case GLYPH_SHADOW -> "Shadows swirl around you... find a Glyph of Shadow!";
@@ -1338,6 +1340,7 @@ final class ModernScripts {
                 slamDir = new Vec3(target.getX() - boss.getX(), 0, target.getZ() - boss.getZ()).normalize();
                 slamDue = now + 3;
                 BossFx.warn(boss, "The Maggot King rears its head to slam!");
+                BossFx.cast(boss, "Slam", null, 3 * com.runecraft.osrs.ArenaTiming.MC_PER_GAME_TICK, 16); // round 43
                 return null;
             }
             return magic ? ModernBosses.MAGGOT_MAGIC : ModernBosses.MAGGOT_RANGED;

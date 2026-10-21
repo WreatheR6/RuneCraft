@@ -42,6 +42,26 @@ class BossBarStatusTest {
         assertNull(BossBarStatus.styleColour(List.of()));
     }
 
+    /** Round 43: the built-in bosses' bars take the colour of their own style roll (entity.BossEntity.rollStyle). */
+    @Test
+    void builtInBossColours() {
+        assertEquals(BossBarStatus.Colour.RED, BossBarStatus.styleColour(BossBarStatus.attacksOf(com.runecraft.osrs.data.Boss.GENERAL_GRAARDOR)),
+                "Graardor: 2/3 melee, 1/3 ranged slam");
+        assertEquals(BossBarStatus.Colour.RED, BossBarStatus.styleColour(BossBarStatus.attacksOf(com.runecraft.osrs.data.Boss.KRIL_TSUTSAROTH)),
+                "K'ril: 2/3 melee, 1/3 magic");
+        assertEquals(BossBarStatus.Colour.WHITE, BossBarStatus.styleColour(BossBarStatus.attacksOf(com.runecraft.osrs.data.Boss.TZTOK_JAD)),
+                "Jad: magic or ranged, melee in reach");
+        assertEquals(BossBarStatus.Colour.BLUE, BossBarStatus.styleColour(BossBarStatus.attacksOf(com.runecraft.osrs.data.Boss.AHRIM)));
+        assertEquals(BossBarStatus.Colour.GREEN, BossBarStatus.styleColour(BossBarStatus.attacksOf(com.runecraft.osrs.data.Boss.KARIL)));
+        assertEquals(BossBarStatus.Colour.RED, BossBarStatus.styleColour(BossBarStatus.attacksOf(com.runecraft.osrs.data.Boss.DHAROK)));
+        assertEquals(BossBarStatus.Colour.BLUE, BossBarStatus.styleColour(BossBarStatus.attacksOf(com.runecraft.osrs.data.Boss.BRYOPHYTA)));
+        for (com.runecraft.osrs.data.Boss b : com.runecraft.osrs.data.Boss.values()) {
+            BossBarStatus.Status s = BossBarStatus.of(-1, 0, BossBarStatus.attacksOf(b), null);
+            assertEquals(b.displayName(), BossBarStatus.title(b.displayName(), s), b + ": no phase or curse, the plain name");
+            org.junit.jupiter.api.Assertions.assertNotNull(s.colour(), b + " has a colour");
+        }
+    }
+
     @Test
     void statusText() {
         assertEquals("", BossBarStatus.phaseText(-1, 0));

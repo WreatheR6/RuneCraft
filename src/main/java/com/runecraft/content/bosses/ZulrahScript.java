@@ -146,6 +146,27 @@ final class ZulrahScript extends ScriptedBoss {
         BossFx.warn(boss, hint);
     }
 
+    /**
+     * The boss bar (round 43, {@code // playability}): the form's colour (the Jad phase: its next attack's), "switches in N"
+     * (the actions of this phase still to come before it dives) and the form of its rotation's next phase. OSRS players learn
+     * the four rotations and count the attacks of each phase.
+     */
+    @Override
+    public com.runecraft.osrs.BossBarStatus.Status bossBarStatus(DataBossEntity boss) {
+        com.runecraft.osrs.BossBarStatus.Status s = boss.defaultBossBarStatus();
+        if (rotation < 0) {
+            return s;
+        }
+        Step cur = current();
+        if (cur.form() == Form.JAD_RANGED || cur.form() == Form.JAD_MAGIC) {
+            s = s.colour(jadMagic ? com.runecraft.osrs.BossBarStatus.Colour.BLUE : com.runecraft.osrs.BossBarStatus.Colour.GREEN)
+                    .with("alternates every attack");
+        }
+        int left = diving >= 0 ? 0 : Math.max(0, cur.actions().length() - action);
+        return s.with(com.runecraft.osrs.BossBarStatus.switchText(left))
+                .with("next: " + com.runecraft.osrs.BossSwitches.zulrahFormName(com.runecraft.osrs.BossSwitches.zulrahNextForm(rotation, step)));
+    }
+
     @Override
     public boolean isVulnerable(DataBossEntity boss) {
         return surfacing <= 0 && diving < 0;

@@ -46,6 +46,16 @@ public final class HudNet {
     public static final ResourceLocation CURSE = RuneCraft.id("hud/curse");
     public static final ResourceLocation STATUS = RuneCraft.id("hud/status");
     public static final ResourceLocation QUICK_CONSUME = RuneCraft.id("hud/quick_consume");
+    /** S2C (round 43): Sol Heredit's grapple prompt: byte the called slot ({@code SolHeredit.Grapple} ordinal, -1 clears), varint window MC. */
+    public static final ResourceLocation GRAPPLE = RuneCraft.id("hud/grapple");
+    /**
+     * S2C (round 43): food (or a potion) added {@code varint} MC to the running weapon delay ({@code AttackTimer.addDelay});
+     * sent just before the attack clock's packet with the new wait, so the timer under the crosshair draws that wait as a food
+     * delay after the weapon's own instead of restarting.
+     */
+    public static final ResourceLocation FOOD_DELAY = RuneCraft.id("hud/food_delay");
+    /** C2S (round 43): a grapple key: byte the slot defended ({@code SolHeredit.Grapple} ordinal). */
+    public static final ResourceLocation GRAPPLE_ANSWER = RuneCraft.id("hud/grapple_answer");
 
     /** Longest label sent with a cast. */
     public static final int LABEL_MAX = 48;
@@ -53,6 +63,21 @@ public final class HudNet {
     /** One cast sent (self-test recorder). */
     public record SentCast(ServerPlayer player, int source, int style, int flags, int landInMc, String label) {
     }
+
+    /** One grapple prompt sent (self-test recorder): the slot called (-1: cleared) and the window in MC ticks. */
+    public record SentGrapple(ServerPlayer player, int called, int windowMc) {
+    }
+
+    /** Self-test hook: sees every grapple prompt sent or cleared. */
+    public static java.util.function.Consumer<SentGrapple> grappleListener = g -> {
+    };
+
+    /** Self-test hook: sees every grapple answer a client sends (the slot ordinal), before Sol Heredit's parry rule. */
+    public static java.util.function.BiConsumer<ServerPlayer, Integer> grappleAnswerListener = (p, slot) -> {
+    };
+
+    /** Players with a grapple prompt on screen (cleared once the grapple is answered or lands). */
+    private static final java.util.Set<UUID> GRAPPLE_OPEN = ConcurrentHashMap.newKeySet();
 
     /** Self-test hook: sees every cast sent (or that would have been sent to a player without a client). */
     public static java.util.function.Consumer<SentCast> castListener = c -> {
@@ -75,6 +100,10 @@ public final class HudNet {
             int kind = buf.readByte();
             server.execute(() -> com.runecraft.skill.QuickConsume.use(player, kind == 1));
         });
+        ServerPlayNetworking.registerGlobalReceiver(GRAPPLE_ANSWER, (server, player, handler, buf, sender) -> {
+            int slot = buf.readByte();
+            server.execute(() -> answerGrapple(player, slot));
+        });
         ServerTickEvents.END_SERVER_TICK.register(HudNet::tick);
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> forget(handler.player.getUUID()));
         CombatHooks.addDamageListener((player, attacker, attack, style, damage) -> {
@@ -88,6 +117,8 @@ public final class HudNet {
     public static void forget(UUID player) {
         SENT.remove(player);
         ATTACKERS.remove(player);
+        GROUND_SENT.remove(player);
+        GRAPPLE_OPEN.remove(player);
         com.runecraft.util.Msg.forget(player);
     }
 
@@ -125,6 +156,126 @@ public final class HudNet {
         buf.writeVarInt(Math.max(0, landInMc));
         buf.writeUtf(text, LABEL_MAX * 4);
         ServerPlayNetworking.send(player, CAST, buf);
+    }
+
+    /** A ground cast already sent to a player: its source, style and the server MC tick it lands on. */
+    private record GroundKey(int source, int style, long landMc) {
+    }
+
+    /** Self-test hook: a player outside the level's player list (the fake player) that ground casts reach too, or null. */
+    public static volatile ServerPlayer selfTestPlayer;
+
+    /** Ground casts sent per player whose landing hasn't passed yet: a volley landing together is one row. */
+    private static final Map<UUID, java.util.Set<GroundKey>> GROUND_SENT = new ConcurrentHashMap<>();
+
+    /**
+     * A ground strike or hazard on the cast bar of every player near it (round 43, {@code // playability}): every player
+     * horizontally within its radius plus {@link CastBar#NEAR_MARGIN} of {@code centre} ({@link CastBar#nearStrike}) gets a
+     * row in the strike's style colour ({@code style} null: typeless orange) marked MOVE ({@link CastBar#FLAG_DODGE}), counting
+     * down to its real landing {@code landInMc}. {@code label} (nullable) names it; null shows the source's name. One row per
+     * source, style and landing tick: a boss's volley of twenty strikes landing together is one row. OSRS shows the marked
+     * tiles only.
+     */
+    public static void groundCast(net.minecraft.server.level.ServerLevel world, net.minecraft.world.phys.Vec3 centre, double radius,
+            Entity source, AttackType style, int landInMc, String label) {
+        groundCast(world, p -> CastBar.nearStrike(p.getX() - centre.x, p.getY() - centre.y, p.getZ() - centre.z, radius),
+                source, style, landInMc, label);
+    }
+
+    /** {@link #groundCast} for any area shape: {@code near} says which players are close enough to get the row. */
+    public static void groundCast(net.minecraft.server.level.ServerLevel world, java.util.function.Predicate<ServerPlayer> near,
+            Entity source, AttackType style, int landInMc, String label) {
+        if (world == null || landInMc < 0) {
+            return;
+        }
+        int barStyle = CastBar.styleOf(style);
+        long land = com.runecraft.action.ActionManager.mcTick() + landInMc;
+        int id = source == null ? -1 : source.getId();
+        java.util.List<ServerPlayer> players = new java.util.ArrayList<>(world.players());
+        ServerPlayer extra = selfTestPlayer;
+        if (extra != null && extra.level() == world && !players.contains(extra)) {
+            players.add(extra); // the self-test's fake player isn't in the level's player list
+        }
+        for (ServerPlayer p : players) {
+            if (!p.isAlive() || p.isSpectator() || !near.test(p)) {
+                continue;
+            }
+            java.util.Set<GroundKey> sent = GROUND_SENT.computeIfAbsent(p.getUUID(), u -> new java.util.HashSet<>());
+            long now = com.runecraft.action.ActionManager.mcTick();
+            sent.removeIf(k -> k.landMc() < now);
+            if (sent.add(new GroundKey(id, barStyle, land))) {
+                cast(p, source, barStyle, CastBar.FLAG_DODGE, landInMc, label);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ food delay
+
+    /** Self-test hook: sees every food delay told to a player (the MC ticks added). */
+    public static java.util.function.BiConsumer<ServerPlayer, Integer> foodDelayListener = (p, mc) -> {
+    };
+
+    /**
+     * Tells the client that food added {@code addedMc} to the running weapon delay (round 43, {@code // playability}): its
+     * attack timer shows the added wait in a distinct food colour after the weapon's own, instead of restarting the bar. The
+     * delays themselves are the server's (OSRS Wiki, Food: 3 ticks, 2 for combo food, only added to a running delay).
+     */
+    public static void foodDelay(ServerPlayer player, int addedMc) {
+        if (player == null || addedMc <= 0) {
+            return;
+        }
+        foodDelayListener.accept(player, addedMc);
+        FriendlyByteBuf buf = PacketByteBufs.create();
+        buf.writeVarInt(addedMc);
+        ServerPlayNetworking.send(player, FOOD_DELAY, buf);
+    }
+
+    // ------------------------------------------------------------------ Sol Heredit's grapple
+
+    /**
+     * Sol Heredit calls a grapple on {@code player} (round 43, {@code // playability}): the HUD prompt "GRAPPLE: press
+     * &lt;key&gt; for body / back / hands / legs / feet" with the called slot lit and a bar emptying over {@code windowMc}
+     * (his 3.6 s window, {@code SolHeredit.GRAPPLE_WINDOW_TICKS}), answered with the client's rebindable grapple keys
+     * ({@link #GRAPPLE_ANSWER}). {@code called} -1 clears the prompt: sent when the grapple is answered (any way, the chat links
+     * too) or lands; the client also drops it once its window is over. OSRS: click the slot in the worn-equipment tab.
+     */
+    public static void grapple(ServerPlayer player, int called, int windowMc) {
+        if (player == null) {
+            return;
+        }
+        grappleListener.accept(new SentGrapple(player, called, windowMc));
+        if (called >= 0) {
+            GRAPPLE_OPEN.add(player.getUUID());
+        } else {
+            GRAPPLE_OPEN.remove(player.getUUID());
+        }
+        FriendlyByteBuf buf = PacketByteBufs.create();
+        buf.writeByte(called);
+        buf.writeVarInt(Math.max(0, windowMc));
+        ServerPlayNetworking.send(player, GRAPPLE, buf);
+    }
+
+    /**
+     * A grapple key pressed: defends that slot ({@code SolHeredit.Grapple} ordinal) through Sol Heredit's own parry rule
+     * ({@code SolHereditScript.parry}: the window, the one answer, the perfect parry on its last tick are the server's).
+     * Returns whether it blocked the grapple.
+     */
+    public static boolean answerGrapple(ServerPlayer player, int slot) {
+        com.runecraft.osrs.content.minigames.SolHeredit.Grapple[] all = com.runecraft.osrs.content.minigames.SolHeredit.Grapple.values();
+        if (player == null || slot < 0 || slot >= all.length) {
+            return false;
+        }
+        grappleAnswerListener.accept(player, slot);
+        boolean blocked = com.runecraft.content.bosses.SolHereditScript.parry(player, all[slot].slot);
+        if (GRAPPLE_OPEN.contains(player.getUUID()) && com.runecraft.content.bosses.SolHereditScript.calledFor(player) == null) {
+            grapple(player, -1, 0); // answered (right or wrong): the prompt goes
+        }
+        return blocked;
+    }
+
+    /** Whether a player has a grapple prompt on screen (self-test). */
+    public static boolean grappleOpen(ServerPlayer player) {
+        return GRAPPLE_OPEN.contains(player.getUUID());
     }
 
     // ------------------------------------------------------------------ hitpoints
