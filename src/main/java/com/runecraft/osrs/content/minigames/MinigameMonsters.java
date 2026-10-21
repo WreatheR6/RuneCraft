@@ -207,9 +207,16 @@ public final class MinigameMonsters {
             list.add(nmzBoss(f));
         }
         // ---------------- Soul Wars ----------------
-        list.add(MonsterDef.of("forgotten_soul", "Forgotten Soul").level(58).stats(60, 40, 40, 40, 1, 1).speed(4) // approx stats
-                .attack(melee(AttackType.SLASH, 6)).drops(Drop.always("soul_fragment"))
+        // Forgotten Souls (OSRS Wiki "Forgotten Soul (Soul Wars)", level 46 and 76): not aggressive, 2 fragments each. The
+        // infobox gives no ranged defence. // approx: 10 like the others
+        list.add(MonsterDef.of("forgotten_soul", "Forgotten Soul").level(46).stats(50, 50, 40, 20, 20, 1).speed(4)
+                .defenceBonus(10, 10, 10, 10, 10).attack(melee(AttackType.SLASH, 5)).attributes("undead")
+                .drops(Drop.of("soul_fragment", MinigameRules.SoulWars.FRAGMENTS_PER_SOUL, MinigameRules.SoulWars.FRAGMENTS_PER_SOUL, 1))
                 .flying().skin(0x9A8AC0, 0x6A5A9A, 0x4A3A7A, 0xC0B0FF));
+        list.add(MonsterDef.of("forgotten_soul_76", "Forgotten Soul").level(76).stats(80, 80, 70, 30, 30, 1).speed(4)
+                .defenceBonus(10, 10, 10, 10, 10).attack(melee(AttackType.SLASH, 8)).attributes("undead")
+                .drops(Drop.of("soul_fragment", MinigameRules.SoulWars.FRAGMENTS_PER_SOUL, MinigameRules.SoulWars.FRAGMENTS_PER_SOUL, 1))
+                .flying().skin(0x7A6AA8, 0x4A3A7A, 0x2A1A5A, 0xD0C0FF));
         list.add(MonsterDef.of("avatar_of_destruction", "Avatar of Destruction").level(525)
                 .stats(MinigameRules.SoulWars.AVATAR_HP, 160, 320, 10, 10, 1).speed(6)
                 .defenceBonus(20, 20, 20, 20, 20).attack(melee(AttackType.CRUSH, 54))

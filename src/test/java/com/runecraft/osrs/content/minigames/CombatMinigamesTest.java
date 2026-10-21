@@ -317,6 +317,28 @@ class CombatMinigamesTest {
         assertEquals(2500, cost("soul_wars", "soul_cape", MinigameCurrencies.ZEAL));
         assertEquals(260, cost("soul_wars", "seers_ring_i", MinigameCurrencies.ZEAL));
         assertEquals(200, cost("soul_wars", "granite_ring_i", MinigameCurrencies.ZEAL));
+        // Round 40: fragments and bones are worth 1% with control, a third without (kept in thirds so none is lost).
+        int r = SoulWars.FULL_REDUCTION_THIRDS;
+        assertEquals(100, SoulWars.percent(r));
+        r = SoulWars.offer(r, 10, true);
+        assertEquals(90, SoulWars.percent(r));
+        r = SoulWars.offer(r, 1, false);
+        assertEquals(90, SoulWars.percent(r), "a third of a percent off still shows 90%");
+        r = SoulWars.offer(r, 2, false);
+        assertEquals(89, SoulWars.percent(r));
+        assertEquals(0, SoulWars.offer(r, 1000, true));
+        assertEquals(SoulWars.FULL_REDUCTION_THIRDS, SoulWars.bury(r, 1000, false), "bones can't push past 100%");
+        assertEquals(r + 3, SoulWars.bury(r, 1, true));
+        assertEquals(0, SoulWars.avatarDamage(40, SoulWars.FULL_REDUCTION_THIRDS));
+        assertEquals(30, SoulWars.avatarDamage(40, 25 * 3));
+        assertEquals(0, SoulWars.control(-1, 2, 1));
+        assertEquals(1, SoulWars.control(0, 1, 3));
+        assertEquals(0, SoulWars.control(0, 2, 2), "a tie keeps the current owner");
+        assertEquals(-1, SoulWars.control(-1, 0, 0));
+        // Forgotten Souls (level 46 and 76) drop 2 fragments and aren't aggressive.
+        assertEquals(50, ContentRegistry.monster("forgotten_soul").hitpoints);
+        assertEquals(80, ContentRegistry.monster("forgotten_soul_76").hitpoints);
+        assertEquals(2, ContentRegistry.monster("forgotten_soul").drops.get(0).min());
     }
 
     @Test

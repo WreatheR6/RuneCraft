@@ -1651,8 +1651,6 @@ public final class MonsterDropsTable {
         add("nmz_dad", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
         // Glod <- parsed:Glod(138)
         add("nmz_glod", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
-        // Forgotten Soul <- parsed:Forgotten Soul(20)
-        add("forgotten_soul", rm(), d("black_robe", 1, 1, 128));
         // Nail beast <- parsed:Nail beast(69)
         add("trek_nail_beast_1", rm(), d("long_bone", 1, 1, 400), d("curved_bone", 1, 1, 5012));
         // Nail beast <- parsed:Nail beast(98)

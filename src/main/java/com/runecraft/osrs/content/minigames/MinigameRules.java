@@ -1599,6 +1599,51 @@ public final class MinigameRules {
         public static int reducedDamage(int damage, int reductionPercent) {
             return damage * (100 - Math.max(0, Math.min(100, reductionPercent))) / 100;
         }
+
+        // ---- Round 40: fragments, bones and control (OSRS Wiki "Soul Wars", "Soul fragment", "Bones (Soul Wars)").
+        /**
+         * Avatar damage reduction is kept in thirds of a percent: a fragment offered by the team controlling the Soul Obelisk
+         * takes 1% off the enemy Avatar's, a bone buried in a graveyard the team controls puts 1% back on its own Avatar, and
+         * either is worth a third as much without control.
+         */
+        public static final int FULL_REDUCTION_THIRDS = 300;
+        /** Forgotten Souls always drop 2 soul fragments; a player who dies drops one set of bones plus what they carry. */
+        public static final int FRAGMENTS_PER_SOUL = 2;
+        public static final int BONES_PER_DEATH = 1;
+        /** The obelisk and graveyards go to the team with more players near them. // approx: the wiki gives no radius */
+        public static final int CONTROL_RANGE = 5;
+
+        /** Reduction (thirds of a percent) after {@code fragments} are offered, with or without control of the obelisk. */
+        public static int offer(int reductionThirds, int fragments, boolean control) {
+            return Math.max(0, reductionThirds - Math.max(0, fragments) * (control ? 3 : 1));
+        }
+
+        /** Reduction (thirds of a percent) after {@code bones} are buried, with or without control of the graveyard. */
+        public static int bury(int reductionThirds, int bones, boolean control) {
+            return Math.min(FULL_REDUCTION_THIRDS, reductionThirds + Math.max(0, bones) * (control ? 3 : 1));
+        }
+
+        /** Whole percent shown for a reduction in thirds (rounded up: anything left still protects the Avatar). */
+        public static int percent(int reductionThirds) {
+            return (Math.max(0, reductionThirds) + 2) / 3;
+        }
+
+        /** Damage an Avatar takes with its reduction in thirds of a percent. */
+        public static int avatarDamage(int damage, int reductionThirds) {
+            int r = Math.max(0, Math.min(FULL_REDUCTION_THIRDS, reductionThirds));
+            return Math.max(0, damage) * (FULL_REDUCTION_THIRDS - r) / FULL_REDUCTION_THIRDS;
+        }
+
+        /** Who controls a point (-1 none, 0 blue, 1 red) given the players near it: the side with more, else no change. */
+        public static int control(int current, int blueNear, int redNear) {
+            if (blueNear > redNear) {
+                return 0;
+            }
+            if (redNear > blueNear) {
+                return 1;
+            }
+            return current;
+        }
     }
 
     // ---------------------------------------------------------------- Tears of Guthix
