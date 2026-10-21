@@ -18,7 +18,6 @@ import com.runecraft.osrs.AmmoRecovery;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.CastBar;
 import com.runecraft.osrs.Prayer;
-import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.BossDef;
 import com.runecraft.osrs.content.ContentRegistry;
@@ -576,10 +575,5 @@ final class CombatHudChecks {
         for (ItemEntity e : c.world.getEntitiesOfClass(ItemEntity.class, new AABB(at, at).inflate(4, 2, 4))) {
             e.discard();
         }
-    }
-
-    @SuppressWarnings("unused")
-    private void level(Skill s, int lv) {
-        data().skills().setXpTenths(s, com.runecraft.osrs.Experience.xpForLevel(lv) * 10);
     }
 }
