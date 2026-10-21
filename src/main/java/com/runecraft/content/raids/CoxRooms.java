@@ -161,19 +161,10 @@ final class CoxRooms {
      * A telegraphed area hit with a damage range: the area is marked now and every tick until it lands, then every player
      * within {@code radius} takes {@code min}-{@code max} (raid scaling applies; prayer doesn't help).
      */
-    static void zone(ServerLevel world, Vec3 pos, double radius, int min, int max, int delay, LivingEntity source, ParticleOptions warn) {
-        int n = (int) Math.max(4, radius * 8);
-        world.sendParticles(warn, pos.x, pos.y + 0.15, pos.z, n, radius * 0.5, 0.02, radius * 0.5, 0);
-        for (int t = 1; t < delay; t++) {
-            RaidEffects.later(t, () -> world.sendParticles(warn, pos.x, pos.y + 0.15, pos.z, n, radius * 0.5, 0.02, radius * 0.5, 0));
-        }
-        RaidEffects.later(delay, () -> {
-            world.sendParticles(ParticleTypes.EXPLOSION, pos.x, pos.y + 0.5, pos.z, 1, 0, 0, 0, 0);
-            for (ServerPlayer p : world.getPlayers(pl -> pl.isAlive() && !pl.isSpectator() && !pl.isCreative()
-                    && RaidEffects.horizontalDistSq(pl.position(), pos) <= radius * radius && Math.abs(pl.getY() - pos.y) < 3)) {
-                RaidEffects.hit(source, p, min + p.getRandom().nextInt(Math.max(1, max - min + 1)), null, true);
-            }
-        });
+    static long zone(ServerLevel world, Vec3 pos, double radius, int min, int max, int delay, LivingEntity source, ParticleOptions warn) {
+        // A raid strike since round 42: its outline drawn at once at the true radius and redrawn until it lands, the real-time
+        // floor, the strike recorder. // playability: it was a particle spray once a game tick
+        return RaidEffects.mark(world, pos, radius).delay(delay).source(source).warn(warn).damage(min, max).start();
     }
 
     /** A ground pool (acid, poison) that hurts anyone standing in it every tick until it dries. */
@@ -184,9 +175,9 @@ final class CoxRooms {
     static void tickPools(RoomLogic room, List<Pool> pools, long now, LivingEntity source, ParticleOptions look) {
         pools.removeIf(p -> now >= p.until());
         for (Pool pool : pools) {
-            if (now % 2 == 0) {
-                room.world().sendParticles(look, pool.pos().x, pool.pos().y + 0.1, pool.pos().z, 3, 0.35, 0.02, 0.35, 0);
-            }
+            // a lime hazard ring every game tick (a new pool shows before it first hurts, a game tick later). // playability:
+            // a sparse particle spray every other tick
+            com.runecraft.boss.ThreatCues.hazardRing(room.world(), pool.pos(), com.runecraft.boss.ThreatCues.HAZARD_RGB, look, false);
         }
         for (ServerPlayer p : room.players()) {
             for (Pool pool : pools) {
@@ -690,15 +681,9 @@ final class CoxRooms {
         private void boulders() {
             for (ServerPlayer p : players()) {
                 if (p.distanceToSqr(vasa) <= CoxRules.VASA_BOULDER_RANGE * CoxRules.VASA_BOULDER_RANGE) {
-                    Vec3 at = p.position();
-                    world().sendParticles(ParticleTypes.CRIT, at.x, at.y + 0.2, at.z, 8, 0.6, 0.05, 0.6, 0);
-                    RaidEffects.later(3, () -> {
-                        for (ServerPlayer q : players()) {
-                            if (RaidEffects.horizontalDistSq(q.position(), at) <= 1.5 * 1.5) {
-                                RaidEffects.hit(vasa, q, rnd().nextInt(19), AttackType.RANGED, false);
-                            }
-                        }
-                    });
+                    // A raid strike (round 42): the 3x3 outlined as the boulder is thrown and until it lands, recorded.
+                    // // playability: it was a particle burst on the throw only
+                    RaidEffects.strike(world(), p.position(), 1.5, 18, 3, vasa, ParticleTypes.CRIT, AttackType.RANGED, false);
                 }
             }
         }
@@ -1002,37 +987,31 @@ final class CoxRooms {
                     say("A lizardman shaman leaps into the air!");
                     world().sendParticles(ParticleTypes.CLOUD, shaman.getX(), shaman.getY(), shaman.getZ(), 15, 0.5, 0.2, 0.5, 0.05);
                     shaman.setInvisible(true);
-                    mark(mark, ParticleTypes.CLOUD, 3);
+                    // The landing spot is a raid strike (round 42): outlined at once at its true size and until the shaman
+                    // lands, recorded. // playability: it was a particle spray once a game tick
                     later(3, () -> {
                         jumping.remove(shaman);
                         shaman.setInvisible(false);
-                        if (!alive(shaman)) {
-                            return;
-                        }
-                        shaman.teleportTo(mark.x, mark.y, mark.z);
-                        for (ServerPlayer p : players()) {
-                            if (RaidEffects.horizontalDistSq(p.position(), mark) <= 1.5 * 1.5) {
+                    });
+                    RaidEffects.mark(world(), mark, 1.5).delay(3).source(shaman).warn(ParticleTypes.CLOUD).live(() -> alive(shaman))
+                            .onHit(p -> {
                                 jumpsLanded++;
                                 RaidEffects.hit(shaman, p, CoxRules.SHAMAN_JUMP_MIN
                                         + rnd().nextInt(CoxRules.SHAMAN_JUMP_MAX - CoxRules.SHAMAN_JUMP_MIN + 1), null, true);
-                            }
-                        }
-                    });
+                            })
+                            .onLand(() -> shaman.teleportTo(mark.x, mark.y, mark.z)).start();
                 }
                 case ACID -> {
                     Msg.red(target, "A lizardman shaman lobs a blob of purple poison at you!");
-                    mark(mark, ParticleTypes.WITCH, 3);
-                    later(3, () -> {
-                        world().sendParticles(ParticleTypes.WITCH, mark.x, mark.y + 0.3, mark.z, 30, 1, 0.2, 1, 0.05);
-                        for (ServerPlayer p : players()) {
-                            if (RaidEffects.horizontalDistSq(p.position(), mark) <= 1.5 * 1.5) {
+                    RaidEffects.mark(world(), mark, 1.5).delay(3).source(shaman).warn(ParticleTypes.WITCH)
+                            .onHit(p -> {
                                 acidLanded++;
                                 RaidEffects.hit(shaman, p, CoxRules.SHAMAN_ACID_MIN
                                         + rnd().nextInt(CoxRules.SHAMAN_ACID_MAX - CoxRules.SHAMAN_ACID_MIN + 1), null, true);
                                 PoisonService.poison(p, CoxRules.SHAMAN_POISON, ActionManager.gameTick());
-                            }
-                        }
-                    });
+                            })
+                            .onLand(() -> world().sendParticles(ParticleTypes.WITCH, mark.x, mark.y + 0.3, mark.z, 30, 1, 0.2, 1, 0.05))
+                            .start();
                 }
                 case SPAWNS -> {
                     spawnCooldown.put(shaman, CoxRules.SHAMAN_SPAWN_COOLDOWN);
@@ -1043,18 +1022,12 @@ final class CoxRooms {
                             spawnsSummoned++;
                             fuses.put(spawn, CoxRules.SPAWN_FUSE_TICKS);
                             spawn.setTarget(target);
+                            // its blast's reach follows it until it explodes. // playability: OSRS shows the spawn swelling
+                            RaidEffects.fuse(spawn, 2.5, CoxRules.SPAWN_FUSE_TICKS);
                         }
                     }
                 }
             }
-        }
-
-        /** Marks a 3x3 landing area every tick until it lands. */
-        private void mark(Vec3 at, ParticleOptions look, int ticks) {
-            for (int i = 0; i < ticks; i++) {
-                later(i + 1, () -> world().sendParticles(look, at.x, at.y + 0.15, at.z, 12, 0.75, 0.02, 0.75, 0));
-            }
-            world().sendParticles(look, at.x, at.y + 0.15, at.z, 12, 0.75, 0.02, 0.75, 0);
         }
 
         @Override
@@ -1266,11 +1239,11 @@ final class CoxRooms {
                         continue;
                     }
                     waterBlasts++;
-                    RaidEffects.later(2, () -> {
-                        if (p.isAlive() && inside(p.position())) {
-                            // approx: protection prayers halve it ("only reduce" the ranged and magic attacks)
-                            RaidEffects.hit(null, p, rnd().nextInt(CoxRules.MUTTADILE_MAGIC_MAX + 1), AttackType.MAGIC, 0.5);
-                        }
+                    // A magic projectile from the water, drawn in magic blue all the way, the prayer read as it lands.
+                    // // playability: it was a splash at the water and a hit two ticks later
+                    RaidEffects.projectile(world(), from, p, AttackType.MAGIC, 2, () -> alive(small) && inside(p.position()), () -> {
+                        // approx: protection prayers halve it ("only reduce" the ranged and magic attacks)
+                        RaidEffects.hit(null, p, rnd().nextInt(CoxRules.MUTTADILE_MAGIC_MAX + 1), AttackType.MAGIC, 0.5);
                     });
                 }
             }
@@ -1601,6 +1574,8 @@ final class CoxRooms {
     static final class Vespula extends RoomLogic implements CoxTobWalk.Walkable {
         /** Game ticks Vespula stays on the ground. // approx: about 20 seconds */
         private static final int LANDED_TICKS = 33;
+        /** A grounded soldier's blast is outlined around it for its last this-many game ticks. */
+        private static final int SOLDIER_WARNING_TICKS = 4;
         private static final int[][] GRUBS = {{11, -6}, {11, 6}, {16, -6}, {16, 6}};
         private DataBossEntity vespula;
         private DataBossEntity portal;
@@ -1747,6 +1722,11 @@ final class CoxRooms {
                         s.setNoGravity(false);
                         say("A vespine soldier drops to the ground - finish it in melee before it explodes!");
                     }
+                    if (landed[i] && fuse[i] == SOLDIER_WARNING_TICKS + 1) {
+                        // its blast's reach follows it for its last moments. // playability: OSRS shows the soldier swelling
+                        RaidEffects.fuse(s, 2.5, SOLDIER_WARNING_TICKS);
+                        say("A grounded vespine soldier is about to explode!");
+                    }
                     if (landed[i] && --fuse[i] <= 0) {
                         world().sendParticles(ParticleTypes.EXPLOSION, s.getX(), s.getY() + 0.5, s.getZ(), 2, 0.3, 0.3, 0.3, 0);
                         for (ServerPlayer p : players()) {
@@ -1806,8 +1786,15 @@ final class CoxRooms {
                             RaidEffects.hit(vespula, p, CoxRules.VESPULA_STOMP_MIN
                                     + rnd().nextInt(CoxRules.VESPULA_STOMP_MAX - CoxRules.VESPULA_STOMP_MIN + 1), null, true);
                         } else if (d < 3 * 3 && t % 2 == 0) { // approx: a sting every other tick as she darts back and forth
-                            RaidEffects.hit(vespula, p, CoxRules.VESPULA_ENRAGED_STING_MIN
-                                    + rnd().nextInt(CoxRules.VESPULA_ENRAGED_STING_MAX - CoxRules.VESPULA_ENRAGED_STING_MIN + 1), null, true);
+                            // the jab after its wind-up, on a player still in reach. // playability: OSRS lands it on the tick
+                            vespula.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+                            com.runecraft.boss.Mechanics.deliverMelee(vespula, p, com.runecraft.osrs.ThreatTiming.MELEE_REACH, () -> {
+                                if (alive(vespula)) {
+                                    RaidEffects.hit(vespula, p, CoxRules.VESPULA_ENRAGED_STING_MIN
+                                            + rnd().nextInt(CoxRules.VESPULA_ENRAGED_STING_MAX - CoxRules.VESPULA_ENRAGED_STING_MIN + 1),
+                                            null, true);
+                                }
+                            });
                         }
                     }
                 }
@@ -3133,6 +3120,44 @@ final class CoxRooms {
     static final class Olm extends RoomLogic implements CoxTobWalk.Walkable {
         private enum Stage { FIGHT, TRANSITION, HEAD }
 
+        /** Game ticks a prayer sphere flies. */
+        private static final int SPHERE_TICKS = 4;
+        /**
+         * Game ticks from a Fire Wall's warning to the walls forming. // playability: OSRS forms them as the fireball lands
+         * (about a tick), catching anyone on the wall's tiles
+         */
+        static final int FIRE_WALL_LEAD = com.runecraft.osrs.ArenaTiming.STRIKE_FLOOR_TICKS;
+
+        /**
+         * The Olm's specials still to land, one at a time (crystal bursts, lightning, swaps, fire walls, crystal bombs,
+         * falling crystals): {@link com.runecraft.osrs.content.raids.RaidRealtime.Timeline}. // playability: OSRS lands them
+         * on their own ticks however close together; here two that need different steps land at least two game ticks apart,
+         * in the order announced, and the queue is shown mid-screen
+         */
+        private final com.runecraft.osrs.content.raids.RaidRealtime.Timeline timeline = new com.runecraft.osrs.content.raids.RaidRealtime.Timeline();
+        /** Specials sequenced, how many were pushed later to keep their spacing, and Crystal Burst hits (self-test). */
+        int sequenced;
+        int spaced;
+        int burstHits;
+
+        /**
+         * Puts one of the Olm's specials on its timeline: returns its delay in game ticks (at least {@code want}), and shows the
+         * queue in landing order when more than one is coming ("Olm: 1. crystal burst · 2. lightning").
+         */
+        private int sequence(int want, String kind, boolean announce) {
+            long now = RaidEffects.now();
+            long due = timeline.schedule(now, want, kind);
+            sequenced++;
+            if (due - now > want) {
+                spaced++;
+            }
+            List<String> order = timeline.order(now);
+            if (announce && order.size() > 1) {
+                RaidEffects.telegraph(players(), "Olm: " + com.runecraft.osrs.content.raids.RaidRealtime.orderCue(order, 3));
+            }
+            return (int) (due - now);
+        }
+
         private DataBossEntity head;
         private DataBossEntity left;
         private DataBossEntity right;
@@ -3230,6 +3255,7 @@ final class CoxRooms {
             phasesSeen++;
             stage = Stage.FIGHT;
             step = 0;
+            timeline.clear();
             clench = 0;
             handDownAt = -1;
             healingHand = 0;
@@ -3512,29 +3538,28 @@ final class CoxRooms {
             // OSRS: 27/28/29 (38/39/41 in Challenge Mode) for a solo raid, scaled up by the party's offence bonus.
             int max = (int) Math.round(CoxRules.olmMaxHit(penultimate(), headPhase(), raid.mode() == com.runecraft.osrs.content.raids.RaidMode.CHALLENGE)
                     * RaidScaling.coxOffence(raid.partySize(), false));
-            Vec3 a = head.getEyePosition();
-            Vec3 b = target.getEyePosition();
-            for (int i = 0; i <= 8; i++) {
-                Vec3 v = a.lerp(b, i / 8.0);
-                world().sendParticles(st == AttackType.MAGIC ? ParticleTypes.HAPPY_VILLAGER : ParticleTypes.END_ROD, v.x, v.y, v.z, 1, 0, 0, 0, 0);
-            }
-            RaidEffects.later(2, () -> {
-                if (!alive(head) || !target.isAlive() || !inside(target.position())) {
-                    return;
-                }
+            // The green orb (magic) or crystal chunk (ranged) flies in the style's colour; the prayer is read as it lands.
+            // // playability: it was a line of particles drawn once
+            DataBossEntity source = head;
+            RaidEffects.projectile(world(), head.getEyePosition(), target, st, 2, () -> alive(source) && inside(target.position()), () -> {
                 int dmg = rnd().nextInt(max + 1);
                 // OSRS: the right protection prayer takes off roughly 75-80%.
                 if (RaidEffects.protectedFrom(target, st)) {
                     dmg = dmg * 22 / 100;
                 }
-                RaidEffects.hitRaw(head, target, dmg);
+                RaidEffects.hitRaw(source, target, dmg);
             });
         }
 
-        /** Prayer spheres: an active protection prayer is knocked off (and prayer halved); the right one blocks it fully. */
+        /**
+         * Prayer spheres: an active protection prayer is knocked off (and prayer halved); the right one blocks it fully. The
+         * sphere flies in its style's colour (red melee, green ranged, magic blue for OSRS's purple) and the prayer it needs is
+         * named mid-screen as it leaves. // playability: OSRS only shows the sphere's colour
+         */
         private void sphere(ServerPlayer p) {
             AttackType[] styles = {AttackType.CRUSH, AttackType.RANGED, AttackType.MAGIC};
             String[] names = {"red", "green", "purple"};
+            String[] prayers = {"Melee", "Missiles", "Magic"};
             int s = rnd().nextInt(3);
             var data = Players.data(p);
             if (RoomLogic.praysOverhead(p)) {
@@ -3543,17 +3568,14 @@ final class CoxRooms {
                 com.runecraft.network.ServerNetworking.sync(p);
             }
             Msg.red(p, "The Great Olm fires a " + names[s] + " sphere at you!");
-            world().sendParticles(s == 0 ? ParticleTypes.FLAME : s == 1 ? ParticleTypes.HAPPY_VILLAGER : ParticleTypes.WITCH,
-                    head.getX(), head.getY() + 1.5, head.getZ(), 10, 0.4, 0.4, 0.4, 0.02);
+            Msg.telegraph(p, "Olm: " + names[s] + " sphere - pray " + prayers[s] + "!", null);
             DataBossEntity source = head;
-            RaidEffects.later(4, () -> {
-                if (!p.isAlive() || !alive(source) || !inside(p.position())) {
-                    return;
-                }
-                if (!RaidEffects.protectedFrom(p, styles[s])) {
-                    special(source, p, CoxRules.olmSphereDamage(Math.round(p.getHealth())));
-                }
-            });
+            RaidEffects.projectile(world(), head.getEyePosition(), p, styles[s], SPHERE_TICKS,
+                    () -> alive(source) && inside(p.position()), () -> {
+                        if (!RaidEffects.protectedFrom(p, styles[s])) {
+                            special(source, p, CoxRules.olmSphereDamage(Math.round(p.getHealth())));
+                        }
+                    });
         }
 
         private void power(String attack, ServerPlayer target, List<ServerPlayer> players) {
@@ -3579,11 +3601,13 @@ final class CoxRooms {
                 case "fire_wall" -> fireWall(target);
                 case "falling_crystals" -> {
                     Msg.red(target, "The Great Olm lets out a cry - crystals fall towards you!");
+                    Msg.telegraph(target, "Olm: falling crystals at you - keep moving!", null);
                     for (int i = 0; i < CoxRules.OLM_FALLING_POWER_CRYSTALS; i++) {
+                        boolean first = i == 0;
                         RaidEffects.later(1 + i, () -> {
                             if (target.isAlive() && alive(head) && inside(target.position())) {
-                                zone(world(), target.position(), 0.8, CoxRules.OLM_FALLING_POWER_MIN, CoxRules.OLM_FALLING_POWER_MAX, 3, head,
-                                        ParticleTypes.END_ROD);
+                                zone(world(), target.position(), 0.8, CoxRules.OLM_FALLING_POWER_MIN, CoxRules.OLM_FALLING_POWER_MAX,
+                                        sequence(3, "falling crystals", first), head, ParticleTypes.END_ROD);
                             }
                         });
                     }
@@ -3655,6 +3679,8 @@ final class CoxRooms {
         static final class FireWall {
             final Vec3 centre;
             int trapped;
+            /** The raid game tick it burns whoever is still between its walls (its warning, then the walls' 8 ticks). */
+            long burnsAt;
 
             FireWall(Vec3 centre) {
                 this.centre = centre;
@@ -3697,36 +3723,43 @@ final class CoxRooms {
             Vec3 c = target.position();
             FireWall wall = new FireWall(c);
             walls.add(wall);
+            int lead = sequence(FIRE_WALL_LEAD, "fire wall", true);
+            wall.burnsAt = RaidEffects.now() + lead + CoxRules.OLM_WALL_TICKS;
             say("The Great Olm breathes walls of fire around " + target.getName().getString() + "!");
-            for (ServerPlayer p : players()) {
-                for (int side = -1; side <= 1; side += 2) {
-                    if (Math.abs(p.getX() - (c.x + side * 2)) < 0.7 && Math.abs(p.getZ() - c.z) <= 3.5) {
-                        special(head, p, CoxRules.OLM_WALL_LEAP_MIN + rnd().nextInt(CoxRules.OLM_WALL_LEAP_MAX - CoxRules.OLM_WALL_LEAP_MIN + 1));
-                        p.push(side * 0.6, 0.2, 0);
-                        p.hurtMarked = true;
+            RaidEffects.telegraph(players(), "Olm: fire walls around " + target.getName().getString()
+                    + " - step out from between them or douse them!");
+            // The walls' lines are outlined from the warning; whoever stands on one as it forms leaps out (8-10). // playability:
+            // OSRS forms them as the fireball lands, catching anyone on their tiles at once
+            DataBossEntity source = head;
+            for (int s = -1; s <= 1; s += 2) {
+                int side = s;
+                RaidEffects.lane(world(), new Vec3(c.x + side * 2, c.y, c.z - 3.5), new Vec3(c.x + side * 2, c.y, c.z + 3.5), 0.7)
+                        .delay(lead).source(source).warn(ParticleTypes.FLAME).live(() -> walls.contains(wall))
+                        .onHit(p -> {
+                            special(source, p, CoxRules.OLM_WALL_LEAP_MIN + rnd().nextInt(CoxRules.OLM_WALL_LEAP_MAX - CoxRules.OLM_WALL_LEAP_MIN + 1));
+                            p.push(side * 0.6, 0.2, 0);
+                            p.hurtMarked = true;
+                        }).start();
+            }
+            RaidEffects.later(lead, () -> RaidEffects.cue(CoxRules.OLM_WALL_TICKS, () -> {
+                if (!walls.contains(wall)) {
+                    return false;
+                }
+                for (int dz = -3; dz <= 3; dz++) {
+                    for (int side = -1; side <= 1; side += 2) {
+                        world().sendParticles(ParticleTypes.FLAME, c.x + side * 2, c.y + 0.3, c.z + dz, 2, 0.1, 0.4, 0.1, 0);
                     }
                 }
-            }
-            for (int i = 0; i < CoxRules.OLM_WALL_TICKS; i++) {
-                RaidEffects.later(i, () -> {
-                    if (!walls.contains(wall)) {
-                        return;
-                    }
-                    for (int dz = -3; dz <= 3; dz++) {
-                        for (int side = -1; side <= 1; side += 2) {
-                            world().sendParticles(ParticleTypes.FLAME, c.x + side * 2, c.y + 0.3, c.z + dz, 2, 0.1, 0.4, 0.1, 0);
-                        }
-                    }
-                });
-            }
-            RaidEffects.later(CoxRules.OLM_WALL_TICKS, () -> {
+                return true;
+            }));
+            RaidEffects.later(lead + CoxRules.OLM_WALL_TICKS, () -> {
                 if (!walls.remove(wall)) {
                     return; // doused
                 }
                 for (ServerPlayer p : players()) {
                     if (Math.abs(p.getX() - c.x) < 2 && Math.abs(p.getZ() - c.z) <= 3.5) {
                         wall.trapped++;
-                        special(head, p, CoxRules.OLM_WALL_MIN + rnd().nextInt(CoxRules.OLM_WALL_MAX - CoxRules.OLM_WALL_MIN + 1));
+                        special(source, p, CoxRules.OLM_WALL_MIN + rnd().nextInt(CoxRules.OLM_WALL_MAX - CoxRules.OLM_WALL_MIN + 1));
                         Msg.red(p, "You are caught between the walls of fire!");
                     }
                 }
@@ -3737,82 +3770,80 @@ final class CoxRooms {
         /** Crystal bombs: 2-3 bombs near the players explode over 4 tiles (15, +15 for every tile closer). */
         private void crystalBombs(List<ServerPlayer> players) {
             say("The Great Olm fires crystal bombs!");
+            int fuse = sequence(CoxRules.OLM_BOMB_FUSE, "crystal bombs", true);
+            RaidEffects.telegraph(players, "Olm: crystal bombs - get well away from them!");
+            DataBossEntity source = head;
             for (int i = 0; i < CoxRules.olmCrystalBombs(raid.partySize()); i++) {
                 ServerPlayer p = players.get(rnd().nextInt(players.size()));
                 Vec3 at = p.position().add(rnd().nextInt(7) - 3, 0, rnd().nextInt(7) - 3);
-                for (int k = 0; k < CoxRules.OLM_BOMB_FUSE; k++) {
-                    RaidEffects.later(k, () -> world().sendParticles(ParticleTypes.END_ROD, at.x, at.y + 0.5, at.z, 4, 0.2, 0.3, 0.2, 0));
-                }
-                RaidEffects.later(CoxRules.OLM_BOMB_FUSE, () -> {
+                // A raid strike at the blast's full reach (4.5 tiles), drawn from the throw. // playability: OSRS shows the bomb
+                RaidEffects.mark(world(), at, 4.5).delay(fuse).source(source).warn(ParticleTypes.END_ROD).onLand(() -> {
                     world().sendParticles(ParticleTypes.EXPLOSION_EMITTER, at.x, at.y + 0.5, at.z, 1, 0, 0, 0, 0);
                     for (ServerPlayer q : players()) {
                         int dmg = CoxRules.olmCrystalBombDamage(Math.sqrt(RaidEffects.horizontalDistSq(q.position(), at)));
                         if (dmg > 0) {
-                            special(head, q, dmg);
+                            special(source, q, dmg);
                         }
                     }
-                });
+                }).start();
             }
         }
 
-        /** A falling crystal: 16-25 directly under it, 10-16 one tile off. */
+        /** A falling crystal: 16-25 directly under it, 10-16 one tile off; its 3x3 drawn from when its shadow appears. */
         private void fallingCrystal(Vec3 at) {
-            world().sendParticles(ParticleTypes.END_ROD, at.x, at.y + 0.2, at.z, 10, 0.5, 0.05, 0.5, 0);
             DataBossEntity source = head;
-            RaidEffects.later(3, () -> {
-                world().sendParticles(ParticleTypes.EXPLOSION, at.x, at.y + 0.5, at.z, 1, 0, 0, 0, 0);
-                for (ServerPlayer p : players()) {
-                    double d = RaidEffects.horizontalDistSq(p.position(), at);
-                    if (d < 0.6 * 0.6) {
-                        RaidEffects.hit(source, p, CoxRules.OLM_CRYSTAL_DIRECT_MIN
-                                + rnd().nextInt(CoxRules.OLM_CRYSTAL_DIRECT_MAX - CoxRules.OLM_CRYSTAL_DIRECT_MIN + 1), null, true);
-                    } else if (d < 1.6 * 1.6) {
-                        RaidEffects.hit(source, p, CoxRules.OLM_CRYSTAL_NEAR_MIN
-                                + rnd().nextInt(CoxRules.OLM_CRYSTAL_NEAR_MAX - CoxRules.OLM_CRYSTAL_NEAR_MIN + 1), null, true);
-                    }
-                }
-            });
-        }
-
-        /** Crystal Burst: a seedling under every player bursts a few ticks later for heavy damage. // approx: 20-40 */
-        private void crystalBurst(List<ServerPlayer> players) {
-            say("Crystals burst from the ground!");
-            for (ServerPlayer p : players) {
-                Vec3 at = p.position();
-                zone(world(), at, 1.0, 20, 40, 4, left, ParticleTypes.END_ROD);
-                RaidEffects.later(4, () -> {
-                    for (ServerPlayer q : players()) {
-                        if (RaidEffects.horizontalDistSq(q.position(), at) <= 1.0) {
-                            imperfect = true; // "Perfect Olm": caught by a Crystal Burst
+            RaidEffects.mark(world(), at, 1.6).delay(sequence(3, "falling crystals", false)).source(source).warn(ParticleTypes.END_ROD)
+                    .onHit(p -> {
+                        if (RaidEffects.horizontalDistSq(p.position(), at) < 0.6 * 0.6) {
+                            RaidEffects.hit(source, p, CoxRules.OLM_CRYSTAL_DIRECT_MIN
+                                    + rnd().nextInt(CoxRules.OLM_CRYSTAL_DIRECT_MAX - CoxRules.OLM_CRYSTAL_DIRECT_MIN + 1), null, true);
+                        } else {
+                            RaidEffects.hit(source, p, CoxRules.OLM_CRYSTAL_NEAR_MIN
+                                    + rnd().nextInt(CoxRules.OLM_CRYSTAL_NEAR_MAX - CoxRules.OLM_CRYSTAL_NEAR_MIN + 1), null, true);
                         }
-                    }
-                });
-            }
+                    }).start();
         }
 
-        /** Lightning: bolts run across the chamber; anyone zapped loses their overhead prayers, is hit and bound. */
-        private void lightning() {
+        /**
+         * Crystal Burst: a seedling under every player bursts a few ticks later for heavy damage. // approx: 20-40. Returns its
+         * delay in game ticks.
+         */
+        private int crystalBurst(List<ServerPlayer> players) {
+            say("Crystals burst from the ground!");
+            int delay = sequence(4, "crystal burst", true);
+            RaidEffects.telegraph(players, "Olm: crystal burst - step off the crystal under you!");
+            DataBossEntity source = left;
+            for (ServerPlayer p : players) {
+                RaidEffects.mark(world(), p.position(), 1.0).delay(delay).source(source).warn(ParticleTypes.END_ROD).onHit(q -> {
+                    burstHits++;
+                    imperfect = true; // "Perfect Olm": caught by a Crystal Burst
+                    RaidEffects.hit(source, q, 20 + rnd().nextInt(21), null, true);
+                }).start();
+            }
+            return delay;
+        }
+
+        /**
+         * Lightning: bolts run across the chamber; anyone zapped loses their overhead prayers, is hit and bound. Each bolt's lane
+         * is outlined from the warning. // playability: OSRS shows the lightning travelling north or south along its column
+         */
+        private int lightning() {
             say("The Great Olm's left claw crackles - lightning strikes!");
+            int delay = sequence(3, "lightning", true);
+            RaidEffects.telegraph(players(), "Olm: lightning - get off the crackling lanes!");
+            DataBossEntity source = left;
+            double y = center().getY() + 1;
             for (int lane = 0; lane < 2; lane++) {
                 double z = center().getZ() + 0.5 + rnd().nextInt(25) - 12;
-                for (int k = 0; k < 3; k++) {
-                    RaidEffects.later(k, () -> {
-                        for (int x = -18; x <= 18; x += 2) {
-                            world().sendParticles(ParticleTypes.ELECTRIC_SPARK, center().getX() + 0.5 + x, center().getY() + 1.2, z, 2, 0.4, 0.2, 0.1, 0);
-                        }
-                    });
-                }
-                DataBossEntity source = left;
-                RaidEffects.later(3, () -> {
-                    for (ServerPlayer p : players()) {
-                        if (Math.abs(p.getZ() - z) < 1.0) {
+                RaidEffects.lane(world(), new Vec3(center().getX() + 0.5 - RaidBuilder.HALF, y, z),
+                                new Vec3(center().getX() + 0.5 + RaidBuilder.HALF, y, z), 1.0)
+                        .delay(delay).source(source).warn(ParticleTypes.ELECTRIC_SPARK).onHit(p -> {
                             dropOverheads(p, "The lightning disables your protection prayers!");
                             RaidEffects.hit(source, p, 10 + rnd().nextInt(16), null, true); // approx: "moderate damage"
                             com.runecraft.content.systems.SysCombat.freeze(p, 3);
-                        }
-                    }
-                });
+                        }).start();
             }
+            return delay;
         }
 
         /**
@@ -3822,6 +3853,7 @@ final class CoxRooms {
          */
         void portals(List<ServerPlayer> players) {
             say("Portals open beneath you!");
+            int delay = sequence(4, "swap", true);
             List<ServerPlayer> list = new ArrayList<>(players);
             java.util.Collections.shuffle(list, rnd());
             if (list.size() == 1) {
@@ -3838,8 +3870,14 @@ final class CoxRooms {
                     }
                 }
                 Vec3 dest = to == null ? from : to;
-                world().sendParticles(ParticleTypes.PORTAL, dest.x, dest.y + 0.5, dest.z, 20, 0.4, 0.4, 0.4, 0.1);
-                later(4, () -> {
+                // The portal it opens is drawn until the swap, and named mid-screen. // playability: OSRS shows it once
+                Msg.telegraph(p, "Olm: portal swap - walk towards the portal to take less damage!", null);
+                RaidEffects.cue(delay, () -> {
+                    world().sendParticles(ParticleTypes.PORTAL, dest.x, dest.y + 0.5, dest.z, 8, 0.4, 0.4, 0.4, 0.1);
+                    RaidEffects.safeTile(world(), dest);
+                    return alive(head);
+                });
+                later(delay, () -> {
                     if (p.isAlive() && inside(p.position())) {
                         int dmg = CoxRules.olmTeleportDamage(Math.sqrt(RaidEffects.horizontalDistSq(p.position(), dest)));
                         p.teleportTo(dest.x, dest.y, dest.z);
@@ -3854,7 +3892,9 @@ final class CoxRooms {
             for (int i = 0; i + 1 < paired; i += 2) {
                 ServerPlayer a = list.get(i);
                 ServerPlayer b = list.get(i + 1);
-                later(4, () -> {
+                Msg.telegraph(a, "Olm: portal swap with " + b.getName().getString() + " - stand close to them!", null);
+                Msg.telegraph(b, "Olm: portal swap with " + a.getName().getString() + " - stand close to them!", null);
+                later(delay, () -> {
                     if (a.isAlive() && b.isAlive()) {
                         Vec3 pa = a.position();
                         Vec3 pb = b.position();
@@ -3898,6 +3938,8 @@ final class CoxRooms {
             }
             for (Vec3 v : siphon) {
                 world().sendParticles(ParticleTypes.SOUL_FIRE_FLAME, v.x, v.y + 0.1, v.z, 4, 0.4, 0.02, 0.4, 0);
+                // the safe pool's true size (within a block) in green. // playability
+                com.runecraft.boss.ThreatCues.ring(world(), v, 1.0, 0x73FF73, null, siphonTicks <= 2);
             }
             if (--siphonTicks > 0) {
                 return;
@@ -3944,7 +3986,8 @@ final class CoxRooms {
             // The swap: a solo player lands on a random tile up to ten tiles away, hurt 5 per tile.
             Vec3 before0 = w.player().position();
             portals(List.of(w.player()));
-            w.tick(5);
+            // (since round 42 the swap may wait its turn behind another special: the Olm's specials land one at a time)
+            w.until(() -> swaps == 1, 12, "the Olm's swap never happened");
             double moved = Math.sqrt(RaidEffects.horizontalDistSq(before0, w.player().position()));
             w.expect(swaps == 1 && moved <= CoxRules.OLM_SWAP_SOLO_RANGE + 1, "the Olm's swap sent the player " + moved + " tiles");
             w.expect(lastSwapDamage == CoxRules.olmTeleportDamage(moved), "the swap hurt " + lastSwapDamage + " for " + moved + " tiles");
@@ -3962,7 +4005,8 @@ final class CoxRooms {
             int dousedBefore = doused;
             w.give(CoxSupplies.WATER_GOURD, 1);
             w.expect(CoxSupplyService.useWaterGourd(w.player()), "a water-filled gourd vial did not douse the fire wall");
-            for (int i = 0; i <= CoxRules.OLM_WALL_TICKS; i++) {
+            // (since round 42 the walls form a warning's length after the breath, and burn their 8 ticks from then)
+            while (RaidEffects.now() <= first.burnsAt) {
                 w.moveTo(trap); // stay inside (the Olm's own swaps and bursts would move the player)
                 w.tick(1);
             }
@@ -3972,11 +4016,26 @@ final class CoxRooms {
                     + (doused - dousedBefore));
             w.moveTo(trap);
             FireWall second = fireWall(w.player());
-            for (int i = 0; i <= CoxRules.OLM_WALL_TICKS; i++) {
+            while (RaidEffects.now() <= second.burnsAt) {
                 w.moveTo(trap);
                 w.tick(1);
             }
             w.expect(second.trapped == 1, "a fire wall left alone did not burn the trapped player (caught " + second.trapped + ")");
+            // The Olm's specials land one at a time (round 42): a crystal burst and a lightning strike made together land at
+            // least two game ticks apart, in the order they were made, and the queue is shown. // playability
+            int sequencedBefore = sequenced;
+            long burstIn = crystalBurst(List.of(w.player()));
+            long boltIn = lightning();
+            w.expect(sequenced == sequencedBefore + 2 && burstIn >= 4 && boltIn >= 3 && Math.abs(burstIn - boltIn)
+                    >= com.runecraft.osrs.content.raids.RaidRealtime.SEQUENCE_GAP_TICKS, "the Olm's crystal burst (in " + burstIn
+                    + ") and lightning (in " + boltIn + ") were not spaced");
+            w.expect(RaidEffects.strikesOn(w.player()) >= 1, "no crystal burst marked under the player");
+            int burstsBefore = burstHits;
+            for (int i = 0; i <= Math.max(burstIn, boltIn); i++) {
+                w.moveTo(trap.add(3 + i, 0, 0)); // step off the crystal and keep walking (the Olm's own specials follow the player)
+                w.tick(1);
+            }
+            w.expect(burstHits == burstsBefore, "a crystal burst hit a player who stepped off it");
             int guard = 0;
             int lastPhase = phase;
             while (stage != Stage.HEAD && guard++ < 3000) {

@@ -453,6 +453,24 @@ public final class RaidEffects {
         }
     }
 
+    /**
+     * A creature about to explode where it stands when its fuse runs out (a lizardman spawn, a grounded vespine soldier, an
+     * old nylocas): the blast's ring of {@code radius} around it, following it, for its last {@code gameTicks} game ticks,
+     * brightening at the end. // playability: OSRS shows the creature swelling, and the blast is tile-exact
+     */
+    public static void fuse(LivingEntity e, double radius, int gameTicks) {
+        long until = now() + gameTicks;
+        cue(gameTicks, () -> {
+            if (!e.isAlive() || e.isRemoved()) {
+                return false;
+            }
+            boolean landing = ArenaTiming.finalCue(until * ArenaTiming.MC_PER_GAME_TICK, clockMc());
+            com.runecraft.boss.StrikeMarkers.ring((ServerLevel) e.level(), e.position(), radius, null, landing,
+                    ArenaTiming.ringPoints(radius, 1));
+            return true;
+        });
+    }
+
     /** Says {@code text} to each of {@code players} as a centre-screen warning (colour by the style it names). */
     public static void telegraph(Iterable<ServerPlayer> players, String text) {
         for (ServerPlayer p : players) {
