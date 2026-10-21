@@ -190,6 +190,16 @@ public final class RaidSelfTest {
         return dealt;
     }
 
+    /**
+     * Switches a prayer through the path the prayer keys use ({@code PrayerService.set}), as the player reacting to a cue.
+     * // playability (round 42): checks switch prayers like a player instead of setting them
+     */
+    void pray(com.runecraft.osrs.Prayer prayer, boolean on) {
+        com.runecraft.combat.PrayerService.set(player, prayer, on);
+        expect(Players.data(player).isActive(prayer) == on, "could not switch " + prayer + (on ? " on" : " off") + " ("
+                + com.runecraft.combat.PrayerService.lastRefusal + ")");
+    }
+
     /** Right-clicks a raid block (the block at {@code pos} must be a raid block). */
     void use(BlockPos pos) {
         BlockState state = raid.world.getBlockState(pos);

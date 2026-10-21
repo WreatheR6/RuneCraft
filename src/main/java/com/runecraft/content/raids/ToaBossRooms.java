@@ -1102,9 +1102,11 @@ final class ToaBossRooms {
                 switch (sp) {
                     case 0 -> memoryBlast(inv);
                     case 1 -> {
-                        warn("Magical orbs begin to materialise around you!");
+                        warn("Magical orbs begin to materialise around you! Stand still - every step leaves an orb.");
                         trailTicks = 10;
                         trailLast.clear();
+                        walked.clear();
+                        lastMc.clear();
                     }
                     default -> detonate(inv);
                 }
@@ -1150,6 +1152,41 @@ final class ToaBossRooms {
             later(start + order.size() * gap, () -> hidden = false);
         }
 
+        /** Distance each player walked of their own accord since the last game tick, and where they were a Minecraft tick ago. */
+        private final Map<UUID, Double> walked = new HashMap<>();
+        private final Map<UUID, Vec3> lastMc = new HashMap<>();
+
+        /**
+         * Every Minecraft tick while the orbs materialise: adds up each player's own steps ({@link
+         * com.runecraft.osrs.content.raids.RaidRealtime#inputStep}): on the ground, not pressed against a body (Akkha or a
+         * shadow shoving them), not sliding on ice, neither standing still nor teleported.
+         */
+        @Override
+        public void bossTick(DataBossEntity boss) {
+            if (boss != akkha) {
+                return;
+            }
+            if (trailTicks <= 0) {
+                lastMc.clear();
+                return;
+            }
+            for (ServerPlayer p : players()) {
+                Vec3 now = p.position();
+                Vec3 before = lastMc.put(p.getUUID(), now);
+                if (before == null) {
+                    continue;
+                }
+                double step = Math.sqrt(RaidEffects.horizontalDistSq(before, now));
+                net.minecraft.world.phys.AABB box = p.getBoundingBox().inflate(0.15, 0, 0.15);
+                boolean pushed = !world().getEntities(p, box, e -> e instanceof LivingEntity && !(e instanceof ServerPlayer)).isEmpty();
+                BlockPos below = BlockPos.containing(now.x, now.y - 0.5, now.z);
+                boolean slippery = world().getBlockState(below).getBlock().getFriction() > 0.6f;
+                if (com.runecraft.osrs.content.raids.RaidRealtime.inputStep(step, p.onGround(), pushed, slippery)) {
+                    walked.merge(p.getUUID(), step, Double::sum);
+                }
+            }
+        }
+
         /** Trailing Orbs: every step a player takes leaves an orb behind (and one ahead with Feeling Special?). */
         private void trailingOrbs(Set<Invocation> inv) {
             trail.removeIf(o -> o[2] < now());
@@ -1172,12 +1209,16 @@ final class ToaBossRooms {
             for (ServerPlayer p : players()) {
                 Vec3 now = p.position();
                 Vec3 last = trailLast.put(p.getUUID(), now);
-                if (last != null && RaidEffects.horizontalDistSq(last, now) > 0.25) {
+                double walked = this.walked.getOrDefault(p.getUUID(), 0.0);
+                this.walked.put(p.getUUID(), 0.0);
+                // Only the player's own steps since the last game tick count (Akkha's body shoving them, ice sliding and
+                // teleports don't): see bossTick. // playability: OSRS drops an orb on each tile a player walks off
+                if (last != null && walked >= com.runecraft.osrs.content.raids.RaidRealtime.ORB_STEP) {
                     // CA "Dropped the ball": moving while the orbs materialise drops one behind you.
                     com.runecraft.content.systems.CombatAchievementService.flag(p, ToaLoot.FLAG_AKKHA_ORB_DROPPED);
                     orbsDropped++;
                     trail.add(new double[]{last.x, last.z, now() + 12});
-                    if (Invocation.akkhaTrailingOrbs(inv) > 1) {
+                    if (Invocation.akkhaTrailingOrbs(inv) > 1 && now.subtract(last).horizontalDistanceSqr() > 1e-4) {
                         Vec3 ahead = now.add(now.subtract(last).normalize().scale(1.5));
                         trail.add(new double[]{ahead.x, ahead.z, now() + 12});
                     }
@@ -2049,25 +2090,29 @@ final class ToaBossRooms {
             for (ServerPlayer p : here) {
                 if (p.distanceToSqr(zebak) < 3.5 * 3.5) {
                     // OSRS: his melee hits through prayer at reduced damage, and can make you bleed. // approx: half
-                    int roll = rnd().nextInt(ToaBossRules.ZEBAK_MELEE_MAX + 1);
-                    if (RaidEffects.protectedFrom(p, AttackType.STAB)) {
-                        roll /= 2;
-                    }
-                    Msg.red(p, "Zebak's jaws snap at you!");
-                    RaidEffects.hit(zebak, p, roll, null, true);
+                    // // playability: OSRS lands the bite on the attack tick; here after the jaws' wind-up, on a player still in
+                    // reach, the prayer read as it lands
+                    zebak.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+                    Mechanics.deliverMelee(zebak, p, com.runecraft.osrs.ThreatTiming.MELEE_REACH, () -> {
+                        if (!alive(zebak)) {
+                            return;
+                        }
+                        int roll = rnd().nextInt(ToaBossRules.ZEBAK_MELEE_MAX + 1);
+                        if (RaidEffects.protectedFrom(p, AttackType.STAB)) {
+                            roll /= 2;
+                        }
+                        Msg.red(p, "Zebak's jaws snap at you!");
+                        RaidEffects.hit(zebak, p, roll, null, true);
+                    });
                     return;
                 }
             }
             ServerPlayer target = here.get(rnd().nextInt(here.size()));
             AttackType style = rnd().nextBoolean() ? AttackType.RANGED : AttackType.MAGIC;
-            world().sendParticles(style == AttackType.MAGIC ? ParticleTypes.DAMAGE_INDICATOR : ParticleTypes.CRIT, zebak.getX(), zebak.getY() + 2,
-                    zebak.getZ(), 10, 0.3, 0.3, 0.3, 0.05);
-            // OSRS: the projectile only hurts on impact, so it can be prayed against late.
-            later(2, () -> {
-                if (alive(zebak) && target.isAlive()) {
-                    RaidEffects.hit(zebak, target, rnd().nextInt(ToaBossRules.ZEBAK_RANGED_MAX + 1), style, false);
-                }
-            });
+            // OSRS: the rock (ranged) or jug (magic) only hurts on impact, so it can be prayed against late; drawn here in the
+            // style's colour all the way to its target. // playability
+            RaidEffects.projectile(world(), zebak.position().add(0, 2, 0), target, style, 2, () -> alive(zebak),
+                    () -> RaidEffects.hit(zebak, target, rnd().nextInt(ToaBossRules.ZEBAK_RANGED_MAX + 1), style, false));
         }
 
         /** A special: jugs and acid with the Great Roar or the Tidal Waves. */
@@ -2086,6 +2131,15 @@ final class ToaBossRooms {
                 }
                 roarIn = 10; // approx: "several attacks after"
                 roarHits = 3;
+                // The shelters shown in green from the warning until the last of the roar's three hits. // playability
+                RaidEffects.telegraph(players(), "Great Roar coming - shelter in the green behind a rock (west of it)!");
+                RaidEffects.cue(roarIn + roarHits + 1, () -> {
+                    if (!alive(zebak) || rocks.isEmpty()) {
+                        return false;
+                    }
+                    drawShelters();
+                    return true;
+                });
             } else {
                 tidalWaves();
             }
@@ -2165,16 +2219,42 @@ final class ToaBossRooms {
             }
         }
 
-        /** The rock a player shelters behind: west of it (away from Zebak), up to three tiles, in its row. */
-        private BlockPos coverFor(ServerPlayer p) {
-            BlockPos stand = p.blockPosition();
+        /**
+         * The rock a player shelters behind: west of it (away from Zebak), up to three tiles, in its row (OSRS), here in a
+         * cone that widens behind the rock ({@link com.runecraft.osrs.content.raids.RaidRealtime#inShelterCone}).
+         * // playability: OSRS shelters exactly the three tiles behind it
+         */
+        BlockPos coverFor(Vec3 pos) {
             for (BlockPos r : rocks.keySet()) {
-                int behind = r.getX() - stand.getX();
-                if (behind >= 1 && behind <= 3 && Math.abs(r.getZ() - stand.getZ()) <= 0) {
+                double behind = r.getX() + 0.5 - pos.x;
+                double lateral = pos.z - (r.getZ() + 0.5);
+                if (com.runecraft.osrs.content.raids.RaidRealtime.inShelterCone(behind, lateral)) {
                     return r;
                 }
             }
             return null;
+        }
+
+        private BlockPos coverFor(ServerPlayer p) {
+            return coverFor(p.position());
+        }
+
+        /** Each rock's shelter in green on the floor (the cone {@link #coverFor} accepts), until the roar is over. */
+        private void drawShelters() {
+            double y = center().getY() + 1.1;
+            double half = com.runecraft.osrs.content.raids.RaidRealtime.SHELTER_HALF_WIDTH;
+            double spread = com.runecraft.osrs.content.raids.RaidRealtime.SHELTER_SPREAD;
+            for (BlockPos r : rocks.keySet()) {
+                for (double behind = 0.75; behind <= com.runecraft.osrs.content.raids.RaidRealtime.SHELTER_DEPTH; behind += 0.5) {
+                    double w = half + spread * (behind - 0.5) - 0.05;
+                    double x = r.getX() + 0.5 - behind;
+                    world().sendParticles(RaidEffects.SAFE, x, y, r.getZ() + 0.5 - w, 1, 0, 0, 0, 0);
+                    world().sendParticles(RaidEffects.SAFE, x, y, r.getZ() + 0.5 + w, 1, 0, 0, 0, 0);
+                    if (behind == 0.75 || behind >= com.runecraft.osrs.content.raids.RaidRealtime.SHELTER_DEPTH - 0.25) {
+                        world().sendParticles(RaidEffects.SAFE, x, y, r.getZ() + 0.5, 2, 0, 0, w * 0.5, 0);
+                    }
+                }
+            }
         }
 
         /**
@@ -2420,7 +2500,18 @@ final class ToaBossRooms {
         @Override
         String selfTestSolve(RaidSelfTest t) {
             int[] jugsBroken = {0};
+            boolean[] shelterChecked = {false};
             String r = grind(t, zebak, AttackType.RANGED, 25, () -> {
+                if (!shelterChecked[0] && !rocks.isEmpty()) {
+                    // The Great Roar's shelter: the tiles behind a rock in its row (OSRS), widening behind it; not beside it.
+                    shelterChecked[0] = true;
+                    BlockPos rock = rocks.keySet().iterator().next();
+                    Vec3 c = Vec3.atBottomCenterOf(rock);
+                    RaidSelfTest.expect(coverFor(c.add(-2, 0, 0)) != null && coverFor(c.add(-3, 0, 0.9)) != null,
+                            "Zebak: the tiles behind a rock gave no shelter");
+                    RaidSelfTest.expect(coverFor(c.add(2, 0, 0)) == null && coverFor(c.add(-1, 0, 1.2)) == null
+                            || rocks.size() > 1, "Zebak: a rock sheltered a player in front of it or beside it");
+                }
                 if (!jugs.isEmpty() && !acid.isEmpty()) {
                     BlockPos j = jugs.iterator().next();
                     int before = acid.size();
