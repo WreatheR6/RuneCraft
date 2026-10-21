@@ -4366,12 +4366,16 @@ final class CoxRooms {
             w.expect(acidFormed >= formedBefore + 3, "the Olm's acid spray formed " + (acidFormed - formedBefore) + " of its 3 pools");
             // Round 43: the head attacks only the zone it faces. With nobody there it swerves to the player's zone and skips that
             // step; facing them, the next step goes ahead.
+            // (the rotation first holds still while the specials it already queued land - a swap would move the player - and
+            // no hand has been hit within the four ticks the hand rule looks back)
+            quietTicks = 12;
+            w.moveTo(at(-16, south ? 5 : -5));
+            w.tick(12);
+            quietTicks = 0;
             aim.reset();
             faceZone(aim.facing());
-            w.moveTo(at(-16, south ? 5 : -5));
-            w.tick(4); // stay clear of hand hits for the four ticks the hand rule looks back
-            aim.reset();
             int skipsBefore = zoneSkips;
+            w.moveTo(at(-16, south ? 5 : -5));
             int want = com.runecraft.osrs.content.raids.RaidRealtime.olmZone(w.player().getX() - head.getX(), south);
             w.tick(CoxRules.OLM_STEP_TICKS);
             w.expect(zoneSkips == skipsBefore + 1 && aim.facing() == want, "the Olm's head did not swerve to an empty zone's player (skips "
@@ -4379,7 +4383,11 @@ final class CoxRooms {
             w.moveTo(at(-16, south ? 5 : -5));
             w.tick(CoxRules.OLM_STEP_TICKS);
             w.expect(zoneSkips == skipsBefore + 1, "the Olm's head skipped a step while facing the player");
-            // A Crystal Burst shoves whoever stays on it to a nearby tile (OSRS wiki).
+            // A Crystal Burst shoves whoever stays on it to a nearby tile (OSRS wiki). The rotation holds still from here to the
+            // end of the sphere check (whatever it queued lands first), so no swap moves the player and no lightning or other
+            // sphere drops their prayer meanwhile.
+            quietTicks = 40;
+            w.tick(8);
             Vec3 stay = at(-6, south ? 6 : -6).getBottomCenter();
             w.moveTo(stay);
             int hitsBefore = burstHits;
@@ -4389,10 +4397,11 @@ final class CoxRooms {
                 w.moveTo(stay);
                 w.tick(1);
             }
+            w.expect(burstHits == hitsBefore + 1 && shoves == shovesBefore + 1
+                    && RaidEffects.horizontalDistSq(stay, w.player().position()) >= 1.0, "a Crystal Burst did not hit and shove the player on it "
+                    + "(hits " + (burstHits - hitsBefore) + ", shoves " + (shoves - shovesBefore) + ")");
             // A prayer sphere is answered as a player would: its colour and prayer named mid-screen, the prayer switched through
-            // the prayer keys' path a game tick later; it is blocked (the rotation holds still meanwhile, so no other sphere
-            // knocks the prayer off).
-            quietTicks = 12;
+            // the prayer keys' path a game tick later; it is blocked.
             int blocksBefore = sphereBlocks;
             int sphereHitsBefore = sphereHits;
             sphere(w.player());
@@ -4403,9 +4412,6 @@ final class CoxRooms {
                     + " a tick after its cue was not blocked");
             w.pray(answer, false);
             quietTicks = 0;
-            w.expect(burstHits == hitsBefore + 1 && shoves == shovesBefore + 1
-                    && RaidEffects.horizontalDistSq(stay, w.player().position()) >= 1.0, "a Crystal Burst did not hit and shove the player on it "
-                    + "(hits " + (burstHits - hitsBefore) + ", shoves " + (shoves - shovesBefore) + ")");
             int guard = 0;
             int lastPhase = phase;
             while (stage != Stage.HEAD && guard++ < 3000) {

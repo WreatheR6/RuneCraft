@@ -2099,6 +2099,9 @@ final class ToaBossRooms {
                         if (i == crackedAt) {
                             cracked.add(b);
                             b.setCustomName(net.minecraft.network.chat.Component.literal("Cracked boulder"));
+                            // round 43: it glows, so the one to break (ranged always max-hits it) stands out in a rolling row.
+                            // // playability: OSRS shows its cracks
+                            b.setGlowingTag(true);
                         }
                     }
                 }
