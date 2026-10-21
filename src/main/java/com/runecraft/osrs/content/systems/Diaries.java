@@ -103,14 +103,15 @@ public final class Diaries {
      * "altar_restore_85" (85+ points restored),
      * "tears_of_guthix:100" (100+ tears in one visit), "fill:" + filled item ("fill:water_bucket") at a pump or well,
      * "dog_bone", "kitten_colour", "chompy_hat:" + kills registered, "phoenix_feather", "emote:" + emote slug, "stairs:" + id and
-     * "machete_trade" (Safta Doc's gem machetes) and "crystal_saw" (a crystal saw seed sung into a saw).
+     * "machete_trade" (Safta Doc's gem machetes), "crystal_saw" (a crystal saw seed sung into a saw) and "lectern:" + tablet
+     * made at the Arceuus lectern.
      */
     public static final List<String> ACTIVITIES = List.of("talk", "minigame_start", "minigame_win", "spellbook", "teleport", "eat",
             "trek_complete", "fight_pit_champion", "monkey_cage", "shop_open", "shop_buy", "shop_sell", "bert_sand", "tindel_identify",
             "genie_visit", "chest_open", "join", "cast_on_player", "strut_repair", "essence_mine", "steal", "kingdom_approval",
             "ba_blackboard", "tbw_favour", "kudos", "ba_wave", "poh_portal", "monster_examine", "totem_recharge", "dig", "ent_chop",
             "shortcut", "travel", "fairy_ring", "altar_pray", "altar_restore_85", "tears_of_guthix", "fill", "dog_bone", "kitten_colour",
-            "chompy_hat", "phoenix_feather", "emote", "stairs", "altar_restore", "machete_trade", "crystal_saw");
+            "chompy_hat", "phoenix_feather", "emote", "stairs", "altar_restore", "machete_trade", "crystal_saw", "lectern");
 
     /** The Fishing Platform's deck (an "x,y,r" restriction out at sea, so the land check skips it). */
     public static final String FISHING_PLATFORM = "2788,3285,10";
@@ -541,9 +542,10 @@ public final class Diaries {
         visit("Visit the Port Sarim Rat Pits", 3017, 3233, 8);
         shortcut("Grapple up and then jump off the north Falador wall", "falador_wall_grapple", AGILITY, 11, STRENGTH, 37, RANGED, 19);
         xp("Pickpocket a Falador guard", THIEVING, 40);
-        // approx: only the Initiate sallet exists (no hauberk or cuisse), so the armour isn't checked.
+        // Full Initiate armour (Sir Tiffy Cashien sells it after Recruitment Drive; DiaryActivities).
         event("Pray at the Altar of Guthix in Taverley whilst wearing full Initiate", "altar_pray", at(2925, 3483, 6), PRAYER, 10, DEFENCE, 20);
-        approx();
+        wearing(DiaryActivities.INITIATE_SET);
+        needs(lastId, DiaryActivities.RECRUITMENT_DRIVE);
         getAt("Mine some Gold ore at the Crafting Guild", "gold_ore", 1, at(2935, 3283, 9), MINING, 40, CRAFTING, 40);
         shortcut("Squeeze through the crevice in the Dwarven mines", "dwarven_mine_narrow_crevice", AGILITY, 42);
         getAt("Chop and burn some Willow logs in Taverley", "willow_logs", 1, at(2895, 3445, 50), WOODCUTTING, 30, FIREMAKING, 30);
@@ -560,9 +562,11 @@ public final class Diaries {
         wearing("prospector_helmet&prospector_jacket|varrock_armour_4&prospector_legs&prospector_boots");
         killAny("Kill the Blue Dragon under the Heroes' Guild", "blue dragon", 1);
         visit("Crack a wall safe within Rogues' Den", 2906, 3537, 8, THIEVING, 50);
-        // approx: there is no altar in Port Sarim's church and no Proselyte armour, so standing in the church counts.
-        visit("Recharge your prayer in the Port Sarim church while wearing full Proselyte", 3023, 3208, 15, DEFENCE, 30, PRAYER, 20);
-        approx();
+        // The altar of the Rimmington ("Port Sarim") church, in full Proselyte (Sir Tiffy, after The Slug Menace).
+        event("Recharge your prayer in the Port Sarim church while wearing full Proselyte", "altar_pray",
+                at(DiaryActivities.SARIM_CHURCH_X, DiaryActivities.SARIM_CHURCH_Y, 4), DEFENCE, 30, PRAYER, 20);
+        wearing(DiaryActivities.PROSELYTE_SET);
+        needs(lastId, DiaryActivities.SLUG_MENACE);
         visit("Enter the Warriors' Guild", 2877, 3546, 8, ATTACK, 65, STRENGTH, 65); // approx reqs: 130 combined
         // The Dwarven Mine is carved under Falador and Ice Mountain (OSRS 2999-3057, 3379-3452 on the surface map).
         wear("Equip a dwarven helmet within the Dwarven mines", "dwarven_helmet", at(3028, 3415, 40) + ",u", DEFENCE, 50);
@@ -786,7 +790,8 @@ public final class Diaries {
         kc("Kill Skotizo in the Catacombs of Kourend", "skotizo", 1);
         makeHere("Catch an Anglerfish and cook it whilst in Great Kourend", "anglerfish", 1, FISHING, 82, COOKING, 84);
         killAny("Kill a hydra in the Karuulm Slayer Dungeon", "hydra", 1, SLAYER, 95);
-        cast("Create an Ape Atoll teleport tablet", "ape_atoll_teleport", MAGIC, 90); approx(); // approx
+        // The Arceuus lectern in the Ouditor's house (DiaryActivities): a dark essence block and the spell's runes.
+        event("Create an Ape Atoll teleport tablet", "lectern:ape_atoll_teleport_tablet", null, MAGIC, 90);
         kc("Complete a raid in the Chambers of Xeric", "great_olm", 1);
         make("Create your own Battlestaff from scratch within the Farming Guild", "*battlestaff", 1, FLETCHING, 40, FARMING, 85);
 

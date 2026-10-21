@@ -117,6 +117,7 @@ class DiaryRound40Test {
         // The Altar of Nature is a scripted block placed at its tile (DiaryActivities).
         altars.add(new int[]{DiaryActivities.NATURE_ALTAR_X, DiaryActivities.NATURE_ALTAR_Y});
         altars.add(new int[]{DiaryActivities.DEMONIC_RUINS_X, DiaryActivities.DEMONIC_RUINS_Y});
+        altars.add(new int[]{DiaryActivities.SARIM_CHURCH_X, DiaryActivities.SARIM_CHURCH_Y});
         int n = 0;
         for (Diaries.Task t : Diaries.tasks()) {
             if (t.type() == Diaries.Type.EVENT && (t.target().equals("altar_pray") || t.target().startsWith("altar_restore"))) {
@@ -181,7 +182,21 @@ class DiaryRound40Test {
     @Test
     void approxStandInsShrank() {
         long approx = Diaries.tasks().stream().filter(Diaries::isApprox).count();
-        assertTrue(approx <= 15, "approx tasks: " + approx);
+        assertTrue(approx <= 12, "approx tasks: " + approx);
+        // The Arceuus lectern: every tablet it makes is a real tablet of an Arceuus teleport (Ape Atoll: 90 Magic, 100 XP, wiki).
+        for (Map.Entry<String, String> e : DiaryActivities.LECTERN_TABLETS.entrySet()) {
+            assertNotNull(Spellbooks.tablet(e.getKey()), e.getKey());
+            Spellbooks.Spell spell = Spellbooks.get(e.getValue());
+            assertNotNull(spell, e.getValue());
+            assertEquals(Spellbooks.Book.ARCEUUS, spell.book(), e.getValue());
+        }
+        Spellbooks.Spell ape = Spellbooks.get(DiaryActivities.LECTERN_TABLETS.get("ape_atoll_teleport_tablet"));
+        assertEquals(90, ape.level());
+        assertEquals(100, ape.xp());
+        Diaries.Task tablet = byDesc("Create an Ape Atoll teleport tablet");
+        assertEquals("lectern:ape_atoll_teleport_tablet", tablet.target());
+        assertFalse(Diaries.isApprox(tablet));
+        assertNotNull(ItemCatalog.get(DiaryActivities.DARK_ESSENCE_BLOCK));
         assertFalse(Diaries.isApprox(byDesc("Collect at least 100 Tears of Guthix")));
         assertEquals("tears_of_guthix:100", byDesc("Collect at least 100 Tears of Guthix").target());
         assertFalse(Diaries.isApprox(byDesc("Have the Mage of Zamorak teleport you to the Abyss")));
@@ -433,6 +448,38 @@ class DiaryRound40Test {
         for (String item : new String[]{DiaryActivities.BELLOWS, DiaryActivities.BLOATED_TOAD, "ogre_bow", "ogre_arrow"}) {
             assertNotNull(ItemCatalog.get(item), item);
         }
+    }
+
+    @Test
+    void templeKnightArmourTasks() {
+        // Wiki: Initiate 20 Defence / 10 Prayer, Proselyte 30 / 20; values 10,000 / 8,000 and 8,000 / 12,000 / 10,000.
+        assertEquals(6, DiaryActivities.TEMPLE_ARMOUR.size());
+        for (DiaryActivities.TempleArmour a : DiaryActivities.TEMPLE_ARMOUR) {
+            com.runecraft.osrs.ItemDef def = ItemCatalog.get(a.item());
+            assertNotNull(def, a.item());
+            assertNotNull(def.equipment(), a.item());
+            assertEquals(a.item().startsWith("initiate") ? 20 : 30, def.equipment().requirements().get(com.runecraft.osrs.Skill.DEFENCE));
+            assertEquals(a.item().startsWith("initiate") ? 10 : 20, def.equipment().requirements().get(com.runecraft.osrs.Skill.PRAYER));
+            assertTrue(a.stats().prayer() >= 4, a.item());
+        }
+        assertEquals(12000, DiaryActivities.TEMPLE_ARMOUR.stream().filter(a -> a.item().equals("proselyte_hauberk")).findFirst()
+                .orElseThrow().value());
+        Diaries.Task initiate = byDesc("Pray at the Altar of Guthix in Taverley whilst wearing full Initiate");
+        Diaries.Task proselyte = byDesc("Recharge your prayer in the Port Sarim church while wearing full Proselyte");
+        for (Diaries.Task t : List.of(initiate, proselyte)) {
+            assertFalse(Diaries.isApprox(t), t.id());
+            assertEquals(Diaries.Type.EVENT, t.type());
+            assertEquals("altar_pray", t.target());
+        }
+        assertEquals(List.of(DiaryActivities.INITIATE_SET), Diaries.wornReq(initiate));
+        assertEquals(List.of(DiaryActivities.PROSELYTE_SET), Diaries.wornReq(proselyte));
+        assertTrue(Diaries.wearingAll(DiaryActivities.PROSELYTE_SET, List.of("proselyte_sallet", "proselyte_hauberk", "proselyte_tasset")));
+        assertFalse(Diaries.wearingAll(DiaryActivities.PROSELYTE_SET, List.of("proselyte_sallet", "proselyte_hauberk")));
+        assertTrue(Diaries.wearingAll(DiaryActivities.INITIATE_SET, List.of("initiate_sallet", "initiate_hauberk", "initiate_cuisse")));
+        assertNotNull(ItemCatalog.get("initiate_sallet"));
+        assertTrue(Diaries.restrictContains(proselyte.restrict(), null, DiaryActivities.SARIM_CHURCH_X, DiaryActivities.SARIM_CHURCH_Y));
+        assertTrue(Diaries.questReqs(proselyte).contains(DiaryActivities.SLUG_MENACE));
+        assertNotNull(ContentRegistry.npc(DiaryActivities.SIR_TIFFY));
     }
 
     @Test

@@ -132,6 +132,22 @@ final class DiaryActivitiesService {
                 (world, centre) -> DiaryObjectsService.place(world, centre, DiaryActivities.WHITE_TREE, false));
         LandmarkBuilder.registerCustom(DiaryActivities.NATURE_ALTAR,
                 (world, centre) -> DiaryObjectsService.place(world, centre, DiaryActivities.NATURE_ALTAR, false));
+        BlockHooks.register(DiaryActivities.SARIM_CHURCH_ALTAR, (p, pos, state) -> PrayerService.useAltar(p, pos));
+        LandmarkBuilder.registerCustom(DiaryActivities.SARIM_CHURCH_ALTAR,
+                (world, centre) -> DiaryObjectsService.place(world, centre, DiaryActivities.SARIM_CHURCH_ALTAR, true));
+        wrap(DiaryActivities.SIR_TIFFY, DiaryActivities.RECRUITMENT_DRIVE, (p, npc) -> templeArmoury(p),
+                "Sneak and talk to Sir Tiffy to buy Temple Knight armour.");
+        SysNet.onAction("diary_tiffy", (p, a, f) -> {
+            buyTempleArmour(p, a);
+            templeArmoury(p);
+        });
+        BlockHooks.register(DiaryActivities.LECTERN, (p, pos, state) -> lectern(p));
+        LandmarkBuilder.registerCustom(DiaryActivities.LECTERN,
+                (world, centre) -> DiaryObjectsService.place(world, centre, DiaryActivities.LECTERN, true));
+        SysNet.onAction("diary_lectern", (p, a, f) -> {
+            makeTablet(p, a);
+            lectern(p);
+        });
         BlockHooks.register(DiaryActivities.DEMONIC_RUINS, (p, pos, state) -> PrayerService.useAltar(p, pos));
         LandmarkBuilder.registerCustom(DiaryActivities.DEMONIC_RUINS,
                 (world, centre) -> DiaryObjectsService.place(world, centre, DiaryActivities.DEMONIC_RUINS, false));
@@ -422,6 +438,98 @@ final class DiaryActivitiesService {
         if (chosen) {
             GameEvents.fireActivity(p, "kitten_colour");
         }
+        return true;
+    }
+
+    // ------------------------------------------------------------------ the Arceuus lectern
+
+    /** The lectern's tablets: each needs the Arceuus spellbook, its spell's Magic level and runes, and a dark essence block. */
+    static void lectern(ServerPlayer p) {
+        SysNet.Screen s = new SysNet.Screen("diary_lectern", "Lectern");
+        boolean book = SysState.of(p).book == com.runecraft.osrs.content.systems.Spellbooks.Book.ARCEUUS;
+        boolean block = Inv.has(p, DiaryActivities.DARK_ESSENCE_BLOCK, 1);
+        s.line(!book ? "You need to be on the Arceuus spellbook to study the lectern."
+                : block ? "Choose a teleport tablet to make." : "Each tablet needs a dark essence block.");
+        for (Map.Entry<String, String> e : DiaryActivities.LECTERN_TABLETS.entrySet()) {
+            com.runecraft.osrs.content.systems.Spellbooks.Spell spell = com.runecraft.osrs.content.systems.Spellbooks.get(e.getValue());
+            if (spell == null) {
+                continue;
+            }
+            boolean ok = book && block && SpellService.canCast(p, spell, true);
+            s.button(e.getKey(), spell.name().replace(" Teleport", "") + " tablet (level " + spell.level() + ")",
+                    ok ? "" : "Needs Magic " + spell.level() + ", its runes and a dark essence block.", ok);
+        }
+        s.send(p);
+    }
+
+    /** Makes one tablet at the lectern: the spell's runes and XP plus a dark essence block (not a cast of the spell). */
+    static boolean makeTablet(ServerPlayer p, String tablet) {
+        String spellId = DiaryActivities.LECTERN_TABLETS.get(tablet);
+        com.runecraft.osrs.content.systems.Spellbooks.Spell spell = spellId == null ? null
+                : com.runecraft.osrs.content.systems.Spellbooks.get(spellId);
+        if (spell == null || SysState.of(p).book != com.runecraft.osrs.content.systems.Spellbooks.Book.ARCEUUS) {
+            return false;
+        }
+        if (!Inv.has(p, DiaryActivities.DARK_ESSENCE_BLOCK, 1)) {
+            Msg.game(p, "You need a dark essence block to make a tablet here.");
+            return false;
+        }
+        if (!SpellService.canCast(p, spell, false)) {
+            return false;
+        }
+        Map<String, Integer> plan = SpellService.runePlan(p, spell.runes());
+        if (plan == null) {
+            return false;
+        }
+        SpellService.consume(p, plan);
+        Inv.remove(p, DiaryActivities.DARK_ESSENCE_BLOCK, 1);
+        Inv.give(p, tablet, 1);
+        XpService.add(p, Skill.MAGIC, spell.xp());
+        Msg.action(p, "You study the lectern and bind the spell into the dark essence: " + spell.name().toLowerCase() + " tablet.");
+        GameEvents.fireActivity(p, "lectern:" + tablet);
+        return true;
+    }
+
+    // ------------------------------------------------------------------ Sir Tiffy's Temple Knight armour
+
+    /** Sir Tiffy's stock: Initiate armour after Recruitment Drive, Proselyte too after The Slug Menace (OSRS values). */
+    static void templeArmoury(ServerPlayer p) {
+        QuestApi.say(p, "Sir Tiffy Cashien", "What-ho! Kit yourself out like a proper Temple Knight, don'tchaknow.");
+        SysNet.Screen s = new SysNet.Screen("diary_tiffy", "Temple Knight armour");
+        boolean sallet = Inv.has(p, Inv.COINS, DiaryActivities.INITIATE_SALLET_PRICE);
+        s.button("initiate_sallet", "Initiate sallet (" + DiaryActivities.INITIATE_SALLET_PRICE + " coins)",
+                sallet ? "" : "Not enough coins.", sallet);
+        for (DiaryActivities.TempleArmour a : DiaryActivities.TEMPLE_ARMOUR) {
+            boolean unlocked = questDone(p, a.quest());
+            boolean coins = Inv.has(p, Inv.COINS, a.value());
+            s.button(a.item(), a.name() + " (" + a.value() + " coins)", !unlocked ? "Complete The Slug Menace first."
+                    : coins ? "" : "Not enough coins.", unlocked && coins);
+        }
+        s.send(p);
+    }
+
+    static boolean buyTempleArmour(ServerPlayer p, String item) {
+        if (!questDone(p, DiaryActivities.RECRUITMENT_DRIVE)) {
+            return false;
+        }
+        int price;
+        if (item.equals("initiate_sallet")) {
+            price = DiaryActivities.INITIATE_SALLET_PRICE;
+        } else {
+            DiaryActivities.TempleArmour a = DiaryActivities.TEMPLE_ARMOUR.stream().filter(t -> t.item().equals(item)).findFirst()
+                    .orElse(null);
+            if (a == null || !questDone(p, a.quest())) {
+                return false;
+            }
+            price = a.value();
+        }
+        if (!Inv.has(p, Inv.COINS, price)) {
+            Msg.game(p, "You don't have enough coins.");
+            return false;
+        }
+        Inv.remove(p, Inv.COINS, price);
+        Inv.give(p, item, 1);
+        GameEvents.fireActivity(p, "shop_buy:sir_tiffy:" + item);
         return true;
     }
 

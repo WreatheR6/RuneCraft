@@ -199,6 +199,75 @@ public final class DiaryActivities {
     public static final int DEMONIC_RUINS_X = 3287;
     public static final int DEMONIC_RUINS_Y = 3884;
 
+    // ---------------- Temple Knight armour ----------------
+
+    /**
+     * Initiate and Proselyte armour, sold by Sir Tiffy Cashien in Falador Park after Recruitment Drive / The Slug Menace (wiki
+     * bonuses and values; Initiate needs 20 Defence and 10 Prayer, Proselyte 30 and 20). The Initiate sallet is the quests
+     * module's Recruitment Drive reward; Sir Tiffy sells it too.
+     */
+    public record TempleArmour(String item, String name, EquipmentDef.Slot slot, String shape, int value, EquipmentStats stats,
+                               int defence, int prayer, String quest, String examine) {
+    }
+
+    public static final String RECRUITMENT_DRIVE = "recruitment_drive";
+    public static final String SLUG_MENACE = "the_slug_menace";
+    public static final String SIR_TIFFY = "sir_tiffy_cashien";
+    public static final List<TempleArmour> TEMPLE_ARMOUR = List.of(
+            new TempleArmour("initiate_hauberk", "Initiate hauberk", EquipmentDef.Slot.CHEST, "platebody", 10000,
+                    new EquipmentStats(0, 0, 0, -30, -15, 46, 44, 38, -6, 44, 0, 0, 0, 6), 20, 10, RECRUITMENT_DRIVE,
+                    "An initiate Temple Knight's Armour."),
+            new TempleArmour("initiate_cuisse", "Initiate cuisse", EquipmentDef.Slot.LEGS, "platelegs", 8000,
+                    new EquipmentStats(0, 0, 0, -21, -11, 24, 22, 20, -4, 22, 0, 0, 0, 5), 20, 10, RECRUITMENT_DRIVE,
+                    "An initiate Temple Knight's leg armour."),
+            new TempleArmour("proselyte_sallet", "Proselyte sallet", EquipmentDef.Slot.HEAD, "full_helm", 8000,
+                    new EquipmentStats(0, 0, 0, -6, -3, 19, 21, 16, -1, 19, 0, 0, 0, 4), 30, 20, SLUG_MENACE,
+                    "A Proselyte Temple Knight's helm."),
+            new TempleArmour("proselyte_hauberk", "Proselyte hauberk", EquipmentDef.Slot.CHEST, "platebody", 12000,
+                    new EquipmentStats(0, 0, 0, -30, -15, 65, 63, 55, -6, 63, 0, 0, 0, 8), 30, 20, SLUG_MENACE,
+                    "A Proselyte Temple Knight's armour."),
+            new TempleArmour("proselyte_cuisse", "Proselyte cuisse", EquipmentDef.Slot.LEGS, "platelegs", 10000,
+                    new EquipmentStats(0, 0, 0, -21, -11, 33, 31, 29, -4, 31, 0, 0, 0, 6), 30, 20, SLUG_MENACE,
+                    "A Proselyte Temple Knight's leg armour."),
+            new TempleArmour("proselyte_tasset", "Proselyte tasset", EquipmentDef.Slot.LEGS, "platelegs", 10000,
+                    new EquipmentStats(0, 0, 0, -21, -11, 33, 31, 29, -4, 31, 0, 0, 0, 6), 30, 20, SLUG_MENACE,
+                    "A Proselyte Temple Knight's leg armour."));
+    /** Sir Tiffy's price for the Initiate sallet (its OSRS value; the quests module's item is valued at 1). */
+    public static final int INITIATE_SALLET_PRICE = 6000;
+    /** Full Initiate and full Proselyte, as diary WEAR targets ('&' pieces, '|' alternatives). */
+    public static final String INITIATE_SET = "initiate_sallet&initiate_hauberk&initiate_cuisse";
+    public static final String PROSELYTE_SET = "proselyte_sallet&proselyte_hauberk&proselyte_cuisse|proselyte_tasset";
+    /** The altar in the Rimmington ("Port Sarim") church (mejrs' object list 2995, 3177). */
+    public static final String SARIM_CHURCH_ALTAR = "port_sarim_church_altar";
+    public static final int SARIM_CHURCH_X = 2995;
+    public static final int SARIM_CHURCH_Y = 3177;
+
+    // ---------------- The Arceuus lectern ----------------
+
+    /**
+     * The lectern in the Ouditor's house in Arceuus (wiki 1679, 3765): on the Arceuus spellbook, a teleport's runes and Magic
+     * level plus a dark essence block make its tablet, for the spell's XP. Tablet id -> Arceuus teleport spell id.
+     */
+    public static final String LECTERN = "arceuus_lectern";
+    public static final int LECTERN_X = 1679;
+    public static final int LECTERN_Y = 3765;
+    public static final String DARK_ESSENCE_BLOCK = "dark_essence_block";
+    public static final java.util.Map<String, String> LECTERN_TABLETS;
+
+    static {
+        java.util.Map<String, String> m = new java.util.LinkedHashMap<>();
+        m.put("arceuus_library_teleport_tablet", "arceuus_library_teleport");
+        m.put("draynor_manor_teleport_tablet", "draynor_manor_teleport");
+        m.put("salve_graveyard_teleport_tablet", "salve_graveyard_teleport");
+        m.put("fenkenstrains_castle_teleport_tablet", "fenkenstrains_castle_teleport");
+        m.put("west_ardougne_teleport_tablet", "west_ardougne_teleport");
+        m.put("harmony_island_teleport_tablet", "harmony_island_teleport");
+        m.put("cemetery_teleport_tablet", "cemetery_teleport");
+        m.put("barrows_teleport_tablet", "barrows_teleport");
+        m.put("ape_atoll_teleport_tablet", "ape_atoll_dungeon_teleport");
+        LECTERN_TABLETS = java.util.Collections.unmodifiableMap(m);
+    }
+
     // ---------------- Safta Doc's gem machetes ----------------
 
     /** Safta Doc, by Tai Bwo Wannai's calquat patch (mejrs' NPC list 2790, 3100). */
@@ -265,6 +334,14 @@ public final class DiaryActivities {
                 .examine("A long feather patterned like a flame.");
         items.add(WHITE_TREE_FRUIT, "White tree fruit", ItemDef.Kind.FOOD, "produce", 0xF0F0E8).value(1).heal(3)
                 .examine("Looks delicious.");
+        for (TempleArmour a : TEMPLE_ARMOUR) {
+            items.add(a.item(), a.name(), ItemDef.Kind.ARMOUR, a.shape(), a.item().startsWith("initiate") ? 0xA0A0B1 : 0xC0C0D0)
+                    .value(a.value()).stack(1)
+                    .equipment(new EquipmentDef(a.slot(), a.stats(), java.util.Map.of(com.runecraft.osrs.Skill.DEFENCE, a.defence(),
+                            com.runecraft.osrs.Skill.PRAYER, a.prayer()), 0, com.runecraft.osrs.AttackType.CRUSH,
+                            EquipmentDef.WeaponClass.NONE))
+                    .examine(a.examine());
+        }
         Defs.simple(items, CRYSTAL_SAW_SEED, "Crystal saw seed", "seed", 0xB0E0F0, 1).stack(1)
                 .examine("A small crystal seed. It could be enchanted into something useful.");
         items.add(CRYSTAL_SAW, "Crystal saw", ItemDef.Kind.TOOL, "saw", 0xB0E0F0).value(1).stack(1)

@@ -129,6 +129,8 @@ public final class SystemsContent implements ContentModule {
                 BlockDef.scripted(DiaryActivities.WHITE_TREE, "White tree", 0xE8E8E0, "young_tree"),
                 BlockDef.scripted(DiaryActivities.NATURE_ALTAR, "Altar of Nature", 0x4A7A3A, "altar"),
                 BlockDef.scripted(DiaryActivities.DEMONIC_RUINS, "Demonic ruins", 0x5A2A2A, "altar"),
+                BlockDef.scripted(DiaryActivities.SARIM_CHURCH_ALTAR, "Altar", 0xE0E0D0, "altar"),
+                BlockDef.scripted(DiaryActivities.LECTERN, "Lectern", 0x5A3A6A, "table"),
                 BlockDef.scripted(ItemSources.SALT_ROCKS.get(0).block(), ItemSources.SALT_ROCKS.get(0).name(), 0x3A3A40, "rock"),
                 BlockDef.scripted(ItemSources.SALT_ROCKS.get(1).block(), ItemSources.SALT_ROCKS.get(1).name(), 0xE0E0D0, "rock"),
                 BlockDef.scripted(ItemSources.SALT_ROCKS.get(2).block(), ItemSources.SALT_ROCKS.get(2).name(), 0xB0D8F0, "rock"),
@@ -180,6 +182,10 @@ public final class SystemsContent implements ContentModule {
                 DiaryActivities.NATURE_ALTAR_Y, PlaceDef.Style.NONE, List.of()));
         places.add(PlaceDef.of(DiaryActivities.DEMONIC_RUINS, "Demonic ruins", DiaryActivities.DEMONIC_RUINS_X,
                 DiaryActivities.DEMONIC_RUINS_Y, PlaceDef.Style.NONE, List.of()));
+        places.add(PlaceDef.of(DiaryActivities.SARIM_CHURCH_ALTAR, "Rimmington church altar", DiaryActivities.SARIM_CHURCH_X,
+                DiaryActivities.SARIM_CHURCH_Y, PlaceDef.Style.NONE, List.of()));
+        places.add(PlaceDef.of(DiaryActivities.LECTERN, "Arceuus lectern", DiaryActivities.LECTERN_X, DiaryActivities.LECTERN_Y,
+                PlaceDef.Style.NONE, List.of()));
         places.add(PlaceDef.of(DiaryActivities.SAFTA_DOC, "Safta Doc", DiaryActivities.SAFTA_DOC_X, DiaryActivities.SAFTA_DOC_Y,
                 PlaceDef.Style.NONE, List.of()));
         for (DiaryTransport.Stop s : DiaryTransport.STOPS) {

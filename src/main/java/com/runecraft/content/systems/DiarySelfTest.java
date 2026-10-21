@@ -730,6 +730,57 @@ public final class DiarySelfTest {
             com.runecraft.content.dungeons.DungeonsHooks.setSecurityChests(c.player, chests);
         }
         c.home();
+        // Temple Knight armour from Sir Tiffy: full Initiate at the Taverley stone circle, full Proselyte at the Rimmington church altar.
+        Inv.give(c.player, Inv.COINS, 60000);
+        for (String piece : new String[]{"initiate_sallet", "initiate_hauberk", "initiate_cuisse", "proselyte_sallet",
+                "proselyte_hauberk", "proselyte_tasset"}) {
+            if (!DiaryActivitiesService.buyTempleArmour(c.player, piece) || !Inv.has(c.player, piece, 1)) {
+                throw new AssertionError("Sir Tiffy sold no " + piece);
+            }
+        }
+        Diaries.Task initiate = task("Pray at the Altar of Guthix in Taverley whilst wearing full Initiate");
+        Diaries.Task proselyte = task("Recharge your prayer in the Port Sarim church while wearing full Proselyte");
+        at(c, 2925, 3483);
+        PrayerService.useAltar(c.player, null);
+        expect(c, initiate, false, "praying at the stone circle without the armour");
+        c.player.setItemSlot(EquipmentSlot.HEAD, carried(c, "initiate_sallet").split(1));
+        c.player.setItemSlot(EquipmentSlot.CHEST, carried(c, "initiate_hauberk").split(1));
+        c.player.setItemSlot(EquipmentSlot.LEGS, carried(c, "initiate_cuisse").split(1));
+        PrayerService.useAltar(c.player, null);
+        expect(c, initiate, true, "praying there in full Initiate");
+        at(c, com.runecraft.osrs.content.systems.DiaryActivities.SARIM_CHURCH_X,
+                com.runecraft.osrs.content.systems.DiaryActivities.SARIM_CHURCH_Y);
+        com.runecraft.content.BlockHooks.use(c.player, com.runecraft.osrs.content.systems.DiaryActivities.SARIM_CHURCH_ALTAR,
+                c.player.blockPosition(), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+        expect(c, proselyte, false, "praying in the church in Initiate armour");
+        c.player.setItemSlot(EquipmentSlot.HEAD, carried(c, "proselyte_sallet").split(1));
+        c.player.setItemSlot(EquipmentSlot.CHEST, carried(c, "proselyte_hauberk").split(1));
+        c.player.setItemSlot(EquipmentSlot.LEGS, carried(c, "proselyte_tasset").split(1));
+        com.runecraft.content.BlockHooks.use(c.player, com.runecraft.osrs.content.systems.DiaryActivities.SARIM_CHURCH_ALTAR,
+                c.player.blockPosition(), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+        expect(c, proselyte, true, "praying in the church in full Proselyte (tasset)");
+        for (EquipmentSlot slot : new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS}) {
+            c.player.setItemSlot(slot, net.minecraft.world.item.ItemStack.EMPTY);
+        }
+        // The Arceuus lectern: an Ape Atoll teleport tablet on the Arceuus book (90 Magic, 2 blood/law/soul, a dark essence block).
+        Diaries.Task apeTablet = task("Create an Ape Atoll teleport tablet");
+        SysState.SysPlayer spl = SysState.of(c.player);
+        spl.book = com.runecraft.osrs.content.systems.Spellbooks.Book.ARCEUUS;
+        setLevel(c, Skill.MAGIC, 90);
+        Inv.give(c.player, "blood_rune", 2);
+        Inv.give(c.player, "law_rune", 2);
+        Inv.give(c.player, "soul_rune", 2);
+        Inv.remove(c.player, "dark_essence_block", Inv.count(c.player, "dark_essence_block"));
+        if (DiaryActivitiesService.makeTablet(c.player, "ape_atoll_teleport_tablet")) {
+            throw new AssertionError("a tablet was made without a dark essence block");
+        }
+        Inv.give(c.player, "dark_essence_block", 1);
+        if (!DiaryActivitiesService.makeTablet(c.player, "ape_atoll_teleport_tablet")
+                || !Inv.has(c.player, "ape_atoll_teleport_tablet", 1) || Inv.has(c.player, "dark_essence_block", 1)) {
+            throw new AssertionError("the lectern made no Ape Atoll tablet");
+        }
+        expect(c, apeTablet, true, "making the tablet at the lectern");
+        spl.book = com.runecraft.osrs.content.systems.Spellbooks.Book.STANDARD;
         // Shops and services: a stew bought at the Forester's Arms, Thessalia's store opened, a plank from the sawmill operator.
         Inv.give(c.player, Inv.COINS, 500);
         at(c, 2691, 3493);
