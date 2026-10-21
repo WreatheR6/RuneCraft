@@ -92,7 +92,10 @@ public final class DiarySelfTest {
             throw new AssertionError("could not create a creature");
         }
         e.setCustomName(Component.literal(name));
-        GameEvents.fireKill(c.player, e, null);
+        // A real kill carries the monster's own stats (named like the task's monster); kill listeners read them.
+        com.runecraft.combat.MonsterStats d = com.runecraft.combat.MonsterStats.of(e);
+        GameEvents.fireKill(c.player, e, new com.runecraft.combat.MonsterStats(name, d.combatLevel(), d.hitpoints(), d.attack(),
+                d.strength(), d.defence(), d.magic(), d.ranged(), d.defenceBonus(), d.attackSpeed(), d.style(), d.maxHit(), null, null));
     }
 
     private static void wield(TestContext c, String item) {
