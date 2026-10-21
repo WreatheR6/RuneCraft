@@ -94,12 +94,12 @@ public final class CastBarHud {
         return CombatKeys.keyName(CastBar.keyFor(c.protection(), ClientState.CURSE));
     }
 
-    /** The rows as the probe reports them (self-tests). */
+    /** Every row held, soonest first, as the probe reports them (self-tests; only the first {@link CastBar#MAX_SHOWN} draw). */
     static List<HudProbe.Cast> probe(Minecraft mc) {
         List<HudProbe.Cast> out = new ArrayList<>();
         long now = CombatHudClient.clientTick();
         int active = activeProtection();
-        for (CastBar.Cast c : CastBar.shown(CASTS, CastBar.MAX_SHOWN)) {
+        for (CastBar.Cast c : CastBar.shown(CASTS, Integer.MAX_VALUE)) {
             out.add(new HudProbe.Cast(c.source(), name(mc, c), c.style(), c.protection(), key(c), CastBar.rightOverhead(c, active),
                     c.left(now) / 20f));
         }

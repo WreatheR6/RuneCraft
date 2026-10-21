@@ -92,6 +92,11 @@ public final class CombatHudClient {
         HudProbe.latest = new HudProbe.Snapshot(java.util.List.copyOf(CastBarHud.probe(mc)), opp == null ? -1 : opp.getId(),
                 opp == null ? "" : opp.getName().getString(), opp == null ? 0 : HudOverlay.combatLevel(opp, true), hp[0], hp[1],
                 ret == null ? "" : "Auto-retaliating: " + ret.getName().getString(), ClientState.poison, ClientState.CURSE.clone(),
-                keys, specialReady.getAsBoolean(), clientTick);
+                keys, specialReady.getAsBoolean(), held(mc), clientTick);
+    }
+
+    private static String held(Minecraft mc) {
+        net.minecraft.world.item.ItemStack stack = mc.player.getMainHandItem();
+        return stack.isEmpty() ? "" : net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).getPath();
     }
 }

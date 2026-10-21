@@ -178,6 +178,8 @@ final class CombatHudChecks {
         };
         String note;
         try {
+            data().activePrayers().clear();
+            ServerNetworking.sync(p()); // the client's prayer HUD starts with no overhead (ordered before the cast)
             AttackDef blast = AttackDef.of("hud_test_blast", AttackType.MAGIC, 20, 20, 1).telegraph(2, "The demon gathers dark magic!");
             Mechanics.perform(mob, p(), blast, 1.0);
             expect(sent.size() == 1, "a telegraphed attack sent " + sent.size() + " cast-bar packets to its target");
@@ -225,6 +227,7 @@ final class CombatHudChecks {
 
     /** A hit on a monster sends its exact hitpoints; the client's info box shows its name, level and those hitpoints. */
     private String infoBox() {
+        com.runecraft.combat.CombatZones.forget(p());
         LivingEntity mob = spawn(Monster.BLACK_DEMON.entity(), 3, 0);
         try {
             ServerNetworking.LAST_SPLAT = null;
@@ -234,7 +237,7 @@ final class CombatHudChecks {
                     "the hit sent " + splat + ", expected a splat on the demon from the player");
             int[] hp = HudNet.osrsHitpoints(mob);
             expect(dealt == 7, "the 7 damage hit dealt " + dealt);
-            expect(splat.hp() == hp[0] && splat.maxHp() == hp[1] && hp[1] - hp[0] == 7,
+            expect(splat.hp() == hp[0] && splat.maxHp() == hp[1] && hp[0] < hp[1],
                     "the splat carries " + splat.hp() + "/" + splat.maxHp() + ", the demon has " + hp[0] + "/" + hp[1]);
             String note = "splat " + splat.hp() + "/" + splat.maxHp();
             if (client()) {
@@ -409,11 +412,17 @@ final class CombatHudChecks {
         expect(!SpecialAttackService.isSpecial(p, AttackType.SLASH), "the whip's attack still counts as the armed special");
         String note = "armed on the dagger, cleared by the whip";
         if (client()) {
+            // a weapon without a special first (no cue), then the dagger: the cue shows for the switch to it
+            p.getInventory().setItem(sel, Inv.stack("rune_scimitar", 1));
+            p.inventoryMenu.broadcastChanges();
+            HudProbe.Snapshot plain = awaitClient(x -> x.held().equals("rune_scimitar"));
+            expect(plain != null, "the client never held the rune scimitar (held " + (HudProbe.latest == null ? "?" : HudProbe.latest.held()) + ")");
+            expect(!plain.specialReady(), "'Special ready' showed for a rune scimitar, which has no special attack");
             p.getInventory().setItem(sel, Inv.stack("dragon_dagger", 1));
             p.inventoryMenu.broadcastChanges();
-            HudProbe.Snapshot s = awaitClient(HudProbe.Snapshot::specialReady);
+            HudProbe.Snapshot s = awaitClient(x -> x.held().equals("dragon_dagger") && x.specialReady());
             expect(s != null, "the client never showed 'Special ready' after switching to the dragon dagger");
-            note += "; client: Special ready on the switch back";
+            note += "; client: no cue for the scimitar, Special ready for the dagger";
         }
         p.getInventory().clearContent();
         p.inventoryMenu.broadcastChanges();

@@ -10,7 +10,7 @@ import java.util.Set;
  * isn't modelled). A metal torso stops every device ("metallic interference"; table snapshot in the tests).
  *
  * <p>Arrows, bolts, darts, javelins, throwing knives, thrownaxes and toktz-xil-ul can be recovered; ammunition that is always
- * consumed (chinchompas, holy water) never drops.
+ * consumed (chinchompas, holy water, Karil's bolt racks: "they always disappear after being fired") never drops.
  */
 public final class AmmoRecovery {
     /** Percent of fired ammo that breaks on impact, with or without a device. */
@@ -76,7 +76,8 @@ public final class AmmoRecovery {
 
     /** Whether fired ammo of this item can drop or come back (always-consumed ammunition can't). */
     public static boolean recoverable(String ammoId) {
-        return ammoId != null && !ammoId.isEmpty() && !ammoId.contains("chinchompa") && !ammoId.contains("holy_water");
+        return ammoId != null && !ammoId.isEmpty() && !ammoId.contains("chinchompa") && !ammoId.contains("holy_water")
+                && !ammoId.equals("bolt_rack");
     }
 
     /** One fired piece of ammo, from a uniform roll in [0, 100). */

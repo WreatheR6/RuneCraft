@@ -18,11 +18,12 @@ public final class HudProbe {
     /**
      * The combat HUD: the cast bars (soonest first), the opponent info box (entity -1 when hidden), the auto-retaliate hint
      * (empty when hidden), the HP orb tint (0 none, 1 poison, 2 venom), the protection keys' curse map, the bound protection
-     * keys, the quick-eat key, whether the "Special ready" cue is showing, and the client tick it was taken.
+     * keys, whether the "Special ready" cue is showing, the item id in the main hand ("" for none) and the client tick it
+     * was taken.
      */
     public record Snapshot(List<Cast> casts, int opponent, String opponentName, int opponentLevel, int opponentHp,
             int opponentMaxHp, String retaliating, int poison, int[] curse, String[] protectionKeys, boolean specialReady,
-            long clientTick) {
+            String held, long clientTick) {
     }
 
     /** The newest snapshot (null when no client draws one). */

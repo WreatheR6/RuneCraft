@@ -54,6 +54,7 @@ class AmmoRecoveryTest {
         assertEquals(AmmoRecovery.Device.NONE, AmmoRecovery.device(null, null));
         assertTrue(AmmoRecovery.recoverable("rune_arrow"));
         assertFalse(AmmoRecovery.recoverable("red_chinchompa"));
+        assertFalse(AmmoRecovery.recoverable("bolt_rack"), "Bolt rack: always disappear after being fired");
         assertFalse(AmmoRecovery.recoverable(null));
     }
 
