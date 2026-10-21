@@ -27,11 +27,15 @@ final class BossHits {
                 : style == AttackType.RANGED ? Prayer.PROTECT_FROM_MISSILES : Prayer.PROTECT_FROM_MELEE;
     }
 
+    /** Whether the player prays against {@code style}, read through the one protection chokepoint (CombatHandler.isProtected). */
     static boolean protectedFrom(ServerPlayer p, AttackType style) {
-        return style != null && com.runecraft.osrs.NpcHitCalc.protectedFrom(Players.data(p).activePrayers(), style);
+        return style != null && CombatHandler.isProtected(Players.data(p), style);
     }
 
-    /** Whether the player prays a protection prayer, but not the one against {@code style}. */
+    /**
+     * Whether the player prays a protection prayer, but not the one against {@code style}. Read strictly from the active
+     * prayers on purpose (no switch grace): Phosani's 120% punishes the wrong prayer that is up right now.
+     */
     static boolean wrongProtection(ServerPlayer p, AttackType style) {
         var active = Players.data(p).activePrayers();
         Prayer right = protection(style);

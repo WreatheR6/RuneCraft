@@ -529,7 +529,11 @@ public final class BossWalks {
         return dmg > 0 ? CombatHandler.applyDamage(p, boss, dmg) : 0;
     }
 
-    /** Switches the player's overhead to the protection against an attack's style (none for null). */
+    /**
+     * Switches the player's overhead to the protection against an attack's style (none for null) through the real prayer
+     * toggle, as a player clicking it does: the walk calls it on the game tick after an orb is announced and launched, some
+     * Minecraft ticks into its flight (round 41: orbs fly at least 3 ticks).
+     */
     static void prayAgainst(ServerPlayer p, com.runecraft.osrs.content.AttackDef a) {
         if (a == null) {
             return;
@@ -539,7 +543,16 @@ public final class BossWalks {
             case RANGED -> com.runecraft.osrs.Prayer.PROTECT_FROM_MISSILES;
             default -> com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE;
         };
-        pray(p, pr);
+        com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(p);
+        if (data.prayerPoints() <= 0) {
+            data.setPrayerPoints(99); // the walk tests mechanics, not prayer upkeep
+        }
+        if (!data.isActive(pr)) {
+            com.runecraft.combat.PrayerService.toggle(p, pr);
+            if (!data.isActive(pr)) {
+                throw fail("the prayer toggle refused " + pr + " (active " + data.activePrayers() + ")");
+            }
+        }
     }
 
     static void pray(ServerPlayer p, com.runecraft.osrs.Prayer pr) {

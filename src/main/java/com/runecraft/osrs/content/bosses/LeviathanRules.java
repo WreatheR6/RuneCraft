@@ -25,13 +25,20 @@ public final class LeviathanRules {
     private LeviathanRules() {
     }
 
-    /** Ticks between the orbs of each volley stage. */
+    /** Ticks between the orbs of each volley stage (OSRS). */
     private static final int[] SPACING = {3, 2, 2, 1, 1, 1, 1};
     /** Whether a stage mixes in the melee orb. */
     private static final boolean[] MELEE = {false, false, true, false, true, true, true};
     /** Ticks the player has to react to an orb (its flight time). approx: 3 until the last two stages */
     private static final int[] REACT = {3, 3, 3, 3, 3, 2, 1};
     public static final int STAGES = SPACING.length;
+    /**
+     * Real-time floors: orbs at least 2 ticks (24 Minecraft ticks) apart and at least 3 ticks (1.8 s) in flight, so each
+     * prayer switch can be made in time. // playability: OSRS speeds the volleys up to 1-tick orbs with 1-2 ticks to react,
+     * a prayer flick a tick; the orb counts, styles, max hits and the speed-up order stay
+     */
+    public static final int MIN_SPACING = 2;
+    public static final int MIN_REACT = 3;
 
     public static final int ROAR_MAX = 7;
     public static final int DEBRIS_MAX = 25;
@@ -52,7 +59,13 @@ public final class LeviathanRules {
     /** Outside the pathfinder the player's attacks deal less: halved. approx */
     public static final double OUTSIDE_PATHFINDER = 0.5;
 
+    /** Ticks between orbs as played: the OSRS spacing, floored at {@link #MIN_SPACING}. // playability */
     public static int spacing(int stage, boolean enraged, boolean awakened) {
+        return Math.max(MIN_SPACING, osrsSpacing(stage, enraged, awakened));
+    }
+
+    /** The OSRS spacing: 3, 2, 2, 1, 1, 1, 1 by stage; enraged every 2 ticks (awakened 1). */
+    public static int osrsSpacing(int stage, boolean enraged, boolean awakened) {
         if (enraged) {
             return awakened ? 1 : 2;
         }
@@ -63,7 +76,13 @@ public final class LeviathanRules {
         return !enraged && MELEE[clamp(stage)];
     }
 
+    /** Ticks an orb flies as played: the OSRS reaction time, floored at {@link #MIN_REACT}. // playability */
     public static int react(int stage, boolean enraged) {
+        return Math.max(MIN_REACT, osrsReact(stage, enraged));
+    }
+
+    /** The OSRS reaction time: 3 until the last two stages (2, then 1); 2 enraged. */
+    public static int osrsReact(int stage, boolean enraged) {
         return enraged ? 2 : REACT[clamp(stage)];
     }
 

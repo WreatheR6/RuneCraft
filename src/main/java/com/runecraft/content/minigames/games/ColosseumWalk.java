@@ -364,9 +364,20 @@ public final class ColosseumWalk {
             expect(pattern != null && pattern.size() == 3 && (anyOrder || pattern.get(2) == AttackType.CRUSH)
                     && new java.util.HashSet<>(pattern).size() == 3, "manticore pattern " + pattern);
             expect(session.orbsPending() == 3, session.orbsPending() + " orbs queued (expected 3)");
-            tick(3);
+            // Round 41 playability: shown as it charges, the orbs land 3, 5 and 7 ticks after the launch (OSRS a tick apart,
+            // the first at once).
+            tick(FortisColosseum.MANTICORE_ORB_LEAD_TICKS - 1);
+            expect(session.orbsPending() == 3, (3 - session.orbsPending()) + " manticore orb(s) landed before the "
+                    + FortisColosseum.MANTICORE_ORB_LEAD_TICKS + "-tick lead");
+            tick(1);
+            expect(session.orbsPending() == 2, "the first orb did not land " + FortisColosseum.MANTICORE_ORB_LEAD_TICKS
+                    + " ticks after the launch (" + session.orbsPending() + " pending)");
+            tick(FortisColosseum.MANTICORE_ORB_GAP_TICKS - 1);
+            expect(session.orbsPending() == 2, "the second orb landed less than " + FortisColosseum.MANTICORE_ORB_GAP_TICKS
+                    + " ticks after the first");
+            tick(1 + FortisColosseum.MANTICORE_ORB_GAP_TICKS);
             expect(session.orbsPending() == 0, "the orbs never landed");
-            done.add("manticore " + pattern);
+            done.add("manticore " + pattern + " (orbs 3/5/7 ticks after the launch)");
             // Totemic: a totem rises beside a monster at half health and heals it (followed through the session's list).
             LivingEntity shaman = first(FortisColosseum.SHAMAN);
             expect(shaman != null, "no serpent shaman on wave 4");
@@ -417,7 +428,9 @@ public final class ColosseumWalk {
             expect(a != null && a.equals(b), "the second manticore did not copy the first's pattern (" + a + " / " + b + ")");
             long gap = session.manticoreVolleyAt(manticores.get(1)) - session.manticoreVolleyAt(manticores.get(0));
             expect(gap >= FortisColosseum.MANTICORE_STAGGER_TICKS, "volleys only " + gap + " ticks apart");
-            tick(FortisColosseum.MANTICORE_STAGGER_TICKS + 3);
+            // both volleys land (the later one's last orb 7 ticks after its staggered launch)
+            until(() -> session.orbsPending() == 0, (int) gap + (int) FortisColosseum.manticoreOrbTick(0, 2) + 2,
+                    "the two manticores' orbs never all landed");
             done.add("manticores share " + a + ", volleys " + gap + " ticks apart");
         }
         if (wave == 10) {

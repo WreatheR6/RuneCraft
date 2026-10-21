@@ -83,11 +83,20 @@ class SolHereditTest {
         assertEquals(3, SolHeredit.tripleGap(0, 4));
         assertEquals(3, SolHeredit.tripleGap(2, 3));
         assertEquals(4, SolHeredit.tripleGap(2, 4)); // the last hit is delayed a tick from 50%
-        // Protect from Melee must be switched on just before the hit; left on early, it doesn't block.
+        // Playability (round 41): Protect from Melee on as the hit lands blocks it, however long it has been on (OSRS: switched
+        // on the tick before each hit, a prayer left on early knocked off); off, the hit lands.
         assertTrue(SolHeredit.parried(true, 99, 100));
         assertTrue(SolHeredit.parried(true, 100, 100));
-        assertFalse(SolHeredit.parried(true, 90, 100));
+        assertTrue(SolHeredit.parried(true, 90, 100));
+        assertTrue(SolHeredit.parried(true, -1, 100));
         assertFalse(SolHeredit.parried(false, 99, 100));
+        // Each hit is called out two game ticks (24 Minecraft ticks) ahead, at least a tick after the previous hit.
+        assertEquals(2, SolHeredit.TRIPLE_CUE_TICKS);
+        for (int phase = 2; phase <= 6; phase++) {
+            for (int hit = 0; hit < 3; hit++) {
+                assertTrue(SolHeredit.tripleGap(hit, phase) > SolHeredit.TRIPLE_CUE_TICKS, "cue before the previous hit landed");
+            }
+        }
         assertFalse(SolHeredit.perfectParry(0));
         assertFalse(SolHeredit.perfectParry(2));
         assertTrue(SolHeredit.perfectParry(SolHeredit.GRAPPLE_WINDOW_TICKS - 1)); // the last tick before it lands
@@ -132,6 +141,36 @@ class SolHereditTest {
         assertFalse(SolHeredit.hits(Attack.SPEAR_1, 5, 0, 1, 0));
         assertEquals(List.of(1, 0), List.of(SolHeredit.facing(5, 2)[0], SolHeredit.facing(5, 2)[1]));
         assertEquals(List.of(0, -1), List.of(SolHeredit.facing(1, -4)[0], SolHeredit.facing(1, -4)[1]));
+    }
+
+    /** Playability (round 41): the dust lands 3 ticks after the wind-up, and 0.3 blocks off a safe tile still counts as on it. */
+    @Test
+    void aoeLandsLaterAndForgivesTheEdges() {
+        assertEquals(3, SolHeredit.AOE_LAND_TICKS);
+        assertTrue(SolHeredit.AOE_LAND_TICKS < SolHeredit.AOE_ROOT_TICKS, "the dust lands while he is still rooted");
+        assertEquals(0.3, SolHeredit.AOE_EDGE_LENIENCY, 1e-9);
+        // Shield 1 aimed south: the ring 4 tiles out is safe. Tile dx = 4 spans px 4.0-5.0 (from his centre block's corner).
+        assertFalse(SolHeredit.hitsLenient(Attack.SHIELD_1, 4.5, 0.5, 0, 1), "the middle of the safe ring");
+        assertFalse(SolHeredit.hitsLenient(Attack.SHIELD_1, 3.75, 0.5, 0, 1), "0.25 into the hit tile beside the ring");
+        assertTrue(SolHeredit.hitsLenient(Attack.SHIELD_1, 3.65, 0.5, 0, 1), "0.35 into the hit tile");
+        assertFalse(SolHeredit.hitsLenient(Attack.SHIELD_1, 5.25, 0.5, 0, 1), "0.25 past the ring, outwards");
+        assertTrue(SolHeredit.hitsLenient(Attack.SHIELD_1, 5.5, 0.5, 0, 1), "the middle of the hit tile outside the ring");
+        // Away from any safe tile it agrees with the tile-exact rule.
+        for (Attack a : List.of(Attack.SPEAR_1, Attack.SPEAR_2, Attack.SHIELD_1, Attack.SHIELD_2)) {
+            for (int dx = -8; dx <= 8; dx++) {
+                for (int dz = -8; dz <= 8; dz++) {
+                    boolean exact = SolHeredit.hits(a, dx, dz, 0, 1);
+                    boolean centre = SolHeredit.hitsLenient(a, dx + 0.5, dz + 0.5, 0, 1);
+                    assertTrue(!centre || exact, a + ": lenient hit where the exact rule doesn't at " + dx + "," + dz);
+                    if (exact && SolHeredit.hits(a, dx - 1, dz, 0, 1) && SolHeredit.hits(a, dx + 1, dz, 0, 1)
+                            && SolHeredit.hits(a, dx, dz - 1, 0, 1) && SolHeredit.hits(a, dx, dz + 1, 0, 1)
+                            && SolHeredit.hits(a, dx - 1, dz - 1, 0, 1) && SolHeredit.hits(a, dx + 1, dz + 1, 0, 1)
+                            && SolHeredit.hits(a, dx - 1, dz + 1, 0, 1) && SolHeredit.hits(a, dx + 1, dz - 1, 0, 1)) {
+                        assertTrue(SolHeredit.hitsLenient(a, dx + 0.1, dz + 0.9, 0, 1), a + ": deep inside the pattern is hit");
+                    }
+                }
+            }
+        }
     }
 
     @Test

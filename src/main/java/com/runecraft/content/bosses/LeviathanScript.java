@@ -204,9 +204,7 @@ final class LeviathanScript extends ScriptedBoss {
                 int s = boss.getRandom().nextInt(melee ? 3 : 2);
                 volley.add(s == 0 ? Dt2Bosses.LEVI_RANGED : s == 1 ? Dt2Bosses.LEVI_MAGIC : Dt2Bosses.LEVI_MELEE);
             }
-            if (!enraged) {
-                BossFx.warn(boss, "The Leviathan prepares a barrage of " + n + " orbs!");
-            }
+            announceVolley(boss);
         }
         if (volley.isEmpty()) {
             return null;
@@ -215,12 +213,28 @@ final class LeviathanScript extends ScriptedBoss {
         AttackDef a = volley.remove(0);
         int react = LeviathanRules.react(stage, enraged);
         flying.add(new Orb(a, now + react));
-        Msg.action(target, a == Dt2Bosses.LEVI_RANGED ? "Green orb! (ranged)" : a == Dt2Bosses.LEVI_MAGIC ? "Blue orb! (magic)"
-                : "Orange orb! (melee)");
         BossFx.burst(boss, a == Dt2Bosses.LEVI_RANGED ? ParticleTypes.COMPOSTER : a == Dt2Bosses.LEVI_MAGIC ? ParticleTypes.SOUL_FIRE_FLAME
                 : ParticleTypes.FLAME, 8, 0.8);
         cooldown = LeviathanRules.spacing(stage, enraged, boss.awakened()) - 1;
         return null;
+    }
+
+    /**
+     * The whole volley in one centre-screen line, in firing order and style colours ("Orbs: MAG RNG MEL"), shown as it
+     * begins. // playability: OSRS shows each orb only as it flies; one action-bar line per orb overwrote the last
+     */
+    private void announceVolley(DataBossEntity boss) {
+        net.minecraft.network.chat.MutableComponent line = net.minecraft.network.chat.Component.literal("Orbs:")
+                .withStyle(s -> s.withColor(0xFFC030));
+        for (AttackDef a : volley) {
+            final boolean ranged = a == Dt2Bosses.LEVI_RANGED;
+            final boolean magic = a == Dt2Bosses.LEVI_MAGIC;
+            line.append(net.minecraft.network.chat.Component.literal(ranged ? " RNG" : magic ? " MAG" : " MEL")
+                    .withStyle(s -> s.withColor(ranged ? Msg.RANGED_RGB : magic ? Msg.MAGIC_RGB : Msg.MELEE_RGB)));
+        }
+        for (ServerPlayer p : BossFx.world(boss).getPlayers(p -> p.distanceToSqr(boss) < 48 * 48)) {
+            Msg.telegraph(p, line);
+        }
     }
 
     @Override

@@ -646,6 +646,20 @@ public final class FortisColosseum {
         return Math.max(now, otherLast + MANTICORE_STAGGER_TICKS);
     }
 
+    /**
+     * Ticks from a volley's launch to its first orb landing, and between its orbs' landings. // playability: in OSRS the three
+     * orbs leave a tick apart and the first lands almost at once, so the three prayers are flicked on consecutive ticks; here
+     * the pattern is shown at the launch and the orbs land 3, 5 and 7 ticks later (1.8 s, then 1.2 s apart). The pattern,
+     * 31/36/31 and the Mantimayhem rules stay.
+     */
+    public static final int MANTICORE_ORB_LEAD_TICKS = 3;
+    public static final int MANTICORE_ORB_GAP_TICKS = 2;
+
+    /** The tick orb {@code index} (0-2) of a volley launched on {@code volley} lands. */
+    public static long manticoreOrbTick(long volley, int index) {
+        return volley + MANTICORE_ORB_LEAD_TICKS + (long) MANTICORE_ORB_GAP_TICKS * index;
+    }
+
     /** Mantimayhem I: each orb hits twice. */
     public static int manticoreHitsPerOrb(int mayhemTier) {
         return mayhemTier >= 1 ? 2 : 1;

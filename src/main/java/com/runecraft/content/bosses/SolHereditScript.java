@@ -4,6 +4,8 @@ import com.runecraft.boss.DataBossEntity;
 import com.runecraft.boss.Mechanics;
 import com.runecraft.combat.CombatHandler;
 import com.runecraft.combat.CombatHooks;
+import com.runecraft.action.ActionManager;
+import com.runecraft.osrs.ArenaTiming;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.Prayer;
 import com.runecraft.osrs.content.minigames.SolHeredit;
@@ -15,6 +17,7 @@ import com.runecraft.platform.CommandRegistrationCallback;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
@@ -22,8 +25,10 @@ import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Vector3f;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,8 +37,9 @@ import java.util.Random;
 import java.util.UUID;
 
 /**
- * Sol Heredit ({@link SolHeredit}): spear and shield AoEs dodged by position (the dust covers the pattern's tiles, prayer
- * doesn't help), the triple parry (Protect from Melee switched on just before each hit), the grapple (a gear slot to defend
+ * Sol Heredit ({@link SolHeredit}): spear and shield AoEs dodged by position (the safe tiles are drawn from the wind-up; the
+ * dust covers the pattern's tiles, prayer doesn't help), the triple parry (Protect from Melee on as each called-out hit
+ * lands), the grapple (a gear slot to defend
  * within 4 ticks: chat links run {@code /solheredit parry <slot>}; the last tick is a perfect parry and the next attack within
  * 5 ticks is a max hit), phase transitions with molten sand and light-beam crystals, and the enrage at 10%.
  */
@@ -65,8 +71,12 @@ public final class SolHereditScript extends ScriptedBoss {
     private boolean defended;
     /** The grapple was answered (right or wrong slot): later answers are refused, so a wrong slot can't be taken back. */
     private boolean answered;
+    /** The triple-attack hit whose cue (spear glint, "1/3") was shown, -1 for none yet. */
+    private int tripleCued = -1;
     // Protect from Melee tracking (per target).
     private long protectSince = -1;
+    /** The real Minecraft tick the pending regular attack's tiles were last drawn on. */
+    private long aoeDrawnMc;
     // Light beams.
     private final List<long[]> lasers = new ArrayList<>();
     private long nextLaser;
@@ -193,7 +203,7 @@ public final class SolHereditScript extends ScriptedBoss {
             boss.getNavigation().stop();
         }
         if (target != null) {
-            boolean on = Players.data(target).isActive(Prayer.PROTECT_FROM_MELEE);
+            boolean on = BossFx.protects(target, Prayer.PROTECT_FROM_MELEE);
             protectSince = on ? (protectSince < 0 ? now : protectSince) : -1;
         }
         int nowPhase = SolHeredit.phase(percent(boss));
@@ -232,6 +242,7 @@ public final class SolHereditScript extends ScriptedBoss {
             case TRIPLE -> {
                 tripleStart = now;
                 tripleHit = 0;
+                tripleCued = -1;
                 tripleNext = now + SolHeredit.tripleGap(0, phase);
                 BossFx.warn(boss, "Sol Heredit grips his spear tightly...");
             }
@@ -244,6 +255,7 @@ public final class SolHereditScript extends ScriptedBoss {
                 rooted = SolHeredit.AOE_ROOT_TICKS - 1; // this tick plus the next AOE_ROOT_TICKS - 1
                 boss.getNavigation().stop();
                 BossFx.warn(boss, a.spear() ? "Sol Heredit draws back his spear!" : "Sol Heredit raises his shield!");
+                drawAoe(BossFx.world(boss), true);
             }
         }
     }
@@ -266,9 +278,61 @@ public final class SolHereditScript extends ScriptedBoss {
             int dz = i == 0 && onPlayer ? 0 : random.nextInt(2 * SolHeredit.SAND_RADIUS + 1) - SolHeredit.SAND_RADIUS;
             Vec3 at = BossFx.ground(world, t.getX() + dx + 0.5, t.getZ() + dz + 0.5, target.getY());
             BossFx.column(world, at, ParticleTypes.END_ROD, 4);
-            strike(boss, at, SolHeredit.SAND_DELAY_TICKS, 0, 0.5, ParticleTypes.END_ROD, (hit, pos) ->
+            // Exact: the beam only leaves the molten sand (a hazard, which arms on its own delay); it deals no damage itself.
+            strikeExact(boss, at, SolHeredit.SAND_DELAY_TICKS, 0, 0.5, ParticleTypes.END_ROD, (hit, pos) ->
                     Mechanics.addHazard(world, pos, SolHeredit.SAND_MAX_DAMAGE, 6000, boss));
         }
+    }
+
+    @Override
+    public void tick(DataBossEntity boss) {
+        super.tick(boss);
+        if (pending != null && boss.isAlive() && ArenaTiming.redrawDue(aoeDrawnMc, ActionManager.mcTick())) {
+            drawAoe(BossFx.world(boss), false);
+        }
+    }
+
+    /** Safe-tile marker: bright green, well apart from the danger orange. */
+    private static final DustParticleOptions SAFE_TILE = new DustParticleOptions(new Vector3f(0.45f, 1.0f, 0.45f), 1.5f);
+    private static final DustParticleOptions DANGER_TILE = new DustParticleOptions(new Vector3f(1.0f, 0.63f, 0.13f), 1.0f);
+
+    /**
+     * Draws the pending regular attack: every safe tile next to the pattern (the shields' safe ring, the spears' outline) in
+     * green, redrawn every few Minecraft ticks until the dust lands, and once at the wind-up a sparse orange fill of the tiles
+     * it hits. // playability: OSRS shows only the animation, and the safe tiles are learned
+     */
+    private void drawAoe(ServerLevel world, boolean withDanger) {
+        aoeDrawnMc = ActionManager.mcTick();
+        Attack a = pending;
+        if (a == null || pendingCentre == null) {
+            return;
+        }
+        int fx = pendingFacing[0];
+        int fz = pendingFacing[1];
+        double y = pendingCentre.getY() + 0.15;
+        for (int dx = -7; dx <= 7; dx++) {
+            for (int dz = -7; dz <= 7; dz++) {
+                boolean hit = SolHeredit.hits(a, dx, dz, fx, fz);
+                double x = pendingCentre.getX() + dx + 0.5;
+                double z = pendingCentre.getZ() + dz + 0.5;
+                if (!hit && bordersHit(a, dx, dz, fx, fz)) {
+                    world.sendParticles(SAFE_TILE, x, y, z, 2, 0.22, 0.0, 0.22, 0.0);
+                } else if (hit && withDanger && (dx + dz) % 2 == 0) {
+                    world.sendParticles(DANGER_TILE, x, y, z, 1, 0.2, 0.0, 0.2, 0.0);
+                }
+            }
+        }
+    }
+
+    private static boolean bordersHit(Attack a, int dx, int dz, int fx, int fz) {
+        for (int ox = -1; ox <= 1; ox++) {
+            for (int oz = -1; oz <= 1; oz++) {
+                if ((ox != 0 || oz != 0) && SolHeredit.hits(a, dx + ox, dz + oz, fx, fz)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private void tickPending(DataBossEntity boss) {
@@ -287,8 +351,9 @@ public final class SolHereditScript extends ScriptedBoss {
             }
         }
         for (ServerPlayer p : BossFx.players(boss, 16)) {
-            BlockPos b = p.blockPosition();
-            if (SolHeredit.hits(a, b.getX() - pendingCentre.getX(), b.getZ() - pendingCentre.getZ(), pendingFacing[0], pendingFacing[1])) {
+            // within AOE_EDGE_LENIENCY of a safe tile counts as safe // playability: OSRS tests the one tile stood on
+            if (SolHeredit.hitsLenient(a, p.getX() - pendingCentre.getX(), p.getZ() - pendingCentre.getZ(), pendingFacing[0],
+                    pendingFacing[1])) {
                 CombatHooks.nameAttack(a.spear() ? "spear" : "shield_bash", null);
                 CombatHandler.applyDamage(boss, p, random.nextInt(SolHeredit.AOE_MAX_HIT + 1));
             }
@@ -296,30 +361,61 @@ public final class SolHereditScript extends ScriptedBoss {
     }
 
     private void tickTriple(DataBossEntity boss, ServerPlayer target) {
-        if (tripleStart < 0 || now < tripleNext) {
+        if (tripleStart < 0) {
+            return;
+        }
+        if (tripleCued < tripleHit && now >= tripleNext - SolHeredit.TRIPLE_CUE_TICKS) {
+            tripleCued = tripleHit;
+            cueTriple(boss, tripleHit);
+        }
+        if (now < tripleNext) {
             return;
         }
         if (target != null) {
-            boolean on = Players.data(target).isActive(Prayer.PROTECT_FROM_MELEE);
-            if (SolHeredit.parried(on, protectSince, now)) {
-                CombatHooks.nameAttack("triple_attack", null);
-                CombatHandler.applyDamage(boss, target, 0);
-            } else {
-                if (on) {
-                    // A prayer switched on too early is switched off and the hit lands.
-                    BossFx.disablePrayers(target, "Sol Heredit's spear knocks your prayer away!");
-                    protectSince = -1;
-                }
-                CombatHooks.nameAttack("triple_attack", null);
-                CombatHandler.applyDamage(boss, target, SolHeredit.tripleDamage(tripleHit, phase));
-            }
+            // Protect from Melee on as the hit lands blocks it (SolHeredit.parried). // playability: OSRS wants it switched on
+            // the tick before each hit and knocks off a prayer left on early: a one-tick flick, three times
+            boolean on = BossFx.protects(target, Prayer.PROTECT_FROM_MELEE);
+            CombatHooks.nameAttack("triple_attack", null);
+            CombatHandler.applyDamage(boss, target, SolHeredit.parried(on, protectSince, now) ? 0
+                    : SolHeredit.tripleDamage(tripleHit, phase));
         }
         tripleHit++;
         if (tripleHit >= 3) {
             tripleStart = -1;
+            tripleCued = -1;
         } else {
             tripleNext = now + SolHeredit.tripleGap(tripleHit, phase);
         }
+    }
+
+    /**
+     * A triple-attack hit comes in {@link SolHeredit#TRIPLE_CUE_TICKS} game ticks (24 Minecraft ticks): his spear glints (a
+     * column of light and a chime, higher each hit) and "Spear 1/3" is called out. // playability: OSRS gives the animation
+     */
+    private void cueTriple(DataBossEntity boss, int hit) {
+        ServerLevel world = BossFx.world(boss);
+        Vec3 tip = boss.position().add(0, boss.getBbHeight() + 0.3, 0);
+        BossFx.column(world, tip, ParticleTypes.END_ROD, 4);
+        world.sendParticles(ParticleTypes.FLASH, tip.x, tip.y + 1.0, tip.z, 1, 0, 0, 0, 0);
+        BossFx.sound(boss, SoundEvents.NOTE_BLOCK_CHIME.value(), 1.0f + 0.3f * hit);
+        for (ServerPlayer p : BossFx.players(boss, 24)) {
+            Msg.telegraph(p, "Spear " + (hit + 1) + "/3 - Protect from Melee!", ChatFormatting.RED);
+        }
+    }
+
+    /** Self-test: Sol Heredit starts his triple parry now (its hits land 3, 6 and 9 or 10 ticks on). */
+    public void selfTestTriple() {
+        previous = Attack.TRIPLE;
+        tripleStart = now;
+        tripleHit = 0;
+        tripleCued = -1;
+        tripleNext = now + SolHeredit.tripleGap(0, phase);
+        wait = Math.max(wait, SolHeredit.attackDelay(Attack.TRIPLE, phase));
+    }
+
+    /** Self-test: whether the triple parry is under way. */
+    public boolean selfTestTripleRunning() {
+        return tripleStart >= 0;
     }
 
     private void startGrapple(DataBossEntity boss, ServerPlayer target) {
@@ -432,7 +528,10 @@ public final class SolHereditScript extends ScriptedBoss {
         double angle = (beamIndex++ % 8) * Math.PI / 4;
         Vec3 crystal = new Vec3(t.getX() + 0.5 + Math.cos(angle) * 8, target.getY() + 1, t.getZ() + 0.5 + Math.sin(angle) * 8);
         world.sendParticles(ParticleTypes.END_ROD, crystal.x, crystal.y, crystal.z, 6, 0.2, 0.2, 0.2, 0.0);
-        lasers.add(new long[]{now + (enraged ? SolHeredit.ENRAGE_LASER_WARNING_TICKS : SolHeredit.LASER_WARNING_TICKS),
+        // the enraged 2-tick warning gets the strike floor // playability: OSRS 3 ticks to step off, 2 when enraged
+        int warning = Math.max(ArenaTiming.STRIKE_FLOOR_TICKS,
+                enraged ? SolHeredit.ENRAGE_LASER_WARNING_TICKS : SolHeredit.LASER_WARNING_TICKS);
+        lasers.add(new long[]{now + warning,
                 t.getX(), (long) Math.floor(target.getY()), t.getZ()});
         Msg.action(target, "A beam of light locks onto you!");
     }
