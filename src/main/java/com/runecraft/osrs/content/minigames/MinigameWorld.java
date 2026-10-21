@@ -502,12 +502,13 @@ public final class MinigameWorld {
                 "dark_acorn", "hallowed_crystal_shard", "hallowed_focus", "hallowed_symbol", "hallowed_hammer", "hallowed_grapple",
                 "hallowed_ring", "strange_old_lockpick")));
         pages.add(new CollectionLogData.Page(c, "Brimhaven Agility Arena", List.of("pirates_hook")));
-        pages.add(new CollectionLogData.Page(c, "Gnome Restaurant", List.of("gnome_scarf", "gnome_goggles", "mint_cake")));
+        pages.add(new CollectionLogData.Page(c, "Gnome Restaurant", List.of("grand_seed_pod", "gnome_scarf", "gnome_goggles", "mint_cake")));
         List<String> naval = new ArrayList<>();
         for (String colour : MinigameItems.NAVAL_COLOURS) {
             naval.addAll(List.of(colour + "_naval_shirt", colour + "_tricorn_hat", colour + "_navy_slacks"));
         }
-        naval.add("the_stuff");
+        naval.addAll(List.of("cutthroat_flag", "gilded_smile_flag", "bronze_fist_flag", "lucky_shot_flag", "treasure_flag",
+                "phasmatys_flag", "the_stuff", "rum_red", "rum_blue"));
         pages.add(new CollectionLogData.Page(c, "Trouble Brewing", naval));
         pages.add(new CollectionLogData.Page(c, "Shades of Mort'ton", List.of("amulet_of_the_damned", "flamtaer_bag", "fine_cloth",
                 "bronze_locks", "steel_locks", "black_locks", "silver_locks", "gold_locks", "runescroll_of_swampbark",
@@ -515,7 +516,7 @@ public final class MinigameWorld {
         pages.add(new CollectionLogData.Page(c, "Tithe Farm", List.of("farmers_strawhat", "farmers_jacket", "farmers_boro_trousers",
                 "farmers_boots", "gricollers_can", "seed_box", "herb_sack")));
         pages.add(new CollectionLogData.Page(c, "Giants' Foundry", List.of("smiths_tunic", "smiths_trousers", "smiths_boots",
-                "smiths_gloves", "colossal_blade", "double_ammo_mould")));
+                "smiths_gloves", "colossal_blade", "double_ammo_mould", "kovacs_grog")));
         pages.add(new CollectionLogData.Page(c, "Mahogany Homes", List.of("carpenters_helmet", "carpenters_shirt", "carpenters_trousers",
                 "carpenters_boots", "plank_sack", "amys_saw", "hosidius_blueprints")));
         pages.add(new CollectionLogData.Page(c, "Fishing Trawler", List.of("angler_hat", "angler_top", "angler_waders", "angler_boots")));
