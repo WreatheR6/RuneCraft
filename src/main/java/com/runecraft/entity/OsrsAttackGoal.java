@@ -15,7 +15,8 @@ import net.minecraft.world.entity.ai.goal.Goal;
  * <p>Real-time adaptations (// playability, round 41): melee reach is the horizontal gap between the two bounding boxes (at most
  * 1.5 blocks, 1.5 in height; OSRS: an adjacent tile) instead of a 3D centre distance that grew with the monster's width, and a
  * melee monster closes in until the gap is 0.8. A newly engaged target, or one that just came into melee reach, is never hit
- * sooner than 10 MC later (OSRS can hit on the tick a monster arrives).
+ * sooner than 10 MC later (OSRS can hit on the tick a monster arrives). A melee-styled special made to reach from range (BLINK,
+ * SKY_STRIKE, PULL: {@code ThreatTiming.needsMeleeReach}) starts from range; its creature keeps walking in meanwhile.
  */
 public class OsrsAttackGoal extends Goal {
     private final OsrsMonsterEntity mob;
@@ -68,15 +69,18 @@ public class OsrsAttackGoal extends Goal {
         }
         double distSq = mob.distanceToSqr(target);
         AttackType style = mob.chooseStyle(target, distSq);
-        boolean melee = style.isMelee() || mob.meleeRangeOnly;
+        // started only in melee reach (chooseStyle rolls by the same rule and reach); a melee special made for range (BLINK,
+        // SKY_STRIKE, PULL) starts from range like a spell, but its creature keeps walking in while it waits
+        boolean melee = mob.needsMeleeReach(style) || mob.meleeRangeOnly;
+        boolean closing = melee || style.isMelee();
         double gap = ThreatTiming.gap(target.getX() - mob.getX(), target.getZ() - mob.getZ(), mob.getBbWidth(), target.getBbWidth());
         double ranged = mob.rangedReach > 0 ? mob.rangedReach : 10.0;
-        boolean inRange = melee ? mob.inMeleeReach(target) : distSq <= ranged * ranged; // the reach chooseStyle picks melee by
+        boolean inRange = melee ? mob.inMeleeReach(target, distSq) : distSq <= ranged * ranged;
         mob.getLookControl().setLookAt(target, 30.0f, 30.0f);
         boolean canSee = mob.getSensing().hasLineOfSight(target);
         if (!inRange || !canSee) {
             chase(target, melee && canSee, gap);
-        } else if (!melee) {
+        } else if (!closing) {
             mob.getNavigation().stop();
         } else if (ThreatTiming.keepChasing(gap)) {
             chase(target, true, gap);

@@ -654,7 +654,7 @@ final class NpcDeliveryChecks {
                 if (style != null && ThreatTiming.prayerGroup(next) != ThreatTiming.prayerGroup(style)) {
                     flips++;
                 }
-                if (next.isMelee() && !mob.inMeleeReach(c.player)) {
+                if (mob.needsMeleeReach(next) && !mob.inMeleeReach(c.player)) {
                     meleeOutOfReach++;
                 }
                 style = next;

@@ -1002,15 +1002,17 @@ public final class Mechanics {
     }
 
     /**
-     * A monster attack goal's pick ({@code OsrsMonsterEntity.chooseStyle}): a weighted attack it can start from here, a melee one
-     * only in melee reach ({@link ThreatTiming#usable}, the reach the goal starts melee at), whatever its nominal range. When none
-     * can start here (a melee-only creature out of reach, every attack out of range) it is the plain pick above, walked in with.
-     * Before, a melee attack counted from its nominal range (Skotizo's claws: 3.5 blocks): picked 1.6 blocks out, it was kept
-     * while the goal waited for melee reach, and Skotizo never cast his shadow bolt.
+     * A monster attack goal's pick ({@code OsrsMonsterEntity.chooseStyle}): a weighted attack it can start from here, a plain melee
+     * one only in melee reach ({@link ThreatTiming#usable}, the reach the goal starts melee at), whatever its nominal range, a
+     * melee special made for range (BLINK, SKY_STRIKE, PULL) within its range; out of melee reach a melee-only creature also rolls
+     * the melee attacks it walks in for ({@link ThreatTiming#pickable}). When it may roll none (every attack out of range) it is
+     * the plain pick above. Before, a melee attack counted from its nominal range (Skotizo's claws: 3.5 blocks): picked 1.6 blocks
+     * out, it was kept while the goal waited for melee reach, and Skotizo never cast his shadow bolt.
      */
     public static AttackDef choose(List<AttackDef> attacks, double distance, boolean inMeleeReach,
             net.minecraft.util.RandomSource random) {
-        AttackDef picked = pick(attacks, a -> ThreatTiming.usable(a, distance, inMeleeReach), random);
+        boolean meleeOnly = ThreatTiming.meleeOnly(attacks);
+        AttackDef picked = pick(attacks, a -> ThreatTiming.pickable(a, distance, inMeleeReach, meleeOnly), random);
         return picked != null ? picked : choose(attacks, distance, random);
     }
 

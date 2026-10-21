@@ -167,6 +167,14 @@ public final class ThreatTiming {
         return Math.max(0, Math.sqrt(dx * dx + dz * dz) - w1 / 2 - w2 / 2);
     }
 
+    /**
+     * {@link #gap} for two bounding boxes whose feet are {@code sqrt(distanceSq)} apart, {@code dy} of it in height (a squared
+     * distance shorter than the height difference is a gap of 0).
+     */
+    public static double gapAcross(double distanceSq, double dy, double w1, double w2) {
+        return Math.max(0, Math.sqrt(Math.max(0, distanceSq - dy * dy)) - w1 / 2 - w2 / 2);
+    }
+
     /** Whether a monster can start a melee attack across this gap and height difference. */
     public static boolean inMeleeReach(double gap, double dy) {
         return gap <= MELEE_REACH && Math.abs(dy) <= MELEE_REACH_DY;
@@ -178,13 +186,70 @@ public final class ThreatTiming {
     }
 
     /**
-     * Whether a monster's attack goal may pick {@code attack} now, {@code gap} blocks from its target: a melee attack only in melee
-     * reach ({@code inMeleeReach}: {@link #inMeleeReach} on the horizontal gap and height difference, where the goal can start it),
-     * whatever its nominal range; any other attack within its range. OSRS: an NPC uses its melee attack only from a tile next to its
-     * target and attacks from further away only with ranged or magic (Skotizo "does not approach to use melee attacks").
+     * Whether {@code attack} can only be started in melee reach: a melee-styled attack, except the specials made to reach a target
+     * from range, which {@code Mechanics} delivers anywhere in their range: BLINK (the monster appears beside its target before the
+     * hit: the abyssal demon's teleport, which makes "safespotting not viable"), SKY_STRIKE (it lands on the target's tile: the
+     * lizardman shaman's jump "targets a small area where the player was previously standing", Brutus's charge) and PULL (the
+     * target is dragged beside the monster: the Fragment of Seren's "Come closer!"). The attack goal starts the others only in melee
+     * reach, and walks in for every melee-styled one.
+     */
+    public static boolean needsMeleeReach(AttackDef attack) {
+        AttackDef.Special sp = attack.special();
+        return attack.melee() && sp != AttackDef.Special.BLINK && sp != AttackDef.Special.SKY_STRIKE && sp != AttackDef.Special.PULL;
+    }
+
+    /**
+     * Whether a monster's attack goal can start {@code attack} now, {@code gap} blocks from its target: one that needs melee reach
+     * ({@link #needsMeleeReach}) only in melee reach ({@code inMeleeReach}: {@link #inMeleeReach} on the horizontal gap and height
+     * difference, where the goal starts it), whatever its nominal range; any other attack within its range. OSRS: an NPC uses its
+     * melee attack only from a tile next to its target and attacks from further away only with ranged, magic or a special made for
+     * it (Skotizo "does not approach to use melee attacks").
      */
     public static boolean usable(AttackDef attack, double gap, boolean inMeleeReach) {
-        return attack.melee() ? inMeleeReach : gap <= attack.range();
+        return needsMeleeReach(attack) ? inMeleeReach : gap <= attack.range();
+    }
+
+    /** Whether every one of {@code attacks} is melee-styled (a creature with nothing to cast or shoot). */
+    public static boolean meleeOnly(java.util.List<AttackDef> attacks) {
+        for (AttackDef a : attacks) {
+            if (!a.melee()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Whether a monster's attack goal may roll {@code attack} now: one it can start from here ({@link #usable}) or, for a melee-only
+     * creature ({@code meleeOnly}, {@link #meleeOnly}) out of melee reach, a melee attack it walks in for. So a melee creature's
+     * specials made for range are rolled against its melee attacks by weight, as in OSRS (Brutus charges about one attack in five,
+     * an abyssal demon now and then teleports beside a player standing back), not made on every attack while its target stays out
+     * of reach; a creature that also casts or shoots attacks from range with those and its specials.
+     */
+    public static boolean pickable(AttackDef attack, double gap, boolean inMeleeReach, boolean meleeOnly) {
+        return usable(attack, gap, inMeleeReach) || meleeOnly && needsMeleeReach(attack);
+    }
+
+    /**
+     * Whether a monster keeps the attack it rolled ({@code kept}, one of {@code attacks}) until it makes it: while it may still roll
+     * it ({@link #pickable}), or while it may roll none of them and {@code kept} is still within its nominal range (the fallback
+     * roll by nominal range it walks in with). // playability: the attack goal asks every Minecraft tick, and rolling afresh every
+     * tick made a mixed creature stop and start walking and churned the fallback among the attacks in range.
+     */
+    public static boolean keeps(AttackDef kept, java.util.List<AttackDef> attacks, double gap, boolean inMeleeReach) {
+        boolean meleeOnly = meleeOnly(attacks);
+        if (pickable(kept, gap, inMeleeReach, meleeOnly)) {
+            return true;
+        }
+        if (gap > kept.range()) {
+            return false;
+        }
+        for (AttackDef a : attacks) {
+            if (pickable(a, gap, inMeleeReach, meleeOnly)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

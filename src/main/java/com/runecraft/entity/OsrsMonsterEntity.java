@@ -126,19 +126,22 @@ public class OsrsMonsterEntity extends Monster {
     }
 
     /**
-     * Style used for the next attack against a target at the given distance. A module creature's attack is rolled once and kept
-     * until {@link #performAttack} uses it, or until it can't be used at the current distance (// playability: the goal asks every
-     * tick, and a re-roll every tick made a mixed melee/magic creature stop and start walking): the choice is made on the
-     * bounding-box gap to the target, a melee attack only in {@link #inMeleeReach}, the reach its attack goal starts melee at
-     * (OSRS: melee from the next tile, ranged or magic from further away; a mixed creature out of melee reach casts or shoots).
+     * Style used for the next attack against a target {@code distanceSq} away (squared, feet to feet: the caller's
+     * {@code distanceToSqr(target)}, or a distance it asks about; every reach test here is made on it, with the target's real height
+     * difference). A module creature's attack is rolled once and kept until {@link #performAttack} uses it, or until it may no
+     * longer roll it from here ({@code ThreatTiming.keeps}; // playability: the goal asks every tick, and a re-roll every tick made a
+     * mixed melee/magic creature stop and start walking): the choice is made on the bounding-box gap to the target, a plain melee
+     * attack only in {@link #inMeleeReach}, the reach its attack goal starts melee at (OSRS: melee from the next tile, ranged, magic
+     * or a special made for range from further away; a mixed creature out of melee reach casts or shoots, a melee one walks in or
+     * now and then makes its special).
      */
     public AttackType chooseStyle(ServerPlayer target, double distanceSq) {
         java.util.List<com.runecraft.osrs.content.AttackDef> attacks = attackList();
         if (attacks != null) {
             double gap = Math.max(0, Math.sqrt(distanceSq) - getBbWidth() / 2 - target.getBbWidth() / 2);
-            boolean reach = inMeleeReach(target);
+            boolean reach = inMeleeReach(target, distanceSq);
             if (nextAttack == null || !containsSame(attacks, nextAttack)
-                    || !com.runecraft.osrs.ThreatTiming.usable(nextAttack, gap, reach)) {
+                    || !com.runecraft.osrs.ThreatTiming.keeps(nextAttack, attacks, gap, reach)) {
                 nextAttack = com.runecraft.boss.Mechanics.choose(attacks, gap, reach, getRandom());
             }
             return nextAttack.style();
@@ -147,13 +150,31 @@ public class OsrsMonsterEntity extends Monster {
     }
 
     /**
+     * Whether the attack {@link #chooseStyle} picked (it returned {@code style}) can only be started in melee reach: a module
+     * creature's planned attack by {@code ThreatTiming.needsMeleeReach} (its BLINK, SKY_STRIKE and PULL melee specials reach from
+     * range), a built-in creature's by its style. The attack goal starts it only in {@link #inMeleeReach}.
+     */
+    public boolean needsMeleeReach(AttackType style) {
+        return nextAttack != null && attackList() != null ? com.runecraft.osrs.ThreatTiming.needsMeleeReach(nextAttack) : style.isMelee();
+    }
+
+    /**
      * Whether this creature can start a melee attack on {@code target} from where they stand: the horizontal gap between their
-     * bounding boxes and their height difference ({@link com.runecraft.osrs.ThreatTiming#inMeleeReach}, round 41). Its attack goal
-     * starts melee only here and {@link #chooseStyle} picks melee by it, so the two never disagree.
+     * bounding boxes and their height difference ({@link com.runecraft.osrs.ThreatTiming#inMeleeReach}, round 41).
      */
     public boolean inMeleeReach(net.minecraft.world.entity.LivingEntity target) {
-        return com.runecraft.osrs.ThreatTiming.inMeleeReach(com.runecraft.osrs.ThreatTiming.gap(target.getX() - getX(),
-                target.getZ() - getZ(), getBbWidth(), target.getBbWidth()), target.getY() - getY());
+        return inMeleeReach(target, distanceToSqr(target));
+    }
+
+    /**
+     * {@link #inMeleeReach(net.minecraft.world.entity.LivingEntity)} with {@code target} {@code distanceSq} away (squared, feet to
+     * feet) and its real height difference. Its attack goal starts melee only here and {@link #chooseStyle} picks melee by it,
+     * both on the same squared distance, so the two never disagree.
+     */
+    public boolean inMeleeReach(net.minecraft.world.entity.LivingEntity target, double distanceSq) {
+        double dy = target.getY() - getY();
+        return com.runecraft.osrs.ThreatTiming.inMeleeReach(com.runecraft.osrs.ThreatTiming.gapAcross(distanceSq, dy, getBbWidth(),
+                target.getBbWidth()), dy);
     }
 
     private static boolean containsSame(java.util.List<com.runecraft.osrs.content.AttackDef> attacks, com.runecraft.osrs.content.AttackDef a) {
