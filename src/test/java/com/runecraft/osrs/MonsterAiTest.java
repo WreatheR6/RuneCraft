@@ -56,11 +56,29 @@ class MonsterAiTest {
         assertFalse(MonsterAi.holdAtEdge(16, 18, 1.5, true, true), "a target inside its range is chased as usual");
         assertFalse(MonsterAi.holdAtEdge(16, 25, 1.5, false, true), "not under fire: it gives up instead");
         assertFalse(MonsterAi.holdAtEdge(16, 25, 10, true, true), "a ranged monster's range reaches the target");
-        // home again: it heals only once the hits have stopped for 5 s
+        // home again: it heals only once the hits have stopped for 6 s
         assertFalse(MonsterAi.healsAtHome(0));
         assertFalse(MonsterAi.healsAtHome(MonsterAi.UNDER_FIRE_MC - 1));
         assertTrue(MonsterAi.healsAtHome(MonsterAi.UNDER_FIRE_MC));
-        assertEquals(5 * 20, MonsterAi.UNDER_FIRE_MC);
+        assertEquals(6 * 20, MonsterAi.UNDER_FIRE_MC);
+    }
+
+    @Test
+    void everyWeaponKeepsAMonsterUnderFireBetweenAttacks() {
+        // a player attacking at their weapon's listed speed (Rapid is a tick faster) never lets the window lapse between attacks;
+        // the dark bow's 9 ticks (108 MC) are the slowest (wiki)
+        int slowest = 0;
+        String slowestId = null;
+        for (ItemDef def : ItemCatalog.all()) {
+            EquipmentDef eq = def.equipment();
+            if (eq != null && eq.slot() == EquipmentDef.Slot.WEAPON && eq.attackSpeed() > slowest) {
+                slowest = eq.attackSpeed();
+                slowestId = def.id();
+            }
+        }
+        assertEquals(9, ItemCatalog.get("dark_bow").equipment().attackSpeed());
+        assertTrue(AttackClock.periodMc(slowest) < MonsterAi.UNDER_FIRE_MC, slowestId + " attacks every "
+                + AttackClock.periodMc(slowest) + " MC, the under-fire window is " + MonsterAi.UNDER_FIRE_MC);
     }
 
     @Test

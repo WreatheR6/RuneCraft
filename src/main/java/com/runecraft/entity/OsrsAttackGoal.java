@@ -8,6 +8,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.ai.navigation.WallClimberNavigation;
 
 /**
  * Chases (melee) or keeps range (ranged/magic) and attacks at the OSRS attack speed, stamped when each attack starts (the hit
@@ -56,7 +57,7 @@ public class OsrsAttackGoal extends Goal {
 
     @Override
     public void stop() {
-        mob.getNavigation().stop();
+        standStill(mob); // its target is gone: a spider doesn't walk on to the target's last block
     }
 
     @Override
@@ -91,7 +92,7 @@ public class OsrsAttackGoal extends Goal {
         if (!inRange || !canSee) {
             chase(target, melee && canSee, gap);
         } else if (!closing) {
-            mob.getNavigation().stop();
+            standStill(mob);
         } else if (ThreatTiming.keepChasing(gap)) {
             chase(target, true, gap);
         }
@@ -114,7 +115,7 @@ public class OsrsAttackGoal extends Goal {
             targets = OsrsTargetGoal.of(mob);
         }
         if (targets != null && targets.holding()) {
-            mob.getNavigation().stop();
+            standStill(mob);
             return;
         }
         if (c.directPathing()) {
@@ -125,6 +126,21 @@ public class OsrsAttackGoal extends Goal {
             mob.getMoveControl().setWantedPosition(target.getX(), target.getY(), target.getZ(), 1.0);
         } else {
             mob.getNavigation().moveTo(target, 1.0);
+        }
+    }
+
+    /**
+     * Stops walking. {@code PathNavigation.stop()} alone doesn't stop a spider (the giant spider and spider stand-ins): its
+     * {@link WallClimberNavigation} remembers the block it last pathed to and, once the path is gone, steers straight at it every
+     * tick, so a giant spider held at the edge of its max range walked on at the player shooting it until the 20-block leash sent
+     * it home. Aimed at the block it stands on, it lets go on its next tick (a path to its own block: cheap). Called every tick of
+     * the hold and of a ranged stand-off, after the target goal and before the navigation ticks, and when the goal stops (its
+     * target gone, dropped or given up: it doesn't walk on to the target's last block).
+     */
+    static void standStill(Mob mob) {
+        mob.getNavigation().stop();
+        if (mob.getNavigation() instanceof WallClimberNavigation climber) {
+            climber.createPath(mob.blockPosition(), 0);
         }
     }
 

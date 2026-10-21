@@ -13,11 +13,15 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.ai.navigation.GroundPathNavigation;
+import net.minecraft.world.entity.ai.navigation.PathNavigation;
+import net.minecraft.world.entity.ai.navigation.WallClimberNavigation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.pathfinder.Path;
 
@@ -33,7 +37,7 @@ import net.minecraft.world.level.pathfinder.Path;
  * while the new attacker isn't ({@link MonsterAi#switchTarget}; // playability: vanilla switched to every new attacker).</li>
  * <li>Leash (open-world monsters, {@link MonsterHome}): past {@link MonsterAi#LEASH_BLOCKS} from its spawn point, or with its target
  * fled beyond its aggression range, it drops the fight, walks home and is back to full health there once nothing has hit it for
- * 5 s (// playability: OSRS confines a monster to 7 tiles of its spawn point and it regenerates 1 hitpoint a minute). A target that
+ * 6 s (// playability: OSRS confines a monster to 7 tiles of its spawn point and it regenerates 1 hitpoint a minute). A target that
  * keeps attacking it from beyond its range is not given up: the monster stands at the edge of its max range
  * ({@link MonsterAi#holdAtEdge}, OSRS safespotting), so a player out-ranging it can still kill it.</li>
  * <li>Single-way: a monster that may not attack its target (the player is fighting something else) drops it after
@@ -51,6 +55,11 @@ public class OsrsTargetGoal extends Goal {
     private final boolean hunts;
     private int scanIn;
     private int lastHurtStamp = Integer.MIN_VALUE;
+    /**
+     * Who (credited: a thrall's owner) landed the last hit or miss, at {@link #lastHurtStamp}. Kept here because vanilla forgets
+     * {@code getLastHurtByMob} 100 MC after the hit, shorter than the slowest player attack (the dark bow's 9 ticks).
+     */
+    private UUID lastAttacker;
     private int blockedFor;
     private UUID forgotten;
     private int forgottenUntil;
@@ -118,6 +127,7 @@ public class OsrsTargetGoal extends Goal {
         if (newHurt) {
             lastHurtStamp = mob.getLastHurtByMobTimestamp();
             lastHitAt = now;
+            lastAttacker = credited(hurtBy).getUUID();
         }
         boolean wasHolding = holding;
         holding = false;
@@ -198,10 +208,14 @@ public class OsrsTargetGoal extends Goal {
         return mob.distanceToSqr(target) <= max * max;
     }
 
-    /** Its target hit (or missed) it within {@link MonsterAi#UNDER_FIRE_MC}: the fight is still on wherever the target stands. */
+    /**
+     * Its target landed the last hit (or miss) on it within {@link MonsterAi#UNDER_FIRE_MC}: the fight is still on wherever the
+     * target stands. Read from this goal's own record, not {@code getLastHurtByMob}, which vanilla clears 100 MC after the hit: a
+     * dark bow shooting every 108 MC left the monster not under fire for the last 8 MC of every cycle, and it turned for home.
+     */
     private boolean underFire(LivingEntity target, int now) {
-        LivingEntity by = mob.getLastHurtByMob();
-        return by != null && credited(by) == target && (long) now - mob.getLastHurtByMobTimestamp() < MonsterAi.UNDER_FIRE_MC;
+        return lastAttacker != null && lastAttacker.equals(target.getUUID())
+                && (long) now - lastHurtStamp < MonsterAi.UNDER_FIRE_MC;
     }
 
     /** A summon (a thrall) answers for its owner: the monster goes for the player behind it. */
@@ -233,8 +247,52 @@ public class OsrsTargetGoal extends Goal {
                 return true;
             }
         }
-        Path path = mob.getNavigation().createPath(e, 1);
+        Path path = probe(e, 1);
         return path != null && path.canReach();
+    }
+
+    /**
+     * A path to {@code e} for a reachability test that doesn't steer the monster. A spider's {@link WallClimberNavigation} remembers
+     * the block of every path it is asked for ({@code createPath} of a block or an entity) and, once its own path is done or gone,
+     * steers straight at it: probing a second attacker sent a giant spider standing in melee reach of its target drifting toward
+     * the attacker's block (its close-in step overridden too) until the gap reopened. Its {@code Set} form, which the climber doesn't
+     * override, finds the same path once the target block is put where {@link GroundPathNavigation#createPath(BlockPos, int)} puts
+     * it (an airborne target onto the ground below it, a solid block's up to the first non-solid one above).
+     */
+    private Path probe(LivingEntity e, int accuracy) {
+        PathNavigation nav = mob.getNavigation();
+        if (!(nav instanceof WallClimberNavigation)) {
+            return nav.createPath(e, accuracy);
+        }
+        BlockPos pos = e.blockPosition();
+        net.minecraft.world.level.chunk.LevelChunk chunk = mob.level().getChunkSource().getChunkNow(
+                SectionPos.blockToSectionCoord(pos.getX()), SectionPos.blockToSectionCoord(pos.getZ()));
+        if (chunk == null) {
+            return null;
+        }
+        int min = mob.level().getMinBuildHeight();
+        int max = mob.level().getMaxBuildHeight();
+        if (chunk.getBlockState(pos).isAir()) {
+            BlockPos below = pos.below();
+            while (below.getY() > min && chunk.getBlockState(below).isAir()) {
+                below = below.below();
+            }
+            if (below.getY() > min) {
+                return nav.createPath(java.util.Collections.singleton(below.above()), accuracy);
+            }
+            while (below.getY() < max && chunk.getBlockState(below).isAir()) {
+                below = below.above();
+            }
+            pos = below;
+        }
+        if (chunk.getBlockState(pos).isSolid()) {
+            BlockPos above = pos.above();
+            while (above.getY() < max && chunk.getBlockState(above).isSolid()) {
+                above = above.above();
+            }
+            pos = above;
+        }
+        return nav.createPath(java.util.Collections.singleton(pos), accuracy);
     }
 
     private ServerPlayer findPrey(ServerLevel level, BlockPos home, int now) {
@@ -317,7 +375,7 @@ public class OsrsTargetGoal extends Goal {
 
     /**
      * Home again: the fight is over, its health back to full and its damage ledger cleared, unless something hit it in the last
-     * 5 s (it heals once the hits stop: a reset must not erase hits that are still coming).
+     * 6 s ({@link MonsterAi#UNDER_FIRE_MC}; it heals once the hits stop: a reset must not erase hits that are still coming).
      */
     private void arrive() {
         returning = false;

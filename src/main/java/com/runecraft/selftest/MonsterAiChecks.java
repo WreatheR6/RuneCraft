@@ -14,6 +14,7 @@ import com.runecraft.entity.OsrsAttackGoal;
 import com.runecraft.entity.OsrsMonsterEntity;
 import com.runecraft.entity.OsrsTargetGoal;
 import com.runecraft.entity.VanillaOsrsAi;
+import com.runecraft.osrs.AttackClock;
 import com.runecraft.osrs.AttackType;
 import com.runecraft.osrs.Experience;
 import com.runecraft.osrs.MonsterAi;
@@ -455,8 +456,9 @@ final class MonsterAiChecks {
 
     /**
      * A giant spider shot from beyond its aggression range (the player 26 blocks off its spawn point; spells reach 20) doesn't give
-     * up and heal: it walks out to the edge of its 7-tile max range and stands there, keeping its damage, while the shots come; only
-     * once they have stopped for 5 s does it walk home, and it heals there.
+     * up and heal: it walks out to the edge of its 7-tile max range and stands there, keeping its damage, while the shots come at
+     * the dark bow's 9 ticks (the slowest weapon); only once they have stopped for {@link MonsterAi#UNDER_FIRE_MC} (6 s) does it
+     * walk home, and it heals there.
      */
     private String leashUnderFire() {
         ServerPlayer p = c.player;
@@ -472,14 +474,17 @@ final class MonsterAiChecks {
         int held = 0;
         double furthest = 0;
         int shots = 0;
-        for (int i = 0; i < 200; i++) {
-            if (i % 20 == 0) {
-                CombatHandler.applyDamage(p, spider, 0); // a shot a second (a miss is still an attack)
+        int period = AttackClock.periodMc(9); // a dark bow's volley (108 MC), longer than vanilla's 100 MC hurt-by memory
+        int since = 20; // MC from the last shot to the end of the shooting
+        for (int i = 0; i < 3 * period + since; i++) {
+            if (i % period == 0) {
+                CombatHandler.applyDamage(p, spider, 0); // a miss is still an attack
                 shots++;
             }
             step(1);
             expect(!goal.returning(), "the giant spider gave up " + i + " MC in while the player kept shooting it from "
-                    + fmt(playerFromHome) + " blocks off its spawn point");
+                    + fmt(playerFromHome) + " blocks off its spawn point (it stood " + fmt(fromHome(spider)) + " blocks out; max range "
+                    + fmt(MonsterAi.MAX_RANGE_BLOCKS) + ", leash " + fmt(MonsterAi.LEASH_BLOCKS) + ")");
             expect(spider.getTarget() == p, "the giant spider dropped the player shooting it");
             expect(spider.getHealth() <= half, "the giant spider healed to " + spider.getHealth() + " while being shot");
             furthest = Math.max(furthest, fromHome(spider));
@@ -490,8 +495,8 @@ final class MonsterAiChecks {
         expect(held > 0, "the giant spider never stood at the edge of its range (got " + fmt(furthest) + " blocks out)");
         expect(furthest <= MonsterAi.MAX_RANGE_BLOCKS + 2, "the giant spider walked " + fmt(furthest)
                 + " blocks from its spawn point (max range " + fmt(MonsterAi.MAX_RANGE_BLOCKS) + ")");
-        // the shots stop: 5 s later it gives up, walks home and heals there
-        int quiet = 20; // since the last shot
+        // the shots stop: UNDER_FIRE_MC later it gives up, walks home and heals there
+        int quiet = since;
         while (!goal.returning() && quiet < MonsterAi.UNDER_FIRE_MC + 40) {
             step(1);
             quiet++;
@@ -579,34 +584,41 @@ final class MonsterAiChecks {
     }
 
     /**
-     * A giant spider fighting the player keeps fighting them while another player hits it (vanilla switched to every new attacker),
-     * and only switches once its target is gone.
+     * A giant spider fighting the player keeps fighting them while another player hits it from out of melee reach (vanilla switched
+     * to every new attacker), stays in melee reach of its target meanwhile (the reachability test of the other player must not
+     * steer it: its wall-climber navigation used to walk it toward them), and only switches once its target is gone.
      */
     private String retaliation() {
         ServerPlayer p = c.player;
         ServerPlayer partner = com.runecraft.platform.FakePlayer.partner(c.world);
-        moveTo(partner, 0, 3);
+        moveTo(partner, 0, 6);
         // an open-world spider: an encounter spawn would hunt the maxed player again once its target is gone
         Mob spider = vanilla(EntityType.SPIDER, 2, 0, true);
         spider.setTarget(p);
         int switches = 0;
+        double widest = 0; // the spider's gap to its target
         LivingEntity last = spider.getTarget();
         for (int round = 0; round < 6; round++) {
             CombatHandler.applyDamage(partner, spider, 0); // the other player swings at it
             forgetSingleWay(spider, partner); // multi-way: only the target choice is tested here
-            for (int i = 0; i < 20; i++) {
+            for (int i = 0; i < 24; i++) {
+                if (i == 20) {
+                    CombatHandler.applyDamage(p, spider, 0);
+                    forgetSingleWay(spider, partner);
+                }
                 step(1);
                 if (spider.getTarget() != last) {
                     switches++;
                     last = spider.getTarget();
                 }
+                widest = Math.max(widest, ThreatTiming.gap(p.getX() - spider.getX(), p.getZ() - spider.getZ(),
+                        spider.getBbWidth(), p.getBbWidth()));
             }
-            CombatHandler.applyDamage(p, spider, 0);
-            forgetSingleWay(spider, partner);
-            step(4);
         }
         expect(switches == 0 && spider.getTarget() == p, "the giant spider switched targets " + switches + " times (now "
                 + (spider.getTarget() == null ? "none" : spider.getTarget().getName().getString()) + ")");
+        expect(widest <= ThreatTiming.MELEE_REACH, "the giant spider drifted " + fmt(widest) + " blocks off its target while the other"
+                + " player hit it (melee reach " + fmt(ThreatTiming.MELEE_REACH) + ")");
         // its target gone: the next attacker takes over
         OsrsMonsterEntity goblin = module(Monster.GOBLIN.entity(), -4, 0, false);
         spider.setTarget(goblin);
@@ -617,7 +629,8 @@ final class MonsterAiChecks {
         forgetSingleWay(spider, partner);
         step(2);
         expect(spider.getTarget() == partner, "the giant spider didn't take on the next attacker once its target was gone");
-        return "kept its target through 6 hits from another player; switched once its target was gone";
+        return "kept its target through 6 hits from another player, at most " + fmt(widest)
+                + " blocks off it; switched once its target was gone";
     }
 
     private void forgetSingleWay(Mob spider, ServerPlayer partner) {
