@@ -312,7 +312,7 @@ public final class ItemHooks {
         stack.shrink(1);
         player.heal(b.heal());
         player.getFoodData().eat(Math.max(1, b.heal() / 2), 0.3f);
-        player.getCooldowns().addCooldown(item, EAT_DELAY);
+        com.runecraft.skill.ConsumeCooldowns.consume(player, b.full());
         if (b.next() != null) {
             Inv.give(player, b.next(), 1);
         }
@@ -468,7 +468,7 @@ public final class ItemHooks {
             player.getFoodData().eat(Math.max(1, drink.heal() / 2), 0.2f);
         }
         int used = stack.getDamageValue() + 1;
-        player.getCooldowns().addCooldown(stack.getItem(), EAT_DELAY);
+        com.runecraft.skill.ConsumeCooldowns.consume(player, Inv.idOf(stack));
         player.level().playSound(null, player.blockPosition(), SoundEvents.GENERIC_DRINK, SoundSource.PLAYERS, 0.5f, 1.0f);
         int left = BrewingData.KEG_PINTS - used;
         Msg.action(player, "You drink from the keg of " + SkillingUtil.lower(drink.name()) + "."
@@ -495,7 +495,7 @@ public final class ItemHooks {
         if (glass != null) {
             Inv.give(player, glass, 1);
         }
-        player.getCooldowns().addCooldown(item, EAT_DELAY);
+        com.runecraft.skill.ConsumeCooldowns.consume(player, drink.id());
         player.level().playSound(null, player.blockPosition(), SoundEvents.GENERIC_DRINK, SoundSource.PLAYERS, 0.5f, 1.0f);
         Msg.action(player, "You drink the " + SkillingUtil.lower(drink.name()) + "."
                 + (drink.mods().isEmpty() ? "" : " You feel slightly reinvigorated... and slightly dizzy too."));
@@ -550,7 +550,7 @@ public final class ItemHooks {
     private static void useDose(ServerPlayer player, ItemStack stack, InteractionHand hand, String name, int doses, boolean drank) {
         int used = stack.getDamageValue() + 1;
         int left = doses - used;
-        player.getCooldowns().addCooldown(stack.getItem(), EAT_DELAY);
+        com.runecraft.skill.ConsumeCooldowns.consume(player, stack, drank);
         player.level().playSound(null, player.blockPosition(), drank ? SoundEvents.GENERIC_DRINK : SoundEvents.BOTTLE_EMPTY,
                 SoundSource.PLAYERS, 0.5f, 1.0f);
         if (drank) {

@@ -6,6 +6,7 @@ import com.runecraft.osrs.CollectionLogData;
 import com.runecraft.osrs.CombatStyle;
 import com.runecraft.osrs.EquipmentStats;
 import com.runecraft.osrs.Prayer;
+import com.runecraft.osrs.PrayerGrace;
 import com.runecraft.osrs.Quest;
 import com.runecraft.osrs.QuestInfo;
 import com.runecraft.osrs.Skill;
@@ -60,6 +61,45 @@ public final class SidePanel {
     private static int logScroll;
 
     private SidePanel() {
+    }
+
+    /** Where the last open tab is remembered between sessions (a client-only convenience; any failure is ignored). */
+    private static java.nio.file.Path tabFile() {
+        return Minecraft.getInstance().gameDirectory.toPath().resolve("config").resolve("runecraft-client.properties");
+    }
+
+    /** Opens the panel on the tab that was open last time (round 41: it always opened on Skills). */
+    public static void loadTab() {
+        try {
+            java.nio.file.Path file = tabFile();
+            if (!java.nio.file.Files.exists(file)) {
+                return;
+            }
+            java.util.Properties props = new java.util.Properties();
+            try (java.io.Reader r = java.nio.file.Files.newBufferedReader(file)) {
+                props.load(r);
+            }
+            String name = props.getProperty("sidePanelTab");
+            if (name != null) {
+                tab = PanelTab.valueOf(name);
+            }
+        } catch (Exception | LinkageError e) {
+            // Keep the default tab.
+        }
+    }
+
+    private static void saveTab() {
+        try {
+            java.nio.file.Path file = tabFile();
+            java.nio.file.Files.createDirectories(file.getParent());
+            java.util.Properties props = new java.util.Properties();
+            props.setProperty("sidePanelTab", tab.name());
+            try (java.io.Writer w = java.nio.file.Files.newBufferedWriter(file)) {
+                props.store(w, "RuneCraft client settings");
+            }
+        } catch (Exception e) {
+            // Not remembered this time.
+        }
     }
 
     /** Where the panel sits on screen (GUI units) and how many GUI units one OSRS pixel takes. */
@@ -271,7 +311,7 @@ public final class SidePanel {
         };
     }
 
-    private static String initials(String name) {
+    static String initials(String name) {
         StringBuilder sb = new StringBuilder();
         for (String w : name.split(" ")) {
             if (!w.isEmpty() && !w.equals("of") && !w.equals("from") && !w.equals("the")) {
@@ -298,12 +338,29 @@ public final class SidePanel {
                 ctx.fill(x + 2, y + 2, x + PRAYER_BOX - 3, y + PRAYER_ROW - 3, 0x20FFFFFF);
             }
             OsrsUi.icon(ctx, OsrsUi.skillIcon(prayerIcon(p)), x + 8, y + 2, 20);
-            OsrsUi.centered(ctx, tr, initials(p.displayName()), x + 18, y + 23, unlocked ? OsrsUi.WHITE : OsrsUi.GREY);
+            // Overheads get distinct, style-coloured labels (OSRS draws a different icon for each); others their initials.
+            String tag = PrayerGrace.overheadTag(p);
+            int labelColor = !unlocked ? OsrsUi.GREY : tag != null ? PrayerGrace.overheadColor(p) : OsrsUi.WHITE;
+            OsrsUi.centered(ctx, tr, tag != null ? tag : initials(p.displayName()), x + 18, y + 23, labelColor);
+            if (active && p.isOverhead()) {
+                ctx.renderOutline(x + 1, y + 1, PRAYER_BOX - 2, PRAYER_ROW - 2, 0xFFFFFFA0);
+                ctx.renderOutline(x + 2, y + 2, PRAYER_BOX - 4, PRAYER_ROW - 4, 0xFFFFFFA0);
+            }
+            if ((ClientState.quickPrayerMask & (1L << p.ordinal())) != 0) {
+                ctx.fill(x + PRAYER_BOX - 9, y + 3, x + PRAYER_BOX - 4, y + 8, 0xFFFFD700);
+            }
             if (!unlocked) {
                 ctx.fill(x + 1, y + 1, x + PRAYER_BOX - 2, y + PRAYER_ROW - 2, 0x90000000);
             }
             if (hover) {
-                tip = List.of(p.displayName(), "Level " + p.level(), "Drain: " + p.drainEffect());
+                List<String> lines = new ArrayList<>(List.of(p.displayName(), "Level " + p.level(), "Drain: " + p.drainEffect()));
+                int key = PrayerGrace.index(p);
+                if (key >= 0) {
+                    lines.add("Key: " + CombatKeys.keyName(key));
+                }
+                lines.add("Shift-click: " + ((ClientState.quickPrayerMask & (1L << p.ordinal())) != 0 ? "remove from" : "add to")
+                        + " quick-prayers");
+                tip = lines;
             }
         }
         OsrsUi.centered(ctx, tr, "Prayer points: " + ClientState.prayerPoints + " / " + ClientState.SKILLS.currentLevel(Skill.PRAYER),
@@ -317,8 +374,15 @@ public final class SidePanel {
             int x = 2 + (i % 5) * PRAYER_BOX;
             int y = 2 + (i / 5) * PRAYER_ROW;
             if (in(mx, my, x, y, PRAYER_BOX - 1, PRAYER_ROW - 1)) {
-                if (ClientState.SKILLS.level(Skill.PRAYER) >= all[i].level()) {
-                    send(Net.TOGGLE_PRAYER, all[i].ordinal());
+                if (net.minecraft.client.gui.screens.Screen.hasShiftDown()) {
+                    // OSRS Quick-prayers: shift-click picks the prayers the quick-prayer key switches.
+                    long mask = ClientState.quickPrayerMask ^ (1L << all[i].ordinal());
+                    ClientState.quickPrayerMask = mask;
+                    FriendlyByteBuf buf = PacketByteBufs.create();
+                    buf.writeVarLong(mask);
+                    ClientPlayNetworking.send(Net.PRAYER_QUICK_SET, buf);
+                } else if (ClientState.SKILLS.level(Skill.PRAYER) >= all[i].level()) {
+                    CombatKeys.set(all[i], !ClientState.prayerActive(all[i]));
                 }
                 return true;
             }
@@ -546,7 +610,10 @@ public final class SidePanel {
                 if (next == PanelTab.SKILLS && tab == PanelTab.SKILLS) {
                     SKILLS_TAB.closeGuide();
                 }
-                tab = next;
+                if (tab != next) {
+                    tab = next;
+                    saveTab();
+                }
             } else if (t == EXPAND_TAB) {
                 Minecraft.getInstance().setScreen(new RuneScapeScreen(fullTab(tab)));
             } else if (t == CLOSE_TAB) {

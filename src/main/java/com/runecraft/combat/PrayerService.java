@@ -76,14 +76,91 @@ public final class PrayerService {
     public static final java.util.List<java.util.function.BiFunction<ServerPlayer, Prayer, Prayer>> REDIRECTS =
             new java.util.concurrent.CopyOnWriteArrayList<>();
 
-    public static void toggle(ServerPlayer player, Prayer prayer) {
+    /** The prayer a click on {@code prayer} switches after every {@link #REDIRECTS} entry (the Nightmare's curse). */
+    private static Prayer redirect(ServerPlayer player, Prayer prayer) {
         for (java.util.function.BiFunction<ServerPlayer, Prayer, Prayer> r : REDIRECTS) {
             Prayer to = r.apply(player, prayer);
             prayer = to == null ? prayer : to;
         }
+        return prayer;
+    }
+
+    /** The player clicks a prayer: it switches on (with the usual checks) or off. Redirects apply. */
+    public static void toggle(ServerPlayer player, Prayer prayer) {
+        toggleRedirected(player, redirect(player, prayer));
+    }
+
+    /**
+     * Sets a prayer on or off; nothing happens when it already is (idempotent, so a key press that crosses a sync under
+     * latency can't flip it back). Redirects apply first, then the normal toggle rules (level, quests, scrolls, points).
+     * // playability: the hotkeys and quick-prayer keys send this instead of a toggle.
+     */
+    public static void set(ServerPlayer player, Prayer prayer, boolean on) {
+        Prayer target = redirect(player, prayer);
+        PlayerData data = Players.data(player);
+        if (data.isActive(target) != on) {
+            toggleRedirected(player, target);
+        }
+        if (data.isActive(target) != on || target != prayer) {
+            // Refused (level, quest, points) or redirected: the client's optimistic HUD needs the real state.
+            ServerNetworking.sync(player);
+        }
+    }
+
+    /**
+     * OSRS Quick-prayers: if any quick prayer is on, all of them switch off; otherwise each switches on through the normal
+     * toggle (so locked or conflicting ones follow the usual rules). An empty set tells the player how to choose them.
+     */
+    public static void toggleQuick(ServerPlayer player) {
+        PlayerData data = Players.data(player);
+        java.util.Set<Prayer> quick = com.runecraft.osrs.PrayerGrace.fromMask(data.quickPrayers());
+        if (quick.isEmpty()) {
+            Msg.game(player, "You haven't selected any quick-prayers. Shift-click prayers in the Prayer tab to choose them.");
+            return;
+        }
+        boolean anyOn = false;
+        for (Prayer p : quick) {
+            anyOn |= data.isActive(p);
+        }
+        for (Prayer p : quick) {
+            if (anyOn) {
+                if (data.isActive(p)) {
+                    toggleRedirected(player, p);
+                }
+            } else if (!data.isActive(p)) {
+                toggleRedirected(player, p);
+            }
+        }
+        ServerNetworking.sync(player);
+    }
+
+    /** Sets the quick-prayer selection (a mask of Prayer ordinals); conflicting prayers keep the last one picked. */
+    public static void setQuickPrayers(ServerPlayer player, long mask) {
+        PlayerData data = Players.data(player);
+        data.setQuickPrayers(mask);
+        ServerNetworking.sync(player);
+    }
+
+    /** Stamps a voluntary switch of a protection overhead for the switch grace (others are ignored). */
+    private static void stamp(PlayerData data, Prayer prayer, boolean on) {
+        int i = com.runecraft.osrs.PrayerGrace.index(prayer);
+        if (i < 0) {
+            return;
+        }
+        long now = com.runecraft.action.ActionManager.mcTick();
+        if (on) {
+            data.overheadOnAt[i] = now;
+        } else {
+            data.overheadOffAt[i] = now;
+        }
+    }
+
+    private static void toggleRedirected(ServerPlayer player, Prayer prayer) {
         PlayerData data = Players.data(player);
         if (data.isActive(prayer)) {
             data.activePrayers().remove(prayer);
+            stamp(data, prayer, false);
+            player.level().playSound(null, player.blockPosition(), SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 0.3f, 1.6f);
         } else {
             if (data.skills().level(Skill.PRAYER) < prayer.level()) {
                 Msg.game(player, "You need a Prayer level of " + prayer.level() + " to use " + prayer.displayName() + ".");
@@ -112,8 +189,16 @@ public final class PrayerService {
                 Msg.game(player, "You have run out of Prayer points, you can recharge at an altar.");
                 return;
             }
-            data.activePrayers().removeIf(prayer::conflictsWith);
+            // Switching overheads is voluntary too: the one replaced gets the switch grace.
+            data.activePrayers().removeIf(other -> {
+                if (prayer.conflictsWith(other)) {
+                    stamp(data, other, false);
+                    return true;
+                }
+                return false;
+            });
             data.activePrayers().add(prayer);
+            stamp(data, prayer, true);
             player.level().playSound(null, player.blockPosition(), SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.3f, 1.6f);
         }
         ServerNetworking.sync(player);

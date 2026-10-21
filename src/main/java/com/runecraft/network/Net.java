@@ -20,12 +20,20 @@ public final class Net {
     public static final ResourceLocation SET_AUTOCAST = RuneCraft.id("set_autocast");
     /** Toggles auto-retaliate (no payload). */
     public static final ResourceLocation TOGGLE_RETALIATE = RuneCraft.id("toggle_retaliate");
+    /** Sets a prayer on or off (varint ordinal, boolean on): idempotent, sent by the prayer hotkeys and the side panel. */
+    public static final ResourceLocation PRAYER_SET = RuneCraft.id("prayer/set");
+    /** Switches the quick-prayers (no payload), OSRS's quick-prayer orb. */
+    public static final ResourceLocation PRAYER_QUICK = RuneCraft.id("prayer/quick");
+    /** Sets the quick-prayer selection (varlong mask of prayer ordinals). */
+    public static final ResourceLocation PRAYER_QUICK_SET = RuneCraft.id("prayer/quick_set");
 
     public static final byte SPLAT_MISS = 0;
     public static final byte SPLAT_DAMAGE = 1;
     public static final byte SPLAT_HEAL = 2;
     public static final byte SPLAT_POISON = 3;
     public static final byte SPLAT_VENOM = 4;
+    /** A monster's hit stopped by the matching protection prayer: a blue 0 with the overhead's tag and a shield sound. */
+    public static final byte SPLAT_BLOCKED = 5;
 
     private Net() {
     }

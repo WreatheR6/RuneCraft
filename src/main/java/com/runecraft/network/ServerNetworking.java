@@ -60,6 +60,24 @@ public final class ServerNetworking {
             int ordinal = buf.readVarInt();
             server.execute(() -> MagicService.setAutocast(player, ordinal < 0 || ordinal >= Spell.values().length ? null : Spell.values()[ordinal]));
         });
+        // Prayer hotkeys, quick-prayers and the side panel (round 41 playability).
+        ServerPlayNetworking.registerGlobalReceiver(Net.PRAYER_SET, (server, player, handler, buf, sender) -> {
+            int ordinal = buf.readVarInt();
+            boolean on = buf.readBoolean();
+            server.execute(() -> {
+                if (ordinal >= 0 && ordinal < Prayer.values().length) {
+                    PrayerService.set(player, Prayer.values()[ordinal], on);
+                }
+            });
+        });
+        ServerPlayNetworking.registerGlobalReceiver(Net.PRAYER_QUICK, (server, player, handler, buf, sender) ->
+                server.execute(() -> PrayerService.toggleQuick(player)));
+        ServerPlayNetworking.registerGlobalReceiver(Net.PRAYER_QUICK_SET, (server, player, handler, buf, sender) -> {
+            long mask = buf.readVarLong();
+            server.execute(() -> PrayerService.setQuickPrayers(player, mask));
+        });
+        com.runecraft.combat.FreezeRules.register();
+        com.runecraft.skill.ConsumeCooldowns.register();
     }
 
     /** Sends the full RuneCraft state (skills, prayer, style, pouch, slayer task) to the client. */
@@ -99,6 +117,7 @@ public final class ServerNetworking {
             buf.writeVarInt(kc);
         });
         buf.writeVarLong(data.tokkul());
+        buf.writeVarLong(data.quickPrayers());
         ServerPlayNetworking.send(player, Net.SYNC, buf);
     }
 
@@ -109,8 +128,25 @@ public final class ServerNetworking {
         ServerPlayNetworking.send(player, Net.XP_DROP, buf);
     }
 
+    /** One hitsplat as sent: target and attacker entity ids (-1 for none), the server MC tick. */
+    public record Splat(int target, int damage, byte type, int attacker, long mcTick) {
+    }
+
+    /** Self-test hook: the last hitsplat sent (or that would have been sent), whoever was watching. */
+    public static volatile Splat LAST_SPLAT;
+
     /** Shows a hitsplat on an entity to every player tracking it (and the attacker). */
     public static void hitsplat(Entity target, int damage, byte type) {
+        hitsplat(target, damage, type, null);
+    }
+
+    /**
+     * Shows a hitsplat on an entity to every player within 64 blocks, naming the attacker (null for none) so the client can
+     * outline the local player's own hits and point at whoever hit them.
+     */
+    public static void hitsplat(Entity target, int damage, byte type, Entity attacker) {
+        int attackerId = attacker == null ? -1 : attacker.getId();
+        LAST_SPLAT = new Splat(target.getId(), damage, type, attackerId, com.runecraft.action.ActionManager.mcTick());
         if (!(target.level() instanceof ServerLevel world)) {
             return;
         }
@@ -125,6 +161,7 @@ public final class ServerNetworking {
                 buf.writeVarInt(damage);
                 buf.writeByte(type);
                 buf.writeFloat(ratio);
+                buf.writeVarInt(attackerId);
                 ServerPlayNetworking.send(p, Net.HITSPLAT, buf);
             }
         }
