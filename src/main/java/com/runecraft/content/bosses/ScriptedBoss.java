@@ -262,12 +262,22 @@ public abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScale
         return boss.getHealth() * 100.0 / boss.getMaxHealth();
     }
 
+    /**
+     * The player the boss fights: its target while that player is still in the fight, else the nearest player within 24 blocks it
+     * would attack unprovoked ({@link DataBossEntity#wantsToAttack}, as its target goal's hunt). A boss the wiki calls not aggressive
+     * (the Giant Mole, the Kraken, Vorkath, the Abyssal Sire, the Thermonuclear smoke devil, the Grotesque Guardians, Vardorvis)
+     * picks nobody here: it fights the player who disturbed it (its summoner, its first target) or attacked it (its target goal's
+     * retaliation), and once that fight is gone (the Mole dug away, its target left the lair) it waits to be attacked again.
+     */
     protected ServerPlayer target(DataBossEntity boss) {
         if (boss.getTarget() instanceof ServerPlayer p && p.isAlive() && !p.isSpectator() && !p.isCreative()) {
             return p;
         }
         ServerPlayer nearest = null;
         for (ServerPlayer p : BossFx.players(boss, 24)) {
+            if (!boss.wantsToAttack(p)) {
+                continue; // a passive boss never picks a player on its own
+            }
             if (nearest == null || p.distanceToSqr(boss) < nearest.distanceToSqr(boss)) {
                 nearest = p;
             }
