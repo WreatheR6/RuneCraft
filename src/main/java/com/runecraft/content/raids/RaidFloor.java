@@ -20,14 +20,13 @@ import net.minecraft.world.phys.Vec3;
  * world. Every block goes back as {@link FloorMarkers} promises (a server stop, a crash).
  */
 final class RaidFloor {
-    // The colour of each meaning, in one place: round 43's floor-marker scope adds red strike, cyan safe and dark red blood kinds
-    // to HazardKind; until both are merged the nearest existing colours stand in.
-    /** Where a strike will land (orange, the typeless/AoE colour). */
-    static final HazardKind DANGER = HazardKind.FIRE;
-    /** Where to stand (yellow, as Eyatlalli's glyph). */
-    static final HazardKind SAFE = HazardKind.GLYPH;
-    /** The Maiden's blood (orange until a red kind exists). */
-    static final HazardKind BLOOD = HazardKind.FIRE;
+    // The colour of each meaning, in one place, the same as the bosses' floor marks (round 43: red strike, cyan safe, dark red blood).
+    /** Where a strike will land (red). */
+    static final HazardKind DANGER = HazardKind.STRIKE;
+    /** Where to stand (cyan). */
+    static final HazardKind SAFE = HazardKind.SAFE;
+    /** The Maiden's blood (dark red). */
+    static final HazardKind BLOOD = HazardKind.BLOOD;
     /** Kephri's dung (grey). */
     static final HazardKind DUNG = HazardKind.GAS;
     /** Olm's acid and Xarpus's exhumes (lime). */
