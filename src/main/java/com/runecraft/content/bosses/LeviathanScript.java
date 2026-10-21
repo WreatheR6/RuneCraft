@@ -29,7 +29,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * The Leviathan (OSRS Wiki "The Leviathan/Strategies", {@link LeviathanRules}): volleys of orbs announced as they fly (blue
+ * The Leviathan (OSRS Wiki "The Leviathan/Strategies", {@link LeviathanRules}): volleys of orbs announced as each volley begins (blue
  * magic, green ranged, orange melee; switch protection prayers for each), faster every volley; after each a roar, debris
  * (one stays on the player's tile as a blocker, five in a + awakened) and a special, alternating Lightning Barrage (a current
  * chasing the player, orbs across the arena) and Smoke Blast (ten debris, then a blast for anyone it can see - hide behind
