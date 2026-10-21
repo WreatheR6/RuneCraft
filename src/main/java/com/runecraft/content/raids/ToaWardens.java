@@ -236,6 +236,7 @@ final class ToaWardens extends RoomLogic {
         phantomAttackCount = 0;
         enraged = false;
         rippedColumns = 0;
+        ripWarnedFor = -1;
         obelisk = spawnBoss("wardens_obelisk", at(OBELISK_X, 0));
         elidinis = spawnBoss("elidinis_warden", at(OBELISK_X, -WARDEN_Z));
         tumeken = spawnBoss("tumekens_warden", at(OBELISK_X, WARDEN_Z));
@@ -502,9 +503,14 @@ final class ToaWardens extends RoomLogic {
             if (s.x - (center().getX() + 0.5) <= -RaidBuilder.HALF + 4) {
                 continue; // the stairs' edge
             }
-            RaidEffects.strike(world(), s, 1.5, 15, 4, w, ParticleTypes.END_ROD, null, true);
+            // round 43: each pyramid's burst marked on the floor too. // playability: OSRS shows the pyramids over their tiles
+            RaidEffects.mark(world(), s, 1.5).delay(4).source(w).warn(ParticleTypes.END_ROD).damage(0, 15).floor(RaidFloor.DANGER).start();
         }
     }
+
+    /** Self-test: charged shots that landed, and the game ticks the last one flew. */
+    int chargedShotsLanded;
+    long lastChargedShotFlight = -1;
 
     /**
      * Charged Shot (OSRS): a slow ball at every player that can't be prayed against. Elidinis' small ball splashes onto
@@ -513,50 +519,58 @@ final class ToaWardens extends RoomLogic {
      */
     private void chargedShot(int side, DataBossEntity w) {
         List<ServerPlayer> targets = players();
-        Map<ServerPlayer, Vec3> aimed = new HashMap<>();
-        for (ServerPlayer p : targets) {
-            aimed.put(p, p.position());
-            world().sendParticles(side == 0 ? ParticleTypes.SOUL_FIRE_FLAME : ParticleTypes.FLAME, w.getX(), w.getY() + 2, w.getZ(), 20, 0.4,
-                    0.4, 0.4, 0.05);
+        world().sendParticles(side == 0 ? ParticleTypes.SOUL_FIRE_FLAME : ParticleTypes.FLAME, w.getX(), w.getY() + 2, w.getZ(), 20, 0.4,
+                0.4, 0.4, 0.05);
+        // Round 43: a ball flies at each player (drawn all the way, five game ticks as before), with the reach of its splash (or
+        // its share) drawn round its target: spread out from Elidinis' ball, stack up for Tumeken's. // playability: it was a
+        // particle puff at the Warden and a hit five ticks later
+        RaidEffects.telegraph(targets, side == 0 ? "Elidinis' charged shot - spread out!" : "Tumeken's charged shot - stack up!");
+        long launched = RaidEffects.now();
+        java.util.function.BooleanSupplier attempt = current();
+        for (ServerPlayer target : targets) {
+            RaidEffects.cue(5, center().getCenter(), () -> {
+                if (!alive(w) || phase != 1 || !target.isAlive()) {
+                    return false;
+                }
+                com.runecraft.boss.ThreatCues.ring(world(), target.position(), 1.6, side == 0 ? com.runecraft.util.Msg.TYPELESS_RGB : 0x73FF73,
+                        null, false);
+                return true;
+            });
+            RaidEffects.projectile(world(), w.getEyePosition(), target, null, 5, () -> attempt.getAsBoolean() && alive(w) && phase == 1,
+                    () -> landChargedShot(side, w, target, launched));
         }
-        later(5, () -> {
-            if (!alive(w) || phase != 1) {
-                return;
-            }
-            boolean solo = raid.partySize() <= 1;
-            double mult = raid.damageMultiplier();
-            List<ServerPlayer> here = players();
-            if (side == 0) {
-                int cap = ToaBossRules.chargedShotCap(true, solo);
-                for (ServerPlayer target : aimed.keySet()) {
-                    if (!here.contains(target)) {
-                        continue;
-                    }
-                    for (ServerPlayer p : here) {
-                        if (p == target || p.distanceToSqr(target) < 1.6 * 1.6) {
-                            RaidEffects.hitRaw(w, p, Math.min(cap, (int) Math.round((18 + rnd().nextInt(10)) * mult)));
-                        }
-                    }
-                }
-            } else {
-                for (ServerPlayer target : aimed.keySet()) {
-                    if (!here.contains(target)) {
-                        continue;
-                    }
-                    List<ServerPlayer> stack = new ArrayList<>();
-                    for (ServerPlayer p : here) {
-                        if (p.distanceToSqr(target) < 1.6 * 1.6) {
-                            stack.add(p);
-                        }
-                    }
-                    double total = (12 + rnd().nextInt(8)) * mult * (solo ? 1 : 1 + 0.6 * (raid.partySize() - 1));
-                    int each = (int) Math.round(total / Math.max(1, stack.size()));
-                    for (ServerPlayer p : stack) {
-                        RaidEffects.hitRaw(w, p, Math.min(ToaBossRules.chargedShotCap(false, solo), each));
-                    }
+    }
+
+    /** One charged shot landing on its target: Elidinis' splashes on anyone next to them, Tumeken's is shared by them. */
+    private void landChargedShot(int side, DataBossEntity w, ServerPlayer target, long launched) {
+        List<ServerPlayer> here = players();
+        if (!here.contains(target)) {
+            return;
+        }
+        chargedShotsLanded++;
+        lastChargedShotFlight = RaidEffects.now() - launched;
+        boolean solo = raid.partySize() <= 1;
+        double mult = raid.damageMultiplier();
+        if (side == 0) {
+            int cap = ToaBossRules.chargedShotCap(true, solo);
+            for (ServerPlayer p : here) {
+                if (p == target || p.distanceToSqr(target) < 1.6 * 1.6) {
+                    RaidEffects.hitRaw(w, p, Math.min(cap, (int) Math.round((18 + rnd().nextInt(10)) * mult)));
                 }
             }
-        });
+        } else {
+            List<ServerPlayer> stack = new ArrayList<>();
+            for (ServerPlayer p : here) {
+                if (p.distanceToSqr(target) < 1.6 * 1.6) {
+                    stack.add(p);
+                }
+            }
+            double total = (12 + rnd().nextInt(8)) * mult * (solo ? 1 : 1 + 0.6 * (raid.partySize() - 1));
+            int each = (int) Math.round(total / Math.max(1, stack.size()));
+            for (ServerPlayer p : stack) {
+                RaidEffects.hitRaw(w, p, Math.min(ToaBossRules.chargedShotCap(false, solo), each));
+            }
+        }
     }
 
     /**
@@ -1059,6 +1073,16 @@ final class ToaWardens extends RoomLogic {
         RaidEffects.telegraph(players(), RaidRealtime.wardenSlamCue(kind));
         int cz = center().getZ();
         long made = RaidEffects.now();
+        // Round 43: the struck rows are marked on the floor too, until the floor rises. // playability: OSRS raises the floor
+        List<int[]> struck = new ArrayList<>();
+        for (int z = -18; z <= 18; z++) {
+            if (ToaBossRules.slamHits(kind, z)) {
+                for (int x = -16; x <= 10; x++) {
+                    struck.add(new int[]{center().getX() + x, cz + z});
+                }
+            }
+        }
+        RaidFloor.columns(world(), struck, center().getY() + 1, RaidFloor.DANGER, SLAM_LEAD_TICKS, warden, center().getCenter());
         RaidEffects.cue(SLAM_LEAD_TICKS, () -> {
             if (!alive(warden) || phase != 3) {
                 return false;
@@ -1220,16 +1244,29 @@ final class ToaWardens extends RoomLogic {
      */
     private void enrageTick(long tick, long now, List<ServerPlayer> players) {
         boolean insanity = raid.invocations().contains(Invocation.INSANITY);
+        // Round 43: every lightning strike marked on the floor (light blue) until it lands. // playability: OSRS shows the
+        // lightning's shadow on its tiles
         if (tick % ToaBossRules.wardenLightningEvery(insanity) == 0) {
             int x = -18 + rippedColumns + rnd().nextInt(Math.max(1, 30 - rippedColumns));
-            RaidEffects.strike(world(), vec(x, -18 + rnd().nextInt(37)), 1.0, 20, 4, warden, ParticleTypes.SMOKE, null, true);
+            RaidEffects.mark(world(), vec(x, -18 + rnd().nextInt(37)), 1.0).delay(4).source(warden).warn(ParticleTypes.SMOKE).damage(0, 20)
+                    .floor(RaidFloor.LIGHTNING).start();
         }
         if (tick % 6 == 3) {
             for (ServerPlayer p : players) {
-                RaidEffects.strike(world(), p.position(), 1.0, 20, 4, warden, ParticleTypes.SMOKE, null, true);
+                RaidEffects.mark(world(), p.position(), 1.0).delay(4).source(warden).warn(ParticleTypes.SMOKE).damage(0, 20)
+                        .floor(RaidFloor.LIGHTNING).start();
             }
         }
         int lastColumn = OBELISK_X - 3 + RaidBuilder.HALF - 1; // columns counted from the west wall
+        // The next row to be torn away is marked on the floor for the strike floor first (round 43: it vanished unannounced).
+        // // playability: OSRS shows the phantom reaching for the row
+        if (rippedColumns < lastColumn && now >= nextRip - RIP_WARN_TICKS && ripWarnedFor != rippedColumns) {
+            ripWarnedFor = rippedColumns;
+            int wx = center().getX() - RaidBuilder.HALF + 1 + rippedColumns;
+            RaidFloor.rect(world(), wx, center().getZ() - RaidBuilder.HALF + 1, wx, center().getZ() + RaidBuilder.HALF - 1, center().getY() + 1,
+                    RaidFloor.DANGER, (int) Math.max(1, nextRip - now), warden);
+            ripsWarned++;
+        }
         if (now >= nextRip && rippedColumns < lastColumn) {
             nextRip = now + ToaBossRules.wardenRipEvery(insanity);
             int x = -RaidBuilder.HALF + 1 + rippedColumns;
@@ -1249,6 +1286,12 @@ final class ToaWardens extends RoomLogic {
             }
         }
     }
+
+    /** Game ticks the next row to be torn away is marked before it goes. */
+    static final int RIP_WARN_TICKS = com.runecraft.osrs.ArenaTiming.STRIKE_FLOOR_TICKS;
+    /** The ripped-column count the rip warning was last shown for (-1: none), and warnings shown (self-test). */
+    private int ripWarnedFor = -1;
+    int ripsWarned;
 
     private void restoreFloor() {
         if (rippedColumns <= 0) {
@@ -1293,8 +1336,8 @@ final class ToaWardens extends RoomLogic {
             case "Kephri" -> {
                 int radius = Invocation.kephriFireballRadius(inv);
                 int max = (int) Math.round(ToaBossRooms.Kephri.KEPHRI_MAX_HIT * Invocation.kephriFireballDamage(inv));
-                RaidEffects.strike(world(), p.position(), 0.8 + 1.5 * radius, max, 3, mob, ParticleTypes.FLAME, AttackType.MAGIC,
-                        ToaBossRooms.Kephri.KEPHRI_PROTECTED_SHARE);
+                RaidEffects.mark(world(), p.position(), 0.8 + 1.5 * radius).delay(3).source(mob).warn(ParticleTypes.FLAME).damage(0, max)
+                        .style(AttackType.MAGIC, ToaBossRooms.Kephri.KEPHRI_PROTECTED_SHARE).floor(RaidFloor.DANGER).start();
             }
             case "Akkha" -> {
                 boolean magic = inv.contains(Invocation.STAY_VIGILANT) ? rnd().nextBoolean() : (phantomAttacks[i] / 3) % 2 == 1;
@@ -1302,29 +1345,29 @@ final class ToaWardens extends RoomLogic {
                 AttackType style = magic ? AttackType.MAGIC : AttackType.RANGED;
                 world().sendParticles(magic ? ParticleTypes.WITCH : ParticleTypes.CRIT, mob.getX(), mob.getY() + 2, mob.getZ(), 12, 0.3, 0.3, 0.3,
                         0.05);
-                later(2, () -> {
-                    if (!alive(warden) || phase != 3 || !mob.isAlive()) {
-                        return;
-                    }
-                    // OSRS: Akkha's ranged and magic hit everyone; a protection prayer only takes 80-90% off.
-                    for (ServerPlayer q : players()) {
-                        RaidEffects.hit(mob, q, rnd().nextInt(ToaBossRules.AKKHA_PHANTOM_MAX_HIT + 1), style,
-                                ToaBossRules.AKKHA_PROTECTED_RANGED_MAGIC);
-                    }
-                });
+                // Round 43: a projectile in its style's colour at each player, the prayer read as it lands (it was a hit two ticks
+                // after a particle puff); its style named mid-screen. // playability: OSRS flies them too
+                RaidEffects.telegraph(players, "Akkha's phantom: " + (magic ? "magic" : "ranged") + " - pray "
+                        + (magic ? "Magic" : "Missiles") + "!");
+                for (ServerPlayer q : players) {
+                    RaidEffects.projectile(world(), mob.getEyePosition(), q, style, 2, () -> alive(warden) && phase == 3 && mob.isAlive(), () ->
+                            // OSRS: Akkha's ranged and magic hit everyone; a protection prayer only takes 80-90% off.
+                            RaidEffects.hit(mob, q, rnd().nextInt(ToaBossRules.AKKHA_PHANTOM_MAX_HIT + 1), style,
+                                    ToaBossRules.AKKHA_PROTECTED_RANGED_MAGIC));
+                }
             }
             case "Zebak" -> {
                 AttackType style = rnd().nextBoolean() ? AttackType.MAGIC : AttackType.RANGED;
                 world().sendParticles(style == AttackType.MAGIC ? ParticleTypes.DAMAGE_INDICATOR : ParticleTypes.CRIT, mob.getX(), mob.getY() + 2,
                         mob.getZ(), 10, 0.3, 0.3, 0.3, 0.05);
-                later(2, () -> {
-                    if (alive(warden) && phase == 3 && mob.isAlive() && p.isAlive()) {
-                        RaidEffects.hit(mob, p, rnd().nextInt(ToaBossRules.ZEBAK_RANGED_MAX + 1), style, false);
-                    }
-                });
+                // round 43: his jug or rock flies in its style's colour, prayable until it lands
+                com.runecraft.util.Msg.telegraph(p, "Zebak's phantom: " + (style == AttackType.MAGIC ? "jug - pray Magic" : "rock - pray Missiles")
+                        + "!", null);
+                RaidEffects.projectile(world(), mob.getEyePosition(), p, style, 2, () -> alive(warden) && phase == 3 && mob.isAlive(), () ->
+                        RaidEffects.hit(mob, p, rnd().nextInt(ToaBossRules.ZEBAK_RANGED_MAX + 1), style, false));
             }
-            default -> RaidEffects.strike(world(), p.position(), 0.9, ToaBossRules.BABA_PHANTOM_BOULDER_MAX, 3, mob,
-                    ParticleTypes.CAMPFIRE_COSY_SMOKE, null, true);
+            default -> RaidEffects.mark(world(), p.position(), 0.9).delay(3).source(mob).warn(ParticleTypes.CAMPFIRE_COSY_SMOKE)
+                    .damage(0, ToaBossRules.BABA_PHANTOM_BOULDER_MAX).floor(RaidFloor.DANGER).start();
         }
     }
 

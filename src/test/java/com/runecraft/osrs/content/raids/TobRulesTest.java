@@ -110,6 +110,18 @@ class TobRulesTest {
         // The tornado comes once someone steps onto the fourth row (row 3).
         assertFalse(TobRules.mazeTornado(2));
         assertTrue(TobRules.mazeTornado(3));
+        // One runner: their row (before the maze, -1).
+        assertEquals(-1, TobRules.mazeTornadoProgress(new int[]{-1}, new int[]{0}));
+        assertEquals(3, TobRules.mazeTornadoProgress(new int[]{3}, new int[]{0}));
+        assertEquals(-1, TobRules.mazeTornadoProgress(new int[0], new int[0]));
+        // Hard mode, two runners (rows 0-6 and 7-13): the second starts on row 7 but has walked none of their part, and only
+        // the runner lowest in orb order counts, so no tornado until the first passes the third row.
+        assertFalse(TobRules.mazeTornado(TobRules.mazeTornadoProgress(new int[]{-1, 7}, new int[]{0, 7})));
+        assertFalse(TobRules.mazeTornado(TobRules.mazeTornadoProgress(new int[]{2, 11}, new int[]{0, 7})));
+        assertTrue(TobRules.mazeTornado(TobRules.mazeTornadoProgress(new int[]{3, 8}, new int[]{0, 7})));
+        // the first runner is out: the second's own part counts from its first row
+        assertFalse(TobRules.mazeTornado(TobRules.mazeTornadoProgress(new int[]{9}, new int[]{7})));
+        assertTrue(TobRules.mazeTornado(TobRules.mazeTornadoProgress(new int[]{10}, new int[]{7})));
         assertEquals(100, TobRules.SOTETSEG_DEFENCE_FLOOR);
         // Hard mode Xarpus: the two outer rings start poisoned except the six entrance tiles (west side, z = -1..1).
         int half = 8;
@@ -165,6 +177,14 @@ class TobRulesTest {
         assertEquals(50, TobRules.VERZIK_SLAM_MAX, "infobox: 50 (bounce)");
         assertEquals(48, TobRules.VERZIK_LIGHTNING_MAX);
         assertEquals(25, TobRules.VERZIK_LIGHTNING_INSULATED_MAX);
+        // Mod Ash: the ball passing through her deals "15-20. No accuracy calculation."; it strikes the fourth player reached
+        assertEquals(15, TobRules.VERZIK_LIGHTNING_SELF_MIN);
+        assertEquals(20, TobRules.VERZIK_LIGHTNING_SELF_MAX);
+        // the players it chains through take "a small amount of damage", well under the last player's strike
+        assertTrue(TobRules.VERZIK_LIGHTNING_CHAIN_MIN >= 1
+                && TobRules.VERZIK_LIGHTNING_CHAIN_MAX < TobRules.VERZIK_LIGHTNING_INSULATED_MAX);
+        assertEquals(4, RaidRealtime.VERZIK_LIGHTNING_PLAYERS);
+        assertEquals(5, TobRules.VERZIK_LIGHTNING_EVERY);
         assertEquals(7, TobRules.DAWNBRINGER_RANGE_TILES);
         // Raw damage barely hurts the Athanatos.
         assertEquals(10, TobRules.athanatosRawDamage(40));

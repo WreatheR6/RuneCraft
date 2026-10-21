@@ -221,6 +221,24 @@ public final class TobRules {
         return furthestRow > SOTETSEG_TORNADO_ROW - 1;
     }
 
+    /**
+     * The runners' maze progress the tornado reads ({@link #mazeTornado}). Hard mode (OSRS wiki "Sotetseg"): the maze is divided
+     * among the runners, in orb order, and the tornado forms once the runner lowest in orb order passes the third row; each
+     * runner's progress counts from the first row of their own part, so one who starts mid-maze has walked none of it.
+     * {@code rows[i]}: runner i's maze row (-1 before the maze); {@code starts[i]}: the first row of their part (0 for a lone
+     * runner, whose progress is their row). Returns -1 with no runner. // approx: once the first runner is out, the next one's
+     * part counts (the wiki only names the first)
+     */
+    public static int mazeTornadoProgress(int[] rows, int[] starts) {
+        int lowest = -1;
+        for (int i = 0; i < rows.length; i++) {
+            if (lowest < 0 || starts[i] < starts[lowest]) {
+                lowest = i;
+            }
+        }
+        return lowest < 0 ? -1 : Math.max(-1, rows[lowest] - starts[lowest]);
+    }
+
     // ------------------------------------------------------------------ Xarpus
 
     /** Exhumeds before Xarpus starts phase 2 (OSRS wiki: 12 in trios and smaller, 15 in four- and five-player teams). */
@@ -335,6 +353,15 @@ public final class TobRules {
     public static final int VERZIK_LIGHTNING_EVERY = 5;
     public static final int VERZIK_LIGHTNING_MAX = 48;
     public static final int VERZIK_LIGHTNING_INSULATED_MAX = 25;
+    /** What the lightning ball deals to Verzik when it passes through her (Mod Ash: "15-20. No accuracy calculation."). */
+    public static final int VERZIK_LIGHTNING_SELF_MIN = 15;
+    public static final int VERZIK_LIGHTNING_SELF_MAX = 20;
+    /**
+     * What the lightning ball deals to each player it chains through before the last (OSRS wiki "Verzik Vitur": it "will chain
+     * between players in a random sequence, hitting them for a small amount of damage"). // approx: no figure published
+     */
+    public static final int VERZIK_LIGHTNING_CHAIN_MIN = 1;
+    public static final int VERZIK_LIGHTNING_CHAIN_MAX = 5;
     /**
      * The phase 2 and 3 nylocas home in on a player and explode for up to 63 when they reach their target (OSRS wiki
      * "Verzik Vitur", which settles the dispute with the Strategies page's 46), and die after ~15 s (25 ticks). Players up

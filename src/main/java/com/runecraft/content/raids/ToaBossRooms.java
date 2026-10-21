@@ -44,6 +44,37 @@ import org.joml.Vector3f;
  * {@link Invocation}, the other numbers from {@link ToaBossRules}.
  */
 final class ToaBossRooms {
+    /**
+     * Players encased in Akkha's ice and the raid game tick it thaws (OSRS: their attacks are a tick slower until then): each
+     * attack they make adds a game tick to their weapon delay (round 43).
+     */
+    static final Map<UUID, Long> ICED = new HashMap<>();
+    /** The weapon delay each iced player was last slowed at, so one multi-hit attack is slowed once. */
+    private static final Map<UUID, Long> ICED_AT = new HashMap<>();
+
+    /** Combat hooks of the ToA bosses (round 43): Akkha's ice slows the attacks of whoever it encases. */
+    static void init() {
+        com.runecraft.combat.CombatHooks.addModifier(new com.runecraft.combat.CombatHooks.PlayerAttackModifier() {
+            @Override
+            public void afterHit(ServerPlayer player, LivingEntity target, AttackType type, int dealt) {
+                Long until = ICED.get(player.getUUID());
+                if (until == null) {
+                    return;
+                }
+                if (RaidEffects.now() >= until) {
+                    ICED.remove(player.getUUID());
+                    ICED_AT.remove(player.getUUID());
+                    return;
+                }
+                PlayerData d = Players.data(player);
+                if (ICED_AT.getOrDefault(player.getUUID(), Long.MIN_VALUE) == d.lastAttackTick) {
+                    return;
+                }
+                com.runecraft.combat.AttackTimer.addDelay(player, com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK);
+                ICED_AT.put(player.getUUID(), d.lastAttackTick);
+            }
+        });
+    }
     private ToaBossRooms() {
     }
 
@@ -322,13 +353,41 @@ final class ToaBossRooms {
                     if (alive(kephri) && dazed) {
                         double a = Math.PI / 3 * point + Math.PI / 6;
                         for (int k = 0; k < n; k++) {
-                            spawnMob("toa_scarab_swarm", at((int) Math.round(Math.cos(a) * 16) + k, (int) Math.round(Math.sin(a) * 16)), false);
+                            LivingEntity swarm = spawnMob("toa_scarab_swarm", at((int) Math.round(Math.cos(a) * 16) + k,
+                                    (int) Math.round(Math.sin(a) * 16)), false);
+                            markSwarm(swarm);
                         }
                     }
                 });
             }
             later(delay + 4, this::endIntermission);
+            RaidEffects.telegraph(players(), "Kephri calls " + swarms + " swarms - kill them before they reach her!");
         }
+
+        /**
+         * A scarab swarm outlined and its way to Kephri drawn while it lives (round 43). // playability: OSRS swarms are small
+         * dark clusters on dark sand, read by their movement; here they glow and their path is dotted
+         */
+        private void markSwarm(LivingEntity swarm) {
+            if (swarm == null) {
+                return;
+            }
+            swarm.setGlowingTag(true);
+            RaidEffects.cue(600, center().getCenter(), () -> {
+                if (!alive(swarm) || !alive(kephri)) {
+                    return false;
+                }
+                Vec3 a = swarm.position();
+                Vec3 b = kephri.position();
+                for (int k = 1; k <= 4; k++) {
+                    Vec3 at = a.lerp(b, k / 5.0);
+                    world().sendParticles(SWARM_PATH, at.x, at.y + 0.2, at.z, 1, 0, 0, 0, 0);
+                }
+                return true;
+            });
+        }
+
+        private static final DustParticleOptions SWARM_PATH = new DustParticleOptions(new Vector3f(0.55f, 0.35f, 0.9f), 0.9f);
 
         /** The swarms are spent: once her overlords are dead the shield is back at full strength. */
         private void endIntermission() {
@@ -403,19 +462,55 @@ final class ToaBossRooms {
             say("The Arcane Scarab scuttles away, dispersing its swarm.");
         }
 
+        /** Blocks the dung row runs on from the struck spot, away from Kephri. // approx */
+        static final int DUNG_ROW_LENGTH = 6;
+        /** Game ticks the dung piles lie on the floor. // approx */
+        static final int DUNG_TICKS = 25;
+        /** Self-test: dung strikes made, players they hit, and how far the last one threw its target. */
+        int dungStrikes;
+        int dungHits;
+        double lastThrow;
+
+        /**
+         * Dung Strike (OSRS wiki): flies buzz round a player, warning the team; then Kephri throws them back, stunned for two
+         * seconds, and dung falls along the way they flew; whoever is in the way takes light damage and is shoved aside. Round
+         * 43: the flies' spot and the row behind it are marked (on the floor too) from the buzzing, so stepping aside dodges it,
+         * and the dung lies on the floor afterwards. // playability: OSRS throws the target on the attack tick
+         */
         private void dungStrike(ServerPlayer p) {
             Msg.red(p, "Flies buzz around you...");
-            later(3, () -> {
-                if (!alive(kephri) || !p.isAlive()) {
-                    return;
+            Msg.telegraph(p, "Kephri: dung strike - step aside!", null);
+            dungStrikes++;
+            Vec3 spot = p.position();
+            Vec3 away = spot.subtract(kephri.position()).multiply(1, 0, 1);
+            Vec3 dir = away.lengthSqr() < 1e-4 ? new Vec3(-1, 0, 0) : away.normalize();
+            Vec3 end = spot.add(dir.scale(DUNG_ROW_LENGTH));
+            RaidEffects.cue(3, center().getCenter(), () -> {
+                if (!p.isAlive() || !alive(kephri)) {
+                    return false;
                 }
-                Msg.red(p, "Kephri throws you back!");
-                Vec3 push = p.position().subtract(kephri.position()).multiply(1, 0, 1).normalize().scale(1.4);
-                p.push(push.x, 0.4, push.z);
-                p.hurtMarked = true;
-                hurt(kephri, p, 5 + rnd().nextInt(11)); // approx: "light damage"
-                world().sendParticles(ParticleTypes.ITEM_SLIME, p.getX(), p.getY() + 0.5, p.getZ(), 12, 0.6, 0.3, 0.6, 0.05);
+                world().sendParticles(ParticleTypes.ITEM_SLIME, p.getX(), p.getY() + 1.6, p.getZ(), 4, 0.4, 0.3, 0.4, 0.02);
+                return true;
             });
+            DataBossEntity source = kephri;
+            java.util.function.BooleanSupplier attempt = current();
+            RaidEffects.lane(world(), spot, end, 0.8).delay(3).source(source).warn(ParticleTypes.ITEM_SLIME).floor(RaidFloor.DANGER)
+                    .live(() -> attempt.getAsBoolean() && alive(source))
+                    .onHit(q -> {
+                        dungHits++;
+                        hurt(source, q, 5 + rnd().nextInt(11)); // approx: "light damage"
+                        if (q == p) {
+                            Msg.red(q, "Kephri throws you back!");
+                            lastThrow = shove(q, dir, DUNG_ROW_LENGTH + 2);
+                            com.runecraft.content.systems.SysCombat.freeze(q, 3); // OSRS: stunned for 2 seconds
+                        } else {
+                            Msg.red(q, "Dung falls on you!");
+                            shove(q, new Vec3(-dir.z, 0, dir.x).scale(rnd().nextBoolean() ? 1 : -1), 2);
+                        }
+                        world().sendParticles(ParticleTypes.ITEM_SLIME, q.getX(), q.getY() + 0.5, q.getZ(), 12, 0.6, 0.3, 0.6, 0.05);
+                    })
+                    .onLand(() -> RaidFloor.lane(world(), spot, end, 0.5, RaidFloor.DUNG, DUNG_TICKS, source))
+                    .start();
         }
 
         /**
@@ -426,8 +521,9 @@ final class ToaBossRooms {
             Set<Invocation> inv = raid.invocations();
             int radius = Invocation.kephriFireballRadius(inv);
             int max = (int) Math.round(KEPHRI_MAX_HIT * Invocation.kephriFireballDamage(inv));
-            RaidEffects.strike(world(), p.position(), 0.8 + 1.5 * radius, max, 3, kephri, ParticleTypes.FLAME, AttackType.MAGIC,
-                    KEPHRI_PROTECTED_SHARE);
+            // its shadow on the floor too (round 43). // playability: OSRS shows the shadow on the tiles
+            RaidEffects.mark(world(), p.position(), 0.8 + 1.5 * radius).delay(3).source(kephri).warn(ParticleTypes.FLAME).damage(0, max)
+                    .style(AttackType.MAGIC, KEPHRI_PROTECTED_SHARE).floor(RaidFloor.DANGER).start();
         }
 
         @Override
@@ -502,6 +598,7 @@ final class ToaBossRooms {
                     LivingEntity swarm = spawnMob("toa_scarab_swarm", g.blockPosition(), false);
                     if (swarm != null) {
                         swarm.setHealth(Math.max(1, swarm.getMaxHealth() * (float) raid.healthFraction(g)));
+                        markSwarm(swarm);
                     }
                 } else if ("toa_spitting_scarab".equals(id) && tick % 3 == 0) {
                     // OSRS: the Spitting Scarab hits every player within 8 tiles (poisoning from 6).
@@ -689,6 +786,8 @@ final class ToaBossRooms {
      */
     static final class Akkha extends PathBoss {
         private static final String[] STYLES = {"melee", "ranged", "magic"};
+        /** Game ticks the ice quadrant's element lasts. // approx */
+        static final int ICE_TICKS = 10;
         DataBossEntity akkha;
         int style;
         /** Attacks made (autos and specials), and auto-attacks since the last special. */
@@ -1022,17 +1121,57 @@ final class ToaBossRooms {
                             0.3, 0.2, 0.3, 0.01);
                 }
                 if (shadowCharge[q] >= 40) {
-                    shadowCharge[q] = 0;
-                    warn("The shadow in the " + ToaBossRules.QUADRANTS[q] + " quadrant slams its spear down!");
-                    for (ServerPlayer p : players()) {
-                        if (quadrant(p.position()) == q) {
-                            // OSRS: a heavy hit, Akkha's Shadow's infobox max hit of 22, plus the quadrant's element.
-                            hurt(akkha, p, ToaBossRules.AKKHA_SHADOW_MAX_HIT / 2 + rnd().nextInt(ToaBossRules.AKKHA_SHADOW_MAX_HIT / 2 + 1));
-                            element(p, q);
-                        }
-                    }
+                    shadowSlam(q);
                 }
             }
+        }
+
+        /** Shadow slams landed, and the game ticks between the last one's warning and its landing (self-test). */
+        int shadowSlams;
+        long lastShadowSlamLead = -1;
+
+        /**
+         * A shadow's hourglass is full: it raises its spear and the whole quadrant is marked on the floor, then the slam envelops
+         * whoever is still in it (Akkha's Shadow's infobox max hit of 22, plus the quadrant's element). A shadow killed meanwhile
+         * spares it. Its charge then starts again from below zero (OSRS: it resumes after a short time). // playability: OSRS
+         * slams as the hourglass fills, the element spreading from the edge to the centre
+         */
+        void shadowSlam(int q) {
+            int lead = com.runecraft.osrs.content.raids.RaidRealtime.SHADOW_SLAM_LEAD_TICKS;
+            shadowCharge[q] = -lead;
+            String where = com.runecraft.osrs.content.raids.RaidRealtime.quarter(q == 0 || q == 3, q <= 1);
+            warn("The shadow in the " + ToaBossRules.QUADRANTS[q] + " quadrant (" + where + ") raises its spear - leave that quadrant!");
+            markQuadrant(q, RaidFloor.DANGER, lead);
+            LivingEntity shadow = shadows[q];
+            long made = now();
+            later(lead, () -> {
+                if (!alive(akkha) || !alive(shadow) || finalStand) {
+                    return;
+                }
+                shadowSlams++;
+                lastShadowSlamLead = now() - made;
+                say("The shadow in the " + ToaBossRules.QUADRANTS[q] + " quadrant slams its spear down!");
+                for (ServerPlayer p : players()) {
+                    if (quadrant(p.position()) == q) {
+                        hurt(akkha, p, ToaBossRules.AKKHA_SHADOW_MAX_HIT / 2 + rnd().nextInt(ToaBossRules.AKKHA_SHADOW_MAX_HIT / 2 + 1));
+                        element(p, q);
+                    }
+                }
+            });
+        }
+
+        /**
+         * Marks a quadrant's floor (both centre lines left plain) with {@code kind} for {@code gameTicks} game ticks (round 43).
+         * // playability: OSRS shows the quadrant's element spreading over its tiles
+         */
+        RaidFloor.Group markQuadrant(int q, com.runecraft.boss.HazardKind kind, int gameTicks) {
+            BlockPos c = center();
+            boolean west = q == 0 || q == 3;
+            boolean north = q <= 1;
+            int x0 = west ? c.getX() - RaidBuilder.HALF + 1 : c.getX() + 1;
+            int z0 = north ? c.getZ() - RaidBuilder.HALF + 1 : c.getZ() + 1;
+            return RaidFloor.rect(world(), x0, z0, x0 + RaidBuilder.HALF - 2, z0 + RaidBuilder.HALF - 2, c.getY() + 1, kind, gameTicks,
+                    akkha);
         }
 
         /** A quadrant's element on a player hit there by a special (OSRS). */
@@ -1057,11 +1196,23 @@ final class ToaBossRooms {
                 }
                 case 2 -> dropOverheads(p, "Lightning disables your protection prayers!");
                 default -> {
-                    // Ice: attacks one tick slower until it thaws. // approx: shown as a slow
-                    Msg.red(p, "Ice encases your limbs, slowing you.");
-                    p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 120, 1, false, true));
-                    p.addEffect(new MobEffectInstance(MobEffects.DIG_SLOWDOWN, 120, 1, false, true));
-                    later(10, () -> Msg.game(p, "The ice around you melts away."));
+                    // Ice (OSRS): attacks one tick slower until it thaws. Round 43: on the attack clock (it was a movement slow,
+                    // which OSRS doesn't have). // approx: thaws after 10 ticks
+                    Msg.red(p, "Ice encases your limbs, slowing your attacks.");
+                    long until = now() + ICE_TICKS;
+                    ICED.put(p.getUUID(), until);
+                    RaidEffects.cue(ICE_TICKS, center().getCenter(), () -> {
+                        if (!p.isAlive() || ICED.getOrDefault(p.getUUID(), 0L) != until) {
+                            return false;
+                        }
+                        world().sendParticles(ParticleTypes.SNOWFLAKE, p.getX(), p.getY() + 1.2, p.getZ(), 3, 0.3, 0.4, 0.3, 0.01);
+                        return true;
+                    });
+                    later(ICE_TICKS, () -> {
+                        if (ICED.remove(p.getUUID(), until)) {
+                            Msg.game(p, "The ice around you melts away.");
+                        }
+                    });
                 }
             }
         }
@@ -1118,7 +1269,11 @@ final class ToaBossRooms {
             hidden = true;
             warn("Sections of the room start to glow...");
             List<Integer> order = ToaBossRules.memoryBlastOrder(ToaBossRules.memoryBlastRounds(raid.pathLevel()), rnd());
-            int gap = Invocation.akkhaMemoryBlastTicks(inv);
+            // At least the strike floor between blasts (36 MC). // playability: OSRS gives four ticks, two with Feeling Special?
+            int gap = com.runecraft.osrs.content.raids.RaidRealtime.memoryBlastGap(Invocation.akkhaMemoryBlastTicks(inv));
+            lastMemoryBlastGap = gap;
+            memoryOrder.clear();
+            memoryOrder.addAll(order);
             for (int k = 0; k < order.size(); k++) {
                 int shown = order.get(k);
                 later(1 + 2 * k, () -> {
@@ -1126,15 +1281,32 @@ final class ToaBossRooms {
                     world().sendParticles(ParticleTypes.SOUL_FIRE_FLAME, c.x, c.y + 1, c.z, 60, 3, 0.5, 3, 0.01);
                     world().playSound(null, BlockPos.containing(c), SoundEvents.NOTE_BLOCK_PLING.value(), SoundSource.HOSTILE, 1f,
                             0.7f + shown * 0.15f);
+                    // Round 43: the quadrant's symbol and the floor round it glow yellow while it is shown (the order to
+                    // remember). // playability: OSRS lights the symbol's tiles
+                    BlockPos m = BlockPos.containing(c);
+                    RaidFloor.rect(world(), m.getX() - 2, m.getZ() - 2, m.getX() + 2, m.getZ() + 2, c.y, RaidFloor.SAFE, 2, akkha);
+                    memoryGlows++;
                 });
             }
             int start = 3 + 2 * order.size();
+            later(start - 2, () -> RaidEffects.telegraph(players(), "Memory Blast: " + order.size() + " blasts, "
+                    + String.format(java.util.Locale.ROOT, "%.1f", gap * 0.6) + " s apart - stand in each quadrant in the order it glowed!"));
             for (int k = 0; k < order.size(); k++) {
                 int safe = order.get(k);
+                long due = now() + start + (long) k * gap;
+                // a rising bell in each blast's last moments. // playability
+                RaidEffects.cue(start + k * gap, center().getCenter(), () -> {
+                    long dueMc = due * com.runecraft.osrs.ArenaTiming.MC_PER_GAME_TICK;
+                    if (com.runecraft.osrs.ArenaTiming.finalCue(dueMc, RaidEffects.clockMc())) {
+                        com.runecraft.boss.StrikeMarkers.bell(world(), vec(0, 0), dueMc - RaidEffects.clockMc());
+                    }
+                    return alive(akkha);
+                });
                 later(start + k * gap, () -> {
                     if (!alive(akkha)) {
                         return;
                     }
+                    memoryBlasts++;
                     for (ServerPlayer p : players()) {
                         int q = quadrant(p.position());
                         if (q != safe) {
@@ -1147,6 +1319,12 @@ final class ToaBossRooms {
             }
             later(start + order.size() * gap, () -> hidden = false);
         }
+
+        /** Memory Blast self-test notes: quadrant glows shown, blasts landed, the last gap and order. */
+        int memoryGlows;
+        int memoryBlasts;
+        int lastMemoryBlastGap = -1;
+        final List<Integer> memoryOrder = new ArrayList<>();
 
         /** Distance each player walked of their own accord since the last game tick, and where they were a Minecraft tick ago. */
         private final Map<UUID, Double> walked = new HashMap<>();
@@ -1386,10 +1564,76 @@ final class ToaBossRooms {
             p.setOnGround(onGround);
         }
 
+        /**
+         * Self-test (round 43): Memory Blast glows each quadrant's floor in turn, and a player who stands in each glowing quadrant
+         * in that order, stepping over after each blast, is never hit; the blasts are at least the strike floor apart. A full
+         * shadow marks its quadrant's floor before it slams, and a player who steps out in time is spared. The ice quadrant's
+         * element slows attacks (not movement) until it thaws.
+         */
+        private String selfTestMemoryAndSlam(RaidSelfTest t) {
+            ServerPlayer p = t.player();
+            Set<Invocation> inv = raid.invocations();
+            int hitsBefore = raid.attacksOnParty();
+            memoryBlast(inv);
+            int rounds = memoryOrder.size();
+            RaidSelfTest.expect(rounds > 0 && lastMemoryBlastGap >= com.runecraft.osrs.ArenaTiming.STRIKE_FLOOR_TICKS,
+                    "Akkha: Memory Blast had " + rounds + " rounds " + lastMemoryBlastGap + " ticks apart");
+            t.tick(1);
+            BlockPos glow = BlockPos.containing(quadrantCentre(memoryOrder.get(0))).below();
+            RaidSelfTest.expect(com.runecraft.boss.FloorMarkers.marked(world(), glow), "Akkha: the first glowing quadrant's floor was not marked");
+            // stand in the first safe quadrant, then step on to each next one as the blast before it lands
+            t.moveTo(BlockPos.containing(quadrantCentre(memoryOrder.get(0))));
+            // the first blast lands 3 + 2 x rounds ticks after the special; one tick has passed, stop a tick before it
+            t.tick(1 + 2 * rounds);
+            for (int k = 0; k < rounds; k++) {
+                t.tick(1); // blast k lands with the player in its safe quadrant
+                RaidSelfTest.expect(memoryBlasts == k + 1, "Akkha: Memory Blast " + (k + 1) + " did not land (" + memoryBlasts + ")");
+                if (k + 1 < rounds) {
+                    t.moveTo(BlockPos.containing(quadrantCentre(memoryOrder.get(k + 1))));
+                    t.tick(lastMemoryBlastGap - 1);
+                }
+            }
+            RaidSelfTest.expect(raid.attacksOnParty() == hitsBefore, "Akkha: the Memory Blast hit a player standing in each safe quadrant");
+            RaidSelfTest.expect(memoryGlows == rounds, "Akkha: " + memoryGlows + " quadrant glows for " + rounds + " blasts");
+            t.tick(lastMemoryBlastGap);
+            RaidSelfTest.expect(!hidden, "Akkha did not come back after his Memory Blast");
+            // A shadow's slam: its quadrant is marked, and stepping out in time spares the player.
+            spawnShadows(true);
+            int q = quadrant(p.position());
+            shadowSlam(q);
+            BlockPos inside = BlockPos.containing(quadrantCentre(q)).offset(3, -1, 3);
+            RaidSelfTest.expect(com.runecraft.boss.FloorMarkers.marked(world(), inside), "Akkha: a full shadow's quadrant was not marked");
+            int other = (q + 1) % 4;
+            t.moveTo(BlockPos.containing(quadrantCentre(other)));
+            int slamsBefore = shadowSlams;
+            hitsBefore = raid.attacksOnParty();
+            t.tick(com.runecraft.osrs.content.raids.RaidRealtime.SHADOW_SLAM_LEAD_TICKS + 1);
+            RaidSelfTest.expect(shadowSlams == slamsBefore + 1 && lastShadowSlamLead >= com.runecraft.osrs.ArenaTiming.STRIKE_FLOOR_TICKS,
+                    "Akkha: the shadow's slam landed " + lastShadowSlamLead + " ticks after its warning");
+            RaidSelfTest.expect(raid.attacksOnParty() == hitsBefore, "Akkha: the shadow's slam hit a player who had left its quadrant");
+            RaidSelfTest.expect(!com.runecraft.boss.FloorMarkers.marked(world(), inside), "Akkha: the slammed quadrant's floor stayed marked");
+            for (int k = 0; k < 4; k++) {
+                if (alive(shadows[k])) {
+                    shadows[k].discard();
+                }
+                shadows[k] = null;
+                shadowCharge[k] = 0;
+            }
+            // Ice: attacks a tick slower until it thaws, and no movement slow.
+            element(p, 3);
+            RaidSelfTest.expect(ICED.containsKey(p.getUUID()) && !p.hasEffect(MobEffects.MOVEMENT_SLOWDOWN),
+                    "Akkha: the ice quadrant's element did not slow attacks (or slowed movement)");
+            t.tick(ICE_TICKS + 1);
+            RaidSelfTest.expect(!ICED.containsKey(p.getUUID()), "Akkha: the ice never thawed");
+            return rounds + " memory blasts dodged " + lastMemoryBlastGap + " ticks apart, a shadow slam dodged after " + lastShadowSlamLead
+                    + " ticks, ice slowed attacks";
+        }
+
         @Override
         String selfTestSolve(RaidSelfTest t) {
             int shadowsKilled = 0;
             int[] kills = {0};
+            String memory = selfTestMemoryAndSlam(t);
             String orbs = selfTestTrailingOrbs(t);
             selfTestStandBeside(t);
             String r = grind(t, akkha, AttackType.MAGIC, 30, () -> {
@@ -1419,7 +1663,7 @@ final class ToaBossRooms {
             RaidSelfTest.expect(specialsUsed <= attacks / every && (attacks < 2 * every || specialsUsed >= 1),
                     "Akkha: " + specialsUsed + " specials in " + attacks + " attacks (one every " + every + ")");
             RaidSelfTest.expect(finalStand, "Akkha: he died without his final stand");
-            return r + ", " + (kills[0] + shadowsKilled) + " shadows dispelled, " + orbs;
+            return r + ", " + (kills[0] + shadowsKilled) + " shadows dispelled, " + orbs + ", " + memory;
         }
     }
 
@@ -1552,33 +1796,52 @@ final class ToaBossRooms {
             bananas(tick, inv);
         }
 
-        /** Rockfall: a rock on each player's tile, and two debris piles that stay until destroyed. */
+        /**
+         * Rockfall: a rock on each player's tile, and two debris piles that stay until destroyed. Round 43: every falling rock
+         * is a raid strike marked on the floor from its shadow (the debris too: it was a puff of particles and a tile-exact hit),
+         * and a debris pile never lands on anyone: whoever stands there is hit and shoved off first. // playability: OSRS shows
+         * the rocks' shadows on the tiles
+         */
         private void rockfall() {
+            DataBossEntity source = baba;
+            java.util.function.BooleanSupplier attempt = current();
             for (ServerPlayer p : players()) {
-                RaidEffects.strike(world(), p.position(), 0.9, 30, 3, baba, ParticleTypes.CLOUD, null, true); // approx: heavy
+                RaidEffects.mark(world(), p.position(), 0.9).delay(3).source(source).warn(ParticleTypes.CLOUD).damage(0, 30) // approx: heavy
+                        .floor(RaidFloor.DANGER).start();
             }
             for (int i = 0; i < 2; i++) {
                 BlockPos d = at(rnd().nextInt(24) - 14, rnd().nextInt(28) - 14);
                 if (debris.containsKey(d) || sarcophagi.containsKey(d)) {
                     continue;
                 }
-                world().sendParticles(ParticleTypes.CLOUD, d.getX() + 0.5, d.getY() + 0.2, d.getZ() + 0.5, 30, 1.2, 0.05, 1.2, 0);
-                later(3, () -> {
-                    if (!alive(baba)) {
-                        return;
-                    }
-                    for (ServerPlayer p : players()) {
-                        if (p.blockPosition().equals(d)) {
-                            hurt(baba, p, 20 + rnd().nextInt(10));
-                            p.push(1, 0.2, 0);
-                            p.hurtMarked = true;
-                        }
-                    }
-                    RaidBuilder.set(world(), d, Blocks.COBBLESTONE.defaultBlockState());
-                    debris.put(d, ToaBossRules.debrisHp(raid.partySize()));
-                });
+                Vec3 c = Vec3.atBottomCenterOf(d);
+                RaidEffects.mark(world(), c, 0.9).delay(3).source(source).warn(ParticleTypes.CLOUD).floor(RaidFloor.DANGER)
+                        .live(() -> attempt.getAsBoolean() && alive(source))
+                        .onHit(p -> hurt(source, p, 20 + rnd().nextInt(10)))
+                        .onLand(() -> {
+                            for (ServerPlayer p : players()) {
+                                if (p.getBoundingBox().intersects(new net.minecraft.world.phys.AABB(d))) {
+                                    Vec3 off = p.position().subtract(c).multiply(1, 0, 1);
+                                    shove(p, off.lengthSqr() < 1e-4 ? new Vec3(1, 0, 0) : off, 2);
+                                }
+                            }
+                            RaidBuilder.set(world(), d, Blocks.COBBLESTONE.defaultBlockState());
+                            debris.put(d, ToaBossRules.debrisHp(raid.partySize()));
+                        }).start();
             }
         }
+
+        /**
+         * Whether a player stands next to a block (cover against a thrown boulder): within reach of its sides or corners,
+         * measured from the player's centre. // playability: OSRS counts the eight tiles round it; a player standing between
+         * blocks straddles two
+         */
+        static boolean besideBlock(Vec3 p, BlockPos b) {
+            return Math.abs(p.x - (b.getX() + 0.5)) <= COVER_REACH && Math.abs(p.z - (b.getZ() + 0.5)) <= COVER_REACH;
+        }
+
+        /** How far from a cover block's centre (each axis) still counts as next to it: its tile and the ring round it, plus a little. */
+        static final double COVER_REACH = 1.9;
 
         /**
          * Rock Throw (OSRS): a boulder at every player, landing about 6 ticks later; it is nulled by standing next to
@@ -1586,8 +1849,39 @@ final class ToaBossRooms {
          */
         private void rockThrow() {
             warn("Ba-Ba hurls boulders at everyone! Take cover next to debris, a sarcophagus or a baboon.");
+            // Round 43: each boulder's shadow follows its player until it lands, and the tiles round every debris pile and
+            // unopened sarcophagus (the cover) are marked on the floor. // playability: OSRS shows the boulder overhead
+            List<Vec3> covers = new ArrayList<>();
+            for (BlockPos d : debris.keySet()) {
+                covers.add(Vec3.atBottomCenterOf(d));
+            }
+            for (Map.Entry<BlockPos, Integer> s : sarcophagi.entrySet()) {
+                if (s.getValue() > 0) {
+                    covers.add(Vec3.atBottomCenterOf(s.getKey()));
+                }
+            }
+            for (Vec3 c : covers) {
+                BlockPos b = BlockPos.containing(c);
+                List<int[]> ring = new ArrayList<>();
+                for (int dx = -1; dx <= 1; dx++) {
+                    for (int dz = -1; dz <= 1; dz++) {
+                        if (dx != 0 || dz != 0) {
+                            ring.add(new int[]{b.getX() + dx, b.getZ() + dz});
+                        }
+                    }
+                }
+                RaidFloor.columns(world(), ring, c.y, RaidFloor.SAFE, 6, baba, c);
+            }
+            DataBossEntity source = baba;
             for (ServerPlayer p : players()) {
                 world().sendParticles(ParticleTypes.LARGE_SMOKE, p.getX(), p.getY() + 2.5, p.getZ(), 10, 0.3, 0.3, 0.3, 0.02);
+                RaidEffects.cue(6, center().getCenter(), () -> {
+                    if (!alive(source) || !p.isAlive()) {
+                        return false;
+                    }
+                    com.runecraft.boss.StrikeMarkers.ring(world(), p.position(), 0.6, ParticleTypes.LARGE_SMOKE, false, 10);
+                    return true;
+                });
             }
             later(6, () -> {
                 if (!alive(baba)) {
@@ -1598,7 +1892,7 @@ final class ToaBossRooms {
                     BlockPos stand = p.blockPosition();
                     BlockPos cover = null;
                     for (BlockPos d : debris.keySet()) {
-                        if (d.distManhattan(stand) <= 1 || (Math.abs(d.getX() - stand.getX()) <= 1 && Math.abs(d.getZ() - stand.getZ()) <= 1)) {
+                        if (besideBlock(p.position(), d)) {
                             cover = d;
                             break;
                         }
@@ -1612,7 +1906,7 @@ final class ToaBossRooms {
                     BlockPos sarc = null;
                     for (Map.Entry<BlockPos, Integer> s : sarcophagi.entrySet()) {
                         BlockPos b = s.getKey();
-                        if (s.getValue() > 0 && Math.abs(b.getX() - stand.getX()) <= 1 && Math.abs(b.getZ() - stand.getZ()) <= 1) {
+                        if (s.getValue() > 0 && besideBlock(p.position(), b)) {
                             sarc = b;
                             break;
                         }
@@ -1635,7 +1929,7 @@ final class ToaBossRooms {
                     int dmg = (raid.partySize() > 1 ? 35 : 45) + rnd().nextInt(16); // approx: massive, less in groups
                     ServerPlayer buddy = null;
                     for (ServerPlayer o : players()) {
-                        if (o != p && Math.abs(o.getBlockX() - stand.getX()) <= 1 && Math.abs(o.getBlockZ() - stand.getZ()) <= 1) {
+                        if (o != p && besideBlock(o.position(), stand)) {
                             buddy = o;
                             break;
                         }
@@ -1677,14 +1971,28 @@ final class ToaBossRooms {
             }
             boolean shaking = inv.contains(Invocation.SHAKING_THINGS_UP);
             BlockPos centre = target.blockPosition();
+            // Round 43: the shadow's tiles are marked on the floor and redrawn until the slam (what is marked is what it hits).
+            // // playability: OSRS spreads a shadow over the tiles
+            List<int[]> tiles = new ArrayList<>();
             for (int dx = -3; dx <= 3; dx++) {
                 for (int dz = -3; dz <= 3; dz++) {
                     if (ToaBossRules.babaShockwaveHits(dx, dz, shaking)) {
-                        world().sendParticles(ParticleTypes.CLOUD, centre.getX() + dx + 0.5, centre.getY() + 0.1, centre.getZ() + dz + 0.5, 2, 0.3, 0,
-                                0.3, 0);
+                        tiles.add(new int[]{centre.getX() + dx, centre.getZ() + dz});
                     }
                 }
             }
+            RaidFloor.columns(world(), tiles, centre.getY(), RaidFloor.DANGER, 3, baba, Vec3.atBottomCenterOf(centre));
+            DataBossEntity source = baba;
+            RaidEffects.cue(3, center().getCenter(), () -> {
+                if (!alive(source) || rolling) {
+                    return false;
+                }
+                for (int[] c : tiles) {
+                    world().sendParticles(ParticleTypes.CLOUD, c[0] + 0.5, centre.getY() + 0.1, c[1] + 0.5, 1, 0.3, 0, 0.3, 0);
+                }
+                return true;
+            });
+            shockwaves++;
             later(3, () -> {
                 if (!alive(baba) || rolling) {
                     return;
@@ -1791,6 +2099,9 @@ final class ToaBossRooms {
                         if (i == crackedAt) {
                             cracked.add(b);
                             b.setCustomName(net.minecraft.network.chat.Component.literal("Cracked boulder"));
+                            // round 43: it glows, so the one to break (ranged always max-hits it) stands out in a rolling row.
+                            // // playability: OSRS shows its cracks
+                            b.setGlowingTag(true);
                         }
                     }
                 }
@@ -1829,6 +2140,9 @@ final class ToaBossRooms {
                 endRolling();
             }
         }
+
+        /** Self-test: shockwaves made. */
+        int shockwaves;
 
         /** The pit at the bottom (west) of the room: the middle columns, west of this line. */
         static final int PIT_X = -18;
@@ -2046,6 +2360,19 @@ final class ToaBossRooms {
             boulderKnockback(p);
             RaidSelfTest.expect(p.isAlive() && p.getX() >= center().getX() + 0.5 + PIT_X, "Ba-Ba: a boulder knocked the player into the pit "
                     + "without Mind the Gap!");
+            // Round 43: a shockwave's tiles are marked on the floor until it lands, then put back.
+            t.moveTo(at(4, 0));
+            int waves = shockwaves;
+            shockwave(raid.invocations());
+            BlockPos under = p.blockPosition().below();
+            RaidSelfTest.expect(shockwaves == waves + 1 && com.runecraft.boss.FloorMarkers.marked(world(), under),
+                    "Ba-Ba: the shockwave's tiles were not marked on the floor");
+            t.tick(4);
+            RaidSelfTest.expect(!com.runecraft.boss.FloorMarkers.marked(world(), under), "Ba-Ba: the shockwave's floor marks stayed after it landed");
+            // cover against a thrown boulder counts from the player's centre, a little past the ring of tiles round it
+            BlockPos block = at(-2, 4);
+            RaidSelfTest.expect(besideBlock(Vec3.atBottomCenterOf(block).add(1.8, 0, -1.8), block)
+                    && !besideBlock(Vec3.atBottomCenterOf(block).add(2.2, 0, 0), block), "Ba-Ba: the cover reach is off");
             t.moveTo(at(0, 0));
             int expectHp = ToaBossRules.babaBoulderHp(raid.partySize(), raid.pathLevel());
             String r = grind(t, baba, AttackType.CRUSH, 30, () -> {

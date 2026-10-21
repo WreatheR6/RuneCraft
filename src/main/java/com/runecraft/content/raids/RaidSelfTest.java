@@ -192,6 +192,25 @@ public final class RaidSelfTest {
                 + " MC, the second style " + gap + " MC after the first";
     }
 
+    /**
+     * Self-test (round 43): leaves a strike, a projectile at {@code p}, and floor marks pending in room {@code room}, as a fight
+     * would just before a wipe. Returns how many are pending there now.
+     */
+    static int seedPending(RaidInstance raid, int room, ServerPlayer p) {
+        net.minecraft.world.phys.Vec3 c = net.minecraft.world.phys.Vec3.atBottomCenterOf(raid.center(room).above());
+        RaidEffects.mark(raid.world, c.add(3, 0, 3), 0.8).delay(8).damage(1, 1).floor(RaidFloor.DANGER).start();
+        RaidEffects.projectile(raid.world, c.add(0, 2, 0), p, AttackType.MAGIC, 8, () -> true, () -> {
+        });
+        RaidFloor.disc(raid.world, c.add(-3, 0, -3), 1.0, RaidFloor.DANGER, 50, null);
+        return RaidEffects.pendingIn(raid.world, RaidBuilder.roomBox(raid.slot, room));
+    }
+
+    /** Fails unless nothing is pending in room {@code room} (its strikes, projectiles, anchored cues and floor marks). */
+    static void expectCleared(RaidInstance raid, int room, String where) {
+        int left = RaidEffects.pendingIn(raid.world, RaidBuilder.roomBox(raid.slot, room));
+        expect(left == 0, where + ": " + left + " strike(s), projectile(s), cue(s) or floor mark(s) of the failed attempt survived the reset");
+    }
+
     // ------------------------------------------------------------------ driver API (used by the rooms' solvers)
 
     RaidInstance raid() {
@@ -598,6 +617,7 @@ public final class RaidSelfTest {
                 t.use(raid.nexus().entrance(1));
                 int room = raid.currentRoom();
                 expect(raid.logic(room).started, "the Path of Het did not start");
+                int seeded = hardcore ? 0 : seedPending(raid, room, p);
                 int before = raid.toaTotal(p.getUUID());
                 raid.onDeath(p);
                 expect(raid.toaTotal(p.getUUID()) == before - Math.max(1000, before / 5), "the death penalty was "
@@ -608,6 +628,9 @@ public final class RaidSelfTest {
                 } else {
                     expect(RaidManager.of(p) == raid && !raid.isDowned(p), "the wipe did not bring the solo player back");
                     expect(raid.logic(room).started && !raid.logic(room).done, "the room was not reset after the wipe");
+                    // round 43: nothing of the failed attempt is left to land on the retry
+                    expect(seeded >= 3, "only " + seeded + " test strikes/projectiles/floor marks were pending before the wipe");
+                    expectCleared(raid, room, "the ToA wipe");
                     expect(Inv.count(p, ToaSupplies.HONEY_LOCUST) == ToaSupplies.honeyLocustsOnWipe(raid.invocations()),
                             "the wipe handed out " + Inv.count(p, ToaSupplies.HONEY_LOCUST) + " honey locusts");
                     // the retried room runs on for a while: whatever it strikes must still be fair

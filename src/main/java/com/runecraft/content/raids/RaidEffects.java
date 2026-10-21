@@ -56,6 +56,8 @@ public final class RaidEffects {
         final BooleanSupplier live;
         long firstDrawnMc = -1;
         int draws;
+        /** Its area marked on the floor until it lands ({@link Marker#floor}), or null. */
+        RaidFloor.Group floor;
 
         Strike(Marker m, long due, long createdMc) {
             this.world = m.world;
@@ -117,6 +119,7 @@ public final class RaidEffects {
         private Consumer<ServerPlayer> onHit;
         private Runnable onLand;
         private BooleanSupplier live;
+        private com.runecraft.boss.HazardKind floor;
 
         private Marker(ServerLevel world, Vec3 pos, double radius) {
             this.world = world;
@@ -174,6 +177,15 @@ public final class RaidEffects {
             return this;
         }
 
+        /**
+         * Marks its area on the floor in {@code kind}'s colour from now until it lands (round 43, {@link RaidFloor}). //
+         * playability: OSRS tints the tiles about to be struck
+         */
+        public Marker floor(com.runecraft.boss.HazardKind kind) {
+            this.floor = kind;
+            return this;
+        }
+
         /** Keeps the delay exact (at least a tick) even when it hurts: logic a room's timing depends on. */
         public Marker exact() {
             this.exact = true;
@@ -201,11 +213,15 @@ public final class RaidEffects {
         return m;
     }
 
-    private record Task(long due, Runnable run) {
+    /** A delayed task; {@code anchor}: where it belongs (a projectile's launch point), so a room reset drops it, or null. */
+    private record Task(long due, Runnable run, Vec3 anchor) {
     }
 
-    /** A marker redrawn every few Minecraft ticks until the raid clock reaches {@code until} or it says to stop. */
-    private record Cue(long until, BooleanSupplier draw) {
+    /**
+     * A marker redrawn every few Minecraft ticks until the raid clock reaches {@code until} or it says to stop; {@code anchor} as
+     * for a task.
+     */
+    private record Cue(long until, BooleanSupplier draw, Vec3 anchor) {
     }
 
     private static final List<Strike> STRIKES = new ArrayList<>();
@@ -251,7 +267,7 @@ public final class RaidEffects {
 
     /** Runs {@code run} after {@code gameTicks} game ticks. */
     public static void later(int gameTicks, Runnable run) {
-        TASKS.add(new Task(now() + Math.max(1, gameTicks), run));
+        TASKS.add(new Task(now() + Math.max(1, gameTicks), run, null));
     }
 
     /**
@@ -323,6 +339,10 @@ public final class RaidEffects {
         boolean damaging = m.maxHit > 0 || m.onHit != null || m.onLand != null;
         long due = m.exact ? now + d : ArenaTiming.strikeDue(now, d, damaging, into);
         Strike s = new Strike(m, due, now * ArenaTiming.MC_PER_GAME_TICK + into);
+        if (m.floor != null) {
+            s.floor = s.to == null ? RaidFloor.disc(m.world, m.pos, m.radius, m.floor, 0, m.source)
+                    : RaidFloor.lane(m.world, m.pos, m.to, m.radius, m.floor, 0, m.source);
+        }
         STRIKES.add(s);
         draw(s, false);
         if (damaging) { // round 43: on the cast bar of the players near it (a lane: near its line), counting down to its landing
@@ -423,7 +443,7 @@ public final class RaidEffects {
         // round 43: on the target's cast bar in its style, with the key that blocks it as it lands
         com.runecraft.network.HudNet.cast(to, null, com.runecraft.osrs.CastBar.styleOf(style),
                 style == null ? com.runecraft.osrs.CastBar.FLAG_UNPRAYABLE : 0, (int) flightMc, "Incoming");
-        cue((int) (due - now) + 1, () -> {
+        cue((int) (due - now) + 1, from, () -> {
             if (!to.isAlive() || (live != null && !live.getAsBoolean())) {
                 return false;
             }
@@ -441,7 +461,7 @@ public final class RaidEffects {
             if (ok) {
                 land.run();
             }
-        }));
+        }, from));
         return due;
     }
 
@@ -529,13 +549,54 @@ public final class RaidEffects {
      * ticks for {@code gameTicks} game ticks, or until {@code draw} returns false.
      */
     public static void cue(int gameTicks, BooleanSupplier draw) {
+        cue(gameTicks, null, draw);
+    }
+
+    /** {@link #cue(int, BooleanSupplier)} belonging to a place ({@code anchor}): a reset of the room holding it drops it. */
+    public static void cue(int gameTicks, Vec3 anchor, BooleanSupplier draw) {
         if (draw.getAsBoolean()) {
-            CUES.add(new Cue(now() + Math.max(1, gameTicks), draw));
+            CUES.add(new Cue(now() + Math.max(1, gameTicks), draw, anchor));
         }
     }
 
+    /**
+     * Drops everything pending inside a box (round 43: a room that resets after a ToA or ToB Entry wipe, a raid closing): its
+     * strikes and their floor marks, the projectiles launched there and their trails, anchored cues, the projectile spacing of
+     * the players there, and the raid floor marks. A strike or projectile from before a wipe never lands on the retry.
+     */
     public static void clear(ServerLevel world, net.minecraft.world.phys.AABB box) {
-        STRIKES.removeIf(s -> s.world == world && box.contains(s.pos));
+        STRIKES.removeIf(s -> {
+            if (s.world == world && box.contains(s.pos)) {
+                if (s.floor != null) {
+                    s.floor.release();
+                }
+                return true;
+            }
+            return false;
+        });
+        TASKS.removeIf(t -> t.anchor() != null && box.contains(t.anchor()));
+        CUES.removeIf(c -> c.anchor() != null && box.contains(c.anchor()));
+        for (ServerPlayer p : world.players()) {
+            if (box.contains(p.position())) {
+                LAST_PROJECTILE.remove(p.getUUID());
+            }
+        }
+        RaidFloor.clear(world, box);
+    }
+
+    /** Self-test: strikes, projectiles, anchored cues and floor marks still pending inside a box. */
+    static int pendingIn(ServerLevel world, net.minecraft.world.phys.AABB box) {
+        int n = 0;
+        for (Strike s : STRIKES) {
+            n += s.world == world && box.contains(s.pos) ? 1 : 0;
+        }
+        for (Task t : TASKS) {
+            n += t.anchor() != null && box.contains(t.anchor()) ? 1 : 0;
+        }
+        for (Cue c : CUES) {
+            n += c.anchor() != null && box.contains(c.anchor()) ? 1 : 0;
+        }
+        return n + RaidFloor.liveIn(world, box);
     }
 
     /** Pending strikes whose area holds {@code p} right now (self-tests: what a player stands in). */
@@ -553,6 +614,7 @@ public final class RaidEffects {
         long now = now();
         boundaryMc = ActionManager.mcTick();
         CUES.removeIf(c -> now >= c.until());
+        RaidFloor.tick(now);
         if (!LAST_PROJECTILE.isEmpty()) {
             LAST_PROJECTILE.values().removeIf(v -> v[0] < now);
         }
@@ -579,6 +641,9 @@ public final class RaidEffects {
             if (now >= s.due) {
                 due.add(s);
                 it.remove();
+                if (s.floor != null) {
+                    s.floor.release();
+                }
             }
         }
         for (Strike s : due) {

@@ -40,6 +40,7 @@ public final class RaidsHooks implements ModuleHooks {
         registerToaScaling();
         ToaSupplyService.init();
         ToaPuzzleRooms.init();
+        ToaBossRooms.init();
         CoxSupplyService.init();
         registerNylocasStyles();
         LandmarkBuilder.registerCustom(RaidType.COX.placeId(), RaidsHooks::buildMountQuidamortem);

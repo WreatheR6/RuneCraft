@@ -1662,7 +1662,10 @@ public final class RaidInstance {
     /** A short status line for the HUD: ToA path level, attempts left and time-limit countdown; the CoX/ToB mode. */
     String hudStatus() {
         if (type != RaidType.TOA) {
-            return mode == RaidMode.NORMAL ? "" : mode.displayName();
+            String shown = mode == RaidMode.NORMAL ? "" : mode.displayName();
+            // round 43: the room's own note too (the Nylocas supports' health)
+            String roomNote = logics[current].started && !logics[current].done ? logics[current].hudNote() : null;
+            return roomNote == null || roomNote.isEmpty() ? shown : shown.isEmpty() ? roomNote : shown + "  " + roomNote;
         }
         StringBuilder sb = new StringBuilder();
         if (inPath()) {
