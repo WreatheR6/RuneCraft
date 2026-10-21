@@ -288,7 +288,7 @@ public final class SeaHooks {
     }
 
     private static void onKill(ServerPlayer player, LivingEntity entity, MonsterStats stats) {
-        if (!(stats.profile() instanceof MonsterDef md)) {
+        if (stats == null || !(stats.profile() instanceof MonsterDef md)) { // fireKill may carry no stats (a vanilla or test creature)
             return;
         }
         SailingSea.SeaCreature c = SailingSea.creature(md.id);
