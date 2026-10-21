@@ -311,7 +311,10 @@ public final class TestContext {
         placed.add(pos.immutable());
     }
 
-    /** Removes every non-player entity around the platform (bosses, minions, drops, hazards) and the blocks checks placed. */
+    /**
+     * Removes every non-player entity around the platform (bosses, minions, drops, hazards) and the blocks checks placed, and
+     * lays the platform floor again.
+     */
     void cleanUp() {
         ActionManager.cancel(player);
         for (BlockPos pos : placed) {
@@ -330,7 +333,27 @@ public final class TestContext {
         // next check, Branda's, as 8 "hits from other sources".
         com.runecraft.boss.Mechanics.clearHazards(world, box);
         com.runecraft.boss.Mechanics.clearPendingForSelfTest(world, box);
+        relayFloor();
         player.getInventory().clearContent();
+    }
+
+    /**
+     * The platform floor back to plain smooth stone, except blocks a floor mark still holds: a boss may lay floor blocks it
+     * never takes back (the Alchemical Hydra's three vents, part of its lair as in OSRS, laid around where it spawns), and the
+     * next check must start on the plain floor it assumes. The Hydra's blue vent left under a Hunllef tile was light blue
+     * already, so FloorMarkers rightly didn't mark it, and boss:playability_floor_hunllef counted 24 light blue blocks for 23
+     * marked whenever a tile landed on it.
+     */
+    private void relayFloor() {
+        BlockState stone = Blocks.SMOOTH_STONE.defaultBlockState();
+        for (int dx = -RADIUS; dx <= RADIUS; dx++) {
+            for (int dz = -RADIUS; dz <= RADIUS; dz++) {
+                BlockPos pos = PLATFORM.offset(dx, -1, dz);
+                if (world.getBlockState(pos) != stone && !com.runecraft.boss.FloorMarkers.marked(world, pos)) {
+                    world.setBlock(pos, stone, Block.UPDATE_CLIENTS);
+                }
+            }
+        }
     }
 
     /** Spot next to the player on the platform. */
