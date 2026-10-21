@@ -256,7 +256,7 @@ public final class ClassicBosses {
         // OSRS wiki: Str 250; 80 stab/slash/crush/magic and 130 ranged defence.
         return BossDef.of("skotizo", "Skotizo").level(321).stats(450, 240, 250, 200, 280, 1).speed(5)
                 .defenceBonus(80, 80, 80, 80, 130)
-                .attack(AttackDef.of("claws", AttackType.SLASH, 38, 3.5, 6))
+                .attack(AttackDef.of("claws", AttackType.STAB, 38, 3.5, 6))
                 .attack(AttackDef.of("shadow_bolt", AttackType.MAGIC, 38, 12, 4).particle("minecraft:squid_ink"))
                 // Gar mulno ful taglo! Three reanimated demon spawns once two thirds of his hitpoints are gone (OSRS wiki);
                 // the script summons dark ankou and re-summons slain spawns.
