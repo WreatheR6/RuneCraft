@@ -203,6 +203,14 @@ public final class ThreatTiming {
         return nowMc - (long) speedTicks * MC_PER_GAME_TICK + Math.max(ENGAGE_MIN_MC, windupMc);
     }
 
+    /**
+     * A monster's "last attack" after it engages a new target: the engage floor only ever postpones its next attack, never brings
+     * it forward (a boss switching targets right after an attack still waits its full attack speed).
+     */
+    public static long engage(long lastAttackMc, long nowMc, int speedTicks, int windupMc) {
+        return Math.max(lastAttackMc, engageLastAttack(nowMc, speedTicks, windupMc));
+    }
+
     /** The earliest launch after a melee monster came into reach at {@code arrivedMc}, so its hit lands at least 10 MC later. */
     public static long arrivalReadyMc(long arrivedMc, int windupMc) {
         return arrivedMc + Math.max(0, ENGAGE_MIN_MC - windupMc);

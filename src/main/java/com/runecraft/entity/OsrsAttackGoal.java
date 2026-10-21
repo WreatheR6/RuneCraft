@@ -63,7 +63,7 @@ public class OsrsAttackGoal extends Goal {
         int windup = ThreatTiming.meleeWindupMc(mob.getBbWidth());
         if (target != engaged) {
             engaged = target;
-            lastAttack = ThreatTiming.engageLastAttack(now, speedTicks, windup);
+            lastAttack = ThreatTiming.engage(lastAttack, now, speedTicks, windup);
             wasInReach = false;
         }
         double distSq = mob.distanceToSqr(target);

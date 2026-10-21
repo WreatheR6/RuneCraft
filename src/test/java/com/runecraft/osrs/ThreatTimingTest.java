@@ -145,6 +145,11 @@ class ThreatTimingTest {
         assertTrue(ThreatTiming.cadenceReady(1010, last, 4));
         // a big monster's 10 MC wind-up already covers the floor
         assertEquals(1010, ThreatTiming.engageLastAttack(1000, 6, 10) + 6 * 12);
+        // a switch of target never brings an attack forward: just after an attack at 990, the next still waits for 1038
+        assertEquals(990, ThreatTiming.engage(990, 1000, 4, 6));
+        assertFalse(ThreatTiming.cadenceReady(1010, ThreatTiming.engage(990, 1000, 4, 6), 4));
+        assertTrue(ThreatTiming.cadenceReady(1038, ThreatTiming.engage(990, 1000, 4, 6), 4));
+        assertEquals(ThreatTiming.engageLastAttack(1000, 4, 6), ThreatTiming.engage(-1000, 1000, 4, 6), "a fresh monster");
         assertEquals(1004, ThreatTiming.arrivalReadyMc(1000, 6), "launch 4 + wind-up 6 = hit 10 MC after arrival");
         assertEquals(1000, ThreatTiming.arrivalReadyMc(1000, 10));
     }
