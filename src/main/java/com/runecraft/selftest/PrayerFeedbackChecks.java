@@ -177,6 +177,22 @@ final class PrayerFeedbackChecks {
             if (!data.isActive(Prayer.PROTECT_FROM_MISSILES) || data.isActive(magic)) {
                 throw failure("a redirect Magic -> Missiles left " + data.activePrayers());
             }
+            // Every cursed click toggles the target: Magic reads off, so the client sends on = true; Missiles goes off.
+            PrayerService.set(p(), magic, true);
+            if (!data.activePrayers().isEmpty()) {
+                throw failure("a second cursed click on Magic didn't turn Missiles off: " + data.activePrayers());
+            }
+        } finally {
+            PrayerService.REDIRECTS.remove(curse);
+        }
+        // Magic on before the curse: the cursed click reads "Magic off" (on = false) and still turns Missiles on.
+        PrayerService.set(p(), magic, true);
+        PrayerService.REDIRECTS.add(curse);
+        try {
+            PrayerService.set(p(), magic, false);
+            if (!data.isActive(Prayer.PROTECT_FROM_MISSILES) || data.isActive(magic)) {
+                throw failure("a cursed click on an active Magic left " + data.activePrayers());
+            }
         } finally {
             PrayerService.REDIRECTS.remove(curse);
         }
@@ -193,7 +209,7 @@ final class PrayerFeedbackChecks {
         if (msg == null || !msg.contains("Prayer level of 37")) {
             throw failure("no level message (got " + msg + ")");
         }
-        return "idempotent, redirected, level refused: " + msg;
+        return "idempotent, redirected clicks toggle, level refused: " + msg;
     }
 
     /**
@@ -295,12 +311,28 @@ final class PrayerFeedbackChecks {
         if (!data.activePrayers().isEmpty()) {
             throw failure("quick-prayers off left " + data.activePrayers());
         }
+        // Cursed (Melee -> Magic): the key turns on what a click would, Piety and Protect from Magic, then turns both off.
+        BiFunction<ServerPlayer, Prayer, Prayer> curse = (pl, pr) -> pl == p() && pr == Prayer.PROTECT_FROM_MELEE
+                ? Prayer.PROTECT_FROM_MAGIC : pr;
+        PrayerService.REDIRECTS.add(curse);
+        try {
+            PrayerService.toggleQuick(p());
+            if (!data.isActive(Prayer.PIETY) || !data.isActive(Prayer.PROTECT_FROM_MAGIC) || data.activePrayers().size() != 2) {
+                throw failure("cursed quick-prayers on gave " + data.activePrayers());
+            }
+            PrayerService.toggleQuick(p());
+            if (!data.activePrayers().isEmpty()) {
+                throw failure("cursed quick-prayers off left " + data.activePrayers());
+            }
+        } finally {
+            PrayerService.REDIRECTS.remove(curse);
+        }
         PlayerData copy = new PlayerData();
         copy.fromNbt(data.toNbt(), c.server.registryAccess());
         if (copy.quickPrayers() != mask) {
             throw failure("the quick-prayer selection didn't survive a save: " + copy.quickPrayers() + " != " + mask);
         }
-        return "on and off, saved as QuickPrayers";
+        return "on and off (also cursed), saved as QuickPrayers";
     }
 
     // ------------------------------------------------------------------ feedback

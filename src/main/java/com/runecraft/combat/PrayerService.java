@@ -94,15 +94,22 @@ public final class PrayerService {
      * Sets a prayer on or off; nothing happens when it already is (idempotent, so a key press that crosses a sync under
      * latency can't flip it back). Redirects apply first, then the normal toggle rules (level, quests, scrolls, points).
      * // playability: the hotkeys and quick-prayer keys send this instead of a toggle.
+     * A redirected click (the Nightmare's curse) always toggles the prayer it lands on, as every click does in OSRS: the
+     * client's on/off was worked out from the prayer clicked and says nothing about the redirect target.
      */
     public static void set(ServerPlayer player, Prayer prayer, boolean on) {
         Prayer target = redirect(player, prayer);
+        if (target != prayer) {
+            toggleRedirected(player, target, false);
+            ServerNetworking.sync(player); // the optimistic HUD switched the prayer clicked
+            return;
+        }
         PlayerData data = Players.data(player);
         if (data.isActive(target) != on) {
             toggleRedirected(player, target);
         }
-        if (data.isActive(target) != on || target != prayer) {
-            // Refused (level, quest, points) or redirected: the client's optimistic HUD needs the real state.
+        if (data.isActive(target) != on) {
+            // Refused (level, quest, points): the client's optimistic HUD needs the real state.
             ServerNetworking.sync(player);
         }
     }
@@ -110,6 +117,9 @@ public final class PrayerService {
     /**
      * OSRS Quick-prayers: if any quick prayer is on, all of them switch off; otherwise each switches on through the normal
      * toggle (so locked or conflicting ones follow the usual rules). An empty set tells the player how to choose them.
+     * Redirects apply like a click on each (the Nightmare's curse turns quick Protect from Melee into Protect from Magic),
+     * so the key can't get around the curse; a redirect target that is on counts as its quick prayer being on, and goes
+     * off with it. // approx: no source says whether OSRS's quick-prayer orb is cursed; the brief has it go through toggle().
      */
     public static void toggleQuick(ServerPlayer player) {
         PlayerData data = Players.data(player);
@@ -120,15 +130,19 @@ public final class PrayerService {
         }
         boolean anyOn = false;
         for (Prayer p : quick) {
-            anyOn |= data.isActive(p);
+            anyOn |= data.isActive(p) || data.isActive(redirect(player, p));
         }
         for (Prayer p : quick) {
+            Prayer target = redirect(player, p);
             if (anyOn) {
                 if (data.isActive(p)) {
                     toggleRedirected(player, p, false);
                 }
-            } else if (!data.isActive(p)) {
-                toggleRedirected(player, p, false);
+                if (target != p && data.isActive(target)) {
+                    toggleRedirected(player, target, false);
+                }
+            } else if (!data.isActive(target)) {
+                toggleRedirected(player, target, false);
             }
         }
         ServerNetworking.sync(player);

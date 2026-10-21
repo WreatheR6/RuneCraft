@@ -575,11 +575,11 @@ On consumeClick:
 - Flip ClientState.prayerMask optimistically, clearing the other overheads; the next SYNC corrects it.
 
 2. Server.
-- PrayerService.set(player, prayer, boolean on) applies REDIRECTS (the Nightmare curse), then calls toggle only when the state differs. That makes it idempotent under latency.
+- PrayerService.set(player, prayer, boolean on) applies REDIRECTS (the Nightmare curse), then calls toggle only when the state differs. That makes it idempotent under latency. A redirected click always toggles its target (OSRS click behaviour: the client's on/off describes the prayer clicked, not the target).
 - Quick prayers:
   - PlayerData.quickPrayers is a long mask saved as the 'QuickPrayers' NBT tag.
   - Shift-clicking a prayer in SidePanel's prayer tab toggles its membership (gold corner dot) and sends RuneCraft.id("prayer/quick_set").
-  - The key sends RuneCraft.id("prayer/quick"), which calls PrayerService.toggleQuick: if any quick prayer is on, turn them all off; otherwise call toggle() for each, so the normal rules apply. An empty set gives a hint message.
+  - The key sends RuneCraft.id("prayer/quick"), which calls PrayerService.toggleQuick: if any quick prayer is on, turn them all off; otherwise call toggle() for each, so the normal rules apply (the curse redirects too; a redirect target that is on counts as on). An empty set gives a hint message.
 - Play BEACON_DEACTIVATE when a prayer is deactivated.
 - Register the receivers in ServerNetworking.
 
