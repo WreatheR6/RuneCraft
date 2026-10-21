@@ -35,11 +35,32 @@ class MonsterAiTest {
 
     @Test
     void leash() {
-        assertFalse(MonsterAi.giveUp(10, 12, 1.5));
-        assertTrue(MonsterAi.giveUp(20.5, 12, 1.5), "past the leash");
-        assertTrue(MonsterAi.giveUp(12, 20.5, 1.5), "target fled past the aggression range + slack");
-        assertFalse(MonsterAi.giveUp(12, 20.5, 10), "a ranged monster reaches further");
+        assertFalse(MonsterAi.giveUp(10, 12, 1.5, false));
+        assertTrue(MonsterAi.giveUp(20.5, 12, 1.5, false), "past the leash");
+        assertTrue(MonsterAi.giveUp(12, 20.5, 1.5, false), "target fled past the aggression range + slack");
+        assertFalse(MonsterAi.giveUp(12, 20.5, 10, false), "a ranged monster reaches further");
         assertTrue(MonsterAi.LEASH_BLOCKS >= 16 && MonsterAi.LEASH_BLOCKS <= 20);
+    }
+
+    @Test
+    void aTargetAttackingFromBeyondTheRangeIsHeldNotReset() {
+        // a melee monster at its spawn point, a player casting from 21 blocks (spells reach 20): no give-up while the hits come
+        assertFalse(MonsterAi.giveUp(0, 21, 1.5, true), "under fire from beyond its range: it doesn't reset");
+        assertFalse(MonsterAi.giveUp(15, 25, 1.5, true), "wandered 15 blocks out, shot from 10 further: it doesn't reset");
+        assertTrue(MonsterAi.giveUp(15, 25, 1.5, false), "the shots stopped: it gives up");
+        assertTrue(MonsterAi.giveUp(20.5, 25, 1.5, true), "the leash itself still holds");
+        // it walks out to its 7-tile max range and stands there while the way to its target leads further out
+        assertFalse(MonsterAi.holdAtEdge(10, 25, 1.5, true, true), "not at the edge yet: it walks on");
+        assertTrue(MonsterAi.holdAtEdge(MonsterAi.MAX_RANGE_BLOCKS, 25, 1.5, true, true), "at the edge: it holds");
+        assertFalse(MonsterAi.holdAtEdge(16, 25, 1.5, true, false), "the way to its target leads home: it walks");
+        assertFalse(MonsterAi.holdAtEdge(16, 18, 1.5, true, true), "a target inside its range is chased as usual");
+        assertFalse(MonsterAi.holdAtEdge(16, 25, 1.5, false, true), "not under fire: it gives up instead");
+        assertFalse(MonsterAi.holdAtEdge(16, 25, 10, true, true), "a ranged monster's range reaches the target");
+        // home again: it heals only once the hits have stopped for 5 s
+        assertFalse(MonsterAi.healsAtHome(0));
+        assertFalse(MonsterAi.healsAtHome(MonsterAi.UNDER_FIRE_MC - 1));
+        assertTrue(MonsterAi.healsAtHome(MonsterAi.UNDER_FIRE_MC));
+        assertEquals(5 * 20, MonsterAi.UNDER_FIRE_MC);
     }
 
     @Test
@@ -94,11 +115,15 @@ class MonsterAiTest {
 
     @Test
     void lootPrivacy() {
-        assertTrue(MonsterAi.lootPrivate(0, true, false));
-        assertTrue(MonsterAi.lootPrivate(MonsterAi.PRIVATE_LOOT_MC - 1, true, false));
-        assertFalse(MonsterAi.lootPrivate(MonsterAi.PRIVATE_LOOT_MC, true, false), "visible to all after 60 s");
-        assertFalse(MonsterAi.lootPrivate(0, true, true), "the Wilderness shows drops at once");
-        assertTrue(MonsterAi.lootPrivate(100_000, false, true), "untradeables stay the winner's");
-        assertEquals(3 * 60 * 20, MonsterAi.LOOT_LIFESPAN_MC);
+        // wiki, Drops: invisible to other players for the first 100 game ticks, the Wilderness included (only an item a player
+        // drops there by hand shows at once); tradeable drops stay 200 game ticks, untradeable ones 300
+        assertTrue(MonsterAi.lootPrivate(0, true));
+        assertTrue(MonsterAi.lootPrivate(MonsterAi.PRIVATE_LOOT_MC - 1, true));
+        assertFalse(MonsterAi.lootPrivate(MonsterAi.PRIVATE_LOOT_MC, true), "visible to all after 60 s");
+        assertTrue(MonsterAi.lootPrivate(100_000, false), "untradeables stay the winner's");
+        assertEquals(60 * 20, MonsterAi.PRIVATE_LOOT_MC);
+        assertEquals(2 * 60 * 20, MonsterAi.lootLifespanMc(true));
+        assertEquals(3 * 60 * 20, MonsterAi.lootLifespanMc(false));
+        assertTrue(MonsterAi.lootLifespanMc(true) > MonsterAi.PRIVATE_LOOT_MC, "public for a minute before it goes");
     }
 }

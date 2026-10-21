@@ -32,8 +32,10 @@ import net.minecraft.world.level.pathfinder.Path;
  * <li>Retaliation stickiness: hit by someone else, it switches only when its target is gone, dead, out of range or out of reach
  * while the new attacker isn't ({@link MonsterAi#switchTarget}; // playability: vanilla switched to every new attacker).</li>
  * <li>Leash (open-world monsters, {@link MonsterHome}): past {@link MonsterAi#LEASH_BLOCKS} from its spawn point, or with its target
- * fled beyond its aggression range, it drops the fight, walks home and is back to full health there (// playability: OSRS confines
- * a monster to 7 tiles of its spawn point and it regenerates 1 hitpoint a minute).</li>
+ * fled beyond its aggression range, it drops the fight, walks home and is back to full health there once nothing has hit it for
+ * 5 s (// playability: OSRS confines a monster to 7 tiles of its spawn point and it regenerates 1 hitpoint a minute). A target that
+ * keeps attacking it from beyond its range is not given up: the monster stands at the edge of its max range
+ * ({@link MonsterAi#holdAtEdge}, OSRS safespotting), so a player out-ranging it can still kill it.</li>
  * <li>Single-way: a monster that may not attack its target (the player is fighting something else) drops it after
  * {@link MonsterAi#BLOCKED_DROP_MC} instead of hovering at the player's side (// playability).</li>
  * </ul>
@@ -54,6 +56,12 @@ public class OsrsTargetGoal extends Goal {
     private int forgottenUntil;
     private boolean returning;
     private int returningSince;
+    /** When something last hit (or missed) the monster, in its own ticks. */
+    private int lastHitAt = Integer.MIN_VALUE;
+    /** Standing at the edge of its max range while its target attacks it from further out. */
+    private boolean holding;
+    /** Came home while still being hit: it heals once the hits have stopped. */
+    private boolean healPending;
 
     /** {@code hunts}: looks for players to attack unprovoked (a rock crab wakes by proximity instead). */
     public OsrsTargetGoal(OsrsCombatant c, boolean hunts) {
@@ -71,6 +79,11 @@ public class OsrsTargetGoal extends Goal {
     /** True while the monster walks back to its spawn point after giving up a chase. */
     public boolean returning() {
         return returning;
+    }
+
+    /** True while the monster stands at the edge of its max range, its target attacking it from beyond (the attack goal stays put). */
+    public boolean holding() {
+        return holding;
     }
 
     @Override
@@ -104,7 +117,10 @@ public class OsrsTargetGoal extends Goal {
         boolean newHurt = hurtBy != null && mob.getLastHurtByMobTimestamp() != lastHurtStamp;
         if (newHurt) {
             lastHurtStamp = mob.getLastHurtByMobTimestamp();
+            lastHitAt = now;
         }
+        boolean wasHolding = holding;
+        holding = false;
         if (returning) {
             tickReturn(level, home, now);
             return;
@@ -120,12 +136,30 @@ public class OsrsTargetGoal extends Goal {
         }
         if (home != null) {
             double mobFromHome = MonsterHome.fromHome(home, mob.getX(), mob.getZ());
-            boolean giveUp = target != null
-                    ? MonsterAi.giveUp(mobFromHome, MonsterHome.fromHome(home, target.getX(), target.getZ()), c.attackReach())
-                    : mobFromHome > MonsterAi.LEASH_BLOCKS;
+            boolean giveUp;
+            if (target != null) {
+                double targetFromHome = MonsterHome.fromHome(home, target.getX(), target.getZ());
+                boolean underFire = underFire(target, now);
+                giveUp = MonsterAi.giveUp(mobFromHome, targetFromHome, c.attackReach(), underFire);
+                // the way to the target leads further from home: (target - mob) . (mob - home) > 0
+                double outward = (target.getX() - mob.getX()) * (mob.getX() - (home.getX() + 0.5))
+                        + (target.getZ() - mob.getZ()) * (mob.getZ() - (home.getZ() + 0.5));
+                holding = !giveUp && MonsterAi.holdAtEdge(mobFromHome, targetFromHome, c.attackReach(), underFire, outward > 0);
+                if (holding && !wasHolding) {
+                    mob.getNavigation().stop();
+                }
+            } else {
+                giveUp = mobFromHome > MonsterAi.LEASH_BLOCKS;
+            }
             if (giveUp) {
+                holding = false;
                 startReturn(now);
                 return;
+            }
+            if (target != null) {
+                healPending = false; // fighting again: the next give-up decides
+            } else if (healPending && MonsterAi.healsAtHome((long) now - lastHitAt)) {
+                heal();
             }
         }
         if (target instanceof ServerPlayer p) {
@@ -162,6 +196,12 @@ public class OsrsTargetGoal extends Goal {
         }
         double max = home != null ? 64 : 48;
         return mob.distanceToSqr(target) <= max * max;
+    }
+
+    /** Its target hit (or missed) it within {@link MonsterAi#UNDER_FIRE_MC}: the fight is still on wherever the target stands. */
+    private boolean underFire(LivingEntity target, int now) {
+        LivingEntity by = mob.getLastHurtByMob();
+        return by != null && credited(by) == target && (long) now - mob.getLastHurtByMobTimestamp() < MonsterAi.UNDER_FIRE_MC;
     }
 
     /** A summon (a thrall) answers for its owner: the monster goes for the player behind it. */
@@ -249,9 +289,10 @@ public class OsrsTargetGoal extends Goal {
         double fromHome = MonsterHome.fromHome(home, mob.getX(), mob.getZ());
         LivingEntity t = mob.getTarget();
         if (t != null) {
-            // hit on its way home by someone it can fight from inside its range: back to the fight
+            // hit on its way home by someone it can fight from inside its range, or who keeps attacking it: back to the fight
             if (valid(t, home) && fromHome <= MonsterAi.LEASH_BLOCKS
-                    && MonsterAi.inAggressionRange(MonsterHome.fromHome(home, t.getX(), t.getZ()), c.attackReach())) {
+                    && (MonsterAi.inAggressionRange(MonsterHome.fromHome(home, t.getX(), t.getZ()), c.attackReach())
+                    || underFire(t, now))) {
                 returning = false;
                 return;
             }
@@ -274,10 +315,22 @@ public class OsrsTargetGoal extends Goal {
         }
     }
 
-    /** Home again: the fight is over, its health back to full and its damage ledger cleared. */
+    /**
+     * Home again: the fight is over, its health back to full and its damage ledger cleared, unless something hit it in the last
+     * 5 s (it heals once the hits stop: a reset must not erase hits that are still coming).
+     */
     private void arrive() {
         returning = false;
         mob.getNavigation().stop();
+        if (MonsterAi.healsAtHome((long) mob.tickCount - lastHitAt)) {
+            heal();
+        } else {
+            healPending = true;
+        }
+    }
+
+    private void heal() {
+        healPending = false;
         mob.setHealth(mob.getMaxHealth());
         KillCredit.forget(mob);
     }
@@ -288,16 +341,26 @@ public class OsrsTargetGoal extends Goal {
      * bracelet, Mage Arena capes), the player is tolerated after 10 minutes in the area, or single-way combat forbids it.
      */
     public static boolean osrsAggression(Mob mob, ServerPlayer player, boolean aggressive, int level, String key) {
+        return osrsAggression(mob, player, aggressive, level, key, false);
+    }
+
+    /**
+     * {@link #osrsAggression(Mob, ServerPlayer, boolean, int, String)}; {@code regardless}: an encounter spawn (a boss's or quest's
+     * summon) that attacks whatever the player's combat level and however long they have stayed (module rules and single-way
+     * still apply).
+     */
+    public static boolean osrsAggression(Mob mob, ServerPlayer player, boolean aggressive, int level, String key, boolean regardless) {
         if (!aggressive || player.isCreative() || player.isSpectator() || Aggression.peaceful(mob, player)) {
             return false;
         }
-        if (!neverTolerant(key) && Aggression.tolerant(player, ActionManager.gameTick())) {
+        if (!regardless && !neverTolerant(key) && Aggression.tolerant(player, ActionManager.gameTick())) {
             return false;
         }
         if (!CombatZones.npcMayAttack(mob, player)) {
             return false;
         }
-        return MonsterAi.aggressiveTo(level, Players.data(player).skills().combatLevel(), Gielinor.wildernessLevel(player) > 0);
+        return MonsterAi.aggressiveTo(level, Players.data(player).skills().combatLevel(),
+                regardless || Gielinor.wildernessLevel(player) > 0);
     }
 
     /** Monsters that stay aggressive however long the player stays (wiki, Tolerance: Exceptions). */

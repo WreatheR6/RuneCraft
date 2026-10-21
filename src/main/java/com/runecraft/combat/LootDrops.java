@@ -2,7 +2,6 @@ package com.runecraft.combat;
 
 import com.runecraft.osrs.MonsterAi;
 import com.runecraft.util.Inv;
-import com.runecraft.world.Gielinor;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -19,8 +18,9 @@ import net.minecraft.world.level.Level;
 
 /**
  * Monster drops as OSRS lays them (round 42): on the monster's tile, not flung about (zero velocity), and the winner's alone for 60
- * seconds (an untradeable item stays theirs), gone 3 minutes after the kill. In the Wilderness tradeable drops are everyone's at once.
- * // approx: OSRS hides a private drop from other players; here they see it but can't pick it up.
+ * seconds, in the Wilderness too (an untradeable item stays theirs); a tradeable drop is gone 2 minutes after the kill, an
+ * untradeable one after 3 (wiki, Drops). // approx: OSRS hides a private drop from other players; here they see it but can't pick
+ * it up.
  */
 public final class LootDrops {
     /** Tag on a drop that is still private to its winner. */
@@ -56,13 +56,12 @@ public final class LootDrops {
         if (stack.isEmpty() || !(dead.level() instanceof ServerLevel level)) {
             return;
         }
-        boolean wilderness = Gielinor.wildernessLevel(dead) > 0;
         Inv.splitStacks(stack, s -> {
             ItemEntity e = new ItemEntity(level, dead.getX(), dead.getY() + 0.05, dead.getZ(), s, 0, 0, 0);
             e.setDefaultPickUpDelay();
-            e.lifespan = MonsterAi.LOOT_LIFESPAN_MC;
             boolean tradeable = !com.runecraft.osrs.data.Untradeables.untradeable(Inv.idOf(s));
-            boolean isPrivate = winner != null && MonsterAi.lootPrivate(0, tradeable, wilderness);
+            e.lifespan = MonsterAi.lootLifespanMc(tradeable);
+            boolean isPrivate = winner != null && MonsterAi.lootPrivate(0, tradeable);
             if (isPrivate) {
                 e.setTarget(winner.getUUID());
                 e.addTag(PRIVATE_TAG);

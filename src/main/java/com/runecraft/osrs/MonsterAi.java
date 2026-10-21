@@ -57,10 +57,18 @@ public final class MonsterAi {
     public static final int HUNT_SCAN_MC = 10;
     /** How long (MC) a target may stay out of reach before an attacker the monster can reach takes over. */
     public static final int UNREACHABLE_MC = 60;
-    /** Drops stay the winner's alone for 60 seconds (OSRS: invisible to others for 60 s, then visible to all). */
+    /**
+     * A monster counts as under fire from its target while that target hit (or missed) it within this long: it doesn't give up a
+     * target that keeps attacking it from beyond its range, and doesn't heal on the way home (5 s, // playability: OSRS has no
+     * reset and regenerates a monster 1 hitpoint a minute).
+     */
+    public static final int UNDER_FIRE_MC = 100;
+    /** Drops stay the winner's alone for 60 seconds (wiki, Drops: invisible to other players for the first 100 game ticks). */
     public static final int PRIVATE_LOOT_MC = 60 * 20;
-    /** Drops disappear 3 minutes after the kill (OSRS: visible to others after 60 s, gone 120 s later). */
-    public static final int LOOT_LIFESPAN_MC = 180 * 20;
+    /** Tradeable drops disappear 2 minutes after the kill (wiki, Drops: they remain on the ground for 200 game ticks). */
+    public static final int TRADEABLE_LOOT_LIFESPAN_MC = 120 * 20;
+    /** Untradeable drops disappear 3 minutes after the kill (wiki, Drops: 300 game ticks). */
+    public static final int UNTRADEABLE_LOOT_LIFESPAN_MC = 180 * 20;
 
     /**
      * Monsters that never become tolerant (wiki, Tolerance: Exceptions). Bosses ignore tolerance too, and the God Wars Dungeon's
@@ -107,10 +115,33 @@ public final class MonsterAi {
 
     /**
      * Whether a chasing monster gives up and walks home: it is past its leash, or its target fled beyond the aggression range plus a
-     * little slack.
+     * little slack and isn't attacking it ({@code underFire}: the target hit it within {@link #UNDER_FIRE_MC}). A target that keeps
+     * attacking from beyond the range is held at the edge instead ({@link #holdAtEdge}): OSRS lets a player safespot a monster at
+     * its max range, never resets it.
      */
-    public static boolean giveUp(double mobFromHome, double targetFromHome, double attackReach) {
-        return mobFromHome > LEASH_BLOCKS || targetFromHome > aggressionRange(attackReach) + GIVE_UP_SLACK_BLOCKS;
+    public static boolean giveUp(double mobFromHome, double targetFromHome, double attackReach, boolean underFire) {
+        return mobFromHome > LEASH_BLOCKS || !underFire && targetFromHome > aggressionRange(attackReach) + GIVE_UP_SLACK_BLOCKS;
+    }
+
+    /**
+     * Whether a monster under fire from a target beyond its range (and the slack) stands at the edge of its max range instead of
+     * walking on: it is at least {@link #MAX_RANGE_BLOCKS} from its spawn point and the way to its target leads further out
+     * ({@code outward}). It still attacks if its target is within its own attack range (OSRS: a monster stops at its max range;
+     * the player can attack it from beyond, and it hits back only if it can reach them from there).
+     */
+    public static boolean holdAtEdge(double mobFromHome, double targetFromHome, double attackReach, boolean underFire,
+            boolean outward) {
+        return underFire && outward && mobFromHome >= MAX_RANGE_BLOCKS
+                && targetFromHome > aggressionRange(attackReach) + GIVE_UP_SLACK_BLOCKS;
+    }
+
+    /**
+     * Whether a monster back at its spawn point regains full health: only once nothing has hit it for {@link #UNDER_FIRE_MC}
+     * ({@code sinceHitMc}; // playability: a reset heal stands in for OSRS's 1 hitpoint a minute, and must not erase hits that are
+     * still coming).
+     */
+    public static boolean healsAtHome(long sinceHitMc) {
+        return sinceHitMc >= UNDER_FIRE_MC;
     }
 
     /**
@@ -130,12 +161,20 @@ public final class MonsterAi {
         return targetsFighter && lineOfSight && distance <= Math.max(ENGAGED_LOCK_BLOCKS, attackReach);
     }
 
-    /** Whether a dropped item is still the winner's alone: OSRS hides it from other players for 60 s, except in the Wilderness. */
-    public static boolean lootPrivate(long ageMc, boolean tradeable, boolean wilderness) {
+    /**
+     * Whether a monster's drop is still the winner's alone: OSRS hides it from other players for 60 s, in the Wilderness too (wiki,
+     * Drops: only an item a player drops there by hand shows at once); an untradeable drop never shows for anyone else.
+     */
+    public static boolean lootPrivate(long ageMc, boolean tradeable) {
         if (!tradeable) {
             return true; // untradeable drops never show for anyone else (OSRS)
         }
-        return !wilderness && ageMc < PRIVATE_LOOT_MC;
+        return ageMc < PRIVATE_LOOT_MC;
+    }
+
+    /** How long (MC) a monster's drop lies on the ground before it disappears. */
+    public static int lootLifespanMc(boolean tradeable) {
+        return tradeable ? TRADEABLE_LOOT_LIFESPAN_MC : UNTRADEABLE_LOOT_LIFESPAN_MC;
     }
 
     /**

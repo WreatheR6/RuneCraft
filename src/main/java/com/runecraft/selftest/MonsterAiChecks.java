@@ -44,8 +44,10 @@ import net.minecraft.world.phys.Vec3;
 /**
  * Round 42 open-world monster AI ({@code boss:playability_monster_*}, so the client walkthrough runs them with the real player
  * too): the vanilla stand-ins fight on OSRS AI with OSRS stats through the real-time delivery, aggression follows the combat-level
- * rule and tolerance, a monster leashes home and heals, retaliation doesn't flip-flop between two attackers, a monster blocked
- * by single-way combat drops its target and the blocker is named, and the top damager wins the kill with a private, unflung drop.
+ * rule and tolerance, a monster leashes home and heals (but holds at the edge of its range, unhealed, while a player shoots it from
+ * beyond), retaliation doesn't flip-flop between two attackers, a monster blocked by single-way combat drops its target and the
+ * blocker is named, the top damager wins the kill with a private, unflung drop, and encounter spawns (God Wars bodyguards, a boss's
+ * vanilla summons) keep their own rules.
  *
  * <p>Time is driven as {@link NpcDeliveryChecks} does: {@link ActionManager#advanceForSelfTest}, the monsters' own ticks and
  * {@link Mechanics#tickForSelfTest} every Minecraft tick. Hits are counted through the damage hook and the pending-hit recorder,
@@ -76,6 +78,8 @@ final class MonsterAiChecks {
         checks.add(new SelfTest.Check("boss:playability_monster_vanilla_osrs_ai", () -> m.run(m::vanillaOnOsrsAi)));
         checks.add(new SelfTest.Check("boss:playability_monster_aggression", () -> m.run(m::aggression)));
         checks.add(new SelfTest.Check("boss:playability_monster_leash", () -> m.run(m::leash)));
+        checks.add(new SelfTest.Check("boss:playability_monster_leash_under_fire", () -> m.run(m::leashUnderFire)));
+        checks.add(new SelfTest.Check("boss:playability_monster_encounter_spawns", () -> m.run(m::encounterSpawns)));
         checks.add(new SelfTest.Check("boss:playability_monster_retaliation", () -> m.run(m::retaliation)));
         checks.add(new SelfTest.Check("boss:playability_monster_single_way", () -> m.run(m::singleWay)));
         checks.add(new SelfTest.Check("boss:playability_monster_top_damager", () -> m.run(m::topDamager)));
@@ -450,6 +454,131 @@ final class MonsterAiChecks {
     }
 
     /**
+     * A giant spider shot from beyond its aggression range (the player 26 blocks off its spawn point; spells reach 20) doesn't give
+     * up and heal: it walks out to the edge of its 7-tile max range and stands there, keeping its damage, while the shots come; only
+     * once they have stopped for 5 s does it walk home, and it heals there.
+     */
+    private String leashUnderFire() {
+        ServerPlayer p = c.player;
+        Mob spider = vanilla(EntityType.SPIDER, -10, -8, true);
+        OsrsTargetGoal goal = OsrsTargetGoal.of(spider);
+        expect(goal != null, "no OSRS target goal");
+        float half = spider.getMaxHealth() / 2;
+        spider.setHealth(half);
+        moveTo(p, 11, 8);
+        double playerFromHome = MonsterHome.fromHome(MonsterHome.get(spider), p.getX(), p.getZ());
+        expect(playerFromHome > MonsterAi.aggressionRange(ThreatTiming.MELEE_REACH) + MonsterAi.GIVE_UP_SLACK_BLOCKS,
+                "the player is only " + fmt(playerFromHome) + " blocks from the spider's spawn point");
+        int held = 0;
+        double furthest = 0;
+        int shots = 0;
+        for (int i = 0; i < 200; i++) {
+            if (i % 20 == 0) {
+                CombatHandler.applyDamage(p, spider, 0); // a shot a second (a miss is still an attack)
+                shots++;
+            }
+            step(1);
+            expect(!goal.returning(), "the giant spider gave up " + i + " MC in while the player kept shooting it from "
+                    + fmt(playerFromHome) + " blocks off its spawn point");
+            expect(spider.getTarget() == p, "the giant spider dropped the player shooting it");
+            expect(spider.getHealth() <= half, "the giant spider healed to " + spider.getHealth() + " while being shot");
+            furthest = Math.max(furthest, fromHome(spider));
+            if (goal.holding()) {
+                held++;
+            }
+        }
+        expect(held > 0, "the giant spider never stood at the edge of its range (got " + fmt(furthest) + " blocks out)");
+        expect(furthest <= MonsterAi.MAX_RANGE_BLOCKS + 2, "the giant spider walked " + fmt(furthest)
+                + " blocks from its spawn point (max range " + fmt(MonsterAi.MAX_RANGE_BLOCKS) + ")");
+        // the shots stop: 5 s later it gives up, walks home and heals there
+        int quiet = 20; // since the last shot
+        while (!goal.returning() && quiet < MonsterAi.UNDER_FIRE_MC + 40) {
+            step(1);
+            quiet++;
+        }
+        expect(goal.returning(), "the giant spider never gave up the player " + quiet + " MC after the last shot");
+        expect(quiet >= MonsterAi.UNDER_FIRE_MC - 5, "the giant spider gave up only " + quiet + " MC after the last shot");
+        int t = 0;
+        while (goal.returning() && t < MonsterAi.RETURN_TIMEOUT_MC + 20) {
+            step(1);
+            t++;
+        }
+        expect(!goal.returning(), "the giant spider never got home");
+        expect(spider.getHealth() >= spider.getMaxHealth(), "the giant spider came home with " + spider.getHealth() + "/" + spider.getMaxHealth());
+        return shots + " shots from " + fmt(playerFromHome) + " blocks: held " + held + " MC at " + fmt(furthest)
+                + " blocks out, unhealed; gave up " + quiet + " MC after the last shot, home and healed in " + t + " MC";
+    }
+
+    /**
+     * Encounter spawns keep their own rules: a God Wars bodyguard placed by its chamber's spawner gets no spawn point (it stays an
+     * encounter monster, kept in the chamber by the lair's leash); a boss's vanilla summon (Persten's leeches: silverfish as giant
+     * rats) keeps the target it was given as it joins the world and attacks a maxed player, whom an open-world level 3 giant rat
+     * ignores; a vanilla mob a camp placed (SPAWNER) gets a spawn point.
+     */
+    private String encounterSpawns() {
+        ServerPlayer p = c.player;
+        boolean invulnerable = p.isInvulnerable();
+        p.setInvulnerable(false); // as the aggression check: monsters never hunt an invulnerable player
+        try {
+            return encounterSpawnsBody(p);
+        } finally {
+            p.setInvulnerable(invulnerable);
+        }
+    }
+
+    private String encounterSpawnsBody(ServerPlayer p) {
+        StringBuilder out = new StringBuilder();
+        OsrsMonsterEntity starlight = module("starlight", 6, 6, false);
+        expect(!starlight.isOpenWorld(), "Commander Zilyana's bodyguard Starlight got a spawn point (open-world rules in a boss chamber)");
+        expect(starlight.huntRange() == MonsterAi.ENCOUNTER_HUNT_BLOCKS, "Starlight hunts " + fmt(starlight.huntRange()) + " blocks");
+        out.append("Starlight: no spawn point, hunts ").append(fmt(starlight.huntRange())).append(" blocks");
+
+        Mob camp = spawn(EntityType.SKELETON, -6, 6, false);
+        expect(VanillaOsrsAi.isInstalled(camp), "a camp's skeleton is not on OSRS AI");
+        expect(MonsterHome.get(camp) != null, "a skeleton a camp placed (SPAWNER) has no spawn point");
+        camp.discard();
+        out.append("; a camp's skeleton has a spawn point");
+
+        expect(combatLevel() > 6, "the self-test player is level " + combatLevel());
+        // a boss summons its minions with its own target set before they join the world (DataBossEntity.summonMinions)
+        Mob leech = EntityType.SILVERFISH.create(c.world);
+        expect(leech != null, "can't create a silverfish");
+        BlockPos base = TestContext.PLATFORM;
+        leech.moveTo(base.getX() + 3.5, base.getY(), base.getZ() + 0.5, 0f, 0f);
+        leech.finalizeSpawn(c.world, c.world.getCurrentDifficultyAt(base), MobSpawnType.MOB_SUMMONED, null);
+        leech.setTarget(p);
+        c.world.addFreshEntity(leech);
+        ticking.add(leech);
+        expect(VanillaOsrsAi.isInstalled(leech), "the summoned silverfish is not on OSRS AI");
+        expect(MonsterHome.get(leech) == null, "a boss's summon got a spawn point");
+        expect(leech.getTarget() == p, "the summoned silverfish lost the target its boss gave it");
+        step(20);
+        expect(leech.getTarget() == p, "the summoned silverfish dropped a level " + combatLevel() + " player (it attacks any level)");
+        leech.setTarget(null);
+        int took = -1;
+        for (int i = 0; i < 40; i++) {
+            step(1);
+            if (leech.getTarget() == p) {
+                took = i + 1;
+                break;
+            }
+        }
+        expect(took > 0, "the summoned silverfish ignored a level " + combatLevel() + " player 3 blocks away");
+        out.append("; a boss's silverfish keeps its target and hunts level ").append(combatLevel()).append(" (").append(took).append(" MC)");
+
+        // the same giant rat placed by a spawn point follows the combat-level rule
+        leech.discard();
+        settle(p);
+        CombatZones.forget(p);
+        CombatZones.forget(leech);
+        Mob rat = vanilla(EntityType.SILVERFISH, -3, 0, true);
+        expect(CombatZones.npcMayAttack(rat, p), "single-way combat still holds the player");
+        step(40);
+        expect(rat.getTarget() == null, "an open-world giant rat (level 3) attacked a level " + combatLevel() + " player");
+        return out + "; an open-world one ignores them";
+    }
+
+    /**
      * A giant spider fighting the player keeps fighting them while another player hits it (vanilla switched to every new attacker),
      * and only switches once its target is gone.
      */
@@ -457,7 +586,8 @@ final class MonsterAiChecks {
         ServerPlayer p = c.player;
         ServerPlayer partner = com.runecraft.platform.FakePlayer.partner(c.world);
         moveTo(partner, 0, 3);
-        Mob spider = vanilla(EntityType.SPIDER, 2, 0, false);
+        // an open-world spider: an encounter spawn would hunt the maxed player again once its target is gone
+        Mob spider = vanilla(EntityType.SPIDER, 2, 0, true);
         spider.setTarget(p);
         int switches = 0;
         LivingEntity last = spider.getTarget();

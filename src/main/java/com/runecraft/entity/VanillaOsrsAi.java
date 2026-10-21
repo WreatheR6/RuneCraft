@@ -35,6 +35,10 @@ import net.minecraft.world.entity.ai.goal.WrappedGoal;
  * arrow as projectiles) and the OSRS target goal (aggression by combat level, tolerance, hunt range, leash, sticky retaliation).
  * Beneficial potion effects (the witch's drinking, the hard-difficulty spider's speed or regeneration) never take on them, and a
  * zombie calls no reinforcements. Outside Gielinor they stay vanilla.
+ *
+ * <p>One a world spawner placed (a spawn point, a dungeon camp: SPAWNER or STRUCTURE) gets a spawn point ({@link MonsterHome}) and
+ * the open-world rules. Any other is an encounter spawn (a boss's or quest's summon, a quest guard): it keeps the target it was
+ * given and attacks any player whatever their combat level or tolerance, as its vanilla AI did.
  */
 public final class VanillaOsrsAi implements OsrsCombatant {
     /** The {@link Monster} constants with vanilla mobs that fight. */
@@ -60,8 +64,9 @@ public final class VanillaOsrsAi implements OsrsCombatant {
     public static void register() {
         com.runecraft.platform.ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> {
             if (entity instanceof Mob mob && Gielinor.is(world)) {
-                if (mob.getTags().contains(com.runecraft.world.LocationSpawner.TAG)) {
-                    MonsterHome.setIfAbsent(mob, mob.blockPosition()); // a spawn point's monster from before round 42
+                if (mob.getTags().contains(com.runecraft.world.LocationSpawner.TAG) || worldSpawned(mob) && fighter(mob) != null) {
+                    // a spawn point's monster from before round 42, or a camp's (DungeonCamps and the like place vanilla mobs too)
+                    MonsterHome.setIfAbsent(mob, mob.blockPosition());
                 }
                 install(mob);
             }
@@ -89,6 +94,17 @@ public final class VanillaOsrsAi implements OsrsCombatant {
         return m != null && !m.isCustom() && FIGHTERS.contains(m) ? m : null;
     }
 
+    /** Placed by a world spawner (NeoForge keeps the spawn type finalizeSpawn was given, saved with the mob). */
+    private static boolean worldSpawned(Mob mob) {
+        net.minecraft.world.entity.MobSpawnType type = mob.getSpawnType();
+        return type == net.minecraft.world.entity.MobSpawnType.SPAWNER || type == net.minecraft.world.entity.MobSpawnType.STRUCTURE;
+    }
+
+    /** An encounter spawn: no spawn point (a boss's or quest's summon, a quest guard). */
+    private boolean encounter() {
+        return MonsterHome.get(mob) == null;
+    }
+
     public static synchronized boolean isInstalled(Mob mob) {
         return INSTALLED.containsKey(mob);
     }
@@ -114,6 +130,9 @@ public final class VanillaOsrsAi implements OsrsCombatant {
             return false;
         }
         VanillaOsrsAi ai = new VanillaOsrsAi(mob, def);
+        // a summon is handed its target before it joins the world (DataBossEntity.summonMinions): stripping the vanilla target
+        // goals would drop it
+        net.minecraft.world.entity.LivingEntity given = mob.getTarget();
         boolean strolls = false;
         for (WrappedGoal w : java.util.List.copyOf(goals.getAvailableGoals())) {
             Goal g = w.getGoal();
@@ -130,7 +149,7 @@ public final class VanillaOsrsAi implements OsrsCombatant {
         }
         ai.targetGoal = new OsrsTargetGoal(ai, true);
         targets.addGoal(1, ai.targetGoal);
-        mob.setTarget(null);
+        mob.setTarget(given instanceof ServerPlayer ? given : null); // OSRS monsters fight players only
         // // playability: a chase at a player's walking pace, as the built-in monsters (OSRS: one tile a tick for everyone)
         AttributeInstance speed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
         if (speed != null) {
@@ -191,10 +210,12 @@ public final class VanillaOsrsAi implements OsrsCombatant {
         }
     }
 
+    /** An open-world stand-in follows OSRS aggression; an encounter spawn attacks any player, as its vanilla AI did. */
     @Override
     public boolean wantsToAttack(ServerPlayer player) {
-        return OsrsTargetGoal.osrsAggression(mob, player, def.aggressive(), def.combatLevel(),
-                com.runecraft.osrs.data.MonsterTraits.key(def));
+        boolean encounter = encounter();
+        return OsrsTargetGoal.osrsAggression(mob, player, def.aggressive() || encounter, def.combatLevel(),
+                com.runecraft.osrs.data.MonsterTraits.key(def), encounter);
     }
 
     @Override

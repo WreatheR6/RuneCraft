@@ -120,7 +120,8 @@ public class OsrsMonsterEntity extends Monster implements OsrsCombatant {
 
     /**
      * Remembers where a world spawner (spawn points, camps: SPAWNER; structures: STRUCTURE) placed an ordinary monster, so it hunts,
-     * chases and returns around its spawn point (round 42). Bosses and encounter creatures never get one.
+     * chases and returns around its spawn point (round 42). Bosses and encounter creatures never get one, nor do the God Wars
+     * generals' bodyguards (part of the boss encounter: aggressive across the whole chamber, kept there by the lair's own leash).
      */
     @Override
     public net.minecraft.world.entity.SpawnGroupData finalizeSpawn(net.minecraft.world.level.ServerLevelAccessor level,
@@ -136,7 +137,13 @@ public class OsrsMonsterEntity extends Monster implements OsrsCombatant {
 
     private boolean encounterOnly() {
         MonsterStats s = stats();
-        return s != null && s.profile() != null && com.runecraft.osrs.world.SpawnTable.encounterOnly().containsKey(s.profile().id);
+        if (s == null || s.profile() == null) {
+            return false;
+        }
+        String id = s.profile().id;
+        return com.runecraft.osrs.world.SpawnTable.encounterOnly().containsKey(id)
+                || com.runecraft.osrs.content.godwars.GwdDungeon.lair(id) != null
+                || com.runecraft.osrs.content.godwars.GodWarsFactions.bodyguardGod(id) != null;
     }
 
     // ------------------------------------------------------------------ OsrsCombatant

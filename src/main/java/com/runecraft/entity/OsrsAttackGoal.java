@@ -27,6 +27,8 @@ public class OsrsAttackGoal extends Goal {
     private LivingEntity engaged;
     private boolean wasInReach;
     private long arrivedAt = Long.MIN_VALUE / 4;
+    /** The monster's target goal (looked up once it exists: it is registered after this goal). */
+    private OsrsTargetGoal targets;
 
     public OsrsAttackGoal(OsrsMonsterEntity mob) {
         this((OsrsCombatant) mob);
@@ -98,8 +100,18 @@ public class OsrsAttackGoal extends Goal {
         tryAttack(target, style, inRange && canSee, now, speedTicks, earliest);
     }
 
-    /** Path-finds to the target, or walks straight at it for a creature with OSRS direct ("dumb") pathing. */
+    /**
+     * Path-finds to the target, or walks straight at it for a creature with OSRS direct ("dumb") pathing; stays put while it holds
+     * at the edge of its max range (its target attacking it from beyond, {@link OsrsTargetGoal#holding}).
+     */
     private void chase(ServerPlayer target) {
+        if (targets == null) {
+            targets = OsrsTargetGoal.of(mob);
+        }
+        if (targets != null && targets.holding()) {
+            mob.getNavigation().stop();
+            return;
+        }
         if (c.directPathing()) {
             mob.getNavigation().stop();
             mob.getMoveControl().setWantedPosition(target.getX(), target.getY(), target.getZ(), 1.0);
