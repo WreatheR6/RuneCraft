@@ -1619,14 +1619,61 @@ final class ToaBossRooms {
                 shadows[k] = null;
                 shadowCharge[k] = 0;
             }
-            // Ice: attacks a tick slower until it thaws, and no movement slow.
+            String ice = selfTestIce(t);
+            return rounds + " memory blasts dodged " + lastMemoryBlastGap + " ticks apart, a shadow slam dodged after " + lastShadowSlamLead
+                    + " ticks, " + ice;
+        }
+
+        /**
+         * Self-test: the ice quadrant's element (OSRS wiki, ToA strategies: "Ice-based attacks will temporarily slow players'
+         * attack speed by 1 tick", until "The ice around you melts away.") makes each attack's weapon delay one game tick
+         * longer, through the attack clock and the after-hit hook a real swing goes through, once per attack however many hits
+         * it has; it adds no movement slow, and attacks are back to their speed once it thaws.
+         */
+        private String selfTestIce(RaidSelfTest t) {
+            ServerPlayer p = t.player();
+            int period = com.runecraft.osrs.AttackClock.periodMc(4); // a 4-tick weapon
+            int tick = com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK;
+            // Kephri's Dung Strike stuns its target for 2 seconds (OSRS; Slowness at freeze strength here). When her path came
+            // first, her last stun is still on the player now: this walk runs inside one server tick and a player's effects
+            // only count down with the server's ticks, so it never wore off, as a real player's did long ago. Only a stun is
+            // worn off; any other slow stays and fails the check below.
+            if (com.runecraft.combat.FreezeRules.isFreeze(p.getEffect(MobEffects.MOVEMENT_SLOWDOWN))) {
+                p.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
+            }
+            RaidSelfTest.expect(!ICED.containsKey(p.getUUID()), "Akkha: the player was encased in ice before the ice check");
+            long before = selfTestSwing(p, period);
+            RaidSelfTest.expect(before == period, "Akkha: an attack before the ice is ready in " + before + " MC, not its " + period);
             element(p, 3);
-            RaidSelfTest.expect(ICED.containsKey(p.getUUID()) && !p.hasEffect(MobEffects.MOVEMENT_SLOWDOWN),
-                    "Akkha: the ice quadrant's element did not slow attacks (or slowed movement)");
+            RaidSelfTest.expect(ICED.containsKey(p.getUUID()), "Akkha: the ice quadrant's element did not encase the player");
+            RaidSelfTest.expect(!p.hasEffect(MobEffects.MOVEMENT_SLOWDOWN) && !p.hasEffect(MobEffects.DIG_SLOWDOWN),
+                    "Akkha: the ice quadrant's element slowed movement or mining (OSRS: only attacks)");
+            long iced = selfTestSwing(p, period);
+            RaidSelfTest.expect(iced == period + tick, "Akkha: an attack in the ice is ready in " + iced + " MC, not " + (period + tick)
+                    + " (its " + period + " and one game tick)");
             t.tick(ICE_TICKS + 1);
             RaidSelfTest.expect(!ICED.containsKey(p.getUUID()), "Akkha: the ice never thawed");
-            return rounds + " memory blasts dodged " + lastMemoryBlastGap + " ticks apart, a shadow slam dodged after " + lastShadowSlamLead
-                    + " ticks, ice slowed attacks";
+            long thawed = selfTestSwing(p, period);
+            RaidSelfTest.expect(thawed == period, "Akkha: an attack after the thaw is ready in " + thawed + " MC, not its " + period);
+            return "ice: a " + period + " MC attack took " + iced + " MC, " + thawed + " after the thaw, no movement slow";
+        }
+
+        /**
+         * Self-test: one two-hit attack at Akkha resolved the way a ready swing is (stamped on the attack clock, then each hit's
+         * after-hit hooks; misses here), and the MC until the next attack is ready. Puts the player's attack clock back.
+         */
+        private long selfTestSwing(ServerPlayer p, int periodMc) {
+            PlayerData d = Players.data(p);
+            long last = d.lastAttackTick;
+            try {
+                com.runecraft.combat.AttackTimer.accept(p, com.runecraft.osrs.AttackClock.Kind.MELEE, periodMc);
+                for (int hit = 0; hit < 2; hit++) {
+                    com.runecraft.combat.CombatHandler.hookAfterHit(p, akkha, AttackType.SLASH, 0);
+                }
+                return com.runecraft.combat.AttackTimer.remaining(p);
+            } finally {
+                d.lastAttackTick = last;
+            }
         }
 
         @Override
