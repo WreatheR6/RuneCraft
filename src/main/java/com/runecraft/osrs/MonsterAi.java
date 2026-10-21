@@ -14,6 +14,11 @@ import java.util.Set;
  * standing inside its <i>aggression range</i>, its max range (almost always 7 tiles from its static spawn point) plus its attack
  * range; after 10 minutes in the same area it becomes tolerant (see {@link CombatBonuses.Tolerance}). Real-time adaptations are
  * marked {@code // playability}.
+ *
+ * <p>Round 43: no reset heal (monsters regenerate a hitpoint every 100 game ticks wherever they are, {@link #REGEN_TICKS}), the
+ * wiki's low-hitpoint retreat ({@link #RETREATS}), an arena for encounter monsters ({@link #ENCOUNTER_LEASH_BLOCKS}), the
+ * single-way lock let go by a monster with no path to the player ({@link #PATH_BLOCKED_MC}), and large monsters' drops on their
+ * south-westernmost tile ({@link #southWestTileCentre}).
  */
 public final class MonsterAi {
     /** One OSRS tile in blocks. */

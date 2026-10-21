@@ -143,7 +143,7 @@ public final class VanillaOsrsAi implements OsrsCombatant {
         return man;
     }
 
-    /** The {@link Monster} a vanilla mob fights as in Gielinor, or null for anything else (animals, villagers, pets, summons). */
+    /** The {@link Monster} a vanilla mob fights as in Gielinor, or null for anything else (villagers, horses, pets, summons). */
     public static Monster fighter(Mob mob) {
         if (mob instanceof OsrsMonsterEntity || mob instanceof TamableAnimal tame && tame.isTame()) {
             return null;
@@ -157,24 +157,27 @@ public final class VanillaOsrsAi implements OsrsCombatant {
         return m != null && !m.isCustom() && FIGHTERS.contains(m) ? m : null;
     }
 
-    private static Set<String> townIds;
+    private static Set<net.minecraft.world.entity.EntityType<?>> townTypes;
 
     /**
      * A town resident ({@code TownSpawner}'s creatures: men, guards, muggers, snails...) that town spawner placed as an EVENT spawn
      * before round 43, so it has no spawn point and would follow an encounter monster's rules.
      */
     private static boolean townResident(OsrsMonsterEntity m) {
-        if (m.getSpawnType() != net.minecraft.world.entity.MobSpawnType.EVENT || m.stats() == null || m.stats().profile() == null) {
+        if (m.getSpawnType() != net.minecraft.world.entity.MobSpawnType.EVENT) {
             return false;
         }
-        if (townIds == null) {
-            java.util.Set<String> ids = new java.util.HashSet<>();
+        if (townTypes == null) {
+            java.util.Set<net.minecraft.world.entity.EntityType<?>> types = new java.util.HashSet<>();
             for (com.runecraft.osrs.content.npcs.TownMonsters.TownSpawn s : com.runecraft.osrs.content.npcs.TownMonsters.spawns()) {
-                ids.add(s.creature());
+                net.minecraft.world.entity.EntityType<?> t = com.runecraft.registry.ModEntities.typeById(s.creature());
+                if (t != null) {
+                    types.add(t);
+                }
             }
-            townIds = ids;
+            townTypes = types;
         }
-        return townIds.contains(m.stats().profile().id);
+        return townTypes.contains(m.getType());
     }
 
     /** Placed by a world spawner (NeoForge keeps the spawn type finalizeSpawn was given, saved with the mob). */

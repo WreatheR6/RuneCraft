@@ -1002,6 +1002,7 @@ final class MonsterAiChecks {
         }
         zombie.setTarget(p);
         CombatHandler.applyDamage(zombie, p, 0); // it swung at the player: single-way combat holds them
+        int swung = from(zombie).size();
         OsrsMonsterEntity goblin = module(Monster.GOBLIN.entity(), 3, 0, false);
         expect(p.hasLineOfSight(zombie), "the player can't see the fenced zombie");
         expect(CombatZones.check(p, goblin) == SingleCombat.Verdict.ATTACKER_BUSY, "the zombie didn't hold the player ("
@@ -1030,7 +1031,7 @@ final class MonsterAiChecks {
         int bound = MonsterAi.PATH_BLOCKED_MC + 2 * MonsterAi.REACH_CHECK_MC;
         expect(released > 0 && released <= bound, "the walled-off zombie held the lock " + (released < 0 ? ">120" : released)
                 + " MC more (it lets go after " + MonsterAi.PATH_BLOCKED_MC + " MC without a path)");
-        expect(from(zombie).isEmpty(), "the fenced zombie hit the player");
+        expect(from(zombie).size() == swung, "the fenced zombie hit the player");
         return "4 held attacks, 1 refusal line; the fenced zombie (in sight) let the lock go " + released + " MC later";
     }
 }
