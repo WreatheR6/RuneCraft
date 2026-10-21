@@ -147,13 +147,13 @@ public final class DoomWalk {
             if (again == null || again.delve() != 1) {
                 throw fail("a claimed run didn't start again at delve 1");
             }
-            kill(again, (DoomDelveService.DoomScript) again.script(), d);
+            String helped = helperOutDamages(again, d);
             DoomDelveService.died(p);
             if (DoomDelveService.heldLoot(p) != 0 || DoomDelveService.runLevel(p) != 0) {
                 throw fail("a death kept the run's loot (" + DoomDelveService.heldLoot(p) + " stacks)");
             }
             return "delves " + String.join("; ", log) + "; left with " + held + " stacks in the chest, claimed (" + tears
-                    + " demon tears), a death forfeits the run";
+                    + " demon tears), " + helped + ", a death forfeits the run";
         } finally {
             for (DataBossEntity b : spawned) {
                 if (b.isAlive()) {
@@ -162,6 +162,45 @@ public final class DoomWalk {
             }
             DoomDelveService.restoreRun(p, saved);
             p.setItemInHand(InteractionHand.MAIN_HAND, net.minecraft.world.item.ItemStack.EMPTY);
+        }
+    }
+
+    /**
+     * A delve level belongs to the run that summoned it (round 43): a helper with no run who deals most of the damage gets
+     * neither the level nor its loot nor a personal best (it would let a player skip straight to a deep level), the player's
+     * run completes it.
+     */
+    private static String helperOutDamages(DataBossEntity boss, BossWalks.Driver d) {
+        ServerPlayer p = d.player();
+        ServerPlayer helper = com.runecraft.platform.FakePlayer.partner((ServerLevel) boss.level());
+        DoomDelveState.Run helperRun = DoomDelveService.takeRun(helper);
+        int helperBest = Players.data(helper).killCount(DoomDelves.DEEPEST_KEY);
+        try {
+            helper.teleportTo((ServerLevel) boss.level(), boss.getX() + 3, boss.getY(), boss.getZ(), 0, 0);
+            int dealt = BossWalks.hit(boss, helper, boss.trueHitpoints() / 2, AttackType.RANGED);
+            com.runecraft.combat.CombatZones.forget(boss);
+            com.runecraft.combat.CombatZones.forget(helper);
+            if (dealt <= 0) {
+                throw fail("the helper's hit dealt nothing");
+            }
+            kill(boss, (DoomDelveService.DoomScript) boss.script(), d);
+            if (boss.isAlive()) {
+                throw fail("the helped delve 1 survived");
+            }
+            if (com.runecraft.combat.KillCredit.topDamager(boss, p) != helper) {
+                throw fail("the helper (" + dealt + " damage) wasn't the top damager");
+            }
+            if (DoomDelveService.runLevel(helper) != 0 || DoomDelveService.heldLoot(helper) != 0
+                    || Players.data(helper).killCount(DoomDelves.DEEPEST_KEY) != helperBest) {
+                throw fail("the helper took the summoner's delve level (run level " + DoomDelveService.runLevel(helper) + ", "
+                        + DoomDelveService.heldLoot(helper) + " stacks held)");
+            }
+            if (DoomDelveService.runLevel(p) != 1 || DoomDelveService.heldLoot(p) == 0) {
+                throw fail("the summoner's run didn't complete the helped level (run level " + DoomDelveService.runLevel(p) + ")");
+            }
+            return "a helper's " + dealt + " damage left the level and its loot to the summoner's run";
+        } finally {
+            DoomDelveService.restoreRun(helper, helperRun);
         }
     }
 

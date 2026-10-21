@@ -206,6 +206,9 @@ public final class DataBossService {
         // raises in onSpawn (Eldric beside Branda): set before that, as they copy its lair rules when they rise
         DataBossEntity entity = spawn(world, at, boss, player,
                 arena != null && at.getX() == arena.x() && at.getZ() == arena.z() ? arena.radius() + 8 : 24, true);
+        if (entity != null) {
+            entity.summoner(player.getUUID());
+        }
         if (entity != null && variant != null) {
             entity.applyVariant(variant);
         }

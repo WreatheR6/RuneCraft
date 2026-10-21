@@ -53,6 +53,8 @@ public class DataBossEntity extends OsrsMonsterEntity {
      */
     private net.minecraft.core.BlockPos home;
     private int leash;
+    /** The player who summoned this boss at its stone (null for bosses spawned by other code). Saved with the entity. */
+    private java.util.UUID summoner;
     /** Game ticks in a row with no player around (a summoned boss resets after {@link BossLair#RESET_TICKS}). */
     private int lonelyTicks;
     /** A summoned boss with nobody near it for this long (game ticks: one minute) resets, like an OSRS instance left. */
@@ -100,6 +102,15 @@ public class DataBossEntity extends OsrsMonsterEntity {
     public void markSummoned(net.minecraft.core.BlockPos at, int leash) {
         this.home = at.immutable();
         this.leash = Math.max(8, leash);
+    }
+
+    /** The player who summoned this boss at its stone, or null (a Doom delve level belongs to the summoner's run). */
+    public java.util.UUID summoner() {
+        return summoner;
+    }
+
+    public void summoner(java.util.UUID player) {
+        this.summoner = player;
     }
 
     /** A boss's next form or companion (Zulrah's forms, Dawn, Eldric) shares its lair: the same leash and reset. */
@@ -323,6 +334,9 @@ public class DataBossEntity extends OsrsMonsterEntity {
             nbt.putInt("RcLeash", leash);
             nbt.putBoolean("RcSafespots", breakSafespots);
         }
+        if (summoner != null) {
+            nbt.putUUID("RcSummoner", summoner);
+        }
         CompoundTag scriptData = new CompoundTag();
         script.writeNbt(this, scriptData);
         if (!scriptData.isEmpty()) {
@@ -348,6 +362,9 @@ public class DataBossEntity extends OsrsMonsterEntity {
         if (nbt.contains("RcHome")) {
             markSummoned(net.minecraft.core.BlockPos.of(nbt.getLong("RcHome")), nbt.getInt("RcLeash"));
             breakSafespots = nbt.getBoolean("RcSafespots");
+        }
+        if (nbt.hasUUID("RcSummoner")) {
+            summoner = nbt.getUUID("RcSummoner");
         }
         if (nbt.contains("RcScript")) {
             script.readNbt(this, nbt.getCompound("RcScript"));

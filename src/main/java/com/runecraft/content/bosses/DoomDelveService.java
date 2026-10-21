@@ -155,12 +155,11 @@ final class DoomDelveService {
     }
 
     private static void completed(ServerPlayer killer, DataBossEntity boss) {
-        // the level's loot goes to the run of whoever dealt the most damage, not the killing blow's (round 43, KillCredit)
-        ServerPlayer player = com.runecraft.combat.KillCredit.topDamager(boss, killer);
+        int level = Math.max(1, boss.delve());
+        ServerPlayer player = delver(boss, killer, level);
         if (player == null) {
             return;
         }
-        int level = Math.max(1, boss.delve());
         DoomDelveState st = state(player);
         DoomDelveState.Run run = st.getOrCreate(player.getUUID());
         run.completed = level;
@@ -184,6 +183,41 @@ final class DoomDelveService {
             Msg.red(player, "A light shines from the burrow hole... delving deeper would risk your unique reward!");
         }
         Msg.game(player, "Use the summoning stone to delve deeper (level " + (level + 1) + "), or sneak and use it to claim your loot.");
+    }
+
+    /**
+     * The player whose run a killed delve level belongs to: the one who summoned it at the stone, whoever dealt the damage or
+     * the killing blow (the OSRS fight is an instance: nobody else can be in it, and the level is the next one of the run that
+     * delved into it). Only while that run is still the one the level came from (it has completed the level before): a run
+     * ended by a death or by leaving gets nothing, and a level never goes to a player who did not delve to it (a helper with no
+     * run, or a shallower one, would otherwise skip levels and take deep loot). A boss with no summoner recorded (one saved
+     * before round 43) goes to its top damager or killer whose run it continues. Null: nobody's run.
+     */
+    static ServerPlayer delver(DataBossEntity boss, ServerPlayer killer, int level) {
+        ServerPlayer top = com.runecraft.combat.KillCredit.topDamager(boss, killer);
+        UUID summoner = boss.summoner();
+        List<ServerPlayer> candidates = new ArrayList<>();
+        if (summoner != null) {
+            MinecraftServer server = boss.getServer();
+            for (ServerPlayer p : new ServerPlayer[]{top, killer, server == null ? null : server.getPlayerList().getPlayer(summoner)}) {
+                if (p != null && summoner.equals(p.getUUID())) {
+                    candidates.add(p);
+                }
+            }
+        } else {
+            candidates.add(top);
+            candidates.add(killer);
+        }
+        for (ServerPlayer p : candidates) {
+            if (p == null) {
+                continue;
+            }
+            DoomDelveState.Run run = state(p).get(p.getUUID());
+            if (run != null && run.completed == level - 1) {
+                return p;
+            }
+        }
+        return null;
     }
 
     /** A death on a delve run forfeits the run's loot (OSRS: "they will forfeit all accumulated drops"); the chest is kept. */
@@ -315,6 +349,7 @@ final class DoomDelveService {
         BossVariant v = nextLevel(player, def);
         DataBossEntity boss = DataBossService.spawn(world, at, def, player);
         if (boss != null) {
+            boss.summoner(player.getUUID());
             boss.applyVariant(v);
         }
         return boss;

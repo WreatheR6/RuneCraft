@@ -62,7 +62,7 @@ public final class KillCredit {
     /**
      * The player who dealt the most damage to a monster: from its ledger while it lives, or as recorded when its death was handed
      * out ({@link #winner}); {@code fallback} when nobody is recorded or that player is gone. For kill hooks that credit something
-     * other than the drop (round 43: a Doom of Mokhaiotl delve level goes to the top damager's run, not the killing blow's).
+     * other than the drop (round 43: a Doom of Mokhaiotl delve level, which still only goes to the run that summoned it).
      */
     public static synchronized ServerPlayer topDamager(LivingEntity e, ServerPlayer fallback) {
         MonsterAi.DamageLedger<UUID> ledger = LEDGERS.get(e);
