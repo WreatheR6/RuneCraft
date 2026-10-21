@@ -64,7 +64,12 @@ public final class RaidSelfTest {
     /** Advances the raid by {@code n} game ticks: delayed effects, strikes and the current room's logic. */
     void tick(int n) {
         for (int i = 0; i < n && !raid.closed(); i++) {
-            RaidEffects.advance(1);
+            // one game tick of the world clock (the raid clock follows it) with the monster hits in flight moved on: since round
+            // 41 they land after their wind-up, flight or telegraph (Mechanics), as the real server's ticks would land them
+            for (int m = 0; m < com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK; m++) {
+                com.runecraft.action.ActionManager.advanceForSelfTest();
+                com.runecraft.boss.Mechanics.tickForSelfTest();
+            }
             RaidEffects.gameTick();
             if (!raid.closed()) {
                 raid.gameTick(RaidEffects.now());

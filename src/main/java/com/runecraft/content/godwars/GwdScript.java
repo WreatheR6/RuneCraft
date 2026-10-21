@@ -83,17 +83,35 @@ abstract class GwdScript implements BossScript {
         return current;
     }
 
+    /**
+     * The pick is used up when the attack starts, so the next attack is picked afresh even when this one's hit never lands (a
+     * projectile that fizzles, a swing the target stepped away from: hits are delivered in real time since round 41).
+     */
+    @Override
+    public AttackDef beforeAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
+        current = null;
+        return attack;
+    }
+
     @Override
     public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
+        return onHitPlayer(boss, player, damage, type, null);
+    }
+
+    /** {@code attack}: the attack that landed (the boss may have picked its next one since); null for a built-in hit. */
+    @Override
+    public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type, AttackDef attack) {
+        AttackDef used = attack != null ? attack : current;
         if (spreading) {
-            return landed(boss, player, damage, current);
+            return landed(boss, player, damage, used);
         }
-        AttackDef used = current;
         int result = landed(boss, player, damage, used);
         if (used != null && isMultiTarget(used)) {
             splash(boss, used, player);
         }
-        current = null;
+        if (attack == null) {
+            current = null;
+        }
         return result;
     }
 

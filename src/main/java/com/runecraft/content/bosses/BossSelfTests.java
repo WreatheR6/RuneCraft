@@ -244,4 +244,17 @@ public final class BossSelfTests {
     public static boolean realAttacksHurt(String bossId) {
         return !"zalcano".equals(bossId);
     }
+
+    /**
+     * Starts {@code attack} through a scripted boss's own perform, as its cadence does (it becomes the script's last attack);
+     * false when the boss's script is not a scripted boss. Round 41's {@code npc:} checks: a hit still on its way when a later
+     * attack starts is judged by its own attack.
+     */
+    public static boolean performScripted(DataBossEntity boss, ServerPlayer target, com.runecraft.osrs.content.AttackDef attack) {
+        if (!(boss.script() instanceof ScriptedBoss s)) {
+            return false;
+        }
+        s.perform(boss, target, attack);
+        return true;
+    }
 }

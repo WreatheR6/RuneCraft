@@ -344,13 +344,23 @@ public final class CombatHandler {
 
     /** Performs one OSRS attack from a monster against a player (respecting attack speed). */
     public static void npcAttack(LivingEntity mob, ServerPlayer player, AttackType type) {
+        npcAttack(mob, player, type, false);
+    }
+
+    /**
+     * Performs one OSRS attack from a monster against a player. {@code ownCadence}: the caller already keeps the attack speed
+     * (OsrsAttackGoal stamps it when the attack starts, Jad's telegraph, Graardor's slam on everyone in the room), so the hit,
+     * which now lands after a wind-up, flight or telegraph (// playability: OSRS rolls a melee hit on the swing tick), is never
+     * dropped by the per-monster cooldown below. Vanilla-AI monsters hitting through {@code allowDamage} pass false.
+     */
+    public static void npcAttack(LivingEntity mob, ServerPlayer player, AttackType type, boolean ownCadence) {
         MonsterStats stats = MonsterStats.of(mob);
         if (!CombatZones.npcMayAttack(mob, player)) {
             return;
         }
         long now = ActionManager.mcTick();
         Long last = NPC_LAST_ATTACK.get(mob);
-        if (last != null && now - last < (long) stats.attackSpeed() * ActionManager.MC_TICKS_PER_GAME_TICK) {
+        if (!ownCadence && last != null && now - last < (long) stats.attackSpeed() * ActionManager.MC_TICKS_PER_GAME_TICK) {
             return;
         }
         NPC_LAST_ATTACK.put(mob, now);
@@ -412,6 +422,11 @@ public final class CombatHandler {
 
     public static void clearCooldown(LivingEntity mob) {
         NPC_LAST_ATTACK.remove(mob);
+    }
+
+    /** True while {@link #applyDamage} is hurting its target (OsrsKnockback cancels the vanilla knockback of that hurt). */
+    public static boolean applyingOsrsHit() {
+        return applying;
     }
 
     // ---------------- Damage + XP ----------------

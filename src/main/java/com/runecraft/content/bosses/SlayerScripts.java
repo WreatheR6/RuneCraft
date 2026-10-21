@@ -1078,9 +1078,13 @@ final class SlayerScripts {
             return SlayerBosses.DUSK_MELEE;
         }
 
+        /** Orbs of the last pair that have landed: they fly to the player now (round 41), so landing order tells them apart. */
+        private int orbsLanded;
+
         @Override
         protected void perform(DataBossEntity boss, ServerPlayer target, AttackDef a) {
             orb = a == SlayerBosses.DUSK_RANGED ? 1 : 0;
+            orbsLanded = 0;
             super.perform(boss, target, a);
             if (a == SlayerBosses.DUSK_RANGED) {
                 orb = 2;
@@ -1095,6 +1099,10 @@ final class SlayerScripts {
          */
         @Override
         public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
+            int orb = this.orb;
+            if (orb == 0 && com.runecraft.boss.Mechanics.resolvingAttack() == SlayerBosses.DUSK_RANGED) {
+                orb = Math.min(2, ++orbsLanded); // an orb that flew: the first of the pair to land, then the second
+            }
             if (orb == 1 && damage > 0) {
                 damage = (int) Math.round(maxHit(boss, SlayerBosses.DUSK_RANGED) * SlayerBosses.DUSK_FIRST_ORB);
             } else if (orb == 2 && damage > 0) {

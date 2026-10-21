@@ -57,6 +57,16 @@ public interface BossScript {
         return damage;
     }
 
+    /**
+     * {@link #onHitPlayer(DataBossEntity, ServerPlayer, int, AttackType)} for a hit of {@code attack} (null when unknown: a
+     * built-in hit). Hits are delivered in real time (round 41: projectiles fly, swings wind up, telegraphs wait), so the boss
+     * may have started a later attack before this one lands: a script that remembers "the attack it made" reads which attack
+     * landed here.
+     */
+    default int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type, AttackDef attack) {
+        return onHitPlayer(boss, player, damage, type);
+    }
+
     /** Called when the boss enters a new phase (index into BossDef.phases). */
     default void onPhase(DataBossEntity boss, int phase) {
     }

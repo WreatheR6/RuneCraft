@@ -191,6 +191,7 @@ final class GameplayChecks {
         // A whole Barrows run as the real player: six crypts, the tunnels, the chest.
         checks.add(new SelfTest.Check("boss:barrows_run", () -> g.walk(com.runecraft.content.dungeons.BarrowsWalk::run)));
         checks.addAll(BossFightChecks.all(context));
+        checks.addAll(NpcDeliveryChecks.all(context));
         // The God Wars Dungeon walked end to end: the hole, kill count, each general's chamber, the prison and Nex.
         checks.add(new SelfTest.Check("boss:gwd_walk", () -> g.walk(com.runecraft.content.godwars.GwdWalk::run)));
         // The Wilderness (round 39): the Revenant Caves, the agility course, an obelisk and the Ferox Enclave, the Mage Arenas.

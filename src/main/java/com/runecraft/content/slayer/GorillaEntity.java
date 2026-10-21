@@ -131,7 +131,8 @@ public class GorillaEntity extends OsrsMonsterEntity {
     @Override
     public int onHitPlayer(ServerPlayer player, int damage, AttackType type) {
         int out = super.onHitPlayer(player, damage, type);
-        if (countingAttack && tracker().attacked(out <= 0, rng)) {
+        // its standard attack's hit now lands after a wind-up or flight (round 41): counted when it resolves
+        if ((countingAttack || com.runecraft.boss.Mechanics.resolving(this)) && tracker().attacked(out <= 0, rng)) {
             Style now = tracker().attackStyle();
             ((ServerLevel) level()).sendParticles(ParticleTypes.ANGRY_VILLAGER, getX(), getY() + getBbHeight() + 0.3, getZ(), 4, 0.4, 0.2,
                     0.4, 0.0);
