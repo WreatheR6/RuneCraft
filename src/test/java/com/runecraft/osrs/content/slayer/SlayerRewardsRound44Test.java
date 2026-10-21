@@ -88,6 +88,21 @@ class SlayerRewardsRound44Test {
     }
 
     @Test
+    void ottoRepairsTheHastaNotTheSlayerMaster() {
+        assertTrue(SlayerRewards.craft(SlayerRewards.DRAGON_HASTA) == null, "no longer a slayer craft");
+        assertNotNull(ContentRegistry.npc(SlayerRewards.OTTO));
+        assertTrue(ItemCatalog.exists(SlayerRewards.BROKEN_HASTA));
+        assertTrue(ItemCatalog.exists(SlayerRewards.DRAGON_HASTA));
+        // the broken hasta comes from the brimstone chest
+        assertTrue(SlayerChests.BRIMSTONE_RARE.stream().anyMatch(d -> d.item().equals(SlayerRewards.BROKEN_HASTA)));
+    }
+
+    @Test
+    void bellLuresWithinThreeTiles() {
+        assertEquals(6, SlayerGear.BELL_RADIUS, "3 game tiles");
+    }
+
+    @Test
     void runePouchHoldsThreeKindsOf16000() {
         Map<String, Integer> pouch = new HashMap<>();
         assertEquals(16_000, RunePouch.deposit(pouch, "death_rune", 20_000));

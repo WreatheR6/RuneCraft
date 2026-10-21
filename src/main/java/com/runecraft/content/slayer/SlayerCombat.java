@@ -73,21 +73,24 @@ public final class SlayerCombat {
         });
     }
 
-    /** Game tick until which a molanisk has been lured off its wall by a slayer bell. */
+    /** Molanisks lured off their wall by a slayer bell (they stay down until they die). */
     private static final Map<LivingEntity, Long> LURED = new WeakHashMap<>();
 
-    /** Rings a slayer bell: molanisks nearby drop off the walls and can be fought for a while. Returns how many. */
+    /**
+     * Rings a slayer bell: molanisks within 3 tiles drop off the walls for good and attack the player who rang it (OSRS
+     * Wiki). Returns how many.
+     */
     public static int ringBell(ServerPlayer player) {
         if (Players.data(player).skills().level(Skill.SLAYER) < SlayerGear.BELL_SLAYER_LEVEL) {
             Msg.game(player, "You need a Slayer level of " + SlayerGear.BELL_SLAYER_LEVEL + " to use the slayer bell.");
             return 0;
         }
-        long until = ActionManager.gameTick() + SlayerGear.BELL_LURE_TICKS;
         List<OsrsMonsterEntity> near = player.level().getEntitiesOfClass(OsrsMonsterEntity.class,
                 player.getBoundingBox().inflate(SlayerGear.BELL_RADIUS),
-                m -> m.isAlive() && SlayerGear.BELL_CATEGORY.equals(category(m)));
+                m -> m.isAlive() && SlayerGear.BELL_CATEGORY.equals(category(m)) && !lured(m));
         for (OsrsMonsterEntity m : near) {
-            LURED.put(m, until);
+            LURED.put(m, Long.MAX_VALUE);
+            m.setTarget(player);
         }
         Msg.game(player, near.isEmpty() ? "You ring the bell. Nothing happens." : "You ring the bell. A molanisk drops off the wall!");
         return near.size();

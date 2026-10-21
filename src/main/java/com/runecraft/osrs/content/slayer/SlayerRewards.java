@@ -302,9 +302,12 @@ public final class SlayerRewards {
                     Skill.SLAYER, 44, 0, null, null),
             new Craft("brimstone_ring", 1, List.of(new Input("hydras_eye", 1), new Input("hydras_fang", 1),
                     new Input("hydras_heart", 1)), Skill.CRAFTING, 1, 0, null, null),
-            new Craft("ferocious_gloves", 1, List.of(new Input("hydra_leather", 1)), Skill.CRAFTING, 1, 0, null, "hammer"),
-            // approx: Otto Godblessed repairs a broken dragon hasta for free in OSRS; here the slayer master does.
-            new Craft("dragon_hasta", 1, List.of(new Input("broken_dragon_hasta", 1)), Skill.ATTACK, 1, 0, null, null));
+            new Craft("ferocious_gloves", 1, List.of(new Input("hydra_leather", 1)), Skill.CRAFTING, 1, 0, null, "hammer"));
+
+    /** Otto Godblessed repairs broken dragon hastas (from the brimstone chest) for free (OSRS Wiki "Broken dragon hasta"). */
+    public static final String OTTO = "otto_godblessed";
+    public static final String BROKEN_HASTA = "broken_dragon_hasta";
+    public static final String DRAGON_HASTA = "dragon_hasta";
 
     /** The recolour crafts: plain and imbued helmet for every {@link #RECOLOURS} line and {@link #CA_HELMETS} entry. */
     public static final List<Craft> HELMET_CRAFTS = helmetCrafts();
