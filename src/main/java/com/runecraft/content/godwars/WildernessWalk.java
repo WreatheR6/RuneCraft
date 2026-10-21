@@ -21,6 +21,7 @@ import com.runecraft.osrs.data.AgilityCourse;
 import com.runecraft.platform.UseItemCallback;
 import com.runecraft.player.PlayerData;
 import com.runecraft.player.Players;
+import com.runecraft.selftest.ChunkSettle;
 import com.runecraft.util.Inv;
 import com.runecraft.world.Gielinor;
 import com.runecraft.world.StructurePlacer;
@@ -263,6 +264,10 @@ public final class WildernessWalk {
         expect(index >= 0, "no revenant imp spawn point");
         RevenantCaves.Spawn spawn = RevenantCaves.SPAWNS.get(index);
         RevenantCavesService.land(player, spawn.x() + 1, spawn.y());
+        // The walk teleports inside one server tick: the chunks it lands in are held and settled as a player arriving there
+        // would have them, or the revenant spawned there and the ether it drops are hidden from every entity search.
+        boolean settled = ChunkSettle.holdAndSettle(world, player.blockPosition(), 16);
+        String loading = settled ? "" : " (the caves' chunks were still loading)";
         RevenantCavesService.resetTimer(index);
         Mob old = RevenantCavesService.find(world, index);
         if (old != null) {
@@ -270,7 +275,7 @@ public final class WildernessWalk {
         }
         RevenantCavesService.stock(world, List.of(player));
         Mob rev = RevenantCavesService.find(world, index);
-        expect(rev != null, "the revenant imp didn't spawn at " + spawn.x() + "," + spawn.y());
+        expect(rev != null, "the revenant imp didn't spawn at " + spawn.x() + "," + spawn.y() + loading);
         expect(rev instanceof OsrsMonsterEntity o && o.attackInterceptor != null, "the revenant has no revenant behaviour");
         SysState.SysPlayer sp = SysState.of(player);
         sp.worn.put(Jewellery.Slot.HANDS, ItemStack.EMPTY);
@@ -297,16 +302,28 @@ public final class WildernessWalk {
         expect(Inv.count(player, "revenant_ether") == 0, "the ether wasn't used up");
         int swings = 0;
         int etherNear = etherAround(rev);
+        int braceletBefore = ItemCharges.get(sp.worn(Jewellery.Slot.HANDS));
         while (rev.isAlive() && swings < 80) {
+            braceletBefore = ItemCharges.get(sp.worn(Jewellery.Slot.HANDS)); // before the swing that kills it
             swing(rev);
             heal();
             swings++;
         }
         expect(!rev.isAlive(), "the revenant imp survived " + swings + " chainmace swings");
         expect(ItemCharges.get(player.getMainHandItem()) < 200, "swinging the chainmace used no ether");
-        expect(etherAround(rev) > etherNear || Inv.count(player, "revenant_ether") > 0, "the revenant dropped no revenant ether");
+        // Revenant ether is always dropped by revenants (wiki, Revenant ether: imp 2-6). The charged bracelet worn above
+        // absorbs the ether of a defeated revenant (wiki, Bracelet of ethereum), so the drop is what it absorbed plus what
+        // landed on the floor or in the pack.
+        int absorbed = ItemCharges.get(sp.worn(Jewellery.Slot.HANDS)) - braceletBefore;
+        int floor = etherAround(rev) - etherNear;
+        int carried = Inv.count(player, "revenant_ether");
+        int dropped = absorbed + floor + carried;
+        int[] ether = RevenantRewards.ether(RevenantRewards.revenant("revenant_imp").level());
+        expect(dropped >= ether[0] && dropped <= ether[1], "the revenant dropped " + dropped + " revenant ether, not " + ether[0] + "-"
+                + ether[1] + " (bracelet absorbed " + absorbed + ", floor " + floor + ", pack " + carried + ")" + loading);
         expect(RevenantCavesService.respawnLeft(index) > 0, "the revenant has no respawn timer");
-        note("chainmace activated, revenant imp killed in " + swings + " swings (" + ItemCharges.get(player.getMainHandItem()) + " ether left)");
+        note("chainmace activated, revenant imp killed in " + swings + " swings (" + ItemCharges.get(player.getMainHandItem())
+                + " ether left), " + dropped + " ether dropped" + (absorbed > 0 ? " (absorbed by the bracelet)" : ""));
 
         // The stairs out: one way to the trapdoor in level 17.
         RevenantCaves.Exit exit = RevenantCaves.EXITS.get(0);
