@@ -528,6 +528,20 @@ public final class QuestInterpreter {
         Msg.red(p, def.name + " (level-" + def.combatLevel + ") appears!");
     }
 
+    /**
+     * Self-test hook (the step walk, which fights its foes on the flat test platform): moves a quest boss a step called up
+     * beside the player ({@link #spawnNear}) to {@code at}, and its lair with it. spawnNear leashes the boss where it appeared
+     * ({@link com.runecraft.osrs.content.bosses.BossLair#QUEST_LEASH}: an OSRS quest boss stays where it appears and is gone
+     * once the player walks off). Moved alone, it would be put straight back there, out of the player's reach (no hit lands
+     * from outside its lair), and vanish a minute later with nobody near (the lair's reset) instead of dying, so its kill
+     * would never reach the quest.
+     */
+    public static void selfTestMoveQuestBoss(DataBossEntity boss, BlockPos at) {
+        boss.getNavigation().stop();
+        boss.teleportTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5);
+        boss.markSummoned(at, com.runecraft.osrs.content.bosses.BossLair.QUEST_LEASH);
+    }
+
     static int[] placeCentre(String place) {
         Landmark l = Landmark.byName(place);
         if (l != null) {
