@@ -218,15 +218,33 @@ public final class SailingCrew {
         return best;
     }
 
-    /** Items the cargo hold accepts (a RuneCraft subset of the wiki list): cannonballs, repair kits, salvage, cargo crates, bounty items. */
+    /**
+     * Items the cargo hold accepts (a RuneCraft subset of the wiki list): cannonballs, repair kits, salvage, cargo crates,
+     * bounty items, trawled fish and fish offcuts.
+     */
     public static boolean storable(String item) {
         return SailingSea.ball(item) != null || special(item) != null || kit(item) != null || SailingData.wreckBySalvage(item) != null
-                || item.equals("cargo_crate") || SailingSea.bountyParts().contains(item);
+                || item.equals("cargo_crate") || SailingSea.bountyParts().contains(item) || trawledFish(item)
+                || item.equals(SailingShoals.OFFCUTS) || item.equals(SailingShoals.FINE_OFFCUTS);
     }
 
-    /** Cargo lost when the boat sinks (wiki: courier crates, bounty items and salvage; cannonballs and repair kits are kept). */
+    /**
+     * Cargo lost when the boat sinks (wiki: courier crates, bounty items, salvage and trawled fish; cannonballs, repair kits
+     * and fish offcuts are kept).
+     */
     public static boolean lostOnSinking(String item) {
-        return SailingData.wreckBySalvage(item) != null || item.equals("cargo_crate") || SailingSea.bountyParts().contains(item);
+        return SailingData.wreckBySalvage(item) != null || item.equals("cargo_crate") || SailingSea.bountyParts().contains(item)
+                || trawledFish(item);
+    }
+
+    /** A raw fish a trawling shoal gives. */
+    public static boolean trawledFish(String item) {
+        for (SailingShoals.Shoal s : SailingShoals.SHOALS) {
+            if (item.equals("raw_" + s.fish())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Slots used: a stackable item takes one slot for the whole stack, anything else one slot each (wiki). */

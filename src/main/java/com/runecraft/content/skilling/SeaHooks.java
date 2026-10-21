@@ -737,6 +737,11 @@ public final class SeaHooks {
         Msg.action(player, "You empty the cargo hold: " + String.join(", ", names) + ".");
     }
 
+    /** Takes one of an item from the boat's cargo hold, else from the inventory; false when there's none. */
+    static boolean takeOne(ServerPlayer player, String type, String item) {
+        return takeFromHold(player, type, item) || Inv.remove(player, item, 1) > 0;
+    }
+
     /** Takes one of the items from the boat's hold (crew repairs and cannon ammunition); false when there's none. */
     private static boolean takeFromHold(ServerPlayer player, String type, String item) {
         CompoundTag hold = hold(player, type);

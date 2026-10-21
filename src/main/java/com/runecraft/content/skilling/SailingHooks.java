@@ -3,12 +3,12 @@ package com.runecraft.content.skilling;
 import com.runecraft.action.Action;
 import com.runecraft.action.ActionManager;
 import com.runecraft.content.BlockHooks;
-import com.runecraft.osrs.Chance;
 import com.runecraft.osrs.GielinorMap;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.skilling.CookingData;
 import com.runecraft.osrs.content.skilling.SailingCrew;
 import com.runecraft.osrs.content.skilling.SailingData;
+import com.runecraft.osrs.content.skilling.SailingShoals;
 import com.runecraft.osrs.content.skilling.SailingTraining;
 import com.runecraft.quest.QuestApi;
 import com.runecraft.skill.XpService;
@@ -89,6 +89,22 @@ final class SailingHooks {
                     placeAtSea(world, centre, "boat_schematics", 2);
                 }
             });
+        }
+        // Trawling shoals: a marker on the water at each wiki map pin; clicking it from your boat lowers the nets.
+        BlockHooks.register(SailingData.TRAWLING_SHOAL, (player, pos, state) -> {
+            SailingShoals.Shoal s = shoalNear(pos, 3);
+            if (s != null && boatType(player.getVehicle()) != null && shoalNear(player.blockPosition(), SailingShoals.RANGE) == s) {
+                startTrawl(player, null);
+            } else if (s != null) {
+                Msg.game(player, "A " + SkillingUtil.lower(s.name()) + " (Fishing " + s.level() + "). Sail your boat over it and lower a"
+                        + " trawling net.");
+            }
+        });
+        for (SailingShoals.Shoal s : SailingShoals.SHOALS) {
+            for (int i = 0; i < s.pins().size(); i++) {
+                LandmarkBuilder.registerCustom(SailingData.shoalPlace(s, i), (world, centre) -> placeAtSea(world, centre,
+                        SailingData.TRAWLING_SHOAL, 0));
+            }
         }
         LandmarkBuilder.registerCustom("fishing_platform_deep_sea", (world, centre) -> {
             placeAtSea(world, centre, "deep_sea_fishing_spot", 0);
@@ -717,18 +733,8 @@ final class SailingHooks {
 
     // ------------------------------------------------------------------ trawling
 
-    private static final List<CookingData.NewFish> TRAWL = new ArrayList<>();
-
-    static {
-        for (CookingData.NewFish f : CookingData.FISH) {
-            if (List.of("giant_krill", "haddock", "yellowfin", "halibut", "bluefin", "marlin").contains(f.id())) {
-                TRAWL.add(0, f);   // best first
-            }
-        }
-    }
-
     /** The best trawling net built on a boat, or null. */
-    private static SailingTraining.Net net(ServerPlayer player, String boat) {
+    static SailingTraining.Net net(ServerPlayer player, String boat) {
         SailingTraining.Net best = null;
         for (SailingTraining.Net n : SailingTraining.NETS) {
             if (boat != null && hasFacility(player, boat, n.facility())) {
@@ -738,55 +744,196 @@ final class SailingHooks {
         return best;
     }
 
+    /** The shoal whose marker or pin is at (or within range of) a block position, or null. */
+    static SailingShoals.Shoal shoalNear(BlockPos pos, int range) {
+        return SailingShoals.nearest(GielinorMap.toOsrsX(pos.getX()), GielinorMap.toOsrsY(pos.getZ()), range);
+    }
+
+    /** Using the trawling net (or clicking a shoal marker) from your boat: lower the nets into the shoal in range. */
     static void trawl(ServerPlayer player) {
+        startTrawl(player, null);
+    }
+
+    /**
+     * Lowers the boat's trawling net into a shoal: the given one, else the one in range of the boat (wiki Deep sea
+     * trawling: a net facility, the shoal's Fishing level, a boat in range). Returns the running trawl, or null.
+     */
+    public static Trawl startTrawl(ServerPlayer player, SailingShoals.Shoal shoal) {
         String boat = boatType(player.getVehicle());
-        if (!(player.getVehicle() instanceof Boat)) {
-            Msg.game(player, "You need to be sailing a boat to cast a trawling net.");
-            return;
+        if (boat == null) {
+            Msg.game(player, "You need to be sailing your boat to lower a trawling net.");
+            return null;
         }
         SailingTraining.Net net = net(player, boat);
         if (net == null) {
-            Msg.game(player, "Your boat needs a trawling net facility (built at boat schematics, level 56 Sailing) to trawl.");
-            return;
+            Msg.game(player, "Your boat needs a trawling net facility (built at the boat schematics, level 56 Sailing) to trawl.");
+            return null;
         }
-        if (SkillingUtil.level(player, Skill.FISHING) < TRAWL.get(TRAWL.size() - 1).fishLevel()) {
-            Msg.game(player, "You need a Fishing level of " + TRAWL.get(TRAWL.size() - 1).fishLevel() + " to trawl.");
-            return;
+        SailingShoals.Shoal s = shoal != null ? shoal : shoalNear(player.blockPosition(), SailingShoals.RANGE);
+        if (s == null) {
+            Msg.game(player, "There's no shoal in range of your net. Trawling shoals swim at their marked spots out at sea.");
+            return null;
         }
-        Msg.action(player, "You lower your " + SkillingUtil.lower(SailingTraining.facility(net.facility()).name()) + " into the sea.");
-        ActionManager.start(player, new Action() {
-            int counter;
+        if (!SkillingUtil.need(player, Skill.FISHING, s.level(), "trawl the " + SkillingUtil.lower(s.name()))) {
+            return null;
+        }
+        Trawl t = new Trawl(s, net, boat, shoal == null);
+        Msg.action(player, "You lower your " + SkillingUtil.lower(SailingTraining.facility(net.facility()).name()) + " into the "
+                + SkillingUtil.lower(s.name()) + ".");
+        ActionManager.start(player, t, true);
+        return t;
+    }
 
-            @Override
-            public boolean tick(ServerPlayer p, long gameTick) {
-                if (!(p.getVehicle() instanceof Boat) || !Inv.has(p, "trawling_net", 1)) {
-                    Msg.game(p, "You haul in your trawling net.");
-                    return false;
-                }
-                if (++counter < SailingTraining.TRAWL_ROLL_TICKS) {
-                    return true;
-                }
-                counter = 0;
-                if (!p.level().getFluidState(p.getVehicle().blockPosition()).is(FluidTags.WATER)
-                        && !p.level().getFluidState(p.getVehicle().blockPosition().below()).is(FluidTags.WATER)) {
-                    return true;
-                }
-                // Every roll gives a token of Sailing XP; a successful roll catches fish for Fishing XP (wiki).
-                XpService.add(p, Skill.SAILING, net.xpPerRoll());
-                int fishing = SkillingUtil.level(p, Skill.FISHING);
-                RandomSource random = p.getRandom();
-                for (CookingData.NewFish f : TRAWL) {
-                    if (fishing >= f.fishLevel() && SailingTraining.shoalDepth(f.id()) <= net.depth()
-                            && random.nextDouble() < Chance.lerp(fishing, 12, 48) / 2) { // approx catch rate
-                        int n = 1 + random.nextInt(net.maxFish());
-                        SkillingUtil.give(p, f.raw(), n);
-                        XpService.add(p, Skill.FISHING, f.fishXp() * n);
-                        Msg.action(p, "Your net brings up " + n + " x " + SkillingUtil.lower(f.name()) + ".");
-                        return true;
-                    }
-                }
-                return true;
+    /**
+     * A trawling net working a shoal: every 3 ticks the net's Sailing XP (halved at the wrong depth) and a catch roll at
+     * the shoal's trawling-net chance; every 5 ticks the best deckhand's flat 4%. The shoal's stops cycle on the spot
+     * (OSRS: along its route): the stop depth (shallow, or deep for three-depth shoals) then moderate halfway; a resuming
+     * shoal turns mixed 10% of the time for two stops; a chum station spreads one offcut per stop (see {@link SailingShoals}).
+     */
+    public static final class Trawl implements Action {
+        final SailingShoals.Shoal shoal;
+        final SailingTraining.Net net;
+        final String boat;
+        /** False for a trawl the self-test drives at a shoal far away (the boat-in-range check is skipped). */
+        final boolean checkRange;
+        int ticks;
+        int stopTick;
+        boolean deepStop;
+        int mixedStops;
+        boolean baited;
+        int crewTicks;
+        /** Catches and fish so far (self-test). */
+        public int catches;
+        public int fish;
+
+        Trawl(SailingShoals.Shoal shoal, SailingTraining.Net net, String boat, boolean checkRange) {
+            this.shoal = shoal;
+            this.net = net;
+            this.boat = boat;
+            this.checkRange = checkRange;
+        }
+
+        /** The mixed shoal swimming in place of this one, or null. */
+        public SailingShoals.Mixed mixed() {
+            return mixedStops > 0 ? SailingShoals.mixedFor(shoal) : null;
+        }
+
+        /** Forces the next stops to be a mixed shoal (self-test). */
+        public void forceMixed() {
+            mixedStops = SailingShoals.MIXED_STOPS;
+        }
+
+        @Override
+        public boolean tick(ServerPlayer p, long gameTick) {
+            if (!boat.equals(boatType(p.getVehicle())) || net(p, boat) == null) {
+                Msg.game(p, "You haul in your trawling net.");
+                return false;
             }
-        }, true);
+            if (checkRange && shoalNear(p.blockPosition(), SailingShoals.RANGE + 4) != shoal) {
+                Msg.game(p, "The shoal swims out of reach of your net.");
+                return false;
+            }
+            ServerLevel world = (ServerLevel) p.level();
+            if (stopTick == 0) {
+                newStop(p);
+            }
+            if (++stopTick >= shoal.stopTicks()) {
+                stopTick = 0;
+            }
+            if (ticks % 10 == 0) {
+                world.sendParticles(ParticleTypes.FISHING, p.getX(), world.getSeaLevel() + 0.2, p.getZ(), 12, 2.5, 0.1, 2.5, 0.05);
+            }
+            ticks++;
+            if (ticks % SailingShoals.PLAYER_ROLL_TICKS == 0) {
+                roll(p, false);
+            }
+            if (++crewTicks >= SailingShoals.CREW_ROLL_TICKS) {
+                crewTicks = 0;
+                SailingCrew.Crewmate hand = crewTrawler(p);
+                if (hand != null) {
+                    roll(p, true);
+                }
+            }
+            return true;
+        }
+
+        /** A shoal stopping: its depth for this stop, the mixed-shoal roll, and one offcut spread from a chum station. */
+        private void newStop(ServerPlayer p) {
+            RandomSource random = p.getRandom();
+            deepStop = random.nextBoolean();
+            if (mixedStops > 0) {
+                mixedStops--;
+            } else if (ticks > 0 && random.nextDouble() < SailingShoals.MIXED_CHANCE && SailingShoals.mixedFor(shoal) != null) {
+                mixedStops = SailingShoals.MIXED_STOPS;
+                Msg.action(p, "The shoal shimmers: a " + SkillingUtil.lower(SailingShoals.mixedFor(shoal).name()) + " swims in its place!");
+            }
+            baited = spreadOffcuts(p);
+        }
+
+        /** Spreads one offcut the shoal takes from the cargo hold or inventory, if a chum station is built (wiki). */
+        private boolean spreadOffcuts(ServerPlayer p) {
+            Set<String> fac = facilities(p, boat);
+            boolean fine = fac.contains("advanced_chum_station") || fac.contains("chum_spreader");
+            if (!fine && !fac.contains("chum_station")) {
+                return false;
+            }
+            for (String bait : SailingShoals.bait(shoal)) {
+                if ((fine || bait.equals(SailingShoals.OFFCUTS)) && SeaHooks.takeOne(p, boat, bait)) {
+                    Msg.action(p, "You spread some " + SkillingUtil.lower(SkillingUtil.name(bait)) + " to bait the shoal.");
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /** The deckhand aboard who can work this net (Deckhandiness 1 rope .. 4 cotton), or null. */
+        private SailingCrew.Crewmate crewTrawler(ServerPlayer p) {
+            int need = SailingTraining.NETS.indexOf(net) + 1;
+            SailingCrew.Crewmate best = null;
+            for (SailingCrew.Crewmate c : SailingCrew.aboard(SeaHooks.crewOrder(p), boat, SkillingUtil.level(p, Skill.SAILING))) {
+                if (c.deckhandiness() >= need && (best == null || c.deckhandiness() > best.deckhandiness())) {
+                    best = c;
+                }
+            }
+            return best;
+        }
+
+        /** One roll of the net (the player's, or a crewmate's flat 4% for fish only). Returns the fish caught. */
+        public int roll(ServerPlayer p, boolean crew) {
+            int depth = SailingShoals.depthAt(shoal.maxDepth(), shoal.stopTicks(), stopTick, deepStop);
+            boolean right = net.depth() >= depth; // the net follows the shoal's depth where it can reach (playability)
+            XpService.add(p, Skill.SAILING, right ? net.xpPerRoll() : net.xpPerRoll() / 2);
+            SailingShoals.Mixed m = mixed();
+            int fishing = SkillingUtil.level(p, Skill.FISHING);
+            double chance = crew ? SailingShoals.CREW_CHANCE : m != null ? SailingShoals.catchChance(fishing, m.low(), m.high())
+                    : SailingShoals.catchChance(fishing, shoal.low(), shoal.high());
+            RandomSource random = p.getRandom();
+            if (random.nextDouble() >= chance) {
+                return 0;
+            }
+            CookingData.NewFish f = fish(m != null ? SailingShoals.mixedFish(m, new java.util.Random(random.nextLong())) : shoal.fish());
+            int n = SailingShoals.fishCaught(net.maxFish(), right, baited, new java.util.Random(random.nextLong()));
+            if (f == null || n <= 0) {
+                return 0;
+            }
+            SkillingUtil.give(p, f.raw(), n);
+            catches++;
+            fish += n;
+            if (!crew) {
+                XpService.add(p, Skill.FISHING, f.fishXp()); // wiki: the shoal's Fishing XP once per successful catch
+            }
+            Msg.action(p, (crew ? "Your crew's net" : "Your net") + " brings up " + n + " x " + SkillingUtil.lower(f.name())
+                    + (right ? "" : " (the net is at the wrong depth)") + ".");
+            return n;
+        }
+    }
+
+    private static CookingData.NewFish fish(String id) {
+        for (CookingData.NewFish f : CookingData.FISH) {
+            if (f.id().equals(id)) {
+                return f;
+            }
+        }
+        return null;
     }
 }

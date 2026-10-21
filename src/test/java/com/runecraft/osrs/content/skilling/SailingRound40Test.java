@@ -165,6 +165,159 @@ class SailingRound40Test {
         assertTrue(SailingSea.lostCrateItems().contains("sawmill_coupon_oak_plank"));
     }
 
+    private static int depth(String d) {
+        return switch (d) {
+            case "Shallow" -> SailingShoals.SHALLOW;
+            case "Moderate" -> SailingShoals.MODERATE;
+            case "Deep" -> SailingShoals.DEEP;
+            default -> throw new AssertionError(d);
+        };
+    }
+
+    private static int deepest(String depths) {
+        int max = -1;
+        for (String d : depths.split(",")) {
+            max = Math.max(max, depth(d));
+        }
+        return max;
+    }
+
+    private static String fishId(String raw) {
+        return raw.toLowerCase(Locale.ROOT).replace("raw ", "").replace(' ', '_');
+    }
+
+    @Test
+    void trawlingShoalsMatchTheWiki() throws Exception {
+        int shoals = 0;
+        int mixed = 0;
+        int nets = 0;
+        for (String[] r : tsv("trawling_shoals.tsv")) {
+            switch (r[0]) {
+                case "shoal" -> {
+                    SailingShoals.Shoal s = SailingShoals.SHOALS.stream().filter(x -> x.name().equals(r[1])).findFirst().orElse(null);
+                    assertNotNull(s, r[1]);
+                    assertEquals(Integer.parseInt(r[2]), s.level(), r[1]);
+                    assertEquals(deepest(r[3]), s.maxDepth(), r[1]);
+                    assertEquals(Integer.parseInt(r[4]), s.stopTicks(), r[1]);
+                    assertEquals(!r[5].contains("Fish offcuts"), s.fineBait(), r[1]);
+                    List<String> bait = new ArrayList<>();
+                    for (String b : r[5].split(",")) {
+                        bait.add(b.equals("Fish offcuts") ? SailingShoals.OFFCUTS : SailingShoals.FINE_OFFCUTS);
+                    }
+                    assertEquals(bait, SailingShoals.bait(s), r[1]);
+                    assertEquals(fishId(r[6]), s.fish(), r[1]);
+                    assertEquals(Double.parseDouble(r[7]), s.xp(), 1e-9, r[1]);
+                    assertEquals(Integer.parseInt(r[8]), s.low(), r[1]);
+                    assertEquals(Integer.parseInt(r[9]), s.high(), r[1]);
+                    String[] pins = r[12].split(";");
+                    assertEquals(pins.length, s.pins().size(), r[1]);
+                    for (int i = 0; i < pins.length; i++) {
+                        String[] xy = pins[i].split(",");
+                        assertEquals(Integer.parseInt(xy[0]), s.pins().get(i)[0], r[1]);
+                        assertEquals(Integer.parseInt(xy[1]), s.pins().get(i)[1], r[1]);
+                        assertEquals(s, SailingShoals.nearest(s.pins().get(i)[0] + 3, s.pins().get(i)[1] - 3, SailingShoals.RANGE), r[1]);
+                    }
+                    // The shoal's Fishing XP per catch is the raw fish's.
+                    CookingData.NewFish f = CookingData.FISH.stream().filter(x -> x.id().equals(s.fish())).findFirst().orElseThrow();
+                    assertEquals(s.xp(), f.fishXp(), 1e-9, r[1]);
+                    assertEquals(s.level(), f.fishLevel(), r[1]);
+                    shoals++;
+                }
+                case "mixed" -> {
+                    SailingShoals.Mixed m = SailingShoals.MIXED.stream().filter(x -> x.name().equals(r[1])).findFirst().orElse(null);
+                    assertNotNull(m, r[1]);
+                    assertEquals(Integer.parseInt(r[2]), m.level(), r[1]);
+                    assertEquals(deepest(r[3]), m.maxDepth(), r[1]);
+                    assertEquals(Integer.parseInt(r[4]), m.low(), r[1]);
+                    assertEquals(Integer.parseInt(r[5]), m.high(), r[1]);
+                    for (String from : r[6].split(",")) {
+                        SailingShoals.Shoal s = SailingShoals.SHOALS.stream().filter(x -> x.name().equals(from)).findFirst().orElseThrow();
+                        assertEquals(m, SailingShoals.mixedFor(s), from);
+                    }
+                    java.util.Map<String, Integer> w = new java.util.LinkedHashMap<>();
+                    for (String kv : r[7].split(";")) {
+                        String[] p = kv.split(":");
+                        w.put(fishId(p[0]), Integer.parseInt(p[1]));
+                    }
+                    assertEquals(w, m.fish(), r[1]);
+                    mixed++;
+                }
+                case "rule" -> {
+                    double v = Double.parseDouble(r[2]);
+                    switch (r[1]) {
+                        case "crew_chance_percent" -> assertEquals(v / 100, SailingShoals.CREW_CHANCE, 1e-12);
+                        case "crew_roll_ticks" -> assertEquals((int) v, SailingShoals.CREW_ROLL_TICKS);
+                        case "player_roll_ticks" -> {
+                            assertEquals((int) v, SailingShoals.PLAYER_ROLL_TICKS);
+                            assertEquals((int) v, SailingTraining.TRAWL_ROLL_TICKS);
+                        }
+                        case "mixed_chance_percent" -> assertEquals(v / 100, SailingShoals.MIXED_CHANCE, 1e-12);
+                        case "mixed_stops" -> assertEquals((int) v, SailingShoals.MIXED_STOPS);
+                        case "net_capacity" -> assertEquals((int) v, SailingShoals.NET_CAPACITY);
+                        case "bait_extra_fish_percent" -> assertEquals(v / 100, SailingShoals.BAIT_EXTRA, 1e-12);
+                        default -> throw new AssertionError(r[1]);
+                    }
+                }
+                case "net" -> {
+                    SailingTraining.Net n = SailingTraining.NETS.get(nets);
+                    assertEquals(r[1], SailingTraining.facility(n.facility()).name());
+                    assertEquals(deepest(r[2]), n.depth(), r[1]);
+                    assertEquals(Integer.parseInt(r[3]), n.maxFish(), r[1]);
+                    assertEquals(Double.parseDouble(r[4]), n.xpPerRoll(), 1e-9, r[1]);
+                    nets++;
+                }
+                default -> throw new AssertionError(r[0]);
+            }
+        }
+        assertEquals(6, shoals);
+        assertEquals(3, mixed);
+        assertEquals(4, nets);
+        assertEquals(SailingShoals.SHOALS.size(), shoals);
+    }
+
+    @Test
+    void shoalsSwimAtSeaAndChangeDepth() {
+        for (SailingShoals.Shoal s : SailingShoals.SHOALS) {
+            for (int[] p : s.pins()) {
+                assertTrue(com.runecraft.osrs.world.Elevation.naturalHeight(com.runecraft.osrs.world.StructureDef.bx(p[0]),
+                        com.runecraft.osrs.world.StructureDef.bz(p[1])) <= com.runecraft.osrs.world.Elevation.SEA_LEVEL,
+                        s.name() + " pin on land: " + p[0] + "," + p[1]);
+            }
+        }
+        // Shallow-only shoals stay shallow; others stop shallow (or deep for three-depth shoals) and rise to moderate halfway.
+        assertEquals(SailingShoals.SHALLOW, SailingShoals.depthAt(SailingShoals.SHALLOW, 150, 140, true));
+        assertEquals(SailingShoals.SHALLOW, SailingShoals.depthAt(SailingShoals.MODERATE, 100, 10, true));
+        assertEquals(SailingShoals.MODERATE, SailingShoals.depthAt(SailingShoals.MODERATE, 100, 50, false));
+        assertEquals(SailingShoals.DEEP, SailingShoals.depthAt(SailingShoals.DEEP, 70, 10, true));
+        assertEquals(SailingShoals.SHALLOW, SailingShoals.depthAt(SailingShoals.DEEP, 70, 10, false));
+        assertEquals(SailingShoals.MODERATE, SailingShoals.depthAt(SailingShoals.DEEP, 70, 40, true));
+        // Catches: 1..max fish, halved at the wrong depth, +20% per fish when baited.
+        Random r = new Random(9);
+        long right = 0;
+        long wrong = 0;
+        long baited = 0;
+        int n = 20_000;
+        for (int i = 0; i < n; i++) {
+            int a = SailingShoals.fishCaught(5, true, false, r);
+            assertTrue(a >= 1 && a <= 5);
+            right += a;
+            wrong += SailingShoals.fishCaught(5, false, false, r);
+            baited += SailingShoals.fishCaught(5, true, true, r);
+        }
+        assertEquals(3.0, right / (double) n, 0.05);
+        assertEquals(1.5, wrong / (double) n, 0.05);
+        assertEquals(3.6, baited / (double) n, 0.06);
+        // A vibrant shoal gives bluefin and marlin half and half.
+        SailingShoals.Mixed vibrant = SailingShoals.mixedFor(SailingShoals.shoal("marlin_shoal"));
+        int marlin = 0;
+        for (int i = 0; i < 4000; i++) {
+            marlin += SailingShoals.mixedFish(vibrant, r).equals("marlin") ? 1 : 0;
+        }
+        assertEquals(0.5, marlin / 4000.0, 0.03);
+        // The catch chance is the wiki's skilling curve: marlin at 99 Fishing, (1 + 20) / 256.
+        assertEquals(21 / 256.0, SailingShoals.catchChance(99, 4, 20), 1e-12);
+    }
+
     @Test
     void anyLitLanternLightsLanternHarpooning() {
         // Wiki Lantern harpooning: any lit lantern; RuneCraft has these four of the wiki's seven.
