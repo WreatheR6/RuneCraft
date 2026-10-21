@@ -1232,23 +1232,37 @@ final class ToaBossRooms {
             return style == 2 ? AttackType.RANGED : AttackType.MAGIC;
         }
 
+        /**
+         * Self-test: the player steps up beside Akkha, two blocks from him towards the room's centre (his quadrant, inside his
+         * melee reach). OSRS: Akkha walks up to whoever he fights and swings his halberd from the next tile, and since round 41
+         * a swing only lands on a target still in reach; his attack goal would walk him there, but entities don't tick while a
+         * check runs ({@link #selfTestAutoAttack} drives his attacks, not his steps).
+         */
+        private void selfTestStandBeside(RaidSelfTest t) {
+            Vec3 a = akkha.position();
+            t.moveTo(BlockPos.containing(a.x + (a.x < center().getX() + 0.5 ? 2 : -2), a.y, a.z));
+        }
+
         @Override
         String selfTestSolve(RaidSelfTest t) {
             int shadowsKilled = 0;
             int[] kills = {0};
+            selfTestStandBeside(t);
             String r = grind(t, akkha, AttackType.MAGIC, 30, () -> {
                 if (finalStand || hidden || !shadowsUp() || !alive(akkha)) {
                     return;
                 }
                 int q = quadrant(akkha.position());
                 if (alive(shadows[q])) {
-                    // Kill the nearest shadow and lure Akkha into its quadrant (moved there, as the player would draw him).
+                    // Kill the nearest shadow and lure Akkha into its quadrant (moved there, as the player would draw him: the
+                    // player walks into that quadrant and he follows to stand beside them).
                     for (int k = 0; k < 4; k++) {
                         if (alive(shadows[k])) {
                             t.hit(shadows[k], 200, AttackType.MAGIC);
                             if (!alive(shadows[k])) {
                                 kills[0]++;
                                 move(akkha, quadrantCentre(k));
+                                selfTestStandBeside(t);
                             }
                             break;
                         }
