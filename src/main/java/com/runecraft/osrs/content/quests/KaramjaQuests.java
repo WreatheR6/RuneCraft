@@ -219,9 +219,10 @@ final class KaramjaQuests {
                 .reach("kharazi_cave", 10).stay().needFlag("lq_crystals").unlessFlag("lq_heart").take("lq_crystal_piece:3").give("heart_crystal").flag("lq_heart")
                 .say("* You melt the three crystal pieces together in the furnace: a heart crystal. It opens the recess by the barrier.")
                 .missing("* The furnace needs all three crystal pieces.")
-                // approx: pieces lost after the three kills (a death) are found again where the guardians fell
-                .reach("kharazi_cave", 10).stay().needFlag("lq_crystals").unless("lq_crystal_piece", "heart_crystal").unlessFlag("lq_heart")
-                .give("lq_crystal_piece:3").say("* You find the crystal pieces where the guardians fell.")
+                // approx: pieces lost after the three kills (a death) are found again where the guardians fell, one at a time
+                // until the player holds three again (one or two kept count: the furnace takes exactly three)
+                .reach("kharazi_cave", 10).stay().needFlag("lq_crystals").unless("lq_crystal_piece:3", "heart_crystal").unlessFlag("lq_heart")
+                .give("lq_crystal_piece").say("* You find a crystal piece where one of the guardians fell.")
                 .talk("echned_zekin").stay().needFlag("lq_heart").unless("dark_dagger").unlessFlag("lq_holy_force", "lq_zekin").give("dark_dagger").flag("lq_zekin")
                 .say("I am Echned Zekin. The water is mine to give, if you kill Viyeldi for me with this dark dagger.")
                 .talk("ungadulu").stay().needFlag("lq_zekin").unlessFlag("lq_holy_force").take("dark_dagger").flag("lq_holy_force")

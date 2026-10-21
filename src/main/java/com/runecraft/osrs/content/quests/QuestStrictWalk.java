@@ -287,7 +287,7 @@ public final class QuestStrictWalk {
     /** QuestInterpreter.skipped: an item or flag that switches the trigger off, or a drop already collected. */
     static boolean skipped(Trigger t, State st) {
         for (String item : t.unlessItems) {
-            if (st.has(item) > 0) {
+            if (st.has(item) >= t.unlessCount(item)) {
                 return true;
             }
         }

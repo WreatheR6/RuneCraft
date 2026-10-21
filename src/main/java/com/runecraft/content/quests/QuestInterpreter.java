@@ -104,7 +104,7 @@ public final class QuestInterpreter {
     /** True when the trigger should be ignored entirely (already done / not applicable). */
     static boolean skipped(ServerPlayer p, Trigger t) {
         for (String item : t.unlessItems) {
-            if (Inv.has(p, item, 1)) {
+            if (Inv.has(p, item, t.unlessCount(item))) {
                 return true;
             }
         }

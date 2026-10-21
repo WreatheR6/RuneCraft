@@ -318,7 +318,9 @@ final class GrandmasterQuests {
         b.item("ds2_key_ungael", "Dragon key piece (Ungael)", "key", 0x8A2A2D, "A piece of the dragon key, from Vorkath's stone chest.");
         b.item("ds2_locator_orb", "Locator orb", "orb", 0x3A8A5A, "Ava's dragonstone locator. It hurts to use.");
         b.spot("ds2_mort_myre", "Mort Myre Swamp", 3440, 3400); // approx: the buried piece is at a random swamp tile in OSRS
-        b.spot("ds2_kourend_tomb", "Kourend crypt", 1504, 3539); // approx: over the tomb at the bottom of the crypt (OSRS 1504, 9939)
+        // Camorra's tomb in the south room of the Shayzien Crypts (quest-helper 1504, 9939), in the carved crypts below the Graveyard
+        // of Heroes (dungeons ShayzienCrypts: shifted by 3550 - 9955); the puzzle is shown only down in the crypts
+        b.spot("ds2_kourend_tomb", "Camorra's tomb, Shayzien Crypts", 1504, 9939 + 3550 - 9955);
         QuestSpec q = b.quest("dragon_slayer_ii", "Dragon Slayer II", Difficulty.GRANDMASTER, 5)
                 .xp(Skill.SMITHING, 80000).xp(Skill.MINING, 60000).xp(Skill.AGILITY, 50000).xp(Skill.THIEVING, 50000) // OSRS (current quest XP rewards)
                 .qp(200).reqQuest("legends_quest", "animal_magnetism", "ghosts_ahoy", "bone_voyage")
@@ -520,7 +522,7 @@ final class GrandmasterQuests {
                 .say("* The locator stings you each time you feel it, but it leads you to a patch of swamp. You dig up a key piece.")
                 .talk("amelia").stay().unless("ds2_key_kourend").unlessFlag("ds2_amelia", "ds2_forged").flag("ds2_amelia")
                 .say("Camorra's tomb? In the crypt west of here. Take a light, and beware the skeletons.")
-                .puzzle("ds2_kourend_tomb", DS2_CRYPT).stay().needFlag("ds2_amelia").unless("ds2_key_kourend").unlessFlag("ds2_forged")
+                .puzzle("ds2_kourend_tomb", DS2_CRYPT).underground().stay().needFlag("ds2_amelia").unless("ds2_key_kourend").unlessFlag("ds2_forged")
                 .give("ds2_key_kourend")
                 .say("* The last bust settles on its plinth. The tomb grinds open: a dragon key piece.");
     }
@@ -567,8 +569,10 @@ final class GrandmasterQuests {
         b.npcAt("shady_stranger", "Shady stranger", 3085, 3243, 0xC8A080, 0x2A2A30, 0x1A1A20, 0x101014);
         b.npcAt("silif", "Silif", 3017, 3512, 0xE0B8A0, 0x8A8A90, 0x4A4A50, 0xC0A063);
         b.npcAt("hunting_expert", "Hunting expert", 2525, 2916, 0xC89870, 0x5A6A2A, 0x4A3A1A, 0x6A5A2A);
-        // Movario waits at the Chasm of Tears (OSRS 3229, 9528 in the Tears of Guthix caves): by the mod's sanctum place. // approx
-        b.npc("movario", "Movario", "guthix_sanctum", 4, 4, 0xD0A880, 0x2A2A3A, 0x1A1A2A, 0x6A1A3A);
+        // Movario waits by the Chasm of Tears (quest-helper 3229, 9528), beyond the Tears of Guthix: in the carved Lumbridge Swamp
+        // Caves he stands at the east end of the Tears' pool room (dungeons DungeonsMisthalin.lumbridgeSwampCaves), where the
+        // passage on to the chasm and the Ancient Guthixian Temple begins (NpcStoreys: feet at y 23)
+        b.npcAt("movario", "Movario", 3199, 3136, 0xD0A880, 0x2A2A3A, 0x1A1A2A, 0x6A1A3A);
         b.spot("wgs_pit_trap", "Feldip Hills pit trap", 2499, 2910); // west of the Hunting expert
         b.spot("wgs_bettys_counter", "Betty's counter", 3013, 3258);
         b.spot("wgs_snapdragon_patch", "White Knights' Castle snapdragon patch", 2962, 3338); // top of the castle
@@ -576,8 +580,12 @@ final class GrandmasterQuests {
         b.spot("wgs_wk_cell", "White Knights' Castle cell", 2989, 3344); // the cell north of Thaerisk
         b.spot("wgs_warriors_guild", "Warriors' Guild entrance", 2877, 3546);
         b.spot("wgs_lucien_camp", "Lucien's camp", 2942, 3822); // the ice wall by the Chaos Temple's roof
-        b.spot("wgs_light_creature", "Chasm of Tears", 3228, 3156); // OSRS 3228, 9525 // approx: beside the sanctum place
-        b.spot("wgs_temple", "Ancient Guthixian Temple", 3214, 3146); // approx: the temple behind the skulls
+        // The light creatures over the Chasm of Tears (quest-helper 3228, 9525) and the Ancient Guthixian Temple beyond it (an
+        // instance in OSRS): the passage past the Tears' pool and the temple cavern of the carved Lumbridge Swamp Caves, both
+        // reached and solved only underground (a spot counts from its chunk's centre: the passage's west end and the temple
+        // cavern's middle). // approx: the carved caves' own layout, not the OSRS tiles
+        b.spot("wgs_light_creature", "Chasm of Tears", 3201, 3136);
+        b.spot("wgs_temple", "Ancient Guthixian Temple", 3218, 3134);
         b.item("movarios_notes", "Movario's notes", "book", 0x3A2A4A, "Notes revealing the location of Guthix's resting place.");
         b.item("dirty_shirt", "Dirty shirt", "cloth", 0xB0A890, "One of Movario's shirts. It smells.");
         b.item("unconscious_broav", "Unconscious broav", "creature", 0x6A4A2A, "A broav, out cold. The Hunting expert can train it.");
@@ -889,32 +897,33 @@ final class GrandmasterQuests {
                 .need("dark_squall_hood", "dark_squall_robe_top", "dark_squall_robe_bottom").flag("wgs_movario")
                 .say("Master Squall! The way down is open. Lucien waits below.", "* Movario takes you for the Dark Squall.")
                 .missing("* Movario eyes you suspiciously. In the Dark Squall's robes he'd take you for his master.")
-                .reach("wgs_light_creature", 6).stay().needFlag("wgs_movario").unlessFlag("wgs_light").need("sapphire_lantern").flag("wgs_light")
+                .reach("wgs_light_creature", 6).underground().stay().needFlag("wgs_movario").unlessFlag("wgs_light").need("sapphire_lantern").flag("wgs_light")
                 .say("* You hold the lit sapphire lantern out to a light creature. It carries you down into the chasm.",
                         "* From the skeletal remains you take a spade, a hammer and a chisel; from four braziers you chisel elemental orbs and "
                                 + "shape them into blocks.")
                 .missing("* The light creatures drift past. They'd follow a lit sapphire lantern.")
-                .puzzle("guthix_sanctum", WGS_SKULLS).needFlag("wgs_light").unlessFlag("wgs_skulls").flag("wgs_skulls").stay()
+                .puzzle("wgs_light_creature", WGS_SKULLS).underground().needFlag("wgs_light").unlessFlag("wgs_skulls").flag("wgs_skulls").stay()
                 .say("* The last block clicks into place and the stone cube in the fourth skull grinds open.")
-                .reach("wgs_temple", 6).stay().needFlag("wgs_skulls").unlessFlag("wgs_pouches").flag("wgs_pouches")
+                .reach("wgs_temple", 6).underground().stay().needFlag("wgs_skulls").unlessFlag("wgs_pouches").flag("wgs_pouches")
                 .say("* In the temple's central chamber a skeleton holds a silver sickle (b) and six druid pouches. Druid spirits along the "
                         + "paths fill them with herblore ingredients.")
-                .puzzle("wgs_temple", WGS_STATUES, 0).needFlag("wgs_pouches").unlessFlag("wgs_statue1").flag("wgs_statue1").stay()
+                .puzzle("wgs_temple", WGS_STATUES, 0).underground().needFlag("wgs_pouches").unlessFlag("wgs_statue1").flag("wgs_statue1").stay()
                 .say("* The statue crumbles to a dolmen.")
-                .puzzle("wgs_temple", WGS_STATUES, 1).needFlag("wgs_statue1").unlessFlag("wgs_statue2").flag("wgs_statue2").stay()
+                .puzzle("wgs_temple", WGS_STATUES, 1).underground().needFlag("wgs_statue1").unlessFlag("wgs_statue2").flag("wgs_statue2").stay()
                 .say("* The statue crumbles to a dolmen.")
-                .puzzle("wgs_temple", WGS_STATUES, 2).needFlag("wgs_statue2").unlessFlag("wgs_statue3").flag("wgs_statue3").stay()
+                .puzzle("wgs_temple", WGS_STATUES, 2).underground().needFlag("wgs_statue2").unlessFlag("wgs_statue3").flag("wgs_statue3").stay()
                 .say("* The statue crumbles to a dolmen.")
-                .puzzle("wgs_temple", WGS_STATUES, 3).needFlag("wgs_statue3").unlessFlag("wgs_statue4").flag("wgs_statue4").stay()
+                .puzzle("wgs_temple", WGS_STATUES, 3).underground().needFlag("wgs_statue3").unlessFlag("wgs_statue4").flag("wgs_statue4").stay()
                 .say("* The statue crumbles to a dolmen.")
-                .puzzle("wgs_temple", WGS_STATUES, 4).needFlag("wgs_statue4").unlessFlag("wgs_statue5").flag("wgs_statue5").stay()
+                .puzzle("wgs_temple", WGS_STATUES, 4).underground().needFlag("wgs_statue4").unlessFlag("wgs_statue5").flag("wgs_statue5").stay()
                 .say("* The statue crumbles to a dolmen.")
-                .puzzle("wgs_temple", WGS_STATUES, 5).needFlag("wgs_statue5").unlessFlag("wgs_statue6").flag("wgs_statue6").stay()
+                .puzzle("wgs_temple", WGS_STATUES, 5).underground().needFlag("wgs_statue5").unlessFlag("wgs_statue6").flag("wgs_statue6").stay()
                 .say("* The statue crumbles to a dolmen.")
-                .puzzle("wgs_temple", WGS_STATUES, 6).needFlag("wgs_statue6").unlessFlag("wgs_statue7").flag("wgs_statue7").stay()
+                .puzzle("wgs_temple", WGS_STATUES, 6).underground().needFlag("wgs_statue6").unlessFlag("wgs_statue7").flag("wgs_statue7").stay()
                 .say("* The statue crumbles to a dolmen.")
-                .puzzle("wgs_temple", WGS_STATUES, 7).needFlag("wgs_statue7").unlessFlag("wgs_statues").flag("wgs_statues").stay()
-                .say("* The eighth statue crumbles. You set the eight dolmens on the stone table and the huge door swings open.")
+                .puzzle("wgs_temple", WGS_STATUES, 7).underground().needFlag("wgs_statue7").unlessFlag("wgs_statues").flag("wgs_statues").stay()
+                .say("* The eighth statue crumbles. You set the eight dolmens on the stone table and the huge door swings open.",
+                        "* Beyond it the way climbs to Guthix's sanctum, where the Stone of Jas lies.")
                 .kill("balance_elemental").needFlag("wgs_skulls", "wgs_statues")
                 .say("* The Balance Elemental dissolves. The Stone of Jas hums beside a sleeping Guthix.")
                 .missing("?!wgs_skulls|* The way into the temple is sealed by the three skulls' mechanisms.",

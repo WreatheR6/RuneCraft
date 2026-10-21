@@ -108,4 +108,34 @@ class QuestBossPolishTest {
         assertEquals(List.of(3508, 3357), List.of(spot.osrsX(), spot.osrsY()));
         assertEquals(AttackType.RANGED, attack("ant_hespori", "spores").style());
     }
+
+    /**
+     * The cave steps happen in their caves: While Guthix Sleeps' light creatures, skull mechanisms, temple and statues down in the
+     * Lumbridge Swamp Caves past the Tears of Guthix (Movario waiting by the pool), Dragon Slayer II's tomb down in the Shayzien
+     * Crypts. Surok attacks like Vorkath: six regular attacks, a special every seventh.
+     */
+    @Test
+    void caveStepsHappenUnderground() {
+        QuestSpec wgs = QuestBook.get().spec("while_guthix_sleeps");
+        Set<String> under = new HashSet<>();
+        for (QuestSpec.Trigger t : wgs.triggers()) {
+            if (t.target.equals("wgs_light_creature") || t.target.equals("wgs_temple")) {
+                assertTrue(t.underground, t.kind + " at " + t.target);
+                under.add(t.kind + ":" + (t.puzzle == null ? "" : t.puzzle.key));
+            }
+            assertFalse(t.kind == QuestSpec.Trigger.Kind.PUZZLE && t.target.equals("guthix_sanctum"), "a puzzle left on the surface");
+        }
+        assertTrue(under.containsAll(List.of("REACH:", "PUZZLE:" + GrandmasterQuests.WGS_SKULLS.key,
+                "PUZZLE:" + GrandmasterQuests.WGS_STATUES.key)), under.toString());
+        var movario = ContentRegistry.npc("movario");
+        assertEquals("at_movario", movario.place());
+        assertEquals(23, com.runecraft.osrs.world.NpcStoreys.undergroundFeetY("movario"));
+        assertTrue(QuestNpcMoves.RELOCATED.contains("movario"));
+        QuestSpec ds2 = QuestBook.get().spec("dragon_slayer_ii");
+        assertTrue(ds2.triggers().stream().anyMatch(t -> t.kind == QuestSpec.Trigger.Kind.PUZZLE && t.target.equals("ds2_kourend_tomb")
+                && t.underground && t.puzzle == GrandmasterQuests.DS2_CRYPT));
+        var tomb = ContentRegistry.place("ds2_kourend_tomb");
+        assertEquals(List.of(1504, 9939 - 6405), List.of(tomb.osrsX(), tomb.osrsY())); // quest-helper's tile in the shifted crypts
+        assertEquals(7, QuestBossRules.SUROK_SPECIAL_EVERY);
+    }
 }

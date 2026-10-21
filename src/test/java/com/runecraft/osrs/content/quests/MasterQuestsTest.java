@@ -223,9 +223,26 @@ class MasterQuestsTest {
                     && g[0].equals(t.spawn) && t.setFlags.isEmpty() && t.give.isEmpty() && t.next == t.stage
                     && t.needFlags.contains(g[1]) && t.unlessFlags.contains(g[2]) && t.unlessFlags.contains("lq_heart")), g[0]);
         }
-        // crystal pieces lost after the kills are found again
+        // crystal pieces lost after the kills are found again one at a time, until three are held (one or two kept count too)
         assertTrue(lq.triggers().stream().anyMatch(t -> t.kind == Trigger.Kind.REACH && t.needFlags.contains("lq_crystals")
-                && t.unlessItems.contains("lq_crystal_piece") && t.give.getOrDefault("lq_crystal_piece", 0) == 3));
+                && t.unlessItems.contains("lq_crystal_piece") && t.unlessCount("lq_crystal_piece") == 3
+                && t.give.getOrDefault("lq_crystal_piece", 0) == 1));
+        Trigger regive = lq.triggers().stream().filter(t -> t.unlessCount("lq_crystal_piece") == 3).findFirst().orElseThrow();
+        for (int held = 0; held <= 3; held++) {
+            int h = held;
+            String why = QuestStepWalk.blocked(regive, new QuestStepWalk.Player() {
+                @Override
+                public boolean flag(String flag) {
+                    return flag.equals("lq_crystals");
+                }
+
+                @Override
+                public int carried(String item) {
+                    return item.equals("lq_crystal_piece") ? h : 0;
+                }
+            }, java.util.Set.of());
+            assertEquals(held == 3, why != null && why.contains("lq_crystal_piece"), held + " pieces: " + why);
+        }
     }
 
     // ------------------------------------------------------------------ the elves, Haunted Mine, Lunar Diplomacy

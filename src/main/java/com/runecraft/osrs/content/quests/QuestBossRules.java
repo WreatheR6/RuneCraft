@@ -204,7 +204,10 @@ public final class QuestBossRules {
         return VANSTROM_LIGHTNING_MIN_BOLTS + Math.max(0, Math.min(5, roll0to5));
     }
 
-    // ---------------------------------------------------------------- While Guthix Sleeps: the Stone of Jas
+    // ---------------------------------------------------------------- While Guthix Sleeps: Surok, the Stone of Jas
+
+    /** Surok Magis (wiki): like Vorkath, six regular attacks and a special as every seventh. */
+    public static final int SUROK_SPECIAL_EVERY = 7;
 
     /**
      * Touching the Stone of Jas raises the player's combat stats to 255 for the fight against Lucien's two tormented demons,

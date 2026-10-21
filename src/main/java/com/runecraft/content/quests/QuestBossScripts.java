@@ -833,19 +833,26 @@ final class QuestBossScripts {
         private long lastMessage;
         private int attacks;
 
-        /** Wiki: Surok fights like Vorkath, six regular attacks and then one of his specials as the seventh. */
+        /** His regular attack (no side effects: the engine asks every Minecraft tick). */
         @Override
         public AttackDef chooseAttack(DataBossEntity boss, ServerPlayer target, double distance) {
             if (boss.def() == null || boss.def().attacks.isEmpty()) {
                 return null;
             }
-            List<AttackDef> all = boss.def().attacks;
-            attacks++;
-            if (attacks % 7 != 0) {
-                return all.get(0);
+            return boss.def().attacks.get(0);
+        }
+
+        /**
+         * Wiki: Surok fights like Vorkath, six regular attacks and then one of his specials as the seventh. Counted here, on the
+         * attacks he really makes (the count used to run in chooseAttack, which the engine calls every tick).
+         */
+        @Override
+        public AttackDef beforeAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
+            if (boss.def() == null || boss.def().attacks.size() < 2 || ++attacks % QuestBossRules.SUROK_SPECIAL_EVERY != 0) {
+                return attack;
             }
-            List<AttackDef> specials = all.subList(1, all.size());
-            return specials.isEmpty() ? all.get(0) : specials.get(boss.getRandom().nextInt(specials.size()));
+            List<AttackDef> specials = boss.def().attacks.subList(1, boss.def().attacks.size());
+            return specials.get(boss.getRandom().nextInt(specials.size()));
         }
 
         @Override
