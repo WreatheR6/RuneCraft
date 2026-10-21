@@ -142,9 +142,9 @@ public final class TestContext {
     /**
      * Per-player state the modules keep outside PlayerData: worn extra slots, spellbook, diaries and Combat Achievements
      * (systems), the Slayer profile, minigame points and flags, quest flags and kill counters, boss loot held for the
-     * player (the Lunar Chest's Moons, the fallen Royal Titans' open choice) and the skilling module's per-player entries
-     * (Sailing boats, crew, schematics, tasks and charting). Reset before every check so
-     * checks don't leak into each other, and put back for a real player at the end.
+     * player (the Lunar Chest's Moons, the fallen Royal Titans' open choice, the Doom of Mokhaiotl's delve run and chest) and
+     * the skilling module's per-player entries (Sailing boats, crew, schematics, tasks and charting). Reset before every check
+     * so checks don't leak into each other, and put back for a real player at the end.
      */
     private List<ModuleState> moduleStates() {
         SysState sys = SysState.get(server);
@@ -213,6 +213,15 @@ public final class TestContext {
 
                     public void restore(java.util.UUID p, Object saved) {
                         com.runecraft.content.bosses.BossSelfTests.titansChoiceRestore(server, p, saved);
+                    }
+                },
+                new ModuleState() { // the Doom's delve run (a kill starts one; a level only goes to the run it continues)
+                    public Object save(java.util.UUID p) {
+                        return com.runecraft.content.bosses.BossSelfTests.doomRunSave(server, p);
+                    }
+
+                    public void restore(java.util.UUID p, Object saved) {
+                        com.runecraft.content.bosses.BossSelfTests.doomRunRestore(server, p, saved);
                     }
                 });
     }

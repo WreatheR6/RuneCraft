@@ -158,6 +158,10 @@ final class DoomDelveService {
         int level = Math.max(1, boss.delve());
         ServerPlayer player = delver(boss, killer, level);
         if (player == null) {
+            // not silent: the kill counted, but this level was no step of the killer's run (another's summon, or a run ended)
+            if (killer != null) {
+                Msg.game(killer, "This delve level was not the next one of your run: its loot is not held for you.");
+            }
             return;
         }
         DoomDelveState st = state(player);
@@ -190,8 +194,10 @@ final class DoomDelveService {
      * the killing blow (the OSRS fight is an instance: nobody else can be in it, and the level is the next one of the run that
      * delved into it). Only while that run is still the one the level came from (it has completed the level before): a run
      * ended by a death or by leaving gets nothing, and a level never goes to a player who did not delve to it (a helper with no
-     * run, or a shallower one, would otherwise skip levels and take deep loot). A boss with no summoner recorded (one saved
-     * before round 43) goes to its top damager or killer whose run it continues. Null: nobody's run.
+     * run, or a shallower one, would otherwise skip levels and take deep loot). A boss with no summoner recorded (spawned
+     * without the stone: an admin's or the self-test's, or one saved before round 43) goes to its top damager or killer whose
+     * run it continues. No run at all is a run at level 0 ({@link DoomDelveState.Run#completed}, as the stone's first summon
+     * creates it): delve 1 starts a fresh run, and only delve 1. Null: nobody's run.
      */
     static ServerPlayer delver(DataBossEntity boss, ServerPlayer killer, int level) {
         ServerPlayer top = com.runecraft.combat.KillCredit.topDamager(boss, killer);
@@ -213,7 +219,7 @@ final class DoomDelveService {
                 continue;
             }
             DoomDelveState.Run run = state(p).get(p.getUUID());
-            if (run != null && run.completed == level - 1) {
+            if ((run == null ? 0 : run.completed) == level - 1) {
                 return p;
             }
         }
