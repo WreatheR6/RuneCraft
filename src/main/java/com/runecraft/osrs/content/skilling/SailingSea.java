@@ -35,7 +35,7 @@ public final class SailingSea {
             Map.entry("Bird nest (egg)#Blue egg", "bird_nest"));
 
     /** Wiki loot that has no RuneCraft item (left out of the tables; a test checks none of them exists). */
-    public static final Set<String> SKIPPED = Set.of("Feather", "Gnomeball", "Soup", "Platinum token", "Old boot",
+    public static final Set<String> SKIPPED = Set.of("Feather", "Soup", "Platinum token",
             "Adamant halberd", "Dragon keel parts", "Large dragon keel parts", "Mudskipper hat");
 
     /** The RuneCraft item id of a wiki item name. */

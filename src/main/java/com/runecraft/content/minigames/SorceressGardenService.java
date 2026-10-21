@@ -139,6 +139,16 @@ public final class SorceressGardenService {
         });
     }
 
+    /** Self-test: crushes the carried sq'irks of a season as using one does (then keeps squeezing each tick). */
+    public static void selfTestJuice(ServerPlayer p, Season s) {
+        startJuicing(p, s);
+    }
+
+    /** Self-test: hands the juice to Osman as talking to him does. */
+    public static boolean selfTestOsman(ServerPlayer p) {
+        return tradeJuice(p);
+    }
+
     /** Hands every glass of sq'irkjuice to Osman for Thieving XP; false if there was nothing to trade. */
     static boolean tradeJuice(ServerPlayer player) {
         if (ContentRegistry.quest(SorceressGarden.QUEST) != null && !QuestApi.isComplete(player, SorceressGarden.QUEST)) {

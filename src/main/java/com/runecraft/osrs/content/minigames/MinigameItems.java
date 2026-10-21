@@ -558,6 +558,8 @@ public final class MinigameItems {
         simple(items, "gnome_ingredients", "Gnome ingredients", "spice", 0x90B040, 0, "Gianne dough, toads, worms and equa leaves.");
         single(items, "aluft_aloft_box", "Aluft aloft box", "package", 0x6A9A4A, 1, "Gnome Restaurant rewards. Right-click to open.");
         single(items, "gnome_scarf", "Gnome scarf", "cloth", 0xE0E040, 1, "A gnomish scarf.");
+        single(items, "gnomeball", "Gnomeball", "orb", 0xC09050, 5, "Lets you play gnomeball.");
+        single(items, "snake_charm", "Snake charm", "talisman", 0x8A6A3A, 1, "A pipe that charms snakes.");
         wear(items, "gnome_goggles", "Gnome goggles", "cowl", 0x8A8A50, Slot.HEAD, 1, EquipmentStats.NONE);
         items.add("mint_cake", "Mint cake", Kind.FOOD, "cake", 0xA0E0A0).value(5).heal(1).examine("Restores run energy.");
         simple(items, "gnome_restaurant_token", "Reward token", "coins", 0x6A9A4A, 1, "Gnome Restaurant delivery token.");
@@ -582,7 +584,20 @@ public final class MinigameItems {
             wear(items, c[0] + "_tricorn_hat", cap + " tricorn hat", "cowl", col, Slot.HEAD, 1, EquipmentStats.NONE);
             wear(items, c[0] + "_navy_slacks", cap + " navy slacks", "chaps", col, Slot.LEGS, 1, EquipmentStats.NONE);
         }
-        single(items, "the_stuff", "The stuff", "potion", 0x80E040, 1, "Makes brewing at Keldagrim much faster.");
+        single(items, "the_stuff", "The stuff", "potion", 0x80E040, 5, "Makes brewing at Keldagrim much faster.");
+        // In-game supplies (taken away at the end) and Honest Jimmy's rum teleports and banners (OSRS Wiki).
+        simple(items, "tb_red_flowers", "Red flowers", "herb", 0xC03030, 0, "Some red flowers, for the kettle.");
+        simple(items, "tb_blue_flowers", "Blue flowers", "herb", 0x3050C0, 0, "Some blue flowers, for the kettle.");
+        single(items, "bowl_of_red_water", "Bowl of red water", "bowl", 0xC03030, 0, "A bowl of red-coloured water.");
+        single(items, "bowl_of_blue_water", "Bowl of blue water", "bowl", 0x3050C0, 0, "A bowl of blue-coloured water.");
+        single(items, "scrapey_tree_logs", "Scrapey tree logs", "log", 0x8A6A4A, 0, "Logs from a scrapey tree. Scrape the bark off with a knife.");
+        single(items, "rum_red", "Rum", "beer", 0xC03030, 10, "A bottle of Trouble Brewing rum. Drink it to go to Mos Le'Harmless.");
+        single(items, "rum_blue", "Rum", "beer", 0x3050C0, 10, "A bottle of Trouble Brewing rum. Drink it to go to Mos Le'Harmless.");
+        for (String[] f : new String[][]{{"cutthroat_flag", "Cutthroat flag", "C02020"}, {"gilded_smile_flag", "Gilded smile flag", "E0C030"},
+                {"bronze_fist_flag", "Bronze fist flag", "B08D57"}, {"lucky_shot_flag", "Lucky shot flag", "30A040"},
+                {"treasure_flag", "Treasure flag", "E0A030"}, {"phasmatys_flag", "Phasmatys flag", "60C0A0"}}) {
+            single(items, f[0], f[1], "cape", Integer.parseInt(f[2], 16), 200, "A pirate banner from Honest Jimmy.");
+        }
     }
 
     // ------------------------------------------------------------------ Shades of Mort'ton
@@ -602,7 +617,10 @@ public final class MinigameItems {
             simple(items, p + "_seed", cap + " seed", "seed", colors[i], 0, "A Tithe Farm seed (Farming " + TITHE_LEVELS[i] + ").");
             simple(items, p + "_fruit", cap + " fruit", "produce", colors[i], 0, "Deliver it to the sack for points.");
         }
-        single(items, "gricollers_can", "Gricoller's can", "pot_item", 0x6A8AA0, 1, "A watering can that holds 1,000 uses.");
+        single(items, "gricollers_can", "Gricoller's can", "pot_item", 0x6A8AA0, 1200,
+                "Contains far more water than should fit in such a small can.");
+        single(items, "gricollers_fertiliser", "Gricoller's fertiliser", "pot_item", 0x6A5A2A, 1,
+                "It's amazing how much fertiliser Gricoller can fit in one bucket.");
         wear(items, "farmers_strawhat", "Farmer's strawhat", "cowl", 0xE0C060, Slot.HEAD, 1, EquipmentStats.NONE)
                 .examine("+0.4% Farming XP (2.5% with the full outfit).");
         wear(items, "farmers_jacket", "Farmer's jacket", "leather_body", 0x8A6A3A, Slot.CHEST, 1, EquipmentStats.NONE)
@@ -657,6 +675,11 @@ public final class MinigameItems {
         wear(items, "angler_boots", "Angler boots", "boots", 0x3A3A2A, Slot.FEET, 1, EquipmentStats.NONE)
                 .examine("+0.2% Fishing XP.");
         simple(items, "swamp_paste", "Swamp paste", "pot_item", 0x4A5A3A, 1, "Patches leaks in the trawler.");
+        // Junk the trawler net brings up with the fish (OSRS Wiki).
+        single(items, "broken_staff", "Broken staff", "staff", 0x6A5A4A, 1, "A broken staff.");
+        single(items, "buttons", "Buttons", "bead", 0xA08060, 1, "Some buttons.");
+        single(items, "damaged_armour", "Damaged armour", "platebody", 0x6A6A6A, 1, "Some damaged armour.");
+        single(items, "old_boot", "Old boot", "boots", 0x5A4A3A, 1, "That's always the way.");
     }
 
     // ------------------------------------------------------------------ Rogues' Den

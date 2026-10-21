@@ -260,6 +260,10 @@ public final class MinigameManager {
         if (game == Minigame.SORCERESS_GARDEN) {
             return com.runecraft.content.minigames.games.SorceressGardenSession.requirement(player);
         }
+        String skilling = com.runecraft.content.minigames.games.SkillingMinigameRules.requirement(player, game);
+        if (skilling != null) {
+            return skilling;
+        }
         if (game.skill() != null && skills.level(game.skill()) < game.level()) {
             return "You need " + Msg.article(game.skill().displayName())
                     + " level of " + game.level() + " to take part in " + game.displayName() + ".";

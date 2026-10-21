@@ -340,6 +340,68 @@ public final class SorceressGarden {
         return false;
     }
 
+    /**
+     * An unseen way from just inside the gate (square 1, 0, at game tick {@code t0}) to square {@code goalU} of the clearing,
+     * moving at most {@code speed} squares a tick through open squares (or waiting): the square for each tick after
+     * {@code t0}, or null when none is found within {@code maxTicks}. The self-test walks it; players find their own.
+     */
+    public static List<int[]> route(Season s, long t0, int speed, int goalU, int maxTicks) {
+        java.util.Map<Long, long[]> parent = new java.util.HashMap<>();
+        java.util.ArrayDeque<int[]> queue = new java.util.ArrayDeque<>();
+        queue.add(new int[]{1, 0, 0});
+        parent.put(state(1, 0, 0), null);
+        while (!queue.isEmpty()) {
+            int[] st = queue.poll();
+            if (st[0] >= goalU) {
+                List<int[]> path = new java.util.ArrayList<>();
+                long k = state(st[0], st[1], st[2]);
+                while (parent.get(k) != null) {
+                    path.add(0, new int[]{(int) (k >> 32) - 64, (int) ((k >> 16) & 0xFFFF) - 64});
+                    long[] p = parent.get(k);
+                    k = p[0];
+                }
+                return path;
+            }
+            if (st[2] >= maxTicks) {
+                continue;
+            }
+            java.util.Set<Long> reach = new java.util.LinkedHashSet<>();
+            List<int[]> frontier = new java.util.ArrayList<>(List.of(new int[]{st[0], st[1]}));
+            reach.add(square(st[0], st[1]));
+            for (int step = 0; step < speed; step++) {
+                List<int[]> next = new java.util.ArrayList<>();
+                for (int[] sq : frontier) {
+                    for (int[] d : new int[][]{{1, 0}, {0, 1}, {0, -1}, {-1, 0}}) {
+                        int u = sq[0] + d[0];
+                        int v = sq[1] + d[1];
+                        if (walkable(s, u, v) && reach.add(square(u, v))) {
+                            next.add(new int[]{u, v});
+                        }
+                    }
+                }
+                frontier = next;
+            }
+            for (long sq : reach) {
+                int u = (int) (sq >> 16) - 64;
+                int v = (int) (sq & 0xFFFF) - 64;
+                long key = state(u, v, st[2] + 1);
+                if (!parent.containsKey(key) && !seen(s, t0 + st[2] + 1, u, v)) {
+                    parent.put(key, new long[]{state(st[0], st[1], st[2])});
+                    queue.add(new int[]{u, v, st[2] + 1});
+                }
+            }
+        }
+        return null;
+    }
+
+    private static long square(int u, int v) {
+        return ((long) (u + 64) << 16) | (v + 64);
+    }
+
+    private static long state(int u, int v, int t) {
+        return ((long) (u + 64) << 32) | ((long) (v + 64) << 16) | t;
+    }
+
     static void items(ItemSink items) {
         for (Season s : Season.values()) {
             items.add(s.fruit(), s.displayName() + " sq'irk", Kind.SIMPLE, "produce", s.fruitColor()).value(1).stack(1)

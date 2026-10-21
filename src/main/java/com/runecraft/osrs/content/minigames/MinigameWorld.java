@@ -150,12 +150,20 @@ public final class MinigameWorld {
             {"brimhaven_obstacle", "Agility obstacle", "7A5A3A", "crate"},
             // Gnome Restaurant
             {"gnome_oven", "Gnome oven", "8A5A3A", "range"},
+            {"gnome_gianne", "Gianne jnr.", "C8A080", "statue"},
             {"gnome_customer", "Customer's door", "6A9A4A", "portal_door"},
             // Trouble Brewing
             {"tb_bitternut_tree", "Bitternut tree", "6A4A2A", "tree"},
             {"tb_scrapey_tree", "Scrapey tree", "8A6A4A", "tree"},
             {"tb_sweetgrub_mound", "Sweetgrub mound", "C0A060", "roots"},
-            {"tb_brewing_vat", "Brewing vat", "8A6A3A", "machine"},
+            {"tb_brewing_vat", "Hopper", "8A6A3A", "machine"},
+            {"tb_boiler", "Boiler", "6A6A70", "fire_brazier"},
+            {"tb_log_store", "Log store", "6A4A2A", "crate"},
+            {"tb_workbench", "Workbench", "8A6A4A", "crate"},
+            {"tb_water_pump", "Water pump", "5A6A7A", "machine"},
+            {"tb_kettle", "Kettle", "4A4A50", "pot"},
+            {"tb_flowers", "Flowers", "C03030", "farming_patch"},
+            {"tb_crate", "Rum crate", "8A6A3A", "chest"},
             // Shades of Mort'ton
             {"funeral_pyre", "Funeral pyre", "6A4A2A", "fire_pyre"},
             {"shade_chest", "Bronze chest", "8A5A2A", "chest"},
@@ -184,9 +192,15 @@ public final class MinigameWorld {
             {"foundry_handin", "Kovac's bench", "8A6A4A", "chest"},
             // Mahogany Homes
             {"mh_hotspot", "Furniture hotspot", "9A7A4A", "crate"},
+            {"mh_homeowner", "Homeowner", "C09070", "statue"},
+            {"mh_contractor", "Mahogany Homes desk", "8A5A3A", "chest"},
             // Fishing Trawler
             {"trawler_leak", "Leak", "4080C0", "water_spot"},
             {"trawler_bucket", "Bailing bucket", "8A6A3A", "pot"},
+            {"trawler_net", "Trawler net", "C8B898", "crate"},
+            {"trawler_tentacle", "Enormous tentacle", "8A3A6A", "roots"},
+            {"trawler_rail", "Broken rail", "6A4A2A", "crate"},
+            {"trawler_box", "Box", "8A6A3A", "crate"},
             // Rogues' Den
             {"rd_obstacle", "Obstacle", "6A6A70", "machine"},
             {"rd_safe", "Wall safe", "5A5A60", "chest"},
@@ -513,12 +527,13 @@ public final class MinigameWorld {
         pages.add(new CollectionLogData.Page(c, "Brimhaven Agility Arena", List.of("agility_arena_ticket", "brimhaven_voucher",
                 "pirates_hook", "graceful_hood_agility_arena", "graceful_top_agility_arena", "graceful_legs_agility_arena",
                 "graceful_gloves_agility_arena", "graceful_boots_agility_arena", "graceful_cape_agility_arena")));
-        pages.add(new CollectionLogData.Page(c, "Gnome Restaurant", List.of("gnome_scarf", "gnome_goggles", "mint_cake")));
+        pages.add(new CollectionLogData.Page(c, "Gnome Restaurant", List.of("grand_seed_pod", "gnome_scarf", "gnome_goggles", "mint_cake")));
         List<String> naval = new ArrayList<>();
         for (String colour : MinigameItems.NAVAL_COLOURS) {
             naval.addAll(List.of(colour + "_naval_shirt", colour + "_tricorn_hat", colour + "_navy_slacks"));
         }
-        naval.add("the_stuff");
+        naval.addAll(List.of("cutthroat_flag", "gilded_smile_flag", "bronze_fist_flag", "lucky_shot_flag", "treasure_flag",
+                "phasmatys_flag", "the_stuff", "rum_red", "rum_blue"));
         pages.add(new CollectionLogData.Page(c, "Trouble Brewing", naval));
         pages.add(new CollectionLogData.Page(c, "Shades of Mort'ton", List.of("amulet_of_the_damned", "flamtaer_bag", "fine_cloth",
                 "bronze_locks", "steel_locks", "black_locks", "silver_locks", "gold_locks", "runescroll_of_swampbark",
@@ -526,7 +541,7 @@ public final class MinigameWorld {
         pages.add(new CollectionLogData.Page(c, "Tithe Farm", List.of("farmers_strawhat", "farmers_jacket", "farmers_boro_trousers",
                 "farmers_boots", "gricollers_can", "seed_box", "herb_sack")));
         pages.add(new CollectionLogData.Page(c, "Giants' Foundry", List.of("smiths_tunic", "smiths_trousers", "smiths_boots",
-                "smiths_gloves", "colossal_blade", "double_ammo_mould")));
+                "smiths_gloves", "colossal_blade", "double_ammo_mould", "kovacs_grog")));
         pages.add(new CollectionLogData.Page(c, "Mahogany Homes", List.of("carpenters_helmet", "carpenters_shirt", "carpenters_trousers",
                 "carpenters_boots", "plank_sack", "amys_saw", "hosidius_blueprints")));
         pages.add(new CollectionLogData.Page(c, "Fishing Trawler", List.of("angler_hat", "angler_top", "angler_waders", "angler_boots")));

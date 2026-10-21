@@ -197,7 +197,7 @@ class CombatMinigamesTest {
         assertEquals(1000, cost("trouble_brewing", "grey_naval_shirt", MinigameCurrencies.EIGHT));
         assertEquals(500, cost("trouble_brewing", "black_tricorn_hat", MinigameCurrencies.EIGHT));
         assertEquals(1000, cost("trouble_brewing", "brown_navy_slacks", MinigameCurrencies.EIGHT));
-        assertEquals(20, cost("trouble_brewing", "bottle_of_rum", MinigameCurrencies.EIGHT));
+        assertEquals(20, cost("trouble_brewing", "rum_red", MinigameCurrencies.EIGHT));
         assertEquals(7, MinigameItems.NAVAL_COLOURS.size());
     }
 
@@ -248,7 +248,7 @@ class CombatMinigamesTest {
         assertEquals(0, GnomeRestaurant.tokens(0, 11));
         assertEquals(1, GnomeRestaurant.tokens(11, 12));
         assertEquals(1, GnomeRestaurant.tokens(10, 13));
-        for (MinigameRules.Loot l : GnomeRestaurant.TIPS) {
+        for (MinigameRules.Loot l : GnomeRestaurant.HARD_TIPS) {
             assertTrue(ItemCatalog.exists(l.item()), l.item());
         }
         for (RewardShop.Entry e : RewardShops.get("gnome_restaurant").entries()) {
@@ -335,7 +335,7 @@ class CombatMinigamesTest {
         }
         assertTrue(MinigameWorld.NPC_SHOPS.containsValue("nightmare_zone"));
         assertTrue(MinigameWorld.NPC_SHOPS.containsValue("soul_wars"));
-        assertEquals(MinigameItems.NAVAL_COLOURS.size() * 3 + 1, MinigameWorld.collectionLog().stream()
+        assertEquals(MinigameItems.NAVAL_COLOURS.size() * 3 + 9, MinigameWorld.collectionLog().stream()
                 .filter(p -> p.name().equals("Trouble Brewing")).findFirst().orElseThrow().items().size());
     }
 }

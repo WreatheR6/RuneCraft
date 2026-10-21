@@ -302,8 +302,8 @@ class MinigamesContentTest {
             assertTrue(ItemCatalog.exists(f));
         }
         assertTrue(ItemCatalog.exists(MinigameRules.Trawler.fishFor(99)));
-        for (String b : MinigameRules.GiantsFoundry.BARS) {
-            assertTrue(ItemCatalog.exists(b), b);
+        for (GiantsFoundry.Metal m : GiantsFoundry.Metal.values()) {
+            assertTrue(ItemCatalog.exists(m.bar()), m.bar());
         }
         for (String p : MinigameRules.MahoganyHomes.PLANKS) {
             assertTrue(ItemCatalog.exists(p), p);

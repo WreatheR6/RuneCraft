@@ -223,13 +223,15 @@ public final class RewardShops {
                 // The amylase pack (60 vouchers) holds 100 amylase crystals.
                 .item("amylase_crystal", 100, BRIMHAVEN_VOUCHERS, 60);
 
-        // Trouble Brewing: Honest Jimmy's House of Stuff (pieces of eight; OSRS Wiki: ten times each item's value,
-        // rum 20).
+        // Trouble Brewing: Honest Jimmy's House of Stuff (pieces of eight; OSRS Wiki store page): naval clothing, the six
+        // banners, the stuff and the red and blue rum that teleport to Mos Le'Harmless.
         RewardShop tb = shop("trouble_brewing", "Honest Jimmy's House of Stuff");
         for (String c : MinigameItems.NAVAL_COLOURS) {
             tb.item(c + "_naval_shirt", EIGHT, 1000).item(c + "_tricorn_hat", EIGHT, 500).item(c + "_navy_slacks", EIGHT, 1000);
         }
-        tb.item("bottle_of_rum", EIGHT, 20).item("the_stuff", EIGHT, 50);
+        tb.item("cutthroat_flag", EIGHT, 2000).item("gilded_smile_flag", EIGHT, 2000).item("bronze_fist_flag", EIGHT, 3000)
+                .item("lucky_shot_flag", EIGHT, 4000).item("treasure_flag", EIGHT, 5000).item("phasmatys_flag", EIGHT, 6000)
+                .item("the_stuff", EIGHT, 50).item("rum_red", EIGHT, 20).item("rum_blue", EIGHT, 20);
 
         // Volcanic Mine: Petrified Pete's Ore Shop (OSRS Wiki prices; ores and minerals come noted, see NOTED). The large water
         // container (10,000 points) doubles the heat-proof vessel's throws (VolcanicMine.LARGE_VESSEL_FLAG). Not stocked here:
@@ -252,43 +254,57 @@ public final class RewardShops {
                 .item("prospector_legs", VOLCANIC_MINE, 34_000)
                 .item("prospector_boots", VOLCANIC_MINE, 21_000);
 
-        // Tithe Farm reward shop.
-        shop("tithe_farm", "Tithe Farm Rewards")
+        // Tithe Farm: Farmer Gricoller's Rewards (OSRS Wiki). The seed pack is a tier 3 farming contract pack (the skilling
+        // module's seed pack opens as tier 3 without a tier of its own); the herb box is the Nightmare Zone's. Not stocked:
+        // Bologa's blessing (needs Bologa's payment) and auto-weed (an unlock farming doesn't read).
+        shop("tithe_farm", "Farmer Gricoller's Rewards")
                 .item("farmers_strawhat", TITHE, 75)
                 .item("farmers_jacket", TITHE, 150)
                 .item("farmers_boro_trousers", TITHE, 125)
                 .item("farmers_boots", TITHE, 50)
-                .item("gricollers_can", TITHE, 200)
+                .item("compost", TITHE, 1)
+                .item("supercompost", TITHE, 5)
+                .item("grape_seed", TITHE, 2)
+                .item("herb_box", TITHE, 30)
+                .item("seed_pack", TITHE, 30)
                 .item("seed_box", TITHE, 250)
-                .item("herb_sack", TITHE, 250);
+                .itemSkill("herb_sack", 1, TITHE, 250, Skill.HERBLORE, 58)
+                .item("gricollers_can", TITHE, 200);
 
-        // Giants' Foundry: Kovac (reputation, per the wiki reward shop).
-        shop("giants_foundry", "Kovac's Rewards")
+        // Giants' Foundry: Kovac (reputation; OSRS Wiki "Giants' Foundry Reward Shop"). The 15 moulds beyond the defaults are
+        // unlocks (bought at any level, used only with their Smithing level). Not stocked: the smithing catalyst (its smelting
+        // effect isn't modelled).
+        RewardShop gf = shop("giants_foundry", "Kovac's Rewards")
+                .item("double_ammo_mould", FOUNDRY, 2000)
+                .item("kovacs_grog", FOUNDRY, 300)
+                .labelled(GiantsFoundry.ORE_PACK_ITEM, "Ore pack", List.of(new Cost(FOUNDRY, 200)))
                 .item("smiths_tunic", FOUNDRY, 4000)
                 .item("smiths_trousers", FOUNDRY, 4000)
                 .item("smiths_boots", FOUNDRY, 3500)
                 .item("smiths_gloves", FOUNDRY, 3500)
-                .item("colossal_blade", FOUNDRY, 5000)
-                .item("double_ammo_mould", FOUNDRY, 2000)
-                .item("kovacs_grog", FOUNDRY, 300); // approx
+                .item("colossal_blade", FOUNDRY, 5000);
+        for (GiantsFoundry.Mould m : GiantsFoundry.MOULDS) {
+            if (m.purchasable()) {
+                gf.unlock(m.flag(), m.name() + " (Smithing " + m.level() + ")", List.of(new Cost(FOUNDRY, m.cost())));
+            }
+        }
 
-        // Mahogany Homes: Amy's carpenter points shop.
-        shop("mahogany_homes", "Amy's Rewards")
+        // Mahogany Homes: Amy's carpenter points shop (OSRS Wiki "Mahogany Homes Reward Shop"); the supply crate is rolled
+        // when bought.
+        shop("mahogany_homes", "Mahogany Homes Reward Shop")
+                .labelled(MinigameRules.MahoganyHomes.SUPPLY_CRATE, "Supply crate", List.of(new Cost(CARPENTER, 25)))
+                .item("amys_saw", CARPENTER, 500)
+                .item("plank_sack", CARPENTER, 350)
+                .item("hosidius_blueprints", CARPENTER, 2000)
                 .item("carpenters_helmet", CARPENTER, 400)
                 .item("carpenters_shirt", CARPENTER, 800)
                 .item("carpenters_trousers", CARPENTER, 600)
-                .item("carpenters_boots", CARPENTER, 200)
-                .item("plank_sack", CARPENTER, 350)
-                .item("amys_saw", CARPENTER, 500)
-                .item("hosidius_blueprints", CARPENTER, 2000)
-                .item("steel_nails", 100, CARPENTER, 5);
+                .item("carpenters_boots", CARPENTER, 200);
 
-        // Gnome Restaurant: a reward token (12 delivery points) is cashed in for one gnome dish delivered to you.
-        // The scarf, goggles and mint cake are tips from customers (MinigameRules.GnomeRestaurant.TIPS).
-        RewardShop gnome = shop("gnome_restaurant", "Aluft Aloft reward token");
-        for (Object[] dish : MinigameItems.GNOME_DISHES) {
-            gnome.item((String) dish[0], GNOME_TOKENS, 1);
-        }
+        // Gnome Restaurant: a reward token (12 delivery points) is cashed in for a random gnome dish delivered to you (OSRS
+        // Wiki). The scarf, goggles and mint cake are hard customers' tips (MinigameRules.GnomeRestaurant.SPECIALS).
+        shop("gnome_restaurant", "Aluft Aloft reward token")
+                .labelled(MinigameRules.GnomeRestaurant.RANDOM_DISH, "Random gnome dish", List.of(new Cost(GNOME_TOKENS, 1)));
 
         // Nightmare Zone: Dom Onion's Reward Shop (OSRS Wiki): resources, upgrades (imbues) and benefits. Benefits are sold
         // by the dose in OSRS and kept in barrels; here they come as 4-dose potions at four times the dose price.

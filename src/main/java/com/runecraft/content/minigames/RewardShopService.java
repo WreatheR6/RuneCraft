@@ -94,12 +94,14 @@ public final class RewardShopService {
     private static String icon(RewardShop.Entry e) {
         return switch (e.reward()) {
             case XP -> "minecraft:experience_bottle";
-            case UNLOCK -> RuneCraft.resolve("bones_to_peaches_tablet").toString();
+            case UNLOCK -> RuneCraft.resolve(e.item().startsWith("gf_mould_") ? "double_ammo_mould" : "bones_to_peaches_tablet").toString();
             case UPGRADE -> RuneCraft.resolve(e.item()).toString();
             case ITEM -> switch (e.item()) {
                 case "#herbs" -> RuneCraft.resolve("grimy_ranarr_weed").toString();
                 case "#seeds" -> RuneCraft.resolve("ranarr_seed").toString();
-                case "#ores" -> RuneCraft.resolve("coal").toString();
+                case "#ores", "#gf_ores" -> RuneCraft.resolve("coal").toString();
+                case "#mh_supply_crate" -> RuneCraft.resolve("teak_plank").toString();
+                case "#gnome_food" -> RuneCraft.resolve("chocolate_bomb").toString();
                 case "#ba_gamble_low" -> RuneCraft.resolve("rune_axe").toString();
                 case "#ba_gamble_medium" -> RuneCraft.resolve("teak_plank").toString();
                 case "#ba_gamble_high" -> RuneCraft.resolve("pet_penance_queen").toString();
@@ -333,6 +335,27 @@ public final class RewardShopService {
             }
             case "#ba_gamble_low", "#ba_gamble_medium", "#ba_gamble_high" -> com.runecraft.content.minigames.games.BarbarianAssaultSession
                     .gamble(player, com.runecraft.osrs.content.minigames.BaGambles.Tier.of(e.item()));
+            case "#gnome_food" -> {
+                // A reward token's food: a random gnome dish (OSRS Wiki).
+                Object[] dish = com.runecraft.osrs.content.minigames.MinigameItems.GNOME_DISHES[
+                        RANDOM.nextInt(com.runecraft.osrs.content.minigames.MinigameItems.GNOME_DISHES.length)];
+                give(player, (String) dish[0], 1);
+            }
+            case "#mh_supply_crate" -> {
+                // Mahogany Homes supply crate (OSRS Wiki): one roll of noted Construction materials.
+                com.runecraft.osrs.content.minigames.MinigameRules.Loot l = com.runecraft.osrs.content.minigames.MinigameRules.pick(
+                        com.runecraft.osrs.content.minigames.MinigameRules.MahoganyHomes.SUPPLY_CRATE_TABLE, RANDOM.nextDouble());
+                giveNoted(player, l.item(), l.min());
+            }
+            case "#gf_ores" -> {
+                // Giants' Foundry ore pack (OSRS Wiki): 30 noted ores, mostly coal.
+                Map<String, Integer> ores = new java.util.LinkedHashMap<>();
+                for (int i = 0; i < com.runecraft.osrs.content.minigames.GiantsFoundry.ORE_PACK_ROLLS; i++) {
+                    ores.merge(com.runecraft.osrs.content.minigames.MinigameRules.pick(
+                            com.runecraft.osrs.content.minigames.GiantsFoundry.ORE_PACK, RANDOM.nextDouble()).item(), 1, Integer::sum);
+                }
+                ores.forEach((ore, n) -> giveNoted(player, ore, n));
+            }
             case "#ores" -> {
                 // Mineral pack (OSRS Wiki): 25 coal and 18 iron ore, noted.
                 for (com.runecraft.osrs.content.minigames.MinigameRules.Loot l : com.runecraft.osrs.content.minigames.PestControlRules.MINERAL_PACK) {

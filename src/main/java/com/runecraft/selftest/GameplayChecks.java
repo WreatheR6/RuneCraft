@@ -138,6 +138,21 @@ final class GameplayChecks {
         // Barbarian Assault as a real player (round 37): wave 1 alone as an attacker, the queen wave, honour, a level, a torso.
         checks.add(new SelfTest.Check("minigame:barbarian_assault_run", () -> g.tzhaarRun(
                 com.runecraft.content.minigames.games.BarbarianAssaultSelfTest::run)));
+        // Round 40: one round of each skilling minigame as the real player, then its points spent (SkillingMinigameWalk).
+        checks.add(new SelfTest.Check("minigame:foundry_round",
+                () -> g.skillingWalk(com.runecraft.content.minigames.games.SkillingMinigameWalk::giantsFoundry)));
+        checks.add(new SelfTest.Check("minigame:tithe_round",
+                () -> g.skillingWalk(com.runecraft.content.minigames.games.SkillingMinigameWalk::titheFarm)));
+        checks.add(new SelfTest.Check("minigame:mahogany_round",
+                () -> g.skillingWalk(com.runecraft.content.minigames.games.SkillingMinigameWalk::mahoganyHomes)));
+        checks.add(new SelfTest.Check("minigame:trawler_round",
+                () -> g.skillingWalk(com.runecraft.content.minigames.games.SkillingMinigameWalk::fishingTrawler)));
+        checks.add(new SelfTest.Check("minigame:brewing_round",
+                () -> g.skillingWalk(com.runecraft.content.minigames.games.SkillingMinigameWalk::troubleBrewing)));
+        checks.add(new SelfTest.Check("minigame:gnome_round",
+                () -> g.skillingWalk(com.runecraft.content.minigames.games.SkillingMinigameWalk::gnomeRestaurant)));
+        checks.add(new SelfTest.Check("minigame:garden_round",
+                () -> g.skillingWalk(com.runecraft.content.minigames.games.SkillingMinigameWalk::sorceressGarden)));
         for (RaidType r : RaidType.values()) {
             checks.add(new SelfTest.Check("raid:" + r.id(), () -> g.raid(r)));
         }

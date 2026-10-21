@@ -806,20 +806,33 @@ public final class MinigameRules {
     // Hallowed Sepulchre: see HallowedSepulchre.
 
     // ---------------------------------------------------------------- Tithe Farm
+    /**
+     * Tithe Farm (OSRS Wiki "Tithe Farm", the seed, plant and fertiliser pages): planting gives no XP; a plant must be
+     * watered in each of its three one-minute stages or it dies, then yields one fruit; Gricoller's fertiliser halves the
+     * growth time. Fruit go into the sack in batches of 100.
+     */
     public static final class TitheFarm {
-        /** Planting XP per seed (approx.; OSRS gives most Tithe XP on harvest and deposit). */
-        public static final double[] PLANT_XP = {3.5, 5.0, 7.0}; // approx
-        /** Farming XP per fruit harvested: golovanova 6, bologano 14, logavano 23. */
+        /** Farming XP per fruit harvested: golovanova 6, bologano 14, logavano 23 (planting gives none). */
         public static final double[] HARVEST_XP = {6, 14, 23};
-        /** Farming XP per fruit deposited (10x harvest XP); fruit 75-100 of a run pay double. */
+        /** Farming XP per fruit deposited (10x harvest XP); fruit 75-100 of a batch pay double. */
         public static final double[] DEPOSIT_XP = {60, 140, 230};
-        /** Fruit a sack holds per run; the 75th earns a 250x harvest XP bonus. */
+        /** Fruit a sack batch holds; the 75th earns a 250x harvest XP bonus, the 100th 2 extra points. */
         public static final int SACK_SIZE = 100;
         public static final int BONUS_FRUIT = 75;
         public static final int MAX_POINTS = 16_000;
+        /** Seeds and fruit a player may hold in one visit, and seeds taken from the table at a time. */
+        public static final int MAX_SEEDS = 10_000;
+        public static final int SEEDS_PER_TAKE = 100; // approx: the table asks for an amount
         public static final int WATERINGS = 3;
-        public static final int GROW_TICKS = 25;
-        public static final int GAME_TICKS = 1000;
+        /** Each growth stage lasts one minute (100 game ticks); a plant is fully grown after three. */
+        public static final int GROW_TICKS = 100;
+        /** Gricoller's fertiliser halves the growth time. */
+        public static final int FERTILISED_GROW_TICKS = 50;
+        /** Fruit a fully grown plant yields. */
+        public static final int YIELD = 1;
+        /** Doses of water: a watering can holds 8, Gricoller's can 1,000. */
+        public static final int CAN_DOSES = 8;
+        public static final int GRICOLLER_DOSES = 1000;
 
         private TitheFarm() {
         }
@@ -835,7 +848,7 @@ public final class MinigameRules {
             return best;
         }
 
-        /** Deposit XP for the n-th fruit (1-based) put in the sack this run. */
+        /** Deposit XP for the n-th fruit (1-based) of a sack batch (the bonus isn't boosted by the farmer's outfit). */
         public static double depositXp(int type, int n) {
             double xp = n >= BONUS_FRUIT ? DEPOSIT_XP[type] * 2 : DEPOSIT_XP[type];
             if (n == BONUS_FRUIT) {
@@ -844,7 +857,12 @@ public final class MinigameRules {
             return xp;
         }
 
-        /** Points for the n-th fruit (1-based) of a run: one per third fruit, plus 2 on the 100th. */
+        /** The part of {@link #depositXp} that is the 75th fruit's bonus (250x the harvest XP; the farmer's outfit doesn't boost it). */
+        public static double bonusXp(int type, int n) {
+            return n == BONUS_FRUIT ? HARVEST_XP[type] * 250 : 0;
+        }
+
+        /** Points for the n-th fruit (1-based) of a sack batch: one per third fruit, plus 2 on the 100th. */
         public static int depositPoints(int n) {
             int pts = n % 3 == 0 ? 1 : 0;
             return n == SACK_SIZE ? pts + 2 : pts;
@@ -861,15 +879,44 @@ public final class MinigameRules {
     }
 
     // ---------------------------------------------------------------- Mahogany Homes
+    /**
+     * Mahogany Homes (OSRS Wiki "Mahogany Homes"): contracts by tier, the plank each tier uses, carpenter points and the
+     * XP per material (the layouts are {@link MahoganyHomesLayouts}).
+     */
     public static final class MahoganyHomes {
         public static final String[] TIERS = {"Beginner", "Novice", "Adept", "Expert"};
+        public static final String[] TIER_IDS = {"BEGINNER", "NOVICE", "ADEPT", "EXPERT"};
         public static final String[] PLANKS = {"plank", "oak_plank", "teak_plank", "mahogany_plank"};
         public static final int[] LEVELS = {1, 20, 50, 70};
         public static final int[] POINTS = {2, 3, 4, 5};
-        public static final double[] XP_PER_PLANK = {30, 48, 72, 112}; // plank value approx
-        /** Construction XP for completing a contract (not boosted by the carpenter's outfit). */
+        /** Construction XP per plank used to build new furniture and per plank used in a repair, by tier. */
+        public static final double[] BUILD_XP = {22.5, 48, 72, 112};
+        public static final double[] REPAIR_XP = {127.5, 160, 190, 240};
+        /** Construction XP for a repair with a steel bar (any tier). */
+        public static final double BAR_XP = 120;
+        /** Construction XP for completing a contract (the carpenter's outfit boosts it by up to 2.5%). */
         public static final double[] COMPLETION_XP = {500, 1250, 2250, 2750};
-        public static final int HOTSPOTS = 4;
+        /** The contractors: Amy in Falador, Marlo in Varrock, Ellie in East Ardougne, Angelo in Hosidius. */
+        public static final String[] CONTRACTORS = {"Amy", "Marlo", "Ellie", "Angelo"};
+
+        /** Supply crate (25 carpenter points): one roll of the wiki's 144-weight table of noted materials. */
+        public static final String SUPPLY_CRATE = "#mh_supply_crate";
+        public static final List<Loot> SUPPLY_CRATE_TABLE = List.of(
+                new Loot("bolt_of_cloth", 9, 9, 5), new Loot("bolt_of_cloth", 10, 10, 1),
+                new Loot("limestone_brick", 9, 9, 5), new Loot("limestone_brick", 10, 10, 1),
+                new Loot("mahogany_plank", 6, 6, 15), new Loot("mahogany_plank", 7, 7, 3),
+                new Loot("oak_plank", 28, 28, 10), new Loot("oak_plank", 29, 29, 15), new Loot("oak_plank", 30, 30, 5),
+                new Loot("soft_clay", 45, 45, 5), new Loot("soft_clay", 46, 46, 10), new Loot("soft_clay", 47, 47, 10),
+                new Loot("soft_clay", 48, 48, 5),
+                new Loot("steel_bar", 23, 23, 5), new Loot("steel_bar", 24, 24, 20), new Loot("steel_bar", 25, 25, 5),
+                new Loot("teak_plank", 15, 15, 20), new Loot("teak_plank", 16, 16, 4));
+        /** Planks a plank sack holds (any mix of types). */
+        public static final int PLANK_SACK = 28;
+
+        /** XP per material of a hotspot at a tier. */
+        public static double hotspotXp(int tier, boolean steelBar, boolean repair) {
+            return steelBar ? BAR_XP : repair ? REPAIR_XP[tier] : BUILD_XP[tier];
+        }
 
         private MahoganyHomes() {
         }
@@ -885,53 +932,143 @@ public final class MinigameRules {
         }
     }
 
-    // ---------------------------------------------------------------- Giants' Foundry
-    public static final class GiantsFoundry {
-        public static final String[] BARS = {"bronze_bar", "iron_bar", "steel_bar", "mithril_bar", "adamantite_bar", "runite_bar"};
-        public static final int[] BAR_VALUE = {1, 2, 3, 5, 7, 10};
-        public static final int BARS_NEEDED = 14;
-        public static final int STAGES = 6;
-        public static final int GAME_TICKS = 600;
-
-        private GiantsFoundry() {
-        }
-
-        /** Reputation for a finished sword: quality (0-100) times metal value / 2 (approx.). */
-        public static int reputation(int quality, int metalScore) {
-            return Math.max(1, quality * metalScore / 20);
-        }
-
-        /** Smithing XP for a sword: proportional to quality and metal value (approx.). */
-        public static double xp(int quality, int metalScore) {
-            return quality * metalScore * 1.5;
-        }
-    }
-
     // ---------------------------------------------------------------- Fishing Trawler
+    /**
+     * Fishing Trawler (OSRS Wiki "Fishing Trawler"): a five-minute trawl; contribution points for bailing (2), patching a
+     * leak (5, 5 Construction XP), mending the net with a rope (7, 5 Crafting XP), chopping the kraken's tentacle (10, 5
+     * Woodcutting XP) and fixing a rail it broke (10, 5 Construction XP); 50 points earn a share of the catch, at most 255
+     * count. Fish are rolled from the best the player's Fishing level allows down (each tier 150/256 at its level to
+     * 200/256 at 99); 1/12 for a missing angler piece; the heron at 1/5,000 to 1/2,500 with a full meter.
+     */
     public static final class Trawler {
         public static final int GAME_TICKS = 500;
-        public static final int LEAK_INTERVAL = 18;
         public static final int MAX_WATER = 100;
         public static final String[] OUTFIT = {"angler_hat", "angler_top", "angler_waders", "angler_boots"};
+        public static final int MIN_CONTRIBUTION = 50;
+        public static final int MAX_CONTRIBUTION = 255;
+        public static final int BAIL_POINTS = 2;
+        public static final int LEAK_POINTS = 5;
+        public static final int NET_POINTS = 7;
+        public static final int CHOP_POINTS = 10;
+        public static final int RAIL_POINTS = 10;
+        /** XP for a patched leak or fixed rail (Construction), a mended net (Crafting) and a tentacle chop (Woodcutting). */
+        public static final double ACTION_XP = 5;
+        /** Fishing level needed for any reward. */
+        public static final int REWARD_LEVEL = 15;
+        /** 1/12 for an angler piece the player doesn't have yet (a second set only after a full first one). */
+        public static final int ANGLER_ROLL = 12;
+        /** Full angler sets the net can give (wiki: "Players can receive two full sets"). */
+        public static final int ANGLER_SETS = 2;
+        /** Game ticks between leaks for a lone player; more players spring more leaks (approx: busy worlds every 5 ticks). */
+        public static final int LEAK_INTERVAL = 18;
+        /** Game ticks between kraken tentacles ("about 45 seconds"), and successful chops that drive one off (approx). */
+        public static final int TENTACLE_INTERVAL = 75;
+        public static final int TENTACLE_HP = 2; // approx
+        /** Game ticks between net tears (approx). */
+        public static final int NET_TEAR_INTERVAL = 90; // approx
+
+        /** A catch: item, Fishing level and Fishing XP per fish (wiki table). */
+        public record Catch(String item, int level, double xp) {
+        }
+
+        /** Best first, as the net rolls them (the last always succeeds). */
+        public static final List<Catch> CATCHES = List.of(new Catch("raw_manta_ray", 81, 69), new Catch("raw_sea_turtle", 79, 57),
+                new Catch("raw_shark", 76, 66), new Catch("raw_swordfish", 50, 60), new Catch("raw_lobster", 40, 54),
+                new Catch("raw_tuna", 35, 48), new Catch("oyster", 16, 51), new Catch("raw_anchovies", 15, 0.7),
+                new Catch("raw_sardine", 15, 0.7), new Catch("raw_shrimps", 15, 0.7));
+        /** Junk the net brings up: 0-2 items, each equally likely (wiki: about 37% one, 16% two). */
+        public static final List<String> JUNK = List.of("broken_arrow", "broken_glass", "broken_staff", "buttons", "damaged_armour",
+                "old_boot", "empty_pot", "rusty_sword");
+        public static final double JUNK_XP = 0.5;
 
         private Trawler() {
         }
 
-        /** Fish caught in the net for a Fishing level and contribution (approx.). */
+        /** The chance a fish tier is caught at a Fishing level: 150/256 at level 1 to 200/256 at 99 (OSRS skilling roll). */
+        public static double tierChance(int level) {
+            int l = Math.max(1, Math.min(99, level));
+            return (1 + Math.floor(150 * (99 - l) / 98.0 + 200 * (l - 1) / 98.0 + 0.5)) / 256.0;
+        }
+
+        /** One fish for a Fishing level, given uniform random values in [0, 1) per tier tried. */
+        public static Catch fish(int level, java.util.function.DoubleSupplier random) {
+            double p = tierChance(level);
+            for (int i = 0; i < CATCHES.size(); i++) {
+                Catch c = CATCHES.get(i);
+                if (c.level() > level) {
+                    continue;
+                }
+                if (i == CATCHES.size() - 1 || random.getAsDouble() < p) {
+                    return c;
+                }
+            }
+            return CATCHES.get(CATCHES.size() - 1);
+        }
+
+        /** The best fish a Fishing level can get from the net. */
         public static String fishFor(int fishing) {
-            if (fishing >= 76) {
-                return "raw_shark";
+            for (Catch c : CATCHES) {
+                if (fishing >= c.level()) {
+                    return c.item();
+                }
             }
-            if (fishing >= 50) {
-                return "raw_swordfish";
+            return CATCHES.get(CATCHES.size() - 1).item();
+        }
+
+        /**
+         * A player's share of the catch: about 10.5 fish alone and 7 in a crowd at the minimum contribution, doubled by a
+         * full meter (wiki: 20-22 solo, 13-15 on busy worlds), less the time the net was torn and half the time a tentacle
+         * slowed the boat (approx).
+         */
+        public static int fishCount(int players, int contribution, double netIntact, double tentacleTime) {
+            if (contribution < MIN_CONTRIBUTION) {
+                return 0;
             }
-            if (fishing >= 40) {
-                return "raw_lobster";
+            double base = 7 + 3.5 / Math.max(1, players); // approx
+            double meter = 1 + (Math.min(MAX_CONTRIBUTION, contribution) - MIN_CONTRIBUTION) / (double) (MAX_CONTRIBUTION - MIN_CONTRIBUTION);
+            double time = Math.max(0, Math.min(1, netIntact) - 0.5 * Math.max(0, Math.min(1, tentacleTime)));
+            return (int) Math.floor(base * meter * time);
+        }
+
+        /** Junk items in the net for a uniform random value in [0, 1): none 47%, one 37%, two 16%. */
+        public static int junkCount(double roll) {
+            return roll < 0.47 ? 0 : roll < 0.84 ? 1 : 2;
+        }
+
+        /** The heron's chance: 1/5,000 at 50 points, scaling to 1/2,500 with a full meter. */
+        public static double heronChance(int contribution) {
+            if (contribution < MIN_CONTRIBUTION) {
+                return 0;
             }
-            if (fishing >= 35) {
-                return "raw_tuna";
+            double f = (Math.min(MAX_CONTRIBUTION, contribution) - MIN_CONTRIBUTION) / (double) (MAX_CONTRIBUTION - MIN_CONTRIBUTION);
+            return 1.0 / (5000 - 2500 * f);
+        }
+
+        /**
+         * The angler piece (index into {@link #OUTFIT}) a successful {@link #ANGLER_ROLL} gives, from how many times the player
+         * has received each piece; -1 once both sets are complete. Only pieces of the set being collected qualify (those
+         * received the fewest times), so the second set starts once the first is complete (OSRS Wiki "Fishing Trawler").
+         */
+        public static int anglerPiece(int[] received, java.util.function.IntUnaryOperator random) {
+            int min = Integer.MAX_VALUE;
+            for (int r : received) {
+                min = Math.min(min, r);
             }
-            return "raw_anchovies";
+            if (min >= ANGLER_SETS) {
+                return -1;
+            }
+            List<Integer> due = new java.util.ArrayList<>();
+            for (int i = 0; i < received.length; i++) {
+                if (received[i] == min) {
+                    due.add(i);
+                }
+            }
+            return due.get(random.applyAsInt(due.size()));
+        }
+
+        /** Game ticks between leaks with this many players aboard (approx). */
+        public static int leakInterval(int players) {
+            return Math.max(5, LEAK_INTERVAL - 2 * (Math.max(1, players) - 1));
         }
     }
 
@@ -1168,21 +1305,65 @@ public final class MinigameRules {
     }
 
     // ---------------------------------------------------------------- Trouble Brewing
+    /**
+     * Trouble Brewing (OSRS Wiki "Trouble Brewing", after the January 2025 XP rescale): a bottle of rum takes 1 bitternut,
+     * 1 sweetgrubs, 1 scrapey bark, 5 buckets of water and 3 bowls of the team's coloured water from the hopper, and three
+     * lit boilers with at least 3 logs each; it brews in 38 seconds and must be packed in the crate by someone whose
+     * ingredients went into it. Each resource deposited is 1 contribution (pieces of eight: 10 per team bottle plus the
+     * contribution, at most 100); each non-water ingredient also earns a rum reward of 100 Crafting, 250 Cooking and 150
+     * Firemaking XP at the end (a third for each bowl of coloured water).
+     */
     public static final class TroubleBrewing {
         /** A game lasts 20 minutes. */
         public static final int GAME_TICKS = 2000;
         /** 10 pieces of eight per bottle of rum the team makes, plus 1 per resource deposited (max 100). */
         public static final int EIGHT_PER_RUM = 10;
         public static final int MAX_CONTRIBUTION = 100;
-        /** Cooking XP for depositing a bitternut (200) or scrapey bark / sweetgrubs (100). */
+        /** Cooking XP for depositing a bitternut (200), sweetgrubs, scrapey bark or a bowl of coloured water (100); water none. */
         public static final double BITTERNUT_XP = 200;
         public static final double DEPOSIT_XP = 100;
-        /** Rum contribution reward per bottle the player helped make: Crafting 100, Cooking 250, Firemaking 150. */
+        /** Rum reward per credit: Crafting 100, Cooking 250, Firemaking 150. */
         public static final double RUM_CRAFTING_XP = 100;
         public static final double RUM_COOKING_XP = 250;
         public static final double RUM_FIREMAKING_XP = 150;
-        /** A bottle takes 38 seconds to brew (64 game ticks). */
+        /** A bottle takes 38 seconds to brew (64 game ticks); unpacked, it breaks about 34 seconds after it arrives. */
         public static final int BREW_TICKS = 64;
+        public static final int BOTTLE_BREAK_TICKS = 57;
+        /** One bottle's ingredients. */
+        public static final int WATER_PER_RUM = 5;
+        public static final int COLOURED_PER_RUM = 3;
+        /** Boilers: three, each needs 3 logs (holds 10) and to be lit; the log store starts with 75 logs. */
+        public static final int BOILERS = 3;
+        public static final int BOILER_MIN_LOGS = 3;
+        public static final int BOILER_MAX_LOGS = 10;
+        public static final int LOG_STORE = 75;
+        /** A lit boiler burns a log this often, rum or no rum (approx). */
+        public static final int LOG_BURN_TICKS = 50; // approx
+        /** XP for obtaining resources: a bitternut 50 Hunter, a caught monkey 15 Agility and 15 Hunter, sweetgrubs 40 Hunter,
+         * scrapey bark 50 Fletching; lighting a boiler 100 Firemaking. */
+        public static final double BITTERNUT_HUNTER_XP = 50;
+        public static final double MONKEY_XP = 15;
+        public static final double SWEETGRUB_HUNTER_XP = 40;
+        public static final double BARK_FLETCHING_XP = 50;
+        public static final double LIGHT_FIREMAKING_XP = 100;
+        /** At most 2 bitternuts and 5 flowers carried; the kettle holds 10 flowers. */
+        public static final int MAX_NUTS = 2;
+        public static final int MAX_FLOWERS = 5;
+        public static final int KETTLE_MAX = 10;
+        /** Using raw meat on a sweetgrub mound: 1/5 it collapses, else 1/5 a swarm of sweetflies, else sweetgrubs. */
+        public static final int GRUB_ROLL = 5;
+        /** Fletching scrapey bark: 1/50 to catch a disease (4 damage). */
+        public static final int DISEASE_ROLL = 50;
+        public static final int DISEASE_DAMAGE = 4;
+
+        /** Rum credits, in thirds, an ingredient earns its depositor: 3 for a solid ingredient, 1 per bowl of coloured water. */
+        public static int rumThirds(String ingredient) {
+            return switch (ingredient) {
+                case "bitternut", "sweetgrubs", "scrapey_tree_bark" -> 3;
+                case "bowl_of_red_water", "bowl_of_blue_water" -> 1;
+                default -> 0;
+            };
+        }
 
         private TroubleBrewing() {
         }
@@ -1193,35 +1374,116 @@ public final class MinigameRules {
     }
 
     // ---------------------------------------------------------------- Gnome Restaurant
+    /**
+     * Gnome Restaurant (OSRS Wiki "Gnome Restaurant"): Gianne jnr. hands out easy deliveries (around the Gnome Stronghold, 6
+     * minutes, 1 point) and hard ones (anywhere, 11 minutes, 3 points; declining one means 5.5 minutes before the next).
+     * Every 12 points make a reward token worth a random gnome dish (at most 10 stored). An easy customer tips 2-500 coins;
+     * a hard customer tips an item from the hard table, plus the specials only some customers give (approx weights from the
+     * Drop Log Project's 3,258 deliveries). Deliveries give no XP: the Cooking XP is in making the food.
+     */
     public static final class GnomeRestaurant {
-        /** Easy deliveries: 6 minutes, 1 point; hard deliveries: 11 minutes, 3 points. 12 points make a reward token. */
         public static final int EASY_TICKS = 600;
         public static final int HARD_TICKS = 1100;
         public static final int EASY_POINTS = 1;
         public static final int HARD_POINTS = 3;
         public static final int POINTS_PER_TOKEN = 12;
-        /** Every delivery is tipped 2-500 coins plus a roll on the tip table (approx. weights from the wiki). */
+        /** A token stores up to 120 points at once: ten unused dishes (not a lifetime cap). */
+        public static final int MAX_POINTS = 120;
+        /** Declining a hard job: no hard job for 5 minutes 30 seconds. */
+        public static final int HARD_DECLINE_TICKS = 550;
+        /** Easy tips: 2-500 coins. */
         public static final int TIP_MIN = 2;
         public static final int TIP_MAX = 500;
-        public static final List<Loot> TIPS = List.of(
-                new Loot("gnome_scarf", 1, 1, 23), new Loot("gnome_goggles", 1, 1, 23), new Loot("mint_cake", 1, 1, 18),
-                new Loot("toadflax", 3, 3, 31), new Loot("snapdragon", 1, 1, 31), new Loot("uncut_sapphire", 6, 16, 31),
-                new Loot("uncut_emerald", 3, 5, 31), new Loot("uncut_ruby", 2, 4, 31), new Loot("uncut_diamond", 1, 1, 31),
-                new Loot("uncut_jade", 2, 3, 31), new Loot("uncut_opal", 3, 3, 31), new Loot("uncut_red_topaz", 1, 1, 31),
-                new Loot("mithril_bolts", 16, 35, 40), new Loot("adamant_bolts", 12, 26, 20), new Loot("bird_nest_seeds", 1, 1, 20),
-                new Loot("coins", 2, 500, 200));
-        /**
-         * Hard deliveries roll this table instead: the same tips plus the grand seed pod, tipped 5 at a time at 23/512 by
-         * Wingstone, Penwie, Brambickle and Professor Manglethorp (OSRS Wiki "Grand seed pod"). Customers aren't tracked, so the
-         * weight is that rate averaged over all hard-delivery customers (about 4 in 15-20): roughly 1/90 per hard delivery
-         * (approx).
-         */
-        public static final List<Loot> HARD_TIPS = hardTips();
+        /** Reward-shop id of a reward token's random dish. */
+        public static final String RANDOM_DISH = "#gnome_food";
 
-        private static List<Loot> hardTips() {
-            List<Loot> out = new java.util.ArrayList<>(TIPS);
-            out.add(new Loot("grand_seed_pod", 5, 5, 7)); // 7/630; weight approx
-            return List.copyOf(out);
+        /** Easy-order customers (in and around the Tree Gnome Stronghold). */
+        public static final List<String> EASY_CUSTOMERS = List.of("Burkor", "Brimstail", "Captain Errdo", "Gnome Coach", "Dalila",
+                "Damwin", "Eebel", "Ermin", "Femi", "Froono", "Guard Vemmeldo", "Gulluck", "Heckel Funch", "King Narnode Shareen",
+                "Meegle", "Perrdur", "Rometti", "Sarble", "Trainer Nacklepen", "Wurbel");
+        /** Hard-order customers. */
+        public static final List<String> HARD_CUSTOMERS = List.of("Ambassador Ferrnook", "Ambassador Gimblewap", "Ambassador Spanfipple",
+                "Brambickle", "Captain Bleemadge", "Captain Daerkin", "Captain Dalbur", "Captain Klemfoodle", "Captain Ninto",
+                "G.L.O. Caranock", "Garkor", "Gnormadium Avlafrim", "Hazelmere", "King Bolren", "Lieutenant Schepbur", "Penwie",
+                "Professor Imblewyn", "Professor Manglethorp", "Professor Onglewip", "Wingstone");
+
+        /** A tip only some hard customers give: item, amount, chance out of 512, and who gives it. */
+        public record Special(String item, int min, int max, double chance512, List<String> customers) {
+        }
+
+        private static final List<String> PILOTS_EXPLORERS_PROFESSORS = List.of("Captain Bleemadge", "Captain Daerkin", "Captain Dalbur",
+                "Captain Klemfoodle", "Captain Ninto", "Gnormadium Avlafrim", "Lieutenant Schepbur", "Wingstone", "Penwie",
+                "Professor Imblewyn", "Professor Manglethorp", "Professor Onglewip");
+        private static final List<String> RUNE_PROFESSORS = List.of("Professor Imblewyn", "Professor Onglewip");
+
+        public static final List<Special> SPECIALS = List.of(
+                new Special("gnome_goggles", 1, 1, 23 * 512 / 384.0, List.of("Captain Ninto", "Captain Daerkin")),
+                new Special("gnome_scarf", 1, 1, 23 * 512 / 384.0, List.of("Captain Ninto", "Captain Daerkin")),
+                new Special("grand_seed_pod", 5, 5, 23, List.of("Wingstone", "Penwie", "Brambickle", "Professor Manglethorp")),
+                new Special("mint_cake", 1, 1, 23, List.of("Wingstone", "Penwie", "Brambickle")),
+                new Special("goutweed", 1, 1, 23, List.of("Brambickle")),
+                new Special("raw_oomlie", 1, 1, 23, List.of("Penwie")),
+                new Special("snake_charm", 1, 1, 23, List.of("Wingstone")),
+                new Special("loop_half_of_key", 1, 1, 23 * 512 / 640.0, PILOTS_EXPLORERS_PROFESSORS),
+                new Special("tooth_half_of_key", 1, 1, 23 * 512 / 640.0, PILOTS_EXPLORERS_PROFESSORS),
+                new Special("gold_ore", 6, 11, 23, List.of("Professor Manglethorp")),
+                new Special("coal", 12, 22, 23, List.of("Professor Manglethorp")),
+                // "Rare" on the wiki: approx 8/512 each.
+                new Special("law_rune", 7, 18, 8, RUNE_PROFESSORS), new Special("nature_rune", 9, 15, 8, RUNE_PROFESSORS),
+                new Special("chaos_rune", 15, 27, 8, RUNE_PROFESSORS), new Special("cosmic_rune", 10, 19, 8, RUNE_PROFESSORS),
+                new Special("death_rune", 7, 13, 8, RUNE_PROFESSORS), new Special("blood_rune", 6, 10, 8, RUNE_PROFESSORS),
+                new Special("soul_rune", 5, 11, 8, RUNE_PROFESSORS), new Special("pure_essence", 51, 97, 8, RUNE_PROFESSORS));
+
+        /** Every hard customer's table (the specials aside): x/128 from the wiki, bolts filling the rest (approx split). */
+        public static final List<Loot> HARD_TIPS = List.of(
+                new Loot("gnomeball", 1, 1, 40), new Loot("toadflax", 3, 3, 40), new Loot("snapdragon", 1, 1, 40),
+                new Loot("uncut_sapphire", 6, 16, 40), new Loot("uncut_emerald", 3, 5, 40), new Loot("uncut_ruby", 2, 4, 40),
+                new Loot("uncut_diamond", 1, 1, 40), new Loot("uncut_jade", 2, 3, 40), new Loot("uncut_opal", 3, 3, 40),
+                new Loot("uncut_red_topaz", 1, 1, 40), new Loot("bird_nest_seeds", 1, 1, 20),
+                new Loot("mithril_bolts", 16, 35, 60), new Loot("adamant_bolts", 12, 26, 24), new Loot("rune_bolts", 7, 15, 8));
+
+        /** The specials a hard customer can give. */
+        public static List<Special> specials(String customer) {
+            return SPECIALS.stream().filter(sp -> sp.customers().contains(customer)).toList();
+        }
+
+        /**
+         * A hard customer's tip for uniform random values: each of the customer's specials at its chance first, else the
+         * base table.
+         */
+        public static Loot hardTip(String customer, java.util.function.DoubleSupplier random) {
+            for (Special sp : specials(customer)) {
+                if (random.getAsDouble() < sp.chance512() / 512.0) {
+                    return new Loot(sp.item(), sp.min(), sp.max(), 1);
+                }
+            }
+            return pick(HARD_TIPS, random.getAsDouble());
+        }
+
+        /** Cooking XP for making each restaurant dish from scratch (OSRS Wiki "Gnome cooking": baking plus toppings). */
+        public static double dishXp(String dish) {
+            return switch (dish) {
+                case "fruit_batta" -> 150;
+                case "toad_batta" -> 152;
+                case "worm_hole" -> 170;
+                case "veg_ball" -> 175;
+                case "tangled_toads_legs" -> 185;
+                case "chocolate_bomb" -> 190;
+                default -> 0;
+            };
+        }
+
+        /** Cooking level for each restaurant dish (orders don't check it; making the food, at the gnome oven too, does). */
+        public static int dishLevel(String dish) {
+            return switch (dish) {
+                case "fruit_batta" -> 25;
+                case "toad_batta" -> 26;
+                case "worm_hole" -> 30;
+                case "veg_ball" -> 35;
+                case "tangled_toads_legs" -> 40;
+                case "chocolate_bomb" -> 42;
+                default -> 1;
+            };
         }
 
         private GnomeRestaurant() {
@@ -1230,6 +1492,18 @@ public final class MinigameRules {
         /** Reward tokens earned when a delivery takes the point total from {@code before} to {@code after}. */
         public static int tokens(int before, int after) {
             return after / POINTS_PER_TOKEN - before / POINTS_PER_TOKEN;
+        }
+
+        /** Unused dishes a player can hold at once (the token stores up to 120 points). */
+        public static final int MAX_TOKENS = MAX_POINTS / POINTS_PER_TOKEN;
+
+        /**
+         * Reward tokens a delivery pays when it takes the lifetime point total from {@code before} to {@code after} and the
+         * player already holds {@code held} unused ones: the token holds at most 120 points (ten dishes) at once, so points
+         * earned while it is full make no dish, but a token spent makes room again (OSRS Wiki "Gnome Restaurant").
+         */
+        public static int tokensToGive(int before, int after, int held) {
+            return Math.max(0, Math.min(tokens(before, after), MAX_TOKENS - Math.max(0, held)));
         }
     }
 
