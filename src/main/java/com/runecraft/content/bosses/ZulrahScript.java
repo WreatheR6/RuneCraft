@@ -268,6 +268,9 @@ final class ZulrahScript extends ScriptedBoss {
         for (int i = 0; i < 2; i++) {
             Vec3 at = fill ? around(boss, homeVec(), 5) : around(boss, target.position(), 6);
             clouds.add(new Cloud(at, now + 30));
+            // drawn where it lands at once; it hurts from the next game tick (12 MC on, as hazards arm). // playability: OSRS
+            // the cloud projectile's landing spot, read on the tick
+            BossFx.world(boss).sendParticles(ParticleTypes.SNEEZE, at.x, at.y + 0.4, at.z, 24, 1.4, 0.3, 1.4, 0.0);
         }
         trace("cloud");
         BossFx.warn(boss, "Zulrah spits clouds of toxic fumes!");

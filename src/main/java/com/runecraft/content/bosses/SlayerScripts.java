@@ -360,6 +360,11 @@ final class SlayerScripts {
             return List.copyOf(tripleShown);
         }
 
+        /** Self-test: summons her souls now, whatever her pattern and hitpoints. */
+        void selfTestSummonSouls(DataBossEntity boss) {
+            summonSouls(boss);
+        }
+
         @Override
         protected int attackDelay(DataBossEntity boss, AttackDef attack) {
             // Auto-attacks every 6 ticks (wiki attack speed); the triple attack fires its three styles 2 ticks apart.
