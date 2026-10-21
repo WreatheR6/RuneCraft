@@ -185,6 +185,10 @@ public final class OsrsEquipmentItems {
                 if (drawn >= AttackClock.HOLD_DRAW_MC && AttackTimer.ready(player)) {
                     if (fire(player, handOf(player, stack), stack, null)) {
                         AttackTimer.markDrawShot(player, drawn);
+                    } else {
+                        // Out of ammo mid-draw: the draw ends, so the message shows once (BowItem.use won't start a
+                        // new draw without ammo). stopUsingItem, not releaseUsingItem, which would try a release shot.
+                        player.stopUsingItem();
                     }
                 }
             }

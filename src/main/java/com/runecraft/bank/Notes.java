@@ -96,6 +96,31 @@ public final class Notes {
     }
 
     /**
+     * A stored key tag as {@link #tagOf} gives it today: Damage dropped when the item no longer takes damage. Bows had
+     * durability before round 41, so every banked, bagged or noted bow is keyed {@code {Damage:0}}, while a bow deposited
+     * now is keyed "" and would land in a second bank row. Every other tag comes back unchanged.
+     */
+    public static String currentTag(String item, String tag) {
+        if (tag == null || tag.isEmpty() || !tag.contains(DAMAGE)) {
+            return tag == null ? "" : tag;
+        }
+        Item it = BuiltInRegistries.ITEM.get(RuneCraft.resolve(item));
+        if (it == Items.AIR || new ItemStack(it).isDamageableItem()) {
+            return tag;
+        }
+        try {
+            CompoundTag n = TagParser.parseTag(tag);
+            if (!n.contains(DAMAGE, Tag.TAG_ANY_NUMERIC)) {
+                return tag;
+            }
+            n.remove(DAMAGE);
+            return n.isEmpty() ? "" : n.getAsString();
+        } catch (CommandSyntaxException e) {
+            return tag;
+        }
+    }
+
+    /**
      * A key (item id + tag) stored before {@link #KEY_FORMAT}, as today's key. Those tags were the whole 1.20.1 stack NBT,
      * so vanilla data in them (display, Enchantments, BlockEntityTag, Potion...) and renamed item ids go through the item
      * stack data fixer; tags holding only custom data and Damage come out unchanged. Unknown items are kept as they are.
@@ -132,9 +157,13 @@ public final class Notes {
         return isNote(stack) ? StackData.get(stack).getString(NOTED) : "";
     }
 
-    /** The noted item's own stack data ("" for none). */
+    /** The noted item's own stack data ("" for none; a bow noted while bows took damage reads as today's key). */
     public static String notedTag(ItemStack stack) {
-        return isNote(stack) ? StackData.get(stack).getString(NOTED_TAG) : "";
+        if (!isNote(stack)) {
+            return "";
+        }
+        CompoundTag n = StackData.get(stack);
+        return currentTag(n.getString(NOTED), n.getString(NOTED_TAG));
     }
 
     /** A single unnoted item for a note (EMPTY if the note is invalid). */

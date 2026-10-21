@@ -2,6 +2,7 @@ package com.runecraft.client;
 
 import com.runecraft.combat.AttackTimer;
 import com.runecraft.osrs.AttackClock;
+import com.runecraft.platform.client.ClientPlayConnectionEvents;
 import com.runecraft.platform.client.ClientPlayNetworking;
 import com.runecraft.platform.client.ClientTickEvents;
 import com.runecraft.platform.client.HudRenderCallback;
@@ -71,6 +72,9 @@ public final class AttackClient {
             client.execute(() -> onClock(remaining, period, k, q));
         });
         ClientTickEvents.END_CLIENT_TICK.register(AttackClient::tick);
+        // The server forgets a buffered click on logout without a clock packet: start the next session clean, or the
+        // queued dot would stay on screen and hold-to-attack would wait for an answer that never comes.
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> reset());
         HudRenderCallback.EVENT.register(AttackClient::render);
         NeoForge.EVENT_BUS.addListener(RenderGuiLayerEvent.Pre.class, AttackClient::beforeLayer);
         NeoForge.EVENT_BUS.addListener(RenderGuiLayerEvent.Post.class, AttackClient::afterLayer);
@@ -81,6 +85,17 @@ public final class AttackClient {
                 awaitingReply = true;
             }
         });
+    }
+
+    /** Back to the state of a fresh session: nothing queued, no reply awaited, the timer idle (hidden). */
+    private static void reset() {
+        readyAtTick = Long.MIN_VALUE / 4;
+        periodMc = 48;
+        kind = AttackClock.Kind.MELEE;
+        queued = false;
+        lastPacketTick = Long.MIN_VALUE / 4;
+        lastSendTick = Long.MIN_VALUE / 4;
+        awaitingReply = false;
     }
 
     private static void onClock(int remaining, int period, int k, boolean q) {

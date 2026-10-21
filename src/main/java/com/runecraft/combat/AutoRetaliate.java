@@ -151,7 +151,13 @@ public final class AutoRetaliate {
             player.attack(target);
             return;
         }
+        long before = data.lastAttackTick;
         AttackTimer.resolve(player, target, kind, AttackTimer.resolver(kind));
+        if (data.lastAttackTick == before) {
+            // The resolver refused (no ammo, no runes, a target the spell can't hit...) and left the clock ready: as in
+            // OSRS the player gets the message once and stops attacking, instead of the refusal repeating every MC tick.
+            TARGETS.remove(player.getUUID());
+        }
     }
 
     /** Whether the target is within this kind of attack's reach, plus {@code slack} blocks. */

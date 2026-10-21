@@ -97,6 +97,9 @@ final class AttackClockChecks {
         checks.add(g.check("attack:clock_retaliate", g::retaliate));
         checks.add(g.check("attack:clock_nightmare_slow", g::nightmare));
         checks.add(g.check("attack:clock_indicator", g::indicator));
+        checks.add(g.check("attack:clock_retaliate_refused", g::retaliateRefused));
+        checks.add(g.check("attack:clock_bow_out_of_ammo", g::bowOutOfAmmo));
+        checks.add(g.check("attack:clock_bow_bank_key", g::bowBankKey));
         checks.add(g.check("boss:playability_attack_buffer", g::realBuffer));
         return checks;
     }
@@ -583,6 +586,119 @@ final class AttackClockChecks {
         }
         return String.format(java.util.Locale.ROOT, "axe %.0f, whip %.0f, staff %.0f, unarmed %.0f MC; halberd +1 reach",
                 axe, whip, staff, unarmed);
+    }
+
+    /**
+     * (k) A refused retaliation ends it: a bow with no arrows and a staff with no runes get the message once and stop
+     * attacking (OSRS), instead of the refusal running again on every MC tick with the clock still ready.
+     */
+    private String retaliateRefused() {
+        LivingEntity mob = dummy();
+        StringBuilder out = new StringBuilder();
+        for (String weapon : List.of("magic_shortbow", "staff_of_fire")) {
+            hold(weapon, 1); // the inventory is empty: no arrows, no air or mind runes
+            data().setAutocast(null);
+            if (weapon.startsWith("staff")) {
+                MagicService.setAutocast(p(), Spell.FIRE_STRIKE);
+            }
+            AttackTimer.forget(p().getUUID());
+            long before = -1_000_000;
+            data().lastAttackTick = before;
+            data().setAutoRetaliate(true);
+            AutoRetaliate.stop(p());
+            face(mob);
+            CombatHandler.clearCooldown(mob);
+            CombatHandler.npcAttack(mob, p(), AttackType.CRUSH);
+            heal(mob);
+            if (!AutoRetaliate.retaliating(p(), mob)) {
+                throw new SelfTest.Skip("the " + DUMMY + "'s hit did not start auto-retaliate (single-way combat refused it?)");
+            }
+            for (int i = 0; i < 10; i++) {
+                tickPlayer();
+                advance();
+            }
+            if (AutoRetaliate.retaliating(p(), mob) || data().lastAttackTick != before) {
+                throw failure("with " + weapon + " and nothing to fire, auto-retaliate is still on (" + AutoRetaliate.retaliating(p(), mob)
+                        + ") or an attack was stamped (lastAttackTick " + data().lastAttackTick + ")");
+            }
+            out.append(out.length() == 0 ? "" : ", ").append(weapon).append(" refused once, retaliation ended");
+        }
+        return out.toString();
+    }
+
+    /** (l) Holding a bow past the last arrow ends the draw, so "no ammo" shows once instead of every MC tick of the hold. */
+    private String bowOutOfAmmo() {
+        ItemStack bow = hold("magic_shortbow", 1);
+        if (!(bow.getItem() instanceof OsrsEquipmentItems.Bow item)) {
+            throw failure("magic_shortbow is not an OSRS bow item");
+        }
+        Inv.give(p(), "rune_arrow", 1);
+        takeArrows();
+        data().setStyle(CombatStyle.RANGED_ACCURATE);
+        ready();
+        int duration = bow.getUseDuration(p());
+        p().startUsingItem(InteractionHand.MAIN_HAND);
+        int stoppedAt = -1;
+        for (int i = 0; i < 3 * AttackClock.periodMc(4) && stoppedAt < 0; i++) {
+            tickPlayer();
+            item.onUseTick(c.world, p(), bow, duration - i);
+            if (!p().isUsingItem()) {
+                stoppedAt = i;
+            }
+            advance();
+        }
+        int fired = takeArrows();
+        int want = AttackClock.HOLD_DRAW_MC + AttackClock.periodMc(4);
+        if (fired != 1 || stoppedAt != want) {
+            throw failure("holding a bow with 1 arrow fired " + fired + " (expected 1) and the draw ended at MC " + stoppedAt
+                    + " (expected " + want + ", when the clock was ready again with an empty quiver)");
+        }
+        return "1 arrow, then the draw ended on the next ready tick (MC " + stoppedAt + ")";
+    }
+
+    /**
+     * (m) Bows banked, bagged or noted while they took damage were keyed {Damage:0}; they load under today's key, so a bow
+     * deposited now joins the same row.
+     */
+    private String bowBankKey() {
+        net.minecraft.core.HolderLookup.Provider reg = c.server.registryAccess();
+        String id = Inv.idOf(Inv.stack("magic_shortbow", 1));
+        String old = "{Damage:0}";
+        if (!com.runecraft.bank.Notes.currentTag(id, old).isEmpty()
+                || !com.runecraft.bank.Notes.currentTag("minecraft:iron_sword", old).equals(old)
+                || !com.runecraft.bank.Notes.currentTag(id, "{Charges:3}").equals("{Charges:3}")) {
+            throw failure("currentTag: bow " + com.runecraft.bank.Notes.currentTag(id, old) + ", iron sword "
+                    + com.runecraft.bank.Notes.currentTag("minecraft:iron_sword", old) + " (a damageable item keeps its Damage)");
+        }
+        net.minecraft.nbt.CompoundTag nbt = new net.minecraft.nbt.CompoundTag();
+        net.minecraft.nbt.ListTag items = new net.minecraft.nbt.ListTag();
+        for (String[] e : new String[][]{{id, old, "3"}, {id, "", "2"}, {"minecraft:iron_sword", "{Damage:7}", "1"}}) {
+            net.minecraft.nbt.CompoundTag t = new net.minecraft.nbt.CompoundTag();
+            t.putString("Item", e[0]);
+            t.putString("Tag", e[1]);
+            t.putLong("Count", Long.parseLong(e[2]));
+            items.add(t);
+        }
+        nbt.put("Items", items);
+        nbt.putInt("KeyFormat", com.runecraft.bank.Notes.KEY_FORMAT);
+        com.runecraft.osrs.bank.BankModel bank = new com.runecraft.osrs.bank.BankModel();
+        com.runecraft.bank.BankService.read(bank, nbt, reg);
+        com.runecraft.osrs.bank.BankModel.Entry row = bank.find(id, "");
+        if (row == null || row.count != 5 || bank.slotsUsed() != 2 || bank.find("minecraft:iron_sword", "{Damage:7}") == null) {
+            throw failure("loaded bank: bow row " + (row == null ? "missing" : row.count) + " (expected 5), " + bank.slotsUsed()
+                    + " rows (expected 2: bows merged, the damaged sword kept)");
+        }
+        com.runecraft.bank.BankService.depositStack(reg, bank, Inv.stack("magic_shortbow", 1), 1, 0);
+        ItemStack oldNotes = com.runecraft.bank.Notes.note(id, old, 4);
+        if (oldNotes.isEmpty() || !com.runecraft.bank.Notes.notedTag(oldNotes).isEmpty()) {
+            throw failure("a bow noted as " + old + " reads as \"" + com.runecraft.bank.Notes.notedTag(oldNotes) + "\"");
+        }
+        com.runecraft.bank.BankService.depositStack(reg, bank, oldNotes, 4, 0);
+        if (row.count != 10 || bank.slotsUsed() != 2) {
+            throw failure("after depositing a bow and 4 old notes: bow row " + row.count + " (expected 10), " + bank.slotsUsed()
+                    + " rows (expected 2)");
+        }
+        return "3 {Damage:0} + 2 new bows loaded as one row of 5; a new bow and 4 old notes joined it (10)";
     }
 
     /**
