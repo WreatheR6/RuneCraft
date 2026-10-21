@@ -117,7 +117,7 @@ public final class RunEnergyService {
             Msg.action(p, "You drink some of your super energy potion.");
         }
         p.level().playSound(null, p.blockPosition(), SoundEvents.GENERIC_DRINK, SoundSource.PLAYERS, 0.5f, 1.0f);
-        p.getCooldowns().addCooldown(stack.getItem(), 3 * ActionManager.MC_TICKS_PER_GAME_TICK);
+        com.runecraft.skill.ConsumeCooldowns.consume(p, Inv.idOf(stack));
         if (stack.isDamageableItem()) {
             int used = stack.getDamageValue() + 1;
             if (used >= stack.getMaxDamage()) {

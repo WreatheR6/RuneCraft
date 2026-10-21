@@ -53,6 +53,14 @@ public final class HudOverlay {
             ctx.drawString(tr, formatCoins(ClientState.tokkul) + " tokkul", x + 3, y + 42, 0xFFE08040);
             below += 12;
         }
+        // The active overhead and prayers (CombatFeedbackHud draws the row; round 41).
+        if (CombatFeedbackHud.prayerRowShown()) {
+            CombatFeedbackHud.prayerRowX = x;
+            CombatFeedbackHud.prayerRowY = below - 4;
+            below += 12;
+        } else {
+            CombatFeedbackHud.prayerRowX = -1;
+        }
         // Multicombat area: OSRS shows crossed swords.
         if (gielinor && ClientState.inMulti) {
             ctx.fill(x - 22, y, x - 2, y + 20, 0xA0201810);
@@ -71,7 +79,7 @@ public final class HudOverlay {
 
         // XP drops (right side, rising)
         long now = System.currentTimeMillis();
-        int dropY = y + 60;
+        int dropY = Math.max(y + 60, below + 16);
         Iterator<ClientState.XpDrop> it = ClientState.XP_DROPS.iterator();
         int index = 0;
         while (it.hasNext()) {

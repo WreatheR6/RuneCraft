@@ -31,7 +31,6 @@ import net.minecraft.tags.FluidTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.state.BlockState;
@@ -42,9 +41,6 @@ import net.minecraft.world.phys.Vec3;
 
 /** Right-click behaviour for catalog items. */
 public final class ItemUses {
-    /** OSRS eating delay: 3 game ticks. */
-    private static final int EAT_DELAY = 3 * ActionManager.MC_TICKS_PER_GAME_TICK;
-
     private ItemUses() {
     }
 
@@ -70,6 +66,10 @@ public final class ItemUses {
 
     public static void use(ServerPlayer player, ItemStack stack, InteractionHand hand, ItemDef def) {
         if (player.getCooldowns().isOnCooldown(stack.getItem())) {
+            return;
+        }
+        // One eat delay for all food and one potion delay for all potions (OSRS), not one per item.
+        if (ConsumeCooldowns.blocked(player, ConsumeCooldowns.groupOf(def.id(), def))) {
             return;
         }
         if (com.runecraft.quest.QuestItems.hasUse(def.id())) {
@@ -107,11 +107,10 @@ public final class ItemUses {
     }
 
     private static void eat(ServerPlayer player, ItemStack stack, ItemDef def) {
-        Item item = stack.getItem();
         stack.shrink(1);
         player.heal(def.heal());
         player.getFoodData().eat(Math.max(1, def.heal() / 2), 0.3f);
-        player.getCooldowns().addCooldown(item, EAT_DELAY);
+        ConsumeCooldowns.consume(player, def.id());
         player.level().playSound(null, player.blockPosition(), SoundEvents.PLAYER_BURP, SoundSource.PLAYERS, 0.5f, 1.0f);
         Msg.action(player, "You eat the " + def.name().toLowerCase(Locale.ROOT) + ". It heals some health.");
         ActionManager.cancel(player);
@@ -145,6 +144,7 @@ public final class ItemUses {
             if (def.id().equals("antifire_potion") || def.id().equals("extended_antifire")) {
                 int minutes = def.id().equals("antifire_potion") ? 6 : 12;
                 player.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, minutes * 60 * 20, 0));
+                ConsumeCooldowns.consume(player, def.id());
                 int used = stack.getDamageValue() + 1;
                 Msg.action(player, "You drink some of your antifire potion.");
                 if (used >= 4) {
@@ -178,7 +178,7 @@ public final class ItemUses {
         int dosesUsed = stack.getDamageValue() + 1;
         int left = 4 - dosesUsed;
         player.level().playSound(null, player.blockPosition(), SoundEvents.GENERIC_DRINK, SoundSource.PLAYERS, 0.5f, 1.0f);
-        player.getCooldowns().addCooldown(stack.getItem(), EAT_DELAY);
+        ConsumeCooldowns.consume(player, def.id());
         Msg.action(player, "You drink some of your " + def.name().toLowerCase(Locale.ROOT) + " potion. "
                 + (left > 0 ? "You have " + left + " dose" + (left > 1 ? "s" : "") + " of potion left." : "You have finished your potion."));
         if (left <= 0) {

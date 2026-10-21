@@ -6,6 +6,7 @@ import com.runecraft.osrs.content.PlaceDef;
 import com.runecraft.world.Gielinor;
 import com.runecraft.world.LandmarkBuilder;
 import com.runecraft.platform.client.ClientTickEvents;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.components.Button;
@@ -264,6 +265,54 @@ public final class ClientSmokeTest {
             });
             step("side panel " + tab + " screenshot", 5, () -> shot(client, "03_panel_" + tab.name().toLowerCase(Locale.ROOT)));
         }
+        // Round 41 combat playability: the Protect from Magic hotkey through the real key mapping and the HUD's prayer row,
+        // then a freeze (Slowness 10 in Gielinor): no walking and no FOV zoom, with the freeze icon.
+        step("prayer level", 20, () -> onServer(client, uuid, p -> {
+            com.runecraft.player.PlayerData d = com.runecraft.player.Players.data(p);
+            d.skills().setXpTenths(com.runecraft.osrs.Skill.PRAYER, com.runecraft.osrs.Experience.xpForLevel(99) * 10);
+            d.setPrayerPoints(99);
+            com.runecraft.network.ServerNetworking.sync(p);
+        }));
+        step("Protect from Magic key", 20, () -> {
+            SidePanel.visible = true;
+            SidePanel.tab = SidePanel.PanelTab.PRAYER;
+            KeyMapping.click(CombatKeys.protectMagic.getKey());
+        });
+        step("Protect from Magic on", 5, () -> {
+            if (!ClientState.prayerActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC)) {
+                ERRORS.add("the Protect from Magic key did not turn the prayer on (server mask " + ClientState.prayerMask + ")");
+            }
+            shot(client, "prayer_hud");
+        });
+        step("Protect from Magic off", 20, () -> KeyMapping.click(CombatKeys.protectMagic.getKey()));
+        step("Protect from Magic off check", 5, () -> {
+            if (ClientState.prayerActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC)) {
+                ERRORS.add("pressing the Protect from Magic key again did not turn it off");
+            }
+        });
+        float[] fovBefore = new float[1];
+        step("freeze", 15, () -> {
+            fovBefore[0] = client.player.getFieldOfViewModifier();
+            cmd(client, uuid, "effect give @s minecraft:slowness 5 10 true");
+        });
+        step("walk while frozen", 4, () -> KeyMapping.set(client.options.keyUp.getKey(), true));
+        step("freeze check", 5, () -> {
+            float forward = client.player.input.forwardImpulse;
+            float fov = client.player.getFieldOfViewModifier();
+            boolean frozen = FreezeClient.frozen(client.player);
+            KeyMapping.set(client.options.keyUp.getKey(), false);
+            if (!frozen) {
+                ERRORS.add("Slowness 10 in Gielinor is not a freeze on the client");
+            }
+            if (forward != 0f) {
+                ERRORS.add("walked while frozen (forward impulse " + forward + ")");
+            }
+            if (Math.abs(fov - fovBefore[0]) > 0.01f) {
+                ERRORS.add("the freeze changed the FOV modifier from " + fovBefore[0] + " to " + fov);
+            }
+            shot(client, "freeze_hud");
+        });
+        step("unfreeze", 10, () -> cmd(client, uuid, "effect clear @s minecraft:slowness"));
         step("side panel cursor screen", 15, () -> client.setScreen(new SidePanelScreen()));
         step("side panel cursor screenshot", 5, () -> shot(client, "03_panel_cursor"));
         // Full RuneScape interface (J) on every tab.

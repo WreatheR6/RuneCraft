@@ -211,9 +211,9 @@ public final class HitCalcBridge {
         return NpcHitCalc.npcAttackRoll(in);
     }
 
-    /** True when the player's overhead prayer blocks a monster's attack of this style. */
+    /** True when the player's overhead prayer blocks a monster's attack of this style (with the switch grace). */
     public static boolean protectedFrom(ServerPlayer p, AttackType style) {
-        return NpcHitCalc.protectedFrom(Players.data(p).activePrayers(), style);
+        return CombatHandler.isProtected(Players.data(p), style);
     }
 
     /** Sets a standard-spellbook spell: max hit scaled with Magic level, element and bolt flag. */

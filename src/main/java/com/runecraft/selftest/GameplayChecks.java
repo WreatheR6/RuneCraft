@@ -228,6 +228,7 @@ final class GameplayChecks {
         checks.addAll(SlayerChecks.all(context));
         checks.addAll(SeaChecks.all(context));
         checks.addAll(SkillChecks.all(context));
+        checks.addAll(PrayerFeedbackChecks.all(context));
         return checks;
     }
 

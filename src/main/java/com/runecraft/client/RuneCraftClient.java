@@ -74,6 +74,11 @@ public class RuneCraftClient {
         });
         HudRenderCallback.EVENT.register(HudOverlay::render);
         WorldRenderEvents.AFTER_ENTITIES.register(HitsplatRenderer::render);
+        // Round 41 combat playability: prayer hotkeys and quick-prayers, the combat feedback HUD, clean freezes.
+        CombatKeys.init();
+        HudRenderCallback.EVENT.register(CombatFeedbackHud::render);
+        FreezeClient.init();
+        SidePanel.loadTab();
         ItemTooltipCallback.EVENT.register(Tooltips::append);
 
         com.runecraft.client.model.ModelSpecs.registerAll();
@@ -173,8 +178,10 @@ public class RuneCraftClient {
                 kills.put(key, buf.readVarInt());
             }
             long tokkul = buf.isReadable() ? buf.readVarLong() : 0;
+            long quick = buf.isReadable() ? buf.readVarLong() : 0;
             client.execute(() -> {
                 ClientState.tokkul = tokkul;
+                ClientState.quickPrayerMask = quick;
                 ClientState.SKILLS.load(xp, boosts);
                 ClientState.prayerPoints = prayer;
                 ClientState.prayerMask = mask;
@@ -201,8 +208,14 @@ public class RuneCraftClient {
             int damage = buf.readVarInt();
             byte type = buf.readByte();
             float ratio = buf.readFloat();
-            client.execute(() -> ClientState.HITSPLATS.computeIfAbsent(entity, k -> new ArrayList<>())
-                    .add(new ClientState.Hitsplat(damage, type, ratio, System.currentTimeMillis())));
+            int attacker = buf.isReadable() ? buf.readVarInt() : -1;
+            client.execute(() -> {
+                ClientState.Hitsplat splat = new ClientState.Hitsplat(damage, type, ratio, System.currentTimeMillis(), attacker);
+                ClientState.HITSPLATS.computeIfAbsent(entity, k -> new ArrayList<>()).add(splat);
+                if (client.player != null && entity == client.player.getId()) {
+                    CombatFeedbackHud.selfSplat(splat);
+                }
+            });
         });
         ClientPlayNetworking.registerGlobalReceiver(Net.OPEN_MENU, (client, handler, buf, sender) -> {
             int type = buf.readVarInt();

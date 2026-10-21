@@ -327,9 +327,13 @@ public final class CombatHandler {
         return true;
     }
 
-    /** True if the player has the overhead protection prayer for this attack style active. */
+    /**
+     * True if the player's overhead protection prayer blocks this attack style now: active, or switched off by the player
+     * within the last 8 MC ticks after being on for at least 12. // playability: OSRS reads the overhead on the exact
+     * resolve tick; see {@link com.runecraft.osrs.PrayerGrace}. Block amounts are unchanged.
+     */
     public static boolean isProtected(PlayerData data, AttackType type) {
-        return com.runecraft.osrs.NpcHitCalc.protectedFrom(data.activePrayers(), type);
+        return data.protectsFrom(type, ActionManager.mcTick());
     }
 
     /** Protection prayers only block 40% of damage dealt by other players. */
@@ -446,7 +450,7 @@ public final class CombatHandler {
         if (attacker != null && !(target instanceof ServerPlayer) && target.isInvulnerable()) {
             // Scenery creatures (GotR's abyssal creatures, Sorceress's Garden elementals) can't be hurt by any path (melee,
             // ranged, magic, cannon, specials), so they never give combat XP.
-            ServerNetworking.hitsplat(target, 0, Net.SPLAT_MISS);
+            ServerNetworking.hitsplat(target, 0, Net.SPLAT_MISS, attacker);
             return 0;
         }
         if (attacker instanceof ServerPlayer gated && !(target instanceof ServerPlayer)) {
@@ -455,7 +459,7 @@ public final class CombatHandler {
                 if (damage > 0) {
                     Msg.game(gated, denied);
                 }
-                ServerNetworking.hitsplat(target, 0, Net.SPLAT_MISS);
+                ServerNetworking.hitsplat(target, 0, Net.SPLAT_MISS, attacker);
                 return 0;
             }
         }
@@ -476,17 +480,30 @@ public final class CombatHandler {
                 }
             }
         }
+        // A monster's hit stopped by the matching protection prayer shows a BLOCKED splat with a shield sound (read the named
+        // style before CombatHooks.damaged clears it). // playability: OSRS shows the same blue 0 for a miss and a block.
+        AttackType blockedStyle = null;
         if (target instanceof ServerPlayer damaged) {
+            AttackType named = CombatHooks.namedStyle();
             if (attacker != null && attacker != damaged && damage > 0) {
                 damage = DefenceEffects.reduce(damaged, attacker, CombatHooks.namedStyle(), CombatHooks.typelessNamed(), damage);
                 damage = CombatHooks.incoming(damaged, attacker, damage);
+            }
+            if (damage <= 0 && attacker != null && !(attacker instanceof Player) && named != null
+                    && isProtected(Players.data(damaged), named)) {
+                blockedStyle = named;
             }
             CombatHooks.damaged(damaged, attacker, Math.max(0, damage));
         } else {
             CombatHooks.clearAttackName();
         }
         if (damage <= 0) {
-            ServerNetworking.hitsplat(target, 0, Net.SPLAT_MISS);
+            if (blockedStyle != null && target instanceof ServerPlayer blocker) {
+                ServerNetworking.hitsplat(target, 0, Net.SPLAT_BLOCKED, attacker);
+                blocker.playNotifySound(net.minecraft.sounds.SoundEvents.SHIELD_BLOCK, net.minecraft.sounds.SoundSource.PLAYERS, 0.4f, 1.5f);
+            } else {
+                ServerNetworking.hitsplat(target, 0, Net.SPLAT_MISS, attacker);
+            }
             return 0;
         }
         int dealt = Math.min(damage, (int) Math.ceil(target.getHealth()));
@@ -498,7 +515,7 @@ public final class CombatHandler {
             applying = false;
         }
         if (attacker != null) {
-            ServerNetworking.hitsplat(target, damage, Net.SPLAT_DAMAGE);
+            ServerNetworking.hitsplat(target, damage, Net.SPLAT_DAMAGE, attacker);
         }
         return dealt;
     }

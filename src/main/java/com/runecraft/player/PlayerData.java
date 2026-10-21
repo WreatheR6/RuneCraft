@@ -44,6 +44,8 @@ public final class PlayerData {
     private final java.util.Map<String, Integer> killCounts = new java.util.HashMap<>();
     private final java.util.Map<String, Integer> questStages = new java.util.HashMap<>();
     private final java.util.Set<String> collectionLog = new java.util.LinkedHashSet<>();
+    /** OSRS quick-prayers: the prayers the quick-prayer key switches, as a bit mask (bit = Prayer ordinal). */
+    private long quickPrayers;
 
     // Transient (not saved)
     public long lastAttackTick = -1000;
@@ -54,6 +56,17 @@ public final class PlayerData {
     public String lastRegion = "";
     public double sailingDistance;
     public long lastAgilityWarning;
+    /**
+     * Minecraft tick each protection overhead (index {@link com.runecraft.osrs.PrayerGrace#index}: magic, missiles, melee)
+     * was last switched on / off by the player. Only voluntary switches stamp (PrayerService); forced removals don't, so
+     * they never get the switch grace.
+     */
+    public final long[] overheadOnAt = {com.runecraft.osrs.PrayerGrace.NEVER, com.runecraft.osrs.PrayerGrace.NEVER,
+            com.runecraft.osrs.PrayerGrace.NEVER};
+    public final long[] overheadOffAt = {com.runecraft.osrs.PrayerGrace.NEVER, com.runecraft.osrs.PrayerGrace.NEVER,
+            com.runecraft.osrs.PrayerGrace.NEVER};
+    /** Minecraft tick each consumable group's delay ends (skill.ConsumeCooldowns: food, potion, combo food). */
+    public final long[] consumeReadyAt = new long[3];
 
     public SkillSet skills() {
         return skills;
@@ -73,6 +86,29 @@ public final class PlayerData {
 
     public boolean isActive(Prayer prayer) {
         return activePrayers.contains(prayer);
+    }
+
+    /**
+     * Whether the overhead protection for this attack style counts at Minecraft tick {@code nowMc}: active, or switched off
+     * by the player within the switch grace ({@link com.runecraft.osrs.PrayerGrace}). // playability: OSRS reads the
+     * overhead on the exact resolve tick.
+     */
+    public boolean protectsFrom(com.runecraft.osrs.AttackType type, long nowMc) {
+        if (type == null) {
+            return false;
+        }
+        int i = com.runecraft.osrs.PrayerGrace.index(type);
+        return com.runecraft.osrs.PrayerGrace.protectedWithGrace(isActive(com.runecraft.osrs.PrayerGrace.PROTECTIONS[i]),
+                overheadOnAt[i], overheadOffAt[i], nowMc);
+    }
+
+    /** The quick-prayer set (OSRS Quick-prayers) as a bit mask of Prayer ordinals. */
+    public long quickPrayers() {
+        return quickPrayers;
+    }
+
+    public void setQuickPrayers(long mask) {
+        this.quickPrayers = mask & ((1L << Prayer.values().length) - 1);
     }
 
     public int prayerDrainCounter() {
@@ -255,6 +291,7 @@ public final class PlayerData {
             log.add(net.minecraft.nbt.StringTag.valueOf(item));
         }
         nbt.put("CollectionLog", log);
+        nbt.putLong("QuickPrayers", quickPrayers);
         return nbt;
     }
 
@@ -311,6 +348,7 @@ public final class PlayerData {
         for (int i = 0; i < log.size(); i++) {
             collectionLog.add(log.getString(i));
         }
+        setQuickPrayers(nbt.getLong("QuickPrayers"));
     }
 
     private static <E extends Enum<E>> E parse(Class<E> type, String name, E fallback) {

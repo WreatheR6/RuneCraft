@@ -20,6 +20,8 @@ public final class ClientState {
     public static final SkillSet SKILLS = new SkillSet();
     public static int prayerPoints;
     public static int prayerMask;
+    /** The quick-prayer selection (bit = prayer ordinal), shown as gold dots in the Prayer tab. */
+    public static long quickPrayerMask;
     public static CombatStyle style = CombatStyle.ACCURATE;
     public static Spell autocast;
     /** Combat Options: Auto Retaliate (on by default). */
@@ -40,11 +42,14 @@ public final class ClientState {
 
     public static final List<XpDrop> XP_DROPS = new ArrayList<>();
     public static final Map<Integer, List<Hitsplat>> HITSPLATS = new HashMap<>();
+    /** Hitsplats on the local player, drawn by {@link CombatFeedbackHud} next to the crosshair (first person can't see them). */
+    public static final List<Hitsplat> SELF_SPLATS = new ArrayList<>();
 
     public record XpDrop(Skill skill, int tenths, long time) {
     }
 
-    public record Hitsplat(int damage, byte type, float hpRatio, long time) {
+    /** One hitsplat; {@code attacker} is the entity id of who caused it, -1 when unknown. */
+    public record Hitsplat(int damage, byte type, float hpRatio, long time, int attacker) {
     }
 
     public record MenuEntry(String recipeId, String name, String icon, int level, int skill, boolean available) {

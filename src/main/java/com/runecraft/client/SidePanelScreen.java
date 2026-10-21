@@ -2,6 +2,8 @@ package com.runecraft.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import com.runecraft.platform.client.KeyBindingHelper;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Options;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -11,6 +13,10 @@ import net.minecraft.network.chat.Component;
  * be used (hover tooltips, clicking tabs/skills/prayers/spells). The world stays visible and the
  * game keeps running. Opened while the "use side panel" key (default Left Alt) is held and closed
  * when it is released, or with Escape.
+ *
+ * <p>// playability: the player keeps moving while it is open (vanilla releases every key when a screen opens, so the
+ * movement keys' physical state is copied back every tick), and the prayer hotkeys still work. OSRS lets you walk and
+ * click the prayer book at the same time.
  */
 public class SidePanelScreen extends Screen {
     public SidePanelScreen() {
@@ -56,6 +62,11 @@ public class SidePanelScreen extends Screen {
             onClose();
             return true;
         }
+        int combat = CombatKeys.keyIndex(keyCode, scanCode);
+        if (combat >= 0) {
+            CombatKeys.press(combat);
+            return true;
+        }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
@@ -70,8 +81,12 @@ public class SidePanelScreen extends Screen {
 
     @Override
     public void tick() {
+        if (minecraft == null) {
+            return;
+        }
+        copyMovementKeys();
         // Safety net in case the release event went elsewhere (e.g. window lost focus).
-        if (minecraft == null || RuneCraftClient.panelCursorKey == null) {
+        if (RuneCraftClient.panelCursorKey == null) {
             return;
         }
         InputConstants.Key key = KeyBindingHelper.getBoundKeyOf(RuneCraftClient.panelCursorKey);
@@ -81,6 +96,31 @@ public class SidePanelScreen extends Screen {
         }
         if (!SidePanel.visible) {
             onClose();
+        }
+    }
+
+    @Override
+    public void removed() {
+        copyMovementKeys();
+        super.removed();
+    }
+
+    /** Copies the physical state of the movement keys into their mappings, so walking continues behind the screen. */
+    private void copyMovementKeys() {
+        if (minecraft == null) {
+            return;
+        }
+        Options o = minecraft.options;
+        long window = minecraft.getWindow().getWindow();
+        for (KeyMapping m : new KeyMapping[]{o.keyUp, o.keyDown, o.keyLeft, o.keyRight, o.keyJump, o.keySprint, o.keyShift}) {
+            // Toggle-mode sprint/sneak flip on every press, so they keep their own state.
+            if (m == o.keySprint && o.toggleSprint().get() || m == o.keyShift && o.toggleCrouch().get()) {
+                continue;
+            }
+            InputConstants.Key k = m.getKey();
+            if (k.getType() == InputConstants.Type.KEYSYM && k.getValue() != InputConstants.UNKNOWN.getValue()) {
+                KeyMapping.set(k, InputConstants.isKeyDown(window, k.getValue()));
+            }
         }
     }
 }
