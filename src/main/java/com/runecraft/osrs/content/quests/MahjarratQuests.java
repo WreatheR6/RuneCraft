@@ -14,8 +14,7 @@ import java.util.List;
 /**
  * Mahjarrat and northern storylines: Enakhra's Lament, Devious Minds, The Garden of Death, Secrets of
  * the North, Desert Treasure II - The Fallen Empire, The Curse of Arrav, My Arm's Big Adventure and
- * Making Friends with My Arm. XP-lamp rewards are given as fixed XP in the usual lamp skills
- * (approximate where the player would choose).
+ * Making Friends with My Arm. XP-lamp rewards are real lamps the player rubs ({@link QuestLamps}).
  */
 final class MahjarratQuests {
     private MahjarratQuests() {
@@ -325,8 +324,7 @@ final class MahjarratQuests {
                         "below_ice_mountain", "his_faithful_servants")
                 .req(Skill.FIREMAKING, 75).req(Skill.MAGIC, 75).req(Skill.THIEVING, 70).req(Skill.HERBLORE, 62)
                 .req(Skill.RUNECRAFT, 60).req(Skill.CONSTRUCTION, 60)
-                // OSRS: three ancient lamps of 100,000 XP each in a combat skill or Prayer (level 60+). // approx: fixed skills
-                .xp(Skill.MAGIC, 100000).xp(Skill.RANGED, 100000).xp(Skill.HITPOINTS, 100000)
+                // OSRS: three ancient lamps of 100,000 XP each in a combat skill or Prayer (level 60+) (QuestLamps)
                 .reward("ring_of_shadows")
                 .unlock("Awakened versions of Vardorvis, Duke Sucellus, the Whisperer and the Leviathan; the Lassar Undercity")
                 .unlock("Access to the Scar essence mine").unlock("The ability to wear ancient rings")
@@ -601,7 +599,7 @@ final class MahjarratQuests {
         b.quest("the_curse_of_arrav", "The Curse of Arrav", Difficulty.MASTER, 2)
                 .reqQuest("defender_of_varrock", "troll_romance")
                 .req(Skill.MINING, 64).req(Skill.RANGED, 62).req(Skill.THIEVING, 62).req(Skill.AGILITY, 61).req(Skill.STRENGTH, 58).req(Skill.SLAYER, 37)
-                .xp(Skill.MINING, 40000).xp(Skill.THIEVING, 40000).xp(Skill.AGILITY, 40000) // approximate lamp rewards
+                .xp(Skill.MINING, 40000).xp(Skill.THIEVING, 40000).xp(Skill.AGILITY, 40000) // wiki: fixed quest XP
                 .unlock("Arrav freed from Zemouregal's control")
                 .stage("I can start this quest by speaking to Elias White at the Uzer Oasis. (Requires Defender of Varrock, Troll Romance, 64 Mining, 62 Ranged, 62 Thieving, 61 Agility, 58 Strength, 37 Slayer.)")
                 .talk("elias_white_uzer").say("Arrav, the hero of Avarrocka, is still Zemouregal's undead slave. His heart is the key: Zemouregal keeps it in his fort.",

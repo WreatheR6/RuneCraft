@@ -27,6 +27,43 @@ public final class BalanceElemental {
 
     /** The BossDef attack each form uses (index = style family). */
     public static final String[] FORM_ATTACKS = {"melee_form", "ranged_form", "magic_form"};
+    /**
+     * The stat-draining special each form opens with (index = style family): the first attack after every change of form (wiki:
+     * a drain, then four normal attacks, then the next form). Up to 89 instead of 40, and it lowers the player's combat stats
+     * and Prayer, unless the matching protection prayer is up when it lands.
+     */
+    public static final String[] FORM_DRAINS = {"melee_drain", "ranged_drain", "magic_drain"};
+    /** Max hits (wiki infobox): 40 standard, 89 for the stat-draining attack. */
+    public static final int STANDARD_MAX = 40;
+    public static final int DRAIN_MAX = 89;
+    /**
+     * Game ticks between the form change and the draining attack landing. // playability: OSRS gives about 2 ticks to switch
+     * prayers once the head changes colour; 3 here, with the form named in chat and on the cast bar
+     */
+    public static final int DRAIN_WARN_TICKS = 3;
+
+    /** Whether an attack name is one of the draining specials. */
+    public static boolean isDrain(String attack) {
+        for (String d : FORM_DRAINS) {
+            if (d.equals(attack)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Levels an unprotected draining attack takes off each combat stat (Attack, Strength, Defence, Ranged, Magic).
+     * // approx: the wiki says only that the stats are "majorly drained"; a fifth of the current level plus 2
+     */
+    public static int statDrain(int currentLevel) {
+        return currentLevel <= 0 ? 0 : currentLevel / 5 + 2;
+    }
+
+    /** Prayer points it takes. // approx: the wiki says "a large chunk"; a third of the points left, at least 10 */
+    public static int prayerDrain(int points) {
+        return Math.min(points, Math.max(10, points / 3));
+    }
     /** How each form looks (index = style family). */
     public static final String[] FORM_NAMES = {"airy", "fiery", "watery"};
 

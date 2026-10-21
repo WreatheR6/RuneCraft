@@ -7,6 +7,7 @@ import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.AttackDef;
 import com.runecraft.osrs.content.AttackDef.Special;
 import com.runecraft.osrs.content.BossDef;
+import com.runecraft.osrs.content.MonsterDef;
 import com.runecraft.osrs.content.PlaceDef;
 import com.runecraft.osrs.data.Drop;
 
@@ -407,7 +408,7 @@ final class MorytaniaQuests {
         b.quest("a_taste_of_hope", "A Taste of Hope", Difficulty.EXPERIENCED, 1)
                 .reqQuest("darkness_of_hallowvale")
                 .req(Skill.CRAFTING, 48).req(Skill.AGILITY, 45).req(Skill.ATTACK, 40).req(Skill.HERBLORE, 40).req(Skill.SLAYER, 38)
-                .xp(Skill.ATTACK, 2500).xp(Skill.AGILITY, 2500).xp(Skill.HERBLORE, 2500).xp(Skill.SLAYER, 2500)
+                // OSRS: a tome of experience, 3 x 2,500 XP in any skill of level 35+ (QuestLamps)
                 .stage("I can start this quest by speaking to Garth by the entrance to the Theatre of Blood in Ver Sinhaza. (Requires Darkness of Hallowvale and more.)")
                 .talk("garth_tob").say("Ranis Drakan and Vanstrom Klause just went into the Theatre. The Myreque would want to know.",
                         "@Safalaan Hallow: A vampyre in the Drakans' court, Flaygian, may help us. We must get into Ver Sinhaza, the vampyre stronghold.")
@@ -452,33 +453,39 @@ final class MorytaniaQuests {
                 .attack(AttackDef.of("magical_fire", AttackType.MAGIC, 1, 10, 1).special(Special.HAZARD, 8)
                         .telegraph(2, "Damien summons a magical fire! Stomp it out.")) // approx: his fires shield him in OSRS
                 .drops(Drop.always("bones")).skin(0xC8C8D0, 0x6A1A2A, 0x3A0A1A, 0x1A1A1A));
-        // Vanstrom Klause in Sins of the Father (wiki): level 459, 750 HP, magic up to 24 every 5 ticks, only blisterwood hurts him
-        // (recoil and Vengeance do nothing); after every 9-12 regular attacks one of his three specials, never the same twice in a
-        // row (QuestBossScripts.Vanstrom): "My pets will feast on your corpse!" (an acidic bloodveld that explodes for up to 50),
-        // "Blood will be my strength!" (a healing blood orb) and "Stare into darkness!" (heavy damage to a player facing him). At
-        // 0 hitpoints he heals 200, calls lightning (up to 46) and his attacks ignore protection prayers.
+        // Sins of the Father (wiki, DPS calculator): the acidic bloodveld Vanstrom calls up with "My pets will feast on your
+        // corpse!": level 56, 5 hitpoints, -100 defence against everything; it walks at the player and explodes for 35-50 when
+        // it reaches them (QuestBossScripts.Vanstrom), so it is best killed from range (melee barely hurts it).
+        b.monster(MonsterDef.of("sotf_acidic_bloodveld", "Acidic Bloodveld").level(56).stats(5, 80, 46, 2, 1, 1).speed(4)
+                .defenceBonus(-100, -100, -100, -100, -100)
+                .attack(AttackDef.of("acid", AttackType.MAGIC, 0, 1.5, 1)) // it does nothing but walk at the player and explode
+                .model("bloodveld").skin(0x6A9A2A, 0x4A7A1A, 0x3A5A10, 0x9AC040).size(0.9f, 1.8f, 1.0f).moveSpeed(0.28));
+        // Vanstrom Klause in Sins of the Father (wiki quest guide, DPS calculator): level 459, 750 HP, magic up to 24 every 5
+        // ticks that Protect from Magic halves and that heals him for part of what it deals; only blisterwood hurts him (recoil
+        // and Vengeance do nothing). QuestBossScripts.Vanstrom runs his specials ("My pets will feast on your corpse!": an acidic
+        // bloodveld that explodes for 35-50; "Stare into darkness!": 40+ on the player's tile; "Blood will be my strength!":
+        // a blood orb that strengthens his blasts) after every 9-12 regular attacks in a set order, and at 0 hitpoints his heal
+        // of 200 and the enraged phase: blasts that ignore prayer and lightning of up to 40 on marked tiles. The special attacks
+        // below only name them (weight 0: the script makes them).
         b.boss(BossDef.of("vanstrom_klause", "Vanstrom Klause").level(459).stats(750, 0, 0, 180, 180, 0).speed(5)
                 .defenceBonus(34, 34, 34, 34, 34)
                 .requiresWeapon("blisterwood_flail")
-                .attack(AttackDef.of("blood_blast", AttackType.MAGIC, 24, 10, 6).particle("minecraft:crimson_spore"))
+                // prayer-piercing so the script can halve it under Protect from Magic (wiki) and leave it whole when he enrages
+                .attack(AttackDef.of("blood_blast", AttackType.MAGIC, 24, 10, 6).special(Special.PRAYER_PIERCING, 0)
+                        .particle("minecraft:crimson_spore"))
                 .attack(AttackDef.of("weaken", AttackType.MAGIC, 24, 10, 2).special(Special.DRAIN_STAT, 0) // lowers Attack like a shadow spell
                         .particle("minecraft:squid_ink"))
-                .attack(AttackDef.of("pets", AttackType.MAGIC, 50, 12, 1).special(Special.SKY_STRIKE, 0)
-                        .telegraph(3, "Vanstrom Klause: My pets will feast on your corpse!"))
-                .attack(AttackDef.of("blood_orb", AttackType.MAGIC, 0, 12, 1).special(Special.HEAL_SELF, 40)
-                        .message("Vanstrom Klause: Blood will be my strength!").particle("minecraft:crimson_spore"))
-                .attack(AttackDef.of("stare_into_darkness", AttackType.MAGIC, 40, 12, 1)
-                        .telegraph(1, "Vanstrom Klause: Stare into darkness!")) // approx: OSRS hurts a player facing him
-                .attack(AttackDef.of("lightning", AttackType.MAGIC, 46, 14, 1).special(Special.SKY_STRIKE, 0)
-                        .telegraph(2, "Dark clouds gather over the graveyard!"))
+                .attack(AttackDef.of("pets", AttackType.MAGIC, 50, 12, 0))
+                .attack(AttackDef.of("blood_orb", AttackType.MAGIC, 40, 12, 0))
+                .attack(AttackDef.of("stare_into_darkness", AttackType.MAGIC, 45, 12, 0))
+                .attack(AttackDef.of("lightning", AttackType.MAGIC, 40, 14, 0))
+                .minion("sotf_acidic_bloodveld", 1)
                 .drops(Drop.always("bones")).size(0.8f, 2.4f, 1.0f).at("darkmeyer").arena(12, "crypt"));
         b.quest("sins_of_the_father", "Sins of the Father", Difficulty.MASTER, 2)
                 .reqQuest("a_taste_of_hope", "VAMPYRE_SLAYER")
                 .req(Skill.WOODCUTTING, 62).req(Skill.FLETCHING, 60).req(Skill.CRAFTING, 56).req(Skill.AGILITY, 52)
                 .req(Skill.ATTACK, 50).req(Skill.SLAYER, 50).req(Skill.MAGIC, 49)
-                // OSRS: a tome of experience, 6 x 15,000 XP in skills of the player's choice (level 60+). // approx: fixed skills
-                .xp(Skill.WOODCUTTING, 15000).xp(Skill.FLETCHING, 15000).xp(Skill.CRAFTING, 15000)
-                .xp(Skill.AGILITY, 15000).xp(Skill.ATTACK, 15000).xp(Skill.SLAYER, 15000)
+                // OSRS: a tome of experience, 6 x 15,000 XP in skills of the player's choice (level 60+) (QuestLamps)
                 .unlock("Access to Darkmeyer and the Daeyalt essence mine").unlock("Access to the Hallowed Sepulchre")
                 .stage("I can start this quest by speaking to Veliaf Hurtz in the Myreque hideout. (Requires A Taste of Hope, Vampyre Slayer and more.)")
                 .talk("veliaf_hurtz").say("Vanescula Drakan, Lord Drakan's own sister, wants to meet. It could be a trap... but we must hear her out.",

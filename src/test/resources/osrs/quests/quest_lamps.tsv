@@ -1,0 +1,43 @@
+# OSRS quest experience lamps, tomes and post-quest skill choices (October 2026), from the OSRS Wiki dump
+# (Kiyogitpy/osrs-wiki-data): each quest's Rewards section and the item pages "Antique lamp", "Antique lamp (<quest>)",
+# "Experience lamp", "Combat lamp", "Dreamy lamp", "Blessed lamp", "Ancient lamp", "Lamp of knowledge", "Dusty lamp",
+# "Magic lamp (The Ides of Milk)", "Magic lamp (The Path of Glouphrie)", "Tome of experience (<quest>)", "Ellen",
+# "Duke (monkey)" and "Daero". Checked by QuestLampsTest.
+# Columns: quest (mod id), item (wiki name; '-' for a dialogue choice), kind (LAMP/TOME/CHOICE), count (items, or choices
+# offered at once), xp (per use), uses (per item: wishes, chapters, or choices), skills (ANY, COMBAT = Att/Str/Def/HP/Rng/Mag,
+# COMBAT_PRAYER = COMBAT and Prayer, MELEE = Att/Str/Def/HP, or a list; PACKAGES for Daero), min_level (unboosted; 1 = none).
+quest	item	kind	count	xp	uses	skills	min_level
+a_kingdom_divided	Antique lamp (A Kingdom Divided)	LAMP	2	10000	1	ANY	40
+architectural_alliance	Antique lamp (Architectural Alliance)	LAMP	1	10000	1	ANY	40
+a_night_at_the_theatre	Antique lamp (A Night at the Theatre)	LAMP	4	20000	1	COMBAT	50
+a_tail_of_two_cats	Antique lamp (A Tail of Two Cats)	LAMP	2	2500	1	ANY	30
+fairytale_ii_cure_a_queen	Antique lamp (A Tail of Two Cats)	LAMP	1	2500	1	ANY	30
+client_of_kourend	Antique lamp (Client of Kourend)	LAMP	2	500	1	ANY	1
+into_the_tombs	Antique lamp (Into the Tombs)	LAMP	1	50000	1	COMBAT	60
+kings_ransom	Antique lamp (King's Ransom)	LAMP	1	5000	1	ANY	50
+legends_quest	Antique lamp (Legends' Quest)	LAMP	4	30000	1	ATTACK,DEFENCE,STRENGTH,HITPOINTS,PRAYER,MAGIC,WOODCUTTING,CRAFTING,SMITHING,HERBLORE,AGILITY,THIEVING	1
+one_small_favour	Antique lamp (One Small Favour)	LAMP	2	10000	1	ANY	30
+recipe_for_disaster	Antique lamp (Recipe for Disaster)	LAMP	1	20000	1	ANY	50
+the_final_dawn	Antique lamp (The Final Dawn)	LAMP	1	55000	1	COMBAT_PRAYER	40
+x_marks_the_spot	Antique lamp (X Marks the Spot)	LAMP	1	300	1	ANY	1
+contact	Combat lamp	LAMP	1	7000	2	COMBAT	1
+dream_mentor	Dreamy lamp	LAMP	1	15000	1	STRENGTH,RANGED,MAGIC,HITPOINTS,DEFENCE	1
+the_great_brain_robbery	Blessed lamp	LAMP	1	5000	1	ANY	30
+desert_treasure_ii	Ancient lamp	LAMP	3	100000	1	COMBAT_PRAYER	60
+in_search_of_knowledge	Lamp of knowledge	LAMP	1	10000	1	ANY	40
+his_faithful_servants	Dusty lamp	LAMP	1	20000	1	PRAYER	1
+the_ides_of_milk	Magic lamp (The Ides of Milk)	LAMP	1	1000	1	COMBAT_PRAYER	1
+the_path_of_glouphrie	Magic lamp (strength)	LAMP	1	30000	1	STRENGTH	1
+the_path_of_glouphrie	Magic lamp (slayer)	LAMP	1	20000	1	SLAYER	1
+the_path_of_glouphrie	Magic lamp (thieving)	LAMP	1	5000	1	THIEVING	1
+the_path_of_glouphrie	Magic lamp (magic)	LAMP	1	5000	1	MAGIC	1
+darkness_of_hallowvale	Tome of experience (Darkness of Hallowvale)	TOME	1	2000	3	ANY	30
+a_taste_of_hope	Tome of experience (A Taste of Hope)	TOME	1	2500	3	ANY	35
+sins_of_the_father	Tome of experience (Sins of the Father)	TOME	1	15000	6	ANY	60
+the_blood_moon_rises	Tome of experience (The Blood Moon Rises)	TOME	1	30000	6	ANY	70
+monkey_madness_i	-	CHOICE	1	0	1	PACKAGES	1
+monkey_madness_ii	-	CHOICE	1	50000	2	COMBAT	1
+dragon_slayer_ii	-	CHOICE	1	25000	4	COMBAT	1
+the_fremennik_isles	-	CHOICE	1	10000	2	MELEE	1
+the_tourist_trap	-	CHOICE	1	4650	2	AGILITY,FLETCHING,SMITHING,THIEVING	1
+shadow_of_the_storm	-	CHOICE	1	10000	1	COMBAT	1

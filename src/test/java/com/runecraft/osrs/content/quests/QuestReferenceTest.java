@@ -96,6 +96,8 @@ class QuestReferenceTest {
         int combat = 0;
         skills.putAll(q.requirements());
         xp.putAll(q.xpRewards());
+        // fixed-skill lamps (The Path of Glouphrie's magic lamps, the dusty lamp): the wiki lists them with the fixed XP
+        QuestLamps.fixedXp(q.questId()).forEach((s, v) -> xp.merge(s, v, Double::sum));
         if (q instanceof QuestDef d) {
             quests.addAll(d.questRequirements());
         }

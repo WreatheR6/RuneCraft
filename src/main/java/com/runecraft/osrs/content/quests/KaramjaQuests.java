@@ -138,7 +138,7 @@ final class KaramjaQuests {
                 .req(Skill.MINING, 52).req(Skill.PRAYER, 42).req(Skill.SMITHING, 50).req(Skill.STRENGTH, 50)
                 .req(Skill.THIEVING, 50).req(Skill.WOODCUTTING, 50)
                 .reqQuest("family_crest", "heroes_quest", "shilo_village", "underground_pass", "waterfall_quest")
-                .xp(Skill.ATTACK, 7650).xp(Skill.DEFENCE, 7650).xp(Skill.STRENGTH, 7650).xp(Skill.HITPOINTS, 7650)
+                // Wiki: four antique lamps from Radimus Erkle, 30,000 XP each in one of twelve skills (QuestLamps)
                 .reward("cape_of_legends")
                 .unlock("Access to the Legends' Guild")
                 .stage("I can start this quest by speaking to Radimus Erkle in the Legends' Guild. (Requires 107 quest points and many skills.)")

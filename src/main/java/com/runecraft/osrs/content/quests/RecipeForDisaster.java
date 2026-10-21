@@ -194,7 +194,7 @@ final class RecipeForDisaster {
 
         b.quest("recipe_for_disaster", "Recipe for Disaster", Difficulty.GRANDMASTER, 10)
                 .reqQuest("COOKS_ASSISTANT").req(Skill.COOKING, 10)
-                .xp(Skill.HERBLORE, 20000) // approx: OSRS gives a 20,000 XP lamp (any skill above 50) for defeating the Culinaromancer
+                // OSRS: a 20,000 XP antique lamp (any skill above 50) for defeating the Culinaromancer (QuestLamps)
                 .unlock("The Culinaromancer's chest: food and RFD gloves, up to Barrows gloves")
                 .stage("I can start this quest by speaking to the Gypsy in Lumbridge Castle's dining room. (Requires Cook's Assistant, 10 Cooking.)")
                 .talk("rfd_gypsy").say("The Duke is holding a banquet for the Secret Council of Gielinor, and the Cook is in a terrible state. He needs ingredients!")

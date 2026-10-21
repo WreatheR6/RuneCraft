@@ -631,6 +631,7 @@ final class ClassicScripts {
         private void bloom(DataBossEntity boss) {
             flowers.forEach(Mob::discard);
             flowers.clear();
+            boolean wild = boss.def() != null && "ant_hespori".equals(boss.def().id);
             Vec3 c = boss.position();
             for (int i = 0; i < BossMechanics.HESPORI_BUDS; i++) {
                 double a = Math.PI * 2 * i / BossMechanics.HESPORI_BUDS + Math.PI / 4;
@@ -645,7 +646,9 @@ final class ClassicScripts {
 
                         @Override
                         public int damage(ServerPlayer p, net.minecraft.world.entity.LivingEntity m, AttackType t, int d) {
-                            return MinionRules.lethal(m); // a bud dies to one hit from any weapon
+                            // a bud dies to one hit from any weapon; A Night at the Theatre's wild Hespori's flowers (10 hitpoints)
+                            // don't always (wiki, Flower (A Night at the Theatre)): they take the hit as rolled
+                            return wild ? Math.max(1, d) : MinionRules.lethal(m);
                         }
                     });
                     flowers.add(f);

@@ -291,7 +291,7 @@ final class MisthalinMoreQuests {
         b.items(s -> s.add("kharedsts_memoirs", "Kharedst's memoirs", com.runecraft.osrs.ItemDef.Kind.SIMPLE, "book", 0x5A3A6A).value(0)
                 .stack(1).examine("A book that can teleport you around Great Kourend."));
         b.quest("client_of_kourend", "Client of Kourend", Difficulty.NOVICE, 1)
-                .reqQuest("x_marks_the_spot").xp(Skill.HITPOINTS, 500).xp(Skill.CRAFTING, 500).reward("kharedsts_memoirs")
+                .reqQuest("x_marks_the_spot").reward("kharedsts_memoirs") // and two 500 XP antique lamps (QuestLamps)
                 .stage("I can start this quest by speaking to Veos on the Port Sarim docks. (Requires X Marks the Spot.)")
                 .talk("veos_port_sarim").give("enchanted_scroll").travel("great_kourend")
                 .say("My client wants opinions on the five houses of Great Kourend. Take this enchanted scroll and ask around. *You sail to Great Kourend.*")
@@ -371,7 +371,7 @@ final class MisthalinMoreQuests {
         b.item("doctors_hat", "Doctor's hat", "cowl", 0xF0F0F2, "A hat that makes you look medical.");
         b.npc("quest_hild", "Hild", "BURTHORPE", 6, -6, 0xE8C0BA, 0x5A2A6A, 0x3A1A4A, 0x8A6A3E);
         b.quest("a_tail_of_two_cats", "A Tail of Two Cats", Difficulty.INTERMEDIATE, 2)
-                .reqQuest("icthlarins_little_helper").xp(Skill.COOKING, 2500).xp(Skill.CRAFTING, 2500)
+                .reqQuest("icthlarins_little_helper") // two 2,500 XP antique lamps, any skill of level 30+ (QuestLamps)
                 .stage("I can start this quest by speaking to Unferth in Burthorpe. (Requires Icthlarin's Little Helper.)")
                 .talk("unferth").say("My cat Bob has run off! He's no ordinary cat... he sees things. Find him, please.")
                 // OSRS: Hild enchants the catspeak amulet with 5 death runes so you can talk to Bob.
@@ -430,7 +430,8 @@ final class MisthalinMoreQuests {
                 .drops(Drop.always("bones")).size(1.0f, 2.4f, 1.0f).at("demon_temple_storm").arena(10, "lava"));
         b.npcAt("father_reen_al_kharid", "Father Reen", 3271, 3159, 0xE0B8AA, 0x2A2A2E, 0x1A1A20, 0x6A6A6C); // cache tile
         b.quest("shadow_of_the_storm", "Shadow of the Storm", Difficulty.INTERMEDIATE, 1)
-                .reqQuest("DEMON_SLAYER", "the_golem").req(Skill.CRAFTING, 30).xp(Skill.STRENGTH, 10000).reward("darklight")
+                .reqQuest("DEMON_SLAYER", "the_golem").req(Skill.CRAFTING, 30).reward("darklight")
+                // 10,000 XP in a combat skill other than Prayer: the player picks (QuestLamps)
                 .stage("I can start this quest by speaking to Father Reen south of the Al Kharid bank. (Requires Demon Slayer, The Golem, 30 Crafting.)")
                 .talk("father_reen_al_kharid").say("A cult in Uzer plans to summon the demon Agrith-Naar! Your Silverlight could stop it.",
                         "Meet me in the ruins of Uzer.")

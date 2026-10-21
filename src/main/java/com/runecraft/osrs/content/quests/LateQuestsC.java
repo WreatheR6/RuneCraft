@@ -17,8 +17,8 @@ import java.util.Map;
 /**
  * Remaining members' quests across the world: Tai Bwo Wannai Trio, Troll Romance, One Small Favour,
  * Rag and Bone Man II, A Soul's Bane, The Great Brain Robbery, The Fremennik Exiles, A Night at the
- * Theatre, A Porcine of Interest, Sleeping Giants and Pandemonium. XP-lamp rewards are given as fixed
- * XP (approximate where the player would choose the skill).
+ * Theatre, A Porcine of Interest, Sleeping Giants and Pandemonium. XP-lamp rewards are real lamps the
+ * player rubs ({@link QuestLamps}).
  */
 final class LateQuestsC {
     private LateQuestsC() {
@@ -155,7 +155,7 @@ final class LateQuestsC {
         b.quest("one_small_favour", "One Small Favour", Difficulty.EXPERIENCED, 2)
                 .reqQuest("RUNE_MYSTERIES", "shilo_village", "DRUIDIC_RITUAL")
                 .req(Skill.AGILITY, 36).req(Skill.CRAFTING, 25).req(Skill.HERBLORE, 18).req(Skill.SMITHING, 30)
-                .xp(Skill.SMITHING, 10000).xp(Skill.AGILITY, 10000) // two 10,000 XP lamps (skill chosen by the player)
+                // two antique lamps of 10,000 XP in any skill of level 30 or above (QuestLamps)
                 .stage("I can start this quest by speaking to Yanni Salika in Shilo Village. (Requires Rune Mysteries, Shilo Village, Druidic Ritual, 36 Agility, 25 Crafting, 18 Herblore, 30 Smithing.)")
                 .talk("yanni_salika").say("Could you do me one small favour? The jungle foresters south of here owe me some red mahogany.")
                 .stage("I should ask a Jungle forester south of Shilo Village about the red mahogany.")
@@ -375,7 +375,9 @@ final class LateQuestsC {
         b.npcAt("daer_krand", "Daer Krand", 3728, 3302, 0xE0C8B0, 0x5A3A6A, 0x3A2A4A, 0xC0C0C0); // approx: the Sisterhood Sanctuary, Slepe
         b.spot("ant_ranis_crypt", "Ranis Drakan's crypt", 3673, 3232); // approx: just north of the Stranger
         b.spot("ant_araxyte_nest", "Araxyte nest", 3658, 3405); // approx: north-west of Slepe
-        b.spot("ant_hespori_island", "Hespori island, Mort Myre", 3535, 3365); // approx: west of Castle Drakan
+        // wiki (Flower (A Night at the Theatre)): its four flowers stand at 3504-3512, 3353-3361 round it, on the island west of
+        // Castle Drakan
+        b.spot("ant_hespori_island", "Hespori island, Mort Myre", 3508, 3357);
         b.item("quest_spider_venom_sample", "Spider venom sample", "vial", 0x5A8A3A, "A sample of venom from the spiders beneath Ver Sinhaza.");
         b.item("quest_ranis_head", "Ranis' head", "creature", 0x8A7A8A, "The severed head of Ranis Drakan. Grim.");
         b.item("ant_sulphuric_acid", "Sulphuric acid", "vial", 0xD0E040, "Daer Krand's acid. It would burn through an egg sac.");
@@ -383,8 +385,8 @@ final class LateQuestsC {
         b.item("ant_hespori_bark", "Hespori bark", "log", 0x5A6A2A, "Bark from a wild hespori in Mort Myre.");
         // Hespori (A Night at the Theatre), wiki infobox (MonsterStatsTable): a harder Hespori than the Farming Guild's (level
         // 302, 360 hitpoints), with its spores (8 x2), green wave (14) and entangle (40+), the flowers that shield it at the
-        // start and at 66% and 33% (the Farming Guild Hespori's script, BossesHooks), and no drop table.
-        // approx: its flowers don't always die in one hit in OSRS
+        // start and at 66% and 33% (the Farming Guild Hespori's script, BossesHooks), and no drop table. Its flowers have 10
+        // hitpoints and, unlike the Farming Guild's, don't always die in one hit (wiki): the script lets them take the hit rolled.
         b.boss(BossDef.of("ant_hespori", "Hespori").level(302).stats(360, 1, 1, 120, 126, 150).speed(6)
                 .defenceBonus(60, 20, 60, 80, 80).attackBonus(0, 150, 150)
                 .attack(com.runecraft.osrs.content.bosses.ClassicBosses.HESPORI_SPORES)
@@ -394,9 +396,7 @@ final class LateQuestsC {
                 .model("hespori").size(1.6f, 1.8f, 1.8f).moveSpeed(0.0));
         b.quest("a_night_at_the_theatre", "A Night at the Theatre", Difficulty.MASTER, 2)
                 .reqQuest("a_taste_of_hope")
-                // Wiki: four antique lamps, each 20,000 XP in Attack, Strength, Defence, Ranged, Magic or Hitpoints (50+).
-                // approx: the player picks the lamps' skills in OSRS
-                .xp(Skill.ATTACK, 20000).xp(Skill.STRENGTH, 20000).xp(Skill.DEFENCE, 20000).xp(Skill.HITPOINTS, 20000)
+                // Wiki: four antique lamps, each 20,000 XP in Attack, Strength, Defence, Ranged, Magic or Hitpoints (50+) (QuestLamps)
                 .unlock("The Theatre of Blood entry mode; Ver Sinhaza's spider caves")
                 .stage("I can start this quest by speaking to the Mysterious Stranger in Ver Sinhaza. (Requires A Taste of Hope.)")
                 .talk("quest_mysterious_stranger_tob").say("Verzik Vitur has powers no vampyre should have. A mercenary saw purple spider eggs fall "

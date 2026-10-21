@@ -478,20 +478,26 @@ class MasterQuestsTest {
         assertEquals(2, wild.phases.size(), "the flowers bloom again at 66% and 33%");
         assertTrue(q.triggers().stream().noneMatch(t -> "hespori".equals(t.target) || "hespori".equals(t.spawn)));
         assertEquals(284, ContentRegistry.boss("hespori").combatLevel);
-        // Wiki rewards: four 20,000 XP combat lamps
-        assertEquals(80000.0, q.def.xpRewards().values().stream().mapToDouble(Double::doubleValue).sum());
+        // Wiki rewards: four 20,000 XP combat lamps, rubbed by the player (no fixed XP)
+        assertTrue(q.def.xpRewards().isEmpty());
+        assertEquals(4, QuestLamps.grants("a_night_at_the_theatre").get(0).count());
+        assertEquals(20_000, QuestLamps.get("quest_lamp_a_night_at_the_theatre").xp());
     }
 
     @Test
     void lampRewardsMatchTheWiki() {
-        // Monkey Madness I: 35,000 in the two skills chosen with Daero and 20,000 in the other two (110,000)
+        // Monkey Madness I: Daero's training, 35,000 in the two skills the player picks and 20,000 in the other two (110,000)
         QuestSpec mm = spec("monkey_madness_i");
-        assertEquals(110000.0, mm.def.xpRewards().values().stream().mapToDouble(Double::doubleValue).sum());
-        assertEquals(35000.0, mm.def.xpRewards().get(com.runecraft.osrs.Skill.ATTACK));
-        assertEquals(20000.0, mm.def.xpRewards().get(com.runecraft.osrs.Skill.HITPOINTS));
+        assertTrue(mm.def.xpRewards().isEmpty());
+        QuestLamps.Lamp daero = QuestLamps.get(QuestLamps.grants("monkey_madness_i").get(0).lamp());
+        assertEquals("daero", daero.npc());
+        for (QuestLamps.Package p : daero.packages()) {
+            assertEquals(110000, p.xp().values().stream().mapToInt(Integer::intValue).sum());
+        }
         // A Kingdom Divided: two 10,000 XP lamps and the book of the dead
         QuestSpec akd = spec("a_kingdom_divided");
-        assertEquals(20000.0, akd.def.xpRewards().values().stream().mapToDouble(Double::doubleValue).sum());
+        assertTrue(akd.def.xpRewards().isEmpty());
+        assertEquals(2, QuestLamps.grants("a_kingdom_divided").get(0).count());
         assertTrue(akd.def.itemRewards().contains("book_of_the_dead"));
         // A Kingdom Divided talks to the one Archeio, in the Arceuus Library
         assertNull(ContentRegistry.npc("archeio"));

@@ -469,7 +469,7 @@ final class F2pQuests {
         b.item("treasure_scroll", "Treasure scroll", "note", 0xE8D8A8, "A treasure scroll with a riddle.");
         b.item("ancient_casket", "Ancient casket", "casket", 0x6A4A2A, "An ancient casket for Veos.");
         b.quest("x_marks_the_spot", "X Marks the Spot", Difficulty.NOVICE, 1)
-                .xp(Skill.HITPOINTS, 300).reward("coins:200", "clue_scroll_beginner")
+                .reward("coins:200", "clue_scroll_beginner") // and a 300 XP antique lamp (QuestLamps)
                 .stage("I can start this quest by speaking to Veos in the Sheared Ram pub in Lumbridge.")
                 .talk("veos").give("treasure_scroll").say("I'm looking for a treasure hunter. This scroll leads to an ancient casket.",
                         "The first clue: 'Dig outside the castle of the Duke, where his statue stands.'")

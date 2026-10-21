@@ -319,6 +319,10 @@ public final class QuestInterpreter {
             showMissing(p, main, name);
             return;
         }
+        // 1b. A quest reward still to claim here: an unmade skill choice, or a lost lamp to give back.
+        if (QuestLampService.talk(p, npcId)) {
+            return;
+        }
         // 2. Quests this NPC starts.
         for (QuestSpec q : book.quests) {
             if (stage(p, q) != 0) {
@@ -411,6 +415,7 @@ public final class QuestInterpreter {
         }
         if (t.completes()) {
             QuestApi.complete(p, q.id());
+            QuestLampService.grant(p, q.id()); // its lamps, tomes and skill choices (once per player)
             for (String unlock : q.unlocks) {
                 p.displayClientMessage(Component.literal("Unlocked: " + unlock).withStyle(ChatFormatting.GOLD), false);
             }

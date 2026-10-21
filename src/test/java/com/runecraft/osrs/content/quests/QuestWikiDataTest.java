@@ -137,7 +137,8 @@ class QuestWikiDataTest {
         assertEquals(80000.0, def("dragon_slayer_ii").xpRewards().get(Skill.SMITHING));
         assertEquals(80000.0, def("monkey_madness_ii").xpRewards().get(Skill.SLAYER));
         assertEquals(80000.0, def("while_guthix_sleeps").xpRewards().get(Skill.THIEVING));
-        assertEquals(20000.0, def("his_faithful_servants").xpRewards().get(Skill.PRAYER));
+        // the dusty lamp: 20,000 Prayer XP, rubbed by the player
+        assertEquals(Map.of(Skill.PRAYER, 20000.0), QuestLamps.fixedXp("his_faithful_servants"));
         assertEquals(55000.0, def("the_final_dawn").xpRewards().get(Skill.THIEVING));
     }
 

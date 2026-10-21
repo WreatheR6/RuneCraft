@@ -205,7 +205,7 @@ final class DesertQuests {
                 .attack(AttackDef.of("scimitar", AttackType.SLASH, 8, 2.5, 10)).drops(Drop.always("bones"))
                 .skin(0xC08A5A, 0x6A5A3A, 0x3A2A1A, 0x2A2A2A).at("desert_mining_camp").arena(8, "sand"));
         b.quest("the_tourist_trap", "The Tourist Trap", Difficulty.INTERMEDIATE, 2)
-                .req(Skill.FLETCHING, 10).req(Skill.SMITHING, 20).xp(Skill.AGILITY, 4650).xp(Skill.THIEVING, 4650)
+                .req(Skill.FLETCHING, 10).req(Skill.SMITHING, 20) // Irena's two 4,650 XP rewards: the player picks (QuestLamps)
                 .stage("I can start this quest by speaking to Irena at the Shantay Pass. (Requires 10 Fletching, 20 Smithing.)")
                 .talk("irena").say("My daughter Ana was kidnapped and forced to work in the Desert Mining Camp! Please bring her home.")
                 .stage("I should get into the Desert Mining Camp. The Mercenary Captain has the gate key.")

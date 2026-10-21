@@ -11,6 +11,7 @@ public final class QuestsHooks implements ModuleHooks {
     @Override
     public void init() {
         QuestInterpreter.init();
+        QuestLampService.init();
         QuestGear.init();
         QuestBossScripts.init();
         MageArenaService.init();
