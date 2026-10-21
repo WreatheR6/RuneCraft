@@ -124,6 +124,7 @@ public final class SolHereditScript extends ScriptedBoss {
             return s.defended;
         }
         s.answered = true;
+        com.runecraft.network.HudNet.grapple(p, -1, 0); // round 43: answered (a key or a chat link), the HUD prompt goes
         Grapple g = Grapple.bySlot(slot);
         if (g != s.grapple) {
             Msg.red(p, "You defend the wrong slot!");
@@ -482,6 +483,9 @@ public final class SolHereditScript extends ScriptedBoss {
             CombatHooks.nameAttack("grapple", null);
             CombatHandler.applyDamage(boss, p, random.nextInt(SolHeredit.GRAPPLE_MAX_HIT + 1));
             unequip(p, grapple);
+        }
+        if (p != null) {
+            com.runecraft.network.HudNet.grapple(p, -1, 0); // round 43: the grapple landed, the HUD prompt goes
         }
         GRAPPLED.remove(grappled);
         grapple = null;

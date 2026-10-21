@@ -996,7 +996,6 @@ final class CombatHudChecks {
             }
             // no grapple of Sol's on this player: the answer is refused by his parry rule, and the prompt goes
             expect(!HudNet.answerGrapple(p, legs), "a grapple key blocked a grapple nobody called");
-            HudNet.update(p);
             expect(!HudNet.grappleOpen(p) && sent.get(sent.size() - 1).called() == -1, "the prompt stayed: " + sent);
             if (client()) {
                 expect(awaitClient(x -> x.grappleCalled() < 0) != null, "the client kept the grapple prompt");

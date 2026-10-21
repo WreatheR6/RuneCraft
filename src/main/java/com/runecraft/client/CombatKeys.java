@@ -71,12 +71,13 @@ public final class CombatKeys {
                 GLFW.GLFW_MOUSE_BUTTON_4, "key.categories.runecraft"));
         quickDrink = KeyBindingHelper.registerKeyBinding(new KeyMapping("RuneCraft Quick-drink", InputConstants.Type.MOUSE,
                 GLFW.GLFW_MOUSE_BUTTON_5, "key.categories.runecraft"));
-        // Round 43 // playability: the grapple's five slots on keys (OSRS clicks them in the worn-equipment tab).
+        // Round 43 // playability: the grapple's five slots on keys (OSRS clicks them in the worn-equipment tab). No ':' in the
+        // names: options.txt splits each line on its first ':', so a rebinding would not be read back.
         com.runecraft.osrs.content.minigames.SolHeredit.Grapple[] slots = com.runecraft.osrs.content.minigames.SolHeredit.Grapple.values();
         grapple = new KeyMapping[slots.length];
         for (int i = 0; i < slots.length; i++) {
             String slot = slots[i].slot.substring(0, 1).toUpperCase(java.util.Locale.ROOT) + slots[i].slot.substring(1);
-            grapple[i] = KeyBindingHelper.registerKeyBinding(new KeyMapping("RuneCraft Grapple: defend " + slot, GRAPPLE_CONTEXT,
+            grapple[i] = KeyBindingHelper.registerKeyBinding(new KeyMapping("RuneCraft Defend " + slot + " (grapple)", GRAPPLE_CONTEXT,
                     InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_1 + com.runecraft.osrs.content.minigames.SolHeredit.hotbarKey(slots[i]) - 1,
                     "key.categories.runecraft"));
         }

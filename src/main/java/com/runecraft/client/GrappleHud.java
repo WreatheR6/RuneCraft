@@ -84,7 +84,7 @@ public final class GrappleHud {
         return active() ? called : -1;
     }
 
-    /** The prompt's text as drawn: "GRAPPLE: press 1 body, 2 back, 3 hands, 4 legs, 5 feet" with the bound keys. */
+    /** The prompt's keys as one line, "GRAPPLE: press 1 body, 2 back, 3 hands, 4 legs, 5 feet" with the bound keys (HUD probe). */
     public static String promptText() {
         StringBuilder sb = new StringBuilder("GRAPPLE: press");
         SolHeredit.Grapple[] all = SolHeredit.Grapple.values();

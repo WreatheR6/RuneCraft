@@ -236,7 +236,8 @@ public final class HudNet {
      * Sol Heredit calls a grapple on {@code player} (round 43, {@code // playability}): the HUD prompt "GRAPPLE: press
      * &lt;key&gt; for body / back / hands / legs / feet" with the called slot lit and a bar emptying over {@code windowMc}
      * (his 3.6 s window, {@code SolHeredit.GRAPPLE_WINDOW_TICKS}), answered with the client's rebindable grapple keys
-     * ({@link #GRAPPLE_ANSWER}). {@code called} -1 clears the prompt. OSRS: click the slot in the worn-equipment tab.
+     * ({@link #GRAPPLE_ANSWER}). {@code called} -1 clears the prompt: sent when the grapple is answered (any way, the chat links
+     * too) or lands; the client also drops it once its window is over. OSRS: click the slot in the worn-equipment tab.
      */
     public static void grapple(ServerPlayer player, int called, int windowMc) {
         if (player == null) {
@@ -357,9 +358,6 @@ public final class HudNet {
 
     /** Sends the curse map and the status to a player when they changed (every MC tick for listed players; self-tests call it for the fake player). */
     public static void update(ServerPlayer p) {
-        if (GRAPPLE_OPEN.contains(p.getUUID()) && com.runecraft.content.bosses.SolHereditScript.calledFor(p) == null) {
-            grapple(p, -1, 0); // the grapple landed or was answered another way (the chat links): the prompt goes
-        }
         int[] curse = curseMap(p);
         int poison = poisonState(p);
         int retaliate = retaliateTarget(p);

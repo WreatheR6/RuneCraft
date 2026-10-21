@@ -124,7 +124,9 @@ public final class AttackClient {
             awaitingReply = false;
             return;
         }
-        foodMc = 0; // an attack accepted or buffered: the food's wait is over or folded into the new clock
+        if (!q) {
+            foodMc = 0; // an attack accepted: the food's wait is over (a click buffered during it keeps the food look)
+        }
         readyAtTick = clientTick + remaining;
         periodMc = Math.max(1, period);
         kind = k >= 0 && k < AttackClock.Kind.values().length ? AttackClock.Kind.values()[k] : AttackClock.Kind.MELEE;
