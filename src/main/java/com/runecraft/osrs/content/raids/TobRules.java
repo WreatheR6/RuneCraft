@@ -335,6 +335,9 @@ public final class TobRules {
     public static final int VERZIK_LIGHTNING_EVERY = 5;
     public static final int VERZIK_LIGHTNING_MAX = 48;
     public static final int VERZIK_LIGHTNING_INSULATED_MAX = 25;
+    /** What the lightning ball deals to Verzik when it passes through her (Mod Ash: "15-20. No accuracy calculation."). */
+    public static final int VERZIK_LIGHTNING_SELF_MIN = 15;
+    public static final int VERZIK_LIGHTNING_SELF_MAX = 20;
     /**
      * The phase 2 and 3 nylocas home in on a player and explode for up to 63 when they reach their target (OSRS wiki
      * "Verzik Vitur", which settles the dispute with the Strategies page's 46), and die after ~15 s (25 ticks). Players up

@@ -165,6 +165,11 @@ class TobRulesTest {
         assertEquals(50, TobRules.VERZIK_SLAM_MAX, "infobox: 50 (bounce)");
         assertEquals(48, TobRules.VERZIK_LIGHTNING_MAX);
         assertEquals(25, TobRules.VERZIK_LIGHTNING_INSULATED_MAX);
+        // Mod Ash: the ball passing through her deals "15-20. No accuracy calculation."; it strikes the fourth player reached
+        assertEquals(15, TobRules.VERZIK_LIGHTNING_SELF_MIN);
+        assertEquals(20, TobRules.VERZIK_LIGHTNING_SELF_MAX);
+        assertEquals(4, RaidRealtime.VERZIK_LIGHTNING_PLAYERS);
+        assertEquals(5, TobRules.VERZIK_LIGHTNING_EVERY);
         assertEquals(7, TobRules.DAWNBRINGER_RANGE_TILES);
         // Raw damage barely hurts the Athanatos.
         assertEquals(10, TobRules.athanatosRawDamage(40));

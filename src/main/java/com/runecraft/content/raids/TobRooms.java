@@ -3075,47 +3075,83 @@ final class TobRooms {
         }
 
         /**
-         * The lightning ball bounces between players up to four times; through Verzik it hurts her for 15-20, else it hits
-         * the last player for up to 48 (25 with insulated boots).
+         * The lightning ball (OSRS wiki, Verzik Vitur and the ToB strategies): it flies at a random player and chains between
+         * players in a random sequence. On each player it reaches it jumps on to a random teammate in range; if Verzik stands in
+         * that path it arcs through her (15-20 to her, no accuracy roll) and is spent; the fourth player it reaches, or one with
+         * no teammate near, is struck for up to 48 (25 in insulated boots). Round 43: a real ball passed between the players,
+         * each jump decided from where everyone stands as it arrives (it was a coin flip at launch). // playability: OSRS
+         * resolves the chain as it fires, flying about a tick between players; here three game ticks to the first player and two
+         * per jump, drawn all the way, each player it jumps to warned mid-screen
          */
         private void lightning(List<ServerPlayer> players) {
             lightnings++;
             ServerPlayer at = players.get(rnd().nextInt(players.size()));
             say("Verzik fires a ball of lightning!");
-            boolean through = false;
-            for (int bounce = 0; bounce < 4 && !through; bounce++) {
-                // approx: a well-spread team bounces it through her half the time
-                through = players.size() > 1 && rnd().nextBoolean();
-            }
-            // The ball flies (typeless orange) and is named to its target as it leaves; it lands three game ticks later, on
-            // the target or, bounced back, on Verzik. // playability: OSRS resolves the bounces as it fires, the ball flying
-            // about a tick between players
-            Msg.telegraph(at, "Verzik's lightning ball is coming at you" + (through ? "!" : " - insulated boots soften it!"), null);
-            DataBossEntity source = verzik;
-            java.util.function.BooleanSupplier current = current();
-            boolean arc = through;
-            long launched = RaidEffects.now();
-            RaidEffects.projectile(world(), verzik.getEyePosition(), at, null, LIGHTNING_TICKS,
-                    () -> alive(source) && current.getAsBoolean(), () -> {
-                        lastLightningFlight = RaidEffects.now() - launched;
-                        if (arc) {
-                            world().sendParticles(ParticleTypes.ELECTRIC_SPARK, source.getX(), source.getY() + 2, source.getZ(), 30, 0.6, 1, 0.6, 0.1);
-                            com.runecraft.combat.CombatHandler.applyDamage(null, source, 15 + rnd().nextInt(6));
-                            say("The lightning arcs through Verzik!");
-                            return;
-                        }
-                        boolean insulated = "insulated_boots".equals(Inv.idOf(at.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.FEET)));
-                        lastLightningMax = insulated ? TobRules.VERZIK_LIGHTNING_INSULATED_MAX : TobRules.VERZIK_LIGHTNING_MAX;
-                        hurt(source, at, rnd().nextInt(lastLightningMax + 1), null, true);
-                    });
-            if (!through && lightnings % 3 == 0 && !alive(athanatos) && !p25 && rnd().nextDouble() < TobRules.VERZIK_RESUMMON_CHANCE) {
+            Msg.telegraph(at, "Verzik's lightning ball is coming at you - keep her between you and a teammate!", null);
+            lightningHop(at, verzik.getEyePosition(), 1, current(), RaidEffects.now());
+            // OSRS: after every third lightning ball, a 25% chance of the nylocas being summoned again.
+            if (lightnings % 3 == 0 && !alive(athanatos) && !p25 && rnd().nextDouble() < TobRules.VERZIK_RESUMMON_CHANCE) {
                 summonNylocas(false);
             }
         }
 
-        /** Game ticks the lightning ball flies (and its last flight, self-test). */
+        /** The ball flying from {@code from} to {@code at}, the {@code reached}th player it reaches; what it does there. */
+        private void lightningHop(ServerPlayer at, Vec3 from, int reached, java.util.function.BooleanSupplier current, long launched) {
+            DataBossEntity source = verzik;
+            RaidEffects.projectile(world(), from, at, null, reached == 1 ? LIGHTNING_TICKS : LIGHTNING_HOP_TICKS,
+                    () -> alive(source) && current.getAsBoolean(), () -> {
+                        if (reached == 1) {
+                            lastLightningFlight = RaidEffects.now() - launched;
+                        }
+                        List<ServerPlayer> here = players();
+                        int holder = here.indexOf(at);
+                        if (holder < 0) {
+                            return; // its player left the room: it fizzles
+                        }
+                        double[][] xz = new double[here.size()][];
+                        for (int i = 0; i < here.size(); i++) {
+                            xz[i] = new double[]{here.get(i).getX(), here.get(i).getZ()};
+                        }
+                        com.runecraft.osrs.content.raids.RaidRealtime.Bounce b = com.runecraft.osrs.content.raids.RaidRealtime.lightningBounce(
+                                reached, holder, xz, source.getX(), source.getZ(), rnd().nextInt(1 << 16));
+                        lightningReached = Math.max(lightningReached, reached);
+                        switch (b.chain()) {
+                            case THROUGH_VERZIK -> {
+                                // the arc from its player through her, then spent
+                                RaidEffects.drawLane(world(), at.position().add(0, 1, 0), source.position().add(0, 1.5, 0), 0.3,
+                                        ParticleTypes.ELECTRIC_SPARK, ParticleTypes.ELECTRIC_SPARK, 0);
+                                world().sendParticles(ParticleTypes.ELECTRIC_SPARK, source.getX(), source.getY() + 2, source.getZ(), 30, 0.6, 1, 0.6, 0.1);
+                                com.runecraft.combat.CombatHandler.applyDamage(null, source, TobRules.VERZIK_LIGHTNING_SELF_MIN
+                                        + rnd().nextInt(TobRules.VERZIK_LIGHTNING_SELF_MAX - TobRules.VERZIK_LIGHTNING_SELF_MIN + 1));
+                                lightningThrough++;
+                                say("The lightning arcs through Verzik!");
+                            }
+                            case NEXT -> {
+                                ServerPlayer next = here.get(b.next());
+                                Msg.telegraph(next, "The lightning ball jumps to you (" + (reached + 1) + "/"
+                                        + com.runecraft.osrs.content.raids.RaidRealtime.VERZIK_LIGHTNING_PLAYERS
+                                        + ") - keep Verzik between you and a teammate!", null);
+                                lightningHop(next, at.position().add(0, 1, 0), reached + 1, current, launched);
+                            }
+                            default -> {
+                                boolean insulated = "insulated_boots".equals(Inv.idOf(at.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.FEET)));
+                                lastLightningMax = insulated ? TobRules.VERZIK_LIGHTNING_INSULATED_MAX : TobRules.VERZIK_LIGHTNING_MAX;
+                                lightningStrikes++;
+                                hurt(source, at, rnd().nextInt(lastLightningMax + 1), null, true);
+                            }
+                        }
+                    });
+        }
+
+        /** Game ticks the lightning ball flies to its first player (and its last such flight, self-test). */
         static final int LIGHTNING_TICKS = com.runecraft.osrs.ArenaTiming.STRIKE_FLOOR_TICKS;
+        /** Game ticks the lightning ball flies on each jump between players (the shortest raid projectile flight). */
+        static final int LIGHTNING_HOP_TICKS = com.runecraft.osrs.content.raids.RaidRealtime.PROJECTILE_MIN_TICKS;
         long lastLightningFlight = -1;
+        /** Self-test: the most players one ball reached, balls that arced through Verzik, and players struck. */
+        int lightningReached;
+        int lightningThrough;
+        int lightningStrikes;
 
         private void healingSpell(ServerPlayer target) {
             int total = 0;
@@ -3842,6 +3878,9 @@ final class TobRooms {
             w.expect(lastLightningFlight >= LIGHTNING_TICKS, "the lightning ball landed " + lastLightningFlight + " game ticks after it left");
             w.expect(lastLightningMax == TobRules.VERZIK_LIGHTNING_INSULATED_MAX, "insulated boots did not soften the lightning ball ("
                     + lastLightningMax + ")");
+            // round 43: the ball is passed between players; alone, with no teammate to pass it to, it strikes its first player
+            w.expect(lightningStrikes > 0 && lightningReached == 1 && lightningThrough == 0, "a solo player's lightning ball reached "
+                    + lightningReached + " player(s), struck " + lightningStrikes + ", arced through Verzik " + lightningThrough);
             w.player().setItemSlot(net.minecraft.world.entity.EquipmentSlot.FEET, ItemStack.EMPTY);
             guard = 0;
             int healedBefore = 0;

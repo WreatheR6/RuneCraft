@@ -3193,6 +3193,22 @@ final class CoxRooms {
         private final Map<UUID, Pool> lastPool = new HashMap<>();
         private int swaps;
         private int lastSwapDamage = -1;
+        /**
+         * Where the head looks (round 43, OSRS wiki "Great Olm"): it attacks only players in the zone it faces, swerving (and
+         * skipping a step) when nobody is there. {@link com.runecraft.osrs.content.raids.RaidRealtime.OlmHead}
+         */
+        private final com.runecraft.osrs.content.raids.RaidRealtime.OlmHead aim = new com.runecraft.osrs.content.raids.RaidRealtime.OlmHead();
+        /** The room tick each hand was last damaged (the head turns to a hand hit within four ticks when it scans nobody). */
+        private long leftHitAt = -100;
+        private long rightHitAt = -100;
+        /** Self-test: steps skipped because the head faced an empty zone, standard attacks caught up, Crystal Burst shoves. */
+        int zoneSkips;
+        int catchUps;
+        int shoves;
+        private static final net.minecraft.core.particles.DustParticleOptions ZONE_MAGIC =
+                new net.minecraft.core.particles.DustParticleOptions(new org.joml.Vector3f(0.25f, 0.5f, 1.0f), 1.1f);
+        private static final net.minecraft.core.particles.DustParticleOptions ZONE_RANGED =
+                new net.minecraft.core.particles.DustParticleOptions(new org.joml.Vector3f(0.25f, 0.75f, 0.25f), 1.1f);
 
         Olm(RaidInstance raid, RoomDef def, int index) {
             super(raid, def, index);
@@ -3235,6 +3251,8 @@ final class CoxRooms {
                 anchor(head);
             }
             nextPhase();
+            DataBossEntity h = head;
+            RaidEffects.cue(Integer.MAX_VALUE / 4, center().getCenter(), () -> h == head && drawZone());
         }
 
         private boolean penultimate() {
@@ -3262,6 +3280,7 @@ final class CoxRooms {
             stage = Stage.FIGHT;
             step = 0;
             timeline.clear();
+            aim.reset();
             clench = 0;
             handDownAt = -1;
             healingHand = 0;
@@ -3275,6 +3294,7 @@ final class CoxRooms {
             }
             left = spawnClaw("olm_left_claw", leftX());
             right = spawnClaw("olm_right_claw", -leftX());
+            faceZone(aim.facing());
             if (penultimate()) {
                 power = null;
                 warn("The Great Olm's head glows with every power it has! (Phase " + phase + "/" + phases + ")");
@@ -3314,6 +3334,11 @@ final class CoxRooms {
         public int bossIncoming(DataBossEntity boss, ServerPlayer attacker, int damage, AttackType type) {
             CoxRules.OlmPart part = boss == head ? CoxRules.OlmPart.HEAD : boss == left ? CoxRules.OlmPart.LEFT : CoxRules.OlmPart.RIGHT;
             int d = CoxRules.olmMitigated(part, type, damage);
+            if (d > 0 && boss == left) {
+                leftHitAt = t;
+            } else if (d > 0 && boss == right) {
+                rightHitAt = t;
+            }
             if (boss == head && stage != Stage.HEAD && d > 0) {
                 // OSRS: until the final stand the head heals back any damage after a few ticks.
                 int heal = d;
@@ -3472,13 +3497,40 @@ final class CoxRooms {
                 penultimateSpecial = true;
                 say("The Great Olm's left claw glows - attacking it will heal it!");
             }
+            // Round 43 (OSRS wiki): the head scans the zone it faces. Nobody there: it swerves towards the most players (or a hand
+            // hit within four ticks) and this step is skipped; a skipped standard attack is caught up on the next step, a skipped
+            // special is lost. The faced zone is drawn in the head's style colour and a turn is named mid-screen.
+            List<List<ServerPlayer>> zones = List.of(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+            double hx = alive(head) ? head.getX() : center().getX() + 0.5;
+            for (ServerPlayer p : players) {
+                zones.get(com.runecraft.osrs.content.raids.RaidRealtime.olmZone(p.getX() - hx, south)).add(p);
+            }
+            int[] counts = {zones.get(0).size(), zones.get(1).size(), zones.get(2).size()};
+            int handZone = t - rightHitAt <= 4 && rightHitAt >= leftHitAt ? com.runecraft.osrs.content.raids.RaidRealtime.OLM_RIGHT
+                    : t - leftHitAt <= 4 ? com.runecraft.osrs.content.raids.RaidRealtime.OLM_LEFT : -1;
+            com.runecraft.osrs.content.raids.RaidRealtime.OlmHead.Step look = aim.step(counts, s == CoxRules.OlmStep.STANDARD, handZone);
+            if (look.turned()) {
+                faceZone(look.facing());
+                RaidEffects.telegraph(players, "Olm turns to its " + com.runecraft.osrs.content.raids.RaidRealtime.olmZoneName(look.facing())
+                        + " (" + com.runecraft.osrs.content.raids.RaidRealtime.olmZoneCompass(look.facing(), south) + ")");
+            }
+            if (!look.act()) {
+                zoneSkips++;
+                return;
+            }
+            // its standard attacks pick a target in the zone it faces; its specials still reach the whole chamber
+            List<ServerPlayer> faced = zones.get(look.facing());
+            if (look.catchUp()) {
+                catchUps++;
+                standard(faced);
+            }
             boolean handSpecials = stage == Stage.FIGHT && alive(left) && clench == 0;
             if (handSpecials && penultimate() && (s == CoxRules.OlmStep.CRYSTAL_BURST || s == CoxRules.OlmStep.LIGHTNING
                     || s == CoxRules.OlmStep.TELEPORT)) {
                 penultimateSpecial = true;
             }
             switch (s) {
-                case STANDARD -> standard(players);
+                case STANDARD -> standard(faced);
                 case CRYSTAL_BURST -> {
                     if (handSpecials) {
                         crystalBurst(players);
@@ -3506,6 +3558,56 @@ final class CoxRooms {
             return stage == Stage.HEAD;
         }
 
+        /** Blocks east of the head of an Olm zone's middle. */
+        private double zoneDx(int zone) {
+            if (zone == com.runecraft.osrs.content.raids.RaidRealtime.OLM_MIDDLE) {
+                return 0;
+            }
+            return (zone == com.runecraft.osrs.content.raids.RaidRealtime.OLM_LEFT) != south ? 13 : -13;
+        }
+
+        /** Turns the head to look into a zone (its body faces the chamber). */
+        private void faceZone(int zone) {
+            if (!alive(head)) {
+                return;
+            }
+            double dx = zoneDx(zone);
+            double dz = south ? -10 : 10;
+            float yaw = (float) (Math.toDegrees(Math.atan2(dz, dx)) - 90);
+            head.setYRot(yaw);
+            head.setYHeadRot(yaw);
+            head.yBodyRot = yaw;
+        }
+
+        /**
+         * The zone the head faces, drawn every few Minecraft ticks as its two edges running out from the wall, in its attack
+         * style's colour (round 43). // playability: OSRS players read where the head looks
+         */
+        private boolean drawZone() {
+            if (!alive(head) || done) {
+                return false;
+            }
+            if (stage == Stage.TRANSITION) {
+                return true;
+            }
+            int zone = aim.facing();
+            double half = com.runecraft.osrs.content.raids.RaidRealtime.OLM_MIDDLE_HALF_WIDTH;
+            double mid = zoneDx(zone);
+            double[] edges = zone == com.runecraft.osrs.content.raids.RaidRealtime.OLM_MIDDLE ? new double[]{-half, half}
+                    : new double[]{Math.signum(mid) * half, Math.signum(mid) * (RaidBuilder.HALF - 1)};
+            double hx = head.getX();
+            double y = center().getY() + 1.15;
+            double z0 = center().getZ() + 0.5 + wall() + (south ? -1.5 : 1.5);
+            double dir = south ? -1 : 1;
+            var dust = style == AttackType.RANGED ? ZONE_RANGED : ZONE_MAGIC;
+            for (double e : edges) {
+                for (int k = 0; k <= 12; k += 2) {
+                    world().sendParticles(dust, hx + e, y, z0 + dir * k, 1, 0.05, 0, 0.05, 0);
+                }
+            }
+            return true;
+        }
+
         /** A standard attack: a power's attack (1/3, 1/2 in the final stand), a prayer sphere, or a magic/ranged attack. */
         private void standard(List<ServerPlayer> players) {
             ServerPlayer target = players.get(rnd().nextInt(players.size()));
@@ -3530,7 +3632,7 @@ final class CoxRooms {
                 }
                 String a = fresh.get(rnd().nextInt(fresh.size()));
                 usedThisPhase.add(a);
-                power(a, target, players);
+                power(a, target, players()); // aimed at its target, its spray and bombs reach the whole chamber
                 return;
             }
             if (rnd().nextDouble() < CoxRules.OLM_SPHERE_CHANCE) {
@@ -3600,11 +3702,14 @@ final class CoxRooms {
                     for (ServerPlayer p : players) {
                         for (int i = 0; i < 3; i++) {
                             Vec3 at = p.position().add(rnd().nextInt(9) - 4, 0, rnd().nextInt(9) - 4);
+                            // round 43: the pool's tile is lime on the floor from the spray until the pool dries
                             acidLands = RaidEffects.mark(world(), at, 0.8).delay(lead).source(source).warn(ParticleTypes.ITEM_SLIME)
+                                    .floor(RaidFloor.ACID)
                                     .live(() -> room.getAsBoolean() && alive(source) && stage == sprayedIn && phase == sprayPhase)
                                     .onLand(() -> {
                                         pools.add(new Pool(at, t + CoxRules.OLM_ACID_TICKS, CoxRules.OLM_ACID_MIN, CoxRules.OLM_ACID_MAX,
                                                 CoxRules.OLM_ACID_POISON));
+                                        RaidFloor.disc(world(), at, 0.5, RaidFloor.ACID, CoxRules.OLM_ACID_TICKS, source);
                                         acidFormed++;
                                     })
                                     .start();
@@ -3685,6 +3790,8 @@ final class CoxRooms {
                 }
                 pools.add(new Pool(p.position(), t + CoxRules.OLM_ACID_TICKS, CoxRules.OLM_ACID_MIN, CoxRules.OLM_ACID_MAX,
                         CoxRules.OLM_ACID_POISON));
+                // round 43: each drip's tile is lime on the floor until it dries
+                RaidFloor.disc(world(), p.position(), 0.5, RaidFloor.ACID, CoxRules.OLM_ACID_TICKS, head);
                 if (left <= 1) {
                     drip.remove(p.getUUID());
                 } else {
@@ -3756,7 +3863,7 @@ final class CoxRooms {
             for (int s = -1; s <= 1; s += 2) {
                 int side = s;
                 RaidEffects.lane(world(), new Vec3(c.x + side * 2, c.y, c.z - 3.5), new Vec3(c.x + side * 2, c.y, c.z + 3.5), 0.7)
-                        .delay(lead).source(source).warn(ParticleTypes.FLAME).live(() -> walls.contains(wall))
+                        .delay(lead).source(source).warn(ParticleTypes.FLAME).floor(RaidFloor.DANGER).live(() -> walls.contains(wall))
                         .onHit(p -> {
                             special(source, p, CoxRules.OLM_WALL_LEAP_MIN + rnd().nextInt(CoxRules.OLM_WALL_LEAP_MAX - CoxRules.OLM_WALL_LEAP_MIN + 1));
                             p.push(side * 0.6, 0.2, 0);
@@ -3798,8 +3905,9 @@ final class CoxRooms {
             for (int i = 0; i < CoxRules.olmCrystalBombs(raid.partySize()); i++) {
                 ServerPlayer p = players.get(rnd().nextInt(players.size()));
                 Vec3 at = p.position().add(rnd().nextInt(7) - 3, 0, rnd().nextInt(7) - 3);
-                // A raid strike at the blast's full reach (4.5 tiles), drawn from the throw. // playability: OSRS shows the bomb
-                RaidEffects.mark(world(), at, 4.5).delay(fuse).source(source).warn(ParticleTypes.END_ROD).onLand(() -> {
+                // A raid strike at the blast's full reach (4.5 tiles), drawn from the throw and (round 43) marked on the floor.
+                // // playability: OSRS shows the bomb
+                RaidEffects.mark(world(), at, 4.5).delay(fuse).source(source).warn(ParticleTypes.END_ROD).floor(RaidFloor.DANGER).onLand(() -> {
                     world().sendParticles(ParticleTypes.EXPLOSION_EMITTER, at.x, at.y + 0.5, at.z, 1, 0, 0, 0, 0);
                     for (ServerPlayer q : players()) {
                         int dmg = CoxRules.olmCrystalBombDamage(Math.sqrt(RaidEffects.horizontalDistSq(q.position(), at)));
@@ -3815,7 +3923,7 @@ final class CoxRooms {
         private void fallingCrystal(Vec3 at) {
             DataBossEntity source = head;
             RaidEffects.mark(world(), at, 1.6).delay(sequence(3, "falling crystals", false)).source(source).warn(ParticleTypes.END_ROD)
-                    .onHit(p -> {
+                    .floor(RaidFloor.DANGER).onHit(p -> {
                         if (RaidEffects.horizontalDistSq(p.position(), at) < 0.6 * 0.6) {
                             RaidEffects.hit(source, p, CoxRules.OLM_CRYSTAL_DIRECT_MIN
                                     + rnd().nextInt(CoxRules.OLM_CRYSTAL_DIRECT_MAX - CoxRules.OLM_CRYSTAL_DIRECT_MIN + 1), null, true);
@@ -3827,8 +3935,8 @@ final class CoxRooms {
         }
 
         /**
-         * Crystal Burst: a seedling under every player bursts a few ticks later for heavy damage. // approx: 20-40. Returns its
-         * delay in game ticks.
+         * Crystal Burst: a seedling under every player bursts a few ticks later for heavy damage and shoves whoever is still on
+         * it to a nearby tile (OSRS wiki; round 43 added the shove). // approx: 20-40. Returns its delay in game ticks.
          */
         private int crystalBurst(List<ServerPlayer> players) {
             say("Crystals burst from the ground!");
@@ -3836,13 +3944,36 @@ final class CoxRooms {
             RaidEffects.telegraph(players, "Olm: crystal burst - step off the crystal under you!");
             DataBossEntity source = left;
             for (ServerPlayer p : players) {
-                RaidEffects.mark(world(), p.position(), 1.0).delay(delay).source(source).warn(ParticleTypes.END_ROD).onHit(q -> {
+                Vec3 seed = p.position();
+                RaidEffects.mark(world(), seed, 1.0).delay(delay).source(source).warn(ParticleTypes.END_ROD).floor(RaidFloor.DANGER).onHit(q -> {
                     burstHits++;
                     imperfect = true; // "Perfect Olm": caught by a Crystal Burst
                     RaidEffects.hit(source, q, 20 + rnd().nextInt(21), null, true);
+                    if (shove(q, seed, 1.6)) {
+                        shoves++;
+                    }
                 }).start();
             }
             return delay;
+        }
+
+        /**
+         * Shoves a player about {@code dist} blocks away from {@code from} onto a free spot in the chamber (straight away first,
+         * then round the compass); nowhere free, they stay. Returns whether they moved.
+         */
+        private boolean shove(ServerPlayer p, Vec3 from, double dist) {
+            Vec3 away = p.position().subtract(from).multiply(1, 0, 1);
+            double base = away.lengthSqr() < 1e-4 ? rnd().nextDouble() * Math.PI * 2 : Math.atan2(away.z, away.x);
+            for (int k = 0; k < 8; k++) {
+                double a = base + (k % 2 == 0 ? 1 : -1) * ((k + 1) / 2) * Math.PI / 4;
+                Vec3 to = new Vec3(from.x + Math.cos(a) * dist, p.getY(), from.z + Math.sin(a) * dist);
+                if (inside(to) && world().noCollision(p, p.getBoundingBox().move(to.x - p.getX(), 0, to.z - p.getZ()))) {
+                    p.teleportTo(to.x, to.y, to.z);
+                    p.hurtMarked = true;
+                    return true;
+                }
+            }
+            return false;
         }
 
         /**
@@ -3857,9 +3988,9 @@ final class CoxRooms {
             double y = center().getY() + 1;
             for (int lane = 0; lane < 2; lane++) {
                 double z = center().getZ() + 0.5 + rnd().nextInt(25) - 12;
-                RaidEffects.lane(world(), new Vec3(center().getX() + 0.5 - RaidBuilder.HALF, y, z),
-                                new Vec3(center().getX() + 0.5 + RaidBuilder.HALF, y, z), 1.0)
-                        .delay(delay).source(source).warn(ParticleTypes.ELECTRIC_SPARK).onHit(p -> {
+                RaidEffects.lane(world(), new Vec3(center().getX() + 0.5 - RaidBuilder.HALF + 1, y, z),
+                                new Vec3(center().getX() + 0.5 + RaidBuilder.HALF - 1, y, z), 1.0)
+                        .delay(delay).source(source).warn(ParticleTypes.ELECTRIC_SPARK).floor(RaidFloor.LIGHTNING).onHit(p -> {
                             dropOverheads(p, "The lightning disables your protection prayers!");
                             RaidEffects.hit(source, p, 10 + rnd().nextInt(16), null, true); // approx: "moderate damage"
                             com.runecraft.content.systems.SysCombat.freeze(p, 3);
@@ -4073,6 +4204,34 @@ final class CoxRooms {
             long lands = acidLands;
             w.until(() -> RaidEffects.now() >= lands, (int) (lands - sprayedAt) + 2, "the Olm's acid never landed");
             w.expect(acidFormed >= formedBefore + 3, "the Olm's acid spray formed " + (acidFormed - formedBefore) + " of its 3 pools");
+            // Round 43: the head attacks only the zone it faces. With nobody there it swerves to the player's zone and skips that
+            // step; facing them, the next step goes ahead.
+            aim.reset();
+            faceZone(aim.facing());
+            w.moveTo(at(-16, south ? 5 : -5));
+            w.tick(4); // stay clear of hand hits for the four ticks the hand rule looks back
+            aim.reset();
+            int skipsBefore = zoneSkips;
+            int want = com.runecraft.osrs.content.raids.RaidRealtime.olmZone(w.player().getX() - head.getX(), south);
+            w.tick(CoxRules.OLM_STEP_TICKS);
+            w.expect(zoneSkips == skipsBefore + 1 && aim.facing() == want, "the Olm's head did not swerve to an empty zone's player (skips "
+                    + (zoneSkips - skipsBefore) + ", facing " + aim.facing() + ", player in " + want + ")");
+            w.moveTo(at(-16, south ? 5 : -5));
+            w.tick(CoxRules.OLM_STEP_TICKS);
+            w.expect(zoneSkips == skipsBefore + 1, "the Olm's head skipped a step while facing the player");
+            // A Crystal Burst shoves whoever stays on it to a nearby tile (OSRS wiki).
+            Vec3 stay = at(-6, south ? 6 : -6).getBottomCenter();
+            w.moveTo(stay);
+            int hitsBefore = burstHits;
+            int shovesBefore = shoves;
+            long burst = crystalBurst(List.of(w.player()));
+            for (int i = 0; i < burst; i++) {
+                w.moveTo(stay);
+                w.tick(1);
+            }
+            w.expect(burstHits == hitsBefore + 1 && shoves == shovesBefore + 1
+                    && RaidEffects.horizontalDistSq(stay, w.player().position()) >= 1.0, "a Crystal Burst did not hit and shove the player on it "
+                    + "(hits " + (burstHits - hitsBefore) + ", shoves " + (shoves - shovesBefore) + ")");
             int guard = 0;
             int lastPhase = phase;
             while (stage != Stage.HEAD && guard++ < 3000) {
