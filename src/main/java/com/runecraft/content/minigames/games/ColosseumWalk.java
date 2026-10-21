@@ -697,25 +697,34 @@ public final class ColosseumWalk {
 
     /** Damage of each triple-attack thrust that reached the walking player (through the damage hooks), in order. */
     private static final List<Integer> TRIPLE_DAMAGE = new java.util.ArrayList<>();
+    /** The Minecraft tick each of those thrusts landed on. */
+    private static final List<Long> TRIPLE_LANDED_MC = new java.util.ArrayList<>();
     private static ServerPlayer tripleWatched;
     private static boolean tripleHooked;
 
     /**
      * Sol Heredit's triple parry (round 41 playability): each spear thrust is called out ("Spear 1/3") two game ticks ahead;
      * Protect from Melee switched on through the real prayer toggle a game tick (12 Minecraft ticks) after the call blocks the
-     * thrust, and with the prayer off it lands for its full 15/25/35. Returns a note.
+     * thrust, and with the prayer off it lands for its full 15/25/35. The player flicks, as OSRS players do: the prayer goes
+     * off once the thrust it was raised for has landed, so the unprayed thrust meets a prayer switched off over a game tick
+     * earlier. Switching it off only after that thrust's call would land 1-12 MC before it (his thrusts land on the global
+     * game-tick boundary, anywhere inside the walk's 12-tick steps), and a voluntary switch-off up to 8 MC before a hit still
+     * protects (round 41's switch grace, {@link com.runecraft.osrs.PrayerGrace}). Returns a note.
      */
     private String walkTriple(SolHereditScript script) {
         com.runecraft.osrs.Prayer melee = com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE;
         var data = Players.data(player);
+        long offMc = com.runecraft.osrs.PrayerGrace.NEVER; // when the walk last switched Protect from Melee off
         if (data.isActive(melee)) {
             com.runecraft.combat.PrayerService.toggle(player, melee);
+            offMc = ActionManager.mcTick();
         }
         if (!tripleHooked) {
             tripleHooked = true;
             com.runecraft.combat.CombatHooks.addDamageListener((p, attacker, attack, style, damage) -> {
                 if (p == tripleWatched && "triple_attack".equals(attack)) {
                     TRIPLE_DAMAGE.add(damage);
+                    TRIPLE_LANDED_MC.add(ActionManager.mcTick());
                 }
             });
         }
@@ -728,6 +737,7 @@ public final class ColosseumWalk {
             }
         };
         TRIPLE_DAMAGE.clear();
+        TRIPLE_LANDED_MC.clear();
         tripleWatched = player;
         boolean[] pray = {true, false, true};
         List<Integer> landed = new java.util.ArrayList<>();
@@ -738,16 +748,23 @@ public final class ColosseumWalk {
                 until(() -> script.selfTestTripleCued() >= h, 5, "Sol Heredit never called out thrust " + (h + 1));
                 expect(TRIPLE_DAMAGE.size() == h, "thrust " + (h + 1) + " landed before it was called out");
                 tick(1); // the player reacts a game tick after the call
-                if (data.isActive(melee) != pray[h]) {
+                if (pray[h] && !data.isActive(melee)) {
                     com.runecraft.combat.PrayerService.toggle(player, melee);
                 }
                 expect(data.isActive(melee) == pray[h], "the prayer toggle left Protect from Melee " + (pray[h] ? "off" : "on"));
                 until(() -> TRIPLE_DAMAGE.size() > h, 3, "thrust " + (h + 1) + " never landed");
                 int dmg = TRIPLE_DAMAGE.get(h);
                 int full = SolHeredit.tripleDamage(h, script.phase());
+                long sinceOff = TRIPLE_LANDED_MC.get(h) - offMc;
+                expect(pray[h] || sinceOff > com.runecraft.osrs.PrayerGrace.GRACE_MC, "thrust " + (h + 1) + " landed "
+                        + sinceOff + " MC after the walk switched Protect from Melee off, inside the switch grace");
                 expect(pray[h] ? dmg == 0 : dmg == full, "thrust " + (h + 1) + " dealt " + dmg + " with Protect from Melee "
                         + (pray[h] ? "on (expected 0)" : "off (expected " + full + ")"));
                 landed.add(dmg);
+                if (data.isActive(melee)) { // the flick: off again once the thrust has landed
+                    com.runecraft.combat.PrayerService.toggle(player, melee);
+                    offMc = ActionManager.mcTick();
+                }
             }
         } finally {
             com.runecraft.util.Msg.telegraphListener = before;
@@ -758,8 +775,8 @@ public final class ColosseumWalk {
         }
         expect(calls.size() >= 3 && calls.get(0).contains("1/3") && calls.get(2).contains("3/3"),
                 "the thrusts were not called out on the player's screen: " + calls);
-        return "triple parry: each thrust called 2 ticks ahead, prayer toggled a tick after the call blocked it, off it landed "
-                + landed;
+        return "triple parry: each thrust called 2 ticks ahead, prayer flicked on a tick after the call blocked it, off since the "
+                + "last thrust it landed " + landed;
     }
 
     private void restoreInventory(List<ItemStack> kept) {
