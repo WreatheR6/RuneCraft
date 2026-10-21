@@ -64,8 +64,8 @@ import net.minecraft.world.phys.AABB;
  *   flags earned in other quests;</li>
  *   <li>a step may cost only the quest items it takes (a fight's weapon swap puts what was in hand back in the pack).</li>
  * </ul>
- * Any step that doesn't take effect fails the check with the stage, step and reason; so does a quest that doesn't end with
- * its quest points, XP and item rewards.
+ * Any step that doesn't take effect fails the check with the stage, step and reason, and so does a foe that leaves its fight
+ * without dying (a lair reset, a despawn) or a quest that doesn't end with its quest points, XP and item rewards.
  */
 final class QuestStepChecks {
     private static final int MC = ActionManager.MC_TICKS_PER_GAME_TICK;
@@ -78,8 +78,6 @@ final class QuestStepChecks {
     private final TestContext c;
     /** The stage the walk is at (for raising the next of several foes). */
     private QuestSpec.Stage stage;
-    /** This step's foe that left the fight without dying, as a note for the step's failure, or null. */
-    private String vanished;
 
     private QuestStepChecks(TestContext c) {
         this.c = c;
@@ -184,7 +182,6 @@ final class QuestStepChecks {
                         + stage.triggers.indexOf(t) + ")";
                 List<ItemStack> banked = prepare(t, questItems);
                 Snapshot snap = new Snapshot(t, s, info, questItems);
-                vanished = null;
                 switch (t.kind) {
                     case TALK -> QuestInterpreter.selfTestTalk(p(), t.target);
                     case REACH -> {
@@ -227,7 +224,7 @@ final class QuestStepChecks {
                     // what didn't happen, then the step's state now: still ready (the talk or place fired another step), or
                     // switched off (it fired, e.g. its flag is set, but part of it - its foe - didn't come through)
                     String why = QuestInterpreter.selfTestBlocked(p(), t);
-                    throw failure(where + " did not take effect (" + missing + (vanished != null ? "; " + vanished : "") + "): "
+                    throw failure(where + " did not take effect (" + missing + "): "
                             + (why != null ? "the step is now " + why
                             : "the step is still ready, the talk or place fired another step"));
                 }
@@ -466,9 +463,11 @@ final class QuestStepChecks {
                     + Math.round(foe.getHealth() * 100 / foe.getMaxHealth()) + "% health)");
         }
         if (foe.isRemoved() && foe.getHealth() > 0) {
-            // gone without dying (a lair reset, a despawn): no kill reached the quest, which the step's check then reports
-            vanished = id + " vanished at " + Math.round(foe.getHealth() * 100 / foe.getMaxHealth()) + "% health without dying ("
-                    + foe.getRemovalReason() + ")";
+            // Gone without dying (a lair reset, a despawn): the kill never went through the real death path. Failed here, not
+            // left to the step's check: a drop step fights again and a kill step of several foes goes on to the next, so a
+            // later kill could cover for this one.
+            throw failure(where + ": " + id + " vanished at " + Math.round(foe.getHealth() * 100 / foe.getMaxHealth())
+                    + "% health without dying (" + foe.getRemovalReason() + "), so no kill reached the quest");
         }
         return note;
     }
