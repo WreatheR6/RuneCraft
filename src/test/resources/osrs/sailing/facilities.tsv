@@ -1,0 +1,47 @@
+# Source: OSRS Wiki wikitext dump (Kiyogitpy/osrs-wiki-data, July 2026): each boat facility page's Recipe template
+# (Sailing level, Construction level and XP, materials, tools). The "Facilities" overview page has two typos these
+# pages correct (dragon cannon 1,857 XP, not 1,586; linen trawling net 697, not 783) and the salvaging station 372 (366).
+# name	sailing	construction	con_xp	materials	tools
+Bronze cannon	28	21	157	Plank:4;Bronze nails:16;Bronze bar:8	Saw, Hammer
+Iron cannon	35	28	328	Oak plank:4;Iron nails:16;Iron bar:8	Saw, Hammer
+Steel cannon	47	39	526	Teak plank:4;Steel nails:16;Steel bar:8	Saw, Hammer
+Mithril cannon	57	50	816	Mahogany plank:4;Mithril nails:16;Mithril bar:8	Saw, Hammer
+Adamant cannon	69	61	986	Camphor plank:4;Adamantite nails:16;Adamantite bar:8	Saw, Hammer
+Rune cannon	80	76	1359	Ironwood plank:4;Rune nails:16;Runite bar:8	Saw, Hammer
+Dragon cannon	92	84	1857	Rosewood plank:4;Dragon nails:16;Dragon metal sheet:8;Dragon cannon barrel:1	Saw, Hammer
+Bronze salvaging hook	15	1	151	Plank:4;Bronze nails:16;Bronze bar:6;Rope:1	Saw, Hammer
+Iron salvaging hook	21	9	312	Oak plank:4;Iron nails:16;Iron bar:6;Rope:1	Saw, Hammer
+Steel salvaging hook	27	18	499	Teak plank:4;Steel nails:16;Steel bar:6;Rope:1;Lead bar:3	Saw, Hammer
+Mithril salvaging hook	44	30	769	Mahogany plank:4;Mithril nails:16;Mithril bar:6;Rope:1;Lead bar:3	Saw, Hammer
+Adamant salvaging hook	59	52	919	Camphor plank:4;Adamantite nails:16;Adamantite bar:6;Rope:1;Lead bar:3	Saw, Hammer
+Rune salvaging hook	74	66	1233	Ironwood plank:4;Rune nails:16;Runite bar:6;Rope:1;Lead bar:4;Cupronickel bar:4	Saw, Hammer
+Dragon salvaging hook	86	78	1537	Rosewood plank:4;Dragon nails:16;Dragon metal sheet:6;Rope:1;Cupronickel bar:4;Broken dragon hook:1	Saw, Hammer
+Rope trawling net	56	45	458	Rope:7;Teak plank:4;Steel bar:4;Lead bar:2	Saw, Hammer
+Linen trawling net	65	61	697	Linen yarn:6;Mahogany plank:4;Rope:1;Mithril bar:4;Lead bar:2	Saw, Hammer
+Hemp trawling net	76	65	1003	Hemp yarn:6;Camphor plank:4;Rope:1;Adamantite bar:4;Cupronickel bar:2;Ray barbs:4	Saw, Hammer
+Cotton trawling net	84	73	1289	Cotton yarn:6;Ironwood plank:4;Rope:1;Runite bar:4;Cupronickel bar:2;Ray barbs:8	Saw, Hammer
+Basic cargo hold	1	1	232	Plank:8;Bronze nails:32	Saw, Hammer
+Oak cargo hold	18	11	491	Oak plank:8;Iron nails:32	Saw, Hammer
+Teak cargo hold	29	21	738	Teak plank:8;Steel nails:32;Lead bar:3	Saw, Hammer
+Mahogany cargo hold	46	41	1153	Mahogany plank:8;Mithril nails:32;Lead bar:3	Saw, Hammer
+Camphor cargo hold	60	53	1326	Camphor plank:8;Adamantite nails:32;Lead bar:3	Saw, Hammer
+Ironwood cargo hold	80	77	1492	Ironwood plank:8;Rune nails:32;Cupronickel bar:3	Saw, Hammer
+Rosewood cargo hold	89	84	1634	Rosewood plank:8;Dragon nails:32;Cupronickel bar:3	Saw, Hammer
+Range (facility)	16	6	90	Steel bar:4;Charcoal:2;Tinderbox:1	Saw, Hammer
+Keg (facility)	33	25	313	Oak plank:5;Iron nails:20	Saw, Hammer, Barrel stand
+Inoculation station	40	37	765	Teak plank:8;Steel nails:32;Relicym's balm(4):6	Saw, Hammer
+Salvaging station (facility)	42	34	372	Teak plank:4;Steel nails:16	Saw, Hammer
+Chum station	56	45	1522	Mahogany plank:10;Mithril nails:40;Steel bar:2;Fishing bait:1000;Knife:1	Saw, Hammer
+Bosun's workbench	63	54	1003	Camphor plank:6;Adamantite nails:24;Lead bar:5	Saw, Hammer
+Advanced chum station	68	61	1738	Camphor plank:10;Adamantite nails:40;Steel bar:2;Fishing bait:1000;Knife:1	Saw, Hammer
+Chum spreader	82	74	2028	Ironwood plank:10;Rune nails:40;Cupronickel bar:5;Fishing bait:10000;Narwhal horn knife:1	Saw, Hammer
+Wind catcher	53	47	741	Teak plank:4;Steel nails:16;Steel bar:8;Lead bar:4;Air rune:10000	Saw, Hammer, Captured wind mote
+Crystal extractor	73	67	3066	Ironwood plank:6;Cupronickel bar:5;Magic stone:2	Saw, Hammer, Heart of ithell
+Gale catcher	79	70	1517	Camphor plank:4;Adamantite nails:16;Adamantite bar:8;Cupronickel bar:4;Air rune:25000;Swift albatross feather:5	Saw, Hammer, Captured wind mote
+Anchor (facility)	37	29	176	Steel bar:8;Lead bar:6;Rope:1	Saw, Hammer
+Ballistic attractor	50	44	2141	Mahogany plank:10;Water rune:5000;Law rune:1000;Lead bar:5;Steel bar:5	Saw, Hammer
+Teleport focus (facility)	55	49	2154	Mahogany plank:8;Mithril nails:32;Lead bar:4;Magic stone:1	Saw, Hammer
+Fathom stone	70	62	1652	Camphor plank:10;Adamantite nails:40;Molten glass:4;Cupronickel bar:2	Saw, Hammer
+Greater teleport focus (facility)	75	69	3582	Ironwood plank:8;Rune nails:32;Cupronickel bar:4;Magic stone:2;Bottled storm:1	Saw, Hammer
+Fathom pearl	91	83	2307	Rosewood plank:10;Dragon nails:40;Dragon metal sheet:2;Echo pearl:1	Saw, Hammer
+Eternal brazier	78	72	1373	Ironwood plank:4;Rune nails:16;Runite bar:6;Cupronickel bar:6;Te salt:250;Efh salt:250;Urt salt:250

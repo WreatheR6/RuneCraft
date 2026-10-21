@@ -318,6 +318,106 @@ class SailingRound40Test {
         assertEquals(21 / 256.0, SailingShoals.catchChance(99, 4, 20), 1e-12);
     }
 
+    /** Facilities RuneCraft doesn't build yet (no effect modelled: kegs and ales, the anchor, Teleport to Boat, the narwhal horn knife). */
+    private static final Set<String> NOT_BUILT = Set.of("keg", "anchor", "teleport_focus", "greater_teleport_focus", "chum_spreader");
+
+    private static String facilityId(String wiki) {
+        return wiki.toLowerCase(Locale.ROOT).replace(" (facility)", "").replace("'s", "s").replace(' ', '_');
+    }
+
+    private static String materialId(String wiki) {
+        return switch (wiki) {
+            case "Relicym's balm(4)" -> "relicyms_balm";
+            case "Charcoal" -> "coal"; // approx: charcoal belongs to the quests module
+            default -> SailingSea.itemId(wiki);
+        };
+    }
+
+    @Test
+    void facilitiesMatchTheWiki() throws Exception {
+        java.util.Map<String, SailingTraining.Facility> all = new java.util.HashMap<>();
+        for (SailingTraining.Facility f : SailingCrew.allFacilities()) {
+            assertTrue(all.put(f.id(), f) == null, "duplicate facility " + f.id());
+        }
+        int checked = 0;
+        for (String[] r : tsv("facilities.tsv")) {
+            String id = facilityId(r[0]);
+            SailingTraining.Facility f = all.remove(id);
+            if (NOT_BUILT.contains(id)) {
+                assertTrue(f == null, id + " is built now: take it off NOT_BUILT");
+                continue;
+            }
+            assertNotNull(f, r[0]);
+            assertEquals(Integer.parseInt(r[1]), f.sailing(), r[0]);
+            assertEquals(Integer.parseInt(r[2]), f.construction(), r[0]);
+            assertEquals(Double.parseDouble(r[3]), f.conXp(), 1e-9, r[0]);
+            java.util.Map<String, Integer> mats = new java.util.LinkedHashMap<>();
+            for (String kv : r[4].split(";")) {
+                String[] p = kv.split(":");
+                mats.put(materialId(p[0]), Integer.parseInt(p[1]));
+            }
+            assertEquals(mats, new java.util.LinkedHashMap<>(f.materials()), r[0]);
+            for (String item : f.materials().keySet()) {
+                assertTrue(ItemCatalog.exists(item), r[0] + ": " + item);
+            }
+            String tool = null;
+            for (String t : r.length > 5 ? r[5].split(", ") : new String[0]) {
+                if (!t.isBlank() && !t.equals("Saw") && !t.equals("Hammer")) {
+                    tool = SailingSea.itemId(t);
+                }
+            }
+            assertEquals(tool, SailingTraining.FACILITY_TOOLS.get(id), r[0]);
+            if (tool != null) {
+                assertTrue(ItemCatalog.exists(tool), tool);
+            }
+            checked++;
+        }
+        assertTrue(all.isEmpty(), "facilities not on the wiki: " + all.keySet());
+        assertEquals(43 - NOT_BUILT.size(), checked);
+        // Wind and gale catchers: 25% less trimming XP, 2 / 3 motes worth 40 / 70 XP (10 from the crystal extractor).
+        assertEquals(0.75, SailingTraining.CATCHER_TRIM_FACTOR, 1e-12);
+        assertEquals(2, SailingTraining.WIND_CATCHER_MOTES);
+        assertEquals(3, SailingTraining.GALE_CATCHER_MOTES);
+        assertEquals(40, SailingTraining.WIND_MOTE_XP, 1e-12);
+        assertEquals(70, SailingTraining.GALE_MOTE_XP, 1e-12);
+        assertEquals(10, SailingTraining.EXTRACTOR_MOTE_XP, 1e-12);
+        assertEquals(0.6, SailingTraining.ATTRACTOR_RECOVERY, 1e-12);
+    }
+
+    @Test
+    void allTenLockboxesAreThere() {
+        assertEquals(10, SailingLockboxes.LOCKBOXES.size());
+        SailingLockboxes.Lockbox anglers = SailingLockboxes.byIsland("anglers_retreat");
+        assertEquals(51, anglers.level());
+        assertEquals("small_key_the_onyx_crest", anglers.keyId());
+        assertEquals("gale_catcher", anglers.unlock());
+        assertEquals(anglers, SailingLockboxes.keyAt(2979, 2255));
+        SailingLockboxes.Lockbox haven = SailingLockboxes.byIsland("buccaneers_haven");
+        assertEquals(76, haven.level());
+        assertEquals("small_key_tear_of_the_soul", haven.keyId());
+        assertEquals(haven, SailingLockboxes.forFacility("eternal_brazier"));
+        assertEquals(haven, SailingLockboxes.nearestLockbox(2094, 3667));
+        // The Deepfin Point key still lies on Buccaneers' Haven, apart from the haven's own lockbox.
+        assertEquals("deepfin_point", SailingLockboxes.keyAt(2059, 3676).island());
+        // The Tear of the Soul gets a dig spot place; the Onyx Crest is traced land.
+        assertTrue(SailingLockboxes.places().stream().anyMatch(p -> p.id().equals(haven.keyPlaceId())));
+        assertTrue(SailingLockboxes.places().stream().noneMatch(p -> p.id().equals(anglers.keyPlaceId())));
+    }
+
+    @Test
+    void barracudaTrialRanksHaveTheWikiBonuses() {
+        // Wiki trial pages: one-time bonus XP for each rank first earned, and the rank rewards RuneCraft has.
+        double[][] bonus = {{1000, 2000, 3000}, {5000, 7500, 10000}, {25000, 35000, 50000}};
+        for (int t = 0; t < 3; t++) {
+            for (int r = 0; r < 3; r++) {
+                assertEquals(bonus[t][r], SailingTraining.TRIALS.get(t).ranks().get(r).bonus(), 1e-9, t + "/" + r);
+            }
+        }
+        assertEquals("captured_wind_mote", SailingTraining.trial("jubbly_jive").ranks().get(1).reward());
+        assertEquals("heart_of_ithell", SailingTraining.trial("gwenith_glide").ranks().get(1).reward());
+        assertTrue(ItemCatalog.exists("captured_wind_mote"));
+    }
+
     @Test
     void anyLitLanternLightsLanternHarpooning() {
         // Wiki Lantern harpooning: any lit lantern; RuneCraft has these four of the wiki's seven.

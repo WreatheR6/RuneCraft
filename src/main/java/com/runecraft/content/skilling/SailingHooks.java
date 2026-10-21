@@ -146,16 +146,22 @@ final class SailingHooks {
             Msg.game(player, "Use the kit while looking at water to launch your " + SkillingUtil.lower(boat.name()) + ".");
             return;
         }
-        Vec3 p = hit.getLocation();
+        launchAt(player, stack, boat, hit.getLocation());
+    }
+
+    /** Launches the kit's boat at a spot on the water (levels already checked); used by the self-test too. */
+    public static Boat launchAt(ServerPlayer player, ItemStack stack, SailingData.Boat boat, Vec3 p) {
         Boat entity = new Boat(player.level(), p.x, p.y, p.z);
         entity.setVariant(Boat.Type.valueOf(boat.variant()));
         entity.setYRot(player.getYRot());
         entity.addTag(BOAT_TAG + boat.kit());
         entity.setCustomName(net.minecraft.network.chat.Component.literal(player.getName().getString() + "'s " + SkillingUtil.lower(boat.name())));
+        SeaHooks.applyTrim(player, entity, boat.type());
         player.level().addFreshEntity(entity);
         stack.shrink(1);
         player.level().playSound(null, entity.blockPosition(), SoundEvents.GENERIC_SPLASH, SoundSource.PLAYERS, 1f, 1f);
         Msg.action(player, "You launch your " + SkillingUtil.lower(boat.name()) + ".");
+        return entity;
     }
 
     /** Sailing is taught by the Pandemonium quest (creative players skip it). */
@@ -200,21 +206,91 @@ final class SailingHooks {
         }
         int[] t = TICKS.computeIfAbsent(player.getUUID(), k -> new int[2]);
         Vec3 v = vehicle.getDeltaMovement();
-        if (v.x * v.x + v.z * v.z > 0.01 && ++t[0] >= SailingTraining.TRIM_TICKS) {
+        boolean moving = v.x * v.x + v.z * v.z > 0.01;
+        if (moving && ++t[0] >= SailingTraining.TRIM_TICKS) {
             t[0] = 0;
-            double xp = SailingTraining.trimXp(type, partTier(player, type, SailingTraining.PartType.SAILS));
-            XpService.add(player, Skill.SAILING, xp);
-            Msg.action(player, "A gust of wind catches your sails and you trim them.");
+            trimSails(player, type);
+        } else if (moving && t[0] == SailingTraining.TRIM_TICKS / 2) {
+            releaseMote(player, type); // playability: OSRS releases a stored mote from the catcher's menu
         }
         if (++t[1] >= SailingTraining.EXTRACTOR_TICKS && hasFacility(player, type, "crystal_extractor")) {
             t[1] = 0;
             XpService.add(player, Skill.SAILING, SailingTraining.EXTRACTOR_XP);
             Msg.action(player, "You harvest a wind mote from the crystal extractor.");
+            storeMote(player, type, true);
         }
         SeaHooks.boatTick(player, vehicle, type);
         if (TRIALS.containsKey(player.getUUID())) {
             trialTick(player);
         }
+    }
+
+    /** Wind motes stored in a boat's catcher: {from trimming, from the crystal extractor}. */
+    private static final Map<UUID, int[]> MOTES = new HashMap<>();
+
+    /** The boat's wind or gale catcher capacity (0: none). */
+    static int catcherMotes(ServerPlayer player, String type) {
+        return hasFacility(player, type, "gale_catcher") ? SailingTraining.GALE_CATCHER_MOTES
+                : hasFacility(player, type, "wind_catcher") ? SailingTraining.WIND_CATCHER_MOTES : 0;
+    }
+
+    /**
+     * Trims the sails: the sails' trimming XP (wiki Mast and sails), 25% less with a wind or gale catcher, which stores a
+     * wind mote. Returns the XP given. Used every 30 seconds under way and by the self-test.
+     */
+    public static double trimSails(ServerPlayer player, String type) {
+        double xp = SailingTraining.trimXp(type, partTier(player, type, SailingTraining.PartType.SAILS));
+        if (catcherMotes(player, type) > 0) {
+            xp *= SailingTraining.CATCHER_TRIM_FACTOR;
+            storeMote(player, type, false);
+        }
+        XpService.add(player, Skill.SAILING, xp);
+        Msg.action(player, "A gust of wind catches your sails and you trim them.");
+        return xp;
+    }
+
+    private static void storeMote(ServerPlayer player, String type, boolean extractor) {
+        int cap = catcherMotes(player, type);
+        int[] m = MOTES.computeIfAbsent(player.getUUID(), k -> new int[2]);
+        if (cap > 0 && m[0] + m[1] < cap) {
+            m[extractor ? 1 : 0]++;
+        }
+    }
+
+    /** Wind motes stored in the player's catcher (self-test). */
+    public static int storedMotes(ServerPlayer player) {
+        int[] m = MOTES.get(player.getUUID());
+        return m == null ? 0 : m[0] + m[1];
+    }
+
+    /**
+     * Releases a stored wind mote for a burst of speed: 40 Sailing XP (70 with a gale catcher), or 10 for a mote from the
+     * crystal extractor (wiki). Returns the XP given (0: no mote stored).
+     */
+    public static double releaseMote(ServerPlayer player, String type) {
+        int[] m = MOTES.get(player.getUUID());
+        if (m == null || m[0] + m[1] == 0 || catcherMotes(player, type) == 0) {
+            return 0;
+        }
+        boolean extractor = m[0] == 0;
+        m[extractor ? 1 : 0]--;
+        double xp = extractor ? SailingTraining.EXTRACTOR_MOTE_XP : hasFacility(player, type, "gale_catcher") ? SailingTraining.GALE_MOTE_XP
+                : SailingTraining.WIND_MOTE_XP;
+        XpService.add(player, Skill.SAILING, xp);
+        player.level().playSound(null, player.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 0.5f, 0.6f);
+        Msg.action(player, "You release a wind mote and your boat surges forward.");
+        return xp;
+    }
+
+    /** Raw food used aboard a boat with a range opens the cooking menu there (wiki Range (facility)). True when it did. */
+    static boolean cookAboard(ServerPlayer player, String item) {
+        String type = boatType(player.getVehicle());
+        if (type == null || !hasFacility(player, type, "range")
+                || com.runecraft.osrs.Recipes.menu(com.runecraft.osrs.MenuType.COOKING).stream().noneMatch(r -> r.inputs().containsKey(item))) {
+            return false;
+        }
+        com.runecraft.menu.MenuService.open(player, com.runecraft.osrs.MenuType.COOKING, null, true);
+        return true;
     }
 
     static boolean nearBoat(ServerPlayer player) {
@@ -584,6 +660,11 @@ final class SailingHooks {
         if (!SkillingUtil.needItem(player, "hammer", "You need a hammer to build boat parts.")) {
             return;
         }
+        String tool = o instanceof SailingTraining.Facility f ? SailingTraining.FACILITY_TOOLS.get(f.id()) : null;
+        if (tool != null && !SkillingUtil.needItem(player, tool, "You need " + Msg.article(SkillingUtil.lower(SkillingUtil.name(tool)))
+                + " to build that.")) {
+            return;
+        }
         if (!hasAll(player, mats)) {
             Msg.game(player, "You need " + materials(mats) + ".");
             return;
@@ -659,6 +740,10 @@ final class SailingHooks {
                     + " Sailing XP. Sneak and use the buoy from your skiff to start.");
             return;
         }
+        if (!rankOpen(player, trial, rank)) {
+            Msg.game(player, "You need to earn the " + trial.ranks().get(rank - 1).name() + " rank of " + trial.name() + " first.");
+            return;
+        }
         Entity boat = player.getVehicle();
         String type = boatType(boat);
         String why = SailingTraining.trialBlocker(trial, SkillingUtil.level(player, Skill.SAILING), type,
@@ -723,12 +808,27 @@ final class SailingHooks {
         Msg.action(player, "You complete " + run.trial.name() + " (" + r.name() + ") in " + (int) seconds + "s"
                 + (target ? ", beating the target time!" : " (target " + r.targetSeconds() + "s)."));
         if (target && !best.getBoolean(key)) {
+            // The rank is earned: a one-time bonus and the rank's reward (wiki trial pages), and the next rank opens.
             best.putBoolean(key, true);
-            if (run.trial.id().equals("gwenith_glide") && r.name().equals("Shark")) {
-                SkillingUtil.give(player, "heart_of_ithell", 1);
-                Msg.action(player, "Gwyna hands you the Heart of Ithell.");
+            XpService.add(player, Skill.SAILING, r.bonus());
+            Msg.action(player, "You earn the " + r.name() + " rank and " + (int) r.bonus() + " bonus Sailing XP!");
+            if (r.reward() != null) {
+                SkillingUtil.give(player, r.reward(), 1);
+                Msg.action(player, "You receive " + Msg.article(SkillingUtil.lower(SkillingUtil.name(r.reward()))) + ".");
             }
         }
+    }
+
+    /** Whether a trial's rank can be attempted: the rank before it must have been earned (wiki: Swordfish first). */
+    static boolean rankOpen(ServerPlayer player, SailingTraining.Trial trial, int rank) {
+        CompoundTag best = SkillingState.get(player.getServer()).entry("trials", player.getStringUUID());
+        return rank == 0 || best.getBoolean(trial.id() + "." + trial.ranks().get(rank - 1).name());
+    }
+
+    /** Ends a trial at once as if its last objective was just reached after {@code seconds} (self-test). */
+    public static void finishTrialForTest(ServerPlayer player, SailingTraining.Trial trial, int rank, double seconds) {
+        TrialRun run = new TrialRun(trial, rank, ActionManager.gameTick() - Math.round(seconds / 0.6));
+        finishTrial(player, run);
     }
 
     // ------------------------------------------------------------------ trawling
@@ -742,6 +842,41 @@ final class SailingHooks {
             }
         }
         return best;
+    }
+
+    /**
+     * A fathom stone points out the cardinal direction of the nearest shoal; a fathom pearl shows where it is (wiki:
+     * the pearl puts a hint arrow over the shoal; here the direction and distance in tiles). Returns the message, or null.
+     */
+    public static String fathom(ServerPlayer player, String boat) {
+        boolean pearl = hasFacility(player, boat, "fathom_pearl");
+        if (!pearl && !hasFacility(player, boat, "fathom_stone")) {
+            return null;
+        }
+        int x = GielinorMap.toOsrsX(player.getBlockX());
+        int y = GielinorMap.toOsrsY(player.getBlockZ());
+        int[] pin = SailingShoals.nearestPin(x, y);
+        String dir = compass(pin[0] - x, pin[1] - y, pearl);
+        String msg = pearl ? "The fathom pearl glows: a shoal swims " + Math.max(Math.abs(pin[0] - x), Math.abs(pin[1] - y))
+                + " tiles to the " + dir + "." : "The fathom stone tugs towards the " + dir + ".";
+        Msg.action(player, msg);
+        return msg;
+    }
+
+    /** "north", "south-east"...: cardinal only for the fathom stone, with the diagonals for the pearl (OSRS y grows north). */
+    static String compass(int dx, int dy, boolean diagonals) {
+        String ns = dy > 0 ? "north" : "south";
+        String ew = dx > 0 ? "east" : "west";
+        if (!diagonals) {
+            return Math.abs(dy) >= Math.abs(dx) ? ns : ew;
+        }
+        if (Math.abs(dy) > 2 * Math.abs(dx)) {
+            return ns;
+        }
+        if (Math.abs(dx) > 2 * Math.abs(dy)) {
+            return ew;
+        }
+        return ns + "-" + ew;
     }
 
     /** The shoal whose marker or pin is at (or within range of) a block position, or null. */
@@ -772,6 +907,7 @@ final class SailingHooks {
         SailingShoals.Shoal s = shoal != null ? shoal : shoalNear(player.blockPosition(), SailingShoals.RANGE);
         if (s == null) {
             Msg.game(player, "There's no shoal in range of your net. Trawling shoals swim at their marked spots out at sea.");
+            fathom(player, boat);
             return null;
         }
         if (!SkillingUtil.need(player, Skill.FISHING, s.level(), "trawl the " + SkillingUtil.lower(s.name()))) {

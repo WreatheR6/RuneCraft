@@ -217,6 +217,8 @@ public final class SailingData extends SkillingPart {
         simple(s, "dragon_nails", "Dragon nails", "nails", 0xA02020, 1500).examine("Keeps things in place very permanently.");
         simple(s, "dragon_metal_sheet", "Dragon metal sheet", "bar", 0xB02A2A, 30000).examine("A sheet of dragon metal.");
         simple(s, "heart_of_ithell", "Heart of Ithell", "orb", 0x80E0D0, 1).examine("A crystal heart from the Gwenith Glide.");
+        simple(s, "captured_wind_mote", "Captured wind mote", "orb", 0xD0E8F0, 1).stack(1)
+                .examine("A wisp of wind from the Jubbly Jive. A wind catcher could hold more like it.");
         for (Boat b : BOATS) {
             simple(s, b.kit(), b.name() + " kit", "boat", b.variant().equals("BAMBOO") ? 0xC0B060
                     : b.variant().equals("OAK") ? 0x9A7A4A : 0x4A3A2A, 100 + b.level() * 50).stack(1)

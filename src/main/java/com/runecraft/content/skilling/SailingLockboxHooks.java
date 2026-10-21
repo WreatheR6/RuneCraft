@@ -33,6 +33,9 @@ public final class SailingLockboxHooks {
         BlockHooks.register(SailingLockboxes.BLOCK, (player, pos, state) -> open(player, pos));
         for (SailingLockboxes.Lockbox l : SailingLockboxes.LOCKBOXES) {
             LandmarkBuilder.registerCustom(l.placeId(), (world, centre) -> SailingHooks.placeAtSea(world, centre, SailingLockboxes.BLOCK, 0));
+            if (SailingLockboxes.UNTRACED.contains(l.keyIsland())) {
+                LandmarkBuilder.registerCustom(l.keyPlaceId(), SailingLockboxHooks::sandBar);
+            }
         }
         UseItemCallback.EVENT.register((player, world, hand) -> {
             ItemStack stack = player.getItemInHand(hand);
@@ -50,6 +53,27 @@ public final class SailingLockboxHooks {
             }
             return InteractionResultHolder.pass(stack);
         });
+    }
+
+    /**
+     * A sand bar of 5 x 5 blocks on the water over a small key's tile on an islet RuneCraft's sea has not traced (the Tear
+     * of the Soul), so the key can be dug up (approx).
+     */
+    private static void sandBar(net.minecraft.server.level.ServerLevel world, BlockPos centre) {
+        for (int dx = -2; dx <= 2; dx++) {
+            for (int dz = -2; dz <= 2; dz++) {
+                if (Math.abs(dx) == 2 && Math.abs(dz) == 2) {
+                    continue;
+                }
+                BlockPos at = centre.offset(dx, 0, dz);
+                if (world.getBlockState(at).getFluidState().is(net.minecraft.tags.FluidTags.WATER) || world.getBlockState(at).canBeReplaced()) {
+                    world.setBlock(at, net.minecraft.world.level.block.Blocks.SAND.defaultBlockState(),
+                            net.minecraft.world.level.block.Block.UPDATE_CLIENTS);
+                    world.setBlock(at.below(), net.minecraft.world.level.block.Blocks.SAND.defaultBlockState(),
+                            net.minecraft.world.level.block.Block.UPDATE_CLIENTS);
+                }
+            }
+        }
     }
 
     private static CompoundTag state(ServerPlayer player) {

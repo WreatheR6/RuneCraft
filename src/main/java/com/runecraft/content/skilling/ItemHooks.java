@@ -186,6 +186,10 @@ public final class ItemHooks {
             pouch(player, stack, pouch);
             return true;
         }
+        // Raw food used aboard a boat with a range facility: cook it there.
+        if (player.getVehicle() != null && SailingHooks.cookAboard(player, id)) {
+            return true;
+        }
         // Sneak + use cargo (salvage, cannonballs, repair kits) near your boat: store it in the cargo hold.
         if (player.isShiftKeyDown() && player.getVehicle() == null && com.runecraft.osrs.content.skilling.SailingCrew.storable(id)
                 && SeaHooks.deposit(player, id, stack.getCount())) {

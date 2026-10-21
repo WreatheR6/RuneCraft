@@ -75,15 +75,17 @@ public final class SeaHooks {
         // Sneak + use your boat with an empty hand: empty its cargo hold into your inventory.
         // Boat paint (OSRS: a cosmetic colour scheme for your boat): use the paint on one of your boats to repaint its hull.
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
-            if (hand != InteractionHand.MAIN_HAND || !(entity instanceof Boat boat) || !PAINT.equals(Inv.idOf(player.getMainHandItem()))) {
+            String paint = Inv.idOf(player.getMainHandItem());
+            if (hand != InteractionHand.MAIN_HAND || !(entity instanceof Boat boat) || !PAINTS.containsKey(paint)) {
                 return InteractionResult.PASS;
             }
             if (world.isClientSide() || !(player instanceof ServerPlayer sp) || SailingHooks.boatType(entity) == null) {
                 return InteractionResult.PASS;
             }
-            boat.setVariant(Boat.Type.DARK_OAK); // approx: the shark scheme's dark grey hull
-            player.getMainHandItem().shrink(1);
-            Msg.action(sp, "You paint your boat in the colours of a shark.");
+            String why = paintBoat(sp, boat, paint);
+            if (why != null) {
+                Msg.game(sp, why);
+            }
             return InteractionResult.SUCCESS;
         });
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
@@ -100,6 +102,57 @@ public final class SeaHooks {
             withdrawAll(sp, type);
             return InteractionResult.SUCCESS;
         });
+    }
+
+    // ------------------------------------------------------------------ boat paint
+
+    /** Boat paints RuneCraft has and the vanilla boat look each trim is shown with (approx: Minecraft boats have no trim). */
+    static final Map<String, Boat.Type> PAINTS = Map.of(PAINT, Boat.Type.SPRUCE, "salvors_paint", Boat.Type.BIRCH,
+            "inky_paint", Boat.Type.MANGROVE);
+
+    /**
+     * Trims a skiff or sloop with a boat paint (wiki Shark paint: 25 Sailing and 20 Construction, 10 Construction XP, one
+     * paint for a skiff and two for a sloop; rafts can't be trimmed; OSRS paints at the boat schematics). The trim is kept
+     * for the boat type and shown again whenever it is launched. Returns why it can't be done, or null.
+     */
+    public static String paintBoat(ServerPlayer player, Entity boat, String paint) {
+        String type = SailingHooks.boatType(boat);
+        if (type == null || type.equals("raft")) {
+            return "Only skiffs and sloops have a trim to paint.";
+        }
+        if (SkillingUtil.level(player, Skill.SAILING) < PAINT_SAILING || SkillingUtil.level(player, Skill.CONSTRUCTION) < PAINT_CONSTRUCTION) {
+            return "You need level " + PAINT_SAILING + " Sailing and " + PAINT_CONSTRUCTION + " Construction to trim a boat.";
+        }
+        int need = type.equals("sloop") ? 2 : 1;
+        if (Inv.count(player, paint) < need) {
+            return "You need " + need + " " + SkillingUtil.lower(SkillingUtil.name(paint)) + " to trim your " + type + ".";
+        }
+        Inv.remove(player, paint, need);
+        SailingHooks.boatState(player).putString("trim." + type, paint);
+        if (boat instanceof Boat b && !(boat instanceof com.runecraft.content.extras.SailBoatEntity)) {
+            b.setVariant(PAINTS.get(paint));
+        }
+        XpService.add(player, Skill.CONSTRUCTION, PAINT_XP);
+        Msg.action(player, "You trim your " + type + " with " + SkillingUtil.lower(SkillingUtil.name(paint)) + ".");
+        return null;
+    }
+
+    public static final int PAINT_SAILING = 25;
+    public static final int PAINT_CONSTRUCTION = 20;
+    public static final double PAINT_XP = 10;
+
+    /** The trim painted on a boat type, or null. */
+    public static String trim(ServerPlayer player, String type) {
+        String t = SailingHooks.boatState(player).getString("trim." + type);
+        return t.isEmpty() ? null : t;
+    }
+
+    /** Shows a launched boat with its painted trim. */
+    static void applyTrim(ServerPlayer player, Boat boat, String type) {
+        String t = trim(player, type);
+        if (t != null && PAINTS.containsKey(t)) {
+            boat.setVariant(PAINTS.get(t));
+        }
     }
 
     // ------------------------------------------------------------------ salvage sorting
@@ -834,7 +887,9 @@ public final class SeaHooks {
                 hand = c;
             }
         }
-        if (s.crewRepair <= 0 && s.hp >= 0 && s.hp < maxHp(player, type) * SailingCrew.CREW_REPAIR_BELOW) {
+        // Crewmates repair by themselves with a bosun's workbench (wiki, May 2026: otherwise only on the captain's order).
+        if (s.crewRepair <= 0 && s.hp >= 0 && s.hp < maxHp(player, type) * SailingCrew.CREW_REPAIR_BELOW
+                && SailingHooks.hasFacility(player, type, "bosuns_workbench")) {
             crewRepair(player, type, hand);
             s.crewRepair = 4; // approx: the eating delay
         }
@@ -897,6 +952,7 @@ public final class SeaHooks {
         if (ball == null) {
             return -1;
         }
+        recoverBall(player, type, item);
         Spawned sp = SPAWNED.get(target);
         if (sp != null) {
             sp.engaged = true;
@@ -917,6 +973,18 @@ public final class SeaHooks {
             XpService.add(player, Skill.SAILING, dmg); // approx: crew shots give the Sailing share of a player's shot
         }
         return dmg;
+    }
+
+    /** A ballistic attractor brings back 60% of the cannonballs fired: into the cargo hold if the boat has one, else the pack. */
+    private static void recoverBall(ServerPlayer player, String type, String item) {
+        if (!SailingHooks.hasFacility(player, type, "ballistic_attractor") || RNG.nextDouble() >= SailingTraining.ATTRACTOR_RECOVERY) {
+            return;
+        }
+        if (SailingCrew.bestHold(SailingHooks.facilities(player, type)) != null) {
+            stockHold(player, type, item, 1);
+        } else {
+            Inv.give(player, item, 1);
+        }
     }
 
     /** A chainshot hit delays the creature's next attack; an incendiary hit adds a burn (up to 5). */
@@ -1026,6 +1094,10 @@ public final class SeaHooks {
         }
         if (Inv.remove(player, item, 1) < 1) {
             return 0;
+        }
+        String boatType = SailingHooks.boatType(SailingHooks.nearbyBoat(player));
+        if (boatType != null) {
+            recoverBall(player, boatType, item);
         }
         Spawned sp = SPAWNED.get(target);
         if (sp != null) {
