@@ -83,6 +83,9 @@ public final class MiningData extends SkillingPart {
         }
     }
 
+    /** Mining XP of a rubium geode (wiki Rubium deposit: average 40); declared before ROCKS, which reads it. */
+    public static final double[] RUBIUM_DEPOSIT_XP = {10.0, 16.7, 18.9, 20.8, 26.0, 32.5, 38.3, 40.0, 56.8, 80.0, 100.0};
+
     public static final List<MineRock> ROCKS = List.of(
             // Sandstone and granite: each size has its own success curve (OSRS Wiki skilling success chart),
             // tried from the heaviest down; the rock's own low/high is unused.
@@ -107,6 +110,10 @@ public final class MiningData extends SkillingPart {
             new MineRock("nickel_rock", "Nickel rocks", 74, 40, 140, 20, List.of(new Yield("nickel_ore", 1, 80.5)), 0xA8A890),
             // Rubium rocks (Charred Dungeon, 60 Sailing): 48 Mining, 30 XP, stackable rubium splinters. Rates approx.
             new MineRock("rubium_rock", "Rubium rocks", 48, 80, 200, 15, List.of(new Yield("rubium_splinters", 1, 30.0)), 0xC03A2A),
+            // Rubium deposits (Charred Dungeon, Kragin's two): 68 Mining, a rubium geode for one of the wiki's eleven XP values
+            // (10 to 100, average 40). Success rates approx (no wiki chart); OSRS keeps one of the two active, each lasting 4-5
+            // minutes; here they never deplete (approx).
+            new MineRock("rubium_deposit", "Rubium deposit", 68, 60, 160, 0, rubiumDeposit(), 0xA02A2A),
             // Volcanic sulphur (Lovakengj sulphur mine): 42 Mining, 35 XP, 100/220, respawns in 25.2 seconds; needs a
             // breathing filter (gas mask, facemask or slayer helmet) worn.
             new MineRock("volcanic_sulphur_rock", "Volcanic sulphur", 42, 100, 220, 42, List.of(new Yield("volcanic_sulphur", 1, 35.0)), 0xC8B830),
@@ -114,6 +121,21 @@ public final class MiningData extends SkillingPart {
             // deposit (32 XP). A rock depletes 20 seconds after it starts being mined and respawns after a minute.
             new MineRock("barronite_rock", "Barronite rocks", 14, 80, 100, 100, List.of(new Yield("barronite_shards", 76, 16.0, 0, 0, 4, 6),
                     new Yield("barronite_deposit", 24, 32.0)), 0x7A6A8A));
+
+    /** The rubium deposit's geode at each Mining XP value of the wiki's table, equally likely. */
+    private static List<Yield> rubiumDeposit() {
+        List<Yield> out = new java.util.ArrayList<>();
+        for (double xp : RUBIUM_DEPOSIT_XP) {
+            out.add(new Yield("rubium_geode", 1, xp));
+        }
+        return List.copyOf(out);
+    }
+
+    /** Rubium splinters in a cracked geode (wiki: 3-7 at 68-75 Mining, 4-8 at 76-83, 5-9 at 84-91, 6-10 from 92). */
+    public static int rubiumSplinters(int miningLevel, java.util.Random random) {
+        int min = miningLevel >= 92 ? 6 : miningLevel >= 84 ? 5 : miningLevel >= 76 ? 4 : 3;
+        return min + random.nextInt(5);
+    }
 
     public static final String LEAD = "lead_rock";
     public static final String SULPHUR = "volcanic_sulphur_rock";

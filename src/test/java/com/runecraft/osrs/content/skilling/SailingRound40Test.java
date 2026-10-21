@@ -419,6 +419,52 @@ class SailingRound40Test {
     }
 
     @Test
+    void rubiumDepositsGiveGeodesAndGeodesSplinters() {
+        // Wiki Rubium deposit: 68 Mining, eleven XP values from 10 to 100 averaging 40; Rubium geode: 3-7 splinters at 68-75
+        // Mining up to 6-10 from 92.
+        MiningData.MineRock deposit = MiningData.rock("rubium_deposit");
+        assertNotNull(deposit);
+        assertEquals(68, deposit.level());
+        assertEquals(11, deposit.yields().size());
+        double sum = 0;
+        for (MiningData.Yield y : deposit.yields()) {
+            assertEquals("rubium_geode", y.item());
+            sum += y.xp();
+        }
+        assertEquals(40.0, sum / deposit.yields().size(), 1e-9);
+        assertTrue(ItemCatalog.exists("rubium_geode"));
+        Random r = new Random(4);
+        int[][] bands = {{68, 3, 7}, {75, 3, 7}, {76, 4, 8}, {84, 5, 9}, {92, 6, 10}, {99, 6, 10}};
+        for (int[] b : bands) {
+            int min = Integer.MAX_VALUE;
+            int max = 0;
+            for (int i = 0; i < 500; i++) {
+                int n = MiningData.rubiumSplinters(b[0], r);
+                min = Math.min(min, n);
+                max = Math.max(max, n);
+            }
+            assertEquals(b[1], min, "level " + b[0]);
+            assertEquals(b[2], max, "level " + b[0]);
+        }
+    }
+
+    @Test
+    void lagunaLeechesAndMosquitoes() {
+        // Wiki infoboxes: leech level 52, 45 HP, stab max 3, attack speed 4; giant mosquito level 13, 3 HP, crush max 1, speed 12.
+        com.runecraft.osrs.content.MonsterDef leech = com.runecraft.osrs.content.ContentRegistry.monsters().stream()
+                .filter(m -> m.id.equals("leech")).findFirst().orElse(null);
+        com.runecraft.osrs.content.MonsterDef mosquito = com.runecraft.osrs.content.ContentRegistry.monsters().stream()
+                .filter(m -> m.id.equals("giant_mosquito")).findFirst().orElse(null);
+        assertNotNull(leech);
+        assertNotNull(mosquito);
+        assertTrue(com.runecraft.osrs.content.islands.IslandsPlaces.camps().stream()
+                .anyMatch(c -> c.place().equals(com.runecraft.osrs.content.islands.IslandsPlaces.LAGUNA_AURORAE) && c.creatures().contains("leech")));
+        assertTrue(com.runecraft.osrs.content.islands.IslandsPlaces.camps().stream()
+                .anyMatch(c -> c.place().equals(com.runecraft.osrs.content.islands.IslandsPlaces.LAGUNA_AURORAE)
+                        && c.creatures().contains("giant_mosquito")));
+    }
+
+    @Test
     void anyLitLanternLightsLanternHarpooning() {
         // Wiki Lantern harpooning: any lit lantern; RuneCraft has these four of the wiki's seven.
         assertEquals(List.of("bug_lantern", "abyssal_lantern", "sapphire_lantern", "ld_emerald_lantern"), GatheringData.LIT_LANTERNS);

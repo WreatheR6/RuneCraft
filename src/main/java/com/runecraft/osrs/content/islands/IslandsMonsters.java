@@ -133,6 +133,11 @@ public final class IslandsMonsters {
                 // Mudskipper Point (approx. stats).
                 m("mudskipper", "Mudskipper", 31, 28, 25, 28, 25, 1, 1).speed(4).attack(melee(AttackType.CRUSH, 4))
                         .drops(Drop.always("bones"), Drop.of("raw_shrimps", 1, 1, 8), Drop.of("coins", 3, 30, 8))
-                        .skin(0x6A6A4A, 0x4A4A3A, 0x4A4A3A, 0x8A8A5A).size(0.9f, 0.7f, 1.0f));
+                        .skin(0x6A6A4A, 0x4A4A3A, 0x4A4A3A, 0x8A8A5A).size(0.9f, 0.7f, 1.0f),
+                // Laguna Aurorae (Sailing 58; wiki infoboxes, July 2026; the wiki lists no drops for either).
+                m("leech", "Leech", 52, 45, 80, 20, 35, 1, 1).speed(4).attack(melee(AttackType.STAB, 3))
+                        .skin(0x3A2A2A, 0x4A3030, 0x4A3030, 0x6A3A3A).size(0.7f, 0.4f, 1.0f),
+                m("giant_mosquito", "Giant mosquito", 13, 3, 5, 1, 45, 1, 1).speed(12).attack(melee(AttackType.CRUSH, 1))
+                        .defenceBonus(2, 2, 5, 2, 0).skin(0x5A4A3A, 0x3A3A3A, 0x3A3A3A, 0xA03030).size(0.6f, 0.6f, 1.0f));
     }
 }

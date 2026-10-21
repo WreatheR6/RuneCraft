@@ -252,6 +252,19 @@ public final class ItemHooks {
                 Msg.action(player, "You crush the infernal eel and find " + SkillingUtil.lower(SkillingUtil.name(l.item())) + ".");
                 return true;
             }
+            case "rubium_geode" -> {
+                // Wiki Rubium geode: a hammer and chisel crack it into splinters, more at higher Mining levels.
+                if (!SkillingUtil.needItem(player, "hammer", "You need a hammer and a chisel to crack the geode.")
+                        || !SkillingUtil.needItem(player, "chisel", "You need a hammer and a chisel to crack the geode.")) {
+                    return true;
+                }
+                stack.shrink(1);
+                int n = com.runecraft.osrs.content.skilling.MiningData.rubiumSplinters(SkillingUtil.level(player, Skill.MINING),
+                        new java.util.Random(player.getRandom().nextLong()));
+                SkillingUtil.give(player, "rubium_splinters", n);
+                Msg.action(player, "You crack the geode open and find " + n + " rubium splinters.");
+                return true;
+            }
             case "trawling_net" -> {
                 SailingHooks.trawl(player);
                 return true;

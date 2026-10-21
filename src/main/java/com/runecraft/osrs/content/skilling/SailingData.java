@@ -251,6 +251,8 @@ public final class SailingData extends SkillingPart {
         simple(s, "rubium_splinters", "Rubium splinters", "shard", 0xC03A2A, 20).stack(Integer.MAX_VALUE)
                 .examine("Splinters of a volatile red mineral.");
         simple(s, "nickel_ore", "Nickel ore", "ore", 0xA8A890, 200).examine("This needs refining.");
+        simple(s, "rubium_geode", "Rubium geode", "ore", 0x8A2A2A, 50)
+                .examine("A hard shell around rubium. A hammer and chisel would crack it open.");
         simple(s, "shark_paint", "Shark paint", "pot_item", 0x5A6A7A, 1000).examine("Paint for the trim of a skiff or sloop.");
         simple(s, SailingShoals.FINE_OFFCUTS, "Fine fish offcuts", "bait", 0xC07A6A, 3).stack(Integer.MAX_VALUE)
                 .examine("Choice cuts of fish, good for baiting the deeper shoals.");
