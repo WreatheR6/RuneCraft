@@ -260,6 +260,26 @@ public final class Mechanics {
         return mob != null && resolvingMob == mob;
     }
 
+    /** The player a pending hit is on its way to, by its {@link Threat#id()} (self-tests; null once it resolved). */
+    public static ServerPlayer targetOf(long threatId) {
+        for (Pending p : PENDING) {
+            if (p.id == threatId) {
+                return p.target;
+            }
+        }
+        return null;
+    }
+
+    /** Whether a ground hazard of {@code world} is on the spot now, armed or arming (self-tests; its contact rule). */
+    public static boolean hazardAt(ServerLevel world, Vec3 at) {
+        for (Hazard h : HAZARDS) {
+            if (h.world == world && ThreatTiming.hazardContact(horizontal(at, h.pos), at.y - h.pos.y)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Pending hits on a player (self-tests). */
     public static int pendingOn(ServerPlayer target) {
         int n = 0;

@@ -165,6 +165,15 @@ public final class HudNet {
     /** Self-test hook: a player outside the level's player list (the fake player) that ground casts reach too, or null. */
     public static volatile ServerPlayer selfTestPlayer;
 
+    /** A round ground strike or hazard as it is made (self-test recorder): where it lands, how wide, and when. */
+    public record GroundCast(net.minecraft.server.level.ServerLevel world, net.minecraft.world.phys.Vec3 centre, double radius,
+                             Entity source, int landInMc, String label) {
+    }
+
+    /** Self-test hook (round 44, the real-player walks): sees every round ground strike or hazard with its place and size. */
+    public static java.util.function.Consumer<GroundCast> groundListener = g -> {
+    };
+
     /** Ground casts sent per player whose landing hasn't passed yet: a volley landing together is one row. */
     private static final Map<UUID, java.util.Set<GroundKey>> GROUND_SENT = new ConcurrentHashMap<>();
 
@@ -178,6 +187,9 @@ public final class HudNet {
      */
     public static void groundCast(net.minecraft.server.level.ServerLevel world, net.minecraft.world.phys.Vec3 centre, double radius,
             Entity source, AttackType style, int landInMc, String label) {
+        if (world != null && landInMc >= 0) {
+            groundListener.accept(new GroundCast(world, centre, radius, source, landInMc, label));
+        }
         groundCast(world, p -> CastBar.nearStrike(p.getX() - centre.x, p.getY() - centre.y, p.getZ() - centre.z, radius),
                 source, style, landInMc, label);
     }

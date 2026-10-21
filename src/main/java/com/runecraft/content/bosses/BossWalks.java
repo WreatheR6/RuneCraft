@@ -42,7 +42,83 @@ public final class BossWalks {
         int biggest(String attack);
 
         void clearDamage();
+
+        /**
+         * Walks the player to a spot in real time (round 44): at a human's pace through the arena's collision, the fight ticking
+         * meanwhile (selftest/RealPlayer), as a player answers a mechanic. {@link #moveTo} stays for setting the scene.
+         */
+        default void walkTo(Vec3 at, DataBossEntity boss) {
+            moveTo(at, boss);
+        }
+
+        /**
+         * The player switches a protection prayer on through the prayer key a human's reaction time after now (round 44:
+         * the walk read the cue now; selftest/RealPlayer.react). Without a real-player helper it switches at once.
+         */
+        default void react(com.runecraft.osrs.Prayer prayer) {
+            pray(player(), prayer);
+        }
+
+        /** Real walks keep {@code radius} blocks from these spots (a dark seed, a pool) until {@link #clearAvoid}. */
+        default void avoid(List<Vec3> spots, double radius) {
+        }
+
+        default void clearAvoid() {
+        }
+
+        /**
+         * Runs {@code n} Minecraft ticks of the fight (a player's reaction to what it just saw: round 44); without a real-player
+         * driver, whole game ticks covering them.
+         */
+        default void mcTicks(DataBossEntity boss, int n) {
+            ticks(boss, (n + com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK - 1)
+                    / com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK);
+        }
+
+        /**
+         * Keeps a protection prayer up (null: stop): switched on now, and on again a reaction time after anything switches it
+         * off (a prayer disable). Without a real-player driver it is only switched on now.
+         */
+        default void keep(com.runecraft.osrs.Prayer prayer) {
+            if (prayer != null) {
+                pray(player(), prayer);
+            }
+        }
+
+        /** Times a kept prayer was switched off and on again. */
+        default int prayerRestores() {
+            return 0;
+        }
+
+        /**
+         * Answers an area attack on a cue the walk read itself (round 44): the cue came {@code sinceCueMc} Minecraft ticks ago
+         * and the attack lands {@code landsInMc} from now; a reaction time after the cue the player walks to {@code safe}. The
+         * walk out is judged against the cue's whole lead, failing the walk with the attack's name when a player reacting at
+         * once couldn't make it.
+         */
+        default void walkOut(String name, Vec3 safe, int sinceCueMc, int landsInMc, DataBossEntity boss) {
+            walkTo(safe, boss);
+        }
     }
+
+    /** Minecraft ticks since the boss's last game tick (what the walk saw at the end of a game tick happened then). */
+    static int sinceGameTick(DataBossEntity boss) {
+        return Math.floorMod(boss.tickCount, com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK);
+    }
+
+    /**
+     * Runs the fight on to just after the boss's next game tick (round 44), so a special the walk starts itself starts where the
+     * boss's own game tick would start it and keeps its whole lead.
+     */
+    static void alignToGameTick(DataBossEntity boss, Driver d) {
+        int k = sinceGameTick(boss);
+        if (k != 0) {
+            d.mcTicks(boss, com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK - k);
+        }
+    }
+
+    /** A human's reaction time in Minecraft ticks (round 44): what a walk waits between seeing a cue and moving. */
+    static final int REACTION_MC = com.runecraft.osrs.RealReaction.REACTION_MC;
 
     private static IllegalStateException fail(String message) {
         return new IllegalStateException(message);
@@ -125,7 +201,7 @@ public final class BossWalks {
             if (w.inRealm(p)) {
                 throw fail("still in the Shadow Realm after the " + special);
             }
-            d.moveTo(c.add(0, 0, -8), boss);
+            d.walkTo(c.add(0, 0, -8), boss); // back to the fight spot, on foot
             d.ticks(boss, 10); // her binding orb and a volley or two
         }
         // the enrage: a lethal hit leaves her at 1, she heals and pulls the player into the realm
@@ -190,9 +266,24 @@ public final class BossWalks {
             throw fail("seeds: no light seeds to step on");
         }
         int n = light.size();
-        for (Vec3 s : light) {
-            d.moveTo(s, boss);
-            d.ticks(boss, 1);
+        // Round 44: walked in real time, nearest seed first, routed round the dark seeds the realm showed (a seed bursts the
+        // moment a player is on it).
+        d.avoid(w.selfTestDarkSeeds(), 1.25);
+        List<Vec3> left = new ArrayList<>(light);
+        try {
+            while (!left.isEmpty() && w.selfTestSpecialName() != null) {
+                Vec3 next = left.get(0);
+                for (Vec3 s : left) {
+                    if (s.distanceToSqr(p.position()) < next.distanceToSqr(p.position())) {
+                        next = s;
+                    }
+                }
+                d.walkTo(next, boss);
+                left.remove(next);
+                left.retainAll(w.selfTestLightSeeds()); // the ones crossed on the way burst too
+            }
+        } finally {
+            d.clearAvoid();
         }
         d.ticks(boss, 1);
         return "seeds: realm peek " + before + "->" + peek + "% sanity, " + n + " light seeds stepped on, sanity " + w.sanity(p) + "%";
@@ -215,7 +306,7 @@ public final class BossWalks {
         int killed = 0;
         for (Mob soul : souls) {
             if (soul.isAlive()) {
-                d.moveTo(soul.position().add(1.2, 0, 0), boss);
+                d.walkTo(soul.position().add(1.2, 0, 0), boss); // round 44: from soul to soul on foot
                 attack(p, soul);
                 if (soul.isAlive()) {
                     throw fail("siphon: a lost soul survived a hit from inside the Shadow Realm");
@@ -235,10 +326,20 @@ public final class BossWalks {
         d.ticks(boss, 1); // a look at the columns' health
         WhispererScript.activateFragment(p);
         d.clearDamage();
+        // Round 44: the player walks to the next column a reaction time after the last one broke, choosing the nearest of the
+        // weakest (each screech breaks the one hidden behind and takes 20 from the rest).
+        Vec3[] hidingAt = {null};
         int ticks = until(boss, d, 40, () -> {
-            Vec3 spot = w.selfTestHidingSpot(boss);
-            if (spot != null) {
-                d.moveTo(spot, boss);
+            Vec3 spot = w.selfTestHidingSpot(boss, p.position());
+            if (spot != null && (hidingAt[0] == null || spot.distanceToSqr(hidingAt[0]) > 0.04)) {
+                if (hidingAt[0] == null) {
+                    d.walkTo(spot, boss); // the first column: the special's own wind-up gives the time
+                } else {
+                    // the column broke with the last screech: the next one comes 4 game ticks after it
+                    int since = sinceGameTick(boss);
+                    d.walkOut("screech", spot, since, 4 * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK - since, boss);
+                }
+                hidingAt[0] = spot;
             }
             return w.selfTestSpecialName() == null;
         });
@@ -266,8 +367,19 @@ public final class BossWalks {
         ServerPlayer p = d.player();
         d.moveTo(m.glyphPos(boss), boss);
         int attacks = m.attackCount;
+        // round 44: the glyph moves on with her attacks; the player walks after it a reaction time after it lights up
+        Vec3[] lit = {m.glyphPos(boss)};
         until(boss, d, 14, () -> {
-            d.moveTo(m.glyphPos(boss), boss);
+            Vec3 g = m.glyphPos(boss);
+            if (g.distanceToSqr(lit[0]) > 0.04) {
+                // standing off the new glyph counts from two game ticks after it moved (BossRealtime.offGlyphCounts)
+                lit[0] = g;
+                int since = sinceGameTick(boss);
+                d.walkOut("glyph", g, since, (com.runecraft.osrs.content.bosses.BossRealtime.GLYPH_MOVE_GRACE_TICKS + 1)
+                        * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK - since, boss);
+            } else {
+                d.walkTo(g, boss);
+            }
             return m.attackCount > attacks;
         });
         if (m.attackCount <= attacks) {
@@ -285,7 +397,7 @@ public final class BossWalks {
         if (offTicks < 2) {
             throw fail("2 ticks off the glyph were counted as " + offTicks + " (no glyph damage)");
         }
-        d.moveTo(m.glyphPos(boss), boss);
+        d.walkTo(m.glyphPos(boss), boss);
         d.ticks(boss, 1);
         return "standard attack, glyph " + glyph + ", " + offTicks + " ticks off it hurt (curse " + m.curse(p).stacks() + ")";
     }
@@ -341,7 +453,7 @@ public final class BossWalks {
             throw fail("freeze: no glowing block of ice");
         }
         int failures = m.failures;
-        d.moveTo(block.position().add(1.2, 0, 0), boss);
+        d.walkTo(block.position().add(1.2, 0, 0), boss);
         int punches = 0;
         for (int i = 0; i < 10 && block.isAlive(); i++) {
             attack(p, block);
@@ -359,15 +471,15 @@ public final class BossWalks {
         if (moonSpecial(boss, m, d, false) != MoonsRules.Special.FROST_STORM) {
             throw fail("the new moon didn't bring Frost Storm but " + m.special);
         }
-        d.moveTo(m.selfTestBrazier(0), boss);
+        d.walkTo(m.selfTestBrazier(0), boss);
         d.ticks(boss, 1);
-        d.moveTo(m.selfTestBrazier(1), boss);
+        d.walkTo(m.selfTestBrazier(1), boss);
         int ticks = until(boss, d, 30, () -> m.special == null);
         if (ticks < 0 || m.failures > failures) {
             throw fail("storm: relighting both braziers didn't stop her healing");
         }
         log.add("storm: both braziers relit");
-        d.moveTo(m.glyphPos(boss), boss);
+        d.walkTo(m.glyphPos(boss), boss);
         moonKill(boss, d, pendingBefore);
         return String.join("; ", log) + "; pacified, reward waits in the Lunar Chest";
     }
@@ -386,7 +498,7 @@ public final class BossWalks {
         }
         m.curse(p).remove(200);
         int ticks = until(boss, d, 24, () -> {
-            d.moveTo(m.shelter(boss), boss);
+            d.walkTo(m.shelter(boss), boss);
             return m.special == null;
         });
         if (ticks < 0) {
@@ -415,7 +527,7 @@ public final class BossWalks {
             throw fail("clones: no parried clone hurt her");
         }
         log.add(String.format(java.util.Locale.ROOT, "clones: faced every clone, parries took %.0f health", hp - boss.getHealth()));
-        d.moveTo(m.glyphPos(boss), boss);
+        d.walkTo(m.glyphPos(boss), boss);
         moonKill(boss, d, pendingBefore);
         return String.join("; ", log) + "; pacified, reward waits in the Lunar Chest";
     }
@@ -451,7 +563,7 @@ public final class BossWalks {
                     best = s;
                 }
             }
-            d.moveTo(best, boss);
+            d.walkTo(best, boss);
             return m.special == null;
         });
         if (ticks < 0 || !m.isVulnerable(boss)) {
@@ -485,7 +597,7 @@ public final class BossWalks {
                     break;
                 }
             }
-            d.moveTo(here, boss);
+            d.walkTo(here, boss);
             if (target.isAlive()) {
                 attack(p, target);
             }
@@ -529,20 +641,28 @@ public final class BossWalks {
         return dmg > 0 ? CombatHandler.applyDamage(p, boss, dmg) : 0;
     }
 
+    /** The protection prayer against an attack's style (null for no attack). */
+    static com.runecraft.osrs.Prayer prayerAgainst(com.runecraft.osrs.content.AttackDef a) {
+        if (a == null) {
+            return null;
+        }
+        return switch (a.style()) {
+            case MAGIC -> com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC;
+            case RANGED -> com.runecraft.osrs.Prayer.PROTECT_FROM_MISSILES;
+            default -> com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE;
+        };
+    }
+
     /**
      * Switches the player's overhead to the protection against an attack's style (none for null) through the real prayer
      * toggle, as a player clicking it does: the walk calls it on the game tick after an orb is announced and launched, some
      * Minecraft ticks into its flight (round 41: orbs fly at least 3 ticks).
      */
     static void prayAgainst(ServerPlayer p, com.runecraft.osrs.content.AttackDef a) {
-        if (a == null) {
+        com.runecraft.osrs.Prayer pr = prayerAgainst(a);
+        if (pr == null) {
             return;
         }
-        com.runecraft.osrs.Prayer pr = switch (a.style()) {
-            case MAGIC -> com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC;
-            case RANGED -> com.runecraft.osrs.Prayer.PROTECT_FROM_MISSILES;
-            default -> com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE;
-        };
         com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(p);
         if (data.prayerPoints() <= 0) {
             data.setPrayerPoints(99); // the walk tests mechanics, not prayer upkeep
@@ -610,7 +730,7 @@ public final class BossWalks {
         }
         d.clearDamage();
         int ticks = until(boss, d, 80, () -> {
-            prayAgainst(p, l.selfTestNextOrb());
+            d.react(prayerAgainst(l.selfTestNextOrb())); // round 44: a reaction time after the orb flies
             return l.selfTestSpecial() != null;
         });
         if (ticks < 0) {
@@ -627,7 +747,7 @@ public final class BossWalks {
         }
         // a stun: hits capped off the wound; the wound breaks it
         if (until(boss, d, 30, () -> {
-            prayAgainst(p, l.selfTestNextOrb());
+            d.react(prayerAgainst(l.selfTestNextOrb())); // round 44: a reaction time after the orb flies
             return l.selfTestFlying() > 0;
         }) < 0) {
             throw fail("no second volley");
@@ -641,7 +761,7 @@ public final class BossWalks {
             throw fail("a hit off its wound took " + front + " (capped at " + LeviathanRules.STUNNED_CAP + ")");
         }
         Vec3 wound = l.selfTestWound(boss);
-        d.moveTo(wound, boss);
+        d.walkTo(wound, boss);
         int back = boss.modifyIncoming(p, 40, AttackType.RANGED);
         if (back <= LeviathanRules.STUNNED_CAP || l.selfTestStunned() || l.selfTestSpecial() == null) {
             throw fail("the wound: " + back + " damage, stunned " + l.selfTestStunned() + ", special " + l.selfTestSpecial());
@@ -658,11 +778,11 @@ public final class BossWalks {
         }
         d.clearDamage();
         for (int i = 0; i < 20; i++) {
-            d.moveTo(l.selfTestPathfinder(), boss);
-            prayAgainst(p, l.selfTestNextOrb());
+            d.walkTo(l.selfTestPathfinder(), boss);
+            d.react(prayerAgainst(l.selfTestNextOrb())); // round 44: a reaction time after the orb flies
             d.ticks(boss, 1);
         }
-        d.moveTo(l.selfTestPathfinder(), boss);
+        d.walkTo(l.selfTestPathfinder(), boss);
         if (!l.selfTestInPathfinder(boss, p)) {
             throw fail("standing on the pathfinder isn't inside its area");
         }
@@ -671,8 +791,8 @@ public final class BossWalks {
             throw fail("inside the pathfinder, prayed orbs still hit for " + pierced);
         }
         for (int i = 0; i < 40 && boss.isAlive(); i++) {
-            d.moveTo(l.selfTestPathfinder(), boss);
-            prayAgainst(p, l.selfTestNextOrb());
+            d.walkTo(l.selfTestPathfinder(), boss);
+            d.react(prayerAgainst(l.selfTestNextOrb())); // round 44: a reaction time after the orb flies
             hit(boss, p, 150, AttackType.RANGED);
             d.ticks(boss, 1);
         }
@@ -695,14 +815,26 @@ public final class BossWalks {
             boolean smokeBlastNext = "smoke".equals(l.selfTestSpecial()) && !l.selfTestSmokeDebris().isEmpty()
                     && l.selfTestSpecialTick() >= LeviathanRules.SMOKE_DEBRIS;
             if (smokeBlastNext) {
-                // the ten debris are down: hide right behind a pile, away from it
+                // the ten debris are down: hide right behind the nearest pile, away from it (round 44: on foot, the blast lands
+                // three game ticks after the last debris)
                 net.minecraft.core.BlockPos pile = l.selfTestSmokeDebris().get(0);
+                for (net.minecraft.core.BlockPos b : l.selfTestSmokeDebris()) {
+                    if (b.distToCenterSqr(p.position()) < pile.distToCenterSqr(p.position())) {
+                        pile = b;
+                    }
+                }
                 Vec3 at = Vec3.atBottomCenterOf(pile);
                 Vec3 away = at.subtract(boss.position()).multiply(1, 0, 1).normalize();
-                d.moveTo(at.add(away.scale(1.0)), boss);
+                Vec3 behind = at.add(away.scale(1.0));
+                if (behind.distanceToSqr(p.position()) > 0.04) {
+                    int since = sinceGameTick(boss);
+                    int left = (LeviathanRules.SMOKE_DEBRIS + 3 - l.selfTestSpecialTick())
+                            * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK - since;
+                    d.walkOut("smoke_blast", behind, since, left, boss);
+                }
             } else {
                 a[0] += 0.25; // keep moving round it (the current and the debris land where the player was)
-                d.moveTo(BossFx.ground(BossFx.world(boss), c.x + Math.cos(a[0]) * 8, c.z + Math.sin(a[0]) * 8, c.y), boss);
+                d.walkTo(BossFx.ground(BossFx.world(boss), c.x + Math.cos(a[0]) * 8, c.z + Math.sin(a[0]) * 8, c.y), boss);
             }
             return l.selfTestSpecial() == null;
         });
@@ -729,7 +861,7 @@ public final class BossWalks {
         }
         List<Mob> ice = new ArrayList<>(a.walkIce());
         for (Mob m : ice) {
-            d.moveTo(m.position().add(1.2, 0, 0), boss);
+            d.walkTo(m.position().add(1.2, 0, 0), boss);
             attack(p, m);
             if (m.isAlive()) {
                 throw fail("a melee hit didn't break the unstable ice");
@@ -739,19 +871,16 @@ public final class BossWalks {
         if (a.walkShattered() > 0) {
             throw fail("the ice shattered although every block was broken");
         }
-        // Icicle Crash: she switches the prayers off; Protect from Magic again before it lands blocks it
-        pray(p, com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC);
+        // Icicle Crash: she switches the prayers off; Protect from Magic again before it lands blocks it (round 44: the player
+        // switches it back on through the prayer key a reaction time after seeing it go, at Minecraft-tick precision)
+        d.keep(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC);
+        int restoresBefore = d.prayerRestores();
         a.walkSpecialNext(false);
         d.clearDamage();
-        int[] disabled = {0};
-        until(boss, d, 16, () -> {
-            if (!com.runecraft.player.Players.data(p).isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC)) {
-                disabled[0]++;
-                pray(p, com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC);
-            }
-            return false;
-        });
-        if (disabled[0] == 0) {
+        d.ticks(boss, 16);
+        d.keep(null);
+        int disabled = d.prayerRestores() - restoresBefore;
+        if (disabled == 0) {
             throw fail("Icicle Crash never switched the prayers off");
         }
         if (d.damage("icicle_crash") > 0) {
@@ -780,15 +909,15 @@ public final class BossWalks {
             throw fail("the head stayed shut with every body part down");
         }
         Vec3 c = h.homeVec();
-        pray(p, com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE);
+        d.keep(com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE); // round 44: kept up through the prayer key, as a player does
         d.clearDamage();
         double[] a = {0};
         for (int i = 0; i < 50; i++) {
             a[0] += 0.3; // keep off her glowing symbols
-            d.moveTo(BossFx.ground(BossFx.world(boss), c.x + Math.cos(a[0]) * 7, c.z + Math.sin(a[0]) * 7, c.y), boss);
-            pray(p, com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE);
+            d.walkTo(BossFx.ground(BossFx.world(boss), c.x + Math.cos(a[0]) * 7, c.z + Math.sin(a[0]) * 7, c.y), boss);
             d.ticks(boss, 1);
         }
+        d.keep(null);
         if (d.biggest("tail_strike") > 2) {
             throw fail("a red feather hit for " + d.biggest("tail_strike") + " through Protect from Melee (0-2)");
         }
@@ -848,7 +977,7 @@ public final class BossWalks {
         d.clearDamage();
         if (until(boss, d, 30, () -> {
             if (t.walkSafe() != null) {
-                d.moveTo(t.walkSafe(), boss);
+                d.walkTo(t.walkSafe(), boss);
             }
             return !t.walkBlasting();
         }) < 0) {
@@ -943,7 +1072,10 @@ public final class BossWalks {
                 best = spot;
             }
         }
-        d.moveTo(best, boss);
+        // round 44: on foot, a reaction time after his gaze begins; it lands DUKE_GAZE_TICKS game ticks after it began
+        int since = sinceGameTick(boss);
+        d.walkOut("freezing_gaze", best, since,
+                BossMechanics.DUKE_GAZE_TICKS * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK - since, boss);
         d.clearDamage();
         if (until(boss, d, 10, () -> !duke.walkGazing()) < 0) {
             throw fail("the gaze never landed");
@@ -984,7 +1116,8 @@ public final class BossWalks {
         int points = com.runecraft.player.Players.data(p).prayerPoints();
         v.walkGaze(boss, p);
         if (until(boss, d, 10, () -> {
-            pray(p, v.walkGazeMagic() ? com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC : com.runecraft.osrs.Prayer.PROTECT_FROM_MISSILES);
+            // round 44: through the prayer key a reaction time after the head shows its style
+            d.react(v.walkGazeMagic() ? com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC : com.runecraft.osrs.Prayer.PROTECT_FROM_MISSILES);
             return !v.walkGazing();
         }) < 0) {
             throw fail("the head's gaze never landed");

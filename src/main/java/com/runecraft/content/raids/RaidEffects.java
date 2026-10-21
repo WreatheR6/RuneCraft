@@ -345,6 +345,10 @@ public final class RaidEffects {
         }
         STRIKES.add(s);
         draw(s, false);
+        if (damaging && s.to == null) { // round 44: a round strike's place and size for the self-test's real-player walks
+            com.runecraft.network.HudNet.groundListener.accept(new com.runecraft.network.HudNet.GroundCast(s.world, s.pos, s.radius,
+                    s.source, com.runecraft.osrs.CastBar.landInMc(due, now, into), s.source == null ? "Strike" : null));
+        }
         if (damaging) { // round 43: on the cast bar of the players near it (a lane: near its line), counting down to its landing
             com.runecraft.network.HudNet.groundCast(s.world, p -> s.to == null
                     ? com.runecraft.osrs.CastBar.nearStrike(p.getX() - s.pos.x, p.getY() - s.pos.y, p.getZ() - s.pos.z, s.radius)

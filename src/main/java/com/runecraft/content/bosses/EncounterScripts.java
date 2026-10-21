@@ -985,6 +985,9 @@ final class EncounterScripts {
             for (int i = 0; i < magic.length; i++) {
                 gazes.add(new Gaze(now + land[i], magic[i], nowMc, nowMc + (long) land[i] * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK,
                         from));
+                // round 44: each gaze on the target's cast bar, counting down to its landing (its style's protection key)
+                com.runecraft.network.HudNet.cast(target, boss, com.runecraft.osrs.CastBar.styleOf(magic[i] ? AttackType.MAGIC : AttackType.RANGED),
+                        0, land[i] * com.runecraft.action.ActionManager.MC_TICKS_PER_GAME_TICK, "Head");
                 int rgb = com.runecraft.boss.ThreatCues.rgb(magic[i] ? AttackType.MAGIC : AttackType.RANGED);
                 line.append(net.minecraft.network.chat.Component.literal((i == 0 ? "" : ", then ") + (magic[i] ? "magic" : "ranged"))
                         .withStyle(st -> st.withColor(rgb)));
