@@ -62,6 +62,7 @@ final class SlayerChecks {
             checks.add(new SelfTest.Check("slayer:task_only:" + spot.dungeon().replace("dng_", "") + ":" + spot.task(),
                     () -> g.taskOnlyArea(spot)));
         }
+        checks.add(new SelfTest.Check("slayer:konar_location", g::konarLocation));
         checks.add(new SelfTest.Check("slayer:task_storage", g::taskStorage));
         checks.add(new SelfTest.Check("slayer:duly_noted_and_rune_pouch", g::dulyNotedAndPouch));
         return checks;
@@ -256,7 +257,116 @@ final class SlayerChecks {
             prof.region = null;
         }
         note.append(", Konar's kingdom rule holds for boss credit");
+        // 9. Her named location: Cerberus counts for hellhounds she wants killed in Taverley Dungeon (wherever the lair
+        // is), not for those she wants killed in the Karuulm Slayer Dungeon.
+        prof.task = "hellhounds";
+        prof.remaining = 10;
+        prof.master = "konar";
+        try {
+            prof.region = SlayerService.LOCATION + "karuulm_slayer_dungeon";
+            SlayerService.creditBossKill(p(), "cerberus");
+            if (prof.remaining != 10) {
+                throw failure("a Cerberus kill counted for Konar's hellhounds in the Karuulm Slayer Dungeon");
+            }
+            prof.region = SlayerService.LOCATION + "taverley_dungeon";
+            SlayerService.creditBossKill(p(), "cerberus");
+            if (prof.remaining != 9) {
+                throw failure("a Cerberus kill didn't count for Konar's hellhounds in Taverley Dungeon (" + prof.remaining
+                        + " left, want 9)");
+            }
+        } finally {
+            prof.task = null;
+            prof.remaining = 0;
+            prof.region = null;
+        }
+        note.append(", and her Taverley Dungeon location takes Cerberus");
         return note.toString();
+    }
+
+    /** Konar's place for a task at a spot: her location holding it, else the kingdom (a task with no built location). */
+    private static String konarPlaceAt(String task, BlockPos at) {
+        for (com.runecraft.osrs.content.slayer.KonarLocations.Location l
+                : com.runecraft.osrs.content.slayer.KonarLocations.candidates(task)) {
+            if (l.contains(at.getX(), at.getY(), at.getZ())) {
+                return SlayerService.LOCATION + l.id();
+            }
+        }
+        return com.runecraft.osrs.world.TaskRegions.at(at.getX(), at.getY(), at.getZ()).name();
+    }
+
+    // ------------------------------------------------------------------ Konar's locations (round 44)
+
+    /**
+     * Konar names a location, not a kingdom: her task comes with one of its built locations; a hellhound killed in Taverley
+     * Dungeon counts when she named Taverley Dungeon and not when she named the Stronghold Slayer Cave, also in the west.
+     */
+    private String konarLocation() {
+        c.completeQuests(null);
+        SlayerState.Profile prof = profile();
+        SlayerMasters.Master konar = SlayerMasters.get("konar");
+        StringBuilder note = new StringBuilder();
+        for (int i = 0; i < 5; i++) {
+            prof.task = null;
+            prof.remaining = 0;
+            prof.region = null;
+            SlayerService.talk(p(), konar);
+            if (!prof.hasTask()) {
+                throw failure("Konar gave a maxed player no task");
+            }
+            if (prof.task.startsWith("boss_") || com.runecraft.osrs.content.slayer.KonarLocations.candidates(prof.task).isEmpty()) {
+                continue;
+            }
+            String id = prof.region == null || !prof.region.startsWith(SlayerService.LOCATION) ? null
+                    : prof.region.substring(SlayerService.LOCATION.length());
+            com.runecraft.osrs.content.slayer.KonarLocations.Location l =
+                    id == null ? null : com.runecraft.osrs.content.slayer.KonarLocations.get(id);
+            if (l == null || !com.runecraft.osrs.content.slayer.KonarLocations.candidates(prof.task).contains(l)) {
+                throw failure("Konar's " + prof.task + " task came with " + prof.region + ", not one of its locations");
+            }
+            note.append(prof.task).append(" in ").append(l.name()).append("; ");
+            break;
+        }
+        Dungeons.Camp cp = camp("dng_taverley_dungeon", "hellhound");
+        BlockPos at = new BlockPos(cp.centreX(), cp.feetY(), cp.centreZ());
+        EntityType<?> type = ModEntities.typeById("hellhound");
+        if (type == null) {
+            throw new SelfTest.Skip("no hellhound entity");
+        }
+        StructurePlacer.applyAround(c.world, at.getX(), at.getZ(), 6);
+        p().teleportTo(c.world, at.getX() + 0.5, at.getY(), at.getZ() + 0.5, p().getYRot(), p().getXRot());
+        ChunkSettle.holdAndSettle(c.world, at, 16);
+        LivingEntity first = null;
+        LivingEntity second = null;
+        try {
+            prof.task = "hellhounds";
+            prof.amount = 40;
+            prof.remaining = 40;
+            prof.master = "konar";
+            prof.region = SlayerService.LOCATION + "stronghold_slayer_cave";
+            first = spawnAt(type, at.offset(1, 0, 0), true);
+            killAsPlayer(first);
+            if (prof.remaining != 40) {
+                throw failure("a hellhound in Taverley Dungeon counted for Konar's Stronghold Slayer Cave task");
+            }
+            prof.region = SlayerService.LOCATION + "taverley_dungeon";
+            second = spawnAt(type, at.offset(1, 0, 0), true);
+            killAsPlayer(second);
+            if (prof.remaining != 39) {
+                throw failure("a hellhound in Taverley Dungeon didn't count for Konar's Taverley Dungeon task ("
+                        + prof.remaining + " left, want 39)");
+            }
+            return note + "Taverley hellhound: Stronghold task 40 -> 40, Taverley task 40 -> 39";
+        } finally {
+            for (LivingEntity e : new LivingEntity[]{first, second}) {
+                if (e != null && e.isAlive()) {
+                    e.discard();
+                }
+            }
+            prof.task = null;
+            prof.remaining = 0;
+            prof.region = null;
+            c.home();
+        }
     }
 
     // ------------------------------------------------------------------ task-only dungeons
@@ -404,8 +514,7 @@ final class SlayerChecks {
             prof.amount = line.min();
             prof.remaining = line.min();
             prof.master = master.id();
-            prof.region = master.locationRestricted()
-                    ? com.runecraft.osrs.world.TaskRegions.at(at.getX(), at.getY(), at.getZ()).name() : null;
+            prof.region = master.locationRestricted() ? konarPlaceAt(spot.task(), at) : null;
             int dealt = CombatHandler.applyDamage(p(), mob, 3);
             if (dealt <= 0) {
                 throw failure("a " + spot.task() + " task from " + master.name() + " still couldn't hurt a " + creature);

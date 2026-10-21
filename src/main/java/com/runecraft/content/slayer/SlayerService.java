@@ -226,9 +226,18 @@ public final class SlayerService {
         p.master = master.id();
         p.region = null;
         if (master.locationRestricted() && boss == null) {
-            List<Region> regions = SlayerTasks.regions(a.category());
-            if (!regions.isEmpty()) {
-                p.region = regions.get(random.nextInt(regions.size())).name();
+            // Konar names one of the task's locations the player may enter, each as likely (OSRS Wiki); a task none of
+            // whose locations is built keeps the kingdom rule.
+            List<com.runecraft.osrs.content.slayer.KonarLocations.Location> locations =
+                    com.runecraft.osrs.content.slayer.KonarLocations.candidates(a.category(),
+                            q -> ContentRegistry.quest(q) == null || QuestApi.isComplete(player, q));
+            if (!locations.isEmpty()) {
+                p.region = LOCATION + locations.get(random.nextInt(locations.size())).id();
+            } else {
+                List<Region> regions = SlayerTasks.regions(a.category());
+                if (!regions.isEmpty()) {
+                    p.region = regions.get(random.nextInt(regions.size())).name();
+                }
             }
         }
         if (boss != null) {
@@ -280,10 +289,46 @@ public final class SlayerService {
         return TaskRegions.at(entity.blockPosition().getX(), entity.blockPosition().getY(), entity.blockPosition().getZ());
     }
 
+    /** Prefix of a task region that is one of Konar's locations (KonarLocations id); other regions are kingdoms. */
+    public static final String LOCATION = "loc:";
+
+    /**
+     * Whether a kill at {@code at} (of the boss {@code bossId}, or null) is where Konar wants it: in her location (or one
+     * of the bosses that count there), or in her kingdom for older tasks. True for tasks without a place.
+     */
+    static boolean inKonarArea(SlayerState.Profile p, Entity at, String bossId) {
+        if (p.region == null) {
+            return true;
+        }
+        if (p.region.startsWith(LOCATION)) {
+            net.minecraft.core.BlockPos b = at.blockPosition();
+            return com.runecraft.osrs.content.slayer.KonarLocations.counts(p.region.substring(LOCATION.length()), b.getX(),
+                    b.getY(), b.getZ(), bossId);
+        }
+        return taskRegion(at).name().equals(p.region);
+    }
+
+    /** The name of a task's place (a Konar location or a kingdom), or null for none. */
+    public static String regionName(String region) {
+        if (region == null) {
+            return null;
+        }
+        if (region.startsWith(LOCATION)) {
+            com.runecraft.osrs.content.slayer.KonarLocations.Location l =
+                    com.runecraft.osrs.content.slayer.KonarLocations.get(region.substring(LOCATION.length()));
+            return l != null ? l.name() : region.substring(LOCATION.length());
+        }
+        try {
+            return Region.valueOf(region).displayName();
+        } catch (IllegalArgumentException e) {
+            return region;
+        }
+    }
+
     private static String describe(SlayerState.Profile p) {
         String name = SlayerTasks.displayName(p.task);
         if (p.region != null) {
-            name += " in " + Region.valueOf(p.region).displayName();
+            name += " in " + regionName(p.region);
         }
         return name;
     }
@@ -495,7 +540,7 @@ public final class SlayerService {
         if (m != null && m.wilderness() && Gielinor.wildernessLevel(entity) <= 0) {
             return false;
         }
-        return p.region == null || taskRegion(entity).name().equals(p.region);
+        return inKonarArea(p, entity, net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).getPath());
     }
 
     /**
@@ -539,8 +584,8 @@ public final class SlayerService {
             Msg.game(player, "Krystilia's tasks only count in the Wilderness.");
             return;
         }
-        if (p.region != null && !taskRegion(at).name().equals(p.region)) {
-            Msg.game(player, "Konar wants you to kill these in " + Region.valueOf(p.region).displayName() + ".");
+        if (!inKonarArea(p, at, bossId)) {
+            Msg.game(player, "Konar wants you to kill these in " + regionName(p.region) + ".");
             return;
         }
         com.runecraft.osrs.content.BossDef def = ContentRegistry.boss(bossId);
@@ -574,8 +619,8 @@ public final class SlayerService {
             Msg.game(player, "Krystilia's tasks only count in the Wilderness.");
             return;
         }
-        if (p.region != null && !taskRegion(entity).name().equals(p.region)) {
-            Msg.game(player, "Konar wants you to kill these in " + Region.valueOf(p.region).displayName() + ".");
+        if (!inKonarArea(p, entity, net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).getPath())) {
+            Msg.game(player, "Konar wants you to kill these in " + regionName(p.region) + ".");
             return;
         }
         // The first kill fixes a boss task's size.

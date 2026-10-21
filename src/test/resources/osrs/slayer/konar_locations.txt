@@ -1,0 +1,39 @@
+# OSRS Wiki "Konar quo Maten", task table (July 2026): category, a tab, then its possible locations separated by ";".
+Aberrant spectres	Catacombs of Kourend;Slayer Tower;Stronghold Slayer Cave
+Abyssal demons	Catacombs of Kourend;Abyss;Slayer Tower
+Ankou	Stronghold of Security;Stronghold Slayer Dungeon;Catacombs of Kourend
+Aviansie	God Wars Dungeon
+Basilisks	Fremennik Slayer Dungeon;Jormungand's Prison
+Black demons	Catacombs of Kourend;Chasm of Fire;Taverley Dungeon;Brimhaven Dungeon
+Black dragons	Catacombs of Kourend;Myths' Guild Dungeon;Evil Chicken's Lair;Taverley Dungeon
+Bloodveld	Catacombs of Kourend;God Wars Dungeon;Iorwerth Dungeon;Meiyerditch Laboratories;Slayer Tower;Stronghold Slayer Dungeon
+Blue dragons	Catacombs of Kourend;Isle of Souls Dungeon;Myths' Guild Dungeon;Ogre Enclave;Ruins of Tapoyauik;Taverley Dungeon
+Brine rats	Brine Rat Cavern
+Cave kraken	Kraken Cove
+Dagannoth	Catacombs of Kourend;Lighthouse;Waterbirth Island;Jormungand's Prison
+Dark beasts	Mourner Tunnels;Iorwerth Dungeon
+Drakes	Karuulm Slayer Dungeon
+Dust devils	Catacombs of Kourend;Smoke Dungeon
+Fire giants	Brimhaven Dungeon;Catacombs of Kourend;Isle of Souls Dungeon;Giants' Den;Karuulm Slayer Dungeon;Stronghold Slayer Dungeon;Waterfall Dungeon
+Fossil Island Wyverns	Wyvern Cave
+Gargoyles	Slayer Tower
+Greater demons	Catacombs of Kourend;Chasm of Fire;Isle of Souls Dungeon;Karuulm Slayer Dungeon;Brimhaven Dungeon
+Hellhounds	Karuulm Slayer Dungeon;Catacombs of Kourend;Stronghold Slayer Dungeon;Taverley Dungeon;Witchaven Dungeon
+Hydras	Karuulm Slayer Dungeon
+Jellies	Fremennik Slayer Dungeon;Catacombs of Kourend;Ruins of Tapoyauik
+Kalphite	Kalphite Lair;Kalphite Cave
+Kurask	Fremennik Slayer Dungeon;Iorwerth Dungeon
+Lesser Nagua	Neypotzli;Ruins of Tapoyauik;Crypt of Tonali
+Lizardmen	Battlefront;Lizardman Canyon;Lizardman Settlement;Kebos Swamp;Molch
+Metal dragons	Brimhaven Dungeon;Catacombs of Kourend;Isle of Souls Dungeon;Lithkren Vault
+Mutated Zygomites	Fossil Island;Zanaris
+Nechryael	Catacombs of Kourend;Iorwerth Dungeon;Slayer Tower
+Red dragons	Brimhaven Dungeon;Catacombs of Kourend;Forthos Dungeon;Myths' Guild Dungeon
+Skeletal Wyverns	Asgarnian Ice Dungeon
+Smoke devils	Smoke Devil Dungeon
+Trolls	Troll Stronghold;Keldagrim;Death Plateau;Mount Quidamortem;Fremennik Isles
+Turoth	Fremennik Slayer Dungeon
+Vampyres	Darkmeyer;Meiyerditch;Slepe;Vampyrium
+Warped creatures	Poison Waste Dungeon
+Waterfiends	Ancient Cavern;Iorwerth Dungeon;Kraken Cove
+Wyrms	Karuulm Slayer Dungeon;Neypotzli;Charred Dungeon
