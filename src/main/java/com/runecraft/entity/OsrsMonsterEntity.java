@@ -189,6 +189,14 @@ public class OsrsMonsterEntity extends Monster {
         return damage;
     }
 
+    /**
+     * {@link #onHitPlayer(ServerPlayer, int, AttackType)} for a hit of {@code attack} landing now ({@code Mechanics}: the hit was
+     * started earlier, and the monster may have started another attack since).
+     */
+    public int onHitPlayer(ServerPlayer player, int damage, AttackType type, com.runecraft.osrs.content.AttackDef attack) {
+        return onHitPlayer(player, damage, type);
+    }
+
     /** Hook: called when a player kills this monster. */
     public void onKilledBy(ServerPlayer player) {
     }

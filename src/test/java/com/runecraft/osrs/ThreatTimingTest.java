@@ -63,6 +63,16 @@ class ThreatTimingTest {
         assertEquals(120, ThreatTiming.spacedDue(105, AttackType.RANGED, dues, styles));
         assertEquals(130, ThreatTiming.spacedDue(110, AttackType.STAB, dues, styles), "capped at natural + 20");
         assertEquals(200, ThreatTiming.spacedDue(200, AttackType.STAB, dues, styles), "far from both: untouched");
+        // a one-tick volley (Demonic Brutus's ghosts): a boss's magic orb launched at 0 lands at 16; a melee swing launched at 12
+        // (natural landing 12 + 8 wind-up = 20) is pushed to 36, then a ranged orb launched at 24 (natural 40) to 56
+        long[] orb = {16};
+        AttackType[] magic = {AttackType.MAGIC};
+        long swing = ThreatTiming.spacedDue(12 + ThreatTiming.meleeWindupMc(2), AttackType.CRUSH, orb, magic);
+        assertEquals(36, swing);
+        assertEquals(56, ThreatTiming.spacedDue(40, AttackType.RANGED, new long[]{16, swing},
+                new AttackType[]{AttackType.MAGIC, AttackType.CRUSH}));
+        // a monster's bolt that already landed (at 10) still spaces a swing landing at 18
+        assertEquals(30, ThreatTiming.spacedDue(18, AttackType.SLASH, new long[]{10}, magic));
     }
 
     @Test

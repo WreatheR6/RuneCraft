@@ -459,6 +459,11 @@ public class DataBossEntity extends OsrsMonsterEntity {
         return script.onHitPlayer(this, player, damage, type);
     }
 
+    @Override
+    public int onHitPlayer(ServerPlayer player, int damage, AttackType type, AttackDef attack) {
+        return script.onHitPlayer(this, player, damage, type, attack); // the attack that landed, not the one last started
+    }
+
     /** Spawns the BossDef's minions around the boss. */
     public void summonMinions(int count) {
         BossDef def = def();

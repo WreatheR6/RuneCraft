@@ -57,6 +57,8 @@ import java.util.UUID;
  *   <li>an untelegraphed ranged or magic attack is a homing projectile, judged when it arrives: it fizzles on a wall, on a target that
  *   died, left the level or got out of range (OSRS rolls it at launch and applies it after the hit delay);</li>
  *   <li>a melee attack winds up for 6-10 MC and only lands on a target still within reach (OSRS: on the swing tick);</li>
+ *   <li>hits that need different protection prayers land at least 20 MC apart on one target: a projectile, swing or single-target
+ *   telegraph is pushed (by up to 20 MC) from those on their way or just landed (OSRS: a one-tick flick);</li>
  *   <li>ground hazards arm after 12 MC and hit a player standing in them once per 12 MC (OSRS: once a game tick).</li>
  * </ul>
  * Rolls, max hits, multipliers, prayer rules and every on-hit effect are unchanged and evaluated at impact, and cadence is stamped
@@ -194,7 +196,13 @@ public final class Mechanics {
         java.util.Collections.addAll(SELF_DELIVERED, attacks);
     }
 
+    /** A single-target hit that just landed on a player: new hits of another style are spaced from it as from one in flight. */
+    private record Landed(ServerPlayer target, long mc, AttackType style) {
+    }
+
     private static final List<Pending> PENDING = new ArrayList<>();
+    /** Single-target hits landed within the last {@link ThreatTiming#STYLE_SPACING_MC} MC. */
+    private static final List<Landed> LANDED = new ArrayList<>();
     private static final List<Hazard> HAZARDS = new ArrayList<>();
     private static long nextId;
     /** The monster whose hit is resolving right now, and that hit's attack (null outside a resolution or for a built-in hit). */
@@ -241,6 +249,9 @@ public final class Mechanics {
 
     private static void tick() {
         long now = ActionManager.mcTick();
+        if (!LANDED.isEmpty()) {
+            LANDED.removeIf(l -> now - l.mc() >= ThreatTiming.STYLE_SPACING_MC || l.target().isRemoved());
+        }
         if (!PENDING.isEmpty()) {
             // a resolving hit may start new ones (scripts' on-hit hooks): those wait for the next tick
             for (Pending p : PENDING.toArray(new Pending[0])) {
@@ -293,8 +304,10 @@ public final class Mechanics {
             // playability: OSRS lands a telegraph 1-2 game ticks after its animation; here at least 36 MC after the first cue
             ThreatCues.launchSound(mob, attack.style(), sp);
             int lead = ThreatTiming.leadMc(attack.telegraphTicks(), sp);
+            // a single-target hit is spread from the other styles already on their way to the target (area ones keep their tick)
+            long due = singleTarget(sp) ? spacedDue(target, now + lead, attack.style()) : now + lead;
             double reach = attack.melee() ? Math.max(ThreatTiming.MELEE_REACH, attack.range()) : attack.range();
-            Pending p = new Pending(Kind.TELEGRAPH, mob, mob, target, attack, attack.style(), multiplier, marked, now, now + lead, reach,
+            Pending p = new Pending(Kind.TELEGRAPH, mob, mob, target, attack, attack.style(), multiplier, marked, now, due, reach,
                     null, null, extra, attack.melee(), false);
             add(p);
             drawTelegraph(p, now);
@@ -311,15 +324,19 @@ public final class Mechanics {
             blinked = true;
         }
         if (attack.melee() || sp == AttackDef.Special.AOE || sp == AttackDef.Special.BLINK) {
-            // playability: OSRS lands a melee hit on the swing tick; here after a 6-10 MC wind-up, on a target still in reach
-            if (attack.melee()) {
+            // playability: OSRS lands a melee hit on the swing tick; here after a 6-10 MC wind-up, on a target still in reach, and
+            // 20 MC from a hit of another style already on its way (the swing waits for it: one prayer switch at a time)
+            long natural = now + ThreatTiming.meleeWindupMc(mob.getBbWidth());
+            long due = singleTarget(sp) ? spacedDue(target, natural, attack.style()) : natural;
+            boolean swingNow = attack.melee() && due == natural;
+            if (swingNow) {
                 mob.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
             }
             double reach = sp == AttackDef.Special.BLINK ? ThreatTiming.MELEE_REACH
                     : attack.melee() ? Math.max(ThreatTiming.MELEE_REACH, attack.range()) : attack.range();
-            Pending p = new Pending(Kind.WINDUP, mob, mob, target, attack, attack.style(), multiplier, marked, now,
-                    now + ThreatTiming.meleeWindupMc(mob.getBbWidth()), reach, null, null, extra,
-                    attack.melee() && sp != AttackDef.Special.AOE, blinked);
+            Pending p = new Pending(Kind.WINDUP, mob, mob, target, attack, attack.style(), multiplier, marked, now, due, reach, null,
+                    null, extra, attack.melee() && sp != AttackDef.Special.AOE, blinked);
+            p.swung = !attack.melee() || swingNow;
             add(p);
             cue(p, now);
             if (sp == AttackDef.Special.AOE) {
@@ -372,8 +389,11 @@ public final class Mechanics {
         long now = ActionManager.mcTick();
         AttackType style = from instanceof OsrsMonsterEntity m && m.stats() != null && m.stats().style().isMelee()
                 ? m.stats().style() : AttackType.CRUSH;
+        long natural = now + ThreatTiming.meleeWindupMc(from.getBbWidth());
+        long due = spacedDue(to, natural, style); // 20 MC from a hit of another style already on its way
         Pending p = new Pending(Kind.WINDUP, from, from instanceof OsrsMonsterEntity m ? m : null, to, null, style, 1.0, to.position(), now,
-                now + ThreatTiming.meleeWindupMc(from.getBbWidth()), reach, resolve, after, null, true, false);
+                due, reach, resolve, after, null, true, false);
+        p.swung = due == natural; // the caller swung; a spaced swing is shown again when it is about to land
         add(p);
         cue(p, now);
     }
@@ -397,24 +417,40 @@ public final class Mechanics {
         cue(p, now);
     }
 
-    /** The style spacing against every hit already on its way to this target. */
+    /** Whether an attack hits its one target (spread from other styles), not an area (judged by its ring) or nobody. */
+    private static boolean singleTarget(AttackDef.Special sp) {
+        return sp != AttackDef.Special.AOE && sp != AttackDef.Special.SKY_STRIKE && sp != AttackDef.Special.SUMMON
+                && sp != AttackDef.Special.HEAL_SELF;
+    }
+
+    /**
+     * The style spacing against every hit already on its way to this target, or landed on it in the last 20 MC (at most
+     * {@link ThreatTiming#MAX_SPACING_PUSH_MC} past {@code natural}): projectiles, melee wind-ups and single-target telegraphs alike.
+     */
     private static long spacedDue(ServerPlayer target, long natural, AttackType style) {
-        List<Pending> on = new ArrayList<>();
+        List<Long> dues = new ArrayList<>();
+        List<AttackType> styles = new ArrayList<>();
         for (Pending p : PENDING) {
-            if (!p.done && p.target == target) {
-                on.add(p);
+            if (!p.done && p.target == target && (p.attack == null || p.attack.special() != AttackDef.Special.SUMMON
+                    && p.attack.special() != AttackDef.Special.HEAL_SELF)) {
+                dues.add(p.dueMc);
+                styles.add(p.style);
             }
         }
-        if (on.isEmpty()) {
+        for (Landed l : LANDED) {
+            if (l.target() == target) {
+                dues.add(l.mc());
+                styles.add(l.style());
+            }
+        }
+        if (dues.isEmpty()) {
             return natural;
         }
-        long[] dues = new long[on.size()];
-        AttackType[] styles = new AttackType[on.size()];
-        for (int i = 0; i < dues.length; i++) {
-            dues[i] = on.get(i).dueMc;
-            styles[i] = on.get(i).style;
+        long[] at = new long[dues.size()];
+        for (int i = 0; i < at.length; i++) {
+            at[i] = dues.get(i);
         }
-        return ThreatTiming.spacedDue(natural, style, dues, styles);
+        return ThreatTiming.spacedDue(natural, style, at, styles.toArray(new AttackType[0]));
     }
 
     private static void add(Pending p) {
@@ -443,6 +479,9 @@ public final class Mechanics {
 
     private static void finish(Pending p, long now, boolean landed) {
         p.done = true;
+        if (landed && (p.attack == null || singleTarget(p.attack.special()))) {
+            LANDED.add(new Landed(p.target, now, p.style));
+        }
         pendingListener.resolved(p.threat, now, landed);
     }
 
@@ -497,6 +536,10 @@ public final class Mechanics {
             return;
         }
         if (now < p.dueMc) {
+            if (!p.swung && now >= p.dueMc - ThreatTiming.meleeWindupMc(p.from.getBbWidth())) {
+                p.swung = true; // a swing spaced from another style's hit: shown one wind-up before it lands
+                p.from.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+            }
             if (p.attack != null && p.attack.special() == AttackDef.Special.AOE && ThreatTiming.redraw(p.createdMc, now)
                     && p.lastDrawMc != now) {
                 ThreatCues.ring(p.level, p.from.position(), Math.max(1, p.attack.param()), ThreatCues.AREA_RGB, p.particle, false);
@@ -788,7 +831,8 @@ public final class Mechanics {
         if (protectedHit && a.special() != AttackDef.Special.PRAYER_PIERCING && a.special() != AttackDef.Special.DRAGONFIRE) {
             damage = 0;
         }
-        damage = mob.onHitPlayer(target, damage, a.style());
+        // the attack that landed: the monster may have started others since (a script's on-hit hook must not read its latest one)
+        damage = mob.onHitPlayer(target, damage, a.style(), a);
         com.runecraft.combat.CombatHooks.nameAttack(a.name(), a.style());
         int dealt = CombatHandler.applyDamage(mob, target, damage);
         if (dealt > 0) {

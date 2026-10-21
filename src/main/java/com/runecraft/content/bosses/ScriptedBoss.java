@@ -185,6 +185,27 @@ abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScaled {
         return d;
     }
 
+    /**
+     * The on-hit hook sees the attack that landed as {@link #last}: hits land in real time (round 41), after the boss may have
+     * started its next attack. An attack the hook itself starts stays the last one.
+     */
+    @Override
+    public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type, AttackDef attack) {
+        if (attack == null) {
+            return onHitPlayer(boss, player, damage, type);
+        }
+        AttackDef started = last;
+        int count = attackCount;
+        last = attack;
+        try {
+            return onHitPlayer(boss, player, damage, type);
+        } finally {
+            if (attackCount == count) {
+                last = started;
+            }
+        }
+    }
+
     /** Scales a "true OSRS hitpoints" amount (heals, thresholds) into Minecraft health. */
     protected static float mcHp(DataBossEntity boss, double osrsHp) {
         int hp = boss.trueHitpoints();

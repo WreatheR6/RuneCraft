@@ -116,6 +116,8 @@ final class NpcDeliveryChecks {
         checks.add(new SelfTest.Check("npc:hazard", () -> n.run(n::hazard)));
         checks.add(new SelfTest.Check("npc:mixed_style_navigation", () -> n.run(n::mixedNavigation)));
         checks.add(new SelfTest.Check("npc:chase_speed", () -> n.run(n::chaseSpeed)));
+        checks.add(new SelfTest.Check("npc:style_spacing", () -> n.run(n::styleSpacing)));
+        checks.add(new SelfTest.Check("npc:landing_sees_its_attack", () -> n.run(n::landingSeesItsAttack)));
         // with the real player too (the client walkthrough runs boss:*): a projectile prayed against through the real toggle
         // a few ticks after its cue, and a telegraph's floor, cues and warning line
         checks.add(new SelfTest.Check("boss:playability_npc_delivery", () -> n.run(n::playability)));
@@ -130,6 +132,7 @@ final class NpcDeliveryChecks {
 
     private String run(Body body) throws Exception {
         hook();
+        settle(c.player); // what earlier checks left on its way (or just landed) must not space this check's hits
         Rec r = new Rec(c.player);
         Mechanics.PendingListener before = Mechanics.pendingListener;
         java.util.function.Function<net.minecraft.server.level.ServerLevel, List<ServerPlayer>> extraBefore = Mechanics.extraPlayers;
@@ -181,13 +184,24 @@ final class NpcDeliveryChecks {
             telegraphing.clear();
             clearStill();
             Mechanics.clearHazards(c.world, new net.minecraft.world.phys.AABB(TestContext.PLATFORM).inflate(40));
-            // land or drop whatever is still on its way before the next check
-            for (int i = 0; i < 80 && Mechanics.pendingOn(p) > 0; i++) {
-                ActionManager.advanceForSelfTest();
-                Mechanics.tickForSelfTest();
-            }
+            settle(p);
             p.setDeltaMovement(Vec3.ZERO);
             c.home();
+        }
+    }
+
+    /**
+     * Lands or drops whatever is still on its way to {@code p}, then lets the style spacing forget the hits that just landed (it
+     * keeps another style 20 MC from them), so one check's hits never move the next one's.
+     */
+    private static void settle(ServerPlayer p) {
+        for (int i = 0; i < 80 && Mechanics.pendingOn(p) > 0; i++) {
+            ActionManager.advanceForSelfTest();
+            Mechanics.tickForSelfTest();
+        }
+        for (int i = 0; i < ThreatTiming.STYLE_SPACING_MC; i++) {
+            ActionManager.advanceForSelfTest();
+            Mechanics.tickForSelfTest();
         }
     }
 
@@ -679,6 +693,105 @@ final class NpcDeliveryChecks {
         double perSecond = (endX - startX) / (endMc - startMc) * 20;
         expect(perSecond >= 3.8 && perSecond <= 4.6, "a chasing goblin walks " + fmt(perSecond) + " blocks a second (3.8-4.6)");
         return "chases at " + fmt(perSecond) + " blocks a second";
+    }
+
+    /**
+     * A melee swing started 12 MC after a magic projectile lands at least 20 MC from it (one prayer switch at a time), whether the
+     * bolt is still flying (a boss's: 16+ MC) or already landed (a monster's over 2 blocks: 10 MC) when the swing starts.
+     */
+    private String styleSpacing() {
+        OsrsMonsterEntity mob = still(Monster.HILL_GIANT.entity(), 2, 0);
+        AttackDef bolt = AttackDef.of("selftest_spacing_bolt", AttackType.MAGIC, 5, 12, 1);
+        AttackDef swing = AttackDef.of("selftest_spacing_swing", AttackType.CRUSH, 5, 3, 1);
+        StringBuilder out = new StringBuilder();
+        for (boolean flying : new boolean[]{true, false}) {
+            long t0 = now();
+            if (flying) {
+                Mechanics.deliverProjectile(mob, c.player, AttackType.MAGIC, true, 12, () -> {
+                });
+            } else {
+                Mechanics.perform(mob, c.player, bolt, 1.0);
+            }
+            Mechanics.Threat magic = rec.last();
+            expect(magic != null && magic.kind() == Mechanics.Kind.PROJECTILE && magic.style() == AttackType.MAGIC,
+                    "the bolt is not a magic projectile");
+            expect(flying == magic.dueMc() > t0 + ActionManager.MC_TICKS_PER_GAME_TICK, (flying ? "the boss's" : "the monster's")
+                    + " bolt flies " + (magic.dueMc() - t0) + " MC (the setup needs it " + (flying ? "still flying" : "landed")
+                    + " when the swing starts 12 MC later)");
+            step(ActionManager.MC_TICKS_PER_GAME_TICK);
+            Mechanics.perform(mob, c.player, swing, 1.0);
+            Mechanics.Threat melee = rec.last();
+            expect(melee != null && melee.kind() == Mechanics.Kind.WINDUP, "the swing has no wind-up");
+            step((int) (Math.max(magic.dueMc(), melee.dueMc()) - now()) + 2);
+            expect(rec.landedAt.containsKey(magic.id()), "the bolt never landed");
+            expect(rec.landedAt.containsKey(melee.id()), "the swing never landed on a player standing in reach");
+            long apart = rec.landedAt.get(melee.id()) - rec.landedAt.get(magic.id());
+            expect(apart >= ThreatTiming.STYLE_SPACING_MC, "a swing started 12 MC after a " + (flying ? "flying" : "landed")
+                    + " magic bolt landed " + apart + " MC after it (at least " + ThreatTiming.STYLE_SPACING_MC + ")");
+            out.append(out.length() == 0 ? "" : "; ").append(flying ? "bolt in flight" : "bolt landed").append(": swing ").append(apart)
+                    .append(" MC after it");
+            settle(c.player);
+        }
+        clearStill();
+        return out.toString();
+    }
+
+    /**
+     * A hit still on its way when its boss starts another attack is judged as its own attack (a script's on-hit hook reads the
+     * attack that landed): the Whisperer's soul bolt, prayed against, deals nothing although her melee, which hits through prayer,
+     * started before the bolt arrived.
+     */
+    private String landingSeesItsAttack() {
+        com.runecraft.osrs.content.BossDef def = ContentRegistry.boss("the_whisperer");
+        if (def == null) {
+            throw new SelfTest.Skip("no BossDef the_whisperer");
+        }
+        com.runecraft.boss.DataBossEntity boss = com.runecraft.boss.DataBossService.spawn(c.world, c.near(3, 0), def, c.player);
+        expect(boss != null, "the Whisperer didn't spawn");
+        stillMobs.add(boss); // discarded after the check; her own tick never runs
+        AttackDef bolt = com.runecraft.osrs.content.bosses.Dt2Bosses.WHISPER_MAGIC;
+        AttackDef whack = com.runecraft.osrs.content.bosses.Dt2Bosses.WHISPER_MELEE;
+        PlayerData data = Players.data(c.player);
+        if (!data.isActive(Prayer.PROTECT_FROM_MAGIC)) {
+            PrayerService.toggle(c.player, Prayer.PROTECT_FROM_MAGIC);
+        }
+        expect(data.isActive(Prayer.PROTECT_FROM_MAGIC), "Protect from Magic didn't come on through the toggle");
+        int bolts = 0;
+        int hurt = 0;
+        int whacks = 0;
+        try {
+            for (int i = 0; i < 6; i++) {
+                expect(com.runecraft.content.bosses.BossSelfTests.performScripted(boss, c.player, bolt),
+                        "the Whisperer's script is not a scripted boss");
+                Mechanics.Threat flying = rec.last();
+                expect(flying != null && flying.kind() == Mechanics.Kind.PROJECTILE, "her soul bolt is not a projectile");
+                step(ActionManager.MC_TICKS_PER_GAME_TICK);
+                expect(flying.dueMc() > now(), "her soul bolt landed within a game tick (nothing to check)");
+                com.runecraft.content.bosses.BossSelfTests.performScripted(boss, c.player, whack); // her script's last attack now
+                Mechanics.Threat swing = rec.last();
+                step((int) (Math.max(flying.dueMc(), swing.dueMc()) - now()) + 2);
+                expect(rec.landedAt.containsKey(flying.id()), "her soul bolt never landed");
+                for (Hit h : rec.named(bolt.name())) {
+                    if (h.mc() == flying.dueMc()) {
+                        bolts++;
+                        if (h.damage() > 0) {
+                            hurt++;
+                        }
+                    }
+                }
+                whacks += rec.named(whack.name()).size();
+                rec.hits.clear();
+                settle(c.player);
+            }
+        } finally {
+            if (data.isActive(Prayer.PROTECT_FROM_MAGIC)) {
+                PrayerService.toggle(c.player, Prayer.PROTECT_FROM_MAGIC);
+            }
+        }
+        expect(bolts == 6, bolts + " of 6 soul bolts resolved at their due tick");
+        expect(hurt == 0, hurt + " of 6 soul bolts hurt through Protect from Magic: judged as the melee she started while they flew");
+        clearStill();
+        return "6 soul bolts landing after her melee started: all blocked by Protect from Magic (" + whacks + " whacks landed)";
     }
 
     /**

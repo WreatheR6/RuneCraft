@@ -180,7 +180,17 @@ final class QuestBossScripts {
 
         @Override
         public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
-            if (!"crystal_judgement".equals(last)) {
+            return judged(boss, player, damage, last);
+        }
+
+        /** The hit's own attack: it lands after its flight or wind-up, when {@code last} may already name her next one. */
+        @Override
+        public int onHitPlayer(DataBossEntity boss, ServerPlayer player, int damage, AttackType type, AttackDef attack) {
+            return judged(boss, player, damage, attack != null ? attack.name() : last);
+        }
+
+        private int judged(DataBossEntity boss, ServerPlayer player, int damage, String attack) {
+            if (!"crystal_judgement".equals(attack)) {
                 return damage;
             }
             float left = boss.getHealth() / boss.getMaxHealth();
