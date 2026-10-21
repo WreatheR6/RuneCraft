@@ -1,7 +1,6 @@
 package com.runecraft.content.systems;
 
 import com.runecraft.osrs.GielinorMap;
-import com.runecraft.osrs.ItemDef;
 import com.runecraft.osrs.QuestInfo;
 import com.runecraft.osrs.Skill;
 import com.runecraft.osrs.content.ContentRegistry;
@@ -146,6 +145,21 @@ public final class AccessGateService {
         p.hurtMarked = true;
     }
 
+    /**
+     * Whether the player carries or wears (the inventory covers the armour and off-hand slots) anything the monks of Entrana
+     * refuse ({@link AccessGates#entranaBanned}); the Entrana boat and balloon check it before leaving.
+     */
+    public static boolean carriesCombatGear(ServerPlayer p) {
+        Inventory inv = p.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack s = inv.getItem(i);
+            if (!s.isEmpty() && AccessGates.entranaBanned(ModItems.def(s))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** The requirement view of a live player. */
     private record View(ServerPlayer p) implements AccessGates.PlayerView {
         private static final EquipmentSlot[] WORN = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS,
@@ -200,18 +214,7 @@ public final class AccessGateService {
 
         @Override
         public boolean hasCombatGear() {
-            Inventory inv = p.getInventory();
-            for (int i = 0; i < inv.getContainerSize(); i++) {
-                ItemStack s = inv.getItem(i);
-                if (s.isEmpty()) {
-                    continue;
-                }
-                ItemDef def = ModItems.def(s);
-                if (AccessGates.entranaBanned(def)) {
-                    return true;
-                }
-            }
-            return false;
+            return carriesCombatGear(p);
         }
     }
 }

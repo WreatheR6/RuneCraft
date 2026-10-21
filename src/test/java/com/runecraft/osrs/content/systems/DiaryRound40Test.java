@@ -604,4 +604,28 @@ class DiaryRound40Test {
             assertFalse(DiaryActivities.BASIC_EMOTES.contains(e), e + " must be unlocked");
         }
     }
+
+    /** Project Rebalance (8 May 2024): the Falador hard Mining Guild task needs only the Prospector helmet. */
+    @Test
+    void miningGuildTaskNeedsOnlyTheProspectorHelmet() {
+        Diaries.Task guild = byDesc("Enter the Mining Guild while wearing a Prospector helmet");
+        assertEquals("falador", guild.area());
+        assertEquals(Diaries.Tier.HARD, guild.tier());
+        assertEquals(List.of("prospector_helmet"), Diaries.wornReq(guild));
+        assertTrue(Diaries.wearingAll("prospector_helmet", List.of("prospector_helmet")));
+        assertFalse(Diaries.wearingAll("prospector_helmet", List.of("prospector_jacket", "prospector_legs", "prospector_boots")));
+    }
+
+    /** The monks' boat and the balloon both land on Entrana, so the travel service searches the player before leaving. */
+    @Test
+    void entranaTripsAreSearchedBeforeLeaving() {
+        Travel.Dest boat = Travel.get("boat_port_sarim_entrana").dests().get(0);
+        assertTrue(AccessGates.onEntrana(boat.x(), boat.y()));
+        Travel.Dest back = Travel.get("boat_entrana_port_sarim").dests().get(0);
+        assertFalse(AccessGates.onEntrana(back.x(), back.y()));
+        Travel.Dest balloon = Travel.get(Travel.balloonRoute(1)).dests().stream().filter(d -> d.name().equals("Entrana"))
+                .findFirst().orElseThrow();
+        assertTrue(AccessGates.onEntrana(balloon.x(), balloon.y()));
+        assertTrue(AccessGates.entranaBanned(ItemCatalog.get("bronze_sword")));
+    }
 }

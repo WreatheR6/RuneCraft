@@ -558,8 +558,9 @@ public final class Diaries {
         kc("Kill the Giant Mole beneath Falador Park", "giant_mole", 1);
         killAny("Kill a Skeletal Wyvern in the Asgarnia Ice Dungeon", "skeletal wyvern", 1, SLAYER, 72);
         xp("Complete a lap of the Falador rooftop agility course", AGILITY, 50);
-        visit("Enter the Mining Guild wearing full Prospector", 3016, 3339, 8, MINING, 60);
-        wearing("prospector_helmet&prospector_jacket|varrock_armour_4&prospector_legs&prospector_boots");
+        // Project Rebalance (8 May 2024): only the Prospector helmet (or the golden one, not an item here) is needed.
+        visit("Enter the Mining Guild while wearing a Prospector helmet", 3016, 3339, 8, MINING, 60);
+        wearing("prospector_helmet");
         killAny("Kill the Blue Dragon under the Heroes' Guild", "blue dragon", 1);
         visit("Crack a wall safe within Rogues' Den", 2906, 3537, 8, THIEVING, 50);
         // The altar of the Rimmington ("Port Sarim") church, in full Proselyte (Sir Tiffy, after The Slug Menace).
@@ -1276,7 +1277,7 @@ public final class Diaries {
     }
 
     /**
-     * Gear a task needs worn when it completes (OSRS: "whilst wearing full Prospector", "with a Slayer helmet equipped"):
+     * Gear a task needs worn when it completes (OSRS: "while wearing a Prospector helmet", "with a Slayer helmet equipped"):
      * WEAR targets, any one of which is enough, or an empty list.
      */
     public static List<String> wornReq(Task task) {

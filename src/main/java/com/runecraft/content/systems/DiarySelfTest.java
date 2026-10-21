@@ -2,6 +2,7 @@ package com.runecraft.content.systems;
 
 import com.runecraft.combat.PrayerService;
 import com.runecraft.content.GameEvents;
+import com.runecraft.content.npcs.TravelService;
 import com.runecraft.osrs.Experience;
 import com.runecraft.osrs.GielinorMap;
 import com.runecraft.osrs.Prayer;
@@ -226,7 +227,6 @@ public final class DiarySelfTest {
                 {"travel:canoe_lumbridge:edgeville", "Travel from Lumbridge to Edgeville on a Waka Canoe"},
                 {"fairy_ring:bis", "Enter the unicorn pen in Ardougne Zoo using Fairy rings"},
                 {"fairy_ring:cip", "Travel to Miscellania by Fairy ring"},
-                {"travel:boat_port_sarim_entrana:entrana", "Take the boat to Entrana"},
                 {"talk:hans", "Learn your age from Hans in Lumbridge"},
                 {"talk:npc_emblem_trader", "Talk to the Emblem Trader in Edgeville about emblems"}};
         Diaries.Task uzer = task("Travel to Uzer via magic carpet");
@@ -239,7 +239,56 @@ public final class DiarySelfTest {
         expect(c, uzer, false, "carpet rides that did not go to Uzer");
         GameEvents.fireActivity(c.player, "travel:carpet_shantay:uzer");
         expect(c, uzer, true, "a carpet ride to Uzer");
-        return "2 eagle flights, the train, " + trips.length + " trip keys";
+        entranaBoat(c);
+        return "2 eagle flights, the train, " + trips.length + " trip keys, the Entrana boat refused armed and taken unarmed";
+    }
+
+    /**
+     * The Entrana boat through the travel service: the Port Sarim monk refuses a player wielding a sword (no trip, no task),
+     * then sails them over once nothing banned is carried. Banned stacks already in the inventory are set aside and put back.
+     */
+    private static void entranaBoat(TestContext c) {
+        String monkId = "npc_monk_of_entrana_port_sarim";
+        NpcDef monk = ContentRegistry.npc(monkId);
+        com.runecraft.entity.QuestNpcEntity npc = com.runecraft.registry.ModEntities.QUEST_NPC.create(c.world);
+        if (npc == null || monk == null) {
+            throw new AssertionError("could not spawn the Port Sarim Monk of Entrana");
+        }
+        net.minecraft.world.entity.player.Inventory inv = c.player.getInventory();
+        java.util.Map<Integer, net.minecraft.world.item.ItemStack> aside = new java.util.HashMap<>();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            net.minecraft.world.item.ItemStack s = inv.getItem(i);
+            if (!s.isEmpty() && com.runecraft.osrs.content.systems.AccessGates.entranaBanned(com.runecraft.registry.ModItems.def(s))) {
+                aside.put(i, s.copy());
+                inv.setItem(i, net.minecraft.world.item.ItemStack.EMPTY);
+            }
+        }
+        Diaries.Task boat = task("Take the boat to Entrana");
+        try {
+            c.home();
+            net.minecraft.core.BlockPos spot = c.near(2, 0);
+            npc.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, 0f, 0f);
+            npc.setNpc(monk);
+            c.world.addFreshEntity(npc);
+            wield(c, "bronze_sword");
+            TravelService.travel(c.player, monkId, 0);
+            int[] pos = SysTeleport.osrs(c.player);
+            if (Teleports.within(pos[0], pos[1], 2834, 3331, 40)) {
+                throw new AssertionError("the monk sailed a player wielding a bronze sword to Entrana");
+            }
+            expect(c, boat, false, "the monk refused a player with a sword");
+            c.player.setItemInHand(InteractionHand.MAIN_HAND, net.minecraft.world.item.ItemStack.EMPTY);
+            TravelService.travel(c.player, monkId, 0);
+            pos = SysTeleport.osrs(c.player);
+            if (!Teleports.within(pos[0], pos[1], 2834, 3331, 8)) {
+                throw new AssertionError("the unarmed boat trip landed at " + pos[0] + "," + pos[1]);
+            }
+            expect(c, boat, true, "the boat trip to Entrana");
+        } finally {
+            npc.discard();
+            c.home();
+            aside.forEach(inv::setItem);
+        }
     }
 
     /** Altars through the prayer service: the Chaos Altar, Emir's Arena with Smite (missed without it), Sophanem's 85 points. */
@@ -290,7 +339,7 @@ public final class DiarySelfTest {
         return "4 altars";
     }
 
-    /** Conditions: the Wolfbane dagger, full Prospector, a complete Barrows set, each first missed and then met. */
+    /** Conditions: the Wolfbane dagger, a Prospector helmet, a complete Barrows set, each first missed and then met. */
     private static String conditions(TestContext c) {
         c.completeQuests(null);
         Diaries.Task werewolf = task("Kill a Werewolf in its human form using the Wolfbane Dagger");
@@ -300,20 +349,21 @@ public final class DiarySelfTest {
         wield(c, "wolfbane");
         kill(c, "Werewolf");
         expect(c, werewolf, true, "a kill with Wolfbane");
-        Diaries.Task guild = task("Enter the Mining Guild wearing full Prospector");
+        Diaries.Task guild = task("Enter the Mining Guild while wearing a Prospector helmet");
         at(c, 3016, 3339);
         DiaryService.check(c.player, Diaries.Type.VISIT);
         expect(c, guild, false, "entering without Prospector");
-        c.player.setItemSlot(EquipmentSlot.HEAD, Inv.stack("prospector_helmet", 1));
         c.player.setItemSlot(EquipmentSlot.CHEST, Inv.stack("prospector_jacket", 1));
-        c.player.setItemSlot(EquipmentSlot.LEGS, Inv.stack("prospector_legs", 1));
-        c.player.setItemSlot(EquipmentSlot.FEET, Inv.stack("prospector_boots", 1));
         DiaryService.check(c.player, Diaries.Type.VISIT);
-        expect(c, guild, true, "entering in full Prospector");
+        expect(c, guild, false, "entering in a Prospector jacket only");
+        c.player.setItemSlot(EquipmentSlot.CHEST, net.minecraft.world.item.ItemStack.EMPTY);
+        c.player.setItemSlot(EquipmentSlot.HEAD, Inv.stack("prospector_helmet", 1));
+        DiaryService.check(c.player, Diaries.Type.VISIT);
+        expect(c, guild, true, "entering in a Prospector helmet");
         c.home();
         Diaries.Task barrows = task("Loot the Barrows chest while wearing any complete Barrows set");
         GameEvents.fireActivity(c.player, "chest_open:barrows_chest");
-        expect(c, barrows, false, "a chest in Prospector");
+        expect(c, barrows, false, "a chest in a Prospector helmet");
         c.player.setItemSlot(EquipmentSlot.HEAD, Inv.stack("dharoks_helm", 1));
         c.player.setItemSlot(EquipmentSlot.CHEST, Inv.stack("dharoks_platebody", 1));
         c.player.setItemSlot(EquipmentSlot.LEGS, Inv.stack("dharoks_platelegs", 1));

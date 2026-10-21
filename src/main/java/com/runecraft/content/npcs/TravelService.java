@@ -26,7 +26,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 
 /** Boats, charter ships, gliders, magic carpets and canoes: a clickable destination list, then a paid trip. */
-final class TravelService {
+public final class TravelService {
     private TravelService() {
     }
 
@@ -86,7 +86,7 @@ final class TravelService {
     }
 
     /** Runs a chosen trip if the player is next to the NPC and meets the fare and requirements. */
-    static void travel(ServerPlayer player, String npcId, int index) {
+    public static void travel(ServerPlayer player, String npcId, int index) {
         TownNpc npc = Townsfolk.get(npcId);
         if (npc == null || npc.travel() == null) {
             return;
@@ -111,6 +111,14 @@ final class TravelService {
                 Msg.game(player, "You need to complete " + ContentRegistry.quest(quest).displayName() + " first.");
                 return;
             }
+        }
+        // The monks (and the balloon assistant) search everyone bound for Entrana: with weapons or armour the trip never leaves.
+        if (com.runecraft.osrs.content.systems.AccessGates.onEntrana(d.x(), d.y())
+                && com.runecraft.content.systems.AccessGateService.carriesCombatGear(player)) {
+            Msg.game(player, route.verb().equals("float")
+                    ? "The assistant won't fly you to Entrana: the monks there allow no weapons or armour on their holy island."
+                    : "Sorry, we cannot allow you on to our island. Make sure you are not carrying weapons or armour please.");
+            return;
         }
         int price = fare(player, route, d);
         if (d.item() != null && !Inv.has(player, d.item(), d.itemCount())) {
