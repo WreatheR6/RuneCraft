@@ -145,10 +145,12 @@ public final class GatheringData extends SkillingPart {
 
     public static final String LANTERN_SPOT = "lantern_fishing_spot";
     /**
-     * Lit lanterns that light lantern harpooning (OSRS takes any lit lantern; the candle, oil, bullseye and gem lanterns
-     * are not in RuneCraft yet, so only the lit bug lantern from CommonItems works here, approx).
+     * Lit lanterns that light lantern harpooning, held or worn (OSRS Wiki, Lantern harpooning: any lit lantern). Of the
+     * wiki's seven, RuneCraft has the lit bug lantern (CommonItems), the abyssal lantern (Guardians of the Rift), the
+     * sapphire lantern (While Guthix Sleeps) and the emerald lantern (Lunar Diplomacy); the candle, oil and bullseye
+     * lanterns are not items yet. Ids of other modules: the hooks check that each item exists.
      */
-    public static final List<String> LIT_LANTERNS = List.of("bug_lantern");
+    public static final List<String> LIT_LANTERNS = List.of("bug_lantern", "abyssal_lantern", "sapphire_lantern", "ld_emerald_lantern");
 
     public static final String MINNOW = "minnow";
     public static final String MINNOW_SPOT = "minnow_fishing_spot";

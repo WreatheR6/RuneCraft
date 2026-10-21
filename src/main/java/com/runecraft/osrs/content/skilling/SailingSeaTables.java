@@ -230,6 +230,31 @@ Veiled kraken	210	225	200	185	115	19,18,17,16,15,13,11,9	5	CRUSH	Yes	325	325	0	2
 Vampyre kraken	211	311	1	1	115	22,21,20,19,18,16,14,12	5	MAGIC	Yes	120	75	60	1890	4145	Everwinter Sea - north of Brittle Isle
             """;
 
+    /** creature, Magic level, attack bonus of its style (wiki infoboxes: mage, attbns / amagic). */
+    static final String CREATURE_ACCURACY = """
+            Dolphin	1	0
+            Tern	1	0
+            Eagle ray	1	0
+            Butterfly ray	1	0
+            Bull shark	1	0
+            Mogre (sea)	1	22
+            Osprey	1	0
+            Stingray	1	0
+            Hammerhead shark	1	0
+            Narwhal	1	0
+            Frigatebird	1	0
+            Manta ray (monster)	1	0
+            Tiger shark	1	0
+            Pygmy kraken	90	0
+            Albatross	1	0
+            Orca	1	0
+            Spined kraken	135	0
+            Great white shark	0	0
+            Armoured kraken	175	0
+            Veiled kraken	100	0
+            Vampyre kraken	215	0
+            """;
+
     /** creature, section, item, quantity, rarity. */
     static final String CREATURE_DROPS = """
 Dolphin	Pre-roll	Echo pearl	1	1/1200

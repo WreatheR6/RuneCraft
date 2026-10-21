@@ -186,6 +186,10 @@ public final class ItemHooks {
             pouch(player, stack, pouch);
             return true;
         }
+        // Raw food used aboard a boat with a range facility: cook it there.
+        if (player.getVehicle() != null && SailingHooks.cookAboard(player, id)) {
+            return true;
+        }
         // Sneak + use cargo (salvage, cannonballs, repair kits) near your boat: store it in the cargo hold.
         if (player.isShiftKeyDown() && player.getVehicle() == null && com.runecraft.osrs.content.skilling.SailingCrew.storable(id)
                 && SeaHooks.deposit(player, id, stack.getCount())) {
@@ -246,6 +250,19 @@ public final class ItemHooks {
                 stack.shrink(1);
                 Loot l = SkillingUtil.roll(player, GatheringData.INFERNAL_EEL, player.getRandom());
                 Msg.action(player, "You crush the infernal eel and find " + SkillingUtil.lower(SkillingUtil.name(l.item())) + ".");
+                return true;
+            }
+            case "rubium_geode" -> {
+                // Wiki Rubium geode: a hammer and chisel crack it into splinters, more at higher Mining levels.
+                if (!SkillingUtil.needItem(player, "hammer", "You need a hammer and a chisel to crack the geode.")
+                        || !SkillingUtil.needItem(player, "chisel", "You need a hammer and a chisel to crack the geode.")) {
+                    return true;
+                }
+                stack.shrink(1);
+                int n = com.runecraft.osrs.content.skilling.MiningData.rubiumSplinters(SkillingUtil.level(player, Skill.MINING),
+                        new java.util.Random(player.getRandom().nextLong()));
+                SkillingUtil.give(player, "rubium_splinters", n);
+                Msg.action(player, "You crack the geode open and find " + n + " rubium splinters.");
                 return true;
             }
             case "trawling_net" -> {

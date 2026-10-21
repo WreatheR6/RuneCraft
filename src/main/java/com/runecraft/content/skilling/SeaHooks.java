@@ -75,15 +75,17 @@ public final class SeaHooks {
         // Sneak + use your boat with an empty hand: empty its cargo hold into your inventory.
         // Boat paint (OSRS: a cosmetic colour scheme for your boat): use the paint on one of your boats to repaint its hull.
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
-            if (hand != InteractionHand.MAIN_HAND || !(entity instanceof Boat boat) || !PAINT.equals(Inv.idOf(player.getMainHandItem()))) {
+            String paint = Inv.idOf(player.getMainHandItem());
+            if (hand != InteractionHand.MAIN_HAND || !(entity instanceof Boat boat) || !PAINTS.containsKey(paint)) {
                 return InteractionResult.PASS;
             }
             if (world.isClientSide() || !(player instanceof ServerPlayer sp) || SailingHooks.boatType(entity) == null) {
                 return InteractionResult.PASS;
             }
-            boat.setVariant(Boat.Type.DARK_OAK); // approx: the shark scheme's dark grey hull
-            player.getMainHandItem().shrink(1);
-            Msg.action(sp, "You paint your boat in the colours of a shark.");
+            String why = paintBoat(sp, boat, paint);
+            if (why != null) {
+                Msg.game(sp, why);
+            }
             return InteractionResult.SUCCESS;
         });
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
@@ -100,6 +102,57 @@ public final class SeaHooks {
             withdrawAll(sp, type);
             return InteractionResult.SUCCESS;
         });
+    }
+
+    // ------------------------------------------------------------------ boat paint
+
+    /** Boat paints RuneCraft has and the vanilla boat look each trim is shown with (approx: Minecraft boats have no trim). */
+    static final Map<String, Boat.Type> PAINTS = Map.of(PAINT, Boat.Type.SPRUCE, "salvors_paint", Boat.Type.BIRCH,
+            "inky_paint", Boat.Type.MANGROVE);
+
+    /**
+     * Trims a skiff or sloop with a boat paint (wiki Shark paint: 25 Sailing and 20 Construction, 10 Construction XP, one
+     * paint for a skiff and two for a sloop; rafts can't be trimmed; OSRS paints at the boat schematics). The trim is kept
+     * for the boat type and shown again whenever it is launched. Returns why it can't be done, or null.
+     */
+    public static String paintBoat(ServerPlayer player, Entity boat, String paint) {
+        String type = SailingHooks.boatType(boat);
+        if (type == null || type.equals("raft")) {
+            return "Only skiffs and sloops have a trim to paint.";
+        }
+        if (SkillingUtil.level(player, Skill.SAILING) < PAINT_SAILING || SkillingUtil.level(player, Skill.CONSTRUCTION) < PAINT_CONSTRUCTION) {
+            return "You need level " + PAINT_SAILING + " Sailing and " + PAINT_CONSTRUCTION + " Construction to trim a boat.";
+        }
+        int need = type.equals("sloop") ? 2 : 1;
+        if (Inv.count(player, paint) < need) {
+            return "You need " + need + " " + SkillingUtil.lower(SkillingUtil.name(paint)) + " to trim your " + type + ".";
+        }
+        Inv.remove(player, paint, need);
+        SailingHooks.boatState(player).putString("trim." + type, paint);
+        if (boat instanceof Boat b && !(boat instanceof com.runecraft.content.extras.SailBoatEntity)) {
+            b.setVariant(PAINTS.get(paint));
+        }
+        XpService.add(player, Skill.CONSTRUCTION, PAINT_XP);
+        Msg.action(player, "You trim your " + type + " with " + SkillingUtil.lower(SkillingUtil.name(paint)) + ".");
+        return null;
+    }
+
+    public static final int PAINT_SAILING = 25;
+    public static final int PAINT_CONSTRUCTION = 20;
+    public static final double PAINT_XP = 10;
+
+    /** The trim painted on a boat type, or null. */
+    public static String trim(ServerPlayer player, String type) {
+        String t = SailingHooks.boatState(player).getString("trim." + type);
+        return t.isEmpty() ? null : t;
+    }
+
+    /** Shows a launched boat with its painted trim. */
+    static void applyTrim(ServerPlayer player, Boat boat, String type) {
+        String t = trim(player, type);
+        if (t != null && PAINTS.containsKey(t)) {
+            boat.setVariant(PAINTS.get(t));
+        }
     }
 
     // ------------------------------------------------------------------ salvage sorting
@@ -364,6 +417,19 @@ public final class SeaHooks {
         }
     }
 
+    /** Clears a player's in-memory sea state (boat hitpoints, encounter, hazard and cannon timers) and their creatures (self-test). */
+    static void resetForTest(ServerPlayer player) {
+        SEA.remove(player.getUUID());
+        Iterator<Map.Entry<Mob, Spawned>> it = SPAWNED.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<Mob, Spawned> e = it.next();
+            if (e.getValue().owner.equals(player.getUUID())) {
+                e.getKey().discard();
+                it.remove();
+            }
+        }
+    }
+
     /** Called every game tick while the player is not on a boat: tidies up their sea creatures. */
     static void offBoat(ServerPlayer player) {
         Sea sea = SEA.get(player.getUUID());
@@ -490,13 +556,24 @@ public final class SeaHooks {
             }
             sp.cooldown = 0;
             mob.lookAt(player, 30f, 30f);
-            int max = Math.max(0, sp.creature.maxHitAgainst(0) - SailingSea.keelReduction(type,
-                    SailingHooks.partTier(player, type, SailingTraining.PartType.KEEL)));
-            int dmg = max <= 0 || RNG.nextBoolean() ? 0 : 1 + RNG.nextInt(max); // approx: half the attacks land
+            int dmg = creatureHit(player, type, sp.creature, RNG);
             if (dmg > 0) {
                 hurtBoat(player, vehicle, type, s, dmg, "The " + SkillingUtil.lower(sp.creature.name()) + " hits your boat");
             }
         }
+    }
+
+    /**
+     * One sea creature attack on a boat: it lands with the creature's attack roll against the hull's defence roll, then
+     * rolls 0 to its wiki max hit against the boat's keel (keel armour already taken off; 0 below the keel's armour).
+     */
+    public static int creatureHit(ServerPlayer player, String type, SailingSea.SeaCreature c, Random random) {
+        int max = c.maxHitAgainst(SailingSea.keelIndex(type, SailingHooks.partTier(player, type, SailingTraining.PartType.KEEL)));
+        if (max <= 0 || random.nextDouble() >= SailingSea.creatureHitChance(c, type,
+                SailingHooks.partTier(player, type, SailingTraining.PartType.HULL))) {
+            return 0;
+        }
+        return random.nextInt(max + 1);
     }
 
     private static void hurtBoat(ServerPlayer player, Entity vehicle, String type, Sea s, int dmg, String what) {
@@ -726,6 +803,11 @@ public final class SeaHooks {
         Msg.action(player, "You empty the cargo hold: " + String.join(", ", names) + ".");
     }
 
+    /** Takes one of an item from the boat's cargo hold, else from the inventory; false when there's none. */
+    static boolean takeOne(ServerPlayer player, String type, String item) {
+        return takeFromHold(player, type, item) || Inv.remove(player, item, 1) > 0;
+    }
+
     /** Takes one of the items from the boat's hold (crew repairs and cannon ammunition); false when there's none. */
     private static boolean takeFromHold(ServerPlayer player, String type, String item) {
         CompoundTag hold = hold(player, type);
@@ -818,7 +900,9 @@ public final class SeaHooks {
                 hand = c;
             }
         }
-        if (s.crewRepair <= 0 && s.hp >= 0 && s.hp < maxHp(player, type) * SailingCrew.CREW_REPAIR_BELOW) {
+        // Crewmates repair by themselves with a bosun's workbench (wiki, May 2026: otherwise only on the captain's order).
+        if (s.crewRepair <= 0 && s.hp >= 0 && s.hp < maxHp(player, type) * SailingCrew.CREW_REPAIR_BELOW
+                && SailingHooks.hasFacility(player, type, "bosuns_workbench")) {
             crewRepair(player, type, hand);
             s.crewRepair = 4; // approx: the eating delay
         }
@@ -881,6 +965,7 @@ public final class SeaHooks {
         if (ball == null) {
             return -1;
         }
+        recoverBall(player, type, item);
         Spawned sp = SPAWNED.get(target);
         if (sp != null) {
             sp.engaged = true;
@@ -888,8 +973,10 @@ public final class SeaHooks {
         ServerLevel world = (ServerLevel) player.level();
         world.playSound(null, player.blockPosition(), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.5f, 1.5f);
         world.sendParticles(ParticleTypes.EXPLOSION, target.getX(), target.getY() + 0.5, target.getZ(), 1, 0, 0, 0, 0);
-        int max = SailingCrew.crewMaxHit(SkillingUtil.level(player, Skill.SAILING), cannon, ball, c.privateering());
-        boolean hit = sp == null || RNG.nextDouble() < SailingSea.cannonAccuracy(cannon, ball, false, sp.creature);
+        int sailing = SkillingUtil.level(player, Skill.SAILING);
+        int max = SailingCrew.crewMaxHit(sailing, cannon, ball, c.privateering());
+        boolean hit = sp == null || RNG.nextDouble() < SailingSea.cannonAccuracy(SailingSea.crewEffectiveLevel(sailing), cannon, ball,
+                false, 0, sp.creature);
         int dmg = hit ? RNG.nextInt(max + 1) : 0;
         if (hit) {
             special(sp, item);
@@ -899,6 +986,18 @@ public final class SeaHooks {
             XpService.add(player, Skill.SAILING, dmg); // approx: crew shots give the Sailing share of a player's shot
         }
         return dmg;
+    }
+
+    /** A ballistic attractor brings back 60% of the cannonballs fired: into the cargo hold if the boat has one, else the pack. */
+    private static void recoverBall(ServerPlayer player, String type, String item) {
+        if (!SailingHooks.hasFacility(player, type, "ballistic_attractor") || RNG.nextDouble() >= SailingTraining.ATTRACTOR_RECOVERY) {
+            return;
+        }
+        if (SailingCrew.bestHold(SailingHooks.facilities(player, type)) != null) {
+            stockHold(player, type, item, 1);
+        } else {
+            Inv.give(player, item, 1);
+        }
     }
 
     /** A chainshot hit delays the creature's next attack; an incendiary hit adds a burn (up to 5). */
@@ -1009,6 +1108,10 @@ public final class SeaHooks {
         if (Inv.remove(player, item, 1) < 1) {
             return 0;
         }
+        String boatType = SailingHooks.boatType(SailingHooks.nearbyBoat(player));
+        if (boatType != null) {
+            recoverBall(player, boatType, item);
+        }
         Spawned sp = SPAWNED.get(target);
         if (sp != null) {
             sp.engaged = true;
@@ -1018,8 +1121,14 @@ public final class SeaHooks {
         ServerLevel world = (ServerLevel) player.level();
         world.playSound(null, player.blockPosition(), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.6f, 1.4f);
         world.sendParticles(ParticleTypes.EXPLOSION, target.getX(), target.getY() + 0.5, target.getZ(), 1, 0, 0, 0, 0);
-        int max = SailingSea.cannonMaxHit(SkillingUtil.level(player, Skill.RANGED), cannon, ball, true);
-        boolean hit = c == null || RNG.nextDouble() < SailingSea.cannonAccuracy(cannon, ball, true, c);
+        // Wiki (1 April 2026): Ranged prayers and worn Ranged gear apply when a player mans the cannon (Void: not here, approx).
+        int ranged = SkillingUtil.level(player, Skill.RANGED);
+        com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(player);
+        com.runecraft.osrs.EquipmentStats gear = com.runecraft.combat.HitCalcBridge.gearStats(player);
+        int max = SailingSea.playerCannonMaxHit(SailingSea.effectiveRanged(ranged, com.runecraft.combat.PrayerService.rangedStrength(data),
+                1.0), cannon, ball, gear.rangedStrength());
+        boolean hit = c == null || RNG.nextDouble() < SailingSea.cannonAccuracy(SailingSea.effectiveRanged(ranged,
+                com.runecraft.combat.PrayerService.rangedAttack(data), 1.0), cannon, ball, true, gear.rangedAttack(), c);
         int dmg = hit ? RNG.nextInt(max + 1) : 0;
         if (hit && special != null) {
             special(sp, item);
@@ -1061,12 +1170,7 @@ public final class SeaHooks {
                 if (level < SailingSea.CRATE_LEVELS[0]) {
                     return;
                 }
-                int tier = SailingSea.lostCrateTier(level, RNG);
-                SailingSea.Got g = SailingSea.lostCrateLoot(tier, RNG);
-                SkillingUtil.give(player, g.item(), g.count());
-                XpService.add(player, Skill.SAILING, SailingSea.CRATE_XP[tier]);
-                Msg.action(player, "You fish a lost " + SailingSea.CRATE_NAMES[tier] + " crate out of the water: " + g.count() + " x "
-                        + SkillingUtil.lower(SkillingUtil.name(g.item())) + ".");
+                openLostCrate(player, SailingSea.lostCrateTier(level, RNG));
             }
             case CASTAWAY -> {
                 if (Inv.has(player, "castaway", 1)) {
@@ -1097,6 +1201,32 @@ public final class SeaHooks {
                 Msg.action(player, "You fish a lost casket out of the sea!");
             }
         }
+    }
+
+    /**
+     * Retrieves a lost crate of a tier (0 wooden .. 5 ironwood): its Sailing XP and one of its eight wiki loot lines,
+     * potions with the wiki's doses. Returns the loot. Used by the ocean encounter and the self-test.
+     */
+    public static SailingSea.Got openLostCrate(ServerPlayer player, int tier) {
+        SailingSea.Got g = SailingSea.lostCrateLoot(tier, RNG);
+        giveLoot(player, g.item(), g.count());
+        XpService.add(player, Skill.SAILING, SailingSea.CRATE_XP[tier]);
+        Msg.action(player, "You fish a lost " + SailingSea.CRATE_NAMES[tier] + " crate out of the water: " + g.count() + " x "
+                + SkillingUtil.lower(SkillingUtil.name(com.runecraft.osrs.data.Drop.baseOf(g.item()))) + ".");
+        return g;
+    }
+
+    /** Gives a loot line; a potion written {@code id(n)} comes with n doses. */
+    static void giveLoot(ServerPlayer player, String item, int count) {
+        int doses = com.runecraft.osrs.data.Drop.dosesOf(item);
+        if (doses == 0) {
+            SkillingUtil.give(player, item, count);
+            return;
+        }
+        String base = com.runecraft.osrs.data.Drop.baseOf(item);
+        Inv.give(player, com.runecraft.skill.Drops.withDoses(Inv.stack(base, count), doses));
+        com.runecraft.collection.CollectionLog.record(player, base);
+        GameEvents.fireObtain(player, base, count);
     }
 
     // ------------------------------------------------------------------ hazards

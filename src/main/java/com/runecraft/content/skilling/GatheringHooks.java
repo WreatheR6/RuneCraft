@@ -537,7 +537,8 @@ public final class GatheringHooks {
             Msg.game(player, "You don't have any " + SkillingUtil.lower(SkillingUtil.name(spot.bait())) + " left.");
             return;
         }
-        if (spot.blockId().equals(GatheringData.LANTERN_SPOT) && GatheringData.LIT_LANTERNS.stream().noneMatch(l -> Inv.has(player, l, 1))) {
+        if (spot.blockId().equals(GatheringData.LANTERN_SPOT) && GatheringData.LIT_LANTERNS.stream()
+                .noneMatch(l -> com.runecraft.osrs.ItemCatalog.exists(l) && Inv.has(player, l, 1))) {
             Msg.game(player, "You need a lit lantern to lure the squid to the surface.");
             return;
         }

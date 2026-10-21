@@ -1,0 +1,28 @@
+# Source: OSRS Wiki wikitext dump (Kiyogitpy/osrs-wiki-data, July 2026): pages "Deep sea trawling" (shoal table, nets,
+# baiting) and each shoal page (Fishing XP per successful catch, stop ticks, trawling-net and fishing-rod "Skilling success
+# chart" low/high, crewmate flat chance and Sailing XP per roll, ObjectLocLine map pins; mixed shoals' fish distribution and spawn rule).
+# shoal	name	fishing	depths	stop_ticks	bait	fish	xp_per_catch	net_low	net_high	rod_low	rod_high	pins (x,y;...)
+shoal	Giant krill shoal	69	Shallow	150	Fish offcuts	Raw giant krill	112.5	15	30	10	25	1564,3364;2784,2633;1493,2924;3021,2510
+shoal	Haddock shoal	73	Shallow	120	Fish offcuts	Raw haddock	128.5	12	28	7	23	2814,2373;1404,2722;2978,2223
+shoal	Yellowfin shoal	79	Shallow,Moderate	100	Fish offcuts,Fine fish offcuts	Raw yellowfin	155.5	8	27	3	22	1706,2662;1866,2784;2272,2678
+shoal	Halibut shoal	83	Shallow,Moderate	80	Fine fish offcuts	Raw halibut	195.5	6	25	1	20	1841,3293;1919,2441
+shoal	Bluefin shoal	87	Shallow,Moderate,Deep	70	Fine fish offcuts	Raw bluefin	220.5	5	23	0	18	2022,3637;2200,2278
+shoal	Marlin shoal	91	Shallow,Moderate,Deep	50	Fine fish offcuts	Raw marlin	265.5	4	20	-	-	1932,4041;2815,4013
+# mixed	name	fishing	depths	net_low	net_high	replaces	fish weights (fish:weight out of 100;...)
+mixed	Shimmering shoal	69	Shallow	15	35	Giant krill shoal,Haddock shoal	Raw giant krill:45;Raw haddock:40;Raw yellowfin:10;Raw halibut:5
+mixed	Glistening shoal	76	Shallow,Moderate	8	32	Yellowfin shoal,Halibut shoal	Raw yellowfin:45;Raw halibut:40;Raw bluefin:10;Raw marlin:5
+mixed	Vibrant shoal	86	Shallow,Moderate,Deep	5	28	Bluefin shoal,Marlin shoal	Raw bluefin:50;Raw marlin:50
+# rule	name	value
+rule	crew_chance_percent	4
+rule	crew_roll_ticks	5
+rule	player_roll_ticks	3
+rule	mixed_chance_percent	10
+rule	mixed_stops	2
+rule	net_capacity	250
+rule	bait_extra_fish_percent	20
+rule	crew_cotton_xp_per_roll	10.5
+# net	name	depths	max_fish	sailing_xp_per_roll	deckhandiness
+net	Rope trawling net	Shallow	2	7	1
+net	Linen trawling net	Shallow,Moderate	3	9	2
+net	Hemp trawling net	Shallow,Moderate,Deep	4	11	3
+net	Cotton trawling net	Shallow,Moderate,Deep	5	15	4

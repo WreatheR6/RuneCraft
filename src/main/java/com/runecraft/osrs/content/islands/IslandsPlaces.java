@@ -172,8 +172,13 @@ public final class IslandsPlaces {
                 new Camp(BRAINDEATH_ISLAND, 20, -6, 6, 4, SURFACE, List.of("fever_spider", "pirate")),
                 new Camp(ZANARIS, 0, 40, 12, 3, SURFACE, List.of("mutated_zygomite")),
                 // Laguna Aurorae's moss giants (wiki spawn tiles): 7 in the east at 1219-1249, 2791-2808 and 8 in the south at
-                // 1174-1193, 2756-2784. Its leeches, giant mosquitoes and giant toads are not in the game.
+                // 1174-1193, 2756-2784. Its 9 leeches and 17 giant mosquitoes roam the whole island (wiki LocLine tiles
+                // 1156-1242, 2739-2808; two camps each, approx); the giant toads are scenery in OSRS.
                 new Camp(LAGUNA_AURORAE, 140, -38, 24, 4, SURFACE, List.of("moss_giant")),
-                new Camp(LAGUNA_AURORAE, 32, 32, 16, 4, SURFACE, List.of("moss_giant")));
+                new Camp(LAGUNA_AURORAE, 32, 32, 16, 4, SURFACE, List.of("moss_giant")),
+                new Camp(LAGUNA_AURORAE, 60, -30, 24, 5, SURFACE, List.of("leech")),
+                new Camp(LAGUNA_AURORAE, 70, 40, 20, 4, SURFACE, List.of("leech")),
+                new Camp(LAGUNA_AURORAE, 40, -10, 24, 9, SURFACE, List.of("giant_mosquito")),
+                new Camp(LAGUNA_AURORAE, 60, 60, 20, 8, SURFACE, List.of("giant_mosquito")));
     }
 }

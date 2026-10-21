@@ -1,0 +1,28 @@
+# Source: OSRS Wiki wikitext dump (Kiyogitpy/osrs-wiki-data, July 2026), each sea creature's Infobox Monster:
+# name, attack style, att, mage, attbns, amagic; and page "Hull": hull Defence per boat and tier (wooden .. rosewood).
+# creature	style	att	mage	attbns	amagic
+creature	Dolphin	Slash	25	1	0	0
+creature	Tern	Stab	25	1	0	0
+creature	Eagle ray	Slash	70	1	0	0
+creature	Butterfly ray	Slash	100	1	0	0
+creature	Bull shark	Slash	80	1	0	0
+creature	Mogre (sea)	Crush	40	1	22	0
+creature	Osprey	Stab	60	1	0	0
+creature	Stingray	Slash	130	1	0	0
+creature	Hammerhead shark	Slash	80	1	0	0
+creature	Narwhal	Slash	95	1	0	0
+creature	Frigatebird	Stab	80	1	0	0
+creature	Manta ray (monster)	Slash	155	1	0	0
+creature	Tiger shark	Slash	120	1	0	0
+creature	Pygmy kraken	Magic	1	90	0	0
+creature	Albatross	Stab	100	1	0	0
+creature	Orca	Slash	165	1	0	0
+creature	Spined kraken	Magic	1	135	0	0
+creature	Great white shark	Slash	155	0	0	0
+creature	Armoured kraken	Magic	1	175	0	0
+creature	Veiled kraken	Crush	200	100	0	0
+creature	Vampyre kraken	Magic	1	215	0	0
+# hull	boat	wooden	oak	teak	mahogany	camphor	ironwood	rosewood
+hull	raft	1	5	10	15	20	25	30
+hull	skiff	10	20	30	40	50	60	70
+hull	sloop	15	25	35	45	55	65	75

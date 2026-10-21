@@ -28,13 +28,14 @@ class SailingIslandsRound30Test {
     void lockboxesKeysAndSchematics() {
         ContentRegistry.places();
         Set<String> ids = new HashSet<>();
-        assertEquals(8, SailingLockboxes.LOCKBOXES.size());
+        assertEquals(10, SailingLockboxes.LOCKBOXES.size());
         for (SailingLockboxes.Lockbox l : SailingLockboxes.LOCKBOXES) {
             assertTrue(ids.add(l.keyId()) && ids.add(l.schematic()), l.island());
             assertTrue(ItemCatalog.exists(l.keyId()), l.keyId());
             assertTrue(ItemCatalog.exists(l.schematic()), l.schematic());
-            assertTrue(land(l.x(), l.y()), l.island() + " lockbox at sea");
-            assertTrue(land(l.keyX(), l.keyY()), l.keyIsland() + " key spot at sea");
+            // Anglers' Retreat and the Tear of the Soul are not traced (round 40: floating lockbox, sand bar key spot).
+            assertTrue(SailingLockboxes.UNTRACED.contains(l.island()) || land(l.x(), l.y()), l.island() + " lockbox at sea");
+            assertTrue(SailingLockboxes.UNTRACED.contains(l.keyIsland()) || land(l.keyX(), l.keyY()), l.keyIsland() + " key spot at sea");
             assertEquals(l, SailingLockboxes.keyAt(l.keyX() + 1, l.keyY() - 1));
             assertEquals(l, SailingLockboxes.nearestLockbox(l.x(), l.y()));
             assertTrue(ContentRegistry.places().stream().map(PlaceDef::id).anyMatch(l.placeId()::equals), l.placeId());

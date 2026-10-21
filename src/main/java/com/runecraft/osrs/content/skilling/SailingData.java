@@ -49,8 +49,9 @@ public final class SailingData extends SkillingPart {
     }
 
     /**
-     * Shipwrecks: block id, Sailing level, XP per salvage hauled up, salvage item (and its OSRS name), success chance out of
-     * 256 at level 1 and 99 (approx), the salvage's OSRS name and the XP for sorting one salvage. Sorting loot is the
+     * Shipwrecks: block id, Sailing level, XP per salvage hauled up, salvage item (and its OSRS name), the bronze hook's
+     * success chance out of 256 at level 1 and 99 (the wiki's shipwreck salvaging calculator, see
+     * {@link SailingSea#salvageChance}), the salvage's OSRS name and the XP for sorting one salvage. Sorting loot is the
      * wiki table in {@link SailingSea#SALVAGE}.
      */
     public record Wreck(String blockId, String name, int level, double xp, String salvage, int low, int high,
@@ -67,19 +68,19 @@ public final class SailingData extends SkillingPart {
 
     /** OSRS Wiki (shipwreck salvaging): salvage XP and sorting XP per salvage. */
     public static final List<Wreck> WRECKS = List.of(
-            new Wreck("small_shipwreck", "Small shipwreck", 15, 10.0, "small_salvage", 80, 220, "Small salvage", 5.5),
-            new Wreck("fishermans_shipwreck", "Fisherman's shipwreck", 26, 17.0, "fishy_salvage", 60, 200,
+            new Wreck("small_shipwreck", "Small shipwreck", 15, 10.0, "small_salvage", 50, 100, "Small salvage", 5.5),
+            new Wreck("fishermans_shipwreck", "Fisherman's shipwreck", 26, 17.0, "fishy_salvage", 48, 96,
                     "Fishy salvage", 9.0),
-            new Wreck("barracuda_shipwreck", "Barracuda shipwreck", 35, 31.0, "barracuda_salvage", 50, 190,
+            new Wreck("barracuda_shipwreck", "Barracuda shipwreck", 35, 31.0, "barracuda_salvage", 45, 90,
                     "Barracuda salvage", 15.5),
-            new Wreck("large_shipwreck", "Large shipwreck", 53, 48.0, "large_salvage", 40, 170, "Large salvage", 24.0),
-            new Wreck("pirate_shipwreck", "Pirate shipwreck", 64, 76.0, "pirate_salvage", 32, 150, "Plundered salvage",
+            new Wreck("large_shipwreck", "Large shipwreck", 53, 48.0, "large_salvage", 42, 84, "Large salvage", 24.0),
+            new Wreck("pirate_shipwreck", "Pirate shipwreck", 64, 76.0, "pirate_salvage", 40, 80, "Plundered salvage",
                     31.5),
-            new Wreck("mercenary_shipwreck", "Mercenary shipwreck", 73, 138.0, "mercenary_salvage", 26, 130,
+            new Wreck("mercenary_shipwreck", "Mercenary shipwreck", 73, 138.0, "mercenary_salvage", 32, 64,
                     "Martial salvage", 63.5),
-            new Wreck("fremennik_shipwreck", "Fremennik shipwreck", 80, 162.0, "fremennik_salvage", 20, 120,
+            new Wreck("fremennik_shipwreck", "Fremennik shipwreck", 80, 162.0, "fremennik_salvage", 28, 58,
                     "Fremennik salvage", 75.0),
-            new Wreck("merchant_shipwreck", "Merchant shipwreck", 87, 200.0, "merchant_salvage", 16, 110,
+            new Wreck("merchant_shipwreck", "Merchant shipwreck", 87, 200.0, "merchant_salvage", 24, 50,
                     "Opulent salvage", 95.0));
 
     public static Wreck wreck(String blockId) {
@@ -145,6 +146,14 @@ public final class SailingData extends SkillingPart {
             new Port("piscatoris", "Piscatoris", 2341, 3690, 75), // approx dock (no notice board)
             new Port("lunar_isle", "Lunar Isle", 2139, 3884, 76));
 
+    /** The marker block of a trawling shoal (clicking it from a boat lowers the trawling nets). */
+    public static final String TRAWLING_SHOAL = "trawling_shoal";
+
+    /** The place id of a shoal's i-th map pin. */
+    public static String shoalPlace(SailingShoals.Shoal s, int i) {
+        return s.id() + "_" + (i + 1);
+    }
+
     /** Ports whose task-board places predate round 8 and are built as camps with a plaza. */
     static final int CAMP_PORTS = 9;
 
@@ -208,6 +217,8 @@ public final class SailingData extends SkillingPart {
         simple(s, "dragon_nails", "Dragon nails", "nails", 0xA02020, 1500).examine("Keeps things in place very permanently.");
         simple(s, "dragon_metal_sheet", "Dragon metal sheet", "bar", 0xB02A2A, 30000).examine("A sheet of dragon metal.");
         simple(s, "heart_of_ithell", "Heart of Ithell", "orb", 0x80E0D0, 1).examine("A crystal heart from the Gwenith Glide.");
+        simple(s, "captured_wind_mote", "Captured wind mote", "orb", 0xD0E8F0, 1).stack(1)
+                .examine("A wisp of wind from the Jubbly Jive. A wind catcher could hold more like it.");
         for (Boat b : BOATS) {
             simple(s, b.kit(), b.name() + " kit", "boat", b.variant().equals("BAMBOO") ? 0xC0B060
                     : b.variant().equals("OAK") ? 0x9A7A4A : 0x4A3A2A, 100 + b.level() * 50).stack(1)
@@ -240,7 +251,11 @@ public final class SailingData extends SkillingPart {
         simple(s, "rubium_splinters", "Rubium splinters", "shard", 0xC03A2A, 20).stack(Integer.MAX_VALUE)
                 .examine("Splinters of a volatile red mineral.");
         simple(s, "nickel_ore", "Nickel ore", "ore", 0xA8A890, 200).examine("This needs refining.");
+        simple(s, "rubium_geode", "Rubium geode", "ore", 0x8A2A2A, 50)
+                .examine("A hard shell around rubium. A hammer and chisel would crack it open.");
         simple(s, "shark_paint", "Shark paint", "pot_item", 0x5A6A7A, 1000).examine("Paint for the trim of a skiff or sloop.");
+        simple(s, SailingShoals.FINE_OFFCUTS, "Fine fish offcuts", "bait", 0xC07A6A, 3).stack(Integer.MAX_VALUE)
+                .examine("Choice cuts of fish, good for baiting the deeper shoals.");
         // Salvage, sea creature and bounty items (wiki names; values approx).
         for (String[] it : SEA_ITEMS) {
             if (it[0].endsWith(" seed") || it[0].endsWith(" frag")) {
@@ -333,6 +348,20 @@ public final class SailingData extends SkillingPart {
             out.accept(plain("saw_" + w[0], MenuType.CONSTRUCTION, title((String) w[0]) + " (" + w[2] + " coins)").in((String) w[1], 1)
                     .in("coins", (Integer) w[2]).out((String) w[0], 1).ticks(0).build());
         }
+        // Trawled fish and squid cut with a knife (wiki Fish offcuts / Fine fish offcuts: 1 offcut, 2 Cooking XP, 3 ticks).
+        String[][] cuts = {{"raw_giant_krill", "fish_offcuts"}, {"raw_haddock", "fish_offcuts"}, {"raw_swordtip_squid", "fish_offcuts"},
+                {"raw_yellowfin", SailingShoals.FINE_OFFCUTS}, {"raw_halibut", SailingShoals.FINE_OFFCUTS},
+                {"raw_bluefin", SailingShoals.FINE_OFFCUTS}, {"raw_marlin", SailingShoals.FINE_OFFCUTS},
+                {"raw_jumbo_squid", SailingShoals.FINE_OFFCUTS}};
+        for (String[] c : cuts) {
+            out.accept(r("cut_" + c[0], MenuType.FLETCHING, title(c[1]) + " (" + title(c[0].substring(4)).toLowerCase(java.util.Locale.ROOT)
+                    + ")", Skill.COOKING, 1, 2.0).in(c[0], 1).out(c[1], 1).tool("knife").ticks(3).build());
+        }
+        // Sawmill coupons (salvage, lost crates): each covers the sawmill fee of one plank (wiki: 100 / 250 coins).
+        out.accept(plain("saw_plank_coupon", MenuType.CONSTRUCTION, "Plank (sawmill coupon)").in("logs", 1)
+                .in("sawmill_coupon_wood_plank", 1).out("plank", 1).ticks(0).build());
+        out.accept(plain("saw_oak_plank_coupon", MenuType.CONSTRUCTION, "Oak plank (sawmill coupon)").in("oak_logs", 1)
+                .in("sawmill_coupon_oak_plank", 1).out("oak_plank", 1).ticks(0).build());
         Object[][] shop = {{"spyglass", 50}, {"salvaging_hook", 40}, {"trawling_net", 60}, {"rope", 18}, {"crowbar", 30},
                 {"current_duck", 40}, {"diving_apparatus", 200}, {"portable_weather_station", 100}};
         for (Object[] o : shop) {
@@ -375,6 +404,7 @@ public final class SailingData extends SkillingPart {
         list.add(BlockDef.scripted("boat_schematics", "Boat schematics", 0x6A5A3A, "notice_board"));
         list.add(BlockDef.scripted("barracuda_trial_buoy", "Barracuda trial master's buoy", 0x3080C0, "buoy"));
         list.add(BlockDef.scripted(SailingLockboxes.BLOCK, "Lockbox", 0x6A4A2A, "chest"));
+        list.add(BlockDef.scripted(TRAWLING_SHOAL, "Trawling shoal", 0x3A6AA0, "fishing_spot"));
         for (Port p : PORTS) {
             list.add(BlockDef.scripted(p.board(), p.name() + " port task board", 0x8A6A3A, "notice_board"));
         }
@@ -409,6 +439,12 @@ public final class SailingData extends SkillingPart {
             list.add(PlaceDef.of(t.placeId(), t.name(), t.objectiveB()[0], t.objectiveB()[1], PlaceDef.Style.NONE, List.of()));
         }
         list.addAll(SailingLockboxes.places());
+        // Trawling shoals on their wiki map pins (out at sea; the Sailing hooks put a shoal marker on the water).
+        for (SailingShoals.Shoal s : SailingShoals.SHOALS) {
+            for (int i = 0; i < s.pins().size(); i++) {
+                list.add(PlaceDef.of(shoalPlace(s, i), s.name(), s.pins().get(i)[0], s.pins().get(i)[1], PlaceDef.Style.NONE, List.of()));
+            }
+        }
         // Crewmates wait at their wiki towns (tiles approx); talking to one recruits them.
         for (SailingCrew.Crewmate c : SailingCrew.CREW) {
             list.add(PlaceDef.of(c.placeId(), c.name(), c.x(), c.y(), PlaceDef.Style.NONE, List.of()));

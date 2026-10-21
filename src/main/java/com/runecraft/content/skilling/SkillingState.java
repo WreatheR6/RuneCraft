@@ -45,6 +45,36 @@ public final class SkillingState extends SavedData {
         section(section).remove(key);
     }
 
+    /**
+     * Self-test hook: a copy of every section entry keyed by this player's UUID (sea charting, port and bounty tasks,
+     * boats and their cargo holds, crew, read schematics, trials, farming contracts...). Patches, sacks and other
+     * entries keyed by position are not included.
+     */
+    public Object selfTestSave(java.util.UUID player) {
+        CompoundTag out = new CompoundTag();
+        String key = player.toString();
+        for (String section : root.getAllKeys()) {
+            CompoundTag s = root.getCompound(section);
+            if (s.contains(key)) {
+                out.put(section, s.get(key).copy());
+            }
+        }
+        return out;
+    }
+
+    /** Self-test hook: puts back a {@link #selfTestSave} copy; null drops the player's entries (fresh ones are made on use). */
+    public void selfTestRestore(java.util.UUID player, Object saved) {
+        String key = player.toString();
+        for (String section : root.getAllKeys()) {
+            root.getCompound(section).remove(key);
+        }
+        if (saved instanceof CompoundTag t) {
+            for (String section : t.getAllKeys()) {
+                section(section).put(key, t.get(section).copy());
+            }
+        }
+    }
+
     /** Skilling progress changes constantly; always save. */
     @Override
     public boolean isDirty() {

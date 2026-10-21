@@ -14,9 +14,9 @@ import java.util.Set;
  * building that boat part or facility. Without the key, the lockbox gives its wiki directions. Lockbox tiles are the
  * wiki map pins; key tiles are the pins of the key pages (approx: the exact dig tile is only shown in an image).
  *
- * <p>Two of the ten wiki lockboxes are left out: Anglers' Retreat (gale catcher, a facility RuneCraft does not have) and
- * Buccaneers' Haven (eternal brazier), whose key is dug up on the Tear of the Soul, an islet RuneCraft's sea has not
- * traced; the eternal brazier stays buildable without its schematic.
+ * <p>All ten wiki lockboxes: Anglers' Retreat (gale catcher) and the Tear of the Soul (the key to Buccaneers' Haven's
+ * eternal brazier schematic) are islets RuneCraft's sea has not traced, so that lockbox floats on its tile and that key is
+ * dug up on a sand bar (approx, see {@link #UNTRACED}).
  */
 public final class SailingLockboxes {
     private SailingLockboxes() {
@@ -82,7 +82,19 @@ public final class SailingLockboxes {
                     "On Charred Island, trace the seaweed up north, then walk six paces east and six paces north.",
                     "rosewood_cotton_sails_schematic", "Rosewood & cotton sails schematic", "SAILS:6"),
             new Lockbox("grimstone", "Grimstone", 2923, 4086, 87, "drumstick_isle", "Drumstick Isle", 2151, 3557,
-                    "On Drumstick Isle, complete the square.", "dragon_keel_schematic", "Dragon keel schematic", "KEEL:6"));
+                    "On Drumstick Isle, complete the square.", "dragon_keel_schematic", "Dragon keel schematic", "KEEL:6"),
+            // Round 40: Anglers' Retreat is not traced in RuneCraft's sea: its lockbox stands on the water at its tile and
+            // opens from a boat (approx).
+            new Lockbox("anglers_retreat", "Anglers' Retreat", 2472, 2712, 51, "the_onyx_crest", "the Onyx Crest", 2979, 2255,
+                    "On the Onyx Crest, dig where lots of gold is close, but your gems are closer.", "gale_catcher_schematic",
+                    "Gale catcher schematic", "gale_catcher"),
+            // The Tear of the Soul is not traced either: a sand bar at its key tile is dug on (approx).
+            new Lockbox("buccaneers_haven", "Buccaneers' Haven", 2094, 3667, 76, "tear_of_the_soul", "the Tear of the Soul", 2318, 2779,
+                    "On the Tear of the Soul, dig directly between the longest straight line 'tween two pieces of green.",
+                    "eternal_brazier_schematic", "Eternal brazier schematic", "eternal_brazier"));
+
+    /** Islands of lockboxes or keys RuneCraft's sea has not traced (their lockbox floats, their key spot is a sand bar). */
+    public static final Set<String> UNTRACED = Set.of("anglers_retreat", "tear_of_the_soul");
 
     /** Small keys are dug up within this many tiles of their spot (approx: OSRS digs on one tile). */
     public static final int DIG_RADIUS = 2;
@@ -179,11 +191,18 @@ public final class SailingLockboxes {
         }
     }
 
-    /** Lockboxes and key dig spots as style-NONE places (the Sailing hooks put the lockbox block on its tile). */
+    /**
+     * Lockboxes as style-NONE places (the Sailing hooks put the lockbox block on its tile), plus the key spots on untraced
+     * islands (the hooks lay a sand bar there to dig on).
+     */
     public static List<PlaceDef> places() {
         List<PlaceDef> out = new ArrayList<>();
         for (Lockbox l : LOCKBOXES) {
             out.add(PlaceDef.of(l.placeId(), "Lockbox (" + l.islandName() + ")", l.x(), l.y(), PlaceDef.Style.NONE, List.of()));
+            if (UNTRACED.contains(l.keyIsland())) {
+                out.add(PlaceDef.of(l.keyPlaceId(), "Small key (" + l.keyIslandName().replace("the ", "") + ")", l.keyX(), l.keyY(),
+                        PlaceDef.Style.NONE, List.of()));
+            }
         }
         return out;
     }

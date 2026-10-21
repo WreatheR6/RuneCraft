@@ -116,11 +116,12 @@ public final class SailingCrew {
     public static final int CREW_SALVAGE_TICKS = 5;
 
     /**
-     * A crewmate's chance to haul salvage: the player's chance at that wreck and hook times Deckhandiness x 10%
-     * (wiki example: 40% for the player, Jobless Jim (3) 12%). The haul gives {@link #salvageShare} of the player's XP.
+     * A crewmate's chance to haul salvage: the wreck and hook's low/high times Deckhandiness x 10% on the player's level
+     * (wiki: about 12% for Jobless Jim (3) where the player has 40%; see {@link SailingSea#crewSalvageChance}). The haul
+     * gives {@link #salvageShare} of the player's XP.
      */
-    public static double crewSalvageChance(double playerChance, int deckhandiness) {
-        return playerChance * salvageShare(deckhandiness);
+    public static double crewSalvageChance(SailingData.Wreck wreck, int sailingLevel, int hookTier, int deckhandiness) {
+        return SailingSea.crewSalvageChance(wreck, sailingLevel, hookTier, deckhandiness);
     }
 
     /** The crewmate aboard with the best Deckhandiness who can work a hook of this tier (SailingSea metal index), or null. */
@@ -217,15 +218,33 @@ public final class SailingCrew {
         return best;
     }
 
-    /** Items the cargo hold accepts (a RuneCraft subset of the wiki list): cannonballs, repair kits, salvage, cargo crates, bounty items. */
+    /**
+     * Items the cargo hold accepts (a RuneCraft subset of the wiki list): cannonballs, repair kits, salvage, cargo crates,
+     * bounty items, trawled fish and fish offcuts.
+     */
     public static boolean storable(String item) {
         return SailingSea.ball(item) != null || special(item) != null || kit(item) != null || SailingData.wreckBySalvage(item) != null
-                || item.equals("cargo_crate") || SailingSea.bountyParts().contains(item);
+                || item.equals("cargo_crate") || SailingSea.bountyParts().contains(item) || trawledFish(item)
+                || item.equals(SailingShoals.OFFCUTS) || item.equals(SailingShoals.FINE_OFFCUTS);
     }
 
-    /** Cargo lost when the boat sinks (wiki: courier crates, bounty items and salvage; cannonballs and repair kits are kept). */
+    /**
+     * Cargo lost when the boat sinks (wiki: courier crates, bounty items, salvage and trawled fish; cannonballs, repair kits
+     * and fish offcuts are kept).
+     */
     public static boolean lostOnSinking(String item) {
-        return SailingData.wreckBySalvage(item) != null || item.equals("cargo_crate") || SailingSea.bountyParts().contains(item);
+        return SailingData.wreckBySalvage(item) != null || item.equals("cargo_crate") || SailingSea.bountyParts().contains(item)
+                || trawledFish(item);
+    }
+
+    /** A raw fish a trawling shoal gives. */
+    public static boolean trawledFish(String item) {
+        for (SailingShoals.Shoal s : SailingShoals.SHOALS) {
+            if (item.equals("raw_" + s.fish())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Slots used: a stackable item takes one slot for the whole stack, anything else one slot each (wiki). */

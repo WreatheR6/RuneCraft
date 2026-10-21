@@ -58,9 +58,28 @@ public final class SailingTraining {
             return y >= 6400;
         }
 
-        /** The completion group: bonus charts count towards "Miscellaneous". */
+        /** One of the 33 "Miscellaneous" bonus charts: a bonus drink, current, dive or weather task. */
+        public boolean misc() {
+            return ocean.equals("Bonus charts") && MISC_CLASS_BONUS.containsKey(type);
+        }
+
+        /**
+         * The completion group: the 33 Miscellaneous bonus charts count towards "Miscellaneous"; a bonus chart outside its
+         * four classes (the Wizards' Tower spyglass) counts towards its sea's ocean, as in the wiki's 69 Ardent Ocean tasks
+         * and 5 Bay of Sarim tasks.
+         */
         public String group() {
-            return ocean.equals("Bonus charts") ? "Miscellaneous" : ocean;
+            if (!ocean.equals("Bonus charts")) {
+                return ocean;
+            }
+            if (!misc()) {
+                for (Sea s : SEAS) {
+                    if (s.name().equals(sea)) {
+                        return s.ocean();
+                    }
+                }
+            }
+            return "Miscellaneous";
         }
     }
 
@@ -73,6 +92,9 @@ public final class SailingTraining {
     public static final Map<String, Double> OCEAN_BONUS;
     /** Bonus for charting all 358 tasks. */
     public static final double ALL_CHARTED_BONUS = 100_000;
+    /** Bonus XP for charting every bonus chart of a Miscellaneous class (wiki "Sea charting/By oceans"). */
+    public static final Map<ChartType, Double> MISC_CLASS_BONUS = Map.of(ChartType.CRATE, 270.0, ChartType.CURRENT, 510.0,
+            ChartType.DIVING, 1_710.0, ChartType.WEATHER, 6_710.0);
 
     static {
         List<ChartTask> charts = new ArrayList<>();
@@ -147,16 +169,27 @@ public final class SailingTraining {
     public static List<ChartReward> chartRewards(ChartTask t, Set<Integer> done) {
         List<ChartReward> out = new ArrayList<>();
         out.add(new ChartReward(t.type().name().toLowerCase(Locale.ROOT) + " charting", t.type().xp));
-        if (!t.ocean().equals("Bonus charts")) {
+        String group = t.group();
+        if (t.misc()) {
+            if (allDone(done, c -> c.misc() && c.type() == t.type())) {
+                String cls = switch (t.type()) {
+                    case CRATE -> "drinks";
+                    case CURRENT -> "currents";
+                    case DIVING -> "dives";
+                    default -> "weather";
+                };
+                out.add(new ChartReward("charting every bonus " + cls, MISC_CLASS_BONUS.get(t.type())));
+            }
+        } else {
             for (Sea s : SEAS) {
-                if (s.name().equals(t.sea()) && s.ocean().equals(t.ocean()) && allDone(done, c -> c.ocean().equals(s.ocean())
+                if (s.name().equals(t.sea()) && s.ocean().equals(group) && allDone(done, c -> !c.misc() && c.group().equals(s.ocean())
                         && c.sea().equals(s.name()))) {
                     out.add(new ChartReward("charting the " + s.name(), s.xp()));
                 }
             }
         }
-        if (allDone(done, c -> c.group().equals(t.group())) && OCEAN_BONUS.containsKey(t.group())) {
-            out.add(new ChartReward("charting the " + t.group(), OCEAN_BONUS.get(t.group())));
+        if (allDone(done, c -> c.group().equals(group)) && OCEAN_BONUS.containsKey(group)) {
+            out.add(new ChartReward("charting the " + group, OCEAN_BONUS.get(group)));
         }
         if (allDone(done, c -> true)) {
             out.add(new ChartReward("charting every ocean", ALL_CHARTED_BONUS));
@@ -371,19 +404,54 @@ public final class SailingTraining {
     public static final List<Facility> FACILITIES = List.of(
             new Facility("inoculation_station", "Inoculation station", 40, 37, 765, mats("teak_plank", 8, "steel_nails", 32,
                     "relicyms_balm", 6), "Protects against fetid waters; needed for the Jubbly Jive."),
-            new Facility("salvaging_station", "Salvaging station", 42, 34, 366, mats("teak_plank", 4, "steel_nails", 16),
+            new Facility("salvaging_station", "Salvaging station", 42, 34, 372, mats("teak_plank", 4, "steel_nails", 16),
                     "Sort salvage at sea, on or next to your boat."),
             new Facility("rope_trawling_net", "Rope trawling net", 56, 45, 458, mats("rope", 7, "teak_plank", 4, "steel_bar", 4,
                     "lead_bar", 2), "Trawls shallow shoals."),
-            // Yarns are bolts of the same fabric and ray barbs are left out (approx).
-            new Facility("linen_trawling_net", "Linen trawling net", 65, 61, 697, mats("bolt_of_linen", 2, "rope", 1, "mahogany_plank", 4,
+            new Facility("linen_trawling_net", "Linen trawling net", 65, 61, 697, mats("linen_yarn", 6, "rope", 1, "mahogany_plank", 4,
                     "mithril_bar", 4, "lead_bar", 2), "Trawls shallow and moderate shoals."),
-            new Facility("hemp_trawling_net", "Hemp trawling net", 76, 65, 1003, mats("bolt_of_canvas", 2, "rope", 1, "camphor_plank", 4,
-                    "adamantite_bar", 4, "cupronickel_bar", 2), "Trawls shoals of every depth."),
-            new Facility("cotton_trawling_net", "Cotton trawling net", 84, 73, 1289, mats("bolt_of_cotton", 2, "rope", 1,
-                    "ironwood_plank", 4, "runite_bar", 4, "cupronickel_bar", 2), "Trawls shoals of every depth."),
+            new Facility("hemp_trawling_net", "Hemp trawling net", 76, 65, 1003, mats("hemp_yarn", 6, "rope", 1, "camphor_plank", 4,
+                    "adamantite_bar", 4, "cupronickel_bar", 2, "ray_barbs", 4), "Trawls shoals of every depth."),
+            new Facility("cotton_trawling_net", "Cotton trawling net", 84, 73, 1289, mats("cotton_yarn", 6, "rope", 1,
+                    "ironwood_plank", 4, "runite_bar", 4, "cupronickel_bar", 2, "ray_barbs", 8), "Trawls shoals of every depth."),
             new Facility("crystal_extractor", "Crystal extractor", 73, 67, 3066, mats("ironwood_plank", 6, "cupronickel_bar", 5,
-                    "magic_stone", 2, "heart_of_ithell", 1), "Harvest a wind mote every 109 ticks for 250 Sailing XP."));
+                    "magic_stone", 2), "Harvest a wind mote every 109 ticks for 250 Sailing XP (needs the heart of ithell)."),
+            // Round 40 (wiki facility pages, July 2026): the range takes 2 coal for the wiki's 2 charcoal (approx: charcoal
+            // belongs to the quests module).
+            new Facility("range", "Range", 16, 6, 90, mats("steel_bar", 4, "coal", 2, "tinderbox", 1),
+                    "Cook raw food aboard: use it while on your boat."),
+            new Facility("ballistic_attractor", "Ballistic attractor", 50, 44, 2141, mats("mahogany_plank", 10, "water_rune", 5000,
+                    "law_rune", 1000, "lead_bar", 5, "steel_bar", 5), "Recovers 60% of the cannonballs fired from the boat."),
+            new Facility("wind_catcher", "Wind catcher", 53, 47, 741, mats("teak_plank", 4, "steel_nails", 16, "steel_bar", 8,
+                    "lead_bar", 4, "air_rune", 10000), "Stores 2 wind motes from trimming for a burst of speed and 40 Sailing XP."),
+            new Facility("chum_station", "Chum station", 56, 45, 1522, mats("mahogany_plank", 10, "mithril_nails", 40, "steel_bar", 2,
+                    "fishing_bait", 1000, "knife", 1), "Spreads fish offcuts to bait a trawling shoal."),
+            new Facility("bosuns_workbench", "Bosun's workbench", 63, 54, 1003, mats("camphor_plank", 6, "adamant_nails", 24,
+                    "lead_bar", 5), "Your crew repair the boat by themselves with kits from the cargo hold."),
+            new Facility("advanced_chum_station", "Advanced chum station", 68, 61, 1738, mats("camphor_plank", 10, "adamant_nails", 40,
+                    "steel_bar", 2, "fishing_bait", 1000, "knife", 1), "Spreads fish offcuts or fine fish offcuts to bait a shoal."),
+            new Facility("fathom_stone", "Fathom stone", 70, 62, 1652, mats("camphor_plank", 10, "adamant_nails", 40, "molten_glass", 4,
+                    "cupronickel_bar", 2), "Points towards the nearest trawling shoal."),
+            new Facility("gale_catcher", "Gale catcher", 79, 70, 1517, mats("camphor_plank", 4, "adamant_nails", 16, "adamantite_bar", 8,
+                    "cupronickel_bar", 4, "air_rune", 25000, "swift_albatross_feather", 5),
+                    "Stores 3 wind motes from trimming for a burst of speed and 70 Sailing XP."),
+            new Facility("fathom_pearl", "Fathom pearl", 91, 83, 2307, mats("rosewood_plank", 10, "dragon_nails", 40, "dragon_metal_sheet", 2,
+                    "echo_pearl", 1), "Shows where the nearest trawling shoal swims."));
+
+    /** Items a facility needs in the inventory to be built but doesn't use up (wiki facility pages: Tools). */
+    public static final Map<String, String> FACILITY_TOOLS = Map.of("crystal_extractor", "heart_of_ithell", "wind_catcher",
+            "captured_wind_mote", "gale_catcher", "captured_wind_mote");
+
+    /** Wind motes a catcher stores, and the Sailing XP a released mote gives (wiki: 10 for a crystal extractor's mote). */
+    public static final int WIND_CATCHER_MOTES = 2;
+    public static final int GALE_CATCHER_MOTES = 3;
+    public static final double WIND_MOTE_XP = 40;
+    public static final double GALE_MOTE_XP = 70;
+    public static final double EXTRACTOR_MOTE_XP = 10;
+    /** Trimming with an active catcher gives 25% less Sailing XP (wiki). */
+    public static final double CATCHER_TRIM_FACTOR = 0.75;
+    /** A ballistic attractor recovers 60% of the cannonballs fired (wiki). */
+    public static final double ATTRACTOR_RECOVERY = 0.6;
 
     public static Facility facility(String id) {
         for (Facility f : FACILITIES) {
@@ -431,8 +499,12 @@ public final class SailingTraining {
 
     // ------------------------------------------------------------------ Barracuda Trials
 
-    /** One rank of a trial: base XP, lost supplies (crates) and XP each, objectives and XP each, target seconds. */
-    public record Rank(String name, double base, int crates, double crateXp, int objectives, double objectiveXp, int targetSeconds) {
+    /**
+     * One rank of a trial: base XP, lost supplies (crates) and XP each, objectives and XP each, target seconds, the
+     * one-time bonus XP for first beating the target and the reward item then (null where RuneCraft has no such item).
+     */
+    public record Rank(String name, double base, int crates, double crateXp, int objectives, double objectiveXp, int targetSeconds,
+                       double bonus, String reward) {
         public double xp() {
             return base + crates * crateXp + objectives * objectiveXp;
         }
@@ -465,16 +537,16 @@ public final class SailingTraining {
                     new int[]{2981, 2848}, new int[]{2978, 2828}, new int[]{2990, 2808}, new int[]{3001, 2788}, new int[]{3012, 2768},
                     new int[]{3057, 2792}, new int[]{3065, 2811}, new int[]{3077, 2825}, new int[]{3078, 2863}, new int[]{3082, 2875},
                     new int[]{3084, 2896}, new int[]{3053, 2920}), new int[]{3037, 2766}, new int[]{3035, 2915},
-                    List.of(new Rank("Swordfish", 385, 14, 15, 2, 19.5, 108), new Rank("Shark", 650, 25, 15, 4, 19.5, 171),
-                            new Rank("Marlin", 1250, 36, 15, 6, 19.5, 270)), null),
+                    List.of(new Rank("Swordfish", 385, 14, 15, 2, 19.5, 108, 1000, null), new Rank("Shark", 650, 25, 15, 4, 19.5, 171,
+                            2000, null), new Rank("Marlin", 1250, 36, 15, 6, 19.5, 270, 3000, null)), null),
             // Course layouts approx (a ring round the trial area).
             new Trial("jubbly_jive", "The Jubbly Jive", 55, 2400, 2970, ring(2400, 2970, 28, 20), new int[]{2400, 2998},
-                    new int[]{2400, 2942}, List.of(new Rank("Swordfish", 1700, 20, 25, 3, 64, 123), new Rank("Shark", 3000, 38, 25, 5, 64, 180),
-                    new Rank("Marlin", 6200, 56, 25, 9, 64, 321)), null),
+                    new int[]{2400, 2942}, List.of(new Rank("Swordfish", 1700, 20, 25, 3, 64, 123, 5000, null), new Rank("Shark", 3000, 38,
+                    25, 5, 64, 180, 7500, "captured_wind_mote"), new Rank("Marlin", 6200, 56, 25, 9, 64, 321, 10000, null)), null),
             // Gwenith Glide crate counts approx (the wiki gives only the supply XP total: 1,050 / 2,065 / 3,360).
             new Trial("gwenith_glide", "The Gwenith Glide", 72, 2183, 3370, ring(2183, 3370, 30, 30), new int[]{2183, 3400},
-                    new int[]{2183, 3340}, List.of(new Rank("Swordfish", 3050, 30, 35, 0, 0, 120), new Rank("Shark", 7250, 59, 35, 0, 0, 222),
-                    new Rank("Marlin", 16050, 96, 35, 0, 0, 369)), "regicide"));
+                    new int[]{2183, 3340}, List.of(new Rank("Swordfish", 3050, 30, 35, 0, 0, 120, 25000, null), new Rank("Shark", 7250, 59,
+                    35, 0, 0, 222, 35000, "heart_of_ithell"), new Rank("Marlin", 16050, 96, 35, 0, 0, 369, 50000, null)), "regicide"));
 
     public static Trial trial(String id) {
         for (Trial t : TRIALS) {
