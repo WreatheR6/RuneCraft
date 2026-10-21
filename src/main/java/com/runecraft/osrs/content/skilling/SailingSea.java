@@ -243,14 +243,33 @@ public final class SailingSea {
         return best;
     }
 
+    /** Each hook's bonus to the wreck's low/high success values, in percent (bronze .. dragon; wiki salvaging calculator). */
+    public static final int[] HOOK_BONUS_PERCENT = {0, 5, 10, 15, 20, 25, 35};
+
+    /** The wreck's {low, high} out of 256 with a hook of this tier: each rounded down after the hook's bonus. */
+    public static int[] hookLowHigh(SailingData.Wreck w, int hookTier) {
+        int bonus = HOOK_BONUS_PERCENT[Math.max(0, Math.min(HOOK_BONUS_PERCENT.length - 1, hookTier))];
+        return new int[]{w.low() * (100 + bonus) / 100, w.high() * (100 + bonus) / 100};
+    }
+
     /**
-     * Chance to haul up salvage per 4-tick roll: the wreck's level curve (low/high out of 256) raised by the hook
-     * tier, 8% of the base per tier above bronze (approx: the wiki has no success-rate table).
+     * Chance to haul up salvage per 4-tick roll (OSRS Wiki shipwreck salvaging calculator, Module:Sandbox/User:Coopermor/
+     * ShipwreckSalvaging/Calc): the wreck's low/high raised by the hook's bonus, then the standard skilling curve
+     * {@code (1 + floor(low (99 - L) / 98 + high (L - 1) / 98 + 0.5)) / 256} at the player's Sailing level.
      */
     public static double salvageChance(SailingData.Wreck w, int sailingLevel, int hookTier) {
-        double lvl = Math.min(99, sailingLevel);
-        double base = (w.low() * (99 - lvl) + w.high() * (lvl - 1)) / 98.0 / 256.0;
-        return Math.min(0.95, base * (1 + 0.08 * Math.max(0, hookTier)));
+        int[] lh = hookLowHigh(w, hookTier);
+        return com.runecraft.osrs.Chance.lerp(sailingLevel, lh[0], lh[1]);
+    }
+
+    /**
+     * A crewmate's chance per 5-tick roll (same calculator): the hook's low/high times Deckhandiness x 10%, each rounded
+     * down, on the player's Sailing level (wiki example: about 30% of the player's chance for Deckhandiness 3).
+     */
+    public static double crewSalvageChance(SailingData.Wreck w, int sailingLevel, int hookTier, int deckhandiness) {
+        int[] lh = hookLowHigh(w, hookTier);
+        int d = Math.max(1, Math.min(4, deckhandiness));
+        return com.runecraft.osrs.Chance.lerp(sailingLevel, lh[0] * d / 10, lh[1] * d / 10);
     }
 
     /** OSRS salvages on a 4-tick cycle. */
@@ -313,20 +332,70 @@ public final class SailingSea {
     }
 
     /**
-     * Wiki cannon max hit: floor((level x (cannon str + ball str + 64) + 320) / 640). A player manning the cannon uses
-     * their Ranged level and the ball's extra heavy ranged strength (approx: added to the ball's strength).
+     * Cannon max hit (OSRS Wiki, Boat combat and Calculator:Sailing/Cannon max hit). Fired by a crewmate ({@code player}
+     * false): floor((Sailing level x (cannon str + ball str + 64) + 320) / 640), before the crewmate's Privateering
+     * scaling. Fired by a player with no prayer, Void or worn ranged strength: see {@link #playerCannonMaxHit}.
      */
     public static int cannonMaxHit(int level, Cannon cannon, Ball ball, boolean player) {
-        int str = cannon.strength() + ball.strength() + (player ? ball.heavy() : 0);
-        return (level * (str + 64) + 320) / 640;
+        if (player) {
+            return playerCannonMaxHit(effectiveRanged(level, 1.0, 1.0), cannon, ball, 0);
+        }
+        return (level * (cannon.strength() + ball.strength() + 64) + 320) / 640;
     }
 
-    /** Hit chance of a cannon shot against a creature's heavy ranged defence (OSRS accuracy roll, approx). */
-    public static double cannonAccuracy(Cannon cannon, Ball ball, boolean player, SeaCreature target) {
-        double att = (player ? cannon.playerAccuracy() : cannon.accuracy()) + ball.accuracy() + 64;
-        double attRoll = att * 64;
-        double defRoll = (target.def() + 9.0) * (target.dheavy() + 64);
-        return attRoll > defRoll ? 1 - (defRoll + 2) / (2 * (attRoll + 1)) : attRoll / (2 * (defRoll + 1));
+    /**
+     * A player's effective Ranged level on a cannon: floor((floor(visible Ranged x prayer) + 8) x Void) (the wiki
+     * calculator; since 1 April 2026 Ranged prayers and the Void set apply to cannon fire).
+     */
+    public static int effectiveRanged(int rangedLevel, double prayer, double voidBonus) {
+        return (int) Math.floor((Math.floor(rangedLevel * prayer + 1e-9) + 8) * voidBonus + 1e-9);
+    }
+
+    /**
+     * A player's cannon max hit: floor(0.5 + effective Ranged x (cannon str + ball str + the ball's heavy ranged bonus +
+     * worn ranged strength + 64) / 640) (wiki calculator; the heavy bonus applies only when a player mans the cannon).
+     */
+    public static int playerCannonMaxHit(int effectiveRanged, Cannon cannon, Ball ball, int wornRangedStrength) {
+        int str = cannon.strength() + ball.strength() + ball.heavy() + wornRangedStrength;
+        return (int) Math.floor(0.5 + effectiveRanged * (str + 64) / 640.0);
+    }
+
+    /**
+     * Hit chance of a cannon shot: the OSRS accuracy roll against the creature's heavy ranged defence roll, (Defence + 9)
+     * x (heavy bonus + 64). A player's attack roll is effective Ranged (Ranged prayer, +8) x (the cannon's manned accuracy
+     * + the ball's accuracy + worn ranged attack + 64) (wiki: "this type of accuracy is considered Heavy Ranged"). A
+     * crewmate fires with the cannon's base accuracy on the player's Sailing level + 8 (approx: the wiki gives no crew
+     * accuracy formula).
+     */
+    public static double cannonAccuracy(int effectiveLevel, Cannon cannon, Ball ball, boolean player, int wornRangedAttack,
+                                        SeaCreature target) {
+        int bonus = (player ? cannon.playerAccuracy() + wornRangedAttack : cannon.accuracy()) + ball.accuracy();
+        long attRoll = com.runecraft.osrs.CombatFormulas.attackRoll(effectiveLevel, bonus);
+        long defRoll = (long) (target.def() + 9) * (target.dheavy() + 64);
+        return com.runecraft.osrs.Chance.hitChance(attRoll, defRoll);
+    }
+
+    /** A crewmate's effective level on a cannon: the player's Sailing level + 8 (approx). */
+    public static int crewEffectiveLevel(int sailingLevel) {
+        return sailingLevel + 8;
+    }
+
+    /** Defence level of a boat's hull (OSRS Wiki, Hull: raft 1-30, skiff 10-70, sloop 15-75 from wooden to rosewood). */
+    private static final int[][] HULL_DEFENCE = {{1, 5, 10, 15, 20, 25, 30}, {10, 20, 30, 40, 50, 60, 70}, {15, 25, 35, 45, 55, 65, 75}};
+
+    public static int hullDefence(String boat, int hullTier) {
+        return HULL_DEFENCE[Math.max(0, SailingTraining.BOATS.indexOf(boat))][clamp(hullTier)];
+    }
+
+    /**
+     * A sea creature's chance to hit a boat: its attack roll, (Attack + 9) x (attack bonus + 64), or Magic for the
+     * krakens that cast, against the hull's defence roll, (hull Defence + 9) x 64 (wiki Boat combat: the hull sets the
+     * ship's defence level and bonuses; the bonuses' values are not in the July 2026 dump, so 0 here, approx).
+     */
+    public static double creatureHitChance(SeaCreature c, String boat, int hullTier) {
+        long attRoll = (long) (c.attackLevel() + 9) * (c.attackBonus() + 64);
+        long defRoll = (long) (hullDefence(boat, hullTier) + 9) * 64;
+        return com.runecraft.osrs.Chance.hitChance(attRoll, defRoll);
     }
 
     // ------------------------------------------------------------------ sea creatures
@@ -338,6 +407,29 @@ public final class SailingSea {
         public int maxHitAgainst(int keelIndex) {
             return keelMaxHits[Math.max(0, Math.min(keelMaxHits.length - 1, keelIndex))];
         }
+
+        /** The level its attack roll uses: Magic for the krakens that cast, else Attack (wiki infobox). */
+        public int attackLevel() {
+            int[] a = ACCURACY.get(id);
+            return style == AttackType.MAGIC ? (a == null ? att : a[0]) : att;
+        }
+
+        /** Its attack bonus for that style (wiki infobox: 0 for every sea creature but the Mogre's +22 crush). */
+        public int attackBonus() {
+            int[] a = ACCURACY.get(id);
+            return a == null ? 0 : a[1];
+        }
+    }
+
+    /** Magic level and attack bonus of each sea creature (wiki infoboxes, July 2026: mage, attbns/amagic). */
+    private static final Map<String, int[]> ACCURACY = accuracy();
+
+    private static Map<String, int[]> accuracy() {
+        Map<String, int[]> m = new LinkedHashMap<>();
+        for (String[] r : rows(SailingSeaTables.CREATURE_ACCURACY)) {
+            m.put(creatureId(r[0]), new int[]{Integer.parseInt(r[1]), Integer.parseInt(r[2])});
+        }
+        return m;
     }
 
     public static final List<SeaCreature> CREATURES;
@@ -587,22 +679,25 @@ public final class SailingSea {
     /**
      * Lost crates (wiki Lost crate): wooden, oak, teak, mahogany, camphor and ironwood crates open at Sailing 5, 26, 51,
      * 71, 86 and 95 and give 25, 50, 150, 235, 335 and 450 Sailing XP. Each crate gives one of eight kinds of loot (1/8
-     * each) at the crate's tier, in a fixed amount. The odds of each unlocked tier are not on the wiki: equal here (approx).
+     * each) at the crate's tier, in a fixed amount. The wiki (July 2026) gives no odds for which unlocked tier spawns
+     * ("each crate has a chance to spawn after reaching a minimum Sailing level"): equal here (approx).
      */
     public static final int[] CRATE_LEVELS = {5, 26, 51, 71, 86, 95};
     public static final double[] CRATE_XP = {25, 50, 150, 235, 335, 450};
     public static final String[] CRATE_NAMES = {"wooden", "oak", "teak", "mahogany", "camphor", "ironwood"};
     /**
      * Loot per kind (ammunition, construction supplies, farming goods, potions, hides, weapons, metals, runes) and tier,
-     * as "item:amount". Sawmill coupons are not in RuneCraft: the wooden and oak crates give the planks they buy (approx);
-     * the ironwood hides line (mixed hide base) is a black dragon leather here (approx).
+     * as "item:amount"; a potion with fewer than four doses is written {@code id(n)} (wiki: superantipoison(2), stamina
+     * potion(2), super combat potion(2) and prayer regeneration potion(1)). The wooden and oak crates give the wiki's
+     * sawmill coupons; the ironwood hides line (mixed hide base) is a black dragon leather here (approx).
      */
     private static final String[][] CRATE = {
             {"steel_arrow:40", "mithril_arrow:40", "adamant_arrow:40", "rune_arrow:30", "amethyst_arrow:25", "dragon_arrow:20"},
-            {"plank:20", "oak_plank:12", "teak_plank:1", "mahogany_plank:1", "camphor_plank:1", "ironwood_plank:1"},
+            {"sawmill_coupon_wood_plank:20", "sawmill_coupon_oak_plank:12", "teak_plank:1", "mahogany_plank:1", "camphor_plank:1",
+                    "ironwood_plank:1"},
             {"sweetcorn_seed:6", "willow_seed:2", "ranarr_seed:2", "watermelon_seed:6", "yew_seed:1", "spirit_seed:1"},
-            {"strength_potion:1", "superantipoison:1", "prayer_potion:1", "stamina_potion:1", "super_combat_potion:1",
-                    "prayer_regeneration_potion:1"},
+            {"strength_potion:1", "superantipoison(2):1", "prayer_potion:1", "stamina_potion(2):1", "super_combat_potion(2):1",
+                    "prayer_regeneration_potion(1):1"},
             {"leather:1", "snakeskin:1", "green_dragon_leather:1", "red_dragon_leather:1", "black_dragon_leather:1", "black_dragon_leather:1"},
             {"steel_scimitar:1", "black_warhammer:1", "adamant_scimitar:1", "rune_dagger:1", "rune_battleaxe:1", "dragon_sword:1"},
             {"silver_bar:1", "gold_bar:1", "mithril_bar:1", "adamantite_bar:1", "runite_bar:1", "dragon_metal_sheet:1"},

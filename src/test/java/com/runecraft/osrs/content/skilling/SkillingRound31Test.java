@@ -175,9 +175,20 @@ class SkillingRound31Test {
 
     @Test
     void crewSalvageAtDeckhandinessTimesTenPercent() {
-        // Wiki example: the player at 40%, Jobless Jim (Deckhandiness 3) about 12%; crew roll every 5 ticks.
-        assertEquals(0.12, SailingCrew.crewSalvageChance(0.40, 3), 1e-9);
-        assertEquals(0.04, SailingCrew.crewSalvageChance(0.40, 1), 1e-9);
+        // Wiki example: the player at 40%, Jobless Jim (Deckhandiness 3) about 12% ("slightly higher or lower than 30%, due to
+        // integer arithmetic"); crew roll every 5 ticks.
+        SailingData.Wreck merchant = SailingData.wreck("merchant_shipwreck");
+        // Dragon hook: 24/50 + 35% = 32/67; Jobless Jim: 9/20 (the wiki calculator's integer steps).
+        assertEquals(68 / 256.0, SailingSea.salvageChance(merchant, 99, 6), 1e-12);
+        assertEquals(21 / 256.0, SailingCrew.crewSalvageChance(merchant, 99, 6, 3), 1e-12);
+        for (SailingData.Wreck w : SailingData.WRECKS) {
+            for (int hook = 0; hook < 7; hook++) {
+                double player = SailingSea.salvageChance(w, 99, hook);
+                for (int d = 1; d <= 4; d++) {
+                    assertEquals(player * d / 10.0, SailingCrew.crewSalvageChance(w, 99, hook, d), 0.015, w.blockId() + " " + hook + " " + d);
+                }
+            }
+        }
         assertEquals(5, SailingCrew.CREW_SALVAGE_TICKS);
         List<SailingCrew.Crewmate> all = new ArrayList<>(SailingCrew.CREW);
         SailingCrew.Crewmate best = SailingCrew.salvager(all, 2);

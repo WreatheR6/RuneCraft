@@ -490,13 +490,24 @@ public final class SeaHooks {
             }
             sp.cooldown = 0;
             mob.lookAt(player, 30f, 30f);
-            int max = Math.max(0, sp.creature.maxHitAgainst(0) - SailingSea.keelReduction(type,
-                    SailingHooks.partTier(player, type, SailingTraining.PartType.KEEL)));
-            int dmg = max <= 0 || RNG.nextBoolean() ? 0 : 1 + RNG.nextInt(max); // approx: half the attacks land
+            int dmg = creatureHit(player, type, sp.creature, RNG);
             if (dmg > 0) {
                 hurtBoat(player, vehicle, type, s, dmg, "The " + SkillingUtil.lower(sp.creature.name()) + " hits your boat");
             }
         }
+    }
+
+    /**
+     * One sea creature attack on a boat: it lands with the creature's attack roll against the hull's defence roll, then
+     * rolls 0 to its wiki max hit against the boat's keel (keel armour already taken off; 0 below the keel's armour).
+     */
+    public static int creatureHit(ServerPlayer player, String type, SailingSea.SeaCreature c, Random random) {
+        int max = c.maxHitAgainst(SailingSea.keelIndex(type, SailingHooks.partTier(player, type, SailingTraining.PartType.KEEL)));
+        if (max <= 0 || random.nextDouble() >= SailingSea.creatureHitChance(c, type,
+                SailingHooks.partTier(player, type, SailingTraining.PartType.HULL))) {
+            return 0;
+        }
+        return random.nextInt(max + 1);
     }
 
     private static void hurtBoat(ServerPlayer player, Entity vehicle, String type, Sea s, int dmg, String what) {
@@ -888,8 +899,10 @@ public final class SeaHooks {
         ServerLevel world = (ServerLevel) player.level();
         world.playSound(null, player.blockPosition(), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.5f, 1.5f);
         world.sendParticles(ParticleTypes.EXPLOSION, target.getX(), target.getY() + 0.5, target.getZ(), 1, 0, 0, 0, 0);
-        int max = SailingCrew.crewMaxHit(SkillingUtil.level(player, Skill.SAILING), cannon, ball, c.privateering());
-        boolean hit = sp == null || RNG.nextDouble() < SailingSea.cannonAccuracy(cannon, ball, false, sp.creature);
+        int sailing = SkillingUtil.level(player, Skill.SAILING);
+        int max = SailingCrew.crewMaxHit(sailing, cannon, ball, c.privateering());
+        boolean hit = sp == null || RNG.nextDouble() < SailingSea.cannonAccuracy(SailingSea.crewEffectiveLevel(sailing), cannon, ball,
+                false, 0, sp.creature);
         int dmg = hit ? RNG.nextInt(max + 1) : 0;
         if (hit) {
             special(sp, item);
@@ -1018,8 +1031,14 @@ public final class SeaHooks {
         ServerLevel world = (ServerLevel) player.level();
         world.playSound(null, player.blockPosition(), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.6f, 1.4f);
         world.sendParticles(ParticleTypes.EXPLOSION, target.getX(), target.getY() + 0.5, target.getZ(), 1, 0, 0, 0, 0);
-        int max = SailingSea.cannonMaxHit(SkillingUtil.level(player, Skill.RANGED), cannon, ball, true);
-        boolean hit = c == null || RNG.nextDouble() < SailingSea.cannonAccuracy(cannon, ball, true, c);
+        // Wiki (1 April 2026): Ranged prayers and worn Ranged gear apply when a player mans the cannon (Void: not here, approx).
+        int ranged = SkillingUtil.level(player, Skill.RANGED);
+        com.runecraft.player.PlayerData data = com.runecraft.player.Players.data(player);
+        com.runecraft.osrs.EquipmentStats gear = com.runecraft.combat.HitCalcBridge.gearStats(player);
+        int max = SailingSea.playerCannonMaxHit(SailingSea.effectiveRanged(ranged, com.runecraft.combat.PrayerService.rangedStrength(data),
+                1.0), cannon, ball, gear.rangedStrength());
+        boolean hit = c == null || RNG.nextDouble() < SailingSea.cannonAccuracy(SailingSea.effectiveRanged(ranged,
+                com.runecraft.combat.PrayerService.rangedAttack(data), 1.0), cannon, ball, true, gear.rangedAttack(), c);
         int dmg = hit ? RNG.nextInt(max + 1) : 0;
         if (hit && special != null) {
             special(sp, item);
@@ -1061,12 +1080,7 @@ public final class SeaHooks {
                 if (level < SailingSea.CRATE_LEVELS[0]) {
                     return;
                 }
-                int tier = SailingSea.lostCrateTier(level, RNG);
-                SailingSea.Got g = SailingSea.lostCrateLoot(tier, RNG);
-                SkillingUtil.give(player, g.item(), g.count());
-                XpService.add(player, Skill.SAILING, SailingSea.CRATE_XP[tier]);
-                Msg.action(player, "You fish a lost " + SailingSea.CRATE_NAMES[tier] + " crate out of the water: " + g.count() + " x "
-                        + SkillingUtil.lower(SkillingUtil.name(g.item())) + ".");
+                openLostCrate(player, SailingSea.lostCrateTier(level, RNG));
             }
             case CASTAWAY -> {
                 if (Inv.has(player, "castaway", 1)) {
@@ -1097,6 +1111,32 @@ public final class SeaHooks {
                 Msg.action(player, "You fish a lost casket out of the sea!");
             }
         }
+    }
+
+    /**
+     * Retrieves a lost crate of a tier (0 wooden .. 5 ironwood): its Sailing XP and one of its eight wiki loot lines,
+     * potions with the wiki's doses. Returns the loot. Used by the ocean encounter and the self-test.
+     */
+    public static SailingSea.Got openLostCrate(ServerPlayer player, int tier) {
+        SailingSea.Got g = SailingSea.lostCrateLoot(tier, RNG);
+        giveLoot(player, g.item(), g.count());
+        XpService.add(player, Skill.SAILING, SailingSea.CRATE_XP[tier]);
+        Msg.action(player, "You fish a lost " + SailingSea.CRATE_NAMES[tier] + " crate out of the water: " + g.count() + " x "
+                + SkillingUtil.lower(SkillingUtil.name(com.runecraft.osrs.data.Drop.baseOf(g.item()))) + ".");
+        return g;
+    }
+
+    /** Gives a loot line; a potion written {@code id(n)} comes with n doses. */
+    static void giveLoot(ServerPlayer player, String item, int count) {
+        int doses = com.runecraft.osrs.data.Drop.dosesOf(item);
+        if (doses == 0) {
+            SkillingUtil.give(player, item, count);
+            return;
+        }
+        String base = com.runecraft.osrs.data.Drop.baseOf(item);
+        Inv.give(player, com.runecraft.skill.Drops.withDoses(Inv.stack(base, count), doses));
+        com.runecraft.collection.CollectionLog.record(player, base);
+        GameEvents.fireObtain(player, base, count);
     }
 
     // ------------------------------------------------------------------ hazards

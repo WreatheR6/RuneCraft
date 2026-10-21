@@ -241,14 +241,15 @@ final class SailingHooks {
                 world.playSound(null, pos, SoundEvents.FISHING_BOBBER_SPLASH, SoundSource.PLAYERS, 0.5f, 0.8f);
                 double chance = com.runecraft.osrs.content.skilling.SailingSea.salvageChance(w, SkillingUtil.level(p, Skill.SAILING), tier);
                 // The best deckhand aboard works a hook alongside you (approx: OSRS assigns crew to each hook, and they keep
-                // salvaging while you do something else): every 5 ticks, your chance x Deckhandiness x 10%, for that share
-                // of the XP (OSRS Wiki, Shipwreck salvaging).
+                // salvaging while you do something else): every 5 ticks, the hook's low/high x Deckhandiness x 10%, for that
+                // share of the XP (OSRS Wiki, Shipwreck salvaging and its calculator).
                 crewTicks += com.runecraft.osrs.content.skilling.SailingSea.SALVAGE_TICKS;
                 while (hookTier >= 0 && crewTicks >= SailingCrew.CREW_SALVAGE_TICKS) {
                     crewTicks -= SailingCrew.CREW_SALVAGE_TICKS;
                     SailingCrew.Crewmate hand = SailingCrew.salvager(
                             SailingCrew.aboard(SeaHooks.crewOrder(p), boatType, SkillingUtil.level(p, Skill.SAILING)), hookTier);
-                    if (hand != null && random.nextDouble() < SailingCrew.crewSalvageChance(chance, hand.deckhandiness())) {
+                    if (hand != null && random.nextDouble() < SailingCrew.crewSalvageChance(w, SkillingUtil.level(p, Skill.SAILING), hookTier,
+                            hand.deckhandiness())) {
                         SkillingUtil.give(p, w.salvage(), 1);
                         XpService.add(p, Skill.SAILING, w.xp() * SailingCrew.salvageShare(hand.deckhandiness()));
                         Msg.action(p, hand.name() + " hauls up some salvage.");

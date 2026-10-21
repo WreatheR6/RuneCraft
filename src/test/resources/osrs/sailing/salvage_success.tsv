@@ -1,0 +1,22 @@
+# Source: OSRS Wiki shipwreck salvaging calculator (Module:Sandbox/User:Coopermor/ShipwreckSalvaging/Calc, via
+# Flipping-Utilities/parsed-osrs data/modules, Oct 2026): bronze-hook success low/high out of 256 per shipwreck, the
+# hook bonus in percent, rolls every 4 ticks (player) and 5 ticks (crew); crew low/high = player low/high x 10% per
+# Deckhandiness, each rounded down; chance = (1 + floor(low (99 - L) / 98 + high (L - 1) / 98 + 0.5)) / 256.
+# kind	name	low	high
+wreck	Small	50	100
+wreck	Fisherman	48	96
+wreck	Barracuda	45	90
+wreck	Large	42	84
+wreck	Pirate	40	80
+wreck	Mercenary	32	64
+wreck	Fremennik	28	58
+wreck	Merchant	24	50
+hook	Bronze	0
+hook	Iron	5
+hook	Steel	10
+hook	Mithril	15
+hook	Adamant	20
+hook	Rune	25
+hook	Dragon	35
+ticks	player	4
+ticks	crew	5

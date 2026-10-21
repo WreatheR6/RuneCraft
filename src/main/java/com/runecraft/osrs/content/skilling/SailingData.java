@@ -49,8 +49,9 @@ public final class SailingData extends SkillingPart {
     }
 
     /**
-     * Shipwrecks: block id, Sailing level, XP per salvage hauled up, salvage item (and its OSRS name), success chance out of
-     * 256 at level 1 and 99 (approx), the salvage's OSRS name and the XP for sorting one salvage. Sorting loot is the
+     * Shipwrecks: block id, Sailing level, XP per salvage hauled up, salvage item (and its OSRS name), the bronze hook's
+     * success chance out of 256 at level 1 and 99 (the wiki's shipwreck salvaging calculator, see
+     * {@link SailingSea#salvageChance}), the salvage's OSRS name and the XP for sorting one salvage. Sorting loot is the
      * wiki table in {@link SailingSea#SALVAGE}.
      */
     public record Wreck(String blockId, String name, int level, double xp, String salvage, int low, int high,
@@ -67,19 +68,19 @@ public final class SailingData extends SkillingPart {
 
     /** OSRS Wiki (shipwreck salvaging): salvage XP and sorting XP per salvage. */
     public static final List<Wreck> WRECKS = List.of(
-            new Wreck("small_shipwreck", "Small shipwreck", 15, 10.0, "small_salvage", 80, 220, "Small salvage", 5.5),
-            new Wreck("fishermans_shipwreck", "Fisherman's shipwreck", 26, 17.0, "fishy_salvage", 60, 200,
+            new Wreck("small_shipwreck", "Small shipwreck", 15, 10.0, "small_salvage", 50, 100, "Small salvage", 5.5),
+            new Wreck("fishermans_shipwreck", "Fisherman's shipwreck", 26, 17.0, "fishy_salvage", 48, 96,
                     "Fishy salvage", 9.0),
-            new Wreck("barracuda_shipwreck", "Barracuda shipwreck", 35, 31.0, "barracuda_salvage", 50, 190,
+            new Wreck("barracuda_shipwreck", "Barracuda shipwreck", 35, 31.0, "barracuda_salvage", 45, 90,
                     "Barracuda salvage", 15.5),
-            new Wreck("large_shipwreck", "Large shipwreck", 53, 48.0, "large_salvage", 40, 170, "Large salvage", 24.0),
-            new Wreck("pirate_shipwreck", "Pirate shipwreck", 64, 76.0, "pirate_salvage", 32, 150, "Plundered salvage",
+            new Wreck("large_shipwreck", "Large shipwreck", 53, 48.0, "large_salvage", 42, 84, "Large salvage", 24.0),
+            new Wreck("pirate_shipwreck", "Pirate shipwreck", 64, 76.0, "pirate_salvage", 40, 80, "Plundered salvage",
                     31.5),
-            new Wreck("mercenary_shipwreck", "Mercenary shipwreck", 73, 138.0, "mercenary_salvage", 26, 130,
+            new Wreck("mercenary_shipwreck", "Mercenary shipwreck", 73, 138.0, "mercenary_salvage", 32, 64,
                     "Martial salvage", 63.5),
-            new Wreck("fremennik_shipwreck", "Fremennik shipwreck", 80, 162.0, "fremennik_salvage", 20, 120,
+            new Wreck("fremennik_shipwreck", "Fremennik shipwreck", 80, 162.0, "fremennik_salvage", 28, 58,
                     "Fremennik salvage", 75.0),
-            new Wreck("merchant_shipwreck", "Merchant shipwreck", 87, 200.0, "merchant_salvage", 16, 110,
+            new Wreck("merchant_shipwreck", "Merchant shipwreck", 87, 200.0, "merchant_salvage", 24, 50,
                     "Opulent salvage", 95.0));
 
     public static Wreck wreck(String blockId) {
@@ -333,6 +334,11 @@ public final class SailingData extends SkillingPart {
             out.accept(plain("saw_" + w[0], MenuType.CONSTRUCTION, title((String) w[0]) + " (" + w[2] + " coins)").in((String) w[1], 1)
                     .in("coins", (Integer) w[2]).out((String) w[0], 1).ticks(0).build());
         }
+        // Sawmill coupons (salvage, lost crates): each covers the sawmill fee of one plank (wiki: 100 / 250 coins).
+        out.accept(plain("saw_plank_coupon", MenuType.CONSTRUCTION, "Plank (sawmill coupon)").in("logs", 1)
+                .in("sawmill_coupon_wood_plank", 1).out("plank", 1).ticks(0).build());
+        out.accept(plain("saw_oak_plank_coupon", MenuType.CONSTRUCTION, "Oak plank (sawmill coupon)").in("oak_logs", 1)
+                .in("sawmill_coupon_oak_plank", 1).out("oak_plank", 1).ticks(0).build());
         Object[][] shop = {{"spyglass", 50}, {"salvaging_hook", 40}, {"trawling_net", 60}, {"rope", 18}, {"crowbar", 30},
                 {"current_duck", 40}, {"diving_apparatus", 200}, {"portable_weather_station", 100}};
         for (Object[] o : shop) {

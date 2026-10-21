@@ -141,7 +141,8 @@ public final class TestContext {
 
     /**
      * Per-player state the modules keep outside PlayerData: worn extra slots, spellbook, diaries and Combat Achievements
-     * (systems), the Slayer profile, minigame points and flags, quest flags and kill counters. Reset before every check so
+     * (systems), the Slayer profile, minigame points and flags, quest flags and kill counters, the skilling module's
+     * per-player entries (Sailing boats, crew, schematics, tasks and charting). Reset before every check so
      * checks don't leak into each other, and put back for a real player at the end.
      */
     private List<ModuleState> moduleStates() {
@@ -184,6 +185,15 @@ public final class TestContext {
 
                     public void restore(java.util.UUID p, Object saved) {
                         quests.selfTestRestore(p, saved);
+                    }
+                },
+                new ModuleState() { // skilling: Sailing boats, cargo, crew, schematics, port tasks, charting; farming contracts
+                    public Object save(java.util.UUID p) {
+                        return com.runecraft.content.skilling.SkillingState.get(server).selfTestSave(p);
+                    }
+
+                    public void restore(java.util.UUID p, Object saved) {
+                        com.runecraft.content.skilling.SkillingState.get(server).selfTestRestore(p, saved);
                     }
                 },
                 new ModuleState() { // the Moons pacified for the Lunar Chest
