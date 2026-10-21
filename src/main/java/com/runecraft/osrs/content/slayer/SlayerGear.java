@@ -89,6 +89,14 @@ public final class SlayerGear {
             new Finisher("mutated_zygomites", "fungicide_spray", 7, false, "shroom_sprayer",
                     "The zygomite seems to wither and dies."));
 
+    /**
+     * Other items that finish a creature like a {@link Finisher}'s own (OSRS Wiki "Rock thrownhammer": it finishes gargoyles
+     * like the rock hammer, from a distance, and is used up).
+     */
+    public static final Map<String, String> FINISHER_ALTERNATES = Map.of("rock_hammer", "rock_thrownhammer");
+    /** Alternates that are used up on use. */
+    public static final List<String> CONSUMED_ALTERNATES = List.of("rock_thrownhammer");
+
     /** Categories only hurt by leaf-bladed weapons, broad ammunition or Magic Dart (slayer staff). */
     public static final List<String> LEAF_BLADED_CATEGORIES = List.of("turoth", "kurask");
     public static final List<String> LEAF_BLADED_WEAPONS = List.of("leaf_bladed_spear", "leaf_bladed_sword",

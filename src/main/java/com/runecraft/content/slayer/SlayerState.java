@@ -40,9 +40,42 @@ public final class SlayerState extends SavedData {
         public boolean migrated;
         /** A boss task whose size the player hasn't chosen yet (OSRS: 3-35 kills, asked by the master). */
         public boolean chooseAmount;
+        /** The task put aside with "Task Storage" (category id), or null; the other stored* fields are its state. */
+        public String storedTask;
+        public int storedRemaining;
+        public int storedAmount;
+        public String storedMaster;
+        public String storedRegion;
+        public boolean storedChooseAmount;
 
         public boolean hasTask() {
             return task != null && remaining > 0;
+        }
+
+        public boolean hasStoredTask() {
+            return storedTask != null && storedRemaining > 0;
+        }
+
+        /** Swaps the current task with the stored one (either may be empty). */
+        public void swapStored() {
+            String t = task;
+            int r = remaining;
+            int a = amount;
+            String m = master;
+            String g = region;
+            boolean c = chooseAmount;
+            task = storedTask;
+            remaining = storedRemaining;
+            amount = storedAmount;
+            master = storedMaster;
+            region = storedRegion;
+            chooseAmount = storedChooseAmount;
+            storedTask = t != null && r > 0 ? t : null;
+            storedRemaining = storedTask == null ? 0 : r;
+            storedAmount = storedTask == null ? 0 : a;
+            storedMaster = storedTask == null ? null : m;
+            storedRegion = storedTask == null ? null : g;
+            storedChooseAmount = storedTask != null && c;
         }
 
         CompoundTag toNbt() {
@@ -58,6 +91,14 @@ public final class SlayerState extends SavedData {
             nbt.putInt("Completed", completed);
             nbt.putBoolean("Migrated", migrated);
             nbt.putBoolean("ChooseAmount", chooseAmount);
+            if (hasStoredTask()) {
+                nbt.putString("StoredTask", storedTask);
+                nbt.putInt("StoredRemaining", storedRemaining);
+                nbt.putInt("StoredAmount", storedAmount);
+                nbt.putString("StoredMaster", storedMaster == null ? "" : storedMaster);
+                nbt.putString("StoredRegion", storedRegion == null ? "" : storedRegion);
+                nbt.putBoolean("StoredChooseAmount", storedChooseAmount);
+            }
             nbt.put("Unlocks", list(unlocks));
             nbt.put("Blocked", list(blocked));
             return nbt;
@@ -76,6 +117,12 @@ public final class SlayerState extends SavedData {
             p.completed = nbt.getInt("Completed");
             p.migrated = nbt.getBoolean("Migrated");
             p.chooseAmount = nbt.getBoolean("ChooseAmount");
+            p.storedTask = emptyToNull(nbt.getString("StoredTask"));
+            p.storedRemaining = nbt.getInt("StoredRemaining");
+            p.storedAmount = nbt.getInt("StoredAmount");
+            p.storedMaster = emptyToNull(nbt.getString("StoredMaster"));
+            p.storedRegion = emptyToNull(nbt.getString("StoredRegion"));
+            p.storedChooseAmount = nbt.getBoolean("StoredChooseAmount");
             ListTag unlocks = nbt.getList("Unlocks", Tag.TAG_STRING);
             for (int i = 0; i < unlocks.size(); i++) {
                 p.unlocks.add(unlocks.getString(i));

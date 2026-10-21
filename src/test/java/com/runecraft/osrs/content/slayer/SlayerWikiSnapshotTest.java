@@ -195,9 +195,8 @@ class SlayerWikiSnapshotTest {
         for (SlayerRewards.Unlock u : SlayerRewards.UNLOCKS) {
             ours.put(norm(u.name()), u);
         }
-        // Duly Noted and Task Storage aren't modelled; the twisted horns, slayer hood and demonic quill don't exist yet.
-        Set<String> notOffered = Set.of(norm("Duly Noted"), norm("Task Storage"), norm("Twisted Vision"), norm("Absolutely Slayin'"),
-                norm("Oath Breaker"));
+        // Every reward is offered (round 44: Duly Noted, Task Storage and the Twisted, Hooded and Oathplate recolours).
+        Set<String> notOffered = Set.of();
         Set<String> seen = new HashSet<>();
         List<String> bad = new ArrayList<>();
         Map<String, Integer> buy = new HashMap<>();

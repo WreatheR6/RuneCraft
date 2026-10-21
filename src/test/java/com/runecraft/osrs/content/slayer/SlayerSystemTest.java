@@ -135,8 +135,8 @@ class SlayerSystemTest {
 
     @Test
     void helmetRecolours() {
-        assertEquals(11, SlayerRewards.slayerHelmets(false).size());
-        assertEquals(11, SlayerRewards.slayerHelmets(true).size());
+        assertEquals(14, SlayerRewards.slayerHelmets(false).size());
+        assertEquals(14, SlayerRewards.slayerHelmets(true).size());
         for (String id : SlayerRewards.slayerHelmets(false)) {
             assertNotNull(ItemCatalog.get(id), id);
             assertNotNull(ItemCatalog.get(id + "_i"), id + "_i");

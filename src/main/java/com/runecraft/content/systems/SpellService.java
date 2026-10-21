@@ -128,7 +128,7 @@ public final class SpellService {
             if (elemental && staffProvides(p, element)) {
                 continue;
             }
-            int have = Inv.count(p, rune);
+            int have = carried(p, rune);
             int use = Math.min(have, e.getValue());
             if (use > 0) {
                 remove.merge(rune, use, Integer::sum);
@@ -148,7 +148,7 @@ public final class SpellService {
             if (need <= 0) {
                 continue;
             }
-            int use = Math.min(need, Inv.count(p, c.getKey()));
+            int use = Math.min(need, carried(p, c.getKey()));
             if (use > 0) {
                 remove.merge(c.getKey(), use, Integer::sum);
                 for (String el : c.getValue()) {
@@ -179,7 +179,13 @@ public final class SpellService {
     }
 
     static void consume(ServerPlayer p, Map<String, Integer> plan) {
-        plan.forEach((item, n) -> Inv.remove(p, item, n));
+        // Inventory first, then a rune pouch (slayer module) for runes.
+        plan.forEach((item, n) -> com.runecraft.content.slayer.SlayerItemService.payRunes(p, item, n));
+    }
+
+    /** Runes carried, a rune pouch's included (slayer module). */
+    private static int carried(ServerPlayer p, String rune) {
+        return Inv.count(p, rune) + com.runecraft.content.slayer.SlayerItemService.pouchCount(p, rune);
     }
 
     /**

@@ -305,7 +305,80 @@ public final class SlayerService {
         line.append(button("[Shop]", "/slayer shop", "Buy slayer equipment"));
         line.append(Component.literal(" "));
         line.append(button("[Craft]", "/slayer craft", "Assemble slayer helmets, rings and more"));
+        if (p.unlocks.contains(SlayerRewards.TASK_STORAGE)) {
+            line.append(Component.literal(" "));
+            if (p.hasStoredTask()) {
+                line.append(button("[" + (p.hasTask() ? "Swap" : "Unstore") + " task]", "/slayer unstore",
+                        "Stored: " + p.storedRemaining + " " + SlayerTasks.displayName(p.storedTask)));
+            } else {
+                line.append(button("[Store task]", "/slayer store", "Put this task aside for later (free)"));
+            }
+        }
         player.displayClientMessage(line, false);
+    }
+
+    // ------------------------------------------------------------------ task storage
+
+    /**
+     * "Task Storage" (OSRS Wiki "Slayer Rewards"): stores the current task for free, for later; refused without the unlock,
+     * without a task, or when a task is already stored. Wilderness tasks may be stored too.
+     */
+    public static boolean storeTask(ServerPlayer player) {
+        SlayerState.Profile p = profile(player);
+        if (!p.unlocks.contains(SlayerRewards.TASK_STORAGE)) {
+            Msg.game(player, "You need to unlock Task Storage (500 points) first.");
+            return false;
+        }
+        if (!p.hasTask()) {
+            Msg.game(player, "You don't have a task to store.");
+            return false;
+        }
+        if (p.hasStoredTask()) {
+            Msg.game(player, "You already have a task stored: " + p.storedRemaining + " " + SlayerTasks.displayName(p.storedTask) + ".");
+            return false;
+        }
+        if (com.runecraft.content.minigames.games.TzHaarSlayer.bossTaskTaken(player)) {
+            Msg.game(player, "You can't store a task you have taken on as TzTok-Jad or TzKal-Zuk.");
+            return false;
+        }
+        p.swapStored();
+        Msg.game(player, "You store your task: " + p.storedRemaining + " " + SlayerTasks.displayName(p.storedTask)
+                + ". You can take it up again from any Slayer master.");
+        SlayerNet.sync(player);
+        return true;
+    }
+
+    /**
+     * Takes the stored task back up: unstores it when there is no current task, else swaps the two (free, OSRS). False
+     * without a stored task.
+     */
+    public static boolean unstoreTask(ServerPlayer player) {
+        SlayerState.Profile p = profile(player);
+        if (!p.hasStoredTask()) {
+            Msg.game(player, "You don't have a stored task.");
+            return false;
+        }
+        boolean swap = p.hasTask();
+        p.swapStored();
+        Msg.game(player, (swap ? "You swap tasks: you're" : "You take up your stored task: you're") + " now hunting "
+                + describe(p) + " (" + p.remaining + " to go)" + (swap ? "; your previous task is stored." : "."));
+        SlayerNet.sync(player);
+        return true;
+    }
+
+    // ------------------------------------------------------------------ Duly Noted
+
+    /** "Duly Noted": a mithril dragon killed on task drops its mithril bars as banknotes (OSRS); null leaves a drop alone. */
+    static net.minecraft.world.item.ItemStack dulyNoted(ServerPlayer killer, LivingEntity mob, String item, int count) {
+        if (killer == null || mob == null) {
+            return null;
+        }
+        String id = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).getPath();
+        if (!SlayerRewards.dulyNoted(id, item) || !profile(killer).unlocks.contains(SlayerRewards.DULY_NOTED)
+                || !isOnTask(killer, mob)) {
+            return null;
+        }
+        return com.runecraft.bank.Notes.note(item, "", count);
     }
 
     static MutableComponent button(String label, String command, String hover) {

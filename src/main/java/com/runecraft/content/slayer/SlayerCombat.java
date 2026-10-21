@@ -136,10 +136,9 @@ public final class SlayerCombat {
             int health = (int) Math.ceil(target.getHealth());
             if (damage >= health) {
                 SlayerState.Profile p = SlayerService.profile(player);
-                if (p.unlocks.contains(f.unlock()) && Inv.has(player, f.item(), 1)) {
-                    if (f.consumed()) {
-                        Inv.remove(player, f.item(), 1);
-                    }
+                String carried = carriedFinisher(player, f);
+                if (p.unlocks.contains(f.unlock()) && carried != null) {
+                    spendFinisher(player, f, carried, null);
                     Msg.game(player, f.verb());
                     return damage;
                 }
@@ -182,11 +181,46 @@ public final class SlayerCombat {
         return def != null && def.kind() == ItemDef.Kind.ARROW;
     }
 
-    /** Using a rock hammer / bag of salt / ice cooler / fungicide spray on a weakened creature finishes it. */
+    /**
+     * The finishing item the player carries for {@code f}: its own item (a fungicide spray only with a charge left) or its
+     * alternate (a rock thrownhammer for the rock hammer), or null.
+     */
+    private static String carriedFinisher(ServerPlayer player, SlayerGear.Finisher f) {
+        if ("fungicide_spray".equals(f.item())) {
+            for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+                ItemStack s = player.getInventory().getItem(i);
+                if ("fungicide_spray".equals(Inv.idOf(s)) && SlayerItemService.sprayCharges(s) > 0) {
+                    return f.item();
+                }
+            }
+            return null;
+        }
+        if (Inv.has(player, f.item(), 1)) {
+            return f.item();
+        }
+        String alt = SlayerGear.FINISHER_ALTERNATES.get(f.item());
+        return alt != null && Inv.has(player, alt, 1) ? alt : null;
+    }
+
+    /** Uses up what a finish costs: a consumed item (from {@code held} when given), a spray charge. */
+    private static void spendFinisher(ServerPlayer player, SlayerGear.Finisher f, String item, ItemStack held) {
+        if ("fungicide_spray".equals(item)) {
+            SlayerItemService.useSprayCharge(player);
+        } else if (f.consumed() || SlayerGear.CONSUMED_ALTERNATES.contains(item)) {
+            if (held != null) {
+                held.shrink(1);
+            } else {
+                Inv.remove(player, item, 1);
+            }
+        }
+    }
+
+    /** Using a rock hammer / thrownhammer / bag of salt / ice cooler / fungicide spray on a weakened creature finishes it. */
     private static boolean useFinisher(ServerPlayer player, LivingEntity target) {
         String category = category(target);
         SlayerGear.Finisher f = category == null ? null : SlayerGear.finisher(creatureId(target), category);
-        if (f == null || !f.item().equals(Inv.idOf(player.getMainHandItem()))) {
+        String held = Inv.idOf(player.getMainHandItem());
+        if (f == null || !(f.item().equals(held) || held.equals(SlayerGear.FINISHER_ALTERNATES.get(f.item())))) {
             return false;
         }
         int health = (int) Math.ceil(target.getHealth());
@@ -194,8 +228,14 @@ public final class SlayerCombat {
             Msg.game(player, "The creature isn't weak enough yet.");
             return true;
         }
-        if (f.consumed()) {
-            player.getMainHandItem().shrink(1);
+        if ("fungicide_spray".equals(held) && SlayerItemService.sprayCharges(player.getMainHandItem()) <= 0) {
+            Msg.game(player, "Your fungicide spray is empty. Refill it with fungicide.");
+            return true;
+        }
+        if ("fungicide_spray".equals(held)) {
+            SlayerItemService.spendSprayCharge(player.getMainHandItem());
+        } else {
+            spendFinisher(player, f, held, player.getMainHandItem());
         }
         Msg.game(player, f.verb());
         CombatHandler.applyDamage(player, target, health);

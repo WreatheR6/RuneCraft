@@ -35,7 +35,9 @@ public final class SlayerHooks implements ModuleHooks {
                         && !SlayerService.profile(player).unlocks.contains("broader_fletching")
                         ? "You need to learn Broader Fletching from a Slayer master first." : null);
         TormentedDemonCombat.register();
+        SlayerItemService.register();
         SlayerCommands.register();
+        com.runecraft.combat.CombatHooks.addDropTransformer(SlayerService::dulyNoted);
         BlockHooks.register("brimstone_chest", (player, pos, state) -> openChest(player, "brimstone_key",
                 "brimstone chest", SlayerChests.BRIMSTONE_MAIN, SlayerChests.BRIMSTONE_RARE));
         BlockHooks.register("larrans_big_chest", (player, pos, state) -> openChest(player, "larran_key",
