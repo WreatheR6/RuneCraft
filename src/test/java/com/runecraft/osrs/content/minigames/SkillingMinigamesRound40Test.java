@@ -175,6 +175,45 @@ class SkillingMinigamesRound40Test {
         }
     }
 
+    // ------------------------------------------------------------------ Gnome Restaurant
+
+    @Test
+    void gnomeRestaurantFollowsTheWiki() {
+        assertEquals(20, MinigameRules.GnomeRestaurant.EASY_CUSTOMERS.size());
+        assertEquals(20, MinigameRules.GnomeRestaurant.HARD_CUSTOMERS.size());
+        assertEquals(600, MinigameRules.GnomeRestaurant.EASY_TICKS);
+        assertEquals(1100, MinigameRules.GnomeRestaurant.HARD_TICKS);
+        assertEquals(550, MinigameRules.GnomeRestaurant.HARD_DECLINE_TICKS);
+        assertEquals(120, MinigameRules.GnomeRestaurant.MAX_POINTS);
+        for (MinigameRules.Loot l : MinigameRules.GnomeRestaurant.HARD_TIPS) {
+            assertTrue(ItemCatalog.exists(l.item()), l.item());
+        }
+        for (MinigameRules.GnomeRestaurant.Special sp : MinigameRules.GnomeRestaurant.SPECIALS) {
+            assertTrue(ItemCatalog.exists(sp.item()), sp.item());
+            for (String c : sp.customers()) {
+                assertTrue(MinigameRules.GnomeRestaurant.HARD_CUSTOMERS.contains(c), c);
+            }
+        }
+        // The x/128 entries of the hard table add up to 105/128 (the bolts fill the rest).
+        int base = MinigameRules.GnomeRestaurant.HARD_TIPS.stream().filter(l -> !l.item().endsWith("_bolts"))
+                .mapToInt(MinigameRules.Loot::weight).sum();
+        assertEquals(105 * 4, base);
+        assertEquals(512, MinigameRules.GnomeRestaurant.HARD_TIPS.stream().mapToInt(MinigameRules.Loot::weight).sum());
+        // Only Captain Ninto and Captain Daerkin tip the scarf and goggles.
+        assertTrue(MinigameRules.GnomeRestaurant.specials("Captain Ninto").stream().anyMatch(sp -> sp.item().equals("gnome_scarf")));
+        assertTrue(MinigameRules.GnomeRestaurant.specials("King Bolren").isEmpty());
+        java.util.Random r = new java.util.Random(4);
+        for (int i = 0; i < 300; i++) {
+            String item = MinigameRules.GnomeRestaurant.hardTip("King Bolren", r::nextDouble).item();
+            assertTrue(!item.equals("gnome_scarf") && !item.equals("grand_seed_pod"), item);
+        }
+        for (Object[] d : MinigameItems.GNOME_DISHES) {
+            assertTrue(MinigameRules.GnomeRestaurant.dishXp((String) d[0]) >= 150, (String) d[0]);
+        }
+        assertEquals(190.0, MinigameRules.GnomeRestaurant.dishXp("chocolate_bomb"));
+        assertCost("gnome_restaurant", MinigameRules.GnomeRestaurant.RANDOM_DISH, MinigameCurrencies.GNOME_TOKENS, 1);
+    }
+
     @Test
     void outfitsAddUpTo2Point5Percent() {
         assertEquals(1.025, SkillingOutfits.multiplier(SkillingOutfits.FARMER, SkillingOutfits.FARMER), 1e-9);

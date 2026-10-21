@@ -138,6 +138,7 @@ public final class MinigameWorld {
             {"agility_ticket_dispenser", "Ticket dispenser", "E0A040", "machine"},
             // Gnome Restaurant
             {"gnome_oven", "Gnome oven", "8A5A3A", "range"},
+            {"gnome_gianne", "Gianne jnr.", "C8A080", "statue"},
             {"gnome_customer", "Customer's door", "6A9A4A", "portal_door"},
             // Trouble Brewing
             {"tb_bitternut_tree", "Bitternut tree", "6A4A2A", "tree"},

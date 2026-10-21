@@ -853,12 +853,9 @@ public final class MinigameRules {
                 new Catch("raw_shark", 76, 66), new Catch("raw_swordfish", 50, 60), new Catch("raw_lobster", 40, 54),
                 new Catch("raw_tuna", 35, 48), new Catch("oyster", 16, 51), new Catch("raw_anchovies", 15, 0.7),
                 new Catch("raw_sardine", 15, 0.7), new Catch("raw_shrimps", 15, 0.7));
-        /**
-         * Junk the net brings up: 0-2 items, each equally likely (wiki: about 37% one, 16% two). The old boot is left out: the
-         * Sailing salvage tables skip it while it doesn't exist (SailingSea.SKIPPED).
-         */
+        /** Junk the net brings up: 0-2 items, each equally likely (wiki: about 37% one, 16% two). */
         public static final List<String> JUNK = List.of("broken_arrow", "broken_glass", "broken_staff", "buttons", "damaged_armour",
-                "empty_pot", "rusty_sword");
+                "old_boot", "empty_pot", "rusty_sword");
         public static final double JUNK_XP = 0.5;
 
         private Trawler() {
@@ -1036,35 +1033,116 @@ public final class MinigameRules {
     }
 
     // ---------------------------------------------------------------- Gnome Restaurant
+    /**
+     * Gnome Restaurant (OSRS Wiki "Gnome Restaurant"): Gianne jnr. hands out easy deliveries (around the Gnome Stronghold, 6
+     * minutes, 1 point) and hard ones (anywhere, 11 minutes, 3 points; declining one means 5.5 minutes before the next).
+     * Every 12 points make a reward token worth a random gnome dish (at most 10 stored). An easy customer tips 2-500 coins;
+     * a hard customer tips an item from the hard table, plus the specials only some customers give (approx weights from the
+     * Drop Log Project's 3,258 deliveries). Deliveries give no XP: the Cooking XP is in making the food.
+     */
     public static final class GnomeRestaurant {
-        /** Easy deliveries: 6 minutes, 1 point; hard deliveries: 11 minutes, 3 points. 12 points make a reward token. */
         public static final int EASY_TICKS = 600;
         public static final int HARD_TICKS = 1100;
         public static final int EASY_POINTS = 1;
         public static final int HARD_POINTS = 3;
         public static final int POINTS_PER_TOKEN = 12;
-        /** Every delivery is tipped 2-500 coins plus a roll on the tip table (approx. weights from the wiki). */
+        /** A token stores up to 120 points: ten dishes. */
+        public static final int MAX_POINTS = 120;
+        /** Declining a hard job: no hard job for 5 minutes 30 seconds. */
+        public static final int HARD_DECLINE_TICKS = 550;
+        /** Easy tips: 2-500 coins. */
         public static final int TIP_MIN = 2;
         public static final int TIP_MAX = 500;
-        public static final List<Loot> TIPS = List.of(
-                new Loot("gnome_scarf", 1, 1, 23), new Loot("gnome_goggles", 1, 1, 23), new Loot("mint_cake", 1, 1, 18),
-                new Loot("toadflax", 3, 3, 31), new Loot("snapdragon", 1, 1, 31), new Loot("uncut_sapphire", 6, 16, 31),
-                new Loot("uncut_emerald", 3, 5, 31), new Loot("uncut_ruby", 2, 4, 31), new Loot("uncut_diamond", 1, 1, 31),
-                new Loot("uncut_jade", 2, 3, 31), new Loot("uncut_opal", 3, 3, 31), new Loot("uncut_red_topaz", 1, 1, 31),
-                new Loot("mithril_bolts", 16, 35, 40), new Loot("adamant_bolts", 12, 26, 20), new Loot("bird_nest_seeds", 1, 1, 20),
-                new Loot("coins", 2, 500, 200));
-        /**
-         * Hard deliveries roll this table instead: the same tips plus the grand seed pod, tipped 5 at a time at 23/512 by
-         * Wingstone, Penwie, Brambickle and Professor Manglethorp (OSRS Wiki "Grand seed pod"). Customers aren't tracked, so the
-         * weight is that rate averaged over all hard-delivery customers (about 4 in 15-20): roughly 1/90 per hard delivery
-         * (approx).
-         */
-        public static final List<Loot> HARD_TIPS = hardTips();
+        /** Reward-shop id of a reward token's random dish. */
+        public static final String RANDOM_DISH = "#gnome_food";
 
-        private static List<Loot> hardTips() {
-            List<Loot> out = new java.util.ArrayList<>(TIPS);
-            out.add(new Loot("grand_seed_pod", 5, 5, 7)); // 7/630; weight approx
-            return List.copyOf(out);
+        /** Easy-order customers (in and around the Tree Gnome Stronghold). */
+        public static final List<String> EASY_CUSTOMERS = List.of("Burkor", "Brimstail", "Captain Errdo", "Gnome Coach", "Dalila",
+                "Damwin", "Eebel", "Ermin", "Femi", "Froono", "Guard Vemmeldo", "Gulluck", "Heckel Funch", "King Narnode Shareen",
+                "Meegle", "Perrdur", "Rometti", "Sarble", "Trainer Nacklepen", "Wurbel");
+        /** Hard-order customers. */
+        public static final List<String> HARD_CUSTOMERS = List.of("Ambassador Ferrnook", "Ambassador Gimblewap", "Ambassador Spanfipple",
+                "Brambickle", "Captain Bleemadge", "Captain Daerkin", "Captain Dalbur", "Captain Klemfoodle", "Captain Ninto",
+                "G.L.O. Caranock", "Garkor", "Gnormadium Avlafrim", "Hazelmere", "King Bolren", "Lieutenant Schepbur", "Penwie",
+                "Professor Imblewyn", "Professor Manglethorp", "Professor Onglewip", "Wingstone");
+
+        /** A tip only some hard customers give: item, amount, chance out of 512, and who gives it. */
+        public record Special(String item, int min, int max, double chance512, List<String> customers) {
+        }
+
+        private static final List<String> PILOTS_EXPLORERS_PROFESSORS = List.of("Captain Bleemadge", "Captain Daerkin", "Captain Dalbur",
+                "Captain Klemfoodle", "Captain Ninto", "Gnormadium Avlafrim", "Lieutenant Schepbur", "Wingstone", "Penwie",
+                "Professor Imblewyn", "Professor Manglethorp", "Professor Onglewip");
+        private static final List<String> RUNE_PROFESSORS = List.of("Professor Imblewyn", "Professor Onglewip");
+
+        public static final List<Special> SPECIALS = List.of(
+                new Special("gnome_goggles", 1, 1, 23 * 512 / 384.0, List.of("Captain Ninto", "Captain Daerkin")),
+                new Special("gnome_scarf", 1, 1, 23 * 512 / 384.0, List.of("Captain Ninto", "Captain Daerkin")),
+                new Special("grand_seed_pod", 5, 5, 23, List.of("Wingstone", "Penwie", "Brambickle", "Professor Manglethorp")),
+                new Special("mint_cake", 1, 1, 23, List.of("Wingstone", "Penwie", "Brambickle")),
+                new Special("goutweed", 1, 1, 23, List.of("Brambickle")),
+                new Special("raw_oomlie", 1, 1, 23, List.of("Penwie")),
+                new Special("snake_charm", 1, 1, 23, List.of("Wingstone")),
+                new Special("loop_half_of_key", 1, 1, 23 * 512 / 640.0, PILOTS_EXPLORERS_PROFESSORS),
+                new Special("tooth_half_of_key", 1, 1, 23 * 512 / 640.0, PILOTS_EXPLORERS_PROFESSORS),
+                new Special("gold_ore", 6, 11, 23, List.of("Professor Manglethorp")),
+                new Special("coal", 12, 22, 23, List.of("Professor Manglethorp")),
+                // "Rare" on the wiki: approx 8/512 each.
+                new Special("law_rune", 7, 18, 8, RUNE_PROFESSORS), new Special("nature_rune", 9, 15, 8, RUNE_PROFESSORS),
+                new Special("chaos_rune", 15, 27, 8, RUNE_PROFESSORS), new Special("cosmic_rune", 10, 19, 8, RUNE_PROFESSORS),
+                new Special("death_rune", 7, 13, 8, RUNE_PROFESSORS), new Special("blood_rune", 6, 10, 8, RUNE_PROFESSORS),
+                new Special("soul_rune", 5, 11, 8, RUNE_PROFESSORS), new Special("pure_essence", 51, 97, 8, RUNE_PROFESSORS));
+
+        /** Every hard customer's table (the specials aside): x/128 from the wiki, bolts filling the rest (approx split). */
+        public static final List<Loot> HARD_TIPS = List.of(
+                new Loot("gnomeball", 1, 1, 40), new Loot("toadflax", 3, 3, 40), new Loot("snapdragon", 1, 1, 40),
+                new Loot("uncut_sapphire", 6, 16, 40), new Loot("uncut_emerald", 3, 5, 40), new Loot("uncut_ruby", 2, 4, 40),
+                new Loot("uncut_diamond", 1, 1, 40), new Loot("uncut_jade", 2, 3, 40), new Loot("uncut_opal", 3, 3, 40),
+                new Loot("uncut_red_topaz", 1, 1, 40), new Loot("bird_nest_seeds", 1, 1, 20),
+                new Loot("mithril_bolts", 16, 35, 60), new Loot("adamant_bolts", 12, 26, 24), new Loot("rune_bolts", 7, 15, 8));
+
+        /** The specials a hard customer can give. */
+        public static List<Special> specials(String customer) {
+            return SPECIALS.stream().filter(sp -> sp.customers().contains(customer)).toList();
+        }
+
+        /**
+         * A hard customer's tip for uniform random values: each of the customer's specials at its chance first, else the
+         * base table.
+         */
+        public static Loot hardTip(String customer, java.util.function.DoubleSupplier random) {
+            for (Special sp : specials(customer)) {
+                if (random.getAsDouble() < sp.chance512() / 512.0) {
+                    return new Loot(sp.item(), sp.min(), sp.max(), 1);
+                }
+            }
+            return pick(HARD_TIPS, random.getAsDouble());
+        }
+
+        /** Cooking XP for making each restaurant dish from scratch (OSRS Wiki "Gnome cooking": baking plus toppings). */
+        public static double dishXp(String dish) {
+            return switch (dish) {
+                case "fruit_batta" -> 150;
+                case "toad_batta" -> 152;
+                case "worm_hole" -> 170;
+                case "veg_ball" -> 175;
+                case "tangled_toads_legs" -> 185;
+                case "chocolate_bomb" -> 190;
+                default -> 0;
+            };
+        }
+
+        /** Cooking level for each restaurant dish (orders don't check it; making the food does). */
+        public static int dishLevel(String dish) {
+            return switch (dish) {
+                case "fruit_batta" -> 25;
+                case "toad_batta" -> 26;
+                case "worm_hole" -> 30;
+                case "veg_ball" -> 35;
+                case "tangled_toads_legs" -> 40;
+                case "chocolate_bomb" -> 42;
+                default -> 1;
+            };
         }
 
         private GnomeRestaurant() {

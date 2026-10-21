@@ -216,7 +216,7 @@ class CombatMinigamesTest {
         assertEquals(0, GnomeRestaurant.tokens(0, 11));
         assertEquals(1, GnomeRestaurant.tokens(11, 12));
         assertEquals(1, GnomeRestaurant.tokens(10, 13));
-        for (MinigameRules.Loot l : GnomeRestaurant.TIPS) {
+        for (MinigameRules.Loot l : GnomeRestaurant.HARD_TIPS) {
             assertTrue(ItemCatalog.exists(l.item()), l.item());
         }
         for (RewardShop.Entry e : RewardShops.get("gnome_restaurant").entries()) {

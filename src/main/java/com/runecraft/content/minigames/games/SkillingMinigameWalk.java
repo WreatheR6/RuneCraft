@@ -85,6 +85,10 @@ public final class SkillingMinigameWalk {
         return run(p, SkillingMinigameWalk::brewingRound);
     }
 
+    public static String gnomeRestaurant(ServerPlayer p) {
+        return run(p, SkillingMinigameWalk::gnomeRound);
+    }
+
     // ------------------------------------------------------------------ helpers
 
     private static void expect(boolean ok, String message) {
@@ -767,6 +771,93 @@ public final class SkillingMinigameWalk {
                 "Honest Jimmy: flag " + Inv.has(player, "cutthroat_flag", 1) + ", rum " + Inv.has(player, "rum_red", 1) + ", paid "
                         + (before - Inv.count(player, "pieces_of_eight")));
         notes.add("bought the cutthroat flag (2,000) and red rum (20)");
+    }
+
+    // ------------------------------------------------------------------ Gnome Restaurant
+
+    private void gnomeRound() {
+        step = "easy job";
+        player.getInventory().clearContent();
+        GnomeRestaurantSession gr = (GnomeRestaurantSession) start(Minigame.GNOME_RESTAURANT);
+        use(gr.selfTestBlock("gnome_gianne"), "gnome_gianne");
+        GnomeRestaurantSession.View v = gr.selfTestView();
+        expect(v.order() != null && !v.hard() && MinigameRules.GnomeRestaurant.EASY_CUSTOMERS.contains(v.customer())
+                && v.ticksLeft() == MinigameRules.GnomeRestaurant.EASY_TICKS, "an easy job: " + v);
+        double cooking = xp(Skill.COOKING);
+        use(gr.selfTestBlock("gnome_oven"), "gnome_oven");
+        expect(Inv.has(player, v.order(), 1) && xp(Skill.COOKING) - cooking == MinigameRules.GnomeRestaurant.dishXp(v.order()),
+                "baking the " + v.order() + ": Cooking +" + (xp(Skill.COOKING) - cooking));
+        int coins = Inv.count(player, "coins");
+        cooking = xp(Skill.COOKING);
+        use(gr.selfTestBlock("gnome_customer"), "gnome_customer");
+        int tip = Inv.count(player, "coins") - coins;
+        expect(gr.selfTestView().order() == null && points("gnome_restaurant") == 1, "the easy delivery: points "
+                + points("gnome_restaurant"));
+        expect(tip >= 2 && tip <= 500 && xp(Skill.COOKING) == cooking, "an easy tip of " + tip + " coins, Cooking +"
+                + (xp(Skill.COOKING) - cooking) + " (deliveries give no XP)");
+        notes.add("easy " + v.order() + " for " + v.customer() + ": " + tip + " coins");
+
+        step = "hard job";
+        player.setShiftKeyDown(true);
+        use(gr.selfTestBlock("gnome_gianne"), "gnome_gianne");
+        player.setShiftKeyDown(false);
+        v = gr.selfTestView();
+        expect(v.order() != null && v.hard() && MinigameRules.GnomeRestaurant.HARD_CUSTOMERS.contains(v.customer())
+                && v.ticksLeft() == MinigameRules.GnomeRestaurant.HARD_TICKS, "a hard job: " + v);
+        Inv.give(player, v.order(), 1); // made earlier with gnome cooking
+        Inv.remove(player, "gnome_ingredients", Inv.count(player, "gnome_ingredients"));
+        coins = Inv.count(player, "coins");
+        int items = 0;
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            items += player.getInventory().getItem(i).isEmpty() ? 0 : 1;
+        }
+        use(gr.selfTestBlock("gnome_customer"), "gnome_customer");
+        int after = 0;
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            after += player.getInventory().getItem(i).isEmpty() ? 0 : 1;
+        }
+        expect(points("gnome_restaurant") == 4 && Inv.count(player, "coins") == coins && after >= items,
+                "the hard delivery: points " + points("gnome_restaurant") + ", coins " + (Inv.count(player, "coins") - coins)
+                        + " (hard customers tip items)");
+        notes.add("hard delivery for " + v.customer() + " (item tip)");
+
+        step = "decline";
+        player.setShiftKeyDown(true);
+        use(gr.selfTestBlock("gnome_gianne"), "gnome_gianne");
+        use(gr.selfTestBlock("gnome_gianne"), "gnome_gianne");
+        expect(gr.selfTestView().order() == null, "sneak-clicking Gianne with a hard job didn't decline it");
+        use(gr.selfTestBlock("gnome_gianne"), "gnome_gianne");
+        player.setShiftKeyDown(false);
+        expect(gr.selfTestView().order() == null, "a hard job was offered right after declining one");
+
+        step = "late";
+        use(gr.selfTestBlock("gnome_gianne"), "gnome_gianne");
+        expect(gr.selfTestView().order() != null && !gr.selfTestView().hard(), "no easy job after declining a hard one");
+        gr.selfTestNearDeadline();
+        until(5, () -> gr.selfTestView().order() == null);
+        expect(gr.selfTestView().order() == null && MinigameManager.session(player) == gr, "a late job: order "
+                + gr.selfTestView().order() + " (it is lost, the shift goes on)");
+        notes.add("declined a hard job (5.5-minute wait), let an easy one expire");
+
+        step = "token";
+        MinigameData.of(player).addPoints(player.getUUID(), "gnome_restaurant", 7);
+        use(gr.selfTestBlock("gnome_gianne"), "gnome_gianne");
+        Inv.remove(player, "gnome_ingredients", Inv.count(player, "gnome_ingredients"));
+        Inv.give(player, gr.selfTestView().order(), 1);
+        use(gr.selfTestBlock("gnome_customer"), "gnome_customer");
+        expect(Inv.count(player, "gnome_restaurant_token") == 1 && points("gnome_restaurant") == 12,
+                "12 points made " + Inv.count(player, "gnome_restaurant_token") + " reward tokens");
+        int dishes = 0;
+        for (Object[] d : com.runecraft.osrs.content.minigames.MinigameItems.GNOME_DISHES) {
+            dishes += Inv.count(player, (String) d[0]);
+        }
+        RewardShopService.buy(player, "gnome_restaurant", entry("gnome_restaurant", MinigameRules.GnomeRestaurant.RANDOM_DISH), 1);
+        int now = 0;
+        for (Object[] d : com.runecraft.osrs.content.minigames.MinigameItems.GNOME_DISHES) {
+            now += Inv.count(player, (String) d[0]);
+        }
+        expect(!Inv.has(player, "gnome_restaurant_token", 1) && now == dishes + 1, "the token bought " + (now - dishes) + " dishes");
+        notes.add("a reward token at 12 points, cashed in for a random dish");
     }
 
     /** Heats or cools the preform into [lo, hi], restarting the lava or waterfall near the goal to keep the steps small. */

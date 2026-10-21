@@ -101,6 +101,7 @@ public final class RewardShopService {
                 case "#seeds" -> RuneCraft.resolve("ranarr_seed").toString();
                 case "#ores", "#gf_ores" -> RuneCraft.resolve("coal").toString();
                 case "#mh_supply_crate" -> RuneCraft.resolve("teak_plank").toString();
+                case "#gnome_food" -> RuneCraft.resolve("chocolate_bomb").toString();
                 case "#ba_gamble_low" -> RuneCraft.resolve("rune_axe").toString();
                 case "#ba_gamble_medium" -> RuneCraft.resolve("teak_plank").toString();
                 case "#ba_gamble_high" -> RuneCraft.resolve("pet_penance_queen").toString();
@@ -334,6 +335,12 @@ public final class RewardShopService {
             }
             case "#ba_gamble_low", "#ba_gamble_medium", "#ba_gamble_high" -> com.runecraft.content.minigames.games.BarbarianAssaultSession
                     .gamble(player, com.runecraft.osrs.content.minigames.BaGambles.Tier.of(e.item()));
+            case "#gnome_food" -> {
+                // A reward token's food: a random gnome dish (OSRS Wiki).
+                Object[] dish = com.runecraft.osrs.content.minigames.MinigameItems.GNOME_DISHES[
+                        RANDOM.nextInt(com.runecraft.osrs.content.minigames.MinigameItems.GNOME_DISHES.length)];
+                give(player, (String) dish[0], 1);
+            }
             case "#mh_supply_crate" -> {
                 // Mahogany Homes supply crate (OSRS Wiki): one roll of noted Construction materials.
                 com.runecraft.osrs.content.minigames.MinigameRules.Loot l = com.runecraft.osrs.content.minigames.MinigameRules.pick(

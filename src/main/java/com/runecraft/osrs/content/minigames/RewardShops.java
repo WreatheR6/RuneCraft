@@ -297,12 +297,10 @@ public final class RewardShops {
                 .item("carpenters_trousers", CARPENTER, 600)
                 .item("carpenters_boots", CARPENTER, 200);
 
-        // Gnome Restaurant: a reward token (12 delivery points) is cashed in for one gnome dish delivered to you.
-        // The scarf, goggles and mint cake are tips from customers (MinigameRules.GnomeRestaurant.TIPS).
-        RewardShop gnome = shop("gnome_restaurant", "Aluft Aloft reward token");
-        for (Object[] dish : MinigameItems.GNOME_DISHES) {
-            gnome.item((String) dish[0], GNOME_TOKENS, 1);
-        }
+        // Gnome Restaurant: a reward token (12 delivery points) is cashed in for a random gnome dish delivered to you (OSRS
+        // Wiki). The scarf, goggles and mint cake are hard customers' tips (MinigameRules.GnomeRestaurant.SPECIALS).
+        shop("gnome_restaurant", "Aluft Aloft reward token")
+                .labelled(MinigameRules.GnomeRestaurant.RANDOM_DISH, "Random gnome dish", List.of(new Cost(GNOME_TOKENS, 1)));
 
         // Nightmare Zone: Dom Onion's Reward Shop (OSRS Wiki): resources, upgrades (imbues) and benefits. Benefits are sold
         // by the dose in OSRS and kept in barrels; here they come as 4-dose potions at four times the dose price.

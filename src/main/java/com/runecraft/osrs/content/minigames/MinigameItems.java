@@ -533,6 +533,8 @@ public final class MinigameItems {
         simple(items, "gnome_ingredients", "Gnome ingredients", "spice", 0x90B040, 0, "Gianne dough, toads, worms and equa leaves.");
         single(items, "aluft_aloft_box", "Aluft aloft box", "package", 0x6A9A4A, 1, "Gnome Restaurant rewards. Right-click to open.");
         single(items, "gnome_scarf", "Gnome scarf", "cloth", 0xE0E040, 1, "A gnomish scarf.");
+        single(items, "gnomeball", "Gnomeball", "orb", 0xC09050, 5, "Lets you play gnomeball.");
+        single(items, "snake_charm", "Snake charm", "talisman", 0x8A6A3A, 1, "A pipe that charms snakes.");
         wear(items, "gnome_goggles", "Gnome goggles", "cowl", 0x8A8A50, Slot.HEAD, 1, EquipmentStats.NONE);
         items.add("mint_cake", "Mint cake", Kind.FOOD, "cake", 0xA0E0A0).value(5).heal(1).examine("Restores run energy.");
         simple(items, "gnome_restaurant_token", "Reward token", "coins", 0x6A9A4A, 1, "Gnome Restaurant delivery token.");
@@ -652,6 +654,7 @@ public final class MinigameItems {
         single(items, "broken_staff", "Broken staff", "staff", 0x6A5A4A, 1, "A broken staff.");
         single(items, "buttons", "Buttons", "bead", 0xA08060, 1, "Some buttons.");
         single(items, "damaged_armour", "Damaged armour", "platebody", 0x6A6A6A, 1, "Some damaged armour.");
+        single(items, "old_boot", "Old boot", "boots", 0x5A4A3A, 1, "That's always the way.");
     }
 
     // ------------------------------------------------------------------ Rogues' Den
