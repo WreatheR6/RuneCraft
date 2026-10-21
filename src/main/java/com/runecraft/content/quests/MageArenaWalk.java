@@ -27,6 +27,7 @@ import com.runecraft.player.Players;
 import com.runecraft.quest.QuestApi;
 import com.runecraft.quest.QuestScripts;
 import com.runecraft.registry.ModEntities;
+import com.runecraft.selftest.ChunkSettle;
 import com.runecraft.util.Inv;
 import com.runecraft.world.Gielinor;
 import com.runecraft.world.StructurePlacer;
@@ -60,6 +61,8 @@ public final class MageArenaWalk {
     private final ServerPlayer player;
     private final ServerLevel world;
     private final StringBuilder log = new StringBuilder();
+    /** Added to a failure when the chunks the walk last settled were still loading ({@link #settle}). */
+    private String loading = "";
 
     private static final net.minecraft.resources.ResourceLocation HP_BUFFER = com.runecraft.RuneCraft.id("selftest_ma_hp");
     private static final String[] QUESTS = {"mage_arena_i", "mage_arena_ii"};
@@ -234,6 +237,16 @@ public final class MageArenaWalk {
         expect(SpellService.retaliate(player, target), "no autocast spell to cast");
     }
 
+    /**
+     * The walk teleports inside one server tick: the chunks within {@code r} blocks of {@code c} are held and settled as a
+     * player arriving there would have them ({@link ChunkSettle}), or a creature raised or dropped there (Kolodion, the battle
+     * mages, a follower and its remains) is hidden from every entity search, the game's own included.
+     */
+    private void settle(BlockPos c, int r) {
+        loading = ChunkSettle.holdAndSettle(world, c, r) ? ""
+                : " (the chunks around " + c.toShortString() + " were still loading after " + ChunkSettle.MAX_NANOS / 1_000_000_000L + " s)";
+    }
+
     private void wield(String item) {
         player.setItemInHand(InteractionHand.MAIN_HAND, Inv.stack(item, 1));
     }
@@ -254,16 +267,17 @@ public final class MageArenaWalk {
         expect(arena != null, "Kolodion has no arena");
         BlockPos stone = Gielinor.safeSpot(world, arena.x(), arena.z());
         player.teleportTo(world, stone.getX() + 2.5, stone.getY(), stone.getZ() + 0.5, 0, 0);
+        settle(stone, arena.radius() + 8);
         BossDef demon = ContentRegistry.boss(MageArena.KOLODION);
         DataBossService.summon(player, world, stone, demon);
         DataBossEntity raised = find(MageArena.KOLODION);
-        expect(raised != null, "the summoning stone raised no Kolodion");
+        expect(raised != null, "the summoning stone raised no Kolodion" + loading);
         for (int i = 0; i < 4 && find(MageArena.KOLODION_FORMS.get(0).id()) == null; i++) {
             tick(raised);
         }
         // The forms are the summoner's alone: another player's Kolodion can't be hurt, doesn't count and doesn't block the stone.
         DataBossEntity first = find(MageArena.KOLODION_FORMS.get(0).id());
-        expect(first != null, "Kolodion didn't take his first form");
+        expect(first != null, "Kolodion didn't take his first form" + loading);
         expect(player.getUUID().equals(MageArenaService.summoner(first)), "Kolodion's form doesn't know who raised it");
         MageArenaService.setSummoner(first, java.util.UUID.randomUUID());
         expect(hit(first, 5, AttackType.MAGIC) == 0, "the player hurt a Kolodion someone else raised");
@@ -274,7 +288,7 @@ public final class MageArenaWalk {
         StringBuilder forms = new StringBuilder();
         for (MageArena.Form f : MageArena.KOLODION_FORMS) {
             DataBossEntity form = find(f.id());
-            expect(form != null, "Kolodion didn't take his " + f.model() + " form (" + f.id() + ")");
+            expect(form != null, "Kolodion didn't take his " + f.model() + " form (" + f.id() + ")" + loading);
             expect(hit(form, 5, AttackType.SLASH) == 0 && hit(form, 5, AttackType.RANGED) == 0,
                     f.id() + " was hurt by melee or ranged: only magic harms Kolodion");
             for (int i = 0; i < 60 && form.isAlive(); i++) {
@@ -331,6 +345,7 @@ public final class MageArenaWalk {
         BlockPos in = Gielinor.safeSpot(world, cx, cz);
         player.teleportTo(world, in.getX() + 0.5, in.getY(), in.getZ() + 0.5, 0, 0);
         expect(MageArenaService.inArena(player), "the middle of the Mage Arena isn't inside the arena");
+        settle(in, 40); // the battle mages' tiles lie up to 18 tiles from the middle
         com.runecraft.world.LocationSpawner.stockForSelfTest(world, p -> MageArena.battleMageGod(p.monster()) != null);
     }
 
@@ -340,7 +355,7 @@ public final class MageArenaWalk {
         expect(type != null, "no entity for " + MageArena.battleMage(god));
         List<Mob> mages = world.getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(48), e -> e.isAlive()
                 && e.getType() == type && e.getTags().contains(com.runecraft.world.LocationSpawner.TAG));
-        expect(!mages.isEmpty(), "the Mage Arena has no " + god + " battle mage: its spawn points placed none");
+        expect(!mages.isEmpty(), "the Mage Arena has no " + god + " battle mage: its spawn points placed none" + loading);
         mages.sort(java.util.Comparator.comparingDouble(e -> e.distanceToSqr(player)));
         expect(MageArenaService.inArena(mages.get(0)), "the nearest " + god + " battle mage stands outside the arena's ring");
         return mages.get(0);
