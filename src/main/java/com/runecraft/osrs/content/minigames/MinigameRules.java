@@ -812,30 +812,121 @@ public final class MinigameRules {
     }
 
     // ---------------------------------------------------------------- Fishing Trawler
+    /**
+     * Fishing Trawler (OSRS Wiki "Fishing Trawler"): a five-minute trawl; contribution points for bailing (2), patching a
+     * leak (5, 5 Construction XP), mending the net with a rope (7, 5 Crafting XP), chopping the kraken's tentacle (10, 5
+     * Woodcutting XP) and fixing a rail it broke (10, 5 Construction XP); 50 points earn a share of the catch, at most 255
+     * count. Fish are rolled from the best the player's Fishing level allows down (each tier 150/256 at its level to
+     * 200/256 at 99); 1/12 for a missing angler piece; the heron at 1/5,000 to 1/2,500 with a full meter.
+     */
     public static final class Trawler {
         public static final int GAME_TICKS = 500;
-        public static final int LEAK_INTERVAL = 18;
         public static final int MAX_WATER = 100;
         public static final String[] OUTFIT = {"angler_hat", "angler_top", "angler_waders", "angler_boots"};
+        public static final int MIN_CONTRIBUTION = 50;
+        public static final int MAX_CONTRIBUTION = 255;
+        public static final int BAIL_POINTS = 2;
+        public static final int LEAK_POINTS = 5;
+        public static final int NET_POINTS = 7;
+        public static final int CHOP_POINTS = 10;
+        public static final int RAIL_POINTS = 10;
+        /** XP for a patched leak or fixed rail (Construction), a mended net (Crafting) and a tentacle chop (Woodcutting). */
+        public static final double ACTION_XP = 5;
+        /** Fishing level needed for any reward. */
+        public static final int REWARD_LEVEL = 15;
+        /** 1/12 for an angler piece the player doesn't have yet (a second set only after a full first one). */
+        public static final int ANGLER_ROLL = 12;
+        /** Game ticks between leaks for a lone player; more players spring more leaks (approx: busy worlds every 5 ticks). */
+        public static final int LEAK_INTERVAL = 18;
+        /** Game ticks between kraken tentacles ("about 45 seconds"), and successful chops that drive one off (approx). */
+        public static final int TENTACLE_INTERVAL = 75;
+        public static final int TENTACLE_HP = 2; // approx
+        /** Game ticks between net tears (approx). */
+        public static final int NET_TEAR_INTERVAL = 90; // approx
+
+        /** A catch: item, Fishing level and Fishing XP per fish (wiki table). */
+        public record Catch(String item, int level, double xp) {
+        }
+
+        /** Best first, as the net rolls them (the last always succeeds). */
+        public static final List<Catch> CATCHES = List.of(new Catch("raw_manta_ray", 81, 69), new Catch("raw_sea_turtle", 79, 57),
+                new Catch("raw_shark", 76, 66), new Catch("raw_swordfish", 50, 60), new Catch("raw_lobster", 40, 54),
+                new Catch("raw_tuna", 35, 48), new Catch("oyster", 16, 51), new Catch("raw_anchovies", 15, 0.7),
+                new Catch("raw_sardine", 15, 0.7), new Catch("raw_shrimps", 15, 0.7));
+        /**
+         * Junk the net brings up: 0-2 items, each equally likely (wiki: about 37% one, 16% two). The old boot is left out: the
+         * Sailing salvage tables skip it while it doesn't exist (SailingSea.SKIPPED).
+         */
+        public static final List<String> JUNK = List.of("broken_arrow", "broken_glass", "broken_staff", "buttons", "damaged_armour",
+                "empty_pot", "rusty_sword");
+        public static final double JUNK_XP = 0.5;
 
         private Trawler() {
         }
 
-        /** Fish caught in the net for a Fishing level and contribution (approx.). */
+        /** The chance a fish tier is caught at a Fishing level: 150/256 at level 1 to 200/256 at 99 (OSRS skilling roll). */
+        public static double tierChance(int level) {
+            int l = Math.max(1, Math.min(99, level));
+            return (1 + Math.floor(150 * (99 - l) / 98.0 + 200 * (l - 1) / 98.0 + 0.5)) / 256.0;
+        }
+
+        /** One fish for a Fishing level, given uniform random values in [0, 1) per tier tried. */
+        public static Catch fish(int level, java.util.function.DoubleSupplier random) {
+            double p = tierChance(level);
+            for (int i = 0; i < CATCHES.size(); i++) {
+                Catch c = CATCHES.get(i);
+                if (c.level() > level) {
+                    continue;
+                }
+                if (i == CATCHES.size() - 1 || random.getAsDouble() < p) {
+                    return c;
+                }
+            }
+            return CATCHES.get(CATCHES.size() - 1);
+        }
+
+        /** The best fish a Fishing level can get from the net. */
         public static String fishFor(int fishing) {
-            if (fishing >= 76) {
-                return "raw_shark";
+            for (Catch c : CATCHES) {
+                if (fishing >= c.level()) {
+                    return c.item();
+                }
             }
-            if (fishing >= 50) {
-                return "raw_swordfish";
+            return CATCHES.get(CATCHES.size() - 1).item();
+        }
+
+        /**
+         * A player's share of the catch: about 10.5 fish alone and 7 in a crowd at the minimum contribution, doubled by a
+         * full meter (wiki: 20-22 solo, 13-15 on busy worlds), less the time the net was torn and half the time a tentacle
+         * slowed the boat (approx).
+         */
+        public static int fishCount(int players, int contribution, double netIntact, double tentacleTime) {
+            if (contribution < MIN_CONTRIBUTION) {
+                return 0;
             }
-            if (fishing >= 40) {
-                return "raw_lobster";
+            double base = 7 + 3.5 / Math.max(1, players); // approx
+            double meter = 1 + (Math.min(MAX_CONTRIBUTION, contribution) - MIN_CONTRIBUTION) / (double) (MAX_CONTRIBUTION - MIN_CONTRIBUTION);
+            double time = Math.max(0, Math.min(1, netIntact) - 0.5 * Math.max(0, Math.min(1, tentacleTime)));
+            return (int) Math.floor(base * meter * time);
+        }
+
+        /** Junk items in the net for a uniform random value in [0, 1): none 47%, one 37%, two 16%. */
+        public static int junkCount(double roll) {
+            return roll < 0.47 ? 0 : roll < 0.84 ? 1 : 2;
+        }
+
+        /** The heron's chance: 1/5,000 at 50 points, scaling to 1/2,500 with a full meter. */
+        public static double heronChance(int contribution) {
+            if (contribution < MIN_CONTRIBUTION) {
+                return 0;
             }
-            if (fishing >= 35) {
-                return "raw_tuna";
-            }
-            return "raw_anchovies";
+            double f = (Math.min(MAX_CONTRIBUTION, contribution) - MIN_CONTRIBUTION) / (double) (MAX_CONTRIBUTION - MIN_CONTRIBUTION);
+            return 1.0 / (5000 - 2500 * f);
+        }
+
+        /** Game ticks between leaks with this many players aboard (approx). */
+        public static int leakInterval(int players) {
+            return Math.max(5, LEAK_INTERVAL - 2 * (Math.max(1, players) - 1));
         }
     }
 

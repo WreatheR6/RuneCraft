@@ -635,6 +635,10 @@ public final class MinigameItems {
         wear(items, "angler_boots", "Angler boots", "boots", 0x3A3A2A, Slot.FEET, 1, EquipmentStats.NONE)
                 .examine("+0.2% Fishing XP.");
         simple(items, "swamp_paste", "Swamp paste", "pot_item", 0x4A5A3A, 1, "Patches leaks in the trawler.");
+        // Junk the trawler net brings up with the fish (OSRS Wiki).
+        single(items, "broken_staff", "Broken staff", "staff", 0x6A5A4A, 1, "A broken staff.");
+        single(items, "buttons", "Buttons", "bead", 0xA08060, 1, "Some buttons.");
+        single(items, "damaged_armour", "Damaged armour", "platebody", 0x6A6A6A, 1, "Some damaged armour.");
     }
 
     // ------------------------------------------------------------------ Rogues' Den

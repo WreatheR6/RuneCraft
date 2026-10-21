@@ -77,6 +77,10 @@ public final class SkillingMinigameWalk {
         return run(p, SkillingMinigameWalk::mahoganyRound);
     }
 
+    public static String fishingTrawler(ServerPlayer p) {
+        return run(p, SkillingMinigameWalk::trawlerRound);
+    }
+
     // ------------------------------------------------------------------ helpers
 
     private static void expect(boolean ok, String message) {
@@ -535,6 +539,112 @@ public final class SkillingMinigameWalk {
         buy("mahogany_homes", "mahogany_homes", "plank_sack", 350);
         expect(Inv.has(player, "carpenters_helmet", 1), "the carpenter's helmet wasn't handed over");
         notes.add("Adept contract by sneak-click; bought a supply crate, the carpenter's helmet and a plank sack");
+    }
+
+    // ------------------------------------------------------------------ Fishing Trawler
+
+    private void trawlerRound() {
+        step = "board";
+        player.getInventory().clearContent();
+        Inv.give(player, "swamp_paste", 60);
+        Inv.give(player, "rope", 10);
+        FishingTrawlerSession ft = (FishingTrawlerSession) start(Minigame.FISHING_TRAWLER);
+        use(ft.selfTestBlock("trawler_box"), "trawler_box");
+        expect(Inv.has(player, "hammer", 1) && Inv.has(player, "bronze_axe", 1), "the deck box handed out no hammer and axe");
+
+        step = "leak";
+        ft.selfTestLeak();
+        BlockPos leak = ft.selfTestView(player).leaks().get(0);
+        double con = xp(Skill.CONSTRUCTION);
+        use(leak, "trawler_leak");
+        expect(!ft.selfTestView(player).leaks().contains(leak) && ft.selfTestView(player).contribution() == 5
+                && xp(Skill.CONSTRUCTION) - con == 5, "patching a leak: contribution " + ft.selfTestView(player).contribution());
+
+        step = "bail";
+        for (int i = 0; i < 6; i++) {
+            ft.selfTestLeak();
+        }
+        until(30, () -> ft.selfTestView(player).water() >= 30);
+        int water = ft.selfTestView(player).water();
+        expect(water >= 30, "six open leaks let in only " + water + "% water in 30 ticks");
+        for (BlockPos l : ft.selfTestView(player).leaks()) {
+            use(l, "trawler_leak");
+        }
+        int before = ft.selfTestView(player).contribution();
+        use(ft.selfTestBlock("trawler_bucket"), "trawler_bucket");
+        expect(until(200, () -> ft.selfTestView(player).water() == 0 || !ActionManager.isBusy(player)) && ft.selfTestView(player).water() < water,
+                "bailing left " + ft.selfTestView(player).water() + "% water");
+        expect(ft.selfTestView(player).contribution() > before, "bailing earned no contribution");
+        notes.add("leaks patched (5 each), water " + water + "% bailed out");
+
+        step = "net";
+        ft.selfTestTearNet();
+        double craft = xp(Skill.CRAFTING);
+        before = ft.selfTestView(player).contribution();
+        for (int i = 0; i < 30 && ft.selfTestView(player).netTorn(); i++) {
+            use(ft.selfTestBlock("trawler_net"), "trawler_net");
+        }
+        expect(!ft.selfTestView(player).netTorn() && xp(Skill.CRAFTING) - craft == 5
+                && ft.selfTestView(player).contribution() - before == Math.min(7, 255 - before), "mending the net: torn "
+                + ft.selfTestView(player).netTorn() + ", Crafting +" + (xp(Skill.CRAFTING) - craft));
+
+        step = "kraken";
+        ft.selfTestTentacle();
+        int side = ft.selfTestView(player).tentacleSide();
+        expect(side != 0 && !ft.selfTestView(player).brokenRails().isEmpty(), "the tentacle didn't come up and break a rail");
+        double wc = xp(Skill.WOODCUTTING);
+        for (int i = 0; i < 40 && ft.selfTestView(player).tentacleSide() != 0; i++) {
+            use(ft.selfTestTentaclePos(), "trawler_tentacle");
+        }
+        expect(ft.selfTestView(player).tentacleSide() == 0 && xp(Skill.WOODCUTTING) - wc == 5 * MinigameRules.Trawler.TENTACLE_HP,
+                "chopping the tentacle off: side " + ft.selfTestView(player).tentacleSide() + ", Woodcutting +" + (xp(Skill.WOODCUTTING) - wc));
+        for (BlockPos rail : ft.selfTestView(player).brokenRails()) {
+            use(rail, "trawler_rail");
+        }
+        expect(ft.selfTestView(player).brokenRails().isEmpty(), "the broken rails weren't fixed");
+        notes.add("net mended, tentacle chopped off, rails fixed (contribution " + ft.selfTestView(player).contribution() + ")");
+
+        step = "trawl";
+        double fishing = xp(Skill.FISHING);
+        int kc = MinigameData.of(player).stat(player.getUUID(), "kc:fishing_trawler");
+        expect(until(MinigameRules.Trawler.GAME_TICKS + 5, () -> {
+            if (ft.isEnded()) {
+                return true;
+            }
+            FishingTrawlerSession.View v = ft.selfTestView(player);
+            for (BlockPos l : v.leaks()) {
+                use(l, "trawler_leak");
+            }
+            if (v.netTorn()) {
+                use(ft.selfTestBlock("trawler_net"), "trawler_net");
+            }
+            if (v.tentacleSide() != 0) {
+                use(ft.selfTestTentaclePos(), "trawler_tentacle");
+            }
+            for (BlockPos rail : v.brokenRails()) {
+                use(rail, "trawler_rail");
+            }
+            return false;
+        }), "the trawl didn't end after " + MinigameRules.Trawler.GAME_TICKS + " ticks");
+        expect(MinigameManager.session(player) == null, "the player is still aboard after the trawl");
+        expect(MinigameData.of(player).stat(player.getUUID(), "kc:fishing_trawler") == kc + 1, "the trawl wasn't counted");
+        int fish = 0;
+        for (MinigameRules.Trawler.Catch c : MinigameRules.Trawler.CATCHES) {
+            fish += Inv.count(player, c.item());
+        }
+        expect(fish >= 10 && Inv.count(player, "raw_manta_ray") > 0 && xp(Skill.FISHING) > fishing, "a level-99 angler's share: "
+                + fish + " fish (" + Inv.count(player, "raw_manta_ray") + " manta rays), Fishing +" + (xp(Skill.FISHING) - fishing));
+        notes.add("trawl survived: " + fish + " fish, " + (xp(Skill.FISHING) - fishing) + " Fishing XP");
+
+        step = "sink";
+        session = null;
+        FishingTrawlerSession sink = (FishingTrawlerSession) start(Minigame.FISHING_TRAWLER);
+        for (int i = 0; i < 16; i++) {
+            sink.selfTestLeak();
+        }
+        expect(until(200, sink::isEnded), "16 open leaks didn't sink the trawler in 200 ticks (water " + sink.selfTestView(player).water() + ")");
+        expect(MinigameManager.session(player) == null, "the player is still aboard the sunk trawler");
+        notes.add("16 leaks sank the trawler");
     }
 
     /** Heats or cools the preform into [lo, hi], restarting the lava or waterfall near the goal to keep the steps small. */

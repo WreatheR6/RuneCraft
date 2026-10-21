@@ -177,6 +177,10 @@ public final class MinigameWorld {
             // Fishing Trawler
             {"trawler_leak", "Leak", "4080C0", "water_spot"},
             {"trawler_bucket", "Bailing bucket", "8A6A3A", "pot"},
+            {"trawler_net", "Trawler net", "C8B898", "crate"},
+            {"trawler_tentacle", "Enormous tentacle", "8A3A6A", "roots"},
+            {"trawler_rail", "Broken rail", "6A4A2A", "crate"},
+            {"trawler_box", "Box", "8A6A3A", "crate"},
             // Rogues' Den
             {"rd_obstacle", "Obstacle", "6A6A70", "machine"},
             {"rd_safe", "Wall safe", "5A5A60", "chest"},
