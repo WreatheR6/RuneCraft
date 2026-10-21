@@ -76,6 +76,7 @@ public final class ServerNetworking {
             long mask = buf.readVarLong();
             server.execute(() -> PrayerService.setQuickPrayers(player, mask));
         });
+        HudNet.register(); // round 42: the combat HUD's cast bar, curse map, status and quick-eat / quick-drink
         com.runecraft.combat.FreezeRules.register();
         com.runecraft.skill.ConsumeCooldowns.register();
     }
@@ -128,8 +129,11 @@ public final class ServerNetworking {
         ServerPlayNetworking.send(player, Net.XP_DROP, buf);
     }
 
-    /** One hitsplat as sent: target and attacker entity ids (-1 for none), the server MC tick. */
-    public record Splat(int target, int damage, byte type, int attacker, long mcTick) {
+    /**
+     * One hitsplat as sent: target and attacker entity ids (-1 for none), the server MC tick, and the target's OSRS hitpoints
+     * after it and at most (0 / 0 for a non-living target; the client's opponent info box shows them, round 42).
+     */
+    public record Splat(int target, int damage, byte type, int attacker, long mcTick, int hp, int maxHp) {
     }
 
     /** Self-test hook: the last hitsplat sent (or that would have been sent), whoever was watching. */
@@ -146,7 +150,8 @@ public final class ServerNetworking {
      */
     public static void hitsplat(Entity target, int damage, byte type, Entity attacker) {
         int attackerId = attacker == null ? -1 : attacker.getId();
-        LAST_SPLAT = new Splat(target.getId(), damage, type, attackerId, com.runecraft.action.ActionManager.mcTick());
+        int[] hp = target instanceof net.minecraft.world.entity.LivingEntity l ? HudNet.osrsHitpoints(l) : new int[]{0, 0};
+        LAST_SPLAT = new Splat(target.getId(), damage, type, attackerId, com.runecraft.action.ActionManager.mcTick(), hp[0], hp[1]);
         if (!(target.level() instanceof ServerLevel world)) {
             return;
         }
@@ -162,6 +167,8 @@ public final class ServerNetworking {
                 buf.writeByte(type);
                 buf.writeFloat(ratio);
                 buf.writeVarInt(attackerId);
+                buf.writeVarInt(hp[0]); // OSRS hitpoints after the hit and at most: the opponent info box (round 42)
+                buf.writeVarInt(hp[1]);
                 ServerPlayNetworking.send(p, Net.HITSPLAT, buf);
             }
         }

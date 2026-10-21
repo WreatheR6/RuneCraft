@@ -95,6 +95,7 @@ public final class SystemsHooks implements ModuleHooks {
             }
         });
 
+        SpecialAttackService.register();
         SysTicks.everyPlayer((p, tick) -> {
             SpecialAttackService.gameTick(p, tick);
             RunEnergyService.gameTick(p, tick);

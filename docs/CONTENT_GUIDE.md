@@ -92,6 +92,7 @@ Implement the methods you need on your module class (`ContentModule`):
   - `DataBossService.buildArena(world, center, radius, style)`
   - `DataBossService.requirement(bossId, (player, def) -> boolean)`
 - **Mechanics:** `Mechanics.perform(mob, target, attackDef, mult)`, `Mechanics.addHazard(world, pos, dmg, ticks, owner)` and `Mechanics.choose(...)`.
+- **Combat HUD (round 42):** a telegraphed `AttackDef` and Jad show on the target's cast bar by themselves (DRAGONFIRE and PRAYER_PIERCING rows name the protection key with "part": the prayer lowers them, see `CastBar.flagsOf`); a script whose attack lands at a known tick adds `BossFx.cast(boss, label, style, landInMc, radius)` (style null: an area to step out of) next to its `BossFx.warn` line. The boss bar shows the phase, the style colour and the Nightmare's curse by default; a script that counts down to a style switch overrides `bossBarStatus` with `boss.defaultBossBarStatus().with(BossBarStatus.switchText(n))`.
 
 ### Combat
 - `CombatHandler.applyDamage(attacker, target, dmg)`, `CombatHandler.npcAttack(mob, player, type)` and `CombatHandler.awardXp(player, style, dmg, magic)`.

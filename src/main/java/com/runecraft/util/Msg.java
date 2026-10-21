@@ -127,6 +127,11 @@ public final class Msg {
         telegraphListener.shown(player, shown.getString(), merged);
     }
 
+    /** Forgets a player's merged warning line (logout; registered by the combat HUD's disconnect hook). */
+    public static void forget(UUID player) {
+        LINES.remove(player);
+    }
+
     /** The colour of a warning by the combat style it names: magic blue, ranged green, melee red, otherwise gold. */
     public static int colourFor(String text) {
         String t = text.toLowerCase(Locale.ROOT);

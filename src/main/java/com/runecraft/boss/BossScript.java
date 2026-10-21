@@ -105,4 +105,14 @@ public interface BossScript {
     default float bossBarProgress(DataBossEntity boss) {
         return boss.getHealth() / boss.getMaxHealth();
     }
+
+    /**
+     * The boss bar's status line and colour (round 42, {@code // playability}; {@link com.runecraft.osrs.BossBarStatus}):
+     * by default the phase, the curse on the boss's target and the colour of the style it attacks with. A script that
+     * knows more (a style switch counting down, a form) returns {@code boss.defaultBossBarStatus().with(...)}; null leaves
+     * the bar as it is.
+     */
+    default com.runecraft.osrs.BossBarStatus.Status bossBarStatus(DataBossEntity boss) {
+        return boss.defaultBossBarStatus();
+    }
 }

@@ -66,6 +66,20 @@ final class BossFx {
         }
     }
 
+    /**
+     * A telegraph on the cast bar of every player within {@code radius} blocks of the boss (round 42, {@code // playability}):
+     * {@code label} (null: the boss's name), the style's colour and protection key ({@code style} null: an area hit to step
+     * out of), and a countdown to {@code landInMc}. For scripts whose attack lands at a known tick; the warning text itself
+     * still goes through {@link #warn}.
+     */
+    static void cast(Entity boss, String label, AttackType style, int landInMc, double radius) {
+        int barStyle = com.runecraft.osrs.CastBar.styleOf(style);
+        int flags = style == null ? com.runecraft.osrs.CastBar.FLAG_DODGE : 0;
+        for (ServerPlayer p : players(boss, radius)) {
+            com.runecraft.network.HudNet.cast(p, boss, barStyle, flags, landInMc, label);
+        }
+    }
+
     static void burst(Entity e, ParticleOptions effect, int count, double spread) {
         world(e).sendParticles(effect, e.getX(), e.getY() + e.getBbHeight() / 2, e.getZ(), count, spread, spread, spread, 0.05);
     }

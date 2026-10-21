@@ -253,6 +253,7 @@ final class GameplayChecks {
         checks.addAll(SeaChecks.all(context));
         checks.addAll(SkillChecks.all(context));
         checks.addAll(PrayerFeedbackChecks.all(context));
+        checks.addAll(CombatHudChecks.all(context)); // round 42: the combat HUD (hud:*, also run by the client walkthrough)
         return checks;
     }
 

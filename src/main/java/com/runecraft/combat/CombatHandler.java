@@ -269,9 +269,8 @@ public final class CombatHandler {
         int dealt = applyDamage(player, target, damage);
         CombatHooks.afterHit(player, target, AttackType.RANGED, dealt);
         awardXp(player, style, dealt, false);
-        if (arrowItem != null && player.getRandom().nextFloat() < 0.8f) {
-            target.spawnAtLocation(Inv.stack(arrowItem, 1));
-        }
+        // Fired ammo breaks, drops under the target or comes back to an Ava's device (OSRS Wiki, Ava's device; round 42).
+        OsrsEquipmentItems.landAmmo(player, target.position(), arrowItem);
     }
 
     private static int parse(String s) {

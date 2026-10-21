@@ -58,6 +58,9 @@ public final class SystemsClientHooks implements ClientModuleHooks {
         });
         HudRenderCallback.EVENT.register(SystemsHud::render);
         com.runecraft.client.AttackClient.init();
+        // Round 42: a weapon switch clears the armed special; a switch to a weapon the energy covers shows "Special ready".
+        ClientTickEvents.END_CLIENT_TICK.register(SpecialCue::tick);
+        com.runecraft.client.CombatHudClient.specialReady = SpecialCue::showing;
         ItemTooltipCallback.EVENT.register((stack, context, lines) -> {
             ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
             if (!id.getNamespace().equals("runecraft")) {
@@ -95,6 +98,7 @@ public final class SystemsClientHooks implements ClientModuleHooks {
                 SysClientState.thrall = thrall;
                 SysClientState.specCost = specCost;
                 SysClientState.received = true;
+                SysClientState.states++;
             });
         });
         ClientPlayNetworking.registerGlobalReceiver(SysNet.SCREEN, (client, handler, buf, sender) -> {
