@@ -125,10 +125,10 @@ public final class PrayerService {
         for (Prayer p : quick) {
             if (anyOn) {
                 if (data.isActive(p)) {
-                    toggleRedirected(player, p);
+                    toggleRedirected(player, p, false);
                 }
             } else if (!data.isActive(p)) {
-                toggleRedirected(player, p);
+                toggleRedirected(player, p, false);
             }
         }
         ServerNetworking.sync(player);
@@ -164,6 +164,10 @@ public final class PrayerService {
     }
 
     private static void toggleRedirected(ServerPlayer player, Prayer prayer) {
+        toggleRedirected(player, prayer, true);
+    }
+
+    private static void toggleRedirected(ServerPlayer player, Prayer prayer, boolean sync) {
         PlayerData data = Players.data(player);
         if (data.isActive(prayer)) {
             data.activePrayers().remove(prayer);
@@ -209,7 +213,9 @@ public final class PrayerService {
             stamp(data, prayer, true);
             player.level().playSound(null, player.blockPosition(), SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.3f, 1.6f);
         }
-        ServerNetworking.sync(player);
+        if (sync) {
+            ServerNetworking.sync(player);
+        }
     }
 
     /** Called every game tick. */
