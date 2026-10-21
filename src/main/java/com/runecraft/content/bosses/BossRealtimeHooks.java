@@ -23,6 +23,33 @@ public final class BossRealtimeHooks {
         return type.cast(boss.script());
     }
 
+    // ---------------- round 43 floor markers (selftest/FloorMarkerChecks)
+
+    /** Vardorvis swings a set of axes at {@code target} now. */
+    public static void vardorvisAxes(DataBossEntity boss, ServerPlayer target) {
+        script(boss, EncounterScripts.Vardorvis.class).walkAxes(boss, target);
+    }
+
+    /** The Hunllef lights its floor on its next game tick. */
+    public static void hunllefFloorNow(DataBossEntity boss) {
+        script(boss, EncounterScripts.Hunllef.class).floorNow();
+    }
+
+    /** The Hunllef's lit tiles (north-west block of each 2x2 tile, at the feet level). */
+    public static List<net.minecraft.core.BlockPos> hunllefFloorTiles(DataBossEntity boss) {
+        return new java.util.ArrayList<>(script(boss, EncounterScripts.Hunllef.class).floorTiles());
+    }
+
+    /** Whether the Hunllef's lit tiles burn now. */
+    public static boolean hunllefFloorBurning(DataBossEntity boss) {
+        return script(boss, EncounterScripts.Hunllef.class).floorBurning();
+    }
+
+    /** Floor blocks the Hunllef's tiles and tornadoes mark now. */
+    public static int hunllefFloorMarked(DataBossEntity boss) {
+        return script(boss, EncounterScripts.Hunllef.class).floorMarked();
+    }
+
     /** Holds a scripted boss's own attacks for {@code gameTicks} game ticks (its specials and the check's actions still run). */
     public static void hold(DataBossEntity boss, int gameTicks) {
         script(boss, ScriptedBoss.class).cooldown = gameTicks;

@@ -365,9 +365,19 @@ final class EncounterScripts {
             return floorMarks != null && floorMarks.marks(floorBlock);
         }
 
-        /** Self-test: the lit tiles now (north-west blocks at the feet level), and whether they burn. */
+        /** Self-test: the lit tiles now (north-west blocks at the feet level). */
         List<BlockPos> floorTiles() {
             return floor;
+        }
+
+        /** Self-test: whether the lit tiles burn now (orange). */
+        boolean floorBurning() {
+            return !floor.isEmpty() && now >= floorOrangeAt;
+        }
+
+        /** Self-test: the floor lights up on the Hunllef's next game tick. */
+        void floorNow() {
+            nextFloorAt = Math.max(0, now);
         }
 
         /**
@@ -896,6 +906,11 @@ final class EncounterScripts {
         // self-test walk
         void walkStrangle(DataBossEntity boss, ServerPlayer p) {
             strangle(boss, p);
+        }
+
+        /** Self-test: a set of swinging axes now, aimed at {@code p}. */
+        void walkAxes(DataBossEntity boss, ServerPlayer p) {
+            axes(boss, p);
         }
 
         List<Mob> walkSpores() {

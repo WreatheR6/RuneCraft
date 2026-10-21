@@ -408,6 +408,17 @@ public final class FloorMarkers {
         return LIVE.size();
     }
 
+    /** Self-test: blocks marked now with {@code kind}'s block. */
+    public static int live(HazardKind kind) {
+        int n = 0;
+        for (Entry e : LIVE.values()) {
+            if (e.placed.is(kind.block)) {
+                n++;
+            }
+        }
+        return n;
+    }
+
     /** Self-test: whether a block is marked now. */
     public static boolean marked(ServerLevel world, BlockPos pos) {
         return LIVE.containsKey(new Key(world.dimension(), pos.asLong()));

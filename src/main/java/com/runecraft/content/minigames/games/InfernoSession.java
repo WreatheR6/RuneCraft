@@ -110,6 +110,8 @@ public class InfernoSession extends TzHaarSession {
     }
 
     private final List<Blast> blasts = new ArrayList<>();
+    /** The Jal-MejJak lava balls' 3x3 squares as orange floor blocks until they land (round 43); the session releases them. */
+    private final com.runecraft.boss.FloorMarkers.Layer lavaFloor = new com.runecraft.boss.FloorMarkers.Layer(null);
     /** Per Jal-Ak (entity id): the Minecraft tick its prayer scan happened (its style glow runs until it attacks). */
     private final Map<Integer, Long> blobScanMc = new HashMap<>();
     /** Wave 68's Jads (entity id): their name ("West", "East", "South") and the Minecraft tick their telegraph tag ends. */
@@ -356,6 +358,7 @@ public class InfernoSession extends TzHaarSession {
         nibblers();
         imkotDig();
         landBlasts();
+        showLava();
         if (wave == 67 || wave == 68) {
             checkJadHealers(TzHaarWaves.JALTOK_JAD, TzHaarWaves.infernoJadHealers(wave));
         }
@@ -455,6 +458,34 @@ public class InfernoSession extends TzHaarSession {
             boolean landing = b.landsAt() * TzHaarWaves.MC_PER_TICK - (long) ticks * TzHaarWaves.MC_PER_TICK <= ArenaTiming.FINAL_CUE_MC;
             drawSquare(b.spot(), TzHaarWaves.MEJJAK_BLAST_HALF, landing);
         }
+        showLava();
+    }
+
+    /**
+     * Each Jal-MejJak lava ball's square (exactly the area {@code inMejJakBlast} tests) as orange floor blocks from the throw
+     * until it lands (round 43); put back then, when the run ends, and when the server stops. // playability: OSRS shows the
+     * ball in the air and the splash only
+     */
+    private void showLava() {
+        com.runecraft.boss.FloorMarkers.Shape shape = new com.runecraft.boss.FloorMarkers.Shape(world);
+        if (!isEnded()) {
+            for (Blast b : blasts) {
+                shape.box(b.spot(), TzHaarWaves.MEJJAK_BLAST_HALF, com.runecraft.boss.HazardKind.FIRE);
+            }
+        }
+        lavaFloor.show(shape);
+    }
+
+    /** Self-test hook: floor blocks the lava balls mark now. */
+    public final int selfTestLavaFloor() {
+        return lavaFloor.size();
+    }
+
+    @Override
+    protected void onClose() {
+        super.onClose();
+        blasts.clear();
+        lavaFloor.clear();
     }
 
     /** Each Jal-Ak that read the prayer glows in the style it will use until it attacks, brighter and chiming at the end. */
@@ -933,6 +964,7 @@ public class InfernoSession extends TzHaarSession {
         blasts.add(new Blast(ticks + TzHaarWaves.MEJJAK_BLAST_TICKS, spot, ActionManager.mcTick()));
         world.sendParticles(ParticleTypes.LAVA, spot.x, spot.y + 0.1, spot.z, 12, 1.0, 0.05, 1.0, 0);
         drawSquare(spot, TzHaarWaves.MEJJAK_BLAST_HALF, false);
+        showLava();
         return true;
     }
 

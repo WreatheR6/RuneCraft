@@ -11,7 +11,7 @@ import java.util.Set;
  * square for a tile area, a line for a path, a ring for a shockwave. The hit tests stay what they were (round 41's horizontal
  * radius, which is a little more lenient than the blocks shown): the blocks show where the mechanic lands, not a new rule.
  *
- * <p>A column is in a disc when its centre lies within the radius plus {@link #SLACK} of the centre point, so a strike centred
+ * <p>A column is in a disc when its centre lies less than the radius plus {@link #SLACK} from the centre point, so a strike centred
  * off a block's middle still marks every block its circle mostly covers; the block under the centre is always in. Shapes are
  * capped at {@link #MAX_BLOCKS} blocks: a larger disc marks only its rim (an area too big to fill is still outlined).
  */
@@ -63,7 +63,7 @@ public final class FloorShapes {
         for (int x = x0; x <= x1; x++) {
             for (int z = z0; z <= z1; z++) {
                 double d = Math.hypot(x + 0.5 - cx, z + 0.5 - cz);
-                if (d <= reach && d > inner) {
+                if (d < reach && d > inner) {
                     add(out, seen, new int[]{x, z});
                 }
             }
