@@ -376,11 +376,13 @@ public final class RaidRealtime {
     }
 
     /**
-     * The Great Olm's head (OSRS wiki, Great Olm): it faces one of three zones and attacks only players in it. At each step of its
-     * rotation it scans the zone it faces: with a player there it acts (and catches up a standard attack it skipped on the step
-     * before); with nobody there it swerves to the zone with the most players (to a hand's side when that hand was damaged
-     * within four ticks) and skips the step: a skipped standard attack is caught up on the next step, a skipped special
-     * (Crystal Burst, Lightning, Teleport) is lost.
+     * The Great Olm's head (OSRS wiki, Great Olm): it faces one of three zones and attacks only players in it, prioritising the
+     * zone with the most players. At each step of its rotation it scans the zone it faces: with a player there it acts (and
+     * catches up a standard attack it skipped on the step before), first swerving to another zone that holds strictly more
+     * players ("If a player is in his attack zone but Olm swerves his head regardless, no attacks are skipped"); with nobody
+     * there it swerves to the zone with the most players (to a hand's side when that hand was damaged within four ticks) and
+     * skips the step: a skipped standard attack is caught up on the next step, a skipped special (Crystal Burst, Lightning,
+     * Teleport) is lost.
      */
     public static final class OlmHead {
         /** One step's outcome: where the head now faces, whether it turned, acts, and catches up a skipped standard attack. */
@@ -406,9 +408,18 @@ public final class RaidRealtime {
          */
         public Step step(int[] counts, boolean standard, int damagedHandZone) {
             if (counts[facing] > 0) {
+                // a busier zone draws the head over without skipping the step; ties stay put
+                int to = facing;
+                for (int z : new int[]{OLM_MIDDLE, OLM_LEFT, OLM_RIGHT}) {
+                    if (counts[z] > counts[to]) {
+                        to = z;
+                    }
+                }
+                boolean turned = to != facing;
+                facing = to;
                 boolean catchUp = owed;
                 owed = false;
-                return new Step(facing, false, true, catchUp);
+                return new Step(facing, turned, true, catchUp);
             }
             int to = facing;
             if (damagedHandZone >= 0) {

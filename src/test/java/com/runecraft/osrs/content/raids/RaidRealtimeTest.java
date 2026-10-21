@@ -214,6 +214,23 @@ class RaidRealtimeTest {
         h4.step(new int[]{1, 0, 0}, true, -1);
         s = h4.step(new int[]{0, 1, 1}, true, -1);
         assertEquals(RaidRealtime.OLM_MIDDLE, s.facing());
+        // a player in the zone it faces, but more in another: it swerves there without skipping the step (OSRS wiki: "If a
+        // player is in his attack zone but Olm swerves his head regardless, no attacks are skipped")
+        RaidRealtime.OlmHead h5 = new RaidRealtime.OlmHead();
+        h5.step(new int[]{1, 0, 0}, true, -1); // turns left, skipping (owes the standard)
+        s = h5.step(new int[]{1, 3, 0}, false, -1);
+        assertEquals(RaidRealtime.OLM_MIDDLE, s.facing());
+        assertTrue(s.turned() && s.act() && s.catchUp(), "it acts on the zone it turned to, catching up the skipped standard");
+        s = h5.step(new int[]{1, 3, 0}, true, -1);
+        assertTrue(s.act() && !s.turned() && !s.catchUp());
+        // as many players elsewhere as in its zone: it stays
+        s = h5.step(new int[]{3, 3, 3}, true, -1);
+        assertEquals(RaidRealtime.OLM_MIDDLE, s.facing());
+        assertTrue(s.act() && !s.turned());
+        // strictly more on the right: over it goes
+        s = h5.step(new int[]{0, 2, 3}, true, -1);
+        assertEquals(RaidRealtime.OLM_RIGHT, s.facing());
+        assertTrue(s.act() && s.turned());
     }
 
     @Test

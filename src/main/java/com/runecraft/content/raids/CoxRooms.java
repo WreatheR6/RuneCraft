@@ -167,13 +167,33 @@ final class CoxRooms {
         return RaidEffects.mark(world, pos, radius).delay(delay).source(source).warn(warn).damage(min, max).start();
     }
 
-    /** A ground pool (acid, poison) that hurts anyone standing in it every tick until it dries. */
-    record Pool(Vec3 pos, long until, int min, int max, int poison) {
+    /**
+     * A ground pool (acid, poison) that hurts anyone standing in it every tick until it dries; {@code mark}: its floor mark
+     * (or null), which goes with it, so what is marked is what hurts.
+     */
+    record Pool(Vec3 pos, long until, int min, int max, int poison, RaidFloor.Group mark) {
+        void dry() {
+            if (mark != null) {
+                mark.release();
+            }
+        }
+    }
+
+    /** Clears a room's pools at once (a phase ends), with their floor marks. */
+    static void clearPools(List<Pool> pools) {
+        pools.forEach(Pool::dry);
+        pools.clear();
     }
 
     /** Ticks a room's pools: dried ones go, players standing in the others are hurt (and poisoned). */
     static void tickPools(RoomLogic room, List<Pool> pools, long now, LivingEntity source, ParticleOptions look) {
-        pools.removeIf(p -> now >= p.until());
+        pools.removeIf(p -> {
+            if (now >= p.until()) {
+                p.dry();
+                return true;
+            }
+            return false;
+        });
         for (Pool pool : pools) {
             // a lime hazard ring every game tick (a new pool shows before it first hurts, a game tick later). // playability:
             // a sparse particle spray every other tick
@@ -3343,7 +3363,8 @@ final class CoxRooms {
         private int lastSwapDamage = -1;
         /**
          * Where the head looks (round 43, OSRS wiki "Great Olm"): it attacks only players in the zone it faces, swerving (and
-         * skipping a step) when nobody is there. {@link com.runecraft.osrs.content.raids.RaidRealtime.OlmHead}
+         * skipping a step) when nobody is there, or (without skipping) to a zone holding more players.
+         * {@link com.runecraft.osrs.content.raids.RaidRealtime.OlmHead}
          */
         private final com.runecraft.osrs.content.raids.RaidRealtime.OlmHead aim = new com.runecraft.osrs.content.raids.RaidRealtime.OlmHead();
         /** The room tick each hand was last damaged (the head turns to a hand hit within four ticks when it scans nobody). */
@@ -3396,7 +3417,7 @@ final class CoxRooms {
             phases = RaidScaling.olmPhases(raid.partySize());
             phase = 0;
             power = null;
-            pools.clear();
+            clearPools(pools);
             stage = Stage.FIGHT;
             south = rnd().nextBoolean();
             head = spawnBoss("great_olm", at(0, wall()));
@@ -3562,7 +3583,7 @@ final class CoxRooms {
                 default -> checkHands();
             }
             if (stage == Stage.FIGHT && !alive(left) && !alive(right)) {
-                pools.clear();
+                clearPools(pools);
                 if (!penultimate()) {
                     stage = Stage.TRANSITION;
                     transitionLeft = CoxRules.olmTransitionCrystals(rnd());
@@ -3655,7 +3676,8 @@ final class CoxRooms {
             }
             // Round 43 (OSRS wiki): the head scans the zone it faces. Nobody there: it swerves towards the most players (or a hand
             // hit within four ticks) and this step is skipped; a skipped standard attack is caught up on the next step, a skipped
-            // special is lost. The faced zone is drawn in the head's style colour and a turn is named mid-screen.
+            // special is lost. Someone there but more players elsewhere: it swerves to them and the step goes ahead. The faced
+            // zone is drawn in the head's style colour and a turn is named mid-screen.
             List<List<ServerPlayer>> zones = List.of(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
             double hx = alive(head) ? head.getX() : center().getX() + 0.5;
             for (ServerPlayer p : players) {
@@ -3867,9 +3889,7 @@ final class CoxRooms {
                                     .floor(RaidFloor.ACID)
                                     .live(() -> room.getAsBoolean() && alive(source) && stage == sprayedIn && phase == sprayPhase)
                                     .onLand(() -> {
-                                        pools.add(new Pool(at, t + CoxRules.OLM_ACID_TICKS, CoxRules.OLM_ACID_MIN, CoxRules.OLM_ACID_MAX,
-                                                CoxRules.OLM_ACID_POISON));
-                                        RaidFloor.disc(world(), at, 0.5, RaidFloor.ACID, CoxRules.OLM_ACID_TICKS, source);
+                                        acidPool(at, source);
                                         acidFormed++;
                                     })
                                     .start();
@@ -3939,6 +3959,17 @@ final class CoxRooms {
             burning.keySet().removeIf(u -> world().getServer().getPlayerList().getPlayer(u) == null);
         }
 
+        /**
+         * An acid pool (spray or drip): it burns for OLM_ACID_TICKS, its tile lime on the floor (round 43) until it dries or the
+         * phase ends, whichever comes first.
+         */
+        private Pool acidPool(Vec3 at, LivingEntity owner) {
+            Pool pool = new Pool(at, t + CoxRules.OLM_ACID_TICKS, CoxRules.OLM_ACID_MIN, CoxRules.OLM_ACID_MAX, CoxRules.OLM_ACID_POISON,
+                    RaidFloor.disc(world(), at, 0.5, RaidFloor.ACID, CoxRules.OLM_ACID_TICKS, owner));
+            pools.add(pool);
+            return pool;
+        }
+
         private void tickDrips(List<ServerPlayer> players) {
             if (drip.isEmpty()) {
                 return;
@@ -3948,10 +3979,8 @@ final class CoxRooms {
                 if (left == null) {
                     continue;
                 }
-                pools.add(new Pool(p.position(), t + CoxRules.OLM_ACID_TICKS, CoxRules.OLM_ACID_MIN, CoxRules.OLM_ACID_MAX,
-                        CoxRules.OLM_ACID_POISON));
                 // round 43: each drip's tile is lime on the floor until it dries
-                RaidFloor.disc(world(), p.position(), 0.5, RaidFloor.ACID, CoxRules.OLM_ACID_TICKS, head);
+                acidPool(p.position(), head);
                 if (left <= 1) {
                     drip.remove(p.getUUID());
                 } else {
@@ -4277,7 +4306,7 @@ final class CoxRooms {
         @Override
         public void cleanup() {
             super.cleanup();
-            pools.clear();
+            clearPools(pools);
             burning.clear();
             drip.clear();
             siphon.clear();
@@ -4414,7 +4443,16 @@ final class CoxRooms {
             quietTicks = 0;
             int guard = 0;
             int lastPhase = phase;
+            // An acid pool still burning when the hands fall goes with the phase, and so does its floor mark (round 43): a pool
+            // with at least ten ticks to run is kept away from the player all phase, and checked as the phase ends.
+            Pool probe = null;
+            int probesChecked = 0;
+            Vec3 probeAt = at(12, 0).getBottomCenter();
             while (stage != Stage.HEAD && guard++ < 3000) {
+                if (stage == Stage.FIGHT && (probe == null || probe.until() - t < 10)) {
+                    probe = acidPool(probeAt, head);
+                }
+                Stage stageBefore = stage;
                 if (stage == Stage.FIGHT) {
                     // Take both hands down together (a hand left down too long recovers in the penultimate phase).
                     if (alive(right)) {
@@ -4425,11 +4463,18 @@ final class CoxRooms {
                     }
                 }
                 w.tick(1);
+                if (stageBefore == Stage.FIGHT && stage != Stage.FIGHT && probe != null) {
+                    w.expect(pools.isEmpty() && probe.mark() != null && probe.mark().released(), "an acid pool's floor mark outlived the "
+                            + "phase it burned in (" + pools.size() + " pools left)");
+                    probe = null;
+                    probesChecked++;
+                }
                 if (phase != lastPhase) {
                     lastPhase = phase;
                     w.expect(alive(left) && alive(right), "the Olm rose for phase " + phase + " without both claws");
                 }
             }
+            w.expect(probesChecked == phases, "acid pools were checked at " + probesChecked + " of " + phases + " phase ends");
             w.expect(stage == Stage.HEAD, "the Olm never reached its final stand (phase " + phase + "/" + phases + ", stage " + stage + ")");
             w.expect(phasesSeen == phases, "the Olm went through " + phasesSeen + " hand phases, expected " + phases);
             w.kill(head, AttackType.RANGED, "the Great Olm's head");

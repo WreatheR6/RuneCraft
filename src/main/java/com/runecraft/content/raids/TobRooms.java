@@ -2052,7 +2052,9 @@ final class TobRooms {
             BlockPos o = mazeOrigin();
             mazeTicks++;
             List<ServerPlayer> inMaze = new ArrayList<>();
-            int leadRow = -1;
+            // each runner's row and the first row of their part: the tornado reads the progress of the runner lowest in orb
+            // order through their own part (a hard mode runner who starts mid-maze has walked none of it)
+            List<int[]> progress = new ArrayList<>();
             for (UUID id : new ArrayList<>(runners)) {
                 ServerPlayer p = player(id);
                 if (p == null || !p.isAlive() || raid.isDowned(p)) {
@@ -2107,13 +2109,20 @@ final class TobRooms {
                     return true;
                 });
                 inMaze.add(p);
-                leadRow = Math.max(leadRow, row);
+                progress.add(new int[]{row, seg[0]});
             }
             if (!inMaze.isEmpty()) {
-                arenaTick(o, inMaze, leadRow);
+                int[] rows = new int[progress.size()];
+                int[] starts = new int[progress.size()];
+                for (int i = 0; i < rows.length; i++) {
+                    rows[i] = progress.get(i)[0];
+                    starts[i] = progress.get(i)[1];
+                }
+                arenaTick(o, inMaze, TobRules.mazeTornadoProgress(rows, starts));
             }
         }
 
+        /** {@code leadRow}: the maze runners' progress the tornado reads ({@link TobRules#mazeTornadoProgress}). */
         private void arenaTick(BlockPos o, List<ServerPlayer> inMaze, int leadRow) {
             BlockPos a = arenaOrigin();
             // Each runner's red glow where they stand (OSRS), and (round 43) each runner's own trail: every path tile they have
@@ -2178,7 +2187,8 @@ final class TobRooms {
         }
 
         /**
-         * The maze tornado (OSRS wiki): once anyone is past the third row it follows the path from the start; anyone it
+         * The maze tornado (OSRS wiki): once anyone on the arena floor, or the runner lowest in orb order (through their own
+         * part of the maze in hard mode), is past the third row it follows the path from the start; anyone it
          * catches brings its damage down on the whole party. It chases the players on the arena floor, or the maze runner
          * when they are alone in the encounter; stepping back to the third row makes it vanish.
          */
@@ -2293,6 +2303,9 @@ final class TobRooms {
                 w.expect(col >= 0, "the maze has no path tile in row " + r);
                 w.moveTo(new Vec3(o.getX() + col * 2 + 1, o.getY() + 1, o.getZ() + r * 2 + 1));
                 w.tick(1);
+                if (r < TobRules.SOTETSEG_TORNADO_ROW && raid.players().size() == 1) {
+                    w.expect(tornado < 0, "the maze tornado formed with the lone runner on row " + (r + 1));
+                }
                 if (r == TobRules.SOTETSEG_TORNADO_ROW + 1 && raid.players().size() == 1) {
                     w.expect(tornado >= 0, "no tornado followed the lone runner past the third row");
                 }
@@ -3287,7 +3300,8 @@ final class TobRooms {
          * The lightning ball (OSRS wiki, Verzik Vitur and the ToB strategies): it flies at a random player and chains between
          * players in a random sequence. On each player it reaches it jumps on to a random teammate in range; if Verzik stands in
          * that path it arcs through her (15-20 to her, no accuracy roll) and is spent; the fourth player it reaches, or one with
-         * no teammate near, is struck for up to 48 (25 in insulated boots). Round 43: a real ball passed between the players,
+         * no teammate near, is struck for up to 48 (25 in insulated boots); each player it chains through takes a small hit
+         * ({@link TobRules#VERZIK_LIGHTNING_CHAIN_MAX}). Round 43: a real ball passed between the players,
          * each jump decided from where everyone stands as it arrives (it was a coin flip at launch). // playability: OSRS
          * resolves the chain as it fires, flying about a tick between players; here three game ticks to the first player and two
          * per jump, drawn all the way, each player it jumps to warned mid-screen
@@ -3324,6 +3338,13 @@ final class TobRooms {
                         com.runecraft.osrs.content.raids.RaidRealtime.Bounce b = com.runecraft.osrs.content.raids.RaidRealtime.lightningBounce(
                                 reached, holder, xz, source.getX(), source.getZ(), rnd().nextInt(1 << 16));
                         lightningReached = Math.max(lightningReached, reached);
+                        if (b.chain() != com.runecraft.osrs.content.raids.RaidRealtime.Chain.STRIKE) {
+                            // OSRS wiki: it chains between players "hitting them for a small amount of damage"; a ball passed
+                            // on correctly doesn't fail "Perfect Verzik" (only the big zap does), so no hurt() here
+                            lightningChainHits++;
+                            RaidEffects.hit(source, at, TobRules.VERZIK_LIGHTNING_CHAIN_MIN + rnd().nextInt(
+                                    TobRules.VERZIK_LIGHTNING_CHAIN_MAX - TobRules.VERZIK_LIGHTNING_CHAIN_MIN + 1), null, true);
+                        }
                         switch (b.chain()) {
                             case THROUGH_VERZIK -> {
                                 // the arc from its player through her, then spent
@@ -3361,6 +3382,8 @@ final class TobRooms {
         int lightningReached;
         int lightningThrough;
         int lightningStrikes;
+        /** Self-test: the small hits on the players the ball chained through. */
+        int lightningChainHits;
 
         private void healingSpell(ServerPlayer target) {
             int total = 0;
@@ -4088,8 +4111,9 @@ final class TobRooms {
             w.expect(lastLightningMax == TobRules.VERZIK_LIGHTNING_INSULATED_MAX, "insulated boots did not soften the lightning ball ("
                     + lastLightningMax + ")");
             // round 43: the ball is passed between players; alone, with no teammate to pass it to, it strikes its first player
-            w.expect(lightningStrikes > 0 && lightningReached == 1 && lightningThrough == 0, "a solo player's lightning ball reached "
-                    + lightningReached + " player(s), struck " + lightningStrikes + ", arced through Verzik " + lightningThrough);
+            w.expect(lightningStrikes > 0 && lightningReached == 1 && lightningThrough == 0 && lightningChainHits == 0,
+                    "a solo player's lightning ball reached " + lightningReached + " player(s), struck " + lightningStrikes
+                            + ", arced through Verzik " + lightningThrough + ", chained through " + lightningChainHits);
             w.player().setItemSlot(net.minecraft.world.entity.EquipmentSlot.FEET, ItemStack.EMPTY);
             guard = 0;
             int healedBefore = 0;
