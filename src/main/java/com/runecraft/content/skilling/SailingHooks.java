@@ -290,9 +290,9 @@ final class SailingHooks {
     }
 
     /**
-     * Raw food used aboard a boat with a range opens the cooking menu there (wiki Range (facility)). Only what the range
-     * heats counts (the "cook_" recipes: raw fish and meat, doughs, uncooked pies...); food and potions that are also some
-     * recipe's ingredient (a tomato, cheese, a banana) are still eaten or drunk. True when it opened the menu.
+     * Raw food used aboard a boat with a range opens the cooking menu there (wiki Range (facility)). Only the dish the range
+     * heats counts ({@link #cookedOnRange}); toppings and food that are also some recipe's ingredient (a tomato, cheese, a
+     * banana) are still eaten or drunk. True when it opened the menu.
      */
     static boolean cookAboard(ServerPlayer player, String item) {
         String type = boatType(player.getVehicle());
@@ -303,14 +303,12 @@ final class SailingHooks {
         return true;
     }
 
-    /** Whether a range cooks this item: an input of a heat ("cook_") recipe that isn't itself food or a potion. */
+    /**
+     * Whether a range cooks this item: the dish put on the heat in a heat recipe, not a topping prepared into it by hand
+     * (cheese on a batta) and not food or a potion ({@link com.runecraft.osrs.content.skilling.SailingTraining#cookedOnRange}).
+     */
     static boolean cookedOnRange(String item) {
-        com.runecraft.osrs.ItemDef def = com.runecraft.osrs.ItemCatalog.get(item);
-        if (def != null && (def.kind() == com.runecraft.osrs.ItemDef.Kind.FOOD || def.kind() == com.runecraft.osrs.ItemDef.Kind.POTION)) {
-            return false;
-        }
-        return com.runecraft.osrs.Recipes.menu(com.runecraft.osrs.MenuType.COOKING).stream()
-                .anyMatch(r -> r.id().startsWith("cook_") && r.inputs().containsKey(item));
+        return com.runecraft.osrs.content.skilling.SailingTraining.cookedOnRange(item);
     }
 
     static boolean nearBoat(ServerPlayer player) {

@@ -325,8 +325,9 @@ public final class SailingSelfTest {
                     && xp(p, Skill.CONSTRUCTION) - con == 100 && !Inv.has(p, "shark_paint", 1), "paint", "trim not applied");
             notes.add("trimmed with shark paint");
 
-            // 12. A range aboard cooks what it heats; food that is also an ingredient is still eaten (no cooking menu).
-            check(SailingHooks.cookedOnRange("raw_shrimps") && SailingHooks.cookedOnRange("uncooked_pizza"), "range", "raw food not cookable aboard");
+            // 12. A range aboard cooks what it heats; food that is also an ingredient (a topping) is still eaten (no cooking menu).
+            check(SailingHooks.cookedOnRange("raw_shrimps") && SailingHooks.cookedOnRange("uncooked_pizza")
+                    && SailingHooks.cookedOnRange("raw_batta"), "range", "raw food not cookable aboard");
             for (String food : List.of("tomato", "cheese", "banana", "minecraft:milk_bucket", "plain_pizza")) {
                 check(!SailingHooks.cookedOnRange(food), "range", food + " would open the cooking menu instead of being eaten");
             }

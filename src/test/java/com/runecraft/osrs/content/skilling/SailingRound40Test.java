@@ -507,4 +507,21 @@ class SailingRound40Test {
             assertTrue(ItemCatalog.exists(l), l);
         }
     }
+
+    @Test
+    void theBoatRangeCooksOnlyTheDishOnTheHeat() {
+        // Wiki Cheese: edible ("Eat"), heals 2.
+        assertEquals(com.runecraft.osrs.ItemDef.Kind.FOOD, ItemCatalog.get("cheese").kind());
+        assertEquals(2, ItemCatalog.get("cheese").heal());
+        // What goes on the range: raw fish, an uncooked pizza, bread dough, a raw batta (baked half way) and a half baked
+        // batta with its toppings.
+        for (String heated : List.of("raw_shrimps", "uncooked_pizza", "bread_dough", "raw_batta", "half_baked_batta")) {
+            assertTrue(SailingTraining.cookedOnRange(heated), heated);
+        }
+        // Toppings are put on the half baked batta by hand (wiki Cheese+tom batta), and food is eaten: none of these opens
+        // the cooking menu aboard.
+        for (String eaten : List.of("cheese", "tomato", "banana", "minecraft:milk_bucket", "plain_pizza", "equa_leaves", "gnome_spice")) {
+            org.junit.jupiter.api.Assertions.assertFalse(SailingTraining.cookedOnRange(eaten), eaten);
+        }
+    }
 }
