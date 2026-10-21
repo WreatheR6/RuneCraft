@@ -85,7 +85,9 @@ public final class GameEvents {
     }
 
     public static void fireKill(ServerPlayer p, LivingEntity e, MonsterStats stats) {
-        KILLS.forEach(l -> l.onKill(p, e, stats));
+        // Listeners read stats unguarded; a caller without them (the diary self-test's plain creature) gets the entity's own.
+        MonsterStats s = stats != null ? stats : MonsterStats.of(e);
+        KILLS.forEach(l -> l.onKill(p, e, s));
     }
 
     public static void fireMake(ServerPlayer p, Recipe r) {
