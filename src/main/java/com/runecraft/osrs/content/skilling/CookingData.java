@@ -165,7 +165,7 @@ public final class CookingData extends SkillingPart {
         simple(s, "pineapple_ring", "Pineapple ring", "produce", 0xE0C040, 1);
         simple(s, "pot_of_cream", "Pot of cream", "pot_item", 0xF0F0E0, 10);
         simple(s, "pat_of_butter", "Pat of butter", "produce", 0xF0E070, 10);
-        simple(s, "cheese", "Cheese", "produce", 0xF0D040, 4);
+        food(s, "cheese", "Cheese", "produce", 0xF0D040, 4, 2); // wiki Cheese: edible ("Eat"), heals 2; mostly a pizza/batta topping
         // Burnt food
         simple(s, "burnt_bread", "Burnt bread", "bread", 0x2A2010, 1);
         simple(s, "burnt_pie", "Burnt pie", "pie", 0x2A2010, 1);

@@ -27,12 +27,12 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * The Sailing walk of the self-test (round 40): a player, real or fake, launches a skiff on a pool by the test platform
- * and plays the skill through its real entry points: builds parts and facilities at the boat schematics, sails and trims,
- * salvages a shipwreck and sorts the salvage, opens a lockbox and builds what its schematic unlocks, trawls a shoal, kills
- * a sea creature with the boat's cannon, opens a lost crate, delivers a courier task, earns Barracuda Trial ranks and the
- * wind mote they give, builds a wind catcher and paints the trim. Every step checks its wiki numbers; any broken step
- * throws an AssertionError naming it.
+ * The Sailing walk of the self-test (round 40): a player launches a skiff on a pool by the test platform (the fake player
+ * stops there: it can't board a vehicle) and plays the skill through its real entry points: builds parts and facilities
+ * at the boat schematics, sails and trims, salvages a shipwreck and sorts the salvage, opens a lockbox and builds what its
+ * schematic unlocks, trawls a shoal, kills a sea creature with the boat's cannon, opens a lost crate, delivers a courier
+ * task, earns Barracuda Trial ranks and the wind mote they give, builds a wind catcher and paints the trim. Every step
+ * checks its wiki numbers; any broken step throws an AssertionError naming it.
  */
 public final class SailingSelfTest {
     private SailingSelfTest() {
@@ -94,8 +94,21 @@ public final class SailingSelfTest {
     }
 
     /**
+     * The boat range's rule: what it heats (raw fish, an uncooked pizza, a raw batta) opens the cooking menu aboard; food
+     * that is also an ingredient (a topping) is still eaten.
+     */
+    private static void rangeRule() {
+        check(SailingHooks.cookedOnRange("raw_shrimps") && SailingHooks.cookedOnRange("uncooked_pizza")
+                && SailingHooks.cookedOnRange("raw_batta"), "range", "raw food not cookable aboard");
+        for (String food : List.of("tomato", "cheese", "banana", "minecraft:milk_bucket", "plain_pizza")) {
+            check(!SailingHooks.cookedOnRange(food), "range", food + " would open the cooking menu instead of being eaten");
+        }
+    }
+
+    /**
      * The walk. {@code at} is a free spot on the test platform (the pool is dug around it), {@code place} places a block
-     * and has it cleared after the check.
+     * and has it cleared after the check. The fake player launches the skiff but can't board it (NeoForge's FakePlayer
+     * refuses every vehicle), so it stops there with a skip; the rest is walked by a real player.
      */
     public static String walk(ServerPlayer p, BlockPos at, BiFunction<BlockPos, BlockState, BlockPos> place) {
         ServerLevel world = (ServerLevel) p.level();
@@ -119,7 +132,17 @@ public final class SailingSelfTest {
             check(!kit.isEmpty(), "launch", "no skiff kit in the pack");
             boat = SailingHooks.launchAt(p, kit, SailingData.boat("skiff_kit"), Vec3.atCenterOf(at).add(0, -0.4, 0));
             check(kit.isEmpty(), "launch", "the kit was not used up");
+            check("skiff".equals(SailingHooks.boatType(boat)), "launch", "the kit launched a " + SailingHooks.boatType(boat) + ", not a skiff");
             p.startRiding(boat, true);
+            if (p.getVehicle() != boat && p.isFakePlayer()) {
+                // NeoForge's FakePlayer overrides startRiding to refuse every vehicle (it always returns false), so the
+                // self-test's fake player can't board; a real player boards through ServerPlayer.startRiding, and the
+                // client's real-player run walks everything aboard. The range's rule needs no boat: check it here too.
+                rangeRule();
+                throw new com.runecraft.selftest.SelfTest.Skip("skiff launched from its kit and the range rule holds, but NeoForge's "
+                        + "fake player can't board a vehicle (FakePlayer.startRiding always refuses); the walk aboard runs in "
+                        + "the client's '/rc selftest real ... skill:' run");
+            }
             boat.positionRider(p); // aboard at once (the walk runs inside one server tick)
             String type = SailingHooks.boatType(p.getVehicle());
             check("skiff".equals(type), "launch", "the player is on " + type + ", not a skiff");
@@ -325,11 +348,8 @@ public final class SailingSelfTest {
                     && xp(p, Skill.CONSTRUCTION) - con == 100 && !Inv.has(p, "shark_paint", 1), "paint", "trim not applied");
             notes.add("trimmed with shark paint");
 
-            // 12. A range aboard cooks what it heats; food that is also an ingredient is still eaten (no cooking menu).
-            check(SailingHooks.cookedOnRange("raw_shrimps") && SailingHooks.cookedOnRange("uncooked_pizza"), "range", "raw food not cookable aboard");
-            for (String food : List.of("tomato", "cheese", "banana", "minecraft:milk_bucket", "plain_pizza")) {
-                check(!SailingHooks.cookedOnRange(food), "range", food + " would open the cooking menu instead of being eaten");
-            }
+            // 12. A range aboard cooks what it heats; food that is also an ingredient (a topping) is still eaten (no cooking menu).
+            rangeRule();
             return String.join(", ", notes);
         } finally {
             ActionManager.cancel(p);

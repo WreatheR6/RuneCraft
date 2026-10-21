@@ -438,6 +438,27 @@ public final class SailingTraining {
             new Facility("fathom_pearl", "Fathom pearl", 91, 83, 2307, mats("rosewood_plank", 10, "dragon_nails", 40, "dragon_metal_sheet", 2,
                     "echo_pearl", 1), "Shows where the nearest trawling shoal swims."));
 
+    /**
+     * Whether the boat's range cooks this item, so using it aboard opens the cooking menu (wiki Range (facility): cook food
+     * at sea). Only the dish put on the heat counts: the first input of a heat recipe ("cook_" or "bake_": raw fish and meat,
+     * doughs, uncooked pies, pizzas and stews, raw and half baked battas). A topping is not heated: it is prepared into the
+     * dish by hand beforehand (wiki Cheese+tom batta: the cheese and tomato go on the half baked batta, then the batta goes
+     * back on the range), and food or a potion is eaten or drunk as anywhere else (wiki Cheese: "Eat", heals 2).
+     */
+    public static boolean cookedOnRange(String item) {
+        com.runecraft.osrs.ItemDef def = com.runecraft.osrs.ItemCatalog.get(item);
+        if (def != null && (def.kind() == com.runecraft.osrs.ItemDef.Kind.FOOD || def.kind() == com.runecraft.osrs.ItemDef.Kind.POTION)) {
+            return false;
+        }
+        for (com.runecraft.osrs.Recipe r : com.runecraft.osrs.Recipes.menu(com.runecraft.osrs.MenuType.COOKING)) {
+            if ((r.id().startsWith("cook_") || r.id().startsWith("bake_")) && !r.inputs().isEmpty()
+                    && r.inputs().keySet().iterator().next().equals(item)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Items a facility needs in the inventory to be built but doesn't use up (wiki facility pages: Tools). */
     public static final Map<String, String> FACILITY_TOOLS = Map.of("crystal_extractor", "heart_of_ithell", "wind_catcher",
             "captured_wind_mote", "gale_catcher", "captured_wind_mote");
