@@ -190,6 +190,9 @@ class CombatMinigamesTest {
         assertEquals(Jewellery.Slot.CAPE, cloak.slot());
         assertEquals(2, cloak.stats().rangedDefence());
         assertEquals(30, Jewellery.wearLevels("decorative_quiver").get(Skill.RANGED));
+        // The team cloaks handed out at the portals are cape-slot items of their own (not the reward hoods).
+        assertEquals(Jewellery.Slot.CAPE, Jewellery.worn("zamorak_team_cloak").slot());
+        assertTrue(RewardShops.get("castle_wars").entries().stream().noneMatch(e -> e.item().endsWith("_team_cloak")));
         List<String> log = castleWarsLog();
         assertEquals(39, log.size());
         for (String id : log) {

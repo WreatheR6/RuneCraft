@@ -469,6 +469,17 @@ public final class MinigameItems {
         com.runecraft.osrs.content.systems.Jewellery.register(new com.runecraft.osrs.content.systems.Jewellery.Worn("decorative_quiver",
                 "Decorative quiver", com.runecraft.osrs.content.systems.Jewellery.Slot.CAPE, four,
                 com.runecraft.osrs.content.systems.Jewellery.Perk.NONE, null, -1, List.of(), false));
+        // The team cloaks handed out at the portals (OSRS Wiki "Saradomin cloak (Castle Wars)"): cape slot, no bonuses, taken back
+        // on leaving.
+        for (String[] team : new String[][]{{"saradomin", "Saradomin", "3060E0"}, {"zamorak", "Zamorak", "C02020"}}) {
+            String id = team[0] + "_team_cloak";
+            String name = team[1] + " cloak (Castle Wars)";
+            items.add(id, name, Kind.SIMPLE, "cape", Integer.parseInt(team[2], 16)).value(1).stack(1)
+                    .examine("The colours of " + team[1] + ".");
+            com.runecraft.osrs.content.systems.Jewellery.register(new com.runecraft.osrs.content.systems.Jewellery.Worn(id, name,
+                    com.runecraft.osrs.content.systems.Jewellery.Slot.CAPE, EquipmentStats.NONE,
+                    com.runecraft.osrs.content.systems.Jewellery.Perk.NONE, null, -1, List.of(), false));
+        }
         // Team colours: the hoods and cloaks (10 tickets) and the banners (100; a weapon with no bonuses).
         for (String[] cloak : new String[][]{{"saradomin", "Saradomin", "3060E0"}, {"zamorak", "Zamorak", "C02020"}}) {
             String id = cloak[0] + "_castlewars_cloak";
