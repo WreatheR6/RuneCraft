@@ -181,9 +181,21 @@ public class DataBossEntity extends OsrsMonsterEntity {
         this.breakSafespots = on;
     }
 
+    /** Whether this boss breaks terrain safespots (self-test: the companions of a summoned boss share its lair rules). */
+    public boolean breaksSafespots() {
+        return breakSafespots;
+    }
+
+    /** Whether {@code other} was put in this boss's lair (the same home): a companion or next form it brought. */
+    public boolean sharesLair(DataBossEntity other) {
+        return home != null && other != null && home.equals(other.home);
+    }
+
     /**
-     * A melee-only boss whose target stands in its lair where it can't walk (on a pillar, past a hole, behind a ledge) steps
-     * up beside the target after {@link BossLair#SAFESPOT_TICKS} game ticks: OSRS's flat lair floors have no such spots.
+     * A melee-only boss whose target stands in its lair out of its melee reach where it can't walk into reach (on a pillar, past
+     * a hole, behind a ledge or a wall) steps up beside the target after {@link BossLair#SAFESPOT_TICKS} game ticks: OSRS's flat
+     * lair floors have no such spots. The reach is the attack goal's (round 41: {@code ThreatTiming.inMeleeReach} on the
+     * bounding-box gap), judged from where the boss stands and from where the best path it can find leaves it.
      */
     private void tickSafespot(LivingEntity target, double targetDistSq) {
         if (!breakSafespots || !(target instanceof ServerPlayer) || !BossLair.inReach(targetDistSq, leash) || !meleeOnly()
@@ -191,12 +203,23 @@ public class DataBossEntity extends OsrsMonsterEntity {
             strandedTicks = 0;
             return;
         }
-        double distance = Math.sqrt(distanceToSqr(target));
-        double reach = getBbWidth() / 2 + 2.0;
+        double gap = com.runecraft.osrs.ThreatTiming.gap(target.getX() - getX(), target.getZ() - getZ(), getBbWidth(),
+                target.getBbWidth());
+        double dy = target.getY() - getY();
         boolean stranded = false;
-        if (distance > reach + 1.0) {
+        if (!com.runecraft.osrs.ThreatTiming.inMeleeReach(gap, dy)) {
+            // where the path it would follow ends: the target's tile, or the closest it can get when none reaches it (a big
+            // boss stands half its width past its last node, so that, not "a node next to the target", says if it gets in reach)
             net.minecraft.world.level.pathfinder.Path path = getNavigation().createPath(target, 1);
-            stranded = BossLair.strandedBy(distance, reach, path != null && path.canReach());
+            double endGap = Double.POSITIVE_INFINITY;
+            double endDy = 0;
+            if (path != null && path.getNodeCount() > 0) {
+                net.minecraft.world.phys.Vec3 end = path.getEntityPosAtNode(this, path.getNodeCount() - 1);
+                endGap = com.runecraft.osrs.ThreatTiming.gap(target.getX() - end.x, target.getZ() - end.z, getBbWidth(),
+                        target.getBbWidth());
+                endDy = target.getY() - end.y;
+            }
+            stranded = BossLair.strandedBy(gap, dy, endGap, endDy);
         }
         strandedTicks = BossLair.stranded(strandedTicks, stranded);
         if (BossLair.breaksSafespot(strandedTicks)) {

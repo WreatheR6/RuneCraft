@@ -933,6 +933,15 @@ public final class Mechanics {
     }
 
     /**
+     * Self-test hook (between checks): forgets every hit still on its way to a player inside a box, and the hits just landed there
+     * (style spacing), so a projectile from a boss killed at the end of one check doesn't land in the next.
+     */
+    public static void clearPendingForSelfTest(ServerLevel world, AABB box) {
+        PENDING.removeIf(p -> p.level == world && box.contains(p.target.position()));
+        LANDED.removeIf(l -> l.target().level() == world && box.contains(l.target().position()));
+    }
+
+    /**
      * Every Minecraft tick (playability: OSRS samples a hazard once a game tick under the player's tile): the ring is redrawn every
      * 4 MC (flashing while it arms), and a player standing in it (horizontally within 1 block) is hit once per 12 MC after it armed,
      * the same damage per second as before.

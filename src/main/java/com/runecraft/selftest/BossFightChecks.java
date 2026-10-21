@@ -175,6 +175,10 @@ final class BossFightChecks {
         final Set<UUID> bosses = new HashSet<>();
         final Map<String, Integer> attacks = new LinkedHashMap<>();
         int otherRolls;
+        /** What the hits from other sources were: "attacker:attack" (attacker "none" for a typeless hit) -> count. */
+        final Map<String, Integer> others = new LinkedHashMap<>();
+        /** The smallest bounding-box gap (blocks) between the boss and the player at the end of a game tick. */
+        double closestGap = Double.POSITIVE_INFINITY;
         int firstAttackTick = -1;
         int tick;
         /** Rolled damage of the player's last attack (before the boss's own rules), -1 when none was seen. */
@@ -208,6 +212,8 @@ final class BossFightChecks {
                 r.attack(attacker, attack != null ? attack : style != null ? style.name().toLowerCase(Locale.ROOT) : "typeless");
             } else {
                 r.otherRolls++;
+                r.others.merge((attacker == null ? "none" : name(attacker)) + ":"
+                        + (attack != null ? attack : style != null ? style.name().toLowerCase(Locale.ROOT) : "typeless"), 1, Integer::sum);
             }
         });
         CombatHooks.addModifier(new CombatHooks.PlayerAttackModifier() {
@@ -267,8 +273,15 @@ final class BossFightChecks {
         try {
             BlockPos at = c.near(0, 0);
             EntityType<DataBossEntity> type = ModEntities.DATA_BOSS_TYPES.get(id);
+            Set<UUID> before = new HashSet<>();
+            for (DataBossEntity d : c.world.getEntitiesOfClass(DataBossEntity.class, new AABB(at).inflate(48), e -> e.isAlive())) {
+                before.add(d.getUUID());
+            }
             DataBossService.summon(c.player, c.world, at, def);
             List<DataBossEntity> found = c.world.getEntities(type, new AABB(at).inflate(48), e -> e.isAlive());
+            if (!found.isEmpty()) {
+                lairMates(found.get(0), at, before);
+            }
             String how = "";
             if (found.isEmpty()) {
                 if (gate != null) {
@@ -293,6 +306,21 @@ final class BossFightChecks {
         } finally {
             if (gate != null) {
                 gate.close();
+            }
+        }
+    }
+
+    /**
+     * The companions a summoned boss raised as it rose (Eldric beside Branda, Dawn beside Dusk, Rex's brothers) share its lair
+     * rules, the terrain safespot rule included: only the boss being fought is ticked here, so a companion that kept every
+     * safespot (Eldric frozen behind the Titans' own walls, round 41 review) would never show in the fight.
+     */
+    private void lairMates(DataBossEntity summoned, BlockPos at, Set<UUID> before) {
+        for (DataBossEntity d : c.world.getEntitiesOfClass(DataBossEntity.class, new AABB(at).inflate(48),
+                e -> e.isAlive() && e != summoned && !before.contains(e.getUUID()) && summoned.sharesLair(e))) {
+            if (summoned.breaksSafespots() && !d.breaksSafespots()) {
+                throw new AssertionError(name(d) + " rose in " + name(summoned) + "'s lair but keeps the terrain safespots "
+                        + name(summoned) + " breaks");
             }
         }
     }
@@ -411,6 +439,8 @@ final class BossFightChecks {
                     continue;
                 }
                 seen.add(boss.getUUID());
+                rec.closestGap = Math.min(rec.closestGap, com.runecraft.osrs.ThreatTiming.gap(p.getX() - boss.getX(),
+                        p.getZ() - boss.getZ(), boss.getBbWidth(), p.getBbWidth()));
                 boolean engaged = (passive || rec.firstAttackTick >= 0) && firstHitTick >= 0;
                 if (killStart < 0 && ((engaged && tick >= 8) || tick >= ENGAGE_TICKS)) {
                     // on to the kill: what lands on the ground or in the pack from here on is loot
@@ -473,8 +503,10 @@ final class BossFightChecks {
                         + "human: " + unfairStrikes);
             }
             if (rec.firstAttackTick < 0 && !passive && c.realPlayer()) {
-                throw new AssertionError("never attacked the player in " + tick + " game ticks"
-                        + (rec.otherRolls > 0 ? " (" + rec.otherRolls + " hits from other sources)" : ""));
+                throw new AssertionError("never attacked the player in " + tick + " game ticks (closest "
+                        + String.format(Locale.ROOT, "%.1f", rec.closestGap) + " blocks between them; melee reach "
+                        + com.runecraft.osrs.ThreatTiming.MELEE_REACH + ")"
+                        + (rec.otherRolls > 0 ? " (" + rec.otherRolls + " hits from other sources " + rec.others + ")" : ""));
             }
             if (firstHitTick < 0) {
                 throw new AssertionError("the player's attacks never took hitpoints off it: " + describe(landed)

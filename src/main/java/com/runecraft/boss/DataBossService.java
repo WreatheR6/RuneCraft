@@ -201,11 +201,10 @@ public final class DataBossService {
         BossVariant variant = chooser == null ? null : chooser.apply(player, boss);
         BlockPos at = spawnPoint(world, pos, boss, player);
         com.runecraft.osrs.world.ArenaLayout.Arena arena = com.runecraft.osrs.world.ArenaLayout.of(boss.id);
+        // a lair boss closes in on a target terrain keeps out of its reach (BossLair), and so do the companions its script
+        // raises in onSpawn (Eldric beside Branda): set before that, as they copy its lair rules when they rise
         DataBossEntity entity = spawn(world, at, boss, player,
-                arena != null && at.getX() == arena.x() && at.getZ() == arena.z() ? arena.radius() + 8 : 24);
-        if (entity != null) {
-            entity.breakSafespots(true); // a lair boss closes in on a target terrain keeps out of its reach (BossLair)
-        }
+                arena != null && at.getX() == arena.x() && at.getZ() == arena.z() ? arena.radius() + 8 : 24, true);
         if (entity != null && variant != null) {
             entity.applyVariant(variant);
         }
@@ -239,9 +238,20 @@ public final class DataBossService {
     /**
      * Spawns a boss; with {@code leash > 0} it is kept in a lair around {@code at} ({@link DataBossEntity#markSummoned}: a
      * summoning stone's boss, or a quest boss spawned beside its player with {@link BossLair#QUEST_LEASH}), set before its
-     * script's onSpawn so the guards it places belong to the lair.
+     * script's onSpawn so the guards it places belong to the lair. Quest bosses keep their terrain safespots.
      */
     public static DataBossEntity spawn(ServerLevel world, BlockPos at, BossDef boss, ServerPlayer target, int leash) {
+        return spawn(world, at, boss, target, leash, false);
+    }
+
+    /**
+     * As {@link #spawn(ServerLevel, BlockPos, BossDef, ServerPlayer, int)}; {@code breakSafespots} (a summoning stone's boss,
+     * {@link DataBossEntity#breakSafespots}) is set with the lair, before the script's onSpawn: a companion raised there
+     * ({@code BossFx.spawnBoss}: Eldric beside Branda, Dawn beside Dusk, Rex's brothers) copies the lair rules as they stand
+     * then, and one raised before the rule was set kept every terrain safespot in a lair whose boss broke them.
+     */
+    public static DataBossEntity spawn(ServerLevel world, BlockPos at, BossDef boss, ServerPlayer target, int leash,
+            boolean breakSafespots) {
         EntityType<DataBossEntity> type = ModEntities.DATA_BOSS_TYPES.get(boss.id);
         if (type == null) {
             return null;
@@ -257,6 +267,7 @@ public final class DataBossService {
         }
         if (leash > 0) {
             entity.markSummoned(at, leash);
+            entity.breakSafespots(breakSafespots);
         }
         world.addFreshEntity(entity);
         entity.script().onSpawn(entity);
