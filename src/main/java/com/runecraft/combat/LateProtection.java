@@ -44,6 +44,11 @@ public final class LateProtection {
     };
 
     private static final List<Held> HELD = new ArrayList<>();
+    /**
+     * A held hit not judged within this many MC was never ticked (the server judges every hit within {@link PrayerGrace#LATE_MC}
+     * MC): a self-test that stopped advancing time left it behind, and it is dropped instead of landing on a later check.
+     */
+    private static final long STALE_MC = PrayerGrace.LATE_MC + 2L * ActionManager.MC_TICKS_PER_GAME_TICK;
 
     private LateProtection() {
     }
@@ -89,6 +94,10 @@ public final class LateProtection {
             if (!h.target().isAlive() || h.target().isRemoved() || h.target().level() != h.level()
                     || h.source() != null && h.source().isRemoved() && h.source().getRemovalReason() != net.minecraft.world.entity.Entity.RemovalReason.KILLED) {
                 HELD.remove(h);
+                continue;
+            }
+            if (now - h.heldAt() > STALE_MC) {
+                HELD.remove(h); // nobody ticked it for two game ticks (a self-test that stopped driving time): not a live hit
                 continue;
             }
             boolean protectedNow = CombatHandler.isProtected(Players.data(h.target()), h.style());

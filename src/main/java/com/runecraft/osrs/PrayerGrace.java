@@ -13,6 +13,10 @@ import java.util.Set;
  * prayer had been on for at least {@link #MIN_ON_MC} ticks (0.6 s, one game tick), so flicking every prayer on and off
  * can't cover all three styles. Forced removals (drained to zero, boss prayer disables, the Nightmare's curse) never get
  * the grace. Block amounts are untouched: 100% against monsters, 40% against players.
+ *
+ * <p>Round 42 added the late side ({@link #holdLate}, {@link #lateDue}): a monster hit that lands while its protection is
+ * off, on a player who is switching protections, waits up to {@link #LATE_MC} ticks for the switch (combat.LateProtection),
+ * so a switch pressed within one game tick around the impact, early or late, decides the hit.
  */
 public final class PrayerGrace {
     /** Minecraft ticks an overhead keeps protecting after the player switches it off (0.4 s). */
