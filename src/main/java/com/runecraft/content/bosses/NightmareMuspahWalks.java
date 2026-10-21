@@ -33,6 +33,8 @@ final class NightmareMuspahWalks {
     /** The player's health buffer while {@link #playToKill} plays a fight on. */
     private static final net.minecraft.resources.ResourceLocation KILL_HP_BUFFER = com.runecraft.RuneCraft.id("selftest_kill_hp");
     private static long tick;
+    /** The walk's game tick (on {@link #tick}) the husks' last bind in this walk let go; none yet when below 0. */
+    private static long bindReleased;
 
     private NightmareMuspahWalks() {
     }
@@ -200,6 +202,7 @@ final class NightmareMuspahWalks {
         PlayerData data = Players.data(p);
         int kcBefore = data.killCount(id);
         tick = ActionManager.gameTick();
+        bindReleased = -1;
         n.selfTestQuiet = true;
         List<String> log = new ArrayList<>();
         try {
@@ -351,6 +354,14 @@ final class NightmareMuspahWalks {
                 return "claws";
             }
             case HUSKS -> {
+                // Their bind is a freeze (FreezeRules), and a freeze can't land for 5 game ticks after the last one ended (OSRS
+                // freeze immunity, round 42: also after a bind released early). The walk plays her fight inside one server
+                // tick on its own game-tick clock while Minecraft's stands still, so a bind let go earlier in this walk
+                // (Phosani's sets go A-B-A: her husks come twice) or in the check just before (the Nightmare's walk) would
+                // still be within that immunity. In a fight her next husks come a phase or more later, as on the walk's clock.
+                check(bindReleased < 0 || tick - bindReleased >= com.runecraft.osrs.FreezeLock.IMMUNITY_TICKS,
+                        "her husks came back " + (tick - bindReleased) + " game ticks after their last bind let go");
+                com.runecraft.combat.FreezeRules.forget(p);
                 n.husks(boss, p);
                 check(n.husks.size() == NightmareRules.HUSKS && n.husks.stream().allMatch(Mob::isAlive), n.husks.size() + " husks");
                 step(boss, p, 3); // they bind the player and attack
@@ -360,6 +371,7 @@ final class NightmareMuspahWalks {
                 }
                 step(boss, p, 1);
                 check(n.husks.isEmpty() && !p.hasEffect(MobEffects.MOVEMENT_SLOWDOWN), "still bound after the husks died");
+                bindReleased = tick;
                 return "husks";
             }
             case CORPSE_FLOWERS -> {
