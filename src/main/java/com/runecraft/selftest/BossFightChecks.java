@@ -60,8 +60,8 @@ import net.minecraft.world.phys.Vec3;
  * outright, these let time pass ({@link ActionManager#advanceForSelfTest}) and check what a player would see:
  * <ol>
  *   <li>the boss attacks the player (any named attack, special or auto);</li>
- *   <li>the player's own melee, magic and ranged attacks (through the real combat paths, with a whip, Fire Surge and a magic
- *   shortbow, at 99s and with an accuracy boost so a few attacks are enough) take hitpoints off it;</li>
+ *   <li>the player's own melee, magic and ranged attacks (through the real combat paths, with a whip, an abyssal bludgeon,
+ *   Fire Surge and a magic shortbow, at 99s and with an accuracy boost so a few attacks are enough) take hitpoints off it;</li>
  *   <li>heavy hits through the boss's own damage rules kill it within {@value #KILL_TICKS} game ticks, its adds (minions,
  *   spawns, bodyguards, Nex's generals) being cleared and its scripted mechanic done for it when it can't be hurt
  *   ({@code BossSelfTests.assist}): its script says so, or the player's attacks roll damage that its rules take to nothing
@@ -86,6 +86,15 @@ final class BossFightChecks {
     /** Player attack-roll multiplier during the fight: a few attacks must be enough to see damage go through. */
     private static final double ACCURACY_BOOST = 4.0;
     private static final ResourceLocation HP_BUFFER = RuneCraft.id("selftest_fight_hp");
+    /**
+     * The crush weapon. Not the dragon mace: OSRS only lets players who have completed Heroes' Quest wield it (OSRS Wiki, Dragon
+     * mace; QuestBook.weaponGates), the test player's quests are reset before every check, and QuestGear takes a locked weapon's
+     * accuracy and max hit to 0, so every crush attack rolled 0 (Vet'ion, round 42 CI: crush 0/14, his weakest style by far). The
+     * abyssal bludgeon needs 70 Attack and 70 Strength and no quest, and attacks every 4 ticks like the whip.
+     */
+    private static final String CRUSH_WEAPON = "abyssal_bludgeon";
+    /** Every weapon the player's own attacks use: none may be quest-locked, or that style silently rolls nothing. */
+    private static final List<String> WEAPONS = List.of("abyssal_whip", CRUSH_WEAPON, "staff_of_fire", "magic_shortbow");
 
     /** Data bosses fought here: every non-raid boss of these categories, plus the Dagannoth Kings fought in their lair. */
     private static final Set<String> CATEGORIES = Set.of("Bosses", "Wilderness", "God Wars Dungeon");
@@ -334,6 +343,15 @@ final class BossFightChecks {
     private String fight(LivingEntity first, String id, boolean passive, boolean realAttacks) {
         hook();
         ServerPlayer p = c.player;
+        // A missing item would make that style an unarmed punch, and a quest-locked one (OSRS: wielded only after its quest)
+        // would roll 0 on every attack: either way the style could never show the boss taking damage.
+        for (String w : WEAPONS) {
+            String quest = com.runecraft.osrs.content.quests.QuestBook.get().weaponGates.get(w);
+            if (Inv.stack(w, 1).isEmpty() || quest != null) {
+                throw new AssertionError("the check's weapon " + w + (quest != null ? " can only be wielded after " + quest
+                        + " (OSRS), and the test player's quests are reset" : " is not an item"));
+            }
+        }
         // the weapon goes in the main hand first, so the runes don't take its slot
         p.setItemInHand(InteractionHand.MAIN_HAND, Inv.stack("abyssal_whip", 1));
         PlayerData data = Players.data(p);
@@ -680,8 +698,8 @@ final class BossFightChecks {
     /**
      * The style of the player's {@code n}th attack: every other one in the style the boss defends worst against (Vet'ion's
      * 395 Defence with +200 slash, +250 magic and +270 ranged left the whip, Fire Surge and magic shortbow about a 7% hit
-     * chance, so 28 misses in a row came up; his crush defence is -10), the rest cycling through the others in case that
-     * style can't hurt it (a form immune to it).
+     * chance, so 28 misses in a row came up; his crush defence is -10, so the crush weapon must be one the player may wield:
+     * {@link #CRUSH_WEAPON}), the rest cycling through the others in case that style can't hurt it (a form immune to it).
      */
     private static AttackType playerStyle(LivingEntity boss, AttackType[] styles, int n) {
         com.runecraft.combat.MonsterStats stats = com.runecraft.combat.MonsterStats.of(boss);
@@ -729,7 +747,7 @@ final class BossFightChecks {
                 }
             }
             case CRUSH -> {
-                p.setItemInHand(InteractionHand.MAIN_HAND, Inv.stack("dragon_mace", 1));
+                p.setItemInHand(InteractionHand.MAIN_HAND, Inv.stack(CRUSH_WEAPON, 1));
                 boss.hurt(CombatHandler.source(p), 1f);
             }
             default -> {
