@@ -1848,6 +1848,8 @@ final class EncounterScripts {
                 chargeUntil = now + 8;
                 safe = around(boss, homeVec().add(2.5, 0, 0), 5);
                 BossFx.warn(boss, "The Royal Titans charge an Elemental Blast! Find the safe spot!");
+                // round 43: the first blast lands on chargeUntil (blasts armed on chargeUntil - 1, fired the game tick after)
+                BossFx.cast(boss, "Elemental Blast", null, (int) (chargeUntil - now) * com.runecraft.osrs.ArenaTiming.MC_PER_GAME_TICK, 24);
                 return;
             }
             if (blastCycle == 12) {

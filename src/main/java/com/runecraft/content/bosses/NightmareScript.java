@@ -1198,6 +1198,7 @@ final class NightmareScript extends ScriptedBoss {
         boss.teleportTo(surgeFrom.x, surgeFrom.y, surgeFrom.z);
         surgeIn = NightmareRules.SURGE_WIND_UP;
         BossFx.warn(boss, (phosani ? "Phosani's Nightmare" : "The Nightmare") + " prepares to surge across the arena!");
+        BossFx.cast(boss, "Surge", null, NightmareRules.SURGE_WIND_UP * com.runecraft.osrs.ArenaTiming.MC_PER_GAME_TICK, 24); // round 43
         drawSurge(boss); // drawn as it is made, then every 4 MC (tick): 36 MC before she surges
     }
 
