@@ -37,8 +37,8 @@ import java.util.UUID;
 /**
  * Sol Heredit ({@link SolHeredit}): spear and shield AoEs dodged by position (the safe tiles are drawn from the wind-up; the
  * dust covers the pattern's tiles, prayer doesn't help), the triple parry (Protect from Melee on as each called-out hit
- * lands), the grapple (a gear slot to defend within {@link SolHeredit#GRAPPLE_WINDOW_TICKS} ticks: the hotbar keys 1-5 in the
- * Colosseum ({@code ColosseumSession.grappleKeys}) or the chat links running {@code /solheredit parry <slot>}; the last tick
+ * lands), the grapple (a gear slot to defend within {@link SolHeredit#GRAPPLE_WINDOW_TICKS} ticks: the HUD prompt's grapple
+ * keys ({@code network.HudNet#GRAPPLE}, round 43) or the chat links running {@code /solheredit parry <slot>}; the last tick
  * is a perfect parry and the next attack within 5 ticks is a max hit), phase transitions with molten sand and light-beam
  * crystals (their lasers are strikes: the outline drawn at once, the hit test horizontal), and the enrage at 10%.
  */
@@ -141,7 +141,7 @@ public final class SolHereditScript extends ScriptedBoss {
         return true;
     }
 
-    /** The slot an unanswered grapple on {@code p} calls, or null (the Colosseum answers it from the hotbar keys). */
+    /** The slot an unanswered grapple on {@code p} calls, or null (the HUD prompt goes once it is null). */
     public static Grapple calledFor(ServerPlayer p) {
         SolHereditScript s = GRAPPLED.get(p.getUUID());
         return s == null || s.answered || s.grapple == null ? null : s.grapple;
@@ -450,9 +450,11 @@ public final class SolHereditScript extends ScriptedBoss {
         answered = false;
         GRAPPLED.put(target.getUUID(), this);
         BossFx.say(boss, "Sol Heredit: " + grapple.shout);
+        // round 43: the HUD prompt and its 3.6 s bar, answered with the grapple keys (HudNet.GRAPPLE_ANSWER)
+        com.runecraft.network.HudNet.grapple(target, slot.ordinal(), SolHeredit.GRAPPLE_WINDOW_TICKS * com.runecraft.osrs.ArenaTiming.MC_PER_GAME_TICK);
         MutableComponent line = Component.literal("Defend: ").withStyle(ChatFormatting.GRAY);
         for (Grapple g : Grapple.values()) {
-            String label = SolHeredit.hotbarKey(g) + " " + g.slot.substring(0, 1).toUpperCase() + g.slot.substring(1);
+            String label = g.slot.substring(0, 1).toUpperCase() + g.slot.substring(1);
             line.append(Component.literal("[" + label + "]").withStyle(st -> st.withColor(ChatFormatting.GOLD)
                     .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/solheredit parry " + g.slot))
                     .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Defend your " + g.slot)))))

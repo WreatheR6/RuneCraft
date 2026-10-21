@@ -504,21 +504,35 @@ public final class ColosseumWalk {
         notes.add("Sol opened with " + script.previous());
         // A grapple defended on its last tick is a perfect parry; an undefended one tears the body armour off.
         moveTo(sol.blockPosition().east(2));
-        // Round 42 playability: answered on the hotbar keys (4 = legs) on the window's last tick, as a player presses it.
+        // Round 43 playability: the HUD prompt (the called slot and his 3.6 s window) and the legs grapple key on the window's
+        // last tick, as the client sends it (HudNet.GRAPPLE_ANSWER); the held hotbar slot is left alone.
         int heldBefore = player.getInventory().selected;
-        script.selfTestGrapple(boss, player, SolHeredit.Grapple.LEGS);
-        session.grappleKeys();
-        expect(session.grappleKeysArmed(player) && SolHeredit.grappleByHotbar(player.getInventory().selected) == null,
-                "the grapple did not move the held slot off keys 1-5 (slot " + player.getInventory().selected + ")");
-        tick(SolHeredit.GRAPPLE_WINDOW_TICKS - 1);
-        expect(SolHereditScript.calledFor(player) == SolHeredit.Grapple.LEGS, "the grapple landed before its last tick");
-        player.getInventory().selected = SolHeredit.hotbarKey(SolHeredit.Grapple.LEGS) - 1; // what the client's key 4 sends
-        session.grappleKeys();
-        expect(SolHereditScript.calledFor(player) == null, "hotbar key 4 did not answer the legs grapple");
-        expect(SolHereditScript.perfectReady(player), "a parry on the last tick was not perfect");
-        session.grappleKeys();
-        expect(!session.grappleKeysArmed(player) && player.getInventory().selected == heldBefore,
-                "the held slot did not come back after the grapple (slot " + player.getInventory().selected + ")");
+        List<com.runecraft.network.HudNet.SentGrapple> prompts = new ArrayList<>();
+        java.util.function.Consumer<com.runecraft.network.HudNet.SentGrapple> was = com.runecraft.network.HudNet.grappleListener;
+        com.runecraft.network.HudNet.grappleListener = g -> {
+            was.accept(g);
+            if (g.player() == player) {
+                prompts.add(g);
+            }
+        };
+        try {
+            script.selfTestGrapple(boss, player, SolHeredit.Grapple.LEGS);
+            expect(prompts.size() == 1 && prompts.get(0).called() == SolHeredit.Grapple.LEGS.ordinal()
+                    && prompts.get(0).windowMc() == SolHeredit.GRAPPLE_WINDOW_TICKS * 12,
+                    "the grapple sent the prompts " + prompts + ", expected legs with a " + SolHeredit.GRAPPLE_WINDOW_TICKS * 12 + " MC bar");
+            tick(SolHeredit.GRAPPLE_WINDOW_TICKS - 1);
+            expect(SolHereditScript.calledFor(player) == SolHeredit.Grapple.LEGS, "the grapple landed before its last tick");
+            expect(com.runecraft.network.HudNet.grappleOpen(player), "the grapple prompt went before the grapple did");
+            com.runecraft.network.HudNet.answerGrapple(player, SolHeredit.Grapple.LEGS.ordinal()); // the client's legs key
+            expect(SolHereditScript.calledFor(player) == null, "the legs grapple key did not answer the legs grapple");
+            expect(SolHereditScript.perfectReady(player), "a parry on the last tick was not perfect");
+            expect(!com.runecraft.network.HudNet.grappleOpen(player) && prompts.get(prompts.size() - 1).called() == -1,
+                    "the answered grapple's prompt stayed on screen");
+            expect(player.getInventory().selected == heldBefore, "the grapple moved the held slot (slot "
+                    + player.getInventory().selected + ")");
+        } finally {
+            com.runecraft.network.HudNet.grappleListener = was;
+        }
         int rolled = CombatHandler.hookAfterRoll(player, sol, AttackType.SLASH, 1, 47);
         expect(rolled >= 47, "the perfect parry's next attack rolled " + rolled + " (expected its max hit, 47)");
         CombatHandler.hookAfterHit(player, sol, AttackType.SLASH, 0);
@@ -541,7 +555,7 @@ public final class ColosseumWalk {
                 "an undefended grapple with a full inventory put the armour on the floor");
         player.setItemSlot(EquipmentSlot.CHEST, ItemStack.EMPTY);
         restoreInventory(kept);
-        notes.add("grapple: perfect parry on hotbar key 4 in its last tick of " + SolHeredit.GRAPPLE_WINDOW_TICKS
+        notes.add("grapple: HUD prompt, perfect parry on the legs grapple key in its last tick of " + SolHeredit.GRAPPLE_WINDOW_TICKS
                 + ", armour torn off, kept on with a full inventory");
         moveTo(sol.blockPosition().east(2));
         notes.add(walkTriple(script));

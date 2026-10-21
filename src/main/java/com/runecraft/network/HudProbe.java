@@ -18,12 +18,13 @@ public final class HudProbe {
     /**
      * The combat HUD: the cast bars (soonest first), the opponent info box (entity -1 when hidden), the auto-retaliate hint
      * (empty when hidden), the HP orb tint (0 none, 1 poison, 2 venom), the protection keys' curse map, the bound protection
-     * keys, whether the "Special ready" cue is showing, the item id in the main hand ("" for none) and the client tick it
-     * was taken.
+     * keys, whether the "Special ready" cue is showing, the item id in the main hand ("" for none), the client tick it was
+     * taken, and (round 43) the grapple prompt (the slot called, -1 when none, and its text) and the food delay the attack
+     * timer still shows (MC, 0 for none).
      */
     public record Snapshot(List<Cast> casts, int opponent, String opponentName, int opponentLevel, int opponentHp,
             int opponentMaxHp, String retaliating, int poison, int[] curse, String[] protectionKeys, boolean specialReady,
-            String held, long clientTick) {
+            String held, long clientTick, int grappleCalled, String grapplePrompt, int foodDelayMc) {
     }
 
     /** The newest snapshot (null when no client draws one). */

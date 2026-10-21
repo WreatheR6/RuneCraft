@@ -366,7 +366,7 @@ public final class ClientSmokeTest {
         step("arena back screenshot", 60, () -> shot(client, "08_boss_arena_back"));
 
         // The in-game self-test with this real (online) player, so minigame sessions, raid rooms and boss targeting see it.
-        String filter = System.getProperty(PROPERTY + ".selftest", "minigame:,raid:,boss:,slayer:,quest:steps:,quest:walk:,skill:,enchant_,telekinetic,bake_pie,superglass,string_jewellery,plank_make,hud:");
+        String filter = System.getProperty(PROPERTY + ".selftest", "minigame:,raid:,boss:,slayer:,quest:steps:,quest:walk:,skill:,enchant_,telekinetic,bake_pie,superglass,string_jewellery,plank_make,hud:,prayer:,feedback:,attack:,npc:,arena:");
         if (!filter.equalsIgnoreCase("none")) {
             long minutes = Long.getLong(PROPERTY + ".selftestMinutes", 14L);
             int[] before = new int[1];
@@ -383,7 +383,8 @@ public final class ClientSmokeTest {
 
     /**
      * Round 42 combat HUD stops: the OSRS attack timer bar under the crosshair, the telegraph cast bar (two stacked casts, the
-     * Protect from Magic key), the opponent info box with the goblin's exact hitpoints, and the quick-eat key eating a lobster.
+     * Protect from Magic key), the opponent info box with the goblin's exact hitpoints, and the quick-eat key eating a lobster;
+     * round 43: the food delay on the attack timer and Sol Heredit's grapple prompt answered with its key.
      */
     private static void combatHudStops(Minecraft client, UUID uuid) {
         int[] goblin = {-1};
@@ -406,6 +407,14 @@ public final class ClientSmokeTest {
                 ERRORS.add("the attack timer bar got no clock after an accepted attack");
             }
             shot(client, "attack_timer");
+        });
+        // Round 43: food eaten during the weapon delay shows as the timer's amber food segment instead of restarting it.
+        step("food delay", 6, () -> onServer(client, uuid, p -> com.runecraft.combat.AttackTimer.addDelay(p, 36)));
+        step("food delay check", 2, () -> {
+            if (AttackClient.foodLeft() <= 0) {
+                ERRORS.add("the attack timer shows no food delay after food added 36 MC to a running weapon delay");
+            }
+            shot(client, "attack_timer_food");
         });
         step("cast bar", 6, () -> onServer(client, uuid, p -> {
             net.minecraft.world.entity.Entity g = p.level().getEntity(goblin[0]);
@@ -451,6 +460,44 @@ public final class ClientSmokeTest {
             }
             shot(client, "quick_eat");
         });
+        // Round 43: Sol Heredit's grapple prompt and its key (4 = legs by default): the answer reaches the server and the
+        // hotbar slot on the same key doesn't move.
+        int legs = com.runecraft.osrs.content.minigames.SolHeredit.Grapple.LEGS.ordinal();
+        int[] heldSlot = {0};
+        int[] answered = {-1};
+        step("grapple prompt", 6, () -> {
+            heldSlot[0] = client.player.getInventory().selected;
+            onServer(client, uuid, p -> {
+                com.runecraft.network.HudNet.grappleAnswerListener = (pl, slot) -> {
+                    if (pl == p) {
+                        answered[0] = slot;
+                    }
+                };
+                com.runecraft.network.HudNet.grapple(p, legs, 72);
+            });
+        });
+        step("grapple prompt check", 2, () -> {
+            com.runecraft.network.HudProbe.Snapshot snap = com.runecraft.network.HudProbe.latest;
+            if (GrappleHud.called() != legs || snap == null || !snap.grapplePrompt().startsWith("GRAPPLE: press")) {
+                ERRORS.add("the grapple prompt isn't up for legs (" + GrappleHud.called() + ", '"
+                        + (snap == null ? "no HUD probe" : snap.grapplePrompt()) + "')");
+            }
+            shot(client, "grapple_prompt");
+        });
+        step("grapple key", 6, () -> KeyMapping.click(CombatKeys.grapple[legs].getKey()));
+        step("grapple key check", 2, () -> {
+            if (answered[0] != legs) {
+                ERRORS.add("the legs grapple key sent " + answered[0] + " to the server, expected " + legs);
+            }
+            if (client.player.getInventory().selected != heldSlot[0]) {
+                ERRORS.add("the grapple key moved the held hotbar slot from " + heldSlot[0] + " to " + client.player.getInventory().selected);
+            }
+        });
+        step("grapple clean-up", 4, () -> onServer(client, uuid, p -> {
+            com.runecraft.network.HudNet.grappleAnswerListener = (pl, slot) -> {
+            };
+            com.runecraft.network.HudNet.grapple(p, -1, 0);
+        }));
         step("combat HUD clean-up", 10, () -> {
             cmd(client, uuid, "kill @e[type=runecraft:goblin,distance=..8]");
             onServer(client, uuid, p -> p.setHealth(p.getMaxHealth()));

@@ -34,6 +34,7 @@ public final class CombatHudClient {
 
     public static void init() {
         CastBarHud.init();
+        GrappleHud.init(); // round 43: Sol Heredit's grapple prompt and keys
         ClientPlayNetworking.registerGlobalReceiver(HudNet.CURSE, (client, handler, buf, sender) -> {
             int[] curse = new int[ClientState.CURSE.length];
             for (int i = 0; i < curse.length; i++) {
@@ -65,6 +66,7 @@ public final class CombatHudClient {
 
     private static void reset() {
         CastBarHud.reset();
+        GrappleHud.reset();
         OpponentHud.reset();
         ClientState.poison = 0;
         ClientState.retaliateTarget = -1;
@@ -92,7 +94,8 @@ public final class CombatHudClient {
         HudProbe.latest = new HudProbe.Snapshot(java.util.List.copyOf(CastBarHud.probe(mc)), opp == null ? -1 : opp.getId(),
                 opp == null ? "" : opp.getName().getString(), opp == null ? 0 : HudOverlay.combatLevel(opp, true), hp[0], hp[1],
                 ret == null ? "" : "Auto-retaliating: " + ret.getName().getString(), ClientState.poison, ClientState.CURSE.clone(),
-                keys, specialReady.getAsBoolean(), held(mc), clientTick);
+                keys, specialReady.getAsBoolean(), held(mc), clientTick, GrappleHud.called(),
+                GrappleHud.called() < 0 ? "" : GrappleHud.promptText(), AttackClient.foodLeft());
     }
 
     private static String held(Minecraft mc) {

@@ -46,6 +46,16 @@ public final class HudNet {
     public static final ResourceLocation CURSE = RuneCraft.id("hud/curse");
     public static final ResourceLocation STATUS = RuneCraft.id("hud/status");
     public static final ResourceLocation QUICK_CONSUME = RuneCraft.id("hud/quick_consume");
+    /** S2C (round 43): Sol Heredit's grapple prompt: byte the called slot ({@code SolHeredit.Grapple} ordinal, -1 clears), varint window MC. */
+    public static final ResourceLocation GRAPPLE = RuneCraft.id("hud/grapple");
+    /**
+     * S2C (round 43): food (or a potion) added {@code varint} MC to the running weapon delay ({@code AttackTimer.addDelay});
+     * sent just before the attack clock's packet with the new wait, so the timer under the crosshair draws that wait as a food
+     * delay after the weapon's own instead of restarting.
+     */
+    public static final ResourceLocation FOOD_DELAY = RuneCraft.id("hud/food_delay");
+    /** C2S (round 43): a grapple key: byte the slot defended ({@code SolHeredit.Grapple} ordinal). */
+    public static final ResourceLocation GRAPPLE_ANSWER = RuneCraft.id("hud/grapple_answer");
 
     /** Longest label sent with a cast. */
     public static final int LABEL_MAX = 48;
@@ -53,6 +63,21 @@ public final class HudNet {
     /** One cast sent (self-test recorder). */
     public record SentCast(ServerPlayer player, int source, int style, int flags, int landInMc, String label) {
     }
+
+    /** One grapple prompt sent (self-test recorder): the slot called (-1: cleared) and the window in MC ticks. */
+    public record SentGrapple(ServerPlayer player, int called, int windowMc) {
+    }
+
+    /** Self-test hook: sees every grapple prompt sent or cleared. */
+    public static java.util.function.Consumer<SentGrapple> grappleListener = g -> {
+    };
+
+    /** Self-test hook: sees every grapple answer a client sends (the slot ordinal), before Sol Heredit's parry rule. */
+    public static java.util.function.BiConsumer<ServerPlayer, Integer> grappleAnswerListener = (p, slot) -> {
+    };
+
+    /** Players with a grapple prompt on screen (cleared once the grapple is answered or lands). */
+    private static final java.util.Set<UUID> GRAPPLE_OPEN = ConcurrentHashMap.newKeySet();
 
     /** Self-test hook: sees every cast sent (or that would have been sent to a player without a client). */
     public static java.util.function.Consumer<SentCast> castListener = c -> {
@@ -75,6 +100,10 @@ public final class HudNet {
             int kind = buf.readByte();
             server.execute(() -> com.runecraft.skill.QuickConsume.use(player, kind == 1));
         });
+        ServerPlayNetworking.registerGlobalReceiver(GRAPPLE_ANSWER, (server, player, handler, buf, sender) -> {
+            int slot = buf.readByte();
+            server.execute(() -> answerGrapple(player, slot));
+        });
         ServerTickEvents.END_SERVER_TICK.register(HudNet::tick);
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> forget(handler.player.getUUID()));
         CombatHooks.addDamageListener((player, attacker, attack, style, damage) -> {
@@ -89,6 +118,7 @@ public final class HudNet {
         SENT.remove(player);
         ATTACKERS.remove(player);
         GROUND_SENT.remove(player);
+        GRAPPLE_OPEN.remove(player);
         com.runecraft.util.Msg.forget(player);
     }
 
@@ -179,6 +209,74 @@ public final class HudNet {
         }
     }
 
+    // ------------------------------------------------------------------ food delay
+
+    /** Self-test hook: sees every food delay told to a player (the MC ticks added). */
+    public static java.util.function.BiConsumer<ServerPlayer, Integer> foodDelayListener = (p, mc) -> {
+    };
+
+    /**
+     * Tells the client that food added {@code addedMc} to the running weapon delay (round 43, {@code // playability}): its
+     * attack timer shows the added wait in a distinct food colour after the weapon's own, instead of restarting the bar. The
+     * delays themselves are the server's (OSRS Wiki, Food: 3 ticks, 2 for combo food, only added to a running delay).
+     */
+    public static void foodDelay(ServerPlayer player, int addedMc) {
+        if (player == null || addedMc <= 0) {
+            return;
+        }
+        foodDelayListener.accept(player, addedMc);
+        FriendlyByteBuf buf = PacketByteBufs.create();
+        buf.writeVarInt(addedMc);
+        ServerPlayNetworking.send(player, FOOD_DELAY, buf);
+    }
+
+    // ------------------------------------------------------------------ Sol Heredit's grapple
+
+    /**
+     * Sol Heredit calls a grapple on {@code player} (round 43, {@code // playability}): the HUD prompt "GRAPPLE: press
+     * &lt;key&gt; for body / back / hands / legs / feet" with the called slot lit and a bar emptying over {@code windowMc}
+     * (his 3.6 s window, {@code SolHeredit.GRAPPLE_WINDOW_TICKS}), answered with the client's rebindable grapple keys
+     * ({@link #GRAPPLE_ANSWER}). {@code called} -1 clears the prompt. OSRS: click the slot in the worn-equipment tab.
+     */
+    public static void grapple(ServerPlayer player, int called, int windowMc) {
+        if (player == null) {
+            return;
+        }
+        grappleListener.accept(new SentGrapple(player, called, windowMc));
+        if (called >= 0) {
+            GRAPPLE_OPEN.add(player.getUUID());
+        } else {
+            GRAPPLE_OPEN.remove(player.getUUID());
+        }
+        FriendlyByteBuf buf = PacketByteBufs.create();
+        buf.writeByte(called);
+        buf.writeVarInt(Math.max(0, windowMc));
+        ServerPlayNetworking.send(player, GRAPPLE, buf);
+    }
+
+    /**
+     * A grapple key pressed: defends that slot ({@code SolHeredit.Grapple} ordinal) through Sol Heredit's own parry rule
+     * ({@code SolHereditScript.parry}: the window, the one answer, the perfect parry on its last tick are the server's).
+     * Returns whether it blocked the grapple.
+     */
+    public static boolean answerGrapple(ServerPlayer player, int slot) {
+        com.runecraft.osrs.content.minigames.SolHeredit.Grapple[] all = com.runecraft.osrs.content.minigames.SolHeredit.Grapple.values();
+        if (player == null || slot < 0 || slot >= all.length) {
+            return false;
+        }
+        grappleAnswerListener.accept(player, slot);
+        boolean blocked = com.runecraft.content.bosses.SolHereditScript.parry(player, all[slot].slot);
+        if (GRAPPLE_OPEN.contains(player.getUUID()) && com.runecraft.content.bosses.SolHereditScript.calledFor(player) == null) {
+            grapple(player, -1, 0); // answered (right or wrong): the prompt goes
+        }
+        return blocked;
+    }
+
+    /** Whether a player has a grapple prompt on screen (self-test). */
+    public static boolean grappleOpen(ServerPlayer player) {
+        return GRAPPLE_OPEN.contains(player.getUUID());
+    }
+
     // ------------------------------------------------------------------ hitpoints
 
     /**
@@ -259,6 +357,9 @@ public final class HudNet {
 
     /** Sends the curse map and the status to a player when they changed (every MC tick for listed players; self-tests call it for the fake player). */
     public static void update(ServerPlayer p) {
+        if (GRAPPLE_OPEN.contains(p.getUUID()) && com.runecraft.content.bosses.SolHereditScript.calledFor(p) == null) {
+            grapple(p, -1, 0); // the grapple landed or was answered another way (the chat links): the prompt goes
+        }
         int[] curse = curseMap(p);
         int poison = poisonState(p);
         int retaliate = retaliateTarget(p);

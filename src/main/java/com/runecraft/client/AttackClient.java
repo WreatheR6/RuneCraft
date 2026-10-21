@@ -34,6 +34,9 @@ import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
  *   <li>{@code // playability} hold-to-attack (OSRS: one click keeps attacking the NPC): with the attack key held on a
  *       monster and no screen open, the client sends the next attack {@value AttackClock#HOLD_SEND_EARLY_MC} MC before
  *       the clock is ready; the server's buffer fires it on the exact ready tick.</li>
+ *   <li>Round 43: food added to a running weapon delay ({@code HudNet.FOOD_DELAY}) shows as its own amber segment after the
+ *       weapon's ({@link com.runecraft.osrs.FoodDelayBar}) in an amber frame, instead of the bar restarting as if the player
+ *       had attacked.</li>
  * </ul>
  */
 public final class AttackClient {
@@ -59,6 +62,10 @@ public final class AttackClient {
     private static boolean awaitingReply;
     /** The player's attack-indicator option while the crosshair layer draws with it switched off, else null. */
     private static AttackIndicatorStatus savedIndicator;
+    /** Food's delay added to the running weapon delay (MC), drawn after the weapon's part until the clock is ready. */
+    private static int foodMc;
+    /** MC a food delay packet announced: the next clock packet carries its new wait (round 43). */
+    private static int foodAnnounced;
 
     private AttackClient() {
     }
@@ -70,6 +77,10 @@ public final class AttackClient {
             int k = buf.readVarInt();
             boolean q = buf.readBoolean();
             client.execute(() -> onClock(remaining, period, k, q));
+        });
+        ClientPlayNetworking.registerGlobalReceiver(com.runecraft.network.HudNet.FOOD_DELAY, (client, handler, buf, sender) -> {
+            int added = buf.readVarInt();
+            client.execute(() -> foodAnnounced += Math.max(0, added));
         });
         ClientTickEvents.END_CLIENT_TICK.register(AttackClient::tick);
         // The server forgets a buffered click on logout without a clock packet: start the next session clean, or the
@@ -96,9 +107,24 @@ public final class AttackClient {
         lastPacketTick = Long.MIN_VALUE / 4;
         lastSendTick = Long.MIN_VALUE / 4;
         awaitingReply = false;
+        foodMc = 0;
+        foodAnnounced = 0;
     }
 
     private static void onClock(int remaining, int period, int k, boolean q) {
+        if (foodAnnounced > 0) {
+            // Food added to the running delay: the weapon's part keeps its period and progress, the food's wait is drawn after
+            // it; vanilla's indicator is not restarted (no attack was made).
+            foodMc = (foodLeft() > 0 ? foodMc : 0) + foodAnnounced;
+            foodAnnounced = 0;
+            readyAtTick = clientTick + remaining;
+            kind = k >= 0 && k < AttackClock.Kind.values().length ? AttackClock.Kind.values()[k] : AttackClock.Kind.MELEE;
+            queued = q;
+            lastPacketTick = clientTick;
+            awaitingReply = false;
+            return;
+        }
+        foodMc = 0; // an attack accepted or buffered: the food's wait is over or folded into the new clock
         readyAtTick = clientTick + remaining;
         periodMc = Math.max(1, period);
         kind = k >= 0 && k < AttackClock.Kind.values().length ? AttackClock.Kind.values()[k] : AttackClock.Kind.MELEE;
@@ -114,6 +140,11 @@ public final class AttackClient {
     /** MC ticks until the server's clock is ready, as last told. */
     public static long remaining() {
         return Math.max(0, readyAtTick - clientTick);
+    }
+
+    /** MC of food delay still to run on the timer (0: the bar shows no food segment). Read by the HUD probe. */
+    public static int foodLeft() {
+        return foodMc <= 0 ? 0 : com.runecraft.osrs.FoodDelayBar.foodLeft(foodMc, remaining());
     }
 
     private static boolean gielinor(Minecraft mc) {
@@ -161,6 +192,10 @@ public final class AttackClient {
         int x = g.guiWidth() / 2 - BAR_WIDTH / 2;
         int y = g.guiHeight() / 2 + BAR_OFFSET_Y;
         float left = Math.max(0f, readyAtTick - clientTick - tickDelta); // smooth between client ticks
+        if (foodLeft() > 0) {
+            renderFood(g, x, y, left);
+            return;
+        }
         float fill = left <= 0 ? 1f : Math.max(0f, Math.min(1f, 1f - left / periodMc));
         g.fill(x - 1, y - 1, x + BAR_WIDTH + 1, y + BAR_HEIGHT + 1, 0xA0000000);
         boolean flash = sinceReady >= 0 && sinceReady < FLASH_TICKS;
@@ -169,6 +204,29 @@ public final class AttackClient {
         if (queued) {
             int dx = x + BAR_WIDTH + 3;
             g.fill(dx, y, dx + BAR_HEIGHT, y + BAR_HEIGHT, 0xFFFFFFFF); // a click is buffered
+        }
+    }
+
+    /**
+     * The timer while food's delay runs (round 43): an amber frame, the weapon's part in the style colour, then the food's part
+     * (dim amber still to come, amber as it runs), and an amber dot on the left; the queued dot as usual.
+     */
+    private static void renderFood(GuiGraphics g, int x, int y, float left) {
+        com.runecraft.osrs.FoodDelayBar.Look look = com.runecraft.osrs.FoodDelayBar.look(periodMc, foodMc, left);
+        int food = 0xFF000000 | com.runecraft.osrs.FoodDelayBar.FOOD_RGB;
+        g.fill(x - 1, y - 1, x + BAR_WIDTH + 1, y + BAR_HEIGHT + 1, 0xC0000000 | (com.runecraft.osrs.FoodDelayBar.FOOD_EMPTY_RGB & 0xFFFFFF));
+        g.renderOutline(x - 1, y - 1, BAR_WIDTH + 2, BAR_HEIGHT + 2, food);
+        int split = Math.round(BAR_WIDTH * look.split());
+        int filled = Math.round(BAR_WIDTH * look.fill());
+        g.fill(x, y, x + Math.min(filled, split), y + BAR_HEIGHT, 0xFF000000 | colour());
+        g.fill(x + split, y, x + BAR_WIDTH, y + BAR_HEIGHT, 0xFF000000 | com.runecraft.osrs.FoodDelayBar.FOOD_EMPTY_RGB);
+        if (filled > split) {
+            g.fill(x + split, y, x + filled, y + BAR_HEIGHT, food);
+        }
+        g.fill(x - 5, y, x - 2, y + BAR_HEIGHT, food); // the food mark
+        if (queued) {
+            int dx = x + BAR_WIDTH + 3;
+            g.fill(dx, y, dx + BAR_HEIGHT, y + BAR_HEIGHT, 0xFFFFFFFF);
         }
     }
 
