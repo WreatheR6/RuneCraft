@@ -542,6 +542,16 @@ public abstract class MinigameSession {
     }
 
     /**
+     * Experience the session has already boosted by the player's skilling outfit, per action
+     * ({@link com.runecraft.osrs.content.minigames.SkillingOutfits#boosted}); the general outfit bonus isn't added on top.
+     */
+    protected static void outfitXp(ServerPlayer p, Skill skill, double amount) {
+        if (amount > 0) {
+            MinigameCombat.addOutfitBoosted(p, skill, amount);
+        }
+    }
+
+    /**
      * Gives an item reward, logs it and fires the obtain event. What a full pack can't take lies at the player's feet for them
      * ({@link #rewardMark}) and goes out with them if they leave it behind.
      */

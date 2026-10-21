@@ -205,7 +205,7 @@ public class MahoganyHomesSession extends MinigameSession {
             usePlanks(player, h.count());
         }
         double xp = h.count() * MahoganyHomes.hotspotXp(layout.tier(), h.steelBar(), h.repair());
-        xp(player, Skill.CONSTRUCTION, SkillingOutfits.boosted(xp, SkillingOutfits.multiplier(SkillingOutfits.CARPENTER, worn(player))));
+        outfitXp(player, Skill.CONSTRUCTION, SkillingOutfits.boosted(xp, SkillingOutfits.multiplier(SkillingOutfits.CARPENTER, worn(player))));
         state[k] = 0;
         show(k);
         Msg.action(player, "You " + (h.repair() ? "repair" : "build") + " the " + h.name().toLowerCase(java.util.Locale.ROOT) + ".");
@@ -232,7 +232,7 @@ public class MahoganyHomesSession extends MinigameSession {
         int tier = layout.tier();
         double xp = SkillingOutfits.boosted(MahoganyHomes.COMPLETION_XP[tier],
                 SkillingOutfits.multiplier(SkillingOutfits.CARPENTER, worn(player)));
-        xp(player, Skill.CONSTRUCTION, xp);
+        outfitXp(player, Skill.CONSTRUCTION, xp);
         addPoints(player, MinigameCurrencies.CARPENTER, MahoganyHomes.POINTS[tier]);
         contracts++;
         int total = MinigameData.of(player).incrementStat(player.getUUID(), "kc:" + game.id());

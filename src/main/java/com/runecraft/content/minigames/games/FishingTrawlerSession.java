@@ -357,7 +357,7 @@ public class FishingTrawlerSession extends MinigameSession {
                 xp += Trawler.JUNK_XP;
             }
             fish.forEach((item, n) -> reward(p, item, n));
-            xp(p, Skill.FISHING, xp);
+            outfitXp(p, Skill.FISHING, xp);
             if (random.nextInt(Trawler.ANGLER_ROLL) == 0) {
                 anglerPiece(p);
             }
