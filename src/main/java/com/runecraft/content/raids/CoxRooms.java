@@ -375,6 +375,7 @@ final class CoxRooms {
         }
 
         private void reachAnvil() {
+            enragedSwings.clear(); // any still listed fizzled on the way
             atAnvil = true;
             sparkSets = 0;
             sparkTimer = 0;
@@ -392,12 +393,35 @@ final class CoxRooms {
             return type == AttackType.MAGIC ? damage / 5 : damage;
         }
 
+        /** The swings Tekton started enraged, by identity (each is its own copy of the attack), until they land. */
+        private final Set<com.runecraft.osrs.content.AttackDef> enragedSwings =
+                java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+
+        /**
+         * Tekton's attacks are counted as they start (a swing that whooshes past was still an attack; round 41 counted landed
+         * hits): his attacks before the anvil, and the enraged ones after it.
+         */
         @Override
-        public int bossOutgoing(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
+        public com.runecraft.osrs.content.AttackDef bossBeforeAttack(DataBossEntity boss, ServerPlayer target,
+                                                                     com.runecraft.osrs.content.AttackDef attack) {
+            if (boss != tekton) {
+                return attack;
+            }
             attacksLeft--;
             if (enragedAttacks > 0) {
-                // Enraged Tekton (fresh from the anvil) has a 59 max hit instead of 52 (OSRS).
                 enragedAttacks--;
+                com.runecraft.osrs.content.AttackDef swing = attack.message(attack.message()); // a copy that marks this swing
+                enragedSwings.add(swing);
+                return swing;
+            }
+            return attack;
+        }
+
+        @Override
+        public int bossOutgoing(DataBossEntity boss, ServerPlayer player, int damage, AttackType type,
+                                com.runecraft.osrs.content.AttackDef attack) {
+            if (attack != null && enragedSwings.remove(attack)) {
+                // Enraged Tekton (fresh from the anvil) has a 59 max hit instead of 52 (OSRS).
                 return (int) Math.round(damage * (double) CoxRules.TEKTON_ENRAGED_MAX_HIT / CoxRules.TEKTON_MAX_HIT);
             }
             return damage;
@@ -1101,17 +1125,17 @@ final class CoxRooms {
             int want = RaidScaling.coxMysticCount(raid.partySize());
             w.expect(spawned.size() == want, "expected " + want + " mystics, found " + spawned.size());
             DataBossEntity first = (DataBossEntity) spawned.get(0);
-            var data = Players.data(w.player());
-            boolean had = data.isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC);
-            data.activePrayers().remove(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC);
+            // The player switches Protect from Magic through the prayer keys' path (a game tick passes after each switch,
+            // longer than the switch grace), as a player would. // playability (round 42): no prayers set directly
+            com.runecraft.osrs.Prayer magic = com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC;
+            boolean had = w.prayerOn(magic);
+            w.pray(magic, false);
             com.runecraft.osrs.content.AttackDef cast = bossAttack(first, w.player(), 1.5);
             w.expect(cast != null && !cast.melee(), "a mystic next to an unprotected player did not cast");
-            data.activePrayers().add(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC);
+            w.pray(magic, true);
             com.runecraft.osrs.content.AttackDef punch = bossAttack(first, w.player(), 1.5);
             com.runecraft.osrs.content.AttackDef far = bossAttack(first, w.player(), 8);
-            if (!had) {
-                data.activePrayers().remove(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC);
-            }
+            w.pray(magic, had);
             w.expect(punch != null && punch.melee(), "a mystic did not punch a player praying Protect from Magic within reach");
             w.expect(far != null && !far.melee(), "a mystic tried to punch a player out of reach");
             for (LivingEntity e : new ArrayList<>(spawned)) {
@@ -3513,9 +3537,7 @@ final class CoxRooms {
             String[] names = {"red", "green", "purple"};
             int s = rnd().nextInt(3);
             var data = Players.data(p);
-            boolean praying = data.isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MELEE) || data.isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MISSILES)
-                    || data.isActive(com.runecraft.osrs.Prayer.PROTECT_FROM_MAGIC);
-            if (praying) {
+            if (RoomLogic.praysOverhead(p)) {
                 dropOverheads(p, "The sphere disrupts your protection prayer!");
                 data.setPrayerPoints(data.prayerPoints() / 2);
                 com.runecraft.network.ServerNetworking.sync(p);

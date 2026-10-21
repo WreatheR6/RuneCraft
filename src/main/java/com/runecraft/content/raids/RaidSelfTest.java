@@ -51,35 +51,24 @@ public final class RaidSelfTest {
     void healthy(String where) {
         expect(raid.roomFailures() == 0, where + ": a room tick threw (" + raid.lastRoomFailure() + ")");
         expect(RaidEffects.failures() == taskFailuresBefore, where + ": a delayed raid task threw (" + RaidEffects.lastFailure() + ")");
-        expect(unfairStrikes.isEmpty(), where + ": " + unfairStrikes.size() + " raid strike(s) broke the real-time floor (round 41: drawn "
-                + "on creation, landing at least " + ArenaTiming.MIN_LEAD_MC + " MC later): " + unfairStrikes);
+        if (recorder != null) {
+            recorder.check(where);
+        }
     }
 
     // ------------------------------------------------------------------ human-budget recorder (round 41 playability)
 
-    /** Raid strikes landed during the run that a human couldn't see coming (first few), and how many landed in all. */
-    private final List<String> unfairStrikes = new ArrayList<>();
-    private int strikesLanded;
-    private Consumer<ArenaTiming.StrikeTrace> strikesBefore;
+    /** The run's strike and projectile recorder (every run records since round 42), or null before it starts. */
+    private RaidStrikeRecorder recorder;
 
-    /** Starts recording the raid's strikes: each damaging, non-exact one must be drawn on creation and land >= 36 MC later. */
+    /** Starts recording the raid's strikes and projectiles (see {@link RaidStrikeRecorder}). */
     private void recordStrikes() {
-        strikesBefore = RaidEffects.strikeListener;
-        Consumer<ArenaTiming.StrikeTrace> chained = strikesBefore;
-        RaidEffects.strikeListener = s -> {
-            chained.accept(s);
-            strikesLanded++;
-            String why = s.unfair();
-            if (why != null && unfairStrikes.size() < 5) {
-                unfairStrikes.add(why);
-            }
-        };
+        recorder = RaidStrikeRecorder.start();
     }
 
     private void stopRecording() {
-        if (strikesBefore != null) {
-            RaidEffects.strikeListener = strikesBefore;
-            strikesBefore = null;
+        if (recorder != null) {
+            recorder.close();
         }
     }
 
@@ -256,7 +245,7 @@ public final class RaidSelfTest {
         RaidSelfTest t = new RaidSelfTest(raid, p);
         t.recordStrikes();
         try {
-            return t.walkToa() + ", " + t.strikesLanded + " strikes landed fair";
+            return t.walkToa() + ", " + t.recorder.summary();
         } finally {
             t.stopRecording();
             if (RaidManager.of(p) == raid) {
@@ -530,6 +519,7 @@ public final class RaidSelfTest {
             RaidInstance raid = RaidManager.of(p);
             expect(raid != null, "RaidManager.enter did not start a raid");
             RaidSelfTest t = new RaidSelfTest(raid, p);
+            t.recordStrikes();
             try {
                 ToaInvocationMenu.preset(p, 0);
                 if (hardcore) {
@@ -554,9 +544,14 @@ public final class RaidSelfTest {
                     expect(raid.logic(room).started && !raid.logic(room).done, "the room was not reset after the wipe");
                     expect(Inv.count(p, ToaSupplies.HONEY_LOCUST) == ToaSupplies.honeyLocustsOnWipe(raid.invocations()),
                             "the wipe handed out " + Inv.count(p, ToaSupplies.HONEY_LOCUST) + " honey locusts");
+                    // the retried room runs on for a while: whatever it strikes must still be fair
+                    t.tick(12);
+                    t.healthy("the retried room");
                     out.append("wipe resets the room with honey locusts; ");
                 }
+                t.recorder.check(hardcore ? "the hardcore wipe" : "the wipe");
             } finally {
+                t.stopRecording();
                 if (RaidManager.of(p) == raid) {
                     RaidManager.selfTestClose(raid);
                 }
@@ -576,6 +571,7 @@ public final class RaidSelfTest {
         RaidInstance raid = RaidManager.of(p);
         expect(raid != null, "RaidManager.enter did not start a raid");
         RaidSelfTest t = new RaidSelfTest(raid, p);
+        t.recordStrikes();
         try {
             ToaInvocationMenu.preset(p, 0);
             t.use(raid.center(0).offset(RaidBuilder.HALF + 1, 1, 0));
@@ -603,9 +599,11 @@ public final class RaidSelfTest {
             expect(RaidManager.of(p) == null, "the lobby exit did not take the player out of the raid");
             expect(!raid.contains(p), "the lobby exit left the player in the instance");
             expect(Inv.count(p, ToaSupplies.HONEY_LOCUST) == 0, "the raid's supplies left the tomb with the player");
-            return "logout mid-fight is a death, rejoin wipes and retries, the exit takes you home; " + shroudChest(p) + "; "
-                    + pickaxeCavity(p);
+            t.recorder.check("rejoin and leave");
+            return "logout mid-fight is a death, rejoin wipes and retries, the exit takes you home (" + t.recorder.summary() + "); "
+                    + shroudChest(p) + "; " + pickaxeCavity(p);
         } finally {
+            t.stopRecording();
             if (RaidManager.of(p) == raid) {
                 RaidManager.selfTestClose(raid);
             }

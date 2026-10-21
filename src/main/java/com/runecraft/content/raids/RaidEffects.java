@@ -34,7 +34,11 @@ public final class RaidEffects {
     private static final class Strike {
         final ServerLevel world;
         final Vec3 pos;
+        /** A lane's far end (a lightning bolt, a wall of fire), or null for a circle around {@link #pos}. */
+        final Vec3 to;
+        /** A circle's radius, or a lane's half width. */
         final double radius;
+        final int minHit;
         final int maxHit;
         final AttackType style;
         final boolean piercing;
@@ -44,24 +48,157 @@ public final class RaidEffects {
         final double protectedShare;
         final boolean exact;
         final long createdMc;
+        /** What each player inside takes instead of the roll (a room's own rule), or null. */
+        final Consumer<ServerPlayer> onHit;
+        /** What happens once it lands, after the players inside were hit (a pool, a spawn), or null. */
+        final Runnable onLand;
+        /** Checked as it lands: false and it fizzles (its source died, the room moved on), or null. */
+        final BooleanSupplier live;
         long firstDrawnMc = -1;
         int draws;
 
-        Strike(ServerLevel world, Vec3 pos, double radius, int maxHit, AttackType style, boolean piercing, long due,
-               LivingEntity source, ParticleOptions warn, double protectedShare, boolean exact, long createdMc) {
+        Strike(Marker m, long due, long createdMc) {
+            this.world = m.world;
+            this.pos = m.pos;
+            this.to = m.to;
+            this.radius = m.radius;
+            this.minHit = m.minHit;
+            this.maxHit = m.maxHit;
+            this.style = m.style;
+            this.piercing = m.piercing;
+            this.due = due;
+            this.source = m.source;
+            this.warn = m.warn == null ? ParticleTypes.FLAME : m.warn;
+            this.protectedShare = m.protectedShare;
+            this.exact = m.exact;
+            this.createdMc = createdMc;
+            this.onHit = m.onHit;
+            this.onLand = m.onLand;
+            this.live = m.live;
+        }
+
+        boolean damaging() {
+            return maxHit > 0 || onHit != null || onLand != null;
+        }
+
+        boolean contains(ServerPlayer p) {
+            double dy = p.getY() - pos.y;
+            if (to == null) {
+                return ArenaTiming.inStrike(p.getX() - pos.x, dy, p.getZ() - pos.z, radius);
+            }
+            return Math.abs(dy) < ArenaTiming.Y_TOLERANCE
+                    && com.runecraft.osrs.content.raids.RaidRealtime.inLane(p.getX(), p.getZ(), pos.x, pos.z, to.x, to.z, radius);
+        }
+
+        Vec3 centre() {
+            return to == null ? pos : pos.lerp(to, 0.5);
+        }
+    }
+
+    /**
+     * A raid ground strike being set up (round 42): a circle ({@link #mark}) or a lane ({@link #lane}), what it deals, and
+     * when. Like every raid strike it is drawn as it is made, redrawn until it lands, recorded, and (unless {@link #exact})
+     * lands no sooner than {@link ArenaTiming#STRIKE_FLOOR_TICKS} game ticks after it was made. // playability
+     */
+    public static final class Marker {
+        private final ServerLevel world;
+        private final Vec3 pos;
+        private Vec3 to;
+        private final double radius;
+        private int delay = ArenaTiming.STRIKE_FLOOR_TICKS;
+        private LivingEntity source;
+        private ParticleOptions warn;
+        private int minHit;
+        private int maxHit;
+        private AttackType style;
+        private boolean piercing = true;
+        private double protectedShare = 1.0;
+        private boolean exact;
+        private Consumer<ServerPlayer> onHit;
+        private Runnable onLand;
+        private BooleanSupplier live;
+
+        private Marker(ServerLevel world, Vec3 pos, double radius) {
             this.world = world;
             this.pos = pos;
             this.radius = radius;
-            this.maxHit = maxHit;
-            this.style = style;
-            this.piercing = piercing;
-            this.due = due;
-            this.source = source;
-            this.warn = warn;
-            this.protectedShare = protectedShare;
-            this.exact = exact;
-            this.createdMc = createdMc;
         }
+
+        /** Game ticks until it lands (floored for a damaging strike unless {@link #exact}). */
+        public Marker delay(int ticks) {
+            this.delay = ticks;
+            return this;
+        }
+
+        public Marker source(LivingEntity source) {
+            this.source = source;
+            return this;
+        }
+
+        /** The particle drawn as its fill. */
+        public Marker warn(ParticleOptions warn) {
+            this.warn = warn;
+            return this;
+        }
+
+        /** Typeless damage, {@code min} to {@code max}, that no prayer stops. */
+        public Marker damage(int min, int max) {
+            this.minHit = Math.max(0, min);
+            this.maxHit = Math.max(this.minHit, max);
+            return this;
+        }
+
+        /** Styled damage: a matching protection prayer lets {@code protectedShare} of the roll through (0: blocks it). */
+        public Marker style(AttackType style, double protectedShare) {
+            this.style = style;
+            this.piercing = false;
+            this.protectedShare = Math.max(0, Math.min(1, protectedShare));
+            return this;
+        }
+
+        /** What each player inside takes, instead of the damage roll. */
+        public Marker onHit(Consumer<ServerPlayer> onHit) {
+            this.onHit = onHit;
+            return this;
+        }
+
+        /** What happens once it lands, after the players inside were hit. */
+        public Marker onLand(Runnable onLand) {
+            this.onLand = onLand;
+            return this;
+        }
+
+        /** Checked as it lands: when false it fizzles (nothing is hit, nothing happens). */
+        public Marker live(BooleanSupplier live) {
+            this.live = live;
+            return this;
+        }
+
+        /** Keeps the delay exact (at least a tick) even when it hurts: logic a room's timing depends on. */
+        public Marker exact() {
+            this.exact = true;
+            return this;
+        }
+
+        /** Makes it: drawn now, landing on its (floored) game tick. Returns the game tick it lands on. */
+        public long start() {
+            return add(this);
+        }
+    }
+
+    /** A circular raid strike of {@code radius} blocks at {@code pos}, to set up and {@link Marker#start}. */
+    public static Marker mark(ServerLevel world, Vec3 pos, double radius) {
+        return new Marker(world, pos, radius);
+    }
+
+    /**
+     * A lane from {@code from} to {@code to}, {@code halfWidth} blocks either side of the line (a lightning bolt across the
+     * chamber, a wall of fire), to set up and {@link Marker#start}. Drawn as its outline; it hits horizontally inside it.
+     */
+    public static Marker lane(ServerLevel world, Vec3 from, Vec3 to, double halfWidth) {
+        Marker m = new Marker(world, from, halfWidth);
+        m.to = to;
+        return m;
     }
 
     private record Task(long due, Runnable run) {
@@ -137,7 +274,12 @@ public final class RaidEffects {
      */
     public static void strike(ServerLevel world, Vec3 pos, double radius, int maxHit, int delay, LivingEntity source,
                               ParticleOptions warn, AttackType style, boolean piercing) {
-        add(world, pos, radius, maxHit, delay, source, warn, style, piercing, piercing ? 1.0 : 0.0, false);
+        Marker m = mark(world, pos, radius).delay(delay).source(source).warn(warn).damage(0, maxHit);
+        if (!piercing) {
+            m.style(style, 0.0);
+        }
+        m.style = style;
+        m.start();
     }
 
     /**
@@ -146,7 +288,7 @@ public final class RaidEffects {
      */
     public static void strike(ServerLevel world, Vec3 pos, double radius, int maxHit, int delay, LivingEntity source,
                               ParticleOptions warn, AttackType style, double protectedShare) {
-        add(world, pos, radius, maxHit, delay, source, warn, style, false, Math.max(0, Math.min(1, protectedShare)), false);
+        mark(world, pos, radius).delay(delay).source(source).warn(warn).damage(0, maxHit).style(style, protectedShare).start();
     }
 
     public static void strike(ServerLevel world, Vec3 pos, double radius, int maxHit, int delay, LivingEntity source,
@@ -160,7 +302,12 @@ public final class RaidEffects {
      */
     public static void strikeExact(ServerLevel world, Vec3 pos, double radius, int maxHit, int delay, LivingEntity source,
                                    ParticleOptions warn, AttackType style, boolean piercing) {
-        add(world, pos, radius, maxHit, delay, source, warn, style, piercing, piercing ? 1.0 : 0.0, true);
+        Marker m = mark(world, pos, radius).delay(delay).source(source).warn(warn).damage(0, maxHit).exact();
+        if (!piercing) {
+            m.style(style, 0.0);
+        }
+        m.style = style;
+        m.start();
     }
 
     /**
@@ -169,26 +316,148 @@ public final class RaidEffects {
      * // playability: OSRS lands raid strikes from a tick after marking them, and the marker here was first drawn a game
      * tick late
      */
-    private static void add(ServerLevel world, Vec3 pos, double radius, int maxHit, int delay, LivingEntity source,
-                            ParticleOptions warn, AttackType style, boolean piercing, double protectedShare, boolean exact) {
+    private static long add(Marker m) {
         long now = now();
         int into = mcIntoTick();
-        int d = Math.max(1, delay);
-        long due = exact ? now + d : ArenaTiming.strikeDue(now, d, maxHit > 0, into);
-        Strike s = new Strike(world, pos, radius, maxHit, style, piercing, due, source, warn == null ? ParticleTypes.FLAME : warn,
-                protectedShare, exact, now * ArenaTiming.MC_PER_GAME_TICK + into);
+        int d = Math.max(1, m.delay);
+        boolean damaging = m.maxHit > 0 || m.onHit != null || m.onLand != null;
+        long due = m.exact ? now + d : ArenaTiming.strikeDue(now, d, damaging, into);
+        Strike s = new Strike(m, due, now * ArenaTiming.MC_PER_GAME_TICK + into);
         STRIKES.add(s);
         draw(s, false);
+        return due;
     }
 
-    /** Draws a pending strike's marker: the outline at its true radius, its warn particle as a sparse fill. */
+    /** Draws a pending strike's marker: the outline at its true radius (a lane's two edges), its warn particle as a fill. */
     private static void draw(Strike s, boolean landing) {
         if (s.firstDrawnMc < 0) {
             s.firstDrawnMc = clockMc();
         }
         s.draws++;
         // the same outline as every other arena's strikes: typeless/AoE orange, red-orange in its last moments
-        com.runecraft.boss.StrikeMarkers.ring(s.world, s.pos, s.radius, s.warn, landing, ArenaTiming.ringPoints(s.radius, STRIKES.size()));
+        if (s.to == null) {
+            com.runecraft.boss.StrikeMarkers.ring(s.world, s.pos, s.radius, s.warn, landing, ArenaTiming.ringPoints(s.radius, STRIKES.size()));
+            return;
+        }
+        drawLane(s.world, s.pos, s.to, s.radius, landing ? com.runecraft.boss.StrikeMarkers.OUTLINE_LANDING
+                : com.runecraft.boss.StrikeMarkers.OUTLINE, s.warn, STRIKES.size());
+    }
+
+    /**
+     * A lane's outline: both edges {@code halfWidth} either side of the line from {@code a} to {@code b}, about two points a
+     * block (fewer when many markers are up), and its fill particle sparsely along the middle.
+     */
+    static void drawLane(ServerLevel world, Vec3 a, Vec3 b, double halfWidth, ParticleOptions edge, ParticleOptions fill, int pending) {
+        Vec3 d = b.subtract(a).multiply(1, 0, 1);
+        double len = d.length();
+        if (len < 1e-3) {
+            com.runecraft.boss.StrikeMarkers.ring(world, a, halfWidth, fill, false, ArenaTiming.ringPoints(halfWidth, pending));
+            return;
+        }
+        Vec3 dir = d.scale(1 / len);
+        Vec3 side = new Vec3(-dir.z, 0, dir.x).scale(halfWidth);
+        int points = (int) Math.max(4, Math.min(24, Math.ceil(len * 2)));
+        if (pending > 6) {
+            points = Math.max(4, points * 6 / pending);
+        }
+        for (int i = 0; i <= points; i++) {
+            Vec3 at = a.lerp(b, i / (double) points);
+            world.sendParticles(edge, at.x + side.x, at.y + 0.1, at.z + side.z, 1, 0, 0, 0, 0);
+            world.sendParticles(edge, at.x - side.x, at.y + 0.1, at.z - side.z, 1, 0, 0, 0, 0);
+            if (fill != null && i % 3 == 0) {
+                world.sendParticles(fill, at.x, at.y + 0.15, at.z, 1, halfWidth * 0.4, 0.02, halfWidth * 0.4, 0);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ projectiles and safe spots (round 42)
+
+    /** What a raid projectile recorder sees (self-tests): when it left and landed (raid-clock MC), its style, if it landed. */
+    public record ProjectileTrace(long createdMc, long landedMc, AttackType style, boolean landed) {
+        public long flightMc() {
+            return landedMc - createdMc;
+        }
+    }
+
+    /** Self-test hook: every raid projectile as it lands or fizzles. */
+    public static Consumer<ProjectileTrace> projectileListener = t -> {
+    };
+
+    /** Per player: the game tick the last raid projectile at them lands, and its style (spacing, see RaidRealtime). */
+    private static final java.util.Map<java.util.UUID, long[]> LAST_PROJECTILE = new java.util.HashMap<>();
+
+    /**
+     * A raid projectile from {@code from} at {@code to} (a skull, an orb, a divine bolt): drawn as a style-coloured head and
+     * tail homing on the target, redrawn every few Minecraft ticks, and landing after {@code flightTicks} game ticks (at
+     * least {@link com.runecraft.osrs.content.raids.RaidRealtime#PROJECTILE_MIN_TICKS}; a projectile of another style already
+     * on its way to the same player keeps {@link com.runecraft.osrs.content.raids.RaidRealtime#SEQUENCE_GAP_TICKS} ahead of
+     * it), when {@code land} runs if {@code live} still holds and the target is alive. The protection prayer is read when it
+     * lands, by {@code land}. Returns the game tick it lands on. // playability: OSRS draws its projectiles too, but rolls
+     * some of them as they leave and flies them a tick or two
+     */
+    public static long projectile(ServerLevel world, Vec3 from, ServerPlayer to, AttackType style, int flightTicks, BooleanSupplier live,
+                                  Runnable land) {
+        long now = now();
+        int into = mcIntoTick();
+        int flight = Math.max(com.runecraft.osrs.content.raids.RaidRealtime.PROJECTILE_MIN_TICKS, flightTicks);
+        long want = now + flight + (into > 0 ? 1 : 0);
+        long[] last = LAST_PROJECTILE.get(to.getUUID());
+        long due = last == null || last[0] < now ? want
+                : com.runecraft.osrs.content.raids.RaidRealtime.spacedTick(want, last[0], last[1] != styleKey(style));
+        LAST_PROJECTILE.put(to.getUUID(), new long[]{Math.max(due, last == null ? due : last[0]), styleKey(style)});
+        long createdMc = now * ArenaTiming.MC_PER_GAME_TICK + into;
+        int rgb = style == null ? com.runecraft.util.Msg.TYPELESS_RGB : style.isMelee() ? com.runecraft.util.Msg.MELEE_RGB
+                : style == AttackType.MAGIC ? com.runecraft.util.Msg.MAGIC_RGB : com.runecraft.util.Msg.RANGED_RGB;
+        net.minecraft.core.particles.DustParticleOptions dust = new net.minecraft.core.particles.DustParticleOptions(
+                new org.joml.Vector3f(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f), 1.6f);
+        double flightMc = Math.max(1, due * ArenaTiming.MC_PER_GAME_TICK - createdMc);
+        cue((int) (due - now) + 1, () -> {
+            if (!to.isAlive() || (live != null && !live.getAsBoolean())) {
+                return false;
+            }
+            double f = Math.min(1.0, (clockMc() - createdMc) / flightMc);
+            Vec3 target = to.position().add(0, 1.0, 0);
+            for (int k = 0; k < 3; k++) {
+                Vec3 at = from.lerp(target, Math.max(0, f - k * 0.08));
+                world.sendParticles(dust, at.x, at.y, at.z, 2, 0.05, 0.05, 0.05, 0.0);
+            }
+            return f < 1.0;
+        });
+        TASKS.add(new Task(due, () -> {
+            boolean ok = to.isAlive() && (live == null || live.getAsBoolean());
+            projectileListener.accept(new ProjectileTrace(createdMc, now() * ArenaTiming.MC_PER_GAME_TICK, style, ok));
+            if (ok) {
+                land.run();
+            }
+        }));
+        return due;
+    }
+
+    private static long styleKey(AttackType style) {
+        return style == null ? -1 : style.isMelee() ? 0 : style == AttackType.MAGIC ? 2 : 1;
+    }
+
+    /** Pale green: a safe tile or spot (the lightning skulls' cross, Zebak's shelter, a slam's safe rows). */
+    public static final net.minecraft.core.particles.DustParticleOptions SAFE =
+            new net.minecraft.core.particles.DustParticleOptions(new org.joml.Vector3f(0.45f, 1.0f, 0.45f), 1.4f);
+
+    /** Marks one block-sized tile (its standing position {@code at}) as safe: a green square outline. */
+    public static void safeTile(ServerLevel world, Vec3 at) {
+        double y = at.y + 0.1;
+        for (int i = 0; i < 4; i++) {
+            double f = -0.4 + 0.8 * i / 3.0;
+            world.sendParticles(SAFE, at.x + f, y, at.z - 0.4, 1, 0, 0, 0, 0);
+            world.sendParticles(SAFE, at.x + f, y, at.z + 0.4, 1, 0, 0, 0, 0);
+            world.sendParticles(SAFE, at.x - 0.4, y, at.z + f, 1, 0, 0, 0, 0);
+            world.sendParticles(SAFE, at.x + 0.4, y, at.z + f, 1, 0, 0, 0, 0);
+        }
+    }
+
+    /** Says {@code text} to each of {@code players} as a centre-screen warning (colour by the style it names). */
+    public static void telegraph(Iterable<ServerPlayer> players, String text) {
+        for (ServerPlayer p : players) {
+            com.runecraft.util.Msg.telegraph(p, text, null);
+        }
     }
 
     /**
@@ -216,12 +485,12 @@ public final class RaidEffects {
         for (Strike s : STRIKES) {
             boolean landing = ArenaTiming.finalCue(s.due * ArenaTiming.MC_PER_GAME_TICK, mc);
             draw(s, landing);
-            if (landing && s.maxHit > 0 && (bell == null || s.due < bell.due)) {
+            if (landing && s.damaging() && (bell == null || s.due < bell.due)) {
                 bell = s;
             }
         }
         if (bell != null) {
-            com.runecraft.boss.StrikeMarkers.bell(bell.world, bell.pos, bell.due * ArenaTiming.MC_PER_GAME_TICK - mc);
+            com.runecraft.boss.StrikeMarkers.bell(bell.world, bell.centre(), bell.due * ArenaTiming.MC_PER_GAME_TICK - mc);
         }
     }
 
@@ -239,10 +508,24 @@ public final class RaidEffects {
         STRIKES.removeIf(s -> s.world == world && box.contains(s.pos));
     }
 
+    /** Pending strikes whose area holds {@code p} right now (self-tests: what a player stands in). */
+    static int strikesOn(ServerPlayer p) {
+        int n = 0;
+        for (Strike s : STRIKES) {
+            if (s.world == p.level() && s.contains(p)) {
+                n++;
+            }
+        }
+        return n;
+    }
+
     public static void gameTick() {
         long now = now();
         boundaryMc = ActionManager.mcTick();
         CUES.removeIf(c -> now >= c.until());
+        if (!LAST_PROJECTILE.isEmpty()) {
+            LAST_PROJECTILE.values().removeIf(v -> v[0] < now);
+        }
         List<Task> dueTasks = new ArrayList<>();
         for (Iterator<Task> it = TASKS.iterator(); it.hasNext(); ) {
             Task t = it.next();
@@ -269,16 +552,42 @@ public final class RaidEffects {
             }
         }
         for (Strike s : due) {
-            s.world.sendParticles(ParticleTypes.EXPLOSION, s.pos.x, s.pos.y + 0.5, s.pos.z, 1, 0, 0, 0, 0);
-            s.world.playSound(null, s.pos.x, s.pos.y, s.pos.z, SoundEvents.GENERIC_EXPLODE, SoundSource.HOSTILE,
-                    0.4f, 1.5f);
-            // What is drawn is what hits: horizontally inside the outline, within its height tolerance. // playability
-            for (ServerPlayer p : s.world.getPlayers(pl -> pl.isAlive() && !pl.isSpectator() && !pl.isCreative()
-                    && ArenaTiming.inStrike(pl.getX() - s.pos.x, pl.getY() - s.pos.y, pl.getZ() - s.pos.z, s.radius))) {
-                hit(s.source, p, p.getRandom().nextInt(s.maxHit + 1), s.style, s.piercing ? 1.0 : s.protectedShare);
-            }
             strikeListener.accept(new ArenaTiming.StrikeTrace(s.createdMc, s.firstDrawnMc, now * ArenaTiming.MC_PER_GAME_TICK,
-                    s.draws, s.radius, s.maxHit, s.maxHit > 0, s.exact));
+                    s.draws, s.radius, s.maxHit, s.damaging(), s.exact));
+            try {
+                land(s);
+            } catch (RuntimeException e) {
+                failures++;
+                lastFailure = e.toString();
+                com.runecraft.RuneCraft.LOGGER.error("Raid strike failed", e);
+            }
+        }
+    }
+
+    /** A strike lands: unless it fizzled, everyone inside its outline takes its roll (or its own rule), then its aftermath. */
+    private static void land(Strike s) {
+        if (s.live != null && !s.live.getAsBoolean()) {
+            return;
+        }
+        Vec3 c = s.centre();
+        if (s.to == null) {
+            s.world.sendParticles(ParticleTypes.EXPLOSION, c.x, c.y + 0.5, c.z, 1, 0, 0, 0, 0);
+        } else {
+            drawLane(s.world, s.pos, s.to, s.radius * 0.5, ParticleTypes.ELECTRIC_SPARK, null, 0);
+        }
+        s.world.playSound(null, c.x, c.y, c.z, SoundEvents.GENERIC_EXPLODE, SoundSource.HOSTILE, 0.4f, 1.5f);
+        // What is drawn is what hits: horizontally inside the outline, within its height tolerance. // playability
+        boolean roll = s.onHit == null && (s.maxHit > 0 || s.onLand == null);
+        for (ServerPlayer p : s.world.getPlayers(pl -> pl.isAlive() && !pl.isSpectator() && !pl.isCreative() && s.contains(pl))) {
+            if (s.onHit != null) {
+                s.onHit.accept(p);
+            } else if (roll) {
+                int dmg = s.minHit + p.getRandom().nextInt(Math.max(1, s.maxHit - s.minHit + 1));
+                hit(s.source, p, dmg, s.style, s.piercing ? 1.0 : s.protectedShare);
+            }
+        }
+        if (s.onLand != null) {
+            s.onLand.run();
         }
     }
 

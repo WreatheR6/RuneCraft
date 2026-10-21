@@ -848,42 +848,66 @@ final class ToaBossRooms {
         }
 
         /**
-         * Each of Akkha's attacks: every seventh (sixth with Stay Vigilant) is a special instead of an auto-attack, after
-         * which he changes style; the autos get partial protection, ranged/magic hit everyone, Keep Back.
+         * Each of Akkha's attacks, counted as it starts (a hit that later fizzles was still an attack; round 41 counted
+         * landed hits): every seventh (sixth with Stay Vigilant) is a special instead of an auto-attack, after which he
+         * changes style. With Keep Back his ranged and magic attacks are preceded by a melee swing at anyone next to him.
          */
         @Override
-        public int bossOutgoing(DataBossEntity boss, ServerPlayer player, int damage, AttackType type) {
-            if (boss != akkha || hidden || finalStand) {
-                return 0;
+        public AttackDef bossBeforeAttack(DataBossEntity boss, ServerPlayer target, AttackDef attack) {
+            if (boss != akkha) {
+                return attack;
+            }
+            if (hidden || finalStand) {
+                return AttackDef.idle(attack.style()); // vanished for Memory Blast, or merged into a shadow: no attacks
             }
             Set<Invocation> inv = raid.invocations();
             lastAttack = now();
             attacks++;
             if (Invocation.akkhaSpecialTurn(inv, attacks)) {
-                // OSRS: six auto-attacks, then the special takes the seventh attack's place.
+                // OSRS: six auto-attacks, then the special takes the seventh attack's place (no auto-attack lands).
                 boolean switches = Invocation.akkhaSwitchesAfter(inv, true, autos);
                 autos = 0;
                 later(1, () -> specials(inv));
                 if (switches) {
                     switchStyle();
                 }
-                return 0;
+                return AttackDef.idle(attack.style());
             }
             autos++;
-            int max = attacks(akkha).get(style).maxHit();
-            if (damage == 0 && RaidEffects.protectedFrom(player, type)) {
+            if (!attack.melee() && Invocation.akkhaKeepBack(inv)) {
+                // OSRS Keep Back: a melee hit on anyone next to him just before his ranged/magic attack, here after the
+                // swing's wind-up and only on a player still in reach. // playability: OSRS lands it on the attack tick
+                int meleeMax = attacks(akkha).get(0).maxHit();
+                akkha.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+                for (ServerPlayer p : players()) {
+                    if (p.distanceToSqr(akkha) < 2.6 * 2.6) {
+                        com.runecraft.boss.Mechanics.deliverMelee(akkha, p, com.runecraft.osrs.ThreatTiming.MELEE_REACH, () -> {
+                            if (alive(akkha) && !hidden && !finalStand) {
+                                hitStyled(p, rnd().nextInt(meleeMax + 1), AttackType.SLASH);
+                            }
+                        });
+                    }
+                }
+            }
+            return attack;
+        }
+
+        /**
+         * One of Akkha's auto-attacks landing: protection only takes part of it off, and his ranged and magic hit everyone
+         * in the arena.
+         */
+        @Override
+        public int bossOutgoing(DataBossEntity boss, ServerPlayer player, int damage, AttackType type, AttackDef attack) {
+            if (boss != akkha || hidden || finalStand) {
+                return 0;
+            }
+            // the attack that is landing, not his current style (a hit in flight may cross a style switch)
+            int max = attack != null ? attack.maxHit() : attacks(akkha).get(style).maxHit();
+            if (damage == 0 && type != null && RaidEffects.protectedFrom(player, type)) {
                 damage = (int) Math.round(rnd().nextInt(max + 1)
                         * (type.isMelee() ? ToaBossRules.AKKHA_PROTECTED_MELEE : ToaBossRules.AKKHA_PROTECTED_RANGED_MAGIC));
             }
-            if (style != 0) {
-                if (Invocation.akkhaKeepBack(inv)) {
-                    // OSRS Keep Back: a melee hit lands on anyone next to him just before his ranged/magic attack.
-                    for (ServerPlayer p : players()) {
-                        if (p.distanceToSqr(akkha) < 2.6 * 2.6) {
-                            hitStyled(p, rnd().nextInt(attacks(akkha).get(0).maxHit() + 1), AttackType.SLASH);
-                        }
-                    }
-                }
+            if (type != null && !type.isMelee()) {
                 // OSRS: his ranged and magic attacks hit everyone in the arena.
                 for (ServerPlayer p : players()) {
                     if (p != player) {
