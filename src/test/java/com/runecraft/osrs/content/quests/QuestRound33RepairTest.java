@@ -99,7 +99,8 @@ class QuestRound33RepairTest {
             Map.entry("lord_kandur_lovakengj", new Object[]{"lovakengj", 0, 3}),
             Map.entry("lazim", new Object[]{"quest_enakhras_temple", 0, 3}),
             Map.entry("dallas_jones", new Object[]{"varrock_museum", 3, 2}), // round 37: to the Musa Point pub
-            Map.entry("quest_archeio", new Object[]{"arceuus", 3, -3})); // round 37: into the Arceuus Library
+            Map.entry("quest_archeio", new Object[]{"arceuus", 3, -3}), // round 37: into the Arceuus Library
+            Map.entry("elissa", new Object[]{"uzer", 3, 3})); // round 44: from Uzer to the Digsite
 
     private static int[] oldBlock(Object[] before) {
         String place = (String) before[0];

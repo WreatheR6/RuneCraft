@@ -39,7 +39,9 @@ public final class QuestStrictWalk {
     public static final List<String> WALKED = List.of("desert_treasure_i", "monkey_madness_i", "dream_mentor", "lunar_diplomacy",
             "legends_quest", "regicide", "mournings_end_part_i", "mournings_end_part_ii", "roving_elves", "haunted_mine",
             "dragon_slayer_i", "the_fremennik_isles", "swan_song", "recipe_for_disaster", "making_friends_with_my_arm",
-            "a_kingdom_divided", "the_path_of_glouphrie", "beneath_cursed_sands", "a_night_at_the_theatre");
+            "a_kingdom_divided", "the_path_of_glouphrie", "beneath_cursed_sands", "a_night_at_the_theatre",
+            // round 44: puzzle quests given their real steps and puzzles
+            "the_golem", "hazeel_cult");
 
     private QuestStrictWalk() {
     }

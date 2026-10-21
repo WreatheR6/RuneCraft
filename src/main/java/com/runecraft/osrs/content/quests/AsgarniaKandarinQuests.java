@@ -10,6 +10,8 @@ import com.runecraft.osrs.content.PlaceDef;
 import com.runecraft.osrs.Station;
 import com.runecraft.osrs.data.Drop;
 
+import java.util.List;
+
 /** Misthalin, Asgarnia and Kandarin members' quests (Lost City, Waterfall, Arthurian quests, Ardougne quests...). */
 final class AsgarniaKandarinQuests {
     private AsgarniaKandarinQuests() {
@@ -621,25 +623,76 @@ final class AsgarniaKandarinQuests {
     }
 
     // ---------------------------------------------------------------- Hazeel Cult
+    /**
+     * Hazeel Cult on Ceril's side, after the wiki walkthrough and quest-helper's steps: Ceril's plea, Clivet in the cult's cave,
+     * the five valves around the Ardougne sewers that steer the water so the raft reaches Alomone ({@link #HAZEEL_VALVES}), the
+     * fight and the stolen armour, then Butler Jones and the poison in the cupboard upstairs that proves he is a cultist.
+     */
     private static void hazeelCult(QuestBook b) {
         b.npc("ceril_carnillean", "Ceril Carnillean", "carnillean_house", 0, 0, 0xF0D0B8, 0x3A3A8A, 0x2A2A5A, 0xC0A050);
         b.npc("clivet", "Clivet", "hazeel_cult_hideout", 2, 2, 0xC0B0A0, 0x2A1A3A, 0x1A0A2A, 0x1A1A1A);
         b.npc("butler_jones", "Butler Jones", "carnillean_house", 3, 2, 0xE8C8A8, 0x1A1A1A, 0x1A1A1A, 0xA0A0A0);
         b.item("carnillean_armour", "Carnillean armour", "platebody", 0xA0A0B0, "The Carnillean family armour.");
-        b.boss(BossDef.of("alomone", "Alomone").level(13).stats(20, 10, 10, 10, 1, 1).speed(4)
-                .attack(AttackDef.of("dagger", AttackType.STAB, 3, 2.5, 10)).drops(Drop.always("bones"))
+        b.item("hazeel_poison", "Poison", "vial", 0x4A8A2A, "A bottle of strong poison, hidden in the butler's cupboard.");
+        // quest-helper's valve zones round the sewers south of the Carnillean house, west to east
+        for (int i = 0; i < HAZEEL_VALVE_TILES.length; i++) {
+            b.spot("hazeel_valve_" + (i + 1), "Sewer valve", HAZEEL_VALVE_TILES[i][0], HAZEEL_VALVE_TILES[i][1]);
+        }
+        // the cupboard on the house's first floor (quest-helper 2574, 3267, floor 1) // approx: at ground level here
+        b.spot("carnillean_cupboard", "Carnillean house cupboard", 2574, 3267);
+        // wiki (Alomone): level 13, 25 hitpoints, 10 Attack and Strength, 4 Defence, crush up to 2 every 4 ticks
+        b.boss(BossDef.of("alomone", "Alomone").level(13).stats(25, 10, 10, 4, 1, 1).speed(4)
+                .attack(AttackDef.of("crush", AttackType.CRUSH, 2, 2.5, 10)).drops(Drop.always("bones"))
                 .skin(0xC0B0A0, 0x3A0A3A, 0x1A0A1A, 0x0A0A0A).at("hazeel_cult_hideout").arena(7, "crypt"));
-        b.quest("hazeel_cult", "Hazeel Cult", Difficulty.NOVICE, 1)
+        QuestSpec q = b.quest("hazeel_cult", "Hazeel Cult", Difficulty.NOVICE, 1)
                 .xp(Skill.THIEVING, 1500).reward("coins:2000")
                 .stage("I can start this quest by speaking to Ceril Carnillean in his house south of the Ardougne market.")
-                .talk("ceril_carnillean").say("Our family armour was stolen and someone poisoned our dog! The Hazeel cult must be behind it.")
-                .stage("I should find the Hazeel cult's hideout in the sewers west of the Clock Tower.")
-                .talk("clivet").say("You've found us. Hazeel will rise again! Join us... or don't. Alomone, our leader, will deal with you.")
-                .stage("I should defeat Alomone, leader of the Hazeel cult.")
-                .kill("alomone").give("carnillean_armour").say("* Alomone is slain. In the hideout you find the stolen Carnillean armour.")
-                .stage("I should return the armour to Ceril. Butler Jones is the one who poisoned the dog!")
-                .talk("ceril_carnillean").take("carnillean_armour").say("Our armour! And Jones a cultist all along? Guards! Take this, with our thanks.")
+                .talk("ceril_carnillean").say("Our family armour was stolen and someone poisoned our dog! The Hazeel cult must be behind it.",
+                        "Their hideout is somewhere in the caves south of here. Find it and bring back our armour!")
+                .stage("I should find the Hazeel cult's hideout in the cave south of the Carnillean house.")
+                .talk("clivet").say("You've found us. Hazeel will rise again! Join us... or don't. Alomone, our leader, will deal with you.",
+                        "> I'll never join you!", "Then you'll never reach him. Our raft only goes where the water takes it.")
+                .stage("I should turn the valves around the sewers so the cult's raft carries me to Alomone, then defeat him.");
+        for (int i = 0; i < HAZEEL_VALVES.size(); i++) {
+            q.puzzle("hazeel_valve_" + (i + 1), HAZEEL_VALVES.get(i)).stay().unlessFlag("hazeel_valve" + (i + 1)).flag("hazeel_valve" + (i + 1))
+                    .say("* Beneath your feet you hear the sudden sound of rushing water.");
+        }
+        q.kill("alomone").needFlag("hazeel_valve1", "hazeel_valve2", "hazeel_valve3", "hazeel_valve4", "hazeel_valve5")
+                .give("carnillean_armour")
+                .say("* Alomone is slain. In his chest you find the stolen Carnillean armour.")
+                .missing("* The raft won't take you to Alomone. The water must be turned at all five valves around the sewers.")
+                .stage("I should return the armour to Ceril. But who in his house let the cult in? I should talk to Butler Jones and "
+                        + "search the house for evidence.")
+                .talk("butler_jones").stay().unlessFlag("hazeel_jones").flag("hazeel_jones")
+                .say("> Did you poison the dog?", "Poison the dog? Sir, I have served this family faithfully for years!")
+                .reach("carnillean_cupboard", 3).stay().needFlag("hazeel_jones").unless("hazeel_poison").give("hazeel_poison")
+                .say("* In the cupboard upstairs you find a bottle of poison, hidden among the butler's things.")
+                .talk("ceril_carnillean").take("carnillean_armour", "hazeel_poison")
+                .say("Our armour! And poison in Jones's cupboard? A cultist under my own roof! Guards! Take this, with our thanks.")
+                .missing("?!hazeel_jones|My armour! But Jones says he knows nothing. Find me proof of who let the cult in.",
+                        "?hazeel_jones|Proof, I need proof! Search the house.")
                 .done("butler_jones", "...I'm sure I don't know what you mean.");
+    }
+
+    /** Quest-helper's five valve zones (centres), west to east. */
+    static final int[][] HAZEEL_VALVE_TILES = {{2562, 3248}, {2571, 3263}, {2585, 3245}, {2597, 3263}, {2611, 3242}};
+
+    /**
+     * The five sewer valves (quest-helper HazeelValves): right, right, left, right, right steers the water so the raft reaches
+     * Alomone. A wrong turn sends the water the other way; the valve can be turned again.
+     */
+    static final List<QuestPuzzle> HAZEEL_VALVES = hazeelValves();
+
+    private static List<QuestPuzzle> hazeelValves() {
+        boolean[] right = {true, true, false, true, true};
+        List<QuestPuzzle> out = new java.util.ArrayList<>();
+        for (int i = 0; i < right.length; i++) {
+            out.add(QuestPuzzle.builder("hazeel_valve" + (i + 1)).room("valve").variant(null)
+                    .prompt("* A great iron valve (" + (i + 1) + " of 5) controls the water under the city. Which way do you turn it?")
+                    .options("Turn it to the left", "Turn it to the right").solution(right[i] ? 1 : 0)
+                    .failLines("* You hear the water drain away from the cult's cave. Wrong way: turn it back.").build());
+        }
+        return List.copyOf(out);
     }
 
     // ---------------------------------------------------------------- Clock Tower
