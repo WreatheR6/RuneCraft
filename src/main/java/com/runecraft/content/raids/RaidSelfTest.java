@@ -16,6 +16,8 @@ import com.runecraft.util.Inv;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
+import com.runecraft.osrs.ArenaTiming;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerPlayer;
@@ -49,6 +51,85 @@ public final class RaidSelfTest {
     void healthy(String where) {
         expect(raid.roomFailures() == 0, where + ": a room tick threw (" + raid.lastRoomFailure() + ")");
         expect(RaidEffects.failures() == taskFailuresBefore, where + ": a delayed raid task threw (" + RaidEffects.lastFailure() + ")");
+        expect(unfairStrikes.isEmpty(), where + ": " + unfairStrikes.size() + " raid strike(s) broke the real-time floor (round 41: drawn "
+                + "on creation, landing at least " + ArenaTiming.MIN_LEAD_MC + " MC later): " + unfairStrikes);
+    }
+
+    // ------------------------------------------------------------------ human-budget recorder (round 41 playability)
+
+    /** Raid strikes landed during the run that a human couldn't see coming (first few), and how many landed in all. */
+    private final List<String> unfairStrikes = new ArrayList<>();
+    private int strikesLanded;
+    private Consumer<ArenaTiming.StrikeTrace> strikesBefore;
+
+    /** Starts recording the raid's strikes: each damaging, non-exact one must be drawn on creation and land >= 36 MC later. */
+    private void recordStrikes() {
+        strikesBefore = RaidEffects.strikeListener;
+        Consumer<ArenaTiming.StrikeTrace> chained = strikesBefore;
+        RaidEffects.strikeListener = s -> {
+            chained.accept(s);
+            strikesLanded++;
+            String why = s.unfair();
+            if (why != null && unfairStrikes.size() < 5) {
+                unfairStrikes.add(why);
+            }
+        };
+    }
+
+    private void stopRecording() {
+        if (strikesBefore != null) {
+            RaidEffects.strikeListener = strikesBefore;
+            strikesBefore = null;
+        }
+    }
+
+    /**
+     * Self-test ({@code arena:raid_strike_floor}): a damaging raid strike made with a 1-tick delay lands no sooner than the
+     * floor and is drawn as it is made; an exact one keeps its tick. Placed at {@code at} (away from every player).
+     */
+    public static String arenaStrikeCheck(net.minecraft.server.level.ServerLevel world, net.minecraft.world.phys.Vec3 at) {
+        List<ArenaTiming.StrikeTrace> seen = new ArrayList<>();
+        Consumer<ArenaTiming.StrikeTrace> before = RaidEffects.strikeListener;
+        double floorRadius = 0.731;
+        double exactRadius = 0.733;
+        RaidEffects.strikeListener = s -> {
+            before.accept(s);
+            if (s.radius() == floorRadius || s.radius() == exactRadius) {
+                seen.add(s);
+            }
+        };
+        try {
+            // on a raid game tick, as room logic makes its strikes
+            RaidEffects.advance(1);
+            RaidEffects.gameTick();
+            RaidEffects.strike(world, at, floorRadius, 10, 1, null, net.minecraft.core.particles.ParticleTypes.FLAME);
+            RaidEffects.strikeExact(world, at.add(3, 0, 0), exactRadius, 10, 1, null, net.minecraft.core.particles.ParticleTypes.FLAME,
+                    null, true);
+            int ticks = 0;
+            while (seen.size() < 2 && ticks++ < 10) {
+                RaidEffects.advance(1);
+                RaidEffects.gameTick();
+            }
+        } finally {
+            RaidEffects.strikeListener = before;
+        }
+        ArenaTiming.StrikeTrace floored = null;
+        ArenaTiming.StrikeTrace exact = null;
+        for (ArenaTiming.StrikeTrace s : seen) {
+            if (s.radius() == floorRadius) {
+                floored = s;
+            } else {
+                exact = s;
+            }
+        }
+        expect(floored != null && exact != null, "the raid strikes never landed (" + seen.size() + " of 2)");
+        expect(floored.firstDrawnMc() == floored.createdMc() && floored.draws() >= 1, "the raid strike was not drawn as it was made");
+        expect(floored.leadMc() >= ArenaTiming.MIN_LEAD_MC, "a 1-tick raid strike landed " + floored.leadMc() + " MC after it was made");
+        expect(floored.unfair() == null, "raid strike: " + floored.unfair());
+        expect(exact.exact() && exact.leadMc() == ArenaTiming.MC_PER_GAME_TICK, "the exact raid strike landed " + exact.leadMc()
+                + " MC after it was made (expected its own 1 tick)");
+        return "1-tick raid strike landed after " + floored.leadMc() + " MC, drawn on creation; exact one after " + exact.leadMc()
+                + " MC";
     }
 
     // ------------------------------------------------------------------ driver API (used by the rooms' solvers)
@@ -153,9 +234,11 @@ public final class RaidSelfTest {
         RaidInstance raid = RaidManager.of(p);
         expect(raid != null, "RaidManager.enter did not start a raid");
         RaidSelfTest t = new RaidSelfTest(raid, p);
+        t.recordStrikes();
         try {
-            return t.walkToa();
+            return t.walkToa() + ", " + t.strikesLanded + " strikes landed fair";
         } finally {
+            t.stopRecording();
             if (RaidManager.of(p) == raid) {
                 RaidManager.selfTestClose(raid);
             }

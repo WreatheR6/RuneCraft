@@ -303,11 +303,14 @@ public abstract class ScriptedBoss implements BossScript, DataBossEntity.HpScale
                            BiConsumer<List<ServerPlayer>, Vec3> onLand, String name, boolean exact) {
         boolean damaging = maxDamage > 0 || onLand != null;
         int into = mcIntoTick();
-        long due = exact ? now + Math.max(0, delayTicks) : ArenaTiming.strikeDue(now, delayTicks, damaging, into);
+        // a script whose game ticks paused (a boss walking home) counts from the server's game tick, not a stale one
+        long base = ActionManager.mcTick() - gameTickMc > ArenaTiming.MC_PER_GAME_TICK ? Math.max(now, ActionManager.gameTick()) : now;
+        long due = exact ? base + Math.max(0, delayTicks) : ArenaTiming.strikeDue(base, delayTicks, damaging, into);
         Strike s = new Strike(BossFx.world(boss), pos, due, maxDamage, radius, particle, onLand, name, damaging, exact,
-                now * ArenaTiming.MC_PER_GAME_TICK + into);
+                base * ArenaTiming.MC_PER_GAME_TICK + into);
         strikes.add(s);
         owner = boss;
+        s.firstDrawnMc = s.createdMc; // drawn right here, as it is made
         drawStrike(s, false);
     }
 
