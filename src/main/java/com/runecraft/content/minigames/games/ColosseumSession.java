@@ -1015,6 +1015,16 @@ public class ColosseumSession extends MinigameSession {
         return orbs.size();
     }
 
+    /** The game ticks the manticore orbs on their way land on, earliest first (self-test). */
+    public List<Long> orbLandingsForTest() {
+        List<Long> out = new ArrayList<>();
+        for (Orb o : orbs) {
+            out.add(o.due());
+        }
+        out.sort(null);
+        return out;
+    }
+
     public int javelinsPending() {
         return javelins.size();
     }

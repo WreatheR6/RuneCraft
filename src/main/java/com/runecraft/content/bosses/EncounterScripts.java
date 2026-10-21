@@ -235,7 +235,7 @@ final class EncounterScripts {
 
         /** The player the tornadoes chase between game ticks (the script's target on its last game tick). */
         private ServerPlayer chased;
-        private long lastCueMc = Long.MIN_VALUE;
+        private long lastCueMc = -1_000_000L;
 
         /**
          * Once a game tick: a tornado within {@link com.runecraft.osrs.content.minigames.Gauntlet#TORNADO_HIT_RADIUS} of the
@@ -344,7 +344,7 @@ final class EncounterScripts {
                 floorOrangeAt = now + com.runecraft.osrs.content.minigames.Gauntlet.floorWarnTicks(phase);
                 floorEndAt = floorOrangeAt + com.runecraft.osrs.content.minigames.Gauntlet.FLOOR_ACTIVE_TICKS;
                 nextFloorAt = floorEndAt + com.runecraft.osrs.content.minigames.Gauntlet.FLOOR_INTERVAL_TICKS[phase];
-                lastCueMc = Long.MIN_VALUE; // drawn at once (tick)
+                lastCueMc = -1_000_000L; // drawn at once (tick)
             }
             if (floor.isEmpty()) {
                 return;

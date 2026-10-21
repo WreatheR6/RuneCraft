@@ -56,9 +56,9 @@ public class ZukScript implements BossScript, DataBossEntity.HpScaled {
     private long chargeStartMc;
     private ServerPlayer chargeTarget;
     private AttackDef chargeAttack;
-    private long lastShadowMc = Long.MIN_VALUE;
+    private long lastShadowMc = -1_000_000L;
     private LivingEntity glyphCache;
-    private long glyphLookedMc = Long.MIN_VALUE;
+    private long glyphLookedMc = -1_000_000L;
 
     static LivingEntity glyph(DataBossEntity boss) {
         List<LivingEntity> list = ((ServerLevel) boss.level()).getEntitiesOfClass(LivingEntity.class,
