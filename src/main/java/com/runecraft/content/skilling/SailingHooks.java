@@ -225,6 +225,13 @@ final class SailingHooks {
         }
     }
 
+    /** Clears a player's in-memory sailing state: trim and extractor timers, stored wind motes, a trial run (self-test). */
+    static void resetForTest(ServerPlayer player) {
+        TICKS.remove(player.getUUID());
+        MOTES.remove(player.getUUID());
+        TRIALS.remove(player.getUUID());
+    }
+
     /** Wind motes stored in a boat's catcher: {from trimming, from the crystal extractor}. */
     private static final Map<UUID, int[]> MOTES = new HashMap<>();
 
@@ -300,7 +307,7 @@ final class SailingHooks {
 
     // ------------------------------------------------------------------ salvaging
 
-    private static void salvage(ServerPlayer player, BlockPos pos, SailingData.Wreck w) {
+    static void salvage(ServerPlayer player, BlockPos pos, SailingData.Wreck w) {
         if (!SkillingUtil.need(player, Skill.SAILING, w.level(), "salvage this shipwreck")) {
             return;
         }
@@ -424,7 +431,7 @@ final class SailingHooks {
         return SkillingState.get(player.getServer()).entry("courier_tasks", player.getStringUUID());
     }
 
-    private static void portBoard(ServerPlayer player, SailingData.Port here) {
+    static void portBoard(ServerPlayer player, SailingData.Port here) {
         if (!pandemoniumDone(player)) {
             Msg.game(player, "You need to complete Pandemonium before you can take port tasks.");
             return;
@@ -590,11 +597,27 @@ final class SailingHooks {
 
     private static boolean hasAll(ServerPlayer player, Map<String, Integer> mats) {
         for (Map.Entry<String, Integer> e : mats.entrySet()) {
-            if (!Inv.has(player, e.getKey(), e.getValue())) {
+            if (available(player, e.getKey()) < e.getValue()) {
                 return false;
             }
         }
         return true;
+    }
+
+    /**
+     * A building material in the pack plus the bank (playability: OSRS carries 10,000 air runes or 1,000 fishing bait in
+     * one stack; a Minecraft stack holds 64, so the shipwright also draws what the pack can't carry from the bank).
+     */
+    static long available(ServerPlayer player, String item) {
+        return Inv.count(player, item) + com.runecraft.player.Players.data(player).bank().count(item, "");
+    }
+
+    /** Uses up a building material: the pack first, then the bank. */
+    static void useMaterial(ServerPlayer player, String item, int n) {
+        int got = Inv.remove(player, item, n);
+        if (got < n) {
+            com.runecraft.player.Players.data(player).bank().withdraw(item, "", n - got);
+        }
     }
 
     /** Boat schematics: click to cycle through the next upgrades for your boat, sneak-click to build the one shown. */
@@ -608,6 +631,32 @@ final class SailingHooks {
             Msg.game(player, "Moor your boat next to the boat schematics to upgrade it.");
             return;
         }
+        List<Object> options = upgradeOptions(player, type);
+        if (options.isEmpty()) {
+            Msg.game(player, "Your " + type + " is fully upgraded.");
+            return;
+        }
+        CompoundTag state = boatState(player);
+        int sel = Math.floorMod(state.getInt("sel"), options.size());
+        if (!player.isShiftKeyDown()) {
+            sel = (sel + 1) % options.size();
+            state.putInt("sel", sel);
+        }
+        Object o = options.get(sel);
+        if (!player.isShiftKeyDown()) {
+            String tool = o instanceof SailingTraining.Facility f ? SailingTraining.FACILITY_TOOLS.get(f.id()) : null;
+            Msg.game(player, "[" + (sel + 1) + "/" + options.size() + "] " + upgradeName(o) + " for your " + type + ": Sailing "
+                    + (o instanceof SailingTraining.Part p ? p.sailing() : ((SailingTraining.Facility) o).sailing()) + ", Construction "
+                    + (o instanceof SailingTraining.Part p ? p.construction() : ((SailingTraining.Facility) o).construction()) + ". Needs "
+                    + materials(upgradeMaterials(o)) + " and a hammer" + (tool == null ? "" : " (and " + Msg.article(SkillingUtil.lower(
+                    SkillingUtil.name(tool))) + ")") + ". Sneak and use the schematics to build it.");
+            return;
+        }
+        buildUpgrade(player, type, o);
+    }
+
+    /** The next tier of each core part and every facility not yet built (a raft only takes salvaging hooks here). */
+    static List<Object> upgradeOptions(ServerPlayer player, String type) {
         List<Object> options = new ArrayList<>();
         for (SailingTraining.PartType t : SailingTraining.PartType.values()) {
             SailingTraining.Part next = SailingTraining.part(type, t, partTier(player, type, t) + 1);
@@ -620,56 +669,56 @@ final class SailingHooks {
                 options.add(f);
             }
         }
-        if (options.isEmpty()) {
-            Msg.game(player, "Your " + type + " is fully upgraded.");
-            return;
-        }
-        CompoundTag state = boatState(player);
-        int sel = Math.floorMod(state.getInt("sel"), options.size());
-        if (!player.isShiftKeyDown()) {
-            sel = (sel + 1) % options.size();
-            state.putInt("sel", sel);
-        }
-        Object o = options.get(sel);
-        String name = o instanceof SailingTraining.Part p ? p.name() : ((SailingTraining.Facility) o).name();
+        return options;
+    }
+
+    private static String upgradeName(Object o) {
+        return o instanceof SailingTraining.Part p ? p.name() : ((SailingTraining.Facility) o).name();
+    }
+
+    private static Map<String, Integer> upgradeMaterials(Object o) {
+        return o instanceof SailingTraining.Part p ? p.materials() : ((SailingTraining.Facility) o).materials();
+    }
+
+    /**
+     * Builds a core part or facility on the boat type: the Sailing and Construction levels, its lost schematic, a hammer
+     * (and the facility's tool, kept), then the materials for the wiki's Construction XP. True when it was built.
+     */
+    static boolean buildUpgrade(ServerPlayer player, String type, Object o) {
         int sailing = o instanceof SailingTraining.Part p ? p.sailing() : ((SailingTraining.Facility) o).sailing();
         int con = o instanceof SailingTraining.Part p ? p.construction() : ((SailingTraining.Facility) o).construction();
         double xp = o instanceof SailingTraining.Part p ? p.conXp() : ((SailingTraining.Facility) o).conXp();
-        Map<String, Integer> mats = o instanceof SailingTraining.Part p ? p.materials() : ((SailingTraining.Facility) o).materials();
-        if (!player.isShiftKeyDown()) {
-            Msg.game(player, "[" + (sel + 1) + "/" + options.size() + "] " + name + " for your " + type + ": Sailing " + sailing
-                    + ", Construction " + con + ". Needs " + materials(mats) + " and a hammer. Sneak and use the schematics to build it.");
-            return;
-        }
+        Map<String, Integer> mats = upgradeMaterials(o);
         if (o instanceof SailingTraining.Part p) {
             String why = SailingTraining.canBuild(p, SkillingUtil.level(player, Skill.SAILING), SkillingUtil.level(player, Skill.CONSTRUCTION),
                     partTier(player, type, p.type()));
             if (why != null) {
                 Msg.game(player, why);
-                return;
+                return false;
             }
         } else if (!SkillingUtil.need(player, Skill.SAILING, sailing, "build this") || !SkillingUtil.need(player, Skill.CONSTRUCTION, con,
                 "build this")) {
-            return;
+            return false;
         }
         String noSchematic = SailingLockboxHooks.missing(player, o);
         if (noSchematic != null) {
             Msg.game(player, noSchematic);
-            return;
+            return false;
         }
         if (!SkillingUtil.needItem(player, "hammer", "You need a hammer to build boat parts.")) {
-            return;
+            return false;
         }
         String tool = o instanceof SailingTraining.Facility f ? SailingTraining.FACILITY_TOOLS.get(f.id()) : null;
         if (tool != null && !SkillingUtil.needItem(player, tool, "You need " + Msg.article(SkillingUtil.lower(SkillingUtil.name(tool)))
                 + " to build that.")) {
-            return;
+            return false;
         }
         if (!hasAll(player, mats)) {
             Msg.game(player, "You need " + materials(mats) + ".");
-            return;
+            return false;
         }
-        mats.forEach((item, n) -> Inv.remove(player, item, n));
+        mats.forEach((item, n) -> useMaterial(player, item, n));
+        CompoundTag state = boatState(player);
         if (o instanceof SailingTraining.Part p) {
             state.putInt(type + "." + p.type().name(), p.tier());
         } else {
@@ -677,7 +726,8 @@ final class SailingHooks {
         }
         XpService.add(player, Skill.CONSTRUCTION, xp);
         player.level().playSound(null, player.blockPosition(), SoundEvents.ANVIL_USE, SoundSource.PLAYERS, 0.6f, 1.2f);
-        Msg.action(player, "You build " + Msg.article(SkillingUtil.lower(name)) + " on your " + type + ".");
+        Msg.action(player, "You build " + Msg.article(SkillingUtil.lower(upgradeName(o))) + " on your " + type + ".");
+        return true;
     }
 
     // ------------------------------------------------------------------ Barracuda Trials
@@ -938,9 +988,10 @@ final class SailingHooks {
         int mixedStops;
         boolean baited;
         int crewTicks;
-        /** Catches and fish so far (self-test). */
+        /** Catches and fish so far, and whether a mixed shoal swam in its place (self-test). */
         public int catches;
         public int fish;
+        public boolean everMixed;
 
         Trawl(SailingShoals.Shoal shoal, SailingTraining.Net net, String boat, boolean checkRange) {
             this.shoal = shoal;
@@ -957,6 +1008,7 @@ final class SailingHooks {
         /** Forces the next stops to be a mixed shoal (self-test). */
         public void forceMixed() {
             mixedStops = SailingShoals.MIXED_STOPS;
+            everMixed = true;
         }
 
         @Override
@@ -1001,6 +1053,7 @@ final class SailingHooks {
                 mixedStops--;
             } else if (ticks > 0 && random.nextDouble() < SailingShoals.MIXED_CHANCE && SailingShoals.mixedFor(shoal) != null) {
                 mixedStops = SailingShoals.MIXED_STOPS;
+                everMixed = true;
                 Msg.action(p, "The shoal shimmers: a " + SkillingUtil.lower(SailingShoals.mixedFor(shoal).name()) + " swims in its place!");
             }
             baited = spreadOffcuts(p);

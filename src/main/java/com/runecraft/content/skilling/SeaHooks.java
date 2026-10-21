@@ -417,6 +417,19 @@ public final class SeaHooks {
         }
     }
 
+    /** Clears a player's in-memory sea state (boat hitpoints, encounter, hazard and cannon timers) and their creatures (self-test). */
+    static void resetForTest(ServerPlayer player) {
+        SEA.remove(player.getUUID());
+        Iterator<Map.Entry<Mob, Spawned>> it = SPAWNED.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<Mob, Spawned> e = it.next();
+            if (e.getValue().owner.equals(player.getUUID())) {
+                e.getKey().discard();
+                it.remove();
+            }
+        }
+    }
+
     /** Called every game tick while the player is not on a boat: tidies up their sea creatures. */
     static void offBoat(ServerPlayer player) {
         Sea sea = SEA.get(player.getUUID());

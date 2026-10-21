@@ -1,6 +1,7 @@
 package com.runecraft.selftest;
 
 import com.runecraft.content.skilling.SailingLockboxHooks;
+import com.runecraft.content.skilling.SailingSelfTest;
 import com.runecraft.content.skilling.SeaHooks;
 import com.runecraft.osrs.Experience;
 import com.runecraft.osrs.Skill;
@@ -40,7 +41,19 @@ final class SeaChecks {
         checks.add(new SelfTest.Check("sailing:wreck_recovery", () -> wreckRecovery(c)));
         checks.add(new SelfTest.Check("sailing:crew_special_ammo", () -> crewSpecialAmmo(c)));
         checks.add(new SelfTest.Check("sailing:lockbox", () -> lockbox(c)));
+        // Named "skill:" so the client's real-player run ('/rc selftest real ... skill: ...') walks it too.
+        checks.add(new SelfTest.Check("skill:sailing:walk", () -> walk(c)));
         return checks;
+    }
+
+    /**
+     * The whole skill walked on a skiff in a pool by the platform: build the boat at the shipyard, sail and trim, salvage
+     * and sort, open a lockbox, trawl, sink a tern with the cannon, open a lost crate, deliver a courier task, earn
+     * Barracuda Trial ranks, build a wind catcher and paint the trim ({@link SailingSelfTest}).
+     */
+    private static String walk(TestContext c) {
+        c.completeQuests(null);
+        return SailingSelfTest.walk(c.player, c.near(0, 5), c::place);
     }
 
     /** The crew fire the cannonball you loaded: an incendiary ball from the cargo hold sets the creature alight. */
