@@ -197,6 +197,10 @@ public final class CapeService {
                     SysMenus.diary(p, area, show);
                     return 1;
                 })))
+                .then(Commands.literal("emotes").executes(ctx -> {
+                    DiaryActivitiesService.emotes(ctx.getSource().getPlayerOrException());
+                    return 1;
+                }))
                 .then(Commands.literal("ge").executes(ctx -> {
                     GeService.open(ctx.getSource().getPlayerOrException(), null, null);
                     return 1;

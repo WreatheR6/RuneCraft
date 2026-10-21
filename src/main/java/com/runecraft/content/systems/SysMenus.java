@@ -41,6 +41,7 @@ public final class SysMenus {
                 case "hiscores" -> hiscores(p, null);
                 case "capes" -> CapeService.open(p);
                 case "spec" -> SpecialAttackService.toggle(p);
+                case "emotes" -> DiaryActivitiesService.emotes(p);
                 default -> {
                 }
             }
@@ -146,6 +147,7 @@ public final class SysMenus {
         s.button("ge", "Grand Exchange", "View and collect your offers.", true);
         s.button("hiscores", "Hiscores", "", true);
         s.button("capes", "Capes of accomplishment", "", true);
+        s.button("emotes", "Emotes", "Including the four the Stronghold of Security unlocks.", true);
         s.button("spec", "Use special attack", "Toggle your weapon's special attack (V).", spec != null);
         s.send(p);
     }

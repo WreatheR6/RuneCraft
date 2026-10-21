@@ -214,7 +214,8 @@ class DiaryReferenceTest {
         assertEquals(492, total);
         // Round 30: of the 28 quest-completion stand-ins, 24 were marked approx (475 -> 452 faithful) while Crandor (2), the Stronghold, the
         // digsite pendant, Ava's device and the Salve shortcut became real.
-        assertTrue(total - approx >= 452, "faithfully tracked tasks: " + (total - approx));
+        // Round 40: trips, fairy rings, altars, shortcuts, spawns, chompy hunting, kittens, emotes and the rest: 40 -> 16 approx.
+        assertTrue(total - approx >= 476, "faithfully tracked tasks: " + (total - approx));
     }
 
     @Test

@@ -296,6 +296,25 @@ public final class DungeonsHooks implements ModuleHooks {
         passThrough(player, pos);
     }
 
+    /**
+     * Whether a player has opened one of the Stronghold of Security's reward chests (0 Gift of Peace .. 3 Cradle of Life),
+     * which unlock its four emotes (the achievement diaries' emote task).
+     */
+    public static boolean securityChestOpened(ServerPlayer player, int chest) {
+        return player.getServer() != null && DungeonState.get(player.getServer()).hasClaimed(player.getUUID(), chest);
+    }
+
+    /** The Stronghold chests a player has opened, as a bit mask; with {@link #setSecurityChests} a self-test restores it. */
+    public static int securityChests(ServerPlayer player) {
+        return player.getServer() == null ? 0 : DungeonState.get(player.getServer()).mask(player.getUUID());
+    }
+
+    public static void setSecurityChests(ServerPlayer player, int mask) {
+        if (player.getServer() != null) {
+            DungeonState.get(player.getServer()).setMask(player.getUUID(), mask);
+        }
+    }
+
     private static void rewardChest(ServerPlayer player, int chest) {
         DungeonState state = DungeonState.get(player.getServer());
         String name = switch (chest) {

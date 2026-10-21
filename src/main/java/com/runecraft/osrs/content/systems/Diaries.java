@@ -99,16 +99,18 @@ public final class Diaries {
      * and "shortcut:" + agility shortcut id (fired when a player uses it). Charged jewellery reports its base id
      * ({@link #teleportKey}): "teleport:digsite_pendant:digsite", not the per-charge item. Round 40 added "travel:" + route id
      * + ":" + destination slug (boats, charters, carpets, canoes, gliders, spirit trees, balloons, carts, eagles, the train),
-     * "fairy_ring:" + code (lower case), "altar_pray" (praying at a world altar) and "altar_restore_85" (85+ points restored),
+     * "fairy_ring:" + code (lower case), "altar_pray" (praying at a world altar), "altar_restore" (points restored there) and
+     * "altar_restore_85" (85+ points restored),
      * "tears_of_guthix:100" (100+ tears in one visit), "fill:" + filled item ("fill:water_bucket") at a pump or well,
-     * "dog_bone", "kitten_colour", "chompy_hat:" + kills registered, "phoenix_feather", "emote:" + emote slug and "stairs:" + id.
+     * "dog_bone", "kitten_colour", "chompy_hat:" + kills registered, "phoenix_feather", "emote:" + emote slug, "stairs:" + id and
+     * "machete_trade" (Safta Doc's gem machetes).
      */
     public static final List<String> ACTIVITIES = List.of("talk", "minigame_start", "minigame_win", "spellbook", "teleport", "eat",
             "trek_complete", "fight_pit_champion", "monkey_cage", "shop_open", "shop_buy", "shop_sell", "bert_sand", "tindel_identify",
             "genie_visit", "chest_open", "join", "cast_on_player", "strut_repair", "essence_mine", "steal", "kingdom_approval",
             "ba_blackboard", "tbw_favour", "kudos", "ba_wave", "poh_portal", "monster_examine", "totem_recharge", "dig", "ent_chop",
             "shortcut", "travel", "fairy_ring", "altar_pray", "altar_restore_85", "tears_of_guthix", "fill", "dog_bone", "kitten_colour",
-            "chompy_hat", "phoenix_feather", "emote", "stairs");
+            "chompy_hat", "phoenix_feather", "emote", "stairs", "altar_restore", "machete_trade");
 
     /** The Fishing Platform's deck (an "x,y,r" restriction out at sea, so the land check skips it). */
     public static final String FISHING_PLATFORM = "2788,3285,10";
@@ -481,7 +483,8 @@ public final class Diaries {
         xpAt("Climb to the summit of the Agility Pyramid", AGILITY, 30, at(3354, 2830, 30));
         kill("Slay a desert lizard", "desert lizard", 1, SLAYER, 22);
         xp("Catch an Orange Salamander", HUNTER, 47);
-        xp("Steal a feather from the Desert Phoenix", THIEVING, 25); approx(); // approx
+        // Grab-feather on the Desert Phoenix north-west of Uzer (DiaryActivities).
+        event("Steal a feather from the Desert Phoenix", "phoenix_feather", null, THIEVING, 25);
         event("Travel to Uzer via magic carpet", "travel:carpet_*:uzer", null);
         event("Travel to the Desert via the Eagle transport system", "travel:eagle_*:desert", null);
         needs(lastId, "eagles_peak");
@@ -703,7 +706,9 @@ public final class Diaries {
         get("Cut a log from a teak tree", "teak_logs", 1, WOODCUTTING, 35);
         get("Cut a log from a mahogany tree", "mahogany_logs", 1, WOODCUTTING, 50);
         getAt("Catch a karambwan", "raw_karambwan", 1, null, FISHING, 65);
-        quest("Exchange gems for a machete", "jungle_potion"); approx(); // approx: Safta Doc's trade isn't modelled
+        // Safta Doc's gem machetes (DiaryActivities): a gout tuber, three gems and trading sticks.
+        event("Exchange gems for a machete", "machete_trade", null);
+        needs(lastId, "jungle_potion");
         event("Use the gnome glider to travel to Karamja", "travel:glider_*:gandius_karamja", null);
         needs(lastId, "the_grand_tree");
         xp("Grow a healthy fruit tree in the patch near Brimhaven", FARMING, 27);
@@ -855,7 +860,10 @@ public final class Diaries {
         visit("Offer some Bonemeal at the Ectofuntus", 3660, 3522, 10);
         kill("Kill a Werewolf in its human form using the Wolfbane Dagger", "werewolf", 1);
         wielding("wolfbane");
-        quest("Restore your prayer points at the nature altar", "nature_spirit"); approx(); // approx
+        // The Altar of Nature (DiaryActivities: it stands above the Nature Grotto, which isn't carved); points must be restored.
+        event("Restore your prayer points at the nature altar", "altar_restore",
+                at(DiaryActivities.NATURE_ALTAR_X, DiaryActivities.NATURE_ALTAR_Y, 4));
+        needs(lastId, "nature_spirit");
         in("morytania", Tier.MEDIUM);
         xp("Catch a swamp lizard", HUNTER, 29);
         xpAt("Complete a lap of the Canifis agility course", AGILITY, 40, at(3507, 3488, 30));
@@ -878,9 +886,10 @@ public final class Diaries {
         needs(lastId, "in_aid_of_the_myreque");
         killAny("Kill a Cave Horror", "cave horror", 1, SLAYER, 58);
         xp("Harvest some Bittercap Mushrooms", FARMING, 53);
-        // The Nature Grotto's altar isn't built: standing in the grotto with Piety on counts. // approx
-        visit("Pray at the Altar of Nature with Piety activated", 3440, 3335, 15, PRAYER, 70, DEFENCE, 70);
+        event("Pray at the Altar of Nature with Piety activated", "altar_pray",
+                at(DiaryActivities.NATURE_ALTAR_X, DiaryActivities.NATURE_ALTAR_Y, 4), PRAYER, 70, DEFENCE, 70);
         praying("PIETY");
+        needs(lastId, "nature_spirit", "kings_ransom");
         shortcut("Use the shortcut to get to the bridge over the Salve", "salve_ornate_railing", AGILITY, 65);
         get("Mine some Mithril ore in the Abandoned Mine", "mithril_ore", 1, MINING, 55);
         in("morytania", Tier.ELITE);
@@ -904,7 +913,8 @@ public final class Diaries {
         shortcut("Jump over the fence south of Varrock", "varrock_south_fence", AGILITY, 13);
         get("Chop down a dying tree in the Lumber Yard", "logs", 1);
         visit("Buy a newspaper", 3218, 3432, 10);
-        visit("Give a dog a bone!", 3213, 3428, 20); approx(); // approx
+        // Bones used on one of Varrock's stray dogs (DiaryActivities).
+        event("Give a dog a bone!", "dog_bone", null);
         makeAt("Spin a bowl on the pottery wheel and fire it in Barbarian Village", "bowl", 1, at(3086, 3409, 25), CRAFTING, 8);
         event("Speak to Haig Halen after obtaining at least 50 kudos", "kudos:haig_halen_50", null);
         getAt("Craft some Earth runes from Essence", "earth_rune", 1, null, RUNECRAFT, 9);
@@ -913,9 +923,12 @@ public final class Diaries {
         in("varrock", Tier.MEDIUM);
         visit("Have the Apothecary in Varrock make you a strength potion", 3195, 3404, 8);
         visit("Enter the Champions' Guild", 3191, 3362, 8);
-        quest("Select a colour for your kitten", "gertrudes_cat"); approx(); // approx: no kittens
+        // Gertrude's kittens (sneak + talk): a chosen colour needs the ring of charos and Garden of Tranquillity started.
+        event("Select a colour for your kitten", "kitten_colour", null);
+        needs(lastId, "gertrudes_cat");
         event("Use the spirit tree in the north eastern corner of Grand Exchange", "travel:spirit_tree_grand_exchange:*", null);
-        visit("Perform the 4 emotes from the Stronghold of Security", 3081, 3421, 10); approx(); // approx
+        // Flap, Slap Head, Idea and Stamp, each unlocked by one of the Stronghold's reward chests (the emote menu).
+        event("Perform the 4 emotes from the Stronghold of Security", DiaryActivities.strongholdEmotesTarget(), null);
         quest("Enter the Tolna dungeon after completing A Soul's Bane", "a_souls_bane"); approx(); // approx: the rift isn't built
         event("Teleport to the digsite using a Digsite pendant", "teleport:digsite_pendant:digsite", null);
         needs(lastId, "the_dig_site");
@@ -923,7 +936,9 @@ public final class Diaries {
         combat("Get a Slayer task from Vannaka", 40);
         getAt("Make 20 Mahogany Planks in one go", "mahogany_plank", 20, null); // the sawmill operator converts a whole load
         inOneGo();
-        quest("Pick a White tree fruit", "garden_of_tranquillity", FARMING, 25); approx(); // approx: no white tree
+        getAt("Pick a White tree fruit", DiaryActivities.WHITE_TREE_FRUIT, 1,
+                at(DiaryActivities.WHITE_TREE_X, DiaryActivities.WHITE_TREE_Y, 6), FARMING, 25);
+        needs(lastId, "garden_of_tranquillity");
         event("Use the balloon to travel from Varrock", "travel:balloon_varrock:*", null, FIREMAKING, 40, FARMING, 30);
         xp("Complete a lap of the Varrock Agility course", AGILITY, 30);
         in("varrock", Tier.HARD);
@@ -952,7 +967,9 @@ public final class Diaries {
         get("Mine some Iron Ore near Piscatoris", "iron_ore", 1, MINING, 15);
         xpAt("Complete a lap of the Gnome Agility Course", AGILITY, 1, at(2474, 3436, 25));
         visit("Score a goal in a Gnome Ball match", 2400, 3487, 12);
-        quest("Claim any Chompy bird hat from Rantz", "big_chompy_bird_hunting"); approx(); // approx: chompy kills aren't counted
+        // Chompy bird hunting (DiaryActivities): Rantz's hats fire "chompy_hat" plus ":125" / ":300" / ":1000" by kills registered.
+        event("Claim any Chompy bird hat from Rantz", "chompy_hat", null);
+        needs(lastId, "big_chompy_bird_hunting");
         visit("Teleport to Pest Control using the Minigame teleports", 2662, 2653, 15);
         visit("Collect a swamp toad at the Gnome Stronghold", 2420, 3510, 15);
         event("Have Brimstail teleport you to the Essence mine", "essence_mine:brimstail", null);
@@ -968,7 +985,8 @@ public final class Diaries {
         event("Complete an intermediate game of Pest Control", "minigame_win:pest_control_intermediate", null);
         event("Travel to the Feldip Hills by Gnome Glider", "travel:glider_*:lemantolly_undri_feldip_hills", null);
         needs(lastId, "one_small_favour");
-        quest("Claim a Chompy bird hat from Rantz after registering at least 30 kills", "big_chompy_bird_hunting"); approx(); // approx
+        event("Claim a Chompy bird hat from Rantz after registering at least 125 kills", "chompy_hat:125", null);
+        needs(lastId, "big_chompy_bird_hunting");
         event("Travel from Eagles' Peak to the Feldip Hills by Eagle", "travel:eagle_eagles_peak:feldip_hills", null);
         needs(lastId, "eagles_peak");
         makeAt("Make a Chocolate Bomb at the Grand Tree", "chocolate_bomb", 1, at(2465, 3495, 20), COOKING, 42);
@@ -985,7 +1003,8 @@ public final class Diaries {
         getAt("Chop and burn some Mahogany logs on Ape Atoll", "mahogany_logs", 1, at(2755, 2775, 50), WOODCUTTING, 50, FIREMAKING, 50);
         get("Mine some Adamantite ore in Tirannwn", "adamantite_ore", 1, MINING, 70);
         xpAt("Check the health of your Palm tree in Lletya", FARMING, 68, at(2340, 3170, 40));
-        quest("Claim a Chompy bird hat from Rantz after registering at least 125 kills", "big_chompy_bird_hunting"); approx(); // approx
+        event("Claim a Chompy bird hat from Rantz after registering at least 300 kills", "chompy_hat:300", null);
+        needs(lastId, "big_chompy_bird_hunting");
         quest("Build an Isafdar painting in your POH Quest hall", "roving_elves", CONSTRUCTION, 65); approx(); // approx
         kc("Kill Zulrah", "zulrah", 1);
         cast("Teleport to Ape Atoll", "ape_atoll_teleport", MAGIC, 64);
@@ -998,7 +1017,8 @@ public final class Diaries {
         wear("Equip any complete void set", "void_knight_top|elite_void_top&void_knight_robe|elite_void_robe&void_knight_gloves"
                 + "&void_melee_helm|void_ranger_helm|void_mage_helm", null, ATTACK, 42, STRENGTH, 42, DEFENCE, 42, HITPOINTS, 42,
                 RANGED, 42, MAGIC, 42, PRAYER, 22);
-        quest("Claim a Chompy bird hat from Rantz after registering at least 1000 kills", "big_chompy_bird_hunting"); approx(); // approx
+        event("Claim a Chompy bird hat from Rantz after registering at least 1,000 kills", "chompy_hat:1000", null);
+        needs(lastId, "big_chompy_bird_hunting");
         xp("Pickpocket an Elf", THIEVING, 85);
 
         // ======================= Wilderness (12 / 11 / 10 / 7) =======================

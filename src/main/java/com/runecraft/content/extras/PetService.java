@@ -81,7 +81,10 @@ final class PetService {
         });
         GameEvents.onXp(PetService::onXp);
         GameEvents.onKill((player, entity, stats) -> {
-            if (stats.profile() != null && "chompy_bird".equals(stats.profile().id)) {
+            // The chompy chick only rolls after the elite Western Provinces diary (wiki "Chompy chick").
+            if (stats.profile() != null && "chompy_bird".equals(stats.profile().id)
+                    && com.runecraft.osrs.content.systems.Diaries.tierComplete(com.runecraft.content.systems.SysState.of(player).diaryDone,
+                    "western", com.runecraft.osrs.content.systems.Diaries.Tier.ELITE)) {
                 rollBoss(player, "chompy_bird", "Chompy chick");
             }
         });

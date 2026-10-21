@@ -48,6 +48,7 @@ public final class SystemsContent implements ContentModule {
         Capes.items(items);
         CombatAchievements.items(items);
         Multicannon.items(items);
+        DiaryActivities.items(items);
         Defs.simple(items, CluePuzzles.PUZZLE_BOX, "Puzzle box", "package", 0x8A6A3A, 1).stack(1)
                 .examine("Slide the pieces into order to solve the puzzle.");
         Defs.simple(items, CluePuzzles.LIGHT_BOX, "Light box", "package", 0xE0D060, 1).stack(1)
@@ -124,6 +125,8 @@ public final class SystemsContent implements ContentModule {
                 BlockDef.scripted(DiaryTransport.TRAIN, "Train cart", 0x5A4A3A, "machine"),
                 BlockDef.scripted(DiaryExtras.SEAWEED.block(), DiaryExtras.SEAWEED.name(), 0x3A6A2A, "plant"),
                 BlockDef.scripted(DiaryExtras.POTATO_CACTUS.block(), DiaryExtras.POTATO_CACTUS.name(), 0x6A8A3A, "plant"),
+                BlockDef.scripted(DiaryActivities.WHITE_TREE, "White tree", 0xE8E8E0, "young_tree"),
+                BlockDef.scripted(DiaryActivities.NATURE_ALTAR, "Altar of Nature", 0x4A7A3A, "altar"),
                 BlockDef.scripted(ItemSources.SALT_ROCKS.get(0).block(), ItemSources.SALT_ROCKS.get(0).name(), 0x3A3A40, "rock"),
                 BlockDef.scripted(ItemSources.SALT_ROCKS.get(1).block(), ItemSources.SALT_ROCKS.get(1).name(), 0xE0E0D0, "rock"),
                 BlockDef.scripted(ItemSources.SALT_ROCKS.get(2).block(), ItemSources.SALT_ROCKS.get(2).name(), 0xB0D8F0, "rock"),
@@ -169,6 +172,12 @@ public final class SystemsContent implements ContentModule {
                 PlaceDef.Style.NONE, List.of()));
         places.add(PlaceDef.of(DiaryExtras.WELL, "Well", DiaryExtras.RELLEKKA_WELL_X, DiaryExtras.RELLEKKA_WELL_Y, PlaceDef.Style.NONE,
                 List.of()));
+        places.add(PlaceDef.of(DiaryActivities.WHITE_TREE, "White tree", DiaryActivities.WHITE_TREE_X, DiaryActivities.WHITE_TREE_Y,
+                PlaceDef.Style.NONE, List.of()));
+        places.add(PlaceDef.of(DiaryActivities.NATURE_ALTAR, "Altar of Nature", DiaryActivities.NATURE_ALTAR_X,
+                DiaryActivities.NATURE_ALTAR_Y, PlaceDef.Style.NONE, List.of()));
+        places.add(PlaceDef.of(DiaryActivities.SAFTA_DOC, "Safta Doc", DiaryActivities.SAFTA_DOC_X, DiaryActivities.SAFTA_DOC_Y,
+                PlaceDef.Style.NONE, List.of()));
         for (DiaryTransport.Stop s : DiaryTransport.STOPS) {
             places.add(PlaceDef.of("diary_stop_" + s.id(), s.name(), s.x(), s.y(), PlaceDef.Style.NONE, List.of()));
         }
@@ -188,7 +197,9 @@ public final class SystemsContent implements ContentModule {
 
     @Override
     public List<com.runecraft.osrs.content.MonsterDef> monsters() {
-        return ClueGuardians.monsters();
+        List<com.runecraft.osrs.content.MonsterDef> all = new ArrayList<>(ClueGuardians.monsters());
+        all.addAll(DiaryActivities.monsters());
+        return all;
     }
 
     @Override
@@ -207,7 +218,8 @@ public final class SystemsContent implements ContentModule {
                 NpcDef.of(DiaryExtras.SAWMILL_OPERATOR, "Sawmill operator", DiaryExtras.SAWMILL_OPERATOR, 0, 0, 0xE0B090, 0x6A4A2A,
                         0x3A3A4A, 0x8A6A3A),
                 NpcDef.of(ItemSources.SKULGRIMEN, "Skulgrimen", ItemSources.SKULGRIMEN, 0, 0, 0xE8C0A0, 0x6A5A4A, 0x3A2A1A, 0x8A6A3A),
-                NpcDef.of(ItemSources.PEER_THE_SEER, "Peer the Seer", ItemSources.PEER_THE_SEER, 0, 0, 0xE8C0A0, 0x3A3A6A, 0x2A2A3A, 0xE0C060)));
+                NpcDef.of(ItemSources.PEER_THE_SEER, "Peer the Seer", ItemSources.PEER_THE_SEER, 0, 0, 0xE8C0A0, 0x3A3A6A, 0x2A2A3A, 0xE0C060),
+                NpcDef.of(DiaryActivities.SAFTA_DOC, "Safta Doc", DiaryActivities.SAFTA_DOC, 0, 0, 0x6A4A2A, 0xC8B070, 0x8A6A3A, 0xE0E0D0)));
         // The diary taskmasters (round 40), each at its OSRS tile; Karamja's Pirate Jackie belongs to the minigames module.
         int[][] looks = {{0xE0B090, 0x6A3A2A, 0x3A2A1A, 0x6A3A2A}, {0xC8A080, 0xD8C8A0, 0x8A6A3A, 0xE0D8C0},
                 {0xE0B090, 0xC0C0C8, 0x8A8A90, 0xC0C0C8}, {0xE0B090, 0x6A4A2A, 0x5A3A2A, 0x8A6A3A}, {0xE0B090, 0x3A5A8A, 0x2A2A3A, 0x3A5A8A},

@@ -114,9 +114,11 @@ class DiaryRound40Test {
                 }
             }
         }
+        // The Altar of Nature is a scripted block placed at its tile (DiaryActivities).
+        altars.add(new int[]{DiaryActivities.NATURE_ALTAR_X, DiaryActivities.NATURE_ALTAR_Y});
         int n = 0;
         for (Diaries.Task t : Diaries.tasks()) {
-            if (t.type() == Diaries.Type.EVENT && (t.target().equals("altar_pray") || t.target().equals("altar_restore_85"))) {
+            if (t.type() == Diaries.Type.EVENT && (t.target().equals("altar_pray") || t.target().startsWith("altar_restore"))) {
                 assertNotNull(t.restrict(), t.id());
                 int[] c = Diaries.visitTarget(t.restrict());
                 assertTrue(altars.stream().anyMatch(a -> Teleports.within(a[0], a[1], c[0], c[1], c[2])),
@@ -178,7 +180,7 @@ class DiaryRound40Test {
     @Test
     void approxStandInsShrank() {
         long approx = Diaries.tasks().stream().filter(Diaries::isApprox).count();
-        assertTrue(approx <= 34, "approx tasks: " + approx);
+        assertTrue(approx <= 16, "approx tasks: " + approx);
         assertFalse(Diaries.isApprox(byDesc("Collect at least 100 Tears of Guthix")));
         assertEquals("tears_of_guthix:100", byDesc("Collect at least 100 Tears of Guthix").target());
         assertFalse(Diaries.isApprox(byDesc("Have the Mage of Zamorak teleport you to the Abyss")));
@@ -380,6 +382,123 @@ class DiaryRound40Test {
                     && com.runecraft.osrs.content.skilling.AgilityShortcuts.DUNGEON_ENDS.stream().anyMatch(e -> e.id().equals(id));
             assertTrue(surface || indoor, id);
             assertTrue(Diaries.tasks().stream().anyMatch(t -> ("shortcut:" + id).equals(t.target())), "no task uses " + id);
+        }
+    }
+
+    @Test
+    void chompyHatsAndTheirTasks() {
+        // Wiki "Chompy bird hunting": 18 hats from 30 to 4,000 kills, in order.
+        assertEquals(18, DiaryActivities.HATS.size());
+        assertEquals(30, DiaryActivities.HATS.get(0).kills());
+        assertEquals("chompy_bird_hat_ogre_bowman", DiaryActivities.HATS.get(0).item());
+        assertEquals(4000, DiaryActivities.HATS.get(17).kills());
+        for (int i = 1; i < DiaryActivities.HATS.size(); i++) {
+            assertTrue(DiaryActivities.HATS.get(i).kills() > DiaryActivities.HATS.get(i - 1).kills());
+        }
+        for (DiaryActivities.Hat h : DiaryActivities.HATS) {
+            assertNotNull(ItemCatalog.get(h.item()), h.item());
+            assertNotNull(ItemCatalog.get(h.item()).equipment(), h.item() + " is worn on the head");
+        }
+        assertNull(DiaryActivities.bestHat(29));
+        assertEquals("chompy_bird_hat_marksman", DiaryActivities.bestHat(125).item());
+        assertEquals("chompy_bird_hat_ogre_forester", DiaryActivities.bestHat(300).item());
+        assertEquals("chompy_bird_hat_ogre_expert", DiaryActivities.bestHat(1000).item());
+        assertEquals(List.of("chompy_hat"), DiaryActivities.hatKeys(124));
+        assertEquals(List.of("chompy_hat", "chompy_hat:125", "chompy_hat:300"), DiaryActivities.hatKeys(999));
+        // The four Western Provinces tasks: any hat (30 kills), then 125, 300 and 1,000 kills.
+        String[][] tiers = {{"Claim any Chompy bird hat", "chompy_hat"}, {"Claim a Chompy bird hat from Rantz after registering at least 125",
+                "chompy_hat:125"}, {"Claim a Chompy bird hat from Rantz after registering at least 300", "chompy_hat:300"},
+                {"Claim a Chompy bird hat from Rantz after registering at least 1,000", "chompy_hat:1000"}};
+        for (int i = 0; i < tiers.length; i++) {
+            Diaries.Task t = byDesc(tiers[i][0]);
+            assertEquals("western", t.area());
+            assertEquals(Diaries.Tier.values()[i], t.tier());
+            assertEquals(tiers[i][1], t.target());
+            assertFalse(Diaries.isApprox(t));
+            assertTrue(Diaries.questReqs(t).contains("big_chompy_bird_hunting"));
+        }
+        // Rewards: two chompies 25% / 50% (medium and hard) / always (elite); Rantz's daily arrows 25 / 50 / 100 / 150.
+        assertEquals(List.of(0, 25, 50, 50, 100), List.of(DiaryActivities.twoChompiesPercent(0), DiaryActivities.twoChompiesPercent(1),
+                DiaryActivities.twoChompiesPercent(2), DiaryActivities.twoChompiesPercent(3), DiaryActivities.twoChompiesPercent(4)));
+        assertEquals(List.of(0, 25, 50, 100, 150), List.of(DiaryActivities.rantzDailyArrows(0), DiaryActivities.rantzDailyArrows(1),
+                DiaryActivities.rantzDailyArrows(2), DiaryActivities.rantzDailyArrows(3), DiaryActivities.rantzDailyArrows(4)));
+        // The five hunting ponds lie on land in the Feldip Hills and the Chompy Marsh.
+        for (int[] pond : DiaryActivities.PONDS) {
+            assertTrue(DiaryActivities.pondAt(pond[0], pond[1]) >= 0);
+            assertFalse(com.runecraft.osrs.world.Elevation.isOcean(GielinorMap.toBlockX(pond[0]), GielinorMap.toBlockZ(pond[1])));
+        }
+        assertEquals(-1, DiaryActivities.pondAt(3222, 3218));
+        assertNotNull(ContentRegistry.boss(DiaryActivities.CHOMPY), "the chompy bird");
+        for (String item : new String[]{DiaryActivities.BELLOWS, DiaryActivities.BLOATED_TOAD, "ogre_bow", "ogre_arrow"}) {
+            assertNotNull(ItemCatalog.get(item), item);
+        }
+    }
+
+    @Test
+    void smallActivitiesFeedTheirTasks() {
+        // Each former stand-in now fires the real action.
+        Object[][] wired = {{"Steal a feather from the Desert Phoenix", "phoenix_feather"}, {"Give a dog a bone!", "dog_bone"},
+                {"Select a colour for your kitten", "kitten_colour"}, {"Restore your prayer points at the nature altar", "altar_restore"},
+                {"Pray at the Altar of Nature with Piety activated", "altar_pray"},
+                {"Perform the 4 emotes from the Stronghold of Security", "emote:flap&emote:slap_head&emote:idea&emote:stamp"},
+                {"Exchange gems for a machete", "machete_trade"}};
+        for (Object[] w : wired) {
+            Diaries.Task t = byDesc((String) w[0]);
+            assertEquals(Diaries.Type.EVENT, t.type(), t.id());
+            assertEquals(w[1], t.target(), t.id());
+            assertFalse(Diaries.isApprox(t), t.id());
+        }
+        assertEquals("PIETY", Diaries.prayerReq(byDesc("Pray at the Altar of Nature with Piety activated")));
+        assertTrue(Diaries.questReqs(byDesc("Restore your prayer points at the nature altar")).contains("nature_spirit"));
+        assertTrue(Diaries.restrictContains(byDesc("Restore your prayer points at the nature altar").restrict(), null,
+                DiaryActivities.NATURE_ALTAR_X, DiaryActivities.NATURE_ALTAR_Y));
+        Diaries.Task fruit = byDesc("Pick a White tree fruit");
+        assertEquals(Diaries.Type.OBTAIN, fruit.type());
+        assertEquals(DiaryActivities.WHITE_TREE_FRUIT, fruit.target());
+        assertFalse(Diaries.isApprox(fruit));
+        assertTrue(Diaries.restrictContains(fruit.restrict(), null, DiaryActivities.WHITE_TREE_X, DiaryActivities.WHITE_TREE_Y));
+        // The phoenix's feather: 25 Thieving and 26 XP (wiki); the white tree: 12 Farming XP, 4 fruit, one per ~5 minutes.
+        assertEquals(0, DiaryActivities.phoenixGrabChance(24));
+        assertTrue(DiaryActivities.phoenixGrabChance(25) > 0);
+        assertEquals(26, DiaryActivities.PHOENIX_XP);
+        assertEquals(12, DiaryActivities.WHITE_TREE_XP);
+        assertEquals(1, DiaryActivities.whiteTreeFruit(0, DiaryActivities.WHITE_TREE_REGROW_TICKS));
+        assertEquals(4, DiaryActivities.whiteTreeFruit(2, 100L * DiaryActivities.WHITE_TREE_REGROW_TICKS));
+        assertEquals(3, DiaryActivities.whiteTreeFruit(3, 10));
+        // The creatures and objects exist where the tasks happen.
+        for (String m : new String[]{DiaryActivities.STRAY_DOG, DiaryActivities.PHOENIX}) {
+            assertNotNull(ContentRegistry.monster(m), m);
+        }
+        long dogs = com.runecraft.osrs.world.SpawnTable.all().stream().filter(p -> p.monster().equals(DiaryActivities.STRAY_DOG)).count();
+        assertEquals(5, dogs, "Varrock's five stray dogs");
+        assertTrue(com.runecraft.osrs.world.SpawnTable.all().stream().anyMatch(p -> p.monster().equals(DiaryActivities.PHOENIX)
+                && Teleports.within(p.x(), p.y(), DiaryActivities.PHOENIX_X, DiaryActivities.PHOENIX_Y, 6)));
+        Set<String> places = new HashSet<>();
+        for (PlaceDef p : ContentRegistry.places()) {
+            places.add(p.id());
+        }
+        assertTrue(places.contains(DiaryActivities.WHITE_TREE));
+        assertTrue(places.contains(DiaryActivities.NATURE_ALTAR));
+        for (String item : new String[]{DiaryActivities.PHOENIX_FEATHER, DiaryActivities.WHITE_TREE_FRUIT, DiaryActivities.KITTEN,
+                "ring_of_charos"}) {
+            assertNotNull(ItemCatalog.get(item), item);
+        }
+        assertEquals(6, DiaryActivities.KITTEN_COLOURS.size());
+        // Safta Doc's machetes: 300 / 600 / 1,200 trading sticks with three gems and a gout tuber (wiki).
+        assertNotNull(ContentRegistry.npc(DiaryActivities.SAFTA_DOC));
+        assertTrue(places.contains(DiaryActivities.SAFTA_DOC));
+        assertEquals(List.of(300, 600, 1200), DiaryActivities.MACHETES.stream().map(DiaryActivities.Machete::sticks).toList());
+        for (DiaryActivities.Machete m : DiaryActivities.MACHETES) {
+            assertNotNull(ItemCatalog.get(m.item()), m.item());
+            assertNotNull(ItemCatalog.get("uncut_" + m.gem()), m.gem());
+        }
+        for (String item : new String[]{DiaryActivities.GOUT_TUBER, DiaryActivities.TRADING_STICKS}) {
+            assertNotNull(ItemCatalog.get(item), item);
+        }
+        assertTrue(Diaries.questReqs(byDesc("Exchange gems for a machete")).contains("jungle_potion"));
+        assertEquals(List.of("Flap", "Slap Head", "Idea", "Stamp"), DiaryActivities.STRONGHOLD_EMOTES);
+        for (String e : DiaryActivities.STRONGHOLD_EMOTES) {
+            assertFalse(DiaryActivities.BASIC_EMOTES.contains(e), e + " must be unlocked");
         }
     }
 }

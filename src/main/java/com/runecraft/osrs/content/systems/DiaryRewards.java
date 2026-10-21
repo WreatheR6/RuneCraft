@@ -403,6 +403,9 @@ public final class DiaryRewards {
                 }
             }
             case "western" -> {
+                out.add(tier >= 4 ? "Two chompy birds always come to a bloated toad"
+                        : DiaryActivities.twoChompiesPercent(tier) + "% chance of two chompy birds coming to a bloated toad");
+                out.add("Rantz hands out " + DiaryActivities.rantzDailyArrows(tier) + " ogre arrows a day");
                 if (tier >= 3) {
                     out.add("Elite void knight equipment available from Pest Control");
                 }

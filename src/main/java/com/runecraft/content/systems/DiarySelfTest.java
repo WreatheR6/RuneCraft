@@ -33,7 +33,9 @@ import net.minecraft.world.entity.LivingEntity;
  * player stands in the task's area, every task wired to a new mechanic this round (eagle and train trips through the
  * transport service, NPC trips, fairy rings, altars through the prayer service, the memoirs' five cities, pumps and wells
  * through the objects service, the five shortcuts, Tears of Guthix), the gear/prayer/weapon conditions (first missed, then
- * met) and the rewards (a claim with its Karamja lamp, taskmaster proximity, teleport charges, the travel fare perks).
+ * met) and the rewards (a claim with its Karamja lamp, taskmaster proximity, teleport charges, the travel fare perks); then the
+ * activities behind the last stand-ins: chompy hunting up to Rantz's four hat tiers, a chosen kitten colour, a stray dog's bone, the
+ * Desert Phoenix's feather, the white tree, the Altar of Nature and the Stronghold of Security's emotes.
  */
 public final class DiarySelfTest {
     private DiarySelfTest() {
@@ -50,6 +52,8 @@ public final class DiarySelfTest {
         checks.add(new SelfTest.Check("minigame:diary_shortcuts_tears", () -> shortcutsAndTears(c)));
         checks.add(new SelfTest.Check("minigame:diary_rewards", () -> rewards(c)));
         checks.add(new SelfTest.Check("minigame:diary_taskmasters", () -> taskmasters(c)));
+        checks.add(new SelfTest.Check("minigame:diary_chompies", () -> chompies(c)));
+        checks.add(new SelfTest.Check("minigame:diary_activities", () -> activities(c)));
         return checks;
     }
 
@@ -454,5 +458,232 @@ public final class DiarySelfTest {
         }
         npc.discard();
         return "12 taskmasters, Toby's claim";
+    }
+
+    // ------------------------------------------------------------------ round 40 activities
+
+    /** The first stack of an item in the player's inventory. */
+    private static net.minecraft.world.item.ItemStack carried(TestContext c, String id) {
+        for (int i = 0; i < c.player.getInventory().getContainerSize(); i++) {
+            net.minecraft.world.item.ItemStack s = c.player.getInventory().getItem(i);
+            if (!s.isEmpty() && Inv.idOf(s).equals(id)) {
+                return s;
+            }
+        }
+        throw new AssertionError("no " + id + " carried");
+    }
+
+    private static void setLevel(TestContext c, Skill skill, int level) {
+        Players.data(c.player).skills().setXpTenths(skill, Experience.xpForLevel(level) * 10);
+    }
+
+    /** Bellows filled and a toad blown up by a Feldip pond, its chompy flying in and killed with an ogre bow, then the four hats. */
+    private static String chompies(TestContext c) {
+        c.completeQuests(null);
+        SysState.SysPlayer sp = SysState.of(c.player);
+        int[] pond = com.runecraft.osrs.content.systems.DiaryActivities.PONDS[0];
+        at(c, pond[0], pond[1]);
+        Inv.give(c.player, com.runecraft.osrs.content.systems.DiaryActivities.BELLOWS, 1);
+        net.minecraft.world.item.ItemStack bellows = carried(c, com.runecraft.osrs.content.systems.DiaryActivities.BELLOWS);
+        DiaryActivitiesService.useBellows(c.player, bellows);
+        DiaryActivitiesService.useBellows(c.player, bellows);
+        if (Inv.count(c.player, com.runecraft.osrs.content.systems.DiaryActivities.BLOATED_TOAD) != 1) {
+            throw new AssertionError("filling the bellows and using them again did not make a bloated toad");
+        }
+        DiaryActivitiesService.putDownToad(c.player, carried(c, com.runecraft.osrs.content.systems.DiaryActivities.BLOATED_TOAD));
+        if (Inv.count(c.player, com.runecraft.osrs.content.systems.DiaryActivities.BLOATED_TOAD) != 0) {
+            throw new AssertionError("the toad was not put down");
+        }
+        List<com.runecraft.boss.DataBossEntity> birds = DiaryActivitiesService.chompiesArrive(c.player, c.world, c.player.blockPosition());
+        if (birds.isEmpty()) {
+            throw new AssertionError("no chompy came to the toad");
+        }
+        com.runecraft.boss.DataBossEntity bird = birds.get(0);
+        com.runecraft.combat.MonsterStats stats = bird.stats();
+        Inv.remove(c.player, "ogre_bow", Inv.count(c.player, "ogre_bow"));
+        sp.diaryCounters.remove(com.runecraft.osrs.content.systems.DiaryActivities.CHOMPY_KILLS);
+        GameEvents.fireKill(c.player, bird, stats);
+        if (DiaryActivitiesService.chompyKills(c.player) != 0) {
+            throw new AssertionError("a chompy killed without an ogre bow was registered");
+        }
+        Inv.give(c.player, "ogre_bow", 1);
+        GameEvents.fireKill(c.player, bird, stats);
+        if (DiaryActivitiesService.chompyKills(c.player) != 1) {
+            throw new AssertionError("a chompy killed with an ogre bow was not registered");
+        }
+        birds.forEach(net.minecraft.world.entity.Entity::discard);
+        // Rantz's hats: none below 30 kills; then the four tiers' tasks as the kills pass 30, 125, 300 and 1,000.
+        String[] tasks = {"Claim any Chompy bird hat", "Claim a Chompy bird hat from Rantz after registering at least 125",
+                "Claim a Chompy bird hat from Rantz after registering at least 300", "Claim a Chompy bird hat from Rantz after registering at least 1,000"};
+        int[] kills = {30, 125, 300, 1000};
+        int[] hats = {0, 5, 8, 12};
+        sp.diaryCounters.put(com.runecraft.osrs.content.systems.DiaryActivities.CHOMPY_KILLS, 28);
+        if (DiaryActivitiesService.claimHat(c.player, 0)) {
+            throw new AssertionError("Rantz gave a hat for 28 kills");
+        }
+        for (int i = 0; i < tasks.length; i++) {
+            sp.diaryCounters.put(com.runecraft.osrs.content.systems.DiaryActivities.CHOMPY_KILLS, kills[i] - 1);
+            GameEvents.fireKill(c.player, bird, stats);
+            expect(c, task(tasks[i]), false, (kills[i]) + " kills before a hat is claimed");
+            if (!DiaryActivitiesService.claimHat(c.player, hats[i])
+                    || !Inv.has(c.player, com.runecraft.osrs.content.systems.DiaryActivities.HATS.get(hats[i]).item(), 1)) {
+                throw new AssertionError("Rantz did not hand out the hat for " + kills[i] + " kills");
+            }
+            expect(c, task(tasks[i]), true, "claiming a hat at " + kills[i] + " kills");
+        }
+        // The daily arrows follow the Western Provinces tiers (the easy tier: 25).
+        Diaries.tasks("western", Diaries.Tier.EASY).forEach(t -> sp.diaryDone.add(t.id()));
+        int before = Inv.count(c.player, "ogre_arrow");
+        DiaryActivitiesService.rantzAction(c.player, "arrows");
+        DiaryActivitiesService.rantzAction(c.player, "arrows");
+        if (Inv.count(c.player, "ogre_arrow") - before != 25) {
+            throw new AssertionError("Rantz's daily arrows after the easy diary: " + (Inv.count(c.player, "ogre_arrow") - before));
+        }
+        // The elite diary's perk: two chompies always come to a toad.
+        for (Diaries.Tier t : Diaries.Tier.values()) {
+            Diaries.tasks("western", t).forEach(task -> sp.diaryDone.add(task.id()));
+        }
+        List<com.runecraft.boss.DataBossEntity> pair = DiaryActivitiesService.chompiesArrive(c.player, c.world, c.player.blockPosition());
+        pair.forEach(net.minecraft.world.entity.Entity::discard);
+        if (pair.size() != 2) {
+            throw new AssertionError(pair.size() + " chompies came to a toad after the elite diary, not 2");
+        }
+        c.home();
+        return "1 hunted chompy, 4 hat tiers, daily arrows, the elite pair";
+    }
+
+    /** A kitten colour, a stray dog's bone, the phoenix's feather, the white tree, the Altar of Nature and the Stronghold emotes. */
+    private static String activities(TestContext c) {
+        c.completeQuests(null);
+        PlayerData d = Players.data(c.player);
+        // Gertrude: without the ring of charos the colour is random (no task); with it the player chooses.
+        Diaries.Task kitten = task("Select a colour for your kitten");
+        String kit = com.runecraft.osrs.content.systems.DiaryActivities.KITTEN;
+        Inv.remove(c.player, kit, Inv.count(c.player, kit));
+        Inv.remove(c.player, "ring_of_charos", Inv.count(c.player, "ring_of_charos"));
+        Inv.give(c.player, Inv.COINS, 200);
+        if (!DiaryActivitiesService.buyKitten(c.player, 1) || !Inv.has(c.player, kit, 1)) {
+            throw new AssertionError("Gertrude sold no kitten");
+        }
+        expect(c, kitten, false, "a kitten without the ring of charos");
+        Inv.remove(c.player, kit, 1);
+        Inv.give(c.player, "ring_of_charos", 1);
+        if (!DiaryActivitiesService.buyKitten(c.player, 1)) {
+            throw new AssertionError("Gertrude sold no kitten to a charming player");
+        }
+        expect(c, kitten, true, "choosing a white kitten with the ring of charos");
+        // Safta Doc: an opal machete for a gout tuber, three opals (cut and uncut mixed) and 300 trading sticks.
+        Diaries.Task machete = task("Exchange gems for a machete");
+        Inv.give(c.player, "gout_tuber", 1);
+        Inv.give(c.player, "trading_sticks", 299);
+        Inv.give(c.player, "uncut_opal", 2);
+        Inv.give(c.player, "opal", 1);
+        if (DiaryActivitiesService.buyMachete(c.player, 0)) {
+            throw new AssertionError("Safta Doc made a machete for 299 trading sticks");
+        }
+        Inv.give(c.player, "trading_sticks", 1);
+        if (!DiaryActivitiesService.buyMachete(c.player, 0) || !Inv.has(c.player, "opal_machete", 1)
+                || Inv.count(c.player, "uncut_opal") + Inv.count(c.player, "opal") != 0 || Inv.has(c.player, "gout_tuber", 1)) {
+            throw new AssertionError("Safta Doc's opal machete trade went wrong");
+        }
+        expect(c, machete, true, "trading gems for a machete");
+        // A stray dog: refused bones, then a bone.
+        Diaries.Task dog = task("Give a dog a bone!");
+        net.minecraft.world.entity.LivingEntity stray = com.runecraft.registry.ModEntities.MODULE_MONSTERS
+                .get(com.runecraft.osrs.content.systems.DiaryActivities.STRAY_DOG).create(c.world);
+        net.minecraft.world.entity.LivingEntity phoenix = com.runecraft.registry.ModEntities.MODULE_MONSTERS
+                .get(com.runecraft.osrs.content.systems.DiaryActivities.PHOENIX).create(c.world);
+        if (stray == null || phoenix == null) {
+            throw new AssertionError("could not create a stray dog or the phoenix");
+        }
+        wield(c, "shaikahan_bones");
+        DiaryActivitiesService.feedDog(c.player, stray);
+        expect(c, dog, false, "offering Shaikahan bones");
+        wield(c, "bones");
+        if (!DiaryActivitiesService.feedDog(c.player, stray) || !c.player.getMainHandItem().isEmpty()) {
+            throw new AssertionError("the dog did not eat the bone");
+        }
+        expect(c, dog, true, "feeding it a bone");
+        // The Desert Phoenix: no feather below 25 Thieving; at 99 one is grabbed within a few tries (stuns cleared).
+        Diaries.Task feather = task("Steal a feather from the Desert Phoenix");
+        String f = com.runecraft.osrs.content.systems.DiaryActivities.PHOENIX_FEATHER;
+        Inv.remove(c.player, f, Inv.count(c.player, f));
+        at(c, com.runecraft.osrs.content.systems.DiaryActivities.PHOENIX_X, com.runecraft.osrs.content.systems.DiaryActivities.PHOENIX_Y);
+        setLevel(c, Skill.THIEVING, 20);
+        DiaryActivitiesService.grabFeather(c.player, phoenix);
+        expect(c, feather, false, "a grab at 20 Thieving");
+        setLevel(c, Skill.THIEVING, 99);
+        for (int i = 0; i < 30 && !Inv.has(c.player, f, 1); i++) {
+            d.stunnedUntil = 0;
+            c.heal();
+            DiaryActivitiesService.grabFeather(c.player, phoenix);
+        }
+        if (!Inv.has(c.player, f, 1)) {
+            throw new AssertionError("no phoenix feather in 30 grabs at 99 Thieving");
+        }
+        expect(c, feather, true, "grabbing a feather");
+        d.stunnedUntil = 0;
+        // The white tree: 25 Farming, four fruit then none until one regrows.
+        Diaries.Task fruit = task("Pick a White tree fruit");
+        at(c, com.runecraft.osrs.content.systems.DiaryActivities.WHITE_TREE_X, com.runecraft.osrs.content.systems.DiaryActivities.WHITE_TREE_Y);
+        setLevel(c, Skill.FARMING, 24);
+        if (DiaryActivitiesService.pickWhiteTree(c.player)) {
+            throw new AssertionError("picked white tree fruit at 24 Farming");
+        }
+        setLevel(c, Skill.FARMING, 25);
+        int picked = 0;
+        while (picked < 6 && DiaryActivitiesService.pickWhiteTree(c.player)) {
+            picked++;
+        }
+        if (picked != 4) {
+            throw new AssertionError("picked " + picked + " fruit from a full white tree, not 4");
+        }
+        expect(c, fruit, true, "picking a fruit");
+        // The Altar of Nature: restoring points (easy), then praying with Piety at 70 Prayer and Defence (hard).
+        Diaries.Task restore = task("Restore your prayer points at the nature altar");
+        Diaries.Task piety = task("Pray at the Altar of Nature with Piety activated");
+        at(c, com.runecraft.osrs.content.systems.DiaryActivities.NATURE_ALTAR_X, com.runecraft.osrs.content.systems.DiaryActivities.NATURE_ALTAR_Y);
+        setLevel(c, Skill.PRAYER, 70);
+        setLevel(c, Skill.DEFENCE, 70);
+        d.activePrayers().clear();
+        d.setPrayerPoints(70);
+        DiaryActivitiesService.natureAltar(c.player, null);
+        expect(c, restore, false, "praying with full points");
+        expect(c, piety, false, "praying without Piety");
+        d.setPrayerPoints(10);
+        DiaryActivitiesService.natureAltar(c.player, null);
+        expect(c, restore, true, "restoring points at the altar");
+        d.activePrayers().add(Prayer.PIETY);
+        DiaryActivitiesService.natureAltar(c.player, null);
+        expect(c, piety, true, "praying there with Piety on");
+        d.activePrayers().clear();
+        // The Stronghold's emotes: locked until each reward chest is opened, then all four performed.
+        Diaries.Task emotes = task("Perform the 4 emotes from the Stronghold of Security");
+        List<String> four = com.runecraft.osrs.content.systems.DiaryActivities.STRONGHOLD_EMOTES;
+        int chests = com.runecraft.content.dungeons.DungeonsHooks.securityChests(c.player);
+        com.runecraft.content.dungeons.DungeonsHooks.setSecurityChests(c.player, 0);
+        try {
+            for (int i = 0; i < four.size(); i++) {
+                if (DiaryActivitiesService.perform(c.player, four.get(i))) {
+                    throw new AssertionError(four.get(i) + " was performed before its chest was opened");
+                }
+                com.runecraft.content.BlockHooks.use(c.player, com.runecraft.osrs.content.dungeons.DungeonBlocks.SOS_CHESTS.get(i),
+                        c.player.blockPosition(), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+            }
+            for (int i = 0; i < 4; i++) {
+                DiaryActivitiesService.perform(c.player, four.get(0)); // the same emote four times doesn't count (wiki)
+            }
+            expect(c, emotes, false, "performing one emote four times");
+            for (String e : four) {
+                if (!DiaryActivitiesService.perform(c.player, e)) {
+                    throw new AssertionError(e + " is still locked after its chest");
+                }
+            }
+            expect(c, emotes, true, "performing all four");
+        } finally {
+            com.runecraft.content.dungeons.DungeonsHooks.setSecurityChests(c.player, chests);
+        }
+        c.home();
+        return "kitten, machete, dog, phoenix, white tree, nature altar, 4 emotes";
     }
 }
