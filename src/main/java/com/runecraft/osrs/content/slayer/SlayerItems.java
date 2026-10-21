@@ -256,6 +256,9 @@ public final class SlayerItems {
         items.add("eternal_gem", "Eternal gem", Kind.SLAYER_GEM, "gem", 0x8A30C0).value(1).stack(1)
                 .examine("An enchanted gem that never runs out of charges.");
         // Slayer chest uniques (OSRS Wiki): the brimstone chest's broken dragon hasta, Larran's big chest's Dagon'hai robes.
+        // Round 44: dropped by gryphons (OSRS Wiki "Gryphon feather"; they charge the horn of plenty, not built).
+        items.add("gryphon_feather", "Gryphon feather", Kind.SIMPLE, "secondary", 0xC8A070).value(15).stack(100000)
+                .examine("A feather from a gryphon.");
         items.add("broken_dragon_hasta", "Broken dragon hasta", Kind.SIMPLE, "spear", 0x8A3A2A).value(62400).stack(1)
                 .examine("The item to make into a hasta.");
         items.add("dragon_hasta", "Dragon hasta", Kind.MELEE_WEAPON, "spear", 0xC02020).value(62400).stack(1).tier("dragon")

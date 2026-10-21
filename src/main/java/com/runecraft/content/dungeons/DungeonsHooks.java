@@ -250,6 +250,10 @@ public final class DungeonsHooks implements ModuleHooks {
         String what = Dungeons.ANY_TASK.equals(area.task()) ? "the creatures of this cave"
                 : com.runecraft.osrs.content.slayer.SlayerTasks.displayName(area.task());
         String line = "You can only fight " + what + " here while on a Slayer task to kill them.";
+        String own = Dungeons.TASK_ONLY_LINES.get(area.dungeon());
+        if (area.guardian() == null && own != null) {
+            return own;
+        }
         return area.guardian() == null ? line : area.guardian() + ": " + line;
     }
 

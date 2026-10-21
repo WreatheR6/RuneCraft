@@ -66,6 +66,7 @@ public final class SlayerContent implements ContentModule {
             list.addAll(SlayerTaskMonsters.all());
             list.addAll(SlayerTaskMonsters2.all());
             list.addAll(SlayerTaskMonsters3.all());
+            list.addAll(SeaSlayerMonsters.all());
             list.add(TormentedDemons.monster());
             list.addAll(DemonicGorillas.monsters());
             list.addAll(Superiors.build(list));
@@ -88,6 +89,7 @@ public final class SlayerContent implements ContentModule {
     public List<ModelSpec.Variant> modelVariants() {
         List<ModelSpec.Variant> out = new ArrayList<>(SlayerTaskMonsters.variants());
         out.addAll(SlayerTaskMonsters2.variants());
+        out.addAll(SeaSlayerMonsters.variants());
         return out;
     }
 

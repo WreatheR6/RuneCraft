@@ -35,3 +35,4 @@ vitreous_chilled_jelly|Vitreous Chilled Jelly|Chilled jelly|241|220|52|2200
 magma_strykewyrm|Magma strykewyrm|Lava strykewyrm|249|340|62|3655
 ancient_custodian|Ancient Custodian|Elder custodian stalker|239|330|76|3382
 dreadborn_araxyte|Dreadborn Araxyte|Araxyte|281|350|92|4462.5
+dire_gryphon|Dire gryphon|Gryphon|209|280|51|2800

@@ -559,7 +559,8 @@ final class SlayerChecks {
                 throw failure("a player without a task hurt a " + creature + " in " + area.dungeon() + " (" + area.guardian() + ")");
             }
             String said = com.runecraft.content.dungeons.DungeonsHooks.taskOnlyMessage(area);
-            if (area.guardian() == null || !said.startsWith(area.guardian())) {
+            String own = Dungeons.TASK_ONLY_LINES.get(area.dungeon());
+            if (area.guardian() == null ? own == null || !said.equals(own) : !said.startsWith(area.guardian())) {
                 throw failure("no Slayer guardian speaks for " + area.dungeon() + ": " + said);
             }
             boolean wild = com.runecraft.world.Gielinor.wildernessLevel(mob) > 0;

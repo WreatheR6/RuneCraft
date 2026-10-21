@@ -122,6 +122,7 @@ public final class Dungeons {
             list.add(CharredDungeon.dungeon());
             list.add(ShayzienCrypts.dungeon());
             list.add(CamdozaalRuins.build());
+            list.addAll(SeaSlayerDungeons.all());
             all = Collections.unmodifiableList(list);
         }
         return all;
@@ -198,6 +199,14 @@ public final class Dungeons {
     public static final java.util.Map<String, String> GUARDIANS = java.util.Map.of("dng_kalphite_cave", "Entomologist",
             "dng_kraken_cove", "Lieve McCracken", "dng_smoke_devil_dungeon", "Breive", "dng_lizardman_caves", "Captain Cleive",
             "dng_slayer_tower_basement", "Raulyn", "dng_stronghold_slayer_cave", "Nieve");
+
+    /**
+     * What a task-only area without a Slayer guardian says to a player attacking off task (OSRS Wiki "Grimstone Dungeon"),
+     * by dungeon id.
+     */
+    public static final java.util.Map<String, String> TASK_ONLY_LINES = java.util.Map.of("dng_grimstone_dungeon",
+            "You feel a strange coldness wash over you, filling you with fear. You decide it best not to attack these dragons"
+                    + " without permission.");
 
     /** The Slayer task category needed to fight at this block (a task-only area or dungeon), or null. */
     public static String taskOnly(int x, int y, int z) {

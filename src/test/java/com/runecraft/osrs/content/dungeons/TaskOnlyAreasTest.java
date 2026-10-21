@@ -150,7 +150,8 @@ class TaskOnlyAreasTest {
     void everyAreaNamesARealTaskAndGuardian() {
         assertFalse(Dungeons.taskOnlyAreas().isEmpty());
         for (Dungeons.TaskOnlyArea a : Dungeons.taskOnlyAreas()) {
-            assertNotNull(a.guardian(), a.toString());
+            // a guardian speaks for the area, or (Grimstone's frost dragons) the area has its own line
+            assertTrue(a.guardian() != null || Dungeons.TASK_ONLY_LINES.containsKey(a.dungeon()), a.toString());
             assertTrue(Dungeons.ANY_TASK.equals(a.task()) || SlayerCategories.get(a.task()) != null, a.task());
             assertTrue(a.y2() <= Dungeons.DEEP_TOP, a.toString());
         }

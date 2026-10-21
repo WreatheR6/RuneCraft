@@ -89,6 +89,7 @@ public final class Superiors {
         add("lava_strykewyrm", "wyrm", "magma_strykewyrm", "Magma strykewyrm", 249, 62, 340, 3655, 1.5f);
         add("elder_custodian_stalker", "ancient_custodian", "Ancient Custodian", 239, 76, 330, 3382, 1.3f);
         add("araxyte", "dreadborn_araxyte", "Dreadborn Araxyte", 281, 92, 350, 4462.5, 1.4f);
+        add("gryphon", "dire_gryphon", "Dire gryphon", 209, 51, 280, 2800, 1.4f);
     }
 
     public static Superior forBase(String baseId) {
