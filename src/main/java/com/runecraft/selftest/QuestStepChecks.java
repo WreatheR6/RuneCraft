@@ -55,7 +55,8 @@ import net.minecraft.world.phys.AABB;
  *   <li>talks go through the real dialogue dispatcher, which must fire the step the walk means;</li>
  *   <li>places are reached by standing at them while the real place check runs;</li>
  *   <li>foes are raised the way a player meets them (a step spawned them, or the summoning stone at their arena, which asks the
- *   quest whether the player may fight them now) and fought to death on the test platform: they attack, the player's hits
+ *   quest whether the player may fight them now) and fought to death on the test platform (one called up at a far place is
+ *   brought there with the lair it is leashed to): they attack, the player's hits
  *   go through their own damage rules (a foe that needs a special weapon is checked to shrug off ordinary ones), and the
  *   kill reaches the quest through the real death path;</li>
  *   <li>puzzles are shown where they are presented and answered through the chat-link handler;</li>
@@ -77,6 +78,8 @@ final class QuestStepChecks {
     private final TestContext c;
     /** The stage the walk is at (for raising the next of several foes). */
     private QuestSpec.Stage stage;
+    /** This step's foe that left the fight without dying, as a note for the step's failure, or null. */
+    private String vanished;
 
     private QuestStepChecks(TestContext c) {
         this.c = c;
@@ -181,6 +184,7 @@ final class QuestStepChecks {
                         + stage.triggers.indexOf(t) + ")";
                 List<ItemStack> banked = prepare(t, questItems);
                 Snapshot snap = new Snapshot(t, s, info, questItems);
+                vanished = null;
                 switch (t.kind) {
                     case TALK -> QuestInterpreter.selfTestTalk(p(), t.target);
                     case REACH -> {
@@ -223,7 +227,8 @@ final class QuestStepChecks {
                     // what didn't happen, then the step's state now: still ready (the talk or place fired another step), or
                     // switched off (it fired, e.g. its flag is set, but part of it - its foe - didn't come through)
                     String why = QuestInterpreter.selfTestBlocked(p(), t);
-                    throw failure(where + " did not take effect (" + missing + "): " + (why != null ? "the step is now " + why
+                    throw failure(where + " did not take effect (" + missing + (vanished != null ? "; " + vanished : "") + "): "
+                            + (why != null ? "the step is now " + why
                             : "the step is still ready, the talk or place fired another step"));
                 }
                 banked.forEach(stack -> Inv.give(p(), stack)); // back from the bank
@@ -393,15 +398,19 @@ final class QuestStepChecks {
         return found;
     }
 
-    /** Quest foes a step raised where the player stood (a place far from the platform) are brought to the platform. */
+    /**
+     * Quest foes a step raised where the player stood (a place far from the platform) are brought to the platform, each with
+     * the lair it is leashed to ({@link QuestInterpreter#selfTestMoveQuestBoss}): a quest boss stays where it appeared, so
+     * one moved alone is put back there, beyond the player's reach, and resets a minute later without dying.
+     */
     private void bringFoesHome() {
         if (p().distanceToSqr(TestContext.PLATFORM.getX() + 0.5, TestContext.PLATFORM.getY(), TestContext.PLATFORM.getZ() + 0.5) < 32 * 32) {
             return;
         }
         int n = 0;
         for (Entity e : c.world.getEntities((Entity) null, new AABB(p().blockPosition()).inflate(48),
-                e -> e instanceof DataBossEntity && e.isAlive())) {
-            e.teleportTo(TestContext.PLATFORM.getX() + 3.5 + n, TestContext.PLATFORM.getY(), TestContext.PLATFORM.getZ() + 0.5);
+                e -> e instanceof DataBossEntity d && d.isAlive() && d.def() != null && d.def().questBoss())) {
+            QuestInterpreter.selfTestMoveQuestBoss((DataBossEntity) e, TestContext.PLATFORM.offset(3 + n, 0, 0));
             n++;
         }
     }
@@ -455,6 +464,11 @@ final class QuestStepChecks {
         if (foe.isAlive()) {
             throw failure(where + ": " + id + " still alive after " + tick + " game ticks ("
                     + Math.round(foe.getHealth() * 100 / foe.getMaxHealth()) + "% health)");
+        }
+        if (foe.isRemoved() && foe.getHealth() > 0) {
+            // gone without dying (a lair reset, a despawn): no kill reached the quest, which the step's check then reports
+            vanished = id + " vanished at " + Math.round(foe.getHealth() * 100 / foe.getMaxHealth()) + "% health without dying ("
+                    + foe.getRemovalReason() + ")";
         }
         return note;
     }
