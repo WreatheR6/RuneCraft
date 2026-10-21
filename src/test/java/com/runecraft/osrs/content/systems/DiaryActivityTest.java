@@ -34,7 +34,11 @@ class DiaryActivityTest {
         for (Diaries.Task t : Diaries.tasks()) {
             if (t.type() == Diaries.Type.EVENT || t.type() == Diaries.Type.WEAR) {
                 events++;
-                assertFalse(Diaries.isApprox(t), t.id() + " uses a real trigger");
+                // Round 40: praying at Taverley's Altar of Guthix is real, but full Initiate armour can't be worn (only the sallet
+                // exists), so that task stays marked approx.
+                if (!t.id().equals("falador_medium_8")) {
+                    assertFalse(Diaries.isApprox(t), t.id() + " uses a real trigger");
+                }
             }
         }
         assertTrue(events >= 10, "activity/wear tasks: " + events);

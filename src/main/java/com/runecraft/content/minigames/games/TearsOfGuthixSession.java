@@ -178,8 +178,16 @@ public class TearsOfGuthixSession extends MinigameSession {
                 default -> true;
             });
             double xp = skill == null ? 0 : TearsOfGuthix.xp(tears, skills.xp(skill));
+            // Hard Lumbridge & Draynor Diary (OSRS wiki): 10% more experience from Tears of Guthix.
+            if (com.runecraft.osrs.content.systems.Diaries.tierComplete(com.runecraft.content.systems.SysState.of(p).diaryDone,
+                    "lumbridge", com.runecraft.osrs.content.systems.Diaries.Tier.HARD)) {
+                xp *= 1.1;
+            }
             if (xp > 0) {
                 xp(p, skill, xp);
+            }
+            if (tears >= 100) {
+                com.runecraft.content.GameEvents.fireActivity(p, "tears_of_guthix:100"); // the hard Lumbridge & Draynor task
             }
             Msg.game(p, "You drink the " + tears + " tears you collected" + (xp > 0 ? " and gain " + (int) xp + " " + skill.displayName()
                     + " experience." : "."));

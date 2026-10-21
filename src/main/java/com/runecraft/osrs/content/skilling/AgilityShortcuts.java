@@ -177,7 +177,13 @@ public final class AgilityShortcuts {
             s("kharazi_jungle_vine", "Vine (Kharazi Jungle)", "climb the vine", 79, 0, 2899, 2937, 2899, 2942),
             s("lava_maze_stepping_stone", "Stepping stone (Lava Maze)", "jump across the stepping stone", 82, 0, 3092, 3878, 3092, 3883),
             s("crandor_rocks", "Rocks (Crandor)", "climb the rocks", 84, 0, 2832, 3247, 2832, 3252),
-            s("waterbirth_island_rocks", "Rocks (Waterbirth Island)", "climb the rocks", 85, 0, 2547, 3749, 2547, 3744));
+            s("waterbirth_island_rocks", "Rocks (Waterbirth Island)", "climb the rocks", 85, 0, 2547, 3749, 2547, 3744),
+            // ---- Round 40 (achievement diary tasks): the Brimhaven ropeswing to Moss Giant Island (shortest-path tiles) and the
+            // medium jutting wall in Zanaris (2400, 4402 / 4404; the ends are a tile further out so the two blocks don't touch). ----
+            // The strait here is wider than OSRS's (the Karamja end, 2709, 3209, is in the water): the Karamja end is on this
+            // world's shore. // approx
+            s("brimhaven_ropeswing", "Ropeswing (Brimhaven)", "swing across on the ropeswing", 10, 3, 2724, 3209, 2704, 3209),
+            s("zanaris_jutting_wall", "Jutting wall (Zanaris, medium)", "squeeze past the jutting wall", 46, 10, 2400, 4401, 2400, 4405));
 
     /**
      * The wiki shortcut (page name in {@code agility_shortcuts.tsv}) each shortcut is; the shortcuts in {@link #UNLISTED} are
@@ -225,7 +231,11 @@ public final class AgilityShortcuts {
             Map.entry("fremennik_slayer_strange_floor", "Strange floor (Fremennik Slayer Dungeon)"),
             Map.entry("stronghold_slayer_tunnel", "Tunnel (Stronghold Slayer Cave)"), Map.entry("asgarnian_ice_tunnel", "Tunnel (Asgarnian Ice Dungeon, level 72)"),
             Map.entry("tonali_log_balance", "Log balance (Tonali Cavern)"), Map.entry("tonali_stepping_stone", "Log balance (Tonali Cavern)"),
-            Map.entry("stalker_den_stepping_stone", "Stepping stone (Stalker Den)"));
+            Map.entry("stalker_den_stepping_stone", "Stepping stone (Stalker Den)"),
+            Map.entry("brimhaven_ropeswing", "Ropeswing (Brimhaven)"), Map.entry("zanaris_jutting_wall", "Jutting wall (Zanaris)#Medium"),
+            Map.entry("dwarven_mine_narrow_crevice", "Narrow crevice (Dwarven Mine)"),
+            Map.entry("taverley_dungeon_strange_floor", "Strange floor (Taverley Dungeon)"),
+            Map.entry("edgeville_dungeon_pipe", "Obstacle pipe (Edgeville Dungeon)"));
 
     /** Shortcuts that are not on the wiki's list: the Kalphite Lair rope, the God Wars boulder (Strength) and Draynor Manor's fence. */
     public static final java.util.Set<String> UNLISTED = java.util.Set.of("kalphite_lair_rope", "gwd_boulder", "draynor_manor_railing");
@@ -253,7 +263,12 @@ public final class AgilityShortcuts {
             // Varlamore (round 28): Tonali Cavern's log balance and stepping stone (46), the Stalker Den's stepping stone (64).
             in("tonali_log_balance", "Log balance (Tonali Cavern)", "walk across the log", 46),
             in("tonali_stepping_stone", "Stepping stone (Tonali Cavern)", "cross the stepping stone", 46),
-            in("stalker_den_stepping_stone", "Stepping stone (Stalker Den)", "cross the stepping stone", 64));
+            in("stalker_den_stepping_stone", "Stepping stone (Stalker Den)", "cross the stepping stone", 64),
+            // Round 40 (achievement diary tasks): the Dwarven Mine's narrow crevice (42, no XP), Taverley Dungeon's strange floor
+            // (80, 12.5 XP) and the obstacle pipe from the Edgeville Dungeon to the Varrock Sewers (51, 10 XP; ends in FIXED_ENDS).
+            in("dwarven_mine_narrow_crevice", "Narrow crevice (Dwarven Mine)", "squeeze through the crevice", 42),
+            in("taverley_dungeon_strange_floor", "Strange floor (Taverley Dungeon)", "jump over the strange floor", 80, 12.5),
+            in("edgeville_dungeon_pipe", "Obstacle pipe (Edgeville Dungeon to the Varrock Sewers)", "squeeze through the pipe", 51, 10));
 
     /** Two block positions joined by an indoor shortcut: end a and end b, each the block the shortcut stands in. */
     public record BlockEnds(String id, int x1, int y1, int z1, int x2, int y2, int z2) {
@@ -281,6 +296,24 @@ public final class AgilityShortcuts {
     public static final List<BlockEnds> TOWER_ENDS = List.of(
             towerEnds("slayer_tower_chain_low", 3418, 3546, 0, 7),
             towerEnds("slayer_tower_chain_high", 3438, 3546, 7, 14));
+
+    /**
+     * Round 40's dungeon shortcuts (achievement diary tasks), placed by block position once their chunk loads like the tower
+     * chains, so worlds whose dungeons were carved before they existed get them too. Feet level = the dungeon's floor + 1.
+     */
+    public static final List<BlockEnds> DUNGEON_ENDS = List.of(
+            // The obstacle pipe joining two dungeons (OSRS 3149/3155, 9906): from the east wall of the Edgeville Dungeon's hill
+            // giants' hall (floor 26) to the west end of the Varrock Sewers' moss giants' cavern (floor 30). The two dungeons are
+            // built further apart than in OSRS, so the pipe is a long one here. // approx
+            new BlockEnds("edgeville_dungeon_pipe", StructureDef.bx(3097) + 53, 27, StructureDef.bz(3468) + 13,
+                    StructureDef.bx(3237) - 139, 31, StructureDef.bz(3458) + 2),
+            // The Dwarven Mine's narrow crevice at its OSRS tiles (3035 / 3028, 9806 = surface 3406) in the main cavern (floor 30).
+            new BlockEnds("dwarven_mine_narrow_crevice", StructureDef.bx(3035), 31, StructureDef.bz(3406),
+                    StructureDef.bx(3028), 31, StructureDef.bz(3406)),
+            // Taverley Dungeon's strange floor (OSRS 2877-2881, 9813, near the entrance): along the hall from the entrance to the
+            // chaos druids (floor 20), whose layout is more compact than OSRS's. // approx
+            new BlockEnds("taverley_dungeon_strange_floor", StructureDef.bx(2872) + 10, 21, StructureDef.bz(3398) + 1,
+                    StructureDef.bx(2872) + 18, 21, StructureDef.bz(3398) + 1));
 
     private static BlockEnds towerEnds(String id, int x, int y, int floorA, int floorB) {
         int bx = StructureDef.bx(x);

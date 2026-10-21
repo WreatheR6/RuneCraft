@@ -104,6 +104,13 @@ public final class Capes {
                     .examine("Rub it to gain " + String.format(Locale.ROOT, "%,d", t.lampXp) + " XP in a skill of level "
                             + t.lampMinLevel + " or higher.");
         }
+        // The Karamja Diary's own lamps for its easy, medium and hard tiers (OSRS: "Antique lamp (Karamja Diary)").
+        for (String key : List.of("karamja_easy", "karamja_medium", "karamja_hard")) {
+            int[] lamp = DiaryRewards.lamp(key);
+            Defs.simple(items, DiaryRewards.LAMP_PREFIX + key, "Antique lamp (Karamja " + key.substring(8) + " diary)", "lamp",
+                    0xE8C030, 1).stack(1).examine("Rub it to gain " + String.format(Locale.ROOT, "%,d", lamp[0]) + " XP in "
+                    + (lamp[1] <= 1 ? "any skill." : "a skill of level " + lamp[1] + " or higher."));
+        }
 
         // ---------------- Arceuus: ensouled heads ----------------
         for (Spellbooks.Head h : Spellbooks.HEADS) {

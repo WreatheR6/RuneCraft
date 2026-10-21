@@ -26,7 +26,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 
 /** Boats, charter ships, gliders, magic carpets and canoes: a clickable destination list, then a paid trip. */
-final class TravelService {
+public final class TravelService {
     private TravelService() {
     }
 
@@ -72,12 +72,21 @@ final class TravelService {
         player.displayClientMessage(line, false);
     }
 
+    /** The fare charged: the route's (Jarvald waives his for Fremennik Trials) after the achievement diary perks. */
+    private static int fare(ServerPlayer player, Travel.Route route, Travel.Dest d) {
+        int base = Travel.fareFor(route.id(), d, q -> QuestApi.isComplete(player, q));
+        var sp = com.runecraft.content.systems.SysState.of(player);
+        boolean gloves = sp.wornId(com.runecraft.osrs.content.systems.Jewellery.Slot.HANDS).startsWith("karamja_gloves_");
+        return com.runecraft.osrs.content.systems.DiaryRewards.travelFare(route.id(), d.name(), base, gloves,
+                (area, tier) -> com.runecraft.osrs.content.systems.Diaries.tierComplete(sp.diaryDone, area, tier));
+    }
+
     private static String capital(String s) {
         return s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1);
     }
 
     /** Runs a chosen trip if the player is next to the NPC and meets the fare and requirements. */
-    static void travel(ServerPlayer player, String npcId, int index) {
+    public static void travel(ServerPlayer player, String npcId, int index) {
         TownNpc npc = Townsfolk.get(npcId);
         if (npc == null || npc.travel() == null) {
             return;
@@ -103,7 +112,15 @@ final class TravelService {
                 return;
             }
         }
-        int price = Travel.fareFor(route.id(), d, q -> QuestApi.isComplete(player, q));
+        // The monks (and the balloon assistant) search everyone bound for Entrana: with weapons or armour the trip never leaves.
+        if (com.runecraft.osrs.content.systems.AccessGates.onEntrana(d.x(), d.y())
+                && com.runecraft.content.systems.AccessGateService.carriesCombatGear(player)) {
+            Msg.game(player, route.verb().equals("float")
+                    ? "The assistant won't fly you to Entrana: the monks there allow no weapons or armour on their holy island."
+                    : "Sorry, we cannot allow you on to our island. Make sure you are not carrying weapons or armour please.");
+            return;
+        }
+        int price = fare(player, route, d);
         if (d.item() != null && !Inv.has(player, d.item(), d.itemCount())) {
             Msg.game(player, "You need " + cost(d) + " to " + route.verb() + " to " + d.name() + ".");
             return;
@@ -128,6 +145,9 @@ final class TravelService {
         BlockPos pos = Gielinor.safeSpot(world, GielinorMap.toBlockX(d.x()), GielinorMap.toBlockZ(d.y()));
         player.teleportTo(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, player.getYRot(), player.getXRot());
         world.playSound(null, pos, SoundEvents.BOAT_PADDLE_WATER, SoundSource.PLAYERS, 1f, 1f);
+        // Achievement diaries: "travel:" + route + ":" + destination ("travel:carpet_shantay:pollnivneach").
+        com.runecraft.content.GameEvents.fireActivity(player, "travel:" + route.id() + ":"
+                + com.runecraft.osrs.content.systems.Diaries.slug(d.name()));
         Msg.game(player, switch (route.verb()) {
             case "sail" -> "You board the ship and sail to " + d.name() + ".";
             case "fly" -> "You climb into the glider and fly to " + d.name() + ".";

@@ -39,6 +39,9 @@ final class DiaryExtrasService {
         BlockHooks.register(DiaryExtras.CRYSTAL_CHEST, (p, pos, state) -> chest(p, "crystal_key", "crystal_chest",
                 DiaryExtras.crystalChest(p.getRandom()::nextDouble)));
         DiaryObjectsService.register();
+        DiaryTransportService.register();
+        DiarySpawnsService.register();
+        DiaryActivitiesService.register();
     }
 
     private static boolean questDone(ServerPlayer p, String questId) {
@@ -105,11 +108,14 @@ final class DiaryExtrasService {
 
     /** Held items this service uses on right-click (the client predicts the result). */
     static boolean handles(String id, boolean sneaking) {
-        return DiaryExtras.join(id) != null || (id.equals(Charges.SKULL_SCEPTRE) && sneaking);
+        return DiaryExtras.join(id) != null || (id.equals(Charges.SKULL_SCEPTRE) && sneaking) || DiaryActivitiesService.handles(id);
     }
 
     /** Right-click: join two halves ("use A on B"), or sneak + right-click the skull sceptre to Invoke its teleport. */
     static boolean use(ServerPlayer p, ItemStack stack, InteractionHand hand, String id, boolean sneaking) {
+        if (DiaryActivitiesService.handles(id)) {
+            return DiaryActivitiesService.use(p, stack, id);
+        }
         if (id.equals(Charges.SKULL_SCEPTRE) && sneaking) {
             int left = ItemCharges.get(stack);
             if (left <= 0) {

@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "side": "runecraft:block/module/eagle_eyrie_side",
+    "top": "runecraft:block/module/eagle_eyrie_top",
+    "bottom": "runecraft:block/module/eagle_eyrie_bottom"
+  }
+}

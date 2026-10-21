@@ -481,11 +481,17 @@ class DungeonsContentTest {
                 : com.runecraft.osrs.content.skilling.AgilityShortcuts.TOWER_ENDS) {
             assertTrue(seen.add(e.id()), "shortcut placed twice: " + e.id());
         }
+        // Round 40's dungeon shortcuts are placed by position when their chunk loads (DiaryRound40Test checks the spots).
+        for (com.runecraft.osrs.content.skilling.AgilityShortcuts.BlockEnds e
+                : com.runecraft.osrs.content.skilling.AgilityShortcuts.DUNGEON_ENDS) {
+            assertTrue(seen.add(e.id()), "shortcut placed twice: " + e.id());
+        }
         for (com.runecraft.osrs.content.skilling.AgilityShortcuts.Shortcut s
                 : com.runecraft.osrs.content.skilling.AgilityShortcuts.INDOOR) {
             assertTrue(seen.contains(s.id()), s.id() + " is not placed anywhere");
         }
-        assertEquals(seen.size(), Dungeons.shortcutEnds().size() + com.runecraft.osrs.content.skilling.AgilityShortcuts.TOWER_ENDS.size());
+        assertEquals(seen.size(), Dungeons.shortcutEnds().size() + com.runecraft.osrs.content.skilling.AgilityShortcuts.TOWER_ENDS.size()
+                + com.runecraft.osrs.content.skilling.AgilityShortcuts.DUNGEON_ENDS.size());
     }
 
     /** The two underground courses: every obstacle step is let into the floor of its cavern once, in reach of the entrance. */

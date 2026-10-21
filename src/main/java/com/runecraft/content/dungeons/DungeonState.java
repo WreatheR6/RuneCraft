@@ -23,6 +23,20 @@ final class DungeonState extends SavedData {
         return (claimed.getOrDefault(uuid, 0) & (1 << chest)) != 0;
     }
 
+    /** The opened chests as a bit mask (self-tests put a player's back afterwards). */
+    int mask(UUID uuid) {
+        return claimed.getOrDefault(uuid, 0);
+    }
+
+    void setMask(UUID uuid, int mask) {
+        if (mask == 0) {
+            claimed.remove(uuid);
+        } else {
+            claimed.put(uuid, mask);
+        }
+        setDirty();
+    }
+
     void claim(UUID uuid, int chest) {
         claimed.merge(uuid, 1 << chest, (a, b) -> a | b);
         setDirty();

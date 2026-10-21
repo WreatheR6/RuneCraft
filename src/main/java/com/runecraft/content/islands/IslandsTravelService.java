@@ -125,6 +125,9 @@ public final class IslandsTravelService {
         Msg.game(player, fairy ? "You step into the fairy ring... " + to.name() + "." : "The mushtree's spores carry you to " + to.name()
                 + ". (Sneak and use it to choose another destination.)");
         travel(player, to);
+        if (fairy) {
+            com.runecraft.content.GameEvents.fireActivity(player, "fairy_ring:" + to.code().toLowerCase(java.util.Locale.ROOT));
+        }
     }
 
     /** Lays the stand-alone fairy rings (mycelium, the ring, mushrooms) where their bare places are built. */

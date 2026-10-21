@@ -403,6 +403,15 @@ public final class AccessGates {
             EquipmentDef.Slot.LEGS, EquipmentDef.Slot.FEET, EquipmentDef.Slot.WEAPON, EquipmentDef.Slot.SHIELD);
 
     /**
+     * Whether a trip lands on Entrana (inside its gate), so the monk or the balloon assistant searches the player before it
+     * leaves and refuses anyone carrying or wearing weapons or armour ({@link #entranaBanned}).
+     */
+    public static boolean onEntrana(double x, double y) {
+        Gate g = byId("entrana");
+        return g != null && g.contains(x, y);
+    }
+
+    /**
      * Whether the monks of Entrana refuse this item: any weapon or armour piece with combat bonuses.
      * Woodcutting axes, pickaxes and other tools, robes without bonuses, and jewellery are allowed
      * (approx: OSRS keeps a hand-made exception list).

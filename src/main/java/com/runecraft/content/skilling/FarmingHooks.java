@@ -769,6 +769,8 @@ final class FarmingHooks {
         BlockPos pos = Gielinor.safeSpot(world, com.runecraft.osrs.GielinorMap.toBlockX(to.x()),
                 com.runecraft.osrs.GielinorMap.toBlockZ(to.y()));
         player.teleportTo(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, player.getYRot(), player.getXRot());
+        com.runecraft.content.GameEvents.fireActivity(player, "travel:spirit_tree_grown:"
+                + com.runecraft.osrs.content.systems.Diaries.slug(to.name()));
     }
 
     private static void clear(ServerLevel world, BlockPos pos, CompoundTag nbt, SkillingState state, String key) {

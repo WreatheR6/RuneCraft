@@ -426,6 +426,12 @@ public final class SpawnTable {
         si("ancient_zygomite", 3686, 3828, 7, 10);      // Fossil Island's mushroom forest (27 in OSRS)
         si("ancient_zygomite", 3684, 3852, 10, 12);
         si("ancient_zygomite", 3690, 3875, 10, 14);
+        // Round 40 diaries (DiaryActivities): Varrock's five stray dogs and the Desert Phoenix north-west of Uzer (wiki tiles).
+        for (int[] dog : com.runecraft.osrs.content.systems.DiaryActivities.STRAY_DOGS) {
+            s(com.runecraft.osrs.content.systems.DiaryActivities.STRAY_DOG, dog[0], dog[1], 1, 4);
+        }
+        s(com.runecraft.osrs.content.systems.DiaryActivities.PHOENIX, com.runecraft.osrs.content.systems.DiaryActivities.PHOENIX_X,
+                com.runecraft.osrs.content.systems.DiaryActivities.PHOENIX_Y, 1, 3);
         // Brine rats, Jormungand's basilisk knights, baby green dragons, sourhogs, shadow warriors and the
         // Wilderness God Wars Dungeon's spiritual creatures are dungeon camps (DungeonsLairs).
     }

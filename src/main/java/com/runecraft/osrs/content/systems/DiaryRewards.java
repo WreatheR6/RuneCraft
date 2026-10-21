@@ -34,7 +34,7 @@ public final class DiaryRewards {
     public static final List<Tele> TELES = List.of(
             new Tele("ardougne", Teleports.at("Ardougne Monastery", 2606, 3222), new int[]{0, 0, 0, 0}),
             new Tele("ardougne", Teleports.at("Ardougne Farm", 2673, 3375), new int[]{-1, 3, 5, 0}),
-            new Tele("desert", Teleports.at("Nardah", 3433, 2892), new int[]{-1, 1, 0, 0}),
+            new Tele("desert", Teleports.at("Nardah", 3433, 2892), new int[]{-1, 1, 1, 0}), // amulet 3: "no new benefits"
             new Tele("desert", Teleports.at("Kalphite Cave", 3321, 3122), new int[]{-1, -1, -1, 0}),
             new Tele("fremennik", Teleports.at("Rellekka", 2660, 3657), new int[]{1, 3, 5, 0}),
             new Tele("kandarin", Teleports.at("Sherlock", 2733, 3415), new int[]{-1, -1, 1, 0}),
@@ -43,7 +43,7 @@ public final class DiaryRewards {
             new Tele("kourend", Teleports.at("Kourend Woodland", 1552, 3456), new int[]{3, 5, 0, 0}),
             new Tele("kourend", Teleports.at("Mount Karuulm", 1311, 3795), new int[]{-1, -1, 3, 0}),
             new Tele("lumbridge", Teleports.at("Cabbage patch", 3052, 3289), new int[]{-1, 3, 0, 0}),
-            new Tele("morytania", Teleports.at("Ectofuntus", 3660, 3522), new int[]{-1, 5, 5, 0}),
+            new Tele("morytania", Teleports.at("Ectofuntus", 3660, 3522), new int[]{2, 5, 5, 0}), // the Pool of Slime below it
             new Tele("morytania", Teleports.at("Burgh de Rott", 3482, 3231), new int[]{-1, -1, 0, 0}),
             new Tele("western", Teleports.at("Piscatoris Fishing Colony", 2340, 3650), new int[]{-1, -1, 1, 0}), // approx
             new Tele("wilderness", Teleports.at("Fountain of Rune", 3375, 3893), new int[]{-1, -1, 1, 0}));
@@ -275,6 +275,69 @@ public final class DiaryRewards {
         };
     }
 
+    // ------------------------------------------------------------------ antique lamps
+
+    /** Prefix of every diary lamp id; the rest is the lamp's key ("easy" ... "elite", "karamja_easy" ...). */
+    public static final String LAMP_PREFIX = "antique_lamp_";
+
+    /**
+     * The antique lamp a diary tier gives (OSRS wiki): the tier's standard lamp, except that the easy, medium and hard
+     * Karamja tiers give the smaller "Antique lamp (Karamja Diary)" lamps.
+     */
+    public static String lampFor(String areaId, Diaries.Tier tier) {
+        return LAMP_PREFIX + ("karamja".equals(areaId) && tier != Diaries.Tier.ELITE ? "karamja_" : "") + tier.id();
+    }
+
+    /** Every diary lamp key. */
+    public static final List<String> LAMP_KEYS = List.of("easy", "medium", "hard", "elite", "karamja_easy", "karamja_medium",
+            "karamja_hard");
+
+    /**
+     * {XP, lowest level of the chosen skill} of a lamp key, or null: 2,500 / 7,500 / 15,000 / 50,000 XP at level 30 / 40 / 50
+     * / 70, and the Karamja lamps' 1,000 XP at any level, 5,000 XP at 30 and 10,000 XP at 40 (OSRS wiki).
+     */
+    public static int[] lamp(String key) {
+        return switch (key) {
+            case "karamja_easy" -> new int[]{1000, 1};
+            case "karamja_medium" -> new int[]{5000, 30};
+            case "karamja_hard" -> new int[]{10000, 40};
+            default -> {
+                for (Diaries.Tier t : Diaries.Tier.values()) {
+                    if (t.id().equals(key)) {
+                        yield new int[]{t.lampXp, t.lampMinLevel};
+                    }
+                }
+                yield null;
+            }
+        };
+    }
+
+    // ------------------------------------------------------------------ transport fares
+
+    /**
+     * The fare of an NPC transport trip after diary perks (OSRS wiki): Karamja gloves (any tier, worn) halve the
+     * Brimhaven-Ardougne and Musa Point-Port Sarim boats to 15 coins, the hard Desert diary makes the desert's magic carpets
+     * free and the elite Karamja diary the Shilo Village carts.
+     */
+    public static int travelFare(String routeId, String destination, int fare, boolean karamjaGloves, TierDone done) {
+        if (fare <= 0) {
+            return fare;
+        }
+        if (karamjaGloves && fare == 30 && (("boat_ardougne_brimhaven".equals(routeId) && "Brimhaven".equals(destination))
+                || ("boat_brimhaven_ardougne".equals(routeId) && "Ardougne".equals(destination))
+                || ("boat_port_sarim_karamja".equals(routeId) && destination.startsWith("Musa Point"))
+                || ("boat_karamja_port_sarim".equals(routeId) && "Port Sarim".equals(destination)))) {
+            return 15;
+        }
+        if (routeId.startsWith("carpet_") && done.done("desert", Diaries.Tier.HARD)) {
+            return 0;
+        }
+        if (routeId.startsWith("cart_") && (routeId.contains("shilo")) && done.done("karamja", Diaries.Tier.ELITE)) {
+            return 0;
+        }
+        return fare;
+    }
+
     /** Short perk descriptions (OSRS effects), shown in the diary screen and the item examine text. */
     public static List<String> perks(String areaId, int tier) {
         List<String> out = new ArrayList<>();
@@ -316,7 +379,18 @@ public final class DiaryRewards {
                     out.add("50% more runes from the Barrows chest");
                 }
             }
-            case "karamja" -> out.add("13% off TzHaar shop prices while wearing the gloves");
+            case "karamja" -> {
+                out.add("13% off TzHaar shop prices while wearing the gloves");
+                out.add("Brimhaven-Ardougne and Musa Point-Port Sarim boats cost 15 coins while wearing the gloves");
+                if (tier >= 4) {
+                    out.add("Free Shilo Village cart rides; double tokkul from the Fight Cave and the Inferno");
+                }
+            }
+            case "desert" -> {
+                if (tier >= 3) {
+                    out.add("Free magic carpet rides in the Kharidian Desert");
+                }
+            }
             case "kandarin" -> out.add((Math.min(3, tier) * 5) + "% reroll on failed Seers' Village rooftop marks of grace");
             case "fremennik" -> {
                 if (tier >= 4) {
@@ -329,6 +403,9 @@ public final class DiaryRewards {
                 }
             }
             case "western" -> {
+                out.add(tier >= 4 ? "Two chompy birds always come to a bloated toad"
+                        : DiaryActivities.twoChompiesPercent(tier) + "% chance of two chompy birds coming to a bloated toad");
+                out.add("Rantz hands out " + DiaryActivities.rantzDailyArrows(tier) + " ogre arrows a day");
                 if (tier >= 3) {
                     out.add("Elite void knight equipment available from Pest Control");
                 }

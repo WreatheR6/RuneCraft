@@ -81,14 +81,22 @@ class DiaryShortcutTasksTest {
         assertTrue(Diaries.questReqs(digsite).contains("the_dig_site"));
         // Every jewellery teleport task names a real piece (its base id) and one of its destinations.
         Set<String> keys = new HashSet<>();
-        for (Jewellery.Worn w : Jewellery.all()) {
+        List<Jewellery.Worn> pieces = new java.util.ArrayList<>(Jewellery.all());
+        // Held teleport items (round 40: Kharedst's memoirs and the book of the dead) report keys the same way.
+        for (String held : List.of("kharedsts_memoirs", "book_of_the_dead")) {
+            pieces.add(Jewellery.held(held));
+        }
+        for (Jewellery.Worn w : pieces) {
             for (Teleports.Destination d : w.teleports()) {
                 keys.add(Diaries.teleportKey(w.id(), w.chargeBase(), d.name()));
             }
         }
         for (Diaries.Task t : Diaries.tasks()) {
             if (t.type() == Diaries.Type.EVENT && t.target().startsWith("teleport:") && !t.target().startsWith("teleport:skull_sceptre")) {
-                assertTrue(keys.contains(t.target()), t.id() + " teleport key never fired: " + t.target());
+                // '&' parts (Kharedst's memoirs: all five cities) and '|' alternatives (either book) are each a fired key.
+                for (String key : t.target().split("[&|]")) {
+                    assertTrue(keys.contains(key), t.id() + " teleport key never fired: " + key);
+                }
             }
         }
     }

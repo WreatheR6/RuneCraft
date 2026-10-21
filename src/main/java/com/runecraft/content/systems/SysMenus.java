@@ -41,6 +41,7 @@ public final class SysMenus {
                 case "hiscores" -> hiscores(p, null);
                 case "capes" -> CapeService.open(p);
                 case "spec" -> SpecialAttackService.toggle(p);
+                case "emotes" -> DiaryActivitiesService.emotes(p);
                 default -> {
                 }
             }
@@ -86,7 +87,7 @@ public final class SysMenus {
                 return;
             }
             if (parts[0].equals("claim")) {
-                DiaryService.claim(p, area, tier);
+                DiaryService.claimFromTaskmaster(p, area, tier);
             }
             diary(p, area.id(), tier);
         });
@@ -105,7 +106,7 @@ public final class SysMenus {
             String[] parts = a.split(":");
             if (parts.length == 2) {
                 try {
-                    DiaryService.rubLamp(p, Diaries.Tier.valueOf(parts[0]), Skill.valueOf(parts[1]));
+                    DiaryService.rubLamp(p, parts[0], Skill.valueOf(parts[1]));
                 } catch (IllegalArgumentException ignored) {
                     // bad value
                 }
@@ -146,6 +147,7 @@ public final class SysMenus {
         s.button("ge", "Grand Exchange", "View and collect your offers.", true);
         s.button("hiscores", "Hiscores", "", true);
         s.button("capes", "Capes of accomplishment", "", true);
+        s.button("emotes", "Emotes", "Including the four the Stronghold of Security unlocks.", true);
         s.button("spec", "Use special attack", "Toggle your weapon's special attack (V).", spec != null);
         s.send(p);
     }
@@ -415,12 +417,18 @@ public final class SysMenus {
         s.send(p);
     }
 
-    public static void lamp(ServerPlayer p, Diaries.Tier tier) {
+    /** The skill choice of a diary lamp ({@code antique_lamp_<key>}; {@link com.runecraft.osrs.content.systems.DiaryRewards#lamp}). */
+    public static void lamp(ServerPlayer p, String key) {
+        int[] lamp = com.runecraft.osrs.content.systems.DiaryRewards.lamp(key);
+        if (lamp == null) {
+            return;
+        }
         SysNet.Screen s = new SysNet.Screen("lamp", "Antique lamp");
-        s.line("Choose a skill to gain " + String.format(Locale.ROOT, "%,d", tier.lampXp) + " XP (level " + tier.lampMinLevel + "+).");
+        s.line("Choose a skill to gain " + String.format(Locale.ROOT, "%,d", lamp[0]) + " XP"
+                + (lamp[1] > 1 ? " (level " + lamp[1] + "+)." : "."));
         PlayerData d = Players.data(p);
         for (Skill sk : Skill.values()) {
-            s.button(tier.name() + ":" + sk.name(), sk.displayName(), "", d.skills().level(sk) >= tier.lampMinLevel);
+            s.button(key + ":" + sk.name(), sk.displayName(), "", d.skills().level(sk) >= lamp[1]);
         }
         s.send(p);
     }

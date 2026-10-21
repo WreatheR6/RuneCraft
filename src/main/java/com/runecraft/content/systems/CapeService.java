@@ -179,6 +179,27 @@ public final class CapeService {
                 .then(Commands.literal("diary").executes(ctx -> {
                     SysMenus.diaries(ctx.getSource().getPlayerOrException());
                     return 1;
+                }).then(Commands.argument("area", StringArgumentType.word()).executes(ctx -> {
+                    // One area's diary (Pirate Jackie the Fruit's chat link opens the Karamja one).
+                    ServerPlayer p = ctx.getSource().getPlayerOrException();
+                    String area = StringArgumentType.getString(ctx, "area");
+                    if (com.runecraft.osrs.content.systems.Diaries.area(area) == null) {
+                        SysMenus.diaries(p);
+                        return 1;
+                    }
+                    com.runecraft.osrs.content.systems.Diaries.Tier show = com.runecraft.osrs.content.systems.Diaries.Tier.ELITE;
+                    for (com.runecraft.osrs.content.systems.Diaries.Tier t : com.runecraft.osrs.content.systems.Diaries.Tier.values()) {
+                        if (!SysState.of(p).diaryClaimed.contains(area + ":" + t.name())) {
+                            show = t;
+                            break;
+                        }
+                    }
+                    SysMenus.diary(p, area, show);
+                    return 1;
+                })))
+                .then(Commands.literal("emotes").executes(ctx -> {
+                    DiaryActivitiesService.emotes(ctx.getSource().getPlayerOrException());
+                    return 1;
                 }))
                 .then(Commands.literal("ge").executes(ctx -> {
                     GeService.open(ctx.getSource().getPlayerOrException(), null, null);

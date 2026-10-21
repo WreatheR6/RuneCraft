@@ -63,8 +63,25 @@ final class DiaryObjectsService {
         GameEvents.onActivity((p, key) -> {
             if (key.equals("talk:" + DiaryExtras.SAWMILL_OPERATOR)) {
                 sawmill(p);
+            } else if (key.equals("talk:mg_pirate_jackie")) {
+                // Pirate Jackie the Fruit runs the Agility Arena's shop and is also the Karamja Diary's taskmaster.
+                p.displayClientMessage(net.minecraft.network.chat.Component.literal("Pirate Jackie the Fruit: Arr, and how be yer Karamja diary? ")
+                        .append(net.minecraft.network.chat.Component.literal("[Karamja Diary]").withStyle(s -> s
+                                .withColor(net.minecraft.ChatFormatting.GOLD)
+                                .withClickEvent(new net.minecraft.network.chat.ClickEvent(
+                                        net.minecraft.network.chat.ClickEvent.Action.RUN_COMMAND, "/rc diary karamja")))), false);
             }
         });
+        // Round 40: the diary taskmasters, the Falador water pump and the Rellekka well.
+        for (DiaryExtras.Taskmaster t : DiaryExtras.TASKMASTERS) {
+            if (!t.npcId().startsWith("mg_")) {
+                com.runecraft.quest.QuestScripts.onTalk(t.npcId(), (p, npc) -> taskmaster(p, t));
+            }
+        }
+        BlockHooks.register(DiaryExtras.WATER_PUMP, (p, pos, state) -> fillWater(p, "pump"));
+        BlockHooks.register(DiaryExtras.WELL, (p, pos, state) -> fillWater(p, "well"));
+        LandmarkBuilder.registerCustom(DiaryExtras.WATER_PUMP, (world, centre) -> place(world, centre, DiaryExtras.WATER_PUMP, false));
+        LandmarkBuilder.registerCustom(DiaryExtras.WELL, (world, centre) -> place(world, centre, DiaryExtras.WELL, false));
         GameEvents.onKill((p, entity, stats) -> {
             if (stats != null && stats.profile() != null && "ent".equals(stats.profile().id)) {
                 fallTrunk(p, (ServerLevel) entity.level(), entity.blockPosition());
@@ -129,6 +146,41 @@ final class DiaryObjectsService {
     private static boolean questDone(ServerPlayer p, String questId) {
         QuestInfo q = ContentRegistry.quest(questId);
         return q == null || Players.data(p).questComplete(q);
+    }
+
+    // ---------------- Taskmasters and water sources (round 40) ----------------
+
+    /** A diary taskmaster: shows the area's diary at its first unclaimed tier (rewards are claimed there). */
+    static void taskmaster(ServerPlayer p, DiaryExtras.Taskmaster t) {
+        com.runecraft.osrs.content.systems.Diaries.Area a = com.runecraft.osrs.content.systems.Diaries.area(t.area());
+        SysState.SysPlayer sp = SysState.of(p);
+        com.runecraft.osrs.content.systems.Diaries.Tier show = com.runecraft.osrs.content.systems.Diaries.Tier.ELITE;
+        for (com.runecraft.osrs.content.systems.Diaries.Tier tier : com.runecraft.osrs.content.systems.Diaries.Tier.values()) {
+            if (!sp.diaryClaimed.contains(a.id() + ":" + tier.name())) {
+                show = tier;
+                break;
+            }
+        }
+        QuestApi.say(p, t.name(), DiaryService.claimable(sp, a, show)
+                ? "Well done! You've finished the " + show.id() + " " + a.name() + " tasks. Here, take your reward."
+                : "How's your " + a.name() + " Achievement Diary coming along?");
+        SysMenus.diary(p, a.id(), show);
+    }
+
+    /** A pump or well: fills the held bucket, jug, bowl or vial with water. */
+    static void fillWater(ServerPlayer p, String what) {
+        ItemStack held = p.getMainHandItem();
+        String full = held.isEmpty() ? null : DiaryExtras.waterFill(Inv.idOf(held));
+        if (full == null) {
+            Msg.game(p, "Use a bucket, jug, bowl or vial on the " + what + " to fill it with water.");
+            return;
+        }
+        held.shrink(1);
+        Inv.give(p, full, 1);
+        p.level().playSound(null, p.blockPosition(), net.minecraft.sounds.SoundEvents.BUCKET_FILL,
+                net.minecraft.sounds.SoundSource.PLAYERS, 1f, 1f);
+        Msg.action(p, "You fill it with water from the " + what + ".");
+        GameEvents.fireActivity(p, "fill:" + (full.startsWith("minecraft:") ? full.substring("minecraft:".length()) : full));
     }
 
     // ---------------- Saltpetre ----------------

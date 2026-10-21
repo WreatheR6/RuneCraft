@@ -349,7 +349,7 @@ public final class SystemsHooks implements ModuleHooks {
         }
         if (id.startsWith("antique_lamp_")) {
             try {
-                SysMenus.lamp(p, Diaries.Tier.valueOf(id.substring("antique_lamp_".length()).toUpperCase(java.util.Locale.ROOT)));
+                SysMenus.lamp(p, id.substring("antique_lamp_".length()));
             } catch (IllegalArgumentException ignored) {
                 // unknown lamp
             }
